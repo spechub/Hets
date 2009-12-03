@@ -43,12 +43,8 @@ import Data.List
 import Data.Maybe ( fromJust, fromMaybe, isJust )
 
 data GProver = GProver { pName :: String
-                       , prover :: G_prover
                        , comorphism :: [AnyComorphism]
                        , selected :: Int }
-
-maxLabelLength :: Int
-maxLabelLength = 30
 
 {- ProverGUI -}
 
@@ -98,11 +94,10 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     btnDisplay            <- xmlGetWidget xml castToButton "btnDisplay"
     btnProofDetails       <- xmlGetWidget xml castToButton "btnProofDetails"
     btnProve              <- xmlGetWidget xml castToButton "btnProve"
-    lblComorphism         <- xmlGetWidget xml castToLabel "lblComorphism"
+    cbComorphism         <- xmlGetWidget xml castToComboBox "cbComorphism"
     lblSublogic           <- xmlGetWidget xml castToLabel "lblSublogic"
     -- prover
     trvProvers            <- xmlGetWidget xml castToTreeView "trvProvers"
-    btnFineGrained        <- xmlGetWidget xml castToButton "btnFineGrained"
 
     windowSetTitle window $ "Prove: " ++ thName
 
@@ -114,9 +109,14 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     listAxioms <- setListData trvAxioms id $ toAxioms axioms
     listTheorems <- setListData trvTheorems id $ toTheorem initState
 
+    -- setup comorphism combobox
+    comboBoxSetModelText cbComorphism
+    shC <- after cbComorphism changed
+      $ setSelectedComorphism trvProvers listProvers cbComorphism
+
     -- setup provers list
     shP <- setListSelectorSingle trvProvers $ modifyMVar_ state
-      $ setSelectedProver trvProvers listProvers lblComorphism
+      $ setSelectedProver trvProvers listProvers cbComorphism shC
 
     -- setup axioms list
     shA <- setListSelectorMultiple trvAxioms btnAxiomsAll btnAxiomsNone
@@ -140,9 +140,8 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       btnTheoremsInvert $ modifyMVar_ state
       $ setSelectedTheorems trvTheorems listTheorems
 
-    let noProver = [ toWidget btnFineGrained
-                   , toWidget btnProve
-                   , toWidget lblComorphism
+    let noProver = [ toWidget btnProve
+                   , toWidget cbComorphism
                    , toWidget lblSublogic ]
         noAxiom = [ toWidget btnAxiomsAll
                   , toWidget btnAxiomsNone
@@ -163,7 +162,7 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
                 , toWidget btnDisplay ]
         update s' = do
           signalBlock shP
-          s <- setSelectedProver trvProvers listProvers lblComorphism
+          s <- setSelectedProver trvProvers listProvers cbComorphism shC
             =<< updateProver trvProvers listProvers
             =<< updateSublogic lblSublogic prGuiAcs knownProvers
             =<< setSelectedGoals trvGoals listGoals s'
@@ -217,8 +216,6 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
             putMVar state s { proverRunning = False
                             , accDiags = accDiags s ++ ds }
 
-    onClicked btnFineGrained $ fineGrainedSelection trvProvers listProvers
-
     onDestroy window $ putMVar wait ()
 
     selectAll trvTheorems
@@ -251,28 +248,32 @@ displayGoals s = case theory s of
     textView ("Selected Goals from Theory " ++ thName) (goalsText sens')
              $ Just (thName ++ "-goals.txt")
 
-fineGrainedSelection :: TreeView -> ListStore GProver -> IO ()
-fineGrainedSelection view list = do
-  ps <- listStoreToList list
-  selector <- treeViewGetSelection view
-  if null ps then error "Cant make selection without sublogic!"
-    else do
-      ret <- listChoiceAux "Choose a translation"
-               (\ (n,_,c) -> n ++ ": " ++ show c) $ concatMap expand ps
-      case ret of
-        Just (_,(n,_,c)) -> case findIndex ((n ==) . pName) ps of
-          Just i -> let p = ps !! i in case findIndex (c ==) $ comorphism p of
-            Just i' -> do
-              let p' = p { selected = i' }
-              listStoreSetValue list i p'
-              treeSelectionSelectPath selector [i]
-            Nothing -> error "can't find selected comorphism"
-          Nothing -> error "can't find selected prover"
-        Nothing -> return ()
+updateComorphism :: TreeView -> ListStore GProver -> ComboBox
+                 -> ConnectId ComboBox -> IO ()
+updateComorphism view list cbComorphism sh = do
+  signalBlock sh
+  model <- comboBoxGetModelText cbComorphism
+  listStoreClear model
+  mfinder <- getSelectedSingle view list
+  case mfinder of
+    Just (_, f) -> do
+      mapM_ (comboBoxAppendText cbComorphism) $ expand f
+      comboBoxSetActive cbComorphism $ selected f
+    Nothing -> return ()
+  signalUnblock sh
 
-expand :: GProver -> [(String, G_prover, AnyComorphism)]
-expand (GProver { pName = n, prover = p, comorphism = cs }) =
-  map (\ c -> (n, p, c)) cs
+expand :: GProver -> [String]
+expand (GProver { pName = n, comorphism = cs }) =
+  map (\ c -> (n ++ ": " ++ show c)) cs
+
+setSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> IO ()
+setSelectedComorphism view list cbComorphism = do
+  mfinder <- getSelectedSingle view list
+  case mfinder of
+    Just (i, f) -> do
+      sel <- comboBoxGetActive cbComorphism
+      listStoreSetValue list i f { selected = sel }
+    Nothing -> return ()
 
 updateSublogic :: Label -> ProofActions lid sentence
                -> KnownProvers.KnownProversMap -> ProofState lid sentence
@@ -335,15 +336,12 @@ stripPrefixAxiom a = case stripPrefix "(Th) " a of
   Nothing -> a
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
-setSelectedProver :: TreeView -> ListStore GProver -> Label
-                  -> ProofState lid sentence -> IO (ProofState lid sentence)
-setSelectedProver trvProvers listProvers lbl s = do
+setSelectedProver :: TreeView -> ListStore GProver -> ComboBox
+                  -> ConnectId ComboBox -> ProofState lid sentence
+                  -> IO (ProofState lid sentence)
+setSelectedProver trvProvers listProvers cbComorphism shC s = do
   mprover <- getSelectedSingle trvProvers listProvers
-  -- update comorphism label
-  maybe (return ()) (\ (_, p) -> case comorphism p !! selected p of
-    Comorphism cid -> let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
-                          l = if null dN then "identity" else dN
-      in labelSetLabel lbl $ shortenLabel maxLabelLength l) mprover
+  updateComorphism trvProvers listProvers cbComorphism shC
   return s { selectedProver = maybe Nothing (Just . pName . snd) mprover }
 
 toAxioms :: ThSens sentence (AnyComorphism, BasicProof) -> [String]
@@ -363,6 +361,6 @@ toTheorem = OMap.keys . goalMap
 toProvers :: ProofState lid sentence -> [GProver]
 toProvers = Map.elems . foldr (\ (p', c) m ->
     let n = getPName p'
-        p = Map.findWithDefault (GProver n p' [] 0) n m in
+        p = Map.findWithDefault (GProver n [] 0) n m in
     Map.insert n (p { comorphism = c : comorphism p}) m
   ) Map.empty . comorphismsToProvers

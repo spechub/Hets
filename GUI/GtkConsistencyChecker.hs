@@ -29,7 +29,6 @@ import Static.GTheory
 import Interfaces.DataTypes
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
-import Logic.Logic (Language(language_name))
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism(..))
 
@@ -96,9 +95,6 @@ statusToPrefix s = case s of
   CSTimeout _      -> "[t] "
   CSError _        -> "[f] "
 
-maxLabelLength :: Int
-maxLabelLength = 30
-
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
 showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
@@ -115,20 +111,19 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
   btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
   -- get checker view and buttons
-  lblComorphism     <- xmlGetWidget xml castToLabel "lblComorphism"
+  cbComorphism      <- xmlGetWidget xml castToComboBox "cbComorphism"
   lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"
   sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
   btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
   btnStop           <- xmlGetWidget xml castToButton "btnStop"
-  btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
+  --btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
   trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
 
   windowSetTitle window "Consistency Checker"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
 
-  let widgets = [ toWidget btnFineGrained
-                , toWidget sbTimeout
-                , toWidget lblComorphism
+  let widgets = [ toWidget sbTimeout
+                , toWidget cbComorphism
                 , toWidget lblSublogic ]
       checkWidgets = widgets ++ [ toWidget btnClose
                                 , toWidget btnNodesAll
@@ -166,20 +161,24 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
     $ zip nodes sls
   listFinder <- setListData trvFinder fName []
 
+  -- setup comorphism combobox
+  comboBoxSetModelText cbComorphism
+  shC <- after cbComorphism changed
+    $ setSelectedComorphism trvFinder listFinder cbComorphism
+
   -- setup view selection actions
   let update = do
         mf <- getSelectedSingle trvFinder listFinder
+        updateComorphism trvFinder listFinder cbComorphism shC
         case mf of
-          Just (_,f) -> do
-            case comorphism f !! selected f of
-              Comorphism cid ->
-                let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
-                    l = if null dN then "identity" else dN
-                in labelSetLabel lblComorphism $ shortenLabel maxLabelLength l
-            widgetSetSensitive btnCheck True
-          Nothing -> do
-            labelSetLabel lblComorphism "No path selected"
-            widgetSetSensitive btnCheck False
+          Just _ -> return ()
+            --case comorphism f !! selected f of
+            --  Comorphism cid ->
+            --    let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
+            --        l = if null dN then "identity" else dN
+            --    in labelSetLabel lblComorphism $ shortenLabel maxLabelLength l
+            --widgetSetSensitive btnCheck True
+          Nothing -> widgetSetSensitive btnCheck False
   setListSelectorSingle trvFinder update
 
   let upd = updateNodes trvNodes listNodes
@@ -212,7 +211,6 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   onClicked btnResults $ showModelView mView "Models" listNodes
   onClicked btnClose $ widgetDestroy window
-  onClicked btnFineGrained $ fineGrainedSelection trvFinder listFinder update
   onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
 
   onClicked btnCheck $ do
@@ -295,29 +293,32 @@ check ln le dg (Finder { finder = cc, comorphism = cs, selected = i}) timeout
            postGUISync $ listStoreSetValue listNodes row fn { status = res }
            return $ count + 1) 0 nodes
 
-fineGrainedSelection :: TreeView -> ListStore Finder -> IO () -> IO ()
-fineGrainedSelection view list unlock = do
-  paths <- listStoreToList list
-  selector <- treeViewGetSelection view
-  if null paths then error "Cant make selection without sublogic!"
-    else do
-      ret <- listChoiceAux "Choose a translation"
-               (\ (n,_,c) -> n ++ ": " ++ show c) $ concatMap expand paths
-      case ret of
-        Just (_,(n,_,c)) -> case findIndex ((n ==) . fName) paths of
-          Just i -> let f = paths !! i in
-            case findIndex (c ==) $ comorphism f of
-              Just i' -> do
-                listStoreSetValue list i $ f { selected = i' }
-                treeSelectionSelectPath selector [i]
-                unlock
-              Nothing -> return ()
-          Nothing -> return ()
-        Nothing -> return ()
+updateComorphism :: TreeView -> ListStore Finder -> ComboBox
+                 -> ConnectId ComboBox -> IO ()
+updateComorphism view list cbComorphism sh = do
+  signalBlock sh
+  model <- comboBoxGetModelText cbComorphism
+  listStoreClear model
+  mfinder <- getSelectedSingle view list
+  case mfinder of
+    Just (_, f) -> do
+      mapM_ (comboBoxAppendText cbComorphism) $ expand f
+      comboBoxSetActive cbComorphism $ selected f
+    Nothing -> return ()
+  signalUnblock sh
 
-expand :: Finder -> [(String, G_cons_checker, AnyComorphism)]
-expand (Finder { fName = n, finder = cc, comorphism = cs }) =
-  map (\ c -> (n,cc,c)) cs
+expand :: Finder -> [String]
+expand (Finder { fName = n, comorphism = cs }) =
+  map (\ c -> (n ++ ": " ++ show c)) cs
+
+setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
+setSelectedComorphism view list cbComorphism = do
+  mfinder <- getSelectedSingle view list
+  case mfinder of
+    Just (i, f) -> do
+      sel <- comboBoxGetActive cbComorphism
+      listStoreSetValue list i f { selected = sel }
+    Nothing -> return ()
 
 -- | Displays the model view window
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> IO ()
