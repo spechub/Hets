@@ -38,6 +38,7 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.Sublogic as HasSub
+import HasCASL.FoldTerm as HasFold
 
 -- | The identity of the comorphism
 data CASL2HasCASL = CASL2HasCASL deriving (Show)
@@ -138,13 +139,13 @@ getConstructors f s = case sentence f of
 mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig constr sign =
     let f1 = concatMap ( \ (i, s) ->
-                   map ( \ ty -> (i, fromOpType ty $ CasS.opKind ty,
+                   map ( \ ty -> (trId i, fromOpType ty $ CasS.opKind ty,
                             if Set.member (i, ty { CasS.opKind = Cas.Partial })
                                constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
                          $ Set.toList s) $ Map.toList $ CasS.opMap sign
         f2 = concatMap ( \ (i, s) ->
-                   map ( \ ty -> (i, fromPredType ty, NoOpDefn Pred))
+                   map ( \ ty -> (trId i, fromPredType ty, NoOpDefn Pred))
                          $ Set.toList s) $ Map.toList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let os = Map.findWithDefault Set.empty i m
@@ -161,20 +162,21 @@ mapSig constr sign =
 mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m
                f1 = map ( \ ((i, ot), (j, t)) ->
-                          ((i, fromOpType ot (CasS.opKind ot)),
-                           (j, mapTypeOfScheme (mapType tm)
+                          ((trId i, fromOpType ot (CasS.opKind ot)),
+                           (trId j, mapTypeOfScheme (mapType tm)
                                     $ fromOpType ot t)))
                     $ Map.toList $ CasM.op_map m
                f2 = map ( \ ((i, pt), j) ->
                           let sc = fromPredType pt
-                          in ((i, sc), (j, mapTypeOfScheme (mapType tm) sc)))
+                          in ( (trId i, sc)
+                             , (trId j, mapTypeOfScheme (mapType tm) sc)))
                     $ Map.toList $ CasM.pred_map m
             in (mkMorphism (mapSig Set.empty $ CasM.msource m)
                                (mapSig Set.empty $ CasM.mtarget m))
            { typeIdMap = tm , funMap = Map.fromList $ f2 ++ f1 }
 
 mapSym :: CasS.Symbol -> Symbol
-mapSym s = let i = CasS.symName s in
+mapSym s = let i = trId $ CasS.symName s in
     case CasS.symbType s of
     CasS.OpAsItemType ot ->
         idToOpSymbol initialEnv i $ fromOpType ot $ CasS.opKind ot
@@ -212,7 +214,7 @@ toSentence f = case f of
               [map (\ a -> Select Nothing a HasCASL.As.Total) args])
           $ filter ( \ (_, t) -> CasS.opRes t == s)
                 $ map ( \ (Cas.Qual_op_name i t _) ->
-                        (i, CasS.toOpType t)) ops) sorts
+                        (trId i, CasS.toOpType t)) ops) sorts
    _ -> Formula $ toTerm f
 
 toTerm :: Pretty f => Cas.FORMULA f -> Term
@@ -239,9 +241,10 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
         mkEqTerm exEq (typeOfTerm c1) ps t1 t2
   , foldStrong_equation = \ (Cas.Strong_equation c1 _ _) t1 t2 ps ->
         mkEqTerm eqId (typeOfTerm c1) ps t1 t2
-  , foldPredication = \ _ (Cas.Qual_pred_name i pty@(Cas.Pred_type ts _) ps)
+  , foldPredication = \ _ (Cas.Qual_pred_name ui pty@(Cas.Pred_type ts _) ps)
         args qs ->
-        let sc = simpleTypeScheme $ fromPREDTYPE pty
+        let i = trId ui
+            sc = simpleTypeScheme $ fromPREDTYPE pty
             p = QualOp Pred (PolyId i [] ps) sc [] Infer ps
             in if null args then p else TypedTerm
               (ApplTerm p (mkTupleTerm (zipWith
@@ -251,16 +254,19 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   , foldDefinedness = \ (Cas.Definedness c _) t ps ->
         mkTerm defId defType [typeOfTerm c] ps t
   , foldMembership = \ _ t -> TypedTerm t InType . toType
-  , foldQuantOp = \ _ o ty frm -> QuantifiedTerm Universal
+  , foldQuantOp = \ _ uo ty frm -> let o = trId uo in
+         QuantifiedTerm Universal
          [GenVarDecl $ VarDecl o (fromOPTYPEAux ty) Other nullRange]
-         frm nullRange
-  , foldQuantPred = \ _ p ty frm -> QuantifiedTerm Universal
+         (qualName2var o frm) nullRange
+  , foldQuantPred = \ _ up ty frm -> let p = trId up in
+         QuantifiedTerm Universal
          [GenVarDecl $ VarDecl p (fromPREDTYPE ty) Other nullRange]
-         frm nullRange
+         (qualName2var p frm) nullRange
   , foldQual_var = \ _ v ty ->
         QualVar . VarDecl (simpleIdToId v) (toType ty) Other
-  , foldApplication = \ _ (Cas.Qual_op_name i ot ps) args qs  ->
-        let o = QualOp Op (PolyId i [] ps) (fromOPTYPE ot) [] Infer ps
+  , foldApplication = \ _ (Cas.Qual_op_name ui ot ps) args qs  ->
+        let i = trId ui
+            o = QualOp Op (PolyId i [] ps) (fromOPTYPE ot) [] Infer ps
             at = CasS.toOpType ot
         in if null args then o else TypedTerm
            (ApplTerm o (mkTupleTerm (zipWith
@@ -270,7 +276,21 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   , foldSorted_term = \ _ trm -> TypedTerm trm OfType . toType
   , foldCast = \ _ trm -> TypedTerm trm AsType . toType
   , foldConditional = \ (Cas.Conditional c1 _ _ _) t1 f t2 ps ->
-        mkTerm whenElse whenType [typeOfTerm c1] ps $ TupleTerm [t1, f, t2] ps }
+        mkTerm whenElse whenType [typeOfTerm c1] ps $ TupleTerm [t1, f, t2] ps
+  }
 
 typeOfTerm :: Cas.TERM f -> Type
 typeOfTerm = toType . CasS.sortOfTerm
+
+-- | replace qualified names by variables in second order formulas
+qualName2var :: Id -> Term -> Term
+qualName2var i = HasFold.foldTerm mapRec
+  { foldQualOp = \ t _ (PolyId j _ _) (TypeScheme _ ty _) _ _ ps ->
+      if i == j then QualVar $ VarDecl i ty Other ps else t }
+
+-- | the invisible identifier is reserved for application
+trId :: Id -> Id
+trId i@(Id ts cs ps) = if null cs && all isPlace ts then
+  Id [genNumVar "empty" $ length ts] cs ps else i
+
+
