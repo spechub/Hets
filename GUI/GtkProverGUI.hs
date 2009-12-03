@@ -263,8 +263,7 @@ updateComorphism view list cbComorphism sh = do
   signalUnblock sh
 
 expand :: GProver -> [String]
-expand (GProver { pName = n, comorphism = cs }) =
-  map (\ c -> (n ++ ": " ++ show c)) cs
+expand = map show . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do

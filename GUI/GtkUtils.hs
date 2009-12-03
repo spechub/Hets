@@ -605,7 +605,7 @@ instance Show Goal where
   show (Goal { gName = n, gStatus = s }) = spanString s $ statusToPrefix s ++ n
 
 instance Eq Goal where
-  (==) (Goal { gName = n1 }) (Goal { gName = n2 }) = n1 == n2
+  (==) g1 g2 = compare g1 g2 == EQ
 
 instance Ord Goal where
   compare (Goal { gName = n1, gStatus = s1 })

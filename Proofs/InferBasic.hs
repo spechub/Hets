@@ -25,13 +25,14 @@ Proof rule "basic inference" in the development graphs calculus.
 module Proofs.InferBasic
   ( basicInferenceNode
   , consistencyCheck
+  , SType(..)
   , ConsistencyStatus(..)
   ) where
 
 import Static.GTheory
 import Static.DevGraph
-
 import Static.ComputeTheory
+
 import Proofs.EdgeUtils
 import Proofs.AbstractState
 
@@ -41,6 +42,7 @@ import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.AS_Annotation
+import qualified Common.Lib.Graph as Tree
 
 import Logic.Logic
 import Logic.Prover
@@ -55,15 +57,20 @@ import GUI.ProverGUI
 
 import Interfaces.DataTypes
 import Interfaces.Utils
-import Data.IORef
 
-import qualified Common.Lib.Graph as Tree
+import Data.IORef
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Data.Time.LocalTime (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
+import Data.Ord (comparing)
+
 import Control.Monad.Trans
+
+import Control.Monad ((=<<))
+
+import System.Timeout
 
 getCFreeDefLinks :: DGraph -> Node
                         -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
@@ -135,16 +142,6 @@ selectProver ps = case ps of
            _ -> fail "Proofs.Proofs: selection"
    return $ ps !! i
 
-consCheck :: Logic lid sublogics
-              basic_spec sentence symb_items symb_map_items
-              sign morphism symbol raw_symbol proof_tree
-           => lid -> ConsChecker sign sentence sublogics morphism proof_tree
-           -> String -> TacticScript
-           -> TheoryMorphism sign sentence morphism proof_tree
-           -> [FreeDefMorphism sentence morphism]
-           -> IO (CCStatus proof_tree)
-consCheck _ = ccAutomatic
-
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree
@@ -190,7 +187,7 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
                         tTarget = Theory sig2 $ toThSens sens2,
                         tMorphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ consCheck lidT cc' thName (TacticScript "20") mor
+            pts <- lift $ ccAutomatic cc' thName (TacticScript "20") mor
                 $ getCFreeDefMorphs lidT libEnv ln dGraph node
             liftR $ case ccResult pts of
               Just True -> let
@@ -215,49 +212,37 @@ basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
                      } thName (hidingLabelWarning lbl) thForProof
                        kpMap (getProvers ProveGUI (Just sublogic) cms)
 
-data ConsistencyStatus = CSUnchecked
-                       | CSConsistent String
-                       | CSInconsistent String
-                       | CSTimeout String
-                       | CSError String
+data SType = CSUnchecked
+           | CSConsistent
+           | CSInconsistent
+           | CSTimeout
+           | CSError
+           deriving (Eq, Ord)
+
+data ConsistencyStatus = ConsistencyStatus { sType :: SType
+                                           , sMessage :: String }
 
 instance Show ConsistencyStatus where
-  show CSUnchecked        = "Unchecked"
-  show (CSConsistent s)   = s
-  show (CSInconsistent s) = s
-  show (CSTimeout s)      = s
-  show (CSError s)        = s
+  show cs = case sType cs of
+    CSUnchecked -> "Unchecked"
+    _ -> sMessage cs
 
 instance Eq ConsistencyStatus where
-  (==) CSUnchecked        CSUnchecked        = True
-  (==) (CSConsistent _)   (CSConsistent _)   = True
-  (==) (CSInconsistent _) (CSInconsistent _) = True
-  (==) (CSTimeout _)      (CSTimeout _)      = True
-  (==) (CSError _)        (CSError _)        = True
-  (==) _                  _                  = False
+  (==) cs1 cs2 = compare cs1 cs2 == EQ
 
 instance Ord ConsistencyStatus where
-  compare CSUnchecked        CSUnchecked        = EQ
-  compare (CSConsistent _)   (CSConsistent _)   = EQ
-  compare (CSInconsistent _) (CSInconsistent _) = EQ
-  compare (CSTimeout _)      (CSTimeout _)      = EQ
-  compare (CSError _)        (CSError _)        = EQ
-  compare CSUnchecked        _ = LT
-  compare (CSConsistent _)   _ = LT
-  compare (CSInconsistent _) _ = LT
-  compare (CSTimeout _)      _ = LT
-  compare (CSError _)        _ = LT
+  compare = comparing sType
 
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
-                 -> DGraph -> LNode DGNodeLab -> Int
-                 -> IO ConsistencyStatus
+                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
-                 timeout = do
+                 t = do
   let lidS = sourceLogic cid
       lidT = targetLogic cid
       thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger timeout
-      ts = TacticScript $ show timeout
+      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t
+      ts = TacticScript $ if ccNeedsTimer cc then "" else show t
+      mTimeout = "No results within: " ++ show t'
   case do
         (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
         let sens = toNamedList axs
@@ -268,25 +253,28 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
           { tSource = emptyTheory lidT
           , tTarget = Theory sig2 $ toThSens sens2
           , tMorphism = incl }) of
-    Result ds Nothing -> return $ CSError $ unlines $ map diagString ds
+    Result ds Nothing ->
+      return $ ConsistencyStatus CSError $ unlines $ map diagString ds
     Result _ (Just (sig1, mor)) -> do
       cc' <- coerceConsChecker lid4 lidT "" cc
-      pt <- consCheck lidT cc' thName ts mor
-                $ getCFreeDefMorphs lidT le ln dg n'
-      return $ case ccResult pt of
-        Just b -> if b then let
-          Result ds ms = extractModel cid sig1 $ ccProofTree pt
-          in case ms of
-          Nothing -> CSConsistent $ unlines $
-            "consistent, but could not reconstruct a model"
-            : map diagString ds ++ lines (show $ ccProofTree pt)
-          Just (sig3, sens3) -> CSConsistent $ showDoc
-            (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
-                       startThId) ""
-          else CSInconsistent $ "prover status is:\n\n" ++ show (ccProofTree pt)
-        Nothing -> if ccUsedTime pt >= t' then
-          CSTimeout $ "No results within: " ++ show (ccUsedTime pt)
-          else CSError $ show (ccProofTree pt)
+      ret <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
+        (ccAutomatic cc' thName ts mor $ getCFreeDefMorphs lidT le ln dg n')
+      return $ case ret of
+        Just ccStatus -> case ccResult ccStatus of
+          Just b -> if b then let
+            Result ds ms = extractModel cid sig1 $ ccProofTree ccStatus
+            in case ms of
+            Nothing -> ConsistencyStatus CSConsistent $ unlines
+              ("consistent, but could not reconstruct a model"
+              : map diagString ds ++ lines (show $ ccProofTree ccStatus))
+            Just (sig3, sens3) -> ConsistencyStatus CSConsistent $ showDoc
+              (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
+                        startThId) ""
+            else ConsistencyStatus CSInconsistent $ show (ccProofTree ccStatus)
+          Nothing -> if ccUsedTime ccStatus >= t' then
+            ConsistencyStatus CSTimeout mTimeout
+            else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
+        Nothing -> ConsistencyStatus CSTimeout mTimeout
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

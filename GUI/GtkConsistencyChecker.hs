@@ -42,12 +42,12 @@ import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, mapM_, when)
 
 import Proofs.AbstractState
-import Proofs.InferBasic (consistencyCheck, ConsistencyStatus (..))
+import Proofs.InferBasic
 
 import Data.IORef
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
-import Data.List (findIndex)
+import Data.List (findIndex, partition)
 import Data.Maybe
 
 data Finder = Finder { fName :: String
@@ -71,8 +71,7 @@ instance Show FNode where
     "</span>"
 
 instance Eq FNode where
-  (==) (FNode { name = n1, status = s1 })
-       (FNode { name = n2, status = s2 }) = s1 == s2 && n1 == n2
+  (==) f1 f2 = compare f1 f2 == EQ
 
 instance Ord FNode where
   compare (FNode { name = n1, status = s1 })
@@ -81,20 +80,20 @@ instance Ord FNode where
     c  -> c
 
 statusToColor :: ConsistencyStatus -> String
-statusToColor s = case s of
-  CSUnchecked      -> "black"
-  CSConsistent _   -> "green"
-  CSInconsistent _ -> "red"
-  CSTimeout _      -> "blue"
-  CSError _        -> "darkred"
+statusToColor s = case sType s of
+  CSUnchecked    -> "black"
+  CSConsistent   -> "green"
+  CSInconsistent -> "red"
+  CSTimeout      -> "blue"
+  CSError        -> "darkred"
 
 statusToPrefix :: ConsistencyStatus -> String
-statusToPrefix s = case s of
-  CSUnchecked      -> "[ ] "
-  CSConsistent _   -> "[+] "
-  CSInconsistent _ -> "[-] "
-  CSTimeout _      -> "[t] "
-  CSError _        -> "[f] "
+statusToPrefix s = case sType s of
+  CSUnchecked    -> "[ ] "
+  CSConsistent   -> "[+] "
+  CSInconsistent -> "[-] "
+  CSTimeout      -> "[t] "
+  CSError        -> "[f] "
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: GInfo -> IO ()
@@ -139,7 +138,6 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
 
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
-  widgetSetSensitive btnResults False
 
   threadId <- newEmptyMVar
   wait <- newEmptyMVar
@@ -154,12 +152,22 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         let le = i_libEnv ist
             dg = lookupDGraph ln le
         return (le, dg, labNodesDG dg)
-  let sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
+  let selNodes = partition (\ (FNode { node = (_,l)}) -> case globalTheory l of
+        Just (G_theory _ _ _ sens _) -> Map.null sens
+        Nothing -> True)
+      sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
+      n2CS n = if hasOpenNodeConsStatus True n then
+                 ConsistencyStatus CSUnchecked ""
+                 else ConsistencyStatus CSConsistent
+                   $ case getNodeConsStatus n of
+                     ConsStatus _ _ (Proven (DGRule s) _) -> s
+                     _ -> ""
+      (emptyNodes, others) = selNodes
+        $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
+        $ zip nodes sls
 
   -- setup data
-  listNodes <- setListData trvNodes show
-    $ map (\ (n@(_,l),s) -> FNode (getDGNodeName l) n s CSUnchecked)
-    $ zip nodes sls
+  listNodes <- setListData trvNodes show others
   listFinder <- setListData trvFinder fName []
 
   -- setup comorphism combobox
@@ -171,15 +179,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   let update = do
         mf <- getSelectedSingle trvFinder listFinder
         updateComorphism trvFinder listFinder cbComorphism shC
-        case mf of
-          Just _ -> return ()
-            --case comorphism f !! selected f of
-            --  Comorphism cid ->
-            --    let dN = drop 1 $ dropWhile (/= ';') $ language_name cid
-            --        l = if null dN then "identity" else dN
-            --    in labelSetLabel lblComorphism $ shortenLabel maxLabelLength l
-            --widgetSetSensitive btnCheck True
-          Nothing -> widgetSetSensitive btnCheck False
+        widgetSetSensitive btnCheck $ isJust mf
   setListSelectorSingle trvFinder update
 
   let upd = updateNodes trvNodes listNodes
@@ -207,10 +207,11 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         signalUnblock shN
         u
 
-  onClicked btnNodesUnchecked $ selectWith (== CSUnchecked) upd
-  onClicked btnNodesTimeout  $ selectWith (== CSTimeout "") upd
+  onClicked btnNodesUnchecked
+    $ selectWith (== ConsistencyStatus CSUnchecked "") upd
+  onClicked btnNodesTimeout $ selectWith (== ConsistencyStatus CSTimeout "") upd
 
-  onClicked btnResults $ showModelView mView "Models" listNodes
+  onClicked btnResults $ showModelView mView "Models" listNodes emptyNodes
   onClicked btnClose $ widgetDestroy window
   onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
 
@@ -233,7 +234,7 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
       postGUIAsync $ do
         switch True
         tryTakeMVar threadId
-        showModelView mView "Results of consistency check" listNodes
+        showModelView mView "Results of consistency check" listNodes emptyNodes
         activate checkWidgets True
         exit
 
@@ -310,8 +311,7 @@ updateComorphism view list cbComorphism sh = do
   signalUnblock sh
 
 expand :: Finder -> [String]
-expand (Finder { fName = n, comorphism = cs }) =
-  map (\ c -> (n ++ ": " ++ show c)) cs
+expand = map show . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do
@@ -323,8 +323,9 @@ setSelectedComorphism view list cbComorphism = do
     Nothing -> return ()
 
 -- | Displays the model view window
-showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> IO ()
-showModelViewAux lock title list = do
+showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> [FNode]
+                 -> IO ()
+showModelViewAux lock title list other = do
   xml      <- getGladeXML ConsistencyChecker.get
   -- get objects
   window   <- xmlGetWidget xml castToWindow "ModelView"
@@ -348,10 +349,10 @@ showModelViewAux lock title list = do
   textBufferApplyTag buffer font start end
 
   -- setup list view
-  let filterNodes = filter ((/= CSUnchecked) . status)
+  let filterNodes = filter ((/= ConsistencyStatus CSUnchecked "") . status)
 
   nodes <- listStoreToList list
-  listNodes <- setListData trvNodes show $ filterNodes nodes
+  listNodes <- setListData trvNodes show $ filterNodes $ other ++ nodes
 
   setListSelectorSingle trvNodes $ do
     mn <- getSelectedSingle trvNodes listNodes
@@ -380,9 +381,9 @@ showModelViewAux lock title list = do
   widgetShow window
 
 -- | Displays the model view window
-showModelView :: MVar (IO ()) -> String -> ListStore FNode -> IO ()
-showModelView lock title list  = do
+showModelView :: MVar (IO ()) -> String -> ListStore FNode -> [FNode] -> IO ()
+showModelView lock title list other = do
   isNotOpen <- isEmptyMVar lock
-  if isNotOpen then showModelViewAux lock title list
+  if isNotOpen then showModelViewAux lock title list other
     else join (readMVar lock)
 
