@@ -172,7 +172,7 @@ distributeAndOverOr f = case f of
   Conjunction xs n -> mkConj (map distributeAndOverOr xs) n
   Disjunction xs n -> if all isPrimForm xs then mkDisj xs n else
     distributeAndOverOr
-    $ mkConj (map (flip mkDisj n) . sequence $ map getConj xs) n
+    $ mkConj (map (flip mkDisj n) . combine $ map getConj xs) n
   _ -> f
 
 cnf :: FORMULA -> FORMULA
@@ -183,8 +183,13 @@ distributeOrOverAnd f = case f of
   Disjunction xs n -> mkDisj (map distributeOrOverAnd xs) n
   Conjunction xs n -> if all isPrimForm xs then mkConj xs n else
     distributeOrOverAnd
-    $ mkDisj (map (flip mkConj n) . sequence $ map getDisj xs) n
+    $ mkDisj (map (flip mkConj n) . combine $ map getDisj xs) n
   _ -> f
 
 dnf :: FORMULA -> FORMULA
 dnf = distributeOrOverAnd . moveNegIn . elimImpl . elimEquiv
+
+combine :: [[a]] -> [[a]]
+combine l = case l of
+  [] -> [[]]
+  h : t -> concatMap (flip map h . flip (:)) (combine t)
