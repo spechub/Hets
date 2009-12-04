@@ -275,7 +275,9 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
     if null initGoals then do
         errorDialog "No goals available!" "No need to start prove window!"
         widgetDestroy window
-      else widgetShow window
+      else do
+        selectFirst trvGoals
+        widgetShow window
 
   -- waiting for results
   res <- takeMVar result
