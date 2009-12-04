@@ -241,10 +241,8 @@ buildGraph oGraph leaves nList eList nodeList =
            in buildGraph oGraph leaves nList' (eList ++ eList') nodeList'
        -- branch, must add n to the nList and edges in eList
 
--- ********************************************************************
 -- normalization of freeness
 -- to be moved in a separate file, together with TheoremFreeShift
--- *********************************************************************
 freeness :: LibName -> LibEnv -> Result LibEnv
 freeness ln le = do
   let dg = lookupDGraph ln le
