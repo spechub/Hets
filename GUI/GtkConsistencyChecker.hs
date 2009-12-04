@@ -26,7 +26,6 @@ import GUI.GraphTypes
 import Static.DevGraph
 import Static.GTheory
 
-import Interfaces.DataTypes
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
@@ -36,6 +35,8 @@ import Logic.Prover
 import Comorphisms.LogicGraph (logicGraph)
 
 import Common.LibName (LibName)
+import Common.Result
+import Common.Consistency
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
@@ -44,7 +45,6 @@ import Control.Monad (foldM_, join, mapM_, when)
 import Proofs.AbstractState
 import Proofs.InferBasic
 
-import Data.IORef
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
 import Data.List (findIndex, partition)
@@ -96,8 +96,16 @@ statusToPrefix s = case sType s of
   CSError        -> "[f] "
 
 -- | Displays the consistency checker window
-showConsistencyChecker :: GInfo -> IO ()
-showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
+showConsistencyChecker :: GInfo -> LibEnv -> IO (Result LibEnv)
+showConsistencyChecker (GInfo { libName = ln }) le = do
+  wait <- newEmptyMVar
+  showConsistencyCheckerAux wait ln le
+  le' <- takeMVar wait
+  return $ Result [] $ Just le'
+
+-- | Displays the consistency checker window
+showConsistencyCheckerAux :: MVar LibEnv -> LibName -> LibEnv -> IO ()
+showConsistencyCheckerAux res ln le = postGUIAsync $ do
   xml               <- getGladeXML ConsistencyChecker.get
   -- get objects
   window            <- xmlGetWidget xml castToWindow "ConsistencyChecker"
@@ -143,25 +151,17 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
   wait <- newEmptyMVar
   mView <- newEmptyMVar
 
-  -- get nodes
-  (le, dg, nodes) <- do
-    ost <- readIORef $ intState gInfo
-    case i_state ost of
-      Nothing -> error "No state given."
-      Just ist -> do
-        let le = i_libEnv ist
-            dg = lookupDGraph ln le
-        return (le, dg, labNodesDG dg)
-  let selNodes = partition (\ (FNode { node = (_,l)}) -> case globalTheory l of
+  let dg = lookupDGraph ln le
+      nodes = labNodesDG dg
+      selNodes = partition (\ (FNode { node = (_,l)}) -> case globalTheory l of
         Just (G_theory _ _ _ sens _) -> Map.null sens
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
-      n2CS n = if hasOpenNodeConsStatus True n then
-                 ConsistencyStatus CSUnchecked ""
-                 else ConsistencyStatus CSConsistent
-                   $ case getNodeConsStatus n of
-                     ConsStatus _ _ (Proven (DGRule s) _) -> s
-                     _ -> ""
+      n2CS n = case getNodeConsStatus n of
+                 ConsStatus _ pc _ -> case pc of
+                   Inconsistent -> ConsistencyStatus CSInconsistent ""
+                   Cons -> ConsistencyStatus CSConsistent ""
+                   _ -> ConsistencyStatus CSUnchecked ""
       (emptyNodes, others) = selNodes
         $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
         $ zip nodes sls
@@ -238,7 +238,21 @@ showConsistencyChecker gInfo@(GInfo { libName = ln }) = postGUIAsync $ do
         activate checkWidgets True
         exit
 
-  selectAll trvNodes
+  onDestroy window $ do
+    nodes' <- listStoreToList listNodes
+    let dg' = foldl (\ dg'' (FNode { node = (i, l), status = s }) ->
+                      if (\ st -> st /= CSConsistent && st /= CSInconsistent)
+                         $ sType s then dg''
+                        else
+                          let n = (i, if sType s == CSInconsistent then
+                                        markNodeInconsistent "" l
+                                        else markNodeConsistent "" l)
+                              h = HistElem $ SetNodeLab l n in
+                          addToProofHistoryDG h $ fst $ labelNodeDG n dg''
+                    ) dg nodes'
+    putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
+
+  selectWith (== ConsistencyStatus CSUnchecked "") upd
 
   widgetShow window
 
@@ -369,7 +383,7 @@ showModelViewAux lock title list other = do
     sel <- treeViewGetSelection trvNodes
     nodes'' <- listStoreToList list
     let nodes' = filterNodes nodes''
-    updateListData listNodes nodes'
+    updateListData listNodes (other ++ nodes')
     maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (:[]))
       $ maybe Nothing (\ (_,n) -> findIndex ((name n ==) . name) nodes') sel'
 

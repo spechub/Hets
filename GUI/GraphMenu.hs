@@ -257,7 +257,9 @@ createGlobalMenu gInfo@(GInfo { hetcatsOpts = opts
                                      GA.hideSetOfEdgeTypes gi eTypes
                                      updateGraph gInfo []
                                    )
-     , Button "Consistency checker" (showConsistencyChecker gInfo)
+     , Button "Consistency checker"
+         (performProofMenuAction (GlobCmd ProveCurrent)
+           $ showConsistencyChecker gInfo)
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?

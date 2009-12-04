@@ -196,8 +196,16 @@ markNodeConsistent str dgnode = dgnode
       ninfo@DGNode { node_cons_status = ConsStatus c pc thm } ->
           if pc >= Cons && isProvenThmLinkStatus thm then ninfo else
           ninfo { node_cons_status = ConsStatus c Cons
-                    $ Proven (DGRule $ "Consistency" ++ str)
-                      emptyProofBasis }
+                    $ Proven (DGRule $ "Consistency" ++ str) emptyProofBasis }
+      ninfo -> ninfo }
+
+markNodeInconsistent :: String -> DGNodeLab -> DGNodeLab
+markNodeInconsistent str dgnode = dgnode
+  { nodeInfo = case nodeInfo dgnode of
+      ninfo@DGNode { node_cons_status = ConsStatus c pc thm } ->
+          if pc == Inconsistent && isProvenThmLinkStatus thm then ninfo else
+          ninfo { node_cons_status = ConsStatus c Inconsistent
+                    $ Proven (DGRule $ "Inconsistency" ++ str) emptyProofBasis }
       ninfo -> ninfo }
 
 -- | test if a conservativity is open, return input for None
