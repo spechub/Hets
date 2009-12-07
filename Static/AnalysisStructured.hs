@@ -604,20 +604,22 @@ anaRestriction gSigma@(G_sign lid sigma _)
 
 anaGmaps :: LogicGraph -> HetcatsOpts -> Range -> G_sign -> G_sign
   -> [G_mapping] -> Result G_morphism
-anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) (G_sign lidA sigmaA _) gsis
-    = adjustPos pos $ if isStructured opts
+anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
+  gsis = adjustPos pos $ if isStructured opts
     then return $ mkG_morphism lidP $ ext_ide sigmaP
     else if null gsis then do
-        sigmaA' <- coerceSign lidA lidP "anaGmaps" sigmaA
-        fmap (mkG_morphism lidP) $
-          ext_induced_from_to_morphism lidP Map.empty sigmaP sigmaA'
+        (G_sign lidP' sigmaP' _, _) <- gSigCoerce lg psig (Logic lidA)
+        sigmaA' <- coerceSign lidA lidP' "anaGmaps" sigmaA
+        fmap (mkG_morphism lidP') $
+          ext_induced_from_to_morphism lidP' Map.empty sigmaP' sigmaA'
       else do
       cl <- lookupCurrentLogic "anaGmaps" lg
       G_symb_map_items_list lid sis <- homogenizeGM cl gsis
       rmap <- stat_symb_map_items lid sis
       (G_sign lidP' sigmaP'' _, _) <- gSigCoerce lg psig (Logic lid)
       sigmaP' <- coerceSign lidP' lid "anaGmaps1" sigmaP''
-      sigmaA' <- coerceSign lidA lid "anaGmaps2" sigmaA
+      (G_sign lidA' sigmaA'' _, _) <- gSigCoerce lg asig (Logic lid)
+      sigmaA' <- coerceSign lidA' lid "anaGmaps2" sigmaA''
       fmap (mkG_morphism lid)
         $ ext_induced_from_to_morphism lid rmap sigmaP' sigmaA'
 
@@ -638,10 +640,12 @@ anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
   Fit_spec asp gsis pos -> do
    (sp', nsigA@(NodeSig nA gsigA), dg') <-
        anaSpec False lg dg nsigI name opts (item asp)
-   gmor <- anaGmaps lg opts pos gsigmaP gsigA gsis
+   (gsigmaP', imor) <- gSigCoerce lg gsigmaP (getNodeLogic nsigA)
+   tmor <- gEmbedComorphism imor gsigmaP
+   gmor <- anaGmaps lg opts pos gsigmaP' gsigA gsis
+   eGmor <- comp tmor $ gEmbed gmor
    return ( Fit_spec (replaceAnnoted sp' asp) gsis pos
-          , let eGmor = gEmbed gmor in
-            if nP == nA && isHomInclusion eGmor then dg' else
+          , if nP == nA && isHomInclusion eGmor then dg' else
                 insLink dg' eGmor globalThm (DGLinkInst spname) nP nA
           , (gmor, nsigA))
   Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
@@ -765,7 +769,7 @@ extendMorphism :: G_sign      -- ^ formal parameter
                -> G_sign      -- ^ body
                -> G_sign      -- ^ actual parameter
                -> G_morphism  -- ^ fitting morphism
-               -> Result(G_sign, GMorphism)
+               -> Result(G_sign, G_morphism)
 extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
     (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
   -- for now, only homogeneous instantiations....
@@ -818,7 +822,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
      ++ showDoc newIdentifications "") nullRange
   incl <- ext_inclusion lid sigmaAD sigma
   mor1 <- comp mor incl
-  return (G_sign lid sigma startSigId, gEmbed $ mkG_morphism lid mor1)
+  return (G_sign lid sigma startSigId, mkG_morphism lid mor1)
 
 applyGS :: LogicGraph -> ExtGenSig -> [(G_morphism, NodeSig)]
          -> Result(G_sign, GMorphism)
@@ -827,7 +831,8 @@ applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
       gsigmaA_i = map (getSig . snd) args
       gsigmaB = getSig nsigB
   gsigmaA@(G_sign lidA _ _) <- gsigManyUnion lg gsigmaA_i
-  (_, Comorphism uid) <- logicUnion lg (getNodeLogic nsigB) (Logic lidA)
+  (Comorphism bid, Comorphism uid) <-
+    logicUnion lg (getNodeLogic nsigB) (Logic lidA)
   let cl = Logic $ targetLogic uid
   G_morphism lidG mor0 _ <- case nsigI of
     EmptyNode _ -> homogeneousMorManyUnion mor_i
@@ -840,8 +845,13 @@ applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
   (gsigmaA', Comorphism aid) <- gSigCoerce lg gsigmaA cl
   mor1 <- coerceMorphism lidG (sourceLogic aid) "applyGS" mor0
   mor2 <- map_morphism aid mor1
-  extendMorphism gsigmaP' gsigmaB' gsigmaA' $
+  (gsig, G_morphism gid mor3 mId) <- extendMorphism gsigmaP' gsigmaB' gsigmaA' $
     G_morphism (targetLogic aid) mor2 startMorId
+  case gsigmaB of
+    G_sign lidB sigB indB -> do
+      sigB' <- coerceSign lidB (sourceLogic bid) "applyGS2" sigB
+      mor4 <- coerceMorphism gid (targetLogic bid) "applyGS3" mor3
+      return (gsig, GMorphism bid sigB' indB mor4 mId)
 
 homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
              -> Result G_symb_map_items_list

@@ -422,10 +422,11 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                    morphA <- homogeneousMorManyUnion
                              $ idI : map first morphSigs
                    -- compute sigMorExt (\sigma^A(\Delta))
-                   (_, sigMorExt) <- extendMorphism (getSig sigF)
+                   (_, gSigMorExt) <- extendMorphism (getSig sigF)
                                      (getSig resultSig) (getSig sigA) morphA
                    -- check amalgamability conditions
-                   let pIL = case pI of
+                   let sigMorExt = gEmbed gSigMorExt
+                       pIL = case pI of
                            JustDiagNode dn -> [dn]
                            _ -> []
                    sink <- inclusionSink lgraph (pIL ++
