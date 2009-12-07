@@ -67,8 +67,9 @@ import Data.Time.Clock (secondsToDiffTime)
 import Data.Ord (comparing)
 
 import Control.Monad.Trans
-
 import Control.Monad ((=<<))
+--import Control.Concurrent
+--import Control.Concurrent.MVar
 
 import System.Timeout
 
@@ -236,12 +237,13 @@ instance Ord ConsistencyStatus where
 consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
-                 t = do
+                 t'' = do
   let lidS = sourceLogic cid
       lidT = targetLogic cid
       thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t
-      ts = TacticScript $ if ccNeedsTimer cc then "" else show t
+      t = t'' * 1000000
+      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
+      ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
       mTimeout = "No results within: " ++ show t'
   case do
         (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
@@ -275,6 +277,18 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
             ConsistencyStatus CSTimeout mTimeout
             else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
         Nothing -> ConsistencyStatus CSTimeout mTimeout
+
+{-
+timeout :: Int -> IO a -> IO (Maybe a)
+timeout t action = do
+  mvar <- newEmptyMVar
+  tid1 <- forkIO $ do x <- action
+                      putMVar mvar $ Just x
+  tid2 <- forkIO $ do threadDelay $ t * 1000000
+                      putMVar mvar Nothing
+  res <- takeMVar mvar
+  killThread (if isJust res then tid2 else tid1) `catch` print
+  return res -}
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

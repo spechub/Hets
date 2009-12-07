@@ -58,7 +58,8 @@ isabelleProver = mkProverTemplate isabelleS () isaProve
 
 isabelleConsChecker :: ConsChecker Sign Sentence () (DefaultMorphism Sign) ()
 isabelleConsChecker = (mkConsChecker "Isabelle-refute" () consCheck)
-  { ccBatch = False }
+  { ccBatch = False
+  , ccNeedsTimer = False }
 
 -- | the name of the inconsistent lemma for consistency checks
 inconsistentS :: String
