@@ -229,7 +229,8 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
         G_sign lid _ _ ->
             noSensGTheory lid (mkExtSign $ empty_signature lid) startSigId
       newN = getNewNodeDG dg
-      newL = newNodeLab emptyNodeName DGProof emptyTh
+      newL = (newNodeLab emptyNodeName DGProof emptyTh)
+             { globalTheory = Just emptyTh }
       morphism = case resultToMaybe $ ginclusion logicGraph (dgn_sign newL) $
                    dgn_sign nodeLab of
              Just m  -> m
