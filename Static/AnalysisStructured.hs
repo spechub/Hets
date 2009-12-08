@@ -386,7 +386,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
            let (fsig@(NodeSig node _), dg2) =
                  insGSig dg name (DGInst spname) gsigma
            incl <- ginclusion lg gsigmaB gsigma
-           let dg3 = insLink dg2 incl globalDef (DGLinkMorph spname) nB node
+           let dg3 = case nsig of
+                 JustNode (NodeSig nI _) | nI == nB -> dg2
+                 _ -> insLink dg2 incl globalDef (DGLinkMorph spname) nB node
            dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
            return (sp, fsig, dg4)
       -- now the case with parameters
@@ -400,7 +402,9 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
        tmor <- gEmbedComorphism imor gsigmaB
        morDelta'' <- comp tmor morDelta'
-       let dg4 = insLink dg' morDelta'' globalDef (DGLinkMorph spname) nB nA
+       let dg4 = case nsig of
+             JustNode (NodeSig nI _) | nI == nB -> dg'
+             _ -> insLink dg' morDelta'' globalDef (DGLinkMorph spname) nB nA
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname ffitargs pos, ns, dg5)
  -- finally the case with conflicting numbers of formal and actual parameters
@@ -636,18 +640,22 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
 anaFitArg :: LogicGraph -> DGraph -> SIMPLE_ID -> MaybeNode -> NodeSig
   -> HetcatsOpts -> NodeName -> FIT_ARG
   -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
-anaFitArg lg dg spname nsigI (NodeSig nP gsigmaP) opts name fv = case fv of
+anaFitArg lg dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
+  case fv of
   Fit_spec asp gsis pos -> do
-   (sp', nsigA@(NodeSig nA gsigA), dg') <-
-       anaSpec False lg dg nsigI name opts (item asp)
-   (gsigmaP', imor) <- gSigCoerce lg gsigmaP (getNodeLogic nsigA)
-   tmor <- gEmbedComorphism imor gsigmaP
-   gmor <- anaGmaps lg opts pos gsigmaP' gsigA gsis
+   (sp', nsigA, dg') <- anaSpec False lg dg nsigI name opts (item asp)
+   (_, Comorphism aid) <-
+       logicUnion lg (getNodeLogic nsigP) (getNodeLogic nsigA)
+   let tl = Logic $ targetLogic aid
+   (nsigA'@(NodeSig nA' gsigA'), dg'') <- coerceNode lg dg' nsigA name tl
+   (gsigmaP', pmor) <- gSigCoerce lg gsigmaP tl
+   tmor <- gEmbedComorphism pmor gsigmaP
+   gmor <- anaGmaps lg opts pos gsigmaP' gsigA' gsis
    eGmor <- comp tmor $ gEmbed gmor
    return ( Fit_spec (replaceAnnoted sp' asp) gsis pos
-          , if nP == nA && isHomInclusion eGmor then dg' else
-                insLink dg' eGmor globalThm (DGLinkInst spname) nP nA
-          , (gmor, nsigA))
+          , if nP == nA' && isHomInclusion eGmor then dg'' else
+                insLink dg'' eGmor globalThm (DGLinkInst spname) nP nA'
+          , (gmor, nsigA'))
   Fit_view vn afitargs pos -> case lookupGlobalEnvDG vn dg of
     Just (ViewEntry (ExtViewSig (NodeSig nSrc gsigmaS) mor
       gs@(ExtGenSig (GenSig _ params _) target@(NodeSig nTar _))))
