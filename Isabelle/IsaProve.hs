@@ -85,7 +85,7 @@ consCheck thName _tac tm freedefs = case tTarget tm of
                      $ foldr1 binConj
                      $ map (metaToTerm . metaTerm . sentence) axs ])
            freedefs
-      return $ CCStatus () midnight $ case l of
+      return $ CCStatus () midnight $ case filter isProvedStat l of
         [_] -> Just False -- inconsistency was proven
         _ -> Nothing -- consistency cannot be recorded automatically
 
