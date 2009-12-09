@@ -42,7 +42,7 @@ MonadT < Monad -> Monad
 type
 ST : Type -> Monad
 type
-ST := \ state : Type . \ a : Type . state ->? a * state
+ST (state : Type) (a : Type) := state ->? a * state
 vars
 a : Type %(var_246)%;
 b : Type %(var_247)%;

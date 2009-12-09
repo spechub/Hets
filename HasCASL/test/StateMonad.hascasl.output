@@ -8,7 +8,7 @@ op    __>>=__ : m a * (a -> m b) -> m b
 type
 ST : Type -> Type -> Type
 type
-ST := \ state : Type . \ a : Type . state ->? a * state
+ST (state : Type) (a : Type) := state ->? a * state
 vars
 a : Type %(var_2)%;
 b : Type %(var_12)%;

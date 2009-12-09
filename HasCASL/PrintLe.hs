@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  pretty printing signatures
-Copyright   :  (c) Christian Maeder  and Uni Bremen 2002-2003
+Copyright   :  (c) Christian Maeder, Uni Bremen, DFKI GmbH 2002-2009
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
@@ -162,7 +162,7 @@ instance Pretty Env where
         $+$ vcat (punctuate semi $ map ( \ (i, s) ->
             pretty i <+> text lessS <+> pretty s) stm)
         $+$ noPrint (Map.null atm) (header atm typeS)
-        $+$ printMap0 atm
+        $+$ printAliasTypes atm
         $+$ noPrint (Map.null tvs) (header tvs varS)
         $+$ printMap0 tvs
         $+$ vcat (map annoDoc bas)
@@ -172,11 +172,23 @@ instance Pretty Env where
         $+$ vcat (map (pretty . fromLabelledSen) $ reverse se)
         $+$ vcat (map pretty $ reverse ds)
 
+printAliasTypes :: Map.Map Id TypeInfo -> Doc
+printAliasTypes = ppMap pretty (\ td -> case typeDefn td of
+  AliasTypeDefn ty ->
+    let (args, t) = getArgsAndType ty in
+    fsep $ map (parens . pretty) args ++ [text assignS, pretty t]
+  _ -> empty) id (vcat . punctuate semi) $ \ a b -> fsep [a, b]
+
+getArgsAndType :: Type -> ([TypeArg], Type)
+getArgsAndType ty = case ty of
+  TypeAbs arg t _ -> let (l, r) = getArgsAndType t in (arg : l, r)
+  _ -> ([], ty)
+
 printMap0 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
-printMap0 = printMap id (vcat . punctuate semi) ( \ a b -> fsep $ a : [b])
+printMap0 = printMap id (vcat . punctuate semi) $ \ a b -> fsep [a, b]
 
 printMap1 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
-printMap1 = printMap id vcat ( \ a b -> fsep $ a : mapsto : [b])
+printMap1 = printMap id vcat $ \ a b -> fsep [a, mapsto, b]
 
 instance Pretty Morphism where
   pretty m =

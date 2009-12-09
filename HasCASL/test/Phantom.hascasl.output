@@ -7,7 +7,7 @@ op    c : Logical
 type
 dummy : Type -> Type
 type
-dummy := \ a : Type . Logical
+dummy (a : Type) := Logical
 var
 a : Type %(var_1)%
 op b : forall a : Type . dummy a %(op)%

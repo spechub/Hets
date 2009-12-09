@@ -32,7 +32,7 @@ even2 : +Type -> Type;
 odd : +Type -> Type;
 odd2 : +Type -> Type
 type
-DList := \ a : +Type . List (List a)
+DList (a : +Type) := List (List a)
 vars
 a : +Type %(var_2)%;
 b : Type %(var_1)%;

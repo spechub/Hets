@@ -8,8 +8,8 @@ types
 Graph : Type -> Type -> Type;
 Set : Type -> Type
 types
-Graph := \ N : Type . \ E : Type . Set N * (E ->? N) * (E ->? N);
-Set := \ S : Type . S ->? Unit
+Graph (N : Type) (E : Type) := Set N * (E ->? N) * (E ->? N);
+Set (S : Type) := S ->? Unit
 vars
 E : Type %(var_3)%;
 N : Type %(var_2)%;

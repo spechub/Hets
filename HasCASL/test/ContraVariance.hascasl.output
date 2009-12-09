@@ -7,8 +7,8 @@ types
 m : -Type -> Type;
 p : +Type -> Type
 types
-m := \ b : -Type . b;
-p := \ a : +Type . Pred (Pred a)
+m (b : -Type) := b;
+p (a : +Type) := Pred (Pred a)
 var
 a : +Type %(var_1)%
 ### Hint 1.5, is type variable 'a'

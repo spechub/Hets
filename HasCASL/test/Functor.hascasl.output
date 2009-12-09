@@ -41,8 +41,8 @@ Alg : Functor -> Type -> Type;
 InitialCarrier : DTFunctor -> Type;
 ParamDT : PolyBifunctor -> DTFunctor
 types
-Alg := \ F : Functor . \ a : Type . F a -> a;
-ParamDT := \ G : PolyBifunctor . \ a : Type . InitialCarrier (G a)
+Alg (F : Functor) (a : Type) := F a -> a;
+ParamDT (G : PolyBifunctor) (a : Type) := InitialCarrier (G a)
 vars
 F : DTFunctor %(var_59)%;
 G : PolyBifunctor %(var_75)%;

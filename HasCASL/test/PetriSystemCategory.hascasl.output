@@ -153,12 +153,12 @@ gn_t76[gn_t75[gn_t74[Net]]] < __*__*__
 types
 HomNet := gn_t97[HomNet] Net;
 HomSys := gn_t164[HomSys] System;
-Map := \ S : Type . S ->? S;
-MapMultiSet := \ S : Type . MultiSet S ->? MultiSet S;
+Map (S : Type) := S ->? S;
+MapMultiSet (S : Type) := MultiSet S ->? MultiSet S;
 Marking := MultiSet P;
-MultiSet := \ Elem : Type . Elem ->? Nat;
+MultiSet (Elem : Type) := Elem ->? Nat;
 Net := gn_t74[Net] (T ->? MultiSet P);
-Set := \ S : Type . S ->? Unit;
+Set (S : Type) := S ->? Unit;
 System := gn_t121[System] Marking;
 gn_t121[System] := gn_t122[gn_t121[System]] Net;
 gn_t164[HomSys] := gn_t165[gn_t164[HomSys]] (T ->? T);

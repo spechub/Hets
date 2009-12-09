@@ -19,9 +19,9 @@ gn_t9[PER] : Type -> +Type -> Type
 type
 gn_t10[gn_t9[PER]] < __->?__
 types
-PER := \ S : Type . gn_t9[PER] S Unit;
-Set := \ S : Type . S ->? Unit;
-gn_t9[PER] := \ S : Type . gn_t10[gn_t9[PER]] (S * S)
+PER (S : Type) := gn_t9[PER] S Unit;
+Set (S : Type) := S ->? Unit;
+gn_t9[PER] (S : Type) := gn_t10[gn_t9[PER]] (S * S)
 var
 S : Type %(var_1)%
 op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%

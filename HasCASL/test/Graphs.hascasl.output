@@ -28,7 +28,7 @@ types
 Bool : Type;
 Set : Type -> Type
 type
-Set := \ S : Type . S ->? Unit
+Set (S : Type) := S ->? Unit
 vars
 S : Type %(var_1)%;
 T : Type %(var_2)%

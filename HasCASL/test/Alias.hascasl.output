@@ -26,13 +26,13 @@ a6 : Type -> Type;
 a7 : Type -> Type
 types
 Binary := S * S -> T;
-MyAlias := \ t : Type . t ->? Unit;
-MyPred := \ s : Type . s ->? Unit;
-a1 := \ a : Type . \ b : Type . a -> b -> Unit;
-a2 := \ a : Type . \ b : Type . a -> Unit;
-a3 := \ a : Type . \ a : Type . a -> Unit;
-a4 := \ a : Type . \ a : Type . a -> Unit;
-a7 := \ a : Type . a6 a -> Unit
+MyAlias (t : Type) := t ->? Unit;
+MyPred (s : Type) := s ->? Unit;
+a1 (a : Type) (b : Type) := a -> b -> Unit;
+a2 (a : Type) (b : Type) := a -> Unit;
+a3 (a : Type) (a : Type) := a -> Unit;
+a4 (a : Type) (a : Type) := a -> Unit;
+a7 (a : Type) := a6 a -> Unit
 var
 s : Type %(var_1)%
 ### Hint 2.16,
