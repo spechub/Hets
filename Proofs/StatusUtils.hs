@@ -23,6 +23,8 @@ import Common.LibName
 import Logic.Logic
 import qualified Common.Lib.SizedList as SizedList
 
+import Data.List
+
 {-
    proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
    DG0 is the development graph resulting from the static analysis
@@ -62,63 +64,63 @@ clearElem e = case e of
 -- methods that keep the change list clean
 -- ----------------------------------------------
 
-removeContraryChanges :: [DGChange] -> [DGChange]
-removeContraryChanges = removeDuplicateSetLabel . removeContraryChangesAux
-
-removeDuplicateSetLabel :: [DGChange] -> [DGChange]
-removeDuplicateSetLabel cs = case cs of
-  [] -> []
-  c1 : r -> (case c1 of
-    SetNodeLab _ (n, _) -> if any (\ c2 -> case c2 of
-        SetNodeLab _ (m, _) -> n == m
-        _ -> False) r then id else (c1 :)
-    _ -> (c1 :)) $ removeDuplicateSetLabel r
-
 {- | remove the contray changes out of the list if it's necessary,
      so that the list can stay clean.
 -}
-removeContraryChangesAux :: [DGChange] -> [DGChange]
-removeContraryChangesAux [] = []
-removeContraryChangesAux (change : changes) =
-  case contraryChange of
-    Just c -> removeContraryChangesAux (removeChange c changes)
-    Nothing -> change : removeContraryChangesAux changes
-  where
-    contraryChange =
-      case getContraryChange change of
-        Just c -> if c  `elem` changes then Just c else Nothing
-        Nothing -> Nothing
-
-{- | get the contrary change to the given one, but only Insertion is
-     interesting.
--}
-getContraryChange :: DGChange -> Maybe DGChange
-getContraryChange change = case change of
-    InsertEdge edge -> Just $ DeleteEdge edge
-    -- re-insertion of deleted edge may be useful if node has changed
-    InsertNode node -> Just $ DeleteNode node
-    -- re-insertion of deleted node may be useful if node has changed
-    -- ... although this should be recognized ... a bit strange ...
-    DeleteEdge _ -> Nothing
-    DeleteNode _ -> Nothing -- Just $ InsertNode node
-    SetNodeLab _ _ -> Nothing
-
-{- | remove the unnecessary changes out of the list.
--}
-removeChange :: DGChange -> [DGChange] -> [DGChange]
-removeChange _ [] = []
-removeChange c1 (c2:rest) | c1==c2 = rest
--- when a node is removed afterwards, throw away all edge operations
--- refering to that node that are encountered on the way
-removeChange c1@(DeleteNode (n,_)) (c2:rest) =
-  if case c2 of
-     InsertEdge (n1,n2,_) -> n==n1 || n==n2
-     DeleteEdge (n1,n2,_) -> n==n1 || n==n2
-     SetNodeLab _ (m, _) -> n == m
-     _ -> False
-   then removeChange c1 rest
-   else c2:removeChange c1 rest
-removeChange c1 (c2:rest) = c2:removeChange c1 rest
+removeContraryChanges :: [DGChange] -> [DGChange]
+removeContraryChanges cs = case cs of
+  [] -> []
+  c1 : r -> let recurse = c1 : removeContraryChanges r in case c1 of
+    SetNodeLab oldLbl (n, _) -> let
+        (r1, r2) = break (\ c2 -> case c2 of
+            SetNodeLab _ (m, _) -> n == m
+            DeleteNode (m, _) -> n == m
+            _ -> False) r
+        in case r2 of
+             [] -> recurse
+             c2 : r3 -> removeContraryChanges $ r1 ++ case c2 of
+                 SetNodeLab _ (_, lbl) -> SetNodeLab oldLbl (n, lbl) : r3
+                 DeleteNode _ -> DeleteNode (n, oldLbl) : r3
+                 _ -> r2
+    InsertNode (n, _) -> let
+        (r1, r2) = break (\ c2 -> case c2 of
+            DeleteNode (m, _) -> n == m
+            _ -> False) r
+        (r1a, r1b) = partition (\ c2 -> case c2 of
+            SetNodeLab _ (m, _) -> n == m
+            _ -> False) r1
+        in case r2 of
+             [] -> case reverse r1a of
+                SetNodeLab _ (_, lbl) : _ ->
+                    InsertNode (n, lbl) : removeContraryChanges r1b
+                _ -> recurse
+             _ : r3 -> removeContraryChanges $
+                       filter (\ c2 -> case c2 of
+                          InsertEdge (s, t, _) -> s /= n && t /= n
+                          DeleteEdge (s, t, _) -> s /= n && t /= n
+                          _ -> True) r1b ++ r3
+    DeleteNode (n, oldLbl) -> let
+        (r1, r2) = break (\ c2 -> case c2 of
+            InsertNode (m, _) -> n == m
+            _ -> False) r
+        in case r2 of
+             InsertNode (_, lbl) : r3 ->
+               removeContraryChanges $ r1 ++ SetNodeLab oldLbl (n, lbl) : r3
+             _ -> recurse
+    InsertEdge e1 -> let
+        (r1, r2) = break (\ c2 -> case c2 of
+            DeleteEdge e2 -> e1 == e2
+            _ -> False) r
+        in case r2 of
+             [] -> recurse
+             _ : r3 -> removeContraryChanges $ r1 ++ r3
+    DeleteEdge e1 -> let
+        (r1, r2) = break (\ c2 -> case c2 of
+            InsertEdge e2 -> e1 == e2
+            _ -> False) r
+        in case r2 of
+             [] -> recurse
+             _ : r3 -> removeContraryChanges $ r1 ++ r3
 
 {- | check if the given edge is an identity edge, namely a loop
      from a node to itself with an identity morphism. -}
