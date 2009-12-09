@@ -76,6 +76,7 @@ module GUI.GtkUtils
 
   -- * Datatypes and functions for prover
   , Goal (..)
+  , showGoal
   , GStatus (..)
   , proofStatusToGStatus
   , basicProofToGStatus
@@ -598,20 +599,14 @@ shortenLabel i s = if length s <= i then s else take (i - 3) s ++ "..."
 
 -- * Datatypes and functions for prover
 
-data Goal = Goal { gName :: String
-                 , gStatus :: GStatus }
+data Goal = Goal
+  { gStatus :: GStatus
+  , gName :: String }
+  deriving (Eq, Ord)
 
-instance Show Goal where
-  show (Goal { gName = n, gStatus = s }) = spanString s $ statusToPrefix s ++ n
-
-instance Eq Goal where
-  (==) (Goal { gName = n1 }) (Goal { gName = n2 }) = n1 == n2
-
-instance Ord Goal where
-  compare (Goal { gName = n1, gStatus = s1 })
-          (Goal { gName = n2, gStatus = s2 }) = case compare s1 s2 of
-                                                  EQ -> compare n1 n2
-                                                  c  -> c
+showGoal :: Goal -> String
+showGoal (Goal { gName = n, gStatus = s }) =
+  spanString s $ statusToPrefix s ++ n
 
 data GStatus = GOpen
              | GTimeout

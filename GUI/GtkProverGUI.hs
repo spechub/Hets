@@ -105,7 +105,7 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
 
     -- set list data
     listProvers <- setListData trvProvers pName []
-    listGoals <- setListData trvGoals show $ toGoals initState
+    listGoals <- setListData trvGoals showGoal $ toGoals initState
     listAxioms <- setListData trvAxioms id $ toAxioms axioms
     listTheorems <- setListData trvTheorems id $ toTheorem initState
 
@@ -307,7 +307,7 @@ updateGoals listGoals s = do
   oldGoals' <- listStoreToList listGoals
   let oldGoals = foldl (\ gs g -> (g, length gs):gs) [] oldGoals'
   mapM_ (\ g -> let (_, idx) = fromMaybe (error "Goal not found!")
-                                 $ find ((==) g . fst) oldGoals
+                                 $ find ((== gName g) . gName . fst) oldGoals
       in listStoreSetValue listGoals idx g
     ) $ toGoals s
 

@@ -100,7 +100,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
     finished <- newEmptyMVar
 
     -- setting up lists
-    listGoals <- setListData trvGoals show $ toGoals initState
+    listGoals <- setListData trvGoals showGoal $ toGoals initState
     listAxioms <- setListData trvAxioms id []
 
     -- short update function
