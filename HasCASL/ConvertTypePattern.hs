@@ -79,11 +79,13 @@ convertTypePattern tp = case tp of
                    else illegalTypePattern tp
                _ -> illegalTypePattern tp
       else case rp of
-         [BracketTypePattern Squares as@(_:_) ps] -> do
+         BracketTypePattern Squares as@(_:_) ps : rp2 -> do
              is <- mapM convertToId as
-             return (Id [t1] is ps, [])
-         _ -> do as <- mapM convertToTypeArg rp
-                 return (simpleIdToId t1, as)
+             rs <- mapM convertToTypeArg rp2
+             return (Id [t1] is ps, rs)
+         _ -> do
+           as <- mapM convertToTypeArg rp
+           return (simpleIdToId t1, as)
     BracketTypePattern bk [ap] ps -> case bk of
       Parens -> convertTypePattern ap
       _ -> let (o, c) = getBrackets bk
