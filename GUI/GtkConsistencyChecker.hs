@@ -44,6 +44,7 @@ import Control.Monad (foldM_, join, mapM_, when)
 
 import Proofs.AbstractState
 import Proofs.InferBasic
+import Proofs.EdgeUtils
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
@@ -240,16 +241,16 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
 
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
-    let dg' = foldl (\ dg'' (FNode { node = (i, l), status = s }) ->
+    let changes = foldl (\ cs (FNode { node = (i, l), status = s }) ->
                       if (\ st -> st /= CSConsistent && st /= CSInconsistent)
-                         $ sType s then dg''
+                         $ sType s then cs
                         else
                           let n = (i, if sType s == CSInconsistent then
                                         markNodeInconsistent "" l
                                         else markNodeConsistent "" l)
-                              h = HistElem $ SetNodeLab l n in
-                          addToProofHistoryDG h $ fst $ labelNodeDG n dg''
-                    ) dg nodes'
+                          in SetNodeLab l n : cs
+                    ) [] nodes'
+        dg' = changesDGH dg changes
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
 
   selectWith (== ConsistencyStatus CSUnchecked "") upd
