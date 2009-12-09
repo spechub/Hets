@@ -62,15 +62,27 @@ clearElem e = case e of
 -- methods that keep the change list clean
 -- ----------------------------------------------
 
+removeContraryChanges :: [DGChange] -> [DGChange]
+removeContraryChanges = removeDuplicateSetLabel . removeContraryChangesAux
+
+removeDuplicateSetLabel :: [DGChange] -> [DGChange]
+removeDuplicateSetLabel cs = case cs of
+  [] -> []
+  c1 : r -> (case c1 of
+    SetNodeLab _ (n, _) -> if any (\ c2 -> case c2 of
+        SetNodeLab _ (m, _) -> n == m
+        _ -> False) r then id else (c1 :)
+    _ -> (c1 :)) $ removeDuplicateSetLabel r
+
 {- | remove the contray changes out of the list if it's necessary,
      so that the list can stay clean.
 -}
-removeContraryChanges :: [DGChange] -> [DGChange]
-removeContraryChanges [] = []
-removeContraryChanges (change : changes) =
+removeContraryChangesAux :: [DGChange] -> [DGChange]
+removeContraryChangesAux [] = []
+removeContraryChangesAux (change : changes) =
   case contraryChange of
-    Just c -> removeContraryChanges (removeChange c changes)
-    Nothing -> change : removeContraryChanges changes
+    Just c -> removeContraryChangesAux (removeChange c changes)
+    Nothing -> change : removeContraryChangesAux changes
   where
     contraryChange =
       case getContraryChange change of
