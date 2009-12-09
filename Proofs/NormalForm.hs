@@ -29,6 +29,7 @@ import Logic.ExtSign
 import Static.ComputeTheory
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 import Static.WACocone
 
 import Proofs.EdgeUtils

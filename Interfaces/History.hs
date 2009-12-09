@@ -25,9 +25,9 @@ import Interfaces.Command
 import Common.LibName
 
 import Proofs.AbstractState
-import Proofs.EdgeUtils
 
 import Static.DevGraph
+import Static.History
 
 import qualified Data.Map as Map
 

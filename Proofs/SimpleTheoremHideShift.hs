@@ -34,6 +34,8 @@ module Proofs.SimpleTheoremHideShift
 import Proofs.EdgeUtils
 
 import Static.DevGraph
+import Static.History
+
 import Common.LibName
 
 import qualified Data.Map as Map

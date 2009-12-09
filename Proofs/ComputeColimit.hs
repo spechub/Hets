@@ -16,11 +16,10 @@ Improvements:
 
 module Proofs.ComputeColimit where
 
-import Proofs.EdgeUtils
-
 import Static.ComputeTheory
 import Static.DevGraph
 import Static.GTheory
+import Static.History
 import Static.WACocone
 
 import Logic.Comorphism (mkIdComorphism)

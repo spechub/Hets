@@ -25,6 +25,7 @@ import Logic.Prover
 
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 
 import Common.LibName
 import Common.Result
@@ -40,7 +41,6 @@ nodeHasHiding dg = labelHasHiding . labDG dg
 
 nodeHasFree :: DGraph -> Node -> Bool
 nodeHasFree dg = labelHasFree . labDG dg
-
 
 isFreeEdge :: DGLinkType -> Bool
 -- this is duplicated because I wanted to avoid quickly a cyclic import
@@ -93,12 +93,18 @@ globalNodeTheory dg = getGlobalTheory . labDG dg
 
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
 computeDGraphTheories le dgraph =
-  foldl (\ dg l@(n, lbl) -> fst $ labelNodeDG (n,
+  let newDg = computeDGraphTheoriesAux le dgraph
+  in groupHistory dgraph (DGRule "Compute theory") newDg
+
+computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
+computeDGraphTheoriesAux le dgraph =
+  foldl (\ dg l@(n, lbl) -> changeDGH dg $ SetNodeLab lbl
+    (n,
     let gth = computeLabelTheory le dg l in
     (case gth of
       Just (G_theory _ _ _ sens _) | Map.null sens ->
          markNodeConsistent "ByNoSentences"
-      _ -> id) lbl { globalTheory = gth }) dg)
+      _ -> id) lbl { globalTheory = gth }))
      dgraph $ topsortedNodes dgraph
 
 computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory

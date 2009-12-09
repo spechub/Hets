@@ -25,6 +25,7 @@ import qualified Data.Map as Map
 
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 
 import Common.LibName
 import Common.Utils

@@ -39,10 +39,10 @@ import Data.Map (insert)
 
 import Static.DevGraph
 import Static.GTheory
+import Static.History
+import Static.ComputeTheory
 
 import Proofs.AbstractState
-import Static.ComputeTheory
-import Proofs.EdgeUtils
 
 import Driver.Options (rmSuffix)
 import System.Directory (getCurrentDirectory)

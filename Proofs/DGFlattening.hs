@@ -61,6 +61,7 @@ import Proofs.NormalForm
 
 import Static.DevGraph
 import Static.GTheory
+import Static.History
 
 import Data.Graph.Inductive.Graph hiding (empty)
 import Data.List

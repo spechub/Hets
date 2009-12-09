@@ -31,6 +31,7 @@ import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
 
 import Static.DevGraph
+import Static.History
 
 import Common.LibName
 import qualified Common.Lib.SizedList as SizedList

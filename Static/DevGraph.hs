@@ -13,8 +13,6 @@ Central datastructures for development graphs
 We also provide functions for constructing and modifying development graphs.
 However note that these changes need to be propagated to the GUI if they
 also shall be visible in the displayed development graph.
-See 'Proofs.EdgeUtils.updateWithChanges'
-and 'Proofs.StatusUtils.mkResultProofStatus'.
 -}
 
 {-
@@ -989,48 +987,6 @@ insEdgesDG = flip $ foldr (\ l -> snd . insLEdgeDG l)
 -- | merge a list of lnodes and ledges into a given DG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
 mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
-
--- ** handle proof history
-
--- | add a history item to current history.
-addToProofHistoryDG :: HistElem -> DGraph -> DGraph
-addToProofHistoryDG x dg =
-  dg { proofHistory = SizedList.cons x $ proofHistory dg }
-
--- | get the old history and the new offset
-splitHistory :: DGraph -> DGraph -> (ProofHistory, ProofHistory)
-splitHistory oldGraph newGraph = let
-  oldHist = proofHistory oldGraph
-  newHist = proofHistory newGraph
-  diff = SizedList.take (SizedList.size newHist - SizedList.size oldHist)
-         newHist
-  in (oldHist, diff)
-
--- | reverse the history list
-reverseHistory :: SizedList.SizedList HistElem -> SizedList.SizedList HistElem
-reverseHistory = SizedList.reverse . SizedList.map
-  (\ e -> case e of
-     HistElem _ -> e
-     HistGroup r l -> HistGroup r $ reverseHistory l)
-
--- | group pushd changes, leave history of old graph unchanged
-groupHistory :: DGraph -> DGRule -> DGraph -> DGraph
-groupHistory oldGraph rule newGraph = let
-  (oldHist, diff) = splitHistory oldGraph newGraph
-  in if SizedList.null diff then newGraph else
-     newGraph { proofHistory = SizedList.cons (HistGroup rule diff) oldHist }
-
--- | get most recent step
-getLastHistElem :: DGraph -> HistElem
-getLastHistElem dg = let hist = proofHistory dg in
-  if SizedList.null hist then error "Static.DevGraph.getHistElem"
-  else SizedList.head hist
-
--- | get most recent change
-getLastChange :: DGraph -> DGChange
-getLastChange dg = case getLastHistElem dg of
-  HistElem c -> c
-  HistGroup _ _ -> error "Static.DevGraph.getLastChange"
 
 -- ** top-level functions
 

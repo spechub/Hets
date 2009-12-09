@@ -18,9 +18,9 @@ module Driver.AnaLib
 
 import Proofs.Automatic
 import Proofs.NormalForm
-import Proofs.EdgeUtils
 
 import Static.DevGraph
+import Static.History
 import Static.AnalysisLibrary
 
 import Comorphisms.LogicGraph

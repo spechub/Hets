@@ -50,6 +50,7 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Static.DGTranslation (libEnv_translation, getDGLogic)
+import Static.History
 
 import Static.ComputeTheory
 import Proofs.EdgeUtils

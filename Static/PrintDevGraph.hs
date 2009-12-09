@@ -30,6 +30,7 @@ module Static.PrintDevGraph
 
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 
 import Common.GlobalAnnotations
 import Common.LibName

@@ -35,6 +35,7 @@ import Logic.Prover
 
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 import Static.ComputeTheory
 
 import Common.AS_Annotation

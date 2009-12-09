@@ -15,8 +15,6 @@ will be repeated.
 
 module Proofs.QualifyNames (qualifyLibEnv) where
 
-import Proofs.EdgeUtils
-
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.ExtSign
@@ -26,6 +24,7 @@ import Logic.Prover
 
 import Static.DevGraph
 import Static.GTheory
+import Static.History
 import Static.ComputeTheory
 
 import Common.DocUtils

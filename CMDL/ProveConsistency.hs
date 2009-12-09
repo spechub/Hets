@@ -30,11 +30,11 @@ import CMDL.Utils(checkPresenceProvers)
 
 import Comorphisms.LogicGraph(logicGraph)
 
-import Proofs.EdgeUtils(changeDGH)
 import Proofs.AbstractState
 
 import Static.DevGraph
 import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
+import Static.History
 import Static.ComputeTheory
 
 import Logic.Comorphism

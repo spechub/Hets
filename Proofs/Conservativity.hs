@@ -19,12 +19,14 @@ import Common.Consistency
 import Common.LibName(LibName)
 import Common.Result(resultToMaybe)
 
-import Proofs.EdgeUtils(changesDGH, isFreeEdge, isGlobalEdge, isGlobalThm,
+import Proofs.EdgeUtils(isFreeEdge, isGlobalEdge, isGlobalThm,
                         getAllPathsOfTypeFrom)
 import Proofs.ComputeColimit(makeDiagram)
 
 import Static.DevGraph
 import Static.GTheory(gEnsuresAmalgamability)
+import Static.History
+
 
 import Data.Graph.Inductive.Graph(LEdge, LNode)
 import Data.List(nubBy, nub)

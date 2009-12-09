@@ -25,6 +25,7 @@ import GUI.GraphTypes
 
 import Static.DevGraph
 import Static.GTheory
+import Static.History
 
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
@@ -44,7 +45,6 @@ import Control.Monad (foldM_, join, mapM_, when)
 
 import Proofs.AbstractState
 import Proofs.InferBasic
-import Proofs.EdgeUtils
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map

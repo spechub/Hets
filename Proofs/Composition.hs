@@ -23,6 +23,7 @@ module Proofs.Composition
 import Proofs.EdgeUtils
 
 import Static.DevGraph
+import Static.History
 
 import Logic.Grothendieck
 

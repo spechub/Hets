@@ -29,10 +29,15 @@ module Proofs.HideTheoremShift
     ) where
 
 import Comorphisms.LogicGraph
+
 import GUI.Utils
+
 import Logic.Grothendieck
+
 import Proofs.EdgeUtils
+
 import Static.DevGraph
+import Static.History
 
 import Common.Consistency
 import Common.LibName

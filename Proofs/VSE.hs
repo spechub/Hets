@@ -21,6 +21,7 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Static.DGTranslation
+import Static.History
 import Static.ComputeTheory
 
 import Proofs.QualifyNames
