@@ -36,6 +36,7 @@ module Common.Utils
   , getEnvSave
   , getEnvDef
   , filterMapWithList
+  , timeoutCommand
   ) where
 
 import Data.Char
@@ -44,8 +45,13 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import System.Exit
+import System.IO
 import System.Environment
+import System.Process
+
 import Control.Monad
+import Control.Concurrent
 
 -- | replace first (non-empty) sublist with second one in third argument list
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
@@ -143,7 +149,7 @@ keepMins lt l = case l of
     [] -> []
     x : r -> let s = filter (not . lt x) r
                  m = keepMins lt s
-              in if any (\ y -> lt y x) s then m
+              in if any (flip lt x) s then m
                  else x : m
 
 {- |
@@ -225,3 +231,17 @@ getEnvDef :: String -- ^ environment variable
           -> String -- ^  default value
           -> IO String
 getEnvDef envVar defValue = getEnvSave defValue envVar Just
+
+-- | runs a command with timeout
+timeoutCommand :: Int -> String -> IO (Maybe ExitCode, Handle, Handle)
+timeoutCommand time cmd = do
+  wait <- newEmptyMVar
+  (_, outh, errh, proch) <- runInteractiveCommand cmd
+  tid1 <- forkIO $ do exit <- waitForProcess proch
+                      putMVar wait $ Just exit
+  tid2 <- forkIO $ do threadDelay $ time * 1000000
+                      putMVar wait Nothing
+                      terminateProcess proch
+  res <- takeMVar wait
+  killThread (if isJust res then tid2 else tid1) `catch` print
+  return (res, outh, errh)
