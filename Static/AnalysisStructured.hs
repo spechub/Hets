@@ -543,8 +543,7 @@ anaRenaming lg lenv gSigma opts (Renaming ren pos) =
 -- analysis of restrictions
 anaRestr :: LogicGraph -> G_sign -> Range -> GMorphism -> G_hiding
   -> Result GMorphism
-anaRestr _ (G_sign lidLenv sigmaLenv _) pos
-              (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
+anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
     case gh of
       G_symb_list (G_symb_items_list lid' sis') -> do
         let lid1 = sourceLogic cid
@@ -558,9 +557,8 @@ anaRestr _ (G_sign lidLenv sigmaLenv _) pos
           $ plain_error () ("attempt to hide unknown symbols:\n"
                           ++ showDoc unmatched "") pos
         -- needs to be changed when logic projections are implemented
-        sigmaLenv' <- coerceSign lidLenv lid1
-          "Analysis of restriction: logic projections not properly handeled"
-          sigmaLenv
+        (G_sign lidE sigmaLenv0 _, _) <- gSigCoerce lg sigEnv (Logic lid1)
+        sigmaLenv' <- coerceSign lidE lid1 "" sigmaLenv0
         let sysLenv = ext_sym_of lid1 sigmaLenv'
             forbiddenSys = sys' `Set.intersection` sysLenv
         unless (Set.null forbiddenSys)
