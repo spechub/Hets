@@ -69,19 +69,35 @@ w : b;
 x : ? a;
 y : ? a;
 z : a
-forall a : Ord; x : a . x <= x
-forall a : Ord; x : a . x <= x
-forall a : Ord; x : a; y : a; z : a . x <= y /\ y <= z => x <= z
-forall a : Ord; x : a; y : a . x <= y /\ y <= x => x = y
-forall b : BoundedOrd; v : b . bot <= v
-forall b : BoundedOrd; v : b . v <= top
+forall a : Ord; x : a
+. (op __<=__ : forall a : Ord . Pred (a * a)) (x, x)
+forall a : Ord; x : a
+. (op __<=__ : forall a : Ord . Pred (a * a)) (x, x)
+forall a : Ord; x : a; y : a; z : a
+. (op __<=__ : forall a : Ord . Pred (a * a)) (x, y)
+  /\ (op __<=__ : forall a : Ord . Pred (a * a)) (y, z)
+  => (op __<=__ : forall a : Ord . Pred (a * a)) (x, z)
+forall a : Ord; x : a; y : a
+. (op __<=__ : forall a : Ord . Pred (a * a)) (x, y)
+  /\ (op __<=__ : forall a : Ord . Pred (a * a)) (y, x)
+  => x = y
+forall b : BoundedOrd; v : b
+. (op __<=__ : forall a : Ord . Pred (a * a)) (bot, v)
+forall b : BoundedOrd; v : b
+. (op __<=__ : forall a : Ord . Pred (a * a)) (v, top)
 forall a : Ord; b : Ord; v : b; w : b; x : a; y : a
-. (x, v) <= (y, w) <=> x <= y /\ v <= w
-forall a : DiscreteOrd; x : a; y : a . x <= y <=> x = y
-. () <= ()
+. (op __<=__ : forall a : Ord . Pred (a * a)) ((x, v), (y, w))
+  <=> (op __<=__ : forall a : Ord . Pred (a * a)) (x, y)
+      /\ (op __<=__ : forall a : Ord . Pred (a * a)) (v, w)
+forall a : DiscreteOrd; x : a; y : a
+. (op __<=__ : forall a : Ord . Pred (a * a)) (x, y) <=> x = y
+. (op __<=__ : forall a : Ord . Pred (a * a)) ((), ())
 forall a : Ord; x : ? a; y : ? a
-. x <= y <=> def x () => x () <= y ()
-forall a : Cpo; x : ? a . x <= x
+. (op __<=__ : forall a : Ord . Pred (a * a)) (x, y)
+  <=> def x ()
+      => (op __<=__ : forall a : Ord . Pred (a * a)) (x (), y ())
+forall a : Cpo; x : ? a
+. (op __<=__ : forall a : Ord . Pred (a * a))[? a] (x, x)
 ### Hint 2.7, is type variable 'a'
 ### Hint 2.16, not a class 'a'
 ### Hint 3.22,

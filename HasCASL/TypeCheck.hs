@@ -44,7 +44,6 @@ import Common.Id
 import Common.GlobalAnnotations
 import Common.Result
 import Common.DocUtils
-import Common.Utils
 import Common.Lib.State
 
 import Data.Maybe (catMaybes)
@@ -265,13 +264,6 @@ mkTypedTerm trm ty = case trm of
         QuantifiedTerm quant decls (mkTypedTerm t ty) ps
     _ -> TypedTerm trm Inferred ty $ getRange trm
 
-lesserTypeScheme :: Env -> TypeScheme -> TypeScheme -> Bool
-lesserTypeScheme e (TypeScheme args1 t1 _) (TypeScheme args2 t2 _) =
-   null args1 && null args2 && lesserType e t1 t2
-
-lesserOpInfo :: Env -> OpInfo -> OpInfo -> Bool
-lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
-
 -- | efficiently infer type of a monomorphic tuple term
 inferWithMaybeType :: Bool -> Maybe Type -> Term
                    -> State Env [(Subst, Constraints, Type, Term)]
@@ -315,7 +307,6 @@ infer :: Bool -> Term -> State Env [(Subst, Constraints, Type, Term)]
 infer isP trm = do
     e <- get
     let tm = typeMap e
-        as = assumps e
         bs = binders e
         vs = localVars e
         ga = globAnnos e
@@ -341,10 +332,7 @@ infer isP trm = do
                Just (VarDefn t) ->
                  infer isP $ QualVar $ VarDecl i t Other ps
                Nothing -> do
-                    insts <- mapM (instOpInfo tys)
-                       $ keepMins (lesserOpInfo e)
-                       $ Set.toList
-                       $ Map.findWithDefault Set.empty i as
+                    insts <- mapM (instOpInfo tys) $ getMinAssumps e i
                     let ls = map ( \ (ty, is, cs, oi) ->
                               (eps, ty, is, cs, oi)) $ catMaybes insts
                     -- possibly fresh variable

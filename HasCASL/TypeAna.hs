@@ -24,6 +24,7 @@ import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import Common.Utils
 import Common.Lib.State
 
 import Data.Maybe
@@ -182,6 +183,18 @@ lesserType te t1 t2 = case (t1, t2) of
     (TypeAppl _ _, TypeAbs _ _ _) -> False
     (TypeAbs _ _ _, TypeName _ _ _) -> False
     (t3, t4) -> t3 == t4
+
+lesserTypeScheme :: Env -> TypeScheme -> TypeScheme -> Bool
+lesserTypeScheme e (TypeScheme args1 t1 _) (TypeScheme args2 t2 _) =
+   null args1 && null args2 && lesserType e t1 t2
+
+lesserOpInfo :: Env -> OpInfo -> OpInfo -> Bool
+lesserOpInfo e o1 = lesserTypeScheme e (opType o1) . opType
+
+-- | get operations by name removing super profiles
+getMinAssumps :: Env -> Id -> [OpInfo]
+getMinAssumps e i = keepMins (lesserOpInfo e) $ Set.toList
+  $ Map.findWithDefault Set.empty i $ assumps e
 
 -- | type identifiers of a type
 idsOf :: (Int -> Bool) -> Type -> Set.Set Id

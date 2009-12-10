@@ -22,7 +22,10 @@ op __union__ : forall N : Type; E : Type
                . Graph N E * Graph N E -> Graph N E
                %(op)%
 forall E : Type; N : Type; g : Graph N E; g' : Graph N E
-. g union g' = g
+. (op __union__ :
+   forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)
+  (g, g')
+  = g
 ### Hint 1.7, is type variable 'S'
 ### Hint 1.9, is type variable 'N'
 ### Hint 1.11, is type variable 'E'

@@ -77,25 +77,63 @@ a : Type; b : Type; c : Type; f : Functor; f : a -> b; g : b -> c;
 x : f a
 . (map \ y : a .! g (f y)) x = map g (map f x)
 forall a : Type; b : Type; m : Monad; q : a ->? m b; x : a
-. def q x => ret x >>= q = q x
+. def q x
+  => (op __>>=__ :
+      forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+     (ret x, q)
+     = q x
 forall
 a : Type; b : Type; c : Type; m : Monad; f : a ->? b; p : m a;
 r : b ->? m c
-. (p >>= \ x : a . ret (f x) >>= r) = p >>= \ x : a . r (f x)
-forall a : Type; m : Monad; p : m a . p >>= ret = p
+. (op __>>=__ :
+   forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+  (p,
+   \ x : a
+   . (op __>>=__ :
+      forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+     (ret (f x), r))
+  = (op __>>=__ :
+     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+    (p, \ x : a . r (f x))
+forall a : Type; m : Monad; p : m a
+. (op __>>=__ :
+   forall m : Monad; a : Type; b : Type . m a * (a -> m b) -> m b)
+  (p, ret)
+  = p
 forall
 a : Type; b : Type; c : Type; m : Monad; p : m a; q : a ->? m b;
 r : b ->? m c
-. (p >>= q) >>= r = p >>= \ x : a . q x >>= r
+. (op __>>=__ :
+   forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+  ((op __>>=__ :
+    forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+   (p, q),
+   r)
+  = (op __>>=__ :
+     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+    (p,
+     \ x : a
+     . (op __>>=__ :
+        forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+       (q x, r))
 forall a : Type; m : Monad; x : a; y : a
 . (ret x : m a) = ret y => x = y
 forall a : Type; b : Type; m : Monad; f : a -> b; x : m a
-. map f x = x >>= \ y : a . ret (f y)
+. map f x
+  = (op __>>=__ :
+     forall m : Monad; a : Type; b : Type . m a * (a ->? m b) ->? m b)
+    (x, \ y : a . ret (f y))
 forall a : Type; m : Monad; t : MonadT; x : a
 . lift (ret x) = (ret x : t m a)
 forall
 a : Type; b : Type; m : Monad; t : MonadT; p : m a; q : a -> m b
-. lift (p >>= q) = lift p >>= \ y : a .! lift (q y) : t m b
+. lift
+  ((op __>>=__ :
+    forall m : Monad; a : Type; b : Type . m a * (a -> m b) -> m b)
+   (p, q))
+  = (op __>>=__ :
+     forall m : Monad; a : Type; b : Type . m a * (a -> m b) -> m b)
+    (lift p, \ y : a .! lift (q y) : t m b)
 ### Hint 2.7, is type variable 'f'
 ### Hint 2.19, is type variable 'a'
 ### Hint 2.22, is type variable 'b'

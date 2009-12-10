@@ -74,22 +74,22 @@ op y : s
        ((op a : s), (var x : s), (op a : s))]%
 op z : s
        %[op= (op __+__ : s * s -> s) ((op x : s), (op x : s) as s)]%
-. c = (op __+__ : s * s -> s) ((op a : s), (op b : s))
-. d = ((op __+__ : s * s -> s) ((op a : s), (op a : s)) : s)
-. e = __+__
-. f = __+__
-. g = ((op a : s), (op b : s))
-. h = (op __+__ : s * s -> s) ((op a : s), (op b : s))
-. i = (op __+__ : s * s -> s) ((op a : s), (op b : s))
-. i1 = incr (op a : s)
-. i2 = incr (op a : s)
-. i3 = incr (op a : s)
-. l1 = (op a : s) <= (op b : s) <= c
+. c = (op __+__ : s * s -> s) (a, b)
+. d = ((op __+__ : s * s -> s) (a, a) : s)
+. e = (op __+__ : s * s -> s)
+. f = (op __+__ : s * s -> s)
+. g = (a, b)
+. h = (op __+__ : s * s -> s) (a, b)
+. i = (op __+__ : s * s -> s) (a, b)
+. i1 = incr a
+. i2 = incr a
+. i3 = incr a
+. l1 = a <= b <= c
 . l2 = __<=__<=__
-. l3 = (op a : s) <= (op b : s) <= c
-. l4 = (op a : s) <= (op b : s) <= c
-. l5 = ((op a : s), (op b : s), c)
-forall x : s . y = a <= (var x : s) <= (op a : s)
+. l3 = a <= b <= c
+. l4 = a <= b <= c
+. l5 = (a, b, c)
+forall x : s . y = a <= (var x : s) <= a
 . z = (op __+__ : s * s -> s) (x, x as s)
 . true %(bla_label)%
 . true

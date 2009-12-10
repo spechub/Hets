@@ -19,8 +19,8 @@ import HasCASL.AsUtils
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.FoldTerm
+import HasCASL.TypeAna
 
-import Common.Utils (hasMany)
 import Common.Lib.State
 
 import qualified Data.Map as Map
@@ -34,8 +34,8 @@ simplifyRec b env = mapRec
           if b then TypedTerm nv OfType ty ps else nv
     , foldQualOp = \ trm _ (PolyId i _ _) _ tys k ps ->
       if Map.member i $ localVars env then trm else
-          case Map.lookup i $ assumps env of
-          Just s | hasMany s -> trm
+          case getMinAssumps env i of
+          _ : _ : _ -> trm
           _ -> ResolvedMixTerm i (if k == Infer then [] else tys) [] ps
     , foldTypedTerm = \ _ nt q ty ps ->
         let ntyped = TypedTerm nt q ty ps in case q of
@@ -47,7 +47,9 @@ simplifyRec b env = mapRec
               else TypedTerm (ResolvedMixTerm v [] [] qs) q ty ps
            QualOp _ (PolyId i _ _) _ tys k qs | q == Inferred ->
               if Map.member i $ localVars env then ntyped
-              else TypedTerm (ResolvedMixTerm i
+              else case getMinAssumps env i of
+                _ : _ : _ -> ntyped
+                _ -> TypedTerm (ResolvedMixTerm i
                      (if k == Infer then [] else tys) [] qs) q ty ps
            TypedTerm ntt qt tyt _ -> case qt of
                InType -> nt
