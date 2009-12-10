@@ -334,7 +334,6 @@ createMenuNode shape color gInfo internal = shape
         , createMenuButtonProveAtNode
         , createMenuButtonProveStructured
         , createMenuButtonCheckCons
-        , createMenuButtonCCCAtNode
         ]))
   $$$ emptyNodeTypeParms
 
@@ -401,7 +400,7 @@ createMenuButtonShowProofStatusOfNode gInfo =
 
 createMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove" (proveAtNode False gInfo) gInfo
+  createMenuButton "Prove" (proveAtNode gInfo) gInfo
 
 createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveStructured gInfo =
@@ -413,10 +412,6 @@ createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
     (flip checkconservativityOfNode gInfo) gInfo
-
-createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonCCCAtNode gInfo =
-  createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
 
 createMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonShowNodeInfo =

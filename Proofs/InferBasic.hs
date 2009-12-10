@@ -68,8 +68,6 @@ import Data.Ord (comparing)
 
 import Control.Monad.Trans
 import Control.Monad ((=<<))
---import Control.Concurrent
---import Control.Concurrent.MVar
 
 import System.Timeout
 
@@ -157,61 +155,26 @@ proveTheory _ =
 {- | applies basic inference to a given node. The result is a theory which is
      either a model after a consistency check or a new theory for the node
      label -}
-basicInferenceNode :: Bool -- ^ True = consistency; False = Prove
-                   -> LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
+basicInferenceNode :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
                    -> LibEnv -> IORef IntState
                    -> IO (Result G_theory)
-basicInferenceNode checkCons lg ln dGraph (node, lbl) libEnv intSt =
+basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
   runResultT $ do
-        -- compute the theory of the node, and its name
-        -- may contain proved theorems
-        thForProof@(G_theory lid1 (ExtSign sign _) _ axs _) <-
-             liftR $ getGlobalTheory lbl
-        let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-            sens = toNamedList axs
-            sublogic = sublogicOfTh thForProof
-        -- select a suitable translation and prover
-
-            cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
-        if checkCons then do
-            (G_cons_checker lid4 cc, Comorphism cid) <-
-                 selectProver $ getConsCheckers cms
-            let lidT = targetLogic cid
-                lidS = sourceLogic cid
-            bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS ""
-                   (sign, sens)
-            -- Borrowing?: translate theory
-            (sig2, sens2) <- liftR $ wrapMapTheory cid bTh'
-            incl <- liftR $ subsig_inclusion lidT (empty_signature lidT) sig2
-            let mor = TheoryMorphism
-                      { tSource = emptyTheory lidT,
-                        tTarget = Theory sig2 $ toThSens sens2,
-                        tMorphism = incl }
-            cc' <- coerceConsChecker lid4 lidT "" cc
-            pts <- lift $ ccAutomatic cc' thName (TacticScript "20") mor
-                $ getCFreeDefMorphs lidT libEnv ln dGraph node
-            liftR $ case ccResult pts of
-              Just True -> let
-                Result ds ms = extractModel cid sig1 $ ccProofTree pts
-                in case ms of
-                Nothing -> fail "consistent but could not reconstruct model"
-                Just (sig3, sens3) -> Result ds $ Just $
-                         G_theory lidS (mkExtSign sig3) startSigId
-                              (toThSens sens3) startThId
-              Just False -> fail "theory is inconsistent."
-              Nothing -> fail "could not determine consistency."
-          else do
-            let freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
-            kpMap <- liftR knownProversGUI
-            ResultT $
-                   proverGUI lid1 ProofActions
-                     { proveF = proveKnownPMap lg intSt freedefs
-                     , fineGrainedSelectionF =
-                           proveFineGrainedSelect lg intSt freedefs
-                     , recalculateSublogicF  =
-                                     recalculateSublogicAndSelectedTheory
-                     } thName (hidingLabelWarning lbl) thForProof
-                       kpMap (getProvers ProveGUI (Just sublogic) cms)
+    -- compute the theory of the node, and its name
+    -- may contain proved theorems
+    thForProof@(G_theory lid1 _ _ _ _) <- liftR $ getGlobalTheory lbl
+    let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
+        sublogic = sublogicOfTh thForProof
+    -- select a suitable translation and prover
+        cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
+        freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
+    kpMap <- liftR knownProversGUI
+    ResultT $ proverGUI lid1 ProofActions
+      { proveF = proveKnownPMap lg intSt freedefs
+      , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
+      , recalculateSublogicF = recalculateSublogicAndSelectedTheory
+      } thName (hidingLabelWarning lbl) thForProof kpMap
+      (getProvers ProveGUI (Just sublogic) cms)
 
 data SType = CSUnchecked
            | CSConsistent
@@ -277,18 +240,6 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
             ConsistencyStatus CSTimeout mTimeout
             else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
         Nothing -> ConsistencyStatus CSTimeout mTimeout
-
-{-
-timeout :: Int -> IO a -> IO (Maybe a)
-timeout t action = do
-  mvar <- newEmptyMVar
-  tid1 <- forkIO $ do x <- action
-                      putMVar mvar $ Just x
-  tid2 <- forkIO $ do threadDelay $ t * 1000000
-                      putMVar mvar Nothing
-  res <- takeMVar mvar
-  killThread (if isJust res then tid2 else tid1) `catch` print
-  return res -}
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
