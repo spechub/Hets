@@ -542,37 +542,17 @@ runProveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
         rTh = propagateProofs oldTh newTh in
     unless (rTh == oldTh) $ do
       showDiagMessAux 2 ds
-      updateNodeProof gInfo (v, dgnode) $ Just rTh
+      lockGlobal gInfo
+      let ln = libName gInfo
+          iSt = intState gInfo
+      ost <- readIORef iSt
+      (ost', mhist) <- updateNodeProof ln ost (v, dgnode) $ Just rTh
+      writeIORef iSt ost'
+      case mhist of
+        Just hist -> runAndLock gInfo $ updateGraph gInfo hist
+        Nothing -> return ()
+      unlockGlobal gInfo
   _ -> return ()
-
-updateNodeProof :: GInfo -> LNode DGNodeLab -> Maybe G_theory -> IO ()
-updateNodeProof gInfo (v, dgnode) tres = case tres of
-  Just theory -> do
-    let ln = libName gInfo
-        iSt = intState gInfo
-    lockGlobal gInfo
-    ost <- readIORef iSt
-    case i_state ost of
-      Nothing -> return ()
-      Just iist -> do
-        let le = i_libEnv iist
-            dg = lookupDGraph ln le
-            nn = getDGNodeName dgnode
-            new = dgnode { dgn_theory = theory }
-            l = new { globalTheory = computeLabelTheory le dg (v, new) }
-            newDg0 = changeDGH dg $ SetNodeLab dgnode (v, l)
-            newDG1 = togglePending newDg0 $ changedLocalTheorems newDg0 (v, l)
-            newDg = togglePending newDG1 $ changedPendingEdges newDG1
-            history = snd $ splitHistory dg newDg
-            nst = add2history
-                    (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
-                    ost [DgCommandChange ln]
-            nwst = nst { i_state =
-                           Just iist { i_libEnv = Map.insert ln newDg le } }
-        writeIORef iSt nwst
-        runAndLock gInfo $ updateGraph gInfo $ reverse $ flatHistory history
-    unlockGlobal gInfo
-  Nothing -> return ()
 
 checkconservativityOfNode :: Int -> GInfo -> DGraph -> IO ()
 checkconservativityOfNode descr gInfo dgraph = do

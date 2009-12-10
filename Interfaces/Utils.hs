@@ -24,8 +24,10 @@ module Interfaces.Utils
          , addCommandHistoryToState
          , checkConservativityNode
          , checkConservativityEdge
+         , updateNodeProof
          ) where
 
+import Interfaces.Command
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
 import qualified Interfaces.Command as IC
@@ -54,6 +56,7 @@ import Logic.Grothendieck
 import Logic.Coerce
 import Comorphisms.LogicGraph(logicGraph)
 
+import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Common.Utils (splitOn)
 import Common.Result
@@ -369,3 +372,27 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
              return ( showRes ++ "\n" ++ myDiags
                     , newLibEnv
                     , history)
+
+updateNodeProof :: LibName -> IntState -> LNode DGNodeLab
+                -> Maybe G_theory -> IO (IntState, Maybe [DGChange])
+updateNodeProof ln ost (v, dgnode) tres = case tres of
+  Just thry ->
+    case i_state ost of
+      Nothing -> return (ost, Nothing)
+      Just iist -> do
+        let le = i_libEnv iist
+            dg = lookupDGraph ln le
+            nn = getDGNodeName dgnode
+            new = dgnode { dgn_theory = thry }
+            l = new { globalTheory = computeLabelTheory le dg (v, new) }
+            newDg0 = changeDGH dg $ SetNodeLab dgnode (v, l)
+            newDG1 = togglePending newDg0 $ changedLocalTheorems newDg0 (v, l)
+            newDg = togglePending newDG1 $ changedPendingEdges newDG1
+            history = snd $ splitHistory dg newDg
+            nst = add2history
+                    (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
+                    ost [DgCommandChange ln]
+            nwst = nst { i_state =
+                           Just iist { i_libEnv = Map.insert ln newDg le } }
+        return (nwst, Just (reverse $ flatHistory history))
+  Nothing -> return (ost, Nothing)

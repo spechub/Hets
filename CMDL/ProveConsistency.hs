@@ -23,6 +23,7 @@ module CMDL.ProveConsistency
 
 import Interfaces.DataTypes
 import Interfaces.GenericATPState(ATPTacticScript)
+import Interfaces.Utils (updateNodeProof)
 
 import CMDL.DataTypes(CmdlState(intState))
 import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
@@ -34,8 +35,6 @@ import Proofs.AbstractState
 
 import Static.DevGraph
 import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
-import Static.History
-import Static.ComputeTheory
 
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -210,11 +209,11 @@ checkNode ::
               Maybe AnyComorphism ->
               MVar (Maybe ThreadId) ->
               MVar (Maybe Int_NodeInfo)  ->
-              MVar LibEnv ->
+              MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
                IO String
-checkNode _useTh _save2File sTxt ndpf ndnm mp mcm _mThr mSt _mlbE _libname
+checkNode _useTh _save2File sTxt ndpf ndnm mp mcm _mThr mSt _miSt _libname
  = case ndpf of
     Element pf_st nd ->
      do
@@ -283,11 +282,11 @@ proveNode ::
               Maybe AnyComorphism ->
               MVar (Maybe ThreadId) ->
               MVar (Maybe Int_NodeInfo)  ->
-              MVar LibEnv ->
+              MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
                IO String
-proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
+proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname
  = case ndpf of
     Element pf_st nd ->
      do
@@ -347,15 +346,15 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt mlbE libname
              swapMVar mThr $ Just $ fst tmp
              getResults lid1 cmp (snd tmp) answ mSt
              swapMVar mThr Nothing
-             lbEnv  <- readMVar mlbE
+             ist  <- readMVar miSt
              state <- readMVar mSt
              case state of
               Nothing -> return []
               Just state' ->
                do
-                lbEnv' <- addResults lbEnv libname state'
+                ist' <- addResults ist libname state'
                 swapMVar mSt  Nothing
-                swapMVar mlbE lbEnv'
+                swapMVar miSt ist'
                 return []
 
 getResults :: (Logic lid sublogics basic_spec sentence
@@ -380,36 +379,34 @@ getResults lid acm mStop mData mState =
                                             (markProved acm lid d' st) node)
 
 -- | inserts the results of the proof in the development graph
-addResults :: LibEnv -> LibName -> Int_NodeInfo -> IO LibEnv
-addResults lbEnv libname ndps =
-  case ndps of
-   Element ps'' node -> case theory ps'' of
-     G_theory lidT sigT indT sensT _ ->
-      do
-       gMap <- coerceThSens (logicId ps'') lidT
-                  "ProveCommands last coerce"
-                  (goalMap ps'')
-       let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
-           dGraph = lookupDGraph libname lbEnv
-           oldContents = labDG dGraph node
-           new1 = oldContents {dgn_theory = nwTh}
-           newContents = new1
-             { globalTheory = computeLabelTheory lbEnv dGraph (node, new1) }
-           nextDGraph = changeDGH dGraph
-               $ SetNodeLab oldContents (node, newContents)
-       return $ Map.insert libname nextDGraph lbEnv
-
+addResults :: IntState -> LibName -> Int_NodeInfo -> IO IntState
+addResults ist libname ndps =
+  case i_state ist of
+    Nothing -> return ist
+    Just pS ->
+      case ndps of
+       Element ps'' node -> case theory ps'' of
+         G_theory lidT sigT indT sensT _ ->
+          do
+           gMap <- coerceThSens (logicId ps'') lidT
+                      "ProveCommands last coerce"
+                      (goalMap ps'')
+           let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
+               dGraph = lookupDGraph libname (i_libEnv pS)
+               nl = labDG dGraph node
+           (ist', _) <- updateNodeProof libname ist (node, nl) (Just nwTh)
+           return ist'
 
 -- | Signal handler that stops the prover from running
 -- when SIGINT is send
 sigIntHandler :: MVar (Maybe ThreadId) ->
-                 MVar LibEnv ->
+                 MVar IntState ->
                  MVar (Maybe Int_NodeInfo) ->
                  ThreadId ->
-                 MVar LibEnv ->
+                 MVar IntState ->
                  LibName ->
                  IO ()
-sigIntHandler mthr mlbE mSt thr mOut libname =
+sigIntHandler mthr miSt mSt thr mOut libname =
   do
    -- print a message
    -- ? shellputStr ! should be used !
@@ -422,66 +419,71 @@ sigIntHandler mthr mlbE mSt thr mOut libname =
    -- kill the prove/prove-all thread
    killThread thr
    -- update LibEnv with intermidiar results !?
-   lbEnv <- readMVar mlbE
+   ist <- readMVar miSt
    st <- readMVar mSt
    case st of
     Nothing ->
       do
-       putMVar mOut lbEnv
+       putMVar mOut ist
        return ()
     Just st' ->
       do
-       lbEnv' <- addResults lbEnv libname st'
+       ist' <- addResults ist libname st'
         -- add to the output mvar results until now
-       putMVar mOut lbEnv'
+       putMVar mOut ist'
        return ()
 
-doLoop :: MVar LibEnv
+doLoop :: MVar IntState
        -> MVar (Maybe ThreadId)
        -> MVar (Maybe Int_NodeInfo)
-       -> MVar LibEnv
-       -> IntIState
+       -> MVar IntState
        -> [Int_NodeInfo]
-       -> Bool -- True = prover, False = consChecker
+       -> Bool
        -> IO ()
-doLoop mlbE mThr mSt mOut pS ls prvr =
-  case ls of
-   -- we are done
-    [] -> do
-           nwLbEnv <- readMVar mlbE
-           putMVar mOut nwLbEnv
-           return ()
-    x: l ->
-          do
-           let nodeName x' = case x' of
-                              Element _ t -> case find(\(n,_)-> n==t)
-                                                  $ getAllNodes pS of
-                                               Nothing -> "Unkown node"
-                                               Just (_,ll) ->
-                                                 getDGNodeName ll
-           putStrLn ("Analyzing node " ++ nodeName x)
-           err <- (if prvr
-                     then proveNode (useTheorems pS)
-                                    (save2file pS)
-                                    (script pS)
-                                    x
-                                    (nodeName x)
-                                    (prover pS)
-                                    (cComorphism pS)
-                                    mThr
-                                    mSt
-                                    mlbE
-                                    (i_ln pS)
-                     else checkNode (useTheorems pS)
-                                    (save2file pS)
-                                    (script pS)
-                                    x
-                                    (nodeName x)
-                                    (consChecker pS)
-                                    (cComorphism pS)
-                                    mThr
-                                    mSt
-                                    mlbE
-                                    (i_ln pS))
-           unless (null err) (putStrLn err)
-           doLoop mlbE mThr mSt mOut pS l prvr
+doLoop miSt mThr mSt mOut ls checkCons = do
+  ist <- readMVar miSt
+  case i_state ist of
+    Nothing -> do
+                 putMVar mOut ist
+                 return ()
+    Just pS ->
+        case ls of
+         -- we are done
+          [] -> do
+                 putMVar mOut ist
+                 return ()
+          x: l ->
+                do
+                 let nodeName x' = case x' of
+                                    Element _ t -> case find(\(n,_)-> n==t)
+                                                        $ getAllNodes pS of
+                                                     Nothing -> "Unkown node"
+                                                     Just (_,ll) ->
+                                                       getDGNodeName ll
+                 putStrLn ("Analyzing node " ++ nodeName x)
+                 err <- (if checkCons
+                           then checkNode (useTheorems pS)
+                                           (save2file pS)
+                                           (script pS)
+                                           x
+                                           (nodeName x)
+                                           (consChecker pS)
+                                           (cComorphism pS)
+                                           mThr
+                                           mSt
+                                           miSt
+                                           (i_ln pS)
+
+                           else proveNode (useTheorems pS)
+                                          (save2file pS)
+                                          (script pS)
+                                          x
+                                          (nodeName x)
+                                          (prover pS)
+                                          (cComorphism pS)
+                                          mThr
+                                          mSt
+                                          miSt
+                                          (i_ln pS))
+                 unless (null err) (putStrLn err)
+                 doLoop miSt mThr mSt mOut l checkCons

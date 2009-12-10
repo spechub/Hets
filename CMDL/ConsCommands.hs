@@ -101,7 +101,7 @@ cConservCheckAll state =
 
 -- applies consistency check to the input
 cConsistCheck :: CmdlState -> IO CmdlState
-cConsistCheck = cDoLoop False
+cConsistCheck = cDoLoop True
 
 -- applies consistency check to all possible input
 cConsistCheckAll :: CmdlState -> IO CmdlState

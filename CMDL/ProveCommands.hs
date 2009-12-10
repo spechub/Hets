@@ -171,10 +171,10 @@ cGoalsAxmGeneral action gls_axm input state
                              }
                      }
 
-cDoLoop :: Bool -- True = prove, False = consChecker
+cDoLoop :: Bool
         -> CmdlState
         -> IO CmdlState
-cDoLoop prvr state
+cDoLoop checkCons state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
@@ -183,16 +183,16 @@ cDoLoop prvr state
          ls ->
            do
             --create initial mVars to comunicate
-            mlbEnv <- newMVar $ i_libEnv pS
+            miSt   <- newMVar $ intState state
             mSt    <- newMVar Nothing
             mThr   <- newMVar Nothing
             mW     <- newEmptyMVar
             -- fork
-            thrID <- forkIO(doLoop mlbEnv mThr mSt mW pS ls prvr)
+            thrID <- forkIO(doLoop miSt mThr mSt mW ls checkCons)
             -- install the handler that waits for SIG_INT
 #ifdef UNIX
             oldHandler <- installHandler sigINT (Catch $
-                     sigIntHandler mThr mlbEnv mSt thrID mW (i_ln pS)
+                     sigIntHandler mThr miSt mSt thrID mW (i_ln pS)
                                   ) Nothing
 #endif
             -- block and wait for answers
@@ -200,22 +200,23 @@ cDoLoop prvr state
 #ifdef UNIX
             installHandler sigINT oldHandler Nothing
 #endif
-            let nwpS = pS { i_libEnv = answ }
-            let nwls = concatMap(\(Element _ x) -> selectANode x nwpS) ls
+
+            let nwpS = case i_state answ of
+                         Nothing  -> pS
+                         Just pS' -> pS'
+                nwls = concatMap(\(Element _ x) -> selectANode x nwpS) ls
                 hst = concatMap(\(Element stt x)  ->
                                  [(AxiomsChange (includedAxioms stt) x),
                                   (GoalsChange (selectedGoals stt) x)]) ls
-            return $ add2hist [(DgCommandChange $ i_ln nwpS),
-                               (ListChange hst)] $
-                         state {
-                           intState = (intState state) {
-                             i_state = Just $ nwpS { elements = nwls } }
-                         }
+            return $ add2hist [(ListChange hst)] $
+                       state { intState = answ {
+                         i_state = Just $ nwpS { elements = nwls }
+                       }}
 
 -- | Proves only selected goals from all nodes using selected
 -- axioms
 cProve :: CmdlState -> IO CmdlState
-cProve = cDoLoop True
+cProve = cDoLoop False
 
 -- | Proves all goals in the nodes selected using all axioms and
 -- theorems
