@@ -946,6 +946,7 @@ varsImpConds im = foldr (Set.union . (varsImpCond im)) Set.empty
 -- to the variables in matching conditions
 varsImpCond :: IdMap -> MAS.Condition -> Set.Set CAS.CASLFORMULA
 varsImpCond im (MAS.MatchCond t _) = varsImpTerm im t
+varsImpCond im (MAS.RwCond _ t) = varsImpTerm im t
 varsImpCond _ _ = Set.empty
 
 -- | computes the predicates with the information associated to the variables in
