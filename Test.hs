@@ -5,6 +5,8 @@ import Static.AnalysisLibrary
 import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
+import Static.History
+
 import Driver.Options
 import Driver.AnaLib
 
