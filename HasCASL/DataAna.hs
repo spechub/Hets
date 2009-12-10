@@ -171,16 +171,16 @@ anaCompType genKind tys (DataPat _ tArgs _ _) t te = do
 checkMonomorphRecursion :: Type -> Env -> DataPat -> Result ()
 checkMonomorphRecursion t te (DataPat i _ _ rt) =
     case filter (\ ty -> not (lesserType te ty rt || lesserType te rt ty))
-       $ findSubTypes (typeMap te) i t of
+       $ findSubTypes (relatedTypeIds (typeMap te) i) i t of
       [] -> return ()
       ty : _ -> Result [Diag Error  ("illegal polymorphic recursion"
                                  ++ expected rt ty) $ getRange ty] Nothing
 
-findSubTypes :: TypeMap -> Id -> Type -> [Type]
-findSubTypes tm i t = case getTypeAppl t of
-    (TypeName j _ _, args) -> if relatedTypeIds tm i j then [t]
-                              else concatMap (findSubTypes tm i) args
-    (topTy, args) -> concatMap (findSubTypes tm i) $ topTy : args
+findSubTypes :: (Id -> Bool) -> Id -> Type -> [Type]
+findSubTypes chk i t = case getTypeAppl t of
+    (TypeName j _ _, args) -> if chk j then [t]
+                              else concatMap (findSubTypes chk i) args
+    (topTy, args) -> concatMap (findSubTypes chk i) $ topTy : args
 
 rejectNegativeOccurrence :: GenKind -> Type -> Env -> DataPat -> Result ()
 rejectNegativeOccurrence genKind t te (DataPat i _ _ _) =
@@ -195,7 +195,7 @@ findNegativeOccurrence te i t = let tm = typeMap te in case getTypeAppl t of
     (TypeName j _ _, _) | relatedTypeIds tm i j ->
       [] -- positive occurrence
     (topTy, [larg, rarg]) | lesserType te topTy (toFunType PFunArr) ->
-       findSubTypes tm i larg ++ findNegativeOccurrence te i rarg
+       findSubTypes (== i) i larg ++ findNegativeOccurrence te i rarg
     (_, args) -> concatMap (findNegativeOccurrence te i) args
 
 relatedTypeIds :: TypeMap -> Id -> Id -> Bool
