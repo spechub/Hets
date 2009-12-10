@@ -251,7 +251,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       (sp1', NodeSig n' gsigma', dg') <-
           anaSpec addSyms lg dg nsig (extName "Restriction" name) opts sp1
       let gsigma = getMaybeSig nsig
-      (hmor, tmor) <- anaRestriction gsigma gsigma' opts restr
+      (hmor, tmor) <- anaRestriction lg gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
       case tmor of
@@ -308,24 +308,25 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       let sp1 = item asp
           sp1' = item asp'
           lname = extName "Local" name
-      (sp2, nsig'@(NodeSig _ (G_sign lid' sigma' _)), dg') <-
+      (sp2, nsig'@(NodeSig _ gsig1), dg') <-
         anaSpec False lg dg nsig (extName "Spec" lname) opts sp1
-      (sp2', NodeSig n'' (G_sign lid'' sigma'' _), dg'') <-
+      (sp2', NodeSig n'' (G_sign lid2 sigma2 _), dg'') <-
         anaSpec False lg dg' (JustNode nsig') (extName "Within" lname) opts sp1'
-      let gsigma = getMaybeSig nsig
-      G_sign lid sigma _ <- return gsigma
-      sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
-      sigma2 <- coerceSign lid'' lid "Analysis of local spec" sigma''
-      let sys = ext_sym_of lid sigma
-          sys1 = ext_sym_of lid sigma1
-          sys2 = ext_sym_of lid sigma2
+      let gSigN = getMaybeSig nsig
+      (G_sign lid sigmaN _, _) <- gSigCoerce lg gSigN (Logic lid2)
+      sigma <- coerceSign lid lid2 "Analysis of local spec1" sigmaN
+      (G_sign lid' sigma' _, _) <- gSigCoerce lg gsig1 (Logic lid2)
+      sigma1 <- coerceSign lid' lid2 "Analysis of local spec2" sigma'
+      let sys = ext_sym_of lid2 sigma
+          sys1 = ext_sym_of lid2 sigma1
+          sys2 = ext_sym_of lid2 sigma2
       mor3 <- if isStructured opts then return (ext_ide sigma2)
-               else ext_cogenerated_sign lid
+               else ext_cogenerated_sign lid2
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom mor3
           -- gsigma2 = G_sign lid sigma2
-          gsigma3 = G_sign lid (makeExtSign lid sigma3) startSigId
-          sys3 = sym_of lid sigma3
+          gsigma3 = G_sign lid2 (makeExtSign lid2 sigma3) startSigId
+          sys3 = sym_of lid2 sigma3
       unless (isStructured opts
               || sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3)
         $ plain_error () (
@@ -336,7 +337,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       return (Local_spec (replaceAnnoted sp2 asp)
                          (replaceAnnoted sp2' asp')
                          poss, ns,
-              insLink dg2 (gEmbed2 gsigma3 $ mkG_morphism lid mor3)
+              insLink dg2 (gEmbed2 gsigma3 $ mkG_morphism lid2 mor3)
                   HidingDefLink SeeTarget n'' node)
   Closed_spec asp pos -> adjustPos pos $ do
       let sp1 = item asp
@@ -540,13 +541,14 @@ anaRenaming lg lenv gSigma opts (Renaming ren pos) =
       foldM (anaRen lg opts lenv pos) (ide gSigma) ren
 
 -- analysis of restrictions
-anaRestr :: G_sign -> Range -> GMorphism -> G_hiding -> Result GMorphism
-anaRestr (G_sign lidLenv sigmaLenv _) pos
+anaRestr :: LogicGraph -> G_sign -> Range -> GMorphism -> G_hiding
+  -> Result GMorphism
+anaRestr _ (G_sign lidLenv sigmaLenv _) pos
               (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
     case gh of
       G_symb_list (G_symb_items_list lid' sis') -> do
         let lid1 = sourceLogic cid
-        sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction" sis'
+        sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction1" sis'
         rsys <- stat_symb_items lid1 sis1
         let sys = sym_of lid1 sigma1
             sys' = Set.filter (\ sy -> any (matches lid1 sy) rsys) sys
@@ -576,35 +578,34 @@ anaRestr (G_sign lidLenv sigmaLenv _) pos
       G_logic_projection (Logic_code _tok _src _tar pos1) ->
         fatal_error "no analysis of logic projections yet" pos1
 
-anaRestriction :: G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
+anaRestriction :: LogicGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
   -> Result (GMorphism, Maybe GMorphism)
-anaRestriction gSigma@(G_sign lid sigma _)
-    gSigma'@(G_sign lid' sigma' _) opts restr =
+anaRestriction lg gSigma gSigma'@(G_sign lid0 sig0 ind0) opts restr =
   if isStructured opts then return (ide gSigma, Nothing) else
   case restr of
     Hidden rstr pos -> do
-      mor <- foldM (anaRestr gSigma pos) (ide gSigma') rstr
+      mor <- foldM (anaRestr lg gSigma pos) (ide gSigma') rstr
       return (mor, Nothing)
-    Revealed (G_symb_map_items_list lid1 sis) pos ->
-     let sys = ext_sym_of lid sigma -- local env
-         sys' = ext_sym_of lid' sigma' -- "big" signature
-     in adjustPos pos $ do
-     sis' <- coerceSymbMapItemsList lid1 lid'
-            "Analysis of restriction" sis
-     rmap <- stat_symb_map_items lid' sis'
-     let sys'' =
-          Set.fromList
+    Revealed (G_symb_map_items_list lid1 sis) pos -> adjustPos pos $ do
+      (G_sign lid sigma _, _) <- gSigCoerce lg gSigma (Logic lid1)
+      sigma0 <- coerceSign lid lid1 "" sigma
+      (G_sign lid' sigma' _, Comorphism cid) <-
+          gSigCoerce lg gSigma' (Logic lid1)
+      sigma1 <- coerceSign lid' lid1 "" sigma'
+      let sys = ext_sym_of lid1 sigma0 -- local env
+          sys' = ext_sym_of lid1 sigma1 -- "big" signature
+      rmap <- stat_symb_map_items lid1 sis
+      let sys'' = Set.fromList
            [sy | sy <- Set.toList sys', rsy <-
-                       Map.keys rmap, matches lid' sy rsy]
+                       Map.keys rmap, matches lid1 sy rsy]
           -- domain of rmap intersected with sys'
           -- domain of rmap should be checked to match symbols from sys' ???
-     sys1 <- coerceSymbolSet lid lid' "Analysis of restriction" sys
-        -- ??? this is too simple in case that local env is translated
-        -- to a different logic
-     mor1 <- ext_generated_sign lid' (sys1 `Set.union` sys'') sigma'
-     mor2 <- ext_induced_from_morphism lid' rmap $ makeExtSign lid' $ dom mor1
-     return (gEmbed (mkG_morphism lid' mor1),
-             Just (gEmbed (mkG_morphism lid' mor2)))
+      mor1 <- ext_generated_sign lid1 (sys `Set.union` sys'') sigma1
+      mor2 <- ext_induced_from_morphism lid1 rmap $ makeExtSign lid1 $ dom mor1
+      mor1' <- coerceMorphism lid1 (targetLogic cid) "" mor1
+      sig1 <- coerceSign lid0 (sourceLogic cid) "" sig0
+      return (GMorphism cid sig1 ind0 mor1' startMorId
+             , Just $ gEmbed $ mkG_morphism lid1 mor2)
 
 anaGmaps :: LogicGraph -> HetcatsOpts -> Range -> G_sign -> G_sign
   -> [G_mapping] -> Result G_morphism
