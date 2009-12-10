@@ -487,11 +487,11 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
       mor1 <- ext_induced_from_morphism lid2 rmap $ makeExtSign lid2 $ cod mor
       case lenv of
         EmptyNode _ -> return ()
-        JustNode (NodeSig _ (G_sign lidLenv sigmaLenv _)) -> do
+        JustNode (NodeSig _ sigLenv) -> do
           -- needs to be changed for logic translations
-          sigmaLenv' <- coerceSign lidLenv lid2
-            "Analysis of renaming: logic translations not properly handeled"
-            sigmaLenv -- see Calculi/Time/FlowOfTime.casl line 305
+          (G_sign lid1 sigmaLenv1 _, _) <-
+              gSigCoerce lg sigLenv (Logic lid2)
+          sigmaLenv' <- coerceSign lid1 lid2 "" sigmaLenv1
           let sysLenv = ext_sym_of lid2 sigmaLenv'
               m = symmap_of lid2 mor1
               isChanged sy = case Map.lookup sy m of
