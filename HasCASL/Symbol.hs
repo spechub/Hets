@@ -49,17 +49,33 @@ hideRelSymbol sym sig =
 hideSymbol :: Symbol -> Env -> Env
 hideSymbol sym sig =
     let i = symName sym
+        cm = classMap sig
         tm = typeMap sig
         as = assumps sig in
     case symType sym of
     ClassAsItemType _ -> sig
-    TypeAsItemType _ -> sig { typeMap =
-                              Map.delete i tm }
+      { classMap = Map.map
+        (\ ci -> ci { classKinds = Set.filter
+                      (Set.notMember i . idsOfKind) $ classKinds ci })
+        $ Map.delete i cm
+      , typeMap = Map.map
+        (\ ti -> ti { otherTypeKinds = Set.filter
+                      (Set.notMember i . idsOfKind) $ otherTypeKinds ti })
+        tm }
+    TypeAsItemType _ -> sig
+      { typeMap = Map.map
+        (\ ti -> ti { superTypes = Set.delete i $ superTypes ti })
+        $ Map.delete i tm }
     OpAsItemType ot ->
         let os = Map.findWithDefault Set.empty i as
-            rs = Set.filter (not . (== ot) . opType) os
+            rs = Set.filter ((/= ot) . opType) os
         in sig { assumps = if Set.null rs then Map.delete i as
                           else Map.insert i rs as }
+
+idsOfKind :: Kind -> Set.Set Id
+idsOfKind kd = case kd of
+  ClassKind i -> Set.singleton i
+  FunKind _ k1 k2 _ -> Set.union (idsOfKind k1) $ idsOfKind k2
 
 plainHide :: SymbolSet -> Env -> Env
 plainHide syms sigma =
