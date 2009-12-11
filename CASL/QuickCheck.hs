@@ -76,7 +76,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
   (stat,Result d res) <- case timeLimit cfg of
     Nothing -> return (ATPSuccess, quickCheck qm nGoal)
     Just t -> do
-      mRes <- timeout t $ return $ quickCheck qm nGoal
+      mRes <- timeout (t * 1000000) $ return $ quickCheck qm nGoal
       return $ maybe (ATPTLimitExceeded,fail "time limit exceeded")
                      (\ x -> (ATPSuccess,x)) mRes
   let fstr = show(printTheoryFormula $ AS_Anno.mapNamed
