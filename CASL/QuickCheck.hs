@@ -39,23 +39,25 @@ import Data.List
 import Control.Monad.Error
 import Control.Concurrent
 
+import System.Timeout
+
 import GUI.GenericATP
+
 import Interfaces.GenericATPState
 
 import Proofs.BatchProcessing
 
 -- a qmodel is a certain term model used by QuickCheck
 data QModel = QModel
-        { sign :: CASLSign,
-          -- sentences determining the set of terms for a sort
-          carrierSens :: Map.Map SORT [CASLFORMULA],
-          -- definitions of predicates and operations
-          predDefs :: Map.Map PRED_SYMB [([CASLTERM], CASLFORMULA)],
-          opDefs :: Map.Map OP_SYMB [([CASLTERM], CASLTERM)],
-          -- currently evaluated items,
-          -- for avoiding infinite recursion
-          evaluatedPreds :: [(PRED_SYMB, [CASLTERM])],
-          evaluatedOps :: [(OP_SYMB, [CASLTERM])]
+        { sign :: CASLSign
+        -- sentences determining the set of terms for a sort
+        , carrierSens :: Map.Map SORT [CASLFORMULA]
+        -- definitions of predicates and operations
+        , predDefs :: Map.Map PRED_SYMB [([CASLTERM], CASLFORMULA)]
+        , opDefs :: Map.Map OP_SYMB [([CASLTERM], CASLTERM)]
+        -- currently evaluated items, for avoiding infinite recursion
+        , evaluatedPreds :: [(PRED_SYMB, [CASLTERM])]
+        , evaluatedOps :: [(OP_SYMB, [CASLTERM])]
         } deriving (Eq, Show)
 
 {- |
@@ -71,61 +73,42 @@ runQuickCheck :: QModel
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runQuickCheck qm cfg _saveFile _thName nGoal = do
-   (stat,Result d res) <- case timeLimit cfg of
-     Nothing -> do
-       mVar <- newEmptyMVar
-       forkIO (do let res = quickCheck qm nGoal
-                  putMVar mVar res)
-       res <- takeMVar mVar
-       return (ATPSuccess,res)
-     Just t -> watchdogIO t $ return $ quickCheck qm nGoal
-   let fstr = show(printTheoryFormula $ AS_Anno.mapNamed
-                        (simplifySen dummyMin dummy (sign qm)) nGoal)
-       showDiagStrings = intercalate "\n" . map diagString -- no final newline
-       diagstr = case (res,d) of
-          (Just True, _) -> showDiagStrings(take 10 d)
-          (_, []) -> ""
-          _ -> unlines ["Formula failed: ", fstr, " some Counterexamples: "]
-               ++ showDiagStrings(take 10 d)
-       gstat = case res of
-          Just True -> Proved True
-          Just False -> Disproved
-          Nothing -> openGoalStatus
-       setStatus pstat = pstat { goalStatus = gstat,
-                                 usedProver = "QuickCheck",
-                                 proofTree = ProofTree diagstr }
-       cfg' = cfg { proofStatus = setStatus (proofStatus cfg),
-                    resultOutput = [diagstr] }
-   return (stat, cfg')
-     -- return ATPError if time is up???
-
-watchdogIO :: (Monad m) =>
-              Int -> IO (m a) -> IO (ATPRetval, m a)
-watchdogIO time process = do
-  mvar <- newEmptyMVar
-  tid1 <- forkIO $ do x <- process
-                      putMVar mvar (Just x)
-  tid2 <- forkIO $ do threadDelay (time * 1000000)
-                      putMVar mvar Nothing
-  res <- takeMVar mvar
-  case res of
-    Just x -> do
-           killThread tid2 `catch` print
-           return (ATPSuccess,x)
-    Nothing -> do
-           killThread tid1 `catch` print
-           return (ATPTLimitExceeded,fail "time limit exceeded")
+  (stat,Result d res) <- case timeLimit cfg of
+    Nothing -> return (ATPSuccess, quickCheck qm nGoal)
+    Just t -> do
+      mRes <- timeout t $ return $ quickCheck qm nGoal
+      return $ maybe (ATPTLimitExceeded,fail "time limit exceeded")
+                     (\ x -> (ATPSuccess,x)) mRes
+  let fstr = show(printTheoryFormula $ AS_Anno.mapNamed
+                       (simplifySen dummyMin dummy (sign qm)) nGoal)
+      showDiagStrings = intercalate "\n" . map diagString -- no final newline
+      diagstr = case (res,d) of
+        (Just True, _) -> showDiagStrings(take 10 d)
+        (_, []) -> ""
+        _ -> unlines ["Formula failed: ", fstr, " some Counterexamples: "]
+             ++ showDiagStrings(take 10 d)
+      gstat = case res of
+        Just True -> Proved True
+        Just False -> Disproved
+        Nothing -> openGoalStatus
+      setStatus pstat = pstat { goalStatus = gstat
+                              , usedProver = "QuickCheck"
+                              , proofTree = ProofTree diagstr }
+      cfg' = cfg { proofStatus = setStatus (proofStatus cfg)
+                 , resultOutput = [diagstr] }
+  return (stat, cfg')
+  -- return ATPError if time is up???
 
 -- * QModels
 
 -- | initial QModel
 makeQm :: CASLSign -> QModel
-makeQm sig = QModel { sign = sig,
-                      carrierSens = Map.empty,
-                      predDefs = Map.empty,
-                      opDefs = Map.empty,
-                      evaluatedPreds = [],
-                      evaluatedOps = []
+makeQm sig = QModel { sign = sig
+                    , carrierSens = Map.empty
+                    , predDefs = Map.empty
+                    , opDefs = Map.empty
+                    , evaluatedPreds = []
+                    , evaluatedOps = []
                     }
 
 insertSens :: QModel -> [AS_Anno.Named CASLFORMULA] -> QModel
@@ -133,8 +116,7 @@ insertSens = foldl insertSen
 
 -- | insert sentences into a QModel
 insertSen :: QModel -> AS_Anno.Named CASLFORMULA -> QModel
-insertSen qm sen =
- if not $ AS_Anno.isAxiom sen then qm else
+insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
   let f = AS_Anno.sentence sen
       qm1 = case f of
                -- sort generation constraint?
@@ -179,26 +161,24 @@ eqSymb = Qual_pred_name eqId (Pred_type [] nullRange) nullRange
 ----------------------------------------------------------------------------
 -- * Variable assignments
 
-data VariableAssignment =
-     VariableAssignment QModel [(VAR, CASLTERM)] deriving Eq
+data VariableAssignment = VariableAssignment QModel [(VAR, CASLTERM)]
+                          deriving Eq
 
 instance Show VariableAssignment where
-    show (VariableAssignment qm assignList) = showAssignments qm assignList
+  show (VariableAssignment qm assignList) = showAssignments qm assignList
 
 showAssignments :: QModel -> [(VAR, CASLTERM)] -> String
 showAssignments qm xs =
-    '[' : intercalate ", " (map (showSingleAssignment qm) xs) ++ "]"
+  '[' : intercalate ", " (map (showSingleAssignment qm) xs) ++ "]"
 
 showSingleAssignment :: QModel -> (VAR, CASLTERM) -> String
 showSingleAssignment qm (v, t) =
-  let st = rmTypesT dummyMin dummy (sign qm) t
-   in show v ++ "->" ++ showDoc st ""
+  show v ++ "->" ++ showDoc (rmTypesT dummyMin dummy (sign qm) t) ""
 
 emptyAssignment :: QModel -> VariableAssignment
 emptyAssignment qm = VariableAssignment qm []
 
-insertAssignment :: VariableAssignment -> (VAR, CASLTERM)
-                 -> VariableAssignment
+insertAssignment :: VariableAssignment -> (VAR, CASLTERM) -> VariableAssignment
 insertAssignment (VariableAssignment qm ass) (v, t) =
   VariableAssignment qm ((v, t) : ass)
 
@@ -206,7 +186,6 @@ concatAssignment :: VariableAssignment -> VariableAssignment
                  -> VariableAssignment
 concatAssignment (VariableAssignment qm l1) (VariableAssignment _ l2) =
   VariableAssignment qm $ l1 ++ l2
-
 
 --------------------------------------------------------------------------
 -- * The quickcheck model checker
@@ -384,7 +363,7 @@ calculateQuantification :: Bool -> QModel -> VariableAssignment -> CASLFORMULA
 calculateQuantification isOuter qm varass qf = case qf of
   Quantification quant vardecls f _ -> do
     assments <- generateVariableAssignments qm vardecls
-    let assments' = map (\ x -> concatAssignment x varass) assments
+    let assments' = map (flip concatAssignment varass) assments
     case quant of
       Universal -> do
         let resList = map (flip (calculateFormula False qm) f) assments'
@@ -513,7 +492,7 @@ getCarrier qm s =
   graphical feedback), then starts the GUI prover.  -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASLMor CASL_Sublogics ProofTree
 quickCheckProver = mkAutomaticProver "QuickCheck"
-  (SL.top {has_part = False, which_logic = SL.FOL})
+  (SL.top { has_part = False, which_logic = SL.FOL })
   quickCheckGUI quickCheckCMDLautomaticBatch
 
 {- |

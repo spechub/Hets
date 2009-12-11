@@ -13,15 +13,11 @@ Inefficient, but useful for learning purposes.
 -}
 
 module Propositional.ProveWithTruthTable
-    (
-     ttProver,
-     ttConsistencyChecker,
-     ttConservativityChecker,
-     allModels
-    )
-    where
-
--- import Debug.Trace
+  ( ttProver
+  , ttConsistencyChecker
+  , ttConservativityChecker
+  , allModels
+  ) where
 
 import Text.Tabular
 import Text.Tabular.AsciiArt
@@ -70,10 +66,10 @@ sigTooLarge sigSize = unlines
   , "but it contains " ++ show sigSize ++ " symbols." ]
 
 ttHelpText :: String
-ttHelpText = "An implementation of the truth table method.\n"++
-                 "Very inefficient, but useful for learning and teaching\n"++
-                 "Works well for signatures with less than "++show maxSigSize++
-                 " symbols."
+ttHelpText = "An implementation of the truth table method.\n"
+             ++ "Very inefficient, but useful for learning and teaching\n"
+             ++ "Works well for signatures with less than " ++ show maxSigSize
+             ++ " symbols."
 
 {- |
   Models and evaluation of sentences
@@ -88,25 +84,21 @@ showBool False = "F"
 
 -- | evaluation of sentences in a model
 eval :: Model -> FORMULA -> Bool
-eval m (Negation phi _) = not (eval m phi)
-eval m (Conjunction phis _) = and (map (eval m) phis)
-eval m (Disjunction phis _) = or (map (eval m) phis)
-eval m (Implication phi1 phi2 _) =
-       not (eval m phi1) || (eval m phi2)
-eval m (Equivalence phi1 phi2 _) =
-       (eval m phi1) == (eval m phi2)
+eval m (Negation phi _) = not $ eval m phi
+eval m (Conjunction phis _) = all (eval m) phis
+eval m (Disjunction phis _) = any (eval m) phis
+eval m (Implication phi1 phi2 _) = not (eval m phi1) || eval m phi2
+eval m (Equivalence phi1 phi2 _) = eval m phi1 == eval m phi2
 eval _ (True_atom _) = True
 eval _ (False_atom _) = False
 eval m (Predication ident) = Id.simpleIdToId ident `Set.member` m
 
 evalNamed :: Model -> AS_Anno.Named FORMULA -> Bool
-evalNamed m phi = eval m (AS_Anno.sentence phi)
-
+evalNamed m = eval m . AS_Anno.sentence
 
 {- |
   Evaluation of (co)freeness constraints
 -}
-
 
 -- | amalgamation of models
 amalg :: Model -> Model -> Model
@@ -116,9 +108,8 @@ data FormulaOrFree =
      Formula FORMULA
    | FreeConstraint (LP.FreeDefMorphism FORMULA PMorphism.Morphism)
 
-
 evalNamedFormulaOrFree :: Model -> AS_Anno.Named FormulaOrFree -> Bool
-evalNamedFormulaOrFree m phi = evalFormulaOrFree m (AS_Anno.sentence phi)
+evalNamedFormulaOrFree m = evalFormulaOrFree m . AS_Anno.sentence
 
 evalFormulaOrFree :: Model -> FormulaOrFree -> Bool
 evalFormulaOrFree m (Formula phi) = eval m phi
@@ -131,17 +122,16 @@ leq :: Model -> Model -> Bool
 leq = Set.isSubsetOf
 
 isMin :: Bool -> Model -> [Model] -> Bool
-isMin isCo m models =
-   all (\m' -> if isCo then leq m' m else leq m m') models
+isMin isCo m = all (\m' -> if isCo then leq m' m else leq m m')
 
 evalFree :: Model
-              -> LP.FreeDefMorphism FORMULA PMorphism.Morphism
-              -> Bool
+         -> LP.FreeDefMorphism FORMULA PMorphism.Morphism
+         -> Bool
 evalFree m freedef =
-  let diffsig = Sign ((items freetar) `Set.difference` (items freesrc))
+  let diffsig = Sign (items freetar `Set.difference` items freesrc)
       mred = reduceModel freesrc m
       modelsOverMred = map (mred `amalg`) (allModels diffsig)
-      modelClass = foldr (filter . (flip eval)) modelsOverMred freeth
+      modelClass = foldr (filter . flip eval) modelsOverMred freeth
   in all (eval m) freeth        -- the model satisfies the axioms ...
      && isMin isCo m modelClass -- ... and is the minimal one that does so
   where freemor = LP.freeDefMorphism freedef
@@ -149,8 +139,6 @@ evalFree m freedef =
         freetar = PMorphism.target freemor
         freeth = map AS_Anno.sentence $ LP.freeTheory freedef
         isCo = LP.isCofree freedef
-
-
 
 -- | generate all models for a signature
 allModels :: Sign -> [Model]
@@ -161,26 +149,27 @@ allModels sig = allModels1 $ Set.toList $ items sig
            in models ++ map (Set.insert p) models
 
 data TTExtRow =
-     TTExtRow { rextprops, rextaxioms :: [Bool],
-                rextIsModel :: Bool
+     TTExtRow { rextprops, rextaxioms :: [Bool]
+              , rextIsModel :: Bool
               }
 
 data TTRow =
-     TTRow { rprops, raxioms :: [Bool],
-             rgoal :: Maybe Bool,
-             rextrows :: [TTExtRow],
-             rIsModel :: Bool,
-             rIsOK :: Bool
+     TTRow { rprops, raxioms :: [Bool]
+           , rgoal :: Maybe Bool
+           , rextrows :: [TTExtRow]
+           , rIsModel :: Bool
+           , rIsOK :: Bool
            }
 
 data TTHead =
-     TTHead { hprops, haxioms, hextprops, hextaxioms :: [String],
-              hgoal :: Maybe String
+     TTHead { hprops, haxioms, hextprops, hextaxioms :: [String]
+            , hgoal :: Maybe String
             }
 
 data TruthTable =
-     TruthTable { thead :: TTHead,
-                  trows :: [TTRow] }
+     TruthTable { thead :: TTHead
+                , trows :: [TTRow]
+                }
 
 renderTT :: TruthTable -> Table String
 renderTT tt = Table rowHeaders header table
@@ -201,20 +190,15 @@ renderTT tt = Table rowHeaders header table
   rowtype r = (if rIsModel r then "M" else " ")
               ++(if rIsOK r then (if rIsModel r then "+" else "o")
                             else "-")
-  rowHeader r =
-     Group NoLine (Header (rowtype r) :
-                   map (const (Header "")) [2..length (rextrows r)])
-  rowHeaders =
-    if all (null . rextrows) rowsTT
+  rowHeader r = Group NoLine
+    $ Header (rowtype r) : map (const (Header "")) [2..length (rextrows r)]
+  rowHeaders = if all (null . rextrows) rowsTT
     then Group NoLine (map (Header . rowtype) rowsTT)
     else Group SingleLine (map rowHeader rowsTT)
-  makeExtRow e =
-    (if rextIsModel e then "M" else "") :
-    map showBool (rextprops e) ++
-    map showBool (rextaxioms e)
+  makeExtRow e = (if rextIsModel e then "M" else "") :
+    map showBool (rextprops e) ++ map showBool (rextaxioms e)
   makeRow r =
-    let common = map showBool (rprops r) ++
-                 map showBool (raxioms r) ++
+    let common = map showBool (rprops r) ++ map showBool (raxioms r) ++
                  case (rgoal r) of
                    Nothing -> []
                    Just g -> [showBool g]
@@ -223,7 +207,6 @@ renderTT tt = Table rowHeaders header table
        [] -> [common]
        e : extrows -> (common ++ e) : map (emptyPrefix ++) extrows
   table = concatMap makeRow rowsTT
-
 
 {- |
   The Prover implementation.
@@ -241,45 +224,43 @@ ttConsistencyChecker :: LP.ConsChecker Sig.Sign FORMULA PropSL
 ttConsistencyChecker = LP.mkConsChecker ttS top consCheck
 
 consCheck :: String -> LP.TacticScript
-  -> LP.TheoryMorphism Sig.Sign FORMULA PMorphism.Morphism ProofTree
-  -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
-    -- ^ free definitions
-  -> IO (LP.CCStatus ProofTree)
-consCheck _ _ tm _freedefs =
-  case LP.tTarget tm of
-    LP.Theory sig nSens ->
-      let sigSize = Set.size (items sig) in
-      if sigSize >= maxSigSize then
-        return $ LP.CCStatus (ProofTree $ sigTooLarge sigSize) midnight Nothing
-      else do
-        let axs = filter (AS_Anno.isAxiom . snd) $ OMap.toList nSens
-            models = allModels sig
-            sigList = Set.toList $ items sig
-            heading =
-              TTHead { hprops = map show sigList,
-                       haxioms = map fst axs,
-                       hextprops = [], hextaxioms = [],
-                       hgoal = Nothing
+          -> LP.TheoryMorphism Sig.Sign FORMULA PMorphism.Morphism ProofTree
+          -> [LP.FreeDefMorphism FORMULA PMorphism.Morphism]
+          -- ^ free definitions
+          -> IO (LP.CCStatus ProofTree)
+consCheck _ _ tm _freedefs = case LP.tTarget tm of
+  LP.Theory sig nSens ->
+    let sigSize = Set.size (items sig) in
+    if sigSize >= maxSigSize then
+      return $ LP.CCStatus (ProofTree $ sigTooLarge sigSize) midnight Nothing
+    else do
+      let axs = filter (AS_Anno.isAxiom . snd) $ OMap.toList nSens
+          models = allModels sig
+          sigList = Set.toList $ items sig
+          heading = TTHead { hprops = map show sigList
+                           , haxioms = map fst axs
+                           , hextprops = [], hextaxioms = []
+                           , hgoal = Nothing
+                           }
+          mkRow m =
+            let evalAx = map (eval m . AS_Anno.sentence . snd) axs
+                isModel = and evalAx
+            in TTRow { rprops = map (`Set.member` m) sigList
+                     , raxioms = evalAx
+                     , rextrows = []
+                     , rgoal = Nothing
+                     , rIsModel = isModel
+                     , rIsOK = isModel
                      }
-            mkRow m =
-              let evalAx = map (eval m . AS_Anno.sentence . snd) axs
-                  isModel = and evalAx
-              in TTRow { rprops = map (`Set.member` m) sigList,
-                         raxioms = evalAx,
-                         rextrows = [],
-                         rgoal = Nothing,
-                         rIsModel = isModel,
-                         rIsOK = isModel
-                       }
-            rows = map mkRow models
-            isOK = or (map rIsOK rows)
-            table = TruthTable { thead = heading,
-                                 trows = rows
-                               }
-            legend = "Legend:\nM+ = model of the axioms\n"
-              ++ " - = not a model of the axioms\n"
-            body = legend ++ "\n" ++ render id (renderTT table)
-        return $ LP.CCStatus (ProofTree body) midnight $ Just isOK
+          rows = map mkRow models
+          isOK = any rIsOK rows
+          table = TruthTable { thead = heading
+                             , trows = rows
+                             }
+          legend = "Legend:\nM+ = model of the axioms\n"
+                   ++ " - = not a model of the axioms\n"
+          body = legend ++ "\n" ++ render id (renderTT table)
+      return $ LP.CCStatus (ProofTree body) midnight $ Just isOK
 
 -- ** prover GUI
 
@@ -292,20 +273,18 @@ ttProveGUI :: String -- ^ theory name
           -- ^ free definitions
           -> IO([LP.ProofStatus ProofTree]) -- ^ proof status for each goal
 ttProveGUI thName th freedefs =
---  trace (show freedefs) $
-    genericATPgui (atpFun thName) True (LP.proverName ttProver) thName th
-                  freedefs emptyProofTree
+  genericATPgui (atpFun thName) True (LP.proverName ttProver) thName th
+                freedefs emptyProofTree
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
-atpFun :: String            -- Theory name
+atpFun :: String -- ^ Theory name
   -> ATPState.ATPFunctions Sig.Sign FORMULA PMorphism.Morphism ProofTree
      PState.PropProverState
 atpFun thName = ATPState.ATPFunctions
-                {
-                  ATPState.initialProverState = PState.propProverState
+                { ATPState.initialProverState = PState.propProverState
                 , ATPState.goalOutput         = goalProblem thName
                 , ATPState.atpTransSenName    = PState.transSenName
                 , ATPState.atpInsertSentence  = PState.insertSentence
@@ -321,38 +300,34 @@ atpFun thName = ATPState.ATPFunctions
 
 defaultProofStatus :: AS_Anno.Named FORMULA -> LP.ProofStatus ProofTree
 defaultProofStatus nGoal =
-  (LP.openProofStatus (AS_Anno.senAttr nGoal)
-                       (LP.proverName ttProver)
-                       emptyProofTree)
-
+  LP.openProofStatus (AS_Anno.senAttr nGoal) (LP.proverName ttProver)
+                     emptyProofTree
 
 {- |
   Runs tt.
 -}
 
 runTt :: PState.PropProverState
-           -- logical part containing the input Sign and
-           -- axioms and possibly goals that have been proved
-           -- earlier as additional axioms
-           -> ATPState.GenericConfig ProofTree
-           -- configuration to use
-           -> Bool
-           -- True means save DIMACS file
-           -> String
-           -- Name of the theory
-           -> AS_Anno.Named FORMULA
-           -- Goal to prove
-           -> IO (ATPState.ATPRetval
-                 , ATPState.GenericConfig ProofTree
-                 )
-           -- (retval, configuration with proof status and complete output)
+      -- ^ logical part containing the input Sign and
+      -- axioms and possibly goals that have been proved
+      -- earlier as additional axioms
+      -> ATPState.GenericConfig ProofTree
+      -- ^ configuration to use
+      -> Bool
+      -- ^ True means save DIMACS file
+      -> String
+      -- ^ Name of the theory
+      -> AS_Anno.Named FORMULA
+      -- ^ Goal to prove
+      -> IO (ATPState.ATPRetval, ATPState.GenericConfig ProofTree)
+      -- ^ (retval, configuration with proof status and complete output)
 runTt pState cfg _ _thName nGoal =
   let sig = PState.initialSignature pState
       sigSize = Set.size $ items sig
    in if sigSize >= maxSigSize then do
         infoDialog "Signature too large" $ sigTooLarge sigSize
         return (ATPState.ATPTLimitExceeded,
-                cfg{ATPState.proofStatus = defaultProofStatus nGoal})
+                cfg { ATPState.proofStatus = defaultProofStatus nGoal })
       else do
        let axs = PState.initialAxioms pState
            freedefs = PState.freeDefs pState
@@ -363,27 +338,27 @@ runTt pState cfg _ _thName nGoal =
            models = allModels sig
            sigList = Set.toList $ items sig
            heading =
-             TTHead { hprops = map show sigList,
-                      haxioms = map AS_Anno.senAttr sens,
-                      hextprops = [], hextaxioms = [],
-                      hgoal = Just $ AS_Anno.senAttr nGoal
+             TTHead { hprops = map show sigList
+                    , haxioms = map AS_Anno.senAttr sens
+                    , hextprops = [], hextaxioms = []
+                    , hgoal = Just $ AS_Anno.senAttr nGoal
                     }
            mkRow m =
              let evalAx = map (evalNamedFormulaOrFree m) sens
                  evalGoal = evalNamed m nGoal
                  isModel = and evalAx
-             in TTRow { rprops = map (`Set.member` m) sigList,
-                        raxioms = evalAx,
-                        rextrows = [],
-                        rgoal = Just evalGoal,
-                        rIsModel = isModel,
-                        rIsOK = not isModel || evalGoal
+             in TTRow { rprops = map (`Set.member` m) sigList
+                      , raxioms = evalAx
+                      , rextrows = []
+                      , rgoal = Just evalGoal
+                      , rIsModel = isModel
+                      , rIsOK = not isModel || evalGoal
                       }
            rows = map mkRow models
-           isOK = and (map rIsOK rows)
-           consistent = or (map rIsModel rows)
-           table = TruthTable { thead = heading,
-                                trows = rows
+           isOK = all rIsOK rows
+           consistent = any rIsModel rows
+           table = TruthTable { thead = heading
+                              , trows = rows
                               }
            legend = "Legend:\nM = model of the premises\n"++
              "+ = OK, model fulfills conclusion\n"++
@@ -393,28 +368,26 @@ runTt pState cfg _ _thName nGoal =
            body = legend++"\n"++render id (renderTT table)
        let status = (defaultProofStatus nGoal)
                      { LP.goalStatus = if isOK then LP.Proved consistent
-                                               else LP.Disproved,
-                       LP.usedAxioms = map AS_Anno.senAttr sens
+                                               else LP.Disproved
+                     ,LP.usedAxioms = map AS_Anno.senAttr sens
                      }
        return (ATPState.ATPSuccess,
-               cfg{ATPState.proofStatus = status,
-                   ATPState.resultOutput = [body]})
+               cfg { ATPState.proofStatus = status
+                   , ATPState.resultOutput = [body] })
 
 {- |
   Creates a list of all options the truth table prover runs with.
   Only Option is the timelimit
 -}
 createTtOptions :: ATPState.GenericConfig ProofTree -> [String]
-createTtOptions _cfg = []
-   -- [(show $ configTimeLimit cfg)]
+createTtOptions _cfg = [] -- [(show $ configTimeLimit cfg)]
 
-goalProblem :: String                   -- name of the theory
-                  -> PState.PropProverState   -- initial Prover state
-                  -> AS_Anno.Named FORMULA -- goal to prove
-                  -> [String]                 -- Options (ignored)
-                  -> IO String
-goalProblem _ _ _ _ =
-  return ""
+goalProblem :: String -- ^ name of the theory
+            -> PState.PropProverState -- ^ initial Prover state
+            -> AS_Anno.Named FORMULA -- ^ goal to prove
+            -> [String] -- ^ Options (ignored)
+            -> IO String
+goalProblem _ _ _ _ = return ""
 
 {- |
   Conservativity check
@@ -429,18 +402,16 @@ ttConservativityChecker ::
            -> PMorphism.Morphism              -- ^ morhpism between specs
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
            -> Result.Result (Maybe (Conservativity, [FORMULA]))
-ttConservativityChecker (_, srcSens) mor tarSens=
+ttConservativityChecker (_, srcSens) mor tarSens =
   let srcAxs        = filter AS_Anno.isAxiom srcSens
       tarAxs        = filter AS_Anno.isAxiom tarSens
       srcSig        = items $ PMorphism.source mor
-      imageSig      = Set.map (PMorphism.applyMorphism mor) $ srcSig
-      imageSigList  =  Set.toList imageSig
+      imageSig      = Set.map (PMorphism.applyMorphism mor) srcSig
+      imageSigList  = Set.toList imageSig
       tarSig        = items $ PMorphism.target mor
       newSig        = Set.difference tarSig imageSig
       sigSize       = Set.size tarSig
-  in
-    if sigSize >= maxSigSize then do
-       return Nothing
+  in if sigSize >= maxSigSize then return Nothing
     else do
       let imageAxs = map (AS_Anno.mapNamed (PMorphism.mapSentenceH mor)) srcAxs
           models = allModels (Sign imageSig)
@@ -469,25 +440,22 @@ ttConservativityChecker (_, srcSens) mor tarSens=
                        rgoal = Nothing,
                        rextrows = if isModel then extrows else [],
                        rIsModel = isModel,
-                       rIsOK = not isModel || or (map rextIsModel extrows)
+                       rIsOK = not isModel || any rextIsModel extrows
                      }
           rows = map mkRow models
-          isOK = and (map rIsOK rows)
+          isOK = all rIsOK rows
           table = TruthTable { thead = heading,
                                trows = rows
                              }
-          title = "The extension is "++
-                  (if isOK then "" else "not ")++
-                  "conservative"
-          legend = "Legend:\n"++
-                   "M = model of the axioms\n"++
-                   "+ = OK, has expansion\n"++
-                   "- = not OK, has no expansion, "++
-                       "hence conservativity fails\n"++
-                   "o = OK, not a model of the axioms, "++
-                       "hence no expansion needed\n"
+          title = "The extension is "++ (if isOK then "" else "not ")
+                  ++ "conservative"
+          legend = "Legend:\n"
+            ++ "M = model of the axioms\n"
+            ++ "+ = OK, has expansion\n"
+            ++ "- = not OK, has no expansion, hence conservativity fails\n"
+            ++ "o = OK, not a model of the axioms, hence no expansion needed\n"
           body = legend++"\n"++render id (renderTT table)
           disp = createTextSaveDisplay title "unnamed" body
           res = if isOK then Cons else Inconsistent
-      return (seq (unsafePerformIO $ disp) (Just (res,[])))
+      return (seq (unsafePerformIO disp) (Just (res,[])))
 

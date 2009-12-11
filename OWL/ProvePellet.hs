@@ -41,6 +41,7 @@ import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 import System.Exit
 import System.IO
 import System.Directory
+import System.Process
 
 import Control.Monad (when)
 import Control.Concurrent
@@ -85,8 +86,7 @@ pelletProver = mkAutomaticProver "Pellet" sl_top pelletGUI
   pelletCMDLautomaticBatch
 
 pelletConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
-pelletConsChecker = (mkConsChecker "Pellet" sl_top consCheck)
-  { ccNeedsTimer = False }
+pelletConsChecker = mkConsChecker "Pellet" sl_top consCheck
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -167,10 +167,9 @@ consCheck :: String
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
           -> IO (CCStatus ProofTree)
-consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
+consCheck thName _ tm freedefs = case tTarget tm of
   Theory sig nSens -> do
     let saveOWL = False
-        timeLimitI = fromMaybe 800 $ readMaybe tl
         proverStateI = pelletProverState sig (toNamedList nSens) freedefs
         problemS     = showOWLProblemS thName proverStateI []
         simpleOptions = "consistency "
@@ -211,15 +210,13 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
         writeFile timeTmpFile problemS
         pPath <- getEnvSec "PELLET_PATH"
         setCurrentDirectory pPath
-        (mExit, outh, errh) <- timeoutCommand timeLimitI command
-        outState <- if isJust mExit then do
-          outp <- hGetContents outh
-          eOut <- hGetContents errh
-          let (exCode, output, tUsed) = analyseOutput outp eOut
-          return $ proofStatM exCode simpleOptions output tUsed
-          else return $ pStatus ["timeout"] timeLimitI
+        (_, outh, errh, proch) <- runInteractiveCommand command
+        waitForProcess proch
+        outp <- hGetContents outh
+        eOut <- hGetContents errh
+        let (exCode, output, tUsed) = analyseOutput outp eOut
         removeFile timeTmpFile
-        return outState
+        return $ proofStatM exCode simpleOptions output tUsed
       (b, _) -> do
         let mess = "Pellet not " ++ if b then "executable" else "found"
         infoDialog "Pellet prover" mess
