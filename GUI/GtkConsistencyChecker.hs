@@ -48,7 +48,7 @@ import Proofs.InferBasic
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
-import Data.List (findIndex, partition)
+import Data.List (findIndex, partition, sort)
 import Data.Maybe
 
 data Finder = Finder { fName :: String
@@ -168,7 +168,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         $ zip nodes sls
 
   -- setup data
-  listNodes <- setListData trvNodes show others
+  listNodes <- setListData trvNodes show $ sort others
   listFinder <- setListData trvFinder fName []
 
   -- setup comorphism combobox
@@ -236,6 +236,10 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         switch True
         tryTakeMVar threadId
         showModelView mView "Results of consistency check" listNodes emptyNodes
+        signalBlock shN
+        sortNodes trvNodes listNodes
+        signalUnblock shN
+        upd
         activate checkWidgets True
         exit
 
@@ -256,6 +260,17 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   selectWith (== ConsistencyStatus CSUnchecked "") upd
 
   widgetShow window
+
+sortNodes :: TreeView -> ListStore FNode -> IO ()
+sortNodes trvNodes listNodes = do
+  sel <- getSelectedMultiple trvNodes listNodes
+  nodes <- listStoreToList listNodes
+  let sn = sort nodes
+  updateListData listNodes sn
+  selector <- treeViewGetSelection trvNodes
+  mapM_ (\ (_, FNode { name = n }) -> treeSelectionSelectPath selector
+      [fromMaybe (error "Node not found!") $ findIndex ((n ==) . name) sn]
+    ) sel
 
 -- | Called when node selection is changed. Updates finder list
 updateNodes :: TreeView -> ListStore FNode -> (Bool -> G_sublogics -> IO ())
@@ -367,7 +382,7 @@ showModelViewAux lock title list other = do
   let filterNodes = filter ((/= ConsistencyStatus CSUnchecked "") . status)
 
   nodes <- listStoreToList list
-  listNodes <- setListData trvNodes show $ filterNodes $ other ++ nodes
+  listNodes <- setListData trvNodes show $ sort $ filterNodes $ other ++ nodes
 
   setListSelectorSingle trvNodes $ do
     mn <- getSelectedSingle trvNodes listNodes
@@ -383,8 +398,8 @@ showModelViewAux lock title list other = do
     sel' <- getSelectedSingle trvNodes listNodes
     sel <- treeViewGetSelection trvNodes
     nodes'' <- listStoreToList list
-    let nodes' = filterNodes nodes''
-    updateListData listNodes (other ++ nodes')
+    let nodes' = sort $ filterNodes nodes''
+    updateListData listNodes $ sort (other ++ nodes')
     maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (:[]))
       $ maybe Nothing (\ (_,n) -> findIndex ((name n ==) . name) nodes') sel'
 

@@ -205,7 +205,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
                            , resultOutput = resultOutput cfg'
                            , timeUsed = timeUsed cfg' }) prName g pt cfg }
               putMVar stateMVar s'
-              update' s'
+              updateGoals s' trvGoals listGoals
               exit
               switch True
 
@@ -235,7 +235,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
                 _ -> return ()
               postGUISync $ do
                 s' <- readMVar stateMVar
-                update' s'
+                updateGoals s' trvGoals listGoals
                 let progress = fromIntegral gPSF / fromIntegral numGoals
                 when cont $ updat progress $ AS_Anno.senAttr $ fromJust nextSen
                 return cont
@@ -313,23 +313,24 @@ saveConfigCurrent s pt prName sbTimeout entryOptions = do
                 $ configsMap s) mn
   return $ s { configsMap = cfg }
 
+updateGoals :: GenericState sign sentence proof_tree pst -> TreeView
+            -> ListStore Goal -> IO ()
+updateGoals s trvGoals listGoals = do
+  let ng = toGoals s
+  selected <- getSelectedSingle trvGoals listGoals
+  updateListData listGoals ng
+  case selected of
+    Just (_, Goal { gName = n }) -> do
+      selector <- treeViewGetSelection trvGoals
+      treeSelectionSelectPath selector
+        [fromMaybe (error "Goal not found!") $ findIndex ((n ==) . gName) ng]
+    Nothing -> return ()
+
 -- | Updates the display of the status of the current goal.
 update :: GenericState sign sentence proof_tree pst -> TreeView
        -> ListStore Goal -> ListStore String -> Label -> SpinButton -> Entry
        -> IO ()
 update s trvGoals listGoals listAxioms lblStatus sbTimeout entryOptions = do
-  -- update goal list
-  oldGoals' <- listStoreToList listGoals
-  let newGoals = goalsList s
-      oldGoals = foldl (\ gs g -> (g, length gs):gs) [] oldGoals'
-  mapM_ (\ g' -> do
-      let n = AS_Anno.senAttr g'
-          (g, idx) = fromMaybe (error "Goal not found!")
-                        $ find (\ (Goal { gName = n' }, _) -> n == n') oldGoals
-          c = Map.findWithDefault (error "Config not found!") n $ configsMap s
-      listStoreSetValue listGoals idx $ g { gStatus = genericConfigToGStatus c }
-    ) newGoals
-
   -- update status and axioms
   selected <- getSelectedSingle trvGoals listGoals
   case selected of
@@ -352,7 +353,7 @@ setExtraOpts :: [String] -> GenericConfig proof_tree -> GenericConfig proof_tree
 setExtraOpts opts c = c { extraOpts = opts }
 
 toGoals :: GenericState sign sentence proof_tree pst -> [Goal]
-toGoals s = map (\ g ->
+toGoals s = sort $ map (\ g ->
   let n = AS_Anno.senAttr g
       c = Map.findWithDefault (error "Config not found!") n $ configsMap s
   in Goal { gName = n, gStatus = genericConfigToGStatus c }) $ goalsList s

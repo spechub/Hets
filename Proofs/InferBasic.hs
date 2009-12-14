@@ -177,10 +177,10 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
       (getProvers ProveGUI (Just sublogic) cms)
 
 data SType = CSUnchecked
-           | CSConsistent
-           | CSInconsistent
            | CSTimeout
            | CSError
+           | CSInconsistent
+           | CSConsistent
            deriving (Eq, Ord)
 
 data ConsistencyStatus = ConsistencyStatus { sType :: SType

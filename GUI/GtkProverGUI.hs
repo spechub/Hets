@@ -212,9 +212,11 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
               Nothing -> do errorDialog "Error" (showRelDiags 2 ds); return s'
               Just res -> return res
             activate prove True
-            updateGoals listGoals s
-            putMVar state s { proverRunning = False
-                            , accDiags = accDiags s ++ ds }
+            signalBlock shG
+            updateGoals trvGoals listGoals s
+            signalUnblock shG
+            putMVar state =<< update s { proverRunning = False
+                                       , accDiags = accDiags s ++ ds }
 
     onDestroy window $ putMVar wait ()
 
@@ -302,14 +304,16 @@ updateProver trvProvers listProvers s = do
     Nothing -> selectFirst trvProvers
   return s
 
-updateGoals :: ListStore Goal -> ProofState lid sentence -> IO ()
-updateGoals listGoals s = do
-  oldGoals' <- listStoreToList listGoals
-  let oldGoals = foldl (\ gs g -> (g, length gs):gs) [] oldGoals'
-  mapM_ (\ g -> let (_, idx) = fromMaybe (error "Goal not found!")
-                                 $ find ((== gName g) . gName . fst) oldGoals
-      in listStoreSetValue listGoals idx g
-    ) $ toGoals s
+updateGoals :: TreeView -> ListStore Goal -> ProofState lid sentence -> IO ()
+updateGoals trvGoals listGoals s = do
+  let ng = toGoals s
+  sel <- getSelectedMultiple trvGoals listGoals
+  updateListData listGoals ng
+  selector <- treeViewGetSelection trvGoals
+
+  mapM_ (\ (_, Goal { gName = n }) -> treeSelectionSelectPath selector
+      [fromMaybe (error "Goal not found!") $ findIndex ((n ==) . gName) ng]
+    ) sel
 
 setSelectedGoals :: TreeView -> ListStore Goal -> ProofState lid sentence
                  -> IO (ProofState lid sentence)
@@ -348,7 +352,7 @@ toAxioms =
   map (\ (k,s) -> if wasTheorem s then "(Th) " ++ k else k) . OMap.toList
 
 toGoals :: ProofState lid sentence -> [Goal]
-toGoals = map toGoal . OMap.toList . goalMap
+toGoals = sort . map toGoal . OMap.toList . goalMap
   where toGoal (n, st) = let ts = thmStatus st in
           Goal { gName = n
                , gStatus = if null ts then GOpen
