@@ -96,14 +96,14 @@ mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
         newargs = map (mapTypeArg jm tm im) args
     in DataEntry tim i k newargs rk $ Set.map
            (mapAlt jm tm tim fm newargs
-           $ patToType (Map.findWithDefault i i tim) newargs rk) alts
+           $ patToType i newargs rk) alts
 
 mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
        -> AltDefn
 mapAlt jm tm im fm args dt (Construct mi ts p sels) =
   let newTs = map (mapTypeE jm tm im) ts in case mi of
     Just i -> let
-        sc = TypeScheme args (getFunType dt p newTs) nullRange
+        sc = TypeScheme args (getFunType dt p ts) nullRange
         (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
         in Construct (Just j) newTs (getPartiality newTs ty)
             $ map (map (mapSel jm tm im fm args dt)) sels
@@ -115,7 +115,7 @@ mapSel jm tm im fm args dt (Select mid t p) =
   let newT = mapTypeE jm tm im t in case mid of
     Nothing -> Select mid newT p
     Just i -> let
-        sc = TypeScheme args (getSelType dt p newT) nullRange
+        sc = TypeScheme args (getSelType dt p t) nullRange
         (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
         in Select (Just j) newT $ getPartiality [dt] ty
 
