@@ -114,7 +114,7 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
             dg' = lookupDGraph (dgn_libname lbl) le
             newLab = labDG dg' refNode
         refTh <- getGlobalTheory newLab
-        joinG_sentences (theoremsToAxioms refTh) localTh
+        joinG_sentences refTh localTh
     else do
       ths <- mapM (\ (s, _, l) -> do
          th <- let sl = labDG dg s in if isLocalDef $ dgl_type l then
