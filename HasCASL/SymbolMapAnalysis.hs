@@ -206,8 +206,8 @@ mapOpSym e jm tm im i ot rsy =
           SyKop -> return (id', sc)
           _ -> err "wrongly kinded raw symbol"
       ASymbol sy -> case symType sy of
-          OpAsItemType ot2 -> if ot2 == expand (typeMap $ symEnv sy) sc
-                              then return (symName sy, ot2)
+          OpAsItemType ot2 -> let xpd = expand (typeMap $ symEnv sy) in
+              if xpd ot2 == xpd sc then return (symName sy, sc)
               else err "wrongly typed symbol"
           _ ->  err "wrongly kinded symbol"
       _ -> error "mapOpSym"
@@ -219,7 +219,7 @@ insertmapOpSym e jm tm im i rsy ot m = do
       m1 <- m
       q <- mapOpSym e jm tm im i ot rsy
       let p = (i, mapTypeScheme jm tm im ot)
-      return $ if p == q then m1 else Map.insert p q m1
+      return $ if p == q then m1 else Map.insert (i, ot) q m1
     -- insert mapping of op symbol (i, ot) into m
 
   -- map the ops in the source signature
@@ -227,9 +227,10 @@ mapOps :: IdMap -> TypeMap -> IdMap -> FunMap -> Id -> Set.Set OpInfo -> Env
        -> Env
 mapOps jm tm im fm i ots e =
     Set.fold ( \ ot e' ->
-        let sc = mapTypeScheme jm tm im $ opType ot
+        let osc = opType ot
+            sc = mapTypeScheme jm tm im osc
             (id', sc') = Map.findWithDefault (i, sc)
-                         (i, sc) fm
+                         (i, osc) fm
             in execState (addOpId id' sc' (Set.map (mapOpAttr jm tm im fm)
                                           $ opAttrs ot)
                           (mapOpDefn jm tm im fm $ opDefn ot)) e')
