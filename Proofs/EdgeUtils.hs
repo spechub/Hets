@@ -13,9 +13,8 @@ utility functions for edges of development graphs
 
 module Proofs.EdgeUtils where
 
-import Comorphisms.LogicGraph
-
 import Logic.Grothendieck
+import Logic.Logic
 
 import Static.DevGraph
 import Static.History
@@ -138,7 +137,7 @@ calculateMorphismOfPath p = case p of
   (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
     if null r then Just morphism else do
        rmor <- calculateMorphismOfPath r
-       resultToMaybe $ compInclusion logicGraph morphism rmor
+       resultToMaybe $ composeMorphisms morphism rmor
   [] -> error "calculateMorphismOfPath"
 
 {- | returns all paths from the given list whose morphism is equal to the
