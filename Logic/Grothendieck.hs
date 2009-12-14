@@ -724,7 +724,7 @@ genCompInclusion f mor1 mor2 = do
   composeMorphisms mor mor2
 
 -- | Composition of two Grothendieck signature morphisms
--- | with itermediate inclusion
+-- | with intermediate inclusion
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion = genCompInclusion . inclusionAux False
 
