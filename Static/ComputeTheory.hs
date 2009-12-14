@@ -102,8 +102,9 @@ computeDGraphTheoriesAux le dgraph =
     (n,
     let gth = computeLabelTheory le dg l in
     (case gth of
-      Just (G_theory _ _ _ sens _) | Map.null sens ->
-         markNodeConsistent "ByNoSentences"
+      Just th@(G_theory _ _ _ sens _) ->
+         if Map.null sens then markNodeConsistent "ByNoSentences"
+         else (\ lb -> lb { dgn_theory = proveLocalSens (dgn_theory lbl) th })
       _ -> id) lbl { globalTheory = gth }))
      dgraph $ topsortedNodes dgraph
 

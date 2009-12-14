@@ -219,8 +219,26 @@ proveSens :: Logic lid sublogics basic_spec sentence symb_items
            -> ThSens sentence (AnyComorphism, BasicProof)
 proveSens lid sens = let
   (axs, ths) = OMap.partition (\ s -> isAxiom s || isProvenSenStatus s) sens
+  in Map.union axs $ proveSensAux lid axs ths
+
+proveLocalSens :: G_theory -> G_theory -> G_theory
+proveLocalSens (G_theory glid _ _ gsens _) lth@(G_theory lid sig ind sens _) =
+  case coerceThSens glid lid "proveLocalSens" gsens of
+    Just lsens -> G_theory lid sig ind
+      (proveSensAux lid (OMap.filter (\ s -> isAxiom s || isProvenSenStatus s)
+       lsens) sens) startThId
+    Nothing -> lth
+
+{- | mark sentences as proven if an identical axiom or other proven sentence
+     is part of a given global theory. -}
+proveSensAux :: Logic lid sublogics basic_spec sentence symb_items
+    symb_map_items sign morphism symbol raw_symbol proof_tree
+    => lid -> ThSens sentence (AnyComorphism, BasicProof)
+           -> ThSens sentence (AnyComorphism, BasicProof)
+           -> ThSens sentence (AnyComorphism, BasicProof)
+proveSensAux lid axs ths = let
   axSet = Map.fromList $ map (\ (n, s) -> (sentence s, n)) $ OMap.toList axs
-  in Map.union axs $ Map.mapWithKey (\ i e -> let sen = OMap.ele e in
+  in Map.mapWithKey (\ i e -> let sen = OMap.ele e in
          case Map.lookup (sentence sen) axSet of
            Just ax ->
              e { OMap.ele = sen { senAttr = ThmStatus $
