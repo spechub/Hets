@@ -203,7 +203,8 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          preds = Map.unionWith (Set.union) ks rp
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
-         new_sens = concat [rs, rs', ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen, pred_forms]
+         new_sens = concat [rs, rs', ops_forms, no_owise_forms, owise_forms, 
+                            mb_rl_forms, ctor_sen, pred_forms]
 
 -- | generates the sentences to state that the rew predicates are a congruence
 rewPredicatesCongSens :: CSign.OpMap -> [Named CAS.CASLFORMULA]
@@ -279,7 +280,24 @@ booleanImported = Map.member (mkSimpleId "if_then_else_fi")
 
 -- | checks if the natural numbers are imported
 natImported :: MSign.SortSet -> MSign.OpMap -> Bool
-natImported ss _ = Set.member (MSym.Sort $ mkSimpleId "Nat") ss
+natImported ss om = b1 && b2 && b3
+     where b1 = Set.member (MSym.Sort $ mkSimpleId "Nat") ss
+           b2 = Map.member (mkSimpleId "0") om
+           b3 = case b2 of
+                 False -> True
+                 True -> specialZeroSet $ om Map.! (mkSimpleId "0")
+
+specialZeroSet :: MSign.OpDeclSet -> Bool
+specialZeroSet = Set.fold specialZero False
+
+specialZero :: MSign.OpDecl -> Bool -> Bool
+specialZero (_, ats) b = b' || b
+         where b' = isSpecial ats
+
+isSpecial :: [MAS.Attr] -> Bool
+isSpecial [] = False
+isSpecial ((MAS.Special _) : _) = True
+isSpecial (_ : ats) = isSpecial ats
 
 -- | delete the universal operators from Maude specifications, that will be
 -- substituted for one operator for each sort in the specification
