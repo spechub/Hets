@@ -193,6 +193,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          (cops, assoc_ops, ops_forms, comps) = translateOps mk ops
          ctor_sen = [ctorSen False (cs, Rel.empty, comps)]
          cops' = universalOps cs cops $ booleanImported ops
+         rs' = rewPredicatesCongSens cops'
          pred_forms = loadLibraries (MSign.sorts msign) ops
          ops_syms = ops2symbols cops'
          (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs nsens
@@ -202,7 +203,53 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          preds = Map.unionWith (Set.union) ks rp
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
-         new_sens = concat [rs, ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen, pred_forms]
+         new_sens = concat [rs, rs', ops_forms, no_owise_forms, owise_forms, mb_rl_forms, ctor_sen, pred_forms]
+
+-- | generates the sentences to state that the rew predicates are a congruence
+rewPredicatesCongSens :: CSign.OpMap -> [Named CAS.CASLFORMULA]
+rewPredicatesCongSens = Map.foldWithKey rewPredCongSet []
+
+-- | generates the sentences to state that the rew predicates are a congruence
+-- for the operator types in the set
+rewPredCongSet :: Id -> Set.Set CSign.OpType -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+rewPredCongSet idn ots fs = fs ++ fs'
+      where fs' = Set.fold (rewPredCong idn) [] ots
+
+-- | generates the sentences to state that the rew predicates are a congruence
+-- for a single operator
+rewPredCong :: Id -> CSign.OpType -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+rewPredCong op ot fs = case args of
+                        [] -> fs
+                        _ -> nq_form : fs
+       where args = CSign.opArgs ot
+             vars1 = rewPredCongPremise 0 args
+             vars2 = rewPredCongPremise (length args) args
+             res = CSign.opRes ot
+             res_pred_type = CAS.Pred_type [res, res] nullRange
+             pn = CAS.Qual_pred_name rewID res_pred_type nullRange
+             name = "rew_cong_" ++ show op
+             prems = rewPredsCong args vars1 vars2
+             prems_conj = createConjForm prems
+             os = CAS.Qual_op_name op (CSign.toOP_TYPE ot) nullRange
+             conc_term1 = CAS.Application os vars1 nullRange
+             conc_term2 = CAS.Application os vars2 nullRange
+             conc_form = CAS.Predication pn [conc_term1, conc_term2] nullRange
+             form = createImpForm prems_conj conc_form
+             nq_form = makeNamed name $ quantifyUniversally form
+
+-- | generates a list of variables of the given sorts
+rewPredCongPremise :: Int -> [CAS.SORT] -> [CAS.CASLTERM]
+rewPredCongPremise n (s : ss) = newVarIndex n s : rewPredCongPremise (n + 1) ss
+rewPredCongPremise _ [] = []
+
+-- | generates a list of rew predicates with the given variables
+rewPredsCong :: [CAS.SORT] -> [CAS.CASLTERM] -> [CAS.CASLTERM] -> [CAS.CASLFORMULA]
+rewPredsCong (s : ss) (t : ts) (t' : ts') = form : forms
+          where pred_type = CAS.Pred_type [s, s] nullRange
+                pn = CAS.Qual_pred_name rewID pred_type nullRange
+                form = CAS.Predication pn [t, t'] nullRange
+                forms = rewPredsCong ss ts ts'
+rewPredsCong _ _ _ = []
 
 -- | load the CASL libraries for the Maude built-in operators
 loadLibraries :: MSign.SortSet -> MSign.OpMap -> [Named CAS.CASLFORMULA]
@@ -431,6 +478,7 @@ createConjForm [] = CAS.True_atom nullRange
 createConjForm [a] = a
 createConjForm fs = CAS.Conjunction fs nullRange
 
+-- | creates a implication formula distinguishing the size of the premises
 createImpForm :: CAS.CASLFORMULA -> CAS.CASLFORMULA -> CAS.CASLFORMULA
 createImpForm (CAS.True_atom _) form = form
 createImpForm form1 form2 = CAS.Implication form1 form2 True nullRange
