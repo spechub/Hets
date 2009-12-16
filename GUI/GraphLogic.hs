@@ -603,7 +603,8 @@ checkconservativityOfEdge descr gInfo me = case me of
         Nothing -> return ()
         Just iist -> do
           lockGlobal gInfo
-          (str, nwle, ph) <- checkConservativityEdge True lnk (i_libEnv iist) ln
+          (str, nwle, _, ph) <- checkConservativityEdge True lnk
+                                (i_libEnv iist) ln
           if isPrefixOf "No conservativity" str
             then
               errorDialog "Result of conservativity check" str

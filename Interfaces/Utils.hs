@@ -241,16 +241,14 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
       lnk = (newN, nodeId, defDGLink
         morphism (ScopedLink Global DefLink $ getNodeConsStatus nodeLab)
         SeeSource)
-      tempChanges = [ InsertNode (newN, newL), InsertEdge lnk ]
-      tempDG = changesDGH dg tempChanges
+      tmpDG = changesDGH dg [ InsertNode (newN, newL) ]
+      (tempDG, InsertEdge lnk') = updateDGOnly tmpDG $ InsertEdge lnk
       tempLibEnv = insert ln (groupHistory dg conservativityRule tempDG) libEnv
-  (str, tempLibEnv', _) <- checkConservativityEdge useGUI lnk tempLibEnv ln
+  (str, _, (_,_,lnkLab),_) <- checkConservativityEdge useGUI lnk' tempLibEnv ln
   if isPrefixOf "No conservativity" str
     then return (str, libEnv, SizedList.empty)
     else do
-         let tempDG' = lookupDGraph ln tempLibEnv'
-             (_,_,lnkLab) = head $ outDG tempDG' newN
-             nInfo = nodeInfo nodeLab
+         let nInfo = nodeInfo nodeLab
              nodeLab' = nodeLab { nodeInfo = nInfo { node_cons_status =
                           getLinkConsStatus $ dgl_type lnkLab } }
              changes = [ SetNodeLab nodeLab (nodeId, nodeLab') ]
@@ -260,8 +258,8 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
          return (str, libEnv', history)
 
 checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LibName
-                        -> IO (String, LibEnv, ProofHistory)
-checkConservativityEdge useGUI (source,target,linklab) libEnv ln
+                        -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
+checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
  = do
     let thT =
          case computeTheory libEnv ln target of
@@ -286,20 +284,20 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
     G_theory lidS signS _ sensS _ <- return thS
     case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
      Nothing -> return ( "no implementation for heterogeneous links"
-                       , libEnv, SizedList.empty)
+                       , libEnv, link, SizedList.empty)
      Just signS' -> do
       sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
       let transSensSrc = propagateErrors
            $ mapThSensValueM (map_sen lidT compMor) sensS'
       if length (conservativityCheck lidT) < 1
           then return ("No conservativity checkers available",
-                       libEnv, SizedList.empty)
+                       libEnv, link, SizedList.empty)
           else
            do
             checkerR <- conservativityChoser useGUI $ conservativityCheck lidT
             if hasErrors $ diags checkerR
              then return ("No conservativity checker chosen",
-                          libEnv, SizedList.empty)
+                          libEnv, link, SizedList.empty)
              else
               do
                let chCons = checkConservativity $
@@ -372,8 +370,7 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                                    ++ "conservative"
                    myDiags = showRelDiags 2 ds
                return ( showRes ++ "\n" ++ myDiags
-                      , newLibEnv
-                      , history)
+                      , newLibEnv, provenEdge, history)
 
 updateNodeProof :: LibName -> IntState -> LNode DGNodeLab
                 -> Maybe G_theory -> IO (IntState, Maybe [DGChange])
