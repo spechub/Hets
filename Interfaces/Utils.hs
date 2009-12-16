@@ -263,38 +263,38 @@ checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LibName
                         -> IO (String, LibEnv, ProofHistory)
 checkConservativityEdge useGUI (source,target,linklab) libEnv ln
  = do
-    let thTar =
+    let thT =
          case computeTheory libEnv ln target of
           Result _ (Just th1) -> th1
           _ -> error "checkconservativityOfEdge: computeTheory"
-    G_theory lid _sign _ sensTar _ <- return thTar
-    GMorphism cid _ _ morphism2 _ <- return $ dgl_morphism linklab
-    morphism2' <- coerceMorphism (targetLogic cid) lid
-                 "checkconservativityOfEdge" morphism2
+    G_theory lidT _ _ sensT _ <- return thT
+    GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
+    morphism' <- coerceMorphism (targetLogic cid) lidT
+                 "checkconservativityOfEdge" morphism
     let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv) target of
-          Nothing -> morphism2'
-          Just (GMorphism cid' _ _ morphism3 _) -> case
-            coerceMorphism (targetLogic cid') lid
-                   "checkconservativityOfEdge" morphism3
-               >>= comp morphism2' of
+          Nothing -> morphism'
+          Just (GMorphism cid' _ _ morphism2 _) -> case
+            coerceMorphism (targetLogic cid') lidT
+                   "checkconservativityOfEdge" morphism2
+               >>= comp morphism' of
                  Result _ (Just phi) -> phi
                  _ -> error "checkconservativityOfEdge: comp"
-    let thSrc =
+    let thS =
          case computeTheory libEnv ln source of
            Result _ (Just th1) -> th1
            _ -> error "checkconservativityOfEdge: computeTheory"
-    G_theory lid1 sign1 _ sensSrc1 _ <- return thSrc
-    sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
-    sensSrc2 <- coerceThSens lid1 lid "checkconservativityOfEdge1" sensSrc1
+    G_theory lidS signS _ sensS _ <- return thS
+    signS' <- coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS
+    sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
     let transSensSrc = propagateErrors
-         $ mapThSensValueM (map_sen lid compMor) sensSrc2
-    if length (conservativityCheck lid) < 1
+         $ mapThSensValueM (map_sen lidT compMor) sensS'
+    if length (conservativityCheck lidT) < 1
         then return ( "No conservativity checkers available"
                     , libEnv
                     , SizedList.empty)
         else
          do
-          checkerR <- conservativityChoser useGUI $ conservativityCheck lid
+          checkerR <- conservativityChoser useGUI $ conservativityCheck lidT
           if hasErrors $ diags checkerR
            then return ( "No conservativity checker chosen"
                        , libEnv
@@ -306,10 +306,10 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                              $ maybeResult checkerR
                  inputThSens = nubBy (\ a b -> sentence a == sentence b) $
                                toNamedList $
-                               sensTar `OMap.difference` transSensSrc
+                               sensT `OMap.difference` transSensSrc
                  Result ds res =
                      chCons
-                        (plainSign sign2, toNamedList sensSrc2)
+                        (plainSign signS', toNamedList sensS')
                         compMor inputThSens
                  consShow = case res of
                             Just (Just (cst, _)) -> cst
@@ -336,7 +336,7 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
                  namedNewSens = toThSens [ (makeNamed "" o) {isAxiom = False} |
                                            o<-obligations ]
              G_theory glid gsign gsigid gsens gid <- return $ dgn_theory nodelab
-             namedNewSens' <- coerceThSens lid glid "" namedNewSens
+             namedNewSens' <- coerceThSens lidT glid "" namedNewSens
              let oldSens = OMap.toList gsens
                  -- Sort out the named sentences which have a different name,
                  -- but same sentence
