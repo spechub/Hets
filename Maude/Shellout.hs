@@ -15,7 +15,7 @@ import Data.List (isPrefixOf)
 
 import Common.Doc
 import Common.DocUtils (Pretty(..))
-
+import Common.Utils
 
 maudePath :: String
 maudePath = "maude"
@@ -30,12 +30,19 @@ basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
 basicAnalysis sign (MaudeText mt) = do
     (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
     hPutStrLn hIn $ unwords ["in", maudeHetsPath]
-    let printedSign = parens $ vcat [text "mod FROM-HETS is", pretty sign, text mt, text "endm"]
-    hPutStrLn hIn $ show printedSign
+    let sigStr = show $ parens
+          $ vcat [text "mod FROM-HETS is", pretty sign, text mt, text "endm"]
+    hPutStrLn hIn sigStr
     hFlush hIn
     specOut <- hGetContents hOut
     hClose hIn
-    return $ convertSpec $ read $ findSpec specOut
+    let spStr = findSpec specOut
+    case readMaybe spStr of
+      Just sp -> return $ convertSpec sp
+      Nothing ->
+          fail $ "cannot interpret the following maude output:\n" ++ spStr
+          ++ "\ncreated for:\n" ++ sigStr
+          ++ "\nmaude return:\n" ++ specOut
 
 -- | extracts the signature and the sentences from a specification
 convertSpec :: Spec -> (Sign, [Sentence])
