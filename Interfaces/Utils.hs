@@ -66,7 +66,6 @@ import Common.Consistency
 import Common.ExtSign
 import Common.AS_Annotation (SenAttr(..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
-import Control.Exception
 
 #ifdef UNI_PACKAGE
 import GUI.Utils
@@ -285,11 +284,10 @@ checkConservativityEdge useGUI (source,target,linklab) libEnv ln
            Result _ (Just th1) -> th1
            _ -> error "checkconservativityOfEdge: computeTheory"
     G_theory lidS signS _ sensS _ <- return thS
-    eSign <- try (coerceSign lidS lidT "checkconservativityOfEdge.coerceSign"
-                 signS)
-    case eSign of
-     Left (e :: SomeException) -> return (show e, libEnv, SizedList.empty)
-     Right signS' -> do
+    case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
+     Nothing -> return ( "no implementation for heterogeneous links"
+                       , libEnv, SizedList.empty)
+     Just signS' -> do
       sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
       let transSensSrc = propagateErrors
            $ mapThSensValueM (map_sen lidT compMor) sensS'
