@@ -91,7 +91,7 @@ instance Pretty Sign where
         -- print subsort declarations
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
-            [keyword "subsort", pretty sub, less, pr'sups sups]
+            [keyword "subsort", pretty sub, less, pr'sups sups, dot]
         pr'subs = vcat . Map.foldWithKey pr'pair []
         -- print operator decparations
         pr'decl attrs symb = hsep
