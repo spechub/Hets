@@ -241,9 +241,9 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
       lnk = (newN, nodeId, defDGLink
         morphism (ScopedLink Global DefLink $ getNodeConsStatus nodeLab)
         SeeSource)
-      tmpDG = changesDGH dg [ InsertNode (newN, newL) ]
+      (tmpDG, _) = updateDGOnly dg $ InsertNode (newN, newL)
       (tempDG, InsertEdge lnk') = updateDGOnly tmpDG $ InsertEdge lnk
-      tempLibEnv = insert ln (groupHistory dg conservativityRule tempDG) libEnv
+      tempLibEnv = insert ln tempDG libEnv
   (str, _, (_,_,lnkLab),_) <- checkConservativityEdge useGUI lnk' tempLibEnv ln
   if isPrefixOf "No conservativity" str
     then return (str, libEnv, SizedList.empty)
