@@ -282,10 +282,10 @@ booleanImported = Map.member (mkSimpleId "if_then_else_fi")
 natImported :: MSign.SortSet -> MSign.OpMap -> Bool
 natImported ss om = b1 && b2 && b3
      where b1 = Set.member (MSym.Sort $ mkSimpleId "Nat") ss
-           b2 = Map.member (mkSimpleId "0") om
+           b2 = Map.member (mkSimpleId "s_") om
            b3 = case b2 of
                  False -> True
-                 True -> specialZeroSet $ om Map.! (mkSimpleId "0")
+                 True -> specialZeroSet $ om Map.! (mkSimpleId "s_")
 
 specialZeroSet :: MSign.OpDeclSet -> Bool
 specialZeroSet = Set.fold specialZero False
