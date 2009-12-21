@@ -5,6 +5,7 @@ maintainer: Thomas Hallgren <hallgren@cse.ogi.edu>
 stability: stable
 homepage: http://www.cse.ogi.edu/PacSoft/projects/programatica
 copyright: Copyright (c) 2003, OGI School of Science & Engineering, Oregon Health & Science University, All rights reserved.
+build-type: Simple
 flag splitBase
   description: Choose the new smaller, split-up base package.
 Library
@@ -247,7 +248,8 @@ Library
   FlexibleContexts,
   MultiParamTypeClasses,
   FunctionalDependencies,
-  TypeSynonymInstances
+  TypeSynonymInstances,
+  EmptyDataDecls
  ghc-options: -O
  build-depends: haskell98, mtl
  if flag(splitBase)
