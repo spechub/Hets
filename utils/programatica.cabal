@@ -241,8 +241,14 @@ Library
   property/TI, property/defs, property/parse2, property/parse2/Parser
  extensions:
   NoMonomorphismRestriction,
-  UndecidableInstances
- ghc-options: -O -fglasgow-exts
+  OverlappingInstances,
+  UndecidableInstances,
+  FlexibleInstances,
+  FlexibleContexts,
+  MultiParamTypeClasses,
+  FunctionalDependencies,
+  TypeSynonymInstances
+ ghc-options: -O
  build-depends: haskell98, mtl
  if flag(splitBase)
     build-depends: base >= 3.0, array, containers, pretty
