@@ -77,7 +77,7 @@ getAllOutput hOut s False = do
             getAllOutput hOut (s ++ "\n" ++ ss) (final ss)
         else do 
             handle <- hShow hOut
-            error $ "No spec available on handle: " ++ handle
+            error $ "No output available on handle: " ++ handle
 getAllOutput _ s True = return $ prepare s
 
 -- | extracts the Haskell representation of a Maude module or view
