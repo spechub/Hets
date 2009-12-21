@@ -70,15 +70,27 @@ findSpec = let
 -- | extracts a Maude module or view
 getAllOutput :: Handle -> String -> Bool -> IO String
 getAllOutput hOut s False = do
-                 ss <- hGetLine hOut
-                 getAllOutput hOut (s ++ "\n" ++ ss) (final ss)
+    ready <- hReady hOut
+    if ready
+        then do 
+            ss <- hGetLine hOut
+            getAllOutput hOut (s ++ "\n" ++ ss) (final ss)
+        else do 
+            handle <- hShow hOut
+            error $ "No spec available on handle: " ++ handle
 getAllOutput _ s True = return $ prepare s
 
 -- | extracts the Haskell representation of a Maude module or view
 getAllSpec :: Handle -> String -> Bool -> IO String
 getAllSpec hOut s False = do
-                 ss <- hGetLine hOut
-                 getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
+    ready <- hReady hOut
+    if ready
+        then do
+            ss <- hGetLine hOut
+            getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
+        else do 
+            handle <- hShow hOut
+            error $ "No spec available on handle: " ++ handle
 getAllSpec _ s True = return s
 
 -- | possible ends of a Maude module or view
