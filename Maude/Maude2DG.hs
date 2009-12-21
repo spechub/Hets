@@ -51,12 +51,6 @@ import Common.Utils
 
 import Driver.Options
 
-maudeProg :: String
-maudeProg = "maude"
-
-maudeArgs :: [String]
-maudeArgs = ["-interactive", "-no-banner", "-no-advise"]
-
 -- | Maude importation types: Protecting, Extending and Including
 data ImportType = Pr | Ex | Inc
 
@@ -608,9 +602,8 @@ directMaudeParsing fp = do
   ml <- getEnvDef "MAUDE_LIB" ""
   if null ml then error "environment variable MAUDE_LIB is not set" else do
     ns <- parse fp
-    let ns' = either (\ _ -> []) id ns
-    (hIn, hOut, _, procH) <-
-        runInteractiveProcess maudeProg maudeArgs Nothing Nothing
+    let ns' = either (const []) id ns
+    (hIn, hOut, _, procH) <- runMaude
     exitCode <- getProcessExitCode procH
     case exitCode of
       Nothing -> do

@@ -1,5 +1,11 @@
 
-module Maude.Shellout (basicAnalysis, findSpec, getAllOutput, getAllSpec) where
+module Maude.Shellout (
+    runMaude, 
+    basicAnalysis, 
+    findSpec, 
+    getAllOutput, 
+    getAllSpec,
+) where
 
 import System.IO
 import System.Process
@@ -19,16 +25,20 @@ import Common.Utils
 
 maudePath :: String
 maudePath = "maude"
-maudeCmd :: String
-maudeCmd = unwords [maudePath, "-interactive", "-no-banner", "-no-advise"]
+maudeArgs :: [String]
+maudeArgs = ["-interactive", "-no-banner", "-no-advise"]
 maudeHetsPath :: String
 maudeHetsPath = "Maude/hets.prj"
+
+-- | runs @maude@ in an interactive subprocess
+runMaude :: IO (Handle, Handle, Handle, ProcessHandle)
+runMaude = runInteractiveProcess maudePath maudeArgs Nothing Nothing
 
 -- | performs the basic analysis, extracting the signature and the sentences
 -- of the given Maude text, that can use the signature accumulated thus far
 basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
 basicAnalysis sign (MaudeText mt) = do
-    (hIn, hOut, _, _) <- runInteractiveCommand maudeCmd
+    (hIn, hOut, _, _) <- runMaude
     hPutStrLn hIn $ unwords ["in", maudeHetsPath]
     let sigStr = show $ parens
           $ vcat [text "mod FROM-HETS is", pretty sign, text mt, text "endm"]
