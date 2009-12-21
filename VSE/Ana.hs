@@ -94,9 +94,9 @@ getVSEVars vf = case vf of
 
 getProgVars :: Program -> Set.Set Token
 getProgVars =
-  let rec = getVarsRec $ const Set.empty
-      getTermVars = foldTerm rec
-      getCondVars = foldFormula rec
+  let vrec = getVarsRec $ const Set.empty
+      getTermVars = foldTerm vrec
+      getCondVars = foldFormula vrec
   in foldProg (progToSetRec getTermVars getCondVars)
   { foldAssign = \ _ v t -> Set.insert v $ getTermVars t
   , foldBlock = \ _ vs p -> Set.union p

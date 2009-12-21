@@ -385,11 +385,11 @@ anyP = atom <|> many1 (char '.')
 -- allow "and", etc. in unknown parts
 unknown :: Parser ()
 unknown = skipMany1 $ forget (lexP $ reserved usedTopKeys anyP)
-          <|> forget (recordP rec)
-          <|> forget (parensP rec)
-          <|> forget (bracketsP rec)
-          <|> forget (bracesP rec)
-          where rec = commalist $ unknown <|> forget (lexP anyP)
+          <|> forget (recordP cus)
+          <|> forget (parensP cus)
+          <|> forget (bracketsP cus)
+          <|> forget (bracesP cus)
+          where cus = commalist $ unknown <|> forget (lexP anyP)
 
 data BodyElem = Axioms [Axiom]
               | Goals [Goal]
