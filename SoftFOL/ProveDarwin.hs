@@ -40,6 +40,7 @@ import qualified Control.Concurrent as Concurrent
 import System.Exit
 import System.IO
 import System.Process
+import System.Cmd as Cmd -- needed for ghc-6.8.x
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -141,7 +142,7 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
         runDarwinRealM :: IO(CCStatus ProofTree)
         runDarwinRealM = do
             probl <- problem
-            hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
+            hasProgramm <- Cmd.system ("which darwin > /dev/null 2> /dev/null")
             case hasProgramm of
               ExitFailure _ -> do
                   infoDialog "Darwin prover" "Darwin not found"
@@ -197,7 +198,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
-      hasProgramm <- system ("which darwin > /dev/null 2> /dev/null")
+      hasProgramm <- Cmd.system ("which darwin > /dev/null 2> /dev/null")
       case hasProgramm of
         ExitFailure _ -> return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",

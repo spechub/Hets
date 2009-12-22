@@ -29,6 +29,7 @@ import qualified Data.Map as Map
 import System.Directory
 import Data.Time.Clock
 import System.Process
+import System.Cmd as Cmd
 
 -- Propositional Stuff
 import Propositional.Sign
@@ -136,7 +137,7 @@ runSKizzo :: String                  -- ^ File in qdimacs syntax
           -> IO Conservativity
 runSKizzo qd =
     do
-      hasProgramm <- system ("which " ++  proverName
+      hasProgramm <- Cmd.system ("which " ++  proverName
                              ++ " > /dev/null 2> /dev/null")
       case hasProgramm of
         ExitFailure _ ->
