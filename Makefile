@@ -166,7 +166,12 @@ endif
 
 TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 
-HC_WARN = -Wall -fno-warn-orphans
+GHCVERSION = $(shell ghc --numeric-version)
+ifneq ($(findstring 12, $(GHCVERSION)),)
+NO_BIND_WARNING = -fno-warn-unused-do-bind
+endif
+
+HC_WARN = -Wall -fno-warn-orphans $(NO_BIND_WARNING)
 
 INCLUDE_PATH =
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
