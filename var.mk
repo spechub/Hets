@@ -27,7 +27,7 @@ TABULAR_PACKAGE = -DTABULAR_PACKAGE
 endif
 
 GLADEVERSION = $(shell $(HCPKG) field glade version)
-ifneq ($(findstring 0., $(GLADEVERSION)),)
+ifneq ($(findstring 0.1, $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE
 endif
 
