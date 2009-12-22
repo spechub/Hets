@@ -166,7 +166,6 @@ endif
 
 TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 
-# remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
 
 INCLUDE_PATH =
