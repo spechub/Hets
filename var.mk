@@ -20,6 +20,9 @@ UNIXVERSION = $(shell $(HCPKG) field unix version)
 ifneq ($(findstring 2.3, $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
+ifneq ($(findstring 2.4, $(UNIXVERSION)),)
+UNIX_PACKAGE = -DUNIX
+endif
 
 TABULARVERSION = $(shell $(HCPKG) field tabular version)
 ifneq ($(findstring 0.1, $(TABULARVERSION)),)
