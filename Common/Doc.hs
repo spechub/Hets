@@ -577,7 +577,7 @@ toLatexRecord dis tab = anyRecord
 
 -- | move a small attribute inwards but not into mathmode bits
 makeSmallMath :: Bool -> Bool -> Doc -> Doc
-makeSmallMath smll math = let rec = makeSmallMath smll math in
+makeSmallMath smll math =
     foldDoc idRecord
     { foldAttr = \ (Attr k d) _ _ -> case k of
                        Small -> makeSmallMath True math d
@@ -594,7 +594,7 @@ makeSmallMath smll math = let rec = makeSmallMath smll math in
                     -- produce fewer small blocks with wrong size though
                              Attr Small $ Cat Horiz $
                               map (makeSmallMath False math) l
-                         else Cat c $ map rec l
+                         else Cat c $ map (makeSmallMath smll math) l
     , foldText = \ d _ _ -> if smll then Attr Small d else d
     }
 
