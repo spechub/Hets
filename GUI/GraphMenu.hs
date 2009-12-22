@@ -20,7 +20,6 @@ import GUI.GraphLogic
 import GUI.ShowLogicGraph (showLogicGraph)
 import GUI.Utils
 import GUI.UDGUtils
-import qualified GUI.HTkUtils as HTk
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker

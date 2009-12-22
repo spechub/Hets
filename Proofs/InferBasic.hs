@@ -67,7 +67,6 @@ import Data.Time.Clock (secondsToDiffTime)
 import Data.Ord (comparing)
 
 import Control.Monad.Trans
-import Control.Monad ((=<<))
 
 import System.Timeout
 

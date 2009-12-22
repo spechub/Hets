@@ -45,7 +45,6 @@ module Comorphisms.LogicGraph
     , lookupQTA_in_LG
     ) where
 
-import Data.List
 import qualified Data.Map as Map
 
 import Common.Result

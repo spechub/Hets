@@ -30,12 +30,10 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.SFKT
+import Common.Utils (nubOrd)
 
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
-
-import Data.List(nub)
-import Control.Monad
 
 computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
@@ -63,7 +61,7 @@ insertColimitInGraph le dgraph = do
 {- | creates an GDiagram with the signatures of the given nodes as nodes
    and the morphisms of the given edges as edges -}
 makeDiagram :: DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
-makeDiagram dg nl el = makeDiagramAux empty dg (nub nl) el
+makeDiagram dg nl el = makeDiagramAux empty dg (nubOrd nl) el
 
 {- | auxiliary method for makeDiagram: first translates all nodes then
    all edges, the descriptors of the nodes are kept in order to make

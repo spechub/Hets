@@ -34,7 +34,6 @@ import Prelude hiding (lookup, map, filter, null)
 
 import qualified Data.Map as Map
 import qualified Data.List as List
-import Data.Maybe
 
 data ElemWOrd a = EWOrd
   { order :: Int
