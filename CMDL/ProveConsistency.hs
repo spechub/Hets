@@ -349,13 +349,12 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname
              ist  <- readMVar miSt
              state <- readMVar mSt
              case state of
-              Nothing -> return []
+              Nothing -> return ""
               Just state' ->
                do
-                ist' <- addResults ist libname state'
-                swapMVar mSt  Nothing
-                swapMVar miSt ist'
-                return []
+                swapMVar mSt Nothing
+                swapMVar miSt $ addResults ist libname state'
+                return ""
 
 getResults :: (Logic lid sublogics basic_spec sentence
                      symb_items symb_map_items
@@ -379,23 +378,21 @@ getResults lid acm mStop mData mState =
                                             (markProved acm lid d' st) node)
 
 -- | inserts the results of the proof in the development graph
-addResults :: IntState -> LibName -> Int_NodeInfo -> IO IntState
+addResults :: IntState -> LibName -> Int_NodeInfo -> IntState
 addResults ist libname ndps =
   case i_state ist of
-    Nothing -> return ist
+    Nothing -> ist
     Just pS ->
       case ndps of
        Element ps'' node -> case theory ps'' of
          G_theory lidT sigT indT sensT _ ->
-          do
-           gMap <- coerceThSens (logicId ps'') lidT
-                      "ProveCommands last coerce"
-                      (goalMap ps'')
-           let nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
+           case coerceThSens (logicId ps'') lidT "" (goalMap ps'') of
+             Nothing -> ist
+             Just gMap -> let
+               nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
                dGraph = lookupDGraph libname (i_libEnv pS)
                nl = labDG dGraph node
-           (ist', _) <- updateNodeProof libname ist (node, nl) (Just nwTh)
-           return ist'
+               in fst $ updateNodeProof libname ist (node, nl) (Just nwTh)
 
 -- | Signal handler that stops the prover from running
 -- when SIGINT is send
@@ -421,17 +418,11 @@ sigIntHandler mthr miSt mSt thr mOut libname =
    -- update LibEnv with intermidiar results !?
    ist <- readMVar miSt
    st <- readMVar mSt
-   case st of
-    Nothing ->
-      do
-       putMVar mOut ist
-       return ()
-    Just st' ->
-      do
-       ist' <- addResults ist libname st'
-        -- add to the output mvar results until now
-       putMVar mOut ist'
-       return ()
+   -- add to the output mvar results until now
+   putMVar mOut $ case st of
+     Nothing -> ist
+     Just st' -> addResults ist libname st'
+   return ()
 
 doLoop :: MVar IntState
        -> MVar (Maybe ThreadId)

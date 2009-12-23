@@ -546,10 +546,11 @@ runProveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
       let ln = libName gInfo
           iSt = intState gInfo
       ost <- readIORef iSt
-      (ost', mhist) <- updateNodeProof ln ost (v, dgnode) $ Just rTh
-      writeIORef iSt ost'
+      let (ost', mhist) = updateNodeProof ln ost (v, dgnode) $ Just rTh
       case mhist of
-        Just hist -> runAndLock gInfo $ updateGraph gInfo hist
+        Just hist -> do
+          writeIORef iSt ost'
+          runAndLock gInfo $ updateGraph gInfo hist
         Nothing -> return ()
       unlockGlobal gInfo
   _ -> return ()

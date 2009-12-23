@@ -373,12 +373,12 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                       , newLibEnv, provenEdge, history)
 
 updateNodeProof :: LibName -> IntState -> LNode DGNodeLab
-                -> Maybe G_theory -> IO (IntState, Maybe [DGChange])
+                -> Maybe G_theory -> (IntState, Maybe [DGChange])
 updateNodeProof ln ost (v, dgnode) tres = case tres of
   Just thry ->
     case i_state ost of
-      Nothing -> return (ost, Nothing)
-      Just iist -> do
+      Nothing -> (ost, Nothing)
+      Just iist ->
         let le = i_libEnv iist
             dg = lookupDGraph ln le
             nn = getDGNodeName dgnode
@@ -386,12 +386,13 @@ updateNodeProof ln ost (v, dgnode) tres = case tres of
             l = new { globalTheory = computeLabelTheory le dg (v, new) }
             newDg0 = changeDGH dg $ SetNodeLab dgnode (v, l)
             newDG1 = togglePending newDg0 $ changedLocalTheorems newDg0 (v, l)
-            newDg = togglePending newDG1 $ changedPendingEdges newDG1
-            history = snd $ splitHistory dg newDg
+            newDG2 = togglePending newDG1 $ changedPendingEdges newDG1
+            newDg = groupHistory dg (DGRule "Node proof") newDG2
+            history = reverse $ flatHistory $ snd $ splitHistory dg newDg
             nst = add2history
                     (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
-                    ost [DgCommandChange ln]
+                    ost $ [DgCommandChange ln]
             nwst = nst { i_state =
                            Just iist { i_libEnv = Map.insert ln newDg le } }
-        return (nwst, Just (reverse $ flatHistory history))
-  Nothing -> return (ost, Nothing)
+        in (nwst, Just history)
+  Nothing -> (ost, Nothing)
