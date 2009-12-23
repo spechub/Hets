@@ -105,14 +105,14 @@ coerceConsChecker = primCoerce
 -- | Possible actions for GUI which are manipulating ProofState
 data ProofActions lid sentence = ProofActions {
     -- | called whenever the "Prove" button is clicked
-    proveF :: (ProofState lid sentence
-               -> IO (Result.Result (ProofState lid sentence))),
+    proveF :: ProofState lid sentence
+           -> IO (Result.Result (ProofState lid sentence)),
     -- | called whenever the "More fine grained selection" button is clicked
-    fineGrainedSelectionF :: (ProofState lid sentence
-                          -> IO (Result.Result (ProofState lid sentence))),
+    fineGrainedSelectionF :: ProofState lid sentence
+                          -> IO (Result.Result (ProofState lid sentence)),
     -- | called whenever a (de-)selection occured for updating sublogic
-    recalculateSublogicF :: (ProofState lid sentence
-                             -> IO (ProofState lid sentence))
+    recalculateSublogicF :: ProofState lid sentence
+                         -> IO (ProofState lid sentence)
   }
 
 {- |
@@ -321,16 +321,17 @@ recalculateSublogicAndSelectedTheory :: (Logic lid sublogics1
                    symbol1
                    raw_symbol1
                    proof_tree1) =>
-       ProofState lid sentence -> IO (ProofState lid sentence)
+       ProofState lid sentence -> ProofState lid sentence
 recalculateSublogicAndSelectedTheory st =
   case theory st of
-    G_theory lid1 sign _ sens _ -> do
+    G_theory lid1 sign _ sens _ ->
           -- coerce goalMap
-        ths <- coerceThSens (logicId st) lid1
-           "Proofs.InferBasic.recalculateSublogic: selected goals"
-           (goalMap st)
-          -- partition goalMap
-        let (sel_goals, other_goals) =
+        case coerceThSens (logicId st) lid1 "" $ goalMap st of
+          Nothing -> error
+            "Proofs.InferBasic.recalculateSublogic: selected goals"
+          Just ths -> let
+            -- partition goalMap
+            (sel_goals, other_goals) =
                 let selected k _ = Set.member k s
                     s = Set.fromList (selectedGoals st)
                 in Map.partitionWithKey selected ths
@@ -344,9 +345,9 @@ recalculateSublogicAndSelectedTheory st =
             currentThSens = Map.union selAxs sel_goals
             sTh = G_theory lid1 sign startSigId currentThSens startThId
             sLo = sublogicOfTh sTh
-        return $ st { sublogicOfTheory = sLo,
-                      selectedTheory = sTh,
-                      proversMap = shrinkKnownProvers sLo (proversMap st) }
+            in st { sublogicOfTheory = sLo
+                  , selectedTheory = sTh
+                  , proversMap = shrinkKnownProvers sLo (proversMap st) }
 
 class GetPName a where
     getPName :: a -> String

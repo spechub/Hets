@@ -14,8 +14,6 @@ CMDL.ProveConsistency contains prove and consistency check command
 module CMDL.ProveConsistency
        ( cProver
        , cConsChecker
-       , checkNode
-       , proveNode
        , doLoop
        , sigIntHandler
        ) where
@@ -187,12 +185,7 @@ cConsChecker input state =
 
 -- | Given a proofstatus the function does the actual call of the
 -- prover for consistency checking
-checkNode ::
-              --use theorems is subsequent proofs
-              Bool ->
-              -- save problem file for each goal
-              Bool ->
-              -- Tactic script
+checkNode :: -- Tactic script
               ATPTacticScript ->
               -- proofState of the node that needs proving
               -- all theorems, goals and axioms should have
@@ -207,25 +200,21 @@ checkNode ::
               -- selected comorphism, if non one will be automatically
               -- selected
               Maybe AnyComorphism ->
-              MVar (Maybe ThreadId) ->
               MVar (Maybe Int_NodeInfo)  ->
-              MVar IntState ->
-              LibName ->
               -- returns an error message if anything happens
                IO String
-checkNode _useTh _save2File sTxt ndpf ndnm mp mcm _mThr mSt _miSt _libname
- = case ndpf of
+checkNode sTxt ndpf ndnm mp mcm mSt =
+  case ndpf of
     Element pf_st nd ->
      do
      -- recompute the theory (to make effective the selected axioms,
      -- goals) !? needed?
-     st <- recalculateSublogicAndSelectedTheory pf_st
+     let st = recalculateSublogicAndSelectedTheory pf_st
      -- compute a prover,comorphism pair to be used in preparing
      -- the theory
      p_cm@(_, acm)<- case mcm of
            Nothing -> lookupKnownConsChecker st
-           Just cm' ->
-            case mp of
+           Just cm' -> case mp of
              Nothing -> lookupKnownConsChecker st
              Just p' -> return (p', cm')
 
@@ -286,20 +275,18 @@ proveNode ::
               LibName ->
               -- returns an error message if anything happens
                IO String
-proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname
- = case ndpf of
+proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
+  case ndpf of
     Element pf_st nd ->
      do
      -- recompute the theory (to make effective the selected axioms,
      -- goals)
-     st <- recalculateSublogicAndSelectedTheory pf_st
+     let st = recalculateSublogicAndSelectedTheory pf_st
      -- compute a prover,comorphism pair to be used in preparing
      -- the theory
-     p_cm@(_,acm)
-        <-case mcm of
+     p_cm@(_,acm) <- case mcm of
            Nothing -> lookupKnownProver st P.ProveCMDLautomatic
-           Just cm' ->
-            case mp of
+           Just cm' -> case mp of
              Nothing-> lookupKnownProver st P.ProveCMDLautomatic
              Just p' -> return (p',cm')
 
@@ -443,28 +430,19 @@ doLoop miSt mThr mSt mOut ls checkCons = do
           [] -> do
                  putMVar mOut ist
                  return ()
-          x: l ->
-                do
+          x : l -> do
                  let nodeName x' = case x' of
-                                    Element _ t -> case find(\(n,_)-> n==t)
-                                                        $ getAllNodes pS of
-                                                     Nothing -> "Unkown node"
-                                                     Just (_,ll) ->
-                                                       getDGNodeName ll
+                       Element _ t -> case lookup t $ getAllNodes pS of
+                         Nothing -> "Unkown node"
+                         Just ll -> getDGNodeName ll
                  putStrLn ("Analyzing node " ++ nodeName x)
-                 err <- (if checkCons
-                           then checkNode (useTheorems pS)
-                                           (save2file pS)
-                                           (script pS)
+                 err <- if checkCons
+                           then checkNode  (script pS)
                                            x
                                            (nodeName x)
                                            (consChecker pS)
                                            (cComorphism pS)
-                                           mThr
                                            mSt
-                                           miSt
-                                           (i_ln pS)
-
                            else proveNode (useTheorems pS)
                                           (save2file pS)
                                           (script pS)
@@ -475,6 +453,6 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                                           mThr
                                           mSt
                                           miSt
-                                          (i_ln pS))
+                                          (i_ln pS)
                  unless (null err) (putStrLn err)
                  doLoop miSt mThr mSt mOut l checkCons

@@ -171,7 +171,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     ResultT $ proverGUI lid1 ProofActions
       { proveF = proveKnownPMap lg intSt freedefs
       , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
-      , recalculateSublogicF = recalculateSublogicAndSelectedTheory
+      , recalculateSublogicF = return . recalculateSublogicAndSelectedTheory
       } thName (hidingLabelWarning lbl) thForProof kpMap
       (getProvers ProveGUI (Just sublogic) cms)
 
