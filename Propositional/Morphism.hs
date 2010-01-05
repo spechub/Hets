@@ -65,7 +65,7 @@ isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
         pdom    = Map.keysSet $ propMap pmor
-        pcodom  = Set.map (applyMorphism pmor) $ psource
+        pcodom  = Set.map (applyMorphism pmor) psource
     in Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
 
 -- | Application funtion for morphisms
@@ -109,10 +109,6 @@ inclusionMap s1 s2 = Morphism
 mapSentence :: Morphism -> AS_BASIC.FORMULA -> Result.Result AS_BASIC.FORMULA
 mapSentence mor = return . mapSentenceH mor
 
--- | gets simple Id
-getSimpleId :: Id.Id -> [Id.Token]
-getSimpleId (Id toks _ _) = toks
-
 mapSentenceH :: Morphism -> AS_BASIC.FORMULA -> AS_BASIC.FORMULA
 mapSentenceH mor frm = case frm of
   AS_BASIC.Negation form rn -> AS_BASIC.Negation (mapSentenceH mor form) rn
@@ -127,7 +123,7 @@ mapSentenceH mor frm = case frm of
   AS_BASIC.True_atom rn -> AS_BASIC.True_atom rn
   AS_BASIC.False_atom rn -> AS_BASIC.False_atom rn
   AS_BASIC.Predication predH -> AS_BASIC.Predication
-      $ head $ getSimpleId $ applyMorphism mor $ Id.simpleIdToId predH
+      $ id2SimpleId $ applyMorphism mor $ Id.simpleIdToId predH
 
 morphismUnion :: Morphism -> Morphism -> Result.Result Morphism
 morphismUnion mor1 mor2 =
