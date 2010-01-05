@@ -24,7 +24,6 @@ import Common.Utils(getEnvDef, nubOrd)
 
 import System.Cmd(system)
 import System.Directory(getTemporaryDirectory)
-import System.IO.Unsafe(unsafePerformIO)
 
 {-
    Automatic termination proof
@@ -38,14 +37,10 @@ import System.IO.Unsafe(unsafePerformIO)
    if a equation system is terminal, then it is computable.
 -}
 
-terminationProof :: Ord f => [FORMULA f] -> [(TERM f,FORMULA f)] -> Maybe Bool
-terminationProof fs dms
-    | null fs            = Just True
-    | proof == "YES\n"   = Just True
-    | proof == "MAYBE\n" = Nothing
-    | proof == "NO\n"    = Just False
-    | otherwise          = Nothing
-    where
+terminationProof :: Ord f => [FORMULA f] -> [(TERM f, FORMULA f)]
+  -> IO (Maybe Bool)
+terminationProof fs dms = if null fs then return $ Just True else do
+  let
     allVar = nubOrd . concat
     varsStr vars str
         | null vars = str
@@ -62,16 +57,18 @@ terminationProof fs dms
     c_axms = axhead ++ axiomTrs fs "" ++ ")\n"
     ipath = "/Input.trs"
     opath = "/Result.txt"
-    proof = unsafePerformIO (do
-                tmpDir <- getTemporaryDirectory
-                writeFile (tmpDir ++ ipath) (c_vars ++ c_axms)
-                aprovePath <- getEnvDef "HETS_APROVE"
+  tmpDir <- getTemporaryDirectory
+  writeFile (tmpDir ++ ipath) (c_vars ++ c_axms)
+  aprovePath <- getEnvDef "HETS_APROVE"
                   "CASL/Termination/AProVE.jar"
-                system ("java -jar " ++ aprovePath ++ " -u cli -m " ++
+  system ("java -jar " ++ aprovePath ++ " -u cli -m " ++
                         "wst -p plain " ++ tmpDir ++
                         ipath ++ " | head -n 1 > " ++ tmpDir ++ opath)
-                readFile (tmpDir ++ opath))
-
+  proof <- readFile (tmpDir ++ opath)
+  return $ case proof of
+    "YES\n" -> Just True
+    "NO\n" -> Just False
+    _ -> Nothing
 
 -- | get the name of a operation symbol
 opSymName :: OP_SYMB -> String

@@ -412,25 +412,24 @@ checkIncomplete osens m fsn
 
 checkTerminal  :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
     -> [Named (FORMULA ())]
-    -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
-checkTerminal (osig, osens) m fsn
-    | not (null fs_terminalProof) && proof /= Just True =
-        if proof == Just False
-            then Just $ warning (Just (Cons, obligations))
-                 "not terminating" nullRange
-            else Just $ warning (Just (Cons, obligations))
-                 "cannot prove termination" nullRange
-    | not $ null obligations = Just $ return (Just (conStatus,obligations))
-    | otherwise = Nothing
-    where
-        fs = getFs fsn
+    -> IO (Maybe (Result (Maybe (Conservativity, [FORMULA ()]))))
+checkTerminal (osig, osens) m fsn = do
+    let fs = getFs fsn
         fs_terminalProof = filter (\ f ->
           not $ isSortGen f || isMembership f || isExQuanti f || isDomain f
           ) fs
         domains = domainList fs
-        proof = terminationProof fs_terminalProof domains
         obligations = getObligations m fsn
-        conStatus = getConStatus (osig,osens) m fsn
+        conStatus = getConStatus (osig, osens) m fsn
+        res = if null obligations then Nothing else
+                  Just $ return (Just (conStatus, obligations))
+    if null fs_terminalProof then return res else do
+      proof <- terminationProof fs_terminalProof domains
+      return $ case proof of
+        Just True -> res
+        _ -> Just $ warning (Just (Cons, obligations))
+             (if isJust proof then "not terminating"
+              else "cannot prove termination") nullRange
 
 checkPositive :: [Named (FORMULA ())]
     -> Maybe (Result (Maybe (Conservativity, [FORMULA ()])))
@@ -487,17 +486,20 @@ checkPositive fsn
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
                  -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
-checkFreeType (osig, osens) m fsn = return $ head $ mapMaybe
-  ($ filter isAxiom $
+checkFreeType (osig, osens) m fsn = do
+  let axs = filter isAxiom $
                deleteFirstsBy (\ a b -> sentence a == sentence b) fsn $
-               map (mapNamed $ mapSen (const id) m) osens)
-  [ checkDefinitional osig
-  , checkSort (osig, osens) m
-  , checkLeadingTerms osens m
-  , checkIncomplete osens m
-  , checkTerminal (osig, osens) m
-  , checkPositive
-  , \ fsn' -> Just $ return $ Just (getConStatus (osig, osens) m fsn', []) ]
+               map (mapNamed $ mapSen (const id) m) osens
+  ms <- mapM ($ axs)
+    [ return . checkDefinitional osig
+    , return . checkSort (osig, osens) m
+    , return . checkLeadingTerms osens m
+    , return . checkIncomplete osens m
+    , checkTerminal (osig, osens) m
+    , return . checkPositive]
+  return $ case catMaybes ms of
+    [] -> return $ Just (getConStatus (osig, osens) m axs, [])
+    a : _ -> a
 
 prettyType :: FORMULA () -> String
 prettyType fm = case fm of
