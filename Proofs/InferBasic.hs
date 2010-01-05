@@ -196,10 +196,10 @@ instance Eq ConsistencyStatus where
 instance Ord ConsistencyStatus where
   compare = comparing sType
 
-consistencyCheck :: G_cons_checker -> AnyComorphism -> LibName -> LibEnv
+consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
-consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
-                 t'' = do
+consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
+  le dg (n', lbl) t'' = do
   let lidS = sourceLogic cid
       lidT = targetLogic cid
       thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
@@ -209,7 +209,10 @@ consistencyCheck (G_cons_checker lid4 cc) (Comorphism cid) ln le dg (n', lbl)
       mTimeout = "No results within: " ++ show t'
   case do
         (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
-        let sens = toNamedList axs
+        let namedSens = toNamedList axs
+            sens = if includeTheorems then
+              map (\ s -> s { isAxiom = True }) namedSens
+              else namedSens
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2

@@ -322,7 +322,7 @@ check ln le dg (Finder { finder = cc, comorphism = cs, selected = i}) timeout
                                    c = cs !! i in
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
-           res <- consistencyCheck cc c ln le dg n timeout
+           res <- consistencyCheck False cc c ln le dg n timeout
            postGUISync $ listStoreSetValue listNodes row fn { status = res }
            return $ count + 1) 0 nodes
 
