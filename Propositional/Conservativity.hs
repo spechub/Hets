@@ -110,10 +110,10 @@ runSKizzo :: String                  -- ^ File in qdimacs syntax
           -> IO Conservativity
 runSKizzo qd =
     do
-      hasProgramm <- check4Prover proverName "PATH" ()
-      case hasProgramm of
-        [] -> return $ Unknown (proverName ++ " not found in your $PATH$")
-        () : _ -> do
+      noProg <- missingExecutableInPath proverName
+      if noProg then
+        return $ Unknown (proverName ++ " not found in your $PATH$")
+        else do
               tmp  <- getTemporaryDirectory
               time <- getCurrentTime
               let path = tmp ++ "/sKizzoTemp_" ++

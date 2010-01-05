@@ -28,6 +28,7 @@ import SoftFOL.ProverState
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import Common.ProofTree
+import Common.ProverTools
 
 import Data.Char (isDigit)
 import Data.List (isPrefixOf)
@@ -40,7 +41,6 @@ import qualified Control.Concurrent as Concurrent
 import System.Exit
 import System.IO
 import System.Process
-import System.Cmd as Cmd -- needed for ghc-6.8.x
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -142,15 +142,14 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
         runDarwinRealM :: IO(CCStatus ProofTree)
         runDarwinRealM = do
             probl <- problem
-            hasProgramm <- Cmd.system ("which darwin > /dev/null 2> /dev/null")
-            case hasProgramm of
-              ExitFailure _ -> do
+            noProg <- missingExecutableInPath "darwin"
+            if noProg then do
                   infoDialog "Darwin prover" "Darwin not found"
                   return CCStatus
                     { ccResult = Nothing
                     , ccProofTree  = ProofTree "Darwin not found"
                     , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime 0 }
-              ExitSuccess -> do
+              else do
                   when saveTPTP $ writeFile (saveFileName ++ ".tptp") probl
                   t <- getCurrentTime
                   let timeTmpFile = "/tmp/" ++ saveFileName ++ show (utctDay t)
@@ -198,13 +197,13 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
-      hasProgramm <- Cmd.system ("which darwin > /dev/null 2> /dev/null")
-      case hasProgramm of
-        ExitFailure _ -> return
+      noProg <- missingExecutableInPath "darwin"
+      if noProg then
+        return
             (ATPError "Could not start Darwin. Is Darwin in your $PATH?",
                   emptyConfig (proverName darwinProver)
                               (AS_Anno.senAttr nGoal) emptyProofTree)
-        ExitSuccess -> do
+        else do
           prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: Darwin"]
           when saveTPTP

@@ -18,15 +18,15 @@ import Common.Utils
 import System.Directory
 import System.IO.Unsafe
 
--- ^ Checks if a Prover Binary exists and is executable
--- ^ in an unsafe manner
+-- | Checks if a Prover Binary exists and is executable
+--  in an unsafe manner
 unsafeProverCheck :: String -- ^ prover Name
                   -> String -- ^ Environment Variable
                   -> a
                   -> [a]
 unsafeProverCheck name env = unsafePerformIO . check4Prover name env
 
--- ^ Checks if a Prover Binary exists and is executable
+-- | Checks if a Prover Binary exists and is executable
 check4Prover :: String -- ^ prover Name
              -> String -- ^ Environment Variable
              -> a
@@ -39,7 +39,11 @@ check4Prover name env a = do
               execI <- mapM (\ x -> getPermissions $ x ++ "/" ++ name) ex
               return [ a | any executable execI ]
 
--- ^ Checks if a Prover Binary exists in an unsafe manner
+missingExecutableInPath :: String -> IO Bool
+missingExecutableInPath name =
+  fmap null $ check4Prover name "PATH" ()
+
+-- | Checks if a file exists in an unsafe manner
 unsafeFileCheck :: String -- ^ prover Name
                 -> String -- ^ Environment Variable
                 -> a
@@ -55,7 +59,7 @@ check4FileAux name env = do
       exIT <- mapM (\ x -> doesFileExist $ x ++ "/" ++ name) path
       return $ map fst $ filter snd $ zip path exIT
 
--- ^ Checks if a Prover Binary exists
+-- | Checks if a file exists
 check4File :: String -- ^ file name
            -> String -- ^ Environment Variable
            -> a
