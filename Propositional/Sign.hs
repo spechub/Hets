@@ -21,6 +21,7 @@ Definition of signatures for propositional logic
 
 module Propositional.Sign
     (Sign (..)                     -- Propositional Signatures
+    ,id2SimpleId
     ,pretty                        -- pretty printing
     ,isLegalSignature              -- is a signature ok?
     ,addToSig                      -- adds an id to the given Signature
@@ -43,6 +44,11 @@ newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
     pretty = printSign
+
+id2SimpleId :: Id -> Token
+id2SimpleId i = case filter (not . isPlace) $ getTokens i of
+  [] -> error "id2SimpleId"
+  c : _ -> c
 
 -- | determines whether a signature is vaild
 -- all sets are ok, so glued to true
@@ -77,5 +83,5 @@ sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) $ items sig2}
 -- | union of Signatures
 -- or do I have to care about more things here?
 sigUnion :: Sign -> Sign -> Result Sign
-sigUnion s1 s2 = Result [Diag Debug "All fine sigUnion" nullRange]
-    $ Just $ unite s1 s2
+sigUnion s1 = Result [Diag Debug "All fine sigUnion" nullRange]
+    . Just . unite s1

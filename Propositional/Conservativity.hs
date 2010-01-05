@@ -12,21 +12,16 @@ THe QBF solver sKizzo is used for conservativity checking. This is the
 code connecting it to Hets
 -}
 
-module Propositional.Conservativity
-    (
-     conserCheck
-    )
-    where
-
+module Propositional.Conservativity (conserCheck) where
 
 import Common.AS_Annotation
 import Common.Consistency
 import Common.Id
 import Common.Result
+import Common.ProverTools
 
 import Data.Time.Clock
 
-import System.Cmd as Cmd
 import System.Directory
 import System.Exit
 import System.Process
@@ -68,16 +63,7 @@ conserCheck (_, inSens) mor cSens = do
 
 -- | Extraction of needed formulas, removes all Axioms and Annotations
 getFormulas :: [Named FORMULA] -> [FORMULA]
-getFormulas sens = foldl (\out sen->
-                                     out ++
-                                     (
-                                      if (isAxiom sen)
-                                       then
-                                           [sentence sen]
-                                       else
-                                           []
-                                     )
-                                ) [] sens
+getFormulas = foldl (\ out sen -> out ++ [sentence sen | isAxiom sen]) []
 
 doConservCheck :: Sign       -- ^ Initial  Sign
                -> Sign       -- ^ Extended Sign
@@ -85,94 +71,77 @@ doConservCheck :: Sign       -- ^ Initial  Sign
                -> IO (Result (Maybe (Conservativity, [FORMULA])))
 doConservCheck inSig exSig form =
     do
-      (oSig , cnf) <- translateToCNF (exSig, [makeNamed "QBF Formula" form])
-      if (length cnf /= 1)
-       then
-           fail "Translation error"
-       else
-           do
+      (oSig, cnf) <- translateToCNF (exSig, [makeNamed "QBF Formula" form])
+      case cnf of
+        [sen] -> do
              let iMap = createSignMap oSig 1 Map.empty
                  iSym = items inSig
                  eSym = (items oSig) `Set.difference` iSym
-             qdim <- showQDimacs iSym eSym iMap cnf
-             res  <- runSKizzo qdim
+                 qdim = showQDimacs iSym eSym iMap $ flatten $ sentence sen
+             res <- runSKizzo qdim
              return (return (Just (res,[])))
+        _ -> fail "Translation error"
 
 -- | Printer for QDimacs Format
 showQDimacs :: Set.Set Id               -- ^ Symbols of initial  Sign
             -> Set.Set Id               -- ^ New symbols of extended Sign
             -> Map.Map Token Integer    -- ^ Map of Symbols
-            -> [Named FORMULA]          -- ^ Formulas to Translate
-            -> IO String
-showQDimacs inSym exSym sigMap forms =
-    do
-      let fforms  = concat $ map flatten $ map sentence forms
-          numVars = Set.size inSym + Set.size exSym
-      return $ "c Conservativity Problem Created by Hets \n" ++
+            -> [FORMULA]          -- ^ Formulas to Translate
+            -> String
+showQDimacs inSym exSym sigMap fforms =
+      let numVars = Set.size inSym + Set.size exSym
+          fct sym str = show (Map.findWithDefault 0 (id2SimpleId sym) sigMap)
+                        ++ " " ++  str
+      in "c Conservativity Problem Created by Hets \n" ++
              "p cnf " ++ show numVars ++ " " ++
-             (show $ length fforms) ++ "\n" ++
-             "a " ++ Set.fold
-                      (\sym str ->
-                           (show $ Map.findWithDefault 0 (head $
-                              getSimpleId sym) sigMap) ++ " " ++  str
-                      ) "" inSym ++ "0\n" ++
-             "e " ++ Set.fold
-                      (\sym str ->
-                           (show $ Map.findWithDefault 0 (head $
-                              getSimpleId sym) sigMap) ++ " " ++ str
-                      ) "" exSym ++ "0\n" ++
-             (\tflAxs ->
+             show (length fforms) ++ "\n" ++
+             "a " ++ Set.fold fct "" inSym ++ "0\n" ++
+             "e " ++ Set.fold fct "" exSym ++ "0\n" ++
+             (\ tflAxs ->
                   case tflAxs of
                     [] -> ""
                     _  -> "c Axioms\n" ++
-                              (foldl (\sr xv -> sr ++
+                              (foldl (\ sr xv -> sr ++
                                       mapClause xv sigMap) "" tflAxs)
              ) fforms
-
--- | gets simple Id
-getSimpleId :: Id -> [Token]
-getSimpleId (Id toks _ _) = toks
 
 -- | Runs sKizzo that has to reside in your path
 runSKizzo :: String                  -- ^ File in qdimacs syntax
           -> IO Conservativity
 runSKizzo qd =
     do
-      hasProgramm <- Cmd.system ("which " ++  proverName
-                             ++ " > /dev/null 2> /dev/null")
+      hasProgramm <- check4Prover proverName "PATH" ()
       case hasProgramm of
-        ExitFailure _ ->
-            do
-              return $ Unknown (proverName ++ " not found in your $PATH$")
-        ExitSuccess ->
-            do
+        [] -> return $ Unknown (proverName ++ " not found in your $PATH$")
+        () : _ -> do
               tmp  <- getTemporaryDirectory
               time <- getCurrentTime
               let path = tmp ++ "/sKizzoTemp_" ++
-                         (replaceBaddies $ show time) ++ ".qdimacs"
+                         replaceBaddies (show time) ++ ".qdimacs"
               writeFile path qd
               let command = proverName ++ " " ++ defOptions ++ " " ++ path
               (_,_,_,pid) <- runInteractiveCommand command
               exCode <- waitForProcess pid
               removeFile path
-              case exCode of
-                ExitFailure 10   -> return Cons
-                ExitFailure 20   -> return Inconsistent
-                ExitFailure 30   -> return $ Unknown "Timeout"
-                ExitFailure 40   -> return $ Unknown "Cannot solve"
-                ExitFailure 250  -> return $ Unknown "Out of memory"
-                ExitFailure 251  -> return $ Unknown "sKizzo crashed"
-                ExitFailure 254  -> return $ Unknown "File not found"
-                ExitFailure (-4) -> return $ Unknown "Parse error"
-                ExitFailure (-5) -> return $ Unknown "sKizzo crashed"
-                ExitFailure (-6) -> return $ Unknown "Out of memory"
-                n                -> return $ Unknown $ "Unkown, exit was: " ++
-                                    show n
+              return $ case exCode of
+                ExitFailure n -> case n of
+                  10   -> Cons
+                  20   -> Inconsistent
+                  30   -> Unknown "Timeout"
+                  40   -> Unknown "Cannot solve"
+                  250  -> Unknown "Out of memory"
+                  251  -> Unknown "sKizzo crashed"
+                  254  -> Unknown "File not found"
+                  -4   -> Unknown "Parse error"
+                  -5   -> Unknown "sKizzo crashed"
+                  -6   -> Unknown "Out of memory"
+                  _    -> Unknown $ "Unkown, exit was: " ++ show n
+                _ -> Unknown $ "Unkown, exit was: " ++ show exCode
 
 -- | Helper to filter out problematic characters
 replaceBaddies :: String -> String
-replaceBaddies s = map (\x -> case x of
+replaceBaddies = map (\ x -> case x of
                                ' ' -> '_'
                                ':' -> '_'
                                y   -> y
-                      ) s
+                      )
