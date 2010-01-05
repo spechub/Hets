@@ -94,8 +94,8 @@ consCheck thName _ tm _ =
                 thName_clean = map (\c -> if c == '/' then '_' else c) thName
                 tmpFile = "/tmp/" ++ (thName_clean ++ "_cc.dimacs")
                 resultFile = tmpFile ++ ".result"
-            dimacsOutput <-  PC.ioDIMACSProblem (thName ++ "_cc")
-                             sig ( [(AS_Anno.makeNamed "myAxioms" $
+                dimacsOutput = PC.showDIMACSProblem (thName ++ "_cc")
+                             sig [(AS_Anno.makeNamed "myAxioms" $
                                      AS_BASIC.Implication
                                      (
                                       AS_BASIC.Conjunction
@@ -110,8 +110,7 @@ consCheck thName _ tm _ =
                                     , AS_Anno.isDef   = False
                                     , AS_Anno.wasTheorem = False
                                     }
-                                   ]
-                                 )[]
+                                   ] []
             outputHf <- openFile tmpFile ReadWriteMode
             hPutStr outputHf dimacsOutput
             hClose outputHf

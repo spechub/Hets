@@ -12,9 +12,7 @@ Helper functions for printing of Theories in DIMACS-CNF Format
 -}
 
 module Propositional.Conversions
-    (
-     showDIMACSProblem
-    ,ioDIMACSProblem
+    (showDIMACSProblem
     ,goalDIMACSProblem
     ,createSignMap
     ,mapClause
@@ -42,27 +40,18 @@ goalDIMACSProblem thName pState conjec _ =
         sign = PState.initialSignature pState
         axs  = PState.initialAxioms    pState
     in
-      ioDIMACSProblem thName sign axs [conjec]
-
--- | IO output of DIMACS Problem
-ioDIMACSProblem :: String                     -- name of the theory
-                -> Sig.Sign                   -- Signature
-                -> [AS_Anno.Named AS.FORMULA] -- Axioms
-                -> [AS_Anno.Named AS.FORMULA] -- Conjectures
-                -> IO String                  -- Output
-ioDIMACSProblem name sig axs cons =
-     showDIMACSProblem name sig axs cons
+      return $ showDIMACSProblem thName sign axs [conjec]
 
 -- | Translation of a Propositional Formula to a String in DIMACS Format
 showDIMACSProblem :: String                     -- name of the theory
                   -> Sig.Sign                   -- Signature
                   -> [AS_Anno.Named AS.FORMULA] -- Axioms
                   -> [AS_Anno.Named AS.FORMULA] -- Conjectures
-                  -> IO String                  -- Output
+                  -> String                     -- Output
 showDIMACSProblem name fSig axs cons =
     let
         nakedCons   = map (AS_Anno.sentence) cons
-        negatedCons = (\ncons ->
+        negatedCons = (\ ncons ->
                            case ncons of
                              [] -> []
                              _  ->
@@ -81,35 +70,29 @@ showDIMACSProblem name fSig axs cons =
                                 }
                                ]
                       ) nakedCons
-    in
-              do
-                let tAxs = map (AS_Anno.mapNamed cnf) axs
-                    tCon = map (AS_Anno.mapNamed cnf) negatedCons
-                    tfAxs        = concat $ map PT.flatten $
-                                   map AS_Anno.sentence tAxs
-                    tfCon        = concat $ map PT.flatten $
-                                   map AS_Anno.sentence tCon
-                    numVars      = Set.size $ Sig.items fSig
-                    numClauses   = length tfAxs + length tfCon
-                    sigMap       = createSignMap fSig 1 Map.empty
-                return $ "c " ++ name ++ "\n" ++
-                           "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n"++
+        tAxs = map (AS_Anno.mapNamed cnf) axs
+        tCon = map (AS_Anno.mapNamed cnf) negatedCons
+        flatSens = PT.flatten . AS_Anno.sentence
+        tfAxs        = concatMap flatSens tAxs
+        tfCon        = concatMap flatSens tCon
+        numVars      = Set.size $ Sig.items fSig
+        numClauses   = length tfAxs + length tfCon
+        sigMap       = createSignMap fSig 1 Map.empty
+        fct sr xv    = sr ++ mapClause xv sigMap
+        in "c " ++ name ++ "\n" ++
+           "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n" ++
                                         (\tflAxs ->
                                              case tflAxs of
                                                [] -> ""
                                                _  -> "c Axioms\n" ++
-                                                     (foldl (\sr xv -> sr ++
-                                                             mapClause xv sigMap) "" tflAxs)
+                                                     foldl fct "" tflAxs
                                         ) tfAxs ++
                                         (\tflCon ->
                                              case tflCon of
                                                [] -> ""
                                                _  -> "c Conjectures\n" ++
-                                                     (foldl (\sr xv -> sr ++
-                                                             mapClause xv sigMap) ""
-                                                      tflCon)
-                                        )
-                           tfCon
+                                                     foldl fct "" tflCon
+                                        ) tfCon
 
 -- | Create signature map
 createSignMap :: Sig.Sign
@@ -122,16 +105,9 @@ createSignMap sig inNum inMap =
         minL = Set.findMin it
         nSig = Sig.Sign {Sig.items = Set.deleteMin it}
     in
-      case (Set.null it) of
-        True  -> inMap
-        False -> createSignMap
-                 nSig
-                 (inNum + 1)
-                 (Map.insert (head $ getSimpleId minL) inNum inMap)
-
--- | gets simple Id
-getSimpleId :: Id.Id -> [Id.Token]
-getSimpleId (Id.Id toks _ _) = toks
+      if Set.null it then inMap else
+      createSignMap nSig (inNum + 1)
+                 (Map.insert (Sig.id2SimpleId minL) inNum inMap)
 
 -- | Mapping of a single Clause
 mapClause :: AS.FORMULA
@@ -139,10 +115,9 @@ mapClause :: AS.FORMULA
           -> String
 mapClause form mapL =
     case form of
-      AS.Disjunction ts _ -> (foldl
-                              (\sr xv -> sr ++ (mapLiteral xv mapL) ++ " ")
+      AS.Disjunction ts _ -> foldl
+                              (\sr xv -> sr ++ mapLiteral xv mapL ++ " ")
                               "" ts
-                             )
                             ++ " 0 \n"
       AS.Negation (AS.Predication _) _ -> mapLiteral form mapL ++ " 0 \n"
       AS.Predication _    -> mapLiteral form mapL ++ " 0 \n"

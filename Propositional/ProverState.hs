@@ -32,7 +32,8 @@ data PropProverState = PropProverState
 -- | function to create prover state
 propProverState :: Sign.Sign                  -- Input Signature
                 -> [AS_Anno.Named AS.FORMULA] -- Input Formulae
-                -> [LP.FreeDefMorphism AS.FORMULA PMorphism.Morphism] -- ^ free definitions
+                -> [LP.FreeDefMorphism AS.FORMULA PMorphism.Morphism]
+                -- ^ free definitions
                 -> PropProverState
 propProverState sign aSens freedefs =
     let

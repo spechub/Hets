@@ -66,45 +66,17 @@ myForm :: FORMULA
 myForm = (Predication (mkSimpleId "a"))
 -}
 
-myEmptyForm = [SenAttr
-               {
-                 senAttr = "myForm"
-               , isAxiom = True
-               , isDef   = False
-               , wasTheorem = False
-               , sentence = myForm
-               }
-              ]
+myEmptyForm = makeNamed "myForm" myForm
 
-myForms = [SenAttr
-           {
-             senAttr = "myForm"
-           , isAxiom = True
-           , isDef   = False
-           , wasTheorem = False
-           , sentence = myForm
-           }
-          ,SenAttr
-           {
-             senAttr = "myOtherForm"
-           , isAxiom = True
-           , isDef   = False
-           , wasTheorem = False
-           , sentence = myOtherForm
-           }
-          ]
+otherForm = makeNamed "myOtherForm" myOtherForm
 
-runAll    = show $ translateToCNF (mySig, myEmptyForm)
+myForms = [myEmptyForm, otherForm]
 
-showStuff = PC.ioDIMACSProblem "Problem " mySig myForms []
+runAll = translateToCNF (mySig, [myEmptyForm])
 
-showProof = PC.goalDIMACSProblem "DIMACSProblem" (propProverState mySig myForms)
-            SenAttr
-            {
-              senAttr = "myOtherForm"
-            , isAxiom = True
-            , isDef   = False
-            , wasTheorem = False
-            , sentence = myOtherForm
-            }
-            []
+showStuff :: IO String
+showStuff = return $ PC.showDIMACSProblem "Problem " mySig myForms []
+
+showProof = PC.goalDIMACSProblem "DIMACSProblem"
+            (propProverState mySig myForms [])
+            otherForm []
