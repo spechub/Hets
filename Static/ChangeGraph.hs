@@ -8,6 +8,12 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
 functions to manipulate a development graph for change management
+
+All of the following functions may fail, therefore the result type should
+not be taken literally, but maybe changed to some monadic result type.
+
+Also all functions modify an development graph when the are successful, which
+may be captured by some form of a state monad.
 -}
 
 module Static.ChangeGraph where
@@ -23,14 +29,7 @@ import Common.Consistency
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
 
--- * adding or deleting nodes or links
-
-{- All of the following functions may fail, therefore the result type should
-not be taken literally, but maybe changed to some monadic result type.
-
-Also all functions modify an development graph when the are successful, which
-may be captured by some form of a state monad.
--}
+-- * deleting and adding nodes
 
 {- | delete a node by index.
 
@@ -52,11 +51,19 @@ symbols.
 The required conservativity is some value from
 `Common.Consistency.Conservativity' like usually 'None' or 'Cons'.
 
-Reference nodes can not be added this way. -}
+Reference nodes can not be added this way. Also the references and morphisms
+to normal forms for hiding or free links cannot be set this way. So further
+function are needed. -}
 
 addDGNode :: NodeName -> G_theory -> DGOrigin -> Conservativity -> DGraph
   -> (DGraph, Node)
 addDGNode = undefined
+
+{- | Maybe a function to rename nodes is desirable -}
+renameNode :: Node -> NodeName -> DGraph -> DGraph
+renameNode = undefined
+
+-- * deleting and adding links
 
 {- | delete a link given the source and target node by index and the edge-id.
 
@@ -76,10 +83,6 @@ automatically? -}
 
 deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> DGraph
 deleteDGLink = undefined
-
-{- | Maybe a function to rename nodes is desirable -}
-renameNode :: Node -> NodeName -> DGraph -> DGraph
-renameNode = undefined
 
 {- | add a link supplying the necessary information.
 
@@ -160,6 +163,7 @@ invalid sentences are left.  -}
 
 setSignature :: Node -> G_sign -> DGraph -> DGraph
 setSignature = undefined
+
 {- | delete symbols from a node's signature.
 
 Deleting symbols is a special case of setting a node's signature. The new
@@ -199,7 +203,9 @@ extendSignature = undefined
 
 -- * modifying local sentences of a node
 
-{- Local sentences have been either directly added or have been inserted by
+{- | a logic independent sentence data type, yet missing in Logic.Grothendieck
+
+Local sentences have been either directly added or have been inserted by
 local inference. Sentences inserted by local inference should not be
 manipulated at the target node but only at the original source. But maybe it
 should be possible to delete such sentences explicitly to match the
@@ -221,7 +227,6 @@ that the used axioms are valid in their original theory.
 So a change of a sentence may invalidate proofs in nodes reachable via theorem
 or definition links.  -}
 
--- any sentence data type, yet missing in Logic.Grothendieck
 data GSentence
 
 {- | delete the sentence that fulfills the given predicate.

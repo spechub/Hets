@@ -442,7 +442,8 @@ docs/index.html:
 	$(HADDOCK) -o docs -h -v -s ../%F \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
-             Syntax/ADoc.hs $(filter-out Test.hs, $(wildcard *.hs))
+             Syntax/ADoc.hs $(filter-out Test.hs, $(wildcard *.hs)) \
+             Static/ChangeGraph.hs
 
 derivedSources: $(derived_sources)
 
