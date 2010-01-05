@@ -204,7 +204,7 @@ addCommandHistoryToState intSt st pcm pt
 conservativityRule :: DGRule
 conservativityRule = DGRule "ConservativityCheck"
 
-conservativityChoser :: Bool ->[ConservativityChecker sign sentence morphism]
+conservativityChoser :: Bool -> [ConservativityChecker sign sentence morphism]
   -> IO (Result (ConservativityChecker sign sentence morphism))
 #ifdef UNI_PACKAGE
 conservativityChoser useGUI checkers = case checkers of
@@ -212,7 +212,7 @@ conservativityChoser useGUI checkers = case checkers of
   hd : tl ->
     if useGUI && not (null tl) then do
       chosenOne <- listBox "Pic a conservativity checker"
-                                $ Prelude.map checker_id checkers
+                                $ Prelude.map checkerId checkers
       case chosenOne of
         Nothing -> return $ fail "No conservativity checker chosen"
         Just i -> return $ return $ checkers !! i
@@ -306,11 +306,11 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                    inputThSens = nubBy (\ a b -> sentence a == sentence b) $
                                  toNamedList $
                                  sensT `OMap.difference` transSensSrc
-                   Result ds res =
+               Result ds res <-
                        chCons
                           (plainSign signS', toNamedList sensS')
                           compMor inputThSens
-                   consShow = case res of
+               let consShow = case res of
                               Just (Just (cst, _)) -> cst
                               _                    -> Unknown "Unknown"
                    cs' = consShow

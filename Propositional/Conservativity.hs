@@ -18,18 +18,21 @@ module Propositional.Conservativity
     )
     where
 
+
 import Common.AS_Annotation
-import Common.Result
 import Common.Consistency
-import qualified Data.Set as Set
 import Common.Id
-import System.Exit
-import System.IO.Unsafe
-import qualified Data.Map as Map
-import System.Directory
+import Common.Result
+
 import Data.Time.Clock
-import System.Process
+
 import System.Cmd as Cmd
+import System.Directory
+import System.Exit
+import System.Process
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- Propositional Stuff
 import Propositional.Sign
@@ -49,21 +52,19 @@ defOptions = "-timeout 60"
 conserCheck :: (Sign, [Named FORMULA])      -- ^ Initial sign and formulas
            -> Morphism                      -- ^ morhpism between specs
            -> [Named FORMULA]               -- ^ Formulas of extended spec
-           -> Result (Maybe (Conservativity, [FORMULA]))
-conserCheck (_, inSens) mor cSens=
-    do
+           -> IO (Result (Maybe (Conservativity, [FORMULA])))
+conserCheck (_, inSens) mor cSens = do
       let cForms  = getFormulas cSens
           inSig   =  source mor
           cSig    =  target mor
-      inFormsM <- mapM (mapSentence mor) $ getFormulas inSens
-      let checkForm =
-              Implication
+      case mapM (mapSentence mor) $ getFormulas inSens of
+        Result ds Nothing -> return $ Result ds Nothing
+        Result _ (Just inFormsM) -> do
+          let checkForm = Implication
                  (Conjunction inFormsM nullRange)
                  (Conjunction cForms nullRange)
                  nullRange
-      result <- unsafePerformIO $
-                doConservCheck inSig cSig checkForm
-      return result
+          doConservCheck inSig cSig checkForm
 
 -- | Extraction of needed formulas, removes all Axioms and Annotations
 getFormulas :: [Named FORMULA] -> [FORMULA]

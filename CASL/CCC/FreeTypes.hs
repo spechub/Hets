@@ -486,8 +486,8 @@ checkPositive fsn
 -- | free datatypes and recursive equations are consistent
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())]
-                 -> Result (Maybe (Conservativity, [FORMULA ()]))
-checkFreeType (osig, osens) m fsn = head $ mapMaybe
+                 -> IO (Result (Maybe (Conservativity, [FORMULA ()])))
+checkFreeType (osig, osens) m fsn = return $ head $ mapMaybe
   ($ filter isAxiom $
                deleteFirstsBy (\ a b -> sentence a == sentence b) fsn $
                map (mapNamed $ mapSen (const id) m) osens)

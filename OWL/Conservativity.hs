@@ -31,7 +31,6 @@ import OWL.Sign
 import System.Directory
 import System.Exit
 import System.IO
-import System.IO.Unsafe
 
 toolName :: String
 toolName = "owl_locality"
@@ -41,9 +40,9 @@ conserCheck :: String                        -- ^ Conser type
            -> (Sign, [Named Axiom])       -- ^ Initial sign and formulas
            -> OWLMorphism                    -- ^ morphism between specs
            -> [Named Axiom]               -- ^ Formulas of extended spec
-           -> Result (Maybe (Conservativity, [Axiom]))
-conserCheck ct (sig, forms) mor =
-  unsafePerformIO . doConservCheck "OWLLocality.jar" ct sig forms mor
+           -> IO (Result (Maybe (Conservativity, [Axiom])))
+conserCheck ct (sig, forms) =
+  doConservCheck "OWLLocality.jar" ct sig forms
 
 -- | Real conservativity check in IO Monad
 doConservCheck :: String            -- ^ Jar name

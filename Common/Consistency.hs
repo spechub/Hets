@@ -45,9 +45,9 @@ instance Pretty Conservativity where
   pretty = text . showConsistencyStatus
 
 data ConservativityChecker sign sentence morphism = ConservativityChecker
-    { checker_id :: String
+    { checkerId :: String
     , checkConservativity
         :: (sign, [Named sentence])
         -> morphism
         -> [Named sentence]
-        -> Result (Maybe (Conservativity, [sentence])) }
+        -> IO (Result (Maybe (Conservativity, [sentence]))) }

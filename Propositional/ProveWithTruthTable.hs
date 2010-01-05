@@ -41,7 +41,6 @@ import qualified Common.Id as Id
 
 import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
-import System.IO.Unsafe
 
 import Common.Consistency
 import qualified Common.Result as Result
@@ -401,7 +400,7 @@ ttConservativityChecker ::
               (Sign, [AS_Anno.Named FORMULA]) -- ^ Initial sign and formulas
            -> PMorphism.Morphism              -- ^ morhpism between specs
            -> [AS_Anno.Named FORMULA]         -- ^ Formulas of extended spec
-           -> Result.Result (Maybe (Conservativity, [FORMULA]))
+           -> IO (Result.Result (Maybe (Conservativity, [FORMULA])))
 ttConservativityChecker (_, srcSens) mor tarSens =
   let srcAxs        = filter AS_Anno.isAxiom srcSens
       tarAxs        = filter AS_Anno.isAxiom tarSens
@@ -411,7 +410,7 @@ ttConservativityChecker (_, srcSens) mor tarSens =
       tarSig        = items $ PMorphism.target mor
       newSig        = Set.difference tarSig imageSig
       sigSize       = Set.size tarSig
-  in if sigSize >= maxSigSize then return Nothing
+  in if sigSize >= maxSigSize then return $ return Nothing
     else do
       let imageAxs = map (AS_Anno.mapNamed (PMorphism.mapSentenceH mor)) srcAxs
           models = allModels (Sign imageSig)
@@ -455,7 +454,6 @@ ttConservativityChecker (_, srcSens) mor tarSens =
             ++ "- = not OK, has no expansion, hence conservativity fails\n"
             ++ "o = OK, not a model of the axioms, hence no expansion needed\n"
           body = legend++"\n"++render id (renderTT table)
-          disp = createTextSaveDisplay title "unnamed" body
           res = if isOK then Cons else Inconsistent
-      return (seq (unsafePerformIO disp) (Just (res,[])))
-
+      createTextSaveDisplay title "unnamed" body
+      return $ return $ Just (res, [])
