@@ -114,6 +114,7 @@ instance Logic Propositional
       stability Propositional     = Experimental
       top_sublogic Propositional  = Sublogic.top
       all_sublogics Propositional = sublogics_all
+      empty_proof_tree Propositional = emptyProofTree
     -- supplied provers
       provers Propositional = []
 #ifdef UNI_PACKAGE
