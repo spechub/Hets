@@ -253,7 +253,10 @@ instance Pretty ConsStatus where
      c -> text (show c) <> pretty thm
 
 instance Pretty DGLinkType where
-    pretty t = text (getDGEdgeTypeModIncName $ getHomEdgeType False True t)
+    pretty t = (case t of
+       FreeOrCofreeDefLink v _ -> text $ show v
+       _ -> Doc.empty)
+         <> text (getDGEdgeTypeModIncName $ getHomEdgeType False True t)
                <> prettyThmLinkStatus t
                $+$ pretty (getLinkConsStatus t)
 
@@ -265,8 +268,10 @@ instance Pretty DGLinkLab where
     , if dglPending l then text "proof chain incomplete" else Doc.empty
     , pretty $ dgl_morphism l
     , case dgl_type l of
-        HidingFreeOrCofreeThm Nothing gm _ ->
-          text "with hiding morphism:" $+$ pretty gm
+        HidingFreeOrCofreeThm k gm _ -> text ("with " ++ (case k of
+          Nothing -> "hiding"
+          Just v -> map toLower (show v))
+          ++ " morphism:") $+$ pretty gm
         _ -> Doc.empty ]
 
 -- | pretty print a labelled node
