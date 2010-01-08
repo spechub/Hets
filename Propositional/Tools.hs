@@ -25,9 +25,11 @@ Some helper functions for Propositional Logic
 module Propositional.Tools
     ( flatten                   -- "flattening" of specs
     , flattenDis                -- "flattening" of disjunctions
+    , negateFormula
     ) where
 
-import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
+import Common.Id
+import Propositional.AS_BASIC_Propositional
 
 -- | the flatten functions use associtivity to "flatten" the syntax
 -- | tree of the formulae
@@ -37,13 +39,21 @@ import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 -- | \"clause\" into a single formula for CNF we really will obtain
 -- | clauses
 
-flatten :: AS_BASIC.FORMULA -> [AS_BASIC.FORMULA]
+flatten :: FORMULA -> [FORMULA]
 flatten f = case f of
-      AS_BASIC.Conjunction fs _ -> concatMap flatten fs
+      Conjunction fs _ -> concatMap flatten fs
       _ -> [f]
 
 -- | "flattening" for disjunctions
-flattenDis :: AS_BASIC.FORMULA -> [AS_BASIC.FORMULA]
+flattenDis :: FORMULA -> [FORMULA]
 flattenDis f = case f of
-      AS_BASIC.Disjunction fs _ -> concatMap flattenDis fs
+      Disjunction fs _ -> concatMap flattenDis fs
       _ -> [f]
+
+-- | negate a formula
+negateFormula :: FORMULA -> FORMULA
+negateFormula f = case f of
+  False_atom ps -> True_atom ps
+  True_atom ps -> False_atom ps
+  Negation nf _ -> nf
+  _ -> Negation f nullRange

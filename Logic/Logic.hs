@@ -255,6 +255,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | simplification of sentences (leave out qualifications)
       simplify_sen :: lid -> sign -> sentence -> sentence
       simplify_sen _ _ = id  -- default implementation
+      -- | negation of a sentence for disproving
+      negation :: lid -> sentence -> Maybe sentence
+      negation _ _ = Nothing
       -- | parsing of sentences
       parse_sentence :: lid -> Maybe (AParser st sentence)
       parse_sentence _ = Nothing

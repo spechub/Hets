@@ -41,6 +41,7 @@ import CASL.ColimSign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Taxonomy
+import CASL.Simplify
 import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint () -- currently unused
@@ -201,6 +202,7 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
 
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       map_sen CASL m = return . mapSen (const id) m
+      negation CASL = negateFormula
       parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap

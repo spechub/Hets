@@ -15,7 +15,21 @@ module CASL.Simplify where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
+
+import Common.Id
 import Common.Utils (nubOrd)
+
+negateForm :: FORMULA f -> Range -> FORMULA f
+negateForm f r = case f of
+  False_atom ps -> True_atom ps
+  True_atom ps -> False_atom ps
+  Negation nf _ -> nf
+  _ -> Negation f r
+
+negateFormula :: FORMULA f -> Maybe (FORMULA f)
+negateFormula f = case f of
+  Sort_gen_ax {} -> Nothing
+  _ -> Just $ negateForm f nullRange
 
 simplifyRecord :: Ord f => (f -> f) -> Record f (FORMULA f) (TERM f)
 simplifyRecord mf = (mapRecord mf)
@@ -57,10 +71,7 @@ simplifyRecord mf = (mapRecord mf)
            True_atom _ -> f2
            False_atom _ -> Negation f2 ps
            _ -> if f1 == f2 then True_atom ps else Equivalence f1 f2 ps
-    , foldNegation = \ _ nf ps -> case nf of
-      False_atom _ -> True_atom ps
-      True_atom _ -> False_atom ps
-      _ -> Negation nf ps
+    , foldNegation = \ _ nf ps -> negateForm nf ps
     , foldStrong_equation = \ _ t1 t2 ps ->
       if t1 == t2 then True_atom ps else Strong_equation t1 t2 ps
     }
