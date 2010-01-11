@@ -1,9 +1,9 @@
 
 module Maude.Shellout (
-    runMaude, 
-    basicAnalysis, 
-    findSpec, 
-    getAllOutput, 
+    runMaude,
+    basicAnalysis,
+    findSpec,
+    getAllOutput,
     getAllSpec,
 ) where
 
@@ -70,12 +70,12 @@ findSpec = let
 -- | extracts a Maude module or view
 getAllOutput :: Handle -> String -> Bool -> IO String
 getAllOutput hOut s False = do
-    ready <- hReady hOut
+    ready <- hWaitForInput hOut 500
     if ready
-        then do 
+        then do
             ss <- hGetLine hOut
             getAllOutput hOut (s ++ "\n" ++ ss) (final ss)
-        else do 
+        else do
             handle <- hShow hOut
             error $ "No output available on handle: " ++ handle
 getAllOutput _ s True = return $ prepare s
@@ -83,12 +83,12 @@ getAllOutput _ s True = return $ prepare s
 -- | extracts the Haskell representation of a Maude module or view
 getAllSpec :: Handle -> String -> Bool -> IO String
 getAllSpec hOut s False = do
-    ready <- hReady hOut
+    ready <- hWaitForInput hOut 500
     if ready
         then do
             ss <- hGetLine hOut
             getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
-        else do 
+        else do
             handle <- hShow hOut
             error $ "No spec available on handle: " ++ handle
 getAllSpec _ s True = return s
@@ -109,4 +109,4 @@ finalSpec _ = False
 
 -- | drops the header and adds the parens for Full Maude
 prepare :: String -> String
-prepare s = "(" ++ (drop 8 s) ++ ")"
+prepare s = "(" ++ drop 8 s ++ ")"
