@@ -78,8 +78,8 @@ Deleted edge-ids are never reused.
 
 Local theorem links are proven by moving sentences from the source to target
 node and changing them to theorems. So if such a proven local theorem link is
-removed the target node needs to be adjusted, too. Should this happen
-automatically? -}
+removed the target node needs to be adjusted, too. This should happen
+automatically! -}
 
 deleteDGLink :: Node -> Node -> EdgeId -> DGraph -> DGraph
 deleteDGLink = undefined
@@ -156,10 +156,9 @@ first extract all symbols from a sentence and compare it to the set of
 signature symbols. (Extracting symbols from sentences is no method of the
 class logic.)
 
-Should the function fail or silently remove invalid sentences? Since there are
-functions to remove sentences explicitely, we leave it to the user to remove
-sentences first before reducing or changing the signature and simply fail if
-invalid sentences are left.  -}
+Since there are functions to remove sentences explicitely, we leave it to the
+user to remove sentences first before reducing or changing the signature and
+simply fail if invalid sentences are left!  -}
 
 setSignature :: Node -> G_sign -> DGraph -> DGraph
 setSignature = undefined
@@ -174,7 +173,10 @@ It is only checked that the symbol set difference of the new and old signature
 corresponds to the supplied symbol set. (Alternatively it could be checked if
 the new signature is a sub-signature of the old one.)
 
-Invalid sentences will be treated as above when setting a signature.
+The target nodes of outgoing definition links will be adjusted according to
+the reduced closed signature automatically.
+
+Invalid sentences should have been removed before.
 
 This function can be easily extended to delete raw symbol via the logic
 specific matching between raw and signature symbols.  -}
@@ -196,7 +198,10 @@ type-checking may fail for the syntactic representation of these sentences.
 
 It is, however, possible to extend a given signature by a basic spec as
 happens for usual spec extensions, but note that the basic analysis may also
-yield sentences that might need to be added separately.  -}
+yield sentences that might need to be added separately.
+
+Again target nodes of outgoing definition links will be adjusted
+automatically.  -}
 
 extendSignature :: Node -> G_sign -> DGraph -> DGraph
 extendSignature = undefined
