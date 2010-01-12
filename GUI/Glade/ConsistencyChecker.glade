@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <glade-interface>
-  <!-- interface-requires gtk+ 2.12 -->
+  <!-- interface-requires gtk+ 2.8 -->
   <!-- interface-naming-policy project-wide -->
   <widget class="GtkWindow" id="ConsistencyChecker">
     <child>
@@ -184,7 +184,6 @@
                                       <widget class="GtkSpinButton" id="sbTimeout">
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
-                                        <property name="invisible_char">&#x25CF;</property>
                                         <property name="width_chars">5</property>
                                         <property name="adjustment">20 1 3600 1 0 0</property>
                                         <property name="climb_rate">1</property>
@@ -200,6 +199,18 @@
                               </widget>
                               <packing>
                                 <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkCheckButton" id="checkbutton1">
+                                <property name="label" translatable="yes">Include Theorems</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="active">True</property>
+                                <property name="draw_indicator">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">1</property>
                               </packing>
                             </child>
                             <child>
@@ -235,7 +246,7 @@
                                 </child>
                               </widget>
                               <packing>
-                                <property name="position">1</property>
+                                <property name="position">2</property>
                               </packing>
                             </child>
                           </widget>
