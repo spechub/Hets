@@ -119,6 +119,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   btnNodesInvert    <- xmlGetWidget xml castToButton "btnNodesInvert"
   btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
   btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
+  cbInclThms       <- xmlGetWidget xml castToCheckButton "cbInclThms"
   -- get checker view and buttons
   cbComorphism      <- xmlGetWidget xml castToComboBox "cbComorphism"
   lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"
@@ -219,6 +220,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   onClicked btnCheck $ do
     activate checkWidgets False
     timeout <- spinButtonGetValueAsInt sbTimeout
+    inclThms <- toggleButtonGetActive cbInclThms
     (updat, exit) <- progressBar "Checking consistency" "please wait..."
     nodes' <- getSelectedMultiple trvNodes listNodes
     mf <- getSelectedSingle trvFinder listFinder
@@ -227,7 +229,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
       Just (_,f) -> return f
     switch False
     tid <- forkIO $ do
-      check ln le dg f timeout listNodes updat nodes'
+      check inclThms ln le dg f timeout listNodes updat nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -315,14 +317,15 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
           Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
     ) m' old
 
-check :: LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
+check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
       -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO ()
-check ln le dg (Finder { finder = cc, comorphism = cs, selected = i}) timeout
-      listNodes update nodes = let count' = fromIntegral $ length nodes
-                                   c = cs !! i in
+check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
+  timeout listNodes update nodes = let
+    count' = fromIntegral $ length nodes
+    c = cs !! i in
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
-           res <- consistencyCheck False cc c ln le dg n timeout
+           res <- consistencyCheck inclThms cc c ln le dg n timeout
            postGUISync $ listStoreSetValue listNodes row fn { status = res }
            return $ count + 1) 0 nodes
 
