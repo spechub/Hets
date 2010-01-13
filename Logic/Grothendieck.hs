@@ -205,6 +205,10 @@ data G_symbol = forall lid sublogics
   G_symbol lid symbol
   deriving Typeable
 
+instance GetRange G_symbol where
+  getRange (G_symbol _ s) = getRange s
+  rangeSpan (G_symbol _ s) = rangeSpan s
+
 instance Show G_symbol where
     show (G_symbol _ s) = show s
 

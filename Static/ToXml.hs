@@ -67,6 +67,11 @@ globalEntry ga dg si ge l = case ge of
     (unode "VIEW-DEFN" $ prettyElem "GMorphism" ga gm) : l
   _ -> l
 
+prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
+                -> Element
+prettyRangeElem s ga a =
+  add_attrs (rangeAttrs $ getRangeSpan a) $ prettyElem s ga a
+
 lnode :: GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
 lnode ga lenv (_, lbl) =
   let nm = dgn_name lbl
@@ -88,7 +93,7 @@ lnode ga lenv (_, lbl) =
           DGNode orig cs -> constStatus cs
               ++ case orig of
                    DGBasicSpec syms -> subnodes "Declarations"
-                     (map (prettyElem "Symbol" ga) $ Set.toList syms)
+                     (map (prettyRangeElem "Symbol" ga) $ Set.toList syms)
                    _ -> [prettyElem "Signature" ga $ dgn_sign lbl]
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
@@ -101,11 +106,10 @@ lnode ga lenv (_, lbl) =
 
 mkThmNode :: (GetRange s, Pretty s) => GlobalAnnos
           -> (String, SenStatus s (AnyComorphism, BasicProof)) -> Element
-mkThmNode ga (n, s) = add_attrs
-  ([ mkNameAttr n
-  , mkProvenAttr $ isProvenSenStatus s ]
-  ++ rangeAttrs (getRange $ sentence s))
-  $ prettyElem "Theorem" ga $ sentence s
+mkThmNode ga (n, th) = let s = sentence th in add_attrs
+  (mkNameAttr n : mkProvenAttr (isProvenSenStatus th)
+    : rangeAttrs (getRangeSpan s))
+  $ prettyElem "Theorem" ga s
 
 -- | a status may be open, proven or outdated
 mkStatusAttr :: String -> Attr
@@ -114,9 +118,10 @@ mkStatusAttr = mkAttr "status"
 mkProvenAttr :: Bool -> Attr
 mkProvenAttr b = mkStatusAttr $ if b then "proven" else "open"
 
-mkAxNode :: Pretty s => GlobalAnnos -> SenAttr s String -> Element
-mkAxNode ga s = add_attr (mkNameAttr $ senAttr s)
-  $ prettyElem "Axiom" ga $ sentence s
+mkAxNode :: (GetRange s, Pretty s) => GlobalAnnos -> SenAttr s String -> Element
+mkAxNode ga ax = let s = sentence ax in add_attrs
+ (mkNameAttr (senAttr ax) : rangeAttrs (getRangeSpan s))
+  $ prettyElem "Axiom" ga s
 
 constStatus :: ConsStatus -> [Element]
 constStatus cs = case show $ pretty cs of
