@@ -99,6 +99,9 @@ singleSortNotGen spSig = singleSorted spSig &&
 data SFSymbol = SFSymbol { sym_ident :: SPIdentifier
                          , sym_type :: SFSymbType}
               deriving (Show,Eq,Ord)
+
+instance GetRange SFSymbol
+
 {- |
    Symbol types of SoftFOL. (not related to CASL)
 -}
@@ -263,6 +266,8 @@ data SPTerm =
       | SPComplexTerm { symbol    :: SPSymbol,
                         arguments :: [SPTerm]}
       deriving (Eq, Ord, Show)
+
+instance GetRange SPTerm
 
 {- | Literals for SPASS CNF and DNF -}
 

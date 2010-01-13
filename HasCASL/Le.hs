@@ -109,6 +109,11 @@ data Sentence =
   | ProgEqSen Id TypeScheme ProgEq
     deriving (Show, Eq, Ord)
 
+instance GetRange Sentence where
+  getRange s = case s of
+    Formula t -> getRange t
+    _ -> nullRange
+
 -- * variables
 
 -- | type variable are kept separately

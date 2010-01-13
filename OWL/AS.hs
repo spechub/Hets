@@ -115,6 +115,8 @@ data EntityType =
 -- | Syntax of Entities
 data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
 
+instance GetRange Entity
+
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
 
@@ -252,6 +254,8 @@ data Axiom = -- Annotations can be ignored
     PlainAxiom [Annotation] PlainAxiom
   | EntityAnno EntityAnnotation
     deriving (Typeable, Show, Eq, Ord)
+
+instance GetRange Axiom
 
 data EquivOrDisjoint = Equivalent | Disjoint deriving (Show, Eq, Ord)
 

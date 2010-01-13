@@ -14,6 +14,8 @@ Instance of class Logic for Isabelle (including Pure, HOL etc.).
 module Isabelle.Logic_Isabelle where
 
 import Common.DefaultMorphism
+import Common.Id
+
 import Logic.Logic
 
 import Isabelle.ATC_Isabelle()
@@ -25,7 +27,8 @@ type IsabelleMorphism = DefaultMorphism Sign
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
-data Isabelle = Isabelle deriving (Show)
+data Isabelle = Isabelle deriving Show
+
 instance Language Isabelle where
  description _ =
   "Isabelle - a generic theorem prover\n" ++
@@ -37,6 +40,8 @@ instance Language Isabelle where
 
 instance Logic.Logic.Syntax Isabelle () () ()
     -- default implementation is fine!
+
+instance GetRange Sentence
 
 instance Sentences Isabelle Sentence Sign IsabelleMorphism ()  where
       map_sen Isabelle _ s = return s

@@ -62,6 +62,8 @@ data RSSymbol = STable Id |     -- id of a table
                     RSIsKey     -- is it a key?
                 deriving (Eq,Ord,Show)
 
+instance GetRange RSSymbol
+
 data RSColumn = RSColumn
                     {
                         c_name :: Id

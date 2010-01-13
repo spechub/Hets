@@ -243,6 +243,7 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
 class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, --  for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
+       GetRange sentence, GetRange symbol,
        PrintTypeConv sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol

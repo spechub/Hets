@@ -34,13 +34,15 @@ import Haskell.HatParser
 import Haskell.HatAna
 import Common.Doc
 import Common.DocUtils
+import Common.Id
 
 import Logic.Logic
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
 
-data Haskell = Haskell deriving (Show)
+data Haskell = Haskell deriving Show
+
 instance Language Haskell where
  description _ = unlines
   [ "Haskell - a purely functional programming language"
@@ -67,6 +69,8 @@ type Haskell_Sublogics = ()
 
 type Symbol = ()
 type RawSymbol = ()
+
+instance GetRange (TiDecl PNT)
 
 instance Sentences Haskell (TiDecl PNT) Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s

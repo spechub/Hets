@@ -20,6 +20,7 @@ import qualified Data.Word as Word
 
 import Common.Doc
 import Common.DocUtils
+import Common.Id
 
 omdocDefaultNamespace :: String
 omdocDefaultNamespace = "http://www.mathweb.org/omdoc"
@@ -204,6 +205,8 @@ data Symbol =
       , symbolType :: Maybe Type
     }
     deriving (Show, Eq, Ord)
+
+instance GetRange Symbol
 
 instance Pretty Symbol where
   pretty s =

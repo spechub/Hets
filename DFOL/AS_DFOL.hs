@@ -87,6 +87,8 @@ data FORMULA = T
              | Exists [DECL] FORMULA
                deriving (Show, Ord, Eq)
 
+instance GetRange FORMULA
+
 -- grammar for symbols and symbol maps
 type SYMB = NAME
 

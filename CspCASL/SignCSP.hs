@@ -31,7 +31,7 @@ import Common.AS_Annotation (Named)
 import Common.Doc
 import Common.DocUtils
 
-import Common.Id (SIMPLE_ID, mkSimpleId, nullRange)
+import Common.Id
 import Common.Lib.Rel (predecessors)
 
 import qualified Data.Map as Map
@@ -202,6 +202,8 @@ data CspCASLSen
     = CASLSen (CASLFORMULA)
     | ProcessEq PROCESS_NAME FQProcVarList CommAlpha PROCESS
       deriving (Show, Eq, Ord)
+
+instance GetRange CspCASLSen
 
 instance Pretty CspCASLSen where
     pretty(CASLSen f) = pretty f

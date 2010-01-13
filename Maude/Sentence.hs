@@ -26,7 +26,7 @@ import Maude.AS_Maude
 import Maude.Meta
 import Maude.Printing ()
 
-import Common.Id (mkSimpleId)
+import Common.Id (mkSimpleId, GetRange)
 import Common.Doc (vcat)
 import Common.DocUtils (Pretty(..))
 
@@ -40,6 +40,8 @@ data Sentence = Membership Membership
               deriving (Show, Read, Ord, Eq)
 
 -- ** Sentence Instances
+
+instance GetRange Sentence
 
 instance Pretty Sentence where
     pretty sent = case sent of

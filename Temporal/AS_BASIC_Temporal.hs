@@ -8,7 +8,8 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Abstract syntax of temporal Basic_spec, Formula, Symb_items and Symb_map_items.
+pretty poor abstract syntax of temporal Basic_spec, Formula, Symb_items and
+Symb_map_items.
 -}
 
 module Temporal.AS_BASIC_Temporal
@@ -34,6 +35,8 @@ instance Pretty BASIC_SPEC where
 
 data FORMULA = Formula
                deriving (Show, Eq, Ord)
+
+instance GetRange FORMULA
 
 instance Pretty FORMULA where
    pretty = text . show

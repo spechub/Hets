@@ -99,11 +99,12 @@ lnode ga lenv (_, lbl) =
                     ++ subnodes "Theorems"
                     (map (mkThmNode ga) $ OMap.toList thms)
 
-mkThmNode :: Pretty s => GlobalAnnos
+mkThmNode :: (GetRange s, Pretty s) => GlobalAnnos
           -> (String, SenStatus s (AnyComorphism, BasicProof)) -> Element
 mkThmNode ga (n, s) = add_attrs
-  [ mkNameAttr n
+  ([ mkNameAttr n
   , mkProvenAttr $ isProvenSenStatus s ]
+  ++ rangeAttrs (getRange $ sentence s))
   $ prettyElem "Theorem" ga $ sentence s
 
 -- | a status may be open, proven or outdated
