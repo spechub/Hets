@@ -99,6 +99,7 @@ writeLibEnv opts filePrefix lenv ln ot =
 #ifdef HXTFILTER
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
+      XmlOut ->  writeVerbFile opts f $ ppTopElement $ ToXml.dGraph lenv dg
       ExperimentalOut ->
           writeVerbFile opts (filePrefix ++ ".xml")
             $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
@@ -264,6 +265,7 @@ writeSpecFiles opts file lenv0 ln dg = do
             ThyFile -> True
             DfgFile _  -> True
             TPTPFile _ -> True
+            XmlOut -> True
             ExperimentalOut -> True
             TheoryFile _ -> True
             SigFile _ -> True
@@ -301,8 +303,6 @@ writeSpecFiles opts file lenv0 ln dg = do
     doDump opts "DGraph" $ putStrLn $ showDoc dg ""
     doDump opts "DuplicateDefEdges" $ let es = duplicateDefEdges dg in
       unless (null es) $ print es
-    doDump opts "DGraphXML" $ writeVerbFile opts
-           (filePrefix ++ ".xml") $ ppTopElement $ ToXml.dGraph lenv dg
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
     doDump opts "LibEnv" $
                writeVerbFile opts (filePrefix ++ ".lenv") $

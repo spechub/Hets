@@ -78,7 +78,8 @@ anaLibExt opts file libEnv initDG = do
             let envRes = if computeNormalForm opts then normalForm ln lenv else
                   return lenv
                 envN = fromMaybe lenv $ maybeResult envRes
-                nEnv = if hasPrfOut opts then automatic ln envN else envN
+                nEnv = if applyAutomatic opts || hasPrfOut opts
+                       then automatic ln envN else envN
             showDiags opts $ diags envRes
             return $ Just (ln, nEnv)
 

@@ -69,7 +69,8 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, skipS, structS, transS,
      guiS, libdirsS, outdirS, amalgS, specS, recursiveS,
-     interactiveS, modelSparQS, connectS, xmlS, listenS, normalFormS :: String
+     interactiveS, modelSparQS, connectS, xmlS, listenS,
+     applyAutomaticRuleS, normalFormS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -88,6 +89,7 @@ interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
 listenS = "listen"
+applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
 
 genTermS, treeS, bafS :: String
@@ -141,6 +143,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , connectH :: String
   , uncolored :: Bool
   , xmlFlag :: Bool
+  , applyAutomatic :: Bool
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
   , listen :: Int }
@@ -169,6 +172,7 @@ defaultHetcatsOpts = HcOpt
   , connectH = ""
   , uncolored = False
   , xmlFlag = False
+  , applyAutomatic = False
   , computeNormalForm = False
   , dumpOpts = []
   , listen   = -1 }
@@ -188,6 +192,7 @@ instance Show HetcatsOpts where
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
     ++ (if recurse opts then showOpt recursiveS else "")
+    ++ (if applyAutomatic opts then showOpt applyAutomaticRuleS else "")
     ++ (if computeNormalForm opts then showOpt normalFormS else "")
     ++ showEqOpt specS (intercalate "," $ map show $ specNames opts)
     ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
@@ -204,6 +209,7 @@ data Flag =
   | Uncolored
   | Version
   | Recurse
+  | ApplyAutomatic
   | NormalForm
   | Help
   | Gui GuiType
@@ -238,6 +244,7 @@ makeOpts opts flg = case flg of
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
     Recurse    -> opts { recurse = True }
+    ApplyAutomatic -> opts { applyAutomatic = True }
     NormalForm -> opts { computeNormalForm = True }
     Specs x    -> opts { specNames = x }
     Trans x    -> opts { transNames = x }
@@ -334,6 +341,7 @@ data OutType =
   | EnvOut
   | OWLOut
   | OmdocOut
+  | XmlOut -- ^ development graph xml output
   | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
   | ThyFile -- ^ isabelle theory file
@@ -351,6 +359,7 @@ instance Show OutType where
     EnvOut -> envS
     OWLOut -> owlS
     OmdocOut -> omdocS
+    XmlOut -> xmlS
     ExperimentalOut -> experimentalS
     HaskellOut -> hsS
     ThyFile -> "thy"
@@ -362,7 +371,7 @@ instance Show OutType where
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, OmdocOut, ExperimentalOut,
+  [Prf, EnvOut, OWLOut, OmdocOut, XmlOut, ExperimentalOut,
       HaskellOut, ThyFile, ComptableXml]
 
 outTypeList :: [OutType]
@@ -393,7 +402,7 @@ instance Show PrettyType where
   show p = case p of
     PrettyAscii -> "het"
     PrettyLatex -> "tex"
-    PrettyXml -> "xml"
+    PrettyXml -> xmlS
 
 prettyList :: [PrettyType]
 prettyList = [PrettyAscii, PrettyLatex, PrettyXml]
@@ -469,6 +478,8 @@ options = let
        ++ bS ++ tptpS ++ bracket cS)
     , Option "R" [recursiveS] (NoArg Recurse)
       "output also imported libraries"
+    , Option "A" [applyAutomaticRuleS] (NoArg ApplyAutomatic)
+      "apply automatic dev-graph strategy"
     , Option "N" [normalFormS] (NoArg NormalForm)
       "compute normal forms (takes long)"
     , Option "n" [specS] (ReqArg parseSpecOpts "NSPECS")
