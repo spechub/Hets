@@ -2,7 +2,7 @@
 
 for i in *.het
 do
-  ../../hets -v2 -o prf,th,pp.xml -d DGraphXML $i
+  ../../hets -v2 -A -o th,pp.xml,xml $i
 done
 
 svn diff
