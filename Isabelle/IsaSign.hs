@@ -340,11 +340,11 @@ data ProofEnd
 data Modifier
     -- | No_asm means that assumptions are completely ignored.
     = No_asm
-    -- | No_asm_simp means that the assumptions are not simpliﬁed but
-    -- | are used in the simpliﬁcation of the conclusion.
+    -- | No_asm_simp means that the assumptions are not simplified but
+    -- | are used in the simplification of the conclusion.
     | No_asm_simp
-    -- | No_asm_use means that the assumptions are simpliﬁed but are
-    -- | not used in the simpliﬁcation of each other or the
+    -- | No_asm_use means that the assumptions are simplified but are
+    -- | not used in the simplification of each other or the
     -- | conclusion.
     | No_asm_use
       deriving (Show, Eq, Ord)
