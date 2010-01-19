@@ -26,7 +26,7 @@ import Data.List (isPrefixOf)
 
 -- | no-bracket-signs
 signChars :: String
-signChars = "!#$&*+-./:<=>?@\\^|~" ++ -- "¡¢£§©¬°±²³µ¶·¹¿×÷"
+signChars = "!#$&*+-./:<=>?@\\^|~" ++
     "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 
 -- \172 neg \183 middle dot \215 times
@@ -46,7 +46,6 @@ caslLetters ch = let c = ord ch in
    else c >= 192 && c <= 255 && notElem c [215, 247]
 
 -- ['A'..'Z'] ++ ['a'..'z'] ++
--- "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ"
 
 -- see <http://www.htmlhelp.com/reference/charset/> starting from \192
 -- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn

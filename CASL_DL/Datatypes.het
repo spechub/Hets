@@ -2,7 +2,7 @@
 library CASL_DL_Datatypes version 0.1
 
 %date 09.02.2006
-%authors Klaus Lüttich <luettich@tzi.de>
+%authors Klaus Luettich <luettich@tzi.de>
 
 %number __@@__
 %string emptyString, __:@:__
@@ -129,105 +129,6 @@ spec StringLiteral =
        '|' : Char;            %(DL_printable_124)%
        '}' : Char;            %(DL_printable_125)%
        '~' : Char;            %(DL_printable_126)%
-
-       %% Iso-Latin-1 character number 160 is displayed as space,
-       %% but internally is different from character 32 (space)
-       ' ' : Char;            %(DL_printable_160)%
-       '¡' : Char;            %(DL_printable_161)%
-       '¢' : Char;            %(DL_printable_162)%
-       '£' : Char;            %(DL_printable_163)%
-       '¤' : Char;            %(DL_printable_164)%
-       '¥' : Char;            %(DL_printable_165)%
-       '¦' : Char;            %(DL_printable_166)%
-       '§' : Char;            %(DL_printable_167)%
-       '¨' : Char;            %(DL_printable_168)%
-       '©' : Char;            %(DL_printable_169)%
-       'ª' : Char;            %(DL_printable_170)%
-       '«' : Char;            %(DL_printable_171)%
-       '¬' : Char;            %(DL_printable_172)%
-       '­' : Char;            %(DL_printable_173)%
-       '®' : Char;            %(DL_printable_174)%
-       '¯' : Char;            %(DL_printable_175)%
-       '°' : Char;            %(DL_printable_176)%
-       '±' : Char;            %(DL_printable_177)%
-       '²' : Char;            %(DL_printable_178)%
-       '³' : Char;            %(DL_printable_179)%
-       '´' : Char;            %(DL_printable_180)%
-       'µ' : Char;            %(DL_printable_181)%
-       '¶' : Char;            %(DL_printable_182)%
-       '·' : Char;            %(DL_printable_183)%
-       '¸' : Char;            %(DL_printable_184)%
-       '¹' : Char;            %(DL_printable_185)%
-       'º' : Char;            %(DL_printable_186)%
-       '»' : Char;            %(DL_printable_187)%
-       '¼' : Char;            %(DL_printable_188)%
-       '½' : Char;            %(DL_printable_189)%
-       '¾' : Char;            %(DL_printable_190)%
-       '¿' : Char;            %(DL_printable_191)%
-       'À' : Char;            %(DL_printable_192)%
-       'Á' : Char;            %(DL_printable_193)%
-       'Â' : Char;            %(DL_printable_194)%
-       'Ã' : Char;            %(DL_printable_195)%
-       'Ä' : Char;            %(DL_printable_196)%
-       'Å' : Char;            %(DL_printable_197)%
-       'Æ' : Char;            %(DL_printable_198)%
-       'Ç' : Char;            %(DL_printable_199)%
-       'È' : Char;            %(DL_printable_200)%
-       'É' : Char;            %(DL_printable_201)%
-       'Ê' : Char;            %(DL_printable_202)%
-       'Ë' : Char;            %(DL_printable_203)%
-       'Ì' : Char;            %(DL_printable_204)%
-       'Í' : Char;            %(DL_printable_205)%
-       'Î' : Char;            %(DL_printable_206)%
-       'Ï' : Char;            %(DL_printable_207)%
-       'Ð' : Char;            %(DL_printable_208)%
-       'Ñ' : Char;            %(DL_printable_209)%
-       'Ò' : Char;            %(DL_printable_210)%
-       'Ó' : Char;            %(DL_printable_211)%
-       'Ô' : Char;            %(DL_printable_212)%
-       'Õ' : Char;            %(DL_printable_213)%
-       'Ö' : Char;            %(DL_printable_214)%
-       '×' : Char;            %(DL_printable_215)%
-       'Ø' : Char;            %(DL_printable_216)%
-       'Ù' : Char;            %(DL_printable_217)%
-       'Ú' : Char;            %(DL_printable_218)%
-       'Û' : Char;            %(DL_printable_219)%
-       'Ü' : Char;            %(DL_printable_220)%
-       'Ý' : Char;            %(DL_printable_221)%
-       'Þ' : Char;            %(DL_printable_222)%
-       'ß' : Char;            %(DL_printable_223)%
-       'à' : Char;            %(DL_printable_224)%
-       'á' : Char;            %(DL_printable_225)%
-       'â' : Char;            %(DL_printable_226)%
-       'ã' : Char;            %(DL_printable_227)%
-       'ä' : Char;            %(DL_printable_228)%
-       'å' : Char;            %(DL_printable_229)%
-       'æ' : Char;            %(DL_printable_230)%
-       'ç' : Char;            %(DL_printable_231)%
-       'è' : Char;            %(DL_printable_232)%
-       'é' : Char;            %(DL_printable_233)%
-       'ê' : Char;            %(DL_printable_234)%
-       'ë' : Char;            %(DL_printable_235)%
-       'ì' : Char;            %(DL_printable_236)%
-       'í' : Char;            %(DL_printable_237)%
-       'î' : Char;            %(DL_printable_238)%
-       'ï' : Char;            %(DL_printable_239)%
-       'ð' : Char;            %(DL_printable_240)%
-       'ñ' : Char;            %(DL_printable_241)%
-       'ò' : Char;            %(DL_printable_242)%
-       'ó' : Char;            %(DL_printable_243)%
-       'ô' : Char;            %(DL_printable_244)%
-       'õ' : Char;            %(DL_printable_245)%
-       'ö' : Char;            %(DL_printable_246)%
-       '÷' : Char;            %(DL_printable_247)%
-       'ø' : Char;            %(DL_printable_248)%
-       'ù' : Char;            %(DL_printable_249)%
-       'ú' : Char;            %(DL_printable_250)%
-       'û' : Char;            %(DL_printable_251)%
-       'ü' : Char;            %(DL_printable_252)%
-       'ý' : Char;            %(DL_printable_253)%
-       'þ' : Char;            %(DL_printable_254)%
-       'ÿ' : Char;            %(DL_printable_255)%
 %[--%% Basic Spec End %%--]%
 end
 
