@@ -56,7 +56,7 @@ showGraph file opts env = case env of
       Right a -> return a
       Left e -> do
         putIfVerbose opts 5 $ "Error: " ++ show e
-        error "Can't initialize GUI."
+        error "Can't initialize GUI (wish)."
 
     useHTk -- All messages are displayed in TK dialog windows
     -- from this point on
