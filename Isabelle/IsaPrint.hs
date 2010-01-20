@@ -37,7 +37,7 @@ printIsaTheory tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = "$HETS_ISABELLE_LIB/"
-    use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
+    use = text usesS <+> doubleQuotes (text $ ld ++ "prelude2009")
     in text theoryS <+> text tn
     $+$ text importsS <+> fsep ((if case b of
         Main_thy -> False
@@ -51,7 +51,7 @@ printIsaTheory tn sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
-    callML "initialize" (brackets $ sepByCommas
+    callSetup "initialize" (brackets $ sepByCommas
       $ map (text . show . Quote . senAttr)
       $ filter (\ s -> not (isConstDef s || isRecDef s || isInstance s)
                 && senAttr s /= "") sens)
@@ -79,12 +79,12 @@ printNamedSentences sens = case sens of
     | True ->
       printNamedSen s $++$ (case senAttr s of
         n | n == "" || isRecDef s -> empty
-          | True -> callML "record" (text $ show $ Quote n))
+          | True -> callSetup "record" (text $ show $ Quote n))
       $++$ printNamedSentences r
 
-callML :: String -> Doc -> Doc
-callML fun args =
-    text mlS <+> doubleQuotes (fsep [text ("Header." ++ fun), args])
+callSetup :: String -> Doc -> Doc
+callSetup fun args =
+    text "setup" <+> doubleQuotes (fsep [text ("Header." ++ fun), args])
 
 data QuotedString = Quote String
 instance Show QuotedString where
