@@ -48,7 +48,7 @@ showGraph file opts env = case env of
     dv <- getDaVinciPath
     putIfVerbose opts 3 $ "uDrawGraph is: " ++ dv
     noUDrawGraph <- missingExecutableInPath dv
-    if noWish && noUDrawGraph then
+    if noWish || noUDrawGraph then
       error $ (if noWish then "wish" else "uDrawGraph") ++ " is missing"
       else do
       putIfVerbose opts 2 $ "Displaying " ++ file ++ " in a graphical window"
