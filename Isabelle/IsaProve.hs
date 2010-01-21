@@ -213,7 +213,7 @@ isaProve thName th _freedefs = do
     Right (ho, bo) -> do
       prepareThyFiles (ho, bo) thyFile thy
       removeDepFiles thBaseName thms
-      isabelle <- getEnvDef "HETS_ISABELLE" "Isabelle"
+      isabelle <- getEnvDef "HETS_ISABELLE" "isabelle emacs"
       callSystem $ isabelle ++ " " ++ thyFile
       ok <- checkFinalThyFile (ho, bo) thyFile
       if ok then getAllProofDeps m thBaseName thms
