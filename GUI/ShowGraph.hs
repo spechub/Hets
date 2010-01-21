@@ -28,11 +28,13 @@ import GUI.GtkUtils(startMainLoop, stopMainLoop)
 
 import Reactor.InfoBus (shutdown)
 import HTk.Toolkit.DialogWin (useHTk)
+import Util.WBFiles
 import Common.UniUtils
 
 import Data.IORef
 import Control.Concurrent.MVar
 import Common.Exception
+import Common.ProverTools
 
 import Interfaces.DataTypes
 
@@ -40,45 +42,51 @@ import Interfaces.DataTypes
 showGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
 showGraph file opts env = case env of
   Just (ln, le) -> do
-    putIfVerbose opts 2 $ "Trying to display " ++ file
-                     ++ " in a graphical window"
-    putIfVerbose opts 3 "Initializing Converter"
+    ws <- getWishPath
+    putIfVerbose opts 3 $ "wish is: " ++ ws
+    noWish <- missingExecutableInPath ws
+    dv <- getDaVinciPath
+    putIfVerbose opts 3 $ "uDrawGraph is: " ++ dv
+    noUDrawGraph <- missingExecutableInPath dv
+    if noWish && noUDrawGraph then
+      error $ (if noWish then "wish" else "uDrawGraph") ++ " is missing"
+      else do
+      putIfVerbose opts 2 $ "Displaying " ++ file ++ " in a graphical window"
+      putIfVerbose opts 3 "Initializing Converter"
 #ifdef GTKGLADE
-    eitherGTK <- try startMainLoop
-    case eitherGTK of
-      Right () -> return ()
-      Left e -> do
-        putIfVerbose opts 5 $ "Error: " ++ show e
-        error $ "Can't initialize GTK."
+      eitherGTK <- try startMainLoop
+      case eitherGTK of
+        Right () -> return ()
+        Left e -> do
+          putIfVerbose opts 5 $ "Error: " ++ show e
+          error $ "Can't initialize GTK."
 #endif
-    eitherHTK <- try initializeConverter
-    (gInfo,wishInst) <- case eitherHTK of
-      Right a -> return a
-      Left e -> do
-        putIfVerbose opts 5 $ "Error: " ++ show e
-        error "Can't initialize GUI (wish)."
-
-    useHTk -- All messages are displayed in TK dialog windows
-    -- from this point on
-    ost <- readIORef $ intState gInfo
-    let nwst = case i_state ost of
-          Nothing -> ost
-          Just ist -> ost
-            { i_state = Just ist
-                { i_libEnv = le
-                , i_ln = ln }
-            , filename = file }
-    writeIORef (intState gInfo) nwst
-    let gInfo' = gInfo
-          { hetcatsOpts = opts
-          , libName = ln }
-    showLibGraph gInfo'
-    mShowGraph gInfo' ln
-    takeMVar $ exitMVar gInfo'
+      eitherHTK <- try initializeConverter
+      (gInfo,wishInst) <- case eitherHTK of
+        Right a -> return a
+        Left e -> do
+          putIfVerbose opts 5 $ "Error: " ++ show e
+          error "Can't initialize GUI (wish)."
+      useHTk -- use TK from this point on
+      ost <- readIORef $ intState gInfo
+      let nwst = case i_state ost of
+            Nothing -> ost
+            Just ist -> ost
+              { i_state = Just ist
+                  { i_libEnv = le
+                  , i_ln = ln }
+              , filename = file }
+      writeIORef (intState gInfo) nwst
+      let gInfo' = gInfo
+            { hetcatsOpts = opts
+            , libName = ln }
+      showLibGraph gInfo'
+      mShowGraph gInfo' ln
+      takeMVar $ exitMVar gInfo'
 #ifdef GTKGLADE
-    stopMainLoop
+      stopMainLoop
 #endif
-    destroy wishInst
-    shutdown
+      destroy wishInst
+      shutdown
   Nothing -> putIfVerbose opts 0
     "missing development graph to display in a window"

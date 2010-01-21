@@ -17,6 +17,7 @@ import Common.Utils
 
 import System.Directory
 import System.IO.Unsafe
+import System.FilePath
 
 -- | Checks if a Prover Binary exists and is executable
 --  in an unsafe manner
@@ -36,7 +37,7 @@ check4Prover name env a = do
       case ex of
         [] -> return []
         _  -> do
-              execI <- mapM (\ x -> getPermissions $ x ++ "/" ++ name) ex
+              execI <- mapM (getPermissions . (</> name)) ex
               return [ a | any executable execI ]
 
 missingExecutableInPath :: String -> IO Bool
@@ -55,8 +56,8 @@ check4FileAux :: String -- ^ file name
               -> IO [String]
 check4FileAux name env = do
       pPath <- getEnvDef env ""
-      let path = splitOn ':' pPath
-      exIT <- mapM (\ x -> doesFileExist $ x ++ "/" ++ name) path
+      let path = "" : splitOn ':' pPath
+      exIT <- mapM (doesFileExist . (</> name)) path
       return $ map fst $ filter snd $ zip path exIT
 
 -- | Checks if a file exists
