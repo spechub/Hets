@@ -14,7 +14,6 @@ specialized debugging functions
 module OMDoc.KeyDebug where
 
 import qualified Data.Map as Map
-import System.IO (putStrLn)
 import Debug.Trace (trace)
 import Data.Char (toLower)
 import Data.List (find, isPrefixOf, isInfixOf, intercalate)

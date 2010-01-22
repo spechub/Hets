@@ -18,7 +18,6 @@ module OMDoc.Base64
   ) where
 
 import Data.Bits (shiftL, shiftR, (.&.), (.|.))
-import Data.Char
 import Data.Word
 import ATerm.Base64
 

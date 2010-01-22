@@ -14,13 +14,12 @@ module OMDoc.OMDocDefs where
 
 import Driver.Options
 import CASL.Sign
-import CASL.AS_Basic_CASL
 import qualified Common.Id as Id
 import Common.LibName
-import qualified CASL.AS_Basic_CASL as ABC
+import CASL.AS_Basic_CASL as ABC
 
 import Static.DevGraph
-import qualified Data.Graph.Inductive.Graph as Graph
+import Data.Graph.Inductive.Graph as Graph
 
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel

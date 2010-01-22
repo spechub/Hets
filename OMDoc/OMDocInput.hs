@@ -39,11 +39,7 @@ import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as CLGraph
 
 -- Often used symbols from HXT
-import Text.XML.HXT.Parser
-  (
-      (.>), xshow, isTag, getChildren, getValue
-    , emptyRoot, v_0, a_issue_errors, a_source, a_validate
-  )
+import Text.XML.HXT.Parser ((.>), xshow, isTag, getChildren, getValue)
 
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 
@@ -62,8 +58,6 @@ import Data.List (find, isPrefixOf)
 import Debug.Trace (trace)
 
 import Driver.Options
-
-import Control.Monad
 
 import qualified Network.URI as URI
 

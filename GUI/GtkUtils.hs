@@ -157,10 +157,10 @@ dialog messageType title message = do
 
   windowSetTitle dlg title
 
-  response <- dialogRun dlg
+  rspns <- dialogRun dlg
   widgetDestroy dlg
 
-  case response of
+  case rspns of
     ResponseOk -> return True
     ResponseYes -> return True
     _ -> return False
@@ -250,8 +250,8 @@ fileDialog fAction fname' filters mAction = do
           fileChooserAddFilter dlg fileFilter
         ) filters
 
-  response <- dialogRun dlg
-  ret <- case response of
+  rspns <- dialogRun dlg
+  ret <- case rspns of
     ResponseCancel -> return Nothing
     ResponseAccept -> do
       mpath <- fileChooserGetFilename dlg
@@ -320,8 +320,8 @@ listChoiceAux title showF items  = do
   dialogAddButton dlg stockCancel ResponseCancel
   dialogAddButton dlg stockOk ResponseOk
 
-  response <- dialogRun dlg
-  ret <- case response of
+  rspns <- dialogRun dlg
+  ret <- case rspns of
     ResponseCancel -> return Nothing
     ResponseOk -> getSelectedSingle trvList store
     _ -> return Nothing

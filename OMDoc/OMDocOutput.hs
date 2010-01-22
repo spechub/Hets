@@ -55,8 +55,6 @@ import Debug.Trace (trace)
 
 import System.Directory
 
-import Control.Monad
-
 import OMDoc.Util
 import OMDoc.XmlHandling
 import OMDoc.OMDocDefs

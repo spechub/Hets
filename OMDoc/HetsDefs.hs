@@ -113,7 +113,6 @@ import Common.Id
 import Common.LibName
 import Common.Utils (trim)
 
-import Data.Graph.Inductive.Graph
 import Data.List (find, nub, partition, intercalate)
 
 import Debug.Trace (trace)

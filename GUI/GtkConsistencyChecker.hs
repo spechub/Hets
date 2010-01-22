@@ -17,7 +17,6 @@ module GUI.GtkConsistencyChecker
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
-import Graphics.UI.Gtk.ModelView as MV
 
 import GUI.GtkUtils
 import qualified GUI.Glade.ConsistencyChecker as ConsistencyChecker
@@ -41,7 +40,7 @@ import Common.Consistency
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
-import Control.Monad (foldM_, join, mapM_, when)
+import Control.Monad (foldM_, join, when)
 
 import Proofs.AbstractState
 import Proofs.InferBasic
@@ -395,7 +394,7 @@ showModelViewAux lock title list other = do
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window
-  onDestroy window $ do takeMVar lock; return ()
+  onDestroy window $ takeMVar lock >>= const (return ())
 
   putMVar lock $ do
     sel' <- getSelectedSingle trvNodes listNodes
