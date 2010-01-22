@@ -12,7 +12,7 @@ case `uname -s` in
   *) TAR=tar;;
 esac
 
-for i in linux linux64 solaris mac pc-solaris intel-mac
+for i in linux linux64 pc-solaris intel-mac
 do
   (cd $INSTALLDIR/$i; cp -p daily/hets.bz2 versions/hets-$VERSION.bz2)
 done
