@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <glade-interface>
-  <!-- interface-requires gtk+ 2.12 -->
+  <!-- interface-requires gtk+ 2.8 -->
   <!-- interface-naming-policy project-wide -->
   <widget class="GtkWindow" id="ProverGUI">
     <child>
@@ -163,6 +163,17 @@
                         <child>
                           <widget class="GtkHBox" id="hbox1">
                             <property name="visible">True</property>
+                            <child>
+                              <widget class="GtkButton" id="btnDisprove">
+                                <property name="label" translatable="yes">Disprove</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                              </widget>
+                              <packing>
+                                <property name="position">3</property>
+                              </packing>
+                            </child>
                             <child>
                               <widget class="GtkButton" id="btnDisplay">
                                 <property name="label" translatable="yes">Display</property>

@@ -94,7 +94,8 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     btnDisplay            <- xmlGetWidget xml castToButton "btnDisplay"
     btnProofDetails       <- xmlGetWidget xml castToButton "btnProofDetails"
     btnProve              <- xmlGetWidget xml castToButton "btnProve"
-    cbComorphism         <- xmlGetWidget xml castToComboBox "cbComorphism"
+    btnDisprove           <- xmlGetWidget xml castToButton "btnDisprove"
+    cbComorphism          <- xmlGetWidget xml castToComboBox "cbComorphism"
     lblSublogic           <- xmlGetWidget xml castToLabel "lblSublogic"
     -- prover
     trvProvers            <- xmlGetWidget xml castToTreeView "trvProvers"
@@ -202,6 +203,10 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     onClicked btnDisplay $ readMVar state >>= displayGoals
 
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
+
+    onClicked btnDisprove $ infoDialog "Disprove selected goal"
+      $ "not implemented yet\n"
+      ++ "see http://trac.informatik.uni-bremen.de:8080/hets/ticket/776"
 
     onClicked btnProve $ do
       s' <- takeMVar state
