@@ -41,8 +41,11 @@ check4Prover name env a = do
               return [ a | any executable execI ]
 
 missingExecutableInPath :: String -> IO Bool
-missingExecutableInPath name =
-  fmap null $ check4Prover name "PATH" ()
+missingExecutableInPath name = do
+  mp <- findExecutable name
+  case mp of
+    Nothing -> return True
+    Just _ -> fmap null $ check4Prover name "PATH" ()
 
 -- | Checks if a file exists in an unsafe manner
 unsafeFileCheck :: String -- ^ prover Name
