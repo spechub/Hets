@@ -13,6 +13,8 @@ for p in \
  zlib-0.5.2.0 \
  HTTP-4000.0.9 \
  cabal-install-0.8.0 \
+ haskell-src-1.0.1.3 \
+ utf8-string-0.3.6 \
  curl-1.3.5 \
  tar-0.3.1.0 \
  deepseq-1.1.0.0 \
@@ -20,7 +22,8 @@ for p in \
  HUnit-1.2.2.1 \
  tagsoup-0.8 \
  hxt-8.5.0 \
- hxt-filter-8.4.0
+ hxt-filter-8.4.0 \
+ haskeline-0.6.2.2
 do ./installPkg.sh $p $1
 done
 else
