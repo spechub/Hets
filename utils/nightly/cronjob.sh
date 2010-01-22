@@ -1,8 +1,7 @@
 #!/bin/bash -xe
 
 GHCRTS='-H300m -M1g'
-LANG=C
-LC_ALL=C
+LANG=de_DE
 case `uname -s` in
   SunOS) TAR=gtar; MAKE=gmake;;
   *) TAR=tar; MAKE=make;;
@@ -13,7 +12,6 @@ HETS_ISABELLE_LIB=/home/maeder/haskell/Hets-lib/Isabelle
 
 export GHCRTS
 export LANG
-export LC_ALL
 export TAR
 export MAKE
 export HETS_OWL_TOOLS
