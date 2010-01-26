@@ -6,14 +6,12 @@
     <child>
       <widget class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
-        <property name="orientation">vertical</property>
         <child>
           <widget class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
             <child>
               <widget class="GtkVBox" id="vbox3">
                 <property name="visible">True</property>
-                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkFrame" id="frame3">
                     <property name="visible">True</property>
@@ -61,7 +59,6 @@
                 <child>
                   <widget class="GtkVBox" id="vbox8">
                     <property name="visible">True</property>
-                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkHButtonBox" id="hbuttonbox6">
                         <property name="visible">True</property>
@@ -148,7 +145,6 @@
             <child>
               <widget class="GtkVBox" id="vbox4">
                 <property name="visible">True</property>
-                <property name="orientation">vertical</property>
                 <child>
                   <widget class="GtkFrame" id="frame2">
                     <property name="visible">True</property>
@@ -379,7 +375,6 @@
         <child>
           <widget class="GtkVBox" id="vbox5">
             <property name="visible">True</property>
-            <property name="orientation">vertical</property>
             <child>
               <widget class="GtkLabel" id="label4">
                 <property name="visible">True</property>
@@ -397,7 +392,6 @@
                 <child>
                   <widget class="GtkVBox" id="vbox2">
                     <property name="visible">True</property>
-                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkFrame" id="frame6">
                         <property name="visible">True</property>
@@ -444,7 +438,6 @@
                     <child>
                       <widget class="GtkVBox" id="vbox7">
                         <property name="visible">True</property>
-                        <property name="orientation">vertical</property>
                         <child>
                           <widget class="GtkHButtonBox" id="hbuttonbox4">
                             <property name="visible">True</property>
@@ -531,7 +524,6 @@
                 <child>
                   <widget class="GtkVBox" id="vbox6">
                     <property name="visible">True</property>
-                    <property name="orientation">vertical</property>
                     <child>
                       <widget class="GtkFrame" id="frame7">
                         <property name="visible">True</property>
