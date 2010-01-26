@@ -122,12 +122,11 @@ Executable hets
 
   if flag(hxtfilter)
     build-depends:
-        hxt >= 8.0.0
-      , hxt-filter >= 8.0.0
+        hxt-filter >= 8.0.0
     cpp-options: -DHXTFILTER
 
   if flag(gtkglade)
     build-depends:
-        glade >= 0.9.13
-      , gtk >= 0.9.13
+        glade >= 0.10.1
+      , gtk >= 0.10.1
     cpp-options: -DGTKGLADE
