@@ -100,9 +100,13 @@ writeLibEnv opts filePrefix lenv ln ot =
       OmdocOut -> hetsToOMDoc opts (ln, lenv) f
 #endif
       XmlOut ->  writeVerbFile opts f $ ppTopElement $ ToXml.dGraph lenv dg
-      ExperimentalOut ->
-          writeVerbFile opts (filePrefix ++ ".xml")
-            $ xmlOut $ exportDGraph ln (lookupDGraph ln lenv)
+      ExperimentalOut -> do
+          let Result ds mOmd = exportDGraph ln (lookupDGraph ln lenv)
+          showDiags opts ds
+          case mOmd of
+               Just omd -> writeVerbFile opts (filePrefix ++ ".xml")
+                           $ xmlOut omd
+               Nothing -> putIfVerbose opts 0 "could not translate to OMDoc"
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg
       _ -> return ()
