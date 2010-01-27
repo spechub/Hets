@@ -133,6 +133,8 @@ foreach my $pair (@input) {
     $pattern =~ s/wasTheorem = \w+,//o;
     # new simpAnno field
     $pattern =~ s/simpAnno = \w+,//o;
+    # new attrOrigin field
+    $pattern =~ s/attrOrigin = \w+,//o;
     # sentence selector
     $pattern =~ s/ sentence = //o;
     #print STDERR "223: $pattern\n";

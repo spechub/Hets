@@ -168,6 +168,7 @@ data SenAttr s a = SenAttr
     , wasTheorem :: Bool
 {- will be set to True when status of isAxiom changes from False to True -}
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
+    , attrOrigin :: Maybe Id
     , sentence :: s } deriving (Eq, Ord, Show)
 
 -- | equip a sentence with a name
@@ -178,6 +179,7 @@ makeNamed a s = SenAttr
   , isDef = False
   , wasTheorem = False
   , simpAnno = Nothing
+  , attrOrigin = Nothing
   , sentence = s }
 
 type Named s = SenAttr s String
