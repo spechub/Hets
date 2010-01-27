@@ -59,18 +59,27 @@ exportNodeLab libid dg (n, lb) =
 
 makeImport :: LibId -> DGraph -> LEdge DGLinkLab -> Result (Maybe TCElement)
 makeImport libid dg (from, _, lbl)
-    | let lt = dgl_type lbl in isGlobalDef lt && (not $ isHidingEdge lt) =
-          return . Just . TCImport (cdFromNode libid $ labDG dg from)
-                   . makeMorphism libid $ dgl_morphism lbl
+    | isHidingEdge $ dgl_type lbl =
+        do
+          warning () ("Hiding link with " ++ show (dgl_id lbl) ++ " not exported.")
+                  nullRange
+          return Nothing
+    | isGlobalDef $ dgl_type lbl =
+        do
+          warning () ("Link with " ++ show (dgl_id lbl) ++ " exported.") nullRange
+          return . Just . TCImport (showEdgeId $ dgl_id lbl)
+                     (cdFromNode libid $ labDG dg from)
+                     . makeMorphism libid $ dgl_morphism lbl
     | otherwise = return Nothing
 
 -- | Given a TheoremLink we compute the view
 exportLinkLab :: LibId -> DGraph -> LEdge DGLinkLab -> Result (Maybe TLElement)
 exportLinkLab libid dg (from, to, lbl) = return $ case dgl_type lbl of
     ScopedLink Global (ThmLink _) _ ->
-       Just . TLView (cdFromNode libid $ labDG dg from)
-           (cdFromNode libid $ labDG dg to)
-           . makeMorphism libid $ dgl_morphism lbl
+       Just . TLView (showEdgeId $ dgl_id lbl)
+                (cdFromNode libid $ labDG dg from)
+                (cdFromNode libid $ labDG dg to)
+                . makeMorphism libid $ dgl_morphism lbl
     _ -> Nothing
 
 makeMorphism :: LibId -> GMorphism -> TCElement

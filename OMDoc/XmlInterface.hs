@@ -35,30 +35,28 @@ omdoc_current_version :: String
 omdoc_current_version = "1.6"
 
 -- | often used element names
-el_omdoc, el_theory, el_view, el_axiom, el_theorem, el_symbol, el_import
- , el_type, el_fmp, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
+el_omdoc, el_theory, el_view, el_structure
+ , el_type, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
  , el_omatp, el_omv, el_oma, el_adt, el_sortdef, el_constructor
- , el_argument, el_insort, el_selector, el_morphism
- , el_conass :: QName
+ , el_argument, el_insort, el_selector, el_morphism, el_conass
+ , el_constant, el_definition :: QName
 
 el_omdoc = (blank_name { qName = "omdoc" })
 el_theory = (blank_name { qName = "theory" })
--- has perhaps to be renamed to view, depends on the omdoc version
 el_view = (blank_name { qName = "view" })
-el_axiom = (blank_name { qName = "axiom" })
-el_theorem = (blank_name { qName = "theorem" })
-el_symbol = (blank_name { qName = "symbol" })
-el_import = (blank_name { qName = "import" })
+el_constant = (blank_name { qName = "constant" })
+el_definition = (blank_name { qName = "definition" })
+el_structure = (blank_name { qName = "structure" })
 el_type = (blank_name { qName = "type" })
-el_fmp = (blank_name { qName = "FMP" })
-el_omobj = (blank_name { qName = "OMOBJ" , qPrefix = Just "om" })
-el_ombind = (blank_name { qName = "OMBIND" })
-el_oms = (blank_name { qName = "OMS" })
-el_ombvar = (blank_name { qName = "OMBVAR" })
-el_omattr = (blank_name { qName = "OMATTR" })
-el_omatp = (blank_name { qName = "OMATP" })
-el_omv = (blank_name { qName = "OMV" })
-el_oma = (blank_name { qName = "OMA" })
+el_omobj = (blank_name { qName = "OMOBJ" })
+
+el_ombind = (blank_name { qName = "OMBIND" , qPrefix = Just "om" })
+el_oms = (blank_name { qName = "OMS" , qPrefix = Just "om" })
+el_ombvar = (blank_name { qName = "OMBVAR" , qPrefix = Just "om" })
+el_omattr = (blank_name { qName = "OMATTR" , qPrefix = Just "om" })
+el_omatp = (blank_name { qName = "OMATP" , qPrefix = Just "om" })
+el_omv = (blank_name { qName = "OMV" , qPrefix = Just "om" })
+el_oma = (blank_name { qName = "OMA" , qPrefix = Just "om" })
 
 el_adt = (blank_name { qName = "adt" })
 el_sortdef = (blank_name { qName = "sortdef" })
@@ -66,12 +64,9 @@ el_constructor = (blank_name { qName = "constructor" })
 el_argument = (blank_name { qName = "argument" })
 el_insort = (blank_name { qName = "insort" })
 el_selector = (blank_name { qName = "selector" })
+
 el_morphism = (blank_name { qName = "morphism" })
 el_conass = (blank_name { qName = "conass" })
-
-el_axiom_or_theorem :: Bool -> QName
-el_axiom_or_theorem True = el_axiom
-el_axiom_or_theorem False = el_theorem
 
 -- | often used attribute names
 at_version, at_cd, at_name, at_meta, at_role, at_type, at_total, at_for
@@ -113,22 +108,34 @@ listToXml :: XmlRepresentable a => [a] -> [Content]
 listToXml l = map toXml l
 
 listFromXml :: XmlRepresentable a => [Content] -> [a]
-listFromXml elms = catMaybes $ map fromXml (onlyElems elms)
+listFromXml elms = mapMaybe fromXml (onlyElems elms)
 
 makeComment :: String -> Content
 makeComment s = Text $ CData CDataRaw ("<!-- " ++ s ++ " -->") Nothing
 
 typeToXml :: OMElement -> Content
-typeToXml t = Elem $ Element el_type []
-              [Elem $ Element el_omobj [attr_om] [toXml t] Nothing]
-              Nothing
+typeToXml t = inContent el_type $ toOmobj $ toXml t
 
 assignmentToXml :: (OMName, OMElement) -> Content
 assignmentToXml (OMName from, to) =
-    Elem $ Element el_conass
-             [Attr at_name from]
-             [Elem $ Element el_omobj [attr_om] [toXml to] Nothing]
+    inAContent el_conass [Attr at_name from] $ toOmobj $ toXml to
+
+constantToXml :: String -> String -> OMElement -> Maybe OMElement -> Content
+constantToXml n r tp prf = 
+    Elem $ Element el_constant
+             [Attr at_name n, Attr at_role r]
+             ([typeToXml tp]
+              ++ map (inContent el_definition . toOmobj . toXml) (maybeToList prf))
              Nothing
+
+inAContent :: QName -> [Attr] -> Content -> Content
+inAContent qn a c = Elem $ Element qn a [c] Nothing
+
+inContent :: QName -> Content -> Content
+inContent qn c = inAContent qn [] c
+
+toOmobj :: Content -> Content
+toOmobj c = inAContent el_omobj [attr_om] c
 
 -- don't need it now
 --uriEncodeOMS :: OMCD -> OMName -> String
@@ -168,11 +175,11 @@ instance XmlRepresentable TLElement where
                           Just mtcd -> [Attr at_meta $ uriEncodeCD mtcd])
          (listToXml elms)
          Nothing)
-    toXml (TLView from to mor) =
-        (Elem $ Element el_view
-         [Attr at_from $ uriEncodeCD from, Attr at_to $ uriEncodeCD to]
-         [toXml mor]
-         Nothing)
+    toXml (TLView nm from to mor) =
+        inAContent
+        el_view [Attr at_name nm, Attr at_from $ uriEncodeCD from,
+                      Attr at_to $ uriEncodeCD to]
+                    $ toXml mor
     fromXml (Element n _ _ _)
         | n == el_theory =
             Nothing
@@ -183,40 +190,26 @@ instance XmlRepresentable TLElement where
 
 -- | theory constitutive OMDoc elements to XML and back
 instance XmlRepresentable TCElement where
-    toXml (TCAxiomOrTheorem b sname obj) =
-        Elem $ Element (el_axiom_or_theorem b) [Attr at_name sname]
-         [Elem $ Element el_fmp []
-          [Elem $ Element el_omobj [attr_om]
-            [toXml obj]
-            Nothing]
-          Nothing]
-         Nothing
+    toXml (TCAxiomOrTheorem mProof sname obj) =
+        constantToXml
+        sname (maybe "axiom" (const "theorem") mProof) obj mProof
     toXml (TCSymbol sname symtype role) =
-        Elem $ Element el_symbol
-         [Attr at_name sname, Attr at_role (show role)]
-         (case symtype of Nothing -> []
-                          Just st -> [typeToXml st])
-         Nothing
+        constantToXml sname (show role) symtype Nothing
     toXml (TCADT sds) = (Elem $ Element el_adt [] (listToXml sds) Nothing)
     toXml (TCComment c) = (makeComment c)
-    toXml (TCImport from mor) =
-        Elem $ Element el_import
-         [Attr at_from $ uriEncodeCD from]
-         [toXml mor]
-         Nothing
+    toXml (TCImport nm from mor) =
+        inAContent
+        el_structure
+        [Attr at_name nm, Attr at_from $ uriEncodeCD from] $ toXml mor
     toXml (TCMorphism mapping) =
         Elem $ Element el_morphism
          []
          (map assignmentToXml mapping)
          Nothing
     fromXml (Element n _ _ _)
-        | n == el_axiom =
+        | n == el_constant =
             Nothing
-        | n == el_theorem =
-            Nothing
-        | n == el_symbol =
-            Nothing
-        | n == el_import =
+        | n == el_structure =
             Nothing
         | otherwise = Nothing
 
@@ -267,13 +260,9 @@ instance XmlRepresentable OMElement where
          Nothing
 
     fromXml (Element n _ _ _)
-        | n == el_axiom =
+        | n == el_constant =
             Nothing
-        | n == el_theorem =
-            Nothing
-        | n == el_symbol =
-            Nothing
-        | n == el_import =
+        | n == el_structure =
             Nothing
         | otherwise = Nothing
 

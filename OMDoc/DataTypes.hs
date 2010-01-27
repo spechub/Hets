@@ -16,7 +16,7 @@ module OMDoc.DataTypes where
   OMDoc represented in 3 layers:
   1. toplevel (theory, view)
   2. theory constitutive (axiom, symbol)
-  3. subelements (FMP, Insort) and OpenMath
+  3. subelements (morphism, insort, ...) and OpenMath
 -}
 
 
@@ -28,19 +28,21 @@ data OMDoc = OMDoc String [TLElement]
 -- | Toplevel elements for OMDoc, theory with name, meta and content,
 -- view with from, to and morphism
 data TLElement = TLTheory String (Maybe OMCD) [TCElement]
-               | TLView OMCD OMCD TCElement
+               | TLView String OMCD OMCD TCElement
                  deriving (Show, Eq, Ord)
 
 -- | Theory constitutive elements for OMDoc
 data TCElement =
-    -- | An axiom or theorem element
-    TCAxiomOrTheorem Bool String OMElement
+    -- | An axiom or theorem element, depends on the proof entry.
+    -- Even unproven theorems should contain a constant marking them as
+    -- a theorem.
+    TCAxiomOrTheorem (Maybe OMElement) String OMElement
     -- | Symbol to represent sorts, constants, predicate symbols, etc.
-  | TCSymbol String (Maybe OMElement) SymbolRole
+  | TCSymbol String OMElement SymbolRole
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
-  | TCImport OMCD TCElement
+  | TCImport String OMCD TCElement
     -- | Morphisms to specify signature mappings
   | TCMorphism [(OMName, OMElement)]
     -- | A comment, only for development purposes
