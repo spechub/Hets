@@ -140,27 +140,9 @@ trTheory (inSig, inForms) = do
 -- ^ translation of named sentences
 trNamedSentence :: DLSign -> Named (FORMULA DL_FORMULA) ->
                    Result (Named (FORMULA ()))
-trNamedSentence inSig inForm =
-    let
-        inAttL = senAttr inForm
-        isAxL  = isAxiom inForm
-        isDefL = isDef   inForm
-        wasThL = wasTheorem inForm
-        simpAL = simpAnno inForm
-        inSenL = sentence inForm
-    in
-      do
-        outSen <- trSentence inSig inSenL
-        return SenAttr
-               {
-                  senAttr = inAttL
-               ,  isAxiom = isAxL
-               ,  isDef   = isDefL
-               ,  wasTheorem = wasThL
-               ,  simpAnno = simpAL
-               ,  sentence = outSen
-               }
-
+trNamedSentence inSig inForm = do
+        outSen <- trSentence inSig $ sentence inForm
+        return $ mapNamed (const outSen) inForm
 
 -- ^ translation of sentences
 trSentence ::  DLSign -> FORMULA DL_FORMULA -> Result (FORMULA ())
