@@ -213,16 +213,16 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
             sens = if includeTheorems then
               map (\ s -> s { isAxiom = True }) namedSens
               else namedSens
-        bTh'@(sig1, sens1) <- coerceBasicTheory lid1 lidS "" (sign, sens)
+        bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2
-        return (sig1, sens1, TheoryMorphism
+        return (sig1, TheoryMorphism
           { tSource = emptyTheory lidT
           , tTarget = Theory sig2 $ toThSens sens2
           , tMorphism = incl }) of
     Result ds Nothing ->
       return $ ConsistencyStatus CSError $ unlines $ map diagString ds
-    Result _ (Just (sig1, sens1, mor)) -> do
+    Result _ (Just (sig1, mor)) -> do
       cc' <- coerceConsChecker lid4 lidT "" cc
       ret <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
         (ccAutomatic cc' thName ts mor $ getCFreeDefMorphs lidT le ln dg n')
@@ -235,8 +235,7 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
               ("consistent, but could not reconstruct a model"
               : map diagString ds ++ lines (show $ ccProofTree ccStatus))
             Just (sig3, sens3) -> ConsistencyStatus CSConsistent $ showDoc
-              (G_theory lidS (mkExtSign sig3) startSigId
-                            (toThSens $ sens1 ++ sens3)
+              (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
                         startThId) ""
             else ConsistencyStatus CSInconsistent $ show (ccProofTree ccStatus)
           Nothing -> if ccUsedTime ccStatus >= t' then
