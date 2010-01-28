@@ -19,7 +19,7 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
-import qualified GUI.Glade.ConsistencyChecker as ConsistencyChecker
+import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
 
 import Static.DevGraph
@@ -108,7 +108,7 @@ showConsistencyCheckerAux :: MVar LibEnv -> LibName -> LibEnv -> IO ()
 showConsistencyCheckerAux res ln le = postGUIAsync $ do
   xml               <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window            <- xmlGetWidget xml castToWindow "ConsistencyChecker"
+  window            <- xmlGetWidget xml castToWindow "NodeChecker"
   btnClose          <- xmlGetWidget xml castToButton "btnClose"
   btnResults         <- xmlGetWidget xml castToButton "btnResults"
   -- get nodes view and buttons
@@ -118,7 +118,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   btnNodesInvert    <- xmlGetWidget xml castToButton "btnNodesInvert"
   btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
   btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
-  cbInclThms       <- xmlGetWidget xml castToCheckButton "cbInclThms"
+  cbInclThms        <- xmlGetWidget xml castToCheckButton "cbInclThms"
   -- get checker view and buttons
   cbComorphism      <- xmlGetWidget xml castToComboBox "cbComorphism"
   lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"

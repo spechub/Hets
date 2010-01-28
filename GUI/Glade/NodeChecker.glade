@@ -2,7 +2,7 @@
 <glade-interface>
   <!-- interface-requires gtk+ 2.8 -->
   <!-- interface-naming-policy project-wide -->
-  <widget class="GtkWindow" id="ConsistencyChecker">
+  <widget class="GtkWindow" id="NodeChecker">
     <child>
       <widget class="GtkVBox" id="vbox3">
         <property name="visible">True</property>
@@ -255,7 +255,7 @@
                     <child>
                       <widget class="GtkLabel" id="label4">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Check Consisstency:</property>
+                        <property name="label" translatable="yes">Checker Configuration:</property>
                         <property name="use_markup">True</property>
                       </widget>
                       <packing>
