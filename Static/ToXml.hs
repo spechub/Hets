@@ -82,7 +82,7 @@ lnode ga lenv (_, lbl) =
                not (isDGRef lbl) && dgn_origin lbl < DGProof then
                [mkAttr "refname" spn, mkAttr "relxpath" xp ]
                else [])
-  $ unode "Node"
+  $ unode "DGNode"
     $ case nodeInfo lbl of
           DGRef li rf ->
             [ add_attrs [ mkAttr "library" $ show $ getLibId li
@@ -144,7 +144,7 @@ ledge ga dg (f, t, lbl) = let
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
   ++ stAttr)
-  $ unode "Link"
+  $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl)
     : lnkSt ++ constStatus (getLinkConsStatus typ)
     ++ [prettyElem "GMorphism" ga $ dgl_morphism lbl]

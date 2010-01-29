@@ -1,87 +1,87 @@
 <?xml version='1.0' ?>
 <DGraph>
-  <Node name="s_IU1" refname="s" relxpath="Imports/Union/Spec[1]">
+  <DGNode name="s_IU1" refname="s" relxpath="Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.29">i</Symbol>
     </Declarations>
-  </Node>
-  <Node name="s_PU1" refname="s" relxpath="Parameters/Union/Spec[1]">
+  </DGNode>
+  <DGNode name="s_PU1" refname="s" relxpath="Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.14">p</Symbol>
     </Declarations>
-  </Node>
-  <Node name="s" refname="s" relxpath="">
+  </DGNode>
+  <DGNode name="s" refname="s" relxpath="">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.39">s</Symbol>
     </Declarations>
-  </Node>
-  <Node name="v_IU1" refname="v" relxpath="Imports/Union/Spec[1]">
+  </DGNode>
+  <DGNode name="v_IU1" refname="v" relxpath="Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.28">j</Symbol>
     </Declarations>
-  </Node>
-  <Node name="v_PU1" refname="v" relxpath="Parameters/Union/Spec[1]">
+  </DGNode>
+  <DGNode name="v_PU1" refname="v" relxpath="Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.13">r</Symbol>
     </Declarations>
-  </Node>
-  <Node name="v_S" refname="v" relxpath="Source">
+  </DGNode>
+  <DGNode name="v_S" refname="v" relxpath="Source">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.39">p</Symbol>
     </Declarations>
-  </Node>
-  <Node name="v_T" refname="v" relxpath="Target">
+  </DGNode>
+  <DGNode name="v_T" refname="v" relxpath="Target">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.51">q</Symbol>
     </Declarations>
-  </Node>
-  <Node name="s2_PU1" refname="s2" relxpath="Parameters/Union/Spec[1]">
+  </DGNode>
+  <DGNode name="s2_PU1" refname="s2" relxpath="Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.15">p2</Symbol>
     </Declarations>
-  </Node>
-  <Node name="s2_A1V" refname="s" relxpath="Parameters/Union/Spec[1]">
+  </DGNode>
+  <DGNode name="s2_A1V" refname="s" relxpath="Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts i, p</Signature>
-  </Node>
-  <Node name="s2_A1A1" refname="s2" relxpath="Actuals/Spec[1]/Actuals/Spec[1]">
+  </DGNode>
+  <DGNode name="s2_A1A1" refname="s2" relxpath="Actuals/Spec[1]/Actuals/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.35">t</Symbol>
     </Declarations>
-  </Node>
-  <Node name="s2_A1" refname="s2" relxpath="Actuals/Spec[1]">
+  </DGNode>
+  <DGNode name="s2_A1" refname="s2" relxpath="Actuals/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts j, q, t</Signature>
-  </Node>
-  <Node name="s2" refname="s2" relxpath="">
+  </DGNode>
+  <DGNode name="s2" refname="s2" relxpath="">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts i, j, p2, q, s, t</Signature>
-  </Node>
-  <Link source="s_IU1" target="s_PU1" linkid="0">
+  </DGNode>
+  <DGLink source="s_IU1" target="s_PU1" linkid="0">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts i} extended with {p}</GMorphism>
-  </Link>
-  <Link source="s_IU1" target="s2_A1V" linkid="5">
+  </DGLink>
+  <DGLink source="s_IU1" target="s2_A1V" linkid="5">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts i} extended with {p}</GMorphism>
-  </Link>
-  <Link source="s_PU1" target="s" linkid="1">
+  </DGLink>
+  <DGLink source="s_PU1" target="s" linkid="1">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts i, p} extended with {s}</GMorphism>
-  </Link>
-  <Link source="s_PU1" target="s2_A1V" linkid="7" status="proven">
+  </DGLink>
+  <DGLink source="s_PU1" target="s2_A1V" linkid="7" status="proven">
     <Type>GlobalProvenThmInc</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="7" />
@@ -89,34 +89,34 @@ inclusion morphism of { sorts i, p} extended with {s}</GMorphism>
     <ProofBasis linkref="15" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 identity morphism over { sorts i, p}</GMorphism>
-  </Link>
-  <Link source="s_PU1" target="s2_A1V" linkid="15" status="proven">
+  </DGLink>
+  <DGLink source="s_PU1" target="s2_A1V" linkid="15" status="proven">
     <Type>LocalProvenThmInc</Type>
     <Rule>Local-Inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 identity morphism over { sorts i, p}</GMorphism>
-  </Link>
-  <Link source="s" target="s2" linkid="13">
+  </DGLink>
+  <DGLink source="s" target="s2" linkid="13">
     <Type>GlobalDef</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {p |-&gt; q} : { sorts i, p, s} |-&gt; { sorts i, j, p2, q, s, t}</GMorphism>
-  </Link>
-  <Link source="v_IU1" target="v_PU1" linkid="2">
+  </DGLink>
+  <DGLink source="v_IU1" target="v_PU1" linkid="2">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts j} extended with {r}</GMorphism>
-  </Link>
-  <Link source="v_IU1" target="s2_A1A1" linkid="8">
+  </DGLink>
+  <DGLink source="v_IU1" target="s2_A1A1" linkid="8">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts j} extended with {t}</GMorphism>
-  </Link>
-  <Link source="v_PU1" target="v_T" linkid="3">
+  </DGLink>
+  <DGLink source="v_PU1" target="v_T" linkid="3">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
-  </Link>
-  <Link source="v_PU1" target="s2_A1A1" linkid="9" status="proven">
+  </DGLink>
+  <DGLink source="v_PU1" target="s2_A1A1" linkid="9" status="proven">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="9" />
@@ -124,52 +124,52 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
     <ProofBasis linkref="16" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {r |-&gt; t} : { sorts j, r} |-&gt; { sorts j, t}</GMorphism>
-  </Link>
-  <Link source="v_PU1" target="s2_A1A1" linkid="16" status="proven">
+  </DGLink>
+  <DGLink source="v_PU1" target="s2_A1A1" linkid="16" status="proven">
     <Type>LocalProvenThm</Type>
     <Rule>Local-Inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {r |-&gt; t} : { sorts j, r} |-&gt; { sorts j, t}</GMorphism>
-  </Link>
-  <Link source="v_S" target="v_T" linkid="4" status="proven">
+  </DGLink>
+  <DGLink source="v_S" target="v_T" linkid="4" status="proven">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <RuleTarget linkref="4" />
     <ProofBasis linkref="17" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
-  </Link>
-  <Link source="v_S" target="v_T" linkid="17" status="proven">
+  </DGLink>
+  <DGLink source="v_S" target="v_T" linkid="17" status="proven">
     <Type>LocalProvenThm</Type>
     <Rule>Local-Inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
-  </Link>
-  <Link source="v_S" target="s2_A1V" linkid="6">
+  </DGLink>
+  <DGLink source="v_S" target="s2_A1V" linkid="6">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts p} extended with {i}</GMorphism>
-  </Link>
-  <Link source="v_T" target="s2_A1" linkid="11">
+  </DGLink>
+  <DGLink source="v_T" target="s2_A1" linkid="11">
     <Type>GlobalDef</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {r |-&gt; t} : { sorts j, q, r} |-&gt; { sorts j, q, t}</GMorphism>
-  </Link>
-  <Link source="s2_PU1" target="s2" linkid="14">
+  </DGLink>
+  <DGLink source="s2_PU1" target="s2" linkid="14">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts p2} extended with {i, j, q, s, t}</GMorphism>
-  </Link>
-  <Link source="s2_A1A1" target="s2_A1" linkid="10">
+  </DGLink>
+  <DGLink source="s2_A1A1" target="s2_A1" linkid="10">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts j, t} extended with {q}</GMorphism>
-  </Link>
-  <Link source="s2_A1" target="s2" linkid="12">
+  </DGLink>
+  <DGLink source="s2_A1" target="s2" linkid="12">
     <Type>GlobalDefInc</Type>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 inclusion morphism of { sorts j, q, t} extended with {i, p2, s}</GMorphism>
-  </Link>
+  </DGLink>
   <SPEC-DEFN name="s" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.6" formal-param="s_PU1" />
   <SPEC-DEFN name="s2" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.6-8.7" formal-param="s2_PU1" />
   <VIEW-DEFN name="v" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.6" formal-param="v_PU1" source="v_S" target="v_T">
