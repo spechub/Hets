@@ -16,17 +16,13 @@ module Proofs.PathifyNames (pathifyLibEnv) where
 
 import Logic.Coerce
 import Logic.Comorphism
-import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Logic
-import Logic.Prover
 
 import Static.DevGraph
 import Static.GTheory
 import Static.History
-import Static.ComputeTheory
 
-import Common.DocUtils
 import Common.ExtSign
 import Common.Id
 import Common.LibName
@@ -36,7 +32,6 @@ import Data.Graph.Inductive.Graph
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Control.Monad
 
 pathifyLibEnv :: LibEnv -> Result LibEnv
@@ -46,21 +41,67 @@ pathifyLibEnv libEnv =
           f le ln =
               do
                 let dg0 = lookupDGraph ln libEnv
-                dg <- pathifyDG dg0
+                dg <- pathifyDG (getLibId ln) dg0
                 return $ Map.insert ln dg le
 
 
-pathifyDG :: DGraph -> Result DGraph
-pathifyDG dg = do
-  foldM pathifyLabNode dg $ topsortedNodes dg
+pathifyDG :: LibId -> DGraph -> Result DGraph
+pathifyDG li dg = do
+  foldM (pathifyLabNode li) dg $ topsortedNodes dg
 
 
-pathifyLabNode :: DGraph -> LNode DGNodeLab -> Result DGraph
-pathifyLabNode dg (n, lb) =
+pathifyLabNode :: LibId -> DGraph -> LNode DGNodeLab -> Result DGraph
+pathifyLabNode li dg (n, lb) =
    if isDGRef lb then return dg else case dgn_theory lb of
-    G_theory lid (ExtSign sig _) x sens y -> do
-      (nsig, nsens) <- pathify lid dg n sig sens
-      let nlb = lb { dgn_theory = G_theory lid
-                     (makeExtSign lid nsig) x
-                     nsens y }
-      return $ changesDGH dg $ SetNodeLab lb (n, nlb)
+    G_theory lid (ExtSign sig _) _ _ _ -> do
+      -- the functions needed for the mapping:
+      -- Map symbol [LinkPath symbol] -> Map G_symbol [LinkPath G_symbol]
+      let f = G_symbol lid
+      let h = map (fmap f)
+      -- get the global imports
+      innMorphs <- getGlobalImports lid $ innDG dg n
+      m <- pathify lid li sig innMorphs
+      let nlb = lb { dgn_symbolpathlist = Map.mapKeys f (Map.map h m) }
+      return $ changesDGH dg [SetNodeLab lb (n, nlb)]
+
+getGlobalImports :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+                   lid -> [LEdge DGLinkLab] -> Result [(Int, morphism)]
+getGlobalImports lid l = fmap catMaybes $ mapR (getGlobalImport lid) l
+
+getGlobalImport :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+               lid -> LEdge DGLinkLab -> Result (Maybe (Int, morphism))
+getGlobalImport lid (_, _, llab) =
+    let lt = dgl_type llab in
+    -- check the type of the linklabel first
+    if isDefEdge lt
+    then
+        if isLocalEdge lt
+        then do
+          -- local edges aren't supported...
+          warning ()
+             (unlines
+              ["Local link with " ++ show (dgl_id llab)
+               ++ " not supported.", 
+               "The result of pathify may not be as expected."]) nullRange
+          -- and will be skipped
+          return Nothing
+        else
+            -- we have a global edge here
+            case (dgl_morphism llab, dgl_id llab) of
+              (GMorphism cid _ _ mor _, EdgeId n) ->
+                  do
+                    hmor <- coerceMorphism (targetLogic cid) lid
+                            "getGlobalImport" mor
+                    return $ Just (n, hmor)
+    -- theorem links will be skipped
+    else return Nothing

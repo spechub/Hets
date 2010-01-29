@@ -8,7 +8,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Pathify all names (in signature and sentences)
+Pathify all signature names
 -}
 
 module CASL.Pathify
@@ -29,6 +29,6 @@ import Control.Monad
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-pathifyNames :: LibId -> Sign f e -> [(Int, CASLMor)]
+pathifyNames :: LibId -> Sign f e -> [(Int, Morphism f e m)]
                  -> Result (Map.Map Symbol [LinkPath Symbol])
 pathifyNames libid sig l = return $ Map.empty

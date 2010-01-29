@@ -23,12 +23,14 @@ import ATerm.Conversion
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.Graph
+import Common.LibName
 import Common.OrderedMap
 import qualified Common.Lib.SizedList as SizedList
 import Common.Result
 
 import ATC.GlobalAnnotations ()
 import ATC.Graph ()
+import ATC.LibName ()
 import Logic.Prover
 import Data.Typeable
 import Data.List
@@ -50,6 +52,7 @@ import Control.Concurrent.MVar
 {-! for Common.Lib.Graph.Gr derive : ShATermLG !-}
 {-! for Common.Lib.Graph.GrContext derive : ShATermLG !-}
 {-! for Common.OrderedMap.ElemWOrd derive : ShATermLG !-}
+{-! for Common.LibName.LinkPath derive : ShATermLG !-}
 
 atcLogicLookup :: LogicGraph -> String -> String -> AnyLogic
 atcLogicLookup lg s l =
@@ -330,6 +333,7 @@ instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
                     case fromShATermLG' lg a att0 of { (att1, a') ->
                     (att1, IntMap.fromDistinctAscList a') }
             u -> fromShATermError "IntMap.IntMap" u
+
 
 instance ShATermLG G_theory where
   toShATermLG  att0 (G_theory lid sign si sens ti) = do
