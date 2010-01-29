@@ -137,6 +137,7 @@ import Data.Typeable
 
 import qualified OMDoc.DataTypes as OMDoc
 
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -377,6 +378,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          qualify :: lid -> SIMPLE_ID -> LibId -> morphism -> sign
                  -> Result (morphism, [Named sentence])
          qualify l _ _ _ _ = statFail l "qualify"
+
+         -- | compute path information of the symbols
+         pathify :: lid -> LibId -> sign -> [(Int, morphism)]
+                 -> Result (Map.Map symbol [LinkPath symbol])
+         pathify l _ _ = statFail l "pathify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym

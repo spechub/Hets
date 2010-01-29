@@ -147,3 +147,17 @@ instance Pretty LibName where
 instance Pretty LibId where
     pretty = structId . show
 
+type LinkPath a = (a, [(LibId, Int)])
+
+showLinkPath :: LinkPath a -> String
+showLinkPath (x, ((_, n):l)) = showLinkPath (x, l) ++ "/" ++ show n
+showLinkPath _ = ""
+
+{-
+instance Show a => Show (LinkPath a) where
+    show (LinkPath x ((li, n):l)) = show (LinkPath x l) ++ "/" ++ show n
+    show _ = ""
+
+instance Functor LinkPath where
+    fmap f (LinkPath x l) = LinkPath (f x) l
+-}

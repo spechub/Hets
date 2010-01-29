@@ -146,6 +146,7 @@ data DGNodeLab =
   , dgn_phi :: Maybe GMorphism --morphism from signature to nffree signature
   , nodeInfo :: DGNodeInfo
   , dgn_lock :: Maybe (MVar ())
+  , dgn_symbolpathlist :: Map.Map G_symbol [LinkPath G_symbol]
   } deriving (Show, Eq)
 
 instance Show (MVar a) where
