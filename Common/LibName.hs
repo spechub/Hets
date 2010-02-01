@@ -22,6 +22,8 @@ import Common.Utils
 import Data.List
 import System.Time
 
+import Data.Graph.Inductive.Graph
+
 omTs :: [Token]
 omTs = [genToken "OM"]
 
@@ -147,7 +149,9 @@ instance Pretty LibName where
 instance Pretty LibId where
     pretty = structId . show
 
-data LinkPath a = LinkPath a [(LibId, Int)] deriving Eq
+-- The Int type is used to represent Node, which is a typesynonym for Int.
+-- We can't use Node here
+data LinkPath a = LinkPath a [(LibId, Node)] deriving (Ord, Eq)
 
 instance Show a => Show (LinkPath a) where
     show (LinkPath x ((li, n):l)) = show (LinkPath x l) ++ "/" ++ show n
@@ -155,3 +159,9 @@ instance Show a => Show (LinkPath a) where
 
 instance Functor LinkPath where
     fmap f (LinkPath x l) = LinkPath (f x) l
+
+addToPath :: LibId -> Node -> LinkPath a -> LinkPath a
+addToPath libid n (LinkPath x l) = LinkPath x $ (libid, n):l
+
+initPath :: LibId -> Node -> a -> LinkPath a
+initPath libid n x = LinkPath x [(libid, n)]

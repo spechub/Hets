@@ -136,6 +136,7 @@ import qualified Data.Map as Map
 import Data.Typeable
 
 import qualified OMDoc.DataTypes as OMDoc
+import Data.Graph.Inductive.Graph
 
 
 -- | Stability of logic implementations
@@ -380,7 +381,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          qualify l _ _ _ _ = statFail l "qualify"
 
          -- | compute path information of the symbols
-         pathify :: lid -> LibId -> sign -> [(Int, morphism)]
+         pathify :: lid -> LibId -> sign
+                 -> [(Node, morphism, Bool, Map.Map symbol [LinkPath symbol])]
                  -> Result (Map.Map symbol [LinkPath symbol])
          pathify l _ _ = statFail l "pathify"
          -------------------- symbols and raw symbols ---------------------

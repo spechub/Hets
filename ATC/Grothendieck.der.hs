@@ -126,6 +126,19 @@ instance ShATermLG G_symbol where
                 (att2, G_symbol lid i2') }}}
             u -> fromShATermError "G_symbol" u
 
+instance ShATermLG G_symbolplmap where
+  toShATermLG att0 (G_symbolplmap lid m) = do
+         (att1,i1) <- toShATermLG' att0 (language_name lid)
+         (att2,i2) <- toShATermLG' att1 m
+         return $ addATerm (ShAAppl "G_symbolplmap" [i1,i2] []) att2
+  fromShATermLG lg ix att = case getShATerm ix att of
+            ShAAppl "G_symbolplmap" [i1,i2] _ ->
+                case fromShATermLG' lg i1 att of { (att1, i1') ->
+                case atcLogicLookup lg "G_symbolplmap" i1' of { Logic lid ->
+                case fromShATermLG' lg i2 att1 of { (att2, i2') ->
+                (att2, G_symbolplmap lid i2') }}}
+            u -> fromShATermError "G_symbolplmap" u
+
 instance ShATermLG G_symb_items_list where
   toShATermLG att0 (G_symb_items_list lid symb_items) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)

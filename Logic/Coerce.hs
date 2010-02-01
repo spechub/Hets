@@ -17,10 +17,13 @@ import Logic.Logic
 import Logic.Prover
 import Common.ExtSign
 import Common.Id
+import Common.LibName
 import Common.Result
 import Common.AS_Annotation
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Data.Dynamic
+import ATC.LibName ()
 import ATC.Prover ()
 import ATC.ExtSign ()
 
@@ -109,6 +112,15 @@ coerceSymbol ::
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
    => lid1 -> lid2 -> symbol1 -> symbol2
 coerceSymbol l1 l2 s1 = unsafeCoerce l1 l2 s1
+
+coerceSymbolplmap ::
+   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
+   => lid1 -> lid2 -> Map.Map symbol1 [LinkPath symbol1]
+           -> Map.Map symbol2 [LinkPath symbol2]
+coerceSymbolplmap l1 l2 sm1 = unsafeCoerce l1 l2 sm1
 
 coerceSymbItemsList ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

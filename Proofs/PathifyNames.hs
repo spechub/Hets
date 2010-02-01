@@ -41,27 +41,31 @@ pathifyLibEnv libEnv =
           f le ln =
               do
                 let dg0 = lookupDGraph ln libEnv
-                dg <- pathifyDG (getLibId ln) dg0
+                dg <- pathifyDG le (getLibId ln) dg0
                 return $ Map.insert ln dg le
 
 
-pathifyDG :: LibId -> DGraph -> Result DGraph
-pathifyDG li dg = do
-  foldM (pathifyLabNode li) dg $ topsortedNodes dg
+pathifyDG :: LibEnv -> LibId -> DGraph -> Result DGraph
+pathifyDG le li dg = do
+  foldM (pathifyLabNode le li) dg $ topsortedNodes dg
 
 
-pathifyLabNode :: LibId -> DGraph -> LNode DGNodeLab -> Result DGraph
-pathifyLabNode li dg (n, lb) =
-   if isDGRef lb then return dg else case dgn_theory lb of
+pathifyLabNode :: LibEnv -> LibId -> DGraph -> LNode DGNodeLab
+               -> Result DGraph
+pathifyLabNode le li dg (n, lb) =
+   if isDGRef lb then
+       do
+         -- get referenced labnode from the libenv and update the
+         -- pathlist in the refnode
+         let rn = labDG (lookupDGraph (dgn_libname lb) le) $ dgn_node lb
+         let nlb = lb { dgn_symbolpathlist = dgn_symbolpathlist rn }
+         return $ changesDGH dg [SetNodeLab lb (n, nlb)]        
+   else case dgn_theory lb of
     G_theory lid (ExtSign sig _) _ _ _ -> do
-      -- the functions needed for the mapping:
-      -- Map symbol [LinkPath symbol] -> Map G_symbol [LinkPath G_symbol]
-      let f = G_symbol lid
-      let h = map (fmap f)
       -- get the global imports
-      innMorphs <- getGlobalImports lid $ innDG dg n
+      innMorphs <- getGlobalImports lid dg $ innDG dg n
       m <- pathify lid li sig innMorphs
-      let nlb = lb { dgn_symbolpathlist = Map.mapKeys f (Map.map h m) }
+      let nlb = lb { dgn_symbolpathlist = G_symbolplmap lid m }
       return $ changesDGH dg [SetNodeLab lb (n, nlb)]
 
 getGlobalImports :: forall lid sublogics
@@ -70,8 +74,9 @@ getGlobalImports :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-                   lid -> [LEdge DGLinkLab] -> Result [(Int, morphism)]
-getGlobalImports lid l = fmap catMaybes $ mapR (getGlobalImport lid) l
+          lid -> DGraph -> [LEdge DGLinkLab]
+              -> Result [(Node, morphism, Bool, Map.Map symbol [LinkPath symbol])]
+getGlobalImports lid dg l = fmap catMaybes $ mapR (getGlobalImport lid dg) l
 
 getGlobalImport :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -79,8 +84,9 @@ getGlobalImport :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-               lid -> LEdge DGLinkLab -> Result (Maybe (Int, morphism))
-getGlobalImport lid (_, _, llab) =
+          lid -> DGraph -> LEdge DGLinkLab ->
+          Result (Maybe (Node, morphism, Bool, Map.Map symbol [LinkPath symbol]))
+getGlobalImport lid dg (from, _, llab) =
     let lt = dgl_type llab in
     -- check the type of the linklabel first
     if isDefEdge lt
@@ -102,6 +108,47 @@ getGlobalImport lid (_, _, llab) =
                   do
                     hmor <- coerceMorphism (targetLogic cid) lid
                             "getGlobalImport" mor
-                    return $ Just (n, hmor)
+                    case dgn_symbolpathlist $ labDG dg from of
+                      G_symbolplmap lid0 m ->
+                          return $ Just (n, hmor, isHidingDef lt
+                                        , coerceSymbolplmap lid0 lid m)
     -- theorem links will be skipped
     else return Nothing
+
+
+
+-- =======================================================
+-- =======================================================
+-- =======================================================
+
+
+{-
+mapPathListMapping ::
+    (a -> b) -> Map.Map a [LinkPath a] -> Map.Map b [LinkPath b]
+mapPathListMapping f m =
+    let h = map (fmap f)
+    in Map.mapKeys f (Map.map h m)
+
+packPathListMapping :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+          lid -> Map.Map symbol [LinkPath symbol]
+              -> Map.Map G_symbol [LinkPath G_symbol]
+packPathListMapping lid = mapPathListMapping $ G_symbol lid
+
+unpackPathListMapping :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+          lid -> Map.Map G_symbol [LinkPath G_symbol]
+              -> Map.Map symbol [LinkPath symbol]
+unpackPathListMapping lid = 
+    let f (G_symbol lid0 s) = coerceSymbol lid0 lid s in mapPathListMapping f
+
+  -}
+  

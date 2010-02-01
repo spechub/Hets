@@ -43,6 +43,7 @@ module Logic.Grothendieck
   , isHomSubGsign
   , isSubGsign
   , langNameSig
+  , G_symbolplmap (..)
   , G_symbol (..)
   , G_symb_items_list (..)
   , G_symb_map_items_list (..)
@@ -101,6 +102,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
+import Common.LibName
 import Common.Lexer
 import Common.Result
 import Common.Token
@@ -194,6 +196,28 @@ instance Pretty G_sign where
 
 langNameSig :: G_sign -> String
 langNameSig (G_sign lid _ _) = language_name lid
+
+
+data G_symbolplmap = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree  =>
+  G_symbolplmap lid (Map.Map symbol [LinkPath symbol])
+  deriving Typeable
+
+instance Show G_symbolplmap where
+    show (G_symbolplmap _ sm) = show sm
+
+instance Eq G_symbolplmap where
+    a == b = compare a b == EQ
+
+instance Ord G_symbolplmap where
+  compare (G_symbolplmap l1 sm1) (G_symbolplmap l2 sm2) =
+    case compare (language_name l1) $ language_name l2 of
+      EQ -> compare (coerceSymbolplmap l1 l2 sm1) sm2
+      r -> r
 
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics
