@@ -230,13 +230,18 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
         Just ccStatus -> case ccResult ccStatus of
           Just b -> if b then let
             Result ds ms = extractModel cid sig1 $ ccProofTree ccStatus
+            msgLines = map diagString ds ++ lines (show $ ccProofTree ccStatus)
             in case ms of
             Nothing -> ConsistencyStatus CSConsistent $ unlines
-              ("consistent, but could not reconstruct a model"
-              : map diagString ds ++ lines (show $ ccProofTree ccStatus))
-            Just (sig3, sens3) -> ConsistencyStatus CSConsistent $ showDoc
-              (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
+              ("consistent, but could not reconstruct a model" : msgLines)
+            Just (sig3, sens3) -> let
+              thTxt = showDoc
+                (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
                         startThId) ""
+              in ConsistencyStatus CSConsistent $
+                 case filterDiags 2 ds of
+                   [] -> thTxt
+                   _ -> unlines $ lines thTxt ++ "%[" : msgLines ++ ["]%"]
             else ConsistencyStatus CSInconsistent $ show (ccProofTree ccStatus)
           Nothing -> if ccUsedTime ccStatus >= t' then
             ConsistencyStatus CSTimeout mTimeout

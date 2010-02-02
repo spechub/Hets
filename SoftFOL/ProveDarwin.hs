@@ -136,7 +136,7 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
         problem     = showTPTPProblemM thName proverStateI []
-        extraOptions  = "-pc true -pmtptp true -fd true -to "
+        extraOptions  = "-pc false -pmtptp true -fd true -to "
                         ++ tl
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
         runDarwinRealM :: IO(CCStatus ProofTree)

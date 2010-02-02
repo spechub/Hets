@@ -25,7 +25,6 @@ import Common.Id
 import Common.Result
 import Common.DocUtils
 import Common.ProofTree
-import Common.Utils (mapAccumLM)
 import qualified Common.Lib.Rel as Rel
 
 import Text.ParserCombinators.Parsec
@@ -35,6 +34,7 @@ import qualified Data.Set as Set
 import Data.List as List
 import Data.Maybe
 import Data.Char
+import Data.Ord (comparing)
 
 -- CASL
 import CASL.Logic_CASL
@@ -494,16 +494,16 @@ mkInjSentences :: IdTypeSPIdMap
                -> [Named SPTerm]
 mkInjSentences idMap = Map.foldWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
-          genInj k (args,res) fs =
+          genInj k (args, res) =
               assert (length args == 1)
-                     $ makeNamed (newName (show k) (show $ head args)
+                     . (makeNamed (newName (show k) (show $ head args)
                                  $ show res)
                        (SPQuantTerm SPForall
                               [typedVarTerm var $ head args]
                              (compTerm SPEqual
                                        [compTerm (spSym k)
                                                  [simpTerm (spSym var)],
-                                        simpTerm (spSym var)])) : fs
+                                        simpTerm (spSym var)])) :)
           var = mkSimpleId $
             fromJust (find (\ x -> not (Set.member (mkSimpleId x) usedIds))
                           ("Y" : [ 'Y' : show i | i <- [(1::Int)..]]))
@@ -839,26 +839,54 @@ isSingleSorted sign =
   Set.size (CSign.sortSet sign) == 1
   && Set.null (emptySortSet sign) -- empty sorts need relativization
 
+-- * extract model out of darwin output stored in a proof tree
+
 extractCASLModel :: CASLSign -> ProofTree
-                 -> Result (CASLSign, [Named (FORMULA ())])
+  -> Result (CASLSign, [Named (FORMULA ())])
 extractCASLModel sign (ProofTree output) =
   case parse tptpModel "" output of
     Right rfs -> do
       let (_, idMap, _) = transSign sign
           rMap = getSignMap idMap
-          (rs, ofs) = partition ((== "interpretation_atoms") . fst) rfs
-      (nm, _) <- mapAccumLM (toForm sign) rMap $ map snd $ rs ++ ofs
-      let nops = Map.filter (\ v -> case v of
-            (COp ot, Nothing) | null (opArgs ot) -> True
+          (rs, fs1) = partition ((== "interpretation_atoms") . fst) rfs
+          (ds, fs2) = partition ((== "interpretation_domain") . fst) fs1
+          (dds, fs3) = partition
+            ((== "interpretation_domain_distinct") . fst) fs2
+          (es, nm0) = foldl (\ (l, m) (_, s) -> let
+                           (e, m2) = typeCheckForm False sign m s
+                           in (l ++ e, m2)) ([], rMap) rs
+          nm = foldl (\ m (_, s) -> snd $ typeCheckForm True sign m s) nm0
+               $ fs3 ++ ds ++ dds
+          nops = Map.filter (\ v -> case v of
+            (COp _, Nothing) -> True
             _ -> False) nm
           os = opMap sign
           nos = foldr (\ (i, (COp ot, _)) -> addOpTo (simpleIdToId i) ot) os
             $ Map.toList nops
           nsign = sign { opMap = nos }
+          mkWarn s = Diag Warning s nullRange
+      doms <- mapM (\ (n, f) -> do
+          diss <- getDisjs f
+          nf <- createDomain sign nm diss
+          return $ makeNamed n nf) ds
+      distfs <- mapM (\ (n, f) -> do
+          let fs = splitConjs f
+              ets = map (fst . typeCheckForm False sign nm) fs
+              cs = filter (null . fst) $ zip ets fs
+          tfs <- mapM (toForm nsign nm . snd) cs
+          return $ makeNamed n $ simplifyFormula id $ conjunct tfs) dds
+      terms <- mapM (\ (n, f) -> do
+          let fs = splitConjs f
+              ets = map (fst . typeCheckForm False sign nm) fs
+              (cs, ws) = partition (null . fst) $ zip ets fs
+          Result (map mkWarn $ concatMap fst ws) $ Just ()
+          tfs <- mapM (toForm nsign nm . snd) cs
+          return $ makeNamed n $ simplifyFormula id $ conjunct tfs) fs3
       sens <- mapM (\ (n, f) -> do
-         (_, cf) <- toForm nsign nm f
-         return $ makeNamed n $ simplifyFormula id cf) rfs
-      return (nsign, filter ((/= False_atom nullRange) . sentence) sens)
+         cf <- toForm nsign nm f
+         return $ makeNamed n $ simplifyFormula id cf) rs
+      Result (map mkWarn es) $ Just ()
+      return (nsign, doms ++ distfs ++ terms ++ sens)
     Left err -> fail $ showErr err
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
@@ -870,97 +898,188 @@ getSignMap =
        _ -> Map.insert s (t, Just i)) g $ Map.toList m)
          Map.empty . Map.toList
 
-toTERM :: Monad m => RMap -> SPTerm -> m (TERM ())
-toTERM m spt = case spt of
-  SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
-    Just (CVar s, _) | null args -> return $ Qual_var cst s nullRange
-    Just (COp ot, Just i) | length args == length (opArgs ot) -> do
-      ts <- mapM (toTERM m) args
-      return $ Application  (Qual_op_name i (toOP_TYPE ot) nullRange)
-        ts nullRange
-    Just (COp ot, Nothing) | null args -> return $ Application
-         (Qual_op_name (simpleIdToId cst) (toOP_TYPE ot) nullRange)
-         [] nullRange
-    _ -> fail "toTERM1"
-  _ -> fail "toTERM2"
+splitConjs :: SPTerm -> [SPTerm]
+splitConjs trm = case trm of
+  SPComplexTerm SPAnd args ->
+     concatMap splitConjs args
+  _ -> [trm]
 
-findTypes :: CASLSign -> SORT -> RMap -> SPTerm -> RMap
-findTypes sign s m t = case t of
+splitDisjs :: SPTerm -> [SPTerm]
+splitDisjs trm = case trm of
+  SPComplexTerm SPOr args ->
+     concatMap splitDisjs args
+  _ -> [trm]
+
+getDisjs :: SPTerm -> Result [SPTerm]
+getDisjs trm = case trm of
+  SPQuantTerm SPForall [var] frm ->
+      mapM (\ t -> case t of
+        SPComplexTerm SPEqual [a1, a2] ->
+          if var == a1 then return a2 else
+          if var == a2 then return a1 else
+              fail $ "expecting equation with " ++ show var
+                     ++ ", got: " ++ showDoc t ""
+        _ -> fail $ "expecting equation, got: " ++ showDoc t "")
+        $ splitDisjs frm
+  _ -> fail $ "expecting simple quantified disjunction, got: "
+       ++ showDoc trm ""
+
+createDomain :: CASLSign -> RMap -> [SPTerm] -> Result (FORMULA ())
+createDomain sign m l = do
+  let es = map ((\ (e, _, s) -> (e, s)) . typeCheckTerm sign Nothing m) l
+  tys <- mapM (\ (e, ms) -> case ms of
+          Just s -> return s
+          _ -> fail $ unlines e) es
+  cs <- mapM (\ ds@((ty, _) : _) -> do
+        ts@(trm : r) <- mapM (toTERM m . snd) ds
+        let v = mkVarDeclStr "X" ty
+        return $ mkForall [v]
+          (if null r then mkStEq (toQualVar v) trm else
+           Disjunction (map (mkStEq $ toQualVar v) ts)
+           nullRange) nullRange)
+        . groupBy (\ p1 p2 -> fst p1 == fst p2) . sortBy (comparing fst)
+        $ zip tys l
+  return $ conjunct cs
+
+typeCheckForm :: Bool -> CASLSign -> RMap -> SPTerm -> ([String], RMap)
+typeCheckForm rev sign m trm =
+  let srts = sortSet sign
+      aty = if Set.size srts == 1 then Just $ Set.findMin srts else Nothing
+  in case trm of
+    SPQuantTerm _ vars frm -> let
+        vs = concatMap getVars vars
+        rm = foldr Map.delete m vs
+        (errs, nm) = typeCheckForm rev sign rm frm
+        m2 = foldr Map.delete nm vs
+        in (errs, Map.union m m2)
+    SPComplexTerm SPEqual [a1, a2] -> let
+        (r1, m1, ety) = typeCheckEq sign aty m a1 a2
+        in case ety of
+             Nothing -> (r1, m1)
+             Just _ -> let
+               (r2, m2, _) = typeCheckEq sign ety m1 a2 a1
+               in (r2, m2)
     SPComplexTerm (SPCustomSymbol cst) args ->
         case Map.lookup cst m of
-          Nothing | null args -> if isVar cst
-            then Map.insert cst (CVar s, Nothing) m
-            else Map.insert cst (COp $ OpType Total [] s, Nothing) m
-          Just (COp ot, _)
-            | opRes ot == s && length args == length (opArgs ot) ->
-                foldr (\ (n, a) m' -> findTypes sign n m' a) m
-                   $ zip (opArgs ot) args
-          Just (CVar s2, j) -> if s == s2 then m
-              else case minimalSupers sign s s2 of
-                [su] -> Map.insert cst (CVar su, j) m
-                _ -> error ("inconsistent variable: " ++ show cst)
-          _ -> m
-    _ -> error "findTypes"
+          Just (CPred pt, _) | length args == length (predArgs pt) ->
+            foldl (\ (b, p) (s, a) -> let
+                     (nb, nm, _) = typeCheckTerm sign (Just s) p a
+                     in (b ++ nb, nm))
+                      ([], m) $ zip (predArgs pt) args
+          _ -> (["unknown predicate: " ++ show cst], m)
+    SPComplexTerm _ args ->
+      foldl (\ (b, p) a -> let
+           (nb, nm) = typeCheckForm rev sign p a
+           in (b ++ nb, nm)) ([], m) $ if rev then reverse args else args
 
-toForm :: Monad m => CASLSign -> RMap -> SPTerm -> m (RMap, FORMULA ())
+typeCheckEq :: CASLSign -> Maybe SORT -> RMap -> SPTerm -> SPTerm
+  -> ([String], RMap, Maybe SORT)
+typeCheckEq sign aty m a1 a2 = let
+    (r1, m1, ty1) = typeCheckTerm sign aty m a1
+    (r2, m2, ty2) = typeCheckTerm sign aty m1 a2
+    in case (ty1, ty2) of
+             (Just s1, Just s2) ->
+                (r1 ++ r2
+                 ++ [ "different types " ++ show (s1, s2) ++ " in equation: "
+                      ++ showDoc a1 " = " ++ showDoc a2 ""
+                    | not $ haveCommonSupersorts True sign s1 s2], m2, Nothing)
+             (Nothing, _) -> (r1, m2, ty2)
+             (_, Nothing) -> (r1 ++ r2, m2, ty1)
+
+typeCheckTerm :: CASLSign -> Maybe SORT -> RMap -> SPTerm
+  -> ([String], RMap, Maybe SORT)
+typeCheckTerm sign ty m trm =
+  let srts = sortSet sign
+      aty = if Set.size srts == 1 then Just $ Set.findMin srts else Nothing
+  in case trm of
+    SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
+      Nothing -> let
+          (fb, fm, aTys) = foldr (\ a (b, p, tys) -> let
+                     (nb, nm, tya) = typeCheckTerm sign aty p a
+                     in (b ++ nb, nm, tya : tys)) ([], m, []) args
+          in case ty of
+               Just r | all isJust aTys ->
+                 if null args && isVar cst then
+                     (fb, Map.insert cst (CVar r, Nothing) fm, ty)
+                 else (fb, Map.insert cst
+                        (COp $ OpType Total (catMaybes aTys) r, Nothing) fm
+                      , ty)
+               _ -> (["no type for: " ++ showDoc trm ""], fm, ty)
+      Just (COp ot, _) -> let
+          aTys = opArgs ot
+          rTy = opRes ot
+          (fb, fm) = foldl (\ (b, p) (s, a)-> let
+                     (nb, nm, _) = typeCheckTerm sign (Just s) p a
+                     in (b ++ nb, nm)) ([], m) $ zip aTys args
+          aTyL = length aTys
+          argL = length args
+          in (fb ++
+              ["expected " ++ show aTyL ++ " arguments, but found "
+               ++ show argL ++ " for: " ++ show cst | aTyL /= argL]
+              ++ case ty of
+              Just r -> ["expected result sort " ++ show r ++ ", but found "
+                ++ show rTy ++ " for: " ++ show cst | not $ leqSort sign rTy r ]
+              _ -> [], fm, Just rTy)
+      Just (CVar s2, _) ->
+        (["unexpected arguments for variable: " ++ show cst | not $ null args]
+         ++ case ty of
+              Just r -> ["expected variable sort " ++ show r ++ ", but found "
+                ++ show s2 ++ " for: " ++ show cst | not $ leqSort sign s2 r ]
+              _ -> [], m, Just s2)
+      _ -> (["unexpected predicate in term: " ++ showDoc trm ""], m, ty)
+    _ -> (["unexpected term: " ++ showDoc trm ""], m, ty)
+
+toForm :: Monad m => CASLSign -> RMap -> SPTerm -> m (FORMULA ())
 toForm sign m t = case t of
     SPQuantTerm q vars frm -> do
         let vs = concatMap getVars vars
             rm = foldr Map.delete m vs
-        (nm, nf) <- toForm sign rm frm
-        let m2 = foldr Map.delete nm vs
+            (b, nm) = typeCheckForm False sign rm frm
             nvs = mapMaybe (toVar nm) vars
-        return (Map.union m m2, Quantification (toQuant q) nvs nf nullRange)
+        nf <- toForm sign nm frm
+        if null b then return $ Quantification (toQuant q) nvs nf nullRange
+           else fail $ unlines b
     SPComplexTerm SPEqual [a1, a2] -> do
-        let nm = case (getType m a1, getType m a2) of
-              (Nothing, Nothing) ->
-                  let srts = sortSet sign in
-                  if Set.size srts == 1 then
-                      let ty = Set.findMin srts in
-                      findTypes sign ty (findTypes sign ty m a1) a2
-                  else m
-              (Just t1, Nothing) ->
-                findTypes sign t1 (findTypes sign t1 m a1) a2
-              (Nothing, Just t2) ->
-                findTypes sign t2 (findTypes sign t2 m a1) a2
-              (Just t1, Just t2) ->
-                findTypes sign t2 (findTypes sign t1 m a1) a2
-        let check = case (getType nm a1, getType nm a2) of
-              (Just t1, Just t2) -> t1 == t2
-                || haveCommonSupersorts True sign t1 t2
-              _ -> True
-        return $ case (toTERM nm a1, toTERM nm a2) of
-            (Just t3, Just t4) | check ->
-              (nm, Strong_equation t3 t4 nullRange)
-            _ -> (nm, False_atom nullRange)
+        t1 <- toTERM m a1
+        t2 <- toTERM m a2
+        return $ mkStEq t1 t2
     SPComplexTerm (SPCustomSymbol cst) args ->
         case Map.lookup cst m of
           Just (CPred pt, mi) | length args == length (predArgs pt) -> do
-              let nm = foldr (\ (s, a) m' -> findTypes sign s m' a) m
-                       $ zip (predArgs pt) args
-              ts <- mapM (toTERM nm) args
-              return (nm, maybe (True_atom nullRange)
-                 (\ i -> Predication
-                (Qual_pred_name i (toPRED_TYPE pt) nullRange)
-                ts nullRange) mi)
+              ts <- mapM (toTERM m) args
+              case mi of
+                Nothing -> case args of
+                  [_] -> return (True_atom nullRange)
+                  _ -> fail $ "unkown predicate: " ++ show cst
+                Just i -> return (Predication
+                  (Qual_pred_name i (toPRED_TYPE pt) nullRange)
+                  ts nullRange)
           _ -> fail $ "inconsistent pred symbol: " ++ show cst
     SPComplexTerm symb args -> do
-         (nm, fs) <- mapAccumLM (toForm sign) m args
+         fs <- mapM (toForm sign m) args
          case (symb, fs) of
-           (SPNot, [f]) -> return (nm, Negation f nullRange)
-           (SPImplies, [f1, f2]) ->
-               return (nm, Implication f1 f2 True nullRange)
-           (SPImplied, [f2, f1]) ->
-               return (nm, Implication f1 f2 False nullRange)
-           (SPEquiv, [f1, f2]) ->
-               return (nm, Equivalence f1 f2 nullRange)
-           (SPAnd, _) ->
-               return (nm, Conjunction fs nullRange)
-           (SPOr, _) ->
-               return (nm, Disjunction fs nullRange)
-           (SPTrue, []) -> return (nm, True_atom nullRange)
-           (SPFalse, []) -> return (nm, False_atom nullRange)
-           _ -> fail "toForm2"
+           (SPNot, [f]) -> return (Negation f nullRange)
+           (SPImplies, [f1, f2]) -> return (mkImpl f1 f2)
+           (SPImplied, [f2, f1]) -> return (Implication f1 f2 False nullRange)
+           (SPEquiv, [f1, f2]) -> return (mkEqv f1 f2)
+           (SPAnd, _) -> return (conjunct fs)
+           (SPOr, _) -> return (Disjunction fs nullRange)
+           (SPTrue, []) -> return (True_atom nullRange)
+           (SPFalse, []) -> return (False_atom nullRange)
+           _ -> fail $ "wrong boolean formula: " ++ showDoc t ""
+
+toTERM :: Monad m => RMap -> SPTerm -> m (TERM ())
+toTERM m spt = case spt of
+  SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
+    Just (CVar s, _) | null args -> return $ Qual_var cst s nullRange
+    Just (COp ot, mi) | length args == length (opArgs ot) -> do
+      ts <- mapM (toTERM m) args
+      return $ Application  (Qual_op_name (case mi of
+              Just i -> i
+              _ -> simpleIdToId cst) (toOP_TYPE ot) nullRange)
+        ts nullRange
+    _ -> fail $ "cannot reconstruct term: " ++ showDoc spt ""
+  _ -> fail $ "cannot reconstruct term: " ++ showDoc spt ""
 
 toQuant :: SPQuantSym -> QUANTIFIER
 toQuant sp = case sp of
@@ -974,14 +1093,6 @@ toVar m sp = case sp of
     Just (CVar s, _) -> return $ Var_decl [cst] s nullRange
     _ -> fail $ "unknown variable: " ++ show cst
   _ -> fail $ "quantified term as variable: " ++ showDoc sp ""
-
-getType :: RMap -> SPTerm -> Maybe SORT
-getType m t = case t of
-    SPComplexTerm (SPCustomSymbol cst) _ -> case Map.lookup cst m of
-        Just (CVar s, _) -> Just s
-        Just (COp ot, _) -> Just $ opRes ot
-        _ -> Nothing
-    _ -> Nothing
 
 isVar :: SPIdentifier -> Bool
 isVar cst = case tokStr cst of
