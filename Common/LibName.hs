@@ -154,8 +154,8 @@ instance Pretty LibId where
 data LinkPath a = LinkPath a [(LibId, Node)] deriving (Ord, Eq)
 
 instance Show a => Show (LinkPath a) where
-    show (LinkPath x ((li, n):l)) = show (LinkPath x l) ++ "/" ++ show n
-    show _ = ""
+    show (LinkPath x ((_, n):l)) = show (LinkPath x l) ++ "/" ++ show n
+    show (LinkPath x _) = show x
 
 instance Functor LinkPath where
     fmap f (LinkPath x l) = LinkPath (f x) l

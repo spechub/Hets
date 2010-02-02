@@ -81,7 +81,7 @@ import Driver.AnaLib (anaLib)
 
 import Data.IORef
 import Data.Char (toLower)
-import Data.List (partition, delete, isPrefixOf)
+import Data.List (partition, delete, isPrefixOf, intercalate)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
@@ -410,7 +410,7 @@ showNodeInfo descr dgraph = do
       title = (if isDGRef dgnode then ("reference " ++) else
                if isInternalNode dgnode then ("internal " ++) else id)
               "node " ++ getDGNodeName dgnode ++ " " ++ show descr
-  createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
+  createTextDisplay title (title ++ "\n" ++ showDoc dgnode (showPathInfo dgnode))
 
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
 showDiagMessAux v ds = let es = filterDiags v ds in
@@ -784,3 +784,17 @@ getNodeLabel (GInfo { options = opts }) dgnode = do
   flags <- readIORef opts
   return $ if flagHideNames flags && isInternalNode dgnode
            then "" else getDGNodeName dgnode
+
+
+
+-- Just a debug output method for the linkpath-lists
+showPathInfo :: DGNodeLab -> String
+showPathInfo lb = ""
+
+showPathInfoBis :: DGNodeLab -> String
+showPathInfoBis lb = unlines (["", map (const '-') [(1::Int)..60], "PATHINFO:", ""]
+                           ++ 
+                           case dgn_symbolpathlist lb of
+                             G_symbolplmap _ x ->
+                                 Map.foldWithKey f [] x)
+                  where f k v l = (show k ++ ": " ++ intercalate ", " (map show v)):l

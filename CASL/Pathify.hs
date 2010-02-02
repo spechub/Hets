@@ -15,11 +15,9 @@ module CASL.Pathify
   ( pathifyNames
   ) where
 
-import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
 
-import Common.Id
 import Common.LibName
 import Common.Result
 
@@ -28,22 +26,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Data.Graph.Inductive.Graph
-
-{-
-idToSortSymbol :: Id -> Symbol
-idToOpSymbol :: Id -> OpType -> Symbol
-idToPredSymbol :: Id -> PredType -> Symbol
-
-
-
-
-
-  sortM <- foldM (pathifySort libid sig l) Map.empty $ Set.toList $ sortSet sig
-  opM <- foldM (pathifyOp libid sig l) sortM $ flattenOpMap $ opMap sig
-  foldM (pathifyPred libid sig l) opM $ flattenPredMap $ predMap sig
-
--}
-
 
 pathifyNames :: (Show f, Show e) => LibId -> Sign f e
              -> [(Node, Morphism f e m, Bool, Map.Map Symbol [LinkPath Symbol])]
@@ -56,7 +38,6 @@ pathifyNames libid sig l = do
                         (flattenOpMap $ opMap sig)
                 ++  map (\ (i,pt) -> (idToPredSymbol i pt,[]))
                         (flattenPredMap $ predMap sig)
-  warning () ("pathifyNames, SIG: " ++ show sig) nullRange
   foldM (pathifyImport libid) initial l
 
 
@@ -96,33 +77,4 @@ pathifySymbol libid n lpm lpm0 (s, sMapped) = do
   let lpNew = lp0 ++ if null lp then [initPath libid n sMapped]
                      else map (addToPath libid n) lp
   return $ Map.adjust (const lpNew) sMapped lpm0
-
-{-
-getSortPathList libid (n, m, b, pl) s sig = do
-  -- 1. check the direction of morphism
-  let sourcesig = if b then mtarget m else msource m
-  -- 2. lookup the s in the morphism table
-  
-  -- 3. if not found lookup the s in the source sig
-  -- 4. if found somewhere add the n to the paths and return the pathlist
--}
-
-pathifySort :: LibId -> Sign f e
-             -> [(Node, Morphism f e m, Bool, Map.Map Symbol [LinkPath Symbol])]
-             -> Map.Map Symbol [LinkPath Symbol] -> SORT
-             -> Result (Map.Map Symbol [LinkPath Symbol])
-pathifySort li sig l m s = return m
-
-pathifyOp :: LibId -> Sign f e
-             -> [(Node, Morphism f e m, Bool, Map.Map Symbol [LinkPath Symbol])]
-             -> Map.Map Symbol [LinkPath Symbol] -> (Id, OpType)
-             -> Result (Map.Map Symbol [LinkPath Symbol])
-pathifyOp li sig l m s = return m
-
-pathifyPred :: LibId -> Sign f e
-             -> [(Node, Morphism f e m, Bool, Map.Map Symbol [LinkPath Symbol])]
-             -> Map.Map Symbol [LinkPath Symbol] -> (Id, PredType)
-             -> Result (Map.Map Symbol [LinkPath Symbol])
-
-pathifyPred li sig l m s = return m
 
