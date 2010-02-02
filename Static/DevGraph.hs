@@ -665,7 +665,7 @@ newRefInfo ln n = DGRef
 
 -- | create a new node label
 newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
-newInfoNodeLab name info gTh = DGNodeLab
+newInfoNodeLab name info gTh@(G_theory lid _ _ _ _) = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
   , globalTheory = Nothing
@@ -676,7 +676,8 @@ newInfoNodeLab name info gTh = DGNodeLab
   , dgn_freenf = Nothing
   , dgn_phi = Nothing
   , nodeInfo = info
-  , dgn_lock = Nothing }
+  , dgn_lock = Nothing
+  , dgn_symbolpathlist = G_symbolplmap lid Map.empty }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
