@@ -15,7 +15,8 @@ module Comorphisms.SuleCFOL2SoftFOL
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
-import Control.Exception
+import Control.Exception (assert)
+import Control.Monad (foldM)
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -34,7 +35,6 @@ import qualified Data.Set as Set
 import Data.List as List
 import Data.Maybe
 import Data.Char
-import Data.Ord (comparing)
 
 -- CASL
 import CASL.Logic_CASL
@@ -866,13 +866,18 @@ extractCASLModel sign (ProofTree output) =
           nsign = sign { opMap = nos }
           mkWarn s = Diag Warning s nullRange
       doms <- mapM (\ (n, f) -> do
-          diss <- getDisjs f
+          diss <- getDomElems f
           nf <- createDomain sign nm diss
           return $ makeNamed n nf) ds
       distfs <- mapM (\ (n, f) -> do
           let fs = splitConjs f
               ets = map (fst . typeCheckForm False sign nm) fs
               cs = filter (null . fst) $ zip ets fs
+          dts <- foldM getUneqElems Set.empty fs
+          let ws = concatMap ((\ (s, _, _) -> s)
+                              . typeCheckTerm sign Nothing nm)
+                   $ Set.toList dts
+          Result (map mkWarn ws) $ Just ()
           tfs <- mapM (toForm nsign nm . snd) cs
           return $ makeNamed n $ simplifyFormula id $ conjunct tfs) dds
       terms <- mapM (\ (n, f) -> do
@@ -904,14 +909,20 @@ splitConjs trm = case trm of
      concatMap splitConjs args
   _ -> [trm]
 
+getUneqElems :: Set.Set SPTerm -> SPTerm -> Result (Set.Set SPTerm)
+getUneqElems s trm = case trm of
+  SPComplexTerm SPNot [(SPComplexTerm SPEqual [a1, a2])] ->
+      return $ Set.insert a2 $ Set.insert a1 s
+  _ -> fail $ "unexpected disjointness formula: " ++ showDoc trm ""
+
 splitDisjs :: SPTerm -> [SPTerm]
 splitDisjs trm = case trm of
   SPComplexTerm SPOr args ->
      concatMap splitDisjs args
   _ -> [trm]
 
-getDisjs :: SPTerm -> Result [SPTerm]
-getDisjs trm = case trm of
+getDomElems :: SPTerm -> Result [SPTerm]
+getDomElems trm = case trm of
   SPQuantTerm SPForall [var] frm ->
       mapM (\ t -> case t of
         SPComplexTerm SPEqual [a1, a2] ->
@@ -930,15 +941,21 @@ createDomain sign m l = do
   tys <- mapM (\ (e, ms) -> case ms of
           Just s -> return s
           _ -> fail $ unlines e) es
-  cs <- mapM (\ ds@((ty, _) : _) -> do
+  cs <- mapM (\ ds -> do
         ts@(trm : r) <- mapM (toTERM m . snd) ds
-        let v = mkVarDeclStr "X" ty
-        return $ mkForall [v]
-          (if null r then mkStEq (toQualVar v) trm else
-           Disjunction (map (mkStEq $ toQualVar v) ts)
-           nullRange) nullRange)
-        . groupBy (\ p1 p2 -> fst p1 == fst p2) . sortBy (comparing fst)
-        $ zip tys l
+        let mtys = keepMinimals sign id . Set.toList . foldl1 Set.intersection
+                  $ map (\ (ty, _) -> Set.insert ty $ supersortsOf ty sign) ds
+        case mtys of
+          [] -> fail $ "no common supersort found for: " ++ showDoc ds ""
+          ty : _ -> do
+            let v = mkVarDeclStr "X" ty
+            return $ mkForall [v]
+              (if null r then mkStEq (toQualVar v) trm else
+                   Disjunction (map (mkStEq $ toQualVar v) ts)
+                   nullRange) nullRange)
+    . Rel.partList
+      (\ p1 p2 -> haveCommonSupersorts True sign (fst p1) $ fst p2)
+    $ zip tys l
   return $ conjunct cs
 
 typeCheckForm :: Bool -> CASLSign -> RMap -> SPTerm -> ([String], RMap)
