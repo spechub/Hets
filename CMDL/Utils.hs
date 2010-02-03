@@ -113,23 +113,20 @@ arrowLink edgLab = padBlanks $ if isLocalEdge $ dgl_type edgLab
     else globalArr
 
 -- | Checks if the string starts with an arrow
-checkArrowLink :: String -> (Bool, String, String)
+checkArrowLink :: String -> Maybe (String, String)
 checkArrowLink str = case find snd
   $ map (\ s -> (s, isPrefixOf s str)) [localArr, globalArr] of
-  Nothing -> (False, [], str)
-  Just (a, _) -> (True, padBlanks a, drop (length a) str)
+  Nothing -> Nothing
+  Just (a, _) -> Just (padBlanks a, drop (length a) str)
 
 -- | Given a string inserts spaces before and after an
 -- arrow
-spacesAroundArrows :: String -> String -> String
-spacesAroundArrows s output = case s of
-       [] -> output
-       hd : tl  ->
-         case checkArrowLink $ trimLeft s of
-          (True, arr, rs)  -> spacesAroundArrows rs
-                               (output ++ arr)
-          (False, _, _) -> spacesAroundArrows tl
-                               (output ++ [hd])
+spacesAroundArrows :: String -> String
+spacesAroundArrows s = case s of
+       [] -> []
+       hd : tl  -> case checkArrowLink $ trimLeft s of
+          Just (arr, rs) -> arr ++ spacesAroundArrows rs
+          Nothing -> hd : spacesAroundArrows tl
 
 -- | Given a string the function decomposes it into 4 lists,
 -- one for node goals, the other for edges, the third for
@@ -139,7 +136,7 @@ decomposeIntoGoals :: String -> ([String], [String], [String], [String])
 decomposeIntoGoals input = let
     -- the new input where words and arrows are separated
     -- by exactly one space
-    nwInput = words $ spacesAroundArrows input []
+    nwInput = words $ spacesAroundArrows input
     -- funtion to parse the input and decompose it into
     -- the three goal list
     parse info nbOfArrows word sw listNode listEdge listNbEdge listError =
@@ -150,12 +147,12 @@ decomposeIntoGoals input = let
                2 -> (listNode, listEdge, word : listNbEdge, listError)
                _ -> (listNode, listEdge, listNbEdge, word : listError)
         x : l -> case checkArrowLink x of
-                (True, arr, _) ->
+                Just (arr, _) ->
                   case word of
                    [] -> (listNode, listEdge, listNbEdge, word : listError)
                    _  -> parse l (nbOfArrows + 1) (word ++ arr) True
                            listNode listEdge listNbEdge listError
-                (False, _, _) ->
+                Nothing ->
                   if sw
                    then parse l nbOfArrows (word ++ x) False
                           listNode listEdge listNbEdge listError
@@ -176,7 +173,7 @@ decomposeIntoGoals input = let
 -- producing error message later on
 mapAndSplit :: (a -> Maybe b) -> [a] -> ([a], [b])
 mapAndSplit fn ls =
-  let ps = map (\ x -> (x, fn x)) ls
+  let ps = zip ls $ map fn ls
       (oks, errs) = partition (isJust . snd) ps
   in (map fst errs, mapMaybe snd oks)
 
@@ -185,7 +182,7 @@ mapAndSplit fn ls =
 -- the function
 concatMapAndSplit :: (a -> [b]) -> [a] -> ([a],[b])
 concatMapAndSplit fn ls =
-  let ps = map (\ x -> (x, fn x)) ls
+  let ps = zip ls $ map fn ls
       (errs, oks) = partition (null . snd) ps
   in (map fst errs, concatMap snd oks)
 
@@ -239,8 +236,8 @@ createEdgeNames lsN lsE = let
 -- | Given a list of edge names and numbered edge names
 -- and the list of all nodes and edges the function
 -- identifies the edges that appear in the name lists
-obtainEdgeList :: [String] ->[String] ->[LNode DGNodeLab]
-                    -> [LEdge DGLinkLab]-> ([String],[LEdge DGLinkLab])
+obtainEdgeList :: [String] -> [String] -> [LNode DGNodeLab]
+  -> [LEdge DGLinkLab] -> ([String],[LEdge DGLinkLab])
 obtainEdgeList lsEdge lsNbEdge allNodes allEdges = let
    -- function that searches through a list of nodes to
    -- find the node number for a given name.
@@ -249,42 +246,41 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges = let
                         getDGNodeName label == s) ls of
            Nothing -> Nothing
            Just (nb, _) -> Just nb
-  -- converts a string to a number (for some reason I
-  -- could not find such a function already implemented
-  -- in the Prelude )
+        -- compute the list of all edges from source node to target
        l1 = concatMapAndSplit
-            (\ nme ->
-               let allx = words nme
-                   node1 = getNodeNb (head allx) allNodes
-                   node2 = getNodeNb (allx !! 2) allNodes
-               in if length allx < 3 then error "CMDL.Utils.obtainEdgeList1"
-                 else case node1 of
+            (\ nme -> case words nme of
+              [src, _, tar] -> let
+                node1 = getNodeNb src allNodes
+                node2 = getNodeNb tar allNodes
+                in case node1 of
                 Nothing -> []
                 Just x ->
                  case node2 of
                  Nothing -> []
                  Just y ->
                   filter (\ (x1, y1, _) -> x == x1 && y == y1) allEdges
+              _ -> error "CMDL.Utils.obtainEdgeList1"
             ) lsEdge
-             -- compute the list of all numbered edges
+        -- compute the list of all numbered edges
        l2 = mapAndSplit
-           (\ nme ->
-              let allx = words nme
-                  node1 = getNodeNb (head allx) allNodes
-                  node2 = getNodeNb (allx !! 5) allNodes
-                  nb = read (allx !! 3)
-              in if length allx < 6 then error "CMDL.Utils.obtainEdgeList2"
-                 else case node1 of
+           (\ nme -> case words nme of
+             [src, _, numb, _, tar] -> let
+               node1 = getNodeNb src allNodes
+               node2 = getNodeNb tar allNodes
+               mnb = readMaybe numb
+               in case node1 of
                Nothing -> Nothing
-               Just x ->
-                case node2 of
+               Just x -> case node2 of
                 Nothing -> Nothing
-                Just y ->
-                 let ls = filter(\ (x1, y1, elab) -> x == x1 && y == y1 &&
+                Just y -> case mnb of
+                 Nothing -> Nothing
+                 Just nb -> let
+                   ls = filter(\ (x1, y1, elab) -> x == x1 && y == y1 &&
                                    dgl_id elab == EdgeId nb) allEdges
-                 in case ls of
+                   in case ls of
                      [] -> Nothing
-                     els : _ -> Just els) lsNbEdge
+                     els : _ -> Just els
+             _ -> error "CMDL.Utils.obtainEdgeList2") lsNbEdge
    in (fst l1 ++ fst l2, snd l1 ++ snd l2)
 
 -- | Giben a listof edgenamesand numbered edge names and
@@ -331,16 +327,15 @@ unfinishedEdgeName input = let
      -- is not an arrow and then we need to consider just
      -- the last word
         case checkArrowLink $ lastString wrds of
-          (True, arr1, _) ->
+          Just (arr1, _) ->
             case checkArrowLink $ prevPrevLast wrds of
-             (True, arr2, _) -> prev2PrevLast wrds
+             Just(arr2, _) -> prev2PrevLast wrds
                ++ arr2 ++ prevLast wrds ++ arr1
              _ -> prevLast wrds ++ arr1
-          --anyhting else
           _ -> case checkArrowLink $ prevLast wrds of
                 -- an entire edge name was just inserted
                 -- before and now we need a fresh new start
-                (True, _, _) -> []
+                Just _ -> []
                 -- if just the first word of an edge was
                 -- inserted then return that
                 _ -> case lastString wrds of
@@ -351,14 +346,14 @@ unfinishedEdgeName input = let
      -- name, arrow or the second node name
       case checkArrowLink $ prevLast wrds of
            -- in the middle of the last word
-          (True, arr1, _) -> case checkArrowLink $ prev2PrevLast wrds of
-             (True, arr2, _) -> prev3PrevLast wrds ++
+          Just (arr1, _) -> case checkArrowLink $ prev2PrevLast wrds of
+             Just (arr2, _) -> prev3PrevLast wrds ++
                            arr2 ++ prevPrevLast wrds ++
                            arr1 ++ lastString wrds
              _ -> prevPrevLast wrds ++ arr1 ++ lastString wrds
           _ -> case checkArrowLink $ prevPrevLast wrds of
                  -- in the middle of the first word
-                (True, _, _) -> lastString wrds
+                Just _ -> lastString wrds
                 -- in the middle of the arrow
                 _ -> case prevLast wrds of
                       [] -> lastString wrds
@@ -366,7 +361,7 @@ unfinishedEdgeName input = let
 
 -- | Given a list of files and folders the function filters
 -- only directory names and files ending in extenstion
--- .casl (why not .het?)
+-- .casl or .het
 fileFilter :: String -> [String] -> [String] -> IO [String]
 fileFilter lPath ls cons = case ls of
     []  -> return cons
@@ -378,7 +373,7 @@ fileFilter lPath ls cons = case ls of
            then fileFilter lPath l ((x ++ "/") : cons)
            -- if it is not a folder then it must be a file
            -- so check the extension
-           else if isSuffixOf ".casl" x
+           else if any (flip isSuffixOf x ) [".casl", ".het" ]
                    then fileFilter lPath l (x : cons)
                    else fileFilter lPath l cons
 

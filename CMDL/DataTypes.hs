@@ -126,14 +126,12 @@ data CmdlCmdFnClasses =
 data CmdlCmdRequirements =
     ReqNodes
   | ReqEdges
-  | ReqNodesAndEdges
   | ReqProvers
   | ReqConsCheck
   | ReqComorphism
   | ReqFile
   | ReqGNodes
   | ReqGEdges
-  | ReqGNodesAndGEdges
   | ReqAxm
   | ReqGoal
   | ReqNumber
@@ -144,14 +142,12 @@ instance Show CmdlCmdRequirements where
   show cr = case cr of
               ReqNodes           -> "Nodes"
               ReqEdges           -> "Edges"
-              ReqNodesAndEdges   -> "Nodes|Edges"
               ReqProvers         -> "Prover"
               ReqConsCheck       -> "ConsChecker"
               ReqComorphism      -> "Comorphism"
               ReqFile            -> "File"
               ReqGNodes          -> "GoalNodes"
               ReqGEdges          -> "GoalEdges"
-              ReqGNodesAndGEdges -> "Nodes|Edges"
               ReqAxm             -> "Axiom"
               ReqGoal            -> "Goal"
               ReqNumber          -> "Number"
