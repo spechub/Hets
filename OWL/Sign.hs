@@ -98,9 +98,13 @@ diffSig a b =
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =
     totalSign { ontologyID = let
-                    lp1 = localPart $ ontologyID totalSign
-                    lp2 = localPart $ ontologyID toIns
-                    in  mkQName $ lp1 ++ "_" ++ lp2,
+                    u1 = ontologyID totalSign
+                    u2 = ontologyID toIns
+                    in case () of
+                    _ | u1 == u2 || nullQName == u2 -> u1
+                      | nullQName == u1 -> u2
+                      | True ->
+                           mkQName $ localPart u1 ++ "_" ++ localPart u2,
                 concepts = Set.union (concepts totalSign)
                                      (concepts toIns),
                 primaryConcepts = Set.union (primaryConcepts totalSign)
