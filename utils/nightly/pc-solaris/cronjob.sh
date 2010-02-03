@@ -41,6 +41,7 @@ makeCofiLib
 repackDocs
 updateLibForCgi
 
+topSortCheck
 moreChecks
 checkCalculi
 checkEnvs
