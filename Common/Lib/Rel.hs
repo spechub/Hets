@@ -39,7 +39,8 @@ module Common.Lib.Rel
     , intransKernel, mostRight, restrict, delSet
     , toSet, fromSet, topSort, nodes, collaps
     , transpose, transReduce, setInsert, setToMap
-    , fromDistinctMap, locallyFiltered, flatSet, partSet, leqClasses
+    , fromDistinctMap, locallyFiltered
+    , flatSet, partSet, partList, leqClasses
     ) where
 
 import Prelude hiding (map, null)
@@ -299,15 +300,20 @@ haveCommonLeftElem t1 t2 =
 -- | partitions a set into a list of disjoint non-empty subsets
 -- determined by the given function as equivalence classes
 partSet :: (Ord a) => (a -> a -> Bool) -> Set.Set a -> [(Set.Set a)]
-partSet f s = if Set.null s then [] else
-              let (x, s') = Set.deleteFindMin s
-                  (ds, es) = List.partition (Set.null . Set.filter (f x))
-                             $ partSet f s'
-              in Set.insert x (Set.unions es) : ds
+partSet f = List.map Set.fromList . leqClasses f
+
+-- | partitions a list into a list of disjoint non-empty lists
+-- determined by the given function as equivalence classes
+partList :: (a -> a -> Bool) -> [a] -> [[a]]
+partList f l = case l of
+  [] -> []
+  x : r -> let
+    (ds, es) = List.partition (List.null . filter (f x)) $ partList f r
+    in (x : concat es) : ds
 
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
 leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
-leqClasses eq = List.map Set.toList . partSet eq
+leqClasses f = partList f . Set.toList
 
 -- | flattens a list of non-empty sets and uses the minimal element of
 -- each set to represent the set
