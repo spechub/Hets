@@ -249,6 +249,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
               insLink dg'' mor globalDef SeeTarget n' node)
   Reduction asp restr ->
    do let sp1 = item asp
+          orig = DGRestriction $ Restricted restr
       (sp1', NodeSig n' gsigma', dg') <-
           anaSpec addSyms lg dg nsig (extName "Restriction" name) opts sp1
       let gsigma = getMaybeSig nsig
@@ -258,7 +259,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       case tmor of
        Nothing ->
         do let (ns@(NodeSig node _), dg'') =
-                   insGSig dg' name DGHiding $ dom hmor
+                   insGSig dg' name orig $ dom hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
                    insLink dg'' hmor HidingDefLink SeeTarget n' node)
@@ -270,12 +271,12 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
         if tmor' == ide (dom tmor')
          then do
            let (ns@(NodeSig node1 _), dg'') =
-                   insGSig dg' name DGRevealing gsigma1
+                   insGSig dg' name orig gsigma1
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
                    insLink dg'' hmor HidingDefLink SeeTarget n' node1)
          else do
            let (NodeSig node1 _, dg'') =
-                   insGSig dg' (extName "Revealing" name) DGRevealing gsigma1
+                   insGSig dg' (extName "Revealing" name) orig gsigma1
                (ns@(NodeSig node2 _), dg3) =
                    insGSig dg'' name DGRevealTranslation gsigma''
                dg4 = insLink dg3 hmor HidingDefLink SeeTarget n' node1

@@ -104,8 +104,7 @@ dgOriginHeader o = case o of
     DGLogicCoercion -> "logic-translation"
     DGTranslation _ -> "translation"
     DGUnion -> "union"
-    DGHiding -> "hiding"
-    DGRevealing -> "revealing"
+    DGRestriction _ -> "restriction"
     DGRevealTranslation -> "translation part of a revealing"
     DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
     DGLocal -> "local-spec"
@@ -129,6 +128,7 @@ instance Pretty DGOrigin where
               if Set.null syms then Doc.empty else
                   text "new symbols:" $+$ pretty syms
           DGTranslation (Renamed r) -> pretty r
+          DGRestriction (Restricted r) -> pretty r
           _ -> Doc.empty
 
 instance Pretty DGNodeInfo where

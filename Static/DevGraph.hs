@@ -102,6 +102,15 @@ instance Ord Renamed where
 instance Eq Renamed where
   _ == _ = True
 
+-- | a wrapper for restrictions with a trivial Ord instance
+data Restricted = Restricted RESTRICTION deriving Show
+
+instance Ord Restricted where
+  compare _ _ = EQ
+
+instance Eq Restricted where
+  _ == _ = True
+
 {- | Data type indicating the origin of nodes and edges in the input language
      This is not used in the DG calculus, only may be used in the future
      for reconstruction of input and management of change. -}
@@ -113,8 +122,7 @@ data DGOrigin =
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
-  | DGHiding
-  | DGRevealing
+  | DGRestriction Restricted
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
   | DGLocal

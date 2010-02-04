@@ -323,14 +323,14 @@ anaUnitTerms lgraph dg opts uctx@(buc, diag) ts = case ts of
        return (dnsig : dnsigs, diag'', dg'', replaceAnnoted ut' ut : uts')
 
 -- | Analyse an unit term
-anaUnitTerm :: LogicGraph -> DGraph
-              -> HetcatsOpts -> ExtStUnitCtx -> UNIT_TERM
-              -> Result (DiagNodeSig, Diag, DGraph, UNIT_TERM)
+anaUnitTerm :: LogicGraph -> DGraph -> HetcatsOpts -> ExtStUnitCtx
+  -> UNIT_TERM -> Result (DiagNodeSig, Diag, DGraph, UNIT_TERM)
 anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
   let pos = getPosUnitTerm utrm
       utStr = showDoc utrm ""
   in case utrm of
   Unit_reduction ut restr -> do
+       let orig = DGRestriction $ Restricted restr
        (p, diag1, dg1, ut') <-
            anaUnitTerm lgraph dg opts uctx (item ut)
        curl <- lookupCurrentLogic "UnitTerm" lgraph
@@ -338,9 +338,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                          (getSig (getSigFromDiag p)) opts restr
        (q@(Diag_node_sig qn _), diag', dg') <-
            extendDiagramWithMorphismRev pos lgraph diag1 dg1 p incl utStr
-            (case restr of
-                 Hidden _ _ -> DGHiding
-                 Revealed _ _ -> DGRevealing)
+            orig
        case msigma of
                   Nothing ->
                   {- the renaming morphism is just identity, so
@@ -353,10 +351,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                          let sink = [(qn, sigma)]
                          () <- assertAmalgamability opts pos diag' sink
                          (q', diag'', dg'') <- extendDiagramWithMorphism pos
-                            lgraph diag' dg' q sigma utStr
-                             (case restr of
-                                Hidden _ _ -> DGHiding
-                                Revealed _ _ -> DGRevealing)
+                            lgraph diag' dg' q sigma utStr orig
                          return (q', diag'', dg'',
                                    Unit_reduction
                                    (replaceAnnoted ut' ut) restr)
