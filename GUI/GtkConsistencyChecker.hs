@@ -23,6 +23,7 @@ import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
 
 import Static.DevGraph
+import Static.PrintDevGraph ()
 import Static.GTheory
 import Static.History
 
@@ -34,6 +35,7 @@ import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
 
+import Common.DocUtils
 import Common.LibName (LibName)
 import Common.Result
 import Common.Consistency
@@ -158,11 +160,13 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         Just (G_theory _ _ _ sens _) -> Map.null sens
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
+
       n2CS n = case getNodeConsStatus n of
-                 ConsStatus _ pc _ -> case pc of
-                   Inconsistent -> ConsistencyStatus CSInconsistent ""
-                   Cons -> ConsistencyStatus CSConsistent ""
-                   _ -> ConsistencyStatus CSUnchecked ""
+                 ConsStatus _ pc thmls ->
+                   let t = showDoc thmls "" in case pc of
+                   Inconsistent -> ConsistencyStatus CSInconsistent t
+                   Cons -> ConsistencyStatus CSConsistent t
+                   _ -> ConsistencyStatus CSUnchecked t
       (emptyNodes, others) = selNodes
         $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
         $ zip nodes sls
