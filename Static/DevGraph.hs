@@ -94,7 +94,7 @@ isInternal :: NodeName ->  Bool
 isInternal n = extIndex n /= 0 || not (null $ extString n)
 
 -- | a wrapper for renamings with a trivial Ord instance
-data Renamed = Renamed RENAMING deriving Show
+newtype Renamed = Renamed RENAMING deriving Show
 
 instance Ord Renamed where
   compare _ _ = EQ
@@ -103,7 +103,7 @@ instance Eq Renamed where
   _ == _ = True
 
 -- | a wrapper for restrictions with a trivial Ord instance
-data Restricted = Restricted RESTRICTION deriving Show
+newtype Restricted = Restricted RESTRICTION deriving Show
 
 instance Ord Restricted where
   compare _ _ = EQ
