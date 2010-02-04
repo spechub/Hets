@@ -218,10 +218,10 @@ dgRuleHeader :: DGRule -> String
 dgRuleHeader r = case r of
     DGRule str -> str
     DGRuleWithEdge str _ -> str
-    DGRuleLocalInference _ -> "Local-Inference"
-    Composition _ -> "Composition"
-    BasicInference _ _ -> "Basic-Inference"
-    BasicConsInference _ _ -> "Basic-Cons-Inference"
+    DGRuleLocalInference _ -> "local-inference"
+    Composition _ -> "composition"
+    BasicInference _ _ -> "basic-inference"
+    BasicConsInference _ _ -> "basic-cons-inference"
 
 instance Pretty DGRule where
   pretty r = let es = dgRuleEdges r in fsep
@@ -354,11 +354,11 @@ instance Pretty GlobalEntry where
 instance Pretty DGraph where
   pretty dg = vcat
     [ prettyGr $ dgBody dg
-    , text "Global Environment"
+    , text "global environment:"
     , printMap id vcat (\ k v -> fsep [k <+> mapsto, v]) $ globalEnv dg
-    , text "History"
+    , text "history:"
     , prettyHistory $ reverseHistory $ proofHistory dg
-    , text "Redoable History"
+    , text "redoable history:"
     , prettyHistory $ SizedList.reverse $ reverseHistory $ redoHistory dg
     , text "next edge:" <+> pretty (getNewEdgeId dg) ]
 
