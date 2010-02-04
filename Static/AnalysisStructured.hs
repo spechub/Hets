@@ -219,7 +219,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
                (basic_analysis lid)
              b (bspec, sig, globalAnnos dg0)
        let gsysd = Set.map (G_symbol lid) sysd
-           (ns, dg') = insGTheory dg0 name (DGBasicSpec gsysd)
+           (ns, dg') = insGTheory dg0 name
+             (DGBasicSpec (G_basic_spec lid bspec') gsysd)
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)

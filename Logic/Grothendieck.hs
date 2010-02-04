@@ -137,6 +137,13 @@ instance Pretty G_basic_spec where
 
 instance GetRange G_basic_spec
 
+-- dummy instances for development graphs
+instance Ord G_basic_spec where
+  compare _ _ = EQ
+
+instance Eq G_basic_spec where
+  _ == _ = True
+
 -- | index for signatures
 newtype SigId = SigId Int
   deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)

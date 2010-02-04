@@ -92,7 +92,7 @@ lnode ga lenv (_, lbl) =
             $ prettyElem "Signature" ga $ dgn_sign lbl ]
           DGNode orig cs -> constStatus cs
               ++ case orig of
-                   DGBasicSpec syms -> subnodes "Declarations"
+                   DGBasicSpec _ syms -> subnodes "Declarations"
                      (map (prettyRangeElem "Symbol" ga) $ Set.toList syms)
                    _ -> [prettyElem "Signature" ga $ dgn_sign lbl]
       ++ case dgn_theory lbl of

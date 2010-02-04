@@ -97,7 +97,7 @@ dgOriginHeader :: DGOrigin -> String
 dgOriginHeader o = case o of
     DGEmpty -> "empty-spec"
     DGBasic -> "foreign-basic-spec"
-    DGBasicSpec _ -> "basic-spec"
+    DGBasicSpec _ _ -> "basic-spec"
     DGExtension -> "extension"
     DGTranslation -> "translation"
     DGUnion -> "union"
@@ -121,8 +121,10 @@ dgOriginHeader o = case o of
 
 instance Pretty DGOrigin where
   pretty o = text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
-    <+> case o of
-          DGBasicSpec syms -> if Set.null syms then Doc.empty else pretty syms
+    $+$ case o of
+          DGBasicSpec gbs syms -> specBraces (pretty gbs) $+$
+              if Set.null syms then Doc.empty else
+                  text "new symbols:" $+$ pretty syms
           _ -> Doc.empty
 
 instance Pretty DGNodeInfo where
@@ -136,8 +138,7 @@ prettyDGNodeLab l = sep [ text $ getDGNodeName l, pretty $ nodeInfo l]
 
 instance Pretty DGNodeLab where
   pretty l = vcat
-    [ text "Origin:" <+> pretty (nodeInfo l)
-    , text $ "XPath: " ++ showXPath (reverse $ xpath $ dgn_name l)
+    [ text $ "xpath: " ++ showXPath (reverse $ xpath $ dgn_name l)
     , pretty $ getNodeConsStatus l
     , if hasOpenGoals l then text "has open goals" else
       if hasSenKind (const True) l then Doc.empty else text "locally empty"
@@ -145,10 +146,11 @@ instance Pretty DGNodeLab where
     , case dgn_nf l of
         Nothing -> Doc.empty
         Just n -> text "normal form:" <+> text (showNodeId n)
+    , text "origin:" $+$ pretty (nodeInfo l)
     , case dgn_sigma l of
         Nothing -> Doc.empty
         Just gm -> text "normal form inclusion:" $+$ pretty gm
-    , text "Local Theory:"
+    , text "local theory:"
     , pretty $ dgn_theory l]
 
 instance Pretty EdgeId where
