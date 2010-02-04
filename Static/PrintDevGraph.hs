@@ -28,6 +28,8 @@ module Static.PrintDevGraph
     , dgRuleEdges
     ) where
 
+import Syntax.Print_AS_Structured ()
+
 import Static.GTheory
 import Static.DevGraph
 import Static.History
@@ -99,7 +101,8 @@ dgOriginHeader o = case o of
     DGBasic -> "foreign-basic-spec"
     DGBasicSpec _ _ -> "basic-spec"
     DGExtension -> "extension"
-    DGTranslation -> "translation"
+    DGLogicCoercion -> "logic-translation"
+    DGTranslation _ -> "translation"
     DGUnion -> "union"
     DGHiding -> "hiding"
     DGRevealing -> "revealing"
@@ -125,6 +128,7 @@ instance Pretty DGOrigin where
           DGBasicSpec gbs syms -> specBraces (pretty gbs) $+$
               if Set.null syms then Doc.empty else
                   text "new symbols:" $+$ pretty syms
+          DGTranslation (Renamed r) -> pretty r
           _ -> Doc.empty
 
 instance Pretty DGNodeInfo where

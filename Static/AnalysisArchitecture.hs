@@ -372,7 +372,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
        () <- assertAmalgamability opts pos diag1 sink
        (dnsig', diag', dg') <- extendDiagramWithMorphism pos lgraph
            diag1 dg1 dnsig gMorph utStr
-                DGTranslation
+                (DGTranslation $ Renamed ren)
        return (dnsig', diag', dg', Unit_translation
                          (replaceAnnoted ut' ut) ren)
   Amalgamation uts poss -> do

@@ -32,6 +32,7 @@ also shall be visible in the displayed development graph.
 
 module Static.DevGraph where
 
+import Syntax.AS_Structured
 import Static.GTheory
 
 import Logic.Logic
@@ -92,6 +93,15 @@ data NodeName = NodeName
 isInternal :: NodeName ->  Bool
 isInternal n = extIndex n /= 0 || not (null $ extString n)
 
+-- | a wrapper for renamings with a trivial Ord instance
+data Renamed = Renamed RENAMING deriving Show
+
+instance Ord Renamed where
+  compare _ _ = EQ
+
+instance Eq Renamed where
+  _ == _ = True
+
 {- | Data type indicating the origin of nodes and edges in the input language
      This is not used in the DG calculus, only may be used in the future
      for reconstruction of input and management of change. -}
@@ -100,7 +110,8 @@ data DGOrigin =
   | DGBasic
   | DGBasicSpec G_basic_spec (Set.Set G_symbol)
   | DGExtension
-  | DGTranslation
+  | DGLogicCoercion
+  | DGTranslation Renamed
   | DGUnion
   | DGHiding
   | DGRevealing

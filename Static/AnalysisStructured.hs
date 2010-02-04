@@ -79,7 +79,7 @@ coerceNode lg dg ns@(NodeSig n s@(G_sign lid1 _ _)) nn l2@(Logic lid2) =
           && dgl_morphism l == gmor) $ outDG dg n of
         Nothing -> do
           let (ms@(NodeSig m _), dg2) =
-                insGSig dg (extName "XCoerced" nn) DGTranslation $ cod gmor
+                insGSig dg (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
               dg3 = insLink dg2 gmor globalDef SeeTarget n m
           return (ms, dg3)
         Just (_, t, _) ->
@@ -243,7 +243,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let (ns@(NodeSig node _), dg'') =
-            insGSig dg' name DGTranslation $ cod mor
+            insGSig dg' name (DGTranslation $ Renamed ren) $ cod mor
            -- ??? too simplistic for non-comorphism inter-logic translations
       return (Translation (replaceAnnoted sp1' asp) ren, ns,
               insLink dg'' mor globalDef SeeTarget n' node)

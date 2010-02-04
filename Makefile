@@ -253,11 +253,12 @@ ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x Logic.Prover.ProverTemplate \
-            -x  Logic.Prover.ConsChecker \
+            -x Logic.Prover.ConsChecker \
             -i ATC.AS_Annotation -i ATC.OrderedMap -o $@ $<
 
 ATC/DevGraph.der.hs: Static/DevGraph.hs $(GENRULES)
-	$(GENRULECALL2) -i ATC.LibName -i ATC.Consistency -o $@ $<
+	$(GENRULECALL2) -i ATC.LibName -i ATC.Consistency \
+            -i ATC.AS_Structured -o $@ $<
 
 # ATC files for every logic
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
