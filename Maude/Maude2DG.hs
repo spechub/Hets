@@ -533,7 +533,8 @@ insertDefEdgeMorphism n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
 insertThmEdgeMorphism :: Token -> Node -> Node -> Morphism -> DGraph -> DGraph
 insertThmEdgeMorphism name n1 n2 morph dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where mor = G_morphism Maude morph startMorId
-                           edg = defDGLink (gEmbed mor) globalThm (DGLinkView name)
+                           edg = defDGLink (gEmbed mor) globalThm
+                                 (DGLinkView name $ Fitted [])
 
 -- | inserts a PCons link between the nodes with the given morphism
 insertConsEdgeMorphism :: Node -> Node -> Morphism -> DGraph -> DGraph

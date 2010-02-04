@@ -140,7 +140,6 @@ data DGOrigin =
   | DGFlattening
     deriving (Show, Eq, Ord)
 
-
 -- | node content or reference to another library's node
 data DGNodeInfo = DGNode
   { node_origin :: DGOrigin       -- origin in input language
@@ -287,6 +286,12 @@ showEdgeId (EdgeId i) = show i
 newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
     deriving (Show, Eq, Ord)
 
+-- | a wrapper for fitting morphisms with a trivial Eq instance
+newtype Fitted = Fitted [G_mapping] deriving Show
+
+instance Eq Fitted where
+  _ == _ = True
+
 data DGLinkOrigin =
     SeeTarget
   | SeeSource
@@ -296,9 +301,9 @@ data DGLinkOrigin =
   | DGLinkClosedLenv
   | DGLinkImports
   | DGLinkMorph SIMPLE_ID
-  | DGLinkInst SIMPLE_ID
+  | DGLinkInst SIMPLE_ID Fitted
   | DGLinkInstArg SIMPLE_ID
-  | DGLinkView SIMPLE_ID
+  | DGLinkView SIMPLE_ID Fitted
   | DGLinkFitView SIMPLE_ID
   | DGLinkFitViewImp SIMPLE_ID
   | DGLinkProof

@@ -29,6 +29,7 @@ module Static.PrintDevGraph
     ) where
 
 import Syntax.Print_AS_Structured ()
+import Syntax.AS_Structured
 
 import Static.GTheory
 import Static.DevGraph
@@ -163,12 +164,18 @@ instance Pretty EdgeId where
 dgLinkOriginSpec :: DGLinkOrigin -> Maybe SIMPLE_ID
 dgLinkOriginSpec o = case o of
     DGLinkMorph n -> Just n
-    DGLinkInst n -> Just n
+    DGLinkInst n _ -> Just n
     DGLinkInstArg n -> Just n
-    DGLinkView n -> Just n
+    DGLinkView n _ -> Just n
     DGLinkFitView n -> Just n
     DGLinkFitViewImp n -> Just n
     _ -> Nothing
+
+dgLinkMapping :: DGLinkOrigin -> [G_mapping]
+dgLinkMapping o = case o of
+    DGLinkInst _ (Fitted l) -> l
+    DGLinkView _ (Fitted l) -> l
+    _ -> []
 
 dgLinkOriginHeader :: DGLinkOrigin -> String
 dgLinkOriginHeader o = case o of
@@ -180,9 +187,9 @@ dgLinkOriginHeader o = case o of
     DGLinkClosedLenv -> "closed spec and local environment"
     DGLinkImports -> "OWL import"
     DGLinkMorph _ -> "instantiation morphism of"
-    DGLinkInst _ -> "instantiation of"
+    DGLinkInst _ _ -> "instantiation of"
     DGLinkInstArg _ -> "actual parameter of"
-    DGLinkView _ -> "view"
+    DGLinkView _ _ -> "view"
     DGLinkFitView _ -> "fit source of"
     DGLinkFitViewImp _ -> "add import to source of"
     DGLinkProof -> "proof-link"
@@ -191,6 +198,7 @@ dgLinkOriginHeader o = case o of
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeader o) <+> pretty (dgLinkOriginSpec o)
+    $+$ ppWithCommas (dgLinkMapping o)
 
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String

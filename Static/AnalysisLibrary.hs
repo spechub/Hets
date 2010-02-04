@@ -374,7 +374,7 @@ anaViewDefn lgraph libenv dg opts vn gen vt gsis pos = do
         pos
       return (View_defn vn gen' vt' gsis pos,
                 (if voidView then dg'' else insLink dg'' gmor globalThm
-                 (DGLinkView vn) nodeS nodeT)
+                 (DGLinkView vn $ Fitted gsis) nodeS nodeT)
                 -- 'LeftOpen' for conserv correct?
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
                , libenv)

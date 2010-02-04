@@ -99,7 +99,7 @@ printLogicEncoding enc = keyword logicS <+> pretty enc
 instance Pretty G_mapping where
     pretty = printG_mapping
 
-printG_mapping ::  G_mapping -> Doc
+printG_mapping :: G_mapping -> Doc
 printG_mapping gma = case gma of
     G_symb_map gsmil -> pretty gsmil
     G_logic_translation enc -> printLogicEncoding enc
