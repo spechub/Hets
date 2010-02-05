@@ -92,7 +92,7 @@ identity morphism over { sorts i, p}</GMorphism>
   </DGLink>
   <DGLink source="s_PU1" target="s2_A1V" linkid="15" status="proven">
     <Type>LocalProvenThmInc</Type>
-    <Rule>Local-Inference</Rule>
+    <Rule>local-inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 identity morphism over { sorts i, p}</GMorphism>
   </DGLink>
@@ -127,7 +127,7 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
   </DGLink>
   <DGLink source="v_PU1" target="s2_A1A1" linkid="16" status="proven">
     <Type>LocalProvenThm</Type>
-    <Rule>Local-Inference</Rule>
+    <Rule>local-inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {r |-&gt; t} : { sorts j, r} |-&gt; { sorts j, t}</GMorphism>
   </DGLink>
@@ -141,7 +141,7 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
   </DGLink>
   <DGLink source="v_S" target="v_T" linkid="17" status="proven">
     <Type>LocalProvenThm</Type>
-    <Rule>Local-Inference</Rule>
+    <Rule>local-inference</Rule>
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
   </DGLink>
