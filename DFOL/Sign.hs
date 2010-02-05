@@ -295,7 +295,8 @@ hasType term expectedType sig cont =
    where Result.Result diag inferredTypeM = getTermType term sig cont
 
 -- determines the type of a term w.r.t. a signature and a context
--- returns type in proper and pi-recursive form
+{- returns the type in recursive form, with bound variables different
+   from signature constants -}
 getTermType :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getTermType term sig cont = getTermTypeH (termRecForm term) sig cont
 
@@ -305,7 +306,7 @@ getTermTypeH (Identifier n) sig cont =
         Just _  -> Result.Result [] fromContext
         Nothing -> case fromSig of
                         Just type1 ->
-                          let type2 = renameBoundVars (piRecForm type1) sig cont
+                          let type2 = renameBoundVars (typeRecForm type1) sig cont
                               in Result.Result [] $ Just type2
                         Nothing ->
                           Result.Result [unknownIdentifierError n cont] Nothing
@@ -319,7 +320,7 @@ getTermTypeH (Appl f [a]) sig cont =
                Nothing -> Result.Result diagF Nothing
                Just (Func (dom:doms) cod) ->
                  if (dom == typeA)
-                    then Result.Result [] $ Just $ typeProperForm
+                    then Result.Result [] $ Just $ typeRecForm
                             $ Func doms cod
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
                Just (Pi [([x],t)] typ) ->
@@ -333,7 +334,6 @@ getTermTypeH (Appl f [a]) sig cont =
 getTermTypeH _ _ _ = Result.Result [] Nothing
 
 -- renames bound variables in a type to make it valid w.r.t. a sig and a context
--- expects type in proper and pi-recursive form
 renameBoundVars :: TYPE -> Sign -> CONTEXT -> TYPE
 renameBoundVars t sig cont =
   let syms = Set.union (getSymbols sig) (getVars cont)

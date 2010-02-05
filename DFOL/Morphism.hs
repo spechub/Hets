@@ -15,7 +15,7 @@ module DFOL.Morphism
    , idMorph
    , compMorph
    , isValidMorph
-   , morphCanForm
+   , canForm
    , applyMorph
    , mapSymbol
    , inclusionMorph
@@ -43,7 +43,7 @@ data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , symMap :: Map.Map NAME NAME
-  } deriving (Eq, Ord, Show)
+  } deriving (Ord, Show)
 
 -- constructs an identity morphism
 idMorph :: Sign -> Morphism
@@ -53,14 +53,11 @@ idMorph sig = Morphism sig sig Map.empty
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 =
   if target m1 /= source m2
-     then fail $ "Codomain of the first morphism "
-                 ++ "must equal the domain of the second."
+     then Result.Result [incompatibleMorphsError m1 m2] Nothing
      else return $ Morphism (source m1) (target m2) $
                  Set.fold (\ sym1 -> let sym2 = mapSymbol m2
                                                   $ mapSymbol m1 sym1
-                                         in if (sym1 == sym2)
-                                               then id
-                                               else Map.insert sym1 sym2)
+                                         in Map.insert sym1 sym2)
                           Map.empty $
                           getSymbols $ source m1
 
@@ -82,8 +79,8 @@ checkTypePres m n =
 
 {- converts the morphism into its canonical form where the symbol map contains
    no key/value pairs of the form (k,k) -}
-morphCanForm :: Morphism -> Morphism
-morphCanForm (Morphism sig1 sig2 map1) =
+canForm :: Morphism -> Morphism
+canForm (Morphism sig1 sig2 map1) =
   let map2 = Map.fromList $ filter (\ (k,a) -> k /= a) $ Map.toList map1
       in Morphism sig1 sig2 map2
 
@@ -237,6 +234,10 @@ toTermMap :: Map.Map NAME NAME -> Map.Map NAME TERM
 toTermMap m = Map.fromList $ map (\ (k,a) -> (k, Identifier a))
                $ Map.toList m
 
+-- equality
+instance Eq Morphism where
+    m1 == m2 = (canForm m1) == (canForm m2)
+
 -- pretty printing
 instance Pretty Morphism where
   pretty = printMorph
@@ -323,6 +324,17 @@ getSymsOfTypeH ((ns,t1):ds) t =
      else getSymsOfTypeH ds t
 
 -- ERROR MESSAGES
+incompatibleMorphsError :: Morphism -> Morphism -> Result.Diagnosis
+incompatibleMorphsError m1 m2 =
+  Result.Diag
+    { Result.diagKind = Result.Error
+    , Result.diagString = "Codomain of the morphism\n" ++ (show $ pretty m1)
+                          ++ "\nis different from the domain of the morphism\n"
+                          ++ (show $ pretty m2)
+                          ++ "\nhence their composition cannot be constructed."
+    , Result.diagPos = nullRange
+    }
+
 incompatibleViewError1 :: NAME -> TYPE -> TYPE -> Result.Diagnosis
 incompatibleViewError1 n t1 t2 =
   Result.Diag

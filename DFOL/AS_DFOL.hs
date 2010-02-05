@@ -23,12 +23,10 @@ module DFOL.AS_DFOL
       SYMB_OR_MAP (..),
       termRecForm,
       termFlatForm,
-      typeProperForm,
-      piRecForm,
-      piFlatForm,
-      formulaProperForm,
-      quantRecForm,
-      quantFlatForm,
+      typeRecForm,
+      typeFlatForm,
+      formulaRecForm,
+      formulaFlatForm,
       printNames,
       printDecls,
       getVarsFromDecls,
@@ -109,8 +107,39 @@ data SYMB_OR_MAP = Symb SYMB
 termRecForm :: TERM -> TERM
 termRecForm (Identifier t) = Identifier t
 termRecForm (Appl f []) = termRecForm f
-termRecForm (Appl f [a]) = Appl (termRecForm f) [a]
-termRecForm (Appl f as) = Appl (termRecForm $ Appl f $ init as) $ [last as]
+termRecForm (Appl f as) = 
+  Appl (termRecForm $ Appl f $ init as) $ [termRecForm $ last as]
+
+{- converts a type into a form where each construct takes
+   exactly one argument -}
+typeRecForm :: TYPE -> TYPE
+typeRecForm (Func [] a) = typeRecForm a
+typeRecForm (Func (t:ts) a) = Func [typeRecForm t] $ typeRecForm $ Func ts a
+typeRecForm (Pi [] t) = typeRecForm t
+typeRecForm (Pi (([],_):ds) a) = typeRecForm $ Pi ds a
+typeRecForm (Pi (((n:ns),t):ds) a) =
+  Pi [([n],typeRecForm t)] $ typeRecForm $ Pi ((ns,t):ds) a
+typeRecForm t = t
+
+{- converts a formula into a form where each quantifier takes
+   exactly one argument -}
+formulaRecForm :: FORMULA -> FORMULA
+formulaRecForm (Negation f) = formulaRecForm f
+formulaRecForm (Conjunction fs) = Conjunction $ map formulaRecForm fs
+formulaRecForm (Disjunction fs) = Disjunction $ map formulaRecForm fs
+formulaRecForm (Implication f g) = 
+  Implication (formulaRecForm f) (formulaRecForm g)
+formulaRecForm (Equivalence f g) = 
+  Equivalence (formulaRecForm f) (formulaRecForm g)
+formulaRecForm (Forall [] f) = formulaRecForm f
+formulaRecForm (Forall (([],_):ds) f) = formulaRecForm $ Forall ds f
+formulaRecForm (Forall (((n:ns),t):ds) f) =
+  Forall [([n],t)] $ formulaRecForm $ Forall ((ns,t):ds) f
+formulaRecForm (Exists [] f) = formulaRecForm f
+formulaRecForm (Exists (([],_):ds) f) = formulaRecForm $ Exists ds f
+formulaRecForm (Exists (((n:ns),t):ds) f) =
+  Exists [([n],t)] $ formulaRecForm $ Exists ((ns,t):ds) f
+formulaRecForm t = t
 
 {- determines the flattened form of a term, i.e. the function symbol
    applied and the argument list -}
@@ -119,66 +148,50 @@ termFlatForm (Identifier x) = (x,[])
 termFlatForm (Appl f as) = (x, bs ++ as)
                           where (x,bs) = termFlatForm f
 
-{- converts a type into a form where each Pi operator binds exactly
-   one argument -}
-piRecForm :: TYPE -> TYPE
-piRecForm (Pi [] type1) = piRecForm type1
-piRecForm (Pi (([n],t):ds) type1) = Pi [([n],t)] $ piRecForm $ Pi ds type1
-piRecForm (Pi (((n:ns),t):ds) type1) =
-  Pi [([n],t)] $ piRecForm $ Pi ((ns,t):ds) type1
-piRecForm t = t
+{- converts a type into a flattened form where each operator binds maximum
+   number of arguments -}
+typeFlatForm :: TYPE -> TYPE
+typeFlatForm (Func [] t) = typeFlatForm t
+typeFlatForm (Func ts t) = 
+  let ts1 = map typeFlatForm ts
+      t1 = typeFlatForm t
+      in case t1 of
+         Func ts2 t2 -> Func (ts1 ++ ts2) t2
+         _ -> Func ts1 t1
+typeFlatForm (Pi [] t) = typeFlatForm t
+typeFlatForm (Pi ds t) =
+  let ds1 = map (\ (ns,t3) -> (ns,typeFlatForm t3)) ds
+      t1 = typeFlatForm t
+      in case t1 of
+         Pi ds2 t2 -> Pi (compactDecls (ds1 ++ ds2)) t2
+         _ -> Pi (compactDecls ds1) t1
+typeFlatForm t = t
 
-{- converts a type into a flattened form where the Pi operator binds multiple
-   arguments and the return type itself does not start with Pi -}
-piFlatForm :: TYPE -> TYPE
-piFlatForm (Pi ds1 type1) =
-  case type1 of
-       Pi ds2 type2 -> piFlatForm $ Pi (ds1 ++ ds2) type2
-       _ -> Pi (compactDecls ds1) type1
-piFlatForm t = t
-
--- removes empty argument lists
-typeProperForm :: TYPE -> TYPE
-typeProperForm (Pi [] t) = typeProperForm t
-typeProperForm (Func [] t) = typeProperForm t
-typeProperForm t = t
-
-{- converts a formula into a form where each quantifier binds exactly
-   one variable -}
-quantRecForm :: FORMULA -> FORMULA
-quantRecForm (Forall [] f) = quantRecForm f
-quantRecForm (Exists [] f) = quantRecForm f
-quantRecForm (Forall (([n],t):ds) f) =
-  Forall [([n],t)] $ quantRecForm $ Forall ds f
-quantRecForm (Exists (([n],t):ds) f) =
-  Exists [([n],t)] $ quantRecForm $ Exists ds f
-quantRecForm (Forall (((n:ns),t):ds) f) =
-  Forall [([n],t)] $ quantRecForm $ Forall ((ns,t):ds) f
-quantRecForm (Exists (((n:ns),t):ds) f) =
-  Exists [([n],t)] $ quantRecForm $ Exists ((ns,t):ds) f
-quantRecForm t = t
-
-{- converts a formula into a flattened form where quantifies bind multiple
-   arguments and the return type itself does not start with the same
-   quantifier -}
-quantFlatForm :: FORMULA -> FORMULA
-quantFlatForm (Forall ds1 f1) =
-  case f1 of
-       Forall ds2 f2 -> quantFlatForm $ Forall (ds1 ++ ds2) f2
-       _ -> Forall (compactDecls ds1) f1
-quantFlatForm (Exists ds1 f1) =
-  case f1 of
-       Exists ds2 f2 -> quantFlatForm $ Exists (ds1 ++ ds2) f2
-       _ -> Exists (compactDecls ds1) f1
-quantFlatForm t = t
-
--- removes empty variable lists
-formulaProperForm :: FORMULA -> FORMULA
-formulaProperForm (Forall [] f) = formulaProperForm f
-formulaProperForm (Exists [] f) = formulaProperForm f
-formulaProperForm (Conjunction []) = T
-formulaProperForm (Disjunction []) = F
-formulaProperForm t = t
+{- converts a formula into a flattened form where each quantifier binds maximum
+   number of arguments -}
+formulaFlatForm :: FORMULA -> FORMULA
+formulaFlatForm (Negation f) = formulaFlatForm f
+formulaFlatForm (Conjunction []) = T
+formulaFlatForm (Conjunction fs) = Conjunction $ map formulaFlatForm fs
+formulaFlatForm (Disjunction []) = F
+formulaFlatForm (Disjunction fs) = Disjunction $ map formulaFlatForm fs
+formulaFlatForm (Implication f g) = 
+  Implication (formulaFlatForm f) (formulaFlatForm g)
+formulaFlatForm (Equivalence f g) = 
+  Equivalence (formulaFlatForm f) (formulaFlatForm g)
+formulaFlatForm (Forall [] f) = formulaFlatForm f
+formulaFlatForm (Forall ds1 f) =
+  let f1 = formulaFlatForm f
+      in case f1 of
+         Forall ds2 f2 -> Forall (compactDecls (ds1 ++ ds2)) f2
+         _ -> Forall (compactDecls ds1) f1
+formulaFlatForm (Exists [] f) = formulaFlatForm f
+formulaFlatForm (Exists ds1 f) =
+  let f1 = formulaFlatForm f
+      in case f1 of
+         Exists ds2 f2 -> Exists (compactDecls (ds1 ++ ds2)) f2
+         _ -> Exists (compactDecls ds1) f1
+formulaFlatForm t = t
 
 -- substitutions
 
@@ -193,17 +206,20 @@ class Translatable a where
 instance Translatable TERM where
    translate m _ = (translateTerm m) . termRecForm
 instance Translatable TYPE where
-   translate m s = (translateType m s) . piRecForm . typeProperForm
+   translate m s = (translateType m s) . typeRecForm
 instance Translatable FORMULA where
-   translate m s = (translateFormula m s) . quantRecForm . formulaProperForm
+   translate m s = (translateFormula m s) . formulaRecForm
 
--- expects type in proper and pi-recursive form
+translateTerm :: Map.Map NAME TERM -> TERM -> TERM
+translateTerm m (Identifier x) = Map.findWithDefault (Identifier x) x m
+translateTerm m (Appl f [a]) = Appl (translateTerm m f) [translateTerm m a]
+translateTerm _ t = t
+
 translateType :: Map.Map NAME TERM -> Set.Set NAME -> TYPE -> TYPE
 translateType _ _ Sort = Sort
 translateType _ _ Form = Form
 translateType m s (Univ t) = Univ $ translate m s t
-translateType m s (Func ts t) =
-  Func (map (translate m s) ts) (translate m s t)
+translateType m s (Func ts t) = Func (map (translate m s) ts) (translate m s t)
 translateType m s (Pi [([x],t)] a) =
   let t1 = translate m s t
       x1 = getNewName x s
@@ -211,13 +227,6 @@ translateType m s (Pi [([x],t)] a) =
       in Pi [([x1],t1)] a1
 translateType _ _ t = t
 
--- expects term in recursive form
-translateTerm :: Map.Map NAME TERM -> TERM -> TERM
-translateTerm m (Identifier x) = Map.findWithDefault (Identifier x) x m
-translateTerm m (Appl f [a]) = Appl (translateTerm m f) [(translateTerm m a)]
-translateTerm _ t = t
-
--- expects formula in proper and quant-recursive form
 translateFormula :: Map.Map NAME TERM -> Set.Set NAME -> FORMULA -> FORMULA
 translateFormula _ _ T = T
 translateFormula _ _ F = F
@@ -261,50 +270,49 @@ getNewNameH var names root i =
 instance Eq TERM where
     u == v = eqTerm (termRecForm u) (termRecForm v)
 instance Eq TYPE where
-    u == v = eqType (piRecForm $ typeProperForm u)
-                    (piRecForm $ typeProperForm v)
+    u == v = eqType (typeRecForm u) (typeRecForm v)
 
--- expects term in recursive form
 eqTerm :: TERM -> TERM -> Bool
 eqTerm (Identifier x1) (Identifier x2) = x1 == x2
 eqTerm (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
 eqTerm _ _ = False
 
--- expects type in proper and pi-recursive form
 eqType :: TYPE -> TYPE -> Bool
 eqType Sort Sort = True
 eqType Form Form = True
 eqType (Univ t1) (Univ t2) = t1 == t2
-eqType (Func (t1:ts1) s1) (Func (t2:ts2) s2) =
-  and [t1 == t2, (Func ts1 s1) == (Func ts2 s2)]
+eqType (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
 eqType (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) =
-  if (n1 == n2)
-     then and [t1 == t2, s1 == s2]
-     else let syms1 = getFreeVars $ piRecForm $ typeProperForm s1
-              syms2 = getFreeVars $ piRecForm $ typeProperForm s2
-              v = getNewName n1 $ Set.union (Set.delete n1 syms1)
-                                            (Set.delete n2 syms2)
-              type1 = translate (Map.singleton n1 (Identifier v)) syms1 s1
-              type2 = translate (Map.singleton n2 (Identifier v)) syms2 s2
-              in and [t1 == t2, type1 == type2]
+  let syms1 = Set.delete n1 $ getFreeVars $ typeRecForm s1
+      syms2 = Set.delete n2 $ getFreeVars $ typeRecForm s2
+      v = getNewName n1 $ Set.union syms1 syms2
+      type1 = translate (Map.singleton n1 (Identifier v)) syms1 s1
+      type2 = translate (Map.singleton n2 (Identifier v)) syms2 s2
+      in and [t1 == t2, type1 == type2]  
 eqType _ _ = False
 
 -- returns a set of unbound identifiers used within a type
--- expects type in proper and pi-recursive form
 getFreeVars :: TYPE -> Set.Set NAME
-getFreeVars Sort = Set.empty
-getFreeVars Form = Set.empty
-getFreeVars (Univ t) = getFreeVarsInTerm t
-getFreeVars (Func ts t) =
-  Set.unions $ [getFreeVars t] ++ (map getFreeVars ts)
-getFreeVars (Pi [([n],t)] a) =
-  Set.delete n $ Set.union (getFreeVars t) (getFreeVars a)
-getFreeVars _ = Set.empty
+getFreeVars e = getFreeVarsH $ typeRecForm e
+
+getFreeVarsH :: TYPE -> Set.Set NAME
+getFreeVarsH Sort = Set.empty
+getFreeVarsH Form = Set.empty
+getFreeVarsH (Univ t) = getFreeVarsInTerm t
+getFreeVarsH (Func [t] v) =  
+  Set.union (getFreeVarsH t) (getFreeVarsH v)
+getFreeVarsH (Pi [([n],t)] a) =
+  Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
+getFreeVarsH _ = Set.empty
 
 getFreeVarsInTerm :: TERM -> Set.Set NAME
-getFreeVarsInTerm (Identifier x) = Set.singleton x
-getFreeVarsInTerm (Appl f as) =
-  Set.unions $ [getFreeVarsInTerm f] ++ (map getFreeVarsInTerm as)
+getFreeVarsInTerm t = getFreeVarsInTermH $ termRecForm t
+
+getFreeVarsInTermH :: TERM -> Set.Set NAME
+getFreeVarsInTermH (Identifier x) = Set.singleton x
+getFreeVarsInTermH (Appl f [a]) =
+  Set.union (getFreeVarsInTermH f) (getFreeVarsInTermH a)
+getFreeVarsInTermH _ = Set.empty
 
 -- precedences - needed for pretty printing
 formulaPrec :: FORMULA -> Int
@@ -333,11 +341,11 @@ instance Pretty BASIC_SPEC where
 instance Pretty BASIC_ITEM where
     pretty = printBasicItem
 instance Pretty TYPE where
-    pretty = printType . piFlatForm . typeProperForm
+    pretty = printType . typeFlatForm
 instance Pretty TERM where
     pretty = printTerm
 instance Pretty FORMULA where
-    pretty = printFormula . quantFlatForm . formulaProperForm
+    pretty = printFormula . formulaFlatForm
 instance Pretty SYMB_ITEMS where
     pretty = printSymbItems
 instance Pretty SYMB_MAP_ITEMS where
@@ -349,22 +357,22 @@ printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItem :: BASIC_ITEM -> Doc
-printBasicItem (Decl_item (ns,t)) = printNames ns <+> text "::" <+> printType t
-printBasicItem (Axiom_item f) = dot <> printFormula f
+printBasicItem (Decl_item (ns,t)) = printNames ns <+> text "::" <+> pretty t
+printBasicItem (Axiom_item f) = dot <> pretty f
 
--- expects type in proper and pi-flat form
 printType :: TYPE -> Doc
 printType (Sort) = text "Sort"
 printType (Form) = text "Form"
 printType (Univ t) = pretty t
 printType (Func ts t) =
-  fsep $ prepPunctuate (text "-> ") $ map (printSubType funcPrec) (ts ++ [t])
+  fsep $ prepPunctuate (text "-> ") 
+    $ map (printTypeWithPrec funcPrec) (ts ++ [t])
 printType (Pi xs x) = text "Pi" <+> printDecls xs <+> printType x
 
-printSubType :: Int -> TYPE -> Doc
-printSubType prec t = if typePrec t >= prec
-                         then parens $ printType t
-                         else printType t
+printTypeWithPrec :: Int -> TYPE -> Doc
+printTypeWithPrec prec t = if typePrec t >= prec
+                              then parens $ printType t
+                              else printType t
 
 printTerm :: TERM -> Doc
 printTerm t = if (as == [])
@@ -372,28 +380,31 @@ printTerm t = if (as == [])
                  else pretty x <> parens (ppWithCommas as)
               where (x,as) = termFlatForm t
 
--- expects formula in proper and quant-flat form
 printFormula :: FORMULA -> Doc
 printFormula (T) = text "true"
 printFormula (F) = text "false"
 printFormula (Pred x) = pretty x
 printFormula (Equality x y) = pretty x <+> text "==" <+> pretty y
-printFormula (Negation f) = notDoc <+> printSubFormula negPrec f
+printFormula (Negation f) = notDoc <+> printFormulaWithPrec negPrec f
 printFormula (Conjunction xs) = fsep $ prepPunctuate (andDoc <> space)
-  $ map (printSubFormula conjPrec) xs
+  $ map (printFormulaWithPrec conjPrec) xs
 printFormula (Disjunction xs) = fsep $ prepPunctuate (orDoc <> space)
-  $ map (printSubFormula disjPrec) xs
-printFormula (Implication x y) = printSubFormula implPrec x <+> implies
-  <+> printSubFormula implPrec y
-printFormula (Equivalence x y) = printSubFormula equivPrec x <+> equiv
-  <+> printSubFormula equivPrec y
+  $ map (printFormulaWithPrec disjPrec) xs
+printFormula (Implication x y) = 
+  printFormulaWithPrec (implPrec-1) x 
+  <+> implies
+  <+> printFormulaWithPrec (implPrec-1) y
+printFormula (Equivalence x y) = 
+  printFormulaWithPrec (equivPrec-1) x
+  <+> equiv
+  <+> printFormulaWithPrec (equivPrec-1) y
 printFormula (Forall xs f) = forallDoc <+> printDecls xs <+> printFormula f
 printFormula (Exists xs f) = exists <+> printDecls xs <+> printFormula f
 
-printSubFormula :: Int -> FORMULA -> Doc
-printSubFormula prec f = if (formulaPrec f) > prec
-                            then parens $ printFormula f
-                            else printFormula f
+printFormulaWithPrec :: Int -> FORMULA -> Doc
+printFormulaWithPrec prec f = if (formulaPrec f) > prec
+                                 then parens $ printFormula f
+                                 else printFormula f
 
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs) = ppWithCommas xs
@@ -409,7 +420,7 @@ printNames :: [NAME] -> Doc
 printNames = ppWithCommas
 
 printDecl :: DECL -> Doc
-printDecl (ns, t) = printNames ns <+> colon <+> printType t
+printDecl (ns, t) = printNames ns <+> colon <+> pretty t
 
 printDecls :: [DECL] -> Doc
 printDecls xs = fsep (punctuate semi $ map printDecl xs) <> dot

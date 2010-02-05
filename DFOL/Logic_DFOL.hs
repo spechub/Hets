@@ -40,7 +40,7 @@ instance Category Sign Morphism where
    ide = idMorph
    dom = source
    cod = target
-   isInclusion = Map.null . symMap . morphCanForm
+   isInclusion = Map.null . symMap . canForm
    composeMorphisms = compMorph
    legal_mor = isValidMorph
 
