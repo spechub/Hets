@@ -179,8 +179,8 @@ eq (Var x1) (Var x2) = x1 == x2
 eq (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
 eq (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
 eq (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) =
-  let syms1 = Set.delete n1 $ getFreeVars $ recForm s1
-      syms2 = Set.delete n2 $ getFreeVars $ recForm s2
+  let syms1 = Set.delete n1 $ getFreeVars s1
+      syms2 = Set.delete n2 $ getFreeVars s2
       v = getNewName n1 $ Set.union syms1 syms2
       type1 = translate (Map.singleton n1 (Var v)) syms1 s1
       type2 = translate (Map.singleton n2 (Var v)) syms2 s2

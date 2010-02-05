@@ -283,6 +283,7 @@ data InType =
   | OWLIn
   | HaskellIn
   | MaudeIn
+  | TwelfIn
   | PrfIn
   | OmdocIn
   | ProofCommand
@@ -296,6 +297,7 @@ instance Show InType where
     OWLIn -> owlS
     HaskellIn -> hsS
     MaudeIn -> "maude"
+    TwelfIn -> "elf"
     PrfIn -> prfS
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
@@ -318,7 +320,7 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-  [CASLIn, HetCASLIn, OWLIn, HaskellIn, MaudeIn, PrfIn, OmdocIn, ProofCommand]
+  [CASLIn, HetCASLIn, OWLIn, HaskellIn, MaudeIn, TwelfIn, PrfIn, OmdocIn, ProofCommand]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

@@ -206,9 +206,11 @@ class Translatable a where
 instance Translatable TERM where
    translate m _ = (translateTerm m) . termRecForm
 instance Translatable TYPE where
-   translate m s = (translateType m s) . typeRecForm
+   translate m s t = let s1 = Set.unions $ map getFreeVarsInTerm $ Map.elems m
+                         in translateType m (Set.union s s1) (typeRecForm t)
 instance Translatable FORMULA where
-   translate m s = (translateFormula m s) . formulaRecForm
+   translate m s f = let s1 = Set.unions $ map getFreeVarsInTerm $ Map.elems m
+                         in translateFormula m (Set.union s s1) (formulaRecForm f)
 
 translateTerm :: Map.Map NAME TERM -> TERM -> TERM
 translateTerm m (Identifier x) = Map.findWithDefault (Identifier x) x m
@@ -283,8 +285,8 @@ eqType Form Form = True
 eqType (Univ t1) (Univ t2) = t1 == t2
 eqType (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
 eqType (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) =
-  let syms1 = Set.delete n1 $ getFreeVars $ typeRecForm s1
-      syms2 = Set.delete n2 $ getFreeVars $ typeRecForm s2
+  let syms1 = Set.delete n1 $ getFreeVars s1
+      syms2 = Set.delete n2 $ getFreeVars s2
       v = getNewName n1 $ Set.union syms1 syms2
       type1 = translate (Map.singleton n1 (Identifier v)) syms1 s1
       type2 = translate (Map.singleton n2 (Identifier v)) syms2 s2

@@ -14,10 +14,9 @@ module LF.Logic_LF where
 
 import LF.Sign
 import LF.Morphism
+import LF.ATC_LF ()
 import Logic.Logic
-import Common.Result
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 -- lid for LF
 data LF = LF deriving Show
@@ -62,4 +61,6 @@ instance StaticAnalysis LF
    Sign
    Morphism
    ()
-   ()  
+   ()
+   where
+   empty_signature LF = emptySig  

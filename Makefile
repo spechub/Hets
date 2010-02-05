@@ -62,7 +62,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    Maude ExtModal
+    LF Maude ExtModal
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -290,6 +290,7 @@ OWL_files = OWL/Sign.hs OWL/Sublogic.hs OWL/Morphism.hs
 VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
 DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
+LF_files = LF/Sign.hs LF/Morphism.hs
 
 Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
     Maude/Symbol.hs Maude/AS_Maude.hs
@@ -348,6 +349,9 @@ OMDoc/ATC_OMDoc.der.hs: $(OMDoc_files) $(GENRULES)
 
 DFOL/ATC_DFOL.der.hs: $(DFOL_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(DFOL_files)
+
+LF/ATC_LF.der.hs: $(LF_files) $(GENRULES)
+	$(GENRULECALL)	-i ATC.AS_Annotation -o $@ $(LF_files)    
 
 Maude/ATC_Maude.der.hs: $(Maude_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(Maude_files)
