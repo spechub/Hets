@@ -87,8 +87,10 @@ mkTypeArg i c = TypeArg i NonVar (VarKind universe) rStar c Other nr
 
 subtAx :: TypeMap -> (Id, Id) -> Named Sentence
 subtAx tm (i1, i2) = let
-    e1 = Map.findWithDefault (error "TypeRel.subtAx1") i1 tm
-    e2 = Map.findWithDefault (error "TypeRel.subtAx2") i2 tm
+    findType i = Map.findWithDefault
+      (Map.findWithDefault (error "TypeRel.subtAx") i bTypes) i tm
+    e1 = findType i1
+    e2 = findType i2
     txt = shows i1 "_<_" ++ show i2
     l1 = getKindAppl $ typeKind e1
     l2 = getKindAppl $ typeKind e2
