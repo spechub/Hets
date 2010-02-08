@@ -202,10 +202,15 @@ makeEquivMonos e i l = case l of
   t : r -> mapMaybe (makeEquivMono e i t) r ++ makeEquivMonos e i r
 
 makeEquivMono :: Env -> Id -> TypeScheme -> TypeScheme -> Maybe (Named Sentence)
-makeEquivMono e i s1 s2 = if
-  haveCommonSupertype e s1 s2 then
+makeEquivMono e i s1 s2 = case getCommonSupertype e s1 s2 of
+  Just (TypeScheme args nTy _) ->
     Just $ makeNamed "ga_monotonicity"
-         $ Formula $ mkEqTerm eqId unitType nr
-           (QualOp Op (PolyId i [] nr) s1 [] Infer nr)
-           $ QualOp Op (PolyId i [] nr) s2 [] Infer nr
-  else Nothing
+         $ Formula $ mkForall (map GenTypeVarDecl args)
+           $ mkEqTerm eqId nTy nr
+           (TypedTerm
+             (QualOp Op (PolyId i [] nr) s1 [] Infer nr)
+             OfType nTy nr)
+           $ TypedTerm
+             (QualOp Op (PolyId i [] nr) s2 [] Infer nr)
+             OfType nTy nr
+  Nothing -> Nothing

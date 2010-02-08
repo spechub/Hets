@@ -11,9 +11,15 @@ Portability :  portable
 choose a minimal type
 -}
 
-module HasCASL.MinType (q2p, typeNub, haveCommonSupertype) where
+module HasCASL.MinType
+  ( q2p
+  , typeNub
+  , haveCommonSupertype
+  , getCommonSupertype
+  ) where
 
 import HasCASL.As
+import HasCASL.FoldType
 import HasCASL.Le
 import HasCASL.AsUtils
 import HasCASL.TypeAna
@@ -23,12 +29,14 @@ import HasCASL.Constrain
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
+import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Lib.State
 import Common.Utils
 
 import Data.List
+import Data.Maybe
 
 q2p :: (a, b, c, d) -> (c, d)
 q2p (_, _, c, d) = (c,d)
@@ -75,25 +83,43 @@ addToEnv (ty, vk) e = case ty of
     _ -> e
 
 haveCommonSupertype :: Env -> TypeScheme -> TypeScheme -> Bool
-haveCommonSupertype e s1 s2 =
+haveCommonSupertype e s = isJust . getCommonSupertype e s
+
+getCommonSupertype :: Env -> TypeScheme -> TypeScheme -> Maybe TypeScheme
+getCommonSupertype e s1 s2 =
     evalState (toEnvState $ haveCommonSupertypeE e s1 s2) e
 
-haveCommonSupertypeE :: Env -> TypeScheme -> TypeScheme -> State Int Bool
+haveCommonSupertypeE :: Env -> TypeScheme -> TypeScheme
+  -> State Int (Maybe TypeScheme)
 haveCommonSupertypeE eIn s1 s2 = do
     (t1, l1) <- freshInst s1
     (t2, l2) <- freshInst s2
     cst <- mkSingleSubst (genName "commonSupertype", rStar)
     let cs = Set.fromList [Subtyping t1 cst, Subtyping t2 cst]
-        e = foldr addToEnv eIn $ l1 ++ l2
+        e = foldr addToEnv eIn $ (cst, VarKind universe) : l1 ++ l2
     Result _ mr <- shapeRelAndSimplify False e cs (Just cst)
     return $ case mr of
-      Nothing -> False
-      Just (_, rcs) -> let (qs, subC) = partitionC rcs
-        in Set.null qs
-          && reduceCommonSubtypes (Rel.transClosure $ fromTypeMap $ typeMap e)
-             (toListC subC)
+      Nothing -> Nothing
+      Just (sbst, rcs) -> let (qs, subC) = partitionC rcs
+        in case reduceCommonSubtypes
+               (Rel.transClosure $ fromTypeMap $ typeMap e)
+               (toListC subC) of
+             Just msb | Set.null qs -> let
+               ty = subst (compSubst sbst msb) cst
+               fvs = freeTVars ty
+               svs = sortBy comp fvs
+               comp a b = compare (fst a) $ fst b
+               tvs = localTypeVars e
+               newArgs = map ( \ (_, (i, _)) -> case Map.lookup i tvs of
+                  Nothing -> error $ "generalizeS " ++ show (i, ty)
+                      ++ "\n" ++ showDoc (s1, s2) ""
+                  Just (TypeVarDefn v vk rk c) ->
+                      TypeArg i v vk rk c Other nullRange) svs
+               in Just $ TypeScheme (genTypeArgs newArgs)
+                      (generalize newArgs ty) nullRange
+             _ -> Nothing
 
-reduceCommonSubtypes :: Rel.Rel Type -> [(Type, Type)] -> Bool
+reduceCommonSubtypes :: Rel.Rel Type -> [(Type, Type)] -> Maybe Subst
 reduceCommonSubtypes e l = let
     mygroup = groupBy ( \ (a, b) (c, d) -> case (a, b, d) of
                   (TypeName _ _ n, TypeName _ _ 0, TypeName _ _ 0)
@@ -109,26 +135,17 @@ reduceCommonSubtypes e l = let
     mkPair s = case s of
           (a, _) : _ -> (a, map snd s)
           _ -> error "reduceCommonSubtypes2"
-    in null (concat rest2) && all (commonSubtype e True . mkPair) csubts
-           && all (commonSubtype e False . mkPair) csuperts
+    subM = mapM (commonSubtype e True . mkPair) csubts
+    superM = mapM (commonSubtype e False . mkPair) csuperts
+    in case (concat rest2, subM, superM) of
+      ([], Just l1, Just l2) -> Just $ Map.fromList $ l1 ++ l2
+      _ -> Nothing
 
-commonSubtype :: Rel.Rel Type -> Bool -> (Type, [Type]) -> Bool
-commonSubtype e b (a, l) = case l of
-       [_] -> True
-       c : d : r ->
-           let c1 = commonSubtype e b (a, c : r)
-               c2 = commonSubtype e b (a, d : r)
-           in commonSubtypeId e b c d && (c1 || c2)
-               || any ( \ f -> commonSubtypeId e b c f
-                            && commonSubtypeId e b d f) r
-                    && c1 && c2
-       _ -> error "commonSubtype"
-
-commonSubtypeId :: Rel.Rel Type -> Bool -> Type -> Type -> Bool
-commonSubtypeId e b c d = let tm = Rel.toMap e in
-    if b then
-       not $ Map.null
-           $ Map.filter ( \ s -> Set.member c s && Set.member d s) tm
-    else not $ Set.null $ Set.intersection
-         (Map.findWithDefault Set.empty c tm)
-         $ Map.findWithDefault Set.empty d tm
+commonSubtype :: Rel.Rel Type -> Bool -> (Type, [Type]) -> Maybe (Int, Type)
+commonSubtype trel b (ty, l) =
+  let tySet = foldl1 Set.intersection
+         $ map (if b then Rel.predecessors trel else Rel.succs trel) l
+  in case ty of
+    TypeName _ _ n | not (Set.null tySet) && n > 0
+      -> Just (n, Set.findMin tySet)
+    _ -> Nothing
