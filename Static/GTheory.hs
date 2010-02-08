@@ -40,8 +40,6 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 
-
-
 -- a theory index describing a set of sentences
 newtype ThId = ThId Int
   deriving (Typeable, Show, Eq, Ord, Enum, ShATermConvertible)
@@ -119,7 +117,8 @@ mapG_theory :: AnyComorphism -> G_theory -> Result G_theory
 mapG_theory (Comorphism cid) (G_theory lid (ExtSign sign _) ind1 sens ind2) =
   do
   bTh <- coerceBasicTheory lid (sourceLogic cid)
-                    "mapG_theory" (sign, toNamedList sens)
+    ("unapplicable comorphism '" ++ language_name cid ++ "'\n")
+    (sign, toNamedList sens)
   (sign', sens') <- wrapMapTheory cid bTh
   return $ G_theory (targetLogic cid) (mkExtSign sign')
          ind1 (toThSens sens') ind2
