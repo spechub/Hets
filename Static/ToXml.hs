@@ -160,6 +160,7 @@ dgrule r =
         [add_attr (mkNameAttr $ show c) $ unode "UsedComorphism" ()]
       BasicConsInference c _ ->
         [add_attr (mkNameAttr $ show c) $ unode "UsedComorphism" ()]
-      _ -> map (\ (_, _, l) ->
+      Composition es -> map (\ (_, _, l) ->
         add_attr (mkAttr "linkref" $ showEdgeId $ dgl_id l)
-        $ unode "RuleTarget" ()) $ dgRuleEdges r
+        $ unode "RuleTarget" ()) es
+      _ -> []

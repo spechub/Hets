@@ -84,7 +84,6 @@ inclusion morphism of { sorts i, p} extended with {s}</GMorphism>
   <DGLink source="s_PU1" target="s2_A1V" linkid="7" status="proven">
     <Type>GlobalProvenThmInc</Type>
     <Rule>Global-Decomposition</Rule>
-    <RuleTarget linkref="7" />
     <ProofBasis linkref="5" />
     <ProofBasis linkref="15" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
@@ -119,7 +118,6 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
   <DGLink source="v_PU1" target="s2_A1A1" linkid="9" status="proven">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
-    <RuleTarget linkref="9" />
     <ProofBasis linkref="8" />
     <ProofBasis linkref="16" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
@@ -134,7 +132,6 @@ inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
   <DGLink source="v_S" target="v_T" linkid="4" status="proven">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
-    <RuleTarget linkref="4" />
     <ProofBasis linkref="17" />
     <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
 {p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
