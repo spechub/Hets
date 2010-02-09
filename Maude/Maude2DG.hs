@@ -627,7 +627,7 @@ directMaudeParsing fp = do
                         hClose hIn
                         hClose hOut
                         hClose hErr
-                        return $ error errs
+                        error errs
       Just ExitSuccess -> error "maude terminated immediately"
       Just (ExitFailure i) ->
           error $ "calling maude failed with exitCode: " ++ show i
