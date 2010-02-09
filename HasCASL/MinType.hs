@@ -35,7 +35,7 @@ import Common.Result
 import Common.Lib.State
 import Common.Utils
 
-import Data.List
+import Data.List as List
 import Data.Maybe
 
 q2p :: (a, b, c, d) -> (c, d)
@@ -85,12 +85,14 @@ addToEnv (ty, vk) e = case ty of
 haveCommonSupertype :: Env -> TypeScheme -> TypeScheme -> Bool
 haveCommonSupertype e s = isJust . getCommonSupertype e s
 
-getCommonSupertype :: Env -> TypeScheme -> TypeScheme -> Maybe TypeScheme
+getCommonSupertype :: Env -> TypeScheme -> TypeScheme -> Maybe TypeTriple
 getCommonSupertype e s1 s2 =
     evalState (toEnvState $ haveCommonSupertypeE e s1 s2) e
 
+type TypeTriple = (Type, [Type], Type, [Type], [TypeArg], Type)
+
 haveCommonSupertypeE :: Env -> TypeScheme -> TypeScheme
-  -> State Int (Maybe TypeScheme)
+  -> State Int (Maybe TypeTriple)
 haveCommonSupertypeE eIn s1 s2 = do
     (t1, l1) <- freshInst s1
     (t2, l2) <- freshInst s2
@@ -105,8 +107,9 @@ haveCommonSupertypeE eIn s1 s2 = do
                (Rel.transClosure $ fromTypeMap $ typeMap e)
                (toListC subC) of
              Just msb | Set.null qs -> let
-               ty = subst (compSubst sbst msb) cst
-               fvs = freeTVars ty
+               doSubst = subst $ compSubst sbst msb
+               [ty, ty1, ty2] = map doSubst [cst, t1, t2]
+               fvs = foldr1 List.union $ map freeTVars [ty1, ty2, ty]
                svs = sortBy comp fvs
                comp a b = compare (fst a) $ fst b
                tvs = localTypeVars e
@@ -115,8 +118,11 @@ haveCommonSupertypeE eIn s1 s2 = do
                       ++ "\n" ++ showDoc (s1, s2) ""
                   Just (TypeVarDefn v vk rk c) ->
                       TypeArg i v vk rk c Other nullRange) svs
-               in Just $ TypeScheme (genTypeArgs newArgs)
-                      (generalize newArgs ty) nullRange
+               genArgs = generalize newArgs
+               [gty, gty1, gty2] = map genArgs [ty, ty1, ty2]
+               gl1 = map (genArgs . doSubst . fst) l1
+               gl2 = map (genArgs . doSubst . fst) l2
+               in Just (gty1, gl1, gty2, gl2, genTypeArgs newArgs, gty)
              _ -> Nothing
 
 reduceCommonSubtypes :: Rel.Rel Type -> [(Type, Type)] -> Maybe Subst

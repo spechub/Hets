@@ -157,11 +157,13 @@ subtTrans = let
          $ mkSubtTerm bType cType v2 v3)
         $ mkSubtTerm aType cType v1 v3
 
+mkInjTerm :: Type -> Type -> Term -> Term
+mkInjTerm t1 t2 = mkTerm injName injType [t1, t2] nr
+
 mkInjEq :: Type -> Type -> VarDecl -> VarDecl -> Term
 mkInjEq t1 t2 v1 v2 =
    mkEqTerm eqId t2 nr (QualVar v2)
-          $ mkTerm injName injType [t1, t2] nr
-            $ QualVar v1
+          $ mkInjTerm t1 t2 $ QualVar v1
 
 subtInjProj :: Named Sentence
 subtInjProj = let
@@ -205,14 +207,12 @@ makeEquivMonos e i l = case l of
 
 makeEquivMono :: Env -> Id -> TypeScheme -> TypeScheme -> Maybe (Named Sentence)
 makeEquivMono e i s1 s2 = case getCommonSupertype e s1 s2 of
-  Just (TypeScheme args nTy _) ->
+  Just (ty1, l1, ty2, l2, args, nTy) ->
     Just $ makeNamed "ga_monotonicity"
          $ Formula $ mkForall (map GenTypeVarDecl args)
            $ mkEqTerm eqId nTy nr
-           (TypedTerm
-             (QualOp Op (PolyId i [] nr) s1 [] Infer nr)
-             OfType nTy nr)
-           $ TypedTerm
-             (QualOp Op (PolyId i [] nr) s2 [] Infer nr)
-             OfType nTy nr
+           (mkInjTerm ty1 nTy
+             $ QualOp Op (PolyId i [] nr) s1 l1 UserGiven nr)
+           $ mkInjTerm ty2 nTy
+             $ QualOp Op (PolyId i [] nr) s2 l2 UserGiven nr
   Nothing -> Nothing
