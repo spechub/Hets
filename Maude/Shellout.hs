@@ -5,6 +5,7 @@ module Maude.Shellout (
     findSpec,
     getAllOutput,
     getAllSpec,
+    getErrors
 ) where
 
 import System.IO
@@ -92,6 +93,19 @@ getAllSpec hOut s False = do
             handle <- hShow hOut
             error $ "No spec available on handle: " ++ handle
 getAllSpec _ s True = return s
+
+getErrors :: Handle -> IO (Bool, String)
+getErrors hErr = do
+               ready <- hWaitForInput hErr 500
+               if ready 
+                   then do
+                         ss <- hGetLine hErr
+                         return (ok (drop 9 ss), ss)
+                   else return (True, "")
+
+ok :: String -> Bool
+ok ('<' : _) = True
+ok _ = False
 
 -- | possible ends of a Maude module or view
 final :: String -> Bool

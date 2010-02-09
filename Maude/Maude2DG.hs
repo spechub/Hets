@@ -604,18 +604,30 @@ directMaudeParsing fp = do
   if null ml then error "environment variable MAUDE_LIB is not set" else do
     ns <- parse fp
     let ns' = either (const []) id ns
-    (hIn, hOut, _, procH) <- runMaude
+    (hIn, hOut, hErr, procH) <- runMaude
     exitCode <- getProcessExitCode procH
     case exitCode of
       Nothing -> do
               hPutStrLn hIn $ "load " ++ fp
+              hFlush hIn
+              hPutStrLn hIn "."
+              hFlush hIn
               ms <- traverseNames hIn hOut ns'
               hPutStrLn hIn "in Maude/hets.prj"
               psps <- predefinedSpecs hIn hOut
               sps <- traverseSpecs hIn hOut ms
-              hClose hIn
-              hClose hOut
-              return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
+              (ok, errs) <- getErrors hErr
+              if ok
+                  then do
+                        hClose hIn
+                        hClose hOut
+                        hClose hErr
+                        return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
+                  else do
+                        hClose hIn
+                        hClose hOut
+                        hClose hErr
+                        return $ error errs
       Just ExitSuccess -> error "maude terminated immediately"
       Just (ExitFailure i) ->
           error $ "calling maude failed with exitCode: " ++ show i

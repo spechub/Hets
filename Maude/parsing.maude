@@ -1,6 +1,6 @@
  fmod HETS-SIGNATURE is
   including FULL-MAUDE-SIGN .
-  
+
   *** functional and system module and theory
   op fmod+_is_endfm : @Interface@ @FDeclList@ -> @Module@ .
   op mod+_is_endm : @Interface@ @SDeclList@ -> @Module@ .
@@ -11,7 +11,7 @@
   op hets_. : @ModExp@ -> @Command@ .
   op hetsView_. : @ModExp@ -> @Command@ .
  endfm
- 
+
  fmod META-HETS-SIGN is
   inc META-FULL-MAUDE-SIGN .
   inc UNIT .
@@ -19,12 +19,12 @@
   op HETS-GRAMMAR : -> FModule [memo] .
   eq HETS-GRAMMAR = addImports((including 'HETS-SIGNATURE .), GRAMMAR) .
  endfm
- 
+
  fmod HETS-COMMAND-PROCESSING is
   pr COMMAND-PROCESSING .
   pr META-HETS-SIGN .
  endfm
- 
+
  mod HETS-DATABASE-HANDLING is
   inc DATABASE-HANDLING .
   pr HETS-COMMAND-PROCESSING .
@@ -32,9 +32,9 @@
 
   sort HetsDatabaseClass .
   subsort HetsDatabaseClass < DatabaseClass .
-  
+
   op HetsDatabase : -> HetsDatabaseClass [ctor] .
-  
+
   *** Initial values of the attributes (except input and output)
   op init-state : -> AttributeSet .
   eq init-state = db : initialDatabase, default : 'CONVERSION .
@@ -52,7 +52,7 @@
   var  V : View .
   var  SVM : Set{ViewMap} .
   var  Q : Qid .
-  
+
   crl [module] :
       < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, 
                               default : ME, AttS >
@@ -85,7 +85,7 @@
    eq coreMaudeOp('fth+_is_endfth) = 'fth_is_endfth .
    eq coreMaudeOp('th+_is_endth) = 'th_is_endth .
    eq coreMaudeOp('omod+_is_endom) = 'omod_is_endom .
-   
+
    crl [maude2hets] :
        < O : X@DatabaseClass | db : DB, input : ('hets_.[T]), output : nil, AttS >
     => < O : X@DatabaseClass | db : DB', input : nilTermList, 
@@ -93,7 +93,7 @@
     if < DB' ; ME > := evalModExp(parseModExp(T), DB) /\
        M := upModule(ME, false) /\
        M' := if ME == 'META-TERM then upModule(ME, true) else getFlatModule(ME, DB') fi .
-   
+
    crl [maudeView2hets] :
        < O : X@DatabaseClass | db : DB, input : ('hetsView_.[T]), output : nil, AttS >
     => < O : X@DatabaseClass | db : DB'', input : nilTermList, 
@@ -103,16 +103,16 @@
        V := getView(VE, DB'') /\
        M := getFirstModule(V, DB'') /\
        M' := getSecondModule(V, DB'') .
-       
+
     op getFirstModule : View Database -> Module .
     ceq getFirstModule(view Q from ME to ME' is SVM endv, DB) = M
      if M := getFlatModule(ME, DB) .
-       
+
     op getSecondModule : View Database -> Module .
     ceq getSecondModule(view Q from ME to ME' is SVM endv, DB) = M
      if M := getFlatModule(ME', DB) .
  endm
- 
+
  mod HETS is
   inc HETS-DATABASE-HANDLING .
   inc LOOP-MODE .
@@ -177,15 +177,15 @@
      [QIL, < O : X@Database | output : (QI QIL'), AttS >, QIL'']
   => [QIL, < O : X@Database | output : nil, AttS >, (QIL'' QI QIL')] .
  endm
- 
+
  set print conceal on .
  print conceal mod_is_sorts_._____endm .
  print conceal fmod_is_sorts_.____endfm .
  print conceal db .
 
- 
+
  loop init-hets .
- 
+
  eof
  
  (mod A is 
