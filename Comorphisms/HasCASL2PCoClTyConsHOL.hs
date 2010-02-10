@@ -96,6 +96,10 @@ t2term = foldTerm mapRec
             InType -> mkTerm defId defType [ty] ps prTrm
             AsType -> TypedTerm prTrm Inferred ty ps
             _ -> let
-              rty = strippedType ty
+              rty = case getTypeAppl ty of
+                      (TypeName l _ _, [lt]) | l == lazyTypeId -> lt
+                      _ -> ty
+              -- not not create injections into lazy types
+              -- (via strippedType all functions arrows became partial)
               rtrm = mkTerm injName (mkInjOrProjType FunArr) [sty, rty] ps ntrm
               in TypedTerm rtrm q ty ps }
