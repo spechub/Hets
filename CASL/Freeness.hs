@@ -71,7 +71,7 @@ create_axs sg_ss sg_m sg_k sens = forms
             sr = sortRel sg_k
             comps = ops2comp $ opMap sg_k
             ctor_sen = [freeCons (ss, sr, comps)]
-            make_axs = make_forms sg_ss
+            make_axs = concat [make_forms sg_ss, make_hom_forms sg_ss]
             h_axs_ops = homomorphism_axs_ops $ opMap sg_m
             h_axs_preds = homomorphism_axs_preds $ predMap sg_m
             h_axs_surj = hom_surjectivity $ sortSet sg_m
@@ -85,6 +85,24 @@ create_axs sg_ss sg_m sg_k sens = forms
             krnl_axs = [mkKernelAx ss_m (predMap sg_m) prems ltkh]
             forms = concat [ctor_sen, make_axs, h_axs_ops, h_axs_preds,
                             h_axs_surj, q_axs, krnl_axs]
+
+-- | generates formulas of the form make(h(x)) =e= x, for any x of sort gn_free_s
+make_hom_forms :: Set.Set SORT -> [Named CASLFORMULA]
+make_hom_forms = Set.fold ((:) . make_hom_form) []
+
+-- | generates a formula of the form make(h(x)) =e= x, for gn_free_s given the SORT s
+make_hom_form :: SORT -> Named CASLFORMULA
+make_hom_form s = makeNamed "" q_eq
+      where free_s = mkFreeName s
+            v = newVar free_s
+            ot_hom = Op_type Partial [free_s] s nullRange
+            os_hom = Qual_op_name homId ot_hom nullRange
+            term_hom = Application os_hom [v] nullRange
+            ot_mk = Op_type Total [s] free_s nullRange
+            os_mk = Qual_op_name makeId ot_mk nullRange
+            term_mk = Application os_mk [term_hom] nullRange
+            eq = Existl_equation term_mk v nullRange
+            q_eq = quantifyUniversally eq
 
 -- | generates the formulas relating the make functions with the homomorphism
 make_forms :: Set.Set SORT -> [Named CASLFORMULA]
