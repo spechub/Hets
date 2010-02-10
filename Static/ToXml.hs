@@ -41,7 +41,8 @@ dGraph lenv dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
-  in unode "DGraph" $
+  in add_attr (mkAttr "nextlinkid" $ showEdgeId $ getNewEdgeId dg)
+     $ unode "DGraph" $
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
          ++ map (lnode ga lenv) lnodes
          ++ map (ledge ga dg) (labEdges body)
