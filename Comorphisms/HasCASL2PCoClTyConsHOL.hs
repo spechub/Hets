@@ -86,10 +86,12 @@ f2Formula s = case s of
 t2term :: Term -> Term
 t2term = foldTerm mapRec
     { foldTypedTerm = \ (TypedTerm trm _ _ _) ntrm q ty ps ->
+      let origTerm = TypedTerm ntrm q ty ps in
       case getTypeOf trm of
-        Nothing -> TypedTerm ntrm q ty ps -- assume this to be the exact type
+        Nothing -> origTerm -- assume this to be the exact type
         Just sty -> if eqStrippedType ty sty
-          then if q == InType then unitTerm trueId ps else ntrm
+          then if q == InType then unitTerm trueId ps else
+                   if q == OfType then origTerm else ntrm
           else let
             prTrm = mkTerm projName (mkInjOrProjType PFunArr) [sty, ty] ps ntrm
           in case q of
