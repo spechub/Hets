@@ -539,14 +539,19 @@ typeQual m = myChoice $ (colT, OfType) : (asT, AsType) : case m of
     NoIn -> []
     WithIn -> [(asKey inS, InType)]
 
+-- | a qualifier plus a subsequent type as mixfix term component
+qualAndType :: InMode -> AParser st Term
+qualAndType i = do
+  (q, p) <- typeQual i
+  ty <- parseType
+  return $ MixTypeTerm q ty $ tokPos p
+
 -- | a possibly type qualified ('typeQual') 'primTerm' or a 'baseTerm'
 typedTerm :: (InMode, TokenMode) -> AParser st Term
 typedTerm (i, b) = do
     t <- primTerm b
-    do  (q, p) <- typeQual i
-        ty <- parseType
-        return $ MixfixTerm [t, MixTypeTerm q ty $ tokPos p]
-      <|> return t
+    tys <- many $ qualAndType i
+    return $ if null tys then t else MixfixTerm $ t : tys
   <|> baseTerm (i, b)
 
 -- | several 'typedTerm's yielding a 'MixfixTerm'

@@ -13,14 +13,13 @@ a
 a + b
 a (: s + b : s)
 *** Error 13.9, not a class 's'
-parse error at 14.12:
-unexpected "as" or "a"
-expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
-
-parse error at 15.7:
-unexpected "as" or "a"
-expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", "exists!", "exists", "\\", "case", "let", "where" or end of input
-
+a (as s : s) (as s)
+*** Error 14.15, unknown type 's'
+*** Error 14.10, not a class 's'
+a (: s : s) (as s) (as s)
+*** Error 15.15, unknown type 's'
+*** Error 15.10, unknown type 's'
+*** Error 15.5, not a class 's'
 [ ]
 + a
 a + b
