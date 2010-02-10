@@ -10,83 +10,173 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module LF.Sign where
+module LF.Sign 
+       ( VAR
+       , SYMBOL_NAME
+       , MODULE_NAME
+       , BASE_NAME
+       , Symbol (..)
+       , EXP (..)
+       , DECL
+       , DEF (..)
+       , Sign (..)
+       , emptySig
+       , addDef
+       , getAllSyms
+       , getDeclaredSyms
+       , getDefinedSyms 
+       , getLocalSyms 
+       , isDeclaredSym
+       , isDefinedSym
+       , isLocalSym
+       , getSymType
+       , getSymValue
+       , recForm
+       , printSymbol
+       , printExp
+       ) where
 
-import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Data.Maybe
+import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-type NAME = Token
-type DECL = ([NAME],EXP)
+type VAR = String
+type SYMBOL_NAME = String
+type MODULE_NAME = String
+type BASE_NAME = String
 
--- LF expressions
+data Symbol = Symbol
+            { symBase :: BASE_NAME
+            , symModule :: MODULE_NAME
+            , symName :: SYMBOL_NAME
+            } deriving (Eq, Ord, Show)
+
 data EXP = Type
-         | Var NAME
+         | Var VAR
+         | Const Symbol 
          | Appl EXP [EXP]
          | Func [EXP] EXP
          | Pi [DECL] EXP
          | Lamb [DECL] EXP
            deriving (Show, Ord)
 
--- signatures for LF
-data Sign = Sign [DECL]
-            deriving (Show, Ord, Eq)
+type DECL = (VAR,EXP)
 
--- the empty signature
+data DEF = Def
+         { getSym :: Symbol
+         , getType :: EXP
+         , getValue :: Maybe EXP
+         } deriving (Eq, Ord, Show)
+
+data Sign = Sign
+          { sigBase :: BASE_NAME
+          , sigName :: MODULE_NAME
+          , getDefs :: [DEF]
+          } 
+          deriving (Show, Ord, Eq)
+
 emptySig :: Sign
-emptySig = Sign []
+emptySig = Sign "" "" []
 
--- adds a symbol declaration to the signature
-addSymbolDecl :: DECL -> Sign -> Sign
-addSymbolDecl d (Sign ds) = Sign (ds ++ [d])
+addDef :: DEF -> Sign -> Sign
+addDef d (Sign b m ds) = Sign b m (ds ++ [d])
 
--- get the set of defined symbols
-getSymbols :: Sign -> Set.Set NAME
-getSymbols (Sign ds) = Set.fromList $ concatMap fst ds
+-- get the set of all symbols
+getAllSyms :: Sign -> Set.Set Symbol 
+getAllSyms (Sign _ _ ds) = Set.fromList $ map getSym ds 
+ 
+-- get the set of declared symbols
+getDeclaredSyms :: Sign -> Set.Set Symbol
+getDeclaredSyms (Sign _ _ ds) = 
+  Set.fromList $ map getSym $ filter (\ d -> isNothing $ getValue d) ds
+
+-- checks if the symbol is declared in the signature
+isDeclaredSym :: Sign -> Symbol -> Bool
+isDeclaredSym sig s = Set.member s $ getDeclaredSyms sig
+
+-- get the set of declared symbols
+getDefinedSyms :: Sign -> Set.Set Symbol
+getDefinedSyms (Sign _ _ ds) = 
+  Set.fromList $ map getSym $ filter (\ d -> isJust $ getValue d) ds
+
+-- checks if the symbol is defined in the signature
+isDefinedSym :: Sign -> Symbol -> Bool
+isDefinedSym sig s = Set.member s $ getDefinedSyms sig
+
+-- get the set of symbols not included from other signatures
+getLocalSyms :: Sign -> Set.Set Symbol
+getLocalSyms sig = Set.filter (isLocalSym sig) $ getAllSyms sig 
+
+-- checks if the symbol is local to the signature
+isLocalSym :: Sign -> Symbol -> Bool
+isLocalSym sig sym = 
+  and [sigBase sig == symBase sym, sigName sig == symModule sym]
+
+-- returns the type/kind for the given symbol
+getSymType :: Sign -> Symbol -> Maybe EXP
+getSymType sig sym = 
+  let res = List.find (\ d -> getSym d == sym) $ getDefs sig
+      in case res of
+              Nothing -> Nothing
+              Just (Def _ t _) -> Just t
+
+-- returns the value for the given symbol, if it exists
+getSymValue :: Sign -> Symbol -> Maybe EXP
+getSymValue sig sym = 
+  let res = List.find (\ d -> getSym d == sym) $ getDefs sig
+      in case res of
+              Nothing -> Nothing
+              Just (Def _ _ v) -> v
 
 -- pretty printing
 instance Pretty Sign where
    pretty = printSig
-instance Pretty EXP where
-   pretty = printExp
 
 printSig :: Sign -> Doc
-printSig (Sign []) = text "EmptySig"
-printSig (Sign ds) = vcat $ map printDecl ds
+printSig sig = vcat $ map (printDef sig) $ getDefs sig
 
-printDecl :: DECL -> Doc
-printDecl (ns,e) = printNames ns <+> colon <+> pretty e
+printDef :: Sign -> DEF -> Doc
+printDef sig (Def s t v) = 
+  printSymbol sig s <+> 
+  text "::" <+> 
+  printExp sig t <+>
+  case v of
+    Nothing -> text ""
+    Just val -> text "=" <+> printExp sig val    
 
-printDecls :: [DECL] -> Doc
-printDecls xs = fsep $ punctuate comma $ map printDecl xs
+printSymbol :: Sign -> Symbol -> Doc
+printSymbol sig s = 
+  if (isLocalSym sig s)
+     then text $ symName s
+     else text (symModule s) <> dot <> text (symName s)
 
-printNames :: [NAME] -> Doc
-printNames = ppWithCommas
-
-printExp :: EXP -> Doc
-printExp Type = text "type"
-printExp (Var n) = pretty n
-printExp (Appl e es) = 
-  let f = printExpWithPrec (precAppl + 1) e
-      as = map (printExpWithPrec precAppl) es
+printExp :: Sign -> EXP -> Doc
+printExp _ Type = text "type"
+printExp sig (Const s) = printSymbol sig s
+printExp _ (Var n) = text n
+printExp sig (Appl e es) = 
+  let f = printExpWithPrec sig (precAppl + 1) e
+      as = map (printExpWithPrec sig precAppl) es
       in fsep (f:as)
-printExp (Func es e) = 
-  let as = map (printExpWithPrec precFunc) es
-      val = printExpWithPrec (precFunc + 1) e
+printExp sig (Func es e) = 
+  let as = map (printExpWithPrec sig precFunc) es
+      val = printExpWithPrec sig (precFunc + 1) e
       in fsep $ prepPunctuate (text "-> ") (as ++ [val])
-printExp (Pi ds e) = text "{" <> printDecls ds <> text "{" <> pretty e
-printExp (Lamb ds e) = text "[" <> printDecls ds <> text "]" <> pretty e
+printExp sig (Pi ds e) = text "{" <> printDecls sig ds <> text "}" <+> printExp sig e
+printExp sig (Lamb ds e) = text "[" <> printDecls sig ds <> text "]" <> printExp sig e
 
-printExpWithPrec :: Int -> EXP -> Doc
-printExpWithPrec i e = 
+printExpWithPrec :: Sign -> Int -> EXP -> Doc
+printExpWithPrec sig i e = 
   if prec e >= i
-     then parens $ printExp e
-     else printExp e
+     then parens $ printExp sig e
+     else printExp sig e
 
 prec :: EXP -> Int
 prec Type = 0
+prec Const {} = 0
 prec Var {} = 0
 prec Appl {} = 1
 prec Func {} = 2
@@ -97,77 +187,81 @@ precFunc, precAppl :: Int
 precFunc = 2
 precAppl = 1
 
+printDecls :: Sign -> [DECL] -> Doc
+printDecls sig xs = fsep $ punctuate comma $ map (printDecl sig) xs
+
+printDecl :: Sign -> DECL -> Doc
+printDecl sig (n,e) = text n <+> colon <+> printExp sig e
+
 {- converts the expression into a form where each construct takes
    exactly one argument -}
 recForm :: EXP -> EXP
-recForm Type = Type
-recForm (Var n) = Var n
 recForm (Appl f []) = recForm f
 recForm (Appl f as) = Appl (recForm $ Appl f $ init as) $ [recForm $ last as]
 recForm (Func [] a) = recForm a
 recForm (Func (t:ts) a) = Func [recForm t] $ recForm $ Func ts a
 recForm (Pi [] t) = recForm t
-recForm (Pi (([],_):ds) a) = recForm $ Pi ds a
-recForm (Pi (((n:ns),t):ds) a) =
-  Pi [([n],recForm t)] $ recForm $ Pi ((ns,t):ds) a
+recForm (Pi ((n,t):ds) a) =
+  Pi [(n,recForm t)] $ recForm $ Pi ds a
 recForm (Lamb [] t) = recForm t
-recForm (Lamb (([],_):ds) a) = recForm $ Lamb ds a
-recForm (Lamb (((n:ns),t):ds) a) =
-  Lamb [([n],recForm t)] $ recForm $ Lamb ((ns,t):ds) a
+recForm (Lamb ((n,t):ds) a) =
+  Lamb [(n,recForm t)] $ recForm $ Lamb ds a
+recForm t = t
 
 {- modifies the given name until it is different from each of the names
    in the input set -}
-getNewName :: NAME -> Set.Set NAME -> NAME
-getNewName var names = getNewNameH var names (tokStr var) 0
+getNewName :: VAR -> Set.Set VAR -> VAR
+getNewName var names = getNewNameH var names var 0
 
-getNewNameH :: NAME -> Set.Set NAME -> String -> Int -> Token
+getNewNameH :: VAR -> Set.Set VAR -> VAR -> Int -> VAR
 getNewNameH var names root i =
   if (Set.notMember var names)
      then var
-     else let newVar = Token (root ++ (show i)) nullRange
-              in getNewNameH newVar names root $ i+1
+     else let newVar = root ++ (show i)
+              in getNewNameH newVar names root $ i+1 
 
--- returns a set of unbound identifiers used within an expression
-getFreeVars :: EXP -> Set.Set NAME
+-- returns a set of free variables used within an expression
+getFreeVars :: EXP -> Set.Set VAR
 getFreeVars e = getFreeVarsH $ recForm e
 
-getFreeVarsH :: EXP -> Set.Set NAME
+getFreeVarsH :: EXP -> Set.Set VAR
 getFreeVarsH Type = Set.empty
+getFreeVarsH (Const _) = Set.empty
 getFreeVarsH (Var x) = Set.singleton x
 getFreeVarsH (Appl f [a]) =
   Set.union (getFreeVarsH f) (getFreeVarsH a)
 getFreeVarsH (Func [t] v) =  
   Set.union (getFreeVarsH t) (getFreeVarsH v)
-getFreeVarsH (Pi [([n],t)] a) =
+getFreeVarsH (Pi [(n,t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
-getFreeVarsH (Lamb [([n],t)] a) =
+getFreeVarsH (Lamb [(n,t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
 getFreeVarsH _ = Set.empty
 
-{- substitutions and renamings: the first argument specifies the desired
-   term/identifier substitutions and the second the set of identifiers which
-   cannot be used as new variable names -}
-translate :: Map.Map NAME EXP -> Set.Set NAME -> EXP -> EXP
-translate m s e = 
-  let s1 = Set.unions $ map getFreeVars $ Map.elems m
-      in translateH m (Set.union s s1) (recForm e)
+{- variable renamings: 
+   - the first argument specifies the desired variable renamings
+   - the second argument specifies the set of variables which cannot 
+     be used as new variable names -}
+rename :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
+rename m s e = renameH m s (recForm e)
 
-translateH :: Map.Map NAME EXP -> Set.Set NAME -> EXP -> EXP
-translateH _ _ Type = Type
-translateH m _ (Var n) = Map.findWithDefault (Var n) n m
-translateH m s (Appl f [a]) = Appl (translate m s f) [translate m s a]
-translateH m s (Func ts t) = Func (map (translate m s) ts) (translate m s t)
-translateH m s (Pi [([x],t)] a) = 
-  let t1 = translate m s t
+renameH :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
+renameH _ _ Type = Type
+renameH _ _ (Const n) = Const n
+renameH m _ (Var n) = Var $ Map.findWithDefault n n m
+renameH m s (Appl f [a]) = Appl (rename m s f) [rename m s a]
+renameH m s (Func [t] u) = Func [rename m s t] (rename m s u)
+renameH m s (Pi [(x,t)] a) = 
+  let t1 = rename m s t
       x1 = getNewName x s
-      a1 = translate (Map.insert x (Var x1) m) (Set.insert x1 s) a
-      in Pi [([x1],t1)] a1
-translateH m s (Lamb [([x],t)] a) = 
-  let t1 = translate m s t
+      a1 = rename (Map.insert x x1 m) (Set.insert x1 s) a
+      in Pi [(x1,t1)] a1
+renameH m s (Lamb [(x,t)] a) = 
+  let t1 = rename m s t
       x1 = getNewName x s
-      a1 = translate (Map.insert x (Var x1) m) (Set.insert x1 s) a
-      in Lamb [([x1],t1)] a1
-translateH _ _ t = t
+      a1 = rename (Map.insert x x1 m) (Set.insert x1 s) a
+      in Lamb [(x1,t1)] a1
+renameH _ _ t = t
 
 -- equality
 instance Eq EXP where
@@ -175,14 +269,22 @@ instance Eq EXP where
 
 eq :: EXP -> EXP -> Bool
 eq Type Type = True
+eq (Const x1) (Const x2) = x1 == x2
 eq (Var x1) (Var x2) = x1 == x2
 eq (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
 eq (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
-eq (Pi [([n1],t1)] s1) (Pi [([n2],t2)] s2) =
-  let syms1 = Set.delete n1 $ getFreeVars s1
-      syms2 = Set.delete n2 $ getFreeVars s2
-      v = getNewName n1 $ Set.union syms1 syms2
-      type1 = translate (Map.singleton n1 (Var v)) syms1 s1
-      type2 = translate (Map.singleton n2 (Var v)) syms2 s2
-      in and [t1 == t2, type1 == type2]
+eq (Pi [(n1,t1)] s1) (Pi [(n2,t2)] s2) =
+  let vars = Set.delete n1 $ getFreeVars s1
+      vars1 = Set.delete n2 $ getFreeVars s2
+      in if (vars1 /= vars)
+            then False
+            else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
+                 in and [t1 == t2, s1 == s3]
+eq (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
+  let vars = Set.delete n1 $ getFreeVars s1
+      vars1 = Set.delete n2 $ getFreeVars s2
+      in if (vars1 /= vars)
+            then False
+            else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
+                 in and [t1 == t2, s1 == s3]
 eq _ _ = False

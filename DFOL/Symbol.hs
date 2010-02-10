@@ -1,8 +1,8 @@
 {- |
 Module      :  $Header$
-Description :  Symbol definition for first-order logic
-               with dependent types (DFOL)
-Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
+Description :  Symbol definition for first-order logic with
+               dependent types
+Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de

@@ -21,11 +21,11 @@ import qualified Common.Result as Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- morphisms for LF
+-- LF morphism cannot map defined symbols, only declared ones
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
-  , symMap :: Map.Map NAME EXP
+  , symMap :: Map.Map Symbol EXP
   } deriving (Ord, Show)
 
 -- constructs an identity morphism
@@ -38,27 +38,57 @@ compMorph m1 m2 =
   if target m1 /= source m2
      then Result.Result [incompatibleMorphsError m1 m2] Nothing 
      else return $ Morphism (source m1) (target m2) $
-                 Set.fold (\ s -> let e = applyMorph m2 $ mapSymbol m1 s
-                                      in Map.insert s e)
+                 Set.fold (\ s -> let Just e1 = mapSymbol m1 s  
+                                      Just e2 = translateH m2 e1 
+                                      in Map.insert s e2)
 
                           Map.empty $
-                          getSymbols $ source m1
+                          getDeclaredSyms $ source m1
 
--- applies a morphism to a symbol
-mapSymbol :: Morphism -> NAME -> EXP
-mapSymbol m sym = Map.findWithDefault (Var sym) sym $ symMap m
+-- applies a morphism to a symbol in the source signature
+mapSymbol :: Morphism -> Symbol -> Maybe EXP
+mapSymbol m s = 
+  let sig = source m
+      in if (isDeclaredSym sig s)
+            then Just $ Map.findWithDefault (Const s) s $ symMap m
+            else if (isDefinedSym sig s)
+                    then do val <- getSymValue sig s
+                            translate m val
+                    else Nothing
 
--- translates an expression along the given morphism
-applyMorph :: Morphism -> EXP -> EXP
-applyMorph m e =
-  let syms = getSymbols (target m)
-      in translate (symMap m) syms e
+-- translates a well-formed expression along the given morphism
+translate :: Morphism -> EXP -> Maybe EXP
+translate m e = translateH m (recForm e)
+
+translateH :: Morphism -> EXP -> Maybe EXP
+translateH _ Type = Just Type
+translateH _ (Var n) = Just $ Var n
+translateH m (Const s) = 
+  do e <- mapSymbol m s
+     return e 
+translateH m (Appl f [a]) =
+  do f1 <- translateH m f
+     a1 <- translateH m a
+     return $ Appl f1 [a1]
+translateH m (Func [t] s) = 
+  do t1 <- translateH m t
+     s1 <- translateH m s  
+     return $ Func [t1] s1 
+translateH m (Pi [(x,t)] a) = 
+  do t1 <- translateH m t
+     a1 <- translateH m a
+     return $ Pi [(x,t1)] a1
+translateH m (Lamb [(x,t)] a) = 
+  do t1 <- translateH m t
+     a1 <- translateH m a
+     return $ Lamb [(x,t1)] a1
+translateH _ _ = Nothing
 
 {- converts the morphism into its canonical form where the symbol map contains
-   no key/value pairs of the form (k,Var k) -}
+   no key/value pairs of the form (s, Const s) -}
 canForm :: Morphism -> Morphism
 canForm (Morphism sig1 sig2 map1) =
-  let map2 = Map.fromList $ filter (\ (k,e) -> Var k /= e) $ Map.toList map1
+  let map2 = Map.fromList $ filter (\ (s,e) -> Const s /= e) $ Map.toList map1
       in Morphism sig1 sig2 map2
 
 -- equality
@@ -71,14 +101,15 @@ instance Pretty Morphism where
 
 printMorph :: Morphism -> Doc
 printMorph m =
-  if m == (idMorph $ source m)
-     then vcat [text "Identity morphism on:", pretty $ source m]
-     else vcat [text "Source signature:", pretty $ source m,
-                text "Target signature:", pretty $ target m,
-                text "Mapping:", printSymMap $ symMap m]
+  let sig1 = source m
+      sig2 = target m
+      in vcat [text "Source signature:", pretty sig1
+              ,text "Target signature:", pretty sig2
+              ,text "Mapping:", printSymMap sig1 sig2 $ symMap m]
 
-printSymMap :: Map.Map NAME EXP -> Doc
-printSymMap m = vcat $ map (\ (k,a) -> pretty k <+> text "|->" <+> pretty a)
+printSymMap :: Sign -> Sign -> Map.Map Symbol EXP -> Doc
+printSymMap sig1 sig2 m = 
+  vcat $ map (\ (s,e) -> printSymbol sig1 s <+> text "|->" <+> printExp sig2 e)
                      $ Map.toList m
 
 -- ERROR MESSAGES
@@ -92,3 +123,5 @@ incompatibleMorphsError m1 m2 =
                           ++ "\nhence their composition cannot be constructed."
     , Result.diagPos = nullRange
     }
+
+
