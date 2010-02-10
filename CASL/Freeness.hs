@@ -353,8 +353,10 @@ quotient_ax nsen = nsen'
 
 -- | applies the homomorphism operator to the terms of the given formula
 homomorphy_form :: CASLFORMULA -> CASLFORMULA
-homomorphy_form (Quantification q vd f r) = Quantification q vd f' r
+homomorphy_form (Quantification q _ f r) = Quantification q var_decl f' r
      where f' = homomorphy_form f
+           vars = getVars f'
+           var_decl = listVarDecl vars
 homomorphy_form (Conjunction fs r) = Conjunction fs' r
      where fs' = map homomorphy_form fs
 homomorphy_form (Disjunction fs r) = Disjunction fs' r
@@ -385,14 +387,23 @@ homomorphy_form f = f
 
 -- | applies the homomorphism operator to the term when possible
 homomorphy_term :: CASLTERM -> CASLTERM
-homomorphy_term t@(Qual_var _ s _) = t'
-      where ot_hom = Op_type Partial [mkFreeName s] s nullRange
+homomorphy_term (Qual_var v s r) = t
+      where free_s = mkFreeName s
+            v' = Qual_var v free_s r
+            ot_hom = Op_type Partial [free_s] s nullRange
             name_hom = Qual_op_name homId ot_hom nullRange
-            t' = Application name_hom [t] nullRange
-homomorphy_term t@(Application os _ _) = t'
-      where Qual_op_name _ ot _ = os
-            Op_type _ _ s _ = ot
-            ot_hom = Op_type Partial [mkFreeName s] s nullRange
+            t = Application name_hom [v'] nullRange
+homomorphy_term (Application os ts r) = t'
+      where ts' = map free_term ts
+            Qual_op_name op_name ot op_r = os
+            Op_type ok ar co ot_r = ot
+            op_name' = mkFreeName op_name
+            ar' = map mkFreeName ar
+            co' = mkFreeName co
+            ot' = Op_type ok ar' co' ot_r
+            os' = Qual_op_name op_name' ot' op_r
+            t = Application os' ts' r
+            ot_hom = Op_type Partial [co'] co nullRange
             name_hom = Qual_op_name homId ot_hom nullRange
             t' = Application name_hom [t] nullRange
 homomorphy_term t = t
