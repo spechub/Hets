@@ -70,7 +70,7 @@ create_axs sg_ss sg_m sg_k sens = forms
             ss = Set.map mkFreeName $ Set.difference ss_m sg_ss
             sr = sortRel sg_k
             comps = ops2comp $ opMap sg_k
-            ctor_sen = [freeCons (ss, sr, comps)]
+            ctor_sen = freeCons (ss, sr, comps)
             make_axs = concat [make_forms sg_ss, make_hom_forms sg_ss]
             h_axs_ops = homomorphism_axs_ops $ opMap sg_m
             h_axs_preds = homomorphism_axs_preds $ predMap sg_m
@@ -499,7 +499,7 @@ ops2comp = Map.foldWithKey g Set.empty
             g = \ name sot s -> Set.fold (f name) s sot
 
 -- | computes the sentence for the constructors
-freeCons :: GenAx -> Named CASLFORMULA
+freeCons :: GenAx -> [Named CASLFORMULA]
 freeCons (sorts, rel, ops) = do
     let sortList = Set.toList sorts
         opSyms = map ( \ c -> let iden = compId c in Qual_op_name iden
@@ -520,8 +520,10 @@ freeCons (sorts, rel, ops) = do
           Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
         f = Sort_gen_ax constrs True
-    makeNamed ("ga_generated_" ++
-                       showSepList (showString "_") showId sortList "") f
+    case constrs of
+     [] -> []
+     _  -> [makeNamed ("ga_generated_" ++
+                       showSepList (showString "_") showId sortList "") f]
 
 -- | given the signature in M the function computes the signature K
 create_sigma_k :: Set.Set SORT -> CASLSign -> CASLSign
