@@ -100,6 +100,6 @@ t2term = foldTerm mapRec
                       (TypeName l _ _, [lt]) | l == lazyTypeId -> lt
                       _ -> ty
               -- not not create injections into lazy types
-              -- (via strippedType all functions arrows became partial)
+              -- (via strippedType all function arrows became partial)
               rtrm = mkTerm injName (mkInjOrProjType FunArr) [sty, rty] ps ntrm
               in TypedTerm rtrm q ty ps }
