@@ -27,6 +27,7 @@ import qualified Data.Set as Set
 -- CASL
 import CASL.Logic_CASL
 import CASL.Sublogic as CasSub
+import CASL.ToDoc
 import CASL.Fold
 import qualified CASL.AS_Basic_CASL as Cas
 import qualified CASL.Sign as CasS
@@ -277,6 +278,10 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   , foldCast = \ _ trm -> TypedTerm trm AsType . toType
   , foldConditional = \ (Cas.Conditional c1 _ _ _) t1 f t2 ps ->
         mkTerm whenElse whenType [typeOfTerm c1] ps $ TupleTerm [t1, f, t2] ps
+  , foldSort_gen_ax = \ _ cs _ ->
+      error $ "unexpected sort generation constraint: "
+      ++ unlines (map (flip showDoc "") $ recoverType cs)
+      ++ "in: " ++ str
   }
 
 typeOfTerm :: Cas.TERM f -> Type
