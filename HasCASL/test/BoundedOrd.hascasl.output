@@ -55,14 +55,13 @@ __->?__ : -Ord -> +Ord -> Ord
 vars
 a : Cpo %(var_46)%;
 b : Ord %(var_32)%
-op __<=__ : forall a : Cpo . Pred (a * a) %(op)%
-op __<=__ : forall a : Ord . Pred (a * a) %(op)%
+op __<=__ : forall a : Cpo . Pred (a * a)
+op __<=__ : forall a : Ord . Pred (a * a)
 op __<=__ : forall a : Ord; b : Ord . Pred ((a ->? b) * (a ->? b))
-            %(op)%
-op bot : forall b : BoundedOrd . b %(op)%
-op min : forall b : Num . b * b ->? b %(op)%
-op min : forall a : Ord . a * a ->? a %(op)%
-op top : forall b : BoundedOrd . b %(op)%
+op bot : forall b : BoundedOrd . b
+op min : forall b : Num . b * b ->? b
+op min : forall a : Ord . a * a ->? a
+op top : forall b : BoundedOrd . b
 vars
 v : b;
 w : b;

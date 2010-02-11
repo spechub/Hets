@@ -17,9 +17,9 @@ SWPoint : Type
 types
 Int < Rat;
 Rat < Real
-op 0 : Int %(op)%
-op 0 : Rat %(op)%
-op 0 : Real %(op)%
+op 0 : Int
+op 0 : Rat
+op 0 : Real
 op Center : SWArc -> SWPoint
             %(selector of constructor(s)
             SWArc : SWPoint * SWPoint * SWPoint -> SWArc)%
@@ -32,14 +32,14 @@ op Start : SWArc -> SWPoint
            %(selector of constructor(s)
            SWArc : SWPoint * SWPoint * SWPoint -> SWArc)%
 op arc1 : SWArc
-          %[op=
+          %[ =
           (op SWArc : SWPoint * SWPoint * SWPoint -> SWArc)
           ((op SWPoint : Real * Real * Real -> SWPoint)
            ((op 0 : Int), (op 0 : Int), (op 0 : Int)),
            (op SWPoint : Real * Real * Real -> SWPoint)
            ((op 0 : Int), (op 0 : Int), (op 0 : Int)),
            (op SWPoint : Real * Real * Real -> SWPoint)
-           ((op 0 : Int), (op 0 : Int), (op 0 : Int)))]%
+           ((op 0 : Int), (op 0 : Int), (op 0 : Int))) ]%
 op x : SWPoint -> Real
        %(selector of constructor(s)
        SWPoint : Real * Real * Real -> SWPoint)%

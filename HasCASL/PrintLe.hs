@@ -21,6 +21,7 @@ module HasCASL.PrintLe
   , printMap1) where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.PrintAs
 import HasCASL.Le
 import HasCASL.Builtin
@@ -87,16 +88,25 @@ instance Pretty ConstrInfo where
 
 instance Pretty OpDefn where
     pretty od = case od of
-        NoOpDefn b -> text $ "%(" ++ shows b ")%"
+        NoOpDefn _ -> empty
         ConstructData _ -> text "%(constructor)%"
         SelectData cs _ -> sep
             [ text "%(selector of constructor(s)"
             , printList0 (Set.toList cs) <> text ")%" ]
         Definition b t ->
-            sep [text $ "%[" ++ shows b "=", pretty t <> text "]%" ]
+            sep [text $ "%[ " ++ if isPred b then "<=>" else "="
+                , pretty t <+> text "]%" ]
+
+isPredOpDefn :: OpDefn -> Bool
+isPredOpDefn od = case od of
+  NoOpDefn b -> isPred b
+  Definition b _ -> isPred b
+  _ -> False
 
 instance Pretty OpInfo where
-    pretty o = sep [pretty $ opType o, pretty $ opDefn o]
+    pretty o = let od = opDefn o in
+      sep [pretty $ (if isPredOpDefn od then unPredTypeScheme else id)
+          $ opType o, pretty $ opDefn o]
 
 instance Pretty DataEntry where
     pretty (DataEntry im j k args _ talts) = let
@@ -129,6 +139,9 @@ instance Pretty Env where
       , sentences = se
       , envDiags = ds } = let
       oops = foldr Map.delete ops $ map fst bList
+      poMap = Map.map (Set.partition (isPredOpDefn . opDefn)) oops
+      pMap = Map.map fst poMap
+      oMap = Map.map snd poMap
       ocm = diffClassMap cm cpoMap
       otm = diffTypeMap ocm tm bTypes
       ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
@@ -166,7 +179,8 @@ instance Pretty Env where
         $+$ noPrint (Map.null tvs) (header tvs varS)
         $+$ printMap0 tvs
         $+$ vcat (map annoDoc bas)
-        $+$ printSetMap (keyword opS) space oops
+        $+$ printSetMap (keyword opS) space oMap
+        $+$ printSetMap (keyword predS) space pMap
         $+$ noPrint (Map.null vs) (header vs varS)
         $+$ printMap0 vs
         $+$ vcat (map (pretty . fromLabelledSen) $ reverse se)

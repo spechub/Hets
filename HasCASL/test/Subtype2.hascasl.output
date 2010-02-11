@@ -29,7 +29,7 @@ gn_t9[Inj] := gn_t10[gn_t9[Inj]] Int
 vars
 a < b : Type %(var_5)%;
 b : Type %(var_4)%
-op down : forall b : Type; a < b : Type . b ->? a %(op)%
+op down : forall b : Type; a < b : Type . b ->? a
 vars
 x : a;
 y : b

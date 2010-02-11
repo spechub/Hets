@@ -32,24 +32,21 @@ Set (S : Type) := S ->? Unit
 vars
 S : Type %(var_1)%;
 T : Type %(var_2)%
-op False : Bool %(op)%
-op True : Bool %(op)%
+op False : Bool
+op True : Bool
 op __*__ : forall S : Type; T : Type . Set S * Set T -> Set (S * T)
-           %(op)%
-op __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
-op __disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
+op __\\__ : forall S : Type . Set S * Set S -> Set S
+op __disjoint__ : forall S : Type . Pred (Set S * Set S)
 op __disjointUnion__ : forall S : Type
                        . Set S * Set S -> Set (S * Bool)
-                       %(op)%
 op __intersection__ : forall S : Type . Set S * Set S -> Set S
-                      %(op)%
-op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
-op __subset__ : forall S : Type . Pred (Set S * Set S) %(op)%
-op __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
-op emptySet : forall S : Type . Set S %(op)%
-op inl : forall S : Type . S -> S * Bool %(op)%
-op inr : forall S : Type . S -> S * Bool %(op)%
-op {__} : forall S : Type . S -> Set S %(op)%
+op __isIn__ : forall S : Type . S * Set S ->? Unit
+op __subset__ : forall S : Type . Pred (Set S * Set S)
+op __union__ : forall S : Type . Set S * Set S -> Set S
+op emptySet : forall S : Type . Set S
+op inl : forall S : Type . S -> S * Bool
+op inr : forall S : Type . S -> S * Bool
+op {__} : forall S : Type . S -> Set S
 forall S : Type; x : S . not x isIn emptySet
 forall S : Type; x : S; x' : S . x isIn { x' } <=> x = x'
 forall S : Type; s : Set S; x : S . x isIn s <=> s x

@@ -3,6 +3,6 @@ op    f : a -> a
 program f (v @ _ : a) = v;
 type
 a : Type
-op f : a -> a %(op)%
+op f : a -> a
 program f (v @ _) = v %(pe_f)%
 ### Hint 3.8-3.13, repeated declaration of 'f' with type 'a -> a'

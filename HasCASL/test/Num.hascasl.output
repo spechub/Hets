@@ -10,8 +10,8 @@ Rat : Type
 types
 Int < Rat;
 Nat < Int
-op 0 : Nat %(op)%
-op 0 : Rat %(op)%
+op 0 : Nat
+op 0 : Rat
 forall y : Rat . y = 0 %(divide_def2_Rat)%
 ### Hint 1.17-1.19, redeclared type 'Int'
 ### Hint 6.14, not a class 'Rat'

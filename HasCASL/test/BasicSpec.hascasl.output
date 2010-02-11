@@ -58,11 +58,10 @@ op Cons32 : Data2 * Data1 -> Data3 %(constructor)%
 op Cons41 : Data1 * Data2 ->? Data4 %(constructor)%
 op Cons42 : Data2 * Data1 ->? Data4 %(constructor)%
 op a : Data1 %(constructor)%
-op a : ? s %(op)%
+op a : ? s
 op b : Data1 %(constructor)%
 op c : Data1 %(constructor)%
-op eq : s * s ->? Unit %(pred)%
-op fst : s * t ->? s %(op)%
+op fst : s * t ->? s
 op sel1 : Data3 ->? Data1
           %(selector of constructor(s)
           (Cons31 : Data1 * Data2 -> Data3,
@@ -79,8 +78,9 @@ op sel2 : Data4 ->? Data2
           %(selector of constructor(s)
           (Cons41 : Data1 * Data2 ->? Data4,
            Cons42 : Data2 * Data1 ->? Data4))%
-op snd : s * t ->? t %(op)%
-op tt : s ->? Unit %(pred)%
+op snd : s * t ->? t
+pred eq : s * s
+pred tt : s
 var
 x : s
 program tt = \ x : s . () %(pe_tt)%

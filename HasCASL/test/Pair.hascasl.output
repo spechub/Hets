@@ -11,14 +11,14 @@ b : Type %(var_2)%
 op Pair : forall a : Type; b : Type . a * b -> Pair a b
           %(constructor)%
 op f : forall a : Type; b : Type . a * b -> Pair a b
-       %[op=
+       %[ =
        \ ((var a : a), (var b : b))
        .! (op Pair : forall a : Type; b : Type . a * b -> Pair a b)
-          ((var a : a), (var b : b))]%
+          ((var a : a), (var b : b)) ]%
 op fst : forall a : Type; b : Type . Pair a b -> a
          %(selector of constructor(s)
          Pair : forall a : Type; b : Type . a * b -> Pair a b)%
-op g : forall a : Type; b : Type . Pair a b ->? a %(op)%
+op g : forall a : Type; b : Type . Pair a b ->? a
 op snd : forall a : Type; b : Type . Pair a b -> b
          %(selector of constructor(s)
          Pair : forall a : Type; b : Type . a * b -> Pair a b)%

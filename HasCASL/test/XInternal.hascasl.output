@@ -6,6 +6,6 @@ funs  o, q : s -> t
 types
 s : Type;
 t : Type
-op o : s -> t %(fun)%
-op q : s -> t %(fun)%
+op o : s -> t
+op q : s -> t
 . o = q

@@ -15,7 +15,7 @@ gn_t2[gn_t1[a]] < __->?__
 types
 a := gn_t1[a] c;
 gn_t1[a] := gn_t2[gn_t1[a]] (b * b)
-op a : a %(op)%
-op b : b %(op)%
-op c : c %(op)%
+op a : a
+op b : b
+op c : c
 . a (b, b) = c

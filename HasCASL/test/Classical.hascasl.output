@@ -21,8 +21,8 @@ op    epsilon : Pred t -> t
 . p \/ not p; %implied
 var
 t : Type %(var_18)%
-op choose : forall t : Type . Pred t ->? t %(op)%
-op epsilon : forall t : Type . Pred t -> t %(op)%
+op choose : forall t : Type . Pred t ->? t
+op epsilon : forall t : Type . Pred t -> t
 vars
 a : t;
 b : t;

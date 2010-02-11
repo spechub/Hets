@@ -12,17 +12,17 @@ Flag : Type -> Type
 var
 a : Type %(var_1)%
 op c : ? Unit
-       %[op=
+       %[ =
        \
        . (op getl : forall a : Type . Flag a -> Logical)
          ((op sg : forall a : Type . Flag a) : Flag a)
-         as Unit]%
-op getl : forall a : Type . Flag a -> Logical %(op)%
-op mkf : forall a : Type . Logical -> Flag a %(op)%
+         as Unit ]%
+op getl : forall a : Type . Flag a -> Logical
+op mkf : forall a : Type . Logical -> Flag a
 op sg : forall a : Type . Flag a
-        %[op=
+        %[ =
         (op mkf : forall a : Type . Logical -> Flag a)
-        forall x, y : a . (var x : a) = (var y : a)]%
+        forall x, y : a . (var x : a) = (var y : a) ]%
 vars
 b : Logical;
 x : Flag a

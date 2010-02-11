@@ -6,7 +6,7 @@ var   x : ? Bool
 . And False True = False; %implied
 type
 Bool : Type
-op And : Bool -> ? Bool -> Bool %(op)%
+op And : Bool -> ? Bool -> Bool
 op False : Bool %(constructor)%
 op True : Bool %(constructor)%
 var

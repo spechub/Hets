@@ -178,118 +178,96 @@ S : Type %(var_18)%;
 U : Type %(var_16)%;
 V : Type %(var_19)%;
 a : Type %(var_13)%
-op 0 : Nat %(op)%
-op 1 : Nat %(op)%
+op 0 : Nat
+op 1 : Nat
 op False : Boolean %(constructor)%
 op MultiSetToSet : forall Elem : Type . MultiSet Elem -> Set Elem
-                   %(op)%
 op True : Boolean %(constructor)%
 op __*__ : forall S : Type; V : Type . Set S * Set V -> Set (S * V)
-           %(op)%
-op __+__ : Nat * Nat -> Nat %(op)%
+op __+__ : Nat * Nat -> Nat
 op __+__ : forall Elem : Type
            . MultiSet Elem * MultiSet Elem -> MultiSet Elem
-           %(op)%
-op __-__ : Nat * Nat -> Nat %(op)%
+op __-__ : Nat * Nat -> Nat
 op __-__ : forall Elem : Type
            . MultiSet Elem * MultiSet Elem -> MultiSet Elem
-           %(op)%
 op __-__ : forall S : Type; V : Type . (S ->? V) * S -> S ->? V
-           %(op)%
 op __::__-->__ : forall S : Type; V : Type
                  . Pred ((S ->? V) * Pred S * Pred V)
-                 %(op)%
 op __::__-->__ : forall S : Type; V : Type
                  . Pred ((S ->? MultiSet V) * Set S * Set V)
-                 %(op)%
-op __<=__ : Nat * Nat ->? Unit %(pred)%
 op __<=__ : forall Elem : Type
             . Pred (MultiSet Elem * MultiSet Elem)
-            %(op)%
-op __>__ : Nat * Nat ->? Unit %(pred)%
-op __>=__ : Nat * Nat ->? Unit %(pred)%
 op __[__/__] : forall S : Type; V : Type
                . (S ->? V) * S * V -> S ->? V
-               %(op)%
-op __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
-op __disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
+op __\\__ : forall S : Type . Set S * Set S -> Set S
+op __disjoint__ : forall S : Type . Pred (Set S * Set S)
 op __disjointUnion__ : forall S : Type
                        . Set S * Set S -> Set (S * Boolean)
-                       %(op)%
 op __intersection__ : forall Elem : Type
                       . MultiSet Elem * MultiSet Elem -> MultiSet Elem
-                      %(op)%
 op __intersection__ : forall S : Type . Set S * Set S -> Set S
-                      %(op)%
 op __intersectionMap__ : forall S : Type; V : Type
                          . (S ->? V) * (S ->? V) -> S ->? V
-                         %(op)%
-op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
+op __isIn__ : forall S : Type . S * Set S ->? Unit
 op __isIn__ : forall Elem : Type . Pred (Elem * MultiSet Elem)
-              %(op)%
-op __o__ : HomNet * HomNet ->? HomNet %(op)%
-op __o__ : HomSys * HomSys ->? HomSys %(op)%
+op __o__ : HomNet * HomNet ->? HomNet
+op __o__ : HomSys * HomSys ->? HomSys
 op __o__ : forall S : Type; V : Type; U : Type
            . (V ->? U) * (S ->? V) -> S ->? U
-           %(op)%
 op __restrict__ : forall S : Type; V : Type
                   . (S ->? V) * Set S -> S ->? V
-                  %(op)%
-op __subset__ : forall S : Type . Pred (Set S * Set S) %(op)%
-op __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op __subset__ : forall S : Type . Pred (Set S * Set S)
+op __union__ : forall S : Type . Set S * Set S -> Set S
 op __unionMap__ : forall S : Type; V : Type
                   . (S ->? V) * (S ->? V) -> S ->? V
-                  %(op)%
-op __|<__> : System * T -> System %(op)%
-op __|<__> : System * MultiSet T ->? System %(op)%
+op __|<__> : System * T -> System
+op __|<__> : System * MultiSet T ->? System
 op __||__ : forall S : Type; V : Type
             . (S ->? V) * Set S -> S ->? V
-            %(op)%
-op cod : HomNet -> Net %(op)%
-op cod : HomSys -> System %(op)%
-op dom : HomNet -> Net %(op)%
-op dom : HomSys -> System %(op)%
-op dom : forall S : Type; V : Type . (S ->? V) -> Set S %(op)%
-op empty : Marking %(op)%
-op emptyMap : forall S : Type; V : Type . S ->? V %(op)%
-op emptySet : forall S : Type . Set S %(op)%
-op freeMap : forall S : Type . Map S -> MapMultiSet S %(op)%
-op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat %(op)%
-op id : System ->? HomSys %(op)%
-op id : Net ->? HomNet %(op)%
+op cod : HomNet -> Net
+op cod : HomSys -> System
+op dom : HomNet -> Net
+op dom : HomSys -> System
+op dom : forall S : Type; V : Type . (S ->? V) -> Set S
+op empty : Marking
+op emptyMap : forall S : Type; V : Type . S ->? V
+op emptySet : forall S : Type . Set S
+op freeMap : forall S : Type . Map S -> MapMultiSet S
+op freq : forall Elem : Type . Elem * MultiSet Elem -> Nat
+op id : System ->? HomSys
+op id : Net ->? HomNet
 op image : forall S : Type; V : Type . (S ->? V) -> Set S -> Set V
-           %(op)%
-op injective : HomNet ->? Unit %(pred)%
-op injective : HomSys ->? Unit %(pred)%
-op injective : forall S : Type; V : Type . Pred (S ->? V) %(op)%
-op injl : forall S : Type . S -> S * Boolean %(op)%
-op injr : forall S : Type . S -> S * Boolean %(op)%
+op injective : forall S : Type; V : Type . Pred (S ->? V)
+op injl : forall S : Type . S -> S * Boolean
+op injr : forall S : Type . S -> S * Boolean
 op ker : forall S : Type; V : Type . (S ->? V) -> Pred (S * S)
-         %(op)%
 op linMap : forall S : Type; V : Type
             . (S ->? MultiSet V) -> MultiSet S ->? MultiSet V
-            %(op)%
-op marking : System -> Marking %(op)%
-op min : Nat * Nat -> Nat %(op)%
-op net : System -> Net %(op)%
-op places : Net -> Set P %(op)%
-op placesMap : HomNet -> P ->? P %(op)%
-op placesMap : HomSys -> P ->? P %(op)%
-op postMap : Net -> T ->? MultiSet P %(op)%
-op preMap : Net -> T ->? MultiSet P %(op)%
-op range : forall S : Type; V : Type . (S ->? V) -> Set V %(op)%
+op marking : System -> Marking
+op min : Nat * Nat -> Nat
+op net : System -> Net
+op places : Net -> Set P
+op placesMap : HomNet -> P ->? P
+op placesMap : HomSys -> P ->? P
+op postMap : Net -> T ->? MultiSet P
+op preMap : Net -> T ->? MultiSet P
+op range : forall S : Type; V : Type . (S ->? V) -> Set V
 op setToMultiSet : forall Elem : Type . Set Elem -> MultiSet Elem
-                   %(op)%
-op sum : forall a : Type . (a ->? Nat) -> Pred a ->? Nat %(op)%
-op sumN : (Nat ->? Nat) -> Nat -> Nat %(op)%
-op sumSet : Set Nat ->? Nat %(op)%
-op transitions : Net -> Set T %(op)%
-op transitionsMap : HomNet -> T ->? T %(op)%
-op transitionsMap : HomSys -> T ->? T %(op)%
-op undef__ : forall S : Type; V : Type . S ->? V %(op)%
-op {__} : forall Elem : Type . Elem -> MultiSet Elem %(op)%
-op {__} : forall S : Type . S -> Set S %(op)%
-op {} : forall Elem : Type . MultiSet Elem %(op)%
+op sum : forall a : Type . (a ->? Nat) -> Pred a ->? Nat
+op sumN : (Nat ->? Nat) -> Nat -> Nat
+op sumSet : Set Nat ->? Nat
+op transitions : Net -> Set T
+op transitionsMap : HomNet -> T ->? T
+op transitionsMap : HomSys -> T ->? T
+op undef__ : forall S : Type; V : Type . S ->? V
+op {__} : forall Elem : Type . Elem -> MultiSet Elem
+op {__} : forall S : Type . S -> Set S
+op {} : forall Elem : Type . MultiSet Elem
+pred __<=__ : Nat * Nat
+pred __>__ : Nat * Nat
+pred __>=__ : Nat * Nat
+pred injective : HomNet
+pred injective : HomSys
 free type Boolean ::= False | True %(ga_Boolean)%
 forall Elem : Type; B : MultiSet Elem
 . let S = MultiSetToSet B in

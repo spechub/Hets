@@ -41,7 +41,6 @@ b : Type %(var_10)%;
 c : Type %(var_13)%
 op __o__ : forall a : Type; b : Type; c : Type
            . (b -> c) * (a -> b) -> a -> c
-           %(op)%
 op abs : (L -> L) -> L %(constructor)%
 op add : forall a : Type . a -> Set a -> Set a %(constructor)%
 op branch : forall a : Type . (Nat ->? CTree a) -> CTree a
@@ -55,12 +54,10 @@ op cons : forall a : Type . a * List a -> List a %(constructor)%
 op empty : forall a : Type . Set a %(constructor)%
 op fold : forall a : Type; b : Type; c : Type
           . (a -> c) -> ((b -> List c) -> c) -> Tree a b -> c
-          %(op)%
 op leaf : forall a : Type . a -> CTree a %(constructor)%
 op leaf : forall a : Type; b : Type . b -> Tree a b %(constructor)%
 op leaf : forall a : Type; b : Type . a -> Tree a b %(constructor)%
 op map : forall a : Type; b : Type . (a -> b) -> List a -> List b
-         %(op)%
 op nil : forall a : Type . List a %(constructor)%
 op node : forall b : Type . b -> Set (Sys b) -> Sys b
           %(constructor)%

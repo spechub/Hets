@@ -3,7 +3,7 @@ op    f : s --> s
 . f = ((\ x : s . x) as s --> s);
 type
 s : Type
-op f : s --> s %(op)%
+op f : s --> s
 . f = ((\ x : s . x) as s --> s)
 ### Hint 3.8,
 no kind found for 's'

@@ -14,13 +14,11 @@ vars
 E : Type %(var_3)%;
 N : Type %(var_2)%;
 S : Type %(var_1)%
-op __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op __\\__ : forall S : Type . Set S * Set S -> Set S
 op __intersection__ : forall S : Type . Set S * Set S -> Set S
-                      %(op)%
-op __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
+op __union__ : forall S : Type . Set S * Set S -> Set S
 op __union__ : forall N : Type; E : Type
                . Graph N E * Graph N E -> Graph N E
-               %(op)%
 forall E : Type; N : Type; g : Graph N E; g' : Graph N E
 . (op __union__ :
    forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)

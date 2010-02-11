@@ -10,9 +10,9 @@ type
 List : Type -> Type
 var
 a : Type %(var_1)%
-op head : forall a : Type . List a -> a %(op)%
-op nil : forall a : Type . List a %(op)%
-op snoc : forall a : Type . List a -> a --> List a %(op)%
+op head : forall a : Type . List a -> a
+op nil : forall a : Type . List a
+op snoc : forall a : Type . List a -> a --> List a
 forall a : Type; x : a . snoc nil x = snoc nil x
 forall a : Type; x : a . head nil x = x
 ### Hint 1.5, is type variable 'a'

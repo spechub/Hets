@@ -36,23 +36,20 @@ F : Funct %(var_8)%;
 a : Type %(var_1)%;
 b : Type %(var_2)%;
 f : Funct %(var_7)%
-op __=[s]__ : forall a : Type . a * a -> Unit %(op)%
-op a : s %(op)%
-op f[a] : forall a : Type . a -> Unit %(op)%
-op g[b,a] : forall a : Type; b : Type . a * b -> Unit %(op)%
-op h[b,a] : forall a : Type; b : Type . a -> b %(op)%
-op if__then__else__ : forall a : Type . a * a * a -> a %(op)%
-op if__then__else[a]__ : forall a : Type . a * a * a -> a %(op)%
-op if__then__else[s]__ : forall a : Type . a * a * a -> a %(op)%
-op j[a,b] : forall a : Type; b : Type . a -> b %(op)%
+op __=[s]__ : forall a : Type . a * a -> Unit
+op a : s
+op f[a] : forall a : Type . a -> Unit
+op g[b,a] : forall a : Type; b : Type . a * b -> Unit
+op h[b,a] : forall a : Type; b : Type . a -> b
+op if__then__else__ : forall a : Type . a * a * a -> a
+op if__then__else[a]__ : forall a : Type . a * a * a -> a
+op if__then__else[s]__ : forall a : Type . a * a * a -> a
+op j[a,b] : forall a : Type; b : Type . a -> b
 op k[G,b,a] : forall G : Funct; b : Type; a : Type . b -> G a
-              %(op)%
 op k[a,b,f] : forall a : Type; b : Type; f : Funct . b -> f a
-              %(op)%
-op k[a,f] : forall a : Type; f : Funct . f a %(op)%
+op k[a,f] : forall a : Type; f : Funct . f a
 op k[b,a,f] : forall a : Type; b : Type; f : Funct . b -> f a
-              %(op)%
-op l[F,a] : forall a : Type; F : Funct . F a %(op)%
+op l[F,a] : forall a : Type; F : Funct . F a
 . a =[s] a
 . a =[s] a
 . a =e= a

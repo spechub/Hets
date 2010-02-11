@@ -32,16 +32,13 @@ f : Functor %(var_4)%;
 m : Monad %(var_3)%
 op __bind__ : forall a : Type; b : Type; m : Monad
               . m a * (a -> m b) -> m b
-              %(op)%
-op empty : forall a : Type . List a %(op)%
-op emptySet : forall a : Type . Set a %(op)%
-op fail : forall a : Type; m : Monad . m a %(op)%
+op empty : forall a : Type . List a
+op emptySet : forall a : Type . Set a
+op fail : forall a : Type; m : Monad . m a
 op fmap : forall a : Type; b : Type; f : Functor
           . (a -> b) -> f a -> f b
-          %(op)%
 op map : forall a : Type; b : Type . (a -> b) -> List a -> List b
-         %(op)%
-op return : forall a : Type; m : Monad . a -> m a %(op)%
+op return : forall a : Type; m : Monad . a -> m a
 vars
 g : a -> b;
 x : m a

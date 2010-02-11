@@ -30,17 +30,16 @@ vars
 a : Type %(var_1)%;
 b : Type %(var_2)%;
 c : Type %(var_3)%
-op False : Bool %(op)%
-op True : Bool %(op)%
-op bot : forall a : Type . ? a %(op)%
-op if__then__else__ : forall a : Type . Bool * a * a -> a %(op)%
-op inl : forall a : Type; b : Type . a -> Sum a b %(op)%
-op inr : forall a : Type; b : Type . b -> Sum a b %(op)%
-op outl : forall a : Type; b : Type . Sum a b -> a %(op)%
-op outr : forall a : Type; b : Type . Sum a b -> b %(op)%
+op False : Bool
+op True : Bool
+op bot : forall a : Type . ? a
+op if__then__else__ : forall a : Type . Bool * a * a -> a
+op inl : forall a : Type; b : Type . a -> Sum a b
+op inr : forall a : Type; b : Type . b -> Sum a b
+op outl : forall a : Type; b : Type . Sum a b -> a
+op outr : forall a : Type; b : Type . Sum a b -> b
 op sumcase : forall a : Type; b : Type; c : Type
              . (a ->? c) -> (b ->? c) -> Sum a b ->? c
-             %(op)%
 vars
 f : a ->? c;
 g : b ->? c;

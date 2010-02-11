@@ -10,8 +10,8 @@ type
 dummy (a : Type) := Logical
 var
 a : Type %(var_1)%
-op b : forall a : Type . dummy a %(op)%
-op c : Logical %(op)%
+op b : forall a : Type . dummy a
+op c : Logical
 forall a : Type . c <=> b[a]
 . c <=> b
 ### Hint 1.5, is type variable 'a'

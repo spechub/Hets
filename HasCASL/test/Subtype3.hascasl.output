@@ -5,7 +5,7 @@ var   x : a
 vars
 a < e : Type %(var_2)%;
 e : Type %(var_1)%
-op f : forall a < e : Type . a -> a %(op)%
+op f : forall a < e : Type . a -> a
 var
 x : a
 forall e : Type . f = \ x : e . f x

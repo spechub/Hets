@@ -16,12 +16,12 @@ op    c : t = snd (x : s, y : t);
 types
 s : Type;
 t : Type
-op a : s %(op)%
-op b : s %(op)%
-op c : t %[op= (op snd : s * t -> t) ((op x : s), (op y : t))]%
-op snd : s * t -> t %(op)%
-op x : s %(op)%
-op y : t %(op)%
+op a : s
+op b : s
+op c : t %[ = (op snd : s * t -> t) ((op x : s), (op y : t)) ]%
+op snd : s * t -> t
+op x : s
+op y : t
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%
 program snd ((var x : s), (var y : t)) = (var y : t) %(pe_snd)%

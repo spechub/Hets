@@ -7,11 +7,11 @@ ops   c, d : ? t
 . def c ();
 type
 t : Type
-op a : t %(op)%
-op b : t %(op)%
-op c : ? t %(op)%
-op d : ? t %(op)%
-op f : ? t -> t %(op)%
-op g : t -> ? t %(op)%
+op a : t
+op b : t
+op c : ? t
+op d : ? t
+op f : ? t -> t
+op g : t -> ? t
 . f a = g c
 . def c ()

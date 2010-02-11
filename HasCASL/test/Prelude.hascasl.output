@@ -136,23 +136,23 @@ d : Cpo %(var_246)%;
 f : Flatcpo %(var_243)%;
 p : Pcpo %(var_242)%;
 t : Type %(var_2)%
-op Y : forall p : Pcpo . (p --> p) --> p %(fun)%
-op __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
-op def : forall s : Type . Pred s %(op)%
-op eq : forall s : Type . s * s ->? Unit %(pred)%
+op Y : forall p : Pcpo . (p --> p) --> p
+op def : forall s : Type . Pred s
 op fst : forall s : Type; t : Type . s * t -> s
-         %[op= \ ((var x : s), (var y : t)) .! (var x : s)]%
-op isBound : forall c : Cpo . c * (nat -> c) ->? Unit %(pred)%
-op isChain : forall c : Cpo . (nat -> c) ->? Unit %(pred)%
-op not : Unit ->? Unit %(pred)%
-op snd : s * t ->? t %(op)%
-op sup : forall c : Cpo . (nat -> c) ->? c %(op)%
-op tt : forall s : Type . Pred s %(op)%
+         %[ = \ ((var x : s), (var y : t)) .! (var x : s) ]%
+op snd : s * t ->? t
+op sup : forall c : Cpo . (nat -> c) ->? c
+op tt : forall s : Type . Pred s
 op undefined : forall p : Pcpo; c : Cpo . c --> p
-               %[op=
+               %[ =
                (fun Y : forall p : Pcpo . (p --> p) --> p)
                ((\ x' : c --> p . (var x' : c --> p)) as
-                (c --> p) --> c --> p)]%
+                (c --> p) --> c --> p) ]%
+pred __<<=__ : forall c : Cpo . c * c
+pred eq : forall s : Type . s * s
+pred isBound : forall c : Cpo . c * (nat -> c)
+pred isChain : forall c : Cpo . nat -> c
+pred not : Unit
 vars
 f : p --> p;
 g : c --> d;

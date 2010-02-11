@@ -53,16 +53,12 @@ state : Type %(var_244)%;
 t : MonadT %(var_161)%
 op __>>=__ : forall m : Monad; a : Type; b : Type
              . m a * (a -> m b) -> m b
-             %(op)%
 op __>>=__ : forall m : Monad; a : Type; b : Type
              . m a * (a ->? m b) ->? m b
-             %(op)%
 op lift : forall t : MonadT; m : Monad; a : Type . m a -> t m a
-          %(op)%
 op map : forall f : Functor; a : Type; b : Type
          . (a -> b) -> f a -> f b
-         %(op)%
-op ret : forall m : Monad; a : Type . a -> m a %(op)%
+op ret : forall m : Monad; a : Type . a -> m a
 vars
 f : a -> b;
 g : b -> c;

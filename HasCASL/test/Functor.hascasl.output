@@ -51,19 +51,14 @@ b : Type %(var_56)%;
 c : Type %(var_12)%
 op __::__->__ : forall F : Functor; a : Type; b : Type
                 . Pred ((a -> b) * Alg F a * Alg F b)
-                %(op)%
 op __comp__ : forall a : Type; b : Type; c : Type
               . (b -> c) * (a -> b) -> a -> c
-              %(op)%
 op fold : forall F : DTFunctor; a : Type
           . Alg F a -> InitialCarrier F -> a
-          %(op)%
-op id : forall a : Type . a -> a %(op)%
+op id : forall a : Type . a -> a
 op initialAlg : forall F : DTFunctor . Alg F (InitialCarrier F)
-                %(op)%
 op map : forall a : Type; b : Type; F : Functor
          . (a -> b) -> F a -> F b
-         %(op)%
 vars
 alpha : Alg F a;
 f : a -> a;

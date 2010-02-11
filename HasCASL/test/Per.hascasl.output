@@ -24,11 +24,11 @@ Set (S : Type) := S ->? Unit;
 gn_t9[PER] (S : Type) := gn_t10[gn_t9[PER]] (S * S)
 var
 S : Type %(var_1)%
-op __isIn__ : forall S : Type . S * Set S ->? Unit %(op)%
-op dom : forall S : Type . PER S -> Set S %(op)%
-op reflexive : forall S : Type . Pred (Set (S * S)) %(op)%
-op symmetric : forall S : Type . Pred (Set (S * S)) %(op)%
-op transitive : forall S : Type . Pred (Set (S * S)) %(op)%
+op __isIn__ : forall S : Type . S * Set S ->? Unit
+op dom : forall S : Type . PER S -> Set S
+op reflexive : forall S : Type . Pred (Set (S * S))
+op symmetric : forall S : Type . Pred (Set (S * S))
+op transitive : forall S : Type . Pred (Set (S * S))
 vars
 r : PER S;
 x : S

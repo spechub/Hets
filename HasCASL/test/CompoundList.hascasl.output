@@ -4,6 +4,6 @@ op    c : ? List [Elem]
 op    c : (? List [Elem]) : Type
 type
 List[Elem] : Type
-op c : List[Elem] %(op)%
-op c : ? List[Elem] %(op)%
-op c : (? List[Elem]) : Type %(op)%
+op c : List[Elem]
+op c : ? List[Elem]
+op c : (? List[Elem]) : Type
