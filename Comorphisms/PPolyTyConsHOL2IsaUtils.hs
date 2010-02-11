@@ -218,7 +218,7 @@ transDataEntries env tyToks t@(dt, tys, cs) l = do
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: Env -> Set.Set String -> DataEntry -> Result DomainEntry
 transDataEntry env tyToks de@(DataEntry _ _ gk _ _ alts) =
-    let dp@(DataPat i tyArgs _ _) = toDataPat de
+    let dp@(DataPat _ i tyArgs _ _) = toDataPat de
     in case gk of
     Le.Free -> do
       nalts <- mapM (transAltDefn env tyToks dp) $ Set.toList alts

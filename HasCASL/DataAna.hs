@@ -39,8 +39,9 @@ import Data.Maybe (mapMaybe)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- | description of polymorphic data types
-data DataPat = DataPat Id [TypeArg] RawKind Type
+{- | description of polymorphic data types. The top-level identifier is
+already renamed according the IdMap. -}
+data DataPat = DataPat IdMap Id [TypeArg] RawKind Type
 
 mkVarDecl :: Id -> Type -> VarDecl
 mkVarDecl i t = VarDecl i t Other nullRange
@@ -82,7 +83,7 @@ makeSelEqs :: DataPat -> Term -> [[(Selector, VarDecl)]] -> [Named Term]
 makeSelEqs dt = concatMap . makeSelTupleEqs dt
 
 makeAltSelEqs :: DataPat -> AltDefn -> [Named Term]
-makeAltSelEqs dt@(DataPat _ iargs _ _) (Construct mc ts p sels) =
+makeAltSelEqs dt@(DataPat _ _ iargs _ _) (Construct mc ts p sels) =
     case mc of
     Nothing -> []
     Just c -> let
@@ -97,17 +98,19 @@ mkSelArgs :: [[VarDecl]] -> [Term]
 mkSelArgs = map (\ vs -> mkTupleTerm (map QualVar vs) nullRange)
 
 getConstrScheme :: DataPat -> Partiality -> [Type] -> TypeScheme
-getConstrScheme (DataPat _ args _ rt) p ts =
-  TypeScheme args (getFunType rt p ts) nullRange
+getConstrScheme (DataPat dm _ args _ rt) p ts =
+  let realTs = map (mapType dm) ts
+  in TypeScheme args (getFunType rt p realTs) nullRange
 
 getSelScheme :: DataPat -> Partiality -> Type -> TypeScheme
-getSelScheme (DataPat _ args _ rt) p t =
-  TypeScheme args (getSelType rt p t) nullRange
+getSelScheme (DataPat dm _ args _ rt) p t =
+  let realT = mapType dm t
+  in TypeScheme args (getSelType rt p realT) nullRange
 
 -- | remove variances from generalized type arguments
 toDataPat :: DataEntry -> DataPat
 toDataPat (DataEntry im i _ args rk _) = let j = Map.findWithDefault i i im in
-  DataPat j (map nonVarTypeArg args) rk $ patToType j args rk
+  DataPat im j (map nonVarTypeArg args) rk $ patToType j args rk
 
 -- | create selector equations for a data type
 makeDataSelEqs :: DataPat -> [AltDefn] -> [Named Sentence]
@@ -160,7 +163,7 @@ anaComp genKind tys rt te (NoSelector t) =
        return  (ct, Select Nothing ct Partial)
 
 anaCompType :: GenKind -> [DataPat] -> DataPat -> Type -> Env -> Result Type
-anaCompType genKind tys (DataPat _ tArgs _ _) t te = do
+anaCompType genKind tys (DataPat _ _ tArgs _ _) t te = do
     (_, ct) <- anaStarTypeM t te
     let ds = unboundTypevars True tArgs ct
     unless (null ds) $ Result ds Nothing
@@ -169,7 +172,7 @@ anaCompType genKind tys (DataPat _ tArgs _ _) t te = do
     return $ generalize tArgs ct
 
 checkMonomorphRecursion :: Type -> Env -> DataPat -> Result ()
-checkMonomorphRecursion t te (DataPat i _ _ rt) =
+checkMonomorphRecursion t te (DataPat _ i _ _ rt) =
     case filter (\ ty -> not (lesserType te ty rt || lesserType te rt ty))
        $ findSubTypes (relatedTypeIds (typeMap te) i) i t of
       [] -> return ()
@@ -183,7 +186,7 @@ findSubTypes chk i t = case getTypeAppl t of
     (topTy, args) -> concatMap (findSubTypes chk i) $ topTy : args
 
 rejectNegativeOccurrence :: GenKind -> Type -> Env -> DataPat -> Result ()
-rejectNegativeOccurrence genKind t te (DataPat i _ _ _) =
+rejectNegativeOccurrence genKind t te (DataPat _ i _ _ _) =
     case findNegativeOccurrence te i t of
       [] -> return ()
       ty : _ -> Result [mkDiag (case genKind of
@@ -211,7 +214,7 @@ subIds tm i = foldr ( \ j s ->
                       Set.insert j s else s) Set.empty $ Map.keys tm
 
 mkPredVar :: DataPat -> VarDecl
-mkPredVar (DataPat i _ _ rt) = let ps = posOfId i in
+mkPredVar (DataPat _ i _ _ rt) = let ps = posOfId i in
   mkVarDecl (if isSimpleId i then mkId [mkSimpleId $ "p_" ++ show i]
              else Id [mkSimpleId "p"] [i] ps) (predType ps rt)
 
@@ -222,7 +225,7 @@ mkPredToVarAppl :: DataPat -> VarDecl -> Term
 mkPredToVarAppl dp = mkPredAppl dp . QualVar
 
 mkConclusion :: DataPat -> Term
-mkConclusion dp@(DataPat _ _ _ ty) =
+mkConclusion dp@(DataPat _ _ _ _ ty) =
   let v = mkVarDecl (mkId [mkSimpleId "x"]) ty
   in mkForall [GenVarDecl v] $ mkPredToVarAppl dp v
 
@@ -252,13 +255,13 @@ mkPremises m de@(DataEntry _ _ _ _ _ alts) =
     concatMap (mkPremise m $ toDataPat de) $ Set.toList alts
 
 joinTypeArgs :: [DataPat] -> Map.Map Id TypeArg
-joinTypeArgs = foldr (\ (DataPat _ iargs _ _) m ->
+joinTypeArgs = foldr (\ (DataPat _ _ iargs _ _) m ->
    foldr (\ ta -> Map.insert (getTypeVar ta) ta) m iargs) Map.empty
 
 inductionScheme :: [DataEntry] -> Term
 inductionScheme des =
     let dps = map toDataPat des
-        m = Map.fromList $ map (\ dp@(DataPat _ _ _ ty) -> (ty, dp)) dps
+        m = Map.fromList $ map (\ dp@(DataPat _ _ _ _ ty) -> (ty, dp)) dps
     in mkForall (map GenTypeVarDecl (Map.elems $ joinTypeArgs dps)
                  ++ map (GenVarDecl . mkPredVar) dps)
        $ mkLogTerm implId nullRange

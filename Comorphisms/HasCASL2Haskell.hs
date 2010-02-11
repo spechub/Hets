@@ -208,7 +208,7 @@ translateAltDefn env dp (Construct muid ts p _) = case muid of
 
 translateDt :: Env -> DataEntry -> Named HsDecl
 translateDt env de@(DataEntry _ i _ args _ alts) =
-         let dp@(DataPat j _ _ _) = toDataPat de
+         let dp@(DataPat _ j _ _ _) = toDataPat de
              loc = toProgPos $ posOfId i
              hsname = mkHsIdent UpperId j
              hsTyName = hsTyCon hsname

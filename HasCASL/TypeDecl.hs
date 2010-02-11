@@ -99,7 +99,7 @@ anaTypeItems gk l = do
 addDataSen :: [DataPat] -> State Env ()
 addDataSen tys = do
     tm <- gets typeMap
-    let tis = map ( \ (DataPat i _ _ _) -> i) tys
+    let tis = map ( \ (DataPat _ i _ _ _) -> i) tys
         ds = foldr ( \ i dl -> case Map.lookup i tm of
                      Nothing -> dl
                      Just ti -> case typeDefn ti of
@@ -318,11 +318,11 @@ dataPatToType :: DatatypeDecl -> State Env DataPat
 dataPatToType d = case d of
     DatatypeDecl (TypePattern i nAs _) k _ _ _ -> do
       rk <- anaKind k
-      return $ DataPat i nAs rk $ patToType i nAs rk
+      return $ DataPat Map.empty i nAs rk $ patToType i nAs rk
     _ -> error "dataPatToType"
 
 addDataSubtype :: DataPat -> Kind -> Type -> State Env ()
-addDataSubtype (DataPat _ nAs _ rt) k st = case st of
+addDataSubtype (DataPat _ _ nAs _ rt) k st = case st of
     TypeName i _ _ -> addSuperType rt k (i, nAs)
     _ -> addDiags [mkDiag Warning "data subtype ignored" st]
 
@@ -332,7 +332,7 @@ anaDatatype :: GenKind -> [DataPat]
 anaDatatype genKind tys d = case item d of
     itd@(DatatypeDecl (TypePattern i nAs _) k alts _ _) -> do
        -- recompute data pattern rather than looking it up in tys
-       dt@(DataPat _ _ rk _) <- dataPatToType itd
+       dt@(DataPat _ _ _ rk _) <- dataPatToType itd
        let fullKind = typeArgsListToKind nAs k
        tvs <- gets localTypeVars
        mapM_ (addTypeVarDecl False . nonVarTypeArg) nAs
@@ -346,7 +346,8 @@ anaDatatype genKind tys d = case item d of
                Nothing -> ts ++ l
                Just _ -> l) [] newAlts
            let gArgs = genTypeArgs nAs
-               de = DataEntry Map.empty i genKind gArgs rk
+               iMap = Map.fromList $ map (\ (DataPat _ j _ _ _) -> (j, j)) tys
+               de = DataEntry iMap i genKind gArgs rk
                     $ Set.fromList newAlts
                dp = toDataPat de
            mapM_ ( \ (Construct mc tc p sels) -> case mc of

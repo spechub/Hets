@@ -55,7 +55,11 @@ data Selector =
 -- | a mapping of type (and disjoint class) identifiers
 type IdMap = Map.Map Id Id
 
--- | for data types the morphism needs to be kept as well
+{- | data entries are produced from possibly mutual recursive data types. The
+top-level identifiers of these types are never renamed but there renaming is
+stored in the identifier map. This identifier map must never be empty (even
+without renamings) because (the domain of) this map is used to store the
+other (recursively dependent) top-level identifiers. -}
 data DataEntry =
     DataEntry IdMap Id GenKind [TypeArg] RawKind (Set.Set AltDefn)
     deriving (Show, Eq, Ord)

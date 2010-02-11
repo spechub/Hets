@@ -89,30 +89,32 @@ getDatatypeIds (DataEntry _ i _ _ _ alts) =
         getTypeIds = idsOf (== 0)
     in Set.insert i $ Set.unions $ map getAltIds $ Set.toList alts
 
-mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry
-             -> DataEntry
-mapDataEntry jm tm im fm de@(DataEntry dm i k args rk alts) =
-    let tim = composeMap (setToMap $ getDatatypeIds de) dm im
+mapDataEntry :: IdMap -> TypeMap -> IdMap -> FunMap -> DataEntry -> DataEntry
+mapDataEntry jm tm im fm (DataEntry dm i k args rk alts) =
+    let nDm = Map.map (\ a -> Map.findWithDefault a a im) dm
         newargs = map (mapTypeArg jm tm im) args
-    in DataEntry tim i k newargs rk $ Set.map
-           (mapAlt jm tm tim fm newargs
-           $ patToType i newargs rk) alts
+        nIm = Map.difference im dm
+    in DataEntry nDm i k newargs rk $ Set.map
+           (mapAlt jm tm im fm nIm newargs dm
+           $ patToType (Map.findWithDefault i i dm) newargs rk) alts
 
-mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> AltDefn
-       -> AltDefn
-mapAlt jm tm im fm args dt (Construct mi ts p sels) =
-  let newTs = map (mapTypeE jm tm im) ts in case mi of
+mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> IdMap -> [TypeArg] -> IdMap
+  -> Type -> AltDefn -> AltDefn
+mapAlt jm tm im fm nIm args dm dt (Construct mi ts p sels) =
+  let newTs = map (mapTypeE jm tm nIm) ts
+      newSels = map (map (mapSel jm tm im fm nIm args dm dt)) sels
+  in case mi of
     Just i -> let
         sc = TypeScheme args (getFunType dt p ts) nullRange
         (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
-        in Construct (Just j) newTs (getPartiality newTs ty)
-            $ map (map (mapSel jm tm im fm args dt)) sels
-    Nothing -> Construct mi newTs p sels
+        in Construct (Just j) newTs (getPartiality newTs ty) newSels
+    Nothing -> Construct mi newTs p newSels
 
-mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> [TypeArg] -> Type -> Selector
-       -> Selector
-mapSel jm tm im fm args dt (Select mid t p) =
-  let newT = mapTypeE jm tm im t in case mid of
+mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> IdMap -> [TypeArg] -> IdMap
+  -> Type -> Selector -> Selector
+mapSel jm tm im fm nIm args dm dt (Select mid t p) =
+  let newT = mapTypeE jm tm nIm t
+  in case mid of
     Nothing -> Select mid newT p
     Just i -> let
         sc = TypeScheme args (getSelType dt p t) nullRange
