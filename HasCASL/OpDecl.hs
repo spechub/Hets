@@ -144,7 +144,9 @@ anaOpItem br oi = do
                            ot = QualOp br p newSc [] Infer
                              nullRange
                            lhs = mkApplTerm ot pats
-                           ef = mkEqTerm eqId monoty ps lhs lastTrm
+                           ef = if isPred br then
+                                    mkLogTerm eqvId ps lhs lastTrm
+                                else mkEqTerm eqId monoty ps lhs lastTrm
                            f = mkEnvForall e ef ps
                        addOpId i newSc Set.empty $ Definition br lamTrm
                        appendSentences
