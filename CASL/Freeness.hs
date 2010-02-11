@@ -184,8 +184,12 @@ ltkh_sort s = imp'
 
 sat_thm_ax :: [Named CASLFORMULA] -> CASLFORMULA
 sat_thm_ax forms = final_form
-     where forms' = map (free_formula . sentence) forms
+     where forms' = map (free_formula . sentence) $ filter (no_gen . sentence) forms
            final_form = mk_conj forms'
+
+no_gen :: CASLFORMULA -> Bool
+no_gen (Sort_gen_ax _ _) = False
+no_gen _ = True
 
 -- | computes the axiom for the congruence of the kernel of h
 congruence_axs :: OpMap -> CASLFORMULA

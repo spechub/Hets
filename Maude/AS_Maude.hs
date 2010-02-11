@@ -151,7 +151,7 @@ newtype ParamId = ParamId Qid
                 deriving (Show, Read, Ord, Eq)
 
 newtype ViewId = ViewId Qid
-                deriving (Show, Read, Ord, Eq)
+               deriving (Show, Read, Ord, Eq)
 
 newtype ModId = ModId Qid
               deriving (Show, Read, Ord, Eq)
