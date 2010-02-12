@@ -106,7 +106,7 @@ isPredOpDefn od = case od of
 instance Pretty OpInfo where
     pretty o = let od = opDefn o in
       sep [pretty $ (if isPredOpDefn od then unPredTypeScheme else id)
-          $ opType o, pretty $ opDefn o]
+          $ opType o, pretty od]
 
 instance Pretty DataEntry where
     pretty (DataEntry im j k args _ talts) = let
