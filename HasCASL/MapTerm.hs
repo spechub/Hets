@@ -14,6 +14,7 @@ rename symbols of terms according to a signature morphisms
 module HasCASL.MapTerm where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.FoldTerm
 import Common.Id
@@ -45,7 +46,14 @@ mapVar m (VarDecl v ty q ps) = VarDecl v (m ty) q ps
 mapGenVar :: (Type -> Type) -> GenVarDecl -> GenVarDecl
 mapGenVar m g = case g of
     GenVarDecl vd -> GenVarDecl $ mapVar m vd
-    _ -> g
+    GenTypeVarDecl (TypeArg i v vk rk c s r) -> GenTypeVarDecl
+      $ TypeArg i v (case vk of
+          VarKind k -> -- extract kind renaming from type renaming
+              let KindedType _ nk _ =
+                      m $ KindedType unitType (Set.singleton k) r
+              in VarKind $ Set.findMin nk
+          Downset t -> Downset $ m t
+          _ -> vk) rk c s r
 
 mapOpInfo :: Rename -> OpInfo -> OpInfo
 mapOpInfo m oi = oi
