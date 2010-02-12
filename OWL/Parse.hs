@@ -22,6 +22,7 @@ import OWL.ColonKeywords
 import Common.Keywords
 import Common.Token (casl_reserved_words)
 import Common.Lexer hiding (skip)
+import Common.AnnoParser (commentLine)
 import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
@@ -143,7 +144,8 @@ hierPartWithOpts :: CharParser st String
 hierPartWithOpts = ihierPart <++> optQueryOrFrag
 
 skip :: CharParser st a -> CharParser st a
-skip = (<< spaces)
+skip = (<< skipMany
+        (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
 abbrIri :: CharParser st QName
 abbrIri = try $ do
