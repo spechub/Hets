@@ -211,7 +211,7 @@ data G_symbolplmap = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
-  G_symbolplmap lid (Map.Map symbol [LinkPath symbol])
+  G_symbolplmap lid (Map.Map symbol [SLinkPath])
   deriving Typeable
 
 instance Show G_symbolplmap where

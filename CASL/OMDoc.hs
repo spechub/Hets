@@ -63,7 +63,7 @@ exportMorphismToOmdoc :: (Pretty e, Show f, Pretty m) => Morphism f e m -> TCEle
 --exportMorphismToOmdoc morphism = []
 --exportMorphismToOmdoc _ = error "not implemented yet"
 
-exportMorphismToOmdoc (Morphism s _ sortmap opmap predmap _) =
+exportMorphismToOmdoc (Morphism _ _ sortmap opmap predmap _) =
 {-    TCComment $ "morphism"
                   ++ " sourcesign: " ++ (show $ pretty s)
                   ++ " sortmaplength=" ++ (show $ Map.size sortmap)

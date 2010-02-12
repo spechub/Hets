@@ -40,6 +40,7 @@ module GUI.GraphLogic
     , focusNode
     ) where
 
+import Logic.Logic (sym_name)
 import Logic.Coerce (coerceSign)
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -65,7 +66,7 @@ import GUI.Utils
 import Graphs.GraphConfigure
 import Reactor.InfoBus (encapsulateWaitTermAct)
 
-import Common.DocUtils (showDoc)
+import Common.DocUtils (showDoc, pretty)
 import Common.AS_Annotation (isAxiom)
 import Common.ExtSign
 import Common.LibName
@@ -792,9 +793,13 @@ showPathInfo :: DGNodeLab -> String
 showPathInfo lb = ""
 
 showPathInfoBis :: DGNodeLab -> String
-showPathInfoBis lb = unlines (["", map (const '-') [(1::Int)..60], "PATHINFO:", ""]
-                           ++ 
-                           case dgn_symbolpathlist lb of
-                             G_symbolplmap _ x ->
-                                 Map.foldWithKey f [] x)
-                  where f k v l = (show k ++ ": " ++ intercalate ", " (map show v)):l
+showPathInfoBis lb =
+    unlines (["", map (const '-') [(1::Int)..60], "PATHINFO:", ""]
+             ++ 
+             case dgn_symbolpathlist lb of
+               G_symbolplmap lid x ->
+                   let f k v l =
+                           ((show $ sym_name lid k) ++ ": "
+                            ++ intercalate ", " (map showSLinkPath v)
+                            ++ " Typeinfo " ++ (show $ pretty k)):l
+                   in Map.foldWithKey f [] x)

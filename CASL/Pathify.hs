@@ -28,8 +28,8 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
 pathifyNames :: (Show f, Show e) => LibId -> Sign f e
-             -> [(Node, Morphism f e m, Bool, Map.Map Symbol [LinkPath Symbol])]
-             -> Result (Map.Map Symbol [LinkPath Symbol])
+             -> [(Node, Morphism f e m, Bool, Map.Map Symbol [SLinkPath])]
+             -> Result (Map.Map Symbol [SLinkPath])
 pathifyNames libid sig l = do
   let initial = Map.fromList
                 $ map (\ i -> (idToSortSymbol i,[]))
@@ -41,9 +41,9 @@ pathifyNames libid sig l = do
   foldM (pathifyImport libid) initial l
 
 
-pathifyImport :: LibId -> Map.Map Symbol [LinkPath Symbol]
-              -> (Node, Morphism f e m, Bool, Map.Map Symbol [LinkPath Symbol])
-              -> Result (Map.Map Symbol [LinkPath Symbol])
+pathifyImport :: LibId -> Map.Map Symbol [SLinkPath]
+              -> (Node, Morphism f e m, Bool, Map.Map Symbol [SLinkPath])
+              -> Result (Map.Map Symbol [SLinkPath])
 
 pathifyImport libid lpm0 (n, m, b, lpm) =
     let map4s = mapSort (sort_map m)
@@ -65,16 +65,16 @@ pathifyImport libid lpm0 (n, m, b, lpm) =
                           (flattenPredMap $ predMap sig)
     in foldM (pathifySymbol libid n lpm) lpm0 symbMap
 
-pathifySymbol :: LibId -> Node -> Map.Map Symbol [LinkPath Symbol]
-              -> Map.Map Symbol [LinkPath Symbol] -> (Symbol, Symbol)
-              -> Result (Map.Map Symbol [LinkPath Symbol])
+pathifySymbol :: LibId -> Node -> Map.Map Symbol [SLinkPath]
+              -> Map.Map Symbol [SLinkPath] -> (Symbol, Symbol)
+              -> Result (Map.Map Symbol [SLinkPath])
 
 pathifySymbol libid n lpm lpm0 (s, sMapped) = do
   -- get the pathslist for the mapped symbol
   let lp0 = lpm0 Map.! sMapped
   -- get the entries in the linksource to add the current path
   let lp = lpm Map.! s
-  let lpNew = lp0 ++ if null lp then [initPath libid n sMapped]
+  let lpNew = lp0 ++ if null lp then [initPath libid n $ show $ symName sMapped]
                      else map (addToPath libid n) lp
   return $ Map.adjust (const lpNew) sMapped lpm0
 

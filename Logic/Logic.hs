@@ -382,8 +382,8 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
          -- | compute path information of the symbols
          pathify :: lid -> LibId -> sign
-                 -> [(Node, morphism, Bool, Map.Map symbol [LinkPath symbol])]
-                 -> Result (Map.Map symbol [LinkPath symbol])
+                 -> [(Node, morphism, Bool, Map.Map symbol [SLinkPath])]
+                 -> Result (Map.Map symbol [SLinkPath])
          pathify l _ _ = statFail l "pathify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.

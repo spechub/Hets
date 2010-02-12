@@ -75,7 +75,7 @@ getGlobalImports :: forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
           lid -> DGraph -> [LEdge DGLinkLab]
-              -> Result [(Node, morphism, Bool, Map.Map symbol [LinkPath symbol])]
+              -> Result [(Node, morphism, Bool, Map.Map symbol [SLinkPath])]
 getGlobalImports lid dg l = fmap catMaybes $ mapR (getGlobalImport lid dg) l
 
 getGlobalImport :: forall lid sublogics
@@ -85,7 +85,7 @@ getGlobalImport :: forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
           lid -> DGraph -> LEdge DGLinkLab ->
-          Result (Maybe (Node, morphism, Bool, Map.Map symbol [LinkPath symbol]))
+          Result (Maybe (Node, morphism, Bool, Map.Map symbol [SLinkPath]))
 getGlobalImport lid dg (from, _, llab) =
     let lt = dgl_type llab in
     -- check the type of the linklabel first
