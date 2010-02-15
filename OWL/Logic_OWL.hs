@@ -101,6 +101,7 @@ instance Logic OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
     --     stability _ = Testing
     -- default implementations are fine
     -- the prover uses HTk and IO functions from uni
+         empty_proof_tree OWL = emptyProofTree
 #ifdef UNI_PACKAGE
          provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver
          cons_checkers OWL =
