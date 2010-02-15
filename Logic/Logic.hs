@@ -136,7 +136,6 @@ import qualified Data.Map as Map
 import Data.Typeable
 
 import qualified OMDoc.DataTypes as OMDoc
-import Data.Graph.Inductive.Graph
 
 
 -- | Stability of logic implementations
@@ -380,11 +379,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                  -> Result (morphism, [Named sentence])
          qualify l _ _ _ _ = statFail l "qualify"
 
-         -- | compute path information of the symbols
-         pathify :: lid -> LibId -> sign
-                 -> [(Node, morphism, Bool, Map.Map symbol [SLinkPath])]
-                 -> Result (Map.Map symbol [SLinkPath])
-         pathify l _ _ = statFail l "pathify"
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym

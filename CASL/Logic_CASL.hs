@@ -46,7 +46,6 @@ import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint () -- currently unused
 import CASL.Qualify
-import CASL.Pathify
 import CASL.OMDoc
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
@@ -225,7 +224,6 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
              ensuresAmalgamability opts diag sink desc
 
          qualify CASL = qualifySig
-         pathify CASL = pathifyNames
          symbol_to_raw CASL = symbolToRaw
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches

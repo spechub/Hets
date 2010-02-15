@@ -70,7 +70,7 @@ import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
 import Static.ComputeTheory (theoremsToAxioms, computeTheory)
-import Proofs.QualifyNames
+import Proofs.PathifyNames
 
 import Driver.Options
 import Driver.WriteLibDefn
@@ -284,7 +284,7 @@ writeSpecFiles opts file lenv0 ln dg = do
                   ExperimentalOut -> True
                   _ -> False) specOutTypes
                then lenv0
-               else fromJust $ maybeResult $ qualifyLibEnv lenv0
+               else fromJust $ maybeResult $ pathifyLibEnv lenv0
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of

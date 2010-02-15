@@ -40,7 +40,6 @@ module GUI.GraphLogic
     , focusNode
     ) where
 
-import Logic.Logic (sym_name)
 import Logic.Coerce (coerceSign)
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -66,7 +65,7 @@ import GUI.Utils
 import Graphs.GraphConfigure
 import Reactor.InfoBus (encapsulateWaitTermAct)
 
-import Common.DocUtils (showDoc, pretty)
+import Common.DocUtils (showDoc)
 import Common.AS_Annotation (isAxiom)
 import Common.ExtSign
 import Common.LibName
@@ -82,7 +81,7 @@ import Driver.AnaLib (anaLib)
 
 import Data.IORef
 import Data.Char (toLower)
-import Data.List (partition, delete, isPrefixOf, intercalate)
+import Data.List (partition, delete, isPrefixOf)
 import Data.Graph.Inductive.Graph (Node, LEdge, LNode)
 import qualified Data.Map as Map
 
@@ -411,7 +410,7 @@ showNodeInfo descr dgraph = do
       title = (if isDGRef dgnode then ("reference " ++) else
                if isInternalNode dgnode then ("internal " ++) else id)
               "node " ++ getDGNodeName dgnode ++ " " ++ show descr
-  createTextDisplay title (title ++ "\n" ++ showDoc dgnode (showPathInfo dgnode))
+  createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
 
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
 showDiagMessAux v ds = let es = filterDiags v ds in
@@ -787,19 +786,3 @@ getNodeLabel (GInfo { options = opts }) dgnode = do
            then "" else getDGNodeName dgnode
 
 
-
--- Just a debug output method for the linkpath-lists
-showPathInfo :: DGNodeLab -> String
-showPathInfo lb = ""
-
-showPathInfoBis :: DGNodeLab -> String
-showPathInfoBis lb =
-    unlines (["", map (const '-') [(1::Int)..60], "PATHINFO:", ""]
-             ++ 
-             case dgn_symbolpathlist lb of
-               G_symbolplmap lid x ->
-                   let f k v l =
-                           ((show $ sym_name lid k) ++ ": "
-                            ++ intercalate ", " (map showSLinkPath v)
-                            ++ " Typeinfo " ++ (show $ pretty k)):l
-                   in Map.foldWithKey f [] x)

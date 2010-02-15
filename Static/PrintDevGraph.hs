@@ -384,3 +384,4 @@ prettyHistory = vcat . map prettyHistElem . SizedList.toList
 
 prettyLibEnv :: LibEnv -> Doc
 prettyLibEnv = printMap id vsep ($+$)
+
