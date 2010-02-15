@@ -166,7 +166,7 @@ printExp sig (Func es e) =
       val = printExpWithPrec sig (precFunc + 1) e
       in fsep $ prepPunctuate (text "-> ") (as ++ [val])
 printExp sig (Pi ds e) = text "{" <> printDecls sig ds <> text "}" <+> printExp sig e
-printExp sig (Lamb ds e) = text "[" <> printDecls sig ds <> text "]" <> printExp sig e
+printExp sig (Lamb ds e) = text "[" <> printDecls sig ds <> text "]" <+> printExp sig e
 
 printExpWithPrec :: Sign -> Int -> EXP -> Doc
 printExpWithPrec sig i e = 

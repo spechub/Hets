@@ -48,59 +48,65 @@ type SIGS_AND_MORPHS = (Map.Map SIG_VIEW_NAME Sign,
                         Map.Map (SIG_VIEW_NAME,SIG_VIEW_NAME,SIG_VIEW_NAME)
                                 (Map.Map Symbol EXP))
 
+omdocNS :: Maybe String
+omdocNS = Just "http://omdoc.org/ns"
+
+openMathNS :: Maybe String
+openMathNS = Just "http://www.openmath.org/OpenMath"
+
 omdocQN :: QName
-omdocQN = QName "omdoc" (Just "http://omdoc.org/ns") Nothing
+omdocQN = QName "omdoc" omdocNS Nothing
 
 theoryQN :: QName
-theoryQN = QName "theory" Nothing Nothing
+theoryQN = QName "theory" omdocNS Nothing
 
 viewQN :: QName
-viewQN = QName "view" Nothing Nothing
+viewQN = QName "view" omdocNS Nothing
 
 includeQN :: QName
-includeQN = QName "include" Nothing Nothing
+includeQN = QName "include" omdocNS Nothing
 
 structureQN :: QName
-structureQN = QName "structure" Nothing Nothing
+structureQN = QName "structure" omdocNS Nothing
 
 constantQN :: QName
-constantQN = QName "constant" Nothing Nothing
+constantQN = QName "constant" omdocNS Nothing
 
 aliasQN :: QName
-aliasQN = QName "alias" Nothing Nothing
+aliasQN = QName "alias" omdocNS Nothing
 
 notationQN :: QName
-notationQN = QName "notation" Nothing Nothing
+notationQN = QName "notation" omdocNS Nothing
 
 typeQN :: QName
-typeQN = QName "type" Nothing Nothing
+typeQN = QName "type" omdocNS Nothing
 
 definitionQN :: QName
-definitionQN = QName "type" Nothing Nothing
+definitionQN = QName "definition" omdocNS Nothing
 
 omobjQN :: QName 
-omobjQN = QName "OMOBJ" Nothing Nothing
+omobjQN = QName "OMOBJ" openMathNS Nothing
 
 omsQN :: QName 
-omsQN = QName "OMS" Nothing Nothing
+omsQN = QName "OMS" openMathNS Nothing
 
 omaQN :: QName 
-omaQN = QName "OMA" Nothing Nothing
+omaQN = QName "OMA" openMathNS Nothing
 
 ombindQN :: QName 
-ombindQN = QName "OMBIND" Nothing Nothing
+ombindQN = QName "OMBIND" openMathNS Nothing
 
 ombvarQN :: QName 
-ombvarQN = QName "OMBVAR" Nothing Nothing
+ombvarQN = QName "OMBVAR" openMathNS Nothing
 
 omattrQN :: QName 
-omattrQN = QName "OMATTR" Nothing Nothing
+omattrQN = QName "OMATTR" openMathNS Nothing
 
 omatpQN :: QName 
-omatpQN = QName "OMATP" Nothing Nothing
+omatpQN = QName "OMATP" openMathNS Nothing
 
 omvQN :: QName 
-omvQN = QName "OMV" Nothing Nothing
+omvQN = QName "OMV" openMathNS Nothing
 
 typeOMS :: Element
 typeOMS = 
@@ -114,16 +120,31 @@ arrowOMS =
                  Attr moduleQN "lf",
                  Attr nameQN "arrow"] [] Nothing
 
-piOMS :: Element
-piOMS = 
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
-                 Attr nameQN "pi"] [] Nothing     
 lambdaOMS :: Element
 lambdaOMS = 
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
                  Attr nameQN "lambda"] [] Nothing
+
+piOMS :: Element
+piOMS = 
+  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
+                 Attr moduleQN "lf",
+                 Attr nameQN "Pi"] [] Nothing  
+
+
+impLambdaOMS :: Element
+impLambdaOMS = 
+  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
+                 Attr moduleQN "lf",
+                 Attr nameQN "implicit_lambda"] [] Nothing
+
+impPiOMS :: Element
+impPiOMS = 
+  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
+                 Attr moduleQN "lf",
+                 Attr nameQN "implicit_Pi"] [] Nothing     
+
 
 oftypeOMS :: Element
 oftypeOMS = 
@@ -191,11 +212,11 @@ omdoc2DG file = do
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
        [root] -> 
-          return $ foldr (\ e -> 
+          return $ foldl (\ sm e -> 
                      let n = elName e
-                         in if (n == theoryQN) then addSign file e else
-                            if (n == viewQN) then addMorph file e else
-                            id
+                         in if (n == theoryQN) then addSign file e sm else
+                            if (n == viewQN) then addMorph file e sm else
+                            sm
                          ) 
                          (Map.empty, Map.empty)
                          $ elChildren root
@@ -209,14 +230,14 @@ addSign file e sm =
        Just name -> 
           let sig = Sign file name []
               (sm1,sig1) = 
-                foldr (\ el -> 
+                foldl (\ sm2 el -> 
                   let n = elName el
-                      in if (n == includeQN) then addIncl el else
-                         if (n == structureQN) then addStruct el else
-                         if (n == constantQN) then addConst el else
-                         if (n == aliasQN) then addAlias el else
-                         if (n == notationQN) then addNotat el else 
-                         id
+                      in if (n == includeQN) then addIncl el sm2 else
+                         if (n == structureQN) then addStruct el sm2 else
+                         if (n == constantQN) then addConst el sm2 else
+                         if (n == aliasQN) then addAlias el sm2 else
+                         if (n == notationQN) then addNotat el sm2 else 
+                         sm2
                       ) 
                       (sm,sig)
                       $ elChildren e
@@ -269,8 +290,9 @@ omel2exp sig e =
       in if (name == omsQN) then oms2exp sig e else
          if (name == omaQN) then oma2exp sig e else
          if (name == ombindQN) then ombind2exp sig e else
+         if (name == omvQN) then oms2exp sig e else
             error $ concat ["Only OMA, OMS, and OMBIND elements correspond "
-                           ,"to a type or kind."]
+                           ,"to an expression."]
 
 -- converts an OMS element to an expression
 oms2exp :: Sign -> Element -> EXP                                      
@@ -294,7 +316,7 @@ oma2exp sig e =
        [] -> error "OMA element must have at least one child."
        (f:as) -> 
          let as1 = map (omel2exp sig) as
-             in if (and [elName f == omsQN, eqOMS f arrowOMS])
+             in if (elName f == omsQN && eqOMS f arrowOMS)
                    then case as1 of
                              [] -> error $ 
                                     concat ["The -> constructor must be applied"
@@ -312,13 +334,16 @@ ombind2exp sig e =
             then error "The second child of OMBIND must be OMBVAR."
             else let d1 = ombvar2decls sig d
                      b1 = omel2exp sig b
-                     in if (and [elName f == omsQN, eqOMS f piOMS])
-                           then Pi d1 b1
-                           else if (and [elName f == omsQN, eqOMS f lambdaOMS])
-                                   then Lamb d1 b1
-                                   else error $
-                                         concat ["The first child of OMBIND "
-                                                ,"must be Pi or Lambda."]
+                     in if (elName f/= omsQN) 
+                           then error "The first child of OMBIND must be OMS."
+                           else if (eqOMS f lambdaOMS) then Lamb d1 b1 else
+                                if (eqOMS f piOMS) then Pi d1 b1 else
+                                {- so far implicit binders are treated
+                                   as explicit -}
+                                if (eqOMS f impLambdaOMS) then Lamb d1 b1 else
+                                if (eqOMS f impPiOMS) then Pi d1 b1 else
+                                error $ concat ["The first child of OMBIND "
+                                               ,"must be be Pi or Lambda."]                                         
        _ -> error "OMBIND element must have exactly 3 children."                   
 
 -- converts an OMBVAR element to a list of declaration
@@ -375,7 +400,3 @@ addNotat _ = id
 -- so far views are ignored
 addMorph :: FilePath -> Element -> SIGS_AND_MORPHS -> SIGS_AND_MORPHS
 addMorph _ _ = id
-
-fp :: FilePath
-fp = "/home/mathias/Desktop/twelf/specs/math/algebra/algebra1.omdoc"
-
