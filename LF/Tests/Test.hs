@@ -9,6 +9,8 @@ import Common.DocUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import LF.Twelf2DG
+import System.Directory
+import Network.URI
 
 import Text.XML.Light.Input
 import Text.XML.Light.Types
@@ -46,24 +48,14 @@ Just r = mapSymbol m $ Symbol "file2" "sig2" "mat"
 
 b = getSymValue sig1 $ Symbol "file2" "sig2" "mat"
 
-fp :: FilePath
 fp = "../twelf/specs/math/algebra/algebra1.elf"
+home = "/home/mathias/hets"
 
-res :: IO Doc
-res = do
-  (s,m) <- test fp
-  let ((b,m),sig1) = (Map.toList s) !! 0
-  return $ vcat [text b, text m, pretty sig1]
+toDoc :: (SIG_VIEW_NAME,Sign) -> Doc
+toDoc ((b,m),sig) = vcat [text b, text m, pretty sig]
 
-test :: FilePath -> IO SIGS_AND_MORPHS
+test :: FilePath -> IO Doc
 test file = do
-  let omdoc_file = concat[reverse $ drop 3 $ reverse file, "omdoc"]
-  xml <- readFile omdoc_file
-  let elems = onlyElems $ parseXML xml
-  let elems1 = filter (\ e -> elName e == omdocQN) elems
-  case elems1 of
-       [root] -> do
-          let th = (elChildren root) !! 0
-          return $ addSign file th (Map.empty, Map.empty) 
-       _ -> fail "Not an OMDoc file."
+  (sigs,_) <- getSigsAndMorphs file
+  return $ vcat $ map toDoc $ Map.toList sigs  
 

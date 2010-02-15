@@ -61,7 +61,7 @@ data EXP = Type
          | Func [EXP] EXP
          | Pi [DECL] EXP
          | Lamb [DECL] EXP
-           deriving (Show, Ord)
+           deriving (Ord, Show)
 
 type DECL = (VAR,EXP)
 

@@ -14,6 +14,10 @@ module LF.Twelf2DG where
 import System.Exit
 import System.IO
 import System.Process
+import System.Directory
+import System.FilePath
+
+import Network.URI
 
 --import Static.GTheory
 import Static.ComputeTheory
@@ -178,6 +182,19 @@ eqOMS e1 e2 =
       n = getNameAttr e1 == getNameAttr e2   
       in and [b,m,n]
 
+-- resolves the first file path wrt to the second
+resolve :: FilePath -> FilePath -> FilePath
+resolve fp1 fp2 = 
+  case parseURIReference fp1 of
+    Nothing -> error "Invalid file name."
+    Just uri1 -> do
+      case parseURIReference fp2 of
+        Nothing -> error "Invalid file name."
+        Just uri2 -> do
+          case relativeTo uri1 uri2 of
+               Nothing -> error "Invalid file name."
+               Just f -> show f
+
 -- generates a library from the path of a Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaTwelfFile _ file = do
@@ -189,24 +206,27 @@ anaTwelfFile _ file = do
 -- generates a development graph from the path of a Twelf file
 twelf2DG :: FilePath -> IO DGraph
 twelf2DG file = do
-  path <- getEnvDef "TWELF_LIB" ""
-  if null path then error "environment variable TWELF_LIB is not set" else do
-    (_, _, _, procH) <- runInteractiveProcess (concat [path, "/" ,twelf])
-                                                   (options ++ [file])
-                                                   Nothing
-                                                   Nothing 
-    exitCode <- getProcessExitCode procH
-    case exitCode of
-      Nothing -> return $ emptyDG --omdoc2DG file
-      Just ExitSuccess -> error "Twelf terminated immediately."
-      Just (ExitFailure i) ->
-          error $ "Calling Twelf failed with exitCode: " ++ show i
+  dir <- getEnvDef "TWELF_LIB" ""
+  if null dir 
+     then error "environment variable TWELF_LIB is not set"
+     else do
+       (_, _, _, pr) <- runInteractiveProcess (concat [dir, "/" ,twelf])
+                                              (options ++ [file])
+                                              Nothing
+                                              Nothing 
+       exitCode <- getProcessExitCode pr
+       case exitCode of
+            Nothing -> return $ emptyDG --omdoc2DG file
+            Just ExitSuccess -> error "Twelf terminated immediately."
+            Just (ExitFailure i) -> 
+              error $ "Calling Twelf failed with exitCode: " ++ show i
 
--- generates a development graph from an OMDoc file
---omdoc2DG :: FilePath -> IO DGraph
-omdoc2DG :: FilePath -> IO SIGS_AND_MORPHS 
-omdoc2DG file = do
-  let omdoc_file = concat[reverse $ drop 3 $ reverse file, "omdoc"]
+-- converts the specifications and views into signatures and morphisms
+getSigsAndMorphs :: FilePath -> IO SIGS_AND_MORPHS 
+getSigsAndMorphs fp = do
+  dir <- getCurrentDirectory
+  let file = resolve fp (dir ++ "/")
+  let omdoc_file = replaceExtension file "omdoc"
   xml <- readFile omdoc_file
   let elems = onlyElems $ parseXML xml
   let elems1 = filter (\ e -> elName e == omdocQN) elems
@@ -297,17 +317,19 @@ omel2exp sig e =
 -- converts an OMS element to an expression
 oms2exp :: Sign -> Element -> EXP                                      
 oms2exp sig e =
-  if (eqOMS e typeOMS)
-     then Type
-     else case getNameAttr e of
-               Nothing -> error "OMS element must have a name."
-               Just n -> 
-                 case getModuleAttr e of
-                      Nothing -> Const $ Symbol (sigBase sig) (sigName sig) n
-                      Just m -> 
-                        case getBaseAttr e of
-                             Nothing -> Const $ Symbol (sigBase sig) m n
-                             Just b -> Const $ Symbol b m n 
+  let curBase = sigBase sig
+      curModule = sigName sig
+  in if (eqOMS e typeOMS)
+        then Type
+        else case getNameAttr e of
+                  Nothing -> error "OMS element must have a name."
+                  Just n -> 
+                    case getModuleAttr e of
+                         Nothing -> Const $ Symbol curBase curModule n
+                         Just m -> 
+                           case getBaseAttr e of
+                                Nothing -> Const $ Symbol curBase m n
+                                Just b -> Const $ Symbol (resolve b curBase) m n
 
 -- converts an OMA element to an expression
 oma2exp :: Sign -> Element -> EXP                                      
