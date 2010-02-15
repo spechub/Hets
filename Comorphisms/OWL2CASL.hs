@@ -83,32 +83,34 @@ mapMorphism oMor =
     do
       cdm <- mapSign $ osource oMor
       ccd <- mapSign $ otarget oMor
-      let sorts = Set.fold (\ x -> Map.insert x x) Map.empty $ sortSet cdm
-          preds = Map.foldWithKey (\ x e b ->
-              Set.fold (\ pt -> Map.insert (x, pt) x) b e)
-            Map.empty $ predMap cdm
-          ops = Map.foldWithKey (\x ot b ->
-              Set.fold (\ ots -> Map.insert (x, ots) (x, opKind ots)) b ot)
-            Map.empty $ opMap cdm
-      return $ Morphism
-                 {
-                   msource      = cdm
-                 , mtarget      = ccd
-                 , sort_map     = sorts
-                 , op_map       = ops
-                 , pred_map     = preds
-                 , extended_map = ()
-                 }
+      let emap = mmaps oMor
+          preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
+              i1 = uriToId u1
+              i2 = uriToId u2
+              in case ty of
+                OWLClass -> Map.insert (i1, conceptPred) i2
+                ObjectProperty -> Map.insert (i1, objectPropPred) i2
+                DataProperty -> Map.insert (i1, dataPropPred) i2
+                _ -> id) Map.empty emap
+          ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
+                Individual ->
+                    Map.insert (uriToId u1, indiConst) (uriToId u2, Total)
+                _ -> id) Map.empty emap
+      return (embedMorphism () cdm ccd)
+                 { op_map = ops
+                 , pred_map = preds }
 
 -- | OWL topsort Thing
-thing :: SORT
+thing :: Id
 thing = stringToId "Thing"
 
+noThing :: Id
+noThing = stringToId "Nothing"
+
 -- | OWL bottom
-noThing :: PRED_SYMB
-noThing =
-     (Qual_pred_name (stringToId "Nothing")
-                         (Pred_type [thing] nullRange) nullRange)
+noThingPred :: PRED_SYMB
+noThingPred =
+  Qual_pred_name noThing (toPRED_TYPE conceptPred) nullRange
 
 -- | OWL Data topSort DATA
 dataS :: SORT
@@ -117,60 +119,40 @@ dataS = stringToId $ drop 3 $ show OWLDATA
 data VarOrIndi = OVar Int | OIndi URI
 
 predefSorts :: Set.Set SORT
-predefSorts = Set.fromList [thing]
+predefSorts = Set.singleton thing
 
 hetsPrefix :: String
 hetsPrefix = ""
 
+conceptPred :: PredType
+conceptPred = PredType [thing]
+
+objectPropPred :: PredType
+objectPropPred = PredType [thing, thing]
+
+dataPropPred :: PredType
+dataPropPred = PredType [thing, dataS]
+
+indiConst :: OpType
+indiConst = OpType Total [] thing
+
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result CASLSign         -- ^ CASL signature
 mapSign sig =
-    do
       let conc = Set.union (OS.concepts sig) (OS.primaryConcepts sig)
-      ooConcs <- foldM (\x y ->
-                               do
-                                 nId <- uriToId y
-                                 return $ (Map.insert nId
-                                    (Set.singleton (PredType [thing])) x)
-                            )
-                   Map.empty $ Set.toList conc
-      let oConcs = Map.union ooConcs $ foldl (Map.union) Map.empty $
-               [
-                Map.singleton (stringToId "Thing")
-                       (Set.singleton (PredType [thing]))
-               ,Map.singleton (stringToId "Nothing")
-                       (Set.singleton (PredType [thing]))
-               ]
-      let objProps = OS.indValuedRoles sig
-      oObjProps <- foldM (\x y ->
-                               do
-                                 nId <- uriToId y
-                                 return $ (Map.insert nId
-                                    (Set.singleton (PredType [thing,thing])) x)
-                            )
-                   Map.empty $ Set.toList objProps
-      let dtProps = OS.dataValuedRoles sig
-      oDTProps <- foldM (\x y ->
-                               do
-                                 nId <- uriToId y
-                                 return $ (Map.insert nId
-                                    (Set.singleton (PredType [thing,dataS])) x)
-                            )
-                   Map.empty $ Set.toList dtProps
-      let inDis = OS.individuals sig
-      oInDis <- foldM (\x y ->
-                               do
-                                 nId <- uriToId y
-                                 return $ (Map.insert nId
-                                    (Set.singleton (OpType Total [] thing)) x)
-                            )
-                   Map.empty $ Set.toList inDis
-      return $ (emptySign ())
-             {
-               sortSet = predefSorts
-             , emptySortSet = Set.empty
-             , predMap = oConcs `Map.union` oObjProps `Map.union` oDTProps
-             , opMap = oInDis
+          cvrt = map (uriToId) . Set.toList
+          tMp k = Map.fromList . map (\ u -> (u, Set.singleton k))
+          cPreds = thing : noThing : cvrt conc
+          oPreds = cvrt $ OS.indValuedRoles sig
+          dPreds = cvrt $ OS.dataValuedRoles sig
+          aPreds = Map.unions
+            [ tMp conceptPred cPreds
+            , tMp objectPropPred oPreds
+            , tMp dataPropPred dPreds ]
+      in return (emptySign ())
+             { sortSet = predefSorts
+             , predMap = aPreds
+             , opMap = tMp indiConst . cvrt $ OS.individuals sig
              }
 
 
@@ -196,7 +178,7 @@ predefinedSentences =
       Negation
       (
        Predication
-       noThing
+       noThingPred
        [Qual_var (mk_Name 1) thing nullRange]
        nullRange
       )
@@ -914,7 +896,7 @@ mapDataProp _ dP nO nD =
       let
           l = mk_Name nO
           r = mk_Name nD
-      ur <- uriToId dP
+      ur <- uriToIdM dP
       return $ Predication
                  (Qual_pred_name ur (Pred_type [thing,dataS] nullRange) nullRange)
                  [Qual_var l thing nullRange, Qual_var r dataS nullRange]
@@ -932,7 +914,7 @@ mapObjProp cSig ob num1 num2 =
           do
             let l = mk_Name num1
                 r = mk_Name num2
-            ur <- uriToId u
+            ur <- uriToIdM u
             return $ Predication
                        (Qual_pred_name ur (Pred_type [thing,thing] nullRange) nullRange)
                        [Qual_var l thing nullRange, Qual_var r thing nullRange]
@@ -958,7 +940,7 @@ mapObjPropI cSig ob lP rP =
                     OVar   num1   -> return $ Qual_var (mk_Name num1)
                                      thing nullRange
                     OIndi indivID -> mapIndivURI cSig indivID
-            ur <- uriToId u
+            ur <- uriToIdM u
             return $ Predication
                        (Qual_pred_name ur
                         (Pred_type [thing,thing] nullRange) nullRange)
@@ -975,7 +957,7 @@ mapClassURI :: CASLSign
             -> Result CASLFORMULA
 mapClassURI _ uril uid =
     do
-      ur <- uriToId uril
+      ur <- uriToIdM uril
       return $ Predication
                   (Qual_pred_name (ur) (Pred_type [thing] nullRange) nullRange)
                   [Qual_var uid thing nullRange]
@@ -987,7 +969,7 @@ mapIndivURI :: CASLSign
             -> Result (TERM ())
 mapIndivURI _ uriI =
     do
-      ur <- uriToId uriI
+      ur <- uriToIdM uriI
       return $ Application
                  (
                   Qual_op_name
@@ -998,9 +980,11 @@ mapIndivURI _ uriI =
                  []
                  nullRange
 
+uriToIdM :: URI -> Result Id
+uriToIdM = return . uriToId
+
 -- | Extracts Id from URI
-uriToId :: URI
-        -> Result Id
+uriToId :: URI -> Id
 uriToId urI =
     let
         ur = case urI of
@@ -1015,9 +999,7 @@ uriToId urI =
         nP = map repl $ namePrefix   ur
         lP = map repl $ localPart    ur
         nU = map repl $ namespaceUri ur
-    in
-      do
-        return $ stringToId $ nU ++ "" ++ nP ++ "" ++ lP
+    in stringToId $ nU ++ "" ++ nP ++ "" ++ lP
 
 -- | Mapping of a list of descriptions
 mapDescriptionList :: CASLSign
@@ -1070,7 +1052,7 @@ mapDataRange cSig rn inId =
       case rn of
         DRDatatype uril ->
           do
-            ur <- uriToId uril
+            ur <- uriToIdM uril
             return $ (Membership
                       (Qual_var uid thing nullRange)
                       ur
