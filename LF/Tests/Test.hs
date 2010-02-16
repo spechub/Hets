@@ -24,9 +24,9 @@ import System.FilePath
 import Common.Utils
 
 fp :: FilePath
-fp = "/home/mathias/twelf/specs/math/algebra/algebra1.elf"
+fp = "/home/mathias/twelf/specs/math/algebra/algebra3.elf"
 
-twelfTest :: FilePath -> IO SIGS_AND_MORPHS
+twelfTest :: FilePath -> IO ()
 twelfTest file = do
   dir <- getEnvDef "TWELF_LIB" ""
   if null dir 
@@ -36,9 +36,10 @@ twelfTest file = do
                                               (options ++ [file])
                                               Nothing
                                               Nothing 
+       
        exitCode <- getProcessExitCode pr
        case exitCode of
-            Nothing -> return (Map.empty,Map.empty)
+            Nothing -> return ()
             Just ExitSuccess -> error "Twelf terminated immediately."
             Just (ExitFailure i) -> 
               error $ "Calling Twelf failed with exitCode: " ++ show i
