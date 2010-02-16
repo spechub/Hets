@@ -224,10 +224,16 @@ twelf2DG file = do
   twelf2SigsAndMorphs file
   return emptyDG
 
-{- runs twelf to create an omdoc file
-   generates the corresponding signatures and morphisms -}
+-- generates signatures and morphisms from the path of a Twelf file
 twelf2SigsAndMorphs :: FilePath -> IO SIGS_AND_MORPHS
 twelf2SigsAndMorphs file = do
+  runTwelf file
+  getSigsAndMorphs file
+  return (Map.empty,Map.empty)
+
+-- runs twelf to create an omdoc file
+runTwelf :: FilePath -> IO ()
+runTwelf file = do
   dir <- getEnvDef "TWELF_LIB" ""
   if null dir 
      then error "environment variable TWELF_LIB is not set"
@@ -236,12 +242,17 @@ twelf2SigsAndMorphs file = do
                                               (options ++ [file])
                                               Nothing
                                               Nothing 
-       exitCode <- getProcessExitCode pr
+       exitCode <- waitForProcess pr --getProcessExitCode pr
        case exitCode of
-            Nothing -> getSigsAndMorphs file
+            ExitFailure i -> 
+              error $ "Calling Twelf failed with exitCode: " ++ show i ++
+                      " on file " ++ file                      
+            ExitSuccess -> return () 
+       {-case exitCode of
+            Nothing -> return ()
             Just ExitSuccess -> error "Twelf terminated immediately."
             Just (ExitFailure i) -> 
-              error $ "Calling Twelf failed with exitCode: " ++ show i
+              error $ "Calling Twelf failed with exitCode: " ++ show i-}
 
 -- converts the specifications and views into signatures and morphisms
 getSigsAndMorphs :: FilePath -> IO SIGS_AND_MORPHS 
