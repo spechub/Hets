@@ -40,6 +40,8 @@ import OWL.Conservativity
 import OWL.Taxonomy
 #endif
 
+import OWL.ColimSign
+
 data OWL = OWL deriving Show
 
 instance Language OWL where
@@ -87,6 +89,7 @@ instance StaticAnalysis OWL OntologyFile Axiom
       induced_from_to_morphism OWL = inducedFromToMor
       cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = generatedSign
+      signature_colimit OWL = return . signColimit
 #ifdef UNI_PACKAGE
       theory_to_taxonomy OWL = onto2Tax
 #endif
