@@ -101,24 +101,32 @@ type ViewMap = Map.Map Token (Node, Token, Morphism, [Renaming], Bool)
 
 -- | Tuple of data structures updated when a specification is introduced into
 -- a development graph
-type InsSpecRes = (TokenInfoMap, ViewMap, [Token], DGraph)
+type InsSpecRes = (TokenInfoMap, TokenInfoMap, ViewMap, [Token], DGraph)
+
+-- | Tuple of data structures to introduce in the current DG the predefined
+-- modules used
+type UpdtPredefs = (TokenInfoMap, TokenInfoMap, DGraph)
 
 -- | inserts the list of specifications in the development graph, updating
 -- the data structures
-insertSpecs :: [Spec] -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> DGraph
-insertSpecs [] _ _ _ dg = dg
-insertSpecs (s : ss) tim vm ths dg = insertSpecs ss tim' vm' ths' dg'
-              where (tim', vm', ths', dg') = insertSpec s tim vm ths dg
+insertSpecs :: [Spec] -> DGraph -> TokenInfoMap -> TokenInfoMap -> ViewMap -> [Token] -> DGraph
+               -> InsSpecRes
+insertSpecs [] _ ptim tim vm tks dg = (ptim, tim, vm, tks, dg)
+insertSpecs (s : ss) pdg ptim tim vm ths dg = insertSpecs ss pdg ptim' tim' vm' ths' dg'
+              where (ptim', tim', vm', ths', dg') = insertSpec s pdg ptim tim vm ths dg
 
 -- | inserts the given specification in the development graph, updating
 -- the data structures
-insertSpec :: Spec -> TokenInfoMap -> ViewMap -> [Token] -> DGraph -> InsSpecRes
-insertSpec (SpecMod sp_mod) tim vm ths dg = (tim5, vm, ths, dg6)
+insertSpec :: Spec -> DGraph -> TokenInfoMap -> TokenInfoMap -> ViewMap -> [Token] -> DGraph
+              -> InsSpecRes
+insertSpec (SpecMod sp_mod) pdg ptim tim vm ths dg = (ptimUp, tim5, vm, ths, dg6)
               where ps = getParams sp_mod
-                    (pl, tim1, morphs, dg1) = processParameters ps tim dg
+                    (il, _) = getImportsSorts sp_mod
+                    up = incPredImps il pdg (ptim, tim, dg)
+                    (ptimUp, timUp, dgUp) = incPredParams ps pdg up
+                    (pl, tim1, morphs, dg1) = processParameters ps timUp dgUp
                     top_sg = Maude.Sign.fromSpec sp_mod
                     paramSorts = getSortsParameterizedBy (paramNames ps) (Set.toList $ sorts top_sg)
-                    (il, _) = getImportsSorts sp_mod
                     ips = processImports tim1 vm dg1 il
                     (tim2, dg2) = last_da ips (tim1, dg1)
                     sg = sign_union_morphs morphs $ sign_union top_sg ips
@@ -133,9 +141,10 @@ insertSpec (SpecMod sp_mod) tim vm ths dg = (tim5, vm, ths, dg6)
                     (tim4, dg4) = createEdgesImports tok ips sg tim3 dg3
                     dg5 = createEdgesParams tok pl morphs sg tim4 dg4
                     (_, tim5, dg6) = insertFreeNode tok tim4 dg5
-insertSpec (SpecTh sp_th) tim vm ths dg = (tim4, vm, tok : ths, dg4)
+insertSpec (SpecTh sp_th) pdg ptim tim vm ths dg = (ptimUp, tim4, vm, tok : ths, dg4)
               where (il, ss1) = getImportsSorts sp_th
-                    ips = processImports tim vm dg il
+                    (ptimUp, timUp, dgUp) = incPredImps il pdg (ptim, tim, dg)
+                    ips = processImports timUp vm dgUp il
                     ss2 = getThSorts ips
                     (tim1, dg1) = last_da ips (tim, dg)
                     sg = sign_union (Maude.Sign.fromSpec sp_th) ips
@@ -149,11 +158,12 @@ insertSpec (SpecTh sp_th) tim vm ths dg = (tim4, vm, tok : ths, dg4)
                     tim2 = Map.insert tok (getNode ns, sg, ss1 ++ ss2, [], []) tim1
                     (tim3, dg3) = createEdgesImports tok ips sg tim2 dg2
                     (_, tim4, dg4) = insertFreeNode tok tim3 dg3
-insertSpec (SpecView sp_v) tim vm ths dg = (tim3, vm', ths, dg4)
+insertSpec (SpecView sp_v) pdg ptim tim vm ths dg = (ptimUp, tim3, vm', ths, dg4)
               where View name from to rnms = sp_v
+                    (ptimUp, timUp, dgUp) = incPredView from to pdg (ptim, tim, dg)
                     inst = isInstantiated ths to
                     tok_name = HasName.getName name
-                    (tok1, tim1, morph1, _, dg1) = processModExp tim vm dg from
+                    (tok1, tim1, morph1, _, dg1) = processModExp timUp vm dgUp from
                     (tok2, tim2, morph2, _, dg2) = processModExp tim1 vm dg1 to
                     (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim2
                     (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim2
@@ -163,6 +173,86 @@ insertSpec (SpecView sp_v) tim vm ths dg = (tim3, vm', ths, dg4)
                     (n3, tim3, dg3) = insertInnerNode n2 tim2 tok2 morph2 new_sign new_sens dg2
                     vm' = Map.insert (HasName.getName name) (n3, tok2, morph', rnms, inst) vm
                     dg4 = insertThmEdgeMorphism tok_name n3 n1 morph' dg3
+
+-- | Includes the references used in importations to modules in the maude prelude
+-- in the current DG
+incPredImps :: [Import] -> DGraph -> UpdtPredefs -> UpdtPredefs
+incPredImps [] _ up = up
+incPredImps (i : is) pdg up = incPredImps is pdg up'
+          where up' = incPredImp i pdg up
+
+-- | Includes the references used in parameterizations to modules in the maude prelude
+-- in the current DG
+incPredParams :: [Parameter] -> DGraph -> UpdtPredefs -> UpdtPredefs
+incPredParams [] _ up = up
+incPredParams (i : is) pdg up = incPredParams is pdg up'
+          where up' = incPredParam i pdg up
+
+-- | Includes the references used in views to modules in the maude prelude
+-- in the current DG
+incPredView :: ModExp -> ModExp -> DGraph -> UpdtPredefs -> UpdtPredefs
+incPredView from to pdg up = up''
+          where up' = incPredImpME from pdg up
+                up'' = incPredImpME to pdg up'
+
+-- | Includes the references used in a parameter to modules in the maude prelude
+-- in the current DG
+incPredParam :: Parameter -> DGraph -> UpdtPredefs -> UpdtPredefs
+incPredParam (Parameter _ me) up = incPredImpME me up
+
+-- | Includes the references used in an importation to modules in the maude prelude
+-- in the current DG
+incPredImp :: Import -> DGraph -> UpdtPredefs -> UpdtPredefs
+incPredImp i up = up'
+          where me = getModExp i
+                up' = incPredImpME me up
+
+-- | Includes the references used in a module expression to modules in the maude prelude
+-- in the current DG
+incPredImpME :: ModExp -> DGraph -> UpdtPredefs -> UpdtPredefs
+incPredImpME (ModExp m_id) pdg (ptim, tim, dg) = up
+          where ModId q = m_id
+                q' = mkFreeName q
+                up = case (Map.member q ptim) of
+                      True -> let (n, sg1, sys1, tts1, ps1) = ptim Map.! q
+                                  (n', sg2, sys2, tts2, ps2) = ptim Map.! q'
+                                  refInfo = newRefInfo preludeLib n
+                                  refInfo' = newRefInfo preludeLib n'
+                                  ptim1 = Map.delete q ptim
+                                  ptim2 = Map.delete q' ptim1
+                                  ext_sg1 = makeExtSign Maude sg1
+                                  gt1 = G_theory Maude ext_sg1 startSigId noSens startThId
+                                  name1 = makeName q
+                                  new = newInfoNodeLab name1 refInfo gt1
+                                  newNode = getNewNodeDG dg
+                                  refLab = labDG pdg n
+                                  nodeCont = new { globalTheory = globalTheory refLab }
+                                  -- (ns1, dg1) = insGTheory dg name1 DGBasic gt1
+                                  dg1 = addToRefNodesDG newNode refInfo $ insNodeDG (newNode, nodeCont) dg
+                                  ext_sg2 = makeExtSign Maude sg2
+                                  gt2 = G_theory Maude ext_sg2 startSigId noSens startThId
+                                  name2 = makeName q'
+                                  new' = newInfoNodeLab name2 refInfo' gt2
+                                  newNode' = getNewNodeDG dg1
+                                  refLab' = labDG pdg n'
+                                  nodeCont' = new' { globalTheory = globalTheory refLab' }
+                                  -- (ns2, dg2) = insGTheory dg1 name2 DGBasic gt2
+                                  dg2 = addToRefNodesDG newNode' refInfo' $ insNodeDG (newNode', nodeCont') dg1
+                                  tim1 = Map.insert q (newNode, sg1, sys1, tts1, ps1) tim
+                                  tim2 = Map.insert q' (newNode', sg2, sys2, tts2, ps2) tim1
+                              in (ptim2, tim2, dg2)
+                      False -> (ptim, tim, dg)
+incPredImpME (SummationModExp me me') pdg up = up''
+          where up' = incPredImpME me pdg up
+                up'' = incPredImpME me' pdg up'
+incPredImpME (RenamingModExp me _) pdg up = incPredImpME me pdg up
+incPredImpME (InstantiationModExp me _) pdg up = incPredImpME me pdg up
+
+-- | extracts the module expression from an importation statement
+getModExp :: Import -> ModExp
+getModExp (Including me) = me
+getModExp (Extending me) = me
+getModExp (Protecting me) = me
 
 -- | computes the union of the signatures obtained from the importation list
 sign_union :: Sign -> [ImportProc] -> Sign
@@ -598,7 +688,7 @@ getImportsSortsStmnts ((SortStmnt s) : stmts) (is, ss) =
 getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 
 -- | builds the development graph of the specified Maude file
-directMaudeParsing :: FilePath -> IO DGraph
+directMaudeParsing :: FilePath -> IO (DGraph, DGraph)
 directMaudeParsing fp = do
   ml <- getEnvDef "MAUDE_LIB" ""
   if null ml then error "environment variable MAUDE_LIB is not set" else do
@@ -622,7 +712,7 @@ directMaudeParsing fp = do
                         hClose hIn
                         hClose hOut
                         hClose hErr
-                        return $ insertSpecs (psps ++ sps) Map.empty Map.empty [] emptyDG
+                        return $ maude2DG psps sps
                   else do
                         hClose hIn
                         hClose hOut
@@ -631,6 +721,11 @@ directMaudeParsing fp = do
       Just ExitSuccess -> error "maude terminated immediately"
       Just (ExitFailure i) ->
           error $ "calling maude failed with exitCode: " ++ show i
+
+maude2DG :: [Spec] -> [Spec] -> (DGraph, DGraph)
+maude2DG psps sps = (dg1, dg2)
+   where (_, tim, vm, tks, dg1) = insertSpecs psps emptyDG Map.empty Map.empty Map.empty [] emptyDG
+         (_,_, _, _, dg2) = insertSpecs sps dg1 tim Map.empty vm tks emptyDG
 
 -- | given input and output handlers and a list of strings, this method
 -- traverses the list transforming each string into a Maude specification
@@ -926,12 +1021,20 @@ createQualificationTh2Mod par (s : ss) =
               s' = HasName.getName s
               rnm = SortRenaming (SortId s') (qualifiedSort par' s')
 
+-- | Library name for Maude prelude
+preludeLib :: LibName
+preludeLib = emptyLibName "Maude_Prelude"
+
 -- | generates the library and the development graph from the path of the
 -- maude file
 anaMaudeFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaMaudeFile _ file = do
-    dg <- directMaudeParsing file
-    let name = emptyLibName "Maude_Module"
-    return $ Just (name, Map.singleton name $
-              computeDGraphTheories Map.empty $ markFree Map.empty $
-              markHiding Map.empty dg)
+    (dg1, dg2) <- directMaudeParsing file
+    let ln = emptyLibName file
+        lib1 = Map.singleton preludeLib $
+                 computeDGraphTheories Map.empty $ markFree Map.empty $
+                 markHiding Map.empty dg1
+        lib2 = Map.insert ln
+                 (computeDGraphTheories lib1 $ markFree Map.empty $
+                 markHiding Map.empty dg2) lib1
+    return $ Just (ln, lib2)

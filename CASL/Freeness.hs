@@ -181,12 +181,13 @@ ltkh_sort s = imp'
            imp = Implication prem concl True nullRange
            imp' = quantifyUniversally imp
 
-
+-- | generates the axioms for satThM
 sat_thm_ax :: [Named CASLFORMULA] -> CASLFORMULA
 sat_thm_ax forms = final_form
      where forms' = map (free_formula . sentence) $ filter (no_gen . sentence) forms
            final_form = mk_conj forms'
 
+-- | checks if the formula is a sort generation constraint
 no_gen :: CASLFORMULA -> Bool
 no_gen (Sort_gen_ax _ _) = False
 no_gen _ = True
