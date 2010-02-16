@@ -51,6 +51,11 @@ type Subst = (Map.Map SubstConst Term, Map.Map SubstType Type)
 eps :: Subst
 eps = (Map.empty, Map.empty)
 
+toSConst :: Term -> Maybe SubstConst
+toSConst (QualVar vd) = Just $ toSC vd
+toSConst (QualOp _ n ts _ _ _) = Just $ toSC (n, ts)
+toSConst _ = Nothing
+
 
 lookupTerm :: Subst -> SubstConst -> Maybe Term
 lookupTerm (m,_) k = Map.lookup k m
@@ -195,16 +200,17 @@ instance Substable Term where
           _ -> t
 
 
-------------------------- Play around output -------------------------
+------------------------- Testsuite -------------------------
 
-showHasCASLSig :: DGNodeLab -> Result ()
-showHasCASLSig dgn = do
+testSubst :: DGNodeLab -> Result ()
+testSubst dgn = do
    case dgn_theory dgn of
     G_theory lid (ExtSign sign _) _ sens _ ->
         do
           csign <- coercePlainSign lid HasCASL "" sign
           csens <- coerceSens lid HasCASL "" $ toNamedList sens
           test1 csign csens
+          test2 csign csens
           hint () ("\n"++show lid ++"\n") nullRange
           return ()
 
@@ -218,6 +224,44 @@ test1 e s = do
            ++ "sens:\n" ++ (showL $ map toSimpNSen s) ++"\n\n"
           ) nullRange
   return ()
+
+test2 :: Env -> [Named Sentence] -> Result ()
+test2 e s = do
+  let eqs = catMaybes $ map getLRHSForNamedSentence s
+  let f sb (t1,t2) = case toSConst t1 of
+                      Nothing -> sb
+                      Just sc -> addTerm sb sc t2
+  let sbst = foldl f eps eqs
+  let substNS x = case sentence x of Formula t -> x{ sentence = Formula $ subst sbst t }
+                                     _ -> x
+  hint () ("\n"
+--           ++ "ops:\n" ++ (showL $ map toSimpOp (flattenOpMap $ assumps e)) ++"\n\n"
+           ++ "sens:\n" ++ (showL $ map (toSimpNSen . substNS) s) ++"\n\n"
+          ) nullRange
+  return ()
+
+------------------------- term tools -------------------------
+
+isEq :: Term -> Bool
+isEq = isJust . getLRHS
+
+getLRHSForNamedSentence :: Named Sentence -> Maybe (Term, Term)
+getLRHSForNamedSentence (SenAttr{ sentence = Formula t }) = getLRHS t
+getLRHSForNamedSentence _ = Nothing
+
+getLRHS :: Term -> Maybe (Term, Term)
+getLRHS (ApplTerm hd (TupleTerm [t1,t2] _) _) =
+    case getId hd of
+      Just n
+          | n == eqId -> Just (t1,t2)
+getLRHS _ = Nothing
+
+getId :: Term -> Maybe Id
+getId (QualVar (VarDecl n _ _ _)) = Just n
+getId (QualOp _ (PolyId n _ _) _ _ _ _) = Just n
+getId _ = Nothing
+
+
 
 ------------------------- SIMPLE OUTPUT FOR Ops -------------------------
 
@@ -256,14 +300,14 @@ toSimpNSen :: Named Sentence -> String
 toSimpNSen x = concat [senAttr x, ": ", toSimpSen $ sentence x]
 
 toSimpSen :: Sentence -> String
-toSimpSen (Formula t) = toSimp t
+toSimpSen (Formula t) = toSimp t ++ if isEq t then " (is equality)" else ""
 toSimpSen _ = "unsupported!"
 
 toSimp :: Term -> String
 toSimp = foldTerm toSimpRec
 
 toSimpVar s = s
-toSimpSym s = s ++ "@"
+toSimpSym s = s
 toSimpApp s a = toSimpParens "()" " " [s, a]
 toSimpBind q vars b = toSimpParens "[]" " " [q, toSimpParens "() ." ", " vars, b]
 toSimpParens b sep l = concat $ [b!!0] : intersperse sep l ++ [tail b]
@@ -283,7 +327,7 @@ toSimpRec = FoldRec
     { -- Term VarDecl
       foldQualVar = \_ (VarDecl v _ _ _) -> toSimpVar $ show v
       -- Term OpBrand PolyId TypeScheme [Type] InstKind Range
-    , foldQualOp = \_ _ (PolyId i _ _) t _ _ _ -> (toSimpSym $ show i)++":"++toSimpTypS t
+    , foldQualOp = \_ _ (PolyId i _ _) t _ _ _ -> (toSimpSym $ show i)
     -- Term a a Range
     , foldApplTerm = \ (ApplTerm _ o2 _) y z _ -> toSimpApp y z
     -- Term [a] Range
