@@ -1035,6 +1035,6 @@ anaMaudeFile _ file = do
                  computeDGraphTheories Map.empty $ markFree Map.empty $
                  markHiding Map.empty dg1
         lib2 = Map.insert ln
-                 (computeDGraphTheories lib1 $ markFree Map.empty $
-                 markHiding Map.empty dg2) lib1
+                 (computeDGraphTheories lib1 $ markFree lib1 $
+                 markHiding lib1 dg2) lib1
     return $ Just (ln, lib2)
