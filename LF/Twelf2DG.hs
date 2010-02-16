@@ -30,10 +30,13 @@ import LF.Sign
 --import LF.Morphism
 
 import Data.Maybe
+import Data.List
 import qualified Data.Map as Map
 
 import Common.LibName
 import Common.Utils
+
+import Control.Monad
 
 import Text.XML.Light.Input
 import Text.XML.Light.Types
@@ -165,6 +168,12 @@ moduleQN = (QName "module" Nothing Nothing)
 baseQN :: QName
 baseQN = (QName "base" Nothing Nothing)
 
+fromQN :: QName
+fromQN = (QName "from" Nothing Nothing)
+
+toQN :: QName
+toQN = (QName "to" Nothing Nothing)
+
 getNameAttr :: Element -> Maybe String
 getNameAttr e = findAttr nameQN e
 
@@ -173,6 +182,12 @@ getModuleAttr e = findAttr moduleQN e
 
 getBaseAttr :: Element -> Maybe String
 getBaseAttr e = findAttr baseQN e
+
+getFromAttr :: Element -> Maybe String
+getFromAttr e = findAttr fromQN e
+
+getToAttr :: Element -> Maybe String
+getToAttr e = findAttr toQN e
 
 -- compares two OMS elements
 eqOMS :: Element -> Element -> Bool
@@ -206,6 +221,13 @@ anaTwelfFile _ file = do
 -- generates a development graph from the path of a Twelf file
 twelf2DG :: FilePath -> IO DGraph
 twelf2DG file = do
+  twelf2SigsAndMorphs file
+  return emptyDG
+
+{- runs twelf to create an omdoc file
+   generates the corresponding signatures and morphisms -}
+twelf2SigsAndMorphs :: FilePath -> IO SIGS_AND_MORPHS
+twelf2SigsAndMorphs file = do
   dir <- getEnvDef "TWELF_LIB" ""
   if null dir 
      then error "environment variable TWELF_LIB is not set"
@@ -216,7 +238,7 @@ twelf2DG file = do
                                               Nothing 
        exitCode <- getProcessExitCode pr
        case exitCode of
-            Nothing -> return $ emptyDG --omdoc2DG file
+            Nothing -> getSigsAndMorphs file
             Just ExitSuccess -> error "Twelf terminated immediately."
             Just (ExitFailure i) -> 
               error $ "Calling Twelf failed with exitCode: " ++ show i
@@ -232,55 +254,55 @@ getSigsAndMorphs fp = do
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
        [root] -> 
-          return $ foldl (\ sm e -> 
+          foldM (\ sm e -> 
                      let n = elName e
                          in if (n == theoryQN) then addSign file e sm else
                             if (n == viewQN) then addMorph file e sm else
-                            sm
-                         ) 
-                         (Map.empty, Map.empty)
-                         $ elChildren root
+                            return sm
+                ) 
+                (Map.empty, Map.empty)
+                $ elChildren root
        _ -> fail "Not an OMDoc file."
 
 -- transforms a theory element into a signature and adds it to the map
-addSign :: FilePath -> Element -> SIGS_AND_MORPHS -> SIGS_AND_MORPHS
+addSign :: FilePath -> Element -> SIGS_AND_MORPHS -> IO SIGS_AND_MORPHS
 addSign file e sm =
   case getNameAttr e of
        Nothing -> error "Theory element must have a name."
-       Just name -> 
+       Just name -> do
           let sig = Sign file name []
-              (sm1,sig1) = 
-                foldl (\ sm2 el -> 
+          (sm1,sig1) <-
+                foldM (\ sms el -> 
                   let n = elName el
-                      in if (n == includeQN) then addIncl el sm2 else
-                         if (n == structureQN) then addStruct el sm2 else
-                         if (n == constantQN) then addConst el sm2 else
-                         if (n == aliasQN) then addAlias el sm2 else
-                         if (n == notationQN) then addNotat el sm2 else 
-                         sm2
+                      in if (n == includeQN) then addIncl el sms else
+                         if (n == structureQN) then addStruct el sms else
+                         if (n == constantQN) then addConst el sms else
+                         if (n == aliasQN) then addAlias el sms else
+                         if (n == notationQN) then addNotat el sms else 
+                         return sms
                       ) 
                       (sm,sig)
                       $ elChildren e
-              (sigs,morphs) = sm1
-              sigs1 = Map.insert (file,name) sig1 sigs
-              in (sigs1,morphs) 
+          let (sigs,morphs) = sm1
+          let sigs1 = Map.insert (file,name) sig1 sigs
+          return (sigs1,morphs) 
               
 -- adds a constant declaration to the signature
-addConst :: Element -> (SIGS_AND_MORPHS,Sign) -> (SIGS_AND_MORPHS,Sign)
-addConst e (sm,sig) = 
+addConst :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addConst e (sm,sig) = do
   let sym = case getNameAttr e of
                  Nothing -> error "Constant element must have a name."
                  Just n -> Symbol (sigBase sig) (sigName sig) n
-      typ = case findChildren typeQN e of
+  let typ = case findChildren typeQN e of
                  [t] -> type2exp sig t
                  _ -> error "Constant element must have a unique type child."
-      val = case findChildren definitionQN e of
+  let val = case findChildren definitionQN e of
                  [] -> Nothing
                  [v] -> Just $ definition2exp sig v         
                  _ ->  error $ concat ["Constant element must have at most ",
                                        "one definition child."]
-      sig1 = addDef (Def sym typ val) sig
-      in (sm,sig1)               
+  let sig1 = addDef (Def sym typ val) sig
+  return (sm,sig1)               
 
 -- converts a type element to an expression
 type2exp :: Sign -> Element -> EXP
@@ -398,27 +420,50 @@ omatp2exp sig e =
        [c1,c2] -> 
           if (and [elName c1 == omsQN, eqOMS c1 oftypeOMS])
              then omel2exp sig c2
-             else error "The first child of OMATP must be the \"oftype\" symbol."
+             else error $ concat ["The first child of OMATP",
+                                  "must be the \"oftype\" symbol."]
        _ -> error "OMATP element must have exactly two children."
       
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
-addIncl :: Element -> (SIGS_AND_MORPHS,Sign) -> (SIGS_AND_MORPHS,Sign)
-addIncl _ = id
+addIncl :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addIncl e ((sigs1,morphs1),sig1) = do
+  let curBase = sigBase sig1
+  let curModule = sigName sig1
+  case getFromAttr e of
+       Nothing -> error "Include element must have a \"from\" attribute."
+       Just ref -> 
+         case elemIndices '?' ref of
+              [i] -> do let (br,m) = splitAt i ref
+                        let b = replaceExtension (resolve br curBase) "elf"
+                        let source = (b,m)
+                        let target = (curBase,curModule)
+                        (sigs2,morphs2) <- twelf2SigsAndMorphs b
+                        let sigs = Map.union sigs1 sigs2
+                        let morphs3 = Map.union morphs1 morphs2
+                        let sig = case Map.lookup source sigs of
+                                       Nothing -> 
+                                          error "Invalid inclusion source."
+                                       Just (Sign _ _ ds) -> addDefs ds sig1
+                        let morphs = Map.insert ((curBase,""),source,target)
+                                                Map.empty
+                                                morphs3
+                        return ((sigs,morphs),sig)
+              _ -> error "Invalid inclusion source."      
 
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
-addStruct :: Element -> (SIGS_AND_MORPHS,Sign) -> (SIGS_AND_MORPHS,Sign)
-addStruct _ = id
+addStruct :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addStruct _ sm = return sm 
 
 -- so far aliases are ignored
-addAlias :: Element -> (SIGS_AND_MORPHS,Sign) -> (SIGS_AND_MORPHS,Sign)
-addAlias _ = id
+addAlias :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addAlias _ sm = return sm
 
 -- so far notations are ignored
-addNotat :: Element -> (SIGS_AND_MORPHS,Sign) -> (SIGS_AND_MORPHS,Sign)
-addNotat _ = id
+addNotat :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addNotat _ sm = return sm
 
 -- so far views are ignored
-addMorph :: FilePath -> Element -> SIGS_AND_MORPHS -> SIGS_AND_MORPHS
-addMorph _ _ = id
+addMorph :: FilePath -> Element -> SIGS_AND_MORPHS -> IO SIGS_AND_MORPHS
+addMorph _ _ sm = return sm

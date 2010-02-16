@@ -22,6 +22,7 @@ module LF.Sign
        , Sign (..)
        , emptySig
        , addDef
+       , addDefs
        , getAllSyms
        , getDeclaredSyms
        , getDefinedSyms 
@@ -82,7 +83,10 @@ emptySig :: Sign
 emptySig = Sign "" "" []
 
 addDef :: DEF -> Sign -> Sign
-addDef d (Sign b m ds) = Sign b m (ds ++ [d])
+addDef d sig = addDefs [d] sig
+
+addDefs :: [DEF] -> Sign -> Sign
+addDefs ds2 (Sign b m ds1) = Sign b m (ds1 ++ ds2)
 
 -- get the set of all symbols
 getAllSyms :: Sign -> Set.Set Symbol 

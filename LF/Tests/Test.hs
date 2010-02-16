@@ -16,6 +16,33 @@ import Text.XML.Light.Input
 import Text.XML.Light.Types
 import Text.XML.Light.Proc
 
+import System.Exit
+import System.IO
+import System.Process
+import System.FilePath
+
+import Common.Utils
+
+fp :: FilePath
+fp = "/home/mathias/twelf/specs/math/algebra/algebra1.elf"
+
+twelfTest :: FilePath -> IO SIGS_AND_MORPHS
+twelfTest file = do
+  dir <- getEnvDef "TWELF_LIB" ""
+  if null dir 
+     then error "environment variable TWELF_LIB is not set"
+     else do
+       (_, _, _, pr) <- runInteractiveProcess (concat [dir, "/" ,twelf])
+                                              (options ++ [file])
+                                              Nothing
+                                              Nothing 
+       exitCode <- getProcessExitCode pr
+       case exitCode of
+            Nothing -> return (Map.empty,Map.empty)
+            Just ExitSuccess -> error "Twelf terminated immediately."
+            Just (ExitFailure i) -> 
+              error $ "Calling Twelf failed with exitCode: " ++ show i
+
 nat,mat :: EXP
 nat = Const $ Symbol "file1" "sig1" "nat"
 mat = Const $ Symbol "file2" "sig2" "mat"
@@ -48,14 +75,16 @@ Just r = mapSymbol m $ Symbol "file2" "sig2" "mat"
 
 b = getSymValue sig1 $ Symbol "file2" "sig2" "mat"
 
-fp = "../twelf/specs/math/algebra/algebra1.elf"
-home = "/home/mathias/hets"
+inc = "/home/mathias/twelf/specs/logics/first-order/proof_theory/derived.elf"
 
 toDoc :: (SIG_VIEW_NAME,Sign) -> Doc
 toDoc ((b,m),sig) = vcat [text b, text m, pretty sig]
 
 test :: FilePath -> IO Doc
 test file = do
-  (sigs,_) <- getSigsAndMorphs file
+  (sigs,_) <- twelf2SigsAndMorphs file
   return $ vcat $ map toDoc $ Map.toList sigs  
+  
+
+
 
