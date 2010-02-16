@@ -18,7 +18,8 @@ Computes the colimit of an arbitrary diagram in Set:
 
 module Common.SetColimit(
     computeColimitSet,
-    addIntToSymbols
+    addIntToSymbols,
+    SymbolName(..)
   )
  where
 
