@@ -86,7 +86,7 @@ instance ShATermConvertible ClockTime where
                     (att2, TOD a' b') }}
             u -> fromShATermError "ClockTime" u
 
-#ifndef TIME_WITH_TYPEABLE
+#ifdef TIME_WITHOUT_TYPEABLE
 timeOfDayTc :: TyCon
 timeOfDayTc = mkTyCon "Data.Time.TimeOfDay"
 

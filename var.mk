@@ -4,11 +4,8 @@ HC = ghc -optl-s -XTemplateHaskell
 HCPKG = ghc-pkg
 
 TIMEVERSION = $(shell $(HCPKG) field time version)
-ifneq ($(findstring 1.1.3, $(TIMEVERSION)),)
-TIME_PACKAGE = -DTIME_WITH_TYPEABLE
-endif
-ifneq ($(findstring 1.1.4, $(TIMEVERSION)),)
-TIME_PACKAGE = -DTIME_WITH_TYPEABLE
+ifneq ($(findstring 1.1.2, $(TIMEVERSION)),)
+TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
 endif
 
 TARVERSION = $(shell $(HCPKG) field tar version)
