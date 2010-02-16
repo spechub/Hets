@@ -118,15 +118,6 @@ class SignExtension e where
 instance SignExtension () where
     isSubSignExtension _ _ = True
 
-flattenSetMap :: Map.Map a (Set.Set b) -> [(a,b)]
-flattenSetMap m = Map.foldWithKey f [] m where
-    f k v l = map (\x -> (k,x)) (Set.toList v) ++ l
-
-flattenOpMap :: OpMap -> [(Id,OpType)]
-flattenOpMap = flattenSetMap
-
-flattenPredMap :: Map.Map Id (Set.Set PredType) -> [(Id,PredType)]
-flattenPredMap = flattenSetMap
 
 
 -- | proper subsorts (possibly excluding input sort)
