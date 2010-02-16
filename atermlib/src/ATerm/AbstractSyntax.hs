@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash #-}
 {- |
 Module      :  $Header$
 Description :  the abstract syntax of shared ATerms and their lookup table
