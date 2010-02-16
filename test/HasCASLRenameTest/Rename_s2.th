@@ -4,9 +4,9 @@ class
 d2 < Type
 type
 t2 : Type
-op b2 : t2 * t2 -> t2 %(op)%
+op b2 : t2 * t2 -> t2
 op c2 : t2 -> t2 %(constructor)%
-op o2 : t2 %(op)%
+op o2 : t2
 op s2 : t2 -> t2 %(selector of constructor(s) c2 : t2 -> t2)%
 
 forall x_1 : t2 . s2 (c2 x_1) = x_1; %(ga_select_s)%
