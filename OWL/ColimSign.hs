@@ -63,9 +63,11 @@ signColimit graph = let
         --            funI = Map.findWithDefault (error "ax") i morMaps
         --                      in
         --            Set.map (mapSignAxiom funI) axSet) $ -- missing!
-        --   map (\(i,l)-> (i, axioms l))$ labNodes graphx
-   nameMap = Map.empty
+        --   map (\(i,l)-> (i, axioms l))$ labNodes graph
+   nameMap = foldl Map.union Map.empty $
+             map (\(_,l)-> namespaceMap l)$ labNodes graph
       -- here it will be a union with clashing symbols renamed
+      -- if their corresponding values are not the same
    pCs = foldl Set.union Set.empty $
          map (\(i,pcs) -> Set.map
                          (\x -> Map.findWithDefault (error "errorColimit") x $
