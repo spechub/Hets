@@ -60,18 +60,21 @@ annoParser2 =
 -- better list what is allowed rather than exclude what is forbidden
 -- white spaces und non-printables should be not allowed!
 encodingName :: AParser st Token
-encodingName = pToken(reserved (funS : casl_reserved_words) (many1
-                    (oneOf ("_`" ++ (signChars \\ ":."))
-                     <|> scanLPD)))
+encodingName = parseToken (reserved (funS : casl_reserved_words)
+    (many1 (oneOf ("_`" ++ (signChars \\ ":.")) <|> scanLPD)))
 
 -- keep these identical in order to
 -- decide after seeing ".", ":" or "->" what was meant
+parseLogicName :: AParser st Logic_name
+parseLogicName = do
+    e <- encodingName
+    do   string dotS
+         s <- encodingName
+         return (Logic_name e (Just s))
+      <|> return (Logic_name e Nothing)
+
 logicName :: AParser st Logic_name
-logicName = do e <- encodingName
-               do string dotS
-                  s <- encodingName
-                  return (Logic_name e (Just s))
-                 <|> return (Logic_name e Nothing)
+logicName = parseLogicName << skipSmart
 
 ------------------------------------------------------------------------
 -- parse Logic_code

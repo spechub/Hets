@@ -291,8 +291,11 @@ reserved l p = try $ checkWith p (`notElem` l)
 
 -- * lexical tokens with position
 
+parseToken :: CharParser st String -> CharParser st Token
+parseToken = liftM2 (\ p s -> Token s $ Range [p]) getPos
+
 pToken :: CharParser st String -> CharParser st Token
-pToken = liftM2 (\ p s -> Token s $ Range [p]) getPos . (<< skipSmart)
+pToken = parseToken . (<< skipSmart)
 
 pluralKeyword :: String -> CharParser st Token
 pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
