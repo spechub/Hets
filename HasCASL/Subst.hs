@@ -13,6 +13,8 @@ substitution and let-reduction of terms
 
 module HasCASL.Subst where
 
+--import qualified Data.Graph.Analysis.Algorithms.Common() as DGAAC
+
 import HasCASL.As
 import HasCASL.FoldTerm
 import HasCASL.AsUtils
@@ -25,6 +27,7 @@ import Common.DocUtils
 import Common.Result
 import Common.ExtSign
 import Common.AS_Annotation
+import Common.Lib.State
 
 import Static.GTheory
 import Static.DevGraph
@@ -36,6 +39,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List as List
 import Data.Maybe
+
 
 
                    
@@ -151,6 +155,26 @@ substWithDefault s dfault x =
     case lookupS s x of Nothing -> dfault
                         Just t -> t
 
+{-
+-- TODO: The substitution doesn't signal variable capturing at the moment
+
+examples: 
+
+for let reduction:
+forall x:A. let y:A = x in exists x:A. x = y 
+
+   or let expanded
+
+for beta reduction
+forall x:A. ( \y:A . exists x:A. x = y ) x
+
+
+--       The obvious solution is variable renaming of the bound vars by
+--       the inner binder, here, e.g., exists x:A -> exists x':A
+--       Another solution would be to signal an error in the subst function
+--       The second method would require a management of scopes
+-}
+
 
 instance Substable Type where
     subst s t = t
@@ -186,11 +210,18 @@ instance Substable Term where
           QuantifiedTerm q vars term rg ->
               let s' = removeListGVD s vars
               in QuantifiedTerm q vars (subst s' term) rg
+          LambdaTerm varPatts p term rg ->
+              let bvars = Set.toList $ Set.unions $ map freeVars varPatts
+                  s' = removeListC s bvars
+              in LambdaTerm varPatts p (subst s' term) rg
+          LetTerm lb eqs term rg -> 
+              let (eqs', s') = substLetEqs s eqs
+              in LetTerm lb eqs' (subst s' term) rg
+          CaseTerm term eqs rg ->
+              CaseTerm (subst s term) (substCaseEqs s eqs) rg
+
           
 {-
-          -- LambdaTerm [Term] Partiality Term Range
-          -- pos "\", dot (plus "!")
-          LambdaTerm vars p term rg ->
           -- CaseTerm Term [ProgEq] Range
           -- pos "case", "of", "|"s
           CaseTerm term eqs rg ->
@@ -198,6 +229,141 @@ instance Substable Term where
           LetTerm lb eqs term rg -> 
 -}
           _ -> t
+
+
+substLetEqs :: Subst -> [ProgEq] -> ([ProgEq], Subst)
+substLetEqs s eqs = runState (mapM substLetEq eqs) s
+
+substLetEq :: ProgEq -> State Subst ProgEq
+substLetEq (ProgEq lh rh rg) = do
+  s <- get
+  let rh' = subst s rh
+  let bvars = Set.toList $ freeVars lh
+  put $ removeListC s bvars
+  return (ProgEq lh rh rg)
+
+
+substCaseEqs :: Subst -> [ProgEq] -> [ProgEq]
+substCaseEqs s = map $ substCaseEq s
+
+substCaseEq :: Subst -> ProgEq -> ProgEq
+substCaseEq s (ProgEq lh rh rg) =
+    let bvars = Set.toList $ freeVars lh
+    in ProgEq lh (subst (removeListC s bvars) rh) rg
+
+
+-- | substitutes the symbols, bound by progeqs, in the term
+substEqs :: Term -> [ProgEq] -> ReductionResult Term
+substEqs t eqs = (\x -> subst x t) <$> redFold substFromEq eps eqs
+
+
+substFromEq :: Subst -> ProgEq -> ReductionResult Subst
+substFromEq s (ProgEq lh rh _) =
+    case toSConst lh of
+      -- NotReduced plays the role of continue, so use it here!
+      Just sc -> NotReduced $ addTerm s sc $ subst s rh
+      Nothing -> CannotReduce HasPatternsOrFunctions "substFromEq" s
+
+
+------------------------- Reduction -------------------------
+
+data ReductionFailure = HasPatternsOrFunctions | HasCycles deriving Show
+
+-- | Codes for explaining the success of a reduction.
+--   * reduced is a stop-flag and signals success
+--   * notreduced is a continue-flag
+--   * cannotreduce is a stop-flag and signals failure
+data ReductionResult a = Reduced a | NotReduced a
+                       | CannotReduce ReductionFailure String a
+
+instance Functor ReductionResult where
+    fmap f rr = case rr of
+                  Reduced a -> Reduced $ f a
+                  NotReduced a -> NotReduced $ f a
+                  CannotReduce rf s a -> CannotReduce rf s $ f a
+
+-- | Usually defined in Data.Functor, but not importable here
+(<$) :: Functor f => a -> f b -> f a
+(<$) = fmap . const
+
+infixl 4 <$>
+
+-- | An infix synonym for 'fmap'.
+(<$>) :: Functor f => (a -> b) -> f a -> f b
+(<$>) = fmap
+
+
+
+
+
+-- | intended to unpack the result or to give an error if CannotReduce
+getResult :: ReductionResult a -> a
+getResult rr = case rr of
+                 Reduced a -> a
+                 NotReduced a -> a
+                 CannotReduce rf s _ ->
+                     error $ "Cannot reduce because " ++ show rf ++ ", " ++ s
+
+
+-- generic functions for the reduction-datatype
+
+redList :: (a -> ReductionResult a) -> [a] -> ReductionResult [a]
+redList _ [] = NotReduced []
+redList f tl@(t:l) = case f t of
+                        NotReduced _ -> (t:) <$> redList f l
+                        Reduced x -> Reduced (x:l)
+                        x -> const tl <$> x
+
+
+redFold :: (a -> b -> ReductionResult a) -> a -> [b] -> ReductionResult a
+redFold _ s [] = NotReduced s
+redFold f x tl@(t:l) = case f x t of
+                        NotReduced y -> redFold f y l
+                        y -> y
+
+---- Let-Reduction
+redLetList :: [Term] -> ReductionResult [Term]
+redLetList  = redList redLet
+
+redLetProg :: ([ProgEq], Term) -> ReductionResult ([ProgEq], Term)
+redLetProg (eqs, t) =
+    let -- build a list from the input structure
+        res = redLetList $ map (\ (ProgEq _ rh _) -> rh) eqs ++ [t]
+        -- function to recombine the result structure from the list
+        recomb tl = (zipWith rhsRepl eqs tl, last tl)
+        -- needed for recomb
+        rhsRepl (ProgEq lh _ rg) x = (ProgEq lh x rg)
+    in fmap recomb res
+
+
+
+-- this function is a nice example where the usage of an abstract functor
+-- makes the implementation cleaner
+
+-- | reduce the topleft-most occurence of a let-expression if possible
+-- , i.e, if the let doesn't contain function-definitions nor patterns
+redLet :: Term -> ReductionResult Term
+redLet t =
+    case t of
+      -- LetTerm LetBrand [ProgEq] Term Range
+      LetTerm lb eqs term rg -> substEqs term eqs
+      ApplTerm t1 t2 rg -> 
+          (\ [r1,r2] -> ApplTerm r1 r2 rg) <$> redLetList [t1,t2]
+      TupleTerm l rg -> (\x -> TupleTerm x rg) <$> redLetList l
+      TypedTerm term tq typ rg -> (\x -> TypedTerm x tq typ rg) <$> redLet term
+      QuantifiedTerm q vars term rg ->
+          (\x -> QuantifiedTerm q vars x rg) <$> redLet term
+      LambdaTerm vars p term rg ->
+          (\x -> LambdaTerm vars p x rg) <$> redLet term
+      CaseTerm term eqs rg ->
+          (\ (xeqs, xt) -> CaseTerm xt xeqs rg) <$> redLetProg (eqs, term)
+      _ -> NotReduced t
+
+
+letReduce :: Term -> Term
+letReduce = getResult . redLet
+                
+---- Beta-Reduction
 
 
 ------------------------- Testsuite -------------------------
@@ -210,7 +376,8 @@ testSubst dgn = do
           csign <- coercePlainSign lid HasCASL "" sign
           csens <- coerceSens lid HasCASL "" $ toNamedList sens
           test1 csign csens
-          test2 csign csens
+--          test2 csign csens
+          test3 csign csens
           hint () ("\n"++show lid ++"\n") nullRange
           return ()
 
@@ -237,6 +404,15 @@ test2 e s = do
   hint () ("\n"
 --           ++ "ops:\n" ++ (showL $ map toSimpOp (flattenOpMap $ assumps e)) ++"\n\n"
            ++ "sens:\n" ++ (showL $ map (toSimpNSen . substNS) s) ++"\n\n"
+          ) nullRange
+  return ()
+
+test3 :: Env -> [Named Sentence] -> Result ()
+test3 e s = do
+  let redNS x = case sentence x of Formula t -> x{ sentence = Formula $ letReduce t }
+                                   _ -> x
+  hint () ("\n"
+           ++ "sens:\n" ++ (showL $ map (toSimpNSen . redNS) s) ++"\n\n"
           ) nullRange
   return ()
 
