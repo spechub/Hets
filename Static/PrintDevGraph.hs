@@ -59,7 +59,8 @@ printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh oga sn g =
     let ga = removeProblematicListAnnos oga in
     useGlobalAnnos ga $ pretty ga $+$ prettyGTheorySL g $+$
-    sep [keyword specS <+> sidDoc sn <+> equals, prettyGTheory g]
+    sep [if null (tokStr sn) then Doc.empty else
+             keyword specS <+> sidDoc sn <+> equals, prettyGTheory g]
 
 removeProblematicListAnnos :: GlobalAnnos -> GlobalAnnos
 removeProblematicListAnnos ga = let
