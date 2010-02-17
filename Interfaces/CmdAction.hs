@@ -15,7 +15,8 @@ module Interfaces.CmdAction where
 
 import Proofs.QualifyNames (qualifyLibEnv)
 import Proofs.DGFlattening
-import Proofs.NormalForm (normalForm, freeness, theoremFreeShift)
+import Proofs.Freeness(freeness, theoremFreeShift)
+import Proofs.NormalForm (normalForm)
 import Proofs.Automatic(automatic)
 import Proofs.Global (globSubsume, globDecomp)
 import Proofs.Local (localInference, locDecomp)
