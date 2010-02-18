@@ -32,8 +32,8 @@ import Data.Maybe
 ------------------------- Subst type -------------------------
 
 -- | The constants for which terms can be substituted
-data SubstConst = SConst Id TypeScheme | SVar Id Type
-                  deriving (Eq, Ord)
+data SubstConst = SConst Id TypeScheme
+                  deriving (Eq, Ord, Show)
 
 type SubstType = Id
 
@@ -41,7 +41,7 @@ type SubstType = Id
 --   The status entry signals if the use of this substitution will trigger
 --   a failure or not. This mechanism is used to detect if variable capturing
 --   will occur.
-data SRule a = Blocked a | Ready a
+data SRule a = Blocked a | Ready a deriving Show
 
 
 type Subst = (Map.Map SubstConst (SRule Term) -- | the const->term mapping
@@ -86,7 +86,7 @@ inScope scs (m,t,br) =
 mkSConst :: Id -> TypeScheme -> SubstConst
 mkSConst = SConst
 mkSVar :: Id -> Type -> SubstConst
-mkSVar = SVar
+mkSVar n = SConst n . simpleTypeScheme
 
 mkSRule :: a -> SRule a
 mkSRule = Ready
@@ -165,7 +165,8 @@ instance SCLike (PolyId, TypeScheme) where
 
 -- | this works only for QualVars and QualOps, otherwise an error is reported
 instance SCLike Term where
-    toSC = fromJust . toSConst
+    toSC t = case toSConst t of Just sc -> sc
+                                _ -> error "Non-SCLike Term encountered."
 
 instance STLike TypeArg where
     toST = typevarId
@@ -192,28 +193,12 @@ removeListT s l = foldl removeT s l
 typevarId :: TypeArg -> Id
 typevarId (TypeArg n _ _ _ _ _ _)= n
 
-removeGVD :: Subst -> GenVarDecl -> Subst
-removeGVD s gvd =
-    case gvd of
-      GenVarDecl vd -> removeC s vd
-      GenTypeVarDecl t -> removeT s t
-
-removeListGVD :: Subst -> [GenVarDecl] -> Subst
-removeListGVD s l = foldl removeGVD s l
-
 
 ------------------------- Substitution -------------------------
 
-substWithDefault :: (LookupSubst a b, Show a) => Subst -> b -> a -> b
-substWithDefault s dfault x =
-    case lookupS s x of
-      Nothing -> dfault
-      Just mp -> if isBlocked mp then error $ "substWithDefault: Rule for "
-                 ++ show x ++ " is blocked!"
-                 else ruleContent mp
-
 {-
--- TODO: The substitution doesn't signal variable capturing at the moment
+
+* VARIABLE CAPTURING
 
 examples: 
 
@@ -225,13 +210,23 @@ forall x:A. let y:A = x in exists x:A. x = y
 for beta reduction
 forall x:A. ( \y:A . exists x:A. x = y ) x
 
+The obvious solution is variable renaming of the bound vars by
+the inner binder, here, e.g., exists x:A -> exists x':A .
+Another solution is signaling an error in the subst function,
+whenever a substitution will cause variable capturing.
 
---       The obvious solution is variable renaming of the bound vars by
---       the inner binder, here, e.g., exists x:A -> exists x':A
---       Another solution would be to signal an error in the subst function
---       The second method would require a management of scopes
+We implement the second solution.
+
 -}
 
+
+substWithDefault :: (LookupSubst a b, Show a) => Subst -> b -> a -> b
+substWithDefault s dfault x =
+    case lookupS s x of
+      Nothing -> dfault
+      Just mp -> if isBlocked mp then error $ "substWithDefault: Rule for "
+                 ++ show x ++ " is blocked!"
+                 else ruleContent mp
 
 instance Substable Type where
     subst _ t = t
@@ -291,9 +286,19 @@ substCaseEq s (ProgEq lh rh rg) =
     in ProgEq lh (subst (inScope bvars $ removeListC s bvars) rh) rg
 
 
+----------------------- Substitution for let reduction -----------------------
+
 -- | substitutes the symbols, bound by progeqs, in the term
 substEqs :: Term -> [ProgEq] -> ReductionResult Term
-substEqs t eqs = (\x -> subst x t) <$> redFold substFromEq eps eqs
+-- evil hack to use the reduction type as it is also for building
+-- the substitution. This leads to the fact that a successful reduction
+-- will be given a notreduced flag!
+-- TODO: remove this evil hack
+substEqs t eqs = toReduced $ (\x -> subst x t) <$> redFold substFromEq eps eqs
+--substEqs t eqs = error $ (show t) ++ "\n\n\n"
+--                 ++ let redd = redFold substFromEq eps eqs
+--                    in (show $ getResult redd) ++ (show $ getResultType redd)
+--substEqs t eqs = (\x -> error $ show x) <$> redFold substFromEq eps eqs
 
 
 substFromEq :: Subst -> ProgEq -> ReductionResult Subst
@@ -332,6 +337,10 @@ infixl 4 <$>
 (<$>) = fmap
 
 
+toReduced :: ReductionResult a -> ReductionResult a
+toReduced rr = case rr of
+                  NotReduced a -> Reduced a
+                  _ -> rr
 
 
 
@@ -342,6 +351,14 @@ getResult rr = case rr of
                  NotReduced a -> a
                  CannotReduce rf s _ ->
                      error $ "Cannot reduce because " ++ show rf ++ ", " ++ s
+
+
+getResultType :: ReductionResult a -> String
+getResultType rr = case rr of
+                     Reduced a -> "Reduced"
+                     NotReduced a -> "NotReduced"
+                     CannotReduce rf s _ -> "CannotReduce: " ++ show rf
+                                            ++ ", " ++ s
 
 
 -- generic functions for the reduction-datatype
@@ -360,7 +377,7 @@ redFold f x (t:l) = case f x t of
                       NotReduced y -> redFold f y l
                       y -> y
 
----- Let-Reduction
+---- let-reduction
 redLetList :: [Term] -> ReductionResult [Term]
 redLetList  = redList redLet
 
@@ -402,6 +419,6 @@ redLet t =
 letReduce :: Term -> Term
 letReduce = getResult . redLet
                 
----- Beta-Reduction
+---- beta-reduction
 -- TODO!
 
