@@ -11,10 +11,10 @@ Portability :  portable
 -}
 
 module LF.Sign 
-       ( VAR
-       , SYMBOL_NAME
-       , MODULE_NAME
-       , BASE_NAME
+       ( Var
+       , NAME
+       , MODULE
+       , BASE
        , Symbol (..)
        , EXP (..)
        , DECL
@@ -44,19 +44,19 @@ import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-type VAR = String
-type SYMBOL_NAME = String
-type MODULE_NAME = String
-type BASE_NAME = String
+type Var = String
+type NAME = String
+type MODULE = String
+type BASE = String
 
 data Symbol = Symbol
-            { symBase :: BASE_NAME
-            , symModule :: MODULE_NAME
-            , symName :: SYMBOL_NAME
+            { symBase :: BASE
+            , symModule :: MODULE
+            , symName :: NAME
             } deriving (Eq, Ord, Show)
 
 data EXP = Type
-         | Var VAR
+         | Var Var
          | Const Symbol 
          | Appl EXP [EXP]
          | Func [EXP] EXP
@@ -64,7 +64,7 @@ data EXP = Type
          | Lamb [DECL] EXP
            deriving (Ord, Show)
 
-type DECL = (VAR,EXP)
+type DECL = (Var,EXP)
 
 data DEF = Def
          { getSym :: Symbol
@@ -73,8 +73,8 @@ data DEF = Def
          } deriving (Eq, Ord, Show)
 
 data Sign = Sign
-          { sigBase :: BASE_NAME
-          , sigName :: MODULE_NAME
+          { sigBase :: BASE
+          , sigModule :: MODULE
           , getDefs :: [DEF]
           } 
           deriving (Show, Ord, Eq)
@@ -117,7 +117,7 @@ getLocalSyms sig = Set.filter (isLocalSym sig) $ getAllSyms sig
 -- checks if the symbol is local to the signature
 isLocalSym :: Sign -> Symbol -> Bool
 isLocalSym sig sym = 
-  and [sigBase sig == symBase sym, sigName sig == symModule sym]
+  and [sigBase sig == symBase sym, sigModule sig == symModule sym]
 
 -- returns the type/kind for the given symbol
 getSymType :: Sign -> Symbol -> Maybe EXP
@@ -214,21 +214,21 @@ recForm t = t
 
 {- modifies the given name until it is different from each of the names
    in the input set -}
-getNewName :: VAR -> Set.Set VAR -> VAR
+getNewName :: Var -> Set.Set Var -> Var
 getNewName var names = getNewNameH var names var 0
 
-getNewNameH :: VAR -> Set.Set VAR -> VAR -> Int -> VAR
+getNewNameH :: Var -> Set.Set Var -> Var -> Int -> Var
 getNewNameH var names root i =
   if (Set.notMember var names)
      then var
      else let newVar = root ++ (show i)
               in getNewNameH newVar names root $ i+1 
 
--- returns a set of free variables used within an expression
-getFreeVars :: EXP -> Set.Set VAR
+-- returns a set of free Variables used within an expression
+getFreeVars :: EXP -> Set.Set Var
 getFreeVars e = getFreeVarsH $ recForm e
 
-getFreeVarsH :: EXP -> Set.Set VAR
+getFreeVarsH :: EXP -> Set.Set Var
 getFreeVarsH Type = Set.empty
 getFreeVarsH (Const _) = Set.empty
 getFreeVarsH (Var x) = Set.singleton x
@@ -242,14 +242,14 @@ getFreeVarsH (Lamb [(n,t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
 getFreeVarsH _ = Set.empty
 
-{- variable renamings: 
-   - the first argument specifies the desired variable renamings
-   - the second argument specifies the set of variables which cannot 
-     be used as new variable names -}
-rename :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
+{- Variable renamings: 
+   - the first argument specifies the desired Variable renamings
+   - the second argument specifies the set of Variables which cannot 
+     be used as new Variable names -}
+rename :: Map.Map Var Var -> Set.Set Var -> EXP -> EXP
 rename m s e = renameH m s (recForm e)
 
-renameH :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
+renameH :: Map.Map Var Var -> Set.Set Var -> EXP -> EXP
 renameH _ _ Type = Type
 renameH _ _ (Const n) = Const n
 renameH m _ (Var n) = Var $ Map.findWithDefault n n m

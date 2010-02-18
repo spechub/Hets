@@ -16,25 +16,27 @@ import System.IO
 import System.Process
 import System.Directory
 import System.FilePath
-
+import Debug.Trace
 import Network.URI
 
---import Static.GTheory
-import Static.ComputeTheory
---import Static.AnalysisStructured
+import Static.AnalysisStructured
 import Static.DevGraph
 
---import Logic.Grothendieck
+import Logic.Grothendieck
+import Logic.ExtSign
 
 import LF.Sign
 --import LF.Morphism
+import LF.Logic_LF
 
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Common.LibName
 import Common.Utils
+import Common.Id
 
 import Control.Monad
 
@@ -44,16 +46,18 @@ import Text.XML.Light.Proc
 
 import Driver.Options
 
--- path to the Twelf folder must be set in the environment variable TWELF_LIB
-twelf :: String
-twelf = "check-some"
-options :: [String]
-options = ["-omdoc", "."]
+type RAW_LIBS = (RAW_GRAPH,Set.Set FilePath)
 
-type SIG_VIEW_NAME = (BASE_NAME,MODULE_NAME)
-type SIGS_AND_MORPHS = (Map.Map SIG_VIEW_NAME Sign, 
-                        Map.Map (SIG_VIEW_NAME,SIG_VIEW_NAME,SIG_VIEW_NAME)
-                                (Map.Map Symbol EXP))
+type RAW_GRAPH = (RAW_NODES,RAW_LINKS)
+type RAW_NODES = Map.Map RAW_NODE_NAME Sign
+type RAW_LINKS = Map.Map (RAW_LINK_NAME,RAW_NODE_NAME,RAW_NODE_NAME)
+                         (Map.Map Symbol EXP)
+
+type RAW_NODE_NAME = (BASE,MODULE)
+type RAW_LINK_NAME = (BASE,MODULE,NAME)
+
+emptyLibs :: RAW_LIBS
+emptyLibs = ((Map.empty,Map.empty),Set.empty)
 
 omdocNS :: Maybe String
 omdocNS = Just "http://omdoc.org/ns"
@@ -189,6 +193,14 @@ getFromAttr e = findAttr fromQN e
 getToAttr :: Element -> Maybe String
 getToAttr e = findAttr toQN e
 
+-- constructs base and module out of a reference
+splitRef :: String -> RAW_NODE_NAME
+splitRef ref = 
+  case elemIndices '?' ref of
+       [i] -> let (b,(_:m)) = splitAt i ref
+                   in (b,m)    
+       _ -> error "Invalid reference."
+
 -- compares two OMS elements
 eqOMS :: Element -> Element -> Bool
 eqOMS e1 e2 =
@@ -210,55 +222,96 @@ resolve fp1 fp2 =
                Nothing -> error "Invalid file name."
                Just f -> show f
 
--- generates a library from the path of a Twelf file
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+
+-- generates a library environment from the path of a Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaTwelfFile _ file = do
-    dg <- twelf2DG file
-    let name = emptyLibName ""
-    return $ Just (name, 
-                   Map.singleton name $ computeDGraphTheories Map.empty dg)
+anaTwelfFile _ fp = do
+    dir <- getCurrentDirectory
+    let file = resolve fp (dir ++ "/")
+    (rg,_) <- twelf2libs file emptyLibs
+    let envir = makeLibEnv rg
+    let name = LibName (IndirectLink "" nullRange file noTime) Nothing
+    return $ Just (name,envir)                 
 
--- generates a development graph from the path of a Twelf file
-twelf2DG :: FilePath -> IO DGraph
-twelf2DG file = do
-  twelf2SigsAndMorphs file
-  return emptyDG
+-- generates a library environment from raw libraries
+makeLibEnv :: RAW_GRAPH -> LibEnv
+makeLibEnv rg = addLinks rg $ addNodes rg emptyLibEnv
 
--- generates signatures and morphisms from the path of a Twelf file
-twelf2SigsAndMorphs :: FilePath -> IO SIGS_AND_MORPHS
-twelf2SigsAndMorphs file = do
-  runTwelf file
-  getSigsAndMorphs file
-  return (Map.empty,Map.empty)
+-- adds nodes to the library environment
+addNodes :: RAW_GRAPH -> LibEnv -> LibEnv
+addNodes (sigs,_) envir =
+  foldl (\ e ((b,m),sig) -> 
+           let libname = LibName (IndirectLink "" nullRange b noTime) Nothing
+               dg = Map.findWithDefault emptyDG libname e
+               nodeName = emptyNodeName { getName = Token m nullRange }
+               gsig = G_sign LF (makeExtSign LF sig) startSigId
+               (_,dg1) = insGSig dg nodeName DGBasic gsig
+               in Map.insert libname dg1 e
+        ) 
+        envir
+        $ Map.toList sigs   
+
+-- adds links to the library environment
+addLinks :: RAW_GRAPH -> LibEnv -> LibEnv
+addLinks _ envir = 
+  {-foldl (\ e ((l,d,c),symmap) -> 
+           let (b,m,n) = l
+               libname = LibName (IndirectLink "" nullRange b noTime) Nothing
+               dg = Map.findWithDefault emptyDG libname env
+               dom = case Map.lookup d sigs of
+                          Nothing -> error "Invalid link source."
+                          Just s -> s
+               cod = case Map.lookup c sigs of
+                          Nothing -> error "Invalid link target."
+                          Just s -> s
+               morph = Morphism b m n dom cod symmap
+               gmorph = GMorphism LF (makeExtSign LF dom) morph startMorId ----- TODO
+               (_,dg1) = insLink dg gmorph ----- TODO
+               in Map.insert libname dg1 e
+        ) 
+        env
+        $ Map.toList morphs -} envir
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------       
+
+-- path to the Twelf folder must be set in the environment variable TWELF_LIB
+twelf :: String
+twelf = "check-some"
+options :: [String]
+options = ["-omdoc"]
 
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
 runTwelf file = do
-  dir <- getEnvDef "TWELF_LIB" ""
-  if null dir 
+  let dir = dropFileName file
+  twelfdir <- getEnvDef "TWELF_LIB" ""
+  if null twelfdir 
      then error "environment variable TWELF_LIB is not set"
      else do
-       (_, _, _, pr) <- runInteractiveProcess (concat [dir, "/" ,twelf])
-                                              (options ++ [file])
-                                              Nothing
-                                              Nothing 
-       exitCode <- waitForProcess pr --getProcessExitCode pr
+       (_, _, _, pr) <- 
+         runInteractiveProcess (concat [twelfdir, "/" ,twelf])
+                               (options ++ [dir,file])
+                               Nothing
+                               Nothing
+       exitCode <- waitForProcess pr
        case exitCode of
             ExitFailure i -> 
-              error $ "Calling Twelf failed with exitCode: " ++ show i ++
-                      " on file " ++ file                      
-            ExitSuccess -> return () 
-       {-case exitCode of
-            Nothing -> return ()
-            Just ExitSuccess -> error "Twelf terminated immediately."
-            Just (ExitFailure i) -> 
-              error $ "Calling Twelf failed with exitCode: " ++ show i-}
+               error $ "Calling Twelf failed with exitCode: " ++ show i ++
+                       " on file " ++ file                    
+            ExitSuccess -> return ()
+
+-- generates signatures and morphisms from the absolute path of a Twelf file
+twelf2libs :: FilePath -> RAW_LIBS -> IO RAW_LIBS
+twelf2libs file libs = do
+  runTwelf (trace ("Analyzing file: " ++ file) file)
+  getSigsAndMorphs file libs 
 
 -- converts the specifications and views into signatures and morphisms
-getSigsAndMorphs :: FilePath -> IO SIGS_AND_MORPHS 
-getSigsAndMorphs fp = do
-  dir <- getCurrentDirectory
-  let file = resolve fp (dir ++ "/")
+getSigsAndMorphs :: FilePath -> RAW_LIBS -> IO RAW_LIBS 
+getSigsAndMorphs file libs = do
   let omdoc_file = replaceExtension file "omdoc"
   xml <- readFile omdoc_file
   let elems = onlyElems $ parseXML xml
@@ -271,12 +324,12 @@ getSigsAndMorphs fp = do
                             if (n == viewQN) then addMorph file e sm else
                             return sm
                 ) 
-                (Map.empty, Map.empty)
+                libs
                 $ elChildren root
        _ -> fail "Not an OMDoc file."
 
 -- transforms a theory element into a signature and adds it to the map
-addSign :: FilePath -> Element -> SIGS_AND_MORPHS -> IO SIGS_AND_MORPHS
+addSign :: FilePath -> Element -> RAW_LIBS -> IO RAW_LIBS
 addSign file e sm =
   case getNameAttr e of
        Nothing -> error "Theory element must have a name."
@@ -294,16 +347,16 @@ addSign file e sm =
                       ) 
                       (sm,sig)
                       $ elChildren e
-          let (sigs,morphs) = sm1
+          let ((sigs,morphs),incl) = sm1
           let sigs1 = Map.insert (file,name) sig1 sigs
-          return (sigs1,morphs) 
+          return ((sigs1,morphs),incl) 
               
 -- adds a constant declaration to the signature
-addConst :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addConst :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
 addConst e (sm,sig) = do
   let sym = case getNameAttr e of
                  Nothing -> error "Constant element must have a name."
-                 Just n -> Symbol (sigBase sig) (sigName sig) n
+                 Just n -> Symbol (sigBase sig) (sigModule sig) n
   let typ = case findChildren typeQN e of
                  [t] -> type2exp sig t
                  _ -> error "Constant element must have a unique type child."
@@ -351,7 +404,7 @@ omel2exp sig e =
 oms2exp :: Sign -> Element -> EXP                                      
 oms2exp sig e =
   let curBase = sigBase sig
-      curModule = sigName sig
+      curModule = sigModule sig
   in if (eqOMS e typeOMS)
         then Type
         else case getNameAttr e of
@@ -418,7 +471,7 @@ omattr2decl sig e =
        _ -> error "OMATTR element must have a unique OMATP child."
 
 -- converts an OMV element to a variable
-omv2var :: Element -> VAR
+omv2var :: Element -> Var
 omv2var e = 
   case getNameAttr e of
        Nothing -> error "OMV element must have a name."
@@ -437,44 +490,62 @@ omatp2exp sig e =
       
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
-addIncl :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
-addIncl e ((sigs1,morphs1),sig1) = do
-  let curBase = sigBase sig1
-  let curModule = sigName sig1
+addIncl :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
+addIncl e (libs,sig) = do
   case getFromAttr e of
        Nothing -> error "Include element must have a \"from\" attribute."
-       Just ref -> 
-         case elemIndices '?' ref of
-              [i] -> do let (br,m) = splitAt i ref
-                        let b = replaceExtension (resolve br curBase) "elf"
-                        let source = (b,m)
-                        let target = (curBase,curModule)
-                        (sigs2,morphs2) <- twelf2SigsAndMorphs b
-                        let sigs = Map.union sigs1 sigs2
-                        let morphs3 = Map.union morphs1 morphs2
-                        let sig = case Map.lookup source sigs of
-                                       Nothing -> 
-                                          error "Invalid inclusion source."
-                                       Just (Sign _ _ ds) -> addDefs ds sig1
-                        let morphs = Map.insert ((curBase,""),source,target)
-                                                Map.empty
-                                                morphs3
-                        return ((sigs,morphs),sig)
-              _ -> error "Invalid inclusion source."      
+       Just ref -> do
+         let curBase = sigBase sig
+         let curModule = sigModule sig
+         let (br,m) = splitRef ref
+         let b = replaceExtension (resolve br curBase) "elf"
+         ((sigs,morphs),incls) <- addFromFile b curBase libs  
+         let s = (b,m)
+         let t = (curBase,curModule)
+         let sig1 = addToSig s sig sigs  
+         let morphs1 = addToMorphs s t morphs
+         return (((sigs,morphs1),incls),sig1)
+
+{- parses the referenced file and imports all signatures
+   and morphisms from it -}
+addFromFile :: String -> FilePath -> RAW_LIBS -> IO RAW_LIBS
+addFromFile file base libs = do
+  let ((sigs,morphs),incls) = libs
+  if (file == base || Set.member file incls)
+     then return libs
+     else do ((sigs1,morphs1),incls1) <- twelf2libs file libs
+             let sigs2 = Map.union sigs sigs1
+             let morphs2 = Map.union morphs morphs1
+             let incls2 = Set.insert file $ Set.union incls incls1
+             return ((sigs2,morphs2),incls2) 
+
+-- adds included definitions to the signature
+addToSig :: RAW_NODE_NAME -> Sign -> RAW_NODES -> Sign
+addToSig s sig sigs = 
+  case Map.lookup s sigs of
+       Nothing -> error "Invalid inclusion source."
+       Just (Sign _ _ ds) -> addDefs ds sig
+
+-- adds the inclusion to the collection of morphisms
+addToMorphs :: RAW_NODE_NAME -> RAW_NODE_NAME -> RAW_LINKS -> RAW_LINKS
+addToMorphs s t morphs = 
+  let (b,m) = t
+      name = (b,m,"") 
+      in Map.insert (name,s,t) Map.empty morphs   
 
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
-addStruct :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addStruct :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
 addStruct _ sm = return sm 
 
 -- so far aliases are ignored
-addAlias :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addAlias :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
 addAlias _ sm = return sm
 
 -- so far notations are ignored
-addNotat :: Element -> (SIGS_AND_MORPHS,Sign) -> IO (SIGS_AND_MORPHS,Sign)
+addNotat :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
 addNotat _ sm = return sm
 
 -- so far views are ignored
-addMorph :: FilePath -> Element -> SIGS_AND_MORPHS -> IO SIGS_AND_MORPHS
+addMorph :: FilePath -> Element -> RAW_LIBS -> IO RAW_LIBS
 addMorph _ _ sm = return sm

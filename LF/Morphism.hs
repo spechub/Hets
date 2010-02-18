@@ -23,21 +23,24 @@ import qualified Data.Set as Set
 
 -- LF morphism cannot map defined symbols, only declared ones
 data Morphism = Morphism
-  { source :: Sign
+  { morphBase :: BASE
+  , morphModule :: MODULE
+  , morphName :: NAME
+  , source :: Sign
   , target :: Sign
   , symMap :: Map.Map Symbol EXP
   } deriving (Ord, Show)
 
 -- constructs an identity morphism
 idMorph :: Sign -> Morphism
-idMorph sig = Morphism sig sig Map.empty
+idMorph sig = Morphism "" "" "" sig sig Map.empty
 
 -- composes two morphisms
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 =
   if target m1 /= source m2
      then Result.Result [incompatibleMorphsError m1 m2] Nothing 
-     else return $ Morphism (source m1) (target m2) $
+     else return $ Morphism "" "" "" (source m1) (target m2) $
                  Set.fold (\ s -> let Just e1 = mapSymbol m1 s  
                                       Just e2 = translateH m2 e1 
                                       in Map.insert s e2)
@@ -87,9 +90,9 @@ translateH _ _ = Nothing
 {- converts the morphism into its canonical form where the symbol map contains
    no key/value pairs of the form (s, Const s) -}
 canForm :: Morphism -> Morphism
-canForm (Morphism sig1 sig2 map1) =
+canForm (Morphism b m n sig1 sig2 map1) =
   let map2 = Map.fromList $ filter (\ (s,e) -> Const s /= e) $ Map.toList map1
-      in Morphism sig1 sig2 map2
+      in Morphism b m n sig1 sig2 map2
 
 -- equality
 instance Eq Morphism where

@@ -23,27 +23,6 @@ import System.FilePath
 
 import Common.Utils
 
-fp :: FilePath
-fp = "/home/mathias/twelf/specs/math/algebra/algebra3.elf"
-
-twelfTest :: FilePath -> IO ()
-twelfTest file = do
-  dir <- getEnvDef "TWELF_LIB" ""
-  if null dir 
-     then error "environment variable TWELF_LIB is not set"
-     else do
-       (_, _, _, pr) <- runInteractiveProcess (concat [dir, "/" ,twelf])
-                                              (options ++ [file])
-                                              Nothing
-                                              Nothing 
-       
-       exitCode <- getProcessExitCode pr
-       case exitCode of
-            Nothing -> return ()
-            Just ExitSuccess -> error "Twelf terminated immediately."
-            Just (ExitFailure i) -> 
-              error $ "Calling Twelf failed with exitCode: " ++ show i
-
 nat,mat :: EXP
 nat = Const $ Symbol "file1" "sig1" "nat"
 mat = Const $ Symbol "file2" "sig2" "mat"
@@ -70,22 +49,28 @@ sig2 = Sign "file1" "sig2"
  [Def (Symbol "file1" "sig1" "nat") t1 Nothing]
 
 m :: Morphism
-m = Morphism sig1 sig2 $ Map.fromList [(Symbol "file1" "sig1" "nat", t0)]
+m = Morphism "" "" "" sig1 sig2 $ Map.fromList [(Symbol "file1" "sig1" "nat", t0)]
 
 Just r = mapSymbol m $ Symbol "file2" "sig2" "mat"
-
 b = getSymValue sig1 $ Symbol "file2" "sig2" "mat"
 
-inc = "/home/mathias/twelf/specs/logics/first-order/proof_theory/derived.elf"
+fp = "/home/mathias/twelf/specs/math/algebra/algebra1.elf"
+fp1 = "/home/mathias/twelf/specs/logics/first-order/proof_theory/derived.elf"
+fp2 = "/home/mathias/twelf/specs/logics/first-order/syntax/derived.elf"
+fp3 = "/home/mathias/twelf/specs/logics/first-order/syntax/fol.elf"
+fp4 = "/home/mathias/twelf/specs/logics/first-order/syntax/modules.elf"
+fp5 = "/home/mathias/twelf/specs/logics/propositional/syntax/prop.elf"
 
-toDoc :: (SIG_VIEW_NAME,Sign) -> Doc
+toDoc :: (RAW_NODE_NAME,Sign) -> Doc
 toDoc ((b,m),sig) = vcat [text b, text m, pretty sig]
 
 test :: FilePath -> IO Doc
 test file = do
-  (sigs,_) <- twelf2SigsAndMorphs file
-  return $ vcat $ map toDoc $ Map.toList sigs  
-  
+  ((sigs,morphs),_) <- twelf2libs file emptyLibs
+  return $ vcat $ map toDoc $ Map.toList sigs
+
+
+
 
 
 
