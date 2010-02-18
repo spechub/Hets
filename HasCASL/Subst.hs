@@ -16,24 +16,12 @@ module HasCASL.Subst where
 --import qualified Data.Graph.Analysis.Algorithms.Common() as DGAAC
 
 import HasCASL.As
-import HasCASL.FoldTerm
 import HasCASL.AsUtils
-import HasCASL.PrintAs
+import HasCASL.FoldTerm
 import HasCASL.Le
-import HasCASL.Logic_HasCASL
 
 import Common.Id
-import Common.DocUtils
-import Common.Result
-import Common.ExtSign
-import Common.AS_Annotation
 import Common.Lib.State
-
-import Static.GTheory
-import Static.DevGraph
-
-import Logic.Coerce
-import Logic.Prover
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -41,48 +29,107 @@ import Data.List as List
 import Data.Maybe
 
 
-
-                   
-
-
 ------------------------- Subst type -------------------------
 
-data SubstConst = SConst Id TypeScheme | SVar Id Type deriving (Eq, Ord)
+-- | The constants for which terms can be substituted
+data SubstConst = SConst Id TypeScheme | SVar Id Type
+                  deriving (Eq, Ord)
+
 type SubstType = Id
 
-type Subst = (Map.Map SubstConst Term, Map.Map SubstType Type)
+-- | Type for the SubstRules.
+--   The status entry signals if the use of this substitution will trigger
+--   a failure or not. This mechanism is used to detect if variable capturing
+--   will occur.
+data SRule a = Blocked a | Ready a
+
+
+type Subst = (Map.Map SubstConst (SRule Term) -- | the const->term mapping
+             , Map.Map SubstType (SRule Type) -- | the const->type mapping
+             -- | if a constant c occurs in the term t of a
+             --   const-term mapping (c',t) then c' is entered in the
+             --   by this mapping corresponding set s: (c, insert c' s)
+             , Map.Map SubstConst (Set.Set SubstConst))
 
 eps :: Subst
-eps = (Map.empty, Map.empty)
+eps = (Map.empty, Map.empty, Map.empty)
+
+isBlocked :: SRule a -> Bool
+isBlocked (Ready _) = False
+isBlocked _ = True
+
+ruleContent :: SRule a -> a
+ruleContent (Ready x) = x
+ruleContent (Blocked x) = x
+
+blockRule :: SRule a -> SRule a
+blockRule (Ready x) = Blocked x
+blockRule x = x
+
+-- | Mark all mappings to terms which contain a var from the given scope
+--   as blocked.
+inScope :: [SubstConst] -> Subst -> Subst
+inScope scs (m,t,br) =
+    let
+        -- constants to block
+        cb = Set.unions $ Map.elems $ Map.filterWithKey (\ k _ -> elem k scs) br
+        -- map after removal of the blocked constants
+        nbr = Map.filter (not . Set.null)
+              $ Map.map (flip Set.difference $ Set.fromList scs) br
+        -- blockfunction
+        blf c v = if Set.member c cb then blockRule v else v
+    in (Map.mapWithKey blf m, t, nbr)
+
+
+
+
+mkSConst :: Id -> TypeScheme -> SubstConst
+mkSConst = SConst
+mkSVar :: Id -> Type -> SubstConst
+mkSVar = SVar
+
+mkSRule :: a -> SRule a
+mkSRule = Ready
 
 toSConst :: Term -> Maybe SubstConst
 toSConst (QualVar vd) = Just $ toSC vd
 toSConst (QualOp _ n ts _ _ _) = Just $ toSC (n, ts)
 toSConst _ = Nothing
 
+termEmpty :: Subst -> Bool
+termEmpty (m,_,_) = Map.null m
+typeEmpty :: Subst -> Bool
+typeEmpty (_,m,_) = Map.null m
 
-lookupTerm :: Subst -> SubstConst -> Maybe Term
-lookupTerm (m,_) k = Map.lookup k m
 
-lookupType :: Subst -> SubstType -> Maybe Type
-lookupType (_,t) k = Map.lookup k t
+lookupTerm :: Subst -> SubstConst -> Maybe (SRule Term)
+lookupTerm (m,_,_) k = Map.lookup k m
+
+lookupType :: Subst -> SubstType -> Maybe (SRule Type)
+lookupType (_,t,_) k = Map.lookup k t
 
 addTerm :: Subst -> SubstConst -> Term -> Subst
-addTerm (m,t) k v = (Map.insert k v m, t)
+addTerm (m,t,br) k v =
+    let nm = Map.insert k (mkSRule v) m
+        f x = (toSC x, Set.singleton k)
+        s = Set.map f (freeVars v) `Set.union` Set.map f (opsInTerm v)
+        nbr = Map.fromList $ Set.toList s
+    in (nm, t, Map.unionWith Set.union br nbr)
 
 removeTerm :: Subst -> SubstConst -> Subst
-removeTerm (m,t) k = (Map.delete k m, t)
+removeTerm (m,t,br) k =
+    (Map.delete k m, t, Map.filter (not . Set.null) $ Map.map (Set.delete k) br)
                  
 addType :: Subst -> SubstType -> Type -> Subst
-addType (m,t) k v = (m, Map.insert k v t)
+addType (m,t,br) k v = (m, Map.insert k (mkSRule v) t,br)
 
 removeType :: Subst -> SubstType -> Subst
-removeType (m,t) k = (m, Map.delete k t)
+removeType (m,t,br) k = (m, Map.delete k t,br)
                  
 
 
 class LookupSubst a b where
-    lookupS :: Subst -> a -> Maybe b
+    lookupS :: Subst -> a -> Maybe (SRule b)
 
 class SCLike a where
     toSC :: a -> SubstConst
@@ -104,14 +151,21 @@ instance STLike a => LookupSubst a Type where
     lookupS s x = lookupType s $ toST x
 
 
+instance SCLike SubstConst where
+    toSC = id
+
 instance SCLike VarDecl where
-    toSC (VarDecl n typ _ _) = SVar n typ
+    toSC (VarDecl n typ _ _) = mkSVar n typ
 
 instance SCLike (Id, OpInfo) where
-    toSC (n, inf) = SConst n $ opType inf
+    toSC (n, inf) = mkSConst n $ opType inf
 
 instance SCLike (PolyId, TypeScheme) where
-    toSC (PolyId n _ _, typs) = SConst n typs
+    toSC (PolyId n _ _, typs) = mkSConst n typs
+
+-- | this works only for QualVars and QualOps, otherwise an error is reported
+instance SCLike Term where
+    toSC = fromJust . toSConst
 
 instance STLike TypeArg where
     toST = typevarId
@@ -150,10 +204,13 @@ removeListGVD s l = foldl removeGVD s l
 
 ------------------------- Substitution -------------------------
 
-substWithDefault :: LookupSubst a b => Subst -> b -> a -> b
+substWithDefault :: (LookupSubst a b, Show a) => Subst -> b -> a -> b
 substWithDefault s dfault x =
-    case lookupS s x of Nothing -> dfault
-                        Just t -> t
+    case lookupS s x of
+      Nothing -> dfault
+      Just mp -> if isBlocked mp then error $ "substWithDefault: Rule for "
+                 ++ show x ++ " is blocked!"
+                 else ruleContent mp
 
 {-
 -- TODO: The substitution doesn't signal variable capturing at the moment
@@ -177,57 +234,35 @@ forall x:A. ( \y:A . exists x:A. x = y ) x
 
 
 instance Substable Type where
-    subst s t = t
+    subst _ t = t
 
 instance Substable Term where
-    subst s@(m,_) t
-      | Map.null m = t
+    subst s t
+      | termEmpty s = t
       | otherwise =
           case t of
-          -- QualVar VarDecl
-          -- pos "(", "var", ":", ")"
           qv@(QualVar v) -> substWithDefault s qv v
-          -- QualOp OpBrand PolyId TypeScheme [Type] InstKind Range
-          -- pos "(", "op", ":", ")"
           qo@(QualOp _ n typ _ _ _) -> substWithDefault s qo (n,typ)
-          -- ApplTerm Term Term Range  -- analysed
-          -- pos?
           ApplTerm t1 t2 rg -> ApplTerm (subst s t1) (subst s t2) rg
-          -- TupleTerm [Term] Range    -- special application
-          -- pos "(", ","s, ")"
           TupleTerm l rg -> TupleTerm (map (subst s) l) rg
-          -- TypedTerm Term TypeQual Type Range
-          -- pos ":", "as" or "in"
           TypedTerm term tq typ rg ->
               TypedTerm (subst s term) tq (subst s typ) rg
-          -- AsPattern VarDecl Term Range
-          -- pos "@"
-          -- patterns are terms constructed by the first six variants
           p@(AsPattern _ _ _) -> p
-          -- QuantifiedTerm Quantifier [GenVarDecl] Term Range
-          -- pos quantifier, ";"s, dot
-          -- only "forall" may have a TypeVarDecl
           QuantifiedTerm q vars term rg ->
-              let s' = removeListGVD s vars
+              let (vds, tvs) = splitVars vars
+                  scs = map toSC vds
+                  s' = inScope scs $ removeListT (removeListC s scs) tvs
               in QuantifiedTerm q vars (subst s' term) rg
           LambdaTerm varPatts p term rg ->
-              let bvars = Set.toList $ Set.unions $ map freeVars varPatts
-                  s' = removeListC s bvars
+              let bvars = map toSC 
+                          $ Set.toList $ Set.unions $ map freeVars varPatts
+                  s' = inScope bvars $ removeListC s bvars
               in LambdaTerm varPatts p (subst s' term) rg
           LetTerm lb eqs term rg -> 
               let (eqs', s') = substLetEqs s eqs
               in LetTerm lb eqs' (subst s' term) rg
           CaseTerm term eqs rg ->
               CaseTerm (subst s term) (substCaseEqs s eqs) rg
-
-          
-{-
-          -- CaseTerm Term [ProgEq] Range
-          -- pos "case", "of", "|"s
-          CaseTerm term eqs rg ->
-          -- LetTerm LetBrand [ProgEq] Term Range
-          LetTerm lb eqs term rg -> 
--}
           _ -> t
 
 
@@ -237,10 +272,14 @@ substLetEqs s eqs = runState (mapM substLetEq eqs) s
 substLetEq :: ProgEq -> State Subst ProgEq
 substLetEq (ProgEq lh rh rg) = do
   s <- get
-  let rh' = subst s rh
-  let bvars = Set.toList $ freeVars lh
-  put $ removeListC s bvars
-  return (ProgEq lh rh rg)
+  let scs = map toSC (Set.toList $ freeVars lh)
+            ++ map toSC (Set.toList $ opsInTerm lh)
+  -- IMPORTANT REMARK:
+  -- The ops contain also constructors which are used to form patterns.
+  -- These constructors shouldn't be substituted at all, so it should
+  -- be no problem if we remove them from the substitution.
+  put $ inScope scs $ removeListC s scs
+  return (ProgEq lh (subst s rh) rg)
 
 
 substCaseEqs :: Subst -> [ProgEq] -> [ProgEq]
@@ -248,8 +287,8 @@ substCaseEqs s = map $ substCaseEq s
 
 substCaseEq :: Subst -> ProgEq -> ProgEq
 substCaseEq s (ProgEq lh rh rg) =
-    let bvars = Set.toList $ freeVars lh
-    in ProgEq lh (subst (removeListC s bvars) rh) rg
+    let bvars = map toSC $ Set.toList $ freeVars lh
+    in ProgEq lh (subst (inScope bvars $ removeListC s bvars) rh) rg
 
 
 -- | substitutes the symbols, bound by progeqs, in the term
@@ -317,9 +356,9 @@ redList f tl@(t:l) = case f t of
 
 redFold :: (a -> b -> ReductionResult a) -> a -> [b] -> ReductionResult a
 redFold _ s [] = NotReduced s
-redFold f x tl@(t:l) = case f x t of
-                        NotReduced y -> redFold f y l
-                        y -> y
+redFold f x (t:l) = case f x t of
+                      NotReduced y -> redFold f y l
+                      y -> y
 
 ---- Let-Reduction
 redLetList :: [Term] -> ReductionResult [Term]
@@ -346,7 +385,7 @@ redLet :: Term -> ReductionResult Term
 redLet t =
     case t of
       -- LetTerm LetBrand [ProgEq] Term Range
-      LetTerm lb eqs term rg -> substEqs term eqs
+      LetTerm _ eqs term _ -> substEqs term eqs
       ApplTerm t1 t2 rg -> 
           (\ [r1,r2] -> ApplTerm r1 r2 rg) <$> redLetList [t1,t2]
       TupleTerm l rg -> (\x -> TupleTerm x rg) <$> redLetList l
@@ -364,180 +403,5 @@ letReduce :: Term -> Term
 letReduce = getResult . redLet
                 
 ---- Beta-Reduction
-
-
-------------------------- Testsuite -------------------------
-
-testSubst :: DGNodeLab -> Result ()
-testSubst dgn = do
-   case dgn_theory dgn of
-    G_theory lid (ExtSign sign _) _ sens _ ->
-        do
-          csign <- coercePlainSign lid HasCASL "" sign
-          csens <- coerceSens lid HasCASL "" $ toNamedList sens
-          test1 csign csens
---          test2 csign csens
-          test3 csign csens
-          hint () ("\n"++show lid ++"\n") nullRange
-          return ()
-
-showL :: [String]->String
-showL l =  unlines $ intersperse "" l
-
-test1 :: Env -> [Named Sentence] -> Result ()
-test1 e s = do
-  hint () ("\n"
-           ++ "ops:\n" ++ (showL $ map toSimpOp (flattenOpMap $ assumps e)) ++"\n\n"
-           ++ "sens:\n" ++ (showL $ map toSimpNSen s) ++"\n\n"
-          ) nullRange
-  return ()
-
-test2 :: Env -> [Named Sentence] -> Result ()
-test2 e s = do
-  let eqs = catMaybes $ map getLRHSForNamedSentence s
-  let f sb (t1,t2) = case toSConst t1 of
-                      Nothing -> sb
-                      Just sc -> addTerm sb sc t2
-  let sbst = foldl f eps eqs
-  let substNS x = case sentence x of Formula t -> x{ sentence = Formula $ subst sbst t }
-                                     _ -> x
-  hint () ("\n"
---           ++ "ops:\n" ++ (showL $ map toSimpOp (flattenOpMap $ assumps e)) ++"\n\n"
-           ++ "sens:\n" ++ (showL $ map (toSimpNSen . substNS) s) ++"\n\n"
-          ) nullRange
-  return ()
-
-test3 :: Env -> [Named Sentence] -> Result ()
-test3 e s = do
-  let redNS x = case sentence x of Formula t -> x{ sentence = Formula $ letReduce t }
-                                   _ -> x
-  hint () ("\n"
-           ++ "sens:\n" ++ (showL $ map (toSimpNSen . redNS) s) ++"\n\n"
-          ) nullRange
-  return ()
-
-------------------------- term tools -------------------------
-
-isEq :: Term -> Bool
-isEq = isJust . getLRHS
-
-getLRHSForNamedSentence :: Named Sentence -> Maybe (Term, Term)
-getLRHSForNamedSentence (SenAttr{ sentence = Formula t }) = getLRHS t
-getLRHSForNamedSentence _ = Nothing
-
-getLRHS :: Term -> Maybe (Term, Term)
-getLRHS (ApplTerm hd (TupleTerm [t1,t2] _) _) =
-    case getId hd of
-      Just n
-          | n == eqId -> Just (t1,t2)
-getLRHS _ = Nothing
-
-getId :: Term -> Maybe Id
-getId (QualVar (VarDecl n _ _ _)) = Just n
-getId (QualOp _ (PolyId n _ _) _ _ _ _) = Just n
-getId _ = Nothing
-
-
-
-------------------------- SIMPLE OUTPUT FOR Ops -------------------------
-
-flattenSetMap :: Map.Map a (Set.Set b) -> [(a,b)]
-flattenSetMap m = Map.foldWithKey f [] m where
-    f k v l = map (\x -> (k,x)) (Set.toList v) ++ l
-
-
-flattenOpMap :: Assumps -> [(Id,OpInfo)]
-flattenOpMap = flattenSetMap
-
-toSimpOp :: (Id,OpInfo) -> String
-toSimpOp (n, inf) = show n
-                    ++ ": " ++ toSimpTypS (opType inf)
-                    ++ case opDefn inf of 
-                         Definition _ t -> " = " ++ toSimp t
-                         _ -> ""
-
-------------------------- SIMPLE OUTPUT FOR Types -------------------------
-
-
-toSimpTypS :: TypeScheme -> String
-toSimpTypS (TypeScheme a t _) =
-    case a of [] -> toSimpTyp t
-              _ -> toSimpBind "!" (map toSimpTypArg a) $ toSimpTyp t
-
-toSimpTypArg :: TypeArg -> String
-toSimpTypArg (TypeArg n _ _ _ _ _ _) = show n
-
-toSimpTyp :: Type -> String
-toSimpTyp = show . pretty
-
-------------------------- SIMPLE OUTPUT FOR Terms/Sentences -------------------------
-
-toSimpNSen :: Named Sentence -> String
-toSimpNSen x = concat [senAttr x, ": ", toSimpSen $ sentence x]
-
-toSimpSen :: Sentence -> String
-toSimpSen (Formula t) = toSimp t ++ if isEq t then " (is equality)" else ""
-toSimpSen _ = "unsupported!"
-
-toSimp :: Term -> String
-toSimp = foldTerm toSimpRec
-
-toSimpVar s = s
-toSimpSym s = s
-toSimpApp s a = toSimpParens "()" " " [s, a]
-toSimpBind q vars b = toSimpParens "[]" " " [q, toSimpParens "() ." ", " vars, b]
-toSimpParens b sep l = concat $ [b!!0] : intersperse sep l ++ [tail b]
-toSimpProgEq x y = concat [x,"=",y]
-
-toSimpQuant Universal = "!"
-toSimpQuant Existential = "?"
-toSimpQuant Unique = "?!"
-
-toSimpGVDs l = map toSimpGVD l
-toSimpVD (VarDecl i t _ _) = show i ++ ":" ++ toSimpTyp t
-toSimpGVD (GenVarDecl v) = toSimpVD v
-toSimpGVD (GenTypeVarDecl v) = toSimpTypArg v
-
-toSimpRec :: FoldRec String String
-toSimpRec = FoldRec
-    { -- Term VarDecl
-      foldQualVar = \_ (VarDecl v _ _ _) -> toSimpVar $ show v
-      -- Term OpBrand PolyId TypeScheme [Type] InstKind Range
-    , foldQualOp = \_ _ (PolyId i _ _) t _ _ _ -> (toSimpSym $ show i)
-    -- Term a a Range
-    , foldApplTerm = \ (ApplTerm _ o2 _) y z _ -> toSimpApp y z
-    -- Term [a] Range
-    , foldTupleTerm = \_ l _ -> toSimpParens "<>" ", " l
-    -- Term a TypeQual Type Range
-    , foldTypedTerm = \_ z _ _ _ -> z
-    -- Term Quantifier [GenVarDecl] a Range
-    , foldQuantifiedTerm =
-        \_ q vars z _ -> toSimpBind (toSimpQuant q) (toSimpGVDs vars) z
-    -- Term [a] Partiality a Range
-    , foldLambdaTerm = \_ vars _ b _ -> toSimpBind "lam" vars b
-    -- Term VarDecl a Range
-    , foldAsPattern = \_ _ _ _ -> failInTermRec "AsPattern"
-    -- Term a [b] Range
-    , foldCaseTerm = \_ _ _ _ -> failInTermRec "CaseTerm"
-    -- Term LetBrand [b] a Range
-    , foldLetTerm = \_ _ eql b _ -> toSimpBind "let" eql b
-    -- ProgEq a a Range
-    , foldProgEq = \_ x y _ -> toSimpProgEq x y
-    -- Term Id [Type] [a] Range
-    , foldResolvedMixTerm = \_ _ _ _ _ -> failInTermRec "ResolvedMixTerm"
-    -- Term Token
-    , foldTermToken = \_ _ -> failInTermRec "TermToken"
-    -- TermTypeQual Type Range
-    , foldMixTypeTerm = \_ _ _ _ -> failInTermRec "MixTypeTerm"
-    -- Term [a]
-    , foldMixfixTerm = \_ _ -> failInTermRec "MixfixTerm"
-    -- Term BracketKind [a] Range
-    , foldBracketTerm = \_ _ _ _ -> failInTermRec "BracketTerm"
-    }
-
-failInTermRec :: String -> a
-failInTermRec x = error $ "Occurence of " ++ x ++ " in toSimpRec!"
-
-
-------------------------- SIMPLE OUTPUT FOR Types -------------------------
+-- TODO!
 

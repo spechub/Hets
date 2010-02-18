@@ -134,3 +134,26 @@ freeVars = foldTerm FoldRec
     , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
     , foldProgEq = \ _ ps ts _ -> (ps, ts)
     }
+
+opsInTerm :: Term -> Set.Set Term
+opsInTerm = foldTerm FoldRec
+    { foldQualVar = \ _ _ -> Set.empty
+    , foldQualOp = \ _ ob n ts tl ik rg ->
+                   Set.singleton $ QualOp ob n ts tl ik rg
+    , foldApplTerm = \ _ t1 t2 _ -> Set.union t1 t2
+    , foldTupleTerm = \ _ tts _ -> Set.unions tts
+    , foldTypedTerm = \ _ ts _ _ _ -> ts
+    , foldAsPattern = \ _ _ ts _ -> ts
+    , foldQuantifiedTerm = \ _ _ _ ts _ -> ts
+    , foldLambdaTerm = \ _ pats _ ts _ -> Set.unions $ ts:pats
+    , foldCaseTerm = \ _ ts tts _ -> Set.unions $ ts:tts
+    , foldLetTerm = \ _ _ tts ts _ ->  Set.unions $ ts:tts
+    , foldResolvedMixTerm = \ _ _ _ tts _ -> Set.unions tts
+    , foldTermToken = \ _ _ -> Set.empty
+    , foldMixTypeTerm = \ _ _ _ _ -> Set.empty
+    , foldMixfixTerm = const Set.unions
+    , foldBracketTerm = \ _ _ tts _ -> Set.unions tts
+    , foldProgEq = \ _ ps ts _ -> Set.union ps ts
+    }
+
+

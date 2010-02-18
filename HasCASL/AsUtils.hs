@@ -317,6 +317,15 @@ getAppl = thrdM reverse . getRevAppl where
         ApplTerm t1 t2 _ -> thrdM (t2:) $ getRevAppl t1
         _ -> Nothing
 
+-- | split the list of generic variables into values and type variables
+splitVars :: [GenVarDecl] -> ([VarDecl], [TypeArg])
+splitVars l = let f x (vs,tvs) =
+                      case x of
+                        GenVarDecl vd -> (vd:vs,tvs)
+                        GenTypeVarDecl tv -> (vs,tv:tvs)
+              in foldr f ([],[]) l
+
+
 -- | extract bindings from an analysed pattern
 extractVars :: Term -> [VarDecl]
 extractVars pat = case pat of
