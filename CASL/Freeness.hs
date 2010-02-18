@@ -525,10 +525,22 @@ freeCons (sorts, rel, ops) = do
           Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
         f = Sort_gen_ax constrs True
+ -- added by me:
+        consSymbs = map (\x -> map fst x) $ map opSymbs constrs
+        toTuple (Qual_op_name n ot@(Op_type _ args _ _) _) =
+                  (n, toOpType ot, map (\x-> Sort x) args)
+        toTuple _ = error "use qualified names"
+        consSymbs' = map (\l -> map toTuple l) consSymbs
+        freeAx = foldl (++) [] $
+                   map (\l -> makeDisjoint l ++
+                              (map makeInjective $
+                                  filter (\(_,_,x) ->not $ null x) l))
+                   consSymbs'
     case constrs of
      [] -> []
      _  -> [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
+           ++ freeAx
 
 -- | given the signature in M the function computes the signature K
 create_sigma_k :: Set.Set SORT -> CASLSign -> CASLSign
