@@ -3,8 +3,8 @@
 HC = ghc -optl-s -XTemplateHaskell
 HCPKG = ghc-pkg
 
-TIMEVERSION = $(shell $(HCPKG) field time version)
-ifneq ($(findstring 1.1.2, $(TIMEVERSION)),)
+TIMEVERSION = $(shell $(HCPKG) latest time)
+ifneq ($(findstring time-1.1.2, $(TIMEVERSION)),)
 TIME_PACKAGE = -DTIME_WITHOUT_TYPEABLE
 endif
 
