@@ -72,7 +72,8 @@ instance Show SymbolRole where
     show Typ = "type"
 
 -- | Names used for OpenMath variables and symbols
-data OMName = OMName { name :: String } deriving (Show, Eq, Ord)
+data OMName = OMName { name :: String,  path :: [String] }
+              deriving (Show, Eq, Ord)
 
 -- | Attribute-name/attribute-value pair used to represent the type
 -- of a type-annotated term
@@ -100,3 +101,8 @@ data OMElement =
   | OMBIND OMElement [OMElement] OMElement
   deriving (Show, Eq, Ord)
 
+
+---------------------- Constructing Values ----------------------
+
+mkSimpleName :: String -> OMName
+mkSimpleName s = OMName s []

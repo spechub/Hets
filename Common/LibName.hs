@@ -157,7 +157,7 @@ type SLinkPath = LinkPath String
 
 showSLinkPath :: SLinkPath -> String
 showSLinkPath (LinkPath x l) = s l where
-    s ((_, n):l1) = s l1 ++ "/" ++ show n
+    s ((_, n):l1) = show n ++ "/" ++ s l1
     s _ = x
 
 instance Show a => Show (LinkPath a) where

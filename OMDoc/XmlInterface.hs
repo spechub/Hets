@@ -29,61 +29,100 @@ module OMDoc.XmlInterface
 import OMDoc.DataTypes
 import Text.XML.Light
 import Data.Maybe
+import Data.List
 
 -- | The implemented OMDoc version
 omdoc_current_version :: String
 omdoc_current_version = "1.6"
 
+{-
+-- the often used element names can be produced with this program
+
+import Data.List
+import Data.Char
+
+val1 prfix f qual s = prfix ++ s ++ " = (blank_name { qName = " ++ show (f s) ++ qual ++ " })"
+val2 prfix f qual s = prfix ++ s ++ " = toQN" ++ qual ++ " " ++ show (f s)
+
+out = putStrLn out1
+out1 = 
+    let om1 = " , qPrefix = Just \"om\""
+        om2 = "OM"
+        om = om2
+        val = val2
+        elprfix = "el_"
+        atprfix = "at_"
+        toUpper = map Data.Char.toUpper
+        typedecl prfix l = (Data.List.intercalate ", " $ map (\x -> prfix ++ x) l) ++ " :: QName"
+        e1 = ["omdoc", "theory", "view", "structure", "type", "adt", "sortdef", "constructor", "argument", "insort", "selector", "morphism", "conass", "constant", "definition"]
+        e2 = ["omobj"]
+        e3 = ["ombind", "oms", "ombvar", "omattr", "omatp", "omv", "oma"]
+        a1 = ["version", "cd", "name", "meta", "role", "type", "total", "for", "from", "to", "cdbase"]
+    in unlines [ typedecl elprfix $ e1 ++ e2 ++ e3
+               , ""
+               , unlines $ map (val elprfix id "") e1
+               , unlines $ map (val elprfix toUpper "") e2
+               , unlines $ map (val elprfix toUpper om) e3
+               , typedecl atprfix a1
+               , ""
+               , unlines $ map (val atprfix id "") a1]
+
+
+-}
+
+toQN :: String -> QName
+toQN s = blank_name { qName = s }
+toQNOM :: String -> QName
+toQNOM s = blank_name { qName = s , qPrefix = Just "om" }
+
 -- | often used element names
-el_omdoc, el_theory, el_view, el_structure
- , el_type, el_omobj, el_ombind, el_oms, el_ombvar, el_omattr
- , el_omatp, el_omv, el_oma, el_adt, el_sortdef, el_constructor
- , el_argument, el_insort, el_selector, el_morphism, el_conass
- , el_constant, el_definition :: QName
 
-el_omdoc = (blank_name { qName = "omdoc" })
-el_theory = (blank_name { qName = "theory" })
-el_view = (blank_name { qName = "view" })
-el_constant = (blank_name { qName = "constant" })
-el_definition = (blank_name { qName = "definition" })
-el_structure = (blank_name { qName = "structure" })
-el_type = (blank_name { qName = "type" })
-el_omobj = (blank_name { qName = "OMOBJ" })
+el_omdoc, el_theory, el_view, el_structure, el_type, el_adt
+ , el_sortdef, el_constructor, el_argument, el_insort, el_selector
+ , el_morphism, el_conass, el_constant, el_definition, el_omobj
+ , el_ombind, el_oms, el_ombvar, el_omattr, el_omatp, el_omv, el_oma :: QName
 
-el_ombind = (blank_name { qName = "OMBIND" , qPrefix = Just "om" })
-el_oms = (blank_name { qName = "OMS" , qPrefix = Just "om" })
-el_ombvar = (blank_name { qName = "OMBVAR" , qPrefix = Just "om" })
-el_omattr = (blank_name { qName = "OMATTR" , qPrefix = Just "om" })
-el_omatp = (blank_name { qName = "OMATP" , qPrefix = Just "om" })
-el_omv = (blank_name { qName = "OMV" , qPrefix = Just "om" })
-el_oma = (blank_name { qName = "OMA" , qPrefix = Just "om" })
+el_omdoc = toQN "omdoc"
+el_theory = toQN "theory"
+el_view = toQN "view"
+el_structure = toQN "structure"
+el_type = toQN "type"
+el_adt = toQN "adt"
+el_sortdef = toQN "sortdef"
+el_constructor = toQN "constructor"
+el_argument = toQN "argument"
+el_insort = toQN "insort"
+el_selector = toQN "selector"
+el_morphism = toQN "morphism"
+el_conass = toQN "conass"
+el_constant = toQN "constant"
+el_definition = toQN "definition"
 
-el_adt = (blank_name { qName = "adt" })
-el_sortdef = (blank_name { qName = "sortdef" })
-el_constructor = (blank_name { qName = "constructor" })
-el_argument = (blank_name { qName = "argument" })
-el_insort = (blank_name { qName = "insort" })
-el_selector = (blank_name { qName = "selector" })
+el_omobj = toQN "OMOBJ"
 
-el_morphism = (blank_name { qName = "morphism" })
-el_conass = (blank_name { qName = "conass" })
+el_ombind = toQNOM "OMBIND"
+el_oms = toQNOM "OMS"
+el_ombvar = toQNOM "OMBVAR"
+el_omattr = toQNOM "OMATTR"
+el_omatp = toQNOM "OMATP"
+el_omv = toQNOM "OMV"
+el_oma = toQNOM "OMA"
 
--- | often used attribute names
-at_version, at_cd, at_name, at_meta, at_role, at_type, at_total, at_for
- , at_from, at_to, at_base :: QName
+at_version, at_cd, at_name, at_meta, at_role, at_type, at_total
+ , at_for, at_from, at_to, at_cdbase :: QName
 
--- at_id = (blank_name { qName = "id", qPrefix = Just "xml" })
-at_version = (blank_name { qName = "version" })
-at_cd = (blank_name { qName = "cd" })
-at_name = (blank_name { qName = "name" })
-at_meta = (blank_name { qName = "meta" })
-at_role = (blank_name { qName = "role" })
-at_type = (blank_name { qName = "type" })
-at_total = (blank_name { qName = "total" })
-at_for = (blank_name { qName = "for" })
-at_from = (blank_name { qName = "from" })
-at_to = (blank_name { qName = "to" })
-at_base = (blank_name { qName = "cdbase" })
+at_version = toQN "version"
+at_cd = toQN "cd"
+at_name = toQN "name"
+at_meta = toQN "meta"
+at_role = toQN "role"
+at_type = toQN "type"
+at_total = toQN "total"
+at_for = toQN "for"
+at_from = toQN "from"
+at_to = toQN "to"
+at_cdbase = toQN "cdbase"
+
 
 attr_om :: Attr
 attr_om = Attr (blank_name { qName = "om" , qPrefix = Just "xmlns" })
@@ -117,8 +156,8 @@ typeToXml :: OMElement -> Content
 typeToXml t = inContent el_type $ toOmobj $ toXml t
 
 assignmentToXml :: (OMName, OMElement) -> Content
-assignmentToXml (OMName from, to) =
-    inAContent el_conass [Attr at_name from] $ toOmobj $ toXml to
+assignmentToXml (from, to) =
+    inAContent el_conass [Attr at_name $ encodeOMName from] $ toOmobj $ toXml to
 
 constantToXml :: String -> String -> OMElement -> Maybe OMElement -> Content
 constantToXml n r tp prf = 
@@ -139,18 +178,21 @@ toOmobj c = inAContent el_omobj [attr_om] c
 
 -- don't need it now
 --uriEncodeOMS :: OMCD -> OMName -> String
---uriEncodeOMS omcd (OMName omname) = uriEncodeCD omcd ++ "?" ++ omname
+--uriEncodeOMS omcd omname = uriEncodeCD omcd ++ "?" ++ encodeOMName omname
 
 uriEncodeCD :: OMCD -> String
 uriEncodeCD (CD omcd base) = (maybe "" id base) ++ "?" ++ omcd
 
+encodeOMName :: OMName -> String
+encodeOMName on = intercalate "/" (path on ++ [name on])
+
 tripleEncodeOMS :: OMCD -> OMName -> [Attr]
-tripleEncodeOMS omcd (OMName omname)
-    = pairEncodeCD omcd ++ [Attr at_name omname]
+tripleEncodeOMS omcd omname
+    = pairEncodeCD omcd ++ [Attr at_name $ encodeOMName omname]
 
 pairEncodeCD :: OMCD -> [Attr]
 pairEncodeCD (CD omcd base) =
-    (maybe [] (\x -> [Attr at_base x]) base) ++ [Attr at_cd omcd]
+    (maybe [] (\x -> [Attr at_cdbase x]) base) ++ [Attr at_cd omcd]
 
 
 -- | The root instance for representing OMDoc in XML

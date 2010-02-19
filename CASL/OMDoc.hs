@@ -220,7 +220,7 @@ makeOMS :: NameTriple -> OMElement
 makeOMS (NameTriple { getName = i, getSpecName = s, getLibName = l }) =
 -- special handling for library entries !??
     OMS (CD s $ if l == "library" || l == "" then Nothing else Just l)
-            $ OMName i
+            $ mkSimpleName i
 
 idToOmdoc :: SPEC_ID -> Id -> OMElement
 idToOmdoc spid s = makeOMS $ idToNameTriple spid s
@@ -241,7 +241,7 @@ makeAttribution :: OMElement -> OMElement -> OMElement
 makeAttribution e1 e2 = OMATTT e1 $ OMAttr const_type e2
 
 varToOmdoc :: Token -> OMElement
-varToOmdoc v = OMV $ OMName $ tokStr v
+varToOmdoc v = OMV $ mkSimpleName $ tokStr v
 
 -- | typed vars can only be typed by a single sort (first order)
 varDeclToOMDoc :: SPEC_ID -> (VAR, SORT) -> OMElement
@@ -251,7 +251,7 @@ varDeclToOMDoc spid (v, s) = makeAttribution (varToOmdoc v) $
 -- cdbase entries missing for predefined content dictionaries
 
 const_casl :: String -> OMElement
-const_casl n = OMS (CD "casl" Nothing) $ OMName n
+const_casl n = OMS (CD "casl" Nothing) $ mkSimpleName n
 
 const_true, const_false, const_sort, const_funtype, const_partialfuntype
  , const_and, const_or, const_implies, const_implied, const_equivalent
@@ -342,16 +342,16 @@ omdocRec spid _ mf = Record
 
 
 makeSortMapEntry :: SPEC_ID -> SORT -> SORT -> (OMName, OMElement)
-makeSortMapEntry spid s1 s2 = (OMName $ idToName spid s1, sortToOmdoc spid s2)
+makeSortMapEntry spid s1 s2 = (mkSimpleName $ idToName spid s1, sortToOmdoc spid s2)
 
 makeOpMapEntry :: SPEC_ID -> (Id, OpType) -> (Id, OpKind) ->
                   (OMName, OMElement)
 makeOpMapEntry spid (o1, _) (o2, _) =
-    (OMName $ idToName spid o1, idToOmdoc spid o2)
+    (mkSimpleName $ idToName spid o1, idToOmdoc spid o2)
 
 makePredMapEntry :: SPEC_ID -> (Id, PredType) -> Id -> (OMName, OMElement)
 makePredMapEntry spid (p1, _) p2 =
-    (OMName $ idToName spid p1, idToOmdoc spid p2)
+    (mkSimpleName $ idToName spid p1, idToOmdoc spid p2)
 
 
 --------------------------------------------------------------------
