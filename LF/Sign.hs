@@ -83,14 +83,22 @@ emptySig :: Sign
 emptySig = Sign "" "" []
 
 addDef :: DEF -> Sign -> Sign
-addDef d sig = addDefs [d] sig
+addDef d@(Def s _ _) sig@(Sign b m ds) = 
+  if (isConstant s sig)
+     then error $ "Symbol " ++ (show $ printSymbol sig s) ++
+                  "is already defined in the signature."
+     else Sign b m $ ds ++ [d]
 
 addDefs :: [DEF] -> Sign -> Sign
-addDefs ds2 (Sign b m ds1) = Sign b m (ds1 ++ ds2)
+addDefs ds sig = foldr addDef sig $ reverse ds
 
 -- get the set of all symbols
 getAllSyms :: Sign -> Set.Set Symbol 
-getAllSyms (Sign _ _ ds) = Set.fromList $ map getSym ds 
+getAllSyms (Sign _ _ ds) = Set.fromList $ map getSym ds
+
+-- checks if the symbol is defined or declared in the signature
+isConstant :: Symbol -> Sign -> Bool
+isConstant s sig = Set.member s $ getAllSyms sig 
  
 -- get the set of declared symbols
 getDeclaredSyms :: Sign -> Set.Set Symbol
@@ -98,8 +106,8 @@ getDeclaredSyms (Sign _ _ ds) =
   Set.fromList $ map getSym $ filter (\ d -> isNothing $ getValue d) ds
 
 -- checks if the symbol is declared in the signature
-isDeclaredSym :: Sign -> Symbol -> Bool
-isDeclaredSym sig s = Set.member s $ getDeclaredSyms sig
+isDeclaredSym :: Symbol -> Sign -> Bool
+isDeclaredSym s sig = Set.member s $ getDeclaredSyms sig
 
 -- get the set of declared symbols
 getDefinedSyms :: Sign -> Set.Set Symbol
@@ -107,29 +115,29 @@ getDefinedSyms (Sign _ _ ds) =
   Set.fromList $ map getSym $ filter (\ d -> isJust $ getValue d) ds
 
 -- checks if the symbol is defined in the signature
-isDefinedSym :: Sign -> Symbol -> Bool
-isDefinedSym sig s = Set.member s $ getDefinedSyms sig
+isDefinedSym :: Symbol -> Sign -> Bool
+isDefinedSym s sig = Set.member s $ getDefinedSyms sig
 
 -- get the set of symbols not included from other signatures
 getLocalSyms :: Sign -> Set.Set Symbol
-getLocalSyms sig = Set.filter (isLocalSym sig) $ getAllSyms sig 
+getLocalSyms sig = Set.filter (\ s -> isLocalSym s sig) $ getAllSyms sig
 
 -- checks if the symbol is local to the signature
-isLocalSym :: Sign -> Symbol -> Bool
-isLocalSym sig sym = 
-  and [sigBase sig == symBase sym, sigModule sig == symModule sym]
+isLocalSym :: Symbol -> Sign -> Bool
+isLocalSym s sig = 
+  and [sigBase sig == symBase s, sigModule sig == symModule s]
 
 -- returns the type/kind for the given symbol
-getSymType :: Sign -> Symbol -> Maybe EXP
-getSymType sig sym = 
+getSymType :: Symbol -> Sign -> Maybe EXP
+getSymType sym sig = 
   let res = List.find (\ d -> getSym d == sym) $ getDefs sig
       in case res of
               Nothing -> Nothing
               Just (Def _ t _) -> Just t
 
 -- returns the value for the given symbol, if it exists
-getSymValue :: Sign -> Symbol -> Maybe EXP
-getSymValue sig sym = 
+getSymValue :: Symbol -> Sign -> Maybe EXP
+getSymValue sym sig = 
   let res = List.find (\ d -> getSym d == sym) $ getDefs sig
       in case res of
               Nothing -> Nothing
@@ -153,7 +161,7 @@ printDef sig (Def s t v) =
 
 printSymbol :: Sign -> Symbol -> Doc
 printSymbol sig s = 
-  if (isLocalSym sig s)
+  if (isLocalSym s sig)
      then text $ symName s
      else text (symModule s) <> dot <> text (symName s)
 

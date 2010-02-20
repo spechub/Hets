@@ -52,10 +52,10 @@ compMorph m1 m2 =
 mapSymbol :: Morphism -> Symbol -> Maybe EXP
 mapSymbol m s = 
   let sig = source m
-      in if (isDeclaredSym sig s)
+      in if (isDeclaredSym s sig)
             then Just $ Map.findWithDefault (Const s) s $ symMap m
-            else if (isDefinedSym sig s)
-                    then do val <- getSymValue sig s
+            else if (isDefinedSym s sig)
+                    then do val <- getSymValue s sig
                             translate m val
                     else Nothing
 

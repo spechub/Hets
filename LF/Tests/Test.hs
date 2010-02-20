@@ -20,8 +20,9 @@ import System.Exit
 import System.IO
 import System.Process
 import System.FilePath
-
+import Common.LibName
 import Common.Utils
+import Common.Id
 
 nat,mat :: EXP
 nat = Const $ Symbol "file1" "sig1" "nat"
@@ -66,8 +67,12 @@ toDoc ((b,m),sig) = vcat [text b, text m, pretty sig]
 
 test :: FilePath -> IO Doc
 test file = do
-  ((sigs,morphs),_) <- twelf2libs file emptyLibs
-  return $ vcat $ map toDoc $ Map.toList sigs
+  dir <- getCurrentDirectory
+  let file = resolve fp (dir ++ "/")
+  (rg,_) <- twelf2libs file emptyLibs
+  let envir = makeLibEnv rg
+  let name = LibName (IndirectLink "" nullRange file noTime) Nothing
+  return $ vcat ([text $ show name, text ""] ++ (map (text . show) $ Map.keys envir))
 
 
 

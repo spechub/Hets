@@ -16,27 +16,32 @@ import System.IO
 import System.Process
 import System.Directory
 import System.FilePath
-import Debug.Trace
+
 import Network.URI
 
 import Static.AnalysisStructured
 import Static.DevGraph
+import Static.ComputeTheory
+import Static.GTheory
 
 import Logic.Grothendieck
 import Logic.ExtSign
+import Logic.Coerce
 
 import LF.Sign
---import LF.Morphism
+import LF.Morphism
 import LF.Logic_LF
 
 import Data.Maybe
 import Data.List
+import Data.Graph.Inductive.Graph (Node)
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import Common.LibName
 import Common.Utils
 import Common.Id
+import Common.ExtSign
+import qualified Common.Consistency as Cons
 
 import Control.Monad
 
@@ -46,18 +51,22 @@ import Text.XML.Light.Proc
 
 import Driver.Options
 
-type RAW_LIBS = (RAW_GRAPH,Set.Set FilePath)
+--import Debug.Trace
 
-type RAW_GRAPH = (RAW_NODES,RAW_LINKS)
-type RAW_NODES = Map.Map RAW_NODE_NAME Sign
-type RAW_LINKS = Map.Map (RAW_LINK_NAME,RAW_NODE_NAME,RAW_NODE_NAME)
-                         (Map.Map Symbol EXP)
+data LINK_TYPE = Definitional | Postulated
 
 type RAW_NODE_NAME = (BASE,MODULE)
 type RAW_LINK_NAME = (BASE,MODULE,NAME)
+type RAW_NODES = Map.Map RAW_NODE_NAME Sign
+type RAW_LINKS = Map.Map (RAW_LINK_NAME,RAW_NODE_NAME,RAW_NODE_NAME)
+                         (LINK_TYPE,Morphism)
+type RAW_GRAPH = (RAW_NODES,RAW_LINKS)
 
-emptyLibs :: RAW_LIBS
-emptyLibs = ((Map.empty,Map.empty),Set.empty)
+type MAP_NODES = Map.Map RAW_NODE_NAME Node
+type LibEnvNodes = (LibEnv,MAP_NODES)
+
+emptyRawGraph :: RAW_GRAPH
+emptyRawGraph = (Map.empty,Map.empty)
 
 omdocNS :: Maybe String
 omdocNS = Just "http://omdoc.org/ns"
@@ -193,6 +202,12 @@ getFromAttr e = findAttr fromQN e
 getToAttr :: Element -> Maybe String
 getToAttr e = findAttr toQN e
 
+-- path to the Twelf folder must be set in the environment variable TWELF_LIB
+twelf :: String
+twelf = "check-some"
+options :: [String]
+options = ["-omdoc"]
+
 -- constructs base and module out of a reference
 splitRef :: String -> RAW_NODE_NAME
 splitRef ref = 
@@ -225,64 +240,22 @@ resolve fp1 fp2 =
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 
--- generates a library environment from the path of a Twelf file
+-- analyzes the given Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaTwelfFile _ fp = do
-    dir <- getCurrentDirectory
-    let file = resolve fp (dir ++ "/")
-    (rg,_) <- twelf2libs file emptyLibs
-    let envir = makeLibEnv rg
-    let name = LibName (IndirectLink "" nullRange file noTime) Nothing
-    return $ Just (name,envir)                 
+  dir <- getCurrentDirectory
+  let file = resolve fp (dir ++ "/")
+  let name = emptyLibName file
+  (libs,_) <- twelf2DG file (emptyLibEnv,Map.empty) 
+  return $ Just (name,libs)  
 
--- generates a library environment from raw libraries
-makeLibEnv :: RAW_GRAPH -> LibEnv
-makeLibEnv rg = addLinks rg $ addNodes rg emptyLibEnv
-
--- adds nodes to the library environment
-addNodes :: RAW_GRAPH -> LibEnv -> LibEnv
-addNodes (sigs,_) envir =
-  foldl (\ e ((b,m),sig) -> 
-           let libname = LibName (IndirectLink "" nullRange b noTime) Nothing
-               dg = Map.findWithDefault emptyDG libname e
-               nodeName = emptyNodeName { getName = Token m nullRange }
-               gsig = G_sign LF (makeExtSign LF sig) startSigId
-               (_,dg1) = insGSig dg nodeName DGBasic gsig
-               in Map.insert libname dg1 e
-        ) 
-        envir
-        $ Map.toList sigs   
-
--- adds links to the library environment
-addLinks :: RAW_GRAPH -> LibEnv -> LibEnv
-addLinks _ envir = 
-  {-foldl (\ e ((l,d,c),symmap) -> 
-           let (b,m,n) = l
-               libname = LibName (IndirectLink "" nullRange b noTime) Nothing
-               dg = Map.findWithDefault emptyDG libname env
-               dom = case Map.lookup d sigs of
-                          Nothing -> error "Invalid link source."
-                          Just s -> s
-               cod = case Map.lookup c sigs of
-                          Nothing -> error "Invalid link target."
-                          Just s -> s
-               morph = Morphism b m n dom cod symmap
-               gmorph = GMorphism LF (makeExtSign LF dom) morph startMorId ----- TODO
-               (_,dg1) = insLink dg gmorph ----- TODO
-               in Map.insert libname dg1 e
-        ) 
-        env
-        $ Map.toList morphs -} envir
-
-------------------------------------------------------------------------------
-------------------------------------------------------------------------------       
-
--- path to the Twelf folder must be set in the environment variable TWELF_LIB
-twelf :: String
-twelf = "check-some"
-options :: [String]
-options = ["-omdoc"]
-
+-- updates the library environment by adding specs from the Twelf file
+twelf2DG :: FilePath -> LibEnvNodes -> IO LibEnvNodes
+twelf2DG file ln = do
+  runTwelf file
+  (ln1,g) <- buildGraph file ln
+  makeLibEnv file ln1 g  
+     
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
 runTwelf file = do
@@ -303,57 +276,122 @@ runTwelf file = do
                        " on file " ++ file                    
             ExitSuccess -> return ()
 
--- generates signatures and morphisms from the absolute path of a Twelf file
-twelf2libs :: FilePath -> RAW_LIBS -> IO RAW_LIBS
-twelf2libs file libs = do
-  runTwelf (trace ("Analyzing file: " ++ file) file)
-  getSigsAndMorphs file libs 
+-- generates a library environment from raw libraries
+makeLibEnv :: FilePath -> LibEnvNodes -> RAW_GRAPH -> IO LibEnvNodes
+makeLibEnv file ln g = do
+  (ln1,dg) <- addNodes emptyDG g ln
+  (ln2,dg1) <- addLinks dg g ln1
+  let (libs,nodes) = ln2
+  let dg2 = computeDGraphTheories libs dg1
+  let libs1 = Map.insert (emptyLibName file) dg2 libs
+  return (libs1,nodes)
 
--- converts the specifications and views into signatures and morphisms
-getSigsAndMorphs :: FilePath -> RAW_LIBS -> IO RAW_LIBS 
-getSigsAndMorphs file libs = do
+-- adds nodes to the library environment
+addNodes :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
+addNodes dg (sigs,_) (libs,nodes) = do
+  let (nodes3,dg3) =
+        foldl (\ (nodes1,dg1) ((b,m),sig) -> 
+                 let nodeName = emptyNodeName { getName = Token m nullRange }
+      	             extSign = makeExtSign LF sig
+                     gsig = G_sign LF extSign startSigId
+                     (NodeSig node _,dg2) = insGSig dg1 nodeName DGBasic gsig
+                     nodes2 = Map.insert (b,m) node nodes1
+                     in (nodes2,dg2)
+              ) 
+              (nodes,dg)
+              $ Map.toList sigs
+  return ((libs,nodes3),dg3)
+
+-- adds links to the library environment
+addLinks :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
+addLinks dg (sigs,morphs) ln = do
+  dg4 <- foldM (\ dg1 ((l,s,t),(k,morph)) -> do 
+                  let (b,_,_) = l
+                  sig1 <- lookupSig s ln sigs
+                  sig2 <- lookupSig t ln sigs
+                  let morph1 = morph { source = sig1, target = sig2 }
+                  let gmorph = gEmbed $ G_morphism LF morph1 startMorId
+                  let thmStatus = Proven (DGRule "Type-checked") emptyProofBasis
+                  let linkKind = case k of
+                                      Definitional -> DefLink
+                                      Postulated -> ThmLink thmStatus 
+                  let consStatus = ConsStatus Cons.None Cons.None LeftOpen
+                  let linkType = ScopedLink Global linkKind consStatus
+                  let (node1,dg2) = getRefNode b dg1 s ln
+                  let (node2,dg3) = getRefNode b dg2 t ln  
+                  return $ insLink dg3 gmorph linkType SeeTarget node1 node2            
+               ) 
+               dg
+               $ Map.toList morphs 
+  return (ln,dg4)
+
+-- constructs a reference node to the specified signature, if needed
+getRefNode :: BASE -> DGraph -> RAW_NODE_NAME -> LibEnvNodes -> (Node,DGraph)
+getRefNode b dg ref@(b1,_) (_,nodes) = 
+  case Map.lookup ref nodes of
+       Nothing -> error "Invalid signature reference."
+       Just node -> 
+         if (b1 == b)
+            then (node,dg)
+         else let info = DGRef (emptyLibName b1) node
+                  refNodeM = lookupInAllRefNodesDG info dg
+                  in case refNodeM of
+                          Just refNode -> (refNode,dg)
+                          Nothing -> 
+                            let refNode = getNewNodeDG dg
+                                dg1 = addToRefNodesDG refNode info dg
+                                in (refNode,dg1)      
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------
+
+-- builds raw development graph libraries
+buildGraph :: FilePath -> LibEnvNodes -> IO (LibEnvNodes,RAW_GRAPH)
+buildGraph file (libs,nodes) = do
   let omdoc_file = replaceExtension file "omdoc"
   xml <- readFile omdoc_file
   let elems = onlyElems $ parseXML xml
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
-       [root] -> 
-          foldM (\ sm e -> 
-                     let n = elName e
-                         in if (n == theoryQN) then addSign file e sm else
-                            if (n == viewQN) then addMorph file e sm else
-                            return sm
-                ) 
-                libs
-                $ elChildren root
+       [root] -> do
+         foldM (\ lng e -> 
+                  let n = elName e
+                      in if (n == theoryQN) then addSign file e lng else
+                         if (n == viewQN) then addMorph file e lng else
+                         return lng
+               ) 
+               ((libs,nodes),emptyRawGraph)
+               $ elChildren root        
        _ -> fail "Not an OMDoc file."
 
--- transforms a theory element into a signature and adds it to the map
-addSign :: FilePath -> Element -> RAW_LIBS -> IO RAW_LIBS
-addSign file e sm =
+-- transforms a theory element into a signature and adds it to the libraries
+addSign :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) -> 
+           IO (LibEnvNodes,RAW_GRAPH)
+addSign file e lng =
   case getNameAttr e of
        Nothing -> error "Theory element must have a name."
        Just name -> do
           let sig = Sign file name []
-          (sm1,sig1) <-
-                foldM (\ sms el -> 
-                  let n = elName el
-                      in if (n == includeQN) then addIncl el sms else
-                         if (n == structureQN) then addStruct el sms else
-                         if (n == constantQN) then addConst el sms else
-                         if (n == aliasQN) then addAlias el sms else
-                         if (n == notationQN) then addNotat el sms else 
-                         return sms
-                      ) 
-                      (sm,sig)
-                      $ elChildren e
-          let ((sigs,morphs),incl) = sm1
+          (lng1,sig1) <-
+            foldM (\ lngs el -> 
+                     let n = elName el
+                         in if (n == includeQN) then addIncl el lngs else
+                            if (n == structureQN) then addStruct el lngs else
+                            if (n == constantQN) then addConst el lngs else
+                            if (n == aliasQN) then addAlias el lngs else
+                            if (n == notationQN) then addNotat el lngs else 
+                            return lngs
+                  ) 
+                  (lng,sig)
+                  $ elChildren e
+          let (ln,(sigs,morphs)) = lng1
           let sigs1 = Map.insert (file,name) sig1 sigs
-          return ((sigs1,morphs),incl) 
+          return (ln,(sigs1,morphs)) 
               
 -- adds a constant declaration to the signature
-addConst :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
-addConst e (sm,sig) = do
+addConst :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+            IO ((LibEnvNodes,RAW_GRAPH),Sign)
+addConst e (lng,sig) = do
   let sym = case getNameAttr e of
                  Nothing -> error "Constant element must have a name."
                  Just n -> Symbol (sigBase sig) (sigModule sig) n
@@ -366,7 +404,7 @@ addConst e (sm,sig) = do
                  _ ->  error $ concat ["Constant element must have at most ",
                                        "one definition child."]
   let sig1 = addDef (Def sym typ val) sig
-  return (sm,sig1)               
+  return (lng,sig1)               
 
 -- converts a type element to an expression
 type2exp :: Sign -> Element -> EXP
@@ -490,8 +528,9 @@ omatp2exp sig e =
       
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
-addIncl :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
-addIncl e (libs,sig) = do
+addIncl :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+           IO ((LibEnvNodes,RAW_GRAPH),Sign)
+addIncl e ((ln,(sigs,morphs)),sig) = do
   case getFromAttr e of
        Nothing -> error "Include element must have a \"from\" attribute."
        Just ref -> do
@@ -499,53 +538,66 @@ addIncl e (libs,sig) = do
          let curModule = sigModule sig
          let (br,m) = splitRef ref
          let b = replaceExtension (resolve br curBase) "elf"
-         ((sigs,morphs),incls) <- addFromFile b curBase libs  
+         ln1 <- addFromFile b curBase ln  
          let s = (b,m)
          let t = (curBase,curModule)
-         let sig1 = addToSig s sig sigs  
-         let morphs1 = addToMorphs s t morphs
-         return (((sigs,morphs1),incls),sig1)
+         sourceSig <- lookupSig s ln1 sigs
+         let sig1 = addInclSyms sourceSig sig
+         let morphs1 = addInclToMorphs s t morphs
+         return ((ln1,(sigs,morphs1)),sig1)
+
+-- finds the signature by base and module
+lookupSig :: RAW_NODE_NAME -> LibEnvNodes -> RAW_NODES -> IO Sign
+lookupSig ref@(b,_) (libs,nodes) sigs = do
+  case Map.lookup ref sigs of
+       Just sig -> return sig
+       Nothing -> 
+         case Map.lookup ref nodes of
+              Nothing -> error "Invalid signature reference."
+              Just node -> 
+                let dg = lookupDGraph (emptyLibName b) libs
+                    gth = dgn_theory $ labDG dg node
+                    in case gth of
+                            (G_theory lid extsig _ _ _) -> 
+                              coercePlainSign lid LF "" $ plainSign extsig
 
 {- parses the referenced file and imports all signatures
    and morphisms from it -}
-addFromFile :: String -> FilePath -> RAW_LIBS -> IO RAW_LIBS
-addFromFile file base libs = do
-  let ((sigs,morphs),incls) = libs
-  if (file == base || Set.member file incls)
-     then return libs
-     else do ((sigs1,morphs1),incls1) <- twelf2libs file libs
-             let sigs2 = Map.union sigs sigs1
-             let morphs2 = Map.union morphs morphs1
-             let incls2 = Set.insert file $ Set.union incls incls1
-             return ((sigs2,morphs2),incls2) 
+addFromFile :: String -> FilePath -> LibEnvNodes -> IO LibEnvNodes
+addFromFile file base ln@(libs,_) = do
+  if (file == base || Map.member (emptyLibName file) libs)
+     then return ln
+     else twelf2DG file ln          
 
 -- adds included definitions to the signature
-addToSig :: RAW_NODE_NAME -> Sign -> RAW_NODES -> Sign
-addToSig s sig sigs = 
-  case Map.lookup s sigs of
-       Nothing -> error "Invalid inclusion source."
-       Just (Sign _ _ ds) -> addDefs ds sig
-
+addInclSyms :: Sign -> Sign -> Sign
+addInclSyms (Sign _ _ ds) sig = addDefs ds sig
+  
 -- adds the inclusion to the collection of morphisms
-addToMorphs :: RAW_NODE_NAME -> RAW_NODE_NAME -> RAW_LINKS -> RAW_LINKS
-addToMorphs s t morphs = 
+addInclToMorphs :: RAW_NODE_NAME -> RAW_NODE_NAME -> RAW_LINKS -> RAW_LINKS
+addInclToMorphs s t morphs = 
   let (b,m) = t
-      name = (b,m,"") 
-      in Map.insert (name,s,t) Map.empty morphs   
+      l = (b,m,"")
+      morph = Morphism b m "" emptySig emptySig Map.empty
+      in Map.insert (l,s,t) (Definitional,morph) morphs
 
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
-addStruct :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
-addStruct _ sm = return sm 
+addStruct :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+           IO ((LibEnvNodes,RAW_GRAPH),Sign)
+addStruct _ lngs = return lngs 
 
 -- so far aliases are ignored
-addAlias :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
-addAlias _ sm = return sm
+addAlias :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+           IO ((LibEnvNodes,RAW_GRAPH),Sign)
+addAlias _ lngs = return lngs
 
 -- so far notations are ignored
-addNotat :: Element -> (RAW_LIBS,Sign) -> IO (RAW_LIBS,Sign)
-addNotat _ sm = return sm
+addNotat :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+           IO ((LibEnvNodes,RAW_GRAPH),Sign)
+addNotat _ lngs = return lngs
 
 -- so far views are ignored
-addMorph :: FilePath -> Element -> RAW_LIBS -> IO RAW_LIBS
-addMorph _ _ sm = return sm
+addMorph :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) -> 
+           IO (LibEnvNodes,RAW_GRAPH)
+addMorph _ _ lng = return lng
