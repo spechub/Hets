@@ -22,11 +22,11 @@ module LF.Sign
        , Sign (..)
        , emptySig
        , addDef
-       , addDefs
        , getAllSyms
        , getDeclaredSyms
        , getDefinedSyms 
-       , getLocalSyms 
+       , getLocalSyms
+       , isConstant   
        , isDeclaredSym
        , isDefinedSym
        , isLocalSym
@@ -83,14 +83,7 @@ emptySig :: Sign
 emptySig = Sign "" "" []
 
 addDef :: DEF -> Sign -> Sign
-addDef d@(Def s _ _) sig@(Sign b m ds) = 
-  if (isConstant s sig)
-     then error $ "Symbol " ++ (show $ printSymbol sig s) ++
-                  "is already defined in the signature."
-     else Sign b m $ ds ++ [d]
-
-addDefs :: [DEF] -> Sign -> Sign
-addDefs ds sig = foldr addDef sig $ reverse ds
+addDef d (Sign b m ds) = Sign b m $ ds ++ [d]
 
 -- get the set of all symbols
 getAllSyms :: Sign -> Set.Set Symbol 

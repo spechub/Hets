@@ -56,11 +56,6 @@ Just r = mapSymbol m $ Symbol "file2" "sig2" "mat"
 b = getSymValue sig1 $ Symbol "file2" "sig2" "mat"
 
 fp = "/home/mathias/twelf/specs/math/algebra/algebra1.elf"
-fp1 = "/home/mathias/twelf/specs/logics/first-order/proof_theory/derived.elf"
-fp2 = "/home/mathias/twelf/specs/logics/first-order/syntax/derived.elf"
-fp3 = "/home/mathias/twelf/specs/logics/first-order/syntax/fol.elf"
-fp4 = "/home/mathias/twelf/specs/logics/first-order/syntax/modules.elf"
-fp5 = "/home/mathias/twelf/specs/logics/propositional/syntax/prop.elf"
 
 toDoc :: (RAW_NODE_NAME,Sign) -> Doc
 toDoc ((b,m),sig) = vcat [text b, text m, pretty sig]
@@ -69,7 +64,7 @@ test :: FilePath -> IO Doc
 test file = do
   dir <- getCurrentDirectory
   let file = resolve fp (dir ++ "/")
-  (rg,_) <- twelf2libs file emptyLibs
+  (rg,_) <- buildGraph file emptyLibs
   let envir = makeLibEnv rg
   let name = LibName (IndirectLink "" nullRange file noTime) Nothing
   return $ vcat ([text $ show name, text ""] ++ (map (text . show) $ Map.keys envir))
