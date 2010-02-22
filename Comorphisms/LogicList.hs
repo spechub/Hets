@@ -63,6 +63,7 @@ import DFOL.Logic_DFOL
 import LF.Logic_LF
 import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
+import CommonLogic.Logic_CommonLogic ()
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU

@@ -1,12 +1,12 @@
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for common logic
-Copyright   :  
-License     :  
+Copyright   :
+License     :
 
 Maintainer  :  kluc
 Stability   :  provisional
-Portability :  
+Portability :
 
 Definition of abstract syntax for common logic
 -}
@@ -16,8 +16,7 @@ Definition of abstract syntax for common logic
   ISO/IEC IS 24707:2007(E)
 -}
 
--- module CommonLogic.AS_CommonLogic where 
-module AS_CommonLogic where
+module CommonLogic.AS_CommonLogic where
 
 -- import Common.Id as Id
 
@@ -27,7 +26,7 @@ data TEXT = Text [PHRASE]
 data PHRASE = Module MODULE
      	    | Sentence SENTENCE
 	    | Importation IMPORTATION
-	    | Comment_Text TEXT COMMENT 
+	    | Comment_Text TEXT COMMENT
      	      deriving Show
 
 data COMMENT = Comment String
