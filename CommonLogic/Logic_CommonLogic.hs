@@ -30,171 +30,86 @@ import Logic.Logic
 
 import ATC.ProofTree ()
 import Common.ProofTree
+import Common.DefaultMorphism
 
 import CommonLogic.AS_CommonLogic
-
-import qualified Data.Map as Map
 
 -- | Lid for propositional logic
 data CommonLogic = CommonLogic deriving Show
 
 instance Language CommonLogic where
-    description _ = "Propositional Logic\n"
+    description _ = "CommonLogic Logic\n"
         ++ "for more information please refer to\n"
         ++ "http://en.wikipedia.org/wiki/Propositional_logic"
 
+data Sign = Sign
+-- | Instance of Category derived by default
+
 {-
--- | Instance of Category for propositional logic
-instance Category Sign Morphism where
-    -- Identity morhpism
-    ide = idMor
-    -- Returns the domain of a morphism
-    dom = source
-    -- Returns the codomain of a morphism
-    cod = target
-    -- check if morphism is inclusion
-    isInclusion = Map.null . propMap
-    -- tests if the morphism is ok
-    legal_mor = isLegalMorphism
-    -- composition of morphisms
-    composeMorphisms = composeMor
-
 -- | Instance of Sentences for propositional logic
-instance Sentences Propositional FORMULA
-    Sign Morphism Symbol where
-    negation Propositional = Just . negateFormula
+instance Sentences CommonLogic SENTENCE Sign (DefaultMorphism Sign) ()
+{-
+  where
+    negation CommonLogic = Just . negateFormula
     -- returns the set of symbols
-    sym_of Propositional = symOf
+    sym_of CommonLogic = symOf
     -- returns the symbol map
-    symmap_of Propositional = getSymbolMap
+    symmap_of CommonLogic = getSymbolMap
     -- returns the name of a symbol
-    sym_name Propositional = getSymbolName
+    sym_name CommonLogic = getSymbolName
     -- translation of sentences along signature morphism
-    map_sen Propositional = mapSentence
+    map_sen CommonLogic = mapSentence
     -- there is nothing to leave out
-    simplify_sen Propositional _ = simplify
+    simplify_sen CommonLogic _ = simplify
+-}
 
--- | Syntax of Propositional logic
-instance Syntax Propositional BASIC_SPEC
-    SYMB_ITEMS SYMB_MAP_ITEMS where
-         parse_basic_spec Propositional = Just basicSpec
-         parse_symb_items Propositional = Just symbItems
-         parse_symb_map_items Propositional = Just symbMapItems
+-- | Syntax of CommonLogic logic
+instance Syntax CommonLogic [SENTENCE] () ()
+{-
+         parse_basic_spec CommonLogic = Just basicSpec
+         parse_symb_items CommonLogic = Just symbItems
+         parse_symb_map_items CommonLogic = Just symbMapItems
+-}
 
 -- | Instance of Logic for propositional logc
-instance Logic Propositional
-    PropSL                    -- Sublogics
-    BASIC_SPEC                -- basic_spec
-    FORMULA                   -- sentence
-    SYMB_ITEMS                -- symb_items
-    SYMB_MAP_ITEMS            -- symb_map_items
+instance Logic CommonLogic
+    ()                    -- Sublogics
+    [SENTENCE]                -- basic_spec
+    SENTENCE                   -- sentence
+    ()                -- symb_items
+    ()            -- symb_map_items
     Sign                          -- sign
-    Morphism                  -- morphism
-    Symbol                      -- symbol
-    Symbol                      -- raw_symbol
-    ProofTree                      -- proof_tree
-    where
-      stability Propositional     = Experimental
-      top_sublogic Propositional  = Sublogic.top
-      all_sublogics Propositional = sublogics_all
-      empty_proof_tree Propositional = emptyProofTree
-    -- supplied provers
-      provers Propositional = []
-#ifdef UNI_PACKAGE
-        ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
-        ++ unsafeProverCheck "minisat" "PATH" minisatProver
-#ifdef TABULAR_PACKAGE
-        ++ [ttProver]
-#endif
-      cons_checkers Propositional = []
-         ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
-         ++ unsafeProverCheck "minisat" "PATH" minisatConsChecker
-#ifdef TABULAR_PACKAGE
-         ++ [ttConsistencyChecker]
-#endif
-      conservativityCheck Propositional = []
-          ++ unsafeProverCheck "sKizzo" "PATH"
-             (ConservativityChecker "sKizzo" conserCheck)
-#ifdef TABULAR_PACKAGE
-          ++ [ConservativityChecker "Truth Tables" ttConservativityChecker]
-#endif
-#endif
-
+    (DefaultMorphism Sign)                 -- morphism
+    ()                      -- symbol
+    ()                      -- raw_symbol
+    ()                     -- proof_tree
 
 -- | Static Analysis for propositional logic
-instance StaticAnalysis Propositional
-    BASIC_SPEC                -- basic_spec
-    FORMULA                   -- sentence
-    SYMB_ITEMS                -- symb_items
-    SYMB_MAP_ITEMS            -- symb_map_items
+instance StaticAnalysis CommonLogic
+    [SENTENCE]               -- basic_spec
+    SENTENCE                   -- sentence
+    ()
+    ()
     Sign                          -- sign
-    Morphism                  -- morphism
-    Symbol                      -- symbol
-    Symbol                      -- raw_symbol
+    (DefaultMorphism Sign)
+    ()
+    ()
+{-
         where
-          basic_analysis Propositional           =
-              Just basicPropositionalAnalysis
-          empty_signature Propositional          = emptySig
-          is_subsig Propositional                = isSubSigOf
-          subsig_inclusion Propositional s = return . inclusionMap s
-          signature_union Propositional          = sigUnion
-          symbol_to_raw Propositional            = symbolToRaw
-          id_to_raw     Propositional            = idToRaw
-          matches       Propositional            = Symbol.matches
-          stat_symb_items Propositional          = mkStatSymbItems
-          stat_symb_map_items Propositional      = mkStatSymbMapItem
-          morphism_union Propositional           = morphismUnion
-          induced_from_morphism Propositional    = inducedFromMorphism
-          induced_from_to_morphism Propositional = inducedFromToMorphism
-          signature_colimit Propositional  = signatureColimit
-
--- | Sublogics
-instance SemiLatticeWithTop PropSL where
-    join = sublogics_max
-    top  = Sublogic.top
-
-instance MinSublogic PropSL BASIC_SPEC where
-     minSublogic = sl_basic_spec bottom
-
-instance MinSublogic PropSL Sign where
-    minSublogic = sl_sig bottom
-
-instance SublogicName PropSL where
-    sublogicName = sublogics_name
-
-instance MinSublogic PropSL FORMULA where
-    minSublogic = sl_form bottom
-
-instance MinSublogic PropSL Symbol where
-    minSublogic = sl_sym bottom
-
-instance MinSublogic PropSL SYMB_ITEMS where
-    minSublogic = sl_symit bottom
-
-instance MinSublogic PropSL Morphism where
-    minSublogic = sl_mor bottom
-
-instance MinSublogic PropSL SYMB_MAP_ITEMS where
-    minSublogic = sl_symmap bottom
-
-instance ProjectSublogicM PropSL Symbol where
-    projectSublogicM = prSymbolM
-
-instance ProjectSublogic PropSL Sign where
-    projectSublogic = prSig
-
-instance ProjectSublogic PropSL Morphism where
-    projectSublogic = prMor
-
-instance ProjectSublogicM PropSL SYMB_MAP_ITEMS where
-    projectSublogicM = prSymMapM
-
-instance ProjectSublogicM PropSL SYMB_ITEMS where
-    projectSublogicM = prSymM
-
-instance ProjectSublogic PropSL BASIC_SPEC where
-    projectSublogic = prBasicSpec
-
-instance ProjectSublogicM PropSL FORMULA where
-    projectSublogicM = prFormulaM
+          basic_analysis CommonLogic           =
+              Just basicCommonLogicAnalysis
+          empty_signature CommonLogic          = emptySig
+          is_subsig CommonLogic                = isSubSigOf
+          subsig_inclusion CommonLogic s = return . inclusionMap s
+          signature_union CommonLogic          = sigUnion
+          symbol_to_raw CommonLogic            = symbolToRaw
+          id_to_raw     CommonLogic            = idToRaw
+          matches       CommonLogic            = Symbol.matches
+          stat_symb_items CommonLogic          = mkStatSymbItems
+          stat_symb_map_items CommonLogic      = mkStatSymbMapItem
+          morphism_union CommonLogic           = morphismUnion
+          induced_from_morphism CommonLogic    = inducedFromMorphism
+          induced_from_to_morphism CommonLogic = inducedFromToMorphism
+          signature_colimit CommonLogic  = signatureColimit
+-}
 -}
