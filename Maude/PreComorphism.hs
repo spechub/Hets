@@ -980,24 +980,37 @@ listVarDecl :: Map.Map Id (Set.Set Token) -> [CAS.VAR_DECL]
 listVarDecl = Map.foldWithKey f []
       where f = \ sort var_set acc -> CAS.Var_decl (Set.toList var_set) sort nullRange : acc
 
+-- | generates an implication formula with the constraints produced by
+-- the sorts of the variables
 varsImp :: MSentence.Sentence -> IdMap -> CAS.CASLFORMULA -> CAS.CASLFORMULA
 varsImp sen im form = createImpForm imp_form form
-      where imp_form = varsImplication sen im
+      where forms = varsImplication sen im
+            forms' = deleteDuplicated forms form
+            imp_form = createConjForm forms'
+
+deleteDuplicated :: [CAS.CASLFORMULA] -> CAS.CASLFORMULA -> [CAS.CASLFORMULA]
+deleteDuplicated fs (CAS.Implication f _ True _) = deleteDuplicatedAux fs f
+deleteDuplicated fs (CAS.Implication _ f False _) = deleteDuplicatedAux fs f
+deleteDuplicated fs _ = fs
+
+deleteDuplicatedAux :: [CAS.CASLFORMULA] -> CAS.CASLFORMULA -> [CAS.CASLFORMULA]
+deleteDuplicatedAux fs (CAS.Conjunction fs' _) = filter (\ x -> not $ elem x fs') fs
+deleteDuplicatedAux fs f = filter (\ x -> not $ elem x [f]) fs
 
 -- | generates the implication obtained from the implicit information given
 -- in Maude variables
-varsImplication :: MSentence.Sentence -> IdMap -> CAS.CASLFORMULA
-varsImplication (MSentence.Membership mb) im = createConjForm forms
+varsImplication :: MSentence.Sentence -> IdMap -> [CAS.CASLFORMULA]
+varsImplication (MSentence.Membership mb) im = forms
       where MAS.Mb t _ conds _ = mb
             formsTerm = varsImpTerm im t
             formsCond = varsImpConds im conds
             forms = Set.toList $ Set.union formsTerm formsCond
-varsImplication (MSentence.Equation eq) im = createConjForm forms
+varsImplication (MSentence.Equation eq) im = forms
       where MAS.Eq t _ conds _ = eq
             formsTerm = varsImpTerm im t
             formsCond = varsImpConds im conds
             forms = Set.toList $ Set.union formsTerm formsCond
-varsImplication (MSentence.Rule rl) im = createConjForm forms
+varsImplication (MSentence.Rule rl) im = forms
       where MAS.Rl t _ conds _ = rl
             formsTerm = varsImpTerm im t
             formsCond = varsImpConds im conds
