@@ -62,7 +62,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Maude ExtModal CommonLogic
+    LF Maude ExtModal
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
