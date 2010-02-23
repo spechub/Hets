@@ -92,7 +92,7 @@ make_hom_forms = Set.fold ((:) . make_hom_form) []
 
 -- | generates a formula of the form make(h(x)) =e= x, for gn_free_s given the SORT s
 make_hom_form :: SORT -> Named CASLFORMULA
-make_hom_form s = makeNamed "" q_eq
+make_hom_form s = makeNamed ("ga_make_hom_"++show s) q_eq
       where free_s = mkFreeName s
             v = newVar free_s
             ot_hom = Op_type Partial [free_s] s nullRange
@@ -111,7 +111,7 @@ make_forms = Set.fold ((:) . make_form) []
 -- | generates the formulas relating the make function for this sort
 -- with the homomorphism
 make_form :: SORT -> Named CASLFORMULA
-make_form s = makeNamed "" q_eq
+make_form s = makeNamed ("ga_hom_make_"++show s) q_eq
       where free_s = mkFreeName s
             v = newVar s
             ot_mk = Op_type Total [s] free_s nullRange
@@ -432,7 +432,7 @@ sort_surj s = form'
             inner_form = Existl_equation lhs v2 nullRange
             inner_form' = Quantification Existential [vd1] inner_form nullRange
             form = Quantification Universal [vd2] inner_form' nullRange
-            form' = makeNamed "" form
+            form' = makeNamed ("ga_hom_surj_" ++ show s) form
 
 -- | generates the axioms for the homomorphisms applied to the predicates
 homomorphism_axs_preds :: Map.Map Id (Set.Set PredType) -> [Named CASLFORMULA]
