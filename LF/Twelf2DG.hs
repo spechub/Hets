@@ -18,7 +18,6 @@ import System.FilePath
 
 import Network.URI
 
-import Static.AnalysisStructured
 import Static.DevGraph
 import Static.ComputeTheory
 import Static.GTheory
@@ -322,60 +321,77 @@ addNodes dg (sigs,_) (libs,nmap) = do
               $ Map.toList sigs
   return ((libs,nmap3),dg3)
 
+-- inserts a signature as a node to the development graph
+insSigToDG :: Sign -> DGraph -> (Node,DGraph)
+insSigToDG sig dg = 
+  let node = getNewNodeDG dg
+      m = sigModule sig
+      nodeName = emptyNodeName { getName = Token m nullRange }
+      info = newNodeInfo DGBasic
+      extSign = makeExtSign LF sig
+      gth = noSensGTheory LF extSign startSigId
+      nodeLabel = newInfoNodeLab nodeName info gth
+      dg1 = insNodeDG (node,nodeLabel) dg   
+      in (node,dg1)
+
 -- adds links to the library environment
 addLinks :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
-addLinks dg (sigs,morphs) ln@(_,nmap) = do
+addLinks dg (sigs,morphs) ln = do
   dg2 <- foldM (\ dg1 ((_,s,t),(k,morph)) -> do 
                   sig1 <- lookupSig s ln sigs
                   sig2 <- lookupSig t ln sigs
                   let morph1 = morph { source = sig1, target = sig2 }
-                  let node1 = lookupNode s nmap
-                  let node2 = lookupNode t nmap
-                  return $ insMorphToDG morph1 node1 node2 k dg1                                              
+                  return $ insMorphToDG morph1 k ln dg1                                              
                ) 
                dg
                $ Map.toList morphs 
   return (ln,dg2)
 
--- inserts a signature as a node to the development graph
-insSigToDG :: Sign -> DGraph -> (Node,DGraph)
-insSigToDG sig dg = 
-  let name = sigModule sig
-      nodeName = emptyNodeName { getName = Token name nullRange }
-      extSign = makeExtSign LF sig
-      gsig = G_sign LF extSign startSigId
-      (NodeSig node _,dg1) = insGSig dg nodeName DGBasic gsig
-      in (node,dg1)
-
 -- inserts a morphism as a link to the development graph
-insMorphToDG :: Morphism -> Node -> Node -> LINK_TYPE -> DGraph -> DGraph
-insMorphToDG morph node1 node2 k dg =
-  let b = morphBase morph
-      gmorph = gEmbed $ G_morphism LF morph startMorId
+insMorphToDG :: Morphism -> LINK_TYPE -> LibEnvNodes -> DGraph -> DGraph
+insMorphToDG morph k ln dg =
+  let gmorph = gEmbed $ G_morphism LF morph startMorId
       thmStatus = Proven (DGRule "Type-checked") emptyProofBasis
       linkKind = case k of
                       Definitional -> DefLink
                       Postulated -> ThmLink thmStatus 
       consStatus = ConsStatus Cons.None Cons.None LeftOpen
       linkType = ScopedLink Global linkKind consStatus
-      (node3,dg1) = addRefNode b dg node1 $ source morph
-      (node4,dg2) = addRefNode b dg1 node2 $ target morph
-      in insLink dg2 gmorph linkType SeeTarget node3 node4 
-
+      linkLabel = defDGLink gmorph linkType SeeTarget
+      b = morphBase morph
+      (node1,dg1) = addRefNode b dg (source morph) ln
+      (node2,dg2) = addRefNode b dg1 (target morph) ln
+      in snd $ insLEdgeDG (node1,node2,linkLabel) dg2  
+      
 -- constructs a reference node to the specified signature, if needed
-addRefNode :: BASE -> DGraph -> Node -> Sign -> (Node,DGraph)
-addRefNode b dg node sig = 
-  let b1 = sigBase sig
-      in if (b1 == b)
+addRefNode :: BASE -> DGraph -> Sign -> LibEnvNodes -> (Node,DGraph)
+addRefNode base dg sig (libs,nmap) =
+  let b = sigBase sig
+      m = sigModule sig
+      node = lookupNode (b,m) nmap 
+      in if (b == base)
          then (node,dg)
-         else let info = DGRef (emptyLibName b1) node
+         else let info = newRefInfo (emptyLibName b) node
                   refNodeM = lookupInAllRefNodesDG info dg
                   in case refNodeM of
                           Just refNode -> (refNode,dg)
-                          Nothing -> 
-                            let (refNode,dg1) = insSigToDG sig dg
-                                dg2 = addToRefNodesDG refNode info dg1
-                                in (refNode,dg2)      
+                          Nothing -> insRefSigToDG sig info dg libs
+
+-- inserts a signature as a reference node to the development graph
+insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnv -> (Node,DGraph)
+insRefSigToDG sig info dg libs = 
+  let node = getNewNodeDG dg
+      m = sigModule sig
+      nodeName = emptyNodeName { getName = Token m nullRange }
+      extSign = makeExtSign LF sig
+      gth = noSensGTheory LF extSign startSigId
+      nodeLabel1 = newInfoNodeLab nodeName info gth
+      refDG = lookupDGraph (ref_libname info) libs
+      refGlobTh = globalTheory $ labDG refDG $ ref_node info 
+      nodeLabel2 = nodeLabel1 { globalTheory = refGlobTh}
+      dg1 = insNodeDG (node,nodeLabel2) dg
+      dg2 = addToRefNodesDG node info dg1    
+      in (node,dg2)                                   
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -596,7 +612,7 @@ addInclSyms (Sign _ _ ds) sig =
       in foldl (\ sig1 d -> 
                   if (Set.member (getSym d) syms)
                      then sig1
-                     else addDef d sig
+                     else addDef d sig1
                )
                sig
                ds

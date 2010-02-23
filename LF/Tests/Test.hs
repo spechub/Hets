@@ -11,6 +11,7 @@ import qualified Data.Set as Set
 import LF.Twelf2DG
 import System.Directory
 import Network.URI
+import Static.DevGraph
 
 import Text.XML.Light.Input
 import Text.XML.Light.Types
@@ -52,10 +53,7 @@ sig2 = Sign "file1" "sig2"
 m :: Morphism
 m = Morphism "" "" "" sig1 sig2 $ Map.fromList [(Symbol "file1" "sig1" "nat", t0)]
 
-Just r = mapSymbol m $ Symbol "file2" "sig2" "mat"
-b = getSymValue sig1 $ Symbol "file2" "sig2" "mat"
-
-fp = "/home/mathias/twelf/specs/math/algebra/algebra1.elf"
+fp = "/home/mathias/twelf/specs/logics/propositional/syntax/modules.elf"
 
 toDoc :: (RAW_NODE_NAME,Sign) -> Doc
 toDoc ((b,m),sig) = vcat [text b, text m, pretty sig]
@@ -64,13 +62,6 @@ test :: FilePath -> IO Doc
 test file = do
   dir <- getCurrentDirectory
   let file = resolve fp (dir ++ "/")
-  (rg,_) <- buildGraph file emptyLibs
-  let envir = makeLibEnv rg
-  let name = LibName (IndirectLink "" nullRange file noTime) Nothing
-  return $ vcat ([text $ show name, text ""] ++ (map (text . show) $ Map.keys envir))
-
-
-
-
-
-
+  (_,(sigs,morphs)) <- buildGraph file (emptyLibEnv,Map.empty)
+  return $ vcat $ map toDoc $ Map.toList sigs
+  
