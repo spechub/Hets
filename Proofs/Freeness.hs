@@ -38,6 +38,8 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import Control.Monad
 import Comorphisms.LogicGraph
+import Data.List(nub)
+import Common.Lib.Graph
 
 import Data.Maybe
 import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
@@ -102,14 +104,18 @@ handleEdge libEnv dg edge@(m,n,x) = do
                 allChanges = del: insK : insE
                 newDG = changesDGH dg allChanges
                 labelN = labDG dg n
-            return $ changesDGH newDG $ [SetNodeLab labelK (k, labelK
-              { globalTheory = computeLabelTheory libEnv newDG
+                succs = map (\y -> (y,labDG dg y)) $ descs (dgBody dg) n
+                labCh =  [SetNodeLab labelK (k, labelK
+                          { globalTheory = computeLabelTheory libEnv newDG
                                (k, labelK) }),
-              SetNodeLab labelN (n, labelN
-              { globalTheory = computeLabelTheory libEnv newDG
+                         SetNodeLab labelN (n, labelN
+                          { globalTheory = computeLabelTheory libEnv newDG
                                (n, labelN)
-                , labelHasHiding = True })
-              ]
+                            , labelHasHiding = True })
+                         ] ++
+                         map (\(y,ly) -> SetNodeLab ly
+                                         (y, ly{labelHasHiding = True})) succs
+            return $ changesDGH newDG $ labCh
            _ -> do
                -- failed in logic lid, look for comorphism and translate
                -- then recursive call
@@ -121,6 +127,21 @@ handleEdge libEnv dg edge@(m,n,x) = do
                 (m', dgM) <- translateFree libEnv dg edge com
                 foldM (handleEdge libEnv) dgM $ out (dgBody dgM) m'
      _ -> return dg
+
+descs :: Gr a b -> Node -> [Node]
+descs graph node = let
+   d nList descList =
+    case nList of
+      [] -> descList
+      _ -> let
+             newDescs = concatMap (\x -> suc graph x) nList
+             nList' = filter (\x -> not $ (x `elem` nList) ||
+                                          (x `elem` descList))
+                      newDescs
+             descList' = nub $ descList ++ newDescs
+           in d nList' descList'
+ in d [node] []
+
 
 translateFree :: LibEnv -> DGraph -> LEdge DGLinkLab -> AnyComorphism ->
                  Result (Node, DGraph)
