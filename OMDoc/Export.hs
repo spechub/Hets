@@ -72,7 +72,7 @@ makeImport libid dg (from, _, lbl)
                      . makeMorphism libid $ dgl_morphism lbl
     | otherwise = return Nothing
 
--- | Given a TheoremLink we compute the view
+-- | Given a TheoremLink we output the view
 exportLinkLab :: LibId -> DGraph -> LEdge DGLinkLab -> Result (Maybe TLElement)
 exportLinkLab libid dg (from, to, lbl) = return $ case dgl_type lbl of
     ScopedLink Global (ThmLink _) _ ->
@@ -82,9 +82,11 @@ exportLinkLab libid dg (from, to, lbl) = return $ case dgl_type lbl of
                 . makeMorphism libid $ dgl_morphism lbl
     _ -> Nothing
 
-makeMorphism :: LibId -> GMorphism -> TCElement
+makeMorphism :: LibId -> GMorphism -> Maybe TCElement
 makeMorphism _ (GMorphism cid _ _ mor _) =
-    export_morphismToOmdoc (targetLogic cid) mor
+    case export_morphismToOmdoc (targetLogic cid) mor of
+      TCMorphism [] -> Nothing
+      m -> Just m
 
 cdFromNode :: LibId -> DGNodeLab -> OMCD
 cdFromNode libid lb =

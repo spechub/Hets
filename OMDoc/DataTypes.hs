@@ -12,6 +12,8 @@ Datatypes for an intermediate OMDoc Representation.
 -}
 module OMDoc.DataTypes where
 
+import Common.Amalgamate
+
 {-
   OMDoc represented in 3 layers:
   1. toplevel (theory, view)
@@ -28,21 +30,21 @@ data OMDoc = OMDoc String [TLElement]
 -- | Toplevel elements for OMDoc, theory with name, meta and content,
 -- view with from, to and morphism
 data TLElement = TLTheory String (Maybe OMCD) [TCElement]
-               | TLView String OMCD OMCD TCElement
+               | TLView String OMCD OMCD (Maybe TCElement)
                  deriving (Show, Eq, Ord)
 
 -- | Theory constitutive elements for OMDoc
 data TCElement =
+    -- | Symbol to represent sorts, constants, predicate symbols, etc.
+    TCSymbol String OMElement SymbolRole (Maybe OMElement)
     -- | An axiom or theorem element, depends on the proof entry.
     -- Even unproven theorems should contain a constant marking them as
     -- a theorem.
-    TCAxiomOrTheorem (Maybe OMElement) String OMElement
-    -- | Symbol to represent sorts, constants, predicate symbols, etc.
-  | TCSymbol String OMElement SymbolRole
+--  | TCAxiomOrTheorem (Maybe OMElement) String OMElement
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
-  | TCImport String OMCD TCElement
+  | TCImport String OMCD (Maybe TCElement)
     -- | Morphisms to specify signature mappings
   | TCMorphism [(OMName, OMElement)]
     -- | A comment, only for development purposes
@@ -52,24 +54,52 @@ data TCElement =
 
 -- | The flattened structure of an Algebraic Data Type
 data OmdADT =
-    -- | A single sort given by name, free? and a list of constructors
-    ADTSortDef String Bool [OmdADT]
+    -- | A single sort given by name, type and a list of constructors
+    ADTSortDef String ADTType [OmdADT]
     -- | A constructor given by its name and a list of arguments
   | ADTConstr String [OmdADT]
     -- | An argument with type and evtually a selector
   | ADTArg OMElement (Maybe OmdADT)
-    -- | The selector has a name and is total (True) or partial (False)
-  | ADTSelector String Bool
+    -- | The selector has a name and is total (Yes) or partial (No)
+  | ADTSelector String Totality
     -- | Insort elements point to other sortdefs and inherit their structure
   | ADTInsort String
     deriving (Show, Eq, Ord)
 
 -- | Roles of the declared symbols can be object or type
-data SymbolRole = Obj | Typ deriving (Eq, Ord)
+data SymbolRole = Obj | Typ | Axiom | Theorem deriving (Eq, Ord)
+
+-- | Type of the algebraic data type
+data ADTType = Free | Generated deriving (Eq, Ord)
+
+-- | Totality for selectors of an adt
+data Totality = Yes | No deriving (Eq, Ord)
 
 instance Show SymbolRole where
     show Obj = "object"
     show Typ = "type"
+    show Axiom = "axiom"
+    show Theorem = "theorem"
+
+instance Show ADTType where
+    show Free = "free"
+    show Generated = "generated"
+
+instance Show Totality where
+    show Yes = "yes"
+    show No = "no"
+
+instance Read SymbolRole where
+    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o))
+                   [Obj, Typ, Axiom, Theorem]
+
+instance Read ADTType where
+    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o))
+                   [Free, Generated]
+
+instance Read Totality where
+    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o))
+                   [Yes, No]
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String,  path :: [String] }
