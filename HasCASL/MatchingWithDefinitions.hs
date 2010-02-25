@@ -71,6 +71,39 @@ getConstructors a = let constrs = Map.map (Set.filter isConstructor) a
                        $ Map.filter (not . Set.null) constrs
 
 
+termIsConstructor :: Assumps -> Term -> Bool
+termIsConstructor a t = case toSConst t of
+                          Nothing -> False
+                          Just sc@(SConst n ts) -> 
+                              case Map.lookup n (getConstructors a) of
+                                Just s -> Set.member ts s
+                                _ -> False
+
+-- | The noclash here depends only on each term seperately.
+--   Only when the predicate on both terms evaluates to true a clash occurs.
+noclashHeadInduced :: (Term -> Bool) -> Term -> Term -> Bool
+noclashHeadInduced p t1 t2 = not (p t1) || not (p t2)
+
+-- | The noclash here is induced only by the noclashHead function
+noclashInduced :: (Term -> Term -> Bool) -> Term -> Term -> Bool
+noclashInduced p (ApplTerm f1 _ _) (ApplTerm f2 _ _) = p f1 f2
+noclashInduced _ _ _ = True
+
+-- | The default noclash functions for the matching.
+--   We assume that equality of terms is handled before.
+defaultNoclashFromAssumps ::
+    Assumps -> (Term -> Term -> Bool, Term -> Term -> Bool)
+defaultNoclashFromAssumps a =
+    let p = termIsConstructor a
+        nch = noclashHeadInduced p
+    in (nch, noclashInduced nch)
+    
+
+defaultmatch :: (Monad m) => Assumps -> Subst -> Term -> Term
+             -> m (Subst, [(Term, Term)])
+defaultmatch a s = let (nch, nc) = defaultNoclashFromAssumps a in
+                   match s nch nc
+
 match :: (Monad m) => Subst -> (Term -> Term -> Bool) -> (Term -> Term -> Bool)
       -> Term -> Term -> m (Subst, [(Term, Term)])
 match map noclashHead noclash t1 t2 =

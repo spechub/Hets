@@ -384,6 +384,13 @@ redFold f x (t:l) = case f x t of
                       NotReduced y -> redFold f y l
                       y -> y
 
+-- | Reduces until the result is NotReduced.
+redUntil :: (a -> ReductionResult a) -> a -> a
+redUntil f a = case f a of
+                 NotReduced x -> x
+                 Reduced x -> redUntil f x
+                 x -> getResult x
+
 ---- let-reduction
 redLetList :: [Term] -> ReductionResult [Term]
 redLetList  = redList redLet
@@ -423,9 +430,12 @@ redLet t =
       _ -> NotReduced t
 
 
+letReduceOnce :: Term -> Term
+letReduceOnce = getResult . redLet
+
 letReduce :: Term -> Term
-letReduce = getResult . redLet
-                
+letReduce = redUntil redLet
+
 ---- beta-reduction
 -- TODO!
 
