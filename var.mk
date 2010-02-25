@@ -21,8 +21,8 @@ ifneq ($(findstring 2.4, $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
 
-TABULARVERSION = $(shell $(HCPKG) field tabular version)
-ifneq ($(findstring 0.1, $(TABULARVERSION)),)
+TABULARVERSION = $(shell $(HCPKG) latest tabular)
+ifneq ($(findstring tabular-0.1, $(TABULARVERSION)),)
 TABULAR_PACKAGE = -DTABULAR_PACKAGE
 endif
 
