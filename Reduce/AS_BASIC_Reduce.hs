@@ -9,20 +9,21 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-Definition of abstract syntax for reduce computer algebra system
+This file contains the abstract syntax for the reduce computer algebra system as well as pretty printer for it. 
+
 -}
 
 module Reduce.AS_BASIC_Reduce
     ( FORMULA (..)             -- datatype for Propositional Formulas
-    , EXPRESSION (..)
+    , EXPRESSION (..)          -- datatype for numerical expressions (e.g. polynomials)
     , BASIC_ITEMS (..)         -- Items of a Basic Spec
     , BASIC_SPEC (..)          -- Basic Spec
     , SYMB_ITEMS (..)          -- List of symbols
     , SYMB (..)                -- Symbols
     , SYMB_MAP_ITEMS (..)      -- Symbol map
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
-    , OP_ITEM (..)             -- 
-    , VAR_ITEM (..)
+    , OP_ITEM (..)             -- operator declaration
+    , VAR_ITEM (..)            -- variable declaration (needed?)
     ) where
 
 import Common.Id as Id
@@ -52,25 +53,25 @@ data BASIC_ITEMS =
 -- | Datatype for expressions
 data EXPRESSION = 
     Var String Id.Range
-  | Op [EXPRESSION] Id.Range
+  | Op String [EXPRESSION] Id.Range
   | List [EXPRESSION] Id.Range
-  | Int Int
-  | Double Double
+  | Int Int Id.Range
+  | Double Double Id.Range
   deriving (Eq,Show)
   
 -- | Datatyoe for nary boolean expressions
-data Naryboolop = And | Or | Cmd deriving (Eq,Show)
+data NARYBOOLOP = And | Or | Cmd deriving (Eq,Show)
 
 -- | Datatype for binary bollean expressions
-data Bboolop = Impl | Repl | Equiv deriving (Eq,Show)
+data BBOOLOP = Impl | Repl | Equiv deriving (Eq,Show)
 
 
 -- | Datatype for reduce formulas (could be factored)
 data FORMULA =
     False_atom Id.Range
   | True_atom Id.Range
-  | Nary Naryboolop  [FORMULA] Id.Range
-  | Binary Bboolop FORMULA FORMULA Id.Range
+  | Nary NARYBOOLOP  [FORMULA] Id.Range
+  | Binary BBOOLOP FORMULA FORMULA Id.Range
     deriving (Show, Eq)
 
 -- | symbol lists for hiding
@@ -96,6 +97,82 @@ data SYMB_OR_MAP = Symb SYMB
 
 -- Pretty Printing; 
 
+instance Pretty OP_ITEM where
+    pretty = printOpItem
+instance Pretty VAR_ITEM where
+    pretty = printVarItem
+instance Pretty BASIC_SPEC where
+    pretty = printBasicSpec
+instance Pretty BASIC_ITEMS where
+    pretty = printBasicItems
+instance Pretty EXPRESSION where
+    pretty = printExpression
+instance Pretty BBOOLOP where
+    pretty = printBBoolOp
+instance Pretty NARYBOOLOP where
+    pretty = printNaryBoolOp
+instance Pretty FORMULA where
+    pretty = printFormula
+instance Pretty SYMB_ITEMS where
+    pretty = printSymbItems
+instance Pretty SYMB where
+    pretty = printSymbol
+instance Pretty SYMB_MAP_ITEMS where
+    pretty = printSymbMapItems
+instance Pretty SYMB_OR_MAP where
+    pretty = printSymbOrMap
+
+
+printExpression :: EXPRESSION -> Doc
+printExpression (Var s a) = text s
+printExpression (Op s exps a) = text s <+> (parens (sepByCommas (map printExpression exps)))
+printExpression (List exps a) = sepByCommas (map printExpression exps)
+printExpression (Int i a) = text (show i)
+printExpression (Double d a) = text (show d)
+
+printNaryBoolOp :: NARYBOOLOP -> Doc
+printNaryBoolOp And = andDoc
+printNaryBoolOp Or = orDoc
+printNaryBoolOp Cmd = text "Cmd"
+
+printBBoolOp :: BBOOLOP -> Doc
+printBBoolOp Impl = implies
+printBBoolOp Repl = text "Repl"
+printBBoolOp Equiv = equiv
+
+printFormula :: FORMULA -> Doc
+printFormula (False_atom a) = text falseS
+printFormula (True_atom a) = text trueS
+printFormula (Nary nop  formulas a) = (printNaryBoolOp nop) <+> (parens (sepByCommas (map printFormula formulas)))
+printFormula (Binary boolop f1 f2 a) = printFormula f1  <+> printBBoolOp boolop <+> printFormula f2
+
+printOpItem :: OP_ITEM -> Doc
+printOpItem (Op_item tokens a) = (text "operator") <+> (sepByCommas (map pretty tokens))
+
+printVarItem :: VAR_ITEM -> Doc
+printVarItem (Var_item vars a) = (text "var") <+> (sepByCommas (map pretty vars))
+
+printBasicSpec :: BASIC_SPEC -> Doc
+printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
+
+printBasicItems :: BASIC_ITEMS -> Doc
+printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+printBasicItems (Var_decl x) = pretty x
+printBasicItems (Op_decl x) = pretty x
+
+printSymbol :: SYMB -> Doc
+printSymbol (Symb_id sym) = pretty sym
+
+printSymbItems :: SYMB_ITEMS -> Doc
+printSymbItems (Symb_items xs _) = fsep $ map pretty xs
+
+printSymbOrMap :: SYMB_OR_MAP -> Doc
+printSymbOrMap (Symb sym) = pretty sym
+printSymbOrMap (Symb_map source dest  _) =
+  pretty source <+> mapsto <+> pretty dest
+
+printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
+printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 
 
 -- Instances for GetRange
@@ -130,8 +207,6 @@ instance GetRange BASIC_ITEMS where
     Op_decl a -> joinRanges [rangeSpan a]
     Var_decl a -> joinRanges [rangeSpan a]
     Axiom_items a -> joinRanges [rangeSpan a]
-
--- instance GetRange FORMULA 
 
 instance GetRange SYMB_ITEMS where
   getRange = const nullRange
