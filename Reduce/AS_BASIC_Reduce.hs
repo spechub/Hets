@@ -52,7 +52,7 @@ data BASIC_ITEMS =
 
 -- | Datatype for expressions
 data EXPRESSION = 
-    Var String Id.Range
+    Var Id.Token
   | Op String [EXPRESSION] Id.Range
   | List [EXPRESSION] Id.Range
   | Int Int Id.Range
@@ -124,7 +124,7 @@ instance Pretty SYMB_OR_MAP where
 
 
 printExpression :: EXPRESSION -> Doc
-printExpression (Var s a) = text s
+printExpression (Var token) = text (tokStr token)
 printExpression (Op s exps a) = text s <+> (parens (sepByCommas (map printExpression exps)))
 printExpression (List exps a) = sepByCommas (map printExpression exps)
 printExpression (Int i a) = text (show i)
