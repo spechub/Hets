@@ -54,6 +54,9 @@ type Subst = (Map.Map SubstConst (SRule Term) -- | the const->term mapping
 eps :: Subst
 eps = (Map.empty, Map.empty, Map.empty)
 
+size :: Subst -> Int
+size (m,t,_) = Map.size m + Map.size t
+
 isBlocked :: SRule a -> Bool
 isBlocked (Ready _) = False
 isBlocked _ = True
@@ -112,7 +115,8 @@ addTerm :: Subst -> SubstConst -> Term -> Subst
 addTerm (m,t,br) k v =
     let nm = Map.insert k (mkSRule v) m
         f x = (toSC x, Set.singleton k)
-        s = Set.map f (freeVars v) `Set.union` Set.map f (opsInTerm v)
+        g x = (fromJust $ toSConst x, Set.singleton k)
+        s = Set.map f (freeVars v) `Set.union` Set.map g (opsInTerm v)
         nbr = Map.fromList $ Set.toList s
     in (nm, t, Map.unionWith Set.union br nbr)
 
@@ -144,6 +148,11 @@ class Substable a where
 
 
 
+instance LookupSubst Term Term where
+    lookupS s x = case toSConst x of
+                    Just sc -> lookupTerm s sc
+                    _ -> Nothing
+
 instance SCLike a => LookupSubst a Term where
     lookupS s x = lookupTerm s $ toSC x
 
@@ -162,11 +171,6 @@ instance SCLike (Id, OpInfo) where
 
 instance SCLike (PolyId, TypeScheme) where
     toSC (PolyId n _ _, typs) = mkSConst n typs
-
--- | this works only for QualVars and QualOps, otherwise an error is reported
-instance SCLike Term where
-    toSC t = case toSConst t of Just sc -> sc
-                                _ -> error "Non-SCLike Term encountered."
 
 instance STLike TypeArg where
     toST = typevarId
@@ -188,6 +192,9 @@ removeT s k = removeType s (toST k)
 removeListT :: STLike a => Subst -> [a] -> Subst
 removeListT s l = foldl removeT s l
 
+
+lookupContent :: LookupSubst a b => Subst -> a -> Maybe b
+lookupContent s k = fmap ruleContent $ lookupS s k
 
 ---- other functions
 typevarId :: TypeArg -> Id
@@ -268,7 +275,7 @@ substLetEq :: ProgEq -> State Subst ProgEq
 substLetEq (ProgEq lh rh rg) = do
   s <- get
   let scs = map toSC (Set.toList $ freeVars lh)
-            ++ map toSC (Set.toList $ opsInTerm lh)
+            ++ mapMaybe toSConst (Set.toList $ opsInTerm lh)
   -- IMPORTANT REMARK:
   -- The ops contain also constructors which are used to form patterns.
   -- These constructors shouldn't be substituted at all, so it should
