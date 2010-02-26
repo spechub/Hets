@@ -587,32 +587,37 @@ $((p_0\Rightarrow p_1), (p_5\Rightarrow p_6))$ and $(p_0,p_5)$, but it will
 also try to show equivalences between any two conditional antecedents (e.g. $(p_0,
 (p_5\Rightarrow p_6))$), even though these equivalences will not be needed
 during the execution of Algorithm~\ref{alg:optSeq}.
+\label{ex:requis}
 \end{example}
 
-Based on this observation it is possible to assign a category to each pair of
-antecedents that appear in it:
+Based on this observation it is possible to define a set $C$ of classes
+of so-called \emph{connected} subformulas of a given formula $\phi$. We require that
+each class $c_i\in C$ contains only formulas that are pairwise connected in $\phi$. Given
+a formula $\phi$, two subformulas of it are said to be connected in $\phi$ if they \emph{may}
+both appear in the conclusion of the application of a modal rule during the course of a proof
+of $\phi$. Two subformulas of $\phi$ are said to be \emph{independent} in $\phi$ if they are
+not connected.
 
-\begin{definition}
-The \emph{paths (in $\phi$)} to a conditional antecedent $\psi$ describe the orders
-of modal arguments through which $\psi$ is reached, when starting from the root
-of $\phi$:
-The path to a top-level antecedent is just $\{1\}$. If $\psi$ does not appear as
-antecedent on the topmost level of $\phi$, the path to it is $\{1\}$ prepended to the set
-of paths to $\psi$ in any top-level conditional antecedent of $\phi$ together with $\{0\}$
-prepended to the set of paths to $\psi$ in any top-level conditional consequent of $\phi$.
-\end{definition}
+
+In the case of conditional logic with conditional excluded middle, two formulas are connected
+if they appear at identical positions (modulo different choice of modal operator on each level)
+within $\phi$. We use the notions of \emph{classes of connected antecedents} (and \emph{classes of
+connected consequents}) to refer to the set of those classes which only contain antecedents (and consequents,
+respectively). 
 
 \begin{example}
-Consider the formula $\phi=(p_0\Rightarrow p_2)\Rightarrow ((p_0\Rightarrow p_1)\Rightarrow p_3)$. Then the path to
-$(p_0\Rightarrow p_2)$ is $\{1\}$, whereas the path to $(p_0\Rightarrow p_1)$ is $\{01\}$. The paths
-to $p_0$ are $\{11,011\}$.
+Considering again the formula from Example~\ref{ex:requis}, $\phi$ has the following classes
+of connected antecedents:
+\begin{quote}
+$c_1=\{((p_0\Rightarrow p_1)\Rightarrow p_2, (p_5\Rightarrow p_6)\Rightarrow p_7)\}$,
+$c_2=\{(p_0\Rightarrow p_1, p_5\Rightarrow p_6)\}$ and $c_3=\{(p_0,p_5)\}$.
+\end{quote}
+The classes of connected consequents in $\phi$ are as follows:
+\begin{quote}
+$c_4=\{(p_4, p_8)\}$, $c_5=\{p_2, p_7)\}$ and $c_6=\{p_1, p_6)\}$.
+\end{quote}
 \end{example}
 
-\begin{definition}
-Let $A$ and $B$ be two conditional antecedents. $A$ and $B$ are called \emph{connected (in $\phi$)} if
-at least one path to $A$ is also a path to $B$ (and hence vice-versa). If no path to $A$ is a path to $B$,
-the two antecedents are said to be \emph{independent}.
-\end{definition}
 
 Since two independent conditional antecedents will never appear in the scope of the
 same application of the modal rule, it is in no case necessary to show (or
@@ -625,22 +630,22 @@ may be the case, that we show equivalences of antecedents which are in fact not 
 of the modal rule - this is the case whenever two preceding antecedents are not logically equivalent).
 
 As result of these considerations, we devise Algorithm~\ref{alg:optPreprove},
-an improved version of Algorithm~\ref{alg:preprove}. The only difference is
-that before proving any equivalence, Algorithm~\ref{alg:optPreprove} checks
-whether the current pair of conditional antecedents is actually connected;
-only then does it treat the equivalence. Hence independent pairs of antecedents
-remain untreated
+an improved version of Algorithm~\ref{alg:preprove}. The crucial difference is
+that before proving any equivalences, Algorithm~\ref{alg:optPreprove} partitions the
+set of all relevant modal antecedents into the set of classes of connected antecedents.
+Then the algorithm treats equivalences between any two pairs in each of the classes.
+Hence independent pairs of antecedents remain untreated.
 %\begin{algorithm}[h]
 \begin{alg}
 \begin{upshape}
   Step 1: Take a formula $\phi$ as input. Set $i=0$, $\mathcal{K}_0=\emptyset$, $\eval_0=\emptyset$.\\
-  Step 2: Generate the set $\prems_i$ of all conditional antecedents of $\phi$
+  Step 2: Generate the set $C_i$ of all \emph{classes of connected} conditional antecedents of $\phi$
   of nesting depth at most $i$. If $i<depth(\phi)$ continue
   with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
-  Step 3: Let $eq_i$ denote the set of all equalities $A_a = A_b$ for different and not independent
-  pairs of formulas $A_a,A_b\in \prems_i$. Compute
-  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_i$.
-  Set $\mathcal{K}_{i+1} = eq_i$, set $i = i + 1$. For each equality $\psi\in eq_i$,
+  Step 3: For each $c_i\in C_i$, let $eq_{c_i}$ denote the set of all equalities $A_a = A_b$ for different
+  pairs of formulas $A_a,A_b\in c_i$. For each $eq_{c_i}$, compute
+  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_{c_i}$.
+  Set $\mathcal{K}_{i+1} = \bigcup_{c_i\in C_i} eq_{c_i}$, set $i = i + 1$. For each equality $\psi\in\mathcal{K}_{i+1}$,
   set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was `provable'
   and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
   Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its 
