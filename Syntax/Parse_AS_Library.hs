@@ -47,7 +47,7 @@ library lG = do
 libName :: AParser st LibName
 libName = do
     libid <- libId
-    v <- option Nothing (fmap Just version)
+    v <- optionMaybe version
     return $ LibName libid v
 
 -- | Parse the library version
@@ -169,17 +169,17 @@ viewType l = do
 itemNameOrMap :: AParser st ITEM_NAME_OR_MAP
 itemNameOrMap = do
     i1 <- simpleId
-    i' <- option Nothing $ do
+    i' <- optionMaybe $ do
         s <- asKey mapsTo
         i <- simpleId
-        return $ Just (i,s)
+        return (i, s)
     return $ case i' of
         Nothing -> Item_name i1
         Just (i2, s) -> Item_name_map i1 i2 $ tokPos s
 
 optEnd :: AParser st (Maybe Token)
 optEnd = try
-    (addAnnos >> option Nothing (fmap Just $ pToken $ keyWord $ string endS))
+    (addAnnos >> optionMaybe (pToken $ keyWord $ string endS))
     << addLineAnnos
 
 generics :: LogicGraph -> AParser st GENERICITY
