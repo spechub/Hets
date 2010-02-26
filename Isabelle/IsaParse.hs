@@ -133,18 +133,18 @@ data TheoryHead = TheoryHead
 
 theoryHead :: Parser TheoryHead
 theoryHead = do
-    option () isaSkip
-    option Nothing $ fmap Just headerP
+    isaSkip
+    optionMaybe headerP
     lexS theoryS
     th <- nameP
     is <- optionL (lexS importsS >> many nameP)
     us <- optionL (lexS usesS >> many (nameP <|> parname))
     lexS beginS
-    oc <- option Nothing $ fmap Just nameP
+    oc <- optionMaybe nameP
     return $ TheoryHead th is us oc
 
 commalist :: Parser a -> Parser [a]
-commalist = fmap fst . flip separatedBy (lexS ",")
+commalist = flip sepBy1 (lexS ",")
 
 parensP :: Parser a -> Parser a
 parensP p = do
@@ -174,20 +174,20 @@ recordP p = do
     lexS "|)"
     return a
 
-locale :: Parser ()
-locale = forget . parensP $ lexS "in" >> nameP
+locale :: Parser Token
+locale = parensP $ lexS "in" >> nameP
 
 markupP :: Parser Token
-markupP = choice (map lexS markups) >> option () locale >> lexP isaText
+markupP = choice (map lexS markups) >> optional locale >> lexP isaText
 
 infixP :: Parser ()
-infixP = forget $ choice (map lexS ["infix", "infixl", "infixr"])
-         >> option () (forget $ lexP isaString) >> lexP nat
+infixP = choice (map lexS ["infix", "infixl", "infixr"])
+         >> optional (lexP isaString) << lexP nat
 
 mixfixSuffix :: Parser ()
-mixfixSuffix = forget $ lexP isaString
+mixfixSuffix = lexP isaString
     >> optionL (bracketsP $ commalist $ lexP nat)
-           >> option () (forget $ lexP nat)
+           >> optional (lexP nat)
 
 structureL :: Parser ()
 structureL = forget $ lexS structureS
@@ -222,8 +222,8 @@ classdecl = do
     ns <- commalist namerefP
     return $ n : ns
 
-classes :: Parser ()
-classes = forget $ lexS classesS >> many1 classdecl
+classes :: Parser [[Token]]
+classes = lexS classesS >> many1 classdecl
 
 data Typespec = Typespec Token [Token]
 
@@ -235,7 +235,7 @@ typespec = fmap (flip Typespec []) namerefP <|> do
     where typefreeP = lexP typefree
 
 optinfix :: Parser ()
-optinfix = option () $ parensP infixP
+optinfix = optional $ parensP infixP
 
 types :: Parser [Typespec]
 types = lexS typesS >> many1 (typespec << (lexS "=" >> typeP >> optinfix))
@@ -256,30 +256,30 @@ typeSuffix = lexS "::" >> typeP
 
 consts :: Parser [Const]
 consts = lexS constsS >> many1 (liftM2 Const nameP (typeSuffix
-                                          << option () mixfix))
+                                          << optional mixfix))
 
 vars :: Parser ()
-vars = many1 nameP >> option () (forget typeSuffix)
+vars = many1 nameP >> optional typeSuffix
 
-andL :: Parser ()
-andL = forget $ lexS andS
+andL :: Parser String
+andL = lexS andS
 
 structs :: Parser ()
-structs = parensP $ structureL << separatedBy vars andL
+structs = parensP $ structureL << sepBy1 vars andL
 
 constdecl :: Parser [Const]
 constdecl = do
     n <- nameP
-    do t <- typeSuffix << option () mixfix
+    do t <- typeSuffix << optional mixfix
        return [Const n t]
      <|> (lexS "where" >> return [])
   <|> (mixfix >> return [])
 
 constdef :: Parser ()
-constdef = option () (forget thmdecl) << prop
+constdef = optional thmdecl << prop
 
 constdefs :: Parser [[Const]]
-constdefs = lexS constdefsS >> option () structs >>
+constdefs = lexS constdefsS >> optional structs >>
             many1 (optionL constdecl << constdef)
 
 -- | the sentence name plus simp attribute (if True)
@@ -313,13 +313,13 @@ thmbind :: Parser SenDecl
 thmbind = liftM2 SenDecl nameP optAttributes
           <|> (attributes >> return emptySen)
 
-selection :: Parser ()
-selection = forget . parensP . commalist $
-  natP >> option () (lexS "-" >> option () (forget natP))
+selection :: Parser [()]
+selection = parensP . commalist $
+  natP >> optional (lexS "-" >> optional natP)
   where natP = lexP nat
 
 thmref :: Parser Token
-thmref = namerefP << (option () selection >> optionL attributes)
+thmref = namerefP << (optional selection >> optionL attributes)
 
 thmrefs :: Parser [Token]
 thmrefs = many1 thmref
@@ -331,25 +331,25 @@ thmdecl :: Parser SenDecl
 thmdecl = try $ thmbind << lexS ":"
 
 theorems :: Parser ()
-theorems = forget $ (lexS theoremsS <|> lexS lemmasS)
-    >> option () locale
-    >> separatedBy (option () (forget thmdef) >> thmrefs) andL
+theorems = (lexS theoremsS <|> lexS lemmasS)
+    >> optional locale
+    << sepBy1 (optional thmdef >> thmrefs) andL
 
-proppat :: Parser ()
-proppat = forget . parensP . many1 $ lexP term
+proppat :: Parser [Token]
+proppat = parensP . many1 $ lexP term
 
 data Goal = Goal SenDecl [Token]
 
 props :: Parser Goal
 props = liftM2 Goal (option emptySen thmdecl)
-        $ many1 (prop << option () proppat)
+        $ many1 (prop << optional proppat)
 
 goal :: Parser [Goal]
-goal = fmap fst $ separatedBy props andL
+goal = sepBy1 props andL
 
 lemma :: Parser [Goal]
 lemma = choice (map lexS [lemmaS, theoremS, corollaryS])
-    >> option () locale >> goal -- longgoal ignored
+    >> optional locale >> goal -- longgoal ignored
 
 instanceP :: Parser Token
 instanceP =
@@ -362,21 +362,21 @@ mltext :: Parser Token
 mltext = lexS mlS >> lexP isaText
 
 cons :: Parser [Token]
-cons = nameP <:> many typeP << option () mixfix
+cons = nameP <:> many typeP << optional mixfix
 
 data Dtspec = Dtspec Typespec [[Token]]
 
 dtspec :: Parser Dtspec
 dtspec = do
-    option () $ forget $ try parname
+    optional $ try parname
     t <- typespec
     optinfix
     lexS "="
-    cs <- fmap fst $ separatedBy cons $ lexS "|"
+    cs <- sepBy1 cons $ lexS "|"
     return $ Dtspec t cs
 
 datatype :: Parser [Dtspec]
-datatype = lexS datatypeS >> fmap fst (separatedBy dtspec andL)
+datatype = lexS datatypeS >> sepBy1 dtspec andL
 
 -- allow '.' sequences in unknown parts
 anyP :: Parser String
@@ -384,11 +384,11 @@ anyP = atom <|> many1 (char '.')
 
 -- allow "and", etc. in unknown parts
 unknown :: Parser ()
-unknown = skipMany1 $ forget (lexP $ reserved usedTopKeys anyP)
-          <|> forget (recordP cus)
-          <|> forget (parensP cus)
-          <|> forget (bracketsP cus)
-          <|> forget (bracesP cus)
+unknown = skipMany1 $ (lexP (reserved usedTopKeys anyP) >> return [()])
+          <|> recordP cus
+          <|> parensP cus
+          <|> bracketsP cus
+          <|> bracesP cus
           where cus = commalist $ unknown <|> forget (lexP anyP)
 
 data BodyElem = Axioms [Axiom]
