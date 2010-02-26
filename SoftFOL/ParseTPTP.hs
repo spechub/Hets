@@ -24,7 +24,7 @@ import SoftFOL.PrintTPTP
 
 import qualified Common.Doc as Doc
 import Common.Id
-import Common.Lexer ((<<), getPos)
+import Common.Lexer ((<<), (<:>), (<++>), getPos, single)
 
 import Control.Monad
 import Data.Char (ord, toLower, isAlphaNum)
@@ -205,7 +205,7 @@ singleQuoted :: Parser String
 singleQuoted = do
   let quote = '\''
   char quote
-  s <- many1 $ try (string "\\'") <|> fmap (: "")
+  s <- many1 $ try (string "\\'") <|> single
        (satisfy $ \ c -> printable c && c /= quote)
   char quote
   return $ concat s
@@ -261,27 +261,18 @@ distinct :: Parser String
 distinct = do
   let dquot = '"'
   a <- char dquot
-  s <- many1 $ try (string "\\\"") <|> fmap (: "") (satisfy (/= dquot))
+  s <- many1 $ try (string "\\\"") <|> single (satisfy (/= dquot))
   e <- char dquot
   return $ a : concat s ++ [e]
 
 decimal :: Parser String
-decimal = do
-  s <- option "" $ string "+" <|> string "-"
-  ds <- natural
-  return $ s ++ ds
+decimal = option "" $ single (oneOf "-+") <++> natural
 
 real :: Parser String
 real = do
   d <- decimal
-  f <- option "" $ do
-    p <- char '.'
-    n <- many1 digit
-    return $ p : n
-  e <- option "" $ do
-    x <- oneOf "eE"
-    g <- decimal
-    return $ x : g
+  f <- option "" $ char '.' <:> many1 digit
+  e <- option "" $ oneOf "eE" <:> decimal
   return $ d ++ f ++ e
 
 formData :: Parser GenData
