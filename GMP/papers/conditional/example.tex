@@ -601,8 +601,8 @@ not connected.
 
 In the case of conditional logic with conditional excluded middle, two formulas are connected
 if they appear at identical positions (modulo different choice of modal operator on each level)
-within $\phi$. We use the notions of \emph{classes of connected antecedents} (and \emph{classes of
-connected consequents}) to refer to the set of those classes which only contain antecedents (and consequents,
+within $\phi$. We use the notions of \emph{classes of connected antecedents} (\emph{classes of
+connected consequents}) to refer to the set of those classes which only contain antecedents (consequents,
 respectively). 
 
 \begin{example}
@@ -614,7 +614,7 @@ $c_2=\{(p_0\Rightarrow p_1, p_5\Rightarrow p_6)\}$ and $c_3=\{(p_0,p_5)\}$.
 \end{quote}
 The classes of connected consequents in $\phi$ are as follows:
 \begin{quote}
-$c_4=\{(p_4, p_8)\}$, $c_5=\{p_2, p_7)\}$ and $c_6=\{p_1, p_6)\}$.
+$c_4=\{(p_4, p_8)\}$, $c_5=\{(p_2, p_7)\}$ and $c_6=\{(p_1, p_6)\}$.
 \end{quote}
 \end{example}
 
@@ -642,10 +642,10 @@ Hence independent pairs of antecedents remain untreated.
   Step 2: Generate the set $C_i$ of all \emph{classes of connected} conditional antecedents of $\phi$
   of nesting depth at most $i$. If $i<depth(\phi)$ continue
   with Step 3, else set $\mathcal{K}=\mathcal{K}_{i-1}, \eval=\eval_{i-1}$ and continue with Step 4.\\
-  Step 3: For each $c_i\in C_i$, let $eq_{c_i}$ denote the set of all equalities $A_a = A_b$ for different
-  pairs of formulas $A_a,A_b\in c_i$. For each $eq_{c_i}$, compute
-  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_{c_i}$.
-  Set $\mathcal{K}_{i+1} = \bigcup_{c_i\in C_i} eq_{c_i}$, set $i = i + 1$. For each equality $\psi\in\mathcal{K}_{i+1}$,
+  Step 3: For each $c\in C_i$, let $eq_{c}$ denote the set of all equalities $A_a = A_b$ for different
+  pairs of formulas $A_a,A_b\in c$. For each $eq_{c}$, compute
+  Algorithm~\ref{alg:optSeq} ($\psi$, $(\mathcal{K}_i,\eval_i)$) for all $\psi\in eq_{c}$.
+  Set $\mathcal{K}_{i+1} = \bigcup_{c\in C_i} eq_{c}$, set $i = i + 1$. For each equality $\psi\in\mathcal{K}_{i+1}$,
   set $\eval_{i+1}(\psi)=\top$ if the result of Algorithm~\ref{alg:optSeq} was `provable'
   and $\eval_{i+1}(\psi)=\bot$ otherwise. Continue with Step 2.\\
   Step 4: Call Algorithm~\ref{alg:optSeq} ($\phi$, $(\mathcal{K},\eval)$) and return its 
