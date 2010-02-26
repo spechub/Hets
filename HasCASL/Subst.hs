@@ -99,6 +99,18 @@ toSConst (QualVar vd) = Just $ toSC vd
 toSConst (QualOp _ n ts _ _ _) = Just $ toSC (n, ts)
 toSConst _ = Nothing
 
+
+substFromEqs :: [(Term, Term)] -> Subst
+substFromEqs eqs =
+  let f sb (t1,t2) = case toSConst t1 of
+                       Nothing -> sb
+                       Just sc -> addTerm sb sc t2
+  in foldl f eps eqs
+
+substFromTermMap :: [(SubstConst, Term)] -> Subst
+substFromTermMap tmap = foldl (\sb -> uncurry $ addTerm sb) eps tmap
+
+
 termEmpty :: Subst -> Bool
 termEmpty (m,_,_) = Map.null m
 typeEmpty :: Subst -> Bool
@@ -171,6 +183,9 @@ instance SCLike (Id, OpInfo) where
 
 instance SCLike (PolyId, TypeScheme) where
     toSC (PolyId n _ _, typs) = mkSConst n typs
+
+instance SCLike (Id, TypeScheme) where
+    toSC (n, typs) = mkSConst n typs
 
 instance STLike TypeArg where
     toST = typevarId

@@ -38,6 +38,7 @@ import Control.Monad
 
 Input: 
 - map = constant->term mapping for constant definition expansion
+- consts = set of constants to match, the others will be added as constraints
 - noclash = a function taking two constants which produced a clash
             and returning whether or not this clash should be ignored and
             the corresponding term-pair should be added to the constraints
@@ -57,7 +58,6 @@ a lazy list of:
 
 ----------------------- simple matching -----------------------
 
---isConstructor :: OpInfo -> Bool
 {-
   The default behaviour of the match is to signal only a clash
   if two constructors that are different are tried to be matched.
@@ -99,21 +99,21 @@ defaultNoclashFromAssumps a =
     in (nch, noclashInduced nch)
     
 
-defaultmatch :: (Monad m) => Assumps -> Subst -> Term -> Term
-             -> m (Subst, [(Term, Term)])
-defaultmatch a s = let (nch, nc) = defaultNoclashFromAssumps a in
-                   match s nch nc
+defaultmatch :: (Monad m) => Assumps -> Subst -> Set.Set SubstConst
+             -> Term -> Term -> m (Subst, [(Term, Term)])
+defaultmatch a s c = let (nch, nc) = defaultNoclashFromAssumps a in
+                     match s c nch nc
 
-match :: (Monad m) => Subst -> (Term -> Term -> Bool) -> (Term -> Term -> Bool)
-      -> Term -> Term -> m (Subst, [(Term, Term)])
-match map noclashHead noclash t1 t2 =
-    matchAux map noclashHead noclash (eps, []) (t1, t2)
+match :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
+      -> (Term -> Term -> Bool) -> Term -> Term -> m (Subst, [(Term, Term)])
+match map consts noclashHead noclash t1 t2 =
+    matchAux map consts noclashHead noclash (eps, []) (t1, t2)
 
 
-matchAux :: (Monad m) => Subst -> (Term -> Term -> Bool)
+matchAux :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
          -> (Term -> Term -> Bool) -> (Subst, [(Term, Term)]) -> (Term, Term)
          -> m (Subst, [(Term, Term)])
-matchAux map noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
+matchAux map consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
     case terms of
       -- handle the skip-cases first
       (TypedTerm term _ _ _, _) -> match' term t2
@@ -123,7 +123,7 @@ matchAux map noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
       (ApplTerm f1 a1 _, _) ->
           case t2 of
             ApplTerm f2 a2 _ | f1 == f2 -> match' a1 a2
-                             | noclashHead f1 f2 -> addConstraint t1 t2
+                             | noclashHead f1 f2 -> addConstraint
             _ -> tryDefExpand
 
       (TupleTerm l _, _) -> 
@@ -134,30 +134,32 @@ matchAux map noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
             _ -> tryDefExpand
 
       -- add the mapping v->t2 to output
-      (QualVar v, _) -> addMapping v t2
+      (QualVar v, _) -> addMapping v
       -- add the mapping (n,typ)->t2 to output
-      (QualOp _ n typ _ _ _, _) -> addMapping (n,typ) t2
+      (QualOp _ n typ _ _ _, _) -> addMapping (n,typ)
 
       -- all other terms are not expected and accepted here
       _ -> fail "matchAux: unhandled term"
 
-      where matchF = matchAux map noclashHead noclash -- used for the fold
+      where matchF = matchAux map consts noclashHead noclash -- used for fold
             match' = curry $ matchF output
-            addMapping k t =
+            addMapping k =
                 let sc = toSC k in
-                case lookupContent sbst sc of
-                  Just t' | t == t' -> return output
-                          | otherwise -> fail
-                                         $ concat [ "matchAux: "
-                                                  , "Conflicting substitution"
-                                                  , " for ", show k]
-                  _ -> return (addTerm sbst sc t, ctrts)
-            addConstraint t t' = return (sbst, (t,t'):ctrts)
+                if Set.member sc consts then
+                    case lookupContent sbst sc of
+                      Just t' | t2 == t' -> return output
+                              | otherwise ->
+                                  fail $ concat [ "matchAux: Conflicting "
+                                                , "substitution for ", show k]
+                      _ -> return (addTerm sbst sc t2, ctrts)
+                else addConstraint
+            addConstraint | t1 == t2 = return output
+                          | otherwise = return (sbst, (t1,t2):ctrts)
             -- The definition expansion application case
             -- (for ApplTerm and TupleTerm) is handled uniformly
             tryDefExpand = case defExpansion t2 of
                              Just t2' -> match' t1 t2'
-                             _ | noclash t1 t2 -> addConstraint t1 t2
+                             _ | noclash t1 t2 -> addConstraint
                                | otherwise -> clash
 
 
