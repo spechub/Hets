@@ -330,10 +330,10 @@ thmdef = try $ thmbind << lexS "="
 thmdecl :: Parser SenDecl
 thmdecl = try $ thmbind << lexS ":"
 
-theorems :: Parser ()
+theorems :: Parser [[Token]]
 theorems = (lexS theoremsS <|> lexS lemmasS)
     >> optional locale
-    << sepBy1 (optional thmdef >> thmrefs) andL
+    >> sepBy1 (optional thmdef >> thmrefs) andL
 
 proppat :: Parser [Token]
 proppat = parensP . many1 $ lexP term
