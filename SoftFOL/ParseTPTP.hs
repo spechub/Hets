@@ -279,7 +279,7 @@ real = do
     n <- many1 digit
     return $ p : n
   e <- option "" $ do
-    x <- char 'e' <|> char 'E'
+    x <- oneOf "eE"
     g <- decimal
     return $ x : g
   return $ d ++ f ++ e
