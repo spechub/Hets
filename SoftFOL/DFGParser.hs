@@ -99,9 +99,6 @@ mapTokensToData :: [(String, a)] -> Parser a
 mapTokensToData ls = choice (map tokenToData ls)
     where tokenToData (s,t) = keywordT s >> return t
 
-maybeParser :: Parser a -> Parser (Maybe a)
-maybeParser = option Nothing . fmap Just
-
 -- * SPASS Problem
 {- |
    This is the main function of the module
@@ -138,15 +135,15 @@ descriptionList = do
     n <- parensDot text
     keywordT "author"
     a <- parensDot text
-    v <- maybeParser (keywordT "version" >> parensDot text)
-    l <- maybeParser (keywordT "logic" >> parensDot text)
+    v <- optionMaybe (keywordT "version" >> parensDot text)
+    l <- optionMaybe (keywordT "logic" >> parensDot text)
     s <- keywordT "status" >> parensDot (mapTokensToData
       [ ("satisfiable", SPStateSatisfiable)
       , ("unsatisfiable", SPStateUnsatisfiable)
       , ("unknown", SPStateUnknown)])
     keywordT "description"
     de <- parensDot text
-    da <- maybeParser (keywordT "date" >> parensDot text)
+    da <- optionMaybe (keywordT "date" >> parensDot text)
     endOfList
     return SPDescription
       { name = n
@@ -166,8 +163,8 @@ descriptionList = do
 -}
 logicalPartP :: Parser SPLogicalPart
 logicalPartP = do
-    sl <- maybeParser symbolListP
-    dl <- maybeParser declarationListP
+    sl <- optionMaybe symbolListP
+    dl <- optionMaybe declarationListP
     fs <- many formulaList
     cl <- many clauseList
     pl <- many proofList
@@ -186,9 +183,9 @@ logicalPartP = do
 symbolListP :: Parser SPSymbolList
 symbolListP = do
     listOfDot "symbols"
-    fs <- option [] (signSymFor "functions")
-    ps <- option [] (signSymFor "predicates")
-    ss <- option [] sortSymFor
+    fs <- optionL (signSymFor "functions")
+    ps <- optionL (signSymFor "predicates")
+    ss <- optionL sortSymFor
     endOfList
     return emptySymbolList
       { functions = fs
@@ -250,7 +247,7 @@ clauseList = do
 clause :: SPClauseType -> Bool -> Parser SPClause
 clause ct bool = keywordT "clause" >> parensDot (do
     sen  <- clauseFork ct
-    cname <- (option "" (comma >> identifierS))
+    cname <- optionL (comma >> identifierS)
     return (makeNamed cname sen) { isAxiom = bool })
 
 clauseFork :: SPClauseType -> Parser NSPClause
@@ -278,13 +275,13 @@ toNSPClause ct t = case t of
 termWsList :: Parser TermWsList
 termWsList = do
     twl <- many term
-    p <- maybeParser (symbolT "+")
+    p <- optionMaybe (symbolT "+")
     return $ TWL twl $ isJust p
 
 formula :: Bool -> Parser (Named SoftFOL.Sign.SPTerm)
 formula bool = keywordT "formula" >> parensDot (do
      sen <- term
-     fname <- option "" (comma >> identifierS)
+     fname <- optionL (comma >> identifierS)
      return (makeNamed fname sen) { isAxiom = bool })
 
 declarationListP :: Parser [SPDeclaration]
@@ -333,8 +330,8 @@ declaration = do
 proofList :: Parser SPProofList
 proofList = do
     listOf "proof"
-    pa <- maybeParser $ parensDot $ do
-        pt <- maybeParser getproofType
+    pa <- optionMaybe $ parensDot $ do
+        pt <- optionMaybe getproofType
         assList <- option Map.empty (comma >> assocList)
         return (pt, assList)
     steps <- many proofStep
@@ -470,7 +467,7 @@ term = do
         let s = spSym i
         option (simpTerm s) $ do
           (ts, as@(a : _)) <- parens $ do
-            ts <- option [] (squares (commaSep term) << comma)
+            ts <- optionL (squares (commaSep term) << comma)
             as <- if null ts then commaSep term
                   else fmap (: []) term
             return (ts, as)

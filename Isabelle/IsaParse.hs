@@ -39,7 +39,7 @@ latin = single letter <?> "latin"
 
 greek :: Parser String
 greek = string "\\<" <++>
-         option "" (string "^") -- isup
+         optionL (string "^") -- isup
          <++> many1 letter <++> string ">" <?> "greek"
 
 isaLetter :: Parser String
@@ -88,10 +88,10 @@ typefree :: Parser String
 typefree = prime <:> ident
 
 indexsuffix :: Parser String
-indexsuffix = option "" (char '.' <:> nat)
+indexsuffix = optionL (char '.' <:> nat)
 
 typevar :: Parser String
-typevar = try (string "?'") <++> ident <++> option "" (char '.' <:> nat)
+typevar = try (string "?'") <++> ident <++> optionL (char '.' <:> nat)
 
 typeP :: Parser Token
 typeP = lexP typefree <|> lexP typevar <|> namerefP
@@ -137,8 +137,8 @@ theoryHead = do
     option Nothing $ fmap Just headerP
     lexS theoryS
     th <- nameP
-    is <- option [] (lexS importsS >> many nameP)
-    us <- option [] (lexS usesS >> many (nameP <|> parname))
+    is <- optionL (lexS importsS >> many nameP)
+    us <- optionL (lexS usesS >> many (nameP <|> parname))
     lexS beginS
     oc <- option Nothing $ fmap Just nameP
     return $ TheoryHead th is us oc
@@ -186,7 +186,7 @@ infixP = forget $ choice (map lexS ["infix", "infixl", "infixr"])
 
 mixfixSuffix :: Parser ()
 mixfixSuffix = forget $ lexP isaString
-    >> option [] (bracketsP $ commalist $ lexP nat)
+    >> optionL (bracketsP $ commalist $ lexP nat)
            >> option () (forget $ lexP nat)
 
 structureL :: Parser ()
@@ -228,7 +228,7 @@ classes = forget $ lexS classesS >> many1 classdecl
 data Typespec = Typespec Token [Token]
 
 typespec :: Parser Typespec
-typespec = fmap (\ n -> Typespec n []) namerefP <|> do
+typespec = fmap (flip Typespec []) namerefP <|> do
     ns <- parensP (commalist typefreeP) <|> fmap (:[]) typefreeP
     n <- namerefP
     return $ Typespec n ns
@@ -280,7 +280,7 @@ constdef = option () (forget thmdecl) << prop
 
 constdefs :: Parser [[Const]]
 constdefs = lexS constdefsS >> option () structs >>
-            many1 (option [] constdecl << constdef)
+            many1 (optionL constdecl << constdef)
 
 -- | the sentence name plus simp attribute (if True)
 data SenDecl = SenDecl Token Bool
@@ -289,7 +289,7 @@ emptySen :: SenDecl
 emptySen = SenDecl (mkSimpleId "") False
 
 optAttributes :: Parser Bool
-optAttributes = fmap or $ option [] attributes
+optAttributes = fmap or $ optionL attributes
 
 axmdecl :: Parser SenDecl
 axmdecl = liftM2 SenDecl nameP optAttributes << lexS ":"
@@ -303,7 +303,7 @@ axiomsP :: Parser [Axiom]
 axiomsP = many1 (liftM2 Axiom axmdecl prop)
 
 defs :: Parser [Axiom]
-defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
+defs = lexS defsS >> optionL (parensP $ lexS "overloaded") >>
        axiomsP
 
 axioms :: Parser [Axiom]
@@ -319,7 +319,7 @@ selection = forget . parensP . commalist $
   where natP = lexP nat
 
 thmref :: Parser Token
-thmref = namerefP << (option () selection >> option [] attributes)
+thmref = namerefP << (option () selection >> optionL attributes)
 
 thmrefs :: Parser [Token]
 thmrefs = many1 thmref

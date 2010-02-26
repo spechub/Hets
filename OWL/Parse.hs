@@ -108,8 +108,8 @@ port :: CharParser st String
 port = many digit
 
 iauthority :: CharParser st String
-iauthority = option "" (try $ iuserinfo <++> string "@") <++> ihost
-    <++> option "" (char ':' <:> port)
+iauthority = optionL (try $ iuserinfo <++> string "@") <++> ihost
+    <++> optionL (char ':' <:> port)
 
 isegment :: CharParser st String
 isegment = flat $ many ipChar
@@ -121,7 +121,7 @@ ipathAbempty :: CharParser st String
 ipathAbempty = flat $ many (char '/' <:> isegment)
 
 ipathAbsolute :: CharParser st String
-ipathAbsolute = char '/' <:> option "" (isegmentNz <++> ipathAbempty)
+ipathAbsolute = char '/' <:> optionL (isegmentNz <++> ipathAbempty)
 
 -- within abbreviated IRIs only ipath-noscheme should be used
 -- that excludes colons via isegment-nz-nc
@@ -132,8 +132,8 @@ iauthorityWithPath :: CharParser st String
 iauthorityWithPath = try (string "//") <++> iauthority <++> ipathAbempty
 
 optQueryOrFrag :: CharParser st String
-optQueryOrFrag = option "" (char '?' <:> iquery)
-  <++> option "" (char '#' <:> ifragment)
+optQueryOrFrag = optionL (char '?' <:> iquery)
+  <++> optionL (char '#' <:> ifragment)
 
 -- | covers irelative-part (therefore we omit curie)
 ihierPart :: CharParser st String
@@ -184,8 +184,8 @@ uriP :: CharParser st QName
 uriP = let
   mkLow = map toLower
   in skip $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
-  if null p then not $ elem (mkLow $ localPart q) $ map mkLow owlKeywords
-   else not $ elem (mkLow p)
+  if null p then notElem (mkLow $ localPart q) $ map mkLow owlKeywords
+   else notElem (mkLow p)
      $ map (mkLow . takeWhile (/= ':')) colonKeywords
 
 -- | parse a possibly kinded list of comma separated uris aka symbols
@@ -233,20 +233,20 @@ stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
                         <|> char '\\' <:> single anyChar) $ char '\"'
 
 optSign :: CharParser st String
-optSign = option "" (single $ oneOf "+-")
+optSign = optionL (single $ oneOf "+-")
 
 postDecimal :: CharParser st String
 postDecimal = char '.' <:> getNumber
 
 fullDecimal :: CharParser st String
-fullDecimal = getNumber <++> option "" postDecimal
+fullDecimal = getNumber <++> optionL postDecimal
 
 decimalLit :: CharParser st String
 decimalLit = optSign <++> fullDecimal
 
 floatingPointLit :: CharParser st String
 floatingPointLit = optSign <++> (fullDecimal <|> postDecimal)
-  <++> option "" (oneOf "eE" <:> optSign <++> getNumber)
+  <++> optionL (oneOf "eE" <:> optSign <++> getNumber)
   << oneOf "fF"
 
 languageTag :: CharParser st String
@@ -383,9 +383,9 @@ individualOrConstantList :: CharParser st (Either [QName] [Constant])
 individualOrConstantList = do
     ioc <- individualOrConstant
     case ioc of
-      Left u -> fmap (Left . (u :)) $ option []
+      Left u -> fmap (Left . (u :)) $ optionL
         $ commaP >> sepByComma individualUri
-      Right c -> fmap (Right . (c :)) $ option []
+      Right c -> fmap (Right . (c :)) $ optionL
         $ commaP >> sepByComma constant
 
 primaryOrDataRange :: CharParser st (Either Description DataRange)
@@ -432,7 +432,7 @@ restrictionAny opExpr = do
     <|> do -- sugar
       keyword onlysomeS
       ds <- bracketsP $ sepByComma description
-      let as = map (\ d -> ObjectValuesFrom SomeValuesFrom opExpr d) ds
+      let as = map (ObjectValuesFrom SomeValuesFrom opExpr) ds
           o = ObjectValuesFrom AllValuesFrom opExpr
               $ mkObjectJunction UnionOf ds
       return $ mkObjectJunction IntersectionOf $ o : as
@@ -522,7 +522,7 @@ optAnnos p = do
   return (as, a)
 
 annotations :: CharParser st [Annotation]
-annotations = option [] realAnnotations
+annotations = optionL realAnnotations
 
 realAnnotations :: CharParser st [Annotation]
 realAnnotations = do
@@ -544,7 +544,7 @@ entityAnnos qn ty = do
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
 classFrameBit :: QName -> CharParser st [Axiom]
-classFrameBit curi = let duri = OWLClassDescription curi in do
+classFrameBit curi = let duri = OWLClassDescription curi in
     entityAnnos curi OWLClass
   <|> do
     pkeyword subClassOfC
@@ -593,7 +593,7 @@ characterKey :: CharParser st ()
 characterKey = pkeyword characteristicsC
 
 objectFrameBit :: QName -> CharParser st [Axiom]
-objectFrameBit ouri = let opExp = OpURI ouri in do
+objectFrameBit ouri = let opExp = OpURI ouri in
     entityAnnos ouri ObjectProperty
   <|> do
     r <- domainOrRange
@@ -640,7 +640,7 @@ dataPropExprAList :: CharParser st [([Annotation], DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
 
 dataFrameBit :: QName -> CharParser st [Axiom]
-dataFrameBit duri = do
+dataFrameBit duri =
     entityAnnos duri DataProperty
   <|> do
     pkeyword domainC
@@ -692,7 +692,7 @@ fact iuri = do
       return $ ObjectPropertyAssertion $ Assertion (OpURI u) pn iuri t
 
 iFrameBit :: QName -> CharParser st [Axiom]
-iFrameBit iuri = do
+iFrameBit iuri =
     entityAnnos iuri Individual
   <|> do
     pkeyword typesC
@@ -706,7 +706,7 @@ iFrameBit iuri = do
   <|> do
     pkeyword factsC
     fs <- sepByComma $ optAnnos $ fact iuri
-    return $ map (\ (as, f) -> PlainAxiom as f) fs
+    return $ map (uncurry PlainAxiom) fs
 
 individualFrame :: CharParser st [Axiom]
 individualFrame = do

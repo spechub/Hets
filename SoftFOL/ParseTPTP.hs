@@ -24,7 +24,7 @@ import SoftFOL.PrintTPTP
 
 import qualified Common.Doc as Doc
 import Common.Id
-import Common.Lexer ((<<), (<:>), (<++>), getPos, single)
+import Common.Lexer ((<<), (<:>), (<++>), getPos, single, optionL)
 
 import Control.Monad
 import Data.Char (ord, toLower, isAlphaNum)
@@ -156,11 +156,14 @@ lexeme = (<< skipAll)
 key :: Parser a -> Parser ()
 key = (>> skipAll)
 
+keyChar :: Char -> Parser ()
+keyChar = key . char
+
 comma :: Parser ()
-comma = key $ char ','
+comma = keyChar ','
 
 oParen :: Parser ()
-oParen = key $ char '('
+oParen = keyChar '('
 
 cDotParen :: Parser ()
 cDotParen = string ")." >> skip >> option () (newline >> skip)
@@ -170,7 +173,7 @@ include = do
   key $ try $ string "include"
   oParen
   a <- atomicWord
-  m <- option [] $ do
+  m <- optionL $ do
     comma
     sepBy1 aname comma
   cDotParen
@@ -238,20 +241,20 @@ formAnno = do
   return $ FormAnno k n r f m
 
 colon :: Parser ()
-colon = key $ char ':'
+colon = keyChar ':'
 
 genTerm :: Parser GenTerm
 genTerm = fmap GenTermList genList <|> do
   gd <- genData
   m <- optionMaybe $ do
-    key $ char ':'
+    keyChar ':'
     genTerm
   return $ GenTerm gd m
 
 genData :: Parser GenData
 genData = formData <|> otherData <|> do
   a <- fmap AWord atomicWord
-  l <- option [] $ parens $ sepBy1 genTerm comma
+  l <- optionL $ parens $ sepBy1 genTerm comma
   return $ GenData a l
 
 otherData :: Parser GenData
@@ -266,13 +269,13 @@ distinct = do
   return $ a : concat s ++ [e]
 
 decimal :: Parser String
-decimal = option "" $ single (oneOf "-+") <++> natural
+decimal = optionL $ single (oneOf "-+") <++> natural
 
 real :: Parser String
 real = do
   d <- decimal
-  f <- option "" $ char '.' <:> many1 digit
-  e <- option "" $ oneOf "eE" <:> decimal
+  f <- optionL $ char '.' <:> many1 digit
+  e <- optionL $ oneOf "eE" <:> decimal
   return $ d ++ f ++ e
 
 formData :: Parser GenData
@@ -283,10 +286,10 @@ formData = do
   return $ GenFormData $ FormData k f
 
 orOp :: Parser ()
-orOp = key $ char '|'
+orOp = keyChar '|'
 
 andOp :: Parser ()
-andOp = key $ char '&'
+andOp = keyChar '&'
 
 pToken :: Parser String -> Parser Token
 pToken = liftM2 (\ p s -> Token s (Range [p])) getPos . (<< skipAll)
@@ -333,7 +336,7 @@ quantForm = do
 
 unaryForm :: Parser SPTerm
 unaryForm = do
-  key $ char '~'
+  keyChar '~'
   u <- unitary
   return $ compTerm SPNot [u]
 
@@ -373,21 +376,21 @@ dollarWord = do
 term :: Parser SPTerm
 term = variable <|> definedAtom <|> do
   f <- functor
-  as <- option [] $ parens $ sepBy1 term comma
+  as <- optionL $ parens $ sepBy1 term comma
   return $ compTerm f as
 
 brackets :: Parser a -> Parser a
 brackets p = do
-  key $ char '['
+  keyChar '['
   a <- p
-  key $ char ']'
+  keyChar ']'
   return a
 
 parens :: Parser a -> Parser a
 parens p = do
   oParen
   a <- p
-  key $ char ')'
+  keyChar ')'
   return a
 
 genList :: Parser [GenTerm]

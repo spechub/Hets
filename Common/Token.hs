@@ -143,34 +143,34 @@ bracketP p = begDoEnd oBracketT p cBracketT
 -- | an 'sid' optionally followed by other mixfix components
 -- (without no two consecutive 'sid's)
 innerMix1 :: ([String], [String]) -> GenParser Char st [Token]
-innerMix1 l = sid l <:> option [] (innerMix2 l)
+innerMix1 l = sid l <:> optionL (innerMix2 l)
 
 -- | mixfix components not starting with a 'sid' (possibly places)
 innerMix2 :: ([String], [String]) -> GenParser Char st [Token]
 innerMix2 l = let p = innerList l in
                   flat (many1 (braceP p <|> bracketP p <|> many1 placeT))
-                           <++> option [] (innerMix1 l)
+                           <++> optionL (innerMix1 l)
 
 -- | any mixfix components within braces or brackets
 innerList :: ([String], [String]) -> GenParser Char st [Token]
-innerList l = option [] (innerMix1 l <|> innerMix2 l <?> "token")
+innerList l = optionL (innerMix1 l <|> innerMix2 l <?> "token")
 
 -- | mixfix components starting with a 'sid' (outside 'innerList')
 topMix1 :: ([String], [String]) -> GenParser Char st [Token]
-topMix1 l = sid l <:> option [] (topMix2 l)
+topMix1 l = sid l <:> optionL (topMix2 l)
 
 -- | mixfix components starting with braces ('braceP')
 -- that may follow 'sid' outside 'innerList'.
 -- (Square brackets after a 'sid' will be taken as a compound list.)
 topMix2 :: ([String], [String]) -> GenParser Char st [Token]
-topMix2 l = flat (many1 (braceP $ innerList l)) <++> option [] (topMix1 l)
+topMix2 l = flat (many1 (braceP $ innerList l)) <++> optionL (topMix1 l)
 
 -- | mixfix components starting with square brackets ('bracketP')
 -- that may follow a place ('placeT') (outside 'innerList')
 topMix3 :: ([String], [String]) -> GenParser Char st [Token]
 topMix3 l = let p = innerList l in
                 bracketP p <++> flat (many (braceP p))
-                             <++> option [] (topMix1 l)
+                             <++> optionL (topMix1 l)
 
 -- | any ('topMix1', 'topMix2', 'topMix3') mixfix components
 -- that may follow a place ('placeT') at the top level
@@ -179,7 +179,7 @@ afterPlace l = topMix1 l <|> topMix2 l<|> topMix3 l
 
 -- | places possibly followed by other ('afterPlace') mixfix components
 middle :: ([String], [String]) -> GenParser Char st [Token]
-middle l = many1 placeT <++> option [] (afterPlace l)
+middle l = many1 placeT <++> optionL (afterPlace l)
 
 -- | many (balanced, top-level) mixfix components ('afterPlace')
 -- possibly interspersed with multiple places ('placeT')
@@ -190,7 +190,7 @@ tokStart l = afterPlace l <++> flat (many (middle l))
 -- possibly starting with places but no single 'placeT' only.
 start :: ([String], [String]) -> GenParser Char st [Token]
 start l = tokStart l <|> placeT <:> (tokStart l <|>
-                                 many1 placeT <++> option [] (tokStart l))
+                                 many1 placeT <++> optionL (tokStart l))
                                      <?> "id"
 
 -- * parser for mixfix and compound 'Id's

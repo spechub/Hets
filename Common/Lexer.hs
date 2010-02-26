@@ -88,6 +88,10 @@ flat = fmap concat
 
 -- * ParsecCombinator extension
 
+-- | parse an optional list
+optionL :: GenParser tok st [a] -> GenParser tok st [a]
+optionL = option []
+
 lookaheadPosition :: String
 lookaheadPosition = "lookahead position "
 
@@ -212,8 +216,8 @@ getNumber = many1 digit
 
 scanFloat :: CharParser st String
 scanFloat = getNumber
-  <++> (option "" (try $ char '.' <:> getNumber)
-        <++> option "" (char 'E' <:> option "" (single $ oneOf "+-")
+  <++> (optionL (try $ char '.' <:> getNumber)
+        <++> optionL (char 'E' <:> optionL (single $ oneOf "+-")
                         <++> getNumber))
 
 scanDigit :: CharParser st String
@@ -298,7 +302,7 @@ pToken :: CharParser st String -> CharParser st Token
 pToken = parseToken . (<< skipSmart)
 
 pluralKeyword :: String -> CharParser st Token
-pluralKeyword s = pToken (keyWord (string s <++> option "" (string "s")))
+pluralKeyword s = pToken (keyWord (string s <++> optionL (string "s")))
   <?> show s
 
 -- | check for keywords (depending on lexem class)
