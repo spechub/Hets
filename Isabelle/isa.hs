@@ -27,9 +27,9 @@ main = getArgs >>= mapM_ process
 process :: String -> IO ()
 process f = do
   s <- readFile f
-  putStrLn $ case parse parseTheory f s of
-             Right (_, b) -> show $ printBody b
-             Left err -> show err
+  case parse parseTheory f s of
+             Right (_, b) -> print $ printBody b
+             Left err -> fail $ show err
 
 printBody :: Body -> Doc
 printBody f = let

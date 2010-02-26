@@ -181,7 +181,7 @@ markupP :: Parser Token
 markupP = choice (map lexS markups) >> optional locale >> lexP isaText
 
 infixP :: Parser ()
-infixP = choice (map lexS ["infix", "infixl", "infixr"])
+infixP = choice (map lexS ["infixl", "infixr", "infix"])
          >> optional (lexP isaString) << lexP nat
 
 mixfixSuffix :: Parser ()
@@ -389,7 +389,7 @@ unknown = skipMany1 $ (lexP (reserved usedTopKeys anyP) >> return [()])
           <|> parensP cus
           <|> bracketsP cus
           <|> bracesP cus
-          where cus = commalist $ unknown <|> forget (lexP anyP)
+          where cus = commalist (unknown <|> forget (lexP anyP))
 
 data BodyElem = Axioms [Axiom]
               | Goals [Goal]
