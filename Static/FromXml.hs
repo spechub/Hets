@@ -19,6 +19,7 @@ import Common.Result
 import Text.XML.Light
 
 import Data.List
+import Data.Maybe
 
 data Change = Change Element
 
@@ -47,16 +48,31 @@ isAddQN q = any (flip isPrefixOf $ qName q) ["insert", "append"]
 isRemoveQN :: QName -> Bool
 isRemoveQN q = qName q == "remove"
 
+getAttrVal :: String -> Element -> String
+getAttrVal a = fromMaybe (error "FromXml.getAttrVal")
+  . findAttr (unqual a)
+
+getSelectVal :: Element -> String
+getSelectVal = getAttrVal "select"
+
+data XPath = XPath
+
+anaXPath :: String -> XPath
+anaXPath = undefined
+
 anaUpdate :: LibEnv -> DGraph -> Element -> Result [Change]
 anaUpdate l g e = let q = elName e in
   if isXUpdateQN q then
-      if isAddQN q then anaAddElems l g $ elChildren e else
+      if isAddQN q then
+
+          fmap concat $ mapM (anaAddElem l g) $ elChildren e else
       if isRemoveQN q then return [] else
           return [Change e]
   else return [Change e]
 
-anaAddElems :: LibEnv -> DGraph -> [Element] -> Result [Change]
-anaAddElems = undefined
+anaAddElem :: LibEnv -> DGraph -> Element -> Result [Change]
+anaAddElem l g e = let q = elName e in
+  if isXUpdateQN q then undefined else undefined
 
 {-
  xupdate:element
