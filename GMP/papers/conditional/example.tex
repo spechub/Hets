@@ -679,8 +679,8 @@ complexity w.r.t. different parts of the algorithms and thus exhibiting specific
 advantages or disadvantages of each algorithm:
 
 \begin{itemize}
-\item The formula \verb|bloat(|$i$\verb|)| is a full binary tree of depth $i$ (containing $2^i$ pairwise logically
-inequivalent atoms and $2^i-1$ independent modal antecedents):
+\item The formula \verb|bloat(|$i$\verb|)| is a full binary tree of depth $i$ (containing $2^i$ different atoms
+and $2^i-1$ independent modal antecedents):
 \begin{quote}
 \verb|bloat(|$i$\verb|)| = $($\verb|bloat(|$i-1$\verb|)|$)\Rightarrow($\verb|bloat(|$i-1$\verb|)|)\\
 \verb|bloat(|$0$\verb|)| = $p_{rand}$
@@ -692,7 +692,7 @@ Since Algorithm~\ref{alg:preprove} does not check whether pairs of modal anteced
 it performs considerably worse than Algorithm~\ref{alg:optPreprove} which only attempts to prove the logical
 equivalence of formulas which are not independent. Algorithm~\ref{alg:seq} has the best performance in this
 extreme case, as it only has to consider pairs of modal antecedents which actually appear during the course
-of a proof. This is the price to pay for the optimisation by dynamic programming.
+of a proof. This is the (small) price to pay for the optimisation by dynamic programming.
 \end{itemize}
 
 \begin{figure}[!h]
@@ -701,13 +701,13 @@ of a proof. This is the price to pay for the optimisation by dynamic programming
 \hline
 $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
 \hline
- 1 & 0.007s & 0.007s & 0.007s\\
- 2 & 0.007s & 0.007s & 0.007s\\
- 3 & 0.007s & 0.008s & 0.008s\\
- 4 & 0.008s & 0.017s & 0.012s\\
- 5 & 0.009s & 0.112s & 0.048s\\
- 6 & 0.010s & 1.154s & 0.416s\\
- 7 & 0.012s & 11.998s & 4.116s\\
+ 1 & 0.004s & 0.004s & 0.004s\\
+ 2 & 0.004s & 0.004s & 0.004s\\
+ 3 & 0.004s & 0.006s & 0.004s\\
+ 4 & 0.005s & 0.014s & 0.005s\\
+ 5 & 0.005s & 0.108s & 0.006s\\
+ 6 & 0.007s & 1.149s & 0.008s\\
+ 7 & 0.009s & 11.993s & 0.015s\\
  \hline
  \end{tabular}
   \end{center}
@@ -740,15 +740,15 @@ Optimisation of propositional reasoning is not the scope of this paper though, t
 \hline
 $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
 \hline
- 1 & 0.008s & 0.008s & 0.008s\\
- 2 & 0.009s & 0.009s & 0.009s\\
- 3 & 0.011s & 0.010s & 0.010s\\
- 4 & 0.058s & 0.011s & 0.011s\\
- 5 & 1.335s & 0.014s & 0.015s\\
- 6 & 42.885s & 0.038s & 0.040s\\
- 7 & $>$600.000s & 0.220s & 0.232s\\
- 8 & $\gg$600.000s & 1.944s & 2.019s\\
- 9 & $\gg$600.000s & 17.826s & 18.790s\\
+ 1 & 0.005s & 0.005s & 0.005s\\
+ 2 & 0.006s & 0.006s & 0.005s\\
+ 3 & 0.009s & 0.006s & 0.006s\\
+ 4 & 0.056s & 0.007s & 0.007s\\
+ 5 & 1.334s & 0.012s & 0.009s\\
+ 6 & 42.885s & 0.035s & 0.019s\\
+ 7 & $>$600.000s & 0.217s & 0.092s\\
+ 8 & $\gg$600.000s & 1.944s & 0.761s\\
+ 9 & $\gg$600.000s & 17.826s & 6.929s\\
  \hline
  \end{tabular}
   \end{center}
@@ -783,15 +783,15 @@ Figure~\ref{fig:benchExplode}).
 \hline
 $i$ & Algorithm~\ref{alg:seq} & Algorithm~\ref{alg:preprove} & Algorithm~\ref{alg:optPreprove}  \\
 \hline
- 1 & 0.007s & 0.007s & 0.007s\\
- 2 & 0.007s & 0.007s & 0.007s\\
- 3 & 0.009s & 0.009s & 0.009s\\
- 4 & 0.017s & 0.010s & 0.010s\\
- 5 & 0.133s & 0.012s & 0.012s\\
- 6 & 0.305s & 0.015s & 0.016s\\
- 7 & 430.684s& 0.018s & 0.022s\\
- 8 & $\gg$600.000s& 0.023s & 0.029s\\
- 9 & $\gg$600.000s& 0.029s & 0.044s\\
+ 1 & 0.004s & 0.004s & 0.004s\\
+ 2 & 0.005s & 0.005s & 0.005s\\
+ 3 & 0.006s & 0.006s & 0.006s\\
+ 4 & 0.014s & 0.007s & 0.007s\\
+ 5 & 0.130s & 0.009s & 0.008s\\
+ 6 & 0.302s & 0.011s & 0.012s\\
+ 7 & 430.684s& 0.015s & 0.016s\\
+ 8 & $\gg$600.000s& 0.021s & 0.019s\\
+ 9 & $\gg$600.000s& 0.029s & 0.022s\\
  \hline
  \end{tabular}
   \end{center}
