@@ -13,6 +13,6 @@ spec AProp =
      . remainder((x+y)*(x+2*y),x+3*y)
      . gcd(f(x)+g(x)-l1-l2,f(x)-l1)
      . int(log(x),x)
-     . qelim(all(x, ex(y, x2+xy+b>0 and x+ay2+b≤0)))
+     . qelim(all(x, ex(y, x2+xy+b>0 and x+ay2+b<=0)))
 end
 

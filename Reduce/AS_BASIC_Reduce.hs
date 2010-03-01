@@ -14,8 +14,8 @@ This file contains the abstract syntax for the reduce computer algebra system as
 -}
 
 module Reduce.AS_BASIC_Reduce
-    ( FORMULA (..)             -- datatype for Propositional Formulas
-    , EXPRESSION (..)          -- datatype for numerical expressions (e.g. polynomials)
+    ( 
+     EXPRESSION (..)          -- datatype for numerical expressions (e.g. polynomials)
     , BASIC_ITEMS (..)         -- Items of a Basic Spec
     , BASIC_SPEC (..)          -- Basic Spec
     , SYMB_ITEMS (..)          -- List of symbols
@@ -47,7 +47,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
 data BASIC_ITEMS =
     Op_decl OP_ITEM
     | Var_decl VAR_ITEM
-    | Axiom_items [AS_Anno.Annoted (FORMULA)]
+    | Axiom_items [AS_Anno.Annoted (EXPRESSION)]
     deriving Show
 
 -- | Datatype for expressions
@@ -58,22 +58,10 @@ data EXPRESSION =
   | Int Int Id.Range
   | Double Double Id.Range
   deriving (Eq,Show)
+
+data CMD = 
+    Cmd String [EXPRESSIONS]
   
--- | Datatyoe for nary boolean expressions
-data NARYBOOLOP = And | Or | Cmd deriving (Eq,Show)
-
--- | Datatype for binary bollean expressions
-data BBOOLOP = Impl | Repl | Equiv deriving (Eq,Show)
-
-
--- | Datatype for reduce formulas (could be factored)
-data FORMULA =
-    False_atom Id.Range
-  | True_atom Id.Range
-  | Nary NARYBOOLOP  [FORMULA] Id.Range
-  | Binary BBOOLOP FORMULA FORMULA Id.Range
-    deriving (Show, Eq)
-
 -- | symbol lists for hiding
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
@@ -107,12 +95,6 @@ instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
 instance Pretty EXPRESSION where
     pretty = printExpression
-instance Pretty BBOOLOP where
-    pretty = printBBoolOp
-instance Pretty NARYBOOLOP where
-    pretty = printNaryBoolOp
-instance Pretty FORMULA where
-    pretty = printFormula
 instance Pretty SYMB_ITEMS where
     pretty = printSymbItems
 instance Pretty SYMB where
@@ -129,22 +111,6 @@ printExpression (Op s exps a) = text s <+> (parens (sepByCommas (map printExpres
 printExpression (List exps a) = sepByCommas (map printExpression exps)
 printExpression (Int i a) = text (show i)
 printExpression (Double d a) = text (show d)
-
-printNaryBoolOp :: NARYBOOLOP -> Doc
-printNaryBoolOp And = andDoc
-printNaryBoolOp Or = orDoc
-printNaryBoolOp Cmd = text "Cmd"
-
-printBBoolOp :: BBOOLOP -> Doc
-printBBoolOp Impl = implies
-printBBoolOp Repl = text "Repl"
-printBBoolOp Equiv = equiv
-
-printFormula :: FORMULA -> Doc
-printFormula (False_atom a) = text falseS
-printFormula (True_atom a) = text trueS
-printFormula (Nary nop  formulas a) = (printNaryBoolOp nop) <+> (parens (sepByCommas (map printFormula formulas)))
-printFormula (Binary boolop f1 f2 a) = printFormula f1  <+> printBBoolOp boolop <+> printFormula f2
 
 printOpItem :: OP_ITEM -> Doc
 printOpItem (Op_item tokens a) = (text "operator") <+> (sepByCommas (map pretty tokens))
@@ -176,14 +142,6 @@ printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 
 
 -- Instances for GetRange
-
-instance GetRange FORMULA where
-  getRange = const nullRange
-  rangeSpan x = case x of 
-                  False_atom a -> joinRanges [rangeSpan a]
-                  True_atom a -> joinRanges [rangeSpan a]
-                  Nary op formulas a -> joinRanges [rangeSpan a, rangeSpan formulas]
-                  Binary bop formula1 formula2 a -> joinRanges [rangeSpan a, rangeSpan formula1, rangeSpan formula2]
 
 instance GetRange OP_ITEM where
   getRange = const nullRange
@@ -228,3 +186,12 @@ instance GetRange SYMB_OR_MAP where
   rangeSpan x = case x of
     Symb a -> joinRanges [rangeSpan a]
     Symb_map a b c -> joinRanges [rangeSpan a,rangeSpan b,rangeSpan c]
+
+instance GetRange EXPRESSION where
+  getRange = const nullRange
+  rangeSpan x = case x of
+                      Var token -> joinRanges [rangeSpan token]
+                      Op s exps a -> joinRanges [rangeSpan a]
+                      List exps a -> joinRanges [rangeSpan a]
+                      Int i a -> joinRanges [rangeSpan a]
+                      Double i a -> joinRanges [rangeSpan a]
