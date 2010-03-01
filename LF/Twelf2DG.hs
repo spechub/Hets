@@ -11,7 +11,6 @@ Portability :  portable
 module LF.Twelf2DG where
 
 import System.Exit
-import System.IO
 import System.Process
 import System.Directory
 import System.FilePath
@@ -103,70 +102,70 @@ typeQN = QName "type" omdocNS Nothing
 definitionQN :: QName
 definitionQN = QName "definition" omdocNS Nothing
 
-omobjQN :: QName 
+omobjQN :: QName
 omobjQN = QName "OMOBJ" openMathNS Nothing
 
-omsQN :: QName 
+omsQN :: QName
 omsQN = QName "OMS" openMathNS Nothing
 
-omaQN :: QName 
+omaQN :: QName
 omaQN = QName "OMA" openMathNS Nothing
 
-ombindQN :: QName 
+ombindQN :: QName
 ombindQN = QName "OMBIND" openMathNS Nothing
 
-ombvarQN :: QName 
+ombvarQN :: QName
 ombvarQN = QName "OMBVAR" openMathNS Nothing
 
-omattrQN :: QName 
+omattrQN :: QName
 omattrQN = QName "OMATTR" openMathNS Nothing
 
-omatpQN :: QName 
+omatpQN :: QName
 omatpQN = QName "OMATP" openMathNS Nothing
 
-omvQN :: QName 
+omvQN :: QName
 omvQN = QName "OMV" openMathNS Nothing
 
 typeOMS :: Element
-typeOMS = 
+typeOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
                  Attr nameQN "type"] [] Nothing
 
 arrowOMS :: Element
-arrowOMS = 
+arrowOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
                  Attr nameQN "arrow"] [] Nothing
 
 lambdaOMS :: Element
-lambdaOMS = 
+lambdaOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
                  Attr nameQN "lambda"] [] Nothing
 
 piOMS :: Element
-piOMS = 
+piOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
-                 Attr nameQN "Pi"] [] Nothing  
+                 Attr nameQN "Pi"] [] Nothing
 
 
 impLambdaOMS :: Element
-impLambdaOMS = 
+impLambdaOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
                  Attr nameQN "implicit_lambda"] [] Nothing
 
 impPiOMS :: Element
-impPiOMS = 
+impPiOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
-                 Attr nameQN "implicit_Pi"] [] Nothing     
+                 Attr nameQN "implicit_Pi"] [] Nothing
 
 
 oftypeOMS :: Element
-oftypeOMS = 
+oftypeOMS =
   Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
                  Attr moduleQN "lf",
                  Attr nameQN "oftype"] [] Nothing
@@ -212,10 +211,10 @@ options = ["-omdoc"]
 
 -- constructs base and module out of a reference
 splitRef :: String -> RAW_NODE_NAME
-splitRef ref = 
+splitRef ref =
   case elemIndices '?' ref of
        [i] -> let (b,(_:m)) = splitAt i ref
-                   in (b,m)    
+                   in (b,m)
        _ -> error "Invalid reference."
 
 -- compares two OMS elements
@@ -223,12 +222,12 @@ eqOMS :: Element -> Element -> Bool
 eqOMS e1 e2 =
   let b = getBaseAttr e1 == getBaseAttr e2
       m = getModuleAttr e1 == getModuleAttr e2
-      n = getNameAttr e1 == getNameAttr e2   
+      n = getNameAttr e1 == getNameAttr e2
       in and [b,m,n]
 
 -- resolves the first file path wrt to the second
 resolve :: FilePath -> FilePath -> FilePath
-resolve fp1 fp2 = 
+resolve fp1 fp2 =
   case parseURIReference fp1 of
     Nothing -> error "Invalid file name."
     Just uri1 -> do
@@ -241,10 +240,10 @@ resolve fp1 fp2 =
 
 -- looks up the node number for the given signature reference
 lookupNode :: RAW_NODE_NAME -> MAP_NODES -> Node
-lookupNode ref nmap = 
+lookupNode ref nmap =
   case Map.lookup ref nmap of
        Nothing -> error "Invalid signature reference."
-       Just node -> node 
+       Just node -> node
 
 -- finds the signature by base and module
 lookupSig :: RAW_NODE_NAME -> LibEnvNodes -> RAW_NODES -> IO Sign
@@ -256,7 +255,7 @@ lookupSig ref@(b,_) (libs,nmap) sigs =
          let dg = lookupDGraph (emptyLibName b) libs
          let gth = dgn_theory $ labDG dg node
          case gth of
-              (G_theory lid extsig _ _ _) -> 
+              (G_theory lid extsig _ _ _) ->
                 coercePlainSign lid LF "" $ plainSign extsig
 
 ------------------------------------------------------------------------------
@@ -269,33 +268,33 @@ anaTwelfFile _ fp = do
   let file = resolve fp (dir ++ "/")
   let name = emptyLibName file
   (libs,_) <- twelf2DG file (emptyLibEnv,Map.empty)
-  return $ Just (name,libs)  
+  return $ Just (name,libs)
 
 -- updates the library environment by adding specs from the Twelf file
 twelf2DG :: FilePath -> LibEnvNodes -> IO LibEnvNodes
 twelf2DG file ln = do
   runTwelf $ trace ("Running Twelf on file: " ++ show file) file
   (ln1,g) <- buildGraph (trace ("Analyzing file: " ++ show file) file) ln
-  makeLibEnv (trace ("Building graph for file: " ++ show file) file) ln1 g  
-     
+  makeLibEnv (trace ("Building graph for file: " ++ show file) file) ln1 g
+
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
 runTwelf file = do
   let dir = dropFileName file
   twelfdir <- getEnvDef "TWELF_LIB" ""
-  if null twelfdir 
+  if null twelfdir
      then error "environment variable TWELF_LIB is not set"
      else do
-       (_, _, _, pr) <- 
+       (_, _, _, pr) <-
          runInteractiveProcess (concat [twelfdir, "/" ,twelf])
                                (options ++ [dir,file])
                                Nothing
                                Nothing
        exitCode <- waitForProcess pr
        case exitCode of
-            ExitFailure i -> 
+            ExitFailure i ->
                error $ "Calling Twelf failed with exitCode: " ++ show i ++
-                       " on file " ++ file                    
+                       " on file " ++ file
             ExitSuccess -> return ()
 
 -- generates a library environment from raw libraries
@@ -312,18 +311,18 @@ makeLibEnv file ln g = do
 addNodes :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
 addNodes dg (sigs,_) (libs,nmap) = do
   let (nmap3,dg3) =
-        foldl (\ (nmap1,dg1) ((b,m),sig) -> 
+        foldl (\ (nmap1,dg1) ((b,m),sig) ->
                  let (node,dg2) = insSigToDG sig dg1
                      nmap2 = Map.insert (b,m) node nmap1
                      in (nmap2,dg2)
-              ) 
+              )
               (nmap,dg)
               $ Map.toList sigs
   return ((libs,nmap3),dg3)
 
 -- inserts a signature as a node to the development graph
 insSigToDG :: Sign -> DGraph -> (Node,DGraph)
-insSigToDG sig dg = 
+insSigToDG sig dg =
   let node = getNewNodeDG dg
       m = sigModule sig
       nodeName = emptyNodeName { getName = Token m nullRange }
@@ -331,20 +330,20 @@ insSigToDG sig dg =
       extSign = makeExtSign LF sig
       gth = noSensGTheory LF extSign startSigId
       nodeLabel = newInfoNodeLab nodeName info gth
-      dg1 = insNodeDG (node,nodeLabel) dg   
+      dg1 = insNodeDG (node,nodeLabel) dg
       in (node,dg1)
 
 -- adds links to the library environment
 addLinks :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
 addLinks dg (sigs,morphs) ln = do
-  dg2 <- foldM (\ dg1 ((_,s,t),(k,morph)) -> do 
+  dg2 <- foldM (\ dg1 ((_,s,t),(k,morph)) -> do
                   sig1 <- lookupSig s ln sigs
                   sig2 <- lookupSig t ln sigs
                   let morph1 = morph { source = sig1, target = sig2 }
-                  return $ insMorphToDG morph1 k ln dg1                                              
-               ) 
+                  return $ insMorphToDG morph1 k ln dg1
+               )
                dg
-               $ Map.toList morphs 
+               $ Map.toList morphs
   return (ln,dg2)
 
 -- inserts a morphism as a link to the development graph
@@ -354,21 +353,21 @@ insMorphToDG morph k ln dg =
       thmStatus = Proven (DGRule "Type-checked") emptyProofBasis
       linkKind = case k of
                       Definitional -> DefLink
-                      Postulated -> ThmLink thmStatus 
+                      Postulated -> ThmLink thmStatus
       consStatus = ConsStatus Cons.None Cons.None LeftOpen
       linkType = ScopedLink Global linkKind consStatus
       linkLabel = defDGLink gmorph linkType SeeTarget
       b = morphBase morph
       (node1,dg1) = addRefNode b dg (source morph) ln
       (node2,dg2) = addRefNode b dg1 (target morph) ln
-      in snd $ insLEdgeDG (node1,node2,linkLabel) dg2  
-      
+      in snd $ insLEdgeDG (node1,node2,linkLabel) dg2
+
 -- constructs a reference node to the specified signature, if needed
 addRefNode :: BASE -> DGraph -> Sign -> LibEnvNodes -> (Node,DGraph)
 addRefNode base dg sig (libs,nmap) =
   let b = sigBase sig
       m = sigModule sig
-      node = lookupNode (b,m) nmap 
+      node = lookupNode (b,m) nmap
       in if (b == base)
          then (node,dg)
          else let info = newRefInfo (emptyLibName b) node
@@ -379,7 +378,7 @@ addRefNode base dg sig (libs,nmap) =
 
 -- inserts a signature as a reference node to the development graph
 insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnv -> (Node,DGraph)
-insRefSigToDG sig info dg libs = 
+insRefSigToDG sig info dg libs =
   let node = getNewNodeDG dg
       m = sigModule sig
       nodeName = emptyNodeName { getName = Token m nullRange }
@@ -387,11 +386,11 @@ insRefSigToDG sig info dg libs =
       gth = noSensGTheory LF extSign startSigId
       nodeLabel1 = newInfoNodeLab nodeName info gth
       refDG = lookupDGraph (ref_libname info) libs
-      refGlobTh = globalTheory $ labDG refDG $ ref_node info 
+      refGlobTh = globalTheory $ labDG refDG $ ref_node info
       nodeLabel2 = nodeLabel1 { globalTheory = refGlobTh}
       dg1 = insNodeDG (node,nodeLabel2) dg
-      dg2 = addToRefNodesDG node info dg1    
-      in (node,dg2)                                   
+      dg2 = addToRefNodesDG node info dg1
+      in (node,dg2)
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -405,18 +404,18 @@ buildGraph file (libs,nmap) = do
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
        [root] -> do
-         foldM (\ lng e -> 
+         foldM (\ lng e ->
                   let n = elName e
                       in if (n == theoryQN) then addSign file e lng else
                          if (n == viewQN) then addMorph file e lng else
                          return lng
-               ) 
+               )
                ((libs,nmap),emptyRawGraph)
-               $ elChildren root        
+               $ elChildren root
        _ -> fail "Not an OMDoc file."
 
 -- transforms a theory element into a signature and adds it to the libraries
-addSign :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) -> 
+addSign :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) ->
            IO (LibEnvNodes,RAW_GRAPH)
 addSign file e lng =
   case getNameAttr e of
@@ -424,23 +423,23 @@ addSign file e lng =
        Just name -> do
           let sig = Sign file name []
           (lng1,sig1) <-
-            foldM (\ lngs el -> 
+            foldM (\ lngs el ->
                      let n = elName el
                          in if (n == includeQN) then addIncl el lngs else
                             if (n == structureQN) then addStruct el lngs else
                             if (n == constantQN) then addConst el lngs else
                             if (n == aliasQN) then addAlias el lngs else
-                            if (n == notationQN) then addNotat el lngs else 
+                            if (n == notationQN) then addNotat el lngs else
                             return lngs
-                  ) 
+                  )
                   (lng,sig)
                   $ elChildren e
           let (ln,(sigs,morphs)) = lng1
           let sigs1 = Map.insert (file,name) sig1 sigs
-          return (ln,(sigs1,morphs)) 
-              
+          return (ln,(sigs1,morphs))
+
 -- adds a constant declaration to the signature
-addConst :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+addConst :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
             IO ((LibEnvNodes,RAW_GRAPH),Sign)
 addConst e (lng,sig) = do
   let sym = case getNameAttr e of
@@ -451,29 +450,29 @@ addConst e (lng,sig) = do
                  _ -> error "Constant element must have a unique type child."
   let val = case findChildren definitionQN e of
                  [] -> Nothing
-                 [v] -> Just $ definition2exp sig v         
+                 [v] -> Just $ definition2exp sig v
                  _ ->  error $ concat ["Constant element must have at most ",
                                        "one definition child."]
   let sig1 = addDef (Def sym typ val) sig
-  return (lng,sig1)               
+  return (lng,sig1)
 
 -- converts a type element to an expression
 type2exp :: Sign -> Element -> EXP
-type2exp sig e = 
+type2exp sig e =
   case findChildren omobjQN e of
        [omobj] -> omobj2exp sig omobj
        _ -> error "Type element must have a unique OMOBJ child."
 
 -- converts a definition element to an expression
 definition2exp :: Sign -> Element -> EXP
-definition2exp sig e = 
+definition2exp sig e =
   case findChildren omobjQN e of
        [omobj] -> omobj2exp sig omobj
        _ -> error "Definition element must have a unique OMOBJ child."
 
 -- converts an OMOBJ element to an expression
 omobj2exp :: Sign -> Element -> EXP
-omobj2exp sig e = 
+omobj2exp sig e =
   case elChildren e of
        [el] -> omel2exp sig el
        _ -> error "OMOBJ element must have a unique child."
@@ -490,7 +489,7 @@ omel2exp sig e =
                            ,"to an expression."]
 
 -- converts an OMS element to an expression
-oms2exp :: Sign -> Element -> EXP                                      
+oms2exp :: Sign -> Element -> EXP
 oms2exp sig e =
   let curBase = sigBase sig
       curModule = sigModule sig
@@ -498,40 +497,40 @@ oms2exp sig e =
         then Type
         else case getNameAttr e of
                   Nothing -> error "OMS element must have a name."
-                  Just n -> 
+                  Just n ->
                     case getModuleAttr e of
                          Nothing -> Const $ Symbol curBase curModule n
-                         Just m -> 
+                         Just m ->
                            case getBaseAttr e of
                                 Nothing -> Const $ Symbol curBase m n
                                 Just b -> Const $ Symbol (resolve b curBase) m n
 
 -- converts an OMA element to an expression
-oma2exp :: Sign -> Element -> EXP                                      
-oma2exp sig e = 
+oma2exp :: Sign -> Element -> EXP
+oma2exp sig e =
   case elChildren e of
        [] -> error "OMA element must have at least one child."
-       (f:as) -> 
+       (f:as) ->
          let as1 = map (omel2exp sig) as
              in if (elName f == omsQN && eqOMS f arrowOMS)
                    then case as1 of
-                             [] -> error $ 
+                             [] -> error $
                                     concat ["The -> constructor must be applied"
-                                           ," to at least one argument."]  
+                                           ," to at least one argument."]
                              _ -> Func (init as1) (last as1)
                 else let f1 = omel2exp sig f
-                         in Appl f1 as1      
+                         in Appl f1 as1
 
 -- converts an OMBIND element to an expression
-ombind2exp :: Sign -> Element -> EXP                                      
-ombind2exp sig e = 
+ombind2exp :: Sign -> Element -> EXP
+ombind2exp sig e =
   case elChildren e of
-       [f,d,b] -> 
+       [f,d,b] ->
          if (elName d /= ombvarQN)
             then error "The second child of OMBIND must be OMBVAR."
             else let d1 = ombvar2decls sig d
                      b1 = omel2exp sig b
-                     in if (elName f/= omsQN) 
+                     in if (elName f/= omsQN)
                            then error "The first child of OMBIND must be OMS."
                            else if (eqOMS f lambdaOMS) then Lamb d1 b1 else
                                 if (eqOMS f piOMS) then Pi d1 b1 else
@@ -540,12 +539,12 @@ ombind2exp sig e =
                                 if (eqOMS f impLambdaOMS) then Lamb d1 b1 else
                                 if (eqOMS f impPiOMS) then Pi d1 b1 else
                                 error $ concat ["The first child of OMBIND "
-                                               ,"must be be Pi or Lambda."]                                         
-       _ -> error "OMBIND element must have exactly 3 children."                   
+                                               ,"must be be Pi or Lambda."]
+       _ -> error "OMBIND element must have exactly 3 children."
 
 -- converts an OMBVAR element to a list of declaration
 ombvar2decls :: Sign -> Element -> [DECL]
-ombvar2decls sig e = 
+ombvar2decls sig e =
   let attrs = findChildren omattrQN e
       in map (omattr2decl sig) attrs
 
@@ -553,7 +552,7 @@ ombvar2decls sig e =
 omattr2decl :: Sign -> Element -> DECL
 omattr2decl sig e =
   case findChildren omatpQN e of
-       [omatp] -> 
+       [omatp] ->
          case findChildren omvQN e of
               [omv] -> (omv2var omv, omatp2exp sig omatp)
               _ -> error "OMATTR element must have a unique OMV child."
@@ -561,25 +560,25 @@ omattr2decl sig e =
 
 -- converts an OMV element to a variable
 omv2var :: Element -> Var
-omv2var e = 
+omv2var e =
   case getNameAttr e of
        Nothing -> error "OMV element must have a name."
        Just v -> v
 
 -- converts an OMATP element to an expression
 omatp2exp :: Sign -> Element -> EXP
-omatp2exp sig e = 
+omatp2exp sig e =
   case elChildren e of
-       [c1,c2] -> 
+       [c1,c2] ->
           if (and [elName c1 == omsQN, eqOMS c1 oftypeOMS])
              then omel2exp sig c2
              else error $ concat ["The first child of OMATP",
                                   "must be the \"oftype\" symbol."]
        _ -> error "OMATP element must have exactly two children."
-      
+
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
-addIncl :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+addIncl :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
            IO ((LibEnvNodes,RAW_GRAPH),Sign)
 addIncl e ((ln,(sigs,morphs)),sig) = do
   case getFromAttr e of
@@ -607,19 +606,19 @@ addFromFile file base ln@(libs,_) = do
 
 -- adds included definitions to the signature
 addInclSyms :: Sign -> Sign -> Sign
-addInclSyms (Sign _ _ ds) sig = 
+addInclSyms (Sign _ _ ds) sig =
   let syms = getAllSyms sig
-      in foldl (\ sig1 d -> 
+      in foldl (\ sig1 d ->
                   if (Set.member (getSym d) syms)
                      then sig1
                      else addDef d sig1
                )
                sig
                ds
-  
+
 -- adds the inclusion to the collection of morphisms
 addInclToMorphs :: RAW_NODE_NAME -> RAW_NODE_NAME -> RAW_LINKS -> RAW_LINKS
-addInclToMorphs s t morphs = 
+addInclToMorphs s t morphs =
   let (b,m) = t
       l = (b,m,"")
       morph = Morphism b m "" emptySig emptySig Map.empty
@@ -627,21 +626,21 @@ addInclToMorphs s t morphs =
 
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
-addStruct :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+addStruct :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
            IO ((LibEnvNodes,RAW_GRAPH),Sign)
-addStruct _ lngs = return lngs 
+addStruct _ lngs = return lngs
 
 -- so far aliases are ignored
-addAlias :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+addAlias :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
            IO ((LibEnvNodes,RAW_GRAPH),Sign)
 addAlias _ lngs = return lngs
 
 -- so far notations are ignored
-addNotat :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) -> 
+addNotat :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
            IO ((LibEnvNodes,RAW_GRAPH),Sign)
 addNotat _ lngs = return lngs
 
 -- so far views are ignored
-addMorph :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) -> 
+addMorph :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) ->
            IO (LibEnvNodes,RAW_GRAPH)
 addMorph _ _ lng = return lng
