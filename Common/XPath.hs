@@ -104,11 +104,16 @@ isDescOrSelfNode (Step a n _) = case (a, n) of
 
 data Path = Path Bool [Step] -- absolute? or relative
 
+showSteps :: Bool -> [Step] -> String
+showSteps abso sts = case sts of
+  [] -> "/" -- no steps are only legal if absolute
+  s : r -> let f = (if abso then "/" else "") ++ showStep s in case r of
+    [] -> f
+    _ -> if abso && isDescOrSelfNode s then "//" ++ showSteps False r
+         else f ++ showSteps True r
+
 showPath :: Path -> String
-showPath (Path abso sts) = case sts of
-  [] -> "/"
-  _ -> if abso then concatMap (('/' :) . showStep) sts
-       else intercalate "/" $ map showStep sts
+showPath (Path abso sts) = showSteps abso sts
 
 data PrimKind
   = Var -- leading dollar
@@ -177,7 +182,7 @@ showInfixExpr op args = case args of
        _ -> s
   arg : rargs ->
     let mi = findIndex (elem op) inOps
-        padOp = if op == "|" then op else ' ' : op ++ " "
+        padOp = if any ncNameChar op then ' ' : op ++ " " else op
     in parenExpr False mi arg
        ++ concatMap ((padOp ++) .  parenExpr True mi) rargs
 
