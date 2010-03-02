@@ -28,11 +28,16 @@ runParser aFormula 2 "" "2<3 and 2<=3"
 runParser aFormula 2 "" "2<3 or true and false"
 
 -- the basic parser
+runParser parseBasicItems (AnnoState.emptyAnnos ()) "" "operator f,h"
+runParser parseBasicItems (AnnoState.emptyAnnos ()) "" ". solve(x^2=1,x)"
 
-runParser basicSpec (AnnoState.emptyAnnos ()) "" ""
-runParser parseBasicItems (AnnoState.emptyAnnos ()) "" ""
 runParser parseOpDecl (AnnoState.emptyAnnos ()) "" "operator f,h"
 runParser parseAxItems (AnnoState.emptyAnnos ()) "" ". solve(x^2=1,x)"
 
+-- das hier geht nicht
+runParser basicSpec (AnnoState.emptyAnnos ()) "" "operator f,h"
 
 
+
+-- beispiele für propositional
+runParser basicSpec (AnnoState.emptyAnnos ()) "" "props a,b"

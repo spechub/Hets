@@ -1,4 +1,4 @@
-{-# LINE 1 "Reduce/AS_BASIC_Reduce.der.hs" #-}
+{-# LINE 1 "Reduce/AS_BASIC_Reduce.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce
@@ -24,6 +24,7 @@ module Reduce.AS_BASIC_Reduce
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
     , OP_ITEM (..)             -- operator declaration
     , VAR_ITEM (..)            -- variable declaration (needed?)
+    , CMD (..)
     ) where
 
 import Common.Id as Id
@@ -47,20 +48,21 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
 data BASIC_ITEMS =
     Op_decl OP_ITEM
     | Var_decl VAR_ITEM
-    | Axiom_items [AS_Anno.Annoted (EXPRESSION)]
+    | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
 
 -- | Datatype for expressions
 data EXPRESSION = 
     Var Id.Token
-  | Op String [EXPRESSION] Id.Range
+  | Op String [EXPRESSION] Id.Range          -- token statt string Id vs Token:
   | List [EXPRESSION] Id.Range
   | Int Int Id.Range
   | Double Double Id.Range
   deriving (Eq,Show)
 
 data CMD = 
-    Cmd String [EXPRESSIONS]
+    Cmd String [EXPRESSION]
+    deriving Show
   
 -- | symbol lists for hiding
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
@@ -103,7 +105,11 @@ instance Pretty SYMB_MAP_ITEMS where
     pretty = printSymbMapItems
 instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
+instance Pretty CMD where
+    pretty = printCMD
 
+printCMD :: CMD -> Doc
+printCMD (Cmd s exps) = (text s) <> (parens (sepByCommas (map printExpression exps)))
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
@@ -122,7 +128,7 @@ printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+printBasicItems (Axiom_item x) = pretty x
 printBasicItems (Var_decl x) = pretty x
 printBasicItems (Op_decl x) = pretty x
 
@@ -164,7 +170,11 @@ instance GetRange BASIC_ITEMS where
   rangeSpan x = case x of
     Op_decl a -> joinRanges [rangeSpan a]
     Var_decl a -> joinRanges [rangeSpan a]
-    Axiom_items a -> joinRanges [rangeSpan a]
+    Axiom_item a -> joinRanges [rangeSpan a]
+
+instance GetRange CMD where
+    getRange = const nullRange
+    rangeSpan (Cmd s exps) = joinRanges (map rangeSpan exps)
 
 instance GetRange SYMB_ITEMS where
   getRange = const nullRange

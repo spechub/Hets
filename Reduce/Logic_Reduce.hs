@@ -52,13 +52,13 @@ instance Category Sign Morphism where
 instance Sentences Reduce Cmd
     Sign Morphism Symbol where
     negation Reduce = Just . negateFormula
-    -- returns the set of symbols
+    -- returns the set of symbols --> also operatoren
     sym_of Reduce = symOf
-    -- returns the symbol map
+    -- returns the symbol map --> in map stehen nur änderungen, symbolmap enthält auch ids (hinzufügen aus quellsignatur)
     symmap_of Reduce = getSymbolMap
-    -- returns the name of a symbol
+    -- returns the name of a symbol --> id
     sym_name Reduce = getSymbolName
-    -- translation of sentences along signature morphism
+    -- translation of sentences along signature morphism /operatoren umbenennen entsprechend der map
     map_sen Reduce = mapSentence
     -- there is nothing to leave out
     simplify_sen Reduce _ = id
@@ -72,9 +72,9 @@ instance Syntax Reduce BASIC_SPEC
 
 -- | Instance of Logic for reduce logc
 instance Logic Reduce
-    PropSL                    -- Sublogics
+    ()                    -- Sublogics
     BASIC_SPEC                -- basic_spec
-    Cmd                    -- sentences are CAS commands
+    CMD                    -- sentences are CAS commands
     SYMB_ITEMS                -- symb_items
     SYMB_MAP_ITEMS            -- symb_map_items
     Sign                          -- sign
@@ -95,7 +95,7 @@ instance Logic Reduce
 -- | Static Analysis for reduce logic
 instance StaticAnalysis Reduce
     BASIC_SPEC                -- basic_spec
-    Cmd                   -- sentence
+    CMD                   -- sentence
     SYMB_ITEMS                -- symb_items
     SYMB_MAP_ITEMS            -- symb_map_items
     Sign                          -- sign
@@ -109,32 +109,14 @@ instance StaticAnalysis Reduce
           is_subsig Reduce                = isSubSigOf
           subsig_inclusion Reduce s = return . inclusionMap s
           signature_union Reduce          = sigUnion
-          symbol_to_raw Reduce            = symbolToRaw
-          id_to_raw     Reduce            = idToRaw
+          symbol_to_raw Reduce            = id
+          id_to_raw     Reduce            = id
           matches       Reduce            = Symbol.matches
           stat_symb_items Reduce          = mkStatSymbItems
           stat_symb_map_items Reduce      = mkStatSymbMapItem
           morphism_union Reduce           = morphismUnion
           induced_from_morphism Reduce    = inducedFromMorphism
           induced_from_to_morphism Reduce = inducedFromToMorphism
-          signature_colimit Reduce  = signatureColimit
 
 
 
-
--- =============================================================================
-
-basic_analysis = basicPropositionalAnalysis
-empty_signature = emptySig
-is_subsig = isSubSigOf
-subsig_inclusion  s = return . inclusionMap s
-signature_union  sigUnion
-symbol_to_raw = symbolToRaw
-id_to_raw = idToRaw
-matches = Symbol.matches
-stat_symb_items  = mkStatSymbItems
-stat_symb_map_items = mkStatSymbMapItem
-morphism_union = morphismUnion
-induced_from_morphism = inducedFromMorphism
-induced_from_to_morphism = inducedFromToMorphism
-signature_colimit = signatureColimit

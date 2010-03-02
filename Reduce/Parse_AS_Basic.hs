@@ -209,11 +209,12 @@ parseBasicItems = parseOpDecl <|> parseAxItems
 parseOpDecl :: AnnoState.AParser st BASIC_ITEMS
 parseOpDecl = fmap Op_decl opItem
 
--- | parser for Axiom_items
+-- | parser for Axiom_item
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS
 parseAxItems = do
-  cmds <- many $ liftM2 (,) AnnoState.dotT (AnnoState.allAnnoParser command)
-  return $ Axiom_items (map snd cmds)
+  AnnoState.dotT
+  cmd <- (AnnoState.allAnnoParser command)
+  return $ Axiom_item cmd
 
 
 

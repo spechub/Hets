@@ -3,8 +3,7 @@ library reduceTest
 logic Reduce
 
 spec AProp =
-     operator f,g, linear
-     vars x,y,l1,l2
+     operator f,g
      . solve(x^2=1,x)
      . solve(a*log(sin(x+3))^5 - b, sin(x+3))
      . solve({x+3y=7,y-x=1},{x,y})
