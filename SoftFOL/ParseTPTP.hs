@@ -269,7 +269,7 @@ distinct = do
   return $ a : concat s ++ [e]
 
 decimal :: Parser String
-decimal = optionL $ single (oneOf "-+") <++> natural
+decimal = optionL (single $ oneOf "-+") <++> natural
 
 real :: Parser String
 real = do
