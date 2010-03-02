@@ -1,0 +1,90 @@
+/bookstore/book/title
+/bookstore/book[1]/title
+/bookstore/book/price/text()
+/bookstore/book[price>35]/price
+/bookstore/book[price>35]/title
+/AAA/CCC/DDD/*
+/*/*/*/BBB
+//*
+//@id
+//BBB[@id]
+//BBB[@name]
+//BBB[@*]
+//BBB[not(@*)]
+//BBB[@id='b1']
+//BBB[@name='bbb']
+//BBB[normalize-space(@name)='bbb']
+//*[count(BBB)=2]
+//*[count(*)=2]
+//*[count(*)=3]
+//*[name()='BBB']
+//*[starts-with(name(),'B')]
+//*[contains(name(),'C')]
+//*[string-length(name()) = 3]
+//*[string-length(name()) < 3]
+//*[string-length(name()) > 3]
+//CCC | //BBB
+/AAA/EEE | //BBB
+/AAA/EEE | //DDD/CCC | /AAA | //BBB
+/child::AAA
+/child::AAA/child::BBB
+/child::AAA/BBB
+/descendant::*
+/AAA/BBB/descendant::*
+//CCC/descendant::*
+//CCC/descendant::DDD
+//DDD/parent::*
+/AAA/BBB/DDD/CCC/EEE/ancestor::*
+//FFF/ancestor::*
+/AAA/BBB/following-sibling::*
+//CCC/following-sibling::*
+/AAA/XXX/preceding-sibling::*
+//CCC/preceding-sibling::*
+/AAA/XXX/following::*
+//ZZZ/following::*
+/AAA/XXX/preceding::*
+//GGG/preceding::*
+/AAA/XXX/descendant-or-self::*
+//CCC/descendant-or-self::*
+/AAA/XXX/DDD/EEE/ancestor-or-self::*
+//GGG/ancestor-or-self::*
+//GGG/ancestor::*
+//GGG/descendant::*
+//GGG/following::*
+//GGG/preceding::*
+//GGG/self::*
+//GGG/ancestor::* | //GGG/descendant::* | //GGG/following::* | //GGG/preceding::* | //GGG/self::*
+//BBB[position() mod 2 = 0 ]
+//BBB[ position() = floor(last() div 2 + 0.5) or position() = ceiling(last() div 2 + 0.5) ]
+//CCC[ position() = floor(last() div 2 + 0.5) or position() = ceiling(last() div 2 + 0.5) ]
+child::*[self::chapter or self::appendix][position()=last()]
+child::*[self::chapter or self::appendix]
+child::chapter[child::title]
+child::chapter[child::title='Introduction']
+child::para[position()=5][attribute::type="warning"]
+child::para[attribute::type='warning'][position()=5]
+child::para[attribute::type="warning"]
+/child::doc/child::chapter[position()=5]/child::section[position()=2]
+/descendant::figure[position()=42]
+preceding-sibling::chapter[position()=1]
+following-sibling::chapter[position()=1]
+child::para[position()>1]
+child::para[position()=last()-1]
+child::para[position()=last()]
+child::para[position()=1]
+/descendant::olist/child::item
+/descendant::para
+/
+child::*/child::para
+child::chapter/descendant::para
+self::para
+descendant-or-self::para
+ancestor-or-self::div
+ancestor::div
+descendant::para
+attribute::*
+attribute::name
+child::node()
+child::text()
+child::*
+child::para

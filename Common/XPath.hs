@@ -53,8 +53,7 @@ showAxis a =
   _ -> s
 
 data NodeTest
-  = NameTest String -- possibly containing colon
-  | PrefixTest String
+  = NameTest String String -- prefix and local part (possibly *)
   | PINode String
   | NodeTest
   | CommentNode
@@ -79,8 +78,7 @@ showNodeTest :: NodeTest -> String
 showNodeTest t = let
   b = (++ paren "")
   in case t of
-  NameTest s -> if null s then "*" else s
-  PrefixTest p -> p ++ ":*"
+  NameTest p l -> (if null p then "" else p ++ ":") ++ l
   PINode s -> pIS ++ paren s
   NodeTest -> b nodeS
   CommentNode -> b commentS
@@ -90,14 +88,27 @@ data Step = Step Axis NodeTest [Expr]
 
 showStep :: Step -> String
 showStep (Step a n ps) =
-  showAxis a ++ "::" ++ showNodeTest n ++ concatMap showPred ps
+  let t = showNodeTest n in
+  case (a, n) of
+     (Attribute, _) -> "@" ++ t
+     (Child, _) -> t
+     (Self, NodeTest) -> "."
+     (Parent, NodeTest) -> ".."
+     _ -> showAxis a ++ "::" ++ t
+  ++ concatMap showPred ps
+
+isDescOrSelfNode :: Step -> Bool
+isDescOrSelfNode (Step a n _) = case (a, n) of
+  (Descendant True, NodeTest) -> True
+  _ -> False
 
 data Path = Path Bool [Step] -- absolute? or relative
 
 showPath :: Path -> String
-showPath (Path abso sts) =
-  if abso then concatMap (('/' :) . showStep) sts
-     else intercalate "/" $ map showStep sts
+showPath (Path abso sts) = case sts of
+  [] -> "/"
+  _ -> if abso then concatMap (('/' :) . showStep) sts
+       else intercalate "/" $ map showStep sts
 
 data PrimKind
   = Var -- leading dollar
@@ -132,14 +143,26 @@ isPrimExpr e = case e of
   GenExpr False _ _ -> True
   _ -> False
 
+eqOps :: [String]
+eqOps = ["!=", "="]
+
+relOps :: [String]
+relOps = ["<=", ">=", "<", ">"]
+
+addOps :: [String]
+addOps = ["+", "-"]
+
+multOps :: [String]
+multOps = ["*", "div", "mod"]
+
 inOps :: [[String]]
 inOps =
   [ ["or"]
   , ["and"]
-  , ["!=", "="]
-  , ["<=", ">=", "<", ">"]
-  , ["+", "-"]
-  , ["*", "div", "mod"]
+  , eqOps
+  , relOps
+  , addOps
+  , multOps
   , ["|"]]
 
 showInfixExpr :: String -> [Expr] -> String
@@ -189,13 +212,15 @@ slash  = forget (symbol "/")
 dslash = forget (symbol "//")
 
 axis :: Parser Axis
-axis = choice $ map (\ a -> symbol (showAxis a) >> return a) allAxis
+axis = choice (map (\ a -> symbol (showAxis a) >> return a) allAxis)
+  <?> "axis"
 
 abbrAxis :: Parser Axis
 abbrAxis =
   (symbol "@" >> return Attribute)
   <|> try (axis << symbol "::")
   <|> return Child
+  <?> "abbrAxis"
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
@@ -205,20 +230,151 @@ ncNameChar :: Char -> Bool
 ncNameChar c = isAlphaNum c || elem c ".+-_\183"
 
 ncName :: Parser String
-ncName = satisfy ncNameStart <:> many (satisfy ncNameChar)
+ncName = satisfy ncNameStart <:> many (satisfy ncNameChar) <?> "ncName"
 
 literal :: Parser String
-literal =
+literal = skips $
   char '"' <:> many (satisfy (/= '"')) <++> string "\""
   <|> char '\'' <:> many (satisfy (/= '\'')) <++> string "'"
+
+localName :: Parser String
+localName = symbol "*" <|> skips ncName <?> "localName"
 
 nodeTest :: Parser NodeTest
 nodeTest = fmap PINode (symbol pIS >> lpar >> literal << rpar)
   <|> choice (map (\ t -> symbol (takeWhile isAlpha $ showNodeTest t)
                           >> lpar >> rpar >> return t)
               [NodeTest, CommentNode, TextNode])
-  <|> (symbol "*" >> return (NameTest ""))
   <|> do
-    n <- ncName
-    (symbol ":*" >> return (PrefixTest n))
-      <|> fmap (NameTest . (n ++)) (option "" $ char ':' <:> ncName)
+    p <- try (ncName << char ':')
+    l <- localName
+    return $ NameTest p l
+  <|> do
+    l <- localName
+    return $ NameTest "" l
+  <?> "nodeTest"
+
+abbrStep :: Parser Step
+abbrStep =
+  (symbol ".." >> return (Step Parent NodeTest []))
+  <|> (symbol "." >> return (Step Self NodeTest []))
+  <?> "abbrStep"
+
+predicate :: Parser Expr
+predicate = lbra >> expr << rbra <?> "predicate"
+
+step :: Parser Step
+step = abbrStep <|> do
+  a <- abbrAxis
+  t <- nodeTest
+  ps <- many predicate
+  return (Step a t ps)
+  <?> "step"
+
+descOrSelfStep :: Step
+descOrSelfStep = Step (Descendant True) NodeTest []
+
+doubleSlash :: Parser Bool
+doubleSlash = (dslash >> return True) <|> (slash >> return False)
+
+slashStep :: Parser [Step]
+slashStep = do
+  b <- doubleSlash
+  s <- step
+  return (if b then [descOrSelfStep, s] else [s])
+  <?> "slashStep"
+
+relPath :: Parser [Step]
+relPath = do
+  s <- step
+  sl <- many slashStep
+  return (s : concat sl)
+  <?> "relPath"
+
+path :: Parser Path
+path = do
+    m <- optionMaybe doubleSlash
+    s <- (case m of
+      Just False -> optionL
+      _ -> id) relPath
+    return (case m of
+      Nothing -> Path False s
+      Just b -> Path True $ if b then descOrSelfStep : s else s)
+    <?> "path"
+
+number :: Parser String
+number = skips $ many1 digit <++> optionL (char '.' <:> many digit)
+  <|> char '.' <:> many1 digit
+
+primExpr :: Parser Expr
+primExpr = fmap (PrimExpr Var) (skips $ char '$' <:> ncName)
+  <|> (lpar >> expr << rpar)
+  <|> fmap (PrimExpr Literal) literal
+  <|> fmap (PrimExpr Number) number
+  <|> fct
+
+fct :: Parser Expr
+fct = do
+  q <- try $ do
+    n <- ncName <++> optionL (char ':' <:> ncName)
+    if elem n [pIS, commentS, textS, nodeS]
+      then fail $ n ++ " not allowed as function name"
+      else spaces >> lpar >> return n
+  args <- sepBy expr (symbol ",")
+  rpar
+  return $ GenExpr False q args
+
+filterExpr :: Parser Expr
+filterExpr = do
+  e <- primExpr
+  ps <- many predicate
+  s <- optionL $ do
+    b <- doubleSlash
+    r <- relPath
+    return $ if b then descOrSelfStep : r else r
+  return $ if null ps && null s then e else FilterExpr e ps s
+
+pathExpr :: Parser Expr
+pathExpr = filterExpr
+  <|> fmap PathExpr path
+
+singleInfixExpr :: Parser Expr -> String -> Parser Expr
+singleInfixExpr p s = do
+  l <- sepBy1 p $ symbol s
+  return $ case l of
+    [e] -> e
+    _ -> GenExpr True s l
+
+unionExpr :: Parser Expr
+unionExpr = singleInfixExpr pathExpr "|"
+
+unaryExpr :: Parser Expr
+unaryExpr = do
+    symbol "-"
+    e <- unaryExpr
+    return $ GenExpr True "-" [e]
+  <|> unionExpr
+
+leftAssocExpr :: Parser Expr -> [String] -> Parser Expr
+leftAssocExpr p ops =
+  chainl1 p $ do
+    op <- choice $ map symbol ops
+    return $ \ a b -> GenExpr True op [a, b]
+
+multExpr :: Parser Expr
+multExpr = leftAssocExpr unaryExpr multOps
+
+addExpr :: Parser Expr
+addExpr = leftAssocExpr multExpr addOps
+
+relExpr :: Parser Expr
+relExpr = leftAssocExpr addExpr relOps
+
+eqExpr :: Parser Expr
+eqExpr = leftAssocExpr relExpr eqOps
+
+andExpr :: Parser Expr
+andExpr = singleInfixExpr eqExpr "and"
+
+expr :: Parser Expr
+expr = singleInfixExpr andExpr "or"
