@@ -90,7 +90,7 @@ showStep :: Step -> String
 showStep (Step a n ps) =
   let t = showNodeTest n in
   case (a, n) of
-     (Attribute, _) -> "@" ++ t
+     (Attribute, _) -> '@' : t
      (Child, _) -> t
      (Self, NodeTest) -> "."
      (Parent, NodeTest) -> ".."
