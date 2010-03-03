@@ -69,20 +69,24 @@ dummyMin _ _ = return ()
 
 type CASLSign = Sign () ()
 
+{- | the data type for the basic static analysis to accumulate variables,
+sentences, symbols, diagnostics and annotations, that are removed or ignored
+when looking at signatures from outside, i.e. during logic-independent
+processing.  -}
 data Sign f e = Sign
     { sortSet :: Set.Set SORT
     , emptySortSet :: Set.Set SORT
-    -- a subset of the sort set of possibly empty sorts
+    -- ^ a subset of the sort set of possibly empty sorts
     , sortRel :: Rel.Rel SORT
     , opMap :: OpMap
-    , assocOps :: OpMap
+    , assocOps :: OpMap -- ^ the subset of associative operators
     , predMap :: Map.Map Id (Set.Set PredType)
-    , varMap :: Map.Map SIMPLE_ID SORT
-    , sentences :: [Named (FORMULA f)]
-    , declaredSymbols :: Set.Set Symbol
-    , envDiags :: [Diagnosis]
-    , annoMap :: Map.Map Symbol (Set.Set Annotation)
-    , globAnnos :: GlobalAnnos
+    , varMap :: Map.Map SIMPLE_ID SORT -- ^ temporary variables
+    , sentences :: [Named (FORMULA f)] -- ^ current sentences
+    , declaredSymbols :: Set.Set Symbol -- ^ introduced or redeclared symbols
+    , envDiags :: [Diagnosis] -- ^ diagnostics for basic spec
+    , annoMap :: Map.Map Symbol (Set.Set Annotation) -- ^ annotated symbols
+    , globAnnos :: GlobalAnnos -- ^ global annotations to use
     , extendedInfo :: e
     } deriving Show
 
@@ -117,8 +121,6 @@ class SignExtension e where
 
 instance SignExtension () where
     isSubSignExtension _ _ = True
-
-
 
 -- | proper subsorts (possibly excluding input sort)
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
