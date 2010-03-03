@@ -30,7 +30,6 @@ module Reduce.AS_BASIC_Reduce
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords
 import Common.AS_Annotation as AS_Anno
 
 -- | operator symbol declaration
@@ -47,7 +46,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
 -- | basic items: either an operator declaration or and axiom
 data BASIC_ITEMS =
     Op_decl OP_ITEM
-    | Var_decl VAR_ITEM
+-- | Var_decl VAR_ITEM
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
 
@@ -57,12 +56,12 @@ data EXPRESSION =
   | Op String [EXPRESSION] Id.Range          -- token statt string Id vs Token:
   | List [EXPRESSION] Id.Range
   | Int Int Id.Range
-  | Double Double Id.Range
-  deriving (Eq,Show)
+  | Double Float Id.Range
+  deriving (Eq,Ord,Show)
 
 data CMD = 
     Cmd String [EXPRESSION]
-    deriving Show
+    deriving (Show,Eq,Ord)
   
 -- | symbol lists for hiding
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
@@ -113,23 +112,23 @@ printCMD (Cmd s exps) = (text s) <> (parens (sepByCommas (map printExpression ex
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
-printExpression (Op s exps a) = text s <+> (parens (sepByCommas (map printExpression exps)))
-printExpression (List exps a) = sepByCommas (map printExpression exps)
-printExpression (Int i a) = text (show i)
-printExpression (Double d a) = text (show d)
+printExpression (Op s exps _) = text s <+> (parens (sepByCommas (map printExpression exps)))
+printExpression (List exps _) = sepByCommas (map printExpression exps)
+printExpression (Int i _) = text (show i)
+printExpression (Double d _) = text (show d)
 
 printOpItem :: OP_ITEM -> Doc
-printOpItem (Op_item tokens a) = (text "operator") <+> (sepByCommas (map pretty tokens))
+printOpItem (Op_item tokens _) = (text "operator") <+> (sepByCommas (map pretty tokens))
 
 printVarItem :: VAR_ITEM -> Doc
-printVarItem (Var_item vars a) = (text "var") <+> (sepByCommas (map pretty vars))
+printVarItem (Var_item vars _) = (text "var") <+> (sepByCommas (map pretty vars))
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_item x) = pretty x
-printBasicItems (Var_decl x) = pretty x
+-- printBasicItems (Var_decl x) = pretty x
 printBasicItems (Op_decl x) = pretty x
 
 printSymbol :: SYMB -> Doc
@@ -169,12 +168,12 @@ instance GetRange BASIC_ITEMS where
   getRange = const nullRange
   rangeSpan x = case x of
     Op_decl a -> joinRanges [rangeSpan a]
-    Var_decl a -> joinRanges [rangeSpan a]
+--    Var_decl a -> joinRanges [rangeSpan a]
     Axiom_item a -> joinRanges [rangeSpan a]
 
 instance GetRange CMD where
     getRange = const nullRange
-    rangeSpan (Cmd s exps) = joinRanges (map rangeSpan exps)
+    rangeSpan (Cmd _ exps) = joinRanges (map rangeSpan exps)
 
 instance GetRange SYMB_ITEMS where
   getRange = const nullRange
@@ -201,7 +200,7 @@ instance GetRange EXPRESSION where
   getRange = const nullRange
   rangeSpan x = case x of
                       Var token -> joinRanges [rangeSpan token]
-                      Op s exps a -> joinRanges [rangeSpan a]
-                      List exps a -> joinRanges [rangeSpan a]
-                      Int i a -> joinRanges [rangeSpan a]
-                      Double i a -> joinRanges [rangeSpan a]
+                      Op _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
+                      List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
+                      Int _ a -> joinRanges [rangeSpan a]
+                      Double _ a -> joinRanges [rangeSpan a]

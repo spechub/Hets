@@ -62,7 +62,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Maude ExtModal CommonLogic
+    LF Maude ExtModal CommonLogic Reduce
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -298,6 +298,8 @@ Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
 ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs \
     ExtModal/MorphismExtension.hs
 
+Reduce_files = Reduce/Sign.hs Reduce/Morphism.hs Reduce/AS_BASIC_Reduce.hs Reduce/Symbol.hs
+
 CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs
 
 # ATC DrIFT-rule generation for logics
@@ -360,6 +362,9 @@ Maude/ATC_Maude.der.hs: $(Maude_files) $(GENRULES)
 
 ExtModal/ATC_ExtModal.der.hs: $(ExtModal_files) $(GENRULES)
 	$(GENRULECALL)  -i CASL.ATC_CASL -o $@ $(ExtModal_files)
+
+Reduce/ATC_Reduce.der.hs: $(Reduce_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Reduce_files)
 
 CommonLogic/ATC_CommonLogic.der.hs: $(CommonLogic_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(CommonLogic_files)

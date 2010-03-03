@@ -1,4 +1,4 @@
-module CASInterface where
+module Reduce.Reduce_Interface where
 
 import System.Directory
 import System.Exit

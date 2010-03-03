@@ -12,83 +12,93 @@ Portability :  portable
 -}
 
 
-module Propositional.Analysis
+module Reduce.Analysis
     (
-     basicPropositionalAnalysis
-    ,mkStatSymbItems
-    ,mkStatSymbMapItem
-    ,inducedFromMorphism
-    ,inducedFromToMorphism
-    , signatureColimit
+     splitSpec
+     ,basicReduceAnalysis
+--     basicReduceAnalysis
+--    ,mkStatSymbItems
+--    ,mkStatSymbMapItem
+--   ,inducedFromMorphism
+--    ,inducedFromToMorphism
+--    , signatureColimit
     )
     where
 
 import Common.ExtSign
-import Common.Lib.Graph
-import Common.SetColimit
-import Data.Graph.Inductive.Graph
 import Reduce.Sign as Sign
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.GlobalAnnotations as GlobalAnnos
-import qualified Common.Id as Id
-import qualified Common.Result as Result
+import Common.Id
+import Common.Result
 import qualified Data.List as List
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Reduce.AS_BASIC_Reduce 
-import Reduce.Morphism 
 import Reduce.Symbol 
 
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm
     {
-      formula :: AS_Anno.Named (CMD),
-      diagnosis :: Result.Diagnosis
+      formula :: (AS_Anno.Named CMD),
+      diagnosis :: Diagnosis
     }
+               deriving Show
+
+-- | extracts the operators of a given Expression, will be used for analysis
+-- extractOperators :: EXPRESSION -> [String]
+-- extractOperators (Op s exps _) = s:(concat (map extractOperators exps))
+-- extractOperators (List exps _) = (concat (map extractOperators exps))
+-- extractOperators _ = []
+
+
+-- | generates a named formula
+makeNamed :: AS_Anno.Annoted CMD -> Int -> AS_Anno.Named CMD
+makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
+                                       else label) $ AS_Anno.item f)
+                    { AS_Anno.isAxiom = not isTheorem }
+    where
+      label = AS_Anno.getRLabel f
+      annos = AS_Anno.r_annos f
+      isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos
+      isImplied = foldl (\y x -> AS_Anno.isImplied x || y) False annos
+      isTheorem = isImplies || isImplied
+
 
 -- | takes a signature and a formula, analyzes it and returns a formula with diagnosis
-analyzeFormula :: Sign.Sign -> CMD -> DIAG_FORM
-analyzeFormula sign f = DiagForm  { formula = f, diagnosis = {
-                                                Result.diagKind = Result.Hint
-                                              , Result.diagString = "All fine"
-                                              , Result.diagPos    = AS_Anno.opt_pos nullRange
-                                              }}
-                        
+analyzeFormula :: Sign.Sign -> (AS_Anno.Annoted CMD) -> Int -> DIAG_FORM
+analyzeFormula _ f i = DiagForm { formula = (makeNamed f i), 
+                                             diagnosis = Diag {
+                                               diagKind = Hint
+                                             , diagString = "All fine"
+                                             , diagPos    = nullRange
+                                                         }
+                                 }
+
 -- | Extracts the axioms and the signature of a basic spec
-splitSpec :: BASIC_SPEC -> Sign.Sign -> [Sign.Sign,DIAG_FORM]
-splitSpec (Basic_spec bspec) sig =
-    List.foldl (\item (sign,axs) -> 
-                    case (AS_Anno.item item) of
-                      (Op_decl (Op_item tokens range)) -> (addTokens sign tokens, axs)
-                      (Axiom_items cmds) -> (sign, addAxioms cmds axs)
-               )
-            []  bspec
+splitSpec :: BASIC_SPEC -> Sign.Sign -> (Sign.Sign,[DIAG_FORM])
+splitSpec (Basic_spec specitems) sig =
+    List.foldl (\(sign,axs) item -> 
+                case (AS_Anno.item item) of
+                  (Op_decl (Op_item tokens _)) -> (addTokens sign tokens,axs) 
+                  (Axiom_item annocmd) -> (sign,(analyzeFormula sign annocmd (length axs)):axs) --  addAxioms cmds sign
+                 )
+             (sig,[]) specitems
 
 -- | adds the specified tokens to the signature
 addTokens :: Sign.Sign -> [Token] -> Sign.Sign
-addTokens sign tokens = foldl (\item res -> (addToSig res (simpleIdToId item))) sign tokens
-
--- | adds the cmds to the already specified axioms
-addAxioms :: [DIAG_FORM] -> [CMD] -> [DIAG_FORM]
-addAxioms fs cmds = foldl (\item res -> (analyzeFormula item):res) fs cmds
+addTokens sign tokens = foldl (\res item -> (addToSig res (simpleIdToId item))) sign tokens
 
 
 -- | stepwise extends an initially empty signature by the basic spec bs. The resulting spec contains analyzed axioms in it. 
 -- The result contains: 1) the basic spec 2) the new signature + the added symbols 3) sentences of the spec 
--- op-> items kommen in signatur
--- axioms -> kommen in liste der sätze
-basicPropositionalAnalysis (bs, sig, _) =
-   Result.Result diags $ if exErrs then Nothing else
-     Just (bs, ExtSign sigItems declaredSyms, formulae)
-    where
-      bsSig     = makeSig bs sig
-      sigItems  = msign bsSig
-      declaredSyms = Set.map Symbol.Symbol
-        $ Set.difference (items sigItems) $ items sig
-      bsForm    = makeFormulas bs sigItems
-      formulae  = map formula bsForm
-      diags     = map diagnosis bsForm ++ tdiagnosis bsSig
-      exErrs    = Result.hasErrors diags
+basicReduceAnalysis :: (BASIC_SPEC, Sign, a) -> Result (BASIC_SPEC, ExtSign Sign Symbol, [AS_Anno.Named CMD])
+basicReduceAnalysis (bs, sig, _) =
+    Result diagnoses $ if exErrs then Nothing else
+                       Just (bs, ExtSign newSig newSyms, (map formula cmds))
+        where
+          (newSig,cmds)     = splitSpec bs sig
+          diagnoses     = []
+          exErrs    = False
+          newSyms   = Set.map Symbol $ Set.difference (items newSig) $ items sig
 
 

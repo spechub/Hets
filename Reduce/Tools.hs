@@ -11,7 +11,11 @@ Portability :  portable
 
 -}
 
+module Reduce.Tools where
 
-negateFormula :: Cmd -> Cmd
-negateFormula s = Cmd "Not" [s]
+import Reduce.AS_BASIC_Reduce
+import Common.Id
+
+negateFormula :: CMD -> CMD
+negateFormula (Cmd s exps) = Cmd "Not" [(Op s exps nullRange)]
 

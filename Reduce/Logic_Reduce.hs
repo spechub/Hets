@@ -9,12 +9,12 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
-Instance of class Logic for the propositional logic
+Instance of class Logic for the Reduce logic
    Also the instances for Syntax and Category.
 -}
 
 
-module Reduce.Reduce where
+module Reduce.Logic_Reduce where
 
 import Logic.Logic
 
@@ -24,8 +24,12 @@ import Reduce.AS_BASIC_Reduce
 import Reduce.Parse_AS_Basic
 import Reduce.Analysis
 import Reduce.Tools
+import Reduce.Symbol
+import Reduce.ATC_Reduce ()
 import qualified Data.Map as Map
+import ATC.ProofTree ()
 import Common.ProofTree
+
 
 -- | Lid for reduce logic
 data Reduce = Reduce deriving Show
@@ -42,14 +46,14 @@ instance Category Sign Morphism where
     -- Returns the codomain of a morphism
     cod = target
     -- check if morphism is inclusion
-    isInclusion = Map.null . propMap
+    isInclusion = Map.null . operatorMap
     -- tests if the morphism is ok
     legal_mor = isLegalMorphism
     -- composition of morphisms
     composeMorphisms = composeMor
 
 -- | Instance of Sentences for reduce logic
-instance Sentences Reduce Cmd
+instance Sentences Reduce CMD
     Sign Morphism Symbol where
     negation Reduce = Just . negateFormula
     -- returns the set of symbols --> also operatoren
@@ -84,8 +88,6 @@ instance Logic Reduce
     ProofTree                      -- proof_tree
     where
       stability Reduce     = Experimental
-      top_sublogic Reduce  = Sublogic.top
-      all_sublogics Reduce = sublogics_all
       empty_proof_tree Reduce = emptyProofTree
       -- supplied provers
       provers Reduce = []
@@ -103,20 +105,17 @@ instance StaticAnalysis Reduce
     Symbol                      -- symbol
     Symbol                      -- raw_symbol
         where
-          basic_analysis Reduce           =
-              Just basicReduceAnalysis
+          basic_analysis Reduce           = Just basicReduceAnalysis
           empty_signature Reduce          = emptySig
           is_subsig Reduce                = isSubSigOf
           subsig_inclusion Reduce s = return . inclusionMap s
           signature_union Reduce          = sigUnion
-          symbol_to_raw Reduce            = id
-          id_to_raw     Reduce            = id
-          matches       Reduce            = Symbol.matches
-          stat_symb_items Reduce          = mkStatSymbItems
-          stat_symb_map_items Reduce      = mkStatSymbMapItem
+          symbol_to_raw Reduce            = symbolToRaw
+          id_to_raw     Reduce            = idToRaw
+--          matches       Reduce            = Symbol.matches
+--          stat_symb_items Reduce          = mkStatSymbItems
+--          stat_symb_map_items Reduce      = mkStatSymbMapItem
           morphism_union Reduce           = morphismUnion
-          induced_from_morphism Reduce    = inducedFromMorphism
-          induced_from_to_morphism Reduce = inducedFromToMorphism
-
-
+--          induced_from_morphism Reduce    = inducedFromMorphism
+--          induced_from_to_morphism Reduce = inducedFromToMorphism
 

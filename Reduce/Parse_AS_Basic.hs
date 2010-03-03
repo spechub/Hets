@@ -15,7 +15,6 @@ module Reduce.Parse_AS_Basic
     where
 
 import qualified Common.AnnoState as AnnoState
-import qualified Common.AS_Annotation as Annotation
 import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
@@ -73,14 +72,14 @@ expatom = do
      else return (Int (read (tokStr nr)) (tokPos nr))
   <|> 
   do
-    id <- identifier
-    return (Var id)
+    ident <- identifier
+    return (Var ident)
   <|>
   do
     oParenT
-    exp <- expression
+    expr <- expression
     cParenT
-    return exp
+    return expr
 
 -- | parses a list expression
 listexp :: CharParser st EXPRESSION
@@ -150,11 +149,11 @@ impOrFormula = do
   f1 <- andFormula
   opfs <- many $ liftM2 (,) (lexemeParser (Lexer.keySign (string "or" <|> string "impl"))) impOrFormula
   if null opfs then return f1 
-   else return $ foldr (\ a b -> case (fst a) of 
-                                   "or" -> (Op "Or" [b,(snd a)] nullRange)
-                                   "impl" -> (Op "Impl" [b,(snd a)] nullRange)
+   else return $ foldr (\ (a1,a2) b -> case a1 of 
+                                   "or" -> Op "Or" [b,a2] nullRange
+                                   "impl" -> Op "Impl" [b,a2] nullRange
+                                   _ -> error "impl or or expected"
                                  ) f1 opfs
-
 
 -- | a parser for and sequence of and formulas
 andFormula :: CharParser st EXPRESSION

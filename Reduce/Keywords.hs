@@ -919,4 +919,5 @@ otherKeywords = [beginS, doS, exprS, fexprS, inputS, lambdaS, lispS, macroS, pro
 
 
 -- 
+allKeywords :: [String]
 allKeywords = commandKeywords ++ booleanKeywords ++ infixKeywords ++ numericalKeywords ++ prefixKeywords ++ varKeywords ++ switchKeywords ++ otherKeywords
