@@ -240,7 +240,7 @@ multOps :: [String]
 multOps = ["*", "div", "mod"]
 
 {- | all infix operators. Lowest precedence for @or@ followed by @and@,
-highest is union(@|@).  Only these three operators will have more than two
+highest is union(@|@).  Only these three operators may get more than two
 arguments. -}
 inOps :: [[String]]
 inOps =
