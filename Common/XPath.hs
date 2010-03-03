@@ -1,13 +1,26 @@
 {- |
 Module      :  $Header$
 Description :  XPath utilities
-Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
+Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-XPath utilities independent of xml package
+XPath utilities independent of xml package.
+references:
+<http://www.w3.org/TR/xpath/>
+<http://www.galiel.net/el/study/XPath_Overview.html>
+<http://www.fh-wedel.de/~si/HXmlToolbox/hxpath/diplomarbeit.pdf>
+<http://hackage.haskell.org/package/hxt-xpath>
+(modules XPathParser, XPathDataTypes)
+<http://hackage.haskell.org/package/hxt-8.5.0>
+(modules Text.XML.HXT.DOM.Unicode, Text.XML.HXT.Parser.XmlCharParser)
+<http://www.w3.org/TR/REC-xml/#NT-Name>
+
+'ncName' from 'OWL.Parse' allows `+' in names. Unicode is not
+fully supported. A qualified name is an ncName or two ncNames
+separated by a colon (different from OWL uris).
 -}
 
 module Common.XPath where
@@ -40,9 +53,12 @@ allAxis = let bl = [True, False] in
   ++ [ Following b | b <- bl ]
   ++ [ Preceding b | b <- bl ]
 
+lowerShow :: Show a => a -> String
+lowerShow = map toLower . show
+
 showAxis :: Axis -> String
 showAxis a =
-  let s = map toLower . takeWhile isAlpha $ show a
+  let s = takeWhile isAlpha $ lowerShow a
       orSelf b = if b then s ++ "-or-self" else s
       sibl b = if b then s ++ "-sibling" else s
   in case a of
@@ -55,34 +71,25 @@ showAxis a =
 data NodeTest
   = NameTest String String -- prefix and local part (possibly *)
   | PINode String
-  | NodeTest
-  | CommentNode
-  | TextNode
+  | Node
+  | Comment
+  | Text
+    deriving Show
+
+nodeTypes :: [NodeTest]
+nodeTypes = [Node, Comment, Text]
 
 pIS :: String
 pIS = "processing-instruction"
-
-nodeS :: String
-nodeS = "node"
-
-commentS :: String
-commentS = "comment"
-
-textS :: String
-textS = "text"
 
 paren :: String -> String
 paren = ('(' :) . (++ ")")
 
 showNodeTest :: NodeTest -> String
-showNodeTest t = let
-  b = (++ paren "")
-  in case t of
+showNodeTest t = case t of
   NameTest p l -> (if null p then "" else p ++ ":") ++ l
   PINode s -> pIS ++ paren s
-  NodeTest -> b nodeS
-  CommentNode -> b commentS
-  TextNode -> b textS
+  _ -> lowerShow t ++ paren ""
 
 data Step = Step Axis NodeTest [Expr]
 
@@ -92,22 +99,22 @@ showStep (Step a n ps) =
   case (a, n) of
      (Attribute, _) -> '@' : t
      (Child, _) -> t
-     (Self, NodeTest) -> "."
-     (Parent, NodeTest) -> ".."
+     (Self, Node) -> "."
+     (Parent, Node) -> ".."
      _ -> showAxis a ++ "::" ++ t
   ++ concatMap showPred ps
 
 isDescOrSelfNode :: Step -> Bool
 isDescOrSelfNode (Step a n _) = case (a, n) of
-  (Descendant True, NodeTest) -> True
+  (Descendant True, Node) -> True
   _ -> False
 
 data Path = Path Bool [Step] -- absolute? or relative
 
 showSteps :: Bool -> [Step] -> String
-showSteps abso sts = case sts of
-  [] -> "/" -- no steps are only legal if absolute
-  s : r -> let f = (if abso then "/" else "") ++ showStep s in case r of
+showSteps abso sts = let h = if abso then "/" else "" in case sts of
+  [] -> h
+  s : r -> let f = h ++ showStep s in case r of
     [] -> f
     _ -> if abso && isDescOrSelfNode s then "//" ++ showSteps False r
          else f ++ showSteps True r
@@ -122,8 +129,8 @@ data PrimKind
 
 data Expr
   = GenExpr Bool String [Expr] -- infix
-  | PathExpr Path
-  | FilterExpr Expr [Expr] [Step]
+  | PathExpr (Maybe Expr) Path
+  | FilterExpr Expr [Expr]
   | PrimExpr PrimKind String
 
 showPred :: Expr -> String
@@ -135,11 +142,13 @@ showExpr e = case e of
     if infx then
         showInfixExpr op args
     else op ++ paren (intercalate "," $ map showExpr args)
-  PathExpr p -> showPath p
-  FilterExpr pe ps sts ->
+  PathExpr m p -> case m of
+      Nothing -> ""
+      Just f -> showExpr f
+    ++ showPath p
+  FilterExpr pe ps ->
     (if isPrimExpr pe then id else paren) (showExpr e)
     ++ concatMap showPred ps
-    ++ showPath (Path True sts)
   PrimExpr _ s -> s
 
 isPrimExpr :: Expr -> Bool
@@ -182,15 +191,17 @@ showInfixExpr op args = case args of
        _ -> s
   arg : rargs ->
     let mi = findIndex (elem op) inOps
-        padOp = if any ncNameChar op then ' ' : op ++ " " else op
-    in parenExpr False mi arg
-       ++ concatMap ((padOp ++) .  parenExpr True mi) rargs
+        f = parenExpr False mi arg
+        padOp = if any isAlpha op then ' ' : op ++ " " else
+          if elem op addOps && not (null f) && ncNameChar (last f)
+             then ' ' : op else op
+    in f ++ concatMap ((padOp ++) .  parenExpr True mi) rargs
 
 parenExpr :: Bool -> Maybe Int -> Expr -> String
 parenExpr rst mi e =
   let s = showExpr e
   in case e of
-  GenExpr True op _ ->
+  GenExpr True op (_ : _ : _) ->
     let mj = findIndex (elem op) inOps
         putPar = case (mi, mj) of
            (Just i, Just j) -> i > j || rst && i == j
@@ -207,32 +218,29 @@ skips = (<< spaces)
 symbol :: String -> Parser String
 symbol = skips . tryStr
 
-lpar, rpar, lbra, rbra, slash, dslash :: Parser ()
+lpar :: Parser ()
+lpar = forget (symbol "(")
 
-lpar   = forget (symbol "(")
-rpar   = forget (symbol ")")
-lbra   = forget (symbol "[")
-rbra   = forget (symbol "]")
-slash  = forget (symbol "/")
-dslash = forget (symbol "//")
+rpar :: Parser ()
+rpar = forget (symbol ")")
 
 axis :: Parser Axis
-axis = choice (map (\ a -> symbol (showAxis a) >> return a) allAxis)
+axis = choice (map (\ a -> tryStr (showAxis a) >> return a) allAxis)
   <?> "axis"
 
 abbrAxis :: Parser Axis
 abbrAxis =
-  (symbol "@" >> return Attribute)
-  <|> try (axis << symbol "::")
+  (char '@' >> return Attribute)
+  <|> try (axis << tryStr "::")
   <|> return Child
   <?> "abbrAxis"
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
 
--- | rfc3987 plus '+' from scheme (scheme does not allow the dots)
+-- | name character (without '+')
 ncNameChar :: Char -> Bool
-ncNameChar c = isAlphaNum c || elem c ".+-_\183"
+ncNameChar c = isAlphaNum c || elem c ".-_\183"
 
 ncName :: Parser String
 ncName = satisfy ncNameStart <:> many (satisfy ncNameChar) <?> "ncName"
@@ -247,9 +255,8 @@ localName = symbol "*" <|> skips ncName <?> "localName"
 
 nodeTest :: Parser NodeTest
 nodeTest = fmap PINode (symbol pIS >> lpar >> literal << rpar)
-  <|> choice (map (\ t -> symbol (takeWhile isAlpha $ showNodeTest t)
-                          >> lpar >> rpar >> return t)
-              [NodeTest, CommentNode, TextNode])
+  <|> choice (map (\ t -> symbol (lowerShow t)
+                   >> lpar >> rpar >> return t) nodeTypes)
   <|> do
     p <- try (ncName << char ':')
     l <- localName
@@ -261,12 +268,12 @@ nodeTest = fmap PINode (symbol pIS >> lpar >> literal << rpar)
 
 abbrStep :: Parser Step
 abbrStep =
-  (symbol ".." >> return (Step Parent NodeTest []))
-  <|> (symbol "." >> return (Step Self NodeTest []))
+  (tryStr ".." >> return (Step Parent Node []))
+  <|> (char '.' >> return (Step Self Node []))
   <?> "abbrStep"
 
 predicate :: Parser Expr
-predicate = lbra >> expr << rbra <?> "predicate"
+predicate = symbol "[" >> expr << symbol "]" <?> "predicate"
 
 step :: Parser Step
 step = abbrStep <|> do
@@ -277,10 +284,10 @@ step = abbrStep <|> do
   <?> "step"
 
 descOrSelfStep :: Step
-descOrSelfStep = Step (Descendant True) NodeTest []
+descOrSelfStep = Step (Descendant True) Node []
 
 doubleSlash :: Parser Bool
-doubleSlash = (dslash >> return True) <|> (slash >> return False)
+doubleSlash = (tryStr "//" >> return True) <|> (char '/' >> return False)
 
 slashStep :: Parser [Step]
 slashStep = do
@@ -321,10 +328,10 @@ primExpr = fmap (PrimExpr Var) (skips $ char '$' <:> ncName)
 fct :: Parser Expr
 fct = do
   q <- try $ do
-    n <- ncName <++> optionL (char ':' <:> ncName)
-    if elem n [pIS, commentS, textS, nodeS]
+    n <- skips $ ncName <++> optionL (char ':' <:> ncName)
+    if elem n $ pIS : map lowerShow nodeTypes
       then fail $ n ++ " not allowed as function name"
-      else spaces >> lpar >> return n
+      else lpar >> return n
   args <- sepBy expr (symbol ",")
   rpar
   return $ GenExpr False q args
@@ -333,15 +340,17 @@ filterExpr :: Parser Expr
 filterExpr = do
   e <- primExpr
   ps <- many predicate
-  s <- optionL $ do
-    b <- doubleSlash
-    r <- relPath
-    return $ if b then descOrSelfStep : r else r
-  return $ if null ps && null s then e else FilterExpr e ps s
+  return $ if null ps then e else FilterExpr e ps
 
 pathExpr :: Parser Expr
-pathExpr = filterExpr
-  <|> fmap PathExpr path
+pathExpr = do
+    f <- filterExpr
+    s <- optionL $ do
+      b <- doubleSlash
+      r <- relPath
+      return $ if b then descOrSelfStep : r else r
+    return $ if null s then f else PathExpr (Just f) $ Path True s
+  <|> fmap (PathExpr Nothing) path
 
 singleInfixExpr :: Parser Expr -> String -> Parser Expr
 singleInfixExpr p s = do
