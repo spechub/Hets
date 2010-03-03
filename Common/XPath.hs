@@ -274,16 +274,16 @@ lpar = forget (symbol "(")
 rpar :: Parser ()
 rpar = forget (symbol ")")
 
--- | non-abbreviated axis parser (non-skipping)
+-- | non-abbreviated axis parser
 axis :: Parser Axis
-axis = choice (map (\ a -> tryStr (showAxis a) >> return a) allAxis)
+axis = choice (map (\ a -> symbol (showAxis a) >> return a) allAxis)
   <?> "axis"
 
--- | the axis specifier parser (non-skipping)
+-- | the axis specifier parser
 abbrAxis :: Parser Axis
 abbrAxis =
-  (char '@' >> return Attribute)
-  <|> try (axis << tryStr "::")
+  (symbol "@" >> return Attribute)
+  <|> try (axis << symbol "::")
   <|> return Child
   <?> "abbrAxis"
 
@@ -323,11 +323,11 @@ nodeTest = fmap PI (symbol pIS >> lpar >> literal << rpar)
     return $ NameTest l
   <?> "nodeTest"
 
--- | parent or self abbreviated steps (non-skipping)
+-- | parent or self abbreviated steps
 abbrStep :: Parser Step
 abbrStep =
-  (tryStr ".." >> return (Step Parent Node []))
-  <|> (char '.' >> return (Step Self Node []))
+  (symbol ".." >> return (Step Parent Node []))
+  <|> (symbol "." >> return (Step Self Node []))
   <?> "abbrStep"
 
 -- | the predicate (expression in square brackets) parser
@@ -347,9 +347,9 @@ step = abbrStep <|> do
 descOrSelfStep :: Step
 descOrSelfStep = Step (Descendant True) Node []
 
--- | a double or single slash (non-skipping)
+-- | a double or single slash
 doubleSlash :: Parser Bool
-doubleSlash = (tryStr "//" >> return True) <|> (char '/' >> return False)
+doubleSlash = (symbol "//" >> return True) <|> (symbol "/" >> return False)
 
 {- | a step starting with a single or double slash,
      the latter yielding two steps. -}
