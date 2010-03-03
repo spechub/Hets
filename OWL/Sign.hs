@@ -42,7 +42,6 @@ data Sign = Sign
             , individuals :: Set.Set IndividualID  -- ^ a set of individual
               -- ^ a set of axioms of subconceptrelations, domain an drenge
               -- ^of roles, functional roles and concept membership
-            , axioms :: Set.Set SignAxiom
             , namespaceMap :: Namespace
             } deriving (Show, Eq, Ord)
 
@@ -75,7 +74,6 @@ emptySign =  Sign
   , dataValuedRoles = Set.empty
   , annotationRoles = Set.empty
   , individuals = Set.empty
-  , axioms = Set.empty
   , namespaceMap = Map.empty
   }
 

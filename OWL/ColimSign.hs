@@ -57,13 +57,6 @@ signColimit graph = let
                 ]
    morMaps = Map.fromAscList $
               map (\x -> (x,morFun x)) $ nodes graph
-   ax = Set.empty
-        -- foldl Set.union Set.empty $
-        --   map (\(i,axSet) -> let
-        --            funI = Map.findWithDefault (error "ax") i morMaps
-        --                      in
-        --            Set.map (mapSignAxiom funI) axSet) $ -- missing!
-        --   map (\(i,l)-> (i, axioms l))$ labNodes graph
    nameMap = foldl Map.union Map.empty $
              map (\(_,l)-> namespaceMap l)$ labNodes graph
       -- here it will be a union with clashing symbols renamed
@@ -83,7 +76,6 @@ signColimit graph = let
                   indValuedRoles = obj,
                   dataValuedRoles = dp,
                   individuals = ind,
-                  axioms = ax,
                   namespaceMap = nameMap
                 }
    colimMor = Map.fromAscList $

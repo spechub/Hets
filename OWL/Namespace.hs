@@ -86,7 +86,7 @@ instance PNamespace QName where
 
 instance PNamespace Sign where
    propagateNspaces _ sig = sig
-   renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7 p8 p9 p10) =
+   renameNamespace tMap (Sign p1 p2 p3 p4 p5 p6 p7 p8 p10) =
        Sign (renameNamespace tMap p1)
             (Set.map (renameNamespace tMap) p2)
             (Set.map (renameNamespace tMap) p3)
@@ -95,7 +95,6 @@ instance PNamespace Sign where
             (Set.map (renameNamespace tMap) p6)
             (Set.map (renameNamespace tMap) p7)
             (Set.map (renameNamespace tMap) p8)
-            (Set.map (renameNamespace tMap) p9)
             (renameNamespace tMap p10)
 
 instance PNamespace (DomainOrRangeOrFunc a) where
