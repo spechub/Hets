@@ -89,3 +89,4 @@ child::text()
 child::*
 child::para
 $a + $b mod $b - $c div $d > $a*-$b >= $a div-$b != $b - $c div $d < $a*-$b  >= $a div-$b = $b - $c div $d < $a*-$b  >= $a mod-$b* $c - c
+$a[$b]//a
