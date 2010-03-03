@@ -2,16 +2,11 @@ library reduceTest
 
 logic Reduce
 
-spec AProp =
-     operator f,g
+spec ReduceTest1 =
+     operator f,h
      . solve(x^2=1,x)
-     . solve(a*log(sin(x+3))^5 - b, sin(x+3))
-     . solve({x+3y=7,y-x=1},{x,y})
      . simplify((x+y)*(x+y+z))
      . remainder(2*x+y,2)
      . remainder((x+y)*(x+2*y),x+3*y)
-     . gcd(f(x)+g(x)-l1-l2,f(x)-l1)
-     . int(log(x),x)
-     . qelim(all(x, ex(y, x2+xy+b>0 and x+ay2+b<=0)))
 end
 
