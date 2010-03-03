@@ -10,4 +10,4 @@ main = do
 process :: (Int, String) -> IO ()
 process (n, str) = case parse (spaces >> expr << eof) "" str of
   Left err -> fail $ "line " ++ show n ++ ": " ++ show err
-  Right e -> putStrLn $ showExpr e
+  Right e -> print e
