@@ -46,7 +46,6 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
 -- | basic items: either an operator declaration or and axiom
 data BASIC_ITEMS =
     Op_decl OP_ITEM
--- | Var_decl VAR_ITEM
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
 
@@ -128,7 +127,6 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_item x) = pretty x
--- printBasicItems (Var_decl x) = pretty x
 printBasicItems (Op_decl x) = pretty x
 
 printSymbol :: SYMB -> Doc
