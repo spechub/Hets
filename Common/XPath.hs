@@ -383,7 +383,7 @@ path = do
 -- | at least one digit and at most one decimal point (skipping)
 number :: Parser String
 number = skips $ many1 digit <++> optionL (char '.' <:> many digit)
-  <|> char '.' <:> many1 digit
+  <|> try (char '.' <:> many1 digit)
 
 -- | parse a primary expression (including 'fct' or 'expr' in parens)
 primExpr :: Parser Expr

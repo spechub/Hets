@@ -90,3 +90,25 @@ child::*
 child::para
 $a + $b mod $b - $c div $d > $a*-$b >= $a div-$b != $b - $c div $d < $a*-$b  >= $a div-$b = $b - $c div $d < $a*-$b  >= $a mod-$b* $c - c
 $a[$b]//a
+employee[@secretary and @assistant]
+chapter[title]
+chapter[title="Introduction"]
+para[5][@type="warning"]
+para[@type="warning"][5]
+para[@type="warning"]
+../@lang
+..
+.//para
+.
+//olist/item
+//para
+chapter//para
+/doc/chapter[5]/section[2]
+*/para
+para[last()]
+para[1]
+@*
+@name
+text()
+*
+para
