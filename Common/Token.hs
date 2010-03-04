@@ -137,10 +137,11 @@ sid (kOps, kWords) = pToken (scanQuotedChar <|> scanDotWords
 
 -- | balanced mixfix components within braces
 braceP :: GenParser Char st [Token] -> GenParser Char st [Token]
-braceP p = begDoEnd oBraceT p cBraceT <|> try (oBracketT <:> single cBracketT)
+braceP p = oBraceT <:> p <++> single cBraceT
+           <|> try (oBracketT <:> single cBracketT)
 -- | balanced mixfix components within square brackets
 bracketP :: GenParser Char st [Token] -> GenParser Char st [Token]
-bracketP p = begDoEnd oBracketT p cBracketT
+bracketP p = oBracketT <:> p <++> single cBracketT
 
 -- | an 'sid' optionally followed by other mixfix components
 -- (without no two consecutive 'sid's)

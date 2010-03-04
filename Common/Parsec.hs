@@ -44,11 +44,8 @@ single = liftM return
 flat :: Monad m => m [[a]] -> m [a]
 flat = liftM concat
 
-begDoEnd :: Monad m => m a -> m [a] -> m a -> m [a]
-begDoEnd open p close = open <:> p <++> single close
-
 enclosedBy :: Monad m => m [a] -> m a -> m [a]
-enclosedBy p q = begDoEnd q p q
+enclosedBy p q = q <:> p <++> single q
 
 -- * parsec shortcuts
 

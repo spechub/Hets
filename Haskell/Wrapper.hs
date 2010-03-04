@@ -39,7 +39,7 @@ stuff = lineComment <|> nestComment <|> stringLit <|> charLit
         <|> single (noneOf "])}") <?> ""
 
 balanced :: String -> CharParser st String
-balanced [o, c] = begDoEnd (char o) hStuff $ char c
+balanced [o, c] = char o <:> hStuff <++> string [c]
 balanced _ = error "balanced"
 
 nestComment :: CharParser st String
