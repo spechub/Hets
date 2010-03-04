@@ -7,8 +7,9 @@
  -  Stability   : provisional
  -  Portability : portable
  -
- - Provides the implementation of the matching functions for several logics.
- - Currently implemented: K, KD, Mon, HM, C, P, G
+ - Provides the implementation of the generic proving function.
+ - Also contains an optimized version of the proving function (using so-called
+ - 'memoizing')
  -}
 
 module GMP.Prover where
@@ -18,19 +19,8 @@ import Maybe
 
 import Debug.Trace
 
-import GMP.Generic
-
---------------------------------------------------------------------------------
--- basic sequent function(s)
---------------------------------------------------------------------------------
-
--- expand applies all sequent rules that do not induce branching
-expand :: (Logic a) => Sequent a -> Sequent a
-expand s | seq s $ False = undefined -- force strictness
-expand [] = []
-expand ((Neg (Neg phi)):as) = expand (phi:as)
-expand ((Neg (And phi psi)):as) = expand ((Neg phi):(Neg psi):as)
-expand (a:as) = a:(expand as)
+import GMP.Logics.Generic
+import GMP.Logics.K
 
 --------------------------------------------------------------------------------
 -- sequent calculus implementation
@@ -51,23 +41,25 @@ expand (a:as) = a:(expand as)
 
 -- faster to check for atomic axioms
 -- axiom1 xs = [ []  | p <- xs, (Not q) <- xs, p==q]
-axiom_rule  :: (Logic a) => Sequent a -> [[Sequent a]]
-axiom_rule xs = nub [ []  | (Atom n) <- xs, (Neg (Atom m)) <- xs, m==n]
+axiom_rule :: Sequent -> Premises
+axiom_rule (Sequent xs) = [ [[Sequent ([]::[Formula (K (K (K ())))])]]  | (Atom n) <- xs, (Neg (Atom m)) <- xs, m==n]
 
-true_rule :: (Logic a) => Sequent a -> [[Sequent a]]
-true_rule xs = nub [ []  | T <- xs]
+true_rule :: Sequent -> Premises
+true_rule (Sequent xs) = [ [[Sequent ([]::[Formula (K (K (K ())))])]]  | T <- xs]
 
-negfalse_rule :: (Logic a) => Sequent a -> [[Sequent a]]
-negfalse_rule xs = nub [ []  | (Neg F) <- xs]
+negfalse_rule :: Sequent -> Premises
+negfalse_rule (Sequent xs) = [ [[Sequent ([]::[Formula (K (K (K ())))])]]  | (Neg F) <- xs]
 
--- two variants here: use @-patterns or ``plain'' recursion.
-conj_rule :: (Logic a) => Sequent a -> [[ Sequent a]]
-conj_rule s | seq s $ False = undefined -- force strictness
-conj_rule as = [ [ (p: delete f as) , ( q: delete f as )] | f@(And p q ) <- as]
+conj_rule :: Sequent -> Premises
+conj_rule (Sequent as) = [ [[(Sequent (p: delete f as))],[(Sequent (q: delete f as))]] | f@(And p q) <- as]
 
 -- the rule for the modal operator
-modal_rule :: (Logic a) => Sequent a -> [[Sequent a]]
-modal_rule xs = match xs
+modal_rule :: [Bool] -> Sequent -> Premises
+modal_rule flags (Sequent xs) = (emptify (fMatch flags xs))
+
+-- the rule for the modal operator - optimised version
+omodal_rule :: [Bool] -> [Sequent] -> Sequent -> Premises
+omodal_rule flags [Sequent ec] (Sequent xs) = emptify (fMatchOptimised flags xs [])
 
 -- collect all possible premises, i.e. the union of the possible
 -- premises taken over the set of all rules in one to  get the
@@ -79,27 +71,63 @@ modal_rule xs = match xs
 -- first look at the rules that induce branching.
 -- we can do slightly better if we apply all rules that do not
 -- induce branching in one single step.
-allRules :: (Logic a) => Sequent a -> [[Sequent a]]
-allRules s = let t = expand s in trace ("\n  Axiom-rule: " ++ show(map (map (map pretty)) (axiom_rule $ t) ) ++
-                                        "  True-rule: " ++ show(map (map (map pretty)) (true_rule $ t) ) ++
-                                        "  NegFalse-rule: " ++ show(map (map (map pretty)) (negfalse_rule $ t) ) ++
-                                        "  Modal-rule: " ++ show(map (map (map pretty)) (modal_rule $ t) ) ++
-                                        "  Conj-rule: " ++ show(map (map (map pretty)) (conj_rule $ t) ) ) $ 
-                                 (axiom_rule $ t) ++ (true_rule $ t) ++ (negfalse_rule $ t) ++ (conj_rule $ t) ++ (modal_rule $ t)
+allRules :: [Bool] -> Sequent -> Premises
+allRules flags (Sequent seq) = let t = Sequent (expand seq)
+                                   axioms = axiom_rule $ t
+                                   trues = true_rule $ t
+                                   negfalses = negfalse_rule $ t
+                                   modals = modal_rule flags t
+                                   conjs = conj_rule $ t
+                               in if (flags!!1) then
+                                         trace ("\n  Axiom-rule: "    ++ (prettylll axioms) ++
+                                                "  True-rule: "     ++ (prettylll trues) ++
+                                                "  NegFalse-rule: " ++ (prettylll negfalses) ++
+                                                "  Modal-rule: "    ++ (prettylll modals) ++
+                                                "  Conj-rule: "     ++ (prettylll conjs) ) $ 
+                                        (axioms ++ trues ++ negfalses ++ conjs ++ modals)
+                                                else
+                                        (axioms ++ trues ++ negfalses ++ conjs ++ modals)
+
+oallRules :: [Bool] -> [Sequent] -> Sequent -> Premises
+oallRules flags ec (Sequent seq) = let t = Sequent (expand seq)
+                                       axioms = axiom_rule $ t
+                                       trues = true_rule $ t
+                                       negfalses = negfalse_rule $ t
+                                       modals = omodal_rule flags ec t
+                                       conjs = conj_rule $ t
+                                   in trace ("\n  Axiom-rule: "    ++ (prettylll axioms) ++
+                                             "  True-rule: "     ++ (prettylll trues) ++
+                                             "  NegFalse-rule: " ++ (prettylll negfalses) ++
+                                             "  Modal-rule: "    ++ (prettylll modals) ++
+                                             "  Conj-rule: "     ++ (prettylll conjs) ) $ 
+                                     (axioms ++ trues ++ negfalses ++ conjs ++ modals)
 
 -- A sequent is provable iff there exists a set of premises that
 -- prove the sequent such that all elements in the list of premises are
 -- themselves provable.
-sprovable :: (Logic a) => Sequent a -> Bool
-sprovable s | seq s $ False = undefined -- force strictness
-sprovable s = trace ("\n  Sequent:" ++ show( map pretty (expand s) )) $ 
-                      any  (\p -> (all sprovable p)) (allRules s)
+sprovable :: [Bool] -> Sequent -> Bool
+sprovable flags (Sequent []) = True
+sprovable flags (Sequent seq) = if (flags!!1) then trace ("\n  <Current Sequent:> " ++ (pretty_seq (Sequent (expand seq)))) $
+                                                   any (\p -> (all (\q -> any (sprovable flags) q) p)) (allRules flags (Sequent seq))
+                                              else any (\p -> (all (\q -> any (sprovable flags) q) p)) (allRules flags (Sequent seq))
 
--- specialisation to formulas
-sequent_provable :: (Logic a) => L a -> Bool
-sequent_provable phi = sprovable [ phi ]
+-- optimized, alla
+osprovable :: [Bool] -> [Sequent] -> Sequent -> Bool
+osprovable flags ec (Sequent []) = True
+osprovable flags ec (Sequent seq) = trace ("\n  <Current Sequent:> " ++ (pretty_seq (Sequent (expand seq)))) $
+                                    any (\p -> (all (\q -> any (osprovable flags ec) q) p)) (oallRules flags ec (Sequent seq))
+
+-- specialisation to formulae
+provable :: (SigFeature a b (c d), Eq (a (b (c d)))) => Formula (a (b (c d))) -> [Bool] -> Bool
+provable phi flags = sprovable flags (Sequent [phi])
+
+oprovable :: (SigFeature a b (c d), Eq (a (b (c d)))) => [Bool] -> [Sequent] -> Formula (a (b (c d))) -> Bool
+oprovable flags ec phi = osprovable flags ec (Sequent [phi])
 
 -- a formula is satisfiable iff it's negation is not provable
-sequent_satisfiable :: (Logic a) => L a -> Bool
-sequent_satisfiable phi = not $ sequent_provable $ (Neg phi)
+satisfiable :: (SigFeature a b (c d), Eq (a (b (c d)))) => Formula (a (b (c d))) -> [Bool] -> Bool
+satisfiable phi flags = not (provable (neg phi) flags)
+
+osatisfiable :: (SigFeature a b (c d), Eq (a (b (c d)))) => [Bool] -> [Sequent] -> Formula (a (b (c d))) -> Bool
+osatisfiable flags ec phi = not (oprovable flags ec (neg phi))
 

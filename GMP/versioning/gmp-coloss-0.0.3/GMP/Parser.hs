@@ -8,113 +8,195 @@
  -
  -  Provides the implementation of the generic parser for the L formula datatype
  -}
+
 module GMP.Parser where
 import Text.ParserCombinators.Parsec
 
-import GMP.Generic
-import GMP.Logics
+import GMP.Logics.Generic
 
-data ModalOperator = Sqr | Ang | None
-    deriving Eq
+-- import Debug.Trace
+
+------------------------------------
+-- experiment 2 starting here:
+------------------------------------
+
+--class (SigFeature a b (c d), SigFeature b c (e f)) => MyFeat a b c d e f where
+--  yoyo :: (a (b (c d))) -> (b (c (e f)))
+--  pGoOn3 :: (a (b (c d))) -> ModalOperator ->  GenParser Char st (Formula (b (c (e f))))
+
+--instance MyFeat K K K () K () where
+--  yoyo sig = K [Mod (K [Mod (K [])])]
+--  pGoOn3 sig flag = primFormula (yoyo sig) flag
+
+--instance MyFeat KD KD KD () KD () where
+--  yoyo sig = KD [Mod (KD [Mod (KD [])])]
+--  pGoOn3 sig flag = primFormula (yoyo sig) flag
+
+--instance MyFeat K KD K () KD () where
+--  yoyo sig = KD [Mod (K [Mod (KD [])])]
+--  pGoOn3 sig flag = primFormula (yoyo sig) flag
+
+--instance MyFeat KD K KD () K () where
+--  yoyo sig = K [Mod (KD [Mod (K [])])]
+--  pGoOn3 sig flag = primFormula (yoyo sig) flag
+
+------------------------------------
+-- experiment 1 starting here:
+------------------------------------
+
+--class SigFeature a b c => ParseMe a b c where
+--  pGive :: (a (b c)) -> (b c)
+--  pGoOn2 :: (a (b c)) -> ModalOperator ->  GenParser Char st (Formula (b c))
+
+--instance (SigFeature K K (K d), ParseMe K K d) => ParseMe K K (K d) where
+--  pGive = genericPGive
+--  pGoOn2 = genericPGoOn2
+
+--instance SigFeature K K () => ParseMe K K () where
+--  pGive sig = trace ("finishing: " ++ sPretty sig) $ K []
+--  pGoOn2 sig flag = trace ("finishing: " ++ sPretty sig) $ return F
+
+--instance (SigFeature KD KD (KD d), ParseMe KD KD d) => ParseMe KD KD (KD d) where
+--  pGive = genericPGive
+--  pGoOn2 = genericPGoOn2
+
+--instance SigFeature KD KD () => ParseMe KD KD () where
+--  pGive sig = trace ("finishing: " ++ sPretty sig) $ KD []
+--  pGoOn2 sig flag = trace ("finishing: " ++ sPretty sig) $ return F
+
+--instance (SigFeature KD K (KD d), ParseMe K KD d) => ParseMe KD K (KD d) where
+--  pGive = genericPGive
+--  pGoOn2 = genericPGoOn2
+
+--instance SigFeature K KD () => ParseMe K KD () where
+--  pGive sig = trace ("finishing: " ++ sPretty sig) $ KD []
+--  pGoOn2 sig flag = trace ("finishing: " ++ sPretty sig) $ return F
+
+--instance (SigFeature K KD (K d), ParseMe KD K d) => ParseMe K KD (K d) where
+--  pGive = genericPGive
+--  pGoOn2 = genericPGoOn2
+
+--instance SigFeature KD K () => ParseMe KD K () where
+--  pGive sig = trace ("finishing: " ++ sPretty sig) $ K []
+--  pGoOn2 sig flag = trace ("finishing: " ++ sPretty sig) $ return F
+
+--genericPGive :: (SigFeature a b (c d), SigFeature b c d, ParseMe a b (c d), ParseMe b c d) => (a (b (c d))) -> (b (c d))
+--genericPGive sig = ((sSecondFeat sig) [Mod ((sSecondFeat (sNextSig sig)) [])])
+
+--genericPGoOn2 :: (SigFeature a b (c d), SigFeature b c d, ParseMe a b (c d), ParseMe b c d) => (a (b (c d))) -> ModalOperator ->  GenParser Char st (Formula (b (c d)))
+--genericPGoOn2 sig flag = return T
+--genericPGoOn2 sig flag = primFormula (pGive sig) flag
+
+-- generic parsing stuff
+genericPGoOn :: (SigFeature a b (c d), SigFeature b c d) => (a (b (c d))) -> ModalOperator ->  Parser (Formula (b (c d)))
+genericPGoOn sig flag = primFormula (sNextSig sig) flag
+
+-- parser:
+
+-- Normalised negation.
+nneg :: Formula (a b) -> Formula (a b)
+nneg F = T
+nneg T = F
+nneg (Neg phi) = phi
+nneg phi = Neg phi
 
 -- | Main parser
-parser :: ModalOperator -> GenParser Char st a -> GenParser Char st (L a)
-parser flag pa = implFormula flag pa
+parser :: (SigFeature a b c) => (a (b c)) -> ModalOperator -> Parser (Formula (a (b c)) )
+parser sig flag = implFormula sig flag
 
 -- | Parser which translates all implications in disjunctions & conjunctions
-implFormula :: ModalOperator -> GenParser Char st a -> GenParser Char st (L a)
-implFormula flag pa = do
-    f <- orFormula flag pa
+implFormula :: (SigFeature a b c) => (a (b c)) -> ModalOperator -> Parser (Formula (a (b c)) )
+implFormula sig flag = do
+    f <- orFormula sig flag
     option f (do string "->"
                  spaces
-                 i <- implFormula flag pa
+                 i <- implFormula sig flag
                  return $ Or (Neg f) i
           <|> do try(string "<->")
                  spaces
-                 i <- implFormula flag pa
+                 i <- implFormula sig flag
                  return $ And (Or (Neg f) i) (Or f (Neg i))
           <|> do string "<-"
                  spaces
-                 i <- implFormula flag pa
+                 i <- implFormula sig flag
                  return $ Or f (Neg i)
           <|> do return f
           <?> "GMPParser.implFormula")
 
 -- | Parser for disjunction - used for handling binding order
-orFormula :: ModalOperator -> GenParser Char st a -> GenParser Char st (L a)
-orFormula flag pa = do
-    f <- andFormula flag pa
+orFormula :: (SigFeature a b c) => (a (b c)) -> ModalOperator -> Parser (Formula (a (b c)) )
+orFormula sig flag = do
+    f <- andFormula sig flag
     option f $ do
       string "\\/"
       spaces
-      g <- orFormula flag pa
+      g <- orFormula sig flag
       return $ Or f g
   <?> "GMPParser.orFormula"
 
 -- | Parser for conjunction - used for handling the binding order
-andFormula :: ModalOperator -> GenParser Char st a -> GenParser Char st (L a)
-andFormula flag pa = do
-    f <- primFormula flag pa
+andFormula :: (SigFeature a b c) => (a (b c)) -> ModalOperator -> Parser (Formula (a (b c)) )
+andFormula sig flag = do
+    f <- primFormula sig flag
     option f $ do
       string "/\\"
       spaces
-      g <- andFormula flag pa
+      g <- andFormula sig flag
       return $ And f g
   <?> "GMPParser.andFormula"
 
-          
 {- | Parse a primitive formula: T, F, ~f, <i>f, [i]f, p*, 
  -   where i stands for an index, f for a formula and 
  -   * for a series of digits i.e. and integer -}
-primFormula :: ModalOperator -> GenParser Char st a -> GenParser Char st (L a)
-primFormula flag pa =  
+primFormula :: (SigFeature a b c) => (a (b c)) -> ModalOperator -> Parser (Formula (a (b c)) )
+primFormula sig flag = 
                   do string "T"
                      spaces
                      return T
               <|> do string "F"
                      spaces
                      return F
-              <|> do f <- parenFormula flag pa
+              <|> do f <- parenFormula sig flag
                      return f
               <|> do string "~"
                      spaces
-                     f <- primFormula flag pa
+                     f <- primFormula sig flag
                      return $ nneg f
               <|> do char '<'
                      spaces
-                     i <- pa
+                     i <- sParser sig
                      spaces
                      char '>'
                      spaces
-		     f <- sepBy1 (primFormula flag pa) (char ',')
+		     f <- sepBy1 (pGoOn sig flag) (string (fSeparator sig))
                      -- restrict to the default modal operator
                      case flag of
-                       Ang -> return $ M i f
-                       Sqr -> return $ Neg (M i (map nneg f))
-                       _   -> return $ M i f
+                       Ang -> return $ Mod (i f)
+                       Sqr -> return $ Neg (Mod (i (map nneg f)))
+                       _   -> return $ Mod (i f)
               <|> do char '['
                      spaces
-                     i <- pa
+                     i <- sParser sig
                      spaces
                      char ']'
                      spaces
-		     f <- sepBy1 (primFormula flag pa) (char ',')
+		     f <- sepBy1 (pGoOn sig flag) (string (fSeparator sig))
                      -- restrict to the default modal operator
                      case flag of
-                       Sqr -> return $ M i f
-                       Ang -> return $ Neg (M i (map nneg f))
-                       _   -> return $ M i f
+                       Sqr -> return $ Mod (i f)
+                       Ang -> return $ Neg (Mod (i (map nneg f)))
+                       _   -> return $ Mod (i f)
               <|> do char 'p'
                      i <- atomIndex
-                     return $ Atom (fromInteger i)
+                     return $ (Atom (fromInteger i))
               <?> "GMPParser.primFormula"
 
 -- | Parser for un-parenthesizing a formula
-parenFormula :: ModalOperator -> GenParser Char st a -> GenParser Char st (L a)
-parenFormula flag pa =  
+parenFormula :: (SigFeature a b c) => (a (b c)) -> ModalOperator -> Parser (Formula (a (b c)) )
+parenFormula sig flag =  
                    do char '('
                       spaces
-                      f <- parser flag pa
+                      f <- parser sig flag
                       spaces
                       char ')'
                       spaces
@@ -131,81 +213,3 @@ atomIndex =  do i <- try natural
                 spaces
                 return $ i
          <?> "GMPParser.atomIndex"
-
--- | Parsers for the different modal logic indexes
-
-parseCindex :: Parser C
-parseCindex =  do -- checks whether there are more numbers to be parsed
-                  let stopParser =  do char ','
-                                       return False
-                                <|> do char '}'
-                                       return True
-                                <?> "Parser.parseCindex.stop"                  
-                  -- checks whether the index is of the form x1,..,x&
-                  let normalParser l =  do x <- natural
-                                           let n = fromInteger x
-                                           spaces
-                                           q <- stopParser
-                                           spaces
-                                           case q of
-                                             False -> normalParser (n:l)
-                                             _     -> return (n:l)
-                                    <?> "Parser.parseCindex.normal"
-                  char '{'
-                  res <- try(normalParser [])
-                  return $ C res
-           <|> do -- checks whether the index is of the form "n..m"
-                  let shortParser =  do x <- natural
-                                        let n = fromInteger x
-                                        spaces
-                                        string ".."
-                                        spaces
-                                        y <- natural
-                                        let m = fromInteger y
-                                        return $ [n..m]
-                                 <?> "Parser.parseCindex.short"
-                  res <- try(shortParser)
-                  return $ C res
-           <?> "Parser.parseCindex"
-
-parseGindex :: Parser G
-parseGindex = do n <- natural
-                 return $ G (fromInteger n)
-
-parseHMindex :: Parser HM
-parseHMindex =  do c <- letter
-                   return $ HM c
-            <?> "Parser.parseHMindex"
-
-parseKindex :: Parser K
-parseKindex = return K
-
-parseKDindex ::Parser KD
-parseKDindex = return KD
-
-parsePindex :: Parser P
-parsePindex = 
-    do x <- natural
-       let auxP n =  do char '/'
-                        m<-natural
-                        return $ toRational (fromInteger n/fromInteger m)
-                 <|> do char '.'
-                        m<-natural
-                        let noDig n
-                              | n<10 = 1
-                              | n>=10 = 1 + noDig (div n 10)
-                        let rat n = toRational(fromInteger n / 
-                                               fromInteger (10^(noDig n)))
-                        let res = toRational n + rat m
-                        return res
-                 <|> do return $ toRational n
-                 <?> "Parser.parsePindex.auxP"
-       aux <- auxP x
-       return $ P aux
-
-parseMindex :: Parser Mon
-parseMindex = return Mon
-
-parseConindex :: Parser Con
-parseConindex = return Con
-
