@@ -43,7 +43,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature HM b c d 
                               [ [[(Sequent ((head phi):stripnlits ind))]] | (Mod (HM ind phi)) <- seq]
 
   nefPretty d = case d of 
-                  HM c [] -> "[HM]" ++ (show c) ++ "empty,mann"
+                  HM c [] -> "[HM]" ++ (show c) ++ "nothing contained"
                   HM c e -> "[HM]" ++ (show c) ++ (pretty (head e))
   nefFeatureFromSignature sig = HM 'a'
   nefFeatureFromFormula phi = HM 'a'

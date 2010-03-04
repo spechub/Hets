@@ -55,7 +55,7 @@ run p_r input flags = case (parse p_r "" input) of
                                        case isS of
                                           True -> putStrLn "  ... The formula is satisfiable"
                                           _    -> putStrLn "  ... The formula is not satisfiable"
-                                       putStrLn ("\n  Trying to show provability...")
+                                       putStrLn ("  Trying to show provability...")
                                        let isP = provable x flags
                                        case isP of
                                           True -> putStrLn "  ... The formula is provable"
@@ -86,24 +86,24 @@ runTest ml input flags = do
 showHelp :: IO()
 showHelp = do
     putStrLn ( "Usage:\n" ++
-               "    ./main <ML> -p <path> or ./main <ML> -t <test>\n\n" ++
-               "<ML>:    1 for K Modal Logic\n" ++
-               "         2 for KD Modal Logic\n" ++
-               "         3 for Coalition Logic\n" ++
-               "         4 for Graded Modal Logic\n" ++
-               "         5 for Probabilistic Modal Logic\n" ++
-               "         6 for Hennessy-Milner Modal Logic\n" ++
-               "         7 for Monotonic Modal Logic\n" ++
-               "         8 for Conditional Modal Logic (CK+CEM)\n" ++
-               "         9 for System S (CK+ID+CM+DisjElim)\n" ++
-               "        10 for Combined Logic (K KD)\n" ++
-               "        11 for Combined Logic (KD K)\n" ++
-               "        12 for Combined Logic (Con Mon K)\n" ++
-               "        13 for (K + KD)\n" ++
-               "        14 for CK+CM\n" ++
+               "    ./main <ML> -[v/nv] -p <path> or ./main <ML> -[v/nv] -t <test>\n\n" ++
+               "<ML>:     1 for K Modal Logic\n" ++
+               "          2 for KD Modal Logic\n" ++
+               "          3 for Coalition Logic\n" ++
+               "          4 for Graded Modal Logic\n" ++
+               "          5 for Probabilistic Modal Logic\n" ++
+               "          6 for Hennessy-Milner Modal Logic\n" ++
+               "          7 for Monotonic Modal Logic\n" ++
+               "          8 for Conditional Modal Logic (CK+CEM)\n" ++
+               "          9 for System S (CK+ID+CM+DisjElim)\n" ++
+               "         10 for Combined Logic (K KD)\n" ++
+               "         11 for Combined Logic (KD K)\n" ++
+               "         12 for Combined Logic (Con Mon K)\n" ++
+               "         13 for (K + KD)\n" ++
+               "         14 for CK+CM\n" ++
                "<path>:  path to input file\n" ++
-               "<test>:  test given as a string\n")
-
+               "<test>:  test given as a string\n" ++
+               "-[v/nv]: either verbose or non-verbose output\n")
 -- | main program function
 main :: IO()
 main = do
@@ -113,13 +113,13 @@ main = do
      else let ml:fl:it:test:[] = take 4 args
           in case it of
                "-p" -> case fl of
-                          "-v" -> do input <- readFile test
-                                     runTest (read ml) input [True,False]
-                          "-o" -> do input <- readFile test
-                                     runTest (read ml) input [False,True]
-                          _    -> showHelp
+                          "-v"  -> do input <- readFile test
+                                      runTest (read ml) input [False,True]
+                          "-nv" -> do input <- readFile test
+                                      runTest (read ml) input [True,False]
+                          _     -> showHelp
                "-t" ->  case fl of
-                          "-v" -> runTest (read ml) test [True,False]
-                          "-o" -> runTest (read ml) test [False,True]
-                          _    -> showHelp
+                          "-v"  -> runTest (read ml) test [False,True]
+                          "-nv" -> runTest (read ml) test [True,False]
+                          _     -> showHelp
                _    -> showHelp

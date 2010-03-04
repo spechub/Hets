@@ -51,7 +51,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature P b c d w
                               else map pml_match all_combinations
 
     nefPretty d = case d of 
-                    P r [] -> "[P]" ++ show r ++ "empty,mann"
+                    P r [] -> "[P]" ++ show r ++ "nothing contained"
                     P r e -> "[P]" ++ show r ++ (pretty (head e))
     nefFeatureFromSignature sig = P 1
     nefFeatureFromFormula phi = P 1

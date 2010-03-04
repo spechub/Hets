@@ -47,7 +47,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature C b c d w
                                 [ [[Sequent (c_match++poslits)]] | c_match <- c_build_matches (keep_poslits seq) (keep_neglits seq)]
                                 ++ [[[Sequent neglits]]]
     nefPretty d = case d of 
-                    C l [] -> "[C]" ++ show l ++ "empty,mann"
+                    C l [] -> "[C]" ++ show l ++ "nothing contained"
                     C l e -> "[C]" ++ show l ++ (pretty (head e))
     nefFeatureFromSignature sig = C [1]
     nefFeatureFromFormula phi = C [1]

@@ -44,7 +44,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature G b c d w
                                                      (gml_filter_tuples (side_condition_tuples (ps,ns)) [] )
                          in map gml_match all_combinations
     nefPretty d = case d of 
-                    G i [] -> "[G]" ++ show i ++ "empty,mann"
+                    G i [] -> "[G]" ++ show i ++ "nothing contained"
                     G i e -> "[G]" ++ show i ++ (pretty (head e))
     nefFeatureFromSignature sig = G 1
     nefFeatureFromFormula phi = G 1
