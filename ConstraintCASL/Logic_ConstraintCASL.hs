@@ -15,7 +15,7 @@ Here is the place where the class Logic is instantiated for CASL.
 module ConstraintCASL.Logic_ConstraintCASL where
 
 import Common.AS_Annotation
-import Common.Lexer((<<))
+import Common.Parsec((<<))
 import Text.ParserCombinators.Parsec
 
 import Logic.Logic

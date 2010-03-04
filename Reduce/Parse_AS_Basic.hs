@@ -18,6 +18,8 @@ import qualified Common.AnnoState as AnnoState
 import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
+import Common.Parsec
+
 import Control.Monad
 
 import Reduce.AS_BASIC_Reduce
@@ -30,9 +32,10 @@ import Text.ParserCombinators.Parsec
 --------------------------- Parser for Expressions --------------------------
 -----------------------------------------------------------------------------
 
--- | parsing of identifiers. an identifier is a letter followed by letters/numbers/_, but not a keyword
+{- | parsing of identifiers. an identifier is a letter followed by
+     letters, numbers, or _, but not a keyword -}
 identifier :: CharParser st Id.Token
-identifier = Lexer.pToken $ Lexer.reserved allKeywords Lexer.scanAnyWords
+identifier = Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords
 
 -- | parser for numbers (both integers and floats) without signs
 number :: CharParser st Id.Token
@@ -41,36 +44,36 @@ number = Lexer.pToken Lexer.scanFloat
 expression :: CharParser st EXPRESSION
 expression = do
   exp1 <- factor
-  exps <- many $ liftM2 (,) (Lexer.keySign (string "+" <|> string "-")) factor
-  if null exps then return exp1  
-     else return $ foldr (\ a b -> (Op (fst a) [b,(snd a)] nullRange)) exp1 exps
+  exps <- many $ pair (Lexer.keySign $ string "+" <|> string "-") factor
+  if null exps then return exp1
+     else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
   <|>
   listexp
 
 -- | parse a product of basic expressions
 factor :: CharParser st EXPRESSION
 factor = do
-  exp1 <- expexp 
-  exps <- many $ liftM2 (,) (Lexer.keySign (string "*" <|> string "/")) factor
-  if null exps then return exp1  
-     else return $ foldr (\ a b -> (Op (fst a) [b,(snd a)] nullRange)) exp1 exps
+  exp1 <- expexp
+  exps <- many $ pair (Lexer.keySign $ string "*" <|> string "/") factor
+  if null exps then return exp1
+     else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
 
 -- | parse a sequence of exponentiations
 expexp :: CharParser st EXPRESSION
 expexp = do
-  exp1 <- expatom 
-  exps <- many $ liftM2 (,) (Lexer.keySign (string "**" <|> string "^")) expexp
-  if null exps then return exp1  
-    else return $ foldr (\ a b -> (Op (fst a) [b,(snd a)] nullRange)) exp1 exps
-  
-         
+  exp1 <- expatom
+  exps <- many $ pair (Lexer.keySign $ tryString "**" <|> string "^") expexp
+  if null exps then return exp1
+    else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
+
+
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
 expatom = do
   nr <- number
-  if (isFloating nr) then return (Double (read (tokStr nr)) (tokPos nr))
+  if isFloating nr then return (Double (read (tokStr nr)) (tokPos nr))
      else return (Int (read (tokStr nr)) (tokPos nr))
-  <|> 
+  <|>
   do
     ident <- identifier
     return (Var ident)
@@ -97,13 +100,13 @@ listexp = do
 
 -- | parser for atoms
 truefalseFormula :: CharParser st EXPRESSION
-truefalseFormula = 
-    do 
-      (lexemeParser (Lexer.keySign (string "true")))
-      return (Op "True" [] nullRange)
-    <|> 
+truefalseFormula =
     do
-      (lexemeParser (Lexer.keySign (string "false")))
+      lexemeParser (Lexer.keyWord (tryString "true"))
+      return (Op "True" [] nullRange)
+    <|>
+    do
+      lexemeParser (Lexer.keyWord (tryString "false"))
       return (Op "False" [] nullRange)
 
 -- | parser for predicates
@@ -111,27 +114,25 @@ predFormula :: CharParser st EXPRESSION
 predFormula =
     do
       exp1 <- expression
-      op <- (Lexer.keySign (try (string "<=") <|> try (string ">=") <|> try (string "=") <|> try (string "<") <|> try (string ">")))
+      op <- Lexer.keySign $ tryString "<=" <|> tryString ">="
+        <|> single (oneOf "=<>")
       exp2 <- expression
       return (Op op [exp1,exp2] nullRange)
- 
+
 atomicFormula :: CharParser st EXPRESSION
 atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
 
 -- | parser for formulas
 aFormula :: CharParser st EXPRESSION
-aFormula = (try negFormula) <|> impOrFormula
+aFormula = try negFormula <|> impOrFormula
 
 -- | parser for symbols followed by whitechars
 lexemeParser :: CharParser st a -> CharParser st a
-lexemeParser p1 = do
-  res <- p1
-  skip
-  return res
+lexemeParser = (<< skip)
 
 negFormula :: CharParser st EXPRESSION
 negFormula = do
-  (lexemeParser (Lexer.keySign (string "not")))
+  lexemeParser (Lexer.keyWord (tryString "not"))
   f <- atomicFormula
   return (Op "Not" [f] nullRange)
 
@@ -147,38 +148,41 @@ parenFormula = do
 impOrFormula :: CharParser st EXPRESSION
 impOrFormula = do
   f1 <- andFormula
-  opfs <- many $ liftM2 (,) (lexemeParser (Lexer.keySign (string "or" <|> string "impl"))) impOrFormula
-  if null opfs then return f1 
-   else return $ foldr (\ (a1,a2) b -> case a1 of 
-                                   "or" -> Op "Or" [b,a2] nullRange
-                                   "impl" -> Op "Impl" [b,a2] nullRange
-                                   _ -> error "impl or or expected"
+  opfs <- many $ pair (lexemeParser $ Lexer.keyWord
+                      $ tryString "or" <|> tryString "impl") impOrFormula
+  if null opfs then return f1
+   else return $ foldr (\ (a1,a2) b -> Op (case a1 of
+                                   "or" -> "Or"
+                                   "impl" -> "Impl"
+                                   _ -> error "impl or or expected")
+                                    [b,a2] nullRange
                                  ) f1 opfs
 
 -- | a parser for and sequence of and formulas
 andFormula :: CharParser st EXPRESSION
 andFormula = do
   f1 <- atomicFormula
-  opfs <- many $ liftM2 (,) (lexemeParser (Lexer.keySign (string "and"))) atomicFormula
-  if null opfs then return f1 
-   else return $ foldr (\ a b -> (Op "And" [b,(snd a)] nullRange)) f1 opfs
+  opfs <- many $ pair (lexemeParser $ keyWord $ tryString "and") atomicFormula
+  if null opfs then return f1
+   else return $ foldr (\ a b -> (Op "And" [b, snd a] nullRange)) f1 opfs
 
 -----------------------------------------------------------------------------
 ---------------------------- Parser for Commands ----------------------------
 -----------------------------------------------------------------------------
 
 formulaorexpression :: CharParser st EXPRESSION
-formulaorexpression = ((try aFormula) <|> expression)
+formulaorexpression = try aFormula <|> expression
 
 -- | parser for commands
 command :: CharParser st CMD
 command = do
-  cmd <- (lexemeParser (Lexer.keySign (try (string "solve")) <|> string "simplify" <|> string "remainder" <|> string "gcd" <|> string "int" <|> string "qelim"))
+  cmd <- lexemeParser $ Lexer.keyWord $ choice $ map tryString
+    ["solve", "simplify", "remainder", "gcd", "int", "qelim"]
   oParenT
   arg1 <- formulaorexpression
-  args <- many $ liftM2 (,) (lexemeParser (Lexer.keySign (string ","))) formulaorexpression
+  args <- many $ pair (lexemeParser $ string ",") formulaorexpression
   cParenT
-  return (Cmd cmd (arg1 : (map snd args))) 
+  return (Cmd cmd (arg1 : map snd args))
 
 
 -----------------------------------------------------------------------------
@@ -187,12 +191,12 @@ command = do
 
 -- | parser for operator declarations: example: operator a,b,c
 opItem :: CharParser st OP_ITEM
-opItem = do 
-  Lexer.keySign (lexemeParser (string "operator"))
+opItem = do
+  Lexer.keySign (lexemeParser (tryString "operator"))
   var1 <- identifier
-  vars <- many $ liftM2 (,) (lexemeParser (Lexer.keySign (string ","))) identifier
-  return (Op_item  (var1:(map snd vars)) nullRange)
-  
+  vars <- many $ pair (lexemeParser $ string ",") identifier
+  return (Op_item  (var1 : map snd vars) nullRange)
+
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC

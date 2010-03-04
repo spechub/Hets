@@ -26,7 +26,7 @@ separated by a colon (different from OWL uris).
 module Common.XPath where
 
 import Text.ParserCombinators.Parsec
-import Common.Lexer
+import Common.Parsec
 import Data.Char
 import Data.List
 
@@ -254,17 +254,13 @@ inOps =
 
 -- * parsers
 
--- | shortcut for @try . string@
-tryStr :: String -> Parser String
-tryStr = try . string
-
 -- | skip trailing spaces
 skips :: Parser a -> Parser a
 skips = (<< spaces)
 
 -- | parse keyword and skip spaces
 symbol :: String -> Parser String
-symbol = skips . tryStr
+symbol = skips . tryString
 
 -- | skip left paren
 lpar :: Parser ()

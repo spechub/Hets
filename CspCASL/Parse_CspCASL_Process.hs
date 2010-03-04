@@ -29,7 +29,8 @@ import qualified CASL.Formula
 import Common.AnnoState (AParser, asKey)
 import Common.Id
 import Common.Keywords
-import Common.Lexer ((<<), commaSep1, commaT, cParenT, oParenT)
+import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
+import Common.Parsec ((<<))
 import Common.Token (parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL_Process
@@ -48,63 +49,50 @@ cond_proc = do ift <- asKey ifS
                return (ConditionalProcess f p q (compRange ift q))
 
 par_proc :: AParser st PROCESS
-par_proc = do cp <- choice_proc
-              p <- par_proc' cp
-              return p
+par_proc = choice_proc >>= par_proc'
 
 par_proc' :: PROCESS -> AParser st PROCESS
 par_proc' lp =
     do     asKey interleavingS
            rp <- choice_proc
-           p <- par_proc' (Interleaving lp rp (compRange lp rp))
-           return p
+           par_proc' (Interleaving lp rp (compRange lp rp))
     <|> do asKey synchronousS
            rp <- choice_proc
-           p <- par_proc' (SynchronousParallel lp rp (compRange lp rp))
-           return p
+           par_proc' (SynchronousParallel lp rp (compRange lp rp))
     <|> do asKey genpar_openS
            es <- event_set <?> "communication type"
            asKey genpar_closeS
            rp <- choice_proc
-           p <- par_proc' (GeneralisedParallel lp es rp (compRange lp rp))
-           return p
+           par_proc' (GeneralisedParallel lp es rp (compRange lp rp))
     <|> do asKey alpar_openS
            les <- event_set
            asKey alpar_sepS
            res <- event_set
            asKey alpar_closeS
            rp <- choice_proc
-           p <- par_proc' (AlphabetisedParallel lp les res rp (compRange lp rp))
-           return p
+           par_proc' (AlphabetisedParallel lp les res rp (compRange lp rp))
     <|> return lp
 
 choice_proc :: AParser st PROCESS
-choice_proc = do sp <- seq_proc
-                 p <- choice_proc' sp
-                 return p
+choice_proc = seq_proc >>= choice_proc'
 
 choice_proc' :: PROCESS -> AParser st PROCESS
 choice_proc' lp =
     do     asKey external_choiceS
            rp <- seq_proc
-           p <- choice_proc' (ExternalChoice lp rp (compRange lp rp))
-           return p
+           choice_proc' (ExternalChoice lp rp (compRange lp rp))
     <|> do asKey internal_choiceS
            rp <- seq_proc
-           p <- choice_proc' (InternalChoice lp rp (compRange lp rp))
-           return p
+           choice_proc' (InternalChoice lp rp (compRange lp rp))
     <|> return lp
 
 seq_proc :: AParser st PROCESS
-seq_proc = do pp <- pref_proc
-              p <- seq_proc' pp
-              return p
+seq_proc = pref_proc >>= seq_proc'
 
 seq_proc' :: PROCESS -> AParser st PROCESS
 seq_proc' lp = do  asKey sequentialS
                    rp <- pref_proc
-                   p <- seq_proc' (Sequential lp rp (compRange lp rp))
-                   return p
+                   seq_proc' (Sequential lp rp (compRange lp rp))
                <|> return lp
 
 pref_proc :: AParser st PROCESS
@@ -114,25 +102,21 @@ pref_proc = do e <- try (event << asKey prefix_procS)
             <|> hid_ren_proc
 
 hid_ren_proc :: AParser st PROCESS
-hid_ren_proc = do pl <- prim_proc
-                  p <- (hid_ren_proc' pl)
-                  return p
+hid_ren_proc = prim_proc >>= hid_ren_proc'
 
 hid_ren_proc' :: PROCESS -> AParser st PROCESS
 hid_ren_proc' lp =
     do     asKey hiding_procS
            es <- event_set
-           p <- (hid_ren_proc' (Hiding lp es (compRange lp es)))
-           return p
+           hid_ren_proc' (Hiding lp es (compRange lp es))
     <|> do asKey ren_proc_openS
            rn <- renaming
            ck <- asKey ren_proc_closeS
-           p <- (hid_ren_proc' (RenamingProcess lp rn (compRange lp ck)))
-           return p
+           hid_ren_proc' (RenamingProcess lp rn (compRange lp ck))
     <|> return lp
 
 prim_proc :: AParser st PROCESS
-prim_proc = do     try oParenT
+prim_proc = do     oParenT
                    p <- csp_casl_process
                    cParenT
                    return p
@@ -152,7 +136,7 @@ prim_proc = do     try oParenT
                    return (Stop (getRange sk))
             <|> do sk <- asKey skipS
                    return (Skip (getRange sk))
-            <|> do n <- (try process_name)
+            <|> do n <- try process_name
                    args <- procArgs
                    return (NamedProcess n args (compRange n args))
 
@@ -167,7 +151,7 @@ comm_type = varId csp_casl_keywords
 
 -- List of arguments to a named process
 procArgs :: AParser st [(TERM ())]
-procArgs = do try oParenT
+procArgs = do oParenT
               es <- commaSep1 (CASL.Formula.term csp_casl_keywords)
               cParenT
               return es
@@ -232,8 +216,7 @@ term_event = do t <- CASL.Formula.term csp_casl_keywords
 -- however.
 
 formula :: AParser st (FORMULA ())
-formula = do f <- CASL.Formula.formula csp_casl_keywords
-             return f
+formula = CASL.Formula.formula csp_casl_keywords
 
 -- Primitive renaming is done using an operator name or a predicate
 -- name.  They're both Ids.  Separation between operator or predicate
@@ -241,7 +224,7 @@ formula = do f <- CASL.Formula.formula csp_casl_keywords
 -- problem.
 
 renaming :: AParser st RENAMING
-renaming =  fmap Renaming $ (parseId csp_casl_keywords) `sepBy` commaT
+renaming =  fmap Renaming $ parseId csp_casl_keywords `sepBy` commaT
 
 -- Variables come from CASL/Hets.
 
@@ -251,4 +234,4 @@ var = varId csp_casl_keywords
 -- Composition of ranges
 
 compRange :: (GetRange a, GetRange b) => a -> b -> Range
-compRange x y = (getRange x) `appRange` (getRange y)
+compRange x y = getRange x `appRange` getRange y

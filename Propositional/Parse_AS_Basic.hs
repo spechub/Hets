@@ -12,10 +12,6 @@ Parser for abstract syntax for propositional logic
 
   Ref.
   <http://en.wikipedia.org/wiki/Propositional_logic>
-
-Acknowledgements:
-I'd like to thank Christian Maeder for his help and advice.
-
 -}
 
 module Propositional.Parse_AS_Basic
@@ -29,6 +25,7 @@ import qualified Common.AS_Annotation as Annotation
 import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
+import Common.Parsec
 
 import Propositional.AS_BASIC_Propositional as AS_BASIC
 import Text.ParserCombinators.Parsec
@@ -66,7 +63,7 @@ parseAxItems = do
 
 -- | Any word to token
 propId :: GenParser Char st Id.Token
-propId = Lexer.pToken $ Lexer.reserved propKeywords Lexer.scanAnyWords
+propId = Lexer.pToken $ reserved propKeywords Lexer.scanAnyWords
 
 -- | parser for predicates = propositions
 predItem :: AnnoState.AParser st AS_BASIC.PRED_ITEM

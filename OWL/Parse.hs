@@ -19,9 +19,11 @@ module OWL.Parse (basicSpec, symbItems, symbMapItems) where
 import OWL.AS
 import OWL.Keywords
 import OWL.ColonKeywords
+
 import Common.Keywords
 import Common.Token (casl_reserved_words)
-import Common.Lexer hiding (skip)
+import Common.Lexer
+import Common.Parsec
 import Common.AnnoParser (commentLine)
 import Common.Utils (nubOrd)
 
@@ -129,7 +131,7 @@ ipathRootless :: CharParser st String
 ipathRootless = isegmentNz <++> ipathAbempty
 
 iauthorityWithPath :: CharParser st String
-iauthorityWithPath = try (string "//") <++> iauthority <++> ipathAbempty
+iauthorityWithPath = tryString "//" <++> iauthority <++> ipathAbempty
 
 optQueryOrFrag :: CharParser st String
 optQueryOrFrag = optionL (char '?' <:> iquery)
@@ -143,8 +145,8 @@ ihierPart =
 hierPartWithOpts :: CharParser st String
 hierPartWithOpts = ihierPart <++> optQueryOrFrag
 
-skip :: CharParser st a -> CharParser st a
-skip = (<< skipMany
+skips :: CharParser st a -> CharParser st a
+skips = (<< skipMany
         (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
 abbrIri :: CharParser st QName
@@ -183,7 +185,7 @@ datatypeKeys =
 uriP :: CharParser st QName
 uriP = let
   mkLow = map toLower
-  in skip $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
+  in skips $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
   if null p then notElem (mkLow $ localPart q) $ map mkLow owlKeywords
    else notElem (mkLow p)
      $ map (mkLow . takeWhile (/= ':')) colonKeywords
@@ -261,16 +263,16 @@ stringConstant = do
       return $ Constant s $ Typed d
     <|> do
       string asP
-      t <- skip languageTag
+      t <- skips languageTag
       return $ Constant s $ Untyped t
-    <|> skip (return $ Constant s $ Typed $ mkQName stringS)
+    <|> skips (return $ Constant s $ Typed $ mkQName stringS)
 
 constant :: CharParser st Constant
 constant = do
-    f <- skip $ try floatingPointLit
+    f <- skips $ try floatingPointLit
     return $ Constant f $ Typed $ mkQName floatS
   <|> do
-    d <- skip decimalLit
+    d <- skips decimalLit
     return $ Constant d $ Typed $ mkQName
       $ if any (== '.') d then decimalS else integerS
   <|> stringConstant
@@ -283,17 +285,20 @@ owlClassUri = uriP
 individualUri :: CharParser st QName
 individualUri = uriP
 
+skipChar :: Char -> CharParser st ()
+skipChar = forget . skips . char
+
 parensP :: CharParser st a -> CharParser st a
-parensP = between (skip $ char '(') (skip $ char ')')
+parensP = between (skipChar '(') (skipChar ')')
 
 bracesP :: CharParser st a -> CharParser st a
-bracesP = between (skip $ char '{') (skip $ char '}')
+bracesP = between (skipChar '{') (skipChar '}')
 
 bracketsP :: CharParser st a -> CharParser st a
-bracketsP = between (skip $ char '[') (skip $ char ']')
+bracketsP = between (skipChar '[') (skipChar ']')
 
 commaP :: CharParser st ()
-commaP = skip (char ',') >> return ()
+commaP = skipChar ',' >> return ()
 
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p commaP
@@ -315,7 +320,7 @@ pkeyword :: String -> CharParser st ()
 pkeyword s = keywordNotFollowedBy s (alphaNum <|> char '/') >> return ()
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
-keywordNotFollowedBy s c = skip $ try $ istring s << notFollowedBy c
+keywordNotFollowedBy s c = skips $ try $ istring s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st String
@@ -373,7 +378,7 @@ card = do
   c <- choice $ map (\ f -> keywordNotFollowedBy (showCardinalityType f) letter
                             >> return f)
              [MinCardinality, MaxCardinality, ExactCardinality]
-  n <- skip getNumber
+  n <- skips getNumber
   return (c, value 10 n)
 
 individualOrConstant :: CharParser st (Either QName Constant)
@@ -562,7 +567,7 @@ classFrameBit curi = let duri = OWLClassDescription curi in
     return [PlainAxiom as $ DisjointUnion curi ds]
   <|> do -- no documented
     pkeyword paraphraseC
-    skip stringLit
+    skips stringLit
     return []
 
 classFrame :: CharParser st [Axiom]
@@ -758,8 +763,8 @@ frames = flat $ many $ classFrame
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
   pkeyword namespaceC
-  p <- skip prefix
-  i <- skip fullIri
+  p <- skips prefix
+  i <- skips fullIri
   return (p, i)
 
 importEntry :: CharParser st QName

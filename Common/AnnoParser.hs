@@ -28,6 +28,7 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 import Text.ParserCombinators.Parsec.Pos as Pos
 
+import Common.Parsec
 import Common.Lexer
 import Common.Token
 import Common.Id as Id
@@ -55,7 +56,7 @@ mkLineAnno s = let r = unwords $ words s in Line_anno $
 commentLine :: GenParser Char st Annotation
 commentLine = do
     p <- getPos
-    try $ string percents
+    tryString percents
     line <- manyTill anyChar newlineOrEof
     q <- getPos
     return $ Unparsed_anno Comment_start (mkLineAnno line) (Range [p, dec q])
@@ -199,7 +200,7 @@ precAnno, numberAnno, stringAnno, listAnno, floatingAnno
     :: Range -> GenParser Char st Annotation
 precAnno ps = do
     leftIds <- braces commaIds
-    sign <- (try (string "<>") <|> string "<") << skip
+    sign <- (tryString "<>" <|> string "<") << skip
     rightIds <- braces commaIds
     return $ Prec_anno
                (if sign == "<" then Lower else BothDirections)
@@ -240,7 +241,7 @@ displayAnno ps = do
 dispSymb :: (Display_format, String)
           -> GenParser Char st (Display_format, String)
 dispSymb (dfSymb, symb) = do
-  try (string $ percentS ++ symb) << skip
+  tryString (percentS ++ symb) << skip
   str <- manyTill anyChar $ lookAhead $ charOrEof '%'
   return (dfSymb, reverse $ dropWhile (`elem` whiteChars) $ reverse str)
 

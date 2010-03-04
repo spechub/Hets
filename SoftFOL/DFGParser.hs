@@ -14,15 +14,20 @@ A parser for the SPASS Input Syntax taken from
 
 module SoftFOL.DFGParser (parseSPASS) where
 
-import Text.ParserCombinators.Parsec
 import SoftFOL.Sign
+
+import Text.ParserCombinators.Parsec
+
 import Common.AS_Annotation
 import Common.Id
 import Common.Lexer
-import qualified Data.Map as Map
+import Common.Parsec
+
+import Control.Monad
+
 import Data.Char (isSpace)
 import Data.Maybe
-import Control.Monad
+import qualified Data.Map as Map
 
 -- * lexical matter
 
@@ -56,7 +61,7 @@ whiteSpace :: Parser ()
 whiteSpace = skipMany $ (satisfy isSpace >> return ()) <|> commentLine
 
 symbolT :: String -> Parser String
-symbolT s = try (string s) << whiteSpace
+symbolT = (<< whiteSpace) . tryString
 
 keywordT :: String -> Parser String
 keywordT s = try (string s << notFollowedBy wordChar) << whiteSpace

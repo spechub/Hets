@@ -14,9 +14,11 @@ converting (ie. kif) strings to CASL identifiers
 module Common.ToId where
 
 import Common.Id
+import Common.Lexer
+import Common.Parsec
 import Common.ProofUtils
 import Common.Token
-import Common.Lexer
+
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 

@@ -23,15 +23,18 @@ Parser for SORT-ITEMs (sort and subsort declarations and definitions)
 
 module CASL.SortItem (sortItem, datatype) where
 
+import CASL.AS_Basic_CASL
+import CASL.Formula
+
+import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import CASL.AS_Basic_CASL
-import Common.AS_Annotation
-import Text.ParserCombinators.Parsec
+import Common.Parsec
 import Common.Token
-import CASL.Formula
+
+import Text.ParserCombinators.Parsec
 
 -- ------------------------------------------------------------------------
 -- sortItem

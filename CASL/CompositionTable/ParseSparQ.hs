@@ -17,6 +17,7 @@ module CASL.CompositionTable.ParseSparQ (parseSparQTableFromFile) where
 import Text.ParserCombinators.Parsec
 import CASL.CompositionTable.CompositionTable
 import Common.Lexer
+import Common.Parsec
 
 parseSparQTableFromFile :: String -> IO (Either ParseError Table)
 parseSparQTableFromFile = parseFromFile parseSparQTable
@@ -41,16 +42,14 @@ parseSparQTable = do
     (Table_Attrs calculusName (Baserel identityRelation) br)
     compt ct (Reflectiontable []) (Models [])
 
+parseArBaPa :: Parser String
+parseArBaPa = try parseArity <|> try parseBasisEntity <|> try parseQualifier
+
 parseCalculusProperties :: Parser String
 parseCalculusProperties = do
-  many (try (parseArity) <|>
-        try (parseBasisEntity) <|>
-        try(parseQualifier) <|>
-        try (parseParametric))
+  many (parseArBaPa <|> try parseParametric)
   ide <- parseIdentityRelation
-  many (try (parseArity) <|>
-        try (parseBasisEntity) <|>
-        try(parseQualifier))
+  many parseArBaPa
   many skippable
   return ide
 
@@ -95,7 +94,7 @@ parseQualifier = do
 parseQualifierBrace :: Parser String
 parseQualifierBrace = do
   string "(" <|> string "#'("
-  many (many1 (noneOf "()") <|> try (parseQualifierBrace))
+  many (many1 (noneOf "()") <|> try parseQualifierBrace)
   string ")"
   return ""
 
@@ -165,7 +164,7 @@ parseComptabentry = do
   rel2 <- parseRelationId
   results <- parseComptabentryResults
   cParenT
-  return (Cmptabentry (Cmptabentry_Attrs rel1 rel2) (results))
+  return (Cmptabentry (Cmptabentry_Attrs rel1 rel2) results)
 
 parseComptabentryResults :: Parser [Baserel]
 parseComptabentryResults = try (do
@@ -173,9 +172,7 @@ parseComptabentryResults = try (do
     results <- many1 parseRelationId
     cParenT
     return results)
-  <|> try (do
-    string "NIL"
-    return [])
+  <|> (tryString "NIL" >> return [])
   <|> do
     result <- parseRelationId
     return [result]

@@ -13,6 +13,7 @@ Parsing lists of lists with SUMO (suggested upper merged ontology) .kif files
 
 module CASL.Kif where
 
+import Common.Parsec
 import Text.ParserCombinators.Parsec
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import Data.Char
@@ -28,11 +29,9 @@ dq :: Char
 dq = '"'
 
 scanString :: CharParser st String
-scanString = do
-  o <- char dq
-  s <- many $ fmap (: []) (satisfy (/= dq)) <|> try (string "\\\"")
-  c <- char dq
-  return $ o : concat s ++ [c]
+scanString = enclosedBy
+  (flat $ many $ fmap (: []) (satisfy (/= dq)) <|> tryString "\\\"")
+  $ char dq
 
 isKTokenChar :: Char -> Bool
 isKTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
@@ -53,10 +52,7 @@ skip :: CharParser st [()]
 skip = many ((satisfy isSpace >> return ()) <|> commentOut)
 
 lexem :: CharParser st a -> CharParser st a
-lexem p = do
-  r <- p
-  skip
-  return r
+lexem = (<< skip)
 
 nestedList :: CharParser st ListOfList
 nestedList = do

@@ -24,7 +24,8 @@ import SoftFOL.PrintTPTP
 
 import qualified Common.Doc as Doc
 import Common.Id
-import Common.Lexer ((<<), (<:>), (<++>), getPos, single, optionL)
+import Common.Lexer (getPos)
+import Common.Parsec
 
 import Control.Monad
 import Data.Char (ord, toLower, isAlphaNum)
@@ -135,10 +136,7 @@ headerLine :: Parser TPTP
 headerLine = fmap CommentLine $ commentLine << skip
 
 commentBlock :: Parser ()
-commentBlock = do
-  string "/*"
-  manyTill anyChar $ try $ string "*/"
-  return ()
+commentBlock = forget $ plainBlock "/*" "*/"
 
 whiteSpace :: Parser ()
 whiteSpace = oneOf "\r\t\v\f " >> return ()
@@ -170,7 +168,7 @@ cDotParen = string ")." >> skip >> option () (newline >> skip)
 
 include :: Parser TPTP
 include = do
-  key $ try $ string "include"
+  key $ tryString "include"
   oParen
   a <- atomicWord
   m <- optionL $ do
@@ -208,17 +206,17 @@ singleQuoted :: Parser String
 singleQuoted = do
   let quote = '\''
   char quote
-  s <- many1 $ try (string "\\'") <|> single
+  s <- many1 $ tryString "\\'" <|> single
        (satisfy $ \ c -> printable c && c /= quote)
   char quote
   return $ concat s
 
 formKind :: Parser FormKind
-formKind = choice $ map (\ k -> key (try $ string $ show k) >> return k)
+formKind = choice $ map (\ k -> key (tryString $ show k) >> return k)
     [FofKind, CnfKind, FotKind]
 
 role :: Parser Role
-role = choice $ map (\ r -> key (try $ string $ showRole r)
+role = choice $ map (\ r -> key (tryString $ showRole r)
                      >> return r) allRoles
 
 formAnno :: Parser TPTP
@@ -261,12 +259,10 @@ otherData :: Parser GenData
 otherData = fmap OtherGenData $ (upperWord <|> real <|> distinct) << skipAll
 
 distinct :: Parser String
-distinct = do
-  let dquot = '"'
-  a <- char dquot
-  s <- many1 $ try (string "\\\"") <|> single (satisfy (/= dquot))
-  e <- char dquot
-  return $ a : concat s ++ [e]
+distinct =
+  let dquot = '"' in
+  enclosedBy (flat $ many1 $ tryString "\\\"" <|> single (satisfy (/= dquot)))
+  $ char dquot
 
 decimal :: Parser String
 decimal = optionL (single $ oneOf "-+") <++> natural
@@ -305,7 +301,7 @@ form = do
       us <- sepBy1 unitary andOp
       return $ compTerm SPAnd $ u : us
     <|> do
-      o <- choice $ map (pToken . try . string)
+      o <- choice $ map (pToken . tryString)
            ["<=>", "=>", "<=", "<~>", "~|", "~&"]
       u2 <- unitary
       let s = tokStr o
@@ -347,7 +343,7 @@ atomicForm = do
       t2 <- term
       return $ mkEq t t2
     <|> do
-      key $ try $ string "!="
+      key $ tryString "!="
       t2 <- term
       return $ compTerm SPNot [mkEq t t2]
     <|> return t
@@ -368,7 +364,7 @@ functor = fmap (\ t -> case lookup (tokStr t) $ zip
 -- system and defined words
 dollarWord :: Parser String
 dollarWord = do
-  d <- try (string "$$") <|> string "$"
+  d <- tryString "$$" <|> string "$"
   w <- lowerWord
   return $ d ++ w
 

@@ -98,12 +98,14 @@ import Logic.Modification
 import Logic.Morphism
 
 import ATerm.Lib
+
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
 import Common.LibName
 import Common.Lexer
+import Common.Parsec
 import Common.Result
 import Common.Token
 import Common.Utils
@@ -113,7 +115,7 @@ import Data.Maybe (mapMaybe)
 import Data.Typeable
 import qualified Data.Map as Map
 
-import Text.ParserCombinators.Parsec (Parser, try, parse, eof, string, (<|>))
+import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
 
 
@@ -509,7 +511,7 @@ bracks lG = do
 
 parseIdentity :: (Monad m) => LogicGraph -> Parser (m AnyModification)
 parseIdentity lG = do
-  try (string "id_")
+  tryString "id_"
   tok <- simpleId
   let name = tokStr tok
   case Map.lookup name (comorphisms lG) of

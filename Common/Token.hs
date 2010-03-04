@@ -70,9 +70,11 @@ TOKEN           ::= WORDS  |  DOT-WORDS  |  DIGIT  |  QUOTED-CHAR
 
 module Common.Token where
 
+import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Common.Id
+import Common.Parsec
+
 import Text.ParserCombinators.Parsec
 import Data.List (delete)
 

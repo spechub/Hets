@@ -34,10 +34,11 @@ import Syntax.AS_Structured
 
 import Common.AS_Annotation
 import Common.AnnoState
+import Common.Id
 import Common.Keywords
 import Common.Lexer
+import Common.Parsec
 import Common.Token
-import Common.Id
 
 import Text.ParserCombinators.Parsec
 

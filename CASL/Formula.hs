@@ -62,8 +62,11 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
+import Common.Parsec
 import Common.Token
+
 import CASL.AS_Basic_CASL
+
 import Text.ParserCombinators.Parsec
 
 simpleTerm :: [String] -> AParser st (TERM f)
@@ -254,7 +257,7 @@ termFormula k t = do
     r <- term k
     return $ Existl_equation t r $ tokPos e
   <|> do
-    try $ string exEqual
+    tryString exEqual
     unexpected $ "sign following " ++ exEqual
   <|> do
     e <- equalT

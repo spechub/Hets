@@ -29,7 +29,8 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import Common.Doc
-import Common.Lexer ((<<), skip)
+import Common.Lexer (skip)
+import Common.Parsec
 
 import HasCASL.As
 import HasCASL.HToken

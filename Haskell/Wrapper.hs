@@ -25,34 +25,36 @@ extract Haskell code from String
 module Haskell.Wrapper where
 
 import Text.ParserCombinators.Parsec
-import Common.Lexer
-import Data.Char
+import Common.Parsec
 
-hStuff, stuff :: CharParser st String
+hStuff :: CharParser st String
 hStuff = flat $ many stuff
 
+stuff :: CharParser st String
 stuff = lineComment <|> nestComment <|> stringLit <|> charLit
         <|> balanced "{}"
         <|> balanced "()"
         <|> balanced "[]"
-        <|> satisfy isAlpha <:> many (satisfy isAlphaNum <|> prime)
+        <|> letter <:> many (alphaNum <|> char '\'')
         <|> single (noneOf "])}") <?> ""
 
 balanced :: String -> CharParser st String
-balanced [o, c] = char o <:> hStuff <++> string [c]
+balanced [o, c] = begDoEnd (char o) hStuff $ char c
 balanced _ = error "balanced"
 
 nestComment :: CharParser st String
 nestComment = nestedComment "{-" "-}"
 
-lineComment, stringLit, charLit :: CharParser st String
-lineComment = try (string "--") <++> many (noneOf "\n\r")
+lineComment :: CharParser st String
+lineComment = tryString "--" <++> many (noneOf "\n\r")
               <++> many (oneOf "\n\r")
 
+stringLit :: CharParser st String
 stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
                         <|> char '\\' <:> single anyChar) $ char '\"'
 
-charLit = try (string "'''") <|>
+charLit :: CharParser st String
+charLit = tryString "'''" <|>
           enclosedBy (flat $ many $ single (noneOf "\\\'")
                       <|> char '\\' <:> single anyChar)
           (char '\'')

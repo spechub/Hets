@@ -53,6 +53,7 @@ import Data.List (isPrefixOf)
 
 import Common.LaTeX_maps
 import Common.Lib.Pretty as Pretty
+import Common.Parsec
 import Text.ParserCombinators.Parsec as Parsec
 
 -- |
@@ -107,7 +108,7 @@ calc_word_width wt s =
     case Map.lookup s wFM of
     Just l  -> l
     Nothing -> sum_char_width_deb (  showString "In map \""
-                                   . showsPrec 0 wt
+                                   . shows wt
                                    . showString "\" \'") wFM k_wFM s
                  - correction
     where (wFM,k_wFM) = case wt of
@@ -130,16 +131,16 @@ itCorrection s
     | otherwise    = itCorrection' 0 s
     where itCorrection' :: Int -> String -> Int
           itCorrection' _ [] = error "itCorrection' applied to empty List"
-          itCorrection' r ys@(y1:[y2])
+          itCorrection' r ys@[y1, y2]
               | not (isAlphaNum y1) = r
               | not (isAlphaNum y2) = r
               | otherwise           = r + lookupCorrection ys
 
-          itCorrection' r (y1:(ys@(y2:_)))
+          itCorrection' r (y1 : ys@(y2 : _))
               | not (isAlphaNum y1) = itCorrection' r ys
               | otherwise           =
                   itCorrection'
-                        (r + lookupCorrection (y1:y2:[]))
+                        (r + lookupCorrection [y1, y2])
                         ys
           itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
           lookupCorrection str = Map.findWithDefault def_cor str
@@ -153,12 +154,12 @@ sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
           sum_char_width' [c] r
               | c == ' '  = r + lookupWithDefault_cFM "~"
-              | otherwise = r + lookupWithDefault_cFM (c:[])
+              | otherwise = r + lookupWithDefault_cFM [c]
           sum_char_width' full@(c1:rest@(c2:cs)) r
-              | isLigature (c1:c2:[]) = case Map.lookup (c1:c2:[]) cFM of
+              | isLigature [c1, c2] = case Map.lookup [c1, c2] cFM of
                                         Just l  -> sum_char_width' cs (r+l)
                                         Nothing -> sum_char_width' rest nl
-              | (c1:c2:[]) == "\\ " =
+              | [c1, c2] == "\\ " =
                   sum_char_width' cs (r + lookupWithDefault_cFM "~")
               | c1 == ' ' =
                   sum_char_width' rest (r + lookupWithDefault_cFM "~")
@@ -171,7 +172,7 @@ sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
                                         (dropWhile isAlpha rest)
                                          $ r + lookupWithDefault_cFM "~"
                                         else sum_char_width' rest nl
-              where nl = r + lookupWithDefault_cFM (c1:[])
+              where nl = r + lookupWithDefault_cFM [c1]
           lookupWithDefault_cFM s' = case Map.lookup s' cFM of
                                      Nothing -> 2200 -- do something here?
                                      Just w  -> w
@@ -184,9 +185,9 @@ prefixIsKey ls@(c:_) key_cFM = case filter (flip isPrefixOf ls)
     s : _ -> Just s
 
 isLigature :: String -> Bool
-isLigature s
-    | (length s) /= 2 = False
-    | otherwise = Map.findWithDefault False s ligatures
+isLigature s = case s of
+  [_, _] -> Map.findWithDefault False s ligatures
+  _ -> False
 
 keyword_width, structid_width, axiom_width, annotationbf_width,
     comment_width, normal_width :: String -> Int
@@ -219,7 +220,7 @@ casl_axiom_latex s        = sp_text (axiom_width s) s
 -- | sort, op, pred, type and its plurals
 hc_sty_casl_keyword :: String -> Doc
 hc_sty_casl_keyword str =
-    sp_text (keyword_width "preds") $ "\\" ++ map toUpper str
+    sp_text (keyword_width "preds") $ '\\' : map toUpper str
 
 hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword kw =
@@ -245,7 +246,7 @@ hc_sty_axiom ax = latex_macro "\\Ax{"<>ax_doc<>latex_macro "}"
 
 -- | flush argument doc to the right
 flushright :: Doc -> Doc
-flushright d = latex_macro "\\`" <> d
+flushright = (latex_macro "\\`" <>)
 
 -- |
 -- a constant String for the start of annotations
@@ -281,7 +282,7 @@ axiomString = do
 
 parseAtom :: CharParser st [String]
 parseAtom = do
-    try (string "\\Ax{") <|> try (string "\\Id{") <|> string "{"
+    tryString "\\Ax{" <|> tryString "\\Id{" <|> string "{"
     l <- many parseAtom
     Parsec.char '}'
     return (concat l)
@@ -289,10 +290,10 @@ parseAtom = do
     b <- Parsec.char '\\'
     s <- fmap (: []) (satisfy (\ c -> isSpace c
                                       || elem c "_~^|\'\",;:.`\\{}[]%$&#()"))
-         <|> many1 (satisfy isAlpha)
+         <|> many1 letter
     return [b : s]
  <|> do
-    s <- many1 (satisfy isAlpha)
+    s <- many1 letter
     return [s]
  <|> do
     c <- satisfy (/= '}')

@@ -16,6 +16,7 @@ module CASL_DL.Parse_AS where
 import Common.AnnoState
 import Common.Id
 import Common.Lexer
+import Common.Parsec
 import Common.Token
 
 import CASL_DL.AS_CASL_DL

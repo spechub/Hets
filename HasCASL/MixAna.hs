@@ -21,17 +21,18 @@ module HasCASL.MixAna
   , uTok
   ) where
 
-import Common.GlobalAnnotations
-import Common.Result
-import Common.Id
+import Common.AnnoParser
+import Common.AnnoState
+import Common.ConvertMixfixToken
 import Common.DocUtils
 import Common.Earley
-import Common.Lexer
-import Common.Prec
-import Common.ConvertMixfixToken
+import Common.GlobalAnnotations
+import Common.Id
 import Common.Lib.State
-import Common.AnnoState
-import Common.AnnoParser
+import Common.Parsec
+import Common.Prec
+import Common.Result
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 

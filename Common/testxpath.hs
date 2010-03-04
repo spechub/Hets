@@ -1,6 +1,6 @@
 import Common.XPath
 import Text.ParserCombinators.Parsec
-import Common.Lexer
+import Common.Parsec
 
 main :: IO ()
 main = do

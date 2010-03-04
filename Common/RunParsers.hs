@@ -14,24 +14,27 @@ test some parsers (and printers)
 module Common.RunParsers (exec, StringParser, toStringParser, fromAParser)
     where
 
-import Common.Lexer((<<), parseString)
-import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Pos
+import Common.AnalyseAnnos (addGlobalAnnos)
 import Common.AnnoParser
 import Common.AnnoState
 import Common.DocUtils
 import Common.GlobalAnnotations
-import Common.AnalyseAnnos(addGlobalAnnos)
+import Common.Lexer (parseString)
+import Common.Parsec ((<<))
 import Common.Result
+
 import System.Environment
+
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Pos
 
 type StringParser = GlobalAnnos -> AParser () String
 
 fromAParser :: Pretty a => AParser () a -> StringParser
-fromAParser p ga = fmap (\ a -> showGlobalDoc ga a "") p
+fromAParser p ga = fmap (flip (showGlobalDoc ga) "") p
 
 toStringParser :: Pretty a => (GlobalAnnos -> AParser () a) -> StringParser
-toStringParser p ga = fmap (\ a -> showGlobalDoc ga a "") $ p ga
+toStringParser p ga = fmap (flip (showGlobalDoc ga) "") $ p ga
 
 exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
 exec lps fps = do

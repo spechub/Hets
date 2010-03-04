@@ -17,10 +17,12 @@ module HasCASL.AsUtils where
 import HasCASL.As
 import HasCASL.FoldType
 import HasCASL.HToken
-import Common.Id
-import Common.Lexer
-import Common.Keywords
+
 import Common.DocUtils
+import Common.Id
+import Common.Keywords
+import Common.Parsec
+
 import qualified Data.Set as Set
 import qualified Text.ParserCombinators.Parsec as P
 
@@ -286,7 +288,7 @@ toProdType n r = TypeName (productId n r) (toRaw $ prodKind n r) 0
 -- | the brackets as tokens with positions
 mkBracketToken :: BracketKind -> Range -> [Token]
 mkBracketToken k ps =
-    map ( \ s -> Token s ps) $ (\ (o,c) -> [o,c]) $ getBrackets k
+    map (flip Token ps) $ (\ (o, c) -> [o, c]) $ getBrackets k
 
 -- | construct a tuple from non-singleton lists
 mkTupleTerm :: [Term] -> Range -> Term
@@ -390,7 +392,7 @@ getFunType :: Type -> Partiality -> [Type] -> Type
 getFunType rty p ts = (case p of
     Total -> id
     Partial -> addPartiality ts)
-    $ foldr (\ c -> mkFunArrType c FunArr) rty ts
+    $ foldr (flip mkFunArrType FunArr) rty ts
 
 -- | get the type of a selector given the data type as first arguemnt
 getSelType :: Type -> Partiality -> Type -> Type

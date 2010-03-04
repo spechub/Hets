@@ -19,6 +19,7 @@ import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Lexer
+import Common.Parsec
 import Common.Result
 import qualified Common.Lib.Rel as Rel
 

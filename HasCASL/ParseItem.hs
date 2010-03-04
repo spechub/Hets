@@ -20,11 +20,12 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
+import Common.Parsec
 import Common.Token
 
-import HasCASL.HToken
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.HToken
 import HasCASL.ParseTerm
 
 import Control.Monad

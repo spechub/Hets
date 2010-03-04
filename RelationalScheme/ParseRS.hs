@@ -19,40 +19,30 @@ module RelationalScheme.ParseRS
         )
         where
 
+import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
 import Common.Lexer
-import Common.AS_Annotation
+import Common.Parsec
+
 import Control.Monad
+
+import RelationalScheme.AS
 import RelationalScheme.Keywords
 import RelationalScheme.Sign
-import RelationalScheme.AS
-import qualified Data.Set as Set
+
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Error
 
-{-
-foldRanges :: [Token] -> Range
-foldRanges inR = foldl (\x y -> appRange x $ tokPos y) nullRange inR
--}
+import qualified Data.Set as Set
 
 -- ^ parse a simple word not in 'rskeywords'
 rsVarId :: [String] -> AParser st Token
 rsVarId ks =
      do
-        tk <- pToken (reserved (ks++rsKeyWords) (scanAnyWords))
+        tk <- pToken $ reserved (ks ++ rsKeyWords) scanAnyWords
         addAnnos
         return tk
-{-
--- ^ Token parser that does not skip whitespaces
-pTokenN :: CharParser st String -> CharParser st Token
-pTokenN parser =
-  bind (\ p s -> Token s (Range [p])) getPos (parser)
-
--- ^ parser for simple ids
-rsSimpleId :: GenParser Char st Token
-rsSimpleId = pTokenN (reserved rsKeyWords scanAnyWords)
--}
 
 parseRSScheme :: AParser st RSScheme
 parseRSScheme =
@@ -72,8 +62,7 @@ parseRSRelationships =
         r <- many parseRSRel
         return $ RSRelationships r $ catRange [k]
     <|>
-     do
-        return $ RSRelationships [] nullRange
+        return (RSRelationships [] nullRange)
 
 -- ^ Parser for a single relationship
 parseRSRel :: AParser st (Annoted RSRel)
@@ -95,8 +84,10 @@ parseRSQualId =
         oBracketT
         cn <- sepBy1 (rsVarId []) commaT
         cBracketT
-        let out = map (\x -> RSQualId (simpleIdToId tn) (simpleIdToId x) $ tokPos x) cn
-        return $ out
+        let out = map
+              (\ x -> RSQualId (simpleIdToId tn) (simpleIdToId x) $ tokPos x)
+              cn
+        return out
 
 -- ^ parser for collection of tables
 parseRSTables :: AParser st RSTables
@@ -105,13 +96,12 @@ parseRSTables =
         try $ asKey rsTables
         t <- many parseRSTable
         ot <- setConv t
-        return $ RSTables
+        return RSTables
                     {
                         tables = ot
                     }
     <|>
-      do
-        return $ RSTables
+        return RSTables
                     {
                         tables = Set.empty
                     }
@@ -122,8 +112,8 @@ setCol t =
         names = map c_name t
     in
       do
-        foldM (\x y -> insertUnique y x) Set.empty names
-        return $ foldl (\x y -> Set.insert y x) Set.empty t
+        foldM_ (flip insertUnique) Set.empty names
+        return $ foldl (flip Set.insert) Set.empty t
 
 setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
 setConv t =
@@ -131,14 +121,13 @@ setConv t =
         names = map t_name t
     in
       do
-        foldM (\x y -> insertUnique y x) Set.empty names
-        return $ foldl (\x y -> Set.insert y x) Set.empty t
+        foldM_ (flip insertUnique) Set.empty names
+        return $ foldl (flip Set.insert) Set.empty t
 
 insertUnique :: (Monad m) => Id -> Set.Set Id -> m (Set.Set Id)
 insertUnique t s =
-    case t `Set.notMember` s of
-        True  -> return $ Set.insert t s
-        False -> fail ("Duplicate definition of " ++ (show t))
+    if t `Set.notMember` s then return $ Set.insert t s
+    else fail $ "Duplicate definition of " ++ show t
 
 -- ^ parser for table
 parseRSTable :: AParser st RSTable
@@ -148,15 +137,18 @@ parseRSTable =
         tid <- rsVarId []
         oParenT
         cl <- sepBy1 parseRSColumn commaT
-        setCol $ concat cl
+        let ccl = concat cl
+        setCol ccl
         cParenT
         ra <- getAnnos
-        return $ RSTable
+        return RSTable
             {
                 t_name  = simpleIdToId tid
-            ,   columns = concat $ cl
+            ,   columns = ccl
             ,   rsannos = la ++ ra
-            ,   t_keys  = Set.fromList $ map (\x -> (c_name x, c_data x))  $ filter (\x -> c_key x == True) $ concat cl
+            ,   t_keys  = Set.fromList
+                  $ map (\x -> (c_name x, c_data x))
+                  $ filter c_key ccl
             }
 
 parseEntry :: AParser st (Token, Bool)
@@ -185,96 +177,98 @@ look4Key =
 testParse ::GenParser tok (AnnoState ()) a
             -> [tok]
             -> Either Text.ParserCombinators.Parsec.Error.ParseError a
-testParse par st = runParser par (emptyAnnos ()) "" st
+testParse par = runParser par (emptyAnnos ()) ""
 
 longTest :: IO (Either ParseError RSScheme)
-longTest = do x <- (readFile "RelationalScheme/test/rel.het"); return $ testParse parseRSScheme x
+longTest = do
+  x <- readFile "RelationalScheme/test/rel.het"
+  return $ testParse parseRSScheme x
 
 -- boring parser for rel types
 parseRSRelTypes :: AParser st RSRelType
 parseRSRelTypes =
     do
         asKey rs1to1
-        return $ RSone_to_one
+        return RSone_to_one
     <|>
     do
         asKey rs1tom
-        return $ RSone_to_many
+        return RSone_to_many
     <|>
     do
         asKey rsmto1
-        return $ RSmany_to_one
+        return RSmany_to_one
      <|>
     do
         asKey rsmtom
-        return $ RSmany_to_many
+        return RSmany_to_many
 
 -- boring parser for data-types
 parseRSDatatypes :: AParser st RSDatatype
 parseRSDatatypes =
     do
         asKey rsBool
-        return $ RSboolean
+        return RSboolean
     <|>
     do
         asKey rsBin
-        return $ RSbinary
+        return RSbinary
     <|>
     do
         asKey rsDate
-        return $ RSdate
+        return RSdate
      <|>
     do
         asKey rsDatetime
-        return $ RSdatetime
+        return RSdatetime
      <|>
     do
         asKey rsDecimal
-        return $ RSdecimal
+        return RSdecimal
      <|>
     do
         asKey rsFloat
-        return $ RSfloat
+        return RSfloat
       <|>
     do
         asKey rsInteger
-        return $ RSinteger
+        return RSinteger
      <|>
     do
         asKey rsString
-        return $ RSstring
+        return RSstring
      <|>
     do
         asKey rsText
-        return $ RStext
+        return RStext
      <|>
     do
         asKey rsTime
-        return $ RStime
+        return RStime
       <|>
     do
         asKey rsTimestamp
-        return $ RStimestamp
+        return RStimestamp
       <|>
     do
         asKey rsDouble
-        return $ RSdouble
+        return RSdouble
       <|>
     do
         asKey rsNonPosInteger
-        return $ RSnonPosInteger
+        return RSnonPosInteger
        <|>
     do
         asKey rsNonNegInteger
-        return $ RSnonNegInteger
+        return RSnonNegInteger
        <|>
     do
         asKey rsLong
-        return $ RSlong
+        return RSlong
        <|>
     do
       asKey rsPointer
-      return $ RSPointer
+      return RSPointer
 
 
 makeAnnoted :: [Annotation] -> [Annotation] -> a -> Annoted a

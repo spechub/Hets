@@ -19,6 +19,7 @@ Parsing of interspersed annotations
 
 module Common.AnnoState where
 
+import Common.Parsec
 import Common.Lexer
 import Common.Token
 import Common.Id

@@ -14,34 +14,37 @@ analyse generic var (or type var) decls
 
 module HasCASL.VarDecl where
 
-import Data.Maybe
-import Data.List as List
-import Control.Monad
-import Text.ParserCombinators.Parsec (runParser, eof)
+import HasCASL.As
+import HasCASL.AsUtils
+import HasCASL.Builtin
+import HasCASL.ClassAna
+import HasCASL.FoldTerm
+import HasCASL.FoldType
+import HasCASL.Le
+import HasCASL.MapTerm
+import HasCASL.Merge
+import HasCASL.ParseTerm
+import HasCASL.PrintLe
+import HasCASL.TypeAna
+import HasCASL.Unify
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import Common.AnnoState
+import Common.DocUtils
 import Common.Id
 import Common.Lib.Rel (setToMap)
 import Common.Lib.State
+import Common.Parsec
 import Common.Result
-import Common.DocUtils
-import Common.Lexer
-import Common.AnnoState
 
-import HasCASL.ParseTerm
-import HasCASL.As
-import HasCASL.AsUtils
-import HasCASL.FoldType
-import HasCASL.FoldTerm
-import HasCASL.Le
-import HasCASL.PrintLe
-import HasCASL.ClassAna
-import HasCASL.TypeAna
-import HasCASL.Unify
-import HasCASL.Merge
-import HasCASL.Builtin
-import HasCASL.MapTerm
+import Text.ParserCombinators.Parsec (runParser, eof)
+
+import Control.Monad
+
+import Data.List as List
+import Data.Maybe
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | quantify
 mkEnvForall :: Env -> Term -> Range -> Term

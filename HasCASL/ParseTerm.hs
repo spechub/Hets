@@ -17,16 +17,17 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
+import Common.Parsec
 import Common.Token
-import HasCASL.HToken
+
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.HToken
 
 import Text.ParserCombinators.Parsec
 
 import Data.List ((\\))
 import qualified Data.Set as Set
-
 
 -- * key sign tokens
 

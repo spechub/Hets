@@ -21,11 +21,12 @@ Parser for CASL basic specifications (SIG-ITEMS, BASIC-ITEMS, BASIC-SPEC)
 
 module CASL.Parse_AS_Basic where
 
+import Common.AS_Annotation
 import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Common.AS_Annotation
+import Common.Parsec
 
 import CASL.AS_Basic_CASL
 import CASL.Formula

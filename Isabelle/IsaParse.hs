@@ -25,6 +25,7 @@ import Isabelle.IsaConsts
 import Common.DocUtils
 import Common.Id
 import Common.Lexer
+import Common.Parsec
 import Common.Result
 
 import Text.ParserCombinators.Parsec
@@ -46,7 +47,7 @@ isaLetter :: Parser String
 isaLetter = latin <|> greek
 
 quasiletter :: Parser String
-quasiletter = single (digit <|> prime <|> char '_' ) <|> isaLetter
+quasiletter = single (digit <|> char '\'' <|> char '_' ) <|> isaLetter
               <?> "quasiletter"
 
 restident :: Parser String
@@ -85,13 +86,13 @@ isaText :: Parser String
 isaText = nameref <|> verbatim
 
 typefree :: Parser String
-typefree = prime <:> ident
+typefree = char '\'' <:> ident
 
 indexsuffix :: Parser String
 indexsuffix = optionL (char '.' <:> nat)
 
 typevar :: Parser String
-typevar = try (string "?'") <++> ident <++> optionL (char '.' <:> nat)
+typevar = tryString "?'" <++> ident <++> optionL (char '.' <:> nat)
 
 typeP :: Parser Token
 typeP = lexP typefree <|> lexP typevar <|> namerefP
@@ -109,7 +110,7 @@ lexP :: Parser String -> Parser Token
 lexP = liftM2 (\ p s -> Token s (Range [p])) getPos . (<< isaSkip)
 
 lexS :: String -> Parser String
-lexS s = try (string s) << isaSkip
+lexS = (<< isaSkip) . tryString
 
 headerP :: Parser Token
 headerP = lexS headerS >> lexP isaText
@@ -353,7 +354,8 @@ lemma = choice (map lexS [lemmaS, theoremS, corollaryS])
 
 instanceP :: Parser Token
 instanceP =
-    lexS instanceS >> namerefP << (lexS "::" << arity <|> lessOrEq << namerefP)
+    lexS instanceS >> namerefP <<
+    ((lexS "::" << arity) <|> (lessOrEq << namerefP))
 
 axclass :: Parser [Token]
 axclass = lexS axclassS >> classdecl << many (axmdecl >> prop)

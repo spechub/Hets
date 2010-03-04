@@ -18,6 +18,7 @@ module DFOL.Parse_AS_DFOL
        where
 
 import qualified Common.Lexer as Lexer
+import Common.Parsec
 import Common.Token (casl_structured_reserved_words)
 import qualified Common.Keywords as Keywords
 import qualified Common.AnnoState as AnnoState
@@ -25,8 +26,8 @@ import DFOL.AS_DFOL
 import Text.ParserCombinators.Parsec
 
 -- keywords which cannot appear as identifiers in a signature
-reserved :: [String]
-reserved = [Keywords.trueS,
+dfolKeys :: [String]
+dfolKeys = [Keywords.trueS,
             Keywords.falseS,
             Keywords.notS,
             Keywords.forallS,
@@ -94,16 +95,15 @@ type1P = do AnnoState.asKey "Sort"
 -- parser for terms
 termP :: AnnoState.AParser st TERM
 termP = do f <- nameP
-           (do Lexer.oParenT
+           do  Lexer.oParenT
                (as, _) <- termP `Lexer.separatedBy` AnnoState.anComma
                Lexer.cParenT
                return $ Appl (Identifier f) as
-            <|>
-            do return $ Identifier f)
+             <|> return (Identifier f)
 
 -- parsers for names
 nameP :: AnnoState.AParser st NAME
-nameP = Lexer.pToken $ Lexer.reserved reserved Lexer.scanAnyWords
+nameP = Lexer.pToken $ reserved dfolKeys Lexer.scanAnyWords
 
 namesP :: AnnoState.AParser st [NAME]
 namesP = fmap fst $ nameP `Lexer.separatedBy` AnnoState.anComma

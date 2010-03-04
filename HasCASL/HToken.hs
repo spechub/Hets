@@ -16,7 +16,9 @@ module HasCASL.HToken where
 import Common.Id
 import Common.Keywords
 import Common.Lexer
+import Common.Parsec
 import Common.Token
+
 import Text.ParserCombinators.Parsec
 
 -- * HasCASL keyword handling

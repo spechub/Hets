@@ -19,13 +19,16 @@ import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
     (logicName, groupSpec, aSpec, parseMapping)
 import Syntax.Parse_AS_Architecture
+
 import Common.AS_Annotation
 import Common.AnnoState
+import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Common.Token
-import Common.Id
 import Common.LibName
+import Common.Parsec
+import Common.Token
+
 import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 import Data.Maybe (maybeToList)

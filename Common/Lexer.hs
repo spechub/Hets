@@ -15,6 +15,7 @@ according to chapter II.4 (Lexical Symbols) of the CASL reference manual
 module Common.Lexer where
 
 import Common.Id
+import Common.Parsec
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
@@ -33,7 +34,7 @@ signChars = "!#$&*+-./:<=>?@\\^|~" ++
 
 -- at least two semicolons
 semis :: CharParser st String
-semis = try (string ";;") <++> many (char ';')
+semis = tryString ";;" <++> many (char ';')
 
 scanAnySigns :: CharParser st String
 scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
@@ -53,44 +54,10 @@ caslLetters ch = let c = ord ch in
 caslLetter :: CharParser st Char
 caslLetter = satisfy caslLetters <?> "casl letter"
 
-prime :: CharParser st Char
-prime = char '\'' -- also used for quoted chars
-
 scanLPD :: CharParser st Char
-scanLPD = caslLetter <|> digit <|> prime <?> "casl char"
-
--- * Monad and Functor extensions
-
-infixl <<
-
-(<<) :: Monad m => m a -> m b -> m a
-(<<) = liftM2 const
-
-infixr 5 <:>
-
-(<:>) :: Monad m => m a -> m [a] -> m [a]
-(<:>) = liftM2 (:)
-
-infixr 5 <++>
-
-(<++>) :: Monad m => m [a] -> m [a] -> m [a]
-(<++>) = liftM2 (++)
-
-pair :: Monad m => m a -> m b -> m (a, b)
-pair = liftM2 (,)
-
--- Functor extension
-single :: (Functor f, Monad m) => f a -> f (m a)
-single = fmap return
-
-flat :: Functor f => f [[a]] -> f [a]
-flat = fmap concat
+scanLPD = caslLetter <|> digit <|> char '\'' <?> "casl char"
 
 -- * ParsecCombinator extension
-
--- | parse an optional list
-optionL :: GenParser tok st [a] -> GenParser tok st [a]
-optionL = option []
 
 lookaheadPosition :: String
 lookaheadPosition = "lookahead position "
@@ -108,12 +75,6 @@ myLookAhead parser = do
 
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
 followedWith p q = try $ p << myLookAhead q
-
-begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
-begDoEnd open p close = open <:> p <++> single close
-
-enclosedBy :: (Monad f, Functor f) => f [a] -> f a -> f [a]
-enclosedBy p q = begDoEnd q p q
 
 checkWithUsing :: (a -> String) -> GenParser tok st a -> (a -> Bool)
           -> GenParser tok st a
@@ -187,7 +148,7 @@ caslChar = escapeChar <|> printable
 
 scanQuotedChar :: CharParser st String
 scanQuotedChar = enclosedBy (caslChar <|> (char '"' >> return "\\\""))
-    prime <?> "quoted char"
+    (char '\'') <?> "quoted char"
 
 -- convert '"' to '\"' and "'" to "\'" (no support for ''')
 
@@ -232,30 +193,10 @@ isFloating :: Token -> Bool
 -- precondition: isNumber
 isFloating = any (flip elem ".E") . tokStr
 
--- * nested comment outs
-
-nestedComment :: String -> String -> CharParser st String
-nestedComment op cl = case (op, cl) of
-  (oh : ot : _, ch : ct : _) ->
-    try (string op) <++>
-    flat (many $ single
-          (noneOf [oh, ch]
-           <|> try (char ch << notFollowedBy (char ct))
-           <|> try (char oh << notFollowedBy (char ot)))
-          <|> nestedComment op cl)
-    <++> string cl
-  _ -> error "nestedComment"
-
-plainBlock :: String -> String -> CharParser st String
-plainBlock op cl = try (string op) >> manyTill anyChar (try $ string cl)
-
-forget :: GenParser tok st a -> GenParser tok st ()
-forget = (>> return ())
+-- * skip whitespaces and nested comment out
 
 nestCommentOut :: CharParser st ()
 nestCommentOut = forget $ nestedComment "%[" "]%"
-
--- * skip whitespaces and nested comment out
 
 whiteChars :: String
 whiteChars = "\n\r\t\v\f \160" -- non breaking space
@@ -288,10 +229,6 @@ keyWord = try . (<< notFollowedBy (scanLPD <|> singleUnderline))
 
 keySign :: CharParser st a -> CharParser st a
 keySign = try . (<< notFollowedBy (oneOf signChars))
-
-reserved :: [String] -> CharParser st String -> CharParser st String
--- "try" to avoid reading keywords
-reserved l p = try $ checkWith p (`notElem` l)
 
 -- * lexical tokens with position
 
@@ -334,7 +271,7 @@ oBracketT :: CharParser st Token
 oBracketT = asSeparator "["
 
 cBracketT :: CharParser st Token
-cBracketT = (try (string "]%") >> unexpected "block-comment-end ]%" <?> "")
+cBracketT = (tryString "]%" >> unexpected "block-comment-end ]%" <?> "")
     <|> asSeparator "]"
 
 oParenT :: CharParser st Token
@@ -350,7 +287,7 @@ commaSep1 :: CharParser st a -> CharParser st [a]
 commaSep1 p = fmap fst $ separatedBy p commaT
 
 placeS :: CharParser st String
-placeS = try (string place) <?> place
+placeS = tryString place <?> place
 
 placeT :: CharParser st Token
 placeT = pToken placeS
