@@ -1,7 +1,10 @@
-\documentclass{entcs} \usepackage{entcsmacro}
+\documentclass{entcs}
+ \usepackage{entcsmacro}
 \usepackage{graphicx}
 \usepackage{mathpartir}
 \usepackage{amsmath,amssymb}
+\usepackage{pstricks}
+
 \newcommand{\hearts}{\heartsuit}
 \newcommand{\prems}{\mathit{prems}}
 \newcommand{\eval}{\mathit{eval}}
@@ -49,15 +52,16 @@ abstract hier, abstract da
 \end{keyword}
 \end{frontmatter}
 \section{Introduction}\label{intro}
-introbla
  
+\ldots
+
 \section{Generic Sequent Calculi for Coalgebraic Modal Logic}
 
-theorybla
+\ldots
 
 \section{Generic and Heterogenous Sequent Calculi for Coalgebraic Modal Logic}
 
-There are several reasonable definitions of what a heterogenous modal logic could be. For the remainder
+There are several reasonable concepts of what a heterogenous modal logic could be. For the remainder
 of this paper we go with the following definition:
 
 \begin{definition}
@@ -176,20 +180,6 @@ conclusion whereas the only premise consists of one homogenous sequent of level
 $i+1$. For this reason the rule realizes a \emph{one-level-step}
 (from level $i$ to level $i+1$) upon application during proof search.
 
-\begin{figure}[!h]
-  \begin{center}
-    \begin{tabular}{| c |}
-    \hline
-      \\[-5pt]
-      (\textsc {\textbf{K}})\inferrule{ (\neg A_1)_{:i+1},\ldots,(\neg A_n)_{:i+1}, (A_0)_{:i+1}}
-                      {\Gamma, (\neg\Box A_1)_{:i},\ldots,(\neg\Box A_n)_{:i},(\Box A_0)_{:i}} \\[-5pt]\\
-    \hline
-    \end{tabular}
-  \end{center}
-  \caption{The modal rule for \textbf{K}}
-  \label{fig:modalK}
-\end{figure}
-
 For now we consider only homogenous modal rules that realize one-level-steps. Take note that
 the resulting logic still is heterogenous since different homogenous logics are combined
 together.
@@ -200,21 +190,126 @@ their conclusion. What's a reasonable example of this case? Are these logics cov
 the coalgebraic theory?
 \end{remark}
 
-Put KD, CKCEM, P, G, HM, Mon etcpp here!
+Put P, G etcpp here!
+\begin{example}
+Here are some modal rules, adopted to the heterogenous setting:
+\begin{enumerate}
+\item
+
+The rule for monotone modal logic \textbf{Mon}:
 \begin{figure}[!h]
   \begin{center}
     \begin{tabular}{| c |}
     \hline
       \\[-5pt]
-      (\textsc {\textbf{CK}})\inferrule{ (A_0=A_1;\ldots;A_n=A_0)_{:i+1}\\(\neg B_1)_{:i+1},\ldots,(\neg B_n)_{:i+1},(B_0)_{:i+1}}
-                      {\Gamma, \neg(A_1\Rightarrow B_1)_{:i},\ldots,\neg(A_n\Rightarrow B_n)_{:i},(A_0\Rightarrow B_0)_{:i}} \\[-5pt]\\
+      (\textsc {\textbf{Mon}})\inferrule{ (\neg A,B)^{:i+1}}
+                      {\Gamma, (\neg \Box A, \Box B)^{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{Mon}}
+  \label{fig:modalMon}
+\end{figure}
+
+\item
+The rule for the modal logic \textbf{K} (i.e. Kripke semantics):
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{K}})\inferrule{ (\neg A_1,\ldots,\neg A_n, A_0)^{:i+1}}
+                      {\Gamma, (\neg\Box A_1,\ldots,\neg\Box A_n,\Box A_0)^{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{K}}
+  \label{fig:modalK}
+\end{figure}
+
+\item
+The rule for the modal logic \textbf{KD}:
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{KD}})\inferrule{ (\neg A_1,\ldots,\neg A_n, A_0)^{:i+1} \\ (\neg A_1,\ldots,\neg B_n)^{:i+1}}
+                      {\Gamma, (\neg\Box A_1,\ldots,\neg\Box A_n,\Box A_0)^{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{KD}}
+  \label{fig:modalKD}
+\end{figure}
+
+\item 
+The rule for Hennessy-Milner logic ($\mathcal{HML}$):
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {$\mathcal{HML}$})\inferrule{ (\neg A_1,\ldots,\neg A_n, A_0)^{:i+1}}
+                      {\Gamma, (\neg[a]A_1,\ldots,\neg[a]A_n,[a]A_0)^{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for $\mathcal{HML}$}
+  \label{fig:modalHML}
+\end{figure}
+
+\item 
+The rule for Pauly's coalition logic (\textbf{C}),
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{C}})\inferrule{ (\neg A_1,\ldots,\neg A_n, B)^{:i+1} \\ (D_1,\ldots,D_m)^{:i+1}}
+                      {\Gamma, (\neg[C_1]A_1,\ldots,\neg[C_n]A_n,[D]B,[N]D_1,\ldots,[N]D_m)^{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{C}}
+  \label{fig:modalC}
+\end{figure}
+where $m,n\geq 0$ with the side condition that the $C_i$ are pairwise disjoint subsets of $D$.
+
+\item The rules for basic conditional logic (\textbf{CK}) and for conditional logic with
+conditional excluded middle (\textbf{CKCEM}):
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{CK}})\inferrule{ (A_0=A_1;\ldots;A_n=A_0)^{:i+1}\\(\neg B_1,\ldots,\neg B_n,B_0)^{:i+1}}
+                      {\Gamma, (\neg A_1\Rightarrow B_1,\ldots,\neg A_n\Rightarrow B_n, A_0\Rightarrow B_0)^{:i}} \\[-5pt]\\
     \hline
     \end{tabular}
   \end{center}
   \caption{The modal rule for \textbf{CK}}
-  \label{fig:modalK}
+  \label{fig:modalCK}
 \end{figure}
 
+\begin{figure}[!h]
+  \begin{center}
+    \begin{tabular}{| c |}
+    \hline
+      \\[-5pt]
+      (\textsc {\textbf{CKCEM}})\inferrule{ (A_0=A_1;\ldots;A_n=A_0)^{:i+1}\\(B_0,\ldots,B_j,\neg B_{j+1},\ldots,\neg B_n)^{:i+1}}
+                      {\Gamma, (A_0\Rightarrow B_0,\ldots,A_j\Rightarrow B_j,\neg A_{j+1}\Rightarrow B_{j+1},
+                       \ldots,\neg A_n\Rightarrow B_n)^{:i}} \\[-5pt]\\
+    \hline
+    \end{tabular}
+  \end{center}
+  \caption{The modal rule for \textbf{CKCEM}}
+  \label{fig:modalCKCEM}
+\end{figure}
+
+\end{enumerate}
+
+\end{example}
 
 heterogenous sequent algorithm
 
@@ -224,7 +319,7 @@ heterogenous sequent algorithm
 
 \section{Conclusion}  
 
-concludebla
+\ldots
 
 \bibliographystyle{myabbrv}
 \bibliography{coalgml}
