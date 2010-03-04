@@ -1008,7 +1008,7 @@ insEdgeDG l oldDG =
 
 -- | insert a list of labeled edge into a given DG
 insEdgesDG :: [LEdge DGLinkLab] -> DGraph -> DGraph
-insEdgesDG = flip $ foldr (\ l -> snd . insLEdgeDG l)
+insEdgesDG = flip $ foldr insLEdgeNubDG
 
 -- | merge a list of lnodes and ledges into a given DG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
