@@ -381,9 +381,13 @@ number :: Parser String
 number = skips $ many1 digit <++> optionL (char '.' <:> many digit)
   <|> try (char '.' <:> many1 digit)
 
+-- | a qualified name (prefixed or unprefixed)
+qName :: Parser String
+qName = skips $ ncName <++> optionL (char ':' <:> ncName)
+
 -- | parse a primary expression (including 'fct' or 'expr' in parens)
 primExpr :: Parser Expr
-primExpr = fmap (PrimExpr Var) (skips $ char '$' <:> ncName)
+primExpr = fmap (PrimExpr Var) (char '$' <:> qName)
   <|> (lpar >> expr << rpar)
   <|> fmap (PrimExpr Literal) literal
   <|> fmap (PrimExpr Number) number
@@ -393,7 +397,7 @@ primExpr = fmap (PrimExpr Var) (skips $ char '$' <:> ncName)
 fct :: Parser Expr
 fct = do
   q <- try $ do
-    n <- skips $ ncName <++> optionL (char ':' <:> ncName)
+    n <- qName
     if elem n $ pIS : map lowerShow nodeTypes
       then fail $ n ++ " not allowed as function name"
       else lpar >> return n
