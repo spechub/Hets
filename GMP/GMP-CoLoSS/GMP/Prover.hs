@@ -55,7 +55,7 @@ conj_rule (Sequent as) = [ [[(Sequent (p: delete f as))],[(Sequent (q: delete f 
 
 -- the rule for the modal operator
 modal_rule :: [Bool] -> Sequent -> Premises
-modal_rule flags (Sequent xs) = (emptify (fMatch flags xs))
+modal_rule flags (Sequent xs) = emptify (fMatch flags xs)
 
 -- the rule for the modal operator - optimised version
 omodal_rule :: [Bool] -> [Sequent] -> Sequent -> Premises

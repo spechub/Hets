@@ -411,22 +411,32 @@ andify (phi:phis) = And phi (andify phis)
 -- remove empty sequents from a list of sequents
 --------------------------------------------------------------------------------
 
-emptifys :: [Sequent] -> [Sequent]
-emptifys seqs = case seqs of
-                  []               -> []
-                  ((Sequent x):xs) -> case x of
-                                         []   -> emptifys xs
-                                         phis -> (Sequent x) : emptifys xs
+--emptifys :: [Sequent] -> [Sequent]
+--emptifys seqs = case seqs of
+--                  []               -> []
+--                  ((Sequent x):xs) -> case x of
+--                                         []   -> emptifys xs
+--                                         phis -> (Sequent x) : emptifys xs
 
-emptifyss :: [[Sequent]] -> [[Sequent]]
-emptifyss seqs = case seqs of
-                  []     -> []
-                  (x:xs) -> emptifys x : emptifyss xs
+--emptifyss :: [[Sequent]] -> [[Sequent]]
+--emptifyss seqs = case seqs of
+--                  []     -> []
+--                  (x:xs) -> emptifys x : emptifyss xs
+
+--emptify :: Premises -> Premises
+--emptify prems = trace ("emptying "++ show (map (map (map pretty_seq)) prems))$
+--                  case prems of
+--                  []     -> []
+--                  (x:xs) -> emptifyss x : emptify xs
+
+emptifys :: [Sequent] -> [Sequent]
+emptifys []       = []
+emptifys (s:seqs) = case s of
+                       Sequent []     -> emptifys seqs
+                       Sequent (x:xs) -> s : emptifys seqs
 
 emptify :: Premises -> Premises
-emptify prems = case prems of
-                  []     -> []
-                  (x:xs) -> emptifyss x : emptify xs
+emptify prems = map (map emptifys) prems
 
 --------------------------------------------------------------------------------
 -- basic sequent functions

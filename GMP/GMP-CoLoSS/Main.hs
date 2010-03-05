@@ -34,6 +34,7 @@ import GMP.Logics.Con
 import GMP.Logics.CKCM
 import GMP.Logics.SysS
 import GMP.Logics.DisjUnion
+--import GMP.Logics.Product
 
 -- | Runs the parser and the prover and prints the result(s) of obtained.
 runLex :: (SigFeature b c d, SigFeature a b (c d), Eq (a (b (c d)))) => Parser (Formula (a (b (c d)))) -> String -> [Bool] -> IO ()

@@ -33,7 +33,8 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature CKCM b c 
                          in if (flags!!1) 
                             then
                               [ trace ("Matching <g0>: " ++ pretty_list gZ ++ " Using <graph>: " ++ show cG) $
-                                (ckcmPremise gZ cG) | (gZ,cGs) <- compGraphs, cG <- cGs ]
+                                let sss = (ckcmPremise gZ cG) in trace ("Premise: " ++ show (map (map pretty_seq) (sss)) )
+                                sss | (gZ,cGs) <- compGraphs, cG <- cGs ]
                             else
                               [ (ckcmPremise gZ cG) | (gZ,cGs) <- compGraphs, cG <- cGs ]
     nefPretty d = genfPretty d "[CK+CM]"
@@ -45,10 +46,10 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature CKCM b c 
 gZeros :: [Formula (CKCM (b c))] -> [[Formula (CKCM (b c))]]
 gZeros seq = let poslits = [ (Mod (CKCM phis)) | (Mod (CKCM phis)) <- seq]
                  neglits = [ Neg (Mod (CKCM phis)) | Neg (Mod (CKCM phis)) <- seq]
-             in [ (poslit:neglits) | poslit <- poslits ]
+             in [ neglits ++ [poslit] | poslit <- poslits ]
 
 constructCompGraphs :: [Formula (a (b c))] -> ([Formula (a (b c))],[([[Int]],[([Int],[Int])])])
-constructCompGraphs gZ = (gZ,(allCompGraphs ((length gZ) - 1 )))
+constructCompGraphs gZ = (gZ,(allCompGraphs ((length gZ) - 2 )))
 
 allCompGraphs :: Int -> [([[Int]],[([Int],[Int])])]
 allCompGraphs i = removeDuplicates (iteratedLayerAdding [([[0..i]],[])])
@@ -73,10 +74,10 @@ iteratedLayerAdding graphs = -- trace ("graphs: " ++ show graphs) $
 addLayer :: ([[Int]],[([Int],[Int])]) -> [([[Int]],[([Int],[Int])])]
 addLayer graph@(worlds,rel) = let exps = initialStates graph 
                               in case exps of
-                                  [] -> trace ("initial states: " ++ show (exps)) $
+                                  [] -> --trace ("initial states: " ++ show (exps)) $
                                         [graph]
-                                  _  -> trace ("initial states: " ++ show (exps)) $
-                                        [ trace ("expansion: " ++ show (nub stateSetExpansion)) $
+                                  _  -> --trace ("initial states: " ++ show (exps)) $
+                                        graph: [ --trace ("expansion: " ++ show (nub stateSetExpansion)) $
                                           (expandAll graph (nub stateSetExpansion)) |
                                           stateSetExpansion <- stateSetExpansions exps ]
 
@@ -98,53 +99,70 @@ decompositions world = map (\decomp -> (world,decomp)) (nub (concat [ (sort (dec
 decomposition :: [Int] -> [[[Int]]]
 decomposition []        = []
 decomposition [x]       = []
-decomposition is@(x:xs) = trace ("decomposing " ++ show is) $ 
-                          [ trace ("decomposition: " ++ show (nub decomp)) $ 
-                            (nub decomp) | decomp <- (decompose is), not ((nub decomp)==[(sort is)])] 
+decomposition is@(x:xs) = --trace ("decomposing " ++ show is) $ 
+                          [ --trace ("decomposition: " ++ show (nub decomp\\[is])) $ 
+                            (nub (decomp\\[is])) | decomp <- (decompose is), not ((nub (decomp\\[is])) == []), not ((nub decomp)==[(sort is)])] 
 
 isInfixOf               :: (Eq a) => [a] -> [a] -> Bool
 isInfixOf needle haystack = any (isPrefixOf needle) (tails haystack)
 
-decompose2 :: [Int] -> [[[Int]]]
-decompose2 []        = [[[]]]
-decompose2 [x]       = [[[x]]]
-decompose2 is@(x:xs) = [ trace ("x: " ++ show x ++ " xs:" ++ show xs ++ " cont: " ++ show contained ++
-                                " excl: " ++ show exclusives ++ "subD: " ++ show subDecomposition) $ 
-                        ((sort (x:contained)) : subDecomposition)\\[[]] | contained <- (powerList xs), exclusives <- (powerList contained),
-                                                                          subDecomposition <- (decompose2 (xs\\(exclusives))),
-                                                                          not (isInfixOf (xs\\(exclusives)) (x:contained))]
-
 decompose :: [Int] -> [[[Int]]]
 decompose []        = [[[]]]
 decompose [x]       = [[[x]]]
-decompose is@(x:xs) = [ trace ("x: " ++ show x ++ " xs:" ++ show xs ++ " excl: " ++ show exclusives ++ "subD: " ++ show subDecomposition) $ 
-                        ((sort (x:exclusives)) : subDecomposition)\\[[]] | exclusives <- (powerList xs),
-                                                                           subDecomposition <- (decompose (xs\\(exclusives)))]
+decompose is@(x:xs) = [[is]] ++ [ --trace ("x: " ++ show x ++ " xs:" ++ show xs ++ " cont: " ++ show contained ++
+                               --" excl: " ++ show exclusives ++ "subD: " ++ show subDecomposition) $ 
+                       ((sort (x:contained)) : subDecomposition)\\[[]] | contained <- (powerList xs), exclusives <- (powerList contained),
+                                                                         subDecomposition <- (decompose (xs\\(exclusives))),
+                                                                         not ((xs\\contained)==[]),
+                                                                         not (any (\w -> (isInfixOf w (x:contained))) subDecomposition)]
 
 initialStates :: ([[Int]],[([Int],[Int])]) -> [[Int]]
-initialStates graph@(worlds,rel) = filter (\w -> not ((length w) == 1)) (filter (\s -> not (any (\p -> ((p,s)`elem` rel)) worlds)) worlds)
+initialStates graph@(worlds,rel) = filter (\w -> not ((length w) == 1))
+                                          (filter (\s -> not (any (\p -> ((p,s)`elem` rel)) worlds)) worlds)
 
-ckcmPremise :: (SigFeature b c d, Eq (b (c d)), Eq (c d)) => [Formula (CKCM (b (c d)))] -> ([[Int]],[([Int],[Int])]) -> [[Sequent]]
+initialStates2 :: ([[Int]],[([Int],[Int])]) -> [[Int]]
+initialStates2 graph@(worlds,rel) = [s | s <- worlds, (all (\p -> (not((p,s)`elem` rel))) worlds)]
+
+ckcmPremise :: (SigFeature b c d, Eq (b (c d)), Eq (c d)) => 
+                 [Formula (CKCM (b (c d)))] ->
+                 ([[Int]],[([Int],[Int])]) -> [[Sequent]]
 ckcmPremise gZ cG@(worlds,rel) = let allNegConsequents = [ (Neg psi) | (Neg (Mod (CKCM [phi,psi]))) <- gZ]
                                      allNegAntecedents = [ (Neg phi) | (Neg (Mod (CKCM [phi,psi]))) <- gZ]
                                      consequent      (Mod (CKCM [phi,psi]))  = psi
                                      consequent (Neg (Mod (CKCM [phi,psi]))) = psi
                                      antecedent      (Mod (CKCM [phi,psi]))  = phi
                                      antecedent (Neg (Mod (CKCM [phi,psi]))) = phi
-                                     negArgs state = [ Neg (antecedent (gZ!!ind)) | ind <- state ] ++ [ Neg (consequent (gZ!!ind)) | ind <- state ]
-                                 in [ [Sequent (equiv initialState gZ)] | initialState <- (initialStates cG) ] ++
-                                    [ [Sequent ((antecedent (gZ!!j)) : (negArgs v))] | v <- worlds, w <- worlds, ((v,w)`elem`rel), j <- w] ++
-                                    [ [Sequent ((consequent (gZ!!((length gZ) - 1))) : allNegConsequents)] ] ++
-                                    [ [Sequent ((antecedent (gZ!!((length gZ) - 1))) : allNegConsequents ++ allNegAntecedents )] ] ++
-                                    [ [Sequent ((Neg (antecedent (gZ!!((length gZ) -1)))) : [antecedent (gZ!!i)])] | i <- [0..((length gZ)-1)] ]
+                                     negArgs state = [ Neg (antecedent (gZ!!ind)) | ind <- state ] ++
+                                                     [ Neg (consequent (gZ!!ind)) | ind <- state ]
+                                 in [ [Sequent (equiv (keep initialstate gZ))]
+                                                        | initialstate <- initialStates2 cG ] ++
+                                    [ [Sequent ((antecedent (gZ!!j)) : (negArgs v))] 
+                                                        | v <- worlds, w <- worlds, ((v,w)`elem`rel), j <- w] ++
+                                    [ [Sequent ((consequent (gZ!!((length gZ) - 1))) : (take ((length gZ)-1) allNegConsequents))] ] ++
+                                    [ [Sequent ((antecedent (gZ!!((length gZ) - 1))) : (take ((length gZ)-1) allNegConsequents)
+                                                                                    ++ (take ((length gZ)-1) allNegAntecedents) )] ] ++
+                                    [ [Sequent ((Neg (antecedent (gZ!!((length gZ) -1)))) : [antecedent (gZ!!i)])]
+                                                        | i <- [0..((length gZ)-2)] ]
 
-equiv :: (SigFeature b c d, Eq (b (c d)), Eq (c d)) => [Int] -> [Formula (CKCM (b (c d)))] -> [Formula (b (c d))]
-equiv [] seq = []
-equiv (i:[]) seq = []
-equiv (i:j:is) seq = let antecedent (Neg (Mod (CKCM [phi,psi]))) = phi
-                         antecedent      (Mod (CKCM [phi,psi]))  = phi
-                     in (And (Neg (And (Neg (antecedent (seq!!i))) (antecedent (seq!!j))))
-                             (Neg (And (Neg (antecedent (seq!!j))) (antecedent (seq!!i))))) : (equiv (j:is) seq)
+keep :: (SigFeature b c d, Eq (b (c d)), Eq (c d)) =>
+               [Int] ->
+               [Formula (CKCM (b (c d)))] -> [Formula (CKCM (b (c d)))]
+keep [] seq = []
+keep (x:xs) seq = if x<(length seq) then (seq!!x):(keep xs seq)
+                                    else (keep xs seq)
+
+equiv :: (SigFeature b c d, Eq (b (c d)), Eq (c d)) =>
+               [Formula (CKCM (b (c d)))] -> [Formula (b (c d))]
+equiv [] = --trace ("no more element, nothing needs to be shown... ") $
+           [T]
+equiv [x] = --trace ("only one element, nothing needs to be shown... " ++ pretty x) $
+            [T]
+equiv (x:y:xs) = --trace ("equiv added...") $
+                 let antecedent xi = case xi of (Neg (Mod (CKCM (phi:psi:_)))) -> phi
+                                                (Mod (CKCM (phi:psi:_)))       -> phi
+                                                _                              -> F
+                 in (And (Neg (And (Neg (antecedent x)) (antecedent y)))
+                         (Neg (And (Neg (antecedent y)) (antecedent x)))) : (equiv (y:xs))
 
 --------------------------------------------------------------------------------
 -- instance of sigFeature for CK+CM

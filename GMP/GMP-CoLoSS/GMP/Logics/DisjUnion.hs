@@ -19,7 +19,6 @@ import Debug.Trace
 import Text.ParserCombinators.Parsec
 
 import GMP.Logics.Generic
-import GMP.Logics.K
 import GMP.Parser
 
 --------------------------------------------------------------------------------
