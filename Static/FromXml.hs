@@ -15,6 +15,7 @@ module Static.FromXml where
 import Static.DevGraph
 
 import Common.Result
+import Common.XPath
 
 import Text.XML.Light
 
@@ -48,25 +49,22 @@ isAddQN q = any (flip isPrefixOf $ qName q) ["insert", "append"]
 isRemoveQN :: QName -> Bool
 isRemoveQN q = qName q == "remove"
 
-getAttrVal :: String -> Element -> String
-getAttrVal a = fromMaybe (error "FromXml.getAttrVal")
-  . findAttr (unqual a)
+getAttrVal :: String -> Element -> Maybe String
+getAttrVal = findAttr . unqual
 
 getSelectVal :: Element -> String
-getSelectVal = getAttrVal "select"
-
-data XPath = XPath
-
-anaXPath :: String -> XPath
-anaXPath = undefined
+getSelectVal = fromMaybe "" . getAttrVal "select"
 
 anaUpdate :: LibEnv -> DGraph -> Element -> Result [Change]
 anaUpdate l g e = let q = elName e in
   if isXUpdateQN q then
       if isAddQN q then
-
-          fmap concat $ mapM (anaAddElem l g) $ elChildren e else
-      if isRemoveQN q then return [] else
+          case maybePath $ getSelectVal e of
+            Just ex@(PathExpr _ (Path _ s@(_ : _)))
+              | isPathExpr ex && isElementNode (last s) ->
+                  fmap concat $ mapM (anaAddElem l g) $ elChildren e
+            _ -> fail $ showElement e
+      else if isRemoveQN q then return [] else
           return [Change e]
   else return [Change e]
 

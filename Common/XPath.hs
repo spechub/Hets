@@ -382,12 +382,12 @@ number = skips $ many1 digit <++> optionL (char '.' <:> many digit)
   <|> try (char '.' <:> many1 digit)
 
 -- | a qualified name (prefixed or unprefixed)
-qName :: Parser String
-qName = skips $ ncName <++> optionL (char ':' <:> ncName)
+qualName :: Parser String
+qualName = skips $ ncName <++> optionL (char ':' <:> ncName)
 
 -- | parse a primary expression (including 'fct' or 'expr' in parens)
 primExpr :: Parser Expr
-primExpr = fmap (PrimExpr Var) (char '$' <:> qName)
+primExpr = fmap (PrimExpr Var) (char '$' <:> qualName)
   <|> (lpar >> expr << rpar)
   <|> fmap (PrimExpr Literal) literal
   <|> fmap (PrimExpr Number) number
@@ -397,7 +397,7 @@ primExpr = fmap (PrimExpr Var) (char '$' <:> qName)
 fct :: Parser Expr
 fct = do
   q <- try $ do
-    n <- qName
+    n <- qualName
     if elem n $ pIS : map lowerShow nodeTypes
       then fail $ n ++ " not allowed as function name"
       else lpar >> return n
@@ -472,3 +472,110 @@ andExpr = singleInfixExpr eqExpr "and"
 -- | the top-level expressions interspersed by @or@.
 expr :: Parser Expr
 expr = singleInfixExpr andExpr "or"
+
+-- * checking sanity of paths
+
+data PrincipalNodeType
+  = TAttribute
+  | TNamespace
+  | TElement deriving Eq
+
+principalNodeType :: Axis -> PrincipalNodeType
+principalNodeType a = case a of
+  Attribute -> TAttribute
+  Namespace -> TNamespace
+  _ -> TElement
+
+-- | may this step have further steps
+isElementNode :: Step -> Bool
+isElementNode (Step a t _) =
+  principalNodeType a == TElement && case t of
+  Node -> True
+  NameTest _ -> True
+  _ -> False
+
+isLegalPath :: [Step] -> Bool
+isLegalPath l = case l of
+  [] -> True
+  [_] -> True
+  s : r -> isElementNode s && isLegalPath r
+
+finalStep :: Path -> Maybe Step
+finalStep (Path _ l) = case l of
+  [] -> Nothing
+  _ -> Just $ last l
+
+finalPrincipalNodeType :: Path -> PrincipalNodeType
+finalPrincipalNodeType p = case finalStep p of
+  Nothing -> TElement
+  Just (Step a _ _) -> principalNodeType a
+
+data BasicType
+  = NodeSet
+  | Boolean
+  | Numeral
+  | String
+  | Object
+
+coreFcts :: [(String, (BasicType, [BasicType]))]
+coreFcts =
+  [ ("last", (Numeral, []))
+  , ("position", (Numeral, []))
+  , ("count", (Numeral, [NodeSet]))
+  , ("id", (NodeSet, [Object]))
+  , ("local-name", (String, [NodeSet]))
+  , ("namespace-uri", (String, [NodeSet]))
+  , ("name", (String, [NodeSet]))
+  , ("string", (String, [Object]))
+  , ("concat", (String, [String, String]))
+  , ("substring-before", (String, [String, String]))
+  , ("substring-after", (String, [String, String]))
+  , ("substring", (String, [String, Numeral, Numeral]))
+  , ("starts-with", (Boolean, [String, String]))
+  , ("contains", (Boolean, [String, String]))
+  , ("string-length", (Numeral, [String]))
+  , ("normalize-space", (String, [String]))
+  , ("translate", (String, [String, String, String]))
+  , ("boolean", (Boolean, [Object]))
+  , ("not", (Boolean, [Boolean]))
+  , ("true", (Boolean, []))
+  , ("false", (Boolean, []))
+  , ("lang", (Boolean, [String]))
+  , ("number", (Numeral, [Object]))
+  , ("sum", (Numeral, [NodeSet]))
+  , ("floor", (Numeral, [Numeral]))
+  , ("ceiling", (Numeral, [Numeral]))
+  , ("round", (Numeral, [Numeral]))
+  ]
+
+basicType :: Expr -> BasicType
+basicType e = case e of
+  GenExpr infx op _ ->
+    if infx then case op of
+       "|" -> NodeSet
+       _ | elem op $ ["or", "and"] ++ eqOps ++ relOps -> Boolean
+         | elem op $ addOps ++ multOps -> Numeral
+       _ -> Object
+    else case lookup op coreFcts of
+           Just (t, _) -> t
+           Nothing -> Object
+  PrimExpr k _ -> case k of
+    Number -> Numeral
+    Literal -> String
+    Var -> Object
+  _ -> NodeSet
+
+isPathExpr :: Expr -> Bool
+isPathExpr e = case e of
+  GenExpr True "|" args -> all isPathExpr args
+  GenExpr False "id" [_] -> True
+  PrimExpr Var _ -> True
+  PathExpr m (Path _ s) -> isLegalPath s && maybe True isPathExpr m
+  FilterExpr p _ -> isPathExpr p
+  _ -> False
+
+-- | parse string and perform sanity check
+maybePath :: String -> Maybe Expr
+maybePath s = case parse (expr << eof) "" s of
+  Right e | isPathExpr e -> Just e
+  _ -> Nothing
