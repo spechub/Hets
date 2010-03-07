@@ -389,14 +389,6 @@ twelf2DG file le = trace ("Analyzing file: " ++ show file) $ do
   libs <- buildGraph file le
   return $ makeLibEnv libs
 
-=======
--- updates the library environment by adding specs from the Twelf file
-twelf2DG :: FilePath -> LibEnvExt -> IO LibEnvExt
-twelf2DG file le = do
-  runTwelf $ trace ("Analyzing file: " ++ show file) file
-  libs <- buildGraph file le
-  return $ makeLibEnv libs
-
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
 runTwelf file = do
