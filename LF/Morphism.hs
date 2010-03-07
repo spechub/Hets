@@ -31,7 +31,9 @@ data Morphism = Morphism
   , source :: Sign
   , target :: Sign
   , morphType :: MorphType
-  , symMap :: Map.Map Symbol EXP  
+  , symMap :: Map.Map Symbol EXP
+  , morphType :: MorphType
+  , symMap :: Map.Map Symbol EXP
   } deriving (Ord, Show)
 
 -- constructs an identity morphism
@@ -42,11 +44,11 @@ idMorph sig = Morphism "" "" "" sig sig Unknown Map.empty
 compMorph :: Morphism -> Morphism -> Result Morphism
 compMorph m1 m2 =
   if target m1 /= source m2
-     then Result.Result [incompatibleMorphsError m1 m2] Nothing 
-     else do 
-       let newmap = 
-            Set.fold (\ s -> 
-                        let Just e1 = mapSymbol s m1 
+     then Result.Result [incompatibleMorphsError m1 m2] Nothing
+     else do
+       let newmap =
+            Set.fold (\ s ->
+                        let Just e1 = mapSymbol s m1
                             Just e2 = translateH m2 e1
                             in Map.insert s e2
                      )
@@ -56,7 +58,7 @@ compMorph m1 m2 =
 
 -- applies a morphism to a symbol in the source signature
 mapSymbol :: Symbol -> Morphism -> Maybe EXP
-mapSymbol s m = 
+mapSymbol s m =
   let sig = source m
       in if (isDeclaredSym s sig)
             then Just $ Map.findWithDefault (Const s) s $ symMap m
@@ -72,22 +74,22 @@ translate m e = translateH m (recForm e)
 translateH :: Morphism -> EXP -> Maybe EXP
 translateH _ Type = Just Type
 translateH _ (Var n) = Just $ Var n
-translateH m (Const s) = 
+translateH m (Const s) =
   do e <- mapSymbol s m
-     return e 
+     return e
 translateH m (Appl f [a]) =
   do f1 <- translateH m f
      a1 <- translateH m a
      return $ Appl f1 [a1]
-translateH m (Func [t] s) = 
+translateH m (Func [t] s) =
   do t1 <- translateH m t
-     s1 <- translateH m s  
-     return $ Func [t1] s1 
-translateH m (Pi [(x,t)] a) = 
+     s1 <- translateH m s
+     return $ Func [t1] s1
+translateH m (Pi [(x,t)] a) =
   do t1 <- translateH m t
      a1 <- translateH m a
      return $ Pi [(x,t1)] a1
-translateH m (Lamb [(x,t)] a) = 
+translateH m (Lamb [(x,t)] a) =
   do t1 <- translateH m t
      a1 <- translateH m a
      return $ Lamb [(x,t1)] a1
@@ -112,7 +114,7 @@ printMorph :: Morphism -> Doc
 printMorph m = printSymMap (source m) (target m) $ symMap m
 
 printSymMap :: Sign -> Sign -> Map.Map Symbol EXP -> Doc
-printSymMap sig1 sig2 m = 
+printSymMap sig1 sig2 m =
   vcat $ map (\ (s,e) -> printSymbol sig1 s <+> text "|->" <+> printExp sig2 e)
                      $ Map.toList m
 

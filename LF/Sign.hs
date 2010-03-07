@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Definition of signatures for the Edinburgh 
+Description :  Definition of signatures for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -10,7 +10,7 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module LF.Sign 
+module LF.Sign
        ( Var
        , NAME
        , MODULE
@@ -24,9 +24,9 @@ module LF.Sign
        , addDef
        , getAllSyms
        , getDeclaredSyms
-       , getDefinedSyms 
+       , getDefinedSyms
        , getLocalSyms
-       , isConstant   
+       , isConstant
        , isDeclaredSym
        , isDefinedSym
        , isLocalSym
@@ -57,7 +57,7 @@ data Symbol = Symbol
 
 data EXP = Type
          | Var Var
-         | Const Symbol 
+         | Const Symbol
          | Appl EXP [EXP]
          | Func [EXP] EXP
          | Pi [DECL] EXP
@@ -76,7 +76,7 @@ data Sign = Sign
           { sigBase :: BASE
           , sigModule :: MODULE
           , getDefs :: [DEF]
-          } 
+          }
           deriving (Show, Ord, Eq)
 
 emptySig :: Sign
@@ -86,16 +86,16 @@ addDef :: DEF -> Sign -> Sign
 addDef d (Sign b m ds) = Sign b m $ ds ++ [d]
 
 -- get the set of all symbols
-getAllSyms :: Sign -> Set.Set Symbol 
+getAllSyms :: Sign -> Set.Set Symbol
 getAllSyms (Sign _ _ ds) = Set.fromList $ map getSym ds
 
 -- checks if the symbol is defined or declared in the signature
 isConstant :: Symbol -> Sign -> Bool
-isConstant s sig = Set.member s $ getAllSyms sig 
- 
+isConstant s sig = Set.member s $ getAllSyms sig
+
 -- get the set of declared symbols
 getDeclaredSyms :: Sign -> Set.Set Symbol
-getDeclaredSyms (Sign _ _ ds) = 
+getDeclaredSyms (Sign _ _ ds) =
   Set.fromList $ map getSym $ filter (\ d -> isNothing $ getValue d) ds
 
 -- checks if the symbol is declared in the signature
@@ -104,7 +104,7 @@ isDeclaredSym s sig = Set.member s $ getDeclaredSyms sig
 
 -- get the set of declared symbols
 getDefinedSyms :: Sign -> Set.Set Symbol
-getDefinedSyms (Sign _ _ ds) = 
+getDefinedSyms (Sign _ _ ds) =
   Set.fromList $ map getSym $ filter (\ d -> isJust $ getValue d) ds
 
 -- checks if the symbol is defined in the signature
@@ -117,12 +117,12 @@ getLocalSyms sig = Set.filter (\ s -> isLocalSym s sig) $ getAllSyms sig
 
 -- checks if the symbol is local to the signature
 isLocalSym :: Symbol -> Sign -> Bool
-isLocalSym s sig = 
+isLocalSym s sig =
   and [sigBase sig == symBase s, sigModule sig == symModule s]
 
 -- returns the type/kind for the given symbol
 getSymType :: Symbol -> Sign -> Maybe EXP
-getSymType sym sig = 
+getSymType sym sig =
   let res = List.find (\ d -> getSym d == sym) $ getDefs sig
       in case res of
               Nothing -> Nothing
@@ -130,7 +130,7 @@ getSymType sym sig =
 
 -- returns the value for the given symbol, if it exists
 getSymValue :: Symbol -> Sign -> Maybe EXP
-getSymValue sym sig = 
+getSymValue sym sig =
   let res = List.find (\ d -> getSym d == sym) $ getDefs sig
       in case res of
               Nothing -> Nothing
@@ -144,16 +144,16 @@ printSig :: Sign -> Doc
 printSig sig = vcat $ map (printDef sig) $ getDefs sig
 
 printDef :: Sign -> DEF -> Doc
-printDef sig (Def s t v) = 
-  printSymbol sig s <+> 
-  text "::" <+> 
+printDef sig (Def s t v) =
+  printSymbol sig s <+>
+  text "::" <+>
   printExp sig t <+>
   case v of
     Nothing -> text ""
-    Just val -> text "=" <+> printExp sig val    
+    Just val -> text "=" <+> printExp sig val
 
 printSymbol :: Sign -> Symbol -> Doc
-printSymbol sig s = 
+printSymbol sig s =
   if (isLocalSym s sig)
      then text $ symName s
      else text (symModule s) <> dot <> text (symName s)
@@ -162,19 +162,19 @@ printExp :: Sign -> EXP -> Doc
 printExp _ Type = text "type"
 printExp sig (Const s) = printSymbol sig s
 printExp _ (Var n) = text n
-printExp sig (Appl e es) = 
+printExp sig (Appl e es) =
   let f = printExpWithPrec sig (precAppl + 1) e
       as = map (printExpWithPrec sig precAppl) es
-      in fsep (f:as)
-printExp sig (Func es e) = 
+      in hsep (f:as)
+printExp sig (Func es e) =
   let as = map (printExpWithPrec sig precFunc) es
       val = printExpWithPrec sig (precFunc + 1) e
-      in fsep $ prepPunctuate (text "-> ") (as ++ [val])
+      in hsep $ punctuate (text "-> ") (as ++ [val])
 printExp sig (Pi ds e) = text "{" <> printDecls sig ds <> text "}" <+> printExp sig e
 printExp sig (Lamb ds e) = text "[" <> printDecls sig ds <> text "]" <+> printExp sig e
 
 printExpWithPrec :: Sign -> Int -> EXP -> Doc
-printExpWithPrec sig i e = 
+printExpWithPrec sig i e =
   if prec e >= i
      then parens $ printExp sig e
      else printExp sig e
@@ -186,14 +186,14 @@ prec Var {} = 0
 prec Appl {} = 1
 prec Func {} = 2
 prec Pi {} = 3
-prec Lamb {} = 3 
+prec Lamb {} = 3
 
 precFunc, precAppl :: Int
 precFunc = 2
 precAppl = 1
 
 printDecls :: Sign -> [DECL] -> Doc
-printDecls sig xs = fsep $ punctuate comma $ map (printDecl sig) xs
+printDecls sig xs = hsep $ punctuate comma $ map (printDecl sig) xs
 
 printDecl :: Sign -> DECL -> Doc
 printDecl sig (n,e) = text n <+> colon <+> printExp sig e
@@ -223,7 +223,7 @@ getNewNameH var names root i =
   if (Set.notMember var names)
      then var
      else let newVar = root ++ (show i)
-              in getNewNameH newVar names root $ i+1 
+              in getNewNameH newVar names root $ i+1
 
 -- returns a set of free Variables used within an expression
 getFreeVars :: EXP -> Set.Set Var
@@ -235,7 +235,7 @@ getFreeVarsH (Const _) = Set.empty
 getFreeVarsH (Var x) = Set.singleton x
 getFreeVarsH (Appl f [a]) =
   Set.union (getFreeVarsH f) (getFreeVarsH a)
-getFreeVarsH (Func [t] v) =  
+getFreeVarsH (Func [t] v) =
   Set.union (getFreeVarsH t) (getFreeVarsH v)
 getFreeVarsH (Pi [(n,t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
@@ -243,9 +243,9 @@ getFreeVarsH (Lamb [(n,t)] a) =
   Set.delete n $ Set.union (getFreeVarsH t) (getFreeVarsH a)
 getFreeVarsH _ = Set.empty
 
-{- Variable renamings: 
+{- Variable renamings:
    - the first argument specifies the desired Variable renamings
-   - the second argument specifies the set of Variables which cannot 
+   - the second argument specifies the set of Variables which cannot
      be used as new Variable names -}
 rename :: Map.Map Var Var -> Set.Set Var -> EXP -> EXP
 rename m s e = renameH m s (recForm e)
@@ -256,12 +256,12 @@ renameH _ _ (Const n) = Const n
 renameH m _ (Var n) = Var $ Map.findWithDefault n n m
 renameH m s (Appl f [a]) = Appl (rename m s f) [rename m s a]
 renameH m s (Func [t] u) = Func [rename m s t] (rename m s u)
-renameH m s (Pi [(x,t)] a) = 
+renameH m s (Pi [(x,t)] a) =
   let t1 = rename m s t
       x1 = getNewName x s
       a1 = rename (Map.insert x x1 m) (Set.insert x1 s) a
       in Pi [(x1,t1)] a1
-renameH m s (Lamb [(x,t)] a) = 
+renameH m s (Lamb [(x,t)] a) =
   let t1 = rename m s t
       x1 = getNewName x s
       a1 = rename (Map.insert x x1 m) (Set.insert x1 s) a
