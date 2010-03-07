@@ -32,8 +32,6 @@ data Morphism = Morphism
   , target :: Sign
   , morphType :: MorphType
   , symMap :: Map.Map Symbol EXP
-  , morphType :: MorphType
-  , symMap :: Map.Map Symbol EXP
   } deriving (Ord, Show)
 
 -- constructs an identity morphism
