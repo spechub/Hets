@@ -22,12 +22,11 @@ import Static.ComputeTheory
 import Static.GTheory
 
 import Logic.Grothendieck
-import Logic.ExtSign
-import Logic.Coerce
 
 import LF.Sign
 import LF.Morphism
 import LF.Logic_LF
+import Logic.ExtSign
 
 import Data.Maybe
 import Data.List
@@ -36,9 +35,9 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.LibName
+import Common.Result
 import Common.Utils
 import Common.Id
-import Common.ExtSign
 import qualified Common.Consistency as Cons
 
 import Control.Monad
@@ -51,26 +50,44 @@ import Driver.Options
 
 import Debug.Trace
 
-data LINK_TYPE = Definitional | Postulated
+type NODE = (BASE,MODULE)
+type LINK = (BASE,MODULE,NAME)
 
-type RAW_NODE_NAME = (BASE,MODULE)
-type RAW_LINK_NAME = (BASE,MODULE,NAME)
-type RAW_NODES = Map.Map RAW_NODE_NAME Sign
-type RAW_LINKS = Map.Map (RAW_LINK_NAME,RAW_NODE_NAME,RAW_NODE_NAME)
-                         (LINK_TYPE,Morphism)
-type RAW_GRAPH = (RAW_NODES,RAW_LINKS)
+type SIGS = Map.Map NODE Sign
+type MORPHS = Map.Map (LINK,NODE,NODE) Morphism
 
-type MAP_NODES = Map.Map RAW_NODE_NAME Node
-type LibEnvNodes = (LibEnv,MAP_NODES)
+type GRAPH = (SIGS,MORPHS)
 
-emptyRawGraph :: RAW_GRAPH
-emptyRawGraph = (Map.empty,Map.empty)
+type NODE_MAP = Map.Map NODE (Sign,Node)
+type LINK_MAP = Map.Map LINK Morphism
+type GR_MAP = (NODE_MAP,LINK_MAP)
+
+type LibEnvExt = (LibEnv,GR_MAP)
+type LibEnvFull = (LibEnvExt,BASE,GRAPH)
+
+emptyGraph :: GRAPH
+emptyGraph = (Map.empty,Map.empty)
+
+emptyGrMap :: GR_MAP
+emptyGrMap = (Map.empty,Map.empty)
 
 omdocNS :: Maybe String
 omdocNS = Just "http://omdoc.org/ns"
 
 openMathNS :: Maybe String
 openMathNS = Just "http://www.openmath.org/OpenMath"
+
+lfBase :: String
+lfBase = "http://cds.omdoc.org/foundations/lf/lf.omdoc"
+
+mmtBase :: String
+mmtBase = "http://cds.omdoc.org/omdoc/mmt.omdoc"
+
+lfMod :: String
+lfMod = "lf"
+
+mmtMod :: String
+mmtMod = "mmt"
 
 omdocQN :: QName
 omdocQN = QName "omdoc" omdocNS Nothing
@@ -126,49 +143,64 @@ omatpQN = QName "OMATP" openMathNS Nothing
 omvQN :: QName
 omvQN = QName "OMV" openMathNS Nothing
 
+ommorQN :: QName 
+ommorQN = QName "OMMOR" omdocNS Nothing
+
+conassQN :: QName
+conassQN = QName "conass" omdocNS Nothing
+
+strassQN :: QName
+strassQN = QName "strass" omdocNS Nothing
+
 typeOMS :: Element
 typeOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "type"] [] Nothing
 
 arrowOMS :: Element
 arrowOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "arrow"] [] Nothing
 
 lambdaOMS :: Element
 lambdaOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "lambda"] [] Nothing
 
 piOMS :: Element
 piOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "Pi"] [] Nothing
 
 
 impLambdaOMS :: Element
 impLambdaOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "implicit_lambda"] [] Nothing
 
 impPiOMS :: Element
 impPiOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "implicit_Pi"] [] Nothing
 
 
 oftypeOMS :: Element
 oftypeOMS =
-  Element omsQN [Attr baseQN "http://cds.omdoc.org/foundations/lf/lf.omdoc",
-                 Attr moduleQN "lf",
+  Element omsQN [Attr baseQN lfBase,
+                 Attr moduleQN lfMod,
                  Attr nameQN "oftype"] [] Nothing
+
+compOMS :: Element
+compOMS = 
+  Element omsQN [Attr baseQN mmtBase,
+                 Attr moduleQN mmtMod,
+                 Attr nameQN "composition"] [] Nothing 
 
 nameQN :: QName
 nameQN = (QName "name" Nothing Nothing)
@@ -185,21 +217,6 @@ fromQN = (QName "from" Nothing Nothing)
 toQN :: QName
 toQN = (QName "to" Nothing Nothing)
 
-getNameAttr :: Element -> Maybe String
-getNameAttr e = findAttr nameQN e
-
-getModuleAttr :: Element -> Maybe String
-getModuleAttr e = findAttr moduleQN e
-
-getBaseAttr :: Element -> Maybe String
-getBaseAttr e = findAttr baseQN e
-
-getFromAttr :: Element -> Maybe String
-getFromAttr e = findAttr fromQN e
-
-getToAttr :: Element -> Maybe String
-getToAttr e = findAttr toQN e
-
 -- path to the Twelf folder must be set in the environment variable TWELF_LIB
 twelf :: String
 twelf = "check-some"
@@ -208,22 +225,54 @@ options = ["-omdoc"]
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+-- HELPER FUNCTIONS
 
--- constructs base and module out of a reference
-splitRef :: String -> RAW_NODE_NAME
-splitRef ref =
-  case elemIndices '?' ref of
-       [i] -> let (b,(_:m)) = splitAt i ref
-                   in (b,m)
-       _ -> error "Invalid reference."
+getNameAttr :: Element -> String
+getNameAttr e = 
+  case findAttr nameQN e of
+       Nothing -> error $ "Element is missing a name." ++ (show e)
+       Just n -> n
+
+getModuleAttr :: Element -> Maybe String
+getModuleAttr e = findAttr moduleQN e
+
+getBaseAttr :: Element -> Maybe String
+getBaseAttr e = findAttr baseQN e
+
+getFromAttr :: Element -> String
+getFromAttr e = 
+  case findAttr fromQN e of
+       Nothing -> error "Element is missing a \"from\" attribute."
+       Just a -> a
+
+getToAttr :: Element -> String
+getToAttr e = 
+  case findAttr toQN e of
+       Nothing -> error "Element is missing a \"to\" attribute."
+       Just a -> a
+
+-- retrieves the base, module, and name attributes
+getBMN :: Element -> NODE -> (BASE,MODULE,NAME)
+getBMN e (base,mo) = 
+  let n = case findAttr nameQN e of
+               Nothing -> ""
+               Just n' -> n'  
+      m = case getModuleAttr e of
+               Nothing -> mo
+               Just m' -> m'
+      b = case getBaseAttr e of
+               Nothing -> base
+               Just b' -> resolve b' base
+      in (b,m,n)
 
 -- compares two OMS elements
 eqOMS :: Element -> Element -> Bool
 eqOMS e1 e2 =
-  let b = getBaseAttr e1 == getBaseAttr e2
-      m = getModuleAttr e1 == getModuleAttr e2
-      n = getNameAttr e1 == getNameAttr e2
-      in and [b,m,n]
+  if (elName e1 /= omsQN || elName e2 /= omsQN)
+     then False
+     else and [getNameAttr e1 == getNameAttr e2
+              ,getModuleAttr e1 == getModuleAttr e2
+              ,getBaseAttr e1 == getBaseAttr e2] 
 
 -- resolves the first file path wrt to the second
 resolve :: FilePath -> FilePath -> FilePath
@@ -238,28 +287,101 @@ resolve fp1 fp2 =
                Nothing -> error "Invalid file name."
                Just f -> show f
 
+-- returns the referenced base and module
+parseRef :: String -> String -> NODE
+parseRef ref base = 
+  case elemIndices '?' ref of
+       [i] -> let (br,(_:m)) = splitAt i ref
+                  b = replaceExtension (resolve br base) "elf"
+                  in (b,m)     
+       _ -> error "Invalid reference."
+
+{- parses the referenced file if needed and imports all signatures
+   and morphisms from it -}
+addFromFile :: FilePath -> LibEnvFull -> IO LibEnvFull
+addFromFile file libs = do
+  let (le,base,gr) = libs
+  let (lenv,_) = le
+  if (file == base || Map.member (emptyLibName file) lenv)
+     then return libs
+     else do le1 <- twelf2DG file le
+             return (le1,base,gr)
+
 -- looks up the node number for the given signature reference
-lookupNode :: RAW_NODE_NAME -> MAP_NODES -> Node
-lookupNode ref nmap =
-  case Map.lookup ref nmap of
-       Nothing -> error "Invalid signature reference."
-       Just node -> node
+lookupNode :: NODE -> LibEnvFull -> Node
+lookupNode ref ((_,grmap),_,_) =
+  let (sigmap,_) = grmap
+      in case Map.lookup ref sigmap of
+              Just (_,n) -> n
+              Nothing -> error $ "Node number cannot be found." ++ (show ref)       
 
 -- finds the signature by base and module
-lookupSig :: RAW_NODE_NAME -> LibEnvNodes -> RAW_NODES -> IO Sign
-lookupSig ref@(b,_) (libs,nmap) sigs =
-  case Map.lookup ref sigs of
-       Just sig -> return sig
-       Nothing -> do
-         let node = lookupNode ref nmap
-         let dg = lookupDGraph (emptyLibName b) libs
-         let gth = dgn_theory $ labDG dg node
-         case gth of
-              (G_theory lid extsig _ _ _) ->
-                coercePlainSign lid LF "" $ plainSign extsig
+lookupSig :: NODE -> LibEnvFull -> Sign
+lookupSig ref ((_,grmap),_,gr) =
+  let (sigmap,_) = grmap
+      (sigs,_) = gr
+      in case Map.lookup ref sigmap of
+              Just (sig,_) -> sig
+              Nothing -> case Map.lookup ref sigs of
+                              Just sig -> sig
+                              Nothing -> error "Signature cannot be found."  
+
+-- finds the morphism by base, module, and name
+lookupMorph :: LINK -> LibEnvFull -> Morphism
+lookupMorph ref ((_,grmap),_,gr) =
+  let (_,mormap) = grmap
+      (_,morphs) = gr
+      in case Map.lookup ref mormap of
+              Just morph -> morph
+              Nothing -> 
+                let morphs1 = Map.filterWithKey (\ (l,_,_) _ -> l == ref) morphs
+                    in case Map.toList morphs1 of
+                            [(_,morph)] -> morph
+                            _ -> error "Morphism cannot be found."
+
+-- adds the signature to the signature collection
+addSigToGraph :: Sign -> LibEnvFull -> LibEnvFull
+addSigToGraph sig (le,file,(sigs,morphs)) =
+  let b = sigBase sig
+      m = sigModule sig 
+      sigs1 = Map.insert (b,m) sig sigs
+      in (le,file,(sigs1,morphs))
+
+-- adds the morphism to the morphism collection
+addMorphToGraph :: Morphism -> LibEnvFull -> LibEnvFull
+addMorphToGraph m (le,file,(sigs,morphs)) = 
+  let sig1 = source m
+      sig2 = target m
+      l = (morphBase m, morphModule m, morphName m)
+      s = (sigBase sig1, sigModule sig1)
+      t = (sigBase sig2, sigModule sig2)
+      morphs1 = Map.insert (l,s,t) m morphs
+      in (le,file,(sigs,morphs1))
+
+-- adds the signature to the node map
+addSigToGrMap :: Sign -> Node -> LibEnvFull -> LibEnvFull
+addSigToGrMap sig nod ((l,grmap),file,gr) =
+  let (sigmap,mormap) = grmap
+      b = sigBase sig
+      m = sigModule sig
+      sigmap1 = Map.insert (b,m) (sig,nod) sigmap
+      grmap1 = (sigmap1,mormap) 
+      in ((l,grmap1),file,gr)
+
+-- adds the morphism to the link map
+addMorphToGrMap :: Morphism -> LibEnvFull -> LibEnvFull
+addMorphToGrMap morph ((l,grmap),file,gr) =
+  let (sigmap,mormap) = grmap
+      b = morphBase morph
+      m = morphModule morph
+      n = morphName morph
+      mormap1 = Map.insert (b,m,n) morph mormap
+      grmap1 = (sigmap,mormap1) 
+      in ((l,grmap1),file,gr)  
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+-- CONSTRUCTING THE DGRAPH
 
 -- analyzes the given Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
@@ -267,16 +389,16 @@ anaTwelfFile _ fp = do
   dir <- getCurrentDirectory
   let file = resolve fp (dir ++ "/")
   let name = emptyLibName file
-  (libs,_) <- twelf2DG file (emptyLibEnv,Map.empty)
+  (libs,_) <- twelf2DG file (emptyLibEnv,emptyGrMap)
   return $ Just (name,libs)
 
 -- updates the library environment by adding specs from the Twelf file
-twelf2DG :: FilePath -> LibEnvNodes -> IO LibEnvNodes
-twelf2DG file ln = do
-  runTwelf $ trace ("Running Twelf on file: " ++ show file) file
-  (ln1,g) <- buildGraph (trace ("Analyzing file: " ++ show file) file) ln
-  makeLibEnv (trace ("Building graph for file: " ++ show file) file) ln1 g
-
+twelf2DG :: FilePath -> LibEnvExt -> IO LibEnvExt
+twelf2DG file le = do
+  runTwelf $ trace ("Analyzing file: " ++ show file) file
+  libs <- buildGraph file le
+  return $ makeLibEnv libs  
+     
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
 runTwelf file = do
@@ -298,31 +420,32 @@ runTwelf file = do
             ExitSuccess -> return ()
 
 -- generates a library environment from raw libraries
-makeLibEnv :: FilePath -> LibEnvNodes -> RAW_GRAPH -> IO LibEnvNodes
-makeLibEnv file ln g = do
-  (ln1,dg) <- addNodes emptyDG g ln
-  (ln2,dg1) <- addLinks dg g ln1
-  let (libs,nmap) = ln2
-  let dg2 = computeDGraphTheories libs $ trace ("Computing theories for file: " ++ show file) dg1
-  let libs1 = Map.insert (emptyLibName file) dg2 libs
-  return (libs1,nmap)
+makeLibEnv :: LibEnvFull -> LibEnvExt
+makeLibEnv libs = do
+  let libs1 = addNodes libs
+      libs2 = addLinks libs1
+      ((l,grmap),file,_) = libs2
+      lname = emptyLibName file
+      dg = computeDGraphTheories l $ lookupDGraph lname l
+      l1 = Map.insert lname dg l
+      in (l1,grmap)
 
 -- adds nodes to the library environment
-addNodes :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
-addNodes dg (sigs,_) (libs,nmap) = do
-  let (nmap3,dg3) =
-        foldl (\ (nmap1,dg1) ((b,m),sig) ->
-                 let (node,dg2) = insSigToDG sig dg1
-                     nmap2 = Map.insert (b,m) node nmap1
-                     in (nmap2,dg2)
-              )
-              (nmap,dg)
-              $ Map.toList sigs
-  return ((libs,nmap3),dg3)
+addNodes :: LibEnvFull -> LibEnvFull
+addNodes libs@(_,_,(sigs,_)) =
+  let (dg2,libs3) = 
+         Map.fold (\ sig (dg,libs1) -> 
+                     let (nod,dg1) = addSigToDG sig dg
+                         libs2 = addSigToGrMap sig nod libs1
+                         in (dg1,libs2)                     
+                  ) (emptyDG,libs) sigs
+      ((l,grmap),base,gr) = libs3
+      l1 = Map.insert (emptyLibName base) dg2 l
+      in ((l1,grmap),base,gr)
 
 -- inserts a signature as a node to the development graph
-insSigToDG :: Sign -> DGraph -> (Node,DGraph)
-insSigToDG sig dg =
+addSigToDG :: Sign -> DGraph -> (Node,DGraph)
+addSigToDG sig dg = 
   let node = getNewNodeDG dg
       m = sigModule sig
       nodeName = emptyNodeName { getName = Token m nullRange }
@@ -334,41 +457,45 @@ insSigToDG sig dg =
       in (node,dg1)
 
 -- adds links to the library environment
-addLinks :: DGraph -> RAW_GRAPH -> LibEnvNodes -> IO (LibEnvNodes,DGraph)
-addLinks dg (sigs,morphs) ln = do
-  dg2 <- foldM (\ dg1 ((_,s,t),(k,morph)) -> do
-                  sig1 <- lookupSig s ln sigs
-                  sig2 <- lookupSig t ln sigs
-                  let morph1 = morph { source = sig1, target = sig2 }
-                  return $ insMorphToDG morph1 k ln dg1
-               )
-               dg
-               $ Map.toList morphs
-  return (ln,dg2)
+addLinks :: LibEnvFull -> LibEnvFull
+addLinks libs@((l,_),file,(_,morphs)) = 
+  let lname = emptyLibName file
+      dg = lookupDGraph lname l
+      (dg3,libs3) = 
+         Map.foldWithKey (\ (_,_,t) morph (dg1,libs1) -> 
+                            let sig = lookupSig t libs1
+                                morph1 = morph { target = sig }
+                                dg2 = addMorphToDG morph1 dg1 libs1
+                                libs2 = addMorphToGrMap morph1 libs1
+                                in (dg2,libs2)                                              
+                         ) (dg,libs) morphs
+      ((l1,grmap),_,gr) = libs3
+      l2 = Map.insert lname dg3 l1
+      in ((l2,grmap),file,gr)
 
 -- inserts a morphism as a link to the development graph
-insMorphToDG :: Morphism -> LINK_TYPE -> LibEnvNodes -> DGraph -> DGraph
-insMorphToDG morph k ln dg =
+addMorphToDG :: Morphism -> DGraph -> LibEnvFull -> DGraph
+addMorphToDG morph dg libs =
   let gmorph = gEmbed $ G_morphism LF morph startMorId
       thmStatus = Proven (DGRule "Type-checked") emptyProofBasis
-      linkKind = case k of
+      linkKind = case morphType morph of
                       Definitional -> DefLink
                       Postulated -> ThmLink thmStatus
+                      Unknown -> error "Unknown morphism type." 
       consStatus = ConsStatus Cons.None Cons.None LeftOpen
       linkType = ScopedLink Global linkKind consStatus
       linkLabel = defDGLink gmorph linkType SeeTarget
-      b = morphBase morph
-      (node1,dg1) = addRefNode b dg (source morph) ln
-      (node2,dg2) = addRefNode b dg1 (target morph) ln
+      (node1,dg1) = addRefNode dg (source morph) libs
+      (node2,dg2) = addRefNode dg1 (target morph) libs
       in snd $ insLEdgeDG (node1,node2,linkLabel) dg2
-
+      
 -- constructs a reference node to the specified signature, if needed
-addRefNode :: BASE -> DGraph -> Sign -> LibEnvNodes -> (Node,DGraph)
-addRefNode base dg sig (libs,nmap) =
+addRefNode :: DGraph -> Sign -> LibEnvFull -> (Node,DGraph)
+addRefNode dg sig libs@(_,file,_) =
   let b = sigBase sig
       m = sigModule sig
-      node = lookupNode (b,m) nmap
-      in if (b == base)
+      node = lookupNode (b,m) libs
+      in if (b == file)
          then (node,dg)
          else let info = newRefInfo (emptyLibName b) node
                   refNodeM = lookupInAllRefNodesDG info dg
@@ -377,15 +504,15 @@ addRefNode base dg sig (libs,nmap) =
                           Nothing -> insRefSigToDG sig info dg libs
 
 -- inserts a signature as a reference node to the development graph
-insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnv -> (Node,DGraph)
-insRefSigToDG sig info dg libs =
+insRefSigToDG :: Sign -> DGNodeInfo -> DGraph -> LibEnvFull -> (Node,DGraph)
+insRefSigToDG sig info dg ((l,_),_,_) =
   let node = getNewNodeDG dg
       m = sigModule sig
       nodeName = emptyNodeName { getName = Token m nullRange }
       extSign = makeExtSign LF sig
       gth = noSensGTheory LF extSign startSigId
       nodeLabel1 = newInfoNodeLab nodeName info gth
-      refDG = lookupDGraph (ref_libname info) libs
+      refDG = lookupDGraph (ref_libname info) l
       refGlobTh = globalTheory $ labDG refDG $ ref_node info
       nodeLabel2 = nodeLabel1 { globalTheory = refGlobTh}
       dg1 = insNodeDG (node,nodeLabel2) dg
@@ -394,215 +521,188 @@ insRefSigToDG sig info dg libs =
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+-- CONSTRUCTING SIGNATURES AND MORPHISMS
 
 -- builds raw development graph libraries
-buildGraph :: FilePath -> LibEnvNodes -> IO (LibEnvNodes,RAW_GRAPH)
-buildGraph file (libs,nmap) = do
+buildGraph :: FilePath -> LibEnvExt -> IO LibEnvFull
+buildGraph file le = do
   let omdoc_file = replaceExtension file "omdoc"
-  xml <- readFile $ trace "Parsing omdoc file." omdoc_file
+  xml <- readFile omdoc_file
   let elems = onlyElems $ parseXML xml
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
        [root] -> do
-         foldM (\ lng e ->
+         foldM (\ libs e -> 
                   let n = elName e
-                      in if (n == theoryQN) then addSign file e lng else
-                         if (n == viewQN) then addMorph file e lng else
-                         return lng
+                      in if (n == theoryQN) then addSign e libs else
+                         if (n == viewQN) then addView e libs else
+                         return libs
                )
-               ((libs,nmap),emptyRawGraph)
+               (le,file,emptyGraph)
                $ elChildren root
        _ -> fail "Not an OMDoc file."
 
 -- transforms a theory element into a signature and adds it to the libraries
-addSign :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) ->
-           IO (LibEnvNodes,RAW_GRAPH)
-addSign file e lng =
-  case getNameAttr e of
-       Nothing -> error "Theory element must have a name."
-       Just name -> do
-          let sig = Sign file name []
-          (lng1,sig1) <-
-            foldM (\ lngs el ->
-                     let n = elName el
-                         in if (n == includeQN) then addIncl el lngs else
-                            if (n == structureQN) then addStruct el lngs else
-                            if (n == constantQN) then addConst el lngs else
-                            if (n == aliasQN) then addAlias el lngs else
-                            if (n == notationQN) then addNotat el lngs else
-                            return lngs
-                  )
-                  (lng,sig)
-                  $ elChildren e
-          let (ln,(sigs,morphs)) = lng1
-          let sigs1 = Map.insert (file,name) sig1 sigs
-          return (ln,(sigs1,morphs))
+addSign :: Element -> LibEnvFull -> IO LibEnvFull
+addSign e libs@(_,base,_) = do
+  let mo = getNameAttr e
+  let sig = Sign base mo []
+  (libs1,sig1) <- 
+     foldM (\ ls el -> 
+              let n = elName el
+                  in if (n == includeQN) then addIncl el ls else
+                     if (n == structureQN) then addStruct el ls else
+                     if (n == constantQN) then addConst el ls else
+                     if (n == aliasQN) then addAlias el ls else
+                     if (n == notationQN) then addNotat el ls else 
+                     return ls
+           ) 
+           (libs,sig)
+           $ elChildren e
+  return $ addSigToGraph sig1 libs1
+
+-- so far views are ignored
+addView :: Element -> LibEnvFull -> IO LibEnvFull
+addView _ libs = return libs
+  
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------              
+-- CONSTRUCTING CONSTANTS
 
 -- adds a constant declaration to the signature
-addConst :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
-            IO ((LibEnvNodes,RAW_GRAPH),Sign)
-addConst e (lng,sig) = do
-  let sym = case getNameAttr e of
-                 Nothing -> error "Constant element must have a name."
-                 Just n -> Symbol (sigBase sig) (sigModule sig) n
+addConst :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
+addConst e (lib,sig) = do
+  let ref@(base,mo) = (sigBase sig, sigModule sig) 
+  let sym = Symbol base mo $ getNameAttr e
   let typ = case findChildren typeQN e of
-                 [t] -> type2exp sig t
+                 [t] -> type2exp t ref
                  _ -> error "Constant element must have a unique type child."
   let val = case findChildren definitionQN e of
                  [] -> Nothing
-                 [v] -> Just $ definition2exp sig v
+                 [v] -> Just $ definition2exp v ref        
                  _ ->  error $ concat ["Constant element must have at most ",
                                        "one definition child."]
   let sig1 = addDef (Def sym typ val) sig
-  return (lng,sig1)
+  return (lib,sig1)
 
 -- converts a type element to an expression
-type2exp :: Sign -> Element -> EXP
-type2exp sig e =
+type2exp :: Element -> NODE -> EXP
+type2exp e ref = 
   case findChildren omobjQN e of
-       [omobj] -> omobj2exp sig omobj
+       [omobj] -> omobj2exp omobj ref
        _ -> error "Type element must have a unique OMOBJ child."
 
 -- converts a definition element to an expression
-definition2exp :: Sign -> Element -> EXP
-definition2exp sig e =
+definition2exp :: Element -> NODE -> EXP
+definition2exp e ref = 
   case findChildren omobjQN e of
-       [omobj] -> omobj2exp sig omobj
+       [omobj] -> omobj2exp omobj ref
        _ -> error "Definition element must have a unique OMOBJ child."
 
 -- converts an OMOBJ element to an expression
-omobj2exp :: Sign -> Element -> EXP
-omobj2exp sig e =
+omobj2exp :: Element -> NODE -> EXP
+omobj2exp e ref = 
   case elChildren e of
-       [el] -> omel2exp sig el
+       [el] -> omel2exp el ref
        _ -> error "OMOBJ element must have a unique child."
 
 -- converts an Open Math element to an expression
-omel2exp :: Sign -> Element -> EXP
-omel2exp sig e =
+omel2exp :: Element -> NODE -> EXP
+omel2exp e ref =
   let name = elName e
-      in if (name == omsQN) then oms2exp sig e else
-         if (name == omaQN) then oma2exp sig e else
-         if (name == ombindQN) then ombind2exp sig e else
-         if (name == omvQN) then oms2exp sig e else
+      in if (name == omsQN) then oms2exp e ref else
+         if (name == omaQN) then oma2exp e ref else
+         if (name == ombindQN) then ombind2exp e ref else
+         if (name == omvQN) then oms2exp e ref else
             error $ concat ["Only OMA, OMS, and OMBIND elements correspond "
                            ,"to an expression."]
 
 -- converts an OMS element to an expression
-oms2exp :: Sign -> Element -> EXP
-oms2exp sig e =
-  let curBase = sigBase sig
-      curModule = sigModule sig
-  in if (eqOMS e typeOMS)
-        then Type
-        else case getNameAttr e of
-                  Nothing -> error "OMS element must have a name."
-                  Just n ->
-                    case getModuleAttr e of
-                         Nothing -> Const $ Symbol curBase curModule n
-                         Just m ->
-                           case getBaseAttr e of
-                                Nothing -> Const $ Symbol curBase m n
-                                Just b -> Const $ Symbol (resolve b curBase) m n
+oms2exp :: Element -> NODE -> EXP                                      
+oms2exp e ref =
+  if (eqOMS e typeOMS)
+     then Type
+     else let (b,m,n) = getBMN e ref
+              in Const $ Symbol b m n
 
 -- converts an OMA element to an expression
-oma2exp :: Sign -> Element -> EXP
-oma2exp sig e =
+oma2exp :: Element -> NODE -> EXP                                      
+oma2exp e ref = 
   case elChildren e of
        [] -> error "OMA element must have at least one child."
        (f:as) ->
-         let as1 = map (omel2exp sig) as
-             in if (elName f == omsQN && eqOMS f arrowOMS)
+         let as1 = map (\ a -> omel2exp a ref) as
+             in if (eqOMS f arrowOMS)
                    then case as1 of
                              [] -> error $
                                     concat ["The -> constructor must be applied"
                                            ," to at least one argument."]
                              _ -> Func (init as1) (last as1)
-                else let f1 = omel2exp sig f
-                         in Appl f1 as1
+                   else let f1 = omel2exp f ref
+                            in Appl f1 as1      
 
 -- converts an OMBIND element to an expression
-ombind2exp :: Sign -> Element -> EXP
-ombind2exp sig e =
+ombind2exp :: Element -> NODE -> EXP                                      
+ombind2exp e ref = 
   case elChildren e of
        [f,d,b] ->
          if (elName d /= ombvarQN)
             then error "The second child of OMBIND must be OMBVAR."
-            else let d1 = ombvar2decls sig d
-                     b1 = omel2exp sig b
-                     in if (elName f/= omsQN)
-                           then error "The first child of OMBIND must be OMS."
-                           else if (eqOMS f lambdaOMS) then Lamb d1 b1 else
-                                if (eqOMS f piOMS) then Pi d1 b1 else
-                                {- so far implicit binders are treated
-                                   as explicit -}
-                                if (eqOMS f impLambdaOMS) then Lamb d1 b1 else
-                                if (eqOMS f impPiOMS) then Pi d1 b1 else
-                                error $ concat ["The first child of OMBIND "
-                                               ,"must be be Pi or Lambda."]
-       _ -> error "OMBIND element must have exactly 3 children."
+            else let d1 = ombvar2decls d ref
+                     b1 = omel2exp b ref
+                     in if (eqOMS f lambdaOMS) then Lamb d1 b1 else
+                        if (eqOMS f piOMS) then Pi d1 b1 else
+                        {- so far implicit binders are treated
+                           as explicit -}
+                        if (eqOMS f impLambdaOMS) then Lamb d1 b1 else
+                        if (eqOMS f impPiOMS) then Pi d1 b1 else
+                        error $ concat ["The first child of OMBIND " 
+                                       ,"must be be Pi or Lambda."]                                         
+       _ -> error "OMBIND element must have exactly 3 children."                   
 
 -- converts an OMBVAR element to a list of declaration
-ombvar2decls :: Sign -> Element -> [DECL]
-ombvar2decls sig e =
+ombvar2decls :: Element -> NODE -> [DECL]
+ombvar2decls e ref = 
   let attrs = findChildren omattrQN e
-      in map (omattr2decl sig) attrs
+      in map (\ a -> omattr2decl a ref) attrs
 
 -- converts an OMATTR element to a declaration
-omattr2decl :: Sign -> Element -> DECL
-omattr2decl sig e =
+omattr2decl :: Element -> NODE -> DECL
+omattr2decl e ref =
   case findChildren omatpQN e of
        [omatp] ->
          case findChildren omvQN e of
-              [omv] -> (omv2var omv, omatp2exp sig omatp)
+              [omv] -> (getNameAttr omv, omatp2exp omatp ref)
               _ -> error "OMATTR element must have a unique OMV child."
        _ -> error "OMATTR element must have a unique OMATP child."
 
--- converts an OMV element to a variable
-omv2var :: Element -> Var
-omv2var e =
-  case getNameAttr e of
-       Nothing -> error "OMV element must have a name."
-       Just v -> v
-
 -- converts an OMATP element to an expression
-omatp2exp :: Sign -> Element -> EXP
-omatp2exp sig e =
+omatp2exp :: Element -> NODE -> EXP
+omatp2exp e ref = 
   case elChildren e of
        [c1,c2] ->
-          if (and [elName c1 == omsQN, eqOMS c1 oftypeOMS])
-             then omel2exp sig c2
+          if (eqOMS c1 oftypeOMS)
+             then omel2exp c2 ref
              else error $ concat ["The first child of OMATP",
                                   "must be the \"oftype\" symbol."]
        _ -> error "OMATP element must have exactly two children."
 
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------     
+-- CONSTRUCTING INCLUSIONS
+
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
-addIncl :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
-           IO ((LibEnvNodes,RAW_GRAPH),Sign)
-addIncl e ((ln,(sigs,morphs)),sig) = do
-  case getFromAttr e of
-       Nothing -> error "Include element must have a \"from\" attribute."
-       Just ref -> do
-         let curBase = sigBase sig
-         let curModule = sigModule sig
-         let (br,m) = splitRef ref
-         let b = replaceExtension (resolve br curBase) "elf"
-         ln1 <- addFromFile b curBase ln
-         let s = (b,m)
-         let t = (curBase,curModule)
-         sourceSig <- lookupSig s ln1 sigs
-         let sig1 = addInclSyms sourceSig sig
-         let morphs1 = addInclToMorphs s t morphs
-         return ((ln1,(sigs,morphs1)),sig1)
-
-{- parses the referenced file and imports all signatures
-   and morphisms from it -}
-addFromFile :: String -> FilePath -> LibEnvNodes -> IO LibEnvNodes
-addFromFile file base ln@(libs,_) = do
-  if (file == base || Map.member (emptyLibName file) libs)
-     then return ln
-     else twelf2DG file ln
+addIncl :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
+addIncl e (libs,sig) = do
+  let from = getFromAttr e
+  let src = parseRef from $ sigBase sig
+  libs1 <- addFromFile (fst src) libs
+  let srcSig = lookupSig src libs1
+  let tarSig = addInclSyms srcSig sig
+  let morph = getInclMorph srcSig tarSig
+  let libs2 = addMorphToGraph morph libs1
+  return (libs2,tarSig)
 
 -- adds included definitions to the signature
 addInclSyms :: Sign -> Sign -> Sign
@@ -612,35 +712,198 @@ addInclSyms (Sign _ _ ds) sig =
                   if (Set.member (getSym d) syms)
                      then sig1
                      else addDef d sig1
-               )
-               sig
-               ds
+               ) sig ds
 
--- adds the inclusion to the collection of morphisms
-addInclToMorphs :: RAW_NODE_NAME -> RAW_NODE_NAME -> RAW_LINKS -> RAW_LINKS
-addInclToMorphs s t morphs =
-  let (b,m) = t
-      l = (b,m,"")
-      morph = Morphism b m "" emptySig emptySig Map.empty
-      in Map.insert (l,s,t) (Definitional,morph) morphs
+-- constructs the inclusion morphism
+getInclMorph :: Sign -> Sign -> Morphism
+getInclMorph sig1 sig2 = 
+  Morphism (sigBase sig2) (sigModule sig2) "" sig1 sig2 Definitional Map.empty
+
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------      
+-- CONSTRUCTING STRUCTURES
 
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
-addStruct :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
-           IO ((LibEnvNodes,RAW_GRAPH),Sign)
-addStruct _ lngs = return lngs
+addStruct :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
+addStruct e (libs,sig) = do
+  let name = getNameAttr e
+  let from = getFromAttr e
+  let src = parseRef from $ sigBase sig
+  libs1 <- addFromFile (fst src) libs
+  let srcSig = lookupSig src libs1
+  (tarSig,morph,libs2) <- processStruct name srcSig sig (elChildren e) libs1
+  let libs3 = addMorphToGraph morph libs2
+  return (libs3,tarSig)
 
--- so far aliases are ignored
-addAlias :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
-           IO ((LibEnvNodes,RAW_GRAPH),Sign)
-addAlias _ lngs = return lngs
+{- adds the definitions imported by a structure to the signature and
+   constructs the structure morphism -}
+processStruct :: String -> Sign -> Sign -> [Element] -> LibEnvFull -> 
+                 IO (Sign,Morphism,LibEnvFull)
+processStruct name srcSig tarSig els libs = do
+  let base = sigBase tarSig
+  let mo = sigModule tarSig
+  let prefix = name ++ "/"
+  let node1 = (sigBase srcSig, sigModule srcSig)
+  let node2 = (base,mo)
+  (symmap,libs1) <- constructMap els node1 node2 libs
+  let Sign _ _ ds = srcSig
+  let morph_init = 
+        Morphism base mo name emptySig emptySig Definitional Map.empty  
+  let (sig2,morph2) = 
+        foldl (\ (sig,morph) (Def s t v) ->
+                 let local = isLocalSym s srcSig
+                     defined = isDefinedSym s srcSig
+                     rel sym = Symbol base mo $ prefix ++ (symName sym)
+                     sig1 = if (not local) then sig else
+                       let s1 = rel s 
+                           t1 = case translate morph t of
+                                     Just t1'-> t1'
+                                     Nothing -> error $
+                                       "Structure could not be formed."
+                           v1 = case v of
+                                     Just v1' -> translate morph v1'
+                                     Nothing -> Map.lookup s symmap 
+                           in addDef (Def s1 t1 v1) sig 
+                     morph1 = let source1 = addDef (Def s t v) $ source morph
+                                  e = if local
+                                         then Const $ rel s  
+                                         else Map.findWithDefault (Const s)
+                                              s symmap
+                                  map1 = if defined
+                                            then symMap morph
+                                            else Map.insert s e $ symMap morph
+                                  in morph { source = source1
+                                           , target = sig1
+                                           , symMap = map1 }                   
+                     in (sig1,morph1)
+              ) (tarSig,morph_init) ds
+  return (sig2,morph2,libs1)      
+
+-- constructs the translation part of the structure
+constructMap :: [Element] -> NODE -> NODE -> LibEnvFull -> 
+                IO (Map.Map Symbol EXP, LibEnvFull)
+constructMap els src tar libs = do
+  foldM (\ ml el -> 
+           let n = elName el
+               in if (n == conassQN) then conass2map el ml src tar else
+                  if (n == includeQN) then incl2map el ml src tar else
+                  if (n == strassQN) then strass2map el ml src tar else                 
+                  return ml
+        ) (Map.empty,libs) els
+
+-- converts the constant assignment into a map
+conass2map :: Element -> (Map.Map Symbol EXP, LibEnvFull) -> NODE ->
+              NODE -> IO (Map.Map Symbol EXP, LibEnvFull)
+conass2map e (mapp,libs) src tar = do
+  let (b,m,n) = getBMN e src
+  case findChildren omobjQN e of
+       [omobj] -> do let expr = omobj2exp omobj tar
+                     let map1 = Map.insert (Symbol b m n) expr mapp
+                     return (map1,libs)
+       _ -> error "Constant assignment element must have a unique OMMOR child."
+
+-- converts the included morphism into a map
+incl2map :: Element -> (Map.Map Symbol EXP, LibEnvFull) -> NODE ->
+            NODE -> IO (Map.Map Symbol EXP, LibEnvFull)
+incl2map e (m,l) _ tar =
+  case findChildren ommorQN e of
+       [ommor] -> do (mor,l1) <- ommor2mor ommor tar l
+                     let m1 = Map.union m $ symMap mor
+                     return (m1,l1)
+       _ -> error "Include element must have a unique OMMOR child."
+
+-- converts the structure assignment into a map
+strass2map :: Element -> (Map.Map Symbol EXP, LibEnvFull) -> NODE ->
+              NODE -> IO (Map.Map Symbol EXP, LibEnvFull)
+strass2map e (m,l) src tar =
+  case findChildren ommorQN e of
+       [ommor] -> do (mor1,l1) <- retrieveMorph (getBMN e src) l
+                     (mor2,l2) <- ommor2mor ommor tar l1
+                     let m1 = Map.union m $ combineMorphs mor1 mor2
+                     return (m1,l2)
+       _ -> error "Structure assignment element must have a unique OMMOR child."
+
+-- converts an OMMOR element to a morphism
+ommor2mor :: Element -> NODE -> LibEnvFull -> IO (Morphism,LibEnvFull)
+ommor2mor e ref libs = 
+  case elChildren e of
+       [el] -> omel2mor el ref libs
+       _ -> error "OMMOR element must have a unique child."
+
+-- converts an Open Math element to a morphism
+omel2mor :: Element -> NODE -> LibEnvFull -> IO (Morphism,LibEnvFull)
+omel2mor e ref libs =
+  let name = elName e
+      in if (name == omsQN) then oms2mor e ref libs else
+         if (name == omaQN) then oma2mor e ref libs else
+         error "Only OMA and OMS elements correspond to a morphism."
+ 
+-- converts an OMS element to a morphism
+oms2mor :: Element -> NODE -> LibEnvFull -> IO (Morphism,LibEnvFull)                                    
+oms2mor e ref libs = retrieveMorph (getBMN e ref) libs
+
+-- converts an OMA element to a morphism  
+oma2mor :: Element -> NODE -> LibEnvFull -> IO (Morphism,LibEnvFull)                                    
+oma2mor e ref l = do
+  case elChildren e of
+       [c,m1,m2] -> do
+         if (eqOMS c compOMS)
+            then do (mor1,l1) <- omel2mor m1 ref l
+                    (mor2,l2) <- omel2mor m2 ref l1
+                    let morR = compMorph (mor1 { target = source mor2 }) mor2
+                    let mor = case morR of
+                                   Result _ (Just mor') -> mor'
+                                   _ -> error "Morphism cannot be retrieved." 
+                    return (mor,l2)
+            else error "The first child of OMA in OMMOR must be composition."
+       _ -> error "OMA in OMMOR must have exactly three children." 
+
+-- retrieves a morphism by the link name
+retrieveMorph :: LINK -> LibEnvFull -> IO (Morphism,LibEnvFull)
+retrieveMorph (b,m,n) l = do
+  l1 <- addFromFile (replaceExtension b "elf") l
+  let 
+  case elemIndex '/' n of
+       Nothing -> do 
+         let mor = lookupMorph (b,m,n) l1
+         return (mor,l1)
+       Just i -> do 
+         let (n1,(_:n2)) = splitAt i n
+         let mor1 = lookupMorph (b,m,n1) l1
+         let sig = source mor1
+         let b1 = sigBase sig
+         let m1 = sigModule sig
+         (mor2,l2) <- retrieveMorph (b1,m1,n2) l1
+         let morR = compMorph (mor2 { target = sig }) mor1
+         let mor = case morR of
+                        Result _ (Just mor') -> mor'
+                        _ -> error "Morphism cannot be retrieved." 
+         return (mor,l2)
+
+-- combines two morphisms according to the structure assignment
+combineMorphs :: Morphism -> Morphism -> Map.Map Symbol EXP
+combineMorphs mor1 mor2 = 
+  Set.fold ( \ s ->
+               let s1 = case mapSymbol s mor1 of
+                             Just (Const s1') -> s1'
+                             _ -> error "Morphisms cannot be combined."
+                   e1 = case mapSymbol s mor2 of
+                             Just e1' -> e1'
+                             _ -> error "Morphisms cannot be combined."
+                   in Map.insert s1 e1
+           )
+           Map.empty
+           $ getLocalSyms $ source mor1 
+        
+------------------------------------------------------------------------------
+------------------------------------------------------------------------------     
+-- CONSTRUCTING ALIASES AND NOTATIONS
+ 
+ -- so far aliases are ignored
+addAlias :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
+addAlias _ ls = return ls
 
 -- so far notations are ignored
-addNotat :: Element -> ((LibEnvNodes,RAW_GRAPH),Sign) ->
-           IO ((LibEnvNodes,RAW_GRAPH),Sign)
-addNotat _ lngs = return lngs
-
--- so far views are ignored
-addMorph :: FilePath -> Element -> (LibEnvNodes,RAW_GRAPH) ->
-           IO (LibEnvNodes,RAW_GRAPH)
-addMorph _ _ lng = return lng
+addNotat :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
+addNotat _ ls = return ls
