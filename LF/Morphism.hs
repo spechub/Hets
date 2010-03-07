@@ -47,7 +47,7 @@ compMorph m1 m2 =
        let newmap =
             Set.fold (\ s ->
                         let Just e1 = mapSymbol s m1
-                            Just e2 = translateH m2 e1
+                            Just e2 = translate m2 e1
                             in Map.insert s e2
                      )
                      Map.empty $

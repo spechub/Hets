@@ -37,6 +37,7 @@ import qualified Data.Set as Set
 import Common.LibName
 import Common.Result
 import Common.Utils
+import Common.DocUtils
 import Common.Id
 import qualified Common.Consistency as Cons
 
@@ -552,7 +553,31 @@ addSign e libs@(_,base,_) = do
 
 -- so far views are ignored
 addView :: Element -> LibEnvFull -> IO LibEnvFull
-addView _ libs = return libs
+addView e libs@(_,file,_) = do
+  let name = getNameAttr e
+  let from = getFromAttr e
+  let to = getToAttr e
+  let src = parseRef from file
+  let tar = parseRef to file
+  libs1 <- addFromFile (fst src) libs
+  libs2 <- addFromFile (fst tar) libs1
+  let srcSig = lookupSig src libs2
+  let tarSig = lookupSig tar libs2
+  (morph,libs3) <- getViewMorph name srcSig tarSig (elChildren e) libs2
+  let libs4 = addMorphToGraph morph libs3
+  return libs4
+
+{- constructs the view morphism -}
+getViewMorph :: String -> Sign -> Sign -> [Element] -> LibEnvFull ->
+               IO (Morphism,LibEnvFull)
+getViewMorph name srcSig tarSig els libs@(_,file,_) = do
+  let b1 = sigBase srcSig
+  let m1 = sigModule srcSig
+  let b2 = sigBase tarSig
+  let m2 = sigModule tarSig
+  (symmap,libs1) <- constructMap els (b1,m1) (b2,m2) libs
+  let morph = Morphism file name "" srcSig tarSig Postulated symmap
+  return (morph,libs1)  
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -687,9 +712,9 @@ omv2exp e _ = Var $ getNameAttr e
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
 addIncl :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
-addIncl e (libs,sig) = do
+addIncl e (libs@(_,file,_),sig) = do
   let from = getFromAttr e
-  let src = parseRef from $ sigBase sig
+  let src = parseRef from file
   libs1 <- addFromFile (fst src) libs
   let srcSig = lookupSig src libs1
   let tarSig = addInclSyms srcSig sig
@@ -719,10 +744,10 @@ getInclMorph sig1 sig2 =
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
 addStruct :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
-addStruct e (libs,sig) = do
+addStruct e (libs@(_,file,_),sig) = do
   let name = getNameAttr e
   let from = getFromAttr e
-  let src = parseRef from $ sigBase sig
+  let src = parseRef from file
   libs1 <- addFromFile (fst src) libs
   let srcSig = lookupSig src libs1
   (tarSig,morph,libs2) <- processStruct name srcSig sig (elChildren e) libs1
@@ -877,17 +902,17 @@ retrieveMorph (b,m,n) l = do
 -- combines two morphisms according to the structure assignment
 combineMorphs :: Morphism -> Morphism -> Map.Map Symbol EXP
 combineMorphs mor1 mor2 =
-  Set.fold ( \ s ->
-               let s1 = case mapSymbol s mor1 of
-                             Just (Const s1') -> s1'
-                             _ -> error "Morphisms cannot be combined."
-                   e1 = case mapSymbol s mor2 of
-                             Just e1' -> e1'
-                             _ -> error "Morphisms cannot be combined."
-                   in Map.insert s1 e1
-           )
-           Map.empty
-           $ getLocalSyms $ source mor1
+  let local = getLocalSyms $ source mor1
+      declared = getDeclaredSyms $ source mor1
+      in Set.fold ( \ s ->
+                      let s1 = case mapSymbol s mor1 of
+                                    Just (Const s1') -> s1'
+                                    _ -> error $ "Morphisms cannot be combined."
+                          e1 = case mapSymbol s mor2 of
+                                    Just e1' -> e1'
+                                    _ -> error $ "Morphisms cannot be combined."
+                          in Map.insert s1 e1
+                  ) Map.empty $ Set.intersection local declared 
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
