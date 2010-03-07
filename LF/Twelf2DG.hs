@@ -36,7 +36,6 @@ import qualified Data.Set as Set
 
 import Common.LibName
 import Common.Result
-import Common.DocUtils
 import Common.Utils
 import Common.Id
 import qualified Common.Consistency as Cons
@@ -735,26 +734,26 @@ addStruct e (libs,sig) = do
 processStruct :: String -> Sign -> Sign -> [Element] -> LibEnvFull ->
                  IO (Sign,Morphism,LibEnvFull)
 processStruct name srcSig tarSig els libs = do
-  let base = sigBase tarSig
-  let modul = sigModule tarSig
+  let b1 = sigBase srcSig
+  let m1 = sigModule srcSig
+  let b2 = sigBase tarSig
+  let m2 = sigModule tarSig
   let prefix = name ++ "/"
-  let node1 = (sigBase srcSig, sigModule srcSig)
-  let node2 = (base,modul)
-  (symmap,libs1) <- constructMap els node1 node2 libs
+  let rel sym = Symbol b2 m2 $ prefix ++ (symName sym)
+  (symmap,libs1) <- constructMap els (b1,m1) (b2,m2) libs
   let Sign _ _ ds = srcSig
-  let morph_init =
-        Morphism base modul name emptySig emptySig Definitional Map.empty
+  let morph_init = 
+        Morphism b2 m2 name (Sign b1 m1 []) tarSig Definitional Map.empty
   let (sig2,morph2) =
         foldl (\ (sig,morph) (Def s t v) ->
                  let local = isLocalSym s srcSig
                      defined = isDefinedSym s srcSig
-                     rel sym = Symbol base modul $ prefix ++ (symName sym)
                      sig1 = if (not local) then sig else
                        let s1 = rel s
                            t1 = case translate morph t of
                                      Just t1'-> t1'
                                      Nothing -> error $
-                                       "Structure could not be formed. " ++ (show $ pretty $ target morph)
+                                       "Structure could not be formed. "
                            v1 = case v of
                                      Just v1' -> translate morph v1'
                                      Nothing -> Map.lookup s symmap
