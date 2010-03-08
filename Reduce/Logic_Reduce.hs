@@ -26,6 +26,7 @@ import Reduce.Analysis
 import Reduce.Tools
 import Reduce.Symbol
 import Reduce.ATC_Reduce ()
+import Reduce.ReduceProve
 import qualified Data.Map as Map
 import ATC.ProofTree ()
 import Common.ProofTree
@@ -85,12 +86,12 @@ instance Logic Reduce
     Morphism                  -- morphism
     Symbol                      -- symbol
     Symbol                      -- raw_symbol
-    ProofTree                      -- proof_tree
+    ()                      -- proof_tree
     where
       stability Reduce     = Experimental
-      empty_proof_tree Reduce = emptyProofTree
+      empty_proof_tree Reduce = ()
       -- supplied provers
-      provers Reduce = []
+      provers Reduce = [reduceProver]
 
 
 

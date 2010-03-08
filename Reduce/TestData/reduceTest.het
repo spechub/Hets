@@ -4,6 +4,7 @@ logic Reduce
 
 spec ReduceTest1 =
      operator f,h
+then %implies
      . solve(x^2=1,x)
      . simplify((x+y)*(x+y+z))
      . remainder(2*x+y,2)

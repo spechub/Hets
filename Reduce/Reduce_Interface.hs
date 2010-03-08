@@ -1,14 +1,9 @@
 module Reduce.Reduce_Interface where
-
-import System.Directory
-import System.Exit
 import System.IO
 import System.Process
-import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Expr
-import Text.ParserCombinators.Parsec.Token
-import Text.ParserCombinators.Parsec.Language
 import Reduce.AS_BASIC_Reduce
+import Common.Id
+
 
 type Session = (Handle,Handle)
 
@@ -28,8 +23,9 @@ connectCAS = do
   
 -- | closes the connection to the CAS
 disconnectCAS :: (Handle,Handle)->IO()
-disconnectCAS (inp,out) = do 
+disconnectCAS (inp,_) = do 
   hPutStrLn inp "quit;"
+  putStrLn "CAS disconnected"
   return ()
 
  
@@ -44,38 +40,76 @@ getNextResultOutput out = do
                                                    r <- getNextResultOutput out
                                                    return (c:r)
 
-procSimpleCmd :: (Handle,Handle)-> String -> IO String
-casfactorExp (inp,out) s = do
+exportExps :: [EXPRESSION] -> String
+exportExps [] = ""
+exportExps (e1:e2:e3) = exportExp e1 ++ "," ++ (exportExps (e2:e3))
+exportExps (e1:[]) = exportExp e1
+
+-- | those operators declared as infix in Reduce
+infixOps :: [String] 
+infixOps = ["+","-","/","**","^","=","*"]
+
+exportExp :: EXPRESSION -> String
+exportExp (Var token) = tokStr token
+exportExp (Op s [e1,e2] _) = if (elem s infixOps) then "(" ++ (exportExp e1) ++ s ++ (exportExp e2) ++ ")" 
+                              else s++"("++(exportExp e1)++","++(exportExp e2)++")"
+exportExp (Op s exps _) = s++"("++ (exportExps exps) ++ ")"
+exportExp (List exps _) = "{" ++ (exportExps exps) ++ "}"
+exportExp (Int i _) = show i
+exportExp (Double d _) = show d
+
+exportReduce :: CMD -> String
+exportReduce (Cmd "simplify" exps) = exportExp $ head exps
+exportReduce (Cmd cmd exps) = cmd ++ "(" ++ (exportExps exps) ++ ")"
+
+procCmd :: (Handle,Handle) -> CMD -> IO [EXPRESSION]
+procCmd (inp,out) cmd = case cmdstring of 
+                          "simplify" -> cassimplify (inp,out) cmd
+                          "remainder" -> casremainder (inp,out) cmd
+                          "casgcd" -> casgcd (inp,out) cmd
+                          "casint" -> casint (inp,out) cmd
+                          "qelim" -> casqelim (inp,out) cmd
+                          "factor" -> casfactorExp (inp,out) cmd
+                          "solve" -> cassolve(inp,out) cmd
+                          _ -> error "Command not supported"
+                          where (Cmd cmdstring _) = cmd
+
+procString :: (Handle,Handle)-> String -> IO [EXPRESSION]
+procString (inp,out) s = do
+  putStrLn $ "Send CAS cmd " ++ s
   hPutStrLn inp s
-  getNextResultOutput out
+  res <- getNextResultOutput out
+  putStrLn $ "Result is " ++ res
+  return []
+
 
 -- | factors a given expression over the reals
-casfactorExp :: (Handle,Handle) -> EXPRESSION -> IO String 
-casfactorExp (inp,out) exp = procSimpleCmd (inp,out) "factorize(a*a+b*b+2*a*b);"
+casfactorExp :: (Handle,Handle) -> CMD -> IO [EXPRESSION] 
+casfactorExp (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
 
 -- | solves a single equation over the reals
-cassolve :: (Handle,Handle)-> String -> IO String
-casfactorExp (inp,out) exp = procSimpleCmd (inp,out) "factorize(a*a+b*b+2*a*b);"
+cassolve :: (Handle,Handle)-> CMD-> IO [EXPRESSION]
+cassolve (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
 
 -- | solves a list of equations 
 -- solven
 
 -- | simplifies a given expression over the reals   
-cassimplify :: (Handle,Handle)-> String -> IO String
-cassimplify (inp,out) exp = procSimpleCmd (inp,out) "factorize(a*a+b*b+2*a*b);"
+cassimplify :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
+cassimplify (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
 
 -- | computes the remainder of a division
-casremainder :: (Handle,Handle)-> String -> IO String
-casremainder (inp,out) exp = procSimpleCmd (inp,out) "remainder((x+y)*(x+2*y),x+3*y);"
+casremainder :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
+casremainder (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
 
 -- | computes the gcd of a division
-casgcd :: (Handle,Handle)-> String -> IO String
-casgcd (inp,out) exp = procSimpleCmd (inp,out) "gcd(f(x)+g(x)-l1-l2,f(x)-l1);"
+casgcd :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
+casgcd (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
 
 -- | integrates the given expression
-casint :: (Handle,Handle)-> String -> IO String
-casint (inp,out) exp = procSimpleCmd (inp,out) "int(log(x),x);"
+casint :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
+casint (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
 
 -- | performs quantifier elimination of a given expression
-casqelim :: (Handle,Handle)-> String -> IO String
-casqelim (inp,out) exp = procSimpleCmd (inp,out) "qelim(all(x, ex(y, x2+xy+b>0 and x+ay2+b<=0)))"
+casqelim :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
+casqelim (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
