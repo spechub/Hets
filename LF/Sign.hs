@@ -145,12 +145,13 @@ printSig sig = vcat $ map (printDef sig) $ getDefs sig
 
 printDef :: Sign -> DEF -> Doc
 printDef sig (Def s t v) =
-  printSymbol sig s <+>
-  text "::" <+>
-  printExp sig t <+>
-  case v of
-    Nothing -> text ""
-    Just val -> text "=" <+> printExp sig val
+  fsep
+   [ printSymbol sig s
+   , text "::" <+> printExp sig t
+   , case v of
+          Nothing -> empty
+          Just val -> text "=" <+> printExp sig val
+   ]
 
 printSymbol :: Sign -> Symbol -> Doc
 printSymbol sig s =
@@ -170,8 +171,8 @@ printExp sig (Func es e) =
   let as = map (printExpWithPrec sig precFunc) es
       val = printExpWithPrec sig (precFunc + 1) e
       in hsep $ punctuate (text "-> ") (as ++ [val])
-printExp sig (Pi ds e) = text "{" <> printDecls sig ds <> text "}" <+> printExp sig e
-printExp sig (Lamb ds e) = text "[" <> printDecls sig ds <> text "]" <+> printExp sig e
+printExp sig (Pi ds e) = sep [text "{" <> printDecls sig ds <> text "}", printExp sig e]
+printExp sig (Lamb ds e) = sep [text "[" <> printDecls sig ds <> text "]", printExp sig e]
 
 printExpWithPrec :: Sign -> Int -> EXP -> Doc
 printExpWithPrec sig i e =
