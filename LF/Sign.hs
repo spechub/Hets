@@ -171,8 +171,8 @@ printExp sig (Func es e) =
   let as = map (printExpWithPrec sig precFunc) es
       val = printExpWithPrec sig (precFunc + 1) e
       in hsep $ punctuate (text "-> ") (as ++ [val])
-printExp sig (Pi ds e) = sep [text "{" <> printDecls sig ds <> text "}", printExp sig e]
-printExp sig (Lamb ds e) = sep [text "[" <> printDecls sig ds <> text "]", printExp sig e]
+printExp sig (Pi ds e) = sep [braces $ printDecls sig ds, printExp sig e]
+printExp sig (Lamb ds e) = sep [brackets $ printDecls sig ds, printExp sig e]
 
 printExpWithPrec :: Sign -> Int -> EXP -> Doc
 printExpWithPrec sig i e =
@@ -194,10 +194,10 @@ precFunc = 2
 precAppl = 1
 
 printDecls :: Sign -> [DECL] -> Doc
-printDecls sig xs = hsep $ punctuate comma $ map (printDecl sig) xs
+printDecls sig xs = sep $ punctuate comma $ map (printDecl sig) xs
 
 printDecl :: Sign -> DECL -> Doc
-printDecl sig (n,e) = text n <+> colon <+> printExp sig e
+printDecl sig (n,e) = sep [text n, colon <+> printExp sig e]
 
 {- converts the expression into a form where each construct takes
    exactly one argument -}
