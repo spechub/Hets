@@ -37,7 +37,6 @@ import qualified Data.Set as Set
 import Common.LibName
 import Common.Result
 import Common.Utils
-import Common.DocUtils
 import Common.Id
 import qualified Common.Consistency as Cons
 
@@ -577,7 +576,7 @@ getViewMorph name srcSig tarSig els libs@(_,file,_) = do
   let m2 = sigModule tarSig
   (symmap,libs1) <- constructMap els (b1,m1) (b2,m2) libs
   let morph = Morphism file name "" srcSig tarSig Postulated symmap
-  return (morph,libs1)  
+  return (morph,libs1)
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -767,7 +766,7 @@ processStruct name srcSig tarSig els libs = do
   let rel sym = Symbol b2 m2 $ prefix ++ (symName sym)
   (symmap,libs1) <- constructMap els (b1,m1) (b2,m2) libs
   let Sign _ _ ds = srcSig
-  let morph_init = 
+  let morph_init =
         Morphism b2 m2 name (Sign b1 m1 []) tarSig Definitional Map.empty
   let (sig2,morph2) =
         foldl (\ (sig,morph) (Def s t v) ->
@@ -912,7 +911,7 @@ combineMorphs mor1 mor2 =
                                     Just e1' -> e1'
                                     _ -> error $ "Morphisms cannot be combined."
                           in Map.insert s1 e1
-                  ) Map.empty $ Set.intersection local declared 
+                  ) Map.empty $ Set.intersection local declared
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
