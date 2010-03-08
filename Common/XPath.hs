@@ -517,7 +517,11 @@ data BasicType
   | String
   | Object
 
-coreFcts :: [(String, (BasicType, [BasicType]))]
+type FctEnv = [(String, (BasicType, [BasicType]))]
+
+type VarEnv = [(String, BasicType)]
+
+coreFcts :: FctEnv
 coreFcts =
   [ ("last", (Numeral, []))
   , ("position", (Numeral, []))
@@ -574,8 +578,18 @@ isPathExpr e = case e of
   FilterExpr p _ -> isPathExpr p
   _ -> False
 
--- | parse string and perform sanity check
-maybePath :: String -> Maybe Expr
-maybePath s = case parse (expr << eof) "" s of
-  Right e | isPathExpr e -> Just e
-  _ -> Nothing
+-- | parse string
+parseExpr :: String -> Either String Expr
+parseExpr s = case parse (expr << eof) "" s of
+  Right e | isPathExpr e -> Right e
+  Left e -> Left $ show e
+  _ -> Left "not a legal path expression"
+
+getPaths :: Expr -> [Path]
+getPaths e = case e of
+  GenExpr True "|" args -> concatMap getPaths args
+  PathExpr m p@(Path _ s) -> case m of
+    Nothing -> [p]
+    Just fe -> map (\ (Path r f) -> Path r $ f ++ s) $ getPaths fe
+  FilterExpr p _ -> getPaths p
+  _ -> []
