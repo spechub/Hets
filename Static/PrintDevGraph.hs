@@ -83,7 +83,7 @@ showXPathComp c = case c of
   ChildIndex i -> "Spec[" ++ show i ++ "]"
 
 showXPath :: [XPathPart] -> String
-showXPath = intercalate "/" . map showXPathComp
+showXPath = concatMap $ ('/' :) . showXPathComp
 
 showNodeId :: Node -> String
 showNodeId i = "node " ++ show i

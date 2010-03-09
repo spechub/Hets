@@ -1,12 +1,12 @@
 <?xml version='1.0' ?>
 <DGraph nextlinkid="18">
-  <DGNode name="s_IU1" refname="s" relxpath="Imports/Union/Spec[1]">
+  <DGNode name="s_IU1" refname="s" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.29">i</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s_PU1" refname="s" relxpath="Parameters/Union/Spec[1]">
+  <DGNode name="s_PU1" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.14">p</Symbol>
@@ -18,47 +18,47 @@
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.39">s</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v_IU1" refname="v" relxpath="Imports/Union/Spec[1]">
+  <DGNode name="v_IU1" refname="v" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.28">j</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v_PU1" refname="v" relxpath="Parameters/Union/Spec[1]">
+  <DGNode name="v_PU1" refname="v" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.13">r</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v_S" refname="v" relxpath="Source">
+  <DGNode name="v_S" refname="v" relxpath="/Source">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.39">p</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="v_T" refname="v" relxpath="Target">
+  <DGNode name="v_T" refname="v" relxpath="/Target">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.51">q</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2_PU1" refname="s2" relxpath="Parameters/Union/Spec[1]">
+  <DGNode name="s2_PU1" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.15">p2</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2_A1V" refname="s" relxpath="Parameters/Union/Spec[1]">
+  <DGNode name="s2_A1V" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts i, p</Signature>
   </DGNode>
-  <DGNode name="s2_A1A1" refname="s2" relxpath="Actuals/Spec[1]/Actuals/Spec[1]">
+  <DGNode name="s2_A1A1" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.35">t</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s2_A1" refname="s2" relxpath="Actuals/Spec[1]">
+  <DGNode name="s2_A1" refname="s2" relxpath="/Actuals/Spec[1]">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts j, q, t</Signature>
   </DGNode>

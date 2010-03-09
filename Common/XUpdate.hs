@@ -14,6 +14,7 @@ module Common.XUpdate where
 
 import Common.XPath
 import Common.ToXml
+import Common.Utils
 
 import Text.XML.Light
 
@@ -97,13 +98,17 @@ isAddQN q = any (flip isPrefixOf $ qName q) ["insert", "append"]
 isRemoveQN :: QName -> Bool
 isRemoveQN = hasLocalQN "remove"
 
-getAttrVal :: String -> Element -> Maybe String
-getAttrVal = findAttr . unqual
+getAttrVal :: Monad m => String -> Element -> m String
+getAttrVal n e =
+    (\ s -> if null s
+            then failX ("missing " ++ n ++ " attribute") $ elName e
+            else return s)
+    . fromMaybe "" $ findAttr (unqual n) e
 
-getSelectAttr :: Element -> Maybe String
+getSelectAttr :: Monad m => Element -> m String
 getSelectAttr = getAttrVal "select"
 
-getNameAttr :: Element -> Maybe String
+getNameAttr :: Monad m => Element -> m String
 getNameAttr = getAttrVal "name"
 
 str2QName :: String -> QName
@@ -112,11 +117,18 @@ str2QName str = let (ft, rt) = break (== ':') str in
     _ : l@(_ : _) -> (unqual l) { qPrefix = Just ft }
     _ -> unqual str
 
+getText :: Monad m => Element -> m String
+getText e = let s = trim $ strContent e in
+  if null s then fail $ "empty text: " ++ showElement e else
+  case elChildren e of
+    [] -> return s
+    c : _ -> failX "unexpected child" $ elName c
+
 anaXUpdate :: Monad m => Element -> m [Change]
 anaXUpdate e = let q = elName e in
-  if isXUpdateQN q then case getSelectAttr e of
-    Nothing -> failX "missing select attribute" q
-    Just sel -> case parseExpr sel of
+  if isXUpdateQN q then do
+    sel <- getSelectAttr e
+    case parseExpr sel of
       Left _ -> fail $ "unparsable xpath: " ++ sel
       Right p -> case () of
         _ | isAddQN q -> do
@@ -127,11 +139,13 @@ anaXUpdate e = let q = elName e in
             else fail $ "expecting element path: " ++ sel
           | isRemoveQN q ->
               return [Change Remove p]
-          | hasLocalQN "variable" q -> case getNameAttr e of
-              Nothing -> failX "expected name attribute" q
-              Just vn -> return [Change (Variable vn) p]
+          | hasLocalQN "variable" q -> do
+              vn <- getNameAttr e
+              return [Change (Variable vn) p]
         _ -> case lookup (qName q) [("update", Update), ("rename", Rename)] of
-          Just c -> return [Change (c $ strContent e) p]
+          Just c -> do
+            s <- getText e
+            return [Change (c s) p]
           Nothing -> failX "no xupdate modification" q
   else failX "no xupdate qualified element" q
 
@@ -148,20 +162,21 @@ failX str q = fail $ str ++ ": " ++ showQName q
 addXElem :: Monad m => Element -> m AddChange
 addXElem e = let q = elName e in
   if isXUpdateQN q then case () of
-      _ | isTextQN q -> return $ AddText $ strContent e
-        | hasLocalQN "comment" q -> return $ AddComment $ strContent e
+      _ | isTextQN q -> liftM AddText $ getText e
+        | hasLocalQN "comment" q -> liftM AddComment $ getText e
         | hasLocalQN "value-of" q -> failX "no support for" q
-      _ -> case getNameAttr e of
-        Just n -> let qn = str2QName n in case () of
+      _ -> do
+        n <- getNameAttr e
+        let qn = str2QName n
+        case () of
           _ | isAttributeQN q ->
-               return $ AddAttr $ Attr qn $ strContent e
+               liftM (AddAttr . Attr qn) $ getText e
             | isElementQN q ->  do
               es <- mapM addXElem $ elChildren e
               let (as, cs) = partitionAddChanges es
               return $ AddElem $ add_attrs as $ node qn cs
-            | hasLocalQN pIS q -> return $ AddPI n $ strContent e
+            | hasLocalQN pIS q -> liftM (AddPI n) $ getText e
           _ -> failX "unknown change" q
-        Nothing -> failX "missing name attribute for" q
   else failX "no xupdate element" q
 
 {-
