@@ -18,6 +18,7 @@ import Common.Utils
 
 import Text.XML.Light
 
+import Data.Char
 import Data.Either
 import Data.List
 import Data.Maybe
@@ -45,8 +46,15 @@ instance Show AddChange where
 valueOfS :: String
 valueOfS = "value-of"
 
+data Insert = Before | After | Append deriving Show
+
+showInsert :: Insert -> String
+showInsert i = let s = map toLower $ show i in case i of
+  Append -> s
+  _ -> "insert-" ++ s
+
 data ChangeSel
-  = Add AddChange
+  = Add Insert [AddChange]
   | Remove
   | Update String
   | Rename String
@@ -54,7 +62,7 @@ data ChangeSel
 
 instance Show ChangeSel where
   show c = case c of
-    Add a -> '\n' : show a
+    Add i cs -> showInsert i ++ concatMap (('\n' :) . show) cs
     Remove -> ""
     Update s -> '=' : s
     Rename s -> s
@@ -69,7 +77,7 @@ instance Show Change where
 anaXUpdates :: Monad m => String -> m [Change]
 anaXUpdates input = case parseXMLDoc input of
     Nothing -> fail "cannot parse xupdate file"
-    Just e -> liftM concat $ mapM anaXUpdate $ elChildren e
+    Just e -> mapM anaXUpdate $ elChildren e
 
 {- the input element is expected to be one of
 
@@ -78,8 +86,6 @@ anaXUpdates input = case parseXMLDoc input of
  xupdate:append
  xupdate:remove
  xupdate:update
-
-insert and append are treated identically since order will not matter
 -}
 
 isXUpdateQN :: QName -> Bool
@@ -132,28 +138,32 @@ getText e = let s = trim $ strContent e in
     [] -> return s
     c : _ -> failX "unexpected child" $ elName c
 
-anaXUpdate :: Monad m => Element -> m [Change]
-anaXUpdate e = let q = elName e in
+anaXUpdate :: Monad m => Element -> m Change
+anaXUpdate e = let
+  q = elName e
+  u = qName q in
   if isXUpdateQN q then do
     sel <- getSelectAttr e
     case parseExpr sel of
       Left _ -> fail $ "unparsable xpath: " ++ sel
       Right p -> case () of
-        _ | isAddQN q -> do
-          cs <- mapM addXElem $ elChildren e
-          let ps = getPaths p
-          if all ((== TElement) . finalPrincipalNodeType) ps then
-              return $ map (\ c -> Change (Add c) p) cs
-            else fail $ "expecting element path: " ++ sel
-          | isRemoveQN q -> noContent e [Change Remove p]
+        _ | isRemoveQN q -> noContent e $ Change Remove p
           | hasLocalQN "variable" q -> do
               vn <- getNameAttr e
-              noContent e [Change (Variable vn) p]
-        _ -> case lookup (qName q) [("update", Update), ("rename", Rename)] of
+              noContent e $ Change (Variable vn) p
+        _ -> case lookup u [("update", Update), ("rename", Rename)] of
           Just c -> do
             s <- getText e
-            return [Change (c s) p]
-          Nothing -> failX "no xupdate modification" q
+            return $ Change (c s) p
+          Nothing -> case lookup u $ map (\ i -> (showInsert i, i))
+                     [Before, After, Append] of
+            Just i -> do
+              cs <- mapM addXElem $ elChildren e
+              let ps = getPaths p
+              if all ((== TElement) . finalPrincipalNodeType) ps then
+                  return $ Change (Add i cs) p
+                else fail $ "expecting element path: " ++ sel
+            Nothing -> failX "no xupdate modification" q
   else failX "no xupdate qualified element" q
 
 -- | partitions additions and ignores comments, pi, and value-of
