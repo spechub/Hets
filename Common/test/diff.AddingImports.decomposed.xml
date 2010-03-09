@@ -1,0 +1,122 @@
+<xupdate:modifications xmlns:xupdate="http://www.xmldb.org/xupdate" version="1.0">
+<xupdate:insert-before select="/DGraph/SPEC-DEFN[@name=&quot;C&quot;][1]">
+<xupdate:element name="SPEC-DEFN">
+<xupdate:attribute name="name">B</xupdate:attribute>
+<xupdate:attribute name="range">/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:8.6</xupdate:attribute>
+</xupdate:element>
+</xupdate:insert-before>
+<xupdate:update select="/DGraph/SPEC-DEFN[@name=&quot;A&quot;][1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:4.6
+</xupdate:update>
+<xupdate:remove select="/DGraph/VIEW-DEFN[@name=&quot;CasD&quot;][1]/GMorphism[1]"/>
+<xupdate:append select="/DGraph/DGNode[@name=&quot;C&quot;][1]">
+<xupdate:attribute name="MOCAffectedSignature">true</xupdate:attribute>
+</xupdate:append>
+<xupdate:update select="/DGraph/SPEC-DEFN[@name=&quot;C&quot;][1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:13.6
+</xupdate:update>
+<xupdate:update select="/DGraph/SPEC-DEFN[@name=&quot;D&quot;][1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:19.6
+</xupdate:update>
+<xupdate:insert-before select="/DGraph/DGNode[@name=&quot;C&quot;][1]">
+<xupdate:element name="DGNode">
+<xupdate:attribute name="name">B</xupdate:attribute>
+<xupdate:attribute name="refname">B</xupdate:attribute>
+<xupdate:attribute name="relxpath">/</xupdate:attribute>
+<xupdate:element name="ConsStatus">
+<xupdate:text>Cons(ConsistencyByNoSentences)</xupdate:text>
+</xupdate:element>
+<xupdate:element name="Declarations">
+<xupdate:element name="Symbol">
+<xupdate:attribute name="range">/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:9.8</xupdate:attribute>
+<xupdate:text>type B : Type</xupdate:text>
+</xupdate:element>
+</xupdate:element>
+</xupdate:element>
+<xupdate:element name="DGNode">
+<xupdate:attribute name="name">C_E1</xupdate:attribute>
+<xupdate:attribute name="refname">C</xupdate:attribute>
+<xupdate:attribute name="relxpath">/Extension/Spec[1]</xupdate:attribute>
+<xupdate:element name="ConsStatus">
+<xupdate:text>Cons(ConsistencyByNoSentences)</xupdate:text>
+</xupdate:element>
+<xupdate:element name="Signature">
+<xupdate:text>types A : Type; B : Type</xupdate:text>
+</xupdate:element>
+</xupdate:element>
+</xupdate:insert-before>
+<xupdate:remove select="/DGraph/DGLink[@linkid=&quot;0&quot; and @source=&quot;A&quot; and @target=&quot;C&quot;][1]"/>
+<xupdate:append select="/DGraph/DGLink[@linkid=&quot;1&quot; and @source=&quot;C&quot; and @target=&quot;D&quot;][1]">
+<xupdate:element name="GMorphism">
+<xupdate:text>id_HasCASL.SubPCoClTyConsHOL= : HasCASL -&gt; HasCASL : {types A : Type; B : Type; C : Type } |-&gt; {types A : Type; B : Type; C : Type }</xupdate:text>
+</xupdate:element>
+</xupdate:append>
+<xupdate:insert-before select="/DGraph/DGNode[@name=&quot;D&quot;][1]/Declarations[1]/Symbol[2]">
+<xupdate:element name="Symbol">
+<xupdate:attribute name="range">/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:22.7</xupdate:attribute>
+<xupdate:text>type B : Type</xupdate:text>
+</xupdate:element>
+</xupdate:insert-before>
+<xupdate:insert-before select="/DGraph/DGLink[@linkid=&quot;1&quot; and @source=&quot;C&quot; and @target=&quot;D&quot;][1]">
+<xupdate:element name="DGLink">
+<xupdate:attribute name="linkid">0</xupdate:attribute>
+<xupdate:attribute name="source">A</xupdate:attribute>
+<xupdate:attribute name="target">C_E1</xupdate:attribute>
+<xupdate:element name="Type">
+<xupdate:text>GlobalDefInc</xupdate:text>
+</xupdate:element>
+<xupdate:element name="GMorphism">
+<xupdate:text>id_HasCASL.SubPCoClTyConsHOL= : HasCASL -&gt; HasCASL : {type A : Type } |-&gt; {types A : Type; B : Type }</xupdate:text>
+</xupdate:element>
+</xupdate:element>
+<xupdate:element name="DGLink">
+<xupdate:attribute name="linkid">5</xupdate:attribute>
+<xupdate:attribute name="source">B</xupdate:attribute>
+<xupdate:attribute name="target">C_E1</xupdate:attribute>
+<xupdate:element name="Type">
+<xupdate:text>GlobalDefInc</xupdate:text>
+</xupdate:element>
+<xupdate:element name="GMorphism">
+<xupdate:text>id_HasCASL.SubPCoClTyConsHOL= : HasCASL -&gt; HasCASL : {type B : Type } |-&gt; {types A : Type; B : Type }</xupdate:text>
+</xupdate:element>
+</xupdate:element>
+<xupdate:element name="DGLink">
+<xupdate:attribute name="linkid">6</xupdate:attribute>
+<xupdate:attribute name="source">C_E1</xupdate:attribute>
+<xupdate:attribute name="target">C</xupdate:attribute>
+<xupdate:element name="Type">
+<xupdate:text>GlobalDefInc</xupdate:text>
+</xupdate:element>
+<xupdate:element name="GMorphism">
+<xupdate:text>id_HasCASL.SubPCoClTyConsHOL= : HasCASL -&gt; HasCASL : {types A : Type; B : Type } |-&gt; {types A : Type; B : Type; C : Type }</xupdate:text>
+</xupdate:element>
+</xupdate:element>
+</xupdate:insert-before>
+<xupdate:update select="/DGraph/VIEW-DEFN[@name=&quot;CasD&quot;][1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:25.6-25.9
+</xupdate:update>
+<xupdate:update select="/DGraph/DGNode[@name=&quot;D&quot;][1]/Declarations[1]/Symbol[1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:20.7
+</xupdate:update>
+<xupdate:remove select="/DGraph/DGLink[@linkid=&quot;1&quot; and @source=&quot;C&quot; and @target=&quot;D&quot;][1]/GMorphism[1]"/>
+<xupdate:append select="/DGraph/DGLink[@linkid=&quot;1&quot; and @source=&quot;C&quot; and @target=&quot;D&quot;][1]">
+<xupdate:attribute name="MOCAffectedDecomposition">true</xupdate:attribute>
+</xupdate:append>
+<xupdate:update select="/DGraph/DGNode[@name=&quot;C&quot;][1]/Declarations[1]/Symbol[1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:16.8
+</xupdate:update>
+<xupdate:append select="/DGraph/VIEW-DEFN[@name=&quot;CasD&quot;][1]">
+<xupdate:element name="GMorphism">
+<xupdate:text>id_HasCASL.SubPCoClTyConsHOL= : HasCASL -&gt; HasCASL : {types A : Type; B : Type; C : Type } |-&gt; {types A : Type; B : Type; C : Type }</xupdate:text>
+</xupdate:element>
+</xupdate:append>
+<xupdate:update select="/DGraph/DGNode[@name=&quot;A&quot;][1]/Declarations[1]/Symbol[1]/attribute::range">
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:5.8</xupdate:text>
+</xupdate:update>
+<xupdate:append select="/DGraph/DGNode[@name=&quot;D&quot;][1]">
+<xupdate:attribute name="MOCAffectedSignature">true</xupdate:attribute>
+</xupdate:append>
+<xupdate:append select="/DGraph/DGLink[@linkid=&quot;1&quot; and @source=&quot;C&quot; and @target=&quot;D&quot;][1]">
+<xupdate:attribute name="MOCAffectedMorphism">true</xupdate:attribute>
+</xupdate:append>
+</xupdate:modifications>
