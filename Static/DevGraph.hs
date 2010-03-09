@@ -1014,6 +1014,10 @@ insEdgesDG = flip $ foldr insLEdgeNubDG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
 mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
 
+-- | get nodes by name
+getDGNodesByName :: (NodeName -> Bool) -> DGraph -> [LNode DGNodeLab]
+getDGNodesByName p = filter (p . dgn_name . snd) . labNodesDG
+
 -- ** top-level functions
 
 -- | initializes the MVar for locking if nessesary
