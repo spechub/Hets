@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  export a development graph to an omdoc structure
+Description :  Exports a development graph to an omdoc structure
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  Ewaryst.Schulz@dfki.de

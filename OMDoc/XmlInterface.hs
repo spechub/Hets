@@ -56,10 +56,10 @@ out1 =
         atprfix = "at_"
         toUpper = map Data.Char.toUpper
         typedecl prfix l = (Data.List.intercalate ", " $ map (\x -> prfix ++ x) l) ++ " :: QName"
-        e1 = ["omdoc", "theory", "view", "structure", "type", "adt", "sortdef", "constructor", "argument", "insort", "selector", "morphism", "conass", "constant", "definition"]
+        e1 = ["omdoc", "theory", "view", "structure", "type", "adt", "sortdef", "constructor", "argument", "insort", "selector", "morphism", "conass", "constant", "notation", "text", "definition"]
         e2 = ["omobj"]
         e3 = ["ombind", "oms", "ombvar", "omattr", "omatp", "omv", "oma"]
-        a1 = ["version", "cd", "name", "meta", "role", "type", "total", "for", "from", "to", "cdbase"]
+        a1 = ["version", "cd", "name", "meta", "role", "type", "total", "for", "from", "to", "cdbase", "value"]
     in unlines [ typedecl elprfix $ e1 ++ e2 ++ e3
                , ""
                , unlines $ map (val elprfix id "") e1
@@ -79,9 +79,9 @@ toQNOM s = blank_name { qName = s , qPrefix = Just "om" }
 
 -- | often used element names
 
-el_omdoc, el_theory, el_view, el_structure, el_type, el_adt
- , el_sortdef, el_constructor, el_argument, el_insort, el_selector
- , el_morphism, el_conass, el_constant, el_definition, el_omobj
+el_omdoc, el_theory, el_view, el_structure, el_type, el_adt, el_sortdef
+ , el_constructor, el_argument, el_insort, el_selector, el_morphism
+ , el_conass, el_constant, el_notation, el_text, el_definition, el_omobj
  , el_ombind, el_oms, el_ombvar, el_omattr, el_omatp, el_omv, el_oma :: QName
 
 el_omdoc = toQN "omdoc"
@@ -98,6 +98,8 @@ el_selector = toQN "selector"
 el_morphism = toQN "morphism"
 el_conass = toQN "conass"
 el_constant = toQN "constant"
+el_notation = toQN "notation"
+el_text = toQN "text"
 el_definition = toQN "definition"
 
 el_omobj = toQN "OMOBJ"
@@ -111,7 +113,7 @@ el_omv = toQNOM "OMV"
 el_oma = toQNOM "OMA"
 
 at_version, at_cd, at_name, at_meta, at_role, at_type, at_total
- , at_for, at_from, at_to, at_cdbase :: QName
+ , at_for, at_from, at_to, at_value, at_cdbase :: QName
 
 at_version = toQN "version"
 at_cd = toQN "cd"
@@ -123,6 +125,7 @@ at_total = toQN "total"
 at_for = toQN "for"
 at_from = toQN "from"
 at_to = toQN "to"
+at_value = toQN "value"
 at_cdbase = toQN "cdbase"
 
 
@@ -298,6 +301,11 @@ instance XmlRepresentable TLElement where
 instance XmlRepresentable TCElement where
     toXml (TCSymbol sname symtype role defn) =
         constantToXml sname (show role) symtype defn
+    toXml (TCNotation nm val) =
+        inAContent
+        el_notation
+        [Attr at_for $ encodeOMName nm, Attr at_role "constant"]
+        $ Just $ inAContent el_text [Attr at_value val] Nothing
     toXml (TCADT sds) = Elem $ Element el_adt [] (listToXml sds) Nothing
     toXml (TCComment c) = makeComment c
     toXml (TCImport nm from mor) =
@@ -316,6 +324,15 @@ instance XmlRepresentable TCElement where
               typ <- fmap (musthave "typ") $ omelementFrom el_type e
               defn <- omelementFrom el_definition e
               justReturn $ TCSymbol nm typ role defn
+        | elName e == el_notation =
+            let musthave s v = missingMaybe "Notation" s v
+                nm = musthave "for" $ findAttr at_for e
+                role = musthave "role" $ findAttr at_role e
+                text = musthave "text" $ findChild el_text e
+                val = musthave "value" $ findAttr at_value text
+            in if role == "constant"
+               then justReturn $ TCNotation (decodeOMName nm) val
+               else return Nothing
         | elName e == el_structure =
             let musthave at s = missingMaybe "Structure" s $ findAttr at e
                 nm = musthave at_name "name"

@@ -37,10 +37,8 @@ data TLElement = TLTheory String (Maybe OMCD) [TCElement]
 data TCElement =
     -- | Symbol to represent sorts, constants, predicate symbols, etc.
     TCSymbol String OMElement SymbolRole (Maybe OMElement)
-    -- | An axiom or theorem element, depends on the proof entry.
-    -- Even unproven theorems should contain a constant marking them as
-    -- a theorem.
---  | TCAxiomOrTheorem (Maybe OMElement) String OMElement
+    -- | A notation for the given symbol
+  | TCNotation OMName String
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
