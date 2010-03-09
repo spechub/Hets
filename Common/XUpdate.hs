@@ -5,7 +5,7 @@ Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable(Grothendieck)
+Portability :  portable
 
 collect xupdate information
 -}
@@ -77,9 +77,9 @@ anaXUpdates input = case parseXMLDoc input of
  xupdate:insert-after
  xupdate:append
  xupdate:remove
+ xupdate:update
 
-insert and append are treated identically since order does not matter
-We ignore xupdate:update as this is only used to update a range, currently.
+insert and append are treated identically since order will not matter
 -}
 
 isXUpdateQN :: QName -> Bool
