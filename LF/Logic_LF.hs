@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Instances of classes defined in Logic.hs for the Edinburgh 
+Description :  Instances of classes defined in Logic.hs for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -23,7 +23,7 @@ data LF = LF deriving Show
 
 instance Language LF where
    description _ = "Edinburgh Logical Framework"
-                   
+
 -- instance of Category for LF
 instance Category Sign Morphism where
    ide = idMorph
@@ -38,7 +38,7 @@ instance Syntax LF () () ()
 
 -- sentences for LF
 instance Sentences LF () Sign Morphism ()
-   
+
 -- instance of logic for LF
 instance Logic LF
    ()
@@ -63,4 +63,4 @@ instance StaticAnalysis LF
    ()
    ()
    where
-   empty_signature LF = emptySig  
+   empty_signature LF = emptySig

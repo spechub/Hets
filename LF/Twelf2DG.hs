@@ -8,7 +8,7 @@ Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
 Portability :  portable
 -}
-module LF.Twelf2DG where
+module LF.Twelf2DG ( anaTwelfFile ) where
 
 import System.Exit
 import System.Process
@@ -409,7 +409,7 @@ runTwelf file = do
             ExitFailure i -> do
                putStrLn (outH ++ errH)
                error $ "Calling Twelf failed with exitCode: " ++ show i ++
-                       " on file " ++ file 
+                       " on file " ++ file
             ExitSuccess -> return ()
 
 -- generates a library environment from raw libraries
