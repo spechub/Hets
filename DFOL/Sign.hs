@@ -306,7 +306,8 @@ getTermTypeH (Identifier n) sig cont =
         Just _  -> Result.Result [] fromContext
         Nothing -> case fromSig of
                         Just type1 ->
-                          let type2 = renameBoundVars (typeRecForm type1) sig cont
+                          let type2 = renameBoundVars (typeRecForm type1)
+                                         sig cont
                               in Result.Result [] $ Just type2
                         Nothing ->
                           Result.Result [unknownIdentifierError n cont] Nothing

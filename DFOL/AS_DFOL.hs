@@ -210,7 +210,8 @@ instance Translatable TYPE where
                          in translateType m (Set.union s s1) (typeRecForm t)
 instance Translatable FORMULA where
    translate m s f = let s1 = Set.unions $ map getFreeVarsInTerm $ Map.elems m
-                         in translateFormula m (Set.union s s1) (formulaRecForm f)
+                         in translateFormula m (Set.union s s1) 
+                               (formulaRecForm f)
 
 translateTerm :: Map.Map NAME TERM -> TERM -> TERM
 translateTerm m (Identifier x) = Map.findWithDefault (Identifier x) x m

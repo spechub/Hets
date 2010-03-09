@@ -14,6 +14,7 @@ import System.Exit
 import System.Process
 import System.Directory
 import System.FilePath
+import System.IO
 
 import Network.URI
 
@@ -396,16 +397,19 @@ runTwelf file = do
   if null twelfdir
      then error "environment variable TWELF_LIB is not set"
      else do
-       (_, _, _, pr) <-
+       (_, out, err, pr) <-
          runInteractiveProcess (concat [twelfdir, "/" ,twelf])
                                (options ++ [dir,file])
                                Nothing
                                Nothing
        exitCode <- waitForProcess pr
+       outH <- hGetContents out
+       errH <- hGetContents err
        case exitCode of
-            ExitFailure i ->
+            ExitFailure i -> do
+               putStrLn (outH ++ errH)
                error $ "Calling Twelf failed with exitCode: " ++ show i ++
-                       " on file " ++ file
+                       " on file " ++ file 
             ExitSuccess -> return ()
 
 -- generates a library environment from raw libraries
