@@ -31,6 +31,7 @@ data AddChange
   | AddText String
   | AddComment String
   | AddPI String String
+  | ValueOf
 
 instance Show AddChange where
   show c = case c of
@@ -39,6 +40,10 @@ instance Show AddChange where
     AddText s -> show s
     AddComment s -> "<!--" ++ s ++ "-->"
     AddPI n s -> "<?" ++ n ++ " " ++ s ++ "?>"
+    ValueOf -> valueOfS
+
+valueOfS :: String
+valueOfS = "value-of"
 
 data ChangeSel
   = Add AddChange
@@ -98,6 +103,7 @@ isAddQN q = any (flip isPrefixOf $ qName q) ["insert", "append"]
 isRemoveQN :: QName -> Bool
 isRemoveQN = hasLocalQN "remove"
 
+-- | extract the non-empty attribute value
 getAttrVal :: Monad m => String -> Element -> m String
 getAttrVal n e =
     (\ s -> if null s
@@ -111,12 +117,14 @@ getSelectAttr = getAttrVal "select"
 getNameAttr :: Monad m => Element -> m String
 getNameAttr = getAttrVal "name"
 
+-- | convert a string to a qualified name by splitting at the colon
 str2QName :: String -> QName
 str2QName str = let (ft, rt) = break (== ':') str in
   case rt of
     _ : l@(_ : _) -> (unqual l) { qPrefix = Just ft }
     _ -> unqual str
 
+-- | extract text and check for no other children
 getText :: Monad m => Element -> m String
 getText e = let s = trim $ strContent e in
   if null s then fail $ "empty text: " ++ showElement e else
@@ -137,11 +145,10 @@ anaXUpdate e = let q = elName e in
           if all ((== TElement) . finalPrincipalNodeType) ps then
               return $ map (\ c -> Change (Add c) p) cs
             else fail $ "expecting element path: " ++ sel
-          | isRemoveQN q ->
-              return [Change Remove p]
+          | isRemoveQN q -> noContent e [Change Remove p]
           | hasLocalQN "variable" q -> do
               vn <- getNameAttr e
-              return [Change (Variable vn) p]
+              noContent e [Change (Variable vn) p]
         _ -> case lookup (qName q) [("update", Update), ("rename", Rename)] of
           Just c -> do
             s <- getText e
@@ -149,6 +156,7 @@ anaXUpdate e = let q = elName e in
           Nothing -> failX "no xupdate modification" q
   else failX "no xupdate qualified element" q
 
+-- | partitions additions and ignores comments, pi, and value-of
 partitionAddChanges :: [AddChange] -> ([Attr], [Content])
 partitionAddChanges = foldr (\ c (as, cs) -> case c of
       AddAttr a -> (a : as, cs)
@@ -159,12 +167,18 @@ partitionAddChanges = foldr (\ c (as, cs) -> case c of
 failX :: Monad m => String -> QName -> m a
 failX str q = fail $ str ++ ": " ++ showQName q
 
+-- | check if the element contains no other content
+noContent ::  Monad m => Element -> a -> m a
+noContent e a = case elContent e of
+  [] -> return a
+  c : _ -> fail $ "unexpected content: " ++ showContent c
+
 addXElem :: Monad m => Element -> m AddChange
 addXElem e = let q = elName e in
   if isXUpdateQN q then case () of
       _ | isTextQN q -> liftM AddText $ getText e
         | hasLocalQN "comment" q -> liftM AddComment $ getText e
-        | hasLocalQN "value-of" q -> failX "no support for" q
+        | hasLocalQN valueOfS q -> noContent e ValueOf
       _ -> do
         n <- getNameAttr e
         let qn = str2QName n
