@@ -12,7 +12,7 @@
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.14">p</Symbol>
     </Declarations>
   </DGNode>
-  <DGNode name="s" refname="s" relxpath="">
+  <DGNode name="s" refname="s" relxpath="/">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Declarations>
       <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.39">s</Symbol>
@@ -62,7 +62,7 @@
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts j, q, t</Signature>
   </DGNode>
-  <DGNode name="s2" refname="s2" relxpath="">
+  <DGNode name="s2" refname="s2" relxpath="/">
     <ConsStatus>Cons(ConsistencyByNoSentences)</ConsStatus>
     <Signature>sorts i, j, p2, q, s, t</Signature>
   </DGNode>
