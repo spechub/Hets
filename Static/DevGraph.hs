@@ -373,6 +373,7 @@ data DGLinkLab = DGLink
   , dgl_origin :: DGLinkOrigin -- origin in input language
   , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
+  , dglName :: String         -- name of the edge
   } deriving (Show, Eq)
 
 mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> EdgeId -> DGLinkLab
@@ -381,7 +382,12 @@ mkDGLink mor ty orig ei = DGLink
   , dgl_type = ty
   , dgl_origin = orig
   , dglPending = False
-  , dgl_id = ei }
+  , dgl_id = ei
+  , dglName = "" }
+
+-- | name a link
+nameDGLink :: String -> DGLinkLab -> DGLinkLab
+nameDGLink s l = l { dglName = s }
 
 defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
 defDGLink m ty orig = mkDGLink m ty orig defaultEdgeId
@@ -761,6 +767,7 @@ eqDGLinkLabContent l1 l2 = let
     dgl_morphism l1 == dgl_morphism l2
   && dgl_type l1 == dgl_type l2
   && dgl_origin l1 == dgl_origin l2
+  && dglName l1 == dglName l2
   else let r = eqDGLinkLabContent l1 l2 { dgl_id = defaultEdgeId}
            s = i1 == i2
        in assert (r == s) s
@@ -1017,6 +1024,10 @@ mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
 -- | get nodes by name
 getDGNodesByName :: (NodeName -> Bool) -> DGraph -> [LNode DGNodeLab]
 getDGNodesByName p = filter (p . dgn_name . snd) . labNodesDG
+
+-- | get links by name (inefficiently)
+getDGLinksByName :: String -> DGraph -> [LEdge DGLinkLab]
+getDGLinksByName s = filter (\ (_, _, l) -> dglName l == s) . labEdgesDG
 
 -- ** top-level functions
 
