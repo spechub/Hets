@@ -111,7 +111,7 @@
 </xupdate:element>
 </xupdate:append>
 <xupdate:update select="/DGraph/DGNode[@name=&quot;A&quot;][1]/Declarations[1]/Symbol[1]/attribute::range">
-/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:5.8</xupdate:text>
+/Users/autexier/Repositories/omoc/src/gmoc/examples/Structuretests/AddingImports2.het:5.8
 </xupdate:update>
 <xupdate:append select="/DGraph/DGNode[@name=&quot;D&quot;][1]">
 <xupdate:attribute name="MOCAffectedSignature">true</xupdate:attribute>
