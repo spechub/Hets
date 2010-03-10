@@ -181,7 +181,7 @@ ltkh_sort s = imp'
            imp = Implication prem concl True nullRange
            imp' = quantifyUniversally imp
 
--- | generates the axioms for satThM
+-- | generates the axioms for satThM
 sat_thm_ax :: [Named CASLFORMULA] -> CASLFORMULA
 sat_thm_ax forms = final_form
      where forms' = map (free_formula . sentence) $ filter (no_gen . sentence) forms

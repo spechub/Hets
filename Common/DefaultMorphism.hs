@@ -50,4 +50,3 @@ legalDefaultMorphism legalSign (MkMorphism s t) = legalSign s && legalSign t
 
 defaultInclusion :: Monad m => sign -> sign -> m (DefaultMorphism sign)
 defaultInclusion s = return . MkMorphism s
-

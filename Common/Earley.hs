@@ -445,8 +445,8 @@ getResolved pp p toExpr st = let
        (q, errs) = if null withpos then (p, expected) else
          (concatMapRange (reverseRange . posList) withpos, withpos)
        in Result (Diag Error ("expected further mixfix token: "
-            ++ show (take 5 $ nubOrd $ map (tokStr . head . rest) errs)) q : ds)
-            Nothing
+          ++ show (take 5 $ nubOrd $ map (tokStr . head . rest) errs)) q : ds)
+          Nothing
      [har] -> case ambigs har of
        [] -> case mkAmbigs toExpr har of
          [] -> Result ds $ Just $ fst $ mkExpr toExpr har

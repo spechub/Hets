@@ -52,7 +52,7 @@ vsep :: [Doc] -> Doc
 vsep = vcat . map ($$ (text ""))
 
 sepDoc :: Doc
-sepDoc = commentLine . text $ " Imported from other files :-"
+sepDoc = commentLine . text $ "Imported from other files :-"
 
 -- Main Pass - Takes parsed data and rules and combines to create instances...
 -- Returns all parsed data, ande commands calling for files to be imported if

@@ -125,7 +125,7 @@ addIntToSymbols (set, fun) = let
         updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
                        Map.fromList $ map (\x -> (x, fst $ head p)) $
                        filter (\x -> Map.findWithDefault (error "fo(node)") x
-                                      (Map.findWithDefault (error "f0") node f0)
+                                     (Map.findWithDefault (error "f0") node f0)
                                      == head p) $
                        Map.keys $ Map.findWithDefault (error "f0")
                                    node f0
@@ -137,8 +137,8 @@ addIntToSymbols (set, fun) = let
         updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
              Map.fromList $
              map ( \x -> (x, addIntAsSuffix $
-                                  Map.findWithDefault (error "addSuffixToId") x
-                                  (Map.findWithDefault (error "f0") node f0))) $
+                             Map.findWithDefault (error "addSuffixToId") x
+                             (Map.findWithDefault (error "f0") node f0))) $
              filter (\x -> (Map.findWithDefault (error "fo(node)") x
                            (Map.findWithDefault (error "f0") node f0))
                            `elem` p) $
@@ -147,5 +147,3 @@ addIntToSymbols (set, fun) = let
     in namePartitions ps f0 s2 f2
  in namePartitions (partList set) fun (Set.empty) $
     Map.fromList $ zip (Map.keys fun) (repeat Map.empty)
-
-
