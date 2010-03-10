@@ -1,8 +1,3 @@
--- todo: nimm SYMB, symbol=rawsymbol
--- statische analyse wandelt symbol -> raw-symbol um
--- inducedfromMorphism wandelt rawsymbolmap in morphismus um
--- voll analysierte symbole
-
 module Reduce.Symbol
 where
 
