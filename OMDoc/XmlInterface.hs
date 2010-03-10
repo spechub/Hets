@@ -47,7 +47,7 @@ val1 prfix f qual s = prfix ++ s ++ " = (blank_name { qName = " ++ show (f s) ++
 val2 prfix f qual s = prfix ++ s ++ " = toQN" ++ qual ++ " " ++ show (f s)
 
 out = putStrLn out1
-out1 = 
+out1 =
     let om1 = " , qPrefix = Just \"om\""
         om2 = "OM"
         om = om2
@@ -226,7 +226,9 @@ fmapFromMaybe :: Monad m => (a -> m (Maybe b)) -> Maybe a -> m (Maybe b)
 fmapFromMaybe f = flattenMaybe . fmapMaybe f
 
 encapsMaybe :: Monad m => Maybe (m a) -> m (Maybe a)
-encapsMaybe v = case v of { Just x -> x >>= justReturn; _ -> return Nothing }
+encapsMaybe v = case v of
+  Just x -> x >>= justReturn
+  _ -> return Nothing
 
 flattenMaybe :: Monad m => m (Maybe (Maybe a)) -> m (Maybe a)
 flattenMaybe v = v >>= return . fromMaybe Nothing
@@ -235,7 +237,7 @@ flattenMaybe v = v >>= return . fromMaybe Nothing
 -- | Function to extract the Just values from maybes with a default missing
 --   error in case of Nothing
 missingMaybe :: String -> String -> Maybe a -> a
-missingMaybe el misses = 
+missingMaybe el misses =
     fromMaybe (error $ el ++ " element must have a " ++ misses ++ ".")
 
 
@@ -506,7 +508,7 @@ omobjToOMElement e = case elChildren e of
 
 -- | The input is assumed to be a conass element
 xmlToAssignment :: Element -> Result (OMName, OMElement)
-xmlToAssignment e = 
+xmlToAssignment e =
     let musthave s v = missingMaybe "Conass" s v
         nm = musthave "name" $ findAttr at_name e
     in do
@@ -525,7 +527,7 @@ assignmentToXml (from, to) =
                    $ Just . toOmobj . toXml $ to
 
 constantToXml :: String -> String -> OMElement -> Maybe OMElement -> Content
-constantToXml n r tp prf = 
+constantToXml n r tp prf =
     Elem $ Element el_constant
              [Attr at_name n, Attr at_role r]
              ([typeToXml tp]

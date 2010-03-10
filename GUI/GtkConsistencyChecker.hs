@@ -194,7 +194,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
             listStoreClear listFinder
             activate widgets False
             widgetSetSensitive btnCheck False)
-        (do activate widgets True; widgetSetSensitive btnCheck True)
+        (activate widgets True >> widgetSetSensitive btnCheck True)
 
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
     btnNodesInvert upd
@@ -284,7 +284,7 @@ updateNodes view listNodes update lock unlock = do
   nodes <- getSelectedMultiple view listNodes
   if null nodes then lock
     else let sls = map (sublogic . snd) nodes in
-      maybe lock (\ sl -> do unlock; update (length nodes == 1) sl)
+      maybe lock (\ sl -> unlock >> update (length nodes == 1) sl)
             $ foldl (\ ma b -> case ma of
                       Just a -> joinSublogics b a
                       Nothing -> Nothing) (Just $ head sls) $ tail sls

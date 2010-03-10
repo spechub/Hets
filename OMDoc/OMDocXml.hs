@@ -726,7 +726,9 @@ instance XmlRepresentable Definition where
             case HXT.xshow $ HXT.getValue "for" t of
               '#':r -> r
               r -> r
-          ids' = case ids of [] -> fors; _ -> ids
+          ids' = case ids of
+                   [] -> fors
+                   _ -> ids
           children = HXT.getChildren t
           cmps = getAllFromXml children
           fmps = getAllFromXml children

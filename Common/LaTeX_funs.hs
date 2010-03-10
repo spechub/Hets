@@ -92,7 +92,9 @@ calc_line_length s =
                "in" -> 25.4
                u    -> error ( "unknown or unsupported LaTeX unit: " ++ u )
         len :: Double
-        len = read $ map (\c -> case c of ',' -> '.';_ -> c) r_number
+        len = read $ map (\ c -> case c of
+                                   ',' -> '.'
+                                   _ -> c) r_number
     in truncate (len * unit * 1000)
 
 {- functions to calculate a word-width in integer with a given word

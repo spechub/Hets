@@ -95,14 +95,14 @@ mapDataEntry jm tm im fm (DataEntry dm i k args rk alts) =
         newargs = map (mapTypeArg jm tm im) args
         nIm = Map.difference im dm
     in DataEntry nDm i k newargs rk $ Set.map
-           (mapAlt jm tm im fm nIm newargs dm
+           (mapAlt jm tm im fm nIm newargs
            $ patToType (Map.findWithDefault i i dm) newargs rk) alts
 
-mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> IdMap -> [TypeArg] -> IdMap
-  -> Type -> AltDefn -> AltDefn
-mapAlt jm tm im fm nIm args dm dt (Construct mi ts p sels) =
+mapAlt :: IdMap -> TypeMap -> IdMap -> FunMap -> IdMap -> [TypeArg] -> Type
+  -> AltDefn -> AltDefn
+mapAlt jm tm im fm nIm args dt (Construct mi ts p sels) =
   let newTs = map (mapTypeE jm tm nIm) ts
-      newSels = map (map (mapSel jm tm im fm nIm args dm dt)) sels
+      newSels = map (map (mapSel jm tm im fm nIm args dt)) sels
   in case mi of
     Just i -> let
         sc = TypeScheme args (getFunType dt p ts) nullRange
@@ -110,9 +110,9 @@ mapAlt jm tm im fm nIm args dm dt (Construct mi ts p sels) =
         in Construct (Just j) newTs (getPartiality newTs ty) newSels
     Nothing -> Construct mi newTs p newSels
 
-mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> IdMap -> [TypeArg] -> IdMap
-  -> Type -> Selector -> Selector
-mapSel jm tm im fm nIm args dm dt (Select mid t p) =
+mapSel :: IdMap -> TypeMap -> IdMap -> FunMap -> IdMap -> [TypeArg] -> Type
+  -> Selector -> Selector
+mapSel jm tm im fm nIm args dt (Select mid t p) =
   let newT = mapTypeE jm tm nIm t
   in case mid of
     Nothing -> Select mid newT p

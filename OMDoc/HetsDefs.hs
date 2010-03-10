@@ -1461,8 +1461,10 @@ makeUniqueNames
                       until
                         (\c' ->
                           let
-                            ext = case c' of 0 -> ""; _ -> "_" ++ (show c')
-                            name = (show $ getIdId $ woItem iwon) ++ ext
+                            ext = case c' of
+                                    0 -> ""
+                                    _ -> "_" ++ show c'
+                            name = show (getIdId $ woItem iwon) ++ ext
                           in
                             not $ Set.member name previousNameSet
                         )
@@ -1515,11 +1517,15 @@ makeUniqueIdNameMapping
         ids = Map.findWithDefault Set.empty ln unnMap
         sensfromunn =
           Set.filter
-            (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
+            (\(i, _) -> case woItem i of
+                          IdSens {} -> True
+                          _ -> False)
             ids
         gapredsfromunn =
           Set.filter
-            (\(i, _) -> case woItem i of IdGaPred {} -> True; _ -> False)
+            (\(i, _) -> case woItem i of
+                          IdGaPred {} -> True
+                          _ -> False)
             ids
       in
         foldl
@@ -1596,7 +1602,9 @@ makeUniqueIdNameMapping
                     (getIdId $ woItem i, uname)
                   )
                   (Set.filter
-                    (\(i, _) -> case woItem i of IdId {} -> True; _ -> False)
+                    (\(i, _) -> case woItem i of
+                                  IdId {} -> True
+                                  _ -> False)
                     nodeids
                   )
               remappedops =
@@ -1625,7 +1633,9 @@ makeUniqueIdNameMapping
                   )
                   (Set.filter
                     (\(i, _) ->
-                      case woItem i of IdPred {} -> True; _ -> False) nodeids
+                      case woItem i of
+                        IdPred {} -> True
+                        _ -> False) nodeids
                   )
               nodesensunn = Set.filter (\(i, _) -> woOrigin i == nn) sensfromunn
               nodesens =
@@ -2229,15 +2239,21 @@ makeCollectionMap
         ids = Map.findWithDefault Set.empty ln unnMap
         sensfromunn =
           Set.filter
-            (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
+            (\(i, _) -> case woItem i of
+                          IdSens {} -> True
+                          _ -> False)
             ids
         gapredsfromunn =
           Set.filter
-            (\(i, _) -> case woItem i of IdGaPred {} -> True; _ -> False)
+            (\(i, _) -> case woItem i of
+                          IdGaPred {} -> True
+                          _ -> False)
             ids
         genopsfromunn =
           Set.filter
-            (\(i, _) -> case woItem i of IdOpM _ _ _ True -> True; _ -> False)
+            (\(i, _) -> case woItem i of
+                          IdOpM _ _ _ True -> True
+                          _ -> False)
             ids
       in
         foldl
@@ -2346,15 +2362,17 @@ makeCollectionMap
                             refIds = Map.findWithDefault Set.empty mln unnMap
                             refSorts =
                               Set.filter
-                                (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                (\(s, _) -> case wonItem s of
+                                              IdId {} -> True
+                                              _ -> False)
                                 refIds
                             refMatch =
                               Set.filter
-                                (\(s,_) -> (getIdId $ wonItem s) == (wonItem swo))
+                                (\(s,_) -> getIdId (wonItem s) == wonItem swo)
                                 refSorts
                             refOrigin =
                               Set.filter
-                                (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                (\(s,_) -> woOrigin s == woOrigin mid)
                                 refIds
                           in
                             case
@@ -2451,15 +2469,17 @@ makeCollectionMap
                                   refIds = Map.findWithDefault Set.empty mln unnMap
                                   refSorts =
                                     Set.filter
-                                      (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                      (\(s, _) -> case wonItem s of
+                                                    IdId {} -> True
+                                                    _ -> False)
                                       refIds
                                   refMatch =
                                     Set.filter
-                                      (\(s,_) -> (getIdId $ wonItem s) == (wonItem idwo))
+                                      (\(s,_) -> getIdId (wonItem s) == wonItem idwo)
                                       refSorts
                                   refOrigin =
                                     Set.filter
-                                      (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                      (\(s,_) -> woOrigin s == woOrigin mid)
                                       refIds
                                 in
                                   case
@@ -2536,15 +2556,17 @@ makeCollectionMap
                                   refIds = Map.findWithDefault Set.empty mln unnMap
                                   refSorts =
                                     Set.filter
-                                      (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                      (\(s, _) -> case wonItem s of
+                                                    IdId {} -> True
+                                                    _ -> False)
                                       refIds
                                   refMatch =
                                     Set.filter
-                                      (\(s,_) -> (getIdId $ wonItem s) == (wonItem idwo))
+                                      (\(s,_) -> getIdId (wonItem s) == wonItem idwo)
                                       refSorts
                                   refOrigin =
                                     Set.filter
-                                      (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                      (\(s,_) -> woOrigin s == woOrigin mid)
                                       refIds
                                 in
                                   case

@@ -310,7 +310,7 @@ ternaryAnd (Result d1 Nothing, _) (b2, x2) =
 
 ternaryOr :: Result Bool -> Result Bool -> Result Bool
 ternaryOr b1@(Result _ (Just True)) _ = b1
-ternaryOr (Result d1 (Just False)) b2 = do Result d1 (Just ()); b2
+ternaryOr (Result d1 (Just False)) b2 = Result d1 (Just ()) >> b2
 ternaryOr (Result d1 Nothing) b2@(Result _ (Just True)) =
   Result d1 (Just ()) >> b2
 ternaryOr (Result d1 Nothing) b2 =

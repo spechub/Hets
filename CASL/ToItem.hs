@@ -65,9 +65,9 @@ bsToItem bs = runReader (toitem bs) $ getTransState bs
 
 instance (GetRange b, GetRange s, GetRange f)
     => ItemConvertible (BASIC_SPEC b s f) (Reader (TS b s f)) where
-    toitem (Basic_spec l) =
-        do{ l' <-  listFromAL l
-          ; return rootItem{ items = l' } }
+    toitem (Basic_spec l) = do
+        l' <-  listFromAL l
+        return rootItem { items = l' }
 
 instance (GetRange b, GetRange s, GetRange f)
     => ItemConvertible (BASIC_ITEMS b s f) (Reader (TS b s f)) where
@@ -83,9 +83,9 @@ instance (GetRange b, GetRange s, GetRange f)
           Free_datatype sk adtds _ ->
               mkItemM ("Free_datatype", "SortsKind", show sk) rg
                           $ listFromAL adtds
-          Ext_BASIC_ITEMS b ->
-              do{ st <- ask
-                ; fromPrinter (fB st) "Ext_BASIC_ITEMS" b }
+          Ext_BASIC_ITEMS b -> do
+              st <- ask
+              fromPrinter (fB st) "Ext_BASIC_ITEMS" b
 
 instance (GetRange s, GetRange f)
     => ItemConvertible (SIG_ITEMS s f) (Reader (TS b s f)) where
@@ -99,9 +99,9 @@ instance (GetRange s, GetRange f)
           Datatype_items sk adds _ ->
               mkItemM ("Datatype_items", "SortsKind", show sk) rg
                 $ listFromAL adds
-          Ext_SIG_ITEMS s ->
-              do{ st <- ask
-                ; fromPrinter (fS st) "Ext_SIG_ITEMS" s }
+          Ext_SIG_ITEMS s -> do
+              st <- ask
+              fromPrinter (fS st) "Ext_SIG_ITEMS" s
 
 
 instance GetRange f => ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
@@ -169,9 +169,9 @@ instance ItemConvertible OP_HEAD (Reader (TS b s f)) where
     toitem = fromPrinterWithRg pretty "OP_HEAD"
 
 instance ItemConvertible (OP_ATTR f) (Reader (TS b s f)) where
-    toitem a =
-        do{ st <- ask
-          ; fromPrinter (printAttr (fF st)) "OP_ATTR" a }
+    toitem a = do
+        st <- ask
+        fromPrinter (printAttr (fF st)) "OP_ATTR" a
 
 instance ItemConvertible PRED_TYPE (Reader (TS b s f)) where
     toitem = fromPrinterWithRg pretty "PRED_TYPE"

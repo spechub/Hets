@@ -322,7 +322,7 @@ punctuate d l = case l of
 hsep :: [Doc] -> Doc         -- ^List version of '<+>'
 hsep = Cat Horiz . punctuate space . rmEmpties
 
-($+$) :: Doc -> Doc -> Doc;    -- ^Above, without dovetailing.
+($+$) :: Doc -> Doc -> Doc    -- ^Above, without dovetailing.
 a $+$ b = vcat [a, b]
 
 -- | vertical composition with a specified number of blank lines

@@ -108,17 +108,17 @@ fromAC :: ItemConvertible a m => Annoted a -> m (Annoted Item)
 fromAC = annToAItem
 
 fromL :: (ItemConvertible a m, ItemTypeable b) => b -> [a] -> m (Annoted Item)
-fromL it l =
-    do{ l' <- listFromL l
-      ; let i = liftIT2I it
-      ; return $ emptyAnno i{ items = l' } }
+fromL it l = do
+    l' <- listFromL l
+    let i = liftIT2I it
+    return $ emptyAnno i { items = l' }
 
 fromAL :: (ItemConvertible a m, ItemTypeable b) => b -> [Annoted a] ->
           m (Annoted Item)
-fromAL it l =
-    do{ l' <- listFromAL l
-      ; let i = liftIT2I it
-      ; return $ emptyAnno i{ items = l' } }
+fromAL it l = do
+    l' <- listFromAL l
+    let i = liftIT2I it
+    return $ emptyAnno i { items = l' }
 
 ---------------------------- standard items ----------------------------
 

@@ -176,7 +176,8 @@ transEventSet :: EVENT_SET -> Term
 transEventSet evs =
     case evs of
       EventSet _ _ ->
-          error "CspCASLProver.TransProcesses.transEventSet: Expected a FQEventSet not a non-FQEventSet";
+          error $ "CspCASLProver.TransProcesses.transEventSet: "
+            ++ "Expected a FQEventSet not a non-FQEventSet"
       FQEventSet comms _ ->
           -- This list will not be empty otherwise, if it was empty the static
           -- analysis would have failed.
@@ -305,8 +306,11 @@ transEvent ccSign pcfolSign cfolSign vsm event p =
                       (transProcess' (Map.insert var
                                       (ChanSendOrRec declaredChanSort) vsm) p)
 
-            FQEvent _ _ _ _ -> error "CspCASLProver.TransProcesses.transEvent: A FQEvent should not contain a non-FQEvent";
-      _ ->  error "CspCASLProver.TransProcesses.transEvent: Expected a FQEvent not a non-FQEvent";
+            FQEvent _ _ _ _ ->
+              error $ "CspCASLProver.TransProcesses.transEvent: "
+                ++ "A FQEvent should not contain a non-FQEvent"
+      _ -> error $ "CspCASLProver.TransProcesses.transEvent: "
+             ++ "Expected a FQEvent not a non-FQEvent"
 
 -- | Translate a variable into CspProver (Isabelle). Notice
 --   that this does not work on fully qualified CASL variables (TERMs)

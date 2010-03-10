@@ -3177,8 +3177,12 @@ unwrapFormulaOM ffxi origin con =
               formulaFromOM ffxi origin [] ome
             _ -> error (e_fname ++ "Can only create Formula from OMOBJ!")
   in (Ann.makeNamed axdefname formula)
-      { Ann.isAxiom = (case con of OMDoc.CAx {} -> True; _ -> False)
-      , Ann.isDef = (case con of OMDoc.CDe {} -> True; _ -> False) }
+      { Ann.isAxiom = case con of
+                        OMDoc.CAx {} -> True
+                        _ -> False
+      , Ann.isDef = case con of
+                      OMDoc.CDe {} -> True
+                      _ -> False }
 
 {- |
   Formula-From-Xml-Input-context
@@ -3573,7 +3577,9 @@ getVarDeclsOM ombvar =
     )
     (
       filter
-        (\v -> case v of OMDoc.OMVA {} -> True; _ -> False)
+        (\v -> case v of
+                 OMDoc.OMVA {} -> True
+                 _ -> False)
         $
         OMDoc.ombvarVars ombvar
     )

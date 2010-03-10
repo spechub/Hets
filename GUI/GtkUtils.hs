@@ -365,7 +365,7 @@ progressBarAux isProgress title description = do
                       progressBarPulse bar
                       return True
                     ) 75
-    return (do timeoutRemove h; widgetDestroy window)
+    return (timeoutRemove h >> widgetDestroy window)
 
   widgetShow window
 
@@ -503,7 +503,7 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
   -- setup buttons
   onClicked btnAll $ selectAll view
   onClicked btnNone $ selectNone view
-  onClicked btnInvert $ do selectInvert view sh; action
+  onClicked btnInvert (selectInvert view sh >> action)
   return sh
 
 -- | Selects the first item if possible

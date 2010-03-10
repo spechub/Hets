@@ -420,8 +420,12 @@ data  Int  -- =  minBound ... -1 | 0 | 1 ... maxBound
 instance  Eq       Int  where (==) = primIntEq
 instance  Ord      Int  where (<=) = primIntLte
 instance  Num      Int  where
-  (+) = primIntAdd; (-) = primIntSub; (*) = primIntMul
-  negate = primIntNegate; abs = primIntAbs; signum = primIntSignum
+  (+) = primIntAdd
+  (-) = primIntSub
+  (*) = primIntMul
+  negate = primIntNegate
+  abs = primIntAbs
+  signum = primIntSignum
   fromInteger = primInteger2Int
 
 instance  Real     Int  --where ...
@@ -430,7 +434,9 @@ instance  Integral Int  where
    toInteger = primInt2Integer
    n `quotRem` d = (n `primIntQuot` d,n `primIntRem` d)
 
-instance  Enum     Int  where toEnum = id; fromEnum = id
+instance  Enum     Int  where
+  toEnum = id
+  fromEnum = id
 
 instance  Bounded  Int  --where ...
 
@@ -439,8 +445,12 @@ data  Integer  -- =  ... -1 | 0 | 1 ...
 instance  Eq       Integer  where (==) = primIntegerEq
 instance  Ord      Integer  where (<=) = primIntegerLte
 instance  Num      Integer  where
-  (+) = primIntegerAdd; (-) = primIntegerSub; (*) = primIntegerMul
-  negate = primIntegerNegate; abs = primIntegerAbs; signum = primIntegerSignum
+  (+) = primIntegerAdd
+  (-) = primIntegerSub
+  (*) = primIntegerMul
+  negate = primIntegerNegate
+  abs = primIntegerAbs
+  signum = primIntegerSignum
   fromInteger = id
 
 instance  Enum     Integer  where

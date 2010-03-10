@@ -214,7 +214,7 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       forkIOWithPostProcessing (proveF prGuiAcs s')
         $ \ (Result ds ms) -> do
             s <- case ms of
-              Nothing -> do errorDialog "Error" (showRelDiags 2 ds); return s'
+              Nothing -> errorDialog "Error" (showRelDiags 2 ds) >> return s'
               Just res -> return res
             activate prove True
             signalBlock shG

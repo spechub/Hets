@@ -152,7 +152,7 @@ systemCmd = let
                ["quit", "eof", "popd", "pwd", "cd", "push", "ls"]
     other = ignore $ otherSym >> line
     loadSym = anyReserved ["in", "load"]
-    load = do loadSym; name <- line; return $ Just $ Left name
+    load = loadSym >> fmap (Just . Left) line
     in load <|> other
 
 -- | Parse a command

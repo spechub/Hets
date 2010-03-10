@@ -110,7 +110,7 @@ sortItems = hasCaslItemList sortS sortItem (TypeItems Plain)
 
 typeItem :: AParser st TypeItem
 typeItem = do
-    s <- typePattern;
+    s <- typePattern
     subTypeDecl ([s],[])
         <|> dataDef s universe []
         <|> pseudoTypeDef s Nothing []

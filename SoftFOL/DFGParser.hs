@@ -226,7 +226,9 @@ formulaList = do
     ot <- parensDot $ mapTokensToData
       [ ("axioms", SPOriginAxioms)
       , ("conjectures", SPOriginConjectures)]
-    fs <- many (formula (case ot of {SPOriginAxioms -> True; _ -> False}))
+    fs <- many $ formula $ case ot of
+      SPOriginAxioms -> True
+      _ -> False
     endOfList
     return SPFormulaList { originType = ot, formulae = fs }
 
