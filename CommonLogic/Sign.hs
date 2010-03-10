@@ -20,7 +20,7 @@ Definition of signatures for common logic
 -}
 
 module CommonLogic.Sign
-    (Sign (..)                     -- 
+    (Sign (..)                     --
     ,pretty                        -- pretty printing
     ,emptySig                      -- empty signature
     ) where
