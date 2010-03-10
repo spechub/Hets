@@ -46,8 +46,10 @@ nestComment :: CharParser st String
 nestComment = nestedComment "{-" "-}"
 
 lineComment :: CharParser st String
-lineComment = tryString "--" <++> many (noneOf "\n\r")
-              <++> many (oneOf "\n\r")
+lineComment =
+  try ((char '-' <:> many1 (char '-'))
+       << notFollowedBy (oneOf "!#$%&*+./<=>?@\\^|~"))
+  <++> many (noneOf "\n\r") <++> many (oneOf "\n\r")
 
 stringLit :: CharParser st String
 stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")

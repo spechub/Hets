@@ -26,4 +26,4 @@ process f = do
   s <- readFile f
   case parse (hStuff << eof) f s of
              Right x -> putStrLn x
-             Left err -> error $ show err
+             Left err -> fail $ show err
