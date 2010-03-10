@@ -2,16 +2,42 @@ module Reduce.Reduce_Interface where
 import System.IO
 import System.Process
 import Reduce.AS_BASIC_Reduce
+import Reduce.Parse_AS_Basic
 import Common.Id
-
+import Logic.Prover
+import Common.AS_Annotation
+import Data.Time (midnight)
+import Common.Utils (getEnvDef)
 
 type Session = (Handle,Handle)
+
+-- | returns the name of the reduce prover
+reduceS :: String
+reduceS = "Reduce"
+
+-- | returns a basic proof status for conjecture with name n where [EXPRESSION] represents the proof tree
+openReduceProofStatus :: String -> [EXPRESSION] -> ProofStatus [EXPRESSION]
+openReduceProofStatus n prooftree = openProofStatus n reduceS prooftree
+
+
+closedReduceProofStatus :: Ord pt => String -- ^ name of the goal
+                -> pt -> ProofStatus pt
+closedReduceProofStatus goalname proof_tree = 
+    ProofStatus
+    { goalName = goalname
+    , goalStatus = Proved True
+    , usedAxioms = []
+    , usedProver = reduceS
+    , proofTree = proof_tree
+    , usedTime = midnight
+    , tacticScript = TacticScript "" }
 
 -- | connects to the CAS, prepares the streams and sets initial options
 connectCAS :: IO (Handle, Handle, Handle, ProcessHandle)
 connectCAS = do 
   putStr "Connecting CAS.."
-  (inp,out,err,pid) <-runInteractiveCommand "/home/dodi/import/reduce/reduce-algebra/trunk/bin/redcsl -w"
+  reducecmdline <- getEnvDef "HETS_REDUCE" "redcsl"
+  (inp,out,err,pid) <-runInteractiveCommand $ reducecmdline ++ " -w"
   hSetBuffering out NoBuffering
   hSetBuffering inp LineBuffering
   hPutStrLn inp "off nat;"
@@ -20,6 +46,7 @@ connectCAS = do
   hGetLine out
   putStrLn "done"
   return (inp,out,err,pid)
+
   
 -- | closes the connection to the CAS
 disconnectCAS :: (Handle,Handle)->IO()
@@ -58,58 +85,67 @@ exportExp (List exps _) = "{" ++ (exportExps exps) ++ "}"
 exportExp (Int i _) = show i
 exportExp (Double d _) = show d
 
-exportReduce :: CMD -> String
-exportReduce (Cmd "simplify" exps) = exportExp $ head exps
-exportReduce (Cmd cmd exps) = cmd ++ "(" ++ (exportExps exps) ++ ")"
+exportReduce :: Named CMD -> String
+exportReduce namedcmd = case (sentence namedcmd) of 
+                          (Cmd "simplify" exps) -> exportExp $ head exps
+                          (Cmd cmd exps) ->  cmd ++ "(" ++ (exportExps exps) ++ ")"
 
-procCmd :: (Handle,Handle) -> CMD -> IO [EXPRESSION]
+procCmd :: (Handle,Handle) -> (Named CMD) -> IO (ProofStatus [EXPRESSION])
 procCmd (inp,out) cmd = case cmdstring of 
-                          "simplify" -> cassimplify (inp,out) cmd
-                          "remainder" -> casremainder (inp,out) cmd
-                          "casgcd" -> casgcd (inp,out) cmd
-                          "casint" -> casint (inp,out) cmd
-                          "qelim" -> casqelim (inp,out) cmd
-                          "factor" -> casfactorExp (inp,out) cmd
-                          "solve" -> cassolve(inp,out) cmd
-                          _ -> error "Command not supported"
-                          where (Cmd cmdstring _) = cmd
+                                 "simplify" -> cassimplify (inp,out) cmd
+                                 "remainder" -> casremainder (inp,out) cmd
+                                 "casgcd" -> casgcd (inp,out) cmd
+                                 "casint" -> casint (inp,out) cmd
+                                 "qelim" -> casqelim (inp,out) cmd
+                                 "factor" -> casfactorExp (inp,out) cmd
+                                 "solve" -> cassolve(inp,out) cmd
+                                 _ -> error "Command not supported"
+    where (Cmd cmdstring _) = (sentence cmd)
 
-procString :: (Handle,Handle)-> String -> IO [EXPRESSION]
-procString (inp,out) s = do
+-- | removes the newlines 4: from the beginning of the string
+skipReduceLineNr :: String -> String
+skipReduceLineNr s = dropWhile (\x -> elem x [' ','\n']) $ tail $ dropWhile (\x -> not (x==':')) s
+
+-- | sends the given string to the CAS, reads the result and tries to parse it. 
+procString :: (Handle,Handle)-> String -> String -> IO (ProofStatus [EXPRESSION])
+procString (inp,out) axname s = do
   putStrLn $ "Send CAS cmd " ++ s
   hPutStrLn inp s
   res <- getNextResultOutput out
   putStrLn $ "Result is " ++ res
-  return []
+  putStrLn $ "Parsing of --" ++(skipReduceLineNr res)++ "-- yields " ++ show (parseResult (skipReduceLineNr res))
+  case (parseResult (skipReduceLineNr res)) of
+    Just e -> return $ closedReduceProofStatus axname [e]
+    Nothing -> return $ openReduceProofStatus axname []
 
 
 -- | factors a given expression over the reals
-casfactorExp :: (Handle,Handle) -> CMD -> IO [EXPRESSION] 
-casfactorExp (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+casfactorExp :: (Handle,Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+casfactorExp (inp,out) cmd = procString (inp,out) (senAttr cmd) $ exportReduce cmd ++ ";"
 
 -- | solves a single equation over the reals
-cassolve :: (Handle,Handle)-> CMD-> IO [EXPRESSION]
-cassolve (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+cassolve :: (Handle,Handle)-> Named CMD-> IO (ProofStatus [EXPRESSION])
+cassolve (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"
 
 -- | solves a list of equations 
 -- solven
 
 -- | simplifies a given expression over the reals   
-cassimplify :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
-cassimplify (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+cassimplify :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
+cassimplify (inp,out) cmd = procString (inp,out) (senAttr cmd)  $ (exportReduce cmd) ++ ";"
 
 -- | computes the remainder of a division
-casremainder :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
-casremainder (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+casremainder :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
+casremainder (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"
 
 -- | computes the gcd of a division
-casgcd :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
-casgcd (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+casgcd :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
+casgcd (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"
 
 -- | integrates the given expression
-casint :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
-casint (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+casint :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
+casint (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"
 
 -- | performs quantifier elimination of a given expression
-casqelim :: (Handle,Handle)-> CMD -> IO [EXPRESSION]
-casqelim (inp,out) cmd = procString (inp,out) $ (exportReduce cmd) ++ ";"
+casqelim :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
+casqelim (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"

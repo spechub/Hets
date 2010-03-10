@@ -35,16 +35,28 @@ import Text.ParserCombinators.Parsec
 {- | parsing of identifiers. an identifier is a letter followed by
      letters, numbers, or _, but not a keyword -}
 identifier :: CharParser st Id.Token
-identifier = Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords
+identifier = lexemeParser (Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords)
 
 -- | parser for numbers (both integers and floats) without signs
 number :: CharParser st Id.Token
 number = Lexer.pToken Lexer.scanFloat
 
+-- | parses a possibly signed number
+signednumber :: CharParser st EXPRESSION
+signednumber = 
+    do
+      nr <- number
+      return $ if isFloating nr then (Double (read (tokStr nr)) (tokPos nr)) else (Int (read (tokStr nr)) (tokPos nr))
+    <|>
+    do
+      (Lexer.keySign $ string "-")
+      nr <- number
+      return $ if isFloating nr then (Double (-1*(read (tokStr nr))) (tokPos nr)) else (Int (-1*(read (tokStr nr))) (tokPos nr))
+
 expression :: CharParser st EXPRESSION
 expression = do
   exp1 <- factor
-  exps <- many $ pair (Lexer.keySign $ string "+" <|> string "-") factor
+  exps <- many $ pair (lexemeParser (Lexer.keySign $ string "+" <|> string "-")) factor
   if null exps then return exp1
      else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
   <|>
@@ -54,7 +66,7 @@ expression = do
 factor :: CharParser st EXPRESSION
 factor = do
   exp1 <- expexp
-  exps <- many $ pair (Lexer.keySign $ string "*" <|> string "/") factor
+  exps <- many $ pair (lexemeParser (Lexer.keySign $ string "*" <|> string "/")) factor
   if null exps then return exp1
      else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
 
@@ -62,7 +74,7 @@ factor = do
 expexp :: CharParser st EXPRESSION
 expexp = do
   exp1 <- expatom
-  exps <- many $ pair (Lexer.keySign $ tryString "**" <|> string "^") expexp
+  exps <- many $ pair (lexemeParser (Lexer.keySign $ tryString "**" <|> string "^")) expexp
   if null exps then return exp1
     else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
 
@@ -70,9 +82,8 @@ expexp = do
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
 expatom = do
-  nr <- number
-  if isFloating nr then return (Double (read (tokStr nr)) (tokPos nr))
-     else return (Int (read (tokStr nr)) (tokPos nr))
+  nr <- signednumber
+  return nr  
   <|>
   do
     ident <- identifier
@@ -88,7 +99,7 @@ expatom = do
 listexp :: CharParser st EXPRESSION
 listexp = do
   (Lexer.keySign (string "{"))
-  elems <- Lexer.separatedBy expression  (Lexer.keySign (string ","))
+  elems <- Lexer.separatedBy formulaorexpression  (Lexer.keySign (string ","))
   (Lexer.keySign (string "}"))
   return (List (fst elems) nullRange)
 
@@ -114,8 +125,8 @@ predFormula :: CharParser st EXPRESSION
 predFormula =
     do
       exp1 <- expression
-      op <- Lexer.keySign $ tryString "<=" <|> tryString ">="
-        <|> single (oneOf "=<>")
+      op <- (lexemeParser $ Lexer.keySign $ tryString "<=" <|> tryString ">=")
+        <|> (lexemeParser $ single (oneOf "=<>"))
       exp2 <- expression
       return (Op op [exp1,exp2] nullRange)
 
@@ -139,9 +150,9 @@ negFormula = do
 -- | parses a formula within brackets
 parenFormula :: CharParser st EXPRESSION
 parenFormula = do
-  oParenT
+  lexemeParser oParenT
   f <- aFormula
-  cParenT
+  lexemeParser cParenT
   return f
 
 -- | parser for implications and ors (same precedence)
@@ -268,3 +279,8 @@ symbMaps = do
       (is, ps) <- symbMaps
       return (s:is, c:ps)
     <|> return ([s], [])
+
+parseResult :: String -> Maybe EXPRESSION
+parseResult inp = case runParser formulaorexpression "" "" inp of
+               Left _ -> Nothing
+               (Right s) -> (Just s)

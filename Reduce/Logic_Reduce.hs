@@ -29,7 +29,6 @@ import Reduce.ATC_Reduce ()
 import Reduce.ReduceProve
 import qualified Data.Map as Map
 import ATC.ProofTree ()
-import Common.ProofTree
 
 
 -- | Lid for reduce logic
@@ -77,19 +76,19 @@ instance Syntax Reduce BASIC_SPEC
 
 -- | Instance of Logic for reduce logc
 instance Logic Reduce
-    ()                    -- Sublogics
+    ()                        -- Sublogics
     BASIC_SPEC                -- basic_spec
-    CMD                    -- sentences are CAS commands
+    CMD                       -- sentences are CAS commands
     SYMB_ITEMS                -- symb_items
     SYMB_MAP_ITEMS            -- symb_map_items
-    Sign                          -- sign
+    Sign                      -- sign
     Morphism                  -- morphism
-    Symbol                      -- symbol
-    Symbol                      -- raw_symbol
-    ()                      -- proof_tree
+    Symbol                    -- symbol
+    Symbol                    -- raw_symbol
+    [EXPRESSION]              -- proof_tree
     where
       stability Reduce     = Experimental
-      empty_proof_tree Reduce = ()
+      empty_proof_tree Reduce = []
       -- supplied provers
       provers Reduce = [reduceProver]
 
@@ -98,13 +97,13 @@ instance Logic Reduce
 -- | Static Analysis for reduce logic
 instance StaticAnalysis Reduce
     BASIC_SPEC                -- basic_spec
-    CMD                   -- sentence
+    CMD                       -- sentence
     SYMB_ITEMS                -- symb_items
     SYMB_MAP_ITEMS            -- symb_map_items
-    Sign                          -- sign
+    Sign                      -- sign
     Morphism                  -- morphism
-    Symbol                      -- symbol
-    Symbol                      -- raw_symbol
+    Symbol                    -- symbol
+    Symbol                    -- raw_symbol
         where
           basic_analysis Reduce           = Just basicReduceAnalysis
           empty_signature Reduce          = emptySig
