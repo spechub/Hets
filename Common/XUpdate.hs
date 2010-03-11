@@ -178,7 +178,7 @@ failX :: Monad m => String -> QName -> m a
 failX str q = fail $ str ++ ": " ++ showQName q
 
 -- | check if the element contains no other content
-noContent ::  Monad m => Element -> a -> m a
+noContent :: Monad m => Element -> a -> m a
 noContent e a = case elContent e of
   [] -> return a
   c : _ -> fail $ "unexpected content: " ++ showContent c
@@ -195,7 +195,7 @@ addXElem e = let q = elName e in
         case () of
           _ | isAttributeQN q ->
                liftM (AddAttr . Attr qn) $ getText e
-            | isElementQN q ->  do
+            | isElementQN q -> do
               es <- mapM addXElem $ elChildren e
               let (as, cs) = partitionAddChanges es
               return $ AddElem $ add_attrs as $ node qn cs
@@ -204,10 +204,10 @@ addXElem e = let q = elName e in
   else failX "no xupdate element" q
 
 {-
- xupdate:element
- xupdate:attribute
- xupdate:text
+xupdate:element
+xupdate:attribute
+xupdate:text
 
 xupdate:element may contain xupdate:attribute elements and further
 xupdate:element or xupdate:text elements.
- -}
+-}

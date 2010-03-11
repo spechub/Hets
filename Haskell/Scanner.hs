@@ -15,6 +15,7 @@ module Haskell.Scanner where
 import Haskell.Wrapper
 
 import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Pos
 import Common.Parsec
 
 import Control.Monad
@@ -163,8 +164,18 @@ splitLines = splitBy (isIndent . snd)
 anaLine :: [(SourcePos, Token)] -> [String]
 anaLine l = case l of
   [] -> []
+  (p, Token Comment s) : r -> let
+    n = adjustComment s
+    s5 = take 5 s
+    nr = take 5 $ reverse n
+    sr = take 5 $ reverse s
+    in [ show p ++ " non-conventional comment start: " ++ s5 | s5 /= take 5 n ]
+       ++ [ show (updatePosString p s) ++ " non-conventional comment end: "
+            ++ reverse sr | isPrefixOf "{-" s5, sr /= nr ]
+       ++ anaLine r
   [(p, x)] -> case x of
     Token White _ -> [show p ++ " trailing white space"]
+    Token Indent (_ : _ : _) -> [show p ++ " empty line with spaces"]
     _ -> []
   (_, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
      s1 = show t1
@@ -188,11 +199,8 @@ anaLine l = case l of
 processLine :: [(SourcePos, Token)] -> [(SourcePos, Token)]
 processLine l = case l of
   [] -> []
-  (p, Token Comment s) : r -> (p, Token Comment
-    $ adjustPrefix "--" ""
-    $ adjustBothEnds "{-" "}-" "!#"
-    $ adjustBothEnds "{-!" "}-!" ""
-    $ adjustBothEnds "{-#" "}-#" "" s) : processLine r
+  (p, Token Comment s) : r ->
+      (p, Token Comment $ adjustComment s) : processLine r
   [(_, x)] -> case x of
     Token White _ -> []
     _ -> l
@@ -214,22 +222,47 @@ processLine l = case l of
       then (p, Token White " ") : processLine r
       else processLine r
 
-processScan :: [(SourcePos, Token)] -> String
-processScan = concatMap (concatMap (show . snd) . processLine) . splitLines
+processScan :: [[(SourcePos, Token)]] -> String
+processScan = concatMap (concatMap (show . snd) . processLine)
+  . removeBlankLines 1 . removeFinalBlankLines
 
-showScan :: [(SourcePos, Token)] -> String
-showScan = intercalate "\n" . concatMap anaLine . splitLines
+showScan :: [[(SourcePos, Token)]] -> String
+showScan = intercalate "\n" . concatMap anaLine
 
 adjustPrefix :: String -> String -> String -> String
 adjustPrefix p n s = let ps = map (\ c -> p ++ [c]) n in
    if any (flip isPrefixOf s) ps then s else case stripPrefix p s of
      Nothing -> s
-     Just r -> case dropWhile isWhite r of
-         [] -> p
-         rt@('\n' : _) -> p ++ rt
-         rt -> p ++ ' ' : rt
+     Just r -> let (ft, rt) = span isSpace r in
+         p ++ (case filter (== '\n') ft of
+                 n1 : n2 : _ -> [n1, n2]
+                 [n1] -> [n1]
+                 [] -> " ") ++ rt
 
 adjustBothEnds :: String -> String -> String -> String -> String
 adjustBothEnds p q n s = let ps = map (\ c -> p ++ [c]) n in
     if any (flip isPrefixOf s) ps || not (isPrefixOf p s) then s
        else reverse $ adjustPrefix q n $ reverse $ adjustPrefix p n s
+
+adjustComment :: String -> String
+adjustComment = adjustPrefix "--" ""
+    . adjustBothEnds "{-" "}-" "!#"
+    . adjustBothEnds "{-!" "}-!" ""
+    . adjustBothEnds "{-#" "}-#" ""
+
+nL :: [(SourcePos, Token)]
+nL = [(initialPos "", Token Indent "\n")]
+
+removeBlankLines :: Int -> [[(SourcePos, Token)]] -> [[(SourcePos, Token)]]
+removeBlankLines c l = case l of
+  [] -> []
+  x : r -> case x of
+    [(_, Token Indent _)] -> if c > 2 then removeBlankLines c r else
+      x : removeBlankLines (c + 1) r
+    _ -> x : removeBlankLines 0 r
+
+removeFinalBlankLines :: [[(SourcePos, Token)]] -> [[(SourcePos, Token)]]
+removeFinalBlankLines ll = reverse $ nL :
+  dropWhile (\ l -> case l of
+                [(_, Token Indent _)] -> True
+                _ -> False) (reverse ll)
