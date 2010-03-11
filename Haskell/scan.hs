@@ -17,9 +17,11 @@ import Data.Char
 import Data.List
 
 import System.Environment
+import System.Cmd
 
 import Haskell.Scanner
 import Text.ParserCombinators.Parsec
+import Common.Parsec
 
 main :: IO ()
 main = do
@@ -41,6 +43,8 @@ process b f = do
       if b then let o = showScan x in unless (null o) $ putStrLn o else
       writeFile f $ processScan x
     Left err -> fail $ show err
+  when b $ forget $ system $ "hlint -i \"Use camelCase\" " ++ f
+  when b $ forget $ system $ "haddock -w " ++ f
 
 checkBlankLines :: FilePath -> Int -> [(Int, String)] -> [String]
 checkBlankLines f c l = case l of

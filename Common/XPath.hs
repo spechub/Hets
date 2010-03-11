@@ -198,7 +198,7 @@ showInfixExpr op args = case args of
         padOp = if any isAlpha op then ' ' : op ++ " " else
           if elem op addOps && not (null f) && ncNameChar (last f)
              then ' ' : op else op
-    in f ++ concatMap ((padOp ++) .  parenExpr True mi) rargs
+    in f ++ concatMap ((padOp ++) . parenExpr True mi) rargs
 
 {- | put parens around arguments that have a lower precedence or
      equal precendence if they are a right argument. -}

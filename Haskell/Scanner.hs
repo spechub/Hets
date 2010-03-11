@@ -148,7 +148,7 @@ whitePos :: Parser (SourcePos, Token)
 whitePos = pair getPosition $ fmap (Token White) white
 
 scan :: Parser [(SourcePos, Token)]
-scan = whitePos
+scan = fmap (\ (p, Token _ s) -> (p, Token Indent s)) whitePos
     <:> (flat $ many $ liftM2
         (\ t w@(_, Token _ s) -> if null s then [t] else [t, w])
         tokPos whitePos) << eof
@@ -224,7 +224,7 @@ processLine l = case l of
 
 processScan :: [[(SourcePos, Token)]] -> String
 processScan = concatMap (concatMap (show . snd) . processLine)
-  . removeBlankLines 1 . removeFinalBlankLines
+  . removeBlankLines 1 isBlankLine . removeFinalBlankLines
 
 showScan :: [[(SourcePos, Token)]] -> String
 showScan = intercalate "\n" . concatMap anaLine
@@ -233,16 +233,17 @@ adjustPrefix :: String -> String -> String -> String
 adjustPrefix p n s = let ps = map (\ c -> p ++ [c]) n in
    if any (flip isPrefixOf s) ps then s else case stripPrefix p s of
      Nothing -> s
-     Just r -> let (ft, rt) = span isSpace r in
-         p ++ (case filter (== '\n') ft of
-                 n1 : n2 : _ -> [n1, n2]
-                 [n1] -> [n1]
-                 [] -> " ") ++ rt
+     Just r -> p ++ case dropWhile isWhite r of
+         rt@('\n' : _) -> rt
+         rt -> ' ' : rt
 
 adjustBothEnds :: String -> String -> String -> String -> String
 adjustBothEnds p q n s = let ps = map (\ c -> p ++ [c]) n in
-    if any (flip isPrefixOf s) ps || not (isPrefixOf p s) then s
-       else reverse $ adjustPrefix q n $ reverse $ adjustPrefix p n s
+    if any (flip isPrefixOf s) ps || not (isPrefixOf p s) then s else
+    concatMap (reverse . dropWhile isWhite . reverse)
+    $ removeBlankLines 1 (all isSpace)
+    $ splitBy (== '\n')
+    $ reverse $ adjustPrefix q n $ reverse $ adjustPrefix p n s
 
 adjustComment :: String -> String
 adjustComment = adjustPrefix "--" ""
@@ -250,19 +251,23 @@ adjustComment = adjustPrefix "--" ""
     . adjustBothEnds "{-!" "}-!" ""
     . adjustBothEnds "{-#" "}-#" ""
 
-nL :: [(SourcePos, Token)]
-nL = [(initialPos "", Token Indent "\n")]
+isBlankLine :: [(SourcePos, Token)] -> Bool
+isBlankLine x = case x of
+  [(_, Token Indent _)] -> True
+  _ -> False
 
-removeBlankLines :: Int -> [[(SourcePos, Token)]] -> [[(SourcePos, Token)]]
-removeBlankLines c l = case l of
+removeBlankLines :: Int -> ([a] -> Bool) -> [[a]] -> [[a]]
+removeBlankLines c p l = case l of
   [] -> []
-  x : r -> case x of
-    [(_, Token Indent _)] -> if c > 2 then removeBlankLines c r else
-      x : removeBlankLines (c + 1) r
-    _ -> x : removeBlankLines 0 r
+  x : r ->
+    if p x
+    then if c > 1
+         then removeBlankLines c p r
+         else x : removeBlankLines (c + 1) p r
+    else x : removeBlankLines 0 p r
 
 removeFinalBlankLines :: [[(SourcePos, Token)]] -> [[(SourcePos, Token)]]
-removeFinalBlankLines ll = reverse $ nL :
-  dropWhile (\ l -> case l of
+removeFinalBlankLines ll = reverse $ [(initialPos "", Token Indent "\n")]
+  : dropWhile (\ l -> case l of
                 [(_, Token Indent _)] -> True
                 _ -> False) (reverse ll)
