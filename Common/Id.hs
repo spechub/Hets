@@ -142,11 +142,11 @@ placeTok = mkSimpleId place
 
 -- | also a definition indicator
 equalS :: String
-equalS  = "="
+equalS = "="
 
 -- | mind spacing i.e. in @e =e= e@
 exEqual :: String
-exEqual  = "=e="
+exEqual = "=e="
 
 -- | token for type annotations
 typeTok :: Token
@@ -281,9 +281,10 @@ noShow b s = if b then id else s
 
 -- | intersperse seperators
 showSepList :: ShowS -> (a -> ShowS) -> [a] -> ShowS
-showSepList _ _ [] = id
-showSepList _ f [x] = f x
-showSepList s f (x:r) = f x . s . showSepList s f r
+showSepList s f l = case l of
+  [] -> id
+  [x] -> f x
+  x : r -> f x . s . showSepList s f r
 
 -- | shows a compound list
 showIds :: [Id] -> ShowS
@@ -296,18 +297,19 @@ showId :: Id -> ShowS
 showId (Id ts is _) =
         let (toks, places) = splitMixToken ts
             showToks = showSepList id $ showString . tokStr
-        in  showToks toks . showIds is . showToks places
+        in showToks toks . showIds is . showToks places
 
 -- ** splitting identifiers
 
 -- | splits off the front and final places
 splitMixToken :: [Token] -> ([Token],[Token])
-splitMixToken [] = ([], [])
-splitMixToken (h:l) =
+splitMixToken ts = case ts of
+  [] -> ([], [])
+  h : l ->
     let (toks, pls) = splitMixToken l
         in if isPlace h && null toks
-           then (toks, h:pls)
-           else (h:toks, pls)
+           then (toks, h : pls)
+           else (h : toks, pls)
 
 -- | return open and closing list bracket and a compound list
 -- from a bracket 'Id'  (parsed by 'Common.AnnoParser.caslListBrackets')
@@ -329,14 +331,16 @@ expandPos :: (Token -> a) -> (String, String) -> [a] -> Range -> [a]
 expandPos f (o, c) ts (Range ps) =
     if null ts then if null ps then map (f . mkSimpleId) [o, c]
        else map f (zipWith Token [o, c] [Range [head ps] , Range [last ps]])
-    else  let n = length ts + 1
-              diff = n - length ps
-              commas j = if j == 2 then [c] else "," : commas (j - 1)
-              ocs = o : commas n
-              seps = map f (if diff == 0 then
-                            zipWith ( \ s p -> Token s (Range [p]))
-                            ocs ps else map mkSimpleId ocs)
-          in head seps : concat (zipWith (\ t s -> [t,s]) ts (tail seps))
+    else let
+      n = length ts + 1
+      diff = n - length ps
+      commas j = if j == 2 then [c] else "," : commas (j - 1)
+      ocs = o : commas n
+      seps = map f
+        $ if diff == 0
+          then zipWith (\ s p -> Token s (Range [p])) ocs ps
+          else map mkSimpleId ocs
+    in head seps : concat (zipWith (\ t s -> [t, s]) ts (tail seps))
 
 -- | reconstruct the token list of an 'Id'
 -- including square brackets and commas of (nested) compound lists.
@@ -398,12 +402,12 @@ endPlace (Id toks _ _) = not (null toks) && isPlace (last toks)
 
 -- | starts with a 'place'
 isPostfix :: Id -> Bool
-isPostfix (Id tops _ _) = not (null tops) &&  isPlace (head  tops)
+isPostfix (Id tops _ _) = not (null tops) && isPlace (head tops)
                           && not (isPlace (last tops))
 
 -- | starts and ends with a 'place'
 isInfix :: Id -> Bool
-isInfix (Id tops _ _) = not (null tops) &&  isPlace (head tops)
+isInfix (Id tops _ _) = not (null tops) && isPlace (head tops)
                         && isPlace (last tops)
 
 -- * position stuff
@@ -448,7 +452,7 @@ idRange (Id ts _ r) =
     let (fs, rs) = splitMixToken ts
     in joinRanges $ map tokenRange fs ++ [outerRange r] ++ map tokenRange rs
 
----- helper class -------------------------------------------------------
+-- -- helper class -------------------------------------------------------
 
 {- | This class is derivable with DrIFT.
    Its main purpose is to have a function that operates on

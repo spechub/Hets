@@ -12,16 +12,22 @@ test the haskell scanner
 -}
 
 import Control.Monad
+import Data.List
 import System.Environment
 import Haskell.Scanner
 import Text.ParserCombinators.Parsec
 
 main :: IO ()
-main = getArgs >>= mapM_ process
+main = do
+  args <- getArgs
+  let (opts, files) = span (isPrefixOf "-") args
+  mapM_ (process $ null opts) files
 
-process :: String -> IO ()
-process f = do
+process :: Bool -> String -> IO ()
+process b f = do
   s <- readFile f
   case parse scan f s of
-             Right x -> let o = showScan x in unless (null o) $ putStrLn o
+             Right x -> if b then
+               let o = showScan x in unless (null o) $ putStrLn o
+               else writeFile f $ processScan x
              Left err -> fail $ show err

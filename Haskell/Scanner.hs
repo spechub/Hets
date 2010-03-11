@@ -86,7 +86,7 @@ isIndent t = case t of
 
 isInfixOp :: Token -> Bool
 isInfixOp t = case t of
-  QualName (Name _ Sym s) -> notElem s $ map (: []) "@#\\"
+  QualName (Name _ Sym s) -> notElem s $ map (: []) "@#"
   Token Infix _ -> True
   _ -> False
 
@@ -123,8 +123,11 @@ instance Show Token where
     Sep c -> [c]
     Token _ s -> s
 
+isWhite :: Char -> Bool
+isWhite c = isSpace c && c /= '\n'
+
 white :: Parser String
-white = many (satisfy $ \ c -> isSpace c && c /= '\n')
+white = many $ satisfy isWhite
 
 indent :: Parser String
 indent = newline <:> white
@@ -182,6 +185,51 @@ anaLine l = case l of
           [ show p2 ++ " leave space before " ++ show t2 | isInfixOp t2 ]
       else []) ++ anaLine r
 
+processLine :: [(SourcePos, Token)] -> [(SourcePos, Token)]
+processLine l = case l of
+  [] -> []
+  (p, Token Comment s) : r -> (p, Token Comment
+    $ adjustPrefix "--" ""
+    $ adjustBothEnds "{-" "}-" "!#"
+    $ adjustBothEnds "{-!" "}-!" ""
+    $ adjustBothEnds "{-#" "}-#" "" s) : processLine r
+  [(_, x)] -> case x of
+    Token White _ -> []
+    _ -> l
+  p1@(_, t1) : p2@(p, Token White _) : r@(p3@(_, t3) : ts) -> let
+     s1 = show t1
+     s3 = show t3
+     in p1 :
+        if isInfixOp t1 && isClPar t3 || isOpPar t1 && isInfixOp t3
+        then processLine r
+        else if isComment t3
+             then p2 : processLine r
+             else (p, Token White " ") :
+                  if s1 == "::" && s3 == "!"
+                  then p3 : processLine ts
+                  else processLine r
+  p1@(p, t1) : r@((_, t2) : _) ->
+      p1 : if (isNonPar t1 || isInfixOp t1) && isNameOrLit t2
+         || isNameOrLit t1 && isInfixOp t2
+      then (p, Token White " ") : processLine r
+      else processLine r
+
+processScan :: [(SourcePos, Token)] -> String
+processScan = concatMap (concatMap (show . snd) . processLine) . splitLines
+
 showScan :: [(SourcePos, Token)] -> String
 showScan = intercalate "\n" . concatMap anaLine . splitLines
 
+adjustPrefix :: String -> String -> String -> String
+adjustPrefix p n s = let ps = map (\ c -> p ++ [c]) n in
+   if any (flip isPrefixOf s) ps then s else case stripPrefix p s of
+     Nothing -> s
+     Just r -> case dropWhile isWhite r of
+         [] -> p
+         rt@('\n' : _) -> p ++ rt
+         rt -> p ++ ' ' : rt
+
+adjustBothEnds :: String -> String -> String -> String -> String
+adjustBothEnds p q n s = let ps = map (\ c -> p ++ [c]) n in
+    if any (flip isPrefixOf s) ps || not (isPrefixOf p s) then s
+       else reverse $ adjustPrefix q n $ reverse $ adjustPrefix p n s
