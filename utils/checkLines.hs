@@ -73,7 +73,7 @@ checkLine f (n, s) = do
       (bs, rt) = span isSpace r
       l = length rt
       trailBSlash = takeWhile (== '\\') rt
-      badChars = filter (\c -> not $ isAscii c && isPrint c) s
+      badChars = filter (\ c -> not $ isAscii c && isPrint c) s
   unless (null bs) $
     diag f n "trailing white space (use: perl -i -ple 's/ +$//g')"
   when (l > 80) $

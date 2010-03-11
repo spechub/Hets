@@ -31,17 +31,16 @@ prettyType (LApply t ts) = prettyType t <+> hsep (map prettyType ts)
 texts :: [String] -> [Doc]
 texts = map text
 
-block, blockList,parenList,bracketList :: [Doc] -> Doc
+block, parenList, bracketList :: [Doc] -> Doc
 block = nest 4 . vcat
-blockList = braces . fcat . sepWith semi
-parenList = parens . fcat . sepWith comma
-bracketList = brackets . fcat . sepWith comma
+parenList = parens . fsep . sepWith comma
+bracketList = brackets . fsep . sepWith comma
 
 -- for bulding m1 >> m2 >> m3, f . g . h, etc
-sepWith :: a -> [a] -> [a]
+sepWith :: Doc -> [Doc] -> [Doc]
 sepWith _ [] = []
 sepWith _ [x] = [x]
-sepWith a (x:xs) = x:a: sepWith a xs
+sepWith a (x:xs) = (x <> a) : sepWith a xs
 
 --optional combinator, applys fn if arg is non-[]
 opt :: [a] -> ([a] -> Doc) -> Doc
@@ -78,7 +77,7 @@ simpleInstance s d = hsep [text "instance"
    where
    constr = map (\(c,v) -> text c <+> text v) (constraints d) ++
                       map (\x -> text s <+> text x) (vars d)
-   parenSpace = parens . hcat . sepWith space
+   parenSpace = parens . hsep
 
 
 -- instanceSkeleton handles most instance declarations, where instance
