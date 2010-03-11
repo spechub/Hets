@@ -50,3 +50,7 @@ checkEnvs
 checkPrfs
 date
 updateOMDoc
+
+cd /home/linux-bkb/twelf/twelf-mod
+svn up
+sml build/twelf-server-smlnj.sml
