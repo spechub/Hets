@@ -1,11 +1,11 @@
 {- |
-Module      :  ./ExtModal/StatAna.hs
-Copyright   :  
+Module      :  $Header$
+Copyright   :  DFKI GmbH 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  
+Maintainer  :  codruta.liliana@gmail.com
 Stability   :  experimental
-Portability :  
+Portability :  portable
 
 static analysis of modal logic parts
 -}
@@ -36,208 +36,208 @@ import Common.ExtSign
 import qualified Data.List as List
 
 instance FreeVars EM_FORMULA where
-	freeVarsOfExt sign ( BoxOrDiamond _ _ _ _ f _ ) = freeVars sign f
-	freeVarsOfExt sign ( Hybrid _ _ f _ ) = freeVars sign f
-	freeVarsOfExt sign ( UntilSince _ f1 f2 _ ) = Set.union (freeVars sign f1) (freeVars sign f2)
-	freeVarsOfExt sign ( PathQuantification _ f _ ) = freeVars sign f
-	freeVarsOfExt sign ( StateQuantification _ _ f _ ) = freeVars sign f
-	freeVarsOfExt sign ( NextY _ f _ ) = freeVars sign f
-	freeVarsOfExt sign ( FixedPoint _ _ f _ ) = freeVars sign f
+        freeVarsOfExt sign ( BoxOrDiamond _ _ _ _ f _ ) = freeVars sign f
+        freeVarsOfExt sign ( Hybrid _ _ f _ ) = freeVars sign f
+        freeVarsOfExt sign ( UntilSince _ f1 f2 _ ) = Set.union (freeVars sign f1) (freeVars sign f2)
+        freeVarsOfExt sign ( PathQuantification _ f _ ) = freeVars sign f
+        freeVarsOfExt sign ( StateQuantification _ _ f _ ) = freeVars sign f
+        freeVarsOfExt sign ( NextY _ f _ ) = freeVars sign f
+        freeVarsOfExt sign ( FixedPoint _ _ f _ ) = freeVars sign f
 
-basicEModalAnalysis 
-	:: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
-	   , Sign EM_FORMULA EModalSign, GlobalAnnos)
-	-> Result (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
-		  , ExtSign (Sign EM_FORMULA EModalSign) Symbol
-		  , [Named (FORMULA EM_FORMULA)])
+basicEModalAnalysis
+        :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
+           , Sign EM_FORMULA EModalSign, GlobalAnnos)
+        -> Result (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
+                  , ExtSign (Sign EM_FORMULA EModalSign) Symbol
+                  , [Named (FORMULA EM_FORMULA)])
 basicEModalAnalysis = basicAnalysis frmTypeAna basItemStatAna sigItemStatAna mixfixAna
 
 
 frmTypeAna :: Min EM_FORMULA EModalSign
 frmTypeAna sign form =
-	let checkMod term_mod = case term_mod of 
-			Simple_modality s_id -> if tokStr s_id == emptyS 
-						   || Map.member s_id (modalities $ extendedInfo sign)
-						   then return $ Simple_modality s_id
-						   else Result 
-						   	   [mkDiag Error "unknown modality" s_id] 
-							   $ Just $ Simple_modality s_id
-			Composition md1 md2 -> do new_md1 <- checkMod md1
-						  new_md2 <- checkMod md2
-	  					  return $ Composition new_md1 new_md2
-			Union md1 md2 -> do new_md1 <- checkMod md1
-					    new_md2 <- checkMod md2
-					    return $ Union new_md1 new_md2
-			TransitiveClosure md -> do new_md <- checkMod md
-						   return $ TransitiveClosure new_md
-			Guard frm -> do new_frm <- minExpFORMULA frmTypeAna sign frm
-					return $ Guard new_frm
-	in case form of 
-		BoxOrDiamond choice md leq_geq number f pos -> 
-			do new_md <- checkMod md
-			   new_f <- minExpFORMULA frmTypeAna sign f
-			   if number >= 0
-			      then return $ BoxOrDiamond choice new_md leq_geq number new_f pos
-			      else Result [mkDiag Error "negative number grading" number] 
-			      		$ Just $ BoxOrDiamond choice new_md leq_geq number new_f pos
-		Hybrid choice nm f pos -> 
-			do new_f <- minExpFORMULA frmTypeAna sign f
-			   let id_of_nom ( Nominal sid ) = sid in
-			   	if Set.member (id_of_nom nm) (nominals $ extendedInfo sign)
-			   		then return $ Hybrid choice nm new_f pos
-		     		        else Result [mkDiag Error "unknown nominal" nm]
-			   		$ Just $ Hybrid choice nm new_f pos
-		UntilSince choice f1 f2 pos -> 
-			do new_f1 <- minExpFORMULA frmTypeAna sign f1
-			   new_f2 <- minExpFORMULA frmTypeAna sign f2
-			   return $ UntilSince choice new_f1 new_f2 pos
-		PathQuantification choice f pos -> 
-			do new_f <- minExpFORMULA frmTypeAna sign f
-			   return $ PathQuantification choice new_f pos
-		StateQuantification t_dir choice f pos -> 
-			do new_f <- minExpFORMULA frmTypeAna sign f
-			   return $ StateQuantification t_dir choice new_f pos
-		NextY choice f pos ->
-			do new_f <- minExpFORMULA frmTypeAna sign f
-			   return $ NextY choice new_f pos
-		FixedPoint choice fpvar f pos -> 
-			do new_f <- minExpFORMULA frmTypeAna sign f
-			   return $ FixedPoint choice fpvar new_f pos
+        let checkMod term_mod = case term_mod of
+                        Simple_modality s_id -> if tokStr s_id == emptyS
+                                                   || Map.member s_id (modalities $ extendedInfo sign)
+                                                   then return $ Simple_modality s_id
+                                                   else Result
+                                                           [mkDiag Error "unknown modality" s_id]
+                                                           $ Just $ Simple_modality s_id
+                        Composition md1 md2 -> do new_md1 <- checkMod md1
+                                                  new_md2 <- checkMod md2
+                                                  return $ Composition new_md1 new_md2
+                        Union md1 md2 -> do new_md1 <- checkMod md1
+                                            new_md2 <- checkMod md2
+                                            return $ Union new_md1 new_md2
+                        TransitiveClosure md -> do new_md <- checkMod md
+                                                   return $ TransitiveClosure new_md
+                        Guard frm -> do new_frm <- minExpFORMULA frmTypeAna sign frm
+                                        return $ Guard new_frm
+        in case form of
+                BoxOrDiamond choice md leq_geq number f pos ->
+                        do new_md <- checkMod md
+                           new_f <- minExpFORMULA frmTypeAna sign f
+                           if number >= 0
+                              then return $ BoxOrDiamond choice new_md leq_geq number new_f pos
+                              else Result [mkDiag Error "negative number grading" number]
+                                        $ Just $ BoxOrDiamond choice new_md leq_geq number new_f pos
+                Hybrid choice nm f pos ->
+                        do new_f <- minExpFORMULA frmTypeAna sign f
+                           let id_of_nom ( Nominal sid ) = sid in
+                                if Set.member (id_of_nom nm) (nominals $ extendedInfo sign)
+                                        then return $ Hybrid choice nm new_f pos
+                                        else Result [mkDiag Error "unknown nominal" nm]
+                                        $ Just $ Hybrid choice nm new_f pos
+                UntilSince choice f1 f2 pos ->
+                        do new_f1 <- minExpFORMULA frmTypeAna sign f1
+                           new_f2 <- minExpFORMULA frmTypeAna sign f2
+                           return $ UntilSince choice new_f1 new_f2 pos
+                PathQuantification choice f pos ->
+                        do new_f <- minExpFORMULA frmTypeAna sign f
+                           return $ PathQuantification choice new_f pos
+                StateQuantification t_dir choice f pos ->
+                        do new_f <- minExpFORMULA frmTypeAna sign f
+                           return $ StateQuantification t_dir choice new_f pos
+                NextY choice f pos ->
+                        do new_f <- minExpFORMULA frmTypeAna sign f
+                           return $ NextY choice new_f pos
+                FixedPoint choice fpvar f pos ->
+                        do new_f <- minExpFORMULA frmTypeAna sign f
+                           return $ FixedPoint choice fpvar new_f pos
 
 
 basItemStatAna :: Ana EM_BASIC_ITEM EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
 basItemStatAna mix basic_item = do
-	case basic_item of
-		Simple_mod_decl is_time anno_list forms pos -> do
-			mapM_ ( (updateExtInfo . preAddMod) . item ) anno_list
-			new_forms <- mapAnM (ana_FORMULA mix) forms
-			res_forms <- mapAnM (return . fst) new_forms
-			ana_forms <- mapAnM (return . snd) new_forms
-			mapM_ ( (updateExtInfo . addMod ana_forms) . item ) anno_list
-			if (not is_time) then return $ Simple_mod_decl is_time anno_list res_forms pos
-				else do	mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list 
-					return $ Simple_mod_decl is_time anno_list res_forms pos
-		Nominal_decl anno_list pos -> do
-			mapM_ ( (updateExtInfo . addNom) . item ) anno_list
-			return $ Nominal_decl anno_list pos
+        case basic_item of
+                Simple_mod_decl is_time anno_list forms pos -> do
+                        mapM_ ( (updateExtInfo . preAddMod) . item ) anno_list
+                        new_forms <- mapAnM (ana_FORMULA mix) forms
+                        res_forms <- mapAnM (return . fst) new_forms
+                        ana_forms <- mapAnM (return . snd) new_forms
+                        mapM_ ( (updateExtInfo . addMod ana_forms) . item ) anno_list
+                        if (not is_time) then return $ Simple_mod_decl is_time anno_list res_forms pos
+                                else do mapM_ ( (updateExtInfo . addTimeMod ) . item ) anno_list
+                                        return $ Simple_mod_decl is_time anno_list res_forms pos
+                Nominal_decl anno_list pos -> do
+                        mapM_ ( (updateExtInfo . addNom) . item ) anno_list
+                        return $ Nominal_decl anno_list pos
 
 addTimeMod :: SIMPLE_ID -> EModalSign -> Result EModalSign
-addTimeMod tmi sgn = 
-	let tm = time_modalities sgn in 
-	if Set.member tmi tm then
-		Result [mkDiag Hint "repeated time modality" tmi] $ Just sgn
-		else if Set.size tm >= 1 then
-			Result [mkDiag Hint "more than one time modality" tmi] $ Just sgn
-			else return sgn { time_modalities = Set.insert tmi tm }
+addTimeMod tmi sgn =
+        let tm = time_modalities sgn in
+        if Set.member tmi tm then
+                Result [mkDiag Hint "repeated time modality" tmi] $ Just sgn
+                else if Set.size tm >= 1 then
+                        Result [mkDiag Hint "more than one time modality" tmi] $ Just sgn
+                        else return sgn { time_modalities = Set.insert tmi tm }
 
 preAddMod :: SIMPLE_ID -> EModalSign -> Result EModalSign
-preAddMod mi sgn  = 
-	let m = modalities sgn in
-	if Map.member mi m then 
-		Result [mkDiag Hint "repeated modality" mi] $ Just sgn
-		else return sgn { modalities = Map.insert mi [] m }
+preAddMod mi sgn  =
+        let m = modalities sgn in
+        if Map.member mi m then
+                Result [mkDiag Hint "repeated modality" mi] $ Just sgn
+                else return sgn { modalities = Map.insert mi [] m }
 
 addMod :: [AnEModForm] -> SIMPLE_ID -> EModalSign -> Result EModalSign
-addMod forms mi sgn = 
-	return sgn { modalities = Map.insertWith List.union mi forms $ modalities sgn }
+addMod forms mi sgn =
+        return sgn { modalities = Map.insertWith List.union mi forms $ modalities sgn }
 
 addNom :: SIMPLE_ID -> EModalSign -> Result EModalSign
-addNom ni sgn = 
-	let n = nominals sgn in 
-	if Set.member ni n then 
-		Result [mkDiag Hint "repeated nominal" ni] $ Just sgn
-		else return sgn { nominals = Set.insert ni n }
+addNom ni sgn =
+        let n = nominals sgn in
+        if Set.member ni n then
+                Result [mkDiag Hint "repeated nominal" ni] $ Just sgn
+                else return sgn { nominals = Set.insert ni n }
 
 sigItemStatAna :: Ana EM_SIG_ITEM EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
-sigItemStatAna mix sig_item = case sig_item of 
-	Rigid_op_items rig ann_list pos -> 
-		do new_list <- mapM (ana_OP_ITEM frmTypeAna mix) ann_list
-		   case rig of 
-		   	Rigid -> mapM_ ( \ nlitem -> 
-						case item nlitem of
-							Op_decl ops typ _ _ -> 
-								mapM_ (updateExtInfo . addRigidOp (toOpType typ)) ops
-							Op_defn op hd _ _ -> 
-								updateExtInfo $ addRigidOp (toOpType $ headToType hd) op
-					) new_list
-			_ -> return ()
-		   return $ Rigid_op_items rig new_list pos
-	Rigid_pred_items rig ann_list pos ->
-		do new_list <- mapM (ana_PRED_ITEM frmTypeAna mix) ann_list
-		   case rig of 
-		   	Rigid -> mapM_ ( \ nlitem ->
-						case item nlitem of
-							Pred_decl preds typ _ -> 
-								mapM_ (updateExtInfo . addRigidPred (toPredType typ) ) preds
-							Pred_defn prd (Pred_head args _ ) _ _ ->
-								updateExtInfo $ addRigidPred (PredType $ sortsOfArgs args) prd
-					) new_list
-			_ -> return ()
-		   return $ Rigid_pred_items rig new_list pos
+sigItemStatAna mix sig_item = case sig_item of
+        Rigid_op_items rig ann_list pos ->
+                do new_list <- mapM (ana_OP_ITEM frmTypeAna mix) ann_list
+                   case rig of
+                        Rigid -> mapM_ ( \ nlitem ->
+                                                case item nlitem of
+                                                        Op_decl ops typ _ _ ->
+                                                                mapM_ (updateExtInfo . addRigidOp (toOpType typ)) ops
+                                                        Op_defn op hd _ _ ->
+                                                                updateExtInfo $ addRigidOp (toOpType $ headToType hd) op
+                                        ) new_list
+                        _ -> return ()
+                   return $ Rigid_op_items rig new_list pos
+        Rigid_pred_items rig ann_list pos ->
+                do new_list <- mapM (ana_PRED_ITEM frmTypeAna mix) ann_list
+                   case rig of
+                        Rigid -> mapM_ ( \ nlitem ->
+                                                case item nlitem of
+                                                        Pred_decl preds typ _ ->
+                                                                mapM_ (updateExtInfo . addRigidPred (toPredType typ) ) preds
+                                                        Pred_defn prd (Pred_head args _ ) _ _ ->
+                                                                updateExtInfo $ addRigidPred (PredType $ sortsOfArgs args) prd
+                                        ) new_list
+                        _ -> return ()
+                   return $ Rigid_pred_items rig new_list pos
 
 addRigidOp :: OpType -> Id -> EModalSign -> Result EModalSign
 addRigidOp typ i sgn = return
-	sgn { rigidOps = addOpTo i typ $ rigidOps sgn }
+        sgn { rigidOps = addOpTo i typ $ rigidOps sgn }
 
 addRigidPred :: PredType -> Id -> EModalSign -> Result EModalSign
-addRigidPred typ i sgn = return 
-	sgn { rigidPreds = let 
-		old_rpreds = rigidPreds sgn
-		in Map.insert i (Set.insert typ $ Map.findWithDefault Set.empty i old_rpreds) old_rpreds
-		}
+addRigidPred typ i sgn = return
+        sgn { rigidPreds = let
+                old_rpreds = rigidPreds sgn
+                in Map.insert i (Set.insert typ $ Map.findWithDefault Set.empty i old_rpreds) old_rpreds
+                }
 
 mixfixAna :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
-mixfixAna = emptyMix 
-	{ getSigIds = extraSigItems
-	, putParen = parenExtForm
-	, mixResolve = resolveExtForm
-	}
+mixfixAna = emptyMix
+        { getSigIds = extraSigItems
+        , putParen = parenExtForm
+        , mixResolve = resolveExtForm
+        }
 
 extraSigItems :: EM_SIG_ITEM -> IdSets
 extraSigItems s = case s of
-	Rigid_op_items _ annoted_list _ -> (Set.unions $ map (ids_OP_ITEM . item) annoted_list, Set.empty)
-	Rigid_pred_items _ annoted_list _ -> (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) annoted_list) 
+        Rigid_op_items _ annoted_list _ -> (Set.unions $ map (ids_OP_ITEM . item) annoted_list, Set.empty)
+        Rigid_pred_items _ annoted_list _ -> (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) annoted_list)
 
 parenExtForm :: EM_FORMULA -> EM_FORMULA
-parenExtForm (BoxOrDiamond choice md leq_geq nr frm pos) = 
-	BoxOrDiamond choice md leq_geq nr (mapFormula parenExtForm frm) pos
+parenExtForm (BoxOrDiamond choice md leq_geq nr frm pos) =
+        BoxOrDiamond choice md leq_geq nr (mapFormula parenExtForm frm) pos
 parenExtForm (Hybrid choice nom frm pos) =
-	Hybrid choice nom (mapFormula parenExtForm frm) pos
+        Hybrid choice nom (mapFormula parenExtForm frm) pos
 parenExtForm (UntilSince choice f1 f2 pos) =
-	UntilSince choice (mapFormula parenExtForm f1) (mapFormula parenExtForm f2) pos
+        UntilSince choice (mapFormula parenExtForm f1) (mapFormula parenExtForm f2) pos
 parenExtForm (PathQuantification choice frm pos) =
-	PathQuantification choice (mapFormula parenExtForm frm) pos
+        PathQuantification choice (mapFormula parenExtForm frm) pos
 parenExtForm (StateQuantification t_dir choice frm pos) =
-	StateQuantification t_dir choice (mapFormula parenExtForm frm) pos
+        StateQuantification t_dir choice (mapFormula parenExtForm frm) pos
 parenExtForm (NextY choice frm pos) =
-	NextY choice (mapFormula parenExtForm frm) pos
-parenExtForm (FixedPoint choice fpvar frm pos) = 
-	FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
-	
+        NextY choice (mapFormula parenExtForm frm) pos
+parenExtForm (FixedPoint choice fpvar frm pos) =
+        FixedPoint choice fpvar (mapFormula parenExtForm frm) pos
+
 resolveExtForm :: MixResolve EM_FORMULA
-resolveExtForm ga ids f = case f of 
-	BoxOrDiamond choice ms leq_geq nr frm pos -> do
-		new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-		return $ BoxOrDiamond choice ms leq_geq nr new_frm pos
-	Hybrid choice nom frm pos -> do
-		new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-		return $ Hybrid choice nom new_frm pos
-	UntilSince choice f1 f2 pos -> do
-		new_f1 <- resolveMixFrm parenExtForm resolveExtForm ga ids f1
-		new_f2 <- resolveMixFrm parenExtForm resolveExtForm ga ids f2
-		return $ UntilSince choice new_f1 new_f2 pos
-	PathQuantification choice frm pos -> do
-		new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-		return $ PathQuantification choice new_frm pos
-	StateQuantification t_dir choice frm pos -> do
-		new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-		return $ StateQuantification t_dir choice new_frm pos
-	NextY choice frm pos -> do
-		new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-		return $ NextY choice new_frm pos
-	FixedPoint choice fpvar frm pos -> do
-		new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
-		return $ FixedPoint choice fpvar new_frm pos
+resolveExtForm ga ids f = case f of
+        BoxOrDiamond choice ms leq_geq nr frm pos -> do
+                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+                return $ BoxOrDiamond choice ms leq_geq nr new_frm pos
+        Hybrid choice nom frm pos -> do
+                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+                return $ Hybrid choice nom new_frm pos
+        UntilSince choice f1 f2 pos -> do
+                new_f1 <- resolveMixFrm parenExtForm resolveExtForm ga ids f1
+                new_f2 <- resolveMixFrm parenExtForm resolveExtForm ga ids f2
+                return $ UntilSince choice new_f1 new_f2 pos
+        PathQuantification choice frm pos -> do
+                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+                return $ PathQuantification choice new_frm pos
+        StateQuantification t_dir choice frm pos -> do
+                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+                return $ StateQuantification t_dir choice new_frm pos
+        NextY choice frm pos -> do
+                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+                return $ NextY choice new_frm pos
+        FixedPoint choice fpvar frm pos -> do
+                new_frm <- resolveMixFrm parenExtForm resolveExtForm ga ids frm
+                return $ FixedPoint choice fpvar new_frm pos
 
 ana_FORMULA :: Mix EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA EModalSign
             -> FORMULA EM_FORMULA -> State (Sign EM_FORMULA EModalSign)
@@ -274,8 +274,8 @@ getFormPredToks frm = case frm of
     Mixfix_formula t -> getTermPredToks t
     ExtFORMULA (BoxOrDiamond _ _ _ _ f _) -> getFormPredToks f
     ExtFORMULA (Hybrid _ _ f _ ) -> getFormPredToks f
-    ExtFORMULA (UntilSince _ f1 f2 _ ) -> 
-    	Set.union (getFormPredToks f1) (getFormPredToks f2)
+    ExtFORMULA (UntilSince _ f1 f2 _ ) ->
+        Set.union (getFormPredToks f1) (getFormPredToks f2)
     ExtFORMULA (NextY _ f _ ) -> getFormPredToks f
     ExtFORMULA (PathQuantification _ f _ ) -> getFormPredToks f
     ExtFORMULA (StateQuantification _ _ f _ ) -> getFormPredToks f

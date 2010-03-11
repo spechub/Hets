@@ -22,7 +22,7 @@ import ATC.ProofTree ()
 
 import CommonLogic.ATC_CommonLogic ()
 import CommonLogic.Sign
-import CommonLogic.AS_CommonLogic 
+import CommonLogic.AS_CommonLogic
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -30,13 +30,13 @@ instance Language CommonLogic where
     description _ = "CommonLogic Logic\n"
         ++ ""
 
-type Morphism = DefaultMorphism Sign 
+type Morphism = DefaultMorphism Sign
 
 instance GetRange SENTENCE
 
 instance Sentences CommonLogic
     SENTENCE
-    Sign 
+    Sign
     Morphism
     ()
 
@@ -49,10 +49,10 @@ instance Logic CommonLogic
     ()                -- Sublogics
     [SENTENCE]               -- basic_spec
     SENTENCE          -- sentence
-    ()      	      -- symb_items
-    ()         	      -- symb_map_items
+    ()                -- symb_items
+    ()                -- symb_map_items
     Sign              -- sign
-    Morphism	      -- morphism
+    Morphism          -- morphism
     ()                -- symbol
     ()                -- raw_symbol
     ()                -- proof_tree
