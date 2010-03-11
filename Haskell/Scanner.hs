@@ -86,7 +86,7 @@ isIndent t = case t of
 
 isInfixOp :: Token -> Bool
 isInfixOp t = case t of
-  QualName (Name _ Sym s) -> notElem s $ map (: []) "@#"
+  QualName (Name _ Sym s) -> notElem s $ map (: []) "@#\\"
   Token Infix _ -> True
   _ -> False
 
@@ -141,7 +141,7 @@ tokPos :: Parser (SourcePos, Token)
 tokPos = pair getPosition tok
 
 whitePos :: Parser (SourcePos, Token)
-whitePos = pair getPosition $ fmap (Token Indent) white
+whitePos = pair getPosition $ fmap (Token White) white
 
 scan :: Parser [(SourcePos, Token)]
 scan = whitePos
@@ -163,12 +163,18 @@ anaLine l = case l of
   [(p, x)] -> case x of
     Token White _ -> [show p ++ " trailing white space"]
     _ -> []
-  (_, t1) : (p2, Token White s) : r@((_, t3) : _) ->
-     [ show p2 ++ " no space needed at paren"
-     | isInfixOp t1 && isClPar t3 ||
-        isOpPar t1 && isInfixOp t3 ]
-     ++ [ show p2 ++ " multiple blanks" | length s > 1 ]
-     ++ anaLine r
+  (_, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
+     s1 = show t1
+     s3 = show t3
+     n = length s
+     in [ show p2 ++ " no space needed at paren"
+        | isInfixOp t1 && isClPar t3 || isOpPar t1 && isInfixOp t3 ]
+     ++ [ show p2 ++ " multiple (" ++ show n ++ ") blanks"
+        | n > 1 || n > 2 && s1 == "infix"
+        , not (isComment t3) ]
+     ++ [ show p3 ++ " break line after " ++ s3
+        | elem s3 ["of", "do"], not (null ts) ]
+     ++ if s1 == "::" && s3 == "!" then anaLine ts else anaLine r
   (p1, t1) : r@((p2, t2) : _) ->
       (if isNonPar t1 || isInfixOp t1 then
           [ show p1 ++ " leave space after " ++ show t1 | isNameOrLit t2 ]

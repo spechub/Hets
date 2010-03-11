@@ -339,8 +339,8 @@ makeFromShATerm forLG b =
         vs = varNames ts
         childFromShATerm v i =
           text ("case fromShATerm" ++ if forLG then "LG' lg" else "'")
-          <+> v <+> att i <+> text "of {"
-          <+> pair (att $ i + 1) (addPrime v) <+> rArrow
+          <+> v <+> att i <+> text "of"
+          $$ text "{" <+> pair (att $ i + 1) (addPrime v) <+> rArrow
         rl = pair (att $ length ts) (ppCons' b $ varNames' ts)
              <+> closeBraces ts
     in text "ShAAppl" <+> doubleQuotes (text $ constructor b) <+>
