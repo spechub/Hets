@@ -23,13 +23,13 @@ import Data.Char
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
---OWL = domain
+-- OWL = domain
 import OWL.Logic_OWL
 import OWL.AS
 import OWL.Sublogic
 import OWL.Morphism
 import qualified OWL.Sign as OS
---CASL_DL = codomain
+-- CASL_DL = codomain
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -197,11 +197,11 @@ predefinedSentences =
 mapTheory :: (OS.Sign, [Named Axiom])
              -> Result (CASLSign, [Named CASLFORMULA])
 mapTheory (owlSig, owlSens) =
-	let
-	    sublogic =
-		sl_max (sl_sig owlSig) $
-		foldl sl_max sl_bottom $ map (sl_ax . sentence) owlSens
-	in
+        let
+            sublogic =
+                sl_max (sl_sig owlSig) $
+                foldl sl_max sl_bottom $ map (sl_ax . sentence) owlSens
+        in
     do
       cSig <- mapSign owlSig
       let pSig = loadDataInformation sublogic

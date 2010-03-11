@@ -1,4 +1,4 @@
-{-to generate by utils genTransMFormFunc.pl -}
+{- to generate by utils genTransMFormFunc.pl -}
 
 module ExtModal.ExtModalSystems  where
 
@@ -12,4 +12,3 @@ import CASL.AS_Basic_CASL
 -- ExtModal
 import ExtModal.AS_ExtModal
 import ExtModal.Print_AS
-

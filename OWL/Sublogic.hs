@@ -40,10 +40,10 @@ data NumberRestrictions = None | Unqualified | Qualified
                         deriving (Show, Eq, Ord)
 
 data OWLDatatypes = OWLDATA | OWLString |
-		    OWLnormalizedString |
-		    OWLBoolean | OWLDecimal | OWLFloat | OWLDouble |
-		    OWLInteger | OWLnonNegativeInteger | OWLpositiveInteger |
-		    OWLnonPositiveInteger | OWLnegativeInteger
+                    OWLnormalizedString |
+                    OWLBoolean | OWLDecimal | OWLFloat | OWLDouble |
+                    OWLInteger | OWLnonNegativeInteger | OWLpositiveInteger |
+                    OWLnonPositiveInteger | OWLnegativeInteger
                deriving (Show, Eq, Ord)
 
 printXSDName :: (Show a) => a -> [Char]
@@ -83,7 +83,7 @@ sl_top = OWLSub
                                 , OWLInteger
                                 , OWLnonNegativeInteger
                                 , OWLpositiveInteger
-				, OWLnonPositiveInteger
+                                , OWLnonPositiveInteger
                                 , OWLnegativeInteger]
       }
 
@@ -289,29 +289,29 @@ sl_data_uri :: QName -> OWLSub
 sl_data_uri ur =
     case (namePrefix ur, localPart ur) of
       ("xsd", "string")           ->
-	  sl_bottom {datatype = Set.fromList [OWLString, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLString, OWLDATA]}
       ("xsd", "#string")           ->
-	  sl_bottom {datatype = Set.fromList [OWLString, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLString, OWLDATA]}
       ("xsd", "normalizedString") ->
-	  sl_bottom {datatype = Set.fromList [OWLnormalizedString, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLnormalizedString, OWLDATA]}
       ("xsd", "#normalizedString") ->
-	  sl_bottom {datatype = Set.fromList [OWLnormalizedString, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLnormalizedString, OWLDATA]}
       ("xsd", "boolean") ->
           sl_bottom {datatype = Set.fromList [OWLBoolean, OWLDATA]}
       ("xsd", "#boolean") ->
           sl_bottom {datatype = Set.fromList [OWLBoolean, OWLDATA]}
       ("xsd", "decimal") ->
-	  sl_bottom {datatype = Set.fromList [OWLDecimal, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLDecimal, OWLDATA]}
       ("xsd", "#decimal") ->
-	  sl_bottom {datatype = Set.fromList [OWLDecimal, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLDecimal, OWLDATA]}
       ("xsd", "float") ->
-	  sl_bottom {datatype = Set.fromList [OWLFloat, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLFloat, OWLDATA]}
       ("xsd", "#float") ->
-	  sl_bottom {datatype = Set.fromList [OWLFloat, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLFloat, OWLDATA]}
       ("xsd", "double") ->
-	  sl_bottom {datatype = Set.fromList [OWLDouble, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLDouble, OWLDATA]}
       ("xsd", "#double") ->
-	  sl_bottom {datatype = Set.fromList [OWLDouble, OWLDATA]}
+          sl_bottom {datatype = Set.fromList [OWLDouble, OWLDATA]}
       ("xsd", "integer") ->
           sl_bottom {datatype = Set.fromList [OWLInteger, OWLDATA]}
       ("xsd", "#integer") ->

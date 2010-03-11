@@ -1,83 +1,84 @@
-{-
- Module		: ./ExtModal/Keywords.hs
- Description	: Keywords for extended modal logic
- Copyright	:
- License	:
+{- |
+Module      :  $Header$
+Descriptio  :  Keywords for extended modal logic
+Copyright   :  DFKI GmbH 2009
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
- Maintainer	:
- Stability	:
- Portability	:
- -}
+Maintainer  :  codruta.liliana@gmail.com
+Stability   :  experimental
+Portability :  portable
 
- module ExtModal.Keywords where 
+-}
 
- untilS :: String
- untilS = "U"
+module ExtModal.Keywords where
 
- sinceS :: String
- sinceS = "S"
+untilS :: String
+untilS = "U"
 
- allPathsS :: String
- allPathsS = "A"
+sinceS :: String
+sinceS = "S"
 
- somePathsS :: String
- somePathsS = "E"
+allPathsS :: String
+allPathsS = "A"
 
- nextS :: String
- nextS = "X"
+somePathsS :: String
+somePathsS = "E"
 
- yesterdayS :: String
- yesterdayS = "Y"
+nextS :: String
+nextS = "X"
 
- generallyS :: String
- generallyS = "G"
+yesterdayS :: String
+yesterdayS = "Y"
 
- eventuallyS :: String
- eventuallyS = "F" 
+generallyS :: String
+generallyS = "G"
 
- hithertoS :: String
- hithertoS = "H" 
+eventuallyS :: String
+eventuallyS = "F"
 
- previouslyS :: String
- previouslyS = "P"
+hithertoS :: String
+hithertoS = "H"
 
- muS :: String
- muS = "mu"
+previouslyS :: String
+previouslyS = "P"
 
- nuS :: String 
- nuS = "nu"
+muS :: String
+muS = "mu"
 
- atS :: String
- atS = "@"
+nuS :: String
+nuS = "nu"
 
- hereS :: String
- hereS = "Here"
+atS :: String
+atS = "@"
 
- nominalS :: String
- nominalS = "nominal"
+hereS :: String
+hereS = "Here"
 
- nominalsS :: String
- nominalsS = "nominals"
+nominalS :: String
+nominalS = "nominal"
 
- timeS :: String
- timeS = "time"
+nominalsS :: String
+nominalsS = "nominals"
 
- tmCompositionS :: String
- tmCompositionS = ";"
+timeS :: String
+timeS = "time"
 
- tmUnionS :: String
- tmUnionS = "|"
+tmCompositionS :: String
+tmCompositionS = ";"
 
- tmTransClosS :: String
- tmTransClosS = "*"
+tmUnionS :: String
+tmUnionS = "|"
 
- tmGuardS :: String
- tmGuardS = "?"
+tmTransClosS :: String
+tmTransClosS = "*"
 
- tmOParanthS :: String
- tmOParanthS = "("
+tmGuardS :: String
+tmGuardS = "?"
 
- tmCParanthS :: String
- tmCParanthS = ")"
+tmOParanthS :: String
+tmOParanthS = "("
 
- 
+tmCParanthS :: String
+tmCParanthS = ")"
+
+

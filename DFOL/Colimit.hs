@@ -25,17 +25,17 @@ Output : a signature "sig" and for each input signature "sig1" a morphism
 3 : For each input signature sig1 :
     3.1 : Initialize the output map "m" to empty
     3.2 : For each symbol "s" in sig1 (keeping the order in which they are
-	      defined) :
+              defined) :
           3.1.1 Check if s R s' for any already analyzed symbol "s'"
           3.1.2 If yes:
                 3.1.2.1 Recover from M the value "c" that s' maps to
-		3.1.2.2 Update m by adding the pair (s,c)
-	  3.1.3 If no:
+                3.1.2.2 Update m by adding the pair (s,c)
+          3.1.3 If no:
                 3.1.3.1 Get the type "t" of s in sig1
                 3.1.3.2 Translate t along m; call this new type "t1"
                 3.1.3.3 Update sig by adding the declaration s : t1
                         (in case the name s is already contained in sig,
-			we generate a fresh name "s1" and add the declaration
+                        we generate a fresh name "s1" and add the declaration
                         s1 : t and pair (s,s1) to sig and m respectively.
     3.3 : Add m to M
 -}
