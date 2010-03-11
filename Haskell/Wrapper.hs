@@ -49,7 +49,7 @@ lineComment :: CharParser st String
 lineComment =
   try ((char '-' <:> many1 (char '-'))
        << notFollowedBy (oneOf "!#$%&*+./<=>?@\\^|~"))
-  <++> many (noneOf "\n\r") <++> many (oneOf "\n\r")
+  <++> many (noneOf "\n")
 
 stringLit :: CharParser st String
 stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
