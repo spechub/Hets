@@ -1,11 +1,10 @@
-module Main where
+import Posixutil.ChildProcess
+import Util.Computation
+import Control.Concurrent
 
-import ChildProcess
-import Computation
-import Concurrent
-
+main :: IO ()
 main = do
-  p <- newChildProcess "isabelle" [arguments ["HOL"]]
-  sendMsg p "3+4;"
+  p <- newChildProcess "isabelle" [arguments ["tty", "-l", "HOL"]]
+  sendMsg p ""
   forkIO $ forever $ readMsg p >>= putStrLn
-  return p
+  return ()
