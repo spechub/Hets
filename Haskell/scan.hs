@@ -17,17 +17,19 @@ import Data.Char
 import Data.List
 
 import System.Environment
-import System.Cmd
 
 import Haskell.Scanner
 import Text.ParserCombinators.Parsec
-import Common.Parsec
 
 main :: IO ()
 main = do
   args <- getArgs
-  let (opts, files) = span (isPrefixOf "-") args
-  mapM_ (process $ null opts) files
+  let (opts, files) = span (== "-") args
+      b = null opts
+  case files of
+    [] -> putStrLn "missing file argument"
+    _ -> mapM_ (process $ null opts) $ if b then files else
+         take 3 files -- do not spoil more than 3 files
 
 process :: Bool -> String -> IO ()
 process b f = do
@@ -41,10 +43,12 @@ process b f = do
   case parse scan f str of
     Right ts -> let x = splitLines ts in
       if b then let o = showScan x in unless (null o) $ putStrLn o else
-      writeFile f $ processScan x
+      let rstr = processScan x in
+      if rstr == str then putStrLn $ "no changes in \"" ++ f ++ "\"" else do
+      writeFile (f ++ ".bak") str
+      writeFile f rstr
+      putStrLn $ "updated \"" ++ f ++ "\" (and created .bak)"
     Left err -> fail $ show err
-  when b $ forget $ system $ "hlint -i \"Use camelCase\" " ++ f
-  when b $ forget $ system $ "haddock -w " ++ f
 
 checkBlankLines :: FilePath -> Int -> [(Int, String)] -> [String]
 checkBlankLines f c l = case l of
