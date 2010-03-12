@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Descriptio  :  Keywords for extended modal logic
+Description :  Keywords for extended modal logic
 Copyright   :  DFKI GmbH 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
