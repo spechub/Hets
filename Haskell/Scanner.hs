@@ -33,9 +33,9 @@ number =
   <|>
     try (char '0' <:> single (oneOf "xX")) <++> many hexDigit
   <|> many1 digit
-          <++> optionL (char '.' <:> many digit)
-          <++> optionL (oneOf "eE" <:> optionL (single $ oneOf "+-")
-                        <++> many digit)
+          <++> optionL (try (char '.' <:> single digit) <++> many digit)
+          <++> optionL (try (oneOf "eE" <:> optionL (single $ oneOf "+-")
+                             <++> single digit) <++> many digit)
 
 hChar :: Parser Char
 hChar = alphaNum <|> oneOf "_'"
