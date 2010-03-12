@@ -258,9 +258,6 @@ instance Logic CASL CASL_Sublogics
              ConservativityChecker "CCC" checkFreeType
              ]
          empty_proof_tree CASL = emptyProofTree
-         export_signToOmdoc CASL = exportSignToOmdoc
-         export_morphismToOmdoc CASL = exportMorphismToOmdoc
-         export_senToOmdoc CASL = exportSenToOmdoc
          omdoc_metatheory CASL = Just caslMetaTheory
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]

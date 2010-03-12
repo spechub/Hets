@@ -13,6 +13,7 @@ Datatypes for an intermediate OMDoc Representation.
 module OMDoc.DataTypes where
 
 import Common.Amalgamate
+import qualified Data.Map as Map
 
 {-
   OMDoc represented in 3 layers:
@@ -22,6 +23,7 @@ import Common.Amalgamate
 -}
 
 
+---------------------- Datatypes for Representation ----------------------
 
 
 -- | OMDoc root element with libname and a list of toplevel elements
@@ -129,6 +131,15 @@ data OMElement =
   | OMBIND OMElement [OMElement] OMElement
   deriving (Show, Eq, Ord)
 
+
+---------------------- Datatypes for Translation ----------------------
+
+type UniqName = (String, Int)
+type NameMap a = Map.Map a UniqName
+
+nameToString :: UniqName -> String
+nameToString (s,i) = s ++ if i > 0 then concat ["{", show i, "}"]
+                          else ""
 
 ---------------------- Constructing Values ----------------------
 

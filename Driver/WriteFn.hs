@@ -89,6 +89,14 @@ writeVerbFile opts f str = do
     putIfVerbose opts 2 $ "Writing file: " ++ f
     writeFile f str
 
+-- | compute for each LibName in the List a path relative to the given FilePath
+writeVerbFiles :: HetcatsOpts -> String -> FilePath -> [(LibName, String)]
+               -> IO ()
+writeVerbFiles opts suffix filePrefix outl =
+    mapM_ (uncurry $ writeVerbFile opts) $ map f outl
+-- TODO: implement the computation
+        where f (_, s) = (filePrefix ++ suffix, s)
+
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
             -> IO ()
 writeLibEnv opts filePrefix lenv ln ot =
@@ -101,11 +109,11 @@ writeLibEnv opts filePrefix lenv ln ot =
 #endif
       XmlOut ->  writeVerbFile opts f $ ppTopElement $ ToXml.dGraph lenv dg
       ExperimentalOut -> do
-          let Result ds mOmd = exportDGraph ln (lookupDGraph ln lenv)
+          let Result ds mOmd = exportLibEnv (recurse opts) ln lenv
           showDiags opts ds
           case mOmd of
-               Just omd -> writeVerbFile opts (filePrefix ++ ".xml")
-                           $ xmlOut omd
+               Just omd -> writeVerbFiles opts ".xml" filePrefix
+                           $ map (\ (libn, od) -> (libn, xmlOut od)) omd
                Nothing -> putIfVerbose opts 0 "could not translate to OMDoc"
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
         $ dotGraph showInternalNodeLabels dg

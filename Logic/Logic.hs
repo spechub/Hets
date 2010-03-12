@@ -583,19 +583,15 @@ class (StaticAnalysis lid
          empty_proof_tree l = statError l "empty_proof_tree"
 
          ----------------------- OMDoc ---------------------------
-         export_signToOmdoc :: lid -> SIMPLE_ID -> LibId -> sign
-                           -> [OMDoc.TCElement]
+         export_symToOmdoc :: lid -> OMDoc.NameMap symbol
+                           -> symbol -> String -> Result OMDoc.TCElement
          -- default implementation
-         export_signToOmdoc l _ _ _ = statError l "export_signToOmdoc"
+         export_symToOmdoc l _ _ = statError l "export_symToOmdoc"
 
-         export_morphismToOmdoc :: lid -> morphism -> OMDoc.TCElement
+         export_senToOmdoc :: lid -> OMDoc.NameMap symbol
+                          -> sentence -> Result OMDoc.OMElement
          -- default implementation
-         export_morphismToOmdoc l _ = statError l "export_morphismToOmdoc"
-
-         export_senToOmdoc :: lid -> SIMPLE_ID -> LibId -> sign
-                          -> Named sentence -> OMDoc.TCElement
-         -- default implementation
-         export_senToOmdoc l _ _ _ _  = statError l "export_senToOmdoc"
+         export_senToOmdoc l _ _  = statError l "export_senToOmdoc"
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
          -- default implementation
