@@ -34,7 +34,7 @@ number =
     try (char '0' <:> single (oneOf "xX")) <++> many hexDigit
   <|> many1 digit
           <++> optionL (char '.' <:> many digit)
-          <++> optionL (oneOf "eE" <:> optionL (single  $ oneOf "+-")
+          <++> optionL (oneOf "eE" <:> optionL (single $ oneOf "+-")
                         <++> many digit)
 
 hChar :: Parser Char
@@ -55,7 +55,7 @@ opSym = oneOf "!#$%&*+-./:<=>?@\\^|~"
 op :: Parser String
 op = many1 opSym
 
-data QualElem = Var | Sym | Cons
+data QualElem = Var | Sym | Cons deriving Eq
 
 data QualName = Name Bool QualElem String
 
@@ -126,6 +126,15 @@ isWhiteTok t = case t of
   Token White _ -> True
   _ -> False
 
+isInfixMinusOp :: Token -> Bool
+isInfixMinusOp t = case t of
+  QualName (Name _ k _) -> k /= Sym
+  Sep _ -> isClPar t
+  Token k _ -> case k of
+    Literal -> True
+    Infix -> True
+    _ -> False
+
 noSpaceNeededBefore :: Token -> Bool
 noSpaceNeededBefore t = isSepIn ",;})]" t || isWhiteTok t || show t == "@"
 
@@ -163,7 +172,7 @@ whitePos = pair getPosition $ fmap (Token White) white
 
 scan :: Parser [(SourcePos, Token)]
 scan = fmap (\ (p, Token _ s) -> (p, Token Indent s)) whitePos
-    <:> (flat $ many $ liftM2
+    <:> flat (many $ liftM2
         (\ t w@(_, Token _ s) -> if null s then [t] else [t, w])
         tokPos whitePos) << eof
 
@@ -191,17 +200,17 @@ anaLine l = case l of
     Token White _ -> [show p ++ " trailing white space"]
     Token Indent (_ : _ : _) -> [show p ++ " empty line with spaces"]
     _ -> []
-  (p, Token Indent s) : r ->
-    [ show (updatePosString p $ takeWhile (flip elem "\n ") s)
+  (p, Token Indent s) : r -> let (ft, rt) = span (`elem` "\n ") s in
+    [ show (updatePosString p ft)
       ++ " use only blanks for indentation"
-    | not (null $ filter (flip notElem "\n ") s) ]
+    | not (null rt) ]
     ++ anaLine r
   (_, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
      s1 = show t1
      s3 = show t3
      n = length s
      in [ show p2 ++ " no space needed at "
-                   ++ filter (flip elem "[({})]") (s1 ++ s3)
+                   ++ filter (`elem` "[({})]") (s1 ++ s3)
         | isOpParOrInfix t1
         , isClParOrInfix t3
         , not (isInfixOp t1 && isInfixOp t3)
@@ -212,34 +221,43 @@ anaLine l = case l of
      ++ [ show p3 ++ " break line after " ++ show s3
         | elem s3 ["of", "do"], not (null ts) ]
      ++ case ts of
-          (_, t4) : _ | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
-             -> anaLine ts
+          (_, t4) : _
+            | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
+              -> anaLine ts
+            | s3 == "-" && not (noSpaceNeededBefore t4) && isInfixMinusOp t1
+              -> (show p3 ++ " insert space after infix -") : anaLine r
           _ -> anaLine r
-  (_, t1) : r@((p2, t2) : _) ->
-      [ show p2 ++ " leave space "
-        ++ let
-         s1 = show t1
-         s2 = show t2
-         n1 = length s1
-         n2 = length s2
-         lt = n1 <= n2
-         after = case () of
-           _ | isNonPar t1 -> True
-             | isOpPar t2 -> False
-             | s1 == "\\" -> True
-             | isInfixOp t1 -> if isInfixOp t2 then lt else True
-             | isInfixOp t2 -> False
-           _ -> lt
-         in if after then "after " ++ s1 else "before " ++ s2
-      | not (noSpaceNeededAfter t1)
-      , not (noSpaceNeededBefore t2)]
-      ++ anaLine r
+  (_, t1) : r@((p2, t2) : ts) -> let
+    s1 = show t1
+    s2 = show t2
+    n1 = length s1
+    n2 = length s2
+    lt = n1 <= n2
+    after = case () of
+      _ | isNonPar t1 -> True
+        | isOpPar t2 -> False
+        | s1 == "\\" -> True
+        | isInfixOp t1 -> if isInfixOp t2 then lt else True
+        | isInfixOp t2 -> False
+      _ -> lt
+    in case ts of
+    (_, t3) : _
+      | s2 == "-" && not (noSpaceNeededBefore t3) && isInfixMinusOp t1
+        -> (show p2 ++ " put spaces around infix -") : anaLine ts
+    _ -> [ show p2 ++ " leave space "
+           ++ if after then "after " ++ s1 else "before " ++ s2
+         | not (noSpaceNeededAfter t1)
+         , not (noSpaceNeededBefore t2)]
+         ++ anaLine r
 
 untabify :: SourcePos -> String -> String
 untabify p s =
   let p2 = updatePosString p s
       bs = sourceColumn p2 - sourceColumn p
   in replicate bs ' '
+
+blankTok :: (SourcePos, Token)
+blankTok = (initialPos "", Token White " ")
 
 processLine :: [(SourcePos, Token)] -> [(SourcePos, Token)]
 processLine l = case l of
@@ -262,16 +280,22 @@ processLine l = case l of
         then processLine r
         else if isComment t3
              then (p, Token White $ untabify p s) : processLine r
-             else (p, Token White " ") :
-                  case ts of
-                    (_, t4) : _
-                      | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
-                        -> p3 : processLine ts
-                    _ -> processLine r
-  p1@(p, t1) : r@((_, t2) : _) -> p1
-    : if noSpaceNeededAfter t1 || noSpaceNeededBefore t2
+             else blankTok : case ts of
+          (_, t4) : _
+            | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
+              -> p3 : processLine ts
+            | s3 == "-" && not (noSpaceNeededBefore t4) && isInfixMinusOp t1
+              -> p3 : blankTok : processLine ts
+          _ -> processLine r
+  p1@(_, t1) : r@(p2@(_, t2) : ts) -> p1
+    : case ts of
+    (_, t3) : _
+      | show t2 == "-" && not (noSpaceNeededBefore t3) && isInfixMinusOp t1
+        -> blankTok : p2 : blankTok : processLine ts
+    _ ->
+      if noSpaceNeededAfter t1 || noSpaceNeededBefore t2
       then processLine r
-      else (p, Token White " ") : processLine r
+      else blankTok : processLine r
 
 processScan :: [[(SourcePos, Token)]] -> String
 processScan = concatMap (concatMap (show . snd) . processLine)
@@ -280,17 +304,22 @@ processScan = concatMap (concatMap (show . snd) . processLine)
 showScan :: [[(SourcePos, Token)]] -> String
 showScan = intercalate "\n" . concatMap anaLine
 
+
+hasLongerPrefix :: String -> String -> String -> Bool
+hasLongerPrefix p n s = let ps = map (\ c -> p ++ [c]) n in
+  any (`isPrefixOf` s) ps
+
 adjustPrefix :: String -> String -> String -> String
-adjustPrefix p n s = let ps = map (\ c -> p ++ [c]) n in
-   if any (flip isPrefixOf s) ps then s else case stripPrefix p s of
+adjustPrefix p n s =
+   if hasLongerPrefix p n s then s else case stripPrefix p s of
      Nothing -> s
      Just r -> p ++ case dropWhile isWhite r of
          rt@('\n' : _) -> rt
          rt -> ' ' : rt
 
 adjustBothEnds :: String -> String -> String -> String -> String
-adjustBothEnds p q n s = let ps = map (\ c -> p ++ [c]) n in
-    if any (flip isPrefixOf s) ps || not (isPrefixOf p s) then s else
+adjustBothEnds p q n s =
+    if hasLongerPrefix p n s then s else
     concatMap (reverse . dropWhile isWhite . reverse)
     $ removeBlankLines 1 (all isSpace)
     $ splitBy (== '\n')
