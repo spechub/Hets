@@ -192,7 +192,8 @@ anaLine l = case l of
     Token Indent (_ : _ : _) -> [show p ++ " empty line with spaces"]
     _ -> []
   (p, Token Indent s) : r ->
-    [ show p ++ " use only blanks for indentation"
+    [ show (updatePosString p $ takeWhile (flip elem "\n ") s)
+      ++ " use only blanks for indentation"
     | not (null $ filter (flip notElem "\n ") s) ]
     ++ anaLine r
   (_, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
