@@ -44,18 +44,19 @@ type SubstType = Id
 data SRule a = Blocked a | Ready a deriving Show
 
 
-type Subst = (Map.Map SubstConst (SRule Term) -- | the const->term mapping
-             , Map.Map SubstType (SRule Type) -- | the const->type mapping
-             -- | if a constant c occurs in the term t of a
-             --   const-term mapping (c',t) then c' is entered in the
-             --   by this mapping corresponding set s: (c, insert c' s)
-             , Map.Map SubstConst (Set.Set SubstConst))
+newtype Subst =
+    Subst ( Map.Map SubstConst (SRule Term) -- | the const->term mapping
+          , Map.Map SubstType (SRule Type) -- | the const->type mapping
+                                           -- | if a constant c occurs in the term t of a
+          --   const-term mapping (c',t) then c' is entered in the
+          --   by this mapping corresponding set s: (c, insert c' s)
+          , Map.Map SubstConst (Set.Set SubstConst)) deriving Show
 
 eps :: Subst
-eps = (Map.empty, Map.empty, Map.empty)
+eps = Subst (Map.empty, Map.empty, Map.empty)
 
 size :: Subst -> Int
-size (m,t,_) = Map.size m + Map.size t
+size (Subst (m,t,_)) = Map.size m + Map.size t
 
 isBlocked :: SRule a -> Bool
 isBlocked (Ready _) = False
@@ -72,7 +73,7 @@ blockRule x = x
 -- | Mark all mappings to terms which contain a var from the given scope
 --   as blocked.
 inScope :: [SubstConst] -> Subst -> Subst
-inScope scs (m,t,br) =
+inScope scs (Subst (m,t,br)) =
     let
         -- constants to block
         cb = Set.unions $ Map.elems $ Map.filterWithKey (\ k _ -> elem k scs) br
@@ -81,7 +82,7 @@ inScope scs (m,t,br) =
               $ Map.map (flip Set.difference $ Set.fromList scs) br
         -- blockfunction
         blf c v = if Set.member c cb then blockRule v else v
-    in (Map.mapWithKey blf m, t, nbr)
+    in Subst (Map.mapWithKey blf m, t, nbr)
 
 
 
@@ -112,35 +113,36 @@ substFromTermMap tmap = foldl (\sb -> uncurry $ addTerm sb) eps tmap
 
 
 termEmpty :: Subst -> Bool
-termEmpty (m,_,_) = Map.null m
+termEmpty (Subst (m,_,_)) = Map.null m
 typeEmpty :: Subst -> Bool
-typeEmpty (_,m,_) = Map.null m
+typeEmpty (Subst (_,m,_)) = Map.null m
 
 
 lookupTerm :: Subst -> SubstConst -> Maybe (SRule Term)
-lookupTerm (m,_,_) k = Map.lookup k m
+lookupTerm (Subst (m,_,_)) k = Map.lookup k m
 
 lookupType :: Subst -> SubstType -> Maybe (SRule Type)
-lookupType (_,t,_) k = Map.lookup k t
+lookupType (Subst (_,t,_)) k = Map.lookup k t
 
 addTerm :: Subst -> SubstConst -> Term -> Subst
-addTerm (m,t,br) k v =
+addTerm (Subst (m,t,br)) k v =
     let nm = Map.insert k (mkSRule v) m
         f x = (toSC x, Set.singleton k)
         g x = (fromJust $ toSConst x, Set.singleton k)
         s = Set.map f (freeVars v) `Set.union` Set.map g (opsInTerm v)
         nbr = Map.fromList $ Set.toList s
-    in (nm, t, Map.unionWith Set.union br nbr)
+    in Subst (nm, t, Map.unionWith Set.union br nbr)
 
 removeTerm :: Subst -> SubstConst -> Subst
-removeTerm (m,t,br) k =
-    (Map.delete k m, t, Map.filter (not . Set.null) $ Map.map (Set.delete k) br)
+removeTerm (Subst (m,t,br)) k =
+    Subst ( Map.delete k m, t
+          , Map.filter (not . Set.null) $ Map.map (Set.delete k) br)
                  
 addType :: Subst -> SubstType -> Type -> Subst
-addType (m,t,br) k v = (m, Map.insert k (mkSRule v) t,br)
+addType (Subst (m,t,br)) k v = Subst (m, Map.insert k (mkSRule v) t,br)
 
 removeType :: Subst -> SubstType -> Subst
-removeType (m,t,br) k = (m, Map.delete k t,br)
+removeType (Subst (m,t,br)) k = Subst (m, Map.delete k t,br)
                  
 
 

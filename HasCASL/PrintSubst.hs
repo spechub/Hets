@@ -36,7 +36,7 @@ instance Pretty a => Pretty (SRule a) where
     pretty (Ready x) = mapsto <+> pretty x
 
 instance Pretty Subst where
-    pretty (a,b,_) =
+    pretty (Subst (a,b,_)) =
         vcat [ text "Substitution", text $ map (const '=') [1..70]
              , prettyRuleMap "Termmap" a, prettyRuleMap "Typemap" b]
 
