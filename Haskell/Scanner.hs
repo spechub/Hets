@@ -266,7 +266,7 @@ processLine l = case l of
       (p, Token Comment $ adjustComment s) : processLine r
   (p, Token Indent s) : r ->
       (p, Token Indent $ case s of
-          '\n' : w -> '\n' : untabify p w
+          '\n' : w -> '\n' : untabify (initialPos "") w
           _ -> untabify p s) : processLine r
   [(_, x)] -> case x of
     Token White _ -> []
