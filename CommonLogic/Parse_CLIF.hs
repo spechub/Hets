@@ -1,12 +1,12 @@
 {- |
 Module      :  $Header$
 Description :  Parser of common logic interface format
-Copyright   :  Karl Luc, DFKI Bremen 2010
+Copyright   :  (c) Karl Luc, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.tx
 
 Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  
+Portability :  portable
 
 Parser of common logic interface format
 -}
