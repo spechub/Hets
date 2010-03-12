@@ -10,7 +10,12 @@ Portability :  portable
 
 -}
 
-module Haskell.Scanner where
+module Haskell.Scanner
+  ( splitLines
+  , showScan
+  , processScan
+  , scan
+  ) where
 
 import Haskell.Wrapper
 
@@ -87,7 +92,7 @@ isIndent t = case t of
 
 isInfixOp :: Token -> Bool
 isInfixOp t = case t of
-  QualName (Name _ Sym s) -> notElem s $ map (: []) "@#"
+  QualName (Name _ Sym s) -> notElem s $ map (: []) "~@#\\"
   Token Infix _ -> True
   _ -> False
 
@@ -95,14 +100,6 @@ isComment :: Token -> Bool
 isComment t = case t of
   Token Comment _ -> True
   _ -> False
-
-isNameOrLit :: Token -> Bool
-isNameOrLit t = case t of
-  Token k _ -> case k of
-    Literal -> True
-    _ -> False
-  Sep _ -> False
-  QualName _ -> not $ isInfixOp t
 
 isSepIn :: String -> Token -> Bool
 isSepIn cs t = case t of
@@ -115,8 +112,25 @@ isOpPar = isSepIn "[({"
 isClPar :: Token -> Bool
 isClPar = isSepIn "})]"
 
+isOpParOrInfix :: Token -> Bool
+isOpParOrInfix t = isOpPar t || isInfixOp t
+
+isClParOrInfix :: Token -> Bool
+isClParOrInfix t = isClPar t || isInfixOp t
+
 isNonPar :: Token -> Bool
 isNonPar = isSepIn ",;"
+
+isWhiteTok :: Token -> Bool
+isWhiteTok t = case t of
+  Token White _ -> True
+  _ -> False
+
+noSpaceNeededBefore :: Token -> Bool
+noSpaceNeededBefore t = isSepIn ",;})]" t || isWhiteTok t || show t == "@"
+
+noSpaceNeededAfter :: Token -> Bool
+noSpaceNeededAfter t = isOpPar t || elem (show t) (map (: []) "-~@#")
 
 instance Show Token where
   show t = case t of
@@ -177,50 +191,86 @@ anaLine l = case l of
     Token White _ -> [show p ++ " trailing white space"]
     Token Indent (_ : _ : _) -> [show p ++ " empty line with spaces"]
     _ -> []
+  (p, Token Indent s) : r ->
+    [ show p ++ " use only blanks for indentation"
+    | not (null $ filter (flip notElem "\n ") s) ]
+    ++ anaLine r
   (_, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
      s1 = show t1
      s3 = show t3
      n = length s
-     in [ show p2 ++ " no space needed at paren"
-        | isInfixOp t1 && isClPar t3 || isOpPar t1 && isInfixOp t3 ]
+     in [ show p2 ++ " no space needed at "
+                   ++ filter (flip elem "[({})]") (s1 ++ s3)
+        | isOpParOrInfix t1
+        , isClParOrInfix t3
+        , not (isInfixOp t1 && isInfixOp t3)
+        ]
      ++ [ show p2 ++ " multiple (" ++ show n ++ ") blanks"
-        | n > 1 || n > 2 && s1 == "infix"
+        | n > 1
         , not (isComment t3) ]
-     ++ [ show p3 ++ " break line after " ++ s3
+     ++ [ show p3 ++ " break line after " ++ show s3
         | elem s3 ["of", "do"], not (null ts) ]
-     ++ if s1 == "::" && s3 == "!" then anaLine ts else anaLine r
-  (p1, t1) : r@((p2, t2) : _) ->
-      (if isNonPar t1 || isInfixOp t1 then
-          [ show p1 ++ " leave space after " ++ show t1 | isNameOrLit t2 ]
-      else if isNameOrLit t1 then
-          [ show p2 ++ " leave space before " ++ show t2 | isInfixOp t2 ]
-      else []) ++ anaLine r
+     ++ case ts of
+          (_, t4) : _ | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
+             -> anaLine ts
+          _ -> anaLine r
+  (_, t1) : r@((p2, t2) : _) ->
+      [ show p2 ++ " leave space "
+        ++ let
+         s1 = show t1
+         s2 = show t2
+         n1 = length s1
+         n2 = length s2
+         lt = n1 <= n2
+         after = case () of
+           _ | isNonPar t1 -> True
+             | isOpPar t2 -> False
+             | s1 == "\\" -> True
+             | isInfixOp t1 -> if isInfixOp t2 then lt else True
+             | isInfixOp t2 -> False
+           _ -> lt
+         in if after then "after " ++ s1 else "before " ++ s2
+      | not (noSpaceNeededAfter t1)
+      , not (noSpaceNeededBefore t2)]
+      ++ anaLine r
+
+untabify :: SourcePos -> String -> String
+untabify p s =
+  let p2 = updatePosString p s
+      bs = sourceColumn p2 - sourceColumn p
+  in replicate bs ' '
 
 processLine :: [(SourcePos, Token)] -> [(SourcePos, Token)]
 processLine l = case l of
   [] -> []
   (p, Token Comment s) : r ->
       (p, Token Comment $ adjustComment s) : processLine r
+  (p, Token Indent s) : r ->
+      (p, Token Indent $ case s of
+          '\n' : w -> '\n' : untabify p w
+          _ -> untabify p s) : processLine r
   [(_, x)] -> case x of
     Token White _ -> []
     _ -> l
-  p1@(_, t1) : p2@(p, Token White _) : r@(p3@(_, t3) : ts) -> let
+  p1@(_, t1) : (p, Token White s) : r@(p3@(_, t3) : ts) -> let
      s1 = show t1
      s3 = show t3
      in p1 :
-        if isInfixOp t1 && isClPar t3 || isOpPar t1 && isInfixOp t3
+        if isOpParOrInfix t1 && isClParOrInfix t3
+               && not (isInfixOp t1 && isInfixOp t3)
         then processLine r
         else if isComment t3
-             then p2 : processLine r
+             then (p, Token White $ untabify p s) : processLine r
              else (p, Token White " ") :
-                  if s1 == "::" && s3 == "!"
-                  then p3 : processLine ts
-                  else processLine r
-  p1@(p, t1) : r@((_, t2) : _) ->
-      p1 : if (isNonPar t1 || isInfixOp t1) && isNameOrLit t2
-         || isNameOrLit t1 && isInfixOp t2
-      then (p, Token White " ") : processLine r
-      else processLine r
+                  case ts of
+                    (_, t4) : _
+                      | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
+                        -> p3 : processLine ts
+                    _ -> processLine r
+  p1@(p, t1) : r@((_, t2) : _) -> p1
+    : if noSpaceNeededAfter t1 || noSpaceNeededBefore t2
+      then processLine r
+      else (p, Token White " ") : processLine r
 
 processScan :: [[(SourcePos, Token)]] -> String
 processScan = concatMap (concatMap (show . snd) . processLine)
