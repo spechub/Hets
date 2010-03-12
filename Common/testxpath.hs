@@ -5,7 +5,7 @@ import Common.Parsec
 main :: IO ()
 main = do
   str <- getContents
-  mapM_ process $ zip [1 .. ] $ lines str
+  mapM_ process $ zip [1 ..] $ lines str
 
 process :: (Int, String) -> IO ()
 process (n, str) = case parse (spaces >> expr << eof) "" str of

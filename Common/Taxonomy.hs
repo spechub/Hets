@@ -19,7 +19,7 @@ of taxonomy graphs.
 module Common.Taxonomy where
 
 data TaxoGraphKind = KSubsort | KConcept
-     deriving (Show,Enum,Eq)
+     deriving (Show, Enum, Eq)
 
 data OntoObjectType =
     OntoClass | OntoObject | OntoPredicate deriving (Show, Eq)
