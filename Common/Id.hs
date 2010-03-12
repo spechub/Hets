@@ -302,7 +302,7 @@ showId (Id ts is _) =
 -- ** splitting identifiers
 
 -- | splits off the front and final places
-splitMixToken :: [Token] -> ([Token],[Token])
+splitMixToken :: [Token] -> ([Token], [Token])
 splitMixToken ts = case ts of
   [] -> ([], [])
   h : l ->
@@ -355,7 +355,7 @@ getTokenList placeStr (Id ts cs ps) =
         -- reconstruct tokens of a compound list
         -- although positions will be replaced (by scan)
         getCompoundTokenList comps = concat .
-            expandPos (:[]) ("[", "]") (map getPlainTokenList comps)
+            expandPos (: []) ("[", "]") (map getPlainTokenList comps)
     in if null cs then convert ts else
        let (toks, pls) = splitMixToken ts in
            convert toks ++ getCompoundTokenList cs ps ++ convert pls
@@ -500,7 +500,7 @@ instance GetRange a => GetRange [a] where
 
 instance (GetRange a, GetRange b) => GetRange (a, b) where
     getRange = getRange . fst
-    rangeSpan(a, b) = sortRange (rangeSpan a) $ rangeSpan b
+    rangeSpan (a, b) = sortRange (rangeSpan a) $ rangeSpan b
 
 instance GetRange a => GetRange (Set.Set a) where
     getRange = getRange . Set.toList

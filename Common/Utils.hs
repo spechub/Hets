@@ -149,7 +149,7 @@ keepMins lt l = case l of
     [] -> []
     x : r -> let s = filter (not . lt x) r
                  m = keepMins lt s
-              in if any (flip lt x) s then m
+              in if any (`lt` x) s then m
                  else x : m
 
 {- |
@@ -198,8 +198,8 @@ stripDir =
 
 stripSuffix :: [String] -> FilePath -> (FilePath, Maybe String)
 stripSuffix suf fp = case filter isJust $ map (stripSuf fp) suf of
-                       Just (x, s) : _  -> (x, Just s)
-                       _  -> (fp, Nothing)
+                       Just (x, s) : _ -> (x, Just s)
+                       _ -> (fp, Nothing)
     where stripSuf f s | s `isSuffixOf` f =
                            Just (take (length f - length s) f, s)
                        | otherwise = Nothing
@@ -237,11 +237,13 @@ timeoutCommand :: Int -> String -> IO (Maybe ExitCode, Handle, Handle)
 timeoutCommand time cmd = do
   wait <- newEmptyMVar
   (_, outh, errh, proch) <- runInteractiveCommand cmd
-  tid1 <- forkIO $ do exit <- waitForProcess proch
-                      putMVar wait $ Just exit
-  tid2 <- forkIO $ do threadDelay $ time * 1000000
-                      putMVar wait Nothing
-                      terminateProcess proch
+  tid1 <- forkIO $ do
+    exit <- waitForProcess proch
+    putMVar wait $ Just exit
+  tid2 <- forkIO $ do
+    threadDelay $ time * 1000000
+    putMVar wait Nothing
+    terminateProcess proch
   res <- takeMVar wait
   killThread (if isJust res then tid2 else tid1) `catch` print
   return (res, outh, errh)

@@ -78,19 +78,17 @@ setUserState st = getState >>= \ s -> setState s { userState = st }
 -- | extract all annotation from the internal state,
 -- resets the internal state to 'emptyAnnos'
 getAnnos :: AParser st [Annotation]
-getAnnos = do aSt <- getState
-              setState aSt { toAnnos = [] }
-              return $ toAnnos aSt
+getAnnos = do
+  aSt <- getState
+  setState aSt { toAnnos = [] }
+  return $ toAnnos aSt
 
 -- | annotations on consecutive lines
 mLineAnnos :: GenParser Char st [Annotation]
-mLineAnnos =
-       do a <- annotationL
-          skipSmart
-          do  l <- mLineAnnos
-              return (a:l)
-            <|> return [a]
-         <|> return []
+mLineAnnos = optionL $ do
+    a <- annotationL
+    skipSmart
+    fmap (a :) $ optionL mLineAnnos
 
 -- | explicitly parse annotations, reset internal state
 annos :: AParser st [Annotation]
@@ -102,11 +100,13 @@ lineAnnos = addLineAnnos >> getAnnos
 
 -- | optional semicolon followed by annotations on consecutive lines
 optSemi :: AParser st ([Token], [Annotation])
-optSemi = do (a1, s) <- try $ pair annos semiT
-             a2 <- lineAnnos
-             return ([s], a1 ++ a2)
-          <|> do a <- lineAnnos
-                 return ([], a)
+optSemi = do
+    (a1, s) <- try $ pair annos semiT
+    a2 <- lineAnnos
+    return ([s], a1 ++ a2)
+  <|> do
+    a <- lineAnnos
+    return ([], a)
 
 -- | succeeds if the previous item is finished
 tryItemEnd :: [String] -> AParser st ()
@@ -130,7 +130,7 @@ allAnnoParser p = liftM2 appendAnno (annoParser p) lineAnnos
 
 {- | parse preceding and consecutive trailing annotations of an item in
      between.  Unlike 'annosParser' do not treat all trailing annotations as
-     preceding annotations of the next item.  -}
+     preceding annotations of the next item. -}
 trailingAnnosParser :: AParser st a -> AParser st [Annoted a]
 trailingAnnosParser p = do
   l <- many1 $ allAnnoParser p
@@ -144,7 +144,7 @@ annosParser parser =
        l <- many1 $ pair parser annos
        let ps = map fst l
            as = map snd l
-           is = zipWith addLeftAnno (a: init as) ps
+           is = zipWith addLeftAnno (a : init as) ps
        return (init is ++ [appendAnno (last is) (last as)])
 
 -- | parse an item list preceded by a singular or plural keyword,
@@ -162,7 +162,7 @@ auxItemList :: [String] -> [Token] -> AParser st b
 auxItemList startKeywords ps parser constr = do
        (vs, ts, ans) <- itemAux startKeywords (annoParser parser)
        let r = zipWith appendAnno vs ans in
-           return (constr r (catRange (ps++ts)))
+           return (constr r (catRange (ps ++ ts)))
 
 -- | parse an item list without a starting keyword
 itemAux :: [String] -> AParser st a
@@ -173,7 +173,7 @@ itemAux startKeywords itemParser =
        let r = return ([a], [], [an])
        if null m then r else (tryItemEnd startKeywords >> r) <|>
           do (ergs, ts, ans) <- itemAux startKeywords itemParser
-             return (a:ergs, m++ts, an:ans)
+             return (a : ergs, m ++ ts, an : ans)
 
 -- | collect preceding and trailing annotations
 wrapAnnos :: AParser st a -> AParser st a
