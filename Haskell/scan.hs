@@ -11,6 +11,8 @@ Portability :  portable
 test the haskell scanner
 -}
 
+module Main where
+
 import Control.Monad
 
 import Data.Char
@@ -62,7 +64,7 @@ checkBlankLines f c l = case l of
     else checkBlankLines f 0 r
 
 diagStr :: FilePath -> Int -> String -> String
-diagStr f n str = "\"" ++ f ++ "\" (line " ++  show n ++ ") " ++ str
+diagStr f n str = "\"" ++ f ++ "\" (line " ++ show n ++ ") " ++ str
 
 diag :: FilePath -> Int -> String -> IO ()
 diag f n = putStrLn . diagStr f n
@@ -79,4 +81,4 @@ checkLine f (n, s) = do
   unless (null badChars) $
     diag f n $ "contains undesirable characters: " ++ show badChars
   unless (null trailBSlash) $
-    diag f n $ "back slash at line end (may disturb cpp)"
+    diag f n "back slash at line end (may disturb cpp)"
