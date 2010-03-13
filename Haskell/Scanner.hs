@@ -205,7 +205,7 @@ anaLine l = case l of
       ++ " use only blanks for indentation"
     | not (null rt) ]
     ++ anaLine r
-  (_, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
+  (p1, t1) : (p2, Token White s) : r@((p3, t3) : ts) -> let
      s1 = show t1
      s3 = show t3
      n = length s
@@ -224,7 +224,12 @@ anaLine l = case l of
         | n > 1
         , not (isComment t3) ]
      ++ [ show p3 ++ " break line after " ++ show s3
-        | elem s3 ["of", "do"], not (null ts) ]
+        | elem s3 ["of", "do"], case ts of
+           [] -> False
+           [(_, t4)] -> not (isWhiteTok t4) || show t4 /= "{"
+           (_, t4) : (_, t5) : _ -> not (isWhiteTok t4 && show t5 == "{") ]
+     ++ [ show p1 ++ " use layout instead of ;"
+        | s1 == ";" ]
      ++ case ts of
           (_, t4) : _
             | s1 == "::" && s3 == "!" && not (isWhiteTok t4)
