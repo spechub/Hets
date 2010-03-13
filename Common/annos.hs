@@ -19,21 +19,23 @@ import Common.AnnoParser
 import Common.Doc
 import Common.DocUtils
 import Common.AnalyseAnnos
-import Common.ConvertGlobalAnnos()
+import Common.ConvertGlobalAnnos ()
 
 main :: IO ()
 main = exec lineParser fileParser
 
-lineParser, fileParser :: [(String, StringParser)]
-lineParser = [("MixIds", fromAParser $ parseId []),
-              ("VarIds", fromAParser $ varId []),
-              ("SortIds", fromAParser $ sortId []),
-              ("Annos", fromAParser annotationL)]
+lineParser :: [(String, StringParser)]
+lineParser =
+  [ ("MixIds", fromAParser $ parseId [])
+  , ("VarIds", fromAParser $ varId [])
+  , ("SortIds", fromAParser $ sortId [])
+  , ("Annos", fromAParser annotationL) ]
 
-fileParser = [("Annotations", \ ga -> fmap
-               (show . useGlobalAnnos ga . vcat . map pretty)
-               annotations)
-             ,("GlobalAnnos", \ ga -> fmap
-               (show . useGlobalAnnos ga . pretty . addGlobalAnnos ga)
-               annotations)
-             ]
+fileParser :: [(String, StringParser)]
+fileParser =
+  [ ("Annotations", \ ga -> fmap
+     (show . useGlobalAnnos ga . vcat . map pretty)
+     annotations)
+  , ("GlobalAnnos", \ ga -> fmap
+     (show . useGlobalAnnos ga . pretty . addGlobalAnnos ga)
+     annotations) ]

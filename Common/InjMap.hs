@@ -97,11 +97,11 @@ lookupWithB :: (Ord a, Ord b) => b -> InjMap a b -> Maybe a
 lookupWithB y = lookupWithA y . transpose
 
 -- | update codomain at domain value that must be defined
-updateBWithA:: (Ord a, Ord b) => a  -> b -> InjMap a b -> InjMap a b
+updateBWithA :: (Ord a, Ord b) => a -> b -> InjMap a b -> InjMap a b
 updateBWithA a b m = case lookupWithA a m of
     Nothing -> error "InjMap.updateBWithA"
     _ -> insert a b m
 
 -- | update domain at codomain value that must be defined
-updateAWithB :: (Ord a, Ord b) => b  -> a -> InjMap a b -> InjMap a b
+updateAWithB :: (Ord a, Ord b) => b -> a -> InjMap a b -> InjMap a b
 updateAWithB b newA = transpose . updateBWithA b newA . transpose

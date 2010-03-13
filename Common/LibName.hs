@@ -157,7 +157,7 @@ type SLinkPath = LinkPath String
 
 showSLinkPath :: SLinkPath -> String
 showSLinkPath (LinkPath x l) = s l where
-    s ((_, n):l1) = show n ++ "/" ++ s l1
+    s ((_, n) : l1) = show n ++ "/" ++ s l1
     s _ = x
 
 instance Show a => Show (LinkPath a) where
@@ -167,7 +167,7 @@ instance Functor LinkPath where
     fmap f (LinkPath x l) = LinkPath (f x) l
 
 addToPath :: LibId -> Node -> LinkPath a -> LinkPath a
-addToPath libid n (LinkPath x l) = LinkPath x $ (libid, n):l
+addToPath libid n (LinkPath x l) = LinkPath x $ (libid, n) : l
 
 initPath :: LibId -> Node -> a -> LinkPath a
 initPath libid n x = LinkPath x [(libid, n)]

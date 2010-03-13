@@ -12,7 +12,7 @@ S-Expressions for the translation from HasCASL, CASL and VSE to OMDoc
 -}
 
 module Common.SExpr
-  ( SExpr(..)
+  ( SExpr (..)
   , prettySExpr
   , idToSSymbol
   , transToken

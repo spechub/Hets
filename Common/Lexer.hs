@@ -43,7 +43,7 @@ scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
 -- | casl letters
 caslLetters :: Char -> Bool
 caslLetters ch = let c = ord ch in
-   if c <= 122 && c >= 65 then  c >= 97 || c <= 90
+   if c <= 122 && c >= 65 then c >= 97 || c <= 90
    else c >= 192 && c <= 255 && notElem c [215, 247]
 
 -- ['A'..'Z'] ++ ['a'..'z'] ++
@@ -124,14 +124,14 @@ simpleEscape :: CharParser st String
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
 decEscape :: CharParser st String
-decEscape = count 3 digit `checkWith` \s -> value 10 s <= 255
+decEscape = count 3 digit `checkWith` \ s -> value 10 s <= 255
 
 hexEscape :: CharParser st String
 hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
 
 octEscape :: CharParser st String
 octEscape = char 'o' <:>
-            count 3 octDigit `checkWith` \s -> value 8 s <= 255
+            count 3 octDigit `checkWith` \ s -> value 8 s <= 255
 
 escapeChar :: CharParser st String
 escapeChar = char '\\' <:>
@@ -140,8 +140,7 @@ escapeChar = char '\\' <:>
 -- * chars for quoted chars and literal strings
 
 printable :: CharParser st String
-printable = single (satisfy (\c -> (c /= '\'')  && (c /= '"')
-                              && (c /= '\\') && (c > '\026')))
+printable = single $ satisfy $ \ c -> notElem c "'\"\\" && c > '\026'
 
 caslChar :: CharParser st String
 caslChar = escapeChar <|> printable

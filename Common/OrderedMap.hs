@@ -37,7 +37,7 @@ import qualified Data.List as List
 
 data ElemWOrd a = EWOrd
   { order :: Int
-  , ele  :: a }
+  , ele :: a }
   deriving Show
 
 instance Ord a => Eq (ElemWOrd a) where
@@ -71,7 +71,7 @@ filterWithKey :: Ord k => (k -> a -> Bool) -> OMap k a -> OMap k a
 filterWithKey p = Map.filterWithKey (\ k -> p k . ele)
 
 difference :: Ord k => OMap k a -> OMap k b -> OMap k a
-difference m = Map.difference m
+difference = Map.difference
 
 map :: Ord k => (a -> b) -> OMap k a -> OMap k b
 map = mapWithKey . const
@@ -83,12 +83,12 @@ partition :: Ord k => (a -> Bool) -> OMap k a -> (OMap k a, OMap k a)
 partition = partitionWithKey . const
 
 partitionWithKey :: Ord k => (k -> a -> Bool) -> OMap k a
-                 -> (OMap k a,OMap k a)
+                 -> (OMap k a, OMap k a)
 partitionWithKey p = Map.partitionWithKey (\ k -> p k . ele)
 
-fromList :: Ord k => [(k,a)] -> OMap k a
+fromList :: Ord k => [(k, a)] -> OMap k a
 fromList = List.foldl ins Map.empty
-    where ins m (k,e) = insert k e m
+    where ins m (k, e) = insert k e m
 
 toList :: Ord k => OMap k a -> [(k, a)]
 toList = List.map (\ (k, e) -> (k, ele e)) . List.sortBy comp . Map.toList

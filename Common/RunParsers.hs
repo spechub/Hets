@@ -42,8 +42,8 @@ exec lps fps = do
   case l of
    [] -> parseSpec emptyGlobalAnnos . snd $ head fps
    opt : tl -> do
-    let lps' = filter (\(s, _) -> s == opt) lps
-        fps' = filter (\(s, _) -> s == opt) fps
+    let lps' = filter (\ (s, _) -> s == opt) lps
+        fps' = filter (\ (s, _) -> s == opt) fps
     ga <- case tl of
      [] -> return emptyGlobalAnnos
      annoFile : _ -> do

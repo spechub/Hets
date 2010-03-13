@@ -20,7 +20,7 @@ import System.IO.Unsafe
 import System.FilePath
 
 -- | Checks if a Prover Binary exists and is executable
---  in an unsafe manner
+-- in an unsafe manner
 unsafeProverCheck :: String -- ^ prover Name
                   -> String -- ^ Environment Variable
                   -> a
@@ -36,9 +36,9 @@ check4Prover name env a = do
       ex <- check4FileAux name env
       case ex of
         [] -> return []
-        _  -> do
-              execI <- mapM (getPermissions . (</> name)) ex
-              return [ a | any executable execI ]
+        _ -> do
+          execI <- mapM (getPermissions . (</> name)) ex
+          return [ a | any executable execI ]
 
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do

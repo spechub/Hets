@@ -13,15 +13,15 @@ Portability :  portable
 -}
 
 module Common.Result
-  ( DiagKind(..)
-  , Diagnosis(..)
+  ( DiagKind (..)
+  , Diagnosis (..)
   , mkDiag
   , mkNiceDiag
   , isErrorDiag
   , hasErrors
   , addErrorDiag
   , checkUniqueness
-  , Result(..)
+  , Result (..)
   , appendDiags
   , joinResultWith
   , joinResult
@@ -102,10 +102,10 @@ adjustDiagPos r d = if isNullRange $ diagPos d then d { diagPos = r } else d
 checkUniqueness :: (Pretty a, GetRange a, Ord a) => [a] -> [Diagnosis]
 checkUniqueness l =
     let vd = filter ( not . null . tail) $ group $ sort l
-    in map ( \ vs -> mkDiag Error ("duplicates at '" ++
+    in map (\ vs -> mkDiag Error ("duplicates at '" ++
                                   showSepList (showString " ") shortPosShow
                                   (concatMap getPosList (tail vs)) "'"
-                                   ++ " for")  (head vs)) vd
+                                   ++ " for") (head vs)) vd
     where shortPosShow :: Pos -> ShowS
           shortPosShow p = showParen True
                            (shows (sourceLine p) .
@@ -163,7 +163,7 @@ mkError s c = Result [mkDiag Error s c] Nothing
 -- | add a debug point
 debug :: (GetRange a, Pretty a) => Int -> (String, a) -> Result ()
 debug n (s, a) = Result
-  [mkDiag Debug (unlines [" point " ++ show n, "Variable "++ s ++":"]) a ]
+  [mkDiag Debug (unlines [" point " ++ show n, "Variable " ++ s ++ ":"]) a ]
   $ Just ()
 
 -- | add an error message but don't fail
@@ -214,7 +214,7 @@ propagateErrors r =
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
 showErr err = let
-    (lookAheads, msgs) = partition ( \ m -> case m of
+    (lookAheads, msgs) = partition (\ m -> case m of
                      Message str -> isPrefixOf lookaheadPosition str
                      _ -> False) $ errorMessages err
     readPos :: String -> Maybe Pos
@@ -281,12 +281,12 @@ instance Pretty Diagnosis where
                   _ -> "###") <+> text (show k))
         <> (case sp of
              [] | isMessageW -> empty
-                | otherwise  -> comma
+                | otherwise -> comma
              _ -> space <> prettyRange sp <> comma)
         , text s]
         where isMessageW = case k of
                            MessageW -> True
-                           _        -> False
+                           _ -> False
 
 instance GetRange Diagnosis where
     getRange = diagPos
