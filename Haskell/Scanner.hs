@@ -92,7 +92,7 @@ isIndent t = case t of
 
 isInfixOp :: Token -> Bool
 isInfixOp t = case t of
-  QualName (Name _ Sym s) -> notElem s $ map (: []) "~@#\\"
+  QualName (Name _ Sym s) -> notElem s $ map (: []) "~@#"
   Token Infix _ -> True
   _ -> False
 
@@ -209,8 +209,13 @@ anaLine l = case l of
      s1 = show t1
      s3 = show t3
      n = length s
-     in [ show p2 ++ " no space needed at "
-                   ++ filter (`elem` "[({})]") (s1 ++ s3)
+     both = filter (`elem` "[({\\`})]") $ s1 ++ s3
+     pos = case both of
+             _ : _ : _ -> "between"
+             _ | isOpPar t1 -> "after"
+               | isClPar t3 -> "before"
+             _ -> "here"
+     in [ show p2 ++ " no space needed " ++ pos ++ " " ++ both
         | isOpParOrInfix t1
         , isClParOrInfix t3
         , not (isInfixOp t1 && isInfixOp t3)
