@@ -92,7 +92,7 @@ isIndent t = case t of
 
 isInfixOp :: Token -> Bool
 isInfixOp t = case t of
-  QualName (Name _ Sym s) -> notElem s $ map (: []) "~@#"
+  QualName (Name _ Sym s) -> notElem s $ ".." : map (: []) "~@#\\"
   Token Infix _ -> True
   _ -> False
 
@@ -249,7 +249,7 @@ anaLine l = case l of
         | isOpPar t2 -> False
         | s1 == "\\" -> True
         | isInfixOp t1 -> if isInfixOp t2 then lt else True
-        | isInfixOp t2 -> False
+        | isInfixOp t2 || s2 == ".." -> False
       _ -> lt
     in case ts of
     (_, t3) : _
