@@ -232,12 +232,13 @@ anaLine l = case l of
             | s3 == "-" && not (noSpaceNeededBefore t4) && isInfixMinusOp t1
               -> (show p3 ++ " insert space after infix -") : anaLine r
           _ -> anaLine r
-  (_, t1) : r@((p2, t2) : ts) -> let
+  (p1, t1) : r@((p2, t2) : ts) -> let
     s1 = show t1
     s2 = show t2
     n1 = length s1
     n2 = length s2
     lt = n1 <= n2
+    both = s1 ++ s2
     after = case () of
       _ | isNonPar t1 -> True
         | isOpPar t2 -> False
@@ -253,6 +254,8 @@ anaLine l = case l of
            ++ if after then "after " ++ s1 else "before " ++ s2
          | not (noSpaceNeededAfter t1)
          , not (noSpaceNeededBefore t2)]
+         ++ [ show p1 ++ " but may be template haskell splice " ++ both
+            | both == "$(" ]
          ++ anaLine r
 
 untabify :: SourcePos -> String -> String
