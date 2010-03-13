@@ -54,7 +54,7 @@ process b f = do
 
 checkBlankLines :: FilePath -> Int -> [(Int, String)] -> [String]
 checkBlankLines f c l = case l of
-  [] -> []
+  [] -> if c > 0 then ["trailing blank lines"] else []
   (n, s) : r ->
     if null $ filter (not . isSpace) s then
       if c >= 2 then
