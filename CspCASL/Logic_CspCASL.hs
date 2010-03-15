@@ -64,7 +64,7 @@ instance Show a => Language (GenCspCASL a) where
         "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
 instance SignExtension SignCSP.CspSign where
-  isSubSignExtension = SignCSP.isInclusion
+  isSubSignExtension = SignCSP.isCspSubSign
 
 -- | Instance of Sentences for CspCASL
 instance Show a => Sentences (GenCspCASL a)
@@ -175,7 +175,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       symbol_to_raw (GenCspCASL _) = symbolToRaw
       matches (GenCspCASL _) = CASL.Morphism.matches
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
-      is_subsig (GenCspCASL _) = isSubSig SignCSP.isInclusion -- BUG???
+      is_subsig (GenCspCASL _) = isSubSig SignCSP.isCspSubSign -- BUG???
       subsig_inclusion (GenCspCASL _) =
           sigInclusion CspCASL_Morphism.emptyCspAddMorphism -- BUG???
       signature_union (GenCspCASL _) s =
@@ -186,5 +186,9 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphismExt
           (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
           inducedCspMorphExt
-          SignCSP.isInclusion
+          SignCSP.isCspSubSign
           SignCSP.diffCspProcSig
+      morphism_union (GenCspCASL _) =
+          morphismUnion CspCASL_Morphism.cspAddMorphismUnion
+                        SignCSP.cspSignUnion
+

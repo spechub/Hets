@@ -97,10 +97,18 @@ data CspSign = CspSign
     { chans :: ChanNameMap
     , procSet :: ProcNameMap
     -- | Added for uniformity to the CASL static analysis. After
-    --   static analysis this is the empty list.
+    -- static analysis this is the empty list.
     , ccSentences :: [Named CspCASLSen]
     } deriving (Eq, Ord, Show)
 
+-- | I dont know if this is implemented correctly. Always prefers sign1 if there
+-- are clashes in chans or procSet. BUG?
+cspSignUnion :: CspSign -> CspSign -> CspSign
+cspSignUnion sign1 sign2 =
+    CspSign { chans = Map.union (chans sign1) (chans sign2)
+            , procSet = Map.union (procSet sign1) (procSet sign2)
+            , ccSentences = ccSentences sign1 ++ ccSentences sign2
+            }
 -- | A CspCASL signature is a CASL signature with a CSP process
 -- signature in the extendedInfo part.
 type CspCASLSign = Sign () CspSign
@@ -127,20 +135,24 @@ emptyCspSign = CspSign
 -- | Compute union of two CSP process signatures.
 addCspProcSig :: CspSign -> CspSign -> CspSign
 addCspProcSig a b =
-    a { chans = chans a `Map.union` chans b
-      , procSet = procSet a `Map.union` procSet b
+    CspSign { chans = chans a `Map.union` chans b
+            , procSet = procSet a `Map.union` procSet b
+            , ccSentences = ccSentences a ++ ccSentences b
       }
 
 -- | Compute difference of two CSP process signatures.
 diffCspProcSig :: CspSign -> CspSign -> CspSign
 diffCspProcSig a b =
-    a { chans = chans a `Map.difference` chans b
-      , procSet = procSet a `Map.difference` procSet b
-      }
+    CspSign { chans = chans a `Map.difference` chans b
+            , procSet = procSet a `Map.difference` procSet b
+            }
 
--- XXX looks incomplete!
-isInclusion :: CspSign -> CspSign -> Bool
-isInclusion _ _ = True
+-- | Is one Csp Signature a sub signature of another
+isCspSubSign :: CspSign -> CspSign -> Bool
+isCspSubSign a b =
+    chans a `Map.isSubmapOf` chans b &&
+    procSet a `Map.isSubmapOf` procSet b
+
 
 -- | Pretty printing for CspCASL signatures
 instance Pretty CspSign where
@@ -154,7 +166,8 @@ printCspSign sigma =
                     0 -> empty
                     1 -> (keyword channelS) <+> printChanNameMap (chans sigma)
                     _ -> (keyword channelsS) <+> printChanNameMap (chans sigma)
-              proc_part = (keyword processS) <+> printProcNameMap (procSet sigma)
+              proc_part = (keyword processS) <+>
+                          printProcNameMap (procSet sigma)
 
 -- | Pretty printing for channel name maps
 instance Pretty ChanNameMap where
@@ -188,16 +201,15 @@ printProcProfile (ProcProfile sorts commAlpha) =
 
 -- Sentences
 
--- | FQProcVarList should only contain fully qualified CASL variables
---   which are TERMs i.e. constructed via the TERM constructor
---   Qual_var.
+-- | FQProcVarList should only contain fully qualified CASL variables which are
+-- | TERMs i.e. constructed via the TERM constructor Qual_var.
 type FQProcVarList = [TERM ()]
 
--- | A CspCASl senetence is either a CASL formula or a Procsses
---   equation. A process equation has on the LHS a process name, a
---   list of parameters which are qualified variables (which are
---   terms), a constituent( or is it permitted ?) communication
---   alphabet and finally on the RHS a fully qualified process.
+-- | A CspCASl senetence is either a CASL formula or a Procsses equation. A
+-- | process equation has on the LHS a process name, a list of parameters which
+-- | are qualified variables (which are terms), a constituent( or is it
+-- | permitted ?) communication alphabet and finally on the RHS a fully
+-- | qualified process.
 data CspCASLSen
     = CASLSen (CASLFORMULA)
     | ProcessEq PROCESS_NAME FQProcVarList CommAlpha PROCESS
@@ -223,12 +235,13 @@ emptyCCSen =
         emptyVarList = []
         emptyAlphabet = Set.empty
         emptyProc = Skip nullRange
-    in ProcessEq emptyProcName emptyVarList emptyAlphabet emptyProc -- BUG - this is incorrect
+    -- BUG - this is incorrect
+    in ProcessEq emptyProcName emptyVarList emptyAlphabet emptyProc
 
 -- | Test if a CspCASL sentence is a CASL sentence
 isCASLSen :: CspCASLSen -> Bool
 isCASLSen (CASLSen _) = True
-isCASLSen _           = False
+isCASLSen _ = False
 
 -- | Test if a CspCASL sentence is a Process Equation.
 isProcessEq :: CspCASLSen -> Bool

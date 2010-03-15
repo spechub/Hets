@@ -15,6 +15,7 @@ module CspCASL.Morphism
     ( CspMorphism
     , CspAddMorphism(..)
     , emptyCspAddMorphism
+    , cspAddMorphismUnion
     , makeChannelNameSymbol
     , makeProcNameSymbol
     , mapSen
@@ -114,6 +115,14 @@ emptyCspAddMorphism =
     -- are used to form the empty morphism.
     CspAddMorphism { channelMap = Map.empty
                    , processMap = Map.empty
+                   }
+
+-- | Dont know if this is implemented correctly. If m1 and m2 have the same
+--   channel or process maps then m1's are taken. BUG?
+cspAddMorphismUnion :: CspAddMorphism -> CspAddMorphism -> CspAddMorphism
+cspAddMorphismUnion m1 m2 =
+    CspAddMorphism { channelMap = Map.union (channelMap m1) (channelMap m2)
+                   , processMap = Map.union (processMap m1) (processMap m2)
                    }
 
 -- | Pretty printing for Csp morphisms
