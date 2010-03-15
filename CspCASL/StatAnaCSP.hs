@@ -41,7 +41,7 @@ import CspCASL.AS_CspCASL_Process
 import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
-import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol)
+import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol, symOf)
 
 -- | The first element of the returned pair (CspBasicSpec) is the same
 --   as the inputted version just with some very minor optimisations -
@@ -64,7 +64,7 @@ basicAnalysisCspCASL (cc, sigma, ga) =
         cleanSig = accSig
                    { extendedInfo = ext { ccSentences = []}}
     in Result (es ++ ds) $
-      Just (cc, mkExtSign cleanSig, ccsents)
+      Just (cc, ExtSign cleanSig $ symOf cleanSig, ccsents)
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops
