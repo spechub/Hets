@@ -139,7 +139,8 @@ noSpaceNeededBefore :: Token -> Bool
 noSpaceNeededBefore t = isSepIn ",;})]" t || isWhiteTok t || show t == "@"
 
 noSpaceNeededAfter :: Token -> Bool
-noSpaceNeededAfter t = isOpPar t || elem (show t) (map (: []) "-~@#")
+noSpaceNeededAfter t =
+  isWhiteTok t || isOpPar t || elem (show t) (map (: []) "-~@#")
 
 instance Show Token where
   show t = case t of
@@ -327,7 +328,9 @@ adjustPrefix p n s =
    if hasLongerPrefix p n s then s else case stripPrefix p s of
      Nothing -> s
      Just r -> p ++ case dropWhile isWhite r of
-         rt@('\n' : _) -> rt
+         rt@('\n' : _) -> case s of
+           '}' : _ -> r
+           _ -> rt
          rt -> ' ' : rt
 
 adjustBothEnds :: String -> String -> String -> String -> String
