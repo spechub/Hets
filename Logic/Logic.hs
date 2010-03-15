@@ -589,9 +589,17 @@ class (StaticAnalysis lid
          export_symToOmdoc l _ _ = statError l "export_symToOmdoc"
 
          export_senToOmdoc :: lid -> OMDoc.NameMap symbol
-                          -> sentence -> Result OMDoc.OMElement
+                          -> sentence -> Result OMDoc.TCorOMElement
          -- default implementation
          export_senToOmdoc l _ _  = statError l "export_senToOmdoc"
+
+         -- | additional information which have to be exported can be
+         --   exported by this function
+         export_theoryToOmdoc :: lid -> OMDoc.SigMap symbol -> sign
+                              -> [Named sentence] -> Result [OMDoc.TCElement]
+         -- default implementation does no extra export
+         -- , sufficient in some cases
+         export_theoryToOmdoc _ _ _ _  = return []
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
          -- default implementation

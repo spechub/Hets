@@ -11,9 +11,7 @@ A given development graph will be exported to an omdoc structure
 which can then be output to XML via the XmlInterface.
 -}
 
-module OMDoc.Export
-    ( exportLibEnv
-    ) where
+module OMDoc.Export where
 
 import Logic.Logic
 import Logic.Coerce
@@ -38,20 +36,14 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-
 --------------------- Name Mapping interface ---------------------
 
-dummy :: a
-dummy = error "dummy"
-
--- | Mapping of symbols to unique ids
-data SigMap a = SigMap (NameMap a) (NameMap String)
 
 -- | Mapping of Specs to SigMaps
 newtype SpecSymNames = SpecSymNames
     (Map.Map (LibName, String) (SigMap G_symbol))
 
-type Env = SpecSymNames
+type OMEnv = SpecSymNames
 
 fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
@@ -61,9 +53,6 @@ fmapSM f (SigMap m1 m2) = SigMap (fmapNM f m1) m2
 
 emptySSN :: SpecSymNames
 emptySSN = SpecSymNames $ Map.empty
-
-emptyNM :: SigMap a
-emptyNM = SigMap Map.empty Map.empty
 
 fromSignAndNamedSens:: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -162,74 +151,138 @@ exportLibEnv b ln le =
     let im = emptySSN
         cmbnF (x,_) y = (x,y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
-    in mapWithAC cmbnF exportDGraph im inputList >>= return . snd
+    in mapWithAC cmbnF (exportDGraph le) im inputList >>= return . snd
 
 
 -- | DGraph to OMDoc translation
-exportDGraph :: Env -> (LibName, DGraph)
-             -> Result (Env, OMDoc)
-exportDGraph s (ln,dg) = do
-  (s', theories) <- mapWithAC proj2 (exportNodeLab ln dg) s $ labNodesDG dg
-  (s'', views) <- mapWithAC proj2 (exportLinkLab ln dg) s' $ labEdgesDG dg
+exportDGraph :: LibEnv -> OMEnv -> (LibName, DGraph) -> Result (OMEnv, OMDoc)
+exportDGraph le s (ln,dg) = do
+  (s', theories) <- mapWithAC proj2 (exportNodeLab le ln dg) s $ labNodesDG dg
+  (s'', views) <- mapWithAC proj2 (exportLinkLab le ln dg) s' $ labEdgesDG dg
   return (s'', OMDoc (show ln) $ (catMaybes theories) ++ (catMaybes views))
 
 
 -- | DGNodeLab to TLTheory translation
-exportNodeLab :: LibName -> DGraph -> Env -> LNode DGNodeLab
-              -> Result (Env, Maybe TLElement)
-exportNodeLab ln dg s (n, lb) =
+exportNodeLab :: LibEnv -> LibName -> DGraph -> OMEnv -> LNode DGNodeLab
+              -> Result (OMEnv, Maybe TLElement)
+exportNodeLab le ln dg s (n, lb) =
   if isDGRef lb then return (s, Nothing) else
-      case dgn_theory lb of
+      let (lb', ln') = getNodeData le ln lb in
+      case dgn_theory lb' of
         G_theory lid (ExtSign sig _) _ sens _ ->
-            let specname = getDGNodeName lb
-                nsens = toNamedList sens
-                -- get the sigmap from the SSM otherwise create and add it
-                (s', sigm@(SigMap sm thm)) =
-                    lookupWithInsert lid sig nsens s (ln, specname)
-            in do
-              (s'', imports) <- mapWithAC proj2 (makeImport ln dg) s'
-                                $ innDG dg n
+            do
+              let sn = getDGNodeName lb'
+                  nsens = toNamedList sens
+                  (s', sigm@(SigMap nm _))
+                      = lookupWithInsert lid sig nsens s (ln', sn)
+              (s'', imports) <- mapWithAC proj2
+                                (makeImport le ln dg (lid, nm)) s' $ innDG dg n
+              extra <- export_theoryToOmdoc lid sigm sig nsens
               -- create the OMDoc elements for the signature
-              consts <- mapR (uncurry $ exportSymbol lid sigm) $ Map.toList sm
+              consts <- mapR (uncurry $ exportSymbol lid sigm) $ Map.toList nm
               -- create the OMDoc elements for the sentences
               thms <- mapR (exportSentence lid sigm) nsens
-              return (s'', Just $ TLTheory specname (omdoc_metatheory lid)
-                             $ concatMap concat [imports, consts, thms])
+              return (s'', Just $ TLTheory sn (omdoc_metatheory lid)
+                             $ concatMap concat
+                                   [imports, [extra], consts, thms])
 
 
 --------------------- Views and Morphisms ---------------------
 
+-- Node lookup for handling ref nodes
+getNodeData :: LibEnv -> LibName -> DGNodeLab -> (DGNodeLab, LibName)
+getNodeData le ln lb =
+    if isDGRef lb then
+        let ni = nodeInfo lb
+            lnRef = ref_libname ni
+            dg' = Map.findWithDefault
+                  (error $ "getNodeData: Lib not found: " ++ show lnRef)
+                  lnRef le
+        in (labDG dg' $ ref_node ni, lnRef)
+    else (lb, ln)
 
-makeImport :: LibName -> DGraph -> Env -> LEdge DGLinkLab
-           -> Result (Env, [TCElement])
-makeImport ln dg s (from, _, lbl)
+{-
+
+getSpecData :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree => 
+        (lid, sign, sentence) -> LibName -> OMEnv -> DGNodeLab
+         -> Result ( OMEnv, String, SigMap symbol, [Named sentence])
+getSpecData (lid, sig, sens) ln s lb =
+    let specname = getDGNodeName lb
+        nsens = toNamedList sens
+        (s', sigm) = lookupWithInsert lid sig nsens s (ln, specname)
+    in return (s', specname, sigm, nsens)
+
+-}
+
+makeImport :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+        LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> OMEnv
+               -> LEdge DGLinkLab -> Result (OMEnv, [TCElement])
+makeImport le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
-        do
-          warning () ("Hiding link with " ++ show (dgl_id lbl) ++ " not exported.")
-                  nullRange
-          return (s, [])
+        warning () (concat [ "Hiding link with ", show (dgl_id lbl)
+                           , " not exported."]) nullRange >> return (s, [])
+    | isLocalDef $ dgl_type lbl =
+        warning () (concat [ "Local def-link with ", show (dgl_id lbl)
+                           , " not exported."]) nullRange >> return (s, [])
     | isGlobalDef $ dgl_type lbl =
-        do
-          warning () ("Link with " ++ show (dgl_id lbl) ++ " exported.") nullRange
-          return $ (s, [TCImport (showEdgeId $ dgl_id lbl)
-                        (cdFromNode ln $ labDG dg from)
-                        -- $ makeMorphism ln $ dgl_morphism lbl
-                        dummy
-                       ])
+        let (lb', ln') = getNodeData le ln $ labDG dg from in
+        case dgn_theory lb' of
+          G_theory lid (ExtSign sig _) _ sens _ ->
+              do
+                let sn = getDGNodeName lb'
+                    nsens = toNamedList sens
+                    (s', (SigMap nm _))
+                        = lookupWithInsert lid sig nsens s (ln', sn)
+                morph <- makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
+                let impnm = showEdgeId $ dgl_id lbl
+                return (s', [TCImport impnm (mkCD ln ln' sn) $ Just morph])
     | otherwise = return (s, [])
 
 -- | Given a TheoremLink we output the view
-exportLinkLab :: LibName -> DGraph -> Env -> LEdge DGLinkLab
-              -> Result (Env, Maybe TLElement)
-exportLinkLab ln dg s (from, to, lbl) = return $ case dgl_type lbl of
-    ScopedLink Global (ThmLink _) _ ->
-       (s, Just $ TLView (showEdgeId $ dgl_id lbl)
-             (cdFromNode ln $ labDG dg from)
-             (cdFromNode ln $ labDG dg to)
-             -- . makeMorphism ln $ dgl_morphism lbl
-             dummy
-       )
-    _ -> (s, Nothing)
+exportLinkLab :: LibEnv -> LibName -> DGraph -> OMEnv -> LEdge DGLinkLab
+              -> Result (OMEnv, Maybe TLElement)
+exportLinkLab le ln dg s (from, to, lbl) =
+    let ltyp = dgl_type lbl
+        gmorph = dgl_morphism lbl
+        viewname = showEdgeId $ dgl_id lbl
+        (lb1, ln1) = getNodeData le ln $ labDG dg from
+        (lb2, ln2) = getNodeData le ln $ labDG dg to
+        noExport = return (s, Nothing)
+        withWarning lt = warning () (concat [ "exportLinkLab: ", lt
+                                           , " link with ", show (dgl_id lbl)
+                                           , " not exported."])
+                        nullRange >> noExport
+    in case (isDefEdge ltyp, isLocalEdge ltyp, isHidingEdge ltyp) of
+         (True, _, _) -> noExport
+         (_, True, _) -> withWarning "Local"
+         (_, _, True) -> withWarning "Hiding"
+         _ -> 
+             case (dgn_theory lb1, dgn_theory lb2) of
+               { ((G_theory lid1 (ExtSign sig1 _) _ sens1 _) ,
+                  (G_theory lid2 (ExtSign sig2 _) _ sens2 _ )) ->
+                 do 
+                   let sn1 = getDGNodeName lb1
+                       sn2 = getDGNodeName lb2
+                       nsens1 = toNamedList sens1
+                       nsens2 = toNamedList sens2
+                       (s', (SigMap nm1 _)) =
+                           lookupWithInsert lid1 sig1 nsens1 s (ln1, sn1)
+                       (s'', (SigMap nm2 _)) =
+                           lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
+                   morph <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
+                   return (s'', Just $ TLView viewname (mkCD ln ln1 sn1)
+                                  (mkCD ln ln2 sn2) $ Just morph) }
+
 
 makeMorphism :: forall lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -261,7 +314,8 @@ makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
 -- symmap_of lT mor :: EndoMap symbolT
 
 -- comorphism based map:
--- (sglElem (show cid) . map_symbol cid sig . coerceSymbol l1 lS) :: symbol1 -> symbolT
+-- (sglElem (show cid) . map_symbol cid sig . coerceSymbol l1 lS)
+--  :: symbol1 -> symbolT
 
 -- we need sigmap1 :: lT
 -- we need sigmap2 :: lT
@@ -276,9 +330,9 @@ makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
               else sglElem (show cid) . map_symbol cid sig . coerceSymbol l1 lS
           symM1' = fmapNM f symM1
           symM2' = fmapNM (coerceSymbol l2 lT) symM2
-          morMap = symmap_of lT mor
+          mormap = symmap_of lT mor
       in return $ TCMorphism $ map (mapEntry lT symM1' symM2')
-             $ Map.toList morMap
+             $ Map.toList mormap
 
 
 mapEntry :: forall lid sublogics
@@ -289,7 +343,7 @@ mapEntry :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree => 
         lid -> NameMap symbol -> NameMap symbol -> (symbol, symbol)
             -> (OMName, OMElement)
-mapEntry lid m1 m2 (s1, s2) =
+mapEntry _ m1 m2 (s1, s2) =
     let e = error "mapEntry: symbolmapping is missing"
         un1 = Map.findWithDefault e s1 m1
         un2 = Map.findWithDefault e s2 m2
@@ -308,21 +362,14 @@ sglElem s sa
 
 --------------------- Names and CDs ---------------------
 
-cdFromNode :: LibName -> DGNodeLab -> OMCD
-cdFromNode ln lb =
--- special handling for library entries !??
-    CD (getDGNodeName lb) $
-    let omcdbase = show $ if isDGRef lb
-                          then ref_libname $ nodeInfo lb
-                          else ln
-    in if omcdbase == "library" || omcdbase == ""
-       then Nothing else Just omcdbase
+mkCD :: LibName -> LibName -> String -> OMCD
+mkCD lnCurrent ln sn = CD $ [sn] ++ if lnCurrent == ln then [] else [show ln]
 
 omName :: UniqName -> OMName
 omName = mkSimpleName . nameToString
 
 simpleOMS :: UniqName -> OMElement
-simpleOMS un = OMS (CD "" Nothing) $ omName un
+simpleOMS un = OMS (CD []) $ omName un
 
 --------------------- Symbols and Sentences ---------------------
 
@@ -346,7 +393,7 @@ exportSentence :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree => 
         lid -> SigMap symbol -> Named sentence -> Result [TCElement]
 exportSentence lid (SigMap sm thm) nsen = do
-  omobj <- export_senToOmdoc lid sm $ sentence nsen
+  omobjOrAdt <- export_senToOmdoc lid sm $ sentence nsen
   let symRole = if isAxiom nsen && not (wasTheorem nsen) then Axiom
                 else Theorem
       thmName = senAttr nsen
@@ -354,8 +401,11 @@ exportSentence lid (SigMap sm thm) nsen = do
            (error $ concat [ "exportSentence: mapping for "
                            , thmName, " is missing!"]) thmName thm
       omname = nameToString un
-  return $ [TCSymbol omname omobj symRole Nothing]
-             ++ (maybeToList $ notationFromUniqName un)
+  return $ case omobjOrAdt of
+             Left adt -> [adt]
+             Right omobj ->
+                 [TCSymbol omname omobj symRole Nothing]
+                 ++ (maybeToList $ notationFromUniqName un)
 
 notationFromUniqName :: UniqName -> Maybe TCElement
 notationFromUniqName un =

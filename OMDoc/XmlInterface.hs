@@ -72,6 +72,7 @@ out1 =
 
 -}
 
+
 toQN :: String -> QName
 toQN s = blank_name { qName = s }
 toQNOM :: String -> QName
@@ -80,7 +81,7 @@ toQNOM s = blank_name { qName = s , qPrefix = Just "om" }
 -- | often used element names
 
 el_omdoc, el_theory, el_view, el_structure, el_type, el_adt, el_sortdef
- , el_constructor, el_argument, el_insort, el_selector, el_morphism
+ , el_constructor, el_argument, el_insort, el_selector
  , el_conass, el_constant, el_notation, el_text, el_definition, el_omobj
  , el_ombind, el_oms, el_ombvar, el_omattr, el_omatp, el_omv, el_oma :: QName
 
@@ -95,7 +96,6 @@ el_constructor = toQN "constructor"
 el_argument = toQN "argument"
 el_insort = toQN "insort"
 el_selector = toQN "selector"
-el_morphism = toQN "morphism"
 el_conass = toQN "conass"
 el_constant = toQN "constant"
 el_notation = toQN "notation"
@@ -134,6 +134,9 @@ attr_om = Attr (blank_name { qName = "om" , qPrefix = Just "xmlns" })
           "http://www.openmath.org/OpenMath"
 
 
+mkElement :: QName -> [Attr] -> [Content] -> Content
+mkElement qn atts elems = Elem $ Element qn atts elems Nothing
+
 {- |
   this class defines the interface to read from and write to XML
 -}
@@ -165,7 +168,7 @@ makeComment s = Text $ CData CDataRaw ("<!-- " ++ s ++ " -->") Nothing
 
 
 inAContent :: QName -> [Attr] -> Maybe Content -> Content
-inAContent qn a c = Elem $ Element qn a (maybeToList c) Nothing
+inAContent qn a c = mkElement qn a $ maybeToList c
 
 inContent :: QName -> Maybe Content -> Content
 inContent qn c = inAContent qn [] c
@@ -178,11 +181,12 @@ toOmobj c = inAContent el_omobj [attr_om] $ Just c
 --uriEncodeOMS omcd omname = uriEncodeCD omcd ++ "?" ++ encodeOMName omname
 
 uriEncodeCD :: OMCD -> String
-uriEncodeCD (CD omcd base) = (fromMaybe "" base) ++ "?" ++ omcd
+uriEncodeCD cd = let [x,y] = cdToList cd in concat [x, "?", y]
 
 uriDecodeCD :: String -> OMCD
--- TODO: implement the decoding
-uriDecodeCD s = CD s Nothing
+uriDecodeCD s = let base = takeWhile ('?' /=) s
+                    cd = drop (length base +1) s
+                in if base == "" then CD [cd] else CD [cd, base]
 
 encodeOMName :: OMName -> String
 encodeOMName on = intercalate "/" (path on ++ [name on])
@@ -196,8 +200,14 @@ tripleEncodeOMS omcd omname
     = pairEncodeCD omcd ++ [Attr at_name $ encodeOMName omname]
 
 pairEncodeCD :: OMCD -> [Attr]
-pairEncodeCD (CD omcd base) =
-    (maybe [] (\x -> [Attr at_cdbase x]) base) ++ [Attr at_cd omcd]
+pairEncodeCD cd = let f x y = fmap (Attr x) y
+                  in catMaybes $ zipWith f [at_cdbase, at_cd]
+                         $ cdToMaybeList cd
+
+pairDecodeCD :: String -> String -> OMCD
+pairDecodeCD [] [] = CD []
+pairDecodeCD cd [] = CD [cd] 
+pairDecodeCD cd base =  CD [cd, base]
 
 warnIfNothing :: String -> (Maybe a -> b)  -> Maybe a -> Result b
 warnIfNothing s f v = let o = f v in
@@ -247,11 +257,9 @@ missingMaybe el misses =
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
     toXml (OMDoc omname elms) =
-        (Elem $ Element el_omdoc
-         [Attr at_version omdoc_current_version, Attr at_name omname]
-         (listToXml elms)
-         Nothing)
-
+        mkElement
+        el_omdoc [Attr at_version omdoc_current_version, Attr at_name omname]
+                     $ listToXml elms
     fromXml e
         | elName e == el_omdoc =
             do
@@ -268,17 +276,19 @@ instance XmlRepresentable OMDoc where
 -- | toplevel OMDoc elements to XML and back
 instance XmlRepresentable TLElement where
     toXml (TLTheory tname meta elms) =
-        (Elem $ Element el_theory
-         ((Attr at_name tname)
-           : case meta of Nothing -> []
-                          Just mtcd -> [Attr at_meta $ uriEncodeCD mtcd])
-         (listToXml elms)
-         Nothing)
-    toXml (TLView nm from to mor) =
-        inAContent
+        mkElement
+        el_theory ((Attr at_name tname)
+                   : case meta of Nothing -> []
+                                  Just mtcd ->
+                                      [Attr at_meta $ uriEncodeCD mtcd])
+                      $ listToXml elms
+    toXml (TLView nm from to tc) =
+        mkElement
         el_view [Attr at_name nm, Attr at_from $ uriEncodeCD from,
                       Attr at_to $ uriEncodeCD to]
-                    $ fmap toXml mor
+                    $ case tc of Just (TCMorphism mapping) ->
+                                     map assignmentToXml mapping
+                                 _ -> []
 
     fromXml e
         | elName e == el_theory =
@@ -294,8 +304,8 @@ instance XmlRepresentable TLElement where
                 from = uriDecodeCD $ musthave at_from "from"
                 to = uriDecodeCD $ musthave at_to "to"
             in do
-              tc <- fmapFromMaybe fromXml $ findChild el_morphism e
-              justReturn $ TLView nm from to tc
+              tc <- mapR xmlToAssignment (findChildren el_conass e)
+              justReturn $ TLView nm from to $ Just $ TCMorphism tc
         | otherwise = return Nothing
 
 
@@ -308,14 +318,16 @@ instance XmlRepresentable TCElement where
         el_notation
         [Attr at_for $ encodeOMName nm, Attr at_role "constant"]
         $ Just $ inAContent el_text [Attr at_value val] Nothing
-    toXml (TCADT sds) = Elem $ Element el_adt [] (listToXml sds) Nothing
+    toXml (TCADT sds) = mkElement el_adt [] $ listToXml sds
     toXml (TCComment c) = makeComment c
-    toXml (TCImport nm from mor) =
-        inAContent
-        el_structure
-        [Attr at_name nm, Attr at_from $ uriEncodeCD from] $ fmap toXml mor
-    toXml (TCMorphism mapping) =
-        Elem $ Element el_morphism [] (map assignmentToXml mapping) Nothing
+    toXml (TCImport nm from tc) =
+        mkElement
+        el_structure [Attr at_name nm, Attr at_from $ uriEncodeCD from]
+                         $ case tc of Just (TCMorphism mapping) ->
+                                          map assignmentToXml mapping
+                                      _ -> []
+
+    toXml (TCMorphism _) = error "TCMorphism may only occur in imports!"
 
     fromXml e
         | elName e == el_constant =
@@ -340,40 +352,32 @@ instance XmlRepresentable TCElement where
                 nm = musthave at_name "name"
                 from = uriDecodeCD $ musthave at_from "from"
             in do
-              tc <- fmapFromMaybe fromXml $ findChild el_morphism e
-              justReturn $ TCImport nm from tc
+              tc <- mapR xmlToAssignment (findChildren el_conass e)
+              justReturn $ TCImport nm from $ Just $ TCMorphism tc
         | elName e == el_adt =
             do
               sds <- listFromXml $ elContent e
               justReturn $ TCADT sds
-        | elName e == el_morphism =
-            mapR xmlToAssignment (findChildren el_conass e)
-                     >>= justReturn . TCMorphism
         | otherwise =
-            fail $ oneOfMsg e [el_constant, el_structure, el_adt, el_morphism]
+            fail $ oneOfMsg e [el_constant, el_structure, el_adt, el_notation]
 
 
 -- | OMDoc - Algebraic Data Types
 instance XmlRepresentable OmdADT where
     toXml (ADTSortDef n b cs) =
-        Elem $ Element el_sortdef
-                 [Attr at_name n,
-                  Attr at_type $ show b]
-                 (listToXml cs) Nothing
+        mkElement el_sortdef
+                      [Attr at_name n, Attr at_type $ show b]
+                      $ listToXml cs
     toXml (ADTConstr n args) =
-        Elem $ Element el_constructor [Attr at_name n] (listToXml args) Nothing
+        mkElement el_constructor [Attr at_name n] $ listToXml args
     toXml (ADTArg t sel) =
-        Elem $ Element el_argument []
-                 (typeToXml t :
-                  case sel of Nothing -> []
-                              Just s -> [toXml s])
-                 Nothing
+        mkElement el_argument []
+                      $ typeToXml t :
+                        case sel of Nothing -> []
+                                    Just s -> [toXml s]
     toXml (ADTSelector n total) =
-        Elem $ Element el_selector
-                 [Attr at_name n,
-                  Attr at_total $ show total]
-                 [] Nothing
-    toXml (ADTInsort n) = Elem $ Element el_insort [Attr at_for n] [] Nothing
+        mkElement el_selector [Attr at_name n, Attr at_total $ show total] []
+    toXml (ADTInsort n) = mkElement el_insort [Attr at_for n] []
 
     fromXml e
         | elName e == el_sortdef =
@@ -410,31 +414,22 @@ instance XmlRepresentable OmdADT where
 
 -- | OpenMath elements to XML and back
 instance XmlRepresentable OMElement where
-    toXml (OMS d n) = Elem $ Element el_oms
-                       (tripleEncodeOMS d n)
-                       []
-                       Nothing
-    toXml (OMV n) = Elem $ Element el_omv [Attr at_name (name n)] [] Nothing
-    toXml (OMATTT elm attr) =
-        Elem $ Element el_omattr
-         []
-         [toXml attr, toXml elm]
-         Nothing
-    toXml (OMA args) = Elem $ Element el_oma [] (listToXml args) Nothing
+    toXml (OMS d n) = mkElement el_oms (tripleEncodeOMS d n) []
+    toXml (OMV n) = mkElement el_omv [Attr at_name (name n)] []
+    toXml (OMATTT elm attr) = mkElement el_omattr [] [toXml attr, toXml elm]
+    toXml (OMA args) = mkElement el_oma [] $ listToXml args
     toXml (OMBIND symb vars body) =
-        Elem $ Element el_ombind
-         []
-         [toXml symb,
-          Elem (Element el_ombvar [] (listToXml vars) Nothing),
-          toXml body]
-         Nothing
+        mkElement el_ombind []
+                      [ toXml symb
+                      , mkElement el_ombvar [] $ listToXml vars
+                      , toXml body]
 
     fromXml e
         | elName e == el_oms =
             let nm = missingMaybe "OMS" "name" $ findAttr at_name e
                 omcd = fromMaybe "" $ findAttr at_cd e
-                cdb = findAttr at_cdbase e
-            in justReturn $ OMS (CD omcd cdb) $ decodeOMName nm
+                cdb = fromMaybe "" $ findAttr at_cdbase e
+            in justReturn $ OMS (pairDecodeCD omcd cdb) $ decodeOMName nm
         | elName e == el_omv =
             let nm = missingMaybe "OMV" "name" $ findAttr at_name e
             in justReturn $ OMV $ decodeOMName nm
@@ -465,13 +460,7 @@ instance XmlRepresentable OMElement where
 
 -- | Helper instance for OpenMath attributes
 instance XmlRepresentable OMAttribute where
-    toXml (OMAttr e1 e2) =
-        (Elem $ Element el_omatp
-         []
-         [toXml e1,
-          toXml e2]
-         Nothing)
-
+    toXml (OMAttr e1 e2) = mkElement el_omatp [] [toXml e1, toXml e2]
     fromXml e
         | elName e == el_omatp =
             do

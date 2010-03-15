@@ -51,6 +51,9 @@ data TCElement =
   | TCComment String
     deriving (Show, Eq, Ord)
 
+-- | return type for sentence translation
+type TCorOMElement = Either TCElement OMElement
+
 
 -- | The flattened structure of an Algebraic Data Type
 data OmdADT =
@@ -112,9 +115,7 @@ data OMAttribute = OMAttr OMElement OMElement
 
 -- | CD contains the reference to the content dictionary
 -- and eventually the cdbase entry
-data OMCD = CD { cd :: String,
-                 cdbase :: (Maybe String)}
-            deriving (Show, Eq, Ord)
+data OMCD = CD [String] deriving (Show, Eq, Ord)
 
 -- | Elements for Open Math
 data OMElement =
@@ -131,15 +132,27 @@ data OMElement =
   | OMBIND OMElement [OMElement] OMElement
   deriving (Show, Eq, Ord)
 
-
 ---------------------- Datatypes for Translation ----------------------
 
 type UniqName = (String, Int)
 type NameMap a = Map.Map a UniqName
 
+-- | Mapping of symbols to unique ids
+data SigMap a = SigMap (NameMap a) (NameMap String)
+
 nameToString :: UniqName -> String
 nameToString (s,i) = s ++ if i > 0 then concat ["{", show i, "}"]
                           else ""
+
+cdToList :: OMCD -> [String]
+cdToList (CD [cd, base]) = [base, cd]
+cdToList (CD [cd]) = ["", cd]
+cdToList _ = ["", ""]
+
+cdToMaybeList :: OMCD -> [Maybe String]
+cdToMaybeList (CD [cd, base]) = [Just base, Just cd]
+cdToMaybeList (CD [cd]) = [Nothing, Just cd]
+cdToMaybeList _ = [Nothing, Nothing]
 
 ---------------------- Constructing Values ----------------------
 
