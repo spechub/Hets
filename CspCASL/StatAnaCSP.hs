@@ -41,7 +41,7 @@ import CspCASL.AS_CspCASL_Process
 import CspCASL.LocalTop (Obligation(..), unmetObs)
 import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
-import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol, symOf)
+import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol)
 
 -- | The first element of the returned pair (CspBasicSpec) is the same
 --   as the inputted version just with some very minor optimisations -
@@ -64,7 +64,7 @@ basicAnalysisCspCASL (cc, sigma, ga) =
         cleanSig = accSig
                    { extendedInfo = ext { ccSentences = []}}
     in Result (es ++ ds) $
-      Just (cc, ExtSign cleanSig $ symOf cleanSig, ccsents)
+      Just (cc, ExtSign cleanSig $ declaredSymbols accSig, ccsents)
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops
@@ -101,11 +101,8 @@ anaChanDecl (ChannelDecl chanNames chanSort) = do
     let ext = extendedInfo sig
         oldChanMap = chans ext
     newChanMap <- Monad.foldM (anaChannelName chanSort) oldChanMap chanNames
-    vds <- gets envDiags
-    put sig { extendedInfo = ext { chans = newChanMap }
-            , envDiags = vds
-            }
-    return ()
+    sig2 <- get
+    put sig2 { extendedInfo = ext { chans = newChanMap }}
 
 -- | Statically analyse a CspCASL channel name.
 anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
@@ -169,11 +166,8 @@ anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
                 -- signature
                 addSymbol (makeProcNameSymbol name)
                 return (Map.insert name profile oldProcDecls)
-    vds <- gets envDiags
-    put sig { extendedInfo = ext {procSet = newProcDecls }
-            , envDiags = vds
-            }
-    return ()
+    sig2 <- get
+    put sig2 { extendedInfo = ext {procSet = newProcDecls }}
 
 -- Static analysis of process equations
 
