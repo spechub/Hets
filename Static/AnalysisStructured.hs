@@ -126,7 +126,7 @@ createConsLink :: LinkKind -> Conservativity -> LogicGraph -> DGraph
 createConsLink lk conser lg dg nsig (NodeSig node gsig) orig = case nsig of
     EmptyNode _ | conser == None -> return dg
     _ -> case nsig of
-      JustNode (NodeSig n sig)-> do
+      JustNode (NodeSig n sig) -> do
         let Result _ mIncl = ginclusion lg sig gsig
         case mIncl of
           Just incl ->
@@ -235,7 +235,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
         {- anaSpec should be changed to return a MaybeNode!
            Then this duplicate dummy node could be avoided.
            Also empty unions could be treated then -}
-      JustNode ns -> return (sp, ns ,dg)
+      JustNode ns -> return (sp, ns , dg)
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, dg') <-
@@ -283,7 +283,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
            return (Reduction (replaceAnnoted sp1' asp) restr, ns,
                    insLink dg4 tmor' globalDef SeeTarget node1 node2)
   Union asps pos -> do
-    (newAsps, _, ns, dg') <-  adjustPos pos $ anaUnion addSyms lg dg nsig
+    (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg dg nsig
       name opts asps
     return (Union newAsps pos, ns, dg')
   Extension asps pos -> do
@@ -297,7 +297,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
        EmptyNode _ -> fail "empty extension"
        JustNode nsig1 -> return (Extension (zipWith replaceAnnoted
                           (reverse sps') asps)
-                                 pos, nsig1,dg1)
+                                 pos, nsig1, dg1)
   Free_spec asp poss -> do
       (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts dg nsig name
         Free asp poss
@@ -370,7 +370,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
   Spec_inst spname afitargs pos0 -> let
        pos = if null afitargs then tokPos spname else pos0
        spstr = tokStr spname
-    in  adjustPos pos $ case lookupGlobalEnvDG spname dg of
+    in adjustPos pos $ case lookupGlobalEnvDG spname dg of
     Just (SpecEntry gs@(ExtGenSig (GenSig _ params _)
                         body@(NodeSig nB gsigmaB))) ->
      case (\ x y -> (x , x - y)) (length afitargs) (length params) of
@@ -441,13 +441,25 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
           dg2 = insLink dg1 (GMorphism cid sigmaD startSigId
                              (ext_ide sigmaD') startMorId)
                 globalDef SeeTarget n' node
+          gsigmaD = G_sign lidP' sigmaD' startSigId
+      (usig, udg) <- case nsig of
+        EmptyNode _ -> return (nsig2, dg2)
+        _ -> do
+          let gsigma = getMaybeSig nsig
+          gsigma2 <- gsigUnion lg gsigma gsigmaD
+          let (ns@(NodeSig node2a _), dg2a) =
+                insGSig dg2 (extName "Union" name) DGUnion gsigma2
+          incl2 <- ginclusion lg gsigmaD gsigma2
+          let dg3 = insLink dg2a incl2 globalDef SeeTarget node node2a
+          dg4 <- createConsLink DefLink conser lg dg3 nsig ns SeeTarget
+          return (ns, dg4)
       -- analyse SPEC2
-      (sp2', nsig3, dg3) <-
-          anaSpec addSyms lg dg2 (JustNode nsig2) name opts sp2
+      (sp2', nsig3, udg3) <-
+          anaSpec addSyms lg udg (JustNode usig) name opts sp2
       return (Data (Logic lidD) (Logic lidP)
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
-                   pos, nsig3, dg3)
+                   pos, nsig3, udg3)
 
 anaUnion :: Bool -> LogicGraph -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> [Annoted SPEC]
@@ -779,7 +791,7 @@ extendMorphism :: G_sign      -- ^ formal parameter
                -> G_sign      -- ^ body
                -> G_sign      -- ^ actual parameter
                -> G_morphism  -- ^ fitting morphism
-               -> Result(G_sign, G_morphism)
+               -> Result (G_sign, G_morphism)
 extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
     (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
   -- for now, only homogeneous instantiations....
@@ -792,15 +804,15 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
       symbMapToRawSymbMap =
-          Map.foldWithKey (\sy1 sy2 -> Map.insert (symbol_to_raw lid sy1)
+          Map.foldWithKey (\ sy1 sy2 -> Map.insert (symbol_to_raw lid sy1)
                                                   (symbol_to_raw lid sy2))
                           Map.empty
       rh = symbMapToRawSymbMap h
       idh = Map.foldWithKey
-             (\sy1 sy2 -> Rel.setInsert (sym_name lid sy1) (sym_name lid sy2))
+             (\ sy1 sy2 -> Rel.setInsert (sym_name lid sy1) (sym_name lid sy2))
              Map.empty h
   idhExt <- extID idsB idh
-  let rIdExt = Map.foldWithKey (\id1 id2 -> Map.insert
+  let rIdExt = Map.foldWithKey (\ id1 id2 -> Map.insert
                                 (id_to_raw lid id1) (id_to_raw lid id2))
                 Map.empty
                 (foldr Map.delete idhExt $ Map.keys idh)
@@ -835,7 +847,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
   return (G_sign lid sigma startSigId, mkG_morphism lid mor1)
 
 applyGS :: LogicGraph -> ExtGenSig -> [(G_morphism, NodeSig)]
-         -> Result(G_sign, GMorphism)
+         -> Result (G_sign, GMorphism)
 applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
   let mor_i = map fst args
       gsigmaA_i = map (getSig . snd) args
@@ -889,7 +901,7 @@ getSpecAnnos pos a = do
                 SA_def -> Def
                 SA_mono -> Mono
                 _ -> None, any (/= f) r,
-                     anno1 ==  SA_implied, anno1 == SA_implies)
+                     anno1 == SA_implied, anno1 == SA_implies)
         _ -> (None, False, False, False)
   when conflict $ plain_error () "Conflicting semantic annotations" pos
   when impliedA $ plain_error ()
