@@ -213,7 +213,7 @@ symbOrMapToRaw k sm = case sm of
         _ -> []
       w <- symbToRaw k s
       x <- symbToRaw k t
-      let mkS =  ASymbol . idToSortSymbol
+      let mkS = ASymbol . idToSortSymbol
       case (s, t) of
         (Qual_id _ t1 _, Qual_id _ t2 _) -> case (t1, t2) of
           (O_type (Op_type _ args1 res1 _), O_type (Op_type _ args2 res2 _))
@@ -362,9 +362,9 @@ legalSign sigma =
   Map.foldWithKey (\ s sset -> (&& legalSort s && all legalSort
                                 (Set.toList sset)))
                   True (Rel.toMap (sortRel sigma))
-  && Map.fold (\ts -> (&& all legalOpType (Set.toList ts)))
+  && Map.fold (\ ts -> (&& all legalOpType (Set.toList ts)))
               True (opMap sigma)
-  && Map.fold (\ts -> (&& all legalPredType (Set.toList ts)))
+  && Map.fold (\ ts -> (&& all legalPredType (Set.toList ts)))
               True (predMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
@@ -373,11 +373,11 @@ legalSign sigma =
         legalPredType = all legalSort . predArgs
 
 -- | the image of a signature morphism
-imageOfMorphism :: Morphism f e m  -> Sign f e
+imageOfMorphism :: Morphism f e m -> Sign f e
 imageOfMorphism m = imageOfMorphismAux (const $ extendedInfo $ mtarget m) m
 
 -- | the generalized image of a signature morphism
-imageOfMorphismAux :: (Morphism f e m -> e) -> Morphism f e m  -> Sign f e
+imageOfMorphismAux :: (Morphism f e m -> e) -> Morphism f e m -> Sign f e
 imageOfMorphismAux fE m =
   inducedSignAux (\ _ _ _ _ _ -> fE m)
          (sort_map m) (op_map m) (pred_map m) (extended_map m) (msource m)
@@ -551,16 +551,16 @@ instance Pretty RawSymbol where
     ASymbol sy -> pretty sy
     AKindedSymb k i -> pretty k <+> pretty i
 
-printMorphism :: (e -> Doc) -> (m -> Doc) -> Morphism f e m
-              -> Doc
-printMorphism fE fM mor =
+printMorphism :: (e -> e -> Bool) -> (m -> Bool) -> (e -> Doc) -> (m -> Doc)
+  -> Morphism f e m -> Doc
+printMorphism isSubSigExt isInclMorExt fE fM mor =
     let src = msource mor
         tar = mtarget mor
         ops = op_map mor
         prSig s = specBraces (space <> printSign fE s)
         srcD = prSig src
-    in if isInclusionMorphism (const True) mor then
-           if isSubSig (\ _ _ -> True) tar src then
+    in if isInclusionMorphism isInclMorExt mor then
+           if isSubSig isSubSigExt tar src then
                fsep [text "identity morphism over", srcD]
            else fsep
       [ text "inclusion morphism of", srcD
@@ -575,6 +575,7 @@ printMorphism fE fM mor =
           $+$ fM (extended_map mor)
       , colon <+> srcD, mapsto <+> prSig tar ]
 
-instance (Pretty e, Show f, Pretty m) =>
-    Pretty (Morphism f e m) where
-       pretty = printMorphism pretty pretty
+instance (SignExtension e, Pretty e, Show f, MorphismExtension e m, Pretty m)
+  => Pretty (Morphism f e m) where
+       pretty = printMorphism isSubSignExtension isInclusionMorphismExtension
+         pretty pretty
