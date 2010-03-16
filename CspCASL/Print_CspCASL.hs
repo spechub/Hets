@@ -95,7 +95,7 @@ printProcess pr = case pr of
     NamedProcess pn ts _ ->
         (pretty pn) <+>
         if (null ts)
-        then ppWithCommas ts
+        then empty
         else lparen <+> (ppWithCommas ts) <+> rparen
     -- precedence 1
     ConditionalProcess f p q _ ->

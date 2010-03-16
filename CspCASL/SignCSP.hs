@@ -223,10 +223,7 @@ instance Pretty CspCASLSen where
         let varDoc = if (null varList)
                      then empty
                      else parens $ sepByCommas $ map pretty varList
-            commAlphaDoc = brackets ((text "CommAlpha:") <+>
-                                     (text $ show commAlpha))
-        in pretty pn <+> varDoc <+> commAlphaDoc <+>
-           equals <+> pretty proc
+        in pretty pn <+> varDoc <+> equals <+> pretty proc
 
 -- | Empty CspCASL sentence
 emptyCCSen :: CspCASLSen
