@@ -16,14 +16,17 @@ instantiation can be found in module CASL.Logic_CASL.
 module CASL.OMDoc
     ( exportSymToOmdoc
     , exportSenToOmdoc
+    , exportTheoryToOmdoc
     , caslMetaTheory
     ) where
 
 import OMDoc.DataTypes
-import OMDoc.Export
+--import OMDoc.Export
 
 import Common.Id
 import Common.Result
+import Common.AS_Annotation
+import qualified Common.Lib.Rel as Rel
 
 import Common.DocUtils
 
@@ -52,10 +55,33 @@ exportSenToOmdoc :: (GetRange f, Pretty f) => Env -> FORMULA f
                  -> Result TCorOMElement
 exportSenToOmdoc e f =
     case f of
-        Sort_gen_ax cs b -> return $ Left $ makeADTsFromConstraints e cs
+        Sort_gen_ax cs b -> return $ Left $ makeADTs e cs
                             (if b then Free else Generated)
         _ -> let err = const $ error "CASL extension not supported."
              in return $ Right $ foldFormula (omdocRec e err) f
+
+exportTheoryToOmdoc :: (Show f, Pretty e) => SigMap Symbol -> Sign f e
+                    -> [Named (FORMULA f)] -> Result [TCElement]
+
+exportTheoryToOmdoc sigm sig _ =
+    return $ map (subsortToOmdoc $ symbMap sigm) $ Rel.toList $ sortRel sig
+
+
+-------------------------- Sentences --------------------------
+
+prefixForST :: String
+prefixForST = uniqPrefix ++ "ST:"
+
+mkSTName :: String -> String -> String
+mkSTName a b = concat [prefixForST, a, uniqPrefix, b]
+
+subsortToOmdoc :: Env -> (SORT, SORT) -> TCElement
+subsortToOmdoc e (s1, s2) =
+    let oms1@(OMS (_, (OMName n1 _))) = oms e s1
+        oms2@(OMS (_, (OMName n2 _))) = oms e s2
+    in TCSymbol (mkSTName n1 n2)
+           (OMA [const_subsortof, oms1, oms2]) Axiom Nothing
+
 
 -------------------------- Symbol Interface --------------------------
 
@@ -113,8 +139,8 @@ instance AsOMConstant (String, SymbType) where
 
 -------------------------- ADT --------------------------
 
-makeADTsFromConstraints :: Env -> [Constraint] -> ADTType -> TCElement
-makeADTsFromConstraints e cs b =
+makeADTs :: Env -> [Constraint] -> ADTType -> TCElement
+makeADTs e cs b =
     TCADT $ map (makeADTSortDef e b) cs
 
 makeADTSortDef :: Env -> ADTType -> Constraint -> OmdADT
@@ -123,8 +149,9 @@ makeADTSortDef e b (Constraint s l _) =
     map (makeADTConstructor e . fst) l
 
 makeADTConstructor :: Env -> OP_SYMB -> OmdADT
-makeADTConstructor e os@(Qual_op_name _ (Op_type _ args _ _) _) =
-    ADTConstr (omn e os) $ map (makeADTArgument e) args
+makeADTConstructor e os@(Qual_op_name n (Op_type _ args _ _) _) =
+    if isInjName n then ADTInsort $ omqn e $ head args
+    else ADTConstr (omn e os) $ map (makeADTArgument e) args
 
 makeADTConstructor _ (Op_name (Id _ _ r)) =
     sfail "makeADTConstructor: No_qual_op" r
@@ -149,6 +176,13 @@ omn e x = let s = toSymbol x
                                    , "--------------------------------\n"
                                    , show e]
           in nameToString $ findInEnv err e s
+
+omqn :: AsSymbol a => Env -> a -> OMQualName
+omqn e x = let s = toSymbol x
+               err = error $ concat [ "omqn: No mapping for ", show s, "\n"
+                                    , "--------------------------------\n"
+                                    , show e]
+           in mkSimpleQualName $ findInEnv err e s
 
 oms :: AsSymbol a => Env -> a -> OMElement
 oms e x = let s = toSymbol x
@@ -194,15 +228,13 @@ varDeclToOMDoc e (v, s) = makeTyped (varToOmdoc v) $ oms e s
 -- cdbase entries missing for predefined content dictionaries
 
 const_casl :: String -> OMElement
-const_casl n = OMS caslMetaTheory $ mkSimpleName n
+const_casl n = OMS (caslMetaTheory, mkSimpleName n)
 
 const_true, const_false, const_sort, const_funtype, const_partialfuntype
  , const_and, const_or, const_implies, const_implied, const_equivalent
  , const_forall, const_exists, const_eq, const_eeq, const_existsunique
  , const_def, const_in, const_if, const_cast, const_type, const_not
  , const_predtype, const_subsortof :: OMElement
-
--- TODO: output the subtype relation if not already in the sentences
 
 const_true = const_casl "true"
 const_false = const_casl "false"

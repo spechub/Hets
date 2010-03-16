@@ -79,8 +79,8 @@ import Driver.WriteLibDefn
 import OMDoc.OMDocOutput
 #endif
 
-import OMDoc.XmlInterface
-import OMDoc.Export
+import OMDoc.XmlInterface (xmlOut)
+import OMDoc.Export (exportLibEnv)
 --import Omega.Export
 --import Omega.ToLisp
 

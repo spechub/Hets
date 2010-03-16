@@ -27,7 +27,7 @@ import qualified Data.Map as Map
 
 
 -- | OMDoc root element with libname and a list of toplevel elements
-data OMDoc = OMDoc String [TLElement]
+data OMDoc = OMDoc String [TLElement] deriving (Show, Eq, Ord)
 
 -- | Toplevel elements for OMDoc, theory with name, meta and content,
 -- view with from, to and morphism
@@ -40,7 +40,7 @@ data TCElement =
     -- | Symbol to represent sorts, constants, predicate symbols, etc.
     TCSymbol String OMElement SymbolRole (Maybe OMElement)
     -- | A notation for the given symbol
-  | TCNotation OMName String
+  | TCNotation OMQualName String
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
@@ -66,7 +66,7 @@ data OmdADT =
     -- | The selector has a name and is total (Yes) or partial (No)
   | ADTSelector String Totality
     -- | Insort elements point to other sortdefs and inherit their structure
-  | ADTInsort String
+  | ADTInsort OMQualName
     deriving (Show, Eq, Ord)
 
 -- | Roles of the declared symbols can be object or type
@@ -117,10 +117,12 @@ data OMAttribute = OMAttr OMElement OMElement
 -- and eventually the cdbase entry
 data OMCD = CD [String] deriving (Show, Eq, Ord)
 
+type OMQualName = (OMCD, OMName)
+
 -- | Elements for Open Math
 data OMElement =
     -- | Symbol
-    OMS OMCD OMName
+    OMS OMQualName
     -- | Simple variable
   | OMV OMName
     -- | Attributed element needed for type annotations of elements
@@ -140,9 +142,14 @@ type NameMap a = Map.Map a UniqName
 -- | Mapping of symbols to unique ids
 data SigMap a = SigMap (NameMap a) (NameMap String)
 
-nameToString :: UniqName -> String
-nameToString (s,i) = s ++ if i > 0 then concat ["{", show i, "}"]
-                          else ""
+symbMap :: SigMap a -> NameMap a
+symbMap (SigMap sm _) = sm
+
+cdFromList :: [String] -> OMCD
+cdFromList ["", ""] = CD []
+cdFromList ["", cd] = CD [cd]
+cdFromList [base, cd] = CD [cd, base]
+cdFromList _ = error "cdFromList: Malformed list. I need exactly 2 elements!"
 
 cdToList :: OMCD -> [String]
 cdToList (CD [cd, base]) = [base, cd]
@@ -154,7 +161,34 @@ cdToMaybeList (CD [cd, base]) = [Just base, Just cd]
 cdToMaybeList (CD [cd]) = [Nothing, Just cd]
 cdToMaybeList _ = [Nothing, Nothing]
 
+
+-- | The closing paren + percent can be used neither in ordinary Hets-names
+--   nor in sentence names hence it is used here for encodings.
+
+uniqPrefix :: String
+uniqPrefix = "%()%"
+
+prefixForOL :: String
+prefixForOL = uniqPrefix ++ "over:"
+
+nameToString :: UniqName -> String
+nameToString (s,i) = if i > 0 then concat [prefixForOL, show i, "_", s]
+                     else s
+
 ---------------------- Constructing Values ----------------------
+
+emptyCD :: OMCD
+emptyCD = CD []
+
+omName :: UniqName -> OMName
+omName = mkSimpleName . nameToString
 
 mkSimpleName :: String -> OMName
 mkSimpleName s = OMName s []
+
+mkSimpleQualName :: UniqName -> OMQualName
+mkSimpleQualName un = (CD [], omName un)
+
+simpleOMS :: UniqName -> OMElement
+simpleOMS = OMS . mkSimpleQualName
+

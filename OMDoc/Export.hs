@@ -95,39 +95,6 @@ lookupWithInsert lid sig sens s@(SpecSymNames m) k =
 
 --------------------- LibEnv traversal ---------------------
 
-{-
-foldWithAccu :: Monad m => (stat -> a -> m (stat, b)) -> stat -> [a]
-             -> m (stat, b)
-foldWithAccu f s l = do
-  (s', res) <- foldM (foldFun f) (s, Nothing) l
-  case res of Just out -> return (s', out)
-              _ -> fail "foldWithAccu: No result"
-      where foldFun f (x, _) y = do
-                       (x', res) <- f x y
-                       return (x', Just res)
-
-mapWithAccu :: Monad m => (stat -> a -> m (stat, b)) -> stat -> [a]
-             -> m (stat, [b])
-mapWithAccu f s l = do
-  foldM (foldFun f) (s, []) l
-    where foldFun f (x, l') y = do
-                       (x', res) <- f x y
-                       return (x', res:l')
-
-mapWithAccu :: (acc -> (x, z) -> m (acc, y)) -- Function of elt of input list
-                                    -- and accumulator, returning new
-                                    -- accumulator and elt of result list
-          -> acc            -- Initial accumulator 
-          -> [(x, z)]            -- Input list
-          -> m (acc, [(x, y)])     -- Final accumulator and result list
-mapWithAccu _ s []        =  return (s, [])
-mapWithAccu f s (e@(x, z):xs) = do
-  (s', y ) <- f s e
-  (s'',ys) <- mapWithAccu f s' xs
-  return (s'',(x, y):ys)
--}
-                                         
-
 -- first projection is the const function
 
 -- | 2nd projection 
@@ -365,12 +332,6 @@ sglElem s sa
 mkCD :: LibName -> LibName -> String -> OMCD
 mkCD lnCurrent ln sn = CD $ [sn] ++ if lnCurrent == ln then [] else [show ln]
 
-omName :: UniqName -> OMName
-omName = mkSimpleName . nameToString
-
-simpleOMS :: UniqName -> OMElement
-simpleOMS un = OMS (CD []) $ omName un
-
 --------------------- Symbols and Sentences ---------------------
 
 exportSymbol :: forall lid sublogics
@@ -411,4 +372,5 @@ notationFromUniqName :: UniqName -> Maybe TCElement
 notationFromUniqName un =
     let n = nameToString un
         orign = fst un 
-    in if n == orign then Nothing else Just $ TCNotation (mkSimpleName n) orign
+    in if n == orign then Nothing
+       else Just $ TCNotation (mkSimpleQualName un) orign

@@ -52,6 +52,7 @@ import PGIP.XMLstate (isRemote)
 
 import Maude.Maude2DG (anaMaudeFile)
 import LF.Twelf2DG (anaTwelfFile)
+import OMDoc.Import (anaOMDocFile)
 
 main :: IO ()
 main =
@@ -81,6 +82,7 @@ processFile opts file = do
         return . getMaybeLib $ intState st
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
+      ExperimentalIn -> anaOMDocFile opts file
       _ -> anaLib opts file
     case res of
       Just (ln, nEnv) -> writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
