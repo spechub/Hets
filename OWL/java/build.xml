@@ -20,7 +20,7 @@
         <mkdir dir="${classesdir}/Fact"/>
 	<mkdir dir="../lib/native/i686"/>
 	<mkdir dir="../lib/native/x86_64"/>
-	<get src="http://factplusplus.googlecode.com/files/FaCTpp-OWLAPI-v1.2.0.jar" dest="${libdir}/FaCTpp-OWLAPI-v1.2.0.jar"/>
+	<get src="http://factplusplus.googlecode.com/files/FaCTpp-OWLAPI-v1.3.0.1.jar" dest="${libdir}/FaCTpp-OWLAPI-v1.3.0.1.jar"/>
         <javac srcdir="./" destdir="${classesdir}/Fact" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/Fact/*.java"/>
@@ -30,13 +30,13 @@
 	  <attribute name="Title" value="OWL Fact"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="de.unibremen.informatik.Fact.Fact"/>
-	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/FaCTpp-OWLAPI-v1.2.0.jar"/>	  
+	  <attribute name="Class-Path" value="lib/owlapi-bin.jar lib/factplusplus-1.3.1.jar"/>	  
 	</manifest>
       </jar>
       <copy file="${builddir}/OWLFact.jar" todir="../"/>
       <copy file="lib/native/i686/libFaCTPlusPlusJNI.so" todir="../lib/native/i686/"/>
       <copy file="lib/native/x86_64/libFaCTPlusPlusJNI.so" todir="../lib/native/x86_64/"/>
-      <copy file="${libdir}/FaCTpp-OWLAPI-v1.2.0.jar" todir="../lib/"/>
+      <copy file="${libdir}/FaCTpp-OWLAPI-v1.3.0.1.jar" todir="../lib/"/>
     </target>
 
     <target name="compile">

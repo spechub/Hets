@@ -1,6 +1,7 @@
 package de.unibremen.informatik.Fact;
 
 import uk.ac.manchester.cs.factplusplus.owlapi.*;
+import org.semanticweb.reasonerfactory.factpp.*;
 
 import org.semanticweb.owl.inference.*;
 
@@ -8,6 +9,7 @@ import org.semanticweb.owl.apibinding.OWLManager;
 import org.semanticweb.owl.io.OWLXMLOntologyFormat;
 import org.semanticweb.owl.model.*;
 import java.net.URI;
+import java.util.*;
 
 class Fact
 {
@@ -24,10 +26,14 @@ class Fact
 	    {
 		OWLOntologyManager manager = 
 		    OWLManager.createOWLOntologyManager();
-		OWLReasoner reasoner = new Reasoner(manager);
+		OWLReasonerFactory fac = new FaCTPlusPlusReasonerFactory();
+		OWLReasoner reasoner = fac.createReasoner(manager);
 		URI physicalURI = URI.create(args[0]);
 		OWLOntology ontology = 
 		    manager.loadOntologyFromPhysicalURI(physicalURI);
+		TreeSet ontos = new TreeSet();
+		ontos.add(ontology);
+		reasoner.loadOntologies(ontos);
 		Boolean cons = reasoner.isConsistent(ontology);
 		if (cons)
 		    {
