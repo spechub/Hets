@@ -36,6 +36,7 @@ import OWL.Morphism
 import Common.Consistency
 import Common.ProverTools
 import OWL.ProvePellet
+import OWL.ProveFact
 import OWL.Conservativity
 import OWL.Taxonomy
 #endif
@@ -108,7 +109,8 @@ instance Logic OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
 #ifdef UNI_PACKAGE
          provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver
          cons_checkers OWL =
-             unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker
+             (unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker) ++
+             (unsafeFileCheck "OWLFact.jar" "HETS_OWL_TOOLS" factConsChecker)
          conservativityCheck OWL =
            unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
               (ConservativityChecker "Locality_BOTTOM_BOTTOM"
