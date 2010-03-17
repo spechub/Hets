@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Ali, Uni Bremen 2005-2006
+Copyright   :  (c) Domink Luecke, Uni Bremen 2009-2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  shabani@informatik.uni-bremen.de
+Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable
 
 Fact++ prover for OWL
 -}
