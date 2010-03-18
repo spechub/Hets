@@ -135,7 +135,11 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Typeable
 
-import qualified OMDoc.DataTypes as OMDoc
+import qualified OMDoc.DataTypes as OMDoc ( TCElement
+                                          , TCorOMElement
+                                          , NameMap
+                                          , SigMap
+                                          , OMCD)
 
 
 -- | Stability of logic implementations
