@@ -46,7 +46,8 @@ import qualified Data.Set as Set
 newtype SpecSymNames = SpecSymNames
     (Map.Map (LibName, String) (SigMap G_symbol))
 
-type OMEnv = SpecSymNames
+data OMEnv = OMEnv { getSSN :: SpecSymNames
+                   , getInitialLN :: LibName }
 
 fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
@@ -54,8 +55,9 @@ fmapNM = Map.mapKeys
 fmapSM :: (Ord a, Ord b) => (a -> b) -> SigMap a -> SigMap b
 fmapSM f (SigMap m1 m2) = SigMap (fmapNM f m1) m2
 
-emptySSN :: SpecSymNames
-emptySSN = SpecSymNames $ Map.empty
+emptyEnv :: LibName -> OMEnv 
+emptyEnv ln = OMEnv { getSSN = SpecSymNames $ Map.empty
+                    , getInitialLN = ln }
 
 fromSignAndNamedSens:: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -86,15 +88,17 @@ lookupWithInsert :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree => 
-        lid -> sign -> [Named sentence] -> SpecSymNames -> (LibName, String)
-             -> (SpecSymNames, SigMap symbol)
-lookupWithInsert lid sig sens s@(SpecSymNames m) k =
+        lid -> sign -> [Named sentence] -> OMEnv -> (LibName, String)
+             -> (OMEnv, SigMap symbol)
+lookupWithInsert lid sig sens s k =
+    let SpecSymNames m = getSSN s in
     case Map.lookup k m of
       Just nm -> (s, fmapSM (\ (G_symbol lid1 sym)
                                -> coerceSymbol lid1 lid sym) nm)
-      Nothing -> let nm = fromSignAndNamedSens lid sig sens
-                 in ( SpecSymNames $ Map.insert k (fmapSM (G_symbol lid) nm) m
-                    , nm)
+      Nothing -> let nm = fromSignAndNamedSens lid sig sens in
+                 ( s { getSSN = SpecSymNames
+                                $ Map.insert k (fmapSM (G_symbol lid) nm) m }
+                 , nm)
 
 --------------------- LibEnv traversal ---------------------
 
@@ -108,7 +112,7 @@ proj2 _ y = y
 --   is false only the DG to the given LibName is translated and returned.
 exportLibEnv :: Bool -> LibName -> LibEnv -> Result [(LibName, OMDoc)]
 exportLibEnv b ln le =
-    let im = emptySSN
+    let im = emptyEnv ln
         cmbnF (x,_) y = (x,y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
     in mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
@@ -161,23 +165,6 @@ getNodeData le ln lb =
         in (labDG dg' $ ref_node ni, lnRef)
     else (lb, ln)
 
-{-
-
-getSpecData :: forall lid sublogics
-        basic_spec sentence symb_items symb_map_items
-         sign morphism symbol raw_symbol proof_tree .
-        Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree => 
-        (lid, sign, sentence) -> LibName -> OMEnv -> DGNodeLab
-         -> Result ( OMEnv, String, SigMap symbol, [Named sentence])
-getSpecData (lid, sig, sens) ln s lb =
-    let specname = getDGNodeName lb
-        nsens = toNamedList sens
-        (s', sigm) = lookupWithInsert lid sig nsens s (ln, specname)
-    in return (s', specname, sigm, nsens)
-
--}
 
 makeImport :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -205,7 +192,7 @@ makeImport le ln dg toInfo s (from, _, lbl)
                         = lookupWithInsert lid sig nsens s (ln', sn)
                 morph <- makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
-                return (s', [TCImport impnm (mkCD ln ln' sn) $ Just morph])
+                return (s', [TCImport impnm (mkCD s' ln ln' sn) $ Just morph])
     | otherwise = return (s, [])
 
 -- | Given a TheoremLink we output the view
@@ -240,8 +227,8 @@ exportLinkLab le ln dg s (from, to, lbl) =
                        (s'', (SigMap nm2 _)) =
                            lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
                    morph <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
-                   return (s'', Just $ TLView viewname (mkCD ln ln1 sn1)
-                                  (mkCD ln ln2 sn2) $ Just morph) }
+                   return (s'', Just $ TLView viewname (mkCD s'' ln ln1 sn1)
+                                  (mkCD s'' ln ln2 sn2) $ Just morph) }
 
 
 makeMorphism :: forall lid1 sublogics1
@@ -322,14 +309,19 @@ sglElem s sa
 
 --------------------- Names and CDs ---------------------
 
-mkCD :: LibName -> LibName -> String -> OMCD
-mkCD lnCurrent ln sn = CD $ [sn] ++ if lnCurrent == ln then [] else [getFP ln]
+mkCD :: OMEnv -> LibName -> LibName -> String -> OMCD
+mkCD s lnCurr ln sn = CD $ [sn] ++ if lnCurr == ln then [] else [mkAbsURL s ln]
 
+
+mkAbsURL :: OMEnv -> LibName -> String
+mkAbsURL s ln = let fp = getFP ln
+                    fpInit = getFP $ getInitialLN s
+                in "file://" ++ rmSuffix fp ++ ".omdoc"
 
 getFP :: LibName -> String
 getFP ln = case getLibId ln of
-             IndirectLink p _ fp _ -> p ++ "-file://" ++ rmSuffix fp ++ ".omdoc"
-             _ -> error "getFilePath: DirectLinks not supported!"
+             IndirectLink _ _ fp _ -> fp
+             _ -> error "getFP: DirectLinks not supported!"
 
 --------------------- Symbols and Sentences ---------------------
 
