@@ -331,7 +331,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
             ++ show ln ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
-            dg1 <- liftR $ anaItemNamesOrMaps libenv' ln dg' dg0 items
+            dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 items
             return (itm, dg1, libenv')
           else liftR $ mkError ("downloaded library '" ++ show ln'
             ++ "' does not match library name") $ getLibId ln
