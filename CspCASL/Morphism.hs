@@ -18,7 +18,7 @@ module CspCASL.Morphism
     , emptyCspAddMorphism
     , cspAddMorphismUnion
     , composeCspAddMorphism
-    , shortCspAddMorphismToSymbMap
+    , cspAddMorphismToSymbMap
     , makeChannelNameSymbol
     , makeProcNameSymbol
     , mapSen
@@ -137,11 +137,6 @@ cspAddMorphismToSymbMap sig mor =
          $ channelMap mor) Map.empty $ Map.keys $ chans sig)
   $ Map.keys $ procSet sig
 
--- | symbol map without identity mappings
-shortCspAddMorphismToSymbMap :: CspSign -> CspAddMorphism -> SymbolMap
-shortCspAddMorphismToSymbMap s =
-   Map.filterWithKey (/=) . cspAddMorphismToSymbMap s
-
 -- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where
   pretty m = pretty $ Map.union
@@ -161,7 +156,7 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       inverseMorphismExtension = inverseCspAddMorphism
       isInclusionMorphismExtension m =
         Map.null (channelMap m) && Map.null (processMap m)
-      morphismToSymbolMapExtension = shortCspAddMorphismToSymbMap
+      morphismToSymbolMapExtension = cspAddMorphismToSymbMap
 
 -- Application of morhisms to sentences
 

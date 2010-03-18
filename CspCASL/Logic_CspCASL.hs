@@ -79,7 +79,7 @@ instance Show a => Sentences (GenCspCASL a)
       parse_sentence (GenCspCASL _) = Nothing
       sym_of (GenCspCASL _) = allSymOf CspCASL_Morphism.cspSymOf
       symmap_of (GenCspCASL _) =
-         extMorphismToSymbMap CspCASL_Morphism.shortCspAddMorphismToSymbMap
+         extMorphismToSymbMap CspCASL_Morphism.cspAddMorphismToSymbMap
       sym_name (GenCspCASL _) = symName
       simplify_sen (GenCspCASL _) = SimplifySen.simplifySen
 
