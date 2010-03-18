@@ -25,8 +25,11 @@ import Static.GTheory
 import Common.Result
 import Common.ExtSign
 import Common.Id
+import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
+
+import Driver.Options (rmSuffix)
 
 import OMDoc.DataTypes
 
@@ -101,16 +104,6 @@ lookupWithInsert lid sig sens s@(SpecSymNames m) k =
 proj2 :: a -> b -> b
 proj2 _ y = y
 
--- | map with accumulator and combine function
-mapWithAC :: (Monad m) => (a -> b -> c) -> (s -> a -> m (s, b))
-          -> s -> [a] -> m (s, [c])
-mapWithAC _  _ s []        =  return (s, [])
-mapWithAC g f s (x:xs) = do
-  (s', y) <- f s x
-  (s'',ys) <- mapWithAC g f s' xs
-  return (s'', g x y:ys)
-
-
 -- | Translates the given LibEnv to a list of OMDocs. If the first argument
 --   is false only the DG to the given LibName is translated and returned.
 exportLibEnv :: Bool -> LibName -> LibEnv -> Result [(LibName, OMDoc)]
@@ -118,14 +111,14 @@ exportLibEnv b ln le =
     let im = emptySSN
         cmbnF (x,_) y = (x,y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
-    in mapWithAC cmbnF (exportDGraph le) im inputList >>= return . snd
-
+    in mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
 
 -- | DGraph to OMDoc translation
 exportDGraph :: LibEnv -> OMEnv -> (LibName, DGraph) -> Result (OMEnv, OMDoc)
 exportDGraph le s (ln,dg) = do
-  (s', theories) <- mapWithAC proj2 (exportNodeLab le ln dg) s $ labNodesDG dg
-  (s'', views) <- mapWithAC proj2 (exportLinkLab le ln dg) s' $ labEdgesDG dg
+  (s', theories) <- mapAccumLCM proj2 (exportNodeLab le ln dg) s
+                    $ topsortedNodes dg
+  (s'', views) <- mapAccumLCM proj2 (exportLinkLab le ln dg) s' $ labEdgesDG dg
   return (s'', OMDoc (show ln) $ (catMaybes theories) ++ (catMaybes views))
 
 
@@ -142,7 +135,7 @@ exportNodeLab le ln dg s (n, lb) =
                   nsens = toNamedList sens
                   (s', sigm@(SigMap nm _))
                       = lookupWithInsert lid sig nsens s (ln', sn)
-              (s'', imports) <- mapWithAC proj2
+              (s'', imports) <- mapAccumLCM proj2
                                 (makeImport le ln dg (lid, nm)) s' $ innDG dg n
               extra <- export_theoryToOmdoc lid sigm sig nsens
               -- create the OMDoc elements for the signature
@@ -330,7 +323,13 @@ sglElem s sa
 --------------------- Names and CDs ---------------------
 
 mkCD :: LibName -> LibName -> String -> OMCD
-mkCD lnCurrent ln sn = CD $ [sn] ++ if lnCurrent == ln then [] else [show ln]
+mkCD lnCurrent ln sn = CD $ [sn] ++ if lnCurrent == ln then [] else [getFP ln]
+
+
+getFP :: LibName -> String
+getFP ln = case getLibId ln of
+             IndirectLink p _ fp _ -> p ++ "-file://" ++ rmSuffix fp ++ ".omdoc"
+             _ -> error "getFilePath: DirectLinks not supported!"
 
 --------------------- Symbols and Sentences ---------------------
 

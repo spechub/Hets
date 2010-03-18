@@ -60,6 +60,7 @@ exportSenToOmdoc e f =
         _ -> let err = const $ error "CASL extension not supported."
              in return $ Right $ foldFormula (omdocRec e err) f
 
+-- | We have to export the subsort relation because it's not given in sentences
 exportTheoryToOmdoc :: (Show f, Pretty e) => SigMap Symbol -> Sign f e
                     -> [Named (FORMULA f)] -> Result [TCElement]
 
@@ -69,17 +70,11 @@ exportTheoryToOmdoc sigm sig _ =
 
 -------------------------- Sentences --------------------------
 
-prefixForST :: String
-prefixForST = uniqPrefix ++ "ST:"
-
-mkSTName :: String -> String -> String
-mkSTName a b = concat [prefixForST, a, uniqPrefix, b]
-
 subsortToOmdoc :: Env -> (SORT, SORT) -> TCElement
 subsortToOmdoc e (s1, s2) =
     let oms1@(OMS (_, (OMName n1 _))) = oms e s1
         oms2@(OMS (_, (OMName n2 _))) = oms e s2
-    in TCSymbol (mkSTName n1 n2)
+    in TCSymbol (nameEncode "ST" [n1, n2])
            (OMA [const_subsortof, oms1, oms2]) Axiom Nothing
 
 

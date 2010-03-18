@@ -12,7 +12,9 @@ Datatypes for an intermediate OMDoc Representation.
 -}
 module OMDoc.DataTypes where
 
+import Common.Utils
 import Common.Amalgamate
+import Data.List
 import qualified Data.Map as Map
 
 {-
@@ -139,7 +141,7 @@ data OMElement =
 type UniqName = (String, Int)
 type NameMap a = Map.Map a UniqName
 
--- | Mapping of symbols to unique ids
+-- | Mapping of symbols and sentence names to unique ids
 data SigMap a = SigMap (NameMap a) (NameMap String)
 
 symbMap :: SigMap a -> NameMap a
@@ -168,11 +170,21 @@ cdToMaybeList _ = [Nothing, Nothing]
 uniqPrefix :: String
 uniqPrefix = "%()%"
 
-prefixForOL :: String
-prefixForOL = uniqPrefix ++ "over:"
+nameEncode :: String -> [String] -> String
+nameEncode s l = concat [uniqPrefix, s, ":", intercalate uniqPrefix l]
+
+nameDecode :: String -> Maybe (String, [String])
+nameDecode s =
+    case stripPrefix uniqPrefix s of
+      Nothing -> Nothing
+      Just s' ->
+          let (kind, r) = break (==':') s'
+          in if null r
+             then error $ "nameDecode: missing colon in " ++ s
+             else Just (kind, splitByList uniqPrefix $ tail r)
 
 nameToString :: UniqName -> String
-nameToString (s,i) = if i > 0 then concat [prefixForOL, show i, "_", s]
+nameToString (s,i) = if i > 0 then nameEncode ("over:" ++ show i) [s]
                      else s
 
 ---------------------- Constructing Values ----------------------

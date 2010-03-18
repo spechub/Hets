@@ -261,7 +261,6 @@ instance Logic CASL CASL_Sublogics
          omdoc_metatheory CASL = Just caslMetaTheory
          export_senToOmdoc CASL = exportSenToOmdoc
          export_symToOmdoc CASL = exportSymToOmdoc
-         -- We have to export the subsort relation if not given in sentences
          export_theoryToOmdoc CASL = exportTheoryToOmdoc
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]

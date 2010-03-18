@@ -8,11 +8,10 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
 Given an OMDoc file, we transform it to a development graph by
-following also all library links and building the Environment in
-a topological order.
+following also all library links.
 -}
 
-module OMDoc.Import where
+module OMDoc.Import (anaOMDocFile, module Network.URI) where
 
 import Driver.Options
 
@@ -32,10 +31,13 @@ import Static.DevGraph
 -- import Static.GTheory
 
 -- import Data.Graph.Inductive.Graph
--- import Data.Maybe
+import Data.Maybe
 -- import Data.List
 -- import qualified Data.Map as Map
 -- import qualified Data.Set as Set
+import Control.Monad
+
+import Network.URI
 
 --import OMDoc.DataTypes
 import OMDoc.XmlInterface (xmlIn)
@@ -50,3 +52,4 @@ anaOMDocFile opts fp = do
   case mOmd of Just omd -> putIfVerbose opts 0 $ show $ length $ show omd
                Nothing -> putIfVerbose opts 0 $ "No omdoc!"
   return Nothing
+

@@ -29,6 +29,7 @@ import Data.List
 
 --import Debug.Trace
 
+import Common.Utils (splitBy)
 import Common.Result
 import Common.Id
 
@@ -75,11 +76,11 @@ el_omatp = toQNOM "OMATP"
 el_omv = toQNOM "OMV"
 el_oma = toQNOM "OMA"
 
-at_version, at_cd, at_name, at_meta, at_role, at_type, at_total
- , at_for, at_from, at_to, at_value, at_cdbase :: QName
+at_version, at_module, at_name, at_meta, at_role, at_type, at_total
+ , at_for, at_from, at_to, at_value, at_base :: QName
 
 at_version = toQN "version"
-at_cd = toQN "cd"
+at_module = toQN "module"
 at_name = toQN "name"
 at_meta = toQN "meta"
 at_role = toQN "role"
@@ -89,7 +90,7 @@ at_for = toQN "for"
 at_from = toQN "from"
 at_to = toQN "to"
 at_value = toQN "value"
-at_cdbase = toQN "cdbase"
+at_base = toQN "base"
 
 
 attr_om :: Attr
@@ -148,10 +149,6 @@ uriEncodeCDName omcd omname = uriEncodeCD omcd ++ "?" ++ encodeOMName omname
 uriEncodeCD :: OMCD -> String
 uriEncodeCD cd = let [x,y] = cdToList cd in concat [x, "?", y]
 
-splitBy :: Eq a => a -> [a] -> [[a]]
-splitBy c l = 
-    let (p, q) = break (c==) l in if null q then [p] else p:splitBy c (tail q)
-
 
 uriDecodeCD :: Show a => a -> String -> OMCD
 --uriDecodeCD x = traceShow x $ cdFromList . splitBy '?'
@@ -176,7 +173,7 @@ tripleEncodeOMS omcd omname
 
 pairEncodeCD :: OMCD -> [Attr]
 pairEncodeCD cd = let f x y = fmap (Attr x) y
-                  in catMaybes $ zipWith f [at_cdbase, at_cd]
+                  in catMaybes $ zipWith f [at_base, at_module]
                          $ cdToMaybeList cd
 
 pairDecodeCD :: String -> String -> OMCD
@@ -408,8 +405,8 @@ instance XmlRepresentable OMElement where
     fromXml e
         | elemIsOf e el_oms =
             let nm = missingMaybe "OMS" "name" $ findAttr at_name e
-                omcd = fromMaybe "" $ findAttr at_cd e
-                cdb = fromMaybe "" $ findAttr at_cdbase e
+                omcd = fromMaybe "" $ findAttr at_module e
+                cdb = fromMaybe "" $ findAttr at_base e
             in justReturn $ OMS (pairDecodeCD omcd cdb, decodeOMName nm)
         | elemIsOf e el_omv =
             let nm = missingMaybe "OMV" "name" $ findAttr at_name e
