@@ -34,7 +34,7 @@ import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
 #ifdef UNI_PACKAGE
-import VSE.Prove(vse)
+import VSE.Prove (vse)
 #endif
 import Logic.Logic
 
@@ -102,7 +102,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
            . inducedFromMorphismExt inducedExt (constMorphExt emptyMorExt) rm
          induced_from_to_morphism VSE rm s1 = fmap correctTarget
            . inducedFromToMorphismExt inducedExt (constMorphExt emptyMorExt)
-             isSubProcsMap diffProcs rm s1
+             (\ _ _ _ -> return emptyMorExt) isSubProcsMap diffProcs rm s1
 
 instance Logic VSE ()
                VSEBasicSpec Sentence SYMB_ITEMS SYMB_MAP_ITEMS

@@ -150,11 +150,11 @@ sortFun rmap s
           return $ rawSymName $ Set.findMin rsys -- take the unique rsy
   | otherwise = plain_error s  -- ambiguity! generate an error
                  ("sort " ++ showId s
-                  " is mapped ambiguously: "  ++ showDoc rsys "")
+                  " is mapped ambiguously: " ++ showDoc rsys "")
                  $ getRange rsys
     where
     -- get all raw symbols to which s is mapped to
-    rsys = Set.fromList $ mapMaybe (flip Map.lookup rmap)
+    rsys = Set.fromList $ mapMaybe (`Map.lookup` rmap)
                [ ASymbol $ idToSortSymbol s
                , AKindedSymb Implicit s ]
 
@@ -218,7 +218,7 @@ mappedOpSym sort_Map ide ot rsy =
            else plain_error (ide, kind)
              (opSym ++ "type " ++ showDoc ot'
               " but should be mapped to type " ++
-              showDoc (mapOpType sort_Map ot)"") $ getRange rsy
+              showDoc (mapOpType sort_Map ot) "") $ getRange rsy
       AKindedSymb k ide' | elem k [Implicit, Ops_kind] -> return (ide', kind)
       _ -> plain_error (ide, kind)
                (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
@@ -375,21 +375,25 @@ inducedFromToMorphism :: (Eq e, Show f, Pretty e, Pretty m)
                       -> RawSymbolMap
                       -> ExtSign (Sign f e) Symbol
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphism =
-  inducedFromToMorphismExt (\ _ _ _ _ -> extendedInfo) . constMorphExt
+inducedFromToMorphism m =
+  inducedFromToMorphismExt (\ _ _ _ _ -> extendedInfo) (constMorphExt m)
+  (\ _ _ _ -> return m)
 
-inducedFromToMorphismExt :: (Eq e, Show f, Pretty e, Pretty m)
-                      => InducedSign f e m e
-                      -> InducedMorphism e m -- ^ compute extended morphism
-                      -> (e -> e -> Bool) -- ^ subsignature test of extensions
-                      -> (e -> e -> e) -- ^ difference of extensions
-                      -> RawSymbolMap
-                      -> ExtSign (Sign f e) Symbol
-                      -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphismExt extInd extEm isSubExt diffExt rmap sig1@(ExtSign _ sy1)
-  sig2@(ExtSign _ sy2) =
-    let iftm rm = (inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt
-                   rm sig1 sig2, rm)
+inducedFromToMorphismExt
+  :: (Eq e, Show f, Pretty e, Pretty m)
+  => InducedSign f e m e
+  -> InducedMorphism e m -- ^ compute extended morphism
+  -> (e -> m -> m -> Result m) -- ^ composition of extensions
+  -> (e -> e -> Bool) -- ^ subsignature test of extensions
+  -> (e -> e -> e) -- ^ difference of extensions
+  -> RawSymbolMap
+  -> ExtSign (Sign f e) Symbol
+  -> ExtSign (Sign f e) Symbol
+  -> Result (Morphism f e m)
+inducedFromToMorphismExt extInd extEm compM isSubExt diffExt rmap
+  sig1@(ExtSign _ sy1) sig2@(ExtSign _ sy2) =
+    let iftm rm = (inducedFromToMorphismAuxExt extInd extEm compM isSubExt
+                   diffExt rm sig1 sig2, rm)
         isOk = isJust . resultToMaybe
         res = fst $ iftm rmap
         pos = concatMapRange getRange $ Map.keys rmap
@@ -435,15 +439,18 @@ filteredPairs :: (a -> b -> Bool) -> [a] -> [b] -> [[(a, b)]]
 filteredPairs p s l = sequence [[(a, b) | b <- filter (p a) l] | a <- s]
 -- http://www.haskell.org/pipermail/haskell-cafe/2009-December/069957.html
 
-inducedFromToMorphismAuxExt :: (Eq e, Show f, Pretty e, Pretty m)
-                      => InducedSign f e m e
-                      -> InducedMorphism e m -- ^ compute extended morphism
-                      -> (e -> e -> Bool) -- ^ subsignature test of extensions
-                      -> (e -> e -> e) -- ^ difference of extensions
-                      -> RawSymbolMap
-                      -> ExtSign (Sign f e) Symbol
-                      -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
-inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt rmap
+inducedFromToMorphismAuxExt
+  :: (Eq e, Show f, Pretty e, Pretty m)
+  => InducedSign f e m e
+  -> InducedMorphism e m -- ^ compute extended morphism
+  -> (e -> m -> m -> Result m) -- ^ composition of extensions
+  -> (e -> e -> Bool) -- ^ subsignature test of extensions
+  -> (e -> e -> e) -- ^ difference of extensions
+  -> RawSymbolMap
+  -> ExtSign (Sign f e) Symbol
+  -> ExtSign (Sign f e) Symbol
+  -> Result (Morphism f e m)
+inducedFromToMorphismAuxExt extInd extEm compM isSubExt diffExt rmap
   (ExtSign sigma1 _) (ExtSign sigma2 _) = do
   -- 1. use rmap to get a renaming...
   mor1 <- inducedFromMorphismExt extInd extEm rmap sigma1
@@ -452,7 +459,7 @@ inducedFromToMorphismAuxExt extInd extEm isSubExt diffExt rmap
       em = extended_map mor1
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
-   then composeM (\ _ _ -> return em) mor1 $ idOrInclMorphism
+   then composeM (compM $ extendedInfo $ msource mor1) mor1 $ idOrInclMorphism
      $ embedMorphism em inducedSign sigma2
      -- here the empty mapping should be used, but it will be overwritten
      -- by the first argument of composeM
@@ -510,7 +517,7 @@ generatedSign extEm sys sigma =
     , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
 
 revealSym :: Symbol -> Sign f e -> Sign f e
-revealSym sy sigma1 = case symbType sy of  -- 4.1.
+revealSym sy sigma1 = case symbType sy of
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
@@ -558,7 +565,7 @@ cogeneratedSign extEm symset sigma =
   where
   symset0 = symOf sigma   -- 1.
   symset1 = Set.fold revealSym' symset0 symset  -- 3.
-  revealSym' sy symset1' = case symbType sy of  -- 3.1.
+  revealSym' sy symset1' = case symbType sy of
     SortAsItemType ->      -- 3.1.1.
       Set.filter (not . profileContains (symName sy) . symbType)
         $ Set.delete sy symset1'
@@ -566,7 +573,7 @@ cogeneratedSign extEm symset sigma =
       Set.delete sy symset1'
     PredAsItemType _ ->   -- 3.1.2
       Set.delete sy symset1'
-    _ ->  symset1'
+    _ -> symset1'
   profileContains s symbT = elem s $ case symbT of
     OpAsItemType ot -> opRes ot : opArgs ot
     PredAsItemType pt -> predArgs pt
@@ -605,7 +612,7 @@ finalUnion addSigExt s1 s2 =
          ++ show (prM "op" d2 $+$ prM "pred" e2)
 
 listOfSetDiff :: Ord a => Bool -> [(Set.Set a, [Set.Set a], Bool)]
-              -> [Set.Set a]-> Maybe [(Set.Set a, [Set.Set a], Bool)]
+              -> [Set.Set a] -> Maybe [(Set.Set a, [Set.Set a], Bool)]
 listOfSetDiff b rl1 l2 = let
   fst3 (s, _, _) = s
   l1 = map fst3 rl1 in
@@ -618,7 +625,7 @@ listOfSetDiff b rl1 l2 = let
            [] -> case find sIn l2 of
              Nothing -> error "CASL.finalUnion.listOfSetDiff1"
              Just s2 -> (if elem s2 $ map fst3 l then l else
-                         (s2, filter (flip Set.isSubsetOf s2) l1, b) : l, r)
+                         (s2, filter (`Set.isSubsetOf` s2) l1, b) : l, r)
            [_] -> (l, r2)
            _ -> error "CASL.finalUnion.listOfSetDiff2")
   ([], l2) l1

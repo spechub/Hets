@@ -186,6 +186,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphismExt
           (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
           inducedCspMorphExt
+          CspCASL_Morphism.composeCspAddMorphism
           SignCSP.isCspSubSign
           SignCSP.diffCspProcSig
       morphism_union (GenCspCASL _) =

@@ -17,6 +17,7 @@ module CspCASL.Morphism
     , CspAddMorphism (..)
     , emptyCspAddMorphism
     , cspAddMorphismUnion
+    , composeCspAddMorphism
     , shortCspAddMorphismToSymbMap
     , makeChannelNameSymbol
     , makeProcNameSymbol
