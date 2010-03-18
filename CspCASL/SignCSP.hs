@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Id$
 Description :  CspCASL signatures
@@ -9,15 +10,12 @@ Stability   :  provisional
 Portability :  portable
 
 signatures for CSP-CASL
-
 -}
-
--- todo:  implement isInclusion, computeExt
 
 module CspCASL.SignCSP where
 
 import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME,
-    PROCESS(..), CommAlpha, CommType(..), TypedChanName(..))
+    PROCESS (..), CommAlpha, CommType (..), TypedChanName (..))
 
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
@@ -118,7 +116,7 @@ ccSig2CASLSign sigma = sigma { extendedInfo = () }
 
 -- | Projection from CspCASL signature to Csp signature
 ccSig2CspSign :: CspCASLSign -> CspSign
-ccSig2CspSign sigma = extendedInfo sigma
+ccSig2CspSign = extendedInfo
 
 -- | Empty CspCASL signature.
 emptyCspCASLSign :: CspCASLSign
@@ -129,23 +127,22 @@ emptyCspSign :: CspSign
 emptyCspSign = CspSign
     { chans = Map.empty
     , procSet = Map.empty
-    , ccSentences =[]
+    , ccSentences = []
     }
 
 -- | Compute union of two CSP process signatures.
 addCspProcSig :: CspSign -> CspSign -> CspSign
-addCspProcSig a b =
-    CspSign { chans = chans a `Map.union` chans b
-            , procSet = procSet a `Map.union` procSet b
-            , ccSentences = ccSentences a ++ ccSentences b
-      }
+addCspProcSig a b = emptyCspSign
+  { chans = chans a `Map.union` chans b
+  , procSet = procSet a `Map.union` procSet b
+  }
 
 -- | Compute difference of two CSP process signatures.
 diffCspProcSig :: CspSign -> CspSign -> CspSign
-diffCspProcSig a b =
-    CspSign { chans = chans a `Map.difference` chans b
-            , procSet = procSet a `Map.difference` procSet b
-            }
+diffCspProcSig a b = emptyCspSign
+  { chans = chans a `Map.difference` chans b
+  , procSet = procSet a `Map.difference` procSet b
+  }
 
 -- | Is one Csp Signature a sub signature of another
 isCspSubSign :: CspSign -> CspSign -> Bool
@@ -162,11 +159,11 @@ printCspSign :: CspSign -> Doc
 printCspSign sigma =
     chan_part $+$ proc_part
         where chan_part =
-                  case (Map.size $ chans sigma) of
+                  case Map.size $ chans sigma of
                     0 -> empty
-                    1 -> (keyword channelS) <+> printChanNameMap (chans sigma)
-                    _ -> (keyword channelsS) <+> printChanNameMap (chans sigma)
-              proc_part = (keyword processS) <+>
+                    s -> keyword (if s > 1 then channelsS else channelS)
+                         <+> printChanNameMap (chans sigma)
+              proc_part = keyword processS <+>
                           printProcNameMap (procSet sigma)
 
 -- | Pretty printing for channel name maps
@@ -177,7 +174,7 @@ printChanNameMap :: ChanNameMap -> Doc
 printChanNameMap chanMap =
     vcat $ punctuate semi $ map printChan $ Map.toList chanMap
         where printChan (chanName, sort) =
-                  (pretty chanName) <+> colon <+> (pretty sort)
+                  pretty chanName <+> colon <+> pretty sort
 
 -- | Pretty printing for process name maps
 instance Pretty ProcNameMap where
@@ -187,7 +184,7 @@ printProcNameMap :: ProcNameMap -> Doc
 printProcNameMap procNameMap =
     vcat $ punctuate semi $ map printProcName $ Map.toList procNameMap
     where printProcName (procName, procProfile) =
-              (pretty procName) <+> pretty procProfile
+              pretty procName <+> pretty procProfile
 
 -- | Pretty printing for process profiles
 instance Pretty ProcProfile where
@@ -195,7 +192,7 @@ instance Pretty ProcProfile where
 
 printProcProfile :: ProcProfile -> Doc
 printProcProfile (ProcProfile sorts commAlpha) =
-    printArgs sorts <+> colon <+> (ppWithCommas $ Set.toList commAlpha)
+    printArgs sorts <+> colon <+> ppWithCommas (Set.toList commAlpha)
     where printArgs [] = empty
           printArgs args = parens $ ppWithCommas args
 
@@ -218,11 +215,11 @@ data CspCASLSen
 instance GetRange CspCASLSen
 
 instance Pretty CspCASLSen where
-    pretty(CASLSen f) = pretty f
-    pretty(ProcessEq pn varList commAlpha proc) =
-        let varDoc = if (null varList)
+    pretty (CASLSen f) = pretty f
+    pretty (ProcessEq pn varList _commAlpha proc) =
+        let varDoc = if null varList
                      then empty
-                     else parens $ sepByCommas $ map pretty varList
+                     else parens $ ppWithCommas varList
         in pretty pn <+> varDoc <+> equals <+> pretty proc
 
 -- | Empty CspCASL sentence

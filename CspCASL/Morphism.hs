@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Symbols and signature morphisms for the CspCASL logic
@@ -13,9 +14,10 @@ Symbols and signature morphisms for the CspCASL logic
 
 module CspCASL.Morphism
     ( CspMorphism
-    , CspAddMorphism(..)
+    , CspAddMorphism (..)
     , emptyCspAddMorphism
     , cspAddMorphismUnion
+    , shortCspAddMorphismToSymbMap
     , makeChannelNameSymbol
     , makeProcNameSymbol
     , mapSen
@@ -24,7 +26,7 @@ module CspCASL.Morphism
     , inducedCspMorphExt
     ) where
 
-import CASL.AS_Basic_CASL (FORMULA, TERM, SYMB_KIND(..))
+import CASL.AS_Basic_CASL (FORMULA, TERM, SYMB_KIND (..))
 import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
@@ -103,7 +105,7 @@ inverseCspAddMorphism cm = do
     , processMap = Map.fromList $ swap prL }
 
 -- | A CspMorphism is a CASL Morphism with the extended_map to be a
---   CspAddMorphism.
+-- CspAddMorphism.
 type CspMorphism = CASL_Morphism.Morphism () CspSign CspAddMorphism
 
 -- | The empty CspAddMorphism.
@@ -118,12 +120,28 @@ emptyCspAddMorphism =
                    }
 
 -- | Dont know if this is implemented correctly. If m1 and m2 have the same
---   channel or process maps then m1's are taken. BUG?
+-- channel or process maps then m1's are taken. BUG?
 cspAddMorphismUnion :: CspAddMorphism -> CspAddMorphism -> CspAddMorphism
 cspAddMorphismUnion m1 m2 =
     CspAddMorphism { channelMap = Map.union (channelMap m1) (channelMap m2)
                    , processMap = Map.union (processMap m1) (processMap m2)
                    }
+
+-- | create a symbol map from the additional csp entities.
+cspAddMorphismToSymbMap :: CspSign -> CspAddMorphism -> SymbolMap
+cspAddMorphismToSymbMap sig mor =
+  foldr (\ p -> Map.insert (makeProcNameSymbol p)
+         . makeProcNameSymbol . Map.findWithDefault p p
+         $ processMap mor)
+  (foldr (\ c -> Map.insert (makeChannelNameSymbol c)
+         . makeChannelNameSymbol . Map.findWithDefault c c
+         $ channelMap mor) Map.empty $ Map.keys $ chans sig)
+  $ Map.keys $ procSet sig
+
+-- | symbol map without identity mappings
+shortCspAddMorphismToSymbMap :: CspSign -> CspAddMorphism -> SymbolMap
+shortCspAddMorphismToSymbMap s =
+   Map.filterWithKey (/=) . cspAddMorphismToSymbMap s
 
 -- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where
@@ -145,8 +163,8 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
 -- | Apply a Signature Morphism to a CspCASL Sentence
 mapSen :: CspMorphism -> CspCASLSen -> Result CspCASLSen
 mapSen mor sen =
-    if (CASL_Morphism.isInclusionMorphism
-                     CASL_Morphism.isInclusionMorphismExtension) mor
+    if CASL_Morphism.isInclusionMorphism
+       CASL_Morphism.isInclusionMorphismExtension mor
     then return sen
     else case sen of
            CASLSen caslSen ->
@@ -163,13 +181,13 @@ mapSen mor sen =
 
 -- | Apply a signature morphism  to a Fully Qualified Process Variable List
 mapFQProcVarList :: CspMorphism -> FQProcVarList -> FQProcVarList
-mapFQProcVarList mor fqVarList =
+mapFQProcVarList mor =
     -- As these are terms, just map the morphism over CASL TERMs
-    map (mapCASLTerm mor) fqVarList
+    map (mapCASLTerm mor)
 
 -- | Apply a signature morphism  to a CommAlpha
 mapCommAlpha :: CspMorphism -> CommAlpha -> CommAlpha
-mapCommAlpha mor commAlpha = Set.map (mapCommType mor) commAlpha
+mapCommAlpha mor = Set.map (mapCommType mor)
 
 -- | Apply a signature morphism to a CommType
 mapCommType :: CspMorphism -> CommType -> CommType
@@ -187,7 +205,6 @@ mapProc mor proc =
         mapCASLTerm' = mapCASLTerm mor
         mapCASLFormula' = mapCASLFormula mor
     in case proc of
-         --
          Skip r -> Skip r
          Stop r -> Stop r
          Div r -> Div r
@@ -213,7 +230,7 @@ mapProc mor proc =
          ConditionalProcess f p q r ->
              ConditionalProcess (mapCASLFormula' f)
                                     (mapProc' p) (mapProc' q) r
-         NamedProcess pn fqParams  r ->
+         NamedProcess pn fqParams r ->
              NamedProcess (mapProcessName' pn) (map mapCASLTerm' fqParams) r
          FQProcess p commAlpha r ->
              FQProcess (mapProc' p) (mapCommAlpha' commAlpha) r
@@ -278,20 +295,20 @@ mapRenaming mor re =
       FQRenaming rs -> FQRenaming $ map (mapCASLTerm mor) rs
 
 -- | Apply a signature morphism to a CASL TERM (for CspCASL only, i.e. a CASL
---   TERM that appears in CspCASL).
+-- TERM that appears in CspCASL).
 mapCASLTerm :: CspMorphism -> TERM () -> TERM ()
-mapCASLTerm mor t =
+mapCASLTerm =
     -- The error here is not used. It is a function to map over the morphism,
     -- CspCASL does not use this functionality.
-    CASL_MapSen.mapTerm (error "CspCASL.Morphism.mapCASLTerm") mor t
+    CASL_MapSen.mapTerm (error "CspCASL.Morphism.mapCASLTerm")
 
 -- | Apply a signature morphism to a CASL FORMULA (for CspCASL only, i.e. a CASL
---   FORMULA that appears in CspCASL).
+-- FORMULA that appears in CspCASL).
 mapCASLFormula :: CspMorphism -> FORMULA () -> FORMULA ()
-mapCASLFormula mor f =
+mapCASLFormula =
     -- The error here is not used. It is a function to map over the morphism,
     -- CspCASL does not use this functionality.
-    CASL_MapSen.mapSen (error "CspCASL.Morphism.mapCASLFormula") mor f
+    CASL_MapSen.mapSen (error "CspCASL.Morphism.mapCASLFormula")
 
 -- | Apply a signature morphism to a channel name
 mapChannelName :: CspMorphism -> CHANNEL_NAME -> CHANNEL_NAME

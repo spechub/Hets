@@ -12,16 +12,17 @@ Here is the place where the class Logic is instantiated for CspCASL.  A
 CspCASL signature is a CASL signature with a set of named channels and
 processes. Every process has a profile. Morphisms are supposed to allow
 renaming of channels and processes, too. Also sublogics (as a superset of some
-CASL sublogics) are still missing.  -}
+CASL sublogics) are still missing.
+-}
 
 module CspCASL.Logic_CspCASL
-  ( GenCspCASL(..)
+  ( GenCspCASL (..)
   , CspCASLSemantics
   , CspCASL
   , cspCASL
-  , Trace(..)
+  , Trace (..)
   , traceCspCASL
-  , Failure(..)
+  , Failure (..)
   , failureCspCASL
   ) where
 
@@ -36,7 +37,7 @@ import CASL.SymbolParser
 import CASL.SymbolMapAnalysis
 
 import qualified CspCASL.AS_CspCASL as AS_CspCASL
-import qualified CspCASL.ATC_CspCASL()
+import qualified CspCASL.ATC_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import CspCASL.Morphism as CspCASL_Morphism
 import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
@@ -45,7 +46,7 @@ import qualified CspCASL.SignCSP as SignCSP
 import qualified CspCASL.SimplifySen as SimplifySen
 import qualified CspCASL.StatAnaCSP as StatAnaCSP
 
-import CspCASLProver.CspCASLProver(cspCASLProver)
+import CspCASLProver.CspCASLProver (cspCASLProver)
 
 -- | a generic logic id for CspCASL with different semantics
 data GenCspCASL a = GenCspCASL a deriving Show
@@ -60,7 +61,7 @@ instance Show a => Language (GenCspCASL a) where
       language_name (GenCspCASL a) = "CspCASL"
         ++ let s = show a in if s == "()" then "" else '_' : s
       description _ =
-        "CspCASL - see\n\n"++
+        "CspCASL - see\n\n" ++
         "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
 instance SignExtension SignCSP.CspSign where
@@ -80,7 +81,8 @@ instance Show a => Sentences (GenCspCASL a)
       map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
       parse_sentence (GenCspCASL _) = Nothing
       sym_of (GenCspCASL _) = CspCASL_Morphism.symOf
-      symmap_of (GenCspCASL _) = morphismToSymbMap
+      symmap_of (GenCspCASL _) =
+         extMorphismToSymbMap CspCASL_Morphism.shortCspAddMorphismToSymbMap
       sym_name (GenCspCASL _) = symName
       simplify_sen (GenCspCASL _) = SimplifySen.simplifySen
 
@@ -101,14 +103,15 @@ instance Show a => Syntax (GenCspCASL a)
 
 class Show a => CspCASLSemantics a where
   cspProvers :: a
-    -> [Prover SignCSP.CspCASLSign SignCSP.CspCASLSen CspCASL_Morphism.CspMorphism () ()]
+    -> [Prover SignCSP.CspCASLSign SignCSP.CspCASLSen
+        CspCASL_Morphism.CspMorphism () ()]
   cspProvers _ = []
 
 {- further dummy types for the trace of the failure semantics can be added
    and made an instance of CspCASLSemantics.
    "identity" Comorphisms between these different logics still need to be
    defined.
- -}
+-}
 
 instance CspCASLSemantics ()
 
@@ -175,9 +178,9 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       symbol_to_raw (GenCspCASL _) = symbolToRaw
       matches (GenCspCASL _) = CASL.Morphism.matches
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
-      is_subsig (GenCspCASL _) = isSubSig SignCSP.isCspSubSign -- BUG???
+      is_subsig (GenCspCASL _) = isSubSig SignCSP.isCspSubSign
       subsig_inclusion (GenCspCASL _) =
-          sigInclusion CspCASL_Morphism.emptyCspAddMorphism -- BUG???
+          sigInclusion CspCASL_Morphism.emptyCspAddMorphism
       signature_union (GenCspCASL _) s =
           return . addSig SignCSP.addCspProcSig s
       induced_from_morphism (GenCspCASL _) = inducedFromMorphismExt
@@ -191,4 +194,3 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion
                         SignCSP.cspSignUnion
-
