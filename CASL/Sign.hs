@@ -72,7 +72,7 @@ type CASLSign = Sign () ()
 {- | the data type for the basic static analysis to accumulate variables,
 sentences, symbols, diagnostics and annotations, that are removed or ignored
 when looking at signatures from outside, i.e. during logic-independent
-processing.  -}
+processing. -}
 data Sign f e = Sign
     { sortSet :: Set.Set SORT
     , emptySortSet :: Set.Set SORT
@@ -118,6 +118,8 @@ emptySign e = Sign
 
 class SignExtension e where
     isSubSignExtension :: e -> e -> Bool
+    symOfExtension :: e -> Set.Set Symbol
+    symOfExtension _ = Set.empty
 
 instance SignExtension () where
     isSubSignExtension _ _ = True
@@ -186,7 +188,7 @@ printSign fE s = let
     (if Set.null esorts then empty else text (esortS ++ sS) <+>
        sepByCommas (map idDoc (Set.toList esorts))) $+$
     (if Rel.null srel then empty
-      else text (sortS++sS) <+>
+      else text (sortS ++ sS) <+>
        fsep (punctuate semi $
           map (fsep . punctuate (space <> equals) . map pretty)
            (filter ((> 1) . length) $ map Set.toList cs)
@@ -243,7 +245,7 @@ mkTotal o = o { opKind = Total }
 makePartial :: Set.Set OpType -> Set.Set OpType
 makePartial = Set.mapMonotonic mkPartial
 
---  | remove (True) or add (False) partial op if it is included as total
+-- | remove (True) or add (False) partial op if it is included as total
 rmOrAddParts :: Bool -> Set.Set OpType -> Set.Set OpType
 rmOrAddParts b s =
   let t = makePartial $ Set.filter ((== Total) . opKind) s
@@ -264,7 +266,7 @@ interOpMapSet m = Map.filter (not . Set.null)
    $ rmOrAddParts False t) m
 
 uniteCASLSign :: Sign () () -> Sign () () -> Sign () ()
-uniteCASLSign = addSig (\_ _ -> ())
+uniteCASLSign = addSig (\ _ _ -> ())
 
 nonEmptySortSet :: Sign f e -> Set.Set Id
 nonEmptySortSet s = Set.difference (sortSet s) $ emptySortSet s
@@ -391,7 +393,7 @@ addSubsortOrIso b super sub = do
   if super == sub then addDiags [mkDiag Warning "void reflexive subsort" sub]
     else if b then
       if Rel.path super sub r then
-        if  Rel.path sub super r
+        if Rel.path sub super r
         then addDiags [Diag Warning ("sorts are isomorphic" ++ rel) p]
         else addDiags [Diag Warning ("added subsort cycle by" ++ rel) p]
       else when (Rel.path sub super r)
@@ -406,7 +408,7 @@ addSubsortOrIso b super sub = do
            showDoc sub "' made isomorphic by" ++ rel) p]
 
 closeSubsortRel :: State.State (Sign f e) ()
-closeSubsortRel=
+closeSubsortRel =
     do e <- State.get
        State.put e { sortRel = Rel.transClosure $ sortRel e }
 

@@ -21,7 +21,7 @@ module CspCASL.Morphism
     , makeChannelNameSymbol
     , makeProcNameSymbol
     , mapSen
-    , CspCASL.Morphism.symOf
+    , cspSymOf
     , inducedCspSign
     , inducedCspMorphExt
     ) where
@@ -54,17 +54,15 @@ processNameSymbType :: SymbType
 processNameSymbType = OtherTypeKind processS
 
 -- | Calculate the set of symbols for a CspCASL signature
-symOf :: CspCASLSign -> Set.Set Symbol
-symOf sigma =
-    let caslSymbols = CASL_Morphism.symOf sigma -- Get CASL symbols
-        cspExt = extendedInfo sigma
-        chanNames = Map.keysSet (chans cspExt) -- Get the channel names
+cspSymOf :: CspSign -> Set.Set Symbol
+cspSymOf cspExt =
+    let chanNames = Map.keysSet (chans cspExt) -- Get the channel names
         procNames = Map.keysSet (procSet cspExt) -- Get the process names
         -- Make channel symbols from names
         chanNameSymbols = Set.map makeChannelNameSymbol chanNames
         -- Make process name symbols from names
         procNameSymbols = Set.map makeProcNameSymbol procNames
-    in Set.unions [caslSymbols, chanNameSymbols, procNameSymbols]
+    in Set.union chanNameSymbols procNameSymbols
 
 -- | Make a symbol form a channel name
 makeChannelNameSymbol :: CHANNEL_NAME -> Symbol
@@ -149,6 +147,11 @@ instance Pretty CspAddMorphism where
              (Map.mapKeys makeChannelNameSymbol $ channelMap m)
              $ Map.mapKeys makeProcNameSymbol $ processMap m
 
+-- | Instance for CspCASL signature extension
+instance SignExtension CspSign where
+  isSubSignExtension = isCspSubSign
+  symOfExtension = cspSymOf
+
 -- | Instance for CspCASL morphism extension (used for Category)
 instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
     where
@@ -157,6 +160,7 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       inverseMorphismExtension = inverseCspAddMorphism
       isInclusionMorphismExtension m =
         Map.null (channelMap m) && Map.null (processMap m)
+      morphismToSymbolMapExtension = shortCspAddMorphismToSymbMap
 
 -- Application of morhisms to sentences
 

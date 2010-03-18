@@ -64,9 +64,6 @@ instance Show a => Language (GenCspCASL a) where
         "CspCASL - see\n\n" ++
         "http://www.cs.swan.ac.uk/~csmarkus/ProcessesAndData/"
 
-instance SignExtension SignCSP.CspSign where
-  isSubSignExtension = SignCSP.isCspSubSign
-
 -- | Instance of Sentences for CspCASL
 instance Show a => Sentences (GenCspCASL a)
     -- sentence
@@ -80,7 +77,7 @@ instance Show a => Sentences (GenCspCASL a)
     where
       map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
       parse_sentence (GenCspCASL _) = Nothing
-      sym_of (GenCspCASL _) = CspCASL_Morphism.symOf
+      sym_of (GenCspCASL _) = allSymOf CspCASL_Morphism.cspSymOf
       symmap_of (GenCspCASL _) =
          extMorphismToSymbMap CspCASL_Morphism.shortCspAddMorphismToSymbMap
       sym_name (GenCspCASL _) = symName

@@ -150,7 +150,6 @@ isCspSubSign a b =
     chans a `Map.isSubmapOf` chans b &&
     procSet a `Map.isSubmapOf` procSet b
 
-
 -- | Pretty printing for CspCASL signatures
 instance Pretty CspSign where
   pretty = printCspSign
