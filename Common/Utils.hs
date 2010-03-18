@@ -25,9 +25,12 @@ module Common.Utils
   , nubOrdOn
   , readMaybe
   , mapAccumLM
+  , mapAccumLCM
   , composeMap
   , keepMins
   , splitOn
+  , splitBy
+  , splitByList
   , basename
   , dirname
   , fileparse
@@ -136,6 +139,16 @@ mapAccumLM f s l = case l of
     (s'', ys) <- mapAccumLM f s' xs
     return (s'', y : ys)
 
+-- | generalization of mapAccumL to monads with combine function
+mapAccumLCM :: (Monad m) => (a -> b -> c) -> (acc -> a -> m (acc, b))
+          -> acc -> [a] -> m (acc, [c])
+mapAccumLCM _  _ s []        =  return (s, [])
+mapAccumLCM g f s (x:xs) = do
+  (s', y) <- f s x
+  (s'',ys) <- mapAccumLCM g f s' xs
+  return (s'', g x y:ys)
+
+
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
 composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
@@ -162,6 +175,24 @@ splitOn :: Eq a => a -- ^ seperator
         -> [[a]]
 splitOn x xs = let (l, r) = break (== x) xs in
     (if null l then [] else [l]) ++ (if null r then [] else splitOn x $ tail r)
+
+{- |
+  Same as splitOn but empty lists are kept. Even the empty list is split into
+  a singleton list containing the empty list.
+-}
+splitBy :: Eq a => a -- ^ seperator
+        -> [a] -- ^ list to split
+        -> [[a]]
+splitBy c l = 
+    let (p, q) = break (c==) l in if null q then [p] else p:splitBy c (tail q)
+
+-- | Same as splitBy but the seperator is a sublist not only one element.
+splitByList :: Eq a => [a] -> [a] -> [[a]]
+splitByList sep l = split' [] [] l where
+    split' acc bag [] = bag ++ [acc]
+    split' acc bag l'@(x:xs) = case stripPrefix sep l' of
+                                 Nothing -> split' (acc++[x]) bag xs
+                                 Just l'' -> split' [] (bag++[acc]) l''
 
 {- |
   A function inspired by a perl function from the standard perl-module
