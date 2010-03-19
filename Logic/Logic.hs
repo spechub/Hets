@@ -606,7 +606,8 @@ class (StaticAnalysis lid
          export_theoryToOmdoc _ _ _ _  = return []
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
-         -- default implementation
+         -- default implementation, no logic should throw an error here
+         -- and the base of omcd should be a parseable URI
          omdoc_metatheory _lid = Nothing
 
 ----------------------------------------------------------------
