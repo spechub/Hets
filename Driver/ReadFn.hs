@@ -94,7 +94,8 @@ readVerbose lg opts ln file = do
 libNameToFile :: LibName -> FilePath
 libNameToFile ln = case getLibId ln of
   IndirectLink file _ ofile _ ->
-      if null ofile then file else ofile
+      if null ofile then file
+      else rmSuffix ofile
   DirectLink _ _ -> error "libNameToFile"
 
 findFileOfLibName :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
