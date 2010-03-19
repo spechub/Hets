@@ -92,7 +92,7 @@ anaString lgraph opts topLns libenv initDG input file = do
              libPath = dropWhile (== '/')
                $ filter (\ c -> isAlphaNum c || elem c "'_/") noSuffixFile
              noLibName = null $ show $ getLibId pln
-             nLn = setFilePath file mt
+             nLn = setFilePath (curDir </> file) mt
                $ if noLibName then emptyLibName libPath else pln
              spN = reverse $ takeWhile (/= '/') $ reverse libPath
              nIs = case is of
