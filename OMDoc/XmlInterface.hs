@@ -259,13 +259,11 @@ instance XmlRepresentable TLElement where
                                   Just mtcd ->
                                       [Attr at_meta $ uriEncodeCD mtcd])
                       $ listToXml elms
-    toXml (TLView nm from to tc) =
+    toXml (TLView nm from to morph) =
         mkElement
         el_view [Attr at_name nm, Attr at_from $ uriEncodeCD from,
                       Attr at_to $ uriEncodeCD to]
-                    $ case tc of Just (TCMorphism mapping) ->
-                                     map assignmentToXml mapping
-                                 _ -> []
+                    $ map assignmentToXml morph
 
     fromXml e
         | elemIsOf e el_theory =
@@ -281,8 +279,8 @@ instance XmlRepresentable TLElement where
                 from = uriDecodeCD (elLine e) $ musthave at_from "from"
                 to = uriDecodeCD (elLine e) $ musthave at_to "to"
             in do
-              tc <- mapR xmlToAssignment (findChildren el_conass e)
-              justReturn $ TLView nm from to $ Just $ TCMorphism tc
+              morph <- mapR xmlToAssignment (findChildren el_conass e)
+              justReturn $ TLView nm from to morph
         | otherwise = return Nothing
 
 
@@ -297,14 +295,10 @@ instance XmlRepresentable TCElement where
         $ Just $ inAContent el_text [Attr at_value val] Nothing
     toXml (TCADT sds) = mkElement el_adt [] $ listToXml sds
     toXml (TCComment c) = makeComment c
-    toXml (TCImport nm from tc) =
+    toXml (TCImport nm from morph) =
         mkElement
         el_structure [Attr at_name nm, Attr at_from $ uriEncodeCD from]
-                         $ case tc of Just (TCMorphism mapping) ->
-                                          map assignmentToXml mapping
-                                      _ -> []
-
-    toXml (TCMorphism _) = error "TCMorphism may only occur in imports!"
+                         $ map assignmentToXml morph
 
     fromXml e
         | elemIsOf e el_constant =
@@ -329,8 +323,8 @@ instance XmlRepresentable TCElement where
                 nm = musthave at_name "name"
                 from = uriDecodeCD (elLine e) $ musthave at_from "from"
             in do
-              tc <- mapR xmlToAssignment (findChildren el_conass e)
-              justReturn $ TCImport nm from $ Just $ TCMorphism tc
+              morph <- mapR xmlToAssignment (findChildren el_conass e)
+              justReturn $ TCImport nm from morph
         | elemIsOf e el_adt =
             do
               sds <- listFromXml $ elContent e
@@ -501,5 +495,3 @@ constantToXml n r tp prf =
               ++ map (inContent el_definition . Just . toOmobj . toXml)
                      (maybeToList prf))
              Nothing
-
-

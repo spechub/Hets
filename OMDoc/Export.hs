@@ -29,7 +29,7 @@ import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
 
-import Driver.Options (rmSuffix)
+import Driver.ReadFn (libNameToFile)
 
 import OMDoc.DataTypes
 
@@ -39,15 +39,15 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
---------------------- Name Mapping interface ---------------------
+-- ------------------- Name Mapping interface ---------------------
 
 
 -- | Mapping of Specs to SigMaps
 newtype SpecSymNames = SpecSymNames
     (Map.Map (LibName, String) (SigMap G_symbol))
 
-data OMEnv = OMEnv { getSSN :: SpecSymNames
-                   , getInitialLN :: LibName }
+data ExpEnv = ExpEnv { getSSN :: SpecSymNames
+                     , getInitialLN :: LibName }
 
 fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
@@ -55,11 +55,11 @@ fmapNM = Map.mapKeys
 fmapSM :: (Ord a, Ord b) => (a -> b) -> SigMap a -> SigMap b
 fmapSM f (SigMap m1 m2) = SigMap (fmapNM f m1) m2
 
-emptyEnv :: LibName -> OMEnv 
-emptyEnv ln = OMEnv { getSSN = SpecSymNames $ Map.empty
-                    , getInitialLN = ln }
+emptyEnv :: LibName -> ExpEnv
+emptyEnv ln = ExpEnv { getSSN = SpecSymNames $ Map.empty
+                     , getInitialLN = ln }
 
-fromSignAndNamedSens:: forall lid sublogics
+fromSignAndNamedSens :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
@@ -68,7 +68,7 @@ fromSignAndNamedSens:: forall lid sublogics
         lid -> sign -> [Named sentence] -> SigMap symbol
 fromSignAndNamedSens lid sig nsens =
     let syms = Set.toAscList $ sym_of lid sig
-        updFun _ _ = (1+)
+        updFun _ _ = (1 +)
         newName acc s = let (v, acc') = Map.insertLookupWithKey updFun s 1 acc
                         in (acc', (s, fromMaybe 0 v))
         symF acc x = let (acc', nn) = newName acc $ show $ sym_name lid x
@@ -81,15 +81,15 @@ fromSignAndNamedSens lid sig nsens =
 
 
 -- | Looks up the key in the map and if it doesn't exist it adds the
---   value for this key which results from the sign and sentences given
+-- value for this key which results from the sign and sentences given
 lookupWithInsert :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree => 
-        lid -> sign -> [Named sentence] -> OMEnv -> (LibName, String)
-             -> (OMEnv, SigMap symbol)
+          sign morphism symbol raw_symbol proof_tree =>
+        lid -> sign -> [Named sentence] -> ExpEnv -> (LibName, String)
+             -> (ExpEnv, SigMap symbol)
 lookupWithInsert lid sig sens s k =
     let SpecSymNames m = getSSN s in
     case Map.lookup k m of
@@ -100,26 +100,26 @@ lookupWithInsert lid sig sens s k =
                                 $ Map.insert k (fmapSM (G_symbol lid) nm) m }
                  , nm)
 
---------------------- LibEnv traversal ---------------------
+-- ------------------- LibEnv traversal ---------------------
 
 -- first projection is the const function
 
--- | 2nd projection 
+-- | 2nd projection
 proj2 :: a -> b -> b
 proj2 _ y = y
 
 -- | Translates the given LibEnv to a list of OMDocs. If the first argument
---   is false only the DG to the given LibName is translated and returned.
+-- is false only the DG to the given LibName is translated and returned.
 exportLibEnv :: Bool -> LibName -> LibEnv -> Result [(LibName, OMDoc)]
 exportLibEnv b ln le =
     let im = emptyEnv ln
-        cmbnF (x,_) y = (x,y)
+        cmbnF (x, _) y = (x, y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
     in mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
 
 -- | DGraph to OMDoc translation
-exportDGraph :: LibEnv -> OMEnv -> (LibName, DGraph) -> Result (OMEnv, OMDoc)
-exportDGraph le s (ln,dg) = do
+exportDGraph :: LibEnv -> ExpEnv -> (LibName, DGraph) -> Result (ExpEnv, OMDoc)
+exportDGraph le s (ln, dg) = do
   (s', theories) <- mapAccumLCM proj2 (exportNodeLab le ln dg) s
                     $ topsortedNodes dg
   (s'', views) <- mapAccumLCM proj2 (exportLinkLab le ln dg) s' $ labEdgesDG dg
@@ -127,8 +127,8 @@ exportDGraph le s (ln,dg) = do
 
 
 -- | DGNodeLab to TLTheory translation
-exportNodeLab :: LibEnv -> LibName -> DGraph -> OMEnv -> LNode DGNodeLab
-              -> Result (OMEnv, Maybe TLElement)
+exportNodeLab :: LibEnv -> LibName -> DGraph -> ExpEnv -> LNode DGNodeLab
+              -> Result (ExpEnv, Maybe TLElement)
 exportNodeLab le ln dg s (n, lb) =
   if isDGRef lb then return (s, Nothing) else
       let (lb', ln') = getNodeData le ln lb in
@@ -151,7 +151,7 @@ exportNodeLab le ln dg s (n, lb) =
                                    [imports, [extra], consts, thms])
 
 
---------------------- Views and Morphisms ---------------------
+-- ------------------- Views and Morphisms ---------------------
 
 -- Node lookup for handling ref nodes
 getNodeData :: LibEnv -> LibName -> DGNodeLab -> (DGNodeLab, LibName)
@@ -172,8 +172,8 @@ makeImport :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> OMEnv
-               -> LEdge DGLinkLab -> Result (OMEnv, [TCElement])
+        LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> ExpEnv
+               -> LEdge DGLinkLab -> Result (ExpEnv, [TCElement])
 makeImport le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
         warning () (concat [ "Hiding link with ", show (dgl_id lbl)
@@ -192,12 +192,12 @@ makeImport le ln dg toInfo s (from, _, lbl)
                         = lookupWithInsert lid sig nsens s (ln', sn)
                 morph <- makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
-                return (s', [TCImport impnm (mkCD s' ln ln' sn) $ Just morph])
+                return (s', [TCImport impnm (mkCD s' ln ln' sn) $ morph])
     | otherwise = return (s, [])
 
 -- | Given a TheoremLink we output the view
-exportLinkLab :: LibEnv -> LibName -> DGraph -> OMEnv -> LEdge DGLinkLab
-              -> Result (OMEnv, Maybe TLElement)
+exportLinkLab :: LibEnv -> LibName -> DGraph -> ExpEnv -> LEdge DGLinkLab
+              -> Result (ExpEnv, Maybe TLElement)
 exportLinkLab le ln dg s (from, to, lbl) =
     let ltyp = dgl_type lbl
         gmorph = dgl_morphism lbl
@@ -213,11 +213,11 @@ exportLinkLab le ln dg s (from, to, lbl) =
          (True, _, _) -> noExport
          (_, True, _) -> withWarning "Local"
          (_, _, True) -> withWarning "Hiding"
-         _ -> 
+         _ ->
              case (dgn_theory lb1, dgn_theory lb2) of
                { ((G_theory lid1 (ExtSign sig1 _) _ sens1 _) ,
                   (G_theory lid2 (ExtSign sig2 _) _ sens2 _ )) ->
-                 do 
+                 do
                    let sn1 = getDGNodeName lb1
                        sn2 = getDGNodeName lb2
                        nsens1 = toNamedList sens1
@@ -228,7 +228,7 @@ exportLinkLab le ln dg s (from, to, lbl) =
                            lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
                    morph <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
                    return (s'', Just $ TLView viewname (mkCD s'' ln ln1 sn1)
-                                  (mkCD s'' ln ln2 sn2) $ Just morph) }
+                                  (mkCD s'' ln ln2 sn2) morph) }
 
 
 makeMorphism :: forall lid1 sublogics1
@@ -244,7 +244,7 @@ makeMorphism :: forall lid1 sublogics1
          basic_spec2 sentence2 symb_items2 symb_map_items2
          sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
        (lid1, NameMap symbol1) -> (lid2, NameMap symbol2) -> GMorphism
-                               -> Result TCElement
+                               -> Result TCMorphism
 makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
 
 -- l1 = logic1
@@ -262,13 +262,13 @@ makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
 
 -- comorphism based map:
 -- (sglElem (show cid) . map_symbol cid sig . coerceSymbol l1 lS)
---  :: symbol1 -> symbolT
+-- :: symbol1 -> symbolT
 
 -- we need sigmap1 :: lT
 -- we need sigmap2 :: lT
 -- for sigmap2 we take a simple coerce
 -- for sigmap1 we take a simple coerce if we know that l1 = l2
---             otherwise a comorphism fmap composed with a simple coerce 
+-- otherwise a comorphism fmap composed with a simple coerce
 
     = let lS = sourceLogic cid
           lT = targetLogic cid
@@ -278,8 +278,7 @@ makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
           symM1' = fmapNM f symM1
           symM2' = fmapNM (coerceSymbol l2 lT) symM2
           mormap = symmap_of lT mor
-      in return $ TCMorphism $ map (mapEntry lT symM1' symM2')
-             $ Map.toList mormap
+      in return $ map (mapEntry lT symM1' symM2') $ Map.toList mormap
 
 
 mapEntry :: forall lid sublogics
@@ -287,7 +286,7 @@ mapEntry :: forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree => 
+          sign morphism symbol raw_symbol proof_tree =>
         lid -> NameMap symbol -> NameMap symbol -> (symbol, symbol)
             -> (OMName, OMElement)
 mapEntry _ m1 m2 (s1, s2) =
@@ -298,7 +297,7 @@ mapEntry _ m1 m2 (s1, s2) =
 
 
 -- | extracts the single element from singleton sets, fails otherwise
-sglElem:: String -> Set.Set a -> a
+sglElem :: String -> Set.Set a -> a
 sglElem s sa
     | Set.size sa > 1 =
         error $ "OMDocExport: comorphism symbol image > 1 in " ++ s
@@ -307,30 +306,21 @@ sglElem s sa
     | otherwise = Set.findMin sa
 
 
---------------------- Names and CDs ---------------------
+-- ------------------- Names and CDs ---------------------
 
-mkCD :: OMEnv -> LibName -> LibName -> String -> OMCD
-mkCD s lnCurr ln sn = CD $ [sn] ++ if lnCurr == ln then [] else [mkAbsURL s ln]
+mkCD :: ExpEnv -> LibName -> LibName -> String -> OMCD
+mkCD s lnCurr ln sn = 
+    CD $ [sn] ++ if lnCurr == ln then []
+                 else [concat ["file://", libNameToFile ln, ".omdoc"]]
 
-
-mkAbsURL :: OMEnv -> LibName -> String
-mkAbsURL s ln = let fp = getFP ln
-                    fpInit = getFP $ getInitialLN s
-                in "file://" ++ rmSuffix fp ++ ".omdoc"
-
-getFP :: LibName -> String
-getFP ln = case getLibId ln of
-             IndirectLink _ _ fp _ -> fp
-             _ -> error "getFP: DirectLinks not supported!"
-
---------------------- Symbols and Sentences ---------------------
+-- ------------------- Symbols and Sentences ---------------------
 
 exportSymbol :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree => 
+          sign morphism symbol raw_symbol proof_tree =>
         lid -> SigMap symbol -> symbol -> UniqName -> Result [TCElement]
 exportSymbol lid (SigMap sm _) sym n = do
   let un = nameToString n
@@ -342,7 +332,7 @@ exportSentence :: forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree => 
+          sign morphism symbol raw_symbol proof_tree =>
         lid -> SigMap symbol -> Named sentence -> Result [TCElement]
 exportSentence lid (SigMap sm thm) nsen = do
   omobjOrAdt <- export_senToOmdoc lid sm $ sentence nsen
@@ -362,6 +352,6 @@ exportSentence lid (SigMap sm thm) nsen = do
 notationFromUniqName :: UniqName -> Maybe TCElement
 notationFromUniqName un =
     let n = nameToString un
-        orign = fst un 
+        orign = fst un
     in if n == orign then Nothing
        else Just $ TCNotation (mkSimpleQualName un) orign

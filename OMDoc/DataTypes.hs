@@ -34,7 +34,7 @@ data OMDoc = OMDoc String [TLElement] deriving (Show, Eq, Ord)
 -- | Toplevel elements for OMDoc, theory with name, meta and content,
 -- view with from, to and morphism
 data TLElement = TLTheory String (Maybe OMCD) [TCElement]
-               | TLView String OMCD OMCD (Maybe TCElement)
+               | TLView String OMCD OMCD TCMorphism
                  deriving (Show, Eq, Ord)
 
 -- | Theory constitutive elements for OMDoc
@@ -46,15 +46,16 @@ data TCElement =
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
-  | TCImport String OMCD (Maybe TCElement)
-    -- | Morphisms to specify signature mappings
-  | TCMorphism [(OMName, OMElement)]
+  | TCImport String OMCD TCMorphism
     -- | A comment, only for development purposes
   | TCComment String
     deriving (Show, Eq, Ord)
 
 -- | return type for sentence translation
 type TCorOMElement = Either TCElement OMElement
+
+-- | Morphisms to specify signature mappings
+type TCMorphism = [(OMName, OMElement)]
 
 
 -- | The flattened structure of an Algebraic Data Type
@@ -153,6 +154,7 @@ cdFromList ["", cd] = CD [cd]
 cdFromList [base, cd] = CD [cd, base]
 cdFromList _ = error "cdFromList: Malformed list. I need exactly 2 elements!"
 
+-- | The result list has always two elements: [base, modul]
 cdToList :: OMCD -> [String]
 cdToList (CD [cd, base]) = [base, cd]
 cdToList (CD [cd]) = ["", cd]
@@ -170,8 +172,16 @@ cdToMaybeList _ = [Nothing, Nothing]
 uniqPrefix :: String
 uniqPrefix = "%()%"
 
-nameEncode :: String -> [String] -> String
+-- | Special name encoding in order to be able to recognize these names
+--   while reading. 
+nameEncode :: String -- ^ the kind of the encoding, may not contain colons
+           -> [String] -- ^ the values to encode
+           -> String
 nameEncode s l = concat [uniqPrefix, s, ":", intercalate uniqPrefix l]
+
+{- |
+ This invariant should hold: (x, l) = fromJust $ nameDecode $ nameEncode x l
+-}
 
 nameDecode :: String -> Maybe (String, [String])
 nameDecode s =
@@ -184,7 +194,7 @@ nameDecode s =
              else Just (kind, splitByList uniqPrefix $ tail r)
 
 nameToString :: UniqName -> String
-nameToString (s,i) = if i > 0 then nameEncode ("over:" ++ show i) [s]
+nameToString (s,i) = if i > 0 then nameEncode ("over_" ++ show i) [s]
                      else s
 
 ---------------------- Constructing Values ----------------------
