@@ -80,8 +80,8 @@ fromSignAndNamedSens lid sig nsens =
     in SigMap (Map.fromList symL) (Map.fromList sensL)
 
 
--- | Looks up the key in the map and if it doesn't exist it adds the
--- value for this key which results from the sign and sentences given
+-- | Looks up the key in the map and if it doesn't exist adds the
+--   value for this key which results from the given sign and sentences.
 lookupWithInsert :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -106,7 +106,7 @@ lookupWithInsert lid sig sens s k =
 
 -- | 2nd projection
 proj2 :: a -> b -> b
-proj2 _ y = y
+proj2 = curry snd
 
 -- | Translates the given LibEnv to a list of OMDocs. If the first argument
 -- is false only the DG to the given LibName is translated and returned.

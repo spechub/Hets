@@ -154,6 +154,9 @@ cdFromList ["", cd] = CD [cd]
 cdFromList [base, cd] = CD [cd, base]
 cdFromList _ = error "cdFromList: Malformed list. I need exactly 2 elements!"
 
+cdIsEmpty :: OMCD -> Bool
+cdIsEmpty cd = ["", ""] == cdToList cd
+
 -- | The result list has always two elements: [base, modul]
 cdToList :: OMCD -> [String]
 cdToList (CD [cd, base]) = [base, cd]
