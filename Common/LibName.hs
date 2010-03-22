@@ -95,6 +95,13 @@ setFilePath :: FilePath -> ClockTime -> LibName -> LibName
 setFilePath fp mt ln =
   ln { getLibId = updFilePathOfLibId fp mt $ getLibId ln }
 
+getFilePath :: LibName -> FilePath
+getFilePath ln =
+    case getLibId ln of
+      IndirectLink n _ fp _ ->
+          if null fp then error "getFilePath: empty fp in " ++ n else fp
+      _ -> error "getFilePath: No IndirectLink"
+
 data VersionNumber = VersionNumber [String] Range
                       -- pos: "version", start of first string
 
