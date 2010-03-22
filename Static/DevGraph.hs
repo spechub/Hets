@@ -841,6 +841,23 @@ lookupInAllRefNodesDG ref dg = case ref of
         Map.lookup (libn, refn) $ allRefNodes dg
     _ -> Nothing
 
+
+-- ** lookup nodes by their names or other properties
+
+-- | lookup a node in the graph with a predicate.
+lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph
+               -> Maybe (LNode DGNodeLab)
+lookupNodeWith f dg = find f $ labNodesDG dg
+
+-- | lookup a node in the graph by its name, using showName
+--   to convert nodenames.
+lookupNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+lookupNodeByName s dg = lookupNodeWith f dg where
+    f (_, lbl) = getDGNodeName lbl == s
+    
+    
+
+
 -- ** treat reference nodes
 
 -- | add a new referenced node into the refNodes map of the given DG
