@@ -9,12 +9,12 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-This file contains the abstract syntax for the reduce computer algebra system as well as pretty printer for it. 
+This file contains the abstract syntax for the reduce computer algebra system as well as pretty printer for it.
 
 -}
 
 module Reduce.AS_BASIC_Reduce
-    ( 
+    (
      EXPRESSION (..)          -- datatype for numerical expressions (e.g. polynomials)
     , BASIC_ITEMS (..)         -- Items of a Basic Spec
     , BASIC_SPEC (..)          -- Basic Spec
@@ -50,18 +50,18 @@ data BASIC_ITEMS =
     deriving Show
 
 -- | Datatype for expressions
-data EXPRESSION = 
+data EXPRESSION =
     Var Id.Token
   | Op String [EXPRESSION] Id.Range          -- token statt string Id vs Token:
   | List [EXPRESSION] Id.Range
   | Int Int Id.Range
   | Double Float Id.Range
-  deriving (Eq,Ord,Show)
+  deriving (Eq, Ord, Show)
 
-data CMD = 
+data CMD =
     Cmd String [EXPRESSION]
-    deriving (Show,Eq,Ord)
-  
+    deriving (Show, Eq, Ord)
+
 -- | symbol lists for hiding
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
@@ -83,7 +83,7 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
--- Pretty Printing; 
+-- Pretty Printing;
 
 instance Pretty OP_ITEM where
     pretty = printOpItem
@@ -137,7 +137,7 @@ printSymbItems (Symb_items xs _) = fsep $ map pretty xs
 
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap (Symb sym) = pretty sym
-printSymbOrMap (Symb_map source dest  _) =
+printSymbOrMap (Symb_map source dest _) =
   pretty source <+> mapsto <+> pretty dest
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
@@ -149,12 +149,12 @@ printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 instance GetRange OP_ITEM where
   getRange = const nullRange
   rangeSpan x = case x of
-    Op_item a b -> joinRanges [rangeSpan a,rangeSpan b]
+    Op_item a b -> joinRanges [rangeSpan a, rangeSpan b]
 
 instance GetRange VAR_ITEM where
   getRange = const nullRange
   rangeSpan x = case x of
-    Var_item a b -> joinRanges [rangeSpan a,rangeSpan b]
+    Var_item a b -> joinRanges [rangeSpan a, rangeSpan b]
 
 
 instance GetRange BASIC_SPEC where
@@ -166,7 +166,7 @@ instance GetRange BASIC_ITEMS where
   getRange = const nullRange
   rangeSpan x = case x of
     Op_decl a -> joinRanges [rangeSpan a]
---    Var_decl a -> joinRanges [rangeSpan a]
+-- Var_decl a -> joinRanges [rangeSpan a]
     Axiom_item a -> joinRanges [rangeSpan a]
 
 instance GetRange CMD where
@@ -176,7 +176,7 @@ instance GetRange CMD where
 instance GetRange SYMB_ITEMS where
   getRange = const nullRange
   rangeSpan x = case x of
-    Symb_items a b -> joinRanges [rangeSpan a,rangeSpan b]
+    Symb_items a b -> joinRanges [rangeSpan a, rangeSpan b]
 
 instance GetRange SYMB where
   getRange = const nullRange
@@ -186,13 +186,13 @@ instance GetRange SYMB where
 instance GetRange SYMB_MAP_ITEMS where
   getRange = const nullRange
   rangeSpan x = case x of
-    Symb_map_items a b -> joinRanges [rangeSpan a,rangeSpan b]
+    Symb_map_items a b -> joinRanges [rangeSpan a, rangeSpan b]
 
 instance GetRange SYMB_OR_MAP where
   getRange = const nullRange
   rangeSpan x = case x of
     Symb a -> joinRanges [rangeSpan a]
-    Symb_map a b c -> joinRanges [rangeSpan a,rangeSpan b,rangeSpan c]
+    Symb_map a b c -> joinRanges [rangeSpan a, rangeSpan b, rangeSpan c]
 
 instance GetRange EXPRESSION where
   getRange = const nullRange

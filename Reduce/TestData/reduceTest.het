@@ -7,7 +7,14 @@ spec ReduceTest1 =
 then %implies
      . solve(x^2=1,x)
      . simplify((x+y)*(x+y+z))
-     . remainder(2*x+y,2)
-     . remainder((x+y)*(x+2*y),x+3*y)
+     . divide((x+y)*(x+2*y),x+3*y)
+     . divide((x+y)*(x+2*y),x+3*y)
+     . factorize(x*x+x*y+x*y+y*y)
+     . int(x*x,x)
+     . rlqe(ex(x,x*x=0))
+     . rlqe(ex(x,x*x-x+1=0))
+     . rlqe(ex(x,x*x-3*x+1=0))
+     . rlqe(ex(x,x>6 and x*x-3*x+1=0))
+     . rlqe(ex(x,7*x*x+3>0 and x*x-3*x+1=0))
 end
 

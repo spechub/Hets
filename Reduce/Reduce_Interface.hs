@@ -41,6 +41,12 @@ connectCAS = do
   hSetBuffering out NoBuffering
   hSetBuffering inp LineBuffering
   hPutStrLn inp "off nat;"
+  hPutStrLn inp "load redlog;"
+  hPutStrLn inp "rlset reals;"
+  hGetLine out
+  hGetLine out
+  hGetLine out
+  hGetLine out
   hGetLine out
   hGetLine out
   hGetLine out
@@ -74,7 +80,7 @@ exportExps (e1:[]) = exportExp e1
 
 -- | those operators declared as infix in Reduce
 infixOps :: [String] 
-infixOps = ["+","-","/","**","^","=","*"]
+infixOps = ["+","-","/","**","^","=","*","and", "impl", "or"]
 
 exportExp :: EXPRESSION -> String
 exportExp (Var token) = tokStr token
@@ -93,11 +99,10 @@ exportReduce namedcmd = case (sentence namedcmd) of
 procCmd :: (Handle,Handle) -> (Named CMD) -> IO (ProofStatus [EXPRESSION])
 procCmd (inp,out) cmd = case cmdstring of 
                                  "simplify" -> cassimplify (inp,out) cmd
-                                 "remainder" -> casremainder (inp,out) cmd
-                                 "casgcd" -> casgcd (inp,out) cmd
-                                 "casint" -> casint (inp,out) cmd
-                                 "qelim" -> casqelim (inp,out) cmd
-                                 "factor" -> casfactorExp (inp,out) cmd
+                                 "divide" -> casremainder (inp,out) cmd
+                                 "rlqe" -> casqelim (inp,out) cmd
+                                 "factorize" -> casfactorExp (inp,out) cmd
+                                 "int" -> casint (inp,out) cmd
                                  "solve" -> cassolve(inp,out) cmd
                                  _ -> error "Command not supported"
     where (Cmd cmdstring _) = (sentence cmd)
@@ -136,7 +141,10 @@ cassimplify (inp,out) cmd = procString (inp,out) (senAttr cmd)  $ (exportReduce 
 
 -- | computes the remainder of a division
 casremainder :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
-casremainder (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"
+casremainder (inp,out) cmd = do
+  divres <- procString (inp,out) (senAttr cmd) $ (exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args))) ++ ";"
+  return divres
+         where (Cmd _ args)  = (sentence cmd)
 
 -- | computes the gcd of a division
 casgcd :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])

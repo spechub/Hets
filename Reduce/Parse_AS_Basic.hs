@@ -109,6 +109,42 @@ listexp = do
 ---------------------------- parser for formulas ----------------------------
 -----------------------------------------------------------------------------
 
+parseVarList :: CharParser st EXPRESSION
+parseVarList = do
+  (Lexer.keySign (string "{"))
+  elems <- Lexer.separatedBy identifier  (Lexer.keySign (string ","))
+  (Lexer.keySign (string "}"))
+  return (List (map (\x -> (Var x)) (fst elems)) nullRange)
+
+parseVar :: CharParser st EXPRESSION
+parseVar = do
+  ident<-identifier
+  return (Var ident)
+    
+
+existsFormula :: CharParser st EXPRESSION
+existsFormula = 
+    do
+      (Lexer.keySign (string "ex"))
+      oParenT
+      vars <- ( parseVar <|> parseVarList)
+      (Lexer.keySign (string ","))
+      expr <- formulaorexpression 
+      cParenT
+      return (Op "ex" [vars,expr] nullRange)
+
+forallFormula :: CharParser st EXPRESSION
+forallFormula = 
+    do
+      (Lexer.keySign (string "all"))
+      oParenT
+      vars <- ( parseVar <|> parseVarList)
+      (Lexer.keySign (string ","))
+      expr <- formulaorexpression 
+      cParenT
+      return (Op "all" [vars,expr] nullRange)
+
+
 -- | parser for atoms
 truefalseFormula :: CharParser st EXPRESSION
 truefalseFormula =
@@ -119,6 +155,10 @@ truefalseFormula =
     do
       lexemeParser (Lexer.keyWord (tryString "false"))
       return (Op "False" [] nullRange)
+    <|>
+    existsFormula 
+    <|>
+    forallFormula
 
 -- | parser for predicates
 predFormula :: CharParser st EXPRESSION
@@ -163,8 +203,8 @@ impOrFormula = do
                       $ tryString "or" <|> tryString "impl") impOrFormula
   if null opfs then return f1
    else return $ foldr (\ (a1,a2) b -> Op (case a1 of
-                                   "or" -> "Or"
-                                   "impl" -> "Impl"
+                                   "or" -> "or"
+                                   "impl" -> "impl"
                                    _ -> error "impl or or expected")
                                     [b,a2] nullRange
                                  ) f1 opfs
@@ -175,7 +215,7 @@ andFormula = do
   f1 <- atomicFormula
   opfs <- many $ pair (lexemeParser $ keyWord $ tryString "and") atomicFormula
   if null opfs then return f1
-   else return $ foldr (\ a b -> (Op "And" [b, snd a] nullRange)) f1 opfs
+   else return $ foldr (\ a b -> (Op "and" [b, snd a] nullRange)) f1 opfs
 
 -----------------------------------------------------------------------------
 ---------------------------- Parser for Commands ----------------------------
@@ -188,7 +228,7 @@ formulaorexpression = try aFormula <|> expression
 command :: CharParser st CMD
 command = do
   cmd <- lexemeParser $ Lexer.keyWord $ choice $ map tryString
-    ["solve", "simplify", "remainder", "gcd", "int", "qelim"]
+    ["solve", "simplify", "divide", "int", "rlqe","factorize"]
   oParenT
   arg1 <- formulaorexpression
   args <- many $ pair (lexemeParser $ string ",") formulaorexpression
