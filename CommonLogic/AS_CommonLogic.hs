@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Abstract syntax for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.tx
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  provisional
@@ -45,26 +45,26 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
               | Bool_sent BOOL_SENT Id.Range
               | Atom_sent ATOM Id.Range
               | Comment_sent SENTENCE COMMENT Id.Range
-              | Irregular_sent Id.Range
+              | Irregular_sent SENTENCE Id.Range -- opt
                 deriving (Show, Ord, Eq)
 
-data QUANT_SENT = Universal [BINDING_SEQ] SENTENCE Id.Range
-                | Existential [BINDING_SEQ] SENTENCE Id.Range
+data QUANT_SENT = Universal [BINDING_SEQ] SENTENCE
+                | Existential [BINDING_SEQ] SENTENCE
                   deriving (Show, Ord, Eq)
 
 data BINDING_SEQ = B_name NAME Id.Range
                  | B_seqmark SEQ_MARK Id.Range
                    deriving (Show, Ord, Eq)
 
-data BOOL_SENT = Conjunction [SENTENCE] Id.Range
-               | Disjunction [SENTENCE] Id.Range
-               | Negation SENTENCE Id.Range
-               | Implication SENTENCE SENTENCE Id.Range
-               | Biconditional SENTENCE SENTENCE Id.Range
+data BOOL_SENT = Conjunction [SENTENCE]
+               | Disjunction [SENTENCE]
+               | Negation SENTENCE
+               | Implication SENTENCE SENTENCE
+               | Biconditional SENTENCE SENTENCE
                  deriving (Show, Ord, Eq)
 
-data ATOM = Equation TERM TERM Id.Range
-          | Atom TERM TERM_SEQ Id.Range
+data ATOM = Equation TERM TERM
+          | Atom TERM TERM_SEQ
             deriving (Show, Ord, Eq)
 
 data TERM = Name NAME Id.Range
@@ -102,58 +102,56 @@ instance Pretty TERM where
    pretty = printTerm
 instance Pretty TERM_SEQ where
    pretty = printTermSeq
+instance Pretty BINDING_SEQ where
+   pretty = printBindingSeq
+instance Pretty COMMENT where
+   pretty = printComment
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
-    Quant_sent b _  -> br $ printQuantSent b
-    Bool_sent b _ -> br $ printBoolSent b
-    Atom_sent b _ -> printAtom b
-    Comment_sent _ _ _ -> text falseS -- opt.
-    Irregular_sent _ -> text falseS   -- opt.
+    Quant_sent xs _ -> parens $ pretty xs
+    Bool_sent xs _ -> parens $ pretty xs
+    Atom_sent xs _ -> pretty xs
+    Comment_sent x y _ -> parens $ pretty y <+> pretty x
+    Irregular_sent xs _ -> parens $ pretty xs
+
+printComment :: COMMENT -> Doc
+printComment s = case s of
+   Comment x _ -> text x
 
 printQuantSent :: QUANT_SENT -> Doc
 printQuantSent s = case s of
-   Universal a b _ -> text forallS <+> br (sep $ map printBindingSeq a)<+> printSentence b
-   Existential a b _ -> text existsS <+> br (sep $ map printBindingSeq a) <+> printSentence b
+   Universal x y -> text forallS <+> parens (sep $ map pretty x)<+> pretty y
+   Existential x y -> text existsS <+> parens (sep $ map pretty x) <+> pretty y
 
 printBindingSeq :: BINDING_SEQ -> Doc
 printBindingSeq s = case s of
-   B_name a _ -> printName a
-   B_seqmark a _ -> printSeqMark a
+   B_name xs _ -> pretty xs
+   B_seqmark xs _ -> text seqmark <> pretty xs
 
 printBoolSent :: BOOL_SENT -> Doc
 printBoolSent s = case s of
-   Conjunction a _ -> text andS <+> (sep $ map printSentence a)
-   Disjunction a _ -> text orS <+> (sep $ map printSentence a)
-   Negation a _ -> text notS <+> printSentence a
-   Implication a b _ -> text ifS <+> printSentence a <+> printSentence b
-   Biconditional a b _ -> text iffS <+> printSentence a <+> printSentence b
+   Conjunction xs -> text andS <+> (fsep $ map pretty xs)
+   Disjunction xs -> text orS <+> (fsep $ map pretty xs)
+   Negation xs -> text notS <+> pretty xs
+   Implication x y -> text ifS <+> pretty x <+> pretty y
+   Biconditional x y -> text iffS <+> pretty x <+> pretty y
 
 printAtom :: ATOM -> Doc
 printAtom s = case s of
-   Equation a b _ -> br $ equals <+> printTerm a <+> printTerm b
-   Atom t ts _ -> br $ printTerm t <+> printTermSeq ts
+   Equation a b -> parens $ equals <+> pretty a <+> pretty b
+   Atom t ts -> parens $ pretty t <+> pretty ts
 
 printTerm :: TERM -> Doc
 printTerm s = case s of
-   Name a _ -> printName a
-   Funct_term _ _ _ -> text ""
-   Comment_term _ _ _ -> text "" -- opt.
+   Name a _ -> pretty a
+   Funct_term t ts _ -> parens $ pretty t <+> pretty ts
+   Comment_term x y _ -> pretty x <+> pretty y
 
 printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of
-  Term_seq t _ -> fsep $ map printTerm t
-  Seq_marks m _ -> fsep $ map printSeqMark m
-
-printName :: NAME -> Doc
-printName n = text $ tokStr n
-
-printSeqMark :: SEQ_MARK -> Doc
-printSeqMark m = text seqmark <> text (tokStr m)
-
--- parent
-br :: Doc -> Doc
-br a = lparen <> a <> rparen
+  Term_seq t _ -> fsep $ map pretty t
+  Seq_marks m _ -> fsep $ map pretty m
 
 -- keywords, reservednames in CLIF
 
