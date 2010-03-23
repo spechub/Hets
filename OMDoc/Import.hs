@@ -16,7 +16,7 @@ module OMDoc.Import (anaOMDocFile)
 
 import Common.Result
 import Common.ResultT
--- import Common.ExtSign
+import Common.ExtSign
 import Common.Id
 import Common.LibName
 import Common.Utils
@@ -27,7 +27,7 @@ import Driver.Options (rmSuffix, HetcatsOpts, putIfVerbose, showDiags)
 
 import Logic.Logic
 import Logic.ExtSign
--- import Logic.Coerce
+import Logic.Coerce
 -- import Logic.Prover
 import Logic.Grothendieck
 -- import Logic.Comorphism
@@ -36,13 +36,14 @@ import Comorphisms.LogicList
 
 import Static.DevGraph
 import Static.GTheory
+import Static.AnalysisStructured
 
 import OMDoc.DataTypes
 import OMDoc.XmlInterface (xmlIn)
 
 import System.Directory
 
-import Data.Graph.Inductive.Graph (LNode)
+import Data.Graph.Inductive.Graph (LNode, Node, LEdge)
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
@@ -52,9 +53,16 @@ import Control.Monad.Trans
 
 import Network.URI
 
+-- only for debugging
+-- import Debug.Trace
+
 -- * Import Environment Interface
 
+sorry :: a
 sorry = error "Under construction"
+
+debugOut :: String -> ResultT IO ()
+debugOut = lift . putStrLn . ("Debug: " ++)
 
 -- | the keys consist of the filepaths without suffix!
 data ImpEnv = ImpEnv { libMap :: Map.Map FilePath (LibName, DGraph) }
@@ -82,9 +90,9 @@ lookupNode e (ln, dg) ucd =
           Just lnode -> Just (ln, lnode)
     else case lookupLib e $ fromJust $ getUri ucd of
            Nothing -> Nothing
-           Just (ln', dg') -> fmap (\n -> (ln', n)) $ lookupNodeByName mn dg'
+           Just (ln', dg') -> fmap (\ n -> (ln', n)) $ lookupNodeByName mn dg'
 
-  
+
 -- * URI Functions
 
 readURL :: URI -> IO String
@@ -97,9 +105,10 @@ toURI s = case parseURIReference s of
             _ -> error $ "toURI: can't parse as uri " ++ s
 
 libNameFromURL :: String -> URI -> IO LibName
-libNameFromURL s u = do let fp = uriPath u
-                        mt <- getModificationTime fp
-                        return $ setFilePath fp mt $ emptyLibName s
+libNameFromURL s u = do
+  let fp = uriPath u
+  mt <- getModificationTime fp
+  return $ setFilePath fp mt $ emptyLibName s
 
 -- | Compute an absolute URI for a supplied URI relative to the given filepath.
 resolveURI :: URI -> FilePath -> URI
@@ -140,8 +149,13 @@ cdInLib ucd ln = case getUri ucd of
                    Just url -> isFileURI url && getFilePath ln == uriPath url
 
 -- | Compute an absolute URI for a supplied UriCD relative to the given LibName.
-uriInLib :: UriCD -> LibName -> URI
-uriInLib = sorry
+uriRelativeToLib :: UriCD -> LibName -> URI
+uriRelativeToLib ucd ln =
+    let fp = getFilePath ln in
+    case getUri ucd of
+      Just u -> resolveURI u fp
+      _ -> toURI fp
+
 
 -- * Main translation functions
 
@@ -159,7 +173,7 @@ anaOMDocFile opts fp = do
 -- * OMDoc traversal
 
 -- | If the lib is not already in the environment, the OMDoc file and
---   the closure of its imports is added to the environment.
+-- the closure of its imports is added to the environment.
 importLib :: ImpEnv -- ^ The import environment
           -> URI -- ^ The url of the OMDoc file
           -> ResultT IO (ImpEnv, LibName, DGraph)
@@ -189,17 +203,17 @@ importTheory e cl@(ln, dg) cd =
     case lookupNode e (ln, dg) ucd of
       Just (ln', nd)
           | ln == ln' -> return (e, cl, nd)
-          | otherwise -> let (lnode, dg') = addNodeRefToDG nd ln' dg
+          | otherwise -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
                          in return (e, (ln, dg'), lnode)
+      -- if lookupNode finds nothing implies that ln is not the current libname!
       _ -> do
-        let u = uriInLib ucd ln
-        (e', ln', dg') <- readLib e u
-        case lookupNodeByName (getModule ucd) dg of
-          Just nd -> let (lnode, dg'') = addNodeRefToDG nd ln' dg'
-                     in return (e', (ln', dg''), lnode)
+        let u = uriRelativeToLib ucd ln
+        (e', ln', refDg) <- readLib e u
+        case lookupNodeByName (getModule ucd) refDg of
+          -- don't add the node to the refDG but to the original one!
+          Just nd -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
+                     in return (e', (ln', dg'), lnode)
           Nothing -> error $ "importTheory: couldn't find node: " ++ show cd
-        -- import the lib to the environment, search the node in the devgraph
-        -- and add a refnode to it
 
 
 -- | Adds a view or theory to the DG, the ImpEnv may also be modified.
@@ -207,67 +221,145 @@ addTLToDGraph :: LibName -> (ImpEnv, DGraph) -> TLElement
               -> ResultT IO (ImpEnv, DGraph)
 -- adding a theory to the DG
 addTLToDGraph ln (e, dg) (TLTheory n mCD l) =
-    let TCClf iInfo syms sens adt nameMap = classifyTCs l
-        -- I. Compute local sig and add the node to the DGraph
-        (lnode, dg') = addNodeToDG dg n $ getLogicFromMeta mCD
+    let clf@(TCClf iInfo syms sens adt nameMap) = classifyTCs l
+        -- I. Compute initial signature
+        gSig = initialSig clf $ getLogicFromMeta mCD
     in do
-      -- II. Lookup all imports (= follow and create them first) 
-      ((e', dg''), iIL) <- followImports ln (e, dg') iInfo
-       -- III. Compute morphisms and update local sig stepwise
-       -- IV. Create links from the morphisms
-       --     (and insert DGNodeRefs if neccessary)
-       -- V. Add the sentences to the Node
-       -- VI. Update the Node in the DGraph
-      return $ (e', dg'')
+      -- II. Lookup all imports (= follow and create them first),
+      -- and insert DGNodeRefs if neccessary.
+      ((e', dg'), iIL) <- followImports ln (e, dg) iInfo
+      -- III. Compute morphisms and update local sig stepwise.
+      (gSig', iIWL) <- computeMorphisms nameMap gSig iIL
+       -- IV. Add the sentences to the Node.
+       -- V. Add the Node to the DGraph.
+      let ((nd, _), dg'') = addNodeToDG dg' n gSig'
+          -- VI. Create links from the morphisms.
+          dg''' = addLinksToDG nd dg'' iIWL
+      return $ (e', dg''')
 
 -- TODO: adding a view to the DG
-addTLToDGraph ln (e, dg) (TLView n from to mMor) = 
+addTLToDGraph ln (e, dg) (TLView n from to mMor) =
     return (e, dg)
 
+
+-- ** Utils to compute DGNodes from OMDoc Theories
+
+computeMorphisms :: Map.Map OMName String -> G_sign -> [ImportInfo LinkNode]
+              -> ResultT IO (G_sign, [LinkInfo])
+computeMorphisms nameMap = mapAccumLM (computeMorphism nameMap)
+
+computeMorphism :: Map.Map OMName String -- ^ Hets-notation for OMDoc symbols
+                -> G_sign -- ^ target signature
+                -> ImportInfo LinkNode -- ^ source label with OMDoc morphism
+                -> ResultT IO (G_sign, LinkInfo)
+computeMorphism nameMap tGSig iInfo@(ImportInfo ((_, (from, lbl)), n, morph)) =
+    case dgn_theory lbl of
+      G_theory sLid (ExtSign sSig _) _ _ _ ->
+          case tGSig of
+            G_sign tLid (ExtSign tSig _) sigId ->
+                do
+                  -- 1. build the morphism
+                  -- compute first the symbol-map
+                  symMap <- computeSymbolMap morph
+                  -- we coerce all symbols to the target logic
+                  let f gSym = case gSym of
+                                 G_symbol lid s -> symbol_to_raw tLid
+                                                   $ coerceSymbol lid tLid s
+                      rsMap = Map.fromList $ map (\ (x,y) -> (f x, f y) )
+                              symMap
+                  sSig' <- coercePlainSign sLid tLid "computeMorphism" sSig
+                  mor <- liftR $ induced_from_morphism tLid rsMap sSig'
+                  -- 2. build the GMorphism and update the signature
+                  newSig <- liftR $ signature_union tLid tSig $ cod mor
+                  let gMor = gEmbed $ mkG_morphism tLid mor
+                      newGSig = G_sign tLid (makeExtSign tLid newSig) sigId
+                  -- 3. update the signature
+                  return (newGSig, (gMor, globalDef, mkLinkOrigin n, from))
+
+-- Language.Haskell.Interpreter
+
+mkLinkOrigin :: String -> DGLinkOrigin
+mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
+
+computeSymbolMap :: TCMorphism -> ResultT IO [(G_symbol, G_symbol)]
+computeSymbolMap _ = return []
 
 
 followImports :: LibName -> (ImpEnv, DGraph) -> [ImportInfo OMCD]
               -> ResultT IO ((ImpEnv, DGraph), [ImportInfo LinkNode])
-followImports ln env l = mapAccumLCM (curry snd) (followImport ln) env l
+followImports ln = mapAccumLCM (curry snd) (followImport ln)
 
-
+-- | We lookup the theory referenced by the cd in the environment
+-- and add it if neccessary to the environment.
 followImport :: LibName -> (ImpEnv, DGraph) -> ImportInfo OMCD
              -> ResultT IO ((ImpEnv, DGraph), ImportInfo LinkNode)
-followImport ln (e, dg) (ImportInfo (cd, n, morph)) = 
-    -- 1. lookup node
-    -- 2. return fmapped entry
-    sorry
+followImport ln (e, dg) iInfo@(ImportInfo (cd, _, _)) = do
+  (e', (ln', dg'), lnode) <- importTheory e (ln, dg) cd
+  let linknode = (if ln == ln' then Nothing else Just ln', lnode)
+  return $ ((e', dg'), fmap (const linknode) iInfo)
 
 
 -- * Development Graph and LibEnv interface
 
--- | Adds an empty Node of the given logic to the development graph.
-addNodeToDG :: DGraph -> String -> AnyLogic -> (LNode DGNodeLab, DGraph)
-addNodeToDG dg n lg =
+-- String -> NodeName
+-- makeName . mkSimpleId
+
+-- | Builds an initial Sig of the given logic and classification.
+initialSig :: TCClassification -> AnyLogic -> G_sign
+initialSig _ lg =
     case lg of
       Logic lid ->
+          let extSig = makeExtSign lid $ empty_signature lid
+          in G_sign lid extSig startSigId
+
+-- | Adds Edges from the LinkInfo list to the development graph.
+addLinksToDG :: Node -> DGraph -> [LinkInfo] -> DGraph
+addLinksToDG nd = foldl (addLinkToDG nd)
+
+-- | Adds Edge from the LinkInfo to the development graph.
+addLinkToDG :: Node -> DGraph -> LinkInfo -> DGraph
+addLinkToDG to dg (gMor, lt, lo, from) = insLink dg gMor lt lo from to
+
+
+-- | Adds a Node from the given signature to the development graph.
+addNodeToDG :: DGraph -> String -> G_sign -> (LNode DGNodeLab, DGraph)
+addNodeToDG dg n gSig =
+    case gSig of
+      G_sign lid eSig sigId ->
           let nd = getNewNodeDG dg
-              ndName = emptyNodeName { getName = Token n nullRange }
+              -- we should parse the name and restore the NodeName
+              ndName = makeName $ mkSimpleId n
               ndInfo = newNodeInfo DGBasic
-              extSig = makeExtSign lid $ empty_signature lid
-              gth = noSensGTheory lid extSig startSigId
+              gth = noSensGTheory lid eSig sigId
               newNode = (nd, newInfoNodeLab ndName ndInfo gth)
           in (newNode, insNodeDG newNode dg)
 
 
-addNodeRefToDG :: LNode DGNodeLab -> LibName -> DGraph -> (LNode DGNodeLab, DGraph)
-addNodeRefToDG = sorry
+addNodeAsRefToDG :: LNode DGNodeLab -> LibName -> DGraph
+                 -> (LNode DGNodeLab, DGraph)
+addNodeAsRefToDG (nd, lbl) ln dg =
+    let info = newRefInfo ln nd
+        refNodeM = lookupInAllRefNodesDG info dg
+        nd' = getNewNodeDG dg
+        lnode = (nd', lbl { nodeInfo = info })
+        dg1 = insNodeDG lnode dg
+        dg2 = addToRefNodesDG nd' info dg1
+    in case refNodeM of
+         Just refNode -> ((refNode, labDG dg refNode), dg)
+         _ -> (lnode, dg2)
 
--- * Theory-types and -utils
 
+-- * Theory-utils
 
 type CurrentLib = (LibName, DGraph)
 
 type LinkNode = (Maybe LibName, LNode DGNodeLab)
 
+type LinkInfo = (GMorphism, DGLinkType, DGLinkOrigin, Node)
+
 newtype ImportInfo a = ImportInfo (a, String, TCMorphism)
 
-instance Functor ImportInfo where fmap f (ImportInfo (x,y,z))
+instance Functor ImportInfo where fmap f (ImportInfo (x, y, z))
                                       = ImportInfo (f x, y, z)
 
 data TCClassification = TCClf {
@@ -277,7 +369,7 @@ data TCClassification = TCClf {
     , adts :: [[OmdADT]] -- ^ ADTs
     , notations :: (Map.Map OMName String) -- ^ Notations
     }
-    
+
 
 emptyClassification :: TCClassification
 emptyClassification = TCClf [] [] [] [] Map.empty
@@ -292,76 +384,10 @@ classifyTC tc clf =
           | elem sr [Obj, Typ] -> clf { sigElems = tc : sigElems clf }
           | otherwise -> clf { sentences = tc : sentences clf }
       TCNotation (cd, omn) n ->
-          if cdIsEmpty cd then 
+          if cdIsEmpty cd then
               clf { notations = Map.insert omn n $ notations clf }
           else clf
       TCADT l -> clf { adts = l : adts clf }
       TCImport n from morph ->
           clf { importInfo = ImportInfo (from, n, morph) : importInfo clf }
       TCComment _ -> clf
-
-
-{-
-
-TODO:
-addTCToDGraph :: LibName -> (ImpEnv, DGraph) -> TCElement
-              -> ResultT IO (ImpEnv, DGraph)
-addTCToDGraph ln p@(e, dg) tc =
-    case tc of
-      -- import
-      TCImport _ from morph ->
-          do
-            -- get source sign
-            -- get target sign
-            -- 
-            DefLink
-
-      -- TODO: other elements
-      _ -> return p
-
-
-importLib
-induced_from_to_morphism ::
-             lid -> EndoMap raw_symbol -> ExtSign sign symbol
-                 -> ExtSign sign symbol -> Result morphism
-
--- inserts a morphism as a link to the development graph
-addMorphToDG :: Morphism -> DGraph -> LibEnvFull -> DGraph
-addMorphToDG morph dg libs =
-  let gmorph = gEmbed $ G_morphism LF morph startMorId
-      thmStatus = Proven (DGRule "Type-checked") emptyProofBasis
-      linkKind = case morphType morph of
-                      Definitional -> DefLink
-                      Postulated -> ThmLink thmStatus
-                      Unknown -> error "Unknown morphism type."
-      consStatus = ConsStatus Cons.None Cons.None LeftOpen
-      linkType = ScopedLink Global linkKind consStatus
-      linkLabel = defDGLink gmorph linkType SeeTarget
-      (node1,dg1) = addRefNode dg (source morph) libs
-      (node2,dg2) = addRefNode dg1 (target morph) libs
-      in snd $ insLEdgeDG (node1,node2,linkLabel) dg2
-
-
-
-addTheory :: ImpEnv -> DGraph -> TLElement -> IO ImpEnv
-addTheory e dg (TLTheory n mMeta l) = do
-  -- make the labeled node and 
-
--- inserts a signature as a node to the development graph
-addSigToDG :: Sign -> DGraph -> (Node,DGraph)
-addSigToDG sig dg =
-  let node = getNewNodeDG dg
-      m = sigModule sig
-      nodeName = emptyNodeName { getName = Token m nullRange }
-      info = newNodeInfo DGBasic
-      extSign = makeExtSign LF sig
-      gth = noSensGTheory LF extSign startSigId
-      nodeLabel = newInfoNodeLab nodeName info gth
-      dg1 = insNodeDG (node,nodeLabel) dg
-      in (node,dg1)
-
-
-readOMDoc
-
-
--}

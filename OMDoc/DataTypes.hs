@@ -21,7 +21,7 @@ import qualified Data.Map as Map
   OMDoc represented in 3 layers:
   1. toplevel (theory, view)
   2. theory constitutive (axiom, symbol)
-  3. subelements (morphism, insort, ...) and OpenMath
+  3. subelements (insort, ...) and OpenMath
 -}
 
 
