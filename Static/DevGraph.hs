@@ -90,6 +90,7 @@ data NodeName = NodeName
   , xpath :: [XPathPart]
   } deriving (Show, Eq, Ord)
 
+
 isInternal :: NodeName ->  Bool
 isInternal n = extIndex n /= 0 || not (null $ extString n)
 
@@ -311,6 +312,18 @@ data DGLinkOrigin =
   | DGLinkFlatteningRename
     deriving (Show, Eq)
 
+-- | name of the LinkOrigin if existent
+getLinkOriginName :: DGLinkOrigin -> Maybe SIMPLE_ID
+getLinkOriginName lo = case lo of
+                         DGLinkMorph sid -> Just sid
+                         DGLinkInst sid _ -> Just sid
+                         DGLinkInstArg sid -> Just sid
+                         DGLinkView sid _ -> Just sid
+                         DGLinkFitView sid -> Just sid
+                         DGLinkFitViewImp sid -> Just sid
+                         _ -> Nothing
+                   
+
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth
    mutual recursive with 'DGLinkLab', 'DGLinkType', and 'ThmLinkStatus'
@@ -373,24 +386,28 @@ data DGLinkLab = DGLink
   , dgl_origin :: DGLinkOrigin -- origin in input language
   , dglPending :: Bool        -- open proofs of edges in proof basis
   , dgl_id :: EdgeId          -- id of the edge
-  , dglName :: String         -- name of the edge
+  , dglName :: NodeName         -- name of the edge
   } deriving (Show, Eq)
 
-mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> EdgeId -> DGLinkLab
-mkDGLink mor ty orig ei = DGLink
+mkDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> NodeName -> EdgeId
+         -> DGLinkLab
+mkDGLink mor ty orig nn ei = DGLink
   { dgl_morphism = mor
   , dgl_type = ty
   , dgl_origin = orig
   , dglPending = False
   , dgl_id = ei
-  , dglName = "" }
+  , dglName = nn }
 
 -- | name a link
-nameDGLink :: String -> DGLinkLab -> DGLinkLab
-nameDGLink s l = l { dglName = s }
+nameDGLink :: NodeName -> DGLinkLab -> DGLinkLab
+nameDGLink nn l = l { dglName = nn }
 
 defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
-defDGLink m ty orig = mkDGLink m ty orig defaultEdgeId
+defDGLink m ty orig = let nn = makeName $ case getLinkOriginName orig of
+                                            Just sid -> sid
+                                            _ ->  mkSimpleId ""
+                      in mkDGLink m ty orig nn defaultEdgeId
 
 globDefLink :: GMorphism -> DGLinkOrigin -> DGLinkLab
 globDefLink m orig = defDGLink m globalDef orig
@@ -679,6 +696,10 @@ dgn_sign dn = case dgn_theory dn of
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName = showName . dgn_name
 
+-- | gets the name of a development graph link as a string (total)
+getDGLinkName :: DGLinkLab -> String
+getDGLinkName = showName . dglName
+
 -- ** creating node content and label
 
 -- | create default content
@@ -850,7 +871,7 @@ lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph
 lookupNodeWith f dg = find f $ labNodesDG dg
 
 -- | lookup a node in the graph by its name, using showName
---   to convert nodenames.
+--   to convert nodenames. See also 'getDGNodesByName'.
 lookupNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
@@ -1043,8 +1064,8 @@ getDGNodesByName :: (NodeName -> Bool) -> DGraph -> [LNode DGNodeLab]
 getDGNodesByName p = filter (p . dgn_name . snd) . labNodesDG
 
 -- | get links by name (inefficiently)
-getDGLinksByName :: String -> DGraph -> [LEdge DGLinkLab]
-getDGLinksByName s = filter (\ (_, _, l) -> dglName l == s) . labEdgesDG
+getDGLinksByName :: (NodeName -> Bool) -> DGraph -> [LEdge DGLinkLab]
+getDGLinksByName p = filter (\ (_, _, l) -> p $ dglName l) . labEdgesDG
 
 -- ** top-level functions
 

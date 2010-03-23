@@ -206,7 +206,7 @@ instance Pretty DGLinkOrigin where
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String
 showLEdge (s, t, l) = "edge " ++ showEdgeId (dgl_id l)
-  ++ " " ++ (let n = dglName l in if null n then "" else n)
+  ++ " " ++ (showName $ dglName l)
   ++ "(" ++ showNodeId s ++ " --> " ++ show t ++ ")"
 
 -- | only print the origin and parts of the type
