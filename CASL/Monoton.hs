@@ -80,7 +80,7 @@ makeEquivMonoR o o1 o2 args res =
         t2 = injectTerm (Application (Qual_op_name o (toOP_TYPE o2)
                                             nullRange) a2 nullRange) res
     in makeNamed "ga_function_monotonicity" $ mkForall vds
-           (Existl_equation t1 t2 nullRange) nullRange
+           (Strong_equation t1 t2 nullRange) nullRange
 
 makeEquivPredMono :: Id -> Sign f e -> PredType -> PredType
                   -> [Named (FORMULA f)]
