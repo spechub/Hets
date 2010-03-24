@@ -201,6 +201,7 @@ printNamedSen ns =
   in case s of
   TypeDef {} -> d
   RecDef {} -> d
+  Lemmas {} -> d
   Instance {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
@@ -234,6 +235,11 @@ printSentence s = case s of
         <+> printSortAux True res <+> pretty prf
   Sentence { isRefuteAux = b, metaTerm = t } -> printPlainMetaTerm (not b) t
   ConstDef t -> printTerm t
+  Lemmas name lemmas -> if null lemmas
+                        then empty -- only have this lemmas if we have some in
+                                   -- the list
+                        else text lemmasS <+> text name <+>
+                             equals <+> (sep $ map text lemmas)
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl setdecl =
@@ -711,7 +717,6 @@ printProofMethod pm =
                                             Nothing -> empty
                              in fsep $ [text autoS, text simpS, modDoc,
                                              text "add:"] ++ map text names
-
       SimpAdd m names -> let modDoc = case m of
                                         Just mod' -> parens $ pretty mod'
                                         Nothing -> empty

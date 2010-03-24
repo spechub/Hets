@@ -129,6 +129,9 @@ data Sentence =
   | TypeDef { newType :: Typ
             , typeDef :: SetDecl
             , nonEmptyPr :: IsaProof}
+  -- |Isabelle syntax for grouping multiple lemmas in to a single lemma.
+  | Lemmas { lemmaName :: String
+           , lemmasList :: [String]}
     deriving (Eq, Ord, Show)
 
 -- Other SetDecl variants to be added later
