@@ -300,7 +300,7 @@ ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs \
 
 Reduce_files = Reduce/Sign.hs Reduce/Morphism.hs Reduce/AS_BASIC_Reduce.hs Reduce/Symbol.hs
 
-CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs
+CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs CommonLogic/Symbol.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
