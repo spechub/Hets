@@ -32,7 +32,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
-import Common.Id (getRange, Id, nullRange, simpleIdToId)
+import Common.Id (getRange, Id, nullRange, simpleIdToId, tokStr)
 import Common.Lib.State
 import Common.ExtSign
 
@@ -200,7 +200,7 @@ anaProcEq (ParmProcname pn vs) proc = do
                                 -- BUG - What should the constituent
                                 -- alphabet be for this process?
                                 -- probably the same as the inner one!
-                                (makeNamed ("ProcHugo")
+                                (makeNamed ("Proc_" ++ tokStr pn)
                                                (ProcessEq pn fqGVars
                                                           procAlpha
                                                           fqProc)):ccsens
