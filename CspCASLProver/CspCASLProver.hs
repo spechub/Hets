@@ -25,7 +25,7 @@ module CspCASLProver.CspCASLProver
     ) where
 
 import CASL.AS_Basic_CASL (CASLFORMULA)
-import CASL.Sign (CASLSign, Sign(..))
+import CASL.Sign (CASLSign, Sign (..))
 
 import Common.AS_Annotation (Named, mapNamedM)
 import Common.Result
@@ -34,8 +34,8 @@ import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
 import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
-import CspCASL.SignCSP (ccSig2CASLSign, ccSig2CspSign, CspCASLSign, CspSign(..)
-                       , CspCASLSen(..))
+import CspCASL.SignCSP (ccSig2CASLSign, ccSig2CspSign, CspCASLSign, CspSign (..)
+                       , CspCASLSen (..))
 import CspCASL.Morphism (CspMorphism)
 
 import CspCASLProver.Consts
@@ -61,7 +61,7 @@ cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
 
 -- | The main cspCASLProver function
 cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a ->
-                      IO([ProofStatus ()])
+                      IO ([ProofStatus ()])
 cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
   let -- get the CASL signature of the data part of the CspcASL theory
       caslSign = ccSig2CASLSign ccSign
@@ -102,39 +102,41 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
       isaProve thName (produceProcesses thName ccSign ccNamedSens pcfolSign
                                         cfolSign) ()
 
--- | Produce the Isabelle theory of the data part of a CspCASL
---   specification. The data transalation can fail. If it does fail there will
---   be an error message. Its arguments are the CASL signature from the data
---   part and a list of the named CASL sentences from the data part. Returned
---   are the Isabelle signature, Isabelle named sentences and also the CASL
---   signature of the data part after translation to pcfol (i.e. with out
---   subsorting) and cfol (i.e. with out subsorting and partiality).
+-- |Produce the Isabelle theory of the data part of a CspCASL
+-- specification. The data transalation can fail. If it does fail there will
+-- be an error message. Its arguments are the CASL signature from the data
+-- part and a list of the named CASL sentences from the data part. Returned
+-- are the Isabelle signature, Isabelle named sentences and also the CASL
+-- signature of the data part after translation to pcfol (i.e. with out
+-- subsorting) and cfol (i.e. with out subsorting and partiality).
 produceDataEncoding :: CASLSign -> [Named CASLFORMULA] ->
                        Result (Isa.Sign, [Named Isa.Sentence], CASLSign,
                                   CASLSign)
 produceDataEncoding caslSign caslNamedSens =
     let -- Comorphisms
         casl2pcfol = wrapMapTheory CASL2PCFOL.CASL2PCFOL
-        pcfol2cfol = wrapMapTheory $ CASL2SubCFOL.CASL2SubCFOL True CASL2SubCFOL.AllSortBottoms
+        pcfol2cfol = wrapMapTheory $ CASL2SubCFOL.CASL2SubCFOL True
+                     CASL2SubCFOL.AllSortBottoms
         cfol2isabelleHol = wrapMapTheory CFOL2IsabelleHOL.CFOL2IsabelleHOL
-    in do -- Remove Subsorting from the CASL part of the CspCASL
-          -- specification
-          th_pcfol <- casl2pcfol (caslSign, caslNamedSens)
-          -- Next Remove partial functions
-          th_cfol <- pcfol2cfol th_pcfol
-          -- Next Translate to IsabelleHOL code
-          (th_isa_Sig, th_isa_Sens) <- cfol2isabelleHol th_cfol
-          return (th_isa_Sig, th_isa_Sens, fst th_pcfol, fst th_cfol)
+    in do
+      -- Remove Subsorting from the CASL part of the CspCASL
+      -- specification
+      th_pcfol <- casl2pcfol (caslSign, caslNamedSens)
+      -- Next Remove partial functions
+      th_cfol <- pcfol2cfol th_pcfol
+      -- Next Translate to IsabelleHOL code
+      (th_isa_Sig, th_isa_Sens) <- cfol2isabelleHol th_cfol
+      return (th_isa_Sig, th_isa_Sens, fst th_pcfol, fst th_cfol)
 
--- | Produce the Isabelle theory which contains the PreAlphabet,
---   Justification Theorems and also the instances code. We need the
---   PFOL signature which is the data part CASL signature after
---   translation to PCFOL (i.e. without subsorting) to pass on as an
---   argument.
+-- |Produce the Isabelle theory which contains the PreAlphabet,
+-- Justification Theorems and also the instances code. We need the
+-- PFOL signature which is the data part CASL signature after
+-- translation to PCFOL (i.e. without subsorting) to pass on as an
+-- argument.
 producePreAlphabet :: String -> CASLSign -> CASLSign ->
                       Theory Isa.Sign Isa.Sentence ()
 producePreAlphabet thName caslSign pfolSign =
-    let sortList = Set.toList(sortSet caslSign)
+    let sortList = Set.toList (sortSet caslSign)
         -- empty Isabelle signature which imports the data encoding
         -- and quotient.thy (which is needed for the instances code)
         isaSignEmpty = Isa.emptySign {Isa.imports = [mkThyNameDataEnc thName
@@ -145,18 +147,19 @@ producePreAlphabet thName caslSign pfolSign =
         -- instance of code.
         (isaSign, isaSens) = addInstansanceOfEquiv
                            $ addJustificationTheorems caslSign pfolSign
+                           $ addAllGaAxiomsCollections caslSign pfolSign
                            $ addEqFun sortList
                            $ addAllCompareWithFun caslSign
                            $ addPreAlphabet sortList
-                           $ (isaSignEmpty,[])
+                           $ (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
 
--- | Produce the Isabelle theory which contains the Alphabet
---   construction,  and also the bar types and choose
---   fucntions for CspCASLProver.
+-- |Produce the Isabelle theory which contains the Alphabet
+-- construction,  and also the bar types and choose
+-- fucntions for CspCASLProver.
 produceAlphabet :: String -> CASLSign -> Theory Isa.Sign Isa.Sentence ()
 produceAlphabet thName caslSign =
-    let sortList = Set.toList(sortSet caslSign)
+    let sortList = Set.toList (sortSet caslSign)
         -- empty Isabelle signature which imports the preAlphabet encoding
         isaSignEmpty = Isa.emptySign {
                          Isa.imports = [mkThyNamePreAlphabet thName]}
@@ -165,37 +168,37 @@ produceAlphabet thName caslSign =
         (isaSign, isaSens) = addAllChooseFunctions sortList
                            $ addAllBarTypes sortList
                            $ addAlphabetType
-                           $ (isaSignEmpty,[])
+                           $ (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
 
--- | Produce the Isabelle theory which contains the Integration
---   Theorems on data
+-- |Produce the Isabelle theory which contains the Integration
+-- Theorems on data
 produceIntegrationTheorems :: String -> CASLSign ->
                               Theory Isa.Sign Isa.Sentence ()
 produceIntegrationTheorems thName caslSign =
-    let sortList = Set.toList(sortSet caslSign)
+    let sortList = Set.toList (sortSet caslSign)
         -- empty Isabelle signature which imports the alphabet encoding
         isaSignEmpty = Isa.emptySign {Isa.imports = [mkThyNameAlphabet thName] }
         -- Start with our empty isabelle theory and add the
         -- integration theorems.
         (isaSign, isaSens) = addAllIntegrationTheorems sortList caslSign
-                           $ (isaSignEmpty,[])
+                           $ (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
 
--- | Produce the Isabelle theory which contains the Process Translations and
---   process refinement theorems. We -- need the PCFOL and CFOL signatures of
---   the data part after translation to PCFOL and CFOL to pass -- along to the
---   process translation.
+-- |Produce the Isabelle theory which contains the Process Translations and
+-- process refinement theorems. We -- need the PCFOL and CFOL signatures of
+-- the data part after translation to PCFOL and CFOL to pass -- along to the
+-- process translation.
 produceProcesses :: String -> CspCASLSign -> [Named CspCASLSen] ->
                     CASLSign -> CASLSign -> Theory Isa.Sign Isa.Sentence ()
 produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
     let caslSign = ccSig2CASLSign ccSign
         cspSign = ccSig2CspSign ccSign
-        sortList = Set.toList(sortSet caslSign)
+        sortList = Set.toList (sortSet caslSign)
         sortRel' = sortRel caslSign
         chanNameMap = chans cspSign
-        --  Isabelle signature which imports the integration theorems encoding
-        --  and CSP_F
+        -- Isabelle signature which imports the integration theorems encoding
+        -- and CSP_F
         isaSignEmpty = Isa.emptySign {Isa.imports = [mkThyNameIntThms thName
                                                     , cspFThyS] }
         -- Start with our empty isabelle theory and add the
@@ -205,6 +208,5 @@ produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
                            $ addFlatTypes sortList
                            $ addProjFlatFun
                            $ addEventDataType sortRel' chanNameMap
-                           $ (isaSignEmpty,[])
+                           $ (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
-

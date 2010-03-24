@@ -30,7 +30,7 @@ signatures.
 "CspCASLProver.TransProcesses" contains functions that implement CspCASLProver's
 translation of processes from CspCASL to CspProver.
 
-"CspCASLProver.Utils" contains utilities for CspCASLProver related to the actual construction of
-Isabelle theories.
+"CspCASLProver.Utils" contains utilities for CspCASLProver related to the actual
+construction of Isabelle theories.
 -}
 module CspCASLProver where

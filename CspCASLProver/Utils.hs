@@ -20,6 +20,7 @@ module CspCASLProver.Utils
     , addAllChooseFunctions
     , addAllCompareWithFun
     , addAllIntegrationTheorems
+    , addAllGaAxiomsCollections
     , addEqFun
     , addEventDataType
     , addFlatTypes
@@ -168,6 +169,30 @@ addCompareWithFun caslSign isaTh sort =
     in  addPrimRec eqs isaThWithConst
 
 --------------------------------------------------------
+-- Functions that creates a lemma for group many lemmas
+--------------------------------------------------------
+
+-- | Add a series of lemmas sentences that collect together all the
+--   automatically generate axioms. This allow us to group large collections of
+--   lemmas in to a single lemma. This cuts down on the repreated addition of
+--   lemmas in the proofs. We need to the CASL signature (from the datapart) and
+--   the PFOL Signature to pass it on. We could recalculate the PFOL signature
+--   from the CASL signature here, but we dont as it can be passed in. We need
+--   the PFOL signature which is the data part CASL signature after translation
+--   to PCFOL (i.e. without subsorting)
+addAllGaAxiomsCollections :: CASLSign.CASLSign -> CASLSign.CASLSign ->
+                        IsaTheory -> IsaTheory
+addAllGaAxiomsCollections caslSign pfolSign isaTh =
+    let sortRel = Rel.toList(CASLSign.sortRel caslSign)
+        sorts = Set.toList(CASLSign.sortSet caslSign)
+    in addLemmasCollection lemmasEmbInjAxS (getCollectionEmbInjAx sortRel)
+     $ addLemmasCollection lemmasIdentityAxS (getCollectionIdentityAx caslSign)
+     $ addLemmasCollection lemmasNotDefBotAxS (getCollectionNotDefBotAx sorts)
+     $ addLemmasCollection lemmasTotalityAxS (getCollectionTotAx pfolSign)
+     $ addLemmasCollection lemmasTransAxS (getCollectionTransAx caslSign)
+     $ isaTh
+
+--------------------------------------------------------
 -- Functions for producing the Justification theorems --
 --------------------------------------------------------
 
@@ -175,7 +200,7 @@ addCompareWithFun caslSign isaTh sort =
 --   the CASL signature (from the datapart) and the PFOL Signature to
 --   pass it on. We could recalculate the PFOL signature from the CASL
 --   signature here, but we dont as it can be passed in. We need the
---   PFOL signature which is the data part CASL signature afetr
+--   PFOL signature which is the data part CASL signature after
 --   translation to PCFOL (i.e. without subsorting)
 addJustificationTheorems :: CASLSign.CASLSign -> CASLSign.CASLSign ->
                             IsaTheory -> IsaTheory
@@ -253,31 +278,38 @@ addDecompositionTheorem caslSign pfolSign sorts isaTh (s1,s2,s3) =
         injOp_s1_s3 = mkInjection s1 s3
         inj_s1_s2_s3_x = injOp_s2_s3 (injOp_s1_s2 x)
         inj_s1_s3_x = injOp_s1_s3 x
-
         definedOp_s1 = getDefinedOp sorts s1
         definedOp_s3 = getDefinedOp sorts s3
-        collectionIdentityAx = getCollectionIdentityAx caslSign
-        collectionTransAx = getCollectionTransAx caslSign
-        collectionTotAx = getCollectionTotAx pfolSign
-        collectionNotDefBotAx = getCollectionNotDefBotAx sorts
 
         name = getDecompositionThmName(s1, s2, s3)
         conds = []
         concl = binEq inj_s1_s2_s3_x inj_s1_s3_x
-
+        -- We only want to add these lemma sets if they exist
+        lemmasIdentityAxS' = if null $ getCollectionIdentityAx caslSign
+                             then []
+                             else [lemmasIdentityAxS]
+        lemmasTransAxS' = if null $ getCollectionTransAx caslSign
+                          then []
+                          else [lemmasTransAxS]
+        lemmasTotalityAxS' = if null $ getCollectionTotAx pfolSign
+                             then []
+                             else [lemmasTotalityAxS]
+        lemmasNotDefBotAxS' = if null $ getCollectionNotDefBotAx sorts
+                              then []
+                              else [lemmasNotDefBotAxS]
         proof' = IsaProof [Apply[CaseTac (definedOp_s3 inj_s1_s2_s3_x)] False,
                            -- Case 1
                            Apply[SubgoalTac(definedOp_s1 x)] False,
-                           Apply[Insert (collectionIdentityAx
-                                         ++ collectionTransAx)] False,
+                           Apply[Insert $ lemmasIdentityAxS' ++
+                                        lemmasTransAxS'] False,
                            Apply[Simp] False,
-                           Apply[SimpAdd Nothing collectionTotAx] False,
+                           Apply[SimpAdd Nothing lemmasTotalityAxS'] False,
 
                            -- Case 2
                            Apply[SubgoalTac(
                                termAppl notOp(definedOp_s3 inj_s1_s3_x))] False,
-                           Apply[SimpAdd Nothing collectionNotDefBotAx] False,
-                           Apply[SimpAdd Nothing collectionTotAx] False]
+                           Apply[SimpAdd Nothing lemmasNotDefBotAxS'] False,
+                           Apply[SimpAdd Nothing lemmasTotalityAxS'] False]
                            Done
     in addTheoremWithProof name conds concl proof' isaTh
 
@@ -301,29 +333,37 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
         injY = mkInjection s1 s2 y
         definedOp_s1 = getDefinedOp sorts s1
         definedOp_s2 = getDefinedOp sorts s2
-        collectionEmbInjAx = getCollectionEmbInjAx sortRel
-        collectionTotAx = getCollectionTotAx pfolSign
-        collectionNotDefBotAx = getCollectionNotDefBotAx sorts
         name = getInjectivityThmName(s1, s2)
         conds = [binEq injX injY]
         concl = binEq x y
+        -- We only want to add these lemma sets if they exist
+        lemmasEmbInjAxS' = if null $ getCollectionEmbInjAx sortRel
+                           then []
+                           else [lemmasEmbInjAxS]
+        lemmasTotalityAxS' = if null $ getCollectionTotAx pfolSign
+                             then []
+                             else [lemmasTotalityAxS]
+        lemmasNotDefBotAxS' = if null $ getCollectionNotDefBotAx sorts
+                              then []
+                              else [lemmasNotDefBotAxS]
+
         proof' = IsaProof [Apply [CaseTac (definedOp_s2 injX)] False,
                            -- Case 1
                            Apply[SubgoalTac(definedOp_s1 x)] False,
                            Apply[SubgoalTac(definedOp_s1 y)] False,
-                           Apply[Insert collectionEmbInjAx] False,
+                           Apply[Insert lemmasEmbInjAxS'] False,
                            Apply[Simp] False,
-                           Apply[SimpAdd Nothing collectionTotAx] False,
-                           Apply[SimpAdd (Just No_asm_use) collectionTotAx]
+                           Apply[SimpAdd Nothing lemmasTotalityAxS'] False,
+                           Apply[SimpAdd (Just No_asm_use) lemmasTotalityAxS']
                                 False,
                            -- Case 2
                            Apply[SubgoalTac(termAppl notOp (definedOp_s1 x))]
                                 False,
                            Apply[SubgoalTac(termAppl notOp(definedOp_s1 y))]
                                 False,
-                           Apply[SimpAdd Nothing collectionNotDefBotAx] False,
-                           Apply[SimpAdd Nothing collectionTotAx] False,
-                           Apply[SimpAdd (Just No_asm_use) collectionTotAx]
+                           Apply[SimpAdd Nothing lemmasNotDefBotAxS'] False,
+                           Apply[SimpAdd Nothing lemmasTotalityAxS'] False,
+                           Apply[SimpAdd (Just No_asm_use) lemmasTotalityAxS']
                                 False]
                            Done
     in addTheoremWithProof name conds concl proof' isaTh
@@ -334,8 +374,14 @@ addInjectivityTheorem pfolSign sorts sortRel isaTh (s1,s2) =
 --   injectivity theorem names
 addTransitivityTheorem :: [SORT] -> [(SORT,SORT)] -> IsaTheory -> IsaTheory
 addTransitivityTheorem sorts sortRel isaTh =
-    let colInjThmNames = getColInjectivityThmName sortRel
-        colDecompThmNames = getColDecompositionThmName sortRel
+    let -- First we extend the theory to include the collections of CspCASL
+        -- prover's injectivity and decomposition theorems
+        isaThExt =
+            addLemmasCollection lemmasCCProverInjectivityThmsS
+                (getColInjectivityThmName sortRel)
+          $ addLemmasCollection lemmasCCProverDecompositionThmsS
+                (getColDecompositionThmName sortRel)
+          $ isaTh
         numSorts = length(sorts)
         name = transitivityS
         x = mkFree "x"
@@ -343,7 +389,18 @@ addTransitivityTheorem sorts sortRel isaTh =
         z = mkFree "z"
         thmConds = [binEq_PreAlphabet x y, binEq_PreAlphabet y z]
         thmConcl = binEq_PreAlphabet x z
-        simpPlus = SimpAdd Nothing (colDecompThmNames ++ colInjThmNames)
+        -- We only want to add these lemma sets if they exist
+        lemmasCCProverDecompositionThmsS' =
+            if null $ getColDecompositionThmName sortRel
+            then []
+            else [lemmasCCProverDecompositionThmsS]
+        lemmasCCProverInjectivityThmsS' =
+            if null $ getColInjectivityThmName sortRel
+            then []
+            else [lemmasCCProverInjectivityThmsS]
+
+        simpPlus = SimpAdd Nothing (lemmasCCProverDecompositionThmsS' ++
+                                    lemmasCCProverInjectivityThmsS')
         -- We want to induct Y, Z and perfom simplification is a clever way,
         -- namely,
         -- apply(induct y, (induct z, simp * numSorts) * numSorts)+
@@ -355,7 +412,9 @@ addTransitivityTheorem sorts sortRel isaTh =
                    proof = (Apply [Induct x] False : inductPC),
                    end = Done
                  }
-    in addTheoremWithProof name thmConds thmConcl proof' isaTh
+    in addTheoremWithProof name thmConds thmConcl proof' isaThExt
+
+
 
 --------------------------------------------------------------
 -- Functions for producing instances of equivalence classes --
@@ -711,8 +770,9 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
 -- Basic function to help keep strings consistent         --
 ------------------------------------------------------------
 
--- | Return the list of strings of all gn_totality axiom names. This
---   function is not implemented in a satisfactory way.
+-- | Return the list of strings of all gn_totality axiom names produced by the
+--   translation CASL2PCFOL; CASL2SubCFOL. This function is not implemented in a
+--   satisfactory way.
 getCollectionTotAx :: CASLSign.CASLSign -> [String]
 getCollectionTotAx pfolSign =
     let opList = Map.toList $ CASLSign.opMap pfolSign
@@ -780,42 +840,17 @@ mkInjection s s' t =
        then t
        else termAppl injOp t
 
--- | Return the list of string of all embedding_injectivity axioms
+-- | Return the list of string of all ga_embedding_injectivity axioms
 --   produced by the translation CASL2PCFOL; CASL2SubCFOL.
 getCollectionEmbInjAx :: [(SORT,SORT)] -> [String]
 getCollectionEmbInjAx sortRel =
     let mkName (s,s') = transString $ mkEmbInjName s s'
     in map mkName sortRel
 
--- | Return the list of strings of all ga_notDefBottom axioms.
+-- | Return the list of strings of all ga_notDefBottom axioms produced by
+--   the translation CASL2PCFOL; CASL2SubCFOL.
 getCollectionNotDefBotAx :: [SORT] -> [String]
 getCollectionNotDefBotAx = map $ transString . mkNotDefBotAxiomName
-
--- | Return the list of string of all decomposition theorem names that we
---   generate. This function is not implemented in a satisfactory way
-getColDecompositionThmName :: [(SORT,SORT)] -> [String]
-getColDecompositionThmName sortRel =
-    let tripples = [(s1,s2,s3) |
-                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
-    in map getDecompositionThmName tripples
-
--- | Produce the theorem name of the decomposition theorem that we produce for a
---   gievn tripple of sorts.
-getDecompositionThmName :: (SORT,SORT,SORT) -> String
-getDecompositionThmName (s, s', s'') =
-    "decomposition_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
-                    ++ "_" ++ (convertSort2String s'')
-
--- | Return the list of strings of the injectivity theorem names that we
---   generate.  This function is not implemented in a satisfactory way
-getColInjectivityThmName :: [(SORT,SORT)] -> [String]
-getColInjectivityThmName sortRel = map getInjectivityThmName sortRel
-
--- | Produce the theorem name of the injectivity theorem that we produce for a
---   gievn pair of sorts.
-getInjectivityThmName :: (SORT,SORT) -> String
-getInjectivityThmName (s, s') =
-    "injectivity_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
 
 -- | Return the list of strings of all the transitivity axioms names produced by
 --   the translation CASL2PCFOL; CASL2SubCFOL.
@@ -837,3 +872,30 @@ getCollectionIdentityAx caslSign =
                           (Set.member s' $ CASLSign.supersortsOf s caslSign)
     in [transString $ mkIdAxiomName s s'
             | s <- sorts, s' <- sorts, isomorphic s s']
+
+
+-- | Return the list of string of all decomposition theorem names that we
+--   generate. This function is not implemented in a satisfactory way
+getColDecompositionThmName :: [(SORT,SORT)] -> [String]
+getColDecompositionThmName sortRel =
+    let tripples = [(s1,s2,s3) |
+                    (s1,s2) <- sortRel, (s2',s3) <- sortRel, s2==s2']
+    in map getDecompositionThmName tripples
+
+-- | Produce the theorem name of the decomposition theorem that we produce for a
+--   gievn tripple of sorts.
+getDecompositionThmName :: (SORT,SORT,SORT) -> String
+getDecompositionThmName (s, s', s'') =
+    "ccprover_decomposition_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')
+                    ++ "_" ++ (convertSort2String s'')
+
+-- | Return the list of strings of the injectivity theorem names that we
+--   generate.  This function is not implemented in a satisfactory way
+getColInjectivityThmName :: [(SORT,SORT)] -> [String]
+getColInjectivityThmName sortRel = map getInjectivityThmName sortRel
+
+-- | Produce the theorem name of the injectivity theorem that we produce for a
+--   gievn pair of sorts.
+getInjectivityThmName :: (SORT,SORT) -> String
+getInjectivityThmName (s, s') =
+    "ccprover_injectivity_" ++ (convertSort2String s) ++ "_" ++ (convertSort2String s')

@@ -36,7 +36,14 @@ module CspCASLProver.Consts
     , preAlphabetSimS
     , preAlphabetType
     , projFlatS
-     , projFlatOp
+    , projFlatOp
+    , lemmasCCProverDecompositionThmsS
+    , lemmasCCProverInjectivityThmsS
+    , lemmasEmbInjAxS
+    , lemmasIdentityAxS
+    , lemmasNotDefBotAxS
+    , lemmasTotalityAxS
+    , lemmasTransAxS
     , mkChooseFunName
     , mkChooseFunOp
     , mkCompareWithFunName
@@ -158,6 +165,36 @@ flatS = "Flat"
 -- | Function that takes a Term and adds a flat around it
 flatOp :: Term -> Term
 flatOp = termAppl (conDouble flatS)
+
+-- |Name for the lemma which is the collection of our decomposition axioms that
+--  we produce.
+lemmasCCProverDecompositionThmsS :: String
+lemmasCCProverDecompositionThmsS = "ccproverDecompositionAxs"
+
+-- |Name for the lemma which is the collection of our injectivity axioms that we
+--  produce.
+lemmasCCProverInjectivityThmsS :: String
+lemmasCCProverInjectivityThmsS = "ccproverInjectivityThms"
+
+-- | Name for the lemma which is the collection of embedding injectivity axioms.
+lemmasEmbInjAxS :: String
+lemmasEmbInjAxS = "allGaEmbInjAx"
+
+-- | Name for the lemma which is the collection of identity axioms.
+lemmasIdentityAxS :: String
+lemmasIdentityAxS = "allGaIdentityAx"
+
+-- | Name for the lemma which is the collection of not defined bottom axioms.
+lemmasNotDefBotAxS :: String
+lemmasNotDefBotAxS  = "allGaNotDefBotAx"
+
+-- | Name for the lemma which is the collection of totality axioms.
+lemmasTotalityAxS :: String
+lemmasTotalityAxS = "allGaTotAx"
+
+-- | Name for the lemma which is the collection of transitivity axioms.
+lemmasTransAxS :: String
+lemmasTransAxS = "allGaTransAx"
 
 -- | Function that takes a sort and outputs the function name for the
 --   corresponing choose function

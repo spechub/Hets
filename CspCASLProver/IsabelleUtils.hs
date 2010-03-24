@@ -17,6 +17,7 @@ module CspCASLProver.IsabelleUtils
     ( addConst
     , addDef
     , addInstanceOf
+    , addLemmasCollection
     , addPrimRec
     , addTheoremWithProof
     , updateDomainTab
@@ -75,6 +76,20 @@ addInstanceOf name args res pr isaTh =
         sen = Instance name args res pr
         namedSen = (makeNamed name sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
+
+-- | Add a lemmas sentence (definition) that allow us to group large collections
+--   of lemmas in to a single lemma. This cuts down on the repreated addition of
+--   lemmas in the proofs.
+addLemmasCollection ::String -> [String] -> IsaTheory -> IsaTheory
+addLemmasCollection lemmaname lemmas isaTh =
+    if null lemmas
+    then isaTh
+    else let isaTh_sign = fst isaTh
+             isaTh_sen = snd isaTh
+             -- Make a named lemmas sentence
+             namedSen = (makeNamed lemmaname (Lemmas lemmaname lemmas))
+                        {isAxiom = False}
+         in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- | Add a primrec defintion to the sentences of an Isabelle theory
 addPrimRec :: [Term] -> IsaTheory -> IsaTheory
