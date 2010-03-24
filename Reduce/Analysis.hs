@@ -44,12 +44,29 @@ data DIAG_FORM = DiagForm
     }
                deriving Show
 
--- | extracts the operators of a given Expression, will be used for analysis
--- extractOperators :: EXPRESSION -> [String]
--- extractOperators (Op s exps _) = s:(concat (map extractOperators exps))
--- extractOperators (List exps _) = (concat (map extractOperators exps))
--- extractOperators _ = []
+-- | extracts the operators + arity information for an operator
+extractOperatorsExp :: EXPRESSION -> [(String,Int)]
+extractOperatorsExp (Var _) = []
+extractOperatorsExp (Op s exps _) = (s,(length exps)) : (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+extractOperatorsExp (List exps _) = (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+extractOperatorsExp _ = []
 
+-- | extracts the operators + arity information for a cmd
+extractOperatorsCmd :: CMD -> [(String,Int)]
+extractOperatorsCmd (Cmd _ exps) = (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+
+-- | checks whether the command is correctly declared 
+checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
+checkOperators _ [] = True
+checkOperators s ((op,arit):ops) = case op of
+                                     "solve" -> (arit==2)
+                                     "simplify" -> (arit==1)
+                                     "divide" -> (arit==2)
+                                     "int" -> (arit==2)
+                                     "rlqe" -> (arit==1)
+                                     "factorize" -> (arit==1)
+                                     _ -> Sign.lookupSym s $ genName op 
+                                   && checkOperators s ops
 
 -- | generates a named formula
 makeNamed :: AS_Anno.Annoted CMD -> Int -> AS_Anno.Named CMD
@@ -66,7 +83,7 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
 
 -- | takes a signature and a formula, analyzes it and returns a formula with diagnosis
 analyzeFormula :: Sign.Sign -> (AS_Anno.Annoted CMD) -> Int -> DIAG_FORM
-analyzeFormula _ f i = DiagForm { formula = (makeNamed f i),
+analyzeFormula _ f i =  DiagForm { formula = (makeNamed f i),
                                              diagnosis = Diag {
                                                diagKind = Hint
                                              , diagString = "All fine"

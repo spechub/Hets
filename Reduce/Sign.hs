@@ -21,6 +21,7 @@ module Reduce.Sign
     ,isSubSigOf                    -- is subsiganture?
     ,sigDiff                       -- Difference of Signatures
     ,sigUnion                      -- Union for Logic.Logic
+    ,lookupSym
     ) where
 
 import qualified Data.Set as Set
@@ -35,6 +36,10 @@ newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
     pretty = printSign
+
+-- | checks whether a Id is declared in the signature
+lookupSym :: Sign -> Id -> Bool
+lookupSym (Sign s) item = Set.member item s
 
 -- | pretty printer for Reduce signatures
 printSign :: Sign -> Doc

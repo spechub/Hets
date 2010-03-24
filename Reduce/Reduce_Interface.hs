@@ -157,3 +157,10 @@ casint (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) +
 -- | performs quantifier elimination of a given expression
 casqelim :: (Handle,Handle)-> Named CMD -> IO (ProofStatus [EXPRESSION])
 casqelim (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"
+
+
+casDeclareOperators :: (Handle,Handle) -> [EXPRESSION] -> IO ()
+casDeclareOperators (inp,out) varlist = do
+  hPutStrLn inp $ "operator " ++ (exportExps varlist) ++ ";"
+  hGetLine out
+  return ()
