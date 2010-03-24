@@ -23,6 +23,8 @@ import ATC.ProofTree ()
 import CommonLogic.ATC_CommonLogic ()
 import CommonLogic.Sign
 import CommonLogic.AS_CommonLogic
+import CommonLogic.Symbol
+import CommonLogic.Analysis
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -38,7 +40,7 @@ instance Sentences CommonLogic
     SENTENCE
     Sign
     Morphism
-    ()
+    Symbol
 
 instance Syntax CommonLogic
     [SENTENCE]
@@ -47,14 +49,14 @@ instance Syntax CommonLogic
 
 instance Logic CommonLogic
     ()                -- Sublogics
-    [SENTENCE]               -- basic_spec
+    [SENTENCE]        -- basic_spec
     SENTENCE          -- sentence
     ()                -- symb_items
     ()                -- symb_map_items
     Sign              -- sign
     Morphism          -- morphism
-    ()                -- symbol
-    ()                -- raw_symbol
+    Symbol            -- symbol
+    Symbol            -- raw_symbol
     ()                -- proof_tree
 
 instance StaticAnalysis CommonLogic
@@ -62,9 +64,11 @@ instance StaticAnalysis CommonLogic
     SENTENCE
     ()
     ()
-    (Sign)
+    Sign
     Morphism
-    ()
-    ()
+    Symbol
+    Symbol
     where
-      empty_signature CommonLogic          = emptySig
+      basic_analysis CommonLogic    = Just basicCommonLogicAnalysis
+      empty_signature CommonLogic   = emptySig
+      is_subsig CommonLogic         = isSubSigOf

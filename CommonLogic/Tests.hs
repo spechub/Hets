@@ -5,7 +5,7 @@ module CommonLogic.Tests where
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Parse_CLIF
 
-import Common.Doc
+import Common.Doc as Doc
 import Common.Id as Id
 
 import Text.ParserCombinators.Parsec
@@ -19,13 +19,13 @@ a = Token "x" nullRange
 b :: NAME
 b = Token "y" nullRange
 t1 :: TERM
-t1 = Name a nullRange
+t1 = Name_term a
 t2 :: TERM
-t2 = Name b nullRange
+t2 = Name_term b
 t3 :: TERM
-t3 = Name (Token "P" nullRange) nullRange
+t3 = Name_term (Token "P" nullRange)
 t4 :: TERM
-t4 = Name (Token "Q" nullRange) nullRange
+t4 = Name_term (Token "Q" nullRange)
 ts1 :: TERM_SEQ
 ts1 = Term_seq [t1, t1, t2] nullRange
 b1 :: BOOL_SENT
@@ -51,29 +51,31 @@ s4 :: SENTENCE
 s4 = Bool_sent (Disjunction [s1, sa2]) nullRange
 
 ct :: TERM
-ct = Name (Token "Cat" nullRange) nullRange
+ct = Name_term (Token "Cat" nullRange)
+{-
 bs1 :: BINDING_SEQ
 bs1 = B_name a nullRange
 bs2 :: BINDING_SEQ
 bs2 = B_name b nullRange
+-}
 
 -- examples for pretty printing
 
 test :: Doc
-test = text "Atom:" <+> printAtom at1 
-   $+$ text "Atom_sent:" <+> printSentence s1 
-   $+$ text "Bool_sent:" <+> printSentence s2
-   $+$ text "Bool_sent:" <+> printSentence s4
-   $+$ text "Bool_sent:" <+> printSentence s3
-   $+$ text "Bool_sent:" <+> printSentence (Bool_sent (Implication s1 sa2) nullRange)
-   $+$ text "Bool_sent:" <+> printSentence (Bool_sent (Biconditional s1 sa2) nullRange)
-   $+$ text "Quant_sent:" <+> printSentence 
-       (Quant_sent (Existential [bs1, bs2] s1) nullRange)
-   $+$ text "Quant_sent:" <+> printSentence 
-       (Quant_sent (Universal [bs1, bs2] s1) nullRange)
-   $+$ text "Equation:" <+> printAtom (Equation t1 t1)
-   $+$ text "Functional Term:" <+> printTerm (Funct_term (t1) (ts1) nullRange)
-   $+$ text "Sentence Functional:" <+> printSentence (
+test = Doc.text "Atom:" <+> printAtom at1 
+   $+$ Doc.text "Atom_sent:" <+> printSentence s1 
+   $+$ Doc.text "Bool_sent:" <+> printSentence s2
+   $+$ Doc.text "Bool_sent:" <+> printSentence s4
+   $+$ Doc.text "Bool_sent:" <+> printSentence s3
+   $+$ Doc.text "Bool_sent:" <+> printSentence (Bool_sent (Implication s1 sa2) nullRange)
+   $+$ Doc.text "Bool_sent:" <+> printSentence (Bool_sent (Biconditional s1 sa2) nullRange)
+   $+$ Doc.text "Quant_sent:" <+> printSentence 
+       (Quant_sent (Existential [] s1) nullRange)
+   $+$ Doc.text "Quant_sent:" <+> printSentence 
+       (Quant_sent (Universal [] s1) nullRange)
+   $+$ Doc.text "Equation:" <+> printAtom (Equation t1 t1)
+   $+$ Doc.text "Functional Term:" <+> printTerm (Funct_term (t1) (ts1) nullRange)
+   $+$ Doc.text "Sentence Functional:" <+> printSentence (
             Atom_sent (Atom (Funct_term (t1) (ts1) nullRange) 
                       (Term_seq [t1] nullRange)) nullRange)
 

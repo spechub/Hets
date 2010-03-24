@@ -15,6 +15,7 @@ module CommonLogic.Sign
     (Sign (..)                     --
     ,pretty                        -- pretty printing
     ,emptySig                      -- empty signature
+    ,isSubSigOf                    -- 
     ) where
 
 import qualified Data.Set as Set
@@ -37,3 +38,7 @@ emptySig = Sign {items = Set.empty}
 printSign :: Sign -> Doc
 printSign s =
     hsep [text "prop", sepByCommas $ map pretty $ Set.toList $ items s]
+
+-- | Determines if sig1 is subsignature of sig2
+isSubSigOf :: Sign -> Sign -> Bool
+isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2

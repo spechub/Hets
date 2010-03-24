@@ -35,7 +35,7 @@ data PHRASE = Module MODULE Id.Range
 data COMMENT = Comment String Id.Range
                deriving (Show, Ord, Eq)
 
-data MODULE = Mod NAME [NAME] TEXT Id.Range
+data MODULE = Mod NAME [NAME] TEXT
               deriving (Show, Ord, Eq)
 
 data IMPORTATION = Imp_name NAME Id.Range
@@ -48,13 +48,15 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
               | Irregular_sent SENTENCE Id.Range -- opt
                 deriving (Show, Ord, Eq)
 
-data QUANT_SENT = Universal [BINDING_SEQ] SENTENCE
-                | Existential [BINDING_SEQ] SENTENCE
+data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
+                | Existential [NAME_OR_SEQMARK] SENTENCE
                   deriving (Show, Ord, Eq)
 
+{-
 data BINDING_SEQ = B_name NAME Id.Range
                  | B_seqmark SEQ_MARK Id.Range
                    deriving (Show, Ord, Eq)
+-}
 
 data BOOL_SENT = Conjunction [SENTENCE]
                | Disjunction [SENTENCE]
@@ -67,7 +69,7 @@ data ATOM = Equation TERM TERM
           | Atom TERM TERM_SEQ
             deriving (Show, Ord, Eq)
 
-data TERM = Name NAME Id.Range
+data TERM = Name_term NAME
           | Funct_term TERM TERM_SEQ Id.Range
           | Comment_term TERM COMMENT Id.Range
             deriving (Show, Ord, Eq)
@@ -77,14 +79,20 @@ data TERM_SEQ = Term_seq [TERM] Id.Range
                 deriving (Show, Ord, Eq)
 
 type NAME = Id.Token
-
 type SEQ_MARK = Id.Token
 
+data NAME_OR_SEQMARK = Name NAME
+                     | SeqMark SEQ_MARK
+                       deriving (Show, Eq, Ord)
+
+data SYMB_MAP_ITEMS = Symb_map_items [NAME_OR_SEQMARK] Id.Range
+                      deriving (Show, Eq)
+
 {-
-newtype NAME = Name Id.Token
+newtype NAME = Name_id Id.Token
                deriving (Show, Eq)
 
-newtype SEQ_MARK = SeqMark Id.Token
+newtype SEQ_MARK = SeqMark_id Id.Token
                    deriving (Show, Eq)
 -}
 
@@ -102,10 +110,10 @@ instance Pretty TERM where
    pretty = printTerm
 instance Pretty TERM_SEQ where
    pretty = printTermSeq
-instance Pretty BINDING_SEQ where
-   pretty = printBindingSeq
 instance Pretty COMMENT where
    pretty = printComment
+instance Pretty NAME_OR_SEQMARK where
+   pretty = printNameOrSeqMark
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
@@ -123,12 +131,12 @@ printQuantSent :: QUANT_SENT -> Doc
 printQuantSent s = case s of
    Universal x y -> text forallS <+> parens (sep $ map pretty x)<+> pretty y
    Existential x y -> text existsS <+> parens (sep $ map pretty x) <+> pretty y
-
+{-
 printBindingSeq :: BINDING_SEQ -> Doc
 printBindingSeq s = case s of
    B_name xs _ -> pretty xs
    B_seqmark xs _ -> text seqmark <> pretty xs
-
+-}
 printBoolSent :: BOOL_SENT -> Doc
 printBoolSent s = case s of
    Conjunction xs -> text andS <+> (fsep $ map pretty xs)
@@ -144,7 +152,7 @@ printAtom s = case s of
 
 printTerm :: TERM -> Doc
 printTerm s = case s of
-   Name a _ -> pretty a
+   Name_term a -> pretty a
    Funct_term t ts _ -> parens $ pretty t <+> pretty ts
    Comment_term x y _ -> pretty x <+> pretty y
 
@@ -152,6 +160,11 @@ printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of
   Term_seq t _ -> fsep $ map pretty t
   Seq_marks m _ -> fsep $ map pretty m
+
+printNameOrSeqMark :: NAME_OR_SEQMARK -> Doc
+printNameOrSeqMark s = case s of
+  Name x -> pretty x
+  SeqMark x -> pretty x
 
 -- keywords, reservednames in CLIF
 

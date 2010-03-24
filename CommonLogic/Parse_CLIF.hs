@@ -87,15 +87,15 @@ sentence = parens $ do
     at <- atom
     return $ Atom_sent at $ appRange (case at of
                                          Atom t ts -> case t of 
-                                                        Name x r -> r)
+                                                        Name_term x -> getRange x)
                                      (case at of 
                                          Atom t ts -> case ts of
                                                         Term_seq x r -> lastRange r)
 
-bindingseq :: CharParser st [BINDING_SEQ]
+bindingseq :: CharParser st [NAME_OR_SEQMARK]
 bindingseq = many $ do 
   n <- identifier
-  return $ B_name n $ getRange n
+  return $ Name n
 
 atom :: CharParser st ATOM
 atom = do
@@ -112,7 +112,7 @@ atom = do
 term :: CharParser st TERM
 term = do
   t <- identifier
-  return $ Name t $ tokPos t
+  return $ Name_term t
   <|>
   do 
     parens $ do 
@@ -124,9 +124,42 @@ termseq :: CharParser st TERM_SEQ
 termseq = do 
   s <- many term
   return $ Term_seq s $ appRange (case (head s) of
-                                    Name x r -> r) -- missing pm
+                                    Name_term x -> getRange x) -- missing pm
                                  (case (last s) of
-                                    Name x r -> r)
+                                    Name_term x -> getRange x)
+
+text :: CharParser st TEXT
+text = do
+  c <- Lexer.pToken $ string "cl_text"
+  phr <- many phrase
+  return $ Text phr $ if phr == [] then tokPos c else 
+                                   appRange (tokPos c) (case (last phr) of
+                                     Module _ r -> lastRange r
+                                     Sentence _ r -> lastRange r
+                                     Importation _ r -> lastRange r
+                                     Comment_Text _ _ r -> lastRange r)
+
+phrase :: CharParser st PHRASE
+phrase = do
+  (m, r) <- try $ parens $ do 
+               c <- Lexer.pToken $ string "cl_module"
+               t <- identifier
+               ts <- many identifier
+               txt <- text
+               return $ (Mod t ts txt, appRange (tokPos c) (case txt of
+                                                              Text _ x -> lastRange x))
+  return $ Module m r
+  <|> do 
+    m <- sentence
+    return $ Sentence m $ getRange m
+
+pModule :: CharParser st MODULE
+pModule = parens $ do
+  c <- Lexer.pToken $ string "cl_module"
+  t <- identifier
+  ts <- many identifier
+  txt <- text
+  return $ Mod t ts txt
 
 parens :: CharParser st a -> CharParser st a
 parens p = oParenT >> p << cParenT
@@ -158,4 +191,5 @@ identifier :: CharParser st Id.Token
 identifier = Lexer.pToken $ reserved reservedelement Lexer.scanAnyWords
 
 reservedelement :: [String]
-reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not", "..."]
+reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not", "...",
+                   "cl_text", "cl_imports", "cl_excludes", "cl_module", "cl_comment"]
