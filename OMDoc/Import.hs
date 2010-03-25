@@ -293,7 +293,7 @@ mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
 
 computeSymbolMap :: TCMorphism -> ResultT IO [(G_symbol, G_symbol)]
 computeSymbolMap _ = return []
-
+-- TODO: add a G_sympairlist to Grothendieck
 
 followImports :: LibName -> (ImpEnv, DGraph) -> [ImportInfo OMCD]
               -> ResultT IO ((ImpEnv, DGraph), [ImportInfo LinkNode])
@@ -311,8 +311,6 @@ followImport ln (e, dg) iInfo@(ImportInfo (cd, _, _)) = do
 
 -- * Development Graph and LibEnv interface
 
--- String -> NodeName
--- makeName . mkSimpleId
 
 -- | returns a function compatible with mapAccumLM for TCElement processing.
 --   Used in initialSig.
