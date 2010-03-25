@@ -8,7 +8,7 @@ public class Prove {
 	{
 		if (args.length < 2)
 	    {
-		System.out.println("owl_fact_prover <Ontology>");
+		System.out.println("owl_fact_prover <Ontology> <Conjecture>");
 		System.exit(1);
 	    } 
 		

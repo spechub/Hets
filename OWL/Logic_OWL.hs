@@ -107,7 +107,8 @@ instance Logic OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
     -- the prover uses HTk and IO functions from uni
          empty_proof_tree OWL = emptyProofTree
 #ifdef UNI_PACKAGE
-         provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver
+         provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver ++
+           (unsafeFileCheck "OWLFactProver.jar" "HETS_OWL_TOOLS" factProver)
          cons_checkers OWL =
              (unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker) ++
              (unsafeFileCheck "OWLFact.jar" "HETS_OWL_TOOLS" factConsChecker)
