@@ -43,7 +43,8 @@ module Logic.Grothendieck
   , isHomSubGsign
   , isSubGsign
   , langNameSig
-  , G_symbolplmap (..)
+  , G_symbolmap (..)
+  , G_mapofsymbol (..)
   , G_symbol (..)
   , G_symb_items_list (..)
   , G_symb_map_items_list (..)
@@ -103,7 +104,6 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
-import Common.LibName
 import Common.Lexer
 import Common.Parsec
 import Common.Result
@@ -206,27 +206,51 @@ instance Pretty G_sign where
 langNameSig :: G_sign -> String
 langNameSig (G_sign lid _ _) = language_name lid
 
-
-data G_symbolplmap = forall lid sublogics
+-- | Grothendieck maps with symbol as keys
+data G_symbolmap a = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree  =>
-  G_symbolplmap lid (Map.Map symbol [SLinkPath])
+  G_symbolmap lid (Map.Map symbol a)
   deriving Typeable
 
-instance Show G_symbolplmap where
-    show (G_symbolplmap _ sm) = show sm
+instance Show a => Show (G_symbolmap a) where
+    show (G_symbolmap _ sm) = show sm
 
-instance Eq G_symbolplmap where
+instance (Typeable a, Ord a) => Eq (G_symbolmap a) where
     a == b = compare a b == EQ
 
-instance Ord G_symbolplmap where
-  compare (G_symbolplmap l1 sm1) (G_symbolplmap l2 sm2) =
+instance (Typeable a, Ord a) => Ord (G_symbolmap a) where
+  compare (G_symbolmap l1 sm1) (G_symbolmap l2 sm2) =
     case compare (language_name l1) $ language_name l2 of
-      EQ -> compare (coerceSymbolplmap l1 l2 sm1) sm2
+      EQ -> compare (coerceSymbolmap l1 l2 sm1) sm2
       r -> r
+
+
+-- | Grothendieck maps with symbol as values
+data G_mapofsymbol a = forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree  =>
+  G_mapofsymbol lid (Map.Map a symbol)
+  deriving Typeable
+
+instance Show a => Show (G_mapofsymbol a) where
+    show (G_mapofsymbol _ sm) = show sm
+
+instance (Typeable a, Ord a) => Eq (G_mapofsymbol a) where
+    a == b = compare a b == EQ
+
+instance (Typeable a, Ord a) => Ord (G_mapofsymbol a) where
+  compare (G_mapofsymbol l1 sm1) (G_mapofsymbol l2 sm2) =
+    case compare (language_name l1) $ language_name l2 of
+      EQ -> compare (coerceMapofsymbol l1 l2 sm1) sm2
+      r -> r
+
 
 -- | Grothendieck symbols
 data G_symbol = forall lid sublogics

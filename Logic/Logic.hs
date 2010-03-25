@@ -134,12 +134,15 @@ import Common.Item
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Typeable
+import Control.Monad (unless)
 
 import qualified OMDoc.DataTypes as OMDoc ( TCElement
                                           , TCorOMElement
                                           , NameMap
                                           , SigMap
-                                          , OMCD)
+                                          , SigMapI
+                                          , OMCD
+                                          , OmdADT)
 
 
 -- | Stability of logic implementations
@@ -400,6 +403,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          --------------- operations on signatures and morphisms -----------
          -- | the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
+         -- | adds a symbol to a given signature
+         add_symb_to_sign :: lid -> sign -> symbol -> Result sign
+         add_symb_to_sign l _ _ = statFail l "add_symb_to_sign"
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statFail l "signature_union"
@@ -587,17 +593,22 @@ class (StaticAnalysis lid
          empty_proof_tree l = statError l "empty_proof_tree"
 
          ----------------------- OMDoc ---------------------------
+
+         omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
+         -- default implementation, no logic should throw an error here
+         -- and the base of omcd should be a parseable URI
+         omdoc_metatheory _lid = Nothing
+
+
          export_symToOmdoc :: lid -> OMDoc.NameMap symbol
                            -> symbol -> String -> Result OMDoc.TCElement
-         -- default implementation
-         export_symToOmdoc l _ _ = statError l "export_symToOmdoc"
+         export_symToOmdoc l _ _ = statFail l "export_symToOmdoc"
 
          export_senToOmdoc :: lid -> OMDoc.NameMap symbol
                           -> sentence -> Result OMDoc.TCorOMElement
-         -- default implementation
-         export_senToOmdoc l _ _  = statError l "export_senToOmdoc"
+         export_senToOmdoc l _ _  = statFail l "export_senToOmdoc"
 
-         -- | additional information which have to be exported can be
+         -- | additional information which has to be exported can be
          --   exported by this function
          export_theoryToOmdoc :: lid -> OMDoc.SigMap symbol -> sign
                               -> [Named sentence] -> Result [OMDoc.TCElement]
@@ -605,10 +616,37 @@ class (StaticAnalysis lid
          -- , sufficient in some cases
          export_theoryToOmdoc _ _ _ _  = return []
 
-         omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
-         -- default implementation, no logic should throw an error here
-         -- and the base of omcd should be a parseable URI
-         omdoc_metatheory _lid = Nothing
+
+         omdocToSym :: lid -> OMDoc.SigMapI symbol -> OMDoc.TCElement
+                    -> String -> Result symbol
+         omdocToSym l _ _ _ = statFail l "omdocToSym"
+
+         omdocToSen :: lid -> OMDoc.SigMapI symbol -> OMDoc.TCElement
+                    -> String -> Result (Maybe (Named sentence))
+         omdocToSen l _ _ _ = statFail l "omdocToSen"
+
+         -- | abstract datatypes are imported with this function.
+         --   By default the input is returned without changes.
+         addOMadtToTheory :: lid -> OMDoc.SigMapI symbol
+                          -> (sign, [Named sentence]) -> [[OMDoc.OmdADT]]
+                          -> Result (sign, [Named sentence])
+         -- no logic should throw an error here
+         addOMadtToTheory l _ t adts = do
+           unless (null adts) $ warning ()
+                      (concat [ "ADT handling not implemented for logic "
+                              , show l, " but some adts have to be handled" ])
+                      nullRange
+           return t
+
+         -- | additional information which has to be imported can be
+         --   imported by this function. By default the input is returned
+         --   without changes.
+         addOmdocToTheory :: lid -> OMDoc.SigMapI symbol
+                          -> (sign, [Named sentence]) -> [OMDoc.TCElement]
+                          -> Result (sign, [Named sentence])
+         -- no logic should throw an error here
+         addOmdocToTheory _ _ t _ = return t
+
 
 ----------------------------------------------------------------
 -- Derived functions

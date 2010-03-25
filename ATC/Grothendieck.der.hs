@@ -126,18 +126,32 @@ instance ShATermLG G_symbol where
                 (att2, G_symbol lid i2') }}}
             u -> fromShATermError "G_symbol" u
 
-instance ShATermLG G_symbolplmap where
-  toShATermLG att0 (G_symbolplmap lid m) = do
+instance (Ord a, ShATermLG a) => ShATermLG (G_symbolmap a) where
+  toShATermLG att0 (G_symbolmap lid m) = do
          (att1,i1) <- toShATermLG' att0 (language_name lid)
          (att2,i2) <- toShATermLG' att1 m
-         return $ addATerm (ShAAppl "G_symbolplmap" [i1,i2] []) att2
+         return $ addATerm (ShAAppl "G_symbolmap" [i1,i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_symbolplmap" [i1,i2] _ ->
+            ShAAppl "G_symbolmap" [i1,i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
-                case atcLogicLookup lg "G_symbolplmap" i1' of { Logic lid ->
+                case atcLogicLookup lg "G_symbolmap" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
-                (att2, G_symbolplmap lid i2') }}}
-            u -> fromShATermError "G_symbolplmap" u
+                (att2, G_symbolmap lid i2') }}}
+            u -> fromShATermError "G_symbolmap" u
+
+instance (Ord a, ShATermLG a) => ShATermLG (G_mapofsymbol a) where
+  toShATermLG att0 (G_mapofsymbol lid m) = do
+         (att1,i1) <- toShATermLG' att0 (language_name lid)
+         (att2,i2) <- toShATermLG' att1 m
+         return $ addATerm (ShAAppl "G_mapofsymbol" [i1,i2] []) att2
+  fromShATermLG lg ix att = case getShATerm ix att of
+            ShAAppl "G_mapofsymbol" [i1,i2] _ ->
+                case fromShATermLG' lg i1 att of { (att1, i1') ->
+                case atcLogicLookup lg "G_mapofsymbol" i1' of { Logic lid ->
+                case fromShATermLG' lg i2 att1 of { (att2, i2') ->
+                (att2, G_mapofsymbol lid i2') }}}
+            u -> fromShATermError "G_mapofsymbol" u
+
 
 instance ShATermLG G_symb_items_list where
   toShATermLG att0 (G_symb_items_list lid symb_items) = do

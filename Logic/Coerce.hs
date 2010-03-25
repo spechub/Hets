@@ -17,7 +17,6 @@ import Logic.Logic
 import Logic.Prover
 import Common.ExtSign
 import Common.Id
-import Common.LibName
 import Common.Result
 import Common.AS_Annotation
 import qualified Data.Set as Set
@@ -113,15 +112,25 @@ coerceSymbol ::
    => lid1 -> lid2 -> symbol1 -> symbol2
 coerceSymbol l1 l2 s1 = unsafeCoerce l1 l2 s1
 
-coerceSymbolplmap ::
+coerceSymbolmap ::
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Typeable a)
-   => lid1 -> lid2 -> Map.Map symbol1 [LinkPath a]
-           -> Map.Map symbol2 [LinkPath a]
-coerceSymbolplmap l1 l2 sm1 = unsafeCoerce l1 l2 sm1
+   => lid1 -> lid2 -> Map.Map symbol1 a
+           -> Map.Map symbol2 a
+coerceSymbolmap l1 l2 sm1 = unsafeCoerce l1 l2 sm1
+
+coerceMapofsymbol ::
+   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Typeable a)
+   => lid1 -> lid2 -> Map.Map a symbol1
+           -> Map.Map a symbol2
+coerceMapofsymbol l1 l2 sm1 = unsafeCoerce l1 l2 sm1
 
 coerceSymbItemsList ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

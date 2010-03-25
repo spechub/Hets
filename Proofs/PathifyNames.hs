@@ -71,7 +71,7 @@ pathifyLabNode le li dg (n, lb) =
       -- get the global imports
       innMorphs <- getGlobalImports lid dg $ innDG dg n
       m <- pathifySign lid li sig innMorphs
-      let nlb = lb { dgn_symbolpathlist = G_symbolplmap lid m }
+      let nlb = lb { dgn_symbolpathlist = G_symbolmap lid m }
       return $ changesDGH dg [SetNodeLab lb (n, nlb)]
 
 
@@ -124,11 +124,11 @@ getGlobalImport lid dg (from, _, llab) =
                     hmor <- coerceMorphism (targetLogic cid) lid
                             "getGlobalImport" mor
                     case dgn_symbolpathlist $ labDG dg from of
-                      G_symbolplmap lid0 m ->
+                      G_symbolmap lid0 m ->
                           if isIdComorphism (Comorphism cid)
                           then
                           return $ Just (n, hmor, isHidingDef lt
-                                        , coerceSymbolplmap lid0 lid m)
+                                        , coerceSymbolmap lid0 lid m)
                           else
                               do
                                 warning () ("translating by comorphism "
@@ -136,10 +136,10 @@ getGlobalImport lid dg (from, _, llab) =
                                 let plmap = Map.mapKeys
                                              (sglElem (show cid)
                                               . map_symbol cid sign1)
-                                             $ coerceSymbolplmap lid0
+                                             $ coerceSymbolmap lid0
                                                   (sourceLogic cid) m
                                 return $ Just (n, hmor, isHidingDef lt,
-                                                coerceSymbolplmap
+                                                coerceSymbolmap
                                                 (targetLogic cid) lid plmap)
     -- theorem links will be skipped
     else return Nothing

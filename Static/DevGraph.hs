@@ -165,7 +165,7 @@ data DGNodeLab =
   , dgn_phi :: Maybe GMorphism --morphism from signature to nffree signature
   , nodeInfo :: DGNodeInfo
   , dgn_lock :: Maybe (MVar ())
-  , dgn_symbolpathlist :: G_symbolplmap
+  , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
   } deriving (Show, Eq)
 
 instance Show (MVar a) where
@@ -728,7 +728,7 @@ newInfoNodeLab name info gTh@(G_theory lid _ _ _ _) = DGNodeLab
   , dgn_phi = Nothing
   , nodeInfo = info
   , dgn_lock = Nothing
-  , dgn_symbolpathlist = G_symbolplmap lid Map.empty }
+  , dgn_symbolpathlist = G_symbolmap lid Map.empty }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
