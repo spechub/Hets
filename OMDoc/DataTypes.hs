@@ -142,11 +142,18 @@ data OMElement =
 type UniqName = (String, Int)
 type NameMap a = Map.Map a UniqName
 
--- | Mapping of symbols and sentence names to unique ids
+-- | Mapping of symbols and sentence names to unique ids (used in export)
 data SigMap a = SigMap (NameMap a) (NameMap String)
 
-symbMap :: SigMap a -> NameMap a
-symbMap (SigMap sm _) = sm
+-- | Mapping of OMDoc names to hets strings, for signature creation,
+--   and strings to symbols, for lookup in terms (used in import)
+data SigMapI a = SigMapI (Map.Map OMName a) (Map.Map OMName String)
+
+sigMapSymbs :: SigMap a -> NameMap a
+sigMapSymbs (SigMap sm _) = sm
+
+sigMapISymbs :: SigMapI a -> Map.Map OMName a
+sigMapISymbs (SigMapI sm _) = sm
 
 cdFromList :: [String] -> OMCD
 cdFromList ["", ""] = CD []
@@ -200,7 +207,20 @@ nameToString :: UniqName -> String
 nameToString (s,i) = if i > 0 then nameEncode ("over_" ++ show i) [s]
                      else s
 
----------------------- Constructing Values ----------------------
+---------------------- Constructing/Extracting Values ----------------------
+
+-- | name of the theory constitutive element, error if not TCSymbol, TCNotation,
+--   or TCImport
+tcName :: TCElement -> OMName
+tcName tc = case tc of
+              TCSymbol s _ _ _ -> mkSimpleName s
+              TCNotation qn _ -> unqualName qn
+              TCImport s _ _ -> mkSimpleName s
+              _ -> error "tcName: No name for this value."
+
+unqualName :: OMQualName -> OMName
+unqualName = snd
+
 
 emptyCD :: OMCD
 emptyCD = CD []

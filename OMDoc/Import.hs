@@ -58,17 +58,23 @@ import Network.URI
 
 -- * Import Environment Interface
 
+{-
 sorry :: a
 sorry = error "Under construction"
 
 debugOut :: String -> ResultT IO ()
 debugOut = lift . putStrLn . ("Debug: " ++)
+-}
+
+type NameSymbolMap = G_mapofsymbol OMName
 
 -- | the keys consist of the filepaths without suffix!
-data ImpEnv = ImpEnv { libMap :: Map.Map FilePath (LibName, DGraph) }
+data ImpEnv =
+    ImpEnv { libMap :: Map.Map FilePath (LibName, DGraph)
+           , nsymbMap :: Map.Map (LibName, String) NameSymbolMap }
 
 initialEnv :: ImpEnv
-initialEnv = ImpEnv { libMap = Map.empty }
+initialEnv = ImpEnv { libMap = Map.empty, nsymbMap = Map.empty }
 
 getLibEnv :: ImpEnv -> LibEnv
 getLibEnv = Map.fromList . Map.elems . libMap
@@ -220,22 +226,27 @@ importTheory e cl@(ln, dg) cd =
 addTLToDGraph :: LibName -> (ImpEnv, DGraph) -> TLElement
               -> ResultT IO (ImpEnv, DGraph)
 -- adding a theory to the DG
-addTLToDGraph ln (e, dg) (TLTheory n mCD l) =
-    let clf@(TCClf iInfo syms sens adt nameMap) = classifyTCs l
-        -- I. Compute initial signature
-        gSig = initialSig clf $ getLogicFromMeta mCD
-    in do
-      -- II. Lookup all imports (= follow and create them first),
-      -- and insert DGNodeRefs if neccessary.
-      ((e', dg'), iIL) <- followImports ln (e, dg) iInfo
-      -- III. Compute morphisms and update local sig stepwise.
-      (gSig', iIWL) <- computeMorphisms nameMap gSig iIL
-       -- IV. Add the sentences to the Node.
-       -- V. Add the Node to the DGraph.
-      let ((nd, _), dg'') = addNodeToDG dg' n gSig'
-          -- VI. Create links from the morphisms.
-          dg''' = addLinksToDG nd dg'' iIWL
-      return $ (e', dg''')
+addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
+  let clf@(TCClf iInfo syms sens adt nameMap) = classifyTCs l
+
+  -- I. Compute initial signature
+  (gSig, nsmap) <- liftR $ initialSig clf $ getLogicFromMeta mCD
+
+  -- II. Lookup all imports (= follow and create them first),
+  -- and insert DGNodeRefs if neccessary.
+  ((e', dg'), iIL) <- followImports ln (e, dg) iInfo
+
+  -- III. Compute morphisms and update local sig stepwise.
+  (gSig', iIWL) <- computeMorphisms nameMap gSig iIL
+
+  -- IV. Add the sentences to the Node.
+
+  -- V. Add the Node to the DGraph.
+  let ((nd, _), dg'') = addNodeToDG dg' n gSig'
+      -- VI. Create links from the morphisms.
+      dg''' = addLinksToDG nd dg'' iIWL
+  return $ (e', dg''')
+
 
 -- TODO: adding a view to the DG
 addTLToDGraph ln (e, dg) (TLView n from to mMor) =
@@ -265,7 +276,7 @@ computeMorphism nameMap tGSig iInfo@(ImportInfo ((_, (from, lbl)), n, morph)) =
                   let f gSym = case gSym of
                                  G_symbol lid s -> symbol_to_raw tLid
                                                    $ coerceSymbol lid tLid s
-                      rsMap = Map.fromList $ map (\ (x,y) -> (f x, f y) )
+                      rsMap = Map.fromList $ map (\ (x, y) -> (f x, f y) )
                               symMap
                   sSig' <- coercePlainSign sLid tLid "computeMorphism" sSig
                   mor <- liftR $ induced_from_morphism tLid rsMap sSig'
@@ -276,7 +287,6 @@ computeMorphism nameMap tGSig iInfo@(ImportInfo ((_, (from, lbl)), n, morph)) =
                   -- 3. update the signature
                   return (newGSig, (gMor, globalDef, mkLinkOrigin n, from))
 
--- Language.Haskell.Interpreter
 
 mkLinkOrigin :: String -> DGLinkOrigin
 mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
@@ -304,13 +314,34 @@ followImport ln (e, dg) iInfo@(ImportInfo (cd, _, _)) = do
 -- String -> NodeName
 -- makeName . mkSimpleId
 
--- | Builds an initial Sig of the given logic and classification.
-initialSig :: TCClassification -> AnyLogic -> G_sign
-initialSig _ lg =
+-- | returns a function compatible with mapAccumLM for TCElement processing.
+--   Used in initialSig.
+sigmapAccumFun :: Monad m => (SigMapI a -> TCElement -> String -> m a)
+               -> SigMapI a -> TCElement -> m (SigMapI a, a)
+sigmapAccumFun f smi@(SigMapI m1 m2) s = do
+  let n = tcName s
+      mf = Map.findWithDefault (error "sigmapAccumFun: lookup failed")
+      hetsname = mf n m2
+  s' <- f smi s hetsname
+  let smi' = SigMapI (Map.insert n s' m1) m2
+  return (smi', s')
+
+
+-- | Builds an initial Sig and a name map of the given logic and classification.
+initialSig :: TCClassification -> AnyLogic -> Result (G_sign, NameSymbolMap)
+initialSig clf lg =
     case lg of
       Logic lid ->
-          let extSig = makeExtSign lid $ empty_signature lid
-          in G_sign lid extSig startSigId
+          do
+            let initSM = SigMapI Map.empty $ notations clf
+            -- accumulates symbol mappings in the symbMap in SigMapI
+            -- while creating symbols from OMDoc symbols
+            (sm, symbs) <- mapAccumLM (sigmapAccumFun $ omdocToSym lid) initSM
+                           $ sigElems clf
+            -- adding the symbols to the empty signature
+            sig <- foldM (add_symb_to_sign lid) (empty_signature lid) symbs
+            let gsig = G_sign lid (makeExtSign lid sig) startSigId
+            return (gsig, G_mapofsymbol lid $ sigMapISymbs sm)
 
 -- | Adds Edges from the LinkInfo list to the development graph.
 addLinksToDG :: Node -> DGraph -> [LinkInfo] -> DGraph
