@@ -15,6 +15,7 @@ module OMDoc.DataTypes where
 import Common.Utils
 import Common.Amalgamate
 import Data.List
+import Data.Typeable
 import qualified Data.Map as Map
 
 {-
@@ -109,7 +110,7 @@ instance Read Totality where
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String,  path :: [String] }
-              deriving (Show, Eq, Ord)
+              deriving (Show, Eq, Ord, Typeable)
 
 -- | Attribute-name/attribute-value pair used to represent the type
 -- of a type-annotated term

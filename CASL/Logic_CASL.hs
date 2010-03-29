@@ -46,7 +46,9 @@ import CASL.SimplifySen
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint () -- currently unused
 import CASL.Qualify
-import CASL.OMDoc
+import qualified CASL.OMDocImport as OMI
+import CASL.OMDocExport
+
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
 #endif
@@ -231,6 +233,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          is_injective CASL = isInjective
 
          empty_signature CASL = emptySign ()
+         add_symb_to_sign CASL = addSymbToSign
+
          signature_union CASL s = return . addSig const s
          intersection CASL s = return . interSig const s
          morphism_union CASL = morphismUnion (const id) const
@@ -262,6 +266,9 @@ instance Logic CASL CASL_Sublogics
          export_senToOmdoc CASL = exportSenToOmdoc
          export_symToOmdoc CASL = exportSymToOmdoc
          export_theoryToOmdoc CASL = exportTheoryToOmdoc
+         omdocToSen CASL = OMI.omdocToSen
+         omdocToSym CASL = OMI.omdocToSym
+
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
 #endif

@@ -13,7 +13,7 @@ export_morphismToOmdoc, export_senToOmdoc from class Logic. The actual
 instantiation can be found in module CASL.Logic_CASL.
 -}
 
-module CASL.OMDoc
+module CASL.OMDocExport
     ( exportSymToOmdoc
     , exportSenToOmdoc
     , exportTheoryToOmdoc

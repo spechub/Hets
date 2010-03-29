@@ -66,6 +66,13 @@ debugOut :: String -> ResultT IO ()
 debugOut = lift . putStrLn . ("Debug: " ++)
 -}
 
+{- | There are three important maps for each theory:
+ 1. OMName -> symbol, the NameSymbolMap stores for each OMDoc name the
+                      translated hets symbol
+ 2. OMName -> String, the nameMap stores the notation information of the
+                      OMDoc names, identity mappings are NOT stored here!
+ 3. SigMapI symbol,   this signatureMap is just a container to store map 1 and 2
+-}
 type NameSymbolMap = G_mapofsymbol OMName
 
 -- | the keys consist of the filepaths without suffix!
@@ -83,6 +90,10 @@ addDGToEnv :: ImpEnv -> LibName -> DGraph -> ImpEnv
 addDGToEnv e ln dg =
     e { libMap = Map.insert (libNameToFile ln) (ln, dg) $ libMap e }
 
+addNSMapToEnv :: ImpEnv -> LibName -> String -> NameSymbolMap -> ImpEnv
+addNSMapToEnv e ln nm nsm =
+    e { nsymbMap = Map.insert (ln, nm) nsm $ nsymbMap e }
+
 lookupLib :: ImpEnv -> URI -> Maybe (LibName, DGraph)
 lookupLib e u = Map.lookup (rmSuffix $ uriPath u) $ libMap e
 
@@ -97,6 +108,13 @@ lookupNode e (ln, dg) ucd =
     else case lookupLib e $ fromJust $ getUri ucd of
            Nothing -> Nothing
            Just (ln', dg') -> fmap (\ n -> (ln', n)) $ lookupNodeByName mn dg'
+
+lookupNSMap :: ImpEnv -> LibName -> Maybe LibName -> String -> NameSymbolMap
+lookupNSMap e ln mLn nm =
+    let ln' = fromMaybe ln mLn
+        mf = Map.findWithDefault
+             $ error $ "lookupNSMap: lookup failed for " ++ show (mLn, nm, nsymbMap e)
+    in mf (ln', nm) $ nsymbMap e
 
 
 -- * URI Functions
@@ -114,6 +132,7 @@ libNameFromURL :: String -> URI -> IO LibName
 libNameFromURL s u = do
   let fp = uriPath u
   mt <- getModificationTime fp
+  putStrLn $ "libname: " ++ s ++ " -- " ++ show u
   return $ setFilePath fp mt $ emptyLibName s
 
 -- | Compute an absolute URI for a supplied URI relative to the given filepath.
@@ -237,15 +256,19 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
   ((e', dg'), iIL) <- followImports ln (e, dg) iInfo
 
   -- III. Compute morphisms and update local sig stepwise.
-  (gSig', iIWL) <- computeMorphisms nameMap gSig iIL
+  (gSig', iIWL) <- computeMorphisms e ln nsmap gSig iIL
 
   -- IV. Add the sentences to the Node.
+  -- TODO
 
   -- V. Add the Node to the DGraph.
   let ((nd, _), dg'') = addNodeToDG dg' n gSig'
       -- VI. Create links from the morphisms.
       dg''' = addLinksToDG nd dg'' iIWL
-  return $ (e', dg''')
+      -- add the new name symbol map to the environment
+      e'' = addNSMapToEnv e' ln n nsmap
+
+  return $ (e'', dg''')
 
 
 -- TODO: adding a view to the DG
@@ -255,45 +278,69 @@ addTLToDGraph ln (e, dg) (TLView n from to mMor) =
 
 -- ** Utils to compute DGNodes from OMDoc Theories
 
-computeMorphisms :: Map.Map OMName String -> G_sign -> [ImportInfo LinkNode]
-              -> ResultT IO (G_sign, [LinkInfo])
-computeMorphisms nameMap = mapAccumLM (computeMorphism nameMap)
+computeMorphisms :: ImpEnv -> LibName -> NameSymbolMap -> G_sign
+                 -> [ImportInfo LinkNode]
+                 -> ResultT IO (G_sign, [LinkInfo])
+computeMorphisms e ln nsmap = mapAccumLM (computeMorphism e ln nsmap)
 
-computeMorphism :: Map.Map OMName String -- ^ Hets-notation for OMDoc symbols
+computeMorphism :: ImpEnv -- ^ The import environment for lookup purposes
+                -> LibName -- ^ Current libname
+                -> NameSymbolMap -- ^ OMDoc symbol to Hets symbol map
                 -> G_sign -- ^ target signature
                 -> ImportInfo LinkNode -- ^ source label with OMDoc morphism
                 -> ResultT IO (G_sign, LinkInfo)
-computeMorphism nameMap tGSig iInfo@(ImportInfo ((_, (from, lbl)), n, morph)) =
-    case dgn_theory lbl of
-      G_theory sLid (ExtSign sSig _) _ _ _ ->
-          case tGSig of
-            G_sign tLid (ExtSign tSig _) sigId ->
-                do
-                  -- 1. build the morphism
-                  -- compute first the symbol-map
-                  symMap <- computeSymbolMap morph
-                  -- we coerce all symbols to the target logic
-                  let f gSym = case gSym of
-                                 G_symbol lid s -> symbol_to_raw tLid
-                                                   $ coerceSymbol lid tLid s
-                      rsMap = Map.fromList $ map (\ (x, y) -> (f x, f y) )
-                              symMap
-                  sSig' <- coercePlainSign sLid tLid "computeMorphism" sSig
-                  mor <- liftR $ induced_from_morphism tLid rsMap sSig'
-                  -- 2. build the GMorphism and update the signature
-                  newSig <- liftR $ signature_union tLid tSig $ cod mor
-                  let gMor = gEmbed $ mkG_morphism tLid mor
-                      newGSig = G_sign tLid (makeExtSign tLid newSig) sigId
-                  -- 3. update the signature
-                  return (newGSig, (gMor, globalDef, mkLinkOrigin n, from))
-
+computeMorphism e ln nsmap tGSig iIL@(ImportInfo (_, (from, lbl)) n _)
+    = case dgn_theory lbl of
+        G_theory sLid (ExtSign sSig _) _ _ _ ->
+            case tGSig of
+              G_sign tLid (ExtSign tSig _) sigId ->
+                  do
+                    -- 1. build the morphism
+                    -- compute first the symbol-map
+                    symMap <- computeSymbolMap e ln nsmap iIL tLid
+                    let
+                        f = symbol_to_raw tLid
+                        rsMap = Map.fromList $ map (\ (x, y) -> (f x, f y) )
+                                symMap
+                    -- REMARK: Logic-homogeneous environment assumed
+                    sSig' <- coercePlainSign sLid tLid "computeMorphism" sSig
+                    mor <- liftR $ induced_from_morphism tLid rsMap sSig'
+                    -- 2. build the GMorphism and update the signature
+                    newSig <- liftR $ signature_union tLid tSig $ cod mor
+                    let gMor = gEmbed $ mkG_morphism tLid mor
+                        newGSig = G_sign tLid (makeExtSign tLid newSig) sigId
+                    -- 3. update the signature
+                    return (newGSig, (gMor, globalDef, mkLinkOrigin n, from))
 
 mkLinkOrigin :: String -> DGLinkOrigin
 mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
 
-computeSymbolMap :: TCMorphism -> ResultT IO [(G_symbol, G_symbol)]
-computeSymbolMap _ = return []
--- TODO: add a G_sympairlist to Grothendieck
+computeSymbolMap :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+        ImpEnv -> LibName -> NameSymbolMap -> ImportInfo LinkNode -> lid
+               -> ResultT IO [(symbol, symbol)]
+computeSymbolMap e ln nsmap iIL@(ImportInfo (mLn, (_, lbl)) _ morph) lid =
+  case (lookupNSMap e ln mLn $ getDGNodeName lbl, nsmap) of
+    (G_mapofsymbol sLid sm, G_mapofsymbol tLid tm) ->
+        do
+          -- REMARK: Logic-homogeneous environment assumed
+          let sNSMap = coerceMapofsymbol sLid lid sm
+              tNSMap = coerceMapofsymbol tLid lid tm
+              mf = Map.findWithDefault $ error "computeSymbolMap: lookup failed"
+              -- function for the map functor
+              f (omn, ome) =
+                  case ome of
+                    OMS qn ->
+                        let tSymName = (unqualName qn)
+                            tSym = mf tSymName tNSMap
+                        in (mf omn sNSMap, tSym)
+                    _ -> error "computeSymbolMap: Nonsymbol element mapped"
+          return $ map f morph
+
 
 followImports :: LibName -> (ImpEnv, DGraph) -> [ImportInfo OMCD]
               -> ResultT IO ((ImpEnv, DGraph), [ImportInfo LinkNode])
@@ -303,9 +350,10 @@ followImports ln = mapAccumLCM (curry snd) (followImport ln)
 -- and add it if neccessary to the environment.
 followImport :: LibName -> (ImpEnv, DGraph) -> ImportInfo OMCD
              -> ResultT IO ((ImpEnv, DGraph), ImportInfo LinkNode)
-followImport ln (e, dg) iInfo@(ImportInfo (cd, _, _)) = do
+followImport ln (e, dg) iInfo@(ImportInfo cd  _ _) = do
   (e', (ln', dg'), lnode) <- importTheory e (ln, dg) cd
   let linknode = (if ln == ln' then Nothing else Just ln', lnode)
+  lift $ putStrLn $ "following: " ++ show ln ++ " --> " ++ show cd
   return $ ((e', dg'), fmap (const linknode) iInfo)
 
 
@@ -386,10 +434,10 @@ type LinkNode = (Maybe LibName, LNode DGNodeLab)
 
 type LinkInfo = (GMorphism, DGLinkType, DGLinkOrigin, Node)
 
-newtype ImportInfo a = ImportInfo (a, String, TCMorphism)
+data ImportInfo a = ImportInfo a String TCMorphism
 
-instance Functor ImportInfo where fmap f (ImportInfo (x, y, z))
-                                      = ImportInfo (f x, y, z)
+instance Functor ImportInfo where fmap f (ImportInfo x y z)
+                                      = ImportInfo (f x) y z
 
 data TCClassification = TCClf {
       importInfo :: [ImportInfo OMCD] -- ^ Import-info
@@ -418,5 +466,5 @@ classifyTC tc clf =
           else clf
       TCADT l -> clf { adts = l : adts clf }
       TCImport n from morph ->
-          clf { importInfo = ImportInfo (from, n, morph) : importInfo clf }
+          clf { importInfo = (ImportInfo from n morph) : importInfo clf }
       TCComment _ -> clf

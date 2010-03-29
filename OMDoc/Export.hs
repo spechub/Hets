@@ -123,7 +123,8 @@ exportDGraph le s (ln, dg) = do
   (s', theories) <- mapAccumLCM proj2 (exportNodeLab le ln dg) s
                     $ topsortedNodes dg
   (s'', views) <- mapAccumLCM proj2 (exportLinkLab le ln dg) s' $ labEdgesDG dg
-  return (s'', OMDoc (show ln) $ (catMaybes theories) ++ (catMaybes views))
+  return (s'', OMDoc (show $ getLibId ln)
+                 $ (catMaybes theories) ++ (catMaybes views))
 
 
 -- | DGNodeLab to TLTheory translation

@@ -116,6 +116,7 @@ emptySign e = Sign
     , globAnnos = emptyGlobalAnnos
     , extendedInfo = e }
 
+
 class SignExtension e where
     isSubSignExtension :: e -> e -> Bool
     symOfExtension :: e -> Set.Set Symbol
@@ -508,3 +509,25 @@ mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'
 
 mkAxNameSingle :: String -> SORT -> String
 mkAxNameSingle str s = "ga_" ++ str ++ "_" ++ show s
+
+
+-- | adds a symbol to a given signature
+addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)
+addSymbToSign sig sy =
+    let addSort' cs s = 
+            cs { sortSet = Set.insert s $ sortSet cs }
+        addToMap' m n t = Map.insertWith Set.union n (Set.singleton t) m
+        addOp' cs n ot = cs { opMap = addToMap' (opMap cs) n ot }
+        addPred' cs n pt = cs { predMap = addToMap' (predMap cs) n pt }
+    in do
+      let sig' = addSymbToDeclSymbs sig sy
+      case symbType sy of
+        SortAsItemType -> return  $ addSort' sig' $ symName sy
+        PredAsItemType pt -> return  $ addPred' sig' (symName sy) pt
+        OpAsItemType ot -> return  $ addOp' sig' (symName sy) ot
+        _ -> fail "addSymbToSign: symbol type not supported"
+
+
+addSymbToDeclSymbs :: Sign e f -> Symbol -> Sign e f
+addSymbToDeclSymbs cs sy =
+    cs { declaredSymbols = Set.insert sy $ declaredSymbols cs }
