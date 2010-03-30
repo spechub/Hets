@@ -39,21 +39,23 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- ------------------- Name Mapping interface ---------------------
+-- * Name Mapping interface
 
+-- TODO: introduce numbered uniqname in order to output the signature
+-- in the correct order, important for reimport!
+
+-- | A structure similar to SigMap but with a Grothendieck map instead
+data GSigMap = GSigMap { gSymbMap :: G_symbolmap UniqName
+                       , gNameMap :: NameMap String }
 
 -- | Mapping of Specs to SigMaps
-newtype SpecSymNames = SpecSymNames
-    (Map.Map (LibName, String) (SigMap G_symbol))
+newtype SpecSymNames = SpecSymNames (Map.Map (LibName, String) GSigMap)
 
 data ExpEnv = ExpEnv { getSSN :: SpecSymNames
                      , getInitialLN :: LibName }
 
 fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
-
-fmapSM :: (Ord a, Ord b) => (a -> b) -> SigMap a -> SigMap b
-fmapSM f (SigMap m1 m2) = SigMap (fmapNM f m1) m2
 
 emptyEnv :: LibName -> ExpEnv
 emptyEnv ln = ExpEnv { getSSN = SpecSymNames $ Map.empty
@@ -93,14 +95,13 @@ lookupWithInsert :: forall lid sublogics
 lookupWithInsert lid sig sens s k =
     let SpecSymNames m = getSSN s in
     case Map.lookup k m of
-      Just nm -> (s, fmapSM (\ (G_symbol lid1 sym)
-                               -> coerceSymbol lid1 lid sym) nm)
-      Nothing -> let nm = fromSignAndNamedSens lid sig sens in
-                 ( s { getSSN = SpecSymNames
-                                $ Map.insert k (fmapSM (G_symbol lid) nm) m }
-                 , nm)
+      Just (GSigMap (G_symbolmap lid1 sm) nm) -> 
+          (s, SigMap (coerceSymbolmap lid1 lid sm) nm)
+      Nothing -> let sigm@(SigMap sm nm) = fromSignAndNamedSens lid sig sens
+                     gsm = GSigMap (G_symbolmap lid sm) nm
+                 in ( s { getSSN = SpecSymNames $ Map.insert k gsm m }, sigm)
 
--- ------------------- LibEnv traversal ---------------------
+-- * LibEnv traversal
 
 -- first projection is the const function
 
@@ -149,10 +150,10 @@ exportNodeLab le ln dg s (n, lb) =
               thms <- mapR (exportSentence lid sigm) nsens
               return (s'', Just $ TLTheory sn (omdoc_metatheory lid)
                              $ concatMap concat
-                                   [imports, [extra], consts, thms])
+                                   [imports, consts, [extra], thms])
 
 
--- ------------------- Views and Morphisms ---------------------
+-- * Views and Morphisms
 
 -- Node lookup for handling ref nodes
 getNodeData :: LibEnv -> LibName -> DGNodeLab -> (DGNodeLab, LibName)
@@ -307,14 +308,14 @@ sglElem s sa
     | otherwise = Set.findMin sa
 
 
--- ------------------- Names and CDs ---------------------
+-- * Names and CDs
 
 mkCD :: ExpEnv -> LibName -> LibName -> String -> OMCD
-mkCD s lnCurr ln sn = 
+mkCD _ lnCurr ln sn =
     CD $ [sn] ++ if lnCurr == ln then []
                  else [concat ["file://", libNameToFile ln, ".omdoc"]]
 
--- ------------------- Symbols and Sentences ---------------------
+-- * Symbols and Sentences
 
 exportSymbol :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items

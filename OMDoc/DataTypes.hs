@@ -138,7 +138,8 @@ data OMElement =
   | OMBIND OMElement [OMElement] OMElement
   deriving (Show, Eq, Ord)
 
----------------------- Datatypes for Translation ----------------------
+
+-- * Utils for Translation
 
 type UniqName = (String, Int)
 type NameMap a = Map.Map a UniqName
@@ -148,13 +149,11 @@ data SigMap a = SigMap (NameMap a) (NameMap String)
 
 -- | Mapping of OMDoc names to hets strings, for signature creation,
 --   and strings to symbols, for lookup in terms (used in import)
-data SigMapI a = SigMapI (Map.Map OMName a) (Map.Map OMName String)
+data SigMapI a = SigMapI { sigMapISymbs :: Map.Map OMName a
+                         , sigMapINotations :: Map.Map OMName String }
 
 sigMapSymbs :: SigMap a -> NameMap a
 sigMapSymbs (SigMap sm _) = sm
-
-sigMapISymbs :: SigMapI a -> Map.Map OMName a
-sigMapISymbs (SigMapI sm _) = sm
 
 cdFromList :: [String] -> OMCD
 cdFromList ["", ""] = CD []
@@ -177,9 +176,10 @@ cdToMaybeList (CD [cd]) = [Nothing, Just cd]
 cdToMaybeList _ = [Nothing, Nothing]
 
 
+-- * Name handling: encoding, decoding, unique names
+
 -- | The closing paren + percent can be used neither in ordinary Hets-names
 --   nor in sentence names hence it is used here for encodings.
-
 uniqPrefix :: String
 uniqPrefix = "%()%"
 
@@ -208,7 +208,7 @@ nameToString :: UniqName -> String
 nameToString (s,i) = if i > 0 then nameEncode ("over_" ++ show i) [s]
                      else s
 
----------------------- Constructing/Extracting Values ----------------------
+-- * Constructing/Extracting Values
 
 -- | name of the theory constitutive element, error if not TCSymbol, TCNotation,
 --   or TCImport
