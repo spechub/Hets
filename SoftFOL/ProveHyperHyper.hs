@@ -14,7 +14,7 @@ its CASC-mode, aka tptp-input. It works for single input files and
 fof-style.
 -}
 
-module SoftFOL.ProveHyperHyper (hyperProver)
+module SoftFOL.ProveHyperHyper (hyperProver, hyperConsChecker)
     where
 
 import Logic.Prover
@@ -45,6 +45,8 @@ import Data.List
 import Data.Time (timeToTimeOfDay)
 import Data.Time.LocalTime(TimeOfDay(..))
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
+
+-- Prover
 
 {- | The Prover implementation. -}
 hyperProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
@@ -107,7 +109,7 @@ hyperCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
         resultMVar (proverName hyperProver) thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
-prelTxt :: Int -> String
+prelTxt :: String -> String
 prelTxt t =
     "% only print essential output\n" ++
     "#(set_verbosity(1)).\n\n" ++
@@ -126,7 +128,7 @@ prelTxt t =
     "% Terminate if out of time\n" ++
     "#(set_parameter(timeout_termination_method,0)).\n\n" ++
     "% Start timer\n" ++
-    "#(start_wallclock_timer("++ show t ++".0)).\n"
+    "#(start_wallclock_timer("++ t ++".0)).\n"
 
 runTxt :: String
 runTxt =
@@ -173,7 +175,7 @@ runHyper sps cfg saveTPTP thName nGoal =
                                "-" ++ (show $ utctDayTime t) ++ ".tme"
             stpRunFile  = "/tmp/" ++ runFile ++ (show $ utctDay t) ++
                                "-" ++ (show $ utctDayTime t) ++ ".tme"
-        writeFile stpPrelFile $ prelTxt tl
+        writeFile stpPrelFile $ prelTxt $ show tl
         writeFile stpRunFile  $ runTxt
         writeFile stpTmpFile  $ prob
         let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
@@ -185,7 +187,8 @@ runHyper sps cfg saveTPTP thName nGoal =
         removeFile stpPrelFile
         removeFile stpRunFile
         removeFile stpTmpFile
-        let t_t = (round (realToFrac (t_end - t_start + 1) :: Double) :: Integer)
+        let t_t = (round (realToFrac
+                          (t_end - t_start + 1) :: Double) :: Integer)
         let t_u = timeToTimeOfDay $ secondsToDiffTime $
                   if t_t == 0
                   then
@@ -277,3 +280,104 @@ examineProof sps cfg stdoutC stderrC simpleOptions nGoal tUsed =
                                            ++ "\nOutput was:\n\n" ++
                                               stdoutC ++ stderrC)
                                 , defaultStatus)
+
+-- Consistency Checker
+
+hyperConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
+hyperConsChecker = (mkConsChecker "ekrhyper" () consCheck)
+  { ccNeedsTimer = False }
+
+{- |
+  Runs the krhyper cons-chcker. The tactic script only contains a string for the
+  time limit.
+-}
+
+runTxtC :: String
+runTxtC =
+    "% start derivation with the input received so far\n" ++
+    "#(run).\n\n" ++
+    "% print normal E-KRHyper proof\n" ++
+    "%#(print_proof).\n\n" ++
+    "% print result and proof using SZS terminology;\n" ++
+    "% requires postprocessing with post_szs script for proper legibility\n" ++
+    "%#(print_szs_proof).\n\n" ++
+    "% Show the model\n" ++
+    "#(print_model).\n"
+
+consCheck :: String
+          -> TacticScript
+          -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
+          -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+          -> IO(CCStatus ProofTree)
+consCheck thName (TacticScript tl) tm freedefs =
+    case tTarget tm of
+      Theory sig nSens ->
+          let
+              saveTPTP = False
+              proverStateI = spassProverState sig (toNamedList nSens) freedefs
+              problem     = showTPTPProblemM thName proverStateI []
+              saveFile = reverse $ fst $ span (/= '/') $ reverse thName
+              tmpFile  = (reverse $ fst $ span (/='/') $ reverse thName)
+              prelFile = "prelude_" ++ (reverse $ fst $ span (/='/') $ reverse
+                                        thName)
+              runFile  = "run_" ++ (reverse $ fst $ span (/='/') $ reverse
+                                            thName)
+          in
+            do
+              prob <- problem
+              when saveTPTP
+                       (writeFile (saveFile ++".tptp") prob)
+              t <- getCurrentTime
+              let stpTmpFile  = "/tmp/" ++ tmpFile ++ (show $ utctDay t) ++
+                                "-" ++ (show $ utctDayTime t) ++ ".tptp"
+                  stpPrelFile = "/tmp/" ++ prelFile ++ (show $ utctDay t) ++
+                                "-" ++ (show $ utctDayTime t) ++ ".tme"
+                  stpRunFile  = "/tmp/" ++ runFile ++ (show $ utctDay t) ++
+                                "-" ++ (show $ utctDayTime t) ++ ".tme"
+              writeFile stpPrelFile $ prelTxt tl
+              writeFile stpRunFile  $ runTxtC
+              writeFile stpTmpFile  $ prob
+              let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
+                            " " ++ stpRunFile
+              t_start <- epochTime
+              (_, stdouth, stderrh, proch) <- runInteractiveCommand command
+              waitForProcess proch
+              t_end <- epochTime
+              removeFile stpPrelFile
+              removeFile stpRunFile
+              removeFile stpTmpFile
+              stdoutC <- hGetContents stdouth
+              stderrC <- hGetContents stderrh
+              let out = filter ("% SZS status " `isPrefixOf`) $
+                        lines (stdoutC ++ stderrC)
+                  outp = map (trim . drop (length "% SZS status ")) out
+                  t_t = (round (realToFrac
+                                (t_end - t_start + 1) :: Double) :: Integer)
+                  t_u = timeToTimeOfDay $ secondsToDiffTime $
+                        if t_t == 0
+                         then
+                             1
+                         else
+                             t_t
+              let res = case outp of
+                         ["Theorem"]            -> HProved
+                         ["Satisfiable"]        -> HProved
+                         ["Timeout"]            -> HTimeout
+                         ["CounterSatisfiable"] -> HDisproved
+                         ["Unsatisfiable"]      -> HDisproved
+                         ["MemoryOut"]          -> HMemout
+                         _                      -> HError
+              let outstate =  CCStatus
+                              { ccResult = Nothing
+                              , ccProofTree = ProofTree $ (stdoutC ++ stderrC)
+                              , ccUsedTime =  t_u }
+              case res of
+                HProved -> return outstate
+                           {
+                             ccResult = Just True
+                           }
+                HDisproved -> return outstate
+                           {
+                             ccResult = Just False
+                           }
+                _          -> return outstate

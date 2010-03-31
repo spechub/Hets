@@ -90,5 +90,7 @@ instance Logic SoftFOL () () Sentence () ()
                            ++ (unsafeProverCheck "darwin" "PATH" darwinProver)
                            ++ (unsafeProverCheck "ekrh" "PATH" hyperProver)
          cons_checkers SoftFOL = (unsafeProverCheck "darwin" "PATH"
-                                                    darwinConsChecker)
+                                                    darwinConsChecker) ++
+                                 (unsafeProverCheck "ekrh" "PATH"
+                                                    hyperConsChecker)
 #endif
