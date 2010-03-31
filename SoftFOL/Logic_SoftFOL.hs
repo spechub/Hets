@@ -31,6 +31,7 @@ import SoftFOL.Morphism
 #ifdef UNI_PACKAGE
 import Common.ProverTools
 import SoftFOL.ProveSPASS
+import SoftFOL.ProveHyperHyper
 #ifndef NOMATHSERVER
 import SoftFOL.ProveMathServ
 import SoftFOL.ProveVampire
@@ -87,6 +88,7 @@ instance Logic SoftFOL () () Sentence () ()
                            ++ [mathServBroker, vampire]
 #endif
                            ++ (unsafeProverCheck "darwin" "PATH" darwinProver)
+                           ++ (unsafeProverCheck "ekrh" "PATH" hyperProver)
          cons_checkers SoftFOL = (unsafeProverCheck "darwin" "PATH"
                                                     darwinConsChecker)
 #endif
