@@ -45,9 +45,9 @@ data SRule a = Blocked a | Ready a deriving Show
 
 
 newtype Subst =
-    Subst ( Map.Map SubstConst (SRule Term) -- | the const->term mapping
-          , Map.Map SubstType (SRule Type) -- | the const->type mapping
-                                           -- | if a constant c occurs in the term t of a
+    Subst ( Map.Map SubstConst (SRule Term) -- the const->term mapping
+          , Map.Map SubstType (SRule Type) --  the const->type mapping
+                                           --  if a constant c occurs in the term t of a
           --   const-term mapping (c',t) then c' is entered in the
           --   by this mapping corresponding set s: (c, insert c' s)
           , Map.Map SubstConst (Set.Set SubstConst)) deriving Show
