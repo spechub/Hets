@@ -209,7 +209,7 @@ importLib :: ImpEnv -- ^ The import environment
           -> URI -- ^ The url of the OMDoc file
           -> ResultT IO (ImpEnv, LibName, DGraph)
 importLib e u =
-    lift (mytrace ["importLib: ", show u]) >> 
+    lift (mytrace ["importLib: ", show u]) >>
     case lookupLib e u of
       Just (ln, dg) -> lift (mytrace ["foundLib: ", show ln]) >> return (e, ln, dg)
       _ -> readLib e u
@@ -230,10 +230,10 @@ readLib e u = do
 importTheory :: ImpEnv -- ^ The import environment
              -> CurrentLib -- ^ The current lib
              -> OMCD -- ^ The cd which points to the Theory
-             -> ResultT IO ( ImpEnv -- ^ the updated environment
-                           , LibName -- ^ the origin libname of the theory
-                           , DGraph -- ^ the updated devgraph of the current lib
-                           , LNode DGNodeLab -- ^ the corresponding node
+             -> ResultT IO ( ImpEnv -- the updated environment
+                           , LibName -- the origin libname of the theory
+                           , DGraph -- the updated devgraph of the current lib
+                           , LNode DGNodeLab -- the corresponding node
                            )
 importTheory e (ln, dg) cd =
     let ucd = toUriCD cd in
