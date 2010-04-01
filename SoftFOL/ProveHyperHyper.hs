@@ -130,6 +130,18 @@ prelTxt t =
     "% Start timer\n" ++
     "#(start_wallclock_timer("++ t ++".0)).\n"
 
+uniteOptions :: [String] -> [String]
+uniteOptions opts =
+    case opts of
+      []     ->   []
+      a:[]   -> a:[]
+      a:b:cs ->
+          if ("#(" `isPrefixOf` a && ")." `isSuffixOf` a)
+           then
+               a:(uniteOptions (b:cs))
+           else
+               (a ++ b):(uniteOptions cs)
+
 runTxt :: String
 runTxt =
     "% start derivation with the input received so far\n" ++
@@ -138,7 +150,7 @@ runTxt =
     "%#(print_proof).\n\n" ++
     "% print result and proof using SZS terminology;\n" ++
     "% requires postprocessing with post_szs script for proper legibility\n" ++
-    "%#(print_szs_proof).\n"
+    "#(print_szs_proof).\n"
 
 runHyper :: SoftFOLProverState
            -- ^ logical part containing the input Sign and axioms and possibly
@@ -160,50 +172,83 @@ runHyper sps cfg saveTPTP thName nGoal =
         runFile  = "run_" ++ (reverse $ fst $ span (/='/') $ reverse
                                           thName)
                    ++ '_':AS_Anno.senAttr nGoal
-        simpleOptions = extraOpts cfg
+        simpleOptions = uniteOptions $ extraOpts cfg
         tl = configTimeLimit cfg
     in
       do
-        prob <- showTPTPProblem thName sps nGoal $
-                      simpleOptions ++ ["Requested prover: ekrhyper"]
-        when saveTPTP
-            (writeFile (saveFile ++".tptp") prob)
-        t <- getCurrentTime
-        let stpTmpFile  = "/tmp/" ++ tmpFile ++ (show $ utctDay t) ++
-                               "-" ++ (show $ utctDayTime t) ++ ".tptp"
-            stpPrelFile = "/tmp/" ++ prelFile ++ (show $ utctDay t) ++
-                               "-" ++ (show $ utctDayTime t) ++ ".tme"
-            stpRunFile  = "/tmp/" ++ runFile ++ (show $ utctDay t) ++
-                               "-" ++ (show $ utctDayTime t) ++ ".tme"
-        writeFile stpPrelFile $ prelTxt $ show tl
-        writeFile stpRunFile  $ runTxt
-        writeFile stpTmpFile  $ prob
-        let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
-                      " " ++ stpRunFile
-        t_start <- epochTime
-        (_, stdouth, stderrh, proch) <- runInteractiveCommand command
-        waitForProcess proch
-        t_end <- epochTime
-        removeFile stpPrelFile
-        removeFile stpRunFile
-        removeFile stpTmpFile
-        let t_t = (round (realToFrac
-                          (t_end - t_start + 1) :: Double) :: Integer)
-        let t_u = timeToTimeOfDay $ secondsToDiffTime $
-                  if t_t == 0
-                  then
-                      1
-                  else
-                      t_t
-        stdoutC <- hGetContents stdouth
-        stderrC <- hGetContents stderrh
-        (pStat, ret) <- examineProof sps cfg stdoutC stderrC simpleOptions nGoal t_u
-        return (pStat, cfg
-                         {
-                           proofStatus = ret
-                         , resultOutput = lines (stdoutC ++ stderrC)
-                         , timeUsed = usedTime ret
-                         })
+        let chk = and $ map (\x ->
+                                 "#(" `isPrefixOf` x &&
+                                 ")." `isSuffixOf` x
+                            ) simpleOptions
+        if chk
+         then
+           do
+             prob <- showTPTPProblem thName sps nGoal $ []
+             when saveTPTP
+                 (writeFile (saveFile ++".tptp") prob)
+             t <- getCurrentTime
+             let stpTmpFile  = "/tmp/" ++ tmpFile ++ (show $ utctDay t) ++
+                                    "-" ++ (show $ utctDayTime t) ++ ".tptp"
+                 stpPrelFile = "/tmp/" ++ prelFile ++ (show $ utctDay t) ++
+                                    "-" ++ (show $ utctDayTime t) ++ ".tme"
+                 stpRunFile  = "/tmp/" ++ runFile ++ (show $ utctDay t) ++
+                                    "-" ++ (show $ utctDayTime t) ++ ".tme"
+             writeFile stpPrelFile $
+                           ((prelTxt $ show tl) ++ "\n" ++ unlines
+                                                simpleOptions)
+             writeFile stpRunFile  $ runTxt
+             writeFile stpTmpFile  $ prob
+             let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
+                           " " ++ stpRunFile
+             t_start <- epochTime
+             (_, stdouth, stderrh, proch) <- runInteractiveCommand command
+             waitForProcess proch
+             t_end <- epochTime
+             removeFile stpPrelFile
+             removeFile stpRunFile
+             removeFile stpTmpFile
+             let t_t = (round (realToFrac
+                               (t_end - t_start + 1) :: Double) :: Integer)
+             let t_u = timeToTimeOfDay $ secondsToDiffTime $
+                       if t_t == 0
+                       then
+                           1
+                       else
+                           t_t
+             stdoutC <- hGetContents stdouth
+             stderrC <- hGetContents stderrh
+             (pStat, ret) <- examineProof sps cfg stdoutC stderrC nGoal t_u tl
+             return (pStat, cfg
+                              {
+                                proofStatus = ret
+                              , resultOutput = lines (stdoutC ++ stderrC)
+                              , timeUsed = usedTime ret
+                             })
+         else
+            do
+              let tScript opts = TacticScript $ show ATPTacticScript
+                                 { tsTimeLimit = configTimeLimit cfg
+                                 , tsExtraOpts = opts }
+              return $
+                    (ATPError "Syntax error in options"
+                    , cfg
+                     {proofStatus =
+                       ProofStatus { goalName = senAttr nGoal
+                                   , goalStatus = openGoalStatus
+                                   , usedAxioms = []
+                                   , usedProver = proverName hyperProver
+                                   , proofTree =  emptyProofTree
+                                  , usedTime = timeToTimeOfDay $
+                                               secondsToDiffTime $ 0
+                                   , tacticScript = tScript $
+                                                    (filter
+                                                     (\x -> "#" `isPrefixOf` x)$
+                                                     lines $ (prelTxt $ show tl)
+                                                               ++ runTxt)}
+                     , resultOutput = ["Parse Error"]
+                     , timeUsed = timeToTimeOfDay $
+                                               secondsToDiffTime $ 0
+                     })
 
 {- | Mapping type from SZS to Hets -}
 data HyperResult = HProved | HDisproved | HTimeout | HError | HMemout
@@ -213,11 +258,11 @@ examineProof :: SoftFOLProverState
              -> GenericConfig ProofTree
              -> String
              -> String
-             -> [String]
              -> AS_Anno.Named SPTerm
              -> TimeOfDay
+             -> Int
              -> IO (ATPRetval, ProofStatus ProofTree)
-examineProof sps cfg stdoutC stderrC simpleOptions nGoal tUsed =
+examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
     let
         tScript opts = TacticScript $ show ATPTacticScript
                        { tsTimeLimit = configTimeLimit cfg
@@ -229,7 +274,9 @@ examineProof sps cfg stdoutC stderrC simpleOptions nGoal tUsed =
                         , usedProver = proverName hyperProver
                         , proofTree =  emptyProofTree
                         , usedTime = tUsed
-                        , tacticScript = tScript simpleOptions}
+                        , tacticScript = tScript $ (filter
+                                         (\x -> "#" `isPrefixOf` x) $
+                                         lines $ (prelTxt $ show tl) ++ runTxt)}
         out = filter ("% SZS status " `isPrefixOf`) $
               lines (stdoutC ++ stderrC)
         getAxioms =
