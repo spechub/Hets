@@ -41,8 +41,12 @@ import qualified Data.Set as Set
 
 -- * Name Mapping interface
 
--- TODO: introduce numbered uniqname in order to output the signature
--- in the correct order, important for reimport!
+-- TODO: the logic independent way of fetching the symbols from the signature
+--       by sym_of returns a Set where the order of the symbols in the signature
+--       is lost! I need a way how to extract the order, because OMDoc needs the
+--       correct order
+
+--type Numbered a = (Int, a)
 
 -- | A structure similar to SigMap but with a Grothendieck map instead
 data GSigMap = GSigMap { gSymbMap :: G_symbolmap UniqName
@@ -83,7 +87,7 @@ fromSignAndNamedSens lid sig nsens =
 
 
 -- | Looks up the key in the map and if it doesn't exist adds the
---   value for this key which results from the given sign and sentences.
+-- value for this key which results from the given sign and sentences.
 lookupWithInsert :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -95,7 +99,7 @@ lookupWithInsert :: forall lid sublogics
 lookupWithInsert lid sig sens s k =
     let SpecSymNames m = getSSN s in
     case Map.lookup k m of
-      Just (GSigMap (G_symbolmap lid1 sm) nm) -> 
+      Just (GSigMap (G_symbolmap lid1 sm) nm) ->
           (s, SigMap (coerceSymbolmap lid1 lid sm) nm)
       Nothing -> let sigm@(SigMap sm nm) = fromSignAndNamedSens lid sig sens
                      gsm = GSigMap (G_symbolmap lid sm) nm
