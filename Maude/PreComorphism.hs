@@ -212,21 +212,26 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
 -- | translates the Maude subsorts into CASL subsorts, and adds the subsorts
 -- for the kinds
 maudeSbs2caslSbs :: MSign.SubsortRel -> IdMap -> Rel.Rel CAS.SORT
-maudeSbs2caslSbs sbs im = Rel.fromDistinctMap m3
+maudeSbs2caslSbs sbs im = Rel.fromDistinctMap m4
       where l = Map.toList $ Rel.toMap sbs
             l1 = map maudeSb2caslSb l
             l2 = idList2Subsorts $ Map.toList im
+            l3 = map subsortsKinds l
             m1 = Map.fromList l1
             m2 = Map.fromList l2
-            m3 = Map.unionWith Set.union m1 m2
-            -- m = Map.fromList $ concat [l1, l2]
+            m3 = Map.fromList l3
+            m4 = Map.unionWith Set.union m1 $ Map.unionWith Set.union m2 m3
 
 idList2Subsorts :: [(Id, Id)] -> [(Id, Set.Set Id)]
 idList2Subsorts [] = []
-idList2Subsorts ((id1, id2) : il) = (id1, Set.singleton id2) : idList2Subsorts il
+idList2Subsorts ((id1, id2) : il) = t1 : idList2Subsorts il
+      where t1 = (id1, Set.singleton id2)
 
 maudeSb2caslSb :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
-maudeSb2caslSb (sym, st) = (sortSym2id sym, Set.map sortSym2id st)
+maudeSb2caslSb (sym, st) = (kindId $ sortSym2id sym, Set.map (kindId . sortSym2id) st)
+
+subsortsKinds :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
+subsortsKinds (sym, st) = (sortSym2id sym, Set.map sortSym2id st)
 
 sortSym2id :: MSym.Symbol -> Id
 sortSym2id (MSym.Sort q) = token2id q
@@ -886,6 +891,18 @@ kindsFromMap = Map.fold Set.insert Set.empty
 -- | return a map where each sort is mapped to its kind, both of them
 -- already converted to Id
 arrangeKinds :: MSign.SortSet -> MSign.SubsortRel -> IdMap
+arrangeKinds ss _ = Map.fromList l'
+       where l = Set.toList ss
+             l' = map arrangeSortKind l
+
+arrangeSortKind :: MSym.Symbol -> (Id, Id)
+arrangeSortKind s = (i, kindId i)
+       where i = sort2id [s]
+
+{-
+-- | return a map where each sort is mapped to its kind, both of them
+-- already converted to Id
+arrangeKinds :: MSign.SortSet -> MSign.SubsortRel -> IdMap
 arrangeKinds ss r = arrangeKindsList (Set.toList ss) r Map.empty
 
 -- | traverse the sorts and creates a table that assigns to each sort its kind
@@ -897,6 +914,7 @@ arrangeKindsList l@(s : _) r m = arrangeKindsList not_rel r m'
             (rel, not_rel) = sameKindList s tc l
             f = \ x y z -> Map.insert (sym2id y) (kindId $ sort2id x) z
             m' = foldr (f tops) m rel
+-}
 
 -- | creates two list distinguishing in the first componente the symbols
 -- with the same kind than the given one and in the second one the
@@ -1130,6 +1148,6 @@ errorId :: String -> Id
 errorId s = token2id $ mkSimpleId $ "ERROR: " ++ s
 
 kindId :: Id -> Id
-kindId i = token2id $ mkSimpleId $ "top_" ++ show i
+kindId i = token2id $ mkSimpleId $ "kind_" ++ show i
 
 -- | not useful anymore: ops2pred
