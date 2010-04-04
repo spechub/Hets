@@ -158,8 +158,26 @@ fromSpec (Module _ _ stmts) = let
     sign = ins'ops . ins'subs . ins'sorts $ empty
     in sign {
         subsorts = Rel.transClosure $ subsorts sign,
-        sentences = Set.fromList sents
+        sentences = Set.fromList sents,
+        ops = addPartial $ ops sign
     }
+
+addPartial :: OpMap -> OpMap
+addPartial om = Map.unionWith Set.union om $ Map.map partialODS om
+
+partialODS :: OpDeclSet -> OpDeclSet
+partialODS ods = Set.map partialSet ods
+
+partialSet :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
+partialSet (ss, ats) = (Set.map partialOp ss, ats)
+
+partialOp :: Symbol -> Symbol
+partialOp (Operator q ss s) = Operator q (map sortSym2kindSym ss) $ sortSym2kindSym s
+partialOp s = s
+
+sortSym2kindSym :: Symbol -> Symbol
+sortSym2kindSym (Sort q) = Kind q
+sortSym2kindSym s = s
 
 -- | The empty 'Sign'ature.
 empty :: Sign

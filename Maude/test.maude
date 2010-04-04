@@ -1,3 +1,4 @@
+
 fth FREENESS is
  pr BOOL .
  
@@ -46,6 +47,18 @@ fmod OTHER_ALPHA_ASSOC is
  eq g(E1, g(E2, E3)) = g(g(E1, E2), E3) [nonexec] .
 endfm
 
+fth LAST_FREENESS_THEORY is
+ sort Elt .
+endfth
+
+fmod LAST_FREENESS_TEST{X :: LAST_FREENESS_THEORY} is
+ sort List .
+ subsort X$Elt < List .
+ 
+ op nil : -> List [ctor] .
+ op __ : List List -> List [ctor assoc id: nil] .
+endfm
+
 view VALPHA from ALPHA_ASSOC to OTHER_ALPHA_ASSOC is
  sort Foo to Elt .
  op f to g .
@@ -54,7 +67,7 @@ endv
 fmod MY_LIST is
  pr NAT .
  
- sorts List  .
+ sorts List .
  subsort Nat < List .
  
  op nil : -> List [ctor] .
@@ -67,6 +80,27 @@ fmod MY_LIST is
  eq reverse(nil) = nil .
  eq reverse(E L) = reverse(L) E .
 endfm
+
+fth TLIST is
+ pr NAT .
+ 
+ sorts List2  .
+ subsort Nat < List2 .
+ 
+ op nil : -> List2 [ctor] .
+ op __ : List2 List2 -> List2 [ctor assoc id: nil] .
+ 
+ var L : List2 .
+ var E : Nat .
+ 
+ op reverse : List2 -> List2 .
+ eq reverse(reverse(L)) = L .
+ 
+endfth
+
+view V22 from TLIST to MY_LIST is
+ sort List2 to List .
+endv
 
 fmod MY_LIST_OPS is
  pr MY_LIST .
