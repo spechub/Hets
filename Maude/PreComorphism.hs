@@ -212,11 +212,14 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
 -- | translates the Maude subsorts into CASL subsorts, and adds the subsorts
 -- for the kinds
 maudeSbs2caslSbs :: MSign.SubsortRel -> IdMap -> Rel.Rel CAS.SORT
-maudeSbs2caslSbs sbs im = Rel.fromDistinctMap m
+maudeSbs2caslSbs sbs im = Rel.fromDistinctMap m3
       where l = Map.toList $ Rel.toMap sbs
             l1 = map maudeSb2caslSb l
             l2 = idList2Subsorts $ Map.toList im
-            m = Map.fromList $ concat [l1, l2]
+            m1 = Map.fromList l1
+            m2 = Map.fromList l2
+            m3 = Map.unionWith Set.union m1 m2
+            -- m = Map.fromList $ concat [l1, l2]
 
 idList2Subsorts :: [(Id, Id)] -> [(Id, Set.Set Id)]
 idList2Subsorts [] = []
