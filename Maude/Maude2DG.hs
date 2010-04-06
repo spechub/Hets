@@ -140,8 +140,8 @@ insertSpec (SpecMod sp_mod) pdg ptim tim vm ths dg = (ptimUp, tim5, vm, ths, dg6
                     tim3 = Map.insert tok (getNode ns, sg, [], pl, paramSorts) tim2
                     (tim4, dg4) = createEdgesImports tok ips sg tim3 dg3
                     dg5 = createEdgesParams tok pl morphs sg tim4 dg4
-                    (_, tim5, dg6) = insertFreeNode tok tim4 dg5
-insertSpec (SpecTh sp_th) pdg ptim tim vm ths dg = (ptimUp, tim4, vm, tok : ths, dg4)
+                    (_, tim5, dg6) = insertFreeNode tok tim4 morphs dg5
+insertSpec (SpecTh sp_th) pdg ptim tim vm ths dg = (ptimUp, tim3, vm, tok : ths, dg3)
               where (il, ss1) = getImportsSorts sp_th
                     (ptimUp, timUp, dgUp) = incPredImps il pdg (ptim, tim, dg)
                     ips = processImports timUp vm dgUp il
@@ -157,7 +157,7 @@ insertSpec (SpecTh sp_th) pdg ptim tim vm ths dg = (ptimUp, tim4, vm, tok : ths,
                     (ns, dg2) = insGTheory dg1 name DGBasic gt
                     tim2 = Map.insert tok (getNode ns, sg, ss1 ++ ss2, [], []) tim1
                     (tim3, dg3) = createEdgesImports tok ips sg tim2 dg2
-                    (_, tim4, dg4) = insertFreeNode tok tim3 dg3
+                    -- (_, tim4, dg4) = insertFreeNode tok tim3 [] dg3
 insertSpec (SpecView sp_v) pdg ptim tim vm ths dg = (ptimUp, tim3, vm', ths, dg4)
               where View name from to rnms = sp_v
                     (ptimUp, timUp, dgUp) = incPredView from to pdg (ptim, tim, dg)
@@ -296,7 +296,7 @@ createEdgeImport :: Token -> ImportProc -> Sign -> TokenInfoMap -> DGraph
                     -> (TokenInfoMap, DGraph)
 createEdgeImport tok1 (Pr, tok2, _, morph, _, _) sg tim dg = (tim', dg'')
                where morph' = setTarget sg morph
-                     (tok2', tim', dg') = insertFreeNode tok2 tim dg
+                     (tok2', tim', dg') = insertFreeNode tok2 tim [] dg
                      (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim'
                      (n2, _, _, _, _) = fromJust $ Map.lookup tok2' tim'
                      dg'' = insertDefEdgeMorphism n1 n2 morph' dg'
@@ -578,7 +578,7 @@ insertInnerNode :: Node -> TokenInfoMap -> Token -> Morphism -> Sign -> [Sentenc
 insertInnerNode nod tim tok morph sg sens dg =
                          if (isIdentity morph) && null sens
                          then let
-                                (fn, tim', dg') = insertFreeNode tok tim dg
+                                (fn, tim', dg') = insertFreeNode tok tim [] dg
                                 (n2, _, _, _, _) = fromJust $ Map.lookup fn tim'
                               in (n2, tim', dg')
                          else let
@@ -642,11 +642,23 @@ insertFreeEdge tok1 tok2 tim dg = snd $ insLEdgeDG (n2, n1, edg) dg
                            dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
                            edg = defDGLink (gEmbed mor) dgt SeeTarget
 
+-- | inserts a free definition link between the nodes with the given name. This function is used
+-- to create free links when a module is parameterized, so the morphism is more complicated:
+-- It also receives a morphism, obtained from the parameters.
+insertFreeEdgeMor :: Token -> Token -> TokenInfoMap -> Morphism -> DGraph -> DGraph
+insertFreeEdgeMor tok1 tok2 tim mor dg = snd $ insLEdgeDG (n2, n1, edg) dg
+                     -- currently, the empty sign is used in the inclusion instead of sg1
+                     where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
+                           (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
+                           mor' = G_morphism Maude mor startMorId
+                           dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
+                           edg = defDGLink (gEmbed mor') dgt SeeTarget
+
 -- | the importation mode "protecting M" generates a new node M' and a free link
 -- between M and M'. This function is in charge of creating such M' if it does not
 -- exist
-insertFreeNode :: Token -> TokenInfoMap -> DGraph -> (Token, TokenInfoMap, DGraph)
-insertFreeNode t tim dg = (t', tim', dg'')
+insertFreeNode :: Token -> TokenInfoMap -> [Morphism] -> DGraph -> (Token, TokenInfoMap, DGraph)
+insertFreeNode t tim [] dg = (t', tim', dg'')
                where t' = mkFreeName t
                      b = Map.member t' tim
                      (tim', dg') = if b
@@ -655,6 +667,19 @@ insertFreeNode t tim dg = (t', tim', dg'')
                      dg'' = if b
                             then dg'
                             else insertFreeEdge t' t tim' dg'
+insertFreeNode t tim morphs@(_ : _) dg = (t', tim', dg'')
+               where t' = mkFreeName t
+                     b = Map.member t' tim
+                     (tim', dg') = if b
+                                   then (tim, dg)
+                                   else insertFreeNode2 t' tim (fromJust $ Map.lookup t tim) dg
+                     morph = morphismUnion morphs
+                     dg'' = if b
+                            then dg'
+                            else insertFreeEdgeMor t' t tim' morph dg'
+
+morphismUnion :: [Morphism] -> Morphism
+morphismUnion = foldr Maude.Morphism.union Maude.Morphism.empty
 
 -- | auxiliary function in charge of creating M' when it does not exist
 insertFreeNode2 :: Token -> TokenInfoMap -> ProcInfo -> DGraph -> (TokenInfoMap, DGraph)
