@@ -195,7 +195,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          ops = deleteUniversal $ MSign.ops msign
          ksyms = kinds2syms cs
          (cops, assoc_ops, comps) = translateOps mk ops
-         ctor_sen = [ctorSen False (cs, Rel.empty, comps)]
+         ctor_sen = [] -- [ctorSen False (cs, Rel.empty, comps)]
          cops' = universalOps cs cops $ booleanImported ops
          rs' = rewPredicatesCongSens cops'
          pred_forms = loadLibraries (MSign.sorts msign) ops
