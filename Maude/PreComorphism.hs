@@ -194,7 +194,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          rs = rewPredicatesSens cs
          ops = deleteUniversal $ MSign.ops msign
          ksyms = kinds2syms cs
-         (cops, assoc_ops, comps) = translateOps mk ops
+         (cops, assoc_ops, _) = translateOps mk ops -- (cops, assoc_ops, comps)
          ctor_sen = [] -- [ctorSen False (cs, Rel.empty, comps)]
          cops' = universalOps cs cops $ booleanImported ops
          rs' = rewPredicatesCongSens cops'
