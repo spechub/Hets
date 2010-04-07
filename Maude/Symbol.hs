@@ -196,9 +196,13 @@ sameKind :: SymbolRel -> Symbol -> Symbol -> Bool
 sameKind rel s1 s2
     | all id [isOpWildcard s1, isOperator s2] = True
     | all id [isOperator s1, isOpWildcard s2] = True
-    | all isType [s1, s2] = typeSameKind rel s1 s2
+    | all isType [s1, s2] = typeSameKind rel (kindSym2sortSym s1) (kindSym2sortSym s2)
     | all isOperator [s1, s2] = let
         Operator _ dom1 _ = s1
         Operator _ dom2 _ = s2
         in zipSameKind rel dom1 dom2
     | otherwise = False
+    
+kindSym2sortSym :: Symbol -> Symbol
+kindSym2sortSym (Kind q) = Sort q
+kindSym2sortSym s = s
