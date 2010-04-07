@@ -163,13 +163,14 @@ fromSpec (Module _ _ stmts) = let
     }
 
 addPartial :: OpMap -> OpMap
-addPartial om = Map.unionWith Set.union om $ Map.map partialODS om
+addPartial om = Map.map partialODS om
 
 partialODS :: OpDeclSet -> OpDeclSet
 partialODS ods = Set.map partialSet ods
 
 partialSet :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
-partialSet (ss, ats) = (Set.map partialOp ss, ats)
+partialSet (ss, ats) = (Set.union ss ss', ats)
+      where ss' = Set.map partialOp ss
 
 partialOp :: Symbol -> Symbol
 partialOp (Operator q ss s) = Operator q (map sortSym2kindSym ss) $ sortSym2kindSym s
@@ -178,6 +179,13 @@ partialOp s = s
 sortSym2kindSym :: Symbol -> Symbol
 sortSym2kindSym (Sort q) = Kind q
 sortSym2kindSym s = s
+
+{-
+quitSpecial :: [Attr] -> [Attr]
+quitSpecial [] = []
+quitSpecial ((Special _) : ats) = quitSpecial ats
+quitSpecial (a : ats) = a : quitSpecial ats
+-}
 
 -- | The empty 'Sign'ature.
 empty :: Sign
