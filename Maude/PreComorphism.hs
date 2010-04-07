@@ -468,10 +468,14 @@ translateOpDeclSet im ods tpl = Set.fold (translateOpDecl im) tpl ods
 -- induced by the operator declaration, and checking if it has the ctor attribute
 -- to introduce the operator in the generators sentence
 translateOpDecl :: IdMap -> MSign.OpDecl -> OpTransTuple -> OpTransTuple
-translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = (ops', assoc_ops', cs')
+translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
+                      [] -> (ops', assoc_ops', cs')
+                      _ -> translateOpDecl im (syms', ats) (ops', assoc_ops', cs')
       where sym = head $ Set.toList syms
-            (cop_id, ot, ot') = fromJust $ maudeSym2CASLOp im sym
-            cop_type = Set.union (Set.singleton ot) (Set.singleton ot')
+            tl = tail $ Set.toList syms
+            syms' = Set.fromList tl
+            (cop_id, ot, _) = fromJust $ maudeSym2CASLOp im sym
+            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
             ops' = Map.insertWith (Set.union) cop_id cop_type ops
             assoc_ops' = if any MAS.assoc ats
                          then Map.insertWith (Set.union) cop_id cop_type assoc_ops
@@ -485,7 +489,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = (ops', assoc_ops', cs')
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot, ot')
       where f = token2id . getName
-            g = \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im -- \ x -> maudeSymbol2caslSort x im
+            g = \ x -> maudeSymbol2caslSort x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
             ot' = CSign.OpType CAS.Total (map f ar) (f co)
 maudeSym2CASLOp _ _ = Nothing

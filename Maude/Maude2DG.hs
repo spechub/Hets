@@ -647,7 +647,6 @@ insertFreeEdge tok1 tok2 tim dg = snd $ insLEdgeDG (n2, n1, edg) dg
 -- It also receives a morphism, obtained from the parameters.
 insertFreeEdgeMor :: Token -> Token -> TokenInfoMap -> Morphism -> DGraph -> DGraph
 insertFreeEdgeMor tok1 tok2 tim mor dg = snd $ insLEdgeDG (n2, n1, edg) dg
-                     -- currently, the empty sign is used in the inclusion instead of sg1
                      where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
                            (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
                            mor' = G_morphism Maude mor startMorId
@@ -667,7 +666,7 @@ insertFreeNode t tim [] dg = (t', tim', dg'')
                      dg'' = if b
                             then dg'
                             else insertFreeEdge t' t tim' dg'
-insertFreeNode t tim morphs@(_ : _) dg = (t', tim', dg'')
+insertFreeNode t tim morphs@(_:_) dg = (t', tim', dg'')
                where t' = mkFreeName t
                      b = Map.member t' tim
                      (tim', dg') = if b
