@@ -180,13 +180,6 @@ sortSym2kindSym :: Symbol -> Symbol
 sortSym2kindSym (Sort q) = Kind q
 sortSym2kindSym s = s
 
-{-
-quitSpecial :: [Attr] -> [Attr]
-quitSpecial [] = []
-quitSpecial ((Special _) : ats) = quitSpecial ats
-quitSpecial (a : ats) = a : quitSpecial ats
--}
-
 -- | The empty 'Sign'ature.
 empty :: Sign
 empty = Sign {
@@ -216,7 +209,7 @@ insertOpDecl rel symb attrs opmap = let
     merge decls = let
         decl = head $ Set.toList decls
         syms = Set.insert symb $ fst decl
-        attr = mergeAttrs attrs $ snd decl
+        attr = removeReps $ mergeAttrs attrs $ snd decl
         in if Set.null decls
            then Set.insert (asSymbolSet symb, attrs)
            else Set.insert (syms, attr)
@@ -233,7 +226,7 @@ mapOpDecl rel src tgt attrs opmap = let
     merge decls = let
         decl = head $ Set.toList decls
         syms = mapOps (Map.singleton src tgt) $ fst decl
-        attr = mergeAttrs attrs $ snd decl
+        attr = removeReps $ mergeAttrs attrs $ snd decl
         in if Set.null decls
            then id
            else Set.insert (syms, attr)
@@ -265,6 +258,10 @@ mergeAttrs = let
     similar _ _ = False
     update new = (:) new . filter (not . similar new)
     in flip $ foldl $ flip update
+
+removeReps :: [Attr] -> [Attr]
+removeReps [] = []
+removeReps (a : as) = a : (filter (/= a) $ removeReps as)
 
 -- * Combination
 
@@ -313,8 +310,19 @@ isSubsign sig1 sig2 = let
     apply func items = func (items sig1) (items sig2)
     has'sorts = apply Set.isSubsetOf sorts
     has'subsorts = apply Rel.isSubrelOf subsorts
-    has'ops = apply Map.isSubmapOf ops
+    has'ops = apply (Map.isSubmapOfBy subODS) ops
     in all id [has'sorts, has'subsorts, has'ops]
+
+subODS :: OpDeclSet -> OpDeclSet -> Bool
+subODS ods1 ods2 = Set.isSubsetOf ods1' ods2'
+    where ods1' = removeAttsODS ods1
+          ods2' = removeAttsODS ods2
+
+removeAttsODS :: OpDeclSet -> OpDeclSet
+removeAttsODS ods = Set.map removeAtts ods
+
+removeAtts :: (Set Symbol, [Attr]) -> (Set Symbol, [Attr])
+removeAtts (ss, _) = (ss, [])
 
 -- * Modification
 
