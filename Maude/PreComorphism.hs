@@ -189,7 +189,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          mk = arrangeKinds ss (MSign.subsorts msign)
          sbs = MSign.subsorts msign
          sbs' = maudeSbs2caslSbs sbs mk
-         cs = Set.union ss' (kindsFromMap mk)
+         cs = Set.union ss' $ kindsFromMap mk -- (Set.map kindId ss')
          preds = rewPredicates cs
          rs = rewPredicatesSens cs
          ops = deleteUniversal $ MSign.ops msign
@@ -470,8 +470,8 @@ translateOpDeclSet im ods tpl = Set.fold (translateOpDecl im) tpl ods
 translateOpDecl :: IdMap -> MSign.OpDecl -> OpTransTuple -> OpTransTuple
 translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = (ops', assoc_ops', cs')
       where sym = head $ Set.toList syms
-            (cop_id, ot, _) = fromJust $ maudeSym2CASLOp im sym
-            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
+            (cop_id, ot, ot') = fromJust $ maudeSym2CASLOp im sym
+            cop_type = Set.union (Set.singleton ot) (Set.singleton ot')
             ops' = Map.insertWith (Set.union) cop_id cop_type ops
             assoc_ops' = if any MAS.assoc ats
                          then Map.insertWith (Set.union) cop_id cop_type assoc_ops
@@ -485,7 +485,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = (ops', assoc_ops', cs')
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot, ot')
       where f = token2id . getName
-            g = \ x -> maudeSymbol2caslSort x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
+            g = \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im -- \ x -> maudeSymbol2caslSort x im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
             ot' = CSign.OpType CAS.Total (map f ar) (f co)
 maudeSym2CASLOp _ _ = Nothing
@@ -1149,5 +1149,3 @@ errorId s = token2id $ mkSimpleId $ "ERROR: " ++ s
 
 kindId :: Id -> Id
 kindId i = token2id $ mkSimpleId $ "kind_" ++ show i
-
--- | not useful anymore: ops2pred
