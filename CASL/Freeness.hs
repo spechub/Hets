@@ -28,7 +28,7 @@ import qualified Common.Lib.Rel as Rel
 
 import Data.Char
 import Data.Maybe
-import Data.List (findIndex)
+import Data.List (findIndex, groupBy)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -552,11 +552,23 @@ freeCons (sorts, rel, ops) = do
                               (map makeInjective $
                                   filter (\(_,_,x) ->not $ null x) l))
                    consSymbs'
+        sameSort (Constraint s _ _) (Constraint s' _ _) = (s == s')
+        disjToSortAx = concatMap (\ctors -> let
+                         cSymbs = concatMap (\x ->map toTuple $
+                                            filter nonSub $ map fst x) $
+                                     map opSymbs ctors
+                         sSymbs =  concatMap (\x ->map getSubsorts $
+                                             filter (\a-> not $ nonSub a) $
+                                                map fst x) $ map opSymbs ctors
+                                                              in
+                         concatMap ( \ c -> map (makeDisjToSort c) sSymbs)
+                                   cSymbs
+                          ) $ groupBy sameSort  constrs
     case constrs of
      [] -> []
      _  -> [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
-           ++ freeAx ++ sortAx
+           ++ freeAx ++ sortAx ++ disjToSortAx
 
 -- | given the signature in M the function computes the signature K
 create_sigma_k :: Set.Set SORT -> CASLSign -> CASLSign
