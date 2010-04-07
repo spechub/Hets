@@ -511,7 +511,7 @@ freeCons (sorts, rel, ops) = do
                       (toOP_TYPE $ compType c) $ posOfId iden) $ Set.toList ops
         injSyms = map ( \ (s, t) -> let p = posOfId s in
                         Qual_op_name (mkUniqueInjName s t)
-                        (Op_type Total [s] t p) p) $ Rel.toList
+                         (Op_type Total [s] t p) p) $ Rel.toList
                   $ Rel.irreflex rel
         allSyms = opSyms ++ injSyms
         resType _ (Op_name _) = False
@@ -524,13 +524,29 @@ freeCons (sorts, rel, ops) = do
         collectOps s =
           Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
-        f = Sort_gen_ax constrs True
+        f =  Sort_gen_ax constrs True
  -- added by me:
-        consSymbs = map (\x -> map fst x) $ map opSymbs constrs
+        nonSub (Qual_op_name n _ _) = not $ isInjName n
+        nonSub _ = error "use qualified names"
+        consSymbs = map (\x ->filter nonSub $ map fst x) $
+                    map opSymbs constrs
         toTuple (Qual_op_name n ot@(Op_type _ args _ _) _) =
                   (n, toOpType ot, map (\x-> Sort x) args)
         toTuple _ = error "use qualified names"
         consSymbs' = map (\l -> map toTuple l) consSymbs
+        sortSymbs = map (\x ->filter (\o -> not $ nonSub o) $ map fst x) $
+                    map opSymbs constrs
+        getSubsorts (Qual_op_name _ (Op_type _ [ss] _  _) _)  = ss
+        getSubsorts _ = error "error in injSyms"
+        sortSymbs' = map (\l ->
+                       case l of
+                        (Qual_op_name _ (Op_type _ _ rs  _) _):_ ->
+                          (rs,map getSubsorts l)
+                        _ -> error "empty list filtered")
+                     $ filter (\l -> not $ null l) sortSymbs
+        sortAx = foldl (++) [] $
+                  map (\(x,l)-> makeDisjSubsorts x l)
+                   sortSymbs'
         freeAx = foldl (++) [] $
                    map (\l -> makeDisjoint l ++
                               (map makeInjective $
@@ -540,7 +556,7 @@ freeCons (sorts, rel, ops) = do
      [] -> []
      _  -> [makeNamed ("ga_generated_" ++
                        showSepList (showString "_") showId sortList "") f]
-           ++ freeAx
+           ++ freeAx ++ sortAx
 
 -- | given the signature in M the function computes the signature K
 create_sigma_k :: Set.Set SORT -> CASLSign -> CASLSign
