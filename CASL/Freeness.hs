@@ -70,7 +70,8 @@ create_axs sg_ss sg_m sg_k sens = forms
             ss = Set.map mkFreeName $ Set.difference ss_m sg_ss
             sr = sortRel sg_k
             comps = ops2comp $ opMap sg_k
-            ctor_sen = freeCons (ss, sr, comps)
+            ss' = filterNoCtorSorts (opMap sg_k) ss
+            ctor_sen = freeCons (ss', sr, comps)
             make_axs = concat [make_forms sg_ss, make_hom_forms sg_ss]
             h_axs_ops = homomorphism_axs_ops $ opMap sg_m
             h_axs_preds = homomorphism_axs_preds $ predMap sg_m
@@ -85,6 +86,21 @@ create_axs sg_ss sg_m sg_k sens = forms
             krnl_axs = [mkKernelAx ss_m (predMap sg_m) prems ltkh]
             forms = concat [ctor_sen, make_axs, h_axs_ops, h_axs_preds,
                             h_axs_surj, q_axs, krnl_axs]
+
+filterNoCtorSorts :: OpMap -> Set.Set SORT -> Set.Set SORT
+filterNoCtorSorts om = Set.filter (filterNoCtorSort om)
+
+filterNoCtorSort :: OpMap -> SORT -> Bool
+filterNoCtorSort om s = Map.fold f False om
+         where f = \ x y -> or [resultTypeSet s x, y]
+
+resultTypeSet :: SORT -> Set.Set OpType -> Bool
+resultTypeSet s = Set.fold f False
+         where f = \ x y -> or [resultType s x, y]
+
+resultType :: SORT -> OpType -> Bool
+resultType s ot = s == s'
+         where s' = opRes ot
 
 -- | generates formulas of the form make(h(x)) =e= x, for any x of sort gn_free_s
 make_hom_forms :: Set.Set SORT -> [Named CASLFORMULA]
