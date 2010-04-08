@@ -508,7 +508,7 @@ generatedSign extEm sys sigma =
    else return $ idOrInclMorphism $ embedMorphism extEm sigma2 sigma
   -- 7.
   where
-  symset = symOf sigma   -- 1.
+  symset = Set.fromList $ symOf sigma   -- 1.
   sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
                                      , opMap = Map.empty
                                      , predMap = Map.empty }) sys  -- 4.
@@ -563,7 +563,7 @@ cogeneratedSign extEm symset sigma =
             ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
   where
-  symset0 = symOf sigma   -- 1.
+  symset0 = Set.fromList $ symOf sigma   -- 1.
   symset1 = Set.fold revealSym' symset0 symset  -- 3.
   revealSym' sy symset1' = case symbType sy of
     SortAsItemType ->      -- 3.1.1.

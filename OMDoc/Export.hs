@@ -45,6 +45,7 @@ import qualified Data.Set as Set
 --       by sym_of returns a Set where the order of the symbols in the signature
 --       is lost! I need a way how to extract the order, because OMDoc needs the
 --       correct order
+-- DONE: The logic interface exports sym_of now as a dependency ordered list
 
 --type Numbered a = (Int, a)
 
@@ -73,7 +74,7 @@ fromSignAndNamedSens :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         lid -> sign -> [Named sentence] -> SigMap symbol
 fromSignAndNamedSens lid sig nsens =
-    let syms = Set.toAscList $ sym_of lid sig
+    let syms = sym_of lid sig
         updFun _ _ = (1 +)
         newName acc s = let (v, acc') = Map.insertLookupWithKey updFun s 1 acc
                         in (acc', (s, fromMaybe 0 v))

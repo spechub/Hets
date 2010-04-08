@@ -23,6 +23,8 @@ import qualified Temporal.Symbol as Symbol
 import Temporal.AS_BASIC_Temporal as AS_BASIC
 import Temporal.ATC_Temporal ()
 
+import qualified Data.Set as Set
+
 -- | Lid for termporal logic
 data Temporal = Temporal deriving Show
 
@@ -52,7 +54,7 @@ instance Sentences Temporal
     Morphism.Morphism
     Symbol.Symbol
     where
-        sym_of       Temporal        = Symbol.symOf             -- Returns the set of symbols
+        sym_of       Temporal        = Set.toList . Symbol.symOf             -- Returns the set of symbols
         symmap_of    Temporal        = Symbol.getSymbolMap      -- Returns the symbol map
         sym_name     Temporal        = Symbol.getSymbolName     -- Returns the name of a symbol
         map_sen      Temporal        = Morphism.mapSentence     -- Translation of sentences along signature morphism

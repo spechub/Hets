@@ -43,6 +43,8 @@ import OWL.Taxonomy
 
 import OWL.ColimSign
 
+import qualified Data.Set as Set
+
 data OWL = OWL deriving Show
 
 instance Language OWL where
@@ -67,7 +69,7 @@ instance Sentences OWL Axiom Sign OWLMorphism Entity where
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
-    sym_of OWL = symOf
+    sym_of OWL = Set.toList . symOf
     symmap_of OWL = symMapOf
 
 instance StaticAnalysis OWL OntologyFile Axiom

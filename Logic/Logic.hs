@@ -133,6 +133,7 @@ import Common.Item
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.List ((\\))
 import Data.Typeable
 import Control.Monad (unless)
 
@@ -277,8 +278,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
 
       ----------------------- symbols ---------------------------
-      -- | set of symbols for a signature
-      sym_of :: lid -> sign -> Set.Set symbol
+      -- | dependency ordered list of symbols for a signature
+      sym_of :: lid -> sign -> [symbol]
       sym_of l _ = statError l "sym_of"
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
@@ -469,7 +470,7 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
           => lid -> sign -> sign ->  Result morphism
 inclusion lid s1 s2 = if is_subsig lid s1 s2 then subsig_inclusion lid s1 s2
   else fail $ "Attempt to construct inclusion between non-subsignatures:\n"
-           ++ showDoc (Set.difference (sym_of lid s1) $ sym_of lid s2) ""
+           ++ showDoc (sym_of lid s1 \\ sym_of lid s2) ""
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given

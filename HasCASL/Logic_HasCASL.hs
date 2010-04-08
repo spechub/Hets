@@ -35,6 +35,8 @@ import Logic.Logic
 import Common.Doc
 import Common.DocUtils
 
+import qualified Data.Set as Set
+
 data HasCASL = HasCASL deriving Show
 
 instance Language HasCASL where
@@ -83,7 +85,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
         . fromLabelledSen
     sym_name HasCASL = symName
-    sym_of HasCASL = symOf
+    sym_of HasCASL = Set.toList . symOf
     symmap_of HasCASL = morphismToSymbMap
     parse_sentence HasCASL = Nothing
 

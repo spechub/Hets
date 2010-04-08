@@ -39,6 +39,8 @@ import SoftFOL.ProveVampire
 import SoftFOL.ProveDarwin
 #endif
 
+import qualified Data.Set as Set
+
 instance Pretty Sign where
   pretty = pretty . signToSPLogicalPart
 
@@ -63,7 +65,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
 instance Sentences SoftFOL Sentence Sign
                            SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ s = return s
-      sym_of SoftFOL = symOf
+      sym_of SoftFOL = Set.toList . symOf
       sym_name SoftFOL = symbolToId
       print_named SoftFOL = printFormula
     -- other default implementations are fine

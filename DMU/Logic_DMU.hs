@@ -26,7 +26,6 @@ import ATerm.Lib
 
 import Text.ParserCombinators.Parsec
 
-import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Typeable
 
@@ -48,7 +47,7 @@ instance Syntax DMU Text () () where
 
 instance Sentences DMU () Text (DefaultMorphism Text) () where
   map_sen DMU _ = return
-  sym_of DMU _ = Set.singleton ()
+  sym_of DMU _ = [()]
   symmap_of DMU _ = Map.empty
   sym_name DMU _ = genName "DMU"
 

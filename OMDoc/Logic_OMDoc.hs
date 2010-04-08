@@ -92,12 +92,8 @@ instance Category OMDoc_Sign OMDoc_Morphism where
 
 instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_of OMDoc_PUN s =
-    Set.fromList
-      $
-      map
-        (\(OMDoc.CSy s') -> s')
-        $
-        filter OMDoc.isSymbol (OMDoc.theoryConstitutives s)
+      map (\ (OMDoc.CSy s') -> s')
+              $ filter OMDoc.isSymbol (OMDoc.theoryConstitutives s)
   symmap_of OMDoc_PUN (m, s1, s2) =
     case OMDoc.inclusionMorphism m of
       Nothing -> Map.empty

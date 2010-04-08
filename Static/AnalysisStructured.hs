@@ -224,7 +224,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
-               $ sym_of lid sigma_complete) startSigId (toThSens ax) startThId
+               $ Set.fromList $ sym_of lid sigma_complete)
+             startSigId (toThSens ax) startThId
        dg'' <- createConsLink DefLink conser lg dg' nsig' ns DGLinkExtension
        return (Basic_spec (G_basic_spec lid bspec') pos, ns, dg'')
   EmptySpec pos -> case nsig of
@@ -328,7 +329,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       let sigma3 = dom mor3
           -- gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid2 (makeExtSign lid2 sigma3) startSigId
-          sys3 = sym_of lid2 sigma3
+          sys3 = Set.fromList $ sym_of lid2 sigma3
       unless (isStructured opts
               || sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3)
         $ plain_error () (
@@ -563,7 +564,7 @@ anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
         let lid1 = sourceLogic cid
         sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction1" sis'
         rsys <- stat_symb_items lid1 sis1
-        let sys = sym_of lid1 sigma1
+        let sys = Set.fromList $ sym_of lid1 sigma1
             sys' = Set.filter (\ sy -> any (matches lid1 sy) rsys) sys
             unmatched = filter ( \ rsy -> Set.null $ Set.filter
                                  ( \ sy -> matches lid1 sy rsy) sys') rsys

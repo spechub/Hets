@@ -18,6 +18,7 @@ module CASL.Morphism where
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
+import Data.List ((\\), union)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -152,19 +153,32 @@ rawSymName rs = case rs of
   ASymbol sym -> symName sym
   AKindedSymb _ i -> i
 
-allSymOf :: (e -> SymbolSet) -> Sign f e -> SymbolSet
-allSymOf f s = Set.union (symOf s) $ f (extendedInfo s)
+allSymOf :: (e -> SymbolSet) -> Sign f e -> [Symbol]
+allSymOf f s = let esyms = partitionSymbols $ Set.toList $ f (extendedInfo s)
+               in concat $ zipWith union (symTriple s) esyms
 
-symOf :: Sign f e -> SymbolSet
-symOf sigma = let
-    sorts = Set.map idToSortSymbol $ sortSet sigma
-    ops = Set.fromList $
-      concatMap (\ (i, ts) -> map (idToOpSymbol i) $ Set.toList ts)
-        $ Map.toList $ opMap sigma
-    preds = Set.fromList $
-       concatMap (\ (i, ts) -> map (idToPredSymbol i)
-           $ Set.toList ts) $ Map.toList $ predMap sigma
-    in Set.unions [sorts, ops, preds]
+partitionSymbols :: [Symbol] -> [[Symbol]]
+partitionSymbols l = foldr f [[], [], []] l
+    where f s [x, y, z] = case symbType s of
+                            SortAsItemType -> [s:x, y, z]
+                            OpAsItemType _ -> [x, s:y, z]
+                            _ -> [x, y, s:z] -- Preds and OtherTypeKinds are
+                                             -- mixed here, TODO: fix this?
+          f _ _ = error "partitionSymbols: impossible case!"
+
+symTriple :: Sign f e -> [[Symbol]]
+symTriple sigma = let
+    sorts = map idToSortSymbol $ Set.toList $ sortSet sigma
+    ops = concatMap (\ (i, ts) -> map (idToOpSymbol i) $ Set.toList ts)
+          $ Map.toList $ opMap sigma
+    preds = concatMap (\ (i, ts) -> map (idToPredSymbol i) $ Set.toList ts)
+            $ Map.toList $ predMap sigma
+    in [sorts, ops, preds]
+
+-- | returns the symbols of the signature in the correct dependency order
+-- , i.e., sorts first, then ops and predicates
+symOf :: Sign f e -> [Symbol]
+symOf sigma = concat $ symTriple sigma
 
 checkSymbList :: [SYMB_OR_MAP] -> [Diagnosis]
 checkSymbList l = case l of
@@ -578,8 +592,7 @@ printMorphism isSubSigExt isInclMorExt fE fM symOfExt mor =
       [ text "inclusion morphism of", srcD
       , fsep $ if Map.null ops then
           [ text "extended with"
-          , pretty $ Set.difference (allSymOf symOfExt tar)
-            $ allSymOf symOfExt src ]
+          , pretty $ allSymOf symOfExt tar \\ allSymOf symOfExt src ]
         else
           [ text "by totalizing"
           , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
