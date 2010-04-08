@@ -146,29 +146,36 @@ idemEq op ar co = [Equation $ Eq t v [] []]
 
 identityEq :: Qid -> Type -> Term -> Type -> [Sentence]
 identityEq op ar1 idt co = [eq1, eq2]
-    where v = mkVar "v" $ type2Kind ar1
-          t1 = Apply op [v, idt] $ type2Kind co
-          t2 = Apply op [idt, v] $ type2Kind co
+    where idt' = const2kind idt
+          v = mkVar "v" $ type2Kind ar1
+          t1 = Apply op [v, idt'] $ type2Kind co
+          t2 = Apply op [idt', v] $ type2Kind co
           eq1 = Equation $ Eq t1 v [] []
           eq2 = Equation $ Eq t2 v [] []
 
 leftIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 leftIdEq op ar1 idt co = [eq1, eq2]
-    where v = mkVar "v" $ type2Kind ar1
-          t = Apply op [idt, v] $ type2Kind co
+    where idt' = const2kind idt
+          v = mkVar "v" $ type2Kind ar1
+          t = Apply op [idt', v] $ type2Kind co
           eq1 = Equation $ Eq t v [] []
           eq2 = Equation $ Eq v t [] []
 
 rightIdEq :: Qid -> Type -> Term -> Type -> [Sentence]
 rightIdEq op ar1 idt co = [eq1, eq2]
-    where v = mkVar "v" $ type2Kind ar1
-          t = Apply op [v, idt] $ type2Kind co
+    where idt' = const2kind idt
+          v = mkVar "v" $ type2Kind ar1
+          t = Apply op [v, idt'] $ type2Kind co
           eq1 = Equation $ Eq t v [] []
           eq2 = Equation $ Eq v t [] []
 
 type2Kind :: Type -> Type
 type2Kind (TypeSort (SortId s)) = TypeKind $ KindId s
 type2Kind k = k
+
+const2kind :: Term -> Term
+const2kind (Const q ty) = Const q $ type2Kind ty
+const2kind t = t
 
 -- * Testing
 
