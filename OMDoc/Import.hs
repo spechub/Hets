@@ -54,9 +54,8 @@ import Control.Monad.Trans
 import Network.URI
 
 -- only for debugging
-import Debug.Trace
-import System.IO
--- * Import Environment Interface
+--import Debug.Trace
+--import System.IO
 
 {-
 sorry :: a
@@ -64,10 +63,12 @@ sorry = error "Under construction"
 
 debugOut :: String -> ResultT IO ()
 debugOut = lift . putStrLn . ("Debug: " ++)
--}
 
 mytrace :: [String] -> IO ()
 mytrace  = hPutStrLn stderr . concat
+-}
+
+-- * Import Environment Interface
 
 {- | There are three important maps for each theory:
  1. OMName -> symbol, the NameSymbolMap stores for each OMDoc name the
@@ -127,7 +128,7 @@ lookupNotation smi n = Map.findWithDefault (name n) n $ sigMapINotations smi
 -- * URI Functions
 
 readURL :: URI -> IO String
-readURL u = if isFileURI u then mytrace ["readURL: ", show u] >> (readFile $ uriPath u)
+readURL u = if isFileURI u then readFile $ uriPath u
             else error $ "readURI: Unsupported URI-scheme " ++ uriScheme u
 
 toURI :: String -> URI
@@ -209,9 +210,8 @@ importLib :: ImpEnv -- ^ The import environment
           -> URI -- ^ The url of the OMDoc file
           -> ResultT IO (ImpEnv, LibName, DGraph)
 importLib e u =
-    lift (mytrace ["importLib: ", show u]) >>
     case lookupLib e u of
-      Just (ln, dg) -> lift (mytrace ["foundLib: ", show ln]) >> return (e, ln, dg)
+      Just (ln, dg) -> return (e, ln, dg)
       _ -> readLib e u
 
 -- | The OMDoc file and the closure of its imports is added to the environment.
@@ -221,7 +221,6 @@ readLib :: ImpEnv -- ^ The import environment
 readLib e u = do
   xmlString <- lift $ readURL u
   OMDoc n l <- liftR $ xmlIn xmlString
-  lift $ mytrace ["readlib: ", n, " -- ", show u]
   ln <- lift $ libNameFromURL n u
   (e', dg) <- foldM (addTLToDGraph ln) (e, emptyDG) l
   return (addDGToEnv e' ln dg, ln, dg)
@@ -239,19 +238,17 @@ importTheory e (ln, dg) cd =
     let ucd = toUriCD cd in
     case lookupNode e (ln, dg) ucd of
       Just (ln', nd)
-          | ln == ln' -> trace ("importTheory: already linked " ++ show ucd) $ return (e, ln, dg, nd)
+          | ln == ln' -> return (e, ln, dg, nd)
           | otherwise -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
-                         in trace ("importTheory: not linked " ++ show ucd) $ return (e, ln', dg', lnode)
+                         in return (e, ln', dg', lnode)
       -- if lookupNode finds nothing implies that ln is not the current libname!
       _ -> do
         let u = uriRelativeToLib ucd ln
-        lift $ mytrace ["{importTheory: new lib ", show ucd]
         (e', ln', refDg) <- readLib e u
-        lift $ mytrace ["read lib: ", show ln', " nsymbMap size: ", show $ Map.size $ nsymbMap e']
         case lookupNodeByName (getModule ucd) refDg of
           -- don't add the node to the refDG but to the original DG!
           Just nd -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
-                     in trace ("importTheory: added refnode}") $ return (e', ln', dg', lnode)
+                     in return (e', ln', dg', lnode)
           Nothing -> error $ "importTheory: couldn't find node: " ++ show cd
 
 
@@ -263,21 +260,14 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
   let clf = classifyTCs l
 
   -- I. Compute initial signature
-  lift $ mytrace ["{processing theory: ", n]
   (gSig, nsmap) <- liftR $ initialSig clf $ getLogicFromMeta mCD
 
   -- II. Lookup all imports (= follow and create them first),
   -- and insert DGNodeRefs if neccessary.
   ((e', dg'), iIL) <- followImports ln (e, dg) $ importInfo clf
 
-  lift $ mytrace [ "followed Imports: nsymbMap size: "
-                 , show $ Map.size $ nsymbMap e'
-                 , "iIL: ", show iIL]
-
   -- III. Compute morphisms and update local sig stepwise.
   (gSig', iIWL) <- computeMorphisms e' ln nsmap gSig iIL
-
-  lift $ mytrace [ "computed Morphisms"]
 
   -- IV. Add the sentences to the Node.
   -- TODO
@@ -288,13 +278,15 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
       dg''' = addLinksToDG nd dg'' iIWL
       -- add the new name symbol map to the environment
       e'' = addNSMapToEnv e' ln n nsmap
-  lift $ mytrace ["added nsmap for theory: ", n, " nsymbMap size: ", show $ Map.size $ nsymbMap e'']
 
-  return $ trace ("Theory processed}") $ (e'', dg''')
+  return (e'', dg''')
 
 
 -- TODO: adding a view to the DG
 addTLToDGraph _ (e, dg) _ = -- (TLView n from to mMor) =
+    -- follow the source and target of the view and insert DGNodeRefs
+    -- if neccessary.
+    -- use followTheory for from and to.
     return (e, dg)
 
 
@@ -368,15 +360,20 @@ followImports :: LibName -> (ImpEnv, DGraph) -> [ImportInfo OMCD]
               -> ResultT IO ((ImpEnv, DGraph), [ImportInfo LinkNode])
 followImports ln = mapAccumLCM (curry snd) (followImport ln)
 
--- | We lookup the theory referenced by the cd in the environment
--- and add it if neccessary to the environment.
 followImport :: LibName -> (ImpEnv, DGraph) -> ImportInfo OMCD
              -> ResultT IO ((ImpEnv, DGraph), ImportInfo LinkNode)
-followImport ln (e, dg) iInfo@(ImportInfo cd  _ _) = do
-  lift $ mytrace ["following: ", show ln, " --> ", show cd]
+followImport ln x iInfo = do
+  (x', linknode) <- followTheory ln x $ iInfoVal iInfo
+  return (x', fmap (const linknode) iInfo)
+
+-- | We lookup the theory referenced by the cd in the environment
+-- and add it if neccessary to the environment.
+followTheory :: LibName -> (ImpEnv, DGraph) -> OMCD
+             -> ResultT IO ((ImpEnv, DGraph), LinkNode)
+followTheory ln (e, dg) cd = do
   (e', ln', dg', lnode) <- importTheory e (ln, dg) cd
-  let linknode = (if ln == ln' then Nothing else Just ln', lnode)
-  return $ ((e', dg'), fmap (const linknode) iInfo)
+  let mLn = if ln == ln' then Nothing else Just ln'
+  return ((e', dg'), (mLn, lnode))
 
 
 -- * Development Graph and LibEnv interface
@@ -389,9 +386,9 @@ sigmapAccumFun :: (Monad m, Show a) => (SigMapI a -> TCElement -> String -> m a)
 sigmapAccumFun f smi s = do
   let n = tcName s
       hetsname = lookupNotation smi n
-  s' <- trace ("lookup for " ++ show n) $ f smi s hetsname
+  s' <- f smi s hetsname
   let smi' = smi { sigMapISymbs = Map.insert n s' $ sigMapISymbs smi }
-  trace ("returns " ++ show s') $ return (smi', s')
+  return (smi', s')
 
 
 -- | Builds an initial Sig and a name map of the given logic and classification.
@@ -456,6 +453,9 @@ type LinkNode = (Maybe LibName, LNode DGNodeLab)
 type LinkInfo = (GMorphism, DGLinkType, DGLinkOrigin, Node)
 
 data ImportInfo a = ImportInfo a String TCMorphism deriving Show
+
+iInfoVal :: ImportInfo a -> a
+iInfoVal (ImportInfo x _ _) = x
 
 instance Functor ImportInfo where fmap f (ImportInfo x y z)
                                       = ImportInfo (f x) y z

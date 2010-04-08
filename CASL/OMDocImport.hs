@@ -35,8 +35,6 @@ import CASL.OMDoc
 import qualified Data.Map as Map
 import Data.Maybe
 
-import Debug.Trace
-
 -- * Environment Interface
 
 type Env = SigMapI Symbol
@@ -80,7 +78,6 @@ nameToId s = mkId [mkSimpleId s]
 -- | A TCSymbols is transformed to a CASL symbol with given name.
 omdocToSym :: Env -> TCElement -> String -> Result Symbol
 omdocToSym e sym@(TCSymbol _ ctp srole _) n =
-    trace ("omdocToSym: " ++ show sym ++ "\n\n") $
     case srole of
       Typ | ctp == const_sort -> return $ idToSortSymbol $ nameToId n
           | otherwise -> fail $ "omdocToSym: No sorttype for " ++ show sym

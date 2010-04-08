@@ -41,21 +41,33 @@ import qualified Data.Set as Set
 
 -- * Name Mapping interface
 
--- TODO: the logic independent way of fetching the symbols from the signature
---       by sym_of returns a Set where the order of the symbols in the signature
---       is lost! I need a way how to extract the order, because OMDoc needs the
---       correct order
--- DONE: The logic interface exports sym_of now as a dependency ordered list
+-- | A structure similar to SigMap but with a Grothendieck map instead.
+-- The numbered UniqName just stores the original position of the symbol
+-- in the signature, and will be exploited in order to output the symbols 
+-- in the correct dependency order.
+data GSigMap = GSigMap (G_symbolmap (Int, UniqName)) (NameMap String)
 
---type Numbered a = (Int, a)
+-- | We need this type to store the original dependency order.
+-- This type is the logic dependent analogue to the GSigMap
+type NumberedSigMap a = (Map.Map a (Int, UniqName), NameMap String)
 
--- | A structure similar to SigMap but with a Grothendieck map instead
-data GSigMap = GSigMap { gSymbMap :: G_symbolmap UniqName
-                       , gNameMap :: NameMap String }
+-- | Removes the numbering from the symbol map
+nSigMapToSigMap :: NumberedSigMap a -> SigMap a
+nSigMapToSigMap (nMap, sMap) = SigMap (Map.map snd nMap) sMap
+
+-- | Computes a dependency sorted symbol unique name list
+nSigMapToOrderedList :: NumberedSigMap a -> [(a, UniqName)]
+nSigMapToOrderedList (nMap, _) = let
+    compByPos (_, (pos1, _)) (_, (pos2, _)) = compare pos1 pos2
+    sortedList = sortBy compByPos $ Map.toList nMap
+    in map (\ (a,x) -> (a, snd x)) sortedList
+                                 
 
 -- | Mapping of Specs to SigMaps
 newtype SpecSymNames = SpecSymNames (Map.Map (LibName, String) GSigMap)
 
+
+-- | The export environment
 data ExpEnv = ExpEnv { getSSN :: SpecSymNames
                      , getInitialLN :: LibName }
 
@@ -72,19 +84,27 @@ fromSignAndNamedSens :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        lid -> sign -> [Named sentence] -> SigMap symbol
+        lid -> sign -> [Named sentence] -> NumberedSigMap symbol
 fromSignAndNamedSens lid sig nsens =
     let syms = sym_of lid sig
-        updFun _ _ = (1 +)
-        newName acc s = let (v, acc') = Map.insertLookupWithKey updFun s 1 acc
-                        in (acc', (s, fromMaybe 0 v))
-        symF acc x = let (acc', nn) = newName acc $ show $ sym_name lid x
-                     in (acc', (x, nn))
+        -- The accumulator var is a map of names to integer values designating
+        -- the next identifier to use for this name to make it unique.
+        -- acc: Map String Int
+        newName acc s =
+            let (v, acc') = Map.insertLookupWithKey (const (+)) s 1 acc
+            in (acc', (s, fromMaybe 0 v))
+        -- We need to store in addition to the name-int-map an integer to
+        -- increment in order to remember the original order of the signature
+        -- elements after having destroyed it by making a map from the list.
+        -- for that reason we use the following accumvar:
+        -- acc: (Int, Map String Int)
+        symF (i, acc) x = let (acc', nn) = newName acc $ show $ sym_name lid x
+                          in ((i+1, acc'), (x, (i, nn)))
         sensF acc x = let n = senAttr x
                           (acc', nn) = newName acc n in (acc', (n, nn))
-        (cm, symL) = mapAccumL symF Map.empty syms
-        (_, sensL) = mapAccumL sensF cm nsens
-    in SigMap (Map.fromList symL) (Map.fromList sensL)
+        (cm, symL) = mapAccumL symF (0, Map.empty) syms
+        (_, sensL) = mapAccumL sensF (snd cm) nsens
+    in (Map.fromList symL, Map.fromList sensL)
 
 
 -- | Looks up the key in the map and if it doesn't exist adds the
@@ -96,15 +116,15 @@ lookupWithInsert :: forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
         lid -> sign -> [Named sentence] -> ExpEnv -> (LibName, String)
-             -> (ExpEnv, SigMap symbol)
+             -> (ExpEnv, NumberedSigMap symbol)
 lookupWithInsert lid sig sens s k =
     let SpecSymNames m = getSSN s in
     case Map.lookup k m of
       Just (GSigMap (G_symbolmap lid1 sm) nm) ->
-          (s, SigMap (coerceSymbolmap lid1 lid sm) nm)
-      Nothing -> let sigm@(SigMap sm nm) = fromSignAndNamedSens lid sig sens
+          (s, (coerceSymbolmap lid1 lid sm, nm))
+      Nothing -> let nsigm@(sm, nm) = fromSignAndNamedSens lid sig sens
                      gsm = GSigMap (G_symbolmap lid sm) nm
-                 in ( s { getSSN = SpecSymNames $ Map.insert k gsm m }, sigm)
+                 in ( s { getSSN = SpecSymNames $ Map.insert k gsm m }, nsigm)
 
 -- * LibEnv traversal
 
@@ -144,13 +164,14 @@ exportNodeLab le ln dg s (n, lb) =
             do
               let sn = getDGNodeName lb'
                   nsens = toNamedList sens
-                  (s', sigm@(SigMap nm _))
-                      = lookupWithInsert lid sig nsens s (ln', sn)
+                  (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
+                  sigm@(SigMap nm _) = nSigMapToSigMap nsigm
               (s'', imports) <- mapAccumLCM proj2
                                 (makeImport le ln dg (lid, nm)) s' $ innDG dg n
               extra <- export_theoryToOmdoc lid sigm sig nsens
               -- create the OMDoc elements for the signature
-              consts <- mapR (uncurry $ exportSymbol lid sigm) $ Map.toList nm
+              consts <- mapR (uncurry $ exportSymbol lid sigm)
+                        $ nSigMapToOrderedList nsigm
               -- create the OMDoc elements for the sentences
               thms <- mapR (exportSentence lid sigm) nsens
               return (s'', Just $ TLTheory sn (omdoc_metatheory lid)
@@ -195,8 +216,8 @@ makeImport le ln dg toInfo s (from, _, lbl)
               do
                 let sn = getDGNodeName lb'
                     nsens = toNamedList sens
-                    (s', (SigMap nm _))
-                        = lookupWithInsert lid sig nsens s (ln', sn)
+                    (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
+                    SigMap nm _ = nSigMapToSigMap nsigm
                 morph <- makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
                 return (s', [TCImport impnm (mkCD s' ln ln' sn) $ morph])
@@ -229,10 +250,12 @@ exportLinkLab le ln dg s (from, to, lbl) =
                        sn2 = getDGNodeName lb2
                        nsens1 = toNamedList sens1
                        nsens2 = toNamedList sens2
-                       (s', (SigMap nm1 _)) =
+                       (s', nsigm1) =
                            lookupWithInsert lid1 sig1 nsens1 s (ln1, sn1)
-                       (s'', (SigMap nm2 _)) =
+                       (s'', nsigm2) =
                            lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
+                       SigMap nm1 _ = nSigMapToSigMap nsigm1
+                       SigMap nm2 _ = nSigMapToSigMap nsigm2
                    morph <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
                    return (s'', Just $ TLView viewname (mkCD s'' ln ln1 sn1)
                                   (mkCD s'' ln ln2 sn2) morph) }
