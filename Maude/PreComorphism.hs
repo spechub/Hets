@@ -490,7 +490,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot, ot')
       where f = token2id . getName
-            g = \ x -> maudeSymbol2caslSort x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
+            g = \ x -> maudeSymbol2caslSort2 x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
             ot' = CSign.OpType CAS.Total (map f ar) (f co)
 maudeSym2CASLOp _ _ = Nothing
@@ -817,6 +817,13 @@ maudeSymbol2caslSort (MSym.Kind q) im = Map.findWithDefault err q' im
       where q' = token2id q
             err = errorId "error translate symbol"
 maudeSymbol2caslSort _ _ = errorId "error translate symbol"
+
+maudeSymbol2caslSort2 :: MSym.Symbol -> IdMap -> CAS.SORT
+maudeSymbol2caslSort2 (MSym.Sort q) _ = token2id q
+maudeSymbol2caslSort2 (MSym.Kind q) im = Map.findWithDefault err q' im
+      where q' = token2id q
+            err = errorId "error translate symbol"
+maudeSymbol2caslSort2 _ _ = errorId "error translate symbol"
 
 maudeType2caslSort :: MAS.Type -> IdMap -> CAS.SORT
 maudeType2caslSort (MAS.TypeSort q) im = Map.findWithDefault err q' im -- token2id $ getName q
