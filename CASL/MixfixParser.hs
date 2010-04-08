@@ -158,8 +158,9 @@ addRule ga uRules (ops, preds) tok =
         tPId = mkId [tok, placeTok] -- prefix identifier
     in (if isSimpleToken tok && not (Set.member tId sops)
         then mkRule tId -- add rule for new variable
-             : if Set.member tPId ops || Set.member tPId rpreds then [] else
-                  [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
+             : if Set.member tPId ops || Set.member tPId rpreds
+                  || Set.member applId ops || Set.member applId rpreds
+               then [] else [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
               -- add also rules for undeclared op
         else []) ++ Map.findWithDefault [] tok m
 
