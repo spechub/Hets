@@ -1108,6 +1108,7 @@ maudeSymbol2validCASLSymbol t = splitDoubleUnderscores str ""
 -- | transforms a string coding a Maude identifier into another string
 -- representing a CASL identifier
 ms2vcs :: String -> String
+ms2vcs s@('k' : 'i' : 'n' : 'd' : '_' : _) = s
 ms2vcs s = case Map.member s stringMap of
     True -> Map.findWithDefault "" s stringMap
     False -> let f = \ x y -> if Map.member x charMap
