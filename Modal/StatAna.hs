@@ -13,7 +13,7 @@ static analysis of modal logic parts
 module Modal.StatAna (basicModalAnalysis, minExpForm) where
 
 import Modal.AS_Modal
-import Modal.Print_AS()
+import Modal.Print_AS ()
 import Modal.ModalSign
 
 import CASL.Sign
@@ -56,11 +56,11 @@ ana_Mix = emptyMix
 
 -- rigid ops will also be part of the CASL signature
 ids_M_SIG_ITEM :: M_SIG_ITEM -> IdSets
-ids_M_SIG_ITEM si = case si of
+ids_M_SIG_ITEM si = let e = Set.empty in case si of
     Rigid_op_items _ al _ ->
-        (Set.unions $ map (ids_OP_ITEM . item) al, Set.empty)
+        (unite2 $ map (ids_OP_ITEM . item) al, e)
     Rigid_pred_items _ al _ ->
-        (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) al)
+        ((e, e), Set.unions $ map (ids_PRED_ITEM . item) al)
 
 mapMODALITY :: MODALITY -> MODALITY
 mapMODALITY m = case m of
@@ -124,7 +124,7 @@ ana_M_SIG_ITEM mix mi =
     Rigid_op_items r al ps ->
         do ul <- mapM (ana_OP_ITEM minExpForm mix) al
            case r of
-               Rigid -> mapM_ ( \ aoi -> case item aoi of
+               Rigid -> mapM_ (\ aoi -> case item aoi of
                    Op_decl ops ty _ _ ->
                        mapM_ (updateExtInfo . addRigidOp (toOpType ty)) ops
                    Op_defn i par _ _ ->
@@ -135,7 +135,7 @@ ana_M_SIG_ITEM mix mi =
     Rigid_pred_items r al ps ->
         do ul <- mapM (ana_PRED_ITEM minExpForm mix) al
            case r of
-               Rigid -> mapM_ ( \ aoi -> case item aoi of
+               Rigid -> mapM_ (\ aoi -> case item aoi of
                    Pred_decl ops ty _ ->
                        mapM_ (updateExtInfo . addRigidPred (toPredType ty)) ops
                    Pred_defn i (Pred_head args _) _ _ ->
@@ -155,8 +155,7 @@ addRigidPred ty i m = return
 
 ana_M_BASIC_ITEM
     :: Ana M_BASIC_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_M_BASIC_ITEM mix bi = do
-    case bi of
+ana_M_BASIC_ITEM mix bi = case bi of
         Simple_mod_decl al fs ps -> do
             mapM_ ((updateExtInfo . preAddModId) . item) al
             newFs <- mapAnM (ana_FORMULA mix) fs
@@ -225,7 +224,7 @@ getFormPredToks frm = case frm of
     Disjunction fs _ -> Set.unions $ map getFormPredToks fs
     Implication f1 f2 _ _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Equivalence f1 f2 _  ->
+    Equivalence f1 f2 _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.singleton t

@@ -14,23 +14,27 @@ Mixfix analysis of terms
 module CASL.MixfixParser
     ( resolveFormula, resolveMixfix, MixResolve
     , resolveMixTrm, resolveMixFrm
-    , IdSets, mkIdSets, emptyIdSets, unite
-    , makeRules, Mix(..), emptyMix
+    , IdSets, mkIdSets, emptyIdSets, unite, unite2
+    , makeRules, Mix (..), emptyMix, extendMix
     , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM)
     where
 
 import CASL.AS_Basic_CASL
-import Common.GlobalAnnotations
-import Common.Result
-import Common.Id
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Common.Earley
+import CASL.ShowMixfix
+import CASL.ToDoc ()
+
+import Common.AS_Annotation
 import Common.ConvertMixfixToken
 import Common.DocUtils
-import Common.AS_Annotation
-import CASL.ShowMixfix
-import CASL.ToDoc()
+import Common.Earley
+import Common.GlobalAnnotations
+import Common.Id
+import Common.Result
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+import Data.Maybe
 
 data Mix b s f e = MixRecord
     { getBaseIds :: b -> IdSets -- ^ ids of extra basic items
@@ -52,18 +56,26 @@ emptyMix = MixRecord
     , mixResolve = const $ const return
     }
 
+extendMix :: Set.Set Token -> Mix b s f e -> Mix b s f e
+extendMix ts r = r
+  { mixRules = extendRules ts $ mixRules r
+  , mixResolve = extendMixResolve ts $ mixResolve r }
+
 -- precompute non-simple op and pred identifier for mixfix rules
 
--- | the precomputed sets of op and pred (non-simple) identifiers
-type IdSets = (Set.Set Id, Set.Set Id) -- ops are first component
+-- | the precomputed sets of constant, op, and pred identifiers
+type IdSets = ((Set.Set Id, Set.Set Id), Set.Set Id) -- ops are first component
 
 -- | the empty 'IdSets'
 emptyIdSets :: IdSets
-emptyIdSets = (Set.empty, Set.empty)
+emptyIdSets = let e = Set.empty in ((e, e), e)
+
+unite2 :: [(Set.Set Id, Set.Set Id)] -> (Set.Set Id, Set.Set Id)
+unite2 l = (Set.unions $ map fst l, Set.unions $ map snd l)
 
 -- | union 'IdSets'
 unite :: [IdSets] -> IdSets
-unite l = (Set.unions $ map fst l, Set.unions $ map snd l)
+unite l = (unite2 $ map fst l, Set.unions $ map snd l)
 
 -- | get all ids of a basic spec
 ids_BASIC_SPEC :: (b -> IdSets) -> (s -> IdSets) -> BASIC_SPEC b s f -> IdSets
@@ -81,22 +93,26 @@ ids_BASIC_ITEMS f g bi = case bi of
 
 ids_anDATATYPE_DECLs :: [Annoted DATATYPE_DECL] -> IdSets
 ids_anDATATYPE_DECLs al =
-    (Set.unions $ map (ids_DATATYPE_DECL . item) al, Set.empty)
+    (unite2 $ map (ids_DATATYPE_DECL . item) al, Set.empty)
 
 -- | get all ids of a sig items
 ids_SIG_ITEMS :: (s -> IdSets) -> SIG_ITEMS s f -> IdSets
-ids_SIG_ITEMS f si = case si of
+ids_SIG_ITEMS f si = let e = Set.empty in case si of
     Sort_items _ _ _ -> emptyIdSets
-    Op_items al _ -> (Set.unions $ map (ids_OP_ITEM . item) al, Set.empty)
-    Pred_items al _ -> (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) al)
+    Op_items al _ -> (unite2 $ map (ids_OP_ITEM . item) al, e)
+    Pred_items al _ -> ((e, e), Set.unions $ map (ids_PRED_ITEM . item) al)
     Datatype_items _ al _ -> ids_anDATATYPE_DECLs al
     Ext_SIG_ITEMS s -> f s
 
 -- | get all op ids of an op item
-ids_OP_ITEM :: OP_ITEM f -> Set.Set Id
-ids_OP_ITEM o = case o of
-    Op_decl ops _ _ _ -> Set.unions $ map Set.singleton ops
-    Op_defn i _ _ _ -> Set.singleton i
+ids_OP_ITEM :: OP_ITEM f -> (Set.Set Id, Set.Set Id)
+ids_OP_ITEM o = let e = Set.empty in case o of
+    Op_decl ops (Op_type _ args _ _) _ _ ->
+      let s = Set.fromList ops in
+      if null args then (s, e) else (e, s)
+    Op_defn i (Op_head _ args _ _) _ _ ->
+      let s = Set.singleton i in
+      if null args then (s, e) else (e, s)
 
 -- | get all pred ids of a pred item
 ids_PRED_ITEM :: PRED_ITEM f -> Set.Set Id
@@ -104,15 +120,15 @@ ids_PRED_ITEM p = case p of
     Pred_decl preds _ _ -> Set.unions $ map Set.singleton preds
     Pred_defn i _ _ _ -> Set.singleton i
 
-ids_DATATYPE_DECL :: DATATYPE_DECL -> Set.Set Id
+ids_DATATYPE_DECL :: DATATYPE_DECL -> (Set.Set Id, Set.Set Id)
 ids_DATATYPE_DECL (Datatype_decl _ al _) =
-    Set.unions $ map (ids_ALTERNATIVE . item) al
+    unite2 $ map (ids_ALTERNATIVE . item) al
 
-ids_ALTERNATIVE :: ALTERNATIVE -> Set.Set Id
-ids_ALTERNATIVE a = case a of
-    Alt_construct _ i cs _ ->
-        Set.unions $ Set.singleton i : map ids_COMPONENTS cs
-    Subsorts _ _ -> Set.empty
+ids_ALTERNATIVE :: ALTERNATIVE -> (Set.Set Id, Set.Set Id)
+ids_ALTERNATIVE a = let e = Set.empty in case a of
+    Alt_construct _ i cs _ -> let s = Set.singleton i in
+      if null cs then (s, e) else (e, Set.unions $ s : map ids_COMPONENTS cs)
+    Subsorts _ _ -> (e, e)
 
 ids_COMPONENTS :: COMPONENTS -> Set.Set Id
 ids_COMPONENTS c = case c of
@@ -127,8 +143,8 @@ mkSingleArgRule :: Int -> Id -> Rule
 mkSingleArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [varTok])
 
 mkArgsRule :: Int -> Id -> Rule
-mkArgsRule b ide = (protect ide, b, getPlainTokenList ide
-                      ++ getTokenPlaceList tupleId)
+mkArgsRule b ide =
+  (protect ide, b, getPlainTokenList ide ++ getTokenPlaceList tupleId)
 
 singleArgId :: Id
 singleArgId = mkId [exprTok, varTok]
@@ -137,48 +153,59 @@ multiArgsId :: Id
 multiArgsId = mkId (exprTok : getPlainTokenList tupleId)
 
 -- | additional scan rules
-addRule :: GlobalAnnos -> [Rule] -> IdSets -> Token -> [Rule]
-addRule ga uRules (ops, preds) tok =
-    let addR p = Set.fold ( \ i@(Id (t : _) _ _)  ->
+addRule :: GlobalAnnos -> [Rule] -> Bool -> IdSets -> Token -> [Rule]
+addRule ga uRules hasInvisible ((consts, ops), preds) tok =
+    let addP = Set.fold (\ i@(Id (t : _) _ _) ->
                Map.insertWith (++) t
-                [mixRule p i, mkSingleArgRule p i, mkArgsRule p i])
+                [ mixRule (if Set.member i consts then 1 else 0) i
+                , mkSingleArgRule 0 i, mkArgsRule 0 i])
+        addO = Set.fold (\ i@(Id (t : _) _ _) ->
+               Map.insertWith (++) t
+                 $ [mkRule i | not (isSimpleId i)
+                   || Set.member i (Set.union consts preds) ]
+                 ++ [mkSingleArgRule 1 i, mkArgsRule 1 i])
+        addC = Set.fold (\ i@(Id (t : _) _ _) ->
+               Map.insertWith (++) t [mkRule i])
         lm = foldr ( \ r@(_, _, t : _) -> Map.insertWith (++) t [r])
              Map.empty $ listRules 1 ga
         (spreds, rpreds) = Set.partition isSimpleId preds
         -- do not add simple ids as preds as these may be variables
         -- with higher precedence
-        sops = Set.union ops spreds
+        ops2 = Set.union ops spreds
+        sops = Set.union consts ops2
+        rConsts = Set.difference consts $ Set.union ops preds
         varR = mkRule varId
         m = Map.insert placeTok uRules
             $ Map.insert varTok [varR]
             $ Map.insert exprTok
                   [varR, mkRule singleArgId, mkRule multiArgsId]
-            $ addR 0 (addR 1 lm sops) rpreds
+            $ addP (addC (addO lm ops2) rConsts) $ Set.difference rpreds ops
         tId = mkId [tok]
         tPId = mkId [tok, placeTok] -- prefix identifier
     in (if isSimpleToken tok && not (Set.member tId sops)
-        then mkRule tId -- add rule for new variable
+        then if hasInvisible then [] else mkRule tId
+             -- add rule for unknown constant or variable
              : if Set.member tPId ops || Set.member tPId rpreds
-                  || Set.member applId ops || Set.member applId rpreds
                then [] else [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
               -- add also rules for undeclared op
         else []) ++ Map.findWithDefault [] tok m
 
 -- insert only identifiers starting with a place
-initRules :: IdSets -> Rules
+initRules :: (Set.Set Id, Set.Set Id) -> Rules
 initRules (opS, predS) =
     let addR p = Set.fold ((:) . mixRule p)
     in (addR 1 (addR 0 [mkRule typeId] predS) opS, [])
 
 -- | construct rules from 'IdSets' to be put into a 'Mix' record
 makeRules :: GlobalAnnos -> IdSets -> (Token -> [Rule], Rules)
-makeRules ga (opS, predS) = let
+makeRules ga ((constS, opS), predS) = let
     (cOps, sOps) = Set.partition begPlace opS
     (cPreds, sPreds) = Set.partition begPlace $ Set.difference predS opS
     addR p = Set.fold ( \ i l ->
            mkSingleArgRule p i : mkArgsRule p i : l)
     uRules = addR 0 (addR 1 [] cOps) cPreds
-    in (addRule ga uRules (sOps, sPreds), initRules (cOps, cPreds))
+    in (addRule ga uRules (Set.member applId $ Set.union cOps cPreds)
+        ((constS, sOps), sPreds), initRules (cOps, cPreds))
 
 -- | construct application
 asAppl :: Id -> [TERM f] -> Range -> TERM f
@@ -188,7 +215,7 @@ asAppl f args ps = Application (Op_name f) args
 -- | constructing the parse tree from (the final) parser state(s)
 toAppl :: GetRange f => Id -> [TERM f] -> Range -> TERM f
 toAppl ide ar ps =
-       if ide == singleArgId || ide == multiArgsId
+       if elem ide [singleArgId, multiArgsId]
             then case ar of
               har : tar -> case har of
                  Application q [] p ->
@@ -219,65 +246,56 @@ iterateCharts par extR g terms c =
         ruleS = rules c
         adder = addRules c
         resolveTerm = resolveMixTrm par extR g (adder, ruleS)
-    in if null terms then c
-       else case head terms of
-            Mixfix_term ts -> self (ts ++ tail terms) c
+    in case terms of
+    [] -> c
+    hd : tl -> case hd of
+            Mixfix_term ts -> self (ts ++ tl) c
             Mixfix_bracketed ts ps ->
-                self (expand ("[", "]") ts ps ++ tail terms) c
+                self (expand ("[", "]") ts ps ++ tl) c
             Mixfix_braced ts ps ->
-                self (expand ("{", "}") ts ps ++ tail terms) c
-            Mixfix_parenthesized ts ps ->
-                case ts of
-                  [h] -> let Result mds v = resolveTerm h
-                             tNew = case v of
-                                      Nothing -> h
-                                      Just x -> x
-                             c2 = self (tail terms)
-                                  (oneStep (tNew, varTok {tokPos = ps}))
-                         in mixDiags mds c2
-                  _ -> self (expand ("(", ")") ts ps ++ tail terms) c
-            h@(Conditional t1 f2 t3 ps) ->
-                let Result mds v =
-                        do t4 <- resolveTerm t1
-                           f5 <- resolveMixFrm par extR g (adder, ruleS) f2
-                           t6 <- resolveTerm t3
-                           return (Conditional t4 f5 t6 ps)
-                    tNew = case v of
-                             Nothing -> h
-                             Just x -> x
-                    c2 = self (tail terms)
-                         (oneStep (tNew, varTok {tokPos = ps}))
+                self (expand ("{", "}") ts ps ++ tl) c
+            Mixfix_parenthesized ts ps -> case ts of
+              [h] -> let
+                Result mds v = resolveTerm h
+                c2 = self tl (oneStep (fromMaybe h v, varTok {tokPos = ps}))
                 in mixDiags mds c2
+              _ -> self (expand ("(", ")") ts ps ++ tl) c
+            h@(Conditional t1 f2 t3 ps) -> let
+              Result mds v = do
+                t4 <- resolveTerm t1
+                f5 <- resolveMixFrm par extR g (adder, ruleS) f2
+                t6 <- resolveTerm t3
+                return (Conditional t4 f5 t6 ps)
+              c2 = self tl
+                   (oneStep (fromMaybe h v, varTok {tokPos = ps}))
+              in mixDiags mds c2
             Mixfix_token t -> let
               (ds1, trm) = convertMixfixToken (literal_annos g) asAppl
                 Mixfix_token t
-              c2 = self (tail terms) $ oneStep $ case trm of
+              c2 = self tl $ oneStep $ case trm of
                 Mixfix_token tok -> (trm, tok)
                 _ -> (trm, varTok {tokPos = tokPos t})
               in mixDiags ds1 c2
-            t@(Mixfix_sorted_term _ ps) -> self (tail terms)
-                            (oneStep (t, typeTok {tokPos = ps}))
-            t@(Mixfix_cast _ ps) -> self (tail terms)
-                            (oneStep (t, typeTok {tokPos = ps}))
-            t@(Qual_var _ _ ps) -> self (tail terms)
-                            (oneStep (t, varTok {tokPos = ps}))
+            t@(Mixfix_sorted_term _ ps) ->
+              self tl (oneStep (t, typeTok {tokPos = ps}))
+            t@(Mixfix_cast _ ps) ->
+              self tl (oneStep (t, typeTok {tokPos = ps}))
+            t@(Qual_var _ _ ps) ->
+              self tl (oneStep (t, varTok {tokPos = ps}))
             t@(Application (Qual_op_name _ _ ps) _ _) ->
-                self (tail terms) (oneStep (t, exprTok{tokPos = ps} ))
+                self tl (oneStep (t, exprTok {tokPos = ps} ))
             t@(Mixfix_qual_pred (Qual_pred_name _ _ ps)) ->
-                self (tail terms) (oneStep (t, exprTok{tokPos = ps} ))
-            Sorted_term t s ps ->
-                   let Result mds v = resolveTerm t
-                       tNew = Sorted_term (case v of
-                                             Nothing -> t
-                                             Just x -> x) s ps
-                       c2 = self (tail terms)
-                            (oneStep (tNew, varTok {tokPos = ps}))
-                   in mixDiags mds c2
+                self tl (oneStep (t, exprTok {tokPos = ps} ))
+            Sorted_term t s ps -> let
+              Result mds v = resolveTerm t
+              tNew = Sorted_term (fromMaybe t v) s ps
+              c2 = self tl (oneStep (tNew, varTok {tokPos = ps}))
+              in mixDiags mds c2
             _ -> error "iterateCharts"
 
 -- | construct 'IdSets' from op and pred identifiers
-mkIdSets :: Set.Set Id -> Set.Set Id -> IdSets
-mkIdSets ops preds = (ops, preds)
+mkIdSets :: Set.Set Id -> Set.Set Id -> Set.Set Id -> IdSets
+mkIdSets consts ops preds = ((consts, ops), preds)
 
 -- | top-level resolution like 'resolveMixTrm' that fails in case of diags
 resolveMixfix :: (GetRange f, Pretty f) => (f -> f)
@@ -303,6 +321,22 @@ resolveFormula par extR g ruleS f =
     let r@(Result ds _) = resolveMixFrm par extR g ruleS f
         in if null ds then r else Result ds Nothing
 
+varDeclTokens :: [VAR_DECL] -> Set.Set Token
+varDeclTokens = Set.unions . map (\ (Var_decl vs _ _) -> Set.fromList vs)
+
+extendRules :: Set.Set Token -> (Token -> [Rule], Rules)
+  -> (Token -> [Rule], Rules)
+extendRules ts (f, rs) =
+  (\ t -> let
+     l = f t
+     r = mkRule $ mkId [t]
+     in if Set.member t ts then
+         if elem r l then l else r : l
+     else l, rs)
+
+extendMixResolve :: Set.Set Token -> MixResolve f -> MixResolve f
+extendMixResolve ts f ga = f ga . extendRules ts
+
 -- | basic formula resolution that supports recursion without failure
 resolveMixFrm :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> MixResolve (FORMULA f)
@@ -311,7 +345,9 @@ resolveMixFrm par extR g ids frm =
         resolveTerm = resolveMixTrm par extR g ids in
     case frm of
        Quantification q vs fOld ps ->
-           do fNew <- resolveMixFrm par extR g ids fOld
+           do let ts = varDeclTokens vs
+              fNew <- resolveMixFrm par (extendMixResolve ts extR)
+                g (extendRules ts ids) fOld
               return $ Quantification q vs fNew ps
        Conjunction fsOld ps ->
            do fsNew <- mapM self fsOld

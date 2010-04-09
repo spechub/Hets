@@ -53,9 +53,8 @@ import Data.Maybe
 import Data.List
 
 checkPlaces :: [SORT] -> Id -> [Diagnosis]
-checkPlaces args i =
-    if let n = placeCount i in n == 0 || n == length args then []
-           else [mkDiag Error "wrong number of places" i]
+checkPlaces args i = let n = placeCount i in
+    [mkDiag Error "wrong number of places" i | n > 0 && n /= length args ]
 
 checkWithVars :: String -> Map.Map SIMPLE_ID a -> Id -> [Diagnosis]
 checkWithVars s m i@(Id ts _ _) = if isSimpleId i then
@@ -115,13 +114,22 @@ addPred a ty i =
                 ++ checkWithVars predS (varMap e) i
        if Set.member ty l then
           addDiags $ mkDiag Hint "redeclared pred" i : ds
-          else do put e { predMap = Map.insert i (Set.insert ty l) m }
-                  addDiags $ checkPlaces (predArgs ty) i
-                           ++ checkNamePrefix i ++ ds
+          else do
+            put e { predMap = Map.insert i (Set.insert ty l) m }
+            addDiags $ checkPlaces (predArgs ty) i ++ checkNamePrefix i ++ ds
        addAnnoSet a $ Symbol i $ PredAsItemType ty
 
+nonConsts :: OpMap -> Set.Set Id
+nonConsts = Map.keysSet . Map.filter (any (not . null . opArgs) . Set.toList)
+
+opMapConsts :: OpMap -> Set.Set Id
+opMapConsts = Map.keysSet . Map.filter (any (null . opArgs) . Set.toList)
+
 allOpIds :: Sign f e -> Set.Set Id
-allOpIds = Map.keysSet . opMap
+allOpIds = nonConsts . opMap
+
+allConstIds :: Sign f e -> Set.Set Id
+allConstIds = opMapConsts . opMap
 
 addAssocs :: Sign f e -> GlobalAnnos -> GlobalAnnos
 addAssocs e = updAssocMap (\ m -> foldr addAssocId m $ Map.keys $ assocOps e)
@@ -159,7 +167,7 @@ ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
 unionGenAx :: [GenAx] -> GenAx
-unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
+unionGenAx = foldr (\ (s1, r1, f1) (s2, r2, f2) ->
                         (Set.union s1 s2,
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
@@ -181,7 +189,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
            closeSubsortRel
            return bi
     Sort_gen al ps ->
-        do (gs,ul) <- ana_Generated mef anas mix al
+        do (gs, ul) <- ana_Generated mef anas mix al
            toSortGenAx ps False $ unionGenAx gs
            return $ Sort_gen ul ps
     Var_items il _ ->
@@ -193,7 +201,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
            vds <- gets envDiags
            sign <- get
            put e { envDiags = vds } -- restore with shadowing warnings
-           let (es, resFs, anaFs) = foldr ( \ f (dss, ress, ranas) ->
+           let (es, resFs, anaFs) = foldr (\ f (dss, ress, ranas) ->
                       let Result ds m = anaForm mef mix sign $ item f
                       in case m of
                          Nothing -> (ds ++ dss, ress, ranas)
@@ -203,7 +211,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let
                          qf = mkForall il f ps
-                         vs = map ( \ (v, s) -> Var_decl [v] s ps)
+                         vs = map (\ (v, s) -> Var_decl [v] s ps)
                               $ Set.toList $ freeVars sign qf
                          in stripQuant sign $ mkForall vs qf ps))
                       anaFs
@@ -213,7 +221,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
            return $ Local_var_axioms il resFs ps
     Axiom_items afs ps ->
         do sign <- get
-           let (es, resFs, anaFs) = foldr ( \ f (dss, ress, ranas) ->
+           let (es, resFs, anaFs) = foldr (\ f (dss, ress, ranas) ->
                       let Result ds m = anaForm mef mix
                                         sign $ item f
                       in case m of
@@ -223,7 +231,7 @@ ana_BASIC_ITEMS mef ab anas mix bi =
                                  f {item = anaF} : ranas))
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let
-                         vs = map ( \ (v, s) -> Var_decl [v] s ps)
+                         vs = map (\ (v, s) -> Var_decl [v] s ps)
                                  $ Set.toList $ freeVars sign f
                          in stripQuant sign $ mkForall vs f ps)) anaFs
                sens = map makeNamedSen fufs
@@ -243,9 +251,9 @@ emptyGenAx = (Set.empty, Rel.empty, Set.empty)
 toSortGenAx :: Range -> Bool -> GenAx -> State (Sign f e) ()
 toSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
-        opSyms = map ( \ c -> let ide = compId c in Qual_op_name ide
+        opSyms = map (\ c -> let ide = compId c in Qual_op_name ide
                       (toOP_TYPE $ compType c) $ posOfId ide) $ Set.toList ops
-        injSyms = map ( \ (s, t) -> let p = posOfId s in
+        injSyms = map (\ (s, t) -> let p = posOfId s in
                         Qual_op_name (mkUniqueInjName s t)
                         (Op_type Total [s] t p) p) $ Rel.toList
                   $ Rel.irreflex rel
@@ -256,7 +264,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         addIndices (Op_name _) =
           error "CASL/StaticAna: Internal error in function addIndices"
         addIndices os@(Qual_op_name _ t _) =
-            (os,map getIndex $ args_OP_TYPE t)
+            (os, map getIndex $ args_OP_TYPE t)
         collectOps s =
           Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
@@ -266,15 +274,15 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         voidOps = Set.difference resList sorts
         f = Sort_gen_ax constrs isFree
     when (null sortList)
-      $ addDiags[Diag Error "missing generated sort" ps]
+      $ addDiags [Diag Error "missing generated sort" ps]
     unless (Set.null noConsList)
-      $ addDiags[mkDiag Warning "generated sorts without constructor"
-                 noConsList]
+      $ addDiags [mkDiag Warning "generated sorts without constructor"
+          noConsList]
     unless (Set.null voidOps)
-      $ addDiags[mkDiag Warning "non-generated sorts as constructor result"
-                 voidOps]
-    addSentences [makeNamed ("ga_generated_" ++
-                       showSepList (showString "_") showId sortList "") f]
+      $ addDiags [mkDiag Warning "non-generated sorts as constructor result"
+          voidOps]
+    addSentences [makeNamed
+      ("ga_generated_" ++ showSepList (showString "_") showId sortList "") f]
 
 ana_SIG_ITEMS :: (GetRange f, Pretty f) => Min f e -> Ana s b s f e
               -> Mix b s f e -> GenKind -> SIG_ITEMS s f
@@ -303,7 +311,7 @@ ana_SIG_ITEMS mef anas mix gk si =
 ana_Generated :: (GetRange f, Pretty f) => Min f e -> Ana s b s f e
               -> Mix b s f e -> [Annoted (SIG_ITEMS s f)]
               -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
-ana_Generated mef anas mix  al = do
+ana_Generated mef anas mix al = do
    ul <- mapAnM (ana_SIG_ITEMS mef anas mix Generated) al
    return (map (getGenSig . item) ul, ul)
 
@@ -327,16 +335,15 @@ isConsAlt a = case a of
 
 getDataGenSig :: [Annoted DATATYPE_DECL] -> GenAx
 getDataGenSig dl =
-    let alts = concatMap (( \ (Datatype_decl s al _) ->
-                          map ( \ a -> (s, item a)) al) . item) dl
+    let alts = concatMap ((\ (Datatype_decl s al _) ->
+                          map (\ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
         (realAlts, subs) = partition (isConsAlt . snd) alts
-        cs = map ( \ (s, a) ->
+        cs = map (\ (s, a) ->
                let (i, ty, _) = getConsType s a
                in Component i ty) realAlts
-        rel = foldr ( \ (t, a) r ->
-                  foldr ( \ s ->
-                          Rel.insert s t)
+        rel = foldr (\ (t, a) r ->
+                  foldr (`Rel.insert` t)
                   r $ getAltSubsorts a)
                Rel.empty subs
         in (Set.fromList sorts, rel, Set.fromList cs)
@@ -345,24 +352,24 @@ getGenSorts :: SORT_ITEM f -> GenAx
 getGenSorts si =
     let (sorts, rel) = case si of
            Sort_decl il _ -> (Set.fromList il, Rel.empty)
-           Subsort_decl il i _ -> (Set.fromList (i:il)
-                                  , foldr (flip Rel.insert i) Rel.empty il)
+           Subsort_decl il i _ -> (Set.fromList (i : il)
+                                  , foldr (`Rel.insert` i) Rel.empty il)
            Subsort_defn sub _ super _ _ -> (Set.singleton sub
                                            , Rel.insert sub super Rel.empty)
            Iso_decl il _ -> (Set.fromList il
-                            , foldr ( \ s r -> foldr (Rel.insert s) r il)
+                            , foldr (\ s r -> foldr (Rel.insert s) r il)
                               Rel.empty il)
         in (sorts, rel, Set.empty)
 
 getOps :: OP_ITEM f -> Set.Set Component
 getOps oi = case oi of
     Op_decl is ty _ _ ->
-        Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
+        Set.fromList $ map (flip Component $ toOpType ty) is
     Op_defn i par _ _ ->
         Set.singleton $ Component i $ toOpType $ headToType par
 
 ana_SORT_ITEM :: (GetRange f, Pretty f) => Min f e -> Mix b s f e
-              -> SortsKind -> Annoted (SORT_ITEM  f)
+              -> SortsKind -> Annoted (SORT_ITEM f)
               -> State (Sign f e) (Annoted (SORT_ITEM f))
 ana_SORT_ITEM mef mix sk asi =
     case item asi of
@@ -370,7 +377,7 @@ ana_SORT_ITEM mef mix sk asi =
         do mapM_ (addSort sk asi) il
            return asi
     Subsort_decl il i _ ->
-        do mapM_ (addSort sk asi) (i:il)
+        do mapM_ (addSort sk asi) (i : il)
            mapM_ (addSubsort i) il
            return asi
     Subsort_defn sub v super af ps ->
@@ -390,7 +397,7 @@ ana_SORT_ITEM mef mix sk asi =
              Just (resF, anaF) -> do
                let p = posOfId sub
                    pv = tokPos v
-               addSentences[(makeNamed lab $
+               addSentences [(makeNamed lab $
                               mkForall [Var_decl [v] super pv]
                               (Equivalence
                                (Membership (Qual_var v super pv) sub p)
@@ -415,11 +422,11 @@ ana_OP_ITEM mef mix aoi =
                ni = notImplied aoi
            mapM_ (addOp aoi oty) ops
            ul <- mapM (ana_OP_ATTR mef mix oty ni ops) il
-           when (any ( \ a -> case a of
+           when (any (\ a -> case a of
                   Assoc_op_attr -> True
                   _ -> False) il) $ do
               mapM_ (addAssocOp oty) ops
-              when (any ( \ a -> case a of
+              when (any (\ a -> case a of
                   Comm_op_attr -> True
                   _ -> False) il)
                    $ addSentences $ map (addLeftComm oty ni) ops
@@ -431,8 +438,8 @@ ana_OP_ITEM mef mix aoi =
                args = case ohd of
                       Op_head _ as _ _ -> as
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
-               arg = concatMap ( \ (Var_decl v s qs) ->
-                                 map ( \ j -> Qual_var j s qs) v) vs
+               arg = concatMap (\ (Var_decl v s qs) ->
+                                 map (\ j -> Qual_var j s qs) v) vs
            addOp aoi (toOpType ty) i
            e <- get -- save
            put e { varMap = Map.empty }
@@ -457,7 +464,7 @@ headToType :: OP_HEAD -> OP_TYPE
 headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 
 sortsOfArgs :: [ARG_DECL] -> [SORT]
-sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
+sortsOfArgs = concatMap (\ (Arg_decl l s _) -> map (const s) l)
 
 -- see Isabelle/doc/ref.pdf 10.6 Permutative rewrite rules (p. 137)
 addLeftComm :: OpType -> Bool -> Id -> Named (FORMULA f)
@@ -466,8 +473,8 @@ addLeftComm ty ni i =
       rty = opRes ty
       q = posOfId rty
       ns = map mkSimpleId ["x", "y", "z"]
-      vs = map ( \ v -> Var_decl [v] rty q) ns
-      [v1, v2, v3] = map ( \ v -> Qual_var v rty q) ns
+      vs = map (\ v -> Var_decl [v] rty q) ns
+      [v1, v2, v3] = map (\ v -> Qual_var v rty q) ns
       p = posOfId i
       qi = Qual_op_name i sty p
   in (makeNamed ("ga_left_comm_" ++ showId i "") $
@@ -478,13 +485,12 @@ addLeftComm ty ni i =
             { isAxiom = ni }
 
 ana_OP_ATTR :: (GetRange f, Pretty f) => Min f e -> Mix b s f e -> OpType
-            -> Bool -> [Id]-> (OP_ATTR f)
-            -> State (Sign f e) (Maybe (OP_ATTR f))
+  -> Bool -> [Id] -> OP_ATTR f -> State (Sign f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR mef mix ty ni ois oa = do
-  let   sty = toOP_TYPE ty
-        rty = opRes ty
-        atys = opArgs ty
-        q = posOfId rty
+  let sty = toOP_TYPE ty
+      rty = opRes ty
+      atys = opArgs ty
+      q = posOfId rty
   case atys of
          [t1, t2] | t1 == t2 -> case oa of
               Comm_op_attr -> return ()
@@ -500,14 +506,14 @@ ana_OP_ATTR mef mix ty ni ois oa = do
            addDiags ds
            case mt of
              Nothing -> return Nothing
-             Just (resT, anaT)  -> do
+             Just (resT, anaT) -> do
                addSentences $ map (makeUnit True anaT ty ni) ois
                addSentences $ map (makeUnit False anaT ty ni) ois
                return $ Just $ Unit_op_attr resT
     Assoc_op_attr -> do
       let ns = map mkSimpleId ["x", "y", "z"]
-          vs = map ( \ v -> Var_decl [v] rty q) ns
-          [v1, v2, v3] = map ( \ v -> Qual_var v rty q) ns
+          vs = map (\ v -> Var_decl [v] rty q) ns
+          [v1, v2, v3] = map (\ v -> Qual_var v rty q) ns
           makeAssoc i = let p = posOfId i
                             qi = Qual_op_name i sty p in
             (makeNamed ("ga_assoc_" ++ showId i "") $
@@ -520,7 +526,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
       return $ Just oa
     Comm_op_attr -> do
       let ns = map mkSimpleId ["x", "y"]
-          vs = zipWith ( \ v t -> Var_decl [v] t
+          vs = zipWith (\ v t -> Var_decl [v] t
                          $ concatMapRange posOfId atys) ns atys
           args = map toQualVar vs
           makeComm i = let p = posOfId i
@@ -575,8 +581,8 @@ ana_PRED_ITEM mef mix apr = case item apr of
                lab = if null lb then getRLabel apr else lb
                ty = Pred_type (sortsOfArgs args) rs
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
-               arg = concatMap ( \ (Var_decl v s qs) ->
-                                 map ( \ j -> Qual_var j s qs) v) vs
+               arg = concatMap (\ (Var_decl v s qs) ->
+                                 map (\ j -> Qual_var j s qs) v) vs
            addPred apr (toPredType ty) i
            e <- get -- save
            put e { varMap = Map.empty }
@@ -624,7 +630,7 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
                   addDiags $ checkUniqueness cs
                   let totalSels = Set.unions $ map snd constr
                       wrongConstr = filter ((totalSels /=) . snd) constr
-                  addDiags $ map ( \ (c, _) -> mkDiag Warning
+                  addDiags $ map (\ (c, _) -> mkDiag Warning
                       ("total selectors '" ++ showSepList (showString ", ")
                        showDoc (Set.toList totalSels)
                        "'\n  should be in alternative") c) wrongConstr
@@ -635,20 +641,20 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
                (alts, subs) = partition isConsAlt allts
                sbs = concatMap getAltSubsorts subs
                comps = map (getConsType s) alts
-               ttrips = map (( \ (a, vs, t, ses) -> (a, vs, t, catSels ses))
+               ttrips = map ((\ (a, vs, t, ses) -> (a, vs, t, catSels ses))
                                . selForms1 "X" ) comps
-               sels = concatMap ( \ (_, _, _, ses) -> ses) ttrips
-           addDiags $ map ( \ (Alt_construct _ i _ _) ->  mkDiag Error
+               sels = concatMap (\ (_, _, _, ses) -> ses) ttrips
+           addDiags $ map (\ (Alt_construct _ i _ _) -> mkDiag Error
                "illegal free partial constructor" i) pfs
            addSentences $ map makeInjective
-                            $ filter ( \ (_, _, ces) -> not $ null ces)
+                            $ filter (\ (_, _, ces) -> not $ null ces)
                               comps
            addSentences $ makeDisjSubsorts s sbs
-           addSentences $ concatMap ( \ c -> map (makeDisjToSort c) sbs)
+           addSentences $ concatMap (\ c -> map (makeDisjToSort c) sbs)
                         comps
            addSentences $ makeDisjoint comps
            addSentences $ catMaybes $ concatMap
-                             ( \ ses ->
+                             (\ ses ->
                                map (makeUndefForm ses) ttrips) sels
          _ -> return ()
        return cs
@@ -686,7 +692,7 @@ makeInjective a =
     in makeNamed ("ga_injective_" ++ showId c "")
         $ mkForall (v1 ++ v2)
         (Equivalence (Strong_equation t1 t2 p)
-         (let ces = zipWith ( \ w1 w2 -> Strong_equation
+         (let ces = zipWith (\ w1 w2 -> Strong_equation
                               (toQualVar w1) (toQualVar w2) p) v1 v2
           in if isSingle ces then head ces else Conjunction ces p)
          p) p
@@ -706,14 +712,14 @@ makeDisjoint l = case l of
         $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 catSels :: [(Maybe Id, OpType)] -> [(Id, OpType)]
-catSels = map ( \ (m, t) -> (fromJust m, t)) .
-                 filter ( \ (m, _) -> isJust m)
+catSels = map (\ (m, t) -> (fromJust m, t)) .
+                 filter (\ (m, _) -> isJust m)
 
 makeUndefForm :: (Id, OpType) -> (Id, [VAR_DECL], TERM f, [(Id, OpType)])
               -> Maybe (Named (FORMULA f))
 makeUndefForm (s, ty) (i, vs, t, sels) =
     let p = posOfId s in
-    if any ( \ (se, ts) -> s == se && opRes ts == opRes ty ) sels
+    if any (\ (se, ts) -> s == se && opRes ts == opRes ty ) sels
     then Nothing else
        Just $ makeNamed ("ga_selector_undef_" ++ showId s "_" ++ showId i "")
               $ mkForall vs
@@ -737,19 +743,21 @@ getConsType s c =
         Alt_construct k a l _ -> getConsTypeAux (k, a, l)
 
 getCompType :: SORT -> COMPONENTS -> [(Maybe Id, OpType)]
-getCompType s (Cons_select k l cs _) =
-    map (\ i -> (Just i, OpType k [s] cs)) l
-getCompType s (Sort cs) = [(Nothing, OpType Partial [s] cs)]
+getCompType s c = case c of
+  Cons_select k l cs _ -> map (\ i -> (Just i, OpType k [s] cs)) l
+  Sort cs -> [(Nothing, OpType Partial [s] cs)]
 
 genSelVars :: String -> Int -> [OpType] -> [VAR_DECL]
-genSelVars _ _ [] = []
-genSelVars str n (ty:rs)  =
-    Var_decl [mkNumVar str n] (opRes ty) nullRange : genSelVars str (n+1) rs
+genSelVars str n tys = case tys of
+  [] -> []
+  ty : rs -> Var_decl [mkNumVar str n] (opRes ty) nullRange
+    : genSelVars str (n + 1) rs
 
 makeSelForms :: Int -> (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
              -> [Named (FORMULA f)]
-makeSelForms _ (_, _, _, []) = []
-makeSelForms n (i, vs, t, (mi, ty):rs) =
+makeSelForms n (i, vs, t, tys) = case tys of
+  [] -> []
+  (mi, ty) : rs ->
     (case mi of
             Nothing -> []
             Just j -> let p = posOfId j
@@ -760,7 +768,7 @@ makeSelForms n (i, vs, t, (mi, ty):rs) =
                       (Strong_equation
                        (Application (Qual_op_name j (toOP_TYPE ty) p) [t] p)
                        (Qual_var (mkNumVar "X" n) rty q) p) p]
-    )  ++ makeSelForms (n+1) (i, vs, t, rs)
+    ) ++ makeSelForms (n + 1) (i, vs, t, rs)
 
 selForms1 :: String -> (Id, OpType, [COMPONENTS])
           -> (Id, [VAR_DECL], TERM f, [(Maybe Id, OpType)])
@@ -776,8 +784,7 @@ selForms = makeSelForms 1 . selForms1 "X"
 -- | return the constructor and the set of total selectors
 ana_ALTERNATIVE :: SORT -> Annoted ALTERNATIVE
                 -> State (Sign f e) (Maybe (Component, Set.Set Component))
-ana_ALTERNATIVE s c =
-    case item c of
+ana_ALTERNATIVE s c = case item c of
     Subsorts ss _ -> do
         mapM_ (addSubsort s) ss
         return Nothing
@@ -795,12 +802,13 @@ ana_COMPONENTS :: SORT -> COMPONENTS
                -> State (Sign f e) ([Component], [Component])
 ana_COMPONENTS s c = do
     let cs = getCompType s c
-    sels <- mapM ( \ (mi, ty) ->
+    sels <- mapM (\ (mi, ty) ->
             case mi of
             Nothing -> return Nothing
-            Just i -> do addOp (emptyAnno ()) ty i
-                         return $ Just $ Component i ty) cs
-    return $ partition ((==Total) . opKind . compType) $ catMaybes sels
+            Just i -> do
+              addOp (emptyAnno ()) ty i
+              return $ Just $ Component i ty) cs
+    return $ partition ((== Total) . opKind . compType) $ catMaybes sels
 
 -- | utility
 resultToState :: (a -> Result a) -> a -> State (Sign f e) a
@@ -817,7 +825,8 @@ type Ana a b s f e = Mix b s f e -> a -> State (Sign f e) a
 
 anaForm :: (GetRange f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
         -> FORMULA f -> Result (FORMULA f, FORMULA f)
-anaForm mef mix sign f = do
+anaForm mef mixIn sign f = do
+    let mix = extendMix (Map.keysSet $ varMap sign) mixIn
     resF <- resolveFormula (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) f
     anaF <- minExpFORMULA mef sign resF
@@ -825,7 +834,8 @@ anaForm mef mix sign f = do
 
 anaTerm :: (GetRange f, Pretty f) => Min f e -> Mix b s f e -> Sign f e
         -> SORT -> Range -> TERM f -> Result (TERM f, TERM f)
-anaTerm mef mix sign srt pos t = do
+anaTerm mef mixIn sign srt pos t = do
+    let mix = extendMix (Map.keysSet $ varMap sign) mixIn
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) t
     anaT <- oneExpTerm mef sign $ Sorted_term resT srt pos
@@ -843,7 +853,8 @@ basicAnalysis :: (GetRange f, Pretty f, FreeVars f)
 basicAnalysis mef anab anas mix (bs, inSig, ga) =
     let allIds = unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
                  : getExtIds mix (extendedInfo inSig) :
-                  [mkIdSets (allOpIds inSig) $ allPredIds inSig]
+                  [mkIdSets (allConstIds inSig) (allOpIds inSig)
+                  $ allPredIds inSig]
         (newBs, accSig) = runState (ana_BASIC_SPEC mef anab anas
                mix { mixRules = makeRules ga allIds }
                bs) inSig { globAnnos = addAssocs inSig ga }

@@ -22,11 +22,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as S
 import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
                            VAR_DECL(..))
-import CASL.MixfixParser (emptyMix, Mix(..), makeRules, mkIdSets,
-                          resolveFormula, resolveMixfix, unite)
+import CASL.MixfixParser
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
-import CASL.StaticAna (allOpIds, allPredIds)
+import CASL.StaticAna (allConstIds, allOpIds, allPredIds)
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
@@ -732,13 +731,17 @@ anaTermCspCASL pm t = do
     addDiags ds
     return mt
 
+idSetOfSig :: CspCASLSign -> IdSets
+idSetOfSig sig =
+  unite [mkIdSets (allConstIds sig) (allOpIds sig) $ allPredIds sig]
+
 -- | Statically analyse a CASL term in the context of a CspCASL
 -- signature.  If successful, returns a fully-qualified term.
 anaTermCspCASL' :: CspCASLSign -> TERM () -> Result (TERM ())
 anaTermCspCASL' sig trm = do
-    let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
-        ga = globAnnos sig
-        mix = emptyMix { mixRules = makeRules ga allIds }
+    let ga = globAnnos sig
+        mix = extendMix (Map.keysSet $ varMap sig)
+              emptyMix { mixRules = makeRules ga $ idSetOfSig sig }
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
                  ga (mixRules mix) trm
     oneExpTerm (const return) sig resT
@@ -784,9 +787,9 @@ anaFormulaCspCASL pm f = do
 -- signature.  If successful, returns a fully-qualified formula.
 anaFormulaCspCASL' :: CspCASLSign -> FORMULA () -> Result (FORMULA ())
 anaFormulaCspCASL' sig frm = do
-    let allIds = unite [mkIdSets (allOpIds sig) $ allPredIds sig]
-        ga = globAnnos sig
-        mix = emptyMix { mixRules = makeRules ga allIds }
+    let ga = globAnnos sig
+        mix = extendMix (Map.keysSet $ varMap sig)
+              emptyMix { mixRules = makeRules ga $ idSetOfSig sig }
     resF <- resolveFormula (putParen mix) (mixResolve mix) ga (mixRules mix) frm
     minExpFORMULA (const return) sig resF
 

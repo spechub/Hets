@@ -19,13 +19,16 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 import Common.ExampleMixIds
+
 import CASL.Formula
 import CASL.ShowMixfix
 import CASL.MixfixParser
 import CASL.AS_Basic_CASL
 
+import qualified Data.Set as Set
+
 myIdSets :: IdSets
-myIdSets = mkIdSets (mkIds stdOpsL) stdPreds
+myIdSets = mkIdSets Set.empty (mkIds stdOpsL) stdPreds
 
 resolveForm :: GlobalAnnos -> AParser () (Result (FORMULA ()))
 resolveForm ga =
@@ -46,23 +49,25 @@ instance Pretty WrapString where
     pretty (WrapString s) = text s
 
 testTerm :: AParser () WrapString
-testTerm = do t <- term [] :: AParser () (TERM ())
-              return $ WrapString $ showDoc (mapTerm id t) ""
+testTerm = do
+  t <- term [] :: AParser () (TERM ())
+  return $ WrapString $ showDoc (mapTerm id t) ""
 
 testTermMix :: GlobalAnnos -> AParser () WrapString
-testTermMix ga = do Result ds mt <- resolveTerm ga
-                    return $ WrapString $
-                        case mt of
-                        Just t -> showGlobalDoc ga (mapTerm id t) ""
-                        _ -> show ds
+testTermMix ga = do
+  Result ds mt <- resolveTerm ga
+  return $ WrapString $ case mt of
+    Just t -> showGlobalDoc ga (mapTerm id t) ""
+    _ -> show ds
 
 testFormula :: AParser () WrapString
-testFormula = do f <- formula [] :: AParser () (FORMULA ())
-                 return $ WrapString $ showDoc (mapFormula id  f) ""
+testFormula = do
+  f <- formula [] :: AParser () (FORMULA ())
+  return $ WrapString $ showDoc (mapFormula id f) ""
 
 testFormulaMix :: GlobalAnnos -> AParser () WrapString
-testFormulaMix ga = do Result ds m <- resolveForm ga
-                       return $ WrapString $
-                           case m of
-                           Just f -> showGlobalDoc ga (mapFormula id f) ""
-                           _ -> show ds
+testFormulaMix ga = do
+  Result ds m <- resolveForm ga
+  return $ WrapString $ case m of
+    Just f -> showGlobalDoc ga (mapFormula id f) ""
+    _ -> show ds

@@ -13,7 +13,7 @@ static analysis of modal logic parts
 module ExtModal.StatAna where
 
 import ExtModal.AS_ExtModal
-import ExtModal.Print_AS()
+import ExtModal.Print_AS ()
 import ExtModal.ExtModalSign
 
 import CASL.Sign
@@ -134,7 +134,7 @@ addTimeMod tmi sgn = let tm = time_modalities sgn in
        else return sgn { time_modalities = Set.insert tmi tm }
 
 preAddMod :: SIMPLE_ID -> EModalSign -> Result EModalSign
-preAddMod mi sgn  =
+preAddMod mi sgn =
         let m = modalities sgn in
         if Map.member mi m then
                 Result [mkDiag Hint "repeated modality" mi] $ Just sgn
@@ -197,11 +197,11 @@ mixfixAna = emptyMix
         }
 
 extraSigItems :: EM_SIG_ITEM -> IdSets
-extraSigItems s = case s of
+extraSigItems s = let e = Set.empty in case s of
         Rigid_op_items _ annoted_list _ ->
-            (Set.unions $ map (ids_OP_ITEM . item) annoted_list, Set.empty)
+            (unite2 $ map (ids_OP_ITEM . item) annoted_list, e)
         Rigid_pred_items _ annoted_list _ ->
-            (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) annoted_list)
+            ((e, e), Set.unions $ map (ids_PRED_ITEM . item) annoted_list)
 
 parenExtForm :: EM_FORMULA -> EM_FORMULA
 parenExtForm (BoxOrDiamond choice md leq_geq nr frm pos) =
@@ -273,7 +273,7 @@ getFormPredToks frm = case frm of
     Disjunction fs _ -> Set.unions $ map getFormPredToks fs
     Implication f1 f2 _ _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Equivalence f1 f2 _  ->
+    Equivalence f1 f2 _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.singleton t

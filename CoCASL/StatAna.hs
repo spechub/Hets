@@ -13,7 +13,7 @@ static analysis for CoCASL
 module CoCASL.StatAna where
 
 import CoCASL.AS_CoCASL
-import CoCASL.Print_AS()
+import CoCASL.Print_AS ()
 import CoCASL.CoCASLSign
 
 import CASL.Sign
@@ -28,7 +28,6 @@ import CASL.Fold
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
@@ -61,7 +60,8 @@ ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_CMix = emptyMix
     { getBaseIds = ids_C_BASIC_ITEM
     , getSigIds = ids_C_SIG_ITEM
-    , getExtIds = \ e -> mkIdSets (Map.keysSet $ constructors e) Set.empty
+    , getExtIds = \ e -> let c = constructors e in
+        mkIdSets (opMapConsts c) (nonConsts c) Set.empty
     , putParen = mapC_FORMULA
     , mixResolve = resolveC_FORMULA
     }
@@ -69,22 +69,23 @@ ana_CMix = emptyMix
 ids_C_BASIC_ITEM :: C_BASIC_ITEM -> IdSets
 ids_C_BASIC_ITEM ci = case ci of
     CoFree_datatype al _ ->
-        (Set.unions $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
+        (unite2 $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
     CoSort_gen al _ -> unite $ map (ids_SIG_ITEMS ids_C_SIG_ITEM . item) al
 
 ids_C_SIG_ITEM :: C_SIG_ITEM -> IdSets
 ids_C_SIG_ITEM (CoDatatype_items al _) =
-    (Set.unions $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
+    (unite2 $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
 
-ids_CODATATYPE_DECL :: CODATATYPE_DECL -> Set.Set Id
+ids_CODATATYPE_DECL :: CODATATYPE_DECL -> (Set.Set Id, Set.Set Id)
 ids_CODATATYPE_DECL (CoDatatype_decl _ al _) =
-    Set.unions $ map (ids_COALTERNATIVE . item) al
+    unite2 $ map (ids_COALTERNATIVE . item) al
 
-ids_COALTERNATIVE :: COALTERNATIVE -> Set.Set Id
-ids_COALTERNATIVE a = case a of
-    Co_construct _ mi cs _ -> Set.unions $
-        maybe Set.empty Set.singleton mi : map ids_COCOMPONENTS cs
-    CoSubsorts _ _ -> Set.empty
+ids_COALTERNATIVE :: COALTERNATIVE -> (Set.Set Id, Set.Set Id)
+ids_COALTERNATIVE a = let e = Set.empty in case a of
+    Co_construct _ mi cs _ -> let s = maybe Set.empty Set.singleton mi in
+        if null cs then (s, e) else
+            (e, Set.unions $ s : map ids_COCOMPONENTS cs)
+    CoSubsorts _ _ -> (e, e)
 
 ids_COCOMPONENTS :: COCOMPONENTS -> Set.Set Id
 ids_COCOMPONENTS (CoSelect l _ _) = Set.unions $ map Set.singleton l
@@ -174,8 +175,7 @@ minExpForm s form =
         phi -> return phi
 
 ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
-ana_C_SIG_ITEM _ mi =
-    case mi of
+ana_C_SIG_ITEM _ mi = case mi of
     CoDatatype_items al _ ->
         do mapM_ (\ i -> case item i of
                   CoDatatype_decl s _ _ -> addSort NonEmptySorts i s) al
@@ -195,15 +195,15 @@ getCoSubsorts c = case c of
 
 -- | return list of constructors
 ana_CODATATYPE_DECL :: GenKind -> CODATATYPE_DECL -> State CSign [Component]
-ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
-    do ul <- mapM (ana_COALTERNATIVE s) al
+ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) = do
+       ul <- mapM (ana_COALTERNATIVE s) al
        let constr = catMaybes ul
            cs = map fst constr
        unless (null constr) $ do
                   addDiags $ checkUniqueness cs
                   let totalSels = Set.unions $ map snd constr
                       wrongConstr = filter ((totalSels /=) . snd) constr
-                  addDiags $ map ( \ (c, _) -> mkDiag Error
+                  addDiags $ map (\ (c, _) -> mkDiag Error
                       ("total selectors '" ++ showSepList (showString ",")
                        showDoc (Set.toList totalSels)
                        "'\n  must appear in alternative") c) wrongConstr
@@ -212,20 +212,20 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
            let (alts, subs) = partition isCoConsAlt $ map item al
                sbs = concatMap getCoSubsorts subs
                comps = map (getCoConsType s) alts
-               ttrips = map (( \ (a, vs, ses) -> (a, vs, catSels ses))
+               ttrips = map ((\ (a, vs, ses) -> (a, vs, catSels ses))
                             . coselForms1 "X") comps
-               sels = concatMap ( \ (_, _, ses) -> ses) ttrips
+               sels = concatMap (\ (_, _, ses) -> ses) ttrips
            addSentences $ mapMaybe comakeInjective
-                            $ filter ( \ (_, _, ces) -> not $ null ces)
+                            $ filter (\ (_, _, ces) -> not $ null ces)
                               comps
            addSentences $ makeDisjSubsorts s sbs
            addSentences $ catMaybes $ concatMap
-                            ( \ c -> map (comakeDisjToSort c) sbs)
+                            (\ c -> map (comakeDisjToSort c) sbs)
                         comps
            addSentences $ comakeDisjoint comps
-           let ttrips' = [(a,vs,t,ses) | (Just(a,t),vs,ses) <- ttrips]
+           let ttrips' = [(a, vs, t, ses) | (Just (a, t), vs, ses) <- ttrips]
            addSentences $ catMaybes $ concatMap
-                             ( \ ses ->
+                             (\ ses ->
                                map (makeUndefForm ses) ttrips') sels
          _ -> return ()
        return cs
@@ -233,19 +233,18 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
 getCoConsType :: SORT -> COALTERNATIVE -> (Maybe Id, OpType, [COCOMPONENTS])
 getCoConsType s c =
     let (part, i, il) = case c of
-              CoSubsorts _ _ ->  error "getCoConsType"
+              CoSubsorts _ _ -> error "getCoConsType"
               Co_construct k a l _ -> (k, a, l)
         in (i, OpType part (concatMap
                             (map (opRes . snd) . getCoCompType s) il) s, il)
 
 getCoCompType :: SORT -> COCOMPONENTS -> [(Id, OpType)]
 getCoCompType s (CoSelect l (Op_type k args res _) _) =
-    map (\ i -> (i, OpType k (args++[s]) res)) l
+    map (\ i -> (i, OpType k (args ++ [s]) res)) l
 
 coselForms :: (Maybe Id, OpType, [COCOMPONENTS]) -> [Named (FORMULA f)]
-coselForms x =
-  case coselForms1 "X" x of
-    (Just (i,f),vs,cs) -> makeSelForms 1 (i,vs,f,cs)
+coselForms x = case coselForms1 "X" x of
+    (Just (i, f), vs, cs) -> makeSelForms 1 (i, vs, f, cs)
     _ -> []
 
 coselForms1 :: String -> (Maybe Id, OpType, [COCOMPONENTS])
@@ -255,17 +254,17 @@ coselForms1 str (i, ty, il) =
         vs = genSelVars str 1 $ map snd cs
         it = case i of
                Nothing -> Nothing
-               Just i' -> Just (i',Application (Qual_op_name i'
+               Just i' -> Just (i', Application (Qual_op_name i'
                                                  (toOP_TYPE ty) nullRange)
                                               (map toQualVar vs) nullRange)
-     in (it, vs, map ( \ (j, typ) -> (Just j, typ)) cs)
+     in (it, vs, map (\ (j, typ) -> (Just j, typ)) cs)
 
 comakeDisjToSort :: (Maybe Id, OpType, [COCOMPONENTS]) -> SORT
                      -> Maybe (Named (FORMULA f))
 comakeDisjToSort a s = do
     let (i, v, _) = coselForms1 "X" a
         p = posOfId s
-    (c,t) <- i
+    (c, t) <- i
     return $ makeNamed ("ga_disjoint_" ++ showId c "_sort_" ++ showId s "")
                $ mkForall v (Negation (Membership t s p) p) p
 
@@ -274,20 +273,21 @@ comakeInjective :: (Maybe Id, OpType, [COCOMPONENTS])
 comakeInjective a = do
     let (i1, v1, _) = coselForms1 "X" a
         (i2, v2, _) = coselForms1 "Y" a
-    (c,t1) <- i1
-    (_,t2) <- i2
+    (c, t1) <- i1
+    (_, t2) <- i2
     let p = posOfId c
     return $ makeNamed ("ga_injective_" ++ showId c "") $
        mkForall (v1 ++ v2)
        (Equivalence (Strong_equation t1 t2 p)
-        (let ces = zipWith ( \ w1 w2 -> Strong_equation
+        (let ces = zipWith (\ w1 w2 -> Strong_equation
                              (toQualVar w1) (toQualVar w2) p) v1 v2
          in if isSingle ces then head ces else Conjunction ces p)
         p) p
 
 comakeDisjoint :: [(Maybe Id, OpType, [COCOMPONENTS])] -> [Named (FORMULA f)]
-comakeDisjoint [] = []
-comakeDisjoint (a:as) = mapMaybe (comakeDisj a) as ++ comakeDisjoint as
+comakeDisjoint l = case l of
+  [] -> []
+  a : as -> mapMaybe (comakeDisj a) as ++ comakeDisjoint as
 
 comakeDisj :: (Maybe Id, OpType, [COCOMPONENTS])
                            -> (Maybe Id, OpType, [COCOMPONENTS])
@@ -295,8 +295,8 @@ comakeDisj :: (Maybe Id, OpType, [COCOMPONENTS])
 comakeDisj a1 a2 = do
     let (i1, v1, _) = coselForms1 "X" a1
         (i2, v2, _) = coselForms1 "Y" a2
-    (c1,t1) <- i1
-    (c2,t2) <- i2
+    (c1, t1) <- i1
+    (c2, t2) <- i2
     let p = posOfId c1 `appRange` posOfId c2
     return $ makeNamed ("ga_disjoint_" ++ showId c1 "_" ++ showId c2 "")
               $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
@@ -304,8 +304,7 @@ comakeDisj a1 a2 = do
 -- | return the constructor and the set of total selectors
 ana_COALTERNATIVE :: SORT -> Annoted COALTERNATIVE
                 -> State CSign (Maybe (Component, Set.Set Component))
-ana_COALTERNATIVE s c =
-    case item c of
+ana_COALTERNATIVE s c = case item c of
     CoSubsorts ss _ -> do
         mapM_ (addSubsort s) ss
         return Nothing
@@ -327,15 +326,14 @@ ana_COCOMPONENTS :: SORT -> COCOMPONENTS
                -> State CSign ([Component], [Component])
 ana_COCOMPONENTS s c = do
     let cs = getCoCompType s c
-    sels <- mapM ( \ (i, ty) ->
+    sels <- mapM (\ (i, ty) ->
                    do addOp (emptyAnno ()) ty i
                       return $ Just $ Component i ty) cs
-    return $ partition ((==Total) . opKind . compType) $ catMaybes sels
+    return $ partition ((== Total) . opKind . compType) $ catMaybes sels
 
 ana_C_BASIC_ITEM
     :: Ana C_BASIC_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
-ana_C_BASIC_ITEM mix bi =
-  case bi of
+ana_C_BASIC_ITEM mix bi = case bi of
     CoFree_datatype al ps ->
         do mapM_ (\ i -> case item i of
                   CoDatatype_decl s _ _ -> addSort NonEmptySorts i s) al
@@ -344,16 +342,16 @@ ana_C_BASIC_ITEM mix bi =
            closeSubsortRel
            return bi
     CoSort_gen al ps ->
-        do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM mix ([], al)
+        do (gs, ul) <- ana_CoGenerated ana_C_SIG_ITEM mix ([], al)
            toCoSortGenAx ps False $ unionGenAx gs
            return $ CoSort_gen ul ps
 
 toCoSortGenAx :: Range -> Bool -> GenAx -> State CSign ()
 toCoSortGenAx ps isFree (sorts, rel, ops) = do
     let sortList = Set.toList sorts
-        opSyms = map ( \ c -> let ide = compId c in  Qual_op_name ide
+        opSyms = map (\ c -> let ide = compId c in Qual_op_name ide
                       (toOP_TYPE $ compType c) $ posOfId ide) $ Set.toList ops
-        injSyms = map ( \ (s, t) -> let p = posOfId s in
+        injSyms = map (\ (s, t) -> let p = posOfId s in
                         Qual_op_name (mkUniqueInjName s t)
                         (Op_type Total [s] t p) p) $ Rel.toList rel
     when (null sortList)
@@ -382,16 +380,13 @@ getCoGenSig si = case si of
 getCoDataGenSig :: [Annoted CODATATYPE_DECL] -> GenAx
 getCoDataGenSig dl =
     let get_sel (s, a) = case a of
-          CoSubsorts _ _ ->  []
+          CoSubsorts _ _ -> []
           Co_construct _ _ l _ -> concatMap (getCoCompType s) l
-        alts = concatMap (( \ (CoDatatype_decl s al _) ->
-                       map ( \ a -> (s, item a)) al) . item) dl
+        alts = concatMap ((\ (CoDatatype_decl s al _) ->
+                       map (\ a -> (s, item a)) al) . item) dl
         sorts = map fst alts
         (realAlts, subs) = partition (isCoConsAlt . snd) alts
         sels = map (uncurry Component) $ concatMap get_sel realAlts
-        rel = foldr ( \ (t, a) r ->
-                  foldr ( \ s ->
-                          Rel.insert s t)
-                  r $ getCoSubsorts a)
+        rel = foldr (\ (t, a) r -> foldr (`Rel.insert` t) r $ getCoSubsorts a)
                Rel.empty subs
         in (Set.fromList sorts, rel, Set.fromList sels)
