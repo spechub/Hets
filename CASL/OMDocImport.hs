@@ -16,10 +16,11 @@ instantiation can be found in module CASL.Logic_CASL.
 module CASL.OMDocImport
     ( omdocToSym
     , omdocToSen
+    , addOMadtToTheory
+    , addOmdocToTheory
     ) where
 
 import OMDoc.DataTypes
---import OMDoc.Export
 
 import Common.Id
 import Common.Result
@@ -33,6 +34,7 @@ import CASL.Sign
 import CASL.OMDoc
 
 import qualified Data.Map as Map
+import Data.List
 import Data.Maybe
 
 -- * Environment Interface
@@ -95,6 +97,91 @@ omdocToSym _ sym _ = fail $ concat [ "omdocToSym: only TCSymbol is allowed,"
 omdocToSen :: Env -> TCElement -> String
            -> Result (Maybe (Named (FORMULA f)))
 omdocToSen _ _ _ = return Nothing
+
+
+-- | Sort generation constraints are added as named formulas.
+addOMadtToTheory :: Env
+                 -> (Sign f e, [Named (FORMULA f)]) -> [[OmdADT]]
+                 -> Result (Sign f e, [Named (FORMULA f)])
+addOMadtToTheory e (sig, nsens) adts = do
+    sgcs <- mapR (omdocToSortGenConstraint e) adts
+    return (sig, nsens ++ sgcs)
+
+
+-- | The subsort relation is recovered from exported sentences.
+addOmdocToTheory :: Env
+                 -> (Sign f e, [Named (FORMULA f)]) -> [TCElement]
+                 -> Result (Sign f e, [Named (FORMULA f)])
+addOmdocToTheory _ t _ = return t
+
+
+-- * Algebraic Data Types
+
+omdocToSortGenConstraint :: Env -> [OmdADT] -> Result (Named (FORMULA f))
+omdocToSortGenConstraint e sortdefs = do
+  -- take the last type as the type of all constraints
+  let (t, cs) = mapAccumL (const $ mkConstraint e) Generated sortdefs
+  -- TODO: do we take newSort or origSort?
+  return $ toSortGenNamed (Sort_gen_ax cs $ t == Free) $ map newSort cs
+
+mkConstraint :: Env -> OmdADT -> (ADTType, Constraint)
+mkConstraint e (ADTSortDef nm t constrs) =
+    let s = lookupSort e $ mkSimpleName nm
+        l = map (mkConstructor e s) constrs
+    in (t, Constraint s l s)
+
+mkConstraint _ _ = error "mkConstraint: Malformed ADT expression"
+
+mkConstructor :: Env -> SORT -> OmdADT -> (OP_SYMB, [Int])
+mkConstructor e s (ADTConstr nm args) =
+    let opn = nameToId $ lookupNotation e $ mkSimpleName nm
+        l = map (mkArg e) args
+    in (Qual_op_name opn (Op_type Total l s nullRange) nullRange, [0])
+
+
+-- we have to create the name of this injection because we throw it away
+-- during the export
+mkConstructor e s (ADTInsort (_, omn)) =
+    let opn = error "TODO: mkConstructor: create an injection name"
+        argsort = lookupSort e omn
+    in (Qual_op_name opn (Op_type Total [argsort] s nullRange) nullRange, [0])
+
+mkConstructor _ _ _ = error "mkConstructor: Malformed ADT expression"
+
+mkArg :: Env -> OmdADT -> SORT
+mkArg e (ADTArg oms _) = lookupSortOMS "mkArg" e oms
+
+mkArg _ _ = error "mkArg: Malformed ADT expression"
+
+
+-------------------------- ADT --------------------------
+{-
+Sort_gen_ax cs b -> return $ Left $ makeADTs e cs
+                            (if b then Free else Generated)
+
+makeADTs :: Env -> [Constraint] -> ADTType -> TCElement
+makeADTs e cs b =
+    TCADT $ map (makeADTSortDef e b) cs
+
+makeADTSortDef :: Env -> ADTType -> Constraint -> OmdADT
+makeADTSortDef e b (Constraint s l _) =
+    ADTSortDef (omn e s) b $
+    map (makeADTConstructor e . fst) l
+
+makeADTConstructor :: Env -> OP_SYMB -> OmdADT
+makeADTConstructor e os@(Qual_op_name n (Op_type _ args _ _) _) =
+    if isInjName n then ADTInsort $ omqn e $ head args
+    else ADTConstr (omn e os) $ map (makeADTArgument e) args
+
+makeADTConstructor _ (Op_name (Id _ _ r)) =
+    sfail "makeADTConstructor: No_qual_op" r
+
+-- TODO: support for selectors
+makeADTArgument :: Env -> SORT -> OmdADT
+makeADTArgument e s = ADTArg (oms e s) Nothing
+-}
+
+-- * Subsort Relation
 
 
 -- * Types

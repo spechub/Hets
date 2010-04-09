@@ -268,6 +268,8 @@ instance Logic CASL CASL_Sublogics
          export_theoryToOmdoc CASL = exportTheoryToOmdoc
          omdocToSen CASL = OMI.omdocToSen
          omdocToSym CASL = OMI.omdocToSym
+         addOMadtToTheory CASL = OMI.addOMadtToTheory
+         addOmdocToTheory CASL = OMI.addOmdocToTheory
 
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]

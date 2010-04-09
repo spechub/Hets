@@ -373,11 +373,13 @@ exportSentence lid (SigMap sm thm) nsen = do
            (error $ concat [ "exportSentence: mapping for "
                            , thmName, " is missing!"]) thmName thm
       omname = nameToString un
-  return $ case omobjOrAdt of
-             Left adt -> [adt]
-             Right omobj ->
-                 [TCSymbol omname omobj symRole Nothing]
-                 ++ (maybeToList $ notationFromUniqName un)
+  case omobjOrAdt of
+    Left adt ->
+        warning () ("Name for adt not exported: " ++ show omname) nullRange
+                    >> return [adt]
+    Right omobj ->
+        return $ [TCSymbol omname omobj symRole Nothing]
+                   ++ (maybeToList $ notationFromUniqName un)
 
 notationFromUniqName :: UniqName -> Maybe TCElement
 notationFromUniqName un =

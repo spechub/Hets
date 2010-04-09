@@ -238,3 +238,7 @@ mkSimpleQualName un = (CD [], omName un)
 simpleOMS :: UniqName -> OMElement
 simpleOMS = OMS . mkSimpleQualName
 
+-- * Lookup utils for Import and Export
+
+lookupNotation :: SigMapI a -> OMName -> String
+lookupNotation smi n = Map.findWithDefault (name n) n $ sigMapINotations smi
