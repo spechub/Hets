@@ -280,9 +280,8 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
           noConsList]
     unless (Set.null voidOps)
       $ addDiags [mkDiag Warning "non-generated sorts as constructor result"
-          voidOps]
-    addSentences [makeNamed
-      ("ga_generated_" ++ showSepList (showString "_") showId sortList "") f]
+                  voidOps]
+    addSentences [toSortGenNamed f sortList]
 
 ana_SIG_ITEMS :: (GetRange f, Pretty f) => Min f e -> Ana s b s f e
               -> Mix b s f e -> GenKind -> SIG_ITEMS s f

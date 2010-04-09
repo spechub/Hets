@@ -510,6 +510,13 @@ mkAxName str s s' = "ga_" ++ str ++ "_" ++ show s ++ "_to_" ++ show s'
 mkAxNameSingle :: String -> SORT -> String
 mkAxNameSingle str s = "ga_" ++ str ++ "_" ++ show s
 
+mkSortGenName :: [SORT] -> String
+mkSortGenName sl = "ga_generated_" ++ showSepList (showString "_") showId sl ""
+
+-- | The sort generation constraint is given a generated name,
+-- built from the sort list
+toSortGenNamed :: FORMULA f -> [SORT] -> Named (FORMULA f)
+toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 
 -- | adds a symbol to a given signature
 addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)

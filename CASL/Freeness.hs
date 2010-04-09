@@ -582,8 +582,7 @@ freeCons (sorts, rel, ops) = do
                           ) $ groupBy sameSort  constrs
     case constrs of
      [] -> []
-     _  -> [makeNamed ("ga_generated_" ++
-                       showSepList (showString "_") showId sortList "") f]
+     _  -> [toSortGenNamed f sortList]
            ++ freeAx ++ sortAx ++ disjToSortAx
 
 -- | given the signature in M the function computes the signature K
