@@ -626,7 +626,7 @@ class (StaticAnalysis lid
                     -> String -> Result (Maybe (Named sentence))
          omdocToSen l _ _ _ = statFail l "omdocToSen"
 
-         -- | abstract datatypes are imported with this function.
+         -- | Algebraic Data Types are imported with this function.
          --   By default the input is returned without changes.
          addOMadtToTheory :: lid -> OMDoc.SigMapI symbol
                           -> (sign, [Named sentence]) -> [[OMDoc.OmdADT]]
