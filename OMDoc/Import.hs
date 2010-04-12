@@ -7,8 +7,8 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Given an OMDoc file, we transform it to a development graph by
-following also all library links.
+Given an OMDoc file, a Library Environment is constructed from it by
+following all library links.
 -}
 
 module OMDoc.Import (anaOMDocFile)

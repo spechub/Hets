@@ -14,8 +14,13 @@ module OMDoc.DataTypes where
 
 import Common.Utils
 import Common.Amalgamate
+import Common.Id
+import Common.Lexer
+import Common.AnnoParser
+
 import Data.List
 import Data.Typeable
+
 import qualified Data.Map as Map
 
 {-
@@ -138,6 +143,14 @@ data OMElement =
   | OMBIND OMElement [OMElement] OMElement
   deriving (Show, Eq, Ord)
 
+
+-- * Hets Utils
+
+nameToId :: String -> Id
+nameToId = parseString parseAnnoId
+
+nameToToken :: String -> Token
+nameToToken = mkSimpleId
 
 -- * Utils for Translation
 

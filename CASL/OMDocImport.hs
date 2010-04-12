@@ -25,12 +25,12 @@ import OMDoc.DataTypes
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
---import qualified Common.Lib.Rel as Rel
+-- import qualified Common.Lib.Rel as Rel
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
---import CASL.Fold
---import CASL.Quantification
+-- import CASL.Fold
+-- import CASL.Quantification
 import CASL.OMDoc
 
 import qualified Data.Map as Map
@@ -54,26 +54,32 @@ symbolToPred (Symbol n (PredAsItemType pt)) = (n, pt)
 symbolToPred _ = error "symbolToPred: Nonpred encountered"
 
 lookupSymbol :: Env -> OMName -> Symbol
-lookupSymbol e omn = 
-    Map.findWithDefault (error $ "lookupSymbol failed for: " ++ show omn ++ " map " ++ (show $ sigMapISymbs e))
+lookupSymbol e omn =
+    Map.findWithDefault
+           (error $ concat [ "lookupSymbol failed for: "
+                           , show omn, " map ", show $ sigMapISymbs e])
        omn $ sigMapISymbs e
 
 lookupSort :: Env -> OMName -> SORT
 lookupSort e = symbolToSort . lookupSymbol e
 
 lookupSortOMS :: String -> Env -> OMElement -> SORT
-lookupSortOMS msg e oms@(OMS (cd, omn)) =
-    if cdIsEmpty cd then lookupSort e omn
-    else error $ concat [ msg, ": lookupSortOMS: Nonempty cd in const: "
+lookupSortOMS msg = lookupOMS lookupSort $ msg ++ "(SORT)"
+
+lookupPred :: Env -> OMName -> (Id, PredType)
+lookupPred e = symbolToPred . lookupSymbol e
+
+lookupPredOMS :: String -> Env -> OMElement -> (Id, PredType)
+lookupPredOMS msg = lookupOMS lookupPred $ msg ++ "(PRED)"
+
+lookupOMS :: (Env -> OMName -> a) -> String -> Env -> OMElement -> a
+lookupOMS f msg e oms@(OMS (cd, omn)) =
+    if cdIsEmpty cd then f e omn
+    else error $ concat [ msg, ": lookupOMS: Nonempty cd in const: "
                         , show oms]
-lookupSortOMS msg _ ome =
-    error $ concat [msg, ": lookupSortOMS: Nonsymbol: ", show ome]
+lookupOMS _ msg _ ome =
+    error $ concat [msg, ": lookupOMS: Nonsymbol: ", show ome]
 
-
--- * Hets utils
-
-nameToId :: String -> Id
-nameToId s = mkId [mkSimpleId s]
 
 -- * TOPLEVEL Interface
 
@@ -96,7 +102,17 @@ omdocToSym _ sym _ = fail $ concat [ "omdocToSym: only TCSymbol is allowed,"
 
 omdocToSen :: Env -> TCElement -> String
            -> Result (Maybe (Named (FORMULA f)))
-omdocToSen _ _ _ = return Nothing
+omdocToSen e (TCSymbol _ t sr _) n =
+    case nameDecode n of
+      Just _ ->
+          return Nothing
+      Nothing ->
+          if elem sr [Axiom, Theorem]
+          then return $ Just $ makeNamed n $ omdocToFormula e t
+          else return Nothing
+
+omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
+                                   , " but found: ", show sym ]
 
 
 -- | Sort generation constraints are added as named formulas.
@@ -154,40 +170,13 @@ mkArg e (ADTArg oms _) = lookupSortOMS "mkArg" e oms
 mkArg _ _ = error "mkArg: Malformed ADT expression"
 
 
--------------------------- ADT --------------------------
-{-
-Sort_gen_ax cs b -> return $ Left $ makeADTs e cs
-                            (if b then Free else Generated)
-
-makeADTs :: Env -> [Constraint] -> ADTType -> TCElement
-makeADTs e cs b =
-    TCADT $ map (makeADTSortDef e b) cs
-
-makeADTSortDef :: Env -> ADTType -> Constraint -> OmdADT
-makeADTSortDef e b (Constraint s l _) =
-    ADTSortDef (omn e s) b $
-    map (makeADTConstructor e . fst) l
-
-makeADTConstructor :: Env -> OP_SYMB -> OmdADT
-makeADTConstructor e os@(Qual_op_name n (Op_type _ args _ _) _) =
-    if isInjName n then ADTInsort $ omqn e $ head args
-    else ADTConstr (omn e os) $ map (makeADTArgument e) args
-
-makeADTConstructor _ (Op_name (Id _ _ r)) =
-    sfail "makeADTConstructor: No_qual_op" r
-
--- TODO: support for selectors
-makeADTArgument :: Env -> SORT -> OmdADT
-makeADTArgument e s = ADTArg (oms e s) Nothing
--}
-
 -- * Subsort Relation
 
 
 -- * Types
 
 omdocToType :: Env -> OMElement -> Either OpType PredType
-omdocToType e (OMA (c:args)) =
+omdocToType e (OMA (c : args)) =
     let sorts = map (lookupSortOMS "omdocToType" e) args
         opargs = init sorts
         oprange = last sorts
@@ -204,10 +193,141 @@ omdocToType e oms@(OMS _) =
 omdocToType _ ome = error $ "omdocToType: Non-supported element: " ++ show ome
 
 
--- * Terms
+-- * Terms and Formulas
+
+type VarMap = Map.Map VAR SORT
+
+type TermEnv = (Env, VarMap)
+
+mkConjunction, mkDisjunction, mkImplication, mkIf, mkEquivalence, mkNegation
+    :: [FORMULA f] -> FORMULA f
+
+mkConjunction l = Conjunction l nullRange
+mkDisjunction l = Disjunction l nullRange
+mkImplication [x, y] = Implication x y True nullRange
+mkImplication _ = error "Malformed implication"
+mkIf [x, y] = Implication x y False nullRange
+mkIf _ = error "Malformed if"
+mkEquivalence [x, y] = Equivalence x y nullRange
+mkEquivalence _ = error "Malformed equivalence"
+mkNegation [x] = Negation x nullRange
+mkNegation _ = error "Malformed negation"
+
+mkDefinedness, mkExistl_equation, mkStrong_equation
+    :: [TERM f] -> FORMULA f
+
+mkDefinedness [x] = Definedness x nullRange
+mkDefinedness _ = error "Malformed definedness"
+mkExistl_equation [x, y] = Existl_equation x y nullRange
+mkExistl_equation _ = error "Malformed existl equation"
+mkStrong_equation [x, y] = Strong_equation x y nullRange
+mkStrong_equation _ = error "Malformed strong equation"
+
+-- Quantification, Predication and Membership are handled inside omdocToFormula
+
+mkFF :: TermEnv -> ([FORMULA f] -> FORMULA f) -> [OMElement] -> FORMULA f
+mkFF e f l = f $ map (omdocToFormula' e) l
+
+mkTF :: TermEnv -> ([TERM f] -> FORMULA f) -> [OMElement] -> FORMULA f
+mkTF e f l = f $ map (omdocToTerm' e) l
+
+getQuantifier :: OMElement -> QUANTIFIER
+getQuantifier oms
+    | oms == const_forall = Universal
+    | oms == const_exists = Existential
+    | oms == const_existsunique = Unique_existential
+    | otherwise = error $ "getQuantifier: unrecognized quantifier " ++ show oms
+
+mkBinder :: TermEnv -> QUANTIFIER -> [OMElement] -> OMElement -> FORMULA f
+mkBinder te@(e, _) q vars body =
+    let (vm', vardecls) = toVarDecls te vars
+        bd = omdocToFormula' (e, vm') body
+    in Quantification q vardecls bd nullRange
+
+toVarDecls :: TermEnv -> [OMElement] -> (VarMap, [VAR_DECL])
+toVarDecls (e, vm) l =
+    let f acc x = let (v, s) = toVarDecl e x
+                      acc' = Map.insert v s acc
+                  in (acc', (v, s))
+        (vm', l') = mapAccumL f vm l
+        -- group by same sort
+        l'' = groupBy (\ x y -> snd x == snd y) l'
+        -- the lists returned by groupBy are never empty, so head will succeed
+        g vsl = Var_decl (map fst vsl) (snd $ head vsl) nullRange
+    in (vm', map g l'')
+
+-- in CASL we expect all bound vars to be attributed (typed)
+toVarDecl :: Env -> OMElement -> (VAR, SORT)
+toVarDecl e (OMATTT (OMV v) (OMAttr ct t))
+    | ct == const_type = (nameToToken $ name v, lookupSortOMS "toVarDecl" e t)
+    | otherwise = error $ "toVarDecl: unrecognized attribution " ++ show ct
+
+toVarDecl _ _ = error "toVarDecl: bound variables should be attributed."
+
+-- Toplevel entry point
+omdocToFormula :: Env -> OMElement -> FORMULA f
+omdocToFormula e f = omdocToFormula' (e, Map.empty) f
+
+
+-- Functions with given VarMap
+
+-- omdocToTerm has no toplevel entry point
+omdocToTerm' :: TermEnv -> OMElement -> TERM f
+omdocToTerm' e _ = error "TODO:"
+
+omdocToFormula' :: TermEnv -> OMElement -> FORMULA f
+omdocToFormula' e@(ie, _) f =
+    case f of
+      OMA (h : args)
+          | h == const_in ->
+              case args of
+                [x, s] ->
+                    Membership (omdocToTerm' e x) (lookupSortOMS
+                                                   "omdocToFormula"
+                                                  ie s) nullRange
+                _ -> error "Malformed membership"
+          | h == const_and ->
+              mkFF e mkConjunction args
+          | h == const_or ->
+              mkFF e mkDisjunction args
+          | h == const_implies ->
+              mkFF e mkImplication args
+          | h == const_implied ->
+              mkFF e mkIf args
+          | h == const_equivalent ->
+              mkFF e mkEquivalence args
+          | h == const_not ->
+              mkFF e mkNegation args
+          | h == const_def ->
+              mkTF e mkDefinedness args
+          | h == const_eeq ->
+              mkTF e mkExistl_equation args
+          | h == const_eq ->
+              mkTF e mkStrong_equation args
+          -- all other heads mean predication
+          | otherwise ->
+              let (i, t) = lookupPredOMS "omdocToFormula" ie h
+                  g l = Predication (Qual_pred_name i (toPRED_TYPE t)
+                                                    nullRange) l nullRange in
+              mkTF e g args
+
+      OMBIND binder args body ->
+          mkBinder e (getQuantifier binder) args body
+
+      _ | f == const_true -> True_atom nullRange
+      _ | f == const_false -> False_atom nullRange
+      _ | otherwise -> error $ "omdocToFormula: no valid formula " ++ show f
+
 {-
-
-
+    -- | Simple variable
+  | OMV OMName
+    -- | Attributed element needed for type annotations of elements
+  | OMATTT OMElement OMAttribute
+    -- | Application to a list of arguments,
+    -- first argument is usually the functionhead
+  | OMA [OMElement]
+    -- | Bindersymbol, bound vars, body
+  | OMBIND OMElement [OMElement] OMElement
 
 
 data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
