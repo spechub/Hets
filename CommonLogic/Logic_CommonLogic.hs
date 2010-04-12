@@ -14,7 +14,6 @@ Instance of class Logic for the common logic
 module CommonLogic.Logic_CommonLogic where
 
 import Common.DefaultMorphism
-import Common.Id as Id
 
 import Logic.Logic
 
@@ -25,6 +24,8 @@ import CommonLogic.Sign
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Symbol
 import CommonLogic.Analysis
+import CommonLogic.Parse_CLIF
+import Text.ParserCombinators.Parsec as Parsec
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -33,8 +34,6 @@ instance Language CommonLogic where
         ++ ""
 
 type Morphism = DefaultMorphism Sign
-
-instance GetRange SENTENCE
 
 instance Sentences CommonLogic
     SENTENCE
@@ -45,7 +44,8 @@ instance Sentences CommonLogic
 instance Syntax CommonLogic
     [SENTENCE]
     ()
-    ()
+    () where
+    parse_basic_spec CommonLogic = Just $ many sentence
 
 instance Logic CommonLogic
     ()                -- Sublogics

@@ -217,7 +217,11 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
              b <- maybeToMonad
                ("no basic analysis for logic " ++ language_name lid)
                (basic_analysis lid)
-             b (bspec, sig, globalAnnos dg0)
+             let res@(Result ds mb) = b (bspec, sig, globalAnnos dg0)
+             case mb of
+               Nothing | null ds ->
+                 fail "basic analysis failed without giving a reason"
+               _ -> res
        let gsysd = Set.map (G_symbol lid) sysd
            (ns, dg') = insGTheory dg0 name
              (DGBasicSpec (G_basic_spec lid bspec') gsysd)
