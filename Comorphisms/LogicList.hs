@@ -64,7 +64,7 @@ import LF.Logic_LF
 import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
 import Reduce.Logic_Reduce
-import CommonLogic.Logic_CommonLogic ()
+import CommonLogic.Logic_CommonLogic
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU
@@ -97,6 +97,7 @@ logicList =
   , Logic LF
   , Logic Maude
   , Logic Reduce
+  , Logic CommonLogic
 #endif
 #ifndef NOOWLLOGIC
   , Logic DMU
