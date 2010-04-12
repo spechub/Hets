@@ -52,12 +52,6 @@ data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
                 | Existential [NAME_OR_SEQMARK] SENTENCE
                   deriving (Show, Ord, Eq)
 
-{-
-data BINDING_SEQ = B_name NAME Id.Range
-                 | B_seqmark SEQ_MARK Id.Range
-                   deriving (Show, Ord, Eq)
--}
-
 data BOOL_SENT = Conjunction [SENTENCE]
                | Disjunction [SENTENCE]
                | Negation SENTENCE
@@ -83,18 +77,11 @@ type SEQ_MARK = Id.Token
 
 data NAME_OR_SEQMARK = Name NAME
                      | SeqMark SEQ_MARK
+                     | Alt NAME NAME
                        deriving (Show, Eq, Ord)
 
 data SYMB_MAP_ITEMS = Symb_map_items [NAME_OR_SEQMARK] Id.Range
                       deriving (Show, Eq)
-
-{-
-newtype NAME = Name_id Id.Token
-               deriving (Show, Eq)
-
-newtype SEQ_MARK = SeqMark_id Id.Token
-                   deriving (Show, Eq)
--}
 
 -- pretty printing using CLIF
 
@@ -131,12 +118,14 @@ printQuantSent :: QUANT_SENT -> Doc
 printQuantSent s = case s of
    Universal x y -> text forallS <+> parens (sep $ map pretty x)<+> pretty y
    Existential x y -> text existsS <+> parens (sep $ map pretty x) <+> pretty y
+
 {-
 printBindingSeq :: BINDING_SEQ -> Doc
 printBindingSeq s = case s of
    B_name xs _ -> pretty xs
    B_seqmark xs _ -> text seqmark <> pretty xs
 -}
+
 printBoolSent :: BOOL_SENT -> Doc
 printBoolSent s = case s of
    Conjunction xs -> text andS <+> (fsep $ map pretty xs)
@@ -165,6 +154,7 @@ printNameOrSeqMark :: NAME_OR_SEQMARK -> Doc
 printNameOrSeqMark s = case s of
   Name x -> pretty x
   SeqMark x -> pretty x
+  Alt x y -> pretty x <+> pretty y
 
 -- keywords, reservednames in CLIF
 

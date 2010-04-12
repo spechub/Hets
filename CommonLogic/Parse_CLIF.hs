@@ -32,9 +32,11 @@ instance GetRange SENTENCE where
 
 sentenceRange :: SENTENCE -> Range
 sentenceRange x = case x of
-                    Atom_sent y z -> z
-                    Bool_sent y z -> z
-                    Quant_sent y z -> z
+                    Atom_sent _ z -> z
+                    Bool_sent _ z -> z
+                    Quant_sent _ z -> z
+                    Comment_sent _ _ z -> z
+                    Irregular_sent _ z -> z
 
 lastRange :: Range -> Range
 lastRange (Range x) = Range [last x]
@@ -86,11 +88,16 @@ sentence = parens $ do
   do
     at <- atom
     return $ Atom_sent at $ appRange (case at of
-                                         Atom t ts -> case t of 
-                                                        Name_term x -> getRange x)
+                                         Atom t _ -> case t of 
+                                                        Name_term x -> getRange x
+                                                        Funct_term _ _ _ -> nullRange
+                                                        Comment_term _ _ _ -> nullRange
+                                         Equation _ _ -> nullRange)
                                      (case at of 
-                                         Atom t ts -> case ts of
-                                                        Term_seq x r -> lastRange r)
+                                         Atom _ ts -> case ts of
+                                                        Term_seq _ r -> lastRange r
+                                                        Seq_marks _ r -> lastRange r
+                                         Equation _ _ -> nullRange)
 
 bindingseq :: CharParser st [NAME_OR_SEQMARK]
 bindingseq = many $ do 
@@ -99,7 +106,7 @@ bindingseq = many $ do
 
 atom :: CharParser st ATOM
 atom = do
-  c <- Lexer.pToken $ string "="
+  Lexer.pToken $ string "="
   t1 <- term
   t2 <- term
   return $ Equation t1 t2
@@ -124,9 +131,13 @@ termseq :: CharParser st TERM_SEQ
 termseq = do 
   s <- many term
   return $ Term_seq s $ appRange (case (head s) of
-                                    Name_term x -> getRange x) -- missing pm
+                                    Name_term x -> getRange x -- missing
+                                    Funct_term _ _ _ -> nullRange 
+                                    Comment_term _ _ _ -> nullRange)
                                  (case (last s) of
-                                    Name_term x -> getRange x)
+                                    Name_term x -> getRange x
+                                    Funct_term _ _ _ -> nullRange -- todo
+                                    Comment_term _ _ _ -> nullRange) -- todo
 
 text :: CharParser st TEXT
 text = do
@@ -142,7 +153,7 @@ text = do
 phrase :: CharParser st PHRASE
 phrase = do
   (m, r) <- try $ parens $ do 
-               c <- Lexer.pToken $ string "cl_module"
+               c <- Lexer.pToken $ string "cl:module"
                t <- identifier
                ts <- many identifier
                txt <- text
@@ -155,12 +166,27 @@ phrase = do
 
 pModule :: CharParser st MODULE
 pModule = parens $ do
-  c <- Lexer.pToken $ string "cl_module"
+  moduleKey
   t <- identifier
   ts <- many identifier
   txt <- text
   return $ Mod t ts txt
 
+
+{-
+-- file parser
+f1 = do x <- readFile "CommonLogic/test.clf"
+        parseTest sentence x
+
+f2 :: Either ParseError SENTENCE
+f2 = runParser sentence "" "" "(P x)"
+
+parseFile :: String -> IO ()
+parseFile f = do x <- readFile f
+                 parseTest sentence x
+-}
+
+-- 
 parens :: CharParser st a -> CharParser st a
 parens p = oParenT >> p << cParenT
 
@@ -186,10 +212,28 @@ forallKey = Lexer.pToken $ string forallS
 existsKey :: CharParser st Id.Token
 existsKey = Lexer.pToken $ string existsS
 
+textKey :: CharParser st Id.Token
+textKey = do
+  c <- clKey
+  char ':'
+  string "text"
+  return $ Token "cl:text" $ tokPos c
+
+moduleKey :: CharParser st Id.Token
+moduleKey = do 
+  c <- clKey
+  char ':'
+  string "module"
+  return $ Token "cl:module" $ tokPos c
+
+clKey :: CharParser st Id.Token
+clKey = Lexer.pToken $ string "cl"
+            
+
 -- change to enable digits
 identifier :: CharParser st Id.Token
 identifier = Lexer.pToken $ reserved reservedelement Lexer.scanAnyWords
 
 reservedelement :: [String]
 reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not", "...",
-                   "cl_text", "cl_imports", "cl_excludes", "cl_module", "cl_comment"]
+                   "cl:text", "cl:imports", "cl:excludes", "cl:module", "cl:comment"]
