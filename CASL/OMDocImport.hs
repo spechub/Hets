@@ -72,6 +72,12 @@ lookupPred e = symbolToPred . lookupSymbol e
 lookupPredOMS :: String -> Env -> OMElement -> (Id, PredType)
 lookupPredOMS msg = lookupOMS lookupPred $ msg ++ "(PRED)"
 
+lookupOp :: Env -> OMName -> (Id, OpType)
+lookupOp e = symbolToOp . lookupSymbol e
+
+lookupOpOMS :: String -> Env -> OMElement -> (Id, OpType)
+lookupOpOMS msg = lookupOMS lookupOp $ msg ++ "(Op)"
+
 lookupOMS :: (Env -> OMName -> a) -> String -> Env -> OMElement -> a
 lookupOMS f msg e oms@(OMS (cd, omn)) =
     if cdIsEmpty cd then f e omn
@@ -80,6 +86,11 @@ lookupOMS f msg e oms@(OMS (cd, omn)) =
 lookupOMS _ msg _ ome =
     error $ concat [msg, ": lookupOMS: Nonsymbol: ", show ome]
 
+toOpSymb :: (Id, OpType) -> OP_SYMB
+toOpSymb (i, t) = Qual_op_name i (toOP_TYPE t) nullRange
+
+toPredSymb :: (Id, PredType) -> PRED_SYMB
+toPredSymb (i, t) = Qual_pred_name i (toPRED_TYPE t) nullRange
 
 -- * TOPLEVEL Interface
 
@@ -129,6 +140,7 @@ addOmdocToTheory :: Env
                  -> (Sign f e, [Named (FORMULA f)]) -> [TCElement]
                  -> Result (Sign f e, [Named (FORMULA f)])
 addOmdocToTheory _ t _ = return t
+-- TODO: implement the extraction of the subsort relation
 
 
 -- * Algebraic Data Types
@@ -158,8 +170,8 @@ mkConstructor e s (ADTConstr nm args) =
 -- we have to create the name of this injection because we throw it away
 -- during the export
 mkConstructor e s (ADTInsort (_, omn)) =
-    let opn = error "TODO: mkConstructor: create an injection name"
-        argsort = lookupSort e omn
+    let argsort = lookupSort e omn
+        opn = mkUniqueInjName argsort s
     in (Qual_op_name opn (Op_type Total [argsort] s nullRange) nullRange, [0])
 
 mkConstructor _ _ _ = error "mkConstructor: Malformed ADT expression"
@@ -199,15 +211,15 @@ type VarMap = Map.Map VAR SORT
 
 type TermEnv = (Env, VarMap)
 
-mkConjunction, mkDisjunction, mkImplication, mkIf, mkEquivalence, mkNegation
-    :: [FORMULA f] -> FORMULA f
+mkConjunction, mkDisjunction, mkImplication, mkImplied, mkEquivalence
+                 , mkNegation :: [FORMULA f] -> FORMULA f
 
 mkConjunction l = Conjunction l nullRange
 mkDisjunction l = Disjunction l nullRange
 mkImplication [x, y] = Implication x y True nullRange
 mkImplication _ = error "Malformed implication"
-mkIf [x, y] = Implication x y False nullRange
-mkIf _ = error "Malformed if"
+mkImplied [x, y] = Implication x y False nullRange
+mkImplied _ = error "Malformed if"
 mkEquivalence [x, y] = Equivalence x y nullRange
 mkEquivalence _ = error "Malformed equivalence"
 mkNegation [x] = Negation x nullRange
@@ -225,6 +237,21 @@ mkStrong_equation _ = error "Malformed strong equation"
 
 -- Quantification, Predication and Membership are handled inside omdocToFormula
 
+-- Term construction functions
+mkT2 :: (OMElement -> a) -> (OMElement -> b) -> (a -> b -> Range -> TERM f)
+     -> [OMElement] -> TERM f
+mkT2 f g c l = case l of
+                 [x, y] -> c (f x) (g y) nullRange
+                 _ -> error "mkT2: 2 arguments expected"
+
+mkT3 :: (OMElement -> a) -> (OMElement -> b) -> (OMElement -> c)
+     -> (a -> b -> c -> Range -> TERM f) -> [OMElement] -> TERM f
+mkT3 f g h c l = case l of
+                   [x, y, z] -> c (f x) (g y) (h z) nullRange
+                   _ -> error "mkT3: 3 arguments expected"
+
+
+-- Formula construction functions
 mkFF :: TermEnv -> ([FORMULA f] -> FORMULA f) -> [OMElement] -> FORMULA f
 mkFF e f l = f $ map (omdocToFormula' e) l
 
@@ -273,52 +300,38 @@ omdocToFormula e f = omdocToFormula' (e, Map.empty) f
 
 -- omdocToTerm has no toplevel entry point
 omdocToTerm' :: TermEnv -> OMElement -> TERM f
-omdocToTerm' e _ = error "TODO:"
-
-omdocToFormula' :: TermEnv -> OMElement -> FORMULA f
-omdocToFormula' e@(ie, _) f =
+omdocToTerm' e@(ie, vm) f =
     case f of
       OMA (h : args)
-          | h == const_in ->
-              case args of
-                [x, s] ->
-                    Membership (omdocToTerm' e x) (lookupSortOMS
-                                                   "omdocToFormula"
-                                                  ie s) nullRange
-                _ -> error "Malformed membership"
-          | h == const_and ->
-              mkFF e mkConjunction args
-          | h == const_or ->
-              mkFF e mkDisjunction args
-          | h == const_implies ->
-              mkFF e mkImplication args
-          | h == const_implied ->
-              mkFF e mkIf args
-          | h == const_equivalent ->
-              mkFF e mkEquivalence args
-          | h == const_not ->
-              mkFF e mkNegation args
-          | h == const_def ->
-              mkTF e mkDefinedness args
-          | h == const_eeq ->
-              mkTF e mkExistl_equation args
-          | h == const_eq ->
-              mkTF e mkStrong_equation args
-          -- all other heads mean predication
+          | h == const_cast ->
+              mkT2 (omdocToTerm' e) (lookupSortOMS "toTerm: Cast" ie) Cast args
+          | h == const_if ->
+              mkT3 (omdocToTerm' e) (omdocToFormula' e) (omdocToTerm' e)
+                   Conditional args
+          -- all other heads mean application
           | otherwise ->
-              let (i, t) = lookupPredOMS "omdocToFormula" ie h
-                  g l = Predication (Qual_pred_name i (toPRED_TYPE t)
-                                                    nullRange) l nullRange in
-              mkTF e g args
+              let os = toOpSymb $ lookupOpOMS "omdocToTerm" ie h
+                  args' = map (omdocToTerm' e) args
+              in Application os args' nullRange
+      OMV omn -> let var = nameToToken $ name omn
+                     -- lookup the type of the variable in the varmap
+                     s = Map.findWithDefault
+                         (error $ concat [ "omdocToTerm': Variable not in "
+                                         , "varmap: ", show var ]) var vm
+                 in Qual_var var s nullRange
+      _ -> error $ "omdocToTerm: no valid term " ++ show f
 
-      OMBIND binder args body ->
-          mkBinder e (getQuantifier binder) args body
-
-      _ | f == const_true -> True_atom nullRange
-      _ | f == const_false -> False_atom nullRange
-      _ | otherwise -> error $ "omdocToFormula: no valid formula " ++ show f
-
+-- TODO: eventually export and reimport SortedTerms!
 {-
+
+    , foldQual_var = \ _ v _ _ -> varToOmdoc v
+    , foldApplication = \ _ o ts _ -> OMA $ (oms e o) : ts
+    , foldSorted_term = \ _ r _ _ -> r
+    , foldCast = \ _ t s _ ->
+                 (OMA [const_cast , t, oms e s])
+    , foldConditional = \ _ e' f t _ -> (OMA [const_if , e' , t, f])
+
+
     -- | Simple variable
   | OMV OMName
     -- | Attributed element needed for type annotations of elements
@@ -340,3 +353,47 @@ data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
           | Conditional (TERM f) (FORMULA f) (TERM f) Range
 
 -}
+
+
+omdocToFormula' :: TermEnv -> OMElement -> FORMULA f
+omdocToFormula' e@(ie, _) f =
+    case f of
+      OMA (h : args)
+          | h == const_in ->
+              case args of
+                [x, s] ->
+                    Membership (omdocToTerm' e x) (lookupSortOMS
+                                                   "omdocToFormula"
+                                                  ie s) nullRange
+                _ -> error "Malformed membership"
+          | h == const_and ->
+              mkFF e mkConjunction args
+          | h == const_or ->
+              mkFF e mkDisjunction args
+          | h == const_implies ->
+              mkFF e mkImplication args
+          | h == const_implied ->
+              mkFF e mkImplied args
+          | h == const_equivalent ->
+              mkFF e mkEquivalence args
+          | h == const_not ->
+              mkFF e mkNegation args
+          | h == const_def ->
+              mkTF e mkDefinedness args
+          | h == const_eeq ->
+              mkTF e mkExistl_equation args
+          | h == const_eq ->
+              mkTF e mkStrong_equation args
+          -- all other heads mean predication
+          | otherwise ->
+              let ps = toPredSymb $ lookupPredOMS "omdocToFormula" ie h
+                  g l = Predication ps l nullRange in
+              mkTF e g args
+
+      OMBIND binder args body ->
+          mkBinder e (getQuantifier binder) args body
+
+      _ | f == const_true -> True_atom nullRange
+      _ | f == const_false -> False_atom nullRange
+      _ | otherwise -> error $ "omdocToFormula: no valid formula " ++ show f
+

@@ -471,6 +471,7 @@ addSentences clf nsmap gsig =
             (sig'', sens'') <- addOmdocToTheory lid sigm (sig', sens')
                                $ sentences clf
 
+            -- TODO: remove error: no global theory!
             return $ G_theory lid (mkExtSign sig'') ind1
                        (toThSens sens'') startThId
 
