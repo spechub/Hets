@@ -128,6 +128,12 @@ procString (inp,out) axname s = do
 casfactorExp :: (Handle,Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
 casfactorExp (inp,out) cmd = procString (inp,out) (senAttr cmd) $ exportReduce cmd ++ ";"
 
+-- | generates the lemma for cmd with result ProofStatus
+exportLemmaFactor :: Named CMD -> (ProofStatus [EXPRESSION]) -> [EXPRESSION]
+exportLemmaFactor namedcmd ps = [(Op "=" [exps!!0,(proofTree ps)!!0] nullRange)]
+                           where (Cmd _ exps) = (sentence namedcmd)
+                                 
+
 -- | solves a single equation over the reals
 cassolve :: (Handle,Handle)-> Named CMD-> IO (ProofStatus [EXPRESSION])
 cassolve (inp,out) cmd = procString (inp,out) (senAttr cmd) $ (exportReduce cmd) ++ ";"

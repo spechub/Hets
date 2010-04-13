@@ -65,7 +65,7 @@ checkOperators s ((op,arit):ops) = case op of
                                      "int" -> (arit==2)
                                      "rlqe" -> (arit==1)
                                      "factorize" -> (arit==1)
-                                     _ -> Sign.lookupSym s $ genName op 
+                                     _ -> Sign.lookupSym s $ genName op  -- .. otherwise it must be declared in the signature
                                    && checkOperators s ops
 
 -- | generates a named formula
@@ -81,15 +81,28 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
       isTheorem = isImplies || isImplied
 
 
--- | takes a signature and a formula, analyzes it and returns a formula with diagnosis
+-- | takes a signature and a formula and a number. It analyzes the formula and returns a formula with diagnosis
 analyzeFormula :: Sign.Sign -> (AS_Anno.Annoted CMD) -> Int -> DIAG_FORM
-analyzeFormula _ f i =  DiagForm { formula = (makeNamed f i),
-                                             diagnosis = Diag {
-                                               diagKind = Hint
-                                             , diagString = "All fine"
-                                             , diagPos = nullRange
-                                                         }
-                                 }
+analyzeFormula s f i =  
+    let
+        opargs = extractOperatorsCmd (AS_Anno.item f)
+    in
+      if (checkOperators s opargs) then 
+          DiagForm { formula = (makeNamed f i),
+                               diagnosis = Diag {
+                                             diagKind = Hint
+                                           , diagString = "All fine"
+                                           , diagPos = nullRange
+                                           }
+                   }
+          else
+          DiagForm { formula = (makeNamed f i),
+                               diagnosis = Diag {
+                                             diagKind = Error
+                                           , diagString = "Wrong arity or undeclared operator"
+                                           , diagPos = nullRange
+                                           }
+                   }
 
 -- | Extracts the axioms and the signature of a basic spec
 splitSpec :: BASIC_SPEC -> Sign.Sign -> (Sign.Sign, [DIAG_FORM])
