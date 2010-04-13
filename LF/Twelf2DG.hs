@@ -14,7 +14,7 @@ import System.Exit
 import System.Process
 import System.Directory
 import System.FilePath
-import System.IO
+import System.IO (hGetContents)
 
 import Network.URI
 
@@ -29,7 +29,6 @@ import LF.Morphism
 import LF.Logic_LF
 import Logic.ExtSign
 
-import Data.Maybe
 import Data.List
 import Data.Graph.Inductive.Graph (Node)
 import qualified Data.Map as Map
