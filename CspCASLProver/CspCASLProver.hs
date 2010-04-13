@@ -79,7 +79,7 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
   in case dataTh of
     Nothing -> do
       -- Data translation failed
-      putStrLn $ "Sorry, could not encode the data part:" ++ (show diag)
+      putStrLn $ "Sorry, could not encode the data part:" ++ show diag
       return []
     Just (dataThSig, dataThSens, pcfolSign, cfolSign) -> do
       -- Data translation succeeded
@@ -151,7 +151,7 @@ producePreAlphabet thName caslSign pfolSign =
                            $ addEqFun sortList
                            $ addAllCompareWithFun caslSign
                            $ addPreAlphabet sortList
-                           $ (isaSignEmpty, [])
+                             (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
 
 -- |Produce the Isabelle theory which contains the Alphabet
@@ -168,7 +168,7 @@ produceAlphabet thName caslSign =
         (isaSign, isaSens) = addAllChooseFunctions sortList
                            $ addAllBarTypes sortList
                            $ addAlphabetType
-                           $ (isaSignEmpty, [])
+                             (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
 
 -- |Produce the Isabelle theory which contains the Integration
@@ -182,7 +182,7 @@ produceIntegrationTheorems thName caslSign =
         -- Start with our empty isabelle theory and add the
         -- integration theorems.
         (isaSign, isaSens) = addAllIntegrationTheorems sortList caslSign
-                           $ (isaSignEmpty, [])
+                             (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
 
 -- |Produce the Isabelle theory which contains the Process Translations and
@@ -208,5 +208,5 @@ produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
                            $ addFlatTypes sortList
                            $ addProjFlatFun
                            $ addEventDataType sortRel' chanNameMap
-                           $ (isaSignEmpty, [])
+                            (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)
