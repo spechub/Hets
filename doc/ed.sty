@@ -1,0 +1,88 @@
+%%
+%% This is file `ed.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% ed.dtx  (with options: `package')
+%% 
+\NeedsTeXFormat{LaTeX2e}[1999/12/01]
+\ProvidesPackage{ed}[2007/05/10 v.12 Editorial Notes]
+\newif\ifshowednotes\showednotesfalse
+\DeclareOption{show}{\showednotestrue}
+\DeclareOption{hide}{\showednotesfalse}
+\ProcessOptions
+\ifshowednotes\else\usepackage{verbatim}\fi
+\def\ednoteshape{\sffamily}
+\newcounter{ednote}
+\def\ed@foot#1#2#3% text, type, label
+{\def\test{#3}\def\empty{}\footnotetext[\value{ednote}]%
+{{\scshape{#2}\if\test\empty\else\label{ed:#3}[{#3}]\fi:} \ednoteshape #1}}
+\def\Ed@note#1#2#3% text, type, label
+{\addtocounter{ednote}{1}\message{#2!}%
+\ifshowednotes\footnotemark[\arabic{ednote}]\ed@foot{#1}{#2}{#3}\fi}
+\def\ed@note#1#2#3% text, type, label
+{\Ed@note{#1}{#2}{#3}\ifshowednotes\marginpar{#2(\arabic{ednote})}\fi}
+\newcommand{\Ednote}[2][]{\Ed@note{#2}{EdNote}{#1}}
+\newcommand{\ednote}[2][]{\ed@note{#2}{EdNote}{#1}}
+\newcommand{\tweak}[2][]{\ed@note{#2}{Tweak}{#1}}
+\newcommand{\Tweak}[2][]{\Ed@note{#2}{Tweak}{#1}}
+\newcommand{\issue}[2][]{\ed@note{#2}{Issue}{#1}}
+\newcommand{\Issue}[2][]{\Ed@note{#2}{Issue}{#1}}
+\def\new@part#1#2#3% text, mess, start
+{\addtocounter{ednote}{1}\edef\new@number{\theednote}\message{#2!\new@number}
+\ifshowednotes\ed@foot{#1}{#2}{}\marginpar{#3(\new@number)}\fi}
+\def\endnew@part#1% end
+{\ifshowednotes\marginpar{#1(\new@number)}\fi}
+\newenvironment{Newpart}[1]{\new@part{#1}{New Part}{BegNP}}{}
+\newenvironment{newpart}[1]{\new@part{#1}{New Part}{BegNP}}{\endnew@part{EndNP}}
+\newenvironment{Oldpart}[1]{\new@part{#1}{Old Part}{BegOP}}{}
+\newenvironment{oldpart}[1]{\new@part{#1}{Old Part}{BegOP}}{\endnew@part{EndOP}}
+\def\Todo#1{% the comment
+\ifshowednotes\message{todo!}{{\sffamily To Do: #1}}\bgroup\sffamily%
+\else\comment%
+\fi}
+\def\endTodo{\ifshowednotes\egroup\else\endcomment\fi}
+\def\todo#1{\ifshowednotes\marginpar{{\sffamily ToDo}}\Todo{#1}\fi}
+\def\endtodo{\endTodo}
+\def\Todolist#1{% the comment
+\ifshowednotes\message{todolist!}{{\sffamily To Do: #1}}\bgroup\sffamily\begin{itemize}%
+\else\comment%
+\fi}
+\def\endTodolist{\ifshowednotes\end{itemize}\egroup\else\endcomment\fi}
+\def\todolist#1{\ifshowednotes\marginpar{{\sffamily ToDo}}\Todolist{#1}\fi}
+\def\endtodolist{\endTodolist}
+\def\ednotemessage{\ifnum\value{ednote}>0\typeout{}%
+\typeout{There are still \arabic{ednote} EdNotes and Issues to resolve!}%
+\typeout{}\fi}
+\long\def\edexplanation{\todolist{we will use the ednote system to communicate}
+\item use the {\tt{\char92ednote\char123author: some explanatory text\char125}}
+  like a footnote to say what you have done or what should still be
+  done\ednote{MiKo: this is an example of an ednote}. Ednotes are numbered and
+  marked in the margin for easy recognition.
+\item use the {\tt{\char92issue\char123author: explanation of the
+      issue\char125}} variant of ednote for issues\issue{this is an example of
+    an issue} that still have to be discussed.
+\item finally, the {\tt{todolist}} environment is a list environment that can be
+  used to mark up todo lists. This explanation is an example of a todo list, it
+  is inserted into the text in a different font.
+\item the {\tt{newpart}} environment can be used to mark up changed text blocks.
+  {\tt{\char92begin\char123newpart\char125}} takes an argument that is
+  interpreted as a comment and is treated like an {\tt{\char92ednote}} comment.
+\item the {\tt{oldpart}} environment is similar to {\tt{newpart}} but is used
+  for old parts of text copied from another document that still need to be
+  changed in a document.
+\item putting the macro {\tt{\char92ednotemessage}} just before the
+  {\tt{char92end\char123document\char125}} will generate a message with
+  cardinality information for the ednotes into the log file.
+\item all of these text decorations and meta-annotations are only inserted into
+  the text, if the {\tt{show}} package option in the {\tt{\char92 usepackage}}
+  directive in the preamble of the document is set: {\tt{\char92
+      usepackage[show]\char123ed\char125}} will show the decorations, while
+  {\tt{\char92 usepackage\char123ed\char125}} will not. This is useful for
+  preparing ``clean'' version for outside consumption without loosing the
+  management metadata.
+\endtodolist}
+\endinput
+%%
+%% End of file `ed.sty'.

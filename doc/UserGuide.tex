@@ -1,4 +1,7 @@
 \documentclass{article}
+
+\usepackage[show]{ed}  % set to hide for producing a released version
+
 \usepackage{alltt}
 \usepackage{casl}
 \usepackage{xspace}
@@ -6,8 +9,9 @@
 \usepackage{url}
 \usepackage{threeparttable,hhline}
 
+
 \usepackage[pdfborder=0 0 0,bookmarks,
-pdfauthor={Till Mossakowski, Christian Maeder, Klaus Lüttich},
+pdfauthor={Till Mossakowski, Christian Maeder, Mihai Codescu},
 pdftitle={Hets User Guide}]
 {hyperref} %% do not load more packages after this line!!
 
@@ -137,20 +141,43 @@ Comments to: hets-users@informatik.uni-bremen.de \\
 \section{Introduction}
 
 
-The Heterogeneous Tool Set (\protect\Hets) is the main analysis tool
-for the specification language heterogeneous \CASL. Heterogeneous
-\CASL (\HetCASL) combines the specification language \CASL
-\cite{CASL-UM,CASL/RefManual} with \CASL extensions
-and sublanguages, as well as completely different logics and even
-programming languages such as Haskell. \HetCASL
-(see Fig.~\ref{fig:lang} for a simple subset)
-extends the structuring mechanisms of \CASL:
-\emph{Basic specifications} are
-unstructured specifications or modules written in a specific logic.
-The graph of currently supported logics and logic translations (the
-latter are also called comorphisms) is shown in
-Fig.~\ref{fig:LogicGraph}, and the degree of support by \Hets in
-Fig.~\ref{fig:Languages}.
+
+The central idea of the Heterogeneous Tool Set (\protect\Hets) is to
+provide a general framework for formal methods integration and proof
+management. One can think of \Hets acting like a motherboard where
+different expansion cards can be plugged in, the expansion cards here
+being individual logics (with their analysis and proof tools) as well
+as logic translations.  Individual logics and their analysis and proof
+tools can be plugged into the \Hets motherboard using an
+object-oriented interface based on institutions
+\cite{GoguenBurstall92}.  The \Hets motherboard already has plugged in
+a number of expansion cards (e.g., the theorem provers Isabelle, SPASS
+and more, as well as model finders). Hence, a variety of tools is
+available, without the need to hard-wire each tool to the logic at
+hand.
+\begin{figure}
+\begin{center}
+ \includegraphics[width=0.45\textwidth]{hets-motherboard}
+\end{center}
+\caption{The \Hets motherboard and some expansion cards}
+\end{figure}
+
+\Hets supports a number of input languages directly, such as \CASL,
+Common Logic, OWL-DL, Haskell, and Maude. For heterogeneous
+specification, \Hets offers language heterogeneous \CASL.
+Heterogeneous \CASL (\HetCASL) generalises the structuring
+constructs of
+\CASL \cite{CASL-UM,CASL/RefManual} to arbitrary logics
+(if they are formalised as institutions and plugged into
+the \Hets motherboard), as well as to heterogeneous
+combination of specification written in different logics.
+See
+Fig.~\ref{fig:lang} for a simple subset of the
+\HetCASL syntax, where \emph{basic specifications} are unstructured
+specifications or modules written in a specific logic.  The graph of
+currently supported logics and logic translations (the latter are also
+called comorphisms) is shown in Fig.~\ref{fig:LogicGraph}, and the
+degree of support by \Hets in Fig.~\ref{fig:Languages}.
 
 \begin{figure}[ht]
 \centering
@@ -236,6 +263,7 @@ SoftFOL & - & - & x \\\hline
 \end{center}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
 \end{figure}
+\ednote{TODO Christian: update table}
 
 \begin{description}
 
@@ -326,9 +354,11 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
   for higher-order logic.
 \end{description}
-Propositional, SoftFOL and \Isabelle are currently the only logics
-coming with a prover. Proof support for the other logics can be
-obtained by using logic translations to a prover-supported logic.
+\ednote{TODO Till: update list}
+
+Various logics are supported with proof tools. Proof support for the
+other logics can be obtained by using logic translations to a
+prover-supported logic.
 
 
 An introduction to \CASL can be found in the \CASL User Manual
@@ -367,6 +397,7 @@ together with their comorphisms.}
 
 In more detail, the following list of logic translations is currently
 supported by \Hets:
+\ednote{TODO Christian: update table}
 
 \begin{tabular}{|l|p{5cm}|}\hline
 CASL2CoCASL &  inclusion \\\hline
@@ -526,7 +557,7 @@ is skipped.
 Use \texttt{DIR} as the directory for specification libraries
 (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
-\item[\texttt{--casl-amalg=ANALYSIS}]
+\item[\texttt{-a ANALYSIS}, \texttt{--casl-amalg=ANALYSIS}]
   For the analysis of architectural specification (a quite advanced
   feature of \CASL), the \texttt{ANALYSIS} argument specifies the options for
   amalgamability checking
@@ -550,9 +581,21 @@ calling \Hets).
   \texttt{cell}.
 \end{description}
 
+\ednote{TODO Christian: describe the following options}
+MISSING OPTIONS:
+\begin{verbatim}
+  -x                --xml                    use xml packets to communicate
+  -c HOSTNAME:PORT  --connect=HOSTNAME:PORT  run interface comunicating via connecting to the port
+  -S PORT           --listen=PORT            run interface by listening to the port
+  -d STRING         --dump=STRING            dump various strings
+  -A                --apply-automatic-rule   apply automatic dev-graph strategy
+  -N                --normal-form            compute normal forms (takes long)
+\end{verbatim}
+
 \section{Heterogeneous Specification} \label{sec:HetSpec}
 
-\Hets accepts plain text input files with the following endings:\\
+\Hets accepts plain text input files with the following endings:
+\ednote{TODO Christian: update table}\\
 
 \begin{tabular}{|l|c|c|}\hline
 Ending & default logic & structuring language\\\hline
@@ -694,10 +737,12 @@ of the proof calculus for heterogeneous development graphs.
 Details can be found in the \CASL Reference Manual \cite[IV:4]{CASL/RefManual}
 and in \cite{Habil,MossakowskiEtAl05,MossakowskiEtAl07b}.
 
-The following option lets \Hets show the development graph of
+The following options let \Hets show the development graph of
 a specification library:
 \begin{description}
-\item[\texttt{-g}, \texttt{--gui}]  Shows the development graph in a GUI window.\end{description}
+\item[\texttt{-g}, \texttt{--gui}]  Shows the development graph in a GUI window
+\item[\texttt{-u}, \texttt{--uncolored}] no colors in shown graphs
+\end{description}
 
 \eat{
 Let us extend the above library \texttt{Order.casl}. One use of the
@@ -875,7 +920,7 @@ proof obligation between \NAMEREF{List\_Order\_Sorted}  and
 
 
 Here is a summary of the types of nodes and links occurring in
-development graphs:
+development graphs:\ednote{TODO Christian: update list}
 \begin{description}
 \item[Named nodes] correspond to a named specification.
 \item[Unnamed nodes] correspond to an anonymous specification.
@@ -908,6 +953,7 @@ their function can be looked up in the uDraw(Graph) documentation\footnote{see
 The exception is the Edit menu. Moreover, the nodes and links
 of the graph have attached pop-up menus, which appear when
 clicking with the right mouse button.
+\ednote{TODO Mihai: update}\\
 
 \begin{description}
 \item[Edit] This menu has the following submenus:
@@ -1157,9 +1203,13 @@ used theorem prover. The `Status:' shows either `No prover running' or
 the window is closed and the status of the goals' list is integrated
 into the development graph. If all goals have been proved, the
 selected node turns from red into green.
+\ednote{TODO Christian: describe disprove button}
+
+\ednote{TODO Christian: describe consistency checker interface}
+
 
 The list `Pick Theorem Prover:' lets you choose one of the connected
-provers (currently, these are \Isabelle, MathServe Broker, \SPASS,
+provers (among them \Isabelle, MathServe Broker, \SPASS,
 Vampire, and zChaff, described below). By pressing `Prove' the
 selected prover is launched and the theory along with the selected
 goals is translated via the shortest possible path of comorphisms into
@@ -1333,6 +1383,29 @@ The \Isabelle theory file conforms to the Isabelle/Isar syntax
  by saving your file (using the Emacs file menu, or the Ctrl-x Ctrl-s
  key sequence), and by exiting Emacs (Ctrl-x Ctrl-c).
 
+
+\subsection{VSE}
+ The specification environment Verification Support Environment
+(VSE) \cite{VSE00}, developed at
+DFKI Saarbr\"ucken, provides an industrial-strength  methodology 
+for specification and verification of imperative programs. 
+VSE provides an interactive prover, which supports a Gentzen style
+natural deduction calculus for dynamic logic.
+This logic is an extension of first-order logic with two additional
+kinds of formulas
+that allow for reasoning about programs. One of them is the
+box formula $[\alpha]\varphi$, where $\alpha$ is a program written in an imperative
+language, and $\varphi$ is a dynamic logic formula.
+The meaning of $[\alpha]\varphi$ can be roughly put as
+``After every terminating execution of $\alpha$, $\varphi$ holds.''.
+The other new kind
+of formulas is the diamond formula $\langle\alpha\rangle\varphi$, which is the dual counter part
+of a box formula. The meaning of $\langle\alpha\rangle\varphi$
+can be described as ``After some terminating execution of $\alpha$,
+$\varphi$ holds''.
+
+\ednote{TODO Christian: describe interaction with \Hets}
+
 \subsection{zChaff}
 
 zChaff is a solver for satisfiabily problems of boolean formulas
@@ -1347,6 +1420,26 @@ the result \normalTEXTSC{U}{NSAT}\xspace in the proof details, if a theorem has 
 to be true. zChaff uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \ref{sec:ATP}). zChaff does not accept any options apart from the time-limit. The
 current integration of zChaff into \Hets has been tested with zChaff 2004.11.15.
+
+\subsection{Reduce}
+\ednote{TODO : Dominik D.}
+\subsection{Pellet}
+\ednote{TODO Dominik L.}
+\subsection{Fact++}
+\ednote{TODO Dominik L.}
+\subsection{QuickCheck}
+\ednote{TODO Till}
+\subsection{minisat}
+\ednote{TODO Till}
+\subsection{Truth tables}
+\ednote{TODO Till}
+\subsection{EKrHyper}
+\ednote{TODO Dominik L.}
+\subsection{Darwin}
+\ednote{TODO Dominik L.}
+\subsection{CspCASLProver}
+\ednote{TODO Markus}
+
 
 \section{Limits of Hets}
 
