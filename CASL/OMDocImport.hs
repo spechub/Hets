@@ -416,4 +416,3 @@ omdocToFormula' e@(ie, _) f =
       _ | f == const_true -> True_atom nullRange
       _ | f == const_false -> False_atom nullRange
       _ | otherwise -> error $ "omdocToFormula: no valid formula " ++ show f
-

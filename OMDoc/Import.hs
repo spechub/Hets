@@ -75,7 +75,7 @@ initialEnv :: ImpEnv
 initialEnv = ImpEnv { libMap = Map.empty, nsymbMap = Map.empty }
 
 getLibEnv :: ImpEnv -> LibEnv
-getLibEnv e = --computeLibEnvTheories $
+getLibEnv e = computeLibEnvTheories $
               Map.fromList $ Map.elems $ libMap e
 
 addDGToEnv :: ImpEnv -> LibName -> DGraph -> ImpEnv
@@ -105,7 +105,8 @@ lookupNSMap :: ImpEnv -> LibName -> Maybe LibName -> String -> NameSymbolMap
 lookupNSMap e ln mLn nm =
     let ln' = fromMaybe ln mLn
         mf = Map.findWithDefault
-             $ error $ "lookupNSMap: lookup failed for " ++ show (mLn, nm, nsymbMap e)
+             $ error $ "lookupNSMap: lookup failed for "
+                   ++ show (mLn, nm, nsymbMap e)
     in mf (ln', nm) $ nsymbMap e
 
 -- * URI Functions
@@ -255,10 +256,13 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
   -- IV. Add the sentences to the Node.
   gThy <- liftR $ addSentences clf nsmap gSig'
 
-  -- V. Add the Node to the DGraph.
+  -- V. Complete the morphisms with final signature
+  iIWL' <- liftR $ completeMorphisms (signOf gThy) iIWL
+
+  -- VI. Add the Node to the DGraph.
   let ((nd, _), dg'') = addNodeToDG dg' n gThy
-      -- VI. Create links from the morphisms.
-      dg''' = addLinksToDG nd dg'' iIWL
+      -- VII. Create links from the morphisms.
+      dg''' = addLinksToDG nd dg'' iIWL'
       -- add the new name symbol map to the environment
       e'' = addNSMapToEnv e' ln n nsmap
 
@@ -282,6 +286,17 @@ addTLToDGraph ln (e, dg) (TLView n from to mMor) = do
 
 -- ** Utils to compute DGNodes from OMDoc Theories
 
+{-
+ the morphisms are incomplete because the target signature
+ wasn't complete at the time of morphism computation.
+ we complete the morphisms by composing them with signature inclusions
+ to the complete target signature
+-}
+completeMorphisms :: G_sign -- ^ the complete target signature
+                  -> [LinkInfo] -- ^ the incomplete morphisms
+                  -> Result [LinkInfo]
+completeMorphisms gsig = mapR (fmapLI $ completeMorphism $ ide gsig)
+
 completeMorphism :: GMorphism -- ^ the target signature id morphism
                  -> GMorphism -- ^ the incomplete morphism
                  -> Result GMorphism
@@ -291,15 +306,7 @@ completeMorphism idT gmorph = compInclusion logicGraph gmorph idT
 computeMorphisms :: ImpEnv -> LibName -> NameSymbolMap -> G_sign
                  -> [ImportInfo LinkNode]
                  -> ResultT IO (G_sign, [LinkInfo])
-computeMorphisms e ln nsmap gsig iIL = do
-  -- the morphisms are incomplete because the target signature
-  -- wasn't complete at the time of morphism computation.
-  (gsig', lil) <- mapAccumLM (computeMorphism e ln nsmap) gsig iIL
-  -- we complete the morphisms by composing them with signature inclusions
-  -- to the complete target signature
-  let targetIdGMorph = ide gsig'
-  lil' <- liftR $ mapR (fmapLI $ completeMorphism targetIdGMorph) lil
-  return (gsig', lil')
+computeMorphisms e ln nsmap = mapAccumLM (computeMorphism e ln nsmap)
 
 -- | Computes the morphism for an import link and updates the signature
 -- with the imported symbols
@@ -403,7 +410,6 @@ followImport ln x iInfo = do
   return (x', fmap (const linknode) iInfo)
 
 
-
 followTheories :: LibName -> (ImpEnv, DGraph) -> [OMCD]
                -> ResultT IO ((ImpEnv, DGraph), [LinkNode])
 followTheories ln = mapAccumLCM (curry snd) (followTheory ln)
@@ -422,7 +428,7 @@ followTheory ln (e, dg) cd = do
 
 
 -- | returns a function compatible with mapAccumLM for TCElement processing.
---   Used in initialSig.
+-- Used in initialSig.
 sigmapAccumFun :: (Monad m, Show a) => (SigMapI a -> TCElement -> String -> m a)
                -> SigMapI a -> TCElement -> m (SigMapI a, a)
 sigmapAccumFun f smi s = do
@@ -472,7 +478,6 @@ addSentences clf nsmap gsig =
             (sig'', sens'') <- addOmdocToTheory lid sigm (sig', sens')
                                $ sentences clf
 
-            -- TODO: remove error: no global theory!
             return $ G_theory lid (mkExtSign sig'') ind1
                        (toThSens sens'') startThId
 
