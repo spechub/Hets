@@ -73,6 +73,7 @@ import Static.ComputeTheory (theoremsToAxioms, computeTheory)
 import Proofs.PathifyNames
 
 import Driver.Options
+import Driver.ReadFn (libNameToFile)
 import Driver.WriteLibDefn
 
 #ifdef HXTFILTER
@@ -92,10 +93,9 @@ writeVerbFile opts f str = do
 -- | compute for each LibName in the List a path relative to the given FilePath
 writeVerbFiles :: HetcatsOpts -> String -> FilePath -> [(LibName, String)]
                -> IO ()
-writeVerbFiles opts suffix filePrefix outl =
+writeVerbFiles opts suffix _ outl =
     mapM_ (uncurry $ writeVerbFile opts) $ map f outl
--- TODO: implement the computation
-        where f (_, s) = (filePrefix ++ suffix, s)
+        where f (ln, s) = (libNameToFile ln ++ suffix, s)
 
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
             -> IO ()
@@ -112,7 +112,7 @@ writeLibEnv opts filePrefix lenv ln ot =
           let Result ds mOmd = exportLibEnv (recurse opts) ln lenv
           showDiags opts ds
           case mOmd of
-               Just omd -> writeVerbFiles opts ".xml" filePrefix
+               Just omd -> writeVerbFiles opts ".omdoc" filePrefix
                            $ map (\ (libn, od) -> (libn, xmlOut od)) omd
                Nothing -> putIfVerbose opts 0 "could not translate to OMDoc"
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
