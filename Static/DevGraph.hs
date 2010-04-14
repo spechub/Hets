@@ -81,8 +81,8 @@ data BasicConsProof = BasicConsProof deriving (Show, Eq) -- needs more details
 
 data XPathPart = ElemName String | ChildIndex Int deriving (Show, Eq, Ord)
 
--- | name of a node in a DG; auxiliary nodes may have extension string
---   and non-zero number (for these, names are usually hidden)
+{- | name of a node in a DG; auxiliary nodes may have extension string
+     and non-zero number (for these, names are usually hidden). -}
 data NodeName = NodeName
   { getName :: SIMPLE_ID
   , extString :: String
@@ -91,7 +91,7 @@ data NodeName = NodeName
   } deriving (Show, Eq, Ord)
 
 
-isInternal :: NodeName ->  Bool
+isInternal :: NodeName -> Bool
 isInternal n = extIndex n /= 0 || not (null $ extString n)
 
 -- | a wrapper for renamings with a trivial Ord instance
@@ -162,7 +162,7 @@ data DGNodeLab =
   , dgn_nf :: Maybe Node         -- normal form, for Theorem-Hide-Shift
   , dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
   , dgn_freenf :: Maybe Node -- normal form for freeness
-  , dgn_phi :: Maybe GMorphism --morphism from signature to nffree signature
+  , dgn_phi :: Maybe GMorphism -- morphism from signature to nffree signature
   , nodeInfo :: DGNodeInfo
   , dgn_lock :: Maybe (MVar ())
   , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
@@ -203,7 +203,7 @@ getNodeConservativity :: LNode DGNodeLab -> Conservativity
 getNodeConservativity = getNodeCons . snd
 
 -- | test if a node conservativity is open,
---  return input for refs or nodes with normal forms
+-- return input for refs or nodes with normal forms
 hasOpenNodeConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenNodeConsStatus b lbl = if isJust $ dgn_nf lbl then b else
   hasOpenConsStatus b $ getNodeConsStatus lbl
@@ -322,7 +322,7 @@ getLinkOriginName lo = case lo of
                          DGLinkFitView sid -> Just sid
                          DGLinkFitViewImp sid -> Just sid
                          _ -> Nothing
-                   
+
 
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth
@@ -360,8 +360,8 @@ isProvenConsStatusLink = not . hasOpenConsStatus False
 mkConsStatus :: Conservativity -> ConsStatus
 mkConsStatus c = ConsStatus c None LeftOpen
 
--- | Link types of development graphs
---  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
+{- | Link types of development graphs,
+     Sect. IV:4.2 of the CASL Reference Manual explains them in depth. -}
 data DGLinkType =
     ScopedLink Scope LinkKind ConsStatus
   | HidingDefLink
@@ -406,11 +406,11 @@ nameDGLink nn l = l { dglName = nn }
 defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
 defDGLink m ty orig = let nn = makeName $ case getLinkOriginName orig of
                                             Just sid -> sid
-                                            _ ->  mkSimpleId ""
+                                            _ -> mkSimpleId ""
                       in mkDGLink m ty orig nn defaultEdgeId
 
 globDefLink :: GMorphism -> DGLinkOrigin -> DGLinkLab
-globDefLink m orig = defDGLink m globalDef orig
+globDefLink m = defDGLink m globalDef
 
 -- | describe the link type of the label
 getDGLinkType :: DGLinkLab -> String
@@ -652,7 +652,7 @@ showExt n = let i = extIndex n in extString n ++ if i == 0 then "" else show i
 
 showName :: NodeName -> String
 showName n = let ext = showExt n in
-    tokStr (getName n) ++ if null ext then ext else '_' : ext
+    tokStr (getName n) ++ if null ext then ext else "__" ++ ext
 
 makeName :: SIMPLE_ID -> NodeName
 makeName n = NodeName n "" 0 [ElemName $ tokStr n]
@@ -690,7 +690,7 @@ dgn_node = ref_node . nodeInfo
 -- | get the signature of a node's theory (total)
 dgn_sign :: DGNodeLab -> G_sign
 dgn_sign dn = case dgn_theory dn of
-    G_theory lid sig ind _ _-> G_sign lid sig ind
+    G_theory lid sig ind _ _ -> G_sign lid sig ind
 
 -- | gets the name of a development graph node as a string (total)
 getDGNodeName :: DGNodeLab -> String
@@ -741,7 +741,7 @@ treatNodeLock :: (MVar () -> a) -> DGNodeLab -> a
 treatNodeLock f = maybe (error "MVar not initialised") f . dgn_lock
 
 {- | Acquire the local lock. If already locked it waits till it is unlocked
-     again.-}
+     again. -}
 lockLocal :: DGNodeLab -> IO ()
 lockLocal = treatNodeLock $ flip putMVar ()
 
@@ -871,12 +871,10 @@ lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph
 lookupNodeWith f dg = find f $ labNodesDG dg
 
 -- | lookup a node in the graph by its name, using showName
---   to convert nodenames. See also 'getDGNodesByName'.
+-- to convert nodenames. See also 'getDGNodesByName'.
 lookupNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
-    
-    
 
 
 -- ** treat reference nodes
@@ -955,7 +953,7 @@ newNodesDG n = newNodes n . dgBody
 
 -- | tear the given DGraph appart.
 matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
-matchDG n dg = let (mc, b) = match n $ dgBody dg in(mc, dg { dgBody = b })
+matchDG n dg = let (mc, b) = match n $ dgBody dg in (mc, dg { dgBody = b })
 
 -- | get the context of the given DG
 contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
@@ -1129,7 +1127,7 @@ isDefEdge edge = case edge of
 
 isLocalEdge :: DGLinkType -> Bool
 isLocalEdge edge = case edge of
-    ScopedLink Local _ _  -> True
+    ScopedLink Local _ _ -> True
     _ -> False
 
 isHidingEdge :: DGLinkType -> Bool
@@ -1195,8 +1193,8 @@ getConservativityOfPath path = minimum [getConservativity e | e <- path]
 getLibDepRel :: LibEnv -> Rel.Rel LibName
 getLibDepRel = Rel.transClosure
   . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
-    foldr (\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id) s
-      $ map snd $ labNodesDG dg) Set.empty
+    foldr ((\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id)
+           . snd) s $ labNodesDG dg) Set.empty
 
 topsortedLibsWithImports :: Rel.Rel LibName -> [LibName]
 topsortedLibsWithImports = concatMap Set.toList . Rel.topSort
