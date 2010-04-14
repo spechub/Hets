@@ -91,6 +91,8 @@ pdftitle={Hets User Guide}]
 \newcommand{\CASLDL}{\textmd{\textsc{Casl-DL}}\xspace}
 \newcommand{\Dolce}{\textmd{\textsc{Dolce}}\xspace}
 \newcommand{\SHOIN}{$\mathcal{SHOIN}$(\textbf{D})\xspace}
+\newcommand{\SROIQ}{$\mathcal{SROIQ}$(\textbf{D})\xspace}
+\newcommand{\DL}{DL\xspace}
 %%%%% end of Klaus macros
 
 %% Use \ELAN-\CASL, \HOL-\CASL, \Isabelle/\HOL
@@ -157,7 +159,7 @@ available, without the need to hard-wire each tool to the logic at
 hand.
 \begin{figure}
 \begin{center}
- \includegraphics[width=0.45\textwidth]{hets-motherboard}
+  \includegraphics[width=0.45\textwidth]{hets-motherboard}
 \end{center}
 \caption{The \Hets motherboard and some expansion cards}
 \end{figure}
@@ -1424,19 +1426,88 @@ current integration of zChaff into \Hets has been tested with zChaff 2004.11.15.
 \subsection{Reduce}
 \ednote{TODO : Dominik D.}
 \subsection{Pellet}
-\ednote{TODO Dominik L.}
+Pellet is a popular open-source \DL-reasoner for \SROIQ, which is the logic 
+underlying OWL 2.0, written in Java. A Java Runtime Environment (in version > 1.5)
+is needed to run Pellet. For the integration into \Hets the environment variable
+\verb+PELLET_PATH+ has to be set to the root-directory of the Pellet installation.
+
+Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
+\ref{sec:ATP}).
 \subsection{Fact++}
-\ednote{TODO Dominik L.}
+Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2.0, written in
+C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java. 
+A Java Runtime Environment (in version >= 1.5) has to be installed. To use Fact++, 
+the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory 
+containing the files
+\begin{verbatim}
+OWLFact.jar
+OWLFactProver.jar
+lib/FaCTpp-OWLAPI-v1.3.0.1.jar
+lib/owlapi-bin.jar
+\end{verbatim}
+as well as 
+\begin{verbatim}
+lib/native/i686/libFaCTPlusPlusJNI.so
+\end{verbatim}
+on a 32bits-Linux-system or
+\begin{verbatim}
+lib/native/x86_64/libFaCTPlusPlusJNI.so
+\end{verbatim}
+in a 64bits-Linux-system. Fact++ does not support options.
+
+Fact++ uses the same ATP GUI as the provers for SoftFOL (ref. to section
+\ref{sec:ATP}).
 \subsection{QuickCheck}
 \ednote{TODO Till}
 \subsection{minisat}
 \ednote{TODO Till}
 \subsection{Truth tables}
 \ednote{TODO Till}
-\subsection{EKrHyper}
-\ednote{TODO Dominik L.}
+\subsection{E-KRHyper}
+E-KRHyper\footnote{\url{http://www.uni-koblenz.de/~bpelzer/ekrhyper/}} 
+is an extension of 
+KRHyper\footnote{\url{http://www.uni-koblenz.de/~wernhard/krhyper/}} by
+handling of equality. E-KRHyper is an automatic first order theorem
+prover and model finder based on the Hyper Tableaux Calculus\cite{Baumgartner:1996}.
+E-KRHyper is optimized for being integrated into other systems. In the current 
+implementation we use a default tactics script, that can be influenced by the user.
+The options of E-KRHyper are written in a Prolog-like syntax as in 
+\begin{verbatim}
+#(set_parameter(timeout_termination_method,0)).
+\end{verbatim}
+the ``.'' at the end of each option is mandatory. To get an overview of 
+E-KRHyper's options, run the command
+\begin{verbatim}
+ekrh
+\end{verbatim}
+in a terminal. Then enter the command
+\begin{verbatim}
+#(help).
+\end{verbatim}
+at the prompt of E-KRHyper, to display its help information, which is basically
+a long list of all available parameters. You can exit E-KRHyper by the command
+\begin{verbatim}
+#(exit).
+\end{verbatim}
+
+E-KRHyper uses the same ATP GUI as the other provers for SoftFOL (ref. to section
+\ref{sec:ATP}).
 \subsection{Darwin}
-\ednote{TODO Dominik L.}
+Darwin is an automatic first order prover and model finder implementing the Model 
+Evolution
+Calculus\cite{Baumgartner:2003}. The integration of Darwin as a consistency checker
+supports the display of models (if they can be constructed) in \CASL-syntax. 
+Eprover is needed to be in the system-path, if Darwin is used with \Hets, since 
+Darwin uses Eprover for clausification of first-order formulae.
+
+Darwin supports a wide range of options, to get an overview of them run the command
+\begin{verbatim}
+darwin --help
+\end{verbatim}
+in a terminal.
+
+Darwin uses the same ATP GUI as the other provers for SoftFOL (ref. to section
+\ref{sec:ATP}).
 \subsection{CspCASLProver}
 \ednote{TODO Markus}
 
