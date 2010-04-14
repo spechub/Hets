@@ -1,5 +1,6 @@
 module Reduce.Reduce_Interface where
 import System.IO
+import System.Directory
 import System.Process
 import Reduce.AS_BASIC_Reduce
 import Reduce.Parse_AS_Basic
@@ -19,6 +20,13 @@ reduceS = "Reduce"
 openReduceProofStatus :: String -> [EXPRESSION] -> ProofStatus [EXPRESSION]
 openReduceProofStatus n prooftree = openProofStatus n reduceS prooftree
 
+-- | checks that the specified file exists and returns an error otherwise
+check :: (FilePath -> IO Bool) -> FilePath -> IO ()
+check p s = do
+  result <- p s
+  putStrLn (show result)
+  if result then (return True) else (error ("Could not find reduce under " ++ s))
+  return ()
 
 closedReduceProofStatus :: Ord pt => String -- ^ name of the goal
                 -> pt -> ProofStatus pt
@@ -37,6 +45,8 @@ connectCAS :: IO (Handle, Handle, Handle, ProcessHandle)
 connectCAS = do 
   putStr "Connecting CAS.."
   reducecmdline <- getEnvDef "HETS_REDUCE" "redcsl"
+  -- check that prog exists
+  check doesFileExist reducecmdline
   (inp,out,err,pid) <-runInteractiveCommand $ reducecmdline ++ " -w"
   hSetBuffering out NoBuffering
   hSetBuffering inp LineBuffering

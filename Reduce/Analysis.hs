@@ -53,19 +53,22 @@ extractOperatorsExp _ = []
 
 -- | extracts the operators + arity information for a cmd
 extractOperatorsCmd :: CMD -> [(String,Int)]
-extractOperatorsCmd (Cmd _ exps) = (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+extractOperatorsCmd (Cmd cmd exps) = (cmd,length exps) : (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
 
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
 checkOperators _ [] = True
-checkOperators s ((op,arit):ops) = case op of
-                                     "solve" -> (arit==2)
-                                     "simplify" -> (arit==1)
-                                     "divide" -> (arit==2)
-                                     "int" -> (arit==2)
-                                     "rlqe" -> (arit==1)
-                                     "factorize" -> (arit==1)
-                                     _ -> Sign.lookupSym s $ genName op  -- .. otherwise it must be declared in the signature
+checkOperators s ((op,arit):ops) = (if elem op ["ex","all",">","<","+","-","*","=","/","**","^","and","or","impl"] then (arit==2)
+                                    else 
+                                        case op of
+                                          "solve" -> (arit==2)
+                                          "simplify" -> (arit==1)
+                                          "divide" -> (arit==2)
+                                          "int" -> (arit==2)
+                                          "rlqe" -> (arit==1)
+                                          "factorize" -> (arit==1)
+                                          _ -> Sign.lookupSym s $ genName op  -- .. otherwise it must be declared in the signature
+                                               )
                                    && checkOperators s ops
 
 -- | generates a named formula
@@ -99,8 +102,8 @@ analyzeFormula s f i =
           DiagForm { formula = (makeNamed f i),
                                diagnosis = Diag {
                                              diagKind = Error
-                                           , diagString = "Wrong arity or undeclared operator"
-                                           , diagPos = nullRange
+                                           , diagString = "Wrong arity or undeclared operator in Formula " ++ show (extractOperatorsCmd (AS_Anno.item f))
+                                           , diagPos = nullRange -- position of the error
                                            }
                    }
 
@@ -124,9 +127,9 @@ addTokens sign tokens = foldl (\ res item -> (addToSig res (simpleIdToId item)))
 basicReduceAnalysis :: (BASIC_SPEC, Sign, a) -> Result (BASIC_SPEC, ExtSign Sign Symbol, [AS_Anno.Named CMD])
 basicReduceAnalysis (bs, sig, _) =
     Result diagnoses $ if exErrs then Nothing else
-                       Just (bs, ExtSign newSig newSyms, (map formula cmds))
+                       Just (bs, ExtSign newSig newSyms, (map formula diagcmds))
         where
-          (newSig, cmds) = splitSpec bs sig
-          diagnoses = []
+          (newSig, diagcmds) = splitSpec bs sig
+          diagnoses = (map diagnosis diagcmds)
           exErrs = False
           newSyms = Set.map Symbol $ Set.difference (items newSig) $ items sig
