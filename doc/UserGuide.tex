@@ -250,22 +250,30 @@ Language & Parser & Static Analysis & Prover \\\hline
 \CoCASL & x & x & - \\\hline
 \ModalCASL & x & x & - \\\hline
 \HasCASL & x & x & - \\\hline
-Haskell & x & x & -\\\hline
-\CspCASL & (x) & - & - \\\hline
+Haskell & (x) & x & - \\\hline
+\CspCASL & x & x & - \\\hline
+\CspCASL\_Trace & - & - & x \\\hline
+\CspCASL\_Failure & - & - & - \\\hline
 Constraint\CASL & x & (x) & - \\\hline
+Temporal & x & (x) & - \\\hline
+RelScheme & x & (x) & - \\\hline
+DFOL & x & (x) & - \\\hline
+ExtModal & x & (x) & - \\\hline
+LF & x & (x) & - \\\hline
 %Structured specifications & x & x & (x) \\\hline
 %Architectural specifications & x & x & -\\\hline
 \CASLDL & x & - & - \\\hline
-OWL DL basic & x & (x) & - \\\hline
-OWL DL structure & x & (x) & - \\\hline
+DMU & x & - & - \\\hline
+OWL DL & x & x & - \\\hline
 Propositional & x & x & x \\\hline
-SoftFOL & - & - & x \\\hline
-\Isabelle & - & - & x \\\hline
+SoftFOL & x & - & x \\\hline
+Maude & x & x & - \\\hline
+VSE & x & x & x \\\hline
+\Isabelle & (x) & - & x \\\hline
 \end{tabular}
 \end{center}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
 \end{figure}
-\ednote{TODO Christian: update table}
 
 \begin{description}
 
@@ -1389,8 +1397,8 @@ The \Isabelle theory file conforms to the Isabelle/Isar syntax
 \subsection{VSE}
  The specification environment Verification Support Environment
 (VSE) \cite{VSE00}, developed at
-DFKI Saarbr\"ucken, provides an industrial-strength  methodology 
-for specification and verification of imperative programs. 
+DFKI Saarbr\"ucken, provides an industrial-strength  methodology
+for specification and verification of imperative programs.
 VSE provides an interactive prover, which supports a Gentzen style
 natural deduction calculus for dynamic logic.
 This logic is an extension of first-order logic with two additional
@@ -1426,7 +1434,7 @@ current integration of zChaff into \Hets has been tested with zChaff 2004.11.15.
 \subsection{Reduce}
 \ednote{TODO : Dominik D.}
 \subsection{Pellet}
-Pellet is a popular open-source \DL-reasoner for \SROIQ, which is the logic 
+Pellet is a popular open-source \DL-reasoner for \SROIQ, which is the logic
 underlying OWL 2.0, written in Java. A Java Runtime Environment (in version > 1.5)
 is needed to run Pellet. For the integration into \Hets the environment variable
 \verb+PELLET_PATH+ has to be set to the root-directory of the Pellet installation.
@@ -1435,9 +1443,9 @@ Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \ref{sec:ATP}).
 \subsection{Fact++}
 Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2.0, written in
-C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java. 
-A Java Runtime Environment (in version >= 1.5) has to be installed. To use Fact++, 
-the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory 
+C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java.
+A Java Runtime Environment (in version >= 1.5) has to be installed. To use Fact++,
+the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory
 containing the files
 \begin{verbatim}
 OWLFact.jar
@@ -1445,7 +1453,7 @@ OWLFactProver.jar
 lib/FaCTpp-OWLAPI-v1.3.0.1.jar
 lib/owlapi-bin.jar
 \end{verbatim}
-as well as 
+as well as
 \begin{verbatim}
 lib/native/i686/libFaCTPlusPlusJNI.so
 \end{verbatim}
@@ -1464,18 +1472,18 @@ Fact++ uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \subsection{Truth tables}
 \ednote{TODO Till}
 \subsection{E-KRHyper}
-E-KRHyper\footnote{\url{http://www.uni-koblenz.de/~bpelzer/ekrhyper/}} 
-is an extension of 
+E-KRHyper\footnote{\url{http://www.uni-koblenz.de/~bpelzer/ekrhyper/}}
+is an extension of
 KRHyper\footnote{\url{http://www.uni-koblenz.de/~wernhard/krhyper/}} by
 handling of equality. E-KRHyper is an automatic first order theorem
 prover and model finder based on the Hyper Tableaux Calculus\cite{Baumgartner:1996}.
-E-KRHyper is optimized for being integrated into other systems. In the current 
+E-KRHyper is optimized for being integrated into other systems. In the current
 implementation we use a default tactics script, that can be influenced by the user.
-The options of E-KRHyper are written in a Prolog-like syntax as in 
+The options of E-KRHyper are written in a Prolog-like syntax as in
 \begin{verbatim}
 #(set_parameter(timeout_termination_method,0)).
 \end{verbatim}
-the ``.'' at the end of each option is mandatory. To get an overview of 
+the ``.'' at the end of each option is mandatory. To get an overview of
 E-KRHyper's options, run the command
 \begin{verbatim}
 ekrh
@@ -1493,11 +1501,11 @@ a long list of all available parameters. You can exit E-KRHyper by the command
 E-KRHyper uses the same ATP GUI as the other provers for SoftFOL (ref. to section
 \ref{sec:ATP}).
 \subsection{Darwin}
-Darwin is an automatic first order prover and model finder implementing the Model 
+Darwin is an automatic first order prover and model finder implementing the Model
 Evolution
 Calculus\cite{Baumgartner:2003}. The integration of Darwin as a consistency checker
-supports the display of models (if they can be constructed) in \CASL-syntax. 
-Eprover is needed to be in the system-path, if Darwin is used with \Hets, since 
+supports the display of models (if they can be constructed) in \CASL-syntax.
+Eprover is needed to be in the system-path, if Darwin is used with \Hets, since
 Darwin uses Eprover for clausification of first-order formulae.
 
 Darwin supports a wide range of options, to get an overview of them run the command
