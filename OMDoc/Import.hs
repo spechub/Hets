@@ -33,6 +33,7 @@ import Logic.Grothendieck
 -- import Logic.Comorphism
 
 import Comorphisms.LogicList
+import Comorphisms.LogicGraph
 
 import Static.DevGraph
 import Static.GTheory
@@ -74,16 +75,9 @@ initialEnv :: ImpEnv
 initialEnv = ImpEnv { libMap = Map.empty, nsymbMap = Map.empty }
 
 getLibEnv :: ImpEnv -> LibEnv
-getLibEnv e = let le = Map.fromList $ Map.elems $ libMap e
-              in le
-{-
-TODO: repair the signature creation from import morphisms
-                  lns = getTopsortedLibs le
-                  upd le' ln = let dg0 = lookupDGraph ln le
-                                   dg = computeDGraphTheories le' dg0
-                               in Map.insert ln dg le'
-              in foldl upd Map.empty lns
--}
+getLibEnv e = --computeLibEnvTheories $
+              Map.fromList $ Map.elems $ libMap e
+
 addDGToEnv :: ImpEnv -> LibName -> DGraph -> ImpEnv
 addDGToEnv e ln dg =
     e { libMap = Map.insert (libNameToFile ln) (ln, dg) $ libMap e }
@@ -288,11 +282,24 @@ addTLToDGraph ln (e, dg) (TLView n from to mMor) = do
 
 -- ** Utils to compute DGNodes from OMDoc Theories
 
+completeMorphism :: GMorphism -- ^ the target signature id morphism
+                 -> GMorphism -- ^ the incomplete morphism
+                 -> Result GMorphism
+completeMorphism idT gmorph = compInclusion logicGraph gmorph idT
+
 
 computeMorphisms :: ImpEnv -> LibName -> NameSymbolMap -> G_sign
                  -> [ImportInfo LinkNode]
                  -> ResultT IO (G_sign, [LinkInfo])
-computeMorphisms e ln nsmap = mapAccumLM (computeMorphism e ln nsmap)
+computeMorphisms e ln nsmap gsig iIL = do
+  -- the morphisms are incomplete because the target signature
+  -- wasn't complete at the time of morphism computation.
+  (gsig', lil) <- mapAccumLM (computeMorphism e ln nsmap) gsig iIL
+  -- we complete the morphisms by composing them with signature inclusions
+  -- to the complete target signature
+  let targetIdGMorph = ide gsig'
+  lil' <- liftR $ mapR (fmapLI $ completeMorphism targetIdGMorph) lil
+  return (gsig', lil')
 
 -- | Computes the morphism for an import link and updates the signature
 -- with the imported symbols
@@ -520,6 +527,11 @@ iInfoVal (ImportInfo x _ _) = x
 
 instance Functor ImportInfo where fmap f (ImportInfo x y z)
                                       = ImportInfo (f x) y z
+
+fmapLI :: Monad m => (GMorphism -> m GMorphism) -> LinkInfo -> m LinkInfo
+fmapLI f (gm, x, y, z, t) = do
+  gm' <- f gm
+  return (gm', x, y, z, t)
 
 data TCClassification = TCClf {
       importInfo :: [ImportInfo OMCD] -- ^ Import-info

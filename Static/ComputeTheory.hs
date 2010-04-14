@@ -16,6 +16,7 @@ module Static.ComputeTheory
     , getGlobalTheory
     , theoremsToAxioms
     , computeDGraphTheories
+    , computeLibEnvTheories
     , computeLabelTheory
     , markHiding
     , markFree
@@ -90,6 +91,15 @@ getGlobalTheory = maybe (fail "no global theory") return . globalTheory
 
 globalNodeTheory :: DGraph -> Node -> Result G_theory
 globalNodeTheory dg = getGlobalTheory . labDG dg
+
+computeLibEnvTheories :: LibEnv -> LibEnv
+computeLibEnvTheories le =
+    let lns = getTopsortedLibs le
+        upd le' ln = let dg0 = lookupDGraph ln le
+                         dg = computeDGraphTheories le' dg0
+                     in Map.insert ln dg le'
+    in foldl upd Map.empty lns
+
 
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
 computeDGraphTheories le dgraph =
