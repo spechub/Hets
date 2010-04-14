@@ -25,13 +25,13 @@ import OMDoc.DataTypes
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
--- import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Rel as Rel
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
--- import CASL.Fold
--- import CASL.Quantification
 import CASL.OMDoc
+
+import Control.Monad
 
 import qualified Data.Map as Map
 import Data.List
@@ -136,11 +136,11 @@ addOMadtToTheory e (sig, nsens) adts = do
 
 
 -- | The subsort relation is recovered from exported sentences.
-addOmdocToTheory :: Env
-                 -> (Sign f e, [Named (FORMULA f)]) -> [TCElement]
+addOmdocToTheory :: Env -> (Sign f e, [Named (FORMULA f)]) -> [TCElement]
                  -> Result (Sign f e, [Named (FORMULA f)])
-addOmdocToTheory _ t _ = return t
--- TODO: implement the extraction of the subsort relation
+addOmdocToTheory e (sig, nsens) tcs = do
+  srel <- omdocToSortRel e tcs
+  return (sig { sortRel = irreflexClosure srel }, nsens)
 
 
 -- * Algebraic Data Types
@@ -183,6 +183,26 @@ mkArg _ _ = error "mkArg: Malformed ADT expression"
 
 
 -- * Subsort Relation
+
+omdocToSortRel :: Env -> [TCElement] -> Result (Rel.Rel SORT)
+omdocToSortRel e tcs = foldM (addMaybeToSortRel e) Rel.empty tcs
+
+addMaybeToSortRel :: Env -> Rel.Rel SORT -> TCElement -> Result (Rel.Rel SORT)
+addMaybeToSortRel e r (TCSymbol n (OMA [sof, oms1, oms2]) Axiom _) =
+    case nameDecode n of
+      Just ("ST", _)
+          | sof == const_subsortof ->
+              let s1 = lookupSortOMS "addMaybeToSortRel: s1" e oms1
+                  s2 = lookupSortOMS "addMaybeToSortRel: s2" e oms2
+              in return $ Rel.insert s1 s2 r
+          | otherwise ->
+              do
+                warning () ("Use of subsortof in a non ST Statement: " ++ n)
+                        nullRange
+                return r
+      _ -> return r
+
+addMaybeToSortRel _ r _ = return r
 
 
 -- * Types

@@ -57,7 +57,7 @@ data TCElement =
   | TCComment String
     deriving (Show, Eq, Ord)
 
--- | return type for sentence translation
+-- | return type for sentence translation (ADT or formula)
 type TCorOMElement = Either TCElement OMElement
 
 -- | Morphisms to specify signature mappings

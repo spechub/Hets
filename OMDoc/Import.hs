@@ -37,6 +37,7 @@ import Comorphisms.LogicList
 import Static.DevGraph
 import Static.GTheory
 import Static.AnalysisStructured
+import Static.ComputeTheory
 
 import OMDoc.DataTypes
 import OMDoc.XmlInterface (xmlIn)
@@ -52,21 +53,6 @@ import Control.Monad
 import Control.Monad.Trans
 
 import Network.URI
-
--- only for debugging
---import Debug.Trace
---import System.IO
-
-{-
-sorry :: a
-sorry = error "Under construction"
-
-debugOut :: String -> ResultT IO ()
-debugOut = lift . putStrLn . ("Debug: " ++)
-
-mytrace :: [String] -> IO ()
-mytrace  = hPutStrLn stderr . concat
--}
 
 -- * Import Environment Interface
 
@@ -88,8 +74,16 @@ initialEnv :: ImpEnv
 initialEnv = ImpEnv { libMap = Map.empty, nsymbMap = Map.empty }
 
 getLibEnv :: ImpEnv -> LibEnv
-getLibEnv = Map.fromList . Map.elems . libMap
-
+getLibEnv e = let le = Map.fromList $ Map.elems $ libMap e
+              in le
+{-
+TODO: repair the signature creation from import morphisms
+                  lns = getTopsortedLibs le
+                  upd le' ln = let dg0 = lookupDGraph ln le
+                                   dg = computeDGraphTheories le' dg0
+                               in Map.insert ln dg le'
+              in foldl upd Map.empty lns
+-}
 addDGToEnv :: ImpEnv -> LibName -> DGraph -> ImpEnv
 addDGToEnv e ln dg =
     e { libMap = Map.insert (libNameToFile ln) (ln, dg) $ libMap e }
