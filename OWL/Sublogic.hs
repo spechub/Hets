@@ -48,6 +48,9 @@ data OWLDatatypes = OWLDATA | OWLString |
                     OWLnonPositiveInteger | OWLnegativeInteger
                deriving (Show, Eq, Ord, Enum, Bounded)
 
+owlDatatypes :: [OWLDatatypes]
+owlDatatypes = [minBound .. maxBound]
+
 printXSDName :: Show a => a -> String
 printXSDName dt =
     drop 3 $ show dt
@@ -75,7 +78,7 @@ sl_top = OWLSub
       , roleHierarchy = True
       , complexRoleInclusions = True
       , addFeatures = True
-      , datatype = Set.fromList [minBound .. maxBound]
+      , datatype = Set.fromList owlDatatypes
       }
 
 -- ALC
@@ -133,7 +136,8 @@ sl_name sl =
            ++ (let ts = Set.filter (/= OWLDATA) ds
                in if Set.null ts then "" else
                  " {"
-                 ++ intercalate " " (map printXSDName $ Set.toList ts)
+                 ++ (if ds == Set.fromList owlDatatypes then "..." else
+                         intercalate " " $ map printXSDName $ Set.toList ts)
                  ++ "}")
            ++ ")"
 
@@ -280,8 +284,7 @@ sl_data_uri ur = sl_bottom
                 '#' : r -> r
                 _ -> l
           in Set.fromList $ OWLDATA
-               : filter ((s ==) . map toLower . printXSDName)
-                 [minBound .. maxBound]
+               : filter ((s ==) . map toLower . printXSDName) owlDatatypes
       _ -> Set.singleton OWLDATA }
 
 sl_data_prop :: DataPropertyExpression
