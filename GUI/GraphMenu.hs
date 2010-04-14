@@ -17,7 +17,6 @@ module GUI.GraphMenu (createGraph) where
 import qualified GUI.GraphAbstraction as GA
 import GUI.GraphTypes
 import GUI.GraphLogic
-import GUI.ShowLogicGraph (showLogicGraph)
 import GUI.Utils
 import GUI.UDGUtils
 #ifdef GTKGLADE
@@ -26,10 +25,12 @@ import GUI.GtkConsistencyChecker
 #endif
 
 import Control.Concurrent.MVar
+
 import Data.IORef
-import Data.List (isPrefixOf)
 import qualified Data.Map as Map
+
 import System.Directory (getCurrentDirectory)
+import System.FilePath
 
 import Static.DevGraph
 import Static.PrintDevGraph ()
@@ -57,7 +58,7 @@ nodeTypes :: HetcatsOpts
 nodeTypes opts = map
   ((\ (n, s) -> if isProvenNode n then -- Add color
       if isProvenCons n
-      then (n, s, getColor opts Green  True  False)
+      then (n, s, getColor opts Green True False)
       else (n, s, getColor opts Yellow False True)
      else (n, s, getColor opts Coral False $ isProvenCons n))
   . \ n -> (n, if isRefType n then Box else Ellipse) -- Add shape
@@ -83,30 +84,30 @@ edgeTypes opts = map
       _ -> (e, l, c, False)
     )
   . (\ (e, l) -> case edgeTypeModInc e of -- Add colors
-      HidingDef       -> (e, l, getColor opts Blue   True  $ not $ isInc e)
-      FreeOrCofreeDef -> (e, l, getColor opts Blue   False $ not $ isInc e)
+      HidingDef -> (e, l, getColor opts Blue True $ not $ isInc e)
+      FreeOrCofreeDef -> (e, l, getColor opts Blue False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isProvenEdge = False } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
-                      -> (e, l, getColor opts Coral  True  $ not $ isInc e)
-        HidingThm     -> (e, l, getColor opts Yellow False $ not $ isInc e)
-        _             -> (e, l, getColor opts Coral  False $ not $ isInc e)
+                      -> (e, l, getColor opts Coral True $ not $ isInc e)
+        HidingThm -> (e, l, getColor opts Yellow False $ not $ isInc e)
+        _ -> (e, l, getColor opts Coral False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isConservativ = False } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
-                      -> (e, l, getColor opts Yellow True  $ not $ isInc e)
-        _             -> (e, l, getColor opts Yellow False $ not $ isInc e)
+                      -> (e, l, getColor opts Yellow True $ not $ isInc e)
+        _ -> (e, l, getColor opts Yellow False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isPending = True } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
-                      -> (e, l, getColor opts Yellow True  $ not $ isInc e)
-        _             -> (e, l, getColor opts Yellow False $ not $ isInc e)
+                      -> (e, l, getColor opts Yellow True $ not $ isInc e)
+        _ -> (e, l, getColor opts Yellow False $ not $ isInc e)
       ThmType { thmEdgeType = thmType } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }
-                      -> (e, l, getColor opts Green  True  $ not $ isInc e)
-        HidingThm     -> (e, l, getColor opts Green  True  $ not $ isInc e)
-        _             -> (e, l, getColor opts Green  False $ not $ isInc e)
-      _               -> (e, l, getColor opts Black  False $ not $ isInc e)
+                      -> (e, l, getColor opts Green True $ not $ isInc e)
+        HidingThm -> (e, l, getColor opts Green True $ not $ isInc e)
+        _ -> (e, l, getColor opts Green False $ not $ isInc e)
+      _ -> (e, l, getColor opts Black False $ not $ isInc e)
     )
   . (\ e -> case edgeTypeModInc e of -- Add lineformat
       ThmType { thmEdgeType = GlobalOrLocalThm { isLocalThmType = Local
@@ -114,9 +115,9 @@ edgeTypes opts = map
                    -> (e, Dashed)
       ThmType { thmEdgeType = GlobalOrLocalThm { isHomThm = False } }
                    -> (e, Double)
-      LocalDef     -> (e, Dashed)
-      HetDef       -> (e, Double)
-      _            -> (e, Solid)
+      LocalDef -> (e, Dashed)
+      HetDef -> (e, Double)
+      _ -> (e, Solid)
     )
   ) listDGEdgeTypes
 
@@ -203,7 +204,7 @@ createClose gInfo@(GInfo { windowCount = wc
             else takeMVar lock
         Nothing -> error $ "MVar of " ++ show ln ++ " not initialized"
     Nothing -> error $ "development graph with libname " ++ show ln
-                       ++" does not exist"
+                       ++ " does not exist"
    count <- takeMVar wc
    if count <= 1
      then putMVar exit ()
@@ -271,14 +272,13 @@ createGlobalMenu gInfo@
         ++ map (\ (cmd, act) -> mkGlobProofButton cmd $ return . act ln)
            globLibResultAct
         ++ [ Menu (Just "Flattening") $ map ( \ (cmd, act) ->
-           mkGlobProofButton cmd  $ return . act) globResultAct ]
+           mkGlobProofButton cmd $ return . act) globResultAct ]
      , Button "Dump Development Graph" $ do
           ost2 <- readIORef $ intState gInfo
           case i_state ost2 of
             Nothing -> putStrLn "no lib"
             Just ist2 -> print . pretty . lookupDGraph (i_ln ist2)
               $ i_libEnv ist2
-     , Button "Show Logic Graph" $ ral $ showLogicGraph daVinciSort
      , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
      , Button "Save Graph for uDrawGraph" $ ral
               $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
@@ -289,16 +289,16 @@ createGlobalMenu gInfo@
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
-                -> [(DGNodeType,DaVinciNodeTypeParms GA.NodeValue)]
+                -> [(DGNodeType, DaVinciNodeTypeParms GA.NodeValue)]
 createNodeTypes gInfo@(GInfo {hetcatsOpts = opts}) cGraph showLib = map
   (\ (n, s, c) -> (n, if isRefType n
     then createMenuNodeRef s c gInfo cGraph showLib $ isInternalSpec n
     else createMenuNode s c gInfo $ isInternalSpec n)) $ nodeTypes opts
 
 -- | the edge types (share strings to avoid typos)
-createEdgeTypes :: GInfo -> [(DGEdgeType,DaVinciArcTypeParms GA.EdgeValue)]
+createEdgeTypes :: GInfo -> [(DGEdgeType, DaVinciArcTypeParms GA.EdgeValue)]
 createEdgeTypes gInfo@(GInfo {hetcatsOpts = opts}) =
-  map (\(title, look, color, hasCons) ->
+  map (\ (title, look, color, hasCons) ->
         (title, look
           $$$ Color color
           $$$ (if hasCons then createEdgeMenuConsEdge gInfo
@@ -310,16 +310,16 @@ createEdgeTypes gInfo@(GInfo {hetcatsOpts = opts}) =
 
 -- * methods to create the local menus of the different nodetypes
 
-titleNormal :: forall t. ValueTitle (String, t)
-titleNormal = ValueTitle (\ (s,_) -> return s)
+titleNormal :: ValueTitle (String, t)
+titleNormal = ValueTitle (\ (s, _) -> return s)
 
-titleInternal :: forall t. GInfo -> ValueTitleSource (String, t)
+titleInternal :: GInfo -> ValueTitleSource (String, t)
 titleInternal (GInfo { internalNames = updaterIORef }) =
-  ValueTitleSource (\ (s,_) -> do
+  ValueTitleSource (\ (s, _) -> do
                      b <- newSimpleBroadcaster ""
                      updater <- readIORef updaterIORef
-                     let upd = (s,applySimpleUpdate b)
-                     writeIORef updaterIORef $ upd:updater
+                     let upd = (s, applySimpleUpdate b)
+                     writeIORef updaterIORef $ upd : updater
                      return $ toSimpleSource b)
 
 -- | local menu for the nodetypes spec and locallyEmpty_spec
@@ -415,7 +415,7 @@ createMenuButtonProveStructured gInfo =
 createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
-    (flip checkconservativityOfNode gInfo) gInfo
+    (`checkconservativityOfNode` gInfo) gInfo
 
 createMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonShowNodeInfo =
@@ -433,13 +433,13 @@ createEdgeMenuConsEdge gInfo = LocalMenu $ Menu Nothing
 
 createMenuButtonShowEdgeInfo :: GInfo -> ButtonMenu GA.EdgeValue
 createMenuButtonShowEdgeInfo _ = Button "Show info"
-  (\ (_, (EdgeId descr), maybeLEdge) -> showEdgeInfo descr maybeLEdge)
+  (\ (_, EdgeId descr, maybeLEdge) -> showEdgeInfo descr maybeLEdge)
 
 createMenuButtonCheckconservativityOfEdge :: GInfo
                                                -> ButtonMenu GA.EdgeValue
 createMenuButtonCheckconservativityOfEdge gInfo =
   Button "Check conservativity"
-    (\ (_, (EdgeId descr), maybeLEdge)  ->
+    (\ (_, EdgeId descr, maybeLEdge) ->
       checkconservativityOfEdge descr gInfo maybeLEdge)
 
 createMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
@@ -459,12 +459,9 @@ createMenuValueTitleShowConservativity = ValueTitle
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: String -> IO FilePath
-getProofScriptFileName f
- | "/" `isPrefixOf` f = return $ f ++ ".hpf"
- | otherwise          = do
-                          dir <- getCurrentDirectory
-                          return $ dir ++ '/' : f ++ ".hpf"
-
+getProofScriptFileName f = let fn = f <.> "hpf" in
+  if isAbsolute fn then return fn else
+     fmap (</> fn) getCurrentDirectory
 
 -- | Displays a Save-As dialog and writes the proof-script.
 askSaveProofScript :: GA.GraphInfo -> IORef IntState -> IO ()
@@ -474,7 +471,7 @@ askSaveProofScript gi ch = do
    [] -> infoDialog "Information" "The history is empty. No file written."
    _ -> do
      ff <- getProofScriptFileName $ rmSuffix $ filename h
-     maybeFilePath <- fileSaveDialog ff [ ("Proof Script",["*.hpf"])
+     maybeFilePath <- fileSaveDialog ff [ ("Proof Script", ["*.hpf"])
                                         , ("All Files", ["*"])] Nothing
      case maybeFilePath of
        Just fPath -> do

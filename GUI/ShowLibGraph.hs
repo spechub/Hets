@@ -12,7 +12,7 @@ This Modul provides a function to display a Library Dependency Graph.
 
 module GUI.ShowLibGraph (showLibGraph, mShowGraph) where
 
-import Driver.Options (HetcatsOpts(outtypes), putIfVerbose)
+import Driver.Options (HetcatsOpts (outtypes), putIfVerbose)
 import Driver.ReadFn
 import Driver.AnaLib
 
@@ -22,7 +22,8 @@ import GUI.UDGUtils as UDG
 import GUI.Utils
 
 import GUI.GraphTypes
-import GUI.GraphLogic(translateGraph)
+import GUI.GraphLogic (translateGraph)
+import GUI.ShowLogicGraph (showLogicGraph)
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
 
@@ -38,10 +39,10 @@ import Control.Monad (when)
 import Interfaces.DataTypes
 import Interfaces.Utils
 
-type NodeEdgeList = ([DaVinciNode LibName],[DaVinciArc (IO String)])
+type NodeEdgeList = ([DaVinciNode LibName], [DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
-     the given LibEnv.-}
+     the given LibEnv. -}
 showLibGraph :: LibFunc
 showLibGraph gInfo@(GInfo { windowCount = wc
                           , libGraphLock = lock}) = do
@@ -51,12 +52,13 @@ showLibGraph gInfo@(GInfo { windowCount = wc
     count <- takeMVar wc
     putMVar wc $ count + 1
     graph <- newIORef daVinciSort
-    nodesEdges <- newIORef (([],[])::NodeEdgeList)
+    nodesEdges <- newIORef (([], []) :: NodeEdgeList)
     let
       globalMenu =
         GlobalMenu (UDG.Menu Nothing
           [ Button "Reload Library" $ reloadLibGraph gInfo graph nodesEdges
           , Button "Translate Library" $ translate gInfo
+          , Button "Show Logic Graph" $ showLogicGraph daVinciSort
           ])
       graphParms = globalMenu $$
                    GraphTitle "Library Graph" $$
@@ -93,7 +95,7 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
   m <- anaLib opts { outtypes = [] } libfile
   case m of
     Nothing -> errorDialog "Error" $ "Error when reloading file '"
-                                     ++ libfile ++  "'"
+                                     ++ libfile ++ "'"
     Just (_, le) -> do
       closeOpenWindows gInfo
       mapM_ (deleteArc graph') edges
@@ -104,9 +106,9 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
       let ost = emptyIntState
           nwst = case i_state ost of
             Nothing -> ost
-            Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
-                                                  , i_ln = ln}
-                           , filename = libfile}
+            Just ist -> ost { i_state = Just $ ist { i_libEnv = le
+                                                   , i_ln = ln }
+                            , filename = libfile }
       writeIORef (intState gInfo) nwst
       mShowGraph gInfo ln
 
@@ -126,9 +128,9 @@ translate' gInfo@(GInfo { libName = ln }) = do
       let ost = emptyIntState
           nwst = case i_state ost of
             Nothing -> ost
-            Just ist -> ost{ i_state = Just $ ist { i_libEnv = le
-                                                  , i_ln = ln}
-                           , filename = libNameToFile ln}
+            Just ist -> ost { i_state = Just $ ist { i_libEnv = le
+                                                   , i_ln = ln }
+                            , filename = libNameToFile ln }
       writeIORef (intState gInfo) nwst
       mShowGraph gInfo ln
     Nothing -> return ()
@@ -138,7 +140,7 @@ closeOpenWindows :: GInfo -> IO ()
 closeOpenWindows (GInfo { openGraphs = iorOpenGrpahs
                         , windowCount = wCount }) = do
   oGrpahs <- readIORef iorOpenGrpahs
-  mapM (GA.closeGraphWindow . graphInfo) $ Map.elems oGrpahs
+  mapM_ (GA.closeGraphWindow . graphInfo) $ Map.elems oGrpahs
   writeIORef iorOpenGrpahs Map.empty
   takeMVar wCount
   putMVar wCount 1
@@ -154,7 +156,7 @@ addNodesAndEdges gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
     le = i_libEnv ist
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
-    subNodeMenu = LocalMenu(UDG.Menu Nothing [
+    subNodeMenu = LocalMenu (UDG.Menu Nothing [
       Button "Show Graph" $ mShowGraph gInfo,
       Button "Show spec/View Names" $ showSpec le])
     subNodeTypeParms = subNodeMenu $$$
@@ -166,7 +168,7 @@ addNodesAndEdges gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
    subNodeList <- mapM (newNode graph subNodeType) keys
    let
     nodes' = Map.fromList $ zip keys subNodeList
-    subArcMenu = LocalMenu(UDG.Menu Nothing [])
+    subArcMenu = LocalMenu (UDG.Menu Nothing [])
     subArcTypeParms = subArcMenu $$$
                       ValueTitle id $$$
                       Color (getColor opts Black False False) $$$
@@ -192,7 +194,7 @@ mShowGraph gInfo@(GInfo {hetcatsOpts = opts}) ln = do
   return ()
 
 -- | Displays the Specs of a Library in a Textwindow
-showSpec :: LibEnv -> LibName -> IO()
+showSpec :: LibEnv -> LibName -> IO ()
 showSpec le ln =
   createTextDisplay ("Contents of " ++ show ln)
                     $ unlines . map show . Map.keys . globalEnv
