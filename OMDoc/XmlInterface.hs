@@ -27,7 +27,7 @@ import Text.XML.Light
 import Data.Maybe
 import Data.List
 
---import Debug.Trace
+import Network.URI (isUnescapedInURI, escapeURIString, unEscapeString)
 
 import Common.Utils (splitBy)
 import Common.Result
@@ -143,43 +143,60 @@ toOmobj c = inAContent el_omobj [attr_om] $ Just c
 
 -- TODO: URL-encode/decode the ids
 
+-- url escaping and unescaping.
+-- We use ? and / as special characters, so we need them to be encoded in names
+urlEscape :: String -> String
+urlEscape = escapeURIString (\ c -> isUnescapedInURI c && notElem c "/?")
+
+urlUnescape :: String -> String
+urlUnescape = unEscapeString
+
+
+-- encoding
+
 uriEncodeCDName :: OMCD -> OMName -> String
 uriEncodeCDName omcd omname = uriEncodeCD omcd ++ "?" ++ encodeOMName omname
 
 uriEncodeCD :: OMCD -> String
-uriEncodeCD cd = let [x,y] = cdToList cd in concat [x, "?", y]
-
-
-uriDecodeCD :: Show a => a -> String -> OMCD
---uriDecodeCD x = traceShow x $ cdFromList . splitBy '?'
-uriDecodeCD _ = cdFromList . splitBy '?'
-
-uriDecodeCDName :: String -> OMQualName
-uriDecodeCDName s = case splitBy '?' s of
-                      (b:cd:n:[]) -> (cdFromList [b, cd], decodeOMName n)
-                      _ -> error $ concat [ "uriDecodeCDName: The value "
-                                          , "has to contain exactly two '?'"]
+uriEncodeCD cd = let [x,y] = cdToList cd
+                 in concat [urlEscape x, "?", urlEscape y]
 
 encodeOMName :: OMName -> String
-encodeOMName on = intercalate "/" (path on ++ [name on])
-
-decodeOMName :: String -> OMName
--- TODO: implement the decoding
-decodeOMName s = mkSimpleName s
+encodeOMName on = intercalate "/" $ map urlEscape $ path on ++ [name on]
 
 tripleEncodeOMS :: OMCD -> OMName -> [Attr]
 tripleEncodeOMS omcd omname
     = pairEncodeCD omcd ++ [Attr at_name $ encodeOMName omname]
 
 pairEncodeCD :: OMCD -> [Attr]
-pairEncodeCD cd = let f x y = fmap (Attr x) y
+pairEncodeCD cd = let f x y = fmap (Attr x . urlEscape) y
                   in catMaybes $ zipWith f [at_base, at_module]
                          $ cdToMaybeList cd
 
-pairDecodeCD :: String -> String -> OMCD
-pairDecodeCD [] [] = CD []
-pairDecodeCD cd [] = CD [cd] 
-pairDecodeCD cd base =  CD [cd, base]
+-- decoding
+
+uriDecodeCD :: Show a => a -> String -> OMCD
+uriDecodeCD _ = cdFromList . map urlUnescape . splitBy '?'
+
+uriDecodeCDName :: String -> OMQualName
+uriDecodeCDName s = case splitBy '?' s of
+                      (b:cd:n:[]) -> ( cdFromList $ map urlUnescape [b, cd]
+                                     , decodeOMName n)
+                      _ -> error $ concat [ "uriDecodeCDName: The value "
+                                          , "has to contain exactly two '?'"]
+
+decodeOMName :: String -> OMName
+decodeOMName s = let l = map urlUnescape $ splitBy '/' s
+                 in OMName (last l) $ init l
+
+
+tripleDecodeOMS :: String -> String -> String -> (OMCD, OMName)
+tripleDecodeOMS cd base nm =
+    let cdl = map urlUnescape $ filter (not . null) [cd, base]
+    in if null cd && not (null base)
+       then error "tripleDecodeOMS: base not empty but cd not given!"
+       else (CD cdl, decodeOMName nm)
+
 
 warnIfNothing :: String -> (Maybe a -> b)  -> Maybe a -> Result b
 warnIfNothing s f v = let o = f v in
@@ -401,7 +418,7 @@ instance XmlRepresentable OMElement where
             let nm = missingMaybe "OMS" "name" $ findAttr at_name e
                 omcd = fromMaybe "" $ findAttr at_module e
                 cdb = fromMaybe "" $ findAttr at_base e
-            in justReturn $ OMS (pairDecodeCD omcd cdb, decodeOMName nm)
+            in justReturn $ OMS $ tripleDecodeOMS omcd cdb nm
         | elemIsOf e el_omv =
             let nm = missingMaybe "OMV" "name" $ findAttr at_name e
             in justReturn $ OMV $ decodeOMName nm

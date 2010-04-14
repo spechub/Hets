@@ -255,7 +255,7 @@ omdocRec e mf = Record
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ t s _ ->
                  (OMA [const_cast , t, oms e s])
-    , foldConditional = \ _ e' f t _ -> (OMA [const_if , e' , t, f])
+    , foldConditional = \ _ e' f t _ -> (OMA [const_if , e' , f, t])
     , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
     , foldMixfix_term = \ (Mixfix_term ts) _ ->
         sfail "Mixfix_term" $ getRange ts

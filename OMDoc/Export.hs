@@ -29,7 +29,8 @@ import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
 
-import Driver.ReadFn (libNameToFile)
+--import Driver.ReadFn (libNameToFile)
+import Driver.Options (rmSuffix)
 
 import OMDoc.DataTypes
 
@@ -338,10 +339,19 @@ sglElem s sa
 
 -- * Names and CDs
 
+libNameOFile :: LibName -- ^ libname for filepath extraction
+             -> FilePath
+libNameOFile ln = case getLibId ln of
+  IndirectLink _ _ ofile _ ->
+      if null ofile then error $ "libNameOFile: no ofile given in " ++ show ln
+      else rmSuffix ofile
+  DirectLink _ _ -> error "libNameOFile: DirectLink"
+
+
 mkCD :: ExpEnv -> LibName -> LibName -> String -> OMCD
 mkCD _ lnCurr ln sn =
     CD $ [sn] ++ if lnCurr == ln then []
-                 else [concat ["file://", libNameToFile ln, ".omdoc"]]
+                 else [concat ["file://", libNameOFile ln, ".omdoc"]]
 
 -- * Symbols and Sentences
 

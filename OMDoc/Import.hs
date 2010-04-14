@@ -105,8 +105,9 @@ lookupNSMap :: ImpEnv -> LibName -> Maybe LibName -> String -> NameSymbolMap
 lookupNSMap e ln mLn nm =
     let ln' = fromMaybe ln mLn
         mf = Map.findWithDefault
-             $ error $ "lookupNSMap: lookup failed for "
-                   ++ show (mLn, nm, nsymbMap e)
+             $ error $ concat [ "lookupNSMap: lookup failed for "
+                              , show (ln', nm), "\n", show mLn, "\n"
+                              , show $ nsymbMap e ]
     in mf (ln', nm) $ nsymbMap e
 
 -- * URI Functions
@@ -274,7 +275,7 @@ addTLToDGraph ln (e, dg) (TLView n from to mMor) = do
   -- if neccessary.
   -- use followTheory for from and to.
   ((e', dg'), [lkNdFrom, lkNdTo]) <- followTheories ln (e, dg) [from, to]
-  lkInf <- computeViewMorphism e ln $ ImportInfo (lkNdFrom, lkNdTo) n mMor
+  lkInf <- computeViewMorphism e' ln $ ImportInfo (lkNdFrom, lkNdTo) n mMor
   let dg'' = addLinkToDG
              -- this error should never occur as the linkinfo contains
              -- a to-node.
@@ -385,14 +386,15 @@ computeSymbolMap nsmapS nsmapT morph lid =
           -- REMARK: Logic-homogeneous environment assumed
           let sNSMap = coerceMapofsymbol sLid lid sm
               tNSMap = coerceMapofsymbol tLid lid tm
-              mf = Map.findWithDefault $ error "computeSymbolMap: lookup failed"
+              mf msg = Map.findWithDefault
+                       $ error $ "computeSymbolMap: lookup failed for " ++ msg
               -- function for the map functor
               f (omn, ome) =
                   case ome of
                     OMS qn ->
                         let tSymName = (unqualName qn)
-                            tSym = mf tSymName tNSMap
-                        in (mf omn sNSMap, tSym)
+                            tSym = mf (show tSymName) tSymName tNSMap
+                        in (mf (show omn) omn sNSMap, tSym)
                     _ -> error "computeSymbolMap: Nonsymbol element mapped"
           return $ map f morph
 

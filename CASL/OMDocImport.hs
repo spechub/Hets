@@ -43,15 +43,15 @@ type Env = SigMapI Symbol
 
 symbolToSort :: Symbol -> SORT
 symbolToSort (Symbol n SortAsItemType) = n
-symbolToSort _ = error "symbolToSort: Nonsort encountered"
+symbolToSort s = error $ "symbolToSort: Nonsort encountered: " ++ show s
 
 symbolToOp :: Symbol -> (Id, OpType)
 symbolToOp (Symbol n (OpAsItemType ot)) = (n, ot)
-symbolToOp _ = error "symbolToOp: Nonop encountered"
+symbolToOp s = error $ "symbolToOp: Nonop encountered: " ++ show s
 
 symbolToPred :: Symbol -> (Id, PredType)
 symbolToPred (Symbol n (PredAsItemType pt)) = (n, pt)
-symbolToPred _ = error "symbolToPred: Nonpred encountered"
+symbolToPred s = error $ "symbolToPred: Nonpred encountered: " ++ show s
 
 lookupSymbol :: Env -> OMName -> Symbol
 lookupSymbol e omn =
@@ -342,38 +342,6 @@ omdocToTerm' e@(ie, vm) f =
       _ -> error $ "omdocToTerm: no valid term " ++ show f
 
 -- TODO: eventually export and reimport SortedTerms!
-{-
-
-    , foldQual_var = \ _ v _ _ -> varToOmdoc v
-    , foldApplication = \ _ o ts _ -> OMA $ (oms e o) : ts
-    , foldSorted_term = \ _ r _ _ -> r
-    , foldCast = \ _ t s _ ->
-                 (OMA [const_cast , t, oms e s])
-    , foldConditional = \ _ e' f t _ -> (OMA [const_if , e' , t, f])
-
-
-    -- | Simple variable
-  | OMV OMName
-    -- | Attributed element needed for type annotations of elements
-  | OMATTT OMElement OMAttribute
-    -- | Application to a list of arguments,
-    -- first argument is usually the functionhead
-  | OMA [OMElement]
-    -- | Bindersymbol, bound vars, body
-  | OMBIND OMElement [OMElement] OMElement
-
-
-data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
-          | Application OP_SYMB [TERM f] Range
-            -- pos: parens around TERM f if any and seperating commas
-          | Sorted_term (TERM f) SORT Range
-            -- pos: colon
-          | Cast (TERM f) SORT Range
-            -- pos: "as"
-          | Conditional (TERM f) (FORMULA f) (TERM f) Range
-
--}
-
 
 omdocToFormula' :: TermEnv -> OMElement -> FORMULA f
 omdocToFormula' e@(ie, _) f =
