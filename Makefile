@@ -62,7 +62,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Maude ExtModal CommonLogic Reduce
+    LF Maude ExtModal CommonLogic Reduce QBF
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -193,6 +193,7 @@ drifted_files = Common/AS_Annotation.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
+    QBF/AS_BASIC_QBF.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -271,6 +272,10 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
     Propositional/Sublogic.hs
 
+QBF_files = Propositional/Sign.hs QBF/Morphism.hs \
+    QBF/AS_BASIC_QBF.hs QBF/Symbol.hs \
+    QBF/Sublogic.hs
+
 RS_files = RelationalScheme/AS.hs RelationalScheme/Sign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
@@ -311,6 +316,9 @@ RelationalScheme/ATC_RelationalScheme.der.hs: $(RS_files) $(GENRULES)
 
 Propositional/ATC_Propositional.der.hs: $(Propositional_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(Propositional_files)
+
+QBF/ATC_QBF.der.hs: $(QBF_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(QBF_files)
 
 HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(HasCASL_files)

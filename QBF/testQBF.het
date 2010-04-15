@@ -1,0 +1,7 @@
+logic QBF
+
+spec S =
+ props a, b
+ . a
+ . forall p p <=> not not p
+

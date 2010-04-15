@@ -42,6 +42,7 @@ import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
+import QBF.Logic_QBF
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
@@ -78,6 +79,7 @@ logicList =
   , Logic Isabelle
   , Logic SoftFOL
   , Logic Propositional
+  , Logic QBF
 #ifdef PROGRAMATICA
   , Logic Haskell
 #endif
