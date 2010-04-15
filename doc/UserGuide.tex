@@ -409,7 +409,7 @@ In more detail, the following list of logic translations is currently
 supported by \Hets:
 \ednote{TODO Mihai,Till: check VSE, Maude, DFOL descr. or ref.}
 
-\begin{tabular}{|l|p{5cm}|}\hline
+\begin{tabular}{|l|p{8cm}|}\hline
 CASL2CoCASL & inclusion \\\hline
 CASL2CspCASL & inclusion \\\hline
 CASL2HasCASL & inclusion \\\hline
@@ -428,7 +428,7 @@ CASL2SubCFOL & coding of partial functions by error elements
 (translation $(4a')$ of \cite{Mossakowski02}, but extended to subsorting, i.e. sublogic SubPCFOL=) \\\hline
 CASL2VSE & inclusion on sublogic CFOL= \\\hline
 CASL2VSEImport & inclusion on sublogic CFOL= \\\hline
-CASL2VSERefine & refinining translation of CASL.CFOL= to VSE \\\hline
+CASL2VSERefine & refining translation of CASL.CFOL= to VSE \\\hline
 CASL\_DL2CASL & inclusion \\\hline
 CoCASL2CoPCFOL & coding of subsorting by injections, similar to CASL2PCFOL \\\hline
 CoCASL2CoSubCFOL & coding of partial functions by error supersorts, similar to  CASL2SubCFOL \\\hline
@@ -440,7 +440,7 @@ DFOL2CASL & translating dependent types \\\hline
 DMU2OWL & interpreting Catia output as OWL \\\hline
 \end{tabular}
 
-\begin{tabular}{|l|p{5cm}|}\hline
+\begin{tabular}{|l|p{7cm}|}\hline
 HasCASL2HasCASLNoSubtypes & coding out subtypes \\\hline
 HasCASL2HasCASLPrograms & coding of \HasCASL axiomatic recursive definitions
 as \HasCASL recursive program definitions \\\hline
@@ -466,8 +466,8 @@ The latest \Hets version can be obtained from the
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
 
-\Hets currently is available for Linux, Solaris and
-Mac OS-X.
+\Hets currently is available (on Intel architectures only) for Linux, Solaris
+and Mac OS-X.
 
 There are three possibilities to install \Hets:
 \begin{enumerate}
@@ -486,11 +486,12 @@ software (if not already installed on your computer):
 
 \medskip
 {\small
-\begin{tabular}{|l|l|l|}\hline
-CASL-lib & specification library & \url{http://www.cofi.info/Libraries}\\\hline
+\begin{tabular}{|l|l|p{5cm}|}\hline
+Hets-lib & specification library & \url{http://www.cofi.info/Libraries}\\\hline
 uDraw(Graph) & graph drawing & \url{http://www.informatik.uni-bremen.de/uDrawGraph/en/}\\\hline
 Tcl/Tk & graphics widget system & (version 8.4 or 8.5 must be installed before)\\\hline
 \SPASS & theorem prover & \url{http://spass.mpi-sb.mpg.de/}\\\hline
+Darwin & theorem prover & should be installed manually from \url{http://combination.cs.uiowa.edu/Darwin/}\\\hline
 \Isabelle & theorem prover & \url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}\\\hline
 (X)Emacs & editor (for Isabelle) & (must be installed manually)\\\hline
 \end{tabular}
@@ -505,12 +506,33 @@ install the above mentioned software and set
 several environment variables, as explained on the installation page.
 
 \item
-If you want to compile \Hets from the sources, please follow the
+You may compile \Hets from the sources, please follow the
 link ``Hets: source code and information for developers''
 on the \Hets web page, download the sources (as tarball or from
 svn), and follow the
-instructions in the \texttt{INSTALL} file.
+instructions in the \texttt{INSTALL} file, but be prepared to take some time.
 \end{enumerate}
+
+Depending on your application further tools are supported and may be
+installed in addition:
+
+\medskip
+{\small
+\begin{tabular}{|l|l|p{5cm}|}\hline
+zChaff & SAT solver & \url{http://www.princeton.edu/~chaff/zchaff.html} \\\hline
+minisat & SAT solver & \url{http://minisat.se/} \\\hline
+Pellet & OWL reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
+E-KRHyper & theorem prover
+  & \url{http://userpages.uni-koblenz.de/~bpelzer/ekrhyper/} \\\hline
+Reduce & computer algebra system (CAS)
+  & \url{http://www.reduce-algebra.com/} \\\hline
+Maude & rewrite system & \url{http://maude.cs.uiuc.edu/} \\\hline
+VSE & theorem prover & (non-public) \\\hline
+Twelf & & \url{http://twelf.plparty.org/} \\\hline
+\end{tabular}
+}
+\ednote{TODO Mihai, Till, Luecke: check prover list}
+
 
 \section{Analysis of Specifications}
 Consider the following \CASL
