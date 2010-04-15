@@ -33,6 +33,7 @@ module Common.Utils
   , splitByList
   , takeUntilList
   , prefixsAsInfixs
+  , numberSuffix
   , matchPaths
   , basename
   , dirname
@@ -229,6 +230,23 @@ prefixsAsInfixs sep l = f [] [] sep [] l where
       | null c = f bag (acc ++ [x]) sep [] xs
       | otherwise = f (updB bag acc c) (acc ++ [head c]) sep [] $ tail c ++ xl
 
+
+-- | If the given string is terminated by a decimal number
+-- this number and the nonnumber prefix is returned.
+numberSuffix :: String -> Maybe (String, Int)
+numberSuffix s =
+    let f a r@(x, y, b) =
+            let b' = isDigit a
+                y' = y + x * digitToInt a
+                out | not b = r
+                    | b && b' = (x * 10, y', b')
+                    | otherwise = (x, y, False)
+            in out
+    in case foldr f (1, 0, True) s of
+         (1, _, _) ->
+             Nothing
+         (p, n, _) ->
+             Just (take (1 + length s - length (show p)) s, n)
 
 -- | Matches first relative path against second absolute path. as in this example
 -- Example: matchPaths "a/b/c" "/x/y/a/d" == "/x/y/a/b/c" (not /x/y/a/a/b/c !)

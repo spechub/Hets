@@ -48,6 +48,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
+import Common.Utils (numberSuffix, splitByList)
 import Common.LibName
 import Common.Consistency
 
@@ -656,6 +657,21 @@ showName n = let ext = showExt n in
 
 makeName :: SIMPLE_ID -> NodeName
 makeName n = NodeName n "" 0 [ElemName $ tokStr n]
+
+parseNodeName :: String -> NodeName
+parseNodeName s = case splitByList "__" s of
+                    [i] ->
+                        makeName $ mkSimpleId i
+                    [i, e] ->
+                        let n = makeName $ mkSimpleId i
+                            mSf = numberSuffix e
+                            (es, sf) = fromMaybe (e, 0) mSf
+                        in n { extString = es
+                             , extIndex = sf }
+                    _ ->
+                        error
+                        $ "parseNodeName: malformed NodeName, too many __: "
+                              ++ s
 
 incBy :: Int -> NodeName -> NodeName
 incBy i n = n
