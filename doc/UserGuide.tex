@@ -524,7 +524,7 @@ minisat & SAT solver & \url{http://minisat.se/} \\\hline
 Pellet & OWL reasoner & \url{http://clarkparsia.com/pellet/} \\\hline
 E-KRHyper & theorem prover
   & \url{http://userpages.uni-koblenz.de/~bpelzer/ekrhyper/} \\\hline
-Reduce & computer algebra system (CAS)
+Reduce & computer algebra system
   & \url{http://www.reduce-algebra.com/} \\\hline
 Maude & rewrite system & \url{http://maude.cs.uiuc.edu/} \\\hline
 VSE & theorem prover & (non-public) \\\hline
@@ -568,7 +568,7 @@ checking static well-formedness of specifications.
 
 Let us assume that the example is in a file named
 \texttt{Order.casl} (actually, this file is provided
-with the \Hets distribution).
+with the \Hets distribution as \texttt{Hets-lib/UserManual/Chapter3.casl}).
 Then you can check the well-formedness of the
 specification by typing (into some shell):
 
@@ -583,8 +583,8 @@ whether operators are applied to arguments of the correct sorts,
 whether the use of overloaded symbols is unambiguous, and so on).
 The following flags are available in this context:
 \begin{description}
-\item[\texttt{-p}, \texttt{--just-parse}] Just do the parsing -- the static analysis
-is skipped.
+\item[\texttt{-p}, \texttt{--just-parse}] Just do the parsing
+ -- the static analysis is skipped and no development is created.
 \item[\texttt{-s}, \texttt{--just-structured}] Do the parsing and the
   static analysis of (heterogeneous) structured specifications, but
   leave out the analysis of basic specifications.  This can be used
@@ -593,8 +593,7 @@ is skipped.
   Sect.~\ref{sec:DevGraph}) even if the individual specifications are
   not correct yet.
 \item[\texttt{-L DIR}, \texttt{--hets-libdir=DIR}]
-Use \texttt{DIR} as the directory for specification libraries
-(equivalently, you can set the variable \texttt{HETS\_LIB} before
+Use \texttt{DIR} as a colon separated list of directories for specification libraries (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
 \item[\texttt{-a ANALYSIS}, \texttt{--casl-amalg=ANALYSIS}]
   For the analysis of architectural specification (a quite advanced
@@ -620,21 +619,10 @@ calling \Hets).
   \texttt{cell}.
 \end{description}
 
-\ednote{TODO Christian: describe the following options}
-MISSING OPTIONS:
-\begin{verbatim}
-  -x                --xml                    use xml packets to communicate
-  -c HOSTNAME:PORT  --connect=HOSTNAME:PORT  run interface comunicating via connecting to the port
-  -S PORT           --listen=PORT            run interface by listening to the port
-  -d STRING         --dump=STRING            dump various strings
-  -A                --apply-automatic-rule   apply automatic dev-graph strategy
-  -N                --normal-form            compute normal forms (takes long)
-\end{verbatim}
-
 \section{Heterogeneous Specification} \label{sec:HetSpec}
 
 \Hets accepts plain text input files with the following endings:
-\ednote{TODO Christian: update table}\\
+\\
 
 \begin{tabular}{|l|c|c|}\hline
 Ending & default logic & structuring language\\\hline
@@ -642,9 +630,16 @@ Ending & default logic & structuring language\\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
 \texttt{.hs} & Haskell & Haskell\\\hline
 \texttt{.owl} & OWL DL, OWL Lite & OWL\\\hline
+\texttt{.elf} & LF & Twelf \\\hline
+\texttt{.maude} & Maude & Maude \\\hline
 \end{tabular}
 
 \medskip
+
+Furthermore, \texttt{.xml} files are accepted as Catia output if the default
+logic is set to DMU before a library import or by the ``\texttt{-l DMU}''
+command line option of \Hets.
+
 Although the endings \texttt{.casl} and \texttt{.het} are
 interchangeable, the former should be used for libraries of
 homogeneous \CASL specifications and the latter for \HetCASL libraries
@@ -779,8 +774,19 @@ and in \cite{Habil,MossakowskiEtAl05,MossakowskiEtAl07b}.
 The following options let \Hets show the development graph of
 a specification library:
 \begin{description}
-\item[\texttt{-g}, \texttt{--gui}]  Shows the development graph in a GUI window
+\item[\texttt{-g}, \texttt{--gui}] Shows the development graph in a GUI window
 \item[\texttt{-u}, \texttt{--uncolored}] no colors in shown graphs
+\end{description}
+
+The following additional options also apply typical rules from the development
+graph calculus to the final graph and save applying these rule via the GUI.
+\begin{description}
+\item[\texttt{-A}, \texttt{--apply-automatic-rule}] apply the automatic
+  strategy to the development graph. This is what you usual want in order to
+  get goals within nodes for proving.
+\item[\texttt{-N}, \texttt{--normal-form}] compute all normal forms for nodes
+  with incoming hiding links. (This may take long and may not be implemented
+  for all logics.)
 \end{description}
 
 \eat{
@@ -1094,50 +1100,67 @@ edges.
 \Hets provides several options controlling the types of files
 that are read and written.
 \begin{description}
-\item[\texttt{-i ITYPE}, \texttt{--input-type=ITYPE}] Specify
-\texttt{ITYPE} as the type of the input file.  The default is
-\texttt{het} (\HetCASL plain text). \texttt{ast} is for reading
-in abstract syntax trees in ATerm format, while \texttt{ast.baf}
-reads in the compressed ATerm format.
+\item[\texttt{-i ITYPE}, \texttt{--input-type=ITYPE}] Specify \texttt{ITYPE}
+  as explicit type of the input file.  By default \texttt{env}, \texttt{casl},
+  or \texttt{het} extensions are tried in this order.  An \texttt{env} file
+  contains a shared ATerm of a development graph, whereas \texttt{casl} or
+  \texttt{het} files contain plain \HetCASL text. An \texttt{env} file will
+  always be read if it exists and is consistent (aka newer) than the
+  corresponding \HetCASL file.
+
+  \texttt{exp} files contain a development graph in a new experimental omdoc
+  format.  \texttt{prf} files contain additional development steps (as shared
+  ATerms) to be applied on top of an underlying development graph created from
+  a corresponding \texttt{env}, \texttt{casl}, or \texttt{het}
+  file. \texttt{hpf} files are plain text files representing heterogeneous
+  proof scripts. The contents of a \texttt{hpf} file must be valid input for
+  \Hets in interactive mode.  (\texttt{gen\_trm} formats are currently not
+  supported.)
+
 The possible input types are:
 \begin{verbatim}
-             (casl|het|owl|hs|prf|omdoc|hpf|[tree.]gen_trm[.baf])
+    casl|het|owl|hs|exp|maude|elf|prf
+     |omdoc|hpf|[tree.]gen_trm[.baf]
 \end{verbatim}
 
 \item[\texttt{-O DIR}, \texttt{--output-dir=DIR}]
-Specify \texttt{DIR} as  destination directory for output files.
+Specify \texttt{DIR} as destination directory for output files.
 
 \item[\texttt{-o OTYPES}, \texttt{--output-types=OTYPES}]
 \texttt{OTYPES} is a comma separated list of output types:
 \begin{verbatim}
-              prf
-            | env
-            | omdoc
-            | hs
-            | thy
-            | comptable.xml
-            | (sig|th)[.delta]
-            | pp.(het|tex)
-            | graph.(exp.dot|dot)
-            | dfg[.c]
-            | tptp[.c]
+    prf
+  | env
+  | owl
+  | omdoc
+  | xml
+  | exp
+  | hs
+  | thy
+  | comptable.xml
+  | (sig|th)[.delta]
+  | pp.(het|tex|xml)
+  | graph.(exp.dot|dot)
+  | dfg[.c]
+  | tptp[.c]
 \end{verbatim}
-The default is \texttt{prf} (a synonym for \texttt{dg.taf}), which
-means that the development graph of the library is stored in textual
-ATerm format (\texttt{taf}).  This format can be read in when a
-library is downloaded from another library, avoiding the need to
-re-analyse the downloaded library. You can also directly read in
-the \texttt{prf} format (both from the command line, by calling
-\Hets on the \texttt{prf} file, and from the GUI, using the
-File-Open menu.
+The \texttt{env} and \texttt{prf} formats are for subsequent reading,
+avoiding the need to re-analyse downloaded libraries. \texttt{prf} files
+can also be stored or loaded via the GUI's File menu.
 
-The \texttt{env} format is currently not used.
+The \texttt{owl} option \cite{books/sp/Kohlhase06} will produce OWL files in
+Manchester Syntax for each specification of a structured OWL library.
 
 The \texttt{omdoc} format \cite{books/sp/Kohlhase06} is an XML-based
 markup format and data model for Open Mathematical Documents. It
 serves as semantics-oriented representation format and ontology
 language for mathematical knowledge. Currently, \CASL specifications
 can be output in this format; support for further logics is planned.
+
+The \texttt{xml} option will produce an XML-version of the development graph
+for our change management broker.
+
+The \texttt{exp} format is the new experimental omdoc format.
 
 The \texttt{hs} format is used for Haskell modules. Executable \CASL or
 \HasCASL specifications can be translated to Haskell.
@@ -1157,19 +1180,27 @@ available from \texttt{www.cofi.info/Libraries}.
 The output format is XML, the URL of the DTD is included in the
 XML file.
 
+The \texttt{sig} or \texttt{th} option will create \HetCASL signature or
+theory files for each development graph node. (The \texttt{.delta} extension
+is not supported, yet.)
+
 The \texttt{pp} format is for pretty printing, either as plain text
-(\texttt{het}), \LaTeX input (\texttt{tex}) or HTML (\texttt{html}).
-A formatter with pretty-printed output currently is available only for
-the \CASL logic. For example, it is possible to generate a pretty
+(\texttt{het}), \LaTeX input (\texttt{tex}) or XML (\texttt{xml}).
+For example, it is possible to generate a pretty
 printed \LaTeX\ version of \texttt{Order.casl} by typing:
 
 \begin{quote}
-\texttt{hets -o pp.tex Order.casl}
+\texttt{hets -v2 -o pp.tex Order.casl}
 \end{quote}
 
 This will generate a file \texttt{Order.pp.tex}. It can be included
 into \LaTeX\ documents, provided that the style \texttt{hetcasl.sty}
 coming with the \Hets distribution (\texttt{LaTeX/hetcasl.sty}) is used.
+
+The format \texttt{pp.xml} represents a library in XML for our change
+  management broker.
+
+Formats with \texttt{graph} are for future usage.
 
 The \texttt{dfg} format is used by the \SPASS theorem prover
 \cite{WeidenbachEtAl02}.
@@ -1177,13 +1208,36 @@ The \texttt{dfg} format is used by the \SPASS theorem prover
 The \texttt{tptp} format (\url{http://www.tptp.org}) is a standard
 format for first-order theorem provers.
 
+Appending \texttt{.c} to \texttt{dfg} or \texttt{tptp} will create files for
+consistency checks by SPASS or Darwin respectively.
+
+For all output formats it is recommended to increase the verbosity to at least
+level 2 (by using the option \texttt{-v2}) to get feedback which files are
+actually written. (\texttt{-v2} also shows which files are read.)
+
 \item[\texttt{-t TRANS}, \texttt{--translation=TRANS}]
 chooses a translation option. \texttt{TRANS} is a colon-separated list
 without blanks of one or more comorphism names (see Sect.~\ref{comorphisms}).
 
+\item[\texttt{-n SPECS}, \texttt{--spec=SPECS}]
+chooses a list of named specifications for processing
+
 \item[\texttt{-R}, \texttt{--recursive}] output also imported libraries.
 
-The other output formats are for future usage.
+\item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode
+
+\item[\texttt{-x}, \texttt{--xml}] use xml-pgip packets to communicate with
+  \Hets in interactive mode
+
+\item[\texttt{-S PORT}, \texttt{--listen=PORT}] communicate
+  with \Hets in interactive mode vy listining to the port \texttt{PORT}
+
+\item[\texttt{-c HOSTNAME:PORT}, \texttt{--connect=HOSTNAME:PORT}] communicate
+  with \Hets in interactive mode via connecting to the port on host
+  \texttt{HOSTNAME}
+
+\item[\texttt{-d STRING}, \texttt{--dump=STRING}] produces implementation
+  dependent output for debugging purposes only
 \end{description}
 
 \section{Miscellaneous Options}
@@ -1201,10 +1255,7 @@ Print usage information and exit.
 This must be the first option.
 \item[\texttt{-l LOGIC}, \texttt{--logic=LOGIC}] chooses the initial logic, which is used for processing the specifications before the first \textbf{logic L}
 declaration. The default is \CASL.
-\item[\texttt{-n SPECS}, \texttt{--spec=SPECS}]
-chooses a list of named specifications for processing
 \item[\texttt{-m FILE}, \texttt{--modelSparQ=FILE}] model check a qualitative calculus given in SparQ lisp notation \cite{SparQ06} against a \CASL specification
-\item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode
 \end{description}
 
 \section{Proofs with \Hets}\label{sec:Proofs}
