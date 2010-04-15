@@ -407,47 +407,54 @@ together with their comorphisms.}
 
 In more detail, the following list of logic translations is currently
 supported by \Hets:
-\ednote{TODO Christian: update table}
+\ednote{TODO Mihai,Till: check VSE, Maude, DFOL descr. or ref.}
 
 \begin{tabular}{|l|p{5cm}|}\hline
-CASL2CoCASL &  inclusion \\\hline
+CASL2CoCASL & inclusion \\\hline
 CASL2CspCASL & inclusion \\\hline
 CASL2HasCASL & inclusion \\\hline
-CASL2Modal & inclusion \\\hline
-CASL2PCFOL &  coding of subsorting by injections, see Chap.\ III:3.1 of the CASL Reference Manual \cite{CASL/RefManual}\\\hline
-CASL2SubCFOL & coding of partial functions by error elements
-(translation $(4a')$ of \cite{Mossakowski02}, but extended to subsorting) \\\hline
-CASL2TopSort & coding of subsorting by a top sort and unary
-predicates for the subsorts \\\hline
-CFOL2IsabelleHOL &  coding of \CASL to Isabelle
+CASL2Isabelle & inclusion on sublogic CFOL=
 (translation $(7)$ of \cite{Mossakowski02}) \\\hline
+CASL2Modal & inclusion \\\hline
+CASL2PCFOL & coding of subsorting (SubPCFOL=) by injections, see Chap.\ III:3.1 of the CASL Reference Manual \cite{CASL/RefManual} \\\hline
+CASL2PCFOLTopSort & coding of subsorting (SulPeCFOL=) by a top sort and unary
+predicates for the subsorts \\\hline
+CASL2Propositional & translation of propositional FOL \\\hline
+CASL2SoftFOL & coding of CASL.SuleCFOL=E to SoftFOL \cite{LuettichEA06a},
+mapping types to soft types \\\hline
+CASL2SoftFOLInduction & same as CASL2SoftFOL but with instances of induction
+axioms for all proof goals \\\hline
+CASL2SubCFOL & coding of partial functions by error elements
+(translation $(4a')$ of \cite{Mossakowski02}, but extended to subsorting, i.e. sublogic SubPCFOL=) \\\hline
+CASL2VSE & inclusion on sublogic CFOL= \\\hline
+CASL2VSEImport & inclusion on sublogic CFOL= \\\hline
+CASL2VSERefine & refinining translation of CASL.CFOL= to VSE \\\hline
+CASL\_DL2CASL & inclusion \\\hline
 CoCASL2CoPCFOL & coding of subsorting by injections, similar to CASL2PCFOL \\\hline
 CoCASL2CoSubCFOL & coding of partial functions by error supersorts, similar to  CASL2SubCFOL \\\hline
-CoCFOL2IsabelleHOL & coding of \CoCASL to Isabelle, similar to CFOL2IsabelleHOL \\\hline
-%CoPCFOL2CoCFOL & coding of partial functions by error elements,
-%similar to PCFOL2CFOL \\\hline
-%%CspCASL2IsabelleHOL &  \\\hline
-%%CspCASL2Modal &  \\\hline
-HasCASL2HasCASL & coding of \HasCASL axiomatic recursive definitions
-as \HasCASL recursive program definitions   \\\hline
-HasCASL2Haskell & translation of \HasCASL recursive program definitions to Haskell \\\hline
-HasCASL2IsabelleHOL & coding of HasCASL to Isabelle/HOL \cite{Groening05} \\\hline
-Haskell2IsabelleHOL & coding of Haskell to Isabelle/HOL \cite{TorriniEtAl07} \\\hline
-Haskell2IsabelleHOLCF & coding of Haskell to Isabelle/HOLCF \cite{TorriniEtAl07}\\\hline
-Modal2CASL & the standard translation of modal logic
-to first-order logic \cite{blackburn_p-etal:2001a} \\\hline
-%PCFOL2CFOL & coding of partial functions by error elements
-%(translation $(4a')$ of \cite{Mossakowski02}) \\\hline
-PCoClTyConsHOL2IsabelleHOL &  coding of \HasCASL to Isabelle/HOL\\\hline
-SuleCFOL2SoftFOL & coding of CASL to SoftFOL \cite{LuettichEA06a},
-mapping types to soft types \\\hline
-SuleCFOL2SoftFOLIndcuction & dto., but with instances of induction
-axioms for all proof goals\\\hline
-Prop2CASL &  inclusion \\\hline
-Prop2CNF &  conversion of propositional formulas to conjunctive normal form\\\hline
+CoCASL2Isabelle & extended translation similar to CASL2Isabelle \\\hline
+CspCASL2CspCASL\_Failure & inclusion \\\hline
+CspCASL2CspCASL\_Trace & inclusion \\\hline
+CspCASL2Modal & translating the CASL data part to ModalCASL \\\hline
+DFOL2CASL & translating dependent types \\\hline
+DMU2OWL & interpreting Catia output as OWL \\\hline
 \end{tabular}
 
-
+\begin{tabular}{|l|p{5cm}|}\hline
+HasCASL2HasCASLNoSubtypes & coding out subtypes \\\hline
+HasCASL2HasCASLPrograms & coding of \HasCASL axiomatic recursive definitions
+as \HasCASL recursive program definitions \\\hline
+HasCASL2Haskell & translation of \HasCASL recursive program definitions to Haskell \\\hline
+HasCASL2IsabelleOption & coding of HasCASL to Isabelle/HOL \cite{Groening05} \\\hline
+Haskell2Isabelle & coding of Haskell to Isabelle/HOL \cite{TorriniEtAl07} \\\hline
+Haskell2IsabelleHOLCF & coding of Haskell to Isabelle/HOLCF \cite{TorriniEtAl07} \\\hline
+Maude2CASL & inclusion \\\hline
+Modal2CASL & the standard translation of modal logic
+to first-order logic \cite{blackburn_p-etal:2001a} \\\hline
+OWL2CASL & inclusion \\\hline
+Propositional2CASL & inclusion \\\hline
+RelScheme2CASL & inclusion \\\hline
+\end{tabular}
 
 \section{Getting started}
 
