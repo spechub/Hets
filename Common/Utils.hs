@@ -31,6 +31,9 @@ module Common.Utils
   , splitOn
   , splitBy
   , splitByList
+  , takeUntilList
+  , prefixsAsInfixs
+  , matchPaths
   , basename
   , dirname
   , fileparse
@@ -193,6 +196,59 @@ splitByList sep l = split' [] [] l where
     split' acc bag l'@(x:xs) = case stripPrefix sep l' of
                                  Nothing -> split' (acc++[x]) bag xs
                                  Just l'' -> split' [] (bag++[acc]) l''
+
+-- | Returns all elements of the second list until the first list is
+-- encountered as sublist.
+-- Example: takeUntilList "aab" "xdcabaabdx" == "xdcab"
+takeUntilList :: Eq a => [a] -> [a] -> [a]
+takeUntilList sep l = f [] sep [] l where
+    f acc [] _ _ = acc
+    f _ (_:_) _ [] = l
+    f acc (s:sl) c xl@(x:xs)
+      | s == x = f acc sl (c++[x]) xs
+      | null c = f (acc ++ [x]) sep [] xs
+      | otherwise = f (acc ++ [head c]) sep [] $ tail c ++ xl
+
+-- | Returns all initial segments of the second list where the continuing
+-- list matches a nonempty prefix of the first list. The first list is
+-- concatenated to each such segment and the size of the matching prefix is
+-- attached to the entry in the output list. Subsumed entries are not returned.
+-- Example: prefixsAsInfixs "bac" "dbabacabd" ==
+-- [(1,"dbabacabac"),(3,"dbabac"),(2,"dbac")]
+prefixsAsInfixs :: (Eq a, Show a) => [a] -> [a] -> [(Int, [a])]
+prefixsAsInfixs [] _ = []
+prefixsAsInfixs sep l = f [] [] sep [] l where
+    -- acc: the input list until the current match
+    -- bag: the output bag containing all matches
+    updB bag acc c = (length c, acc ++ sep) : bag
+    f bag _ _ [] [] = bag
+    f bag acc _ c [] = updB bag acc c
+    f bag acc [] c l' = f (updB bag acc c) (acc ++ c) sep [] l'
+    f bag acc (s:sl) c xl@(x:xs) 
+      | s == x = f bag acc sl (c++[x]) xs
+      | null c = f bag (acc ++ [x]) sep [] xs
+      | otherwise = f (updB bag acc c) (acc ++ [head c]) sep [] $ tail c ++ xl
+
+
+-- | Matches first relative path against second absolute path. as in this example
+-- Example: matchPaths "a/b/c" "/x/y/a/d" == "/x/y/a/b/c" (not /x/y/a/a/b/c !)
+matchPaths :: FilePath -- ^ relative path
+            -> FilePath -- ^ reference path for matching
+            -> Maybe FilePath -- ^ path 
+matchPaths rFP refFP =
+    let rp = splitBy '/' rFP
+        refp = splitBy '/' refFP
+        rpI = init rp
+        refpI = init refp
+        matchs = prefixsAsInfixs rp refpI
+        cmp (n, s) (n', s') = case compare n n' of
+                                EQ -> compare (length s) (length s')
+                                od -> od
+        (_, bestmatch) = maximumBy cmp matchs
+    in if null rpI then Just $ intercalate "/" $ refpI ++ [rFP]
+       else case matchs of
+              [] -> Nothing
+              _ -> Just $ intercalate "/" bestmatch
 
 {- |
   A function inspired by a perl function from the standard perl-module
