@@ -68,11 +68,16 @@ type NameSymbolMap = G_mapofsymbol OMName
 
 -- | the keys consist of the filepaths without suffix!
 data ImpEnv =
-    ImpEnv { libMap :: Map.Map FilePath (LibName, DGraph)
-           , nsymbMap :: Map.Map (LibName, String) NameSymbolMap }
+    ImpEnv {
+      libMap :: Map.Map FilePath (LibName, DGraph)
+    , nsymbMap :: Map.Map (LibName, String) NameSymbolMap
+    , hetsOptions :: HetcatsOpts
+    }
 
-initialEnv :: ImpEnv
-initialEnv = ImpEnv { libMap = Map.empty, nsymbMap = Map.empty }
+initialEnv :: HetcatsOpts -> ImpEnv
+initialEnv opts = ImpEnv { libMap = Map.empty
+                         , nsymbMap = Map.empty
+                         , hetsOptions = opts }
 
 getLibEnv :: ImpEnv -> LibEnv
 getLibEnv e = computeLibEnvTheories $
@@ -110,6 +115,16 @@ lookupNSMap e ln mLn nm =
                               , show $ nsymbMap e ]
     in mf (ln', nm) $ nsymbMap e
 
+
+rPutIfVerbose :: ImpEnv -> Int -> String -> ResultT IO ()
+rPutIfVerbose e n s = lift $ putIfVerbose (hetsOptions e) n s
+
+rPut :: ImpEnv -> String -> ResultT IO ()
+rPut e s = rPutIfVerbose e 1 s
+
+rPut2 :: ImpEnv -> String -> ResultT IO ()
+rPut2 e s = rPutIfVerbose e 2 s
+
 -- * URI Functions
 
 readURL :: URI -> IO String
@@ -138,6 +153,11 @@ isFileURI u = elem (uriScheme u) ["", "file:"]
 
 
 type UriCD = (Maybe URI, String)
+
+showUriCD :: UriCD -> String
+showUriCD (mUri, s) = case mUri of
+                        Just u -> show u ++ "?" ++ s
+                        _ -> s
 
 getUri :: UriCD -> Maybe URI
 getUri = fst
@@ -181,7 +201,7 @@ anaOMDocFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaOMDocFile opts fp = do
   dir <- getCurrentDirectory
   putIfVerbose opts 2 $ "anaOMDocFile: Importing OMDoc file " ++ fp
-  Result ds mEnvLn <- runResultT $ importLib initialEnv
+  Result ds mEnvLn <- runResultT $ importLib (initialEnv opts)
                       $ resolveURI (toURI fp) $ dir ++ "/"
   showDiags opts ds
   return $ fmap (\ (env, ln, _) -> (ln, getLibEnv env)) mEnvLn
@@ -204,10 +224,13 @@ readLib :: ImpEnv -- ^ The import environment
         -> URI -- ^ The url of the OMDoc file
         -> ResultT IO (ImpEnv, LibName, DGraph)
 readLib e u = do
+  rPut e $ "Downloading " ++ show u ++ " ..."
   xmlString <- lift $ readURL u
   OMDoc n l <- liftR $ xmlIn xmlString
   ln <- lift $ libNameFromURL n u
+  rPut e $ "Importing library " ++ show ln
   (e', dg) <- foldM (addTLToDGraph ln) (e, emptyDG) l
+  rPut e $ "... loaded " ++ show u
   return (addDGToEnv e' ln dg, ln, dg)
 
 -- | Adds the Theory in the OMCD and the containing lib to the environment
@@ -219,22 +242,31 @@ importTheory :: ImpEnv -- ^ The import environment
                            , DGraph -- the updated devgraph of the current lib
                            , LNode DGNodeLab -- the corresponding node
                            )
-importTheory e (ln, dg) cd =
-    let ucd = toUriCD cd in
-    case lookupNode e (ln, dg) ucd of
-      Just (ln', nd)
-          | ln == ln' -> return (e, ln, dg, nd)
-          | otherwise -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
-                         in return (e, ln', dg', lnode)
-      -- if lookupNode finds nothing implies that ln is not the current libname!
-      _ -> do
-        let u = uriRelativeToLib ucd ln
-        (e', ln', refDg) <- readLib e u
-        case lookupNodeByName (getModule ucd) refDg of
-          -- don't add the node to the refDG but to the original DG!
-          Just nd -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
-                     in return (e', ln', dg', lnode)
-          Nothing -> error $ "importTheory: couldn't find node: " ++ show cd
+importTheory e (ln, dg) cd = do
+  let ucd = toUriCD cd
+  rPut2 e $ "Looking up theory " ++ showUriCD ucd ++ " ..."
+  case lookupNode e (ln, dg) ucd of
+    Just (ln', nd)
+        | ln == ln' ->
+            do
+              rPut2 e $ "... found local or already referenced node."
+              return (e, ln, dg, nd)
+        | otherwise ->
+            do
+              rPut2 e $ "... found node, referencing it ..."
+              let (lnode, dg') = addNodeAsRefToDG nd ln' dg
+              rPut2 e $ "... done"
+              return (e, ln', dg', lnode)
+    -- if lookupNode finds nothing implies that ln is not the current libname!
+    _ -> do
+      let u = uriRelativeToLib ucd ln
+      rPut2 e $ "... node not found, reading lib."
+      (e', ln', refDg) <- readLib e u
+      case lookupNodeByName (getModule ucd) refDg of
+        -- don't add the node to the refDG but to the original DG!
+        Just nd -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
+                   in return (e', ln', dg', lnode)
+        Nothing -> error $ "importTheory: couldn't find node: " ++ show cd
 
 
 -- | Adds a view or theory to the DG, the ImpEnv may also be modified.
@@ -242,6 +274,9 @@ addTLToDGraph :: LibName -> (ImpEnv, DGraph) -> TLElement
               -> ResultT IO (ImpEnv, DGraph)
 -- adding a theory to the DG
 addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
+
+  rPut e $ "Importing theory " ++ n
+
   let clf = classifyTCs l
 
   -- I. Compute initial signature
@@ -271,6 +306,9 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
 
 
 addTLToDGraph ln (e, dg) (TLView n from to mMor) = do
+
+  rPut e $ "Importing view " ++ n
+
   -- follow the source and target of the view and insert DGNodeRefs
   -- if neccessary.
   -- use followTheory for from and to.
@@ -498,8 +536,7 @@ addLinkToDG to dg (gMor, lt, lo, from, mTo) =
 addNodeToDG :: DGraph -> String -> G_theory -> (LNode DGNodeLab, DGraph)
 addNodeToDG dg n gth =
     let nd = getNewNodeDG dg
-        -- TODO: we have to restore the NodeName
-        ndName = makeName $ mkSimpleId n
+        ndName = parseNodeName n
         ndInfo = newNodeInfo DGBasic
         newNode = (nd, newInfoNodeLab ndName ndInfo gth)
     in (newNode, insNodeDG newNode dg)
