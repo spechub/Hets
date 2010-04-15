@@ -29,7 +29,7 @@ import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
 
---import Driver.ReadFn (libNameToFile)
+import Driver.ReadFn (libNameToFile)
 import Driver.Options (rmSuffix)
 
 import OMDoc.DataTypes
@@ -221,7 +221,8 @@ makeImport le ln dg toInfo s (from, _, lbl)
                     SigMap nm _ = nSigMapToSigMap nsigm
                 morph <- makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
-                return (s', [TCImport impnm (mkCD s' ln ln' sn) $ morph])
+                cd <- mkCD s' ln ln' sn
+                return (s', [TCImport impnm cd $ morph])
     | otherwise = return (s, [])
 
 -- | Given a TheoremLink we output the view
@@ -258,8 +259,9 @@ exportLinkLab le ln dg s (from, to, lbl) =
                        SigMap nm1 _ = nSigMapToSigMap nsigm1
                        SigMap nm2 _ = nSigMapToSigMap nsigm2
                    morph <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
-                   return (s'', Just $ TLView viewname (mkCD s'' ln ln1 sn1)
-                                  (mkCD s'' ln ln2 sn2) morph) }
+                   cd1 <- mkCD s'' ln ln1 sn1
+                   cd2 <- mkCD s'' ln ln2 sn2
+                   return (s'', Just $ TLView viewname cd1 cd2 morph) }
 
 
 makeMorphism :: forall lid1 sublogics1
@@ -339,19 +341,35 @@ sglElem s sa
 
 -- * Names and CDs
 
-libNameOFile :: LibName -- ^ libname for filepath extraction
-             -> FilePath
-libNameOFile ln = case getLibId ln of
-  IndirectLink _ _ ofile _ ->
-      if null ofile then error $ "libNameOFile: no ofile given in " ++ show ln
-      else rmSuffix ofile
-  DirectLink _ _ -> error "libNameOFile: DirectLink"
+libNameFilePath :: LibName -- ^ libname as reference for relative uris
+                -> LibName -- ^ libname for filepath extraction
+                -> Result FilePath
+libNameFilePath lnRef ln = case getLibId ln of
+  IndirectLink file rg ofile _ ->
+      if null ofile
+      then do
+        warning () (concat [ "libNameFilePath: LibName does not conatin a "
+                           , "filepath: ", show ln, " (referenced from lib "
+                           , show lnRef, ")" ]) rg
+        let mFp = matchPaths file $ libNameToFile lnRef
+        case mFp of
+          Just fp ->
+              do
+                warning () ("repaired missing filepath: " ++ fp) rg
+                return fp
+          _ -> error $ concat [ "libNameFilePath: could not repair missing "
+                              , "filepath: ", show ln, " referenced from lib "
+                              , show lnRef]
+      else return $ rmSuffix ofile
+  DirectLink _ _ -> error "libNameFilePath: DirectLink"
 
-
-mkCD :: ExpEnv -> LibName -> LibName -> String -> OMCD
-mkCD _ lnCurr ln sn =
-    CD $ [sn] ++ if lnCurr == ln then []
-                 else [concat ["file://", libNameOFile ln, ".omdoc"]]
+mkCD :: ExpEnv -> LibName -> LibName -> String -> Result OMCD
+mkCD _ lnCurr ln sn = do
+  base <- if lnCurr == ln then return []
+          else do
+            fp <- libNameFilePath lnCurr ln
+            return [concat ["file://", fp, ".omdoc"]]
+  return $ CD $ [sn] ++ base
 
 -- * Symbols and Sentences
 
