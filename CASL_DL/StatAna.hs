@@ -383,8 +383,8 @@ checkSymbolMapDL rsm =
        then return rsm
        else Result (ds syms) Nothing
     where checkSourceSymbol sSym _ syms =
-              if foldr (\ ps -> (||) $ matches ps sSym) False
-                          $ symOf predefinedSign
+              if Set.fold (\ ps -> (||) $ matches ps sSym) False
+                          symOfPredefinedSign
               then syms ++ [sSym]
               else syms
           -- ds :: [RawSymbol] -> [Diagnosis]
@@ -392,6 +392,9 @@ checkSymbolMapDL rsm =
                      ("Predefined CASL_DL symbols\n    cannot be mapped: "
                       ++ show (ppWithCommas syms))
                      $ minimum $ map getRange syms]
+
+symOfPredefinedSign :: SymbolSet
+symOfPredefinedSign = symsetOf predefinedSign
 
 isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isNumber = isGenNum splitApplM

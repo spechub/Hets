@@ -23,8 +23,6 @@ import qualified Temporal.Symbol as Symbol
 import Temporal.AS_BASIC_Temporal as AS_BASIC
 import Temporal.ATC_Temporal ()
 
-import qualified Data.Set as Set
-
 -- | Lid for termporal logic
 data Temporal = Temporal deriving Show
 
