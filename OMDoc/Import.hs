@@ -11,8 +11,7 @@ Given an OMDoc file, a Library Environment is constructed from it by
 following all library links.
 -}
 
-module OMDoc.Import (anaOMDocFile)
-    where
+module OMDoc.Import where
 
 import Common.Result
 import Common.ResultT
@@ -129,7 +128,7 @@ rPut2 e s = rPutIfVerbose e 2 s
 
 readURL :: URI -> IO String
 readURL u = if isFileURI u then readFile $ uriPath u
-            else error $ "readURI: Unsupported URI-scheme " ++ uriScheme u
+            else error $ "readURL: Unsupported URI-scheme " ++ uriScheme u
 
 toURI :: String -> URI
 toURI s = case parseURIReference s of

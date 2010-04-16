@@ -25,14 +25,14 @@ ext_sym_of :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> ExtSign sign symbol -> Set.Set symbol
-ext_sym_of l = Set.fromList . sym_of l . plainSign
+ext_sym_of l = symset_of l . plainSign
 
 -- | simply put all symbols into the symbol set
 makeExtSign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> sign -> ExtSign sign symbol
-makeExtSign l s = ExtSign s $ Set.fromList $ sym_of l s
+makeExtSign l s = ExtSign s $ symset_of l s
 
 ext_ide :: (Ord symbol, Category sign morphism)
            => ExtSign sign symbol -> morphism
@@ -48,7 +48,7 @@ checkExtSign :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> String -> ExtSign sign symbol -> Result ()
-checkExtSign l msg e@(ExtSign s sy) = let sys = Set.fromList $ sym_of l s in
+checkExtSign l msg e@(ExtSign s sy) = let sys = symset_of l s in
     if Set.isSubsetOf sy sys then return () else
         error $ "inconsistent symbol set in extended signature: " ++ msg ++ "\n"
              ++ showDoc e "\rwith unknown symbols\n"
@@ -118,7 +118,7 @@ checkRawMap :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
         => lid -> EndoMap raw_symbol -> sign -> Result ()
-checkRawMap l rmap = checkRawSyms l (Map.keys rmap) . Set.fromList . sym_of l
+checkRawMap l rmap = checkRawSyms l (Map.keys rmap) . symset_of l
 
 checkRawSyms :: Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -142,7 +142,7 @@ ext_induced_from_to_morphism l r s@(ExtSign p sy) t = do
     checkRawMap l r p
     checkRawSyms l (Map.elems r) $ nonImportedSymbols t
     mor <- induced_from_to_morphism l r s t
-    let sysI = Set.toList $ Set.difference (Set.fromList $ sym_of l p) sy
+    let sysI = Set.toList $ Set.difference (symset_of l p) sy
         morM = symmap_of l mor
         msysI = map (\ sym -> Map.findWithDefault sym sym morM) sysI
     if sysI == msysI then return mor

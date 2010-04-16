@@ -156,7 +156,7 @@ pathifySign :: forall lid sublogics
              -> Result (Map.Map symbol [SLinkPath])
 pathifySign lid libid sig l =
     foldM (pathifyImport lid libid)
-              (Map.fromList $ map ( \x -> (x,[]) ) $ sym_of lid sig) l
+              (Map.fromList $ map ( \x -> (x,[]) ) $ symlist_of lid sig) l
 
 
 
@@ -206,9 +206,3 @@ sglElem s sa
     | Set.null sa = error $ "PathifyNames: empty symbol image in " ++ s
     | otherwise = Set.findMin sa
 
-{-
-TODO: sym_of
--- | builds a map with initial default value from a set
-mapFromSet :: Ord a => b -> Set.Set a -> Map.Map a b
-mapFromSet v s = Map.fromList $ map ( \x -> (x,v) ) $ Set.toList s
--}

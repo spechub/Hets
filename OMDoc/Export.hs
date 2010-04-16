@@ -87,7 +87,7 @@ fromSignAndNamedSens :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         lid -> sign -> [Named sentence] -> NumberedSigMap symbol
 fromSignAndNamedSens lid sig nsens =
-    let syms = sym_of lid sig
+    let syms = symlist_of lid sig
         -- The accumulator var is a map of names to integer values designating
         -- the next identifier to use for this name to make it unique.
         -- acc: Map String Int

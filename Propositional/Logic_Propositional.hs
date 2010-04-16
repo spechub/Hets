@@ -54,7 +54,6 @@ import ATC.ProofTree ()
 import Common.ProofTree
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show
@@ -84,7 +83,7 @@ instance Sentences Propositional FORMULA
     Sign Morphism Symbol where
     negation Propositional = Just . negateFormula
     -- returns the set of symbols
-    sym_of Propositional = Set.toList . symOf
+    sym_of Propositional = singletonList . symOf
     -- returns the symbol map
     symmap_of Propositional = getSymbolMap
     -- returns the name of a symbol

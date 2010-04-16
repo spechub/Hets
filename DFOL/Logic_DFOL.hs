@@ -53,7 +53,7 @@ instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 -- sentences for DFOL
 instance Sentences DFOL FORMULA Sign Morphism Symbol where
    map_sen DFOL m = wrapInResult . (applyMorph m)
-   sym_of DFOL = Set.toList . (Set.map Symbol) . getSymbols
+   sym_of DFOL = singletonList . (Set.map Symbol) . getSymbols
    symmap_of DFOL = toSymMap . symMap
    sym_name DFOL = toId
 

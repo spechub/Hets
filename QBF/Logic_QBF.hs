@@ -45,7 +45,6 @@ import ATC.ProofTree ()
 import Common.ProofTree
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 -- | Lid for propositional logic
 data QBF = QBF deriving Show
@@ -76,7 +75,7 @@ instance Sentences QBF FORMULA
     Sign Morphism Symbol where
     negation QBF = Just . negateFormula
     -- returns the set of symbols
-    sym_of QBF = Set.toList . symOf
+    sym_of QBF = singletonList . symOf
     -- returns the symbol map
     symmap_of QBF = getSymbolMap
     -- returns the name of a symbol

@@ -34,8 +34,6 @@ import Common.DocUtils
 import Common.ExtSign
 import System.IO.Unsafe
 
-import qualified Data.Set as Set
-
 -- | Lid for Maude
 data Maude = Maude
            deriving (Show, Eq)
@@ -75,7 +73,7 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
     -- print_named Maude = printAnnoted (addBullet . pretty) . fromLabelledSen
     -- symbols --
     sym_name Maude = Symbol.toId
-    sym_of Maude = Set.toList . Sign.symbols
+    sym_of Maude = singletonList . Sign.symbols
     symmap_of Maude = Morphism.symbolMap
 
 -- | Instance of Syntax for Maude

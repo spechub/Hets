@@ -1,4 +1,4 @@
-{- |
+- |
 Module      :  $Header$
 Description :  Instance of class Logic for temporal logic
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
@@ -54,7 +54,7 @@ instance Sentences Temporal
     Morphism.Morphism
     Symbol.Symbol
     where
-        sym_of       Temporal        = Set.toList . Symbol.symOf             -- Returns the set of symbols
+        sym_of       Temporal        = singletonList . Symbol.symOf  -- Returns a list of sets of symbols
         symmap_of    Temporal        = Symbol.getSymbolMap      -- Returns the symbol map
         sym_name     Temporal        = Symbol.getSymbolName     -- Returns the name of a symbol
         map_sen      Temporal        = Morphism.mapSentence     -- Translation of sentences along signature morphism

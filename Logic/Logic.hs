@@ -278,8 +278,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
 
       ----------------------- symbols ---------------------------
-      -- | dependency ordered list of symbols for a signature
-      sym_of :: lid -> sign -> [symbol]
+      -- | dependency ordered list of symbol sets for a signature
+      sym_of :: lid -> sign -> [Set.Set symbol]
       sym_of l _ = statError l "sym_of"
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
@@ -287,6 +287,22 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+
+-- | makes a singleton list from the given value
+singletonList :: a -> [a]
+singletonList x = [x]
+
+-- | set of symbols for a signature
+symset_of :: forall lid sentence sign morphism symbol . 
+             Sentences lid sentence sign morphism symbol =>
+             lid -> sign -> Set.Set symbol
+symset_of lid sig = Set.unions $ sym_of lid sig
+
+-- | dependency ordered list of symbols for a signature
+symlist_of :: forall lid sentence sign morphism symbol . 
+              Sentences lid sentence sign morphism symbol =>
+              lid -> sign -> [symbol]
+symlist_of lid sig = concatMap Set.toList $ sym_of lid sig
 
 -- | a dummy static analysis function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid

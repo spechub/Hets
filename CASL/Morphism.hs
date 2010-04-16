@@ -18,7 +18,6 @@ module CASL.Morphism where
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
-import Data.List ((\\), union)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -153,32 +152,30 @@ rawSymName rs = case rs of
   ASymbol sym -> symName sym
   AKindedSymb _ i -> i
 
-allSymOf :: (e -> SymbolSet) -> Sign f e -> [Symbol]
-allSymOf f s = let esyms = partitionSymbols $ Set.toList $ f (extendedInfo s)
-               in concat $ zipWith union (symTriple s) esyms
+allSymOf :: (e -> SymbolSet) -> Sign f e -> [SymbolSet]
+allSymOf f s = let (s1, so) = Set.partition ((== Sorts_kind) .
+                                             symbTypeToKind . symbType)
+                              $ f (extendedInfo s)
+               in zipWith Set.union (symPair s) [s1, so]
 
-partitionSymbols :: [Symbol] -> [[Symbol]]
-partitionSymbols l = foldr f [[], [], []] l
-    where f s [x, y, z] = case symbType s of
-                            SortAsItemType -> [s:x, y, z]
-                            OpAsItemType _ -> [x, s:y, z]
-                            _ -> [x, y, s:z] -- Preds and OtherTypeKinds are
-                                             -- mixed here, TODO: fix this?
-          f _ _ = error "partitionSymbols: impossible case!"
+symPair :: Sign f e -> [SymbolSet]
+symPair sigma =
+    let
+        ml f = concatMap (\ (i, ts) -> map (f i) $ Set.toList ts) . Map.toList
+        sorts = Set.map idToSortSymbol $ sortSet sigma
+        ops = ml idToOpSymbol $ opMap sigma
+        preds = ml idToPredSymbol $ predMap sigma
+    in [sorts, Set.fromList $ ops ++ preds]
 
-symTriple :: Sign f e -> [[Symbol]]
-symTriple sigma = let
-    sorts = map idToSortSymbol $ Set.toList $ sortSet sigma
-    ops = concatMap (\ (i, ts) -> map (idToOpSymbol i) $ Set.toList ts)
-          $ Map.toList $ opMap sigma
-    preds = concatMap (\ (i, ts) -> map (idToPredSymbol i) $ Set.toList ts)
-            $ Map.toList $ predMap sigma
-    in [sorts, ops, preds]
+-- | returns the symbol sets of the signature in the correct dependency order
+-- , i.e., sorts first, then ops and predicates. Result list is of length two.
+symOf :: Sign f e -> [SymbolSet]
+symOf = symPair
 
--- | returns the symbols of the signature in the correct dependency order
--- , i.e., sorts first, then ops and predicates
-symOf :: Sign f e -> [Symbol]
-symOf sigma = concat $ symTriple sigma
+-- | set of symbols for a signature
+symsetOf :: Sign f e -> SymbolSet
+symsetOf = Set.unions . symOf
+
 
 checkSymbList :: [SYMB_OR_MAP] -> [Diagnosis]
 checkSymbList l = case l of
@@ -592,7 +589,8 @@ printMorphism isSubSigExt isInclMorExt fE fM symOfExt mor =
       [ text "inclusion morphism of", srcD
       , fsep $ if Map.null ops then
           [ text "extended with"
-          , pretty $ allSymOf symOfExt tar \\ allSymOf symOfExt src ]
+          , pretty $ Set.unions $ zipWith Set.difference (allSymOf symOfExt tar)
+                       $ allSymOf symOfExt src ]
         else
           [ text "by totalizing"
           , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]

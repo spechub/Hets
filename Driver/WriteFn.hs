@@ -73,7 +73,7 @@ import Static.ComputeTheory (theoremsToAxioms, computeTheory)
 import Proofs.PathifyNames
 
 import Driver.Options
-import Driver.ReadFn (libNameToFile)
+import Driver.ReadFn (libNameToFile, findFileOfLibName)
 import Driver.WriteLibDefn
 
 #ifdef HXTFILTER
@@ -91,11 +91,26 @@ writeVerbFile opts f str = do
     writeFile f str
 
 -- | compute for each LibName in the List a path relative to the given FilePath
-writeVerbFiles :: HetcatsOpts -> String -> FilePath -> [(LibName, String)]
+writeVerbFiles :: HetcatsOpts -- ^ Hets options
+               -> String -- ^ A suffix to be combined with the libname
+               -> [(LibName, String)] -- ^ An output list
                -> IO ()
-writeVerbFiles opts suffix _ outl =
-    mapM_ (uncurry $ writeVerbFile opts) $ map f outl
-        where f (ln, s) = (libNameToFile ln ++ suffix, s)
+writeVerbFiles opts suffix outl =
+    mapM_ f outl
+        where f (ln, s) = do
+                -- if a file with this suffix does not exist, casl is used as
+                -- default suffix
+                mFp <- findFileOfLibName opts $ libNameToFile ln ++ suffix
+                case mFp of
+                  Just fp ->
+                      do
+                        -- we overwrite the eventual default suffix by
+                        -- our suffix
+                        let fp' = rmSuffix fp ++ suffix
+                        writeVerbFile opts fp' s
+                  _ ->
+                      error $ "writeVerbFiles: Cannot resolve file for libname "
+                                ++ show ln
 
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
             -> IO ()
@@ -112,7 +127,7 @@ writeLibEnv opts filePrefix lenv ln ot =
           let Result ds mOmd = exportLibEnv (recurse opts) ln lenv
           showDiags opts ds
           case mOmd of
-               Just omd -> writeVerbFiles opts ".omdoc" filePrefix
+               Just omd -> writeVerbFiles opts ".omdoc"
                            $ map (\ (libn, od) -> (libn, xmlOut od)) omd
                Nothing -> putIfVerbose opts 0 "could not translate to OMDoc"
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f

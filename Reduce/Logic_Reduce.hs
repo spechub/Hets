@@ -30,8 +30,6 @@ import Reduce.ReduceProve
 import qualified Data.Map as Map
 import ATC.ProofTree ()
 
-import qualified Data.Set as Set
-
 -- | Lid for reduce logic
 data Reduce = Reduce deriving Show
 
@@ -58,7 +56,7 @@ instance Sentences Reduce CMD
     Sign Morphism Symbol where
     negation Reduce = Just . negateFormula
     -- returns the set of symbols --> including operators
-    sym_of Reduce = Set.toList . symOf
+    sym_of Reduce = singletonList . symOf
     {- returns the symbol map -->
     the internal map only contains changes but the external symbol map
     must also contain identity mappings for all remaining symbols -}
