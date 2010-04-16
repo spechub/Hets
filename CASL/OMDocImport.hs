@@ -116,11 +116,14 @@ omdocToSen :: Env -> TCElement -> String
 omdocToSen e (TCSymbol _ t sr _) n =
     case nameDecode n of
       Just _ ->
-          return Nothing
+          return Nothing -- don't translate encoded names here
       Nothing ->
-          if elem sr [Axiom, Theorem]
-          then return $ Just $ makeNamed n $ omdocToFormula e t
-          else return Nothing
+          let ns = makeNamed n $ omdocToFormula e t
+              res b = return $ Just $ ns { isAxiom = b }
+          in case sr of
+               Axiom -> res True
+               Theorem -> res False
+               _ -> return Nothing
 
 omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
                                    , " but found: ", show sym ]
