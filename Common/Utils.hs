@@ -82,9 +82,9 @@ isSingleton s = Set.size s == 1
 hasMany :: Set.Set a -> Bool
 hasMany s = Set.size s > 1
 
--- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
--- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
--- (this is just sequence!)
+{- | Transform a list @[l1, l2, ... ln]@ to (in sloppy notation)
+     @[[x1, x2, ... xn] | x1 <- l1, x2 <- l2, ... xn <- ln]@
+     (this is just the 'sequence' function!) -}
 combine :: [[a]] -> [[a]]
 combine = sequence
 -- see http://www.haskell.org/pipermail/haskell-cafe/2009-November/069490.html
@@ -130,12 +130,12 @@ readMaybe s = case filter (all isSpace . snd) $ reads s of
 
 -- | generalization of mapAccumL to monads
 mapAccumLM :: Monad m
-           => (acc -> x -> m (acc, y)) -- Function of elt of input list
-                                     -- and accumulator, returning new
-                                     -- accumulator and elt of result list
-           -> acc           -- Initial accumulator
-           -> [x]           -- Input list
-           -> m (acc, [y])          -- Final accumulator and result list
+  => (acc -> x -> m (acc, y))
+    {- ^ Function taking accumulator and list element,
+         returning new accumulator and modified list element -}
+  -> acc           -- ^ Initial accumulator
+  -> [x]           -- ^ Input list
+  -> m (acc, [y])  -- ^ Final accumulator and result list
 mapAccumLM f s l = case l of
   [] -> return (s, [])
   x : xs -> do
@@ -146,12 +146,12 @@ mapAccumLM f s l = case l of
 -- | generalization of mapAccumL to monads with combine function
 mapAccumLCM :: (Monad m) => (a -> b -> c) -> (acc -> a -> m (acc, b))
           -> acc -> [a] -> m (acc, [c])
-mapAccumLCM _  _ s []        =  return (s, [])
-mapAccumLCM g f s (x:xs) = do
-  (s', y) <- f s x
-  (s'',ys) <- mapAccumLCM g f s' xs
-  return (s'', g x y:ys)
-
+mapAccumLCM g f s l = case l of
+  [] -> return (s, [])
+  x : xs -> do
+    (s', y) <- f s x
+    (s'', ys) <- mapAccumLCM g f s' xs
+    return (s'', g x y : ys)
 
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
@@ -178,7 +178,7 @@ splitOn :: Eq a => a -- ^ seperator
         -> [a] -- ^ list to split
         -> [[a]]
 splitOn x xs = let (l, r) = break (== x) xs in
-    (if null l then [] else [l]) ++ (if null r then [] else splitOn x $ tail r)
+    (if null l then [] else [l]) ++ if null r then [] else splitOn x (tail r)
 
 {- |
   Same as splitOn but empty lists are kept. Even the empty list is split into
@@ -187,35 +187,41 @@ splitOn x xs = let (l, r) = break (== x) xs in
 splitBy :: Eq a => a -- ^ seperator
         -> [a] -- ^ list to split
         -> [[a]]
-splitBy c l = 
-    let (p, q) = break (c==) l in if null q then [p] else p:splitBy c (tail q)
+splitBy c l = let (p, q) = break (c ==) l in
+  if null q then [p] else p : splitBy c (tail q)
 
 -- | Same as splitBy but the seperator is a sublist not only one element.
 splitByList :: Eq a => [a] -> [a] -> [[a]]
 splitByList sep l = split' [] [] l where
-    split' acc bag [] = bag ++ [acc]
-    split' acc bag l'@(x:xs) = case stripPrefix sep l' of
-                                 Nothing -> split' (acc++[x]) bag xs
-                                 Just l'' -> split' [] (bag++[acc]) l''
+    split' acc bag l' = case l' of
+      [] -> bag ++ [acc]
+      x : xs -> case stripPrefix sep l' of
+        Nothing -> split' (acc ++ [x]) bag xs
+        Just l'' -> split' [] (bag ++ [acc]) l''
 
--- | Returns all elements of the second list until the first list is
--- encountered as sublist.
--- Example: takeUntilList "aab" "xdcabaabdx" == "xdcab"
+{- | Returns all elements of the second list until the first list is
+     encountered as sublist. Example:
+
+   > takeUntilList "aab" "xdcabaabdx" == "xdcab"
+-}
 takeUntilList :: Eq a => [a] -> [a] -> [a]
 takeUntilList sep l = f [] sep [] l where
     f acc [] _ _ = acc
-    f _ (_:_) _ [] = l
-    f acc (s:sl) c xl@(x:xs)
-      | s == x = f acc sl (c++[x]) xs
+    f _ (_ : _) _ [] = l
+    f acc (s : sl) c xl@(x : xs)
+      | s == x = f acc sl (c ++ [x]) xs
       | null c = f (acc ++ [x]) sep [] xs
       | otherwise = f (acc ++ [head c]) sep [] $ tail c ++ xl
 
--- | Returns all initial segments of the second list where the continuing
--- list matches a nonempty prefix of the first list. The first list is
--- concatenated to each such segment and the size of the matching prefix is
--- attached to the entry in the output list. Subsumed entries are not returned.
--- Example: prefixsAsInfixs "bac" "dbabacabd" ==
--- [(1,"dbabacabac"),(3,"dbabac"),(2,"dbac")]
+{- | Returns all initial segments of the second list where the continuing
+     list matches a nonempty prefix of the first list. The first list is
+     concatenated to each such segment and the size of the matching prefix is
+     attached to the entry in the output list.
+     Subsumed entries are not returned. Example:
+
+   > prefixsAsInfixs "bac" "dbabacabd" ==
+   >    [(1, "dbabacabac"), (3, "dbabac"), (2, "dbac")]
+-}
 prefixsAsInfixs :: (Eq a, Show a) => [a] -> [a] -> [(Int, [a])]
 prefixsAsInfixs [] _ = []
 prefixsAsInfixs sep l = f [] [] sep [] l where
@@ -225,8 +231,8 @@ prefixsAsInfixs sep l = f [] [] sep [] l where
     f bag _ _ [] [] = bag
     f bag acc _ c [] = updB bag acc c
     f bag acc [] c l' = f (updB bag acc c) (acc ++ c) sep [] l'
-    f bag acc (s:sl) c xl@(x:xs) 
-      | s == x = f bag acc sl (c++[x]) xs
+    f bag acc (s : sl) c xl@(x : xs)
+      | s == x = f bag acc sl (c ++ [x]) xs
       | null c = f bag (acc ++ [x]) sep [] xs
       | otherwise = f (updB bag acc c) (acc ++ [head c]) sep [] $ tail c ++ xl
 
@@ -248,11 +254,14 @@ numberSuffix s =
          (p, n, _) ->
              Just (take (1 + length s - length (show p)) s, n)
 
--- | Matches first relative path against second absolute path. as in this example
--- Example: matchPaths "a/b/c" "/x/y/a/d" == "/x/y/a/b/c" (not /x/y/a/a/b/c !)
-matchPaths :: FilePath -- ^ relative path
-            -> FilePath -- ^ reference path for matching
-            -> Maybe FilePath -- ^ path 
+{- | Matches first relative path against second absolute path. Example:
+
+   > matchPaths "a/b/c" "/x/y/a/d" == "/x/y/a/b/c"
+   >   (not "/x/y/a/a/b/c" !)
+ -}
+matchPaths :: FilePath       -- ^ relative path
+           -> FilePath       -- ^ reference path for matching
+           -> Maybe FilePath -- ^ path
 matchPaths rFP refFP =
     let rp = splitBy '/' rFP
         refp = splitBy '/' refFP
@@ -322,10 +331,11 @@ filterMapWithSet s = Map.filterWithKey (\ k _ -> Set.member k s)
 {- | get, parse and check an environment variable; provide the default
   value, only if the envionment variable is not set or the
   parse-check-function returns a Left value -}
-getEnvSave :: a -- ^ default value
-           -> String -- ^ name of environment variable
-           -> (String -> Maybe a) -- ^ parse and check value of variable;
-                         -- for every b the default value is returned
+getEnvSave :: a                   -- ^ default value
+           -> String              -- ^ name of environment variable
+           -> (String -> Maybe a)
+              {- ^ parse and check value of variable;
+                   for every b the default value is returned -}
            -> IO a
 getEnvSave defValue envVar readFun =
     liftM (maybe defValue (fromMaybe defValue . readFun)
