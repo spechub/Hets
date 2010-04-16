@@ -1,4 +1,4 @@
-- |
+{- |
 Module      :  $Header$
 Description :  Instance of class Logic for temporal logic
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
