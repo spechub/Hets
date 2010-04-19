@@ -34,8 +34,6 @@ main = do
 derive :: FilePath -> IO ()
 derive fname = do
         fbody <- readFile fname
-        -- don't add a comment to let other pragmas shine through
-        putStrLn $ "{-# LINE 1 \"" ++ fname ++ "\" #-}"
         let modname = case papply (parse (symbol "module" >> cap))
                       (0, -1) ((0, 0), fbody) of
                       [(m, _)] -> m
