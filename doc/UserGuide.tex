@@ -962,32 +962,36 @@ proof obligation between \NAMEREF{List\_Order\_Sorted}  and
  as a red arrow.
 }
 
-
-
 Here is a summary of the types of nodes and links occurring in
-development graphs:\ednote{TODO Christian: update list}
+development graphs:
 \begin{description}
 \item[Named nodes] correspond to a named specification.
 \item[Unnamed nodes] correspond to an anonymous specification.
 \item[Elliptic nodes] correspond to a specification in the current library.
-\item[Rectangular nodes] are external nodes corresponding
- to a specification downloaded from
-another library.
+\item[Rectangular nodes] are external nodes corresponding to a specification
+  downloaded from another library.
 \item[Red nodes] have open proof obligations.
+\item[Yellow nodes] have an open conservativity proof obligations.
 \item[Green nodes] have all proof obligations resolved.
-\item[Black links] correspond to reference to other specifications
-(definition links in the sense of \cite[IV:4]{CASL/RefManual}).
-\item[Blue links] correspond to hiding (hiding definition links).
+\item[Black links] correspond to reference to other specifications (definition
+  links in the sense of \cite[IV:4]{CASL/RefManual}).
 \item[Red links] correspond to open proof obligations (theorem links).
-\item[Green links] correspond to proved proof obligations (theorem links).
-\item[Yellow links] correspond to open proof obligations involving hiding (hiding theorem links).
+\item[Green links] correspond to proven theorem links.
+\item[Yellow links] correspond to proven theorem links with open
+  conservativity or to open hiding theorem links.
+\item[Blue links] correspond to hiding, free, or cofree definition links.
+\item[Violett links] correspond to a mixture of links becoming visible after
+ ``expand'' or ``Show unnamed nodes with open proofs''.
 \item[Solid links] correspond to global (definition or theorem)
 links in the sense of \cite[IV:4]{CASL/RefManual}.
-\item[Dashed links] correspond to local (definition or theorem) links in the sense of \cite[IV:4]{CASL/RefManual}.
-\item[Single links] have homogeneous signature morphisms (staying within
-one and the same logic).
-\item[Double links] have heterogeneous signature morphisms (moving between
-logics).
+\item[Dashed links] correspond to local (theorem) links in the sense of
+  \cite[IV:4]{CASL/RefManual}. These are usually created after
+  ``Global-Decomposition'' or only be visible after ``Show newly added proven
+  edges''.
+\item[Single line links] have homogeneous signature morphisms (staying within
+  one and the same logic).
+\item[Double line links] have heterogeneous signature morphisms (moving
+  between logics).
 \end{description}
 
 We now explain the menus of the development graph window.
@@ -1006,7 +1010,6 @@ clicking with the right mouse button.
 \item[undo] Undo the last development graph proof step (see under Proofs)
 \item[redo] Restore the last undone development graph proof step (see
   under Proofs)
-\item[reload]  Reload the specification library (Attention! all proofs are lost. A change management keep proofs is in preparation.)
 \item[Unnamed nodes]
 The ``Hide/show names'' menu is a toggle:
 you can switch on or off the display of names for nodes that
@@ -1033,18 +1036,8 @@ nodes re-appear.
   Besides the deduction rules, the menu contains entries for computing
   a colimit approximation for the development graph and for
   computing normal forms of all nodes (needed when dealing with hiding).
-
-
-\item[Translate Graph] translates the whole development graph
-along a logic comorphism.
-\item[Show Logic Graph] shows the graph of logics and logic comorphisms
-currently supported by \Hets.
-\item[Show Library Graph] shows the graph of libraries that have
-been loaded into \Hets, and their dependencies. For library,
-the corresponding development graphs can be shown using its node menu.
-Also, a list of specifications and views can be shown.
-
 \end{description}
+
 \item[Pop-up menu for nodes]
 Here, the number of submenus depends on the type of the node:
 \begin{description}
@@ -1094,6 +1087,32 @@ These numbers are also used in the proof status information for
 edges.
 \end{description}
 \end{description}
+
+Besides development graphs there are library graph windows displaying the
+library hierarchy. The Edit menu has the following submenus:
+
+\begin{description}
+\item[Edit] This menu for library graphs has the following submenus:
+\begin{description}
+\item[Reload Library] Reloads all \HetCASL sources in order to avoid closing
+  and restarting the application after sources have changed. However, all
+  previous proof steps will be lost, therefore you have to confirm this
+  action. (A change management tool to keep proofs is in preparation.)
+\item[Translate Library] Translates a library along a comorphism to be chosen.
+  This only works for a homogeneous library hierarchy. A finer grained
+  alternative is to use ``Translate theory'' for individual nodes. The
+  original state and proof steps will be lost, therefore you have to confirm
+  this action.
+\item[Show Logic Graph] Shows the graph of logics and logic comorphisms
+  currently supported by \Hets. The Edit menu of a logic graph window has the
+  following submenu:
+\begin{description}
+\item[Show detailed logic graph] Shows the important sublogics and comorphims
+  between them, i.e. translation (blue links) and inclusion (black links).
+\end{description}
+\end{description}
+\end{description}
+
 
 \section{Reading, Writing and Formatting}
 
