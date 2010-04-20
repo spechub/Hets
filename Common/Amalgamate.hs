@@ -14,6 +14,7 @@ Data types for amalgamability options and analysis
 
 module Common.Amalgamate where
 
+import Data.Char
 import Data.List
 
 {- | 'CASLAmalgOpt' describes the options for CASL amalgamability analysis
@@ -43,11 +44,18 @@ instance Show CASLAmalgOpt where
 instance Read CASLAmalgOpt where
     readsPrec _ = readShow caslAmalgOpts
 
--- | test all possible values
+-- | test all possible values, ignore leading space
 readShowAux :: [(String, a)] -> ReadS a
-readShowAux l s = case find ( \ (p, _) -> isPrefixOf p s) l of
-               Nothing -> []
-               Just (p, t) -> [(t, drop (length p) s)]
+readShowAux l s =
+    let s' = dropWhile isSpace s
+        f _ [] = Nothing
+        f g' (x : xs) = case g' x of
+                         Just res -> Just (x, res)
+                         _ -> f g' xs
+        g (p, _) = stripPrefix p s'
+    in case f g l of
+         Nothing -> []
+         Just ((_, t), s'') -> [(t, s'')]
 
 -- | input all possible values and read one as it is shown
 readShow :: Show a => [a] -> ReadS a
