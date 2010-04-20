@@ -1513,7 +1513,26 @@ of a box formula. The meaning of $\langle\alpha\rangle\varphi$
 can be described as ``After some terminating execution of $\alpha$,
 $\varphi$ holds''.
 
-\ednote{TODO Christian: describe interaction with \Hets}
+A VSE specification or something that can be translated to VSE (currently only
+\CASL) can be sent to the VSE prover via the node menu of development graph
+nodes in two different ways. You can either select VSE from the theorem prover
+choice box shown after ``Prove'' or you can select ``Prove VSE Structured''.
+The first choice will call VSE with a single flattened theory whereas a
+structured call will translate all nodes with ingoing links to the current one
+individually.
+
+VSE pops up with a ``project'' window. In this window you can choose ``Work
+on'' and ``specification''. Besides the builtin specification ``boolean''
+there is at least one specification from your development graph that you
+can select for proving. For a structured choice you'll have specifications
+for all underlying nodes that you should work on in a bottom up fashion.
+
+The state created by VSE will be stored in a \texttt{.tar} file (within the
+current directory) that preserves proofs for replay later on as long as you
+don't change library or node names.
+
+\ednote{TODO Till reference to VSE prover manual, no? availability of VSE,
+  screen-shots?}
 
 \subsection{zChaff}
 
