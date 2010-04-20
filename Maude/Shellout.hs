@@ -13,7 +13,7 @@ import System.Process
 
 import Maude.AS_Maude
 
-import Maude.Sign (Sign)
+import Maude.Sign (Sign,inlineSign)
 import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
 import qualified Maude.Sentence as Sen
@@ -21,7 +21,7 @@ import qualified Maude.Sentence as Sen
 import Data.List (isPrefixOf)
 
 import Common.Doc
-import Common.DocUtils (Pretty(..))
+import Common.DocUtils ()
 import Common.Utils
 
 maudePath :: String
@@ -42,7 +42,7 @@ basicAnalysis sign (MaudeText mt) = do
     (hIn, hOut, _, _) <- runMaude
     hPutStrLn hIn $ unwords ["in", maudeHetsPath]
     let sigStr = show $ parens
-          $ vcat [text "mod FROM-HETS is", pretty sign, text mt, text "endm"]
+          $ vcat [text "mod FROM-HETS is", inlineSign sign, text mt, text "endm"]
     hPutStrLn hIn sigStr
     hFlush hIn
     specOut <- hGetContents hOut

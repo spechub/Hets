@@ -1,30 +1,33 @@
  fmod MAUDE2HASKELL is
-  pr CONVERSION .
-  pr VIEW .
   ex META-MODULE .
+  pr CONVERSION .
+  pr TERMSET .
+  pr VIEW .
   
   var  H : Header .
   var  IL : ImportList .
   var  SS : SortSet .
   var  SSDS : SubsortDeclSet .
   vars ODS ODS' : OpDeclSet .
-  var  MAS : MembAxSet .
-  var  EqS : EquationSet .
-  var  RS : RuleSet .
+  vars MAS MAS' : MembAxSet .
+  vars EqS EqS' : EquationSet .
+  vars RS RS' : RuleSet .
   vars Q Q' Q'' : Qid .
   var  QIL : QidList .
   var  STR STR1 STR2 : String .
   vars ME ME' ME'' : ModuleExpression .
   vars TL TL' : TermList .
+  var  TS : TermSet .
   vars T T' T'' T1 T2 T3 : Term .
   var  AtS : AttrSet .
   var  TyL : TypeList .
   vars Ty Ty' Ty1 Ty2 : Type .
   vars S S' : Sort .
   var  K : Kind .
+  var  KS : KindSet .
   var  A : Attr .
   var  Ct : Constant .
-  var  V : Variable .
+  vars V V' : Variable .
   vars N N' : Nat .
   var  NL : NatList .
   var  Mb : MembAx .
@@ -47,47 +50,57 @@
   op no-module : -> Module .
   
   op haskellify : Qid -> QidList .
-  eq haskellify(Q) = haskellify(upModule(Q, false), upModule(Q, true)) .
+  ceq haskellify(Q) = haskellify(M, M')
+   if M := varsConstraints(upModule(Q, false)) /\
+      M' := varsConstraints(upModule(Q, true)) .
 
   op haskellify : Module Module -> QidList .
   ceq haskellify(M, M') = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifySorts(SS) comma(IL, SS, KS)
+          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-    if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M .
+    if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M /\
+       KS := getKinds(M) .
   ceq haskellify(M, M') = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifySorts(SS) comma(IL, SS, KS)
+          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-   if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M .
+   if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M /\
+       KS := getKinds(M) .
   ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifySorts(SS) comma(IL, SS, KS)
+          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-   if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M .
+   if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M /\
+       KS := getKinds(M) .
   ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
+          haskellifySorts(SS) comma(IL, SS, KS)
+          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-   if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M .
+   if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M /\
+       KS := getKinds(M) .
   
   op haskellify : Module Module View -> QidList .
   eq haskellify(M, M', view Q from ME to ME' is SVM endv) = 
@@ -177,6 +190,15 @@
   op comma : SortSet -> QidList .
   eq comma((none).SortSet) = nil .
   eq comma(SS) = '`, ' [owise] .
+  
+  op haskellifyKinds : KindSet -> QidList .
+  eq haskellifyKinds(none) = nil .
+  eq haskellifyKinds(K ; KS) = 'KindStmnt ' '`( haskellifyKind(kind2sort(K)) '`) comma(KS)
+                               haskellifyKinds(KS) .
+
+  op comma : KindSet -> QidList .
+  eq comma((none).KindSet) = nil .
+  eq comma(KS) = '`, ' [owise] .
   
   op haskellifySubsorts : SubsortDeclSet -> QidList .
   eq haskellifySubsorts(none) = nil .
@@ -381,39 +403,45 @@
                       else nil
                       fi .
   
-  op comma : ImportList SortSet SubsortDeclSet -> QidList .
-  eq comma(IL, SS, SSDS) = if (IL =/= nil or SS =/= none) and SSDS =/= none
+  op comma : ImportList SortSet KindSet -> QidList .
+  eq comma(IL, SS, KS) = if (IL =/= nil or SS =/= none) and KS =/= none
                            then '`, ' 
                            else nil
                            fi .
   
-  op comma : ImportList SortSet SubsortDeclSet OpDeclSet -> QidList .
-  eq comma(IL, SS, SSDS, ODS) = 
+  op comma : ImportList SortSet KindSet SubsortDeclSet -> QidList .
+  eq comma(IL, SS, KS, SSDS) = if (IL =/= nil or SS =/= none or KS =/= none) and SSDS =/= none
+                           then '`, ' 
+                           else nil
+                           fi .
+  
+  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet -> QidList .
+  eq comma(IL, SS, KS, SSDS, ODS) = 
           if (IL =/= nil or SS =/= none or SSDS =/= none) and ODS =/= none
           then '`, ' 
           else nil
           fi .
   
-  op comma : ImportList SortSet SubsortDeclSet OpDeclSet MembAxSet -> QidList .
-  eq comma(IL, SS, SSDS, ODS, MAS) = 
-          if (IL =/= nil or SS =/= none or SSDS =/= none or ODS =/= none) and MAS =/= none
+  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet MembAxSet -> QidList .
+  eq comma(IL, SS, KS, SSDS, ODS, MAS) = 
+          if (IL =/= nil or SS =/= none or KS =/= none or SSDS =/= none or ODS =/= none) and MAS =/= none
           then '`, ' 
           else nil
           fi .
 
-  op comma : ImportList SortSet SubsortDeclSet OpDeclSet MembAxSet
+  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet MembAxSet
              EquationSet -> QidList .
-  eq comma(IL, SS, SSDS, ODS, MAS, EqS) = 
-          if (IL =/= nil or SS =/= none or SSDS =/= none or ODS =/= none or MAS =/= none)
+  eq comma(IL, SS, KS, SSDS, ODS, MAS, EqS) = 
+          if (IL =/= nil or SS =/= none or KS =/= none or SSDS =/= none or ODS =/= none or MAS =/= none)
              and EqS =/= none
           then '`, ' 
           else nil
           fi .
 
-  op comma : ImportList SortSet SubsortDeclSet OpDeclSet MembAxSet
+  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet MembAxSet
              EquationSet RuleSet -> QidList .
-  eq comma(IL, SS, SSDS, ODS, MAS, EqS, RS) = 
-          if (IL =/= nil or SS =/= none or SSDS =/= none or ODS =/= none
+  eq comma(IL, SS, KS, SSDS, ODS, MAS, EqS, RS) = 
+          if (IL =/= nil or SS =/= none or KS =/= none or SSDS =/= none or ODS =/= none
               or MAS =/= none or EqS =/= none) and RS =/= none
           then '`, ' 
           else nil
@@ -492,6 +520,129 @@
 
   op type : Module Term ~> Type .
   eq type(M, T) = getType(metaReduce(M, T)) .
+
+  op varsConstraints : Module -> Module .
+  ceq varsConstraints(M) = fmod H is IL sorts SS . SSDS ODS MAS' EqS' endfm
+   if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M /\
+      MAS' := varsConstraintsMAS(M, MAS) /\
+      EqS' := varsConstraintsEqS(M, EqS) .
+  ceq varsConstraints(M) = mod H is IL sorts SS . SSDS ODS MAS' EqS' RS' endm
+   if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M /\
+      MAS' := varsConstraintsMAS(M, MAS) /\
+      EqS' := varsConstraintsEqS(M, EqS) /\
+      RS' := varsConstraintsRS(M, RS) .
+  ceq varsConstraints(M) = fth H is IL sorts SS . SSDS ODS MAS' EqS' endfth
+   if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M /\
+      MAS' := varsConstraintsMAS(M, MAS) /\
+      EqS' := varsConstraintsEqS(M, EqS) .
+  ceq varsConstraints(M) = th H is IL sorts SS . SSDS ODS MAS' EqS' RS' endth
+   if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M /\
+      MAS' := varsConstraintsMAS(M, MAS) /\
+      EqS' := varsConstraintsEqS(M, EqS) /\
+      RS' := varsConstraintsRS(M, RS) .
+      
+      
+
+  op varsConstraintsMAS : Module MembAxSet -> MembAxSet .
+  eq varsConstraintsMAS(M, none) = none .
+  eq varsConstraintsMAS(M, Mb MAS) = varsConstraintsMA(M, Mb) varsConstraintsMAS(M, MAS) .
+  
+  op varsConstraintsMA : Module MembAx -> MembAx .
+  ceq varsConstraintsMA(M, mb T : Ty [AtS] .) = 
+                  cmb T1 : Ty if createVarsConstraints(M, TS) [AtS] . 
+   if T1 := sort2kindTerm(M, T) /\
+      TS := getSortVarsTerm(M, T) .
+  ceq varsConstraintsMA(M, cmb T : Ty if C [AtS] .) = 
+                  cmb T1 : Ty if sort2kindCond(M, C) /\ createVarsConstraints(M, TS) [AtS] . 
+   if T1 := sort2kindTerm(M, T) /\
+      TS := getSortVarsTerm(M, T) | getSortVarsCond(M, C) .
+
+  op varsConstraintsEqS : Module EquationSet -> EquationSet .
+  eq varsConstraintsEqS(M, none) = none .
+  eq varsConstraintsEqS(M, Eq EqS) = varsConstraintsEq(M, Eq) varsConstraintsEqS(M, EqS) .
+
+  op varsConstraintsEq : Module Equation -> Equation .
+  ceq varsConstraintsEq(M, eq T = T' [AtS] .) =
+                 ceq T1 = T2 if createVarsConstraints(M, TS) [AtS] .
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') /\
+      TS := getSortVarsTerm(M, T) | getSortVarsTerm(M, T') .
+  ceq varsConstraintsEq(M, ceq T = T' if C [AtS] .) =
+                 ceq T1 = T2 if sort2kindCond(M, C) /\ createVarsConstraints(M, TS) [AtS] .
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') /\
+      TS := getSortVarsTerm(M, T) | getSortVarsTerm(M, T') | getSortVarsCond(M, C) .
+
+  op varsConstraintsRS : Module RuleSet -> RuleSet .
+  eq varsConstraintsRS(M, none) = none .
+  eq varsConstraintsRS(M, R RS) = varsConstraintsRl(M, R) varsConstraintsRS(M, RS) .
+
+  op varsConstraintsRl : Module Rule -> Rule .
+  ceq varsConstraintsRl(M, rl T => T' [AtS] .) =
+                 crl T1 => T2 if createVarsConstraints(M, TS) [AtS] .
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') /\
+      TS := getSortVarsTerm(M, T) | getSortVarsTerm(M, T') .
+  ceq varsConstraintsRl(M, crl T => T' if C [AtS] .) =
+                 crl T1 => T2 if sort2kindCond(M, C) /\ createVarsConstraints(M, TS) [AtS] .
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') /\
+      TS := getSortVarsTerm(M, T) | getSortVarsTerm(M, T') | getSortVarsCond(M, C) .
+  
+  op sort2kindVar : Module Variable -> Variable .
+  ceq sort2kindVar(M, V) = V'
+   if Ty := getType(V) /\
+      Ty' := getKind(M, Ty) /\
+      V' := qid(string(getName(V)) + ":" + string(Ty')) .
+
+  op sort2kindTerm : Module Term -> Term .
+  eq sort2kindTerm(M, Q[TL]) = Q[sort2kindTerm*(M, TL)] .
+  eq sort2kindTerm(M, V) = sort2kindVar(M, V) .
+  eq sort2kindTerm(M, Ct) = Ct .
+  
+  op sort2kindTerm* : Module TermList -> TermList .
+  eq sort2kindTerm*(M, empty) = empty .
+  eq sort2kindTerm*(M, (T, TL)) = sort2kindTerm(M, T), sort2kindTerm*(M, TL) .
+  
+  op sort2kindCond : Module Condition -> Condition .
+  eq sort2kindCond(M, nil) = nil .
+  ceq sort2kindCond(M, T = T' /\ C) = T1 = T2 /\ sort2kindCond(M, C)
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') .
+  ceq sort2kindCond(M, T := T' /\ C) = T1 := T2 /\ sort2kindCond(M, C)
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') .
+  ceq sort2kindCond(M, T : Ty /\ C) = T1 : Ty /\ sort2kindCond(M, C)
+   if T1 := sort2kindTerm(M, T) .
+  ceq sort2kindCond(M, T => T' /\ C) = T1 => T2 /\ sort2kindCond(M, C)
+   if T1 := sort2kindTerm(M, T) /\
+      T2 := sort2kindTerm(M, T') .
+
+  op createVarsConstraints : Module TermSet ~> Condition .
+  eq createVarsConstraints(M, emptyTermSet) = nil .
+  ceq createVarsConstraints(M, V | TS) = V' : Ty /\ createVarsConstraints(M, TS)
+   if Ty := getType(V) /\
+      V' := sort2kindVar(M, V) .
+  
+  op getSortVarsTerm : Module Term -> TermSet .
+  eq getSortVarsTerm(M, Q[TL]) = getSortVarsTerm*(M, TL) .
+  eq getSortVarsTerm(M, V) = if getType(V) :: Kind
+                             then emptyTermSet
+                             else V
+                             fi .
+  eq getSortVarsTerm(M, Ct) = emptyTermSet .
+
+  op getSortVarsTerm* : Module TermList -> TermSet .
+  eq getSortVarsTerm*(M, empty) = emptyTermSet .
+  eq getSortVarsTerm*(M, (T, TL)) = getSortVarsTerm(M, T) | getSortVarsTerm*(M, TL) .
+  
+  op getSortVarsCond : Module Condition -> TermSet .
+  eq getSortVarsCond(M, nil) = emptyTermSet .
+  eq getSortVarsCond(M, T = T' /\ C) = getSortVarsTerm(M, T) | getSortVarsTerm(M, T') .
+  eq getSortVarsCond(M, T : Ty /\ C) = getSortVarsTerm(M, T) .
+  eq getSortVarsCond(M, T := T' /\ C) = getSortVarsTerm(M, T) | getSortVarsTerm(M, T') .
+  eq getSortVarsCond(M, T => T' /\ C) = getSortVarsTerm(M, T) | getSortVarsTerm(M, T') .
+  
  endfm
  
  

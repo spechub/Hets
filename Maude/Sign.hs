@@ -38,6 +38,8 @@ module Maude.Sign (
     renameSort,
     renameLabel,
     renameOp,
+    -- * Inline printing
+    inlineSign
 ) where
 
 import Maude.AS_Maude
@@ -64,17 +66,18 @@ import Common.DocUtils (Pretty(..))
 -- ** Auxiliary types
 
 type SortSet = SymbolSet
+type KindSet = SymbolSet
 type SubsortRel = SymbolRel
 type OpDecl = (Set Symbol, [Attr])
 type OpDeclSet = Set OpDecl
 type OpMap = Map Qid OpDeclSet
 type Sentences = Set Sentence
 
--- TODO: Add the Module name to Sign. Maybe.
 -- ** The Signature type
 -- | The Signature of a Maude 'Module'.
 data Sign = Sign {
         sorts :: SortSet,               -- ^ The 'Set' of 'Sort's
+        kinds :: KindSet,               -- ^ The 'Set' of 'Kind's
         subsorts :: SubsortRel,         -- ^ The 'Rel'ation of 'Sort's
         ops :: OpMap,                   -- ^ The 'Map' of 'Operator's
         sentences :: Sentences          -- ^ The 'Set' of 'Sentence's
@@ -88,6 +91,9 @@ instance Pretty Sign where
         -- print sort declarations
         pr'sorts ss = if null ss then Doc.empty else
             hsep [keyword "sorts", hsep $ map pretty ss, dot]
+        -- print kind declarations
+        pr'kinds ks = if null ks then Doc.empty else
+            hsep [keyword "kinds", hsep $ map pretty ks, dot]
         -- print subsort declarations
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
@@ -100,6 +106,7 @@ instance Pretty Sign where
         pr'ocs = descend pr'ods
         pr'ops = vcat . Map.fold pr'ocs []
         in vcat [ pr'sorts $ Set.elems $ sorts sign
+                , pr'kinds $ Set.elems $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
                 , pr'ops $ ops sign ]
                 -- NOTE: Leaving out Sentences for now.
@@ -109,6 +116,7 @@ instance HasSorts Sign where
     getSorts = sorts
     mapSorts mp sign = sign {
         sorts = mapSorts mp $ sorts sign,
+        kinds = mapSorts mp $ kinds sign,
         subsorts = mapSorts mp $ subsorts sign,
         ops = mapSorts mp $ ops sign
         -- NOTE: Leaving out Sentences for now.
@@ -138,24 +146,26 @@ instance HasLabels Sign where
 -- * Construction
 
 -- | Separate Sort, Subsort and Operator declaration 'Statement's.
-partitionStmts :: [Statement] -> ([Sort], [SubsortDecl], [Operator])
+partitionStmts :: [Statement] -> ([Sort], [Kind], [SubsortDecl], [Operator])
 partitionStmts = let
-    switch (sorts', subs', ops') stmt = case stmt of
-        SortStmnt sort -> (sort:sorts', subs', ops')
-        SubsortStmnt sub -> (sorts', sub:subs', ops')
-        OpStmnt op -> (sorts', subs', op:ops')
-        _ -> (sorts', subs', ops')
-    in foldl switch ([], [], [])
+    switch (sorts', kinds', subs', ops') stmt = case stmt of
+        SortStmnt sort -> (sort : sorts', kinds', subs', ops')
+        KindStmnt kind -> (sorts', kind : kinds', subs', ops')
+        SubsortStmnt sub -> (sorts', kinds', sub : subs', ops')
+        OpStmnt op -> (sorts', kinds', subs', op : ops')
+        _ -> (sorts', kinds', subs', ops')
+    in foldl switch ([], [], [], [])
 
 -- | Extract the 'Sign'ature from the given 'Module'.
 fromSpec :: Module -> Sign
 fromSpec (Module _ _ stmts) = let
     sents = filter (not . Sen.isRule) . Sen.fromStatements $ stmts
-    (sort'list, sub'list, op'list) = partitionStmts stmts
+    (sort'list, kind'list, sub'list, op'list) = partitionStmts stmts
     ins'sorts = flip (foldr insertSort) sort'list
+    ins'kinds = flip (foldr insertKind) kind'list
     ins'subs  = flip (foldr insertSubsort) sub'list
     ins'ops   = flip (foldr insertOp) op'list
-    sign = ins'ops . ins'subs . ins'sorts $ empty
+    sign = ins'ops . ins'subs . ins'kinds . ins'sorts $ empty
     in sign {
         subsorts = Rel.transClosure $ subsorts sign,
         sentences = Set.fromList sents,
@@ -184,10 +194,32 @@ sortSym2kindSym s = s
 empty :: Sign
 empty = Sign {
     sorts = Set.empty,
+    kinds = Set.empty,
     subsorts = Rel.empty,
     ops = Map.empty,
     sentences = Set.empty
 }
+
+inlineSign :: Sign -> Doc
+inlineSign sign = let
+        descend = flip . Set.fold
+        -- print sort declarations
+        pr'sorts ss = if null ss then Doc.empty else
+            hsep [keyword "sorts", hsep $ map pretty ss, dot]
+        -- print subsort declarations
+        pr'sups = hsep . map pretty . Set.elems
+        pr'pair sub sups = (:) . hsep $
+            [keyword "subsort", pretty sub, less, pr'sups sups, dot]
+        pr'subs = vcat . Map.foldWithKey pr'pair []
+        -- print operator decparations
+        pr'decl attrs symb = hsep
+            [keyword "op", pretty symb, pretty attrs, dot]
+        pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
+        pr'ocs = descend pr'ods
+        pr'ops = vcat . Map.fold pr'ocs []
+        in vcat [ pr'sorts $ Set.elems $ sorts sign
+                , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
+                , pr'ops $ ops sign ]
 
 -- ** Auxiliary construction
 
@@ -196,6 +228,12 @@ insertSort :: Sort -> Sign -> Sign
 insertSort sort sign = let
     insert = Set.insert . asSymbol
     in sign {sorts = insert sort (sorts sign)}
+
+-- | Insert a 'Kind' into a 'Sign'ature.
+insertKind :: Kind -> Sign -> Sign
+insertKind kind sign = let
+    insert = Set.insert . asSymbol
+    in sign {kinds = insert kind (kinds sign)}
 
 -- | Insert a 'SubsortDecl' into a 'Sign'ature.
 insertSubsort :: SubsortDecl -> Sign -> Sign
@@ -271,6 +309,7 @@ union sig1 sig2 = let
     apply func items = func (items sig1) (items sig2)
     in Sign {
         sorts = apply Set.union sorts,
+        kinds = apply Set.union kinds,
         subsorts = apply Rel.union subsorts,
         ops = apply (Map.unionWith Set.union) ops,
         sentences = apply Set.union sentences
@@ -282,6 +321,7 @@ intersection sig1 sig2 = let
     apply func items = func (items sig1) (items sig2)
     in Sign {
         sorts = apply Set.intersection sorts,
+        kinds = apply Set.intersection kinds,
         subsorts = apply Rel.intersection subsorts,
         ops = apply Map.intersection ops,
         sentences = apply Set.intersection sentences
@@ -346,3 +386,4 @@ renameOp from to attrs sign = let
     opmap = ops sign
     mapped = mapOpDecl subrel from to attrs opmap
     in sign { ops = mapped }
+

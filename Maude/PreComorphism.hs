@@ -586,18 +586,16 @@ rewID = token2id $ mkSimpleId "rew"
 
 -- | translates a Maude equation without the "owise" attribute into a CASL formula
 noOwiseEq2Formula :: IdMap -> MAS.Equation -> CAS.CASLFORMULA
-noOwiseEq2Formula im eq@(MAS.Eq t t' [] _) = quantifyUniversally vars_form
+noOwiseEq2Formula im (MAS.Eq t t' [] _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             form = CAS.Strong_equation ct ct' nullRange
-            vars_form = varsImp (MSentence.Equation eq) im form
-noOwiseEq2Formula im eq@(MAS.Eq t t' conds@(_:_) _) = quantifyUniversally vars_form
+noOwiseEq2Formula im (MAS.Eq t t' conds@(_:_) _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             conds_form = conds2formula im conds
             concl_form = CAS.Strong_equation ct ct' nullRange
             form = createImpForm conds_form concl_form
-            vars_form = varsImp (MSentence.Equation eq) im form
 
 -- | transforms a Maude equation defined with the otherwise attribute into
 -- a CASL formula
@@ -778,12 +776,9 @@ cond2formula im (MAS.EqCond t t') = CAS.Strong_equation ct ct' nullRange
 cond2formula im (MAS.MatchCond t t') = CAS.Strong_equation ct ct' nullRange
        where ct = maudeTerm2caslTerm im t
              ct' = maudeTerm2caslTerm im t'
-cond2formula im (MAS.MbCond t s) = CAS.Predication pred_name [ct] nullRange
+cond2formula im (MAS.MbCond t s) = CAS.Membership ct s' nullRange
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
-            kind = Map.findWithDefault (errorId "mb cond to formula") s' im
-            pred_type = CAS.Pred_type [kind] nullRange
-            pred_name = CAS.Qual_pred_name s' pred_type nullRange
 cond2formula im (MAS.RwCond t t') = CAS.Predication pred_name [ct, ct'] nullRange
        where ct = maudeTerm2caslTerm im t
              ct' = maudeTerm2caslTerm im t'
@@ -1167,67 +1162,3 @@ errorId s = token2id $ mkSimpleId $ "ERROR: " ++ s
 kindId :: Id -> Id
 kindId i = token2id $ mkSimpleId $ "kind_" ++ show i
 
--- | generates an implication formula with the constraints produced by
--- the sorts of the variables
-varsImp :: MSentence.Sentence -> IdMap -> CAS.CASLFORMULA -> CAS.CASLFORMULA
-varsImp sen im form = createImpForm imp_form form
-      where forms = varsImplication sen im
-            forms' = deleteDuplicated forms form
-            imp_form = createConjForm forms'
-
-deleteDuplicated :: [CAS.CASLFORMULA] -> CAS.CASLFORMULA -> [CAS.CASLFORMULA]
-deleteDuplicated fs (CAS.Implication f _ True _) = deleteDuplicatedAux fs f
-deleteDuplicated fs (CAS.Implication _ f False _) = deleteDuplicatedAux fs f
-deleteDuplicated fs _ = fs
-
-deleteDuplicatedAux :: [CAS.CASLFORMULA] -> CAS.CASLFORMULA -> [CAS.CASLFORMULA]
-deleteDuplicatedAux fs (CAS.Conjunction fs' _) = filter (\ x -> not $ elem x fs') fs
-deleteDuplicatedAux fs f = filter (\ x -> not $ elem x [f]) fs
-
--- | generates the implication obtained from the implicit information given
--- in Maude variables
-varsImplication :: MSentence.Sentence -> IdMap -> [CAS.CASLFORMULA]
-varsImplication (MSentence.Membership mb) im = forms
-      where MAS.Mb t _ conds _ = mb
-            formsTerm = varsImpTerm im t
-            formsCond = varsImpConds im conds
-            forms = Set.toList $ Set.union formsTerm formsCond
-varsImplication (MSentence.Equation eq) im = forms
-      where MAS.Eq t _ conds _ = eq
-            formsTerm = varsImpTerm im t
-            formsCond = varsImpConds im conds
-            forms = Set.toList $ Set.union formsTerm formsCond
-varsImplication (MSentence.Rule rl) im = forms
-      where MAS.Rl t _ conds _ = rl
-            formsTerm = varsImpTerm im t
-            formsCond = varsImpConds im conds
-            forms = Set.toList $ Set.union formsTerm formsCond
-
--- | computes the predicates with the information associated to the variables in
--- matching conditions
-varsImpConds :: IdMap -> [MAS.Condition] -> Set.Set CAS.CASLFORMULA
-varsImpConds im = foldr (Set.union . (varsImpCond im)) Set.empty
-
--- | auxiliary function that computes the predicates with the information associated 
--- to the variables in matching conditions
-varsImpCond :: IdMap -> MAS.Condition -> Set.Set CAS.CASLFORMULA
-varsImpCond im (MAS.MatchCond t _) = varsImpTerm im t
-varsImpCond im (MAS.RwCond _ t) = varsImpTerm im t
-varsImpCond _ _ = Set.empty
-
--- | computes the predicates with the information associated to the variables in
--- the terms
-varsImpTerms :: IdMap -> [MAS.Term] -> Set.Set CAS.CASLFORMULA
-varsImpTerms im = foldr (Set.union . (varsImpTerm im)) Set.empty
-
--- | computes the predicates with the information associated to the variables in
--- a term
-varsImpTerm :: IdMap -> MAS.Term -> Set.Set CAS.CASLFORMULA
-varsImpTerm im t@(MAS.Var _ (MAS.TypeSort s)) = 
-                                  Set.singleton $ CAS.Membership t' sort nullRange
-      where sort = token2id $ getName s
-            t' = maudeTerm2caslTerm im t
--- The variable is declared on the kind
-varsImpTerm _ (MAS.Var _ _) = Set.empty
-varsImpTerm im (MAS.Apply _ terms _) = varsImpTerms im terms
-varsImpTerm _ _ = Set.empty

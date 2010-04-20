@@ -144,7 +144,7 @@ instance Pretty Sort where
     pretty (SortId qid) = pretty qid
 
 instance Pretty Kind where
-    pretty (KindId qid) = pretty qid
+    pretty (KindId qid) = brackets $ pretty qid
 
 instance Pretty ParamId where
     pretty (ParamId qid) = pretty qid
