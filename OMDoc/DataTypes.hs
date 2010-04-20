@@ -13,7 +13,7 @@ Datatypes for an intermediate OMDoc Representation.
 module OMDoc.DataTypes where
 
 import Common.Utils
-import Common.Amalgamate
+import Common.Amalgamate (readShow)
 import Common.Id
 import Common.Lexer
 import Common.AnnoParser
@@ -35,13 +35,13 @@ import qualified Data.Map as Map
 
 
 -- | OMDoc root element with libname and a list of toplevel elements
-data OMDoc = OMDoc String [TLElement] deriving (Show, Eq, Ord)
+data OMDoc = OMDoc String [TLElement] deriving (Show, Read, Eq, Ord)
 
 -- | Toplevel elements for OMDoc, theory with name, meta and content,
 -- view with from, to and morphism
 data TLElement = TLTheory String (Maybe OMCD) [TCElement]
                | TLView String OMCD OMCD TCMorphism
-                 deriving (Show, Eq, Ord)
+                 deriving (Show, Read, Eq, Ord)
 
 -- | Theory constitutive elements for OMDoc
 data TCElement =
@@ -55,7 +55,7 @@ data TCElement =
   | TCImport String OMCD TCMorphism
     -- | A comment, only for development purposes
   | TCComment String
-    deriving (Show, Eq, Ord)
+    deriving (Show, Read, Eq, Ord)
 
 -- | return type for sentence translation (ADT or formula)
 type TCorOMElement = Either TCElement OMElement
@@ -76,7 +76,7 @@ data OmdADT =
   | ADTSelector String Totality
     -- | Insort elements point to other sortdefs and inherit their structure
   | ADTInsort OMQualName
-    deriving (Show, Eq, Ord)
+    deriving (Show, Read, Eq, Ord)
 
 -- | Roles of the declared symbols can be object or type
 data SymbolRole = Obj | Typ | Axiom | Theorem deriving (Eq, Ord)
@@ -102,29 +102,26 @@ instance Show Totality where
     show No = "no"
 
 instance Read SymbolRole where
-    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o))
-                   [Obj, Typ, Axiom, Theorem]
+    readsPrec  _ = readShow [Obj, Typ, Axiom, Theorem]
 
 instance Read ADTType where
-    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o))
-                   [Free, Generated]
+    readsPrec  _ = readShow [Free, Generated]
 
 instance Read Totality where
-    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o))
-                   [Yes, No]
+    readsPrec  _ = readShow [Yes, No]
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String,  path :: [String] }
-              deriving (Show, Eq, Ord, Typeable)
+              deriving (Show, Read, Eq, Ord, Typeable)
 
 -- | Attribute-name/attribute-value pair used to represent the type
 -- of a type-annotated term
 data OMAttribute = OMAttr OMElement OMElement
-                      deriving (Show, Eq, Ord)
+                      deriving (Show, Read, Eq, Ord)
 
 -- | CD contains the reference to the content dictionary
 -- and eventually the cdbase entry
-data OMCD = CD [String] deriving (Show, Eq, Ord)
+data OMCD = CD [String] deriving (Show, Read, Eq, Ord)
 
 type OMQualName = (OMCD, OMName)
 
@@ -141,7 +138,7 @@ data OMElement =
   | OMA [OMElement]
     -- | Bindersymbol, bound vars, body
   | OMBIND OMElement [OMElement] OMElement
-  deriving (Show, Eq, Ord)
+  deriving (Show, Read, Eq, Ord)
 
 
 -- * Hets Utils

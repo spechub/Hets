@@ -94,16 +94,36 @@ lookupLib :: ImpEnv -> URI -> Maybe (LibName, DGraph)
 lookupLib e u = Map.lookup (rmSuffix $ uriPath u) $ libMap e
 
 
-lookupNode :: ImpEnv -> CurrentLib -> UriCD -> Maybe (LibName, LNode DGNodeLab)
+lookupNode :: ImpEnv -> CurrentLib -> UriCD
+           -> Maybe ( LibName -- the origin libname of the theory
+                    , LNode DGNodeLab -- the (eventually reference) node
+                    )
 lookupNode e (ln, dg) ucd =
     let mn = getModule ucd in
     if cdInLib ucd ln then
-        case lookupNodeByName mn dg of
+        case lookupLocalNodeByName mn dg of
           Nothing -> error $ "lookupNode: Node not found: " ++ mn
           Just lnode -> Just (ln, lnode)
     else case lookupLib e $ fromJust $ getUri ucd of
            Nothing -> Nothing
-           Just (ln', dg') -> fmap (\ n -> (ln', n)) $ lookupNodeByName mn dg'
+           Just (ln', dg') ->
+               case lookupRefNodeByName mn ln' dg of
+                 Just lnode -> Just (ln', lnode)
+                 _ -> fmap (\ n -> (ln', n)) $ lookupLocalNodeByName mn dg'
+
+{-
+lookupNode e (ln, dg) ucd = do
+  let mn = getModule ucd
+  case lookupNodeByName mn dg of
+    Just lnode -> return (ln, lnode)
+    Nothing
+        | cdInLib ucd ln -> error $ "lookupNode: Node not found: " ++ mn
+        | otherwise ->
+            case lookupLib e $ fromJust $ getUri ucd of
+              Nothing -> fail ""
+              Just (ln', dg') ->
+                  lookupNodeByName mn dg' >>= (\ n -> return (ln', n))
+-}
 
 lookupNSMap :: ImpEnv -> LibName -> Maybe LibName -> String -> NameSymbolMap
 lookupNSMap e ln mLn nm =
@@ -248,8 +268,12 @@ importTheory e (ln, dg) cd = do
     Just (ln', nd)
         | ln == ln' ->
             do
-              rPut2 e $ "... found local or already referenced node."
+              rPut2 e $ "... found local node."
               return (e, ln, dg, nd)
+        | isDGRef $ snd nd ->
+            do
+              rPut2 e $ "... found already referenced node."
+              return (e, ln', dg, nd)
         | otherwise ->
             do
               rPut2 e $ "... found node, referencing it ..."
@@ -261,7 +285,7 @@ importTheory e (ln, dg) cd = do
       let u = uriRelativeToLib ucd ln
       rPut2 e $ "... node not found, reading lib."
       (e', ln', refDg) <- readLib e u
-      case lookupNodeByName (getModule ucd) refDg of
+      case lookupLocalNodeByName (getModule ucd) refDg of
         -- don't add the node to the refDG but to the original DG!
         Just nd -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
                    in return (e', ln', dg', lnode)

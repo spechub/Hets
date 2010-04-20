@@ -111,6 +111,15 @@ class XmlRepresentable a where
   fromXml :: Element -> Result (Maybe a)
 
 
+{-
+-- for testing the performance without the xml lib we use the show and read funs
+xmlOut :: Show a => a -> String
+xmlOut = show
+
+xmlIn :: String -> Result OMDoc
+xmlIn = return . read
+-}
+
 xmlOut :: XmlRepresentable a => a -> String
 xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
                                c -> ppContent c
@@ -119,7 +128,6 @@ xmlIn :: String -> Result OMDoc
 xmlIn s = case parseXMLDoc s of
             Just e -> fromXml e >>= maybeToMonad "xmlIn"
             _ -> fail "xmlIn: Root element missing"
-
 
 listToXml :: XmlRepresentable a => [a] -> [Content]
 listToXml l = map toXml l

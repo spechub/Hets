@@ -231,7 +231,7 @@ exportLinkLab :: LibEnv -> LibName -> DGraph -> ExpEnv -> LEdge DGLinkLab
 exportLinkLab le ln dg s (from, to, lbl) =
     let ltyp = dgl_type lbl
         gmorph = dgl_morphism lbl
-        edgName = show $ dglName lbl
+        edgName = getDGLinkName lbl
         viewname = if null edgName
                    then "gn_" ++ showEdgeId (dgl_id lbl)
                    else edgName
