@@ -892,6 +892,21 @@ lookupNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
 
+-- | lookup a local node in the graph by its name, using showName
+-- to convert nodenames. See also 'lookupNodeByName'.
+lookupLocalNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+lookupLocalNodeByName s dg = lookupNodeWith f dg where
+    f (_, lbl) = not (isDGRef lbl) && getDGNodeName lbl == s
+
+-- | lookup a local node in the graph by its name, using showName
+-- to convert nodenames. See also 'lookupNodeByName'.
+lookupRefNodeByName :: String -> LibName -> DGraph -> Maybe (LNode DGNodeLab)
+lookupRefNodeByName s ln dg = lookupNodeWith f dg where
+    f (_, lbl) = case nodeInfo lbl of
+                   DGRef { ref_libname = libn } ->
+                       libn == ln && getDGNodeName lbl == s
+                   _ -> False
+
 
 -- ** treat reference nodes
 
