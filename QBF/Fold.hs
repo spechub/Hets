@@ -70,8 +70,8 @@ isQBF f = case f of
   Negation f1 _ -> isQBF f1
   Conjunction xs _ -> or $ map isQBF xs
   Disjunction xs _ -> or $ map isQBF xs
-  Implication x y _ -> or [isQBF x,isQBF y]
-  Equivalence x y _ -> or [isQBF x,isQBF y]
+  Implication x y _ -> any isQBF [x,y]
+  Equivalence x y _ -> any isQBF [x,y]
   Quantified_ForAll _ _ _ -> True
   Quantified_Exists _ _ _ -> True
   

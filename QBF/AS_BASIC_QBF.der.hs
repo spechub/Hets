@@ -82,46 +82,47 @@ data ID = ID Id.Token (Maybe Id.Token)
 
 instance Eq ID where
 	ID t1 (Just t2) == ID t3 (Just t4) = ((t1 == t3) && (t2==t4)) || ((t2==t3) && (t1==t4))
-	ID t1 Nothing == ID t2 t3 = (t1 == t2) || ((Just t1) == t3)
+	ID t1 Nothing == ID t2 t3 = (t1 == t2) || (Just t1 == t3)
+	ID _ (Just _) == ID _ Nothing = False
 
 --two QBFs are equivalent if bound variables can be renamed such that the QBFs are equal
-qbf_make_equal :: (Maybe [ID]) -> FORMULA -> [Id.Token] -> FORMULA -> [Id.Token] -> (Maybe [ID])
-qbf_make_equal (Just ids) f ts f1 ts1 = if (length ts) /= (length ts1) then Nothing else case (f,f1) of
-  (Predication t,Predication t1) -> if (t == t1) then (Just ids) else
-    if (elem t ts) && (elem t1 ts1) then
-      if elem (ID t (Just t1)) ids then
-        (Just ids)
+qbfMakeEqual :: Maybe [ID] -> FORMULA -> [Id.Token] -> FORMULA -> [Id.Token] -> Maybe [ID]
+qbfMakeEqual (Just ids) f ts f1 ts1 = if length ts /= length ts1 then Nothing else case (f,f1) of
+  (Predication t,Predication t1) -> if t == t1 then Just ids else
+    if t `elem` ts && t1 `elem` ts1 then
+      if (ID t (Just t1)) `elem` ids then
+        Just ids
       else
-        if (not (elem (ID t Nothing) ids)) && (not (elem (ID t1 Nothing) ids)) then
-          (Just ((ID t (Just t1)):ids))
+        if (ID t Nothing) `notElem` ids && (ID t1 Nothing) `notElem` ids then
+          Just (ID t (Just t1):ids)
         else
           Nothing
     else Nothing
-  (Negation f_ r1,Negation f1_ r2) -> qbf_make_equal (Just ids) f_ ts f1_ ts1
-  (Conjunction (f_:fs) r1,Conjunction (f1_:fs1) r2) -> if (length fs) /= (length fs1) then Nothing else 
+  (Negation f_ _,Negation f1_ _) -> qbfMakeEqual (Just ids) f_ ts f1_ ts1
+  (Conjunction (f_:fs) _,Conjunction (f1_:fs1) _) -> if length fs /= length fs1 then Nothing else 
     case r of
       Nothing 	-> Nothing
-      _		-> qbf_make_equal r (Conjunction fs nullRange) ts (Conjunction fs1 nullRange) ts1
+      _		-> qbfMakeEqual r (Conjunction fs nullRange) ts (Conjunction fs1 nullRange) ts1
     where
-      r = qbf_make_equal (Just ids) f_ ts f1_ ts1
-  (Disjunction fs r,Disjunction fs1 r1) -> qbf_make_equal (Just ids) (Conjunction fs r) ts (Conjunction fs1 r1) ts1
-  (Implication f_ f1_ r1,Implication f2 f3 r2) -> case r of
+      r = qbfMakeEqual (Just ids) f_ ts f1_ ts1
+  (Disjunction fs r,Disjunction fs1 r1) -> qbfMakeEqual (Just ids) (Conjunction fs r) ts (Conjunction fs1 r1) ts1
+  (Implication f_ f1_ _,Implication f2 f3 _) -> case r of
     Nothing -> Nothing
-    _ -> qbf_make_equal r f1_ ts f3 ts1
+    _ -> qbfMakeEqual r f1_ ts f3 ts1
    where
-     r = qbf_make_equal (Just ids) f_ ts f2 ts1
-  (Equivalence f_ f1_ r1,Equivalence f2 f3 r2) -> qbf_make_equal (Just ids) (Implication f_ f1_ r1) ts (Implication f2 f3 r1) ts1
-  (Quantified_ForAll ts_ f_ r1,Quantified_ForAll ts1_ f1_ r2) -> case r of
+     r = qbfMakeEqual (Just ids) f_ ts f2 ts1
+  (Equivalence f_ f1_ r1,Equivalence f2 f3 _) -> qbfMakeEqual (Just ids) (Implication f_ f1_ r1) ts (Implication f2 f3 r1) ts1
+  (Quantified_ForAll ts_ f_ _,Quantified_ForAll ts1_ f1_ _) -> case r of
     Nothing -> Nothing
-    (Just ids_) -> Just (ids ++  (filter (\(ID x (Just y)) -> ((elem x ts_) && (not (elem y ts1_))) || ((elem x ts1_) && (not (elem y ts_)))) d))
+    (Just ids_) -> Just (ids ++  filter (\(ID x (Just y)) -> (x `elem` ts_ && y `notElem` ts1_) || (x `elem` ts1_ && y `notElem` ts_)) d)
      where
        d = (List.\\) ids_ ids
    where
-     r = qbf_make_equal (Just ids) f_ (ts++ts_) f1_ (ts1++ts1_)
-  (Quantified_Exists ts_ f_ r,Quantified_Exists ts1_ f1_ r1) -> qbf_make_equal (Just ids) (Quantified_Exists ts_ f_ r) ts (Quantified_Exists ts1_ f1_ r1) ts1
+     r = qbfMakeEqual (Just ids) f_ (ts++ts_) f1_ (ts1++ts1_)
+  (Quantified_Exists ts_ f_ r,Quantified_Exists ts1_ f1_ r1) -> qbfMakeEqual (Just ids) (Quantified_Exists ts_ f_ r) ts (Quantified_Exists ts1_ f1_ r1) ts1
   (_1,_2) -> Nothing
 
-qbf_make_equal Nothing _ _ _ _ = Nothing
+qbfMakeEqual Nothing _ _ _ _ = Nothing
 
 --ranges are always equal (see Common/Id.hs) - thus they can be ignored
 instance Eq FORMULA where
@@ -133,8 +134,8 @@ instance Eq FORMULA where
   Disjunction xs _ == Disjunction xs1 _ = xs == xs1
   Implication f f1 _ == Implication f2 f3 _ = (f==f2) && (f1==f3)
   Equivalence f f1 _ == Equivalence f2 f3 _ = (f==f2) && (f1==f3)
-  Quantified_ForAll ts f _ == Quantified_ForAll ts1 f1 _ = isJust (qbf_make_equal (Just []) f ts f1 ts1)
-  Quantified_Exists ts f _ == Quantified_Exists ts1 f1 _ = isJust (qbf_make_equal (Just []) f ts f1 ts1)
+  Quantified_ForAll ts f _ == Quantified_ForAll ts1 f1 _ = isJust (qbfMakeEqual (Just []) f ts f1 ts1)
+  Quantified_Exists ts f _ == Quantified_Exists ts1 f1 _ = isJust (qbfMakeEqual (Just []) f ts f1 ts1)
   _ == _ = False
 	
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
