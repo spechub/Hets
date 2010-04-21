@@ -40,7 +40,7 @@ import Static.AnalysisStructured
 import Static.ComputeTheory
 
 import OMDoc.DataTypes
-import OMDoc.XmlInterface (xmlIn)
+import OMDoc.XmlInterface (xmlIn, readXmlFile)
 
 import System.Directory
 
@@ -48,9 +48,9 @@ import Data.Graph.Inductive.Graph (LNode, Node)
 import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
--- import qualified Data.Set as Set
 import Control.Monad
 import Control.Monad.Trans
+
 
 import Network.URI
 
@@ -146,9 +146,10 @@ rPut2 e s = rPutIfVerbose e 2 s
 
 -- * URI Functions
 
-readURL :: URI -> IO String
-readURL u = if isFileURI u then readFile $ uriPath u
-            else error $ "readURL: Unsupported URI-scheme " ++ uriScheme u
+readFromURL :: (FilePath -> IO a) -> URI -> IO a
+readFromURL f u = if isFileURI u then f $ uriPath u
+                  else error $ "readFromURL: Unsupported URI-scheme "
+                           ++ uriScheme u
 
 toURI :: String -> URI
 toURI s = case parseURIReference s of
@@ -244,7 +245,7 @@ readLib :: ImpEnv -- ^ The import environment
         -> ResultT IO (ImpEnv, LibName, DGraph)
 readLib e u = do
   rPut e $ "Downloading " ++ show u ++ " ..."
-  xmlString <- lift $ readURL u
+  xmlString <- lift $ readFromURL readXmlFile u
   OMDoc n l <- liftR $ xmlIn xmlString
   ln <- lift $ libNameFromURL n u
   rPut e $ "Importing library " ++ show ln

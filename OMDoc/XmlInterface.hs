@@ -1,6 +1,7 @@
 {-# LANGUAGE
   FlexibleInstances
   , TypeSynonymInstances
+  , CPP
  #-}
 
 {- |
@@ -22,16 +23,23 @@ module OMDoc.XmlInterface where
 
 import OMDoc.DataTypes
 
-import Text.XML.Light
+import Common.Utils (splitBy)
+import Common.Result
+import Common.Id
+
 
 import Data.Maybe
 import Data.List
 
 import Network.URI (isUnescapedInURI, escapeURIString, unEscapeString)
 
-import Common.Utils (splitBy)
-import Common.Result
-import Common.Id
+#ifdef HEXPAT
+import qualified Data.ByteString.Lazy as BS
+import qualified Common.XmlExpat as XE
+#endif
+
+import Text.XML.Light
+
 
 -- | The implemented OMDoc version
 omdoc_current_version :: String
@@ -111,6 +119,26 @@ class XmlRepresentable a where
   fromXml :: Element -> Result (Maybe a)
 
 
+-- * Top level from/to xml functions
+class XmlSource a where
+    parseXml :: a -> Either Element String
+
+instance XmlSource String where
+    parseXml s = case parseXMLDoc s of
+                   Just x -> Left x
+                   _ -> Right "parseXMLDoc: parse error"
+
+#ifdef HEXPAT
+instance XmlSource BS.ByteString where
+    parseXml = XE.parseXml
+
+readXmlFile :: FilePath -> IO BS.ByteString
+readXmlFile = BS.readFile
+#else
+readXmlFile :: FilePath -> IO String
+readXmlFile = readFile
+#endif
+
 {-
 -- for testing the performance without the xml lib we use the show and read funs
 xmlOut :: Show a => a -> String
@@ -124,10 +152,11 @@ xmlOut :: XmlRepresentable a => a -> String
 xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
                                c -> ppContent c
 
-xmlIn :: String -> Result OMDoc
-xmlIn s = case parseXMLDoc s of
-            Just e -> fromXml e >>= maybeToMonad "xmlIn"
-            _ -> fail "xmlIn: Root element missing"
+xmlIn :: XmlSource a => a -> Result OMDoc
+xmlIn s = case parseXml s of
+            Left e -> fromXml e >>= maybeToMonad "xmlIn"
+            Right msg -> fail msg
+
 
 listToXml :: XmlRepresentable a => [a] -> [Content]
 listToXml l = map toXml l
