@@ -51,7 +51,7 @@ SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
     ../$(SETUP) configure -O -p $(SETUPPREFIX) --user; \
-    ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
+    ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -103,8 +103,8 @@ programatica_pkg: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
           cp -f utils/programatica.cabal ../programatica/tools; \
           cp -f $(SETUP) ../programatica/tools; \
           (cd ../programatica/tools; \
-           ./Setup configure $(SETUPPREFIX); \
-           ./Setup build; ./Setup install --user) fi
+           ./Setup configure $(SETUPPREFIX) --user; \
+           ./Setup build; ./Setup install) fi
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 	echo "{-# OPTIONS -w #-}" > $@
