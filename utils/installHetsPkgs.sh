@@ -28,7 +28,7 @@ for p in \
  text-0.7.1.0 \
  parallel-2.2.0.1 \
  hexpat-0.12 \
- cgi-3001.1.7.3
+ cgi-3001.1.7.3 \
  xhtml-3000.2.0.1 \
  stm-2.1.1.2 \
  regex-base-0.93.1 \
