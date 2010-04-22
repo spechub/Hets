@@ -303,18 +303,20 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
 
   let clf = classifyTCs l
 
-  -- I. Compute initial signature
-  (gSig, nsmap) <- liftR $ initialSig clf $ getLogicFromMeta mCD
-
-  -- II. Lookup all imports (= follow and create them first),
+  -- I. Lookup all imports (= follow and create them first),
   -- and insert DGNodeRefs if neccessary.
   ((e', dg'), iIL) <- followImports ln (e, dg) $ importInfo clf
 
-  -- III. Compute morphisms and update local sig stepwise.
-  (gSig', iIWL) <- computeMorphisms e' ln nsmap gSig iIL
+  -- II. Compute morphisms and update initial sig and name symbol map stepwise.
+  ((nsmap, gSig), iIWL) <-
+      computeMorphisms e' ln (notations clf)
+                           (initialSig $ getLogicFromMeta mCD) iIL
+
+  -- III. Compute local signature
+  (nsmap', gSig') <- liftR $ localSig clf nsmap gSig
 
   -- IV. Add the sentences to the Node.
-  gThy <- liftR $ addSentences clf nsmap gSig'
+  gThy <- liftR $ addSentences clf nsmap' gSig'
 
   -- V. Complete the morphisms with final signature
   iIWL' <- liftR $ completeMorphisms (signOf gThy) iIWL
@@ -324,7 +326,7 @@ addTLToDGraph ln (e, dg) (TLTheory n mCD l) = do
       -- VII. Create links from the morphisms.
       dg''' = addLinksToDG nd dg'' iIWL'
       -- add the new name symbol map to the environment
-      e'' = addNSMapToEnv e' ln n nsmap
+      e'' = addNSMapToEnv e' ln n nsmap'
 
   return (e'', dg''')
 
@@ -366,20 +368,23 @@ completeMorphism :: GMorphism -- ^ the target signature id morphism
 completeMorphism idT gmorph = compInclusion logicGraph gmorph idT
 
 
-computeMorphisms :: ImpEnv -> LibName -> NameSymbolMap -> G_sign
+computeMorphisms :: ImpEnv -> LibName
+                 -> Map.Map OMName String -- ^ Notations
+                 -> (NameSymbolMap, G_sign)
                  -> [ImportInfo LinkNode]
-                 -> ResultT IO (G_sign, [LinkInfo])
-computeMorphisms e ln nsmap = mapAccumLM (computeMorphism e ln nsmap)
+                 -> ResultT IO ((NameSymbolMap, G_sign), [LinkInfo])
+computeMorphisms e ln nots = mapAccumLM (computeMorphism e ln nots)
 
 -- | Computes the morphism for an import link and updates the signature
--- with the imported symbols
+-- and the name symbol map with the imported symbols
 computeMorphism :: ImpEnv -- ^ The import environment for lookup purposes
                 -> LibName -- ^ Current libname
-                -> NameSymbolMap -- ^ OMDoc symbol to Hets symbol map
-                -> G_sign -- ^ target signature
+                -> Map.Map OMName String -- ^ Notations of target signature
+                -> (NameSymbolMap, G_sign) -- ^ OMDoc symbol to Hets symbol map
+                                           -- and target signature
                 -> ImportInfo LinkNode -- ^ source label with OMDoc morphism
-                -> ResultT IO (G_sign, LinkInfo)
-computeMorphism e ln nsmap tGSig (ImportInfo (mLn, (from, lbl)) n morph)
+                -> ResultT IO ((NameSymbolMap, G_sign), LinkInfo)
+computeMorphism e ln nots (nsmap, tGSig) (ImportInfo (mLn, (from, lbl)) n morph)
     = case dgn_theory lbl of
         G_theory sLid (ExtSign sSig _) _ _ _ ->
             case tGSig of
@@ -388,20 +393,29 @@ computeMorphism e ln nsmap tGSig (ImportInfo (mLn, (from, lbl)) n morph)
                     let sourceNSMap = lookupNSMap e ln mLn $ getDGNodeName lbl
                     -- 1. build the morphism
                     -- compute first the symbol-map
-                    symMap <- computeSymbolMap sourceNSMap nsmap morph tLid
+                    symMap <- computeSymbolMap (Just nots) sourceNSMap nsmap
+                              morph tLid
                     let
                         f = symbol_to_raw tLid
-                        rsMap = Map.fromList $ map (\ (x, y) -> (f x, f y) )
+                        g (Left (_, rs)) = rs
+                        g (Right s) = symbol_to_raw tLid s
+                        rsMap = Map.fromList $ map (\ (x, y) -> (f x, g y) )
                                 symMap
                     -- REMARK: Logic-homogeneous environment assumed
                     sSig' <- coercePlainSign sLid tLid "computeMorphism" sSig
                     mor <- liftR $ induced_from_morphism tLid rsMap sSig'
                     -- 2. build the GMorphism and update the signature
+                    -- and the name symbol map
                     newSig <- liftR $ signature_union tLid tSig $ cod mor
                     let gMor = gEmbed $ mkG_morphism tLid mor
                         newGSig = G_sign tLid (makeExtSign tLid newSig) sigId
-                    -- 3. update the signature
-                    return ( newGSig
+                        -- function for filtering the raw symbols in the
+                        -- nsmap update
+                        h (s, Left (n', _)) = Just (s, n')
+                        h (_, Right _) = Nothing
+                        nsmap' = updateSymbolMap tLid mor nsmap
+                                 $ mapMaybe h symMap
+                    return ( (nsmap', newGSig)
                            , (gMor, globalDef, mkLinkOrigin n, from, Nothing))
 
 -- | Computes the morphism for a view
@@ -419,9 +433,14 @@ computeViewMorphism e ln (ImportInfo ( (mSLn, (from, lblS))
                   nsmapT = lookupNSMap e ln mTLn $ getDGNodeName lblT
               -- 1. build the morphism
               -- compute first the symbol-map
-              symMap <- computeSymbolMap nsmapS nsmapT morph tLid
+              symMap <- computeSymbolMap Nothing nsmapS nsmapT morph tLid
               let f = symbol_to_raw tLid
-                  rsMap = Map.fromList $ map (\ (x, y) -> (f x, f y) ) symMap
+                  -- this can't occur as we do not provide a notation map
+                  -- to computeSymbolMap
+                  g (Left _) = error "computeViewMorphism: impossible case"
+                  g (Right s) = symbol_to_raw tLid s
+                  rsMap = Map.fromList
+                          $ map (\ (x, y) -> (f x, g y) ) symMap
               -- REMARK: Logic-homogeneous environment assumed
               eSSig' <- coerceSign sLid tLid "computeViewMorphism" eSSig
               mor <- liftR $ induced_from_to_morphism tLid rsMap eSSig' eTSig
@@ -433,15 +452,43 @@ computeViewMorphism e ln (ImportInfo ( (mSLn, (from, lblS))
 mkLinkOrigin :: String -> DGLinkOrigin
 mkLinkOrigin s = DGLinkMorph $ mkSimpleId s
 
+-- | For each entry (s, n) in l we enter the mapping (n, m(s))
+-- to the name symbol map
+updateSymbolMap :: forall lid sublogics
+        basic_spec sentence symb_items symb_map_items
+         sign morphism symbol raw_symbol proof_tree .
+        Logic lid sublogics
+         basic_spec sentence symb_items symb_map_items
+          sign morphism symbol raw_symbol proof_tree =>
+        lid -> morphism -- ^ a signature morphism m
+            -> NameSymbolMap
+            -> [(symbol, OMName)] -- ^ a list l of symbol to OMName mappings
+            -> NameSymbolMap
+updateSymbolMap lid mor nsmap l =
+    case nsmap of
+      G_mapofsymbol lid' sm ->
+          let f nsm (s, n) = Map.insert n (g s) nsm -- fold function
+              g s = Map.findWithDefault
+                    (error $ "updateSymbolMap: symbol not found " ++ show s)
+                    s $ symmap_of lid mor
+              sm' = coerceMapofsymbol lid' lid sm
+          in G_mapofsymbol lid $ foldl f sm' l
+
+-- | Computes a symbol map for the given TCMorphism. The symbols are looked
+-- up in the provided maps. For each symbol not found in the target map we
+-- return a OMName, raw symbol pair in order to insert the missing entries
+-- in the target name symbol map later. If notations are not present, all
+-- lookup failures end up in errors.
 computeSymbolMap :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        NameSymbolMap -> NameSymbolMap -> TCMorphism -> lid
-                      -> ResultT IO [(symbol, symbol)]
-computeSymbolMap nsmapS nsmapT morph lid =
+        Maybe (Map.Map OMName String) -- ^ Notations for missing symbols in map
+            -> NameSymbolMap -> NameSymbolMap -> TCMorphism -> lid
+            -> ResultT IO [(symbol, Either (OMName, raw_symbol) symbol)]
+computeSymbolMap mNots nsmapS nsmapT morph lid =
   case (nsmapS, nsmapT) of
     (G_mapofsymbol sLid sm, G_mapofsymbol tLid tm) ->
         do
@@ -450,14 +497,21 @@ computeSymbolMap nsmapS nsmapT morph lid =
               tNSMap = coerceMapofsymbol tLid lid tm
               mf msg = Map.findWithDefault
                        $ error $ "computeSymbolMap: lookup failed for " ++ msg
+              -- function for notation lookup
+              g = lookupNotationInMap
+                  $ fromMaybe (error "computeSymbolMap: no notations") mNots
               -- function for the map functor
-              f (omn, ome) =
-                  case ome of
-                    OMS qn ->
-                        let tSymName = (unqualName qn)
-                            tSym = mf (show tSymName) tSymName tNSMap
-                        in (mf (show omn) omn sNSMap, tSym)
-                    _ -> error "computeSymbolMap: Nonsymbol element mapped"
+              f (omn, omimg) =
+                  let tSymName = case omimg of
+                                   Left s -> mkSimpleName s
+                                   Right (OMS qn) -> unqualName qn
+                                   _ -> error $ "computeSymbolMap: Nonsymbol "
+                                        ++ "element mapped"
+                  in ( mf (show omn) omn sNSMap
+                     , case Map.lookup tSymName tNSMap of
+                         Just ts -> Right ts
+                         _ -> Left (tSymName, id_to_raw lid $ nameToId
+                                                $ g tSymName))
           return $ map f morph
 
 
@@ -492,7 +546,7 @@ followTheory ln (e, dg) cd = do
 
 
 -- | returns a function compatible with mapAccumLM for TCElement processing.
--- Used in initialSig.
+-- Used in localSig.
 sigmapAccumFun :: (Monad m, Show a) => (SigMapI a -> TCElement -> String -> m a)
                -> SigMapI a -> TCElement -> m (SigMapI a, a)
 sigmapAccumFun f smi s = do
@@ -503,24 +557,35 @@ sigmapAccumFun f smi s = do
   return (smi', s')
 
 
--- | Builds an initial Sig and a name map of the given logic and classification.
-initialSig :: TCClassification -> AnyLogic -> Result (G_sign, NameSymbolMap)
-initialSig clf lg =
+-- | Builds an initial signature and a name map of the given logic.
+initialSig :: AnyLogic -> (NameSymbolMap, G_sign)
+initialSig lg =
     case lg of
       Logic lid ->
+          ( G_mapofsymbol lid Map.empty
+          , G_sign lid (makeExtSign lid $ empty_signature lid) startSigId)
+
+-- | Adds the local signature to the given signature and name symbol map
+localSig :: TCClassification -> NameSymbolMap -> G_sign
+         -> Result (NameSymbolMap, G_sign)
+localSig clf nsmap gSig =
+    case (gSig, nsmap) of
+      (G_sign lid _ _, G_mapofsymbol lid' sm) ->
           do
-            let initSM = SigMapI Map.empty $ notations clf
+            let smi = SigMapI (coerceMapofsymbol lid' lid sm) $ notations clf
             -- accumulates symbol mappings in the symbMap in SigMapI
             -- while creating symbols from OMDoc symbols
-            (sm, symbs) <- mapAccumLM (sigmapAccumFun $ omdocToSym lid) initSM
+            (sm', symbs) <- mapAccumLM (sigmapAccumFun $ omdocToSym lid) smi
                            $ sigElems clf
             -- adding the symbols to the empty signature
             sig <- foldM (add_symb_to_sign lid) (empty_signature lid) symbs
-            let gsig = G_sign lid (makeExtSign lid sig) startSigId
-            return (gsig, G_mapofsymbol lid $ sigMapISymbs sm)
+            let locGSig = G_sign lid (makeExtSign lid sig) startSigId
+            -- combining the local and the given signature
+            gSig' <- gsigUnion logicGraph gSig locGSig
+            return (G_mapofsymbol lid $ sigMapISymbs sm', gSig')
 
 
--- | Builds an initial Sig and a name map of the given logic and classification.
+-- | Adds sentences and logic dependent signature elements to the given sig
 addSentences :: TCClassification -> NameSymbolMap -> G_sign -> Result G_theory
 addSentences clf nsmap gsig =
     case (nsmap, gsig) of

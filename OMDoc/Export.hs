@@ -61,8 +61,8 @@ nSigMapToOrderedList :: NumberedSigMap a -> [(a, UniqName)]
 nSigMapToOrderedList (nMap, _) = let
     compByPos (_, (pos1, _)) (_, (pos2, _)) = compare pos1 pos2
     sortedList = sortBy compByPos $ Map.toList nMap
-    in map (\ (a,x) -> (a, snd x)) sortedList
-                                 
+    in map (\ (a, x) -> (a, snd x)) sortedList
+
 
 -- | Mapping of Specs to SigMaps
 newtype SpecSymNames = SpecSymNames (Map.Map (LibName, String) GSigMap)
@@ -100,7 +100,7 @@ fromSignAndNamedSens lid sig nsens =
         -- for that reason we use the following accumvar:
         -- acc: (Int, Map String Int)
         symF (i, acc) x = let (acc', nn) = newName acc $ show $ sym_name lid x
-                          in ((i+1, acc'), (x, (i, nn)))
+                          in ((i + 1, acc'), (x, (i, nn)))
         sensF acc x = let n = senAttr x
                           (acc', nn) = newName acc n in (acc', (n, nn))
         (cm, symL) = mapAccumL symF (0, Map.empty) syms
@@ -167,17 +167,17 @@ exportNodeLab le ln dg s (n, lb) =
                   nsens = toNamedList sens
                   (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                   sigm@(SigMap nm _) = nSigMapToSigMap nsigm
+              -- imports is a list of [TCElement], symbol set pairs
               (s'', imports) <- mapAccumLCM proj2
                                 (makeImport le ln dg (lid, nm)) s' $ innDG dg n
               extra <- export_theoryToOmdoc lid sigm sig nsens
-              -- create the OMDoc elements for the signature
-              consts <- mapR (uncurry $ exportSymbol lid sigm)
+              consts <- mapR (uncurry $ exportSymbol lid sigm $ map snd imports)
                         $ nSigMapToOrderedList nsigm
               -- create the OMDoc elements for the sentences
               thms <- mapR (exportSentence lid sigm) nsens
               return (s'', Just $ TLTheory sn (omdoc_metatheory lid)
                              $ concatMap concat
-                                   [imports, consts, [extra], thms])
+                                   [map fst imports, consts, [extra], thms])
 
 
 -- * Views and Morphisms
@@ -194,7 +194,8 @@ getNodeData le ln lb =
         in (labDG dg' $ ref_node ni, lnRef)
     else (lb, ln)
 
-
+-- | If the link is a global definition link we compute the Import TCElement
+-- and return also the set of (by the link) exported symbols
 makeImport :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -202,14 +203,17 @@ makeImport :: forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
         LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> ExpEnv
-               -> LEdge DGLinkLab -> Result (ExpEnv, [TCElement])
+               -> LEdge DGLinkLab
+               -> Result (ExpEnv, ([TCElement], Set.Set symbol))
 makeImport le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
         warning () (concat [ "Hiding link with ", show (dgl_id lbl)
-                           , " not exported."]) nullRange >> return (s, [])
+                           , " not exported."]) nullRange
+                    >> return (s, ([], Set.empty))
     | isLocalDef $ dgl_type lbl =
         warning () (concat [ "Local def-link with ", show (dgl_id lbl)
-                           , " not exported."]) nullRange >> return (s, [])
+                           , " not exported."]) nullRange
+                    >> return (s, ([], Set.empty))
     | isGlobalDef $ dgl_type lbl =
         let (lb', ln') = getNodeData le ln $ labDG dg from in
         case dgn_theory lb' of
@@ -219,11 +223,12 @@ makeImport le ln dg toInfo s (from, _, lbl)
                     nsens = toNamedList sens
                     (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                     SigMap nm _ = nSigMapToSigMap nsigm
-                morph <- makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
+                (morph, expSymbs) <-
+                    makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
                 cd <- mkCD s' ln ln' sn
-                return (s', [TCImport impnm cd $ morph])
-    | otherwise = return (s, [])
+                return (s', ([TCImport impnm cd $ morph], expSymbs))
+    | otherwise = return (s, ([], Set.empty))
 
 -- | Given a TheoremLink we output the view
 exportLinkLab :: LibEnv -> LibName -> DGraph -> ExpEnv -> LEdge DGLinkLab
@@ -261,12 +266,13 @@ exportLinkLab le ln dg s (from, to, lbl) =
                            lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
                        SigMap nm1 _ = nSigMapToSigMap nsigm1
                        SigMap nm2 _ = nSigMapToSigMap nsigm2
-                   morph <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
+                   (morph, _) <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
                    cd1 <- mkCD s'' ln ln1 sn1
                    cd2 <- mkCD s'' ln ln2 sn2
                    return (s'', Just $ TLView viewname cd1 cd2 morph) }
 
-
+-- | From the given GMorphism we compute the symbol-mapping and return
+-- also the set of (by the morphism) exported symbols (= image of morphism)
 makeMorphism :: forall lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -280,7 +286,7 @@ makeMorphism :: forall lid1 sublogics1
          basic_spec2 sentence2 symb_items2 symb_map_items2
          sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
        (lid1, NameMap symbol1) -> (lid2, NameMap symbol2) -> GMorphism
-                               -> Result TCMorphism
+                               -> Result (TCMorphism, Set.Set symbol2)
 makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
 
 -- l1 = logic1
@@ -314,7 +320,8 @@ makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
           symM1' = fmapNM f symM1
           symM2' = fmapNM (coerceSymbol l2 lT) symM2
           mormap = symmap_of lT mor
-      in return $ map (mapEntry lT symM1' symM2') $ Map.toList mormap
+          expSymbs = Set.fromList $ Map.elems $ coerceMapofsymbol lT l2 mormap
+      in return (map (mapEntry lT symM1' symM2') $ Map.toList mormap, expSymbs)
 
 
 mapEntry :: forall lid sublogics
@@ -324,12 +331,23 @@ mapEntry :: forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
         lid -> NameMap symbol -> NameMap symbol -> (symbol, symbol)
-            -> (OMName, OMElement)
+            -> (OMName, OMImage)
 mapEntry _ m1 m2 (s1, s2) =
     let e = error "mapEntry: symbolmapping is missing"
         un1 = Map.findWithDefault e s1 m1
         un2 = Map.findWithDefault e s2 m2
-    in (omName un1, simpleOMS un2)
+    -- we don't check whether the path is empty or not...
+    in ( omName un1
+       , Right $ simpleOMS un2)
+-- TODO: we want to export it the second way (Left...)
+-- but Hets says when importing RelationsAndOrders.omdoc:
+{-
+No signature morphism for symbol map found.
+The following mapped symbols are missing in the target signature:
+sorts Elem
+pred __<=__ : Elem * Elem
+-}
+--       , Left $ nameToString un2)
 
 
 -- | extracts the single element from singleton sets, fails otherwise
@@ -382,11 +400,15 @@ exportSymbol :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        lid -> SigMap symbol -> symbol -> UniqName -> Result [TCElement]
-exportSymbol lid (SigMap sm _) sym n = do
-  let un = nameToString n
-  symConst <- export_symToOmdoc lid sm sym un
-  return $ [symConst] ++ (maybeToList $ notationFromUniqName n)
+        lid -> SigMap symbol -> [Set.Set symbol] -> symbol -> UniqName
+            -> Result [TCElement]
+exportSymbol lid (SigMap sm _) sl sym n =
+    let symNotation = maybeToList $ notationFromUniqName n
+    in if all (Set.notMember sym) sl
+       then do
+         symConst <- export_symToOmdoc lid sm sym $ nameToString n
+         return $ [symConst] ++ symNotation
+       else return symNotation
 
 exportSentence :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items

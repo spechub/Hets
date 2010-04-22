@@ -53,7 +53,7 @@ toQNOM s = blank_name { qName = s , qPrefix = Just "om" }
 -- | often used element names
 
 el_omdoc, el_theory, el_view, el_structure, el_type, el_adt, el_sortdef
- , el_constructor, el_argument, el_insort, el_selector
+ , el_constructor, el_argument, el_insort, el_selector, el_open
  , el_conass, el_constant, el_notation, el_text, el_definition, el_omobj
  , el_ombind, el_oms, el_ombvar, el_omattr, el_omatp, el_omv, el_oma :: QName
 
@@ -69,6 +69,7 @@ el_argument = toQN "argument"
 el_insort = toQN "insort"
 el_selector = toQN "selector"
 el_conass = toQN "conass"
+el_open = toQN "open"
 el_constant = toQN "constant"
 el_notation = toQN "notation"
 el_text = toQN "text"
@@ -85,7 +86,7 @@ el_omv = toQNOM "OMV"
 el_oma = toQNOM "OMA"
 
 at_version, at_module, at_name, at_meta, at_role, at_type, at_total
- , at_for, at_from, at_to, at_value, at_base :: QName
+ , at_for, at_from, at_to, at_value, at_base, at_as :: QName
 
 at_version = toQN "version"
 at_module = toQN "module"
@@ -99,6 +100,7 @@ at_from = toQN "from"
 at_to = toQN "to"
 at_value = toQN "value"
 at_base = toQN "base"
+at_as = toQN "as"
 
 
 attr_om :: Attr
@@ -340,7 +342,6 @@ instance XmlRepresentable TLElement where
               justReturn $ TLView nm from to morph
         | otherwise = return Nothing
 
-
 -- | theory constitutive OMDoc elements to XML and back
 instance XmlRepresentable TCElement where
     toXml (TCSymbol sname symtype role defn) =
@@ -380,7 +381,8 @@ instance XmlRepresentable TCElement where
                 nm = musthave at_name "name"
                 from = uriDecodeCD (elLine e) $ musthave at_from "from"
             in do
-              morph <- mapR xmlToAssignment (findChildren el_conass e)
+              morph <- mapR xmlToAssignment
+                       $ filterChildrenName (flip elem [el_conass, el_open]) e
               justReturn $ TCImport nm from morph
         | elemIsOf e el_adt =
             do
@@ -525,13 +527,21 @@ omobjToOMElement e = case elChildren e of
 
 
 -- | The input is assumed to be a conass element
-xmlToAssignment :: Element -> Result (OMName, OMElement)
-xmlToAssignment e =
-    let musthave s v = missingMaybe "Conass" s v
-        nm = musthave "name" $ findAttr at_name e
-    in do
-      omel <- omelementFromOmobj e
-      return (decodeOMName nm, musthave "OMOBJ element" omel)
+xmlToAssignment :: Element -> Result (OMName, OMImage)
+xmlToAssignment e
+    | elName e == el_open =
+        let musthave s v = missingMaybe "Open" s v
+            nm = musthave "name" $ findAttr at_name e
+            alias = musthave "as" $ findAttr at_as e
+        in return (decodeOMName nm, Left alias)
+    | elName e == el_conass =
+        let musthave s v = missingMaybe "Conass" s v
+            nm = musthave "name" $ findAttr at_name e
+        in do
+          omel <- omelementFromOmobj e
+          return (decodeOMName nm, Right $ musthave "OMOBJ element" omel)
+    | otherwise = fail $ oneOfMsg e [el_conass, el_open]
+
 
 
 ------------------------------ toXml methods ------------------------------
@@ -539,10 +549,14 @@ xmlToAssignment e =
 typeToXml :: OMElement -> Content
 typeToXml t = inContent el_type $ Just $ toOmobj $ toXml t
 
-assignmentToXml :: (OMName, OMElement) -> Content
+assignmentToXml :: (OMName, OMImage) -> Content
 assignmentToXml (from, to) =
-    inAContent el_conass [Attr at_name $ encodeOMName from]
-                   $ Just . toOmobj . toXml $ to
+    case to of
+      Left s ->
+          mkElement el_open [Attr at_name $ encodeOMName from, Attr at_as s] []
+      Right obj ->
+          inAContent el_conass [Attr at_name $ encodeOMName from]
+                         $ Just . toOmobj . toXml $ obj
 
 constantToXml :: String -> String -> OMElement -> Maybe OMElement -> Content
 constantToXml n r tp prf =

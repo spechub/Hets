@@ -57,7 +57,7 @@ lookupSymbol :: Env -> OMName -> Symbol
 lookupSymbol e omn =
     Map.findWithDefault
            (error $ concat [ "lookupSymbol failed for: "
-                           , show omn, " map ", show $ sigMapISymbs e])
+                           , show omn, "\nmap: ", show $ sigMapISymbs e])
        omn $ sigMapISymbs e
 
 lookupSort :: Env -> OMName -> SORT

@@ -61,8 +61,11 @@ data TCElement =
 type TCorOMElement = Either TCElement OMElement
 
 -- | Morphisms to specify signature mappings
-type TCMorphism = [(OMName, OMElement)]
+type TCMorphism = [(OMName, OMImage)]
 
+-- | The target type of a mapping is just an alias or an assignment to
+-- a symbol
+type OMImage = Either String OMElement
 
 -- | The flattened structure of an Algebraic Data Type
 data OmdADT =
@@ -251,4 +254,7 @@ simpleOMS = OMS . mkSimpleQualName
 -- * Lookup utils for Import and Export
 
 lookupNotation :: SigMapI a -> OMName -> String
-lookupNotation smi n = Map.findWithDefault (name n) n $ sigMapINotations smi
+lookupNotation smi = lookupNotationInMap $ sigMapINotations smi
+
+lookupNotationInMap :: Map.Map OMName String -> OMName -> String
+lookupNotationInMap m n = Map.findWithDefault (name n) n m
