@@ -4,7 +4,7 @@
      adapted version for hets by Christian Maeder.
 -}
 
-module Main () where
+module Main (main) where
 
 import ChaseImports
 import UserRulesHetCATS
