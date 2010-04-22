@@ -126,7 +126,7 @@
                             </child>
                             <child>
                               <widget class="GtkCheckButton" id="cbIncludeProven">
-                                <property name="label" translatable="yes">Include preceeding proven
+                                <property name="label" translatable="yes">Include preceding proven
 theorems in next proof attempt</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>

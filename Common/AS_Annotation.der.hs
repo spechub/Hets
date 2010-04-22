@@ -37,7 +37,7 @@ swapTable = map $ \ (a, b) -> (b, a)
 
 -- | drop the first 3 characters from the show result
 toTable :: (Show a) => [a] -> [(a, String)]
-toTable = map $ \a -> (a, drop 3 $ show a)
+toTable = map $ \ a -> (a, drop 3 $ show a)
 
 -- | a lookup table for the textual representation of display formats
 display_format_table :: [(Display_format, String)]
@@ -92,8 +92,8 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 | String_anno Id Id Range
                 -- position of anno start, commas and anno end
                 | Prec_anno PrecRel [Id] [Id] Range
-                --          ^ positions: "{",commas,"}", RecRel, "{",commas,"}"
-                --          | Lower = "< "  BothDirections = "<>"
+                -- positions: "{",commas,"}", RecRel, "{",commas,"}"
+                -- Lower = "< "  BothDirections = "<>"
                 | Assoc_anno AssocEither [Id] Range -- position of commas
                 | Label [String] Range
                 -- position of anno start and anno end
@@ -110,23 +110,23 @@ data Annotation = -- | constructor for comments or unparsed annotes
 isLabel :: Annotation -> Bool
 isLabel a = case a of
     Label _ _ -> True
-    _         -> False
+    _ -> False
 
 isImplies :: Annotation -> Bool
 isImplies a = case a of
-    Semantic_anno SA_implies _  -> True
+    Semantic_anno SA_implies _ -> True
     _ -> False
 
 isImplied :: Annotation -> Bool
 isImplied a = case a of
-    Semantic_anno SA_implied _  -> True
+    Semantic_anno SA_implied _ -> True
     _ -> False
 
 -- |
 -- 'isSemanticAnno' tests if the given 'Annotation' is a semantic one
 isSemanticAnno :: Annotation -> Bool
 isSemanticAnno a = case a of
-    Semantic_anno _ _  -> True
+    Semantic_anno _ _ -> True
     _ -> False
 
 -- |
@@ -142,7 +142,7 @@ isComment c = case c of
 isAnnote :: Annotation -> Bool
 isAnnote = not . isComment
 
--- | an item wrapped in preceeding (left 'l_annos')
+-- | an item wrapped in preceding (left 'l_annos')
 -- and following (right 'r_annos') annotations.
 -- 'opt_pos' should carry the position of an optional semicolon
 -- following a formula (but is currently unused).
@@ -162,11 +162,12 @@ notImplied = not . any isImplied . r_annos
 
 -- | naming or labelling sentences
 data SenAttr s a = SenAttr
-    { senAttr  :: a
+    { senAttr :: a
     , isAxiom :: Bool
     , isDef :: Bool
     , wasTheorem :: Bool
-{- will be set to True when status of isAxiom changes from False to True -}
+      {- will be set to True when status of isAxiom
+         changes from False to True -}
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , attrOrigin :: Maybe Id
     , sentence :: s } deriving (Eq, Ord, Show)
@@ -234,7 +235,7 @@ getRLabel a =
       _ -> ""
 
 -- | check for an annotation starting with % and the input str
---   (does not work for known annotation words)
+-- (does not work for known annotation words)
 identAnno :: String -> Annotation -> Bool
 identAnno str an = case an of
     Unparsed_anno (Annote_word wrd) _ _ -> wrd == str

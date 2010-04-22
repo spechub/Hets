@@ -42,17 +42,16 @@ import Proofs.BatchProcessing
   For values <= 0 a default value is used.
 -}
 setTimeLimit :: Int -> GenericConfig proofTree -> GenericConfig proofTree
-setTimeLimit n c = if n > 0 then c{timeLimit = Just n}
-                   else c{timeLimit = Nothing}
+setTimeLimit n c = if n > 0 then c {timeLimit = Just n}
+                   else c {timeLimit = Nothing}
 
 {- |
   Utility function to set the extra options of a Config.
 -}
 setExtraOpts :: [String] -> GenericConfig proofTree -> GenericConfig proofTree
-setExtraOpts opts c = c{extraOpts = opts}
+setExtraOpts opts c = c {extraOpts = opts}
 
 -- ** Constants
-
 
 
 -- ** Defining the view
@@ -71,7 +70,7 @@ data ProofStatusColour
   | Black
   -- | Running
   | Blue
-   deriving (Bounded,Enum,Show)
+   deriving (Bounded, Enum, Show)
 
 {- |
   Generates a ('ProofStatusColour', 'String') tuple representing a Proved proof
@@ -123,13 +122,13 @@ toGuiStatus :: GenericConfig proofTree -- ^ current prover configuration
             -> (ProofStatus a) -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
-  Proved c  -> if c then statusProved else statusProvedButInconsistent
+  Proved c -> if c then statusProved else statusProvedButInconsistent
   Disproved -> statusDisproved
-  _         -> if timeLimitExceeded cf
+  _ -> if timeLimitExceeded cf
                then statusOpenTExceeded
                else statusOpen
 
-{- | stores widgets of an options frame and the frame itself -}
+-- | stores widgets of an options frame and the frame itself
 data OpFrame = OpFrame { ofFrame :: Frame
                        , ofTimeSpinner :: SpinButton
                        , ofTimeEntry :: Entry Int
@@ -189,12 +188,13 @@ batchInfoText :: Int -- ^ batch time limt
               -> String
 batchInfoText tl gTotal gDone =
   let totalSecs = (gTotal - gDone) * tl
-      (remMins,secs) = divMod totalSecs 60
-      (hours,mins) = divMod remMins 60
+      (remMins, secs) = divMod totalSecs 60
+      (hours, mins) = divMod remMins 60
   in
-  "Batch mode running.\n"++
+  "Batch mode running.\n" ++
   show gDone ++ "/" ++ show gTotal ++ " goals processed.\n" ++
-  "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
+  "At most " ++ show hours ++ "h " ++ show mins ++ "m " ++ show secs
+  ++ "s remaining."
 
 
 -- ** Callbacks
@@ -225,7 +225,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
    will be installed when switching to ghc-6.6.1 -}
   do
     when updateLb (do
-           (offScreen,_) <- view Vertical goalsLb
+           (offScreen, _) <- view Vertical goalsLb
            populateGoalsListBox goalsLb (goalsView st)
            moveto Vertical goalsLb offScreen
           )
@@ -247,7 +247,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
                 statusLabel # foreground (show color)
                 timeEntry # value t'
                 optionsEntry # value opts'
-                axiomsLb # value (usedAxs::[String])
+                axiomsLb # value (usedAxs :: [String])
                 return ())
           (currentGoal st)
 
@@ -309,21 +309,21 @@ newOptionsFrame con updateFn isExtraOps = do
   or use a detailed GUI for proving each goal manually.
 -}
 genericATPgui :: (Ord proofTree, Ord sentence)
-              => ATPFunctions sign sentence mor proofTree pst -- ^ prover specific
-                                                           -- functions
-              -> Bool -- ^ prover supports extra options
+              => ATPFunctions sign sentence mor proofTree pst
+                        -- ^ prover specific functions
+              -> Bool   -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> Theory sign sentence proofTree -- ^ theory consisting of a
-                 -- signature and a list of Named sentence
+              -> Theory sign sentence proofTree
+                        -- ^ theory with signature and sentences
               -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
-              -> proofTree -- ^ initial empty proofTree
-              -> IO([ProofStatus proofTree]) -- ^ proof status for each goal
+              -> proofTree                      -- ^ initial empty proofTree
+              -> IO ([ProofStatus proofTree]) -- ^ proof status for each goal
 genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   -- create initial backing data structure
   let initState = initialGenericState prName
                                       (initialProverState atpFun)
-                                      (atpTransSenName atpFun) th freedefs  pt
+                                      (atpTransSenName atpFun) th freedefs pt
   stateMVar <- Conc.newMVar initState
   batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 
@@ -352,7 +352,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   lbFrame <- newFrame b3 []
   pack lbFrame [Expand On, Fill Both]
 
-  lb <- newListBox lbFrame [bg "white",exportSelection False,
+  lb <- newListBox lbFrame [bg "white", exportSelection False,
                             selectMode Single, height 15] :: IO (ListBox String)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
@@ -415,7 +415,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   resultFrame <- newFrame right []
   pack resultFrame [Expand On, Fill Both]
 
-  l4 <- newLabel resultFrame [text ("Results:"++replicate 70 ' ')]
+  l4 <- newLabel resultFrame [text ("Results:" ++ replicate 70 ' ')]
   pack l4 [Anchor NorthWest]
 
   spacer <- newLabel resultFrame [text "   "]
@@ -440,8 +440,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   pack statusLabel [Anchor West]
   axiomsFrame <- newFrame rc2 []
   pack axiomsFrame [Expand On, Anchor West, Fill Both]
-  axiomsLb <- newListBox axiomsFrame [value ([]::[String]),
-                                      bg "white",exportSelection False,
+  axiomsLb <- newListBox axiomsFrame [value ([] :: [String]),
+                                      bg "white", exportSelection False,
                                       selectMode Browse,
                                       height 6, width 19] :: IO (ListBox String)
   pack axiomsLb [Side AtLeft, Expand On, Fill Both]
@@ -495,8 +495,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                    (do
                     curEntTL <- getValueSafe batchTLimit tEntry
                     let t' = case sp of
-                              Up -> curEntTL+10
-                              _ -> max batchTLimit (curEntTL-10)
+                              Up -> curEntTL + 10
+                              _ -> max batchTLimit (curEntTL - 10)
                     tEntry # value t'
                     done))
                  isExtraOptions
@@ -544,8 +544,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   inclProvedThsCheckButton <-
          newCheckButton globalOptsFr
                         [variable inclProvedThsTK,
-                         text ("include preceeding proven therorems"++
-                               " in next proof attempt")]
+                         text ("include preceding proven therorems"
+                               ++ " in next proof attempt")]
   pack inclProvedThsCheckButton [Side AtLeft]
 
   -- separator 3
@@ -588,15 +588,15 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   saveConfiguration <- clicked saveButton
   exit <- clicked exitButton
 
-  (closeWindow,_) <- bindSimple main Destroy
+  (closeWindow, _) <- bindSimple main Destroy
 
-  let goalSpecificWids = [EnW timeEntry, EnW timeSpinner,EnW optionsEntry] ++
-                         map EnW [proveButton,detailsButton,saveProbButton]
+  let goalSpecificWids = [EnW timeEntry, EnW timeSpinner, EnW optionsEntry] ++
+                         map EnW [proveButton, detailsButton, saveProbButton]
       wids = EnW lb : goalSpecificWids ++
              [EnW batchTimeEntry, EnW batchTimeSpinner,
               EnW saveProblem_batch_checkBox,
-              EnW batchOptionsEntry,EnW inclProvedThsCheckButton] ++
-             map EnW [helpButton,saveButton,exitButton,runBatchButton]
+              EnW batchOptionsEntry, EnW inclProvedThsCheckButton] ++
+             map EnW [helpButton, saveButton, exitButton, runBatchButton]
 
   disableWids goalSpecificWids
   disable stopBatchButton
@@ -623,7 +623,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
           batchModeRunning <- isBatchModeRunning mVar_batchId
           when (isJust sel && not batchModeRunning)
                (enableWids goalSpecificWids)
-          when (isJust sel) $ enableWids [EnW detailsButton,EnW saveProbButton]
+          when (isJust sel) $ enableWids [EnW detailsButton, EnW saveProbButton]
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done
       +> saveProb >>> do
@@ -633,7 +633,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
             inclProvedThs <- readTkVariable inclProvedThsTK
             maybe (return ())
                   (\ goal -> do
-                      let (nGoal,lp') =
+                      let (nGoal, lp') =
                               prepareLP (proverState rs)
                                         rs goal inclProvedThs
                           s = rs {configsMap = adjustOrSetConfig
@@ -668,7 +668,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                             (setTimeLimit curEntTL)
                                             prName goal pt
                                             (configsMap rs)}
-                    (nGoal,lp') = prepareLP (proverState rs)
+                    (nGoal, lp') = prepareLP (proverState rs)
                                         rs goal inclProvedThs
                 extraOptions <- getValue optionsEntry :: IO String
                 let s' = s {configsMap = adjustOrSetConfig
@@ -689,7 +689,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                  case retval of
                    ATPError m -> errorDialog "Error" m
                    _ -> return ()
-                 let s'' = s'{
+                 let s'' = s' {
                      configsMap =
                         adjustOrSetConfig
                            (\ c -> c {timeLimitExceeded = isTimeLimitExceeded
@@ -698,7 +698,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                           ((proofStatus cfg)
                                            {usedTime = timeUsed cfg}),
                                       resultOutput = resultOutput cfg,
-                                      timeUsed     = timeUsed cfg})
+                                      timeUsed = timeUsed cfg})
                            prName goal pt (configsMap s')}
                  Conc.modifyMVar_ stateMVar (return . const s'')
                 -- check again if window was closed
@@ -719,12 +719,12 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
               Nothing -> noGoalSelected >> done
               Just goal -> do
                 let result = Map.lookup goal (configsMap s)
-                    output = maybe ["This goal hasn't been run through "++
+                    output = maybe ["This goal hasn't been run through " ++
                                      "the prover yet."]
                                    resultOutput
                                    result
-                    detailsText = concatMap ('\n':) output
-                createTextSaveDisplay (prName ++ " Output for Goal "++goal)
+                    detailsText = concatMap ('\n' :) output
+                createTextSaveDisplay (prName ++ " Output for Goal " ++ goal)
                         (goal ++ proverOutput (fileExtensions atpFun))
                         (seq (length detailsText) detailsText)
                 done
@@ -736,7 +736,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
             batchTimeEntry # value tLimit
             extOpts <- getValue batchOptionsEntry :: IO String
             let extOpts' = words extOpts
-                openGoalsMap =  filterOpenGoals $ configsMap s
+                openGoalsMap = filterOpenGoals $ configsMap s
                 numGoals = Map.size openGoalsMap
                 firstGoalName = fromMaybe "--" $
                                 find (flip Map.member openGoalsMap) $
@@ -746,7 +746,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
               let afterEachProofAttempt =
                 -- this function is called after the prover returns from a
                 -- proof attempt (... -> IO Bool)
-                   (\ gPSF nSen nextSen cfg@(retval,_) -> do
+                   (\ gPSF nSen nextSen cfg@(retval, _) -> do
                      cont <- goalProcessed stateMVar tLimit extOpts'
                                            numGoals prName gPSF nSen False cfg
                      Conc.tryTakeMVar mVar_batchId >>=
@@ -755,7 +755,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                                  mVar_batchId
                                                  tId
                            if not stored
-                              then fail $ "GenericATP: Thread "++
+                              then fail $ "GenericATP: Thread " ++
                                           "run check failed"
                               else do
                             wDestroyed <- windowDestroyed windowDestroyedMVar
@@ -790,17 +790,17 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
               setCurrentGoalLabel batchCurrentGoalLabel firstGoalName
               disableWids wids
               enable stopBatchButton
-              enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
+              enableWidsUponSelection lb [EnW detailsButton, EnW saveProbButton]
               enable lb
               inclProvedThs <- readTkVariable inclProvedThsTK
               saveProblem_F <- readTkVariable saveProblem_batch
-              batchProverId <- Conc.forkIO
-                   (do genericProveBatch False tLimit extOpts' inclProvedThs
+              batchProverId <- Conc.forkIO $
+                genericProveBatch False tLimit extOpts' inclProvedThs
                                       saveProblem_F
                           afterEachProofAttempt
                           (atpInsertSentence atpFun) (runProver atpFun)
                           prName thName s Nothing
-                       return ())
+                >> return ()
               stored <- Conc.tryPutMVar mVar_batchId batchProverId
               if stored
                  then done
@@ -863,7 +863,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
     windowDestroyed sMVar =
        Conc.yield >>
        Conc.tryTakeMVar sMVar >>=
-         maybe (return False)  (\ un -> Conc.putMVar sMVar un >> return True)
+         maybe (return False) (\ un -> Conc.putMVar sMVar un >> return True)
 
     isBatchModeRunning tIdMVar =
        Conc.tryTakeMVar tIdMVar >>=
@@ -879,7 +879,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                     beforeThis
        in if inclProvedThs
              then (head afterThis,
-                   foldl (\lp provedGoal ->
+                   foldl (\ lp provedGoal ->
                      atpInsertSentence atpFun
                        lp provedGoal {AS_Anno.isAxiom = True})
                          prS
@@ -890,7 +890,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                    prS)
     setCurrentGoalLabel batchLabel s = batchLabel # text (take 65 s)
     removeFirstDot [] = error "GenericATP: no extension given"
-    removeFirstDot e@(h:ext) =
+    removeFirstDot e@(h : ext) =
        case h of
             '.' -> ext
-            _   -> e
+            _ -> e
