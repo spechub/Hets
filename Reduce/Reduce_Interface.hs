@@ -15,8 +15,6 @@ module Reduce.Reduce_Interface where
 
 import Common.AS_Annotation
 import Common.Id
-import Common.ProverTools (missingExecutableInPath)
-import Common.Utils (getEnvDef)
 
 import Data.Time (midnight)
 
@@ -52,15 +50,9 @@ closedReduceProofStatus goalname proof_tree =
     , tacticScript = TacticScript "" }
 
 -- | connects to the CAS, prepares the streams and sets initial options
-connectCAS :: IO (Handle, Handle, Handle, ProcessHandle)
-connectCAS = do
-  putStr "Connecting CAS.."
-  reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
-  -- check that prog exists
-  noProg <- missingExecutableInPath reducecmd
-  if noProg then error $ "Could not find reduce under " ++ reducecmd
-    else do
-    putStrLn "True"
+connectCAS :: String -> IO (Handle, Handle, Handle, ProcessHandle)
+connectCAS reducecmd = do
+    putStrLn "succeeded"
     (inp, out, err, pid) <- runInteractiveCommand $ reducecmd ++ " -w"
     hSetBuffering out NoBuffering
     hSetBuffering inp LineBuffering
