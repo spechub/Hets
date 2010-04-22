@@ -24,7 +24,16 @@ for p in \
  tagsoup-0.8 \
  hxt-8.5.0 \
  hxt-filter-8.4.2 \
- haskeline-0.6.2.2
+ haskeline-0.6.2.2 \
+ text-0.7.1.0 \
+ parallel-2.2.0.1 \
+ hexpat-0.12 \
+ cgi-3001.1.7.3
+ xhtml-3000.2.0.1 \
+ stm-2.1.1.2 \
+ regex-base-0.93.1 \
+ regex-posix-0.94.1 \
+ regex-compat-0.92
 do ./installPkg.sh $p $1
 done
 else
