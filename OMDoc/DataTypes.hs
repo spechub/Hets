@@ -8,7 +8,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Datatypes for an intermediate OMDoc Representation.
+Datatypes for an intermediate OMDoc representation.
 -}
 module OMDoc.DataTypes where
 
@@ -205,10 +205,8 @@ nameEncode :: String -- ^ the kind of the encoding, may not contain colons
            -> String
 nameEncode s l = concat [uniqPrefix, s, ":", intercalate uniqPrefix l]
 
-{- |
- This invariant should hold: (x, l) = fromJust $ nameDecode $ nameEncode x l
--}
-
+-- | This invariant should hold:
+-- @(x, l) = fromJust $ nameDecode $ nameEncode x l@
 nameDecode :: String -> Maybe (String, [String])
 nameDecode s =
     case stripPrefix uniqPrefix s of

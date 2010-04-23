@@ -7,8 +7,8 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-A given development graph will be exported to an omdoc structure
-which can then be output to XML via the XmlInterface.
+Export of a given development graph to an OMDoc structure
+which can then be stored as xml via the "OMDoc.XmlInterface".
 -}
 
 module OMDoc.Export where

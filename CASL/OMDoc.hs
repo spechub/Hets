@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  CASL specific OMDoc structures
+Description :  CASL specific OMDoc constants
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Library of CASL specific OMDoc structures
+Library of CASL specific OMDoc constants
 -}
 
 module CASL.OMDoc where

@@ -8,9 +8,8 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Provides the Hexpat parsing facility and transformation to XML.Light types.
+Provides the Hexpat parsing and transformation facility to XML.Light types.
 -}
-
 
 
 module Common.XmlExpat where

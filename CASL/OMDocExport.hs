@@ -1,16 +1,16 @@
 {- |
 Module      :  $Header$
-Description :  Hets-to-OMDoc conversion
+Description :  CASL-to-OMDoc conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
-Portability :  non-portable(Logic)
+Portability :  portable
 
 CASL implementation of the interface functions export_signToOmdoc,
 export_morphismToOmdoc, export_senToOmdoc from class Logic. The actual
-instantiation can be found in module CASL.Logic_CASL.
+instantiation can be found in module "CASL.Logic_CASL".
 -}
 
 module CASL.OMDocExport

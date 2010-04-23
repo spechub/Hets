@@ -6,15 +6,15 @@
 
 {- |
 Module      :  $Header$
-Description :  OMDoc-to/from-XML conversion
+Description :  OMDoc-XML conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
-Portability :  non-portable(Logic)
+Portability :  portable
 
-The transformation of the OMDoc intermediate representation to and from XML.
+The transformation of the OMDoc intermediate representation to and from xml.
 The import from xml does not validate the xml, hence if you encounter strange
 errors, do not forget to check the xml structure first.
 -}
@@ -42,6 +42,7 @@ import qualified Common.XmlExpat as XE
 
 import Text.XML.Light
 
+-- * Names and other constants
 
 -- | The implemented OMDoc version
 omdoc_current_version :: String
@@ -110,11 +111,10 @@ attr_om = Attr (blank_name { qName = "om" , qPrefix = Just "xmlns" })
           "http://www.openmath.org/OpenMath"
 
 
-mkElement :: QName -> [Attr] -> [Content] -> Content
-mkElement qn atts elems = Elem $ Element qn atts elems Nothing
+-- * Top level from/to xml functions
 
 {- |
-  this class defines the interface to read from and write to XML
+  This class defines the interface to read from and write to XML
 -}
 class XmlRepresentable a where
   -- | render instance to an XML Element
@@ -123,7 +123,6 @@ class XmlRepresentable a where
   fromXml :: Element -> Result (Maybe a)
 
 
--- * Top level from/to xml functions
 class XmlSource a where
     parseXml :: a -> Either Element String
 
@@ -168,9 +167,11 @@ listToXml l = map toXml l
 listFromXml :: XmlRepresentable a => [Content] -> Result [a]
 listFromXml elms = fmap catMaybes $ mapR fromXml (onlyElems elms)
 
+mkElement :: QName -> [Attr] -> [Content] -> Content
+mkElement qn atts elems = Elem $ Element qn atts elems Nothing
+
 makeComment :: String -> Content
 makeComment s = Text $ CData CDataRaw ("<!-- " ++ s ++ " -->") Nothing
-
 
 inAContent :: QName -> [Attr] -> Maybe Content -> Content
 inAContent qn a c = mkElement qn a $ maybeToList c
@@ -181,8 +182,7 @@ inContent qn c = inAContent qn [] c
 toOmobj :: Content -> Content
 toOmobj c = inAContent el_omobj [attr_om] $ Just c
 
-
--- TODO: URL-encode/decode the ids
+-- * Encoding/Decoding
 
 -- url escaping and unescaping.
 -- We use ? and / as special characters, so we need them to be encoded in names
@@ -262,7 +262,7 @@ oneOfMsg e l = let printName = qName in
                       , " but found ", printName $ elName e, "."
                       ]
 
-------------------------- Monad and Maybe interplay -------------------------
+-- * Monad and Maybe interaction
 
 justReturn :: Monad m => a -> m (Maybe a)
 justReturn = return . Just
@@ -289,8 +289,7 @@ missingMaybe el misses =
     fromMaybe (error $ el ++ " element must have a " ++ misses ++ ".")
 
 
------------------------------- Class instances ------------------------------
-
+-- -- -- -- -- XmlRepresentable Class instances for OMDoc types -- -- -- -- --
 
 -- | The root instance for representing OMDoc in XML
 instance XmlRepresentable OMDoc where
@@ -503,10 +502,10 @@ instance XmlRepresentable OMAttribute where
             fail $ oneOfMsg e [el_omatp]
 
 
------------------------------- fromXml methods ------------------------------
+-- * fromXml methods
 
--- | Get an OMElement from an child element of type qn of the given element,
---   hence containing an OMOBJ
+-- | If the child element with given name contains an OMOBJ xml element,
+-- this is transformed to an OMElement.
 omelementFrom :: QName -> Element -> Result (Maybe OMElement)
 omelementFrom qn e = fmapFromMaybe omelementFromOmobj $ findChild qn e
 
@@ -546,7 +545,7 @@ xmlToAssignment e
 
 
 
------------------------------- toXml methods ------------------------------
+-- * toXml methods
 
 typeToXml :: OMElement -> Content
 typeToXml t = inContent el_type $ Just $ toOmobj $ toXml t
