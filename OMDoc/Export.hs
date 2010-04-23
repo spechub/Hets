@@ -224,7 +224,7 @@ makeImport le ln dg toInfo s (from, _, lbl)
                     (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                     SigMap nm _ = nSigMapToSigMap nsigm
                 (morph, expSymbs) <-
-                    makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
+                    makeMorphism (lid, nm) toInfo True $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
                 cd <- mkCD s' ln ln' sn
                 return (s', ([TCImport impnm cd $ morph], expSymbs))
@@ -266,7 +266,8 @@ exportLinkLab le ln dg s (from, to, lbl) =
                            lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
                        SigMap nm1 _ = nSigMapToSigMap nsigm1
                        SigMap nm2 _ = nSigMapToSigMap nsigm2
-                   (morph, _) <- makeMorphism (lid1, nm1) (lid2, nm2) gmorph
+                   (morph, _) <-
+                       makeMorphism (lid1, nm1) (lid2, nm2) False gmorph
                    cd1 <- mkCD s'' ln ln1 sn1
                    cd2 <- mkCD s'' ln ln2 sn2
                    return (s'', Just $ TLView viewname cd1 cd2 morph) }
@@ -285,9 +286,12 @@ makeMorphism :: forall lid1 sublogics1
         Logic lid2 sublogics2
          basic_spec2 sentence2 symb_items2 symb_map_items2
          sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
-       (lid1, NameMap symbol1) -> (lid2, NameMap symbol2) -> GMorphism
+       (lid1, NameMap symbol1) -> (lid2, NameMap symbol2)
+                               -> Bool -- ^ use open instead of conass
+                               -> GMorphism
                                -> Result (TCMorphism, Set.Set symbol2)
-makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
+makeMorphism (l1, symM1) (l2, symM2) useOpen
+                 (GMorphism cid (ExtSign sig _) _ mor _)
 
 -- l1 = logic1
 -- l2 = logic2
@@ -321,7 +325,8 @@ makeMorphism (l1, symM1) (l2, symM2) (GMorphism cid (ExtSign sig _) _ mor _)
           symM2' = fmapNM (coerceSymbol l2 lT) symM2
           mormap = symmap_of lT mor
           expSymbs = Set.fromList $ Map.elems $ coerceMapofsymbol lT l2 mormap
-      in return (map (mapEntry lT symM1' symM2') $ Map.toList mormap, expSymbs)
+      in return (map (mapEntry lT symM1' symM2' useOpen)
+                         $ Map.toList mormap, expSymbs)
 
 
 mapEntry :: forall lid sublogics
@@ -330,24 +335,17 @@ mapEntry :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        lid -> NameMap symbol -> NameMap symbol -> (symbol, symbol)
+        lid -> NameMap symbol -> NameMap symbol
+            -> Bool -- ^ use open instead of conass
+            -> (symbol, symbol)
             -> (OMName, OMImage)
-mapEntry _ m1 m2 (s1, s2) =
+mapEntry _ m1 m2 useOpen (s1, s2) =
     let e = error "mapEntry: symbolmapping is missing"
         un1 = Map.findWithDefault e s1 m1
         un2 = Map.findWithDefault e s2 m2
     -- we don't check whether the path is empty or not...
     in ( omName un1
-       , Right $ simpleOMS un2)
--- TODO: we want to export it the second way (Left...)
--- but Hets says when importing RelationsAndOrders.omdoc:
-{-
-No signature morphism for symbol map found.
-The following mapped symbols are missing in the target signature:
-sorts Elem
-pred __<=__ : Elem * Elem
--}
---       , Left $ nameToString un2)
+       , if useOpen then Left $ nameToString un2 else Right $ simpleOMS un2)
 
 
 -- | extracts the single element from singleton sets, fails otherwise

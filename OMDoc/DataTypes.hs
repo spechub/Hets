@@ -13,6 +13,8 @@ Datatypes for an intermediate OMDoc Representation.
 module OMDoc.DataTypes where
 
 import Common.Utils
+import Common.Doc
+import Common.DocUtils
 import Common.Amalgamate (readShow)
 import Common.Id
 import Common.Lexer
@@ -258,3 +260,8 @@ lookupNotation smi = lookupNotationInMap $ sigMapINotations smi
 
 lookupNotationInMap :: Map.Map OMName String -> OMName -> String
 lookupNotationInMap m n = Map.findWithDefault (name n) n m
+
+-- * Pretty instances
+
+instance Pretty OMName where
+    pretty = text . show

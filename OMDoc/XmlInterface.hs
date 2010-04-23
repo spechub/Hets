@@ -15,6 +15,8 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
 The transformation of the OMDoc intermediate representation to and from XML.
+The import from xml does not validate the xml, hence if you encounter strange
+errors, do not forget to check the xml structure first.
 -}
 
 
