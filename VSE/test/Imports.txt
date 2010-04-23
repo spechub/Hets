@@ -1,0 +1,78 @@
+cd Hets/VSE/test
+rm -rf specifications Imports_List_1.tar
+hets -g -A Imports.casl
+
+uDrawGraph window "Development Graph for Imports" ->
+"Prove VSE Structured" on node "List"
+
+vse window "project" ->
+"Work On" -> "Specification" -> select "imports_nat_0" -> "ok"
+
+vse window "specification":
+"View" -> "Short Symbols"
+"Specification" -> "Add Simplifier Rules"
+  -> selection of first 4 axioms leaving 3 theorems -> "ok"
+"Proof" -> "Begin" -> selection "AX6 ()" -> "ok"
+
+vse window "specification-strat" (h-step) ->
+"Control" -> "Heuristics"
+  -> heuristic (scroll left side down) "local simplifier equations" -> "ok"
+
+vse window "ruleselection" -> "structural induction"
+
+vse window "specification-strat":
+"Lemma" -> "Update"
+"File" -> "Go Back"
+
+vse window "specification":
+"Specification" -> "Add Simplifier Rules"
+  -> selection of first proven theorem leaving 2 theorems -> "ok"
+"Proof" -> "Begin" -> selection "AX7 ()" -> "ok"
+
+h-step
+
+vse window "ruleselection":
+"structural induction" -> selection "m" -> "ok"
+"all right"
+"all left" -> Confirm "Use SL parser?" -> "Yes" -> type in "n" -> "ok"
+"insert equation" -> selection (choose first equation) -> "ok"
+"all right"
+
+vse window "specification-strat":
+"Lemma" -> "Update"
+"File" -> "Go Back"
+
+same steps for "AX8 ()" starting with "Add Simplifier Rules"
+
+vse window "specification":
+"Proof" -> "Replay Proofs" -> select "### All proofs ###" -> "ok" !
+"File" -> "Go Back"
+
+vse window "project" ->
+"Work On" -> "Specification" -> select "imports_list_1" -> "ok"
+
+vse window "specification":
+"Specification" -> "Add Simplifier Rules"
+  -> selection of first 6 axioms leaving the theorem -> "ok"
+"Proof" -> "Begin" -> selection "LEN_1APP ()" -> "ok"
+
+h-step
+
+"structural induction" -> selection "l1" -> "ok"
+"all right"
+"all left" -> Confirm "Use SL parser?" -> "Yes" -> type in "l2" -> "ok"
+"insert equation" -> selection (choose first equation) -> "ok"
+"all right"
+
+vse window "specification-strat":
+"Lemma" -> "Update"
+"File" -> "Go Back"
+
+vse window "specification":
+"Proof" -> "Replay Proofs" -> select "### All proofs ###" -> "ok" !
+"File" -> "Go Back"
+
+vse window "project" ->
+"Project" -> "Exit All"
+
+uDrawGraph window "Development Graph for Imports" -> "File" -> "Exit"
