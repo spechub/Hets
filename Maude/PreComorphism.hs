@@ -55,7 +55,7 @@ mapMorphism morph =
          let
            src = MMorphism.source morph
            tgt = MMorphism.target morph
-           mk = arrangeKinds (MSign.sorts src) (MSign.subsorts src)
+           mk = kindMapId $ MSign.kindRel src
            cs = kindsFromMap mk
            smap = MMorphism.sortMap morph
            omap = MMorphism.opMap morph
@@ -87,13 +87,13 @@ translateOpMapEntry _ _ _ _ = Map.empty
 -- | generates a set of CASL symbol from a Maude Symbol
 mapSymbol :: MSign.Sign -> MSym.Symbol -> Set.Set CSign.Symbol
 mapSymbol sg (MSym.Sort q) = Set.singleton csym
-           where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
+           where mk = kindMapId $ MSign.kindRel sg
                  sym_id = token2id q
                  kind = Map.findWithDefault (errorId "map symbol") sym_id mk
                  pred_data = CSign.PredType [kind]
                  csym = CSign.Symbol sym_id $ CSign.PredAsItemType pred_data
 mapSymbol sg (MSym.Operator q ar co) = Set.singleton csym
-           where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
+           where mk = kindMapId $ MSign.kindRel sg
                  q' = token2id q
                  ar' = map (maudeSort2caslId mk) ar
                  co' = token2id $ getName co
@@ -153,16 +153,16 @@ mapSentence sg sen@(MSentence.Equation eq) = case any MAS.owise ats of
                        no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
                        trans = sentence $ owiseSen2Formula mk no_owise_forms named
                      in return trans
-          where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
+          where mk = kindMapId $ MSign.kindRel sg
                 MAS.Eq _ _ _ ats = eq
                 named = makeNamed "" sen
 mapSentence sg sen@(MSentence.Membership mb) = return $ sentence form
-          where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
+          where mk = kindMapId $ MSign.kindRel sg
                 MAS.Mb _ _ _ _ = mb
                 named = makeNamed "" sen
                 form = mb_rl2formula mk named
 mapSentence sg sen@(MSentence.Rule rl) = return $ sentence form
-          where mk = arrangeKinds (MSign.sorts sg) (MSign.subsorts sg)
+          where mk = kindMapId $ MSign.kindRel sg
                 MAS.Rl _ _ _ _ = rl
                 named = makeNamed "" sen
                 form = mb_rl2formula mk named
@@ -186,11 +186,10 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
    where csign = CSign.emptySign ()
          ss = MSign.sorts msign
          ss' = Set.map sym2id ss
-         mk = arrangeKinds ss (MSign.subsorts msign)
-         mk' = arrangeKinds2 ss (MSign.subsorts msign)
+         mk = kindMapId $ MSign.kindRel msign
          sbs = MSign.subsorts msign
          sbs' = maudeSbs2caslSbs sbs mk
-         cs = Set.union ss' $ kindsFromMap mk -- (Set.map kindId ss')
+         cs = Set.union ss' $ kindsFromMap mk
          preds = rewPredicates cs
          rs = rewPredicatesSens cs
          ops = deleteUniversal $ MSign.ops msign
@@ -202,9 +201,9 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          pred_forms = loadLibraries (MSign.sorts msign) ops
          ops_syms = ops2symbols cops'
          (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs nsens
-         no_owise_forms = map (noOwiseSen2Formula mk') no_owise_sens
-         owise_forms = map (owiseSen2Formula mk' no_owise_forms) owise_sens
-         mb_rl_forms = map (mb_rl2formula mk') mbs_rls_sens
+         no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
+         owise_forms = map (owiseSen2Formula mk no_owise_forms) owise_sens
+         mb_rl_forms = map (mb_rl2formula mk) mbs_rls_sens
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
          new_sens = concat [rs, rs', no_owise_forms, owise_forms, 
@@ -215,9 +214,9 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
 maudeSbs2caslSbs :: MSign.SubsortRel -> IdMap -> Rel.Rel CAS.SORT
 maudeSbs2caslSbs sbs im = Rel.fromDistinctMap m4
       where l = Map.toList $ Rel.toMap sbs
-            l1 = map maudeSb2caslSb l
+            l1 = [] -- map maudeSb2caslSb l
             l2 = idList2Subsorts $ Map.toList im
-            l3 = map subsortsKinds l
+            l3 = map subsorts2Ids l
             m1 = Map.fromList l1
             m2 = Map.fromList l2
             m3 = Map.fromList l3
@@ -229,10 +228,10 @@ idList2Subsorts ((id1, id2) : il) = t1 : idList2Subsorts il
       where t1 = (id1, Set.singleton id2)
 
 maudeSb2caslSb :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
-maudeSb2caslSb (sym, st) = (kindId $ sortSym2id sym, Set.map (kindId . sortSym2id) st)
+maudeSb2caslSb (sym, st) = (sortSym2id sym, Set.map (kindId . sortSym2id) st)
 
-subsortsKinds :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
-subsortsKinds (sym, st) = (sortSym2id sym, Set.map sortSym2id st)
+subsorts2Ids :: (MSym.Symbol, Set.Set MSym.Symbol) -> (Id, Set.Set Id)
+subsorts2Ids (sym, st) = (sortSym2id sym, Set.map sortSym2id st)
 
 sortSym2id :: MSym.Symbol -> Id
 sortSym2id (MSym.Sort q) = token2id q
@@ -490,7 +489,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot, ot')
       where f = token2id . getName
-            g = \ x -> maudeSymbol2caslSort2 x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
+            g = \ x -> maudeSymbol2caslSort x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
             ot' = CSign.OpType CAS.Total (map f ar) (f co)
 maudeSym2CASLOp _ _ = Nothing
@@ -805,25 +804,14 @@ maudeTerm2caslTerm im (MAS.Apply q ts ty) = CAS.Application op tts nullRange
               op = CAS.Qual_op_name name op_type nullRange
 
 maudeSymbol2caslSort :: MSym.Symbol -> IdMap -> CAS.SORT
-maudeSymbol2caslSort (MSym.Sort q) im = Map.findWithDefault err q' im -- token2id q
-      where q' = token2id q
-            err = errorId "error translate symbol"
+maudeSymbol2caslSort (MSym.Sort q) _ = token2id q
 maudeSymbol2caslSort (MSym.Kind q) im = Map.findWithDefault err q' im
       where q' = token2id q
             err = errorId "error translate symbol"
 maudeSymbol2caslSort _ _ = errorId "error translate symbol"
 
-maudeSymbol2caslSort2 :: MSym.Symbol -> IdMap -> CAS.SORT
-maudeSymbol2caslSort2 (MSym.Sort q) _ = token2id q
-maudeSymbol2caslSort2 (MSym.Kind q) im = Map.findWithDefault err q' im
-      where q' = token2id q
-            err = errorId "error translate symbol"
-maudeSymbol2caslSort2 _ _ = errorId "error translate symbol"
-
 maudeType2caslSort :: MAS.Type -> IdMap -> CAS.SORT
-maudeType2caslSort (MAS.TypeSort q) im = Map.findWithDefault err q' im -- token2id $ getName q
-      where q' = token2id $ getName q
-            err = errorId "error translate type"
+maudeType2caslSort (MAS.TypeSort q) _ = token2id $ getName q
 maudeType2caslSort (MAS.TypeKind q) im = Map.findWithDefault err q' im
       where q' = token2id $ getName q
             err = errorId "error translate type"
@@ -900,43 +888,6 @@ kindPredicate sort kind mis = case sort == (str2id "Universal") of
 -- | extract the kinds from the map of id's
 kindsFromMap :: IdMap -> Set.Set Id
 kindsFromMap = Map.fold Set.insert Set.empty
-
--- | return a map where each sort is mapped to its kind, both of them
--- already converted to Id
-arrangeKinds :: MSign.SortSet -> MSign.SubsortRel -> IdMap
-arrangeKinds ss _ = Map.fromList l'
-       where l = Set.toList ss
-             l' = map arrangeSortKind l
-
-arrangeSortKind :: MSym.Symbol -> (Id, Id)
-arrangeSortKind s = (i, kindId i)
-       where i = sort2id [s]
-
--- | return a map where each sort is mapped to its kind, both of them
--- already converted to Id
-arrangeKinds2 :: MSign.SortSet -> MSign.SubsortRel -> IdMap
-arrangeKinds2 ss r = arrangeKindsList (Set.toList ss) r Map.empty
-
--- | traverse the sorts and creates a table that assigns to each sort its kind
-arrangeKindsList :: [MSym.Symbol] -> MSign.SubsortRel -> IdMap -> IdMap
-arrangeKindsList [] _ m = m
-arrangeKindsList l@(s : _) r m = arrangeKindsList not_rel r m'
-      where tops = List.sort $ getTop r s
-            tc = Rel.transClosure r
-            (rel, not_rel) = sameKindList s tc l
-            f = \ x y z -> Map.insert (sym2id y) (kindId $ sort2id x) z
-            m' = foldr (f tops) m rel
-
--- | creates two list distinguishing in the first componente the symbols
--- with the same kind than the given one and in the second one the
--- symbols with different kind
-sameKindList :: MSym.Symbol -> MSign.SubsortRel -> [MSym.Symbol]
-                -> ([MSym.Symbol], [MSym.Symbol])
-sameKindList _ _ [] = ([], [])
-sameKindList t r (t' : ts) = if MSym.sameKind r t t'
-                       then (t' : hold, not_hold)
-                       else (hold, t' : not_hold)
-      where (hold, not_hold) = sameKindList t r ts
 
 -- | transform the set of Maude sorts in a set of CASL sorts, including
 -- only one sort for each kind.
@@ -1162,3 +1113,13 @@ errorId s = token2id $ mkSimpleId $ "ERROR: " ++ s
 kindId :: Id -> Id
 kindId i = token2id $ mkSimpleId $ "kind_" ++ show i
 
+kindMapId :: MSign.KindRel -> IdMap
+kindMapId kr = Map.fromList krl'
+     where krl = Map.toList kr
+           krl' = map (\ (x, y) -> (mSym2caslId x, mSym2caslId y)) krl
+
+mSym2caslId :: MSym.Symbol -> Id
+mSym2caslId (MSym.Sort q) = token2id q
+mSym2caslId (MSym.Kind q) = kindId q'
+      where q' = token2id q
+mSym2caslId _ = errorId "error translate symbol"

@@ -66,7 +66,6 @@ data ToPartRenaming = To OpId [Attr]
 
 data Statement = ImportStmnt Import
                | SortStmnt Sort
-               | KindStmnt Kind
                | SubsortStmnt SubsortDecl
                | OpStmnt Operator
                | EqStmnt Equation

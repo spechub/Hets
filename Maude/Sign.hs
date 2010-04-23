@@ -17,6 +17,7 @@ module Maude.Sign (
     Sign(..),
     -- ** Auxiliary types
     SortSet,
+    KindRel,
     SubsortRel,
     OpDecl,
     OpDeclSet,
@@ -56,6 +57,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
+import qualified Data.List as List
 
 import Common.Doc hiding (empty)
 import qualified Common.Doc as Doc
@@ -72,6 +74,7 @@ type OpDecl = (Set Symbol, [Attr])
 type OpDeclSet = Set OpDecl
 type OpMap = Map Qid OpDeclSet
 type Sentences = Set Sentence
+type KindRel = Map Symbol Symbol
 
 -- ** The Signature type
 -- | The Signature of a Maude 'Module'.
@@ -80,7 +83,8 @@ data Sign = Sign {
         kinds :: KindSet,               -- ^ The 'Set' of 'Kind's
         subsorts :: SubsortRel,         -- ^ The 'Rel'ation of 'Sort's
         ops :: OpMap,                   -- ^ The 'Map' of 'Operator's
-        sentences :: Sentences          -- ^ The 'Set' of 'Sentence's
+        sentences :: Sentences,         -- ^ The 'Set' of 'Sentence's
+        kindRel :: KindRel              -- ^ The 'Set' of 'Sentence's for the kind function
     } deriving (Show, Ord, Eq)
 
 -- ** 'Sign' instances
@@ -99,7 +103,7 @@ instance Pretty Sign where
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
         pr'subs = vcat . Map.foldWithKey pr'pair []
-        -- print operator decparations
+        -- print operator declarations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
         pr'ods (decls, attrs) = descend ((:) . pr'decl attrs) decls
@@ -108,7 +112,9 @@ instance Pretty Sign where
         in vcat [ pr'sorts $ Set.elems $ sorts sign
                 , pr'kinds $ Set.elems $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
-                , pr'ops $ ops sign ]
+                , pr'ops $ ops sign
+                , pretty "op kind : Sort -> Kind ."
+                , prettyPrint $ kindRel sign]
                 -- NOTE: Leaving out Sentences for now.
                 -- , pretty $ Set.toList $ sentences sign ]
 
@@ -118,10 +124,15 @@ instance HasSorts Sign where
         sorts = mapSorts mp $ sorts sign,
         kinds = mapSorts mp $ kinds sign,
         subsorts = mapSorts mp $ subsorts sign,
-        ops = mapSorts mp $ ops sign
+        ops = mapSorts mp $ ops sign,
+        kindRel = mapSorts mp $ kindRel sign
         -- NOTE: Leaving out Sentences for now.
         -- sentences = mapSorts mp $ sentences sign
     }
+
+instance HasSorts KindRel where
+    getSorts = getSortsKindRel
+    mapSorts = renameSortKindRel
 
 instance HasOps Sign where
     getOps = let
@@ -146,30 +157,32 @@ instance HasLabels Sign where
 -- * Construction
 
 -- | Separate Sort, Subsort and Operator declaration 'Statement's.
-partitionStmts :: [Statement] -> ([Sort], [Kind], [SubsortDecl], [Operator])
+partitionStmts :: [Statement] -> ([Sort], [SubsortDecl], [Operator])
 partitionStmts = let
-    switch (sorts', kinds', subs', ops') stmt = case stmt of
-        SortStmnt sort -> (sort : sorts', kinds', subs', ops')
-        KindStmnt kind -> (sorts', kind : kinds', subs', ops')
-        SubsortStmnt sub -> (sorts', kinds', sub : subs', ops')
-        OpStmnt op -> (sorts', kinds', subs', op : ops')
-        _ -> (sorts', kinds', subs', ops')
-    in foldl switch ([], [], [], [])
+    switch (sorts', subs', ops') stmt = case stmt of
+        SortStmnt sort -> (sort : sorts', subs', ops')
+        SubsortStmnt sub -> (sorts', sub : subs', ops')
+        OpStmnt op -> (sorts', subs', op : ops')
+        _ -> (sorts', subs', ops')
+    in foldl switch ([], [], [])
 
 -- | Extract the 'Sign'ature from the given 'Module'.
 fromSpec :: Module -> Sign
 fromSpec (Module _ _ stmts) = let
     sents = filter (not . Sen.isRule) . Sen.fromStatements $ stmts
-    (sort'list, kind'list, sub'list, op'list) = partitionStmts stmts
+    (sort'list, sub'list, op'list) = partitionStmts stmts
     ins'sorts = flip (foldr insertSort) sort'list
-    ins'kinds = flip (foldr insertKind) kind'list
     ins'subs  = flip (foldr insertSubsort) sub'list
     ins'ops   = flip (foldr insertOp) op'list
-    sign = ins'ops . ins'subs . ins'kinds . ins'sorts $ empty
+    sign = ins'ops . ins'subs . ins'sorts $ empty
+    sbs = Rel.transClosure $ subsorts sign
+    kr = getkindRel (sorts sign) sbs
     in sign {
-        subsorts = Rel.transClosure $ subsorts sign,
+        kinds = kindsFromMap kr,
+        subsorts = sbs,
+        ops = addPartial $ ops sign,
         sentences = Set.fromList sents,
-        ops = addPartial $ ops sign
+        kindRel = kr
     }
 
 addPartial :: OpMap -> OpMap
@@ -197,7 +210,8 @@ empty = Sign {
     kinds = Set.empty,
     subsorts = Rel.empty,
     ops = Map.empty,
-    sentences = Set.empty
+    sentences = Set.empty,
+    kindRel = Map.empty
 }
 
 inlineSign :: Sign -> Doc
@@ -228,12 +242,6 @@ insertSort :: Sort -> Sign -> Sign
 insertSort sort sign = let
     insert = Set.insert . asSymbol
     in sign {sorts = insert sort (sorts sign)}
-
--- | Insert a 'Kind' into a 'Sign'ature.
-insertKind :: Kind -> Sign -> Sign
-insertKind kind sign = let
-    insert = Set.insert . asSymbol
-    in sign {kinds = insert kind (kinds sign)}
 
 -- | Insert a 'SubsortDecl' into a 'Sign'ature.
 insertSubsort :: SubsortDecl -> Sign -> Sign
@@ -307,24 +315,28 @@ removeReps (a : as) = a : (filter (/= a) $ removeReps as)
 union :: Sign -> Sign -> Sign
 union sig1 sig2 = let
     apply func items = func (items sig1) (items sig2)
+    kr = getkindRel (apply Set.union sorts) (apply Rel.union subsorts)
     in Sign {
         sorts = apply Set.union sorts,
-        kinds = apply Set.union kinds,
+        kinds = kindsFromMap kr,
         subsorts = apply Rel.union subsorts,
         ops = apply (Map.unionWith Set.union) ops,
-        sentences = apply Set.union sentences
+        sentences = apply Set.union sentences,
+        kindRel = kr
     }
 
 -- | The intersection of two 'Sign'atures.
 intersection :: Sign -> Sign -> Sign
 intersection sig1 sig2 = let
     apply func items = func (items sig1) (items sig2)
+    kr = getkindRel (apply Set.union sorts) (apply Rel.union subsorts)
     in Sign {
         sorts = apply Set.intersection sorts,
-        kinds = apply Set.intersection kinds,
+        kinds = kindsFromMap kr,
         subsorts = apply Rel.intersection subsorts,
         ops = apply Map.intersection ops,
-        sentences = apply Set.intersection sentences
+        sentences = apply Set.intersection sentences,
+        kindRel = kr
     }
 
 -- * Conversion
@@ -387,3 +399,51 @@ renameOp from to attrs sign = let
     mapped = mapOpDecl subrel from to attrs opmap
     in sign { ops = mapped }
 
+getkindRel :: SortSet -> SubsortRel -> KindRel
+getkindRel ss r = kindRelList (Set.toList ss) r Map.empty
+
+kindRelList :: [Symbol] -> SubsortRel -> KindRel -> KindRel
+kindRelList [] _ m = m
+kindRelList l@(s : _) r m = kindRelList not_rel r m'
+      where (top : _) = List.sort $ getTop r s
+            tc = Rel.transClosure r
+            (rel, not_rel) = sameKindList s tc l
+            f = \ x y z -> Map.insert y (sortSym2kindSym x) z
+            m' = foldr (f top) m rel
+
+sameKindList :: Symbol -> SubsortRel -> [Symbol] -> ([Symbol], [Symbol])
+sameKindList _ _ [] = ([], [])
+sameKindList t r (t' : ts) = if sameKind r t t'
+                       then (t' : hold, not_hold)
+                       else (hold, t' : not_hold)
+      where (hold, not_hold) = sameKindList t r ts
+
+getTop :: SubsortRel -> Symbol -> [Symbol]
+getTop r tok = case succs of
+           [] -> [tok]
+           toks@(_:_) -> foldr ((++) . (getTop r)) [] toks
+      where succs = Set.toList $ Rel.succs r tok
+
+kindsFromMap :: KindRel -> KindSet
+kindsFromMap kr = foldr (\ (_,y) z -> Set.insert y z) Set.empty krl
+      where krl = Map.toList kr
+
+prettyPrint :: KindRel -> Doc
+prettyPrint kr = foldr f Doc.empty krl
+      where krl = Map.toList kr
+            f = \ x y -> vsep [prettyKindPair x, y]
+
+prettyKindPair :: (Symbol, Symbol) -> Doc
+prettyKindPair (s, k) = hsep [keyword "eq", pretty "kind" <> (parens . pretty $ s),
+                              equals, pretty k, dot]
+
+getSortsKindRel :: KindRel -> SymbolSet
+getSortsKindRel = Map.foldWithKey f Set.empty
+      where f = \ k _ s -> Set.insert k s
+
+renameSortKindRel :: Map Symbol Symbol -> KindRel -> KindRel
+renameSortKindRel m kr = kr'
+      where krl = Map.toList kr
+            f = \ mss (x,y) z -> (mapSorts mss x, mapSorts mss y) : z
+            krl' = foldr (f m) [] krl
+            kr' = Map.fromList krl'

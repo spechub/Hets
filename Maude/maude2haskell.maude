@@ -58,46 +58,41 @@
   ceq haskellify(M, M') = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, KS)
-          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-    if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M /\
-       KS := getKinds(M) .
+    if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M .
   ceq haskellify(M, M') = 
       'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, KS)
-          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M', EqS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS, RS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
    if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M /\
        KS := getKinds(M) .
   ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, KS)
-          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
    if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M /\
        KS := getKinds(M) .
   ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
-          haskellifySorts(SS) comma(IL, SS, KS)
-          haskellifyKinds(KS) comma(IL, SS, KS, SSDS)
-          haskellifySubsorts(SSDS) comma(IL, SS, KS, SSDS, ODS)
-          haskellifyOpDeclSet(M', ODS) comma(IL, SS, KS, SSDS, ODS, MAS)
-          haskellifyMembAxSet(M', MAS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS)
-          haskellifyEqSet(M', EqS) comma(IL, SS, KS, SSDS, ODS, MAS, EqS, RS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
    if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M /\
        KS := getKinds(M) .
@@ -403,45 +398,39 @@
                       else nil
                       fi .
   
-  op comma : ImportList SortSet KindSet -> QidList .
-  eq comma(IL, SS, KS) = if (IL =/= nil or SS =/= none) and KS =/= none
+  op comma : ImportList SortSet SubsortDeclSet -> QidList .
+  eq comma(IL, SS, SSDS) = if (IL =/= nil or SS =/= none) and SSDS =/= none
                            then '`, ' 
                            else nil
                            fi .
   
-  op comma : ImportList SortSet KindSet SubsortDeclSet -> QidList .
-  eq comma(IL, SS, KS, SSDS) = if (IL =/= nil or SS =/= none or KS =/= none) and SSDS =/= none
-                           then '`, ' 
-                           else nil
-                           fi .
-  
-  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet -> QidList .
-  eq comma(IL, SS, KS, SSDS, ODS) = 
+  op comma : ImportList SortSet SubsortDeclSet OpDeclSet -> QidList .
+  eq comma(IL, SS, SSDS, ODS) = 
           if (IL =/= nil or SS =/= none or SSDS =/= none) and ODS =/= none
           then '`, ' 
           else nil
           fi .
   
-  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet MembAxSet -> QidList .
-  eq comma(IL, SS, KS, SSDS, ODS, MAS) = 
-          if (IL =/= nil or SS =/= none or KS =/= none or SSDS =/= none or ODS =/= none) and MAS =/= none
+  op comma : ImportList SortSet SubsortDeclSet OpDeclSet MembAxSet -> QidList .
+  eq comma(IL, SS, SSDS, ODS, MAS) = 
+          if (IL =/= nil or SS =/= none or SSDS =/= none or ODS =/= none) and MAS =/= none
           then '`, ' 
           else nil
           fi .
 
-  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet MembAxSet
+  op comma : ImportList SortSet SubsortDeclSet OpDeclSet MembAxSet
              EquationSet -> QidList .
-  eq comma(IL, SS, KS, SSDS, ODS, MAS, EqS) = 
-          if (IL =/= nil or SS =/= none or KS =/= none or SSDS =/= none or ODS =/= none or MAS =/= none)
+  eq comma(IL, SS, SSDS, ODS, MAS, EqS) = 
+          if (IL =/= nil or SS =/= none or SSDS =/= none or ODS =/= none or MAS =/= none)
              and EqS =/= none
           then '`, ' 
           else nil
           fi .
 
-  op comma : ImportList SortSet KindSet SubsortDeclSet OpDeclSet MembAxSet
+  op comma : ImportList SortSet SubsortDeclSet OpDeclSet MembAxSet
              EquationSet RuleSet -> QidList .
-  eq comma(IL, SS, KS, SSDS, ODS, MAS, EqS, RS) = 
-          if (IL =/= nil or SS =/= none or KS =/= none or SSDS =/= none or ODS =/= none
+  eq comma(IL, SS, SSDS, ODS, MAS, EqS, RS) = 
+          if (IL =/= nil or SS =/= none or SSDS =/= none or ODS =/= none
               or MAS =/= none or EqS =/= none) and RS =/= none
           then '`, ' 
           else nil
