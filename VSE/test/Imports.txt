@@ -76,3 +76,23 @@ vse window "project" ->
 "Project" -> "Exit All"
 
 uDrawGraph window "Development Graph for Imports" -> "File" -> "Exit"
+
+If something does not work as above, you probably did not set up the
+Simplifier Rules correctly or forgot the "local simplifier equations"
+Control Heuristic (h-step).
+
+It may be a good idea to replay every single proof first, before attempting
+the next one. (Only replayed proofs are reported back to hets.)
+
+Locked lemmas are not properly written back and the proofs will be lost by
+unlocking.
+
+In case of a crash you'll have to kill the remaining lisp and wish processes
+manually from within another shell.
+
+Do not check in a changed file Imports_List_1.tar!  This archive always
+changes when replaying proofs.  A successful replayed proof on any node will
+report all proven lemmas back to hets.
+
+Of course you need the secret binary hetsvse in your PATH or pointed to by
+the environment variable HETS_VSE.
