@@ -1007,21 +1007,52 @@ clicking with the right mouse button.
 \begin{description}
 \item[Edit] This menu has the following submenus:
 \begin{description}
-\item[undo] Undo the last development graph proof step (see under Proofs)
-\item[redo] Restore the last undone development graph proof step (see
+\item[Undo] Undo the last development graph proof step (see under Proofs)
+\item[Redo] Restore the last undone development graph proof step (see
   under Proofs)
-\item[Unnamed nodes]
-The ``Hide/show names'' menu is a toggle:
-you can switch on or off the display of names for nodes that
-are initially unnamed. The newly named nodes get names that
+\item[Hide/show names/nodes/edges]
+The ``Hide/show names/nodes/edges'' menu is a toggle:
+you can switch on or off the display of node names, unnamed nodes or 
+proven theorem links.
+
+With the ``Hide/show internal node names'' option, the nodes that
+are initially unnamed get names that
 are derived from named neighbour nodes.
 
-With the ``Hide nodes'' submenu, it is possible
-to reduce the complexity of the graph by hiding all unnamed nodes;
-only nodes corresponding to named specifications remain displayed.
+With the ``Hide/show unnamed nodes'' option, it is possible
+to reveal the unnamed nodes which do not have open proof goals.
+Initially, the complexity of the graph is reduced by hiding all these nodes;
+only nodes corresponding to named specifications are displayed.
 Paths between named nodes going through unnamed nodes
-are displayed as links. With the ``Show nodes'' submenu, the unnamed
-nodes re-appear.
+are displayed as edges; these paths are then expanded when showing the 
+unnamed nodes.
+
+When applying the development graph calculus rules, theorem links that have
+been proven are removed from the graph. With the ``Hide/Show newly added 
+proven edges'' option, it is possible to re-display these links; they are marked
+as proven in the link info (see \emph{Pop-up menu for links}, below).
+
+\item[Focus node]
+
+This menu is particularly useful when navigating a large development graph, 
+which does not fit on a single screen. The list of all nodes is displayed: 
+the nodes are identified by the internal node number and the internal node name.
+Once a node is selected, the view centers on it. 
+
+\item[Select Linktypes]
+
+This menu allows to select the type of links that are displayed in the 
+development graph. A selection window appears, where links are grouped into
+three categories: definition links, proven theorem links and unproven 
+theorem links. It is possible to select/deselect all links or to invert the
+current selection. 
+
+\item[Consistency checker] 
+ 
+ Checks whether the theories of the nodes of the graph are consistent
+ i.e. have a model. The model finders currently interfaced are
+ Isabelle-refute, darwin and E-KRHyper.
+
 \item[Proofs] This menu allows to apply some of the deduction rules
   for development graphs, see Sect. IV:4.4 of the \CASL Reference
   Manual \cite{CASL/RefManual} or one of
@@ -1036,55 +1067,80 @@ nodes re-appear.
   Besides the deduction rules, the menu contains entries for computing
   a colimit approximation for the development graph and for
   computing normal forms of all nodes (needed when dealing with hiding).
+  Also, a \CASL-specific normalisation of free links has been
+  implemented.
+
+\item[Dump Development Graph] This option is available for 
+ debugging purposes and it prints at the command line informations 
+ about the content of the development graph.
+
+\item[Show Library Graph] This menu displays the library graph, in a separate
+  window, if the library graph window has been closed after \Hets has been 
+  called.
+
+\item[Save Graph for uDrawGraph] Saves the development graph in a .udg file
+ which can be later read by uDrawGraph.
+
+\item[Save proof-script] This menu saves the proof rules that have been applied
+ to the current development graph in a .hpf file which can be later read by 
+ \Hets and thus the action performed on the graph are saved.
+
 \end{description}
 
 \item[Pop-up menu for nodes]
 Here, the number of submenus depends on the type of the node:
 \begin{description}
-\item[Show signature] Shows the signature of the node.
-\item[Show local axioms] Shows the local axioms of the node.
+
+\item[Show node info] Shows the local informations of the node: the internal
+ node name and node number, the xpath \ednote{what is this?}, informations 
+ about consistency of the node, origin of the node and the local theory
+ i.e. axioms declared locally.
+
 \item[Show theory] Shows the theory of the node (including axioms
-imported from other nodes). Warning: axioms imported via hiding  links
+imported from other nodes). Notice that axioms imported via hiding  links
 are not part of the theory; they can be made visible only by re-adding
-the hidden symbols, using the proof rule \emph{Theorem-Hide-Shift}.
+the hidden symbols, using the normal form of the node, by calling 
+\emph{Proofs/Compute Normal Form}. For such nodes, a warning is displayed.
+
 \item[Translate theory] Translates the theory of a node to another logic.
 A menu with the possible translation paths will be displayed.
-\item[Taxonomy graphs] (Only available for some logics) Shows the subsort graph of the signature of the node.
-\item[Show sublogic] Shows the logic and, within that logic, the minimal sublogic
-for the signature and the axioms of the node.
-\item[Show origin] Shows the kind of \CASL structuring construct that
-led to the node.
+
+\item[Taxonomy graphs] (Only available for some logics) Shows the subsort graph
+ of the signature of the node.
+
 \item[Show proof status] Show open and proven local proof goals.
 \item[Prove] Try to prove the local proof goals. See Section~\ref{sec:Proofs}
 for details.
-\item[Check consistency] Check the consistency of the theory of the node.
-\item[Show just subtree] (Only for named nodes) Reduce the complexity
-of the graph by just showing the subtree below the current node.
-\item[Undo show just subtree] (Only for named nodes) Undo the reduction.
-\item[Show referenced library] (Only for external nodes) Open a new window
-showing the development graph for the library the external node refers to.
-%\item[Show spec] Show the structured specification of the node.
-% (not fully implemented yet)
-\item[Show number of node] Show the internal number of the node.
+
+\item[Prove VSE structured] \ednote{@Christian: could you clarify this?}
+\item[Check conservativity] Checks conservativity of the inclusion 
+ morphism from the empty theory to the theory of the node (see
+ {\bf Check conervativity} for edges).
 \end{description}
+
+For the nodes which are references to specifications from an external library,
+the pop-up menu options are reduced to {\bf Show node info, Show theory,
+Show proof status} and {\bf Prove} and moroever, the option {\bf Show
+referenced library} is added: on selection, it displays in  a new window
+the development graph of the external library from which the specification has
+been downloaded.
+
 \item[Pop-up menu for links]
 Again, the number of submenus depends on the type of the link:
 \begin{description}
-\item[Show morphism] Shows the signature morphism of the link. It consists
+\item[Show info] Shows informations about the edge: internal number and
+internal nodes it links, the link type and origin and the  
+signature morphism of the link. The latter consists
 of two components: a logic translation and a signature morphism in the
 target logic of the logic translation.
 In the (most frequent) case
 of an intra-logic signature morphism, the logic translation component is
 just the identity.
-\item[Show origin] Shows the kind of \CASL structuring construct that
-led to the link.
-\item[Show proof status] (Only for theorem links) Show the proof status.
 \item[Check conservativity] (Experimental) Check whether the
 theory of the target node of the link
 is a conservative extension of the theory of the source node.
-\item[Show ID of this edge] Shows the internal number of the edge.
-These numbers are also used in the proof status information for
-edges.
+\item[Expand]This menu is available only for paths going through unnamed
+nodes which are not displayed and it expands the path to the links forming it.
 \end{description}
 \end{description}
 
