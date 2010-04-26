@@ -13,33 +13,22 @@ else
     if [ ! -d "$UDG_HOME" ] ; then
 	if [ -f "$UNIDAVINCI" ] ; then
 	    UDG_HOME=`dirname $UNIDAVINCI 2> /dev/null`/..
-	else if [ -f "$UDRAWGRAPH_PATH" ] ; then
-	        UDG_HOME=`dirname $UDRAWGRAPH_PATH 2> /dev/null`/..
-	     else
-	       UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
-	     fi
+	else
+	    UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
 	fi
     fi
 fi
-UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
+export PATH=$UDG_HOME/bin:$PATH
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
 else if [ ! -d "$ISABELLE_HOME" ] ; then
-         if [ -f "$ISABELLE_PATH" ] ; then
-	     ISABELLE_FILE=`dirname $ISABELLE_PATH`/isabelle-interface
-	  else ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
-	 fi
+	 ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
      fi
 fi
-if [ -f "$ISABELLE_HOME/Isabelle/bin/isabelle-interface" ] ;
-    then ISABELLE_FILE=$ISABELLE_HOME/Isabelle/bin/isabelle-interface
-fi
 
-if [ -z "$HETS_ISABELLE" ] ; then
-    HETS_ISABELLE=$ISABELLE_FILE
-# on Darwin
-# HETS_ISABELLE="$ISABELLE_FILE -p '/Applications/Aquamacs\ Emacs.app/Contents/MacOS/Aquamacs\ Emacs'"
+if [ -f "$ISABELLE_HOME/Isabelle/bin/isabelle" ] ;
+    then export PATH=$ISABELLE_HOME/Isabelle/bin:$PATH
 fi
 
 if [ -d $INSTALL_PATH/Hets-lib ] ; then
@@ -47,12 +36,11 @@ if [ -d $INSTALL_PATH/Hets-lib ] ; then
 fi
 
 HETS_OWL_TOOLS=$INSTALL_PATH/lib/hets/java
-UNIWISH=/usr/bin/wish
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 HETS_APROVE=$INSTALL_PATH/lib/hets/java/AProVE.jar
 
 export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_TOOLS \
-    UNIWISH UNIDAVINCI UDG_HOME HETS_APROVE
+    UDG_HOME HETS_APROVE
 
 if [ -d $INSTALL_PATH/lib/SPASS* ] ; then
     SPASS_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
