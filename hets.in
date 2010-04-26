@@ -2,28 +2,34 @@
 
 ### contact: hets-devel@informatik.uni-bremen.de
 
-### a script that sets all HETS_*- and UNI*-variables according to the
-### installation directory or according binaries found during the
+### a script that sets some HETS_*- variables and the PATH according to the
+### installation directory or according to binaries found during the
 ### installation;
 ### it is post processed by some IzPack variables starting with %
 
 if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
-else
-    if [ ! -d "$UDG_HOME" ] ; then
-	if [ -f "$UNIDAVINCI" ] ; then
-	    UDG_HOME=`dirname $UNIDAVINCI 2> /dev/null`/..
-	else
-	    UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
-	fi
-    fi
+else if [ ! -d "$UDG_HOME" ] ; then
+        if [ -f "$UNIDAVINCI" ] ; then
+          UDG_HOME=`dirname $UNIDAVINCI 2> /dev/null`/..
+        else if [ -f "$UDRAWGRAPH_PATH" ] ; then
+                UDG_HOME=`dirname $UDRAWGRAPH_PATH 2> /dev/null`/..
+             else
+                UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
+             fi
+        fi
+     fi
 fi
 export PATH=$UDG_HOME/bin:$PATH
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
 else if [ ! -d "$ISABELLE_HOME" ] ; then
-	 ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
+        if [ -f "$ISABELLE_PATH" ] ; then
+          ISABELLE_HOME=`dirname $ISABELLE_PATH 2> /dev/null`/../..
+        else
+          ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
+        fi
      fi
 fi
 
