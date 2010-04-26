@@ -56,10 +56,11 @@ mapMorphism morph =
            src = MMorphism.source morph
            tgt = MMorphism.target morph
            mk = kindMapId $ MSign.kindRel src
-           cs = kindsFromMap mk
+           mk' = kindMapId $ MSign.kindRel tgt
            smap = MMorphism.sortMap morph
+           kmap = MMorphism.kindMap morph
            omap = MMorphism.opMap morph
-           smap' = applySortMap2CASLSorts smap cs
+           smap' = applySortMap2CASLSorts smap mk mk'
            omap' = maudeOpMap2CASLOpMap mk omap
            pmap = createPredMap mk smap
            (src', _) = maude2casl src []
@@ -121,18 +122,21 @@ createPredMap4sort im from to m = Map.insert key id_to m
 
 -- | computes the sort morphism of CASL from the sort morphism in Maude and the set
 -- of kinds
-applySortMap2CASLSorts :: MMorphism.SortMap -> Set.Set Id -> CMorphism.Sort_map
-applySortMap2CASLSorts sm = Set.fold (applySortMap2CASLSort sm) Map.empty
+applySortMap2CASLSorts :: MMorphism.SortMap -> IdMap -> IdMap -> CMorphism.Sort_map
+applySortMap2CASLSorts sm im im' = Map.fromList sml'
+            where sml = Map.toList sm
+                  sml' = foldr (applySortMap2CASLSort im im') [] sml
 
--- | computes the morphism for a single kind
-applySortMap2CASLSort :: MMorphism.SortMap -> Id -> CMorphism.Sort_map -> CMorphism.Sort_map
-applySortMap2CASLSort sm sort csm = new_csm
-          where toks = getTokens sort
-                new_toks = map (rename sm) toks
-                new_sort = mkId new_toks
-                new_csm = if new_sort == sort
-                          then csm
-                          else Map.insert sort new_sort csm
+-- | computes the morphism for a single sort pair
+applySortMap2CASLSort :: IdMap -> IdMap -> (MSym.Symbol, MSym.Symbol) -> [(Id, Id)]
+                         -> [(Id, Id)]
+applySortMap2CASLSort im im' (s1, s2) l = l'
+         where p1 = (mSym2caslId s1, mSym2caslId s2)
+               f = \ x y -> Map.findWithDefault (errorId $ "err" ++ (show $ mSym2caslId x)) (mSym2caslId x) y
+               p2 = (f s1 im, f s2 im')
+               l' = if s1 == s2
+                    then p1 : l
+                    else p1 : p2 : l
 
 -- | renames the sorts in a given kind
 rename :: MMorphism.SortMap -> Token -> Token
@@ -816,7 +820,7 @@ maudeType2caslSort (MAS.TypeKind q) im = Map.findWithDefault err q' im
       where q' = token2id $ getName q
             err = errorId "error translate type"
 
--- | obtains the types of the given terms
+-- | obtains the types of the given terms
 getTypes :: [CAS.CASLTERM] -> [Id]
 getTypes = mapMaybe getType
 
@@ -1058,7 +1062,7 @@ ctorSen isFree (sorts, _, ops) = do
         f = CAS.Sort_gen_ax constrs isFree
     makeNamed ("ga_generated_" ++ showSepList (showString "_") showId sortList "") f
 
--- | transforms a maude identifier into a valid CASL identifier
+-- | transforms a maude identifier into a valid CASL identifier
 maudeSymbol2validCASLSymbol :: Token -> [Token]
 maudeSymbol2validCASLSymbol t = splitDoubleUnderscores str ""
     where str = ms2vcs $ show t

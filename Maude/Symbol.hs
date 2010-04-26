@@ -20,6 +20,7 @@ module Maude.Symbol (
     SymbolSet,
     SymbolMap,
     SymbolRel,
+    kindSym2sortSym,
     -- * Conversion
     toId,
     qualify,
@@ -206,7 +207,3 @@ sameKind rel s1 s2
 kindSym2sortSym :: Symbol -> Symbol
 kindSym2sortSym (Kind q) = Sort q
 kindSym2sortSym s = s
-
-sortSym2kindSym :: Symbol -> Symbol
-sortSym2kindSym (Sort q) = Kind q
-sortSym2kindSym s = s

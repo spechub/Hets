@@ -17,6 +17,7 @@ module Maude.Morphism (
     Morphism(..),
     -- ** Auxiliary type
     SortMap,
+    KindMap,
     OpMap,
     -- * Construction
     fromSignRenamings,
@@ -50,7 +51,7 @@ import Maude.Meta
 import Maude.Util
 import Maude.Printing ()
 
-import Maude.Sign (Sign)
+import Maude.Sign (Sign,kindRel,KindRel)
 import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
 
@@ -69,6 +70,7 @@ import Common.DocUtils (Pretty(..))
 -- ** Auxiliary types
 
 type SortMap = SymbolMap
+type KindMap = SymbolMap
 type OpMap = SymbolMap
 type LabelMap = SymbolMap
 
@@ -78,6 +80,7 @@ data Morphism = Morphism {
         source :: Sign,
         target :: Sign,
         sortMap :: SortMap,
+        kindMap :: KindMap,
         opMap :: OpMap,
         labelMap :: LabelMap
     } deriving (Show, Ord, Eq)
@@ -91,9 +94,12 @@ instance Pretty Morphism where
         pr'ops src tgt = pr'pair (text "op") src (getName tgt)
         pr'map fun = vcat . map (uncurry fun) . Map.toList
         smap = pr'map (pr'pair $ text "sort") $ sortMap mor
+        kmap = pr'map (pr'pair $ text "kind") $ kindMap mor
         omap = pr'map pr'ops $ opMap mor
         lmap = pr'map (pr'pair $ text "label") $ labelMap mor
-        in vcat [ smap, omap, lmap ]
+        s = pretty $ source mor
+        t = pretty $ target mor
+        in vcat [ smap, kmap, omap, lmap, pretty "\nSource:\n", s, pretty "\nTarget\n", t ]
 
 -- * Helper functions
 
@@ -189,11 +195,11 @@ insertRenamings apply mor rens = let
 
 -- | Create a 'Morphism' from an initial 'Sign'ature and a list of 'Renaming's.
 fromSignRenamings :: Sign -> [Renaming] -> Morphism
-fromSignRenamings = insertRenamings True . identity
+fromSignRenamings s rs = kindMorph $ insertRenamings True (identity s) rs
 
 -- | Create a 'Morphism' from a pair of 'Sign'atures and a list of 'Renaming's.
 fromSignsRenamings :: Sign -> Sign -> [Renaming] -> Morphism
-fromSignsRenamings sign1 sign2 = insertRenamings False $ inclusion sign1 sign2
+fromSignsRenamings sign1 sign2 rs = kindMorph $ insertRenamings False (inclusion sign1 sign2) rs
 
 -- | the empty 'Morphism'
 empty :: Morphism
@@ -209,6 +215,7 @@ inclusion src tgt = Morphism {
         source = src,
         target = tgt,
         sortMap  = Map.empty,
+        kindMap  = Map.empty,
         opMap    = Map.empty,
         labelMap = Map.empty
     }
@@ -219,10 +226,11 @@ inclusion src tgt = Morphism {
 inverse :: Morphism -> Result Morphism
 inverse mor = let
     invertMap = Map.foldWithKey (flip Map.insert) Map.empty
-    in return Morphism {
+    in return $ kindMorph Morphism {
         source = target mor,
         target = source mor,
         sortMap  = invertMap $ sortMap mor,
+        kindMap = invertMap $ kindMap mor,
         opMap    = invertMap $ opMap mor,
         labelMap = invertMap $ labelMap mor
     }
@@ -231,10 +239,11 @@ inverse mor = let
 union :: Morphism -> Morphism -> Morphism
 union mor1 mor2 = let
     apply func items = func (items mor1) (items mor2)
-    in Morphism {
+    in kindMorph Morphism {
         source = apply Sign.union source,
         target = apply Sign.union target,
         sortMap  = apply Map.union sortMap,
+        kindMap  = apply Map.union kindMap,
         opMap    = apply Map.union opMap,
         labelMap = apply Map.union labelMap
     }
@@ -269,7 +278,7 @@ compose f g
             else Set.fold (insert mp) Map.empty $ items (source f)
         -- We want a morphism from |source f| to |target g|.
         mor = inclusion (source f) (target g)
-        in return mor {
+        in return $ kindMorph mor {
             sortMap = compose'map sortMap getSorts,
             opMap = compose'map opMap getOps,
             labelMap = compose'map labelMap getLabels
@@ -316,7 +325,7 @@ symbolMap mor = Map.unions [sortMap mor, opMap mor, labelMap mor]
 
 -- | set a new target for a 'Morphism'
 setTarget :: Sign -> Morphism -> Morphism
-setTarget = mapTarget . const
+setTarget sg m = kindMorph $ mapTarget (const sg) m
 
 -- | qualify a list of 'Symbol's inside a 'Morphism'
 qualifySorts :: Morphism -> Qid -> Symbols -> Morphism
@@ -326,19 +335,19 @@ qualifySorts mor qid syms = let
     q'tgt  = mapTarget $ mapSorts smap
     q'smap = mapSortMap $ mapSorts smap
     x'smap = mapSortMap $ Map.union smap
-    in q'tgt . x'smap .  q'smap $ mor
+    in kindMorph $ q'tgt . x'smap .  q'smap $ mor
 
 -- | apply a list of 'Renaming's to a 'Morphism'
 applyRenamings :: Morphism -> [Renaming] -> Morphism
-applyRenamings = insertRenamings True
+applyRenamings m rs = kindMorph $ insertRenamings True m rs
 
 -- | apply a 'Sort' 'Renaming' to a 'Morphism'
 extendWithSortRenaming :: Symbol -> Symbol -> Morphism -> Morphism
-extendWithSortRenaming src tgt = let
+extendWithSortRenaming src tgt m = let
     add'sort = mapSortMap $ Map.insert src tgt
     use'sort = mapTarget $ Sign.renameSort src tgt
     ren'sort = mapOpMap $ renameSortOpMap src tgt
-    in ren'sort . use'sort . add'sort
+    in kindMorph $ ren'sort . use'sort $ add'sort m
 
 -- * Application
 
@@ -353,3 +362,21 @@ translateSentence mor = let
 -- | translate 'Sort's along a 'Morphism'
 translateSorts :: (HasSorts a) => Morphism -> a -> a
 translateSorts = mapSorts . sortMap
+
+-- * Auxiliary functions
+kindMorph :: Morphism -> Morphism
+kindMorph morph = morph { kindMap = kindMorphAux kr1 sm kr2}
+     where kr1 = kindRel $ source morph
+           kr2 = kindRel $ target morph
+           sm = Map.toList $ sortMap morph
+
+kindMorphAux :: KindRel -> [(Symbol,Symbol)] -> KindRel -> KindMap
+kindMorphAux _ [] _ = Map.empty
+kindMorphAux kr1 ((s1, s2) : ls) kr2 = Map.union m m'
+     where m = kindMorphAux kr1 ls kr2
+           (k1, k2) = if and [(Map.member s1 kr1), (Map.member s2 kr2)]
+                      then (fromJust $ Map.lookup s1 kr1, fromJust $ Map.lookup s2 kr2)
+                      else (s1, s1)
+           m' = if k1 == k2
+                then Map.empty
+                else Map.singleton k1 k2
