@@ -77,6 +77,7 @@ hets-download : hets-lib-checkout
         cp OWL/*.jar $(IZPACK_JAVA) ; \
         cp OWL/lib/*.jar $(IZPACK_JAVA)/lib ; \
         cp CASL/Termination/AProVE.jar $(IZPACK_JAVA) ; \
+        cp DMU/OntoDMU.jar $(IZPACK_JAVA) ; \
         cp utils/hetcasl.sty docs/UserGuide.pdf $(IZPACK_HETS)/doc/ ; \
         cd .. ; \
         $(RM) -r Hets
