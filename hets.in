@@ -50,13 +50,14 @@ export HETS_LIB ISABELLE_HOME HETS_OWL_TOOLS \
     UDG_HOME HETS_APROVE HETS_ONTODMU
 
 if [ -d $INSTALL_PATH/lib/SPASS* ] ; then
-    SPASS_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
-    export PATH=$PATH:$INSTALL_PATH/lib/$SPASS_DIR
+    SPASS_LOCAL_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
+    SPASS_DIR=$INSTALL_PATH/lib/$SPASS_LOCAL_DIR
 else if [ -f "$SPASS_PATH" ] ; then
        SPASS_DIR=`dirname $SPASS_PATH 2> /dev/null`
-       export PATH=$PATH:$SPASS_DIR
      fi
 fi
+
+export PATH=$PATH:$SPASS_DIR
 
 export PATH=$PATH:$INSTALL_PATH/bin
 exec $HETS $@
