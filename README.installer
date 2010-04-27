@@ -33,13 +33,13 @@ example) with the following layout:
 			 if you really want to uninstall hets (-;
 
 A typical call of hets within the directory Hets/Hets-lib/ is:
-   ../bin/hets -v2 -g Calculi/Space/RCCVerification.het
+   ../bin/hets -v2 -g -A Calculi/Space/RCCVerification.het
 
 After "Edit" -> "Proofs" -> "Automatic" you may try to prove the red
 nodes using SPASS or Isabelle. Isabelle is only needed for the single
 red node that is not supported by other provers. The used Isabelle
 example proof is stored in the file
-RCCVerification_RCC_FO_in_MetricSpace_T.thy
+RCCVerification_RCC_FO_in_MetricSpace__T.thy
 
 If you install the emacs casl-mode you can also run hets from within
 emacs on a specification file with C-c C-r or C-c C-g (to get the
@@ -53,10 +53,6 @@ Solaris users: hets uses the "patch" program before calling
 Isabelle. Under Solaris this must be the "gpatch" program, so you may
 somehow make sure (by a link or an alias) that "patch" executes
 "gpatch".
-
-x86_64 users: We only create 32bit binaries and rely on gmp and
-readline libraries. These must be installed as 32bit libraries,
-i.e. rpm package gmp-32bit-4.1.4.
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and
