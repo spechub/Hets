@@ -17,12 +17,12 @@ IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
 IZPACK_JAVA = $(IZPACK_HETS)/java
-HETS_VERSION = 0.93
+HETS_VERSION = 0.95
 SPASS_DIR_MAC = SPASS-3.0
-SPASS_MAC_BINARY = /home/mac-bkb/bin/SPASS
 SPASS_INTEL_MAC_BINARY = /home/mac-bkb/intel/bin/SPASS
+SPASS_PC_SOLARIS_BINARY = /home/pub-bkb/pc-solaris/SPASS/bin/SPASS
 
-ARCH_OSES = linux intel-mac pc-solaris mac solaris linux64
+ARCH_OSES = linux intel-mac pc-solaris linux64
 
 HETS_URL = \
   http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
@@ -44,10 +44,6 @@ else
 GET = wget -O
 endif
 
-SPASSURL_SOLARIS = \
-  http://www.spass-prover.org/download/binaries/spass22sparc59.tgz
-SPASSURL_MAC = \
-  http://www.spass-prover.org/download/binaries/spass30powerpcmac.dmg
 SPASSURL_LINUX = \
   http://www.spass-prover.org/download/binaries/spass30pclinux.tgz
 SPASSURL_INTELMAC = \
@@ -116,16 +112,15 @@ spass-download :
 	$(RM) $(IZPACK_SPASS)/spass-src.tgz
 	$(GET) $(IZPACK_SPASS)/linux/spass.tgz $(SPASSURL_LINUX)
 	$(GET) $(IZPACK_SPASS)/linux64/spass.tgz $(SPASSURL_LINUX)
-	$(GET) $(IZPACK_SPASS)/solaris/spass.tgz $(SPASSURL_SOLARIS)
-	$(GET) $(IZPACK_SPASS)/mac/spass.dmp $(SPASSURL_MAC)
 	$(GET) $(IZPACK_SPASS)/intel-mac/spass.dmg $(SPASSURL_INTELMAC)
-	for i in linux solaris linux64; do \
+	for i in linux linux64; do \
            cd $(IZPACK_SPASS)/$$i/ ; $(TAR) xvfz spass.tgz ; \
                 $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
                 mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS ; \
            done
-	mkdir -p $(IZPACK_SPASS)/mac/$(SPASS_DIR_MAC)
-	cp $(SPASS_MAC_BINARY) $(IZPACK_SPASS)/mac/$(SPASS_DIR_MAC)/
+	mkdir -p $(IZPACK_SPASS)/pc-solaris/SPASS
+	cp $(SPASS_PC_SOLARIS_BINARY) \
+           $(IZPACK_SPASS)/pc-solaris/SPASS/
 	mkdir -p $(IZPACK_SPASS)/intel-mac/$(SPASS_DIR_MAC)
 	cp $(SPASS_INTEL_MAC_BINARY) \
            $(IZPACK_SPASS)/intel-mac/$(SPASS_DIR_MAC)/
