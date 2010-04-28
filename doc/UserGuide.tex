@@ -1093,9 +1093,9 @@ Here, the number of submenus depends on the type of the node:
 \begin{description}
 
 \item[Show node info] Shows the local informations of the node: the internal
- node name and node number, the xpath \ednote{what is this?}, informations
- about consistency of the node, origin of the node and the local theory
- i.e. axioms declared locally.
+  node name and node number, the xpath that denotes the location of the node
+  within an XML representation, information about consistency of the node,
+  origin of the node and the local theory i.e. axioms declared locally.
 
 \item[Show theory] Shows the theory of the node (including axioms
 imported from other nodes). Notice that axioms imported via hiding  links
@@ -1623,9 +1623,6 @@ The state created by VSE will be stored in a \texttt{.tar} file (within the
 current directory) that preserves proofs for replay later on as long as you
 don't change library or node names.
 
-\ednote{TODO Till reference to VSE prover manual, no? availability of VSE,
-  screen-shots?}
-
 \subsection{zChaff}
 
 zChaff is a solver for satisfiabily problems of boolean formulas
@@ -1642,10 +1639,22 @@ to be true. zChaff uses the same ATP GUI as the provers for SoftFOL (ref. to sec
 current integration of zChaff into \Hets has been tested with zChaff 2004.11.15.
 
 \subsection{Reduce}
-\ednote{TODO : Dominik D.}
+This is a connection to the computer algebra system from
+\url{http://www.reduce-algebra.com/}. Installation is possible as follows:
+
+\begin{verbatim}
+svn co https://reduce-algebra.svn.sourceforge.net/svnroot/reduce-algebra
+cd reduce-algebra/trunk
+./configure --with-csl --with-psl
+make
+\end{verbatim}
+
+The binary \texttt{redcsl} will be search in the \texttt{PATH} or is taken
+from the \texttt{HETS\_REDUCE} environment variable.
+
 \subsection{Pellet}
 Pellet is a popular open-source \DL-reasoner for \SROIQ, which is the logic
-underlying OWL 2.0, written in Java. A Java Runtime Environment (in version > 1.5)
+underlying OWL 2.0, written in Java. A Java Runtime Environment (in version $> 1.5$)
 is needed to run Pellet. For the integration into \Hets the environment variable
 \verb+PELLET_PATH+ has to be set to the root-directory of the Pellet installation.
 
@@ -1654,7 +1663,7 @@ Pellet uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \subsection{Fact++}
 Fact++ is a \DL-reasoner for \SROIQ, which is the logic underlying OWL 2.0, written in
 C++. Fact++ is integrated into \Hets via the OWL-API, which is written in Java.
-A Java Runtime Environment (in version >= 1.5) has to be installed. To use Fact++,
+A Java Runtime Environment (in version $>= 1.5$) has to be installed. To use Fact++,
 the environment variable \verb+HETS_OWL_TOOLS+ has to be set to the directory
 containing the files
 \begin{verbatim}
