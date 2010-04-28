@@ -132,7 +132,8 @@ pdftitle={Hets User Guide}]
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\
 -- Version 0.95 --}
-\author{Till Mossakowski, Christian Maeder, Klaus L\"{u}ttich\\[1em]
+\author{Till Mossakowski, Christian Maeder,
+  Mihai Codescu, Dominik L\"{u}cke\\[1em]
 DFKI Lab Bremen, Bremen, Germany.\\[1em]
 Comments to: hets-users@informatik.uni-bremen.de \\
 (the latter needs subscription to the mailing list)
@@ -1012,7 +1013,7 @@ clicking with the right mouse button.
   under Proofs)
 \item[Hide/show names/nodes/edges]
 The ``Hide/show names/nodes/edges'' menu is a toggle:
-you can switch on or off the display of node names, unnamed nodes or 
+you can switch on or off the display of node names, unnamed nodes or
 proven theorem links.
 
 With the ``Hide/show internal node names'' option, the nodes that
@@ -1024,31 +1025,31 @@ to reveal the unnamed nodes which do not have open proof goals.
 Initially, the complexity of the graph is reduced by hiding all these nodes;
 only nodes corresponding to named specifications are displayed.
 Paths between named nodes going through unnamed nodes
-are displayed as edges; these paths are then expanded when showing the 
+are displayed as edges; these paths are then expanded when showing the
 unnamed nodes.
 
 When applying the development graph calculus rules, theorem links that have
-been proven are removed from the graph. With the ``Hide/Show newly added 
+been proven are removed from the graph. With the ``Hide/Show newly added
 proven edges'' option, it is possible to re-display these links; they are marked
 as proven in the link info (see \emph{Pop-up menu for links}, below).
 
 \item[Focus node]
 
-This menu is particularly useful when navigating a large development graph, 
-which does not fit on a single screen. The list of all nodes is displayed: 
+This menu is particularly useful when navigating a large development graph,
+which does not fit on a single screen. The list of all nodes is displayed:
 the nodes are identified by the internal node number and the internal node name.
-Once a node is selected, the view centers on it. 
+Once a node is selected, the view centers on it.
 
 \item[Select Linktypes]
 
-This menu allows to select the type of links that are displayed in the 
+This menu allows to select the type of links that are displayed in the
 development graph. A selection window appears, where links are grouped into
-three categories: definition links, proven theorem links and unproven 
+three categories: definition links, proven theorem links and unproven
 theorem links. It is possible to select/deselect all links or to invert the
-current selection. 
+current selection.
 
-\item[Consistency checker] 
- 
+\item[Consistency checker]
+
  Checks whether the theories of the nodes of the graph are consistent
  i.e. have a model. The model finders currently interfaced are
  Isabelle-refute, darwin and E-KRHyper.
@@ -1070,19 +1071,19 @@ current selection.
   Also, a \CASL-specific normalisation of free links has been
   implemented.
 
-\item[Dump Development Graph] This option is available for 
- debugging purposes and it prints at the command line informations 
+\item[Dump Development Graph] This option is available for
+ debugging purposes and it prints at the command line informations
  about the content of the development graph.
 
 \item[Show Library Graph] This menu displays the library graph, in a separate
-  window, if the library graph window has been closed after \Hets has been 
+  window, if the library graph window has been closed after \Hets has been
   called.
 
 \item[Save Graph for uDrawGraph] Saves the development graph in a .udg file
  which can be later read by uDrawGraph.
 
 \item[Save proof-script] This menu saves the proof rules that have been applied
- to the current development graph in a .hpf file which can be later read by 
+ to the current development graph in a .hpf file which can be later read by
  \Hets and thus the action performed on the graph are saved.
 
 \end{description}
@@ -1092,14 +1093,14 @@ Here, the number of submenus depends on the type of the node:
 \begin{description}
 
 \item[Show node info] Shows the local informations of the node: the internal
- node name and node number, the xpath \ednote{what is this?}, informations 
+ node name and node number, the xpath \ednote{what is this?}, informations
  about consistency of the node, origin of the node and the local theory
  i.e. axioms declared locally.
 
 \item[Show theory] Shows the theory of the node (including axioms
 imported from other nodes). Notice that axioms imported via hiding  links
 are not part of the theory; they can be made visible only by re-adding
-the hidden symbols, using the normal form of the node, by calling 
+the hidden symbols, using the normal form of the node, by calling
 \emph{Proofs/Compute Normal Form}. For such nodes, a warning is displayed.
 
 \item[Translate theory] Translates the theory of a node to another logic.
@@ -1112,8 +1113,8 @@ A menu with the possible translation paths will be displayed.
 \item[Prove] Try to prove the local proof goals. See Section~\ref{sec:Proofs}
 for details.
 
-\item[Prove VSE structured] \ednote{@Christian: could you clarify this?}
-\item[Check conservativity] Checks conservativity of the inclusion 
+\item[Prove VSE structured] (see \ref{subsec:VSE})
+\item[Check conservativity] Checks conservativity of the inclusion
  morphism from the empty theory to the theory of the node (see
  {\bf Check conervativity} for edges).
 \end{description}
@@ -1129,7 +1130,7 @@ been downloaded.
 Again, the number of submenus depends on the type of the link:
 \begin{description}
 \item[Show info] Shows informations about the edge: internal number and
-internal nodes it links, the link type and origin and the  
+internal nodes it links, the link type and origin and the
 signature morphism of the link. The latter consists
 of two components: a logic translation and a signature morphism in the
 target logic of the logic translation.
@@ -1335,14 +1336,16 @@ declaration. The default is \CASL.
 
 \section{Proofs with \Hets}\label{sec:Proofs}
 
-The proof calculus for development graphs (Sect.~\ref{sec:DevGraph})
-reduces global theorem links to local proof goals. Local proof goals
-(indicated by red nodes in the development graph) can be eventually
-discharged using a theorem prover, using the ``Prove'' menu of a red node.
+The proof calculus for development graphs (Sect.~\ref{sec:DevGraph}) reduces
+global theorem links to local proof goals. Local proof goals (indicated by red
+nodes in the development graph) can be eventually discharged using a theorem
+prover, i.e. by using the ``Prove'' menu of a red node.
 
 The graphical user interface (GUI) for calling a prover is shown in
 Fig. \ref{fig:proof_window} --- we call it ``Proof Management GUI''.
-The list on the left shows all goal names prefixed with the proof
+(This GUI looks slightly different, if hets was not build with GTK support as
+for example under solaris.)
+The top list on the left shows all goal names prefixed with the proof
 status in square brackets. A proved goal is indicated by a `+', a `-'
 indicates a disproved goal, a space denotes an open goal, and a
 `$\times$' denotes an inconsistent specification (aka a fallen `+';
@@ -1356,40 +1359,73 @@ see below for details).
 
 If you open this GUI when processing the goals of one node for the
 first time, it will show all goals as open. Within this list you can
-select those goals that should be inspected or proved. The button
-`Display' shows the selected goals in the ASCII syntax of this
-theory's logic in a separate window. With the `Prove' button the
-actual prover is launched. This is described in more detail in the
-paragraphs below. By pressing the `Show Proof Details' button a window
-is opened where for each proved goal the used axioms, its proof
-script, and its proof are shown --- the level of detail depends on the
-used theorem prover. The `Status:' shows either `No prover running' or
-`Waiting for prover' in black or blue. If you press the `Close' button
-the window is closed and the status of the goals' list is integrated
-into the development graph. If all goals have been proved, the
-selected node turns from red into green.
-\ednote{TODO Christian: describe disprove button}
+select those goals that should be inspected or proved. The GUI elements are the following:
 
-\ednote{TODO Christian: describe consistency checker interface}
+\begin{itemize}
+\item The top-right button `Disprove' is supposed to prove the negation of a
+  selected goal, but this functionality is not implemented yet.
+\item The button `Display' shows the selected goals in the ASCII syntax of
+  this theory's logic in a separate window.
+\item By pressing the `Proof details' button a window is opened where for each
+  proved goal the used axioms, its proof script, and its proof are shown ---
+  the level of detail depends on the used theorem prover.
+\item With the `Prove' button the actual prover is launched. This is described
+  in more detail in the paragraphs below.
+\item The list `Pick Theorem Prover:' lets you choose one of the connected
+  provers (among them \Isabelle, MathServe Broker, \SPASS, Vampire, and
+  zChaff, described below). By pressing `Prove' the selected prover is
+  launched and the theory along with the selected goals is translated via the
+  shortest possible path of comorphisms into the provers logic.
+\item The pop-up choice box below `Selected comorphism path:' lets you pick a
+  (composed) comorphism to be used for the chosen prover.
+\item Since the amount and kind of sentences sent to an ATP system is a major
+  factor for the performance of the ATP system, it is possible to select in
+  the bottom lists the axioms and proven theorems that will comprise the
+  theory of the next proof attempt. Based on this selection the sublogic may
+  vary and also the available provers and comorphisms to provers. Former
+  theorems that are imported from other specifications are marked with the
+  prefix `(Th)'. Since former theorems do not add additional logical content,
+  they may be safely removed from the theory.
+\item If you press the bottom-right `Close' button the window is closed and
+  the status of the goals' list is integrated into the development graph. If
+  all goals have been proved, the selected node turns from red into green.
+\item All other buttons control selecting list entries
+\end{itemize}
 
+\subsection{Consistency Checker}
+\label{sec:CC}
+Since proofs are void if specifications are inconsistent, the consistency
+should be checked (if possible for the given logic) by the ``Consistency
+checker'' shown in Fig. \ref{fig:cons_window}.  This GUI is invoked from
+the `Edit' menu as it operates on all nodes.  (Without GTK support this GUI is
+missing, though.)
 
-The list `Pick Theorem Prover:' lets you choose one of the connected
-provers (among them \Isabelle, MathServe Broker, \SPASS,
-Vampire, and zChaff, described below). By pressing `Prove' the
-selected prover is launched and the theory along with the selected
-goals is translated via the shortest possible path of comorphisms into
-the provers logic.  The button `More fine grained selection...' lets
-you pick a (composed) comorphism in a separate window from where the
-prover is launched then.
+The list on the left shows all node names prefixed with a consistency status
+in square brackets that is initially empty.  A consistent node is indicated by
+a `+', a `-' indicates an inconsistent node, a `t' denotes a timeout of the last
+checking attempt.
 
-Since the amount and kind of sentences sent to an ATP system is a
-major factor for the performance of the ATP system, it is possible to
-select the axioms and proven theorems that will comprise the theory
-of the next proof attempt. Based on this selection the sublogic may
-vary and also the available provers and comorphisms to provers. Former
-theorems that are imported from other specifications are marked with
-the prefix `(Th)'. Since former theorems do not add additional logical
-content, they may be safely removed from the theory.
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{ConsistencyChecker}
+\caption{Hets Consistency Checker Interface\label{fig:cons_window}}
+\end{figure}
+
+For some selection of nodes (of a common logic) a model finder should be
+selectable from the `Pick Model finder:' list. Currently only for ``darwin''
+some \CASL models can be re-constructed. When pressing `Check', possibly after
+`Select comorphism path:', all selected nodes will be checked, spending at
+most the number of seconds given under `Timeout:' on each node. Pressing
+`Stop' allows to terminate this process if too many nodes have been chosen.
+Either by `View results' or automatically the `Results of consistency check'
+(Fig. \ref{fig:cons_res}) will pop up and allow you to inspect the models for
+nodes, if they could be constructed.
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{ConsCheckResults}
+\caption{Consistency Checker Results\label{fig:cons_res}}
+\end{figure}
 
 \subsection[Automated Theorem Proving Systems]
 {Automated Theorem Proving Systems\\(Logic SoftFOL)}
@@ -1402,22 +1438,21 @@ content, they may be safely removed from the theory.
 \end{figure}
 
 All ATPs integrated into \Hets share the same GUI, with only a slight
-modification for the MathServe Broker: it does not have input
-fields for extra options. Figure~\ref{fig:SPASS_GUI} shows the
-instantiation for \SPASS, where in the lower part of the window the
-batch mode can be controlled. The upper part shows on the left the
-list of goals (with the same status indicators as in the Proof
-Management GUI), and on the right a proof attempt of the selected goal
-is controlled and the result of the last proof attempt is displayed.
-The status line indicates `Open', `Running', `Proved', `Disproved',
-`Open (Time is up!)', and `Proved (Theory inconsistent!)'. The list of
-used axioms is actually only filled by \SPASS. The help button displays
-information about the extra options accepted by the ATP system. The
-button `Show Details' shows the whole output of the ATP system. `Save
-Prover Configuration' allows you to save the configuration and status
-of each proof for documentation. By pressing the button `Exit Prover'
-the status of these proofs and goals is transferred back to the
-Proof Management GUI.
+modification for the MathServe Broker: the input field for extra options is
+inactive. Figure~\ref{fig:SPASS_GUI} shows the instantiation for \SPASS, where
+in the top right part of the window the batch mode can be controlled.  The
+left side shows the list of goals (with status indicators).  If goals are
+timed out (indicated by `t') is may help to activate the check box `Include
+preceeding proven theorems in next proof attempt' and pressing `Prove all'
+again.
+
+On the bottom right the result of the last proof
+attempt is displayed.  The `Status:' indicates `Open', `Proved', `Disproved',
+`Open (Time is up!)', or `Proved (Theory inconsistent!)'. The list of `Used
+Axioms:' is filled by \SPASS. The button `Show Details' shows the whole output
+of the ATP system. The `Save' buttons allow you to save the input and
+configuration of each proof for documentation. By `Close' the results for all
+goals are transferred back to the Proof Management GUI.
 
 The MathServe system \cite{ZimmerAutexier06} developed by J\"{u}rgen
 Zimmer provides a unified interface to a range of different ATP
@@ -1550,6 +1585,7 @@ The \Isabelle theory file conforms to the Isabelle/Isar syntax
 
 
 \subsection{VSE}
+\label{subsec:VSE}
  The specification environment Verification Support Environment
 (VSE) \cite{VSE00}, developed at
 DFKI Saarbr\"ucken, provides an industrial-strength  methodology
@@ -1854,11 +1890,16 @@ without cooperation with many people.
 Besides the authors, the following people have been involved
 in the implementation of \Hets:
 Katja Abu-Dib,
-Mihai Codescu,
+Liliana Codruta,
+Dominik Dietrich,
+Elena Digor,
 Carsten Fischer,
 Jorina Freya Gerken,
+Andy Gimblett,
 Rainer Grabbe,
 Sonja Gr\"{o}ning,
+Markus Groß,
+Klaus Hartke,
 Daniel Hausmann,
 Wiebke Herding,
 Hendrik Iben,
@@ -1868,19 +1909,28 @@ Anton Kirilov,
 Tina Krausser,
 Martin K\"{u}hl,
 Mingyi Liu,
-Dominik L\"{u}cke,
-%Klaus L\"{u}ttich,
+Karl Luc,
+Klaus L\"{u}ttich,
 %Christian Maeder,
 Maciek Makowski,
+Florian Mossakowski,
 Immanuel Normann,
+Liam O'Reilly,
 Razvan Pascanu,
 Daniel Pratsch,
 Felix Reckers,
+Adrian Riesco,
 Markus Roggenbach,
 Pascal Schmidt,
+Ewaryst Schulz,
+Kristina Sojakova,
+Igor Stassiy,
+Tilman Thiry,
 Paolo Torrini,
+Jonathan von Schroeder,
 Ren\'{e} Wagner,
-Jian Chun Wang and
+Jian Chun Wang,
+Zicheng Wang, and
 Thiemo Wiedemeyer.
 
 \Hets has been built based on experiences with its
@@ -1902,7 +1952,7 @@ graphs without hiding and without logic translations.  \MAYA has been
 developed by Serge Autexier and Dieter Hutter.
 
 We also want to thank Agn\`es Arnould, Thibaud Brunet, Pascale LeGall,
-Kathrin Hoffmann, Katiane Lopes,
+Kathrin Hoffmann, Bruno Langenstein, Katiane Lopes,
 %Klaus L\"uttich, Christian Maeder,
 Stefan Merz, Maria Martins Moreira, Christophe
 Ringeissen, Markus Roggenbach, Dmitri Schamschurko, Lutz Schr\"oder,
