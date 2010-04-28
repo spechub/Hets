@@ -4,7 +4,12 @@
     <ant antfile="build.xml" dir="./OWL/java" target="java-libs" inheritAll="false"/>
   </target>
 
-  <target name="java-files">
+  <target name="fact">
+    <ant antfile="build.xml" dir="./OWL/java" target="fact" inheritAll="false"/>
+    <ant antfile="build.xml" dir="./OWL/java" target="fact-prover" inheritAll="false"/>
+  </target>
+
+  <target name="java-files" depends="fact">
     <ant antfile="build.xml" dir="./OWL/java" target="java-files" inheritAll="false"/>
   </target>
 
@@ -12,6 +17,6 @@
     <ant antfile="build.xml" dir="./OWL/java" target="clean" inheritAll="false"/>
   </target>
 
-  <target name="init" depends="java-libs,java-files"/>
+  <target name="init" depends="java-libs,java-files,fact"/>
 
 </project>
