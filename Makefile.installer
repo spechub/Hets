@@ -74,7 +74,8 @@ hets-download : hets-lib-checkout
         make -f Makefile.orig initialize_java ; \
         cp OWL/owl_parser $(IZPACK_JAVA) ; \
         cp OWL/owl_locality $(IZPACK_JAVA) ; \
-        cp OWL/*.jar $(IZPACK_JAVA) ; \
+        cp OWL/OWLLocality.jar $(IZPACK_JAVA) ; \
+        cp OWL/OWL2ATerm.jar $(IZPACK_JAVA) ; \
         cp OWL/lib/*.jar $(IZPACK_JAVA)/lib ; \
         cp CASL/Termination/AProVE.jar $(IZPACK_JAVA) ; \
         cp DMU/OntoDMU.jar $(IZPACK_JAVA) ; \
