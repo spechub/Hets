@@ -364,8 +364,12 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
 
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
   for higher-order logic.
+\item[VSE] is an interactive theorem prover, see \ref{subsec:VSE}.
+\item[DMU] is a dummy logic to read output of ``Computer Aided
+  Three-dimensional Interactive Application'' (Catia).
+\item[Maude] is a rewrite system \url{http://maude.cs.uiuc.edu/} for
+  first-order logic.
 \end{description}
-\ednote{TODO Till: update list}
 
 Various logics are supported with proof tools. Proof support for the
 other logics can be obtained by using logic translations to a
@@ -408,7 +412,6 @@ together with their comorphisms.}
 
 In more detail, the following list of logic translations is currently
 supported by \Hets:
-\ednote{TODO Mihai,Till: check VSE, Maude, DFOL descr. or ref.}
 
 \begin{tabular}{|l|p{8cm}|}\hline
 CASL2CoCASL & inclusion \\\hline
@@ -532,8 +535,6 @@ VSE & theorem prover & (non-public) \\\hline
 Twelf & & \url{http://twelf.plparty.org/} \\\hline
 \end{tabular}
 }
-\ednote{TODO Mihai, Till, Luecke: check prover list}
-
 
 \section{Analysis of Specifications}
 Consider the following \CASL
@@ -1003,7 +1004,6 @@ their function can be looked up in the uDraw(Graph) documentation\footnote{see
 The exception is the Edit menu. Moreover, the nodes and links
 of the graph have attached pop-up menus, which appear when
 clicking with the right mouse button.
-\ednote{TODO Mihai: update}\\
 
 \begin{description}
 \item[Edit] This menu has the following submenus:
@@ -1017,10 +1017,9 @@ you can switch on or off the display of node names, unnamed nodes or
 proven theorem links.
 
 With the ``Hide/show internal node names'' option, the nodes that
-are initially unnamed get names that
-are derived from named neighbour nodes.
+are initially unnamed get derived names.
 
-With the ``Hide/show unnamed nodes'' option, it is possible
+With the ``Hide/show unnamed nodes without open proofs'' option, it is possible
 to reveal the unnamed nodes which do not have open proof goals.
 Initially, the complexity of the graph is reduced by hiding all these nodes;
 only nodes corresponding to named specifications are displayed.
@@ -1035,7 +1034,7 @@ as proven in the link info (see \emph{Pop-up menu for links}, below).
 
 \item[Focus node]
 
-This menu is particularly useful when navigating a large development graph,
+This menu is particularly useful when navigating in a large development graph,
 which does not fit on a single screen. The list of all nodes is displayed:
 the nodes are identified by the internal node number and the internal node name.
 Once a node is selected, the view centers on it.
@@ -1062,18 +1061,18 @@ current selection.
   for hiding links and checking conservativity is still experimental.
   In most cases, it is advisable to use ``Automatic'', which
   automatically applies the rules in the correct order. As a result,
-  the the open theorem links (marked in red) will be reduced to local
-  proof goals, that is, they become green, and instead, some of the
-  node will get red, indicating open local proof goals.
+  the open theorem links (marked in red) will be reduced to local
+  proof goals, that is, they become green, and instead, some target nodes
+  may get red, indicating open local proof goals.
   Besides the deduction rules, the menu contains entries for computing
   a colimit approximation for the development graph and for
   computing normal forms of all nodes (needed when dealing with hiding).
   Also, a \CASL-specific normalisation of free links has been
   implemented.
 
-\item[Dump Development Graph] This option is available for
- debugging purposes and it prints at the command line informations
- about the content of the development graph.
+\item[Dump Development Graph] This option is available only for
+ debugging purposes; it outputs a textual representation
+ of the development graph.
 
 \item[Show Library Graph] This menu displays the library graph, in a separate
   window, if the library graph window has been closed after \Hets has been
@@ -1113,7 +1112,10 @@ A menu with the possible translation paths will be displayed.
 \item[Prove] Try to prove the local proof goals. See Section~\ref{sec:Proofs}
 for details.
 
-\item[Prove VSE structured] (see \ref{subsec:VSE})
+\item[Prove VSE structured] Allows to send a development graph below the
+  current node to the interactive \texttt{hetsvse} prover if that binary is
+  available, see \ref{subsec:VSE}.
+
 \item[Check conservativity] Checks conservativity of the inclusion
  morphism from the empty theory to the theory of the node (see
  {\bf Check conervativity} for edges).
@@ -1684,12 +1686,6 @@ in a 64bits-Linux-system. Fact++ does not support options.
 
 Fact++ uses the same ATP GUI as the provers for SoftFOL (ref. to section
 \ref{sec:ATP}).
-\subsection{QuickCheck}
-\ednote{TODO Till}
-\subsection{minisat}
-\ednote{TODO Till}
-\subsection{Truth tables}
-\ednote{TODO Till}
 \subsection{E-KRHyper}
 E-KRHyper\footnote{\url{http://www.uni-koblenz.de/~bpelzer/ekrhyper/}}
 is an extension of
@@ -1735,9 +1731,11 @@ in a terminal.
 
 Darwin uses the same ATP GUI as the other provers for SoftFOL (ref. to section
 \ref{sec:ATP}).
-\subsection{CspCASLProver}
-\ednote{TODO Markus}
 
+\subsection{QuickCheck}
+\subsection{minisat}
+\subsection{Truth tables}
+\subsection{CspCASLProver}
 
 \section{Limits of Hets}
 
@@ -1899,6 +1897,7 @@ without cooperation with many people.
 Besides the authors, the following people have been involved
 in the implementation of \Hets:
 Katja Abu-Dib,
+Michael Chan,
 Codru\c ta G\^ arlea,
 Dominik Dietrich,
 Elena Digor,
