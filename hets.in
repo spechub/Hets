@@ -20,7 +20,9 @@ else if [ ! -d "$UDG_HOME" ] ; then
         fi
      fi
 fi
+export UDG_HOME
 export PATH=$UDG_HOME/bin:$PATH
+export UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
@@ -38,15 +40,13 @@ if [ -f "$ISABELLE_HOME/Isabelle/bin/isabelle" ] ;
 fi
 
 if [ -d $INSTALL_PATH/Hets-lib ] ; then
-    HETS_LIB=$INSTALL_PATH/Hets-lib
+    export HETS_LIB=$INSTALL_PATH/Hets-lib
+    export HETS_ISABELLE_LIB=$HETS_LIB/Isabelle
 fi
 
-HETS_OWL_TOOLS=$INSTALL_PATH/lib/hets/java
-HETS=$INSTALL_PATH/lib/hets/hets
-HETS_APROVE=$INSTALL_PATH/lib/hets/java/AProVE.jar
-HETS_ONTODMU=$INSTALL_PATH/lib/hets/java/OntoDMU.jar
-
-export HETS_LIB HETS_OWL_TOOLS UDG_HOME HETS_APROVE HETS_ONTODMU
+export HETS_OWL_TOOLS=$INSTALL_PATH/lib/hets/java
+export HETS_APROVE=$INSTALL_PATH/lib/hets/java/AProVE.jar
+export HETS_ONTODMU=$INSTALL_PATH/lib/hets/java/OntoDMU.jar
 
 if [ -d $INSTALL_PATH/lib/SPASS* ] ; then
     SPASS_LOCAL_DIR=`ls $INSTALL_PATH/lib/ | grep SPASS`
@@ -61,4 +61,7 @@ if [ -f $SPASS_HOME/SPASS ] ; then
 fi
 
 export PATH=$PATH:$INSTALL_PATH/bin
+
+HETS=$INSTALL_PATH/lib/hets/hets
+
 exec $HETS $@
