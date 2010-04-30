@@ -6,7 +6,7 @@
 INSTALLDIR=/home/www/agbkb/forschung/formal_methods/CoFI/hets 
 VERSION=$1
 LINKTYPE=$2
-for i in linux solaris mac pc-solaris intel-mac linux64
+for i in linux pc-solaris intel-mac linux64
 do
   (cd $INSTALLDIR/$i; f=${LINKTYPE}hets.bz2; rm $f; \
    ln -s versions/hets-$VERSION.bz2 $f)
