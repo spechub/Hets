@@ -16,10 +16,14 @@ module CommonLogic.Sign
     ,pretty                        -- pretty printing
     ,emptySig                      -- empty signature
     ,isSubSigOf                    -- 
+    ,sigDiff                       -- Difference of Signatures
+    ,unite                         -- union of signatures
+    ,sigUnion                      -- Union for Logic.Logic
     ) where
 
 import qualified Data.Set as Set
 import Common.Id
+import Common.Result
 import Common.Doc
 import Common.DocUtils
 
@@ -42,3 +46,14 @@ printSign s =
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: Sign -> Sign -> Bool
 isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
+
+-- | difference of Signatures
+sigDiff :: Sign -> Sign -> Sign
+sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) $ items sig2}
+
+sigUnion :: Sign -> Sign -> Result Sign
+sigUnion s1 = Result [Diag Debug "All fine sigUnion" nullRange]
+      . Just . unite s1
+
+unite :: Sign -> Sign -> Sign
+unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}

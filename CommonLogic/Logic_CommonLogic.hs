@@ -25,7 +25,6 @@ import CommonLogic.AS_CommonLogic
 import CommonLogic.Symbol
 import CommonLogic.Analysis
 import CommonLogic.Parse_CLIF
-import Text.ParserCombinators.Parsec as Parsec
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -42,16 +41,18 @@ instance Sentences CommonLogic
     Symbol
 
 instance Syntax CommonLogic
-    [SENTENCE]
-    ()
+    BASIC_SPEC
+    NAME
     () where
-    parse_basic_spec CommonLogic = Just $ many sentence
+    parse_basic_spec CommonLogic = Just basicSpec
+    -- parse_symb_items CommonLogic = Just symbItems
+    -- parse_symb_map_items CommonLogic = Just symbMapItems
 
 instance Logic CommonLogic
     ()                -- Sublogics
-    [SENTENCE]        -- basic_spec
+    BASIC_SPEC        -- basic_spec
     SENTENCE          -- sentence
-    ()                -- symb_items
+    NAME                -- symb_items
     ()                -- symb_map_items
     Sign              -- sign
     Morphism          -- morphism
@@ -60,9 +61,9 @@ instance Logic CommonLogic
     ()                -- proof_tree
 
 instance StaticAnalysis CommonLogic
-    [SENTENCE]
+    BASIC_SPEC
     SENTENCE
-    ()
+    NAME
     ()
     Sign
     Morphism
@@ -72,3 +73,5 @@ instance StaticAnalysis CommonLogic
       basic_analysis CommonLogic    = Just basicCommonLogicAnalysis
       empty_signature CommonLogic   = emptySig
       is_subsig CommonLogic         = isSubSigOf
+      signature_union CommonLogic         = sigUnion
+      

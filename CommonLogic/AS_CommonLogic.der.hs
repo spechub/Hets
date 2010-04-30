@@ -22,30 +22,65 @@ import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
+import qualified Common.AS_Annotation as AS_Anno
 
+-- DrIFT command
+{-! global: GetRange !-}
+
+-- Basic specs
+data P = P [Id.Token] Id.Range
+         deriving Show
+
+newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
+                      deriving Show
+
+data BASIC_ITEMS =
+    P_decl P
+    | Axiom_items [AS_Anno.Annoted (SENTENCE)]
+    deriving Show
+
+instance Pretty BASIC_SPEC where
+    pretty = printBasicSpec
+instance Pretty BASIC_ITEMS where
+    pretty = printBasicItems
+instance Pretty P where
+    pretty = printP
+
+printBasicSpec :: BASIC_SPEC -> Doc
+printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
+
+printBasicItems :: BASIC_ITEMS -> Doc
+printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+printBasicItems (P_decl x) = pretty x
+
+printP :: P -> Doc
+printP (P xs _) = fsep $ map pretty xs
+
+-- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
+          | Named_text String TEXT Id.Range
             deriving (Show, Ord, Eq)
 
-data PHRASE = Module MODULE Id.Range
-            | Sentence SENTENCE Id.Range
-            | Importation IMPORTATION Id.Range
-            | Comment_Text TEXT COMMENT Id.Range
+data PHRASE = Module MODULE
+            | Sentence SENTENCE
+            | Importation IMPORTATION
+            | Comment_text TEXT COMMENT Id.Range
               deriving (Show, Ord, Eq)
 
 data COMMENT = Comment String Id.Range
                deriving (Show, Ord, Eq)
 
-data MODULE = Mod NAME [NAME] TEXT
+data MODULE = Mod NAME [NAME] TEXT Id.Range
               deriving (Show, Ord, Eq)
 
-data IMPORTATION = Imp_name NAME Id.Range
+data IMPORTATION = Imp_name NAME
                    deriving (Show, Ord, Eq)
 
 data SENTENCE = Quant_sent QUANT_SENT Id.Range
               | Bool_sent BOOL_SENT Id.Range
               | Atom_sent ATOM Id.Range
               | Comment_sent SENTENCE COMMENT Id.Range
-              | Irregular_sent SENTENCE Id.Range -- opt
+              | Irregular_sent SENTENCE Id.Range
                 deriving (Show, Ord, Eq)
 
 data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
@@ -75,9 +110,10 @@ data TERM_SEQ = Term_seq [TERM] Id.Range
 type NAME = Id.Token
 type SEQ_MARK = Id.Token
 
+-- binding seq
 data NAME_OR_SEQMARK = Name NAME
                      | SeqMark SEQ_MARK
-                     | Alt NAME NAME
+                     -- | Alt NAME NAME -- ?
                        deriving (Show, Eq, Ord)
 
 data SYMB_MAP_ITEMS = Symb_map_items [NAME_OR_SEQMARK] Id.Range
@@ -119,13 +155,6 @@ printQuantSent s = case s of
    Universal x y -> text forallS <+> parens (sep $ map pretty x)<+> pretty y
    Existential x y -> text existsS <+> parens (sep $ map pretty x) <+> pretty y
 
-{-
-printBindingSeq :: BINDING_SEQ -> Doc
-printBindingSeq s = case s of
-   B_name xs _ -> pretty xs
-   B_seqmark xs _ -> text seqmark <> pretty xs
--}
-
 printBoolSent :: BOOL_SENT -> Doc
 printBoolSent s = case s of
    Conjunction xs -> text andS <+> (fsep $ map pretty xs)
@@ -150,14 +179,41 @@ printTermSeq s = case s of
   Term_seq t _ -> fsep $ map pretty t
   Seq_marks m _ -> fsep $ map pretty m
 
+-- Binding Seq
 printNameOrSeqMark :: NAME_OR_SEQMARK -> Doc
 printNameOrSeqMark s = case s of
   Name x -> pretty x
   SeqMark x -> pretty x
-  Alt x y -> pretty x <+> pretty y
+  -- Alt x y -> pretty x <+> pretty y
+
+instance Pretty TEXT where
+   pretty = printText
+instance Pretty PHRASE where
+   pretty = printPhrase
+instance Pretty MODULE where
+   pretty = printModule
+instance Pretty IMPORTATION where
+   pretty = printImportation
+
+printText :: TEXT -> Doc
+printText s = case s of
+  Text x _ -> fsep $ map pretty x
+  Named_text x y _ -> text x <+> pretty y
+
+printPhrase :: PHRASE -> Doc
+printPhrase s = case s of
+  Module x -> pretty x
+  Sentence x -> pretty x
+  Importation x -> pretty x
+  Comment_text x y _ -> pretty x <+> pretty y
+
+printModule :: MODULE -> Doc
+printModule (Mod x y z _)  = pretty x <+> fsep (map pretty y) <+> pretty z
+
+printImportation :: IMPORTATION -> Doc
+printImportation (Imp_name x) = pretty x
 
 -- keywords, reservednames in CLIF
-
 seqmark :: String
 seqmark = "..."
 
