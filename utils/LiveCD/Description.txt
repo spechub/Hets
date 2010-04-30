@@ -1,0 +1,25 @@
+get "slax.iso" via "http://www.slax.org/build.php" -> "restore it later"
+-> Hets/utils/LiveCD/slax-cd-build-new.txt -> "Upload"
+
+sudo mount -o loop slax.iso
+
+copy or unpack via
+  file-roller slax.iso
+
+(currently the uid and gid are not always root)
+
+create the additional packages within slax/modules
+  91-SPASS-3.0.lzm
+  92-darwin-1.4.5.lzm
+  93-Isabelle2009-1.lzm
+  94-uDrawGraph-3.1.1.lzm
+  95-pellet-2.0.0-rc6.lzm
+  96-hets-0.95.lzm
+using tools/dir2lzm (old packages can be unpacked using tools/lzm2ir)
+
+within the slax directory call:
+  ./make_iso.sh <absolute_path_to_iso_file>
+
+try out the image using "VirtualBox" -> "New" -> OS "Linux"
+-> Version "Other Linux" -> RAM 512 MB -> Hard Disk does not matter
+-> add the iso image under "IDE-Controller" to CD/DVD-Drive to boot from
