@@ -113,10 +113,24 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
 -- Retrives the signature of a sentence
 propsOfFormula :: CL.SENTENCE -> Sign.Sign
 propsOfFormula (CL.Atom_sent form _) = case form of
-                                        CL.Equation _ _ -> Sign.emptySig
+                                        CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1) 
+                                                                              (propsOfTerm term2)
                                         CL.Atom term _     -> propsOfTerm term
-propsOfFormula (CL.Quant_sent _ _) = Sign.emptySig
-propsOfFormula (CL.Bool_sent  _ _) = Sign.emptySig
+propsOfFormula (CL.Quant_sent qs _) = case qs of
+                                        CL.Universal _ _ -> Sign.emptySig
+                                        CL.Existential _ _ -> Sign.emptySig
+propsOfFormula (CL.Bool_sent bs _) = case bs of
+                                        CL.Conjunction xs -> List.foldl (\ sig frm -> Sign.unite sig
+                                                                                $ propsOfFormula frm)
+                                                             Sign.emptySig xs
+                                        CL.Disjunction xs -> List.foldl (\ sig frm -> Sign.unite sig
+                                                                                $ propsOfFormula frm)
+                                                             Sign.emptySig xs
+                                        CL.Negation x -> propsOfFormula x
+                                        CL.Implication s1 s2 -> Sign.unite (propsOfFormula s1)
+                                                                           (propsOfFormula s2)
+                                        CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1)
+                                                                             (propsOfFormula s2)
 propsOfFormula (CL.Comment_sent _ _ _) = Sign.emptySig
 propsOfFormula (CL.Irregular_sent _ _) = Sign.emptySig
 
