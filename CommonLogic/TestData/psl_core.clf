@@ -1,0 +1,112 @@
+
+(forall (?t1 ?t2)
+	(if	(before ?t1 ?t2)
+		(and 	(timepoint ?t1) 
+			(timepoint ?t2))))
+
+(forall (?t1 ?t2)
+	(if	(and 	(timepoint ?t1) 
+			(timepoint ?t2))
+		(or 	(= ?t1 ?t2) 
+			(before ?t1 ?t2) 
+			(before ?t2 ?t1))))
+
+(forall (?t1)
+	(not (before ?t1 ?t1)))
+
+(forall (?t1 ?t2 ?t3)
+	(if	(and 	(before ?t1 ?t2) 
+			(before ?t2 ?t3))
+		(before ?t1 ?t3)))
+
+(forall (?t)
+        (if	(and 	(timepoint ?t) 
+			(not (= ?t inf-)))
+		(before inf- ?t)))
+
+(forall (?t)
+        (if	(and 	(timepoint ?t) 
+			(not (= ?t inf+)))
+		(before ?t inf+)))
+
+(forall (?t)
+	(if	(and 	(timepoint ?t) 
+			(not (= ?t inf-)))
+		(exists (?u) 
+			(between inf- ?u ?t))))
+
+(forall (?t)
+	(if	(and 	(timepoint ?t) 
+			(not (= ?t inf+)))
+		(exists (?u) 
+			(between ?t ?u inf+))))
+
+(forall (?x)
+	(or 	(activity ?x) 
+		(activity_occurrence ?x) 
+		(timepoint ?x) 
+		(object ?x)))
+
+(forall (?x)
+(and (if (activity ?x)
+         (not (or (activity_occurrence ?x) (object ?x) (timepoint ?x))))
+     (if (activity_occurrence ?x)
+         (not (or (object ?x) (timepoint ?x))))
+     (if (object ?x)
+         (not (timepoint ?x)))))
+
+(forall (?a ?occ)
+	(if	(occurrence_of ?occ ?a)
+		(and	(activity ?a)
+			(activity_occurrence ?occ))))
+
+(forall (?occ)
+	(if	(activity_occurrence ?occ)
+		(exists (?a)
+			(and	(activity ?a)
+				(occurrence_of ?occ ?a)))))
+
+(forall (?occ ?a1 ?a2)
+        (if	(and	(occurrence_of ?occ ?a1)
+                        (occurrence_of ?occ ?a2))
+		(= ?a1 ?a2)))
+
+(forall (?a ?x)
+	(if	(or	(occurrence_of ?x ?a)
+			(object ?x))
+		(and 	(timepoint (beginof ?x))
+         		(timepoint (endof ?x)))))
+
+(forall (?x)
+	(if	(or	(activity_occurrence ?x)
+			(object ?x))
+		(beforeEq (beginof ?x) (endof ?x))))
+
+(forall (?x ?occ ?t)
+	(if	(participates_in ?x ?occ ?t)
+		(and 	(object ?x) 
+			(activity_occurrence ?occ) 
+			(timepoint ?t))))
+
+(forall (?x ?occ ?t)
+	(if	(participates_in ?x ?occ ?t)
+		(and 	(exists_at ?x ?t)
+         		(is_occurring_at ?occ ?t))))
+
+(forall (?t1 ?t2 ?t3) (iff (between ?t1 ?t2 ?t3)
+  (and (before ?t1 ?t2) (before ?t2 ?t3))))
+
+(forall (?t1 ?t2) (iff (beforeEq ?t1 ?t2)
+  (and (timepoint ?t1) (timepoint ?t2)
+       (or (before ?t1 ?t2) (= ?t1 ?t2)))))
+
+(forall (?t1 ?t2 ?t3) (iff (betweenEq ?t1 ?t2 ?t3)
+  (and (beforeEq ?t1 ?t2)
+       (beforeEq ?t2 ?t3))))
+
+(forall (?x ?t) (iff (exists_at ?x ?t)
+  (and (object ?x)
+       (betweenEq (beginof ?x) ?t (endof ?x)))))
+
+(forall (?occ ?t) (iff (is_occurring_at ?occ ?t)
+ (betweenEq (beginof ?occ) ?t (endof ?occ))))

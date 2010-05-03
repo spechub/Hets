@@ -45,6 +45,7 @@ retrieveFormulaItem axs x sig =
       (CL.P_decl _)   -> axs
       (CL.Axiom_items ax) -> 
           List.foldl (\xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
+      (CL.Sent _) -> axs
 
 data NUM_FORM = NumForm
     {
@@ -113,23 +114,29 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
 -- Retrives the signature of a sentence
 propsOfFormula :: CL.SENTENCE -> Sign.Sign
 propsOfFormula (CL.Atom_sent form _) = case form of
-                                        CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1) 
-                                                                              (propsOfTerm term2)
-                                        CL.Atom term _     -> propsOfTerm term
+                                 CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1) 
+                                                                       (propsOfTerm term2)
+                                 CL.Atom term _     -> propsOfTerm term
 propsOfFormula (CL.Quant_sent qs _) = case qs of
-                                        CL.Universal _ _ -> Sign.emptySig
-                                        CL.Existential _ _ -> Sign.emptySig
+                                 CL.Universal xs s -> Sign.unite 
+                                   (List.foldl (\ sig frm -> Sign.unite sig $ propsOfNames frm)
+                                      Sign.emptySig xs)
+                                   (propsOfFormula s)
+                                 CL.Existential xs s -> Sign.unite 
+                                   (List.foldl (\ sig frm -> Sign.unite sig $ propsOfNames frm)
+                                      Sign.emptySig xs)
+                                   (propsOfFormula s)
 propsOfFormula (CL.Bool_sent bs _) = case bs of
-                                        CL.Conjunction xs -> List.foldl (\ sig frm -> Sign.unite sig
-                                                                                $ propsOfFormula frm)
+                                 CL.Conjunction xs -> List.foldl (\ sig frm -> Sign.unite sig
+                                                                         $ propsOfFormula frm)
+                                                      Sign.emptySig xs
+                                 CL.Disjunction xs -> List.foldl (\ sig frm -> Sign.unite sig     
+                                                                         $ propsOfFormula frm)
                                                              Sign.emptySig xs
-                                        CL.Disjunction xs -> List.foldl (\ sig frm -> Sign.unite sig
-                                                                                $ propsOfFormula frm)
-                                                             Sign.emptySig xs
-                                        CL.Negation x -> propsOfFormula x
-                                        CL.Implication s1 s2 -> Sign.unite (propsOfFormula s1)
-                                                                           (propsOfFormula s2)
-                                        CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1)
+                                 CL.Negation x -> propsOfFormula x
+                                 CL.Implication s1 s2 -> Sign.unite (propsOfFormula s1)
+                                                                           (propsOfFormula s2)   
+                                 CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1)
                                                                              (propsOfFormula s2)
 propsOfFormula (CL.Comment_sent _ _ _) = Sign.emptySig
 propsOfFormula (CL.Irregular_sent _ _) = Sign.emptySig
@@ -137,8 +144,19 @@ propsOfFormula (CL.Irregular_sent _ _) = Sign.emptySig
 propsOfTerm :: CL.TERM -> Sign.Sign
 propsOfTerm term = case term of
     CL.Name_term x -> Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
-    CL.Funct_term _ _ _ -> Sign.emptySig 
+    CL.Funct_term t ts _ -> Sign.unite (propsOfTerm t) 
+                             (case ts of
+                               CL.Term_seq xs _ -> List.foldl (\ sig frm -> Sign.unite sig
+                                                                         $ propsOfTerm frm)
+                                                   Sign.emptySig xs
+                               CL.Seq_marks xs _ -> List.foldl (\ sig frm -> Sign.unite sig
+                                   $ Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId frm})
+                                                   Sign.emptySig xs)
     CL.Comment_term _ _ _ -> Sign.emptySig
+
+propsOfNames :: CL.NAME_OR_SEQMARK -> Sign.Sign
+propsOfNames (CL.Name x) = Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
+propsOfNames (CL.SeqMark x) = Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
 
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC, 

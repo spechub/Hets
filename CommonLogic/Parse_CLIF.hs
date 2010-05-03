@@ -154,13 +154,8 @@ comment = do
    clCommentKey
    return $ Comment "" nullRange
 
--- file parser
-f1 :: IO ()
-f1 = do x <- readFile "CommonLogic/fp.clf"
-        parseTest sentence x
-
-f2 :: Either ParseError SENTENCE
-f2 = runParser sentence "" "" "(P x)"
+f1 :: Either ParseError SENTENCE
+f1 = runParser sentence "" "" "(P x)"
 
 parseTestFile :: String -> IO ()
 parseTestFile f = do x <- readFile f
@@ -241,13 +236,28 @@ basicSpec =
 
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
-parseBasicItems = parseAxItems
-
+--parseBasicItems = parseAxItems <|> parseSentences
+parseBasicItems = parseAxItems <|> do
+                                    xs <- many1 aFormula
+                                    return $ Axiom_items xs
 {-
--- | parser for predicate declarations
-parsePredDecl :: AnnoState.AParser st BASIC_ITEMS
-parsePredDecl = fmap P_decl 
+parseBasicItems = parseAxItems <|> do 
+                                    s <- many1 sentence
+                                    return $ Sent s  
 -}
+{-
+parseSentences :: AnnoState.AParser st BASIC_ITEMS
+parseSentences = do
+       fs <- many1 sentence
+       (_, an) <- AnnoState.optSemi
+       let _  = Id.nullRange
+           ns = init fs ++ [Annotation.appendAnno (last fs) an]
+       return $ Axiom_items ns
+-}
+
+sentToAx :: SENTENCE -> Range -> [Annotation.Annotation] -> [Annotation.Annotation]
+            -> Annotation.Annoted SENTENCE
+sentToAx sent = Annotation.Annoted (sent)
 
 -- | parser for Axiom_items
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS

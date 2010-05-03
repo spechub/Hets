@@ -37,6 +37,7 @@ newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
 data BASIC_ITEMS =
     P_decl P
     | Axiom_items [AS_Anno.Annoted (SENTENCE)]
+    | Sent [SENTENCE]
     deriving Show
 
 instance Pretty BASIC_SPEC where
@@ -52,6 +53,7 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = vcat $ map pretty xs
 printBasicItems (P_decl x) = pretty x
+printBasicItems (Sent xs) = vcat $ map pretty xs
 
 printP :: P -> Doc
 printP (P xs _) = fsep $ map pretty xs

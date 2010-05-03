@@ -289,6 +289,7 @@ data InType =
   | ExperimentalIn -- ^ for testing new functionality
   | ProofCommand
   | GuessIn
+  | CommonLogicIn
 
 instance Show InType where
   show i = case i of
@@ -304,6 +305,7 @@ instance Show InType where
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
     GuessIn -> ""
+    CommonLogicIn -> "clf"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
@@ -323,7 +325,7 @@ instance Show ATType where
 plainInTypes :: [InType]
 plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
-  , PrfIn, OmdocIn, ProofCommand]
+  , PrfIn, OmdocIn, ProofCommand, CommonLogicIn]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

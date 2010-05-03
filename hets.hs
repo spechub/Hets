@@ -83,6 +83,7 @@ processFile opts file = do
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
       ExperimentalIn -> anaOMDocFile opts file
+      CommonLogicIn -> anaLibExt (opts { defLogic = "CommonLogic" }) file emptyLibEnv emptyDG
       _ -> anaLib opts file
     case res of
       Just (ln, nEnv) -> writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
