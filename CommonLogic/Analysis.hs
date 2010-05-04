@@ -27,6 +27,7 @@ import qualified Common.Id as Id
 import qualified Data.Set as Set
 import qualified Data.List as List
 
+-- TODO: add signatures here
 data DIAG_FORM = DiagForm
     {
         formula :: AS_Anno.Named (CL.SENTENCE),
@@ -66,6 +67,8 @@ addFormula :: [DIAG_FORM]
            -> Sign.Sign
            -> [DIAG_FORM]
 addFormula formulae nf sign
+-- TODO: remove the error message generation
+-- TODO: compute signature using varsOfFormula
     | isLegal == True = formulae ++
                         [DiagForm
                          {
@@ -117,6 +120,7 @@ propsOfFormula (CL.Atom_sent form _) = case form of
                                  CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1) 
                                                                        (propsOfTerm term2)
                                  CL.Atom term _     -> propsOfTerm term
+-- TODO: subtract xs from propositions of s
 propsOfFormula (CL.Quant_sent qs _) = case qs of
                                  CL.Universal xs s -> Sign.unite 
                                    (List.foldl (\ sig frm -> Sign.unite sig $ propsOfNames frm)
@@ -167,9 +171,10 @@ basicCommonLogicAnalysis (bs, sig, _) =
      Just (bs, ExtSign sigItems newSyms, sentences) 
     where
       -- bsig      = bs sig
-      sigItems  = sig
+      sigItems  = sig -- here should come the *new* signature
       newSyms   = Set.map Symbol.Symbol 
         $ Set.difference (items sigItems) $ items sig
-      bsform    = makeFormulas bs sigItems -- [DIAG_FORM] list of sentence
+      -- TODO: this neends to flow into sigItems:
+      bsform    = makeFormulas bs sigItems -- [DIAG_FORM] signature and list of sentences 
       sentences = map formula bsform
       exErrs    = False

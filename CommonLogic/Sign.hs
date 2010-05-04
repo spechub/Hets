@@ -29,6 +29,7 @@ import Common.DocUtils
 
 -- | Datatype for propositional Signatures
 -- Signatures are just sets
+--TODO: function testing whether an ID is a sequence marker
 newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
