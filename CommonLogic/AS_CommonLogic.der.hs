@@ -28,35 +28,38 @@ import qualified Common.AS_Annotation as AS_Anno
 {-! global: GetRange !-}
 
 -- Basic specs
+{-
 data P = P [Id.Token] Id.Range
          deriving Show
+-}
 
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                       deriving Show
 
 data BASIC_ITEMS =
-    P_decl P
-    | Axiom_items [AS_Anno.Annoted (SENTENCE)]
-    | Sent [SENTENCE]
+    Axiom_items [AS_Anno.Annoted (SENTENCE)]
     deriving Show
 
 instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
 instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
+{-
 instance Pretty P where
     pretty = printP
+-}
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = vcat $ map pretty xs
-printBasicItems (P_decl x) = pretty x
-printBasicItems (Sent xs) = vcat $ map pretty xs
+-- printBasicItems (P_decl x) = pretty x
 
+{-
 printP :: P -> Doc
 printP (P xs _) = fsep $ map pretty xs
+-}
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
@@ -87,6 +90,7 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
 
 data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
                 | Existential [NAME_OR_SEQMARK] SENTENCE
+                  -- 
                   deriving (Show, Ord, Eq)
 
 data BOOL_SENT = Conjunction [SENTENCE]
@@ -97,17 +101,26 @@ data BOOL_SENT = Conjunction [SENTENCE]
                  deriving (Show, Ord, Eq)
 
 data ATOM = Equation TERM TERM
-          | Atom TERM TERM_SEQ
+          | Atom TERM [TERM_SEQ]
             deriving (Show, Ord, Eq)
 
 data TERM = Name_term NAME
-          | Funct_term TERM TERM_SEQ Id.Range
+          | Funct_term TERM [TERM_SEQ] Id.Range
           | Comment_term TERM COMMENT Id.Range
             deriving (Show, Ord, Eq)
-
+{-
 data TERM_SEQ = Term_seq [TERM] Id.Range
               | Seq_marks [SEQ_MARK] Id.Range
                 deriving (Show, Ord, Eq)
+
+data TERM_SEQ = Term_seq [TERM_OR_SEQMARK] Id.Range
+                deriving (Show, Ord, Eq)
+-}
+
+data TERM_SEQ = Term_seq TERM
+              | Seq_marks SEQ_MARK
+                deriving (Show, Ord, Eq)
+                
 
 type NAME = Id.Token
 type SEQ_MARK = Id.Token
@@ -168,18 +181,18 @@ printBoolSent s = case s of
 printAtom :: ATOM -> Doc
 printAtom s = case s of
    Equation a b -> parens $ equals <+> pretty a <+> pretty b
-   Atom t ts -> parens $ pretty t <+> pretty ts
+   Atom t ts -> parens $ pretty t <+> (sep $ map pretty ts)
 
 printTerm :: TERM -> Doc
 printTerm s = case s of
    Name_term a -> pretty a
-   Funct_term t ts _ -> parens $ pretty t <+> pretty ts
+   Funct_term t ts _ -> parens $ pretty t <+> (fsep $ map pretty ts)
    Comment_term x y _ -> pretty x <+> pretty y
 
 printTermSeq :: TERM_SEQ -> Doc
 printTermSeq s = case s of
-  Term_seq t _ -> fsep $ map pretty t
-  Seq_marks m _ -> fsep $ map pretty m
+  Term_seq t -> pretty t
+  Seq_marks m -> pretty m
 
 -- Binding Seq
 printNameOrSeqMark :: NAME_OR_SEQMARK -> Doc
@@ -216,8 +229,8 @@ printImportation :: IMPORTATION -> Doc
 printImportation (Imp_name x) = pretty x
 
 -- keywords, reservednames in CLIF
-seqmark :: String
-seqmark = "..."
+seqmarkS :: String
+seqmarkS = "..."
 
 (...) :: String
 (...) = "..."

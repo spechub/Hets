@@ -27,8 +27,7 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 
--- | Datatype for propositional Signatures
--- Signatures are just sets
+-- | Datatype for common logic Signatures
 --TODO: function testing whether an ID is a sequence marker
 newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 

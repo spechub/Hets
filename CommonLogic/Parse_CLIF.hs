@@ -93,7 +93,7 @@ atom = do
   <|>
   do
     t <- term
-    ts <- termseq
+    ts <- many1 termseq
     return $ Atom t ts
 
 term :: CharParser st TERM
@@ -104,13 +104,16 @@ term = do
   do 
     parens $ do 
       t <- term
-      ts <- termseq
+      ts <- many1 termseq
       return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
 
 termseq :: CharParser st TERM_SEQ
 termseq = do 
-  s <- many term
-  return $ Term_seq s $ Range $ joinRanges [rangeSpan s]  
+  x <- seqmark
+  return $ Seq_marks $ x
+  <|> do
+   t <- term
+   return $ Term_seq t
 
 -------
 
@@ -205,8 +208,17 @@ clExcludesKey = Lexer.pToken $ string "cl:excludes"
 clCommentKey :: CharParser st Id.Token
 clCommentKey = Lexer.pToken $ string "cl:comment"
             
+seqmark :: CharParser st Id.Token
+seqmark = Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
+
 identifier :: CharParser st Id.Token
 identifier = Lexer.pToken $ reserved reservedelement $ scanClWord
+
+scanSeqMark :: CharParser st String
+scanSeqMark = do
+           sq <- string "..."
+           w <- many clLetter <?> "sequence marker"
+           return $ sq ++ w
 
 scanClWord :: CharParser st String
 scanClWord = many1 clLetter <?> "words"
@@ -226,6 +238,11 @@ reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not", "..
                    "cl:text", "cl:imports", "cl:excludes", "cl:module", "cl:comment",
                    "roleset:"]
 
+reservedelement2 :: [String]
+reservedelement2 = ["=", "and", "or", "iff", "if", "forall", "exists", "not", 
+                   "cl:text", "cl:imports", "cl:excludes", "cl:module", "cl:comment",
+                   "roleset:"]
+
 ----------------------------------------------------------------------------
 
 -- | Toplevel parser for basic specs
@@ -240,11 +257,7 @@ parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
 parseBasicItems = parseAxItems <|> do
                                     xs <- many1 aFormula
                                     return $ Axiom_items xs
-{-
-parseBasicItems = parseAxItems <|> do 
-                                    s <- many1 sentence
-                                    return $ Sent s  
--}
+
 {-
 parseSentences :: AnnoState.AParser st BASIC_ITEMS
 parseSentences = do
@@ -254,10 +267,6 @@ parseSentences = do
            ns = init fs ++ [Annotation.appendAnno (last fs) an]
        return $ Axiom_items ns
 -}
-
-sentToAx :: SENTENCE -> Range -> [Annotation.Annotation] -> [Annotation.Annotation]
-            -> Annotation.Annoted SENTENCE
-sentToAx sent = Annotation.Annoted (sent)
 
 -- | parser for Axiom_items
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS
@@ -276,4 +285,4 @@ aFormula =  AnnoState.allAnnoParser sentence
 -- | collect all the names and sequence markers
 symbItems :: GenParser Char st NAME
 symbItems = do
-  return (Token "" nullRange)
+  return (Token "x" nullRange)

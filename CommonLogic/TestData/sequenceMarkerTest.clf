@@ -1,0 +1,13 @@
+
+
+
+(AllEq x)
+
+(iff (AllEq x y ...)
+     (and (= x y) (AllEq y ...)))
+
+
+(AllDiff x)
+
+(iff (AllDiff x y ...)
+     (and (not (= x y)) (AllDiff x ...) (AllDiff y ...)))

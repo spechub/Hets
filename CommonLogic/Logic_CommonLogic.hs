@@ -45,7 +45,7 @@ instance Syntax CommonLogic
     NAME
     () where
     parse_basic_spec CommonLogic = Just basicSpec
-    -- parse_symb_items CommonLogic = Just symbItems
+    parse_symb_items CommonLogic = Just symbItems
     -- parse_symb_map_items CommonLogic = Just symbMapItems
 
 instance Logic CommonLogic

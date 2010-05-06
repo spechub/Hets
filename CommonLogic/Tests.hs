@@ -27,7 +27,7 @@ t3 = Name_term (Token "P" nullRange)
 t4 :: TERM
 t4 = Name_term (Token "Q" nullRange)
 ts1 :: TERM_SEQ
-ts1 = Term_seq [t1, t1, t2] nullRange
+ts1 = Term_seq t1
 b1 :: BOOL_SENT
 b1 = Conjunction [s1, sa2]
 b2 :: BOOL_SENT
@@ -40,9 +40,9 @@ s1 = Atom_sent at1 nullRange
 sa2 :: SENTENCE
 sa2 = Atom_sent at2 nullRange
 at1 :: ATOM
-at1 = Atom t3 (Term_seq [t1] nullRange)
+at1 = Atom t3 [Term_seq t1]
 at2 :: ATOM
-at2 = Atom t4 (Term_seq [t2] nullRange)
+at2 = Atom t4 [Term_seq t2]
 s2 :: SENTENCE
 s2 = Bool_sent b1 nullRange
 s3 :: SENTENCE
@@ -74,10 +74,10 @@ test = Doc.text "Atom:" <+> printAtom at1
    $+$ Doc.text "Quant_sent:" <+> printSentence 
        (Quant_sent (Universal [] s1) nullRange)
    $+$ Doc.text "Equation:" <+> printAtom (Equation t1 t1)
-   $+$ Doc.text "Functional Term:" <+> printTerm (Funct_term (t1) (ts1) nullRange)
+   $+$ Doc.text "Functional Term:" <+> printTerm (Funct_term (t1) [ts1] nullRange)
    $+$ Doc.text "Sentence Functional:" <+> printSentence (
-            Atom_sent (Atom (Funct_term (t1) (ts1) nullRange) 
-                      (Term_seq [t1] nullRange)) nullRange)
+            Atom_sent (Atom (Funct_term (t1) [ts1] nullRange) 
+                      [Term_seq t1]) nullRange)
 
 -- examples for CLIF parser
 
