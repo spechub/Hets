@@ -27,15 +27,27 @@ import qualified Common.Id as Id
 import qualified Data.Set as Set
 import qualified Data.List as List
 
--- TODO: add signatures here
 data DIAG_FORM = DiagForm
     {
         formula :: AS_Anno.Named (CL.SENTENCE),
-          --  sign :: Sign.Sign,
       diagnosis :: Result.Diagnosis
     }   
 
---retrieve sentences
+-- retrieves the signature out of a basic spec
+makeSig :: CL.BASIC_SPEC -> Sign.Sign -> Sign.Sign
+makeSig (CL.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
+
+retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted (CL.BASIC_ITEMS) -> Sign.Sign
+retrieveBasicItem sig x = case (AS_Anno.item x) of
+                            CL.Axiom_items xs -> List.foldl retrieveSign sig xs
+
+retrieveSign :: Sign.Sign -> AS_Anno.Annoted (CL.SENTENCE) -> Sign.Sign
+retrieveSign sig x = Sign.unite sig $ propsOfFormula (AS_Anno.item x)
+
+-- retrieve CL.Sentence out of BASIC_SPEC
+-- retrieveSentence :: CL.BASIC_SPEC -> [AS_Anno.Named (CL.SENTENCE)]
+
+-- retrieve sentences
 makeFormulas :: CL.BASIC_SPEC -> Sign.Sign -> [DIAG_FORM]
 makeFormulas (CL.Basic_spec bspec) sig = 
     List.foldl (\xs bs -> retrieveFormulaItem xs bs sig) [] bspec
@@ -44,7 +56,6 @@ retrieveFormulaItem :: [DIAG_FORM] -> AS_Anno.Annoted (CL.BASIC_ITEMS)
                        -> Sign.Sign -> [DIAG_FORM]
 retrieveFormulaItem axs x sig =
    case (AS_Anno.item x) of 
-      -- (CL.P_decl _)   -> axs
       (CL.Axiom_items ax) -> 
           List.foldl (\xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
 
@@ -66,41 +77,19 @@ addFormula :: [DIAG_FORM]
            -> NUM_FORM
            -> Sign.Sign
            -> [DIAG_FORM]
-addFormula formulae nf sign
--- TODO: remove the error message generation
--- TODO: compute signature using varsOfFormula
-    | isLegal == True = formulae ++
-                        [DiagForm
-                         {
-                           formula   = makeNamed f i
-                         , diagnosis = Result.Diag
+addFormula formulae nf _  = formulae ++
+                          [DiagForm {
+                             formula   = makeNamed f i
+                           , diagnosis = Result.Diag
                            {
                              Result.diagKind = Result.Hint
                            , Result.diagString = "All fine"
                            , Result.diagPos    = lnum
-                           }
+                           } 
                          }]
-    | otherwise       = formulae ++
-                        [DiagForm
-                         {
-                           formula   = makeNamed f i
-                         , diagnosis = Result.Diag
-                                       {
-                                         Result.diagKind = Result.Error
-                                       , Result.diagString = "Unknown propositions "
-                                         ++ (show $ pretty difference)
-                                         ++ " in formula "
-                                         ++ (show $ pretty nakedFormula)
-                                       , Result.diagPos    = lnum
-                                       }
-                         }]
-    where
+    where 
       f             = nfformula nf
       i             = nfnum nf
-      nakedFormula  = AS_Anno.item f
-      varsOfFormula = propsOfFormula nakedFormula
-      isLegal       = Sign.isSubSigOf varsOfFormula sign
-      difference    = Sign.sigDiff varsOfFormula sign
       lnum          = AS_Anno.opt_pos f
 
 -- generates a named formula
@@ -117,57 +106,46 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
 -- Retrives the signature of a sentence
 propsOfFormula :: CL.SENTENCE -> Sign.Sign
 propsOfFormula (CL.Atom_sent form _) = case form of
-                                 CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1) 
-                                                                       (propsOfTerm term2)
-                                 CL.Atom term _     -> propsOfTerm term
--- TODO: subtract xs from propositions of s
+                           CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1)
+                                                                 (propsOfTerm term2)
+                           CL.Atom term ts    -> Sign.unite (propsOfTerm term)
+                                                            (uniteMap propsOfTermSeq ts)
 propsOfFormula (CL.Quant_sent qs _) = case qs of
-                                 CL.Universal xs s -> Sign.unite 
-                                   (List.foldl (\ sig frm -> Sign.unite sig $ propsOfNames frm)
-                                      Sign.emptySig xs)
-                                   (propsOfFormula s)
-                                 CL.Existential xs s -> Sign.unite 
-                                   (List.foldl (\ sig frm -> Sign.unite sig $ propsOfNames frm)
-                                      Sign.emptySig xs)
-                                   (propsOfFormula s)
+                   CL.Universal xs s -> Sign.sigDiff
+                                          (propsOfFormula s)
+                                          (uniteMap propsOfNames xs)
+                   CL.Existential xs s -> Sign.sigDiff 
+                                          (propsOfFormula s) 
+                                          (uniteMap propsOfNames xs)
 propsOfFormula (CL.Bool_sent bs _) = case bs of
-                                 CL.Conjunction xs -> List.foldl (\ sig frm -> Sign.unite sig
-                                                                         $ propsOfFormula frm)
-                                                      Sign.emptySig xs
-                                 CL.Disjunction xs -> List.foldl (\ sig frm -> Sign.unite sig     
-                                                                         $ propsOfFormula frm)
-                                                             Sign.emptySig xs
-                                 CL.Negation x -> propsOfFormula x
-                                 CL.Implication s1 s2 -> Sign.unite (propsOfFormula s1)
-                                                                           (propsOfFormula s2)   
-                                 CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1)
-                                                                             (propsOfFormula s2)
+                              CL.Conjunction xs -> uniteMap propsOfFormula xs
+                              CL.Disjunction xs -> uniteMap propsOfFormula xs
+                              CL.Negation x     -> propsOfFormula x
+                              CL.Implication s1 s2   -> Sign.unite (propsOfFormula s1)
+                                                                   (propsOfFormula s2)   
+                              CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1)
+                                                                   (propsOfFormula s2)
 propsOfFormula (CL.Comment_sent _ _ _) = Sign.emptySig
 propsOfFormula (CL.Irregular_sent _ _) = Sign.emptySig
 
 propsOfTerm :: CL.TERM -> Sign.Sign
 propsOfTerm term = case term of
     CL.Name_term x -> Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
-    CL.Funct_term _ _ _ -> Sign.emptySig -- TODO
-{-    CL.Funct_term t ts _ -> Sign.unite (propsOfTerm t) 
-                             (case ts of
-                               CL.Term_seq t -> Sign.emptySig
-                               CL.Seq_marks s -> Sign.emptySig)
--}
-                               -- TODO
-{-
-                               CL.Term_seq xs -> List.foldl (\ sig frm -> Sign.unite sig
-                                                                         $ propsOfTerm frm)
-                                                   Sign.emptySig xs
-                               CL.Seq_marks xs -> List.foldl (\ sig frm -> Sign.unite sig
-                                   $ Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId frm})
-                                                   Sign.emptySig xs)
--}
+    CL.Funct_term t ts _ -> Sign.unite (propsOfTerm t)
+                                       (uniteMap propsOfTermSeq ts)
     CL.Comment_term _ _ _ -> Sign.emptySig
 
 propsOfNames :: CL.NAME_OR_SEQMARK -> Sign.Sign
 propsOfNames (CL.Name x) = Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
 propsOfNames (CL.SeqMark x) = Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
+
+propsOfTermSeq :: CL.TERM_SEQ -> Sign.Sign
+propsOfTermSeq s = case s of
+    CL.Term_seq term -> propsOfTerm term
+    CL.Seq_marks sqm -> Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId sqm}
+
+uniteMap :: (a -> Sign.Sign) -> [a] -> Sign
+uniteMap p xs = List.foldl (\ sig frm -> Sign.unite sig $ p frm) Sign.emptySig xs
 
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC, 
@@ -177,11 +155,10 @@ basicCommonLogicAnalysis (bs, sig, _) =
    Result.Result [] $ if exErrs then Nothing else 
      Just (bs, ExtSign sigItems newSyms, sentences) 
     where
-      -- bsig      = bs sig
-      sigItems  = sig -- here should come the *new* signature
+      sigItems  = makeSig bs sig
+      -- sigItems  = msign bsform
       newSyms   = Set.map Symbol.Symbol 
-        $ Set.difference (items sigItems) $ items sig
-      -- TODO: this neends to flow into sigItems:
+                    $ Set.difference (items sigItems) $ items sig
       bsform    = makeFormulas bs sigItems -- [DIAG_FORM] signature and list of sentences 
-      sentences = map formula bsform
+      sentences = map formula bsform       -- Annoted Sentences (Ax_), numbering, DiagError
       exErrs    = False
