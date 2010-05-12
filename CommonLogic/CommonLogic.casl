@@ -1,0 +1,6 @@
+sorts individual, list
+free type list ::= nil | cons(individual;list)
+preds rel : individual * list
+ops fun : individual * list -> individual;
+    c:individual;
+    c:list 
