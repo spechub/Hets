@@ -13,8 +13,6 @@ Instance of class Logic for the common logic
 
 module CommonLogic.Logic_CommonLogic where
 
-import Common.DefaultMorphism
-
 import Logic.Logic
 
 import ATC.ProofTree ()
@@ -25,14 +23,13 @@ import CommonLogic.AS_CommonLogic
 import CommonLogic.Symbol
 import CommonLogic.Analysis
 import CommonLogic.Parse_CLIF
+import CommonLogic.Morphism
 
 data CommonLogic = CommonLogic deriving Show
 
 instance Language CommonLogic where
     description _ = "CommonLogic Logic\n"
         ++ ""
-
-type Morphism = DefaultMorphism Sign
 
 instance Sentences CommonLogic
     SENTENCE
