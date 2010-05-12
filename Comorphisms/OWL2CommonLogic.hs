@@ -37,6 +37,7 @@ import CommonLogic.Symbol
 import CommonLogic.Morphism
 
 import Common.ProofTree
+import Common.DefaultMorphism
 
 data OWL2CommonLogic = OWL2CommonLogic deriving Show
 
@@ -72,17 +73,18 @@ instance Comorphism
       targetLogic OWL2CommonLogic    = CommonLogic
       mapSublogic OWL2CommonLogic _  = Just $ ()
       map_theory OWL2CommonLogic     = mapTheory
-      --map_morphism OWL2CommonLogic   = mapMorphism
+      map_morphism OWL2CommonLogic   = mapMorphism
       isInclusionComorphism OWL2CommonLogic = True
       has_model_expansion OWL2CommonLogic = True
 
-{-- | Mapping of OWL morphisms to CommonLogic morphisms
+-- | Mapping of OWL morphisms to CommonLogic morphisms
 mapMorphism :: OWLMorphism -> Result Morphism
 mapMorphism oMor = 
   do
-    cdm <- mapSign $ osource oMor
-    ccd <- mapSign $ otarget oMor
-    let emap = mmaps oMor
+    dm <- mapSign $ osource oMor
+    cd <- mapSign $ otarget oMor
+    return  (ideOfDefaultMorphism  (unite dm cd))
+    {-let emap = mmaps oMor
         preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
               i1 = uriToTok u1
               i2 = uriToTok u2
@@ -131,7 +133,7 @@ hetsPrefix = ""
 
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result Sign         -- ^ CommonLogic signature
-mapSign sig = return (emptySig ){-
+mapSign _ = return (emptySig ){- mapSign sig =
   let conc = Set.union (OS.concepts sig) (OS.primaryConcepts sig)
       cvrt = map uriToTok . Set.toList
       tMp k = Map.fromList . map (\ u -> (u, Set.singleton k))
