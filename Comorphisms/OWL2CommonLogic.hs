@@ -20,8 +20,8 @@ import Common.Result
 import Common.Id
 import Control.Monad
 import Data.Char
-import qualified Data.Set as Set
-import qualified Data.Map as Map
+--import qualified Data.Set as Set
+--import qualified Data.Map as Map
 
 -- OWL = domain
 import OWL.Logic_OWL
@@ -34,7 +34,7 @@ import CommonLogic.Logic_CommonLogic
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Sign
 import CommonLogic.Symbol
---import CommonLogic.Morphism
+import CommonLogic.Morphism
 
 import Common.ProofTree
 
@@ -77,8 +77,8 @@ instance Comorphism
       has_model_expansion OWL2CommonLogic = True
 
 {-- | Mapping of OWL morphisms to CommonLogic morphisms
-mapMorphism :: OWLMorphism -> Result CommonLogicMor
-mapMorphism oMor =
+mapMorphism :: OWLMorphism -> Result Morphism
+mapMorphism oMor = 
   do
     cdm <- mapSign $ osource oMor
     ccd <- mapSign $ otarget oMor
@@ -106,47 +106,32 @@ thing = mkSimpleId "Thing" --stringToId "Thing"
 noThing :: NAME
 noThing = mkSimpleId "Nothing" --stringToId "Nothing"
 
--- | OWL bottom
+{-- | OWL bottom
 mkThingTerm :: Id -> TERM
 mkThingTerm (Id tokList _ _) =
   case tokList of
          [x] -> Name_term x
-         (x:xs) -> Funct_term (Name_term x) (Term_seq (mkTokTermList xs) nullRange) nullRange
+         (x:xs) -> Funct_term (Name_term x) (mkTokTermList xs) nullRange
          _ -> Name_term noThing
          
-mkTokTermList :: [Token] -> [TERM]
+mkTokTermList :: [Token] -> [TERM_SEQ]
 mkTokTermList toks =
   case toks of
-       [x] -> [Name_term x]
-       (x:xs) -> ((Name_term x):(mkTokTermList xs))
+       [x] -> [Term_seq (Name_term x)]
+       (x:xs) -> ((Term_seq (Name_term x)):(mkTokTermList xs))
 
 -- | OWL Data topSort DATA
 dataS :: NAME
 dataS = mkSimpleId $ drop 3 $ show OWLDATA
-
+-}
 data VarOrIndi = OVar Int | OIndi URI
 
-{-predefSorts :: Set.Set SORT
-predefSorts = Set.singleton thing
--}
 hetsPrefix :: String
 hetsPrefix = ""
-{-
-conceptPred :: PredType
-conceptPred = PredType [thing]
 
-objectPropPred :: PredType
-objectPropPred = PredType [thing, thing]
-
-dataPropPred :: PredType
-dataPropPred = PredType [thing, dataS]
-
-indiConst :: OpType
-indiConst = OpType Total [] thing
--}
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result Sign         -- ^ CommonLogic signature
-mapSign sig = error "nyi"{-
+mapSign sig = return (emptySig ){-
   let conc = Set.union (OS.concepts sig) (OS.primaryConcepts sig)
       cvrt = map uriToTok . Set.toList
       tMp k = Map.fromList . map (\ u -> (u, Set.singleton k))
@@ -168,6 +153,74 @@ predefinedSentences :: [CommonAnno.Named SENTENCE]
 predefinedSentences =
   [
     (
+      CommonAnno.makeNamed "Predicate \"in\"" $
+      Quant_sent
+      (
+        Universal
+        [ Name (mkNName 1)
+        , Name (mkNName 2)]
+        (
+          Bool_sent
+          (
+            Conjunction 
+            [( Bool_sent (
+              Implication
+              ( Bool_sent (
+                Conjunction
+                [ (Atom_sent (
+                  Atom 
+                    (Name_term (mkSimpleId "in"))
+                    [ Term_seq (Name_term (mkNName 1))
+                    , Term_seq (Name_term (mkNName 2))]
+                  ) nullRange)
+                , (Atom_sent (
+                  Atom 
+                    (Name_term (mkSimpleId "in"))
+                    [ Term_seq (Name_term (mkNName 2))
+                    , Term_seq (Name_term (mkNName 1))]
+                  ) nullRange)
+                ]
+              ) nullRange)
+              (
+              Atom_sent (
+                Equation (Name_term (mkNName 1)) (Name_term (mkNName 2))
+                ) nullRange
+              )
+            ) nullRange)
+            , ( Bool_sent (
+              Implication
+              ( Bool_sent (
+                Disjunction
+                [ (Bool_sent ( Negation (Atom_sent (
+                  Atom 
+                    (Name_term (mkSimpleId "in"))
+                    [Term_seq (Name_term (mkNName 1)), Term_seq (Name_term (mkNName 2))]
+                  ) nullRange)) nullRange)
+                , (Bool_sent ( Negation (Atom_sent (
+                  Atom 
+                    (Name_term (mkSimpleId "in"))
+                    [Term_seq (Name_term (mkNName 2)), Term_seq (Name_term (mkNName 1))]
+                  ) nullRange)) nullRange)
+                ]
+              ) nullRange)
+              (
+                Bool_sent (
+                  Negation (
+                    Atom_sent (
+                      Equation (Name_term (mkNName 1)) (Name_term (mkNName 2))
+                    ) nullRange)
+                ) nullRange
+              )
+            ) nullRange)
+            ]
+          )
+          nullRange
+        )
+      )
+      nullRange
+    )
+  ,
+    (
      CommonAnno.makeNamed "nothing in Nothing" $
      Quant_sent 
      (
@@ -183,7 +236,7 @@ predefinedSentences =
           Name_term noThing
          )
          (
-          Term_seq [ Name_term (mkNName 1) ] nullRange
+          [ Term_seq (Name_term (mkNName 1)) ]
          )
         ) nullRange
        )
@@ -205,7 +258,7 @@ predefinedSentences =
          Name_term thing
         )
         (
-         Term_seq [ Name_term (mkNName 1) ] nullRange
+         [ Term_seq (Name_term (mkNName 1)) ]
         )
        ) nullRange
       )
@@ -731,9 +784,7 @@ mapConstant _ c =
               (
                Name_term (mkSimpleId cl)
               )
-              (
-               Term_seq [] nullRange
-              )
+              []
               nullRange
 
 -- | Mapping of subobj properties
@@ -827,9 +878,7 @@ mapDataProp _ dP nO nD =
               (
                Name_term ur
               )
-              (
-               Term_seq [ l, r] nullRange
-              )
+              [Term_seq l, Term_seq r]
              )
              nullRange
 
@@ -853,9 +902,7 @@ mapObjProp cSig ob num1 num2 =
                         (
                           Name_term ur 
                         )
-                        (
-                          Term_seq [l, r] nullRange
-                        )
+                        [Term_seq l, Term_seq r]
                       )
                       nullRange
          InverseOp u ->
@@ -885,9 +932,7 @@ mapObjPropI cSig ob lP rP =
                       (
                        Name_term ur
                       )
-                      (
-                       Term_seq [ lT, rT] nullRange
-                      )
+                       [Term_seq lT, Term_seq rT]
                    )
                    nullRange
        InverseOp u -> mapObjPropI cSig u rP lP
@@ -907,7 +952,7 @@ mapClassURI _ uril uid =
                Name_term ur
               )
               (
-               Term_seq [Name_term uid] nullRange
+               [Term_seq (Name_term uid)]
               )
              )
              nullRange
@@ -923,9 +968,7 @@ mapIndivURI _ uriI =
              (
               Name_term ur
              )
-             (
-              Term_seq [] nullRange
-             )
+             []
              nullRange
 
 uriToTokM :: URI -> Result Token
@@ -996,10 +1039,14 @@ mapDataRange cSig rn inId =
   do 
     let uid = mkNName inId
     case rn of
-         DRDatatype uril -> error "nyi"{-> --TODO
+         DRDatatype uril ->
           do
-            ur <- uriToTokM uril
-            return $ -}
+            return $ (Atom_sent 
+                          (Atom 
+                            (Name_term (mkSimpleId "in"))
+                            [ Term_seq (Name_term uid)
+                            , Term_seq (Name_term (uriToTok uril))]
+                          ) nullRange)          
          DataComplementOf dr ->
           do
             dc <- mapDataRange cSig dr inId
@@ -1117,8 +1164,7 @@ mapDescription cSig des var =
                                ExactCardinality -> return $
                                            Bool_sent (Conjunction
                                            [minLst, maxLst])
-                                           nullRange                     
-           
+                                           nullRange                             
          DataValuesFrom _ _ _ _ -> fail "data handling nyi"
          DataHasValue _ _       -> fail "data handling nyi"
          DataCardinality _      -> fail "data handling nyi"
