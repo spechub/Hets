@@ -8,7 +8,7 @@ Maintainer  :  mata@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  non-portable (via Logic.Logic)
 
-a not yet implemented comorphism
+a comorphism from OWL to CommonLogic
 -}
 
 module Comorphisms.OWL2CommonLogic (OWL2CommonLogic(..)) where
@@ -20,8 +20,7 @@ import Common.Result
 import Common.Id
 import Control.Monad
 import Data.Char
---import qualified Data.Set as Set
---import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- OWL = domain
 import OWL.Logic_OWL
@@ -84,23 +83,7 @@ mapMorphism oMor =
     dm <- mapSign $ osource oMor
     cd <- mapSign $ otarget oMor
     return  (ideOfDefaultMorphism  (unite dm cd))
-    {-let emap = mmaps oMor
-        preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
-              i1 = uriToTok u1
-              i2 = uriToTok u2
-              in case ty of
-                OWLClass -> Map.insert (i1, conceptPred) i2
-                ObjectProperty -> Map.insert (i1, objectPropPred) i2
-                DataProperty -> Map.insert (i1, dataPropPred) i2
-                _ -> id) Map.empty emap
-        ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
-                Individual ->
-                    Map.insert (uriToTok u1, indiConst) (uriToId u2, Total)
-                _ -> id) Map.empty emap
-      return (embedMorphism () cdm ccd)
-                 { op_map = ops
-                 , pred_map = preds }
--}--TODO
+    
 -- | OWL topsort Thing
 thing :: NAME --Id
 thing = mkSimpleId "Thing" --stringToId "Thing"
@@ -108,24 +91,6 @@ thing = mkSimpleId "Thing" --stringToId "Thing"
 noThing :: NAME
 noThing = mkSimpleId "Nothing" --stringToId "Nothing"
 
-{-- | OWL bottom
-mkThingTerm :: Id -> TERM
-mkThingTerm (Id tokList _ _) =
-  case tokList of
-         [x] -> Name_term x
-         (x:xs) -> Funct_term (Name_term x) (mkTokTermList xs) nullRange
-         _ -> Name_term noThing
-         
-mkTokTermList :: [Token] -> [TERM_SEQ]
-mkTokTermList toks =
-  case toks of
-       [x] -> [Term_seq (Name_term x)]
-       (x:xs) -> ((Term_seq (Name_term x)):(mkTokTermList xs))
-
--- | OWL Data topSort DATA
-dataS :: NAME
-dataS = mkSimpleId $ drop 3 $ show OWLDATA
--}
 data VarOrIndi = OVar Int | OIndi URI
 
 hetsPrefix :: String
@@ -133,95 +98,26 @@ hetsPrefix = ""
 
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result Sign         -- ^ CommonLogic signature
-mapSign _ = return (emptySig ){- mapSign sig =
-  let conc = Set.union (OS.concepts sig) (OS.primaryConcepts sig)
-      cvrt = map uriToTok . Set.toList
-      tMp k = Map.fromList . map (\ u -> (u, Set.singleton k))
-      cPreds = thing : noThing : cvrt conc
-      oPreds = cvrt $ OS.indValuedRoles sig
-      dPreds = cvrt $ OS.dataValuedRoles sig
-      aPreds = Map.unions
-        [ tMp conceptPred cPreds
-        , tMp objectPropPred oPreds
-        , tMp dataPropPred dPreds ]
-  in return (emptySign ())
-        { sortSet = predefSorts
-        , predMap = aPreds
-        , opMap = tMp indiConst . cvrt $ OS.inividuals sig
+mapSign sig =
+  let preds = Set.fromList [ (mkQName "Nothing")
+                           , (mkQName "Thing")]
+      conc = Set.unions [ preds
+                        , (OS.concepts sig)
+                        , (OS.primaryConcepts sig)
+                        , (OS.datatypes sig)
+                        , (OS.indValuedRoles sig)
+                        , (OS.dataValuedRoles sig)
+                        , (OS.annotationRoles sig)
+                        , (OS.individuals sig) ]
+      itms = Set.map uriToId conc
+  in return emptySig 
+        { items = itms
         }
--}--TODO
+
 
 predefinedSentences :: [CommonAnno.Named SENTENCE]
 predefinedSentences =
   [
-    (
-      CommonAnno.makeNamed "Predicate \"in\"" $
-      Quant_sent
-      (
-        Universal
-        [ Name (mkNName 1)
-        , Name (mkNName 2)]
-        (
-          Bool_sent
-          (
-            Conjunction 
-            [( Bool_sent (
-              Implication
-              ( Bool_sent (
-                Conjunction
-                [ (Atom_sent (
-                  Atom 
-                    (Name_term (mkSimpleId "in"))
-                    [ Term_seq (Name_term (mkNName 1))
-                    , Term_seq (Name_term (mkNName 2))]
-                  ) nullRange)
-                , (Atom_sent (
-                  Atom 
-                    (Name_term (mkSimpleId "in"))
-                    [ Term_seq (Name_term (mkNName 2))
-                    , Term_seq (Name_term (mkNName 1))]
-                  ) nullRange)
-                ]
-              ) nullRange)
-              (
-              Atom_sent (
-                Equation (Name_term (mkNName 1)) (Name_term (mkNName 2))
-                ) nullRange
-              )
-            ) nullRange)
-            , ( Bool_sent (
-              Implication
-              ( Bool_sent (
-                Disjunction
-                [ (Bool_sent ( Negation (Atom_sent (
-                  Atom 
-                    (Name_term (mkSimpleId "in"))
-                    [Term_seq (Name_term (mkNName 1)), Term_seq (Name_term (mkNName 2))]
-                  ) nullRange)) nullRange)
-                , (Bool_sent ( Negation (Atom_sent (
-                  Atom 
-                    (Name_term (mkSimpleId "in"))
-                    [Term_seq (Name_term (mkNName 2)), Term_seq (Name_term (mkNName 1))]
-                  ) nullRange)) nullRange)
-                ]
-              ) nullRange)
-              (
-                Bool_sent (
-                  Negation (
-                    Atom_sent (
-                      Equation (Name_term (mkNName 1)) (Name_term (mkNName 2))
-                    ) nullRange)
-                ) nullRange
-              )
-            ) nullRange)
-            ]
-          )
-          nullRange
-        )
-      )
-      nullRange
-    )
-  ,
     (
      CommonAnno.makeNamed "nothing in Nothing" $
      Quant_sent 
@@ -621,14 +517,14 @@ mapAxiom cSig ax =
                                          nullRange)) nullRange, cSig)
                             DataRange  rn  ->
                                 do
-                                  odes <- mapDataRange cSig rn b
+                                  (odes, dSig) <- mapDataRange cSig rn b
                                   let vars = (mkNName a, mkNName b)
                                   return (Just $ Quant_sent (Universal
                                          [Name (fst vars)]
                                          (Quant_sent (Existential
                                          [Name (snd vars)]
                                          (Bool_sent (Implication oEx odes) nullRange))
-                                         nullRange)) nullRange, cSig)
+                                         nullRange)) nullRange, dSig)
               FunctionalDataProperty o ->
                         do
                           so1 <- mapDataProp cSig o a b
@@ -754,7 +650,7 @@ mapAxiom cSig ax =
                                       dProp) nullRange
                                     ))
                                     nullRange, cSig)
-              Declaration _ ->
+              Declaration _ -> 
                   return (Nothing, cSig)
         EntityAnno _  ->
               return (Nothing, cSig)
@@ -782,12 +678,17 @@ mapConstant _ c =
   do
     let cl = case c of
               Constant l _ -> l
-    return $ Funct_term
-              (
-               Name_term (mkSimpleId cl)
-              )
-              []
-              nullRange
+    return $ Name_term (mkSimpleId cl)
+
+-- | Mapping of a list of data constants only for mapDataRange        
+mapConstantList :: Sign 
+                -> [Constant]
+                -> Result [TERM_SEQ]
+mapConstantList sig cl = 
+  mapM (\ x -> do
+                 t <- mapConstant sig x
+                 return $ Term_seq t ) cl
+           
 
 -- | Mapping of subobj properties
 mapSubObjProp :: Sign
@@ -994,6 +895,10 @@ uriToTok urI =
         nU = map repl $ namespaceUri ur
     in mkSimpleId $ nU ++ "" ++ nP ++ "" ++ lP
 
+-- | Extracts Id from URI
+uriToId :: URI -> Id
+uriToId = simpleIdToId . uriToTok
+
 -- | Mapping of a list of descriptions
 mapDescriptionList :: Sign
                       -> Int
@@ -1036,24 +941,33 @@ comPairs (a:as) (_:bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
 mapDataRange :: Sign
              -> DataRange                -- ^ OWL DataRange
              -> Int                      -- ^ Current Variablename
-             -> Result SENTENCE       -- ^ CommonLogic SENTENCE
+             -> Result (SENTENCE, Sign)       -- ^ CommonLogic SENTENCE, Signature
 mapDataRange cSig rn inId =
   do 
-    let uid = mkNName inId
+    let uid = Name_term (mkNName inId)
     case rn of
          DRDatatype uril ->
           do
-            return $ (Atom_sent 
+            return  ((Atom_sent 
                           (Atom 
-                            (Name_term (mkSimpleId "in"))
-                            [ Term_seq (Name_term uid)
+                            (Name_term (mkSimpleId "ElementOf"))
+                            [ Term_seq uid
                             , Term_seq (Name_term (uriToTok uril))]
-                          ) nullRange)          
+                          ) nullRange) , unite cSig (emptySig 
+                                {items = Set.fromList [(stringToId "ElementOf")]} ))         
          DataComplementOf dr ->
           do
-            dc <- mapDataRange cSig dr inId
-            return $ Bool_sent (Negation dc) nullRange
-         DataOneOf _ -> error "nyi"
+            (dc, sig) <- mapDataRange cSig dr inId
+            return (( Bool_sent (Negation dc) nullRange), sig)
+         DataOneOf cs -> 
+          do
+            cl <- mapConstantList cSig cs
+            return ((Atom_sent 
+                          (Atom 
+                            (Name_term (mkSimpleId "OneOf"))
+                            ( Term_seq uid : cl)
+                          ) nullRange) , unite cSig (emptySig 
+                                {items = Set.fromList [(stringToId "OneOf")]} )) 
          DatatypeRestriction _ _ -> error "nyi"
 
 -- | mapping of OWL Descriptions
