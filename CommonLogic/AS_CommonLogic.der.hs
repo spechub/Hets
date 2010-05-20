@@ -90,7 +90,7 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
 
 data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
                 | Existential [NAME_OR_SEQMARK] SENTENCE
-                  -- 
+                  --
                   deriving (Show, Ord, Eq)
 
 data BOOL_SENT = Conjunction [SENTENCE]
@@ -120,7 +120,7 @@ data TERM_SEQ = Term_seq [TERM_OR_SEQMARK] Id.Range
 data TERM_SEQ = Term_seq TERM
               | Seq_marks SEQ_MARK
                 deriving (Show, Ord, Eq)
-                
+
 
 type NAME = Id.Token
 type SEQ_MARK = Id.Token
@@ -128,7 +128,6 @@ type SEQ_MARK = Id.Token
 -- binding seq
 data NAME_OR_SEQMARK = Name NAME
                      | SeqMark SEQ_MARK
-                     -- | Alt NAME NAME -- ?
                        deriving (Show, Eq, Ord)
 
 data SYMB_MAP_ITEMS = Symb_map_items [NAME_OR_SEQMARK] Id.Range
@@ -238,5 +237,5 @@ seqmarkS = "..."
 orS :: String
 orS = "or"
 
-iffS :: String 
+iffS :: String
 iffS = "iff"
