@@ -53,24 +53,24 @@ import Data.List (findIndex, partition, sort)
 import Data.Maybe
 
 data Finder = Finder { fName :: String
-                     , finder :: G_cons_checker
+                     , finder :: G_prover
                      , comorphism :: [AnyComorphism]
                      , selected :: Int }
 
 instance Eq Finder where
-  (==) (Finder { fName = n1, comorphism = c1 })
-       (Finder { fName = n2, comorphism = c2 }) = n1 == n2 && c1 == c2
+  Finder { fName = n1, comorphism = c1 } ==
+       Finder { fName = n2, comorphism = c2 } = n1 == n2 && c1 == c2
 
 data FNode = FNode { name :: String
                    , node :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status :: ConsistencyStatus }
+                   , status :: Bool }
 
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show FNode { name = n, status = s } =
-    "<span color=\"" ++ statusToColor s ++ "\">" ++ statusToPrefix s ++ n ++
-    "</span>"
+  show fn =
+    "<span color=\"" ++ ( if status fn then "green" else "red" )
+    ++ "\">" ++ "[] " ++ name fn ++ "</span>"
 
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
@@ -80,22 +80,6 @@ instance Ord FNode where
           (FNode { name = n2, status = s2 }) = case compare s1 s2 of
     EQ -> compare n1 n2
     c  -> c
-
-statusToColor :: ConsistencyStatus -> String
-statusToColor s = case sType s of
-  CSUnchecked    -> "black"
-  CSConsistent   -> "green"
-  CSInconsistent -> "red"
-  CSTimeout      -> "blue"
-  CSError        -> "darkred"
-
-statusToPrefix :: ConsistencyStatus -> String
-statusToPrefix s = case sType s of
-  CSUnchecked    -> "[ ] "
-  CSConsistent   -> "[+] "
-  CSInconsistent -> "[-] "
-  CSTimeout      -> "[t] "
-  CSError        -> "[f] "
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
@@ -161,14 +145,8 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 
-      n2CS n = case getNodeConsStatus n of
-                 ConsStatus _ pc thmls ->
-                   let t = showDoc thmls "" in case pc of
-                   Inconsistent -> ConsistencyStatus CSInconsistent t
-                   Cons -> ConsistencyStatus CSConsistent t
-                   _ -> ConsistencyStatus CSUnchecked t
       (emptyNodes, others) = selNodes
-        $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
+        $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s False)
         $ zip nodes sls
 
   -- setup data
@@ -213,8 +191,8 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         u
 
   onClicked btnNodesUnchecked
-    $ selectWith (== ConsistencyStatus CSUnchecked "") upd
-  onClicked btnNodesTimeout $ selectWith (== ConsistencyStatus CSTimeout "") upd
+    $ selectWith ( const True ) upd
+  onClicked btnNodesTimeout $ selectWith ( const False ) upd
 
   onClicked btnResults $ showModelView mView "Models" listNodes emptyNodes
   onClicked btnClose $ widgetDestroy window
@@ -250,19 +228,16 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
 
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
-    let changes = foldl (\ cs (FNode { node = (i, l), status = s }) ->
-                      if (\ st -> st /= CSConsistent && st /= CSInconsistent)
-                         $ sType s then cs
+    let changes = foldl (\ cs fn ->
+                      if status fn then cs
                         else
-                          let n = (i, if sType s == CSInconsistent then
-                                        markNodeInconsistent "" l
-                                        else markNodeConsistent "" l)
+                          let n@(_, l) = node fn
                           in SetNodeLab l n : cs
                     ) [] nodes'
         dg' = changesDGH dg changes
-    putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
+    putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
-  selectWith (== ConsistencyStatus CSUnchecked "") upd
+  selectWith not upd
 
   widgetShow window
 
@@ -293,12 +268,11 @@ updateNodes view listNodes update lock unlock = do
 updateFinder :: TreeView -> ListStore Finder -> Bool -> G_sublogics -> IO ()
 updateFinder view list useNonBatch sl = do
   old <- listStoreToList list
-  let new = Map.elems $ foldr (\ (cc, c) m ->
-              let n = getPName cc
-                  f = Map.findWithDefault (Finder n cc [] 0) n m
+  let new = Map.elems $ foldr (\ (pr, c) m ->
+              let n = getPName pr
+                  f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ filter (\ (G_cons_checker _ cc, _) -> useNonBatch || ccBatch cc)
-              $ getConsCheckers $ findComorphismPaths logicGraph sl
+              $ getProvers ProveCMDLautomatic (Just sl) $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
@@ -328,8 +302,8 @@ check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
     c = cs !! i in
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
-           res <- consistencyCheck inclThms cc c ln le dg n timeout
-           postGUISync $ listStoreSetValue listNodes row fn { status = res }
+           -- res <- consistencyCheck inclThms cc c ln le dg n timeout
+           postGUISync $ listStoreSetValue listNodes row fn { status = True }
            return $ count + 1) 0 nodes
 
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
@@ -385,7 +359,7 @@ showModelViewAux lock title list other = do
   textBufferApplyTag buffer font start end
 
   -- setup list view
-  let filterNodes = filter ((/= ConsistencyStatus CSUnchecked "") . status)
+  let filterNodes = id
 
   nodes <- listStoreToList list
   listNodes <- setListData trvNodes show $ sort $ filterNodes $ other ++ nodes
