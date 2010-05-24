@@ -25,8 +25,8 @@ data FoldRecord a = FoldRecord
   , foldDisjunction :: [a] -> Range -> a
   , foldImplication :: a -> a -> Range -> a
   , foldEquivalence :: a -> a -> Range -> a
-  , foldTrue_atom :: Range -> a
-  , foldFalse_atom :: Range -> a
+  , foldTrueAtom :: Range -> a
+  , foldFalseAtom :: Range -> a
   , foldPredication :: Token -> a
   , foldForAll :: [Token] -> a -> Range -> a
   , foldExists :: [Token] -> a -> Range -> a }
@@ -38,11 +38,11 @@ foldFormula r frm = case frm of
    Disjunction xs n -> foldDisjunction r (map (foldFormula r) xs) n
    Implication x y n -> foldImplication r (foldFormula r x) (foldFormula r y) n
    Equivalence x y n -> foldEquivalence r (foldFormula r x) (foldFormula r y) n
-   True_atom n -> foldTrue_atom r n
-   False_atom n -> foldFalse_atom r n
+   TrueAtom n -> foldTrueAtom r n
+   FalseAtom n -> foldFalseAtom r n
    Predication x -> foldPredication r x
-   Quantified_ForAll xs f n -> foldForAll r xs (foldFormula r f) n
-   Quantified_Exists xs f n -> foldExists r xs (foldFormula r f) n
+   ForAll xs f n -> foldForAll r xs (foldFormula r f) n
+   Exists xs f n -> foldExists r xs (foldFormula r f) n
 
 mapRecord :: FoldRecord FORMULA
 mapRecord = FoldRecord
@@ -51,11 +51,11 @@ mapRecord = FoldRecord
   , foldDisjunction = Disjunction
   , foldImplication = Implication
   , foldEquivalence = Equivalence
-  , foldTrue_atom = True_atom
-  , foldFalse_atom = False_atom
+  , foldTrueAtom = TrueAtom
+  , foldFalseAtom = FalseAtom
   , foldPredication = Predication
-  , foldForAll = Quantified_ForAll
-  , foldExists = Quantified_Exists }
+  , foldForAll = ForAll
+  , foldExists = Exists }
 
 isNeg :: FORMULA -> Bool
 isNeg f = case f of
@@ -64,17 +64,17 @@ isNeg f = case f of
 
 isQBF :: FORMULA -> Bool
 isQBF f = case f of
-  False_atom _ -> False
-  True_atom _ -> False
+  FalseAtom _ -> False
+  TrueAtom _ -> False
   Predication _ -> False
   Negation f1 _ -> isQBF f1
-  Conjunction xs _ -> or $ map isQBF xs
-  Disjunction xs _ -> or $ map isQBF xs
-  Implication x y _ -> any isQBF [x,y]
-  Equivalence x y _ -> any isQBF [x,y]
-  Quantified_ForAll _ _ _ -> True
-  Quantified_Exists _ _ _ -> True
-  
+  Conjunction xs _ -> any isQBF xs
+  Disjunction xs _ -> any isQBF xs
+  Implication x y _ -> any isQBF [x, y]
+  Equivalence x y _ -> any isQBF [x, y]
+  ForAll _ _ _ -> True
+  Exists _ _ _ -> True
+
 getLits :: Set.Set FORMULA -> Set.Set FORMULA
 getLits = Set.fold (\ f -> case f of
   Negation x _ -> Set.insert x
@@ -98,66 +98,68 @@ getDisj f = case f of
 flatConj :: [FORMULA] -> Set.Set FORMULA
 flatConj = Set.fromList
   . concatMap (\ f -> case f of
-      True_atom _ -> []
+      TrueAtom _ -> []
       Conjunction fs _ -> fs
       _ -> [f])
 
 mkConj :: [FORMULA] -> Range -> FORMULA
 mkConj fs n = let s = flatConj fs in
-  if Set.member (False_atom nullRange) s || bothLits s then False_atom n else
+  if Set.member (FalseAtom nullRange) s || bothLits s then FalseAtom n else
   case Set.toList s of
-    [] -> True_atom n
+    [] -> TrueAtom n
     [x] -> x
     ls -> Conjunction (map (flip mkDisj n . Set.toList)
-      $ foldr (\ l ll ->
-        if any (flip Set.isSubsetOf l) ll then ll else
-          l : filter (not . Set.isSubsetOf l) ll) []
-      $ map (Set.fromList . getDisj) ls) n
+      $ foldr ((\ l ll ->
+        if any (`Set.isSubsetOf` l) ll then ll else
+          l : filter (not . Set.isSubsetOf l) ll)
+          . Set.fromList . getConj)
+        [] ls) n
 
 flatDisj :: [FORMULA] -> Set.Set FORMULA
 flatDisj = Set.fromList
   . concatMap (\ f -> case f of
-      False_atom _ -> []
+      FalseAtom _ -> []
       Disjunction fs _ -> fs
       _ -> [f])
 
 mkDisj :: [FORMULA] -> Range -> FORMULA
 mkDisj fs n = let s = flatDisj fs in
-  if Set.member (True_atom nullRange) s || bothLits s then True_atom n else
+  if Set.member (TrueAtom nullRange) s || bothLits s then TrueAtom n else
   case Set.toList s of
-    [] -> False_atom n
+    [] -> FalseAtom n
     [x] -> x
     ls -> Disjunction (map (flip mkConj n . Set.toList)
-      $ foldr (\ l ll ->
-        if any (flip Set.isSubsetOf l) ll then ll else
-          l : filter (not . Set.isSubsetOf l) ll) []
-      $ map (Set.fromList . getConj) ls) n
+      $ foldr ((\ l ll ->
+        if any (`Set.isSubsetOf` l) ll then ll else
+          l : filter (not . Set.isSubsetOf l) ll)
+          . Set.fromList . getConj)
+      [] ls) n
 
 simplify :: FORMULA -> FORMULA
 simplify = foldFormula mapRecord
   { foldNegation = \ f n -> case f of
-    True_atom p -> False_atom p
-    False_atom p -> True_atom p
+    TrueAtom p -> FalseAtom p
+    FalseAtom p -> TrueAtom p
     Negation g _ -> g
     s -> Negation s n
   , foldConjunction = mkConj
   , foldDisjunction = mkDisj
   , foldImplication = \ x y n -> case x of
-    False_atom p -> True_atom p
-    _ -> if x == y then True_atom n else case x of
-           True_atom _ -> y
-           False_atom _ -> True_atom n
+    FalseAtom p -> TrueAtom p
+    _ -> if x == y then TrueAtom n else case x of
+           TrueAtom _ -> y
+           FalseAtom _ -> TrueAtom n
            Negation z _ | z == y -> x
            _ -> case y of
              Negation z _ | z == x -> x
              _ -> Implication x y n
   , foldEquivalence = \ x y n -> case compare x y of
     LT -> case y of
-      Negation z _ | x == z -> False_atom n
+      Negation z _ | x == z -> FalseAtom n
       _ -> Equivalence x y n
-    EQ -> True_atom n
+    EQ -> TrueAtom n
     GT -> case x of
-      Negation z _ | z == y -> False_atom n
+      Negation z _ | z == y -> FalseAtom n
       _ -> Equivalence y x n }
 
 elimEquiv :: FORMULA -> FORMULA
@@ -175,8 +177,8 @@ negForm r frm = case frm of
   Negation f _ -> f
   Conjunction xs n -> Disjunction (map (negForm r) xs) n
   Disjunction xs n -> Conjunction (map (negForm r) xs) n
-  True_atom n -> False_atom n
-  False_atom n -> True_atom n
+  TrueAtom n -> FalseAtom n
+  FalseAtom n -> TrueAtom n
   _ -> Negation frm r
 
 moveNegIn :: FORMULA -> FORMULA
@@ -191,7 +193,7 @@ distributeAndOverOr f = case f of
   Conjunction xs n -> mkConj (map distributeAndOverOr xs) n
   Disjunction xs n -> if all isPrimForm xs then mkDisj xs n else
     distributeAndOverOr
-    $ mkConj (map (flip mkDisj n) . combine $ map getConj xs) n
+    $ mkConj (map (`mkDisj` n) . combine $ map getConj xs) n
   _ -> f
 
 cnf :: FORMULA -> FORMULA
@@ -202,7 +204,7 @@ distributeOrOverAnd f = case f of
   Disjunction xs n -> mkDisj (map distributeOrOverAnd xs) n
   Conjunction xs n -> if all isPrimForm xs then mkConj xs n else
     distributeOrOverAnd
-    $ mkDisj (map (flip mkConj n) . combine $ map getDisj xs) n
+    $ mkDisj (map (`mkConj` n) . combine $ map getDisj xs) n
   _ -> f
 
 dnf :: FORMULA -> FORMULA

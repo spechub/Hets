@@ -1,7 +1,9 @@
 {-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
-Description :  Instance of class Logic for propositional logic extended with QBFs
+Description :  Instance of class Logic for propositional logic
+               extended with QBFs
+
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -11,9 +13,7 @@ Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for the propositional logic extended with QBFs
    Also the instances for Syntax and Category.
--}
-
-{-
+  
   Ref.
 
   http://en.wikipedia.org/wiki/Propositional_logic
@@ -53,7 +53,7 @@ instance Language QBF where
     description _ = "Propositional Logic extended with QBFs\n"
         ++ "for more information please refer to\n"
         ++ "http://en.wikipedia.org/wiki/Propositional_logic"
-		++ "http://www.voronkov.com/lics.cgi"
+        ++ "http://www.voronkov.com/lics.cgi"
 
 -- | Instance of Category for propositional logic
 instance Category Sign Morphism where
@@ -86,8 +86,8 @@ instance Sentences QBF FORMULA
     simplify_sen QBF _ = simplify
 
 -- | Syntax of Propositional logic
-instance Syntax QBF BASIC_SPEC
-    SYMB_ITEMS SYMB_MAP_ITEMS where
+instance Syntax QBF BASICSPEC
+    SYMBITEMS SYMBMAPITEMS where
          parse_basic_spec QBF = Just basicSpec
          parse_symb_items QBF = Just symbItems
          parse_symb_map_items QBF = Just symbMapItems
@@ -95,78 +95,78 @@ instance Syntax QBF BASIC_SPEC
 -- | Instance of Logic for propositional logc
 instance Logic QBF
     PropSL                    -- Sublogics
-    BASIC_SPEC                -- basic_spec
+    BASICSPEC                 -- basic_spec
     FORMULA                   -- sentence
-    SYMB_ITEMS                -- symb_items
-    SYMB_MAP_ITEMS            -- symb_map_items
+    SYMBITEMS                 -- symb_items
+    SYMBMAPITEMS              -- symb_map_items
     Sign                          -- sign
     Morphism                  -- morphism
     Symbol                      -- symbol
     Symbol                      -- raw_symbol
     ProofTree                      -- proof_tree
     where
-      stability QBF     = Experimental
-      top_sublogic QBF  = Sublogic.top
-      all_sublogics QBF = sublogics_all
+      stability QBF = Experimental
+      top_sublogic QBF = Sublogic.top
+      all_sublogics QBF = sublogicsAll
       empty_proof_tree QBF = emptyProofTree
     -- supplied provers
       provers QBF = []
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis QBF
-    BASIC_SPEC                -- basic_spec
+    BASICSPEC                 -- basic_spec
     FORMULA                   -- sentence
-    SYMB_ITEMS                -- symb_items
-    SYMB_MAP_ITEMS            -- symb_map_items
-    Sign                          -- sign
+    SYMBITEMS                 -- symb_items
+    SYMBMAPITEMS              -- symb_map_items
+    Sign                      -- sign
     Morphism                  -- morphism
-    Symbol                      -- symbol
-    Symbol                      -- raw_symbol
+    Symbol                    -- symbol
+    Symbol                    -- raw_symbol
         where
-          basic_analysis QBF           =
+          basic_analysis QBF =
               Just basicPropositionalAnalysis
-          empty_signature QBF          = emptySig
-          is_subsig QBF                = isSubSigOf
+          empty_signature QBF = emptySig
+          is_subsig QBF = isSubSigOf
           subsig_inclusion QBF s = return . inclusionMap s
-          signature_union QBF          = sigUnion
-          symbol_to_raw QBF            = symbolToRaw
-          id_to_raw     QBF            = idToRaw
-          matches       QBF            = Symbol.matches
-          stat_symb_items QBF          = mkStatSymbItems
-          stat_symb_map_items QBF      = mkStatSymbMapItem
-          morphism_union QBF           = morphismUnion
-          induced_from_morphism QBF    = inducedFromMorphism
+          signature_union QBF = sigUnion
+          symbol_to_raw QBF = symbolToRaw
+          id_to_raw QBF = idToRaw
+          matches QBF = Symbol.matches
+          stat_symb_items QBF = mkStatSymbItems
+          stat_symb_map_items QBF = mkStatSymbMapItem
+          morphism_union QBF = morphismUnion
+          induced_from_morphism QBF = inducedFromMorphism
           induced_from_to_morphism QBF = inducedFromToMorphism
-          signature_colimit QBF  = signatureColimit
+          signature_colimit QBF = signatureColimit
 
 -- | Sublogics
 instance SemiLatticeWithTop PropSL where
-    join = sublogics_max
-    top  = Sublogic.top
+    join = sublogicsMax
+    top = Sublogic.top
 
-instance MinSublogic PropSL BASIC_SPEC where
-     minSublogic = sl_basic_spec bottom
+instance MinSublogic PropSL BASICSPEC where
+     minSublogic = slBasicSpec bottom
 
 instance MinSublogic PropSL Sign where
-    minSublogic = sl_sig bottom
+    minSublogic = slSig bottom
 
 instance SublogicName PropSL where
-    sublogicName = sublogics_name
+    sublogicName = sublogicsName
 
 instance MinSublogic PropSL FORMULA where
-    minSublogic = sl_form bottom
+    minSublogic = slForm bottom
 
 instance MinSublogic PropSL Symbol where
-    minSublogic = sl_sym bottom
+    minSublogic = slSym bottom
 
-instance MinSublogic PropSL SYMB_ITEMS where
-    minSublogic = sl_symit bottom
+instance MinSublogic PropSL SYMBITEMS where
+    minSublogic = slSymit bottom
 
 instance MinSublogic PropSL Morphism where
-    minSublogic = sl_mor bottom
+    minSublogic = slMor bottom
 
-instance MinSublogic PropSL SYMB_MAP_ITEMS where
-    minSublogic = sl_symmap bottom
+instance MinSublogic PropSL SYMBMAPITEMS where
+    minSublogic = slSymmap bottom
 
 instance ProjectSublogicM PropSL Symbol where
     projectSublogicM = prSymbolM
@@ -177,13 +177,13 @@ instance ProjectSublogic PropSL Sign where
 instance ProjectSublogic PropSL Morphism where
     projectSublogic = prMor
 
-instance ProjectSublogicM PropSL SYMB_MAP_ITEMS where
+instance ProjectSublogicM PropSL SYMBMAPITEMS where
     projectSublogicM = prSymMapM
 
-instance ProjectSublogicM PropSL SYMB_ITEMS where
+instance ProjectSublogicM PropSL SYMBITEMS where
     projectSublogicM = prSymM
 
-instance ProjectSublogic PropSL BASIC_SPEC where
+instance ProjectSublogic PropSL BASICSPEC where
     projectSublogic = prBasicSpec
 
 instance ProjectSublogicM PropSL FORMULA where

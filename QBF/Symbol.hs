@@ -48,7 +48,7 @@ printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
+symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.items x
 
 -- | Determines the symbol map of a morhpism
@@ -59,7 +59,7 @@ getSymbolMap f =
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
-getSymbolName sym = symName sym
+getSymbolName = symName
 
 -- | make a raw_symbol
 idToRaw :: Id.Id -> Symbol
@@ -75,4 +75,4 @@ matches s1 s2 = s1 == s2
 
 -- | application function for Symbol Maps
 applySymMap :: Map.Map Symbol Symbol -> Symbol -> Symbol
-applySymMap smap idt = Map.findWithDefault idt idt $ smap
+applySymMap smap idt = Map.findWithDefault idt idt smap

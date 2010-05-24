@@ -45,7 +45,7 @@ import Common.Doc
 import Common.DocUtils
 
 -- | The datatype for morphisms in propositional logic as
---   maps of sets
+-- maps of sets
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
@@ -64,8 +64,8 @@ isLegalMorphism :: Morphism -> Bool
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
-        pdom    = Map.keysSet $ propMap pmor
-        pcodom  = Set.map (applyMorphism pmor) psource
+        pdom = Map.keysSet $ propMap pmor
+        pcodom = Set.map (applyMorphism pmor) psource
     in Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
 
 -- | Application funtion for morphisms
@@ -81,8 +81,8 @@ composeMor :: Morphism -> Morphism -> Result Morphism
 composeMor f g =
   let fSource = source f
       gTarget = target g
-      fMap    = propMap f
-      gMap    = propMap g
+      fMap = propMap f
+      gMap = propMap g
   in return Morphism
   { source = fSource
   , target = gTarget
@@ -120,13 +120,17 @@ mapSentenceH mor frm = case frm of
       (mapSentenceH mor form1) (mapSentenceH mor form2) rn
   AS_BASIC.Equivalence form1 form2 rn -> AS_BASIC.Equivalence
       (mapSentenceH mor form1) (mapSentenceH mor form2) rn
-  AS_BASIC.True_atom rn -> AS_BASIC.True_atom rn
-  AS_BASIC.False_atom rn -> AS_BASIC.False_atom rn
+  AS_BASIC.TrueAtom rn -> AS_BASIC.TrueAtom rn
+  AS_BASIC.FalseAtom rn -> AS_BASIC.FalseAtom rn
   AS_BASIC.Predication predH -> AS_BASIC.Predication
       $ id2SimpleId $ applyMorphism mor $ Id.simpleIdToId predH
-  AS_BASIC.Quantified_ForAll xs form rn -> AS_BASIC.Quantified_ForAll (map (id2SimpleId . (applyMorphism mor) . Id.simpleIdToId) xs) (mapSentenceH mor form) rn
-  AS_BASIC.Quantified_Exists xs form rn -> AS_BASIC.Quantified_Exists (map (id2SimpleId . (applyMorphism mor) . Id.simpleIdToId) xs) (mapSentenceH mor form) rn
-  
+  AS_BASIC.ForAll xs form rn -> AS_BASIC.ForAll (map
+    (id2SimpleId . applyMorphism mor . Id.simpleIdToId) xs)
+    (mapSentenceH mor form) rn
+  AS_BASIC.Exists xs form rn -> AS_BASIC.Exists
+    (map (id2SimpleId . applyMorphism mor . Id.simpleIdToId) xs)
+    (mapSentenceH mor form) rn
+
 morphismUnion :: Morphism -> Morphism -> Result.Result Morphism
 morphismUnion mor1 mor2 =
   let pmap1 = propMap mor1

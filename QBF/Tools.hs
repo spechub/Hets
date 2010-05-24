@@ -54,7 +54,7 @@ flattenDis f = case f of
 -- | negate a formula
 negateFormula :: FORMULA -> FORMULA
 negateFormula f = case f of
-  False_atom ps -> True_atom ps
-  True_atom ps -> False_atom ps
+  FalseAtom ps -> TrueAtom ps
+  TrueAtom ps -> FalseAtom ps
   Negation nf _ -> nf
   _ -> Negation f nullRange
