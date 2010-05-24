@@ -22,6 +22,7 @@ import GUI.UDGUtils
 #ifdef GTKGLADE
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
+import GUI.GtkAutomaticProofs
 #endif
 
 import Control.Concurrent.MVar
@@ -265,6 +266,11 @@ createGlobalMenu gInfo@
      , Button "Consistency checker"
          (performProofMenuAction (GlobCmd ProveCurrent)
            $ showConsistencyChecker gInfo)
+     , Button "Automatic proofs"
+         (performProofMenuAction (GlobCmd ProveCurrent)
+           $ showAutomaticProofs gInfo)
+
+
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?

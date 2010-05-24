@@ -28,9 +28,12 @@ import Static.GTheory
 import Static.History
 
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
+import Interfaces.DataTypes
+import Interfaces.Utils (updateNodeProof)
 
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism(..))
+import Logic.Logic (language_name)
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
@@ -40,7 +43,7 @@ import Common.LibName (LibName)
 import Common.Result
 import Common.Consistency
 
-import Control.Concurrent (forkIO, killThread)
+import Control.Concurrent (ThreadId, forkIO, killThread)
 import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, when)
 
@@ -52,19 +55,18 @@ import qualified Data.Map as Map
 import Data.List (findIndex, partition, sort)
 import Data.Maybe
 
-data Finder = Finder { fName :: String
-                     , finder :: G_prover
+data Finder = Finder { fName      :: String
+                     , finder     :: G_prover
                      , comorphism :: [AnyComorphism]
-                     , selected :: Int }
+                     , selected   :: Int }
 
 instance Eq Finder where
-  Finder { fName = n1, comorphism = c1 } ==
-       Finder { fName = n2, comorphism = c2 } = n1 == n2 && c1 == c2
+  f1 == f2 = fName f1 == fName f2 && comorphism f1 == comorphism f2
 
-data FNode = FNode { name :: String
-                   , node :: LNode DGNodeLab
+data FNode = FNode { name     :: String
+                   , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status :: Bool }
+                   , status   :: Bool }
 
 -- | Get a markup string containing name and color
 instance Show FNode where
@@ -85,13 +87,13 @@ instance Ord FNode where
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
 showAutomaticProofs (GInfo { libName = ln }) le = do
   wait <- newEmptyMVar
-  showConsistencyCheckerAux wait ln le
+  showProverWindow wait ln le
   le' <- takeMVar wait
   return $ Result [] $ Just le'
 
 -- | Displays the consistency checker window
-showConsistencyCheckerAux :: MVar LibEnv -> LibName -> LibEnv -> IO ()
-showConsistencyCheckerAux res ln le = postGUIAsync $ do
+showProverWindow :: MVar LibEnv -> LibName -> LibEnv -> IO ()
+showProverWindow res ln le = postGUIAsync $ do
   xml               <- getGladeXML ConsistencyChecker.get
   -- get objects
   window            <- xmlGetWidget xml castToWindow "NodeChecker"
@@ -202,11 +204,11 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
     activate checkWidgets False
     timeout <- spinButtonGetValueAsInt sbTimeout
     inclThms <- toggleButtonGetActive cbInclThms
-    (updat, exit) <- progressBar "Checking consistency" "please wait..."
+    (updat, exit) <- progressBar "Proving" "please wait..."
     nodes' <- getSelectedMultiple trvNodes listNodes
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
-      Nothing -> error "Consistency checker: internal error"
+      Nothing -> error "Automatic Proofs: internal error"
       Just (_,f) -> return f
     switch False
     tid <- forkIO $ do
@@ -218,7 +220,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
       postGUIAsync $ do
         switch True
         tryTakeMVar threadId
-        showModelView mView "Results of consistency check" listNodes emptyNodes
+        showModelView mView "Results of automatic proofs" listNodes emptyNodes
         signalBlock shN
         sortNodes trvNodes listNodes
         signalUnblock shN
@@ -302,9 +304,145 @@ check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
     c = cs !! i in
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
+           -- res <- proveNode' inclThms
            -- res <- consistencyCheck inclThms cc c ln le dg n timeout
            postGUISync $ listStoreSetValue listNodes row fn { status = True }
            return $ count + 1) 0 nodes
+
+-- | to look up the data types of the 'old' call from consistencyChecker, that need to be adjusted
+-- | in order to match the data types requested in proveNode'
+-- consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
+--                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+
+-- //////////////////////////////////////////////////////////////////////////
+-- | inserted proveNode from CMDL/ProveConsistency and made some changes
+
+-- | Given a proofstatus the function does the actual call of the
+-- prover for proving the node or check consistency
+proveNode' ::
+              --use theorems is subsequent proofs
+              Bool ->
+              -- save problem file for each goal
+              Bool ->
+              -- Timeout Limit
+              Int ->
+              -- proofState of the node that needs proving
+              -- all theorems, goals and axioms should have
+              -- been selected before,but the theory should have
+              -- not beed recomputed
+              Int_NodeInfo ->
+              -- node name
+              String ->
+              -- selected prover, if non one will be automatically
+              -- selected
+              Maybe G_prover ->
+              -- selected comorphism, if non one will be automatically
+              -- selected
+              Maybe AnyComorphism ->
+              MVar (Maybe ThreadId) ->
+              MVar (Maybe Int_NodeInfo)  ->
+              MVar IntState ->
+              LibName ->
+              -- returns an error message if anything happens
+               IO String
+proveNode' useTh save2File timeout ndpf ndnm mp mcm mThr mSt miSt libname =
+  case ndpf of
+    Element pf_st nd ->
+     do
+     -- recompute the theory (to make effective the selected axioms,
+     -- goals)
+     let st = recalculateSublogicAndSelectedTheory pf_st
+     -- compute a prover,comorphism pair to be used in preparing
+     -- the theory
+     p_cm@(_,acm) <- case mcm of
+           Nothing -> lookupKnownProver st ProveCMDLautomatic
+           Just cm' -> case mp of
+             Nothing-> lookupKnownProver st ProveCMDLautomatic
+             Just p' -> return (p',cm')
+
+     -- try to prepare the theory
+     prep <- case prepareForProving st p_cm of
+             Result _ Nothing ->
+               do
+                p_cm'@(prv',acm'@(Comorphism cid)) <-
+                          lookupKnownProver st ProveCMDLautomatic
+                putStrLn ("Analyzing node " ++ ndnm)
+                putStrLn ("Using the comorphism " ++ language_name cid)
+                putStrLn ("Using prover " ++ getPName prv')
+                return $ case prepareForProving st p_cm' of
+                          Result _ Nothing -> Nothing
+                          Result _ (Just sm)-> Just (sm,acm')
+             Result _ (Just sm) -> return $ Just (sm,acm)
+     case prep of
+     -- theory could not be computed
+      Nothing -> return "No suitable prover and comorphism found"
+      Just (G_theory_with_prover lid1 th p, cmp)->
+        case proveCMDLautomaticBatch p of
+         Nothing -> return "Error obtaining the prover"
+         Just fn ->
+          do
+          -- mVar to poll the prover for results
+          answ <- newMVar (return [])
+          let st' = st { proverRunning= True}
+          -- store initial input of the prover
+          swapMVar mSt $ Just $ Element st' nd
+          {- putStrLn ((theoryName st)++"\n"++
+                    (showDoc sign "") ++
+                    show (vsep (map (print_named lid1)
+                                        $ P.toNamedList sens))) -}
+          case selectedGoals st' of
+           [] -> return "No goals selected. Nothing to prove"
+           _ ->
+            do
+             tmp <- fn useTh
+                      save2File
+                      answ
+                      (theoryName st)
+                      (TacticScript $ show timeout)
+                      th []
+             swapMVar mThr $ Just $ fst tmp
+             getResults lid1 cmp (snd tmp) answ mSt
+             swapMVar mThr Nothing
+             ist  <- readMVar miSt
+             state <- readMVar mSt
+             case state of
+              Nothing -> return ""
+              Just state' ->
+               do
+                swapMVar mSt Nothing
+                swapMVar miSt $ addResults ist libname state'
+                return ""
+
+getResults lid acm mStop mData mState =
+  do
+    takeMVar mStop
+    d <- takeMVar mData
+    case d of
+      Result _ Nothing   -> return ()
+      Result _ (Just d') -> modifyMVar_ mState
+        (\ s -> case s of
+                  Nothing -> return s
+                  Just (Element st node) -> return $ Just $ Element
+                                            (markProved acm lid d' st) node)
+
+-- | inserts the results of the proof in the development graph
+addResults :: IntState -> LibName -> Int_NodeInfo -> IntState
+addResults ist libname ndps =
+  case i_state ist of
+    Nothing -> ist
+    Just pS ->
+      case ndps of
+       Element ps'' node -> case theory ps'' of
+         G_theory lidT sigT indT sensT _ ->
+           case coerceThSens (logicId ps'') lidT "" (goalMap ps'') of
+             Nothing -> ist
+             Just gMap -> let
+               nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
+               dGraph = lookupDGraph libname (i_libEnv pS)
+               nl = labDG dGraph node
+               in fst $ updateNodeProof libname ist (node, nl) (Just nwTh)
+-- | proveNode END
+-- //////////////////////////////////////////////////////////
 
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
                  -> ConnectId ComboBox -> IO ()
