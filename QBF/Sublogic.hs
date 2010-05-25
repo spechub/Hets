@@ -25,8 +25,8 @@ Sublogics for Propositional Logic
 module QBF.Sublogic
     (
      slBasicSpec                  -- determine sublogic for basic spec
-    , PropFormulae (..)             -- types of propositional formulae
-    , PropSL (..)                   -- sublogics for propositional logic
+    , QBFFormulae (..)             -- types of propositional formulae
+    , QBFSL (..)                   -- sublogics for propositional logic
     , sublogicsMax                 -- join of sublogics
     , top                           -- Propositional
     , bottom                        -- Horn
@@ -59,24 +59,24 @@ import qualified QBF.Morphism as Morphism
 import qualified Common.Lib.State as State
 
 -- | types of propositional formulae
-data PropFormulae = PlainFormula      -- Formula without structural constraints
+data QBFFormulae = PlainFormula      -- Formula without structural constraints
                   | HornClause        -- Horn Clause Formulae
                   deriving (Show, Eq, Ord)
 
 -- | sublogics for propositional logic
-data PropSL = PropSL
+data QBFSL = QBFSL
     {
-      format :: PropFormulae     -- Structural restrictions
+      format :: QBFFormulae     -- Structural restrictions
     } deriving (Show, Eq, Ord)
 
-isProp :: PropSL -> Bool
+isProp :: QBFSL -> Bool
 isProp sl = format sl == PlainFormula
 
-isHC :: PropSL -> Bool
+isHC :: QBFSL -> Bool
 isHC sl = format sl == HornClause
 
 -- | comparison of sublogics
-compareLE :: PropSL -> PropSL -> Bool
+compareLE :: QBFSL -> QBFSL -> Bool
 compareLE p1 p2 =
     let f1 = format p1
         f2 = format p2
@@ -88,72 +88,72 @@ compareLE p1 p2 =
 
 -- Special elements in the Lattice of logics
 
-top :: PropSL
-top = PropSL PlainFormula
+top :: QBFSL
+top = QBFSL PlainFormula
 
-bottom :: PropSL
-bottom = PropSL HornClause
+bottom :: QBFSL
+bottom = QBFSL HornClause
 
-needPF :: PropSL
+needPF :: QBFSL
 needPF = bottom { format = PlainFormula }
 
 -- join and max
 
-sublogicsJoin :: (PropFormulae -> PropFormulae -> PropFormulae)
-                  -> PropSL -> PropSL -> PropSL
-sublogicsJoin pfF a b = PropSL
+sublogicsJoin :: (QBFFormulae -> QBFFormulae -> QBFFormulae)
+                  -> QBFSL -> QBFSL -> QBFSL
+sublogicsJoin pfF a b = QBFSL
                          {
                            format = pfF (format a) (format b)
                          }
 
-joinType :: PropFormulae -> PropFormulae -> PropFormulae
+joinType :: QBFFormulae -> QBFFormulae -> QBFFormulae
 joinType HornClause HornClause = HornClause
 joinType _ _ = PlainFormula
 
-sublogicsMax :: PropSL -> PropSL -> PropSL
+sublogicsMax :: QBFSL -> QBFSL -> QBFSL
 sublogicsMax = sublogicsJoin joinType
 
 -- Helpers
 
 -- compute sublogics from a list of sublogics
 
-compList :: [PropSL] -> PropSL
+compList :: [QBFSL] -> QBFSL
 compList = foldl sublogicsMax bottom
 
 -- Functions to compute minimal sublogic for a given element, these work
 -- by recursing into all subelements
 
 -- | determines the sublogic for symbol map items
-slSymmap :: PropSL -> AS_BASIC.SYMBMAPITEMS -> PropSL
+slSymmap :: QBFSL -> AS_BASIC.SYMBMAPITEMS -> QBFSL
 slSymmap ps _ = ps
 
 -- | determines the sublogic for a morphism
-slMor :: PropSL -> Morphism.Morphism -> PropSL
+slMor :: QBFSL -> Morphism.Morphism -> QBFSL
 slMor ps _ = ps
 
 -- | determines the sublogic for a Signature
-slSig :: PropSL -> Sign.Sign -> PropSL
+slSig :: QBFSL -> Sign.Sign -> QBFSL
 slSig ps _ = ps
 
 -- | determines the sublogic for Symbol items
-slSymit :: PropSL -> AS_BASIC.SYMBITEMS -> PropSL
+slSymit :: QBFSL -> AS_BASIC.SYMBITEMS -> QBFSL
 slSymit ps _ = ps
 
 -- | determines the sublogic for symbols
-slSym :: PropSL -> Symbol.Symbol -> PropSL
+slSym :: QBFSL -> Symbol.Symbol -> QBFSL
 slSym ps _ = ps
 
 -- | determines sublogic for formula
-slForm :: PropSL -> AS_BASIC.FORMULA -> PropSL
+slForm :: QBFSL -> AS_BASIC.FORMULA -> QBFSL
 slForm ps f = slFlForm ps $ Tools.flatten f
 
 -- | determines sublogic for flattened formula
-slFlForm :: PropSL -> [AS_BASIC.FORMULA] -> PropSL
+slFlForm :: QBFSL -> [AS_BASIC.FORMULA] -> QBFSL
 slFlForm ps f = foldl sublogicsMax ps
   $ map (\ x -> State.evalState (anaForm ps x) 0) f
 
 -- analysis of single "clauses"
-anaForm :: PropSL -> AS_BASIC.FORMULA -> State.State Int PropSL
+anaForm :: QBFSL -> AS_BASIC.FORMULA -> State.State Int QBFSL
 anaForm ps f =
     case f of
       AS_BASIC.Conjunction l _ ->
@@ -240,25 +240,25 @@ isPosLiteral (AS_BASIC.TrueAtom _ ) = True
 isPosLiteral (AS_BASIC.FalseAtom _) = True
 
 -- | determines subloig for basic items
-slBasicItems :: PropSL -> AS_BASIC.BASICITEMS -> PropSL
+slBasicItems :: QBFSL -> AS_BASIC.BASICITEMS -> QBFSL
 slBasicItems ps bi =
     case bi of
       AS_BASIC.PredDecl _ -> ps
       AS_BASIC.AxiomItems xs -> compList $ map (slForm ps . AS_Anno.item) xs
 
 -- | determines sublogic for basic spec
-slBasicSpec :: PropSL -> AS_BASIC.BASICSPEC -> PropSL
+slBasicSpec :: QBFSL -> AS_BASIC.BASICSPEC -> QBFSL
 slBasicSpec ps (AS_BASIC.BasicSpec spec) =
     compList $ map (slBasicItems ps . AS_Anno.item) spec
 
 -- | all sublogics
-sublogicsAll :: [PropSL]
+sublogicsAll :: [QBFSL]
 sublogicsAll =
-    [PropSL
+    [QBFSL
      {
        format = HornClause
      }
-    , PropSL
+    , QBFSL
      {
        format = PlainFormula
      }
@@ -266,42 +266,42 @@ sublogicsAll =
 
 -- Conversion functions to String
 
-sublogicsName :: PropSL -> String
+sublogicsName :: QBFSL -> String
 sublogicsName f = case format f of
       HornClause -> "HornClause"
       PlainFormula -> "Prop"
 
 -- Projections to sublogics
 
-prSymbolM :: PropSL -> Symbol.Symbol -> Maybe Symbol.Symbol
+prSymbolM :: QBFSL -> Symbol.Symbol -> Maybe Symbol.Symbol
 prSymbolM _ = Just
 
-prSig :: PropSL -> Sign.Sign -> Sign.Sign
+prSig :: QBFSL -> Sign.Sign -> Sign.Sign
 prSig _ sig = sig
 
-prMor :: PropSL -> Morphism.Morphism -> Morphism.Morphism
+prMor :: QBFSL -> Morphism.Morphism -> Morphism.Morphism
 prMor _ mor = mor
 
-prSymMapM :: PropSL
+prSymMapM :: QBFSL
           -> AS_BASIC.SYMBMAPITEMS
           -> Maybe AS_BASIC.SYMBMAPITEMS
 prSymMapM _ = Just
 
-prSymM :: PropSL -> AS_BASIC.SYMBITEMS -> Maybe AS_BASIC.SYMBITEMS
+prSymM :: QBFSL -> AS_BASIC.SYMBITEMS -> Maybe AS_BASIC.SYMBITEMS
 prSymM _ = Just
 
 -- keep an element if its computed sublogic is in the given sublogic
 --
 
-prFormulaM :: PropSL -> AS_BASIC.FORMULA -> Maybe AS_BASIC.FORMULA
+prFormulaM :: QBFSL -> AS_BASIC.FORMULA -> Maybe AS_BASIC.FORMULA
 prFormulaM sl form
            | compareLE (slForm bottom form) sl = Just form
            | otherwise = Nothing
 
-prPredItem :: PropSL -> AS_BASIC.PREDITEM -> AS_BASIC.PREDITEM
+prPredItem :: QBFSL -> AS_BASIC.PREDITEM -> AS_BASIC.PREDITEM
 prPredItem _ prI = prI
 
-prBASICItems :: PropSL -> AS_BASIC.BASICITEMS -> AS_BASIC.BASICITEMS
+prBASICItems :: QBFSL -> AS_BASIC.BASICITEMS -> AS_BASIC.BASICITEMS
 prBASICItems pSL bI =
     case bI of
       AS_BASIC.PredDecl pI -> AS_BASIC.PredDecl $ prPredItem pSL pI
@@ -321,7 +321,7 @@ prBASICItems pSL bI =
                                    }
                                    ]
 
-prBasicSpec :: PropSL -> AS_BASIC.BASICSPEC -> AS_BASIC.BASICSPEC
+prBasicSpec :: QBFSL -> AS_BASIC.BASICSPEC -> AS_BASIC.BASICSPEC
 prBasicSpec pSL (AS_BASIC.BasicSpec bS) =
     AS_BASIC.BasicSpec $ map mapH bS
     where

@@ -94,16 +94,16 @@ instance Syntax QBF BASICSPEC
 
 -- | Instance of Logic for propositional logc
 instance Logic QBF
-    PropSL                    -- Sublogics
+    QBFSL                     -- Sublogics
     BASICSPEC                 -- basic_spec
     FORMULA                   -- sentence
     SYMBITEMS                 -- symb_items
     SYMBMAPITEMS              -- symb_map_items
-    Sign                          -- sign
+    Sign                      -- sign
     Morphism                  -- morphism
-    Symbol                      -- symbol
-    Symbol                      -- raw_symbol
-    ProofTree                      -- proof_tree
+    Symbol                    -- symbol
+    Symbol                    -- raw_symbol
+    ProofTree                 -- proof_tree
     where
       stability QBF = Experimental
       top_sublogic QBF = Sublogic.top
@@ -140,51 +140,51 @@ instance StaticAnalysis QBF
           signature_colimit QBF = signatureColimit
 
 -- | Sublogics
-instance SemiLatticeWithTop PropSL where
+instance SemiLatticeWithTop QBFSL where
     join = sublogicsMax
     top = Sublogic.top
 
-instance MinSublogic PropSL BASICSPEC where
+instance MinSublogic QBFSL BASICSPEC where
      minSublogic = slBasicSpec bottom
 
-instance MinSublogic PropSL Sign where
+instance MinSublogic QBFSL Sign where
     minSublogic = slSig bottom
 
-instance SublogicName PropSL where
+instance SublogicName QBFSL where
     sublogicName = sublogicsName
 
-instance MinSublogic PropSL FORMULA where
+instance MinSublogic QBFSL FORMULA where
     minSublogic = slForm bottom
 
-instance MinSublogic PropSL Symbol where
+instance MinSublogic QBFSL Symbol where
     minSublogic = slSym bottom
 
-instance MinSublogic PropSL SYMBITEMS where
+instance MinSublogic QBFSL SYMBITEMS where
     minSublogic = slSymit bottom
 
-instance MinSublogic PropSL Morphism where
+instance MinSublogic QBFSL Morphism where
     minSublogic = slMor bottom
 
-instance MinSublogic PropSL SYMBMAPITEMS where
+instance MinSublogic QBFSL SYMBMAPITEMS where
     minSublogic = slSymmap bottom
 
-instance ProjectSublogicM PropSL Symbol where
+instance ProjectSublogicM QBFSL Symbol where
     projectSublogicM = prSymbolM
 
-instance ProjectSublogic PropSL Sign where
+instance ProjectSublogic QBFSL Sign where
     projectSublogic = prSig
 
-instance ProjectSublogic PropSL Morphism where
+instance ProjectSublogic QBFSL Morphism where
     projectSublogic = prMor
 
-instance ProjectSublogicM PropSL SYMBMAPITEMS where
+instance ProjectSublogicM QBFSL SYMBMAPITEMS where
     projectSublogicM = prSymMapM
 
-instance ProjectSublogicM PropSL SYMBITEMS where
+instance ProjectSublogicM QBFSL SYMBITEMS where
     projectSublogicM = prSymM
 
-instance ProjectSublogic PropSL BASICSPEC where
+instance ProjectSublogic QBFSL BASICSPEC where
     projectSublogic = prBasicSpec
 
-instance ProjectSublogicM PropSL FORMULA where
+instance ProjectSublogicM QBFSL FORMULA where
     projectSublogicM = prFormulaM
