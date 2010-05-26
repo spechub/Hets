@@ -7,23 +7,23 @@ Description :  Instance of class Logic for propositional logic
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  <jonathan.von_schroeder@dfki.de>
+Maintainer  :  jonathan.von_schroeder@dfki.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for the propositional logic extended with QBFs
    Also the instances for Syntax and Category.
-  
+
   Ref.
 
-  http://en.wikipedia.org/wiki/Propositional_logic
+  <http://en.wikipedia.org/wiki/Propositional_logic>
 
   Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
   What is a Logic?.
-  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhaeuser.
+  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-133. Birkhaeuser.
   2005.
-  
-  http://www.voronkov.com/lics.cgi
+
+  <http://www.voronkov.com/lics.cgi>
 -}
 
 module QBF.Logic_QBF where
