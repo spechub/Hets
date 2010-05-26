@@ -146,7 +146,7 @@ proveTheory :: Logic lid sublogics
            => lid -> Prover sign sentence morphism sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
            -> [FreeDefMorphism sentence morphism]
-           -> IO([ProofStatus proof_tree])
+           -> IO([ProofStatus proof_tree], [Named sentence])
 proveTheory _ =
     fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
@@ -290,7 +290,7 @@ callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
                                             lid "Logic.InferBasic: callProver")
                                             freedefs
         lift exit
-        ps <- lift $ proveTheory lid p (theoryName st) th freedefs1
+        (ps, _) <- lift $ proveTheory lid p (theoryName st) th freedefs1
         let st' = markProved acm lid ps st
         lift $ addCommandHistoryToState intSt st'
               (if trans_chosen then Just p_cm else Nothing) ps

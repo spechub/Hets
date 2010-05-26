@@ -227,9 +227,10 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     { proverName :: String,
       proverSublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
-                         -> IO ([ProofStatus proof_tree])),
+                         -> IO ([ProofStatus proof_tree], [Named sentence])),
       -- input: imported theories, theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
+      -- output2: new lemmas
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
                  -> Bool -- 2.
@@ -265,7 +266,9 @@ mkProverTemplate :: String -> sublogics
 mkProverTemplate str sl fct = Prover
     { proverName = str
     , proverSublogic = sl
-    , proveGUI = Just fct
+    , proveGUI = Just $ \ s t fs -> do
+                ps <- fct s t fs
+                return (ps, [])
     , proveCMDLautomaticBatch = Nothing }
 
 mkAutomaticProver :: String -> sublogics
