@@ -292,7 +292,7 @@ date
 ../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa2.log 2>&1
 fgrep \*\*\* ../isa2.log
 ../Hets/utils/nightly/runSPASS.sh Basic/*.dfg.c > ../spass2.log 2>&1
-fgrep "Proof found " ../spass2.log
+fgrep "Proof found" ../spass2.log
 
 }
 
