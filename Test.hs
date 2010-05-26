@@ -38,6 +38,7 @@ import Comorphisms.LogicGraph
 import Proofs.Global
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Proofs.Automatic
 
 myHetcatsOpts :: HetcatsOpts
 myHetcatsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"] }

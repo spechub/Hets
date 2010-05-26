@@ -57,7 +57,7 @@ isReduceAxiom s = case sentence s of
 {- | takes a theory name and a theory as input, starts the prover
   and returns a list of ProofStatus. -}
 reduceProve :: String -> Theory Sign CMD [EXPRESSION] -> a
-  -> IO ([ProofStatus [EXPRESSION]],[(Named sentence, ProofStatus proof_tree)])
+  -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
 reduceProve _ (Theory _ senMap) _freedefs =
     let
         namedCmds = toNamedList senMap
@@ -68,7 +68,7 @@ reduceProve _ (Theory _ senMap) _freedefs =
       return proofinfos
 
 -- | connect to CAS, stepwise process the cmds
-processCmds :: [Named CMD] -> IO ([ProofStatus [EXPRESSION]],[(Named sentence, ProofStatus proof_tree)])
+processCmds :: [Named CMD] -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
 processCmds cmds = do
   putStr "Connecting CAS.."
   reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
@@ -86,7 +86,7 @@ processCmds cmds = do
 
 -- | internal function to process commands over an existing connection
 processCmdsIntern :: (Handle, Handle) -> [Named CMD]
-  -> IO ([ProofStatus [EXPRESSION]],[(Named sentence, ProofStatus proof_tree)])
+  -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
 processCmdsIntern _ [] = return ([],[])
 processCmdsIntern (inp, out) (x : xs) = do
   (prooftree,newlemmas) <- procCmd (inp, out) x

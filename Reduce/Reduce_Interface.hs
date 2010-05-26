@@ -114,7 +114,7 @@ exportReduce namedcmd = case sentence namedcmd of
   Cmd "simplify" exps -> exportExp $ head exps
   Cmd cmd exps -> cmd ++ "(" ++ exportExps exps ++ ")"
 
-procCmd :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+procCmd :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
 procCmd (inp, out) cmd = case cmdstring of
                                  "simplify" -> cassimplify (inp, out) cmd
                                  "divide" -> casremainder (inp, out) cmd
@@ -145,16 +145,16 @@ procString (inp, out) axname s = do
 
 
 -- | factors a given expression over the reals
-casfactorExp :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+casfactorExp :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
 casfactorExp (inp, out) cmd =
   do
     proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[])
+    return (proofstatus,[exportLemmaFactor cmd proofstatus])
 
 -- | generates the lemma for cmd with result ProofStatus
-exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaFactor namedcmd ps =
-  [Op "=" [head exps, head $ proofTree ps] nullRange]
+  (namedcmd , closedReduceProofStatus "asd" [(Op "Proof" [] nullRange)])
       where Cmd _ exps = sentence namedcmd
 
 
@@ -166,60 +166,59 @@ cassolve (inp, out) cmd =
     return (proofstatus,[])
     
 
-exportLemmaSolve :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaSolve :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaSolve namedcmd ps =
-  [Op "=" [head exps, head $ proofTree ps] nullRange]
+  (namedcmd , closedReduceProofStatus "asd" [(Op "Proof" [] nullRange)])
       where Cmd _ exps = sentence namedcmd
 
-
 -- | simplifies a given expression over the reals
-cassimplify :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+cassimplify :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
 cassimplify (inp, out) cmd = do
   proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
-  return (proofstatus,[])
+  return (proofstatus,[exportLemmaSimplify cmd proofstatus])
 
-exportLemmaSimplify :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaSimplify :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaSimplify namedcmd ps =
-  [Op "=" [head exps, head $ proofTree ps] nullRange]
+  (namedcmd , closedReduceProofStatus "asd" [(Op "Proof" [] nullRange)])
       where Cmd _ exps = sentence namedcmd
 
 -- | computes the remainder of a division
-casremainder :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+casremainder :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
 casremainder (inp, out) cmd =
   do
     proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";" 
-    return (proofstatus,[])
+    return (proofstatus,[exportLemmaRemainder cmd proofstatus])
   where Cmd _ args = sentence cmd
 
-exportLemmaRemainder :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaRemainder :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaRemainder namedcmd ps =
-  [Op "=" [head exps, head $ proofTree ps] nullRange]
+  (namedcmd , closedReduceProofStatus "asd" [(Op "Proof" [] nullRange)])
       where Cmd _ exps = sentence namedcmd
 
 -- | integrates the given expression
-casint :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+casint :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
 casint (inp, out) cmd =
   do
     proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[])
+    return (proofstatus,[exportLemmaInt cmd proofstatus])
 
-exportLemmaInt :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaInt :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaInt namedcmd ps =
-  [Op "=" [head exps, head $ proofTree ps] nullRange]
+  (namedcmd , closedReduceProofStatus "asd" [(Op "Proof" [] nullRange)])
       where Cmd _ exps = sentence namedcmd
 
 
 -- | performs quantifier elimination of a given expression
-casqelim :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+casqelim :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
 casqelim (inp, out) cmd =
   do
     proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
-    return (proofstatus,[])
+    return (proofstatus,[exportLemmaQelim cmd proofstatus])
 
 
-exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
 exportLemmaQelim namedcmd ps =
-  [Op "=" [head exps, head $ proofTree ps] nullRange]
+  (namedcmd , closedReduceProofStatus "asd" [(Op "Proof" [] nullRange)])
       where Cmd _ exps = sentence namedcmd
 
 -- | declares an operator, such that it can used infix/prefix in CAS
