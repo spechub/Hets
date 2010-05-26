@@ -462,7 +462,7 @@ HADDOCK_OPTS = $(addprefix --optghc=, $(HC_OPTS))
 docs/index.html:
 	$(RM) -r docs
 	mkdir docs
-	$(HADDOCK) -o docs -h -v -s ../%F \
+	$(HADDOCK) -o docs -h -s ../%F \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
              Syntax/ADoc.hs $(filter-out Test.hs, $(wildcard *.hs)) \
