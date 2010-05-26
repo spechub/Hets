@@ -225,9 +225,9 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
 
     onDestroy window $ putMVar wait ()
 
-    selectAll trvTheorems
-    selectAll trvAxioms
-    selectAll trvGoals
+    selectAllRows trvTheorems
+    selectAllRows trvAxioms
+    selectAllRows trvGoals
 
     widgetShow window
 

@@ -66,9 +66,7 @@ module GUI.GtkUtils
   , getSelectedSingle
   , getSelectedMultiple
 
-  , selectAll
-  , selectNone
-  , selectInvert
+  , selectAllRows
 
   , activate
 
@@ -501,8 +499,8 @@ setListSelectorMultiple view btnAll btnNone btnInvert action = do
   sh <- afterSelectionChanged selector action
 
   -- setup buttons
-  onClicked btnAll $ selectAll view
-  onClicked btnNone $ selectNone view
+  onClicked btnAll $ selectAllRows view
+  onClicked btnNone $ selectNoRows view
   onClicked btnInvert (selectInvert view sh >> action)
   return sh
 
@@ -521,12 +519,12 @@ selectFirst view = do
           treeSelectionSelectIter selector iter
 
 -- | Select all rows
-selectAll :: TreeView -> IO ()
-selectAll view = treeViewGetSelection view >>= treeSelectionSelectAll
+selectAllRows :: TreeView -> IO ()
+selectAllRows view = treeViewGetSelection view >>= treeSelectionSelectAll
 
 -- | Deselect all rows
-selectNone :: TreeView -> IO ()
-selectNone view = treeViewGetSelection view >>= treeSelectionUnselectAll
+selectNoRows :: TreeView -> IO ()
+selectNoRows view = treeViewGetSelection view >>= treeSelectionUnselectAll
 
 -- | Invert selection of list
 selectInvert :: TreeView -> ConnectId TreeSelection -> IO ()
