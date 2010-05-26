@@ -11,6 +11,7 @@ Portability :  portable
 
 -}
 
+-- todo: add static analysis for repeat
 
 module Reduce.Analysis
     (
@@ -59,14 +60,17 @@ extractOperatorsCmd (Cmd cmd exps) = (cmd,length exps) : (List.foldl (\ res item
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
 checkOperators _ [] = True
 checkOperators s ((op,arit):ops) = (if elem op ["ex","all",">","<","+","-","*","=","/","**","^","and","or","impl"] then (arit==2)
-                                    else 
+                                    else if elem op ["cos","sqrt","sin"] then (arit==1) else
                                         case op of
                                           "solve" -> (arit==2)
                                           "simplify" -> (arit==1)
                                           "divide" -> (arit==2)
                                           "int" -> (arit==2)
                                           "rlqe" -> (arit==1)
+                                          ":="   -> (arit==2)
                                           "factorize" -> (arit==1)
+                                          "min" -> (arit>0)
+                                          "max" -> (arit>0)
                                           _ -> Sign.lookupSym s $ genName op  -- .. otherwise it must be declared in the signature
                                                )
                                    && checkOperators s ops
@@ -102,7 +106,7 @@ analyzeFormula s f i =
           DiagForm { formula = (makeNamed f i),
                                diagnosis = Diag {
                                              diagKind = Error
-                                           , diagString = "Wrong arity or undeclared operator in Formula " ++ show (extractOperatorsCmd (AS_Anno.item f))
+                                           , diagString = "Wrong arity or undeclared operator in Formula " ++ show (extractOperatorsCmd (AS_Anno.item f)) ++ " " ++ show (AS_Anno.item f)
                                            , diagPos = nullRange -- position of the error
                                            }
                    }

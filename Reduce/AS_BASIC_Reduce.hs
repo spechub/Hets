@@ -52,7 +52,7 @@ data BASIC_ITEMS =
 -- | Datatype for expressions
 data EXPRESSION =
     Var Id.Token
-  | Op String [EXPRESSION] Id.Range          -- token statt string Id vs Token:
+  | Op String [EXPRESSION] Id.Range          -- token instead string Id vs Token:
   | List [EXPRESSION] Id.Range
   | Int Int Id.Range
   | Double Float Id.Range
@@ -60,6 +60,7 @@ data EXPRESSION =
 
 data CMD =
     Cmd String [EXPRESSION]
+    | Repeat EXPRESSION EXPRESSION [CMD] -- accuracy, variable, statements
     deriving (Show, Eq, Ord)
 
 -- | symbol lists for hiding

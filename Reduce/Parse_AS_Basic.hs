@@ -36,6 +36,9 @@ identifier :: CharParser st Id.Token
 identifier =
   lexemeParser (Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords)
 
+prefixidentifier :: CharParser st Id.Token
+prefixidentifier = lexemeParser (Lexer.pToken Lexer.scanAnyWords)
+
 -- | parser for numbers (both integers and floats) without signs
 number :: CharParser st Id.Token
 number = Lexer.pToken Lexer.scanFloat
@@ -98,6 +101,13 @@ expatom = signednumber
     expr <- expression
     cParenT
     return expr
+  <|>
+  do 
+    ident <- prefixidentifier
+    oParenT
+    exps <- Lexer.separatedBy expression (Lexer.keySign (string ","))
+    cParenT
+    return (Op (tokStr ident) (fst exps) nullRange)
 
 -- | parses a list expression
 listexp :: CharParser st EXPRESSION
@@ -108,9 +118,9 @@ listexp = do
   return (List (fst elems) nullRange)
 
 
--- ---------------------------------------------------------------------------
--- -------------------------- parser for formulas ----------------------------
--- ---------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+---------------------------- parser for formulas ----------------------------
+-----------------------------------------------------------------------------
 
 parseVarList :: CharParser st EXPRESSION
 parseVarList = do
@@ -235,11 +245,33 @@ command = do
   args <- many $ pair (lexemeParser $ string ",") formulaorexpression
   cParenT
   return (Cmd cmd (arg1 : map snd args))
+  <|>
+  do
+    ident <- identifier
+    op <- tryString ":="
+    exp <- expression
+    return (Cmd ":=" [(Var ident),exp])
+  <|>
+  repeatExpr
 
+repeatExpr :: CharParser st CMD
+repeatExpr = do
+  cmd <- (lexemeParser (tryString "repeat"))
+  statements <- Lexer.separatedBy command (lexemeParser (Lexer.keySign (string ";")))
+  skip
+  until <- tryString "until"
+  skip
+  convergence <- tryString "convergence"
+  oParenT
+  accuracy <- expression
+  lexemeParser $ tryString ","
+  var <- expression
+  cParenT
+  return (Repeat accuracy var (fst statements))
 
--- ---------------------------------------------------------------------------
--- ------------------------- parser spec entries. ----------------------------
--- ---------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+--------------------------- parser spec entries. ----------------------------
+-----------------------------------------------------------------------------
 
 -- | parser for operator declarations: example: operator a,b,c
 opItem :: CharParser st OP_ITEM

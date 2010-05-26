@@ -97,6 +97,7 @@ exportExps (e1 : []) = exportExp e1
 infixOps :: [String]
 infixOps = ["+", "-", "/", "**", "^", "=", "*", "and", "impl", "or"]
 
+-- | exports an expression to CAS format
 exportExp :: EXPRESSION -> String
 exportExp (Var token) = tokStr token
 exportExp (Op s [e1, e2] _) =
@@ -113,7 +114,7 @@ exportReduce namedcmd = case sentence namedcmd of
   Cmd "simplify" exps -> exportExp $ head exps
   Cmd cmd exps -> cmd ++ "(" ++ exportExps exps ++ ")"
 
-procCmd :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+procCmd :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
 procCmd (inp, out) cmd = case cmdstring of
                                  "simplify" -> cassimplify (inp, out) cmd
                                  "divide" -> casremainder (inp, out) cmd
@@ -130,8 +131,7 @@ skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
                      $ dropWhile (/= ':') s
 
 -- | sends the given string to the CAS, reads the result and tries to parse it.
-procString :: (Handle, Handle) -> String -> String
-  -> IO (ProofStatus [EXPRESSION])
+procString :: (Handle, Handle) -> String -> String -> IO (ProofStatus [EXPRESSION])
 procString (inp, out) axname s = do
   putStrLn $ "Send CAS cmd " ++ s
   hPutStrLn inp s
@@ -145,9 +145,11 @@ procString (inp, out) axname s = do
 
 
 -- | factors a given expression over the reals
-casfactorExp :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+casfactorExp :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
 casfactorExp (inp, out) cmd =
-  procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+  do
+    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    return (proofstatus,[])
 
 -- | generates the lemma for cmd with result ProofStatus
 exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
@@ -157,42 +159,82 @@ exportLemmaFactor namedcmd ps =
 
 
 -- | solves a single equation over the reals
-cassolve :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+cassolve :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION],[(Named sentence, ProofStatus proof_tree)])
 cassolve (inp, out) cmd =
-  procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+  do 
+    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    return (proofstatus,[])
+    
 
--- | solves a list of equations
--- solven
+exportLemmaSolve :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaSolve namedcmd ps =
+  [Op "=" [head exps, head $ proofTree ps] nullRange]
+      where Cmd _ exps = sentence namedcmd
+
 
 -- | simplifies a given expression over the reals
-cassimplify :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
-cassimplify (inp, out) cmd =
-  procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+cassimplify :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
+cassimplify (inp, out) cmd = do
+  proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+  return (proofstatus,[])
+
+exportLemmaSimplify :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaSimplify namedcmd ps =
+  [Op "=" [head exps, head $ proofTree ps] nullRange]
+      where Cmd _ exps = sentence namedcmd
 
 -- | computes the remainder of a division
-casremainder :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+casremainder :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
 casremainder (inp, out) cmd =
-  procString (inp, out) (senAttr cmd)
-    $ exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";"
-         where Cmd _ args = sentence cmd
+  do
+    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";" 
+    return (proofstatus,[])
+  where Cmd _ args = sentence cmd
 
--- | computes the gcd of a division
-casgcd :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
-casgcd (inp, out) cmd =
-  procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+exportLemmaRemainder :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaRemainder namedcmd ps =
+  [Op "=" [head exps, head $ proofTree ps] nullRange]
+      where Cmd _ exps = sentence namedcmd
 
 -- | integrates the given expression
-casint :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+casint :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
 casint (inp, out) cmd =
-  procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+  do
+    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    return (proofstatus,[])
+
+exportLemmaInt :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaInt namedcmd ps =
+  [Op "=" [head exps, head $ proofTree ps] nullRange]
+      where Cmd _ exps = sentence namedcmd
+
 
 -- | performs quantifier elimination of a given expression
-casqelim :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION])
+casqelim :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named sentence, ProofStatus proof_tree)])
 casqelim (inp, out) cmd =
-  procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+  do
+    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    return (proofstatus,[])
 
+
+exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] -> [EXPRESSION]
+exportLemmaQelim namedcmd ps =
+  [Op "=" [head exps, head $ proofTree ps] nullRange]
+      where Cmd _ exps = sentence namedcmd
+
+-- | declares an operator, such that it can used infix/prefix in CAS
 casDeclareOperators :: (Handle, Handle) -> [EXPRESSION] -> IO ()
 casDeclareOperators (inp, out) varlist = do
   hPutStrLn inp $ "operator " ++ exportExps varlist ++ ";"
   hGetLine out
   return ()
+
+-- -- | declares an equation x := exp 
+-- casDeclareEquation :: (Handle, Handle) -> EXPRESSION -> IO ()
+-- casDeclareEquation (inp, out) (Op s exps) = 
+--   if s == ":=" then 
+--     do
+--       hPutStrLn inp $ "operator " ++ exportExps varlist ++ ";"
+--       hGetLine out
+--       return ()
+--    else error "Expression is not an equation"
