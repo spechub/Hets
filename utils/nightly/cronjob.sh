@@ -286,10 +286,14 @@ for i in Basic/*.th; do ./hets -v2 -o th,pp.het $i; done
 date
 \rm Basic/*.thy
 for i in Basic/*.casl;
-    do ./hets -v2 -o thy -t CASL2PCFOL:CASL2SubCFOL:CASL2Isabelle $i; done
+    do ./hets -v2 -o thy -t CASL2PCFOL:CASL2SubCFOL:CASL2Isabelle $i;
+       ./hets -v2 -o dfg.c -t CASL2PCFOL $i; done
 date
 ../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa2.log 2>&1
 fgrep \*\*\* ../isa2.log
+../Hets/utils/nightly/runSPASS.sh Basic/*.dfg.c > ../spass2.log 2>&1
+fgrep "Proof found " ../spass2.log
+
 }
 
 topSortCheck ()
