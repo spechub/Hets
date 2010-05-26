@@ -18,7 +18,9 @@ module CommonLogic.Sign
     ,isSubSigOf                    -- 
     ,sigDiff                       -- Difference of Signatures
     ,unite                         -- union of signatures
+    ,uniteL                        -- union of a list ofsignatures
     ,sigUnion                      -- Union for Logic.Logic
+    ,sigUnionL                     -- union of a list ofsignatures
     ) where
 
 import qualified Data.Set as Set
@@ -55,5 +57,12 @@ sigUnion :: Sign -> Sign -> Result Sign
 sigUnion s1 = Result [Diag Debug "All fine sigUnion" nullRange]
       . Just . unite s1
 
+sigUnionL :: [Sign] -> Result Sign
+sigUnionL (sig : sigL) = sigUnion sig (uniteL sigL)
+sigUnionL [] = return emptySig
+
 unite :: Sign -> Sign -> Sign
 unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}
+
+uniteL :: [Sign] -> Sign
+uniteL = foldr unite emptySig
