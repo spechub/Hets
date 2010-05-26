@@ -25,8 +25,8 @@ Proof rule "basic inference" in the development graphs calculus.
 module Proofs.InferBasic
   ( basicInferenceNode
   , consistencyCheck
-  , SType(..)
-  , ConsistencyStatus(..)
+  , SType (..)
+  , ConsistencyStatus (..)
   ) where
 
 import Static.GTheory
@@ -146,7 +146,8 @@ proveTheory :: Logic lid sublogics
            => lid -> Prover sign sentence morphism sublogics proof_tree
            -> String -> Theory sign sentence proof_tree
            -> [FreeDefMorphism sentence morphism]
-           -> IO([ProofStatus proof_tree], [Named sentence])
+           -> IO ( [ProofStatus proof_tree]
+                , [(Named sentence, ProofStatus proof_tree)])
 proveTheory _ =
     fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
 
@@ -262,7 +263,7 @@ proveKnownPMap :: (Logic lid sublogics1
     -> IORef IntState
     -> [FreeDefMorphism sentence morphism1]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
-proveKnownPMap lg intSt  freedefs st =
+proveKnownPMap lg intSt freedefs st =
     maybe (proveFineGrainedSelect lg intSt freedefs st)
           (callProver st intSt False freedefs) $
           lookupKnownProver st ProveGUI
@@ -281,8 +282,8 @@ callProver :: (Logic lid sublogics1
     -> IORef IntState
     -> Bool -- indicates if a translation was chosen
     -> [FreeDefMorphism sentence morphism1]
-    -> (G_prover,AnyComorphism) -> IO (Result (ProofState lid sentence))
-callProver st intSt trans_chosen freedefs p_cm@(_,acm) =
+    -> (G_prover, AnyComorphism) -> IO (Result (ProofState lid sentence))
+callProver st intSt trans_chosen freedefs p_cm@(_, acm) =
        runResultT $ do
         (_, exit) <- lift $ pulseBar "prepare for proving" "please wait..."
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
@@ -320,6 +321,6 @@ proveFineGrainedSelect lg intSt freedefs st =
                else getProvers ProveGUI (Just sl) $
                       filter hasModelExpansion $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
-       ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
+       ResultT $ callProver st {lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers}
                                intSt True freedefs pr

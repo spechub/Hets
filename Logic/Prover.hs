@@ -45,7 +45,7 @@ data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving (Show, Eq, Ord)
 instance (Show b, Pretty a) => Pretty (SenAttr a b) where
     pretty = printSenStatus pretty
 
-printSenStatus :: (a -> Doc) -> SenAttr a b  -> Doc
+printSenStatus :: (a -> Doc) -> SenAttr a b -> Doc
 printSenStatus = (. sentence)
 
 emptySenStatus :: SenStatus a b
@@ -65,16 +65,17 @@ noSens = Map.empty
 
 mapThSensValueM :: Monad m => (a -> m b) -> ThSens a c -> m (ThSens b c)
 mapThSensValueM f = foldM (\ m (k, v) -> do
-  let oe =  OMap.ele v
+  let oe = OMap.ele v
   ns <- f $ sentence oe
   let ne = oe { sentence = ns }
   return $ Map.insert k v { OMap.ele = ne } m) Map.empty . Map.toList
 
--- | join and disambiguate
---
--- * separate Axioms from Theorems
---
--- * don't merge sentences with same key but different contents?
+{- | join and disambiguate
+
+   * separate Axioms from Theorems
+
+   * don't merge sentences with same key but different contents?
+-}
 joinSensAux :: (Ord a, Eq b) => ThSens a b -> ThSens a b
             -> (ThSens a b, [(String, String)])
 joinSensAux s1 s2 = let
@@ -111,9 +112,10 @@ cmpSenEle x y = case (OMap.ele x, OMap.ele y) of
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
 mapValue f d = d { sentence = f $ sentence d }
 
--- | sets the field isAxiom according to the boolean value;
--- if isAxiom is False for a sentence and set to True,
--- the field wasTheorem is set to True
+{- | sets the field isAxiom according to the boolean value;
+     if isAxiom is False for a sentence and set to True,
+     the field wasTheorem is set to True.
+-}
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
 markAsAxiom b = OMap.map $ \ d -> d
    { isAxiom = b
@@ -154,10 +156,8 @@ instance Eq Reason where
 data GoalStatus =
     Open Reason -- ^ failure reason
   | Disproved
-  | Proved Bool -- ^ Just True means consistent; False inconsistent
+  | Proved Bool -- ^ True means consistent; False inconsistent
     deriving (Eq, Ord)
- -- needed for automated theorem provers like SPASS;
- -- provers like Isabelle set it to Nothing
 
 instance Show GoalStatus where
     show gs = case gs of
@@ -227,10 +227,12 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     { proverName :: String,
       proverSublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
-                         -> IO ([ProofStatus proof_tree], [Named sentence])),
-      -- input: imported theories, theory name, theory (incl. goals)
-      -- output: proof status for goals and lemmas
-      -- output2: new lemmas
+                         -> IO ( [ProofStatus proof_tree]
+                               , [(Named sentence, ProofStatus proof_tree)])),
+      {- input: imported theories, theory name, theory (incl. goals)
+         output:
+         fst --> proof status for goals and lemmas
+         snd --> new lemmas (with proofs) -}
       proveCMDLautomaticBatch ::
           Maybe (Bool -- 1.
                  -> Bool -- 2.
@@ -240,19 +242,20 @@ data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
                  -> theory  -- 6.
                  -> [FreeDefMorphism sentence morphism]
                  -> IO (Concurrent.ThreadId, Concurrent.MVar ())) -- output
-      -- input: 1. True means include proven theorems in subsequent
-      --           proof attempts;
-      --        2. True means save problem file for each goal;
-      --        3. MVar reference to a Result [] or empty MVar,
-      --           used to store the result of each attempt in the batch run;
-      --        4. theory name;
-      --        5. default TacticScript;
-      --        6. theory (incl. goals and
-      --                   Open SenStatus for individual tactic_scripts)
-      -- output: fst --> identifier of the batch thread for killing it,
-      --                 after each proof attempt the result is stored in the
-      --                 IOref
-      --         snd --> MVar to wait for the end of the thread
+      {- input:
+         1. True means include proven theorems in subsequent proof attempts;
+         2. True means save problem file for each goal;
+         3. MVar reference to a Result [] or empty MVar,
+            used to store the result of each attempt in the batch run;
+         4. theory name;
+         5. default TacticScript;
+         6. theory
+            (incl. goals and Open SenStatus for individual tactic_scripts)
+         7. ingoing free def morphisms
+         output:
+         fst --> identifier of the batch thread for killing it,
+           after each proof attempt the result is stored in the IOref
+         snd --> MVar to wait for the end of the thread -}
     } deriving Typeable
 
 type Prover sign sentence morphism sublogics proof_tree =
@@ -304,9 +307,9 @@ data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
                  -> [FreeDefMorphism sentence morphism]  -- 4.
                  -> IO (CCStatus proof_tree) -- output
       -- input: 1. theory name
-      --        2. default TacticScript
-      --        3. theory morphism
-      --        5. ingoing free definition morphisms
+      -- 2. default TacticScript
+      -- 3. theory morphism
+      -- 5. ingoing free definition morphisms
       -- output: consistency result status
   } deriving Typeable
 
