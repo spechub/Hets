@@ -37,6 +37,7 @@ import Logic.Logic (language_name)
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
+import Comorphisms.KnownProvers
 
 import Common.DocUtils
 import Common.LibName (LibName)
@@ -66,12 +67,45 @@ instance Eq Finder where
 data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status   :: Bool }
+                   , status   :: Bool } --ProofStatus' }
+
+data ProofStatus' = Unchecked
+                  | Proved_All
+                  | Proved_Some
+                  | Proved_None
+                  | Timeout
+                  | P_Error
+                  deriving Eq
+
+instance Show ProofStatus' where
+  show ps = statusToPrefix ps ++ statusToColor ps
+
+-- | does not make much sense, but needed some function for compare
+instance Ord ProofStatus' where
+  compare ps1 ps2 = compare (statusToColor ps1) (statusToColor ps2)
+
+statusToColor :: ProofStatus' -> String
+statusToColor ps = case ps of
+  Unchecked    -> "black"
+  Proved_All   -> "green"
+  Proved_Some  -> "orange"
+  Proved_None  -> "red"
+  Timeout      -> "blue"
+  P_Error      -> "darkred"
+
+statusToPrefix :: ProofStatus' -> String
+statusToPrefix ps = case ps of
+  Unchecked    -> "[ ] "
+  Proved_All   -> "[+] "
+  Proved_Some  -> "[/] "
+  Proved_None  -> "[-] "
+  Timeout      -> "[t] "
+  P_Error      -> "[f] "
 
 -- | Get a markup string containing name and color
 instance Show FNode where
   show fn =
-    "<span color=\"" ++ ( if status fn then "green" else "red" )
+    "<span color=\"" ++ "black" --statusToColor( status fn )
     ++ "\">" ++ "[] " ++ name fn ++ "</span>"
 
 instance Eq FNode where
@@ -298,14 +332,15 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
 
 check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
       -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO ()
-check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
+check inclThms ln le dg (Finder { finder = pr, comorphism = cs, selected = i})
   timeout listNodes update nodes = let
     count' = fromIntegral $ length nodes
     c = cs !! i in
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
-           -- res <- proveNode' inclThms
+           res <- proveNode' inclThms timeout n (pr, c) ln
            -- res <- consistencyCheck inclThms cc c ln le dg n timeout
+           putStrLn res
            postGUISync $ listStoreSetValue listNodes row fn { status = True }
            return $ count + 1) 0 nodes
 
@@ -322,51 +357,32 @@ check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
 proveNode' ::
               --use theorems is subsequent proofs
               Bool ->
-              -- save problem file for each goal
-              Bool ->
               -- Timeout Limit
               Int ->
-              -- proofState of the node that needs proving
-              -- all theorems, goals and axioms should have
-              -- been selected before,but the theory should have
-              -- not beed recomputed
-              Int_NodeInfo ->
-              -- node name
-              String ->
-              -- selected prover, if non one will be automatically
-              -- selected
-              Maybe G_prover ->
-              -- selected comorphism, if non one will be automatically
-              -- selected
-              Maybe AnyComorphism ->
-              MVar (Maybe ThreadId) ->
-              MVar (Maybe Int_NodeInfo)  ->
-              MVar IntState ->
+
+              LNode DGNodeLab ->
+	      -- selected Prover and Comorphism
+              ( G_prover, AnyComorphism ) ->
+              -- MVar (Maybe ThreadId) ->
+              -- MVar (Maybe Int_NodeInfo)  ->
+              -- MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
                IO String
-proveNode' useTh save2File timeout ndpf ndnm mp mcm mThr mSt miSt libname =
-  case ndpf of
-    Element pf_st nd ->
-     do
-     -- recompute the theory (to make effective the selected axioms,
-     -- goals)
+proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
+  case fromMaybe (error "GtkAutomaticProofs.proveNode': noG_theory") $ globalTheory lab of
+    g_th@( G_theory lid _ _ _ _ ) -> do
+      -- recompute the theory (to make effective the selected axioms,
+      -- goals)
+     let knpr = propagateErrors $ knownProversWithKind ProveCMDLautomatic
+     pf_st <- initialState lid "" g_th knpr [p_cm] 
      let st = recalculateSublogicAndSelectedTheory pf_st
-     -- compute a prover,comorphism pair to be used in preparing
-     -- the theory
-     p_cm@(_,acm) <- case mcm of
-           Nothing -> lookupKnownProver st ProveCMDLautomatic
-           Just cm' -> case mp of
-             Nothing-> lookupKnownProver st ProveCMDLautomatic
-             Just p' -> return (p',cm')
-
      -- try to prepare the theory
      prep <- case prepareForProving st p_cm of
              Result _ Nothing ->
                do
                 p_cm'@(prv',acm'@(Comorphism cid)) <-
                           lookupKnownProver st ProveCMDLautomatic
-                putStrLn ("Analyzing node " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
                 putStrLn ("Using prover " ++ getPName prv')
                 return $ case prepareForProving st p_cm' of
@@ -379,68 +395,22 @@ proveNode' useTh save2File timeout ndpf ndnm mp mcm mThr mSt miSt libname =
       Just (G_theory_with_prover lid1 th p, cmp)->
         case proveCMDLautomaticBatch p of
          Nothing -> return "Error obtaining the prover"
-         Just fn ->
-          do
+         Just fn -> do
           -- mVar to poll the prover for results
           answ <- newMVar (return [])
-          let st' = st { proverRunning= True}
-          -- store initial input of the prover
-          swapMVar mSt $ Just $ Element st' nd
-          {- putStrLn ((theoryName st)++"\n"++
-                    (showDoc sign "") ++
-                    show (vsep (map (print_named lid1)
-                                        $ P.toNamedList sens))) -}
-          case selectedGoals st' of
+          case selectedGoals st of
            [] -> return "No goals selected. Nothing to prove"
-           _ ->
-            do
-             tmp <- fn useTh
-                      save2File
-                      answ
-                      (theoryName st)
-                      (TacticScript $ show timeout)
-                      th []
-             swapMVar mThr $ Just $ fst tmp
-             getResults lid1 cmp (snd tmp) answ mSt
-             swapMVar mThr Nothing
-             ist  <- readMVar miSt
-             state <- readMVar mSt
-             case state of
-              Nothing -> return ""
-              Just state' ->
-               do
-                swapMVar mSt Nothing
-                swapMVar miSt $ addResults ist libname state'
-                return ""
+           _ -> do
+             ( thrId, mV ) <- fn useTh
+                              False
+                              answ
+                              (theoryName st)
+                              (TacticScript $ show timeout)
+                              th []
+             -- mThr          <- newMVar $ Just thrId
+             takeMVar mV
+             return ""
 
-getResults lid acm mStop mData mState =
-  do
-    takeMVar mStop
-    d <- takeMVar mData
-    case d of
-      Result _ Nothing   -> return ()
-      Result _ (Just d') -> modifyMVar_ mState
-        (\ s -> case s of
-                  Nothing -> return s
-                  Just (Element st node) -> return $ Just $ Element
-                                            (markProved acm lid d' st) node)
-
--- | inserts the results of the proof in the development graph
-addResults :: IntState -> LibName -> Int_NodeInfo -> IntState
-addResults ist libname ndps =
-  case i_state ist of
-    Nothing -> ist
-    Just pS ->
-      case ndps of
-       Element ps'' node -> case theory ps'' of
-         G_theory lidT sigT indT sensT _ ->
-           case coerceThSens (logicId ps'') lidT "" (goalMap ps'') of
-             Nothing -> ist
-             Just gMap -> let
-               nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
-               dGraph = lookupDGraph libname (i_libEnv pS)
-               nl = labDG dGraph node
-               in fst $ updateNodeProof libname ist (node, nl) (Just nwTh)
 -- | proveNode END
 -- //////////////////////////////////////////////////////////
 
