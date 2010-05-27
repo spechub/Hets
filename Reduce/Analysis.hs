@@ -55,6 +55,7 @@ extractOperatorsExp _ = []
 -- | extracts the operators + arity information for a cmd
 extractOperatorsCmd :: CMD -> [(String,Int)]
 extractOperatorsCmd (Cmd cmd exps) = (cmd,length exps) : (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+extractOperatorsCmd (Repeat _ _ _) = [] -- to be implemented
 
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
