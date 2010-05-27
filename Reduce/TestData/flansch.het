@@ -40,12 +40,14 @@ then
  . e_E:=e_1 * (1 + (beta-1)*l_H/((beta/3) * sqrt(d_1*e_1) + l_H))
  . d_E:=(min(d_1-e_1+e_E,d_2+e_2-e_E) + max(d_1+e_1-e_E,d_2-e_2+e_E))/2
  . gamma:=e_E * d_F/(b_F * d_E * cos(phi_S))
- . e_F:=2 * A_F/(d_4 - d_0)
+%% . e_F:=2 * A_F/(d_4 - d_0)
+ . A_F:=e_F * (d_4 - d_0) / 2
  . llambda:=1 - e_P/e_F 
  . theta:=0.55 * cos(phi_S) * sqrt(d_E * e_E)/e_F
  . E_Gm:=530.0 
  . c_F:=(1 + gamma * theta) / (1 + gamma * theta * (4 * (1 - 3 * llambda + 3 * llambda^2) + 6 * (1 - 2 * llambda) * theta + 6 * theta^2) + 3 * gamma^2 * theta^4)
  . Z_F:=3*d_F *  c_f/(Pi  *  b_F  *  e_F^3)
+ . b_Gi:=b_Gt
 
  . repeat
     b_Ge:=min(b_Gi,b_Gt);
@@ -53,5 +55,6 @@ then
     A_Ge:=Pi * d_Ge * b_Ge;
     h_G0:=(d_3e-d_Ge)/2;
     b_Gi:=sqrt(e_G/(Pi * d_Ge * E_Gm)/(h_G0 * Z_F/E_F0 + h_G0 * Z_F/E_F0) + (F_G0 / (Pi * d_Ge * Q_maxy))^2)
-  until convergence(0.01,b_Ge)
+  until convergence(0.001,b_Ge) %% && F_G0req <= F_G0
+
 end
