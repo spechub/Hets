@@ -109,6 +109,9 @@ instance Pretty CMD where
 
 printCMD :: CMD -> Doc
 printCMD (Cmd s exps) = (text s) <> (parens (sepByCommas (map printExpression exps)))
+printCMD (Repeat a v stms) = text "repeat" <> vcat (map printCMD stms)
+                             <> text "until" <> text "convergence"
+                             <> parens (sepByCommas $ map printExpression $ [a, v])
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
