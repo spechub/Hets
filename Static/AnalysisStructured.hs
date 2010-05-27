@@ -618,10 +618,11 @@ anaRestriction lg gSigma gSigma'@(G_sign lid0 sig0 ind0) opts restr =
           -- domain of rmap intersected with sys'
           -- domain of rmap should be checked to match symbols from sys' ???
       mor1 <- ext_generated_sign lid1 (sys `Set.union` sys'') sigma1
-      mor2 <- ext_induced_from_morphism lid1 rmap $ makeExtSign lid1 $ dom mor1
+      let extsig1 = makeExtSign lid1 $ dom mor1
+      mor2 <- ext_induced_from_morphism lid1 rmap $ extsig1
       mor1' <- coerceMorphism lid1 (targetLogic cid) "" mor1
-      sig1 <- coerceSign lid0 (sourceLogic cid) "" sig0
-      return (GMorphism cid sig1 ind0 mor1' startMorId
+      extsig1' <- coerceSign lid1 (sourceLogic cid) "" extsig1
+      return (GMorphism cid extsig1' ind0 mor1' startMorId
              , Just $ gEmbed $ mkG_morphism lid1 mor2)
 
 anaGmaps :: LogicGraph -> HetcatsOpts -> Range -> G_sign -> G_sign
