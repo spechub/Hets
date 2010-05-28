@@ -30,7 +30,7 @@ type Session = (Handle, Handle)
 
 -- | returns the name of the reduce prover
 reduceS :: String
-reduceS = "Reduce"
+reduceS = "CSL"
 
 {- | returns a basic proof status for conjecture with name n
   where [EXPRESSION] represents the proof tree. -}
