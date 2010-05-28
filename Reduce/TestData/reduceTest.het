@@ -6,7 +6,7 @@ spec ReduceTest1 =
      operator f,h
 then %implies
      . solve(x^2=1,x)
-     . simplify((x+y)*(x+y+z))
+     . simplify((x^2-1)/(x-1))
      . divide((x+y)*(x+2*y),x+3*y)
      . divide((x+y)*(x+2*y),x+3*y)
      . factorize(x*x+x*y+x*y+y*y)

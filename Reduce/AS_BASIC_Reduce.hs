@@ -115,7 +115,7 @@ printCMD (Repeat a v stms) = text "repeat" <> vcat (map printCMD stms)
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
-printExpression (Op s exps _) = text s <+> (parens (sepByCommas (map printExpression exps)))
+printExpression (Op s exps _) = if ((length exps) == 2) then (parens (printExpression $ exps !! 0) <> text s <> (printExpression $ exps !! 0)) else text s <+> (parens (sepByCommas (map printExpression exps)))
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
 printExpression (Double d _) = text (show d)
