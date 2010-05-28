@@ -114,9 +114,25 @@ printCMD (Repeat a v stms) = text "repeat" <> vcat (map printCMD stms)
                              <> text "until" <> text "convergence"
                              <> parens (sepByCommas $ map printExpression $ [a, v])
 
+getPrec :: EXPRESSION -> Integer
+getPrec (Op s exps _) = case s of 
+                          "+" ->  1
+                          "-" ->  1
+                          "/" ->  2
+                          "*" ->  2
+                          "^" ->  3
+                          "**" ->  3
+                          _ -> if (length exps)==0 then 4 else 0
+                          
+printInfix :: EXPRESSION -> Doc
+printInfix exp@(Op s exps _) = (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0)) else  (parens (printExpression $ (exps !! 0)))) 
+                 <> text s 
+                 <> (if (outerprec<=(getPrec (exps!!1))) then (printExpression $ exps !! 1) else (parens (printExpression $ exps !! 1)))
+                     where outerprec=getPrec exp
+
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
-printExpression (Op s exps _) = if ( ((length exps) == 2) && s/="min" && s/="max") then (parens (printExpression $ exps !! 0) <> text s <> (printExpression $ exps !! 1)) else text s <+> (parens (sepByCommas (map printExpression exps)))
+printExpression exp@(Op s exps _) = if ( ((length exps) == 2) && s/="min" && s/="max") then (printInfix exp)  else text s <+> (parens (sepByCommas (map printExpression exps)))
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
 printExpression (Double d _) = text (show d)
