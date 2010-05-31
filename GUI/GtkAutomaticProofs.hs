@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Gtk GUI for the consistency checker
-Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
+Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  raider@informatik.uni-bremen.de
+Maintainer  :  tekknix@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
@@ -28,8 +28,6 @@ import Static.GTheory
 import Static.History
 
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
-import Interfaces.DataTypes
-import Interfaces.Utils (updateNodeProof)
 
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism (..))
@@ -40,17 +38,14 @@ import Comorphisms.LogicGraph (logicGraph)
 import Comorphisms.KnownProvers
 
 import Common.AS_Annotation (isAxiom)
-import Common.DocUtils
 import Common.LibName (LibName)
 import Common.Result
-import Common.Consistency
 
-import Control.Concurrent (ThreadId, forkIO, killThread)
+import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, when)
 
 import Proofs.AbstractState
-import Proofs.InferBasic
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
@@ -172,15 +167,13 @@ showProverWindow res ln le = postGUIAsync $ do
   widgetSetSensitive btnCheck False
 
   threadId <- newEmptyMVar
-  wait <- newEmptyMVar
-  mView <- newEmptyMVar
+  wait     <- newEmptyMVar
+  mView    <- newEmptyMVar
 
-  let dg = lookupDGraph ln le
-      nodes = labNodesDG dg
-
+  let dg       = lookupDGraph ln le
+      nodes    = labNodesDG dg
       selNodes = partition (\ n -> hasSenKind( not.isAxiom ) $ snd $ node n )
-
-      sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
+      sls      = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 
       -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
       (emptyNodes, others) = selNodes
@@ -188,7 +181,7 @@ showProverWindow res ln le = postGUIAsync $ do
         $ zip nodes sls
 
   -- setup data
-  listNodes <- setListData trvNodes show $ sort others
+  listNodes  <- setListData trvNodes show $ sort others
   listFinder <- setListData trvFinder fName []
 
   -- setup comorphism combobox
@@ -204,8 +197,8 @@ showProverWindow res ln le = postGUIAsync $ do
   setListSelectorSingle trvFinder update
 
   let upd = updateNodes trvNodes listNodes
-        (\ b s -> do labelSetLabel lblSublogic $ show s
-                     updateFinder trvFinder listFinder b s)
+        (\ s -> do labelSetLabel lblSublogic $ show s
+                   updateFinder  trvFinder listFinder s)
         ( do labelSetLabel lblSublogic "No sublogic"
              listStoreClear listFinder
              activate widgets False
@@ -291,20 +284,20 @@ sortNodes trvNodes listNodes = do
     ) sel
 
 -- | Called when node selection is changed. Updates finder list
-updateNodes :: TreeView -> ListStore FNode -> (Bool -> G_sublogics -> IO ())
+updateNodes :: TreeView -> ListStore FNode -> (G_sublogics -> IO ())
             -> IO () -> IO () -> IO ()
 updateNodes view listNodes update lock unlock = do
   nodes <- getSelectedMultiple view listNodes
   if null nodes then lock
     else let sls = map (sublogic . snd) nodes in
-      maybe lock (\ sl -> unlock >> update (length nodes == 1) sl)
+      maybe lock (\ sl -> unlock >> update sl)
             $ foldl (\ ma b -> case ma of
                       Just a -> joinSublogics b a
                       Nothing -> Nothing) (Just $ head sls) $ tail sls
 
 -- | Update the list of finder
-updateFinder :: TreeView -> ListStore Finder -> Bool -> G_sublogics -> IO ()
-updateFinder view list useNonBatch sl = do
+updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
+updateFinder view list sl = do
   old <- listStoreToList list
   let new = Map.elems $ foldr (\ (pr, c) m ->
               let n = getPName pr
