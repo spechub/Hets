@@ -38,6 +38,10 @@ import Network.URI (isUnescapedInURI, escapeURIString, unEscapeString)
 #ifdef HEXPAT
 import qualified Data.ByteString.Lazy as BS
 import qualified Common.XmlExpat as XE
+#else
+#ifdef XMLBS
+import qualified Data.ByteString.Lazy as BS
+#endif
 #endif
 
 import Text.XML.Light
@@ -123,23 +127,38 @@ class XmlRepresentable a where
   fromXml :: Element -> Result (Maybe a)
 
 
-class XmlSource a where
+class XmlParseable a where
     parseXml :: a -> Either Element String
 
-instance XmlSource String where
-    parseXml s = case parseXMLDoc s of
-                   Just x -> Left x
-                   _ -> Right "parseXMLDoc: parse error"
 
 #ifdef HEXPAT
-instance XmlSource BS.ByteString where
+instance XmlParseable BS.ByteString where
     parseXml = XE.parseXml
 
 readXmlFile :: FilePath -> IO BS.ByteString
 readXmlFile = BS.readFile
+-- 169MB on Basic/Algebra_I
 #else
+
+#ifdef XMLBS
+instance XmlParseable BS.ByteString where
+    parseXml s = case parseXMLDoc s of
+                   Just x -> Left x
+                   _ -> Right "parseXMLDoc: parse error"
+
+readXmlFile :: FilePath -> IO BS.ByteString
+readXmlFile = BS.readFile
+-- 426MB on Basic/Algebra_I
+#else
+instance XmlParseable String where
+    parseXml s = case parseXMLDoc s of
+                   Just x -> Left x
+                   _ -> Right "parseXMLDoc: parse error"
+
 readXmlFile :: FilePath -> IO String
 readXmlFile = readFile
+-- 482MB on Basic/Algebra_I
+#endif
 #endif
 
 {-
@@ -155,7 +174,7 @@ xmlOut :: XmlRepresentable a => a -> String
 xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
                                c -> ppContent c
 
-xmlIn :: XmlSource a => a -> Result OMDoc
+xmlIn :: XmlParseable a => a -> Result OMDoc
 xmlIn s = case parseXml s of
             Left e -> fromXml e >>= maybeToMonad "xmlIn"
             Right msg -> fail msg
