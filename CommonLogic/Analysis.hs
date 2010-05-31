@@ -98,10 +98,10 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
                                        else label) $ AS_Anno.item f)
    where
       label = AS_Anno.getRLabel f
-      annos = AS_Anno.r_annos f
-      isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos        
-      isImplied = foldl (\y x -> AS_Anno.isImplied x || y) False annos        
-      isTheorem = isImplies || isImplied
+      --annos = AS_Anno.r_annos f
+      --isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos        
+      --isImplied = foldl (\y x -> AS_Anno.isImplied x || y) False annos        
+      --isTheorem = isImplies || isImplied
 
 
 -- | Retrives the signature of a sentence

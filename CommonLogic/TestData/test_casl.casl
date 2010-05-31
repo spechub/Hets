@@ -1,0 +1,22 @@
+sorts individual, list
+free type list ::= nil | cons(individual;list)
+preds rel : individual * list
+ops fun : individual * list -> individual;
+
+op Attr : individual
+op Cat : individual
+op Happy : individual
+op Mat : individual
+op On : individual
+op P : individual
+op Pet : individual
+op Q : individual
+op x : individual
+op y : individual
+. rel(P,cons(x,nil)) %(Ax_0)%
+. rel(P,cons(x,nil)) /\ rel(Q,cons(y,nil)) %(Ax_1)%
+. rel(Cat,cons(x,nil)) \/ rel(Mat,cons(y,nil)) %(Ax_2)%
+. not rel(On,cons(x,cons(y,nil))) %(Ax_3)%
+. rel(P,cons(x,nil)) => rel(Q,cons(x,nil)) %(Ax_4)%
+. exists z:individual. rel(Pet,cons(x,nil)) /\ rel(Happy,cons(z,nil)) /\
+rel(Attr,cons(x,cons(z,nil))) %(Ax_5)%

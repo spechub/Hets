@@ -20,6 +20,7 @@ module CommonLogic.Sign
     ,unite                         -- union of signatures
     ,uniteL                        -- union of a list ofsignatures
     ,sigUnion                      -- Union for Logic.Logic
+    ,isSeqMark                     -- is sequence marker?
     ,sigUnionL                     -- union of a list ofsignatures
     ) where
 
@@ -43,7 +44,7 @@ emptySig = Sign {items = Set.empty}
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
 printSign s =
-    hsep [text "prop", sepByCommas $ map pretty $ Set.toList $ items s]
+    hsep [text "vocabulary", sepByCommas $ map pretty $ Set.toList $ items s]
 
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: Sign -> Sign -> Bool
@@ -53,16 +54,22 @@ isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
 sigDiff :: Sign -> Sign -> Sign
 sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) $ items sig2}
 
+-- | 
 sigUnion :: Sign -> Sign -> Result Sign
 sigUnion s1 = Result [Diag Debug "All fine sigUnion" nullRange]
       . Just . unite s1
 
+-- | 
 sigUnionL :: [Sign] -> Result Sign
 sigUnionL (sig : sigL) = sigUnion sig (uniteL sigL)
 sigUnionL [] = return emptySig
 
 unite :: Sign -> Sign -> Sign
 unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}
+
+--TODO:
+isSeqMark :: Id -> Bool
+isSeqMark _ = True
 
 uniteL :: [Sign] -> Sign
 uniteL = foldr unite emptySig

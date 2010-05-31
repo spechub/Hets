@@ -1,0 +1,6 @@
+(P x)
+(and (P x) (Q y))
+(or (Cat x) (Mat y))
+(not (On x y))
+(if (P x) (Q x))
+(exists (z) (and (Pet x) (Happy z) (Attr x z)))
