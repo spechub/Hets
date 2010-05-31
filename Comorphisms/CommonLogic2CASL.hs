@@ -41,6 +41,8 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
+-- import CommonLogic.CASLSig
+
 data CommonLogic2CASL = CommonLogic2CASL deriving Show
 
 instance Language CommonLogic2CASL where
@@ -94,11 +96,50 @@ mapTheory (sig, form) = Result [] $
      Just (mapSig sig, map trNamedForm form)
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
-mapSig sign = (CSign.emptySign ())
-              {CSign.predMap = Set.fold (\x -> Map.insert x
-                                (Set.singleton $ CSign.PredType
-                                 {CSign.predArgs = []}))
-                                Map.empty $ ClSign.items sign }
+mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
+               CSign.opMap = Set.fold (\x -> Map.insert x
+                                ( Set.singleton $ CSign.OpType
+                                                   { CSign.opKind = CBasic.Total
+                                                   , CSign.opArgs = []
+                                                   , CSign.opRes = individual
+                                                   }))
+                                Map.empty $ ClSign.items sign
+               }) caslSig
+
+caslSig :: CSign.CASLSign
+caslSig = (CSign.emptySign ()) 
+               { CSign.sortSet = Set.fromList [list, individual]
+               , CSign.opMap = Map.fromList [
+                          (cons,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total, 
+                                                      CSign.opArgs = [individual,list], 
+                                                      CSign.opRes = list}])
+                         ,(fun,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total, 
+                                                     CSign.opArgs = [individual,list], 
+                                                     CSign.opRes = individual}])
+                         ,(nil,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total, 
+                                                     CSign.opArgs = [],
+                                                     CSign.opRes = list}])]
+               , CSign.predMap = Map.fromList
+                  [(rel, Set.fromList [CSign.PredType {CSign.predArgs = [individual,list]}])]
+               }
+
+list :: Id.Id
+list = Id.stringToId "list"
+
+individual :: Id.Id
+individual = Id.stringToId "individual"
+
+rel :: Id.Id
+rel = Id.stringToId "rel"
+
+fun :: Id.Id
+fun = Id.stringToId "fun"
+
+cons :: Id.Id
+cons = Id.stringToId "cons"
+
+nil :: Id.Id
+nil = Id.stringToId "nil"
 
 mapSentence :: ClSign.Sign -> ClBasic.SENTENCE -> Result CBasic.CASLFORMULA
 mapSentence _ form = Result [] $ Just $ trForm form
@@ -119,31 +160,38 @@ trForm form =
              ClBasic.Biconditional s1 s2 -> CBasic.Equivalence (trForm s1) (trForm s2) rn
      ClBasic.Quant_sent qs rn
         -> case qs of
-             ClBasic.Universal _ s -> CBasic.Quantification 
-                                       CBasic.Universal [] (trForm s) rn --FIX
-             ClBasic.Existential _ s -> CBasic.Quantification 
-                                         CBasic.Existential [] (trForm s) rn --FIX
+             ClBasic.Universal bs s -> CBasic.Quantification CBasic.Universal
+                                           [CBasic.Var_decl (map bindingSeq bs) individual 
+                                             Id.nullRange] (trForm s) rn --FIX
+             ClBasic.Existential bs s -> CBasic.Quantification CBasic.Existential 
+                                           [CBasic.Var_decl (map bindingSeq bs) individual 
+                                             Id.nullRange] (trForm s) rn --FIX
      ClBasic.Atom_sent at rn 
         -> case at of 
              ClBasic.Equation trm1 trm2 -> 
                 CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
-             ClBasic.Atom trm _ -> CBasic.Predication (CBasic.Qual_pred_name (getId trm) 
-                                                            (CBasic.Pred_type [] Id.nullRange)
-                                                            Id.nullRange)
-                                      [] rn
-     ClBasic.Comment_sent s _ _ -> trForm s -- FIX
-     ClBasic.Irregular_sent s _ -> trForm s  -- FIX
+             ClBasic.Atom trm ts -> CBasic.Predication
+                                    (CBasic.Pred_name rel) ([termForm trm] ++ 
+                                    (consSeq ts):[]) Id.nullRange
+     ClBasic.Comment_sent _ s _ -> trForm s -- FIX
+     ClBasic.Irregular_sent s _ -> trForm s -- FIX
 
--- FIX
 termForm :: ClBasic.TERM -> CBasic.TERM a
 termForm trm = case trm of
-                 ClBasic.Name_term name -> CBasic.Qual_var name 
-                                                       (Id.simpleIdToId name) Id.nullRange
+                 ClBasic.Name_term name -> CBasic.varOrConst name
                  ClBasic.Funct_term term _ _ -> termForm term -- FIX
                  ClBasic.Comment_term term _ _ -> termForm term -- FIX
 
-getId :: ClBasic.TERM -> Id.Id
-getId trm = case trm of
-    ClBasic.Name_term n -> Id.simpleIdToId n
-    ClBasic.Funct_term term _ _ -> getId term --FIX
-    ClBasic.Comment_term term _ _-> getId term --FIX
+consSeq  :: [ClBasic.TERM_SEQ] -> CBasic.TERM a
+consSeq [] = CBasic.Application (CBasic.Op_name nil) [] Id.nullRange
+consSeq (x:xs) = CBasic.Application (CBasic.Op_name cons) [termSeqForm x, consSeq xs] Id.nullRange
+
+termSeqForm :: ClBasic.TERM_SEQ -> CBasic.TERM a
+termSeqForm ts = case ts of 
+                   ClBasic.Term_seq trm -> termForm trm
+                   ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
+
+bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR
+bindingSeq bs = case bs of
+                  ClBasic.Name name -> name
+                  ClBasic.SeqMark seqm -> seqm

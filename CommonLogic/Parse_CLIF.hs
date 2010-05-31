@@ -15,7 +15,7 @@ Parser of common logic interface format
   Ref. ISO/IEC IS 24707:2007(E)
 -}
 
-module CommonLogic.Parse_CLIF where
+module CommonLogic.Parse_CLIF  where
 
 import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
@@ -117,10 +117,12 @@ termseq = do
 
 -------
 
+-- text remove -> cltext = { phrase }
 text :: CharParser st TEXT
 text = do
-    phr <- try $ many phrase
-    return $ Text phr $ if phr == [] then nullRange else nullRange
+    phr <- many1 phrase
+    return $ Text phr nullRange
+{-
   <|> do
     m <- pModule
     return $ Text [Module m] nullRange
@@ -131,38 +133,62 @@ text = do
     t <- text
     cParenT
     return $ Named_text n t nullRange
+-}
 
 name :: CharParser st String
-name = string "name"
+name = do 
+        x <- identifier
+        return $ (tokStr x)
 
 phrase :: CharParser st PHRASE
 phrase = do 
-  s <- sentence
-  return $ Sentence s
+    s <- try sentence
+    return $ Sentence s
+  <|> do
+    m <- try pModule
+    return $ Module m
+  <|> do
+    i <- try importation
+    return $ Importation i
+  <|> do
+    (c,t) <- comment
+    return $ Comment_text c t nullRange
 
+-- | parser for module
 pModule :: CharParser st MODULE
 pModule = parens $ do
   clModuleKey
   t <- identifier
-  ts <- many identifier
   txt <- text
-  return $ Mod t ts txt nullRange
+  return $ Mod t txt nullRange
 
 importation :: CharParser st IMPORTATION
-importation = do 
-     return $ Imp_name (Token "" nullRange)
+importation = parens $ do 
+     clImportsKey
+     n <- identifier
+     return $ Imp_name n
 
-comment :: CharParser st COMMENT
-comment = do
+comment :: CharParser st (COMMENT, TEXT)
+comment = parens $ do 
    clCommentKey
-   return $ Comment "" nullRange
+   qs <- quotedstring
+   t <- many text
+   return $ (Comment qs nullRange, if t == [] then Text [] nullRange else head t)
 
+quotedstring :: CharParser st String
+quotedstring = do 
+   char '\''
+   s <- many $ satisfy clLetters2
+   char '\''
+   return $ s
+
+-- 
 f1 :: Either ParseError SENTENCE
 f1 = runParser sentence "" "" "(P x)"
 
 parseTestFile :: String -> IO ()
 parseTestFile f = do x <- readFile f
-                     parseTest (many sentence) x
+                     parseTest text x
 
 -- | parser for parens
 parens :: CharParser st a -> CharParser st a
@@ -194,19 +220,19 @@ existsKey = Lexer.pToken $ string existsS
 
 -- cl keys
 clTextKey :: CharParser st Id.Token
-clTextKey = Lexer.pToken $ string "cl:text"
+clTextKey = Lexer.pToken $ try (string "cl:text") <|> string "cl-text"
 
 clModuleKey :: CharParser st Id.Token
-clModuleKey = Lexer.pToken $ string "cl:module"
+clModuleKey = Lexer.pToken $ try (string "cl:module") <|> string "cl-module"
 
 clImportsKey :: CharParser st Id.Token
-clImportsKey = Lexer.pToken $ string "cl:imports"
+clImportsKey = Lexer.pToken $ try (string "cl:imports") <|> string "cl-imports"
 
 clExcludesKey :: CharParser st Id.Token
-clExcludesKey = Lexer.pToken $ string "cl:excludes"
+clExcludesKey = Lexer.pToken $ try (string "cl:excludes") <|> string "cl-excludes"
 
 clCommentKey :: CharParser st Id.Token
-clCommentKey = Lexer.pToken $ string "cl:comment"
+clCommentKey = Lexer.pToken $ try (string "cl:comment") <|> string "cl-comment"
             
 seqmark :: CharParser st Id.Token
 seqmark = Lexer.pToken $ reserved reservedelement2 $ scanSeqMark
@@ -228,6 +254,11 @@ clLetters ch = let c = ord ch in
    if c >= 33 && c <= 126 then c <= 38 && c /= 34 || c >= 42 && c /= 64 && c /= 92
    else False
 
+clLetters2 :: Char -> Bool
+clLetters2 ch = let c = ord ch in
+   if c >= 32 && c <= 126 then c <= 38 && c /= 34 || c >= 42 && c /= 64 && c /= 92
+   else False
+
 -- a..z, A..z, 0..9, ~!#$%^&*_+{}|:<>?`-=[];,.
 
 clLetter :: CharParser st Char
@@ -236,7 +267,10 @@ clLetter = satisfy clLetters <?> "cl letter"
 reservedelement :: [String]
 reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not", "...", 
                    "cl:text", "cl:imports", "cl:excludes", "cl:module", "cl:comment",
-                   "roleset:"]
+                   "roleset:"] ++ reservedcl
+
+reservedcl :: [String]
+reservedcl = ["cl-text", "cl-imports", "cl-exlcudes", "cl-module", "cl-comment"]
 
 reservedelement2 :: [String]
 reservedelement2 = ["=", "and", "or", "iff", "if", "forall", "exists", "not", 
@@ -251,22 +285,34 @@ basicSpec =
   fmap Basic_spec (AnnoState.annosParser parseBasicItems)
   <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
+{-
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
---parseBasicItems = parseAxItems <|> parseSentences
-parseBasicItems = parseAxItems <|> do
-                                    xs <- many1 aFormula
-                                    return $ Axiom_items xs
-
-{-
-parseSentences :: AnnoState.AParser st BASIC_ITEMS
-parseSentences = do
-       fs <- many1 sentence
-       (_, an) <- AnnoState.optSemi
-       let _  = Id.nullRange
-           ns = init fs ++ [Annotation.appendAnno (last fs) an]
-       return $ Axiom_items ns
+parseBasicItems = parseAxItems 
+               <|> do
+                 xs <- many1 aFormula
+                 return $ Axiom_items xs
 -}
+
+parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
+parseBasicItems = parseAxItems 
+               <|> do
+                 xs <- many1 pp
+                 return $ Axiom_items xs
+
+pp :: AnnoState.AParser st (Annotation.Annoted SENTENCE)
+pp = do 
+     try pModule
+     pp
+    <|> do
+     try importation
+     pp
+    <|> do
+     try comment
+     pp
+    <|> do
+     aFormula
+  -- geht nicht da (pmoudule ... ) innerhalb der Klammern
 
 -- | parser for Axiom_items
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS
@@ -280,7 +326,8 @@ parseAxItems = do
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (Annotation.Annoted SENTENCE)
-aFormula =  AnnoState.allAnnoParser sentence
+aFormula =  do 
+     AnnoState.allAnnoParser sentence
 
 -- | collect all the names and sequence markers
 symbItems :: GenParser Char st NAME

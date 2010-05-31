@@ -33,7 +33,7 @@ data DIAG_FORM = DiagForm
       diagnosis :: Result.Diagnosis
     }   
 
--- retrieves the signature out of a basic spec
+-- | retrieves the signature out of a basic spec
 makeSig :: CL.BASIC_SPEC -> Sign.Sign -> Sign.Sign
 makeSig (CL.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
 
@@ -47,7 +47,7 @@ retrieveSign sig x = Sign.unite sig $ propsOfFormula (AS_Anno.item x)
 -- retrieve CL.Sentence out of BASIC_SPEC
 -- retrieveSentence :: CL.BASIC_SPEC -> [AS_Anno.Named (CL.SENTENCE)]
 
--- retrieve sentences
+-- | retrieve sentences
 makeFormulas :: CL.BASIC_SPEC -> Sign.Sign -> [DIAG_FORM]
 makeFormulas (CL.Basic_spec bspec) sig = 
     List.foldl (\xs bs -> retrieveFormulaItem xs bs sig) [] bspec
@@ -92,18 +92,19 @@ addFormula formulae nf _  = formulae ++
       i             = nfnum nf
       lnum          = AS_Anno.opt_pos f
 
--- generates a named formula
+-- | generates a named formula
 makeNamed :: AS_Anno.Annoted (CL.SENTENCE) -> Int -> AS_Anno.Named (CL.SENTENCE)
 makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
                                        else label) $ AS_Anno.item f)
    where
       label = AS_Anno.getRLabel f
-      -- annos = AS_Anno.r_annos f
-      -- isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos
-      -- isImplied = foldl (\y x -> AS_Anno.isImplied x || y) False annos
-      -- isTheorem = isImplies || isImplied
+      annos = AS_Anno.r_annos f
+      isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos        
+      isImplied = foldl (\y x -> AS_Anno.isImplied x || y) False annos        
+      isTheorem = isImplies || isImplied
 
--- Retrives the signature of a sentence
+
+-- | Retrives the signature of a sentence
 propsOfFormula :: CL.SENTENCE -> Sign.Sign
 propsOfFormula (CL.Atom_sent form _) = case form of
                            CL.Equation term1 term2 -> Sign.unite (propsOfTerm term1)
@@ -122,7 +123,7 @@ propsOfFormula (CL.Bool_sent bs _) = case bs of
                               CL.Disjunction xs -> uniteMap propsOfFormula xs
                               CL.Negation x     -> propsOfFormula x
                               CL.Implication s1 s2   -> Sign.unite (propsOfFormula s1)
-                                                                   (propsOfFormula s2)   
+                                                                   (propsOfFormula s2)
                               CL.Biconditional s1 s2 -> Sign.unite (propsOfFormula s1)
                                                                    (propsOfFormula s2)
 propsOfFormula (CL.Comment_sent _ _ _) = Sign.emptySig
@@ -133,7 +134,7 @@ propsOfTerm term = case term of
     CL.Name_term x -> Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
     CL.Funct_term t ts _ -> Sign.unite (propsOfTerm t)
                                        (uniteMap propsOfTermSeq ts)
-    CL.Comment_term _ _ _ -> Sign.emptySig
+    CL.Comment_term t _ _ -> propsOfTerm t -- fix
 
 propsOfNames :: CL.NAME_OR_SEQMARK -> Sign.Sign
 propsOfNames (CL.Name x) = Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
@@ -149,14 +150,13 @@ uniteMap p xs = List.foldl (\ sig frm -> Sign.unite sig $ p frm) Sign.emptySig x
 
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC, 
-             ExtSign Sign.Sign Symbol.Symbol, 
+             ExtSign Sign.Sign Symbol.Symbol,
              [AS_Anno.Named (CL.SENTENCE)])
 basicCommonLogicAnalysis (bs, sig, _) = 
    Result.Result [] $ if exErrs then Nothing else 
      Just (bs, ExtSign sigItems newSyms, sentences) 
     where
       sigItems  = makeSig bs sig
-      -- sigItems  = msign bsform
       newSyms   = Set.map Symbol.Symbol 
                     $ Set.difference (items sigItems) $ items sig
       bsform    = makeFormulas bs sigItems -- [DIAG_FORM] signature and list of sentences 

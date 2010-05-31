@@ -27,12 +27,6 @@ import qualified Common.AS_Annotation as AS_Anno
 -- DrIFT command
 {-! global: GetRange !-}
 
--- Basic specs
-{-
-data P = P [Id.Token] Id.Range
-         deriving Show
--}
-
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                       deriving Show
 
@@ -44,22 +38,12 @@ instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
 instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
-{-
-instance Pretty P where
-    pretty = printP
--}
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = vcat $ map pretty xs
--- printBasicItems (P_decl x) = pretty x
-
-{-
-printP :: P -> Doc
-printP (P xs _) = fsep $ map pretty xs
--}
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
@@ -69,13 +53,14 @@ data TEXT = Text [PHRASE] Id.Range
 data PHRASE = Module MODULE
             | Sentence SENTENCE
             | Importation IMPORTATION
-            | Comment_text TEXT COMMENT Id.Range
+            | Comment_text COMMENT TEXT Id.Range
               deriving (Show, Ord, Eq)
 
 data COMMENT = Comment String Id.Range
                deriving (Show, Ord, Eq)
 
-data MODULE = Mod NAME [NAME] TEXT Id.Range
+data MODULE = Mod NAME TEXT Id.Range
+            | Mod_ex NAME [NAME] TEXT Id.Range
               deriving (Show, Ord, Eq)
 
 data IMPORTATION = Imp_name NAME
@@ -84,7 +69,7 @@ data IMPORTATION = Imp_name NAME
 data SENTENCE = Quant_sent QUANT_SENT Id.Range
               | Bool_sent BOOL_SENT Id.Range
               | Atom_sent ATOM Id.Range
-              | Comment_sent SENTENCE COMMENT Id.Range
+              | Comment_sent COMMENT SENTENCE Id.Range
               | Irregular_sent SENTENCE Id.Range
                 deriving (Show, Ord, Eq)
 
@@ -222,7 +207,8 @@ printPhrase s = case s of
   Comment_text x y _ -> pretty x <+> pretty y
 
 printModule :: MODULE -> Doc
-printModule (Mod x y z _)  = pretty x <+> fsep (map pretty y) <+> pretty z
+printModule (Mod x z _) = pretty x <+> pretty z
+printModule (Mod_ex x y z _)  = pretty x <+> fsep (map pretty y) <+> pretty z
 
 printImportation :: IMPORTATION -> Doc
 printImportation (Imp_name x) = pretty x
