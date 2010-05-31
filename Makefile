@@ -441,19 +441,8 @@ cgi:
 	$(MAKE) clean
 	$(MAKE) hets.cgi
 
-hets.cgi: $(sources) GUI/hets_cgi.hs
+hets.cgi: GUI/hets_cgi.hs
 	ghc --make GUI/hets_cgi.hs -o $@ $(HC_OPTS) -O
-
-hets_maintainers.txt: $(sources)
-	@echo 'File : Maintainer' > $@
-	@echo -n Generating $@ " "
-	@egrep -m 1 "Maintainer" $(sources) | \
-          sed -e 's/: *Maintainer *: */ : /' >> $@
-	@echo " done"
-
-# count lines of code
-count: $(sources)
-	wc -l $(sources)
 
 # Documentation via haddock
 doc: docs/index.html
@@ -520,7 +509,7 @@ pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
 
 ### clean up
 clean_genRules:
-	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
+	$(RM) $(generated_rule_files) $(gendrifted_files) \
             $(hs_clean_files)
 
 clean: bin_clean o_clean clean_pretty
