@@ -62,7 +62,7 @@ import RelationalScheme.Logic_Rel
 import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import LF.Logic_LF
-import Framework.Logic_Framework
+--import Framework.Logic_Framework
 import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
 import Reduce.Logic_Reduce
@@ -98,7 +98,7 @@ logicList =
   , Logic Temporal
   , Logic DFOL
   , Logic LF
-  , Logic Framework
+  --, Logic Framework
   , Logic Maude
   , Logic Reduce
   , Logic CommonLogic
