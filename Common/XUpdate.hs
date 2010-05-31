@@ -8,6 +8,8 @@ Stability   :  provisional
 Portability :  portable
 
 collect xupdate information
+<http://xmldb-org.sourceforge.net/xupdate/xupdate-wd.html>
+<http://www.xmldatabases.org/projects/XUpdate-UseCases/>
 -}
 
 module Common.XUpdate where
