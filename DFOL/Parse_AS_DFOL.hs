@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  AParser for first-order logic with dependent types (DFOL)
+Description :  A parser for first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
