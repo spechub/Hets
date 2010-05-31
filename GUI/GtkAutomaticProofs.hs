@@ -32,13 +32,14 @@ import Interfaces.DataTypes
 import Interfaces.Utils (updateNodeProof)
 
 import Logic.Grothendieck
-import Logic.Comorphism (AnyComorphism(..))
+import Logic.Comorphism (AnyComorphism (..))
 import Logic.Logic (language_name)
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
 import Comorphisms.KnownProvers
 
+import Common.AS_Annotation (isAxiom)
 import Common.DocUtils
 import Common.LibName (LibName)
 import Common.Result
@@ -67,7 +68,7 @@ instance Eq Finder where
 data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status   :: Bool } --ProofStatus' }
+                   , status   :: Bool } -- ProofStatus' }
 
 data ProofStatus' = Unchecked
                   | Proved_All
@@ -105,7 +106,7 @@ statusToPrefix ps = case ps of
 -- | Get a markup string containing name and color
 instance Show FNode where
   show fn =
-    "<span color=\"" ++ "black" --statusToColor( status fn )
+    "<span color=\"" ++ "black" -- statusToColor( status fn )
     ++ "\">" ++ "[] " ++ name fn ++ "</span>"
 
 instance Eq FNode where
@@ -147,7 +148,7 @@ showProverWindow res ln le = postGUIAsync $ do
   sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
   btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
   btnStop           <- xmlGetWidget xml castToButton "btnStop"
-  --btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
+  -- btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
   trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
 
   windowSetTitle window "AutomaticProofs"
@@ -176,13 +177,14 @@ showProverWindow res ln le = postGUIAsync $ do
 
   let dg = lookupDGraph ln le
       nodes = labNodesDG dg
-      selNodes = partition (\ (FNode { node = (_,l)}) -> case globalTheory l of
-        Just (G_theory _ _ _ sens _) -> Map.null sens
-        Nothing -> True)
+
+      selNodes = partition (\ n -> hasSenKind( not.isAxiom ) $ snd $ node n )
+
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 
+      -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
       (emptyNodes, others) = selNodes
-        $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s False)
+        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s False)
         $ zip nodes sls
 
   -- setup data
@@ -204,10 +206,10 @@ showProverWindow res ln le = postGUIAsync $ do
   let upd = updateNodes trvNodes listNodes
         (\ b s -> do labelSetLabel lblSublogic $ show s
                      updateFinder trvFinder listFinder b s)
-        (do labelSetLabel lblSublogic "No sublogic"
-            listStoreClear listFinder
-            activate widgets False
-            widgetSetSensitive btnCheck False)
+        ( do labelSetLabel lblSublogic "No sublogic"
+             listStoreClear listFinder
+             activate widgets False
+             widgetSetSensitive btnCheck False)
         (activate widgets True >> widgetSetSensitive btnCheck True)
 
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
@@ -219,7 +221,7 @@ showProverWindow res ln le = postGUIAsync $ do
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
-        mapM_ ( \ p@(row:[]) -> do
+        mapM_ ( \ p@(row : []) -> do
           (FNode { status = s }) <- listStoreGetValue listNodes row
           (if f s then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs
@@ -243,7 +245,7 @@ showProverWindow res ln le = postGUIAsync $ do
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
       Nothing -> error "Automatic Proofs: internal error"
-      Just (_,f) -> return f
+      Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
       check inclThms ln le dg f timeout listNodes updat nodes'
@@ -316,8 +318,8 @@ updateFinder view list useNonBatch sl = do
     listStoreClear list
     mapM_ (listStoreAppend list) $ mergeFinder old new
     maybe (selectFirst view)
-      (\ (_,f) -> let i = findIndex ((fName f ==) . fName) new in
-        maybe (selectFirst view) (treeSelectionSelectPath sel . (:[])) i
+      (\ (_, f) -> let i = findIndex ((fName f ==) . fName) new in
+        maybe (selectFirst view) (treeSelectionSelectPath sel . (: [])) i
       ) selected'
 
 -- | Try to select previous selected comorphism if possible
@@ -331,7 +333,7 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
     ) m' old
 
 check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
-      -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO ()
+      -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
 check inclThms ln le dg (Finder { finder = pr, comorphism = cs, selected = i})
   timeout listNodes update nodes = let
     count' = fromIntegral $ length nodes
@@ -347,7 +349,7 @@ check inclThms ln le dg (Finder { finder = pr, comorphism = cs, selected = i})
 -- | to look up the data types of the 'old' call from consistencyChecker, that need to be adjusted
 -- | in order to match the data types requested in proveNode'
 -- consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
---                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+-- -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 
 -- //////////////////////////////////////////////////////////////////////////
 -- | inserted proveNode from CMDL/ProveConsistency and made some changes
@@ -355,44 +357,45 @@ check inclThms ln le dg (Finder { finder = pr, comorphism = cs, selected = i})
 -- | Given a proofstatus the function does the actual call of the
 -- prover for proving the node or check consistency
 proveNode' ::
-              --use theorems is subsequent proofs
+              -- use theorems is subsequent proofs
               Bool ->
               -- Timeout Limit
               Int ->
 
               LNode DGNodeLab ->
-	      -- selected Prover and Comorphism
+              -- selected Prover and Comorphism
               ( G_prover, AnyComorphism ) ->
               -- MVar (Maybe ThreadId) ->
               -- MVar (Maybe Int_NodeInfo)  ->
+              -- the IntState is needed to write the Results back into the Graph
               -- MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
-               IO String
+              IO String
 proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
   case fromMaybe (error "GtkAutomaticProofs.proveNode': noG_theory") $ globalTheory lab of
     g_th@( G_theory lid _ _ _ _ ) -> do
       -- recompute the theory (to make effective the selected axioms,
       -- goals)
      let knpr = propagateErrors $ knownProversWithKind ProveCMDLautomatic
-     pf_st <- initialState lid "" g_th knpr [p_cm] 
+     pf_st <- initialState lid "" g_th knpr [p_cm]
      let st = recalculateSublogicAndSelectedTheory pf_st
      -- try to prepare the theory
      prep <- case prepareForProving st p_cm of
              Result _ Nothing ->
                do
-                p_cm'@(prv',acm'@(Comorphism cid)) <-
+                p_cm'@(prv', acm'@(Comorphism cid)) <-
                           lookupKnownProver st ProveCMDLautomatic
                 putStrLn ("Using the comorphism " ++ language_name cid)
                 putStrLn ("Using prover " ++ getPName prv')
                 return $ case prepareForProving st p_cm' of
                           Result _ Nothing -> Nothing
-                          Result _ (Just sm)-> Just (sm,acm')
-             Result _ (Just sm) -> return $ Just (sm,acm)
+                          Result _ (Just sm) -> Just (sm, acm')
+             Result _ (Just sm) -> return $ Just (sm, acm)
      case prep of
      -- theory could not be computed
       Nothing -> return "No suitable prover and comorphism found"
-      Just (G_theory_with_prover lid1 th p, cmp)->
+      Just (G_theory_with_prover lid1 th p, cmp) ->
         case proveCMDLautomaticBatch p of
          Nothing -> return "Error obtaining the prover"
          Just fn -> do
@@ -476,7 +479,7 @@ showModelViewAux lock title list other = do
     mn <- getSelectedSingle trvNodes listNodes
     case mn of
       Nothing -> textBufferSetText buffer ""
-      Just (_,n) -> textBufferSetText buffer $ show $ status n
+      Just (_, n) -> textBufferSetText buffer $ show $ status n
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window
@@ -488,8 +491,8 @@ showModelViewAux lock title list other = do
     nodes'' <- listStoreToList list
     let nodes' = sort $ filterNodes nodes''
     updateListData listNodes $ sort (other ++ nodes')
-    maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (:[]))
-      $ maybe Nothing (\ (_,n) -> findIndex ((name n ==) . name) nodes') sel'
+    maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (: []))
+      $ maybe Nothing (\ (_, n) -> findIndex ((name n ==) . name) nodes') sel'
 
   selectFirst trvNodes
 
@@ -504,4 +507,3 @@ showModelView lock title list other = do
   isNotOpen <- isEmptyMVar lock
   if isNotOpen then showModelViewAux lock title list other
     else join (readMVar lock)
-
