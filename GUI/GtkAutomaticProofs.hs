@@ -63,40 +63,47 @@ instance Eq Finder where
 data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status   :: Bool } -- ProofStatus' }
+                   , status   :: ProofResult }
 
-data ProofStatus' = Unchecked
-                  | Proved_All
-                  | Proved_Some
-                  | Proved_None
-                  | Timeout
-                  | P_Error
+data ProofResult = Unchecked
+                 | All_Proved
+                 | Some_Proved
+                 | None_Proved
+                 | Timeout
+                 | Prove_Error
                   deriving Eq
 
-instance Show ProofStatus' where
-  show ps = statusToPrefix ps ++ statusToColor ps
+instance Show ProofResult where
+  show pr = statusToPrefix pr ++ statusToColor pr
 
--- | does not make much sense, but needed some function for compare
-instance Ord ProofStatus' where
-  compare ps1 ps2 = compare (statusToColor ps1) (statusToColor ps2)
+-- | idea is to sort the ProofResult as of relevance to the operator
+instance Ord ProofResult where
+  compare p1 p2 = EQ {- let to_integer p = case p of
+                                       Prove_Error -> 5
+                                       Timeout     -> 4
+                                       None_Proved -> 3
+                                       Some_Proved -> 2
+                                       All_Proved  -> 1
+                                       Unchecked   -> 0
+                  in compare (to_integer p1) (to_integer p2) -}
 
-statusToColor :: ProofStatus' -> String
+statusToColor :: ProofResult -> String
 statusToColor ps = case ps of
-  Unchecked    -> "black"
-  Proved_All   -> "green"
-  Proved_Some  -> "orange"
-  Proved_None  -> "red"
-  Timeout      -> "blue"
-  P_Error      -> "darkred"
+  Unchecked   -> "black"
+  All_Proved  -> "green"
+  Some_Proved -> "yellow"
+  None_Proved -> "red"
+  Timeout     -> "blue"
+  Prove_Error -> "darkred"
 
-statusToPrefix :: ProofStatus' -> String
+statusToPrefix :: ProofResult -> String
 statusToPrefix ps = case ps of
-  Unchecked    -> "[ ] "
-  Proved_All   -> "[+] "
-  Proved_Some  -> "[/] "
-  Proved_None  -> "[-] "
-  Timeout      -> "[t] "
-  P_Error      -> "[f] "
+  Unchecked   -> "[ ] "
+  All_Proved  -> "[+] "
+  Some_Proved -> "[/] "
+  None_Proved -> "[-] "
+  Timeout     -> "[t] "
+  Prove_Error -> "[f] "
 
 -- | Get a markup string containing name and color
 instance Show FNode where
@@ -177,7 +184,7 @@ showProverWindow res ln le = postGUIAsync $ do
 
       -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
       (emptyNodes, others) = selNodes
-        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s False)
+        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s Unchecked)
         $ zip nodes sls
 
   -- setup data
@@ -260,7 +267,7 @@ showProverWindow res ln le = postGUIAsync $ do
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
     let changes = foldl (\ cs fn ->
-                      if status fn then cs
+                      if evaluateProofStatus fn then cs
                         else
                           let n@(_, l) = node fn
                           in SetNodeLab l n : cs
@@ -268,9 +275,16 @@ showProverWindow res ln le = postGUIAsync $ do
         dg' = changesDGH dg changes
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
-  selectWith not upd
+  -- TODO:: cause I dont know what this does, i could not find a 'smart' boolean function!
+  selectWith (\ p -> case p of
+                       Unchecked -> True
+                       _         -> False )
+             upd
 
   widgetShow window
+
+evaluateProofStatus :: FNode -> Bool
+evaluateProofStatus _ = True
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
 sortNodes trvNodes listNodes = do
@@ -336,7 +350,7 @@ check inclThms ln le dg (Finder { finder = pr, comorphism = cs, selected = i})
            res <- proveNode' inclThms timeout n (pr, c) ln
            -- res <- consistencyCheck inclThms cc c ln le dg n timeout
            putStrLn res
-           postGUISync $ listStoreSetValue listNodes row fn { status = True }
+           postGUISync $ listStoreSetValue listNodes row fn { status = None_Proved }
            return $ count + 1) 0 nodes
 
 -- | to look up the data types of the 'old' call from consistencyChecker, that need to be adjusted
