@@ -31,6 +31,7 @@ import Common.AS_Annotation
 
 import Driver.ReadFn (libNameToFile)
 import Driver.Options (rmSuffix)
+import Driver.WriteLibDefn (getFilePrefixGeneric)
 
 import OMDoc.DataTypes
 
@@ -70,14 +71,16 @@ newtype SpecSymNames = SpecSymNames (Map.Map (LibName, String) GSigMap)
 
 -- | The export environment
 data ExpEnv = ExpEnv { getSSN :: SpecSymNames
-                     , getInitialLN :: LibName }
+                     , getInitialLN :: LibName
+                     , getFilePathMapping :: Map.Map LibId FilePath }
 
 fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
 
 emptyEnv :: LibName -> ExpEnv
 emptyEnv ln = ExpEnv { getSSN = SpecSymNames $ Map.empty
-                     , getInitialLN = ln }
+                     , getInitialLN = ln
+                     , getFilePathMapping = Map.empty }
 
 fromSignAndNamedSens :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
@@ -137,12 +140,23 @@ proj2 = curry snd
 
 -- | Translates the given LibEnv to a list of OMDocs. If the first argument
 -- is false only the DG to the given LibName is translated and returned.
-exportLibEnv :: Bool -> LibName -> LibEnv -> Result [(LibName, OMDoc)]
-exportLibEnv b ln le =
+exportLibEnv :: Bool -- recursive
+             -> FilePath -- outdir
+             -> LibName -> LibEnv
+             -> Result [(LibName, OMDoc)]
+exportLibEnv b odir ln le =
     let im = emptyEnv ln
         cmbnF (x, _) y = (x, y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
     in mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
+
+{-
+initFilePathMapping :: FilePath -> LibEnv -> Result (Map.Map LibId FilePath)
+initFilePathMapping fp le =
+    Map.mapKeysMonotonic getLibId $ Map.mapWithKey f le
+        where f k _ = libNameFilePath (error "
+                            
+-}
 
 -- | DGraph to OMDoc translation
 exportDGraph :: LibEnv -> ExpEnv -> (LibName, DGraph) -> Result (ExpEnv, OMDoc)

@@ -64,7 +64,7 @@ import Network.URI
 -}
 type NameSymbolMap = G_mapofsymbol OMName
 
--- | the keys consist of the filepaths without suffix!
+-- | The keys of libMap consist of the filepaths without suffix!
 data ImpEnv =
     ImpEnv {
       libMap :: Map.Map FilePath (LibName, DGraph)
@@ -109,20 +109,6 @@ lookupNode e (ln, dg) ucd =
                case lookupRefNodeByName mn ln' dg of
                  Just lnode -> Just (ln', lnode)
                  _ -> fmap (\ n -> (ln', n)) $ lookupLocalNodeByName mn dg'
-
-{-
-lookupNode e (ln, dg) ucd = do
-  let mn = getModule ucd
-  case lookupNodeByName mn dg of
-    Just lnode -> return (ln, lnode)
-    Nothing
-        | cdInLib ucd ln -> error $ "lookupNode: Node not found: " ++ mn
-        | otherwise ->
-            case lookupLib e $ fromJust $ getUri ucd of
-              Nothing -> fail ""
-              Just (ln', dg') ->
-                  lookupNodeByName mn dg' >>= (\ n -> return (ln', n))
--}
 
 lookupNSMap :: ImpEnv -> LibName -> Maybe LibName -> String -> NameSymbolMap
 lookupNSMap e ln mLn nm =
@@ -184,10 +170,15 @@ getUri = fst
 getModule :: UriCD -> String
 getModule = snd
 
-toUriCD :: OMCD -> UriCD
-toUriCD cd = let [base, m] = cdToList cd in
-             if null base then (Nothing, m) else (Just $ toURI base, m)
 
+-- | Compute an absolute URI for a supplied CD relative to the given LibName
+toUriCD :: OMCD -> LibName -> UriCD
+toUriCD cd ln =
+    let [base, m] = cdToList cd
+        fp = getFilePath ln
+        mU = if null base then Nothing
+             else Just $ resolveURI (toURI base) fp
+    in (mU, m)
 
 getLogicFromMeta :: Maybe OMCD -> AnyLogic
 getLogicFromMeta mCD =
@@ -203,14 +194,6 @@ cdInLib :: UriCD -> LibName -> Bool
 cdInLib ucd ln = case getUri ucd of
                    Nothing -> True
                    Just url -> isFileURI url && getFilePath ln == uriPath url
-
--- | Compute an absolute URI for a supplied UriCD relative to the given LibName.
-uriRelativeToLib :: UriCD -> LibName -> URI
-uriRelativeToLib ucd ln =
-    let fp = getFilePath ln in
-    case getUri ucd of
-      Just u -> resolveURI u fp
-      _ -> toURI fp
 
 
 -- * Main translation functions
@@ -246,6 +229,8 @@ readLib e u = do
   rPut e $ "Downloading " ++ show u ++ " ..."
   xmlString <- lift $ readFromURL readXmlFile u
   OMDoc n l <- liftR $ xmlIn xmlString
+  -- the name of the omdoc is used as the libname, no relationship between the
+  -- libname and the filepath!
   ln <- lift $ libNameFromURL n u
   rPut e $ "Importing library " ++ show ln
   (e', dg) <- foldM (addTLToDGraph ln) (e, emptyDG) l
@@ -262,7 +247,7 @@ importTheory :: ImpEnv -- ^ The import environment
                            , LNode DGNodeLab -- the corresponding node
                            )
 importTheory e (ln, dg) cd = do
-  let ucd = toUriCD cd
+  let ucd = toUriCD cd ln
   rPut2 e $ "Looking up theory " ++ showUriCD ucd ++ " ..."
   case lookupNode e (ln, dg) ucd of
     Just (ln', nd)
@@ -282,7 +267,7 @@ importTheory e (ln, dg) cd = do
               return (e, ln', dg', lnode)
     -- if lookupNode finds nothing implies that ln is not the current libname!
     _ -> do
-      let u = uriRelativeToLib ucd ln
+      let u = fromJust $ getUri ucd
       rPut2 e $ "... node not found, reading lib."
       (e', ln', refDg) <- readLib e u
       case lookupLocalNodeByName (getModule ucd) refDg of

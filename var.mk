@@ -36,11 +36,6 @@ ifneq ($(findstring 0.6, $(HASKELINEVERSION)),)
 HASKELINE_PACKAGE = -DHASKELINE
 endif
 
-HXTFILTERVERSION = $(shell $(HCPKG) field hxt-filter version)
-ifneq ($(findstring 8., $(HXTFILTERVERSION)),)
-HXTFILTER_PACKAGE = -DHXTFILTER
-endif
-
 HEXPATVERSION = $(shell $(HCPKG) field hexpat exposed)
 ifneq ($(findstring True, $(HEXPATVERSION)),)
 HEXPAT_PACKAGE = -DHEXPAT
@@ -77,9 +72,9 @@ endif
 
 HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
-  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HXTFILTER_PACKAGE) \
-  $(HEXPAT_PACKAGE) $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) \
-  $(TABULAR_PACKAGE) -DCASLEXTENSIONS
+  $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
+  $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(TABULAR_PACKAGE) \
+  -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines
 # and the $(GLADE_PACKAGE) below

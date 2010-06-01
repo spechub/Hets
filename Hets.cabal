@@ -53,14 +53,6 @@ flag unix
 flag haskeline
   description: command line interface
 
-flag hxtfilter
-  description: use old hxt-filter package for
-    - old OMDoc round-tripping
-    - HAIFA for MathServer and Vampire remote provers
-       HAIFA is based on syb-generics and both packages are
-       part of the Hets sources and installed via "make"
-    - PGIP xml interface
-
 flag hexpat
   description: haskell xml parsing library for the expat xml parser.
 
@@ -122,11 +114,6 @@ Executable hets
     build-depends:
         haskeline >= 0.6 && < 0.7
     cpp-options: -DHASKELINE
-
-  if flag(hxtfilter)
-    build-depends:
-        hxt-filter >= 8.0.0
-    cpp-options: -DHXTFILTER
 
   if flag(hexpat)
     build-depends:

@@ -14,6 +14,7 @@ the static analysis
 
 module Driver.WriteLibDefn
   ( getFilePrefix
+  , getFilePrefixGeneric
   , writeLibDefn
   , writeLibDefnLatex
   , toShATermString
@@ -46,11 +47,17 @@ import Driver.Options
 
 import System.FilePath
 
--- | compute the prefix for files to be written out
+-- | Compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
-getFilePrefix opts file =
-    let odir' = outdir opts
-        (base, path, _) = fileparse (envSuffix : downloadExtensions) file
+getFilePrefix opts = getFilePrefixGeneric (envSuffix : downloadExtensions)
+                     $ outdir opts
+
+-- | Version of getFilePrefix with explicit parameters
+getFilePrefixGeneric :: [String] -- ^ list of suffixes
+                     -> FilePath -- ^ the outdir
+                     -> FilePath -> (FilePath, FilePath)
+getFilePrefixGeneric suffs odir' file =
+    let (base, path, _) = fileparse suffs file
         odir = if null odir' then path else odir'
     in (odir, odir </> base)
 
