@@ -63,7 +63,7 @@ import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import LF.Logic_LF
 --import Framework.Logic_Framework
-import OMDoc.Logic_OMDoc ()
+--import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
 import Reduce.Logic_Reduce
 import CommonLogic.Logic_CommonLogic

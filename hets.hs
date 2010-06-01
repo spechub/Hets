@@ -29,9 +29,9 @@ import Static.DevGraph
 import OWL.OWLAnalysis
 #endif
 
-#ifdef HXTFILTER
-import OMDoc.OMDocInput
-#endif
+-- #ifdef HXTFILTER
+-- import OMDoc.OMDocInput
+-- #endif
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
@@ -73,16 +73,16 @@ processFile opts file = do
 #ifndef NOOWLLOGIC
       OWLIn -> parseOWL file >>= structureAna file opts
 #endif
-#ifdef HXTFILTER
-      OmdocIn -> mLibEnvFromOMDocFile opts file
-#endif
+-- #ifdef HXTFILTER
+--      OmdocIn -> mLibEnvFromOMDocFile opts file
+-- #endif
       PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do
         st <- cmdlProcessFile opts file
         return . getMaybeLib $ intState st
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
-      ExperimentalIn -> anaOMDocFile opts file
+      OmdocIn -> anaOMDocFile opts file
       CommonLogicIn -> anaLibExt (opts { defLogic = "CommonLogic" }) file emptyLibEnv emptyDG
       _ -> anaLib opts file
     case res of

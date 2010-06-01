@@ -76,9 +76,9 @@ import Driver.Options
 import Driver.ReadFn (libNameToFile, findFileOfLibName)
 import Driver.WriteLibDefn
 
-#ifdef HXTFILTER
-import OMDoc.OMDocOutput
-#endif
+-- #ifdef HXTFILTER
+-- import OMDoc.OMDocOutput
+-- #endif
 
 import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
@@ -119,11 +119,11 @@ writeLibEnv opts filePrefix lenv ln ot =
         dg = lookupDGraph ln lenv in case ot of
       Prf -> toShATermString (ln, lookupHistory ln lenv)
              >>= writeVerbFile opts f
-#ifdef HXTFILTER
-      OmdocOut -> hetsToOMDoc opts (ln, lenv) f
-#endif
+-- #ifdef HXTFILTER
+--      OmdocOut -> hetsToOMDoc opts (ln, lenv) f
+-- #endif
       XmlOut ->  writeVerbFile opts f $ ppTopElement $ ToXml.dGraph lenv dg
-      ExperimentalOut -> do
+      OmdocOut -> do
           let Result ds mOmd = exportLibEnv (recurse opts) ln lenv
           showDiags opts ds
           case mOmd of
