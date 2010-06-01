@@ -1,7 +1,6 @@
 {-# LANGUAGE
   FlexibleInstances
   , TypeSynonymInstances
-  , CPP
  #-}
 
 {- |
@@ -35,15 +34,7 @@ import Data.List
 
 import Network.URI (isUnescapedInURI, escapeURIString, unEscapeString)
 
-#ifdef HEXPAT
-import qualified Data.ByteString.Lazy as BS
-import qualified Common.XmlExpat as XE
-#else
-#ifdef XMLBS
-import qualified Data.ByteString.Lazy as BS
-#endif
-#endif
-
+import Common.XmlParser (XmlParseable, parseXml)
 import Text.XML.Light
 
 -- * Names and other constants
@@ -126,40 +117,6 @@ class XmlRepresentable a where
   -- | read instance from an XML Element
   fromXml :: Element -> Result (Maybe a)
 
-
-class XmlParseable a where
-    parseXml :: a -> Either Element String
-
-
-#ifdef HEXPAT
-instance XmlParseable BS.ByteString where
-    parseXml = XE.parseXml
-
-readXmlFile :: FilePath -> IO BS.ByteString
-readXmlFile = BS.readFile
--- 169MB on Basic/Algebra_I
-#else
-
-#ifdef XMLBS
-instance XmlParseable BS.ByteString where
-    parseXml s = case parseXMLDoc s of
-                   Just x -> Left x
-                   _ -> Right "parseXMLDoc: parse error"
-
-readXmlFile :: FilePath -> IO BS.ByteString
-readXmlFile = BS.readFile
--- 426MB on Basic/Algebra_I
-#else
-instance XmlParseable String where
-    parseXml s = case parseXMLDoc s of
-                   Just x -> Left x
-                   _ -> Right "parseXMLDoc: parse error"
-
-readXmlFile :: FilePath -> IO String
-readXmlFile = readFile
--- 482MB on Basic/Algebra_I
-#endif
-#endif
 
 {-
 -- for testing the performance without the xml lib we use the show and read funs

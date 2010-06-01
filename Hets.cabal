@@ -61,6 +61,9 @@ flag hxtfilter
        part of the Hets sources and installed via "make"
     - PGIP xml interface
 
+flag hexpat
+  description: haskell xml parsing library for the expat xml parser.
+
 flag gtkglade
   description: gtk and glade packages for a better user interface
 
@@ -124,6 +127,11 @@ Executable hets
     build-depends:
         hxt-filter >= 8.0.0
     cpp-options: -DHXTFILTER
+
+  if flag(hexpat)
+    build-depends:
+        hexpat >= 0.11
+    cpp-options: -DHEXPAT
 
   if flag(gtkglade)
     build-depends:

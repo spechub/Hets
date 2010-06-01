@@ -19,7 +19,7 @@ import Common.ExtSign
 import Common.Id
 import Common.LibName
 import Common.Utils
--- import Common.AS_Annotation
+import Common.XmlParser (readXmlFile)
 
 import Driver.ReadFn (libNameToFile)
 import Driver.Options (rmSuffix, HetcatsOpts, putIfVerbose, showDiags)
@@ -29,7 +29,6 @@ import Logic.ExtSign
 import Logic.Coerce
 import Logic.Prover
 import Logic.Grothendieck
--- import Logic.Comorphism
 
 import Comorphisms.LogicList
 import Comorphisms.LogicGraph
@@ -40,7 +39,7 @@ import Static.AnalysisStructured
 import Static.ComputeTheory
 
 import OMDoc.DataTypes
-import OMDoc.XmlInterface (xmlIn, readXmlFile)
+import OMDoc.XmlInterface (xmlIn)
 
 import System.Directory
 
