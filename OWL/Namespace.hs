@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2005
@@ -11,7 +12,7 @@ This module implements a namespace transformation
 -}
 
 module OWL.Namespace
-  ( PNamespace(..)
+  ( PNamespace (..)
   , integrateNamespaces
   , integrateOntologyFile
   , uriToName) where
@@ -21,9 +22,9 @@ import OWL.AS
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.AS_Annotation as Common.Annotation
-import Data.List(find, nub)
-import Data.Maybe(fromJust)
-import Data.Char(isDigit, isAlpha)
+import Data.List (find, nub)
+import Data.Maybe
+import Data.Char (isDigit, isAlpha)
 
 type TranslationMap = Map.Map String String  -- OldPrefix -> NewPrefix
 
@@ -47,16 +48,16 @@ instance PNamespace QName where
   propagateNspaces ns old@(QN pre local isFull nsUri)
     | null (pre ++ local ++ nsUri) = old
     | otherwise =
-     if local == "Thing" || snd (span (/=':') local) == ":Thing" then
+     if local == "Thing" || snd (span (/= ':') local) == ":Thing" then
         QN "owl" "Thing" False "http://www.w3.org/2002/07/owl#"
       else
         if null nsUri then let
           prop :: String -> String -> QName
           prop p loc = QN p loc isFull $ Map.findWithDefault "" p ns
-          in if null pre  then
+          in if null pre then
               let (pre', local') = span (/= ':')
                                      (if head local == '\"' then
-                                         read local::String
+                                         read local :: String
                                          else local
                                      )
               -- hiding "ftp://" oder "http://" oder "file:///"
@@ -66,9 +67,9 @@ instance PNamespace QName where
              else prop pre local
          else
              if null pre then
-               let (pre', local') = span (/='/')
+               let (pre', local') = span (/= '/')
                                      (if head nsUri == '\"' then
-                                         read nsUri::String
+                                         read nsUri :: String
                                          else nsUri
                                      )
                    rns = reverseMap ns
@@ -436,7 +437,7 @@ maybeRename :: (PNamespace a) => TranslationMap -> Maybe a -> Maybe a
 maybeRename tMap = fmap $ renameNamespace tMap
 
 integrateNamespaces :: Namespace -> Namespace
-                    -> (Namespace,TranslationMap)
+                    -> (Namespace, TranslationMap)
 integrateNamespaces oldNsMap testNsMap =
     if oldNsMap == testNsMap then (oldNsMap, Map.empty)
        else testAndInteg oldNsMap (Map.toList testNsMap) Map.empty
@@ -445,29 +446,28 @@ integrateNamespaces oldNsMap testNsMap =
                       -> TranslationMap
                       -> (Namespace, TranslationMap)
          testAndInteg old [] tm = (old, tm)
-         testAndInteg old ((pre, ouri):r) tm
-             | Map.member pre old && ouri ==
-               (fromJust $ Map.lookup pre old) =
-   -- `elem` (Map.elems old) =
+         testAndInteg old ((pre, ouri) : r) tm
+             | Just ouri == Map.lookup pre old =
                  testAndInteg old r tm
-             -- if the uri already existed in old map, the key muss be changed.
-             | Map.member ouri revMap =
+             -- if the uri already existed in old map, the key must be changed.
+             | isJust val =
                  testAndInteg old r
-                      (Map.insert pre (fromJust $ Map.lookup ouri revMap) tm)
+                      (Map.insert pre (fromJust val) tm)
              | Map.member pre old =
                 let pre' = disambiguateName pre old
-                in  testAndInteg (Map.insert pre' ouri old) r
+                in testAndInteg (Map.insert pre' ouri old) r
                         (Map.insert pre pre' tm)
              | otherwise = testAndInteg (Map.insert pre ouri old) r tm
-            where revMap = reverseMap old
+            where val = Map.lookup ouri $ reverseMap old
 
          disambiguateName :: String -> Namespace -> String
          disambiguateName name nameMap =
-             let name' = if isDigit $ head $ reverse name then
-                             take ((length name) -1) name
+             let name' = if isDigit $ last name then
+                             take (length name - 1) name
                           else name
-             in  fromJust $ find (not . flip Map.member nameMap)
-                     [name' ++ (show (i::Int)) | i <-[1..]]
+                      -- how about "reverse . dropWhile isDigit . reverse"?
+             in fromJust $ find (not . flip Map.member nameMap)
+                     [name' ++ show (i :: Int) | i <- [1 ..]]
 
 
 integrateOntologyFile :: OntologyFile -> OntologyFile
@@ -484,8 +484,7 @@ integrateOntologyFile of1@( OntologyFile ns1
               lid1 = localPart id1
               lid2 = localPart id2
             in if null lid1 then id2 else
-               if null lid2 then id1 else
-               if id1 == id2 then id1 else id1
+               if null lid2 || id1 == id2 then id1 else id1
                   { localPart = uriToName lid1 ++ "_" ++ uriToName lid2 }
     in OntologyFile newNamespace
             ( Ontology (newOid oid1 oid2)
@@ -498,14 +497,17 @@ reverseMap :: Ord a => Map.Map k a -> Map.Map a k
 reverseMap oldMap =
     Map.foldWithKey transport Map.empty oldMap
   where
-   transport :: Ord a =>  k -> a -> Map.Map a k -> Map.Map a k
+   transport :: Ord a => k -> a -> Map.Map a k -> Map.Map a k
    transport mKey mElem newMap
        | Map.member mElem newMap = error "double keys in translationMap."
        | otherwise = Map.insert mElem mKey newMap
 
 -- build a QName from string, only local part (for node name, etc.).
 uriToName :: String -> String
-uriToName str = let str' = if take 1 str == "\"" then read str else str in
-    takeWhile (/='.') $ reverse $ case takeWhile (/='/') $ reverse str' of
-         '#' : r  -> r
+uriToName str = let
+  str' = case str of
+           '"' : _ -> read str
+           _ -> str
+  in takeWhile (/= '.') $ reverse $ case takeWhile (/= '/') $ reverse str' of
+         '#' : r -> r
          r -> r

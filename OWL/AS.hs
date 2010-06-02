@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2007
@@ -9,7 +10,8 @@ Portability :  non-portable(deriving Typeable)
 
 This module defines all the data types for the functional style Syntax
 of OWL 1.1.
-It is modeled after the W3C document: <http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
+It is modeled after the W3C document:
+<http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
 -}
 
 module OWL.AS where
@@ -59,7 +61,7 @@ instance Eq QName where
     p == q = compare p q == EQ
 
 instance Ord QName where
-  compare(QN p1 l1 b1 n1) (QN p2 l2 b2 n2) =
+  compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) =
     if null n1 then
       if null n2 then compare (b1, p1, l1) (b2, p2, l2) else LT
     else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
@@ -186,7 +188,7 @@ type RestrictionValue = Constant
 data DataRange =
     DRDatatype DatatypeURI
   | DataComplementOf DataRange
-  | DataOneOf [Constant] --  min. 1 constant
+  | DataOneOf [Constant] -- min. 1 constant
   | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
     deriving (Typeable, Show, Eq, Ord)
 
@@ -223,9 +225,9 @@ data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
 
 data Description =
     OWLClassDescription OwlClassURI
-  | ObjectJunction JunctionType [Description]  --  min. 2 Descriptions
+  | ObjectJunction JunctionType [Description]  -- min. 2 Descriptions
   | ObjectComplementOf Description
-  | ObjectOneOf [IndividualURI]  --  min. 1 Individual
+  | ObjectOneOf [IndividualURI]  -- min. 1 Individual
   | ObjectValuesFrom QuantifierType ObjectPropertyExpression Description
   | ObjectExistsSelf ObjectPropertyExpression
   | ObjectHasValue ObjectPropertyExpression IndividualURI
