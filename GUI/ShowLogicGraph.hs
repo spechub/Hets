@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang and Till Mossakowski, Uni Bremen 2002-2006
@@ -36,15 +35,13 @@ graphParms :: (GraphAllConfig graph graphParms node nodeType nodeTypeParms
                         arc arcType arcTypeParms)
            -> String -- ^ title of graph
            -> graphParms
-graphParms (_ ::
-       Graph graph graphParms node nodeType nodeTypeParms arc
-          arcType arcTypeParms) title =
+graphParms _ title =
              GraphTitle title $$
              OptimiseLayout True $$
              AllowClose (return True) $$
              emptyGraphParms
 
-makeNodeMenu :: (  GraphAllConfig graph graphParms node
+makeNodeMenu :: (GraphAllConfig graph graphParms node
                                     nodeType nodeTypeParms
                                      arc arcType arcTypeParms,
                        Typeable value)
@@ -55,9 +52,7 @@ makeNodeMenu :: (  GraphAllConfig graph graphParms node
                   -> LocalMenu value
                   -> String -- ^ color of node
                   -> nodeTypeParms value
-makeNodeMenu (_ ::
-       Graph graph graphParms node nodeType nodeTypeParms arc
-          arcType arcTypeParms) showMyValue logicNodeMenu color =
+makeNodeMenu _ showMyValue logicNodeMenu color =
                logicNodeMenu $$$
                Ellipse $$$
                ValueTitle showMyValue $$$
@@ -91,11 +86,7 @@ showLogicGraph ::
    => (Graph graph graphParms node nodeType nodeTypeParms
          arc arcType arcTypeParms)
    -> IO ()
-showLogicGraph
-   (displaySrt ::
-       Graph graph graphParms node nodeType nodeTypeParms arc
-          arcType arcTypeParms) =
-    do
+showLogicGraph displaySrt = do
            -- disp s tD = debug (s ++ (show tD))
        logicG <- newGraph displaySrt (GlobalMenu (UDG.Menu Nothing [
                 Button "Show detailed logic graph" showHSG ]) $$
@@ -169,10 +160,10 @@ showLogicGraph
                                 ValueTitle (\c -> case c of
                                     Comorphism cid ->
                                         return $ language_name cid) $$$
-                                nullArcTypeParms
+                                emptyArcTypeParms
            inclArcTypeParms = logicArcMenu $$$           -- inclusion
                                Color inclusionArcColor $$$
-                               nullArcTypeParms
+                               emptyArcTypeParms
        normalArcType <- newArcType logicG normalArcTypeParms
        inclArcType   <- newArcType logicG inclArcTypeParms
        let insertComo =            -- for cormophism
@@ -195,8 +186,6 @@ showLogicGraph
        mapM_ insertComo $ filter (flip notElem inclusionList) comorphismList
        redraw logicG
     where
-        (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
-        (nullSubArcTypeParms :: arcTypeParms String) = emptyArcTypeParms
         showSublogic l =
             case l of
               Logic lid -> unlines (map sublogicName (all_sublogics lid))
@@ -266,7 +255,7 @@ showLogicGraph
                      subArcMenu = LocalMenu(UDG.Menu Nothing [])
                      subArcTypeParms = subArcMenu $$$
                                        Color "green" $$$
-                                       nullSubArcTypeParms
+                                       emptyArcTypeParms
                  subArcType <- newArcType subLogicG subArcTypeParms
                  let insertSubArc (node1, node2) =
                            newArc subLogicG subArcType ""
@@ -289,11 +278,7 @@ showHetSublogicGraph ::
    => (Graph graph graphParms node nodeType nodeTypeParms
          arc arcType arcTypeParms)
    -> IO ()
-showHetSublogicGraph
-   (displaySrt ::
-       Graph graph graphParms node nodeType nodeTypeParms arc
-          arcType arcTypeParms) =
-    do
+showHetSublogicGraph displaySrt = do
        logicG <- newGraph displaySrt (graphParms displaySrt
                                                 "Heterogeneous Sublogic Graph")
        let logicNodeMenu = LocalMenu(UDG.Menu (Just "Info")
@@ -362,14 +347,14 @@ showHetSublogicGraph
            normalArcTypeParms = logicArcMenu $$$         -- normal comorphism
                                 Color normalArcColor $$$
                                 ValueTitle acmName $$$
-                                nullArcTypeParms
+                                emptyArcTypeParms
            inclArcTypeParms = logicArcMenu $$$           -- inclusion
                                Color inclusionArcColor $$$
                                ValueTitle acmName $$$
-                               nullArcTypeParms
+                               emptyArcTypeParms
            adhocInclArcTypeParms =
                             Color inclusionArcColor $$$ -- ad-hoc inclusion
-                            nullArcTypeParms
+                            emptyArcTypeParms
        normalArcType    <- newArcType logicG normalArcTypeParms
        inclArcType      <- newArcType logicG inclArcTypeParms
        adhocInclArcType <- newArcType logicG adhocInclArcTypeParms
@@ -389,7 +374,6 @@ showHetSublogicGraph
        mapM_ (insertArcType normalArcType) normalCom
        redraw logicG
     where
-        (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
         showSublogic (G_sublogics lid _) =
             unlines (map sublogicName (all_sublogics lid))
         showSubTitle gsl =
