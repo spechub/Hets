@@ -80,8 +80,7 @@ Executable hets
     , time >= 1.1.3 && < 1.2
     , xml >= 1.3 && < 1.4
   cpp-options: -DCASLEXTENSIONS
-  extensions: OverlappingInstances
-  ghc-options: -fglasgow-exts -threaded
+  ghc-options: -threaded
 
   if flag(uniform)
     build-depends:

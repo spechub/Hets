@@ -70,7 +70,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif
 
-HC_OPTS_WITHOUTGLADE = -threaded -fglasgow-exts -XOverlappingInstances \
+HC_OPTS_WITHOUTGLADE = -threaded \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(TABULAR_PACKAGE) \
