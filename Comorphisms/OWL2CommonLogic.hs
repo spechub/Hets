@@ -110,10 +110,8 @@ mapSign sig =
                         , (OS.annotationRoles sig)
                         , (OS.individuals sig) ]
       itms = Set.map uriToId conc
-  in return emptySig 
-        { items = itms
-        }
-
+  in return emptySig { items = itms }
+        
 
 predefinedSentences :: [CommonAnno.Named SENTENCE]
 predefinedSentences =
@@ -263,7 +261,7 @@ mapAxiom cSig ax =
                     return (Just os, cSig)
               EquivOrDisjointObjectProperties disOrEq oExLst ->
                   do
-                    pairs <- mapComObjectPropsList cSig oExLst a b
+                    pairs <- mapComObjectPropsList cSig oExLst (OVar a) (OVar b)
                     return (Just $ Quant_sent (Universal
                               [ Name (mkNName a)
                               , Name (mkNName b)]
@@ -285,7 +283,7 @@ mapAxiom cSig ax =
                                nullRange, cSig)
               ObjectPropertyDomainOrRange domOrRn objP descr ->
                         do
-                          tobjP <- mapObjProp cSig objP a b
+                          tobjP <- mapObjProp cSig objP (OVar a) (OVar b)
                           (tdsc, dSig)  <- uncurry (mapDescription cSig descr) $
                                    case domOrRn of
                                      ObjDomain -> (OVar a, a)
@@ -308,8 +306,8 @@ mapAxiom cSig ax =
                                      nullRange, dSig)
               InverseObjectProperties o1 o2 ->
                   do
-                    so1 <- mapObjProp cSig o1 a b
-                    so2 <- mapObjProp cSig o2 b a
+                    so1 <- mapObjProp cSig o1 (OVar a) (OVar b)
+                    so2 <- mapObjProp cSig o2 (OVar a) (OVar b)
                     return (Just $ Quant_sent (Universal
                              [Name (mkNName a)
                              ,Name (mkNName b)]
@@ -324,8 +322,8 @@ mapAxiom cSig ax =
                   case cha of
                     Functional ->
                         do
-                          so1 <- mapObjProp cSig o a b
-                          so2 <- mapObjProp cSig o a c
+                          so1 <- mapObjProp cSig o (OVar a) (OVar b)
+                          so2 <- mapObjProp cSig o (OVar a) (OVar b)
                           return (Just $ Quant_sent (Universal
                                      [Name (mkNName a)
                                      ,Name (mkNName b)
@@ -353,8 +351,8 @@ mapAxiom cSig ax =
                                      nullRange, cSig)
                     InverseFunctional ->
                         do
-                          so1 <- mapObjProp cSig o a c
-                          so2 <- mapObjProp cSig o b c
+                          so1 <- mapObjProp cSig o (OVar a) (OVar c)
+                          so2 <- mapObjProp cSig o (OVar b) (OVar c)
                           return (Just $ Quant_sent (Universal
                                      [Name (mkNName a)
                                      ,Name (mkNName b)
@@ -382,14 +380,14 @@ mapAxiom cSig ax =
                                      nullRange, cSig)
                     Reflexive  ->
                         do
-                          so <- mapObjProp cSig o a a
+                          so <- mapObjProp cSig o (OVar a) (OVar a)
                           return (Just $ Quant_sent (Universal
                                    [Name (mkNName a)]
                                     so)
                                     nullRange, cSig)
                     Irreflexive ->
                         do
-                          so <- mapObjProp cSig o a a
+                          so <- mapObjProp cSig o (OVar a) (OVar a)
                           return
                                  (Just $ Quant_sent (Universal
                                    [Name (mkNName a)]
@@ -397,8 +395,8 @@ mapAxiom cSig ax =
                                    nullRange, cSig)
                     Symmetric ->
                         do
-                          so1 <- mapObjProp cSig o a b
-                          so2 <- mapObjProp cSig o b a
+                          so1 <- mapObjProp cSig o (OVar a) (OVar b)
+                          so2 <- mapObjProp cSig o (OVar b) (OVar a)
                           return
                            (Just $ Quant_sent (Universal
                                [Name (mkNName a)
@@ -411,8 +409,8 @@ mapAxiom cSig ax =
                                nullRange, cSig)
                     Asymmetric ->
                         do
-                          so1 <- mapObjProp cSig o a b
-                          so2 <- mapObjProp cSig o b a
+                          so1 <- mapObjProp cSig o (OVar a) (OVar b)
+                          so2 <- mapObjProp cSig o (OVar b) (OVar a)
                           return
                            (Just $ Quant_sent (Universal
                                [Name (mkNName a)
@@ -425,8 +423,8 @@ mapAxiom cSig ax =
                                nullRange, cSig)
                     Antisymmetric ->
                         do
-                          so1 <- mapObjProp cSig o a b
-                          so2 <- mapObjProp cSig o b a
+                          so1 <- mapObjProp cSig o (OVar a) (OVar b)
+                          so2 <- mapObjProp cSig o (OVar b) (OVar a)
                           return
                            (Just $ Quant_sent (Universal
                                [Name (mkNName a)
@@ -451,9 +449,9 @@ mapAxiom cSig ax =
                                nullRange, cSig)
                     Transitive ->
                         do
-                          so1 <- mapObjProp cSig o a b
-                          so2 <- mapObjProp cSig o b c
-                          so3 <- mapObjProp cSig o a c
+                          so1 <- mapObjProp cSig o (OVar a) (OVar b)
+                          so2 <- mapObjProp cSig o (OVar b) (OVar c)
+                          so3 <- mapObjProp cSig o (OVar a) (OVar c)
                           return
                            (Just $ Quant_sent (Universal
                                [Name (mkNName a)
@@ -469,8 +467,8 @@ mapAxiom cSig ax =
                                nullRange, cSig)
               SubDataPropertyOf dP1 dP2 ->
                   do
-                    l <- mapDataProp cSig dP1 a b
-                    r <- mapDataProp cSig dP2  a b
+                    l <- mapDataProp cSig dP1 (OVar a) (OVar b)
+                    r <- mapDataProp cSig dP2  (OVar a) (OVar b)
                     return (Just $ Quant_sent (Universal
                                [ Name (mkNName a)
                                , Name (mkNName b)]
@@ -482,7 +480,7 @@ mapAxiom cSig ax =
                                nullRange, cSig)
               EquivOrDisjointDataProperties disOrEq dlst ->
                   do
-                    pairs <- mapComDataPropsList cSig dlst a b
+                    pairs <- mapComDataPropsList cSig dlst (OVar a) (OVar b)
                     return (Just $ Quant_sent (Universal
                               [ Name (mkNName a)
                               , Name (mkNName b)]
@@ -504,7 +502,7 @@ mapAxiom cSig ax =
                                nullRange, cSig)
               DataPropertyDomainOrRange domRn dpex ->
                         do
-                          oEx <- mapDataProp cSig dpex a b
+                          oEx <- mapDataProp cSig dpex (OVar a) (OVar b)
                           case domRn of
                             DataDomain mdom ->
                                 do
@@ -518,7 +516,7 @@ mapAxiom cSig ax =
                                          nullRange)) nullRange, dSig)
                             DataRange  rn  ->
                                 do
-                                  (odes, dSig) <- mapDataRange cSig rn b
+                                  (odes, dSig) <- mapDataRange cSig rn (OVar b)
                                   let vars = (mkNName a, mkNName b)
                                   return (Just $ Quant_sent (Universal
                                          [Name (fst vars)]
@@ -528,8 +526,8 @@ mapAxiom cSig ax =
                                          nullRange)) nullRange, dSig)
               FunctionalDataProperty o ->
                         do
-                          so1 <- mapDataProp cSig o a b
-                          so2 <- mapDataProp cSig o a c
+                          so1 <- mapDataProp cSig o (OVar a) (OVar b)
+                          so2 <- mapDataProp cSig o (OVar a) (OVar c)
                           return (Just $ Quant_sent (Universal
                                      [Name (mkNName a)
                                      ,Name (mkNName b)
@@ -583,45 +581,16 @@ mapAxiom cSig ax =
                                 ocls
                                 ) nullRange )) nullRange , dSig)
               ObjectPropertyAssertion ass ->
-                  case ass of
-                    Assertion objProp posNeg sourceInd targetInd ->
-                       do
-                         inS <- mapIndivURI cSig sourceInd
-                         inT <- mapIndivURI cSig targetInd
-                         case objProp of 
-                                 OpURI u -> 
-                                  do
-                                    nm <- uriToTokM u
-                                    let oPropH = Atom_sent
-                                              (
-                                                Atom
-                                                (Name_term nm)
-                                                [ Term_seq inS, Term_seq inT]
-                                              )
-                                             nullRange
-                                        oProp = case posNeg of
-                                              Positive -> oPropH
-                                              Negative -> Bool_sent (Negation
-                                                           oPropH) nullRange                   
-                                    return (Just $ oProp, cSig)
-                                 InverseOp u ->
-                                  case u of
-                                     OpURI ur ->
-                                      do
-                                        nm <- uriToTokM ur
-                                        let oPropH = Atom_sent
-                                                  (
-                                                    Atom
-                                                    (Name_term nm)
-                                                    [ Term_seq inT, Term_seq inS]
-                                                  )
-                                                nullRange
-                                            oProp = case posNeg of
-                                                  Positive -> oPropH
-                                                  Negative -> Bool_sent (Negation
-                                                              oPropH) nullRange                   
-                                        return (Just $ oProp, cSig)
-                                     InverseOp _ -> error "no inverse of an inverse"
+                 case ass of
+                    Assertion objProp posNeg sInd tInd ->
+                      do
+                        oPropH <- mapObjProp cSig objProp (OIndi sInd) (OIndi tInd)
+                        let oProp = case posNeg of
+                                      Positive -> oPropH
+                                      Negative -> Bool_sent (Negation
+                                                    oPropH)
+                                                    nullRange
+                        return (Just oProp, cSig)
               DataPropertyAssertion ass ->
                   case ass of
                     Assertion dPropExp posNeg sourceInd targetInd ->
@@ -641,24 +610,25 @@ mapAxiom cSig ax =
                                         Negative -> Bool_sent (Negation
                                                     dPropH) nullRange
                           return (Just $  dProp, cSig)
-              Declaration _ -> 
-                  return (Nothing, cSig)
-        EntityAnno _  ->
-              return (Nothing, cSig)
+              Declaration _ -> return (Nothing, cSig)
+        EntityAnno _  -> return (Nothing, cSig)
+
+
+
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
 operations. -}
 mapComObjectPropsList :: Sign                    -- ^ Signature
                       -> [ObjectPropertyExpression]
-                      -> Int                         -- ^ First variable
-                      -> Int                         -- ^ Last  variable
+                      -> VarOrIndi                        -- ^ First variable
+                      -> VarOrIndi                         -- ^ Last  variable
                       -> Result [(SENTENCE,SENTENCE)]
 mapComObjectPropsList cSig props num1 num2 =
   mapM (\ (x, z) -> do
         l <- mapObjProp cSig x num1 num2
         r <- mapObjProp cSig z num1 num2
         return (l, r)
-      ) $ comPairs props props
+        ) $ comPairs props props
 
 
 -- | mapping of data constants
@@ -694,8 +664,8 @@ mapSubObjProp cSig prop oP num1 =
     case prop of
              OPExpression oPL ->
                do
-                 l <- mapObjProp cSig oPL num1 num2
-                 r <- mapObjProp cSig oP num1 num2
+                 l <- mapObjProp cSig oPL (OVar num1) (OVar num2)
+                 r <- mapObjProp cSig oP (OVar num1) (OVar num2)
                  return $ Quant_sent (Universal
                     [ Name (mkNName num1)
                     , Name (mkNName num2)]
@@ -714,10 +684,10 @@ mapSubObjProp cSig prop oP num1 =
                do
                  let zprops = zip (tail props) [(num2 + 1) ..]
                      (_, vars) = unzip zprops
-                 oProps  <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
+                 oProps  <- mapM (\ (z, x, y) -> mapObjProp cSig z (OVar x) (OVar y)) $
                                   zip3 props ((num1 : vars) ++ [num2]) $
                                        tail ((num1 : vars) ++ [num2])
-                 ooP     <- mapObjProp cSig oP num1 num2
+                 ooP     <- mapObjProp cSig oP (OVar num1) (OVar num2)
                  return $ Quant_sent (Universal
                            [ Name (mkNName num1)
                            , Name (mkNName num2)]
@@ -744,8 +714,8 @@ mapSubObjProp cSig prop oP num1 =
 operations. -}
 mapComDataPropsList :: Sign
                       -> [DataPropertyExpression]
-                      -> Int                         -- ^ First variable
-                      -> Int                         -- ^ Last  variable
+                      -> VarOrIndi                   -- ^ First variable
+                      -> VarOrIndi                   -- ^ Last  variable
                       -> Result [(SENTENCE,SENTENCE)]
 mapComDataPropsList cSig props num1 num2 =
   mapM (\ (x, z) -> do
@@ -757,14 +727,14 @@ mapComDataPropsList cSig props num1 num2 =
 -- | Mapping of data properties
 mapDataProp :: Sign
             -> DataPropertyExpression
-            -> Int
-            -> Int
+            -> VarOrIndi
+            -> VarOrIndi
             -> Result SENTENCE
 mapDataProp _ dP nO nD =
   do
     let
-        l = Name_term (mkNName nO)
-        r = Name_term (mkNName nD)
+        l = Name_term (voiToTok nO)
+        r = Name_term (voiToTok nD)
     ur <- uriToTokM dP
     return $ Atom_sent
              (
@@ -777,8 +747,8 @@ mapDataProp _ dP nO nD =
              nullRange
 
 mapDataPropI :: Sign
-             -> Int
-             -> Int
+             -> VarOrIndi
+             -> VarOrIndi
              -> DataPropertyExpression
              -> Result SENTENCE
 mapDataPropI cSig nO nD dP =
@@ -787,56 +757,27 @@ mapDataPropI cSig nO nD dP =
 -- | Mapping of obj props
 mapObjProp :: Sign
               -> ObjectPropertyExpression
-              -> Int
-              -> Int
+              -> VarOrIndi
+              -> VarOrIndi
               -> Result SENTENCE
-mapObjProp cSig ob num1 num2 =
+mapObjProp cSig ob var1 var2 =
   case ob of
          OpURI u ->
-           do
-             let l = Name_term (mkNName num1)
-                 r = Name_term (mkNName num2)
-             ur <- uriToTokM u
-             return $ Atom_sent
-                      (
-                       Atom
+            do
+              let l = Name_term (voiToTok var1)
+                  r = Name_term (voiToTok var2)
+              ur <- uriToTokM u
+              return $ Atom_sent
                         (
-                          Name_term ur 
+                        Atom
+                          (
+                            Name_term ur 
+                          )
+                          [Term_seq l, Term_seq r]
                         )
-                        [Term_seq l, Term_seq r]
-                      )
-                      nullRange
+                        nullRange
          InverseOp u ->
-           mapObjProp cSig u num2 num1
-
-
--- | Mapping of obj props with Individuals
-mapObjPropI :: Sign
-              -> ObjectPropertyExpression
-              -> VarOrIndi
-              -> VarOrIndi
-              -> Result SENTENCE
-mapObjPropI cSig ob lP rP =
-    case ob of
-       OpURI u ->
-        do
-          lT <- case lP of
-                    OVar   num1   -> return $ Name_term (mkNName num1)
-                    OIndi indivID -> mapIndivURI cSig indivID
-          rT <- case rP of
-                    OVar   num1   -> return $ Name_term (mkNName num1)
-                    OIndi indivID -> mapIndivURI cSig indivID
-          ur <- uriToTokM u
-          return $ Atom_sent
-                   (
-                     Atom
-                      (
-                       Name_term ur
-                      )
-                       [Term_seq lT, Term_seq rT]
-                   )
-                   nullRange
-       InverseOp u -> mapObjPropI cSig u rP lP
+            mapObjProp cSig u var2 var1
 
 -- | Mapping of Class URIs
 mapClassURI :: Sign
@@ -866,6 +807,11 @@ mapIndivURI _ uriI =
   do
     ur <- uriToTokM uriI
     return $ Name_term ur
+
+voiToTok :: VarOrIndi -> Token
+voiToTok v = case v of
+        OVar o -> mkNName o
+        OIndi o -> uriToTok o
 
 uriToTokM :: URI -> Result Token
 uriToTokM = return . uriToTok
@@ -936,11 +882,11 @@ comPairs (a:as) (_:bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
 -- | mapping of Data Range
 mapDataRange :: Sign
              -> DataRange                -- ^ OWL DataRange
-             -> Int                      -- ^ Current Variablename
+             -> VarOrIndi                      -- ^ Current Variablename
              -> Result (SENTENCE, Sign)       -- ^ CommonLogic SENTENCE, Signature
 mapDataRange cSig rn inId =
   do 
-    let uid = Name_term (mkNName inId)
+    let uid = Name_term (voiToTok inId)
     case rn of
          DRDatatype uril ->
           do
@@ -964,22 +910,21 @@ mapDataRange cSig rn inId =
                             ( Term_seq uid : cl)
                           ) nullRange) , unite cSig (emptySig 
                                 {items = Set.fromList [(stringToId "OneOf")]} )) 
-         DatatypeRestriction dr rl -> {-error "nyi"-}
+         DatatypeRestriction dr rl ->
           do
             (sent, rSig) <- mapDataRange cSig dr inId
-            (sens, sigL) <- liftM unzip $ mapM (mapFacet cSig inId) rl
+            (sens, sigL) <- liftM unzip $ mapM (mapFacet cSig uid) rl
             return $ ((Bool_sent (
                       Conjunction (sent : sens)
                       ) nullRange), (uniteL (rSig : sigL)))
 
 -- | mapping of a tuple of DatatypeFacet and RestictionValue
 mapFacet :: Sign
-             -> Int
+             -> TERM
              -> (DatatypeFacet, RestrictionValue)
              -> Result (SENTENCE, Sign)
-mapFacet sig v (f,r) =
+mapFacet sig var (f,r) =
     do 
-      let var = Name_term (mkNName v)
       con <- mapConstant sig r
       return $ ((Atom_sent 
                 (Atom
@@ -1006,7 +951,7 @@ mapDescription cSig des oVar aVar =
   in case des of
          OWLClassDescription cl ->
            do 
-            rslt <- (mapClassURI cSig cl varN) 
+            rslt <- mapClassURI cSig cl varN
             return (rslt, cSig)
          ObjectJunction jt desL ->
            do
@@ -1027,7 +972,7 @@ mapDescription cSig des oVar aVar =
              return $ ((Bool_sent (Disjunction forms) nullRange), cSig)
          ObjectValuesFrom qt oprop descr -> 
            do
-             opropO <- mapObjProp cSig oprop var (var + 1)
+             opropO <- mapObjProp cSig oprop (OVar var) (OVar (var + 1))
              (descO, dSig) <- mapDescription cSig descr (OVar (var + 1))  (aVar + 1)
              case qt of
                SomeValuesFrom ->
@@ -1050,11 +995,11 @@ mapDescription cSig des oVar aVar =
                         nullRange), dSig)
          ObjectExistsSelf oprop -> 
             do 
-              rslt <- mapObjProp cSig oprop var var
+              rslt <- mapObjProp cSig oprop oVar oVar
               return (rslt, cSig)
          ObjectHasValue oprop indiv -> 
             do
-             rslt <- mapObjPropI cSig oprop (OVar var) (OIndi indiv)
+             rslt <- mapObjProp cSig oprop oVar (OIndi indiv)
              return (rslt, cSig)
          ObjectCardinality c ->         
           case c of
@@ -1064,6 +1009,7 @@ mapDescription cSig des oVar aVar =
                             let vlst = [(var+1) .. (n+var)]
                                 vLst = map (\ x -> OVar x) vlst
                                 vlstM = [(var+1) .. (n+var+1)]
+                                vLstM = map (\ x -> OVar x) vlstM
                             (dOut, sigL) <- (\x -> case x of
                                   Nothing -> return ([], [])
                                   Just y ->
@@ -1093,8 +1039,8 @@ mapDescription cSig des oVar aVar =
                                 qVarsM = map (\x ->
                                                   Name (mkNName x)
                                              ) vlstM
-                            oProps <- mapM (mapObjProp cSig oprop var) vlst
-                            oPropsM <- mapM (mapObjProp cSig oprop var) vlstM
+                            oProps <- mapM (mapObjProp cSig oprop (OVar var)) vLst
+                            oPropsM <- mapM (mapObjProp cSig oprop (OVar var)) vLstM
                             let minLst = Quant_sent (Existential
                                   qVars
                                   (
@@ -1122,8 +1068,8 @@ mapDescription cSig des oVar aVar =
          DataValuesFrom qt dpe dpel dr -> 
             do
               let varNN = mkNName var
-              (drSent, drSig) <- mapDataRange cSig dr var
-              senl <- mapM (mapDataPropI cSig var (var+1)) (dpe : dpel)
+              (drSent, drSig) <- mapDataRange cSig dr (OVar var)
+              senl <- mapM (mapDataPropI cSig (OVar var) (OVar (var+1))) (dpe : dpel)
               case qt of 
                    AllValuesFrom ->
                     return $ (Quant_sent (Universal [Name varNN] (
@@ -1139,33 +1085,29 @@ mapDescription cSig des oVar aVar =
                         )) nullRange, drSig)
          DataHasValue dpe c       -> 
            do
-             let varNN = mkNName var
-                 varM = mkNName (var + 1)
-                 dpet = Name_term $ uriToTok dpe
+             let dpet = Name_term $ uriToTok dpe
              con <- mapConstant cSig c
-             return $ (Quant_sent (Universal [Name varNN] (
+             return $ ((Quant_sent (Universal [Name varN] (
                   Atom_sent (
-                    Equation
-                    (Funct_term 
+                    Atom
                       dpet
-                      [ (Term_seq (Name_term (varNN)))
-                      , (Term_seq (Name_term (varM)))]
-                      nullRange
-                    )
-                    con
+                      [ (Term_seq (Name_term (varN)))
+                      , (Term_seq con)]
                   ) nullRange)
-                  ) nullRange, cSig)
+                  ) nullRange), cSig)
          DataCardinality c -> 
              case c of
                   Cardinality ct n dpe dr 
                     -> 
                       do
                         let vlst  = [(var+1) .. (n+var)]
+                            vLst = map (\ x -> OVar x) vlst
                             vlstM = [(var+1) .. (n+var+1)]
+                            vLstM = map (\ x -> OVar x) vlstM
                         (dOut, sigL) <- (\x -> case x of
                               Nothing -> return ([], [])
                               Just y ->
-                                liftM unzip $ mapM (mapDataRange cSig y) vlst
+                                liftM unzip $ mapM (mapDataRange cSig y) vLst
                              ) dr
                         let dlst = map (\(x,y) -> 
                                         Bool_sent (Negation
@@ -1190,8 +1132,8 @@ mapDescription cSig des oVar aVar =
                             qVarsM = map (\x ->
                                               Name (mkNName x)
                                           ) vlstM
-                        dProps <- mapM (mapDataProp cSig dpe var) vlst
-                        dPropsM <- mapM (mapDataProp cSig dpe var) vlstM
+                        dProps <- mapM (mapDataProp cSig dpe (OVar var)) vLst
+                        dPropsM <- mapM (mapDataProp cSig dpe (OVar var)) vLstM
                         let minLst = Quant_sent (Existential
                               qVars
                               (
