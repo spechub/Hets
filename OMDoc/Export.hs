@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Exports a development graph to an omdoc structure
@@ -46,7 +47,7 @@ import System.FilePath
 
 -- | A structure similar to SigMap but with a Grothendieck map instead.
 -- The numbered UniqName just stores the original position of the symbol
--- in the signature, and will be exploited in order to output the symbols 
+-- in the signature, and will be exploited in order to output the symbols
 -- in the correct dependency order.
 data GSigMap = GSigMap (G_symbolmap (Int, UniqName)) (NameMap String)
 

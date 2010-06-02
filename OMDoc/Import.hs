@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Transforms an OMDoc file into a development graph

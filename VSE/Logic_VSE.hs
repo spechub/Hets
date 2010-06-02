@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  the incomplete Logic instance for VSE
