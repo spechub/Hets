@@ -232,7 +232,7 @@ that the used axioms are valid in their original theory.
 So a change of a sentence may invalidate proofs in nodes reachable via theorem
 or definition links.  -}
 
-data GSentence
+data GSentence = GSentence
 
 {- | delete the sentence that fulfills the given predicate.
 
