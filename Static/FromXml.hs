@@ -32,6 +32,7 @@ import qualified Common.OrderedMap as OMap
 import Common.Result
 import Common.ToXml
 import Common.Utils
+import Common.XPath
 import Common.XUpdate
 
 import Text.XML.Light
@@ -40,15 +41,15 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-anaUpdates :: LibEnv -> DGraph -> String -> Result [AddChangeDG]
-anaUpdates _lenv _dg input = do
+anaUpdates = do
+  input <- readFile "Common/test/diff.AddingImports.decomposed.xml"
   cs <- anaXUpdates input
   acs <- mapM changeDG cs
-  return $ concat acs
+  mapM_ print $ concat acs
 
 -- | target data type of elements that may be added (via AddElem)
-data AddChangeDG =
-    SpecEntryDG
+data AddChangeDG
+  = SpecEntryDG
     { name :: SIMPLE_ID
     , formalParams :: Maybe NodeName
     }
@@ -74,14 +75,13 @@ data AddChangeDG =
     }
   | GMorphismDG
     { gmorphism :: String }
-  | SymbolDG
-    { symbol :: String }
+  | SymbolDG String
   | Affected
     { affected :: String }
   deriving Show
 
-data DeclsOrSign =
-    DeclsDG
+data DeclsOrSign
+  = DeclsDG
     { symbols :: [String] }
   | SignDG
     { sign :: String }
@@ -99,15 +99,15 @@ getElementTexts str = map strContent . findChildrenByLocalName str
 -- | convert (parts of) an xupdate change (list) to more abstract change(s)
 addChangeDG :: Monad m => AddChange -> m AddChangeDG
 addChangeDG ac = case ac of
-  AddElem e -> do
-    n <- getNameAttr e
-    case eName e of
-      "SPEC_DEFN" ->
+  AddElem e -> case eName e of
+      "SPEC-DEFN" -> do
+        n <- getNameAttr e
         return SpecEntryDG
           { name = mkSimpleId n
           , formalParams = fmap parseNodeName $ getAttrVal "formal-param" e
           }
       "DGNode" -> do
+        n <- getNameAttr e
         dOrS <- getDeclsOrSign e
         return NodeDG
           { nName = parseNodeName n -- getAttrVal "relxpath" e
@@ -131,8 +131,7 @@ addChangeDG ac = case ac of
           }
       "GMorphism" -> return GMorphismDG
          { gmorphism = strContent e }
-      "Symbol" -> return SymbolDG
-         { symbol = strContent e }
+      "Symbol" -> return $ SymbolDG $ strContent e
       en -> fail $ "Static.FromXML.addChangeDG: unexpected element: " ++ en
   AddAttr a -> return Affected
       { affected = qName $ attrKey a }
@@ -153,4 +152,26 @@ getDeclsOrSign e = case findChildrenByLocalName "Declarations" e of
 changeDG :: Monad m => Change -> m [AddChangeDG]
 changeDG (Change sel _) = case sel of
    Add _ cs -> mapM addChangeDG cs
-   _ -> fail "Static.FromXML.addChangeDG: unexpected change"
+   Remove -> return []
+   Update _ -> return []
+   _ -> fail "Static.FromXML.changeDG: unexpected change"
+
+data NodeSubElem
+  = Attribute String
+  | DeclSymbol
+  | SymbolRangeAttr Int
+    deriving Show
+
+data ViewDefnElem = RangeAttr | ViewMorphism deriving Show
+
+data LinkSubElem = LinkMorphism deriving Show
+
+data SelElems
+  = NodeElem NodeName (Maybe NodeSubElem)
+  | SpecDefn SIMPLE_ID (Maybe String) -- attribute
+  | ViewDefn SIMPLE_ID (Maybe ViewDefnElem)
+  | LinkElem EdgeId NodeName NodeName (Maybe LinkSubElem)
+    deriving Show
+
+anaPath :: Monad m => Expr -> m SelElems
+anaPath = undefined

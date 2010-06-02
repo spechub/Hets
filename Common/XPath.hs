@@ -42,7 +42,8 @@ data Axis
   | Namespace
   | Parent
   | Preceding Bool -- ^ sibling?
-  | Self deriving Show
+  | Self
+    deriving Show
 
 -- | all possible values
 allAxis :: [Axis]
@@ -478,7 +479,8 @@ expr = singleInfixExpr andExpr "or"
 data PrincipalNodeType
   = TAttribute
   | TNamespace
-  | TElement deriving Eq
+  | TElement
+    deriving Eq
 
 principalNodeType :: Axis -> PrincipalNodeType
 principalNodeType a = case a of

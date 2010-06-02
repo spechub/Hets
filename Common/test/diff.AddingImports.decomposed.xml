@@ -34,7 +34,7 @@
 </xupdate:element>
 </xupdate:element>
 <xupdate:element name="DGNode">
-<xupdate:attribute name="name">C_E1</xupdate:attribute>
+<xupdate:attribute name="name">C__E1</xupdate:attribute>
 <xupdate:attribute name="refname">C</xupdate:attribute>
 <xupdate:attribute name="relxpath">/Extension/Spec[1]</xupdate:attribute>
 <xupdate:element name="ConsStatus">
@@ -61,7 +61,7 @@
 <xupdate:element name="DGLink">
 <xupdate:attribute name="linkid">0</xupdate:attribute>
 <xupdate:attribute name="source">A</xupdate:attribute>
-<xupdate:attribute name="target">C_E1</xupdate:attribute>
+<xupdate:attribute name="target">C__E1</xupdate:attribute>
 <xupdate:element name="Type">
 <xupdate:text>GlobalDefInc</xupdate:text>
 </xupdate:element>
@@ -72,7 +72,7 @@
 <xupdate:element name="DGLink">
 <xupdate:attribute name="linkid">5</xupdate:attribute>
 <xupdate:attribute name="source">B</xupdate:attribute>
-<xupdate:attribute name="target">C_E1</xupdate:attribute>
+<xupdate:attribute name="target">C__E1</xupdate:attribute>
 <xupdate:element name="Type">
 <xupdate:text>GlobalDefInc</xupdate:text>
 </xupdate:element>
@@ -82,7 +82,7 @@
 </xupdate:element>
 <xupdate:element name="DGLink">
 <xupdate:attribute name="linkid">6</xupdate:attribute>
-<xupdate:attribute name="source">C_E1</xupdate:attribute>
+<xupdate:attribute name="source">C__E1</xupdate:attribute>
 <xupdate:attribute name="target">C</xupdate:attribute>
 <xupdate:element name="Type">
 <xupdate:text>GlobalDefInc</xupdate:text>
