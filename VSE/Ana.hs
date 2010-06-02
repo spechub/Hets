@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  static analysis of VSE parts
@@ -196,7 +197,7 @@ basicAna (bs, sig, ga) = do
         (bs, sigIn, ga)
   appendDiags $ checkCases sig2 sens
   appendDiags $ map
-    (\ i -> mkDiag Error "illegal predicate declaration for procedure" i)
+    (mkDiag Error "illegal predicate declaration for procedure")
     $ Map.keys $ interMapSet (diffMapSet (predMap sig2) $ predMap sigIn)
     $ procsToPredMap $ extendedInfo sig2
   let sig3 = diffSig const sig2 boolSig
@@ -431,11 +432,11 @@ anaProcdecl (Procedure i p@(Profile ps mr) q) = do
            else return n)
      case profileToOpType p of
        Just t -> do
-         if all (\ (Procparam j _) -> j == In) ps then return () else
-            addDiags [mkDiag Warning "function must have IN params only" i]
+         unless (all (\ (Procparam j _) -> j == In) ps)
+           $ addDiags [mkDiag Warning "function must have IN params only" i]
          addOp ea t i
-       _ -> if isPred then return () else
-            addAnnoSet ea $ Symbol i $ PredAsItemType $ profileToPredType p
+       _ -> unless isPred
+         $ addAnnoSet ea $ Symbol i $ PredAsItemType $ profileToPredType p
 
 paramsToArgs :: [Procparam] -> [SORT]
 paramsToArgs = map (\ (Procparam _ s) -> s)
@@ -510,9 +511,10 @@ mapDlformula m (Ranged f r) = case f of
    Ranged
     (RestrictedConstraint
        (map (MapSen.mapConstr m) constr)
-       (Map.fromList $ map (\(s,i) -> (mapSort (sort_map m) s, mapProcId m i)) $
-        Map.toList restr)
-    flag ) r
+       (Map.fromList
+        $ map (\ (s, i) -> (mapSort (sort_map m) s, mapProcId m i))
+        $ Map.toList restr)
+    flag) r
 
 -- | simplify fully qualified terms and formulas for pretty printing sentences
 simpProg :: Sign () e -> Program -> Program
@@ -539,7 +541,7 @@ simpDlformula sign (Ranged f r) = let sig = castSign sign in case f of
     n = simplifySen minExpForm simpDlformula sign s
     in Ranged (Dlformula b q n) r
   Defprocs ps -> Ranged (Defprocs $ map (simpDefproc sig) ps) r
-  RestrictedConstraint _ _ _  -> Ranged f r
+  RestrictedConstraint _ _ _ -> Ranged f r
     -- how should this be for restricted constraints?
 
 -- | free variables to be universally bound on the top level
@@ -558,7 +560,7 @@ freeDlVars sig (Ranged f _) = case f of
   Dlformula _ p s -> Set.union (freeProgVars (castSign sig) p) $
           freeVars sig s
   Defprocs _ -> Set.empty
-  RestrictedConstraint _ _ _  -> Set.empty
+  RestrictedConstraint _ _ _ -> Set.empty
 
 instance GetRange (Ranged a) where
   getRange (Ranged _ r) = r
@@ -600,13 +602,13 @@ extVSEColimit :: Gr Procs (Int, VSEMorExt) ->
                   (Procs, Map.Map Int VSEMorExt)
 extVSEColimit graph morMap = let
   procs = Map.fromList $ nub $
-          concatMap (\(n, Procs p) -> let
+          concatMap (\ (n, Procs p) -> let
             phi = Map.findWithDefault (error "extVSEColimit") n morMap
-           in map (\(idN, profile) ->
+           in map (\ (idN, profile) ->
                     (mapProcId phi idN, mapProfile (sort_map phi) profile)) $
               Map.toList p) $
           labNodes graph
- in (Procs procs, Map.fromList $ map (\n -> (n, emptyMorExt)) $
+ in (Procs procs, Map.fromList $ map (\ n -> (n, emptyMorExt)) $
                   nodes graph)
 
 vseMorExt :: CASLMor -> (Op_map, Pred_map)
@@ -616,12 +618,12 @@ vseMorExt m = let
   pm = pred_map m
   eqOps = Map.fromList $ map (\ (s, t) ->
     ((gnEqName s, OpType Partial [s, s] uBoolean)
-    ,(gnEqName t, Partial))) sm
+    , (gnEqName t, Partial))) sm
   restrPreds = Map.fromList $ map (\ (s, t) ->
     ((gnRestrName s, PredType [s]), gnRestrName t)) sm
   opsProcs = Map.fromList $ map (\ ((idN, OpType _ w s), (idN', _)) ->
     ((mkGenName idN, OpType Partial w s)
-    ,(mkGenName idN', Partial))) $ Map.toList om
+    , (mkGenName idN', Partial))) $ Map.toList om
   predProcs = Map.fromList $ map (\ ((idN, PredType w), idN') ->
     ((mkGenName idN, PredType w), mkGenName idN')) $ Map.toList pm
   in (Map.union eqOps opsProcs, Map.union restrPreds predProcs)

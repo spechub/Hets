@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  parsing VSE parts
@@ -93,14 +94,14 @@ program = do
     c <- formula reservedWords
     p <- keyword "then"
     t <- programSeq
-    do  r <- keyword "fi"
-        let s = toRange i [p] r
-        return $ Ranged (If c t $ Ranged Skip s) s
-      <|> do
-        q <- keyword "else"
-        e <- programSeq
-        r <- keyword "fi"
-        return $ Ranged (If c t e) $ toRange i [p, q] r
+    do r <- keyword "fi"
+       let s = toRange i [p] r
+       return $ Ranged (If c t $ Ranged Skip s) s
+     <|> do
+       q <- keyword "else"
+       e <- programSeq
+       r <- keyword "fi"
+       return $ Ranged (If c t e) $ toRange i [p, q] r
   <|> do
     w <- keyword "while"
     c <- formula reservedWords
