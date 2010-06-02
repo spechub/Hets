@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {- |
 Module      :  $Header$
 Description :  Generic Prover GUI.
