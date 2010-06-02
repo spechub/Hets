@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {- |
   test module similar to GUI_tests, but tests CMDL functions
 -}
