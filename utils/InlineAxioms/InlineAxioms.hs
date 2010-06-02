@@ -411,7 +411,7 @@ processFile prog file = do
   src <- readFile file
   let hsModRes = parseModuleWithMode (ParseMode file) src
       firstLineSrc = takeWhile (/='\n') src
-      firstLine = if isPrefixOf "{-# OPTIONS " firstLineSrc
+      firstLine = if isPrefixOf "{-# LANGUAGE " firstLineSrc
                   then firstLineSrc ++"\n"
                   else ""
   case hsModRes of
