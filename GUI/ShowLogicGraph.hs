@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang and Till Mossakowski, Uni Bremen 2002-2006

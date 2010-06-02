@@ -1,5 +1,6 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Header: /repository/HetCATS/Comorphisms/Hs2HOLCFaux.hs,v 1.26 2007/05/28 09:05:49 paolot Exp $
+Module      :  $Header$
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
 License     :  Asimilar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

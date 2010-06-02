@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) K. Luettich, Rene Wagner, Uni Bremen 2002-2005

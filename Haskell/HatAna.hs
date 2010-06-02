@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  calling programatica's analysis

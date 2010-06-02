@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for Reduce

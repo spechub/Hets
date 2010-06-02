@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for the Haskell logic

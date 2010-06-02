@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for temporal logic
@@ -52,11 +53,16 @@ instance Sentences Temporal
     Morphism.Morphism
     Symbol.Symbol
     where
-        sym_of       Temporal        = singletonList . Symbol.symOf  -- Returns a list of sets of symbols
-        symmap_of    Temporal        = Symbol.getSymbolMap      -- Returns the symbol map
-        sym_name     Temporal        = Symbol.getSymbolName     -- Returns the name of a symbol
-        map_sen      Temporal        = Morphism.mapSentence     -- Translation of sentences along signature morphism
-        simplify_sen Temporal _ form = form                     -- There is nothing to leave out
+        sym_of       Temporal        = singletonList . Symbol.symOf
+        -- Returns a list of sets of symbols
+        symmap_of    Temporal        = Symbol.getSymbolMap
+        -- Returns the symbol map
+        sym_name     Temporal        = Symbol.getSymbolName
+        -- Returns the name of a symbol
+        map_sen      Temporal        = Morphism.mapSentence
+        -- Translation of sentences along signature morphism
+        simplify_sen Temporal _ form = form
+        -- There is nothing to leave out
 
 
 -- | Syntax of Temporal logic
@@ -102,7 +108,8 @@ instance StaticAnalysis Temporal
     Symbol.Symbol                      -- symbol
     Symbol.Symbol                      -- raw_symbol
         where
-          basic_analysis           Temporal = Nothing -- Just Analysis.basicTemporalAnalysis
+          basic_analysis           Temporal = Nothing
+          -- Just Analysis.basicTemporalAnalysis
           empty_signature          Temporal = Sign.emptySig
           is_subsig                Temporal = Sign.isSubSigOf
           subsig_inclusion       Temporal s = return . Morphism.inclusionMap s
@@ -110,8 +117,13 @@ instance StaticAnalysis Temporal
           symbol_to_raw            Temporal = Symbol.symbolToRaw
           id_to_raw                Temporal = Symbol.idToRaw
           matches                  Temporal = Symbol.matches
-          stat_symb_items          Temporal = undefined -- Analysis.mkStatSymbItems
-          stat_symb_map_items      Temporal = undefined -- Analysis.mkStatSymbMapItem
-          induced_from_morphism    Temporal = undefined -- Analysis.inducedFromMorphism
-          induced_from_to_morphism Temporal = undefined -- Analysis.inducedFromToMorphism
-          signature_colimit        Temporal = undefined -- Analysis.signatureColimit
+          stat_symb_items          Temporal = undefined
+          -- Analysis.mkStatSymbItems
+          stat_symb_map_items      Temporal = undefined
+          -- Analysis.mkStatSymbMapItem
+          induced_from_morphism    Temporal = undefined
+          -- Analysis.inducedFromMorphism
+          induced_from_to_morphism Temporal = undefined
+          -- Analysis.inducedFromToMorphism
+          signature_colimit        Temporal = undefined
+          -- Analysis.signatureColimit

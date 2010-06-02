@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from CommonLogic to CASL
@@ -12,10 +13,10 @@ Translating comorphism from Common Logic to CASL
 
 -}
 
-module Comorphisms.CommonLogic2CASL 
+module Comorphisms.CommonLogic2CASL
    (
      CommonLogic2CASL (..)
-   ) 
+   )
    where
 
 import Logic.Logic as Logic
@@ -28,7 +29,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 -- Common Logic
-import qualified CommonLogic.Logic_CommonLogic as ClLogic 
+import qualified CommonLogic.Logic_CommonLogic as ClLogic
 import qualified CommonLogic.AS_CommonLogic as ClBasic
 import qualified CommonLogic.Sign as ClSign
 import qualified CommonLogic.Symbol as ClSymbol
@@ -48,7 +49,7 @@ data CommonLogic2CASL = CommonLogic2CASL deriving Show
 instance Language CommonLogic2CASL where
   language_name CommonLogic2CASL = "CommonLogic2CASL"
 
-instance Comorphism 
+instance Comorphism
     CommonLogic2CASL        -- comorphism
     ClLogic.CommonLogic             -- lid domain
     ()                      -- sublogics domain
@@ -72,11 +73,11 @@ instance Comorphism
     CSign.Symbol           -- symbol codomain
     CMor.RawSymbol         -- rawsymbol codomain
     ProofTree              -- proof tree domain
-    where 
+    where
       sourceLogic CommonLogic2CASL = ClLogic.CommonLogic
       sourceSublogic CommonLogic2CASL = ()
       targetLogic CommonLogic2CASL = CLogic.CASL
-      mapSublogic CommonLogic2CASL = mapSub 
+      mapSublogic CommonLogic2CASL = mapSub
       map_theory CommonLogic2CASL = mapTheory -- TODO
       map_morphism CommonLogic2CASL = mapMor  -- TODO
       map_sentence CommonLogic2CASL = mapSentence
@@ -89,10 +90,10 @@ mapMor _ = Result { diags = [], maybeResult = Nothing }
 
 mapTheory :: (ClSign.Sign,
               [AS_Anno.Named ClBasic.SENTENCE])
-              -> Result 
-                  (CSign.CASLSign,                          
+              -> Result
+                  (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
-mapTheory (sig, form) = Result [] $ 
+mapTheory (sig, form) = Result [] $
      Just (mapSig sig, map trNamedForm form)
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
@@ -107,16 +108,16 @@ mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
                }) caslSig
 
 caslSig :: CSign.CASLSign
-caslSig = (CSign.emptySign ()) 
+caslSig = (CSign.emptySign ())
                { CSign.sortSet = Set.fromList [list, individual]
                , CSign.opMap = Map.fromList [
-                          (cons,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total, 
-                                                      CSign.opArgs = [individual,list], 
+                          (cons,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total,
+                                                      CSign.opArgs = [individual,list],
                                                       CSign.opRes = list}])
-                         ,(fun,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total, 
-                                                     CSign.opArgs = [individual,list], 
+                         ,(fun,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total,
+                                                     CSign.opArgs = [individual,list],
                                                      CSign.opRes = individual}])
-                         ,(nil,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total, 
+                         ,(nil,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total,
                                                      CSign.opArgs = [],
                                                      CSign.opRes = list}])]
                , CSign.predMap = Map.fromList
@@ -149,9 +150,9 @@ trNamedForm :: AS_Anno.Named (ClBasic.SENTENCE)
 trNamedForm form = AS_Anno.mapNamed trForm form
 
 trForm :: ClBasic.SENTENCE -> CBasic.CASLFORMULA
-trForm form = 
-   case form of 
-     ClBasic.Bool_sent bs rn 
+trForm form =
+   case form of
+     ClBasic.Bool_sent bs rn
         -> case bs of
              ClBasic.Negation s -> CBasic.Negation (trForm s) rn
              ClBasic.Conjunction ss -> CBasic.Conjunction (map trForm ss) rn
@@ -161,17 +162,17 @@ trForm form =
      ClBasic.Quant_sent qs rn
         -> case qs of
              ClBasic.Universal bs s -> CBasic.Quantification CBasic.Universal
-                                           [CBasic.Var_decl (map bindingSeq bs) individual 
+                                           [CBasic.Var_decl (map bindingSeq bs) individual
                                              Id.nullRange] (trForm s) rn --FIX
-             ClBasic.Existential bs s -> CBasic.Quantification CBasic.Existential 
-                                           [CBasic.Var_decl (map bindingSeq bs) individual 
+             ClBasic.Existential bs s -> CBasic.Quantification CBasic.Existential
+                                           [CBasic.Var_decl (map bindingSeq bs) individual
                                              Id.nullRange] (trForm s) rn --FIX
-     ClBasic.Atom_sent at rn 
-        -> case at of 
-             ClBasic.Equation trm1 trm2 -> 
+     ClBasic.Atom_sent at rn
+        -> case at of
+             ClBasic.Equation trm1 trm2 ->
                 CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
              ClBasic.Atom trm ts -> CBasic.Predication
-                                    (CBasic.Pred_name rel) ([termForm trm] ++ 
+                                    (CBasic.Pred_name rel) ([termForm trm] ++
                                     (consSeq ts):[]) Id.nullRange
      ClBasic.Comment_sent _ s _ -> trForm s -- FIX
      ClBasic.Irregular_sent s _ -> trForm s -- FIX
@@ -187,7 +188,7 @@ consSeq [] = CBasic.Application (CBasic.Op_name nil) [] Id.nullRange
 consSeq (x:xs) = CBasic.Application (CBasic.Op_name cons) [termSeqForm x, consSeq xs] Id.nullRange
 
 termSeqForm :: ClBasic.TERM_SEQ -> CBasic.TERM a
-termSeqForm ts = case ts of 
+termSeqForm ts = case ts of
                    ClBasic.Term_seq trm -> termForm trm
                    ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
 

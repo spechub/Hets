@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {- |
 Module      :  $Header$
 Description :  Access to the .glade files stored as strings inside the binary

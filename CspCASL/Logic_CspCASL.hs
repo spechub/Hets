@@ -1,5 +1,7 @@
+{-# LANGUAGE MultiParamTypeClasses, ScopedTypeVariables
+  , TypeSynonymInstances #-}
 {- |
-Module      :  $Id$
+Module      :  $Header$
 Description :  CspCASL instance of type class logic
 Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt

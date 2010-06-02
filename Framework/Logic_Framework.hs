@@ -1,6 +1,7 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
-Description :  Instances of classes defined in Logic.hs for logical frameworks               
+Description :  Instances of classes defined in Logic.hs for logical frameworks
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -21,7 +22,7 @@ import Common.Result
 data Framework = Framework deriving Show
 
 instance Language Framework where
-   description _ = "Logical Framework"                   
+   description _ = "Logical Framework"
 
 -- instance of Category for Framework
 instance Category () () where
@@ -49,7 +50,7 @@ instance StaticAnalysis Framework
    ()
    ()
    where
-   empty_signature Framework = () 
+   empty_signature Framework = ()
 
 -- instance of logic for Framework
 instance Logic Framework

@@ -1,5 +1,6 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
-Module      :  Comorphisms/CASL_DL2CASL.hs
+Module      :  $Header$
 Description :  Inclusion of CASL_DL into CASL
 Copyright   :  (c) Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt
