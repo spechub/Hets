@@ -52,6 +52,8 @@ import qualified Data.Map as Map
 import Data.List (findIndex, partition, sort)
 import Data.Maybe
 
+import Data.Ord (comparing)
+
 data Finder = Finder { fName      :: String
                      , finder     :: G_prover
                      , comorphism :: [AnyComorphism]
@@ -70,22 +72,24 @@ data ProofResult = Unchecked
                  | Some_Proved
                  | None_Proved
                  | Timeout
+                 | Empty
                  | Prove_Error
                   deriving Eq
 
 instance Show ProofResult where
   show pr = statusToPrefix pr ++ statusToColor pr
 
--- | idea is to sort the ProofResult as of relevance to the operator
+-- | idea is to sort the ProofResult (and thus the Nodes) as of relevance to the operator
 instance Ord ProofResult where
-  compare p1 p2 = EQ {- let to_integer p = case p of
-                                       Prove_Error -> 5
-                                       Timeout     -> 4
-                                       None_Proved -> 3
-                                       Some_Proved -> 2
-                                       All_Proved  -> 1
-                                       Unchecked   -> 0
-                  in compare (to_integer p1) (to_integer p2) -}
+  compare = let to_integer p = case p of
+                                 Prove_Error -> 6
+                                 None_Proved -> 5
+                                 Some_Proved -> 4
+                                 Timeout     -> 3
+                                 All_Proved  -> 2
+                                 Unchecked   -> 1
+                                 Empty       -> 0
+            in comparing to_integer
 
 statusToColor :: ProofResult -> String
 statusToColor ps = case ps of
@@ -94,6 +98,7 @@ statusToColor ps = case ps of
   Some_Proved -> "yellow"
   None_Proved -> "red"
   Timeout     -> "blue"
+  Empty       -> "grey"
   Prove_Error -> "darkred"
 
 statusToPrefix :: ProofResult -> String
@@ -103,6 +108,7 @@ statusToPrefix ps = case ps of
   Some_Proved -> "[/] "
   None_Proved -> "[-] "
   Timeout     -> "[t] "
+  Empty       -> "[o] "
   Prove_Error -> "[f] "
 
 -- | Get a markup string containing name and color
@@ -341,16 +347,14 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
 
 check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
       -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
-check inclThms ln le dg (Finder { finder = pr, comorphism = cs, selected = i})
-  timeout listNodes update nodes = let
-    count' = fromIntegral $ length nodes
-    c = cs !! i in
-  foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
-           postGUISync $ update (count / count') n'
-           res <- proveNode' inclThms timeout n (pr, c) ln
+check inclThms ln le dg f@(Finder _ pr cs i) timeout listNodes update nodes =
+  let count' = fromIntegral $ length nodes
+      c = cs !! i 
+  in foldM_ (\ count (row, fn@(FNode name node _ _)) -> do
+           postGUISync $ update (count / count') name
+           res <- proveNode' inclThms timeout node (pr, c) ln
            -- res <- consistencyCheck inclThms cc c ln le dg n timeout
-           putStrLn res
-           postGUISync $ listStoreSetValue listNodes row fn { status = None_Proved }
+           postGUISync $ listStoreSetValue listNodes row fn { status = res }
            return $ count + 1) 0 nodes
 
 -- | to look up the data types of the 'old' call from consistencyChecker, that need to be adjusted
@@ -378,7 +382,7 @@ proveNode' ::
               -- MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
-              IO String
+              IO ProofResult
 proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
   case fromMaybe (error "GtkAutomaticProofs.proveNode': noG_theory") $ globalTheory lab of
     g_th@( G_theory lid _ _ _ _ ) -> do
@@ -389,37 +393,35 @@ proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
      let st = recalculateSublogicAndSelectedTheory pf_st
      -- try to prepare the theory
      prep <- case prepareForProving st p_cm of
-             Result _ Nothing ->
-               do
-                p_cm'@(prv', acm'@(Comorphism cid)) <-
-                          lookupKnownProver st ProveCMDLautomatic
-                putStrLn ("Using the comorphism " ++ language_name cid)
-                putStrLn ("Using prover " ++ getPName prv')
-                return $ case prepareForProving st p_cm' of
-                          Result _ Nothing -> Nothing
-                          Result _ (Just sm) -> Just (sm, acm')
-             Result _ (Just sm) -> return $ Just (sm, acm)
+               Result _ Nothing -> do
+                 p_cm'@(prv', acm'@(Comorphism cid)) <-
+                           lookupKnownProver st ProveCMDLautomatic
+                 putStrLn ("Using the comorphism " ++ language_name cid)
+                 putStrLn ("Using prover " ++ getPName prv')
+                 return $ case prepareForProving st p_cm' of
+                            Result _ Nothing -> Nothing
+                            Result _ (Just sm) -> Just (sm, acm')
+               Result _ (Just sm) -> return $ Just (sm, acm)
      case prep of
      -- theory could not be computed
-      Nothing -> return "No suitable prover and comorphism found"
-      Just (G_theory_with_prover lid1 th p, cmp) ->
+       Nothing -> do putStrLn "No suitable prover and comorphism found"
+                     return Prove_Error
+       Just (G_theory_with_prover lid1 th p, cmp) ->
         case proveCMDLautomaticBatch p of
-         Nothing -> return "Error obtaining the prover"
-         Just fn -> do
-          -- mVar to poll the prover for results
-          answ <- newMVar (return [])
-          case selectedGoals st of
-           [] -> return "No goals selected. Nothing to prove"
-           _ -> do
-             ( thrId, mV ) <- fn useTh
-                              False
-                              answ
-                              (theoryName st)
-                              (TacticScript $ show timeout)
-                              th []
-             -- mThr          <- newMVar $ Just thrId
-             takeMVar mV
-             return ""
+         Nothing -> do putStrLn "Error obtaining the prover"
+                       return Prove_Error
+         Just fn -> do 
+           -- mVar to poll the prover for results
+           answ <- newMVar (return [])
+           case selectedGoals st of
+             [] -> do putStrLn "No goals selected. Nothing to prove"
+                      return Empty
+             _  -> do (thrId, mV) <- fn useTh False answ (theoryName st)
+                                      (TacticScript $ show timeout) th []
+                      -- mThr          <- newMVar $ Just thrId
+                      takeMVar mV
+                      putStrLn "TODO: read and apply proof results correctly!"
+                      return None_Proved
 
 -- | proveNode END
 -- //////////////////////////////////////////////////////////
