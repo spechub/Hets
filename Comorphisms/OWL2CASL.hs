@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from OWL 1.1 to CASL_Dl

@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Translation of first-order logic with dependent types (DFOL) to

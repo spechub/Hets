@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  State data structure used by the goal management GUI.

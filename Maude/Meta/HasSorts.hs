@@ -1,3 +1,4 @@
+{-# LANGUAGE OverlappingInstances #-}
 {- |
 Module      :  $Header$
 Description :  Accessing the Sorts of Maude data types

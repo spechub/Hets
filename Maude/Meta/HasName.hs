@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Accessing the names of Maude data types

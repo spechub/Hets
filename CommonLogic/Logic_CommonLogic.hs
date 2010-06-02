@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for common logic
@@ -71,4 +72,4 @@ instance StaticAnalysis CommonLogic
       empty_signature CommonLogic   = emptySig
       is_subsig CommonLogic         = isSubSigOf
       signature_union CommonLogic         = sigUnion
-      
+

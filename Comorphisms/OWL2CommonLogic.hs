@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from OWL 1.1 to Common Logic
@@ -78,12 +79,12 @@ instance Comorphism
 
 -- | Mapping of OWL morphisms to CommonLogic morphisms
 mapMorphism :: OWLMorphism -> Result Morphism
-mapMorphism oMor = 
+mapMorphism oMor =
   do
     dm <- mapSign $ osource oMor
     cd <- mapSign $ otarget oMor
     return  (ideOfDefaultMorphism  (unite dm cd))
-    
+
 -- | OWL topsort Thing
 thing :: NAME --Id
 thing = mkSimpleId "Thing" --stringToId "Thing"
@@ -111,14 +112,14 @@ mapSign sig =
                         , (OS.individuals sig) ]
       itms = Set.map uriToId conc
   in return emptySig { items = itms }
-        
+
 
 predefinedSentences :: [CommonAnno.Named SENTENCE]
 predefinedSentences =
   [
     (
      CommonAnno.makeNamed "nothing in Nothing" $
-     Quant_sent 
+     Quant_sent
      (
       Universal
       [Name (mkNName 1)]
@@ -142,7 +143,7 @@ predefinedSentences =
     ,
     (
      CommonAnno.makeNamed "thing in Thing" $
-     Quant_sent 
+     Quant_sent
      (
       Universal
       [Name (mkNName 1)]
@@ -174,7 +175,7 @@ mapTheory (owlSig, owlSens) =
                 return (sen:x, unite sig y)
                 ) ([], cSig) owlSens
     let cSens = concatMap (\ x ->
-            case x of 
+            case x of
                 Nothing -> []
                 Just a -> [a]
          ) cSensI
@@ -217,7 +218,7 @@ mapAxiom cSig ax =
                     (decrsS, dSig) <- mapDescriptionListP cSig a $ comPairs dS dS
                     let decrsP =
                             case eD of
-                              Equivalent -> 
+                              Equivalent ->
                                   map (\(x,y) -> Bool_sent (Biconditional x y) nullRange)
                                       decrsS
                               Disjoint   ->
@@ -335,7 +336,7 @@ mapAxiom cSig ax =
                                        Bool_sent (Conjunction [so1, so2]) nullRange
                                       )
                                       (
-                                      Atom_sent 
+                                      Atom_sent
                                         (
                                          Equation
                                           (
@@ -364,7 +365,7 @@ mapAxiom cSig ax =
                                        Bool_sent (Conjunction [so1, so2]) nullRange
                                       )
                                       (
-                                       Atom_sent 
+                                       Atom_sent
                                        (
                                         Equation
                                         (
@@ -433,7 +434,7 @@ mapAxiom cSig ax =
                                 Bool_sent (Implication
                                  (Bool_sent (Conjunction [so1, so2]) nullRange)
                                  (
-                                  Atom_sent 
+                                  Atom_sent
                                   (
                                     Equation
                                     (
@@ -565,7 +566,7 @@ mapAxiom cSig ax =
                     inD  <- mapIndivURI cSig indi
                     (ocls, dSig) <- mapDescription cSig cls (OIndi indi) a
                     case cls of
-                         OWLClassDescription _ -> 
+                         OWLClassDescription _ ->
                                 return (Just $ ocls, dSig)
                          _ ->
                             return (Just $  Quant_sent (Universal
@@ -634,22 +635,22 @@ mapComObjectPropsList cSig props num1 num2 =
 -- | mapping of data constants
 mapConstant :: Sign
             -> Constant
-            -> Result TERM 
+            -> Result TERM
 mapConstant _ c =
   do
     let cl = case c of
               Constant l _ -> l
     return $ Name_term (mkSimpleId cl)
 
--- | Mapping of a list of data constants only for mapDataRange        
-mapConstantList :: Sign 
+-- | Mapping of a list of data constants only for mapDataRange
+mapConstantList :: Sign
                 -> [Constant]
                 -> Result [TERM_SEQ]
-mapConstantList sig cl = 
+mapConstantList sig cl =
   mapM (\ x -> do
                  t <- mapConstant sig x
                  return $ Term_seq t ) cl
-           
+
 
 -- | Mapping of subobj properties
 mapSubObjProp :: Sign
@@ -657,7 +658,7 @@ mapSubObjProp :: Sign
               -> ObjectPropertyExpression
               -> Int
               -> Result SENTENCE
-mapSubObjProp cSig prop oP num1 = 
+mapSubObjProp cSig prop oP num1 =
   let
       num2 = num1 + 1
   in
@@ -680,7 +681,7 @@ mapSubObjProp cSig prop oP num1 =
                     )
                     )
                     nullRange
-             SubObjectPropertyChain props -> 
+             SubObjectPropertyChain props ->
                do
                  let zprops = zip (tail props) [(num2 + 1) ..]
                      (_, vars) = unzip zprops
@@ -771,7 +772,7 @@ mapObjProp cSig ob var1 var2 =
                         (
                         Atom
                           (
-                            Name_term ur 
+                            Name_term ur
                           )
                           [Term_seq l, Term_seq r]
                         )
@@ -885,31 +886,31 @@ mapDataRange :: Sign
              -> VarOrIndi                      -- ^ Current Variablename
              -> Result (SENTENCE, Sign)       -- ^ CommonLogic SENTENCE, Signature
 mapDataRange cSig rn inId =
-  do 
+  do
     let uid = Name_term (voiToTok inId)
     case rn of
          DRDatatype uril ->
           do
-            return  ((Atom_sent 
-                          (Atom 
+            return  ((Atom_sent
+                          (Atom
                             (Name_term (mkSimpleId "ElementOf"))
                             [ Term_seq uid
                             , Term_seq (Name_term (uriToTok uril))]
-                          ) nullRange) , unite cSig (emptySig 
-                                {items = Set.fromList [(stringToId "ElementOf")]} ))         
+                          ) nullRange) , unite cSig (emptySig
+                                {items = Set.fromList [(stringToId "ElementOf")]} ))
          DataComplementOf dr ->
           do
             (dc, sig) <- mapDataRange cSig dr inId
             return (( Bool_sent (Negation dc) nullRange), sig)
-         DataOneOf cs -> 
+         DataOneOf cs ->
           do
             cl <- mapConstantList cSig cs
-            return ((Atom_sent 
-                          (Atom 
+            return ((Atom_sent
+                          (Atom
                             (Name_term (mkSimpleId "OneOf"))
                             ( Term_seq uid : cl)
-                          ) nullRange) , unite cSig (emptySig 
-                                {items = Set.fromList [(stringToId "OneOf")]} )) 
+                          ) nullRange) , unite cSig (emptySig
+                                {items = Set.fromList [(stringToId "OneOf")]} ))
          DatatypeRestriction dr rl ->
           do
             (sent, rSig) <- mapDataRange cSig dr inId
@@ -924,16 +925,16 @@ mapFacet :: Sign
              -> (DatatypeFacet, RestrictionValue)
              -> Result (SENTENCE, Sign)
 mapFacet sig var (f,r) =
-    do 
+    do
       con <- mapConstant sig r
-      return $ ((Atom_sent 
+      return $ ((Atom_sent
                 (Atom
                   (Name_term (mkSimpleId (showFacet f)))
-                  [ Term_seq var 
+                  [ Term_seq var
                   , Term_seq con ]
-                ) nullRange) , unite sig (emptySig 
-                   {items = Set.fromList [(stringToId (showFacet f))]} )) 
-     
+                ) nullRange) , unite sig (emptySig
+                   {items = Set.fromList [(stringToId (showFacet f))]} ))
+
 
 -- | mapping of OWL Descriptions
 mapDescription :: Sign
@@ -941,7 +942,7 @@ mapDescription :: Sign
                -> VarOrIndi                -- ^ Current Variablename
                -> Int                      -- ^ Alternative to current
                -> Result (SENTENCE, Sign)  -- ^ CommonLogic_DL Formula
-mapDescription cSig des oVar aVar = 
+mapDescription cSig des oVar aVar =
   let varN = case oVar of
         OVar v -> mkNName v
         OIndi i -> uriToTok i
@@ -950,7 +951,7 @@ mapDescription cSig des oVar aVar =
         OIndi _ -> aVar
   in case des of
          OWLClassDescription cl ->
-           do 
+           do
             rslt <- mapClassURI cSig cl varN
             return (rslt, cSig)
          ObjectJunction jt desL ->
@@ -961,22 +962,22 @@ mapDescription cSig des oVar aVar =
                 UnionOf -> ((Bool_sent (Disjunction desO) nullRange), (uniteL dSig))
                 IntersectionOf -> ((Bool_sent (Conjunction desO) nullRange), (uniteL dSig))
          ObjectComplementOf descr ->
-           do 
+           do
              (desO, dSig) <- mapDescription cSig descr oVar  aVar
              return $ ((Bool_sent (Negation desO) nullRange), dSig)
          ObjectOneOf indS ->
            do
              indO <- mapM (mapIndivURI cSig) indS
-             let forms = map ((\x y -> Atom_sent (Equation x y) 
+             let forms = map ((\x y -> Atom_sent (Equation x y)
                             nullRange) (Name_term varN)) indO
              return $ ((Bool_sent (Disjunction forms) nullRange), cSig)
-         ObjectValuesFrom qt oprop descr -> 
+         ObjectValuesFrom qt oprop descr ->
            do
              opropO <- mapObjProp cSig oprop (OVar var) (OVar (var + 1))
              (descO, dSig) <- mapDescription cSig descr (OVar (var + 1))  (aVar + 1)
              case qt of
                SomeValuesFrom ->
-                    return $ ((Quant_sent (Existential [Name (mkNName 
+                    return $ ((Quant_sent (Existential [Name (mkNName
                                         (var + 1))]
                         (
                          Bool_sent (Conjunction
@@ -985,7 +986,7 @@ mapDescription cSig des oVar aVar =
                         ))
                  nullRange), dSig)
                AllValuesFrom ->
-                   return $ ((Quant_sent (Universal [Name (mkNName 
+                   return $ ((Quant_sent (Universal [Name (mkNName
                                         (var + 1))]
                         (
                          Bool_sent (Implication
@@ -993,15 +994,15 @@ mapDescription cSig des oVar aVar =
                          nullRange
                         ))
                         nullRange), dSig)
-         ObjectExistsSelf oprop -> 
-            do 
+         ObjectExistsSelf oprop ->
+            do
               rslt <- mapObjProp cSig oprop oVar oVar
               return (rslt, cSig)
-         ObjectHasValue oprop indiv -> 
+         ObjectHasValue oprop indiv ->
             do
              rslt <- mapObjProp cSig oprop oVar (OIndi indiv)
              return (rslt, cSig)
-         ObjectCardinality c ->         
+         ObjectCardinality c ->
           case c of
                Cardinality ct n oprop d
                         ->
@@ -1013,10 +1014,10 @@ mapDescription cSig des oVar aVar =
                             (dOut, sigL) <- (\x -> case x of
                                   Nothing -> return ([], [])
                                   Just y ->
-                                    liftM unzip $ mapM (uncurry (mapDescription cSig y))  
-                                        (zip vLst vlst) 
+                                    liftM unzip $ mapM (uncurry (mapDescription cSig y))
+                                        (zip vLst vlst)
                                  ) d
-                            let dlst = map (\(x,y) -> 
+                            let dlst = map (\(x,y) ->
                                             Bool_sent (Negation
                                             (
                                               Atom_sent (Equation
@@ -1064,13 +1065,13 @@ mapDescription cSig des oVar aVar =
                                ExactCardinality -> return $
                                            ((Bool_sent (Conjunction
                                            [minLst, maxLst])
-                                           nullRange), uniteL sigL)                                                
-         DataValuesFrom qt dpe dpel dr -> 
+                                           nullRange), uniteL sigL)
+         DataValuesFrom qt dpe dpel dr ->
             do
               let varNN = mkNName var
               (drSent, drSig) <- mapDataRange cSig dr (OVar var)
               senl <- mapM (mapDataPropI cSig (OVar var) (OVar (var+1))) (dpe : dpel)
-              case qt of 
+              case qt of
                    AllValuesFrom ->
                     return $ (Quant_sent (Universal [Name varNN] (
                         Bool_sent
@@ -1083,7 +1084,7 @@ mapDescription cSig des oVar aVar =
                         ( Conjunction (drSent : senl)
                         ) nullRange
                         )) nullRange, drSig)
-         DataHasValue dpe c       -> 
+         DataHasValue dpe c       ->
            do
              let dpet = Name_term $ uriToTok dpe
              con <- mapConstant cSig c
@@ -1095,10 +1096,10 @@ mapDescription cSig des oVar aVar =
                       , (Term_seq con)]
                   ) nullRange)
                   ) nullRange), cSig)
-         DataCardinality c -> 
+         DataCardinality c ->
              case c of
-                  Cardinality ct n dpe dr 
-                    -> 
+                  Cardinality ct n dpe dr
+                    ->
                       do
                         let vlst  = [(var+1) .. (n+var)]
                             vLst = map (\ x -> OVar x) vlst
@@ -1109,7 +1110,7 @@ mapDescription cSig des oVar aVar =
                               Just y ->
                                 liftM unzip $ mapM (mapDataRange cSig y) vLst
                              ) dr
-                        let dlst = map (\(x,y) -> 
+                        let dlst = map (\(x,y) ->
                                         Bool_sent (Negation
                                         (
                                           Atom_sent (Equation
@@ -1157,5 +1158,5 @@ mapDescription cSig des oVar aVar =
                             ExactCardinality -> return $
                                         ((Bool_sent (Conjunction
                                         [minLst, maxLst])
-                                        nullRange), uniteL sigL)   
-         
+                                        nullRange), uniteL sigL)
+

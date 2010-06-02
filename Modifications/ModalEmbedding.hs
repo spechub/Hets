@@ -1,4 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, FlexibleInstances
+  , TypeSynonymInstances #-}
 -- institution modification
 -- CASL -------------------------id------------------> CASL
 -- CASL ---CASL2Modal----> ModalCASL --Modal2CASL----> CASL

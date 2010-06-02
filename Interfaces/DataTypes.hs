@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Common Data types to be used between interfaces

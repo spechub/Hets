@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
@@ -16,8 +17,8 @@ generatedness via non-injective datatype constructors
 total functions my become partial because i.e. division is total
 for a second non-zero argument but partial otherwise.
 
-partial functions remain partial unless the fall to together with an overloaded
-total function
+partial functions remain partial unless they fall to together
+with an overloaded total function
 -}
 
 module Comorphisms.CASL2TopSort (CASL2TopSort(..)) where

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, RankNTypes #-}
 {- |
 Module      :$Header$
 Description : CMDL interface commands
