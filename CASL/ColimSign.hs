@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  CASL signatures colimits

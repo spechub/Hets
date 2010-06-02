@@ -1,4 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
+  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  interface (type class) for comorphism modifications in Hets

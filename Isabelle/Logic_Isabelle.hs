@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Isabelle instance of class Logic

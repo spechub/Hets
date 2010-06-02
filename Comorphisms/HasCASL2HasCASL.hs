@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  translating executable formulas to programs

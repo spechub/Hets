@@ -1,4 +1,5 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
+  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  interface and class for logic translations

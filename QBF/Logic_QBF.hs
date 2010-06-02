@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for propositional logic

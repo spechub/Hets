@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
+  , GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for DMU

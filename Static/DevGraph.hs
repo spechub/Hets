@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes, GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
 Description :  Central datastructures for development graphs

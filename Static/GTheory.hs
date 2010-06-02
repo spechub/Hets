@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable
+  , GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
 Description :  theory datastructure for development graphs

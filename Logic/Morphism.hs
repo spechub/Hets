@@ -1,5 +1,6 @@
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE IncoherentInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
+  , FlexibleInstances, UndecidableInstances, IncoherentInstances
+  , ExistentialQuantification, GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
 Description :  interface (type class) for logic projections (morphisms) in Hets

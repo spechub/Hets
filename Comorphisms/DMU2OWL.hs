@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  translating DMU xml to OWL

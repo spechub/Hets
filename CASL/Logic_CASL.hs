@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
+  , FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for the CASL logic
@@ -16,7 +17,7 @@ Instance of class Logic for the CASL logic
 module CASL.Logic_CASL where
 
 import Common.AS_Annotation
-import Common.Parsec((<<))
+import Common.Parsec ((<<))
 import Common.ProofTree
 import Common.Consistency
 

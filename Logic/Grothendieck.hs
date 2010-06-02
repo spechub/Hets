@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification, MultiParamTypeClasses
+ , DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 {- |
 Module      :  $Header$
 Description :  Grothendieck logic (flattening of logic graph to a single logic)

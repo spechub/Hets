@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for SoftFOL.

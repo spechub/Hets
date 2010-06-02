@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  CASL-to-OMDoc conversion

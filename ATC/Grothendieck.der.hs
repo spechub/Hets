@@ -1,4 +1,4 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances, FlexibleInstances, OverlappingInstances #-}
 {- |
 Module      :  $Header$
 Description :  manually created ShATermConvertible instances
