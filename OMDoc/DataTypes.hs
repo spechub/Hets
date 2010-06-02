@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  The OMDoc Data Types
@@ -33,7 +34,7 @@ import qualified Data.Map as Map
 -}
 
 
----------------------- Datatypes for Representation ----------------------
+-- -------------------- Datatypes for Representation ----------------------
 
 
 -- | OMDoc root element with libname and a list of toplevel elements
@@ -107,16 +108,16 @@ instance Show Totality where
     show No = "no"
 
 instance Read SymbolRole where
-    readsPrec  _ = readShow [Obj, Typ, Axiom, Theorem]
+    readsPrec _ = readShow [Obj, Typ, Axiom, Theorem]
 
 instance Read ADTType where
-    readsPrec  _ = readShow [Free, Generated]
+    readsPrec _ = readShow [Free, Generated]
 
 instance Read Totality where
-    readsPrec  _ = readShow [Yes, No]
+    readsPrec _ = readShow [Yes, No]
 
 -- | Names used for OpenMath variables and symbols
-data OMName = OMName { name :: String,  path :: [String] }
+data OMName = OMName { name :: String, path :: [String] }
               deriving (Show, Read, Eq, Ord, Typeable)
 
 -- | Attribute-name/attribute-value pair used to represent the type
@@ -163,7 +164,7 @@ type NameMap a = Map.Map a UniqName
 data SigMap a = SigMap (NameMap a) (NameMap String)
 
 -- | Mapping of OMDoc names to hets strings, for signature creation,
---   and strings to symbols, for lookup in terms (used in import)
+-- and strings to symbols, for lookup in terms (used in import)
 data SigMapI a = SigMapI { sigMapISymbs :: Map.Map OMName a
                          , sigMapINotations :: Map.Map OMName String }
 
@@ -194,12 +195,12 @@ cdToMaybeList _ = [Nothing, Nothing]
 -- * Name handling: encoding, decoding, unique names
 
 -- | The closing paren + percent can be used neither in ordinary Hets-names
---   nor in sentence names hence it is used here for encodings.
+-- nor in sentence names hence it is used here for encodings.
 uniqPrefix :: String
 uniqPrefix = "%()%"
 
 -- | Special name encoding in order to be able to recognize these names
---   while reading. 
+-- while reading.
 nameEncode :: String -- ^ the kind of the encoding, may not contain colons
            -> [String] -- ^ the values to encode
            -> String
@@ -212,19 +213,19 @@ nameDecode s =
     case stripPrefix uniqPrefix s of
       Nothing -> Nothing
       Just s' ->
-          let (kind, r) = break (==':') s'
+          let (kind, r) = break (== ':') s'
           in if null r
              then error $ "nameDecode: missing colon in " ++ s
              else Just (kind, splitByList uniqPrefix $ tail r)
 
 nameToString :: UniqName -> String
-nameToString (s,i) = if i > 0 then nameEncode ("over_" ++ show i) [s]
+nameToString (s, i) = if i > 0 then nameEncode ("over_" ++ show i) [s]
                      else s
 
 -- * Constructing/Extracting Values
 
 -- | name of the theory constitutive element, error if not TCSymbol, TCNotation,
---   or TCImport
+-- or TCImport
 tcName :: TCElement -> OMName
 tcName tc = case tc of
               TCSymbol s _ _ _ -> mkSimpleName s
