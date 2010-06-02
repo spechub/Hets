@@ -1,6 +1,4 @@
-{-# LANGUAGE
-  CPP
- #-}
+{-# LANGUAGE CPP, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Interface to the Xml Parsing Facility
@@ -15,7 +13,7 @@ Provides an xml parse function which depends on external libraries.
 -}
 
 
-module Common.XmlParser (XmlParseable, parseXml, readXmlFile) where
+module Common.XmlParser (XmlParseable (parseXml), readXmlFile) where
 
 import Text.XML.Light
 
@@ -27,7 +25,6 @@ import qualified Common.XmlExpat as XE
 import qualified Data.ByteString.Lazy as BS
 #endif
 #endif
-
 
 
 -- | This class provides an xml parsing function which is instantiated

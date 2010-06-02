@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  positions, simple and mixfix identifiers
@@ -21,6 +21,7 @@ import Common.AS_Annotation
 import Common.Doc
 
 import Data.Maybe
+import Control.Monad
 
 -- element name, attributes and optional text
 data ItemType = IT
@@ -28,8 +29,8 @@ data ItemType = IT
   , attrList :: [(String, String)]
   , getText :: Maybe Doc }
 
---- flat items (isFlat=True) are intended for output as xml-attributes
---- but this is not yet used
+-- flat items (isFlat=True) are intended for output as xml-attributes
+-- but this is not yet used
 data Item = Item { itemType :: ItemType
                  , isFlat :: Bool
                  , range :: Range
@@ -61,14 +62,14 @@ instance ItemTypeable ItemType where
 instance ItemTypeable String where
     toIT s = IT s [] Nothing
 instance ItemTypeable (String, Doc) where
-    toIT (s,s') = IT s [] $ Just s'
+    toIT (s, s') = IT s [] $ Just s'
 instance ItemTypeable (String, String, String) where
-    toIT (s,s',s'') = IT s [(s',s'')] Nothing
+    toIT (s, s', s'') = IT s [(s', s'')] Nothing
 
 class Monad m => ItemConvertible a m where
     toitem :: a -> m Item
 
----------------------------- Sublist creation ----------------------------
+-- -------------------------- Sublist creation ----------------------------
 
 listFromAL :: ItemConvertible a m => [Annoted a] -> m [Annoted Item]
 listFromAL = mapM annToAItem
@@ -81,16 +82,16 @@ listFromL :: ItemConvertible a m => [a] -> m [Annoted Item]
 listFromL = mapM toAItem
 
 annToAItem :: ItemConvertible a m => Annoted a -> m (Annoted Item)
-annToAItem v = toitem (item v) >>= return . flip replaceAnnoted v
+annToAItem v = liftM (`replaceAnnoted` v) (toitem $ item v)
 
 toAItemWithA :: ItemConvertible a m =>
            (Item -> Annoted Item) -> a -> m (Annoted Item)
-toAItemWithA f x = toitem x >>= return . f
+toAItemWithA f = liftM f . toitem
 
 toAItem :: ItemConvertible a m => a -> m (Annoted Item)
 toAItem = toAItemWithA emptyAnno
 
----------------------------- ItemType lifting ----------------------------
+-- -------------------------- ItemType lifting ----------------------------
 
 -- often we have the situation where we want to obtain a whole Item
 -- or even an Annoted Item from an ItemType:
@@ -99,7 +100,7 @@ liftIT2I t = mkItem t nullRange []
 liftIT2AI :: ItemTypeable a => a -> Annoted Item
 liftIT2AI = emptyAnno . liftIT2I
 
----------------------------- Combinators ----------------------------
+-- -------------------------- Combinators ----------------------------
 
 fromC :: ItemConvertible a m => a -> m (Annoted Item)
 fromC = fromAC . emptyAnno
@@ -120,7 +121,7 @@ fromAL it l = do
     let i = liftIT2I it
     return $ emptyAnno i { items = l' }
 
----------------------------- standard items ----------------------------
+-- -------------------------- standard items ----------------------------
 
 rootItem :: Item
 rootItem = liftIT2I "Basicspec"
@@ -133,7 +134,7 @@ mkFlatItem it rg = Item (toIT it) True rg []
 
 mkItemM :: (ItemTypeable a, Monad m) => a -> Range -> m [Annoted Item] ->
            m Item
-mkItemM it rg l = l >>= return . mkItem it rg
+mkItemM it = liftM . mkItem it
 
 mkItemMM :: (ItemTypeable a, Monad m) => a -> Range -> [m (Annoted Item)] ->
             m Item
