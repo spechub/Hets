@@ -1,4 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
 {- |
 Module      :  $Header$
 Description :  Generic Prover GUI.
@@ -283,9 +282,9 @@ newOptionsFrame con updateFn isExtraOps = do
   timeLimitLine <- newHBox timeLimitFrame []
   pack timeLimitLine [Expand On, Side AtRight, Anchor East]
 
-  (timeEntry :: Entry Int) <- newEntry timeLimitLine [width 18,
-                                              value guiDefaultTimeLimit]
-  pack timeEntry []
+  timeEntry <- newEntry timeLimitLine [width 18,
+                                       value guiDefaultTimeLimit]
+  pack (timeEntry :: Entry Int) []
 
   timeSpinner <- newSpinButton timeLimitLine (updateFn timeEntry) []
   pack timeSpinner []
@@ -293,9 +292,9 @@ newOptionsFrame con updateFn isExtraOps = do
   l3 <- newLabel opFrame2 [text "Extra Options:"]
   when isExtraOps $
        pack l3 [Anchor West]
-  (optionsEntry :: Entry String) <- newEntry opFrame2 [width 37]
+  optionsEntry <- newEntry opFrame2 [width 37]
   when isExtraOps $
-       pack optionsEntry [Fill X, PadX (cm 0.1)]
+       pack (optionsEntry :: Entry String) [Fill X, PadX (cm 0.1)]
 
   return OpFrame
     { ofFrame = right
