@@ -27,7 +27,6 @@ import Static.GTheory
 import Static.DevGraph
 import Static.History
 
---import Proofs.EdgeUtils
 import Common.ExtSign
 import Common.LibName
 import Common.Result
@@ -35,12 +34,9 @@ import Common.Result
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import Control.Monad
---import Comorphisms.LogicGraph
+
 import Data.List(nub)
 import Common.Lib.Graph
-
-import Data.Maybe
---import Proofs.SimpleTheoremHideShift(getInComingGlobalUnprovenEdges)
 
 freenessRule :: DGRule
 freenessRule = DGRule "Freeness"

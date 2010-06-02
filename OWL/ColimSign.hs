@@ -18,14 +18,11 @@ import OWL.Morphism
 import OWL.AS
 
 import Common.SetColimit
---import Common.Utils (number)
---import qualified Common.Lib.Rel as Rel
 import Common.Lib.Graph
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List
 
 signColimit :: Gr Sign (Int,OWLMorphism) ->
                (Sign, Map.Map Int OWLMorphism)

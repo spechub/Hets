@@ -39,8 +39,6 @@ import qualified Data.Map as Map
 import Data.List (nub)
 import Control.Monad
 
-import Data.Maybe
-
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
 

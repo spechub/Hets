@@ -30,12 +30,9 @@ import Common.ProofTree
 import qualified Common.Result as Result
 import Common.Utils
 
-import Data.List
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 import System.Posix.Time
-
-import qualified Control.Concurrent
 
 import System.Exit
 import System.IO

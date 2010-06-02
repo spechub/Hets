@@ -18,7 +18,6 @@ import Control.Monad
 import Text.ParserCombinators.Parsec
 import Text.XML.Light
 import Data.List (partition, (\\))
-import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Id
