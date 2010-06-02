@@ -70,10 +70,9 @@ import Static.DotGraph
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
 import Static.ComputeTheory (theoremsToAxioms, computeTheory)
-import Proofs.PathifyNames
 
 import Driver.Options
-import Driver.ReadFn (libNameToFile, findFileOfLibName)
+import Driver.ReadFn (libNameToFile)
 import Driver.WriteLibDefn
 
 import OMDoc.XmlInterface (xmlOut)
@@ -91,20 +90,7 @@ writeVerbFiles :: HetcatsOpts -- ^ Hets options
                -> IO ()
 writeVerbFiles opts suffix outl =
     mapM_ f outl
-        where f (ln, s) = do
-                -- if a file with this suffix does not exist, casl is used as
-                -- default suffix
-                mFp <- findFileOfLibName opts $ libNameToFile ln ++ suffix
-                case mFp of
-                  Just fp ->
-                      do
-                        -- we overwrite the eventual default suffix by
-                        -- our suffix
-                        let fp' = rmSuffix fp ++ suffix
-                        writeVerbFile opts fp' s
-                  _ ->
-                      error $ "writeVerbFiles: Cannot resolve file for libname "
-                                ++ show ln
+        where f (ln, s) = writeVerbFile opts (libNameToFile ln ++ suffix) s
 
 writeLibEnv :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> OutType
             -> IO ()
@@ -273,7 +259,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n = do
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> LibName -> DGraph
                -> IO ()
-writeSpecFiles opts file lenv0 ln dg = do
+writeSpecFiles opts file lenv ln dg = do
     let gctx = globalEnv dg
         ga = globalAnnos dg
         ns = specNames opts
@@ -284,7 +270,7 @@ writeSpecFiles opts file lenv0 ln dg = do
             DfgFile _  -> True
             TPTPFile _ -> True
             XmlOut -> True
-            ExperimentalOut -> True
+            OmdocOut -> True
             TheoryFile _ -> True
             SigFile _ -> True
             OWLOut -> True
@@ -293,12 +279,6 @@ writeSpecFiles opts file lenv0 ln dg = do
             _ -> False) outTypes
         allSpecs = null ns
         ignore = null specOutTypes && modelSparQ opts == ""
-        -- experimental out needs the qualification of names:
-        lenv = if null $ filter (\ ot -> case ot of
-                  ExperimentalOut -> True
-                  _ -> False) specOutTypes
-               then lenv0
-               else fromJust $ maybeResult $ pathifyLibEnv lenv0
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of

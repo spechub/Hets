@@ -40,6 +40,7 @@ module Common.Utils
   , fileparse
   , stripDir
   , stripSuffix
+  , makeRelativeDesc
   , getEnvSave
   , getEnvDef
   , filterMapWithList
@@ -56,6 +57,7 @@ import System.Exit
 import System.IO
 import System.Environment
 import System.Process
+import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
 
 import Control.Monad
 import Control.Concurrent
@@ -317,6 +319,21 @@ stripSuffix suf fp = case filter isJust $ map (stripSuf fp) suf of
     where stripSuf f s | s `isSuffixOf` f =
                            Just (take (length f - length s) f, s)
                        | otherwise = Nothing
+
+
+{- |
+  This function generalizes makeRelative in that it computes also a relative
+  path with descents such as ../../test.txt
+-}
+makeRelativeDesc :: FilePath -- ^ path to a directory
+                 -> FilePath -- ^ to be computed relatively to given directory
+                 -> FilePath -- ^ resulting relative path
+makeRelativeDesc dp fp = f dp fp []
+    where f "" y l = joinPath $ l ++ [y]
+          f x y l = let y' = makeRelative x y
+                    in if equalFilePath y y'
+                       then f (takeDirectory x) y $ ".." : l
+                       else joinPath $ l ++ [y']
 
 {- | filter a map according to a given list of keys (it dosen't hurt
    if a key is not present in the map) -}

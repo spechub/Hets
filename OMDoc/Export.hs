@@ -29,8 +29,7 @@ import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
 
-import Driver.ReadFn (libNameToFile)
-import Driver.Options (rmSuffix)
+import Driver.Options (downloadExtensions)
 import Driver.WriteLibDefn (getFilePrefixGeneric)
 
 import OMDoc.DataTypes
@@ -40,6 +39,8 @@ import Data.Maybe
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import System.FilePath
 
 -- * Name Mapping interface
 
@@ -72,7 +73,7 @@ newtype SpecSymNames = SpecSymNames (Map.Map (LibName, String) GSigMap)
 -- | The export environment
 data ExpEnv = ExpEnv { getSSN :: SpecSymNames
                      , getInitialLN :: LibName
-                     , getFilePathMapping :: Map.Map LibId FilePath }
+                     , getFilePathMapping :: Map.Map LibName FilePath }
 
 fmapNM :: (Ord a, Ord b) => (a -> b) -> NameMap a -> NameMap b
 fmapNM = Map.mapKeys
@@ -145,18 +146,24 @@ exportLibEnv :: Bool -- recursive
              -> LibName -> LibEnv
              -> Result [(LibName, OMDoc)]
 exportLibEnv b odir ln le =
-    let im = emptyEnv ln
-        cmbnF (x, _) y = (x, y)
+    let cmbnF (x, _) y = (x, y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
-    in mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
+        fpm = initFilePathMapping odir le
+        im = (emptyEnv ln){ getFilePathMapping = fpm }
+        f (ln', o) = let fp = Map.findWithDefault
+                              (error $ "exportLibEnv: filepath not mapped")
+                              ln' fpm
+                         mt = getModTime $ getLibId ln'
+                     in (setFilePath fp mt ln', o)
+    in do
+      l <- mapAccumLCM cmbnF (exportDGraph le) im inputList >>= return . snd
+      return $ map f l
 
-{-
-initFilePathMapping :: FilePath -> LibEnv -> Result (Map.Map LibId FilePath)
+initFilePathMapping :: FilePath -> LibEnv -> Map.Map LibName FilePath
 initFilePathMapping fp le =
-    Map.mapKeysMonotonic getLibId $ Map.mapWithKey f le
-        where f k _ = libNameFilePath (error "
-                            
--}
+    let f k _ = (snd $ getFilePrefixGeneric downloadExtensions fp
+                         $ getFilePath k) ++ ".omdoc"
+    in Map.mapWithKey f le
 
 -- | DGraph to OMDoc translation
 exportDGraph :: LibEnv -> ExpEnv -> (LibName, DGraph) -> Result (ExpEnv, OMDoc)
@@ -373,39 +380,20 @@ sglElem s sa
 
 
 -- * Names and CDs
-
-libNameFilePath :: LibName -- ^ libname as reference for relative uris
-                -> LibName -- ^ libname for filepath extraction
-                -> Result FilePath
-libNameFilePath lnRef ln = case getLibId ln of
-  IndirectLink file rg ofile _ ->
-      if null ofile
-      then do
-        warning () (concat [ "libNameFilePath: LibName does not conatin a "
-                           , "filepath: ", show ln, " (referenced from lib "
-                           , show lnRef, ")" ]) rg
-        let mFp = matchPaths file $ libNameToFile lnRef
-        case mFp of
-          Just fp ->
-              do
-                warning () ("repaired missing filepath: " ++ fp) rg
-                return fp
-          _ -> error $ concat [ "libNameFilePath: could not repair missing "
-                              , "filepath: ", show ln, " referenced from lib "
-                              , show lnRef]
-      else return $ rmSuffix ofile
-  DirectLink _ _ -> error "libNameFilePath: DirectLink"
-
 mkCD :: ExpEnv -> LibName -> LibName -> String -> Result OMCD
-mkCD _ lnCurr ln sn = do
-  base <- if lnCurr == ln then return []
-          else do
-            fp <- libNameFilePath lnCurr ln
-            return [concat ["file://", fp, ".omdoc"]]
-  return $ CD $ [sn] ++ base
+mkCD s lnCurr ln sn =
+    let m = getFilePathMapping s
+        fp = Map.findWithDefault
+             (error $ "mkCD: no entry for " ++ show ln) ln m
+        fpCurr = Map.findWithDefault
+                 (error $ "mkCD: no current entry for " ++ show lnCurr) lnCurr m
+        -- compute the relative path
+        fpRel = makeRelativeDesc (takeDirectory fpCurr) fp
+        fpRel' = if isAbsolute fpRel then "file://" ++ fpRel else fpRel
+        base = if lnCurr == ln then [] else [fpRel']
+    in return $ CD $ [sn] ++ base
 
 -- * Symbols and Sentences
-
 exportSymbol :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
