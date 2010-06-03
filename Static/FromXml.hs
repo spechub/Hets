@@ -40,6 +40,7 @@ import Text.XML.Light
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Control.Monad
 
 anaUpdates = do
   input <- readFile "Common/test/diff.AddingImports.decomposed.xml"
@@ -173,5 +174,19 @@ data SelElems
   | LinkElem EdgeId NodeName NodeName (Maybe LinkSubElem)
     deriving Show
 
-anaPath :: Monad m => Expr -> m SelElems
-anaPath = undefined
+anaTopPath :: Monad m => Expr -> m SelElems
+anaTopPath e = case e of
+  PathExpr Nothing (Path True (stp : stps)) -> do
+    unless (checkStepElement "DGraph" stp)
+      $ fail $ "Static.FromXML.checkStepElement: "
+       ++ "\n found: " ++ showStep stp
+    anaSteps stps
+  _ -> fail $ "Static.FromXML.anaTopPath: " ++ showExpr e
+
+checkStepElement :: String -> Step -> Bool
+checkStepElement str stp = case stp of
+  Step Child (NameTest l) _ | l == str -> True
+  _ -> False
+
+anaSteps :: Monad m => [Step] -> m SelElems
+anaSteps = undefined
