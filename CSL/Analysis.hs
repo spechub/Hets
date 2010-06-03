@@ -1,4 +1,4 @@
-{-# LINE 1 "Reduce/Analysis.hs" #-}
+{-# LINE 1 "CSL/Analysis.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce
@@ -13,11 +13,11 @@ Portability :  portable
 
 -- todo: add static analysis for repeat
 
-module Reduce.Analysis
+module CSL.Analysis
     (
      splitSpec
-     , basicReduceAnalysis
--- basicReduceAnalysis
+     , basicCSLAnalysis
+-- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
 -- ,inducedFromMorphism
@@ -27,14 +27,14 @@ module Reduce.Analysis
     where
 
 import Common.ExtSign
-import Reduce.Sign as Sign
+import CSL.Sign as Sign
 import qualified Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
 import qualified Data.List as List
 import qualified Data.Set as Set
-import Reduce.AS_BASIC_Reduce
-import Reduce.Symbol
+import CSL.AS_BASIC_CSL
+import CSL.Symbol
 
 
 -- | Datatype for formulas with diagnosis data
@@ -129,8 +129,8 @@ addTokens sign tokens = foldl (\ res item -> (addToSig res (simpleIdToId item)))
 
 -- | stepwise extends an initially empty signature by the basic spec bs. The resulting spec contains analyzed axioms in it.
 -- The result contains: 1) the basic spec 2) the new signature + the added symbols 3) sentences of the spec
-basicReduceAnalysis :: (BASIC_SPEC, Sign, a) -> Result (BASIC_SPEC, ExtSign Sign Symbol, [AS_Anno.Named CMD])
-basicReduceAnalysis (bs, sig, _) =
+basicCSLAnalysis :: (BASIC_SPEC, Sign, a) -> Result (BASIC_SPEC, ExtSign Sign Symbol, [AS_Anno.Named CMD])
+basicCSLAnalysis (bs, sig, _) =
     Result diagnoses $ if exErrs then Nothing else
                        Just (bs, ExtSign newSig newSyms, (map formula diagcmds))
         where

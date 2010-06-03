@@ -11,7 +11,7 @@ Portability :  portable
 Interface for Reduce CAS system.
 -}
 
-module Reduce.ReduceProve where
+module CSL.ReduceProve where
 
 import Common.AS_Annotation
 import Common.ProverTools (missingExecutableInPath)
@@ -21,10 +21,10 @@ import Data.List
 
 import Logic.Prover
 
-import Reduce.AS_BASIC_Reduce
-import Reduce.Morphism
-import Reduce.Reduce_Interface
-import Reduce.Sign
+import CSL.AS_BASIC_CSL
+import CSL.Morphism
+import CSL.Reduce_Interface
+import CSL.Sign
 import System.IO
 
 -- as mkProverTemplate, but with additionally functionality to export lemmas

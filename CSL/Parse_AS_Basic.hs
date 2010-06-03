@@ -11,7 +11,7 @@ Portability :  portable
 Parser for abstract syntax for reduce computer algebra system
 -}
 
-module Reduce.Parse_AS_Basic
+module CSL.Parse_AS_Basic
     where
 
 import qualified Common.AnnoState as AnnoState
@@ -20,8 +20,8 @@ import Common.Keywords as Keywords
 import Common.Lexer as Lexer
 import Common.Parsec
 
-import Reduce.AS_BASIC_Reduce
-import Reduce.Keywords
+import CSL.AS_BASIC_CSL
+import CSL.Keywords
 import Text.ParserCombinators.Parsec
 
 -- the basic lexer, test using e.g. runParser identifier 0 "" "asda2_3"

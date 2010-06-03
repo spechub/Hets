@@ -8,10 +8,10 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-Definition of signatures for Reduce logic, which are just lists of operators
+Definition of signatures for CSL logic, which are just lists of operators
 -}
 
-module Reduce.Sign
+module CSL.Sign
     (Sign (..)                     -- Propositional Signatures
     ,pretty                        -- pretty printing
     ,isLegalSignature              -- is a signature ok?
@@ -30,7 +30,7 @@ import Common.Result
 import Common.Doc
 import Common.DocUtils
 
--- | Datatype for Reduce Signatures
+-- | Datatype for CSL Signatures
 -- Signatures are just sets of Tokens for the operators
 newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
 
@@ -41,7 +41,7 @@ instance Pretty Sign where
 lookupSym :: Sign -> Id -> Bool
 lookupSym (Sign s) item = Set.member item s
 
--- | pretty printer for Reduce signatures
+-- | pretty printer for CSL signatures
 printSign :: Sign -> Doc
 printSign s =
     hsep [text "operator", sepByCommas $ map pretty $ Set.toList $ items s]

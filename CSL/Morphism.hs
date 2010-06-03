@@ -1,4 +1,4 @@
-{-# LINE 1 "Reduce/Morhpism.hs" #-}
+{-# LINE 1 "CSL/Morhpism.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce
@@ -13,7 +13,7 @@ this file defines morhpisms for the reduce logic. A morphism is a mapping of ope
 -}
 
 
-module Reduce.Morphism
+module CSL.Morphism
   ( Morphism (..)               -- datatype for Morphisms
   , pretty                      -- pretty printing
   , idMor                       -- identity morphism
@@ -29,9 +29,9 @@ module Reduce.Morphism
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Reduce.Sign as Sign
+import CSL.Sign as Sign
 import qualified Common.Result as Result
-import Reduce.AS_BASIC_Reduce 
+import CSL.AS_BASIC_CSL 
 import Common.Id as Id
 import Common.Result
 import Common.Doc

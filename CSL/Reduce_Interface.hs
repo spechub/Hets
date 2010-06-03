@@ -11,7 +11,7 @@ Portability :  portable
 Interface for Reduce CAS system.
 -}
 
-module Reduce.Reduce_Interface where
+module CSL.Reduce_Interface where
 
 import Common.AS_Annotation
 import Common.Id
@@ -20,8 +20,8 @@ import Data.Time (midnight)
 
 import Logic.Prover
 
-import Reduce.AS_BASIC_Reduce
-import Reduce.Parse_AS_Basic
+import CSL.AS_BASIC_CSL
+import CSL.Parse_AS_Basic
 
 import System.IO
 import System.Process
@@ -30,7 +30,7 @@ type Session = (Handle, Handle)
 
 -- | returns the name of the reduce prover
 reduceS :: String
-reduceS = "CSL"
+reduceS = "Reduce"
 
 {- | returns a basic proof status for conjecture with name n
   where [EXPRESSION] represents the proof tree. -}

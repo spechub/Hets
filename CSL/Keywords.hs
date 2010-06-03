@@ -13,7 +13,7 @@ String constants for keywords to be used for parsing and reduce expressions
 
 -}
 
-module Reduce.Keywords where
+module CSL.Keywords where
 
 -- commands
 

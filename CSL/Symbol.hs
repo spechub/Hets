@@ -1,4 +1,4 @@
-module Reduce.Symbol
+module CSL.Symbol
 where
 
 import Common.Id
@@ -6,8 +6,8 @@ import Common.Doc
 import Common.DocUtils
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Reduce.Sign 
-import Reduce.Morphism
+import CSL.Sign 
+import CSL.Morphism
 
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id}

@@ -1,7 +1,7 @@
-{-# LINE 1 "Reduce/AS_BASIC_Reduce.hs" #-}
+{-# LINE 1 "CSL/AS_BASIC_CSL.hs" #-}
 {- |
 Module      :  $Header$
-Description :  Abstract syntax for reduce
+Description :  Abstract syntax for CSL
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,21 +9,20 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-This file contains the abstract syntax for the reduce computer algebra system as well as pretty printer for it.
+This file contains the abstract syntax for CSL as well as pretty printer for it.
 
 -}
 
-module Reduce.AS_BASIC_Reduce
-    (
-     EXPRESSION (..)          -- datatype for numerical expressions (e.g. polynomials)
-    , BASIC_ITEMS (..)         -- Items of a Basic Spec
-    , BASIC_SPEC (..)          -- Basic Spec
-    , SYMB_ITEMS (..)          -- List of symbols
-    , SYMB (..)                -- Symbols
-    , SYMB_MAP_ITEMS (..)      -- Symbol map
-    , SYMB_OR_MAP (..)         -- Symbol or symbol map
-    , OP_ITEM (..)             -- operator declaration
-    , VAR_ITEM (..)            -- variable declaration (needed?)
+module CSL.AS_BASIC_CSL
+    ( EXPRESSION (..)     -- datatype for numerical expressions (e.g. polynomials)
+    , BASIC_ITEMS (..)    -- Items of a Basic Spec
+    , BASIC_SPEC (..)     -- Basic Spec
+    , SYMB_ITEMS (..)     -- List of symbols
+    , SYMB (..)           -- Symbols
+    , SYMB_MAP_ITEMS (..) -- Symbol map
+    , SYMB_OR_MAP (..)    -- Symbol or symbol map
+    , OP_ITEM (..)        -- operator declaration
+    , VAR_ITEM (..)       -- variable declaration (needed?)
     , CMD (..)
     ) where
 

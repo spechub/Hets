@@ -1,15 +1,15 @@
-import Reduce.Sign
-import Reduce.Analysis         
-import Reduce.AS_BASIC_Reduce
-import Reduce.Morphism    
-import Reduce.Tools
--- import Reduce.Reduce_Interface
-import Reduce.Keywords
-import Reduce.Parse_AS_Basic
+import CSL.Sign
+import CSL.Analysis         
+import CSL.AS_BASIC_CSL
+import CSL.Morphism    
+import CSL.Tools
+-- import CSL.CSL_Interface
+import CSL.Keywords
+import CSL.Parse_AS_Basic
 import Common.GlobalAnnotations
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
-import Reduce.Symbol
+import CSL.Symbol
 -- expression parser
 
 -----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ testspec =
 
 res26 = splitSpec testspec emptySig
 
-res27 = basicReduceAnalysis (testspec, emptySig, [])
+res27 = basicCSLAnalysis (testspec, emptySig, [])
 
 
 -----------------------------------------------------------------------------
@@ -72,5 +72,5 @@ res27 = basicReduceAnalysis (testspec, emptySig, [])
 
 
 -----------------------------------------------------------------------------
------------------------------- Reduce Interface -----------------------------
+------------------------------ CSL Interface -----------------------------
 -----------------------------------------------------------------------------

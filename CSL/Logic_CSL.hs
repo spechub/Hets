@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
 Module      :  $Header$
-Description :  Instance of class Logic for Reduce
+Description :  Instance of class Logic for CSL
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,35 +9,35 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
-Instance of class Logic for the Reduce logic
+Instance of class Logic for the CSL logic
    Also the instances for Syntax and Category.
 -}
 
 
-module Reduce.Logic_Reduce where
+module CSL.Logic_CSL where
 
 import Logic.Logic
 
-import Reduce.Sign
-import Reduce.Morphism
-import Reduce.AS_BASIC_Reduce
-import Reduce.Parse_AS_Basic
-import Reduce.Analysis
-import Reduce.Tools
-import Reduce.Symbol
-import Reduce.ATC_Reduce ()
-import Reduce.ReduceProve
+import CSL.Sign
+import CSL.Morphism
+import CSL.AS_BASIC_CSL
+import CSL.Parse_AS_Basic
+import CSL.Analysis
+import CSL.Tools
+import CSL.Symbol
+import CSL.ATC_CSL ()
+import CSL.ReduceProve
 import qualified Data.Map as Map
 import ATC.ProofTree ()
 
 -- | Lid for reduce logic
-data Reduce = Reduce deriving Show
+data CSL = CSL deriving Show
 
-instance Language Reduce where
+instance Language CSL where
     description _ = "CSL Logic\n"
 --    language_name _ = "CSL"
 
--- | Instance of Category for Reduce logic
+-- | Instance of Category for CSL logic
 instance Category Sign Morphism where
     -- Identity morhpism
     ide = idMor
@@ -53,32 +53,32 @@ instance Category Sign Morphism where
     composeMorphisms = composeMor
 
 -- | Instance of Sentences for reduce logic
-instance Sentences Reduce CMD
+instance Sentences CSL CMD
     Sign Morphism Symbol where
-    negation Reduce = Just . negateFormula
+    negation CSL = Just . negateFormula
     -- returns the set of symbols --> including operators
-    sym_of Reduce = singletonList . symOf
+    sym_of CSL = singletonList . symOf
     {- returns the symbol map -->
     the internal map only contains changes but the external symbol map
     must also contain identity mappings for all remaining symbols -}
-    symmap_of Reduce = getSymbolMap
+    symmap_of CSL = getSymbolMap
     -- returns the name of a symbol --> id
-    sym_name Reduce = getSymbolName
+    sym_name CSL = getSymbolName
     {- translation of sentences along signature morphism -->
     rename the used operators according to the morphism -}
-    map_sen Reduce = mapSentence
+    map_sen CSL = mapSentence
     -- there is nothing to leave out
-    simplify_sen Reduce _ = id
+    simplify_sen CSL _ = id
 
--- | Syntax of Reduce logic
-instance Syntax Reduce BASIC_SPEC
+-- | Syntax of CSL logic
+instance Syntax CSL BASIC_SPEC
     SYMB_ITEMS SYMB_MAP_ITEMS where
-         parse_basic_spec Reduce = Just basicSpec
-         parse_symb_items Reduce = Just symbItems
-         parse_symb_map_items Reduce = Just symbMapItems
+         parse_basic_spec CSL = Just basicSpec
+         parse_symb_items CSL = Just symbItems
+         parse_symb_map_items CSL = Just symbMapItems
 
 -- | Instance of Logic for reduce logc
-instance Logic Reduce
+instance Logic CSL
     ()                        -- Sublogics
     BASIC_SPEC                -- basic_spec
     CMD                       -- sentences are CAS commands
@@ -90,13 +90,13 @@ instance Logic Reduce
     Symbol                    -- raw_symbol
     [EXPRESSION]              -- proof_tree
     where
-      stability Reduce = Experimental
-      empty_proof_tree Reduce = []
+      stability CSL = Experimental
+      empty_proof_tree CSL = []
       -- supplied provers
-      provers Reduce = [reduceProver]
+      provers CSL = [reduceProver]
 
 -- | Static Analysis for reduce logic
-instance StaticAnalysis Reduce
+instance StaticAnalysis CSL
     BASIC_SPEC                -- basic_spec
     CMD                       -- sentence
     SYMB_ITEMS                -- symb_items
@@ -106,16 +106,16 @@ instance StaticAnalysis Reduce
     Symbol                    -- symbol
     Symbol                    -- raw_symbol
         where
-          basic_analysis Reduce = Just basicReduceAnalysis
-          empty_signature Reduce = emptySig
-          is_subsig Reduce = isSubSigOf
-          subsig_inclusion Reduce s = return . inclusionMap s
-          signature_union Reduce = sigUnion
-          symbol_to_raw Reduce = symbolToRaw
-          id_to_raw Reduce = idToRaw
--- matches       Reduce            = Symbol.matches
--- stat_symb_items Reduce          = mkStatSymbItems
--- stat_symb_map_items Reduce      = mkStatSymbMapItem
-          morphism_union Reduce = morphismUnion
--- induced_from_morphism Reduce    = inducedFromMorphism
--- induced_from_to_morphism Reduce = inducedFromToMorphism
+          basic_analysis CSL = Just basicCSLAnalysis
+          empty_signature CSL = emptySig
+          is_subsig CSL = isSubSigOf
+          subsig_inclusion CSL s = return . inclusionMap s
+          signature_union CSL = sigUnion
+          symbol_to_raw CSL = symbolToRaw
+          id_to_raw CSL = idToRaw
+-- matches       CSL            = Symbol.matches
+-- stat_symb_items CSL          = mkStatSymbItems
+-- stat_symb_map_items CSL      = mkStatSymbMapItem
+          morphism_union CSL = morphismUnion
+-- induced_from_morphism CSL    = inducedFromMorphism
+-- induced_from_to_morphism CSL = inducedFromToMorphism

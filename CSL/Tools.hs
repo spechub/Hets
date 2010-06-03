@@ -1,4 +1,4 @@
-{-# LINE 1 "Reduce/AS_BASIC_Reduce.der.hs" #-}
+{-# LINE 1 "CSL/AS_BASIC_CSL.der.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce
@@ -11,9 +11,9 @@ Portability :  portable
 
 -}
 
-module Reduce.Tools where
+module CSL.Tools where
 
-import Reduce.AS_BASIC_Reduce
+import CSL.AS_BASIC_CSL
 import Common.Id
 
 negateFormula :: CMD -> CMD
