@@ -75,7 +75,7 @@ myForms = [myEmptyForm, otherForm]
 runAll = translateToCNF (mySig, [myEmptyForm])
 
 showStuff :: IO String
-showStuff = return $ PC.showDIMACSProblem "Problem " mySig myForms []
+showStuff = PC.showDIMACSProblem "Problem " mySig myForms []
 
 showProof = PC.goalDIMACSProblem "DIMACSProblem"
             (propProverState mySig myForms [])
