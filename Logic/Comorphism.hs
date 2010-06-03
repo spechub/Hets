@@ -78,6 +78,8 @@ class (Language cid,
     -- the source sublogic is the maximal one for which the comorphism works
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
+    minSourceTheory :: cid -> (sign1, [Named sentence1])
+    minSourceTheory cid = (empty_signature (sourceLogic cid), [])
     targetLogic :: cid -> lid2
     -- finer information of target sublogics corresponding to source sublogics
     -- this function must be partial because mapTheory is partial
@@ -86,8 +88,8 @@ class (Language cid,
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
     -- cover theoroidal comorphisms as well
-    map_theory :: cid -> (sign1,[Named sentence1])
-                      -> Result (sign2,[Named sentence2])
+    map_theory :: cid -> (sign1, [Named sentence1])
+                      -> Result (sign2, [Named sentence2])
     map_morphism :: cid -> morphism1 -> Result morphism2
     map_sentence :: cid -> sign1 -> sentence1 -> Result sentence2
           -- also covers semi-comorphisms
@@ -101,7 +103,7 @@ class (Language cid,
     extractModel cid _ _ = fail
       $ "extractModel not implemented for comorphism "
       ++ language_name cid
-    --properties of comorphisms
+    -- properties of comorphisms
     is_model_transportable :: cid -> Bool
     -- a comorphism (\phi, \alpha, \beta) is model-transportable
     -- if for any signature \Sigma,
@@ -133,8 +135,8 @@ map_sign :: Comorphism cid
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-         => cid -> sign1 -> Result (sign2,[Named sentence2])
-map_sign cid sign = wrapMapTheory cid (sign,[])
+         => cid -> sign1 -> Result (sign2, [Named sentence2])
+map_sign cid sign = wrapMapTheory cid (sign, [])
 
 ext_map_sign :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -183,19 +185,29 @@ wrapMapTheory :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             => cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
-wrapMapTheory cid (sign, sens) = let res = map_theory cid (sign, sens) in
+wrapMapTheory cid (sign, sens) =
+  let res = map_theory cid (sign, sens)
+      lid1 = sourceLogic cid
+      thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
+  in
   if isIdComorphism $ Comorphism cid then res else case sourceSublogic cid of
         sub -> case minSublogic sign of
           sigLog -> case foldl join sigLog
                     $ map (minSublogic . sentence) sens of
             senLog ->
               if isSubElem senLog sub
-                 then res
+                 then case minSourceTheory cid of
+                   (msign, msens) ->
+                     if is_subsig lid1 msign sign
+                       && (null sens || all (\ ns -> any (== ns) sens) msens)
+                     then res
+                     else Result
+                       [ Diag Error
+                         ("for '" ++ language_name cid ++
+                          "' expected subtheory not found:\n" ++ thDoc)
+                         nullRange ] Nothing
                  else Result
-                  [ Diag Hint
-                      (show (vcat $ pretty sign : map
-                                (print_named $ sourceLogic cid) sens))
-                      nullRange
+                  [ Diag Hint thDoc nullRange
                   , Diag Error
                       ("for '" ++ language_name cid ++
                            "' expected sublogic '" ++
@@ -208,15 +220,15 @@ wrapMapTheory cid (sign, sens) = let res = map_theory cid (sign, sens) in
 simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2)
                     -> (sign1, [Named sentence1])
                     -> (sign2, [Named sentence2])
-simpleTheoryMapping mapSig mapSen (sign,sens) =
+simpleTheoryMapping mapSig mapSen (sign, sens) =
     (mapSig sign, map (mapNamed mapSen) sens)
 
 mkTheoryMapping :: (Monad m) => (sign1 -> m (sign2, [Named sentence2]))
                    -> (sign1 -> sentence1 -> m sentence2)
                    -> (sign1, [Named sentence1])
                    -> m (sign2, [Named sentence2])
-mkTheoryMapping mapSig mapSen (sign,sens) = do
-       (sign',sens') <- mapSig sign
+mkTheoryMapping mapSig mapSen (sign, sens) = do
+       (sign', sens') <- mapSig sign
        sens'' <- mapM (mapNamedM $ mapSen sign) sens
        return (sign', nameAndDisambiguate $ sens' ++ sens'')
 
@@ -249,7 +261,7 @@ mkInclComorphism lid srcSub trgSub =
       { inclusion_logic = lid
       , inclusion_source_sublogic = srcSub
       , inclusion_target_sublogic = trgSub }
-    else fail ("mkInclComorphism: first sublogic must be a "++
+    else fail ("mkInclComorphism: first sublogic must be a " ++
                "subElem of the second sublogic")
 
 instance (Language lid, Eq sublogics, Show sublogics, SublogicName sublogics)
@@ -328,7 +340,7 @@ instance (Comorphism cid1
            mapSublogic cid2 .
             forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2)
    map_sentence (CompComorphism cid1 cid2) si1 se1 =
-         do (si2,_) <- map_sign cid1 si1
+         do (si2, _) <- map_sign cid1 si1
             se2 <- map_sentence cid1 si1 se1
             (si2', se2') <- coerceBasicTheory
                 (targetLogic cid1) (sourceLogic cid2)
@@ -346,7 +358,7 @@ instance (Comorphism cid1
    map_morphism (CompComorphism cid1 cid2) m1 =
        do m2 <- map_morphism cid1 m1
           m3 <- coerceMorphism (targetLogic cid1) (sourceLogic cid2)
-                  "Mapping signature morphism along comorphism"m2
+                  "Mapping signature morphism along comorphism" m2
           map_morphism cid2 m3
 
    map_symbol (CompComorphism cid1 cid2) sig1 = let
@@ -459,9 +471,6 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
    if language_name l1 == language_name l2 then
       if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
-       then {- case (isIdComorphism cm1,isIdComorphism cm2) of
-         (True,_) -> return cm2
-         (_,True) -> return cm1
-         _ ->  -} return $ Comorphism (CompComorphism cid1 cid2)
+       then return $ Comorphism (CompComorphism cid1 cid2)
        else fail $ "Subl" ++ msg
     else fail $ 'L' : msg
