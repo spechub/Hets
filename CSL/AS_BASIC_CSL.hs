@@ -1,4 +1,3 @@
-{-# LINE 1 "CSL/AS_BASIC_CSL.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for CSL

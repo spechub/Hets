@@ -1,4 +1,3 @@
-{-# LINE 1 "CSL/AS_BASIC_CSL.der.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce

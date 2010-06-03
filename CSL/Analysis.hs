@@ -1,4 +1,3 @@
-{-# LINE 1 "CSL/Analysis.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce

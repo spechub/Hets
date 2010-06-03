@@ -1,4 +1,3 @@
-{-# LINE 1 "CSL/Morhpism.hs" #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce
