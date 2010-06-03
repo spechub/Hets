@@ -153,7 +153,9 @@ elimImpl = foldFormula mapRecord
 
 negForm :: Range -> FORMULA -> FORMULA
 negForm r frm = case frm of
-  Negation f _ -> f
+  Negation f _ -> case f of
+    Negation nf _ -> negForm r nf
+    _ -> f
   Conjunction xs n -> Disjunction (map (negForm r) xs) n
   Disjunction xs n -> Conjunction (map (negForm r) xs) n
   True_atom n -> False_atom n
