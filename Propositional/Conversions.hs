@@ -25,7 +25,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Propositional.AS_BASIC_Propositional as AS
-import qualified Propositional.Prop2CNF as P2C
 import qualified Propositional.ProverState as PState
 import qualified Propositional.Sign as Sig
 
@@ -48,7 +47,7 @@ showDIMACSProblem :: String                     -- ^ name of the theory
                   -> [AS_Anno.Named AS.FORMULA] -- ^ Axioms
                   -> [AS_Anno.Named AS.FORMULA] -- ^ Conjectures
                   -> IO String                  -- ^ Output
-showDIMACSProblem name sig axs cons = do
+showDIMACSProblem name fSig axs cons = do
     let negatedCons = if null cons then [] else
           [(AS_Anno.makeNamed "myCons"
             $ negForm Id.nullRange
@@ -56,11 +55,8 @@ showDIMACSProblem name sig axs cons = do
           { AS_Anno.isAxiom = False
           , AS_Anno.isDef = False
           , AS_Anno.wasTheorem = False } ]
-    (tSig, tAxs) <- P2C.translateToCNF (sig, axs)
-    (tpSig, tCon) <- P2C.translateToCNF (sig, negatedCons)
-    let -- tAxs = map (AS_Anno.mapNamed cnf) axs
-        -- tCon = map (AS_Anno.mapNamed cnf) negatedCons
-        fSig = Sig.unite tSig tpSig
+        tAxs = map (AS_Anno.mapNamed cnf) axs
+        tCon = map (AS_Anno.mapNamed cnf) negatedCons
         flatSens = getConj . flip mkConj Id.nullRange . map AS_Anno.sentence
         tfAxs = flatSens tAxs
         tfCon = flatSens tCon
