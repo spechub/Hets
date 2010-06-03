@@ -90,10 +90,10 @@ mkConj fs n = let s = flatConj fs in
     [] -> True_atom n
     [x] -> x
     ls -> Conjunction (map (flip mkDisj n . Set.toList)
-      $ foldr (\ l ll ->
-        if any (flip Set.isSubsetOf l) ll then ll else
-          l : filter (not . Set.isSubsetOf l) ll) []
-      $ map (Set.fromList . getDisj) ls) n
+      $ foldr ((\ l ll ->
+        if any (`Set.isSubsetOf` l) ll then ll else
+          l : filter (not . Set.isSubsetOf l) ll)
+          . Set.fromList . getDisj) [] ls) n
 
 flatDisj :: [FORMULA] -> Set.Set FORMULA
 flatDisj = Set.fromList
@@ -109,10 +109,10 @@ mkDisj fs n = let s = flatDisj fs in
     [] -> False_atom n
     [x] -> x
     ls -> Disjunction (map (flip mkConj n . Set.toList)
-      $ foldr (\ l ll ->
-        if any (flip Set.isSubsetOf l) ll then ll else
-          l : filter (not . Set.isSubsetOf l) ll) []
-      $ map (Set.fromList . getConj) ls) n
+      $ foldr ((\ l ll ->
+        if any (`Set.isSubsetOf` l) ll then ll else
+          l : filter (not . Set.isSubsetOf l) ll)
+          . Set.fromList . getConj) [] ls) n
 
 simplify :: FORMULA -> FORMULA
 simplify = foldFormula mapRecord
@@ -174,18 +174,26 @@ distributeAndOverOr f = case f of
   Conjunction xs n -> mkConj (map distributeAndOverOr xs) n
   Disjunction xs n -> if all isPrimForm xs then mkDisj xs n else
     distributeAndOverOr
-    $ mkConj (map (flip mkDisj n) . combine $ map getConj xs) n
+    $ mkConj (map (`mkDisj` n) . combine $ map getConj xs) n
   _ -> f
 
 cnf :: FORMULA -> FORMULA
-cnf = distributeAndOverOr . moveNegIn . elimImpl . elimEquiv
+cnf = flipLiterals . distributeAndOverOr . moveNegIn . elimImpl . elimEquiv
+
+flipLiterals :: FORMULA -> FORMULA
+flipLiterals f = case f of
+  Negation p@(Predication _) _ -> p
+  Predication t -> Negation f $ tokPos t
+  Conjunction xs n -> Conjunction (map flipLiterals xs) n
+  Disjunction xs n -> Disjunction (map flipLiterals xs) n
+  _ -> f
 
 distributeOrOverAnd :: FORMULA -> FORMULA
 distributeOrOverAnd f = case f of
   Disjunction xs n -> mkDisj (map distributeOrOverAnd xs) n
   Conjunction xs n -> if all isPrimForm xs then mkConj xs n else
     distributeOrOverAnd
-    $ mkDisj (map (flip mkConj n) . combine $ map getDisj xs) n
+    $ mkDisj (map (`mkConj` n) . combine $ map getDisj xs) n
   _ -> f
 
 dnf :: FORMULA -> FORMULA
