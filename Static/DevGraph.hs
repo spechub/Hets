@@ -64,16 +64,18 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Common.Result
+
 -- * types for structured specification analysis
 
 -- ** basic types
 
 -- | Node with signature in a DG
 data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
-    deriving (Show, Eq)
+    deriving  (Eq, Show)
 
 {- | NodeSig or possibly the empty sig in a logic
-     (but since we want to avoid lots of vacuous nodes with empty sig,
+     (but since we want to avoid lots of vsacuous nodes with empty sig,
      we do not assign a real node in the DG here) -}
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
@@ -298,6 +300,7 @@ instance Eq Fitted where
 data DGLinkOrigin =
     SeeTarget
   | SeeSource
+  | TEST
   | DGImpliesLink
   | DGLinkExtension
   | DGLinkTranslation
@@ -312,6 +315,7 @@ data DGLinkOrigin =
   | DGLinkProof
   | DGLinkFlatteningUnion
   | DGLinkFlatteningRename
+  | DGLinkRefinement SIMPLE_ID
     deriving (Show, Eq)
 
 -- | name of the LinkOrigin if existent
@@ -539,24 +543,187 @@ data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
 {- ** types for architectural and unit specification analysis
     (as defined for basic static semantics in Chap. III:5.1) -}
 
-data UnitSig = UnitSig [NodeSig] NodeSig deriving Show
+data UnitSig = UnitSig [NodeSig] NodeSig deriving (Show, Eq)
 
-data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig deriving Show
+data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
+   deriving (Show, Eq)
 
 type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
-data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
+-- data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
+-- this type is superseeded by RefSig
+
+
+type RefSigMap = Map.Map SIMPLE_ID RefSig
+type BStContext = Map.Map SIMPLE_ID RefSig
+--there should be only BranchRefSigs
+
+data RefSig = BranchRefSig (UnitSig, BranchSig)
+            | ComponentRefSig RefSigMap
+              deriving (Eq)
+
+instance Show RefSig where
+-- made this instance for debugging purposes
+  show (BranchRefSig (usig, bsig)) =
+    let bStr = case bsig of
+                NoFurtherRefinement -> "Bottom\n "
+                UnitSigAsBranchSig u -> if u == usig then "same"
+                                        else "UnitSigAsBranch:" ++ show u
+                                             ++ "\n "
+                BranchStaticContext bst ->
+                  foldl (++) "branching: " $
+                  map (\(n,s) -> show n ++ " mapped to\n" ++ show s ++ "\n") $
+                  Map.toList bst
+    in
+      "Branch: \n before refinement:\n  " ++ show usig ++
+      "\n  after refinement: \n" ++ bStr ++ "\n"
+  show (ComponentRefSig rsm) =
+   foldl (++) "CompRefSig:" $ map (\n -> show n ++ "\n ") $
+     Map.toList rsm
+
+getUnitSigFromRef :: RefSig -> Result UnitSig
+getUnitSigFromRef (BranchRefSig (usig, _)) = return usig
+getUnitSigFromRef (ComponentRefSig rsm) =
+   error $ "getUnitSigFromRef:" ++ (show $ Map.keys rsm)
+
+mkRefSigFromUnit :: UnitSig -> RefSig
+mkRefSigFromUnit usig = BranchRefSig (usig, UnitSigAsBranchSig usig)
+
+mkBotSigFromUnit :: UnitSig -> RefSig
+mkBotSigFromUnit usig = BranchRefSig (usig, NoFurtherRefinement)
+
+data BranchSig = NoFurtherRefinement
+                 -- for unit definitions, which can't be further refined
+               | UnitSigAsBranchSig UnitSig
+               | BranchStaticContext BStContext
+                 deriving (Show, Eq)
+
+type RefStUnitCtx = Map.Map SIMPLE_ID RefSig
+-- only BranchRefSigs allowed
+
+emptyRefStUnitCtx :: RefStUnitCtx
+emptyRefStUnitCtx = Map.empty
+
+-- Auxiliaries for refinament signatures composition
+matchesContext :: RefSigMap -> BStContext -> Bool
+matchesContext rsmap bstc = let
+ b1 = null $ filter (\x-> not $ x `elem` Map.keys bstc) $ Map.keys rsmap
+ b2 = if b1 then namesMatchCtx (Map.keys rsmap) bstc rsmap else False
+                            in
+ b1 && b2
+
+equalSigs :: UnitSig -> UnitSig -> Bool
+equalSigs (UnitSig ls1 ns1) (UnitSig ls2 ns2) =
+ if length ls1 /= length ls2 then False
+ else foldl (&&) (getSig ns1 == getSig ns2) $
+      map (\(x1,x2) -> getSig x1 == getSig x2) $
+      zip ls1 ls2
+
+
+namesMatchCtx :: [SIMPLE_ID] -> BStContext -> RefSigMap -> Bool
+namesMatchCtx [] _ _ = True
+namesMatchCtx (un:unitNames) bstc rsmap =
+ case (Map.findWithDefault (error "namesMatchCtx")
+            un bstc) of
+  BranchRefSig (_usig, bsig) ->
+   case bsig of
+     UnitSigAsBranchSig usig' ->
+       case (Map.findWithDefault (error "USABS") un rsmap) of
+         BranchRefSig(usig'',_bsig') -> (equalSigs usig' usig'') &&
+                                         namesMatchCtx unitNames bstc rsmap
+         _ -> False
+     BranchStaticContext bstc' ->
+       case (rsmap Map.! un) of
+         ComponentRefSig rsmap' -> -- check whether this is needed!
+                (matchesContext rsmap' bstc') &&
+                 namesMatchCtx unitNames bstc rsmap
+  -- This is where I introduce something new wrt to the refinement paper:
+  -- if bstc' has only one element
+  -- it suffices to have the signature of that element
+  -- matching the signature from rsmap'
+         _ -> if Map.size bstc' == 1 then
+                let un1 = head $ Map.keys bstc'
+                    rsmap' =  Map.mapKeys (\x -> if x == un then un1 else x)
+                               rsmap
+                in namesMatchCtx [un1] bstc' rsmap' &&
+                   namesMatchCtx unitNames bstc rsmap
+               else False
+     _ -> False -- should not be the case
+  _ -> False -- this should never be the case
+
+modifyCtx :: [SIMPLE_ID] -> RefSigMap -> BStContext -> BStContext
+-- this function needs to be checked!
+modifyCtx [] _ bstc = bstc
+modifyCtx (un:unitNames) rsmap bstc =
+ case bstc Map.! un of
+   BranchRefSig (usig, bsig) ->
+     case bsig of
+       UnitSigAsBranchSig usig' ->
+          case rsmap Map.! un of
+            BranchRefSig (usig'', bsig'') -> if usig' == usig'' then
+                 modifyCtx unitNames rsmap $
+                 Map.insert un (BranchRefSig (usig,bsig'')) bstc --  was usig'
+                else error "illegal composition"
+            _ -> modifyCtx unitNames rsmap bstc
+       BranchStaticContext bstc' ->
+          case rsmap Map.! un of
+            ComponentRefSig rsmap' -> modifyCtx unitNames rsmap $
+             Map.insert un
+             (BranchRefSig (usig,
+               BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc'))
+             bstc
+            _ -> let f = if Map.size bstc' == 1 then
+                             let un1 = head $ Map.keys bstc'
+                                 rsmap' = Map.mapKeys
+                                          (\x -> if x == un then un1 else x)
+                                           rsmap
+                                 bstc'' = modifyCtx [un1] rsmap' bstc'
+                             in Map.singleton un $
+                                BranchRefSig (usig, BranchStaticContext bstc'')
+                           else Map.empty
+                 in Map.union f $ modifyCtx unitNames rsmap bstc
+       _ -> modifyCtx unitNames rsmap bstc -- should not be the case
+   _ -> modifyCtx unitNames rsmap bstc -- same as above
+
+-- Signature composition
+refSigComposition :: RefSig -> RefSig -> Result RefSig
+refSigComposition (BranchRefSig (usig1, UnitSigAsBranchSig usig2))
+                  (BranchRefSig (usig3, bsig)) =
+  if (usig2 == usig3) then do
+    return $ BranchRefSig (usig1, bsig)
+    else fail $ "Signatures" ++ show usig2 ++ " " ++ show usig3 ++
+                "  do not compose"
+
+refSigComposition _rsig1@(BranchRefSig (usig1, BranchStaticContext bstc))
+                  _rsig2@(ComponentRefSig rsmap) =
+  if matchesContext rsmap bstc then
+      return $ BranchRefSig (usig1,
+                       BranchStaticContext $
+                        modifyCtx (Map.keys rsmap) rsmap bstc)
+      else fail "Signatures do not match"
+
+refSigComposition (ComponentRefSig rsmap1) (ComponentRefSig rsmap2) = do
+  upd <- sequence $
+         map (\x -> do{ s<-refSigComposition (rsmap1 Map.! x) (rsmap2 Map.! x);
+                        return (x,s)}) $
+         filter (\x -> x `elem` (Map.keys rsmap1)) $ Map.keys rsmap2
+  let unionMap = Map.union (Map.fromList upd) $
+                 Map.union rsmap1 rsmap2
+  return $ ComponentRefSig unionMap
+
+refSigComposition _rsig1 _rsig2 =
+  fail "composition of refinement signatures"
 
 -- | an entry of the global environment
 data GlobalEntry =
     SpecEntry ExtGenSig
   | ViewEntry ExtViewSig
-  | ArchEntry ArchSig
+  | ArchEntry RefSig
   | UnitEntry UnitSig
-  | RefEntry
+  | RefEntry RefSig
     deriving Show
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
@@ -580,6 +747,128 @@ data HistElem =
 
 type ProofHistory = SizedList.SizedList HistElem
 
+
+-- datatypes for the refinement tree
+
+data RTNodeType = RTPlain UnitSig | RTRef Node deriving (Show, Eq)
+
+data RTNodeLab = RTNodeLab{
+   rtn_type :: RTNodeType
+ , rtn_name :: String
+ } deriving (Eq)
+
+instance Show RTNodeLab where
+ show r =
+  let
+   name = rtn_name r
+   t = rtn_type r
+   t1 = case t of
+          RTPlain u -> "plain: " ++ show u
+          RTRef n -> show n
+  in name ++ " " ++ t1
+
+data RTLinkType =
+    RTRefine
+  | RTComp
+  | RTTyping
+  | RTGiven
+ deriving (Show, Eq)
+
+data RTLinkLab = RTLink{
+   rtl_type :: RTLinkType
+ } deriving (Show, Eq)
+
+-- utility functions for handling refinement tree
+
+addNodeRT :: DGraph -> UnitSig -> String -> (Node, DGraph)
+addNodeRT dg usig s =
+ let
+  g = refTree dg
+  n = Tree.getNewNode g
+  l = RTNodeLab{
+        rtn_type = RTPlain usig
+        , rtn_name = s
+       }
+ in (n, dg{refTree = insNode (n, l) g})
+
+addSpecNodeRT ::  DGraph -> UnitSig -> String -> (Node, DGraph)
+addSpecNodeRT dg usig s =
+ let
+  (n, dg') = addNodeRT dg usig s
+  f = Map.insert s n $ specRoots dg'
+ in (n, dg'{specRoots = f})
+
+addNodeRefRT :: DGraph -> String -> (Node, DGraph)
+addNodeRefRT dg s =
+ let
+   g = refTree dg
+   n = Map.findWithDefault (error "addNodeRefRT") s $ specRoots dg
+   n'= Tree.getNewNode g
+   l = RTNodeLab{
+        rtn_type = RTRef n,
+        rtn_name = s}
+   g0 = insNode (n', l) g
+   orderRT _ _  = GT
+   (g', _) = Tree.insLEdge True orderRT (n, n', RTLink{rtl_type=RTTyping}) g0
+ in (n', dg{refTree = g'})
+
+updateNodeNameRT :: DGraph -> Node -> String -> DGraph
+updateNodeNameRT dg n s =
+ let
+  g = refTree dg
+  l = Graph.lab g n
+ in case l of
+     Nothing -> dg
+     Just oldL -> let
+       newL = oldL{rtn_name = s}
+       (g', _) = Tree.labelNode (n,newL) g
+                  in dg{refTree = g'}
+
+updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
+updateNodeNameSpecRT dg n s =
+ let dg' = updateNodeNameRT dg n s
+ in dg'{specRoots = Map.insert s n $ specRoots dg}
+
+addRefEdgeRT :: DGraph -> Node -> Node -> DGraph
+addRefEdgeRT dg n1 n2 =
+ let
+  g =  refTree dg
+  orderRT _ _  = GT
+  (g', b) = Tree.insLEdge True orderRT
+                                 (n1, n2, RTLink{rtl_type = RTRefine}) g
+ in if b then dg{refTree = g'}
+    else error "addRefEdgeRT"
+
+addEdgesToNodeRT :: DGraph -> [Node] -> UnitSig -> String ->
+                  (Node, DGraph)
+addEdgesToNodeRT dg rnodes usig s =
+ let
+  (n', dg') = addNodeRT dg usig s
+  g = refTree dg'
+  orderRT _ _  = GT
+  (g', b) = foldl (\(g0, b0) n0 -> let
+                      (g1, b1) = Tree.insLEdge True orderRT
+                                 (n0, n', RTLink{rtl_type = RTComp}) g0
+                                    in (g1, b1 && b0))
+            (g, True) rnodes
+ in if not b then error "addEdgesToNodeRT"
+    else (n', dg'{refTree = g'})
+
+-- I copied these types from ArchDiagram
+-- to store the diagrams of the arch specs in the dgraph
+
+data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
+                 deriving Show
+
+data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number:: Int }
+                 deriving Show
+
+data Diag = Diagram {
+               diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab,
+               numberOfEdges :: Int
+            }
+          deriving Show
+
 {- | the actual development graph with auxiliary information. A
   'G_sign' should be stored in 'sigMap' under its 'gSignSelfIdx'. The
   same applies to 'G_morphism' with 'morMap' and 'gMorphismSelfIdx'
@@ -588,6 +877,10 @@ data DGraph = DGraph
   { globalAnnos :: GlobalAnnos -- ^ global annos of library
   , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
+  , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
+  , specRoots :: Map.Map String Node -- ^ root nodes for named specs
+  , archSpecDiags :: Map.Map String Diag
+      -- ^ dependency diagrams between units
   , getNewEdgeId :: EdgeId  -- ^ edge counter
   , refNodes :: Map.Map Node (LibName, Node) -- ^ unexpanded 'DGRef's
   , allRefNodes :: Map.Map (LibName, Node) Node -- ^ all DGRef's
@@ -605,6 +898,9 @@ emptyDG = DGraph
   { globalAnnos = emptyGlobalAnnos
   , globalEnv = Map.empty
   , dgBody = Graph.empty
+  , refTree = Graph.empty
+  , specRoots = Map.empty
+  , archSpecDiags = Map.empty
   , getNewEdgeId = startEdgeId
   , refNodes = Map.empty
   , allRefNodes = Map.empty

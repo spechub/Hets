@@ -39,6 +39,7 @@ import Control.Monad (when)
 import Interfaces.DataTypes
 import Interfaces.Utils
 
+
 type NodeEdgeList = ([DaVinciNode LibName], [DaVinciArc (IO String)])
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
@@ -200,18 +201,3 @@ showSpec le ln =
                     $ unlines . map show . Map.keys . globalEnv
                     $ lookupDGraph ln le
 
-close :: GInfo -> IO Bool
-close (GInfo { exitMVar = exit'
-             , windowCount = wc
-             , libGraphLock = lock
-             }) = do
-  count <- takeMVar wc
-  if count <= 1
-    then putMVar exit' ()
-    else do
-      putMVar wc $ count - 1
-      takeMVar lock
-  return True
-
-exit :: GInfo -> IO ()
-exit (GInfo {exitMVar = exit'}) = putMVar exit' ()

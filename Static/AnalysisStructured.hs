@@ -250,8 +250,8 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       let (ns@(NodeSig node _), dg'') =
             insGSig dg' name (DGTranslation $ Renamed ren) $ cod mor
            -- ??? too simplistic for non-comorphism inter-logic translations
-      return (Translation (replaceAnnoted sp1' asp) ren, ns,
-              insLink dg'' mor globalDef SeeTarget n' node)
+      let dg3 =  insLink dg'' mor globalDef SeeTarget n' node
+      return (Translation (replaceAnnoted sp1' asp) ren, ns, dg3)
   Reduction asp restr ->
    do let sp1 = item asp
           orig = DGRestriction $ Restricted restr
@@ -597,7 +597,7 @@ anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
 
 anaRestriction :: LogicGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
   -> Result (GMorphism, Maybe GMorphism)
-anaRestriction lg gSigma gSigma'@(G_sign lid0 sig0 ind0) opts restr =
+anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
   if isStructured opts then return (ide gSigma, Nothing) else
   case restr of
     Hidden rstr pos -> do

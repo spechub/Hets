@@ -31,6 +31,7 @@ import Static.DevGraph
 import Static.ComputeTheory
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
+import Static.ArchDiagram(emptyExtStUnitCtx)
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
@@ -262,7 +263,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     let spstr = tokStr spn
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
-    (gen', gsig@(GenSig _ _ allparams), dg') <-
+    (gen', gsig@(GenSig _ args allparams), dg') <-
       liftR $ anaGenericity lgraph dg opts nName gen
     (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
@@ -275,31 +276,39 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     if Map.member spn genv
       then liftR $ plain_error (libItem', dg'', libenv)
                (alreadyDefined spstr) pos
-      else return
-        ( libItem'
-        , dg'' { globalEnv = Map.insert spn (SpecEntry
-                 $ ExtGenSig gsig body) genv }
-        , libenv)
+      else do
+        let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
+        return
+         ( libItem'
+         , dg''' { globalEnv = Map.insert spn (SpecEntry
+                  $ ExtGenSig gsig body) genv }
+         , libenv)
   View_defn vn gen vt gsis pos -> do
     analyzing opts $ "view " ++ tokStr vn
     liftR $ anaViewDefn lgraph libenv dg opts vn gen vt gsis pos
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (archSig, dg', asp') <- liftR $ anaArchSpec lgraph dg opts $ item asp
+    (n, _,diag,archSig, dg', asp') <- liftR $ anaArchSpec lgraph dg opts
+                                                emptyExtStUnitCtx $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member asn genv
       then liftR $ plain_error (asd', dg', libenv) (alreadyDefined asstr) pos
-      else return (asd', dg'
-             { globalEnv = Map.insert asn (ArchEntry archSig) genv },
-             libenv)
+      else do
+            let dg'' = updateNodeNameSpecRT dg' n $ show asn
+                dg3 = dg''{ archSpecDiags =
+                           Map.insert (show asn) diag $ archSpecDiags dg''}
+            return (asd', dg3
+               { globalEnv = Map.insert asn (ArchEntry archSig) genv },
+                      libenv)
   Unit_spec_defn usn usp pos -> do
     let usstr = tokStr usn
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lgraph
-    (unitSig, dg', usp') <-
+    (rSig, dg', usp') <-
         liftR $ anaUnitSpec lgraph dg opts (EmptyNode l) usp
+    unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
     if Map.member usn genv
@@ -307,14 +316,20 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       else return (usd', dg'
              { globalEnv = Map.insert usn (UnitEntry unitSig) genv },
              libenv)
-  Ref_spec_defn rn _ pos -> do
+  Ref_spec_defn rn rsp pos -> do
     let rnstr = tokStr rn
-    analyzing opts $ "refinement "
-      ++ rnstr ++ "\n  (refinement analysis not implemented yet)"
-    let genv = globalEnv dg
+    l <- lookupCurrentLogic "Ref_spec_defn" lgraph
+    (_,_,_,rsig, dg',rsp') <-
+       liftR (anaRefSpec lgraph dg opts (EmptyNode l) rn emptyExtStUnitCtx
+              rsp)
+    analyzing opts $ "ref spec " ++ rnstr
+    let rsd' = Ref_spec_defn rn rsp' pos
+        genv = globalEnv dg'
     if Map.member rn genv
-      then liftR $ plain_error (itm, dg, libenv) (alreadyDefined rnstr) pos
-      else return ( itm, dg { globalEnv = Map.insert rn RefEntry genv }
+      then liftR (plain_error (itm, dg', libenv)
+                             (alreadyDefined rnstr)
+                             pos)
+      else return ( rsd', dg'{ globalEnv = Map.insert rn (RefEntry rsig) genv }
                   , libenv)
   Logic_decl (Logic_name logTok _) _ -> do
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
@@ -428,7 +443,7 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
       in return (genv1,dg1)
     ArchEntry _asig -> anaErr "arch spec download"
     UnitEntry _usig -> anaErr "unit spec download"
-    RefEntry -> anaErr "ref spec download"
+    RefEntry _rsig -> anaErr "ref spec download"
 
 refNodesig :: LibEnv -> LibName -> DGraph -> (NodeName, NodeSig)
            -> (DGraph, NodeSig)

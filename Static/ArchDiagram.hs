@@ -10,6 +10,8 @@ Portability :  non-portable (Logic)
    Data types and functions for architectural diagrams
    Follows the CASL Reference Manual, section III.5.6.
 
+   Extended to the new rules for lambda expressions(WADT2010).
+
 -}
 
 module Static.ArchDiagram where
@@ -35,22 +37,16 @@ import Static.DevGraph
 -- * Types
 -- (as defined for extended static semantics in Chap. III:5.6.1)
 
-data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
-                 deriving Show
-
-data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number:: Int }
-                 deriving Show
-
-data Diag = Diagram {
-               diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab,
-               numberOfEdges :: Int
-            }
-          deriving Show
+-- moved in Static.DevGraph
 
 emptyDiag :: Diag
 emptyDiag = Diagram{diagGraph = Graph.empty, numberOfEdges = 0}
 
-data DiagNodeSig = Diag_node_sig Node NodeSig
+data DiagNodeSig = Diag_node_sig Node NodeSig deriving Show
+
+instance Show MaybeDiagNode where
+ show (EmptyDiagNode _) = "empty"
+ show (JustDiagNode dns) = show dns
 
 data MaybeDiagNode = JustDiagNode DiagNodeSig | EmptyDiagNode AnyLogic
 
@@ -63,8 +59,17 @@ toMaybeNode mdn = case mdn of
 getSigFromDiag :: DiagNodeSig -> NodeSig
 getSigFromDiag (Diag_node_sig _ ns) = ns
 
-data BasedUnitSig = Based_unit_sig DiagNodeSig
-                  | Based_par_unit_sig MaybeDiagNode UnitSig
+data BasedUnitSig = Based_unit_sig DiagNodeSig RefSig
+                  | Based_par_unit_sig MaybeDiagNode RefSig
+                  | Based_lambda_unit_sig [DiagNodeSig] RefSig
+                    -- the list is always non-empty,
+                    -- actually has at least 2 elems, and the
+                    -- head stores the "result" node
+
+instance Show BasedUnitSig where
+ show (Based_unit_sig dns _) = show dns
+ show (Based_par_unit_sig mdn _) = show mdn
+ show (Based_lambda_unit_sig _ usig) = show usig
 
 type StBasedUnitCtx = Map.Map SIMPLE_ID BasedUnitSig
 emptyStBasedUnitCtx :: StBasedUnitCtx
@@ -93,16 +98,18 @@ printDiag :: a -> String -> Diag -> Result a
 printDiag res _ _ = return res
 
 -- | A mapping from extended to basic static unit context
-ctx :: ExtStUnitCtx -> StUnitCtx
+ctx :: ExtStUnitCtx -> RefStUnitCtx
 ctx (buc, _) =
-    let ctx' [] _ = emptyStUnitCtx
+    let ctx' [] _ = emptyRefStUnitCtx
         ctx' (id1 : ids) buc0 =
             let uctx = ctx' ids buc0
             in case Map.lookup id1 buc0 of
-                    Just (Based_unit_sig mds) -> Map.insert id1
-                           (Sig $ getSigFromDiag mds) uctx
-                    Just (Based_par_unit_sig mds usig) -> Map.insert id1
-                           (ImpUnitSig (toMaybeNode mds) usig) uctx
+                    Just (Based_unit_sig _ rsig) -> Map.insert id1
+                           rsig uctx
+                    Just (Based_par_unit_sig _ rsig) -> Map.insert id1
+                           rsig uctx
+                    Just (Based_lambda_unit_sig _ rsig) -> Map.insert id1
+                          rsig uctx
                     _ -> uctx -- this should never be the case
     in ctx' (Map.keys buc) buc
 
@@ -366,3 +373,48 @@ inclusionSink lgraph srcNodes tnsig =
                  return ((n, incl): l)
        sink <- foldl insmorph (return []) srcNodes
        return sink
+
+{- | Build a diagram that extends the given diagram with an
+edge between existing nodes.
+The edge is labelled with a given signature morphism. Extends the
+development graph with the given morphism as well. -}
+extendDiagramWithEdge :: Range         -- ^ the position (for diagnostics)
+                          -> LogicGraph
+                          -> Diag          -- ^ the diagram to be extended
+                          -> DGraph        -- ^ the development graph
+                          -> DiagNodeSig
+                          -- ^ the node from which the edge should originate
+                          -> DiagNodeSig
+                          -- ^ the target node of the edge
+                          -> GMorphism
+                          -- ^ the morphism as label for the new edge
+                          -> DGLinkOrigin -- ^ the origin of the new edge
+                          -> Result (Diag, DGraph)
+-- ^ returns the extended diagram and extended development graph
+extendDiagramWithEdge pos _ diag dg
+                          (Diag_node_sig s ssig)
+                          (Diag_node_sig t tsig)
+                          mor orig =
+  if getSig tsig == cod mor then
+   if getSig ssig == dom mor then
+     do
+        let linkContents = globDefLink mor orig
+            s' = getNode ssig
+            t' = getNode tsig
+            dg' = snd $ insLEdgeDG (s', t', linkContents) dg
+            diagGr = diagGraph diag
+            diag' = Diagram{diagGraph = insEdge (s, t, DiagLink {
+                               dl_morphism = mor,
+                               dl_number = numberOfEdges diag + 1 }) diagGr,
+                            numberOfEdges = numberOfEdges diag + 1 }
+        printDiag (diag', dg')
+                      "extendDiagramWithMorphism" diag'
+      else fatal_error
+     ("Internal error: Static.ArchDiagram.extendDiagramWithMorphism:" ++
+      "\n the morphism domain differs from the signature in given source node")
+                         pos
+   else fatal_error
+     ("Internal error: Static.ArchDiagram.extendDiagramWithMorphism:" ++
+      "\n the morphism domain differs from the signature in given target node")
+                         pos
+

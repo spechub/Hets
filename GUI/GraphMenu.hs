@@ -50,6 +50,8 @@ import Interfaces.DataTypes
 import Interfaces.Command
 import Interfaces.CmdAction
 
+import GUI.ShowRefTree
+
 -- | Adds to the DGNodeType list style options for each type
 nodeTypes :: HetcatsOpts
           -> [( DGNodeType -- Nodetype
@@ -286,6 +288,7 @@ createGlobalMenu gInfo@
             Just ist2 -> print . pretty . lookupDGraph (i_ln ist2)
               $ i_libEnv ist2
      , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
+     , Button "Show RefinementTree" $ ral $ showLibGraph gInfo showRefTree
      , Button "Save Graph for uDrawGraph" $ ral
               $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
      , Button "Save proof-script" $ ral

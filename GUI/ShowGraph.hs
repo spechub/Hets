@@ -21,7 +21,7 @@ import Common.LibName
 
 import GUI.GraphDisplay
 import GUI.GraphTypes
-import GUI.ShowLibGraph
+import GUI.ShowLibGraph(showLibGraph, mShowGraph)
 #ifdef GTKGLADE
 import GUI.GtkUtils(startMainLoop, stopMainLoop)
 #endif
