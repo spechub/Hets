@@ -15,7 +15,6 @@ for p in \
  cabal-install-0.8.2 \
  haskell-src-1.0.1.3 \
  utf8-string-0.3.6 \
- packedstring-0.1.0.1 \
  curl-1.3.5 \
  tar-0.3.1.0 \
  deepseq-1.1.0.0 \
