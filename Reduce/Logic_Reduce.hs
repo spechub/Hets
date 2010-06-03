@@ -34,7 +34,8 @@ import ATC.ProofTree ()
 data Reduce = Reduce deriving Show
 
 instance Language Reduce where
-    description _ = "Reduce Logic\n"
+    description _ = "CSL Logic\n"
+--    language_name _ = "CSL"
 
 -- | Instance of Category for Reduce logic
 instance Category Sign Morphism where

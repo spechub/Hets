@@ -60,7 +60,7 @@ extractOperatorsCmd (Repeat _ _ _) = [] -- to be implemented
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
 checkOperators _ [] = True
-checkOperators s ((op,arit):ops) = (if elem op ["ex","all",">","<","+","-","*","=","/","**","^","and","or","impl"] then (arit==2)
+checkOperators s ((op,arit):ops) = (if elem op ["ex","all",">","<=",">=","!=","<","+","-","*","=","/","**","^","and","or","impl"] then (arit==2)
                                     else if elem op ["cos","sqrt","sin"] then (arit==1) else
                                         case op of
                                           "solve" -> (arit==2)

@@ -30,7 +30,7 @@ then
  . d_3e:=d_3 * (1-2/n_B^2)
  . A_B:=min(d_Be,dBs)^2 * n_B * Pi/4
  . F_R0:=F_A0+(4/d_3e)*M_A0 
- . F_G0:=A_B+f_B0/3 -F_R0
+ . F_G[0]:=A_B+f_B[0]/3 -F_R[0]
  . b_Gt:=(d_G2 - d_G1)/2
  . d_F:=(d_4 + d_0)/2
  . beta:=e_2/e_1

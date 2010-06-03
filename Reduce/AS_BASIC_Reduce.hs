@@ -123,6 +123,7 @@ getPrec (Op s exps _) = case s of
                           "^" ->  3
                           "**" ->  3
                           _ -> if (length exps)==0 then 4 else 0
+getPrec _ = 9
                           
 printInfix :: EXPRESSION -> Doc
 printInfix exp@(Op s exps _) = (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0)) else  (parens (printExpression $ (exps !! 0)))) 
