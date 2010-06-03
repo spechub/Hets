@@ -94,7 +94,7 @@ consCheck thName _ tm _ =
                 thName_clean = map (\c -> if c == '/' then '_' else c) thName
                 tmpFile = "/tmp/" ++ (thName_clean ++ "_cc.dimacs")
                 resultFile = tmpFile ++ ".result"
-                dimacsOutput = PC.showDIMACSProblem (thName ++ "_cc")
+            dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc")
                              sig [(AS_Anno.makeNamed "myAxioms" $
                                      AS_BASIC.Implication
                                      (

@@ -21,7 +21,7 @@ module Propositional.Conversions
 
 import qualified Propositional.AS_BASIC_Propositional as AS
 import qualified Common.AS_Annotation as AS_Anno
-import Propositional.Fold
+import qualified Propositional.Prop2CNF as P2C
 import qualified Propositional.Sign as Sig
 import qualified Common.Id as Id
 import qualified Propositional.Tools as PT
@@ -40,15 +40,15 @@ goalDIMACSProblem thName pState conjec _ =
         sign = PState.initialSignature pState
         axs  = PState.initialAxioms    pState
     in
-      return $ showDIMACSProblem thName sign axs [conjec]
+      showDIMACSProblem thName sign axs [conjec]
 
 -- | Translation of a Propositional Formula to a String in DIMACS Format
 showDIMACSProblem :: String                     -- name of the theory
                   -> Sig.Sign                   -- Signature
                   -> [AS_Anno.Named AS.FORMULA] -- Axioms
                   -> [AS_Anno.Named AS.FORMULA] -- Conjectures
-                  -> String                     -- Output
-showDIMACSProblem name fSig axs cons =
+                  -> IO String                     -- Output
+showDIMACSProblem name sig axs cons = do
     let
         nakedCons   = map (AS_Anno.sentence) cons
         negatedCons = (\ ncons ->
@@ -70,16 +70,18 @@ showDIMACSProblem name fSig axs cons =
                                 }
                                ]
                       ) nakedCons
-        tAxs = map (AS_Anno.mapNamed cnf) axs
-        tCon = map (AS_Anno.mapNamed cnf) negatedCons
-        flatSens = PT.flatten . AS_Anno.sentence
+    (tSig, tAxs) <- P2C.translateToCNF (sig, axs)
+    (tpSig, tCon) <- P2C.translateToCNF (sig, negatedCons)
+    let
+        fSig         = Sig.unite tSig tpSig
+        flatSens     = PT.flatten . AS_Anno.sentence
         tfAxs        = concatMap flatSens tAxs
         tfCon        = concatMap flatSens tCon
         numVars      = Set.size $ Sig.items fSig
         numClauses   = length tfAxs + length tfCon
         sigMap       = createSignMap fSig 1 Map.empty
         fct sr xv    = sr ++ mapClause xv sigMap
-        in "c " ++ name ++ "\n" ++
+    return $ "c " ++ name ++ "\n" ++
            "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n" ++
                                         (\tflAxs ->
                                              case tflAxs of

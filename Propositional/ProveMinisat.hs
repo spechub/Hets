@@ -90,7 +90,7 @@ consCheck thName _ tm _ = case LP.tTarget tm of
     let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
         thName_clean = map (\c -> if c == '/' then '_' else c) thName
         tmpFile = "/tmp/" ++ thName_clean ++ "_cc.dimacs"
-        dimacsOutput = PC.showDIMACSProblem (thName ++ "_cc") sig
+    dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc") sig
           [(AS_Anno.makeNamed "myAxioms" $
           AS_BASIC.Implication
             (AS_BASIC.Conjunction (map AS_Anno.sentence axioms) Id.nullRange)
