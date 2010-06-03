@@ -1,0 +1,7 @@
+use Propositional/TestData/propositionalTest
+
+dg-all auto
+
+dg basic APropP
+prover minisat
+prove
