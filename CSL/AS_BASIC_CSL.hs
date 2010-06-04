@@ -14,6 +14,7 @@ This file contains the abstract syntax for CSL as well as pretty printer for it.
 
 module CSL.AS_BASIC_CSL
     ( EXPRESSION (..)     -- datatype for numerical expressions (e.g. polynomials)
+    , EXTPARAM (..)       -- datatype for extended parameters (e.g. [I=0])
     , BASIC_ITEMS (..)    -- Items of a Basic Spec
     , BASIC_SPEC (..)     -- Basic Spec
     , SYMB_ITEMS (..)     -- List of symbols
@@ -47,10 +48,14 @@ data BASIC_ITEMS =
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
 
+-- | Extended Parameter Datatype stores
+data EXTPARAM = EP Id.Token String EXPRESSION deriving (Eq, Ord, Show)
+
 -- | Datatype for expressions
 data EXPRESSION =
     Var Id.Token
-  | Op String [EXPRESSION] Id.Range          -- token instead string Id vs Token:
+  -- token instead string Id vs Token:
+  | Op String [EXTPARAM] [EXPRESSION] Id.Range
   | List [EXPRESSION] Id.Range
   | Int Int Id.Range
   | Double Float Id.Range
@@ -113,25 +118,30 @@ printCMD (Repeat a v stms) = text "repeat" <> vcat (map printCMD stms)
                              <> parens (sepByCommas $ map printExpression $ [a, v])
 
 getPrec :: EXPRESSION -> Integer
-getPrec (Op s exps _) = case s of 
-                          "+" ->  1
-                          "-" ->  1
-                          "/" ->  2
-                          "*" ->  2
-                          "^" ->  3
-                          "**" ->  3
-                          _ -> if (length exps)==0 then 4 else 0
+getPrec (Op s _ exps _)
+    | elem s ["+", "-"] = 1
+    | elem s ["/", "*"] = 2
+    | elem s ["^", "**"] = 3
+    | length exps == 0 = 4
+    | otherwise = 0
 getPrec _ = 9
-                          
+                       
+-- TODO: print extparams   
 printInfix :: EXPRESSION -> Doc
-printInfix exp@(Op s exps _) = (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0)) else  (parens (printExpression $ (exps !! 0)))) 
-                 <> text s 
-                 <> (if (outerprec<=(getPrec (exps!!1))) then (printExpression $ exps !! 1) else (parens (printExpression $ exps !! 1)))
-                     where outerprec=getPrec exp
+printInfix exp@(Op s _ exps _) =
+    (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0))
+     else  (parens (printExpression $ (exps !! 0))))
+    <> text s <> (if outerprec<= getPrec (exps!!1)
+                  then printExpression $ exps !! 1
+                  else parens (printExpression $ exps !! 1))
+        where outerprec=getPrec exp
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
-printExpression exp@(Op s exps _) = if ( ((length exps) == 2) && s/="min" && s/="max") then (printInfix exp)  else text s <+> (parens (sepByCommas (map printExpression exps)))
+-- TODO: print extparams   
+printExpression exp@(Op s _ exps _)
+    | length exps == 2 && s/="min" && s/="max" = printInfix exp
+    | otherwise = text s <+> parens (sepByCommas (map printExpression exps))
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
 printExpression (Double d _) = text (show d)
@@ -218,7 +228,7 @@ instance GetRange EXPRESSION where
   getRange = const nullRange
   rangeSpan x = case x of
                       Var token -> joinRanges [rangeSpan token]
-                      Op _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
+                      Op _ _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
                       List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
                       Int _ a -> joinRanges [rangeSpan a]
                       Double _ a -> joinRanges [rangeSpan a]

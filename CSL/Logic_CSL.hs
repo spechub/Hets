@@ -73,9 +73,9 @@ instance Sentences CSL CMD
 -- | Syntax of CSL logic
 instance Syntax CSL BASIC_SPEC
     SYMB_ITEMS SYMB_MAP_ITEMS where
-         parse_basic_spec CSL = Just basicSpec
-         parse_symb_items CSL = Just symbItems
-         parse_symb_map_items CSL = Just symbMapItems
+         parse_basic_spec CSL = parseBasicSpec
+         parse_symb_items CSL = parseSymbItems
+         parse_symb_map_items CSL = parseSymbMapItems
 
 -- | Instance of Logic for reduce logc
 instance Logic CSL

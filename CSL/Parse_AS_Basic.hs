@@ -8,10 +8,24 @@ Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-Parser for abstract syntax for reduce computer algebra system
+Parser for abstract syntax for CSL
 -}
 
-module CSL.Parse_AS_Basic
+module CSL.Parse_AS_Basic ( parseBasicSpec
+                          , parseSymbItems
+                          , parseSymbMapItems
+                          , parseResult
+                          , expression
+                          , command
+                          , aFormula
+                          , parseBasicItems
+                          , parseOpDecl
+                          , parseAxItems
+                          , basicSpec
+                          , signednumber
+                          , oneOfKeys
+                          , extparam
+                          )
     where
 
 import qualified Common.AnnoState as AnnoState
@@ -26,18 +40,39 @@ import Text.ParserCombinators.Parsec
 
 -- the basic lexer, test using e.g. runParser identifier 0 "" "asda2_3"
 
+
 -- ---------------------------------------------------------------------------
--- ------------------------- Parser for Expressions --------------------------
+-- * Interface to the syntax class
 -- ---------------------------------------------------------------------------
+
+parseBasicSpec :: Maybe (AnnoState.AParser st BASIC_SPEC)
+parseBasicSpec = Just basicSpec
+parseSymbItems :: Maybe (GenParser Char st SYMB_ITEMS)
+parseSymbItems = Just symbItems
+parseSymbMapItems :: Maybe (GenParser Char st SYMB_MAP_ITEMS)
+parseSymbMapItems = Just symbMapItems
+
+
+-- ---------------------------------------------------------------------------
+-- * Parser for Expressions
+-- ---------------------------------------------------------------------------
+
+mkOp :: String -> [EXPRESSION] -> EXPRESSION
+mkOp s el = Op s [] el nullRange
 
 {- | parsing of identifiers. an identifier is a letter followed by
      letters, numbers, or _, but not a keyword -}
 identifier :: CharParser st Id.Token
 identifier =
-  lexemeParser (Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords)
+  lexemeParser $ Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords
 
 prefixidentifier :: CharParser st Id.Token
-prefixidentifier = lexemeParser (Lexer.pToken Lexer.scanAnyWords)
+prefixidentifier = lexemeParser
+                   $ Lexer.pToken $ Lexer.scanAnySigns <|> Lexer.scanAnyWords
+
+extendedId :: CharParser st Id.Token
+extendedId =
+  lexemeParser (Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords)
 
 -- | parser for numbers (both integers and floats) without signs
 number :: CharParser st Id.Token
@@ -45,27 +80,22 @@ number = Lexer.pToken Lexer.scanFloat
 
 -- | parses a possibly signed number
 signednumber :: CharParser st EXPRESSION
-signednumber =
-    do
-      nr <- number
-      return $ if isFloating nr
-        then Double (read (tokStr nr)) (tokPos nr)
-        else Int (read (tokStr nr)) (tokPos nr)
-    <|>
-    do
-      Lexer.keySign (string "-")
-      nr <- number
-      return $ if isFloating nr
-        then Double (-1 * read (tokStr nr)) (tokPos nr)
-        else Int (-1 * read (tokStr nr)) (tokPos nr)
+signednumber = do
+    (sign, nr) <- pair (option "" $ Lexer.keySign (string "-")) number
+    return $ if isFloating nr
+             then Double (read (sign ++ tokStr nr)) (tokPos nr)
+             else Int (read (sign ++ tokStr nr)) (tokPos nr)
+
+oneOfKeys :: [String] -> CharParser st String
+oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map (try . string) l
 
 expression :: CharParser st EXPRESSION
 expression = do
   exp1 <- factor
   exps <- many
-    $ pair (lexemeParser (Lexer.keySign $ string "+" <|> string "-")) factor
+    $ pair (oneOfKeys ["+", "-"]) factor
   if null exps then return exp1
-     else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
+     else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
   <|>
   listexp
 
@@ -74,27 +104,29 @@ factor :: CharParser st EXPRESSION
 factor = do
   exp1 <- expexp
   exps <- many
-    $ pair (lexemeParser (Lexer.keySign $ string "*" <|> string "/")) factor
+    $ pair (oneOfKeys ["*", "/"]) factor
   if null exps then return exp1
-     else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
+     else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
 
 -- | parse a sequence of exponentiations
 expexp :: CharParser st EXPRESSION
 expexp = do
   exp1 <- expatom
   exps <- many
-    $ pair (lexemeParser (Lexer.keySign $ tryString "**" <|> string "^")) expexp
+    $ pair (oneOfKeys ["**", "^"]) expexp
   if null exps then return exp1
-    else return $ foldr (\ a b -> Op (fst a) [b, snd a] nullRange) exp1 exps
+    else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
 
+pComma :: CharParser st String
+pComma = lexemeParser $ Lexer.keySign $ string ","
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
 expatom = signednumber
   <|>
   do
-    ident <- identifier
-    return (Var ident)
+    ident <- identifier  -- EXTENDED
+    return $ Var ident
   <|>
   do
     oParenT
@@ -103,31 +135,41 @@ expatom = signednumber
     return expr
   <|>
   do 
-    ident <- prefixidentifier
-    oParenT
-    exps <- Lexer.separatedBy expression (Lexer.keySign (string ","))
-    cParenT
-    return (Op (tokStr ident) (fst exps) nullRange)
+    ident <- prefixidentifier  -- EXTENDED
+    ep <- option ([],[])
+          $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
+    exps <- option ([],[])
+            $ oParenT >> Lexer.separatedBy expression pComma << cParenT
+    return $ Op (tokStr ident) (fst ep) (fst exps) nullRange
+
 
 -- | parses a list expression
 listexp :: CharParser st EXPRESSION
 listexp = do
   (Lexer.keySign (string "{"))
-  elems <- Lexer.separatedBy formulaorexpression (Lexer.keySign (string ","))
+  elems <- Lexer.separatedBy formulaorexpression pComma
   (Lexer.keySign (string "}"))
   return (List (fst elems) nullRange)
 
+-- ---------------------------------------------------------------------------
+-- ** parser for extended parameter, e.g., [I=0,...]
+-- ---------------------------------------------------------------------------
 
------------------------------------------------------------------------------
----------------------------- parser for formulas ----------------------------
------------------------------------------------------------------------------
+extparam :: CharParser st EXTPARAM
+extparam = do
+  i <- identifier
+  pair (oneOfKeys ["=", "<=", ">=", "!=", "<", ">"]) expression >--> EP i
+
+-- ---------------------------------------------------------------------------
+-- * parser for formulas
+-- ---------------------------------------------------------------------------
 
 parseVarList :: CharParser st EXPRESSION
 parseVarList = do
   Lexer.keySign (string "{")
-  elems <- Lexer.separatedBy identifier (Lexer.keySign (string ","))
+  elems <- Lexer.separatedBy parseVar pComma
   Lexer.keySign (string "}")
-  return (List (map Var $ fst elems) nullRange)
+  return (List (fst elems) nullRange)
 
 parseVar :: CharParser st EXPRESSION
 parseVar = do
@@ -135,25 +177,16 @@ parseVar = do
   return (Var ident)
 
 
-existsFormula :: CharParser st EXPRESSION
-existsFormula = do
-      Lexer.keySign (string "ex")
-      oParenT
-      vars <- ( parseVar <|> parseVarList)
-      Lexer.keySign (string ",")
-      expr <- formulaorexpression
-      cParenT
-      return (Op "ex" [vars, expr] nullRange)
 
-forallFormula :: CharParser st EXPRESSION
-forallFormula = do
-      Lexer.keySign (string "all")
-      oParenT
-      vars <- parseVar <|> parseVarList
-      Lexer.keySign (string ",")
-      expr <- formulaorexpression
-      cParenT
-      return (Op "all" [vars, expr] nullRange)
+quantFormula :: String -> CharParser st EXPRESSION
+quantFormula q = do
+  Lexer.keySign (string q)
+  oParenT
+  vars <- ( parseVar <|> parseVarList)
+  pComma
+  expr <- formulaorexpression
+  cParenT
+  return (mkOp q [vars, expr])
 
 
 -- | parser for atoms
@@ -161,15 +194,12 @@ truefalseFormula :: CharParser st EXPRESSION
 truefalseFormula =
     do
       lexemeParser (Lexer.keyWord (tryString "true"))
-      return (Op "True" [] nullRange)
+      return (mkOp "True" [])
     <|>
     do
       lexemeParser (Lexer.keyWord (tryString "false"))
-      return (Op "False" [] nullRange)
-    <|>
-    existsFormula
-    <|>
-    forallFormula
+      return (mkOp "False" [])
+    <|> quantFormula "ex" <|> quantFormula "all"
 
 -- | parser for predicates
 predFormula :: CharParser st EXPRESSION
@@ -179,7 +209,7 @@ predFormula =
       op <- lexemeParser (Lexer.keySign $ tryString "<=" <|> tryString ">=")
         <|> lexemeParser (single (oneOf "=<>"))
       exp2 <- expression
-      return (Op op [exp1, exp2] nullRange)
+      return (mkOp op [exp1, exp2])
 
 atomicFormula :: CharParser st EXPRESSION
 atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
@@ -196,7 +226,7 @@ negFormula :: CharParser st EXPRESSION
 negFormula = do
   lexemeParser (Lexer.keyWord (tryString "not"))
   f <- atomicFormula
-  return (Op "Not" [f] nullRange)
+  return (mkOp "Not" [f])
 
 -- | parses a formula within brackets
 parenFormula :: CharParser st EXPRESSION
@@ -213,11 +243,11 @@ impOrFormula = do
   opfs <- many $ pair (lexemeParser $ Lexer.keyWord
                       $ tryString "or" <|> tryString "impl") impOrFormula
   if null opfs then return f1
-   else return $ foldr (\ (a1, a2) b -> Op (case a1 of
+   else return $ foldr (\ (a1, a2) b -> mkOp (case a1 of
                                    "or" -> "or"
                                    "impl" -> "impl"
                                    _ -> error "impl or or expected")
-                                    [b, a2] nullRange
+                                    [b, a2]
                                  ) f1 opfs
 
 -- | a parser for and sequence of and formulas
@@ -226,10 +256,10 @@ andFormula = do
   f1 <- atomicFormula
   opfs <- many $ pair (lexemeParser $ keyWord $ tryString "and") atomicFormula
   if null opfs then return f1
-   else return $ foldr (\ a b -> (Op "and" [b, snd a] nullRange)) f1 opfs
+   else return $ foldr (\ a b -> (mkOp "and" [b, snd a])) f1 opfs
 
 -- ---------------------------------------------------------------------------
--- -------------------------- Parser for Commands ----------------------------
+-- * Parser for Commands
 -- ---------------------------------------------------------------------------
 
 formulaorexpression :: CharParser st EXPRESSION
@@ -242,43 +272,47 @@ command = do
     ["solve", "simplify", "divide", "int", "rlqe", "factorize"]
   oParenT
   arg1 <- formulaorexpression
-  args <- many $ pair (lexemeParser $ string ",") formulaorexpression
+  -- args <- many $ pair (lexemeParser $ string ",") formulaorexpression
+  args <- many $ pair pComma formulaorexpression
   cParenT
   return (Cmd cmd (arg1 : map snd args))
   <|>
   do
-    ident <- identifier
-    op <- tryString ":="
-    exp <- expression
-    return (Cmd ":=" [(Var ident),exp])
+    ident <- identifier -- EXTENDED
+    lexemeParser $ tryString ":="
+    exp' <- expression
+    return (Cmd ":=" [(Var ident),exp'])
   <|>
   repeatExpr
 
 repeatExpr :: CharParser st CMD
 repeatExpr = do
-  cmd <- (lexemeParser (tryString "repeat"))
-  statements <- Lexer.separatedBy command (lexemeParser (Lexer.keySign (string ";")))
+  lexemeParser $ tryString "repeat"
+  statements <- Lexer.separatedBy command
+                $ lexemeParser $ Lexer.keySign $ string ";"
   skip
-  until <- tryString "until"
+  tryString "until"
   skip
-  convergence <- tryString "convergence"
+  tryString "convergence"
   oParenT
   accuracy <- expression
-  lexemeParser $ tryString ","
+  -- lexemeParser $ tryString ","
+  pComma
   var <- expression
   cParenT
   return (Repeat accuracy var (fst statements))
 
------------------------------------------------------------------------------
---------------------------- parser spec entries. ----------------------------
------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
+-- * parser spec entries
+-- ---------------------------------------------------------------------------
 
 -- | parser for operator declarations: example: operator a,b,c
 opItem :: CharParser st OP_ITEM
 opItem = do
   Lexer.keySign (lexemeParser (tryString "operator"))
   var1 <- identifier
-  vars <- many $ pair (lexemeParser $ string ",") identifier
+  -- vars <- many $ pair (lexemeParser $ string ",") identifier
+  vars <- many $ pair pComma identifier
   return (Op_item (var1 : map snd vars) nullRange)
 
 
@@ -305,7 +339,7 @@ parseAxItems = do
 
 
 -- ---------------------------------------------------------------------------
--- ---------------------- parser for symbol maps etc. ------------------------
+-- * parser for symbol maps etc.
 -- ---------------------------------------------------------------------------
 
 -- | parsing a prop symbol

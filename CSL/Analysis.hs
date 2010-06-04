@@ -43,37 +43,45 @@ data DIAG_FORM = DiagForm
       diagnosis :: Diagnosis
     }
                deriving Show
+arityOneOps :: [String]
+arityOneOps = [ "cos", "sin", "tan", "sqrt", "fthrt", "--"
+              , "simplify", "rlqe", "factorize", "simplify"
+              ]
+
+arityTwoOps :: [String]
+arityTwoOps = [ "ex", "all", "and", "or", "impl"
+              , "=", ">", "<=", ">=", "!=", "<"
+              , "+", "-", "*", "/", "**", "^"
+              , ":=", "int", "divide", "solve"
+              ]
+
+arityFlexOps :: [String]
+arityFlexOps = [ "min", "max" ]
 
 -- | extracts the operators + arity information for an operator
 extractOperatorsExp :: EXPRESSION -> [(String,Int)]
 extractOperatorsExp (Var _) = []
-extractOperatorsExp (Op s exps _) = (s,(length exps)) : (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
-extractOperatorsExp (List exps _) = (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+extractOperatorsExp (Op s _ exps _) =
+    (s, length exps) : concatMap extractOperatorsExp exps
+extractOperatorsExp (List exps _) = concatMap extractOperatorsExp exps
 extractOperatorsExp _ = []
 
 -- | extracts the operators + arity information for a cmd
 extractOperatorsCmd :: CMD -> [(String,Int)]
-extractOperatorsCmd (Cmd cmd exps) = (cmd,length exps) : (List.foldl (\ res item -> (res ++ (extractOperatorsExp item)) ) [] exps)
+extractOperatorsCmd (Cmd cmd exps) =
+    (cmd, length exps) : concatMap extractOperatorsExp exps
 extractOperatorsCmd (Repeat _ _ _) = [] -- to be implemented
 
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
-checkOperators _ [] = True
-checkOperators s ((op,arit):ops) = (if elem op ["ex","all",">","<=",">=","!=","<","+","-","*","=","/","**","^","and","or","impl"] then (arit==2)
-                                    else if elem op ["cos","sqrt","sin"] then (arit==1) else
-                                        case op of
-                                          "solve" -> (arit==2)
-                                          "simplify" -> (arit==1)
-                                          "divide" -> (arit==2)
-                                          "int" -> (arit==2)
-                                          "rlqe" -> (arit==1)
-                                          ":="   -> (arit==2)
-                                          "factorize" -> (arit==1)
-                                          "min" -> (arit>0)
-                                          "max" -> (arit>0)
-                                          _ -> Sign.lookupSym s $ genName op  -- .. otherwise it must be declared in the signature
-                                               )
-                                   && checkOperators s ops
+checkOperators s ops =
+    let f (op, arit)
+            | elem op arityOneOps = arit == 1
+            | elem op arityTwoOps = arit == 2
+            | elem op arityFlexOps = arit > 0
+            -- .. otherwise it must be declared in the signature
+            | otherwise = Sign.lookupSym s $ genName op
+    in all f ops
 
 -- | generates a named formula
 makeNamed :: AS_Anno.Annoted CMD -> Int -> AS_Anno.Named CMD
@@ -88,38 +96,42 @@ makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
       isTheorem = isImplies || isImplied
 
 
--- | takes a signature and a formula and a number. It analyzes the formula and returns a formula with diagnosis
+-- | takes a signature and a formula and a number. 
+-- It analyzes the formula and returns a formula with diagnosis
 analyzeFormula :: Sign.Sign -> (AS_Anno.Annoted CMD) -> Int -> DIAG_FORM
-analyzeFormula s f i =  
-    let
-        opargs = extractOperatorsCmd (AS_Anno.item f)
-    in
-      if (checkOperators s opargs) then 
-          DiagForm { formula = (makeNamed f i),
+analyzeFormula s f i
+    | checkOperators s $ extractOperatorsCmd $ AS_Anno.item f
+        = DiagForm { formula = (makeNamed f i),
                                diagnosis = Diag {
                                              diagKind = Hint
                                            , diagString = "All fine"
                                            , diagPos = nullRange
                                            }
                    }
-          else
-          DiagForm { formula = (makeNamed f i),
-                               diagnosis = Diag {
-                                             diagKind = Error
-                                           , diagString = "Wrong arity or undeclared operator in Formula " ++ show (extractOperatorsCmd (AS_Anno.item f)) ++ " " ++ show (AS_Anno.item f)
-                                           , diagPos = nullRange -- position of the error
-                                           }
-                   }
+    | otherwise
+        = let ds = "Wrong arity or undeclared operator in Formula "
+                   ++ show (extractOperatorsCmd (AS_Anno.item f)) ++ " "
+                   ++ show (AS_Anno.item f)
+          in  DiagForm { formula = (makeNamed f i),
+                                   diagnosis = Diag {
+                                                 diagKind = Error
+                                               , diagString = ds
+                                               -- position of the error
+                                               , diagPos = nullRange
+                                               }
+                       }
 
 -- | Extracts the axioms and the signature of a basic spec
 splitSpec :: BASIC_SPEC -> Sign.Sign -> (Sign.Sign, [DIAG_FORM])
 splitSpec (Basic_spec specitems) sig =
     List.foldl (\ (sign, axs) item ->
                 case (AS_Anno.item item) of
-                  (Op_decl (Op_item tokens _)) -> (addTokens sign tokens, axs)
-                  (Axiom_item annocmd) -> (sign, (analyzeFormula sign annocmd (length axs)) : axs) -- addAxioms cmds sign
-                 )
-             (sig, []) specitems
+                  Op_decl (Op_item tokens _) ->
+                      (addTokens sign tokens, axs)
+                  Axiom_item annocmd ->
+                       -- addAxioms cmds sign
+                      (sign, (analyzeFormula sign annocmd (length axs)) : axs)
+               ) (sig, []) specitems
 
 -- | adds the specified tokens to the signature
 addTokens :: Sign.Sign -> [Token] -> Sign.Sign

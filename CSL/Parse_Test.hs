@@ -48,6 +48,10 @@ res24 = runParser parseAxItems (emptyAnnos ()) "" ". solve(x^2=1,x)"
 
 res25 = runParser basicSpec (emptyAnnos ()) "" "operator f,h . solve(x^2=1,x)"
 
+
+res30 = runParser extparam () "" "I=0"
+res31 = runParser extparam () "" "I < I+1"
+
 -----------------------------------------------------------------------------
 ------------------------- test of static analysis... ------------------------
 -----------------------------------------------------------------------------

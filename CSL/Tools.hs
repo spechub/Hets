@@ -16,5 +16,5 @@ import CSL.AS_BASIC_CSL
 import Common.Id
 
 negateFormula :: CMD -> CMD
-negateFormula (Cmd s exps) = Cmd "Not" [(Op s exps nullRange)]
+negateFormula (Cmd s exps) = Cmd "Not" [(Op s [] exps nullRange)]
 
