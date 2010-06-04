@@ -19,6 +19,7 @@ import Static.PrintDevGraph
 import Logic.Prover
 import Logic.Logic
 import Logic.Comorphism
+import Logic.Grothendieck
 
 import Common.AS_Annotation
 import Common.ConvertGlobalAnnos
@@ -28,6 +29,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.LibName
 import qualified Common.OrderedMap as OMap
+import Common.Result
 import Common.ToXml
 
 import Text.XML.Light
@@ -65,8 +67,22 @@ globalEntry ga dg si ge l = case ge of
       ++ genSig dg g ++
       [ mkAttr "source" $ getNameOfNode s dg
       , mkAttr "target" $ getNameOfNode n dg])
-    (unode "VIEW-DEFN" $ prettyElem "GMorphism" ga gm) : l
+    (unode "VIEW-DEFN" $ gmorph ga gm) : l
   _ -> l
+
+gmorph :: GlobalAnnos -> GMorphism -> Element
+gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
+  case map_sign cid ssig of
+    Result _ mr -> case mr of
+      Nothing -> error $ "Static.ToXml.gmorph: " ++ showGlobalDoc ga gm ""
+      Just (_, tsens) -> let
+        tid = targetLogic cid
+        sl = Map.toList . Map.filterWithKey (/=) $ symmap_of tid tmor
+        psym = prettyElem "Symbol" ga
+        in add_attr (mkNameAttr $ language_name cid)
+           $ unode "GMorphism" $
+             subnodes "Axioms" (map (mkAxNode ga) tsens)
+             ++ map (\ (s, t) -> unode "map" [psym s, psym t]) sl
 
 prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
                 -> Element
@@ -148,7 +164,7 @@ ledge ga dg (f, t, lbl) = let
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl)
     : lnkSt ++ constStatus (getLinkConsStatus typ)
-    ++ [prettyElem "GMorphism" ga $ dgl_morphism lbl]
+    ++ [gmorph ga $ dgl_morphism lbl]
 
 dgrule :: DGRule -> [Element]
 dgrule r =
