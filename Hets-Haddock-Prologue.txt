@@ -89,11 +89,8 @@ that provides an event system and encapsulations of TclTk
 
 Hets is also based on the following third-party libraries:
 
- * HXT for XML parsing and printing, see
-   <http://www.haskell.org/haskellwiki/HXT>,
-   <http://hackage.haskell.org/package/hxt-filter>
-   and "OMDoc.OMDocXml" for a sample use.
-   We would like to switch to the xml light package below.
+ * expat for fast XML parsing, see
+   <http://hackage.haskell.org/package/hexpat>
 
  * The combinator parser library Parsec, see
    <http://www.haskell.org/haskellwiki/Parsec>,
