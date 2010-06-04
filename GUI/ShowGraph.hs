@@ -15,13 +15,13 @@ module GUI.ShowGraph
     (showGraph)
 where
 
-import Driver.Options(HetcatsOpts,putIfVerbose)
+import Driver.Options (HetcatsOpts, putIfVerbose)
 import Static.DevGraph
 import Common.LibName
 
 import GUI.GraphDisplay
 import GUI.GraphTypes
-import GUI.ShowLibGraph(showLibGraph, mShowGraph)
+import GUI.ShowLibGraph (showLibGraph, mShowGraph)
 #ifdef GTKGLADE
 import Graphics.UI.Gtk
 #endif
@@ -53,6 +53,7 @@ showGraph file opts env = case env of
       else do
       putIfVerbose opts 2 $ "Displaying " ++ file ++ " in a graphical window"
       putIfVerbose opts 3 "Initializing Converter"
+      let thr = workThread file opts ln le
 #ifdef GTKGLADE
       eitherGTK <- try unsafeInitGUIForThreadedRTS
       case eitherGTK of
@@ -60,10 +61,18 @@ showGraph file opts env = case env of
         Left e -> do
           putIfVerbose opts 5 $ "Error: " ++ show e
           error $ "Can't initialize GTK."
+      _ <- forkIO thr
+      mainGUI
+#else
+      thr
 #endif
-      _ <- forkIO $ do
+  Nothing -> putIfVerbose opts 0
+    "missing development graph to display in a window"
+
+workThread :: FilePath -> HetcatsOpts -> LibName -> LibEnv -> IO ()
+workThread file opts ln le = do
         eitherHTK <- try initializeConverter
-        (gInfo,wishInst) <- case eitherHTK of
+        (gInfo, wishInst) <- case eitherHTK of
           Right a -> return a
           Left e -> do
             putIfVerbose opts 5 $ "Error: " ++ show e
@@ -89,6 +98,3 @@ showGraph file opts env = case env of
 #endif
         destroy wishInst
         shutdown
-      mainGUI
-  Nothing -> putIfVerbose opts 0
-    "missing development graph to display in a window"
