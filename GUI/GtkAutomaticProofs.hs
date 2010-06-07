@@ -93,8 +93,8 @@ instance Eq FNode where
 instance Ord FNode where
   compare (FNode { name = n1, status = s1 })
           (FNode { name = n2, status = s2 }) = let cp [] [] = EQ
-                                                   cp _ [] = GT
-                                                   cp [] _ = LT
+                                                   cp _ [] = LT
+                                                   cp [] _ = GT
                                                    cp a b = compare (minimum a) (minimum b)
                                                in case cp s1 s2 of
                                                     EQ -> compare n1 n2
