@@ -13,9 +13,8 @@ Portability :  portable
 -- todo: add static analysis for repeat
 
 module CSL.Analysis
-    (
-     splitSpec
-     , basicCSLAnalysis
+    ( splitSpec
+    , basicCSLAnalysis
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
@@ -35,6 +34,8 @@ import qualified Data.Set as Set
 import CSL.AS_BASIC_CSL
 import CSL.Symbol
 
+
+-- * Diagnosis Types and Functions
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm
@@ -70,7 +71,7 @@ extractOperatorsExp _ = []
 extractOperatorsCmd :: CMD -> [(String,Int)]
 extractOperatorsCmd (Cmd cmd exps) =
     (cmd, length exps) : concatMap extractOperatorsExp exps
-extractOperatorsCmd (Repeat _ _ _) = [] -- to be implemented
+extractOperatorsCmd (Repeat _ _) = [] -- to be implemented
 
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool

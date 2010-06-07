@@ -88,6 +88,17 @@ res26 = splitSpec testspec emptySig
 
 res27 = basicCSLAnalysis (testspec, emptySig, [])
 
+-----------------------------------------------------------------------------
+--------------------------------- Analysis ----------------------------------
+-----------------------------------------------------------------------------
+
+getAtomsFromFile fp = readFile fp >>= return . getAtomsFrom
+
+getAtomsFrom s = 
+    case runParser basicSpec (emptyAnnos ()) "" s of
+      Right a -> map (\ (x:l) -> (x, 1 + length l)) $ group $ sort $ getBSAtoms a
+      _ -> error "no parse"
+
 
 -----------------------------------------------------------------------------
 --------------------------------- Morphisms ---------------------------------

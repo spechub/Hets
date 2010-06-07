@@ -42,13 +42,13 @@ data VAR_ITEM = Var_item [Id.Token] Id.Range
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                   deriving Show
 
--- | basic items: either an operator declaration or and axiom
+-- | basic items: either an operator declaration or an axiom
 data BASIC_ITEMS =
     Op_decl OP_ITEM
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
 
--- | Extended Parameter Datatype stores
+-- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String EXPRESSION deriving (Eq, Ord, Show)
 
 -- | Datatype for expressions
@@ -63,7 +63,7 @@ data EXPRESSION =
 
 data CMD =
     Cmd String [EXPRESSION]
-    | Repeat EXPRESSION EXPRESSION [CMD] -- accuracy, variable, statements
+    | Repeat EXPRESSION [CMD] -- constraint, statements
     deriving (Show, Eq, Ord)
 
 -- | symbol lists for hiding
@@ -113,9 +113,8 @@ instance Pretty CMD where
 printCMD :: CMD -> Doc
 printCMD (Cmd s exps) = if s==":=" then printExpression (exps !! 0) <> text ":=" <> printExpression (exps !! 1)
                             else (text s) <> (parens (sepByCommas (map printExpression exps)))
-printCMD (Repeat a v stms) = text "repeat" <> vcat (map printCMD stms)
-                             <> text "until" <> text "convergence"
-                             <> parens (sepByCommas $ map printExpression $ [a, v])
+printCMD (Repeat e stms) = text "repeat" <> vcat (map printCMD stms)
+                             <> text "until" <> printExpression e
 
 getPrec :: EXPRESSION -> Integer
 getPrec (Op s _ exps _)
@@ -125,7 +124,7 @@ getPrec (Op s _ exps _)
     | length exps == 0 = 4
     | otherwise = 0
 getPrec _ = 9
-                       
+
 -- TODO: print extparams   
 printInfix :: EXPRESSION -> Doc
 printInfix exp@(Op s _ exps _) =

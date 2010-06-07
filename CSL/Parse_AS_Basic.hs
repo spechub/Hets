@@ -57,6 +57,22 @@ parseSymbMapItems = Just symbMapItems
 
 -- ---------------------------------------------------------------------------
 
+-- * Parser utils
+
+-- ---------------------------------------------------------------------------
+
+pComma :: CharParser st String
+pComma = lexemeParser $ Lexer.keySign $ string ","
+
+lstring :: String -> CharParser st String
+lstring = lexemeParser . string
+
+-- | parser for symbols followed by whitechars
+lexemeParser :: CharParser st a -> CharParser st a
+lexemeParser = (<< skip)
+
+-- ---------------------------------------------------------------------------
+
 -- * Parser for Expressions
 
 -- ---------------------------------------------------------------------------
@@ -87,7 +103,7 @@ signednumber = do
              else Int (read (sign ++ tokStr nr)) (tokPos nr)
 
 oneOfKeys :: [String] -> CharParser st String
-oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map (try . string) l
+oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map tryString l
 
 expression :: CharParser st EXPRESSION
 expression = do
@@ -116,9 +132,6 @@ expexp = do
     $ pair (oneOfKeys ["**", "^"]) expexp
   if null exps then return exp1
     else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
-
-pComma :: CharParser st String
-pComma = lexemeParser $ Lexer.keySign $ string ","
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
@@ -202,10 +215,12 @@ truefalseFormula =
 predFormula :: CharParser st EXPRESSION
 predFormula = do
   exp1 <- expression
-  op <- lexemeParser (Lexer.keySign $ tryString "<=" <|> tryString ">=")
-        <|> lexemeParser (single (oneOf "=<>"))
-  exp2 <- expression
-  return (mkOp op [exp1, exp2])
+  mExp2 <- optionMaybe
+           $ pair (oneOfKeys ["<=", ">=", "!="]
+                   <|> lexemeParser (single $ oneOf "=<>")) expression
+  case mExp2 of
+    Just (op, exp2) -> return $ mkOp op [exp1, exp2]
+    _ -> return $ exp1
 
 atomicFormula :: CharParser st EXPRESSION
 atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
@@ -213,10 +228,6 @@ atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
 -- | parser for formulas
 aFormula :: CharParser st EXPRESSION
 aFormula = try negFormula <|> impOrFormula
-
--- | parser for symbols followed by whitechars
-lexemeParser :: CharParser st a -> CharParser st a
-lexemeParser = (<< skip)
 
 negFormula :: CharParser st EXPRESSION
 negFormula = do
@@ -273,7 +284,6 @@ reduceCommand = do
          ["solve", "simplify", "divide", "int", "rlqe", "factorize"]
   oParenT
   arg1 <- formulaorexpression
-  -- args <- many $ pair (lexemeParser $ string ",") formulaorexpression
   args <- many $ pComma >> formulaorexpression
   cParenT
   return $ Cmd cmd $ arg1 : args
@@ -296,20 +306,11 @@ constraint = do
 
 repeatExpr :: CharParser st CMD
 repeatExpr = do
-  lexemeParser $ tryString "repeat"
-  statements <- Lexer.separatedBy command
-                $ lexemeParser $ Lexer.keySign $ string ";"
-  skip
-  tryString "until"
-  skip
-  tryString "convergence"
-  oParenT
-  accuracy <- expression
-  -- lexemeParser $ tryString ","
-  pComma
-  var <- expression
-  cParenT
-  return (Repeat accuracy var (fst statements))
+  lexemeParser $ string "repeat"
+  statements <- Lexer.separatedBy command $ lstring ";"
+  lstring "until"
+  cstr <- aFormula
+  return $ Repeat cstr $ fst statements
 
 -- ---------------------------------------------------------------------------
 
@@ -322,7 +323,6 @@ opItem :: CharParser st OP_ITEM
 opItem = do
   Lexer.keySign (lexemeParser (tryString "operator"))
   var1 <- identifier
-  -- vars <- many $ pair (lexemeParser $ string ",") identifier
   vars <- many $ pair pComma identifier
   return (Op_item (var1 : map snd vars) nullRange)
 
