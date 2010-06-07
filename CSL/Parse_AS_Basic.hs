@@ -299,8 +299,8 @@ constraint :: CharParser st CMD
 constraint = do
   exp' <- try aFormula
   case exp' of
-    Op op _ args _ ->
-        return $ Cmd op args
+    Op _ _ _ _ ->
+        return $ Cmd "constraint" [exp']
     _ -> fail "Malformed constraint"
 
 
