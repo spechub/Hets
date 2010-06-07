@@ -69,7 +69,7 @@ data FNode = FNode { name :: String
 -- | Get a markup string containing name and color
 instance Show FNode where
   show FNode { name = n, status = s } =
-    "<span color=\"" ++ statusToColor s ++ "\">" ++ statusToPrefix s ++ n ++
+    "<span color=\"" ++ cStatusToColor s ++ "\">" ++ cStatusToPrefix s ++ n ++
     "</span>"
 
 instance Eq FNode where
@@ -81,16 +81,16 @@ instance Ord FNode where
     EQ -> compare n1 n2
     c  -> c
 
-statusToColor :: ConsistencyStatus -> String
-statusToColor s = case sType s of
+cStatusToColor :: ConsistencyStatus -> String
+cStatusToColor s = case sType s of
   CSUnchecked    -> "black"
   CSConsistent   -> "green"
   CSInconsistent -> "red"
   CSTimeout      -> "blue"
   CSError        -> "darkred"
 
-statusToPrefix :: ConsistencyStatus -> String
-statusToPrefix s = case sType s of
+cStatusToPrefix :: ConsistencyStatus -> String
+cStatusToPrefix s = case sType s of
   CSUnchecked    -> "[ ] "
   CSConsistent   -> "[+] "
   CSInconsistent -> "[-] "
@@ -224,7 +224,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
     activate checkWidgets False
     timeout <- spinButtonGetValueAsInt sbTimeout
     inclThms <- toggleButtonGetActive cbInclThms
-    (updat, exit) <- progressBar "Checking consistency" "please wait..."
+    (updat, pexit) <- progressBar "Checking consistency" "please wait..."
     nodes' <- getSelectedMultiple trvNodes listNodes
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
@@ -246,7 +246,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         signalUnblock shN
         upd
         activate checkWidgets True
-        exit
+        pexit
 
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
