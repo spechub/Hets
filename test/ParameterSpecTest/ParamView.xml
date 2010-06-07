@@ -68,109 +68,125 @@
   </DGNode>
   <DGLink source="s__IU1" target="s__PU1" linkid="0">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts i} extended with {p}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s__IU1" target="s2__A1V" linkid="5">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts i} extended with {p}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s__PU1" target="s" linkid="1">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts i, p} extended with {s}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s__PU1" target="s2__A1V" linkid="7" status="proven">
     <Type>GlobalProvenThmInc</Type>
     <Rule>Global-Decomposition</Rule>
     <ProofBasis linkref="5" />
     <ProofBasis linkref="15" />
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-identity morphism over { sorts i, p}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s__PU1" target="s2__A1V" linkid="15" status="proven">
     <Type>LocalProvenThmInc</Type>
     <Rule>local-inference</Rule>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-identity morphism over { sorts i, p}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s" target="s2" linkid="13">
     <Type>GlobalDef</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{p |-&gt; q} : { sorts i, p, s} |-&gt; { sorts i, j, p2, q, s, t}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>p</Symbol>
+        <Symbol>q</Symbol>
+      </map>
+    </GMorphism>
   </DGLink>
   <DGLink source="v__IU1" target="v__PU1" linkid="2">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts j} extended with {r}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="v__IU1" target="s2__A1A1" linkid="8">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts j} extended with {t}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="v__PU1" target="v__T" linkid="3">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts j, r} extended with {q}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="v__PU1" target="s2__A1A1" linkid="9" status="proven">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <ProofBasis linkref="8" />
     <ProofBasis linkref="16" />
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{r |-&gt; t} : { sorts j, r} |-&gt; { sorts j, t}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>r</Symbol>
+        <Symbol>t</Symbol>
+      </map>
+    </GMorphism>
   </DGLink>
   <DGLink source="v__PU1" target="s2__A1A1" linkid="16" status="proven">
     <Type>LocalProvenThm</Type>
     <Rule>local-inference</Rule>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{r |-&gt; t} : { sorts j, r} |-&gt; { sorts j, t}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>r</Symbol>
+        <Symbol>t</Symbol>
+      </map>
+    </GMorphism>
   </DGLink>
   <DGLink source="v__S" target="v__T" linkid="4" status="proven">
     <Type>GlobalProvenThm</Type>
     <Rule>Global-Decomposition</Rule>
     <ProofBasis linkref="17" />
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>p</Symbol>
+        <Symbol>q</Symbol>
+      </map>
+    </GMorphism>
   </DGLink>
   <DGLink source="v__S" target="v__T" linkid="17" status="proven">
     <Type>LocalProvenThm</Type>
     <Rule>local-inference</Rule>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>p</Symbol>
+        <Symbol>q</Symbol>
+      </map>
+    </GMorphism>
   </DGLink>
   <DGLink source="v__S" target="s2__A1V" linkid="6">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts p} extended with {i}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="v__T" target="s2__A1" linkid="11">
     <Type>GlobalDef</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{r |-&gt; t} : { sorts j, q, r} |-&gt; { sorts j, q, t}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>r</Symbol>
+        <Symbol>t</Symbol>
+      </map>
+    </GMorphism>
   </DGLink>
   <DGLink source="s2__PU1" target="s2" linkid="14">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts p2} extended with {i, j, q, s, t}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s2__A1A1" target="s2__A1" linkid="10">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts j, t} extended with {q}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <DGLink source="s2__A1" target="s2" linkid="12">
     <Type>GlobalDefInc</Type>
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-inclusion morphism of { sorts j, q, t} extended with {i, p2, s}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
   <SPEC-DEFN name="s" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.6" formal-param="s__PU1" />
   <SPEC-DEFN name="s2" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.6-8.7" formal-param="s2__PU1" />
   <VIEW-DEFN name="v" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.6" formal-param="v__PU1" source="v__S" target="v__T">
-    <GMorphism>id_CASL.SubPCSOL=E : CASL -&gt; CASL
-{p |-&gt; q} : { sorts p} |-&gt; { sorts j, q, r}</GMorphism>
+    <GMorphism name="id_CASL.SubPCSOL=E">
+      <map>
+        <Symbol>p</Symbol>
+        <Symbol>q</Symbol>
+      </map>
+    </GMorphism>
   </VIEW-DEFN>
 </DGraph>
