@@ -1,19 +1,27 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
-Description :  Instances of classes defined in Logic.hs for logical frameworks
+Description :  Instances of Logic and other classes for the logic Framework               
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
 Portability :  portable
+
+  Signatures of this logic are composed of a logical framework name
+    (currently one of LF, Isabelle, or Maude) to be used as a meta-logic,
+    and a tuple of signature and morphism names which determine 
+    the object logic. As such the logic Framework does not have any 
+    sentences and only identity signature morphisms.
+  
+  For reference see Integrating Logical Frameworks in Hets by M. Codescu et al
+    (WADT10).
 -}
 
 module Framework.Logic_Framework where
 
-import Framework.AS
-import Framework.Parse
+import Framework.SignCat
 import Framework.ATC_Framework ()
 import Logic.Logic
 import Common.Result
@@ -22,45 +30,27 @@ import Common.Result
 data Framework = Framework deriving Show
 
 instance Language Framework where
-   description _ = "Logical Framework"
+   description _ = "A framework allowing to add logics dynamically."
 
--- instance of Category for Framework
-instance Category () () where
-  ide _ = ()
-  dom _ = ()
-  cod _ = ()
-  legal_mor _ = True
-  composeMorphisms _ _ = Result [] $ Just ()
+-- signature category for Framework
+instance Category Sign Morphism where
+  ide sig = Morphism sig 
+  dom = object
+  cod = object
+  legal_mor = const True
+  isInclusion = const True
+  composeMorphisms m _ = Result [] $ Just m
 
--- syntax for DFOL
-instance Syntax Framework BASIC_SPEC () () where
-   parse_basic_spec Framework = Just basicSpecP
+-- syntax for Framework
+instance Syntax Framework () () ()
 
--- sentences for DFOL
-instance Sentences Framework () () () ()
+-- sentences for Framework
+instance Sentences Framework () Sign Morphism ()
 
 -- static analysis for Framework
-instance StaticAnalysis Framework
-   BASIC_SPEC
-   ()
-   ()
-   ()
-   ()
-   ()
-   ()
-   ()
-   where
-   empty_signature Framework = ()
+instance StaticAnalysis Framework () () () () Sign Morphism () () where
+  empty_signature Framework = error "Logic Framework has no empty signature." 
 
 -- instance of logic for Framework
-instance Logic Framework
-   ()
-   BASIC_SPEC
-   ()
-   ()
-   ()
-   ()
-   ()
-   ()
-   ()
-   ()
+instance Logic Framework () () () () () Sign Morphism () () ()
+   

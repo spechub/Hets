@@ -296,7 +296,7 @@ VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
 DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
 LF_files = LF/Sign.hs LF/Morphism.hs
-Framework_files = Framework/AS.hs
+Framework_files = Framework/SignCat.hs
 
 Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
     Maude/Symbol.hs Maude/AS_Maude.hs

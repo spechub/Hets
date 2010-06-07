@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  A parser for logical frameworks
+Description :  A parser for logic definitions
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,16 +9,13 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module Framework.Parse
-       (
-         basicSpecP   -- parser for basic specifications
-       ) where
+module Framework.Parse ( parseLogicDef ) where
 
 import Common.Lexer
 import Common.Parsec
 import Common.Token (casl_structured_reserved_words)
 import Common.AnnoState
-import Framework.AS
+import Framework.SignCat
 import Text.ParserCombinators.Parsec
 
 -- keywords which cannot appear as signature,morphism, and pattern names
@@ -26,18 +23,26 @@ framKeys :: [String]
 framKeys = casl_structured_reserved_words ++
   ["logic","meta","syntax","truth","signatures","models","proofs"] 
 
--- parser for basic spec
-basicSpecP :: AParser st BASIC_SPEC
-basicSpecP = do asKey "logic"
-                l  <- nameP
-                asKey "="
-                f  <- metaP
-                sy <- syntaxP
-                t  <- truthP 
-                si <- signaturesP
-                m  <- modelsP
-                p  <- proofsP
-                return $ Basic_spec l f sy t si m p            
+-- parses a logic definition
+parseLogicDef :: String -> IO Sign
+parseLogicDef str = do
+  let res = runParser logicP (AnnoState [] ()) "" str
+  case res of
+       Right sig -> return sig
+       Left e -> error $ show e
+
+-- parser for logic definitions
+logicP :: AParser st Sign
+logicP = do asKey "logic"
+            l  <- nameP
+            asKey "="
+            f  <- metaP
+            sy <- syntaxP
+            t  <- truthP 
+            si <- signaturesP
+            m  <- modelsP
+            p  <- proofsP
+            return $ Sign l f sy t si m p            
 
 -- parsers for components           
 metaP :: AParser st FRAM

@@ -284,6 +284,7 @@ data InType =
   | HaskellIn
   | MaudeIn
   | TwelfIn
+  | LogicDefIn
   | PrfIn
   | OmdocIn
   | ExperimentalIn -- ^ for testing new functionality
@@ -301,6 +302,7 @@ instance Show InType where
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
     TwelfIn -> "elf"
+    LogicDefIn -> "ldef"
     PrfIn -> prfS
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
