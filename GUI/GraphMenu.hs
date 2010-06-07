@@ -268,9 +268,9 @@ createGlobalMenu gInfo@
      , Button "Consistency checker"
          (performProofMenuAction (GlobCmd ProveCurrent)
            $ showConsistencyChecker gInfo)
---     , Button "Automatic proofs"
---         (performProofMenuAction (GlobCmd ProveCurrent)
---           $ showAutomaticProofs gInfo)
+     , Button "Automatic proofs"
+         (performProofMenuAction (GlobCmd ProveCurrent)
+           $ showAutomaticProofs gInfo)
 
 
 #endif
