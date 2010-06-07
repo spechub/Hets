@@ -12,20 +12,26 @@ display the logic graph
 
 module GUI.ShowRefTree (showRefTree) where
 
-import GUI.GraphTypes
 import Control.Concurrent.MVar
-import Data.IORef
-import GUI.UDGUtils as UDG
-import qualified Data.Map as Map
-import Interfaces.DataTypes
-import Static.DevGraph
+import Control.Monad
+
 import Data.Graph.Inductive.Graph as Tree
+import Data.IORef
+
+import GUI.GraphTypes
+import GUI.UDGUtils as UDG
+
+import Interfaces.DataTypes
+
+import Static.DevGraph
+
+import qualified Data.Map as Map
 
 showRefTree :: LibFunc
 showRefTree gInfo@(GInfo { windowCount = wc}) = do
   -- isEmpty <- isEmptyMVar lock
   -- when isEmpty $ do
-  --  putMVar lock ()
+  -- putMVar lock ()
     count <- takeMVar wc
     putMVar wc $ count + 1
     graph <- newIORef daVinciSort
@@ -37,8 +43,8 @@ showRefTree gInfo@(GInfo { windowCount = wc}) = do
       graphParms = globalMenu $$
                    GraphTitle "Refinement Tree" $$
                    OptimiseLayout True $$
-                   AllowClose (close gInfo) $$
-                   FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
+                   AllowClose (closeGInfo gInfo) $$
+                   FileMenuAct ExitMenuOption (Just (exitGInfo gInfo)) $$
                    emptyGraphParms
     graph' <- newGraph daVinciSort graphParms
     addNodesAndEdgesRef gInfo graph' nodesEdges
@@ -64,7 +70,7 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
     arcs = Tree.labEdges rTree
     subNodeMenu = LocalMenu (UDG.Menu Nothing [
                    Button "Show dependency diagram" $ showDiagram gInfo dg])
-    subNodeTypeParms  = subNodeMenu $$$
+    subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
                        ValueTitle (return . rtn_name) $$$
                        Color (getColor opts Green True True) $$$
@@ -91,29 +97,29 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                                             (return e)
                                             (lookup' nodes' n1)
                                             (lookup' nodes' n2)
-   subArcList <- mapM insertSubArc  $
-                    filter (\(_, _, e) -> rtl_type e == RTComp)$ arcs
+   subArcList <- mapM insertSubArc $
+                    filter (\ (_, _, e) -> rtl_type e == RTComp) arcs
    subArcTypeT <- newArcType graph subArcTypeParmsT
    let insertSubArcT (n1, n2, e) = newArc graph subArcTypeT
                                             (return e)
                                             (lookup' nodes' n1)
                                             (lookup' nodes' n2)
-   subArcListT <- mapM insertSubArcT  $
-                    filter (\(_, _, e) -> rtl_type e == RTTyping)$ arcs
+   subArcListT <- mapM insertSubArcT $
+                    filter (\ (_, _, e) -> rtl_type e == RTTyping) arcs
    subArcTypeR <- newArcType graph subArcTypeParmsR
    let insertSubArcR (n1, n2, e) = newArc graph subArcTypeR
                                             (return e)
                                             (lookup' nodes' n1)
                                             (lookup' nodes' n2)
-   subArcListR <- mapM insertSubArcR  $
-                    filter (\(_, _, e) -> rtl_type e == RTRefine)$ arcs
-   writeIORef nodesEdges (subNodeList, subArcList++subArcListT++subArcListR)
+   subArcListR <- mapM insertSubArcR $
+                    filter (\ (_, _, e) -> rtl_type e == RTRefine) arcs
+   writeIORef nodesEdges (subNodeList, subArcList ++ subArcListT ++ subArcListR)
 
-showDiagram :: GInfo -> DGraph -> RTNodeLab -> IO()
-showDiagram gInfo@(GInfo { windowCount = wc}) dg rtlab =
- let asDiags  = archSpecDiags dg
+showDiagram :: GInfo -> DGraph -> RTNodeLab -> IO ()
+showDiagram gInfo@(GInfo { windowCount = wc}) dg rtlab = do
+ let asDiags = archSpecDiags dg
      name = rtn_name rtlab
- in if (name `elem` Map.keys asDiags) then do
+ when (name `elem` Map.keys asDiags) $ do
       count <- takeMVar wc
       putMVar wc $ count + 1
       graph <- newIORef daVinciSort
@@ -123,18 +129,17 @@ showDiagram gInfo@(GInfo { windowCount = wc}) dg rtlab =
         GlobalMenu (UDG.Menu Nothing
           [])
        graphParms = globalMenu $$
-                   GraphTitle ("Dependency Diagram for "++name) $$
+                   GraphTitle ("Dependency Diagram for " ++ name) $$
                    OptimiseLayout True $$
-                   AllowClose (close gInfo) $$
-                   FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
+                   AllowClose (closeGInfo gInfo) $$
+                   FileMenuAct ExitMenuOption (Just (exitGInfo gInfo)) $$
                    emptyGraphParms
       graph' <- newGraph daVinciSort graphParms
-      addNodesAndEdgesDeps (Map.findWithDefault (error"showDiagram")
+      addNodesAndEdgesDeps (Map.findWithDefault (error "showDiagram")
                             name asDiags)
                            graph' gInfo nodesEdges
       writeIORef graph graph'
       redraw graph'
-    else return ()
 
 addNodesAndEdgesDeps :: Diag -> DaVinciGraphTypeSyn -> GInfo ->
                        IORef NodeEdgeListDep -> IO ()
@@ -145,7 +150,7 @@ addNodesAndEdgesDeps diag graph
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
     subNodeMenu = LocalMenu (UDG.Menu Nothing [])
-    subNodeTypeParms  = subNodeMenu $$$
+    subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
                        ValueTitle (return . dn_desc) $$$
                        Color (getColor opts Green True True) $$$

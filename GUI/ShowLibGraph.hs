@@ -64,8 +64,8 @@ showLibGraph gInfo@(GInfo { windowCount = wc
       graphParms = globalMenu $$
                    GraphTitle "Library Graph" $$
                    OptimiseLayout True $$
-                   AllowClose (close gInfo) $$
-                   FileMenuAct ExitMenuOption (Just (exit gInfo)) $$
+                   AllowClose (closeGInfo gInfo) $$
+                   FileMenuAct ExitMenuOption (Just (exitGInfo gInfo)) $$
                    emptyGraphParms
     graph' <- newGraph daVinciSort graphParms
     addNodesAndEdges gInfo graph' nodesEdges

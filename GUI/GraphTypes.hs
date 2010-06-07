@@ -11,8 +11,8 @@ Portability :  non-portable (imports Logic)
 
 module GUI.GraphTypes
     ( GInfo(..)
-    , close
-    , exit
+    , closeGInfo
+    , exitGInfo
     , ConvFunc
     , LibFunc
     , DaVinciGraphTypeSyn
@@ -65,11 +65,12 @@ data GInfo = GInfo
              , options :: IORef Flags
              }
 
-close :: GInfo -> IO Bool
-close (GInfo { exitMVar = exit'
-             , windowCount = wc
-             , libGraphLock = lock
-             }) = do
+closeGInfo :: GInfo -> IO Bool
+closeGInfo GInfo
+  { exitMVar = exit'
+  , windowCount = wc
+  , libGraphLock = lock
+  } = do
   count <- takeMVar wc
   if count <= 1
     then putMVar exit' ()
@@ -78,8 +79,8 @@ close (GInfo { exitMVar = exit'
       takeMVar lock
   return True
 
-exit :: GInfo -> IO ()
-exit (GInfo {exitMVar = exit'}) = putMVar exit' ()
+exitGInfo :: GInfo -> IO ()
+exitGInfo GInfo {exitMVar = exit'} = putMVar exit' ()
 
 
 {- | Type of the convertGraph function. Used as type of a parameter of some
