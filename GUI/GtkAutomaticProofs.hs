@@ -31,7 +31,7 @@ import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism (..))
-import Logic.Logic (language_name)
+import Logic.Logic (Logic, language_name)
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
@@ -51,6 +51,8 @@ import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
+
+import Debug.Trace (trace)
 
 import Data.Ord (comparing)
 
@@ -90,9 +92,13 @@ instance Eq FNode where
 
 instance Ord FNode where
   compare (FNode { name = n1, status = s1 })
-          (FNode { name = n2, status = s2 }) = case compare s1 s2 of
-    EQ -> compare n1 n2
-    c  -> c
+          (FNode { name = n2, status = s2 }) = let cp [] [] = EQ
+                                                   cp _ [] = GT
+                                                   cp [] _ = LT
+                                                   cp a b = compare (minimum a) (minimum b)
+                                               in case cp s1 s2 of
+                                                    EQ -> compare n1 n2
+                                                    c  -> c
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
@@ -357,21 +363,11 @@ proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
      pf_st <- initialState lid "" g_th knpr [p_cm]
      let st = recalculateSublogicAndSelectedTheory pf_st
      -- try to prepare the theory
-     prep <- case prepareForProving st p_cm of
-               Result _ Nothing -> do
-                 p_cm'@(prv', acm'@(Comorphism cid)) <-
-                           lookupKnownProver st ProveCMDLautomatic
-                 putStrLn ("Using the comorphism " ++ language_name cid)
-                 putStrLn ("Using prover " ++ getPName prv')
-                 return $ case prepareForProving st p_cm' of
-                            Result _ Nothing -> Nothing
-                            Result _ (Just sm) -> Just (sm, acm')
-               Result _ (Just sm) -> return $ Just (sm, acm)
-     case prep of
+     case maybeResult $ prepareForProving st p_cm of
      -- theory could not be computed
        Nothing -> do putStrLn "No suitable prover and comorphism found"
                      return []
-       Just (G_theory_with_prover lid1 th p, cmp) ->
+       Just (G_theory_with_prover lid1 th p) ->
         case proveCMDLautomaticBatch p of
          Nothing -> do putStrLn "Error obtaining the prover"
                        return []
@@ -385,12 +381,24 @@ proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
                                       (TacticScript $ show timeout) th []
                       -- mThr          <- newMVar $ Just thrId
                       takeMVar mV
-                      putStrLn "TODO: read and apply proof results correctly!"
-                      return [Goal GGuessed "nur zum Spass"]
+                      getResults answ
+
+getResults :: MVar (Result [ProofStatus proof_tree]) ->
+              IO [Goal]
+getResults mData =
+  do
+    d <- takeMVar mData
+    return $ case maybeResult d of
+               Nothing -> []
+               Just d' -> map (\ p -> Goal (createGStatus p) (goalName p)) d'
+                            where createGStatus p = case goalStatus p of
+                                                      Proved b -> if b then GProved else GInconsistent
+                                                      Disproved -> GDisproved
+                                                      Open (Reason r) -> trace (unlines r) GOpen
 
 -- | proveNode END
 -- //////////////////////////////////////////////////////////
-
+ 
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
                  -> ConnectId ComboBox -> IO ()
 updateComorphism view list cbComorphism sh = do
