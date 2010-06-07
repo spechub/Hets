@@ -18,7 +18,7 @@ module GUI.GtkAutomaticProofs
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
-import GUI.GtkUtils
+import GUI.GtkUtils as GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
 
@@ -49,7 +49,7 @@ import Proofs.AbstractState
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
-import Data.List (findIndex, partition, sort)
+import Data.List
 import Data.Maybe
 
 import Data.Ord (comparing)
@@ -65,57 +65,25 @@ instance Eq Finder where
 data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status   :: ProofResult }
+                   , status   :: [Goal]  }
 
-data ProofResult = Unchecked
-                 | All_Proved
-                 | Some_Proved
-                 | None_Proved
-                 | Timeout
-                 | Empty
-                 | Prove_Error
-                  deriving Eq
+showStatus :: [Goal] -> String
+showStatus = intercalate "\n" . 
+           map (\ g -> GtkUtils.statusToPrefix (gStatus g) ++ gName g)
 
-instance Show ProofResult where
-  show pr = statusToPrefix pr ++ statusToColor pr
+gStatusToColor :: [Goal] -> String
+gStatusToColor [] = "grey"
+gStatusToColor lg = GtkUtils.statusToColor $ minimum $ map gStatus lg
 
--- | idea is to sort the ProofResult (and thus the Nodes) as of relevance to the operator
-instance Ord ProofResult where
-  compare = let to_integer p = case p of
-                                 Prove_Error -> 6
-                                 None_Proved -> 5
-                                 Some_Proved -> 4
-                                 Timeout     -> 3
-                                 All_Proved  -> 2
-                                 Unchecked   -> 1
-                                 Empty       -> 0
-            in comparing to_integer
-
-statusToColor :: ProofResult -> String
-statusToColor ps = case ps of
-  Unchecked   -> "black"
-  All_Proved  -> "green"
-  Some_Proved -> "yellow"
-  None_Proved -> "red"
-  Timeout     -> "blue"
-  Empty       -> "grey"
-  Prove_Error -> "darkred"
-
-statusToPrefix :: ProofResult -> String
-statusToPrefix ps = case ps of
-  Unchecked   -> "[ ] "
-  All_Proved  -> "[+] "
-  Some_Proved -> "[/] "
-  None_Proved -> "[-] "
-  Timeout     -> "[t] "
-  Empty       -> "[o] "
-  Prove_Error -> "[f] "
+gStatusToPrefix :: [Goal] -> String
+gStatusToPrefix [] = "[0] "
+gStatusToPrefix lg = GtkUtils.statusToPrefix $ minimum $ map gStatus lg
 
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show fn =
-    "<span color=\"" ++ "black" -- statusToColor( status fn )
-    ++ "\">" ++ "[] " ++ name fn ++ "</span>"
+  show fn = let s = status fn in
+    "<span color=\"" ++ gStatusToColor s
+    ++ "\">" ++ gStatusToPrefix s ++ name fn ++ "</span>"
 
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
@@ -185,12 +153,12 @@ showProverWindow res ln le = postGUIAsync $ do
 
   let dg       = lookupDGraph ln le
       nodes    = labNodesDG dg
-      selNodes = partition (\ n -> hasSenKind( not.isAxiom ) $ snd $ node n )
+      selNodes = partition (\ n -> hasSenKind (not . isAxiom) $ snd $ node n)
       sls      = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
 
       -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
-      (emptyNodes, others) = selNodes
-        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s Unchecked)
+      (others, emptyNodes) = selNodes
+        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s [])
         $ zip nodes sls
 
   -- setup data
@@ -282,10 +250,7 @@ showProverWindow res ln le = postGUIAsync $ do
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
   -- TODO:: cause I dont know what this does, i could not find a 'smart' boolean function!
-  selectWith (\ p -> case p of
-                       Unchecked -> True
-                       _         -> False )
-             upd
+  selectWith null upd
 
   widgetShow window
 
@@ -382,7 +347,7 @@ proveNode' ::
               -- MVar IntState ->
               LibName ->
               -- returns an error message if anything happens
-              IO ProofResult
+              IO [Goal]
 proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
   case fromMaybe (error "GtkAutomaticProofs.proveNode': noG_theory") $ globalTheory lab of
     g_th@( G_theory lid _ _ _ _ ) -> do
@@ -405,23 +370,23 @@ proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
      case prep of
      -- theory could not be computed
        Nothing -> do putStrLn "No suitable prover and comorphism found"
-                     return Prove_Error
+                     return []
        Just (G_theory_with_prover lid1 th p, cmp) ->
         case proveCMDLautomaticBatch p of
          Nothing -> do putStrLn "Error obtaining the prover"
-                       return Prove_Error
+                       return []
          Just fn -> do 
            -- mVar to poll the prover for results
            answ <- newMVar (return [])
            case selectedGoals st of
              [] -> do putStrLn "No goals selected. Nothing to prove"
-                      return Empty
+                      return []
              _  -> do (thrId, mV) <- fn useTh False answ (theoryName st)
                                       (TacticScript $ show timeout) th []
                       -- mThr          <- newMVar $ Just thrId
                       takeMVar mV
                       putStrLn "TODO: read and apply proof results correctly!"
-                      return None_Proved
+                      return [Goal GGuessed "nur zum Spass"]
 
 -- | proveNode END
 -- //////////////////////////////////////////////////////////
@@ -488,7 +453,7 @@ showModelViewAux lock title list other = do
     mn <- getSelectedSingle trvNodes listNodes
     case mn of
       Nothing -> textBufferSetText buffer ""
-      Just (_, n) -> textBufferSetText buffer $ show $ status n
+      Just (_, n) -> textBufferSetText buffer $ showStatus $ status n
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window
