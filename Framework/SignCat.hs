@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Abstract syntax for logical frameworks
+Description :  Signatures for the logic Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -9,7 +9,7 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module Framework.AS where
+module Framework.SignCat where
 
 import Common.Id
 import Common.Doc
@@ -21,7 +21,7 @@ type MORPH_NAME = Token
 type PATTERN_NAME = Token
 data FRAM = LF | Isabelle | Maude deriving (Ord, Eq, Show)
 
-data BASIC_SPEC = Basic_spec
+data Sign = Sign
   { -- name of the object logic
     logicName  :: NAME,
     -- the framework used for defining the object logic
@@ -39,15 +39,19 @@ data BASIC_SPEC = Basic_spec
     proofs     :: MORPH_NAME
   } deriving (Ord, Eq, Show)
 
-instance GetRange BASIC_SPEC
+data Morphism = Morphism { object :: Sign } deriving (Ord, Eq, Show)
 
-instance Pretty BASIC_SPEC where
-    pretty = printBasicSpec
+instance GetRange Sign
+
+instance Pretty Morphism where
+  pretty _ = text ""
+instance Pretty Sign where
+    pretty = printSign
 instance Pretty FRAM where
     pretty = printFram
 
-printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec l f sy t si m p) = 
+printSign :: Sign -> Doc
+printSign (Sign l f sy t si m p) = 
   vcat [ text "logic" <+> pretty l <+> text "=" 
        , text " " <+> text "meta" <+> pretty f
        , text " " <+> text "syntax" <+> pretty sy
