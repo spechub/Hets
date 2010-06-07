@@ -77,6 +77,8 @@ module GUI.GtkUtils
   , Goal (..)
   , showGoal
   , GStatus (..)
+  , statusToColor
+  , statusToPrefix
   , proofStatusToGStatus
   , basicProofToGStatus
   , genericConfigToGStatus
