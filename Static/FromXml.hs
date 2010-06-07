@@ -40,6 +40,8 @@ import Text.XML.Light
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List
+import Data.Maybe
 import Control.Monad
 
 anaUpdates = do
@@ -158,7 +160,7 @@ changeDG (Change sel _) = case sel of
    _ -> fail "Static.FromXML.changeDG: unexpected change"
 
 data NodeSubElem
-  = Attribute String
+  = AttributeName String
   | DeclSymbol
   | SymbolRangeAttr Int
     deriving Show
@@ -189,4 +191,53 @@ checkStepElement str stp = case stp of
   _ -> False
 
 anaSteps :: Monad m => [Step] -> m SelElems
-anaSteps = undefined
+anaSteps stps = case stps of
+   Step Child (NameTest l) ps : rst -> case l of
+     "DGNode" -> do
+       nn <- liftM parseNodeName $ getStepNameAttr ps
+       nse <- getNodeSubElem rst
+       return $ NodeElem nn nse
+     "SPEC-DFEN" -> do
+       n <- getStepNameAttr ps
+       return $ SpecDefn (mkSimpleId n) Nothing -- ignore range attribute
+     _ -> fail $ "Static.FromXML.anaSteps: unexpected name: " ++ l
+   [] -> fail "Static.FromXML.anaSteps: missing step"
+   stp : _ ->
+       fail $ "Static.FromXML.anaSteps: unexpected step: " ++ showStep stp
+
+findAttrKey :: Monad m => String -> [Attr] -> m String
+findAttrKey k = maybe (fail $ "findAttrKey: " ++ k) (return . attrVal)
+ . find ((== k) . qName . attrKey)
+
+getStepNameAttr :: Monad m => [Expr] -> m String
+getStepNameAttr = findAttrKey "name" . getStepAttrs
+
+getStepAttrs :: [Expr] -> [Attr]
+getStepAttrs = concatMap getExprAttrs
+
+getExprAttrs :: Expr -> [Attr]
+getExprAttrs = map (uncurry mkAttr) . mapMaybe lookupAttrEq . getConjuncts
+
+getConjuncts :: Expr -> [Expr]
+getConjuncts e = case e of
+  GenExpr True "and" es -> concatMap getConjuncts es
+  _ -> [e]
+
+lookupAttrEq :: Expr -> Maybe (String, String)
+lookupAttrEq e = case e of
+  GenExpr True "=" [e1, e2] ->
+    liftM2 (,) (getAttrExpr e1) $ getLitExpr e2
+  _ -> Nothing
+
+getLitExpr :: Expr -> Maybe String
+getLitExpr e = case e of
+  PrimExpr Literal str -> Just str
+  _ -> Nothing
+
+getAttrExpr :: Expr -> Maybe String
+getAttrExpr e = case e of
+  PathExpr Nothing (Path False [Step Attribute (NameTest s) []]) -> Just s
+  _ -> Nothing
+
+getNodeSubElem :: Monad m => [Step] -> m (Maybe NodeSubElem)
+getNodeSubElem _ = return Nothing
