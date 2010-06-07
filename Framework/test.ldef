@@ -1,0 +1,7 @@
+logic L =
+  meta LF
+  syntax Lsyn
+  truth Ltruth
+  signatures P
+  models Lmod
+  proofs Lpf
