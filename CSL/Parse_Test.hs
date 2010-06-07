@@ -3,13 +3,19 @@ import CSL.Analysis
 import CSL.AS_BASIC_CSL
 import CSL.Morphism    
 import CSL.Tools
--- import CSL.CSL_Interface
+import CSL.Reduce_Interface
+import CSL.ReduceProve
 import CSL.Keywords
 import CSL.Parse_AS_Basic
 import Common.GlobalAnnotations
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
 import CSL.Symbol
+import Common.AS_Annotation
+import Common.Utils (getEnvDef)
+import System.IO
+import System.Process
+
 -- expression parser
 
 -----------------------------------------------------------------------------
@@ -51,6 +57,24 @@ res25 = runParser basicSpec (emptyAnnos ()) "" "operator f,h . solve(x^2=1,x)"
 
 res30 = runParser extparam () "" "I=0"
 res31 = runParser extparam () "" "I < I+1"
+
+res32 = runParser command 2 "" "d_4 := 4.0"
+
+res32pure = case res32 of Right a -> a
+-- processCmds [(makeNamed "as" res32pure)]
+
+-- declares an equation and ask for the result
+castest = do
+  reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
+  (inp, out, _, _) <- connectCAS reducecmd
+  putStrLn "Send the command "
+  casDeclareEquation (inp,out) res32pure
+  putStrLn "query term.. "
+  hPutStrLn inp "d_4;"
+  res <- getNextResultOutput out
+  putStrLn ( "Output is " ++ res)
+  disconnectCAS (inp, out)
+  return ()
 
 -----------------------------------------------------------------------------
 ------------------------- test of static analysis... ------------------------

@@ -104,7 +104,9 @@ exportExp (Op s _ [e1, e2] _) =
   if elem s infixOps
   then "(" ++ exportExp e1 ++ s ++ exportExp e2 ++ ")"
   else s ++ "(" ++ exportExp e1 ++ "," ++ exportExp e2 ++ ")"
-exportExp (Op s _ exps _) = s ++ "(" ++ exportExps exps ++ ")"
+exportExp (Op s _ exps _) = s ++ if (length exps == 0) then "" else "(" 
+                            ++ exportExps exps ++ 
+                                 if (length exps == 0) then ")" else ""
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
 exportExp (Double d _) = show d
@@ -243,12 +245,14 @@ casDeclareOperators (inp, out) varlist = do
   hGetLine out
   return ()
 
--- -- | declares an equation x := exp 
--- casDeclareEquation :: (Handle, Handle) -> EXPRESSION -> IO ()
--- casDeclareEquation (inp, out) (Op s exps) = 
---   if s == ":=" then 
---     do
---       hPutStrLn inp $ "operator " ++ exportExps varlist ++ ";"
---       hGetLine out
---       return ()
---    else error "Expression is not an equation"
+-- | declares an equation x := exp 
+casDeclareEquation :: (Handle, Handle) -> CMD -> IO ()
+casDeclareEquation (inp, out) (Cmd s exps) = 
+  if s == ":=" then 
+    do
+      putStrLn $ (exportExp (exps !! 0)) ++ ":=" ++  (exportExp (exps !! 1))    
+      hPutStrLn inp $ (exportExp (exps !! 0)) ++ ":=" ++  (exportExp (exps !! 1)) ++ ";"
+      res <- getNextResultOutput out
+      putStrLn $ "Declaration Result: " ++ res
+      return ()
+   else error "Expression is not an equation"

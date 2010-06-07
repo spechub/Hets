@@ -12,7 +12,7 @@ The helpers for translating comorphism from Propositional to CASL.
 
 -}
 
-module CSL.Reduce2HasCASL
+module CSL.CSL2HasCASL
     where
 
 import qualified Data.Set as Set
@@ -21,8 +21,8 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.Result as Result
 
--- Reduce
-import qualified CSL.AS_BASIC_Reduce as RBasic
+-- CSL
+import qualified CSL.AS_BASIC_CSL as RBasic
 -- import qualified CSL.Sublogic as PSL
 import qualified CSL.Sign as RSign
 import qualified CSL.Morphism as RMor
