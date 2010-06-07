@@ -42,7 +42,9 @@ import Text.ParserCombinators.Parsec
 
 
 -- ---------------------------------------------------------------------------
+
 -- * Interface to the syntax class
+
 -- ---------------------------------------------------------------------------
 
 parseBasicSpec :: Maybe (AnnoState.AParser st BASIC_SPEC)
@@ -54,7 +56,9 @@ parseSymbMapItems = Just symbMapItems
 
 
 -- ---------------------------------------------------------------------------
+
 -- * Parser for Expressions
+
 -- ---------------------------------------------------------------------------
 
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
@@ -67,12 +71,8 @@ identifier =
   lexemeParser $ Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords
 
 prefixidentifier :: CharParser st Id.Token
-prefixidentifier = lexemeParser
-                   $ Lexer.pToken $ Lexer.scanAnySigns <|> Lexer.scanAnyWords
-
-extendedId :: CharParser st Id.Token
-extendedId =
-  lexemeParser (Lexer.pToken $ reserved allKeywords Lexer.scanAnyWords)
+prefixidentifier =
+    lexemeParser $ Lexer.pToken $ Lexer.scanAnySigns <|> Lexer.scanAnyWords
 
 -- | parser for numbers (both integers and floats) without signs
 number :: CharParser st Id.Token
@@ -122,25 +122,18 @@ pComma = lexemeParser $ Lexer.keySign $ string ","
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
-expatom = signednumber
-  <|>
-  do
-    ident <- identifier  -- EXTENDED
-    return $ Var ident
-  <|>
-  do
-    oParenT
-    expr <- expression
-    cParenT
-    return expr
-  <|>
-  do 
-    ident <- prefixidentifier  -- EXTENDED
-    ep <- option ([],[])
-          $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
-    exps <- option ([],[])
-            $ oParenT >> Lexer.separatedBy expression pComma << cParenT
-    return $ Op (tokStr ident) (fst ep) (fst exps) nullRange
+expatom = signednumber <|> (oParenT >> expression << cParenT) <|> expsymbol
+
+expsymbol :: CharParser st EXPRESSION
+expsymbol = 
+    do 
+      ident <- prefixidentifier  -- EXTENDED
+      ep <- option ([],[])
+            $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
+      exps <- option ([],[])
+              $ oParenT >> Lexer.separatedBy formulaorexpression pComma
+                    << cParenT
+      return $ Op (tokStr ident) (fst ep) (fst exps) nullRange
 
 
 -- | parses a list expression
@@ -152,7 +145,9 @@ listexp = do
   return (List (fst elems) nullRange)
 
 -- ---------------------------------------------------------------------------
+
 -- ** parser for extended parameter, e.g., [I=0,...]
+
 -- ---------------------------------------------------------------------------
 
 extparam :: CharParser st EXTPARAM
@@ -161,7 +156,9 @@ extparam = do
   pair (oneOfKeys ["=", "<=", ">=", "!=", "<", ">"]) expression >--> EP i
 
 -- ---------------------------------------------------------------------------
+
 -- * parser for formulas
+
 -- ---------------------------------------------------------------------------
 
 parseVarList :: CharParser st EXPRESSION
@@ -203,13 +200,12 @@ truefalseFormula =
 
 -- | parser for predicates
 predFormula :: CharParser st EXPRESSION
-predFormula =
-    do
-      exp1 <- expression
-      op <- lexemeParser (Lexer.keySign $ tryString "<=" <|> tryString ">=")
+predFormula = do
+  exp1 <- expression
+  op <- lexemeParser (Lexer.keySign $ tryString "<=" <|> tryString ">=")
         <|> lexemeParser (single (oneOf "=<>"))
-      exp2 <- expression
-      return (mkOp op [exp1, exp2])
+  exp2 <- expression
+  return (mkOp op [exp1, exp2])
 
 atomicFormula :: CharParser st EXPRESSION
 atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
@@ -259,7 +255,9 @@ andFormula = do
    else return $ foldr (\ a b -> (mkOp "and" [b, snd a])) f1 opfs
 
 -- ---------------------------------------------------------------------------
+
 -- * Parser for Commands
+
 -- ---------------------------------------------------------------------------
 
 formulaorexpression :: CharParser st EXPRESSION
@@ -267,23 +265,34 @@ formulaorexpression = try aFormula <|> expression
 
 -- | parser for commands
 command :: CharParser st CMD
-command = do
+command = reduceCommand <|> try assignment <|> repeatExpr <|> constraint
+
+reduceCommand :: CharParser st CMD
+reduceCommand = do
   cmd <- lexemeParser $ Lexer.keyWord $ choice $ map tryString
-    ["solve", "simplify", "divide", "int", "rlqe", "factorize"]
+         ["solve", "simplify", "divide", "int", "rlqe", "factorize"]
   oParenT
   arg1 <- formulaorexpression
   -- args <- many $ pair (lexemeParser $ string ",") formulaorexpression
-  args <- many $ pair pComma formulaorexpression
+  args <- many $ pComma >> formulaorexpression
   cParenT
-  return (Cmd cmd (arg1 : map snd args))
-  <|>
-  do
-    ident <- identifier -- EXTENDED
-    lexemeParser $ tryString ":="
-    exp' <- expression
-    return (Cmd ":=" [(Var ident),exp'])
-  <|>
-  repeatExpr
+  return $ Cmd cmd $ arg1 : args
+
+assignment :: CharParser st CMD
+assignment = do
+  ident <- expsymbol
+  lexemeParser $ tryString ":="
+  exp' <- expression
+  return $ Cmd ":=" [ident, exp']
+
+constraint :: CharParser st CMD
+constraint = do
+  exp' <- try aFormula
+  case exp' of
+    Op op _ args _ ->
+        return $ Cmd op args
+    _ -> fail "Malformed constraint"
+
 
 repeatExpr :: CharParser st CMD
 repeatExpr = do
@@ -303,7 +312,9 @@ repeatExpr = do
   return (Repeat accuracy var (fst statements))
 
 -- ---------------------------------------------------------------------------
+
 -- * parser spec entries
+
 -- ---------------------------------------------------------------------------
 
 -- | parser for operator declarations: example: operator a,b,c
@@ -339,7 +350,9 @@ parseAxItems = do
 
 
 -- ---------------------------------------------------------------------------
+
 -- * parser for symbol maps etc.
+
 -- ---------------------------------------------------------------------------
 
 -- | parsing a prop symbol

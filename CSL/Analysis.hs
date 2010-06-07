@@ -80,7 +80,7 @@ checkOperators s ops =
             | elem op arityTwoOps = arit == 2
             | elem op arityFlexOps = arit > 0
             -- .. otherwise it must be declared in the signature
-            | otherwise = Sign.lookupSym s $ genName op
+            | otherwise = True -- Sign.lookupSym s $ genName op
     in all f ops
 
 -- | generates a named formula
