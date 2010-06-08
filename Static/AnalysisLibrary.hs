@@ -59,6 +59,10 @@ import Data.Char
 import System.Directory
 import System.FilePath
 
+import LF.Twelf2DG 
+
+import Debug.Trace
+
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
@@ -77,7 +81,11 @@ anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
         else do
         input <- readFile file
         putIfVerbose opts 2 $ "Reading file " ++ file
-        runResultT $ anaString lgraph opts topLns libenv initDG input file
+        if takeExtension file /= ('.' : show TwelfIn) 
+           then runResultT $ 
+                   anaString lgraph opts topLns libenv initDG input file
+           else do ana <- anaTwelfFile opts file
+                   return $ Result [] ana
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
@@ -340,7 +348,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       $ Set.map getLibId topLns
     else do
         (ln', libenv') <- anaLibFile lgraph opts topLns libenv
-          (cpIndexMaps dg emptyDG) ln
+          (cpIndexMaps dg emptyDG) $ trace (show ln) $ ln
         if ln == ln' then case Map.lookup ln libenv' of
           Nothing -> error $ "Internal error: did not find library "
             ++ show ln ++ " available: " ++ show (Map.keys libenv')

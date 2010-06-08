@@ -46,15 +46,22 @@ instance Category Sign Morphism where
 -- syntax for Framework
 instance Syntax Framework Sign () () where
    parse_basic_spec Framework = Just basicSpecP
+   parse_symb_items Framework = error noStruct
+   parse_symb_map_items Framework = error noStruct
 
 -- sentences for Framework
-instance Sentences Framework () Sign Morphism ()
-
+instance Sentences Framework () Sign Morphism () where
+   sym_of Framework = error noStruct   
+   
 -- static analysis for Framework
 instance StaticAnalysis Framework Sign () () () Sign Morphism () () where
   basic_analysis Framework = Just basicAnalysis
-  empty_signature Framework = error "Logic Framework has no empty signature." 
-
+  empty_signature Framework = error noEmptySig
+ 
 -- instance of logic for Framework
 instance Logic Framework () Sign () () () Sign Morphism () () ()
+
+noEmptySig, noStruct :: String
+noEmptySig = "Logic Framework does not have an empty signature."
+noStruct = "No views or structuring in logic Framework allowed."
    

@@ -48,8 +48,6 @@ import Text.XML.Light.Proc
 
 import Driver.Options
 
-import Debug.Trace
-
 type NODE = (BASE,MODULE)
 type LINK = (BASE,MODULE,NAME)
 
@@ -217,9 +215,16 @@ fromQN = (QName "from" Nothing Nothing)
 toQN :: QName
 toQN = (QName "to" Nothing Nothing)
 
+omdocE :: String
+omdocE = "omdoc"
+
+twelfE :: String
+twelfE = "elf"
+
 -- path to the Twelf folder must be set in the environment variable TWELF_LIB
 twelf :: String
 twelf = "check-some"
+
 options :: [String]
 options = ["-omdoc"]
 
@@ -251,6 +256,11 @@ getToAttr e =
        Nothing -> error "Element is missing a \"to\" attribute."
        Just a -> a
 
+makeLName :: FilePath -> IO FilePath
+makeLName fp = do
+  fp1 <- makeRelativeToCurrentDirectory fp 
+  return $ dropExtension fp1
+
 -- retrieves the base, module, and name attributes
 getBMN :: Element -> NODE -> (BASE,MODULE,NAME)
 getBMN e (base,modul) =
@@ -262,7 +272,7 @@ getBMN e (base,modul) =
                Just m' -> m'
       b = case getBaseAttr e of
                Nothing -> base
-               Just b' -> replaceExtension (resolve b' base) ".elf"
+               Just b' -> replaceExtension (resolve b' base) twelfE
       in (b,m,n)
 
 -- compares two OMS elements
@@ -292,17 +302,18 @@ parseRef :: String -> String -> NODE
 parseRef ref base =
   case elemIndices '?' ref of
        [i] -> let (br,(_:m)) = splitAt i ref
-                  b = replaceExtension (resolve br base) "elf"
+                  b = replaceExtension (resolve br base) twelfE
                   in (b,m)
        _ -> error "Invalid reference."
 
 {- parses the referenced file if needed and imports all signatures
    and morphisms from it -}
 addFromFile :: FilePath -> LibEnvFull -> IO LibEnvFull
-addFromFile file libs@(le@(lenv,_),base,gr) =
+addFromFile fp libs@(le@(lenv,_),base,gr) = do
+  file <- makeLName fp
   if (file == base || Map.member (emptyLibName file) lenv)
      then return libs
-     else do le1 <- twelf2DG file le
+     else do le1 <- twelf2DG fp le
              return (le1,base,gr)
 
 -- looks up the node number for the given signature reference
@@ -375,15 +386,15 @@ addMorphToGrMap morph ((l,(sigmap,mormap)),file,gr) =
 -- analyzes the given Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaTwelfFile _ fp = do
-  dir <- getCurrentDirectory
-  let file = resolve fp (dir ++ "/")
-  let name = emptyLibName file
-  (libs,_) <- twelf2DG file (emptyLibEnv,emptyGrMap)
-  return $ Just (name,libs)
+  name <- makeLName fp
+  (libs,_) <- twelf2DG fp (emptyLibEnv,emptyGrMap)
+  return $ Just (emptyLibName name, libs)
 
 -- updates the library environment by adding specs from the Twelf file
 twelf2DG :: FilePath -> LibEnvExt -> IO LibEnvExt
-twelf2DG file le = trace ("Analyzing file: " ++ show file) $ do
+twelf2DG fp le = do
+  dir <- getCurrentDirectory
+  let file = resolve fp (dir ++ "/")
   runTwelf file
   libs <- buildGraph file le
   return $ makeLibEnv libs
@@ -517,9 +528,10 @@ insRefSigToDG sig info dg ((l,_),_,_) =
 
 -- builds raw development graph libraries
 buildGraph :: FilePath -> LibEnvExt -> IO LibEnvFull
-buildGraph file le = do
-  let omdoc_file = replaceExtension file "omdoc"
+buildGraph fp le = do
+  let omdoc_file = replaceExtension fp omdocE
   xml <- readFile omdoc_file
+  file <- makeLName fp
   let elems = onlyElems $ parseXML xml
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
@@ -559,12 +571,12 @@ addView e libs@(_,file,_) = do
   let name = getNameAttr e
   let from = getFromAttr e
   let to = getToAttr e
-  let src = parseRef from file
-  let tar = parseRef to file
-  libs1 <- addFromFile (fst src) libs
-  libs2 <- addFromFile (fst tar) libs1
-  let srcSig = lookupSig src libs2
-  let tarSig = lookupSig tar libs2
+  let (b1,m1) = parseRef from file
+  let (b2,m2) = parseRef to file
+  libs1 <- addFromFile b1 libs
+  libs2 <- addFromFile b2 libs1
+  let srcSig = lookupSig (dropExtension b1, m1) libs2
+  let tarSig = lookupSig (dropExtension b2, m2) libs2
   (morph,libs3) <- getViewMorph name srcSig tarSig (elChildren e) libs2
   let libs4 = addMorphToGraph morph libs3
   return libs4
@@ -639,7 +651,7 @@ oms2exp e ref =
   if (eqOMS e typeOMS)
      then Type
      else let (b,m,n) = getBMN e ref
-              in Const $ Symbol b m n
+              in Const $ Symbol (dropExtension b) m n
 
 -- converts an OMA element to an expression
 oma2exp :: Element -> NODE -> EXP
@@ -716,9 +728,9 @@ omv2exp e _ = Var $ getNameAttr e
 addIncl :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
 addIncl e (libs@(_,file,_),sig) = do
   let from = getFromAttr e
-  let src = parseRef from file
-  libs1 <- addFromFile (fst src) libs
-  let srcSig = lookupSig src libs1
+  let (b,m) = parseRef from file
+  libs1 <- addFromFile b libs
+  let srcSig = lookupSig (dropExtension b, m) libs1
   let tarSig = addInclSyms srcSig sig
   let morph = getInclMorph srcSig tarSig
   let libs2 = addMorphToGraph morph libs1
@@ -749,9 +761,9 @@ addStruct :: Element -> (LibEnvFull,Sign) -> IO (LibEnvFull,Sign)
 addStruct e (libs@(_,file,_),sig) = do
   let name = getNameAttr e
   let from = getFromAttr e
-  let src = parseRef from file
-  libs1 <- addFromFile (fst src) libs
-  let srcSig = lookupSig src libs1
+  let (b,m) = parseRef from file
+  libs1 <- addFromFile b libs
+  let srcSig = lookupSig (dropExtension b, m) libs1
   (tarSig,morph,libs2) <- processStruct name srcSig sig (elChildren e) libs1
   let libs3 = addMorphToGraph morph libs2
   return (libs3,tarSig)
@@ -780,7 +792,7 @@ processStruct name srcSig tarSig els libs = do
                            t1 = case translate morph t of
                                      Just t1'-> t1'
                                      Nothing -> error $
-                                       "Structure could not be formed. "
+                                       "Structure could not be formed. " ++ name
                            v1 = case v of
                                      Just v1' -> translate morph v1'
                                      Nothing -> Map.lookup s symmap
@@ -882,15 +894,15 @@ oma2mor e ref l = do
 -- retrieves a morphism by the link name
 retrieveMorph :: LINK -> LibEnvFull -> IO (Morphism,LibEnvFull)
 retrieveMorph (b,m,n) l = do
-  l1 <- addFromFile (replaceExtension b "elf") l
-  let
+  l1 <- addFromFile (replaceExtension b twelfE) l
+  let b' = dropExtension b
   case elemIndex '/' n of
        Nothing -> do
-         let mor = lookupMorph (b,m,n) l1
+         let mor = lookupMorph (b',m,n) l1
          return (mor,l1)
        Just i -> do
          let (n1,(_:n2)) = splitAt i n
-         let mor1 = lookupMorph (b,m,n1) l1
+         let mor1 = lookupMorph (b',m,n1) l1
          let sig = source mor1
          let b1 = sigBase sig
          let m1 = sigModule sig
