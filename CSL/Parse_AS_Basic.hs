@@ -36,7 +36,7 @@ import Common.Parsec
 
 import CSL.AS_BASIC_CSL
 import CSL.Keywords
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec as Parsec
 
 -- the basic lexer, test using e.g. runParser identifier 0 "" "asda2_3"
 
@@ -61,8 +61,18 @@ parseSymbMapItems = Just symbMapItems
 
 -- ---------------------------------------------------------------------------
 
+parseError :: String -> CharParser st a
+parseError s = do
+  p <- getPosition
+  return $ error
+             $ concat [ "Parse error at line: ", show (Parsec.sourceLine p)
+                      , " col: ", show (Parsec.sourceColumn p), "\n", s]
+
 pComma :: CharParser st String
 pComma = lexemeParser $ Lexer.keySign $ string ","
+
+pSemi :: CharParser st String
+pSemi = lexemeParser $ Lexer.keySign $ string ";"
 
 lstring :: String -> CharParser st String
 lstring = lexemeParser . string
@@ -101,6 +111,12 @@ signednumber = do
     return $ if isFloating nr
              then Double (read (sign ++ tokStr nr)) (tokPos nr)
              else Int (read (sign ++ tokStr nr)) (tokPos nr)
+
+numToGroundConstant :: EXPRESSION -> GroundConstant
+numToGroundConstant x = case x of
+                          Double d _ -> GCR d
+                          Int i _ -> GCI i
+                          _ -> error "numToGroundConstant: not a number"
 
 oneOfKeys :: [String] -> CharParser st String
 oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map tryString l
@@ -276,7 +292,8 @@ formulaorexpression = try aFormula <|> expression
 
 -- | parser for commands
 command :: CharParser st CMD
-command = reduceCommand <|> try assignment <|> repeatExpr <|> constraint
+command = reduceCommand <|> try assignment <|> repeatExpr <|> caseExpr
+          <|> constraint
 
 reduceCommand :: CharParser st CMD
 reduceCommand = do
@@ -306,11 +323,23 @@ constraint = do
 
 repeatExpr :: CharParser st CMD
 repeatExpr = do
-  lexemeParser $ string "repeat"
-  statements <- Lexer.separatedBy command $ lstring ";"
+  lstring "repeat"
+  statements <- Lexer.separatedBy command $ pSemi
   lstring "until"
   cstr <- aFormula
   return $ Repeat cstr $ fst statements
+
+singleCase :: CharParser st (EXPRESSION, [CMD])
+singleCase = do
+  lstring "case"
+  cond <- aFormula
+  lstring ":"
+  statements <- Lexer.separatedBy command $ pSemi
+  return (cond, fst statements)
+  
+
+caseExpr :: CharParser st CMD
+caseExpr = many1 singleCase >-> Cond << lstring "end"
 
 -- ---------------------------------------------------------------------------
 
@@ -322,10 +351,38 @@ repeatExpr = do
 opItem :: CharParser st OP_ITEM
 opItem = do
   Lexer.keySign (lexemeParser (tryString "operator"))
-  var1 <- identifier
-  vars <- many $ pair pComma identifier
-  return (Op_item (var1 : map snd vars) nullRange)
+  vars <- sepBy1 identifier pComma
+  return $ Op_item vars nullRange
 
+-- | Parser for variable declarations: example: vars x,y in {1,2}; z in [-1,1]
+varItems :: CharParser st [VAR_ITEM]
+varItems = oneOfKeys ["vars", "var"] >> sepBy1 varItem pSemi
+
+-- | Parser for a variable declaration: example: vars x,y in {1,2}
+varItem :: CharParser st VAR_ITEM
+varItem = do
+  vars <- sepBy1 identifier pComma
+  oneOfKeys ["in"]
+  dom <- parseDomain
+  return $ Var_item vars dom nullRange
+
+
+parseDomain :: CharParser st Domain
+parseDomain = do
+  lp <- lexemeParser $ oneOf "{[]"
+  gcl <- sepBy1 (fmap numToGroundConstant signednumber) pComma
+  rp <- lexemeParser $ oneOf "[]}"
+  let f o c = case gcl of
+                [lb, rb] -> return $ Interval (lb, o) (rb, c)
+                _ -> parseError "parseDomain: incorrect interval-list"
+  case [lp, rp] of
+    "{}" -> return $ Set gcl
+    "[]" -> f True True
+    "[[" -> f True False
+    "][" -> f False False
+    "]]" -> f False True
+    _ -> parseError "parseDomain: malformed domain parens"
+  
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC
@@ -335,11 +392,15 @@ basicSpec =
 
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
-parseBasicItems = parseOpDecl <|> parseAxItems
+parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseAxItems
 
 -- | parser for predicate declarations
 parseOpDecl :: AnnoState.AParser st BASIC_ITEMS
 parseOpDecl = fmap Op_decl opItem
+
+-- | parser for predicate declarations
+parseVarDecl :: AnnoState.AParser st BASIC_ITEMS
+parseVarDecl = fmap Var_decls varItems
 
 -- | parser for Axiom_item
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS
@@ -403,3 +464,4 @@ parseResult :: String -> Maybe EXPRESSION
 parseResult inp = case runParser formulaorexpression "" "" inp of
                Left _ -> Nothing
                Right s -> Just s
+

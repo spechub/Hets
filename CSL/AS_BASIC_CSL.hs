@@ -22,7 +22,9 @@ module CSL.AS_BASIC_CSL
     , SYMB_MAP_ITEMS (..) -- Symbol map
     , SYMB_OR_MAP (..)    -- Symbol or symbol map
     , OP_ITEM (..)        -- operator declaration
-    , VAR_ITEM (..)       -- variable declaration (needed?)
+    , VAR_ITEM (..)       -- variable declaration
+    , Domain (..)         -- domains for variable declarations
+    , GroundConstant (..) -- constants for domain formation
     , CMD (..)
     ) where
 
@@ -36,15 +38,23 @@ data OP_ITEM = Op_item [Id.Token] Id.Range
                deriving Show
 
 -- | variable symbol declaration
-data VAR_ITEM = Var_item [Id.Token] Id.Range
+data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
                 deriving Show
 
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                   deriving Show
 
+data GroundConstant = GCI Int | GCR Float deriving (Eq, Ord, Show)
+
+-- | A finite set or an interval. True = closed, False = opened
+data Domain = Set [GroundConstant]
+            | Interval (GroundConstant, Bool) (GroundConstant, Bool)
+              deriving Show
+
 -- | basic items: either an operator declaration or an axiom
 data BASIC_ITEMS =
     Op_decl OP_ITEM
+    | Var_decls [VAR_ITEM]
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
 
@@ -61,10 +71,10 @@ data EXPRESSION =
   | Double Float Id.Range
   deriving (Eq, Ord, Show)
 
-data CMD =
-    Cmd String [EXPRESSION]
-    | Repeat EXPRESSION [CMD] -- constraint, statements
-    deriving (Show, Eq, Ord)
+data CMD = Cmd String [EXPRESSION]
+         | Cond [(EXPRESSION, [CMD])]
+         | Repeat EXPRESSION [CMD] -- constraint, statements
+           deriving (Show, Eq, Ord)
 
 -- | symbol lists for hiding
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
@@ -89,6 +99,8 @@ data SYMB_OR_MAP = Symb SYMB
 
 -- Pretty Printing;
 
+instance Pretty Domain where
+    pretty = printDomain
 instance Pretty OP_ITEM where
     pretty = printOpItem
 instance Pretty VAR_ITEM where
@@ -149,7 +161,23 @@ printOpItem :: OP_ITEM -> Doc
 printOpItem (Op_item tokens _) = (text "operator") <+> (sepByCommas (map pretty tokens))
 
 printVarItem :: VAR_ITEM -> Doc
-printVarItem (Var_item vars _) = (text "var") <+> (sepByCommas (map pretty vars))
+printVarItem (Var_item vars dom _) =
+    hsep [sepByCommas $ map pretty vars, text "in", pretty dom]
+
+printDomain :: Domain -> Doc
+printDomain (Set l) = braces $ sepByCommas $ map printGC l
+printDomain (Interval (c1, b1) (c2, b2)) =
+    hcat [ getIBorder True b1, sepByCommas $ map printGC [c1, c2]
+         , getIBorder False b2]
+
+getIBorder :: Bool -> Bool -> Doc
+getIBorder False False = lbrack
+getIBorder True True = lbrack
+getIBorder _ _ = rbrack
+
+printGC :: GroundConstant -> Doc
+printGC (GCI i) = text (show i)
+printGC (GCR d) = text (show d)
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
@@ -157,6 +185,7 @@ printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_item x) = pretty x
 printBasicItems (Op_decl x) = pretty x
+printBasicItems (Var_decls x) = text "vars" <+> (sepBySemis $ map pretty x)
 
 printSymbol :: SYMB -> Doc
 printSymbol (Symb_id sym) = pretty sym
@@ -183,7 +212,7 @@ instance GetRange OP_ITEM where
 instance GetRange VAR_ITEM where
   getRange = const nullRange
   rangeSpan x = case x of
-    Var_item a b -> joinRanges [rangeSpan a, rangeSpan b]
+    Var_item a _ b -> joinRanges [rangeSpan a, rangeSpan b]
 
 
 instance GetRange BASIC_SPEC where
@@ -195,7 +224,7 @@ instance GetRange BASIC_ITEMS where
   getRange = const nullRange
   rangeSpan x = case x of
     Op_decl a -> joinRanges [rangeSpan a]
--- Var_decl a -> joinRanges [rangeSpan a]
+    Var_decls a -> joinRanges [rangeSpan a]
     Axiom_item a -> joinRanges [rangeSpan a]
 
 instance GetRange CMD where
