@@ -203,7 +203,7 @@ anaLibItemAux opts topLns (libItems', dg1, libenv1, lG) libItem =
               lG { currentLogic = tokStr logTok }
           _ -> lG
         currLog = currentLogic newLG
-        newOpts = if elem currLog ["DMU"] then
+        newOpts = if elem currLog ["DMU","Framework"] then
           opts { defLogic = currLog } else opts
     in ResultT (do
       Result diags2 res <-

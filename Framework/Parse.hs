@@ -9,13 +9,13 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module Framework.Parse ( parseLogicDef ) where
+module Framework.Parse ( basicSpecP ) where
 
 import Common.Lexer
 import Common.Parsec
 import Common.Token (casl_structured_reserved_words)
 import Common.AnnoState
-import Framework.SignCat
+import Framework.AS
 import Text.ParserCombinators.Parsec
 
 -- keywords which cannot appear as signature,morphism, and pattern names
@@ -23,26 +23,16 @@ framKeys :: [String]
 framKeys = casl_structured_reserved_words ++
   ["logic","meta","syntax","truth","signatures","models","proofs"] 
 
--- parses a logic definition
-parseLogicDef :: String -> IO Sign
-parseLogicDef str = do
-  let res = runParser logicP (AnnoState [] ()) "" str
-  case res of
-       Right sig -> return sig
-       Left e -> error $ show e
-
 -- parser for logic definitions
-logicP :: AParser st Sign
-logicP = do asKey "logic"
-            l  <- nameP
-            asKey "="
-            f  <- metaP
-            sy <- syntaxP
-            t  <- truthP 
-            si <- signaturesP
-            m  <- modelsP
-            p  <- proofsP
-            return $ Sign l f sy t si m p            
+basicSpecP :: AParser st BASIC_SPEC
+basicSpecP = 
+  do f  <- metaP
+     sy <- syntaxP
+     t  <- truthP 
+     si <- signaturesP
+     m  <- modelsP
+     p  <- proofsP
+     return $ Sign f sy t si m p            
 
 -- parsers for components           
 metaP :: AParser st FRAM

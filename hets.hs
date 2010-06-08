@@ -48,7 +48,6 @@ import PGIP.XMLstate (isRemote)
 
 import Maude.Maude2DG (anaMaudeFile)
 import LF.Twelf2DG (anaTwelfFile)
-import Framework.Analysis (anaLogicDef)
 import OMDoc.Import (anaOMDocFile)
 
 main :: IO ()
@@ -76,7 +75,6 @@ processFile opts file = do
         return . getMaybeLib $ intState st
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
-      LogicDefIn -> anaLogicDef opts file 
       OmdocIn -> anaOMDocFile opts file
       CommonLogicIn -> anaLibExt (opts { defLogic = "CommonLogic" }) file
         emptyLibEnv emptyDG

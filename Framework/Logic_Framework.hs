@@ -21,8 +21,10 @@ Portability :  portable
 
 module Framework.Logic_Framework where
 
-import Framework.SignCat
+import Framework.AS
 import Framework.ATC_Framework ()
+import Framework.Parse
+import Framework.Analysis
 import Logic.Logic
 import Common.Result
 
@@ -42,15 +44,17 @@ instance Category Sign Morphism where
   composeMorphisms m _ = Result [] $ Just m
 
 -- syntax for Framework
-instance Syntax Framework () () ()
+instance Syntax Framework Sign () () where
+   parse_basic_spec Framework = Just basicSpecP
 
 -- sentences for Framework
 instance Sentences Framework () Sign Morphism ()
 
 -- static analysis for Framework
-instance StaticAnalysis Framework () () () () Sign Morphism () () where
+instance StaticAnalysis Framework Sign () () () Sign Morphism () () where
+  basic_analysis Framework = Just basicAnalysis
   empty_signature Framework = error "Logic Framework has no empty signature." 
 
 -- instance of logic for Framework
-instance Logic Framework () () () () () Sign Morphism () () ()
+instance Logic Framework () Sign () () () Sign Morphism () () ()
    

@@ -1,4 +1,5 @@
 logic DFOL
+
 spec Categories = 
 Ob :: Sort
 Mor :: Ob -> Ob -> Sort

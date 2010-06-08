@@ -284,7 +284,6 @@ data InType =
   | HaskellIn
   | MaudeIn
   | TwelfIn
-  | LogicDefIn
   | PrfIn
   | OmdocIn
   | ExperimentalIn -- ^ for testing new functionality
@@ -302,7 +301,6 @@ instance Show InType where
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
     TwelfIn -> "elf"
-    LogicDefIn -> "ldef"
     PrfIn -> prfS
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
@@ -326,8 +324,8 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
-  , PrfIn, OmdocIn, ProofCommand, CommonLogicIn]
+  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn, 
+    PrfIn, OmdocIn, ProofCommand, CommonLogicIn]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
@@ -558,7 +556,10 @@ existsAnSource opts file = do
        let base = rmSuffix file
            exts = case intype opts of
                   GuessIn -> if defLogic opts == "DMU"
-                    then [".xml"] else downloadExtensions
+                                then [".xml"] else
+                             if defLogic opts == "Framework"
+                                then [".elf"] else
+                             downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
            names = file : map (base ++) (exts ++ [envSuffix])
