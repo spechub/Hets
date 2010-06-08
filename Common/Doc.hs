@@ -115,6 +115,7 @@ module Common.Doc
     , fcat
     , punctuate
     , sepByCommas
+    , sepBySemis
       -- * symbols
     , dot
     , bullet
@@ -878,6 +879,9 @@ splitDoc d = case d of
 
 sepByCommas :: [Doc] -> Doc
 sepByCommas = fsep . punctuate comma
+
+sepBySemis :: [Doc] -> Doc
+sepBySemis = fsep . punctuate semi
 
 data Weight = Weight Int Id Id Id -- top, left, right
 
