@@ -33,6 +33,7 @@ import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
 import Common.Parsec
+import Common.AS_Annotation as AS_Anno
 
 import CSL.AS_BASIC_CSL
 import CSL.Keywords
@@ -291,7 +292,7 @@ formulaorexpression :: CharParser st EXPRESSION
 formulaorexpression = try aFormula <|> expression
 
 -- | parser for commands
-command :: CharParser st CMD
+command :: CharParser (AnnoState.AnnoState st) CMD
 command = reduceCommand <|> try assignment <|> repeatExpr <|> caseExpr
           <|> constraint
 
@@ -321,24 +322,24 @@ constraint = do
     _ -> fail "Malformed constraint"
 
 
-repeatExpr :: CharParser st CMD
+repeatExpr :: CharParser (AnnoState.AnnoState st) CMD
 repeatExpr = do
   lstring "repeat"
-  statements <- Lexer.separatedBy command $ pSemi
+  statements <- many1 (AnnoState.dotT >> AnnoState.allAnnoParser command)
   lstring "until"
   cstr <- aFormula
-  return $ Repeat cstr $ fst statements
+  return $ Repeat cstr $ map AS_Anno.item statements
 
-singleCase :: CharParser st (EXPRESSION, [CMD])
+singleCase :: CharParser (AnnoState.AnnoState st) (EXPRESSION, [CMD])
 singleCase = do
   lstring "case"
   cond <- aFormula
   lstring ":"
-  statements <- Lexer.separatedBy command $ pSemi
-  return (cond, fst statements)
+  statements <- many1 (AnnoState.dotT >> AnnoState.allAnnoParser command)
+  return (cond, map AS_Anno.item statements)
   
 
-caseExpr :: CharParser st CMD
+caseExpr :: CharParser (AnnoState.AnnoState st) CMD
 caseExpr = many1 singleCase >-> Cond << lstring "end"
 
 -- ---------------------------------------------------------------------------

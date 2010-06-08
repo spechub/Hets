@@ -71,12 +71,12 @@ extractOperatorsExp _ = []
 extractOperatorsCmd :: CMD -> [(String,Int)]
 extractOperatorsCmd (Cmd cmd exps) =
     (cmd, length exps) : concatMap extractOperatorsExp exps
-extractOperatorsCmd (Repeat _ _) = [] -- to be implemented
-extractOperatorsCmd (Cond _) = [] -- to be implemented
+extractOperatorsCmd (Repeat _ _) = [] -- TODO: to be implemented
+extractOperatorsCmd (Cond _) = [] -- TODO: to be implemented
 
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
-checkOperators s ops =
+checkOperators _ ops =
     let f (op, arit)
             | elem op arityOneOps = arit == 1
             | elem op arityTwoOps = arit == 2
@@ -130,7 +130,7 @@ splitSpec (Basic_spec specitems) sig =
                 case (AS_Anno.item item) of
                   Op_decl (Op_item tokens _) ->
                       (addTokens sign tokens, axs)
-                  Var_decls vdl -> bs
+                  Var_decls _ -> bs -- TODO: implement
                   Axiom_item annocmd ->
                        -- addAxioms cmds sign
                       (sign, (analyzeFormula sign annocmd (length axs)) : axs)

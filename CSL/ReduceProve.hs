@@ -52,6 +52,7 @@ getAxioms = partition isReduceAxiom
 isReduceAxiom :: Named CMD -> Bool
 isReduceAxiom s = case sentence s of
                     Cmd {} -> isAxiom s
+                    _ -> False -- TODO: implement
 
 
 {- | takes a theory name and a theory as input, starts the prover

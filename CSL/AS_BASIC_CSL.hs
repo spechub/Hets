@@ -123,10 +123,12 @@ instance Pretty CMD where
     pretty = printCMD
 
 printCMD :: CMD -> Doc
-printCMD (Cmd s exps) = if s==":=" then printExpression (exps !! 0) <> text ":=" <> printExpression (exps !! 1)
-                            else (text s) <> (parens (sepByCommas (map printExpression exps)))
+printCMD (Cmd s exps) = if s==":="
+                        then printExpression (exps !! 0) <> text ":=" <> printExpression (exps !! 1)
+                        else (text s) <> (parens (sepByCommas (map printExpression exps)))
 printCMD (Repeat e stms) = text "repeat" <> vcat (map printCMD stms)
                              <> text "until" <> printExpression e
+printCMD _ = error "printCMD: not implemented case" -- TODO: implement
 
 getPrec :: EXPRESSION -> Integer
 getPrec (Op s _ exps _)
@@ -139,19 +141,20 @@ getPrec _ = 9
 
 -- TODO: print extparams   
 printInfix :: EXPRESSION -> Doc
-printInfix exp@(Op s _ exps _) =
+printInfix e@(Op s _ exps _) =
     (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0))
      else  (parens (printExpression $ (exps !! 0))))
     <> text s <> (if outerprec<= getPrec (exps!!1)
                   then printExpression $ exps !! 1
                   else parens (printExpression $ exps !! 1))
-        where outerprec=getPrec exp
+        where outerprec = getPrec e
+printInfix _ = error "printInfix: not implemented case" -- TODO: implement
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
 -- TODO: print extparams   
-printExpression exp@(Op s _ exps _)
-    | length exps == 2 && s/="min" && s/="max" = printInfix exp
+printExpression e@(Op s _ exps _)
+    | length exps == 2 && s/="min" && s/="max" = printInfix e
     | otherwise = text s <+> parens (sepByCommas (map printExpression exps))
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
@@ -230,6 +233,7 @@ instance GetRange BASIC_ITEMS where
 instance GetRange CMD where
     getRange = const nullRange
     rangeSpan (Cmd _ exps) = joinRanges (map rangeSpan exps)
+    rangeSpan _ = error "rangeSpan(CMD): not implemented" -- TODO: implement
 
 instance GetRange SYMB_ITEMS where
   getRange = const nullRange

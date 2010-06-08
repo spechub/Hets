@@ -115,8 +115,10 @@ exportReduce :: Named CMD -> String
 exportReduce namedcmd = case sentence namedcmd of
   Cmd "simplify" exps -> exportExp $ head exps
   Cmd cmd exps -> cmd ++ "(" ++ exportExps exps ++ ")"
+  _ -> error "exportReduce: not implemented for this case" -- TODO: implement
 
-procCmd :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+procCmd :: (Handle, Handle) -> Named CMD
+        -> IO (ProofStatus [EXPRESSION], [(Named CMD, ProofStatus [EXPRESSION])])
 procCmd (inp, out) cmd = case cmdstring of
                                  "simplify" -> cassimplify (inp, out) cmd
                                  "divide" -> casremainder (inp, out) cmd
@@ -256,3 +258,5 @@ casDeclareEquation (inp, out) (Cmd s exps) =
       putStrLn $ "Declaration Result: " ++ res
       return ()
    else error "Expression is not an equation"
+casDeclareEquation _ _ =
+    error "casDeclareEquation: not implemented for this case" -- TODO: implement
