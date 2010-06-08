@@ -19,8 +19,7 @@ module Propositional.ProveWithTruthTable
   , allModels
   ) where
 
-import Text.Tabular
-import Text.Tabular.AsciiArt
+import Common.Lib.Tabular
 
 import Propositional.AS_BASIC_Propositional
 import Propositional.Sign
@@ -170,7 +169,7 @@ data TruthTable =
                 , trows :: [TTRow]
                 }
 
-renderTT :: TruthTable -> Table String
+renderTT :: TruthTable -> Table String String String
 renderTT tt = Table rowHeaders header table
   where
   hextpropsTT = hextprops (thead tt)
@@ -258,7 +257,7 @@ consCheck _ _ tm _freedefs = case LP.tTarget tm of
                              }
           legend = "Legend:\nM+ = model of the axioms\n"
                    ++ " - = not a model of the axioms\n"
-          body = legend ++ "\n" ++ render id (renderTT table)
+          body = legend ++ "\n" ++ render id id id (renderTT table)
       return $ LP.CCStatus (ProofTree body) midnight $ Just isOK
 
 -- ** prover GUI
@@ -364,7 +363,7 @@ runTt pState cfg _ _thName nGoal =
              "- = not OK, counterexample for logical consequence\n"++
              "o = OK, premises are not fulfilled, hence conclusion is "
              ++ "irrelevant\n"
-           body = legend++"\n"++render id (renderTT table)
+           body = legend++"\n"++render id id id (renderTT table)
        let status = (defaultProofStatus nGoal)
                      { LP.goalStatus = if isOK then LP.Proved consistent
                                                else LP.Disproved
@@ -453,7 +452,7 @@ ttConservativityChecker (_, srcSens) mor tarSens =
             ++ "+ = OK, has expansion\n"
             ++ "- = not OK, has no expansion, hence conservativity fails\n"
             ++ "o = OK, not a model of the axioms, hence no expansion needed\n"
-          body = legend++"\n"++render id (renderTT table)
+          body = legend++"\n"++render id id id (renderTT table)
           res = if isOK then Cons else Inconsistent
       createTextSaveDisplay title "unnamed" body
       return $ return $ Just (res, [])

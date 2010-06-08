@@ -21,11 +21,6 @@ ifneq ($(findstring 2.4, $(UNIXVERSION)),)
 UNIX_PACKAGE = -DUNIX
 endif
 
-TABULARVERSION = $(shell $(HCPKG) latest tabular)
-ifneq ($(findstring tabular-0.1, $(TABULARVERSION)),)
-TABULAR_PACKAGE = -DTABULAR_PACKAGE
-endif
-
 GLADEVERSION = $(shell $(HCPKG) field glade version)
 ifneq ($(findstring 0.1, $(GLADEVERSION)),)
 GLADE_PACKAGE = -DGTKGLADE
@@ -73,7 +68,7 @@ endif
 HC_OPTS_WITHOUTGLADE = -threaded \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
-  $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(TABULAR_PACKAGE) \
+  $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) \
   -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines

@@ -97,10 +97,6 @@ Executable hets
     build-depends: programatica == 1.0
     cpp-options: -DPROGRAMATICA
 
-  if flag(tabular)
-    build-depends: tabular >= 0.1 && < 0.2
-    cpp-options: -DTABULAR_PACKAGE
-
   if flag(tar)
     build-depends: tar >= 0.3 && < 0.4
     cpp-options: -DTAR_PACKAGE

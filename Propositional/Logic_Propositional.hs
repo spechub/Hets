@@ -42,9 +42,7 @@ import Propositional.Tools
 #ifdef UNI_PACKAGE
 import Common.ProverTools
 import Common.Consistency
-#ifdef TABULAR_PACKAGE
 import Propositional.ProveWithTruthTable
-#endif
 import Propositional.Prove
 import Propositional.Conservativity
 import Propositional.ProveMinisat
@@ -122,21 +120,15 @@ instance Logic Propositional
 #ifdef UNI_PACKAGE
         ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
         ++ unsafeProverCheck "minisat" "PATH" minisatProver
-#ifdef TABULAR_PACKAGE
         ++ [ttProver]
-#endif
       cons_checkers Propositional = []
          ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
          ++ unsafeProverCheck "minisat" "PATH" minisatConsChecker
-#ifdef TABULAR_PACKAGE
          ++ [ttConsistencyChecker]
-#endif
       conservativityCheck Propositional = []
           ++ unsafeProverCheck "sKizzo" "PATH"
              (ConservativityChecker "sKizzo" conserCheck)
-#ifdef TABULAR_PACKAGE
           ++ [ConservativityChecker "Truth Tables" ttConservativityChecker]
-#endif
 #endif
 
 
