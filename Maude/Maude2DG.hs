@@ -599,7 +599,7 @@ insertInnerNode nod tim tok morph sg sens dg =
                                 -- inserting the free link
                                 inc_sg = Maude.Morphism.inclusion Maude.Sign.empty sg'
                                 mor = G_morphism Maude inc_sg startMorId
-                                dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
+                                dgt = FreeOrCofreeDefLink NPFree $ EmptyNode (Logic Maude)
                                 edg = defDGLink (gEmbed mor) dgt SeeTarget
                                 dg4 = snd $ insLEdgeDG (nod2, nod3, edg) dg3
                               in (nod3, tim, dg4)
@@ -639,7 +639,7 @@ insertFreeEdge tok1 tok2 tim dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
                            (n2, sg2, _, _, _) = fromJust $ Map.lookup tok2 tim
                            mor = G_morphism Maude (Maude.Morphism.inclusion Maude.Sign.empty sg2) startMorId
-                           dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
+                           dgt = FreeOrCofreeDefLink NPFree $ EmptyNode (Logic Maude)
                            edg = defDGLink (gEmbed mor) dgt SeeTarget
 
 -- | inserts a free definition link between the nodes with the given name. This function is used
@@ -650,7 +650,7 @@ insertFreeEdgeMor tok1 tok2 tim mor dg = snd $ insLEdgeDG (n2, n1, edg) dg
                      where (n1, _, _, _, _) = fromJust $ Map.lookup tok1 tim
                            (n2, _, _, _, _) = fromJust $ Map.lookup tok2 tim
                            mor' = G_morphism Maude mor startMorId
-                           dgt = FreeOrCofreeDefLink Free $ EmptyNode (Logic Maude)
+                           dgt = FreeOrCofreeDefLink NPFree $ EmptyNode (Logic Maude)
                            edg = defDGLink (gEmbed mor') dgt SeeTarget
 
 -- | the importation mode "protecting M" generates a new node M' and a free link

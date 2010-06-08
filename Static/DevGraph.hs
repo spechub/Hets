@@ -355,7 +355,7 @@ data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
-data FreeOrCofree = Free | Cofree deriving (Show, Eq, Ord)
+data FreeOrCofree = Free | Cofree | NPFree deriving (Show, Eq, Ord)
 
 data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)
