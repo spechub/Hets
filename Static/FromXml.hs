@@ -48,7 +48,7 @@ anaUpdates = do
   input <- readFile "Common/test/diff.AddingImports.decomposed.xml"
   cs <- anaXUpdates input
   acs <- mapM changeDG cs
-  mapM_ print $ concat acs
+  mapM_ print acs
 
 -- | target data type of elements that may be added (via AddElem)
 data AddChangeDG
@@ -152,12 +152,15 @@ getDeclsOrSign e = case findChildrenByLocalName "Declarations" e of
     [ str@(_ : _) ] -> return SignDG { sign = str }
     _ -> fail "Static.FromXML.getDeclsOrSign"
 
-changeDG :: Monad m => Change -> m [AddChangeDG]
-changeDG (Change sel _) = case sel of
-   Add _ cs -> mapM addChangeDG cs
-   Remove -> return []
-   Update _ -> return []
-   _ -> fail "Static.FromXML.changeDG: unexpected change"
+changeDG :: Monad m => Change -> m (SelElems, [AddChangeDG])
+changeDG (Change csel path) = do
+  se <- anaTopPath path
+  cs <- case csel of
+    Add _ cs -> mapM addChangeDG cs
+    Remove -> return []
+    Update _ -> return []
+    _ -> fail "Static.FromXML.changeDG: unexpected change"
+  return (se, cs)
 
 data NodeSubElem
   = AttributeName String
@@ -197,16 +200,38 @@ anaSteps stps = case stps of
        nn <- liftM parseNodeName $ getStepNameAttr ps
        nse <- getNodeSubElem rst
        return $ NodeElem nn nse
-     "SPEC-DFEN" -> do
+     "SPEC-DEFN" -> do
        n <- getStepNameAttr ps
+--       unless (null rst) $ fail
+--         $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
+--         ++ "\n" ++ showSteps False rst
        return $ SpecDefn (mkSimpleId n) Nothing -- ignore range attribute
+     "VIEW-DEFN" -> do
+       n <- getStepNameAttr ps
+--       unless (null rst) $ fail
+--         $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
+--         ++ "\n" ++ showSteps False rst
+       return $ ViewDefn (mkSimpleId n) Nothing -- ignore range attribute
+     "DGLink" -> do
+       let as = getStepAttrs ps
+       lnkId <- findAttrKey "linkid" as
+       edgeId <- maybe (fail $ "Static.FromXML.anaSteps.edgeId: " ++ lnkId)
+          return $ readMaybe lnkId
+       s <- findAttrKey "source" as
+       t <- findAttrKey "target" as
+--       unless (null rst) $ fail
+--         $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
+--         ++ "\n" ++ showSteps False rst
+       return $ LinkElem (EdgeId edgeId) (parseNodeName s) (parseNodeName t)
+         Nothing
      _ -> fail $ "Static.FromXML.anaSteps: unexpected name: " ++ l
    [] -> fail "Static.FromXML.anaSteps: missing step"
    stp : _ ->
        fail $ "Static.FromXML.anaSteps: unexpected step: " ++ showStep stp
 
 findAttrKey :: Monad m => String -> [Attr] -> m String
-findAttrKey k = maybe (fail $ "findAttrKey: " ++ k) (return . attrVal)
+findAttrKey k = maybe (fail $ "findAttrKey: " ++ k)
+ (maybe (fail "readAttrString") return . readMaybe . attrVal)
  . find ((== k) . qName . attrKey)
 
 getStepNameAttr :: Monad m => [Expr] -> m String
