@@ -94,14 +94,13 @@ consCheck v thName _ tm _ = case LP.tTarget tm of
         tmpFile = "/tmp/" ++ thName_clean ++ "_cc.dimacs"
         bin = msatName v
     dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc") sig
-          [(AS_Anno.makeNamed "myAxioms" $
-          AS_BASIC.Implication
-            (AS_BASIC.Conjunction (map AS_Anno.sentence axioms) Id.nullRange)
-            (AS_BASIC.False_atom Id.nullRange) Id.nullRange)
-          { AS_Anno.isAxiom = True
+          axioms
+          [(AS_Anno.makeNamed "consistency" $
+            AS_BASIC.False_atom Id.nullRange)
+          { AS_Anno.isAxiom = False
           , AS_Anno.isDef = False
           , AS_Anno.wasTheorem = False
-          }] []
+          }]
     outputHf <- openFile tmpFile ReadWriteMode
     hPutStr outputHf dimacsOutput
     hClose outputHf
@@ -109,8 +108,8 @@ consCheck v thName _ tm _ = case LP.tTarget tm of
     exitCode <- waitForProcess pid
     removeFile tmpFile
     (res, out) <- case exitCode of
-      ExitFailure 20 -> return (Just True, "consistent.")
-      ExitFailure 10 -> return (Just False, "inconsistent.")
+      ExitFailure 10 -> return (Just True, "consistent.")
+      ExitFailure 20 -> return (Just False, "inconsistent.")
       _ -> return (Nothing, "error by calling " ++ bin ++ " " ++ thName)
     return LP.CCStatus { LP.ccResult = res
                        , LP.ccUsedTime = midnight
@@ -118,7 +117,7 @@ consCheck v thName _ tm _ = case LP.tTarget tm of
   where
     getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.ProofStatus ProofTree)]
               -> [AS_Anno.Named AS_BASIC.FORMULA]
-    getAxioms = map (AS_Anno.makeNamed "consistency" . AS_Anno.sentence)
+    getAxioms = map (AS_Anno.makeNamed "axn" . AS_Anno.sentence)
       . filter AS_Anno.isAxiom
 
 -- ** GUI
