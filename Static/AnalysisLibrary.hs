@@ -343,21 +343,23 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
     putMessageIORes opts 1 $ "logic " ++ show logNm
     return (itm, dg, libenv)
-  Download_items ln items _ -> if Set.member ln topLns then
+  Download_items ln items pos -> if Set.member ln topLns then
     liftR $ mkError "illegal cyclic library import"
       $ Set.map getLibId topLns
     else do
         (ln', libenv') <- anaLibFile lgraph opts topLns libenv
           (cpIndexMaps dg emptyDG) $ trace (show ln) $ ln
-        if ln == ln' then case Map.lookup ln libenv' of
+        unless (ln == ln')
+          $ liftR $ warning ()
+              (shows ln " does not match internal name " ++ shows ln' "")
+              pos
+        case Map.lookup ln' libenv' of
           Nothing -> error $ "Internal error: did not find library "
-            ++ show ln ++ " available: " ++ show (Map.keys libenv')
+            ++ show ln' ++ " available: " ++ show (Map.keys libenv')
           Just dg' -> do
             let dg0 = cpIndexMaps dg' dg
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 items
             return (itm, dg1, libenv')
-          else liftR $ mkError ("downloaded library '" ++ show ln'
-            ++ "' does not match library name") $ getLibId ln
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
