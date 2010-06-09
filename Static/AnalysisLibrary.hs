@@ -90,8 +90,11 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
            then runResultT $
                    anaString mln lgraph opts topLns libenv initDG input file
            else do
-             ana <- anaTwelfFile opts file
-             return $ Result [] ana
+             res <- anaTwelfFile opts file
+             case res of
+                  Nothing -> fail ""
+                  Just (lname,lenv) -> return $ Result [] $ 
+                      Just (lname, Map.union lenv libenv)            
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename

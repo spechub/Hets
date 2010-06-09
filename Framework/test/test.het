@@ -1,10 +1,8 @@
 logic Framework
 
-from logics/propositional/syntax/prop get PL
-from logics/first-order/syntax/fol get FOLEQ
-%%from DFOL/Tests/Categories get Categories
-
-%%from Framework/test/prop get PL,V
+from DFOL/Tests/Categories get Categories
+from Framework/test/prop get PL,V
+%%from logics/propositional/syntax/prop get PL
 
 spec L =
   meta LF
