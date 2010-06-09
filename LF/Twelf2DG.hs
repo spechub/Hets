@@ -259,9 +259,9 @@ getToAttr e =
 
 makeLName :: FilePath -> IO FilePath
 makeLName fp = do
-  fp1 <- makeRelativeToCurrentDirectory fp 
-  return $ dropExtension fp1
-
+  dir <- getCurrentDirectory
+  return $ dropExtension $ resolve fp (dir ++ "/")
+ 
 -- retrieves the base, module, and name attributes
 getBMN :: Element -> NODE -> (BASE,MODULE,NAME)
 getBMN e (base,modul) =

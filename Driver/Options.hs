@@ -558,7 +558,7 @@ existsAnSource opts file = do
                   GuessIn -> if defLogic opts == "DMU"
                                 then [".xml"] else
                              if defLogic opts == "Framework"
-                                then [".elf",".thy",".maude"] else
+                                then [".elf",".thy",".maude",".het"] else
                              downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
