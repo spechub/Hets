@@ -83,14 +83,16 @@ instance Logic SoftFOL () () Sentence () ()
     -- again default implementations are fine
     -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
-         provers SoftFOL = (unsafeProverCheck "SPASS" "PATH" spassProver)
+         provers SoftFOL =
+           unsafeProverCheck "SPASS" "PATH" spassProver
 #ifndef NOMATHSERVER
-                           ++ [mathServBroker, vampire]
+           ++ [mathServBroker, vampire]
 #endif
-                           ++ (unsafeProverCheck "darwin" "PATH" darwinProver)
-                           ++ (unsafeProverCheck "ekrh" "PATH" hyperProver)
-         cons_checkers SoftFOL = (unsafeProverCheck "darwin" "PATH"
-                                                    darwinConsChecker) ++
-                                 (unsafeProverCheck "ekrh" "PATH"
-                                                    hyperConsChecker)
+           ++ unsafeProverCheck "darwin" "PATH" (darwinProver Darwin)
+           ++ unsafeProverCheck "e-darwin" "PATH" (darwinProver EDarwin)
+           ++ unsafeProverCheck "ekrh" "PATH" hyperProver
+         cons_checkers SoftFOL =
+           unsafeProverCheck "darwin" "PATH" (darwinConsChecker Darwin)
+           ++ unsafeProverCheck "e-darwin" "PATH" (darwinConsChecker EDarwin)
+           ++ unsafeProverCheck "ekrh" "PATH" hyperConsChecker
 #endif

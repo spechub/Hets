@@ -16,6 +16,7 @@ module SoftFOL.ProveDarwin
   ( darwinProver
   , darwinCMDLautomaticBatch
   , darwinConsChecker
+  , ProverBinary(..)
   ) where
 
 -- preliminary hacks for display of CASL models
@@ -31,7 +32,7 @@ import Common.ProofTree
 import Common.ProverTools
 
 import Data.Char (isDigit)
-import Data.List (isPrefixOf)
+import Data.List
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
 
@@ -49,22 +50,36 @@ import Proofs.BatchProcessing
 
 -- * Prover implementation
 
+data ProverBinary = Darwin | EDarwin deriving Show
+
+dProverName :: ProverBinary -> String
+dProverName = show
+
+proverBinary :: ProverBinary -> String
+proverBinary b = case b of
+  Darwin -> "darwin"
+  EDarwin -> "e-darwin"
+
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover.  -}
-darwinProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-darwinProver = mkAutomaticProver "Darwin" () darwinGUI darwinCMDLautomaticBatch
+darwinProver
+  :: ProverBinary -> Prover Sign Sentence SoftFOLMorphism () ProofTree
+darwinProver b = mkAutomaticProver (dProverName b) () (darwinGUI b)
+  $ darwinCMDLautomaticBatch b
 
-darwinConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-darwinConsChecker = (mkConsChecker "darwin" () consCheck)
+darwinConsChecker
+  :: ProverBinary -> ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
+darwinConsChecker b = (mkConsChecker (dProverName b) () $ consCheck b)
   { ccNeedsTimer = False }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
   line interface.
 -}
-atpFun :: String -- ^ theory name
+atpFun :: ProverBinary  -- ^ the actual binary
+  -> String -- ^ theory name
   -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
-atpFun thName = ATPFunctions
+atpFun b thName = ATPFunctions
   { initialProverState = spassProverState
   , atpTransSenName = transSenName
   , atpInsertSentence = insertSentenceGen
@@ -75,7 +90,7 @@ atpFun thName = ATPFunctions
       { problemOutput = ".tptp"
       , proverOutput = ".spass"
       , theoryConfiguration = ".spcf" }
-  , runProver = runDarwin
+  , runProver = runDarwin b
   , createProverOptions = extraOpts }
 
 -- ** GUI
@@ -84,14 +99,15 @@ atpFun thName = ATPFunctions
   Invokes the generic prover GUI. SPASS specific functions are omitted by
   data type ATPFunctions.
 -}
-darwinGUI :: String -- ^ theory name
-           -> Theory Sign Sentence ProofTree
-           -- ^ theory consisting of a SoftFOL.Sign.Sign
-           --   and a list of Named SoftFOL.Sign.Sentence
-           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
-darwinGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (proverName darwinProver) thName th
+darwinGUI
+  :: ProverBinary -- ^ the actual binary
+  -> String -- ^ theory name
+  -> Theory Sign Sentence ProofTree
+  -- ^ theory consisting of a signature and sentences
+  -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+  -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
+darwinGUI b thName th freedefs =
+    genericATPgui (atpFun b thName) True (dProverName b) thName th
                   freedefs emptyProofTree
 
 -- ** command line function
@@ -101,23 +117,24 @@ darwinGUI thName th freedefs =
   automatic command line interface to the Darwin prover via MathServe.
   Darwin specific functions are omitted by data type ATPFunctions.
 -}
-darwinCMDLautomaticBatch ::
-           Bool -- ^ True means include proved theorems
-        -> Bool -- ^ True means save problem file
-        -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
-           -- ^ used to store the result of the batch run
-        -> String -- ^ theory name
-        -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
-        -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
-darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
+darwinCMDLautomaticBatch
+  :: ProverBinary -- ^ the actual binary
+  -> Bool -- ^ True means include proved theorems
+  -> Bool -- ^ True means save problem file
+  -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
+  -- ^ used to store the result of the batch run
+  -> String -- ^ theory name
+  -> TacticScript -- ^ default tactic script
+  -> Theory Sign Sentence ProofTree
+  -- ^ theory consisting of a signature and sentences
+  -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+     -- ^ fst: identifier of the batch thread for killing it
+     --   snd: MVar to wait for the end of the thread
+darwinCMDLautomaticBatch b inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
-    genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (proverName darwinProver) thName
+    genericCMDLautomaticBatch (atpFun b thName) inclProvedThs saveProblem_batch
+        resultMVar (dProverName b) thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
@@ -126,12 +143,14 @@ darwinCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   time limit.
 -}
 
-consCheck :: String
-          -> TacticScript
-          -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
-          -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-          -> IO(CCStatus ProofTree)
-consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
+consCheck
+  :: ProverBinary
+  -> String
+  -> TacticScript
+  -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
+  -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+  -> IO(CCStatus ProofTree)
+consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> let
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
@@ -141,8 +160,9 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
         runDarwinRealM :: IO(CCStatus ProofTree)
         runDarwinRealM = do
+            let bin = proverBinary b
             probl <- problem
-            noProg <- missingExecutableInPath "darwin"
+            noProg <- missingExecutableInPath bin
             if noProg then do
                   infoDialog "Darwin prover" "Darwin not found"
                   return CCStatus
@@ -155,7 +175,7 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
                   let timeTmpFile = "/tmp/" ++ saveFileName ++ show (utctDay t)
                           ++ "-" ++ show (utctDayTime t) ++ ".tptp"
                   writeFile timeTmpFile probl
-                  let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
+                  let command = bin ++ " " ++ extraOptions ++ " " ++ timeTmpFile
                   (_, outh, errh, proch) <- runInteractiveCommand command
                   (exCode, output, tUsed) <- parseDarwinOut outh errh proch
                   let outState = proofStatM exCode output tUsed
@@ -174,16 +194,18 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
                         then Nothing else Just False }
         in runDarwinRealM
 
-runDarwin :: SoftFOLProverState
-           -- ^ logical part containing the input Sign and axioms and possibly
-           --   goals that have been proved earlier as additional axioms
-           -> GenericConfig ProofTree -- ^ configuration to use
-           -> Bool -- ^ True means save TPTP file
-           -> String -- ^ name of the theory in the DevGraph
-           -> AS_Anno.Named SPTerm -- ^ goal to prove
-           -> IO (ATPRetval, GenericConfig ProofTree)
-           -- ^ (retval, configuration with proof status and complete output)
-runDarwin sps cfg saveTPTP thName nGoal = do
+runDarwin
+  :: ProverBinary
+  -> SoftFOLProverState
+  -- ^ logical part containing the input Sign and axioms and possibly
+  --   goals that have been proved earlier as additional axioms
+  -> GenericConfig ProofTree -- ^ configuration to use
+  -> Bool -- ^ True means save TPTP file
+  -> String -- ^ name of the theory in the DevGraph
+  -> AS_Anno.Named SPTerm -- ^ goal to prove
+  -> IO (ATPRetval, GenericConfig ProofTree)
+     -- ^ (retval, configuration with proof status and complete output)
+runDarwin b sps cfg saveTPTP thName nGoal = do
   -- putStrLn ("running Darwin...")
   runDarwinReal
 
@@ -197,22 +219,23 @@ runDarwin sps cfg saveTPTP thName nGoal = do
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
-      noProg <- missingExecutableInPath "darwin"
+      let bin = proverBinary b
+      noProg <- missingExecutableInPath bin
       if noProg then
         return
-            (ATPError "Could not start Darwin. Is Darwin in your $PATH?",
-                  emptyConfig (proverName darwinProver)
+            (ATPError ("Could not start " ++ bin ++ ". Check your $PATH"),
+                  emptyConfig (dProverName b)
                               (AS_Anno.senAttr nGoal) emptyProofTree)
         else do
           prob <- showTPTPProblem thName sps nGoal $
-                      simpleOptions ++ ["Requested prover: Darwin"]
+                      simpleOptions ++ ["Requested prover: " ++ bin]
           when saveTPTP
             (writeFile (saveFileName ++".tptp") prob)
           t <- getCurrentTime
-          let timeTmpFile = "/tmp/" ++ tmpFileName ++ (show $ utctDay t) ++
-                               "-" ++ (show $ utctDayTime t) ++ ".tptp"
+          let timeTmpFile = "/tmp/" ++ tmpFileName ++ show (utctDay t) ++
+                               "-" ++ show (utctDayTime t) ++ ".tptp"
           writeFile timeTmpFile prob
-          let command = "darwin " ++ extraOptions ++ " " ++ timeTmpFile
+          let command = bin ++ " " ++ extraOptions ++ " " ++ timeTmpFile
           -- putStrLn command
           (_, outh, errh, proch) <- runInteractiveCommand command
           (exCode, output, tUsed) <- parseDarwinOut outh errh proch
@@ -237,7 +260,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
 
     defaultProofStatus opts =
             (openProofStatus
-            (AS_Anno.senAttr nGoal) (proverName darwinProver) $
+            (AS_Anno.senAttr nGoal) (dProverName b) $
                                     emptyProofTree)
                        {tacticScript = TacticScript $ show $ ATPTacticScript
                         {tsTimeLimit = configTimeLimit cfg,
@@ -250,7 +273,7 @@ runDarwin sps cfg saveTPTP thName nGoal = do
       { goalName = AS_Anno.senAttr nGoal
       , goalStatus = Proved True
       , usedAxioms = getAxioms
-      , usedProver = proverName darwinProver
+      , usedProver = dProverName b
       , proofTree = emptyProofTree
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
       , tacticScript = TacticScript $ show $ ATPTacticScript
@@ -293,7 +316,7 @@ parseDarwinOut outh _ procHndl = do
             then do
               waitForProcess procHndl
               return (ExitFailure 2, line : output, to)
-            else if "Try darwin -h for further information" `isPrefixOf` line
+            else if "darwin -h for further information" `isInfixOf` line
                   -- error by running darwin.
               then do
                 waitForProcess procHndl
