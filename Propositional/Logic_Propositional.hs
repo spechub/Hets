@@ -120,10 +120,12 @@ instance Logic Propositional
 #ifdef UNI_PACKAGE
         ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
         ++ unsafeProverCheck "minisat" "PATH" (minisatProver Minisat)
+        ++ unsafeProverCheck "minisat2" "PATH" (minisatProver Minisat2)
         ++ [ttProver]
       cons_checkers Propositional = []
          ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
          ++ unsafeProverCheck "minisat" "PATH" (minisatConsChecker Minisat)
+         ++ unsafeProverCheck "minisat2" "PATH" (minisatConsChecker Minisat2)
          ++ [ttConsistencyChecker]
       conservativityCheck Propositional = []
           ++ unsafeProverCheck "sKizzo" "PATH"
