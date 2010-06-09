@@ -29,6 +29,7 @@ import Common.Parsec
 
 import Control.Monad
 import Data.Char (ord, toLower, isAlphaNum)
+import Data.Maybe
 
 data TPTP =
     FormAnno FormKind Name Role SPTerm (Maybe Annos)
@@ -119,11 +120,14 @@ szsOutput = blank (string "SZS") >> blank (string "output")
 
 tptpModel :: Parser [(String, SPTerm)]
 tptpModel = do
-  manyTill anyChar $ try $ szsOutput >> blank (string "start")
+  manyTill anyChar
+    (try (szsOutput >> blank (string "start"))
+     <|> try (blank $ string "START OF MODEL"))
   manyTill anyChar newline
   skipAll
   ts <- many1 (formAnno << skipAll)
-  szsOutput >> blank (string "end")
+  (szsOutput >> blank (string "end"))
+    <|> (string "END OF MODEL" >> return ())
   return $ map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
 
 printable :: Char -> Bool
@@ -293,9 +297,9 @@ pToken = liftM2 (\ p s -> Token s (Range [p])) getPos . (<< skipAll)
 form :: Parser SPTerm
 form = do
   u <- unitary
-  do  orOp
-      us <- sepBy1 unitary orOp
-      return $ compTerm SPOr $ u : us
+  do orOp
+     us <- sepBy1 unitary orOp
+     return $ compTerm SPOr $ u : us
     <|> do
       andOp
       us <- sepBy1 unitary andOp
@@ -339,9 +343,9 @@ unaryForm = do
 atomicForm :: Parser SPTerm
 atomicForm = do
   t <- term
-  do  key $ try $ char '=' << notFollowedBy (char '>' )
-      t2 <- term
-      return $ mkEq t t2
+  do key $ try $ char '=' << notFollowedBy (char '>' )
+     t2 <- term
+     return $ mkEq t t2
     <|> do
       key $ tryString "!="
       t2 <- term
@@ -355,10 +359,10 @@ definedAtom :: Parser SPTerm
 definedAtom = fmap (simpTerm . SPCustomSymbol) $ pToken $ real <|> distinct
 
 functor :: Parser SPSymbol
-functor = fmap (\ t -> case lookup (tokStr t) $ zip
-  ["$true", "$false", "$equal"] [SPTrue, SPFalse, SPEqual] of
-  Just ks -> ks
-  Nothing -> SPCustomSymbol t) $ pToken
+functor = fmap (\ t -> fromMaybe (SPCustomSymbol t)
+    $ lookup (tokStr t)
+    $ zip ["$true", "$false", "$equal"] [SPTrue, SPFalse, SPEqual])
+  $ pToken
   $ lowerWord <|> singleQuoted <|> dollarWord
 
 -- system and defined words
