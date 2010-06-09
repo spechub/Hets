@@ -31,7 +31,6 @@ import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism (..))
-import Logic.Logic (Logic, language_name)
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
@@ -73,29 +72,29 @@ showStatus :: [Goal] -> String
 showStatus = intercalate "\n" . 
            map (\ g -> GtkUtils.statusToPrefix (gStatus g) ++ gName g)
 
-gStatusToColor :: [Goal] -> String
-gStatusToColor [] = "grey"
-gStatusToColor lg = GtkUtils.statusToColor $ minimum $ map gStatus lg
+goalStatusToColor :: [Goal] -> String
+goalStatusToColor [] = "grey"
+goalStatusToColor lg = GtkUtils.statusToColor $ minimum $ map gStatus lg
 
-gStatusToPrefix :: [Goal] -> String
-gStatusToPrefix [] = "[0] "
-gStatusToPrefix lg = GtkUtils.statusToPrefix $ minimum $ map gStatus lg
+goalStatusToPrefix :: [Goal] -> String
+goalStatusToPrefix [] = "[z] "
+goalStatusToPrefix lg = GtkUtils.statusToPrefix $ minimum $ map gStatus lg
 
 -- | Get a markup string containing name and color
 instance Show FNode where
   show fn = let s = status fn in
-    "<span color=\"" ++ gStatusToColor s
-    ++ "\">" ++ gStatusToPrefix s ++ name fn ++ "</span>"
+    "<span color=\"" ++ goalStatusToColor s
+    ++ "\">" ++ goalStatusToPrefix s ++ name fn ++ "</span>"
 
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
 
+-- | Nodes are sorted in accordance with goalstatus. Nodes without goals are not very importent
+-- | and thus set to status GHandwritten (best case) for comparison only.
 instance Ord FNode where
   compare (FNode { name = n1, status = s1 })
-          (FNode { name = n2, status = s2 }) = let cp [] [] = EQ
-                                                   cp _ [] = LT
-                                                   cp [] _ = GT
-                                                   cp a b = compare (minimum a) (minimum b)
+          (FNode { name = n2, status = s2 }) = let min' a = if null a then Goal GHandwritten "" else minimum a 
+                                                   cp = comparing min'
                                                in case cp s1 s2 of
                                                     EQ -> compare n1 n2
                                                     c  -> c
@@ -157,14 +156,15 @@ showProverWindow res ln le = postGUIAsync $ do
   wait     <- newEmptyMVar
   mView    <- newEmptyMVar
 
-  let dg       = lookupDGraph ln le
-      nodes    = labNodesDG dg
-      selNodes = partition (\ n -> hasSenKind (not . isAxiom) $ snd $ node n)
-      sls      = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
+  let dg         = lookupDGraph ln le
+      nodes      = labNodesDG dg
+      selNodes   = partition (\ n -> hasSenKind (not . isAxiom) $ snd $ node n)
+      sls        = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
+      getGStat l = [] -- TODO :: extract goalStatus from DGNodeLab or other
 
       -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
       (others, emptyNodes) = selNodes
-        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s [])
+        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s (getGStat l))
         $ zip nodes sls
 
   -- setup data
@@ -318,20 +318,15 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
 
 check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
       -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
-check inclThms ln le dg f@(Finder _ pr cs i) timeout listNodes update nodes =
+check inclThms _ _ _ (Finder _ pr cs i) timeout listNodes update nodes =
   let count' = fromIntegral $ length nodes
       c = cs !! i 
-  in foldM_ (\ count (row, fn@(FNode name node _ _)) -> do
-           postGUISync $ update (count / count') name
-           res <- proveNode' inclThms timeout node (pr, c) ln
+  in foldM_ (\ count (row, fn) -> do
+           postGUISync $ update (count / count') $ name fn
+           res <- proveNode' inclThms timeout (node fn) (pr, c)
            -- res <- consistencyCheck inclThms cc c ln le dg n timeout
            postGUISync $ listStoreSetValue listNodes row fn { status = res }
            return $ count + 1) 0 nodes
-
--- | to look up the data types of the 'old' call from consistencyChecker, that need to be adjusted
--- | in order to match the data types requested in proveNode'
--- consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
--- -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 
 -- //////////////////////////////////////////////////////////////////////////
 -- | inserted proveNode from CMDL/ProveConsistency and made some changes
@@ -343,18 +338,11 @@ proveNode' ::
               Bool ->
               -- Timeout Limit
               Int ->
-
               LNode DGNodeLab ->
               -- selected Prover and Comorphism
               ( G_prover, AnyComorphism ) ->
-              -- MVar (Maybe ThreadId) ->
-              -- MVar (Maybe Int_NodeInfo)  ->
-              -- the IntState is needed to write the Results back into the Graph
-              -- MVar IntState ->
-              LibName ->
-              -- returns an error message if anything happens
               IO [Goal]
-proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
+proveNode' useTh timeout (_, lab) p_cm =
   case fromMaybe (error "GtkAutomaticProofs.proveNode': noG_theory") $ globalTheory lab of
     g_th@( G_theory lid _ _ _ _ ) -> do
       -- recompute the theory (to make effective the selected axioms,
@@ -367,7 +355,7 @@ proveNode' useTh timeout lnode@(_, lab) p_cm@(_, acm) libname =
      -- theory could not be computed
        Nothing -> do putStrLn "No suitable prover and comorphism found"
                      return []
-       Just (G_theory_with_prover lid1 th p) ->
+       Just (G_theory_with_prover _ th p) ->
         case proveCMDLautomaticBatch p of
          Nothing -> do putStrLn "Error obtaining the prover"
                        return []
