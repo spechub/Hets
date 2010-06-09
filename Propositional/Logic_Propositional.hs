@@ -111,19 +111,19 @@ instance Logic Propositional
     Symbol                      -- raw_symbol
     ProofTree                      -- proof_tree
     where
-      stability Propositional     = Experimental
-      top_sublogic Propositional  = Sublogic.top
+      stability Propositional = Experimental
+      top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
       empty_proof_tree Propositional = emptyProofTree
     -- supplied provers
       provers Propositional = []
 #ifdef UNI_PACKAGE
         ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
-        ++ unsafeProverCheck "minisat" "PATH" minisatProver
+        ++ unsafeProverCheck "minisat" "PATH" (minisatProver Minisat)
         ++ [ttProver]
       cons_checkers Propositional = []
          ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
-         ++ unsafeProverCheck "minisat" "PATH" minisatConsChecker
+         ++ unsafeProverCheck "minisat" "PATH" (minisatConsChecker Minisat)
          ++ [ttConsistencyChecker]
       conservativityCheck Propositional = []
           ++ unsafeProverCheck "sKizzo" "PATH"
@@ -143,26 +143,26 @@ instance StaticAnalysis Propositional
     Symbol                      -- symbol
     Symbol                      -- raw_symbol
         where
-          basic_analysis Propositional           =
+          basic_analysis Propositional =
               Just basicPropositionalAnalysis
-          empty_signature Propositional          = emptySig
-          is_subsig Propositional                = isSubSigOf
+          empty_signature Propositional = emptySig
+          is_subsig Propositional = isSubSigOf
           subsig_inclusion Propositional s = return . inclusionMap s
-          signature_union Propositional          = sigUnion
-          symbol_to_raw Propositional            = symbolToRaw
-          id_to_raw     Propositional            = idToRaw
-          matches       Propositional            = Symbol.matches
-          stat_symb_items Propositional          = mkStatSymbItems
-          stat_symb_map_items Propositional      = mkStatSymbMapItem
-          morphism_union Propositional           = morphismUnion
-          induced_from_morphism Propositional    = inducedFromMorphism
+          signature_union Propositional = sigUnion
+          symbol_to_raw Propositional = symbolToRaw
+          id_to_raw Propositional = idToRaw
+          matches Propositional = Symbol.matches
+          stat_symb_items Propositional = mkStatSymbItems
+          stat_symb_map_items Propositional = mkStatSymbMapItem
+          morphism_union Propositional = morphismUnion
+          induced_from_morphism Propositional = inducedFromMorphism
           induced_from_to_morphism Propositional = inducedFromToMorphism
-          signature_colimit Propositional  = signatureColimit
+          signature_colimit Propositional = signatureColimit
 
 -- | Sublogics
 instance SemiLatticeWithTop PropSL where
     join = sublogics_max
-    top  = Sublogic.top
+    top = Sublogic.top
 
 instance MinSublogic PropSL BASIC_SPEC where
      minSublogic = sl_basic_spec bottom
