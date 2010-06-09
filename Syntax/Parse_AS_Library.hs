@@ -13,7 +13,7 @@ Parser for CASL specification librariess
 
 module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck (LogicGraph(currentLogic))
+import Logic.Grothendieck (LogicGraph (currentLogic))
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
@@ -32,6 +32,7 @@ import Common.Token
 import Text.ParserCombinators.Parsec
 import Data.List (intercalate)
 import Data.Maybe (maybeToList)
+import Data.Char
 
 -- * Parsing functions
 
@@ -66,7 +67,8 @@ version = do
 libId :: AParser st LibId
 libId = do
     pos <- getPos
-    path <- sepBy1 scanAnyWords (string "/")
+    path <- sepBy1 (many1 $ satisfy $ \ c -> isAlphaNum c || elem c "_-+'")
+            (string "/")
     skip
     return $ IndirectLink (intercalate "/" path) (Range [pos])
         "" noTime
@@ -107,10 +109,10 @@ libItem l =
        g <- generics l
        s2 <- asKey ":"
        vt <- viewType l
-       (symbMap,ps) <- option ([],[])
-                        (do s <- equalT
-                            (m, _) <- parseMapping l
-                            return (m,[s]))
+       (symbMap, ps) <- option ([], []) $ do
+         s <- equalT
+         (m, _) <- parseMapping l
+         return (m, [s])
        q <- optEnd
        return (Syntax.AS_Library.View_defn vn g vt symbMap
                     (catRange ([s1, s2] ++ ps ++ maybeToList q)))
@@ -144,7 +146,7 @@ libItem l =
     do s1 <- asKey fromS
        iln <- libName
        s2 <- asKey getS
-       (il,ps) <- separatedBy itemNameOrMap anComma
+       (il, ps) <- separatedBy itemNameOrMap anComma
        q <- optEnd
        return (Download_items iln il
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
@@ -191,13 +193,13 @@ generics l = do
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2
 
-params :: LogicGraph -> AParser st ([Annoted SPEC],Range)
+params :: LogicGraph -> AParser st ([Annoted SPEC], Range)
 params l = do
     pas <- many (param l)
     let (pas1, ps) = unzip pas
     return (pas1, concatMapRange id ps)
 
-param :: LogicGraph -> AParser st (Annoted SPEC,Range)
+param :: LogicGraph -> AParser st (Annoted SPEC, Range)
 param l = do
     b <- oBracketT
     pa <- aSpec l
