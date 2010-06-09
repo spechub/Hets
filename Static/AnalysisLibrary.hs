@@ -59,7 +59,7 @@ import Data.Char
 import System.Directory
 import System.FilePath
 
-import LF.Twelf2DG 
+import LF.Twelf2DG
 
 import Debug.Trace
 
@@ -81,8 +81,8 @@ anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
         else do
         input <- readFile file
         putIfVerbose opts 2 $ "Reading file " ++ file
-        if takeExtension file /= ('.' : show TwelfIn) 
-           then runResultT $ 
+        if takeExtension file /= ('.' : show TwelfIn)
+           then runResultT $
                    anaString lgraph opts topLns libenv initDG input file
            else do ana <- anaTwelfFile opts file
                    return $ Result [] ana
@@ -98,7 +98,7 @@ anaString lgraph opts topLns libenv initDG input file = do
   case mast of
     Just (Lib_defn pln is ps ans) ->
          let noSuffixFile = dropExtensions file
-             libPath = dropWhile (== '/')
+             libPath = reverse $ takeWhile (/= '/') $ reverse
                $ filter (\ c -> isAlphaNum c || elem c "'_/") noSuffixFile
              noLibName = null $ show $ getLibId pln
              nLn = setFilePath (curDir </> file) mt
