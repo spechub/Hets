@@ -155,8 +155,10 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
         problem     = showTPTPProblemM thName proverStateI []
-        extraOptions  = "-pc false -pmtptp true -fd true -to "
-                        ++ tl
+        extraOptions  = case b of
+            EDarwin -> "-eq Axioms "
+            _ -> ""
+          ++ "-pc false -pmtptp true -fd true -to " ++ tl
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
         runDarwinRealM :: IO(CCStatus ProofTree)
         runDarwinRealM = do
@@ -211,8 +213,11 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
 
   where
     simpleOptions = extraOpts cfg
-    extraOptions  = maybe "-pc false"
-        ( \ tl -> "-pc false" ++ " -to " ++ show tl) $ timeLimit cfg
+    extraOptions  = case b of
+        EDarwin -> "-eq Axioms "
+        _ -> ""
+      ++ maybe "-pc false"
+             (("-pc false -to " ++) .  show) (timeLimit cfg)
     saveFileName  = thName++'_':AS_Anno.senAttr nGoal
     tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
                        '_':AS_Anno.senAttr nGoal
