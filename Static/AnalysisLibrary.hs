@@ -18,6 +18,7 @@ module Static.AnalysisLibrary
     , anaSourceFile
     , anaLibItem
     , anaViewDefn
+    , LNS
     ) where
 
 import Logic.Logic
@@ -31,7 +32,7 @@ import Static.DevGraph
 import Static.ComputeTheory
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
-import Static.ArchDiagram(emptyExtStUnitCtx)
+import Static.ArchDiagram (emptyExtStUnitCtx)
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
@@ -61,8 +62,6 @@ import System.FilePath
 
 import LF.Twelf2DG
 
-import Debug.Trace
-
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
@@ -76,7 +75,7 @@ anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
     Nothing ->
         return $ fail $ "no file for library '" ++ fname ++ "' found."
     Just file ->
-        if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
+        if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
             fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
         input <- readFile file
@@ -84,26 +83,26 @@ anaSourceFile lgraph opts topLns libenv initDG fname = ResultT $ do
         if takeExtension file /= ('.' : show TwelfIn)
            then runResultT $
                    anaString lgraph opts topLns libenv initDG input file
-           else do ana <- anaTwelfFile opts file
-                   return $ Result [] ana
+           else do
+             ana <- anaTwelfFile opts file
+             return $ Result [] ana
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaString lgraph opts topLns libenv initDG input file = do
-  curDir <- lift $ getCurrentDirectory -- get full path for parser positions
+  curDir <- lift getCurrentDirectory -- get full path for parser positions
   mt <- lift $ getModificationTime file
   let Result ds mast = readLibDefnM lgraph opts (curDir </> file) input
   case mast of
     Just (Lib_defn pln is ps ans) ->
          let noSuffixFile = dropExtensions file
-             libPath = reverse $ takeWhile (/= '/') $ reverse
+             spN = reverse $ takeWhile (/= '/') $ reverse
                $ filter (\ c -> isAlphaNum c || elem c "'_/") noSuffixFile
              noLibName = null $ show $ getLibId pln
              nLn = setFilePath (curDir </> file) mt
-               $ if noLibName then emptyLibName libPath else pln
-             spN = reverse $ takeWhile (/= '/') $ reverse libPath
+               $ if noLibName then emptyLibName spN else pln
              nIs = case is of
                [Annoted (Spec_defn spn gn as qs) rs [] []]
                  | noLibName && null (tokStr spn)
@@ -111,7 +110,7 @@ anaString lgraph opts topLns libenv initDG input file = do
                _ -> is
              ast@(Lib_defn ln _ _ _) = Lib_defn nLn nIs ps ans
          in case analysis opts of
-      Skip  -> do
+      Skip -> do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
           ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
@@ -185,11 +184,13 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG libname file = ResultT $ do
                                 ( \ rEnv -> (libname, rEnv)) mEnv
         else runResultT $ anaSourceFile lgraph opts topLns libenv initDG file
 
--- | analyze a LIB_DEFN
--- Parameters: logic graph, default logic, opts, library env, LIB_DEFN
--- call this function as follows:
--- do Result diags res <- runResultT (anaLibDefn ...)
---    mapM_ (putStrLn . show) diags
+{- | analyze a LIB_DEFN.
+  Parameters: logic graph, default logic, opts, library env, LIB_DEFN.
+  Call this function as follows:
+
+>    do Result diags res <- runResultT (anaLibDefn ...)
+>       mapM_ (putStrLn . show) diags
+-}
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
   -> ResultT IO (LibName, LIB_DEFN, DGraph, LibEnv)
 anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
@@ -211,7 +212,7 @@ anaLibItemAux opts topLns (libItems', dg1, libenv1, lG) libItem =
               lG { currentLogic = tokStr logTok }
           _ -> lG
         currLog = currentLogic newLG
-        newOpts = if elem currLog ["DMU","Framework"] then
+        newOpts = if elem currLog ["DMU", "Framework"] then
           opts { defLogic = currLog } else opts
     in ResultT (do
       Result diags2 res <-
@@ -297,7 +298,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (n, _,diag,archSig, dg', asp') <- liftR $ anaArchSpec lgraph dg opts
+    (n, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lgraph dg opts
                                                 emptyExtStUnitCtx $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
@@ -305,7 +306,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       then liftR $ plain_error (asd', dg', libenv) (alreadyDefined asstr) pos
       else do
             let dg'' = updateNodeNameSpecRT dg' n $ show asn
-                dg3 = dg''{ archSpecDiags =
+                dg3 = dg'' { archSpecDiags =
                            Map.insert (show asn) diag $ archSpecDiags dg''}
             return (asd', dg3
                { globalEnv = Map.insert asn (ArchEntry archSig) genv },
@@ -327,7 +328,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Ref_spec_defn rn rsp pos -> do
     let rnstr = tokStr rn
     l <- lookupCurrentLogic "Ref_spec_defn" lgraph
-    (_,_,_,rsig, dg',rsp') <-
+    (_, _, _, rsig, dg', rsp') <-
        liftR (anaRefSpec lgraph dg opts (EmptyNode l) rn emptyExtStUnitCtx
               rsp)
     analyzing opts $ "ref spec " ++ rnstr
@@ -337,7 +338,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       then liftR (plain_error (itm, dg', libenv)
                              (alreadyDefined rnstr)
                              pos)
-      else return ( rsd', dg'{ globalEnv = Map.insert rn (RefEntry rsig) genv }
+      else return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
                   , libenv)
   Logic_decl (Logic_name logTok _) _ -> do
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph
@@ -348,7 +349,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       $ Set.map getLibId topLns
     else do
         (ln', libenv') <- anaLibFile lgraph opts topLns libenv
-          (cpIndexMaps dg emptyDG) $ trace (show ln) $ ln
+          (cpIndexMaps dg emptyDG) ln
         unless (ln == ln')
           $ liftR $ warning ()
               (shows ln " does not match internal name " ++ shows ln' "")
@@ -446,15 +447,15 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
     SpecEntry extsig ->
       let (dg1, extsig1) = refExtsig libenv ln dg newName extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
-       in return (genv1,dg1)
+       in return (genv1, dg1)
     ImportEntry vsig ->
-      let (dg1,vsig1) = refViewsig libenv ln dg newName vsig
+      let (dg1, vsig1) = refViewsig libenv ln dg newName vsig
           genv1 = Map.insert new (ImportEntry vsig1) genv
-      in return (genv1,dg1)
+      in return (genv1, dg1)
     ViewEntry vsig ->
-      let (dg1,vsig1) = refViewsig libenv ln dg newName vsig
+      let (dg1, vsig1) = refViewsig libenv ln dg newName vsig
           genv1 = Map.insert new (ViewEntry vsig1) genv
-      in return (genv1,dg1)
+      in return (genv1, dg1)
     ArchEntry _asig -> anaErr "arch spec download"
     UnitEntry _usig -> anaErr "unit spec download"
     RefEntry _rsig -> anaErr "ref spec download"
