@@ -295,6 +295,15 @@ isAxiomFormula fl =
       SPOriginAxioms -> True
       _              -> False
 
+getSZSStatusWord :: String -> Maybe String
+getSZSStatusWord line = case words $ case stripPrefix "SZS status" line of
+    Just rst -> rst
+    Nothing -> case stripPrefix "% SZS status" line of
+      Just rst -> rst
+      Nothing -> "" of
+  [] -> Nothing
+  w : _ -> Just w
+
 parseDarwinOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr
                -> ProcessHandle -- ^ handel of process
@@ -326,11 +335,11 @@ parseDarwinOut outh _ procHndl = do
               then do
                 waitForProcess procHndl
                 return (ExitFailure 2, line : output, to)
-              else if "SZS status" `isPrefixOf` line && not stateFound
-                then let state' = words line !! 2 in
+              else case getSZSStatusWord line of
+                Just state' | not stateFound ->
                   readLineAndParse (checkSZSState state', line : output, to)
                     True
-                else if "CPU  Time" `isPrefixOf` line  -- get cup time
+                _ -> if "CPU  Time" `isPrefixOf` line  -- get cup time
                   then let time = case takeWhile isDigit $ last (words line) of
                              ds@(_ : _) -> read ds
                              _ -> to
