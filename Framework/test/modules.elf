@@ -1,0 +1,31 @@
+%read "base.elf".
+
+%sig Truth = {
+  %include Base   %open o.
+  true  : o.
+}.
+
+%sig Falsity = {
+  %include Base   %open o.
+  false : o.
+}.
+
+%sig NEG = {
+  %include Base   %open o.
+  not   : o -> o.           %prefix 20 not.
+}.
+
+%sig IMP = {
+  %include Base   %open o.
+  imp   : o -> o -> o.      %infix right 5 imp.
+}.
+
+%sig CONJ = {
+  %include Base   %open o.
+  and   : o -> o -> o.      %infix left 10 and.
+}.
+
+%sig DISJ = {
+  %include Base   %open o.
+  or   : o -> o -> o.       %infix left 10 or.
+}.

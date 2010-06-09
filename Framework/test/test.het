@@ -1,0 +1,12 @@
+logic Framework
+
+%%from /home/mathias/twelf/specs/logics/propositional/syntax/prop get PL
+from Framework/test/prop get PL,V
+
+spec L =
+  meta LF
+  syntax Lsyn
+  truth Ltruth
+  signatures P
+  models Lmod
+  proofs Lpf
