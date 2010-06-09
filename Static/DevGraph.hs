@@ -720,6 +720,7 @@ refSigComposition _rsig1 _rsig2 =
 -- | an entry of the global environment
 data GlobalEntry =
     SpecEntry ExtGenSig
+  | ImportEntry ExtViewSig
   | ViewEntry ExtViewSig
   | ArchEntry RefSig
   | UnitEntry UnitSig

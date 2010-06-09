@@ -23,11 +23,12 @@ import Static.ComputeTheory
 import Static.GTheory
 
 import Logic.Grothendieck
+import Logic.ExtSign
+import Logic.Logic
 
 import LF.Sign
 import LF.Morphism
 import LF.Logic_LF
-import Logic.ExtSign
 
 import Data.List
 import Data.Graph.Inductive.Graph (Node)
@@ -450,14 +451,19 @@ addNodes libs@(_,_,(sigs,_)) =
 addSigToDG :: Sign -> DGraph -> (Node,DGraph)
 addSigToDG sig dg =
   let node = getNewNodeDG dg
-      m = sigModule sig
-      nodeName = emptyNodeName { getName = Token m nullRange }
+      name = Token (sigModule sig) nullRange
+      nodeName = emptyNodeName { getName = name }
       info = newNodeInfo DGBasic
       extSign = makeExtSign LF sig
       gth = noSensGTheory LF extSign startSigId
       nodeLabel = newInfoNodeLab nodeName info gth
       dg1 = insNodeDG (node,nodeLabel) dg
-      in (node,dg1)
+      
+      genSig = GenSig (EmptyNode (Logic LF)) [] (EmptyNode (Logic LF))
+      nodeSig = NodeSig node $ G_sign LF extSign startSigId 
+      gEntry = SpecEntry $ ExtGenSig genSig nodeSig
+      dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
+      in (node,dg2)
 
 -- adds links to the library environment
 addLinks :: LibEnvFull -> LibEnvFull
@@ -479,18 +485,34 @@ addLinks libs@((l,_),file,(_,morphs)) =
 -- inserts a morphism as a link to the development graph
 addMorphToDG :: Morphism -> DGraph -> LibEnvFull -> DGraph
 addMorphToDG morph dg libs =
-  let gmorph = gEmbed $ G_morphism LF morph startMorId
+  let m = morphModule morph
+      n = morphName morph
+      k = morphType morph
+      gMorph = gEmbed $ G_morphism LF morph startMorId
       thmStatus = Proven (DGRule "Type-checked") emptyProofBasis
-      linkKind = case morphType morph of
-                      Definitional -> DefLink
-                      Postulated -> ThmLink thmStatus
-                      Unknown -> error "Unknown morphism type."
+      linkKind = case k of
+          Definitional -> DefLink
+          Postulated -> ThmLink thmStatus
+          Unknown -> error "Unknown morphism type."
       consStatus = ConsStatus Cons.None Cons.None LeftOpen
       linkType = ScopedLink Global linkKind consStatus
-      linkLabel = defDGLink gmorph linkType SeeTarget
+      linkLabel = defDGLink gMorph linkType SeeTarget
       (node1,dg1) = addRefNode dg (source morph) libs
       (node2,dg2) = addRefNode dg1 (target morph) libs
-      in snd $ insLEdgeDG (node1,node2,linkLabel) dg2
+      (_,dg3) = insLEdgeDG (node1,node2,linkLabel) dg2
+      
+      in if (k == Definitional && null n) then dg3 else
+        let n' = if (k == Postulated) then m else m ++ ".." ++ n
+            name = Token n' nullRange
+            extSignSrc = makeExtSign LF $ source morph
+            extSignTar = makeExtSign LF $ target morph      
+            nodeSigSrc = NodeSig node1 $ G_sign LF extSignSrc startSigId
+            nodeSigTar = NodeSig node2 $ G_sign LF extSignTar startSigId
+            genSigTar = GenSig (EmptyNode (Logic LF)) [] (EmptyNode (Logic LF))
+            extGenSigTar = ExtGenSig genSigTar nodeSigTar
+            gEntry = ImportEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar  
+            dg4 = dg3 { globalEnv = Map.insert name gEntry $ globalEnv dg3 }
+            in dg4 
 
 -- constructs a reference node to the specified signature, if needed
 addRefNode :: DGraph -> Sign -> LibEnvFull -> (Node,DGraph)

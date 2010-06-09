@@ -445,6 +445,10 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
       let (dg1, extsig1) = refExtsig libenv ln dg newName extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1,dg1)
+    ImportEntry vsig ->
+      let (dg1,vsig1) = refViewsig libenv ln dg newName vsig
+          genv1 = Map.insert new (ImportEntry vsig1) genv
+      in return (genv1,dg1)
     ViewEntry vsig ->
       let (dg1,vsig1) = refViewsig libenv ln dg newName vsig
           genv1 = Map.insert new (ViewEntry vsig1) genv
