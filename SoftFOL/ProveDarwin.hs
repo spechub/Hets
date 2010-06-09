@@ -155,10 +155,8 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
         problem     = showTPTPProblemM thName proverStateI []
-        extraOptions  = case b of
-            EDarwin -> "-eq Axioms "
-            _ -> ""
-          ++ "-pc false -pmtptp true -fd true -to " ++ tl
+        extraOptions  =
+          "-pc false -pmtptp true -fd true -to " ++ tl
         saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
         runDarwinRealM :: IO(CCStatus ProofTree)
         runDarwinRealM = do
@@ -208,19 +206,15 @@ runDarwin
   -> IO (ATPRetval, GenericConfig ProofTree)
      -- ^ (retval, configuration with proof status and complete output)
 runDarwin b sps cfg saveTPTP thName nGoal = do
-  -- putStrLn ("running Darwin...")
   runDarwinReal
 
   where
     simpleOptions = extraOpts cfg
-    extraOptions  = case b of
-        EDarwin -> "-eq Axioms "
-        _ -> ""
-      ++ maybe "-pc false"
+    extraOptions = maybe "-pc false"
              (("-pc false -to " ++) .  show) (timeLimit cfg)
     saveFileName  = thName++'_':AS_Anno.senAttr nGoal
-    tmpFileName   = (reverse $ fst $ span (/='/') $ reverse thName) ++
-                       '_':AS_Anno.senAttr nGoal
+    tmpFileName   = reverse (fst $ span (/= '/') $ reverse thName) ++
+                       '_' : AS_Anno.senAttr nGoal
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
@@ -241,7 +235,6 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
                                "-" ++ show (utctDayTime t) ++ ".tptp"
           writeFile timeTmpFile prob
           let command = bin ++ " " ++ extraOptions ++ " " ++ timeTmpFile
-          -- putStrLn command
           (_, outh, errh, proch) <- runInteractiveCommand command
           (exCode, output, tUsed) <- parseDarwinOut outh errh proch
           let (err, retval) = proofStat exCode simpleOptions output tUsed
