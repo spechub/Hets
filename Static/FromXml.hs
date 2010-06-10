@@ -13,33 +13,15 @@ adjust development graph according to xupdate information
 module Static.FromXml where
 
 import Static.DevGraph
-import Static.GTheory
-import Static.PrintDevGraph
-import Static.ToXml
 
-import Logic.Prover
-import Logic.Logic
-import Logic.Comorphism
-
-import Common.AS_Annotation
-import Common.ConvertGlobalAnnos
-import Common.DocUtils
-import Common.ExtSign
-import Common.GlobalAnnotations
 import Common.Id
-import Common.LibName
-import qualified Common.OrderedMap as OMap
-import Common.Result
 import Common.ToXml
 import Common.Utils
-import Common.XPath
+import Common.XPath as XPath
 import Common.XUpdate
 
 import Text.XML.Light
 
-import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Map as Map
-import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
 import Control.Monad
@@ -49,6 +31,32 @@ anaUpdates = do
   cs <- anaXUpdates input
   acs <- mapM changeDG cs
   mapM_ print acs
+
+data SelChangeDG = SelChangeDG SelElem ChangeDG deriving Show
+
+data ChangeDG
+  = AddChDG Insert [AddChangeDG]
+  | RemoveChDG
+  | UpdateChDG String
+    deriving Show
+
+changeDG :: Monad m => Change -> m SelChangeDG
+changeDG (Change csel pth) = do
+  se <- anaTopPath pth
+  let sc = SelChangeDG se
+  case csel of
+    Add i cs -> do
+      as <- mapM addChangeDG cs
+      return . sc $ AddChDG i as
+    Remove -> return $ sc RemoveChDG
+    Update s -> if case se of
+        NodeElem _ (Just (SymbolRangeAttr _)) -> True
+        SpecDefn _ True -> True
+        ViewDefn _ (Just RangeAttr) -> True
+        _ -> False
+      then return . sc $ UpdateChDG s
+      else fail "Static.FromXML.changeDG: unexpected update change"
+    _ -> fail "Static.FromXML.changeDG: unexpected change"
 
 -- | target data type of elements that may be added (via AddElem)
 data AddChangeDG
@@ -152,19 +160,8 @@ getDeclsOrSign e = case findChildrenByLocalName "Declarations" e of
     [ str@(_ : _) ] -> return SignDG { sign = str }
     _ -> fail "Static.FromXML.getDeclsOrSign"
 
-changeDG :: Monad m => Change -> m (SelElems, [AddChangeDG])
-changeDG (Change csel path) = do
-  se <- anaTopPath path
-  cs <- case csel of
-    Add _ cs -> mapM addChangeDG cs
-    Remove -> return []
-    Update _ -> return []
-    _ -> fail "Static.FromXML.changeDG: unexpected change"
-  return (se, cs)
-
 data NodeSubElem
-  = AttributeName String
-  | DeclSymbol
+  = DeclSymbol
   | SymbolRangeAttr Int
     deriving Show
 
@@ -172,14 +169,14 @@ data ViewDefnElem = RangeAttr | ViewMorphism deriving Show
 
 data LinkSubElem = LinkMorphism deriving Show
 
-data SelElems
+data SelElem
   = NodeElem NodeName (Maybe NodeSubElem)
-  | SpecDefn SIMPLE_ID (Maybe String) -- attribute
+  | SpecDefn SIMPLE_ID Bool -- range attribute
   | ViewDefn SIMPLE_ID (Maybe ViewDefnElem)
   | LinkElem EdgeId NodeName NodeName (Maybe LinkSubElem)
     deriving Show
 
-anaTopPath :: Monad m => Expr -> m SelElems
+anaTopPath :: Monad m => Expr -> m SelElem
 anaTopPath e = case e of
   PathExpr Nothing (Path True (stp : stps)) -> do
     unless (checkStepElement "DGraph" stp)
@@ -193,25 +190,36 @@ checkStepElement str stp = case stp of
   Step Child (NameTest l) _ | l == str -> True
   _ -> False
 
-anaSteps :: Monad m => [Step] -> m SelElems
+anaSteps :: Monad m => [Step] -> m SelElem
 anaSteps stps = case stps of
-   Step Child (NameTest l) ps : rst -> case l of
+   Step Child (NameTest l) ps : rst ->
+     let err = fail
+             $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
+             ++ "\n" ++ showSteps False rst
+     in case l of
      "DGNode" -> do
        nn <- liftM parseNodeName $ getStepNameAttr ps
        nse <- getNodeSubElem rst
        return $ NodeElem nn nse
      "SPEC-DEFN" -> do
        n <- getStepNameAttr ps
---       unless (null rst) $ fail
---         $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
---         ++ "\n" ++ showSteps False rst
-       return $ SpecDefn (mkSimpleId n) Nothing -- ignore range attribute
+       let sd = SpecDefn (mkSimpleId n)
+       case rst of
+         [] -> return $ sd False
+         as : r -> case attributeStep as of
+           Just "range" | null r -> return $ sd True
+           _ -> err
      "VIEW-DEFN" -> do
        n <- getStepNameAttr ps
---       unless (null rst) $ fail
---         $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
---         ++ "\n" ++ showSteps False rst
-       return $ ViewDefn (mkSimpleId n) Nothing -- ignore range attribute
+       let vd = ViewDefn (mkSimpleId n)
+       case rst of
+         [] -> return $ vd Nothing
+         as : r -> case attributeStep as of
+           Just "range" | null r ->
+             return . vd $ Just RangeAttr
+           _ | null r && checkStepElement "GMorphism" as ->
+             return . vd $ Just ViewMorphism
+           _ -> err
      "DGLink" -> do
        let as = getStepAttrs ps
        lnkId <- findAttrKey "linkid" as
@@ -219,12 +227,13 @@ anaSteps stps = case stps of
           return $ readMaybe lnkId
        s <- findAttrKey "source" as
        t <- findAttrKey "target" as
---       unless (null rst) $ fail
---         $ "Static.FromXML.anaSteps: unexpected steps after: " ++ l
---         ++ "\n" ++ showSteps False rst
-       return $ LinkElem (EdgeId edgeId) (parseNodeName s) (parseNodeName t)
-         Nothing
-     _ -> fail $ "Static.FromXML.anaSteps: unexpected name: " ++ l
+       let le = LinkElem (EdgeId edgeId) (parseNodeName s) (parseNodeName t)
+       case rst of
+         [] -> return $ le Nothing
+         gm : r -> if null r && checkStepElement "GMorphism" gm
+          then return . le $ Just LinkMorphism
+             else err
+     _ -> err
    [] -> fail "Static.FromXML.anaSteps: missing step"
    stp : _ ->
        fail $ "Static.FromXML.anaSteps: unexpected step: " ++ showStep stp
@@ -261,8 +270,36 @@ getLitExpr e = case e of
 
 getAttrExpr :: Expr -> Maybe String
 getAttrExpr e = case e of
-  PathExpr Nothing (Path False [Step Attribute (NameTest s) []]) -> Just s
+  PathExpr Nothing (Path False [s]) -> attributeStep s
+  _ -> Nothing
+
+attributeStep :: Step -> Maybe String
+attributeStep s = case s of
+  Step Attribute (NameTest a) [] -> Just a
   _ -> Nothing
 
 getNodeSubElem :: Monad m => [Step] -> m (Maybe NodeSubElem)
-getNodeSubElem _ = return Nothing
+getNodeSubElem stps =
+  let err = fail $ "Static.FromXML.getNodeSubElem: " ++ showSteps False stps
+  in case stps of
+  [] -> return Nothing
+  d : s : rst | checkStepElement "Declarations" d
+    && checkStepElement "Symbol" s
+    -> case rst of
+         [] -> return $ Just DeclSymbol
+         [a] -> case attributeStep a of
+           Just "range" -> case getStepNumber s of
+             Just i -> return $ Just $ SymbolRangeAttr i
+             Nothing -> err
+           _ -> err
+         _ -> err
+  _ -> err
+
+getStepNumber :: Step -> Maybe Int
+getStepNumber (Step _ _ ps) =
+    listToMaybe $ mapMaybe getNumberExpr ps
+
+getNumberExpr :: Expr -> Maybe Int
+getNumberExpr e = case e of
+  PrimExpr XPath.Number str -> readMaybe str
+  _ -> Nothing
