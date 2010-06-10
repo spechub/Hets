@@ -22,6 +22,7 @@ import Common.GlobalAnnotations
 import Common.Lexer (parseString)
 import Common.Parsec ((<<))
 import Common.Result
+import Common.IO
 
 import System.Environment
 
@@ -39,6 +40,7 @@ toStringParser p ga = fmap (flip (showGlobalDoc ga) "") $ p ga
 exec :: [(String, StringParser)] -> [(String, StringParser)] -> IO ()
 exec lps fps = do
   l <- getArgs
+  setStdEnc Latin1
   case l of
    [] -> parseSpec emptyGlobalAnnos . snd $ head fps
    opt : tl -> do
@@ -47,7 +49,7 @@ exec lps fps = do
     ga <- case tl of
      [] -> return emptyGlobalAnnos
      annoFile : _ -> do
-        str <- readFile annoFile
+        str <- readEncFile Latin1 annoFile
         maybe (error "run parser") return $ maybeResult
           $ addGlobalAnnos emptyGlobalAnnos
           $ parseString annotations str

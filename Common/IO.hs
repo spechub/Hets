@@ -24,6 +24,7 @@ module Common.IO
   ( Enc (..)
   , readEncFile
   , writeEncFile
+  , setStdEnc
   ) where
 
 import System.IO
@@ -33,9 +34,13 @@ data Enc = Latin1 | Utf8
 readEncFile :: Enc -> String -> IO String
 writeEncFile :: Enc -> String -> String -> IO ()
 
+-- | set encoding of stdin and stdout
+setStdEnc :: Enc -> IO ()
+
 #if __GLASGOW_HASKELL__ < 612
 readEncFile _ = readFile
 writeEncFile _ = writeFile
+setStdEnc _ = return ()
 #else
 readEncFile c f = case c of
   Utf8 -> readFile f
@@ -49,4 +54,10 @@ writeEncFile c f txt = case c of
   Latin1 -> withFile f WriteMode $ \ hdl -> do
       hSetEncoding hdl latin1
       hPutStr hdl txt
+
+setStdEnc c = case c of
+  Utf8 -> return ()
+  Latin1 -> do
+    hSetEncoding stdin latin1
+    hSetEncoding stdout latin1
 #endif
