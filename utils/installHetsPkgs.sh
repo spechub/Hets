@@ -9,7 +9,6 @@ for p in \
  fgl-5.4.2.2 \
  xml-1.3.5 \
  html-1.0.1.2 \
- tabular-0.1.0.2 \
  zlib-0.5.2.0 \
  HTTP-4000.0.9 \
  cabal-install-0.8.2 \
