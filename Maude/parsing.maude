@@ -52,6 +52,8 @@
   var  V : View .
   var  SVM : Set{ViewMap} .
   var  Q : Qid .
+  var  SMS : SortMappingSet .
+  var  OMS : OpMappingSet .
 
   crl [module] :
       < O : X@DatabaseClass | db : DB, input : (F[T, T']), output : nil, 
@@ -76,8 +78,8 @@
      if DB' := procView('view_from_to_is_endv[T1, T2, T3, T4], DB) /\
         H := parseHeader(T1) /\
         V := getView(H, DB') /\
-        M := getFirstModule(V, DB') /\
-        M' := getSecondModule(V, DB') .
+        M := getFirstModule(V) /\
+        M' := getSecondModule(V) .
 
    op coreMaudeOp : Qid ~> Qid .
    eq coreMaudeOp('fmod+_is_endfm) = 'fmod_is_endfm .
@@ -92,26 +94,25 @@
                                output : haskellify(M, M''), AttS > 
     if < DB' ; ME > := evalModExp(parseModExp(T), DB) /\
        M := varsConstraints(upModule(ME, false)) /\
-       M' := if ME == 'META-TERM then upModule(ME, true) else getFlatModule(ME, DB') fi /\
+       M' := upModule(ME, true) /\ --- if ME == 'META-TERM then upModule(ME, true) else getFlatModule(ME, DB') fi /\
        M'' := varsConstraints(M') .
 
    crl [maudeView2hets] :
-       < O : X@DatabaseClass | db : DB, input : ('hetsView_.[T]), output : nil, AttS >
-    => < O : X@DatabaseClass | db : DB'', input : nilTermList, 
-                               output : (haskellify(M, M', V)), AttS > 
-    if < DB' ; VE > := evalModExp(parseModExp(T), DB) /\
-       DB'' := procView(VE, DB) /\
-       V := getView(VE, DB'') /\
-       M := getFirstModule(V, DB'') /\
-       M' := getSecondModule(V, DB'') .
+       < O : X@DatabaseClass | db : DB, input : ('hetsView_.['token[T]]), output : nil, AttS >
+    => < O : X@DatabaseClass | db : DB, input : nilTermList,
+                               output : (haskellify(M, M', V)), AttS >
+    if VE := downQid(T) /\
+       V := upView(VE) /\
+       M := getFirstModule(V) /\
+       M' := getSecondModule(V) .
 
-    op getFirstModule : View Database -> Module .
-    ceq getFirstModule(view Q from ME to ME' is SVM endv, DB) = M
-     if M := varsConstraints(getFlatModule(ME, DB)) .
+    op getFirstModule : View -> Module .
+    ceq getFirstModule(view Q from ME to ME' is SMS OMS endv) = M
+     if M := varsConstraints(upModule(ME, true)) .
 
-    op getSecondModule : View Database -> Module .
-    ceq getSecondModule(view Q from ME to ME' is SVM endv, DB) = M
-     if M := varsConstraints(getFlatModule(ME', DB)) .
+    op getSecondModule : View -> Module .
+    ceq getSecondModule(view Q from ME to ME' is SMS OMS endv) = M
+     if M := varsConstraints(upModule(ME, true)) .
  endm
 
  mod HETS is
@@ -184,22 +185,4 @@
  print conceal fmod_is_sorts_.____endfm .
  print conceal db .
 
-
  loop init-hets .
-
- eof
- 
- (mod A is 
-   pr NAT .
-   sorts Foo1 Foo2 Foo3 .
-   sort Foo4{X} . 
-   subsort Foo1 < Foo2 Foo3 < Foo4{X} .
-   op a : -> Foo1 .
-   op b : Foo1 -> Foo1 .
-   op c : Foo1 Foo1 -> Foo1 [assoc comm] .
-   op d : Foo1 ~> Foo1 .
-   mb a : Foo1 .
-   eq a = b(a) .
-   rl [kia] : d(a) => a .
- endm)
-*** (fmod A{X :: TRIV} is pr NAT . endfm)

@@ -40,6 +40,10 @@
   var  HL : HookList .
   var  HK : Hook .
   var  RNMS : RenamingSet .
+  var  SMS : SortMappingSet .
+  var  SM : SortMapping .
+  var  OMS : OpMappingSet .
+  var  OM : OpMapping .
   var  SVM : Set{ViewMap} .
   var  VM : ViewMap .
   var  PL : ParameterList .
@@ -98,11 +102,11 @@
        KS := getKinds(M) .
   
   op haskellify : Module Module View -> QidList .
-  eq haskellify(M, M', view Q from ME to ME' is SVM endv) = 
+  eq haskellify(M, M', view Q from ME to ME' is SMS OMS endv) = 
       'SpecView '`( 'View '`( 'ModId qid2token(Q) '`)
       haskellifyME(ME) haskellifyME(ME')
-      '`[ haskellifyMaps(M, M', SVM) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
-  
+      '`[ haskellifyViewMaps(M, M', SMS, OMS) '`] '`) '\n '@#$endHetsSpec$#@ '\n .
+
   op haskellifyHeader : Header -> QidList .
   eq haskellifyHeader(Q) = ' '`( 'ModId qid2token(Q) '`) ' ' '`[ '`] .
   eq haskellifyHeader(Q {PDL}) = ' '`( 'ModId qid2token(Q) '`) ' '
@@ -148,7 +152,7 @@
   eq haskellifyMaps(M, M', none) = nil .
   eq haskellifyMaps(M, M', VM) = haskellifyMap(M, M', VM) .
   eq haskellifyMaps(M, M', (VM, SVM)) = haskellifyMap(M, M', VM) '`, '
-                                        haskellifyMaps(M, M', SVM) .
+                                        haskellifyMaps(M, M', SVM) [owise] .
   
   op haskellifyMap : Module Module ViewMap -> QidList .
   eq haskellifyMap(M, M', sort Q to Q') = 'SortRenaming haskellifySort(Q) haskellifySort(Q') .
@@ -162,6 +166,35 @@
                    '`( 'To ' '`( 'OpId qid2token(Q') '`) ' 
                    '`[ haskellifyAttr*(no-module, AtS) '`]  '`) ' .
   eq haskellifyMap(M, M', termMap(T, T')) = 'TermMap haskellifyTerm(M, T) haskellifyTerm(M', T') .
+
+  op haskellifyViewMaps : Module Module SortMappingSet OpMappingSet -> QidList .
+  eq haskellifyViewMaps(M, M', none, OMS) = haskellifyOMS(M, M', OMS) .
+  eq haskellifyViewMaps(M, M', SM, OMS) = haskellifySM(M, M', SM)
+                                          if OMS == none
+                                          then nil
+                                          else '`, ' haskellifyOMS(M, M', OMS)
+                                          fi .
+  eq haskellifyViewMaps(M, M', SM SMS, OMS) = haskellifySM(M, M', SM) '`, '
+                                              haskellifyViewMaps(M, M', SMS, OMS) [owise] .
+
+  op haskellifySM : Module Module SortMapping -> QidList .
+  eq haskellifySM(M, M', sort Q to Q' .) = 'SortRenaming haskellifySort(Q) haskellifySort(Q') .
+
+  op haskellifyOMS : Module Module OpMappingSet -> QidList .
+  eq haskellifyOMS(M, M', none) = nil .
+  eq haskellifyOMS(M, M', OM) = haskellifyOM(M, M', OM) .
+  eq haskellifyOMS(M, M', OM OMS) = haskellifyOM(M, M', OM) '`, '
+                                    haskellifyOMS(M, M', OMS) [owise] .
+
+  op haskellifyOM : Module Module OpMapping -> QidList .
+  eq haskellifyOM(M, M', op Q to Q' .) = 'OpRenaming1 '`( 'OpId qid2token(Q) '`) '
+                                         '`( 'To ' '`( 'OpId qid2token(Q') '`) '
+                                         '`[ '`]  '`) ' .
+  eq haskellifyOM(M, M', op Q : TyL -> Ty to Q' .) =
+                   'OpRenaming2 '`( 'OpId qid2token(Q) '`) ' '`[ haskellifyType*(TyL) '`]
+                   haskellifyType(Ty)
+                   '`( 'To ' '`( 'OpId qid2token(Q') '`) ' '`[  '`]  '`) ' .
+  eq haskellifyOM(M, M', op T to term T' .)  = 'TermMap haskellifyTerm(M, T) haskellifyTerm(M', T') .
   
   op haskellifyPL : ParameterList -> QidList .
   eq haskellifyPL(empty) = nil .
@@ -529,8 +562,6 @@
       MAS' := varsConstraintsMAS(M, MAS) /\
       EqS' := varsConstraintsEqS(M, EqS) /\
       RS' := varsConstraintsRS(M, RS) .
-      
-      
 
   op varsConstraintsMAS : Module MembAxSet -> MembAxSet .
   eq varsConstraintsMAS(M, none) = none .
@@ -633,5 +664,4 @@
   eq getSortVarsCond(M, T => T' /\ C) = getSortVarsTerm(M, T) | getSortVarsTerm(M, T') .
   
  endfm
- 
  

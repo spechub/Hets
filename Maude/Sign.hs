@@ -113,9 +113,9 @@ instance Pretty Sign where
         in vcat [ pr'sorts $ Set.elems $ sorts sign
                 , pr'kinds $ Set.elems $ kinds sign
                 , pr'subs $ Rel.toMap $ Rel.transReduce $ subsorts sign
-                , pr'ops $ ops sign
-                , pretty "op kind : Sort -> Kind ."
-                , prettyPrint $ kindRel sign]
+                , pr'ops $ ops sign]
+                -- , pretty "op kind : Sort -> Kind ."
+                -- , prettyPrint $ kindRel sign
                 -- NOTE: Leaving out Sentences for now.
                 -- , pretty $ Set.toList $ sentences sign ]
 
@@ -429,15 +429,6 @@ kindsFromMap :: KindRel -> KindSet
 kindsFromMap kr = foldr (\ (_,y) z -> Set.insert y z) Set.empty krl
       where krl = Map.toList kr
 
-prettyPrint :: KindRel -> Doc
-prettyPrint kr = foldr f Doc.empty krl
-      where krl = Map.toList kr
-            f = \ x y -> vsep [prettyKindPair x, y]
-
-prettyKindPair :: (Symbol, Symbol) -> Doc
-prettyKindPair (s, k) = hsep [keyword "eq", pretty "kind" <> (parens . pretty $ s),
-                              equals, pretty k, dot]
-
 getSortsKindRel :: KindRel -> SymbolSet
 getSortsKindRel = Map.foldWithKey f Set.empty
       where f = \ k _ s -> Set.insert k s
@@ -448,3 +439,14 @@ renameSortKindRel m kr = kr'
             f = \ mss (x,y) z -> (mapSorts mss x, mapSorts mss y) : z
             krl' = foldr (f m) [] krl
             kr' = Map.fromList krl'
+
+{- Used if printing the function 'kind'
+prettyPrint :: KindRel -> Doc
+prettyPrint kr = foldr f Doc.empty krl
+      where krl = Map.toList kr
+            f = \ x y -> vsep [prettyKindPair x, y]
+
+prettyKindPair :: (Symbol, Symbol) -> Doc
+prettyKindPair (s, k) = hsep [keyword "eq", pretty "kind" <> (parens . pretty $ s),
+                              equals, pretty k, dot]
+-}

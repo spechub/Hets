@@ -726,10 +726,9 @@ directMaudeParsing fp = do
               hFlush hIn
               hPutStrLn hIn "."
               hFlush hIn
-              ms <- traverseNames hIn hOut ns'
               hPutStrLn hIn "in Maude/hets.prj"
               psps <- predefinedSpecs hIn hOut
-              sps <- traverseSpecs hIn hOut ms
+              sps <- traversePredefined hIn hOut ns'
               (ok, errs) <- getErrors hErr
               if ok
                   then do
@@ -751,40 +750,10 @@ maude2DG psps sps = (dg1, dg2)
    where (_, tim, vm, tks, dg1) = insertSpecs psps emptyDG Map.empty Map.empty Map.empty [] emptyDG
          (_,_, _, _, dg2) = insertSpecs sps dg1 tim Map.empty vm tks emptyDG
 
--- | given input and output handlers and a list of strings, this method
--- traverses the list transforming each string into a Maude specification
-traverseSpecs :: Handle -> Handle -> [String] -> IO [Spec]
-traverseSpecs _ _ [] = return []
-traverseSpecs hIn hOut (m : ms) = do
-                 hPutStrLn hIn m
-                 hFlush hIn
-                 sOutput <- getAllSpec hOut "" False
-                 ss <- traverseSpecs hIn hOut ms
-                 let stringSpec = findSpec sOutput
-                 let spec = read stringSpec :: Spec
-                 return $ spec : ss
-
--- | given a list of names of views and specifications, a list of
--- string with the real specifications is extracted.
-traverseNames :: Handle -> Handle -> [NamedSpec] -> IO [String]
-traverseNames _ _ [] = return []
-traverseNames hIn hOut (ModName q : ns) = do
-                 hPutStrLn hIn $ concat ["show module ", q, " ."]
-                 hFlush hIn
-                 sOutput <- getAllOutput hOut "" False
-                 rs <- traverseNames hIn hOut ns
-                 return $ sOutput : rs
-traverseNames hIn hOut (ViewName q : ns) = do
-                 hPutStrLn hIn $ concat ["show view ", q, " ."]
-                 hFlush hIn
-                 sOutput <- getAllOutput hOut "" False
-                 rs <- traverseNames hIn hOut ns
-                 return $ sOutput : rs
-
 -- | list of names of the predefined modules
 predefined :: [NamedSpec]
-predefined = [ModName "TRUTH-VALUE", ModName "TRUTH", ModName "BOOL", ModName "EXT-BOOL",
-              ModName "NAT",
+predefined = [ModName "TRUTH-VALUE", ModName "BOOL-OPS", ModName "TRUTH", ModName "BOOL",
+              ModName "EXT-BOOL", ModName "NAT",
               ModName "INT", ModName "RAT", ModName "FLOAT", ModName "STRING", ModName "CONVERSION",
               ModName "RANDOM", ModName "QID", ModName "TRIV", ViewName "TRIV", ViewName "Bool",
               ViewName "Nat", ViewName "Int", ViewName "Rat", ViewName "Float", ViewName "String",
@@ -801,8 +770,8 @@ predefined = [ModName "TRUTH-VALUE", ModName "TRUTH", ModName "BOOL", ModName "E
               ModName "SORTABLE-LIST-AND-SET", ModName "SORTABLE-LIST-AND-SET'",
               ModName "LIST*", ModName "SET*", ModName "MAP", ModName "ARRAY",
               ModName "NAT-LIST", ModName "QID-LIST", ModName "QID-SET", ModName "META-TERM",
-              ModName "META-MODULE", ModName "META-LEVEL", ModName "COUNTER", ModName "LOOP-MODE",
-              ModName "CONFIGURATION"]
+              ModName "META-MODULE", ModName "META-VIEW", ModName "META-LEVEL",
+              ModName "COUNTER", ModName "LOOP-MODE", ModName "CONFIGURATION"]
 
 -- | returns the specifications of the predefined modules by passing as
 -- parameter the list of names

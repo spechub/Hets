@@ -58,7 +58,6 @@ mapMorphism morph =
            mk = kindMapId $ MSign.kindRel src
            mk' = kindMapId $ MSign.kindRel tgt
            smap = MMorphism.sortMap morph
-           kmap = MMorphism.kindMap morph
            omap = MMorphism.opMap morph
            smap' = applySortMap2CASLSorts smap mk mk'
            omap' = maudeOpMap2CASLOpMap mk omap
@@ -1127,3 +1126,41 @@ mSym2caslId (MSym.Sort q) = token2id q
 mSym2caslId (MSym.Kind q) = kindId q'
       where q' = token2id q
 mSym2caslId _ = errorId "error translate symbol"
+
+-- | checks the profile has at least one sort
+atLeastOneSort :: MSign.OpMap -> MSign.OpMap
+atLeastOneSort om = Map.fromList lom'
+      where lom = Map.toList om
+            lom' = filterAtLeastOneSort lom
+
+filterAtLeastOneSort :: [(MAS.Qid, MSign.OpDeclSet)] -> [(MAS.Qid, MSign.OpDeclSet)]
+filterAtLeastOneSort [] = []
+filterAtLeastOneSort ((q, ods) : ls) = hd ++ filterAtLeastOneSort ls
+     where ods' = atLeastOneSortODS ods
+           hd = if Set.null ods'
+                then []
+                else [(q, ods')]
+
+atLeastOneSortODS :: MSign.OpDeclSet -> MSign.OpDeclSet
+atLeastOneSortODS ods = Set.fromList lods'
+     where lods = Set.toList ods
+           lods' = atLeastOneSortLODS lods
+
+atLeastOneSortLODS :: [MSign.OpDecl] -> [MSign.OpDecl]
+atLeastOneSortLODS [] = []
+atLeastOneSortLODS ((ss, ats) : ls) = res ++ atLeastOneSortLODS ls
+     where ss' = atLeastOneSortSS ss
+           res = if Set.null ss'
+                 then []
+                 else [(ss', ats)]
+
+atLeastOneSortSS :: Set.Set MSym.Symbol -> Set.Set MSym.Symbol
+atLeastOneSortSS = Set.filter hasOneSort
+
+hasOneSort :: MSym.Symbol -> Bool
+hasOneSort (MSym.Operator _ ar co) = any isSymSort (co : ar)
+hasOneSort _ = False
+
+isSymSort :: MSym.Symbol -> Bool
+isSymSort (MSym.Sort _) = True
+isSymSort _ = False
