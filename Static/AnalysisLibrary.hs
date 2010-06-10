@@ -42,6 +42,7 @@ import Common.Result
 import Common.ResultT
 import Common.LibName
 import Common.Id
+import Common.IO
 
 import Driver.Options
 import Driver.ReadFn
@@ -84,7 +85,7 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
             fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
-        input <- readFile file
+        input <- readEncFile Latin1 file
         putIfVerbose opts 2 $ "Reading file " ++ file
         if takeExtension file /= ('.' : show TwelfIn)
            then runResultT $
@@ -93,8 +94,8 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
              res <- anaTwelfFile opts file
              case res of
                   Nothing -> fail ""
-                  Just (lname,lenv) -> return $ Result [] $ 
-                      Just (lname, Map.union lenv libenv)            
+                  Just (lname,lenv) -> return $ Result [] $
+                      Just (lname, Map.union lenv libenv)
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename

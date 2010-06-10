@@ -29,6 +29,7 @@ import Common.LibName
 import Common.PrintLaTeX
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos ()
+import Common.IO
 
 import ATerm.AbstractSyntax
 import qualified ATerm.ReadWrite as AT
@@ -69,7 +70,7 @@ writeLibDefn :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
 writeLibDefn ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
-        printAscii fn = writeFile fn $ showGlobalDoc ga ld "\n"
+        printAscii fn = writeEncFile Latin1 fn $ showGlobalDoc ga ld "\n"
         write_type :: OutType -> IO ()
         write_type ty = case ty of
             PrettyOut pty -> do
@@ -90,7 +91,7 @@ debugLatexFilename =
 writeLibDefnLatex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 writeLibDefnLatex opts ga oup ld =
     do let ldoc = toLatex ga $ pretty ld
-       writeFile oup $ renderLatex Nothing ldoc
+       writeEncFile Latin1 oup $ renderLatex Nothing ldoc
        doDump opts "DebugLatex" $
            writeFile (debugLatexFilename oup) $
                debugRenderLatex Nothing ldoc
