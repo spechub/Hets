@@ -5,7 +5,7 @@ Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable(Grothendieck)
+Portability :  non-portable (DevGraph)
 
 adjust development graph according to xupdate information
 -}
