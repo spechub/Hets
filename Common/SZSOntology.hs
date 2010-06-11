@@ -13,6 +13,8 @@ see <http://www.cs.miami.edu/~tptp/> under Documents and SZSOntology
 
 module Common.SZSOntology where
 
+import Data.Char
+
 successes :: [(String, String)]
 successes =
   [ ("Success", "SUC")
@@ -278,3 +280,23 @@ nosuccess =
 
   , ("NotTriedYet", "NTY") ]
   -- Software has not tried to process the data yet, but might in the future.
+
+szsCheck :: [(String, String)] -> [String] -> String -> Bool
+szsCheck pl l = maybe False (`elem` l)
+   . (`lookup` map (\ (t, r) -> (map toLower t, r)) pl) . map toLower
+
+szsProved :: String -> Bool
+szsProved = szsCheck successes ["SAT", "THM"]
+
+szsDisproved :: String -> Bool
+szsDisproved = szsCheck successes ["CSA", "UNS"]
+
+szsTimeout :: String -> Bool
+szsTimeout = szsCheck nosuccess ["TMO"]
+
+szsMemoryOut :: String -> Bool
+szsMemoryOut = szsCheck nosuccess ["MMO"]
+
+szsStopped :: String -> Bool
+szsStopped = szsCheck nosuccess ["STP"]
+

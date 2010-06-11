@@ -30,6 +30,7 @@ import Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import Common.ProofTree
 import Common.ProverTools
+import Common.SZSOntology
 
 import Data.Char (isDigit)
 import Data.List
@@ -188,21 +189,20 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
                   writeFile timeTmpFile probl
                   let command = bin ++ " " ++ extraOptions ++ " " ++ timeTmpFile
                   (_, outh, errh, proch) <- runInteractiveCommand command
-                  (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-                  let outState = proofStatM exCode output tUsed
+                  (szsState, output, tUsed) <- parseDarwinOut outh errh proch
+                  let outState = proofStatM szsState output tUsed
                   return outState
-        proofStatM :: ExitCode -> [String] -> Int -> CCStatus ProofTree
+        proofStatM :: String -> [String] -> Int -> CCStatus ProofTree
         proofStatM exitCode out tUsed = let
              outState = CCStatus
                { ccResult = Just True
-               , ccProofTree = ProofTree $ unlines $ show exitCode : out
+               , ccProofTree = ProofTree $ unlines $ exitCode : out
                , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime
                             $ toInteger tUsed }
-             in case exitCode of
-                  ExitSuccess -> outState
-                  ExitFailure i -> outState
-                    { ccResult = if elem i [2, 105, 112]
-                        then Nothing else Just False }
+             in if szsProved exitCode then outState else
+                    outState
+                    { ccResult = if szsDisproved exitCode then Just False
+                                 else Nothing }
         in runDarwinRealM
 
 runDarwin
@@ -224,8 +224,6 @@ runDarwin b sps cfg saveTPTP thName nGoal = runDarwinReal where
     saveFileName = thName ++ '_' : AS_Anno.senAttr nGoal
     tmpFileName = reverse (fst $ span (/= '/') $ reverse thName) ++
                        '_' : AS_Anno.senAttr nGoal
-    -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-
     runDarwinReal = do
       noProg <- missingExecutableInPath bin
       if noProg then
@@ -252,18 +250,15 @@ runDarwin b sps cfg saveTPTP thName nGoal = runDarwinReal where
                       timeUsed = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
 
-    proofStat exitCode options out tUsed =
-            case exitCode of
-              ExitSuccess -> (ATPSuccess, provedStatus options tUsed)
-              ExitFailure 2 -> (ATPError (unlines ("Internal error." : out)),
+    proofStat exitCode options out tUsed = case () of
+        _ | szsProved exitCode -> (ATPSuccess, provedStatus options tUsed)
+        _ | szsDisproved exitCode -> (ATPSuccess, disProvedStatus options)
+        _ | szsTimeout exitCode ->
+              (ATPTLimitExceeded, defaultProofStatus options)
+        _ | szsStopped exitCode ->
+              (ATPBatchStopped, defaultProofStatus options)
+        _ -> (ATPError (unlines (exitCode : out)),
                                 defaultProofStatus options)
-              ExitFailure 112 ->
-                       (ATPTLimitExceeded, defaultProofStatus options)
-              ExitFailure 105 ->
-                       (ATPBatchStopped, defaultProofStatus options)
-              ExitFailure _ ->
-                  (ATPSuccess, disProvedStatus options)
-
     defaultProofStatus opts =
             (openProofStatus
             (AS_Anno.senAttr nGoal) bin emptyProofTree)
@@ -305,13 +300,13 @@ getSZSStatusWord line = case words
 parseDarwinOut :: Handle        -- ^ handel of stdout
                -> Handle        -- ^ handel of stderr
                -> ProcessHandle -- ^ handel of process
-               -> IO (ExitCode, [String], Int)
+               -> IO (String, [String], Int)
                        -- ^ (exit code, complete output, used time)
 parseDarwinOut outh _ procHndl =
     -- darwin does not write to stderr here, so ignore output
     -- err <- hGetLine errh
     -- if null err then
-  readLineAndParse (ExitFailure 1, [], -1) False
+  readLineAndParse ("", [], -1) False
   where
    readLineAndParse (exCode, output, to) stateFound = do
     procState <- isProcessRun
@@ -329,10 +324,10 @@ parseDarwinOut outh _ procHndl =
                 -- error by running darwin.
             then do
               waitForProcess procHndl
-              return (ExitFailure 2, line : output, to)
+              return ("Internal error.", line : output, to)
             else case getSZSStatusWord line of
-                Just state' | not stateFound ->
-                  readLineAndParse (checkSZSState state', line : output, to)
+                Just szsState | not stateFound ->
+                  readLineAndParse (szsState, line : output, to)
                     True
                 _ -> if "CPU  Time" `isPrefixOf` line  -- get cup time
                   then let time = case takeWhile isDigit $ last (words line) of
@@ -342,46 +337,9 @@ parseDarwinOut outh _ procHndl =
                             stateFound
                   else readLineAndParse (exCode, line : output, to)
                          stateFound
-     failure -> do
+     ExitFailure failure -> do
        waitForProcess procHndl
-       return (failure, output, to)
-
-   checkSZSState szsState =
-        (\ i -> if i == 0 then ExitSuccess else ExitFailure i) $
-        case szsState of
-          "Unsolved" -> 101
-          "Open" -> 102
-          "Unknown" -> 103
-          "Assumed" -> 104
-          "Stopped" -> 105
-          "Error" -> 106
-          "InputError" -> 107
-          "OSError" -> 108
-          "Forced" -> 109
-          "User" -> 110
-          "ResourceOut" -> 111
-          "Timeout" -> 112
-          "MemoryOut" -> 113
-          "Gaveup" -> 114
-          "Incomplete" -> 115
-          "Inappropriate" -> 116
-          "NotTested" -> 117
-          "NotTestedYet" -> 118
-          "CounterSatisfiable" -> 119
-          "CounterTheorem" -> 120
-          "CounterEquivalent" -> 121
-          "WeakerCounterTheorem" -> 122
-          "UnsatisfiableConclusion" -> 123
-          "EquivalentCounterTheorem" -> 124
-          "Unsatisfiable" -> 125
-          "SatisfiableCounterConclusionContradictoryAxioms" -> 126
-          "UnsatisfiableConclusionContradictoryAxioms" -> 127
-          "NoConsequence" -> 128
-          "CounterSatisfiabilityPreserving" -> 129
-          "CounterSatisfiabilityPartialMapping" -> 130
-          "CounterSatisfiabilityMapping" -> 131
-          "CounterSatisfiabilityBijection" -> 132
-          _ -> 0
+       return ("Process error " ++ show failure, output, to)
 
     -- check if darwin running
    isProcessRun = do
