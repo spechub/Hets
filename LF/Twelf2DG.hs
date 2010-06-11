@@ -458,8 +458,8 @@ addSigToDG sig dg =
       gth = noSensGTheory LF extSign startSigId
       nodeLabel = newInfoNodeLab nodeName info gth
       dg1 = insNodeDG (node,nodeLabel) dg
-      
-      genSig = GenSig (EmptyNode (Logic LF)) [] (EmptyNode (Logic LF))
+      emptyNode = EmptyNode $ Logic LF
+      genSig = GenSig emptyNode [] emptyNode
       nodeSig = NodeSig node $ G_sign LF extSign startSigId 
       gEntry = SpecEntry $ ExtGenSig genSig nodeSig
       dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
@@ -508,9 +508,10 @@ addMorphToDG morph dg libs =
             extSignTar = makeExtSign LF $ target morph      
             nodeSigSrc = NodeSig node1 $ G_sign LF extSignSrc startSigId
             nodeSigTar = NodeSig node2 $ G_sign LF extSignTar startSigId
-            genSigTar = GenSig (EmptyNode (Logic LF)) [] (EmptyNode (Logic LF))
+            emptyNode = EmptyNode $ Logic LF
+            genSigTar = GenSig emptyNode [] emptyNode
             extGenSigTar = ExtGenSig genSigTar nodeSigTar
-            gEntry = ImportEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar  
+            gEntry = ImportEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar
             dg4 = dg3 { globalEnv = Map.insert name gEntry $ globalEnv dg3 }
             in dg4 
 

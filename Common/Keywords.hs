@@ -233,6 +233,40 @@ ren_proc_openS = "[["
 ren_proc_closeS :: String
 ren_proc_closeS = "]]"
 
+-- * logic definition symbols
+
+newlogicS :: String
+newlogicS = "newlogic"
+
+metaS :: String
+metaS = "meta"
+
+syntaxS :: String
+syntaxS = "syntax"
+
+truthS :: String
+truthS = "truth"
+
+signaturesS :: String
+signaturesS = "signatures"
+
+modelsS :: String
+modelsS = "models"
+
+proofsS :: String
+proofsS = "proofs"
+
+-- * frameworks
+
+lfS :: String
+lfS = "LF"
+
+isabelleS :: String
+isabelleS = "Isabelle"
+
+maudeS :: String
+maudeS = "Maude"
+
 -- * letter keywords taken from Keywords.txt
 
 andS :: String
@@ -435,6 +469,9 @@ specS = "spec"
 
 stringS :: String
 stringS = "string"
+
+structS :: String
+structS = "struct"
 
 termS :: String
 termS = "term"

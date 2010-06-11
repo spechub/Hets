@@ -64,6 +64,8 @@ import System.FilePath
 
 import LF.Twelf2DG
 
+import Framework.Analysis
+
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
@@ -373,6 +375,9 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
             let dg0 = cpIndexMaps dg' dg
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 items
             return (itm, dg1, libenv')
+  Newlogic_defn ld _ -> do
+    let dg' = anaLogicDef ld libenv dg
+    return (itm, dg' ,libenv)
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph

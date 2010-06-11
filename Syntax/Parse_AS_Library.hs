@@ -34,6 +34,8 @@ import Data.List (intercalate)
 import Data.Maybe (maybeToList)
 import Data.Char
 
+import Framework.AS
+
 -- * Parsing functions
 
 -- | Parse a library of specifications
@@ -151,9 +153,28 @@ libItem l =
        return (Download_items iln il
                 (catRange ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
-    do s1 <- asKey logicS
+    do s <- asKey logicS
        logN@(Logic_name t _) <- logicName
-       return (Logic_decl logN (catRange [s1, t]))
+       return (Logic_decl logN (catRange [s, t]))
+  <|> -- newlogic
+    do s1 <- asKey newlogicS
+       n  <- simpleId
+       s2 <- equalT
+       s3 <- asKey metaS
+       f  <- fram
+       s4 <- asKey syntaxS
+       sy <- simpleId
+       s5 <- asKey truthS
+       t  <- simpleId
+       s6 <- asKey signaturesS
+       si <- simpleId
+       s7 <- asKey modelsS
+       m  <- simpleId
+       s8 <- asKey proofsS
+       p  <- simpleId
+       q <- optEnd
+       return (Newlogic_defn (LogicDef n f sy t si m p)              
+          (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -211,3 +232,13 @@ imports l = do
     s <- asKey givenS
     (sps, ps) <- separatedBy (annoParser $ groupSpec l) anComma
     return (sps, catRange (s : ps))
+
+fram :: AParser st FRAM
+fram = do asKey lfS
+          return LF
+       <|> 
+       do asKey isabelleS
+          return Isabelle
+       <|> 
+       do asKey maudeS
+          return Maude

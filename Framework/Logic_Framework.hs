@@ -23,8 +23,7 @@ module Framework.Logic_Framework where
 
 import Framework.AS
 import Framework.ATC_Framework ()
-import Framework.Parse
-import Framework.Analysis
+--import Framework.Analysis
 import Logic.Logic
 import Common.Result
 
@@ -35,7 +34,7 @@ instance Language Framework where
    description _ = "A framework allowing to add logics dynamically."
 
 -- signature category for Framework
-instance Category Sign Morphism where
+instance Category LogicDef Morphism where
   ide sig = Morphism sig 
   dom = object
   cod = object
@@ -44,24 +43,17 @@ instance Category Sign Morphism where
   composeMorphisms m _ = Result [] $ Just m
 
 -- syntax for Framework
-instance Syntax Framework Sign () () where
-   parse_basic_spec Framework = Just basicSpecP
-   parse_symb_items Framework = error noStruct
-   parse_symb_map_items Framework = error noStruct
+instance Syntax Framework LogicDef () () 
 
 -- sentences for Framework
-instance Sentences Framework () Sign Morphism () where
-   sym_of Framework = error noStruct   
+instance Sentences Framework () LogicDef Morphism ()
    
 -- static analysis for Framework
-instance StaticAnalysis Framework Sign () () () Sign Morphism () () where
-  basic_analysis Framework = Just basicAnalysis
-  empty_signature Framework = error noEmptySig
+instance StaticAnalysis Framework LogicDef () () () 
+         LogicDef Morphism () () where 
+  empty_signature Framework = error 
+       "Logic Framework does not have an empty signature."
  
 -- instance of logic for Framework
-instance Logic Framework () Sign () () () Sign Morphism () () ()
+instance Logic Framework () LogicDef () () () LogicDef Morphism () () ()
 
-noEmptySig, noStruct :: String
-noEmptySig = "Logic Framework does not have an empty signature."
-noStruct = "No views or structuring in logic Framework allowed."
-   

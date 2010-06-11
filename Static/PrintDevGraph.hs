@@ -366,6 +366,7 @@ instance Pretty RefSig where
 instance Pretty GlobalEntry where
   pretty ge = case ge of
     SpecEntry se -> topKey specS <+> pretty se
+    ImportEntry ve -> topKey structS <+> pretty ve
     ViewEntry ve -> topKey viewS <+> pretty ve
     UnitEntry ue -> topKey unitS <+> pretty ue
     ArchEntry ae -> topKey archS <+> pretty ae

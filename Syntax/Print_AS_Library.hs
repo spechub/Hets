@@ -27,7 +27,7 @@ import Syntax.Print_AS_Structured
 
 instance Pretty LIB_DEFN where
     pretty (Lib_defn aa ab _ ad) =
-        let aa' = pretty aa              -- lib name
+        let aa' = pretty aa            -- lib name
             ab' = vsep $ map pretty ab -- LIB_ITEMs
             ad' = vcat $ map pretty ad -- global ANNOTATIONs
         in (if aa == emptyLibName "" then empty else
@@ -87,6 +87,8 @@ instance Pretty LIB_ITEM where
                                    : punctuate comma (map pretty ab))
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
+        Syntax.AS_Library.Newlogic_defn nl _ ->
+            pretty nl        
 
 instance Pretty GENERICITY where
     pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]

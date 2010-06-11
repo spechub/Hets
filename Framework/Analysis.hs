@@ -9,18 +9,39 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module Framework.Analysis ( basicAnalysis ) where
+module Framework.Analysis ( anaLogicDef ) where
 
 import Framework.AS
 
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 
-import Common.ExtSign
-import Common.GlobalAnnotations
-import Common.Result
-import qualified Common.AS_Annotation as Anno
+import Static.DevGraph
+import Static.GTheory
+
+import Logic.Grothendieck
+import Logic.ExtSign
+import Logic.Logic
+
+import Framework.Logic_Framework
 
 -- analyzes a logic definition
-basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos) -> 
-  Result (BASIC_SPEC, ExtSign Sign (), [Anno.Named ()])
-basicAnalysis (bs,_,_) = Result [] $ Just (bs, ExtSign bs Set.empty, [])
+anaLogicDef :: LogicDef -> LibEnv -> DGraph -> DGraph
+anaLogicDef ld _ dg = addLogicDef2DG ld dg 
+
+addLogicDef2DG :: LogicDef -> DGraph -> DGraph
+addLogicDef2DG ld dg =
+  let node = getNewNodeDG dg
+      name = newlogicName ld
+      nodeName = emptyNodeName { getName = name }
+      info = newNodeInfo DGBasic
+      extSign = makeExtSign Framework ld
+      gth = noSensGTheory Framework extSign startSigId
+      nodeLabel = newInfoNodeLab nodeName info gth
+      dg1 = insNodeDG (node,nodeLabel) dg
+
+      emptyNode = EmptyNode $ Logic Framework
+      genSig = GenSig emptyNode [] emptyNode
+      nodeSig = NodeSig node $ G_sign Framework extSign startSigId
+      gEntry = SpecEntry $ ExtGenSig genSig nodeSig
+      dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
+      in dg2

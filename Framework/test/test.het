@@ -1,10 +1,8 @@
-logic Framework
-
 from DFOL/Tests/Categories get Categories
 from Framework/test/prop get PL,V
-%%from logics/propositional/syntax/prop get PL
+from math/algebra/algebra2 get Field
 
-spec L =
+newlogic L =
   meta LF
   syntax Lsyn
   truth Ltruth
