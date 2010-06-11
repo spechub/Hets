@@ -327,10 +327,10 @@ integrateGenerated idMap genSens sign
     | otherwise =
       case partition isAxiom genSens of
       (genAxs,genGoals) ->
-        case makeGenGoals idMap genGoals of
+        case makeGenGoals sign idMap genGoals of
         (newPredsMap,idMap',goalsAndSentences) ->
           -- makeGens must not invent new sorts
-          case makeGens idMap' genAxs of
+          case makeGens sign idMap' genAxs of
           Result dias mv ->
             maybe (Result dias Nothing)
                   (\ (spSortMap_makeGens,newOpsMap,idMap'',exhaustSens) ->
@@ -353,10 +353,10 @@ integrateGenerated idMap genSens sign
                                             exhaustSens))))
                   mv
 
-makeGenGoals :: IdTypeSPIdMap -> [Named (FORMULA f)]
+makeGenGoals :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
              -> (PredMap, IdTypeSPIdMap, [Named SPTerm])
-makeGenGoals idMap fs =
-  let Result _ res = makeGens idMap fs
+makeGenGoals sign idMap fs =
+  let Result _ res = makeGens sign idMap fs
   in case res of
    Nothing -> (Map.empty, idMap, [])
    Just (_,_,idMap',fs') ->
@@ -374,14 +374,14 @@ makeGenGoals idMap fs =
 only one goal, but additional symbols, axioms and a goal
  -}
 
-makeGens :: IdTypeSPIdMap -> [Named (FORMULA f)]
+makeGens :: SPSign.Sign -> IdTypeSPIdMap -> [Named (FORMULA f)]
          -> Result (SortMap, FuncMap, IdTypeSPIdMap,[Named SPTerm])
             -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
             -- and\/or subsort injections, by simply translating
             -- such sort generation constraints to disjunctions
-makeGens idMap fs =
-    case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
+makeGens sign idMap fs =
+    case foldl (makeGen sign) (return (Map.empty,idMap,[],[])) fs of
     Result ds mv ->
         maybe (Result ds Nothing)
               (\ (opM,idMap',pairs,exhaustSens) ->
@@ -391,12 +391,13 @@ makeGens idMap fs =
                              opM,idMap',exhaustSens)))
               mv
 
-makeGen :: Result (FuncMap, IdTypeSPIdMap,
+makeGen :: SPSign.Sign
+        -> Result (FuncMap, IdTypeSPIdMap,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
         -> Named (FORMULA f)
         -> Result (FuncMap, IdTypeSPIdMap,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
-makeGen r@(Result ods omv) nf =
+makeGen sign r@(Result ods omv) nf =
     maybe (Result ods Nothing) process omv where
  process (oMap,iMap,rList,eSens) = case sentence nf of
   Sort_gen_ax constrs free ->
@@ -436,18 +437,21 @@ makeGen r@(Result ods omv) nf =
                              (lookupSPId s CSort iMap)] (disj var1 os))
                         | all isConstorInj os ]
             -- generate sentences: compute one disjunct (for one alternative)
-            disjunct v o@(Qual_op_name _ (Op_type _ args _ _) _) =
+            disjunct v o@(Qual_op_name _ (Op_type _ args res _) _) =
               -- a constant? then just compare with it
-              if nullArgs o then mkEq (varTerm v)
-                                        (varTerm $ transOPSYMB iMap o)
+              case args of
+                [] -> mkEq (varTerm v) $ varTerm $ transOPSYMB iMap o
                 -- an injection? then quantify existentially
                 -- (for the injection's argument)
                 -- since injections are identities, we can leave them out
-                else SPQuantTerm SPExists
-                 [ typedVarTerm var2
-                   $ fromMaybe (error "lookup failed")
-                   $ lookupSPId (head args) CSort iMap ]
-                 (mkEq (varTerm v) (varTerm var2))
+                [arg] -> let ta = transIdSort arg in SPQuantTerm SPExists
+                  [ typedVarTerm var2 ta ]
+                   $ mkEq (varTerm v)
+                   $ if Rel.member ta (transIdSort res)
+                        $ SPSign.sortRel sign
+                     then varTerm var2
+                     else compTerm (spSym $ transOPSYMB iMap o) [varTerm var2]
+                _ -> error "cannot handle ordinary constructors"
             disjunct _ _ = error "unqualified operation symbol"
             -- make disjunction out of all the alternatives
             disj v os = case map (disjunct v) os of
@@ -912,7 +916,7 @@ splitConjs trm = case trm of
 
 getUneqElems :: Set.Set SPTerm -> SPTerm -> Result (Set.Set SPTerm)
 getUneqElems s trm = case trm of
-  SPComplexTerm SPNot [(SPComplexTerm SPEqual [a1, a2])] ->
+  SPComplexTerm SPNot [SPComplexTerm SPEqual [a1, a2]] ->
       return $ Set.insert a2 $ Set.insert a1 s
   _ -> fail $ "unexpected disjointness formula: " ++ showDoc trm ""
 
