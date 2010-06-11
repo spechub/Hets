@@ -50,10 +50,7 @@ import Proofs.BatchProcessing
 
 -- * Prover implementation
 
-data ProverBinary = Darwin | EDarwin deriving Show
-
-dProverName :: ProverBinary -> String
-dProverName = show
+data ProverBinary = Darwin | EDarwin
 
 proverBinary :: ProverBinary -> String
 proverBinary b = case b of
@@ -64,12 +61,12 @@ proverBinary b = case b of
   graphical feedback), then starts the GUI prover.  -}
 darwinProver
   :: ProverBinary -> Prover Sign Sentence SoftFOLMorphism () ProofTree
-darwinProver b = mkAutomaticProver (dProverName b) () (darwinGUI b)
-  $ darwinCMDLautomaticBatch b
+darwinProver b = mkAutomaticProver (proverBinary b) () (darwinGUI b)
+  $ darwinCMDLautomaticBatchAux b
 
 darwinConsChecker
   :: ProverBinary -> ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-darwinConsChecker b = (mkConsChecker (dProverName b) () $ consCheck b)
+darwinConsChecker b = (mkConsChecker (proverBinary b) () $ consCheck b)
   { ccNeedsTimer = False }
 
 {- |
@@ -107,17 +104,32 @@ darwinGUI
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
   -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
 darwinGUI b thName th freedefs =
-    genericATPgui (atpFun b thName) True (dProverName b) thName th
+    genericATPgui (atpFun b thName) True (proverBinary b) thName th
                   freedefs emptyProofTree
 
 -- ** command line function
 
 {- |
   Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
-  automatic command line interface to the Darwin prover via MathServe.
+  automatic command line interface to the Darwin prover.
   Darwin specific functions are omitted by data type ATPFunctions.
 -}
 darwinCMDLautomaticBatch
+  :: Bool -- ^ True means include proved theorems
+  -> Bool -- ^ True means save problem file
+  -> Concurrent.MVar (Result.Result [ProofStatus ProofTree])
+  -- ^ used to store the result of the batch run
+  -> String -- ^ theory name
+  -> TacticScript -- ^ default tactic script
+  -> Theory Sign Sentence ProofTree
+  -- ^ theory consisting of a signature and sentences
+  -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+     -- ^ fst: identifier of the batch thread for killing it
+     --   snd: MVar to wait for the end of the thread
+darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux Darwin
+
+darwinCMDLautomaticBatchAux
   :: ProverBinary -- ^ the actual binary
   -> Bool -- ^ True means include proved theorems
   -> Bool -- ^ True means save problem file
@@ -131,10 +143,10 @@ darwinCMDLautomaticBatch
   -> IO (Concurrent.ThreadId,Concurrent.MVar ())
      -- ^ fst: identifier of the batch thread for killing it
      --   snd: MVar to wait for the end of the thread
-darwinCMDLautomaticBatch b inclProvedThs saveProblem_batch resultMVar
+darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun b thName) inclProvedThs saveProblem_batch
-        resultMVar (dProverName b) thName
+        resultMVar (proverBinary b) thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
@@ -209,6 +221,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
   runDarwinReal
 
   where
+    bin = proverBinary b
     simpleOptions = extraOpts cfg
     extraOptions = maybe "-pc false"
              (("-pc false -to " ++) .  show) (timeLimit cfg)
@@ -218,12 +231,11 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
     runDarwinReal = do
-      let bin = proverBinary b
       noProg <- missingExecutableInPath bin
       if noProg then
         return
             (ATPError ("Could not start " ++ bin ++ ". Check your $PATH"),
-                  emptyConfig (dProverName b)
+                  emptyConfig bin
                               (AS_Anno.senAttr nGoal) emptyProofTree)
         else do
           prob <- showTPTPProblem thName sps nGoal $
@@ -258,7 +270,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
 
     defaultProofStatus opts =
             (openProofStatus
-            (AS_Anno.senAttr nGoal) (dProverName b) $
+            (AS_Anno.senAttr nGoal) bin $
                                     emptyProofTree)
                        {tacticScript = TacticScript $ show $ ATPTacticScript
                         {tsTimeLimit = configTimeLimit cfg,
@@ -271,7 +283,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
       { goalName = AS_Anno.senAttr nGoal
       , goalStatus = Proved True
       , usedAxioms = getAxioms
-      , usedProver = dProverName b
+      , usedProver = bin
       , proofTree = emptyProofTree
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
       , tacticScript = TacticScript $ show $ ATPTacticScript
