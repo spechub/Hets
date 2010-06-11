@@ -16,7 +16,7 @@ module SoftFOL.ProveDarwin
   ( darwinProver
   , darwinCMDLautomaticBatch
   , darwinConsChecker
-  , ProverBinary(..)
+  , ProverBinary (..)
   ) where
 
 -- preliminary hacks for display of CASL models
@@ -33,8 +33,9 @@ import Common.ProverTools
 
 import Data.Char (isDigit)
 import Data.List
+import Data.Maybe
 import Data.Time (timeToTimeOfDay)
-import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
+import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
@@ -45,7 +46,6 @@ import System.Process
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
-import GUI.Utils (infoDialog)
 import Proofs.BatchProcessing
 
 -- * Prover implementation
@@ -58,7 +58,7 @@ proverBinary b = case b of
   EDarwin -> "e-darwin"
 
 {- | The Prover implementation. First runs the batch prover (with
-  graphical feedback), then starts the GUI prover.  -}
+  graphical feedback), then starts the GUI prover. -}
 darwinProver
   :: ProverBinary -> Prover Sign Sentence SoftFOLMorphism () ProofTree
 darwinProver b = mkAutomaticProver (proverBinary b) () (darwinGUI b)
@@ -102,7 +102,7 @@ darwinGUI
   -> Theory Sign Sentence ProofTree
   -- ^ theory consisting of a signature and sentences
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-  -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
+  -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 darwinGUI b thName th freedefs =
     genericATPgui (atpFun b thName) True (proverBinary b) thName th
                   freedefs emptyProofTree
@@ -124,9 +124,9 @@ darwinCMDLautomaticBatch
   -> Theory Sign Sentence ProofTree
   -- ^ theory consisting of a signature and sentences
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+  -> IO (Concurrent.ThreadId, Concurrent.MVar ())
      -- ^ fst: identifier of the batch thread for killing it
-     --   snd: MVar to wait for the end of the thread
+     -- snd: MVar to wait for the end of the thread
 darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux Darwin
 
 darwinCMDLautomaticBatchAux
@@ -140,9 +140,9 @@ darwinCMDLautomaticBatchAux
   -> Theory Sign Sentence ProofTree
   -- ^ theory consisting of a signature and sentences
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+  -> IO (Concurrent.ThreadId, Concurrent.MVar ())
      -- ^ fst: identifier of the batch thread for killing it
-     --   snd: MVar to wait for the end of the thread
+     -- snd: MVar to wait for the end of the thread
 darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun b thName) inclProvedThs saveProblem_batch
@@ -161,25 +161,24 @@ consCheck
   -> TacticScript
   -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-  -> IO(CCStatus ProofTree)
+  -> IO (CCStatus ProofTree)
 consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> let
         saveTPTP = False
         proverStateI = spassProverState sig (toNamedList nSens) freedefs
-        problem     = showTPTPProblemM thName proverStateI []
-        extraOptions  =
+        problem = showTPTPProblemM thName proverStateI []
+        extraOptions =
           "-pc false -pmtptp true -fd true -to " ++ tl
-        saveFileName  = reverse $ fst $ span (/= '/') $ reverse thName
-        runDarwinRealM :: IO(CCStatus ProofTree)
+        saveFileName = reverse $ fst $ span (/= '/') $ reverse thName
+        runDarwinRealM :: IO (CCStatus ProofTree)
         runDarwinRealM = do
             let bin = proverBinary b
             probl <- problem
             noProg <- missingExecutableInPath bin
-            if noProg then do
-                  infoDialog "Darwin prover" "Darwin not found"
+            if noProg then
                   return CCStatus
                     { ccResult = Nothing
-                    , ccProofTree  = ProofTree "Darwin not found"
+                    , ccProofTree = ProofTree "Darwin not found"
                     , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime 0 }
               else do
                   when saveTPTP $ writeFile (saveFileName ++ ".tptp") probl
@@ -210,23 +209,20 @@ runDarwin
   :: ProverBinary
   -> SoftFOLProverState
   -- ^ logical part containing the input Sign and axioms and possibly
-  --   goals that have been proved earlier as additional axioms
+  -- goals that have been proved earlier as additional axioms
   -> GenericConfig ProofTree -- ^ configuration to use
   -> Bool -- ^ True means save TPTP file
   -> String -- ^ name of the theory in the DevGraph
   -> AS_Anno.Named SPTerm -- ^ goal to prove
   -> IO (ATPRetval, GenericConfig ProofTree)
      -- ^ (retval, configuration with proof status and complete output)
-runDarwin b sps cfg saveTPTP thName nGoal = do
-  runDarwinReal
-
-  where
+runDarwin b sps cfg saveTPTP thName nGoal = runDarwinReal where
     bin = proverBinary b
     simpleOptions = extraOpts cfg
     extraOptions = maybe "-pc false"
-             (("-pc false -to " ++) .  show) (timeLimit cfg)
-    saveFileName  = thName++'_':AS_Anno.senAttr nGoal
-    tmpFileName   = reverse (fst $ span (/= '/') $ reverse thName) ++
+             (("-pc false -to " ++) . show) (timeLimit cfg)
+    saveFileName = thName ++ '_' : AS_Anno.senAttr nGoal
+    tmpFileName = reverse (fst $ span (/= '/') $ reverse thName) ++
                        '_' : AS_Anno.senAttr nGoal
     -- tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
 
@@ -241,7 +237,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
           prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: " ++ bin]
           when saveTPTP
-            (writeFile (saveFileName ++".tptp") prob)
+            (writeFile (saveFileName ++ ".tptp") prob)
           t <- getCurrentTime
           let timeTmpFile = "/tmp/" ++ tmpFileName ++ show (utctDay t) ++
                                "-" ++ show (utctDayTime t) ++ ".tptp"
@@ -251,15 +247,15 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
           (exCode, output, tUsed) <- parseDarwinOut outh errh proch
           let (err, retval) = proofStat exCode simpleOptions output tUsed
           return (err,
-                  cfg{proofStatus = retval,
+                  cfg {proofStatus = retval,
                       resultOutput = output,
-                      timeUsed     = timeToTimeOfDay $
+                      timeUsed = timeToTimeOfDay $
                                  secondsToDiffTime $ toInteger tUsed})
 
     proofStat exitCode options out tUsed =
             case exitCode of
               ExitSuccess -> (ATPSuccess, provedStatus options tUsed)
-              ExitFailure 2 -> (ATPError (unlines ("Internal error.":out)),
+              ExitFailure 2 -> (ATPError (unlines ("Internal error." : out)),
                                 defaultProofStatus options)
               ExitFailure 112 ->
                        (ATPTLimitExceeded, defaultProofStatus options)
@@ -270,9 +266,8 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
 
     defaultProofStatus opts =
             (openProofStatus
-            (AS_Anno.senAttr nGoal) bin $
-                                    emptyProofTree)
-                       {tacticScript = TacticScript $ show $ ATPTacticScript
+            (AS_Anno.senAttr nGoal) bin emptyProofTree)
+                       {tacticScript = TacticScript $ show ATPTacticScript
                         {tsTimeLimit = configTimeLimit cfg,
                          tsExtraOpts = opts} }
 
@@ -286,7 +281,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
       , usedProver = bin
       , proofTree = emptyProofTree
       , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
-      , tacticScript = TacticScript $ show $ ATPTacticScript
+      , tacticScript = TacticScript $ show ATPTacticScript
           { tsTimeLimit = configTimeLimit cfg, tsExtraOpts = opts }}
 
     getAxioms = let
@@ -298,14 +293,12 @@ isAxiomFormula :: SPFormulaList -> Bool
 isAxiomFormula fl =
     case originType fl of
       SPOriginAxioms -> True
-      _              -> False
+      _ -> False
 
 getSZSStatusWord :: String -> Maybe String
-getSZSStatusWord line = case words $ case stripPrefix "SZS status" line of
-    Just rst -> rst
-    Nothing -> case stripPrefix "% SZS status" line of
-      Just rst -> rst
-      Nothing -> "" of
+getSZSStatusWord line = case words
+    $ fromMaybe (fromMaybe "" $ stripPrefix "% SZS status" line)
+    $ stripPrefix "SZS status" line of
   [] -> Nothing
   w : _ -> Just w
 
@@ -314,10 +307,10 @@ parseDarwinOut :: Handle        -- ^ handel of stdout
                -> ProcessHandle -- ^ handel of process
                -> IO (ExitCode, [String], Int)
                        -- ^ (exit code, complete output, used time)
-parseDarwinOut outh _ procHndl = do
-    --darwin does not write to stderr here, so ignore output
-    --err <- hGetLine errh
-    --if null err then
+parseDarwinOut outh _ procHndl =
+    -- darwin does not write to stderr here, so ignore output
+    -- err <- hGetLine errh
+    -- if null err then
   readLineAndParse (ExitFailure 1, [], -1) False
   where
    readLineAndParse (exCode, output, to) stateFound = do
@@ -331,16 +324,13 @@ parseDarwinOut outh _ procHndl = do
              return (exCode, reverse output, to)
         else do
           line <- hGetLine outh
-          if  "Couldn't find eprover" `isPrefixOf` line
+          if isPrefixOf "Couldn't find eprover" line
+             || isInfixOf "darwin -h for further information" line
+                -- error by running darwin.
             then do
               waitForProcess procHndl
               return (ExitFailure 2, line : output, to)
-            else if "darwin -h for further information" `isInfixOf` line
-                  -- error by running darwin.
-              then do
-                waitForProcess procHndl
-                return (ExitFailure 2, line : output, to)
-              else case getSZSStatusWord line of
+            else case getSZSStatusWord line of
                 Just state' | not stateFound ->
                   readLineAndParse (checkSZSState state', line : output, to)
                     True
@@ -359,34 +349,34 @@ parseDarwinOut outh _ procHndl = do
    checkSZSState szsState =
         (\ i -> if i == 0 then ExitSuccess else ExitFailure i) $
         case szsState of
-          "Unsolved"         -> 101
-          "Open"             -> 102
-          "Unknown"          -> 103
-          "Assumed"          -> 104
-          "Stopped"          -> 105
-          "Error"            -> 106
-          "InputError"       -> 107
-          "OSError"          -> 108
-          "Forced"           -> 109
-          "User"             -> 110
-          "ResourceOut"      -> 111
-          "Timeout"          -> 112
-          "MemoryOut"        -> 113
-          "Gaveup"           -> 114
-          "Incomplete"       -> 115
-          "Inappropriate"    -> 116
-          "NotTested"        -> 117
-          "NotTestedYet"     -> 118
+          "Unsolved" -> 101
+          "Open" -> 102
+          "Unknown" -> 103
+          "Assumed" -> 104
+          "Stopped" -> 105
+          "Error" -> 106
+          "InputError" -> 107
+          "OSError" -> 108
+          "Forced" -> 109
+          "User" -> 110
+          "ResourceOut" -> 111
+          "Timeout" -> 112
+          "MemoryOut" -> 113
+          "Gaveup" -> 114
+          "Incomplete" -> 115
+          "Inappropriate" -> 116
+          "NotTested" -> 117
+          "NotTestedYet" -> 118
           "CounterSatisfiable" -> 119
-          "CounterTheorem"   -> 120
+          "CounterTheorem" -> 120
           "CounterEquivalent" -> 121
           "WeakerCounterTheorem" -> 122
           "UnsatisfiableConclusion" -> 123
           "EquivalentCounterTheorem" -> 124
-          "Unsatisfiable"    -> 125
+          "Unsatisfiable" -> 125
           "SatisfiableCounterConclusionContradictoryAxioms" -> 126
           "UnsatisfiableConclusionContradictoryAxioms" -> 127
-          "NoConsequence"    -> 128
+          "NoConsequence" -> 128
           "CounterSatisfiabilityPreserving" -> 129
           "CounterSatisfiabilityPartialMapping" -> 130
           "CounterSatisfiabilityMapping" -> 131
@@ -399,4 +389,4 @@ parseDarwinOut outh _ procHndl = do
       case exitcode of
         Nothing -> return ExitSuccess
         Just (ExitFailure i) -> return (ExitFailure i)
-        Just ExitSuccess     -> return ExitSuccess
+        Just ExitSuccess -> return ExitSuccess
