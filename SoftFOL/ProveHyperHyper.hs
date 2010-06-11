@@ -22,6 +22,7 @@ import Logic.Prover
 import Common.ProofTree
 import qualified Common.Result as Result
 import Common.AS_Annotation as AS_Anno
+import Common.SZSOntology
 
 import SoftFOL.Sign
 import SoftFOL.Translate
@@ -39,8 +40,9 @@ import System.Directory
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
-import Common.Utils(trim)
+import Data.Char
 import Data.List
+import Data.Maybe
 
 import Data.Time (timeToTimeOfDay)
 import Data.Time.LocalTime(TimeOfDay(..))
@@ -253,6 +255,15 @@ runHyper sps cfg saveTPTP thName nGoal =
 {- | Mapping type from SZS to Hets -}
 data HyperResult = HProved | HDisproved | HTimeout | HError | HMemout
 
+getHyperResult :: [String] -> HyperResult
+getHyperResult out = case map (takeWhile isAlpha . dropWhile isSpace)
+    $ mapMaybe (stripPrefix "% SZS status ") out of
+  [s] | szsProved s -> HProved
+    | szsDisproved s -> HDisproved
+    | szsTimeout s -> HTimeout
+    | szsMemoryOut s -> HMemout
+  _ -> HError
+
 {- | examine SZS output -}
 examineProof :: SoftFOLProverState
              -> GenericConfig ProofTree
@@ -277,8 +288,6 @@ examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
                         , tacticScript = tScript $ (filter
                                          (\x -> "#" `isPrefixOf` x) $
                                          lines $ (prelTxt $ show tl) ++ runTxt)}
-        out = filter ("% SZS status " `isPrefixOf`) $
-              lines (stdoutC ++ stderrC)
         getAxioms =
             let
                 fl = formulaLists $ initialLogicalPart sps
@@ -288,36 +297,19 @@ examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
                                                         _              -> False
                                                  ) fl
             in map AS_Anno.senAttr fs
-    in
-    do
-      if (length out /= 1)
-       then
-           return (ATPError ("Internal Error in ekrhyper.\nOutput was:\n\n" ++
-                            stdoutC ++ stderrC), defaultStatus)
-       else
-           do
-             let outp = map (trim . drop (length "% SZS status ")) out
-             let res = case outp of
-                         ["Theorem"]            -> HProved
-                         ["Satisfiable"]        -> HProved
-                         ["Timeout"]            -> HTimeout
-                         ["CounterSatisfiable"] -> HDisproved
-                         ["Unsatisfiable"]      -> HDisproved
-                         ["MemoryOut"]          -> HMemout
-                         _                      -> HError
-             case res of
+    in case getHyperResult $ lines stdoutC of
                HProved -> return (ATPSuccess, defaultStatus
                                   {
                                     goalStatus = Proved True
                                   , usedAxioms = getAxioms
-                                  , proofTree  = ProofTree $ unlines out
+                                  , proofTree  = ProofTree stdoutC
                                   })
                HTimeout -> return (ATPTLimitExceeded, defaultStatus)
                HDisproved -> return (ATPSuccess, defaultStatus
                                      {
                                        goalStatus = Disproved
                                      , usedAxioms = getAxioms
-                                     , proofTree  = ProofTree $ unlines out
+                                     , proofTree  = ProofTree stdoutC
                                      })
                HMemout -> return (ATPError ("Out of Memory."
                                            ++ "\nOutput was:\n\n" ++
@@ -395,10 +387,7 @@ consCheck thName (TacticScript tl) tm freedefs =
               removeFile stpTmpFile
               stdoutC <- hGetContents stdouth
               stderrC <- hGetContents stderrh
-              let out = filter ("% SZS status " `isPrefixOf`) $
-                        lines (stdoutC ++ stderrC)
-                  outp = map (trim . drop (length "% SZS status ")) out
-                  t_t = (round (realToFrac
+              let t_t = (round (realToFrac
                                 (t_end - t_start + 1) :: Double) :: Integer)
                   t_u = timeToTimeOfDay $ secondsToDiffTime $
                         if t_t == 0
@@ -406,19 +395,11 @@ consCheck thName (TacticScript tl) tm freedefs =
                              1
                          else
                              t_t
-              let res = case outp of
-                         ["Theorem"]            -> HProved
-                         ["Satisfiable"]        -> HProved
-                         ["Timeout"]            -> HTimeout
-                         ["CounterSatisfiable"] -> HDisproved
-                         ["Unsatisfiable"]      -> HDisproved
-                         ["MemoryOut"]          -> HMemout
-                         _                      -> HError
               let outstate =  CCStatus
                               { ccResult = Nothing
-                              , ccProofTree = ProofTree $ (stdoutC ++ stderrC)
+                              , ccProofTree = ProofTree $ stdoutC ++ stderrC
                               , ccUsedTime =  t_u }
-              case res of
+              case getHyperResult $ lines stdoutC of
                 HProved -> return outstate
                            {
                              ccResult = Just True
