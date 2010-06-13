@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instances of Logic and other classes for the logic Framework               
@@ -23,24 +23,18 @@ module Framework.Logic_Framework where
 
 import Framework.AS
 import Framework.ATC_Framework ()
---import Framework.Analysis
+
 import Logic.Logic
-import Common.Result
+
+import Common.DefaultMorphism
+
+type Morphism = DefaultMorphism LogicDef
 
 -- lid for logical frameworks
 data Framework = Framework deriving Show
 
 instance Language Framework where
    description _ = "A framework allowing to add logics dynamically."
-
--- signature category for Framework
-instance Category LogicDef Morphism where
-  ide sig = Morphism sig 
-  dom = object
-  cod = object
-  legal_mor = const True
-  isInclusion = const True
-  composeMorphisms m _ = Result [] $ Just m
 
 -- syntax for Framework
 instance Syntax Framework LogicDef () () 
@@ -49,7 +43,7 @@ instance Syntax Framework LogicDef () ()
 instance Sentences Framework () LogicDef Morphism ()
    
 -- static analysis for Framework
-instance StaticAnalysis Framework LogicDef () () () 
+instance StaticAnalysis Framework LogicDef () () ()
          LogicDef Morphism () () where 
   empty_signature Framework = error 
        "Logic Framework does not have an empty signature."

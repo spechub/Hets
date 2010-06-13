@@ -41,12 +41,8 @@ data LogicDef = LogicDef
     proofs        :: MORPH_NAME
   } deriving (Ord, Eq, Show)
 
-data Morphism = Morphism { object :: LogicDef } deriving (Ord, Eq, Show)
-
 instance GetRange LogicDef
 
-instance Pretty Morphism where
-  pretty _ = text ""
 instance Pretty LogicDef where
     pretty = printLogicDef
 instance Pretty FRAM where

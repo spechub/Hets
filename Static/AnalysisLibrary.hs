@@ -375,9 +375,9 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
             let dg0 = cpIndexMaps dg' dg
             dg1 <- liftR $ anaItemNamesOrMaps libenv' ln' dg' dg0 items
             return (itm, dg1, libenv')
-  Newlogic_defn ld _ -> do
-    let dg' = anaLogicDef ld libenv dg
-    return (itm, dg' ,libenv)
+  Newlogic_defn ld _ -> ResultT $ do
+    dg' <- anaLogicDef ld dg
+    return $ Result [] $ Just (itm, dg', libenv)
 
 -- the first DGraph dg' is that of the imported library
 anaItemNamesOrMaps :: LibEnv -> LibName -> DGraph -> DGraph
@@ -465,9 +465,9 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
       let (dg1, extsig1) = refExtsig libenv ln dg newName extsig
           genv1 = Map.insert new (SpecEntry extsig1) genv
        in return (genv1, dg1)
-    ImportEntry vsig ->
+    StructEntry vsig ->
       let (dg1, vsig1) = refViewsig libenv ln dg newName vsig
-          genv1 = Map.insert new (ImportEntry vsig1) genv
+          genv1 = Map.insert new (StructEntry vsig1) genv
       in return (genv1, dg1)
     ViewEntry vsig ->
       let (dg1, vsig1) = refViewsig libenv ln dg newName vsig

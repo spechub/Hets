@@ -39,6 +39,7 @@ module LF.Sign
 
 import Common.Doc
 import Common.DocUtils
+import Common.Keywords
 import Data.Maybe
 import qualified Data.List as List
 import qualified Data.Set as Set
@@ -157,7 +158,7 @@ printSymbol :: Sign -> Symbol -> Doc
 printSymbol sig s =
   if (isLocalSym s sig)
      then text $ symName s
-     else text (symModule s) <> dot <> text (symName s)
+     else text (symModule s) <> text sigDelimS <> text (symName s)
 
 printExp :: Sign -> EXP -> Doc
 printExp _ Type = text "type"

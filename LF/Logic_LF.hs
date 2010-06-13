@@ -41,27 +41,9 @@ instance Syntax LF () () ()
 instance Sentences LF () Sign Morphism ()
 
 -- instance of logic for LF
-instance Logic LF
-   ()
-   ()
-   ()
-   ()
-   ()
-   Sign
-   Morphism
-   ()
-   ()
-   ()
+instance Logic LF () () () () () Sign Morphism () () ()
 
 -- static analysis for LF
-instance StaticAnalysis LF
-   ()
-   ()
-   ()
-   ()
-   Sign
-   Morphism
-   ()
-   ()
-   where
+instance StaticAnalysis LF () () () () Sign Morphism () () where
    empty_signature LF = emptySig
+

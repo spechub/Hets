@@ -1,11 +1,13 @@
-from DFOL/Tests/Categories get Categories
-from Framework/test/prop get PL,V
-from math/algebra/algebra2 get Field
+from logics/propositional/syntax/base get Base
+from logics/propositional/syntax/prop get PL, Base2PL
+from logics/propositional/model_theory/prop get PLMOD, PLMODView
+from logics/propositional/proof_theory/prop get CPLPF, PL2CPLPF
 
-newlogic L =
+newlogic Propositional =
   meta LF
-  syntax Lsyn
-  truth Ltruth
+  syntax PL 
+  truth Base2PL 
   signatures P
-  models Lmod
-  proofs Lpf
+  models PLMODView
+  proofs PL2CPLPF
+end

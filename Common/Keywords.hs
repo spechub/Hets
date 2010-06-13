@@ -267,6 +267,14 @@ isabelleS = "Isabelle"
 maudeS :: String
 maudeS = "Maude"
 
+-- * MMT symbols
+
+sigDelimS :: String
+sigDelimS = ".."
+
+structDelimS :: String
+structDelimS = "/" 
+
 -- * letter keywords taken from Keywords.txt
 
 andS :: String

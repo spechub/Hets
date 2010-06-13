@@ -31,6 +31,7 @@ import LF.Morphism
 import LF.Logic_LF
 
 import Data.List
+import qualified Data.List.Split as Split
 import Data.Graph.Inductive.Graph (Node)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -39,6 +40,7 @@ import Common.LibName
 import Common.Result
 import Common.Utils
 import Common.Id
+import Common.Keywords
 import qualified Common.Consistency as Cons
 
 import Control.Monad
@@ -502,7 +504,7 @@ addMorphToDG morph dg libs =
       (_,dg3) = insLEdgeDG (node1,node2,linkLabel) dg2
       
       in if (k == Definitional && null n) then dg3 else
-        let n' = if (k == Postulated) then m else m ++ ".." ++ n
+        let n' = if (k == Postulated) then m else m ++ sigDelimS ++ n
             name = Token n' nullRange
             extSignSrc = makeExtSign LF $ source morph
             extSignTar = makeExtSign LF $ target morph      
@@ -511,7 +513,7 @@ addMorphToDG morph dg libs =
             emptyNode = EmptyNode $ Logic LF
             genSigTar = GenSig emptyNode [] emptyNode
             extGenSigTar = ExtGenSig genSigTar nodeSigTar
-            gEntry = ImportEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar
+            gEntry = StructEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar
             dg4 = dg3 { globalEnv = Map.insert name gEntry $ globalEnv dg3 }
             in dg4 
 
@@ -800,7 +802,7 @@ processStruct name srcSig tarSig els libs = do
   let m1 = sigModule srcSig
   let b2 = sigBase tarSig
   let m2 = sigModule tarSig
-  let prefix = name ++ "/"
+  let prefix = name ++ structDelimS
   let rel sym = Symbol b2 m2 $ prefix ++ (symName sym)
   (symmap,libs1) <- constructMap els (b1,m1) (b2,m2) libs
   let Sign _ _ ds = srcSig
@@ -916,25 +918,28 @@ oma2mor e ref l = do
 
 -- retrieves a morphism by the link name
 retrieveMorph :: LINK -> LibEnvFull -> IO (Morphism,LibEnvFull)
-retrieveMorph (b,m,n) l = do
+retrieveMorph (b,m,n) l = retrieveMorphH b m (Split.splitOn structDelimS n) l
+
+retrieveMorphH :: BASE -> MODULE -> [NAME] -> LibEnvFull ->
+                  IO (Morphism,LibEnvFull)  
+retrieveMorphH b m ns l = do
   l1 <- addFromFile (replaceExtension b twelfE) l
   let b' = dropExtension b
-  case elemIndex '/' n of
-       Nothing -> do
-         let mor = lookupMorph (b',m,n) l1
-         return (mor,l1)
-       Just i -> do
-         let (n1,(_:n2)) = splitAt i n
-         let mor1 = lookupMorph (b',m,n1) l1
-         let sig = source mor1
-         let b1 = sigBase sig
-         let m1 = sigModule sig
-         (mor2,l2) <- retrieveMorph (b1,m1,n2) l1
-         let morR = compMorph (mor2 { target = sig }) mor1
-         let mor = case morR of
-                        Result _ (Just mor') -> mor'
-                        _ -> error "Morphism cannot be retrieved."
-         return (mor,l2)
+  case ns of
+    [n] -> do
+        let mor = lookupMorph (b',m,n) l1
+        return (mor,l1)
+    (n1:n2) -> do
+        let mor1 = lookupMorph (b',m,n1) l1
+        let sig = source mor1
+        let b1 = sigBase sig
+        let m1 = sigModule sig
+        (mor2,l2) <- retrieveMorphH b1 m1 n2 l1
+        let morR = compMorph (mor2 { target = sig }) mor1
+        let mor = case morR of
+                       Result _ (Just mor') -> mor'
+                       _ -> error "Morphism cannot be retrieved."
+        return (mor,l2)
 
 -- combines two morphisms according to the structure assignment
 combineMorphs :: Morphism -> Morphism -> Map.Map Symbol EXP
