@@ -78,7 +78,7 @@ TESTDIRS += Common CASL HasCASL test
 hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
     Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs
 
-PFE_TOOLDIR = $(wildcard ../programatica/tools)
+PFE_TOOLDIR = $(wildcard programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
     base/parse2/LexerGen base/parse2/LexerSpec base/tests/HbcLibraries \
