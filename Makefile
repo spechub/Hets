@@ -484,12 +484,6 @@ REV = trunk
 release:
 	$(RM) -r Hets
 	svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/$(REV) Hets
-	$(RM) -r uni
-	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
-	$(RM) -r programatica
-	if [ -d ../programatica ] ; then \
-            mkdir programatica; \
-            ln -s ../../programatica/tools programatica/tools ; fi
 	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
             cp Makefile Makefile.orig; \
             cp ReleaseMakefile Makefile; \
