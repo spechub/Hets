@@ -2,6 +2,11 @@
 
 if [ -n "$1" ]
 then
+pre=$1
+else 
+pre=`ghc --print-libdir | sed -e 's+/lib/.*++g'`
+fi
+
 for p in \
  mtl-1.1.0.2 \
  parsec-2.1.0.1 \
@@ -11,9 +16,7 @@ for p in \
  zlib-0.5.2.0 \
  HTTP-4000.0.9 \
  cabal-install-0.8.2 \
+ tar-0.3.1.0 \
  haskell-src-1.0.1.3
-do ./installPkg.sh $p $1
+do ./installPkg.sh $p $pre
 done
-else
-echo "usage: $0 prefix"
-fi
