@@ -179,8 +179,7 @@ keepMins lt l = case l of
 splitOn :: Eq a => a -- ^ seperator
         -> [a] -- ^ list to split
         -> [[a]]
-splitOn x xs = let (l, r) = break (== x) xs in
-    (if null l then [] else [l]) ++ if null r then [] else splitOn x (tail r)
+splitOn x = filter (not . null) . splitBy x
 
 {- |
   Same as splitOn but empty lists are kept. Even the empty list is split into
