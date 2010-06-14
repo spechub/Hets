@@ -31,8 +31,6 @@ module Common.Utils
   , splitOn
   , splitBy
   , splitByList
-  , takeUntilList
-  , prefixsAsInfixs
   , numberSuffix
   , matchPaths
   , basename
@@ -199,20 +197,6 @@ splitByList sep l = split' [] [] l where
       x : xs -> case stripPrefix sep l' of
         Nothing -> split' (acc ++ [x]) bag xs
         Just l'' -> split' [] (bag ++ [acc]) l''
-
-{- | Returns all elements of the second list until the first list is
-     encountered as sublist. Example:
-
-   > takeUntilList "aab" "xdcabaabdx" == "xdcab"
--}
-takeUntilList :: Eq a => [a] -> [a] -> [a]
-takeUntilList sep l = f [] sep [] l where
-    f acc [] _ _ = acc
-    f _ (_ : _) _ [] = l
-    f acc (s : sl) c xl@(x : xs)
-      | s == x = f acc sl (c ++ [x]) xs
-      | null c = f (acc ++ [x]) sep [] xs
-      | otherwise = f (acc ++ [head c]) sep [] $ tail c ++ xl
 
 {- | Returns all initial segments of the second list where the continuing
      list matches a nonempty prefix of the first list. The first list is
