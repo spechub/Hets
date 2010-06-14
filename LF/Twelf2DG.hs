@@ -31,7 +31,6 @@ import LF.Morphism
 import LF.Logic_LF
 
 import Data.List
-import qualified Data.List.Split as Split
 import Data.Graph.Inductive.Graph (Node)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -263,7 +262,7 @@ makeLName :: FilePath -> IO FilePath
 makeLName fp = do
   dir <- getCurrentDirectory
   return $ dropExtension $ resolve fp (dir ++ "/")
- 
+
 -- retrieves the base, module, and name attributes
 getBMN :: Element -> NODE -> (BASE,MODULE,NAME)
 getBMN e (base,modul) =
@@ -462,7 +461,7 @@ addSigToDG sig dg =
       dg1 = insNodeDG (node,nodeLabel) dg
       emptyNode = EmptyNode $ Logic LF
       genSig = GenSig emptyNode [] emptyNode
-      nodeSig = NodeSig node $ G_sign LF extSign startSigId 
+      nodeSig = NodeSig node $ G_sign LF extSign startSigId
       gEntry = SpecEntry $ ExtGenSig genSig nodeSig
       dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
       in (node,dg2)
@@ -502,12 +501,12 @@ addMorphToDG morph dg libs =
       (node1,dg1) = addRefNode dg (source morph) libs
       (node2,dg2) = addRefNode dg1 (target morph) libs
       (_,dg3) = insLEdgeDG (node1,node2,linkLabel) dg2
-      
+
       in if (k == Definitional && null n) then dg3 else
         let n' = if (k == Postulated) then m else m ++ sigDelimS ++ n
             name = Token n' nullRange
             extSignSrc = makeExtSign LF $ source morph
-            extSignTar = makeExtSign LF $ target morph      
+            extSignTar = makeExtSign LF $ target morph
             nodeSigSrc = NodeSig node1 $ G_sign LF extSignSrc startSigId
             nodeSigTar = NodeSig node2 $ G_sign LF extSignTar startSigId
             emptyNode = EmptyNode $ Logic LF
@@ -515,7 +514,7 @@ addMorphToDG morph dg libs =
             extGenSigTar = ExtGenSig genSigTar nodeSigTar
             gEntry = StructEntry $ ExtViewSig nodeSigSrc gMorph extGenSigTar
             dg4 = dg3 { globalEnv = Map.insert name gEntry $ globalEnv dg3 }
-            in dg4 
+            in dg4
 
 -- constructs a reference node to the specified signature, if needed
 addRefNode :: DGraph -> Sign -> LibEnvFull -> (Node,DGraph)
@@ -918,10 +917,10 @@ oma2mor e ref l = do
 
 -- retrieves a morphism by the link name
 retrieveMorph :: LINK -> LibEnvFull -> IO (Morphism,LibEnvFull)
-retrieveMorph (b,m,n) l = retrieveMorphH b m (Split.splitOn structDelimS n) l
+retrieveMorph (b,m,n) l = retrieveMorphH b m (splitBy '/' n) l
 
 retrieveMorphH :: BASE -> MODULE -> [NAME] -> LibEnvFull ->
-                  IO (Morphism,LibEnvFull)  
+                  IO (Morphism,LibEnvFull)
 retrieveMorphH b m ns l = do
   l1 <- addFromFile (replaceExtension b twelfE) l
   let b' = dropExtension b
