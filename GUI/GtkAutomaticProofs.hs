@@ -36,6 +36,7 @@ import Logic.Prover
 import Comorphisms.LogicGraph (logicGraph)
 import Comorphisms.KnownProvers
 
+import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation (isAxiom)
 import Common.LibName (LibName)
 import Common.Result
@@ -99,6 +100,12 @@ instance Ord FNode where
                                                     EQ -> compare n1 n2
                                                     c  -> c
 
+initialGoalStatus :: DGNodeLab -> [Goal]
+initialGoalStatus dgn = case dgn_theory dgn of
+  G_theory _lid _sigma _ sens _ -> [ Goal g "test" | g <- map (GtkUtils.basicProofToGStatus . snd) 
+                                      $ concat $ map (thmStatus . snd) $ OMap.toList sens ]   
+
+
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
 showAutomaticProofs (GInfo { libName = ln }) le = do
@@ -160,7 +167,7 @@ showProverWindow res ln le = postGUIAsync $ do
       nodes      = labNodesDG dg
       selNodes   = partition (\ n -> hasSenKind (not . isAxiom) $ snd $ node n)
       sls        = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
-      getGStat l = [] -- TODO :: extract goalStatus from DGNodeLab or other
+      getGStat l = initialGoalStatus l
 
       -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
       (others, emptyNodes) = selNodes
