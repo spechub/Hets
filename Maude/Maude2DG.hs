@@ -727,13 +727,9 @@ directMaudeParsing fp = do
               hPutStrLn hIn "."
               hFlush hIn
               hPutStrLn hIn "in Maude/hets.prj"
-              putStrLn "1"
               psps <- predefinedSpecs hIn hOut
-              putStrLn "2"
               sps <- traversePredefined hIn hOut ns'
-              putStrLn "3"
               (ok, errs) <- getErrors hErr
-              putStrLn "4"
               if ok
                   then do
                         hClose hIn
@@ -788,9 +784,7 @@ traversePredefined _ _ [] = return []
 traversePredefined hIn hOut (ModName n : ns) = do
                  hPutStrLn hIn $ concat ["(hets ", n, " .)"]
                  hFlush hIn
-                 putStrLn $ "t2: " ++ n
                  sOutput <- getAllSpec hOut "" False
-                 putStrLn "t3"
                  ss <- traversePredefined hIn hOut ns
                  let stringSpec = findSpec sOutput
                  let spec = read stringSpec :: Spec

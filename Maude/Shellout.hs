@@ -88,7 +88,6 @@ getAllSpec hOut s False = do
     if ready
         then do
             ss <- hGetLine hOut
-            putStrLn ss
             getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
         else do
             handle <- hShow hOut
