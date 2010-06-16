@@ -52,8 +52,6 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
-import Debug.Trace (trace)
-
 import Data.Ord (comparing)
 
 data Finder = Finder { fName      :: String
@@ -102,8 +100,16 @@ instance Ord FNode where
 
 initialGoalStatus :: DGNodeLab -> [Goal]
 initialGoalStatus dgn = case dgn_theory dgn of
-  G_theory _lid _sigma _ sens _ -> concatMap (\ (sn,sen) -> [Goal gstat sn | gstat <- map (GtkUtils.basicProofToGStatus . snd) 
-                                          $ thmStatus sen] ) $ OMap.toList sens
+  G_theory _lid _sigma _ sens _ -> concatMap (\ (sn,sen) -> case map (GtkUtils.basicProofToGStatus . snd) $ thmStatus sen of
+                                                              [] -> [Goal GOpen sn]
+                                                              l  -> map (\ g -> Goal g sn) l ) 
+                                   $ OMap.toList $ OMap.filter (not . isAxiom) sens
+
+
+
+
+--concatMap (\ (sn,sen) -> [Goal gstat sn | gstat <- map (GtkUtils.basicProofToGStatus . snd) 
+                                     --     $ thmStatus sen] ) $ OMap.toList $ OMap.filter (not . isAxiom) sens
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
@@ -163,15 +169,11 @@ showProverWindow res ln le = postGUIAsync $ do
   mView    <- newEmptyMVar
 
   let dg         = lookupDGraph ln le
-      nodes      = labNodesDG dg
-      selNodes   = partition (\ n -> hasSenKind (not . isAxiom) $ snd $ node n)
+      nodes      = filter (hasSenKind (not . isAxiom) . snd) $ labNodesDG dg
       sls        = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
-      getGStat l = initialGoalStatus l
-
-      -- All relevant nodes are 'others', emptyNodes are those that do not appear in the selection box
-      (others, emptyNodes) = selNodes
-        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s (getGStat l))
-        $ zip nodes sls
+      -- All relevant nodes are 'others' TODO find better name TODO filter first, then map
+      others     = map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s (initialGoalStatus l))
+                   $ zip nodes sls
 
   -- setup data
   listNodes  <- setListData trvNodes show $ sort others
@@ -218,7 +220,7 @@ showProverWindow res ln le = postGUIAsync $ do
     $ selectWith ( const True ) upd
   onClicked btnNodesTimeout $ selectWith ( const False ) upd
 
-  onClicked btnResults $ showModelView mView "Models" listNodes emptyNodes
+  onClicked btnResults $ showModelView mView "Models" listNodes []
   onClicked btnClose $ widgetDestroy window
   onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
 
@@ -242,7 +244,7 @@ showProverWindow res ln le = postGUIAsync $ do
       postGUIAsync $ do
         switch True
         tryTakeMVar threadId
-        showModelView mView "Results of automatic proofs" listNodes emptyNodes
+        showModelView mView "Results of automatic proofs" listNodes []
         signalBlock shN
         sortNodes trvNodes listNodes
         signalUnblock shN
@@ -388,7 +390,7 @@ getResults mData =
                             where createGStatus p = case goalStatus p of
                                                       Proved b -> if b then GProved else GInconsistent
                                                       Disproved -> GDisproved
-                                                      Open (Reason r) -> trace (unlines r) GOpen
+                                                      Open (Reason r) -> if any (isInfixOf "Timeout") r then GTimeout else GOpen
 
 -- | proveNode END
 -- //////////////////////////////////////////////////////////
