@@ -88,6 +88,7 @@ getAllSpec hOut s False = do
     if ready
         then do
             ss <- hGetLine hOut
+            putStrLn ss
             getAllSpec hOut (s ++ "\n" ++ ss) (finalSpec ss)
         else do
             handle <- hShow hOut
@@ -97,7 +98,7 @@ getAllSpec _ s True = return s
 getErrors :: Handle -> IO (Bool, String)
 getErrors hErr = do
                ready <- hWaitForInput hErr 500
-               if ready 
+               if ready
                    then do
                          ss <- hGetLine hErr
                          return (ok (drop 9 ss), ss)

@@ -30,9 +30,10 @@ import Common.Parsec
 import Common.Token
 
 import Text.ParserCombinators.Parsec
-import Data.List (intercalate)
+import Data.List
 import Data.Maybe (maybeToList)
 import Data.Char
+import Control.Monad
 
 import Framework.AS
 
@@ -158,22 +159,22 @@ libItem l =
        return (Logic_decl logN (catRange [s, t]))
   <|> -- newlogic
     do s1 <- asKey newlogicS
-       n  <- simpleId
+       n <- simpleId
        s2 <- equalT
        s3 <- asKey metaS
-       f  <- fram
+       f <- fram
        s4 <- asKey syntaxS
        sy <- simpleId
        s5 <- asKey truthS
-       t  <- simpleId
+       t <- simpleId
        s6 <- asKey signaturesS
        si <- simpleId
        s7 <- asKey modelsS
-       m  <- simpleId
+       m <- simpleId
        s8 <- asKey proofsS
-       p  <- simpleId
+       p <- simpleId
        q <- optEnd
-       return (Newlogic_defn (LogicDef n f sy t si m p)              
+       return (Newlogic_defn (LogicDef n f sy t si m p)
           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
@@ -191,13 +192,19 @@ viewType l = do
     sp2 <- annoParser (groupSpec l)
     return (View_type sp1 sp2 $ tokPos s)
 
+simpleIdOrDDottedId :: GenParser Char st Token
+simpleIdOrDDottedId = pToken $ liftM2 (++)
+  (reserved casl_structured_reserved_words scanAnyWords)
+  $ optionL $ try $ string ".." <++> scanAnyWords
+
 -- | Parse item name or name map
 itemNameOrMap :: AParser st ITEM_NAME_OR_MAP
 itemNameOrMap = do
-    i1 <- simpleId
+    i1 <- simpleIdOrDDottedId
     i' <- optionMaybe $ do
         s <- asKey mapsTo
-        i <- simpleId
+        i <- if isInfixOf ".." $ tokStr i1
+             then simpleIdOrDDottedId else simpleId
         return (i, s)
     return $ case i' of
         Nothing -> Item_name i1
@@ -234,11 +241,12 @@ imports l = do
     return (sps, catRange (s : ps))
 
 fram :: AParser st FRAM
-fram = do asKey lfS
-          return LF
-       <|> 
-       do asKey isabelleS
-          return Isabelle
-       <|> 
-       do asKey maudeS
-          return Maude
+fram = do
+    asKey lfS
+    return LF
+  <|> do
+    asKey isabelleS
+    return Isabelle
+  <|> do
+    asKey maudeS
+    return Maude
