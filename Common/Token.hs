@@ -106,7 +106,7 @@ casl_structured_reserved_words :: [String]
 casl_structured_reserved_words =
     [andS, archS, behaviourallyS, closedS, cofreeS, endS,
      fitS, freeS, fromS, getS, givenS,
-     hideS, lambdaS, libraryS, localS, logicS,
+     hideS, lambdaS, libraryS, localS, logicS, newlogicS,
      refinedS, refinementS,
      resultS, revealS, specS, thenS, toS,
      unitS, unitS ++ sS, versionS, viewS, withS, withinS]
