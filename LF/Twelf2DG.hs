@@ -925,6 +925,7 @@ retrieveMorphH b m ns l = do
   l1 <- addFromFile (replaceExtension b twelfE) l
   let b' = dropExtension b
   case ns of
+    [] -> error "Empty morphism name."  
     [n] -> do
         let mor = lookupMorph (b',m,n) l1
         return (mor,l1)

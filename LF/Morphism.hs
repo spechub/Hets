@@ -102,7 +102,11 @@ canForm (Morphism b m n sig1 sig2 k map1) =
 
 -- equality
 instance Eq Morphism where
-    m1 == m2 = (canForm m1) == (canForm m2)
+    m1 == m2 = eqMorph (canForm m1) (canForm m2)
+
+eqMorph :: Morphism -> Morphism -> Bool
+eqMorph (Morphism _ m1 n1 s1 t1 k1 map1) (Morphism _ m2 n2 s2 t2 k2 map2) =
+  (m1,n1,s1,t1,k1,map1) == (m2,n2,s2,t2,k2,map2) 
 
 -- pretty printing
 instance Pretty Morphism where

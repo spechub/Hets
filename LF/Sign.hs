@@ -54,7 +54,7 @@ data Symbol = Symbol
             { symBase :: BASE
             , symModule :: MODULE
             , symName :: NAME
-            } deriving (Eq, Ord, Show)
+            } deriving (Ord, Show)
 
 data EXP = Type
          | Var Var
@@ -78,7 +78,7 @@ data Sign = Sign
           , sigModule :: MODULE
           , getDefs :: [DEF]
           }
-          deriving (Show, Ord, Eq)
+          deriving (Show, Ord)
 
 emptySig :: Sign
 emptySig = Sign "" "" []
@@ -271,27 +271,37 @@ renameH m s (Lamb [(x,t)] a) =
 renameH _ _ t = t
 
 -- equality
+instance Eq Sign where
+    sig1 == sig2 = eqSig sig1 sig2
+instance Eq Symbol where 
+    s1 == s2 = eqSym s1 s2
 instance Eq EXP where
-    e1 == e2 = eq (recForm e1) (recForm e2)
+    e1 == e2 = eqExp (recForm e1) (recForm e2)
 
-eq :: EXP -> EXP -> Bool
-eq Type Type = True
-eq (Const x1) (Const x2) = x1 == x2
-eq (Var x1) (Var x2) = x1 == x2
-eq (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
-eq (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
-eq (Pi [(n1,t1)] s1) (Pi [(n2,t2)] s2) =
+eqSig :: Sign -> Sign -> Bool
+eqSig (Sign _ m1 d1) (Sign _ m2 d2) = (m1,d1) == (m2,d2)
+
+eqSym :: Symbol -> Symbol -> Bool
+eqSym (Symbol _ m1 n1) (Symbol _ m2 n2) = (m1,n1) == (m2,n2)
+
+eqExp :: EXP -> EXP -> Bool
+eqExp Type Type = True
+eqExp (Const x1) (Const x2) = x1 == x2
+eqExp (Var x1) (Var x2) = x1 == x2
+eqExp (Appl f1 [a1]) (Appl f2 [a2]) = and [f1 == f2, a1 == a2]
+eqExp (Func [t1] s1) (Func [t2] s2) = and [t1 == t2, s1 == s2]
+eqExp (Pi [(n1,t1)] s1) (Pi [(n2,t2)] s2) =
   let vars = Set.delete n1 $ getFreeVars s1
       vars1 = Set.delete n2 $ getFreeVars s2
       in if (vars1 /= vars)
             then False
             else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
                  in and [t1 == t2, s1 == s3]
-eq (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
+eqExp (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
   let vars = Set.delete n1 $ getFreeVars s1
       vars1 = Set.delete n2 $ getFreeVars s2
       in if (vars1 /= vars)
             then False
             else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
                  in and [t1 == t2, s1 == s3]
-eq _ _ = False
+eqExp _ _ = False

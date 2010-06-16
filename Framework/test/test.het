@@ -6,7 +6,7 @@ from Framework/specs/logics/propositional/proof_theory/prop get CPLPF, PL2CPLPF
 newlogic Propositional =
   meta LF
   syntax PL 
-  truth Base2PL 
+  truth MagmaCommut..mag
   signatures P
   models PLMODView
   proofs PL2CPLPF

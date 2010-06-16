@@ -166,13 +166,13 @@ libItem l =
        s4 <- asKey syntaxS
        sy <- simpleId
        s5 <- asKey truthS
-       t <- simpleId
+       t <- simpleIdOrDDottedId
        s6 <- asKey signaturesS
        si <- simpleId
        s7 <- asKey modelsS
-       m <- simpleId
+       m <- simpleIdOrDDottedId
        s8 <- asKey proofsS
-       p <- simpleId
+       p <- simpleIdOrDDottedId
        q <- optEnd
        return (Newlogic_defn (LogicDef n f sy t si m p)
           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
