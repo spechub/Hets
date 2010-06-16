@@ -1,0 +1,620 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="TruthPF">
+   <include from="base.omdoc?BasePF"/>
+   
+   <include from="../syntax/modules.omdoc?Truth"/>
+   
+   <constant name="trueI">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+               <om:OMS base="../syntax/modules.omdoc" module="Truth" name="true"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="FalsityPF">
+   <include from="base.omdoc?BasePF"/>
+   
+   <include from="../syntax/modules.omdoc?Falsity"/>
+   
+   <constant name="falseE">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMA>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+               <om:OMS base="../syntax/modules.omdoc" module="Falsity" name="false"/>
+            </om:OMA>
+               <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMV name="A"/>
+               </om:OMA>
+            </om:OMBIND>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="NEGPF">
+   <include from="base.omdoc?BasePF"/>
+   
+   <include from="../syntax/modules.omdoc?NEG"/>
+   
+   <constant name="notI">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMV name="A"/>
+               </om:OMA>
+                  <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+               </om:OMBIND>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/modules.omdoc" module="NEG" name="not"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+               </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??notI" role="application" implicit="1"/>
+   <constant name="notE">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/modules.omdoc" module="NEG" name="not"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMV name="A"/>
+               </om:OMA>
+                  <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+               </om:OMBIND>
+               </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??notE" role="application" implicit="1"/>
+   
+</theory>
+
+<theory name="IMPPF">
+   <include from="base.omdoc?BasePF"/>
+   
+   <include from="../syntax/modules.omdoc?IMP"/>
+   
+   <constant name="impI">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??impI" role="application" implicit="2"/>
+   <constant name="impE">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??impE" role="application" implicit="2"/>
+   
+</theory>
+
+<theory name="CONJPF">
+   <include from="base.omdoc?BasePF"/>
+   
+   <include from="../syntax/modules.omdoc?CONJ"/>
+   
+   <constant name="andI">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??andI" role="application" implicit="2"/>
+   <constant name="andEl">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??andEl" role="application" implicit="2"/>
+   <constant name="andEr">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??andEr" role="application" implicit="2"/>
+   
+</theory>
+
+<theory name="DISJPF">
+   <include from="base.omdoc?BasePF"/><alias name="ded" for="../syntax/base.omdoc?Base?ded"/>
+   
+   <include from="../syntax/modules.omdoc?DISJ"/><alias name="or" for="../syntax/modules.omdoc?DISJ?or"/>
+   
+   <constant name="orIl">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??orIl" role="application" implicit="2"/>
+   <constant name="orIr">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="A"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??orIr" role="application" implicit="2"/>
+   <constant name="orE">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                        </om:OMATP><om:OMV name="C"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??orE" role="application" implicit="3"/>
+   
+</theory>
+
+<theory name="TND">
+   <include from="base.omdoc?BasePF"/><alias name="ded" for="../syntax/base.omdoc?Base?ded"/>
+   
+   <include from="../syntax/modules.omdoc?NEG"/><alias name="not" for="../syntax/modules.omdoc?NEG?not"/>
+   
+   <include from="../syntax/modules.omdoc?DISJ"/><alias name="or" for="../syntax/modules.omdoc?DISJ?or"/>
+   
+   <constant name="tnd">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                     <om:OMV name="A"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="NEG" name="not"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??tnd" role="application" implicit="1"/>
+   
+</theory>
+
+</omdoc>

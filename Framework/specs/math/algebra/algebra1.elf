@@ -1,0 +1,106 @@
+% Algebraic hierarchy
+
+%read "../../logics/first-order/proof_theory/derived.elf".
+
+%sig Magma = {
+  %include FOLEQPFExt        %open.
+  * : i -> i -> i.       %infix none 100 *.
+}.
+
+%view OppositeMagma : Magma -> Magma = {
+  * := [x][y] y * x.
+}.
+
+%sig MagmaCommut = {
+  %include FOLEQPFExt         %open.
+  %struct %implicit mag : Magma  %open *. 
+  commut : |- forall [x] forall [y] (x * y == y * x).
+}.
+
+%view OppositeMagmaCommut : MagmaCommut -> MagmaCommut = {
+  %struct mag := OppositeMagma mag.
+  commut := forallI [x] forallI [y] (forall2E commut y x).
+}.
+
+%sig Semigroup = {
+  %include FOLEQPFExt         %open.
+  %struct %implicit mag : Magma  %open *.
+  assoc : |- forall [x] forall [y] forall [z] ((x * y) * z == x * (y * z)).
+}.
+
+%view OppositeSemigroup : Semigroup -> Semigroup = {
+  %struct mag := OppositeMagma mag.
+  assoc := forallI [z] forallI [y] forallI [x] (sym (forall3E assoc x y z)).
+}.
+
+%sig SemigroupCommut = {
+  %include FOLEQPFExt.
+  %struct %implicit sg : Semigroup.
+  %struct mc : MagmaCommut = {%struct mag := sg.}.
+}.
+
+%view OppositeSemigroupCommut : SemigroupCommut -> SemigroupCommut = {
+  %struct sg := OppositeSemigroup sg.
+  %struct mc := OppositeMagmaCommut mc.
+}.
+
+%sig MagmaIdempotent = {
+  %include FOLEQPFExt         %open |- forall ==.
+  %struct %implicit mag : Magma  %open *. 
+  idem : |- forall [x] (x * x == x). 
+}.
+
+%sig Band = {
+  %include FOLEQPFExt.
+  %struct %implicit sg : Semigroup.
+  %struct midem : MagmaIdempotent = {%struct mag := sg.}.
+}.
+
+%sig MagmaRightIden = {
+  %include FOLEQPFExt         %open i |- forall ==.
+  %struct %implicit mag : Magma  %open *. 
+  e : i.
+  iden : |- forall [x] (x * e == x).
+}.
+
+%sig MagmaIdentity = {
+  %include FOLEQPFExt.
+  %struct %implicit rid : MagmaRightIden  %open * e. 
+  %struct lid : MagmaRightIden = {
+    %struct mag := OppositeMagma rid.
+    e := e.
+  }.  
+}.
+
+%sig Monoid = {
+  %include FOLEQPFExt.
+  %struct %implicit sg : Semigroup %open *.
+  %struct miden : MagmaIdentity = {
+    %struct rid.mag := sg.
+  } %open e.
+}.
+
+%sig MonoidCommut = {
+  %include FOLEQPFExt  %open |- forall ==.
+  %struct %implicit mon : Monoid.
+  %struct mc : MagmaCommut = {%struct mag := mon.}.
+}.
+
+%sig MagmaRightInv = {
+  %include FOLEQPFExt                 %open i |- forall ==.
+  %struct %implicit id : MagmaIdentity   %open * e.
+  inv : i -> i.
+  inverse : |- forall [x] (x * (inv x) == e).
+}. 
+
+%sig Group = {
+  %include FOLEQPFExt.
+  %struct %implicit mon : Monoid  %open * e.
+  %struct minv : MagmaRightInv = {%struct id := mon.miden.} %open inv.
+}.
+
+%sig GroupAbelian = {
+  %include FOLEQPFExt.
+  %struct %implicit g : Group  %open * %as + e %as 0 inv %as -.
+  %struct mc : MagmaCommut = {%struct mag := g.}.
+}.

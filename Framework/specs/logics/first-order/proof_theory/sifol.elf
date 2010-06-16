@@ -1,0 +1,16 @@
+%read "../syntax/sfol.elf".
+%read "../../propositional/proof_theory/iprop.elf".
+%read "sorted_modules.elf".
+
+%sig SIFOLPF = {
+  %include BaseSFOLPF %open.
+  %include SFOL       %open.
+  %include IPLPF      %open.
+  %include SForallPF  %open.
+  %include SExistsPF  %open.
+}.
+
+%sig SIFOLEQPF = {
+  %include SIFOLPF   %open.
+  %include SEqualPF  %open.
+}.

@@ -1,0 +1,68 @@
+%read "fol.elf".
+%read "../syntax/derived.elf".
+%read "../../propositional/proof_theory/derived.elf".
+
+%sig ForallPFExt = {
+  %include ForallPF  %open.
+  forall2  : (i -> i -> o) -> o = [f] forall [x] forall [y] f x y.
+  forall3  : (i -> i -> i -> o) -> o = [f] forall [x] forall [y] forall [z] f x y z.
+  forall2E : ded forall2 ([x][y] A x y) -> {x}{y} ded A x y = [p] [x][y] forallE (forallE p x) y.
+  forall3E : ded forall3 ([x][y][z] A x y z) -> {x} {y} {z} ded A x y z
+         = [p][x][y][z] forallE (forall2E p x y) z.
+  forall2I : ({x}{y} ded F x y) -> ded forall2 [x][y] F x y = [p] forallI [x] forallI [y] (p x y).
+  forall3I : ({x}{y}{z} ded F x y z) -> ded forall3 [x][y][z] F x y z 
+           = [p] forallI [x] forallI [y] forallI [z] (p x y z).
+}.
+
+%sig ExistsUniquePF = {   
+  %include ExistsUnique      %open.
+  %include IFOLEQPF          %open.
+  existsUI  : ded exists A -> ({x}{y} ded A x -> ded A y -> ded x eq y) -> ded existsU A
+         = [p][f] existsE p ([x][q: ded A x] existsI x (andI q (forallI [y] impI [r: ded A y] (f y x r q)))).
+}.
+
+%sig EqualPFExt = {
+  %include EqualPF      %open.
+  congEr : ded A eq B -> {F: i -> o} ded F B -> ded F A = [p][F][q] congP (sym p) F q.
+  %abbrev congF2 : ded A eq A' -> ded B eq B' -> {F: i -> i -> i} ded (F A B) eq (F A' B')
+         = [p][q][F] trans (congF q ([b] F A b))
+                           (congF p ([a] F a B')).
+  %abbrev congP2  : ded A eq A' -> ded B eq B' -> {F: i -> i -> o} ded (F A B) -> ded (F A' B')
+          = [p][q][F][r] (congP p ([a] F a B') (congP q ([b] F A b) r)).
+  trans3 : ded W eq X -> ded X eq Y -> ded Y eq Z -> ded W eq Z = [p][q][r] (trans p (trans q r)).
+  trans4 : ded V eq W -> ded W eq X -> ded X eq Y -> ded Y eq Z -> ded V eq Z = [p][q][r][s] (trans (trans p q) (trans r s)).
+}.
+
+%sig InequalPF = {
+  %include Inequal      %open.
+  %include NEGPF        %open.
+  %include EqualPF      %open.
+  neq_sym : ded A neq B -> ded B neq A = [p] notI [q][c] notE p (sym q) c.
+}.
+
+%sig IFOLEQPFExt = {
+   %include IFOLEQPF       %open.
+   %include PLPFExt        %open.
+   %include ForallPFExt    %open.
+   %include ExistsUniquePF %open.
+   %include EqualPFExt     %open.
+   %include InequalPF      %open.
+}.
+
+%sig FOLPFExt = {
+  %include FOLPF     %open.
+  %include PLPFExt   %open.
+  nexistsE : ded not (exists [x] F x) -> ded forall [x] not (F x)
+           = [p] forallI [x] notI [q] notE p (existsI x q).
+  nforallE : ded not (forall [x] F x) -> ded exists [x] not (F x)
+           = [p] indir [q] notE p (forallI ([x] nnotE (forallE (nexistsE q) x))).
+}.
+
+%sig FOLEQPFExt = {
+  %include IFOLEQPFExt %open.
+  %include FOLEQPF     %open.
+  nexistsE : ded not (exists [x] F x) -> ded forall [x] not (F x)
+           = [p] forallI [x] notI [q] notE p (existsI x q).
+  nforallE : ded not (forall [x] F x) -> ded exists [x] not (F x)
+           = [p] indir [q] notE p (forallI ([x] nnotE (forallE (nexistsE q) x))).
+}.

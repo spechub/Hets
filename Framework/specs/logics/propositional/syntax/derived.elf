@@ -1,0 +1,8 @@
+%read "modules.elf".
+
+%sig Equiv = {
+  %include Base    %open.
+  %include CONJ   %open.
+  %include IMP   %open.
+  equiv   : o -> o -> o = [a : o] [b : o] ((a imp b) and (b imp a)). %infix left 5 equiv.
+}.

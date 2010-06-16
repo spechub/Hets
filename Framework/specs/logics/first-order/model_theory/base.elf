@@ -1,0 +1,13 @@
+%read "../syntax/base.elf".
+%read "../../propositional/model_theory/base.elf".
+
+%sig BaseFOLMOD = {
+  %include STTIFOLEQ %open.
+  %include BaseMOD   %open.
+  univ : set.
+}.
+
+%view BaseFOLMODView : BaseFOL -> BaseFOLMOD = {
+  %include BaseMODView.
+  i := elem univ.
+}.

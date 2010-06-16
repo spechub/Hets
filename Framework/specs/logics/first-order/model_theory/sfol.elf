@@ -1,0 +1,78 @@
+%read "../syntax/sfol.elf".
+%read "../../propositional/model_theory/prop.elf".
+
+%sig BaseSFOLMOD = {
+  %include STTIFOLEQ  %open.
+  %include BaseMOD %open.
+  univ : set.
+  term : elem univ -> set. 
+}.
+
+%sig SForallMOD = {
+  %include STTIFOLEQ  %open.
+  %include BaseSFOLMOD  %open.
+  forall' : elem ((term S → bool') → bool').
+  forall1 : ded (forall [x : elem (term S)] (F @ x) eq 1) imp ((forall' @ F) eq 1).
+  forall0 : ded (exists [x : elem (term S)] (F @ x) eq 0) imp ((forall' @ F) eq 0). 
+}.
+
+%sig SExistsMOD = {
+  %include STTIFOLEQ  %open.
+  %include BaseSFOLMOD %open.
+  exists' : elem ((term S → bool') → bool').
+  exists1 : ded (exists [x : elem (term S)] (F @ x) eq 1) imp ((exists' @ F) eq 1).
+  exists0 : ded (forall [x : elem (term S)] (F @ x) eq 0) imp ((exists' @ F) eq 0).  
+}.
+
+%sig SEqualMOD = {
+  %include STTIFOLEQ  %open.
+  %include BaseSFOLMOD  %open.
+  eq' : elem (term S → term S → bool').
+  eqdef : ded (X eq Y) equiv ((eq' @ X @ Y) eq 1). 
+}.
+
+%sig SFOLMOD = {
+  %include BaseSFOLMOD  %open.
+  %include PLMOD        %open.
+  %include SForallMOD   %open.
+  %include SExistsMOD   %open.
+  non_empty_universe : ded exists [x : elem (term S)] true.   
+}.
+
+%sig SFOLEQMOD = {
+  %include SFOLMOD      %open.
+  %include SEqualMOD    %open.
+}.
+
+%view BaseSFOLMODView : BaseSFOL -> BaseSFOLMOD = {
+  %include BaseMODView.
+  sort := elem univ.
+  tm := [x] elem (term x).
+}.
+
+%view SForallMODView : SForall -> SForallMOD = {
+  %include BaseSFOLMODView.
+  forall := [S : elem univ][F : elem (term S) -> elem bool'] forall' @ (λ F).
+}.
+
+%view SExistsMODView : SExists -> SExistsMOD = {
+  %include BaseSFOLMODView.
+  exists := [S : elem univ][F : elem (term S) -> elem bool'] exists' @ (λ F).
+}.
+
+%view SEqualMODView : SEqual -> SEqualMOD = {
+  %include BaseSFOLMODView.
+  eq := [S : elem univ][X : elem (term S)][Y : elem (term S)] eq' @ X @ Y.
+}.
+
+%view SFOLMODView : SFOL -> SFOLMOD = {
+  %include BaseSFOLMODView.
+  %include PLMODView.
+  %include SForallMODView.
+  %include SExistsMODView.
+}.
+
+%view SFOLEQMODView : SFOLEQ -> SFOLEQMOD = {
+  %include SFOLMODView.
+  %include SEqualMODView.  
+}.

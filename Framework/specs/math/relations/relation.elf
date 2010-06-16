@@ -1,0 +1,152 @@
+%read "../../logics/first-order/proof_theory/derived.elf".
+
+%sig BinRel = {
+  %include FOLEQPFExt %open.
+  rel : i -> i -> o.  %infix none 100 rel.
+}.
+
+%view OppRel : BinRel -> BinRel = {
+  rel := [x][y] y rel x.
+}.
+
+%sig Refl = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.
+  refl : ded forall [x] x rel x.
+}.
+
+%view OppRefl : Refl -> Refl = {
+  %struct br := OppRel br.	
+  refl := refl.
+}.
+
+%sig Irrefl = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.	
+  irrefl : ded forall [x] not x rel x.
+}.
+
+%view OppIrrefl : Irrefl -> Irrefl = {
+  %struct br := OppRel br.	
+  irrefl := irrefl.
+}.
+
+%sig Sym = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.
+  sym : ded forall [x] forall [y] x rel y imp y rel x.
+}.
+
+%view OppSym : Sym -> Sym = {
+  %struct br := OppRel br.	
+  sym := forallI [x] forallI [y] impI [p] impE (forallE (forallE sym y) x) p.  
+}.
+
+%sig Antisym = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.
+  antisym : ded forall [x] forall [y] x rel y and y rel x imp x eq y.
+}.
+
+%view OppAntisym : Antisym -> Antisym = {
+  %struct br := OppRel br.	
+  antisym := forallI [x] forallI [y] impI [p] sym (impE (forallE (forallE antisym y) x) p).
+}.
+
+%sig Trans = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.
+  trans : ded forall [x] forall [y] forall [z] x rel y and y rel z imp x rel z.  
+}.
+
+%view OppTrans : Trans -> Trans = {
+  %struct br := OppRel br.	
+  trans := forallI [x] forallI [y] forallI [z] impI [p] impE 
+    (forallE (forallE (forallE trans z) y) x) (andI (andEr p) (andEl p)).
+}.
+
+%sig Serial = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.
+  serial : ded forall [x] exists [y] x rel y.  
+}.
+
+%sig TrichAx = {
+  %include FOLEQPFExt %open.
+  %struct br : BinRel %open rel.
+  trich : ded forall [x] forall [y] x eq y or x rel y or y rel x.
+}.
+
+%sig Total = {
+  %include FOLEQPFExt %open.
+  %struct r : Refl %open rel.
+  %struct ta : TrichAx = {%struct br := r.br.} %open trich.   
+}.
+
+%sig Trich = {
+  %include FOLEQPFExt %open.
+  %struct ir : Irrefl %open rel.
+  %struct as : Antisym = {%struct br := ir.br.} %open antisym.
+  %struct ta : TrichAx = {%struct br := ir.br.} %open trich.    
+}.
+
+%sig Preorder = {
+  %include FOLEQPFExt %open.
+  %struct r : Refl %open rel.
+  %struct t : Trans = {%struct br := r.br.} %open trans.  
+}.
+
+%sig PartialOrder = {
+  %include FOLEQPFExt %open.
+  %struct r : Refl %open rel.
+  %struct as : Antisym = {%struct br := r.br.} %open antisym.
+  %struct t : Trans = {%struct br := r.br.} %open trans.    
+}.
+
+%view OppPartialOrder : PartialOrder -> PartialOrder = {
+  %struct r := OppRefl r.
+  %struct as := OppAntisym as.
+  %struct t := OppTrans t.
+}.
+
+%view Preorder-Partial : Preorder -> PartialOrder = {
+  %struct r := r.
+  %struct t := t.
+}.
+
+%sig TotalOrder = {
+  %include FOLEQPFExt %open.
+  %struct po : PartialOrder %open rel.
+  %struct ta : TrichAx = {%struct br := po.r.br.} %open trich.  
+}.
+
+%sig StrictPartialOrder = {
+  %include FOLEQPFExt %open.
+  %struct ir : Irrefl %open rel.
+  %struct as : Antisym = {%struct br := ir.br.} %open antisym.
+  %struct t : Trans = {%struct br := ir.br.} %open trans.
+}.
+
+%view OppStrictPartialOrder : StrictPartialOrder -> StrictPartialOrder = {
+  %struct ir := OppIrrefl ir.
+  %struct as := OppAntisym as.
+  %struct t := OppTrans t.
+}.
+
+%sig StrictTotalOrder = {
+  %include FOLEQPFExt %open.
+  %struct spo : StrictPartialOrder %open rel.
+  %struct ta : TrichAx = {%struct br := spo.ir.br.} %open trich.  
+}.
+
+%sig EquivRel = {
+  %include FOLEQPFExt %open.
+  %struct r : Refl %open rel.
+  %struct s : Sym = {%struct br := r.br.} %open sym.
+  %struct t : Trans = {%struct br := r.br.} %open trans.  
+}.
+
+%view Preorder-Equiv : Preorder -> EquivRel = {
+  %struct r := r.
+  %struct t := t.
+}. 

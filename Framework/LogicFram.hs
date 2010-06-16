@@ -55,7 +55,7 @@ instance LogicFram Logic_Maude.Maude () AS_Maude.MaudeText Sen_Maude.Sentence
 
 baseSigLF :: Sign_LF.Sign
 baseSigLF =  
-  let b = "/home/mathias/twelf/specs/logics/propositional/syntax/base"
+  let b = ""
       m = "Base"
       o = Sign_LF.Symbol b m "o"
       ded = Sign_LF.Symbol b m "ded"

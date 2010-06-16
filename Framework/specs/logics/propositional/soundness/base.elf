@@ -1,0 +1,6 @@
+%read "../proof_theory/base.elf".
+%read "../model_theory/base.elf".
+
+%view SoundBase : BasePF -> BaseMOD = {
+  %include BaseMODView.
+}.

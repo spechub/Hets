@@ -1,0 +1,12 @@
+%read "../syntax/minimal.elf".
+%read "../../first-order/proof_theory/fol.elf".
+
+%sig MPLPf = {
+  %include MPL %open.
+  syllog : ded (P ⇒ Q) ⇒ (Q ⇒ R) ⇒ (P ⇒ R).
+  peirce : ded ((P ⇒ Q) ⇒ P) ⇒ P.
+  weaken : ded P ⇒ (Q ⇒ P).
+  contra : ded ⊥ ⇒ P.
+  mp     : ded (P ⇒ Q) -> ded P -> ded Q.
+}.  
+  

@@ -1,0 +1,15 @@
+%read "base.elf".
+%read "../../propositional/model_theory/base-zf.elf".
+
+%sig FOLZFCModel = {
+   %include Boolean %open.
+   %% an arbitrary set, used as the interpretation of universes for now until we have parametric views
+   univ  : i.
+   non_empty_universe : Elem univ.
+}.
+
+%view BaseFOLMOD-ZF : BaseFOLMOD -> FOLZFCModel = {
+  %include BasePLMOD-ZF.
+  %% This should actually be a parametric view taking univ as a parameter.
+  univ := univ.
+}.

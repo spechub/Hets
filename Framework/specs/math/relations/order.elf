@@ -1,0 +1,50 @@
+%read "../../logics/first-order/proof_theory/derived.elf".
+%read "relation.elf".
+
+%sig OrderInf = {
+  %include FOLEQPFExt %open.
+  %struct ord : PartialOrder %open rel %as leq.
+  inf : i -> i -> i.
+  is_infimum_of : i -> i -> i -> o = [x][y][i] ((i leq x) and (i leq y)) and forall ([z] ((z leq x and z leq y) => z leq i)).
+  ax_inf : ded forall [x] forall [y] is_infimum_of x y (inf x y).
+}.
+
+%sig OrderSup = {
+  %include FOLEQPFExt %open.
+  %struct ord : PartialOrder %open rel %as leq.
+  sup: i -> i -> i.
+  is_supremum_of: i -> i -> i -> o = [x][y][s] ((x leq s ) and (y leq s)) and forall ( [z] ((x leq z and y leq z) => s leq z)).
+  ax_sup: ded forall [x] forall [y] is_supremum_of x y (sup x y).
+}.
+
+%view OppInf : OrderInf -> OrderSup = {
+  %struct ord := OppPartialOrder ord.
+  inf := sup.
+  ax_inf := ax_sup.
+}.
+
+%view OppSup : OrderSup -> OrderInf = {
+  %struct ord := OppPartialOrder ord.
+  sup := inf.
+  ax_sup := ax_inf.
+}.
+
+%sig OrderTop = {
+  %include FOLEQPFExt %open.
+  %struct ord : PartialOrder %open rel %as leq.
+  top : i.
+  ax_top : ded forall [x] x leq top.
+}.
+
+%sig OrderBot = {
+  %include FOLEQPFExt %open.
+  %struct ord : PartialOrder %open rel %as leq.
+  bot : i.
+  ax_bot : ded forall [x] bot leq x.
+}.
+
+%view OppTop : OrderTop -> OrderBot = {
+  %struct ord := OppPartialOrder ord.
+  top := bot.
+  ax_top := ax_bot.
+}.

@@ -1,0 +1,16 @@
+%read "../syntax/fol.elf".
+%read "../../propositional/proof_theory/iprop.elf".
+%read "modules.elf".
+
+%sig IFOLPF = {
+  %include BaseFOLPF %open ded i o.
+  %include FOL       %open true false not imp and or forall exists.
+  %include IPLPF     %open.
+  %include ForallPF  %open forallI forallE.
+  %include ExistsPF  %open existsI existsE.
+}.
+
+%sig IFOLEQPF = {
+  %include IFOLPF   %open.
+  %include EqualPF %open.
+}.

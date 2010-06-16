@@ -1,0 +1,26 @@
+%read "prop.elf".
+
+%sig TableauxProp = {
+  %include PL %open.
+  
+  # : type.
+  pos : o -> type. %prefix 0 pos.
+  neg : o -> type. %prefix 0 neg.
+
+  close: pos A -> neg A -> #.
+  
+  true1  : pos true -> #.
+  false0 : neg false -> #.
+
+  not1 : (neg A -> #) -> (pos not A -> #).
+  not0 : (pos A -> #) -> (neg not A -> #).
+
+  and1 : (pos A -> pos B -> #) -> (pos A and B -> #).
+  and0 : (neg A -> #) -> (neg B -> #) -> (neg A and B -> #).
+
+  or1 : (pos A -> #) -> (pos B -> #) -> (pos A or B -> #).
+  or0 : (neg A -> neg B -> #) -> (neg A or B -> #).
+  
+  imp1 : (neg A -> #) -> (pos B -> #) -> (pos A imp B -> #).
+  imp0 : (pos A -> neg B -> #) -> (neg A imp B -> #).
+}.

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="IPLPF">
+   <include from="base.omdoc?BasePF"/><alias name="o" for="../syntax/base.omdoc?Base?o"/><alias name="ded" for="../syntax/base.omdoc?Base?ded"/>
+   
+   <include from="../syntax/prop.omdoc?PL"/><alias name="true" for="../syntax/modules.omdoc?Truth?true"/><alias name="false" for="../syntax/modules.omdoc?Falsity?false"/><alias name="not" for="../syntax/modules.omdoc?NEG?not"/><alias name="imp" for="../syntax/modules.omdoc?IMP?imp"/><alias name="and" for="../syntax/modules.omdoc?CONJ?and"/><alias name="or" for="../syntax/modules.omdoc?DISJ?or"/>
+   
+   <include from="modules.omdoc?TruthPF"/><alias name="trueI" for="modules.omdoc?TruthPF?trueI"/>
+   
+   <include from="modules.omdoc?FalsityPF"/><alias name="falseE" for="modules.omdoc?FalsityPF?falseE"/>
+   
+   <include from="modules.omdoc?NEGPF"/><alias name="notI" for="modules.omdoc?NEGPF?notI"/><alias name="notE" for="modules.omdoc?NEGPF?notE"/>
+   
+   <include from="modules.omdoc?IMPPF"/><alias name="impI" for="modules.omdoc?IMPPF?impI"/><alias name="impE" for="modules.omdoc?IMPPF?impE"/>
+   
+   <include from="modules.omdoc?CONJPF"/><alias name="andI" for="modules.omdoc?CONJPF?andI"/><alias name="andEl" for="modules.omdoc?CONJPF?andEl"/><alias name="andEr" for="modules.omdoc?CONJPF?andEr"/>
+   
+   <include from="modules.omdoc?DISJPF"/><alias name="orIl" for="modules.omdoc?DISJPF?orIl"/><alias name="orIr" for="modules.omdoc?DISJPF?orIr"/><alias name="orE" for="modules.omdoc?DISJPF?orE"/>
+   
+   
+</theory>
+
+</omdoc>

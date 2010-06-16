@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="PLMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <include from="modules.omdoc?TruthMOD"/>
+   
+   <include from="modules.omdoc?FalsityMOD"/>
+   
+   <include from="modules.omdoc?NEGMOD"/>
+   
+   <include from="modules.omdoc?DISJMOD"/>
+   
+   <include from="modules.omdoc?CONJMOD"/>
+   
+   <include from="modules.omdoc?IMPMOD"/>
+   
+   
+</theory>
+
+<view name="PLMODView" from="../syntax/prop.omdoc?PL" to="?PLMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="modules.omdoc" module="TruthMODView"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="modules.omdoc" module="FalsityMODView"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="modules.omdoc" module="NEGMODView"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="modules.omdoc" module="IMPMODView"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="modules.omdoc" module="CONJMODView"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS base="modules.omdoc" module="DISJMODView"/></OMMOR>
+   </include>
+   
+</view>
+
+</omdoc>

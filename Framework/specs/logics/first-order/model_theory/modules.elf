@@ -1,0 +1,69 @@
+%read "../syntax/modules.elf".
+%read "../../propositional/model_theory/modules.elf".
+%read "base.elf".
+
+%% Model theory of universal quantifier 
+%sig ForallMOD = {
+ %include STTIFOLEQ %open.	
+ %include BaseFOLMOD  %open.
+ forall' : elem ((univ → bool') → bool').
+ forall1 : ded ((forall [u : elem univ] ((F @ u) eq 1)) imp ((forall' @ F) eq 1)).
+ forall0 : ded ((exists [u : elem univ] ((F @ u) eq 0)) imp ((forall' @ F) eq 0)).
+ 
+ forall'' : (elem univ -> elem bool') -> elem bool'
+          = [f] forall' @ (λ f).
+ forall1' : ded forall ([x] (F x) eq 1) -> ded (forall'' F) eq 1
+          = [p] impE forall1 
+                      (forallI [u : elem univ] (trans beta 
+                                                       (forallE p u))).
+ forall0' : ded exists ([x] (F x) eq 0) -> ded (forall'' [x] F x) eq 0
+          = [p] impE forall0
+                      (existsE p [u : elem univ] [q: ded (F u) eq 0] existsI u (trans beta q)). 
+}.
+
+%view ForallMODView : Forall -> ForallMOD = {
+  %include BaseFOLMODView.
+  forall := [p : elem univ -> elem bool'] forall' @ (λ p).
+}.
+
+%sig ExistsMOD = {
+ %include STTIFOLEQ %open.	
+ %include BaseFOLMOD  %open.
+ exists' : elem ((univ → bool') → bool').
+ exists1 : ded ((exists [u : elem univ] ((F @ u) eq 1)) imp ((exists' @ F) eq 1)).
+ exists0 : ded ((forall [u : elem univ] ((F @ u) eq 0)) imp ((exists' @ F) eq 0)).
+ 
+ exists'' : (elem univ -> elem bool') -> elem bool'
+          = [f] exists' @ (λ f).
+ exists1' : ded exists ([x] (F x) eq 1) -> ded (exists'' [x] F x) eq 1
+          = [p] impE exists1 
+                      (existsE p [u: elem univ] [q: ded (F u) eq 1] (existsI u (trans beta q))).
+
+ exists0' : ded forall ([x] (F x) eq 0) -> ded (exists'' [x] F x) eq 0
+          = [p] impE exists0 (forallI ([u: elem univ] trans beta (forallE p u))).
+}.
+
+%view ExistsMODView : Exists -> ExistsMOD = {
+  %include BaseFOLMODView.
+  exists := [p : elem univ -> elem bool'] exists' @ (λ p).
+}.
+
+%sig EqualMOD = {
+ %include STTIFOLEQ %open.	
+ %include BaseFOLMOD   %open.
+ eq'  : elem (univ → univ → bool').
+ eq1  : ded (X eq Y) equiv ((eq' @ X @ Y) eq 1).
+ 
+ eq''     : elem univ -> elem univ -> elem bool'
+          = [A][B] eq' @ A @ B.                  %infix none 25 eq''.
+ equaliff : ded (X eq Y) equiv ((X eq'' Y) eq 1).   
+ equal1   : ded X eq Y -> ded (X eq'' Y) eq 1 
+          = [p] equivEl equaliff p.
+ equal0   : ded not (X eq Y) -> ded (X eq'' Y) eq 0
+          = [p] indirect' ([q : ded (X eq'' Y) eq 1] notE' (equivEr equaliff q) p).
+}.
+
+%view EqualMODView : Equal -> EqualMOD = {
+  %include BaseFOLMODView.
+  eq := [A][B] eq' @ A @ B.
+}.

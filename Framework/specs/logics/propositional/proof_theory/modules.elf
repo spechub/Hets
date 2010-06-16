@@ -1,0 +1,51 @@
+%read "base.elf".
+%read "../syntax/modules.elf".
+
+%sig TruthPF = {
+  %include BasePF   %open.
+  %include Truth    %open.
+  trueI  : ded true.
+}.
+
+%sig FalsityPF = {
+  %include BasePF   %open.
+  %include Falsity  %open.
+  falseE : ded false -> {A} ded A.
+}.
+
+%sig NEGPF = {
+  %include BasePF   %open.
+  %include NEG      %open.
+  notI   : (ded A -> {B} ded B) -> ded (not A).
+  notE   : ded not A -> ded A -> {B} ded B.
+}.
+
+%sig IMPPF = {
+  %include BasePF   %open.
+  %include IMP      %open.
+  impI   : (ded A -> ded B) -> ded (A imp B).
+  impE   : ded (A imp B) -> ded A -> ded B.
+}.
+
+%sig CONJPF = {
+  %include BasePF   %open.
+  %include CONJ     %open.
+  andI   : ded A -> ded B -> ded (A and B).
+  andEl  : ded (A and B) -> ded A.
+  andEr  : ded (A and B) -> ded B.
+}.
+
+%sig DISJPF = {
+  %include BasePF   %open ded.
+  %include DISJ     %open or.
+  orIl    : ded A -> ded (A or B).
+  orIr    : ded B -> ded (A or B).
+  orE     : ded (A or B) -> (ded A -> ded C) -> (ded B -> ded C) -> ded C.
+}.
+
+%sig TND = {  
+  %include BasePF   %open ded.
+  %include NEG      %open not.
+  %include DISJ     %open or. 
+  tnd    : ded (A or (not A)).
+}.

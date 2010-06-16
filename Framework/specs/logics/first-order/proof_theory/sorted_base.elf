@@ -1,0 +1,7 @@
+%read "../syntax/sorted_base.elf".
+%read "../../propositional/proof_theory/base.elf".
+
+%sig BaseSFOLPF = {
+  %include BasePF   %open.
+  %include BaseSFOL  %open.
+}.

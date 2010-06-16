@@ -1,0 +1,15 @@
+%read "../../propositional/syntax/prop.elf".
+%read "modules.elf".
+
+%sig FOL = {
+  %include BaseFOL   %open o ded i.
+  %include PL        %open true false not imp and or.
+  %include Forall    %open forall.
+  %include Exists    %open exists.
+}.
+
+%sig FOLEQ = {
+  %include FOL   %open.
+  %include Equal %open.
+}.
+

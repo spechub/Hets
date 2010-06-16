@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="SFOL">
+   <include from="sorted_base.omdoc?BaseSFOL"/>
+   
+   <include from="../../propositional/syntax/prop.omdoc?PL"/><alias name="true" for="../../propositional/syntax/modules.omdoc?Truth?true"/><alias name="false" for="../../propositional/syntax/modules.omdoc?Falsity?false"/><alias name="not" for="../../propositional/syntax/modules.omdoc?NEG?not"/><alias name="imp" for="../../propositional/syntax/modules.omdoc?IMP?imp"/><alias name="and" for="../../propositional/syntax/modules.omdoc?CONJ?and"/><alias name="or" for="../../propositional/syntax/modules.omdoc?DISJ?or"/>
+   
+   <include from="sorted_modules.omdoc?SForall"/><alias name="forall" for="sorted_modules.omdoc?SForall?forall"/>
+   
+   <include from="sorted_modules.omdoc?SExists"/><alias name="exists" for="sorted_modules.omdoc?SExists?exists"/>
+   
+   
+</theory>
+
+<theory name="SFOLEQ">
+   <include from="?SFOL"/>
+   
+   <include from="sorted_modules.omdoc?SEqual"/>
+   
+   
+</theory>
+
+</omdoc>

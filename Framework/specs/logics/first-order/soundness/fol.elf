@@ -1,0 +1,12 @@
+%read "../../propositional/soundness/prop.elf".
+%read "../proof_theory/fol.elf".
+%read "../model_theory/fol.elf".
+%read "ifol.elf".
+
+%view SoundFOL : FOLPF -> FOLMOD = {
+  %include SoundBaseFOL.
+  %include SoundIFOL.
+  %include SoundTND.
+  non_empty_universe := existsE non_empty_universe [u][_] (impE exists1 (existsI u (trans beta true1))).
+}.
+      

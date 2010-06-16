@@ -1,0 +1,14 @@
+%read "../proof_theory/iprop.elf".
+%read "../model_theory/prop.elf".
+%read "modules.elf".
+
+%view SoundIPL : IPLPF -> PLMOD = {
+  %include SoundBase.
+  %include PLMODView.
+  %include SoundTruth.
+  %include SoundFalsity.
+  %include SoundNEG.
+  %include SoundIMP.
+  %include SoundCONJ.
+  %include SoundDISJ.
+}.

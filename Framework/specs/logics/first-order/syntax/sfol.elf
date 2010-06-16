@@ -1,0 +1,14 @@
+%read "../../propositional/syntax/prop.elf".
+%read "sorted_modules.elf".
+
+%sig SFOL = {
+  %include BaseSFOL   %open.
+  %include PL         %open true false not imp and or.
+  %include SForall    %open forall.
+  %include SExists    %open exists. 
+}.
+
+%sig SFOLEQ = {
+  %include SFOL   %open.
+  %include SEqual %open.
+}.

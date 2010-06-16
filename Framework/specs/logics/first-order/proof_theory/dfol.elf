@@ -1,0 +1,37 @@
+%% Twelf signature for DFOL
+%% Florian Rabe
+
+%% General remarks
+%% %name S x  -  variables of type S should be named x
+%% %infix left 10 f  -  f is left-associative infix symbol of precedence level 10
+%% %prefix 10 f  -  f is prefix symbol of precedence level 10
+%% f' is the symbol used for the morphism component of the functor f since Twelf does not support overloading.
+
+%read "../syntax/dfol.elf".
+
+%sig DFOLPF = {
+  %include DFOL %open.
+  trueI : |- true.
+  falseE : |- false -> |- F.
+  andI : |- F -> |- G -> |- F and G.
+  andEl : |- F and G -> |- F.
+  andEr : |- F and G -> |- G.
+  orIl : |- F -> |- F or G.
+  orIr : |- G -> |- F or G.
+  orE : (|- F -> |- H) -> (|- G -> |- H) -> (|- F or G -> |- H).
+  implI : (|- F -> |- G) -> |- F impl G.
+  implE : |- F impl G -> |- F -> |- G.
+  notI : |- F or not F.
+  notE : |- F -> |- not F -> |- false.
+  forallI : ({x: ^ S} |- F x) -> |- forall F.
+  forallE : |- forall F -> {x: ^ S} |- F x.
+  existsI : {x: ^ S} |- F x -> |- exists F.
+  existsE : ({x: ^ S} |- F x -> |- H) -> (|- exists F -> |- H).
+  equivI : (|- F impl G) -> (|- G impl F) -> |- F <=> G.
+  equivIl : (|- F <=> G) -> (|- F impl G).
+  equivIr : (|- F <=> G) -> (|- G impl F).
+  refl : |- X == X.
+  sym : |- X == Y -> |- Y == X.
+  trans : |- X == Y -> |- Y == Z -> |- X == Z.
+  cong : {f : ^ S -> ^ T} |- X == Y -> |- f X == f Y.  
+}.

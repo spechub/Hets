@@ -1,0 +1,18 @@
+%read "../../propositional/model_theory/bool.elf".
+
+%sig Universes = {
+  %include Bool %open.
+
+  sup    : tm (A → bool') → bool'.
+  sup1   : ded (forall [a: tm A] F @ a eq 1) imp sup @ F eq 1.
+  sup0   : ded (exists [a: tm A] F @ a eq 0) imp sup @ F eq 0.
+  equal  : tm (A → A → bool').
+  equal01: ded forall [x: tm A] forall [y: tm A] (equal @ x @ y eq 1) equiv (x eq y). 
+
+  ∀      : (tm A -> bool) -> bool = [f] ¬ (sup @ (λ (¬ ∘ f))).
+  ∃      : (tm A -> bool) -> bool = [f] sup @ (λ f).
+  forall1 : ded forall ([x] (F x) eq 1) -> ded (∀ [x] F x) eq 1.
+  forall0 : ded exists ([x] (F x) eq 0) -> ded (∀ [x] F x) eq 0.
+  exists1 : ded exists ([x] (F x) eq 1) -> ded (∃ [x] F x) eq 1.
+  exists0 : ded forall ([x] (F x) eq 0) -> ded (∃ [x] F x) eq 0.
+}.

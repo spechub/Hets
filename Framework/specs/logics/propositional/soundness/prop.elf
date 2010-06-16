@@ -1,0 +1,10 @@
+%read "../proof_theory/prop.elf".
+%read "../model_theory/prop.elf".
+%read "iprop.elf".
+
+%view SoundCPL : CPLPF -> PLMOD = {
+  %include SoundBase.
+  %include SoundIPL.
+  %include SoundTND.
+}.
+

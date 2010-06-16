@@ -1,0 +1,9 @@
+%read "../../propositional/soundness/base.elf".
+%read "../proof_theory/sorted_base.elf".
+%read "../model_theory/sorted_base.elf".
+
+%view SoundBaseSFOL : BaseSFOLPF -> BaseSFOLMOD = {
+  %include SoundBase.
+  %include BaseSFOLMODView.
+}.
+

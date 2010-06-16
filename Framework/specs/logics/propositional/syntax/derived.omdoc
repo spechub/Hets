@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="Equiv">
+   <include from="base.omdoc?Base"/>
+   
+   <include from="modules.omdoc?CONJ"/>
+   
+   <include from="modules.omdoc?IMP"/>
+   
+   <constant name="equiv">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="a"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="base.omdoc" module="Base" name="o"/>
+                     </om:OMATP><om:OMV name="b"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="modules.omdoc" module="CONJ" name="and"/>
+                     <om:OMA>
+                        <om:OMS base="modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMV name="a"/>
+                        <om:OMV name="b"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS base="modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMV name="b"/>
+                        <om:OMV name="a"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??equiv" role="application" fixity="in" associativity="left" precedence="5" implicit="0"/>
+   
+</theory>
+
+</omdoc>

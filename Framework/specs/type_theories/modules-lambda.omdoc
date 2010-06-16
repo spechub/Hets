@@ -1,0 +1,3196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="DepFun" meta="http://cds.omdoc.org/foundations/lf/lf.omdoc?lf">
+   
+   <structure name="domain" from="base.omdoc?Level"></structure>
+   <structure name="scope" from="base.omdoc?Level"></structure>
+   <constant name="Π">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS name="domain/exp"/>
+                  <om:OMV name="A"/>
+               </om:OMA>
+                  <om:OMS name="scope/cl"/>
+               </om:OMA>
+                  <om:OMS name="scope/cl"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??Π" role="application" fixity="pre" precedence="50" implicit="1"/>
+   <constant name="λ">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMS name="scope/cl"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS name="domain/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="scope/exp"/>
+                        <om:OMA>
+                           <om:OMV name="B"/>
+                           <om:OMV name="x"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+                     <om:OMA>
+                     <om:OMS name="scope/exp"/>
+                     <om:OMA>
+                        <om:OMS name="Π"/>
+                        <om:OMV name="A"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS name="domain/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="B"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??λ" role="application" implicit="2"/>
+   <constant name="@">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMS name="scope/cl"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS name="scope/exp"/>
+                     <om:OMA>
+                        <om:OMS name="Π"/>
+                        <om:OMV name="A"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS name="domain/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="B"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS name="domain/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="a"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="scope/exp"/>
+                        <om:OMA>
+                           <om:OMV name="B"/>
+                           <om:OMV name="a"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??@" role="application" fixity="in" associativity="left" precedence="100" implicit="2"/>
+   <constant name="beta">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="X1"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="X1"/>
+                     </om:OMA>
+                        <om:OMS name="scope/cl"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="X2"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS name="domain/exp"/>
+                           <om:OMV name="X1"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="T"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="domain/exp"/>
+                                    <om:OMV name="X1"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMS name="scope/exp"/>
+                                 <om:OMA>
+                                    <om:OMV name="X2"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMA>
+                           </om:OMBIND>
+                           </om:OMATP><om:OMV name="F"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMS name="scope/=="/>
+                           <om:OMA>
+                              <om:OMV name="X2"/>
+                              <om:OMV name="T"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS name="@"/>
+                              <om:OMV name="X1"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMA>
+                                       <om:OMS name="domain/exp"/>
+                                       <om:OMV name="X1"/>
+                                    </om:OMA>
+                                    </om:OMATP><om:OMV name="x"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="X2"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                              <om:OMA>
+                                 <om:OMS name="λ"/>
+                                 <om:OMV name="X1"/>
+                                 <om:OMBIND>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                    <om:OMBVAR>
+                                    <om:OMATTR><om:OMATP>
+                                       <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                       <om:OMA>
+                                          <om:OMS name="domain/exp"/>
+                                          <om:OMV name="X1"/>
+                                       </om:OMA>
+                                       </om:OMATP><om:OMV name="x"/>
+                                    </om:OMATTR>
+                                 </om:OMBVAR>
+                                    <om:OMA>
+                                       <om:OMV name="X2"/>
+                                       <om:OMV name="x"/>
+                                    </om:OMA>
+                                 </om:OMBIND>
+                                 <om:OMBIND>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                    <om:OMBVAR>
+                                    <om:OMATTR><om:OMATP>
+                                       <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                       <om:OMA>
+                                          <om:OMS name="domain/exp"/>
+                                          <om:OMV name="X1"/>
+                                       </om:OMA>
+                                       </om:OMATP><om:OMV name="x"/>
+                                    </om:OMATTR>
+                                 </om:OMBVAR>
+                                    <om:OMA>
+                                       <om:OMV name="F"/>
+                                       <om:OMV name="x"/>
+                                    </om:OMA>
+                                 </om:OMBIND>
+                              </om:OMA>
+                              <om:OMV name="T"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMV name="F"/>
+                              <om:OMV name="T"/>
+                           </om:OMA>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??beta" role="application" implicit="4"/>
+   <constant name="eta">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="X1"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="X1"/>
+                     </om:OMA>
+                        <om:OMS name="scope/cl"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="X2"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS name="scope/exp"/>
+                           <om:OMA>
+                              <om:OMS name="Π"/>
+                              <om:OMV name="X1"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMA>
+                                       <om:OMS name="domain/exp"/>
+                                       <om:OMV name="X1"/>
+                                    </om:OMA>
+                                    </om:OMATP><om:OMV name="x"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="X2"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="F"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="scope/=="/>
+                        <om:OMA>
+                           <om:OMS name="Π"/>
+                           <om:OMV name="X1"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="domain/exp"/>
+                                    <om:OMV name="X1"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="X2"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="λ"/>
+                           <om:OMV name="X1"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="domain/exp"/>
+                                    <om:OMV name="X1"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="X2"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMBIND>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="domain/exp"/>
+                                    <om:OMV name="X1"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMS name="@"/>
+                                 <om:OMV name="X1"/>
+                                 <om:OMBIND>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                    <om:OMBVAR>
+                                    <om:OMATTR><om:OMATP>
+                                       <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                       <om:OMA>
+                                          <om:OMS name="domain/exp"/>
+                                          <om:OMV name="X1"/>
+                                       </om:OMA>
+                                       </om:OMATP><om:OMV name="x1"/>
+                                    </om:OMATTR>
+                                 </om:OMBVAR>
+                                    <om:OMA>
+                                       <om:OMV name="X2"/>
+                                       <om:OMV name="x1"/>
+                                    </om:OMA>
+                                 </om:OMBIND>
+                                 <om:OMV name="F"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMA>
+                        <om:OMV name="F"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??eta" role="application" implicit="3"/>
+   <constant name="→">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS name="domain/cl"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS name="scope/cl"/>
+               <om:OMS name="scope/cl"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="scope/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="Π"/>
+                     <om:OMV name="A"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS name="domain/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMV name="B"/>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??→" role="application" fixity="in" associativity="right" precedence="50" implicit="0"/>
+   <constant name=";">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="domain/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="domain/cl"/>
+                        </om:OMATP><om:OMV name="C"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="domain/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="domain/cl"/>
+                        </om:OMATP><om:OMV name="C"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                              <om:OMA>
+                              <om:OMS name="domain/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                              <om:OMA>
+                              <om:OMS name="domain/exp"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="f"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                                 <om:OMA>
+                                 <om:OMS name="domain/exp"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                                 <om:OMA>
+                                 <om:OMS name="domain/exp"/>
+                                 <om:OMV name="C"/>
+                              </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="g"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="domain/exp"/>
+                                    <om:OMV name="A"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="g"/>
+                                 <om:OMA>
+                                    <om:OMV name="f"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??;" role="application" fixity="in" associativity="left" precedence="5" implicit="3"/>
+   <constant name="∘">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="domain/cl"/>
+                     </om:OMATP><om:OMV name="C"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="domain/cl"/>
+                        </om:OMATP><om:OMV name="A"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="domain/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="domain/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="domain/cl"/>
+                     </om:OMATP><om:OMV name="C"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="domain/cl"/>
+                        </om:OMATP><om:OMV name="A"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                              <om:OMA>
+                              <om:OMS name="domain/exp"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                              <om:OMA>
+                              <om:OMS name="domain/exp"/>
+                              <om:OMV name="C"/>
+                           </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="f"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                                 <om:OMA>
+                                 <om:OMS name="domain/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                                 <om:OMA>
+                                 <om:OMS name="domain/exp"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="g"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="domain/exp"/>
+                                    <om:OMV name="A"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="f"/>
+                                 <om:OMA>
+                                    <om:OMV name="g"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??∘" role="application" fixity="in" associativity="left" precedence="5" implicit="3"/>
+   
+</theory>
+
+<theory name="DepTypes">
+   <include from="base.omdoc?KindsTypesTerms"/><alias name="kd" for="base.omdoc?KindsTypesTerms?kinds/cl"/><alias name="tf" for="base.omdoc?KindsTypesTerms?kinds/exp"/><alias name="===" for="base.omdoc?KindsTypesTerms?kinds/=="/><alias name="tp" for="base.omdoc?KindsTypesTerms?types/cl"/><alias name="tm" for="base.omdoc?KindsTypesTerms?types/exp"/><alias name="==" for="base.omdoc?KindsTypesTerms?types/=="/>
+   
+   <structure name="deptypes" from="?DepFun">
+      <strass name="domain">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="types"/></OMMOR>
+      </strass>
+      <strass name="scope">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="types"/></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="DepKinds">
+   <include from="base.omdoc?KindsTypesTerms"/><alias name="kd" for="base.omdoc?KindsTypesTerms?kinds/cl"/><alias name="tf" for="base.omdoc?KindsTypesTerms?kinds/exp"/><alias name="===" for="base.omdoc?KindsTypesTerms?kinds/=="/><alias name="tp" for="base.omdoc?KindsTypesTerms?types/cl"/><alias name="tm" for="base.omdoc?KindsTypesTerms?types/exp"/><alias name="==" for="base.omdoc?KindsTypesTerms?types/=="/>
+   
+   <structure name="depkinds" from="?DepFun">
+      <strass name="domain">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="types"/></OMMOR>
+      </strass>
+      <strass name="scope">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds"/></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="TypeOper">
+   <include from="base.omdoc?KindsTypesTerms"/><alias name="kd" for="base.omdoc?KindsTypesTerms?kinds/cl"/><alias name="tf" for="base.omdoc?KindsTypesTerms?kinds/exp"/><alias name="===" for="base.omdoc?KindsTypesTerms?kinds/=="/><alias name="tp" for="base.omdoc?KindsTypesTerms?types/cl"/><alias name="tm" for="base.omdoc?KindsTypesTerms?types/exp"/><alias name="==" for="base.omdoc?KindsTypesTerms?types/=="/>
+   
+   <structure name="funkinds" from="?DepFun">
+      <strass name="domain">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds"/></OMMOR>
+      </strass>
+      <strass name="scope">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds"/></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="PolyTypes">
+   <include from="base.omdoc?KindsTypesTerms"/><alias name="kd" for="base.omdoc?KindsTypesTerms?kinds/cl"/><alias name="tf" for="base.omdoc?KindsTypesTerms?kinds/exp"/><alias name="===" for="base.omdoc?KindsTypesTerms?kinds/=="/><alias name="tp" for="base.omdoc?KindsTypesTerms?types/cl"/><alias name="tm" for="base.omdoc?KindsTypesTerms?types/exp"/><alias name="==" for="base.omdoc?KindsTypesTerms?types/=="/>
+   
+   <structure name="poly" from="?DepFun">
+      <strass name="domain">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds"/></OMMOR>
+      </strass>
+      <strass name="scope">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="types"/></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="SimpFun" meta="http://cds.omdoc.org/foundations/lf/lf.omdoc?lf">
+   
+   <structure name="level" from="base.omdoc?Level"></structure><alias name="cl" for="??level/cl"/><alias name="exp" for="??level/exp"/><alias name="==" for="??level/=="/>
+   <constant name="→">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS name="level/cl"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS name="level/cl"/>
+               <om:OMS name="level/cl"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??→" role="application" fixity="in" associativity="right" precedence="50" implicit="0"/>
+   <constant name="λ">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS name="level/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS name="level/exp"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS name="level/exp"/>
+                     <om:OMA>
+                        <om:OMS name="→"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??λ" role="application" implicit="2"/>
+   <constant name="@">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS name="level/exp"/>
+                     <om:OMA>
+                        <om:OMS name="→"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS name="level/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS name="level/exp"/>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??@" role="application" fixity="in" associativity="left" precedence="100" implicit="2"/>
+   <constant name="beta">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="X1"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="X2"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                           <om:OMA>
+                           <om:OMS name="level/exp"/>
+                           <om:OMV name="X2"/>
+                        </om:OMA>
+                           <om:OMA>
+                           <om:OMS name="level/exp"/>
+                           <om:OMV name="X1"/>
+                        </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="F"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS name="level/exp"/>
+                              <om:OMV name="X2"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="T"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMS name="level/=="/>
+                           <om:OMV name="X1"/>
+                           <om:OMA>
+                              <om:OMS name="@"/>
+                              <om:OMV name="X2"/>
+                              <om:OMV name="X1"/>
+                              <om:OMA>
+                                 <om:OMS name="λ"/>
+                                 <om:OMV name="X2"/>
+                                 <om:OMV name="X1"/>
+                                 <om:OMBIND>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                    <om:OMBVAR>
+                                    <om:OMATTR><om:OMATP>
+                                       <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                       <om:OMA>
+                                          <om:OMS name="level/exp"/>
+                                          <om:OMV name="X2"/>
+                                       </om:OMA>
+                                       </om:OMATP><om:OMV name="x"/>
+                                    </om:OMATTR>
+                                 </om:OMBVAR>
+                                    <om:OMA>
+                                       <om:OMV name="F"/>
+                                       <om:OMV name="x"/>
+                                    </om:OMA>
+                                 </om:OMBIND>
+                              </om:OMA>
+                              <om:OMV name="T"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMV name="F"/>
+                              <om:OMV name="T"/>
+                           </om:OMA>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??beta" role="application" implicit="4"/>
+   <constant name="eta">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="X1"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="X2"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS name="level/exp"/>
+                           <om:OMA>
+                              <om:OMS name="→"/>
+                              <om:OMV name="X1"/>
+                              <om:OMV name="X2"/>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="F"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="level/=="/>
+                        <om:OMA>
+                           <om:OMS name="→"/>
+                           <om:OMV name="X1"/>
+                           <om:OMV name="X2"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="λ"/>
+                           <om:OMV name="X1"/>
+                           <om:OMV name="X2"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="level/exp"/>
+                                    <om:OMV name="X1"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMS name="@"/>
+                                 <om:OMV name="X1"/>
+                                 <om:OMV name="X2"/>
+                                 <om:OMV name="F"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMA>
+                        <om:OMV name="F"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??eta" role="application" implicit="3"/>
+   <constant name=";">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="level/cl"/>
+                        </om:OMATP><om:OMV name="C"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="level/cl"/>
+                        </om:OMATP><om:OMV name="C"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                              <om:OMA>
+                              <om:OMS name="level/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                              <om:OMA>
+                              <om:OMS name="level/exp"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="f"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                                 <om:OMA>
+                                 <om:OMS name="level/exp"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                                 <om:OMA>
+                                 <om:OMS name="level/exp"/>
+                                 <om:OMV name="C"/>
+                              </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="g"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="level/exp"/>
+                                    <om:OMV name="A"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="g"/>
+                                 <om:OMA>
+                                    <om:OMV name="f"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??;" role="application" fixity="in" associativity="left" precedence="5" implicit="3"/>
+   <constant name="∘">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="C"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="level/cl"/>
+                        </om:OMATP><om:OMV name="A"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS name="level/exp"/>
+                        <om:OMV name="C"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS name="level/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS name="level/cl"/>
+                     </om:OMATP><om:OMV name="C"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS name="level/cl"/>
+                        </om:OMATP><om:OMV name="A"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                              <om:OMA>
+                              <om:OMS name="level/exp"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                              <om:OMA>
+                              <om:OMS name="level/exp"/>
+                              <om:OMV name="C"/>
+                           </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="f"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                                 <om:OMA>
+                                 <om:OMS name="level/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                                 <om:OMA>
+                                 <om:OMS name="level/exp"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="g"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS name="level/exp"/>
+                                    <om:OMV name="A"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="f"/>
+                                 <om:OMA>
+                                    <om:OMV name="g"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??∘" role="application" fixity="in" associativity="left" precedence="5" implicit="3"/>
+   
+</theory>
+
+<theory name="SimpTypes">
+   <include from="base.omdoc?TypesTerms"/><alias name="tp" for="base.omdoc?TypesTerms?types/cl"/><alias name="tm" for="base.omdoc?TypesTerms?types/exp"/>
+   
+   <structure name="funtypes" from="?SimpFun">
+      <strass name="level">
+         <OMMOR ><om:OMS base="base.omdoc" module="TypesTerms" name="types"/></OMMOR>
+      </strass>
+   </structure><alias name="→" for="??funtypes/→"/><alias name="λ" for="??funtypes/λ"/><alias name="@" for="??funtypes/@"/><alias name=";" for="??funtypes/;"/><alias name="∘" for="??funtypes/∘"/>
+   
+</theory>
+
+<view name="SimpToDep" from="?SimpTypes" to="?DepTypes">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="TypesToTypes"/></OMMOR>
+   </include>
+   <conass name="funtypes/→">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS name="deptypes/Π"/>
+                  <om:OMV name="A"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMV name="B"/>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funtypes/λ">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="f"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="deptypes/λ"/>
+                     <om:OMV name="A"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMV name="B"/>
+                     </om:OMBIND>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="f"/>
+                           <om:OMV name="x"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funtypes/@">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMA>
+                           <om:OMS name="deptypes/Π"/>
+                           <om:OMV name="A"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                                    <om:OMV name="A"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMV name="B"/>
+                           </om:OMBIND>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="f"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="deptypes/@"/>
+                        <om:OMV name="A"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x1"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMV name="B"/>
+                        </om:OMBIND>
+                        <om:OMV name="f"/>
+                        <om:OMV name="x"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funtypes/beta">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMATP><om:OMV name="B"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="F"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="T"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="deptypes/beta"/>
+                        <om:OMV name="A"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMV name="B"/>
+                        </om:OMBIND>
+                        <om:OMV name="T"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="F"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funtypes/eta">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMATP><om:OMV name="B"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMA>
+                           <om:OMS name="deptypes/Π"/>
+                           <om:OMV name="B"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                                    <om:OMV name="B"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMV name="A"/>
+                           </om:OMBIND>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="F"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="deptypes/eta"/>
+                     <om:OMV name="B"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMV name="A"/>
+                     </om:OMBIND>
+                     <om:OMV name="F"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="SimpKinds">
+   <include from="base.omdoc?KindsTypesTerms"/>
+   
+   <structure name="funkinds" from="?SimpFun">
+      <strass name="level">
+         <OMMOR ><om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds"/></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<view name="SimpToOper" from="?SimpKinds" to="?TypeOper">
+   
+   <conass name="funkinds/→">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS name="funkinds/Π"/>
+                  <om:OMV name="A"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMV name="B"/>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funkinds/λ">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="f"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="funkinds/λ"/>
+                     <om:OMV name="A"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMV name="B"/>
+                     </om:OMBIND>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMV name="A"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="f"/>
+                           <om:OMV name="x"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funkinds/@">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMA>
+                           <om:OMS name="funkinds/Π"/>
+                           <om:OMV name="A"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                    <om:OMV name="A"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMV name="B"/>
+                           </om:OMBIND>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="f"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="funkinds/@"/>
+                        <om:OMV name="A"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x1"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMV name="B"/>
+                        </om:OMBIND>
+                        <om:OMV name="f"/>
+                        <om:OMV name="x"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funkinds/beta">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+               </om:OMATP><om:OMV name="B"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                        <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="F"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="T"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="funkinds/beta"/>
+                        <om:OMV name="A"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMV name="B"/>
+                        </om:OMBIND>
+                        <om:OMV name="T"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="F"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="funkinds/eta">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+               </om:OMATP><om:OMV name="B"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/cl"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMA>
+                           <om:OMS name="funkinds/Π"/>
+                           <om:OMV name="B"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMA>
+                                    <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                    <om:OMV name="B"/>
+                                 </om:OMA>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMV name="A"/>
+                           </om:OMBIND>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="F"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="funkinds/eta"/>
+                     <om:OMV name="B"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMV name="A"/>
+                     </om:OMBIND>
+                     <om:OMV name="F"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="UnivTypes">
+   <include from="base.omdoc?TypesTerms"/><alias name="tp" for="base.omdoc?TypesTerms?types/cl"/><alias name="tm" for="base.omdoc?TypesTerms?types/exp"/><alias name="==" for="base.omdoc?TypesTerms?types/=="/>
+   
+   <constant name="∀">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+               <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+            </om:OMA>
+               <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="Λ">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     </om:OMATP><om:OMV name="a"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/exp"/>
+                     <om:OMA>
+                        <om:OMV name="A"/>
+                        <om:OMV name="a"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="TypesTerms" name="types/exp"/>
+                  <om:OMA>
+                     <om:OMS name="∀"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                           </om:OMATP><om:OMV name="a"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="A"/>
+                           <om:OMV name="a"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??Λ" role="application" implicit="1"/>
+   <constant name="@">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="TypesTerms" name="types/exp"/>
+                  <om:OMA>
+                     <om:OMS name="∀"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                           </om:OMATP><om:OMV name="a"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="A"/>
+                           <om:OMV name="a"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMA>
+                  <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/exp"/>
+                     <om:OMA>
+                        <om:OMV name="A"/>
+                        <om:OMV name="B"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??@" role="application" fixity="in" associativity="left" precedence="100" implicit="1"/>
+   <constant name="beta">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X1"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     </om:OMATP><om:OMV name="T"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="TypesTerms" name="types/exp"/>
+                              <om:OMA>
+                                 <om:OMV name="X1"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMBIND>
+                        </om:OMATP><om:OMV name="F"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="TypesTerms" name="types/=="/>
+                        <om:OMA>
+                           <om:OMV name="X1"/>
+                           <om:OMV name="T"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="@"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                                 </om:OMATP><om:OMV name="x"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="X1"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMBIND>
+                           <om:OMA>
+                              <om:OMS name="Λ"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                                    </om:OMATP><om:OMV name="x"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="X1"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                                    </om:OMATP><om:OMV name="a"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="F"/>
+                                    <om:OMV name="a"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                           </om:OMA>
+                           <om:OMV name="T"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMV name="F"/>
+                           <om:OMV name="T"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??beta" role="application" implicit="3"/>
+   <constant name="eta">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X1"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="TypesTerms" name="types/exp"/>
+                        <om:OMA>
+                           <om:OMS name="∀"/>
+                           <om:OMBIND>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                              <om:OMBVAR>
+                              <om:OMATTR><om:OMATP>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                 <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                                 </om:OMATP><om:OMV name="a"/>
+                              </om:OMATTR>
+                           </om:OMBVAR>
+                              <om:OMA>
+                                 <om:OMV name="X1"/>
+                                 <om:OMV name="a"/>
+                              </om:OMA>
+                           </om:OMBIND>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="F"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="TypesTerms" name="types/=="/>
+                     <om:OMA>
+                        <om:OMS name="∀"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                              </om:OMATP><om:OMV name="a"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="X1"/>
+                              <om:OMV name="a"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS name="Λ"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="X1"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                              </om:OMATP><om:OMV name="x"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS name="@"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMS base="base.omdoc" module="TypesTerms" name="types/cl"/>
+                                    </om:OMATP><om:OMV name="x1"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="X1"/>
+                                    <om:OMV name="x1"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                              <om:OMV name="F"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                     <om:OMV name="F"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??eta" role="application" implicit="2"/>
+   
+</theory>
+
+<view name="UnivToPoly" from="?UnivTypes" to="?PolyTypes">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="TypesToTypes"/></OMMOR>
+   </include>
+   <conass name="∀">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS name="poly/Π"/>
+               <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="a"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMV name="A"/>
+                     <om:OMV name="a"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="Λ">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="a"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                        <om:OMA>
+                           <om:OMV name="A"/>
+                           <om:OMV name="a"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+                  </om:OMATP><om:OMV name="f"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS name="poly/λ"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMV name="A"/>
+                        <om:OMV name="x"/>
+                     </om:OMA>
+                  </om:OMBIND>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMV name="f"/>
+                        <om:OMV name="x"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="@">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                     <om:OMA>
+                        <om:OMS name="poly/Π"/>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="a"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="A"/>
+                              <om:OMV name="a"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="f"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="x"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="poly/@"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x1"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="A"/>
+                           <om:OMV name="x1"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                     <om:OMV name="f"/>
+                     <om:OMV name="x"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="beta">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="F"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="Pi"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                           <om:OMA>
+                              <om:OMV name="A"/>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                        </om:OMA>
+                     </om:OMBIND>
+                     </om:OMATP><om:OMV name="T"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS name="poly/beta"/>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="A"/>
+                           <om:OMV name="x"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                     <om:OMV name="F"/>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                              <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="x"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMA>
+                           <om:OMV name="T"/>
+                           <om:OMV name="x"/>
+                        </om:OMA>
+                     </om:OMBIND>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="eta">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+               </om:OMA>
+               </om:OMA>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="base.omdoc" module="KindsTypesTerms" name="types/exp"/>
+                     <om:OMA>
+                        <om:OMS name="poly/Π"/>
+                        <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                                 <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="a"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMV name="A"/>
+                              <om:OMV name="a"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="F"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS name="poly/eta"/>
+                  <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="kinds/exp"/>
+                           <om:OMS base="base.omdoc" module="KindsTypesTerms" name="tp'"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMV name="A"/>
+                        <om:OMV name="x"/>
+                     </om:OMA>
+                  </om:OMBIND>
+                  <om:OMV name="F"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+</omdoc>

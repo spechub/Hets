@@ -1,0 +1,43 @@
+%read "../syntax/prop.elf".
+%read "iprop.elf".
+
+%sig CPLPF = {
+  %include BasePF %open o ded.
+  %include IPLPF  %open.
+  %include TND    %open.
+}.
+
+%view Truth2CPLPF : Truth -> CPLPF = {
+  true := true.
+}.
+
+%view Falsity2CPLPF : Falsity -> CPLPF = {
+  false := false.
+}.
+
+%view NEG2CPLPF : NEG -> CPLPF = {
+  not := [x] not x.
+}.
+
+%view IMP2CPLPF : IMP -> CPLPF = {
+  imp := [x][y] x imp y.
+}.
+
+%view CONJ2CPLPF : CONJ -> CPLPF = {
+  and := [x][y] x and y.
+}.
+
+%view DISJ2CPLPF : DISJ -> CPLPF = {
+  or := [x][y] x or y.
+}.
+
+%view PL2CPLPF : PL -> CPLPF = {
+  %include Truth2CPLPF.
+  %include Falsity2CPLPF.
+  %include NEG2CPLPF.
+  %include IMP2CPLPF.
+  %include CONJ2CPLPF.
+  %include DISJ2CPLPF. 
+}.
+  
+  

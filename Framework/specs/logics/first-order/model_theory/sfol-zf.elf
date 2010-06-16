@@ -1,0 +1,63 @@
+%read "sfol.elf".
+%read "../../propositional/model_theory/prop-zf.elf".
+
+%sig SFOLZFCModel = {
+   %include Boolean %open.
+   %% an arbitrary set, used as the interpretation of sorts for now until we have parametric views
+   sort : i.
+   Sort : type = Elem sort.
+   %% an arbitrary function, used as the interpretation of universes of sorts for now until we have parametric views
+   term : Sort -> i.
+   Term : Sort -> type = [x] Elem (term x).
+}.
+
+%view BaseSFOLMOD-ZF : BaseSFOLMOD -> SFOLZFCModel = {
+  %include BasePLMOD-ZF.
+  %% This should actually be a parametric view taking sort and term as a parameter.
+  sort := sort.
+  term := term.
+}.
+
+%view SForallMOD-ZF : SForallMOD -> SFOLZFCModel = {
+   %include BaseSFOLMOD-ZF.
+   univq.forall := [S : Sort][F : Term S -> ℬ] ∀ F.
+   forall1 := [S : Sort][F : Term S -> ℬ][p] 
+                subset_antisym ∞greatest 
+                               (⋂infimum [a] 
+                                          subset_eq ⊆‍refl 
+                                                    (sym (ForallE p a))).
+   forall0 := [S : Sort][F : Term S -> ℬ][p] 
+                subset_antisym (ExistsE p [a][q] subset_eq ⋂subset q) 
+                               ∅least.
+}.
+
+%view SExistsMOD-ZF : SExistsMOD -> SFOLZFCModel = {
+   %include BaseSFOLMOD-ZF.
+   existq.exists := [S : Sort][F : Term S -> ℬ] ∃ F.
+   exists1 := [S : Sort][F : Term S -> ℬ][p]
+                subset_antisym ∞greatest 
+                               (ExistsE p [a][q] eq_subset (sym q) ⋃subset).
+
+   exists0 := [S : Sort][F : Term S -> ℬ][p]
+                subset_antisym (⋃supremum [a] subset_eq ⊆‍refl (ForallE p a))
+                               ∅least.     
+}.
+
+%view SEqualMOD-ZF : SEqualMOD -> SFOLZFCModel = {
+   %include BaseSFOLMOD-ZF.
+   equal.eq := [S : Sort][x : Term S][y : Term S]
+                 reflect (x Eq y).
+   equaliff := [S : Sort][x : Term S][y : Term S]
+                 equivI ([p] reflectI1 p) ([q] reflectE1 q). 
+}.
+
+%view SFOLMOD-ZF : SFOLMOD -> SFOLZFCModel = {
+  %include PLMOD-ZF.
+  %include SForallMOD-ZF.
+  %include SExistsMOD-ZF.  
+}.
+
+%view SFOLEQMOD-ZF : SFOLEQMOD -> SFOLZFCModel = {
+  %include SFOLMOD-ZF.
+  %include SEqualMOD-ZF.
+}.

@@ -1,0 +1,37 @@
+%read "syntax.elf".
+%read "../first-order/model_theory/universe.elf".
+
+%sig Kripke = {
+  %include Universes %open.
+  world : set.
+  acc'  : elem (world → world → bool').
+  acc   : elem world -> elem world -> elem bool' = [v][w] acc' @ v @ w.
+  exists_world : ded exists [x : elem world] true.
+}.
+
+%view Base-Kripke : Base -> Kripke = {
+  o   := elem (world → bool').
+  ded := [f] ded forall [w] f @ w eq 1.
+}.
+
+%view Prop-Kripke : MPL -> Kripke = {
+  %include Base-Kripke.
+  ⊥ := λ[w] 0.
+  ⇒ := [f][g] λ[w] (f @ w) ⇒ (g @ w). 
+}.
+
+%view Necessity-Kripke : Necessity -> Kripke = {
+  %include Base-Kripke.
+  □ := [f] λ[w] ∀[w'] (acc w w') ⇒ (f @ w').
+}.
+
+%view Possibility-Kripke : Possibility -> Kripke = {
+  %include Base-Kripke.
+  ◇ := [f] λ[w] ∃[w'] (acc w w') ∧ (f @ w').
+}.
+
+%view ML-Kripke : ML -> Kripke = {
+  %include Prop-Kripke.
+  %include Necessity-Kripke.
+  %include Possibility-Kripke.  
+}.

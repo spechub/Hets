@@ -1,0 +1,22 @@
+%read "../syntax/fol.elf".
+%read "../../propositional/proof_theory/prop.elf".
+%read "ifol.elf".
+
+%sig FOLPF = {
+ %include IFOLPF %open.
+ %include TND %open.
+ non_empty_universe : ded exists [x] true.
+}.
+
+%sig FOLEQPF = {
+  %include FOLPF   %open.
+  %include FOLEQ   %open.
+  %include EqualPF %open.
+  =>  = [x][y] x imp y.          %infix right 5 =>.
+  <=> = [x][y]((x => y) and (y => x)).
+                                 %infix none 4 <=>.
+  ==  = [x][y] x eq y.           %infix none 30 ==.
+  !=  = [x][y] not (x == y).     %infix none 30 !=.
+  |-  = [x] ded x.               %prefix 0 |-.
+}.
+

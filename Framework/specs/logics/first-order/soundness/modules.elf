@@ -1,0 +1,43 @@
+%read "../../propositional/soundness/modules.elf".
+%read "../proof_theory/modules.elf".
+%read "../model_theory/modules.elf".
+%read "base.elf".
+
+%view SoundForall : ForallPF -> ForallMOD = {
+  %include SoundBaseFOL.
+  %include ForallMODView.
+  forallI := [F][p : {x} ded (F x) eq 1] forall1' (forallI [x] (p x)).
+  forallE := [F][p : ded (forall'' [x] F x) eq 1] [c] 
+               (indirect ([q : ded (F c) eq 0] contra (forall0' (existsI c q)) p)).
+}.
+
+%view SoundExists : ExistsPF -> ExistsMOD = {
+  %include SoundBaseFOL.
+  %include ExistsMODView.
+  existsI := [F][x][p : ded (F x) eq 1] exists1' (existsI x p).
+  existsE := [F][G][p : ded (exists'' [x] F x) eq 1]
+              [f : {y} ded (F y) eq 1 -> ded G eq 1] 
+                (indirect ([q : ded G eq 0] 
+                  contra (exists0' (forallI [y] indirect' ([r : ded F y eq 1] contra q (f y r)))) 
+                         p)).          
+}.
+
+%view SoundEqual : EqualPF -> EqualMOD = {
+  %include SoundBaseFOL.
+  %include EqualMODView.
+  
+  %% alternatively use equal1 instead of (equivEl equaliff)
+  refl  := [X] equivEl equaliff refl. 
+  sym   := [X: elem univ][Y: elem univ][p : ded (X eq'' Y) eq 1] 
+             equivEl equaliff (sym (equivEr equaliff p)).          
+  trans := [X][Y][Z][p : ded (X eq'' Y) eq 1][q : ded (Y eq'' Z) eq 1]
+             equivEl equaliff (trans (equivEr equaliff p)
+                                     (equivEr equaliff q)).
+  congF := [X][Y][p : ded (X eq'' Y)  eq 1][F : elem univ -> elem univ]
+             equivEl equaliff (congF (equivEr equaliff p) F).
+  congP := [X][Y][p : ded (X eq'' Y) eq 1][F][q : ded (F X) eq 1]
+              (congP (equivEr equaliff p) 
+                     ([a] (F a) eq 1)  
+                     q).
+             
+}.

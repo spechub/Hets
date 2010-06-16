@@ -1,0 +1,12 @@
+%read "prop.elf".
+%read "modules-zf.elf".
+
+%view PLMOD-ZF : PLMOD -> Boolean = {
+  %include BasePLMOD-ZF.
+  %include TruthMOD-ZF.
+  %include FalsityMOD-ZF.
+  %include NEGMOD-ZF.
+  %include IMPMOD-ZF.  
+  %include CONJMOD-ZF.
+  %include DISJMOD-ZF.  
+}.

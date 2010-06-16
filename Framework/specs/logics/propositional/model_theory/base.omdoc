@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="BaseMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="bool.omdoc?Bool"/>
+   
+   
+</theory>
+
+<view name="BaseMODView" from="../syntax/base.omdoc?Base" to="?BaseMOD">
+   
+   <conass name="o">
+      <om:OMOBJ>
+         <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+      </om:OMOBJ>
+   </conass>
+   <conass name="ded">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               </om:OMATP><om:OMV name="F"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+               <om:OMA>
+                  <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMV name="F"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+               </om:OMA>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+</omdoc>

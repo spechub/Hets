@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="BaseSFOL">
+   <include from="../../propositional/syntax/base.omdoc?Base"/>
+   
+   <structure name="sorts" from="../../../type_theories/base.omdoc?Level'"></structure><alias name="tm" for="??sorts/exp"/><alias name="sort" for="??sorts/cl"/>
+   
+</theory>
+
+</omdoc>

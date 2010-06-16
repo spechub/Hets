@@ -1,7 +1,7 @@
-from logics/propositional/syntax/base get Base
-from logics/propositional/syntax/prop get PL, Base2PL
-from logics/propositional/model_theory/prop get PLMOD, PLMODView
-from logics/propositional/proof_theory/prop get CPLPF, PL2CPLPF
+from Framework/specs/logics/propositional/syntax/base get Base
+from Framework/specs/logics/propositional/syntax/prop get PL, Base2PL
+from Framework/specs/logics/propositional/model_theory/prop get PLMOD, PLMODView
+from Framework/specs/logics/propositional/proof_theory/prop get CPLPF, PL2CPLPF
 
 newlogic Propositional =
   meta LF

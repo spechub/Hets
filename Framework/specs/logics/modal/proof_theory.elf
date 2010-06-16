@@ -1,0 +1,37 @@
+%read "../propositional/proof_theory/minimal.elf".
+%read "syntax.elf".
+
+%sig MLPf = {
+  %include ML %open.
+  %include MPLPf %open.
+  ax_◇ : ded ◇ P ⇔ ¬ □ (¬ P).
+  nec  : ded P -> ded □ P.
+  ax_k : ded □ (P ⇒ Q) ⇒ □ P ⇒ □ Q.
+}.
+
+%sig D = {
+  %include MLPf %open.
+  ax_d : ded □ P ⇒ ◇ P.
+}.
+
+%sig T = {
+  %include MLPf %open.
+  ax_t : ded □ P ⇒ P.
+}.
+
+%sig S4 = {
+  %include T %open.
+  ax_4 : ded □ P ⇒ □ (□ P).
+}.
+
+%sig S4b = {
+  %include S4 %open.
+  ax_4b : ded P ⇒ □ (◇ P).
+}.
+
+%sig S5 = {
+  %include T %open.
+  ax_5 : ded ◇ P ⇒ □ (◇ P). 
+}.
+
+%% TODO views from S4 and S4b to S5 and from S5 to S4b.

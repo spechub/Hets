@@ -1,0 +1,27 @@
+%read "../syntax/modules.elf".
+%read "../../propositional/proof_theory/modules.elf".
+%read "base.elf".
+
+%sig ForallPF = {
+  %include BaseFOLPF   %open ded i o.
+  %include Forall      %open forall. 
+  forallI : ({x:i} ded (F x)) -> ded (forall [x] F x).
+  forallE : ded (forall [x] F x) -> {c:i} ded (F c).
+}.
+
+%sig ExistsPF = {
+  %include BaseFOLPF   %open ded i o.
+  %include Exists      %open exists. 
+  existsI : {x:i} ded (F x) -> ded (exists [x] F x).
+  existsE : ded (exists [x] F x) -> ({y:i} ded (F y) -> ded G) -> ded G.
+}.
+
+%sig EqualPF = {
+  %include BaseFOLPF   %open ded i o.
+  %include Equal       %open.
+  refl  : ded X eq X.
+  sym   : ded X eq Y -> ded Y eq X.
+  trans : ded X eq Y -> ded Y eq Z -> ded X eq Z.
+  congF : ded X eq Y -> {F: i -> i} ded (F X) eq (F Y).
+  congP : ded X eq Y -> {F : i -> o} ded (F X) -> ded (F Y).
+}.

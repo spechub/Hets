@@ -1,0 +1,7 @@
+%read "base.elf".
+%read "../../../set_theories/zfc/bool.elf".
+%read "bool-zf.elf".
+
+%view BasePLMOD-ZF : BaseMOD -> Boolean = {
+   %include Bool-ZF.  
+}.

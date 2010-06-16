@@ -1,0 +1,43 @@
+%read "../syntax/fol.elf".
+%read "../../propositional/model_theory/propmod.elf".
+%read "universe.elf".
+
+%sig FOLMOD = {
+  %include STTIFOLEQ  %open.
+  %include PLMOD  %open.
+  %include Universes  %open.
+  univ : set.
+  non_empty_universe : ded exists [x : elem univ] true.
+}.
+
+%view BaseFOLMODView : BaseFOL -> FOLMOD = {
+  %include BaseMODView.
+  i := elem univ.
+}.
+
+%view ForallMODView : Forall -> FOLMOD = {
+  %include BaseFOLMODView.
+  forall := ∀.
+}.
+
+%view ExistsMODView : Exists -> FOLMOD = {
+  %include BaseFOLMODView.
+  exists := ∃.
+}.
+
+%view EqualMODView : Equal -> FOLMOD = {
+  %include BaseFOLMODView.
+  eq := [A][B] equal @ A @ B.
+}.
+
+%view FOLMODView : FOL -> FOLMOD = {
+  %include BaseFOLMODView.
+  %include PLMODView.
+  %include ForallMODView.
+  %include ExistsMODView.
+}.
+
+%view FOLEQMODView : FOLEQ -> FOLMOD = {
+  %include FOLMODView.
+  %include EqualMODView.  
+}.

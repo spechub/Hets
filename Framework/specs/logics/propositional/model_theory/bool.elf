@@ -1,0 +1,47 @@
+%read "../../meta/sttifol.elf".
+%read "../syntax/base.elf".
+
+%sig Bool = {
+  %include STTIFOLEQ %open.
+  bool': set.
+  bool : type = elem bool'.
+  1 : bool.
+  0 : bool.
+  cons   : ded not (1 eq 0).
+  boole  : {A} ded (A eq 1 or A eq 0).
+
+  ifte   : elem (bool' → bool' → bool' → bool').
+  ifteT  : ded C eq 1 imp (ifte @ C @ T @ E) eq T.
+  ifteE  : ded C eq 0 imp (ifte @ C @ T @ E) eq E.
+  
+  ¬      : bool -> bool = [a] ifte @ a @ 0 @ 1.
+  ∧      : bool -> bool -> bool = [a][b] ifte @ a @ b @ 0.                    %infix left 10 ∧. 
+  ∨      : bool -> bool -> bool = [a][b] ifte @ a @ 1 @ b.                    %infix left 10 ∨.
+  ⇒      : bool -> bool -> bool = [a][b] ifte @ a @ b @ 1.                    %infix none 10 ⇒.
+  
+  not1 : ded A eq 0 -> ded (¬ A) eq 1 = [p] impE ifteE p.
+  not0 : ded A eq 1 -> ded (¬ A) eq 0 = [p] impE ifteT p.
+  imp1 : ded A eq 0 or  B eq 1 -> ded (A ⇒ B) eq 1
+       = [p] orE p ([q] impE ifteE q) ([q] orE (boole A) ([r: ded A eq 1] trans (impE ifteT r) q)
+                                                         ([r: ded A eq 0] impE ifteE r)).
+  imp0 : ded A eq 1 and B eq 0 -> ded (A ⇒ B) eq 0 = [p] trans (impE ifteT (andEl p)) (andEr p).
+  and1 : ded A eq 1 and B eq 1 -> ded (A ∧ B) eq 1 = [p] trans (impE ifteT (andEl p)) (andEr p).
+  and0 : ded A eq 0 or  B eq 0 -> ded (A ∧ B) eq 0
+       = [p] orE p ([q] impE ifteE q) ([q] orE (boole A) ([r: ded A eq 1] trans (impE ifteT r) q)
+                                                         ([r: ded A eq 0] impE ifteE r)).
+  or1  : ded A eq 1 or  B eq 1 -> ded (A ∨ B) eq 1
+       = [p] orE p ([q] impE ifteT q) ([q] orE (boole A) ([r: ded A eq 1] impE ifteT r)
+                                                         ([r: ded A eq 0] trans (impE ifteE r) q)).
+  or0  : ded A eq 0 and B eq 0 -> ded (A ∨ B) eq 0 = [p] trans (impE ifteE (andEl p)) (andEr p).
+
+  contra : ded A eq 0 -> ded A eq 1 -> ded false
+         = [p][q] (notE' (trans (sym q) p) cons).
+  indirect : (ded A eq 0 -> ded false) -> ded A eq 1
+           = [f] orE (boole A)
+               ([p : ded A eq 1] p)
+               ([p : ded A eq 0] falseE (f p) (A eq 1)).
+  indirect' : (ded A eq 1 -> ded false) -> ded A eq 0
+            = [f] orE (boole A)
+               ([p : ded A eq 1] falseE (f p) (A eq 0))
+               ([p : ded A eq 0] p). 
+}.

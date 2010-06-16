@@ -1,0 +1,15 @@
+%read "../syntax/sfol.elf".
+%read "../../propositional/proof_theory/prop.elf".
+%read "sifol.elf".
+
+%sig SFOLPF = {
+ %include BaseSFOLPF %open ded.
+ %include SIFOLPF %open.
+ %include TND.
+ non_empty_universe : ded exists [x: tm S] true.
+}.
+
+%sig SFOLEQPF = {
+ %include SFOLPF %open.
+ %include SEqualPF %open.
+}.

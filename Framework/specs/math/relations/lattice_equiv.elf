@@ -1,0 +1,242 @@
+%% Equivalence of algebraic and order-theoretical definition of lattices
+
+%read "lattice_algebra.elf".
+%read "lattice_order.elf".
+
+%view OrdSL : OrderInf -> SemiLattice = {
+  leq := [x][y] x * y == x.
+  ord.refl := bd.midem.idem.
+  ord.antisym := forallI [x] forallI [y] impI [p]
+     trans (sym (andEl p))
+                (trans (forall2E mc.commut x y)
+                            (andEr p)
+                ).
+  ord.trans := forallI [x] forallI [y] forallI [z] impI [p]
+    trans3 (sym (congF (andEl p) ([a] a * z)))
+                  (forall3E bd.sg.assoc x y z)
+                  (trans ((congF (andEr p) ([a] x * a)))
+                                (andEl p)
+                  ).
+  inf := [x][y] x * y.
+  ax_inf := forallI [x] forallI [y] andI
+             (andI (trans4 (forall3E bd.sg.assoc x y x)
+                                       (congF (forall2E mc.commut y x) ([a] x * a))
+                                       (sym (forall3E bd.sg.assoc x x y))
+                                       (congF (forallE bd.midem.idem x) ([a] a * y))
+                         )
+                        (trans (forall3E bd.sg.assoc x y y) (congF (forallE bd.midem.idem y) ([a] x * a)))
+             )
+             (forallI [z] impI [p] (trans3 
+                   (sym (forall3E bd.sg.assoc z x y))
+                   ((congF (andEl p) [a] a * y))
+                   (andEr p)
+             )). 
+}.
+
+
+%view SLOrd : SemiLattice -> OrderInf = {
+ mc.mag.* := [x][y] inf x y.
+ bd.sg.assoc := forallI [x] forallI [y] forallI [z]
+                   impE (forall2E ord.antisym (inf (inf x y) z) (inf x (inf y z)))
+                   (
+                    andI                
+                    (
+		     impE 
+                       (forallE (andEr (forall2E ax_inf x (inf y z))) (inf (inf x y) z))
+                       (andI
+                         (ord.leqItrans (andEl (andEl (forall2E ax_inf (inf x y) z)))
+                                        (andEl (andEl (forall2E ax_inf x y)))
+                         )
+                         (impE
+                           (forallE (andEr (forall2E ax_inf y z)) (inf (inf x y) z))
+                           (andI
+                             (ord.leqItrans (andEl (andEl (forall2E ax_inf (inf x y) z )))
+                                            (andEr (andEl (forall2E ax_inf x y)))
+                             )
+                             (andEr (andEl (forall2E ax_inf (inf x y) z)))
+                           )
+                         )
+                       )   
+                    )
+
+                    (
+                     impE
+                     (forallE (andEr (forall2E ax_inf (inf x y) z)) (inf x (inf y z)))
+		     (andI
+		       (impE
+                         (forallE (andEr (forall2E ax_inf x y)) (inf x (inf y z)))
+		         (andI
+                          (andEl(andEl(forall2E ax_inf x (inf y z))))
+                          (ord.leqItrans (andEr(andEl(forall2E ax_inf x (inf y z))))
+                                         (andEl(andEl(forall2E ax_inf y z)))
+                          )
+                         )
+                       )
+                       (ord.leqItrans (andEr(andEl(forall2E ax_inf x (inf y z))))
+                                    (andEr(andEl(forall2E ax_inf y z)))
+                       )
+                     )
+                     
+                    )
+                   ).
+                  
+ bd.midem.idem := forallI [x]
+                   impE (forall2E ord.antisym (inf x x) x)
+                    (andI
+                     (andEl (andEl (forall2E ax_inf x x)))
+                     (impE
+                        (forallE (andEr (forall2E ax_inf x x)) x)
+                        (andI
+                          (forallE ord.refl x)
+                          (forallE ord.refl x)
+                        )
+                     )
+                    ).
+
+
+
+ mc.commut := forallI [x] forallI [y]
+                   impE (forall2E ord.antisym (inf x y) (inf y x))    
+                      (andI 
+                       (
+                        impE
+                        (forallE (andEr(forall2E ax_inf y x)) (inf x y))
+                        (andI
+                          (andEr (andEl (forall2E ax_inf x y))) 
+                          (andEl (andEl (forall2E ax_inf x y)))
+                        )
+                       )
+                       (
+                        impE
+                        (forallE (andEr (forall2E ax_inf x y)) (inf y x))
+                        (andI
+                          (andEr(andEl(forall2E ax_inf y x))) 
+                          (andEl(andEl(forall2E ax_inf y x)))
+                        )
+                       )
+                      ).     
+                         
+ }.
+
+
+%view CartSL : Cartesian -> SemiLatticeBounded = {
+  %struct inf := OrdSL sl.
+  top.top := mon.miden.rid.e.
+  top.ax_top := forallI [x] (forallE mon.miden.rid.iden x).
+}.
+
+%view SLCart : SemiLatticeBounded -> Cartesian = {
+  %struct sl := SLOrd inf.
+  mon.miden.rid.e := top.top.
+  mon.miden.rid.iden := forallI [x]
+                         impE (forall2E top.ord.antisym (inf.inf x top.top) x)
+                    (andI
+                     (andEl(andEl(forall2E inf.ax_inf x top.top)))
+                     (impE (forallE (andEr(forall2E inf.ax_inf x top.top)) x)
+                       (andI
+                        (forallE top.ord.refl x)
+                        (forallE top.ax_top x)
+                       )
+                     )
+                    ).
+ mon.miden.lid.iden := forallI [x]
+                         impE (forall2E top.ord.antisym (inf.inf top.top x) x)
+                    (andI
+                     (andEr(andEl(forall2E inf.ax_inf top.top x)))
+                     (impE (forallE (andEr(forall2E inf.ax_inf top.top x)) x)
+                       (andI
+                        (forallE top.ax_top x)
+                        (forallE top.ord.refl x)
+                       )
+                     )
+                    ).
+}.
+
+%view CoCartSL : Cocartesian -> SemiLatticeBounded = {
+  %struct sup := OppSup OrdSL sl.
+  bot.bot := mon.miden.lid.e.
+  bot.ax_bot := forallI [x] (forallE mon.miden.rid.iden x).
+}.
+
+%view SLCoCart : SemiLatticeBounded -> Cocartesian = {
+ %struct sl := SLOrd OppInf sup.
+ mon.miden.rid.e := bot.bot.
+ mon.miden.rid.iden := forallI [x]
+                         impE (forall2E bot.ord.antisym (sup.sup x bot.bot) x)
+                    (andI
+                     (impE (forallE (andEr(forall2E sup.ax_sup x bot.bot)) x)
+                       (andI
+                        (forallE bot.ord.refl x)
+                        (forallE bot.ax_bot x)
+                       )
+                     )
+                     (andEl(andEl(forall2E sup.ax_sup x bot.bot)))
+                    ).
+ mon.miden.lid.iden := forallI [x]
+                         impE (forall2E bot.ord.antisym (sup.sup bot.bot x) x)
+                    (andI
+                     (impE (forallE (andEr(forall2E sup.ax_sup bot.bot x)) x)
+                       (andI
+                        (forallE bot.ax_bot x)
+                        (forallE bot.ord.refl x)
+                       )
+                     )
+                     (andEr(andEl(forall2E sup.ax_sup bot.bot x)))
+                    ).
+}.
+
+%view LatAlgOrd : LatticeAlg -> LatticeOrd = {
+ %struct bisemlat.meet := SLOrd inf.
+ %struct bisemlat.join := SLOrd OppInf sup.
+ absorbtion := forallI [x] forallI [y] andI 
+               (impE (forall2E inf.ord.antisym (inf.inf x (sup.sup x y)) x)
+                (andI
+                 (andEl(andEl(forall2E inf.ax_inf x (sup.sup x y))))
+                 (impE (forallE (andEr(forall2E inf.ax_inf x (sup.sup x y))) x)
+                  (andI
+                   (forallE inf.ord.refl x)
+                   (equivEr (forall2E ax_leq x (sup.sup x y)) (andEl(andEl(forall2E sup.ax_sup x y))))
+                  )
+                 )
+                )
+               )
+               (impE (forall2E inf.ord.antisym (sup.sup x (inf.inf x y)) x)
+                (andI
+                 (equivEr (forall2E ax_leq (sup.sup x (inf.inf x y)) x)
+                          (impE (forallE (andEr(forall2E sup.ax_sup x (inf.inf x y))) x)
+                                (andI (forallE sup.ord.refl x)
+                                      (equivEl (forall2E ax_leq (inf.inf x y) x)
+                                               (andEl(andEl(forall2E inf.ax_inf x y)))
+                                      )
+                                )
+                          )
+                 )
+                 (equivEr (forall2E ax_leq x (sup.sup x (inf.inf x y)))
+                          (andEl (andEl (forall2E sup.ax_sup x (inf.inf x y))))
+                 )
+                )
+               ).
+}.
+
+%view LatOrdAlg : LatticeOrd -> LatticeAlg = {
+ %struct inf := OrdSL bisemlat.meet.
+ %struct sup := OppSup OrdSL bisemlat.join.
+ ax_leq := forallI [x] forallI [y] andI 
+           (impI [p] (
+                      trans
+		     (sym
+                     (congF
+                      (sym (trans (sym p) (forall2E bisemlat.meet.mc.commut x y)))
+                      ([a] y \/ a)))
+                     (andEr (forall2E absorbtion y x))
+                    ))
+           (impI [q] (
+                      trans
+		     (sym
+                     (congF
+                      (sym (trans (sym q) (forall2E bisemlat.join.mc.commut y x)))
+                      ([a] x /\ a)))
+                     (andEl (forall2E absorbtion x y))
+                    )).
+}.
+

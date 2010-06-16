@@ -1,0 +1,13 @@
+%read "modules.elf".
+%read "fol.elf".
+
+%sig ExistsUnique = {
+  %include FOLEQ   %open.
+  existsU : (i -> o) -> o = [f : i -> o] exists [x : i] (f x and forall [y : i] f y imp y eq x).
+}.
+
+%sig Inequal = {
+  %include NEG     %open.
+  %include Equal   %open.
+  neq     : i -> i -> o = [x][y] not x eq y.   %infix none 20 neq.
+}.

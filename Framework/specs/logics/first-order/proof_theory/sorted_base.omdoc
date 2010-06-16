@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="BaseSFOLPF">
+   <include from="../../propositional/proof_theory/base.omdoc?BasePF"/>
+   
+   <include from="../syntax/sorted_base.omdoc?BaseSFOL"/>
+   
+   
+</theory>
+
+</omdoc>

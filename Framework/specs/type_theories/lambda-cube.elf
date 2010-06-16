@@ -1,0 +1,86 @@
+%% The Lambda Cube
+%% Fulya Horozal, Florian Rabe
+
+%read "modules-lambda.elf".
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% the base corner of the lambda cube
+
+%% Barendregt's lambda arrow: simple type theory
+%sig LambdaArrow = {
+  %include SimpTypes.
+}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% the first triple of corners extending the base corner
+
+%% Barendregt's lambda weak omega
+%% extension of base corner with function kinds
+%sig LambdaOmega_ = {
+  %include LambdaArrow.
+  %include SimpKinds.
+}.
+
+%% Barendregt's lambda 2: second order type theory, system F
+%% extension of base corner with universal types
+%sig Lambda2 = {
+  %include LambdaArrow.
+  %include UnivTypes.
+}.
+
+%% Barendregt's lambda P: dependent type theory (e.g., LF)
+%sig LambdaP = {
+  %include DepTypes.
+  %include DepKinds.
+}.
+
+%% inclusion of base corner into LambdaP
+%view LambdaArrowToP : LambdaArrow -> LambdaP = {
+  %include SimpToDep.
+}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% the triple of corners that combine two corners from the previous triple
+
+%% Barendregt's lambda omega: system F omega
+%sig LambdaOmega = {
+  %include LambdaOmega_.
+  %include PolyTypes.
+}.
+
+%view Lambda2ToOmega : Lambda2 -> LambdaOmega = {
+  %include UnivToPoly.
+}.
+
+%% Barendregt's lambda P 2
+%sig LambdaP2 = {
+  %include LambdaP.
+  %include PolyTypes.  
+}.
+
+%view Lambda2ToP2 : Lambda2 -> LambdaP2 = {
+  %include LambdaArrowToP.
+  %include UnivToPoly.
+}.
+
+%% Barendregt's lambda P weak omega
+%sig LambdaPOmega_ = {
+  %include LambdaP.
+  %include TypeOper.
+}.
+
+%view LambdaOmega_ToPOmega_ : LambdaOmega_ -> LambdaPOmega_ = {
+  %include LambdaArrowToP.
+  %include SimpToDep.
+  %include SimpToOper.
+}.
+
+%% Barendregt's lambda P omega: calculus of constructions (e.g., Coq)
+%sig LambdaPOmega = {
+  %include LambdaP2.
+  %include LambdaPOmega_.
+}.
+
+%view LambdaOmegaToPOmega : LambdaOmega -> LambdaPOmega = {
+  %include LambdaOmega_ToPOmega_.
+}.

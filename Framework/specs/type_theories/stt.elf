@@ -1,0 +1,12 @@
+%% Simple Type Theory
+%% Fulya Horozal, Florian Rabe
+
+%read "base.elf".
+%read "modules-lambda.elf".
+%read "modules-other.elf".
+
+%sig STT = {
+  %include TypesTerms %open.
+  %include Product    %open.
+  %include SimpTypes  %open.
+}.

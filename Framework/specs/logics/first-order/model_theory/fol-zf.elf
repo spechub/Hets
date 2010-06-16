@@ -1,0 +1,15 @@
+%read "fol.elf".
+%read "modules-zf.elf".
+%read "../../propositional/model_theory/prop-zf.elf".
+
+%view FOLMOD-ZF : FOLMOD -> FOLZFCModel = {
+  %include PLMOD-ZF.
+  %include ForallMOD-ZF.
+  %include ExistsMOD-ZF.
+  non_empty_universe := non_empty_universe.
+}.
+
+%view FOLEQMOD-ZF : FOLEQMOD -> FOLZFCModel = {
+  %include FOLMOD-ZF.
+  %include EqualMOD-ZF.
+}.

@@ -1,0 +1,15 @@
+%read "bool.elf".
+%read "../../../set_theories/zfc/bool.elf".
+%read "../../meta/sttifol-zf.elf".
+
+%view Bool-ZF : Bool -> Boolean = {
+   %include STTIFOLEQ-ZF.
+   bool' := cbool.
+   0     := ⊥.
+   1     := ⊤.
+   cons  := ccons.
+   boole := ctnd.
+   ifte  := Lambda [c] Lambda [t] Lambda [e] ifte c t e.
+   ifteT := [C][T][E] impI [p] trans beta3 (EqcongEr ([x] ifte x T E Eq T) p ifte1). 
+   ifteE := [C][T][E] impI [p] trans beta3 (EqcongEr ([x] ifte x T E Eq E) p ifte0). 
+}.

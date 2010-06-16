@@ -1,0 +1,4 @@
+%sig Base = {
+  o     : type.
+  ded   : o -> type.        %prefix 0 ded.
+}.

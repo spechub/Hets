@@ -1,0 +1,11 @@
+%read "../../propositional/model_theory/bool.elf".
+
+%sig BaseMOD = {
+  %include STTIFOLEQ %open.	
+  %include Bool %open.
+}.
+
+%view BaseMODView : Base -> BaseMOD = {
+  o   := bool.
+  ded := [F : bool] ded F eq 1.
+}.

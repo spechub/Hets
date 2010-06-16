@@ -1,0 +1,6 @@
+%read "../../propositional/syntax/base.elf".
+
+%sig BaseFOL = {
+  %include Base  %open o ded.
+  i : type. 
+}.

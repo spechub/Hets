@@ -1,0 +1,16 @@
+%% Martin-Löf Type Theory
+%% Fulya Horozal, Florian Rabe
+
+%read "modules-lambda.elf".
+%read "modules-other.elf".
+
+%sig MLTT = { 
+  %include KindsTypesTerms %open.
+  %include UNIT   %open.
+  %include VOID   %open.
+  %include IDENT  %open.
+  %include DUNION %open.
+  %include SIGMA  %open.
+  %include DepTypes %open.
+  %include DepKinds %open.
+}.

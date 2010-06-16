@@ -1,0 +1,33 @@
+%read "modules.elf".
+%read "base-zf.elf".
+
+%view ForallMOD-ZF : ForallMOD -> FOLZFCModel = {
+   %include BaseFOLMOD-ZF.
+   forall := ∀.
+   forall1 := [F : Elem univ -> ℬ][p] 
+                subset_antisym ∞greatest 
+                               (⋂infimum [a] 
+                                          subset_eq ⊆‍refl 
+                                                    (sym (ForallE p a))).
+   forall0 := [F : Elem univ -> ℬ][p] 
+                subset_antisym (ExistsE p [a][q] subset_eq ⋂subset q) 
+                               ∅least.
+}.
+
+%view ExistsMOD-ZF : ExistsMOD -> FOLZFCModel = {
+   %include BaseFOLMOD-ZF.
+   existq.exists := ∃.
+   exists1 := [F : Elem univ -> ℬ][p]
+                subset_antisym ∞greatest 
+                               (ExistsE p [a][q] eq_subset (sym q) ⋃subset).
+
+   exists0 := [F : Elem univ -> ℬ][p] 
+                subset_antisym (⋃supremum [a] subset_eq ⊆‍refl (ForallE p a))
+                               ∅least.     
+}.
+
+%view EqualMOD-ZF : EqualMOD -> FOLZFCModel = {
+   %include BaseFOLMOD-ZF.
+   equal.eq := [x][y] reflect (x Eq y).
+   equaliff := [x][y] equivI ([p] reflectI1 p) ([q] reflectE1 q). 
+}.

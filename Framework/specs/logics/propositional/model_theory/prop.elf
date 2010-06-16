@@ -1,0 +1,24 @@
+%read "../../meta/sttifol.elf".
+%read "../syntax/prop.elf".
+%read "modules.elf".
+
+%sig PLMOD = {
+ %include STTIFOLEQ   %open.	
+ %include BaseMOD     %open.
+ %include TruthMOD    %open.
+ %include FalsityMOD  %open.
+ %include NEGMOD      %open.
+ %include DISJMOD     %open.
+ %include CONJMOD     %open.
+ %include IMPMOD      %open.
+}.
+
+%view PLMODView : PL -> PLMOD = {
+  %include BaseMODView.
+  %include TruthMODView.
+  %include FalsityMODView.
+  %include NEGMODView.
+  %include IMPMODView.
+  %include CONJMODView.
+  %include DISJMODView.
+}.

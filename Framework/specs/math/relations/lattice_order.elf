@@ -1,0 +1,28 @@
+%% Lattices, based on orderings
+
+%read "order.elf".
+
+%sig LatticeOrd = {
+  %include FOLEQPFExt %open.
+  %struct inf : OrderInf.
+  %struct sup : OrderSup.
+  ax_leq : ded forall [x] forall [y] ((x inf.ord.rel y) <=> (x sup.leq y)).
+}.
+
+%sig Cartesian = {
+  %include FOLEQPFExt %open.
+  %struct inf: OrderInf.
+  %struct top: OrderTop = {%struct ord := inf.ord.}.
+}.
+
+%sig Cocartesian = {
+  %include FOLEQPFExt %open.
+  %struct sup: OrderSup.
+  %struct bot: OrderBot = {%struct ord := sup.ord.}.
+}.
+
+%sig LatticeBddOrd = {
+  %include FOLEQPFExt %open.
+  %struct cart : Cartesian.
+  %struct cocart : Cocartesian = {%struct sup.ord := cart.inf.ord.}.
+}.

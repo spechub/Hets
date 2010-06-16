@@ -1,0 +1,16 @@
+%read "base.elf".
+
+%{
+  minimal propositional logic
+  following Tarski, Bernays, and Wajsberg with primitive ⇒ and ⊥
+}%
+%sig MPL = {
+  %include Base %open.
+  ⊥ : o.
+  ⇒ : o -> o -> o.                                 %infix right 5 ⇒.
+  ¬ : o -> o = [x] x ⇒ ⊥.                          %prefix 20 ¬.
+  ⊤ : o = ¬ ⊥.
+  ∧ : o -> o -> o = [x][y] ¬ (x ⇒ ¬ y).            %infix left 10 ∧.
+  ∨ : o -> o -> o = [x][y] ¬ x ⇒ y.                %infix left 10 ∨.
+  ⇔ : o -> o -> o = [x][y] (x ⇒ y) ∧ (y ⇒ x).      %infix none 5 ⇔.
+}.

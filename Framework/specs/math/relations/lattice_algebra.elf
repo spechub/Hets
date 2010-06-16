@@ -1,0 +1,43 @@
+%% Lattices, algebraically
+
+%read "../algebra/algebra2.elf".
+
+%sig SemiLattice = {
+  %include FOLEQPFExt %open.
+  %struct mc : MagmaCommut.
+  %struct %implicit bd: Band = {
+     %struct sg.mag := mc.
+  } %open sg.mag.*.
+}.
+ 
+%sig BiSemiLattice = {
+  %include FOLEQPFExt %open.
+  %struct meet : SemiLattice %open * %as /\.
+  %struct join : SemiLattice %open * %as \/.
+}.
+
+%sig LatticeAlg = { 
+  %include FOLEQPFExt %open.
+  %struct %implicit bisemlat: BiSemiLattice %open /\ \/.
+  absorbtion: ded forall [x] forall [y] ((x /\ (x \/ y) == x) and ((x \/ (x /\ y)) == x)).
+  leq : i -> i -> o = [x][y] x /\ y == x.  %infix none 30 leq.
+}.
+
+%sig SemiLatticeBounded = {
+  %include FOLEQPFExt %open.
+  %struct %implicit sl : SemiLattice.
+  %struct mon : Monoid = {%struct sg := sl.} %open * e.
+}.
+
+%sig LocBddSemiLattice = {
+  %include FOLEQPFExt %open.
+  %struct meet : SemiLatticeBounded %open * %as /\ e %as bot.
+  %struct join : SemiLatticeBounded %open * %as \/ e %as top.
+}.
+
+%sig LatticeBddAlg = {
+  %include FOLEQPFExt %open.
+  %struct %implicit lat : LatticeAlg %open /\ \/.
+  %struct locbddslat : LocBddSemiLattice = {%struct meet.sl := lat.bisemlat.meet. 
+                                            %struct join.sl := lat.bisemlat.join.} %open bot top.
+}.

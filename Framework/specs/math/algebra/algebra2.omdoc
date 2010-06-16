@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="RightDistrib">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="mag1" from="algebra1.omdoc?Magma"></structure><alias name="+" for="??mag1/*"/>
+   <structure name="mag2" from="algebra1.omdoc?Magma"></structure><alias name="*" for="??mag2/*"/>
+   <constant name="dist">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="|-"/>
+               <om:OMA>
+                  <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                              </om:OMATP><om:OMV name="y"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                                    </om:OMATP><om:OMV name="z"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="=="/>
+                                    <om:OMA>
+                                       <om:OMS name="mag2/*"/>
+                                       <om:OMA>
+                                          <om:OMS name="mag1/*"/>
+                                          <om:OMV name="x"/>
+                                          <om:OMV name="y"/>
+                                       </om:OMA>
+                                       <om:OMV name="z"/>
+                                    </om:OMA>
+                                    <om:OMA>
+                                       <om:OMS name="mag1/*"/>
+                                       <om:OMA>
+                                          <om:OMS name="mag2/*"/>
+                                          <om:OMV name="x"/>
+                                          <om:OMV name="z"/>
+                                       </om:OMA>
+                                       <om:OMA>
+                                          <om:OMS name="mag2/*"/>
+                                          <om:OMV name="y"/>
+                                          <om:OMV name="z"/>
+                                       </om:OMA>
+                                    </om:OMA>
+                                 </om:OMA>
+                              </om:OMBIND>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="Distrib">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="mag1" from="algebra1.omdoc?Magma"></structure>
+   <structure name="mag2" from="algebra1.omdoc?Magma"></structure>
+   <structure name="rdis" from="?RightDistrib">
+      <strass name="mag1">
+         <OMMOR ><om:OMS name="mag1"/></OMMOR>
+      </strass>
+      <strass name="mag2">
+         <OMMOR ><om:OMS name="mag2"/></OMMOR>
+      </strass>
+   </structure>
+   <structure name="ldis" from="?RightDistrib">
+      <strass name="mag1">
+         <OMMOR ><om:OMS name="mag1"/></OMMOR>
+      </strass>
+      <strass name="mag2">
+         <OMMOR ><om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS base="algebra1.omdoc" module="OppositeMagma"/>
+            <om:OMS name="rdis/mag2"/>
+         </om:OMA></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="Ring">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="add" from="algebra1.omdoc?GroupAbelian"></structure><alias name="+" for="??add/g/mon/sg/mag/*"/><alias name="0" for="??add/g/mon/miden/rid/e"/><alias name="-" for="??add/g/minv/inv"/>
+   <structure name="mult" from="algebra1.omdoc?Semigroup"></structure><alias name="*" for="??mult/mag/*"/>
+   <structure name="dis" from="?Distrib">
+      <strass name="mag1">
+         <OMMOR ><om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS base="algebra1.omdoc" module="Semigroup" name="mag"/>
+            <om:OMS base="algebra1.omdoc" module="Monoid" name="sg"/>
+         </om:OMA>
+            <om:OMS base="algebra1.omdoc" module="Group" name="mon"/>
+         </om:OMA>
+            <om:OMS base="algebra1.omdoc" module="GroupAbelian" name="g"/>
+         </om:OMA>
+            <om:OMS name="add"/>
+         </om:OMA></OMMOR>
+      </strass>
+      <strass name="mag2">
+         <OMMOR ><om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS base="algebra1.omdoc" module="Semigroup" name="mag"/>
+            <om:OMS name="mult"/>
+         </om:OMA></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="RingCommut">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="r" from="?Ring"></structure><alias name="+" for="??r/add/g/mon/sg/mag/*"/><alias name="0" for="??r/add/g/mon/miden/rid/e"/><alias name="-" for="??r/add/g/minv/inv"/><alias name="*" for="??r/mult/mag/*"/>
+   <structure name="mc" from="algebra1.omdoc?MagmaCommut">
+      <strass name="mag">
+         <OMMOR ><om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS base="algebra1.omdoc" module="Semigroup" name="mag"/>
+            <om:OMS name="r/mult"/>
+         </om:OMA></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="RingUnit">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="r" from="?Ring"></structure><alias name="+" for="??r/add/g/mon/sg/mag/*"/><alias name="0" for="??r/add/g/mon/miden/rid/e"/><alias name="-" for="??r/add/g/minv/inv"/><alias name="*" for="??r/mult/mag/*"/>
+   <structure name="mon" from="algebra1.omdoc?Monoid">
+      <strass name="sg">
+         <OMMOR ><om:OMS name="r/mult"/></OMMOR>
+      </strass>
+   </structure><alias name="1" for="??mon/miden/rid/e"/>
+   
+</theory>
+
+<theory name="RingUnitCommut">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="ru" from="?RingUnit"></structure><alias name="+" for="??ru/r/add/g/mon/sg/mag/*"/><alias name="0" for="??ru/r/add/g/mon/miden/rid/e"/><alias name="-" for="??ru/r/add/g/minv/inv"/><alias name="*" for="??ru/r/mult/mag/*"/><alias name="1" for="??ru/mon/miden/rid/e"/>
+   <structure name="mc" from="algebra1.omdoc?MagmaCommut">
+      <strass name="mag">
+         <OMMOR ><om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS base="algebra1.omdoc" module="Semigroup" name="mag"/>
+            <om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS module="Ring" name="mult"/>
+            <om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS module="RingUnit" name="r"/>
+            <om:OMS name="ru"/>
+         </om:OMA>
+         </om:OMA>
+         </om:OMA></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+<theory name="IntegralDomain">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="ru" from="?RingUnit"></structure><alias name="+" for="??ru/r/add/g/mon/sg/mag/*"/><alias name="0" for="??ru/r/add/g/mon/miden/rid/e"/><alias name="-" for="??ru/r/add/g/minv/inv"/><alias name="*" for="??ru/r/mult/mag/*"/><alias name="1" for="??ru/mon/miden/rid/e"/>
+   <constant name="noZeroDiv">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="|-"/>
+               <om:OMA>
+                  <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                              </om:OMATP><om:OMV name="y"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="=&gt;"/>
+                              <om:OMA>
+                                 <om:OMS base="../../logics/propositional/syntax/modules.omdoc" module="CONJ" name="and"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="!="/>
+                                    <om:OMV name="x"/>
+                                    <om:OMS name="ru/r/add/g/mon/miden/rid/e"/>
+                                 </om:OMA>
+                                 <om:OMA>
+                                    <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="!="/>
+                                    <om:OMV name="y"/>
+                                    <om:OMS name="ru/r/add/g/mon/miden/rid/e"/>
+                                 </om:OMA>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="!="/>
+                                 <om:OMA>
+                                    <om:OMS name="ru/r/mult/mag/*"/>
+                                    <om:OMV name="x"/>
+                                    <om:OMV name="y"/>
+                                 </om:OMA>
+                                 <om:OMS name="ru/r/add/g/mon/miden/rid/e"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="RingDivision">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="ru" from="?RingUnit"></structure><alias name="+" for="??ru/r/add/g/mon/sg/mag/*"/><alias name="0" for="??ru/r/add/g/mon/miden/rid/e"/><alias name="-" for="??ru/r/add/g/minv/inv"/><alias name="*" for="??ru/r/mult/mag/*"/><alias name="1" for="??ru/mon/miden/rid/e"/>
+   <constant name="inv">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+               <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="invLeft">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="|-"/>
+               <om:OMA>
+                  <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="=&gt;"/>
+                        <om:OMA>
+                           <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="!="/>
+                           <om:OMV name="x"/>
+                           <om:OMS name="ru/r/add/g/mon/miden/rid/e"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="=="/>
+                           <om:OMA>
+                              <om:OMS name="ru/r/mult/mag/*"/>
+                              <om:OMV name="x"/>
+                              <om:OMA>
+                                 <om:OMS name="inv"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                           </om:OMA>
+                           <om:OMS name="ru/mon/miden/rid/e"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="invRight">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="|-"/>
+               <om:OMA>
+                  <om:OMS base="../../logics/first-order/syntax/modules.omdoc" module="Forall" name="forall"/>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../../logics/first-order/syntax/base.omdoc" module="BaseFOL" name="i"/>
+                        </om:OMATP><om:OMV name="x"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="=&gt;"/>
+                        <om:OMA>
+                           <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="!="/>
+                           <om:OMV name="x"/>
+                           <om:OMS name="ru/r/add/g/mon/miden/rid/e"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../logics/first-order/proof_theory/fol.omdoc" module="FOLEQPF" name="=="/>
+                           <om:OMA>
+                              <om:OMS name="ru/r/mult/mag/*"/>
+                              <om:OMA>
+                                 <om:OMS name="inv"/>
+                                 <om:OMV name="x"/>
+                              </om:OMA>
+                              <om:OMV name="x"/>
+                           </om:OMA>
+                           <om:OMS name="ru/mon/miden/rid/e"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="Field">
+   <include from="../../logics/first-order/proof_theory/derived.omdoc?FOLEQPFExt"/>
+   
+   <structure name="rd" from="?RingDivision"></structure>
+   <structure name="mc" from="?RingCommut">
+      <strass name="r">
+         <OMMOR ><om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMA>
+            <om:OMS base="http://cds.omdoc.org/omdoc/mmt.omdoc" module="mmt" name="composition"/>
+            <om:OMS module="RingUnit" name="r"/>
+            <om:OMS module="RingDivision" name="ru"/>
+         </om:OMA>
+            <om:OMS name="rd"/>
+         </om:OMA></OMMOR>
+      </strass>
+   </structure>
+   
+</theory>
+
+</omdoc>

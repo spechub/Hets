@@ -1,0 +1,46 @@
+%read "../../propositional/soundness/modules.elf".
+%read "../proof_theory/sorted_modules.elf".
+%read "../model_theory/sorted_modules.elf".
+%read "sorted_base.elf".
+
+%view SoundSForall : SForallPF -> SForallMOD = {
+  %include SoundBaseSFOL.
+  %include univq.
+  forallI := [S : Sort][F : Term S -> bool][p : {x} ded (F x) eq 1] forall1 (forallI [x] (p x)).
+  forallE := [S : Sort][F : Term S -> bool][p : ded (univq.forall [x] F x) eq 1] [c] 
+               (indirect ([q : ded (F c) eq 0] contra (forall0 (existsI c q)) p)).
+}.
+
+%view SoundSExists : SExistsPF -> SExistsMOD = {
+  %include SoundBaseSFOL.
+  %include existq.
+  existsI := [S : Sort][F : Term S -> bool][x][p : ded (F x) eq 1] exists1 (existsI x p).
+  existsE := [S : Sort][F : Term S -> bool][G][p : ded (existq.exists [x] F x) eq 1]
+              [f : {y} ded (F y) eq 1 -> ded G eq 1] 
+                (indirect ([q : ded G eq 0] 
+                  contra (exists0 (forallI [y] indirect' ([r : ded F y eq 1] contra q (f y r)))) 
+                         p)).          
+}.
+
+%view SoundSEqual : SEqualPF -> SEqualMOD = {
+  %include SoundBaseSFOL.
+  %include equal.
+  
+  %% alternatively use equal1 instead of (equivEl equaliff)
+  refl  := [S : Sort][X : Term S] equivEl equaliff refl. 
+  sym   := [S : Sort][X : Term S][Y : Term S][p : ded (X equal.eq Y) eq 1] 
+             equivEl equaliff (sym (equivEr equaliff p)).          
+  trans := [S : Sort][X : Term S][Y : Term S][Z : Term S]
+           [p : ded (X equal.eq Y) eq 1][q : ded (Y equal.eq Z) eq 1]
+             equivEl equaliff (trans (equivEr equaliff p)
+                                     (equivEr equaliff q)).
+  congF := [S : Sort][X : Term S][Y : Term S][T : Sort]
+           [p : ded (X equal.eq Y)  eq 1][F : Term S -> Term T]
+             equivEl equaliff (congF (equivEr equaliff p) F).
+  congP := [S : Sort][X : Term S][Y : Term S]
+           [p : ded (X equal.eq Y) eq 1][F : Term S -> bool]
+           [q : ded (F X) eq 1]
+              (congP (equivEr equaliff p) 
+                     ([a] (F a) eq 1)  
+                     q).
+}.

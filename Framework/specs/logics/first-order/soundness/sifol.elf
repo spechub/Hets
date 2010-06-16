@@ -1,0 +1,12 @@
+%read "../../propositional/soundness/iprop.elf".
+%read "../proof_theory/sifol.elf".
+%read "../model_theory/sfol.elf".
+%read "sorted_modules.elf".
+
+%view SoundSIFOL : SIFOLPF -> SFOLMOD = {
+  %include SoundBaseSFOL.
+  %include SFOLMODView.
+  %include SoundIPL.
+  %include SoundSForall.
+  %include SoundSExists.
+}.

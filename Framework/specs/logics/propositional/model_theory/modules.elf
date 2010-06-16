@@ -1,0 +1,109 @@
+%read "../syntax/modules.elf".
+%read "base.elf".
+
+%sig TruthMOD = {
+  %include STTIFOLEQ %open.	
+  %include BaseMOD %open.
+  true'  : bool.
+  true1  : ded true' eq 1.
+}.
+
+%view TruthMODView : Truth -> TruthMOD = {
+ %include BaseMODView.
+ true := true'.
+}.
+
+%sig FalsityMOD = {
+  %include STTIFOLEQ %open.	 
+  %include BaseMOD %open.
+  false' : bool.
+  false0 : ded false' eq 0.
+}.
+
+%view FalsityMODView : Falsity -> FalsityMOD = {
+ %include BaseMODView.
+ false := false'.
+}.
+
+%sig NEGMOD = {
+  %include STTIFOLEQ %open.	 
+  %include BaseMOD   %open.
+  not'  : elem (bool' → bool').
+  not1  : ded ((A eq 0) imp ((not' @ A) eq 1)).
+  not0  : ded ((A eq 1) imp ((not' @ A) eq 0)).
+  
+  not'' : bool -> bool 
+        = [A] not' @ A.  
+  not1' : ded (A eq 0) -> ded (not'' A) eq 1
+        = [p] impE not1 p.
+  not0' : ded A eq 1   -> ded (not'' A) eq 0
+        = [p] impE not0 p.
+}.
+
+%view NEGMODView : NEG -> NEGMOD = {
+  %include BaseMODView.
+  not := [A : bool] not' @ A.
+}.
+
+%sig DISJMOD = {
+  %include STTIFOLEQ %open.	
+  %include BaseMOD %open.
+  or'  : elem (bool' → bool' → bool').
+  or1 : ded (((A eq 1) or (B eq 1)) imp (((or' @ A) @ B) eq 1)).
+  or0 : ded (((A eq 0) and (B eq 0)) imp (((or' @ A) @ B) eq 0)).
+ 
+  or'' : bool -> bool -> bool
+       = [A][B] or' @ A @ B.               %infix left 10 or''.
+  or1' : ded (A eq 1) or  (B eq 1) -> ded (A or'' B) eq 1
+       = [p] (orE p 
+                  ([q : ded (A eq 1)] impE or1 p) 
+                  ([r : ded (B eq 1)] impE or1 p)).
+  or0' : ded (A eq 0) and (B eq 0) -> ded (A or'' B) eq 0
+       = [p] impE or0 p.
+}.
+
+%view DISJMODView : DISJ -> DISJMOD = {
+  %include BaseMODView.
+  or := [A][B] (or' @ A) @ B.
+}.
+
+%sig CONJMOD = {
+  %include STTIFOLEQ %open.
+  %include BaseMOD %open.
+  and'  : elem (bool' → bool' → bool').
+  and1 : ded (((A eq 1) and (B eq 1)) imp (((and' @ A) @ B) eq 1)).
+  and0 : ded (((A eq 0) or  (B eq 0)) imp (((and' @ A) @ B) eq 0)).
+ 
+  and'' : bool -> bool -> bool 
+        = [A][B] and' @ A @ B.                %infix left 10 and''.
+       
+  and1' : ded A eq 1 and B eq 1 -> ded (A and'' B) eq 1
+        = [p] impE and1 p. 
+  and0' : ded A eq 0 or  B eq 0 -> ded (A and'' B) eq 0
+        = [p] impE and0 p.
+}.
+
+%view CONJMODView : CONJ -> CONJMOD = {
+  %include BaseMODView.
+  and := [A][B] (and' @ A) @ B.
+}.
+
+%sig IMPMOD = {
+  %include STTIFOLEQ %open.
+  %include BaseMOD %open.
+  imp' : elem (bool' → bool' → bool').
+  imp1 : ded (((A eq 0) or  (B eq 1)) imp (((imp' @ A) @ B) eq 1)).
+  imp0 : ded (((A eq 1) and (B eq 0)) imp (((imp' @ A) @ B) eq 0)).
+ 
+  imp'' : bool -> bool -> bool
+         = [A][B] (imp' @ A) @ B.      %infix right 15 imp''.
+  imp1' : ded A eq 0 or  B eq 1 -> ded (A imp'' B) eq 1 
+         = [p] impE imp1 p.
+  imp0' : ded A eq 1 and B eq 0 -> ded (A imp'' B) eq 0
+         = [p] impE imp0 p.
+}.
+
+%view IMPMODView : IMP -> IMPMOD = {
+  %include BaseMODView.
+  imp := [A][B] imp' @ A @ B.
+}.

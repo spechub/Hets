@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="MLTT">
+   <include from="base.omdoc?KindsTypesTerms"/>
+   
+   <include from="modules-other.omdoc?UNIT"/>
+   
+   <include from="modules-other.omdoc?VOID"/>
+   
+   <include from="modules-other.omdoc?IDENT"/>
+   
+   <include from="modules-other.omdoc?DUNION"/>
+   
+   <include from="modules-other.omdoc?SIGMA"/>
+   
+   <include from="modules-lambda.omdoc?DepTypes"/>
+   
+   <include from="modules-lambda.omdoc?DepKinds"/>
+   
+   
+</theory>
+
+</omdoc>

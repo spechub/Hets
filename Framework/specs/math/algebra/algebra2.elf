@@ -1,0 +1,73 @@
+% Algebraic hierarchy
+
+%read "algebra1.elf".
+
+%sig RightDistrib = {
+  %include FOLEQPFExt %open.
+  %struct mag1 : Magma %open * %as +.
+  %struct mag2 : Magma %open *.
+  dist : |- forall [x] (forall [y] (forall [z] ((x + y) * z == (x * z) + (y * z)))).
+}.
+
+%sig Distrib = {
+  %include FOLEQPFExt %open.
+  %struct mag1 : Magma.
+  %struct mag2 : Magma.
+  %struct rdis : RightDistrib = {
+     %struct mag1 := mag1. 
+     %struct mag2 := mag2.
+  }.
+  %struct ldis : RightDistrib = {
+     %struct mag1 := mag1. 
+     %struct mag2 := OppositeMagma rdis.mag2.
+  }.
+}.
+
+%sig Ring = {
+  %include FOLEQPFExt %open.
+  %struct %implicit add : GroupAbelian   %open + 0 -.
+  %struct mult : Semigroup      %open *.
+  %infix none 110 *.
+  %struct dis : Distrib = {
+     %struct mag1 := add. 
+     %struct mag2 := mult.
+  }.
+}.
+
+%sig RingCommut = {
+  %include FOLEQPFExt %open.
+  %struct %implicit r : Ring  %open + 0 - *.
+  %struct mc : MagmaCommut = {%struct mag := r.mult.}.
+}.
+
+%sig RingUnit = {
+  %include FOLEQPFExt %open.
+  %struct %implicit r : Ring  %open + 0 - *.
+  %struct mon : Monoid = {%struct sg := r.mult.}  %open e %as 1.
+}.
+
+%sig RingUnitCommut = {
+  %include FOLEQPFExt %open.
+  %struct %implicit ru : RingUnit %open + 0 - * 1.
+  %struct mc : MagmaCommut = {%struct mag := Ring..mult.}.
+}.
+
+%sig IntegralDomain = {
+  %include FOLEQPFExt %open.
+  %struct %implicit ru : RingUnit %open + 0 - * 1.
+  noZeroDiv : |- forall [x] forall [y] (x != 0  and  y != 0  => x * y != 0).
+}.  
+
+%sig RingDivision = {
+  %include FOLEQPFExt %open.
+  %struct %implicit ru : RingUnit  %open + 0 - * 1.
+  inv : i -> i.
+  invLeft : |- forall [x] (x != 0  =>  x * (inv x) == 1). 
+  invRight : |- forall [x] (x != 0  => (inv x) * x == 1).
+}.
+
+%sig Field = {
+  %include FOLEQPFExt %open.
+  %struct %implicit rd : RingDivision.
+  %struct mc : RingCommut = {%struct r := rd.}.
+}.

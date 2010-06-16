@@ -1,0 +1,7 @@
+%read "../../propositional/syntax/base.elf".
+%read "../../../type_theories/base.elf".
+
+%sig BaseSFOL = {
+  %include Base  %open.
+  %struct sorts : Level' %open exp %as tm cl %as sort.
+}.

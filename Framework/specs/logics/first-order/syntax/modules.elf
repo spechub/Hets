@@ -1,0 +1,16 @@
+%read "base.elf".
+
+%sig Forall = {
+  %include BaseFOL   %open o i.
+  forall : (i -> o) -> o.
+}.
+
+%sig Exists = {
+  %include BaseFOL   %open o i.
+  exists : (i -> o) -> o.
+}.
+
+%sig Equal = {
+  %include BaseFOL   %open o i.
+  eq : i -> i -> o.  %infix none 25 eq.
+}.

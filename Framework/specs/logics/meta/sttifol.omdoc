@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<view name="IntExt" from="../../type_theories/base.omdoc?Level" to="../first-order/proof_theory/sorted_modules.omdoc?SEqualPF">
+   
+   <conass name="cl">
+      <om:OMOBJ>
+         <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+      </om:OMOBJ>
+   </conass>
+   <conass name="exp">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+               <om:OMV name="A"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="==">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="Y"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="X"/>
+                        <om:OMV name="Y"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="refl">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS name="refl"/>
+                  <om:OMV name="A"/>
+                  <om:OMV name="X"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="sym">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="Y"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMV name="A"/>
+                              <om:OMV name="X"/>
+                              <om:OMV name="Y"/>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS name="sym"/>
+                        <om:OMV name="A"/>
+                        <om:OMV name="X"/>
+                        <om:OMV name="Y"/>
+                        <om:OMV name="p"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="trans">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="Y"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="Z"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                              <om:OMA>
+                                 <om:OMS base="../syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMV name="X"/>
+                                 <om:OMV name="Y"/>
+                              </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="p"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                                 <om:OMA>
+                                    <om:OMS base="../syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMV name="A"/>
+                                    <om:OMV name="Y"/>
+                                    <om:OMV name="Z"/>
+                                 </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="q"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS name="trans"/>
+                              <om:OMV name="A"/>
+                              <om:OMV name="X"/>
+                              <om:OMV name="Y"/>
+                              <om:OMV name="Z"/>
+                              <om:OMV name="p"/>
+                              <om:OMV name="q"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   <conass name="cong">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="X"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="Y"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+                        </om:OMATP><om:OMV name="B"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMBIND>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                        <om:OMBVAR>
+                        <om:OMATTR><om:OMATP>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                           <om:OMA>
+                              <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="ded"/>
+                              <om:OMA>
+                                 <om:OMS base="../syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMV name="X"/>
+                                 <om:OMV name="Y"/>
+                              </om:OMA>
+                           </om:OMA>
+                           </om:OMATP><om:OMV name="F"/>
+                        </om:OMATTR>
+                     </om:OMBVAR>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                                 <om:OMA>
+                                 <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                                 <om:OMA>
+                                 <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="p"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS name="congF"/>
+                              <om:OMV name="A"/>
+                              <om:OMV name="X"/>
+                              <om:OMV name="Y"/>
+                              <om:OMV name="B"/>
+                              <om:OMV name="F"/>
+                              <om:OMBIND>
+                                 <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                                 <om:OMBVAR>
+                                 <om:OMATTR><om:OMATP>
+                                    <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                                    <om:OMA>
+                                       <om:OMS base="../syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                                       <om:OMV name="A"/>
+                                    </om:OMA>
+                                    </om:OMATP><om:OMV name="x"/>
+                                 </om:OMATTR>
+                              </om:OMBVAR>
+                                 <om:OMA>
+                                    <om:OMV name="p"/>
+                                    <om:OMV name="x"/>
+                                 </om:OMA>
+                              </om:OMBIND>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMBIND>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="STTIFOLEQ">
+   <include from="../first-order/proof_theory/sifol.omdoc?SIFOLEQPF"/>
+   
+   <include from="../propositional/proof_theory/derived.omdoc?PLPFExt"/>
+   
+   <structure name="fun" from="../../type_theories/modules-lambda.omdoc?SimpFun">
+      <strass name="level">
+         <OMMOR ><om:OMS module="IntExt"/></OMMOR>
+      </strass>
+   </structure><alias name="→" for="??fun/→"/><alias name="λ" for="??fun/λ"/><alias name="@" for="??fun/@"/><alias name=";" for="??fun/;"/><alias name="∘" for="??fun/∘"/><alias name="beta" for="??fun/beta"/>
+   <constant name="set">
+      <type>
+         <om:OMOBJ>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="type"/>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMS base="../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   
+   <constant name="elem">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="type"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+                  </om:OMATP><om:OMV name="x"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                  <om:OMV name="x"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   
+   
+</theory>
+
+</omdoc>

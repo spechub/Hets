@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="Base" meta="http://cds.omdoc.org/foundations/lf/lf.omdoc?lf">
+   
+   <constant name="o">
+      <type>
+         <om:OMOBJ>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="type"/>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="ded">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS name="o"/>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="type"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??ded" role="application" fixity="pre" precedence="0" implicit="0"/>
+   
+</theory>
+
+</omdoc>

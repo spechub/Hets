@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="Truth">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/>
+   
+   <constant name="true">
+      <type>
+         <om:OMOBJ>
+            <om:OMS base="base.omdoc" module="Base" name="o"/>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="Falsity">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/>
+   
+   <constant name="false">
+      <type>
+         <om:OMOBJ>
+            <om:OMS base="base.omdoc" module="Base" name="o"/>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<theory name="NEG">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/>
+   
+   <constant name="not">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??not" role="application" fixity="pre" precedence="20" implicit="0"/>
+   
+</theory>
+
+<theory name="IMP">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/>
+   
+   <constant name="imp">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??imp" role="application" fixity="in" associativity="right" precedence="5" implicit="0"/>
+   
+</theory>
+
+<theory name="CONJ">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/>
+   
+   <constant name="and">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??and" role="application" fixity="in" associativity="left" precedence="10" implicit="0"/>
+   
+</theory>
+
+<theory name="DISJ">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/>
+   
+   <constant name="or">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??or" role="application" fixity="in" associativity="left" precedence="10" implicit="0"/>
+   
+</theory>
+
+</omdoc>

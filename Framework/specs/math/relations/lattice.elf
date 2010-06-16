@@ -1,0 +1,68 @@
+%% Variants of lattices (based on the algebraic definition of lattices)
+
+%read "lattice_algebra.elf".
+
+%sig LatticeDistrib = {
+  %include FOLEQPFExt %open.
+  %struct %implicit lat : LatticeAlg.
+  %struct md : Distrib = {
+     %struct mag1 := BiSemiLattice..meet.
+     %struct mag2 := BiSemiLattice..join.
+  }.
+}.
+
+%sig LatticeModularAlg = {
+  %include FOLEQPFExt %open.
+  %struct %implicit lat: LatticeAlg %open /\ \/.
+  modAlg: ded forall [x] forall [y] forall [z] (((x /\ z) \/ y) /\ z) == ((x /\ z) \/ (y /\ z)).
+}. 
+
+%sig LatticeComplemented = {
+  %include FOLEQPFExt %open.
+  %struct %implicit lat : LatticeBddAlg %open /\ \/ bot top.
+  compl : i -> i.
+  is_compl_of : i -> i -> o = [x][c] ((x /\ c == bot) and (x \/ c == top)).
+  complementarity: ded forall [x] is_compl_of x (compl x).
+}.  
+
+%sig LatticeBoolean = {
+  %include FOLEQPFExt %open.
+  %struct %implicit latd : LatticeDistrib.
+  %struct latc:  LatticeComplemented = {%struct lat.lat := latd.}.
+}.
+
+%sig LatticeModular = {
+  %include FOLEQPFExt %open.
+  %struct %implicit lat : LatticeAlg %open /\ \/ leq.
+  modOrd: ded forall [x] forall [y] forall [z] ((x leq y) imp (x \/ (y /\ z)) == (y /\ (x \/ z))).
+}.
+
+%sig RelPseudoComp = {
+  %include FOLEQPFExt %open.
+  %struct %implicit lat: LatticeAlg %open /\ \/ leq.
+  rpc: i -> i -> i.
+  is_rpc: i -> i -> i -> o = [a][b][p] ((a /\ p) leq b) and (forall [z] ((a /\ z) leq b) imp (z leq p)).
+  pseudocomplementarity: ded forall [a] forall [b] is_rpc a b (rpc a b).
+}.
+
+%sig Heyting = {
+  %include FOLEQPFExt %open.
+  %struct %implicit rpc : RelPseudoComp.
+  %struct botBound : SemiLatticeBounded = {%struct sl := BiSemiLattice..join.} %open e %as bot.
+  top : i = rpc.rpc bot bot.
+}.
+
+%{
+%view TopBound : SemiLatticeBounded -> Heyting = {
+   %struct sl := BiSemiLattice..meet.
+   mon.miden.rid.e := top.
+}.
+
+%view IPropHeyting : IProp -> Heyting = {
+   
+}.
+
+%view HeytBool : Heyting -> LatticeBoolean = {
+   
+}.
+}%

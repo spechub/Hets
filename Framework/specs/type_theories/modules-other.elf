@@ -1,0 +1,62 @@
+%% Fulya Horozal, Florian Rabe
+
+%read "base.elf".
+
+%sig IDENT = {
+  %include TypesTerms %open.
+  id   : tm A -> tm A -> tp.
+  refl  : X == Y -> tm id X Y.
+  %{ left-over from old version, should be refactored
+  subsType : X == Y -> {F : tm A -> tp} (F X) === (F Y).
+  cast   : A === B -> tm A -> tm B.
+  casteq : {p : A === B} {a : tm A} a == (cast (TEq..sym p) (cast p a)).
+}%
+}.
+  
+%sig UNIT = {
+  %include TypesTerms %open.
+  unit' : tp.
+  unit = tm unit'.
+  ! : unit.
+}.
+
+%sig VOID = {
+  %include TypesTerms %open.
+  void' : tp.
+  void = tm void'.
+  !! : void -> tm A.
+}.
+  
+%% Disjoint union types
+%sig DUNION = {
+  %include TypesTerms %open.
+  +' : tp -> tp -> tp.        %infix none 5 +'.
+  +  = [a][b] (tm a +' b).    %infix none 5 +.
+  inj1 : tm A -> A + B.
+  inj2 : tm B -> A + B.
+  case : A + B -> (tm A -> tm C) -> (tm B -> tm C) -> tm C.
+}.
+
+%sig Product = {
+  %include TypesTerms %open.
+  *    : tp -> tp -> tp.      %infix none 5 *.
+  pair : tm A -> tm B -> tm A * B.
+  pi1  : tm A * B -> tm A.
+  pi2  : tm A * B -> tm B.
+  convpi1 : pi1 (pair X Y) == X.
+  convpi2 : pi2 (pair X Y) == Y.
+  convpair: pair (pi1 U) (pi2 U) == U.
+}.
+ 
+%sig SIGMA = {
+  %include TypesTerms %open.
+  S'   : (tm A -> tp) -> tp.
+  S    = [f] tm (S' f).
+  pair : {a : tm A} tm (B a) -> S [x] (B x).
+  ,    : {a : tm A} tm (B a) -> S [x] (B x) = [a][b] (pair a b).
+                                                      %infix left 1 ,.
+  pi1  : S ([x : tm A] (B x)) -> tm A.
+  pi2  : {u : S [x : tm A] (B x)} tm (B (pi1 u)).
+  *'   = [a][b] S' [x:tm a] b.                        %infix none 5 *'.
+  *    = [a][b] (tm a *' b).                          %infix none 5 *.
+}.

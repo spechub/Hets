@@ -1,0 +1,30 @@
+%read "../syntax/fol.elf".
+%read "../../propositional/model_theory/prop.elf".
+%read "modules.elf".
+
+%sig FOLMOD = {
+  %include STTIFOLEQ   %open. 
+  %include BaseFOLMOD  %open.
+  %include PLMOD       %open.
+  %include ForallMOD   %open.
+  %include ExistsMOD   %open.
+  %include EqualMOD    %open.
+  non_empty_universe : ded exists [x: elem univ] true.
+}.
+
+%view FOLMODView : FOL -> FOLMOD = {
+  %include BaseFOLMODView.
+  %include PLMODView.
+  %include ForallMODView.
+  %include ExistsMODView.
+}.
+
+%sig FOLEQMOD = {
+  %include FOLMOD      %open.
+  %include EqualMOD    %open.
+}.
+
+%view FOLEQMODView : FOLEQ -> FOLEQMOD = {
+  %include FOLMODView.
+  %include EqualMODView.  
+}.

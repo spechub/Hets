@@ -1,0 +1,53 @@
+%read "../../meta/sttifol.elf".
+%read "../syntax/prop.elf".
+%read "bool.elf".
+
+%sig PLMOD = {
+  %include STTIFOLEQ %open.	
+  %include Bool %open.
+}.
+
+%view Base-PLMOD : Base -> PLMOD = {
+  o   := bool.
+  ded := [F : bool] ded F eq 1.
+}.
+
+%view Truth-PLMOD : Truth -> PLMOD = {
+ %include Base-PLMOD.
+ true := 1.
+}.
+
+%view Falsity-PLMOD : Falsity -> PLMOD = {
+ %include Base-PLMOD.
+ false := 0.
+}.
+
+%view NEG-PLMOD : NEG -> PLMOD = {
+  %include Base-PLMOD.
+  not := ¬.
+}.
+
+%view DISJ-PLMOD : DISJ -> PLMOD = {
+  %include Base-PLMOD.
+  or := [A][B] A ∨ B.
+}.
+
+%view CONJ-PLMOD : CONJ -> PLMOD = {
+  %include Base-PLMOD.
+  and := [A][B] A ∧ B. 
+}.
+
+%view IMP-PLMOD : IMP -> PLMOD = {
+  %include Base-PLMOD.
+  imp := [A][B] A ⇒ B.
+}.
+
+%view PL-PLMOD : PL -> PLMOD = {
+  %include Base-PLMOD.
+  %include Truth-PLMOD.
+  %include Falsity-PLMOD.
+  %include NEG-PLMOD.
+  %include IMP-PLMOD.
+  %include CONJ-PLMOD.
+  %include DISJ-PLMOD.
+}.

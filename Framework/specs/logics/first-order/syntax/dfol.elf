@@ -1,0 +1,30 @@
+%% Twelf signature for DFOL
+%% Florian Rabe
+
+%% General remarks
+%% %name S x  -  variables of type S should be named x
+%% %infix left 10 f  -  f is left-associative infix symbol of precedence level 10
+%% %prefix 10 f  -  f is prefix symbol of precedence level 10
+%% f' is the symbol used for the morphism component of the functor f since Twelf does not support overloading.
+
+%sig DFOL = {
+  Sort : type.    %name Sort S.
+  Terms : Sort -> type.
+  %% ^ is abbreviation for Terms
+  ^ = Terms.
+  Form : type.    %name Form F.
+  true : Form.
+  false : Form.
+  and : Form -> Form -> Form.      %infix left 6 and.
+  or : Form -> Form -> Form.       %infix left 4 or.
+  impl : Form -> Form -> Form.     %infix none 3 impl.
+  not : Form -> Form.    %prefix 8 not.
+  forall : (^ S -> Form) -> Form.  %prefix 2 forall.
+  exists : (^ S -> Form) -> Form.  %prefix 2 forall.
+  equ : ^ S -> ^ S -> Form.
+  == = equ.                  %infix none 10 ==.
+  <=> : Form -> Form -> Form.     %infix none 3 <=>.
+  
+  %% declaring elements of type |- F makes F an axiom
+  |- : Form -> type.    %prefix 1 |-.
+}.

@@ -1,0 +1,77 @@
+%read "../../set_theories/zfc/types.elf".
+%read "sttifol.elf".
+
+%view BaseSFOL-ZF : BaseSFOL -> TypedZF = {
+  sort := i.
+  tm := [a] Elem a. 
+}.
+
+%view SForall-ZF : SForall -> TypedZF = {
+  %include BaseSFOL-ZF.
+  forall := [S][F] Forall F.
+}.
+
+%view SExists-ZF : SExists -> TypedZF = {
+  %include BaseSFOL-ZF.
+  exists := [S][F] Exists F.
+}.
+
+%view SFOL-ZF : SFOL -> TypedZF = {
+   %include BaseSFOL-ZF.
+   %include SForall-ZF.
+   %include SExists-ZF.
+}.
+
+%view SEqual-ZF : SEqual -> TypedZF = {
+  %include BaseSFOL-ZF.
+  eq := [S][a][b] a Eq b.
+}.
+
+%view BaseSFOLPF-ZF : BaseSFOLPF -> TypedZF = {
+  %include BaseSFOL-ZF.
+}.
+
+%view SForallPF-ZF : SForallPF -> TypedZF = {
+   %include BaseSFOLPF-ZF.
+   %include SForall-ZF.
+   forallI := [S][F][p] ForallI p.
+   forallE := [S][F][p][x] ForallE p x.
+}.
+
+%view SExistsPF-ZF : SExistsPF -> TypedZF = {
+   %include BaseSFOLPF-ZF.
+   %include SExists-ZF.
+   existsI := [S][F][x][p] ExistsI x p.
+   existsE := [S][F][H][p][Q] ExistsE p Q.
+}.
+
+%view SEqualPF-ZF : SEqualPF -> TypedZF = {
+   %include BaseSFOLPF-ZF.
+   %include SEqual-ZF.
+   refl   := [S][x] refl.
+   sym    := [S][x][y][p] sym p.
+   trans  := [S][x][y][z][p][q] trans p q.
+   congF  := [S][x][y][T][p][F] EqCongF F p.
+   congP  := [S][x][y][p][F][q] EqcongEl F p q.
+}.
+
+%view SIFOLPF-ZF : SIFOLPF -> TypedZF = {
+  %include SFOL-ZF.
+  %% IPLPF already included into TypedZF
+  %include SForallPF-ZF.
+  %include SExistsPF-ZF.
+}.
+
+%view SIFOLEQPF-ZF : SIFOLEQPF -> TypedZF = {
+  %include SIFOLPF-ZF.
+  %include SEqualPF-ZF.
+}.
+
+%view STTIFOLEQ-ZF : STTIFOLEQ -> TypedZF = {
+  %include SIFOLEQPF-ZF.
+  fun.→   := [A][B] (func A B).
+  fun.λ   := [A][B][f] Lambda f.
+  fun.@   := [A][B][f][a] Apply f a.
+  fun.beta := [A][B][F][X] beta.
+  fun.eta  := [A][B][F] eta.
+}.

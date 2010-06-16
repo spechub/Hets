@@ -1,0 +1,27 @@
+%read "../syntax/sorted_modules.elf".
+%read "../../propositional/proof_theory/modules.elf".
+%read "sorted_base.elf".
+
+%sig SForallPF = {
+   %include BaseSFOLPF   %open.
+   %include SForall      %open forall. 
+   forallI : ({x : tm S} ded F x) -> ded forall F.
+   forallE : ded forall F -> {x : tm S} ded F x.
+}.
+
+%sig SExistsPF = {
+   %include BaseSFOLPF   %open.
+   %include SExists      %open exists. 
+   existsI : {x : tm S} ded F x -> ded exists F.
+   existsE : ded exists F -> ({x : tm S} ded F x -> ded H) -> ded H.
+}.
+
+%sig SEqualPF = {
+   %include BaseSFOLPF   %open.
+   %include SEqual       %open.
+   refl  : ded A eq A.
+   sym   : ded A eq B -> ded B eq A.
+   trans : ded A eq B -> ded B eq C -> ded A eq C.
+   congF : ded X eq Y -> {F : tm S -> tm T} ded (F X) eq (F Y).
+   congP : ded X eq Y -> {F : tm S -> o} ded (F X) -> ded (F Y).
+}.

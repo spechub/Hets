@@ -1,0 +1,13 @@
+%read "../../propositional/soundness/prop.elf".
+%read "../proof_theory/sfol.elf".
+%read "../model_theory/sfol.elf".
+%read "sifol.elf".
+
+%view SoundSFOL : SFOLPF -> SFOLMOD = {
+  %include SoundBaseSFOL.
+  %include SoundSIFOL.
+  %include SoundTND.
+  non_empty_universe := [S : Sort]
+     exists1 (existsE non_empty_universe ([x : Term S][p] existsI x true1)). 
+}.
+      

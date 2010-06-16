@@ -1,0 +1,13 @@
+%read "../syntax/prop.elf".
+%read "modules.elf".
+
+%sig IPLPF = {
+  %include BasePF     %open o ded.
+  %include PL         %open true false not imp and or.
+  %include TruthPF    %open trueI.
+  %include FalsityPF  %open falseE.
+  %include NEGPF      %open notI notE.
+  %include IMPPF      %open impI impE.
+  %include CONJPF     %open andI andEl andEr.
+  %include DISJPF     %open orIl orIr orE.
+}.

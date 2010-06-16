@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="BasePF">
+   <include from="../syntax/base.omdoc?Base"/><alias name="o" for="../syntax/base.omdoc?Base?o"/><alias name="ded" for="../syntax/base.omdoc?Base?ded"/>
+   
+   
+</theory>
+
+</omdoc>

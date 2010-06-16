@@ -1,0 +1,16 @@
+%read "modules.elf".
+
+%sig PL = {
+  %include Base    %open o ded.
+  %include Truth   %open true.
+  %include Falsity %open false.
+  %include NEG     %open not.
+  %include IMP     %open imp.
+  %include CONJ    %open and.
+  %include DISJ    %open or.
+}.
+
+%view Base2PL : Base -> PL = {
+  o := o.
+  ded := [x] ded x.
+}.

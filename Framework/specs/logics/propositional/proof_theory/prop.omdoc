@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="CPLPF">
+   <include from="base.omdoc?BasePF"/><alias name="o" for="../syntax/base.omdoc?Base?o"/><alias name="ded" for="../syntax/base.omdoc?Base?ded"/>
+   
+   <include from="iprop.omdoc?IPLPF"/>
+   
+   <include from="modules.omdoc?TND"/>
+   
+   
+</theory>
+
+<view name="Truth2CPLPF" from="../syntax/modules.omdoc?Truth" to="?CPLPF">
+   
+   <conass name="true">
+      <om:OMOBJ>
+         <om:OMS base="../syntax/modules.omdoc" module="Truth" name="true"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="Falsity2CPLPF" from="../syntax/modules.omdoc?Falsity" to="?CPLPF">
+   
+   <conass name="false">
+      <om:OMOBJ>
+         <om:OMS base="../syntax/modules.omdoc" module="Falsity" name="false"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="NEG2CPLPF" from="../syntax/modules.omdoc?NEG" to="?CPLPF">
+   
+   <conass name="not">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="x"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../syntax/modules.omdoc" module="NEG" name="not"/>
+               <om:OMV name="x"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="IMP2CPLPF" from="../syntax/modules.omdoc?IMP" to="?CPLPF">
+   
+   <conass name="imp">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="x"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="y"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                  <om:OMV name="x"/>
+                  <om:OMV name="y"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="CONJ2CPLPF" from="../syntax/modules.omdoc?CONJ" to="?CPLPF">
+   
+   <conass name="and">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="x"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="y"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                  <om:OMV name="x"/>
+                  <om:OMV name="y"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="DISJ2CPLPF" from="../syntax/modules.omdoc?DISJ" to="?CPLPF">
+   
+   <conass name="or">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="x"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="o"/>
+                  </om:OMATP><om:OMV name="y"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                  <om:OMV name="x"/>
+                  <om:OMV name="y"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<view name="PL2CPLPF" from="../syntax/prop.omdoc?PL" to="?CPLPF">
+   <include >
+      <OMMOR ><om:OMS module="Truth2CPLPF"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS module="Falsity2CPLPF"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS module="NEG2CPLPF"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS module="IMP2CPLPF"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS module="CONJ2CPLPF"/></OMMOR>
+   </include>
+   <include >
+      <OMMOR ><om:OMS module="DISJ2CPLPF"/></OMMOR>
+   </include>
+   
+</view>
+
+</omdoc>

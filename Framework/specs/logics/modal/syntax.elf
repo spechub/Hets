@@ -1,0 +1,17 @@
+%read "../propositional/syntax/minimal.elf".
+
+%sig Necessity = {
+  %include Base %open.
+   □ : o -> o.           %prefix 30 □.
+}.
+
+%sig Possibility = {
+  %include Base %open.
+   ◇ : o -> o.           %prefix 30 ◇.
+}.
+
+%sig ML = {
+  %include MPL %open.
+  %include Necessity %open.
+  %include Possibility %open. 
+}.

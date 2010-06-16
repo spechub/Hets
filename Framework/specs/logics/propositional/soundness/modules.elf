@@ -1,0 +1,91 @@
+%read "../proof_theory/modules.elf".
+%read "../model_theory/modules.elf".
+%read "base.elf".
+
+%view SoundTruth : TruthPF -> TruthMOD = {
+  %include SoundBase.
+  %include TruthMODView.
+  trueI := true1.
+}.
+
+%view SoundFalsity : FalsityPF -> FalsityMOD = {
+  %include SoundBase.
+  %include FalsityMODView.
+  falseE := [p : ded false' eq 1][A]
+              (falseE' (contra false0 p)).
+}.
+
+%view SoundIMP : IMPPF -> IMPMOD  = {
+  %include SoundBase.
+  %include IMPMODView.
+  impI := [A][B][p: ded A eq 1 -> ded B eq 1] (
+             imp1' 
+               (orE (boole A)
+                  ([q : ded A eq 1] orIr (p q))
+                  ([q : ded A eq 0] orIl q)
+               )
+          ).
+  impE := [A][B][p : ded (A imp'' B) eq 1][q : ded A eq 1] (
+                orE (boole B)
+                   ([r : ded B eq 1] r)
+                   ([r : ded B eq 0] falseE' (contra (imp0' (andI q r)) p))
+          ).
+}.
+
+%view SoundNEG : NEGPF -> NEGMOD  = {
+  %include SoundBase.
+  %include NEGMODView.
+  notI := [A][p : ded A eq 1 -> {B} ded B eq 1] (
+             orE (boole A)
+                ([q : ded A eq 1] p q (not'' A))
+                ([q : ded A eq 0] not1' q)
+          ).
+  notE := [A] ([q : ded (not'' A) eq 1] [p : ded A eq 1] [B] falseE' (contra (not0' p) q)).
+}.
+
+%view SoundCONJ : CONJPF -> CONJMOD = {
+  %include SoundBase.
+  %include CONJMODView.
+  andI := [A][B][p : ded A eq 1] [q : ded B eq 1] (
+            and1' (andI p q)).
+  andEl := [A][B][p : ded (A and'' B) eq 1] (
+              indirect [q : ded A eq 0]
+                (contra (and0' (orIl q)) p)
+           ).
+  andEr := [A][B][p : ded (A and'' B) eq 1] (
+              indirect [q : ded B eq 0]
+                (contra (and0' (orIr q)) p)
+           ).
+}.
+
+%view SoundDISJ : DISJPF -> DISJMOD = {
+  %include SoundBase.
+  %include DISJMODView.
+  orIl := [A][B][p : ded A eq 1] (or1' (orIl p)).
+  orIr := [B][A][p : ded B eq 1] or1' (orIr p).
+  orE  := [A][B][C][p : ded (A or'' B) eq 1] [q : ded A eq 1 -> ded C eq 1][r : ded B eq 1 -> ded C eq 1] (
+            orE (boole A) 
+              ([s : ded A eq 1] q s)
+              ([s : ded A eq 0] orE (boole B)
+                                ([t : ded B eq 1] r t)
+                                ([t : ded B eq 0] falseE' (contra 
+                                                          (or0' (andI s t)) 
+                                                          p
+                                                       )
+                                )
+              )
+          ).   
+}.
+
+%read "../model_theory/prop.elf".
+
+%view SoundTND : TND -> PLMOD = {  
+  %include SoundBase.
+  %include NEGMODView.
+  %include DISJMODView.
+ 
+  tnd := [A] (orE (boole A)
+                    ([p : ded A eq 1] or1' (orIl p))
+                    ([p : ded A eq 0] or1' (orIr (not1' p)))
+         ).
+}.

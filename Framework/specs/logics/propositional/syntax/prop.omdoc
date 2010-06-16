@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="PL">
+   <include from="base.omdoc?Base"/><alias name="o" for="base.omdoc?Base?o"/><alias name="ded" for="base.omdoc?Base?ded"/>
+   
+   <include from="modules.omdoc?Truth"/><alias name="true" for="modules.omdoc?Truth?true"/>
+   
+   <include from="modules.omdoc?Falsity"/><alias name="false" for="modules.omdoc?Falsity?false"/>
+   
+   <include from="modules.omdoc?NEG"/><alias name="not" for="modules.omdoc?NEG?not"/>
+   
+   <include from="modules.omdoc?IMP"/><alias name="imp" for="modules.omdoc?IMP?imp"/>
+   
+   <include from="modules.omdoc?CONJ"/><alias name="and" for="modules.omdoc?CONJ?and"/>
+   
+   <include from="modules.omdoc?DISJ"/><alias name="or" for="modules.omdoc?DISJ?or"/>
+   
+   
+</theory>
+
+<view name="Base2PL" from="base.omdoc?Base" to="?PL">
+   
+   <conass name="o">
+      <om:OMOBJ>
+         <om:OMS base="base.omdoc" module="Base" name="o"/>
+      </om:OMOBJ>
+   </conass>
+   <conass name="ded">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="base.omdoc" module="Base" name="o"/>
+               </om:OMATP><om:OMV name="x"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="base.omdoc" module="Base" name="ded"/>
+               <om:OMV name="x"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+</omdoc>

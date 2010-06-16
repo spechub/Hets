@@ -1,0 +1,7 @@
+%read "../syntax/base.elf".
+%read "../../propositional/proof_theory/base.elf".
+
+%sig BaseFOLPF = {
+  %include BasePF   %open o ded.
+  %include BaseFOL  %open i.
+}.

@@ -1,0 +1,2466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="TruthMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <constant name="true'">
+      <type>
+         <om:OMOBJ>
+            <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="true1">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+               <om:OMA>
+                  <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS name="true'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<view name="TruthMODView" from="../syntax/modules.omdoc?Truth" to="?TruthMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <conass name="true">
+      <om:OMOBJ>
+         <om:OMS name="true'"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="FalsityMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <constant name="false'">
+      <type>
+         <om:OMOBJ>
+            <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="false0">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+               <om:OMA>
+                  <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS name="false'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   
+</theory>
+
+<view name="FalsityMODView" from="../syntax/modules.omdoc?Falsity" to="?FalsityMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <conass name="false">
+      <om:OMOBJ>
+         <om:OMS name="false'"/>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="NEGMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <constant name="not'">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="elem"/>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="not1">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMV name="A"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS name="not'"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??not1" role="application" implicit="1"/>
+   <constant name="not0">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMV name="A"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS name="not'"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??not0" role="application" implicit="1"/>
+   <constant name="not''">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS name="not'"/>
+                  <om:OMV name="A"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   
+   <constant name="not1'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMV name="A"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                  </om:OMA>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS name="not''"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                  </om:OMA>
+               </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMV name="A"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS name="not'"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS name="not1"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMV name="p"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??not1'" role="application" implicit="1"/>
+   <constant name="not0'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMV name="A"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                  </om:OMA>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS name="not''"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                  </om:OMA>
+               </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="p"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMV name="A"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS name="not'"/>
+                           <om:OMV name="A"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                     <om:OMA>
+                        <om:OMS name="not0"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMV name="p"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??not0'" role="application" implicit="1"/>
+   
+</theory>
+
+<view name="NEGMODView" from="../syntax/modules.omdoc?NEG" to="?NEGMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <conass name="not">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMA>
+               <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+               <om:OMS name="not'"/>
+               <om:OMV name="A"/>
+            </om:OMA>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="DISJMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <constant name="or'">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="elem"/>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="or1">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="or'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??or1" role="application" implicit="2"/>
+   <constant name="or0">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="or'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??or0" role="application" implicit="2"/>
+   <constant name="or''">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        </om:OMA>
+                        <om:OMS name="or'"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??or''" role="application" fixity="in" associativity="left" precedence="10" implicit="0"/>
+   <constant name="or1'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS name="or''"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="B"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../proof_theory/modules.omdoc" module="DISJPF" name="orE"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="or'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMV name="p"/>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMV name="A"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                                 </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="q"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                              <om:OMA>
+                                 <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMV name="A"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                                 </om:OMA>
+                                 <om:OMA>
+                                    <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMV name="B"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                                 </om:OMA>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMA>
+                                       <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                       <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                       <om:OMA>
+                                          <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                          <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                          <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                       </om:OMA>
+                                       <om:OMS name="or'"/>
+                                       <om:OMV name="A"/>
+                                    </om:OMA>
+                                    <om:OMV name="B"/>
+                                 </om:OMA>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS name="or1"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                              <om:OMV name="p"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                        <om:OMBIND>
+                           <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                           <om:OMBVAR>
+                           <om:OMATTR><om:OMATP>
+                              <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                              <om:OMA>
+                                 <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMV name="B"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                                 </om:OMA>
+                              </om:OMA>
+                              </om:OMATP><om:OMV name="r"/>
+                           </om:OMATTR>
+                        </om:OMBVAR>
+                           <om:OMA>
+                              <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                              <om:OMA>
+                                 <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMV name="A"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                                 </om:OMA>
+                                 <om:OMA>
+                                    <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMV name="B"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                                 </om:OMA>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMA>
+                                       <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                       <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                       <om:OMA>
+                                          <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                          <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                          <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                       </om:OMA>
+                                       <om:OMS name="or'"/>
+                                       <om:OMV name="A"/>
+                                    </om:OMA>
+                                    <om:OMV name="B"/>
+                                 </om:OMA>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS name="or1"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMV name="B"/>
+                              </om:OMA>
+                              <om:OMV name="p"/>
+                           </om:OMA>
+                        </om:OMBIND>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??or1'" role="application" implicit="2"/>
+   <constant name="or0'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS name="or''"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="B"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="or'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="or0"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMV name="p"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??or0'" role="application" implicit="2"/>
+   
+</theory>
+
+<view name="DISJMODView" from="../syntax/modules.omdoc?DISJ" to="?DISJMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <conass name="or">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     <om:OMS name="or'"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  <om:OMV name="B"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="CONJMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <constant name="and'">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="elem"/>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="and1">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="and'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??and1" role="application" implicit="2"/>
+   <constant name="and0">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="and'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??and0" role="application" implicit="2"/>
+   <constant name="and''">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        </om:OMA>
+                        <om:OMS name="and'"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??and''" role="application" fixity="in" associativity="left" precedence="10" implicit="0"/>
+   <constant name="and1'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS name="and''"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="B"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="and'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="and1"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMV name="p"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??and1'" role="application" implicit="2"/>
+   <constant name="and0'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS name="and''"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="B"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="and'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="and0"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMV name="p"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??and0'" role="application" implicit="2"/>
+   
+</theory>
+
+<view name="CONJMODView" from="../syntax/modules.omdoc?CONJ" to="?CONJMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <conass name="and">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     <om:OMS name="and'"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  <om:OMV name="B"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+<theory name="IMPMOD">
+   <include from="../../meta/sttifol.omdoc?STTIFOLEQ"/>
+   
+   <include from="base.omdoc?BaseMOD"/>
+   
+   <constant name="imp'">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="elem"/>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+               </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   
+   <constant name="imp1">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="imp'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??imp1" role="application" implicit="2"/>
+   <constant name="imp0">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="IMP" name="imp"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="imp'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??imp0" role="application" implicit="2"/>
+   <constant name="imp''">
+      <type>
+         <om:OMOBJ>
+            <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMA>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+            </om:OMA>
+            </om:OMA>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        </om:OMA>
+                        <om:OMS name="imp'"/>
+                        <om:OMV name="A"/>
+                     </om:OMA>
+                     <om:OMV name="B"/>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??imp''" role="application" fixity="in" associativity="right" precedence="15" implicit="0"/>
+   <constant name="imp1'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS name="imp''"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="B"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="DISJ" name="or"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="imp'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="imp1"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMV name="p"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??imp1'" role="application" implicit="2"/>
+   <constant name="imp0'">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMA>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="A"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMV name="B"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                     </om:OMA>
+                  </om:OMA>
+                     <om:OMA>
+                     <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMA>
+                           <om:OMS name="imp''"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                     </om:OMA>
+                  </om:OMA>
+                  </om:OMA>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+      <definition>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMA>
+                     <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  </om:OMA>
+                  </om:OMATP><om:OMV name="A"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMBIND>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_lambda"/>
+                  <om:OMBVAR>
+                  <om:OMATTR><om:OMATP>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                     <om:OMA>
+                        <om:OMS base="../../first-order/syntax/sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     </om:OMATP><om:OMV name="B"/>
+                  </om:OMATTR>
+               </om:OMBVAR>
+                  <om:OMBIND>
+                     <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+                     <om:OMBVAR>
+                     <om:OMATTR><om:OMATP>
+                        <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/base.omdoc" module="Base" name="ded"/>
+                           <om:OMA>
+                              <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="A"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                              </om:OMA>
+                              <om:OMA>
+                                 <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMV name="B"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                              </om:OMA>
+                           </om:OMA>
+                        </om:OMA>
+                        </om:OMATP><om:OMV name="p"/>
+                     </om:OMATTR>
+                  </om:OMBVAR>
+                     <om:OMA>
+                        <om:OMS base="../proof_theory/modules.omdoc" module="IMPPF" name="impE"/>
+                        <om:OMA>
+                           <om:OMS base="../syntax/modules.omdoc" module="CONJ" name="and"/>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="A"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="1"/>
+                           </om:OMA>
+                           <om:OMA>
+                              <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMV name="B"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                           </om:OMA>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS base="../../first-order/syntax/sorted_modules.omdoc" module="SEqual" name="eq"/>
+                           <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                           <om:OMA>
+                              <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                              <om:OMA>
+                                 <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                                 <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 <om:OMA>
+                                    <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                    <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                                 </om:OMA>
+                                 <om:OMS name="imp'"/>
+                                 <om:OMV name="A"/>
+                              </om:OMA>
+                              <om:OMV name="B"/>
+                           </om:OMA>
+                           <om:OMS base="bool.omdoc" module="Bool" name="0"/>
+                        </om:OMA>
+                        <om:OMA>
+                           <om:OMS name="imp0"/>
+                           <om:OMV name="A"/>
+                           <om:OMV name="B"/>
+                        </om:OMA>
+                        <om:OMV name="p"/>
+                     </om:OMA>
+                  </om:OMBIND>
+               </om:OMBIND>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </definition>
+   </constant>
+   <notation for="??imp0'" role="application" implicit="2"/>
+   
+</theory>
+
+<view name="IMPMODView" from="../syntax/modules.omdoc?IMP" to="?IMPMOD">
+   <include >
+      <OMMOR ><om:OMS base="base.omdoc" module="BaseMODView"/></OMMOR>
+   </include>
+   <conass name="imp">
+      <om:OMOBJ>
+         <om:OMBIND>
+            <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+            <om:OMBVAR>
+            <om:OMATTR><om:OMATP>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+               <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+               </om:OMATP><om:OMV name="A"/>
+            </om:OMATTR>
+         </om:OMBVAR>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="lambda"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool"/>
+                  </om:OMATP><om:OMV name="B"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                  <om:OMA>
+                     <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/@"/>
+                     <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     <om:OMA>
+                        <om:OMS base="../../meta/sttifol.omdoc" module="STTIFOLEQ" name="fun/→"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                        <om:OMS base="bool.omdoc" module="Bool" name="bool'"/>
+                     </om:OMA>
+                     <om:OMS name="imp'"/>
+                     <om:OMV name="A"/>
+                  </om:OMA>
+                  <om:OMV name="B"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMBIND>
+      </om:OMOBJ>
+   </conass>
+   
+</view>
+
+</omdoc>

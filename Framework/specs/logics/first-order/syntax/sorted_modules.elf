@@ -1,0 +1,16 @@
+%read "sorted_base.elf".
+
+%sig SForall = {
+  %include BaseSFOL   %open.
+  forall : (tm S -> o) -> o.
+}.
+
+%sig SExists = {
+  %include BaseSFOL   %open.
+  exists : (tm S -> o) -> o.
+}.
+
+%sig SEqual = {
+  %include BaseSFOL   %open.
+  eq : tm S -> tm S -> o.  %infix none 30 eq.
+}.

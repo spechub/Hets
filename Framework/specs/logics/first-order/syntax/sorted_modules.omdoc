@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath" >
+<!-- generated from Twelf sources by Florian Rabe -->
+<theory name="SForall">
+   <include from="sorted_base.omdoc?BaseSFOL"/>
+   
+   <constant name="forall">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+                  </om:OMATP><om:OMV name="S"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                  <om:OMV name="S"/>
+               </om:OMA>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMA>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??forall" role="application" implicit="1"/>
+   
+</theory>
+
+<theory name="SExists">
+   <include from="sorted_base.omdoc?BaseSFOL"/>
+   
+   <constant name="exists">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+                  </om:OMATP><om:OMV name="S"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                  <om:OMV name="S"/>
+               </om:OMA>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMA>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??exists" role="application" implicit="1"/>
+   
+</theory>
+
+<theory name="SEqual">
+   <include from="sorted_base.omdoc?BaseSFOL"/>
+   
+   <constant name="eq">
+      <type>
+         <om:OMOBJ>
+            <om:OMBIND>
+               <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="implicit_Pi"/>
+               <om:OMBVAR>
+               <om:OMATTR><om:OMATP>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="oftype"/>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/cl"/>
+                  </om:OMATP><om:OMV name="S"/>
+               </om:OMATTR>
+            </om:OMBVAR>
+               <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                  <om:OMV name="S"/>
+               </om:OMA>
+                  <om:OMA>
+                  <om:OMS base="http://cds.omdoc.org/foundations/lf/lf.omdoc" module="lf" name="arrow"/>
+                  <om:OMA>
+                  <om:OMS base="sorted_base.omdoc" module="BaseSFOL" name="sorts/exp"/>
+                  <om:OMV name="S"/>
+               </om:OMA>
+                  <om:OMS base="../../propositional/syntax/base.omdoc" module="Base" name="o"/>
+               </om:OMA>
+               </om:OMA>
+            </om:OMBIND>
+         </om:OMOBJ>
+      </type>
+   </constant>
+   <notation for="??eq" role="application" fixity="in" associativity="none" precedence="30" implicit="1"/>
+   
+</theory>
+
+</omdoc>
