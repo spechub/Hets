@@ -102,9 +102,8 @@ instance Ord FNode where
 
 initialGoalStatus :: DGNodeLab -> [Goal]
 initialGoalStatus dgn = case dgn_theory dgn of
-  G_theory _lid _sigma _ sens _ -> [ Goal g "test" | g <- map (GtkUtils.basicProofToGStatus . snd) 
-                                      $ concat $ map (thmStatus . snd) $ OMap.toList sens ]   
-
+  G_theory _lid _sigma _ sens _ -> concatMap (\ (sn,sen) -> [Goal gstat sn | gstat <- map (GtkUtils.basicProofToGStatus . snd) 
+                                          $ thmStatus sen] ) $ OMap.toList sens
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
