@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Gtk GUI for the consistency checker
+Description :  Gtk GUI for automatic proving procedure of multiple nodes
 Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -32,6 +32,7 @@ import Interfaces.GenericATPState (guiDefaultTimeLimit)
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism (..))
 import Logic.Prover
+import Logic.Logic (Logic)
 
 import Comorphisms.LogicGraph (logicGraph)
 import Comorphisms.KnownProvers
@@ -40,6 +41,7 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation (isAxiom)
 import Common.LibName (LibName)
 import Common.Result
+import Common.DocUtils (showDoc)
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
@@ -54,6 +56,7 @@ import Data.Maybe
 
 import Data.Ord (comparing)
 
+-- | Data structure for saving the user-selected prover and comorphism
 data Finder = Finder { fName      :: String
                      , finder     :: G_prover
                      , comorphism :: [AnyComorphism]
@@ -62,10 +65,11 @@ data Finder = Finder { fName      :: String
 instance Eq Finder where
   f1 == f2 = fName f1 == fName f2 && comorphism f1 == comorphism f2
 
+-- | stores each node to be considered along with some further infomation
 data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status   :: [Goal]  }
+                   , status   :: [Goal] }
 
 showStatus :: [Goal] -> String
 showStatus = intercalate "\n" . 
@@ -88,28 +92,32 @@ instance Show FNode where
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
 
--- | Nodes are sorted in accordance with goalstatus. Nodes without goals are not very importent
--- | and thus set to status GHandwritten (best case) for comparison only.
+-- | Nodes are sorted in accordance with goalstatus. Nodes without goals are not
+-- | very importent and thus set to status GHandwritten (best case) for comparison only.
 instance Ord FNode where
   compare (FNode { name = n1, status = s1 })
-          (FNode { name = n2, status = s2 }) = let min' a = if null a then Goal GHandwritten "" else minimum a 
-                                                   cp = comparing min'
-                                               in case cp s1 s2 of
-                                                    EQ -> compare n1 n2
-                                                    c  -> c
+          (FNode { name = n2, status = s2 }) 
+          = let min' a = if null a then Goal GHandwritten "" else minimum a 
+                cp = comparing min'
+            in case cp s1 s2 of
+                 EQ -> compare n1 n2
+                 c  -> c
 
-initialGoalStatus :: DGNodeLab -> [Goal]
-initialGoalStatus dgn = case dgn_theory dgn of
-  G_theory _lid _sigma _ sens _ -> concatMap (\ (sn,sen) -> case map (GtkUtils.basicProofToGStatus . snd) $ thmStatus sen of
-                                                              [] -> [Goal GOpen sn]
-                                                              l  -> map (\ g -> Goal g sn) l ) 
-                                   $ OMap.toList $ OMap.filter (not . isAxiom) sens
+initFNodes :: [LNode DGNodeLab] -> [FNode]
+initFNodes ls = concatMap (\ n@(_,l) -> case globalTheory l of
+                                         Just gt -> [FNode (getDGNodeName l) n 
+                                                    (sublogicOfTh gt) (initGoalStatus l)]
+                                         Nothing -> [] 
+                       ) $ filter (hasSenKind (not . isAxiom) . snd) ls
 
+initGoalStatus :: DGNodeLab -> [Goal]
+initGoalStatus dgn = case dgn_theory dgn of
+  G_theory _lid _sigma _ sens _ -> concatMap (\ (sn,sen) -> 
+               case map (GtkUtils.basicProofToGStatus . snd) $ thmStatus sen of
+                    [] -> [Goal GOpen sn]
+                    l  -> map (\ g -> Goal g sn) l 
+                        ) $ OMap.toList $ OMap.filter (not . isAxiom) sens
 
-
-
---concatMap (\ (sn,sen) -> [Goal gstat sn | gstat <- map (GtkUtils.basicProofToGStatus . snd) 
-                                     --     $ thmStatus sen] ) $ OMap.toList $ OMap.filter (not . isAxiom) sens
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
@@ -168,15 +176,11 @@ showProverWindow res ln le = postGUIAsync $ do
   wait     <- newEmptyMVar
   mView    <- newEmptyMVar
 
-  let dg         = lookupDGraph ln le
-      nodes      = filter (hasSenKind (not . isAxiom) . snd) $ labNodesDG dg
-      sls        = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
-      -- All relevant nodes are 'others' TODO find better name TODO filter first, then map
-      others     = map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s (initialGoalStatus l))
-                   $ zip nodes sls
+  let dg    = lookupDGraph ln le
+      nodes = initFNodes $ labNodesDG dg
 
   -- setup data
-  listNodes  <- setListData trvNodes show $ sort others
+  listNodes  <- setListData trvNodes show $ sort nodes
   listFinder <- setListData trvFinder fName []
 
   -- setup comorphism combobox
@@ -324,6 +328,8 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
           Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
     ) m' old
 
+-- TODO Clean Up !!!
+
 check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
       -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
 check inclThms _ _ _ (Finder _ pr cs i) timeout listNodes update nodes =
@@ -363,7 +369,7 @@ proveNode' useTh timeout (_, lab) p_cm =
      -- theory could not be computed
        Nothing -> do putStrLn "No suitable prover and comorphism found"
                      return []
-       Just (G_theory_with_prover _ th p) ->
+       Just (G_theory_with_prover lid1 th p) ->
         case proveCMDLautomaticBatch p of
          Nothing -> do putStrLn "Error obtaining the prover"
                        return []
@@ -377,17 +383,32 @@ proveNode' useTh timeout (_, lab) p_cm =
                                       (TacticScript $ show timeout) th []
                       -- mThr          <- newMVar $ Just thrId
                       takeMVar mV
-                      getResults answ
+                      getResults lid1 answ (snd p_cm) st
 
-getResults :: MVar (Result [ProofStatus proof_tree]) ->
-              IO [Goal]
-getResults mData =
+getResults :: (Logic lid1 sublogics1
+                     basic_spec1 sentence1 symb_items1 symb_map_items1
+                     sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+              Logic lid sublogics basic_spec sentence
+                     symb_items symb_map_items
+                     sign morphism symbol raw_symbol proof_tree) =>
+              lid 
+              -> MVar (Result [ProofStatus proof_tree])
+              -> AnyComorphism
+              -> ProofState lid1 sentence1
+              -> IO [Goal]
+getResults lid mData ac st =
   do
     d <- takeMVar mData
-    return $ case maybeResult d of
-               Nothing -> []
-               Just d' -> map (\ p -> Goal (createGStatus p) (goalName p)) d'
-                            where createGStatus p = case goalStatus p of
+    case maybeResult d of
+               Nothing -> return []
+               Just d' -> do
+                 let ps' = markProved ac lid d' st
+                 -- TODO generate GTheory with goalMap and merge using propagateProofs
+                 -- OR using updateNodeProof from interfaces/Utils
+                 putStrLn $ showDoc (goalMap ps') ""
+                 return $ map (\ p -> Goal (createGStatus p) (goalName p)) d'
+                          
+                 where createGStatus p = case goalStatus p of
                                                       Proved b -> if b then GProved else GInconsistent
                                                       Disproved -> GDisproved
                                                       Open (Reason r) -> if any (isInfixOf "Timeout") r then GTimeout else GOpen
