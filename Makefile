@@ -100,9 +100,9 @@ programatica_pkg: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
           echo "of programatica package found"; else \
           ($(PATCH) -usNlp0 -d $(PFE_TOOLDIR) \
             -i `pwd`/Haskell/Programatica.patch || exit 0); \
-          cp -f utils/programatica.cabal ../programatica/tools; \
-          cp -f $(SETUP) ../programatica/tools; \
-          (cd ../programatica/tools; \
+          cp -f utils/programatica.cabal $(PFE_TOOLDIR); \
+          cp -f $(SETUP) $(PFE_TOOLDIR); \
+          (cd $(PFE_TOOLDIR); \
            ./Setup configure $(SETUPPREFIX) --user; \
            ./Setup build; ./Setup install) fi
 
