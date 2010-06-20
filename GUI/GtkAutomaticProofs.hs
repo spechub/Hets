@@ -103,13 +103,17 @@ instance Ord FNode where
                  EQ -> compare n1 n2
                  c  -> c
 
+-- | gets all Nodes from the DGraph as input and creates a list of FNodes only
+-- | containing Nodes to be considered.
 initFNodes :: [LNode DGNodeLab] -> [FNode]
-initFNodes ls = concatMap (\ n@(_,l) -> case globalTheory l of
-                                         Just gt -> [FNode (getDGNodeName l) n 
-                                                    (sublogicOfTh gt) (initGoalStatus l)]
-                                         Nothing -> [] 
-                       ) $ filter (hasSenKind (not . isAxiom) . snd) ls
+initFNodes ls = foldr (\ n@(_,l) t -> case globalTheory l of
+                                        Just gt -> FNode (getDGNodeName l) n 
+                                                   (sublogicOfTh gt) 
+                                                   (initGoalStatus l) : t
+                                        Nothing -> t
+                       ) [] $ filter (hasSenKind (not . isAxiom) . snd) ls
 
+-- | GoalStatus of each FNode is created from its local Theory
 initGoalStatus :: DGNodeLab -> [Goal]
 initGoalStatus dgn = case dgn_theory dgn of
   G_theory _lid _sigma _ sens _ -> concatMap (\ (sn,sen) -> 
@@ -198,10 +202,10 @@ showProverWindow res ln le = postGUIAsync $ do
   let upd = updateNodes trvNodes listNodes
         (\ s -> do labelSetLabel lblSublogic $ show s
                    updateFinder  trvFinder listFinder s)
-        ( do labelSetLabel lblSublogic "No sublogic"
-             listStoreClear listFinder
-             activate widgets False
-             widgetSetSensitive btnCheck False)
+        (do labelSetLabel lblSublogic "No sublogic"
+            listStoreClear listFinder
+            activate widgets False
+            widgetSetSensitive btnCheck False)
         (activate widgets True >> widgetSetSensitive btnCheck True)
 
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
@@ -232,7 +236,7 @@ showProverWindow res ln le = postGUIAsync $ do
     activate checkWidgets False
     timeout <- spinButtonGetValueAsInt sbTimeout
     inclThms <- toggleButtonGetActive cbInclThms
-    (updat, exit) <- progressBar "Proving" "please wait..."
+    (prgBar, exit) <- progressBar "Proving" "please wait..."
     nodes' <- getSelectedMultiple trvNodes listNodes
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
@@ -240,7 +244,8 @@ showProverWindow res ln le = postGUIAsync $ do
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
-      check inclThms ln le dg f timeout listNodes updat nodes'
+      performAutoProof inclThms timeout prgBar f listNodes nodes'
+      -- check inclThms ln le dg f timeout listNodes updat nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -272,6 +277,8 @@ showProverWindow res ln le = postGUIAsync $ do
 
   widgetShow window
 
+
+-- TODO which results should i write back into dgraph
 evaluateProofStatus :: FNode -> Bool
 evaluateProofStatus _ = True
 
@@ -328,35 +335,40 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
           Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
     ) m' old
 
--- TODO Clean Up !!!
-
-check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
-      -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
-check inclThms _ _ _ (Finder _ pr cs i) timeout listNodes update nodes =
+performAutoProof :: -- include proven Theorems in subsequent proofs
+                     Bool
+                    -- Timeout (sec)
+                  -> Int 
+                    -- Progress bar
+                  -> (Double -> String -> IO ()) 
+                    -- selcted Prover and Comorphism
+                  -> Finder
+                    -- Display function for node selection box
+                  -> ListStore FNode 
+                    -- selected nodes
+                  -> [(Int, FNode)]
+                    -- return TODO comment!
+                  -> IO()
+performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   let count' = fromIntegral $ length nodes
       c = cs !! i 
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
-           res <- proveNode' inclThms timeout (node fn) (pr, c)
-           -- res <- consistencyCheck inclThms cc c ln le dg n timeout
+           res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
            postGUISync $ listStoreSetValue listNodes row fn { status = res }
            return $ count + 1) 0 nodes
 
--- //////////////////////////////////////////////////////////////////////////
--- | inserted proveNode from CMDL/ProveConsistency and made some changes
-
--- | Given a proofstatus the function does the actual call of the
--- prover for proving the node or check consistency
-proveNode' ::
-              -- use theorems is subsequent proofs
-              Bool ->
-              -- Timeout Limit
-              Int ->
-              LNode DGNodeLab ->
-              -- selected Prover and Comorphism
-              ( G_prover, AnyComorphism ) ->
-              IO [Goal]
-proveNode' useTh timeout (_, lab) p_cm =
+autoProofAtNode :: -- use theorems is subsequent proofs
+                    Bool
+                   -- Timeout Limit
+                  -> Int
+                   -- Node selected for proving
+                  -> LNode DGNodeLab
+                   -- selected Prover and Comorphism
+                  -> ( G_prover, AnyComorphism )
+                   -- returns new GoalStatus for the Node
+                  -> IO [Goal]
+autoProofAtNode useTh timeout (_, lab) p_cm =
   case fromMaybe (error "GtkAutomaticProofs.proveNode': noG_theory") $ globalTheory lab of
     g_th@( G_theory lid _ _ _ _ ) -> do
       -- recompute the theory (to make effective the selected axioms,
@@ -402,10 +414,11 @@ getResults lid mData ac st =
     case maybeResult d of
                Nothing -> return []
                Just d' -> do
-                 let ps' = markProved ac lid d' st
+
                  -- TODO generate GTheory with goalMap and merge using propagateProofs
                  -- OR using updateNodeProof from interfaces/Utils
-                 putStrLn $ showDoc (goalMap ps') ""
+                 -- let ps' = markProved ac lid d' st
+                 -- putStrLn $ showDoc (goalMap ps') ""
                  return $ map (\ p -> Goal (createGStatus p) (goalName p)) d'
                           
                  where createGStatus p = case goalStatus p of
