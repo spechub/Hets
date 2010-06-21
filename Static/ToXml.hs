@@ -50,7 +50,7 @@ dGraph lenv dg =
          ++ map (ledge ga dg) (labEdges body)
          ++ Map.foldWithKey (globalEntry ga dg) [] (globalEnv dg)
 
-genSig :: DGraph  -> GenSig -> [Attr]
+genSig :: DGraph -> GenSig -> [Attr]
 genSig dg (GenSig _ _ allparams) = case allparams of
    EmptyNode _ -> []
    JustNode (NodeSig n _) -> [mkAttr "formal-param" $ getNameOfNode n dg]
@@ -151,19 +151,18 @@ ledge ga dg (f, t, lbl) = let
   (lnkSt, stAttr) = case thmLinkStatus typ of
         Nothing -> ([], [])
         Just tls -> case tls of
-          LeftOpen -> ([], [mkProvenAttr False])
+          LeftOpen -> ([], [])
           Proven r ls -> (dgrule r ++
             map (\ e -> add_attr (mkAttr "linkref" $ showEdgeId e)
                    $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
-            , [mkProvenAttr True])
+            , [unode "Status" "Proven"])
   in add_attrs
-  ([ mkAttr "source" $ getNameOfNode f dg
+  [ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
-  ++ stAttr)
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl)
-    : lnkSt ++ constStatus (getLinkConsStatus typ)
+    : stAttr ++ lnkSt ++ constStatus (getLinkConsStatus typ)
     ++ [gmorph ga $ dgl_morphism lbl]
 
 dgrule :: DGRule -> [Element]
