@@ -335,6 +335,8 @@ omdocToTerm' e@(ie, vm) f =
               let os = toOpSymb $ lookupOpOMS "omdocToTerm" ie h
                   args' = map (omdocToTerm' e) args
               in Application os args' nullRange
+      OMS _ -> let os = toOpSymb $ lookupOpOMS "omdocToTerm-OMS:" ie f
+               in Application os [] nullRange
       OMV omn -> let var = nameToToken $ name omn
                      -- lookup the type of the variable in the varmap
                      s = Map.findWithDefault
