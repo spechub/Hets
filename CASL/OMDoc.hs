@@ -19,7 +19,7 @@ import OMDoc.DataTypes
 
 -- | CASL meta theory content dictionary
 caslMetaTheory :: OMCD
-caslMetaTheory = CD ["casl", "http://cds.omdoc.org/logics/casl.omdoc"]
+caslMetaTheory = CD ["casl", "http://cds.omdoc.org/logics/casl/casl.omdoc"]
 
 
 -- * Terms

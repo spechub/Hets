@@ -206,6 +206,9 @@ makeObjectType e (OpType opkind opargs oprange) =
 
 -------------------------- TERMS --------------------------
 
+appOrConst :: AsSymbol a => Env -> a -> [OMElement] -> OMElement
+appOrConst e o [] = oms e o
+appOrConst e o ts = OMA $ (oms e o) : ts
 
 -- | the object e1 and its type e2
 makeTyped :: OMElement -> OMElement -> OMElement
@@ -252,7 +255,7 @@ omdocRec e mf = Record
                         $ getRange t
     , foldExtFORMULA = \ _ f -> mf f
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
-    , foldApplication = \ _ o ts _ -> OMA $ (oms e o) : ts
+    , foldApplication = \ _ o ts _ -> appOrConst e o ts
     , foldSorted_term = \ _ r _ _ -> r
     , foldCast = \ _ t s _ ->
                  (OMA [const_cast , t, oms e s])
