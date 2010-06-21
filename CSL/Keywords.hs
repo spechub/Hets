@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  String constants for CASL keywords to be used for parsing
+Description :  String constants for CSL keywords to be used for parsing
   and printing
 Copyright   :  Dominik Dietrich, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -259,8 +259,12 @@ ordpS = "ordp"
 primepS :: String
 primepS = "primep"
 
+convergenceS :: String
+convergenceS = "convergence"
+
 booleanKeywords :: [String]
-booleanKeywords = [evenpS, fixpS, freeofS, numberpS, ordpS, primepS]
+booleanKeywords = [ evenpS, fixpS, freeofS, numberpS, ordpS, primepS
+                  , convergenceS]
 
 
 -- infix operators

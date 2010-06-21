@@ -50,6 +50,15 @@ closedReduceProofStatus goalname proof_tree =
     , usedTime = midnight
     , tacticScript = TacticScript "" }
 
+{-
+For Quantifier Elimination:
+off nat;
+load redlog;
+rlset reals;
+
+rlqe(exp...);
+-}
+
 -- | connects to the CAS, prepares the streams and sets initial options
 connectCAS :: String -> IO (Handle, Handle, Handle, ProcessHandle)
 connectCAS reducecmd = do

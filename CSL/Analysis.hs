@@ -143,7 +143,8 @@ addTokens sign tokens = foldl (\ res item -> (addToSig res (simpleIdToId item)))
 
 -- | stepwise extends an initially empty signature by the basic spec bs. The resulting spec contains analyzed axioms in it.
 -- The result contains: 1) the basic spec 2) the new signature + the added symbols 3) sentences of the spec
-basicCSLAnalysis :: (BASIC_SPEC, Sign, a) -> Result (BASIC_SPEC, ExtSign Sign Symbol, [AS_Anno.Named CMD])
+basicCSLAnalysis :: (BASIC_SPEC, Sign, a)
+                 -> Result (BASIC_SPEC, ExtSign Sign Symbol, [AS_Anno.Named CMD])
 basicCSLAnalysis (bs, sig, _) =
     Result diagnoses $ if exErrs then Nothing else
                        Just (bs, ExtSign newSig newSyms, (map formula diagcmds))

@@ -51,7 +51,7 @@ data Domain = Set [GroundConstant]
             | Interval (GroundConstant, Bool) (GroundConstant, Bool)
               deriving Show
 
--- | basic items: either an operator declaration or an axiom
+-- | basic items: an operator or variable declaration or an axiom
 data BASIC_ITEMS =
     Op_decl OP_ITEM
     | Var_decls [VAR_ITEM]
