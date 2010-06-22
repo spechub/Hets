@@ -250,7 +250,7 @@ negFormula :: CharParser st EXPRESSION
 negFormula = do
   lexemeParser (Lexer.keyWord (tryString "not"))
   f <- atomicFormula
-  return (mkOp "Not" [f])
+  return (mkOp "not" [f])
 
 -- | parses a formula within brackets
 parenFormula :: CharParser st EXPRESSION
