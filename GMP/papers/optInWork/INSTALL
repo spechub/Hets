@@ -1,0 +1,37 @@
+THE ST MARY'S ROAD SYMBOL FONT
+
+6 APRIL 1994
+
+This distribution contains the St Mary's Road symbol fonts:
+
+   INSTALL       stmary5.mf    stmary8.mf    stmaryba.mf   stmaryrd.dtx
+   README        stmary6.mf    stmary9.mf    stmarych.mf   stmaryrd.mf
+   stmary10.mf   stmary7.mf    stmaryaj.mf   stmaryjg.mf
+
+To install the fonts, you should:
+
+ * run METAFONT on the fonts, for example under Unix you say:
+
+      mf "\mode=localfont; input stmary5;"
+      mf "\mode=localfont; input stmary6;"
+      mf "\mode=localfont; input stmary7;"
+      mf "\mode=localfont; input stmary8;"
+      mf "\mode=localfont; input stmary9;"
+      mf "\mode=localfont; input stmary10;"
+
+ * move stmary*.tfm into a TeX font metrics directory
+
+ * move stmary*.*pk into a TeX bitmaps directory
+
+If you want to use the St Mary's Road font in LaTeX2e, you should:
+
+ * run LaTeX2e on stmaryrd.dtx
+
+ * move stmaryrd.sty and Ustmry.fd into a TeX inputs directory
+
+ * read the documentation in stmaryrd.dvi
+
+This file should only be distributed as part of the St Mary's Road
+distribution.
+
+Copyright 1994 Alan Jeffrey

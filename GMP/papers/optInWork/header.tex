@@ -1,0 +1,706 @@
+
+\newcommand{\mi}[1]{\mathit{#1}}
+
+% defs.tex ---
+% for WADT99
+% copied from Tarlecki's definitions for frocos'98
+% modified from moving defs.tex
+
+\newcommand{\ASP}{\mathit{ASP}}
+\newcommand{\SP}{\mathit{SP}}
+\newcommand{\UDD}{\mathit{UDD}}
+\newcommand{\UT}{\mathit{T}}
+\newcommand{\UN}{\mathit{U}}
+\newcommand{\UDecl}{\mathit{Dcl}}
+\newcommand{\UDefn}{\mathit{Dfn}}
+
+\newcommand{\parspec}[3]{#1{\stackrel{#2}{\longrightarrow}}#3}
+
+\newcommand{\archspec}[2]{\textbf{arch spec }#1\textbf{ result }#2}
+\newcommand{\decl}[2]{#1\colon#2}
+\newcommand{\dfn}[2]{#1=#2}
+\newcommand{\amlg}[4]{#1\textbf{ with }#2\textbf{ and }#3\textbf{ with }#4}
+\newcommand{\appl}[3]{#1\lbrack#2\textbf{ fit }#3\rbrack}
+\newcommand{\gris}{\mathrel{::=}}
+
+
+\newcommand{\Mset}{\mathcal{M}}
+\newcommand{\Fset}{\mathcal{F}}
+
+\newcommand{\Dgm}{\mathit{Diag}}
+\newcommand{\Shape}[1]{\mathit{Shape}(#1)}
+\newcommand{\Nodes}[1]{\mathit{Nodes}(#1)}
+\newcommand{\Edges}[1]{\mathit{Edges}(#1)}
+%\newcommand{\restrict}[2]{\reduct{#1}{#2}}
+
+\newcommand{\fm}[2]{\langle#1\rangle_{#2}}
+
+\newcommand{\incl}[2]{\iota_{{#1}\subseteq{#2}}}
+
+\newcommand{\st}{\mathit{st}}
+\newcommand{\stC}{\mathit{C}_{\st}}
+\newcommand{\stB}{\mathit{B}_{\st}}
+\newcommand{\stP}{\mathit{P}_{\st}}
+\newcommand{\emptystC}{\stC^\emptyset}
+\newcommand{\emptyUC}{\UC^\emptyset}
+\newcommand{\UC}{\mathcal{C}}
+\newcommand{\UEv}{\mathit{UEv}}
+\newcommand{\Uset}{\mathcal{V}}
+\newcommand{\UU}{\mathit{V}}
+
+\newcommand{\EstC}{\mathcal{C}_{\st}}
+\newcommand{\emptyEstC}{\EstC^\emptyset}
+\newcommand{\EstB}{\mathcal{B}_{\st}}
+\newcommand{\SD}{D}
+
+\newcommand{\CstC}{\mathfrak{C}_{\st}}
+
+\newcommand{\getstctx}{\mathit{ctx}}
+
+\newcommand{\env}{\mathit{E}}
+
+\newcommand{\lambdaexp}[2]{\lambda#1\cdot#2}
+\newcommand{\reduct}[2]{#1|_{#2}}
+
+\newlength{\croutw}
+\newlength{\crouth}
+\newcommand{\crossout}[1]%
+        {\settowidth{\croutw}{$#1$}\settoheight{\crouth}{$#1$}#1%
+        \hspace{-1.0\croutw}\raisebox{0.3\crouth}{\rule{\croutw}{0.1ex}}}
+
+\newcommand{\commentout}[1]{\ignorespaces}
+\newcommand{\underscore}{\rule{3mm}{0.005in}}
+
+\newcommand{\extaticsem}[3]{#1 \vdash #2 \extsmb #3}
+\newcommand{\extsmb}{\mathrel{\rhd\hspace{-0.5em}\rhd}}
+
+\newcommand{\rulesection}[1]{\[\fbox{$#1$}\]}
+\newcommand{\infrule}[2]{\frac{#1}{#2}}
+\newcommand{\staticsem}[3]{#1 \vdash #2 \rhd #3}
+\newcommand{\modelsem}[3]{#1 \vdash #2 \Rightarrow #3}
+\newcommand{\staticsembreak}[3]{\begin{array}{r}#1 \vdash #2 \qquad\\ 
+                                                \rhd #3 \end{array}}
+\newcommand{\modelsembreak}[3]{\begin{array}{r}#1 \vdash #2 \qquad\\
+                                                 \Rightarrow #3 \end{array}}
+
+
+
+% Defs from Till 
+
+
+%\newenvironment{proof}{\begin{trivlist}\item[\textbf{Proof. 
+%}]}{\end{trivlist}}
+
+%\newcommand{\qed} {\hfill{$\Box$}}
+
+\newcommand{\ttsize}{\footnotesize }
+\newcommand{\NT}[1]{{\ttsize\texttt{#1}}}
+
+%\newcommand{\gram}[1]{{\texttt{#1}}}
+%\newenvironment{grammar}
+% {\texonly{\footnotesize}
+%  \begin{example}}{\end{example}\normalsize}
+%\newenvironment{slgrammar}
+% {\texonly{\footnotesize}
+%  \begin{example}\texorhtml{\slshape}{\it}}{\end{example}\normalsize}
+
+
+\newcommand{\cofidirectory}{}
+
+
+%symbols etc
+\newcommand{\parrightarrow}{\p\rightarrow}
+\newcommand{\p}[1]{\mathrel{\ooalign{\hfil$\mapstochar\mkern 
+5mu$\hfil\cr$#1$}}}
+%\newsavebox{\pararrbox}
+%\savebox{\pararrbox}{$\ \rightarrow\!\!\!\!\!\!{\raisebox{.15cm}{\tiny
+%p}}\ \ $}
+%\newcommand{\classicalpararrow}{{\usebox{\pararrbox}}}
+\newcommand{\totrightarrow}{\rightarrow}
+
+
+\newcommand{\X}{CASL}
+%\newcommand{\congr}{\equiv}
+%\newcommand{\TSX}{{T_{\Sigma}(X)}}
+\newcommand{\LSX}{{W_{\Sigma}(X)}}
+
+\newcommand{\Powfin}{\mathcal{P}_\omega}
+\newcommand{\gen}[1]{\mid_{#1}}
+\newcommand{\cogen}[1]{\mid^{#1}}
+\newcommand{\induce}[2]{\mid^{#1}_{#2}}
+\newcommand{\inducefrom}[1]{\!\mid_{#1}}
+\newcommand{\induceto}[1]{\mid^{#1}}
+
+%\makeindex
+
+%\newcommand{\Mod}{\mathbf{Mod}}
+\newcommand{\sen}{\mathbf{Sen}}
+
+%\newcommand{\Sen}{\mathbf{Sen}}
+
+%\newcommand{\Sign}{\mathbf{Sign}}
+%\newcommand{\Set}{\mathbf{Set}}
+%\newcommand{\ttsize}{\footnotesize }
+%\newcommand{\NT}[1]{{\ttsize\texttt{#1}}}
+\newcommand{\PF}{\mathit{PF}}
+\newcommand{\TF}{\mathit{TF}}
+
+\newcommand{\SY}{\mathit SY}
+\newcommand{\SYs}{\mathit SYs}
+\newcommand{\RSY}{\mathit RSY}
+\newcommand{\RSYs}{\mathit RSYs}
+\newcommand{\Sym}{\mathit{Sym}}
+\newcommand{\RawSym}{\mathit{RawSym}}
+\newcommand{\RawSymMap}{\mathit{RawSymMap}}
+\newcommand{\IDAsRawSym}{\mathit{IDAsRawSym}}
+\newcommand{\SymAsRawSym}{\mathit{SymAsRawSym}}
+
+%\newcommand{\dom}{\mathit{dom}}
+%\newcommand{\graph}{\mathit{graph}}
+%% incompatible with xypic -- dirk
+
+
+%\newenvironment{grammar}
+% {\ttsize\begin{alltt}}{\end{alltt}}
+
+
+
+\newcommand{\TSX}{{T_{\Sigma^\#}(X)}}
+
+\newcommand{\bit}{\begin{itemize}}
+\newcommand{\eit}{\end{itemize}}
+\newcommand{\Equivalent}{\Leftrightarrow}
+%\newcommand{\Implies}{\Rightarrow}
+\newcommand{\logand}{\wedge}
+\newcommand{\logor}{\vee}
+%\newcommand{\union}{\cup}
+\newcommand{\intersection}{\cap}
+\newcommand{\comp}{\circ}
+\newcommand{\suchthat}{\mid}
+\newcommand{\congr}{\equiv}
+\newcommand{\disjoint}{\uplus}
+\newcommand{\buildset}[1]{\{#1\}}
+\newcommand{\Si}{\Sigma}
+\newcommand{\al}{\alpha}
+\newcommand{\pp}[2]{#1_1\commadots #1_{#2}}
+%\newcommand{\map}[2]{\colon#1\!\longrightarrow\!#2}
+\newcommand{\mmap}[2]{#1\!\longrightarrow\!#2}
+\newcommand{\anddots}{\logand\,\cdots\,\logand}
+\newcommand{\lldots}{\,\ldots\,}
+\newcommand{\ccdots}{\,\cdots\,}
+\newcommand{\commadots}{,\lldots,}
+\newcommand{\sigspec}[1]{\langle #1 \rangle}
+\newcommand{\eq}{\stackrel{\mbox{\scriptsize e}}{=}}
+\newcommand{\weq}{\stackrel{\mbox{\scriptsize w}}{=}}
+
+\newcommand{\mBox}[1]{\, \mbox{#1} \,}
+
+\newcommand{\engtwocase}[3]{
+\left\{
+\begin{array}{ll}
+  #1,&\mBox{if }#2\\
+  #3,&\mBox{otherwise}
+\end{array}\right.}
+
+\newcommand{\threecase}[5]{
+\left\{
+\begin{array}{ll}
+  #1,&\mbox{if }#2\\
+  #3,&\mbox{if }#4\\
+  #5,&\mbox{otherwise}
+\end{array}\right.}
+
+\newcommand{\threefullcase}[6]{
+\left\{
+\begin{array}{ll}
+  #1,&\mbox{if }#2\\
+  #3,&\mbox{if }#4\\
+  #5,&\mbox{if }#6
+\end{array}\right.}
+
+\newcommand{\delete}[1]{$\overline{\mbox{#1}}$}
+\newcommand{\new}[1]{{\it\tiny #1}}
+
+\newcommand{\mbs}[1]{\mbox{$#1$}}
+
+
+
+
+\newcommand{\ASL}[1]{[\![#1]\!]}
+
+\newcommand{\sym}{\mathit{sym}}
+\newcommand{\totqual}{\mathsf{t}}
+\newcommand{\parqual}{\mathsf{p}}
+\newcommand{\ws}{\mathit{ws}}
+\newcommand{\FinSet}[1]{\mathit{FinSet}(#1)}
+\newcommand{\RawSymOf}{\mathit{RawSymOf}}
+\newcommand{\Gram}[1]{{\textup{\texttt{#1}}}}
+
+\newcommand{\implicitqualkind}{\mathit{implicit}}
+\newcommand{\sortqualkind}{\mathit{sort}}
+\newcommand{\funqualkind}{\mathit{fun}}
+\newcommand{\predqualkind}{\mathit{pred}}
+\newcommand{\SymKind}{\mathit{SymKind}}
+
+%\newcommand{\Sort}{\mathit{Sort}}
+\newcommand{\QualFunName}{\mathit{QualFunName}}
+\newcommand{\QualPredName}{\mathit{QualPredName}}
+
+
+
+% Lutz's definitions
+
+
+\hfuzz1pc
+\sloppy
+%\frenchspacing
+
+
+%\spnewtheorem{thm}{Theorem}[section]{\bfseries}{\itshape}
+%\spnewtheorem{cor}[theorem]{Corollary}{\bfseries}{\itshape}
+%\spnewtheorem{lem}[theorem]{Lemma}{\bfseries}{\itshape}
+%\spnewtheorem{prop}[theorem]{Proposition}{\bfseries}{\itshape}
+%\spnewtheorem{defn}[theorem]{Definition}{\bfseries}{\upshape}
+%\spnewtheorem{rem}[theorem]{Remark}{\bfseries}{\upshape}
+%\spnewtheorem{expl}[theorem]{Example}{\bfseries}{\upshape}
+%\spnewtheorem{thmdefn}[theorem]{Theorem and Definition}{\bfseries}{\itshape}
+%\spnewtheorem{propdefn}[theorem]{Proposition and Definition}{\bfseries}{\itshape}
+%\spnewtheorem{assumption}[theorem]{Assumption}{\bfseries}{\upshape}
+%\spnewtheorem{algorithm}[theorem]{Algorithm}{\bfseries}{\upshape}
+
+%% Other environments
+%\newenvironment{mycd}
+%       {\begin{displaymath}\renewcommand{\arraystretch}{0.5}\begin{CD}}
+%       {\end{CD}\end{displaymath}}
+\newenvironment{rmenumerate}%
+        {\begin{enumerate}\renewcommand{\labelenumi}{(\roman{enumi})}}%
+        {\end{enumerate}}
+\newenvironment{alenumerate}%
+        {\begin{enumerate}\renewcommand{\labelenumi}{(\alph{enumi})}}%
+        {\end{enumerate}}
+\newenvironment{Alenumerate}%
+        {\begin{enumerate}\renewcommand{\labelenumi}{\Alph{enumi})}}%
+        {\end{enumerate}}
+\newenvironment{numenumerate}%
+        {\begin{enumerate}\renewcommand{\labelenumi}{\arabic{enumi})}}%
+        {\end{enumerate}}
+%\newenvironment{defn}%
+%       {\begin{definition}\em}%
+%       {\end{definition}}
+%\newenvironment{rem}%
+%       {\begin{remark}\em}%
+%       {\end{remark}}
+%\renewenvironment{example}%
+%       {\begin{expl}\em}%
+%       {\end{expl}}
+%\newenvironment{texteqnarray}%
+%       {\setlength{\itemsep}{0pt}%
+%       \setlength{\topsep}{0pt}%
+%       \begin{trivlist}\item[]\begin{displaymath}%
+%       \renewcommand{\arraystretch}{1.2}\begin{array}{rcll}}%
+%       {\end{array}\end{displaymath}\end{trivlist}}
+%\newenvironment{acknowledge}%
+%       {\begin{list}{}{\setlength{\leftmargin}{0pt}%
+%                       \setlength{\topsep}{1cm}}% 
+%       \item{\bf Acknowledgements:}}%
+%       {\end{list}}
+
+%\newcommand{\qed}{\hfill\openbox}
+%\newenvironment{proof}
+%       {\begin{trivlist}\item{\sc Proof: }}
+%       {\qed\end{trivlist}}
+
+
+
+%% Math definitions
+\newcommand{\Cat}{\mathbf}
+\newcommand{\Cls}{\mathcal}
+\newcommand{\Opname}{\mathrm}
+
+\newcommand{\Ob}{{\Opname{Ob}\,}}
+\newcommand{\Mor}{{\Opname{Mor}\,}}
+\newcommand{\Epi}{{\Opname{Epi}\,}}
+\newcommand{\Mono}{{\Opname{Mono}\,}}
+\newcommand{\Iso}{{\Opname{Iso}\,}}
+\newcommand{\Ident}{{\Opname{Ident}\,}}
+\newcommand{\Op}{{op}}
+\newcommand{\colim}{{\Opname{colim}\,}}
+
+\newcommand{\lrule}[3]{(#1)\;\;\infrule{#2}{#3}}
+\newcommand{\lrrule}[3]{(#1)\;\;\infrule{\underline{#2}}{#3}}
+\newcommand{\laxiom}[2]{(#1)\;\;#2}
+
+\newcommand{\BA}{{\Cat A}}
+%\newcommand{\BB}{{\Cat B}}
+\newcommand{\BC}{{\Cat C}}
+\newcommand{\BD}{{\Cat D}}
+\newcommand{\BI}{{\Cat I}}
+\newcommand{\BK}{{\Cat K}}
+\newcommand{\BL}{{\Cat L}}
+\newcommand{\BM}{{\Cat M}}
+\newcommand{\BN}{{\Cat N}}
+\newcommand{\BS}{{\Cat S}}
+\newcommand{\BW}{{\Cat W}}
+\newcommand{\Btwo}{{\Cat 2}}
+
+\newcommand{\CC}{{\Cls C}}
+\newcommand{\CE}{{\Cls E}}
+%\newcommand{\CK}{{\Cls K}}
+% \newcommand{\CL}{{\Cls L}}
+\newcommand{\CM}{{\Cls M}}
+\newcommand{\CO}{{\Cls O}}
+\newcommand{\CP}{{\Cls P}}
+\newcommand{\CS}{{\Cls S}}
+\newcommand{\CT}{{\Cls T}}
+\newcommand{\eps}{\varepsilon}
+
+\newcommand{\integers}{{\mathbb Z}}
+\newcommand{\tensor}{\otimes}
+
+%\newcommand{\openbox}{\leavevmode
+%  \hbox to.77778em{%
+%  \hfil\vrule
+%  \vbox to.675em{\hrule width.6em\vfil\hrule}%
+%  \vrule\hfil}}
+\newcommand{\mystrut}[1]{\rule[#1]{0cm}{0.1cm}}
+
+
+
+%\newcommand{\red}{\vdash}
+\newcommand{\idred}{\red}
+\newcommand{\step}{\red_c}
+% \newcommand{\stepeq}{\succeq}
+\newcommand{\downto}{\succeq}
+\newcommand{\upto}{\preceq}
+\newcommand{\moremonicthan}{\Rightarrow}
+\newcommand{\into}{\hookrightarrow}
+\newcommand{\impl}{\Rightarrow}
+\newcommand{\id}{{id}}
+\newcommand{\ev}{{ev}}
+\newcommand{\Hom}{{hom}}
+\newcommand{\Dom}{{dom\, }}
+\newcommand{\Cod}{{cod}}
+\newcommand{\adj}{\dashv}
+\newcommand{\powerset}{{\mathcal P}}
+\newcommand{\finpowerset}{{\powerset_\omega}}
+\newcommand{\kVec}{\mbox{$k$-$\Cat{Vec}$}}
+\newcommand{\termObj}{1}
+
+\newcommand{\map}[2]{:#1\to #2}
+\newcommand{\restr}[2]{{#1}|_{#2}}
+\newcommand{\wordbrace}[1]{\underbrace{\hspace{1.5cm}}_{\displaystyle{#1}}}
+\newcommand{\forget}[1]{|_{#1}}
+\newcommand{\argument}{\_\!\_}%{\underline{\;\;}}
+%\newcommand{\substack}[2]{{{#1} \atop {#2}}}
+
+%% Category Names
+\newcommand{\CASLsign}{\Cat{CASLsign}}
+\newcommand{\enrCASLsign}{\Cat{enrCASLsign}}
+\newcommand{\refCASLsign}{\Cat{refCASLsign}}
+%\newcommand{\Mod}{\Cat{Mod}\,}
+% the \, caused bad effect when copmbined with indices etc.
+\newcommand{\EnrMod}{\Cat{Mod}_e}
+\newcommand{\CAT}{\Cat{CAT}}
+\newcommand{\Sen}{\Cat{Sen}}
+\newcommand{\Sign}{\Cat{Sign}}
+\newcommand{\SignVar}{\Cat{Var}}
+\newcommand{\EnrSign}{\Cat{EnrSign}}
+%\newcommand{\Set}{\Cat{Set}}
+\newcommand{\CLS}{\Cat{CLS}}
+
+\newcommand{\SmallSpecName}[1]{\textsc{\small #1}}
+%% Institution Names
+\newcommand{\EnrInst}{EnrPCFOL}
+\newcommand{\CASLInst}{SubPCFOL}
+\newcommand{\PCFOLInst}{PCFOL}
+
+%% Words
+\newcommand{\Word}{\mathbf}
+\newcommand{\Ba}{{\Word{a}}}
+\newcommand{\Bb}{{\Word{b}}}
+\newcommand{\Bc}{{\Word{c}}}
+\newcommand{\Bf}{{\Word{f}}}
+\newcommand{\Bg}{{\Word{g}}}
+\newcommand{\Bh}{{\Word{h}}}
+\newcommand{\Bl}{{\Word{l}}}
+\newcommand{\Br}{{\Word{r}}}
+
+
+
+%% For HasCASL:
+
+\newcommand{\HasCASL}{{\sc HasCasl}\xspace}
+\newcommand{\ML}{{\textsf{ML}}\xspace}
+\newcommand{\BaseTypes}{B}
+\newcommand{\SimpleTypes}{T}
+\newcommand{\TotalFunType}[2]{#1\to #2}
+\newcommand{\sbullet}{\mbox{ $\scriptstyle\bullet$ }}
+\newcommand{\lambdaTotal}[2]{\lambda\, #1\sbullet\!\! !\, #2}
+\newcommand{\PartialFunType}[2]{#1\to ?#2}
+\newcommand{\lambdaPartial}[2]{\lambda\, #1\sbullet #2}
+\newcommand{\lambdaType}[2]{\lambda\, #1\sbullet #2}
+\newcommand{\NonStrictFunType}[2]{\PartialFunType{\Maybe{#1}}{#2}}
+\newcommand{\lambdaNonStrict}[2]{\lambda\, #1\sbullet #2}
+\newcommand{\substTerm}[3]{{#1[#3/#2]}}
+\newcommand{\PredType}[1]{{\textsf{pred}(#1)}}
+\newcommand{\ProdType}[2]{#1 * #2}
+\newcommand{\pMonType}[2]{#1 -\!\!\mu\!\!\to\hspace{-1pt}? #2}
+\newcommand{\tMonType}[2]{#1 -\!\!\mu\!\!\to #2}
+\newcommand{\pContType}{Pcont}
+\newcommand{\tContType}{Tcont}
+\newcommand{\projOp}[1]{{pr_#1}}
+\newcommand{\fst}{{\textsf{fst}}}
+\newcommand{\snd}{{\textsf{snd}}}
+\newcommand{\UnitType}{{\textsf{unit}}}
+\newcommand{\UnitOp}{{()}}
+\newcommand{\Maybe}[1]{?#1}
+\newcommand{\TypeSchemes}{{TS}}
+\newcommand{\TypeContext}{\mathcal{C}}
+\newcommand{\UniversalType}[2]{{\forall #1\sbullet #2}}
+\newcommand{\applyPoly}[2]{{#1[#2]}}
+%\newcommand{\lambdaPoly}[2]{\Lambda #1:\TypeKind.\, #2}
+\newcommand{\ConstrainedType}[2]{{#1 \Rightarrow #2}}
+\newcommand{\Constraint}{C}
+\newcommand{\TypeKind}{\textsf{type}}
+\newcommand{\TypeVars}{{TV}}
+\newcommand{\TypeOps}{{TO}}
+\newcommand{\PseudoTypes}{{PT}}
+\newcommand{\SubstType}[3]{{#1[#3/#2]}}
+\newcommand{\varco}[1]{{v^+(#1)}}
+\newcommand{\varcontra}[1]{{v^-(#1)}}
+\newcommand{\Covar}{\textsf{covariant}}
+\newcommand{\Contravar}{\textsf{contravariant}}
+\newcommand{\sigSorts}{S}
+\newcommand{\sigClasses}{C}
+\newcommand{\sigConstrs}{T}
+\newcommand{\sigAlias}{{A}}
+\newcommand{\sigExpand}{{\varepsilon}}
+\newcommand{\unalias}{{\bar\sigExpand}}
+\newcommand{\sigSub}{\leq}
+\newcommand{\extSub}{\leq_*}
+\newcommand{\elPred}[2]{{#1\in #2}}
+\newcommand{\downCast}[2]{{#1\textsf{ as }#2}}
+\newcommand{\upCast}[2]{{#1:#2}}
+\newcommand{\sigOps}{O}
+\newcommand{\IndVars}{V}
+\newcommand{\ifthenelse}[3]{{\textsf{if }#1\textsf{ then }#2
+                        \textsf{  else }#3}}
+\newcommand{\BT}{B}
+\newcommand{\emb}{{emb}}
+
+\newcommand{\Context}{\Gamma}
+\newcommand{\ContextTerm}[3]{{#1 \rhd #2: #3}}
+\newcommand{\ContextEq}[2]{{#1 \rhd #2}}
+\newcommand{\ContextEntails}[3]{{#2 \entails_{#1} #3}}
+\newcommand{\ContextImpl}[3]{{#2 \impl_{#1} #3}}
+\newcommand{\exeq}{\stackrel{e}{=}}
+\newcommand{\IsDef}{\operatorname{def}}
+
+\newcommand{\isFormula}[1]{{#1\in\textsf{Prop}}}
+
+\newcommand{\Model}{M}
+\newcommand{\Sem}[1]{{[\![#1]\!]}}
+\newcommand{\extendsTo}{\preceq}
+\newcommand{\True}{\top}
+\newcommand{\False}{\bot}
+\newcommand{\uexists}{\exists !}
+\newcommand{\iotaTerm}[2]{\iota #1\sbullet #2}
+%\newcommand{\conj}{\wedge}
+\newcommand{\disj}{\vee}
+\newcommand{\modimpl}{\to}
+\newcommand{\modiff}{\leftrightarrow}
+\newcommand{\intEq}{eq}
+\newcommand{\dOrder}[3]{#2 \le\![#1]\,#3}
+\newcommand{\resTerm}[2]{#1\ res\ #2}
+\newcommand{\mono}[2]{\operatorname{mono}_{#1}#2}
+%\newcommand{\entails}{\vdash}
+
+%% CASL constructs
+
+%% HasCASL constructs
+\newcommand{\Class}{\textbf{class}}
+\newcommand{\Instance}{\textbf{instance}}
+\newcommand{\Program}{\textbf{program}}
+\newcommand{\Internal}{\textbf{internal}}
+\providecommand{\pfun}{\mathrel{\rightarrow?}}
+\newcommand{\iimpl}{\Rightarrow}
+\newcommand{\iconj}{\wedge}
+
+%% For Monads:
+\newcommand{\BBT}{\mathbb{T}}
+\newcommand{\DO}{\operatorname{do}}
+\newcommand{\Let}{\operatorname{let}}
+\newcommand{\retOp}{\operatorname{ret}}
+\newcommand{\retOpHC}{\mathit{ret}}
+\newcommand{\ret}[1]{\retOp #1}
+\newcommand{\letTerm}[2]{\DO\, #1; \ #2}
+\newcommand{\leteq}{\leftarrow}
+\newcommand{\se}[2]{\mathsf{se}(#1,#2)}
+\newcommand{\Pfin}{\mathcal P_{\mathit{fin}}}
+
+%% Program logic
+\newcommand{\nec}{\square\,}
+\newcommand{\gbox}{\square\hspace{-6.5pt}\raisebox{2pt}{\tiny{G}}\;}
+\newcommand{\pbox}[1]{[#1]\,}
+\newcommand{\pdiamond}[1]{<\hspace{-3pt}#1\hspace{-3pt}>\!}
+%\newcommand{\lbox}{\square\,}
+\newcommand{\lbox}{\Box}
+\newcommand{\ldiamond}{\Diamond}
+\newcommand{\pmodal}[2]{[#1]_G\,#2}
+\newcommand{\Timpl}{\Rightarrow_T}
+\newcommand{\Tconj}{\wedge}
+\newcommand{\HTriple}[3]{\{#1\}~#2~\{#3\}}
+\newcommand{\ContextHTriple}[4]{#1\rhd\HTriple{#2}{#3}{#4}}
+\newcommand{\DummyCHT}[4]{\HTriple{#2}{#3}{#4}}
+\newcommand{\sef}{\mathit{sef}}
+\newcommand{\dsef}{\mathit{dsef}}
+
+%% For polymorphism
+\newcommand{\extInst}[1]{\mathrm{Ext}(#1)}
+%\newcommand{\gextInst}[1]{\mathrm{gExt}(#1)}
+\newcommand{\Poly}[1]{\mathrm{Poly}(#1)}
+%% For institutions
+
+
+\newcommand{\ModFunctor}{\Cat{Mod}\,}
+
+
+\newcommand{\la}{\langle}
+\newcommand{\ra}{\rangle}
+
+
+\newcommand{\si}{\sigma}
+
+\newcommand{\ISig}{\mathit{Sig}}
+\newcommand{\IMod}{\mathit{Mod}}
+\newcommand{\IAx}{\mathit{Ax}}
+
+\newcounter{blubber}
+
+\newenvironment{algenumerate}
+{\begin{list}
+  {\arabic{blubber}.}
+  {\usecounter{blubber}
+   \setlength{\leftmargin}{3ex}
+    \setlength{\parsep}{0pt}
+    \setlength{\itemindent}{1ex}
+    \setlength{\itemsep}{2pt}   
+    \setlength{\listparindent}{0ex}
+  }
+}
+{\end{list}}
+
+\newenvironment{specsem}%
+        {\smallskip\par\noindent\qquad$\begin{array}{@{}l@{{}={}}l}}%
+        {\end{array}$\par\noindent}
+
+
+%% Width of parboxes for figures
+\newlength{\myboxwidth}
+\setlength{\myboxwidth}{\textwidth}
+\addtolength{\myboxwidth}{-20pt}
+\newenvironment{myfigure}{\begin{figure}\begin{center}
+	\setlength{\fboxsep}{10pt}}% 
+	{\end{center}\end{figure}}
+
+%% Coalgebraic Modal Logic
+\newcommand{\Lang}{\mathcal{L}}	
+\newcommand{\FLang}{\mathcal{F}}	
+\newcommand{\pls}{\Lambda}
+\newcommand{\pl}[3]{#1\in #2(#3)}
+\newcommand{\polypl}[3]{#1\in #2 #3}
+\newcommand{\negpl}[3]{#1\notin #2(#3)}
+\newcommand{\plbox}[1]{[#1]}
+%\newcommand{\pldiamond}[1]{<\hspace{-3pt}#1\hspace{-3pt}>\!}
+\newcommand{\pldiamond}[1]{\langle#1\rangle}
+\newcommand{\gldiamond}[1]{\Diamond_{#1}}
+\newcommand{\glbox}[1]{\square_{#1}}
+
+\newcommand{\HMLBox}[1]{\square\hspace{-5.5pt}\raisebox{2pt}{$\scriptscriptstyle{#1}$}\;}
+\newcommand{\HMLDiamondb}[1]{\Diamond\hspace{-5pt}\raisebox{1.5pt}{$\scriptscriptstyle{#1}$}\;}
+\newcommand{\HMLDiamonda}[1]{\Diamond\hspace{-5.3pt}\raisebox{1.9pt}{$\scriptscriptstyle{#1}$}\;}
+\newcommand{\pldbox}[2]{[#1]_{#2}}
+\newcommand{\plempty}{\plbox{\emptyset}}
+\newcommand{\plcan}{\square}
+\newcommand{\FC}{{\mathfrak C}}
+\newcommand{\negcl}[1]{\mathit{cl}(#1)}
+\newcommand{\Nat}{{\mathbb{N}}}
+\newcommand{\Int}{{\mathbb{Z}}}
+\newcommand{\Rat}{{\mathbb{Q}}}
+\newcommand{\Real}{{\mathbb{R}}}
+\newcommand{\List}{\mathsf{list}}
+\newcommand{\PDist}{D_\omega}%% Provisionary!!
+%\newcommand{\Id}{\mathit{Id}}
+\newcommand{\SFun}{\mathcal{SP}}
+\newcommand{\plcomp}{\circledast}
+\newcommand{\contrapower}{2^{\argument}}
+\newcommand{\trans}[1]{#1^\flat}
+\newcommand{\boolcl}[2]{\mathrm{bcl}_{#1}(#2)}
+\newcommand{\Bag}{\mathcal{B}}
+\newcommand{\Baginfty}{\mathcal{B}_\infty}
+%\newcommand{\Ab}{\mathcal{B}_{\mathbb{Z}}}
+\newcommand{\Prop}{\mathsf{Prop}}
+\newcommand{\Up}{\mathsf{Up}}
+\newcommand{\Lit}{\mathsf{Lit}}
+\newcommand{\nneg}{\sim}
+\newcommand{\satisfies}{\vDash}
+\newcommand{\gsatisfies}{\satisfies_g}
+\newcommand{\nsatisfies}{\nvDash}
+\newcommand{\PSPACE}{\mathit{PSPACE}}
+\newcommand{\Rules}{\mathcal{R}}
+\newcommand{\RulesC}{\Rules_C}
+\newcommand{\Frame}[1]{2^{2^{#1}}}
+\newcommand{\UpP}{\mathsf{Up}\mathcal{P}}
+\newcommand{\one}{\mathbb{1}}
+%\newcommand{\smaller}[2]{#1_{<#2}}
+\newcommand{\total}{\nu}
+\newcommand{\sgn}{\mathit{sgn}}
+%\newcommand{\RedClause}{\Clause^r}
+\newcommand{\size}{\mathit{size}}
+\newcommand{\arity}{\mathit{ar}}
+
+\newcommand{\Sorts}{\mathcal{S}}
+\newcommand{\MSorts}{\Sorts_0}
+\newcommand{\ModOp}{L}
+\newcommand{\contrapow}{\mathcal{Q}}
+\newcommand{\profto}{\stackrel{\bullet}{\to}}
+\newcommand{\Struct}{\mathcal{M}}
+\newcommand{\Id}{\mathit{Id}}
+\newcommand{\Det}{\mathsf{Det}}
+\newcommand{\hDet}{\mathsf{hDet}}
+\newcommand{\FF}{\mathfrak{F}}
+\newcommand{\idOp}{\plbox{\iota}}
+\newcommand{\Sig}{\mathit{Sig}}
+
+\newcommand{\NEXP}{\mi{NEXPTIME}}
+\newcommand{\EXP}{\mi{EXPTIME}}
+\newcommand{\NP}{\mi{NP}}
+\newcommand{\at}{\mi{at}}
+\newcommand{\Max}{\mi{max}}
+\newcommand{\muprod}{\textstyle\prod^\mu}
+\newcommand{\tsum}{\textstyle\sum}
+\DeclareMathOperator{\mge}{\ge}
+\DeclareMathOperator{\meq}{=}
+\DeclareMathOperator{\mle}{\le}
+\DeclareMathOperator{\fixarrow}{\uparrow}
+\newcommand{\Stable}{S}
+\newcommand{\Zero}{Z}
+\newcommand{\Regular}{U}
+\newcommand{\last}{\lambda}
+\newcommand{\fix}[2]{#1\!\fixarrow #2}
+\newcommand{\msf}{\mathsf}
+
+\newcommand{\CKCMi}{\CK\!+\!\CMi\xspace}
+\newcommand{\CK}{\mathit{CK}}
+\newcommand{\CMi}{\mathit{CMi}}
+\newcommand{\Ax}{\mathcal{A}}
+
+%\newcommand{\PLentails}{\entails_{\mi{PL}}}
+%\newcommand{\ModSig}{\Lambda}
+
+\newcommand{\modelsCA}{\models}
+\newcommand{\Th}{\mathsf{Th}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\Space}{\mathcal{S}}
+\newcommand{\osder}[2]{\entails_{#1}^{#2}}
+\newcommand{\gentails}[1]{\entails^{#1}_g}
