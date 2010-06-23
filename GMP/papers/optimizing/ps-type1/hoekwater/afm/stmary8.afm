@@ -1,0 +1,146 @@
+StartFontMetrics 4.0
+Comment Copyright 1995, Richard J. Kinch
+FontName stmary8
+FullName stmary8
+FamilyName stmary8
+Comment UniqueID 0
+FontBBox -133 -2953 1119 846
+Notice Copyright 1995, Richard J. Kinch
+EncodingScheme FontSpecific
+XHeight 431
+ItalicAngle 0
+StartCharMetrics 128
+C 0 ; WX 826 ; N shortleftarrow ; B 59 69 765 431 ;
+C 1 ; WX 826 ; N shortrightarrow ; B 59 69 765 431 ;
+C 2 ; WX 531 ; N shortuparrow ; B 74 -104 455 604 ;
+C 3 ; WX 531 ; N shortdownarrow ; B 74 -104 455 604 ;
+C 4 ; WX 590 ; N Yup ; B 59 14 529 545 ;
+C 5 ; WX 590 ; N Ydown ; B 59 -45 529 486 ;
+C 6 ; WX 649 ; N Yleft ; B 59 14 588 486 ;
+C 7 ; WX 649 ; N Yright ; B 59 14 588 486 ;
+C 8 ; WX 708 ; N varcurlyvee ; B 0 -215 706 694 ;
+C 9 ; WX 708 ; N varcurlywedge ; B 0 -215 706 694 ;
+C 10 ; WX 826 ; N minuso ; B 59 14 765 486 ;
+C 11 ; WX 590 ; N baro ; B 59 -104 529 604 ;
+C 12 ; WX 708 ; N sslash ; B 59 -250 647 750 ;
+C 13 ; WX 708 ; N bbslash ; B 59 -250 647 750 ;
+C 14 ; WX 826 ; N moo ; B 118 -21 706 521 ;
+C 15 ; WX 826 ; N varotimes ; B 59 -103 765 603 ;
+C 16 ; WX 826 ; N varoast ; B 59 -103 765 603 ;
+C 17 ; WX 826 ; N varobar ; B 59 -103 765 603 ;
+C 18 ; WX 826 ; N varodot ; B 59 -103 765 603 ;
+C 19 ; WX 826 ; N varoslash ; B 59 -103 765 603 ;
+C 20 ; WX 826 ; N varobslash ; B 59 -103 765 603 ;
+C 21 ; WX 826 ; N varocircle ; B 59 -103 765 603 ;
+C 22 ; WX 826 ; N varoplus ; B 59 -103 765 603 ;
+C 23 ; WX 826 ; N varominus ; B 59 -103 765 603 ;
+C 24 ; WX 826 ; N boxast ; B 88 -74 736 574 ;
+C 25 ; WX 826 ; N boxbar ; B 88 -74 736 574 ;
+C 26 ; WX 826 ; N boxdot ; B 88 -74 736 574 ;
+C 27 ; WX 826 ; N boxslash ; B 88 -74 736 574 ;
+C 28 ; WX 826 ; N boxbslash ; B 88 -74 736 574 ;
+C 29 ; WX 826 ; N boxcircle ; B 88 -74 736 574 ;
+C 30 ; WX 826 ; N boxbox ; B 88 -74 736 574 ;
+C 31 ; WX 826 ; N boxempty ; B 88 -74 736 574 ;
+C 32 ; WX 333 ; N space ; B 0 0 0 0 ;
+C 33 ; WX 944 ; N merge ; B 65 0 877 738 ;
+C 34 ; WX 590 ; N vartimes ; B 59 0 529 694 ;
+C 35 ; WX 354 ; N fatsemi ; B 59 -194 293 563 ;
+C 36 ; WX 649 ; N ssearrow ; B 87 -194 588 695 ;
+C 37 ; WX 649 ; N curlywedgeuparrow ; B 59 -194 559 695 ;
+C 38 ; WX 708 ; N sswarrow ; B 0 -194 706 707 ;
+C 39 ; WX 708 ; N curlywedgedownarrow ; B 0 -233 706 715 ;
+C 40 ; WX 767 ; N fatslash ; B 297 -250 944 750 ;
+C 41 ; WX 767 ; N fatbslash ; B 59 -250 706 750 ;
+C 42 ; WX 472 ; N lbag ; B 59 -250 411 750 ;
+C 43 ; WX 472 ; N rbag ; B 59 -250 411 750 ;
+C 44 ; WX 1063 ; N varbigcirc ; B 59 -221 1001 721 ;
+C 45 ; WX 826 ; N leftrightarroweq ; B 44 119 780 539 ;
+C 46 ; WX 708 ; N curlyveedownarrow ; B 0 -207 706 694 ;
+C 47 ; WX 708 ; N curlyveeuparrow ; B 0 -215 706 733 ;
+C 48 ; WX 649 ; N nnwarrow ; B 87 -195 588 694 ;
+C 49 ; WX 649 ; N nnearrow ; B 59 -195 559 694 ;
+C 50 ; WX 826 ; N leftslice ; B 59 -6 765 506 ;
+C 51 ; WX 826 ; N rightslice ; B 59 -6 765 506 ;
+C 52 ; WX 826 ; N varolessthan ; B 59 -103 765 603 ;
+C 53 ; WX 826 ; N varogreaterthan ; B 59 -103 765 603 ;
+C 54 ; WX 826 ; N varovee ; B 59 -103 765 603 ;
+C 55 ; WX 826 ; N varowedge ; B 59 -103 765 603 ;
+C 56 ; WX 531 ; N talloblong ; B 134 -250 395 750 ;
+C 57 ; WX 738 ; N interleave ; B 129 -250 606 750 ;
+C 58 ; WX 826 ; N obar ; B 59 -104 765 604 ;
+C 59 ; WX 826 ; N obslash ; B 59 -104 765 604 ;
+C 60 ; WX 826 ; N olessthan ; B 59 -104 765 604 ;
+C 61 ; WX 826 ; N ogreaterthan ; B 59 -104 765 604 ;
+C 62 ; WX 826 ; N ovee ; B 59 -104 765 604 ;
+C 63 ; WX 826 ; N owedge ; B 59 -104 765 604 ;
+C 64 ; WX 708 ; N oblong ; B 65 0 641 599 ;
+C 65 ; WX 708 ; N inplus ; B 88 -64 618 564 ;
+C 66 ; WX 708 ; N niplus ; B 88 -64 618 564 ;
+C 67 ; WX 708 ; N nplus ; B 59 -21 647 599 ;
+C 68 ; WX 826 ; N subsetplus ; B 88 -64 736 564 ;
+C 69 ; WX 826 ; N supsetplus ; B 88 -64 736 564 ;
+C 70 ; WX 826 ; N subsetpluseq ; B 88 -175 736 669 ;
+C 71 ; WX 826 ; N supsetpluseq ; B 88 -175 736 669 ;
+C 72 ; WX 472 ; N Lbag ; B 59 -250 411 750 ;
+C 73 ; WX 472 ; N Rbag ; B 59 -250 411 750 ;
+C 74 ; WX 428 ; N llbracket ; B 122 -250 404 750 ;
+C 75 ; WX 428 ; N rrbracket ; B 25 -250 304 750 ;
+C 76 ; WX 413 ; N llparenthesis ; B 103 -250 352 750 ;
+C 77 ; WX 413 ; N rrparenthesis ; B 59 -250 307 750 ;
+C 78 ; WX 826 ; N binampersand ; B 59 -103 765 603 ;
+C 79 ; WX 826 ; N bindnasrepma ; B 59 -103 765 603 ;
+C 80 ; WX 826 ; N trianglelefteqslant ; B 88 -175 736 669 ;
+C 81 ; WX 826 ; N trianglerighteqslant ; B 88 -175 736 669 ;
+C 82 ; WX 826 ; N ntrianglelefteqslant ; B 88 -346 736 846 ;
+C 83 ; WX 826 ; N ntrianglerighteqslant ; B 88 -346 736 846 ;
+C 84 ; WX 590 ; N llfloor ; B 111 -250 588 750 ;
+C 85 ; WX 590 ; N rrfloor ; B 0 -250 477 750 ;
+C 86 ; WX 590 ; N llceil ; B 111 -250 588 750 ;
+C 87 ; WX 590 ; N rrceil ; B 0 -250 477 750 ;
+C 88 ; WX 0 ; N arrownot ; B 390 61 670 439 ;
+C 89 ; WX 0 ; N Arrownot ; B 419 -47 641 547 ;
+C 90 ; WX 0 ; N Mapstochar ; B 59 -47 133 547 ;
+C 91 ; WX 0 ; N mapsfromchar ; B -133 61 -59 439 ;
+C 92 ; WX 0 ; N Mapsfromchar ; B -133 -47 -59 547 ;
+C 93 ; WX 1063 ; N leftrightarrowtriangle ; B 59 73 1001 427 ;
+C 94 ; WX 1063 ; N leftarrowtriangle ; B 59 73 1001 427 ;
+C 95 ; WX 1063 ; N rightarrowtriangle ; B 59 73 1001 427 ;
+C 96 ; WX 885 ; N bigtriangledown ; B 59 -1000 824 0 ;
+C 97 ; WX 885 ; N bigtriangleup ; B 59 -1000 824 0 ;
+C 98 ; WX 885 ; N bigcurlyvee ; B 59 -1000 824 0 ;
+C 99 ; WX 885 ; N bigcurlywedge ; B 59 -1000 824 0 ;
+C 100 ; WX 885 ; N bigsqcap ; B 59 -1000 824 0 ;
+C 101 ; WX 885 ; N bigbox ; B 59 -1000 824 0 ;
+C 102 ; WX 472 ; N bigparallel ; B 59 -1000 411 0 ;
+C 103 ; WX 649 ; N biginterleave ; B 59 -1000 662 0 ;
+C 104 ; WX 1181 ; N hugetriangledown ; B 59 -1400 1119 0 ;
+C 105 ; WX 1181 ; N hugetriangleup ; B 59 -1400 1119 0 ;
+C 106 ; WX 1181 ; N hugecurlyvee ; B 59 -1400 1119 0 ;
+C 107 ; WX 1181 ; N hugecurlywedge ; B 59 -1400 1119 0 ;
+C 108 ; WX 1181 ; N hugesqcap ; B 59 -1400 1119 0 ;
+C 109 ; WX 1181 ; N hugebox ; B 59 -1400 1119 0 ;
+C 110 ; WX 590 ; N hugeparallel ; B 59 -1400 529 0 ;
+C 111 ; WX 885 ; N hugeinterleave ; B 59 -1400 911 0 ;
+C 112 ; WX 885 ; N hugenplus ; B 59 -1000 824 0 ;
+C 113 ; WX 561 ; N largellbracket ; B 213 -1153 537 45 ;
+C 114 ; WX 620 ; N Largellbracket ; B 239 -1753 600 45 ;
+C 115 ; WX 679 ; N LARGEllbracket ; B 264 -2353 662 45 ;
+C 116 ; WX 738 ; N hugellbracket ; B 290 -2953 725 45 ;
+C 117 ; WX 826 ; N Hugellbrackettop ; B 346 -1769 817 42 ;
+C 118 ; WX 826 ; N Hugellbracketbot ; B 346 -1753 817 59 ;
+C 119 ; WX 826 ; N Hugellbracketex ; B 346 -603 630 16 ;
+C 120 ; WX 1181 ; N Hugenplus ; B 59 -1400 1119 0 ;
+C 121 ; WX 561 ; N largerrbracket ; B 21 -1153 346 45 ;
+C 122 ; WX 620 ; N Largerrbracket ; B 18 -1753 379 45 ;
+C 123 ; WX 679 ; N LARGErrbracket ; B 14 -2353 412 45 ;
+C 124 ; WX 738 ; N hugerrbracket ; B 10 -2953 445 45 ;
+C 125 ; WX 826 ; N Hugerrbrackettop ; B 7 -1769 478 42 ;
+C 126 ; WX 826 ; N Hugerrbracketbot ; B 7 -1753 478 59 ;
+C 127 ; WX 826 ; N Hugerrbracketex ; B 193 -603 478 16 ;
+EndCharMetrics
+StartKernData
+StartKernPairs 0
+EndKernPairs
+EndKernData
+EndFontMetrics

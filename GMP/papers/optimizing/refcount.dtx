@@ -1,0 +1,650 @@
+% \iffalse meta-comment
+%
+% Copyright (C) 1998, 2000, 2006, 2008 by
+%    Heiko Oberdiek <oberdiek@uni-freiburg.de>
+%
+% This work may be distributed and/or modified under the
+% conditions of the LaTeX Project Public License, either
+% version 1.3 of this license or (at your option) any later
+% version. The latest version of this license is in
+%    http://www.latex-project.org/lppl.txt
+% and version 1.3 or later is part of all distributions of
+% LaTeX version 2005/12/01 or later.
+%
+% This work has the LPPL maintenance status "maintained".
+%
+% This Current Maintainer of this work is Heiko Oberdiek.
+%
+% This work consists of the main source file refcount.dtx
+% and the derived files
+%    refcount.sty, refcount.pdf, refcount.ins, refcount.drv.
+%
+% Distribution:
+%    CTAN:macros/latex/contrib/oberdiek/refcount.dtx
+%    CTAN:macros/latex/contrib/oberdiek/refcount.pdf
+%
+% Unpacking:
+%    (a) If refcount.ins is present:
+%           tex refcount.ins
+%    (b) Without refcount.ins:
+%           tex refcount.dtx
+%    (c) If you insist on using LaTeX
+%           latex \let\install=y\input{refcount.dtx}
+%        (quote the arguments according to the demands of your shell)
+%
+% Documentation:
+%    (a) If refcount.drv is present:
+%           latex refcount.drv
+%    (b) Without refcount.drv:
+%           latex refcount.dtx; ...
+%    The class ltxdoc loads the configuration file ltxdoc.cfg
+%    if available. Here you can specify further options, e.g.
+%    use A4 as paper format:
+%       \PassOptionsToClass{a4paper}{article}
+%
+%    Programm calls to get the documentation (example):
+%       pdflatex refcount.dtx
+%       makeindex -s gind.ist refcount.idx
+%       pdflatex refcount.dtx
+%       makeindex -s gind.ist refcount.idx
+%       pdflatex refcount.dtx
+%
+% Installation:
+%    TDS:tex/latex/oberdiek/refcount.sty
+%    TDS:doc/latex/oberdiek/refcount.pdf
+%    TDS:source/latex/oberdiek/refcount.dtx
+%
+%<*ignore>
+\begingroup
+  \def\x{LaTeX2e}%
+\expandafter\endgroup
+\ifcase 0\ifx\install y1\fi\expandafter
+         \ifx\csname processbatchFile\endcsname\relax\else1\fi
+         \ifx\fmtname\x\else 1\fi\relax
+\else\csname fi\endcsname
+%</ignore>
+%<*install>
+\input docstrip.tex
+\Msg{************************************************************************}
+\Msg{* Installation}
+\Msg{* Package: refcount 2008/08/11 v3.1 Data extraction from references (HO)}
+\Msg{************************************************************************}
+
+\keepsilent
+\askforoverwritefalse
+
+\let\MetaPrefix\relax
+\preamble
+
+This is a generated file.
+
+Copyright (C) 1998, 2000, 2006, 2008 by
+   Heiko Oberdiek <oberdiek@uni-freiburg.de>
+
+This work may be distributed and/or modified under the
+conditions of the LaTeX Project Public License, either
+version 1.3 of this license or (at your option) any later
+version. The latest version of this license is in
+   http://www.latex-project.org/lppl.txt
+and version 1.3 or later is part of all distributions of
+LaTeX version 2005/12/01 or later.
+
+This work has the LPPL maintenance status "maintained".
+
+This Current Maintainer of this work is Heiko Oberdiek.
+
+This work consists of the main source file refcount.dtx
+and the derived files
+   refcount.sty, refcount.pdf, refcount.ins, refcount.drv.
+
+\endpreamble
+\let\MetaPrefix\DoubleperCent
+
+\generate{%
+  \file{refcount.ins}{\from{refcount.dtx}{install}}%
+  \file{refcount.drv}{\from{refcount.dtx}{driver}}%
+  \usedir{tex/latex/oberdiek}%
+  \file{refcount.sty}{\from{refcount.dtx}{package}}%
+}
+
+\obeyspaces
+\Msg{************************************************************************}
+\Msg{*}
+\Msg{* To finish the installation you have to move the following}
+\Msg{* file into a directory searched by TeX:}
+\Msg{*}
+\Msg{*     refcount.sty}
+\Msg{*}
+\Msg{* And install the following script file:}
+\Msg{*}
+\Msg{*     }
+\Msg{*}
+\Msg{* To produce the documentation run the file `refcount.drv'}
+\Msg{* through LaTeX.}
+\Msg{*}
+\Msg{* Happy TeXing!}
+\Msg{*}
+\Msg{************************************************************************}
+
+\endbatchfile
+%</install>
+%<*ignore>
+\fi
+%</ignore>
+%<*driver>
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesFile{refcount.drv}%
+  [2008/08/11 v3.1 Data extraction from references (HO)]%
+\documentclass{ltxdoc}
+\usepackage{holtxdoc}[2008/08/11]
+\begin{document}
+  \DocInput{refcount.dtx}%
+\end{document}
+%</driver>
+% \fi
+%
+% \CheckSum{198}
+%
+% \CharacterTable
+%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%   Digits        \0\1\2\3\4\5\6\7\8\9
+%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%   Dollar        \$     Percent       \%     Ampersand     \&
+%   Acute accent  \'     Left paren    \(     Right paren   \)
+%   Asterisk      \*     Plus          \+     Comma         \,
+%   Minus         \-     Point         \.     Solidus       \/
+%   Colon         \:     Semicolon     \;     Less than     \<
+%   Equals        \=     Greater than  \>     Question mark \?
+%   Commercial at \@     Left bracket  \[     Backslash     \\
+%   Right bracket \]     Circumflex    \^     Underscore    \_
+%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%   Right brace   \}     Tilde         \~}
+%
+% \GetFileInfo{refcount.drv}
+%
+% \title{The \xpackage{refcount} package}
+% \date{2008/08/11 v3.1}
+% \author{Heiko Oberdiek\\\xemail{oberdiek@uni-freiburg.de}}
+%
+% \maketitle
+%
+% \begin{abstract}
+% References are not numbers, however they often store numerical
+% data such as section or page numbers. \cs{ref} or \cs{pageref}
+% cannot be used for counter assignments or calculations because
+% they are not expandable, generate warnings, or can even be links,
+% The package provides expandable macros to extract the data
+% from references. Packages \xpackage{hyperref}, \xpackage{nameref},
+% \xpackage{titleref}, and \xpackage{babel} are supported.
+% \end{abstract}
+%
+% \tableofcontents
+%
+% \section{Usage}
+%
+% \subsection{Setting counters}
+%
+% The following commands are similar to \LaTeX's
+% \cs{setcounter} and \cs{addtocounter},
+% but they extract the number value from a reference:
+% \begin{quote}
+%   \cs{setcounterref}, \cs{addtocounterref}\\
+%   \cs{setcounterpageref}, \cs{addtocounterpageref}
+% \end{quote}
+% They take two arguments:
+% \begin{quote}
+%    \cs{...counter...ref} |{|\meta{\LaTeX\ counter}|}|
+%    |{|\meta{reference}|}|
+% \end{quote}
+% An undefined references produces the usual LaTeX warning
+% and its value is assumed to be zero.
+% Example:
+% \begin{quote}
+%\begin{verbatim}
+%\newcounter{ctrA}
+%\newcounter{ctrB}
+%\refstepcounter{ctrA}\label{ref:A}
+%\setcounterref{ctrB}{ref:A}
+%\addtocounterpageref{ctrB}{ref:A}
+%\end{verbatim}
+% \end{quote}
+%
+% \subsection{Expandable commands}
+%
+% These commands that can be used in expandible contexts
+% (inside calculations, \cs{edef}, \cs{csname}, \cs{write}, \dots):
+% \begin{quote}
+%   \cs{getrefnumber}, \cs{getpagerefnumber}
+% \end{quote}
+% They take one argument, the reference:
+% \begin{quote}
+%   \cs{get...refnumber} |{|\meta{reference}|}|
+% \end{quote}
+% The default for undefined references can be changed
+% with macro \cs{setrefcountdefault}, for example this
+% package calls:
+% \begin{quote}
+%   \cs{setrefcountdefault}|{0}|
+% \end{quote}
+%
+% Since version 2.0 of this package there is a new
+% command:
+% \begin{quote}
+%   \cs{getrefbykeydefault} |{|\meta{reference}|}|
+%   |{|\meta{key}|}| |{|\meta{default}|}|
+% \end{quote}
+% This generalized version allows the extraction
+% of further properties of a reference than the
+% two standard ones. Thus the following properties
+% are supported, if they are available:
+% \begin{quote}
+% \begin{tabular}{@{}l|l|l@{}}
+%    Key & Description & Package\\
+% \hline
+%   \meta{empty} & same as \cs{ref} & \LaTeX\\
+%   |page| & same as \cs{pageref} & \LaTeX\\
+%   |title| & section and caption titles & \xpackage{titleref}\\
+%   |name| & section and caption titles & \xpackage{nameref}\\
+%   |anchor| & anchor name & \xpackage{hyperref}\\
+%   |url| & url/file & \xpackage{hyperref}/\xpackage{xr}
+% \end{tabular}
+% \end{quote}
+%
+% \subsection{Undefined references}
+%
+% Because warnings and assignments cannot be used in
+% expandible contexts, undefined references do not
+% produce a warning, their values are assumed to be zero.
+% Example:
+% \begin{quote}
+%\begin{verbatim}
+%\label{ref:here}% somewhere
+%\refused{ref:here}% see below
+%\ifodd\getpagerefnumber{ref:here}%
+%  reference is on an odd page
+%\else
+%  reference is on an even page
+%\fi
+%\end{verbatim}
+% \end{quote}
+%
+% In case of undefined references the user usually want's
+% to be informed. Also \LaTeX\ prints a warning at
+% the end of the \LaTeX\ run. To notify \LaTeX\ and
+% get a normal warning, just use
+% \begin{quote}
+%   \cs{refused} |{|\meta{reference}|}|
+% \end{quote}
+% outside the expanding context. Example, see above.
+%
+% \subsection{Notes}
+%
+% \begin{itemize}
+% \item
+%   The method of extracting the number in this
+%   package also works in cases, where the
+%   reference cannot be used directly, because
+%   a package such as \xpackage{hyperref} has added
+%   extra stuff (hyper link), so that the reference cannot
+%   be used as number any more.
+% \item
+%   If the reference does not contain a number,
+%   assignments to a counter will fail of course.
+% \end{itemize}
+%
+%
+% \StopEventually{
+% }
+%
+% \section{Implementation}
+%
+%    \begin{macrocode}
+%<*package>
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{refcount}
+  [2008/08/11 v3.1 Data extraction from references (HO)]%
+
+\def\setrefcountdefault#1{%
+  \def\rc@default{#1}%
+}
+\setrefcountdefault{0}
+
+% \def\@car#1#2\@nil{#1} % defined in LaTeX kernel
+\def\rc@cartwo#1#2#3\@nil{#2}
+
+% generic check without babel support
+\long\def\rc@refused#1{%
+  \expandafter\ifx\csname r@#1\endcsname\relax
+    \protect\G@refundefinedtrue
+    \@latex@warning{%
+      Reference `#1' on page \thepage\space undefined%
+    }%
+  \fi
+}
+
+% user command, add babel support
+\newcommand*{\refused}[1]{%
+  \begingroup
+    \csname @safe@activestrue\endcsname
+    \rc@refused{#1}{}%
+  \endgroup
+}
+
+% Generic command for "\{set,addto}counter{page,}ref":
+% #1: \setcounter, \addtocounter
+% #2: \@car (for \ref), \@cartwo (for \pageref)
+% #3: LaTeX counter
+% #4: reference
+\def\rc@set#1#2#3#4{%
+  \begingroup
+    \csname @safe@activestrue\endcsname
+    \rc@refused{#4}%
+    \expandafter\rc@@set\csname r@#4\endcsname{#1}{#2}{#3}%
+  \endgroup
+}
+% #1: \r@<...>
+% #2: \setcounter, \addtocounter
+% #3: \@car (for \ref), \@cartwo (for \pageref)
+% #4: LaTeX counter
+\def\rc@@set#1#2#3#4{%
+  \ifx#1\relax
+    #2{#4}{\rc@default}%
+  \else
+    #2{#4}{%
+      \expandafter#3#1\rc@default\rc@default\@nil
+    }%
+  \fi
+}
+
+% user commands:
+
+\newcommand*{\setcounterref}{\rc@set\setcounter\@car}
+\newcommand*{\addtocounterref}{\rc@set\addtocounter\@car}
+\newcommand*{\setcounterpageref}{\rc@set\setcounter\rc@cartwo}
+\newcommand*{\addtocounterpageref}{\rc@set\addtocounter\rc@cartwo}
+
+\newcommand*{\getrefnumber}[1]{%
+  \expandafter\ifx\csname r@#1\endcsname\relax
+    \rc@default
+  \else
+    \expandafter\expandafter\expandafter\@car
+    \csname r@#1\endcsname\@nil
+  \fi
+}
+\newcommand*{\getpagerefnumber}[1]{%
+  \expandafter\ifx\csname r@#1\endcsname\relax
+    \rc@default
+  \else
+    \expandafter\expandafter\expandafter\rc@cartwo
+    \csname r@#1\endcsname\rc@default\rc@default\@nil
+  \fi
+}
+\newcommand*{\getrefbykeydefault}[2]{%
+  \expandafter\rc@getrefbykeydefault
+    \csname r@#1\expandafter\endcsname
+    \csname rc@extract@#2\endcsname
+}
+% #1: \r@<...>
+% #2: \rc@extract@<...>
+% #3: default
+\def\rc@getrefbykeydefault#1#2#3{%
+  \ifx#1\relax
+    % reference is undefined
+    #3%
+  \else
+    \ifx#2\relax
+      % extract method is missing
+      #3%
+    \else
+      \expandafter\rc@generic#1{#3}{#3}{#3}{#3}{#3}\@nil#2{#3}%
+    \fi
+  \fi
+}
+% #1: first item in \r@<...>
+% #2: remaining items in \r@<...>
+% #3: \rc@extract@<...>
+% #4: default
+\def\rc@generic#1#2\@nil#3#4{%
+  #3{#1\TR@TitleReference\@empty{#4}\@nil}{#1}#2\@nil
+}
+\def\rc@extract@{%
+  \expandafter\@car\@gobble
+}
+\def\rc@extract@page{%
+  \expandafter\@car\@gobbletwo
+}
+\def\rc@extract@name{%
+  \expandafter\@car\@gobblefour\@empty
+}
+\def\rc@extract@anchor{%
+  \expandafter\@car\@gobblefour
+}
+\def\rc@extract@url{%
+  \expandafter\expandafter\expandafter\@car\expandafter
+      \@gobble\@gobblefour
+}
+\def\rc@extract@title#1#2\@nil{%
+  \rc@@extract@title#1%
+}
+\def\rc@@extract@title#1\TR@TitleReference#2#3#4\@nil{#3}
+%</package>
+%    \end{macrocode}
+%
+% \section{Installation}
+%
+% \subsection{Download}
+%
+% \paragraph{Package.} This package is available on
+% CTAN\footnote{\url{ftp://ftp.ctan.org/tex-archive/}}:
+% \begin{description}
+% \item[\CTAN{macros/latex/contrib/oberdiek/refcount.dtx}] The source file.
+% \item[\CTAN{macros/latex/contrib/oberdiek/refcount.pdf}] Documentation.
+% \end{description}
+%
+%
+% \paragraph{Bundle.} All the packages of the bundle `oberdiek'
+% are also available in a TDS compliant ZIP archive. There
+% the packages are already unpacked and the documentation files
+% are generated. The files and directories obey the TDS standard.
+% \begin{description}
+% \item[\CTAN{install/macros/latex/contrib/oberdiek.tds.zip}]
+% \end{description}
+% \emph{TDS} refers to the standard ``A Directory Structure
+% for \TeX\ Files'' (\CTAN{tds/tds.pdf}). Directories
+% with \xfile{texmf} in their name are usually organized this way.
+%
+% \subsection{Bundle installation}
+%
+% \paragraph{Unpacking.} Unpack the \xfile{oberdiek.tds.zip} in the
+% TDS tree (also known as \xfile{texmf} tree) of your choice.
+% Example (linux):
+% \begin{quote}
+%   |unzip oberdiek.tds.zip -d ~/texmf|
+% \end{quote}
+%
+% \paragraph{Script installation.}
+% Check the directory \xfile{TDS:scripts/oberdiek/} for
+% scripts that need further installation steps.
+% Package \xpackage{attachfile2} comes with the Perl script
+% \xfile{pdfatfi.pl} that should be installed in such a way
+% that it can be called as \texttt{pdfatfi}.
+% Example (linux):
+% \begin{quote}
+%   |chmod +x scripts/oberdiek/pdfatfi.pl|\\
+%   |cp scripts/oberdiek/pdfatfi.pl /usr/local/bin/|
+% \end{quote}
+%
+% \subsection{Package installation}
+%
+% \paragraph{Unpacking.} The \xfile{.dtx} file is a self-extracting
+% \docstrip\ archive. The files are extracted by running the
+% \xfile{.dtx} through \plainTeX:
+% \begin{quote}
+%   \verb|tex refcount.dtx|
+% \end{quote}
+%
+% \paragraph{TDS.} Now the different files must be moved into
+% the different directories in your installation TDS tree
+% (also known as \xfile{texmf} tree):
+% \begin{quote}
+% \def\t{^^A
+% \begin{tabular}{@{}>{\ttfamily}l@{ $\rightarrow$ }>{\ttfamily}l@{}}
+%   refcount.sty & tex/latex/oberdiek/refcount.sty\\
+%   refcount.pdf & doc/latex/oberdiek/refcount.pdf\\
+%   refcount.dtx & source/latex/oberdiek/refcount.dtx\\
+% \end{tabular}^^A
+% }^^A
+% \sbox0{\t}^^A
+% \ifdim\wd0>\linewidth
+%   \begingroup
+%     \advance\linewidth by\leftmargin
+%     \advance\linewidth by\rightmargin
+%   \edef\x{\endgroup
+%     \def\noexpand\lw{\the\linewidth}^^A
+%   }\x
+%   \def\lwbox{^^A
+%     \leavevmode
+%     \hbox to \linewidth{^^A
+%       \kern-\leftmargin\relax
+%       \hss
+%       \usebox0
+%       \hss
+%       \kern-\rightmargin\relax
+%     }^^A
+%   }^^A
+%   \ifdim\wd0>\lw
+%     \sbox0{\small\t}^^A
+%     \ifdim\wd0>\linewidth
+%       \ifdim\wd0>\lw
+%         \sbox0{\footnotesize\t}^^A
+%         \ifdim\wd0>\linewidth
+%           \ifdim\wd0>\lw
+%             \sbox0{\scriptsize\t}^^A
+%             \ifdim\wd0>\linewidth
+%               \ifdim\wd0>\lw
+%                 \sbox0{\tiny\t}^^A
+%                 \ifdim\wd0>\linewidth
+%                   \lwbox
+%                 \else
+%                   \usebox0
+%                 \fi
+%               \else
+%                 \lwbox
+%               \fi
+%             \else
+%               \usebox0
+%             \fi
+%           \else
+%             \lwbox
+%           \fi
+%         \else
+%           \usebox0
+%         \fi
+%       \else
+%         \lwbox
+%       \fi
+%     \else
+%       \usebox0
+%     \fi
+%   \else
+%     \lwbox
+%   \fi
+% \else
+%   \usebox0
+% \fi
+% \end{quote}
+% If you have a \xfile{docstrip.cfg} that configures and enables \docstrip's
+% TDS installing feature, then some files can already be in the right
+% place, see the documentation of \docstrip.
+%
+% \subsection{Refresh file name databases}
+%
+% If your \TeX~distribution
+% (\teTeX, \mikTeX, \dots) relies on file name databases, you must refresh
+% these. For example, \teTeX\ users run \verb|texhash| or
+% \verb|mktexlsr|.
+%
+% \subsection{Some details for the interested}
+%
+% \paragraph{Attached source.}
+%
+% The PDF documentation on CTAN also includes the
+% \xfile{.dtx} source file. It can be extracted by
+% AcrobatReader 6 or higher. Another option is \textsf{pdftk},
+% e.g. unpack the file into the current directory:
+% \begin{quote}
+%   \verb|pdftk refcount.pdf unpack_files output .|
+% \end{quote}
+%
+% \paragraph{Unpacking with \LaTeX.}
+% The \xfile{.dtx} chooses its action depending on the format:
+% \begin{description}
+% \item[\plainTeX:] Run \docstrip\ and extract the files.
+% \item[\LaTeX:] Generate the documentation.
+% \end{description}
+% If you insist on using \LaTeX\ for \docstrip\ (really,
+% \docstrip\ does not need \LaTeX), then inform the autodetect routine
+% about your intention:
+% \begin{quote}
+%   \verb|latex \let\install=y\input{refcount.dtx}|
+% \end{quote}
+% Do not forget to quote the argument according to the demands
+% of your shell.
+%
+% \paragraph{Generating the documentation.}
+% You can use both the \xfile{.dtx} or the \xfile{.drv} to generate
+% the documentation. The process can be configured by the
+% configuration file \xfile{ltxdoc.cfg}. For instance, put this
+% line into this file, if you want to have A4 as paper format:
+% \begin{quote}
+%   \verb|\PassOptionsToClass{a4paper}{article}|
+% \end{quote}
+% An example follows how to generate the
+% documentation with pdf\LaTeX:
+% \begin{quote}
+%\begin{verbatim}
+%pdflatex refcount.dtx
+%makeindex -s gind.ist refcount.idx
+%pdflatex refcount.dtx
+%makeindex -s gind.ist refcount.idx
+%pdflatex refcount.dtx
+%\end{verbatim}
+% \end{quote}
+%
+% \begin{History}
+%   \begin{Version}{1998/04/08 v1.0}
+%   \item
+%     First public release, written as answer in the
+%     newsgroup \xnewsgroup{comp.text.tex}:
+%     \URL{``\link{Re: Adding a \cs{ref} to a counter?}''}^^A
+%     {http://groups.google.com/group/comp.text.tex/msg/c3f2a135ef5ee528}
+%   \end{Version}
+%   \begin{Version}{2000/09/07 v2.0}
+%   \item
+%     Documentation added.
+%   \item
+%     LPPL 1.2
+%   \item
+%     Package rewritten, new commands added.
+%   \end{Version}
+%   \begin{Version}{2006/02/20 v3.0}
+%   \item
+%     Support for \xpackage{hyperref} and \xpackage{nameref} improved.
+%   \item
+%     Support for \xpackage{titleref} and \xpackage{babel}'s shorthands added.
+%   \item
+%     New: \cs{refused}, \cs{getrefbykeydefault}
+%   \end{Version}
+%   \begin{Version}{2008/08/11 v3.1}
+%   \item
+%     Code is not changed.
+%   \item
+%     URLs updated.
+%   \end{Version}
+% \end{History}
+%
+% \PrintIndex
+%
+% \Finale
+\endinput

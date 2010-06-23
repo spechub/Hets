@@ -1,0 +1,21 @@
+\BOOKMARK [1][]{section.0.1}{Introduction}{}
+\BOOKMARK [1][]{section.0.2}{Coalgebraic Sequent Calculus}{}
+\BOOKMARK [2][]{subsection.0.2.1}{Notation}{section.0.2}
+\BOOKMARK [2][]{subsection.0.2.2}{A generic sequent calculus for coalgebraic modal logics}{section.0.2}
+\BOOKMARK [1][]{section.0.3}{Optimisations}{}
+\BOOKMARK [2][]{subsection.0.3.1}{Normalisation}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.2}{Simplification by Tautologies}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.3}{Semantic Branching}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.4}{Controlled Backtracking}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.5}{Maximal Application of Modal Rules}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.6}{Proof-tree Trimming}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.7}{Caching}{section.0.3}
+\BOOKMARK [2][]{subsection.0.3.8}{Heuristics}{section.0.3}
+\BOOKMARK [1][]{section.0.4}{Global Caching Algorithm}{}
+\BOOKMARK [2][]{subsection.0.4.1}{The proof graph and transitions}{section.0.4}
+\BOOKMARK [2][]{subsection.0.4.2}{The Algorithm}{section.0.4}
+\BOOKMARK [2][]{subsection.0.4.3}{Improving the algorithm}{section.0.4}
+\BOOKMARK [2][]{subsection.0.4.4}{Removing Caching}{section.0.4}
+\BOOKMARK [1][]{section.0.5}{Implementation}{}
+\BOOKMARK [1][]{section.0.6}{Conclusion}{}
+\BOOKMARK [1][]{section.0.7}{Appendix \(\046 old stuff\)}{}

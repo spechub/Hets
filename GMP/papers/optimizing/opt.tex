@@ -1,0 +1,932 @@
+\documentclass{llncs}
+\usepackage{graphicx}
+\usepackage{mathpartir}
+\usepackage{amsmath,amssymb}
+\usepackage{stmaryrd}
+
+\newcommand{\hearts}{\heartsuit}
+\newcommand{\prems}{\mathit{prems}}
+\newcommand{\eval}{\mathit{eval}}
+\newcommand{\sem}[1]{[\![#1]\!]}
+\newcommand{\ind}[1]{\llparenthesis #1 \rrparenthesis}
+
+\input{header}
+\sloppy
+% The following is enclosed to allow easy detection of differences in
+% ascii coding.
+% Upper-case    A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+% Lower-case    a b c d e f g h i j k l m n o p q r s t u v w x y z
+% Digits        0 1 2 3 4 5 6 7 8 9
+% Exclamation   !           Double quote "          Hash (number) #
+% Dollar        $           Percent      %          Ampersand     &
+% Acute accent  '           Left paren   (          Right paren   )
+% Asterisk      *           Plus         +          Comma         ,
+% Minus         -           Point        .          Solidus       /
+% Colon         :           Semicolon    ;          Less than     <
+% Equals        =3D           Greater than >          Question mark ?
+% At            @           Left bracket [          Backslash     \
+% Right bracket ]           Circumflex   ^          Underscore    _
+% Grave accent  `           Left brace   {          Vertical bar  |
+% Right brace   }           Tilde        ~
+
+% A couple of exemplary definitions:
+
+%\newcommand{\Nat}{{\mathbb N}}
+%\newcommand{\Real}{{\mathbb R}}
+\newcommand{\COLOSS}{{\textrm CoLoSS}}
+\def\lastname{Hausmann}
+\begin{document}
+
+\begin{frontmatter}
+  \title{Optimizing Coalgebraic Modal Logic Reasoning}
+  \author{Daniel Hausmann\thanks{Work forms part of DFG-project \emph{Generic Algorithms and Complexity
+      Bounds in Coalgebraic Modal Logic} (SCHR 1118/5-1)}}
+  \institute{Department of Computer Science, Universit\"at Bremen\\\email{hausmann@informatik.uni-bremen.de}}
+\maketitle
+\end{frontmatter}
+
+\begin{abstract} 
+The framework provided by coalgebraic modal logics offers
+broadly applicable coalgebraic semantics and an ensuing general
+treatment of modal sequent and tableau calculi while covering a wide
+variety of logics ranging from graded and probabilistic modal logic
+to coalition logic and conditional logics. Here we discuss generic optimisation
+strategies that may be employed to improve the performance of a global
+caching algorithm that decides the satisfiability of coalgebraic modal logics.
+Specifically, we discuss and show the admissability of generalisations of such
+established strategies as \emph{semantic branching} and \emph{dependency directed backtracking}
+to coalgebraic modal logics. As a more advanced consideration, the flattened
+representation of the involved proof graph by a \emph{proof formula} is shown to be
+sound and complete; this separation of \emph{proof structure} from the actual content of
+the proof does not only enhance the performance of the propagation
+process, it also allows for further optimisation techniques such as
+\emph{proof graph simplification} to be applied. The presented optimisation
+techniques are implemented as part of the examplary implementation, the
+\emph{Coalgebraic Logic Satisfiability Solver}(\emph{CoLoSS}).
+\end{abstract}
+
+
+\section{Introduction}\label{intro}
+
+Coalgebraic modal logic has been established as a unifying framework
+for many modal logics~\cite{SchroderPattinson09}, allowing for generic and
+efficient decision of satisfiability (and provability) of those modal logics.
+In this context, the \emph{Coalgebraic Logic Satisfiability Solver}(\emph{CoLoSS}\footnote{available under \email{http://www.informatik.uni-bremen.de/cofi/CoLoSS/} })
+serves as an examplary implementation of the developed algorithms and as a testsuite
+for their optimisations~\cite{CalinEA09,HausmannSchroder10}.
+The broader focus introduces new difficulties to the process of proving
+satisfiablity (or provablility) of a formula, especially since the considered
+logics do not necessarily branch only on disjunctions (or conjunctions respectively) but
+may also introduce branching through their modal rules.
+Recent research in the area of coalgebraic modal logics has shown that the
+satisfiability (and provability) of coalgebraic logics with global assumptions
+may be decided in EXPTIME by means of an optimal global caching algorithm, thus
+enabling support for (basic) description logics in the coalgebraic setting~\cite{GoreEA10}.
+The introduced algorithm is based on graph rewriting, however it has the weakness
+that the propagation of satisfiability through the graph is realized by
+computing fixpoints of the complete graph w.r.t specific functionals.
+
+This work aims at improving the performance of said algorithm in two directions:
+
+\begin{enumerate}
+\item Established optimisation techniques for specific logics (such as \textbf{K}) are
+generalized and the generalizations are shown to be correct, thus allowing for these techniques
+to be applied for any coalgebraic modal logic.
+\item \emph{Proof formulas}, a flattened representation of the central data structure of the global caching algorithm
+(i.e. the proof graph) are introduced. The process of propagation may then be realized as a simple process of
+propositional simplification in the proof formula (thus making it feasable to propagate after each step of expansion).
+\end{enumerate}
+
+The paper is structured as follows: We first give a short overview over 
+coalgebraic modal logics. Then we briefly recall an optimal global caching
+algorithm that decides the provability of coalgebraic modal logics (with global
+assumptions). As the central contribution of the paper, we then turn our attention
+to the optimisation of said algorithm, focussing on three particular optimisation
+techniques: Generic semantic branching, generic dependency directed backtracking
+and efficient propagation by the use of proof formulas. The admissabilty of each
+of these generic optimization techniques is proved.
+
+\section{Coalgebraic Modal Logic}
+
+We quickly recall the needed notions from the domain of coalgebraic modal logic~\cite{SchroderPattinson09}:
+
+\subsection{Notation}
+
+Given an endofunctor on sets $T$, a $T$-coalgebra $\mathcal{C}$ consists of a
+carrier-set $C$ and a function $\gamma:C\rightarrow T(C)$.
+
+The semantics of modal operators $\hearts\in\Lambda$ is then defined by means
+of \emph{predicate liftings} $\sem{\hearts}:2^n\rightarrow2\circ T^{op}$ where
+$2:\mathbf{Set}\rightarrow\mathbf{Set}^{op}$ denotes the contravariant powerset functor.
+
+Formulas are of the shape
+\begin{quote}
+$\mathcal{F}(\Lambda)\ni A_1,\ldots,A_n\mathrel{\mathop:}=p\mid \neg A_1 \mid A_1\wedge A_2\mid A_1\vee A_2 \mid \hearts(A_1,\ldots,A_n)$
+\end{quote}
+where $\hearts\in\Lambda$ is an $n$-ary modal operator.
+
+The semantics with respect to a model coalgebra $M=(C,\gamma,\pi)$ (where $\pi$ denotes a
+valuation of propositional atoms) is fixed as follows:
+\begin{quote}
+$\sem{\hearts(A_1,\ldots,A_n)}_M=\gamma^{-1}\circ\sem{\hearts}_C(\sem{A_1}_M,\ldots,\sem{A_n}_M)$
+\end{quote}
+
+A ($\Lambda$-)\emph{sequent} $\Gamma$ is a set of formulas (from $\mathcal{F}(\Lambda)$). We refer
+to the set of all sequents of a logic as $Seq$ and to the set of all sets of sequents of a
+logic as $Prem$.
+
+A \emph{sequent rule} consists of its \emph{premise} $\Sigma$ (a set of sequents)
+and its \emph{conclusion} $\Gamma$ (one sequent). A rule $R=(\Sigma=\{\Gamma_1,\ldots,\Gamma_n\},\Gamma)$ 
+is usually presented as follows:
+\begin{quote}
+\centerline{\inferrule{\Gamma_1 \\ \ldots \\ \Gamma_n}{\Gamma}}
+\end{quote}
+
+A rule application of rule $R$ to sequent $\Gamma$ is an instantiation of $R$
+s.t. the conclusion of the rule is equal to $\Gamma$.
+
+A formula $\phi$ is provable if there is a model coalgebra $M=(C,\gamma,\pi)$ with a
+state $x\in C$ s.t. $\sem{\phi}\ni x$. A sequent $\Gamma=\{\phi_1,\ldots,\phi_n\}$ is provable
+iff $\bigvee_{i=1}^n\phi_i$ is provable.
+A premise is said to be provable iff all its sequents are provable.
+
+A sound and complete algorithm for the decision of provability (and satisfiability) of formula
+of the according coalgebraic logic may be obtained if
+the propositional rules from Figures~\ref{fig:bpropRules} and~\ref{fig:lpropRules} are utilized together
+with the appropriate modal rule(s). Some examplary modal rules for different coalgebraic modal logics are
+depicted in Figure~\ref{fig:modalRules} (for more details, refer to~\cite{SchroderPattinson09}) while the modal rules of some conditional logics are
+introduced in Figure~\ref{fig:modalRules2} (more details about optimisation of coalgebraic conditional logics
+can be found in~\cite{PattinsonSchroder08b,HausmannSchroder10}). The collection of all currently utilized rules is referred to
+as $\mathcal{R}$.
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l |}
+\hline
+($\neg\vee$)\inferrule{\Gamma,A \\ \Gamma,B}{\Gamma, \neg (\neg A\vee \neg B)} \\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{Branching propositional sequent rule}
+  \label{fig:bpropRules}
+\end{figure}
+\end{footnotesize}
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l |}
+\hline
+(T)\inferrule{ }{\Gamma, \top}\qquad
+(At)\inferrule{ }{\Gamma, p, \neg p}\qquad
+($\neg\neg$)\inferrule{\Gamma, A}{\Gamma, \neg\neg A}\qquad
+($\vee$)\inferrule{\Gamma,A,B}{\Gamma, (A\vee B)} \\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{Linear or closing propositional sequent rules}
+  \label{fig:lpropRules}
+\end{figure}
+\end{footnotesize}
+
+Take note that the rules from Figure~\ref{fig:lpropRules} may be integrated into
+the process of normalisation, saturation or simpification (see 3.1) due to their linearity.
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l |}
+\hline
+Modal Logic (Feature) & Modal Rule(s)\\
+\hline
+\textbf{M} ($\Box_\mathbf{M}$) & \inferrule{A\rightarrow B}{\Gamma,\Box_\mathbf{M} A\rightarrow\Box_\mathbf{M} B}  \\
+\hline
+\textbf{K} ($\Box_\mathbf{K}$) & \inferrule{\bigwedge\limits_{i=1}^n A_i\rightarrow B}
+                                           {\Gamma,\bigwedge\limits_{i=1}^n\Box_\mathbf{K} A_i\rightarrow\Box_\mathbf{K} B}  \\
+\hline
+\textbf{KD} ($\Box_\mathbf{KD}$) & \inferrule{\bigwedge\limits_{i=1}^n A_i\rightarrow B}
+                                           {\Gamma,\bigwedge\limits_{i=1}^n\Box_\mathbf{KD} A_i\rightarrow\Box_\mathbf{KD} B} \qquad
+                                   \inferrule{\neg\bigwedge\limits_{i=1}^n A_i}
+                                           {\Gamma,\neg\bigwedge\limits_{i=1}^n\Box_\mathbf{KD} A_i}  \\
+\hline
+Hennessy-Milner-Logic ($\Box^a_\mathbf{HM}$) & \inferrule{\bigwedge\limits_{i=1}^n A_i\rightarrow B}
+                                                         {\Gamma,\bigwedge\limits_{i=1}^n \Box^a_\mathbf{HM} A_i\rightarrow\Box^a_\mathbf{HM} B}  \\
+\hline
+Coalition Logic ($\Box^C_\mathbf{C}$) & \inferrule{\bigwedge\limits_{i=1}^n A_i\rightarrow B\vee\bigvee\limits_{j=1}^m C_j}
+                                                  {\Gamma,\bigwedge\limits_{i=1}^n\Box^{C_i}_\mathbf{C} A_i\rightarrow
+                                                   \Box^D_\mathbf{C} B\vee\bigvee\limits_{j=1}^m \Box^N_\mathbf{C} C_j}  \\
+                                             & $m,n\geq 0$,\\ & $C_i$ pairwise disjoint subsets of $D$.\\
+\hline
+Graded Modal Logic ($\Diamond^i_\mathbf{G}$) & \inferrule{\sum\limits_{i=1}^n A_i\leq\sum\limits_{j=1}^m B_j}
+                                                   {\Gamma,\bigwedge\limits_{i=1}^n\Diamond^{k_i}_\mathbf{G}
+                                                    A_i\rightarrow\bigvee\limits_{j=1}^m\Diamond^{l_j}_\mathbf{G} B_j}  \\
+                                           & $n,m\geq 0$,\\
+                                           & $\sum\nolimits_{i=1}^n(k_i + 1)\geq 1 + \sum\nolimits_{j=1}^m l_j$.\\
+\hline
+Probabilistic Modal Logic ($\Diamond^p_\mathbf{P}$) & \inferrule{\sum\limits_{i=1}^n A_i + u \leq\sum\limits_{j=1}^m B_j}
+                                                   {\Gamma,\bigwedge\limits_{i=1}^n\Diamond^{p_i}_\mathbf{P}
+                                                    A_i\rightarrow\bigvee\limits_{j=1}^m\Diamond^{q_j}_\mathbf{P} B_j}  \\
+                                           & $m,n\geq 0$, $m+n\geq 1$, $u\in \mathbb{Z}$,\\
+                                           & $\sum\nolimits_{i=1}^n p_i + u \geq \sum\nolimits_{j=1}^m q_j$ and\\
+                                           &  $m=0\rightarrow \sum\nolimits_{i=1}^n p_i + u > 0$.\\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{One-step complete, resolution closed modal rules for some coalgebraic modal logics}
+  \label{fig:modalRules}
+\end{figure}
+\end{footnotesize}
+
+We introduce the following abbreviations in order to allow for a swift presentation of the modal rules
+of propositional and graded modal logic:
+Given a formula $\phi_i$ and $r_i\in\mathbb{Z}$ for all $i\in I$ as well as $k\in\mathbb{Z}$,
+\begin{quote}
+$\sum\limits_{i\in I}r_i\phi_i\geq k\equiv \bigwedge\limits_{J\subseteq I, r(J)<k}(
+    \bigwedge\limits_{j\in J}\phi_j\rightarrow\bigvee\limits_{j\notin J}\phi_j)$,
+\end{quote}
+where $r(J)=\sum\nolimits_{j\in J}r_j$. Furthermore, we use $\sum a_i\leq\sum b_j$ as an abbreviation
+for $\sum b_j - \sum a_i \geq 0$.
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l |}
+\hline
+Modal Logic (Feature) & Modal Rule(s)\\
+\hline
+\textbf{CK} ($\Rightarrow_\mathbf{CK}$) & \inferrule{ A_0\leftrightarrow\ldots \leftrightarrow A_n \\ \neg B_1,\ldots, \neg B_n,B_0 }
+                      { \Gamma,\bigwedge\limits_{i=1}^n (A_i\Rightarrow_\mathbf{CK} B_i)\rightarrow (A_0\Rightarrow_\mathbf{CK} B_0)}  \\
+\hline
+\textbf{CK+CEM} ($\Rightarrow_\mathbf{CK_{CEM}}$) & \inferrule{ A_0\leftrightarrow\ldots \leftrightarrow A_n \\ B_0,\ldots,B_k,\neg B_{k+1},\ldots \neg B_n}
+                      { \Gamma,\bigwedge\limits_{i=k+1}^ n (A_i\Rightarrow_\mathbf{CK_{CEM}} B_i)\rightarrow
+                               \bigvee\limits_{j=0}^k(A_j\Rightarrow_\mathbf{CK_{CEM}} B_j)}  \\
+\hline
+\textbf{CK+CM} ($\Rightarrow_\mathbf{CK_{CM}}$) &  \vspace{-20pt}\begin{tabular}{ c l }
+                                                               $A_i=A_j$ & for $i,j\in l(v),v\in G$ initial\\
+                                                               $\bigcup\nolimits_{i\in l(v)} \{\neg B_i,\neg A_i\},A_j$ &
+                                                               for $v\in G$ and $j\in l(w)$\\
+                                                               & for some successor $w$ of $v$ \\
+                                                               $\{\neg B_i\mid i\in I\},D$\\
+                                                               $\bigcup\nolimits_{i\in I} \{\neg B_i,\neg A_i\},C$ \\
+                                                               $\neg C, A_i$ & for $i\in I$ \\
+                                                               \end{tabular}\\ 
+                                                    & \inferrule{\empty}{\hspace{28pt}\Gamma,\bigwedge\limits_{i\in I}(A_i\Rightarrow_\mathbf{CK_{CM}} B_i)
+                                                                 \rightarrow (C\Rightarrow_\mathbf{CK_{CM}} D) \hspace{28pt}}\\
+                                                    & for an $I$-compatibility graph $G$   \\
+\hline
+System S ($\Rightarrow_{SysS}$) & \inferrule { \Delta_M(\nu(M)) \text{ for each } M\in\mathfrak{S}_{\Gamma_0}}
+                                                            { \Gamma,\underbrace {\bigwedge\limits_{i\in I}(A_i\Rightarrow_{SysS} B_i)\rightarrow
+                                                              (A_0\Rightarrow_{SysS} B_0)}_{\equiv:\Gamma_0}}\\
+                                               & where $\mathfrak{S}_{\Gamma_0}$ denotes all S-structures $(S,\preceq)$ over $\Gamma_0$,\\
+                                               & $\Delta_M([i])\equiv\bigcup_{k\simeq i}\{\neg A_k, \neg B_k\},
+                                                 \{A_j\mid i \prec j\vee j\notin S\}$,  \\
+                                               & $\Delta_M([0])\equiv\neg A_0, \bigcup_{0\neq k\simeq 0}\{\neg A_k, \neg B_k\},
+                                                 B_0,\{A_j\mid j\notin S\}$.\\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{One-step complete, resolution closed modal rules for some conditional logics}
+  \label{fig:modalRules2}
+\end{figure}
+\end{footnotesize}
+
+\noindent Furthermore, we allow for the treatment of global assumptions (which may be thought of as representing a TBox) by expanding
+the employed modal rules as follows: Given a set of global assumptions $\Delta$ and a modal rule
+$R = \Gamma_0,\ldots,\Gamma_n / \Gamma$, the expanded rule is defined as $R' = (\Delta\rightarrow\Gamma_0),\ldots,
+(\Delta\rightarrow\Gamma_n) / \Gamma$, i.e. we add the global assumptions to each newly constructed state.
+
+The presence of global assumptions introduces the possibility of running into circularities during the course of
+of the proof so that a simple sequent calculus without blocking is no longer sufficient to solve the task
+(as it would possibly not terminate). Hence we introduce an algorithm that uses \emph{global caching} in order to
+not only detect circular proof requirements but to also benefit from the improved performance that comes along with
+the use of (global) caching techniques.
+
+\section{Global Caching Algorithm for Coalgebraic Logics}
+
+We quickly recall the global caching algorithm that was introduced in~\cite{GoreEA10}
+while treating provability of formulas here rather than satisfiability. However, a formula is 
+satisfiable whenever its negation is not provable.
+
+\subsection{The proof graph and transitions}
+
+Given a sequent $\Gamma$, we define the set of all possible rule applications to $\Gamma$,
+$Rules(\Gamma)=\{(\Gamma,\Sigma)\mid\text{ is an instance of a rule } R \}$, the set of
+those sequents that appear in premises of rules that are applicable to $\Gamma$, $S(\Gamma)=
+\{\Gamma'\mid(\Gamma,\Sigma)\text{ is an instance of a rule } R\wedge \Gamma'\in\Sigma\}$, 
+and the set of all selections
+$Selections(\Gamma)=\{(\Sigma,\Gamma')\mid (\Gamma,\Sigma)\in Rules(\Gamma)\wedge\Gamma'\in \Sigma\}$.
+
+A \emph{proof graph} is a tuple $(A,E,U,X,L_1,L_2)$ where $A,E,U\subseteq Seq$ are sets of sequents,
+$X\subseteq Prems$ is a set of premises. The (partial) function $L_1$ assigns the set $Rules(\Gamma)$ to a
+sequent $\Gamma$ whereas the (partial) function $L_2$ assigns the set $Selections(\Gamma)$ to a sequent $\Gamma$.
+
+The sets $A$ und $E$ contain those sequents which are already known to be provable and improvable respectively.
+The set $U$ contains the already expanded but yet undecided sequents whereas the set $X$ keeps track
+of those sequents that have yet to be explored. The relations between sequents and premises are stored
+in the two functions $L_1$ and $L_2$.
+
+Unexpanded sequents $\Gamma\in X$ (i.e. sequents to which no rule has been applied
+yet), are also called \emph{open sequents}. A proof graph with $X=\emptyset$ is
+called \emph{fully expanded}.
+
+Any sequent to which either the rule (T) or the rule (At) may be applied
+is called a \emph{successful leaf} of the proof graph.
+
+Any sequent $\Gamma$ to which no rule may be applied (i.e. $\Gamma$ is not equal to the conclusion of any instance of any of
+the employed rules) is called an \emph{unsuccessful leaf}.
+
+For the sake of readability, we will sometimes show \emph{simplified proof graphs} where only one rule application
+is considered for each sequent (such that only one -- the interesting one -- of the possible premises of each sequent is shown).
+
+We now fix two effectively computable transitions between proof graphs:
+
+\begin{itemize}
+\item \emph{Expand:} Given a sequent $\Gamma$ from $X$, this transition leads from a graph
+$g$ to the graph $g'$ that is
+obtained from $g$ by expanding $\Gamma$. To this end, $X$ is extended by $S(\Gamma)$ and
+$\Gamma$ is removed from $X$ ($X'=(X\cup S(\Gamma))\setminus \Gamma$).
+Furthermore, $L_1$ is extended by all possible rule applications for $\Gamma$
+($L_1'=L_1 \cup AR(\Gamma)$). Finally, $L_2$ is extended by all possible selections
+for rule applications to $\Gamma$ ($L_2'=L_2\cup AS(\Gamma)$).
+
+In conclusion, this procedure applies all applicable rules to $\Gamma$, marks all resulting 
+premises as not yet expanded, marks $\Gamma$ as expanded and stores the implied transitions in
+$L_1$ and $L_2$.
+
+For a fixed sequent $\Gamma$ and a graph $g$, we denote the expansion of $\Gamma$ in $g$ by
+$exp(g,\Gamma)$. If $g'=exp(g,\Gamma)$, we also write $g\stackrel{\Gamma}\rightarrow_E g'$.
+
+\item \emph{Propagate:} This procedure evaluates the given graph as far as yet possible: The sets
+$X$, $L_1$ and $L_2$ remain unchanged. The set of provable sequents however is extended by the least
+fixpoint of a function $M^L$ ($A'=A\cup\mu(M^L)$). The set of improvable sequents is extended by the
+greatest fixpoint of a function $W^L$ ($E'=E\cup\nu(W^L)$). Finally, those sequents that are known to be
+either provable or not provable are removed from the set of undecided sequents
+($U'=U\setminus(A'\cup E')$).\\
+
+The functions which are used for the fixpoint computations are defined as follows:\\
+
+\begin{quote}
+$M^L(X)=\{\Gamma\in U\mid\exists(\Gamma,\Sigma)\in L_1.\forall (\Sigma,\Gamma')\in L_2. \Gamma'\in X\cup A\}$\\
+$W^L(X)=\{\Gamma\in U\mid\forall(\Gamma,\Sigma)\in L_1.\exists (\Sigma,\Gamma')\in L_2. \Gamma'\in X\cup E\}$\\
+\end{quote}
+
+Given a graph $g$, we denote the graph obtained by propagating in $g$ by
+$prp(g)$. If $g'=prp(g)$, we also write $g\rightarrow_P g'$.
+
+\end{itemize}
+
+\subsection{The Algorithm}
+
+In order to show the provability of a formula $\phi$, we start off with the sequent
+$\Gamma_0=\{\phi\}$:
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l |}
+\hline
+\textbf{Algorithm:} (Show provability of $\Gamma_0$)\\
+1. Initialize: $A_0=E_0=\emptyset$, $U_0=\{\Gamma_0\}$, $X_0=S(\Gamma_0)$,\\ \quad$g=(A_0, E_0, U_0, X_0
+Rules(\Gamma_0), Selections(\Gamma_0))$.\\
+2. If $X=\emptyset$, return the current graph as result.\\
+3. Otherwise select any sequent $\Sigma$ from $X$. Compute $g'=exp(g,\Gamma)$ s.t.
+$g\stackrel{\Gamma}\rightarrow_E g'$.\\ \quad (Optionally: Compute $g''=prp(g')$ s.t.
+$g'\rightarrow_P g''$;\\ \quad If $\Gamma_0\in A''\cup E''$, break and return the current
+graph as result.)\\
+4. Set the current graph to $g'$ (or $g''$ if a propagation step took place). \\\quad Continue with 2.\\\\
+After the loop has finished, propagate one final time and then
+let $A$ ($E$) \\ denote the set of provable (improvable) sequents of the resulting
+graph. \\ If $\Gamma_0\in A$, return \verb|True|, if $\Gamma_0\in E$, return
+\verb|False|, otherwise return \verb|Undecided|.\\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{The global caching algorithm}
+  \label{fig:globalAlg}
+\end{figure}
+\end{footnotesize}
+
+In~\cite{GoreEA10}, this algorithm has been shown to be
+\begin{description}
+\item{a) }sound and complete w.r.t. provability of formulas of the logic that is
+represented by the utilized set of rules $\mathcal{R}$,
+\item{b) }of complexity EXPTIME, if the underlaying ruleset allows for it.
+\end{description}
+
+\section{Optimisations}
+
+Even though the complexity of deciding provability (satisfiability) of modal formulas
+using the above algorithm is exponential,
+it is still possible to achieve reasonable performance by making
+use of several optimisation techniques, such as described for specific
+logics in~\cite{HorrocksPatelSchneider99}. 
+Since the above algorithm makes use of global caching in order to
+recognize circular proof requirements, it is already optimized in so far as that
+the provability (improvability) of any sequent $\Gamma$ has to be shown only once during
+the course of a proof (as the status of this sequent is stored and may be looked up upon future occurances of $\Gamma$).
+We continue by describing further methods to modify the introduced algorithm such
+that even complex formulas may be efficiently treated:
+
+First of all, we assume all appearing formulas to be normalized to truth,
+negation and generalized disjunction (where the collection of all disjuncts is treated as a set
+in order to remove duplicates and ordering) as indicated by the rules shown in 
+Figure~\ref{fig:normalisation}.
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l |}
+\hline
+Syntactic construct & Normalisation \\
+\hline
+$\bot$ & $\neg\top$ \\
+$\neg\neg\phi$ & $\phi$ \\
+$\phi\wedge\psi$ & $\neg(\neg\phi\vee\neg\psi)$ \\
+$\phi\rightarrow\psi$ & $\neg\phi\vee \psi$ \\
+$\phi\leftrightarrow\psi$ & $(\phi\rightarrow\psi)\wedge(\psi\rightarrow\phi)$ \\
+$\phi\vee\psi$ & $\cup\{\phi,\psi\}$ \\
+$\cup\{\phi,(\cup\Gamma)\}$ & $\cup(\{\phi\}\cup\Gamma)$ \\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{Normalisation rules}
+  \label{fig:normalisation}
+\end{figure}
+\end{footnotesize}
+
+\noindent Furthermore, the input formula is assumed to already contain only the standard modalities
+for each feature (e.g. $\Box_K\phi$ is assumed to be represented by $\neg\Diamond_K\neg\phi$).
+
+\noindent As another convention, we assume that sequents are always being \emph{satured}
+(i.e. top-level disjunctions $\cup S$ are replaced by just the set $S$).
+
+\noindent As usual, there is a list of all appearing formulas and a sequent is encoded as a string of
+bits, where the bit at position $i$ indicates whether the sequent contains the $i$-th element of the list
+of formulas or not.
+
+\noindent Another improvement over the algorithm from~\cite{GoreEA10} is based on the following
+observation: If a sequent $\Gamma$ has been shown to be provable, all sequents containing $\Gamma$ will
+be provable as well. Thus it is admissable to soften the requirement in the functionals which are used to
+compute the fixpoints:
+\begin{quote}
+$M^L(X)'=\{\Gamma\in U\mid\exists(\Gamma,\Sigma)\in L_1.\forall (\Sigma,\Gamma')\in L_2. \exists \Gamma''\subseteq \Gamma'.\Gamma''\in X\cup A\}$\\
+$W^L(X)'=\{\Gamma\in U\mid\forall(\Gamma,\Sigma)\in L_1.\exists (\Sigma,\Gamma')\in L_2. \exists \Gamma''\subseteq \Gamma'.\Gamma''\in X\cup E\}$\\
+\end{quote}
+
+
+\subsection{Simplification}
+
+As a first basic optimisation, simplifaction makes use of specific (propositional or modal)
+tautologies in order to deterministically rewrite any appearing formulas in a proof.
+The application of simplification does not invoke any branching and is thus a
+linear process.
+
+\noindent A non-exhaustive list of some important simplification rules is shown in
+Figure~\ref{fig:tauts}.
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l |}
+\hline
+Operator & Propositional Tautology \\
+\hline
+$\vee$ & $\cup\{\top,...\}\rightarrow \top$ \\
+&  $\cup\{\neg\top,\phi_1,\ldots,\phi_n\}\rightarrow \cup\{\phi_1,\ldots,\phi_n\}$ \\
+&  $\cup\{\phi,\neg\phi,\ldots\}\rightarrow \top$ \\
+\hline
+$\vee\wedge$ & $\cup\{\neg\phi,\neg(\neg\phi\vee\neg\psi)\}\rightarrow\psi$\\
+\hline
+$\Box_\mathbf{K}$ &  $\Box_\mathbf{K}\top\rightarrow \top$ \\
+ & ($\Box_\mathbf{K}\phi\wedge\Box_\mathbf{K}\psi\rightarrow \Box_\mathbf{K}(\phi\wedge\psi)$) \\
+\hline
+$\Box_\mathbf{KD}$ & $\Box_\mathbf{KD}\top\rightarrow \top$ \\
+ & ($\Box_\mathbf{KD}\phi\wedge\Box_\mathbf{KD}\psi\rightarrow \Box_\mathbf{KD}(\phi\wedge\psi)$) \\
+ & $\neg\Box_\mathbf{KD}\bot\rightarrow \top$ \\
+\hline
+$\Box^a_\mathbf{HM}$ &  $\Box^a_\mathbf{HM}\top\rightarrow \top$ \\
+ & ($\Box^a_\mathbf{HM}\phi\wedge\Box^a_\mathbf{HM}\psi\rightarrow \Box^a_\mathbf{HM}(\phi\wedge\psi)$) \\
+\hline
+$\Rightarrow_\mathbf{CK}$ & $(\phi\Rightarrow_\mathbf{CK}\top)\rightarrow\top$ \\
+\hline
+$\Rightarrow_\mathbf{CK_{CEM}}$ & $(\phi\Rightarrow_\mathbf{CK_{CEM}}\top)\rightarrow\top$ \\
+ \hline
+ \end{tabular}
+  \end{center}
+  \caption{Examplary tautologies used for simplification}
+  \label{fig:tauts}
+\end{figure}
+\end{footnotesize}
+
+\subsection{Generalized Semantic Branching}
+
+The technique of semantic branching~\cite{HorrocksPatelSchneider99} allows to ensure that created
+sub-proofs are strictly disjoint. This prevents duplicate proofs a formulas
+which might otherwise appear in both sub-proofs.
+
+\subsubsection{Propositional Semantic Branching}
+
+In the propositional case, there is just one branching rule, the conjunction rule.
+A semantic version of this rule is shown in Figure~\ref{fig:synSemConj}.
+The justification for replacing the standard conjunction rule by the rule for
+semantic conjunction branching is simple:
+
+\begin{lemma}
+A sequent is provable by syntactic propositional branching iff it is
+provable by semantic propositional branching.
+\begin{proof}
+This fact follows from the propositional tautology
+\begin{quote}
+$(A\wedge B)\leftrightarrow (A\wedge (A\rightarrow B))$.
+\end{quote}
+\end{proof}
+\end{lemma}
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| c | c |}
+\hline
+Syntactic branching & Semantic branching \\
+\hline
+\inferrule{ \Gamma,A \\ \Gamma,B } { \Gamma,A \wedge B} & \inferrule{ \Gamma,A \\ \Gamma,\neg A,B } { \Gamma,A \wedge B}\\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{Syntactic vs. Semantic branching on conjunctions}
+  \label{fig:synSemConj}
+\end{figure}
+\end{footnotesize}
+
+\subsubsection{Modal Semantic Branching}
+
+The general principle that can be extracted from propositional semantic branching
+is a follows:
+
+A syntactic branching rule
+\begin{quote}
+\centerline{\inferrule{\Gamma_1\\\ldots\\\Gamma_i\\\ldots\\\Gamma_n}{\Gamma}}
+\end{quote}
+may be (repeatedly) replaced by a `more semantic` branching rule
+\begin{quote}
+\centerline{\inferrule{\Gamma_1\\\ldots\\ \Gamma'_i\\\ldots\\\Gamma_n}{\Gamma}}
+\end{quote}
+where $\Gamma'_i=\bigwedge_{t\in T}\Gamma_t\rightarrow\Gamma_i$ for some
+$T\subseteq\{1,\ldots,n\}\setminus\{i\}$.
+
+The justification for this generalized semantic branching is as simple as in the propositional
+case:
+
+\begin{lemma}
+A sequent is provable by syntactic modal branching iff it is
+provable by semantic modal branching.
+\begin{proof}
+This fact follows from the propositional tautology
+\begin{quote}
+$(\bigwedge_{t\in T}\Gamma_t\wedge \Gamma_i) \leftrightarrow 
+ (\bigwedge_{t\in T}\Gamma_t\wedge(\bigwedge_{t\in T}\Gamma_t\rightarrow \Gamma_i))$.
+\end{quote}
+\end{proof}
+\end{lemma}
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l |}
+\hline
+Feature & Semantic Branching\\
+\hline
+$\Rightarrow_\mathbf{CK}$ & \inferrule{ A_0\leftrightarrow\ldots \leftrightarrow A_n \\ \neg(A_0\leftrightarrow\ldots \leftrightarrow A_n),\neg B_1,\ldots, \neg B_n,B_0 }
+                      { \Gamma,\bigwedge\limits_{i=1}^n(A_i\Rightarrow_\mathbf{CK} B_i)\rightarrow (A_0\Rightarrow_\mathbf{CK} B_0)} \\
+\hline
+$\Rightarrow_\mathbf{CK_{CEM}}$ & \inferrule{ A_0\leftrightarrow\ldots \leftrightarrow A_n \\ \neg(A_0\leftrightarrow\ldots \leftrightarrow A_n),B_0,\ldots, B_k, \neg B_{k+1},\neg B_n }
+                      { \Gamma,\bigwedge\limits_{i=k+1}^n(A_i\Rightarrow_\mathbf{CK_{CEM}} B_i)\rightarrow 
+                        \bigvee\limits_{j=0}^k(A_j\Rightarrow_\mathbf{CK_{CEM}} B_j)} \\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{Specific semantic branching for examplary modal logics}
+  \label{fig:semBranch}
+\end{figure}
+\end{footnotesize}
+
+\subsection{Generalized Dependency Directed Backtracking}
+
+The technique of \emph{controlled backtracking} (also known as dependency directed
+backtracking~\cite{HorrocksPatelSchneider99}) is in fact a special instance of caching: When this optimisation is
+employed, each sequent $\Gamma$ depends on a set $\sharp(\Gamma)$ of
+sequents (namely on those sequents which introduced any formula $\phi\in\Gamma$ into the proof tree).
+Whenever a sequent turns out to be provable, its provability depends
+on possibly several sequents. These sequents are called the respective
+\emph{dependency set} of $\{\top\}$, denoted by $\sharp(\{\top\})$ (these sequents are 
+also known as the \emph{promotors} of the successful leaf).
+
+We have yet to formally define dependency sets, but we will rely on the following
+crucial fact:
+
+\begin{lemma} Given a dependency set $\sharp(\{\top\})$ of a succesfull leaf, the first
+sequent $\Gamma$ s.t. $\Gamma\in \sharp(\{\top\})$, is provable.
+\label{fact:promtrs}
+\end{lemma}
+
+Due to Lemma~\ref{fact:promtrs}, it will
+not be necessary to treat any open sequents between the current successful node in the
+proof graph and the first node which is contained in the according dependency set.
+
+To achieve this, a set of \emph{current} dependency sequents is used, and whenever a
+sequent is provable, the current set of dependency sequents is defined as the set of
+dependency sequents of $\{\top\}$. Now all those open sequents which
+appear during the following backtracking through the proof tree and which
+are created by a sequent which is \emph{not} in the current set of dependency states,
+may be directly set to $provable$.
+
+If however a node in the proof graph which is contained in the current set of dependency
+states is reached, the current set of dependency states is set to $\emptyset$ and the
+proof may continue as usual.
+
+\begin{definition} Depending on the shape of a proof tree, $\sharp(\Gamma)$ is defined as follows: 
+\begin{itemize}
+\item If $\Gamma$ is the root of the proof tree, $\sharp(\Gamma)=\Gamma$.
+\item If $\Gamma$ is obtained from $\Gamma'$ by means of normalisation, saturation or simplification,
+      then $\sharp(\Gamma):=\sharp(\Gamma')$.
+\item If $\Gamma$ is the only sequent in the premise of a rule application of a non-branching rule to
+$\Gamma'$, then $\sharp(\Gamma):=\sharp(\Gamma')$
+\item If $\Gamma_1,\ldots,\Gamma_n$ are $n$ sequents from the premise of the rule
+application of a branching rule to $\Gamma=\Gamma',\Gamma''$, s.t. $\Gamma_1,\ldots,\Gamma_n$
+is constructed from $\Gamma''$,
+the dependancy set of any formula $\phi\in \bigcup_{i\in\{1,\ldots,n\}} \Gamma_i$ is
+defined as follows: if $\forall i\in\{1,\ldots,n\}. \phi\in \Gamma_i$, then $\sharp(\{\phi\}):=\sharp(\Gamma'')$,
+else $\sharp(\{\phi\}):=\Gamma$.
+\item Finally, $\sharp(\Gamma_1\cup \Gamma_2):=\sharp(\Gamma_1)\cup\sharp(\Gamma_2)$
+\end{itemize}
+\end{definition}
+
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l | l |}
+\hline
+Feature & Modal Rule & Dependencies\\
+\hline
+$\Box_\mathbf{K}$ & \inferrule{ \overbrace{\bigwedge\nolimits_{i=1}^n A_i\rightarrow B}^{\equiv:\Gamma_1} }
+                      { \Gamma, \underbrace{\bigwedge\nolimits_{i=1}^n \Box_\mathbf{K} A_i\rightarrow \Box_\mathbf{K} B}
+                        _{\equiv:\Gamma'}} & $\sharp(\Gamma_1):=\sharp(\Gamma')$ \\
+\hline
+$\Rightarrow_\mathbf{CK}$ & \inferrule{ \overbrace{A_0\leftrightarrow\ldots \leftrightarrow A_n}^{\equiv:\Gamma_1} \\ 
+                                        \overbrace{\neg B_1,\ldots \neg B_n,B_0}^{\equiv:\Gamma_2}  }
+                      { \Gamma, \underbrace {\bigwedge\nolimits_{i=1}^n (A_i\Rightarrow_\mathbf{CK} B_i)\rightarrow
+                        (A_0\Rightarrow_\mathbf{CK} B_0)}_{\equiv:\Gamma'}} & $\sharp(\Gamma_1,\Gamma_2):=\Gamma,\Gamma'$ \\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{Propagation of dependencies over some examplary modal features}
+  \label{fig:depProp}
+\end{figure}
+\end{footnotesize}
+
+Inituitively, a single application of for instance the modal rule of \textbf{K} 
+does not \emph{choose} any subformulas of its conclusionary sequent to generate new sequents
+(this is already a consequence of the fact that this rule does not branch).
+Hence any introduced formulas will depend on those formulas on which the conclusionary sequent
+already depended.
+On the other hand, the modal rule of for instance \textbf{CK} selects some subformulas (the antecedents)
+from its conclusionary sequent to be in the first sequent of the premise and others
+(the consequents) to be in the second sequent of the premise, thus a choice is made and the
+introduced formulas will directly depend on the conclusionary sequent.
+
+The following Lemmas establish that dependency directed backtracking as defined above
+is a sound optimisation technique for any coalgebraic model logic:
+
+\begin{lemma}
+Assume an application of any (possibly branching) rule:
+\begin{quote}
+\centerline{\inferrule{\Gamma_1\\\ldots\\\Gamma_n}{\Gamma}}
+\end{quote}
+Assume a sequent $\Gamma'$ such that $\Gamma\notin\sharp(\Gamma')$,
+but $\Gamma'\subseteq \Gamma_i$ for any $0<i\leq n$.
+Then provability of $\Gamma'$ implies the provability of all sequents $\Gamma_i$ of
+the premise of the rule.
+\begin{proof} Let $\Gamma'$ be provable. Since $\Gamma\notin\sharp(\Gamma')$, we have a non-selecting
+rule application (w.r.t. $\Gamma'$). For non-branching rules, the implication is trivial. For a
+branching rule, it follows directly from the definition of $\sharp(\_)$ and the fact that one
+$\Gamma_j$ contains $\Gamma'$, that all $\Gamma_j$ contain $\Gamma'$.
+Hence all the sequents in the premise of the rule are provable.
+\end{proof}
+\label{lemma:provabilityPropagates}
+\end{lemma}
+
+%%\begin{lemma}
+%%Assume an application of any (possibly branching) rule:
+%%\begin{quote}
+%%\inferrule{\Gamma_1\\\ldots\\\Gamma_n}{\Gamma}
+%%\end{quote}
+%%Assume a formula $\phi$ and its dependency set $\sharp(\{\phi\})$, s.t.
+%%$\Gamma\notin\sharp(\{\phi\})$. If $\phi$ is contained in any
+%%sequent of the premise, it is contained in all sequents of the premise.
+%%\begin{proof}
+%%By case distinction on the definition of $\sharp(\Gamma)$.
+%%\end{proof}
+%%\label{lemma:depAnyAll}
+%%\end{lemma}
+
+%%A promoting set of formulas is any subset of appearing conclusionary sequents $\Gamma$ 
+%%of a rule application $\Gamma'_1 \ldots \Gamma'_n / \Gamma$ s.t. $\sharp(\Gamma)=\sharp(\Gamma'_i)$.
+%%i.e. it is any subset of any $\Gamma$ as long as $\Gamma\notin\sharp(\{\top\})$
+
+
+
+%%\begin{fact}
+%%A sequent that contains a set of promoting formulas, is provable.
+%%\label{fact:containProv}
+%%\end{fact}
+
+\begin{lemma}
+Let the following be a (not yet fully explored) proof tree for $\Gamma$ (where $\Gamma^i_j$ denotes
+the sequent number $j$ on level $i$; in case that $j>1$ and $i>1$, $\Gamma^i_j$ is assumed to be an
+open sequent):
+\begin{quote}
+\centerline{\inferrule{\inferrule{\inferrule{\inferrule{\inferrule{\checkmark}{\Gamma^{n}_{1}}}{\ldots}}{\Gamma^{2}_{1}}
+                                           \\\ldots\\\Gamma^{2}_{i}}{\Gamma^{1}_{1}} \\ \ldots \\ \Gamma^{1}_{j}}{\Gamma}}
+\end{quote}
+Further, let $\sharp(\{\top\})$ denote the dependency set of the successful leaf. If for all $\Gamma^i_1$
+with $0<i\leq n$, $\sharp(\{\top\})\not\subseteq\Gamma^i_1$,
+and if $\sharp(\{\top\})\subseteq\Gamma$ (i.e. $\Gamma$ is the first sequent contained in the dependency
+set of the successful leaf), then $\Gamma^1_1$ is provable (since any $\Gamma^i_j$ with $i>1$ is provable).
+
+\begin{proof}
+Lemma~\ref{lemma:provabilityPropagates} ensures, that the provability of the successful leaf
+propagates to all the open sequents $\Gamma^i_j$ for $i,j>1$ (since $\sharp(\{\top\})\not\subseteq\Gamma^{i-1}_j$).
+Thus we are not able to find any sequent of level $>1$ that is not provable.
+
+%%We try to find any $\Gamma^i_j$ which is not provable. Since $\Gamma^n_1$ is provable, any
+%%open sequent that could be not provable must have been created by a branching rule from
+%%the sequent $\Gamma^{i-1}_1$. However, since $\sharp(\{\top\})\not\subseteq\Gamma^{i-1}_1$ and since
+%%$\Gamma^i_1$ contains a promoting set of formulas, 
+%%a promoting set of formulas is by Lemma~\ref{lemma:depAnyAll} also contained in $\Gamma^i_j$,
+%%thus $\Gamma^i_j$ is by Fact~\ref{fact:containProv} provable.
+%%This shows that any $\Gamma^i_j$ with $i>1$ and in fact also $\Gamma^1_1$ is provable.
+\end{proof}
+\end{lemma}
+
+To summarize, once we found a successful leaf $\Gamma^n_1$, it is not necessary to treat the whole sub-proof
+which is induced by $\Gamma^1_1$, since $\Gamma^1_1$ is always provable in the above situation.
+
+\subsection{Proof Formulas and efficient propagation}
+
+Due to the inherent inefficiency of computing the propagation of provable
+sequents $A$ (improvable sequents $E$) through the proof graph (all undecided
+sequents have to be traversed in order to compute the necessary fix-points),
+we devise the following more efficient method:
+
+\begin{definition}
+A \emph{position} $p\in Pos=\{c_1\ldots c_n\mid c_1,\ldots,c_n\in\mathbb{N}\}\cup\{[]\}$ is a finite
+list of natural numbers.
+
+A \emph{proof formula} is defined as follows (for $j,p\in Pos$):
+\begin{quote}
+$\mathcal{PF} \ni \psi_1,\ldots,\psi_n := a_j \mid \wedge \{\psi_1,\ldots,\psi_n\} \mid \vee \{\psi_1,\ldots,\psi_n\} \mid l_p$
+\end{quote}
+
+The subformula $\phi|_p$ of a proof formula $\phi$ at position $p=c_1\ldots c_n$ is defined
+recursively. If $n=0$, then $\phi|_p=\phi$. If $n=1$ (i.e. $p=c_1$), then $p_2=[]$, otherwise
+(i.e. $n>1$, $p=c_1c_2\ldots c_n$), $p_2=c_2\ldots c_n$.
+\begin{itemize}
+\item If $n>0$, $a_j|_p$ and $l_i|_p$ are undefined.
+\item Let $\phi=\wedge \{\psi_1,\ldots,\psi_n\}$ or $\phi=\vee \{\psi_1,\ldots,\psi_n\}$. If $0<c_1\leq n$,
+$\phi|_p=\psi_{c_1}|_{p_2}$; if $c_1>n$, $\phi|_p$ is undefined.
+\end{itemize}
+
+The partial \emph{indexing function} $\ind{\_}:Seq + Prem \rightarrow Pos$
+maps sequents $\Gamma\in Seq$ or premises $\Sigma\in Prem$ from the defined
+subset of its domain to a position.
+
+We also introduce sets of provable positions $A_p\subseteq Pos$ and non-provable
+positions $E_p\subseteq Pos$ as well as the set $tcs$ of positions that have been
+expanded since the last propagation step and that are relevant to the propagation.
+\end{definition}
+
+When constructing the proof graph $g$ for a formula $\phi$, we build up a proof formula
+$pf(g)$ in parallel, beginning with $pf(g_0)=a_{\ind{\{\phi\}}}$, $\ind{\_}$ undefined except
+for $\ind{\{\phi\}}=[]$ and $A_p=E_p=tcs=\emptyset$.
+
+\noindent\textbf{Expanding the proof formula:} 
+Say we expand sequent $\Gamma$, s.t. $g\stackrel{\Gamma}\rightarrow_E g'$ for $g'=exp(g,\Gamma)=(A',E',U',X',L_1',L_2')$.
+This means that there are $n$ premises to $\Gamma$ (i.e. $|AP(\Gamma)|=n$) and for each $\Sigma_i \in AP(\Gamma)$,
+$(\Gamma,\Sigma_i)\in L_1'$. Also, for each $\Sigma_i \in AP(\Gamma)$, there is an $m_i$ s.t.
+$|\{\Gamma_j\mid (\Sigma_i,\Gamma_j)\in AS(\Gamma)\}|=m_i$ and each such $(\Sigma,\Gamma_j)$ is contained in $L_2'$.
+In other words, $\Gamma$ has $n$ premises, each premise consists of $m_i$ sequents and the according
+transitions are stored in $L_1'$ and $L_2'$.
+
+The according changes to the proof formula and the indexing function are as follows:
+
+\noindent First we expand the sequent $\Gamma$:
+\begin{itemize}
+\item Replace $a_{\ind{\Gamma}}$ with $\vee\{b_1,\ldots,b_n\}$.
+\item For $0<i\leq n$, if $\ind{\Sigma_i}$ is defined (i.e. the premise was encountered before),
+replace $b_i$ by $l_{\ind{\Sigma_i}}$. If $\ind{\Sigma_i}\in A_p\cup E_p$, add $\ind{\Gamma}$ to $tcs$.
+\item For each remaining $b_i$ (i.e. for each new premise), set $\ind{\Sigma_i}=\ind{\Gamma}i$.
+\item \emph{Optional:} If $n=1$, then $\vee\{b_1\}=b_1$ and $\ind{\Sigma_1}=\ind{\Gamma}$.
+\item If $n=0$, then add $\ind{\Gamma}$ to $tcs$.
+\end{itemize}
+
+\noindent Then we expand all the premises $\Sigma_i$:
+\begin{itemize}
+\item Replace any $b_i$ with $\wedge\{a_1,\ldots,a_{m_i}\}$.
+\item For $0<j\leq m_i$, if $\ind{\Gamma_j}$ is defined (i.e. the sequent was encountered before), 
+replace $a_j$ by $l_{\ind{\Gamma_j}}$. If $\ind{\Gamma_j}\in A_p\cup E_p$, add $\ind{\Sigma_i}$ to $tcs$.
+\item For each remaining $a_j$ (i.e. for each new sequent), set $\ind{\Gamma_j}=\ind{\Sigma_i}j$.
+\item \emph{Optional:} If $m_i=1$, then $\wedge\{a_1\}=a_1$ and $\ind{\Gamma_1}=\ind{\Sigma_i}$.
+\item If $m_i=0$, then add $\ind{\Sigma_i}$ to $tcs$.
+\item Replace any $a_j$ with $a_{\ind{\Gamma_j}}$.
+\end{itemize}
+
+\noindent\textbf{Propagation in the proof formula:}
+Propagation of $A$ ($E$) through the proof formula is realized by iterative approximation of the
+fixpoints. 
+Any of the rules from Figure~\ref{fig:propagation} is applied repeatedly for each $pj\in tcs$ until
+no rule may be applied for this specific $pj$ any more, $pj$ is removed from $tcs$ afterwards.
+\begin{footnotesize}
+\begin{figure}[!h]
+  \begin{center}
+\begin{tabular}{| l | l | l |}
+\hline
+Condition(s) & Changes to $A_p$ ($E_p$) & Changes to $tcs$\\
+\hline
+$\phi|_{pj}=\wedge\emptyset$ & add $pj$&\\
+\hline
+$\phi|_{pj}=\vee\emptyset$ & (add $pj$)&\\
+\hline
+$\exists q\in Pos.\phi|_{q}=l_{pj}$, $pj\in A_p$ & add $q$ & add $q$\\
+\hline
+$\exists q\in Pos.\phi|_{q}=l_{pj}$, $pj\in E_p$ & (add $q$) & add $q$\\
+\hline
+$\phi|_{p}=\wedge\{\psi_1,\ldots,\psi_n\}$, $\forall i\in\{1\ldots n\}. pi\in A_p$ & add $p$ & add $p$\\
+\hline
+$\phi|_{p}=\vee\{\psi_1,\ldots,\psi_n\}$, $\exists i\in\{1\ldots n\}. pi\in A_p$ & add $p$ & add $p$\\
+\hline
+$\phi|_{p}=\wedge\{\psi_1,\ldots,\psi_n\}$, $\exists i\in\{1\ldots n\}. pi\in E_p$ & (add $p$) & add $p$\\
+\hline
+$\phi|_{p}=\vee\{\psi_1,\ldots,\psi_n\}$, $\forall i\in\{1\ldots n\}. pi\in E_p$ & (add $p$) & add $p$\\
+\hline
+ \end{tabular}
+  \end{center}
+  \caption{The simplification rules for propagation in proof formulas}
+  \label{fig:propagation}
+\end{figure}
+\end{footnotesize}
+
+Propagation adds the positions of all newly added empty conjunctions (and disjunctions) to
+$A_p$ ($E_p$) and propagates them through the formula. The set $tcs$ is empty after each
+completed propagation step.
+
+The set of all atoms $a_j$ that appear in $pf(g)$ is the relevant subset of the set $X$ of
+unexpanded sequents of the proof graph.
+
+\begin{lemma}
+$\{\Gamma\in Seq\mid \ind{\Gamma}\in A_p\} = A$.
+
+\begin{proof}
+The constructed proof formula is a direct representation of the proof graph. 
+Repeated application of the rules from Figure~\ref{fig:propagation} iteratively approximates the
+collection of fixpoints $A$ and stores the according positions in $A_p$.
+\end{proof}
+\end{lemma}
+
+It follows that $\phi$ is provable iff $[]\in A_p$ and that $\phi$ is not provable otherwise. The
+improved efficiency of the process of propagating in the proof formula turns propagation after
+each expansion step into a feasible option.
+
+\section{Conclusion}  
+
+We have applied the well known optimisation techniques of semantic branching and dependency directed
+backtracking to coalgebraic logics and we have shown that the techniques generalize to all coalgebraic
+modal logics in a natural way. This is especially interesting in the case of those modal logics
+whose modal rule introduces additional branching (in contrast to more classic modal logics which only
+branch on conjunctions).
+
+As a second contribution, we have established a minimal representation of the structure of satisfiability
+proofs of coalgebraic modal logics; this is achieved by introducing and justifying the usage of proof formulas
+as a representation of the proof graph. Hence basic propagation becomes
+a mere process of simplification of the respective proof formula starting at the successful or unsucessful
+leaves and only traversing the needed parts of the proof structure.
+
+The presented algorithm and the proposed optimisations have been successfully implemented as a part of the
+experimental prover \emph{CoLoSS}. Additionally, the following optimization techniques have been implemented:
+\begin{itemize}
+\item restriction to maximal application of modal rules (when admissable),
+\item irrelevance check for subformulas of polarity preserving modal logics,
+\item heuristics (such as \emph{``most-appearing-first''} or \emph{``oldest-first''}).
+\end{itemize}
+
+The implementation shows reasonable performance especially for logics for
+which few optimisations apart from those presented here exist.
+However, detailled and relevant benchmarking of the examplary implementation in \emph{CoLoSS} is a complex task
+(due to the amount and nature of different logics and optimisation techniques which are involved)
+and subject to ongoing research.
+
+\bibliographystyle{myabbrv}
+\bibliography{coalgml}
+
+
+\end{document}

@@ -1,0 +1,40 @@
+\providecommand{\noopsort}[1]{}
+\begin{thebibliography}{1}
+
+\bibitem{CalinEA09}
+G.~Calin, R.~Myers, D.~Pattinson, and L.~Schr{\"o}der.
+\newblock Coloss: The coalgebraic logic satisfiability solver (system
+  description).
+\newblock In {\em Methods for Modalities, M4M-5}, vol. 231 of {\em ENTCS}, pp.
+  41--54. Elsevier, 2009.
+
+\bibitem{GoreEA10}
+R.~Gor{\'e}, C.~Kupke, and D.~Pattinson.
+\newblock Optimal tableau algorithms for coalgebraic logics.
+\newblock In R.~Majumdar and J.~Esparza, eds., {\em Proc. TACAS 2010}, Lecture
+  Notes in Comp. Sci., 2010.
+
+\bibitem{HausmannSchroder10}
+D.~Hausmann and L.~Schr{\"o}der.
+\newblock Optimizing conditional logic reasoning within coloss (system
+  description).
+\newblock In {\em Methods for Modalities, M4M-6}, vol. 262 of {\em ENTCS}, pp.
+  157--171. Elsevier, 2010.
+
+\bibitem{HorrocksPatelSchneider99}
+I.~Horrocks and P.~Patel-Schneider.
+\newblock Optimizing description logic subsumption.
+\newblock {\em Journal of Logic and Computation}, 9(3):267--293, 1999.
+
+\bibitem{PattinsonSchroder08b}
+D.~Pattinson and L.~Schr{\"o}der.
+\newblock Admissibility of cut in coalgebraic logics.
+\newblock In {\em Coalgebraic Methods in Computer Science, CMCS 08}, vol. 203
+  of {\em ENTCS}, pp. 221--241. Elsevier, 2008.
+
+\bibitem{SchroderPattinson09}
+L.~Schr{\"o}der and D.~Pattinson.
+\newblock Pspace bounds for rank-1 modal logics.
+\newblock {\em ACM Trans.\ Comput.\ Logic}, 10(2:13):1--33, 2009.
+
+\end{thebibliography}

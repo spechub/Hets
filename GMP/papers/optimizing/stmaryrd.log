@@ -1,0 +1,266 @@
+This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=latex 2008.12.18)  14 APR 2010 14:48
+entering extended mode
+ %&-line parsing enabled.
+**stmaryrd.dtx
+(./stmaryrd.dtx
+LaTeX2e <2005/12/01>
+Babel <v3.8h> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, loaded.
+
+LaTeX Warning: File `stmaryrd.ins' already exists on the system.
+               Not generating it from this source.
+
+(/usr/share/texmf-texlive/tex/latex/base/docstrip.tex
+\blockLevel=\count79
+\emptyLines=\count80
+\processedLines=\count81
+\commentsRemoved=\count82
+\commentsPassed=\count83
+\codeLinesPassed=\count84
+\TotalprocessedLines=\count85
+\TotalcommentsRemoved=\count86
+\TotalcommentsPassed=\count87
+\TotalcodeLinesPassed=\count88
+\NumberOfFiles=\count89
+\inFile=\read1
+\inputcheck=\read2
+\off@0=\count90
+\off@1=\count91
+\off@2=\count92
+\off@3=\count93
+\off@4=\count94
+\off@5=\count95
+\off@6=\count96
+\off@7=\count97
+\off@8=\count98
+\off@9=\count99
+\off@10=\count100
+\off@11=\count101
+\off@12=\count102
+\off@13=\count103
+\off@14=\count104
+\off@15=\count105
+\@maxfiles=\count106
+\@maxoutfiles=\count107
+
+Utility: `docstrip' 2.5d <2005/07/29>
+English documentation    <1999/03/31>
+
+**********************************************************
+* This program converts documented macro-files into fast *
+* loadable files by stripping off (nearly) all comments! *
+**********************************************************
+
+********************************************************
+* No Configuration file found, using default settings. *
+********************************************************
+
+(./stmaryrd.ins
+
+Generating file(s) ./stmaryrd.sty 
+\openout0 = `./stmaryrd.sty'.
+
+
+Processing file stmaryrd.dtx (package) -> stmaryrd.sty
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % <*install . % % % % . . . . . . % % % % . . . . . . % % % > %
+% % % % % <*driver . . . . % % % % % % % . . . . . . . % % % % % % % . . . > %
+% % % % % <*package . . % % % % % % % % % % % % . % % % % % % % % . . % % % %
+% % % % % . . . . . . . . . . % % % % % % % % . . % % % % % % % % % % % % % %
+% % . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . % % % % %
+% % % % % % % % . % % % . . % % % . . . . . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . % % % . . . % % % . . % % % . . . . . . % % % . . . . .
+. . . . . . . . . . . . . > % % % % % % <*fontdef . . . . . > % % %
+File stmaryrd.dtx ended by \endinput.
+Lines  processed: 663
+Comments removed: 411
+Comments  passed: 20
+Codelines passed: 224
+
+
+Generating file(s) ./Ustmry.fd 
+\openout0 = `./Ustmry.fd'.
+
+
+Processing file stmaryrd.dtx (fontdef) -> Ustmry.fd
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % <*install . % % % % . . . . . . % % % % . . . . . . % % % > %
+% % % % % <*driver . . . . % % % % % % % . . . . . . . % % % % % % % . . . > %
+% % % % % <*package . . % % % % % % % % % % % % . % % % % % % % % . . % % % %
+% % % % % . . . . . . . . . . % % % % % % % % . . % % % % % % % % % % % % % %
+% % . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . % % % % %
+% % % % % % % % . % % % . . % % % . . . . . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+. . . . . . . . . . . % % % . . . % % % . . % % % . . . . . . % % % . . . . .
+. . . . . . . . . . . . . > % % % % % % <*fontdef . . . . . > % % %
+File stmaryrd.dtx ended by \endinput.
+Lines  processed: 663
+Comments removed: 411
+Comments  passed: 20
+Codelines passed: 224
+
+)
+Overall statistics:
+Files  processed: 2
+Lines  processed: 1326
+Comments removed: 822
+Comments  passed: 40
+Codelines passed: 448
+) (/usr/share/texmf-texlive/tex/latex/base/ltxdoc.cls
+Document Class: ltxdoc 1999/08/08 v2.0u Standard LaTeX documentation class
+(/usr/share/texmf-texlive/tex/latex/base/article.cls
+Document Class: article 2005/09/16 v1.4f Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/size10.clo
+File: size10.clo 2005/09/16 v1.4f Standard LaTeX file (size option)
+)
+\c@part=\count108
+\c@section=\count109
+\c@subsection=\count110
+\c@subsubsection=\count111
+\c@paragraph=\count112
+\c@subparagraph=\count113
+\c@figure=\count114
+\c@table=\count115
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf-texlive/tex/latex/base/doc.sty
+Package: doc 2006/02/02 v2.1d Standard LaTeX documentation package (FMi)
+\c@StandardModuleDepth=\count116
+\guard@level=\count117
+\MacrocodeTopsep=\skip43
+\MacroIndent=\dimen103
+\macro@cnt=\count118
+\MacroTopsep=\skip44
+\index@excludelist=\toks14
+
+(/usr/share/texmf-texlive/tex/latex/tools/multicol.sty
+Package: multicol 2006/05/18 v1.6g multicolumn formatting (FMi)
+\c@tracingmulticols=\count119
+\mult@box=\box26
+\multicol@leftmargin=\dimen104
+\c@unbalance=\count120
+\c@collectmore=\count121
+\doublecol@number=\count122
+\multicoltolerance=\count123
+\multicolpretolerance=\count124
+\full@width=\dimen105
+\page@free=\dimen106
+\premulticols=\dimen107
+\postmulticols=\dimen108
+\multicolsep=\skip45
+\multicolbaselineskip=\skip46
+\partial@page=\box27
+\last@line=\box28
+\mult@rightbox=\box29
+\mult@grightbox=\box30
+\mult@gfirstbox=\box31
+\mult@firstbox=\box32
+\@tempa=\box33
+\@tempa=\box34
+\@tempa=\box35
+\@tempa=\box36
+\@tempa=\box37
+\@tempa=\box38
+\@tempa=\box39
+\@tempa=\box40
+\@tempa=\box41
+\@tempa=\box42
+\@tempa=\box43
+\@tempa=\box44
+\@tempa=\box45
+\@tempa=\box46
+\@tempa=\box47
+\@tempa=\box48
+\@tempa=\box49
+\c@columnbadness=\count125
+\c@finalcolumnbadness=\count126
+\last@try=\dimen109
+\multicolovershoot=\dimen110
+\multicolundershoot=\dimen111
+\mult@nat@firstbox=\box50
+\colbreak@box=\box51
+)
+\IndexMin=\dimen112
+\c@IndexColumns=\count127
+\GlossaryMin=\dimen113
+\c@GlossaryColumns=\count128
+\check@sum=\count129
+\bslash@cnt=\count130
+\wrong@table=\toks15
+\c@CodelineNo=\count131
+)) (./stmaryrd.sty
+Package: stmaryrd 1994/03/03 St Mary's Road symbol package
+\symstmry=\mathgroup4
+LaTeX Font Info:    Overwriting symbol font `stmry' in version `bold'
+(Font)                  U/stmry/m/n --> U/stmry/b/n on input line 89.
+)
+(./stmaryrd.aux)
+\openout1 = `stmaryrd.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 355.
+LaTeX Font Info:    ... okay on input line 355.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 355.
+LaTeX Font Info:    ... okay on input line 355.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 355.
+LaTeX Font Info:    ... okay on input line 355.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 355.
+LaTeX Font Info:    ... okay on input line 355.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 355.
+LaTeX Font Info:    ... okay on input line 355.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 355.
+LaTeX Font Info:    ... okay on input line 355.
+Package doc Info: Made | a short reference for \verb on input line 355.
+ (./stmaryrd.dtx
+***************************
+* Character table correct *
+***************************
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 78.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 78.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 78.
+LaTeX Font Info:    Try loading font information for U+stmry on input line 78.
+(./Ustmry.fd)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 83.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 83.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 102.
+
+ (/usr/share/texmf-texlive/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 102.
+ [1
+
+] [2])
+[3] (./stmaryrd.aux) ) 
+Here is how much of TeX's memory you used:
+ 1061 strings out of 95087
+ 11939 string characters out of 1183277
+ 61419 words of memory out of 1500000
+ 4272 multiletter control sequences out of 10000+50000
+ 9312 words of font info for 36 fonts, out of 1200000 for 2000
+ 28 hyphenation exceptions out of 8191
+ 30i,8n,21p,228b,419s stack positions out of 5000i,500n,6000p,200000b,5000s
+
+Output written on stmaryrd.dvi (3 pages, 8680 bytes).
