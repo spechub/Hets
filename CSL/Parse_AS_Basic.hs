@@ -371,7 +371,7 @@ varItem = do
 parseDomain :: CharParser st Domain
 parseDomain = do
   lp <- lexemeParser $ oneOf "{[]"
-  gcl <- sepBy1 (fmap numToGroundConstant signednumber) pComma
+  gcl <- sepBy1 (signednumber >-> numToGroundConstant) pComma
   rp <- lexemeParser $ oneOf "[]}"
   let f o c = case gcl of
                 [lb, rb] -> return $ Interval (lb, o) (rb, c)
@@ -388,7 +388,7 @@ parseDomain = do
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC
 basicSpec =
-  fmap Basic_spec (AnnoState.annosParser parseBasicItems)
+  AnnoState.annosParser parseBasicItems >-> Basic_spec
   <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
 -- | Parser for basic items
@@ -397,11 +397,11 @@ parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseAxItems
 
 -- | parser for predicate declarations
 parseOpDecl :: AnnoState.AParser st BASIC_ITEMS
-parseOpDecl = fmap Op_decl opItem
+parseOpDecl = opItem >-> Op_decl
 
 -- | parser for predicate declarations
 parseVarDecl :: AnnoState.AParser st BASIC_ITEMS
-parseVarDecl = fmap Var_decls varItems
+parseVarDecl = varItems >-> Var_decls
 
 -- | parser for Axiom_item
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS
@@ -419,7 +419,7 @@ parseAxItems = do
 
 -- | parsing a prop symbol
 symb :: GenParser Char st SYMB
-symb = fmap Symb_id identifier
+symb = identifier >-> Symb_id
 
 
 -- | parsing one symbol or a mapping of one to a second symbol

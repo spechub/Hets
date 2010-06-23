@@ -14,8 +14,7 @@ Program transformations from CSL specifications to CAS programs
 -}
 
 module CSL.Transformation
-    ( mytest
-    , transConvergence
+    ( transConvergence
     , transRepeatCondition
     , transRepeat
     , SExp(..)
@@ -72,9 +71,6 @@ class SCmd a where
 instance (SExp a, SExp b) => SCmd (String, a, b) where
     toCmd (s, x, y) = Cmd s [toExp x, toExp y]
 
-
-mytest :: EXPRESSION
-mytest = toExp ("+", ("hallo", 1::Int), "333ta")
 
 -- This function can be used, e.g., to adjust a function for use with mapAccum
 tripleToPair :: (a -> (b, c, d)) -> a -> (b, (c, d))
