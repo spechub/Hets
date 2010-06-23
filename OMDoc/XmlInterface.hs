@@ -163,59 +163,72 @@ toOmobj c = inAContent el_omobj [attr_om] $ Just c
 -- url escaping and unescaping.
 -- We use ? and / as special characters, so we need them to be encoded in names
 urlEscape :: String -> String
-urlEscape = escapeURIString (\ c -> isUnescapedInURI c && notElem c "/?")
+urlEscape = escapeURIString isUnescapedInURI
 
 urlUnescape :: String -> String
 urlUnescape = unEscapeString
 
 
+-- to- and from-string functions
+
+showCDName :: OMCD -> OMName -> String
+showCDName omcd omname = concat [showCD omcd, "?", showOMName omname]
+
+showCD :: OMCD -> String
+showCD cd = let [x,y] = cdToList cd
+                 in concat [x, "?", y]
+
+showOMName :: OMName -> String
+showOMName on = intercalate "/" $ path on ++ [name on]
+
+
+readCD :: Show a => a -> String -> OMCD
+readCD _ s = case splitBy '?' s of
+               [b, cd] -> cdFromList [b, cd]
+               _ -> error $ concat [ "readCD: The value "
+                                   , "has to contain exactly one '?'"]
+
+readCDName :: String -> OMQualName
+readCDName s = case splitBy '?' s of
+                 (b:cd:n:[]) -> ( cdFromList [b, cd]
+                                , readOMName n)
+                 _ -> error $ concat [ "readCDName: The value "
+                                     , "has to contain exactly two '?'"]
+
+readOMName :: String -> OMName
+readOMName s = let l = splitBy '/' s
+               in OMName (last l) $ init l
+
+
 -- encoding
 
-uriEncodeCDName :: OMCD -> OMName -> String
-uriEncodeCDName omcd omname = uriEncodeCD omcd ++ "?" ++ encodeOMName omname
-
-uriEncodeCD :: OMCD -> String
-uriEncodeCD cd = let [x,y] = cdToList cd
-                 in concat [x, "?", urlEscape y]
-
-encodeOMName :: OMName -> String
-encodeOMName on = intercalate "/" $ map urlEscape $ path on ++ [name on]
+-- only uri-fields need to be %-encoded, the following attribs are uri-fields:
+{-
+theory@meta
+include@from
+structure@from
+view@from
+view@to
+@base
+-}
 
 tripleEncodeOMS :: OMCD -> OMName -> [Attr]
 tripleEncodeOMS omcd omname
-    = pairEncodeCD omcd ++ [Attr at_name $ encodeOMName omname]
+    = pairEncodeCD omcd ++ [Attr at_name $ showOMName omname]
 
 pairEncodeCD :: OMCD -> [Attr]
 pairEncodeCD cd = let [base, modl] = cdToMaybeList cd
-                  in catMaybes $ [ fmap (Attr at_base) base
-                                 , fmap (Attr at_module . urlEscape) modl]
+                  in catMaybes $ [ fmap (Attr at_base . urlEscape) base
+                                 , fmap (Attr at_module) modl]
 
 -- decoding
 
-uriDecodeCD :: Show a => a -> String -> OMCD
-uriDecodeCD _ s = case splitBy '?' s of
-                    [b, cd] -> cdFromList [b, urlUnescape cd]
-                    _ -> error $ concat [ "uriDecodeCD: The value "
-                                        , "has to contain exactly one '?'"]
-
-uriDecodeCDName :: String -> OMQualName
-uriDecodeCDName s = case splitBy '?' s of
-                      (b:cd:n:[]) -> ( cdFromList [b, urlUnescape cd]
-                                     , decodeOMName n)
-                      _ -> error $ concat [ "uriDecodeCDName: The value "
-                                          , "has to contain exactly two '?'"]
-
-decodeOMName :: String -> OMName
-decodeOMName s = let l = map urlUnescape $ splitBy '/' s
-                 in OMName (last l) $ init l
-
-
 tripleDecodeOMS :: String -> String -> String -> (OMCD, OMName)
 tripleDecodeOMS cd base nm =
-    let cdl = filter (not . null) [urlUnescape cd, base]
+    let cdl = filter (not . null) [cd, urlUnescape base]
     in if null cd && not (null base)
        then error "tripleDecodeOMS: base not empty but cd not given!"
-       else (CD cdl, decodeOMName nm)
+       else (CD cdl, readOMName nm)
 
 
 warnIfNothing :: String -> (Maybe a -> b)  -> Maybe a -> Result b
@@ -293,18 +306,18 @@ instance XmlRepresentable TLElement where
         el_theory ((Attr at_name tname)
                    : case meta of Nothing -> []
                                   Just mtcd ->
-                                      [Attr at_meta $ uriEncodeCD mtcd])
+                                      [Attr at_meta $ urlEscape $ showCD mtcd])
                       $ listToXml elms
     toXml (TLView nm from to morph) =
         mkElement
-        el_view [Attr at_name nm, Attr at_from $ uriEncodeCD from,
-                      Attr at_to $ uriEncodeCD to]
+        el_view [Attr at_name nm, Attr at_from $ urlEscape $ showCD from,
+                      Attr at_to $ urlEscape $ showCD to]
                     $ map assignmentToXml morph
 
     fromXml e
         | elemIsOf e el_theory =
             let nm = missingMaybe "Theory" "name" $ findAttr at_name e
-                mt = fmap (uriDecodeCD (elLine e)) $ findAttr at_meta e
+                mt = fmap (readCD (elLine e) . urlUnescape) $ findAttr at_meta e
             in do
               tcl <- listFromXml $ elContent e
               justReturn $ TLTheory nm mt tcl
@@ -312,8 +325,8 @@ instance XmlRepresentable TLElement where
         | elemIsOf e el_view =
             let musthave at s = missingMaybe "View" s $ findAttr at e
                 nm = musthave at_name "name"
-                from = uriDecodeCD (elLine e) $ musthave at_from "from"
-                to = uriDecodeCD (elLine e) $ musthave at_to "to"
+                from = readCD (elLine e) $ urlUnescape $ musthave at_from "from"
+                to = readCD (elLine e) $ urlUnescape $ musthave at_to "to"
             in do
               morph <- mapR xmlToAssignment (findChildren el_conass e)
               justReturn $ TLView nm from to morph
@@ -326,13 +339,13 @@ instance XmlRepresentable TCElement where
     toXml (TCNotation (cd, nm) val) =
         inAContent
         el_notation
-        [Attr at_for $ uriEncodeCDName cd nm, Attr at_role "constant"]
+        [Attr at_for $ showCDName cd nm, Attr at_role "constant"]
         $ Just $ inAContent el_text [Attr at_value val] Nothing
     toXml (TCADT sds) = mkElement el_adt [] $ listToXml sds
     toXml (TCComment c) = makeComment c
     toXml (TCImport nm from morph) =
         mkElement
-        el_structure [Attr at_name nm, Attr at_from $ uriEncodeCD from]
+        el_structure [Attr at_name nm, Attr at_from $ urlEscape $ showCD from]
                          $ map assignmentToXml morph
 
     fromXml e
@@ -351,12 +364,12 @@ instance XmlRepresentable TCElement where
                 text = musthave "text" $ findChild el_text e
                 val = musthave "value" $ findAttr at_value text
             in if role == "constant"
-               then justReturn $ TCNotation (uriDecodeCDName nm) val
+               then justReturn $ TCNotation (readCDName nm) val
                else return Nothing
         | elemIsOf e el_structure =
             let musthave at s = missingMaybe "Structure" s $ findAttr at e
                 nm = musthave at_name "name"
-                from = uriDecodeCD (elLine e) $ musthave at_from "from"
+                from = readCD (elLine e) $ urlUnescape $ musthave at_from "from"
             in do
               morph <- mapR xmlToAssignment
                        $ filterChildrenName (flip elem [el_conass, el_open]) e
@@ -385,7 +398,7 @@ instance XmlRepresentable OmdADT where
     toXml (ADTSelector n total) =
         mkElement el_selector [Attr at_name n, Attr at_total $ show total] []
     toXml (ADTInsort (d,n)) =
-        mkElement el_insort [Attr at_for $ uriEncodeCDName d n] []
+        mkElement el_insort [Attr at_for $ showCDName d n] []
 
     fromXml e
         | elemIsOf e el_sortdef =
@@ -414,7 +427,7 @@ instance XmlRepresentable OmdADT where
         | elemIsOf e el_insort =
             do
               let nm = missingMaybe "Insort" "for" $ findAttr at_for e
-              justReturn $ ADTInsort $ uriDecodeCDName nm
+              justReturn $ ADTInsort $ readCDName nm
         | otherwise =
             fail $ oneOfMsg e [ el_sortdef, el_constructor, el_argument
                               , el_selector, el_insort]
@@ -440,7 +453,7 @@ instance XmlRepresentable OMElement where
             in justReturn $ OMS $ tripleDecodeOMS omcd cdb nm
         | elemIsOf e el_omv =
             let nm = missingMaybe "OMV" "name" $ findAttr at_name e
-            in justReturn $ OMV $ decodeOMName nm
+            in justReturn $ OMV $ readOMName nm
         | elemIsOf e el_omattr =
             let [atp, el] = elChildren e
                 musthave s v = missingMaybe "OMATTR" s v
@@ -510,13 +523,13 @@ xmlToAssignment e
         let musthave s v = missingMaybe "Open" s v
             nm = musthave "name" $ findAttr at_name e
             alias = musthave "as" $ findAttr at_as e
-        in return (decodeOMName nm, Left alias)
+        in return (readOMName nm, Left alias)
     | elName e == el_conass =
         let musthave s v = missingMaybe "Conass" s v
             nm = musthave "name" $ findAttr at_name e
         in do
           omel <- omelementFromOmobj e
-          return (decodeOMName nm, Right $ musthave "OMOBJ element" omel)
+          return (readOMName nm, Right $ musthave "OMOBJ element" omel)
     | otherwise = fail $ oneOfMsg e [el_conass, el_open]
 
 
@@ -530,9 +543,9 @@ assignmentToXml :: (OMName, OMImage) -> Content
 assignmentToXml (from, to) =
     case to of
       Left s ->
-          mkElement el_open [Attr at_name $ encodeOMName from, Attr at_as s] []
+          mkElement el_open [Attr at_name $ showOMName from, Attr at_as s] []
       Right obj ->
-          inAContent el_conass [Attr at_name $ encodeOMName from]
+          inAContent el_conass [Attr at_name $ showOMName from]
                          $ Just . toOmobj . toXml $ obj
 
 constantToXml :: String -> String -> OMElement -> Maybe OMElement -> Content

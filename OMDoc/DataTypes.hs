@@ -26,6 +26,8 @@ import Data.Typeable
 
 import qualified Data.Map as Map
 
+import Network.URI (escapeURIString)
+
 {-
   OMDoc represented in 3 layers:
   1. toplevel (theory, view)
@@ -219,8 +221,9 @@ nameDecode s =
              else Just (kind, splitByList uniqPrefix $ tail r)
 
 nameToString :: UniqName -> String
-nameToString (s, i) = if i > 0 then nameEncode ("over_" ++ show i) [s]
-                     else s
+nameToString (s, i) = -- TODO: check if we need to include %
+    let s' = escapeURIString (\ c -> not $ elem c "/?%") s
+    in if i > 0 then nameEncode ("over_" ++ show i) [s'] else s'
 
 -- * Constructing/Extracting Values
 
