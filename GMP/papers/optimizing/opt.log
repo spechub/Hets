@@ -1,7 +1,7 @@
-This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=pdflatex 2008.12.18)  23 JUN 2010 08:19
+This is pdfTeXk, Version 3.141592-1.40.3 (Web2C 7.5.6) (format=pdflatex 2008.12.18)  23 JUN 2010 10:55
 entering extended mode
  %&-line parsing enabled.
-**opt
+**opt.tex
 (./opt.tex
 LaTeX2e <2005/12/01>
 Babel <v3.8h> and hyphenation patterns for english, usenglishmax, dumylang, noh
@@ -314,7 +314,7 @@ Here is how much of TeX's memory you used:
  5811 multiletter control sequences out of 10000+50000
  14963 words of font info for 58 fonts, out of 1200000 for 2000
  28 hyphenation exceptions out of 8191
- 41i,40n,53p,216b,577s stack positions out of 5000i,500n,6000p,200000b,5000s
+ 41i,40n,53p,220b,577s stack positions out of 5000i,500n,6000p,200000b,5000s
  <./stmary7.600p
 k> <./stmary10.600pk></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmbx10.pf
 b></usr/share/texmf-texlive/fonts/type1/bluesky/cm/cmbx12.pfb></usr/share/texmf
@@ -338,7 +338,7 @@ sky/cm/cmtt9.pfb></usr/share/texmf-texlive/fonts/type1/bluesky/ams/eufm10.pfb><
 /usr/share/texmf-texlive/fonts/type1/public/cmex/fmex9.pfb></usr/share/texmf-te
 xlive/fonts/type1/bluesky/ams/msam10.pfb></usr/share/texmf-texlive/fonts/type1/
 bluesky/ams/msbm10.pfb>
-Output written on opt.pdf (15 pages, 241818 bytes).
+Output written on opt.pdf (15 pages, 241980 bytes).
 PDF statistics:
  179 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 131072)

@@ -347,8 +347,8 @@ $g$ to the graph $g'$ that is
 obtained from $g$ by expanding $\Gamma$. To this end, $X$ is extended by $S(\Gamma)$ and
 $\Gamma$ is removed from $X$ ($X'=(X\cup S(\Gamma))\setminus \Gamma$).
 Furthermore, $L_1$ is extended by all possible rule applications for $\Gamma$
-($L_1'=L_1 \cup AR(\Gamma)$). Finally, $L_2$ is extended by all possible selections
-for rule applications to $\Gamma$ ($L_2'=L_2\cup AS(\Gamma)$).
+($L_1'=L_1 \cup Rules(\Gamma)$). Finally, $L_2$ is extended by all possible selections
+for rule applications to $\Gamma$ ($L_2'=L_2\cup Selections(\Gamma)$).
 
 In conclusion, this procedure applies all applicable rules to $\Gamma$, marks all resulting 
 premises as not yet expanded, marks $\Gamma$ as expanded and stores the implied transitions in
@@ -522,7 +522,7 @@ $\Rightarrow_\mathbf{CK_{CEM}}$ & $(\phi\Rightarrow_\mathbf{CK_{CEM}}\top)\right
 \subsection{Generalized Semantic Branching}
 
 The technique of semantic branching~\cite{HorrocksPatelSchneider99} allows to ensure that created
-sub-proofs are strictly disjoint. This prevents duplicate proofs a formulas
+sub-proofs are strictly disjoint. This prevents duplicate proofs of formulas
 which might otherwise appear in both sub-proofs.
 
 \subsubsection{Propositional Semantic Branching}
@@ -651,14 +651,14 @@ proof may continue as usual.
 \item If $\Gamma$ is obtained from $\Gamma'$ by means of normalisation, saturation or simplification,
       then $\sharp(\Gamma):=\sharp(\Gamma')$.
 \item If $\Gamma$ is the only sequent in the premise of a rule application of a non-branching rule to
-$\Gamma'$, then $\sharp(\Gamma):=\sharp(\Gamma')$
+$\Gamma'$, then $\sharp(\Gamma):=\sharp(\Gamma')$.
 \item If $\Gamma_1,\ldots,\Gamma_n$ are $n$ sequents from the premise of the rule
 application of a branching rule to $\Gamma=\Gamma',\Gamma''$, s.t. $\Gamma_1,\ldots,\Gamma_n$
 is constructed from $\Gamma''$,
 the dependancy set of any formula $\phi\in \bigcup_{i\in\{1,\ldots,n\}} \Gamma_i$ is
 defined as follows: if $\forall i\in\{1,\ldots,n\}. \phi\in \Gamma_i$, then $\sharp(\{\phi\}):=\sharp(\Gamma'')$,
 else $\sharp(\{\phi\}):=\Gamma$.
-\item Finally, $\sharp(\Gamma_1\cup \Gamma_2):=\sharp(\Gamma_1)\cup\sharp(\Gamma_2)$
+\item Finally, $\sharp(\Gamma_1\cup \Gamma_2):=\sharp(\Gamma_1)\cup\sharp(\Gamma_2)$.
 \end{itemize}
 \end{definition}
 
@@ -688,7 +688,7 @@ $\Rightarrow_\mathbf{CK}$ & \inferrule{ \overbrace{A_0\leftrightarrow\ldots \lef
 Inituitively, a single application of for instance the modal rule of \textbf{K} 
 does not \emph{choose} any subformulas of its conclusionary sequent to generate new sequents
 (this is already a consequence of the fact that this rule does not branch).
-Hence any introduced formulas will depend on those formulas on which the conclusionary sequent
+Hence any introduced formulas will depend on those formulas on which the conclusionary literals
 already depended.
 On the other hand, the modal rule of for instance \textbf{CK} selects some subformulas (the antecedents)
 from its conclusionary sequent to be in the first sequent of the premise and others
@@ -696,7 +696,7 @@ from its conclusionary sequent to be in the first sequent of the premise and oth
 introduced formulas will directly depend on the conclusionary sequent.
 
 The following Lemmas establish that dependency directed backtracking as defined above
-is a sound optimisation technique for any coalgebraic model logic:
+is a sound optimisation technique for any coalgebraic modal logic:
 
 \begin{lemma}
 Assume an application of any (possibly branching) rule:
@@ -797,7 +797,7 @@ recursively. If $n=0$, then $\phi|_p=\phi$. If $n=1$ (i.e. $p=c_1$), then $p_2=[
 $\phi|_p=\psi_{c_1}|_{p_2}$; if $c_1>n$, $\phi|_p$ is undefined.
 \end{itemize}
 
-The partial \emph{indexing function} $\ind{\_}:Seq + Prem \rightarrow Pos$
+The partial \emph{indexing function} $\ind{\_}:Seq + Prem \rightharpoonup Pos$
 maps sequents $\Gamma\in Seq$ or premises $\Sigma\in Prem$ from the defined
 subset of its domain to a position.
 
@@ -812,9 +812,9 @@ for $\ind{\{\phi\}}=[]$ and $A_p=E_p=tcs=\emptyset$.
 
 \noindent\textbf{Expanding the proof formula:} 
 Say we expand sequent $\Gamma$, s.t. $g\stackrel{\Gamma}\rightarrow_E g'$ for $g'=exp(g,\Gamma)=(A',E',U',X',L_1',L_2')$.
-This means that there are $n$ premises to $\Gamma$ (i.e. $|AP(\Gamma)|=n$) and for each $\Sigma_i \in AP(\Gamma)$,
-$(\Gamma,\Sigma_i)\in L_1'$. Also, for each $\Sigma_i \in AP(\Gamma)$, there is an $m_i$ s.t.
-$|\{\Gamma_j\mid (\Sigma_i,\Gamma_j)\in AS(\Gamma)\}|=m_i$ and each such $(\Sigma,\Gamma_j)$ is contained in $L_2'$.
+This means that there are $n$ premises to $\Gamma$ (i.e. $|Rules(\Gamma)|=n$) and for each $(\Gamma,\Sigma_i) \in Rules(\Gamma)$,
+$(\Gamma,\Sigma_i)\in L_1'$. Also, for each $(\Gamma,\Sigma_i) \in Rules(\Gamma)$, there is an $m_i$ s.t.
+$|\{\Gamma_j\mid (\Sigma_i,\Gamma_j)\in Selections(\Gamma)\}|=m_i$ and each such $(\Sigma,\Gamma_j)$ is contained in $L_2'$.
 In other words, $\Gamma$ has $n$ premises, each premise consists of $m_i$ sequents and the according
 transitions are stored in $L_1'$ and $L_2'$.
 
@@ -902,7 +902,7 @@ each expansion step into a feasible option.
 We have applied the well known optimisation techniques of semantic branching and dependency directed
 backtracking to coalgebraic logics and we have shown that the techniques generalize to all coalgebraic
 modal logics in a natural way. This is especially interesting in the case of those modal logics
-whose modal rule introduces additional branching (in contrast to more classic modal logics which only
+whose modal rule(s) introduce(s) additional branching (in contrast to more classic modal logics which only
 branch on conjunctions).
 
 As a second contribution, we have established a minimal representation of the structure of satisfiability
