@@ -1,0 +1,8 @@
+logic L
+spec SP =
+  i : type.
+  p : o.
+  q : o.
+  
+  . q  
+end
