@@ -50,11 +50,11 @@ then
  . b_Gi:=b_Gt
 
  . repeat
-    b_Ge:=min(b_Gi,b_Gt);
-    d_Ge:=d_G2 - b_Ge;
-    A_Ge:=Pi * d_Ge * b_Ge;
-    h_G0:=(d_3e-d_Ge)/2;
-    b_Gi:=sqrt(e_G/(Pi * d_Ge * E_Gm)/(h_G0 * Z_F/E_F0 + h_G0 * Z_F/E_F0) + (F_G0 / (Pi * d_Ge * Q_maxy))^2)
+    . b_Ge:=min(b_Gi,b_Gt)
+    . d_Ge:=d_G2 - b_Ge
+    . A_Ge:=Pi * d_Ge * b_Ge
+    . h_G0:=(d_3e-d_Ge)/2
+    . b_Gi:=sqrt(e_G/(Pi * d_Ge * E_Gm)/(h_G0 * Z_F/E_F0 + h_G0 * Z_F/E_F0) + (F_G0 / (Pi * d_Ge * Q_maxy))^2)
   until convergence(0.001,b_Ge) %% && F_G0req <= F_G0
 
 end
