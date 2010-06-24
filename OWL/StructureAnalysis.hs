@@ -166,7 +166,7 @@ rebuildDGraph (hd:rs) ontoMap dg
 
 integrateScc :: [Node] -> OntologyMap -> DGraph -> (OntologyMap, DGraph)
 integrateScc nodeList ontoMap dg =
-    let decomps = map (fromJust . fst . flip matchDG dg) nodeList
+    let decomps = map (safeContextDG "OWL.integrateScc" dg) nodeList
         (_, _, lnodes,_) = unzip4 decomps
         dgnNames = map (getNameFromNode . dgn_name) lnodes
         theories = map dgn_theory lnodes

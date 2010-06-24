@@ -1278,26 +1278,12 @@ getNameOfNode index gc = getDGNodeName $ labDG gc index
 newNodesDG :: Int -> DGraph -> [Node]
 newNodesDG n = newNodes n . dgBody
 
--- ** decompose the actual graph
-
--- | tear the given DGraph appart.
-matchDG :: Node -> DGraph -> (MContext DGNodeLab DGLinkLab, DGraph)
-matchDG n dg = let (mc, b) = match n $ dgBody dg in (mc, dg { dgBody = b })
-
--- | get the context of the given DG
-contextDG :: DGraph -> Node -> Context DGNodeLab DGLinkLab
-contextDG = context . dgBody
-
--- | safe context for graphs
-safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
-            -> Context a b
-safeContext err g v =
-  fromMaybe (error $ err ++ ": Match Exception, Node: " ++ show v)
-  . fst $ match v g
-
 -- | get the context and throw input string as error message
 safeContextDG :: String -> DGraph -> Node -> Context DGNodeLab DGLinkLab
-safeContextDG s = safeContext s . dgBody
+safeContextDG s = safeContext s . dgBody where
+  safeContext err g v = -- same as context with extra message
+    fromMaybe (error $ err ++ ": Match Exception, Node: " ++ show v)
+    . fst $ match v g
 
 -- ** manipulate graph
 
