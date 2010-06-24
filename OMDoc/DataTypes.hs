@@ -221,7 +221,7 @@ nameDecode s =
              else Just (kind, splitByList uniqPrefix $ tail r)
 
 nameToString :: UniqName -> String
-nameToString (s, i) = -- TODO: check if we need to include %
+nameToString (s, i) =
     let s' = escapeURIString (\ c -> not $ elem c "/?%") s
     in if i > 0 then nameEncode ("over_" ++ show i) [s'] else s'
 
