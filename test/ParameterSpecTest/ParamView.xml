@@ -78,15 +78,17 @@
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="s__PU1" target="s2__A1V" linkid="7" status="proven">
+  <DGLink source="s__PU1" target="s2__A1V" linkid="7">
     <Type>GlobalProvenThmInc</Type>
+    <Status>Proven</Status>
     <Rule>Global-Decomposition</Rule>
     <ProofBasis linkref="5" />
     <ProofBasis linkref="15" />
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="s__PU1" target="s2__A1V" linkid="15" status="proven">
+  <DGLink source="s__PU1" target="s2__A1V" linkid="15">
     <Type>LocalProvenThmInc</Type>
+    <Status>Proven</Status>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
@@ -111,8 +113,9 @@
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <DGLink source="v__PU1" target="s2__A1A1" linkid="9" status="proven">
+  <DGLink source="v__PU1" target="s2__A1A1" linkid="9">
     <Type>GlobalProvenThm</Type>
+    <Status>Proven</Status>
     <Rule>Global-Decomposition</Rule>
     <ProofBasis linkref="8" />
     <ProofBasis linkref="16" />
@@ -123,8 +126,9 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="v__PU1" target="s2__A1A1" linkid="16" status="proven">
+  <DGLink source="v__PU1" target="s2__A1A1" linkid="16">
     <Type>LocalProvenThm</Type>
+    <Status>Proven</Status>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
@@ -133,8 +137,9 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="v__S" target="v__T" linkid="4" status="proven">
+  <DGLink source="v__S" target="v__T" linkid="4">
     <Type>GlobalProvenThm</Type>
+    <Status>Proven</Status>
     <Rule>Global-Decomposition</Rule>
     <ProofBasis linkref="17" />
     <GMorphism name="id_CASL.SubPCSOL=E">
@@ -144,8 +149,9 @@
       </map>
     </GMorphism>
   </DGLink>
-  <DGLink source="v__S" target="v__T" linkid="17" status="proven">
+  <DGLink source="v__S" target="v__T" linkid="17">
     <Type>LocalProvenThm</Type>
+    <Status>Proven</Status>
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
