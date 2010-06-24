@@ -8,7 +8,7 @@ Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
 Portability :  portable
 -}
-module LF.Twelf2DG ( anaTwelfFile ) where
+module LF.Twelf2DG where
 
 import System.Exit
 import System.Process
@@ -258,10 +258,29 @@ getToAttr e =
        Nothing -> error "Element is missing a \"to\" attribute."
        Just a -> a
 
+-- resolves the first file path wrt to the second
+resolve :: FilePath -> FilePath -> FilePath
+resolve fp1 fp2 =
+  case parseURIReference fp1 of
+    Nothing -> error "Invalid file name."
+    Just uri1 -> do
+      case parseURIReference fp2 of
+        Nothing -> error "Invalid file name."
+        Just uri2 -> do
+          case relativeTo uri1 uri2 of
+               Nothing -> error "Invalid file name."
+               Just f -> show f
+
+-- resolves the file path wrt to the current directory
+resolveToCur :: FilePath -> IO FilePath
+resolveToCur fp = do
+  dir <- getCurrentDirectory
+  return $ resolve fp (dir ++ "/")
+
 makeLName :: FilePath -> IO FilePath
 makeLName fp = do
-  dir <- getCurrentDirectory
-  return $ dropExtension $ resolve fp (dir ++ "/")
+  file <- resolveToCur fp
+  return $ dropExtension file
 
 -- retrieves the base, module, and name attributes
 getBMN :: Element -> NODE -> (BASE,MODULE,NAME)
@@ -285,19 +304,6 @@ eqOMS e1 e2 =
      else and [getNameAttr e1 == getNameAttr e2
               ,getModuleAttr e1 == getModuleAttr e2
               ,getBaseAttr e1 == getBaseAttr e2]
-
--- resolves the first file path wrt to the second
-resolve :: FilePath -> FilePath -> FilePath
-resolve fp1 fp2 =
-  case parseURIReference fp1 of
-    Nothing -> error "Invalid file name."
-    Just uri1 -> do
-      case parseURIReference fp2 of
-        Nothing -> error "Invalid file name."
-        Just uri2 -> do
-          case relativeTo uri1 uri2 of
-               Nothing -> error "Invalid file name."
-               Just f -> show f
 
 -- returns the referenced base and module
 parseRef :: String -> String -> NODE
@@ -395,8 +401,7 @@ anaTwelfFile _ fp = do
 -- updates the library environment by adding specs from the Twelf file
 twelf2DG :: FilePath -> LibEnvExt -> IO LibEnvExt
 twelf2DG fp le = do
-  dir <- getCurrentDirectory
-  let file = resolve fp (dir ++ "/")
+  file <- resolveToCur fp
   runTwelf file
   libs <- buildGraph file le
   return $ makeLibEnv libs
@@ -713,14 +718,14 @@ ombind2exp e ref =
        _ -> error "OMBIND element must have exactly 3 children."
 
 -- converts an OMBVAR element to a list of declaration
-ombvar2decls :: Element -> NODE -> [DECL]
+ombvar2decls :: Element -> NODE -> CONTEXT
 ombvar2decls e ref =
   let attrs = findChildren omattrQN e
-      in map (\ a -> omattr2decl a ref) attrs
+      in map (\ a -> omattr2vardecl a ref) attrs
 
--- converts an OMATTR element to a declaration
-omattr2decl :: Element -> NODE -> DECL
-omattr2decl e ref =
+-- converts an OMATTR element to a variable declaration
+omattr2vardecl :: Element -> NODE -> (VAR,EXP)
+omattr2vardecl e ref = 
   case findChildren omatpQN e of
        [omatp] ->
          case findChildren omvQN e of
@@ -763,7 +768,7 @@ addIncl e (libs@(_,file,_),sig) = do
 -- adds included definitions to the signature
 addInclSyms :: Sign -> Sign -> Sign
 addInclSyms (Sign _ _ ds) sig =
-  let syms = getAllSyms sig
+  let syms = getSymbols sig
       in foldl (\ sig1 d ->
                   if (Set.member (getSym d) syms)
                      then sig1

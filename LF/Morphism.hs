@@ -13,13 +13,15 @@ Portability :  portable
 module LF.Morphism where
 
 import LF.Sign
+
 import Common.Result
 import Common.Doc
 import Common.DocUtils
-import Common.Id
-import qualified Common.Result as Result
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import Debug.Trace
 
 data MorphType = Definitional | Postulated | Unknown deriving (Ord,Eq,Show)
 
@@ -40,19 +42,16 @@ idMorph sig = Morphism "" "" "" sig sig Unknown Map.empty
 
 -- composes two morphisms
 compMorph :: Morphism -> Morphism -> Result Morphism
-compMorph m1 m2 =
-  if target m1 /= source m2
-     then Result.Result [incompatibleMorphsError m1 m2] Nothing
-     else do
-       let newmap =
-            Set.fold (\ s ->
-                        let Just e1 = mapSymbol s m1
-                            Just e2 = translate m2 e1
-                            in Map.insert s e2
-                     )
-                     Map.empty $
-                     getDeclaredSyms $ source m1
-       return $ Morphism "" "" "" (source m1) (target m2) Unknown newmap
+compMorph m1 m2 = do
+  let newmap =
+        Set.fold (\ s ->
+                    let Just e1 = mapSymbol s m1
+                        Just e2 = translate m2 e1
+                        in Map.insert s e2
+                 )
+                 Map.empty $
+                 getDeclaredSyms $ source m1
+  return $ Morphism "" "" "" (source m1) (target m2) Unknown newmap
 
 -- applies a morphism to a symbol in the source signature
 mapSymbol :: Symbol -> Morphism -> Maybe EXP
@@ -110,24 +109,8 @@ eqMorph (Morphism _ m1 n1 s1 t1 k1 map1) (Morphism _ m2 n2 s2 t2 k2 map2) =
 
 -- pretty printing
 instance Pretty Morphism where
-  pretty m = printMorph $ canForm m
+  pretty m = printSymMap $ symMap $ canForm m
 
-printMorph :: Morphism -> Doc
-printMorph m = printSymMap (source m) (target m) $ symMap m
-
-printSymMap :: Sign -> Sign -> Map.Map Symbol EXP -> Doc
-printSymMap sig1 sig2 m =
-  vcat $ map (\ (s,e) -> printSymbol sig1 s <+> text "|->" <+> printExp sig2 e)
-                     $ Map.toList m
-
--- ERROR MESSAGES
-incompatibleMorphsError :: Morphism -> Morphism -> Result.Diagnosis
-incompatibleMorphsError m1 m2 =
-  Result.Diag
-    { Result.diagKind = Result.Error
-    , Result.diagString = "Codomain of the morphism\n" ++ (show $ pretty m1)
-                          ++ "\nis different from the domain of the morphism\n"
-                          ++ (show $ pretty m2)
-                          ++ "\nhence their composition cannot be constructed."
-    , Result.diagPos = nullRange
-    }
+printSymMap :: Map.Map Symbol EXP -> Doc
+printSymMap m =
+  vcat $ map (\ (s,e) -> pretty s <+> text "|->" <+> pretty e) $ Map.toList m

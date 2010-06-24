@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instances of classes defined in Logic.hs for the Edinburgh
@@ -13,19 +13,24 @@ Portability :  portable
 
 module LF.Logic_LF where
 
+import LF.AS
+import LF.Parse
 import LF.Sign
 import LF.Morphism
 import LF.ATC_LF ()
+--import LF.Framework
+
 import Logic.Logic
+
+--import Framework.LogicFram
+
 import qualified Data.Map as Map
 
--- lid for LF
 data LF = LF deriving Show
 
 instance Language LF where
-   description _ = "Edinburgh Logical Framework"
+   description LF = "Edinburgh Logical Framework"
 
--- instance of Category for LF
 instance Category Sign Morphism where
    ide = idMorph
    dom = source
@@ -34,16 +39,33 @@ instance Category Sign Morphism where
    isInclusion = Map.null . symMap . canForm
    legal_mor = const True
 
--- syntax for LF
-instance Syntax LF () () ()
+instance Syntax LF BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
+   parse_basic_spec LF = Just basicSpec
+   parse_symb_items LF = Just symbItems
+   parse_symb_map_items LF = Just symbMapItems
 
--- sentences for LF
-instance Sentences LF () Sign Morphism ()
+instance Sentences LF Sentence Sign Morphism Symbol
 
--- instance of logic for LF
-instance Logic LF () () () () () Sign Morphism () () ()
+instance Logic LF
+   ()
+   BASIC_SPEC
+   Sentence
+   SYMB_ITEMS
+   SYMB_MAP_ITEMS
+   Sign
+   Morphism
+   Symbol
+   Symbol
+   ()   
 
--- static analysis for LF
-instance StaticAnalysis LF () () () () Sign Morphism () () where
+instance StaticAnalysis LF
+   BASIC_SPEC
+   Sentence
+   SYMB_ITEMS
+   SYMB_MAP_ITEMS
+   Sign
+   Morphism
+   Symbol
+   Symbol
+   where
    empty_signature LF = emptySig
-

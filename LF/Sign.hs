@@ -11,18 +11,19 @@ Portability :  portable
 -}
 
 module LF.Sign
-       ( Var
+       ( VAR
        , NAME
        , MODULE
        , BASE
        , Symbol (..)
        , EXP (..)
-       , DECL
+       , Sentence
+       , CONTEXT
        , DEF (..)
        , Sign (..)
        , emptySig
        , addDef
-       , getAllSyms
+       , getSymbols
        , getDeclaredSyms
        , getDefinedSyms
        , getLocalSyms
@@ -33,19 +34,18 @@ module LF.Sign
        , getSymType
        , getSymValue
        , recForm
-       , printSymbol
-       , printExp
        ) where
 
+import Common.Id
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords
+
 import Data.Maybe
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-type Var = String
+type VAR = String
 type NAME = String
 type MODULE = String
 type BASE = String
@@ -54,18 +54,24 @@ data Symbol = Symbol
             { symBase :: BASE
             , symModule :: MODULE
             , symName :: NAME
-            } deriving (Ord, Show)
+            } deriving (Show)
+
+instance GetRange Symbol
 
 data EXP = Type
-         | Var Var
+         | Var VAR
          | Const Symbol
          | Appl EXP [EXP]
          | Func [EXP] EXP
-         | Pi [DECL] EXP
-         | Lamb [DECL] EXP
+         | Pi CONTEXT EXP
+         | Lamb CONTEXT EXP
            deriving (Ord, Show)
 
-type DECL = (Var,EXP)
+instance GetRange EXP
+
+type Sentence = EXP
+
+type CONTEXT = [(VAR,EXP)]
 
 data DEF = Def
          { getSym :: Symbol
@@ -77,8 +83,7 @@ data Sign = Sign
           { sigBase :: BASE
           , sigModule :: MODULE
           , getDefs :: [DEF]
-          }
-          deriving (Show, Ord)
+          } deriving (Show, Ord)
 
 emptySig :: Sign
 emptySig = Sign "" "" []
@@ -87,12 +92,12 @@ addDef :: DEF -> Sign -> Sign
 addDef d (Sign b m ds) = Sign b m $ ds ++ [d]
 
 -- get the set of all symbols
-getAllSyms :: Sign -> Set.Set Symbol
-getAllSyms (Sign _ _ ds) = Set.fromList $ map getSym ds
+getSymbols :: Sign -> Set.Set Symbol
+getSymbols (Sign _ _ ds) = Set.fromList $ map getSym ds
 
 -- checks if the symbol is defined or declared in the signature
 isConstant :: Symbol -> Sign -> Bool
-isConstant s sig = Set.member s $ getAllSyms sig
+isConstant s sig = Set.member s $ getSymbols sig
 
 -- get the set of declared symbols
 getDeclaredSyms :: Sign -> Set.Set Symbol
@@ -114,7 +119,7 @@ isDefinedSym s sig = Set.member s $ getDefinedSyms sig
 
 -- get the set of symbols not included from other signatures
 getLocalSyms :: Sign -> Set.Set Symbol
-getLocalSyms sig = Set.filter (\ s -> isLocalSym s sig) $ getAllSyms sig
+getLocalSyms sig = Set.filter (\ s -> isLocalSym s sig) $ getSymbols sig
 
 -- checks if the symbol is local to the signature
 isLocalSym :: Symbol -> Sign -> Bool
@@ -140,46 +145,48 @@ getSymValue sym sig =
 -- pretty printing
 instance Pretty Sign where
    pretty = printSig
+instance Pretty DEF where
+   pretty = printDef
+instance Pretty EXP where
+   pretty = printExp
+instance Pretty Symbol where
+   pretty = printSymbol
 
 printSig :: Sign -> Doc
-printSig sig = vcat $ map (printDef sig) $ getDefs sig
+printSig sig = vcat $ map printDef (getDefs sig)
 
-printDef :: Sign -> DEF -> Doc
-printDef sig (Def s t v) =
-  fsep
-   [ printSymbol sig s
-   , text "::" <+> printExp sig t
-   , case v of
-          Nothing -> empty
-          Just val -> text "=" <+> printExp sig val
-   ]
+printDef :: DEF -> Doc
+printDef (Def s t v) =
+  case v of
+    Nothing -> fsep [ pretty s
+                    , colon <+> pretty t <> dot ]
+    Just val -> fsep [ pretty s
+                     , colon <+> pretty t
+                     , text "=" <+> pretty val <> dot ]
 
-printSymbol :: Sign -> Symbol -> Doc
-printSymbol sig s =
-  if (isLocalSym s sig)
-     then text $ symName s
-     else text (symModule s) <> text sigDelimS <> text (symName s)
+printSymbol :: Symbol -> Doc
+printSymbol s = text $ symName s
 
-printExp :: Sign -> EXP -> Doc
-printExp _ Type = text "type"
-printExp sig (Const s) = printSymbol sig s
-printExp _ (Var n) = text n
-printExp sig (Appl e es) =
-  let f = printExpWithPrec sig (precAppl + 1) e
-      as = map (printExpWithPrec sig precAppl) es
+printExp :: EXP -> Doc
+printExp Type = text "type"
+printExp (Const s) = pretty s
+printExp (Var n) = text n
+printExp (Appl e es) =
+  let f = printExpWithPrec (precAppl + 1) e
+      as = map (printExpWithPrec precAppl) es
       in hsep (f:as)
-printExp sig (Func es e) =
-  let as = map (printExpWithPrec sig precFunc) es
-      val = printExpWithPrec sig (precFunc + 1) e
-      in hsep $ punctuate (text "-> ") (as ++ [val])
-printExp sig (Pi ds e) = sep [braces $ printDecls sig ds, printExp sig e]
-printExp sig (Lamb ds e) = sep [brackets $ printDecls sig ds, printExp sig e]
+printExp (Func es e) =
+  let as = map (printExpWithPrec precFunc) es
+      val = printExpWithPrec (precFunc + 1) e
+      in hsep $ punctuate (text " ->") (as ++ [val])
+printExp (Pi ds e) = sep [braces $ printContext ds, pretty e]
+printExp (Lamb ds e) = sep [brackets $ printContext ds, pretty e]
 
-printExpWithPrec :: Sign -> Int -> EXP -> Doc
-printExpWithPrec sig i e =
+printExpWithPrec :: Int -> EXP -> Doc
+printExpWithPrec i e =
   if prec e >= i
-     then parens $ printExp sig e
-     else printExp sig e
+     then parens $ printExp e
+     else printExp e
 
 prec :: EXP -> Int
 prec Type = 0
@@ -194,11 +201,11 @@ precFunc, precAppl :: Int
 precFunc = 2
 precAppl = 1
 
-printDecls :: Sign -> [DECL] -> Doc
-printDecls sig xs = sep $ punctuate comma $ map (printDecl sig) xs
+printContext :: CONTEXT -> Doc
+printContext xs = sep $ punctuate comma $ map printVarDecl xs
 
-printDecl :: Sign -> DECL -> Doc
-printDecl sig (n,e) = sep [text n, colon <+> printExp sig e]
+printVarDecl :: (VAR,EXP) -> Doc
+printVarDecl (n,e) = sep [text n, colon <+> pretty e]
 
 {- converts the expression into a form where each construct takes
    exactly one argument -}
@@ -217,10 +224,10 @@ recForm t = t
 
 {- modifies the given name until it is different from each of the names
    in the input set -}
-getNewName :: Var -> Set.Set Var -> Var
+getNewName :: VAR -> Set.Set VAR -> VAR
 getNewName var names = getNewNameH var names var 0
 
-getNewNameH :: Var -> Set.Set Var -> Var -> Int -> Var
+getNewNameH :: VAR -> Set.Set VAR -> VAR -> Int -> VAR
 getNewNameH var names root i =
   if (Set.notMember var names)
      then var
@@ -228,10 +235,10 @@ getNewNameH var names root i =
               in getNewNameH newVar names root $ i+1
 
 -- returns a set of free Variables used within an expression
-getFreeVars :: EXP -> Set.Set Var
+getFreeVars :: EXP -> Set.Set VAR
 getFreeVars e = getFreeVarsH $ recForm e
 
-getFreeVarsH :: EXP -> Set.Set Var
+getFreeVarsH :: EXP -> Set.Set VAR
 getFreeVarsH Type = Set.empty
 getFreeVarsH (Const _) = Set.empty
 getFreeVarsH (Var x) = Set.singleton x
@@ -249,10 +256,10 @@ getFreeVarsH _ = Set.empty
    - the first argument specifies the desired Variable renamings
    - the second argument specifies the set of Variables which cannot
      be used as new Variable names -}
-rename :: Map.Map Var Var -> Set.Set Var -> EXP -> EXP
+rename :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
 rename m s e = renameH m s (recForm e)
 
-renameH :: Map.Map Var Var -> Set.Set Var -> EXP -> EXP
+renameH :: Map.Map VAR VAR -> Set.Set VAR -> EXP -> EXP
 renameH _ _ Type = Type
 renameH _ _ (Const n) = Const n
 renameH m _ (Var n) = Var $ Map.findWithDefault n n m
@@ -305,3 +312,7 @@ eqExp (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
             else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
                  in and [t1 == t2, s1 == s3]
 eqExp _ _ = False
+
+instance Ord Symbol where
+    (Symbol _ m1 n1) < (Symbol _ m2 n2) = (m1,n1) < (m2,n2)
+    
