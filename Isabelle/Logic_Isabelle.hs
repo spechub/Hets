@@ -24,6 +24,8 @@ import Isabelle.IsaSign
 import Isabelle.IsaPrint
 import Isabelle.IsaProve
 
+import Framework.LogicFram
+
 type IsabelleMorphism = DefaultMorphism Sign
 
 -- a dummy datatype for the LogicGraph and for identifying the right
@@ -65,3 +67,8 @@ instance Logic Isabelle () () Sentence () ()
          empty_proof_tree _ = ()
          provers Isabelle = [isabelleProver]
          cons_checkers Isabelle = [isabelleConsChecker]
+
+instance LogicFram Isabelle () () Sentence () ()
+                   Sign IsabelleMorphism () () () where
+         baseSig Isabelle = error $
+            "Instance of LogicFram not yet implemented for Isabelle."

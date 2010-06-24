@@ -35,6 +35,8 @@ import Common.DocUtils
 import Common.ExtSign
 import System.IO.Unsafe
 
+import Framework.LogicFram
+
 -- | Lid for Maude
 data Maude = Maude
            deriving (Show, Eq)
@@ -133,3 +135,10 @@ instance Logic Maude
     -- cons_checkers
     -- conservativityCheck
     -- empty_proof_tree
+
+instance LogicFram Maude
+         () MaudeText Sentence () () Sign Morphism Symbol Symbol ()
+  where
+    baseSig Maude = error $
+       "Instance of LogicFram not yet implemented for Maude."
+

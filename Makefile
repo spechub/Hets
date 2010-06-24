@@ -295,7 +295,7 @@ OWL_files = OWL/Sign.hs OWL/Sublogic.hs OWL/Morphism.hs
 VSE_files = VSE/As.hs
 OMDoc_files = OMDoc/OMDocInterface.hs
 DFOL_files = DFOL/AS_DFOL.hs DFOL/Sign.hs DFOL/Morphism.hs DFOL/Symbol.hs
-LF_files = LF/Sign.hs LF/Morphism.hs
+LF_files = LF/Sign.hs LF/Morphism.hs LF/AS.hs
 Framework_files = Framework/AS.hs
 
 Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
