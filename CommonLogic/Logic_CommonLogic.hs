@@ -26,6 +26,9 @@ import CommonLogic.Analysis
 import CommonLogic.Parse_CLIF
 import CommonLogic.Morphism
 
+import CommonLogic.OMDocExport
+import CommonLogic.OMDocImport
+
 data CommonLogic = CommonLogic deriving Show
 
 instance Language CommonLogic where
@@ -57,6 +60,13 @@ instance Logic CommonLogic
     Symbol            -- symbol
     Symbol            -- raw_symbol
     ()                -- proof_tree
+    where
+         omdoc_metatheory CommonLogic = Just clMetaTheory
+         export_senToOmdoc CommonLogic = exportSenToOmdoc
+         export_symToOmdoc CommonLogic = exportSymToOmdoc
+         omdocToSen CommonLogic = omdocToSen
+         omdocToSym CommonLogic = omdocToSym
+
 
 instance StaticAnalysis CommonLogic
     BASIC_SPEC
