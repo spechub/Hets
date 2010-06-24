@@ -37,17 +37,16 @@ instance Language Framework where
    description _ = "A framework allowing to add logics dynamically."
 
 -- syntax for Framework
-instance Syntax Framework LogicDef () () 
+instance Syntax Framework LogicDef () ()
 
 -- sentences for Framework
 instance Sentences Framework () LogicDef Morphism ()
-   
+
 -- static analysis for Framework
 instance StaticAnalysis Framework LogicDef () () ()
-         LogicDef Morphism () () where 
-  empty_signature Framework = error 
+         LogicDef Morphism () () where
+  empty_signature Framework = error
        "Logic Framework does not have an empty signature."
  
 -- instance of logic for Framework
 instance Logic Framework () LogicDef () () () LogicDef Morphism () () ()
-

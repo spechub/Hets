@@ -3,10 +3,10 @@ from Framework/specs/logics/propositional/syntax/prop get PL, Base2PL
 from Framework/specs/logics/propositional/model_theory/prop get PLMOD, PLMODView
 from Framework/specs/logics/propositional/proof_theory/prop get CPLPF, PL2CPLPF
 
-newlogic Propositional =
+newlogic PL =
   meta LF
   syntax PL 
-  truth MagmaCommut..mag
+  truth Base2PL
   signatures P
   models PLMODView
   proofs PL2CPLPF

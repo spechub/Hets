@@ -14,6 +14,7 @@ module Framework.Analysis ( anaLogicDef ) where
 import Framework.AS
 import Framework.Logic_Framework
 import Framework.LogicFram
+import Framework.WriteLogic
 
 import qualified LF.Logic_LF as Logic_LF
 import qualified Isabelle.Logic_Isabelle as Logic_Isabelle
@@ -24,6 +25,8 @@ import qualified Data.Map as Map
 import Static.DevGraph
 import Static.GTheory
 
+import System.Directory
+
 import Logic.Grothendieck
 import Logic.ExtSign
 import Logic.Logic
@@ -32,26 +35,28 @@ import Logic.Coerce
 
 import Common.ExtSign
 import Common.Result
+import Common.DocUtils
+
+import LF.Framework
+
+import Debug.Trace
 
 -- analyzes a logic definition
 anaLogicDef :: LogicDef -> DGraph -> IO DGraph
-anaLogicDef ld@(LogicDef _ f _ _ _ _ _) dg =
-  case f of
+anaLogicDef ld dg =
+  case meta ld of
     LF       -> anaLogicDefH Logic_LF.LF ld dg
     Isabelle -> anaLogicDefH Logic_Isabelle.Isabelle ld dg
     Maude    -> anaLogicDefH Logic_Maude.Maude ld dg
 
-anaLogicDefH :: (Logic lid sublogics basic_spec sentence symb_items
+anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                        symb_map_items sign morphism symbol raw_symbol
-                       proof_tree,
-                 LogicFram lid sublogics basic_spec sentence symb_items
-                       symb_map_items sign morphism symbol raw_symbol
-                       proof_tree)
+                       proof_tree
                 => lid -> LogicDef -> DGraph -> IO DGraph
-anaLogicDefH l ld dg = do
-  case retrieveDiagram l ld dg of
+anaLogicDefH ml ld dg = do
+  case retrieveDiagram ml ld dg of
        Result _ (Just (ltruth,lmod,lpf)) -> do
-           buildLogic l ltruth lmod lpf
+           buildLogic ml (newlogicName ld) ltruth lmod lpf
            return $ addLogicDef2DG ld dg
        _ -> fail ""
   
@@ -76,21 +81,18 @@ addLogicDef2DG ld dg =
 
 {- constructs the diagram in the signature category of the meta logic
    which represents the object logic -}
-retrieveDiagram :: (Logic lid sublogics basic_spec sentence symb_items
+retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol raw_symbol
-                          proof_tree,
-                    LogicFram lid sublogics basic_spec sentence symb_items
-                          symb_map_items sign morphism symbol raw_symbol
-                          proof_tree)
+                          proof_tree
                    => lid -> LogicDef -> DGraph -> 
                       Result (morphism, morphism, morphism)
-retrieveDiagram l (LogicDef _ _ sy t _ m p) dg = do
-  lSyn <- lookupSig l sy dg
-  ltruth <- lookupMorph l t dg
-  lmod <- lookupMorph l m dg
-  lpf <- lookupMorph l p dg
+retrieveDiagram ml (LogicDef _ _ sy t _ m p) dg = do
+  lSyn <- lookupSig ml sy dg
+  ltruth <- lookupMorph ml t dg
+  lmod <- lookupMorph ml m dg
+  lpf <- lookupMorph ml p dg
   
-  if (dom ltruth /= baseSig l || cod ltruth /= lSyn) then
+  if (dom ltruth /= baseSig ml || cod ltruth /= lSyn) then
      error $ "The morphism " ++ (show t) ++ " must go from Base to " ++
              (show sy) ++ "." else
      if (dom lmod /= lSyn) then
@@ -136,8 +138,20 @@ lookupMorph l n dg = do
          else coerceMorphism l' l "" morph
 
 -- constructs the logic instance for the object logic
-buildLogic :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
-                    sign morphism symbol raw_symbol proof_tree
-              => lid -> morphism -> morphism -> morphism -> IO ()
-buildLogic _ _ _ _ = return ()
+buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
+                    symb_map_items sign morphism symbol raw_symbol proof_tree
+              => lid -> NAME -> morphism -> morphism -> morphism -> IO ()
+buildLogic ml lT ltruth _ _ = do
+  let l = show $ pretty lT
+  let loginst = writeLogic ml l
+  --createDirectory l
+  writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") loginst
+  writeFile (l ++ "/" ++ "Syntax.hs") $ show ltruth
+  return ()
+
+
+       
+
+ 
+  
 
