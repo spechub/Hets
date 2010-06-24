@@ -352,7 +352,4 @@ reverseGraph dg =
 
 -- | find a node in DevGraph
 matchNode :: DGraph -> Node -> LNode DGNodeLab
-matchNode dgraph node =
-             let (mcontext, _ ) = matchDG node dgraph
-                 (_, _, dgNode, _) = fromJust mcontext
-             in (node, dgNode)
+matchNode dgraph node = (node, labDG dgraph node)
