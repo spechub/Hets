@@ -23,11 +23,13 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
+import Common.Utils
 
 import ATerm.Lib
 
 import Text.ParserCombinators.Parsec
 
+import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
@@ -59,5 +61,6 @@ instance StaticAnalysis DMU Text () () () Text (DefaultMorphism Text) () ()
   basic_analysis DMU = Just $ \ (s, _, _) ->
     return (s, mkExtSign s, [])
   empty_signature DMU = Text ""
+  is_subsig DMU (Text s1) (Text s2) = isInfixOf (trim s1) s2
 
 instance Logic DMU () Text () () () Text (DefaultMorphism Text) () () ()
