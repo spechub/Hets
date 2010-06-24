@@ -10,6 +10,28 @@ Portability :  non-portable(Logic)
 
 Given an OMDoc file, a Library Environment is constructed from it by
 following all library links.
+
+The import requires the following interface functions to be instantiated
+for each logic
+
+Signature Category:
+ide, cod
+
+Sentences:
+symmap_of
+
+StaticAnalysis:
+id_to_raw, symbol_to_raw, induced_from_morphism, induced_from_to_morphism
+, signature_union, empty_signature, add_symb_to_sign
+
+Logic:
+omdoc_metatheory, omdocToSym, omdocToSen
+
+These functions have default implementations which are sufficient
+in many cases:
+addOMadtToTheory, addOmdocToTheory
+
+
 -}
 
 module OMDoc.Import where
@@ -26,6 +48,14 @@ import Driver.ReadFn (libNameToFile)
 import Driver.Options (rmSuffix, HetcatsOpts, putIfVerbose, showDiags)
 
 import Logic.Logic
+    ( AnyLogic(Logic)
+    , Logic( omdoc_metatheory, omdocToSym, omdocToSen, addOMadtToTheory
+           , addOmdocToTheory)
+    , Category(ide, cod)
+    , StaticAnalysis( induced_from_morphism, induced_from_to_morphism
+                    , signature_union, empty_signature, add_symb_to_sign
+                    , symbol_to_raw, id_to_raw )
+    , Sentences(symmap_of) )
 import Logic.ExtSign
 import Logic.Coerce
 import Logic.Prover

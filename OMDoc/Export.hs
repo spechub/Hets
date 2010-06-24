@@ -10,11 +10,27 @@ Portability :  non-portable(Logic)
 
 Export of a given development graph to an OMDoc structure
 which can then be stored as xml via the "OMDoc.XmlInterface".
+
+The export requires the following interface functions to be instantiated
+for each logic
+
+Sentences:
+sym_of (needed for symlist_of), sym_name, symmap_of
+
+Logic:
+omdoc_metatheory, export_symToOmdoc, export_senToOmdoc
+
+This function has a default implementation which is sufficient
+in many cases:
+export_theoryToOmdoc
+
 -}
 
 module OMDoc.Export where
 
-import Logic.Logic
+import Logic.Logic ( Logic( omdoc_metatheory, export_theoryToOmdoc
+                          , export_symToOmdoc, export_senToOmdoc)
+                   , Sentences(sym_name, symmap_of), symlist_of)
 import Logic.Coerce
 import Logic.Prover
 import Logic.Grothendieck

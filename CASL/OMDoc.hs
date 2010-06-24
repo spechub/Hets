@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional
-Portability :  non-portable(Logic)
+Portability :  portable
 
 Library of CASL specific OMDoc constants
 -}
