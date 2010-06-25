@@ -19,7 +19,8 @@ import LF.Morphism
 import LF.Twelf2DG
 import LF.Logic_LF
 
-import Framework.LogicFram
+import Logic.LogicFram
+
 import Framework.WriteLogic
 
 import Common.DocUtils
@@ -36,8 +37,6 @@ import Static.DevGraph
 import System.FilePath
 import System.IO.Unsafe
 
-import Debug.Trace
-
 instance LogicFram LF
    ()
    BASIC_SPEC
@@ -50,8 +49,9 @@ instance LogicFram LF
    Symbol
    ()
    where
-   baseSig LF = baseSigLF
+   getBaseSig LF = baseSigLF
    writeLogic LF = writeLogicLF
+   writeSyntax LF = writeSyntaxLF
 
 baseSigLF :: Sign
 baseSigLF =
@@ -88,7 +88,7 @@ wrapInSig :: String -> String -> String
 wrapInSig sn cont = "%sig " ++ sn ++ " = {\n" ++ cont ++ "}.\n"
 
 wrapInIncl :: String -> String
-wrapInIncl sn = trace ("wrapping in sig" ++ sn) $ "%include " ++ sn ++ " %open.\n"
+wrapInIncl sn = "%include " ++ sn ++ " %open.\n"
 
 getSigItems :: [Annoted BASIC_ITEM] -> [Annoted BASIC_ITEM]
 getSigItems = filter ( \ (Annoted i _ _ _) ->
@@ -154,11 +154,11 @@ makeTwelfFile ltruth file name sig_items sen_items = do
                printSigItems sig_items
   let sig3 = wrapInSig (senSuf name) $ wrapInIncl name ++
                printSenItems sen_type sen_items
-  trace (sen_type) $ writeFile file $ sig1 ++ "\n" ++ sig2 ++ "\n" ++ sig3
+  writeFile file $ sig1 ++ "\n" ++ sig2 ++ "\n" ++ sig3
 
 printSigItems :: [Annoted BASIC_ITEM] -> String
 printSigItems [] = ""
-printSigItems (i:is) = trace "Printing sigitems" $ 
+printSigItems (i:is) =
   case i of
     Annoted (Decl d) _ _ _ -> d ++ ".\n" ++ printSigItems is
     _ -> printSigItems is
@@ -252,3 +252,19 @@ writeLogicLF l =
                [mod_decl, impts1, impts2, impts3, lid, lang, syntax, sentences,
                 logic, analysis] 
       in header ++ "\n" ++ body
+
+----------------------------------------------------
+----------------------------------------------------
+
+writeSyntaxLF :: String -> Morphism -> String
+writeSyntaxLF l ltruth =
+  let -- module declaration
+      mod_decl = mkModDecl $ l ++ "." ++ "Syntax"
+      
+      -- imports
+      impts = mkImports ["LF.Sign", "LF.Morphism"]
+      
+      -- ltruth declaration
+      ltruth_decl = mkDecl "ltruth" "Morphism" $ show ltruth
+ 
+      in intercalate "\n\n" [mod_decl, impts, ltruth_decl]

@@ -63,11 +63,10 @@ import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import LF.Logic_LF
 import Framework.Logic_Framework
-import Framework.Logic_L
 --import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
 import CSL.Logic_CSL
-import CommonLogic.Logic_CommonLogic
+--import CommonLogic.Logic_CommonLogic
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU
@@ -100,10 +99,9 @@ logicList =
   , Logic DFOL
   , Logic LF
   , Logic Framework
-  , Logic L
   , Logic Maude
   , Logic CSL
-  , Logic CommonLogic
+--  , Logic CommonLogic
 #endif
 #ifndef NOOWLLOGIC
   , Logic DMU

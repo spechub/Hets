@@ -15,6 +15,7 @@ Instance of class Logic for Maude. See <http://maude.cs.uiuc.edu/>
 module Maude.Logic_Maude where
 
 import Logic.Logic
+import Logic.LogicFram
 
 import Maude.AS_Maude (MaudeText(..))
 import Maude.Parse (mStuff)
@@ -34,8 +35,6 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.ExtSign
 import System.IO.Unsafe
-
-import Framework.LogicFram
 
 -- | Lid for Maude
 data Maude = Maude
@@ -138,7 +137,3 @@ instance Logic Maude
 
 instance LogicFram Maude
          () MaudeText Sentence () () Sign Morphism Symbol Symbol ()
-  where
-    baseSig Maude = error $
-       "Instance of LogicFram not yet implemented for Maude."
-

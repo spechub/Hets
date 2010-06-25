@@ -61,3 +61,6 @@ mkInst inst lid args impls =
                if impE then
                   sepHoriz args ++ " where" ++ sepTabVert impls else
                   sepHoriz args
+
+mkDecl :: String -> String -> String -> String
+mkDecl n t v = n ++ " :: " ++ t ++ "\n" ++ n ++ " = " ++ v 

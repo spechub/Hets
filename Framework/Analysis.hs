@@ -13,8 +13,6 @@ module Framework.Analysis ( anaLogicDef ) where
 
 import Framework.AS
 import Framework.Logic_Framework
-import Framework.LogicFram
-import Framework.WriteLogic
 
 import qualified LF.Logic_LF as Logic_LF
 import qualified Isabelle.Logic_Isabelle as Logic_Isabelle
@@ -30,6 +28,7 @@ import System.Directory
 import Logic.Grothendieck
 import Logic.ExtSign
 import Logic.Logic
+import Logic.LogicFram
 import Logic.Comorphism
 import Logic.Coerce
 
@@ -37,9 +36,7 @@ import Common.ExtSign
 import Common.Result
 import Common.DocUtils
 
-import LF.Framework
-
-import Debug.Trace
+import LF.Framework ()
 
 -- analyzes a logic definition
 anaLogicDef :: LogicDef -> DGraph -> IO DGraph
@@ -92,16 +89,16 @@ retrieveDiagram ml (LogicDef _ _ sy t _ m p) dg = do
   lmod <- lookupMorph ml m dg
   lpf <- lookupMorph ml p dg
   
-  if (dom ltruth /= baseSig ml || cod ltruth /= lSyn) then
+  if (dom ltruth /= getBaseSig ml || cod ltruth /= lSyn) then
      error $ "The morphism " ++ (show t) ++ " must go from Base to " ++
-             (show sy) ++ "." else
-     if (dom lmod /= lSyn) then
-        error $ "The morphism " ++ (show m) ++ " must go from " ++
-                (show sy) ++ "." else
-        if (dom lpf /= lSyn) then
-           error $ "The morphism " ++ (show p) ++ " must go from " ++
-                   (show sy) ++ "." else
-           return (ltruth,lmod,lpf)  
+             (show sy) ++ "." else do
+  if (dom lmod /= lSyn) then
+     error $ "The morphism " ++ (show m) ++ " must go from " ++
+             (show sy) ++ "." else do
+  if (dom lpf /= lSyn) then
+     error $ "The morphism " ++ (show p) ++ " must go from " ++
+             (show sy) ++ "." else do
+  return (ltruth,lmod,lpf)
 
 -- looks up a signature by name
 lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
@@ -143,15 +140,14 @@ buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
               => lid -> NAME -> morphism -> morphism -> morphism -> IO ()
 buildLogic ml lT ltruth _ _ = do
   let l = show $ pretty lT
-  let loginst = writeLogic ml l
-  --createDirectory l
-  writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") loginst
-  writeFile (l ++ "/" ++ "Syntax.hs") $ show ltruth
-  return ()
-
-
-       
-
- 
+  exists <- doesDirectoryExist l
+  if exists then
+     error $ "The directory " ++ l ++ " already exists.\n" ++
+             "Please choose a different object logic name." else do
   
-
+  createDirectory l
+  let logicC = writeLogic ml l
+  let syntaxC = writeSyntax ml l ltruth
+  writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicC
+  writeFile (l ++ "/" ++ "Syntax.hs") syntaxC
+  return ()

@@ -667,7 +667,6 @@ class (StaticAnalysis lid
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
 
-
 -- --------------------------------------------------------------
 -- Derived functions
 -- --------------------------------------------------------------

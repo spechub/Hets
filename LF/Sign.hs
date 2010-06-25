@@ -314,5 +314,5 @@ eqExp (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
 eqExp _ _ = False
 
 instance Ord Symbol where
-    (Symbol _ m1 n1) < (Symbol _ m2 n2) = (m1,n1) < (m2,n2)
+    (Symbol _ m1 n1) <= (Symbol _ m2 n2) = (m1,n1) <= (m2,n2)
     

@@ -18,13 +18,12 @@ import Common.DefaultMorphism
 import Common.Id
 
 import Logic.Logic
+import Logic.LogicFram
 
 import Isabelle.ATC_Isabelle()
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
 import Isabelle.IsaProve
-
-import Framework.LogicFram
 
 type IsabelleMorphism = DefaultMorphism Sign
 
@@ -68,7 +67,4 @@ instance Logic Isabelle () () Sentence () ()
          provers Isabelle = [isabelleProver]
          cons_checkers Isabelle = [isabelleConsChecker]
 
-instance LogicFram Isabelle () () Sentence () ()
-                   Sign IsabelleMorphism () () () where
-         baseSig Isabelle = error $
-            "Instance of LogicFram not yet implemented for Isabelle."
+instance LogicFram Isabelle () () Sentence () () Sign IsabelleMorphism () () ()        

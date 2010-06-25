@@ -15,8 +15,6 @@ import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import Data.Maybe
 
-
-
 type Env = NameMap Symbol                  
 
 

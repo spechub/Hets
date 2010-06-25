@@ -21,8 +21,6 @@ import Common.DocUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Debug.Trace
-
 data MorphType = Definitional | Postulated | Unknown deriving (Ord,Eq,Show)
 
 -- LF morphism cannot map defined symbols, only declared ones
