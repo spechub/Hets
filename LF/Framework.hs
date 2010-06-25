@@ -201,7 +201,18 @@ retrieveSigSen file name = do
 
 writeLogicLF :: String -> String
 writeLogicLF l =
-  let -- module declaration
+  let basic_specC = "BASIC_SPEC"
+      symb_itemsC = "SYMB_ITEMS"
+      symb_map_itemsC = "SYMB_MAP_ITEMS"
+      signC = "Sign"      
+      sentenceC = "Sentence"
+      morphismC = "Morphism"
+      symbolC = "Symbol"
+      raw_symbolC = "Symbol"
+      sublogicsC = "()"
+      proof_treeC = "()"
+      
+      -- module declaration
       comp_opt = mkCompOpt [multiOpt,synOpt]
       mod_decl = mkModDecl $ l ++ "." ++ "Logic_" ++ l
       
@@ -225,25 +236,25 @@ writeLogicLF l =
                                 "Just symbMapItems"
       
       syntax = mkInst "Syntax" l
-                ["BASIC_SPEC", "SYMB_ITEMS", "SYMB_MAP_ITEMS"]
+                [basic_specC, symb_itemsC, symb_map_itemsC]
                 [parse_basic_specI, parse_symb_itemsI, parse_symb_map_itemsI]
     
       -- sentences
-      sentences = mkInst "Sentences" l ["Sentence", "Sign", "Morphism",
-                    "Symbol"] []
+      sentences = mkInst "Sentences" l [sentenceC, signC, morphismC,
+                    symbolC] []
      
       -- logic
-      logic = mkInst "Logic" l ["()", "BASIC_SPEC", "Sentence",
-                "SYMB_ITEMS", "SYMB_MAP_ITEMS", "Sign", "Morphism",
-                "Symbol", "Symbol", "()"] []
+      logic = mkInst "Logic" l [sublogicsC, basic_specC, sentenceC,
+                symb_itemsC, symb_map_itemsC, signC, morphismC,
+                symbolC, raw_symbolC, proof_treeC] []
 
       -- static analysis
       empty_signatureI = mkImpl "empty_signature" l "cod $ ltruth"
       basic_analysisI = mkImpl "basic_analysis" l "Just $ basicAnalysis ltruth"
       
       analysis = mkInst "StaticAnalysis" l
-                   ["BASIC_SPEC", "Sentence", "SYMB_ITEMS", "SYMB_MAP_ITEMS",
-                    "Sign", "Morphism", "Symbol", "Symbol"]
+                   [basic_specC, sentenceC, symb_itemsC, symb_map_itemsC,
+                    signC, morphismC, symbolC, raw_symbolC]
                    [empty_signatureI, basic_analysisI]
 
       -- file
@@ -262,9 +273,10 @@ writeSyntaxLF l ltruth =
       mod_decl = mkModDecl $ l ++ "." ++ "Syntax"
       
       -- imports
-      impts = mkImports ["LF.Sign", "LF.Morphism"]
+      impts1 = mkImports ["LF.Sign", "LF.Morphism"]
+      impts2 = mkImports ["Data.Map"]      
       
       -- ltruth declaration
       ltruth_decl = mkDecl "ltruth" "Morphism" $ show ltruth
  
-      in intercalate "\n\n" [mod_decl, impts, ltruth_decl]
+      in intercalate "\n\n" [mod_decl, impts1, impts2, ltruth_decl]

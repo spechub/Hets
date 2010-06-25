@@ -81,8 +81,7 @@ makeNamedFormula :: DEF -> Named EXP
 makeNamedFormula (Def s t _) =
   let isImplies = or $ map isImplies annos
       isImplied = or $ map isImplied annos
-      isTheorem = isImplies || isImplied
-  
+      isTheorem = isImplies || isImplied  
 
  
 -- converts the basic spec into a Twelf file

@@ -1,4 +1,4 @@
-logic L
+logic PL
 spec SP =
   i : type.
   p : o.

@@ -18,6 +18,7 @@ import qualified LF.Logic_LF as Logic_LF
 import qualified Isabelle.Logic_Isabelle as Logic_Isabelle
 import qualified Maude.Logic_Maude as Logic_Maude
 
+import Data.List
 import qualified Data.Map as Map
 
 import Static.DevGraph
@@ -34,8 +35,24 @@ import Logic.Coerce
 import Common.ExtSign
 import Common.Result
 import Common.DocUtils
+import Common.Parsec
+import Common.AnnoState
+import Common.Lexer
+import Common.Token
+import Common.Id
+
+import Text.ParserCombinators.Parsec
 
 import LF.Framework ()
+
+dynLogicsDir :: FilePath
+dynLogicsDir = "Comorphisms"
+
+dynLogicsFile :: FilePath
+dynLogicsFile = "DynLogicList.hs"
+
+dynLogicsCon :: String
+dynLogicsCon = "dynLogicList"
 
 -- analyzes a logic definition
 anaLogicDef :: LogicDef -> DGraph -> IO DGraph
@@ -52,7 +69,9 @@ anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
 anaLogicDefH ml ld dg = do
   case retrieveDiagram ml ld dg of
        Result _ (Just (ltruth, lmod, lpf)) -> do
-           buildLogic ml (newlogicName ld) ltruth lmod lpf
+           let l = show $ pretty $ newlogicName ld 
+           buildLogic ml l ltruth lmod lpf
+           addLogic2LogicList l
            return $ addLogicDef2DG ld dg
        _ -> fail ""
 
@@ -136,9 +155,8 @@ lookupMorph l n dg = do
 -- constructs the logic instance for the object logic
 buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
-              => lid -> NAME -> morphism -> morphism -> morphism -> IO ()
-buildLogic ml lT ltruth _ _ = do
-  let l = show $ pretty lT
+              => lid -> String -> morphism -> morphism -> morphism -> IO ()
+buildLogic ml l ltruth _ _ = do
   exists <- doesDirectoryExist l
   if exists then
      error $ "The directory " ++ l ++ " already exists.\n" ++
@@ -150,3 +168,74 @@ buildLogic ml lT ltruth _ _ = do
   writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicC
   writeFile (l ++ "/" ++ "Syntax.hs") syntaxC
   return ()
+
+-- includes the newly-defined logic in the logic list
+addLogic2LogicList :: String -> IO ()
+addLogic2LogicList l = do
+  let file = dynLogicsDir ++ "/" ++ dynLogicsFile
+  contentsOld <- readFile file
+  let res = runParser (parser l) (emptyAnnos ()) "" contentsOld
+  case res of
+      Right contentsNew -> writeFile file contentsNew
+      Left er -> error $ show er 
+
+parser :: String -> AParser st String
+parser l = do
+  let l_imp = "import " ++ l ++ "." ++ "Logic_" ++ l
+  let l_log = "Logic " ++ l
+
+  header <- skipUntil "module"
+  mod_decl <- do m <- asStr "module"
+                 n <- moduleName
+                 w <- asStr "where"
+                 return $ intercalate " " [m,n,w]
+  imps <- do many1 $ do
+             i <- asStr "import"
+             n <- moduleName
+             return $ intercalate " " [i,n]
+  log_var_decl <- do v <- asStr dynLogicsCon
+                     s <- asStr "::"
+                     t <- do oBracketT
+                             asStr "AnyLogic"
+                             cBracketT
+                             return "[AnyLogic]"
+                     return $ intercalate " " [v,s,t]
+  log_var_def <- do v <- asStr dynLogicsCon
+                    s <- asStr "="
+                    return $ intercalate " " [v,s]
+  log_list <- do oBracketT
+                 ( do cBracketT
+                      return []
+                   <|>
+                   do (xs,_) <- logParser `separatedBy` commaT
+                      cBracketT
+                      return xs )
+  
+  return $ header ++ mod_decl ++ "\n\n" ++
+           (intercalate "\n" (imps ++ [l_imp])) ++ "\n\n" ++
+           log_var_decl ++ "\n" ++ log_var_def ++ " " ++ "[" ++
+           (intercalate ", " $ log_list ++ [l_log]) ++ "]"
+
+skipUntil :: String -> AParser st String
+skipUntil lim = do
+  res <- many $ (reserved [lim] $ many1 $ noneOf whiteChars) <|>
+                (many1 $ oneOf whiteChars)
+  return $ concat res
+
+asStr :: String -> AParser st String
+asStr x = do
+  res <- asKey x
+  return $ tokStr res
+
+moduleName :: AParser st String
+moduleName = do
+  m <- simpleId
+  dotT
+  n <- simpleId
+  return $ tokStr m ++ "." ++ tokStr n
+       
+logParser :: AParser st String     
+logParser = do
+  l <- asKey "Logic"
+  n <- simpleId
+  return $ tokStr l ++ " " ++ tokStr n
