@@ -19,7 +19,7 @@ import LF.Morphism
 import LF.Twelf2DG
 import LF.Logic_LF
 
-import Logic.LogicFram
+import Logic.Logic
 
 import Framework.WriteLogic
 

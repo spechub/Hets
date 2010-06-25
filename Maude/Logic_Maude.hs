@@ -15,7 +15,6 @@ Instance of class Logic for Maude. See <http://maude.cs.uiuc.edu/>
 module Maude.Logic_Maude where
 
 import Logic.Logic
-import Logic.LogicFram
 
 import Maude.AS_Maude (MaudeText(..))
 import Maude.Parse (mStuff)

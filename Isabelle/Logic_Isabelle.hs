@@ -18,7 +18,6 @@ import Common.DefaultMorphism
 import Common.Id
 
 import Logic.Logic
-import Logic.LogicFram
 
 import Isabelle.ATC_Isabelle()
 import Isabelle.IsaSign

@@ -28,7 +28,6 @@ import System.Directory
 import Logic.Grothendieck
 import Logic.ExtSign
 import Logic.Logic
-import Logic.LogicFram
 import Logic.Comorphism
 import Logic.Coerce
 
@@ -42,9 +41,9 @@ import LF.Framework ()
 anaLogicDef :: LogicDef -> DGraph -> IO DGraph
 anaLogicDef ld dg =
   case meta ld of
-    LF       -> anaLogicDefH Logic_LF.LF ld dg
+    LF -> anaLogicDefH Logic_LF.LF ld dg
     Isabelle -> anaLogicDefH Logic_Isabelle.Isabelle ld dg
-    Maude    -> anaLogicDefH Logic_Maude.Maude ld dg
+    Maude -> anaLogicDefH Logic_Maude.Maude ld dg
 
 anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                        symb_map_items sign morphism symbol raw_symbol
@@ -52,12 +51,12 @@ anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                 => lid -> LogicDef -> DGraph -> IO DGraph
 anaLogicDefH ml ld dg = do
   case retrieveDiagram ml ld dg of
-       Result _ (Just (ltruth,lmod,lpf)) -> do
+       Result _ (Just (ltruth, lmod, lpf)) -> do
            buildLogic ml (newlogicName ld) ltruth lmod lpf
            return $ addLogicDef2DG ld dg
        _ -> fail ""
-  
- -- creates a node for the logic definition
+
+-- creates a node for the logic definition
 addLogicDef2DG :: LogicDef -> DGraph -> DGraph
 addLogicDef2DG ld dg =
   let node = getNewNodeDG dg
@@ -67,7 +66,7 @@ addLogicDef2DG ld dg =
       extSign = makeExtSign Framework ld
       gth = noSensGTheory Framework extSign startSigId
       nodeLabel = newInfoNodeLab nodeName info gth
-      dg1 = insNodeDG (node,nodeLabel) dg
+      dg1 = insNodeDG (node, nodeLabel) dg
 
       emptyNode = EmptyNode $ Logic Framework
       genSig = GenSig emptyNode [] emptyNode
@@ -81,14 +80,14 @@ addLogicDef2DG ld dg =
 retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol raw_symbol
                           proof_tree
-                   => lid -> LogicDef -> DGraph -> 
+                   => lid -> LogicDef -> DGraph ->
                       Result (morphism, morphism, morphism)
 retrieveDiagram ml (LogicDef _ _ sy t _ m p) dg = do
   lSyn <- lookupSig ml sy dg
   ltruth <- lookupMorph ml t dg
   lmod <- lookupMorph ml m dg
   lpf <- lookupMorph ml p dg
-  
+
   if (dom ltruth /= getBaseSig ml || cod ltruth /= lSyn) then
      error $ "The morphism " ++ (show t) ++ " must go from Base to " ++
              (show sy) ++ "." else do
@@ -98,7 +97,7 @@ retrieveDiagram ml (LogicDef _ _ sy t _ m p) dg = do
   if (dom lpf /= lSyn) then
      error $ "The morphism " ++ (show p) ++ " must go from " ++
              (show sy) ++ "." else do
-  return (ltruth,lmod,lpf)
+  return (ltruth, lmod, lpf)
 
 -- looks up a signature by name
 lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
@@ -108,11 +107,11 @@ lookupSig l n dg = do
   let extSig = case lookupGlobalEnvDG n dg of
                  Just (SpecEntry es) -> es
                  _ -> error $ "The signature " ++ (show n) ++
-                              " could not be found." 
+                              " could not be found."
   case extSig of
     ExtGenSig _ (NodeSig _ (G_sign l' (ExtSign sig _) _)) ->
       if Logic l /= Logic l'
-         then error $ "The signature " ++ (show n)  ++
+         then error $ "The signature " ++ (show n) ++
                       " is not in the logic " ++ (show l) ++ "."
          else coercePlainSign l' l "" sig
 
@@ -129,7 +128,7 @@ lookupMorph l n dg = do
   case extView of
     ExtViewSig _ (GMorphism c _ _ morph _) _ -> do
       let l' = targetLogic c
-      if Logic l /= Logic l' 
+      if Logic l /= Logic l'
          then error $ "The morphism " ++ (show n) ++
                       " is not in the logic " ++ (show l) ++ "."
          else coerceMorphism l' l "" morph
@@ -144,7 +143,7 @@ buildLogic ml lT ltruth _ _ = do
   if exists then
      error $ "The directory " ++ l ++ " already exists.\n" ++
              "Please choose a different object logic name." else do
-  
+
   createDirectory l
   let logicC = writeLogic ml l
   let syntaxC = writeSyntax ml l ltruth

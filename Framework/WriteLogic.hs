@@ -49,7 +49,7 @@ mkImpl f lid imp =
   f ++ " " ++ lid ++ " = " ++ imp
 
 mkInst :: String -> String -> [String] -> [String] -> String
-mkInst inst lid args impls = 
+mkInst inst lid args impls =
   let header = "instance " ++ inst ++ " " ++ lid
       argL = length args > 1
       impE = not $ null impls
@@ -63,4 +63,4 @@ mkInst inst lid args impls =
                   sepHoriz args
 
 mkDecl :: String -> String -> String -> String
-mkDecl n t v = n ++ " :: " ++ t ++ "\n" ++ n ++ " = " ++ v 
+mkDecl n t v = n ++ " :: " ++ t ++ "\n" ++ n ++ " = " ++ v
