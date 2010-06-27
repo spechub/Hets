@@ -65,7 +65,7 @@ data EXP = Type
          | Func [EXP] EXP
          | Pi CONTEXT EXP
          | Lamb CONTEXT EXP
-           deriving (Ord, Show)
+           deriving (Ord,Show)
 
 instance GetRange EXP
 
@@ -77,13 +77,13 @@ data DEF = Def
          { getSym :: Symbol
          , getType :: EXP
          , getValue :: Maybe EXP
-         } deriving (Eq, Ord, Show)
+         } deriving (Eq,Ord,Show)
 
 data Sign = Sign
           { sigBase :: BASE
           , sigModule :: MODULE
           , getDefs :: [DEF]
-          } deriving (Show, Ord)
+          } deriving (Show)
 
 emptySig :: Sign
 emptySig = Sign "" "" []
@@ -277,7 +277,7 @@ renameH m s (Lamb [(x,t)] a) =
       in Lamb [(x1,t1)] a1
 renameH _ _ t = t
 
--- equality
+-- equality and ordering
 instance Eq Sign where
     sig1 == sig2 = eqSig sig1 sig2
 instance Eq Symbol where 
@@ -313,6 +313,13 @@ eqExp (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
                  in and [t1 == t2, s1 == s3]
 eqExp _ _ = False
 
+instance Ord Sign where
+    compare = ordSig
 instance Ord Symbol where
-    (Symbol _ m1 n1) <= (Symbol _ m2 n2) = (m1,n1) <= (m2,n2)
-    
+    compare = ordSym
+
+ordSig :: Sign -> Sign -> Ordering
+ordSig (Sign _ m1 d1) (Sign _ m2 d2) = compare (m1,d1) (m2,d2)
+
+ordSym :: Symbol -> Symbol -> Ordering
+ordSym (Symbol _ m1 n1) (Symbol _ m2 n2) = compare (m1,n1) (m2,n2)    

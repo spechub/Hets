@@ -1,8 +1,7 @@
 logic PL
 spec SP =
-  i : type.
   p : o.
   q : o.
   
-  . q  
+  . q
 end

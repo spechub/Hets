@@ -1,0 +1,11 @@
+logic LF
+spec SP =
+  o : type.
+  ded : o -> type.
+  i : type.
+  p : o.
+  q : o.
+  f : i -> o.
+
+  . ded q
+end

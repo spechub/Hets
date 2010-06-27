@@ -18,11 +18,10 @@ import LF.Parse
 import LF.Sign
 import LF.Morphism
 import LF.ATC_LF ()
---import LF.Framework
+import LF.Analysis
+import LF.Framework
 
 import Logic.Logic
-
---import Framework.LogicFram
 
 import qualified Data.Map as Map
 
@@ -56,7 +55,7 @@ instance Logic LF
    Morphism
    Symbol
    Symbol
-   ()   
+   ()
 
 instance StaticAnalysis LF
    BASIC_SPEC
@@ -69,3 +68,20 @@ instance StaticAnalysis LF
    Symbol
    where
    empty_signature LF = emptySig
+   basic_analysis LF = Just $ basicAnalysis
+
+instance LogicFram LF
+   ()
+   BASIC_SPEC
+   Sentence
+   SYMB_ITEMS
+   SYMB_MAP_ITEMS
+   Sign
+   Morphism
+   Symbol
+   Symbol
+   ()
+   where
+   getBaseSig LF = baseSigLF
+   writeLogic LF = writeLogicLF
+   writeSyntax LF = writeSyntaxLF

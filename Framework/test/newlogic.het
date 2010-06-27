@@ -3,7 +3,7 @@ from Framework/specs/logics/propositional/syntax/prop get PL, Base2PL
 from Framework/specs/logics/propositional/model_theory/prop get PLMOD, PLMODView
 from Framework/specs/logics/propositional/proof_theory/prop get CPLPF, PL2CPLPF
 
-newlogic PL1 =
+newlogic PL =
   meta LF
   syntax PL 
   truth Base2PL
