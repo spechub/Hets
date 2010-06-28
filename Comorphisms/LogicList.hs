@@ -67,7 +67,7 @@ import Comorphisms.DynLogicList
 --import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
 import CSL.Logic_CSL
---import CommonLogic.Logic_CommonLogic
+import CommonLogic.Logic_CommonLogic
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU
@@ -102,7 +102,7 @@ logicList =
   , Logic Framework
   , Logic Maude
   , Logic CSL
---  , Logic CommonLogic
+  , Logic CommonLogic
 #endif
 #ifndef NOOWLLOGIC
   , Logic DMU

@@ -56,12 +56,12 @@ instance Comorphism
     ClBasic.BASIC_SPEC              -- Basic spec domain
     ClBasic.SENTENCE                -- sentence domain
     ClBasic.NAME                    -- symbol items domain
-    ()                      -- symbol map items domain
+    ClBasic.SYMB_MAP_ITEMS                      -- symbol map items domain
     ClSign.Sign                    -- signature domain
     ClMor.Morphism                -- morphism domain
     ClSymbol.Symbol                  -- symbol domain
     ClSymbol.Symbol                  -- rawsymbol domain
-    ()                     -- proof tree codomain
+    ProofTree                     -- proof tree codomain
     CLogic.CASL            -- lid codomain
     CSL.CASL_Sublogics     -- sublogics codomain
     CLogic.CASLBasicSpec   -- Basic spec codomain
@@ -94,7 +94,7 @@ mapTheory :: (ClSign.Sign,
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
 mapTheory (sig, form) = Result [] $
-     Just (mapSig sig, map trNamedForm form)
+     Just (mapSig sig, [injcons, discons, genlist] ++ (map trNamedForm form))
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
@@ -142,12 +142,54 @@ cons = Id.stringToId "cons"
 nil :: Id.Id
 nil = Id.stringToId "nil"
 
-mapSentence :: ClSign.Sign -> ClBasic.SENTENCE -> Result CBasic.CASLFORMULA
-mapSentence _ form = Result [] $ Just $ trForm form
+x1 :: Id.Token
+x1 = Id.mkSimpleId "X1"
+x2 :: Id.Token
+x2 = Id.mkSimpleId "X2"
+y1 :: Id.Token
+y1 = Id.mkSimpleId "Y1"
+y2 :: Id.Token
+y2 = Id.mkSimpleId "Y2"
+
+{-
+%% free
+generated type list ::= cons(individual; list) | nil
+                                             %(ga_generated_list)%
+-}
+
+injcons :: AS_Anno.Named (CBasic.CASLFORMULA)
+injcons = AS_Anno.makeNamed "ga_injective_cons" (CBasic.Quantification CBasic.Universal 
+          [CBasic.Var_decl [x1] individual Id.nullRange
+          , CBasic.Var_decl [x2] list Id.nullRange
+          , CBasic.Var_decl [y1] individual Id.nullRange
+          , CBasic.Var_decl [y2] list Id.nullRange]
+          (CBasic.Equivalence (CBasic.Strong_equation (CBasic.Application (CBasic.Op_name cons) 
+          [CBasic.varOrConst x1, CBasic.varOrConst x2] Id.nullRange)
+          (CBasic.Application (CBasic.Op_name cons) 
+          [CBasic.varOrConst y1, CBasic.varOrConst y2] Id.nullRange) Id.nullRange)
+           (CBasic.Conjunction [CBasic.Strong_equation (CBasic.varOrConst x1) 
+           (CBasic.varOrConst y1) Id.nullRange, CBasic.Strong_equation (CBasic.varOrConst x2) 
+           (CBasic.varOrConst y2) Id.nullRange] Id.nullRange) Id.nullRange) Id.nullRange)
+
+discons :: AS_Anno.Named (CBasic.CASLFORMULA)
+discons = AS_Anno.makeNamed "ga_disjoint_nil_cons" (CBasic.Quantification CBasic.Universal 
+          [CBasic.Var_decl [y1] individual Id.nullRange
+          , CBasic.Var_decl [y2] list Id.nullRange] 
+          (CBasic.Negation (CBasic.Strong_equation (CBasic.Application (CBasic.Op_name nil) 
+          [] Id.nullRange) (CBasic.Application (CBasic.Op_name cons) 
+          [CBasic.varOrConst y1, CBasic.varOrConst y2] Id.nullRange) Id.nullRange) 
+           Id.nullRange) Id.nullRange)
+
+genlist :: AS_Anno.Named (CBasic.CASLFORMULA)
+genlist = AS_Anno.makeNamed "ga_generated_list" 
+           (CBasic.Sort_gen_ax [CBasic.Constraint list [] nil] True)
 
 trNamedForm :: AS_Anno.Named (ClBasic.SENTENCE)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
 trNamedForm form = AS_Anno.mapNamed trForm form
+
+mapSentence :: ClSign.Sign -> ClBasic.SENTENCE -> Result CBasic.CASLFORMULA
+mapSentence _ form = Result [] $ Just $ trForm form
 
 trForm :: ClBasic.SENTENCE -> CBasic.CASLFORMULA
 trForm form =
