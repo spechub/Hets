@@ -12,9 +12,6 @@ Basic and static analysis for common logic
 -}
 
 module CommonLogic.Analysis
-    (
-     basicCommonLogicAnalysis
-    )
     where
 
 import Common.ExtSign
@@ -25,7 +22,10 @@ import qualified CommonLogic.AS_CommonLogic as CL
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Data.List as List
+import CommonLogic.Morphism as Morphism
+import CommonLogic.Sign as Sign
 
 data DIAG_FORM = DiagForm
     {
@@ -162,3 +162,14 @@ basicCommonLogicAnalysis (bs, sig, _) =
       bsform    = makeFormulas bs sigItems -- [DIAG_FORM] signature and list of sentences 
       sentences = map formula bsform       -- Annoted Sentences (Ax_), numbering, DiagError
       exErrs    = False
+
+inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol 
+                    -> Sign.Sign
+                    -> Result.Result Morphism.Morphism
+inducedFromMorphism m sig = Result [] $ Nothing
+
+inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
+                      -> ExtSign Sign.Sign Symbol.Symbol
+                      -> ExtSign Sign.Sign Symbol.Symbol
+                      -> Result.Result Morphism.Morphism
+inducedFromToMorphism imap (ExtSign sig _) (ExtSign tsig _) = Result [] $ Nothing

@@ -93,14 +93,6 @@ data TERM = Name_term NAME
           | Funct_term TERM [TERM_SEQ] Id.Range
           | Comment_term TERM COMMENT Id.Range
             deriving (Show, Ord, Eq)
-{-
-data TERM_SEQ = Term_seq [TERM] Id.Range
-              | Seq_marks [SEQ_MARK] Id.Range
-                deriving (Show, Ord, Eq)
-
-data TERM_SEQ = Term_seq [TERM_OR_SEQMARK] Id.Range
-                deriving (Show, Ord, Eq)
--}
 
 data TERM_SEQ = Term_seq TERM
               | Seq_marks SEQ_MARK
@@ -136,6 +128,8 @@ instance Pretty COMMENT where
    pretty = printComment
 instance Pretty NAME_OR_SEQMARK where
    pretty = printNameOrSeqMark
+instance Pretty SYMB_MAP_ITEMS where
+   pretty = printSymbMapItems
 
 printSentence :: SENTENCE -> Doc
 printSentence s = case s of
@@ -184,6 +178,9 @@ printNameOrSeqMark s = case s of
   Name x -> pretty x
   SeqMark x -> pretty x
   -- Alt x y -> pretty x <+> pretty y
+
+printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
+printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 
 instance Pretty TEXT where
    pretty = printText

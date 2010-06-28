@@ -8,13 +8,12 @@ Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  experimental
 Portability :  non-portable (via Logic.Logic)
 
-temporary Dummy Morphism using Default Mprphism for Common Logic
+Morphism of Common Logic
 
 -}
 
-module CommonLogic.Morphism where
-{-
-  ( Morphism (..)               -- datatype for Morphisms
+module CommonLogic.Morphism
+  ( Morphism (..) 
   , pretty                      -- pretty printing
   , idMor                       -- identity morphism
   , isLegalMorphism             -- check if morhpism is ok
@@ -26,28 +25,22 @@ module CommonLogic.Morphism where
   , applyMorphism               -- application function for morphism
   , morphismUnion
   ) where
--}
 
-{-
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import CommonLogic.Sign as Sign
 import qualified Common.Result as Result
-import CommonLogic.AS_CommonLogic as AS_BASIC
 import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
--}
 
+import CommonLogic.AS_CommonLogic as AS_BASIC
 import CommonLogic.Sign as Sign
-import Common.DefaultMorphism
+-- import Common.DefaultMorphism
 
-type Morphism = DefaultMorphism Sign
+-- type Morphism = DefaultMorphism Sign
 
-{-
-
--- | The datatype for morphisms in propositional logic as
 --   maps of sets
 data Morphism = Morphism
   { source :: Sign
@@ -114,9 +107,11 @@ mapSentence mor = return . mapSentenceH mor
 
 mapSentenceH :: Morphism -> AS_BASIC.SENTENCE -> AS_BASIC.SENTENCE
 mapSentenceH mor frm = case frm of
-  AS_BASIC.Quant_sent form rn -> case form of
+  AS_BASIC.Quant_sent sen rn -> case sen of
+    AS_BASIC.Universal ns sen -> sen -- fix
 
 {-
+  AS_BASIC.Quant_sent form rn -> case form of
   AS_BASIC.Negation form rn -> AS_BASIC.Negation (mapSentenceH mor form) rn
   AS_BASIC.Conjunction form rn ->
       AS_BASIC.Conjunction (map (mapSentenceH mor) form) rn
@@ -153,5 +148,3 @@ morphismUnion mor1 mor2 =
       { source = unite p1 p2
       , target = unite (target mor1) $ target mor2
       , propMap = pmap } else Result pds Nothing
-
--}
