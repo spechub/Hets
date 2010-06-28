@@ -97,6 +97,9 @@ import Common.DocUtils (showDoc)
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
 
+import Data.List (isInfixOf)
+import Data.Char (toLower)
+
 import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
@@ -660,7 +663,7 @@ proofStatusToGStatus p = case goalStatus p  of
   Proved False -> GInconsistent
   Proved True  -> GProved
   Disproved    -> GDisproved
-  Open _       -> GOpen
+  Open (Reason s) -> if any (isInfixOf "timeout" . map toLower) s then GTimeout else GOpen
 
 -- | Converts a BasicProof into a GStatus
 basicProofToGStatus :: BasicProof -> GStatus

@@ -12,7 +12,7 @@ This module provides a GUI for the consistency checker.
 -}
 
 module GUI.GtkAutomaticProofs
-  (showAutomaticProofs)
+  (showAutomaticProofs, Finder(..))
   where
 
 import Graphics.UI.Gtk
@@ -41,7 +41,6 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation (isAxiom)
 import Common.LibName (LibName)
 import Common.Result
-import Common.DocUtils (showDoc)
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
@@ -69,48 +68,36 @@ instance Eq Finder where
 data FNode = FNode { name      :: String
                    , node      :: LNode DGNodeLab
                    , sublogic  :: G_sublogics
-                   , sentences :: [String]
-                   , status    :: Map.Map String (AnyComorphism, BasicProof) }
+                   , goals     :: [String]
+                   , newTheory :: G_theory } -- Map.Map String (AnyComorphism, BasicProof) }
 
-{-
-showStatus :: [(String, BasicProof)] -> String
-showStatus = let toPref = (GtkUtils.statusToPrefix . GtkUtils.basicProofToGStatus)
-             in intercalate "\n" . map (\ (s,bp) -> toPref bp ++ s)
+status :: FNode -> Map.Map String (AnyComorphism, BasicProof)
+status fn = case newTheory fn of
+              G_theory _ _ _ sens _ 
+                -> foldr (\ (sn,sen) t -> case thmStatus sen of
+                                          [] -> t
+                                          -- TODO get best, not last goalstatus
+                                          thms -> Map.insert sn (last thms) t
+                   ) Map.empty $ OMap.toList $ OMap.filter (not . isAxiom) sens
 
-pStatusToColor :: [(String, BasicProof)] -> String
-pStatusToColor ls = case ls of
-                      [] -> "grey"
-                      l -> GtkUtils.statusToColor $ minimum 
-                          $ map (GtkUtils.basicProofToGStatus . snd) l
-
-pStatusToPrefix :: [(String, BasicProof)] -> String
-pStatusToPrefix ls = case ls of
-                       [] -> "[z]"
-                       l -> GtkUtils.statusToPrefix $ minimum 
-                           $ map (GtkUtils.basicProofToGStatus . snd) l
--}
 
 showStatus :: FNode -> String
 showStatus fn = let toPref = (GtkUtils.statusToPrefix . GtkUtils.basicProofToGStatus)
                 in intercalate "\n" . map (\ s -> case Map.lookup s (status fn) of
                                                  Just (_,bp) -> toPref bp ++ s
-                                                 Nothing -> "[ ]" ++ s ) $ sentences fn
+                                                 Nothing -> "[ ]" ++ s ) $ goals fn
 
 pStatusToColor :: Map.Map String (a,BasicProof) -> String
-pStatusToColor s = if Map.null s then "black" 
-                   else
-                     case map (snd . snd) $ Map.toList s of
-                       [] -> "grey"
-                       l -> GtkUtils.statusToColor $ minimum 
-                           $ map GtkUtils.basicProofToGStatus l
+pStatusToColor s = GtkUtils.statusToColor gst 
+                   where gst = if Map.null s then GOpen 
+                               else GtkUtils.basicProofToGStatus
+                                  $ minimum  $ map snd $ Map.elems s
 
 pStatusToPrefix :: Map.Map String (a,BasicProof) -> String
-pStatusToPrefix s = if Map.null s then "[ ] " 
-                    else
-                      case map (snd . snd) $ Map.toList s of
-                        [] -> "[z] "
-                        l -> GtkUtils.statusToPrefix $ minimum 
-                            $ map GtkUtils.basicProofToGStatus l
+pStatusToPrefix s = GtkUtils.statusToPrefix gst 
+                    where gst = if Map.null s then GOpen 
+                                else GtkUtils.basicProofToGStatus 
+                                   $ minimum  $ map snd $ Map.elems s
 
 
 -- | Get a markup string containing name and color
@@ -125,15 +112,16 @@ instance Eq FNode where
 -- | Nodes are sorted in accordance with goalstatus. Nodes without goals are not
 -- | very importent and thus set to status GHandwritten (best case) for comparison only.
 instance Ord FNode where
-  compare (FNode { name = n1, status = s1 })
-          (FNode { name = n2, status = s2 }) 
-          = let min' a = case Map.elems a of
-                           [] -> Handwritten
-                           es -> minimum $ map snd es 
-                cp = comparing min'
-            in case cp s1 s2 of
-                 EQ -> compare n1 n2
-                 c  -> c
+  compare f1 f2 = let 
+          s1 = status f1
+          s2 = status f2
+          min' a = case Map.elems a of
+                     [] -> Handwritten
+                     es -> minimum $ map snd es 
+          cp = comparing min'
+          in case cp s1 s2 of
+               EQ -> compare (name f1) (name f2)
+               c  -> c
 
 -- | gets all Nodes from the DGraph as input and creates a list of FNodes only
 -- | containing Nodes to be considered.
@@ -144,23 +132,9 @@ initFNodes ls = foldr (\ n@(_,l) t
                           -> FNode (getDGNodeName l) n 
                                    (sublogicOfTh gt)
                                    (OMap.keys $ OMap.filter (not . isAxiom) sens) 
-                                   (Map.empty) : t
+                                   (dgn_theory l) : t
                        Nothing -> t
                  ) [] $ filter (hasSenKind (not . isAxiom) . snd) ls
-
-{-
--- | GoalStatus of each FNode is created from its local Theory
-initProofStatus :: DGNodeLab -> [(String, BasicProof)]
-initProofStatus dgn = case dgn_theory dgn of
-  gt@(G_theory _lid _sigma _ sens _) 
-     -> let gs = do let knpr = propagateErrors $ knownProversWithKind ProveCMDLautomatic
-                    pf_st <- initialState _lid "" gt knpr []
-                    return $ OMap.toList $ goalMap pf_st
-        in foldr (\ (sn,sen) t -> case thmStatus sen of
-                                          [] -> (sn, Handwritten) : t
-                                          thms -> [(sn, a)| (_,a) <- thms] ++ t ) [] $ concat gs
--}
-
 
 
 -- | Displays the consistency checker window
@@ -251,23 +225,6 @@ showProverWindow res ln le = postGUIAsync $ do
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
     btnNodesInvert upd
 
-  -- bindings
-  let selectWith f u = do
-        signalBlock shN
-        sel <- treeViewGetSelection trvNodes
-        treeSelectionSelectAll sel
-        rs <- treeSelectionGetSelectedRows sel
-        mapM_ ( \ p@(row : []) -> do
-          (FNode { status = s }) <- listStoreGetValue listNodes row
-          (if f s then treeSelectionSelectPath else treeSelectionUnselectPath)
-            sel p) rs
-        signalUnblock shN
-        u
-
-  onClicked btnNodesUnchecked
-    $ selectWith ( const True ) upd
-  onClicked btnNodesTimeout $ selectWith ( const False ) upd
-
   onClicked btnResults $ showModelView mView "Models" listNodes []
   onClicked btnClose $ widgetDestroy window
   onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
@@ -307,33 +264,22 @@ showProverWindow res ln le = postGUIAsync $ do
                       -- where the proving did not return anything, node is not updated
                       if null $ Map.toList $ status fn then cs
                         else
-                          let n@(_, l) = node fn
-                              --n' = updateProofHistory n
-                          in SetNodeLab l n : cs
+                          let (_, l) = node fn
+                              n' = updateProofHistory fn
+                          in SetNodeLab l n' : cs
                     ) [] nodes'
         dg' = changesDGH dg changes
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
-  -- TODO:: cause I dont know what this does, i could not find a 'smart' boolean function!
-  selectWith Map.null upd
-
   widgetShow window
 
 
--- TODO which results should i write back into dgraph
-evaluateProofStatus :: FNode -> Bool
-evaluateProofStatus _ = True
-{-
 updateProofHistory :: FNode -> LNode DGNodeLab
-updateProofHistory fn = let n@(i,l) = node fn
-                            gt = case dgn_theory l of
-                                   gt'@(G_theory lid _ _ sens _)
-                                           -- TODO cannot insert (AnyComorpism,BasicProof) this easy
-                                     -> let sens' = foldr (\ (s, cp) t -> OMap.insert s cp t) sens
-                                                      $ Map.toList $ status fn
-                                        in gt' { gTheorySens = sens' }
-                        in (i, l {dgn_theory = gt})
--}
+updateProofHistory fn = let (i,l) = node fn
+                            gt = dgn_theory l
+                            gt' = propagateProofs gt $ newTheory fn
+                        in (i, l {dgn_theory = gt'})
+
 sortNodes :: TreeView -> ListStore FNode -> IO ()
 sortNodes trvNodes listNodes = do
   sel <- getSelectedMultiple trvNodes listNodes
@@ -407,7 +353,7 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
            res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
-           postGUISync $ listStoreSetValue listNodes row fn { status = res }
+           postGUISync $ listStoreSetValue listNodes row fn { newTheory = res }
            -- using this line to check whether or not new goalstatus is stored withing FNode -> dgn_theory
            -- postGUISync $ listStoreSetValue listNodes row fn { status = initProofStatus $ snd $ node fn }
            return $ count + 1) 0 nodes
@@ -421,7 +367,7 @@ autoProofAtNode :: -- use theorems is subsequent proofs
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
-                  -> IO (Map.Map String (AnyComorphism, BasicProof))
+                  -> IO G_theory
 autoProofAtNode useTh timeout (_, lab) p_cm =
   case fromMaybe (error "GtkAutomaticProofs: noG_theory") $ globalTheory lab of
     g_th@( G_theory lid _ _ _ _ ) -> do
@@ -434,22 +380,27 @@ autoProofAtNode useTh timeout (_, lab) p_cm =
      case maybeResult $ prepareForProving st p_cm of
      -- theory could not be computed
        Nothing -> do putStrLn "No suitable prover and comorphism found"
-                     return Map.empty
+                     return g_th
        Just (G_theory_with_prover lid1 th p) ->
         case proveCMDLautomaticBatch p of
          Nothing -> do putStrLn "Error obtaining the prover"
-                       return Map.empty
+           -- TODO create usefull return value
+                       return g_th
          Just fn -> do 
            -- mVar to poll the prover for results
            answ <- newMVar (return [])
            case selectedGoals st of
              [] -> do putStrLn "No goals selected. Nothing to prove"
-                      return Map.empty
-             _  -> do (thrId, mV) <- fn useTh False answ (theoryName st)
+           -- TODO create usefull return value
+                      return g_th
+             _  -> do (_, mV) <- fn useTh False answ (theoryName st)
                                       (TacticScript $ show timeout) th []
                       -- mThr          <- newMVar $ Just thrId
                       takeMVar mV
-                      getResults lid1 answ (snd p_cm) st
+                      res <- getResults lid1 answ (snd p_cm) st
+                      return $ case res of
+                        Nothing -> g_th
+                        Just gt -> gt
 
 getResults :: (Logic lid1 sublogics1
                      basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -461,29 +412,25 @@ getResults :: (Logic lid1 sublogics1
               -> MVar (Result [ProofStatus proof_tree])
               -> AnyComorphism
               -> ProofState lid1 sentence1
-              -> IO (Map.Map String (AnyComorphism, BasicProof))
+              -> IO (Maybe G_theory)
 getResults lid mData ac st =
   do
     d <- takeMVar mData
     case maybeResult d of
-               Nothing -> return Map.empty
+               Nothing -> return Nothing
                Just d' -> do
 
-                 -- TODO generate GTheory with goalMap and merge using propagateProofs
-                 -- OR using updateNodeProof from interfaces/Utils
                  let ps' = markProved ac lid d' st
-                 putStrLn $ showDoc (goalMap ps') ""
-                 return $ foldr (\ p t -> Map.insert (goalName p) (ac, BasicProof lid p) t) Map.empty d'
-{-
+ -- TODO Open Reason is not written back into GTheory, but only Proved Goals
+ -- this need to be fixed.
+                 case theory ps' of
+                   G_theory lidT sigT indT sensT _ ->
+                     case coerceThSens (logicId ps') lidT "" (goalMap ps') of
+                       Nothing -> return Nothing
+                       Just gMap -> let
+                         nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
+                         in do return $ Just nwTh
 
-maybe it is a good idea to save results as tuple: (AnyComorphism, BasicProof), to ease creation of DGChange
-
--}
-
-
-
--- | proveNode END
--- //////////////////////////////////////////////////////////
  
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
                  -> ConnectId ComboBox -> IO ()
