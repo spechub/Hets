@@ -31,6 +31,7 @@ import qualified Common.Result as Result
 import Common.ProofTree
 import Common.ProverTools
 import Common.SZSOntology
+import Common.Utils (basename)
 
 import Data.Char (isDigit)
 import Data.List
@@ -170,7 +171,7 @@ consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
         problem = showTPTPProblemM thName proverStateI []
         extraOptions =
           "-pc false -pmtptp true -fd true -to " ++ tl
-        saveFileName = reverse $ fst $ span (/= '/') $ reverse thName
+        saveFileName = basename thName
         runDarwinRealM :: IO (CCStatus ProofTree)
         runDarwinRealM = do
             let bin = proverBinary b
@@ -221,9 +222,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = runDarwinReal where
     simpleOptions = extraOpts cfg
     extraOptions = maybe "-pc false"
              (("-pc false -to " ++) . show) (timeLimit cfg)
-    saveFileName = thName ++ '_' : AS_Anno.senAttr nGoal
-    tmpFileName = reverse (fst $ span (/= '/') $ reverse thName) ++
-                       '_' : AS_Anno.senAttr nGoal
+    tmpFileName = basename thName ++ '_' : AS_Anno.senAttr nGoal
     runDarwinReal = do
       noProg <- missingExecutableInPath bin
       if noProg then
@@ -234,8 +233,7 @@ runDarwin b sps cfg saveTPTP thName nGoal = runDarwinReal where
         else do
           prob <- showTPTPProblem thName sps nGoal $
                       simpleOptions ++ ["Requested prover: " ++ bin]
-          when saveTPTP
-            (writeFile (saveFileName ++ ".tptp") prob)
+          when saveTPTP (writeFile (tmpFileName ++ ".tptp") prob)
           t <- getCurrentTime
           let timeTmpFile = "/tmp/" ++ tmpFileName ++ show (utctDay t) ++
                                "-" ++ show (utctDayTime t) ++ ".tptp"

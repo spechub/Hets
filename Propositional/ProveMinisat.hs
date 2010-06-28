@@ -37,7 +37,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
-import Common.Utils (timeoutCommand)
+import Common.Utils (basename, timeoutCommand)
 
 import Control.Monad (when)
 import Control.Concurrent
@@ -90,8 +90,7 @@ consCheck :: MiniSatVer -> String -> LP.TacticScript
 consCheck v thName _ tm _ = case LP.tTarget tm of
   LP.Theory sig nSens -> do
     let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-        thName_clean = map (\ c -> if c == '/' then '_' else c) thName
-        tmpFile = "/tmp/" ++ thName_clean ++ "_cc.dimacs"
+        tmpFile = "/tmp/" ++ basename thName ++ "_cc.dimacs"
         bin = msatName v
     dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc") sig
           axioms
@@ -212,10 +211,9 @@ runminisat :: MiniSatVer -> PState.PropProverState
            -- (retval, configuration with proof status and complete output)
 runminisat v pState cfg saveDIMACS thName nGoal = do
   prob <- Cons.goalDIMACSProblem thName pState nGoal []
-  let zFileName = "/tmp/problem_" ++ thName ++ '_' : AS_Anno.senAttr nGoal
-                  ++ ".dimacs"
-  when saveDIMACS
-    (writeFile (thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs") prob)
+  let thName_clean = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
+      zFileName = "/tmp/problem_" ++ thName_clean
+  when saveDIMACS (writeFile thName_clean prob)
   writeFile zFileName prob
   runStuff zFileName $ fromMaybe 100 $ timeLimit cfg
   where

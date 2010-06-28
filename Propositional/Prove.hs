@@ -12,11 +12,9 @@ This is the connection of the SAT-Solver minisat to Hets
 -}
 
 module Propositional.Prove
-    (
-     zchaffProver,                   -- the zChaff II Prover
-     propConsChecker
-    )
-    where
+    ( zchaffProver                   -- the zChaff II Prover
+    , propConsChecker
+    ) where
 
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.Conversions as Cons
@@ -24,7 +22,7 @@ import qualified Propositional.Conversions as PC
 import qualified Propositional.Morphism as PMorphism
 import qualified Propositional.ProverState as PState
 import qualified Propositional.Sign as Sig
-import Propositional.Sublogic(PropSL,top)
+import Propositional.Sublogic (PropSL, top)
 import Propositional.ChildMessage
 
 import Proofs.BatchProcessing
@@ -37,7 +35,7 @@ import GUI.GenericATP
 import Common.UniUtils as CP
 
 import Common.ProofTree
-import Common.Utils (readMaybe)
+import Common.Utils (readMaybe, basename)
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
@@ -46,9 +44,12 @@ import qualified Common.Result as Result
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Common.Exception as Exception
+
+import Data.Char (isSpace)
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay, timeToTimeOfDay, midnight)
+
 import System.Directory
 import System.Cmd
 import System.Exit
@@ -57,8 +58,8 @@ import System.IO
 -- * Prover implementation
 
 zchaffHelpText :: String
-zchaffHelpText = "Zchaff is a very fast SAT-Solver \n"++
-                 "No additional Options are available"++
+zchaffHelpText = "Zchaff is a very fast SAT-Solver \n" ++
+                 "No additional Options are available" ++
                  "for it!"
 
 -- | the name of the prover
@@ -91,15 +92,15 @@ consCheck thName _ tm _ =
     case LP.tTarget tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-                thName_clean = map (\c -> if c == '/' then '_' else c) thName
-                tmpFile = "/tmp/" ++ (thName_clean ++ "_cc.dimacs")
+                thName_clean = basename thName
+                tmpFile = "/tmp/" ++ thName_clean ++ "_cc.dimacs"
                 resultFile = tmpFile ++ ".result"
             dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc")
                              sig [(AS_Anno.makeNamed "myAxioms" $
                                      AS_BASIC.Implication
                                      (
                                       AS_BASIC.Conjunction
-                                      (map (AS_Anno.sentence) axioms)
+                                      (map AS_Anno.sentence axioms)
                                       Id.nullRange
                                      )
                                      (AS_BASIC.False_atom Id.nullRange)
@@ -107,7 +108,7 @@ consCheck thName _ tm _ =
                                     )
                                     {
                                       AS_Anno.isAxiom = True
-                                    , AS_Anno.isDef   = False
+                                    , AS_Anno.isDef = False
                                     , AS_Anno.wasTheorem = False
                                     }
                                    ] []
@@ -132,8 +133,9 @@ consCheck thName _ tm _ =
           $ filter AS_Anno.isAxiom f
         searchResult :: String -> Maybe Bool
         searchResult hf = let ls = lines hf in
-          if any (== "RESULT:\tUNSAT") ls then Just True else
-          if any (== "RESULT:\tSAT") ls then Just False else Nothing
+          if any (isInfixOf reUNSAT . filter isSpace) ls then Just True else
+          if any (isInfixOf reSAT . filter isSpace) ls then Just False
+          else Nothing
 
 -- ** GUI
 
@@ -144,7 +146,7 @@ zchaffProveGUI :: String -- ^ theory name
           -> LP.Theory Sig.Sign AS_BASIC.FORMULA ProofTree
           -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
           -- ^ free definitions
-          -> IO([LP.ProofStatus ProofTree]) -- ^ proof status for each goal
+          -> IO [LP.ProofStatus ProofTree] -- ^ proof status for each goal
 zchaffProveGUI thName th freedefs =
     genericATPgui (atpFun thName) True (LP.proverName zchaffProver) thName th
                   freedefs emptyProofTree
@@ -173,9 +175,9 @@ zchaffProveCMDLautomaticBatch ::
         -- ^ theory consisting of a signature and a list of Named sentences
         -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
         -- ^ free definitions
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+        -> IO (Concurrent.ThreadId, Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+           -- snd: MVar to wait for the end of the thread
 zchaffProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -191,13 +193,13 @@ atpFun :: String            -- Theory name
      PState.PropProverState
 atpFun thName = ATPFunctions
                 { initialProverState = PState.propProverState
-                , goalOutput         = Cons.goalDIMACSProblem thName
-                , atpTransSenName    = PState.transSenName
-                , atpInsertSentence  = PState.insertSentence
-                , proverHelpText     = zchaffHelpText
-                , runProver          = runZchaff
-                , batchTimeEnv       = "HETS_ZCHAFF_BATCH_TIME_LIMIT"
-                , fileExtensions     = FileExtensions
+                , goalOutput = Cons.goalDIMACSProblem thName
+                , atpTransSenName = PState.transSenName
+                , atpInsertSentence = PState.insertSentence
+                , proverHelpText = zchaffHelpText
+                , runProver = runZchaff
+                , batchTimeEnv = "HETS_ZCHAFF_BATCH_TIME_LIMIT"
+                , fileExtensions = FileExtensions
                     { problemOutput = ".dimacs"
                     , proverOutput = ".zchaff"
                     , theoryConfiguration = ".czchaff"}
@@ -226,11 +228,8 @@ runZchaff :: PState.PropProverState
 runZchaff pState cfg saveDIMACS thName nGoal =
     do
       prob <- Cons.goalDIMACSProblem thName pState nGoal []
-      when saveDIMACS
-               (writeFile (thName++'_':AS_Anno.senAttr nGoal++".dimacs")
-                          prob)
-      (writeFile (zFileName)
-                 prob)
+      when saveDIMACS (writeFile thName_clean prob)
+      writeFile zFileName prob
       zchaff <- newChildProcess "zchaff" [CP.arguments allOptions]
       Exception.catch (runZchaffReal zchaff)
                    (\ excep -> do
@@ -243,8 +242,9 @@ runZchaff pState cfg saveDIMACS thName nGoal =
       deleteJunk = do
         catch (removeFile zFileName) (const $ return ())
         catch (removeFile "resolve_trace") (const $ return ())
-      zFileName = "/tmp/problem_"++thName++'_':AS_Anno.senAttr nGoal++".dimacs"
-      allOptions = zFileName : (createZchaffOptions cfg)
+      thName_clean = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
+      zFileName = "/tmp/problem_" ++ thName_clean
+      allOptions = zFileName : createZchaffOptions cfg
       runZchaffReal zchaff =
           do
                 zchaffOut <- parseIt zchaff isEnd
@@ -252,9 +252,9 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                 let (err, retval) = proofStat res usedAxs [] (head output)
                 deleteJunk
                 return (err,
-                        cfg{proofStatus = retval,
+                        cfg {proofStatus = retval,
                             resultOutput = output,
-                            timeUsed     = tUsed})
+                            timeUsed = tUsed})
                 where
                   proofStat res usedAxs options out
                            | isJust res && elem (fromJust res) proved =
@@ -263,7 +263,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                                 {LP.goalStatus = LP.Proved True
                                 , LP.usedAxioms = filter
                                     (/= AS_Anno.senAttr nGoal) usedAxs
-                                , LP.proofTree = ProofTree $ out })
+                                , LP.proofTree = ProofTree out })
                            | isJust res && elem (fromJust res) disproved =
                                (ATPSuccess,
                                 (defaultProofStatus options)
@@ -280,76 +280,66 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                              (LP.proverName zchaffProver)
                                         emptyProofTree)
                       {LP.tacticScript = LP.TacticScript $ show
-                          $ ATPTacticScript
+                            ATPTacticScript
                              { tsTimeLimit = configTimeLimit cfg
                              , tsExtraOpts = opts} }
 
 proved :: [String]
 proved = ["Proof found."]
+
 disproved :: [String]
 disproved = ["Completion found."]
+
 timelimit :: [String]
 timelimit = ["Ran out of time."]
 
 -- | analysis of output
 analyzeZchaff :: String
-              ->  PState.PropProverState
+              -> PState.PropProverState
               -> IO (Maybe String, [String], [String], TimeOfDay)
 analyzeZchaff str pState =
     let
-        str' = foldr (\ch li -> if ch == '\x9'
-                                then ""++li
-                                else ch:li) "" str
-        str2 = foldr (\ch li -> if ch == '\x9'
-                                then "        "++li
-                                else ch:li) "" str
+        str' = filter isSpace str
+        str2 = map (\ ch -> case ch of
+          '\x9' -> ' '
+          _ -> ch) str
         output = [str2]
-        unsat  = isInfixOf re_UNSAT str'
-        sat    = isInfixOf re_SAT   str'
-        timeLine = if isPrefixOf re_TIME str' then
-                    drop (length re_TIME) str' else "0"
-        timeout = isInfixOf re_end_to str' || isInfixOf re_end_mo str'
-        time   = calculateTime timeLine
-        usedAx = map (AS_Anno.senAttr) $ PState.initialAxioms pState
-    in
-      if timeout
-      then
-          return (Just $ head timelimit, usedAx, output, time)
-          else
-              if sat && not unsat
-              then
-                  return (Just $ head disproved, usedAx, output, time)
-              else if not sat && unsat
-                   then
-                       return (Just $ head proved, usedAx, output, time)
-                   else
-                       do
-                         return (Nothing, usedAx, output, time)
+        unsat = isInfixOf reUNSAT str'
+        sat = isInfixOf reSAT str'
+        timeLine = fromMaybe "0" $ stripPrefix reTIME str'
+        timeout = isInfixOf reEndto str' || isInfixOf reEndmo str'
+        time = calculateTime timeLine
+        usedAx = map AS_Anno.senAttr $ PState.initialAxioms pState
+    in return $ if timeout
+      then (Just $ head timelimit, usedAx, output, time)
+      else if sat && not unsat
+           then (Just $ head disproved, usedAx, output, time)
+           else if not sat && unsat
+                then (Just $ head proved, usedAx, output, time)
+                else (Nothing, usedAx, output, time)
 
 -- | Calculated the time need for the proof in seconds
 calculateTime :: String -> TimeOfDay
 calculateTime timeLine =
-    timeToTimeOfDay $ realToFrac $ (maybe
-         (error $ "calculateTime " ++ timeLine) id $ readMaybe timeLine
+    timeToTimeOfDay $ realToFrac (fromMaybe
+         (error $ "calculateTime " ++ timeLine) $ readMaybe timeLine
              :: Double)
 
-re_UNSAT :: String
-re_UNSAT = "RESULT:UNSAT"
-re_SAT :: String
-re_SAT   = "RESULT:SAT"
-re_TIME :: String
-re_TIME  = "Total Run Time"
+reUNSAT :: String
+reUNSAT = "RESULT:UNSAT"
+reSAT :: String
+reSAT = "RESULT:SAT"
+reTIME :: String
+reTIME = "Total Run Time"
 
 -- | We are searching for Flotter needed to determine the end of input
 isEnd :: String -> Bool
-isEnd inS = any (`isInfixOf` inS) [re_end, re_end_to, re_end_mo]
+isEnd inS = any (`isInfixOf` inS) ["RESULT:", reEndto, reEndmo]
 
-re_end :: String
-re_end = "RESULT:"
-re_end_to :: String
-re_end_to = "TIME OUT"
-re_end_mo :: String
-re_end_mo = "MEM OUT"
+reEndto :: String
+reEndto = "TIME OUT"
+reEndmo :: String
+reEndmo = "MEM OUT"
 
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String
