@@ -150,12 +150,6 @@ lookupWithInsert lid sig sens s k =
 
 -- * LibEnv traversal
 
--- first projection is the const function
-
--- | 2nd projection
-proj2 :: a -> b -> b
-proj2 = curry snd
-
 -- | Translates the given LibEnv to a list of OMDocs. If the first argument
 -- is false only the DG to the given LibName is translated and returned.
 exportLibEnv :: Bool -- recursive
@@ -185,9 +179,9 @@ initFilePathMapping fp le =
 -- | DGraph to OMDoc translation
 exportDGraph :: LibEnv -> ExpEnv -> (LibName, DGraph) -> Result (ExpEnv, OMDoc)
 exportDGraph le s (ln, dg) = do
-  (s', theories) <- mapAccumLCM proj2 (exportNodeLab le ln dg) s
+  (s', theories) <- mapAccumLM (exportNodeLab le ln dg) s
                     $ topsortedNodes dg
-  (s'', views) <- mapAccumLCM proj2 (exportLinkLab le ln dg) s' $ labEdgesDG dg
+  (s'', views) <- mapAccumLM (exportLinkLab le ln dg) s' $ labEdgesDG dg
   return (s'', OMDoc (show $ getLibId ln)
                  $ (catMaybes theories) ++ (catMaybes views))
 
@@ -205,17 +199,26 @@ exportNodeLab le ln dg s (n, lb) =
                   nsens = toNamedList sens
                   (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                   sigm@(SigMap nm _) = nSigMapToSigMap nsigm
-              -- imports is a list of [TCElement], symbol set pairs
-              (s'', imports) <- mapAccumLCM proj2
-                                (makeImport le ln dg (lid, nm)) s' $ innDG dg n
+              -- imports is a list of Maybe (String, OMCD, (OMName, UniqName)),
+              -- symbol-set pairs. We construct the concrete OMImages later
+              -- (see makeImport) in order to prevent multiple imported
+              -- constants to be declared by open as a new constant.
+              -- We must use open for the first occurence and conass for
+              -- the others, i.e., Left resp. Right constructors of
+              -- the OMImage datatype
+              (s'', imports) <-
+                  mapAccumLM (makeImportMapping le ln dg (lid, nm)) s'
+                                 $ innDG dg n
+              let (mappingL, symsetL) = unzip $ catMaybes imports
+                  (_, importL) = mapAccumL makeImport Set.empty mappingL
               extra <- export_theoryToOmdoc lid sigm sig nsens
-              consts <- mapR (uncurry $ exportSymbol lid sigm $ map snd imports)
+              consts <- mapR (uncurry $ exportSymbol lid sigm symsetL)
                         $ nSigMapToOrderedList nsigm
               -- create the OMDoc elements for the sentences
               thms <- mapR (exportSentence lid sigm) nsens
               return (s'', Just $ TLTheory sn (omdoc_metatheory lid)
-                             $ concatMap concat
-                                   [map fst imports, consts, [extra], thms])
+                             $ concat
+                                   [importL, concat consts, extra, concat thms])
 
 
 -- * Views and Morphisms
@@ -232,9 +235,20 @@ getNodeData le ln lb =
         in (labDG dg' $ ref_node ni, lnRef)
     else (lb, ln)
 
--- | If the link is a global definition link we compute the Import TCElement
--- and return also the set of (by the link) exported symbols
-makeImport :: forall lid sublogics
+-- See the comment in exportNodeLab for details about this function
+makeImport :: Set.Set OMName -> (String, OMCD, [(OMName, UniqName)])
+           -> (Set.Set OMName, TCElement)
+makeImport s (n, cd, mapping) =
+    let f s' p@(omn, _)
+            | Set.notMember omn s' =
+                (Set.insert omn s', makeMorphismEntry True p)
+            | otherwise = (s', makeMorphismEntry False p)
+        (s'', morph) = mapAccumL f s mapping
+    in (s'', TCImport n cd morph)
+
+-- | If the link is a global definition link we compute the Import
+-- and return also the set of (by the link) exported symbols.
+makeImportMapping :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
@@ -242,16 +256,17 @@ makeImport :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> ExpEnv
                -> LEdge DGLinkLab
-               -> Result (ExpEnv, ([TCElement], Set.Set symbol))
-makeImport le ln dg toInfo s (from, _, lbl)
+               -> Result (ExpEnv, Maybe ( (String, OMCD, [(OMName, UniqName)])
+                                        , Set.Set symbol))
+makeImportMapping le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
         warning () (concat [ "Hiding link with ", show (dgl_id lbl)
                            , " not exported."]) nullRange
-                    >> return (s, ([], Set.empty))
+                    >> return (s, Nothing)
     | isLocalDef $ dgl_type lbl =
         warning () (concat [ "Local def-link with ", show (dgl_id lbl)
                            , " not exported."]) nullRange
-                    >> return (s, ([], Set.empty))
+                    >> return (s, Nothing)
     | isGlobalDef $ dgl_type lbl =
         let (lb', ln') = getNodeData le ln $ labDG dg from in
         case dgn_theory lb' of
@@ -262,11 +277,11 @@ makeImport le ln dg toInfo s (from, _, lbl)
                     (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                     SigMap nm _ = nSigMapToSigMap nsigm
                 (morph, expSymbs) <-
-                    makeMorphism (lid, nm) toInfo True $ dgl_morphism lbl
+                    makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
                 let impnm = showEdgeId $ dgl_id lbl
                 cd <- mkCD s' ln ln' sn
-                return (s', ([TCImport impnm cd $ morph], expSymbs))
-    | otherwise = return (s, ([], Set.empty))
+                return (s', Just ((impnm, cd, morph), expSymbs))
+    | otherwise = return (s, Nothing)
 
 -- | Given a TheoremLink we output the view
 exportLinkLab :: LibEnv -> LibName -> DGraph -> ExpEnv -> LEdge DGLinkLab
@@ -304,11 +319,18 @@ exportLinkLab le ln dg s (from, to, lbl) =
                            lookupWithInsert lid2 sig2 nsens2 s' (ln2, sn2)
                        SigMap nm1 _ = nSigMapToSigMap nsigm1
                        SigMap nm2 _ = nSigMapToSigMap nsigm2
-                   (morph, _) <-
-                       makeMorphism (lid1, nm1) (lid2, nm2) False gmorph
+                   (preMorph, _) <-
+                       makeMorphism (lid1, nm1) (lid2, nm2) gmorph
+                   let morph = map (makeMorphismEntry False) preMorph
                    cd1 <- mkCD s'' ln ln1 sn1
                    cd2 <- mkCD s'' ln ln2 sn2
                    return (s'', Just $ TLView viewname cd1 cd2 morph) }
+
+
+makeMorphismEntry :: Bool -> (OMName, UniqName)
+                -> (OMName, OMImage)
+makeMorphismEntry useOpen (n, un) =
+    (n, if useOpen then Left $ nameToString un else Right $ simpleOMS un)
 
 -- | From the given GMorphism we compute the symbol-mapping and return
 -- also the set of (by the morphism) exported symbols (= image of morphism)
@@ -325,10 +347,9 @@ makeMorphism :: forall lid1 sublogics1
          basic_spec2 sentence2 symb_items2 symb_map_items2
          sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
        (lid1, NameMap symbol1) -> (lid2, NameMap symbol2)
-                               -> Bool -- ^ use open instead of conass
                                -> GMorphism
-                               -> Result (TCMorphism, Set.Set symbol2)
-makeMorphism (l1, symM1) (l2, symM2) useOpen
+                               -> Result ([(OMName, UniqName)], Set.Set symbol2)
+makeMorphism (l1, symM1) (l2, symM2)
                  (GMorphism cid (ExtSign sig _) _ mor _)
 
 -- l1 = logic1
@@ -363,7 +384,7 @@ makeMorphism (l1, symM1) (l2, symM2) useOpen
           symM2' = fmapNM (coerceSymbol l2 lT) symM2
           mormap = symmap_of lT mor
           expSymbs = Set.fromList $ Map.elems $ coerceMapofsymbol lT l2 mormap
-      in return (map (mapEntry lT symM1' symM2' useOpen)
+      in return (map (mapEntry lT symM1' symM2')
                          $ Map.toList mormap, expSymbs)
 
 
@@ -374,16 +395,14 @@ mapEntry :: forall lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
         lid -> NameMap symbol -> NameMap symbol
-            -> Bool -- ^ use open instead of conass
             -> (symbol, symbol)
-            -> (OMName, OMImage)
-mapEntry _ m1 m2 useOpen (s1, s2) =
+            -> (OMName, UniqName)
+mapEntry _ m1 m2 (s1, s2) =
     let e = error "mapEntry: symbolmapping is missing"
         un1 = Map.findWithDefault e s1 m1
         un2 = Map.findWithDefault e s2 m2
     -- we don't check whether the path is empty or not...
-    in ( omName un1
-       , if useOpen then Left $ nameToString un2 else Right $ simpleOMS un2)
+    in (omName un1, un2)
 
 
 -- | extracts the single element from singleton sets, fails otherwise
