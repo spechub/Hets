@@ -19,18 +19,12 @@ type Env = SigMapI Symbol
 
  --------------- TCSymbol is transformed into a CommonLogic Symbol with given name
 omdocToSym :: Env -> TCElement -> String -> Result Symbol
-omdocToSym _ tcs@(TCSymbol _ {-omel-} _ sr _) n =
+omdocToSym _ tcs@(TCSymbol _ _ sr _) n =
      case sr of
-       Obj -> return $  (Symbol (nameToId n)  {-(symbolType omel)-}) 
+       Obj -> return $  (Symbol (nameToId n)) 
        _ -> fail $ concat ["omdocToSym: only objects are allowed as symbol roles, but found", show sr]
 omdocToSym _ symb _ = fail $ concat ["omdocToSym: only TCSymbols are allowed, but found: ", show symb] 
- {-
-symbolType :: OMElement -> SymType
-symbolType om = case om of
-		 const_predtype -> PredAsItemType
-		 const_funtype -> OpAsItemType
-		 _ -> fail $ "symbolType: only predicates and functions are allowed"
--}
+
  
  
  --------------- Sentences from OMElements
@@ -92,13 +86,13 @@ omdocToTerm e (OMS (_, OMName n _)) = Name_term (strToToken n)
 omdocToTermSeq :: Env -> OMElement -> TERM_SEQ 
 omdocToTermSeq e om@(OMA _) = Term_seq $ omdocToTerm e om
 omdocToTermSeq e (OMS (_,OMName n _)) = let dec = strToToken n 
-					in if isSeqMark n
-					   then Seq_marks dec
-					   else Term_seq (Name_term dec)
+                                         in if isSeqMark n
+                                            then Seq_marks dec
+                                            else Term_seq (Name_term dec)
 
 strToToken :: String -> Token
 strToToken s = Token s nullRange
 
 isSeqMark :: String -> Bool
-isSeqMark s@('s':'e':'q':_) = True
+isSeqMark s@('.':_) = True
 isSeqMark _ = False
