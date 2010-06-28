@@ -326,7 +326,8 @@ omdocToTerm' e@(ie, vm) f =
     case f of
       OMA (h : args)
           | h == const_cast ->
-              mkT2 (omdocToTerm' e) (lookupSortOMS "toTerm: Cast" ie) Cast args
+              mkT2 (omdocToTerm' e) (lookupSortOMS "omdocToTerm: Cast" ie)
+                   Cast args
           | h == const_if ->
               mkT3 (omdocToTerm' e) (omdocToFormula' e) (omdocToTerm' e)
                    Conditional args
@@ -343,7 +344,15 @@ omdocToTerm' e@(ie, vm) f =
                          (error $ concat [ "omdocToTerm': Variable not in "
                                          , "varmap: ", show var ]) var vm
                  in Qual_var var s nullRange
+      OMATTT ome (OMAttr ct t) 
+          | ct == const_type ->
+              -- same as cast
+              mkT2 (omdocToTerm' e) (lookupSortOMS "omdocToTerm: Sorted" ie)
+                   Sorted_term [ome, t]
+          | otherwise -> error $ "omdocToTerm: unrecognized attribution "
+                         ++ show ct
       _ -> error $ "omdocToTerm: no valid term " ++ show f
+
 
 -- TODO: eventually export and reimport SortedTerms!
 

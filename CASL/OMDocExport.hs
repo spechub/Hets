@@ -210,8 +210,10 @@ appOrConst :: AsSymbol a => Env -> a -> [OMElement] -> OMElement
 appOrConst e o [] = oms e o
 appOrConst e o ts = OMA $ (oms e o) : ts
 
--- | the object e1 and its type e2
-makeTyped :: OMElement -> OMElement -> OMElement
+-- | The object e1 and its type e2
+makeTyped :: OMElement -- ^ e1
+          -> OMElement -- ^ e2
+          -> OMElement
 makeTyped e1 e2 = OMATTT e1 $ OMAttr const_type e2
 
 varToOmdoc :: Token -> OMElement
@@ -256,7 +258,7 @@ omdocRec e mf = Record
     , foldExtFORMULA = \ _ f -> mf f
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
     , foldApplication = \ _ o ts _ -> appOrConst e o ts
-    , foldSorted_term = \ _ r _ _ -> r
+    , foldSorted_term = \ _ r s _ -> makeTyped r $ oms e s
     , foldCast = \ _ t s _ ->
                  (OMA [const_cast , t, oms e s])
     , foldConditional = \ _ e' f t _ -> (OMA [const_if , e' , f, t])
