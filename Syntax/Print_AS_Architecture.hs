@@ -53,8 +53,8 @@ instance Pretty REF_SPEC where
     pretty rs = case rs of
         Unit_spec u -> pretty u
         Refinement b u m r _ -> fsep $
-            [(if b then empty else keyword behaviourallyS <> space)
-            <> keyword refinedS, pretty u]
+            [pretty u, (if b then empty else keyword behaviourallyS <> space)
+            <> keyword refinedS]
             ++ (if null m then [] else keyword viaS :
                 punctuate comma (map pretty m))
             ++ [keyword toS, pretty r]
