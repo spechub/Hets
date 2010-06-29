@@ -65,6 +65,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.Result
+--import Debug.Trace
 
 -- * types for structured specification analysis
 
@@ -563,6 +564,7 @@ type BStContext = Map.Map SIMPLE_ID RefSig
 
 data RefSig = BranchRefSig UnitSig (Maybe BranchSig)
             | ComponentRefSig RefSigMap
+
               deriving (Eq)
 
 instance Show RefSig where
@@ -581,9 +583,17 @@ instance Show RefSig where
     in
       "Branch: \n before refinement:\n  " ++ show usig ++
       "\n  after refinement: \n" ++ bStr ++ "\n"
-  show (ComponentRefSig rsm) =
+  show (ComponentRefSig _ rsm) =
    foldl (++) "CompRefSig:" $ map (\ n -> show n ++ "\n ") $
      Map.toList rsm
+
+getPointerFromRef :: RefSig -> RTPointer
+getPointerFromRef (BranchRefSig p _) = p
+getPointerFromRef (ComponentRefSig p _) = p
+
+setPointerInRef :: RefSig -> RTPointer -> RefSig
+setPointerInRef (BranchRefSig _ x) y = BranchRefSig y x
+setPointerInRef (ComponentRefSig _ x) y = ComponentRefSig y x
 
 getUnitSigFromRef :: RefSig -> Result UnitSig
 getUnitSigFromRef (BranchRefSig usig _) = return usig
@@ -632,7 +642,7 @@ namesMatchCtx (un : unitNames) bstc rsmap =
          _ -> False
      BranchStaticContext bstc' ->
        case rsmap Map.! un of
-         ComponentRefSig rsmap' -> -- check whether this is needed!
+         ComponentRefSig _ rsmap' -> -- check whether this is needed!
                 matchesContext rsmap' bstc' &&
                  namesMatchCtx unitNames bstc rsmap
   -- This is where I introduce something new wrt to the refinement paper:
@@ -664,7 +674,7 @@ modifyCtx (un : unitNames) rsmap bstc =
             _ -> modifyCtx unitNames rsmap bstc
        BranchStaticContext bstc' ->
           case rsmap Map.! un of
-            ComponentRefSig rsmap' -> modifyCtx unitNames rsmap $
+            ComponentRefSig n2  rsmap' -> modifyCtx unitNames rsmap $
              Map.insert un
              (BranchRefSig usig $ Just $
                BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc')
@@ -699,14 +709,15 @@ refSigComposition (BranchRefSig usig1 (Just (BranchStaticContext bstc)))
                         modifyCtx (Map.keys rsmap) rsmap bstc
       else fail "Signatures do not match"
 
-refSigComposition (ComponentRefSig rsmap1) (ComponentRefSig rsmap2) = do
+
+refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
   upd <- mapM (\ x -> do
                  s <- refSigComposition (rsmap1 Map.! x) (rsmap2 Map.! x)
                  return (x, s))
          $ filter (`elem` Map.keys rsmap1) $ Map.keys rsmap2
   let unionMap = Map.union (Map.fromList upd) $
                  Map.union rsmap1 rsmap2
-  return $ ComponentRefSig unionMap
+  return $ ComponentRefSig (compPointer n1 n2) unionMap
 
 refSigComposition _rsig1 _rsig2 =
   fail "composition of refinement signatures"
@@ -758,7 +769,7 @@ instance Show RTNodeLab where
    name = rtn_name r
    t = rtn_type r
    t1 = case t of
-          RTPlain u -> "plain: " ++ show u
+          RTPlain u -> "plain: " -- ++ show u
           RTRef n -> show n
   in name ++ " " ++ t1
 
@@ -793,22 +804,28 @@ addSpecNodeRT dg usig s =
   f = Map.insert s n $ specRoots dg'
  in (n, dg' {specRoots = f})
 
-addNodeRefRT :: DGraph -> String -> (Node, DGraph)
-addNodeRefRT dg s =
+addNodeRefRT :: DGraph -> Node -> String -> (Node, DGraph)
+addNodeRefRT dg n s=
  let
    g = refTree dg
-   n = Map.findWithDefault (error "addNodeRefRT") s $ specRoots dg
+--   n = Map.findWithDefault (error "addNodeRefRT") s $ specRoots dg
    n' = Tree.getNewNode g
    l = RTNodeLab {
         rtn_type = RTRef n,
         rtn_name = s}
    g0 = insNode (n', l) g
-   orderRT _ _ = GT
-   (g', _) = Tree.insLEdge True orderRT (n, n', RTLink {rtl_type = RTTyping}) g0
- in (n', dg {refTree = g'})
+   dg' = addTypingEdgeRT dg{refTree=g0} n' n
+ in (n', dg')
+
+addTypingEdgeRT :: DGraph -> Node -> Node -> DGraph
+addTypingEdgeRT dg n1 n2 =  let
+   g0 = refTree dg
+   orderRT _ _  = GT
+   (g', _) = Tree.insLEdge True orderRT (n1, n2, RTLink{rtl_type=RTTyping}) g0
+ in dg{refTree = g'}
 
 updateNodeNameRT :: DGraph -> Node -> String -> DGraph
-updateNodeNameRT dg n s =
+updateNodeNameRT dg n s = --trace (s ++ ":" ++ show n)$
  let
   g = refTree dg
   l = Graph.lab g n
@@ -824,6 +841,51 @@ updateNodeNameSpecRT dg n s =
  let dg' = updateNodeNameRT dg n s
  in dg' {specRoots = Map.insert s n $ specRoots dg}
 
+copySubTree :: DGraph -> Node -> Maybe Node -> (DGraph, Map.Map Node Node)
+copySubTree dg n mN =
+ case mN of
+   Nothing -> let
+     rTree = refTree dg
+     n' = Tree.getNewNode rTree
+     nLab = case lab rTree n of
+            Just x -> x
+            Nothing -> error "copyNode"
+     rTree' = insNode(n', nLab) rTree
+    in copySubTreeN dg{refTree=rTree'} [n] $ Map.fromList [(n, n')]
+   Just y -> --trace (show y) $
+             copySubTreeN dg [n] $ Map.fromList[(n,y)]
+
+copySubTreeN :: DGraph -> [Node] -> Map.Map Node Node
+             -> (DGraph, Map.Map Node Node)
+copySubTreeN dg nList pairs =
+ case nList of
+  [] -> (dg, pairs)
+  n:nList' -> let
+    rTree = refTree dg
+    pairsN = Map.findWithDefault (error "copy") n pairs
+    descs = lsuc rTree n
+    (dg', pairs') = --trace ("descs:" ++ show descs)$
+                    foldl (copyNode pairsN) (dg, pairs) descs
+   in copySubTreeN dg' (nub $ nList' ++ (map fst descs)) pairs'
+
+copyNode :: Node -> (DGraph, Map.Map Node Node) -> LNode RTLinkLab
+           -> (DGraph, Map.Map Node Node)
+copyNode s (dg, nMap)  (n, eLab)= let
+   rTree = refTree dg
+   nLab = case lab rTree n of
+           Just x -> x
+           Nothing -> error "copyNode"
+   n' = Tree.getNewNode rTree
+   rTree' = insNode (n', nLab) rTree  -- the node
+   orderRT _ _ = GT
+   (rTree'', _) = --trace ("ins:" ++ show s ++ " " ++ show n')$
+                  Tree.insLEdge True orderRT (s, n', eLab) rTree'
+ in (dg{refTree = rTree''}, Map.insert n n' nMap)
+-- pt fiecare nod din nList
+-- adauga descendentii si muchiile care intra in ei
+-- apel recursiv pana nList e vida
+
+
 addRefEdgeRT :: DGraph -> Node -> Node -> DGraph
 addRefEdgeRT dg n1 n2 =
  let
@@ -834,29 +896,96 @@ addRefEdgeRT dg n1 n2 =
  in if b then dg {refTree = g'}
     else error "addRefEdgeRT"
 
-addEdgesToNodeRT :: DGraph -> [Node] -> UnitSig -> String ->
-                  (Node, DGraph)
-addEdgesToNodeRT dg rnodes usig s =
+addEdgesToNodeRT :: DGraph -> [Node] -> Node -> DGraph
+addEdgesToNodeRT dg' rnodes n' =
  let
-  (n', dg') = addNodeRT dg usig s
   g = refTree dg'
   orderRT _ _ = GT
   (g', b) = foldl (\ (g0, b0) n0 -> let
                       (g1, b1) = Tree.insLEdge True orderRT
-                                 (n0, n', RTLink {rtl_type = RTComp}) g0
+                                 (n', n0, RTLink{rtl_type = RTComp}) g0
                                     in (g1, b1 && b0))
             (g, True) rnodes
  in if not b then error "addEdgesToNodeRT"
-    else (n', dg' {refTree = g'})
+    else dg'{refTree = g'}
+
+-- datatypes for storing the nodes of the ref tree in the global env
+
+data RTPointer =
+   RTNone
+ | NPUnit Node
+ | NPBranch Node (Map.Map SIMPLE_ID RTPointer)
+        -- here the leaves can be either NPUnit or NPComp
+ | NPRef Node Node
+ | NPComp (Map.Map SIMPLE_ID RTPointer)
+         -- here the leaves can be NPUnit or NPComp
+         -- and roots are needed for inserting edges
+ deriving (Show, Eq)
+
+
+-- map nodes
+
+mapRTNodes :: Map.Map Node Node -> RTPointer ->
+              RTPointer
+mapRTNodes _ RTNone  = RTNone
+mapRTNodes f (NPUnit x)  = NPUnit (app f x)
+mapRTNodes f (NPRef x y)  = NPRef (app f x) (app f y)
+mapRTNodes f (NPBranch x g)  = NPBranch (app f x) (Map.map (mapRTNodes f) g)
+mapRTNodes f (NPComp g)  = NPComp (Map.map (mapRTNodes f) g)
+
+app :: Map.Map Node Node -> Node -> Node
+app f x = Map.findWithDefault (error "mapRTNodes") x f
+
+-- compositions
+
+compPointer :: RTPointer -> RTPointer -> RTPointer
+compPointer (NPUnit n1) (NPUnit n2) =  NPRef n1 n2
+compPointer (NPUnit n1) (NPBranch _ f) =  NPBranch n1 f
+compPointer (NPUnit n1) (NPRef _ n2) = NPRef n1 n2
+compPointer (NPRef n1 _) (NPRef _ n2) =  NPRef n1 n2
+compPointer (NPRef n1 _) (NPBranch _ f) =  NPBranch n1 f
+compPointer (NPBranch n1 f1) (NPComp f2) =
+       NPBranch n1 (Map.unionWith (\_ y -> y) f1 f2 )
+compPointer (NPComp f1) (NPComp f2) =
+       NPComp (Map.unionWith (\_ y -> y) f1  f2)
+compPointer _ _  = error "compPointer"
+
+-- sources
+
+refSource :: RTPointer -> Node
+refSource (NPUnit n) = n
+refSource (NPBranch n _) = n
+refSource (NPRef n _) = n
+refSource x = error ("refSource:" ++ show x)
+
+data RTLeaves = RTLeaf Node | RTLeaves (Map.Map SIMPLE_ID RTLeaves)
+ deriving Show
+
+refTarget :: RTPointer -> RTLeaves
+refTarget (NPUnit n) = RTLeaf n
+refTarget (NPRef _ n) = RTLeaf n
+refTarget (NPComp f) = RTLeaves $ Map.map refTarget f
+refTarget (NPBranch _ f) = RTLeaves $ Map.map refTarget f
+refTarget x = error ("refTarget:" ++ show x)
+
+-- join refinement subtrees
+
+--joinTrees :: DGraph -> RTPointer -> RTPointer -> DGraph
+
+
 
 -- I copied these types from ArchDiagram
 -- to store the diagrams of the arch specs in the dgraph
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
-                 deriving Show
+
+instance Show DiagNodeLab where
+ show x = dn_desc x
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number :: Int }
-                 deriving Show
+
+instance Show DiagLinkLab where
+ show _ = ""
 
 data Diag = Diagram {
                diagGraph :: Tree.Gr DiagNodeLab DiagLinkLab,

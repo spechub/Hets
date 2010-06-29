@@ -418,3 +418,6 @@ extendDiagramWithEdge pos _ diag dg
       "\n the morphism domain differs from the signature in given target node")
                          pos
 
+matchDiagram :: Node -> Diag -> (Graph.MContext DiagNodeLab DiagLinkLab, Diag)
+matchDiagram n diag =
+ let (mc, b) = match n $ diagGraph diag in (mc, diag{diagGraph = b})

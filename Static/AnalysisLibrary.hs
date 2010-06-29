@@ -65,6 +65,7 @@ import System.FilePath
 import LF.Twelf2DG
 
 import Framework.Analysis
+import Debug.Trace
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -300,10 +301,10 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       then liftR $ plain_error (libItem', dg'', libenv)
                (alreadyDefined spstr) pos
       else do
-        let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
+        --let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
         return
          ( libItem'
-         , dg''' { globalEnv = Map.insert spn (SpecEntry
+         , dg'' { globalEnv = Map.insert spn (SpecEntry
                   $ ExtGenSig gsig body) genv }
          , libenv)
   View_defn vn gen vt gsis pos -> do
@@ -312,16 +313,19 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (n, _, diag, archSig, dg', asp') <- liftR $ anaArchSpec lgraph dg opts
-                                                emptyExtStUnitCtx $ item asp
+    (_, _, diag, archSig, dg', asp') <- --trace (show $ refTree dg)$
+                                      liftR $ anaArchSpec lgraph dg opts
+                                      emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
         genv = globalEnv dg'
     if Map.member asn genv
       then liftR $ plain_error (asd', dg', libenv) (alreadyDefined asstr) pos
       else do
-            let dg'' = updateNodeNameSpecRT dg' n $ show asn
+            let dg'' = updateNodeNameRT dg'
+                       (refSource $ getPointerFromRef archSig) $ show asn
                 dg3 = dg'' { archSpecDiags =
                            Map.insert (show asn) diag $ archSpecDiags dg''}
+            --trace (show $ refTree $  dg3) $
             return (asd', dg3
                { globalEnv = Map.insert asn (ArchEntry archSig) genv },
                       libenv)
@@ -330,7 +334,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     analyzing opts $ "unit spec " ++ usstr
     l <- lookupCurrentLogic "Unit_spec_defn" lgraph
     (rSig, dg', usp') <-
-        liftR $ anaUnitSpec lgraph dg opts (EmptyNode l) usp
+        liftR $ anaUnitSpec lgraph dg opts (EmptyNode l) Nothing usp
     unitSig <- liftR $ getUnitSigFromRef rSig
     let usd' = Unit_spec_defn usn usp' pos
         genv = globalEnv dg'
@@ -342,9 +346,9 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Ref_spec_defn rn rsp pos -> do
     let rnstr = tokStr rn
     l <- lookupCurrentLogic "Ref_spec_defn" lgraph
-    (_, _, _, rsig, dg', rsp') <-
+    ( _, _, _, rsig, dg', rsp') <-
        liftR (anaRefSpec lgraph dg opts (EmptyNode l) rn emptyExtStUnitCtx
-              rsp)
+              Nothing rsp)
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
         genv = globalEnv dg'
@@ -352,7 +356,8 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       then liftR (plain_error (itm, dg', libenv)
                              (alreadyDefined rnstr)
                              pos)
-      else return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
+      else --trace (show $ refTree dg') $
+           return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
                   , libenv)
   Logic_decl (Logic_name logTok _) _ -> do
     logNm <- lookupLogic "LOGIC DECLARATION:" (tokStr logTok) lgraph

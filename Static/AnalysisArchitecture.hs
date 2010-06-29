@@ -42,8 +42,10 @@ import Common.Amalgamate
 import Common.DocUtils
 import qualified Data.Map as Map
 
-import Data.Graph.Inductive.Graph as Graph (Node)
+import Data.Graph.Inductive.Graph as Graph (Node, nodes)
 import Control.Monad(foldM)
+
+--import Debug.Trace
 
 -- | Analyse an architectural specification
 -- @
@@ -52,30 +54,60 @@ import Control.Monad(foldM)
 anaArchSpec :: LogicGraph -> DGraph
   -> HetcatsOpts  -- ^ should only the structure be analysed?
   -> ExtStUnitCtx -- ^ for visibility levels
-  -> ARCH_SPEC -> Result (Node, [DiagNodeSig],Diag,RefSig, DGraph, ARCH_SPEC)
+  -> Maybe Node
+  -> ARCH_SPEC -> Result ([DiagNodeSig],Maybe DiagNodeSig,
+                          Diag,RefSig, DGraph, ARCH_SPEC)
 {- ^ returns 1. the architectural signature of given ARCH-SPEC
 2. development graph resulting from structured specs within the arch
 spec and 3. ARCH_SPEC after possible conversions -}
-anaArchSpec lgraph dg opts sharedCtx archSp = case archSp of
+anaArchSpec lgraph dg opts sharedCtx nP archSp = case archSp of
   Basic_arch_spec udd uexpr pos ->
-    do (rNodes, uctx, dg', udd') <-
+    do (branchMap, uctx, dg', udd') <-
          anaUnitDeclDefns lgraph dg opts sharedCtx udd
-       (nodes, usig, diag'', dg'', uexpr') <-
+       (nodes, usig, diag'', dg'', uexpr') <- -- trace "exp" $
            anaUnitExpression lgraph dg' opts uctx $ item uexpr
-       let nodes' = if length nodes < 2  then [] else nodes
-           (rN, dg3) = addEdgesToNodeRT dg'' rNodes usig "ArchSpec"
-       --trace (show $ edges$ diagGraph $  diag'') $
-       return (rN, nodes', diag'',
-                BranchRefSig usig $ Just $ BranchStaticContext (ctx uctx),
+       let (nodes', maybeRes) = case nodes of
+                [] -> ([], Nothing) -- don't think its possible
+                x:[] -> ([], Just x)
+                _ -> (nodes, Nothing)
+           rNodes = -- trace (show $ Map.elems branchMap)$
+                    map refSource $ Map.elems branchMap
+           (rN, dg3) =
+              case nP of
+               Nothing -> let
+                   (n, dgI) = addNodeRT dg'' usig "ArchSpec"
+                          in (n, addEdgesToNodeRT dgI rNodes n)
+               Just x -> (x, addEdgesToNodeRT dg' rNodes x)
+           rP = NPBranch rN branchMap
+       return (nodes', maybeRes,
+                diag'',
+                BranchRefSig rP (usig, Just $ BranchStaticContext (ctx uctx)),
+
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
-  Group_arch_spec asp _ -> anaArchSpec lgraph dg opts sharedCtx (item asp)
+  Group_arch_spec asp _ -> anaArchSpec lgraph dg opts sharedCtx nP (item asp)
   Arch_spec_name asn@(Token astr pos) -> case lookupGlobalEnvDG asn dg of
-            Just (ArchEntry asig@(BranchRefSig (UnitSig nsList resNs) _)) ->
+            Just (ArchEntry asig@(BranchRefSig
+                        (NPBranch n f) (UnitSig nsList resNs, _))) -> do
+              let (rN, dg', asig') =
+                        case nP of
+                         Nothing -> let
+                           (dg0, g) = copySubTree dg n Nothing
+                           n0 = Map.findWithDefault (error "copy") n g
+                           (r1, d1) = addNodeRefRT dg0 n0 $ show asn
+                           a1 = setPointerInRef asig (NPBranch r1 $
+                                 Map.map (mapRTNodes g) f)
+                          in (r1, d1, a1)
+                         Just x  -> let
+                           (dg0, g) = copySubTree dg n Nothing
+                           n0 = Map.findWithDefault (error "copy") n g
+                           d1 = addRefEdgeRT dg0 x n0
+                           a1 = setPointerInRef asig (NPBranch rN  $
+                                 Map.map (mapRTNodes g) f)
+                          in (x, d1, a1)
               case nsList of
                [] -> do
-                 let (rN, dg') = addNodeRefRT dg $ show asn
-                 return (rN, [], snd sharedCtx, asig, dg', archSp)
+                 return ([], Nothing, snd sharedCtx, asig', dg', archSp)
                _ -> do
                 (dnsigs, diag')<- foldM (\(l,d) ns -> do
                         (dns, d')<- extendDiagramIncl lgraph d [] ns "Arch Sig"
@@ -83,30 +115,32 @@ anaArchSpec lgraph dg opts sharedCtx archSp = case archSp of
                       ([], snd sharedCtx) $ reverse nsList
                 (dns, diag'') <-
                    extendDiagramIncl lgraph diag' dnsigs resNs "arch sig"
-                let (rN, dg') = addNodeRefRT dg $ show asn
-                return (rN, dns:dnsigs, diag'', asig, dg', archSp)
+                return (dns:dnsigs, Nothing, diag'', asig', dg', archSp)
             _ -> fatal_error (astr ++
                               " is not an architectural specification") pos
 
 -- | Analyse a list of unit declarations and definitions
 anaUnitDeclDefns :: LogicGraph -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_DECL_DEFN]
-    -> Result ([Node], ExtStUnitCtx, DGraph, [Annoted UNIT_DECL_DEFN])
+    -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx,
+               DGraph, [Annoted UNIT_DECL_DEFN])
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified list of unit declarations and
 definitions -}
 anaUnitDeclDefns lgraph dg opts sharedCtx =
-  anaUnitDeclDefns' lgraph dg opts sharedCtx []
+  anaUnitDeclDefns' lgraph dg opts sharedCtx Map.empty
 
 anaUnitDeclDefns' :: LogicGraph -> DGraph
-    -> HetcatsOpts -> ExtStUnitCtx -> [Node] -> [Annoted UNIT_DECL_DEFN]
-    -> Result ([Node], ExtStUnitCtx, DGraph, [Annoted UNIT_DECL_DEFN])
+    -> HetcatsOpts -> ExtStUnitCtx -> Map.Map SIMPLE_ID RTPointer
+    -> [Annoted UNIT_DECL_DEFN]
+    -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx,
+               DGraph, [Annoted UNIT_DECL_DEFN])
 anaUnitDeclDefns' lgraph dg opts uctx rNodes uds = case uds of
   udd : udds -> do
-    (rNodes1, uctx', dg', udd') <- --trace (show $ item udd)$
+    (rNodes1, uctx', dg', udd') <- -- trace (show $ item udd)$
         anaUnitDeclDefn lgraph dg opts uctx (item udd)
     (rNodes2, uctx'', dg'', udds') <- --trace (show $ edges $ dgBody dg') $
-        anaUnitDeclDefns' lgraph dg' opts uctx' (rNodes1++rNodes) udds
+        anaUnitDeclDefns' lgraph dg' opts uctx' (Map.union rNodes1 rNodes) udds
     return (rNodes2, uctx'', dg'', replaceAnnoted udd' udd : udds')
   [] -> return (rNodes, uctx, dg, [])
 
@@ -137,7 +171,8 @@ nodeSigUnion lgraph dg nodeSigs orig = --trace (show $ length nodeSigs) $
 -- | Analyse unit declaration or definition
 anaUnitDeclDefn :: LogicGraph -> DGraph
                    -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL_DEFN
-                   -> Result ([Node], ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+                   -> Result (Map.Map SIMPLE_ID RTPointer,
+                              ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
@@ -145,33 +180,42 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
        (dns, diag', dg', uts') <-
            anaUnitImported lgraph dg opts uctx pos uts
        let impSig = toMaybeNode dns
-       (rNs, nodes, mDiag, rsig, dg0, usp') <-
-           anaRefSpec lgraph dg' opts impSig un (buc, diag') usp
-       let dg'' = --trace (show $ edges $ dgBody dg0)$
-                  updateNodeNameRT dg0 (head rNs) $ show un
+       (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
+           anaRefSpec lgraph dg' opts impSig un (buc, diag') Nothing usp
+       usig <- getUnitSigFromRef rsig'
+       let (n, dg1, rsig) =
+              case getPointerFromRef rsig' of
+               RTNone -> let (n',d') = addNodeRT dg0 usig $ show un
+                             r' = setPointerInRef rsig' (NPUnit n')
+                         in (n',d',r')
+               _ -> --trace "RT" $
+                    (refSource $ getPointerFromRef rsig', dg0, rsig')
+           dg'' = --trace ("aUDD:" ++ show un)$
+                  updateNodeNameRT dg1 n $ show un
        let diag = case mDiag of
                     Just d -> d
                     Nothing -> diag' -- check!
-       -- aici trebuie sa reunesc diag cu diag'!!!
-       -- insertBasedUnit lgraph dg'' nodes diag usig uctx dns un
-       --   $ Unit_decl un usp' uts' pos
        let ud' = Unit_decl un usp' uts' pos
        case rsig of
-        ComponentRefSig _ -> error $
+        ComponentRefSig _ _ -> error $
                     "component refinement forbidden in arch spec: unit"
                     ++ show un
         _ -> do
          _usig@(UnitSig argSigs resultSig) <- getUnitSigFromRef rsig
          if Map.member un buc
-          then plain_error (rNs,uctx, dg'', ud') (alreadyDefinedUnit un) unpos
-          else  do
+          then plain_error (Map.empty,uctx, dg'', ud')
+               (alreadyDefinedUnit un) unpos
+          else  do -- !!!!! handle maybeRes here!!!
                       (resultSig', dg''') <- nodeSigUnion lgraph dg''
                           (JustNode resultSig:[impSig]) DGImports
                       (basedParUSig, diag''') <-  if null argSigs then do
                           (dn', diag'') <- extendDiagramIncl lgraph diag
-                             (case dns of
+                             ((case dns of
                                 JustDiagNode dn -> [dn]
-                                _ -> []) resultSig' ustr
+                                _ -> []) ++
+                              (case maybeRes of
+                                 Just x ->[x]
+                                 _ -> [])) resultSig' ustr
                           return (Based_unit_sig dn' rsig, diag'')
 -- here compare resultSig' and rsig
                           else if length nodes < 2 then
@@ -186,19 +230,22 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
 -- unitsig argsigs resultsig before refinement
 -- and after refinement i introduce an unnamed component
 -- this happens in all cases
-                      return (rNs, (Map.insert un basedParUSig buc, diag'''),
+                      return (Map.fromList [(un, getPointerFromRef rsig)],
+                       (Map.insert un basedParUSig buc, diag'''),
                                   dg''', ud')
   Unit_defn un uexp poss -> do
-       (nodes, usig, diag, dg', uexp') <-
+       (nodes, usig, diag, dg'', uexp') <-
          anaUnitExpression lgraph dg opts uctx uexp
        let ud' = Unit_defn un uexp' poss
-           (n, dg'') = addNodeRT dg' usig $ show un
+           --(n, dg'') = addNodeRT dg' usig $ show un
        {- it's sufficient to check that un is not mapped in buc, we
           don't need to convert the ExtStUnitCtx to StUnitCtx as the
           domain will be preserved -}
        if Map.member un buc then
-          plain_error ([n], uctx, dg', ud') (alreadyDefinedUnit un) $ tokPos un
-          else case usig of
+          plain_error (Map.empty, uctx, dg'', ud')
+                      (alreadyDefinedUnit un) $ tokPos un
+          else -- trace "aU_d" $
+               case usig of
                {- we can use Map.insert as there are no mappings for
                   un in ps and bs (otherwise there would have been a
                   mapping in (ctx uctx)) -}
@@ -208,21 +255,22 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
                      [dn] -> do
                               let bsig = Based_unit_sig dn $
                                            mkBotSigFromUnit usig
-                              return ([n],(Map.insert un bsig buc, diag),
+                              return (Map.empty,
+                                      (Map.insert un bsig buc, diag),
                                         dg'', ud')
                      _ -> error "anaUnitDeclDefn"
                   else
                    if length nodes < 2 then
                      error "anaUnitDeclDefn:lambda expression"
                    else
-                   return ([n], (Map.insert un
+                   return (Map.empty , (Map.insert un
                              (Based_lambda_unit_sig nodes $
                               mkBotSigFromUnit usig)
                              buc, diag), dg'', ud')
 
 -- | Analyse unit refs
 anaUnitRef :: LogicGraph -> DGraph
-             -> HetcatsOpts -> ExtStUnitCtx -> UNIT_REF
+             -> HetcatsOpts -> ExtStUnitCtx -> Maybe RTLeaves -> UNIT_REF
              -> Result ((UNIT_NAME, RefSig), DGraph, UNIT_REF)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
@@ -231,17 +279,22 @@ development graph 3. possibly modified UNIT_DECL_DEFN -}
 -- no need for ExtStUnitCtx, just pair (un, rsig)
 -- %%%%%%%%%%%
 anaUnitRef lgraph dg opts
-             _uctx@(_ggbuc, _diag')
+             _uctx@(_ggbuc, _diag') rN
              (Unit_ref un@(Token _ustr _unpos) usp pos) = do
 -- %%%%%%%%%%%%%%%%%%%%
 -- here: check if impSig is needed
 --       check if ComponentRefSig is handled correctly.
 -- %%%%%%%%%%%%%%%%%%%%
+  let n = case rN of
+           Nothing -> Nothing
+           Just (RTLeaves f) -> Just $ Map.findWithDefault
+                  (error "component not in map!") un f
+           _ -> error "components!"
   curl <- lookupCurrentLogic "UNIT_REF" lgraph
   --let dns = EmptyDiagNode curl
   let impSig = EmptyNode curl
-  (_, _,_,rsig, dg'', usp') <- anaRefSpec lgraph dg opts impSig un
-                        emptyExtStUnitCtx usp
+  ( _,_,_,rsig, dg'', usp') <- anaRefSpec lgraph dg opts impSig un
+                        emptyExtStUnitCtx n usp
   -- check if this is enough !!!!!!
   -- no sharing
   let ud' = Unit_ref un usp' pos
@@ -328,17 +381,27 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
            insNodes diag0 [] buc0 = return ([], diag0, buc0)
            insNodes diag0 ((un, nsig) : args0) buc0 =
                do (dnsig, diag') <- extendDiagramIncl lgraph diag0 []
-                           nsig dexp
+                           nsig $ show un
                   {- we made sure in anaUnitBindings that there's no
                      mapping for un in buc so we can just use
                      Map.insert -}
-                  let rsig = BranchRefSig (UnitSig [] nsig) Nothing
+                  let rsig = BranchRefSig RTNone (UnitSig [] nsig) Nothing
                       buc' = Map.insert un (Based_unit_sig dnsig rsig) buc0
                   (dnsigs, diag'', buc'') <- insNodes diag' args0 buc'
                   return (dnsig : dnsigs, diag'', buc'')
        (pardnsigs, diag'', buc') <- insNodes diag args buc
+       (resnsig,_) <- nodeSigUnion lgraph dg'
+                              (map (JustNode . snd) args) DGFormalParams
+       (Diag_node_sig nU _, diagI) <- --trace ("diag3:" ++ show diag'')$
+                             extendDiagramIncl lgraph diag''
+                             pardnsigs resnsig dexp
+               -- only add the union to ensure compatibility of
+               -- formal parameters
+               -- but remove afterwards to be able to check
+               -- compatibility of actual parameters: matchDiagram below
        (p@(Diag_node_sig _ pnsig), diag''', dg''', ut') <-
-           anaUnitTerm lgraph dg' opts (buc', diag'') (item ut)
+           --trace ("before:"++show diagI)$
+           anaUnitTerm lgraph dg' opts (buc', diagI) (item ut)
        -- check amalgamability conditions
        let pos = getPosUnitExpression uexp
            checkSubSign dnsigs nsup =
@@ -347,13 +410,16 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
        -- check that signatures in pardnsigs are subsignatures of pnsig
        if checkSubSign pardnsigs pnsig
           then
-            do sink <- inclusionSink lgraph (p : pardnsigs) pnsig
-               () <- assertAmalgamability opts pos diag''' sink
+            do
+               sink <- inclusionSink lgraph (p : pardnsigs) pnsig
+               () <- --trace ("diag4:" ++ (show diag'''))$
+                     assertAmalgamability opts pos diag''' sink
                -- add new node to the diagram
                --curl <- lookupCurrentLogic "UnitExpression" lgraph
+               let (_, diag4) =  matchDiagram nU diag'''
                return (p:pardnsigs,
                         UnitSig (map snd args) pnsig,
-                        diag''', dg''',
+                        diag4, dg''',
                        Unit_expression ubs' (replaceAnnoted ut' ut) poss)
           else -- report an error
               fatal_error
@@ -370,8 +436,8 @@ anaUnitBindings lgraph dg opts uctx@(buc, _) bs = case bs of
  	  [] -> return ([], dg, [])
  	  Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
  	       curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
- 	       (BranchRefSig _usig@(UnitSig argSigs nsig) _, dg', usp') <-
- 	           anaUnitSpec lgraph dg opts (EmptyNode curl) usp
+ 	       (BranchRefSig _ (_usig@(UnitSig argSigs nsig),_), dg', usp') <-
+ 	           anaUnitSpec lgraph dg opts (EmptyNode curl) Nothing usp
  	       let ub' = Unit_binding un usp' poss
  	       case null argSigs of
  	            False -> plain_error ([], dg', [])
@@ -467,8 +533,8 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                      sig utStr
        return (q, diag', dg'', Amalgamation uts' poss)
   Local_unit udds ut poss -> do
-       (_, uctx', dg1, udds') <-
-           anaUnitDeclDefns' lgraph dg opts uctx [] udds
+       (_, uctx', dg1, udds')<-
+           anaUnitDeclDefns' lgraph dg opts uctx Map.empty udds
        (dnsig, diag', dg', ut') <-
            anaUnitTerm lgraph dg1 opts uctx' (item ut)
        return (dnsig, diag', dg',
@@ -486,7 +552,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                   (ustr ++ " is a parameterless unit, "
                    ++ "but arguments have been given: " ++ argStr) pos
             Just (Based_par_unit_sig pI
-                     (BranchRefSig (UnitSig argSigs resultSig) _)) ->
+                     (BranchRefSig _ (UnitSig argSigs resultSig, _))) ->
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
@@ -513,7 +579,8 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                            _ -> []
                    sink <- inclusionSink lgraph (pIL ++
                                                  map third morphSigs) sigA
-                   () <- assertAmalgamability opts pos diagA sink
+                   () <- --trace ("diagA:" ++ show diagA) $
+                         assertAmalgamability opts pos diagA sink
                    (qB@(Diag_node_sig nqB _), diag') <-
                        extendDiagramIncl lgraph diagA pIL resultSig ""
                    -- insert nodes p^F_i and appropriate edges to the diagram
@@ -541,7 +608,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                             (map third morphSigs) q
                    return (q, diag4, dg5, utrm)
             Just (Based_lambda_unit_sig nodes
-                  (BranchRefSig (UnitSig argSigs resultSig) _)) ->
+              (BranchRefSig _ (UnitSig argSigs resultSig, _))) ->
               case nodes of
                [] -> error "error in lambda expression"
                r:fs ->
@@ -565,7 +632,8 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                    -- check amalgamability conditions
                    let sigMorExt = gEmbed gSigMorExt
                    sink <- inclusionSink lgraph (map third morphSigs) sigA
-                   () <- assertAmalgamability opts pos diagA sink
+                   () <- --trace ("in lambda:" ++ show diagA)$
+                         assertAmalgamability opts pos diagA sink
                    let eI = zip fs $ map (\x->(first x, third x)) morphSigs
                    --  insert an edge from f_i to targetNode_i
                    -- extendDiagramWithEdge does it
@@ -650,11 +718,12 @@ anaUnitSpec :: LogicGraph
               -> DGraph
               -> HetcatsOpts   -- ^ should only the structure be analysed?
               -> MaybeNode                   -- ^ the signature of imports
+              -> Maybe RTLeaves -- for building refinement trees
               -> UNIT_SPEC -> Result (RefSig, DGraph, UNIT_SPEC)
 -- ^ returns 1. unit signature 2. the development graph resulting from
 -- structred specs inside the unit spec and 3. a UNIT_SPEC after possible
 -- conversions.
-anaUnitSpec lgraph dg opts impsig usp = case usp of
+anaUnitSpec lgraph dg opts impsig rN usp = case usp of
   Unit_type argSpecs resultSpec poss ->  case argSpecs of
     [] -> case resultSpec of
       Annoted (Spec_inst spn [] _) _ _ _
@@ -666,12 +735,11 @@ anaUnitSpec lgraph dg opts impsig usp = case usp of
             _ -> False ->
        {- if argspecs are empty and resultspec is a name of unit spec
           then this should be converted to a Spec_name -}
-        anaUnitSpec lgraph dg opts impsig (Spec_name spn)
+        anaUnitSpec lgraph dg opts impsig rN (Spec_name spn)
       _ ->  do -- a trivial unit type
        (resultSpec', resultSig, dg') <- anaSpec False lgraph
            dg impsig emptyNodeName opts  (item resultSpec)
        let usig= UnitSig [] resultSig
- --          (n,dg'') = addNodeRT dg' usig ""
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
     _ -> do -- a non-trivial unit type
@@ -685,7 +753,6 @@ anaUnitSpec lgraph dg opts impsig usp = case usp of
                 emptyNodeName opts (item resultSpec)
        let usig = UnitSig argSigs resultSig
            rsig = mkRefSigFromUnit usig
-           --(n, dg4) = addNodeRT dg3 usig ""
        return (rsig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
   Spec_name usn@(Token ustr pos) -> case lookupGlobalEnvDG usn dg of
@@ -693,12 +760,33 @@ anaUnitSpec lgraph dg opts impsig usp = case usp of
     Just (SpecEntry (ExtGenSig _gsig@(GenSig _ args _) nsig) ) ->
      --trace (show usn)$
       return (mkRefSigFromUnit $ UnitSig args nsig, dg, usp)
-    Just (RefEntry rsig) -> return (rsig, dg, usp) -- maybe reject components?
+    Just (RefEntry rsig) -> --trace ("rsig of: " ++ show usn) $
+          case rN of
+           Nothing -> let
+             p = getPointerFromRef rsig
+             s = refSource p
+             (dg', f) = copySubTree dg s Nothing
+             newP = mapRTNodes f p
+            in return (setPointerInRef rsig newP , dg', usp)
+           Just (RTLeaf x) -> let
+                       p = getPointerFromRef rsig
+                       s = refSource p
+                       (dg', f) = copySubTree dg s $ Just x
+                       --dg' = addTypingEdgeRT dg x $ refSource $
+                       --       getPointerFromRef rsig
+                       p'=  mapRTNodes f p
+                       np' =
+                             compPointer (NPUnit x) p'
+                     in return (setPointerInRef rsig np', dg', usp)
+           Just (RTLeaves leaves) -> let
+               p = getPointerFromRef rsig
+             in case p of
+                  NPComp f2 -> error "nyi arch sig as ref"
+                  _ -> error "can't compose signatures!"
     _ -> fatal_error (ustr ++ " is not an unit specification") pos
   Closed_unit_spec usp' _ -> do
     curl <- lookupCurrentLogic "UnitSpec" lgraph
-    anaUnitSpec lgraph dg opts (EmptyNode curl) usp'
-
+    anaUnitSpec lgraph dg opts (EmptyNode curl) rN usp'
 
 -- | Analyse refinement specification
 anaRefSpec :: LogicGraph
@@ -707,36 +795,53 @@ anaRefSpec :: LogicGraph
               -> MaybeNode                   -- ^ the signature of imports
               -> SPEC_NAME -- for origin
               -> ExtStUnitCtx
+              -> Maybe RTLeaves
               -> REF_SPEC
-              -> Result ([Node], [DiagNodeSig], Maybe Diag,
+              -> Result ([DiagNodeSig], -- for lambda expressions
+                         Maybe DiagNodeSig, -- for tracing between levels
+                         Maybe Diag,
                          RefSig, DGraph, REF_SPEC)
-anaRefSpec lgraph dg opts nsig rn sharedCtx rsp =
+anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
  case rsp of
   Unit_spec asp ->
     do
        (rsig, dg', asp') <-
-           anaUnitSpec lgraph dg opts nsig asp
+           anaUnitSpec lgraph dg opts nsig nP asp
        usig <- getUnitSigFromRef rsig
-       let (n,dg'') = addNodeRT dg' usig ""
-       return $ ([n], [], Just (snd sharedCtx), rsig, dg'', Unit_spec asp')
+       let rP = getPointerFromRef rsig
+           (rsig', dg3) = case rP of
+                           RTNone -> let
+                             (n,dg'') = addNodeRT dg' usig $ name asp
+                             r' = setPointerInRef rsig (NPUnit n)
+                            in (r', dg'')
+                           _ -> (rsig, dg')
+       return $ ([], Nothing, Just (snd sharedCtx), rsig', dg3, Unit_spec asp')
   Arch_unit_spec asp poss ->
      do
-       (n, nodes, diag, rsig, dg', asp') <-
-           anaArchSpec lgraph dg opts sharedCtx $ item asp
-       return ([n], nodes, Just diag, rsig, dg',
+       let x = case nP of
+                Nothing -> Nothing
+                Just (RTLeaf y) -> Just y
+                _ -> error "nyi"
+       (nodes,maybeRes, diag, rsig, dg', asp') <-
+           anaArchSpec lgraph dg opts sharedCtx x $ item asp
+       return (nodes, maybeRes, Just diag, rsig, dg',
                Arch_unit_spec (replaceAnnoted asp' asp) poss)
 -- check whether it is indeed correct
 -- to ignore the nodes of the
 -- lambda expressions, like you do in the following
   Compose_ref rslist range ->
     do
-       (dg', anaSpecs) <- foldM (\(dgr, rList) rsp0 ->do
-          (_,_,_,rsig', dgr',rsp')<- anaRefSpec lgraph dgr opts nsig
+       (dg', anaSpecs, _) <- foldM (\(dgr, rList, rN') rsp0 ->do
+          (_,_,_,rsig', dgr',rsp')<-
+                               anaRefSpec lgraph dgr opts nsig
                                (mkSimpleId $ (show  rn) ++ "gen_ref_name" ++
                                              (show $ length rList) )
-                               sharedCtx rsp0
-          return (dgr', rList ++ [(rsig',rsp')])
-                           ) (dg, []) rslist
+                               sharedCtx rN' rsp0
+ -- here Nothing will change
+          --trace ("comp:" ++(show $ refTarget $ getPointerFromRef rsig'))$
+          return (dgr', rList ++ [(rsig',rsp')],
+                        Just $ refTarget $ getPointerFromRef rsig')
+                           ) (dg, [], nP) rslist
        -- compose signatures in csig
        let refSigs = map fst anaSpecs
        csig <- foldM refSigComposition (head refSigs) $ tail refSigs
@@ -746,33 +851,56 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx rsp =
 -- and in the loop i would have to insert a refinement link
        --trace ("Compose - \n"++ show csig) $
        usig <- getUnitSigFromRef csig
-       let (n, dg'') = addNodeRT dg' usig "Composed refinements here"
-       return ([n], [], Nothing, csig, dg'', compRef)
-  Component_ref urlist range -> do
-       (dg', anaRefs, resultMap) <- foldM (\(dgr, rList, cx) uref0 -> do
-         ((n,rs), dgr',uref')<-
-                    anaUnitRef lgraph dgr opts emptyExtStUnitCtx uref0
-         return (dgr', uref':rList , Map.insert n rs cx)
-                           ) (dg, [], Map.empty) urlist
-       --trace ("Component - \n" ++ show resultMap)$
-       --let (r, dg'') = addNodeRT dg' usig "Composed refinements here"
-       return ([],[], Nothing, ComponentRefSig resultMap, dg',
+       --let (n, dg'') = addNodeRT dg' usig "Composed refinements here"
+       return ([], Nothing, Nothing, csig, dg', compRef)
+  Component_ref urlist range ->  do
+       (dg', anaRefs, resultMap, pMap) <-
+         foldM (\(dgr, rList, cx, ps) uref0 -> do
+          ((n,rs), dgr',uref')<-
+                    anaUnitRef lgraph dgr opts emptyExtStUnitCtx nP uref0
+          return (dgr', uref':rList , Map.insert n rs cx,
+                  Map.insert n (getPointerFromRef rs) ps)
+                           ) (dg, [], Map.empty, Map.empty) urlist
+       -- here:
+        -- insert a dummy node labeled with the name of the component
+        -- insert a refinement link from the dummy node to the
+        -- source of refinement
+       return ([], Nothing, Nothing,
+               ComponentRefSig (NPComp pMap) resultMap, dg',
                Component_ref (reverse anaRefs) range)
   Refinement beh uspec gMapList rspec range ->
    do
      -- beh will be ignored for now
-     (BranchRefSig usig _, dg', asp') <-
-           anaUnitSpec lgraph dg opts nsig uspec
-     (t, _, _, BranchRefSig usig' bsig, dgr',rsp') <-
-           anaRefSpec lgraph dg' opts nsig rn emptyExtStUnitCtx rspec
+     (_rsig@(BranchRefSig _ (usig,_)), dg', asp') <-
+           anaUnitSpec lgraph dg opts nsig nP uspec
+     (_, _, _, _rsig'@(BranchRefSig n2 (usig',bsig)), dgr',rsp') <-
+           anaRefSpec lgraph dg' opts nsig rn emptyExtStUnitCtx Nothing rspec
+             -- here Nothing is fine
      case (usig, usig') of
        (UnitSig _ls ns, UnitSig _ls' ns') -> do
                dg'' <- anaSymbMapRef dgr' ns ns' gMapList rn
-               let (s, dg3) = addNodeRT dg'' usig "RefSource"
-                   dg4 = addRefEdgeRT dg3 s (head $ t)
+               let (s, dg3) = case nP of
+                               Nothing -> addNodeRT dg'' usig  $ name uspec
+                               Just (RTLeaf x) -> (x, dg'')
+                               _ -> error "can't refine to component!"
+                   dg4 = -- trace ("ref link:"++show n2++ " " ++ show s)$
+                         addRefEdgeRT dg3 s (refSource n2)
                --trace ("Refinement - \n " ++ show usig ++ " " ++ show bsig) $
-               return ([],[], Nothing, BranchRefSig usig bsig, dg4,
+               return ([], Nothing, Nothing,
+                       BranchRefSig (compPointer (NPUnit s) n2)
+                                    (usig, bsig) ,dg4,
                     Refinement beh asp' gMapList rsp' range)
+
+ where
+  name usp = case usp of
+              Spec_name x -> show x
+              Unit_type argSpecs resultSpec _ ->
+                case argSpecs of
+                 [] -> case resultSpec of
+                        Annoted (Spec_inst spn [] _) _ _ _ -> show spn
+                        _ -> ""
+                 _ -> ""
+              _ -> ""
 
 
 anaSymbMapRef :: DGraph -> NodeSig -> NodeSig -> [G_mapping] -> SPEC_NAME ->
