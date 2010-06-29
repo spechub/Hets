@@ -21,6 +21,7 @@ module CommonLogic.Sign
     ,uniteL                        -- union of a list ofsignatures
     ,sigUnion                      -- Union for Logic.Logic
     ,isSeqMark                     -- is sequence marker?
+    ,isStringSeqMark
     ,sigUnionL                     -- union of a list ofsignatures
     ) where
 
@@ -70,6 +71,9 @@ unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}
 --TODO:
 isSeqMark :: Id -> Bool
 isSeqMark _ = True
+
+isStringSeqMark :: String -> Bool
+isStringSeqMark s = take 3 s == "..."
 
 uniteL :: [Sign] -> Sign
 uniteL = foldr unite emptySig
