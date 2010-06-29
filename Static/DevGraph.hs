@@ -72,7 +72,7 @@ import Common.Result
 
 -- | Node with signature in a DG
 data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
-    deriving  (Eq, Show)
+    deriving (Eq, Show)
 
 {- | NodeSig or possibly the empty sig in a logic
      (but since we want to avoid lots of vsacuous nodes with empty sig,
@@ -559,7 +559,7 @@ emptyStUnitCtx = Map.empty
 
 type RefSigMap = Map.Map SIMPLE_ID RefSig
 type BStContext = Map.Map SIMPLE_ID RefSig
---there should be only BranchRefSigs
+-- there should be only BranchRefSigs
 
 data RefSig = BranchRefSig UnitSig (Maybe BranchSig)
             | ComponentRefSig RefSigMap
@@ -582,7 +582,7 @@ instance Show RefSig where
       "Branch: \n before refinement:\n  " ++ show usig ++
       "\n  after refinement: \n" ++ bStr ++ "\n"
   show (ComponentRefSig rsm) =
-   foldl (++) "CompRefSig:" $ map (\n -> show n ++ "\n ") $
+   foldl (++) "CompRefSig:" $ map (\ n -> show n ++ "\n ") $
      Map.toList rsm
 
 getUnitSigFromRef :: RefSig -> Result UnitSig
@@ -608,23 +608,18 @@ emptyRefStUnitCtx = Map.empty
 
 -- Auxiliaries for refinament signatures composition
 matchesContext :: RefSigMap -> BStContext -> Bool
-matchesContext rsmap bstc = let
- b1 = null $ filter (\x-> not $ x `elem` Map.keys bstc) $ Map.keys rsmap
- b2 = if b1 then namesMatchCtx (Map.keys rsmap) bstc rsmap else False
-                            in
- b1 && b2
+matchesContext rsmap bstc =
+  null (filter (`notElem` Map.keys bstc) $ Map.keys rsmap)
+  && namesMatchCtx (Map.keys rsmap) bstc rsmap
 
 equalSigs :: UnitSig -> UnitSig -> Bool
 equalSigs (UnitSig ls1 ns1) (UnitSig ls2 ns2) =
- if length ls1 /= length ls2 then False
- else foldl (&&) (getSig ns1 == getSig ns2) $
-      map (\(x1,x2) -> getSig x1 == getSig x2) $
-      zip ls1 ls2
-
+  length ls1 == length ls2 && getSig ns1 == getSig ns2
+    && all (\ (x1, x2) -> getSig x1 == getSig x2) (zip ls1 ls2)
 
 namesMatchCtx :: [SIMPLE_ID] -> BStContext -> RefSigMap -> Bool
 namesMatchCtx [] _ _ = True
-namesMatchCtx (un:unitNames) bstc rsmap =
+namesMatchCtx (un : unitNames) bstc rsmap =
  case (Map.findWithDefault (error "namesMatchCtx")
             un bstc) of
   BranchRefSig _usig mbsig -> case mbsig of
@@ -636,21 +631,20 @@ namesMatchCtx (un:unitNames) bstc rsmap =
                                          namesMatchCtx unitNames bstc rsmap
          _ -> False
      BranchStaticContext bstc' ->
-       case (rsmap Map.! un) of
+       case rsmap Map.! un of
          ComponentRefSig rsmap' -> -- check whether this is needed!
-                (matchesContext rsmap' bstc') &&
+                matchesContext rsmap' bstc' &&
                  namesMatchCtx unitNames bstc rsmap
   -- This is where I introduce something new wrt to the refinement paper:
   -- if bstc' has only one element
   -- it suffices to have the signature of that element
   -- matching the signature from rsmap'
-         _ -> if Map.size bstc' == 1 then
+         _ -> Map.size bstc' == 1 &&
                 let un1 = head $ Map.keys bstc'
-                    rsmap' =  Map.mapKeys (\x -> if x == un then un1 else x)
+                    rsmap' = Map.mapKeys (\ x -> if x == un then un1 else x)
                                rsmap
                 in namesMatchCtx [un1] bstc' rsmap' &&
                    namesMatchCtx unitNames bstc rsmap
-               else False
   _ -> False -- this should never be the case
 
 modifyCtx :: [SIMPLE_ID] -> RefSigMap -> BStContext -> BStContext
@@ -665,7 +659,7 @@ modifyCtx (un : unitNames) rsmap bstc =
           case rsmap Map.! un of
             BranchRefSig usig'' bsig'' -> if usig' == usig'' then
                  modifyCtx unitNames rsmap $
-                 Map.insert un (BranchRefSig usig bsig'') bstc --  was usig'
+                 Map.insert un (BranchRefSig usig bsig'') bstc -- was usig'
                 else error "illegal composition"
             _ -> modifyCtx unitNames rsmap bstc
        BranchStaticContext bstc' ->
@@ -678,7 +672,7 @@ modifyCtx (un : unitNames) rsmap bstc =
             _ -> let f = if Map.size bstc' == 1 then
                              let un1 = head $ Map.keys bstc'
                                  rsmap' = Map.mapKeys
-                                          (\x -> if x == un then un1 else x)
+                                          (\ x -> if x == un then un1 else x)
                                            rsmap
                                  bstc'' = modifyCtx [un1] rsmap' bstc'
                              in Map.singleton un $
@@ -706,10 +700,10 @@ refSigComposition (BranchRefSig usig1 (Just (BranchStaticContext bstc)))
       else fail "Signatures do not match"
 
 refSigComposition (ComponentRefSig rsmap1) (ComponentRefSig rsmap2) = do
-  upd <- sequence $
-         map (\x -> do{ s<-refSigComposition (rsmap1 Map.! x) (rsmap2 Map.! x);
-                        return (x,s)}) $
-         filter (\x -> x `elem` (Map.keys rsmap1)) $ Map.keys rsmap2
+  upd <- mapM (\ x -> do
+                 s <- refSigComposition (rsmap1 Map.! x) (rsmap2 Map.! x)
+                 return (x, s))
+         $ filter (`elem` Map.keys rsmap1) $ Map.keys rsmap2
   let unionMap = Map.union (Map.fromList upd) $
                  Map.union rsmap1 rsmap2
   return $ ComponentRefSig unionMap
@@ -753,10 +747,10 @@ type ProofHistory = SizedList.SizedList HistElem
 
 data RTNodeType = RTPlain UnitSig | RTRef Node deriving (Show, Eq)
 
-data RTNodeLab = RTNodeLab{
-   rtn_type :: RTNodeType
- , rtn_name :: String
- } deriving (Eq)
+data RTNodeLab = RTNodeLab
+  { rtn_type :: RTNodeType
+  , rtn_name :: String
+  } deriving Eq
 
 instance Show RTNodeLab where
  show r =
@@ -775,9 +769,9 @@ data RTLinkType =
   | RTGiven
  deriving (Show, Eq)
 
-data RTLinkLab = RTLink{
-   rtl_type :: RTLinkType
- } deriving (Show, Eq)
+data RTLinkLab = RTLink
+  { rtl_type :: RTLinkType
+  } deriving (Show, Eq)
 
 -- utility functions for handling refinement tree
 
@@ -786,32 +780,32 @@ addNodeRT dg usig s =
  let
   g = refTree dg
   n = Tree.getNewNode g
-  l = RTNodeLab{
+  l = RTNodeLab {
         rtn_type = RTPlain usig
         , rtn_name = s
        }
- in (n, dg{refTree = insNode (n, l) g})
+ in (n, dg {refTree = insNode (n, l) g})
 
-addSpecNodeRT ::  DGraph -> UnitSig -> String -> (Node, DGraph)
+addSpecNodeRT :: DGraph -> UnitSig -> String -> (Node, DGraph)
 addSpecNodeRT dg usig s =
  let
   (n, dg') = addNodeRT dg usig s
   f = Map.insert s n $ specRoots dg'
- in (n, dg'{specRoots = f})
+ in (n, dg' {specRoots = f})
 
 addNodeRefRT :: DGraph -> String -> (Node, DGraph)
 addNodeRefRT dg s =
  let
    g = refTree dg
    n = Map.findWithDefault (error "addNodeRefRT") s $ specRoots dg
-   n'= Tree.getNewNode g
-   l = RTNodeLab{
+   n' = Tree.getNewNode g
+   l = RTNodeLab {
         rtn_type = RTRef n,
         rtn_name = s}
    g0 = insNode (n', l) g
-   orderRT _ _  = GT
-   (g', _) = Tree.insLEdge True orderRT (n, n', RTLink{rtl_type=RTTyping}) g0
- in (n', dg{refTree = g'})
+   orderRT _ _ = GT
+   (g', _) = Tree.insLEdge True orderRT (n, n', RTLink {rtl_type = RTTyping}) g0
+ in (n', dg {refTree = g'})
 
 updateNodeNameRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameRT dg n s =
@@ -821,23 +815,23 @@ updateNodeNameRT dg n s =
  in case l of
      Nothing -> dg
      Just oldL -> let
-       newL = oldL{rtn_name = s}
-       (g', _) = Tree.labelNode (n,newL) g
-                  in dg{refTree = g'}
+       newL = oldL {rtn_name = s}
+       (g', _) = Tree.labelNode (n, newL) g
+                  in dg {refTree = g'}
 
 updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameSpecRT dg n s =
  let dg' = updateNodeNameRT dg n s
- in dg'{specRoots = Map.insert s n $ specRoots dg}
+ in dg' {specRoots = Map.insert s n $ specRoots dg}
 
 addRefEdgeRT :: DGraph -> Node -> Node -> DGraph
 addRefEdgeRT dg n1 n2 =
  let
-  g =  refTree dg
-  orderRT _ _  = GT
+  g = refTree dg
+  orderRT _ _ = GT
   (g', b) = Tree.insLEdge True orderRT
-                                 (n1, n2, RTLink{rtl_type = RTRefine}) g
- in if b then dg{refTree = g'}
+                                 (n1, n2, RTLink {rtl_type = RTRefine}) g
+ in if b then dg {refTree = g'}
     else error "addRefEdgeRT"
 
 addEdgesToNodeRT :: DGraph -> [Node] -> UnitSig -> String ->
@@ -846,14 +840,14 @@ addEdgesToNodeRT dg rnodes usig s =
  let
   (n', dg') = addNodeRT dg usig s
   g = refTree dg'
-  orderRT _ _  = GT
-  (g', b) = foldl (\(g0, b0) n0 -> let
+  orderRT _ _ = GT
+  (g', b) = foldl (\ (g0, b0) n0 -> let
                       (g1, b1) = Tree.insLEdge True orderRT
-                                 (n0, n', RTLink{rtl_type = RTComp}) g0
+                                 (n0, n', RTLink {rtl_type = RTComp}) g0
                                     in (g1, b1 && b0))
             (g, True) rnodes
  in if not b then error "addEdgesToNodeRT"
-    else (n', dg'{refTree = g'})
+    else (n', dg' {refTree = g'})
 
 -- I copied these types from ArchDiagram
 -- to store the diagrams of the arch specs in the dgraph
@@ -861,7 +855,7 @@ addEdgesToNodeRT dg rnodes usig s =
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
                  deriving Show
 
-data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number:: Int }
+data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number :: Int }
                  deriving Show
 
 data Diag = Diagram {
@@ -1176,7 +1170,6 @@ lookupInAllRefNodesDG ref dg = case ref of
         Map.lookup (libn, refn) $ allRefNodes dg
     _ -> Nothing
 
-
 -- ** lookup nodes by their names or other properties
 
 -- | lookup a node in the graph with a predicate.
@@ -1204,7 +1197,6 @@ lookupRefNodeByName s ln dg = lookupNodeWith f dg where
                    DGRef { ref_libname = libn } ->
                        libn == ln && getDGNodeName lbl == s
                    _ -> False
-
 
 -- ** treat reference nodes
 
