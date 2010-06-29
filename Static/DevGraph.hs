@@ -561,22 +561,23 @@ type RefSigMap = Map.Map SIMPLE_ID RefSig
 type BStContext = Map.Map SIMPLE_ID RefSig
 --there should be only BranchRefSigs
 
-data RefSig = BranchRefSig (UnitSig, BranchSig)
+data RefSig = BranchRefSig UnitSig (Maybe BranchSig)
             | ComponentRefSig RefSigMap
               deriving (Eq)
 
 instance Show RefSig where
 -- made this instance for debugging purposes
-  show (BranchRefSig (usig, bsig)) =
-    let bStr = case bsig of
-                NoFurtherRefinement -> "Bottom\n "
-                UnitSigAsBranchSig u -> if u == usig then "same"
-                                        else "UnitSigAsBranch:" ++ show u
-                                             ++ "\n "
-                BranchStaticContext bst ->
-                  foldl (++) "branching: " $
-                  map (\(n,s) -> show n ++ " mapped to\n" ++ show s ++ "\n") $
-                  Map.toList bst
+  show (BranchRefSig usig mbsig) =
+    let bStr = case mbsig of
+                 Nothing -> "Bottom\n "
+                 Just bsig -> case bsig of
+                   UnitSigAsBranchSig u ->
+                     if u == usig then "same"
+                     else "UnitSigAsBranch:" ++ shows u "\n "
+                   BranchStaticContext bst ->
+                     foldl (++) "branching: "
+                     $ map (\ (n, s) -> shows n " mapped to\n" ++ shows s "\n")
+                     $ Map.toList bst
     in
       "Branch: \n before refinement:\n  " ++ show usig ++
       "\n  after refinement: \n" ++ bStr ++ "\n"
@@ -585,19 +586,17 @@ instance Show RefSig where
      Map.toList rsm
 
 getUnitSigFromRef :: RefSig -> Result UnitSig
-getUnitSigFromRef (BranchRefSig (usig, _)) = return usig
+getUnitSigFromRef (BranchRefSig usig _) = return usig
 getUnitSigFromRef (ComponentRefSig rsm) =
-   error $ "getUnitSigFromRef:" ++ (show $ Map.keys rsm)
+   error $ "getUnitSigFromRef:" ++ show (Map.keys rsm)
 
 mkRefSigFromUnit :: UnitSig -> RefSig
-mkRefSigFromUnit usig = BranchRefSig (usig, UnitSigAsBranchSig usig)
+mkRefSigFromUnit usig = BranchRefSig usig $ Just $ UnitSigAsBranchSig usig
 
 mkBotSigFromUnit :: UnitSig -> RefSig
-mkBotSigFromUnit usig = BranchRefSig (usig, NoFurtherRefinement)
+mkBotSigFromUnit usig = BranchRefSig usig Nothing
 
-data BranchSig = NoFurtherRefinement
-                 -- for unit definitions, which can't be further refined
-               | UnitSigAsBranchSig UnitSig
+data BranchSig = UnitSigAsBranchSig UnitSig
                | BranchStaticContext BStContext
                  deriving (Show, Eq)
 
@@ -628,11 +627,12 @@ namesMatchCtx [] _ _ = True
 namesMatchCtx (un:unitNames) bstc rsmap =
  case (Map.findWithDefault (error "namesMatchCtx")
             un bstc) of
-  BranchRefSig (_usig, bsig) ->
-   case bsig of
+  BranchRefSig _usig mbsig -> case mbsig of
+    Nothing -> False -- should not be the case
+    Just bsig -> case bsig of
      UnitSigAsBranchSig usig' ->
-       case (Map.findWithDefault (error "USABS") un rsmap) of
-         BranchRefSig(usig'',_bsig') -> (equalSigs usig' usig'') &&
+       case Map.findWithDefault (error "USABS") un rsmap of
+         BranchRefSig usig'' _mbsig' -> equalSigs usig' usig'' &&
                                          namesMatchCtx unitNames bstc rsmap
          _ -> False
      BranchStaticContext bstc' ->
@@ -651,29 +651,29 @@ namesMatchCtx (un:unitNames) bstc rsmap =
                 in namesMatchCtx [un1] bstc' rsmap' &&
                    namesMatchCtx unitNames bstc rsmap
                else False
-     _ -> False -- should not be the case
   _ -> False -- this should never be the case
 
 modifyCtx :: [SIMPLE_ID] -> RefSigMap -> BStContext -> BStContext
 -- this function needs to be checked!
 modifyCtx [] _ bstc = bstc
-modifyCtx (un:unitNames) rsmap bstc =
+modifyCtx (un : unitNames) rsmap bstc =
  case bstc Map.! un of
-   BranchRefSig (usig, bsig) ->
-     case bsig of
+   BranchRefSig usig mbsig -> case mbsig of
+     Nothing -> modifyCtx unitNames rsmap bstc -- should not be the case
+     Just bsig -> case bsig of
        UnitSigAsBranchSig usig' ->
           case rsmap Map.! un of
-            BranchRefSig (usig'', bsig'') -> if usig' == usig'' then
+            BranchRefSig usig'' bsig'' -> if usig' == usig'' then
                  modifyCtx unitNames rsmap $
-                 Map.insert un (BranchRefSig (usig,bsig'')) bstc --  was usig'
+                 Map.insert un (BranchRefSig usig bsig'') bstc --  was usig'
                 else error "illegal composition"
             _ -> modifyCtx unitNames rsmap bstc
        BranchStaticContext bstc' ->
           case rsmap Map.! un of
             ComponentRefSig rsmap' -> modifyCtx unitNames rsmap $
              Map.insert un
-             (BranchRefSig (usig,
-               BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc'))
+             (BranchRefSig usig $ Just $
+               BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc')
              bstc
             _ -> let f = if Map.size bstc' == 1 then
                              let un1 = head $ Map.keys bstc'
@@ -682,27 +682,27 @@ modifyCtx (un:unitNames) rsmap bstc =
                                            rsmap
                                  bstc'' = modifyCtx [un1] rsmap' bstc'
                              in Map.singleton un $
-                                BranchRefSig (usig, BranchStaticContext bstc'')
+                                BranchRefSig usig $ Just
+                                $ BranchStaticContext bstc''
                            else Map.empty
                  in Map.union f $ modifyCtx unitNames rsmap bstc
-       _ -> modifyCtx unitNames rsmap bstc -- should not be the case
    _ -> modifyCtx unitNames rsmap bstc -- same as above
 
 -- Signature composition
 refSigComposition :: RefSig -> RefSig -> Result RefSig
-refSigComposition (BranchRefSig (usig1, UnitSigAsBranchSig usig2))
-                  (BranchRefSig (usig3, bsig)) =
-  if (usig2 == usig3) then do
-    return $ BranchRefSig (usig1, bsig)
+refSigComposition (BranchRefSig usig1 (Just (UnitSigAsBranchSig usig2)))
+                  (BranchRefSig usig3 bsig) =
+  if usig2 == usig3 then
+    return $ BranchRefSig usig1 bsig
     else fail $ "Signatures" ++ show usig2 ++ " " ++ show usig3 ++
                 "  do not compose"
 
-refSigComposition _rsig1@(BranchRefSig (usig1, BranchStaticContext bstc))
-                  _rsig2@(ComponentRefSig rsmap) =
+refSigComposition (BranchRefSig usig1 (Just (BranchStaticContext bstc)))
+                  (ComponentRefSig rsmap) =
   if matchesContext rsmap bstc then
-      return $ BranchRefSig (usig1,
+      return $ BranchRefSig usig1 $ Just $
                        BranchStaticContext $
-                        modifyCtx (Map.keys rsmap) rsmap bstc)
+                        modifyCtx (Map.keys rsmap) rsmap bstc
       else fail "Signatures do not match"
 
 refSigComposition (ComponentRefSig rsmap1) (ComponentRefSig rsmap2) = do

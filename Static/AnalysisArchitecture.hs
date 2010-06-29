@@ -66,12 +66,12 @@ anaArchSpec lgraph dg opts sharedCtx archSp = case archSp of
            (rN, dg3) = addEdgesToNodeRT dg'' rNodes usig "ArchSpec"
        --trace (show $ edges$ diagGraph $  diag'') $
        return (rN, nodes', diag'',
-                BranchRefSig (usig, BranchStaticContext (ctx uctx)),
+                BranchRefSig usig $ Just $ BranchStaticContext (ctx uctx),
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
   Group_arch_spec asp _ -> anaArchSpec lgraph dg opts sharedCtx (item asp)
   Arch_spec_name asn@(Token astr pos) -> case lookupGlobalEnvDG asn dg of
-            Just (ArchEntry asig@(BranchRefSig (UnitSig nsList resNs, _))) ->
+            Just (ArchEntry asig@(BranchRefSig (UnitSig nsList resNs) _)) ->
               case nsList of
                [] -> do
                  let (rN, dg') = addNodeRefRT dg $ show asn
@@ -332,7 +332,7 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
                   {- we made sure in anaUnitBindings that there's no
                      mapping for un in buc so we can just use
                      Map.insert -}
-                  let rsig = BranchRefSig(UnitSig [] nsig, NoFurtherRefinement)
+                  let rsig = BranchRefSig (UnitSig [] nsig) Nothing
                       buc' = Map.insert un (Based_unit_sig dnsig rsig) buc0
                   (dnsigs, diag'', buc'') <- insNodes diag' args0 buc'
                   return (dnsig : dnsigs, diag'', buc'')
@@ -370,7 +370,7 @@ anaUnitBindings lgraph dg opts uctx@(buc, _) bs = case bs of
  	  [] -> return ([], dg, [])
  	  Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
  	       curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
- 	       (BranchRefSig (_usig@(UnitSig argSigs nsig),_), dg', usp') <-
+ 	       (BranchRefSig _usig@(UnitSig argSigs nsig) _, dg', usp') <-
  	           anaUnitSpec lgraph dg opts (EmptyNode curl) usp
  	       let ub' = Unit_binding un usp' poss
  	       case null argSigs of
@@ -486,7 +486,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                   (ustr ++ " is a parameterless unit, "
                    ++ "but arguments have been given: " ++ argStr) pos
             Just (Based_par_unit_sig pI
-                     (BranchRefSig (UnitSig argSigs resultSig, _))) ->
+                     (BranchRefSig (UnitSig argSigs resultSig) _)) ->
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
@@ -540,7 +540,8 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                    diag4 <- insInclusionEdges lgraph diag'''
                             (map third morphSigs) q
                    return (q, diag4, dg5, utrm)
-            Just (Based_lambda_unit_sig nodes (BranchRefSig (UnitSig argSigs resultSig, _))) ->
+            Just (Based_lambda_unit_sig nodes
+                  (BranchRefSig (UnitSig argSigs resultSig) _)) ->
               case nodes of
                [] -> error "error in lambda expression"
                r:fs ->
@@ -760,9 +761,9 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx rsp =
   Refinement beh uspec gMapList rspec range ->
    do
      -- beh will be ignored for now
-     (_rsig@(BranchRefSig (usig,_)), dg', asp') <-
+     (BranchRefSig usig _, dg', asp') <-
            anaUnitSpec lgraph dg opts nsig uspec
-     (t, _, _, _rsig'@(BranchRefSig (usig',bsig)), dgr',rsp') <-
+     (t, _, _, BranchRefSig usig' bsig, dgr',rsp') <-
            anaRefSpec lgraph dg' opts nsig rn emptyExtStUnitCtx rspec
      case (usig, usig') of
        (UnitSig _ls ns, UnitSig _ls' ns') -> do
@@ -770,7 +771,7 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx rsp =
                let (s, dg3) = addNodeRT dg'' usig "RefSource"
                    dg4 = addRefEdgeRT dg3 s (head $ t)
                --trace ("Refinement - \n " ++ show usig ++ " " ++ show bsig) $
-               return ([],[], Nothing, BranchRefSig (usig, bsig) ,dg4,
+               return ([],[], Nothing, BranchRefSig usig bsig, dg4,
                     Refinement beh asp' gMapList rsp' range)
 
 
