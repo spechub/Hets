@@ -14,14 +14,7 @@ Interface for Reduce CAS system.
 module CSL.Lemma_Export where
 
 import Common.AS_Annotation
-import Common.Id
-
-import Data.Time (midnight)
-
-import Logic.Prover
-
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic
 
 -- | generate name for generated lemma out of name of theorem
 ganame :: Named CMD -> String
