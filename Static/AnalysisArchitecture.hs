@@ -385,7 +385,7 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
                   {- we made sure in anaUnitBindings that there's no
                      mapping for un in buc so we can just use
                      Map.insert -}
-                  let rsig = BranchRefSig RTNone (UnitSig [] nsig) Nothing
+                  let rsig = BranchRefSig RTNone (UnitSig [] nsig, Nothing)
                       buc' = Map.insert un (Based_unit_sig dnsig rsig) buc0
                   (dnsigs, diag'', buc'') <- insNodes diag' args0 buc'
                   return (dnsig : dnsigs, diag'', buc'')

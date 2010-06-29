@@ -562,14 +562,13 @@ type RefSigMap = Map.Map SIMPLE_ID RefSig
 type BStContext = Map.Map SIMPLE_ID RefSig
 -- there should be only BranchRefSigs
 
-data RefSig = BranchRefSig UnitSig (Maybe BranchSig)
-            | ComponentRefSig RefSigMap
-
+data RefSig = BranchRefSig RTPointer (UnitSig, Maybe BranchSig)
+            | ComponentRefSig RTPointer RefSigMap
               deriving (Eq)
 
 instance Show RefSig where
 -- made this instance for debugging purposes
-  show (BranchRefSig usig mbsig) =
+  show (BranchRefSig _ (usig, mbsig)) =
     let bStr = case mbsig of
                  Nothing -> "Bottom\n "
                  Just bsig -> case bsig of
@@ -596,15 +595,16 @@ setPointerInRef (BranchRefSig _ x) y = BranchRefSig y x
 setPointerInRef (ComponentRefSig _ x) y = ComponentRefSig y x
 
 getUnitSigFromRef :: RefSig -> Result UnitSig
-getUnitSigFromRef (BranchRefSig usig _) = return usig
-getUnitSigFromRef (ComponentRefSig rsm) =
+getUnitSigFromRef (BranchRefSig _ (usig,_)) = return usig
+getUnitSigFromRef (ComponentRefSig _ rsm) =
    error $ "getUnitSigFromRef:" ++ show (Map.keys rsm)
 
 mkRefSigFromUnit :: UnitSig -> RefSig
-mkRefSigFromUnit usig = BranchRefSig usig $ Just $ UnitSigAsBranchSig usig
+mkRefSigFromUnit usig = BranchRefSig RTNone
+                          (usig, Just $ UnitSigAsBranchSig usig)
 
 mkBotSigFromUnit :: UnitSig -> RefSig
-mkBotSigFromUnit usig = BranchRefSig usig Nothing
+mkBotSigFromUnit usig = BranchRefSig RTNone (usig, Nothing)
 
 data BranchSig = UnitSigAsBranchSig UnitSig
                | BranchStaticContext BStContext
@@ -632,12 +632,12 @@ namesMatchCtx [] _ _ = True
 namesMatchCtx (un : unitNames) bstc rsmap =
  case (Map.findWithDefault (error "namesMatchCtx")
             un bstc) of
-  BranchRefSig _usig mbsig -> case mbsig of
+  BranchRefSig _ (_usig, mbsig) -> case mbsig of
     Nothing -> False -- should not be the case
     Just bsig -> case bsig of
      UnitSigAsBranchSig usig' ->
        case Map.findWithDefault (error "USABS") un rsmap of
-         BranchRefSig usig'' _mbsig' -> equalSigs usig' usig'' &&
+         BranchRefSig _ (usig'', _mbsig') -> equalSigs usig' usig'' &&
                                          namesMatchCtx unitNames bstc rsmap
          _ -> False
      BranchStaticContext bstc' ->
@@ -662,22 +662,23 @@ modifyCtx :: [SIMPLE_ID] -> RefSigMap -> BStContext -> BStContext
 modifyCtx [] _ bstc = bstc
 modifyCtx (un : unitNames) rsmap bstc =
  case bstc Map.! un of
-   BranchRefSig usig mbsig -> case mbsig of
+   BranchRefSig n1 (usig, mbsig) -> case mbsig of
      Nothing -> modifyCtx unitNames rsmap bstc -- should not be the case
      Just bsig -> case bsig of
        UnitSigAsBranchSig usig' ->
           case rsmap Map.! un of
-            BranchRefSig usig'' bsig'' -> if usig' == usig'' then
+            BranchRefSig n2 (usig'', bsig'') -> if equalSigs usig' usig'' then
                  modifyCtx unitNames rsmap $
-                 Map.insert un (BranchRefSig usig bsig'') bstc -- was usig'
+                 Map.insert un (BranchRefSig (compPointer n1 n2) (usig, bsig''))
+                            bstc -- was usig'
                 else error "illegal composition"
             _ -> modifyCtx unitNames rsmap bstc
        BranchStaticContext bstc' ->
           case rsmap Map.! un of
             ComponentRefSig n2  rsmap' -> modifyCtx unitNames rsmap $
              Map.insert un
-             (BranchRefSig usig $ Just $
-               BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc')
+             (BranchRefSig  (compPointer n1 n2) (usig, Just $
+               BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc'))
              bstc
             _ -> let f = if Map.size bstc' == 1 then
                              let un1 = head $ Map.keys bstc'
@@ -686,29 +687,30 @@ modifyCtx (un : unitNames) rsmap bstc =
                                            rsmap
                                  bstc'' = modifyCtx [un1] rsmap' bstc'
                              in Map.singleton un $
-                                BranchRefSig usig $ Just
-                                $ BranchStaticContext bstc''
+                                BranchRefSig RTNone (usig, Just
+                                $ BranchStaticContext bstc'')
                            else Map.empty
                  in Map.union f $ modifyCtx unitNames rsmap bstc
    _ -> modifyCtx unitNames rsmap bstc -- same as above
 
 -- Signature composition
 refSigComposition :: RefSig -> RefSig -> Result RefSig
-refSigComposition (BranchRefSig usig1 (Just (UnitSigAsBranchSig usig2)))
-                  (BranchRefSig usig3 bsig) =
-  if usig2 == usig3 then
-    return $ BranchRefSig usig1 bsig
-    else fail $ "Signatures" ++ show usig2 ++ " " ++ show usig3 ++
+refSigComposition (BranchRefSig n1 (usig1, Just (UnitSigAsBranchSig usig2)))
+                  (BranchRefSig n2 (usig3, bsig)) =
+  if (equalSigs usig2 usig3) then
+    return $ BranchRefSig (compPointer n1 n2) (usig1, bsig)
+    else fail $ "Signatures: \n" ++ show usig2 ++ "\n and \n " ++ show usig3 ++
                 "  do not compose"
 
-refSigComposition (BranchRefSig usig1 (Just (BranchStaticContext bstc)))
-                  (ComponentRefSig rsmap) =
+refSigComposition _rsig1@(BranchRefSig n1
+                       (usig1, Just (BranchStaticContext bstc)))
+                  _rsig2@(ComponentRefSig n2 rsmap) =
   if matchesContext rsmap bstc then
-      return $ BranchRefSig usig1 $ Just $
-                       BranchStaticContext $
-                        modifyCtx (Map.keys rsmap) rsmap bstc
-      else fail "Signatures do not match"
-
+          return $ BranchRefSig (compPointer n1 n2)
+                   (usig1,Just $ BranchStaticContext $
+                          modifyCtx (Map.keys rsmap) rsmap bstc)
+      else fail ("Signatures do not match:" ++ show (Map.keys bstc) ++ " "
+                ++ show (Map.keys rsmap))
 
 refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
   upd <- mapM (\ x -> do
@@ -824,6 +826,7 @@ addTypingEdgeRT dg n1 n2 =  let
    (g', _) = Tree.insLEdge True orderRT (n1, n2, RTLink{rtl_type=RTTyping}) g0
  in dg{refTree = g'}
 
+
 updateNodeNameRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameRT dg n s = --trace (s ++ ":" ++ show n)$
  let
@@ -904,10 +907,12 @@ addEdgesToNodeRT dg' rnodes n' =
   (g', b) = foldl (\ (g0, b0) n0 -> let
                       (g1, b1) = Tree.insLEdge True orderRT
                                  (n', n0, RTLink{rtl_type = RTComp}) g0
+
                                     in (g1, b1 && b0))
             (g, True) rnodes
  in if not b then error "addEdgesToNodeRT"
     else dg'{refTree = g'}
+
 
 -- datatypes for storing the nodes of the ref tree in the global env
 
@@ -978,9 +983,7 @@ refTarget x = error ("refTarget:" ++ show x)
 -- to store the diagrams of the arch specs in the dgraph
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
-
-instance Show DiagNodeLab where
- show x = dn_desc x
+ deriving Show
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism, dl_number :: Int }
 
