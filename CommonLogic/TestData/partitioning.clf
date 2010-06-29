@@ -1,0 +1,37 @@
+
+(cl-module partitioning.clif
+
+(cl-imports weak-tripartite.clif)
+
+(cl-comment 'A line is incident with a unique plane.')
+
+(forall (x y z)
+	(if	(and	(line x)
+			(plane y)
+			(plane z)
+			(in x y)
+			(in x z))
+		(= y z)))
+
+(cl-comment 'A line is incident with at most two points.')
+
+(forall (x y z w)
+	(if	(and	(line x)
+			(point y)
+			(point z)
+			(point w)
+			(in y x)
+			(in z x)
+			(in w x))
+		(or	(= w z)
+			(= w y))))
+
+(forall (x)
+	(if	(line x)
+		(exists (y z)
+			(and	(point y)
+				(point z)
+				(in y x)
+				(in z x)))))
+
+)

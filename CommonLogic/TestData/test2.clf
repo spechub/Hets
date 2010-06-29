@@ -1,0 +1,21 @@
+(Cat kitty)
+(Dogs bello lucky)
+(= 1 1)
+(Dog (operator one two))
+
+(and (Cube a) (Dodec b))
+(or (Cube c) (Cube d) (Cube e))
+(not (Cube f))
+(if (Dodec g) (Dodec h))
+(iff (Cube a) (Dodec b))
+
+(forall (x) (Small x))
+
+(forall (x y) (and (Cube x)
+                   (Dodec y)
+                   (Larger x y)))
+
+(exists (x) (Cube x))
+
+(not (exists (x) (and (Cube x)
+                      (forall (y) (Larger (z, y))))))
