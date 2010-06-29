@@ -172,6 +172,7 @@ dgLinkOriginSpec o = case o of
     DGLinkView n _ -> Just n
     DGLinkFitView n -> Just n
     DGLinkFitViewImp n -> Just n
+    DGLinkRefinement n -> Just n
     _ -> Nothing
 
 dgLinkMapping :: DGLinkOrigin -> [G_mapping]
@@ -199,6 +200,7 @@ dgLinkOriginHeader o = case o of
     DGLinkProof -> "proof-link"
     DGLinkFlatteningUnion -> "flattening non-disjoint union"
     DGLinkFlatteningRename -> "flattening renaming"
+    DGLinkRefinement _ -> "refinement"
 
 instance Pretty DGLinkOrigin where
   pretty o = text (dgLinkOriginHeader o) <+> pretty (dgLinkOriginSpec o)
@@ -355,13 +357,8 @@ instance Pretty ImpUnitSigOrSig where
       [ pretty usig, prettyImport imp ]
     Sig n -> keyword specS <+> pretty (getNode n)
 
--- instance Pretty ArchSig where
---   pretty (ArchSig m usig) = fsep
---     [ printMap id vcat (\ k v -> fsep [keyword unitS <+> k <+> mapsto, v]) m
---     , pretty usig ]
-
 instance Pretty RefSig where
- pretty _ = keyword refinementS
+  pretty = text . show -- missing
 
 instance Pretty GlobalEntry where
   pretty ge = case ge of
@@ -370,7 +367,7 @@ instance Pretty GlobalEntry where
     ViewEntry ve -> topKey viewS <+> pretty ve
     UnitEntry ue -> topKey unitS <+> pretty ue
     ArchEntry ae -> topKey archS <+> pretty ae
-    RefEntry re -> keyword refinementS
+    RefEntry re -> keyword refinementS <+> pretty re
 
 instance Pretty DGraph where
   pretty dg = vcat
