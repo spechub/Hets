@@ -53,8 +53,6 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
-import Data.Ord (comparing)
-
 -- | Data structure for saving the user-selected prover and comorphism
 data Finder = Finder { fName      :: String
                      , finder     :: G_prover
@@ -65,63 +63,42 @@ instance Eq Finder where
   f1 == f2 = fName f1 == fName f2 && comorphism f1 == comorphism f2
 
 -- | stores each node to be considered along with some further infomation
-data FNode = FNode { name      :: String
-                   , node      :: LNode DGNodeLab
-                   , sublogic  :: G_sublogics
-                   , goals     :: [String]
-                   , newTheory :: G_theory } -- Map.Map String (AnyComorphism, BasicProof) }
+data FNode = FNode { name     :: String
+                   , node     :: LNode DGNodeLab
+                   , sublogic :: G_sublogics
+                   , goals    :: [String]
+                   , results  :: G_theory }
 
-status :: FNode -> Map.Map String (AnyComorphism, BasicProof)
-status fn = case newTheory fn of
-              G_theory _ _ _ sens _ 
-                -> foldr (\ (sn,sen) t -> case thmStatus sen of
-                                          [] -> t
-                                          -- TODO get best, not last goalstatus
-                                          thms -> Map.insert sn (last thms) t
-                   ) Map.empty $ OMap.toList $ OMap.filter (not . isAxiom) sens
-
+toGtkGoals :: FNode -> [Goal]
+toGtkGoals fn = case results fn of
+  G_theory _ _ _ sens _ ->
+    let sens' = OMap.toList $ OMap.filter (not . isAxiom) sens
+        toGoal s = case lookup s sens' of
+                     Nothing -> Goal GOpen s
+                     Just tm -> case thmStatus tm of
+                                  [] -> Goal GOpen s
+                                  l -> Goal (GtkUtils.basicProofToGStatus
+                                       (maximum $ map snd l)) s
+        in map toGoal $ goals fn
 
 showStatus :: FNode -> String
-showStatus fn = let toPref = (GtkUtils.statusToPrefix . GtkUtils.basicProofToGStatus)
-                in intercalate "\n" . map (\ s -> case Map.lookup s (status fn) of
-                                                 Just (_,bp) -> toPref bp ++ s
-                                                 Nothing -> "[ ]" ++ s ) $ goals fn
-
-pStatusToColor :: Map.Map String (a,BasicProof) -> String
-pStatusToColor s = GtkUtils.statusToColor gst 
-                   where gst = if Map.null s then GOpen 
-                               else GtkUtils.basicProofToGStatus
-                                  $ minimum  $ map snd $ Map.elems s
-
-pStatusToPrefix :: Map.Map String (a,BasicProof) -> String
-pStatusToPrefix s = GtkUtils.statusToPrefix gst 
-                    where gst = if Map.null s then GOpen 
-                                else GtkUtils.basicProofToGStatus 
-                                   $ minimum  $ map snd $ Map.elems s
-
+showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
+                 (gStatus g) ++ show (gName g)) $ toGtkGoals fn
 
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show fn = let s = status fn in
-    "<span color=\"" ++ pStatusToColor s
-    ++ "\">" ++ pStatusToPrefix s ++ name fn ++ "</span>"
+  show fn = let gs = gStatus $ minimum $ toGtkGoals fn in
+    "<span color=\"" ++ GtkUtils.statusToColor gs
+    ++ "\">" ++ GtkUtils.statusToPrefix gs ++ name fn ++ "</span>"
 
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
 
--- | Nodes are sorted in accordance with goalstatus. Nodes without goals are not
--- | very importent and thus set to status GHandwritten (best case) for comparison only.
 instance Ord FNode where
-  compare f1 f2 = let 
-          s1 = status f1
-          s2 = status f2
-          min' a = case Map.elems a of
-                     [] -> Handwritten
-                     es -> minimum $ map snd es 
-          cp = comparing min'
-          in case cp s1 s2 of
-               EQ -> compare (name f1) (name f2)
-               c  -> c
+  compare f1 f2 = let gmin f = minimum $ toGtkGoals f
+            in case compare (gmin f1) (gmin f2) of
+                 EQ -> compare (name f1) (name f2)
+                 c  -> c
 
 -- | gets all Nodes from the DGraph as input and creates a list of FNodes only
 -- | containing Nodes to be considered.
@@ -262,8 +239,8 @@ showProverWindow res ln le = postGUIAsync $ do
     nodes' <- listStoreToList listNodes
     let changes = foldl (\ cs fn ->
                       -- where the proving did not return anything, node is not updated
-                      if null $ Map.toList $ status fn then cs
-                        else
+--                      if null $ Map.toList $ status fn then cs
+  --                      else
                           let (_, l) = node fn
                               n' = updateProofHistory fn
                           in SetNodeLab l n' : cs
@@ -277,7 +254,7 @@ showProverWindow res ln le = postGUIAsync $ do
 updateProofHistory :: FNode -> LNode DGNodeLab
 updateProofHistory fn = let (i,l) = node fn
                             gt = dgn_theory l
-                            gt' = propagateProofs gt $ newTheory fn
+                            gt' = propagateProofs gt $ results fn
                         in (i, l {dgn_theory = gt'})
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
@@ -353,9 +330,7 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
            res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
-           postGUISync $ listStoreSetValue listNodes row fn { newTheory = res }
-           -- using this line to check whether or not new goalstatus is stored withing FNode -> dgn_theory
-           -- postGUISync $ listStoreSetValue listNodes row fn { status = initProofStatus $ snd $ node fn }
+           postGUISync $ listStoreSetValue listNodes row fn { results = res }
            return $ count + 1) 0 nodes
 
 autoProofAtNode :: -- use theorems is subsequent proofs
