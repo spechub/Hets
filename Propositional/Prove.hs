@@ -45,7 +45,6 @@ import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 import qualified Common.Exception as Exception
 
-import Data.Char (isSpace)
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay, timeToTimeOfDay, midnight)
@@ -133,8 +132,8 @@ consCheck thName _ tm _ =
           $ filter AS_Anno.isAxiom f
         searchResult :: String -> Maybe Bool
         searchResult hf = let ls = lines hf in
-          if any (isInfixOf reUNSAT . filter isSpace) ls then Just True else
-          if any (isInfixOf reSAT . filter isSpace) ls then Just False
+          if any (isInfixOf reUNSAT) ls then Just True else
+          if any (isInfixOf reSAT) ls then Just False
           else Nothing
 
 -- ** GUI
@@ -297,13 +296,8 @@ timelimit = ["Ran out of time."]
 analyzeZchaff :: String
               -> PState.PropProverState
               -> IO (Maybe String, [String], [String], TimeOfDay)
-analyzeZchaff str pState =
-    let
-        str' = filter isSpace str
-        str2 = map (\ ch -> case ch of
-          '\x9' -> ' '
-          _ -> ch) str
-        output = [str2]
+analyzeZchaff str' pState =
+    let output = [str']
         unsat = isInfixOf reUNSAT str'
         sat = isInfixOf reSAT str'
         timeLine = fromMaybe "0" $ stripPrefix reTIME str'
@@ -326,9 +320,9 @@ calculateTime timeLine =
              :: Double)
 
 reUNSAT :: String
-reUNSAT = "RESULT:UNSAT"
+reUNSAT = "RESULT:\tUNSAT"
 reSAT :: String
-reSAT = "RESULT:SAT"
+reSAT = "RESULT:\tSAT"
 reTIME :: String
 reTIME = "Total Run Time"
 
