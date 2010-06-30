@@ -42,7 +42,7 @@ import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
 
-import System.Exit
+import System.Directory
 import System.IO
 import System.Process
 
@@ -165,46 +165,47 @@ consCheck
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
   -> IO (CCStatus ProofTree)
 consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
-    Theory sig nSens -> let
-        saveTPTP = False
-        proverStateI = spassProverState sig (toNamedList nSens) freedefs
-        problem = showTPTPProblemM thName proverStateI []
-        extraOptions =
-          "-pc false -pmtptp true -fd true -to " ++ tl
-        saveFileName = basename thName
-        runDarwinRealM :: IO (CCStatus ProofTree)
-        runDarwinRealM = do
-            let bin = proverBinary b
-            probl <- problem
-            noProg <- missingExecutableInPath bin
-            if noProg then
-                  return CCStatus
-                    { ccResult = Nothing
-                    , ccProofTree = ProofTree "Darwin not found"
-                    , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime 0 }
-              else do
-                  when saveTPTP $ writeFile (saveFileName ++ ".tptp") probl
-                  t <- getCurrentTime
-                  let timeTmpFile = "/tmp/" ++ saveFileName ++ show (utctDay t)
-                          ++ "-" ++ show (utctDayTime t) ++ ".tptp"
-                  writeFile timeTmpFile probl
-                  let command = bin ++ " " ++ extraOptions ++ " " ++ timeTmpFile
-                  (_, outh, errh, proch) <- runInteractiveCommand command
-                  (szsState, output, tUsed) <- parseDarwinOut outh errh proch
-                  let outState = proofStatM szsState output tUsed
-                  return outState
-        proofStatM :: String -> [String] -> Int -> CCStatus ProofTree
-        proofStatM exitCode out tUsed = let
-             outState = CCStatus
+    Theory sig nSens -> do
+        let proverStateI = spassProverState sig (toNamedList nSens) freedefs
+            extraOptions = "-pc false -pmtptp true -fd true -to " ++ tl
+            bin = proverBinary b
+        prob <- showTPTPProblemM thName proverStateI []
+        (exitCode, out, tUsed) <-
+          runDarwinProcess bin False extraOptions thName prob
+        let outState = CCStatus
                { ccResult = Just True
                , ccProofTree = ProofTree $ unlines $ exitCode : out
                , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime
                             $ toInteger tUsed }
-             in if szsProved exitCode then outState else
+        return $ if szsProved exitCode then outState else
                     outState
                     { ccResult = if szsDisproved exitCode then Just False
                                  else Nothing }
-        in runDarwinRealM
+
+runDarwinProcess
+  :: String -- ^ binary name
+  -> Bool -- ^ save problem
+  -> String -- ^ options
+  -> String -- ^ filename without extension
+  -> String -- ^ problem
+  -> IO (String, [String], Int)
+runDarwinProcess bin saveTPTP options tmpFileName prob = do
+  let tmpFile = basename tmpFileName
+  when saveTPTP (writeFile (tmpFile ++ ".tptp") prob)
+  t <- getCurrentTime
+  let timeTmpFile = "/tmp/" ++ tmpFile ++ show (utctDay t)
+                    ++ "-" ++ show (utctDayTime t) ++ ".tptp"
+  noProg <- missingExecutableInPath bin
+  if noProg then
+    return (bin ++ " not found. Check your $PATH", [], -1)
+    else do
+    writeFile timeTmpFile prob
+    (_, pout, _) <-
+      readProcessWithExitCode bin (words options ++ [timeTmpFile]) ""
+    let l = lines pout
+        (res, _, tUsed) = parseOutput l
+    removeFile timeTmpFile
+    return (res, l, tUsed)
 
 runDarwin
   :: ProverBinary
@@ -217,70 +218,48 @@ runDarwin
   -> AS_Anno.Named SPTerm -- ^ goal to prove
   -> IO (ATPRetval, GenericConfig ProofTree)
      -- ^ (retval, configuration with proof status and complete output)
-runDarwin b sps cfg saveTPTP thName nGoal = runDarwinReal where
-    bin = proverBinary b
-    simpleOptions = extraOpts cfg
-    extraOptions = maybe "-pc false"
+runDarwin b sps cfg saveTPTP thName nGoal = do
+    let bin = proverBinary b
+        options = extraOpts cfg
+        extraOptions = maybe "-pc false"
              (("-pc false -to " ++) . show) (timeLimit cfg)
-    tmpFileName = basename thName ++ '_' : AS_Anno.senAttr nGoal
-    runDarwinReal = do
-      noProg <- missingExecutableInPath bin
-      if noProg then
-        return
-            (ATPError ("Could not start " ++ bin ++ ". Check your $PATH"),
-                  emptyConfig bin
-                              (AS_Anno.senAttr nGoal) emptyProofTree)
-        else do
-          prob <- showTPTPProblem thName sps nGoal $
-                      simpleOptions ++ ["Requested prover: " ++ bin]
-          when saveTPTP (writeFile (tmpFileName ++ ".tptp") prob)
-          t <- getCurrentTime
-          let timeTmpFile = "/tmp/" ++ tmpFileName ++ show (utctDay t) ++
-                               "-" ++ show (utctDayTime t) ++ ".tptp"
-          writeFile timeTmpFile prob
-          let command = bin ++ " " ++ extraOptions ++ " " ++ timeTmpFile
-          (_, outh, errh, proch) <- runInteractiveCommand command
-          (exCode, output, tUsed) <- parseDarwinOut outh errh proch
-          let (err, retval) = proofStat exCode simpleOptions output tUsed
-          return (err,
-                  cfg {proofStatus = retval,
-                      resultOutput = output,
-                      timeUsed = timeToTimeOfDay $
-                                 secondsToDiffTime $ toInteger tUsed})
-
-    proofStat exitCode options out tUsed = case () of
-        _ | szsProved exitCode -> (ATPSuccess, provedStatus options tUsed)
-        _ | szsDisproved exitCode -> (ATPSuccess, disProvedStatus options)
-        _ | szsTimeout exitCode ->
-              (ATPTLimitExceeded, defaultProofStatus options)
-        _ | szsStopped exitCode ->
-              (ATPBatchStopped, defaultProofStatus options)
-        _ -> (ATPError (unlines (exitCode : out)),
-                                defaultProofStatus options)
-    defaultProofStatus opts =
+        tmpFileName = thName ++ '_' : AS_Anno.senAttr nGoal
+    prob <- showTPTPProblem thName sps nGoal
+      $ options ++ ["Requested prover: " ++ bin]
+    (exitCode, out, tUsed) <-
+      runDarwinProcess bin saveTPTP extraOptions tmpFileName prob
+    let ctime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
+        (err, retval) = case () of
+          _ | szsProved exitCode -> (ATPSuccess, provedStatus)
+          _ | szsDisproved exitCode -> (ATPSuccess, disProvedStatus)
+          _ | szsTimeout exitCode ->
+              (ATPTLimitExceeded, defaultProofStatus)
+          _ | szsStopped exitCode ->
+              (ATPBatchStopped, defaultProofStatus)
+          _ -> (ATPError exitCode, defaultProofStatus)
+        defaultProofStatus =
             (openProofStatus
             (AS_Anno.senAttr nGoal) bin emptyProofTree)
-                       {tacticScript = TacticScript $ show ATPTacticScript
+                       { usedTime = ctime
+                       , tacticScript = TacticScript $ show ATPTacticScript
                         {tsTimeLimit = configTimeLimit cfg,
-                         tsExtraOpts = opts} }
+                         tsExtraOpts = options} }
 
-    disProvedStatus opts = (defaultProofStatus opts)
-                               {goalStatus = Disproved}
-
-    provedStatus opts ut = ProofStatus
-      { goalName = AS_Anno.senAttr nGoal
-      , goalStatus = Proved True
-      , usedAxioms = getAxioms
-      , usedProver = bin
-      , proofTree = emptyProofTree
-      , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
-      , tacticScript = TacticScript $ show ATPTacticScript
-          { tsTimeLimit = configTimeLimit cfg, tsExtraOpts = opts }}
-
-    getAxioms = let
-        fl = formulaLists $ initialLogicalPart sps
-        fs = concatMap formulae $ filter isAxiomFormula fl
-        in map AS_Anno.senAttr fs
+        disProvedStatus = defaultProofStatus {goalStatus = Disproved}
+        provedStatus = defaultProofStatus
+          { goalName = AS_Anno.senAttr nGoal
+          , goalStatus = Proved True
+          , usedAxioms = getAxioms
+          , usedProver = bin
+          , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
+          }
+        getAxioms = let
+          fl = formulaLists $ initialLogicalPart sps
+          fs = concatMap formulae $ filter isAxiomFormula fl
+          in map AS_Anno.senAttr fs
+    return (err, cfg {proofStatus = retval,
+                      resultOutput = out,
+                      timeUsed = ctime })
 
 isAxiomFormula :: SPFormulaList -> Bool
 isAxiomFormula fl =
@@ -295,54 +274,20 @@ getSZSStatusWord line = case words
   [] -> Nothing
   w : _ -> Just w
 
-parseDarwinOut :: Handle        -- ^ handel of stdout
-               -> Handle        -- ^ handel of stderr
-               -> ProcessHandle -- ^ handel of process
-               -> IO (String, [String], Int)
-                       -- ^ (exit code, complete output, used time)
-parseDarwinOut outh _ procHndl =
-    -- darwin does not write to stderr here, so ignore output
-    -- err <- hGetLine errh
-    -- if null err then
-  readLineAndParse ("", [], -1) False
-  where
-   readLineAndParse (exCode, output, to) stateFound = do
-    procState <- isProcessRun
-    case procState of
-     ExitSuccess -> do
-      iseof <- hIsEOF outh
-      if iseof then
-          do -- ec <- isProcessRun proc
-             waitForProcess procHndl
-             return (exCode, reverse output, to)
-        else do
-          line <- hGetLine outh
+parseOutput :: [String] -> (String, Bool, Int)
+  -- ^ (exit code, status found, used time)
+parseOutput = foldl checkLine ("", False, -1) where
+   checkLine (exCode, stateFound, to) line =
           if isPrefixOf "Couldn't find eprover" line
              || isInfixOf "darwin -h for further information" line
                 -- error by running darwin.
-            then do
-              waitForProcess procHndl
-              return ("Internal error.", line : output, to)
+            then (line, stateFound, to)
             else case getSZSStatusWord line of
                 Just szsState | not stateFound ->
-                  readLineAndParse (szsState, line : output, to)
-                    True
-                _ -> if "CPU  Time" `isPrefixOf` line  -- get cup time
+                  (szsState, True, to)
+                _ -> if "CPU  Time" `isPrefixOf` line  -- get cpu time
                   then let time = case takeWhile isDigit $ last (words line) of
                              ds@(_ : _) -> read ds
                              _ -> to
-                       in readLineAndParse (exCode, line : output, time)
-                            stateFound
-                  else readLineAndParse (exCode, line : output, to)
-                         stateFound
-     ExitFailure failure -> do
-       waitForProcess procHndl
-       return ("Process error " ++ show failure, output, to)
-
-    -- check if darwin running
-   isProcessRun = do
-      exitcode <- getProcessExitCode procHndl
-      case exitcode of
-        Nothing -> return ExitSuccess
-        Just (ExitFailure i) -> return (ExitFailure i)
-        Just ExitSuccess -> return ExitSuccess
+                       in (exCode, stateFound, time)
+                  else (exCode, stateFound, to)
