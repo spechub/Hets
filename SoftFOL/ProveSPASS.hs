@@ -150,27 +150,19 @@ parseSpassOutput :: [String] -- ^ the SPASS process output
 parseSpassOutput = foldl parseIt (Nothing, [], False, midnight)
   where
     parseIt (res, usedAxs, startFound, tUsed) line =
-      let
-          res' = if isPrefixOf re_sb line && startFound
-                 then Just $ drop (length re_sb) line
-                 else res
-          usedAxs' = if isPrefixOf re_ua line
-                     then words $ drop (length re_ua) line
-                     else usedAxs
-          tUsed' = if isPrefixOf re_tu line
-                   && isInfixOf "on the problem." line
-                   then fromMaybe midnight $ parseTimeOfDay
+          ( case stripPrefix "SPASS beiseite: " line of
+             r@(Just _) | startFound -> r
+             _ -> res
+          , case stripPrefix "Formulae used in the proof :" line of
+             Just s -> words s
+             Nothing -> usedAxs
+          , startFound || isInfixOf "SPASS-START" line
+          , case stripPrefix "SPASS spent" line of
+              Just s | isInfixOf "on the problem." line ->
+                fromMaybe midnight $ parseTimeOfDay
                         $ takeWhile (\ c -> isDigit c || elem c ".:")
-                        $ trimLeft $ drop (length re_tu) line
-                   else tUsed
-       in (res', usedAxs', startFound || isInfixOf re_start line, tUsed')
-
-    -- regular expressions used for parsing
-    re_start = "SPASS-START"
-    -- re_stop = "SPASS-STOP"  not emitted by SPASS-3.7
-    re_sb = "SPASS beiseite: "
-    re_ua = "Formulae used in the proof :"
-    re_tu = "SPASS spent"
+                        $ trimLeft s
+              _ -> tUsed)
 
 parseTimeOfDay :: String -> Maybe TimeOfDay
 parseTimeOfDay str =
@@ -194,47 +186,41 @@ runSpass :: SoftFOLProverState -- ^ logical part containing the input Sign and
          -> IO (ATPRetval, GenericConfig ProofTree)
              -- ^ (retval, configuration with proof status and complete output)
 runSpass sps cfg saveDFG thName nGoal = do
+  let allOptions = "-Stdin" : createSpassOptions cfg
+      extraOptions = "-DocProof" : cleanOptions cfg
   prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
   when saveDFG
     $ writeFile (basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dfg") prob
   (_, pout, _) <- readProcessWithExitCode spassName allOptions prob
   -- SPASS 3.7 does not properly stop, but fails with an exit code
-  let output = lines pout
-      (res, usedAxs, _, tUsed) = parseSpassOutput output
-      (err, retval) = proofStat res usedAxs extraOptions output
-  return (err, cfg
-    { proofStatus = retval
-    , resultOutput = output
-    , timeUsed = tUsed })
-  where
-    allOptions = "-Stdin" : createSpassOptions cfg
-    extraOptions = "-DocProof" : cleanOptions cfg
-    defaultProofStatus opts =
+  let out = lines pout
+      (res, usedAxs, startFound, tUsed) = parseSpassOutput out
+      defaultProofStatus =
         (openProofStatus (AS_Anno.senAttr nGoal) spassName
                            emptyProofTree)
         {tacticScript = TacticScript $ show ATPTacticScript
           {tsTimeLimit = configTimeLimit cfg,
-           tsExtraOpts = opts} }
-
-    proofStat res usedAxs options out = case res of
-      Nothing -> (ATPError (unlines ("Internal error." : out)),
-                    defaultProofStatus options)
-      Just str
-        | isInfixOf proved str ->
-          (ATPSuccess,
-           (defaultProofStatus options)
-           { goalStatus = Proved $ elem (AS_Anno.senAttr nGoal) usedAxs
-           , usedAxioms = filter (/= AS_Anno.senAttr nGoal) usedAxs
-           , proofTree = ProofTree $ spassProof out })
-        | isInfixOf disproved str ->
-          (ATPSuccess,
-           (defaultProofStatus options) { goalStatus = Disproved } )
-        | isInfixOf timelimit str ->
-          (ATPTLimitExceeded, defaultProofStatus options)
-      _ -> (ATPSuccess, defaultProofStatus options)
-    proved = "Proof found."
-    disproved = "Completion found."
-    timelimit = "Ran out of time."
+           tsExtraOpts = extraOptions} }
+      (err, retval) = case res of
+        Nothing -> (ATPError $ "Found no SPASS "
+          ++ if startFound then "result" else "output"
+          , defaultProofStatus)
+        Just str
+          | isInfixOf "Proof found." str ->
+            (ATPSuccess, defaultProofStatus
+             { goalStatus = Proved $ elem (AS_Anno.senAttr nGoal) usedAxs
+             , usedAxioms = filter (/= AS_Anno.senAttr nGoal) usedAxs
+             , proofTree = ProofTree $ spassProof out })
+          | isInfixOf "Completion found." str ->
+            (ATPSuccess, defaultProofStatus
+             { goalStatus = Disproved } )
+          | isInfixOf "Ran out of time." str ->
+            (ATPTLimitExceeded, defaultProofStatus)
+        _ -> (ATPSuccess, defaultProofStatus)
+  return (err, cfg
+    { proofStatus = retval
+    , resultOutput = out
+    , timeUsed = tUsed })
 
 {- |
   Creates a list of all options the SPASS prover runs with.
