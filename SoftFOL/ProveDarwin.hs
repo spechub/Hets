@@ -37,7 +37,7 @@ import Data.Char (isDigit)
 import Data.List
 import Data.Maybe
 import Data.Time (timeToTimeOfDay)
-import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
+import Data.Time.Clock (secondsToDiffTime)
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
@@ -190,16 +190,17 @@ runDarwinProcess
   -> String -- ^ problem
   -> IO (String, [String], Int)
 runDarwinProcess bin saveTPTP options tmpFileName prob = do
-  let tmpFile = basename tmpFileName
-  when saveTPTP (writeFile (tmpFile ++ ".tptp") prob)
-  t <- getCurrentTime
-  let timeTmpFile = "/tmp/" ++ tmpFile ++ show (utctDay t)
-                    ++ "-" ++ show (utctDayTime t) ++ ".tptp"
+  let tmpFile = basename tmpFileName ++ ".tptp"
+  when saveTPTP (writeFile tmpFile prob)
   noProg <- missingExecutableInPath bin
   if noProg then
     return (bin ++ " not found. Check your $PATH", [], -1)
     else do
-    writeFile timeTmpFile prob
+    temp <- getTemporaryDirectory
+    (timeTmpFile, hdl) <- openTempFile temp tmpFile
+    hPutStr hdl prob
+    hFlush hdl
+    hClose hdl
     (_, pout, _) <-
       readProcessWithExitCode bin (words options ++ [timeTmpFile]) ""
     let l = lines pout
