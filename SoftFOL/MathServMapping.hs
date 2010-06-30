@@ -37,26 +37,27 @@ brokerName = "MathServe Broker"
   will be returned.
 -}
 mapMathServResponse :: Either String MathServResponse
-                  -- ^ SOAP faultstring or Parsed MathServ data
+                    -- ^ SOAP faultstring or Parsed MathServ data
                     -> GenericConfig ProofTree -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
                     -> (ATPRetval, GenericConfig ProofTree)
                     -- ^ (retval, configuration with proof status and
-                    --    complete output)
+                    -- complete output)
 mapMathServResponse eMsr cfg nGoal prName =
-    either (\ errStr -> (ATPError errStr,cfg))
-           (\msr ->
+    either (\ errStr -> (ATPError errStr, cfg))
+           (\ msr ->
             either
-              (\failure ->
-                (ATPError ("MathServe Error: " ++
-                   if (null failure) then [] else head $ lines failure),
+              (\ failure ->
+                 (ATPError ("MathServe Error: " ++ case lines failure of
+                   [] -> ""
+                   h : _ -> h),
                  cfg { proofStatus = defaultProofStatus nGoal
                          (prName ++ " [via MathServe]") (configTimeLimit cfg)
                          (extraOpts cfg) "",
                        resultOutput = lines failure,
                        timeUsed = cpuTime $ timeResource msr }))
-              (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
+              (\ res -> mapProverResult res (timeResource msr) cfg nGoal prName)
               (foAtpResult msr))
            eMsr
 
@@ -75,44 +76,39 @@ mapProverResult :: MWFoAtpResult -- ^ parsed FoATPResult data
 mapProverResult atpResult timeRes cfg nGoal prName =
     let res = mapToGoalStatus $ systemStatus atpResult
         output = (lines . show) $
-          (if (prName == brokerName) then
+          (if prName == brokerName then
               text "Used prover  " <+> colon <+> text
                            (usedProverName $ systemStr atpResult)
             else empty)
           $+$ text "Calculus     " <+> colon <+>
               text (show $ calculus $ proof atpResult)
           $+$ text "Spent time   " <+> colon <+> (
-              text "CPU time       "              <+> equals <+>
+              text "CPU time       " <+> equals <+>
               text (show $ cpuTime timeRes)
-              $+$ text "Wall clock time"          <+> equals <+>
-              text (show $ wallClockTime timeRes)  )
+              $+$ text "Wall clock time" <+> equals <+>
+              text (show $ wallClockTime timeRes) )
           $+$ text "Prover output" <+> colon $+$
-              vcat (map text (lines $ unTab $ outputStr atpResult))
+              vcat (map (fsep . map text . words) (lines $ outputStr atpResult))
           $+$ text (replicate 75 '-')
-        timeout = (foAtpStatus $ systemStatus atpResult) == Unsolved Timeout
+        timeout = foAtpStatus (systemStatus atpResult) == Unsolved Timeout
 
         -- get real prover name if Broker was used
-        prName' = if (prName == brokerName)
-                     then (usedProverName $ systemStr atpResult)
-                          ++ " [via "++brokerName++"]"
+        prName' = if prName == brokerName
+                     then usedProverName (systemStr atpResult)
+                          ++ " [via " ++ brokerName ++ "]"
                      else prName ++ " [via MathServe]"
-        usedAxs = if (null $ axioms $ proof atpResult)
+        usedAxs = if null (axioms $ proof atpResult)
                     then [AS_Anno.senAttr nGoal]
                     else words $ axioms $ proof atpResult
-        (atpErr, retval) = proof_stat nGoal res usedAxs timeout $
+        (atpErr, retval) = proofStat nGoal res usedAxs timeout $
             defaultProofStatus nGoal prName'
                            (configTimeLimit cfg)
                            (extraOpts cfg)
                            (formalProof $ proof atpResult)
-    in  (atpErr,
+    in (atpErr,
          cfg { proofStatus = retval,
                resultOutput = output,
-               timeUsed     = cpuTime timeRes })
-    where
-      -- replace tabulators with each 8 spaces
-      unTab = foldr (\ch li ->
-                        if ch == '\x9' then "        "++li
-                                       else ch:li) ""
+               timeUsed = cpuTime timeRes })
 
 {- |
   Maps the status message from MathServ results to GoalStatus.
@@ -120,9 +116,9 @@ mapProverResult atpResult timeRes cfg nGoal prName =
 mapToGoalStatus :: MWStatus -- ^ goal status
                 -> GoalStatus -- ^ final parsed goal status
 mapToGoalStatus stat = case foAtpStatus stat of
-        Solved Theorem            -> Proved True
+        Solved Theorem -> Proved True
         Solved CounterSatisfiable -> Disproved
-        s                         -> Open $ Reason [show s]
+        s -> Open $ Reason [show s]
 
 {- |
   Gets the prover name from MathServResponse and extracts the name only
@@ -131,8 +127,8 @@ mapToGoalStatus stat = case foAtpStatus stat of
 usedProverName :: String -- ^ Prover name from MathServResponse
                -> String -- ^ name without version number or unknown
 usedProverName pn =
-    if (null pn) then "unknown"
-      else (takeWhile (\ch -> not $ ch == '_')) pn
+    if null pn then "unknown"
+      else takeWhile (/= '_') pn
 
 {- |
   Default proof status. Contains the goal name, prover name
@@ -147,7 +143,7 @@ defaultProofStatus :: AS_Anno.Named SPTerm -- ^ goal to prove
 defaultProofStatus nGoal prName tl opts pt =
   (openProofStatus (AS_Anno.senAttr nGoal)
                     prName (ProofTree pt))
-  {tacticScript = TacticScript $ show $ ATPTacticScript
+  {tacticScript = TacticScript $ show ATPTacticScript
     {tsTimeLimit = tl,
      tsExtraOpts = opts} }
 
@@ -156,15 +152,15 @@ defaultProofStatus nGoal prName tl opts pt =
   TLimitExceeded), and the proofStatus containing all prove
   information available.
 -}
-proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
+proofStat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
            -> ProofStatus ProofTree -- ^ default proof status
            -> (ATPRetval, ProofStatus ProofTree)
            -- ^ General return value of a prover run, used in GUI.
-           --   Detailed proof status if information is available.
-proof_stat nGoal res usedAxs timeOut defaultPrStat = case res of
+           -- Detailed proof status if information is available.
+proofStat nGoal res usedAxs timeOut defaultPrStat = case res of
   Proved _ -> let nName = AS_Anno.senAttr nGoal in
       (ATPSuccess, defaultPrStat
        { goalStatus = Proved $ elem nName usedAxs
