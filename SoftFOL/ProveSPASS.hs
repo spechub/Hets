@@ -46,8 +46,8 @@ import System.Process
 import Data.Char
 import Data.List
 import Data.Maybe
-import Data.Time (TimeOfDay(..),midnight -- only in ghc-6.6.1: ,parseTime
-                 )
+import Data.Time (TimeOfDay (..), midnight)
+
 -- * Prover implementation
 
 {- |
@@ -74,17 +74,18 @@ spassProver = mkAutomaticProver spassName () spassProveGUI
 atpFun :: String -- ^ theory name
   -> ATPFunctions Sign Sentence SoftFOLMorphism ProofTree SoftFOLProverState
 atpFun thName = ATPFunctions
-    { initialProverState = spassProverState,
-      atpTransSenName = transSenName,
-      atpInsertSentence = insertSentenceGen,
-      goalOutput = showDFGProblem thName,
-      proverHelpText = "http://www.spass-prover.org/\n",
-      batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-      fileExtensions = FileExtensions{problemOutput = ".dfg",
-                                      proverOutput = ".spass",
-                                      theoryConfiguration = ".spcf"},
-      runProver = runSpass,
-      createProverOptions = createSpassOptions }
+    { initialProverState = spassProverState
+    , atpTransSenName = transSenName
+    , atpInsertSentence = insertSentenceGen
+    , goalOutput = showDFGProblem thName
+    , proverHelpText = "http://www.spass-prover.org/\n"
+    , batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT"
+    , fileExtensions = FileExtensions
+        { problemOutput = ".dfg"
+        , proverOutput = ".spass"
+        , theoryConfiguration = ".spcf"}
+    , runProver = runSpass
+    , createProverOptions = createSpassOptions }
 
 {- |
   Parses a given default tactic script into a
@@ -104,7 +105,7 @@ parseSpassTacticScript =
 -}
 spassProveGUI :: String -- ^ theory name
           -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-             --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+             -- 'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 spassProveGUI thName th freedefs =
@@ -126,11 +127,11 @@ spassProveCMDLautomaticBatch ::
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
         -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+           -- 'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+        -> IO (Concurrent.ThreadId, Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+           -- snd: MVar to wait for the end of the thread
 spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -174,18 +175,18 @@ parseSpassOutput = foldl parseIt (Nothing, [], False, midnight)
 parseTimeOfDay :: String -> Maybe TimeOfDay
 parseTimeOfDay str =
     case splitOn ':' str of
-      [h,m,s] -> Just TimeOfDay
+      [h, m, s] -> Just TimeOfDay
         { todHour = read h
-        , todMin  = read m
-        , todSec  = realToFrac (read s :: Double) }
+        , todMin = read m
+        , todSec = realToFrac (read s :: Double) }
       _ -> Nothing
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
 -}
 runSpass :: SoftFOLProverState -- ^ logical part containing the input Sign and
-                     --  axioms and possibly goals that have been proved
-                     --  earlier as additional axioms
+                     -- axioms and possibly goals that have been proved
+                     -- earlier as additional axioms
          -> GenericConfig ProofTree -- ^ configuration to use
          -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph
@@ -196,7 +197,7 @@ runSpass sps cfg saveDFG thName nGoal = do
   prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
   when saveDFG
     $ writeFile (basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dfg") prob
-  (_, pout,_) <- readProcessWithExitCode spassName allOptions prob
+  (_, pout, _) <- readProcessWithExitCode spassName allOptions prob
   -- SPASS 3.7 does not properly stop, but fails with an exit code
   let output = lines pout
       (res, usedAxs, _, tUsed) = parseSpassOutput output
