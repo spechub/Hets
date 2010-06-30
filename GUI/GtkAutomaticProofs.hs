@@ -32,7 +32,6 @@ import Interfaces.GenericATPState (guiDefaultTimeLimit)
 import Logic.Grothendieck
 import Logic.Comorphism (AnyComorphism (..))
 import Logic.Prover
-import Logic.Logic (Logic)
 
 import Comorphisms.LogicGraph (logicGraph)
 import Comorphisms.KnownProvers
@@ -88,8 +87,8 @@ showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
 -- | Get a markup string containing name and color
 instance Show FNode where
   show fn = let gs = gStatus $ minimum $ toGtkGoals fn in
-    "<span color=\"" ++ GtkUtils.statusToColor gs
-    ++ "\">" ++ GtkUtils.statusToPrefix gs ++ name fn ++ "</span>"
+    "<span color=\"" ++ GtkUtils.statusToColor gs ++ "\">"
+     ++ GtkUtils.statusToPrefix gs ++ name fn ++ "</span>"
 
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
@@ -103,15 +102,20 @@ instance Ord FNode where
 -- | gets all Nodes from the DGraph as input and creates a list of FNodes only
 -- | containing Nodes to be considered.
 initFNodes :: [LNode DGNodeLab] -> [FNode]
-initFNodes ls = foldr (\ n@(_,l) t 
-                  -> case globalTheory l of
-                       Just gt@(G_theory _lid _sigma _ sens _) 
-                          -> FNode (getDGNodeName l) n 
-                                   (sublogicOfTh gt)
-                                   (OMap.keys $ OMap.filter (not . isAxiom) sens) 
-                                   (dgn_theory l) : t
-                       Nothing -> t
-                 ) [] $ filter (hasSenKind (not . isAxiom) . snd) ls
+initFNodes = foldr (\ n@(_,l) t -> case globalTheory l of
+                      Nothing -> t
+                      Just gt -> let gt' = dgn_theory l
+                                     gs = case gt' of
+                                            G_theory _ _ _ s _ 
+                                              -> OMap.keys $ OMap.filter (not . isAxiom) s
+                                 in if null gs then t else
+                                 (FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt') : t
+             ) []
+
+unchecked :: FNode -> Bool
+unchecked fn = case results fn of
+                 G_theory _ _ _ sens _ ->
+                   all null $ map (thmStatus . snd) $ OMap.toList $ OMap.filter (not . isAxiom) sens
 
 
 -- | Displays the consistency checker window
@@ -202,6 +206,23 @@ showProverWindow res ln le = postGUIAsync $ do
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
     btnNodesInvert upd
 
+-- bindings
+  let selectWith f u = do
+        signalBlock shN
+        sel <- treeViewGetSelection trvNodes
+        treeSelectionSelectAll sel
+        rs <- treeSelectionGetSelectedRows sel
+        mapM_ ( \ p@(row:[]) -> do
+          fn <- listStoreGetValue listNodes row
+          (if f fn then treeSelectionSelectPath else treeSelectionUnselectPath)
+            sel p) rs
+        signalUnblock shN
+        u
+
+  onClicked btnNodesUnchecked
+    $ selectWith unchecked upd
+  -- onClicked btnNodesTimeout $ selectWith (n -> any (gStatus == GTimeout) (toGtkGoals n)) upd
+
   onClicked btnResults $ showModelView mView "Models" listNodes []
   onClicked btnClose $ widgetDestroy window
   onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
@@ -219,7 +240,6 @@ showProverWindow res ln le = postGUIAsync $ do
     switch False
     tid <- forkIO $ do
       performAutoProof inclThms timeout prgBar f listNodes nodes'
-      -- check inclThms ln le dg f timeout listNodes updat nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -239,10 +259,10 @@ showProverWindow res ln le = postGUIAsync $ do
     nodes' <- listStoreToList listNodes
     let changes = foldl (\ cs fn ->
                       -- where the proving did not return anything, node is not updated
---                      if null $ Map.toList $ status fn then cs
-  --                      else
-                          let (_, l) = node fn
-                              n' = updateProofHistory fn
+                      if unchecked fn then cs
+                        else
+                          let (i, l) = node fn
+                              n' = (i, l {dgn_theory = results fn})
                           in SetNodeLab l n' : cs
                     ) [] nodes'
         dg' = changesDGH dg changes
@@ -251,11 +271,80 @@ showProverWindow res ln le = postGUIAsync $ do
   widgetShow window
 
 
-updateProofHistory :: FNode -> LNode DGNodeLab
-updateProofHistory fn = let (i,l) = node fn
-                            gt = dgn_theory l
-                            gt' = propagateProofs gt $ results fn
-                        in (i, l {dgn_theory = gt'})
+performAutoProof :: -- include proven Theorems in subsequent proofs
+                     Bool
+                    -- Timeout (sec)
+                  -> Int 
+                    -- Progress bar
+                  -> (Double -> String -> IO ()) 
+                    -- selcted Prover and Comorphism
+                  -> Finder
+                    -- Display function for node selection box
+                  -> ListStore FNode 
+                    -- selected nodes
+                  -> [(Int, FNode)]
+                    -- return TODO comment!
+                  -> IO()
+performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
+  let count' = fromIntegral $ length nodes
+      c = cs !! i 
+  in foldM_ (\ count (row, fn) -> do
+           postGUISync $ update (count / count') $ name fn
+           res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
+           let res' = case res of
+                        Nothing -> results fn
+                        Just gt -> propagateProofs (results fn) gt
+           postGUISync $ listStoreSetValue listNodes row fn { results = res' }
+           return $ count + 1) 0 nodes
+
+autoProofAtNode :: -- use theorems is subsequent proofs
+                    Bool
+                   -- Timeout Limit
+                  -> Int
+                   -- Node selected for proving
+                  -> LNode DGNodeLab
+                   -- selected Prover and Comorphism
+                  -> ( G_prover, AnyComorphism )
+                   -- returns new GoalStatus for the Node
+                  -> IO (Maybe G_theory)
+autoProofAtNode useTh timeout (_, l) p_cm =
+  case globalTheory l of
+    Nothing -> do return Nothing
+
+    Just g_th@( G_theory lid _ _ _ _ ) -> do
+      -- recompute the theory (to make effective the selected axioms, goals)
+      let knpr = propagateErrors $ knownProversWithKind ProveCMDLautomatic
+      pf_st <- initialState lid "" g_th knpr [p_cm]
+      let st = recalculateSublogicAndSelectedTheory pf_st
+      -- try to prepare the theory
+      case maybeResult $ prepareForProving st p_cm of
+        Nothing -> do return Nothing
+
+        Just (G_theory_with_prover lid1 th p) ->
+          case proveCMDLautomaticBatch p of
+            Nothing -> do return Nothing
+
+            Just fn -> do 
+              -- mVar to poll the prover for results
+              answ <- newMVar (return [])
+              (_, mV) <- fn useTh False answ (theoryName st)
+                                       (TacticScript $ show timeout) th []
+              takeMVar mV
+              d <- takeMVar answ
+              case maybeResult d of
+                Nothing -> do return Nothing
+
+                Just d' -> do
+                  let ps' = markProved (snd p_cm) lid1 d' st
+ -- TODO Open Reason is not written back into GTheory, but only Proved Goals
+ -- this need to be fixed.
+                  case theory ps' of
+                    G_theory lidT sigT indT sensT _ ->
+                      case coerceThSens (logicId ps') lidT "" (goalMap ps') of
+                        Nothing -> do return Nothing
+
+                        Just gMap -> return $ Just $
+                          G_theory lidT sigT indT (Map.union sensT gMap) startThId
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
 sortNodes trvNodes listNodes = do
@@ -309,103 +398,6 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
         Just f@(Finder { comorphism = cc' }) -> let c = cc !! i in
           Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
     ) m' old
-
-performAutoProof :: -- include proven Theorems in subsequent proofs
-                     Bool
-                    -- Timeout (sec)
-                  -> Int 
-                    -- Progress bar
-                  -> (Double -> String -> IO ()) 
-                    -- selcted Prover and Comorphism
-                  -> Finder
-                    -- Display function for node selection box
-                  -> ListStore FNode 
-                    -- selected nodes
-                  -> [(Int, FNode)]
-                    -- return TODO comment!
-                  -> IO()
-performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
-  let count' = fromIntegral $ length nodes
-      c = cs !! i 
-  in foldM_ (\ count (row, fn) -> do
-           postGUISync $ update (count / count') $ name fn
-           res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
-           postGUISync $ listStoreSetValue listNodes row fn { results = res }
-           return $ count + 1) 0 nodes
-
-autoProofAtNode :: -- use theorems is subsequent proofs
-                    Bool
-                   -- Timeout Limit
-                  -> Int
-                   -- Node selected for proving
-                  -> LNode DGNodeLab
-                   -- selected Prover and Comorphism
-                  -> ( G_prover, AnyComorphism )
-                   -- returns new GoalStatus for the Node
-                  -> IO G_theory
-autoProofAtNode useTh timeout (_, lab) p_cm =
-  case fromMaybe (error "GtkAutomaticProofs: noG_theory") $ globalTheory lab of
-    g_th@( G_theory lid _ _ _ _ ) -> do
-      -- recompute the theory (to make effective the selected axioms,
-      -- goals)
-     let knpr = propagateErrors $ knownProversWithKind ProveCMDLautomatic
-     pf_st <- initialState lid "" g_th knpr [p_cm]
-     let st = recalculateSublogicAndSelectedTheory pf_st
-     -- try to prepare the theory
-     case maybeResult $ prepareForProving st p_cm of
-     -- theory could not be computed
-       Nothing -> do putStrLn "No suitable prover and comorphism found"
-                     return g_th
-       Just (G_theory_with_prover lid1 th p) ->
-        case proveCMDLautomaticBatch p of
-         Nothing -> do putStrLn "Error obtaining the prover"
-           -- TODO create usefull return value
-                       return g_th
-         Just fn -> do 
-           -- mVar to poll the prover for results
-           answ <- newMVar (return [])
-           case selectedGoals st of
-             [] -> do putStrLn "No goals selected. Nothing to prove"
-           -- TODO create usefull return value
-                      return g_th
-             _  -> do (_, mV) <- fn useTh False answ (theoryName st)
-                                      (TacticScript $ show timeout) th []
-                      -- mThr          <- newMVar $ Just thrId
-                      takeMVar mV
-                      res <- getResults lid1 answ (snd p_cm) st
-                      return $ case res of
-                        Nothing -> g_th
-                        Just gt -> gt
-
-getResults :: (Logic lid1 sublogics1
-                     basic_spec1 sentence1 symb_items1 symb_map_items1
-                     sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
-              Logic lid sublogics basic_spec sentence
-                     symb_items symb_map_items
-                     sign morphism symbol raw_symbol proof_tree) =>
-              lid 
-              -> MVar (Result [ProofStatus proof_tree])
-              -> AnyComorphism
-              -> ProofState lid1 sentence1
-              -> IO (Maybe G_theory)
-getResults lid mData ac st =
-  do
-    d <- takeMVar mData
-    case maybeResult d of
-               Nothing -> return Nothing
-               Just d' -> do
-
-                 let ps' = markProved ac lid d' st
- -- TODO Open Reason is not written back into GTheory, but only Proved Goals
- -- this need to be fixed.
-                 case theory ps' of
-                   G_theory lidT sigT indT sensT _ ->
-                     case coerceThSens (logicId ps') lidT "" (goalMap ps') of
-                       Nothing -> return Nothing
-                       Just gMap -> let
-                         nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
-                         in do return $ Just nwTh
-
  
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
                  -> ConnectId ComboBox -> IO ()
