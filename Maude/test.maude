@@ -205,7 +205,6 @@ fmod TEST7 is
 endfm
 
 fth TEST8 is
-
  sorts Foo Faa .
  op update : Foo -> Faa .
 endfth
@@ -218,41 +217,41 @@ view V2 from TEST8 to BOOL is
 endv
 
 fmod MYLIST is
-pr NAT .
+ pr NAT .
 
-sorts List .
-subsort Nat < List .
+ sorts List .
+ subsort Nat < List .
 
-op nil : -> List [ctor] .
-op __ : List List -> List [ctor assoc id: nil] .
+ op nil : -> List [ctor] .
+ op __ : List List -> List [ctor assoc id: nil] .
 
-var L : List .
-var E : Nat .
+ var L : List .
+ var E : Nat .
 
-op reverse : List -> List .
-eq reverse(nil) = nil .
-eq reverse(E L) = reverse(L) E .
+ op reverse : List -> List .
+ eq reverse(nil) = nil .
+ eq reverse(E L) = reverse(L) E .
 endfm
 
 fth TH is 
-pr NAT .
+ pr NAT .
 
-sorts List .
-subsort Nat < List .
+ sorts List .
+ subsort Nat < List .
 
-op nil : -> List [ctor] .
-op __ : List List -> List [ctor assoc id: nil] .
+ op nil : -> List [ctor] .
+ op __ : List List -> List [ctor assoc id: nil] .
 
-var L : List .
-var E : Nat .
+ var L : List .
+ var E : Nat .
 
-op reverse : List -> List .
-eq reverse(reverse(L)) = L .
+ op reverse : List -> List .
+ eq reverse(reverse(L)) = L .
 endfth
 
 view IDEM from TH to MYLIST is
-sort List to List .
-op nil to nil .
-op __ to __ .
-op reverse to reverse .
+ sort List to List .
+ op nil to nil .
+ op __ to __ .
+ op reverse to reverse .
 endv

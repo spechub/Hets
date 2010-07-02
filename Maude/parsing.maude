@@ -112,7 +112,7 @@
 
     op getSecondModule : View -> Module .
     ceq getSecondModule(view Q from ME to ME' is SMS OMS endv) = M
-     if M := varsConstraints(upModule(ME, true)) .
+     if M := varsConstraints(upModule(ME', true)) .
  endm
 
  mod HETS is

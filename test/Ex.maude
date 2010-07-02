@@ -21,8 +21,8 @@ fth MY_LISTVIEW is
  sorts List  .
  subsort Nat < List .
 
- op nil : -> List [ctor] .
- op __ : List List -> List [ctor assoc id: nil] .
+ op nil : -> List .
+ op __ : List List -> List [assoc id: nil] .
 
  var L : List .
  var E : Nat .

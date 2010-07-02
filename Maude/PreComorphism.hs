@@ -51,7 +51,7 @@ type OpTransTuple = (CSign.OpMap, CSign.OpMap, Set.Set Component)
 
 -- | generates a CASL morphism from a Maude morphism
 mapMorphism :: MMorphism.Morphism -> Result (CMorphism.CASLMor)
-mapMorphism morph = 
+mapMorphism morph =
          let
            src = MMorphism.source morph
            tgt = MMorphism.target morph
@@ -172,7 +172,7 @@ mapSentence sg sen@(MSentence.Rule rl) = return $ sentence form
 
 -- | applies maude2casl to compute the CASL signature and sentences from
 -- the Maude ones, and wraps them into a Result datatype
-mapTheory :: (MSign.Sign, [Named MSentence.Sentence]) 
+mapTheory :: (MSign.Sign, [Named MSentence.Sentence])
               -> Result (CSign.CASLSign, [Named CAS.CASLFORMULA])
 mapTheory (sg, nsens) = return $ maude2casl sg nsens
 
@@ -209,7 +209,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          mb_rl_forms = map (mb_rl2formula mk) mbs_rls_sens
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
-         new_sens = concat [rs, rs', no_owise_forms, owise_forms, 
+         new_sens = concat [rs, rs', no_owise_forms, owise_forms,
                             mb_rl_forms, ctor_sen, pred_forms]
 
 -- | translates the Maude subsorts into CASL subsorts, and adds the subsorts
@@ -294,7 +294,7 @@ loadLibraries ss om = case natImported ss om of
 
 -- | loads the sentences associated to the natural numbers
 loadNaturalNatSens :: [Named CAS.CASLFORMULA]
-loadNaturalNatSens = 
+loadNaturalNatSens =
          let lib = head $ unsafePerformIO $ readLib "Maude/MaudeNumbers.casl"
          in case lib of
              G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
@@ -509,7 +509,7 @@ createImpForm (CAS.True_atom _) form = form
 createImpForm form1 form2 = CAS.Implication form1 form2 True nullRange
 
 -- | generates the predicates asserting the "true" sort of the operator if all
--- the arguments have the correct sort 
+-- the arguments have the correct sort
 ops2predPremises :: IdMap -> [MSym.Symbol] -> Int -> ([CAS.CASLTERM], [CAS.CASLFORMULA])
 ops2predPremises im (MSym.Sort s : ss) i = (var : terms, form : forms)
          where s' = token2id s
@@ -530,7 +530,7 @@ ops2predPremises _ _ _ = ([], [])
 -- | traverses the Maude sentences, returning a pair of list of sentences.
 -- The first list in the pair are the equations without the attribute "owise",
 -- while the second one are the equations with this attribute
-splitOwiseEqs :: [Named MSentence.Sentence] -> 
+splitOwiseEqs :: [Named MSentence.Sentence] ->
                 ([Named MSentence.Sentence], [Named MSentence.Sentence], [Named MSentence.Sentence])
 splitOwiseEqs [] = ([], [], [])
 splitOwiseEqs (s : ss) = res
@@ -553,7 +553,7 @@ noOwiseSen2Formula im s = s'
 
 -- | translates a Maude equation defined with the "owise" attribute into
 -- a CASL formula
-owiseSen2Formula ::  IdMap -> [Named CAS.CASLFORMULA] 
+owiseSen2Formula ::  IdMap -> [Named CAS.CASLFORMULA]
                      -> Named MSentence.Sentence -> Named CAS.CASLFORMULA
 owiseSen2Formula im owise_forms s = s'
        where MSentence.Equation eq = sentence s
@@ -563,7 +563,7 @@ owiseSen2Formula im owise_forms s = s'
 -- | translates a Maude membership or rule into a CASL formula
 mb_rl2formula :: IdMap -> Named MSentence.Sentence -> Named CAS.CASLFORMULA
 mb_rl2formula im s = case sen of
-                MSentence.Membership mb -> let 
+                MSentence.Membership mb -> let
                                              mb' = mb2formula im mb
                                            in s { sentence = mb' }
                 MSentence.Rule rl -> let
@@ -831,7 +831,7 @@ getType (CAS.Application op _ _) = case op of
             _ -> Nothing
 getType _ = Nothing
 
--- | generates the formulas for the rewrite predicates 
+-- | generates the formulas for the rewrite predicates
 rewPredicatesSens :: Set.Set Id -> [Named CAS.CASLFORMULA]
 rewPredicatesSens = Set.fold rewPredicateSens []
 
@@ -906,7 +906,7 @@ sortsTranslationList (s : ss) r = Set.insert (sort2id tops) res
             ss' = deleteRelated ss top r
             res = sortsTranslation ss' r
 
--- | return the maximal elements from the sort relation 
+-- | return the maximal elements from the sort relation
 getTop :: MSign.SubsortRel -> MSym.Symbol -> [MSym.Symbol]
 getTop r tok = case succs of
            [] -> [tok]
@@ -962,7 +962,7 @@ noQuantification form = (form, [])
 
 -- | translate the CASL sorts to symbols
 kinds2syms :: Set.Set Id -> Set.Set CSign.Symbol
-kinds2syms = Set.map kind2sym 
+kinds2syms = Set.map kind2sym
 
 -- | translate a CASL sort to a CASL symbol
 kind2sym :: Id -> CSign.Symbol
@@ -1033,9 +1033,9 @@ getVarsTerm (CAS.Conditional t1 f t2 _) = Map.unionWith (Set.union) v3 m
            v3 = getVars f
            m = Map.unionWith (Set.union) v1 v2
 getVarsTerm (CAS.Mixfix_term ts) = foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
-getVarsTerm (CAS.Mixfix_parenthesized ts _) = 
+getVarsTerm (CAS.Mixfix_parenthesized ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
-getVarsTerm (CAS.Mixfix_bracketed ts _) = 
+getVarsTerm (CAS.Mixfix_bracketed ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
 getVarsTerm (CAS.Mixfix_braced ts _) =
                    foldr (Map.unionWith (Set.union) . getVarsTerm) Map.empty ts
@@ -1081,7 +1081,7 @@ ms2vcs s = case Map.member s stringMap of
 
 -- | map of reserved words
 stringMap :: Map.Map String String
-stringMap = Map.fromList 
+stringMap = Map.fromList
     [("true", "maudeTrue"),
      ("false", "maudeFalse"),
      ("not_", "neg__"),
@@ -1107,7 +1107,7 @@ splitDoubleUnderscores ('_' : '_' : cs) acc = if null acc
            dut = mkSimpleId "__"
            rest = splitDoubleUnderscores cs []
 splitDoubleUnderscores (c : cs) acc = splitDoubleUnderscores cs (acc ++ [c])
-           
+
 
 -- | error Id
 errorId :: String -> Id
@@ -1164,3 +1164,54 @@ hasOneSort _ = False
 isSymSort :: MSym.Symbol -> Bool
 isSymSort (MSym.Sort _) = True
 isSymSort _ = False
+
+-- | translates the Maude operator map into a tuple of CASL operators, CASL
+-- associative operators, membership induced from each Maude operator,
+-- and the set of sorts with the ctor attribute
+translateOps' :: IdMap -> MSign.OpMap -> OpTransTuple
+translateOps' im = Map.fold (translateOpDeclSet' im) (Map.empty, Map.empty, Set.empty)
+
+-- | translates an operator declaration set into a tern as described above
+translateOpDeclSet' :: IdMap -> MSign.OpDeclSet -> OpTransTuple -> OpTransTuple
+translateOpDeclSet' im ods tpl = Set.fold (translateOpDecl' im) tpl ods
+
+-- | given an operator declaration updates the accumulator with the translation
+-- to CASL operator, checking if the operator has the assoc attribute to insert
+-- it in the map of associative operators, generating the membership predicate
+-- induced by the operator declaration, and checking if it has the ctor attribute
+-- to introduce the operator in the generators sentence
+translateOpDecl' :: IdMap -> MSign.OpDecl -> OpTransTuple -> OpTransTuple
+translateOpDecl' im (syms, ats) (ops, assoc_ops, cs) = case tl of
+                      [] -> (ops', assoc_ops', cs')
+                      _ -> translateOpDecl' im (syms', ats) (ops', assoc_ops', cs')
+      where sym = head $ Set.toList syms
+            tl = tail $ Set.toList syms
+            syms' = Set.fromList tl
+            (cop_id, ot, _) = fromJust $ maudeSym2CASLOp' im sym
+            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
+            ops' = Map.insertWith (Set.union) cop_id cop_type ops
+            assoc_ops' = if any MAS.assoc ats
+                         then Map.insertWith (Set.union) cop_id cop_type assoc_ops
+                         else assoc_ops
+            cs' = if any MAS.ctor ats
+                  then Set.insert (Component cop_id ot) cs
+                  else cs
+
+-- | translates a Maude operator symbol into a pair with the id of the operator
+-- and its CASL type
+maudeSym2CASLOp' :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType, CSign.OpType)
+maudeSym2CASLOp' im (MSym.Operator op ar co) = Just (token2id op, ot, ot')
+      where f = token2id . getName
+            g = \ x -> maudeSymbol2caslSort' x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
+            ot = CSign.OpType CAS.Total (map g ar) (g co)
+            ot' = CSign.OpType CAS.Total (map f ar) (f co)
+maudeSym2CASLOp' _ _ = Nothing
+
+maudeSymbol2caslSort' :: MSym.Symbol -> IdMap -> CAS.SORT
+maudeSymbol2caslSort' (MSym.Sort q) _ = token2id $ mkSimpleId $ "kind_" ++ show q
+maudeSymbol2caslSort' (MSym.Kind q) im = Map.findWithDefault err q' im
+      where q' = token2id q
+            err = errorId "error translate symbol"
+maudeSymbol2caslSort' _ _ = errorId "error translate symbol"
+
+

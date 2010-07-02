@@ -15,6 +15,7 @@ The translating comorphism from Maude with preorder semantics to CASL.
 module Comorphisms.Maude2CASL
     (
      Maude2CASL (..)
+   , mapMaudeFreeness
     )
     where
 
@@ -38,6 +39,14 @@ import qualified CASL.AS_Basic_CASL as CBasic
 import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
+
+import Common.Result
+import qualified Data.Set as Set
+import qualified Common.Lib.Rel as Rel
+import Common.Id
+import qualified Data.Map as Map
+
+import Debug.Trace
 
 -- | lid of the morphism
 data Maude2CASL = Maude2CASL deriving Show
@@ -83,3 +92,80 @@ instance Comorphism Maude2CASL
       has_model_expansion Maude2CASL = True
       is_weakly_amalgamable Maude2CASL = True
       isInclusionComorphism Maude2CASL = True
+
+mapMaudeFreeness :: MMor.Morphism
+                 -> Result (CSign.CASLSign,CMor.CASLMor, CMor.CASLMor)
+mapMaudeFreeness morph = do
+ let sMaude = MMor.source morph
+     tMaude = MMor.target morph
+ (sCASL,_)<- map_theory Maude2CASL (sMaude,[])
+ (tCASL,_)<- map_theory Maude2CASL (tMaude,[])
+ let tExt = signExtension tMaude tCASL
+     (f1,f2) = morExtension morph tExt sCASL tCASL
+ return (tExt, f1, f2)
+
+
+signExtension :: MSign.Sign -> CSign.CASLSign -> CSign.CASLSign
+signExtension sigma sigmaC=
+ let
+  sorts = Set.map MSymbol.toId $ MSign.sorts sigma
+  subsorts = Rel.map MSymbol.toId $ MSign.subsorts sigma
+  kindR = MSign.kindRel sigma
+  funs = (\(x,_,_)-> x) $ translateOps (kindMapId kindR) $ MSign.ops sigma
+  funSorts = atLeastOneSort $ MSign.ops sigma
+  funs' = (\(x,_,_)-> x) $ translateOps' (kindMapId kindR) funSorts
+  makeKind s = token2id $ mkSimpleId $ "kind_" ++ show s
+  opTypeKind (CSign.OpType oK oArgs oRes) =
+              CSign.OpType oK (map makeKind oArgs) (makeKind oRes)
+ in sigmaC{CSign.sortSet = Set.union
+                    sorts
+                    (Set.map makeKind sorts),
+          CSign.sortRel = Rel.union subsorts
+                           (Rel.union
+                              (Rel.map makeKind subsorts)
+                              (Rel.fromSet $
+                               Set.map ((\x -> (x,makeKind x))) sorts)
+                           ),
+          CSign.opMap = CSign.addOpMapSet funs funs', --Map.map (\s -> Set.union s $
+                         --              Set.map opTypeKind s) funs,
+          CSign.predMap = rewPredicates $ Set.union sorts
+                          (Set.map makeKind sorts)
+
+          }
+
+morExtension :: MMor.Morphism ->  -- sigma:\Sigma -> \Sigma'
+                CSign.CASLSign ->  -- phi(\Sigma)
+                CSign.CASLSign -> -- phi(\Sigma')
+                CSign.CASLSign -> -- \Sigma'#
+                (CMor.CASLMor, CMor.CASLMor)
+morExtension phi tExt sCASL tCASL =
+ let
+   makeKind s = genName $ "kind_"++show s
+   changeMap f mapF =  Map.mapKeys f $
+                       Map.map f mapF
+   sortF =  changeMap MSymbol.toId $ MMor.sortMap phi
+   iotaN = CMor.embedMorphism  () tCASL tExt
+   genOps f = let
+               f' = MSymbol.toId f
+               profiles = Map.findWithDefault
+                         Set.empty f' $
+                         CSign.opMap sCASL
+               ff = Map.findWithDefault (error "morExtension")
+                     f $ MMor.opMap phi
+              in Set.toList $ Set.map (\x-> ((f', x),
+                            (MSymbol.toId ff, CBasic.Partial)))
+                 profiles
+   phi' = CMor.Morphism{
+             CMor.msource = sCASL,
+             CMor.mtarget = tExt,
+             CMor.sort_map = Map.union sortF $
+                              changeMap makeKind sortF,
+             CMor.op_map = Map.fromList $
+                            foldl (++) [] $
+                            map genOps $ Map.keys $
+                            MMor.opMap phi ,
+             CMor.pred_map = Map.empty,
+                -- because rew is mapped identically!
+             CMor.extended_map = ()
+           }
+ in  (iotaN, phi')
