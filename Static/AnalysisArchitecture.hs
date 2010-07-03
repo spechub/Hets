@@ -183,6 +183,9 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
        (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
            anaRefSpec lgraph dg' opts impSig un (buc, diag') Nothing usp
        usig <- getUnitSigFromRef rsig'
+
+-- this is wrong here!
+
        let (n, dg1, rsig) =
               case getPointerFromRef rsig' of
                RTNone -> let (n',d') = addNodeRT dg0 usig $ show un
@@ -218,14 +221,20 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
                                  _ -> [])) resultSig' ustr
                           return (Based_unit_sig dn' rsig, diag'')
 -- here compare resultSig' and rsig
-                          else if length nodes < 2 then
-                                 return (Based_par_unit_sig dns $
-                                         mkRefSigFromUnit $
-                                         UnitSig argSigs resultSig', diag)
-                                else
-                                 return (Based_lambda_unit_sig nodes $
-                                           mkRefSigFromUnit $
-                                          UnitSig argSigs resultSig, diag)
+                          else if length nodes < 2 then do
+                                 let rsig'' = setPointerInRef
+                                              (mkRefSigFromUnit $
+                                              UnitSig argSigs resultSig')
+                                              (NPUnit n)
+                                 return (Based_par_unit_sig dns rsig''
+                                         , diag)
+                                else do
+                                 let rsig'' = setPointerInRef
+                                              (mkRefSigFromUnit $
+                                              UnitSig argSigs resultSig)
+                                              (NPUnit n)
+                                 return (Based_lambda_unit_sig nodes rsig'',
+                                         diag)
 -- here i need to return a different refinement signature
 -- unitsig argsigs resultsig before refinement
 -- and after refinement i introduce an unnamed component
@@ -385,6 +394,7 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
                   {- we made sure in anaUnitBindings that there's no
                      mapping for un in buc so we can just use
                      Map.insert -}
+                   -- here RTNone actually makes sense!!!
                   let rsig = BranchRefSig RTNone (UnitSig [] nsig, Nothing)
                       buc' = Map.insert un (Based_unit_sig dnsig rsig) buc0
                   (dnsigs, diag'', buc'') <- insNodes diag' args0 buc'
