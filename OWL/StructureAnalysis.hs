@@ -11,8 +11,10 @@ Structured analysis of the import structure of OWL-DL files. circular
 imports result in a united theory of all members of the circle.
 -}
 
-module OWL.StructureAnalysis (getNameFromNode, buildDevGraph) where
-
+module OWL.StructureAnalysis
+  ( getNameFromNode
+  , buildDevGraph
+  ) where
 
 import Static.GTheory
 import Static.DevGraph
@@ -206,6 +208,10 @@ integrateTheory theories =
 
 getNameFromNode :: NodeName -> String
 getNameFromNode = show . getName
+
+-- | delete all edges between two nodes out of a given DG
+delEdgeDG :: Edge -> DGraph -> DGraph
+delEdgeDG e dg = dg { dgBody = delEdge e $ dgBody dg }
 
 changeEdges :: [Context DGNodeLab DGLinkLab] -> Node -> DGraph -> DGraph
 changeEdges [] _ dg = dg

@@ -1385,10 +1385,6 @@ outDG = out . dgBody
 nodesDG :: DGraph -> [Node]
 nodesDG = nodes . dgBody
 
--- | get all the edges of the given DG
-edgesDG :: DGraph -> [Edge]
-edgesDG = edges . dgBody
-
 -- | tries to get the label of the given node in a given DG
 labDG :: DGraph -> Node -> DGNodeLab
 labDG dg = fromMaybe (error "labDG") . lab (dgBody dg)
@@ -1439,14 +1435,6 @@ insLNodeDG n@(v, _) g =
 -- | insert a new node with the given node content into a given DGraph
 insNodesDG :: [LNode DGNodeLab] -> DGraph -> DGraph
 insNodesDG ns dg = dg { dgBody = insNodes ns $ dgBody dg }
-
--- | delete an edge out of a given DG
-delEdgeDG :: Edge -> DGraph -> DGraph
-delEdgeDG e dg = dg { dgBody = delEdge e $ dgBody dg }
-
--- | delete a list of edges
-delEdgesDG :: [Edge] -> DGraph -> DGraph
-delEdgesDG es dg = dg { dgBody = delEdges es $ dgBody dg }
 
 -- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph

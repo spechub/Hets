@@ -198,6 +198,14 @@ staticAna file opt (ontoMap, dg) =
                           simpleLibEnv file dg''))
            _            -> error "no devGraph..."
 
+-- | get all the edges of the given DG
+edgesDG :: DGraph -> [Edge]
+edgesDG = edges . dgBody
+
+-- | delete a list of edges
+delEdgesDG :: [Edge] -> DGraph -> DGraph
+delEdgesDG es dg = dg { dgBody = delEdges es $ dgBody dg }
+
 -- | a map to save which node has been analysed.
 type SignMap = Map.Map Node (Sign, [Named Axiom])
 
