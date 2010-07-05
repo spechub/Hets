@@ -340,8 +340,6 @@ data DGRule =
   | DGRuleWithEdge String (LEdge DGLinkLab)
   | DGRuleLocalInference [(String, String)] -- renamed theorems
   | Composition [LEdge DGLinkLab]
-  | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
-  | BasicConsInference Edge BasicConsProof
     deriving (Show, Eq)
 
 -- | proof status of a link

@@ -239,8 +239,6 @@ dgRuleHeader r = case r of
     DGRuleWithEdge str _ -> str
     DGRuleLocalInference _ -> "local-inference"
     Composition _ -> "composition"
-    BasicInference _ _ -> "basic-inference"
-    BasicConsInference _ _ -> "basic-cons-inference"
 
 instance Pretty DGRule where
   pretty r = let es = dgRuleEdges r in fsep
@@ -248,12 +246,6 @@ instance Pretty DGRule where
     DGRuleLocalInference m ->
         braces $ sepByCommas $ map (\ (s, t) ->
           let d = text s in if s == t then d else pairElems d $ text t) m
-    BasicInference c bp -> fsep
-      [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
-      , text $ show bp]
-    BasicConsInference c bp -> fsep
-      [ text $ "using comorphism '" ++ show c ++ "' with proof tree:"
-      , text $ show bp]
     _ -> case es of
       [] -> Doc.empty
       [(_, _, l)] -> prettyDGLinkLab (const Doc.empty) l

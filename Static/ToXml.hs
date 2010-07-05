@@ -172,10 +172,6 @@ dgrule r =
       DGRuleLocalInference m ->
         map (\ (s, t) -> add_attrs [mkNameAttr s, mkAttr "renamedTo" t]
              $ unode "MovedTheorems" ()) m
-      BasicInference c _ ->
-        [add_attr (mkNameAttr $ show c) $ unode "UsedComorphism" ()]
-      BasicConsInference c _ ->
-        [add_attr (mkNameAttr $ show c) $ unode "UsedComorphism" ()]
       Composition es -> map (\ (_, _, l) ->
         add_attr (mkAttr "linkref" $ showEdgeId $ dgl_id l)
         $ unode "RuleTarget" ()) es
