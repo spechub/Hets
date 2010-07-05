@@ -106,9 +106,20 @@ mapSentence :: Morphism -> AS_BASIC.SENTENCE -> Result.Result AS_BASIC.SENTENCE
 mapSentence mor = return . mapSentenceH mor
 
 mapSentenceH :: Morphism -> AS_BASIC.SENTENCE -> AS_BASIC.SENTENCE
-mapSentenceH mor frm = case frm of
-  AS_BASIC.Quant_sent sen rn -> case sen of
-    AS_BASIC.Universal ns sen -> sen -- fix
+mapSentenceH _ frm = case frm of -- mor fix
+  AS_BASIC.Quant_sent qs _ -> case qs of
+    AS_BASIC.Universal _ sen -> sen -- fix
+    AS_BASIC.Existential _ sen -> sen -- fix
+  AS_BASIC.Bool_sent bs _ -> case bs of
+    AS_BASIC.Conjunction sens -> head sens --fix
+    AS_BASIC.Disjunction sens -> head sens --fix
+    AS_BASIC.Negation sen -> sen
+    AS_BASIC.Implication s1 _ -> s1
+    AS_BASIC.Biconditional s1 _ -> s1
+  AS_BASIC.Atom_sent atom rn -> AS_BASIC.Atom_sent atom rn
+  AS_BASIC.Comment_sent _ sen _ -> sen
+  AS_BASIC.Irregular_sent sen _ -> sen
+    
 
 {-
   AS_BASIC.Quant_sent form rn -> case form of

@@ -166,10 +166,11 @@ basicCommonLogicAnalysis (bs, sig, _) =
 inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol 
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
-inducedFromMorphism m sig = Result [] $ Nothing
+inducedFromMorphism _ _  = Result [] $ Nothing
 
 inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                       -> ExtSign Sign.Sign Symbol.Symbol
                       -> ExtSign Sign.Sign Symbol.Symbol
                       -> Result.Result Morphism.Morphism
-inducedFromToMorphism imap (ExtSign sig _) (ExtSign tsig _) = Result [] $ Nothing
+-- inducedFromToMorphism imap (ExtSign sig _) (ExtSign tsig _) = Result [] $ Nothing
+inducedFromToMorphism _ (ExtSign _ _) (ExtSign _ _) = Result [] $ Nothing -- TODO

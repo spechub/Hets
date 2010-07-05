@@ -12,10 +12,10 @@ Parser of common logic interface format
 -}
 
 {-
-  Ref. ISO/IEC IS 24707:2007(E)
+  Ref. Common Logic ISO/IEC IS 24707:2007(E)
 -}
 
-module CommonLogic.Parse_CLIF  where
+module CommonLogic.Parse_CLIF where
 
 import qualified Common.AnnoState as AnnoState
 import qualified Common.AS_Annotation as Annotation
@@ -26,14 +26,14 @@ import Common.Parsec
 import Common.Keywords
 
 import Text.ParserCombinators.Parsec as Parsec
-import Data.Char (ord)
+import Data.Char (ord, isSpace)
 
 ----------------------------------------------------------------------------
                 
 -- parser for sentences
 sentence :: CharParser st SENTENCE
 sentence = parens $ do
-  at <- atom
+  at <- try atom
   return $ Atom_sent at $ Range $ rangeSpan at
   <|>
   do
@@ -80,13 +80,18 @@ sentence = parens $ do
 
 
 bindingseq :: CharParser st [NAME_OR_SEQMARK]
-bindingseq = many $ do 
-  n <- identifier
-  return $ Name n
+bindingseq = many $ do
+    s <- seqmark -- fix seqmark parser for one
+    return $ SeqMark s
+  <|> do
+    n <- identifier
+    return $ Name n
 
 atom :: CharParser st ATOM
 atom = do
-  Lexer.pToken $ string "="
+  -- Lexer.pToken $ string "="
+  string "="
+  many1 space
   t1 <- term
   t2 <- term
   return $ Equation t1 t2
@@ -98,11 +103,15 @@ atom = do
 
 term :: CharParser st TERM
 term = do
-  t <- identifier
-  return $ Name_term t
+    t <- identifier
+    return $ Name_term t
   <|>
   do 
     parens $ do 
+      n <- Lexer.pToken (string "not") -- dirty kif, fix
+      ts <- many1 termseq
+      return $ Funct_term (Name_term n) ts $ Range $ joinRanges [rangeSpan n, rangeSpan ts]
+      <|> do 
       t <- term
       ts <- many1 termseq
       return $ Funct_term t ts $ Range $ joinRanges [rangeSpan t, rangeSpan ts]
@@ -178,9 +187,18 @@ comment = parens $ do
 quotedstring :: CharParser st String
 quotedstring = do 
    char '\''
-   s <- many $ satisfy clLetters2
+   s <- (many $ (satisfy clLetters2) <|> (oneOf whitec) <|> char '(' <|> char ')' <|> char '\"') 
+            <?> "quotedstring: word"
    char '\''
    return $ s
+
+enclosedname :: CharParser st String
+enclosedname = do
+   char '\"'
+   s <- (many $ (satisfy clLetters2) <|> (oneOf whitec) <|> char '(' <|> char ')' <|> char '\'') 
+         <?> "word"
+   char '\"' <?> "\""
+   return s
 
 -- 
 f1 :: Either ParseError SENTENCE
@@ -207,10 +225,10 @@ orKey :: CharParser st Id.Token
 orKey = Lexer.pToken $ string orS
 
 ifKey :: CharParser st Id.Token
-ifKey = Lexer.pToken $ string ifS
+ifKey = (Lexer.pToken $ string ifS) <|> (Lexer.pToken $ string "=>")
 
 iffKey :: CharParser st Id.Token
-iffKey = Lexer.pToken $ string iffS
+iffKey = (Lexer.pToken $ string iffS) <|> (Lexer.pToken $ string "<=>")
 
 forallKey :: CharParser st Id.Token
 forallKey = Lexer.pToken $ string forallS
@@ -242,12 +260,12 @@ identifier = Lexer.pToken $ reserved reservedelement $ scanClWord
 
 scanSeqMark :: CharParser st String
 scanSeqMark = do
-           sq <- string "..."
+           sq <- string "..." <|> string "@" -- kif @
            w <- many clLetter <?> "sequence marker"
            return $ sq ++ w
 
 scanClWord :: CharParser st String
-scanClWord = many1 clLetter <?> "words"
+scanClWord = quotedstring <|> enclosedname <|> (many1 clLetter <?> "words")
 
 clLetters :: Char -> Bool
 clLetters ch = let c = ord ch in
@@ -267,15 +285,24 @@ clLetter = satisfy clLetters <?> "cl letter"
 reservedelement :: [String]
 reservedelement = ["=", "and", "or", "iff", "if", "forall", "exists", "not", "...", 
                    "cl:text", "cl:imports", "cl:excludes", "cl:module", "cl:comment",
-                   "roleset:"] ++ reservedcl
+                   "roleset:"] ++ reservedcl ++ reservedkif
 
 reservedcl :: [String]
 reservedcl = ["cl-text", "cl-imports", "cl-exlcudes", "cl-module", "cl-comment"]
 
+reservedkif :: [String]
+reservedkif = ["<=>", "=>", "<="]
+
 reservedelement2 :: [String]
 reservedelement2 = ["=", "and", "or", "iff", "if", "forall", "exists", "not", 
                    "cl:text", "cl:imports", "cl:excludes", "cl:module", "cl:comment",
-                   "roleset:"]
+                   "roleset:", "<=>", "=>", "<="]
+
+whitec :: String
+whitec = "\n\r\t\v\f "
+
+white :: CharParser st String
+white = many1 $ oneOf whitec
 
 ----------------------------------------------------------------------------
 
@@ -285,34 +312,47 @@ basicSpec =
   fmap Basic_spec (AnnoState.annosParser parseBasicItems)
   <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
-{-
--- | Parser for basic items
-parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
-parseBasicItems = parseAxItems 
-               <|> do
-                 xs <- many1 aFormula
-                 return $ Axiom_items xs
--}
 
+-- function to parse different syntaxes
+-- parsing: axiom items with dots, clif sentences, clif text, kif
+-- first getting only the sentences
 parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
-parseBasicItems = parseAxItems 
-               <|> do
-                 xs <- many1 pp
-                 return $ Axiom_items xs
+parseBasicItems = parseAxItems
+              <|> try parseSentences
+              <|> try parseClText
+              <|> try parseKif
 
-pp :: AnnoState.AParser st (Annotation.Annoted SENTENCE)
-pp = do 
-     try pModule
-     pp
-    <|> do
-     try importation
-     pp
-    <|> do
-     try comment
-     pp
-    <|> do
-     aFormula
-  -- geht nicht da (pmoudule ... ) innerhalb der Klammern
+parseSentences :: AnnoState.AParser st BASIC_ITEMS
+parseSentences = do 
+    xs <- many1 aFormula
+    return $ Axiom_items xs
+
+parseClText :: AnnoState.AParser st BASIC_ITEMS
+parseClText = do 
+     tx <- pModule
+     return $ Axiom_items (ps2 (ps tx))
+
+ps :: MODULE -> [SENTENCE]
+ps (Mod _ tx _) = senOfText tx
+ps (Mod_ex _ _ _ _) = []
+
+ps2 :: [SENTENCE] -> [Annotation.Annoted SENTENCE]
+ps2 x = map (\y -> Annotation.Annoted y nullRange [] []) x
+
+senOfText :: TEXT -> [SENTENCE]
+senOfText (Text phr _) = foldl (sen2) [] phr
+senOfText (Named_text _ t _) = senOfText t
+
+sen2 :: [SENTENCE] -> PHRASE -> [SENTENCE] 
+sen2 s p = if (isSen p) then (s ++ [senOfPhr p]) else s
+
+senOfPhr :: PHRASE -> SENTENCE
+senOfPhr (Sentence s) = s
+senOfPhr _ = Atom_sent (Atom (Name_term (Token "empty" nullRange)) []) nullRange
+
+isSen :: PHRASE -> Bool
+isSen (Sentence _) = True
+isSen _ = False
 
 -- | parser for Axiom_items
 parseAxItems :: AnnoState.AParser st BASIC_ITEMS
@@ -333,3 +373,65 @@ aFormula =  do
 symbItems :: GenParser Char st NAME
 symbItems = do
   return (Token "x" nullRange)
+
+
+
+-----------------------------------------------------------------------------
+-- kif parser
+
+parseKif :: AnnoState.AParser st BASIC_ITEMS
+parseKif = do 
+    ks <- many1 kif
+    return $ Axiom_items $ ps2 ks
+
+k :: String
+k = ";Comment\n(subclass CodingScheme Procedure);Comment2(Comment Comment)\n(P x);Comment"
+
+-- kif :: CharParser st TEXT
+kif :: CharParser st SENTENCE
+kif =  do
+  skip2 
+  s <- sentence
+  skip2
+  return $ s
+
+test :: IO ()
+test = parseTest kif k
+
+eolOrEof :: GenParser Char st ()
+eolOrEof = (oneOf "\n\r" >> return ()) <|> eof
+
+commentOut :: CharParser st ()
+commentOut = char ';' >> manyTill anyChar eolOrEof >> return ()
+
+skip2 :: CharParser st [()]
+skip2 = many ((satisfy isSpace >> return ()) <|> commentOut) -- <|> try docuOut)
+
+lexem :: CharParser st a -> CharParser st a
+lexem = (<< skip2)
+
+docuOut :: CharParser st ()
+docuOut = parens $ do
+     string "documentation"
+     white
+     scanClWord
+     white
+     char '"'
+     manyTill anyChar (char '"')
+     return ()
+
+ds1 :: String
+ds1 = "(documentation anyWord \"any documentation ()\")  (formerName \"First World\" DevelopedCountry)"
+d2 :: String
+d2 = "(formerName \"First World\" DevelopedCountry)\n(conventionalLongName \"Developed Country\" DevelopedCountry)\n(names \"industrial country\" DevelopedCountry)\n(conventionalShortName \"the North\" DevelopedCountry)"
+d3 :: String
+d3 = "(formerName \"nothing\" DevelopedCountry)"
+d4 :: String
+d4 = "(holdsDuring (EndFn (WhenFn ?EXPORT)) (not (located ?ITEM ?AREA)))"
+
+parseFileKif :: String -> IO ()
+parseFileKif f = do x <- readFile f
+                    parseTest (many kif) x
+
+kk :: IO ()
+kk = parseFileKif "CommonLogic/TestData/kif.clf"

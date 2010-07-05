@@ -70,4 +70,4 @@ matches :: Symbol -> Symbol -> Bool
 matches s1 s2 = s1 == s2
 
 addSymbToSign :: Sign.Sign -> Symbol -> Result (Sign.Sign)
-addSymbToSign sig sym = Result [] $ Just sig
+addSymbToSign sig _ = Result [] $ Just sig -- TODO
