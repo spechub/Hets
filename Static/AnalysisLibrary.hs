@@ -324,9 +324,16 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
             let dg'' = updateNodeNameRT dg'
                        (refSource $ getPointerFromRef archSig) $ show asn
                 dg3 = dg'' { archSpecDiags =
-                           Map.insert (show asn) diag $ archSpecDiags dg''}
-            --trace (show $ refTree $  dg3) $
-            return (asd', dg3
+                           Map.insert (show asn)
+                             (let
+                               gr = nmap
+                                     (\x-> x{dn_desc =
+                                        (take 20 $ dn_desc x) ++ "..."})
+                                     $ diagGraph diag
+                              in diag{diagGraph = gr})
+                           $ archSpecDiags dg''}
+            trace (show $ refTree $  dg3) $
+             return (asd', dg3
                { globalEnv = Map.insert asn (ArchEntry archSig) genv },
                       libenv)
   Unit_spec_defn usn usp pos -> do

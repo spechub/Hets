@@ -65,7 +65,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.Result
---import Debug.Trace
+import Debug.Trace
 
 -- * types for structured specification analysis
 
@@ -669,7 +669,7 @@ modifyCtx (un : unitNames) rsmap bstc =
           case rsmap Map.! un of
             BranchRefSig n2 (usig'', bsig'') -> if equalSigs usig' usig'' then
                  modifyCtx unitNames rsmap $
-                 Map.insert un (BranchRefSig (compPointer n1 n2) (usig, bsig''))
+                 Map.insert un (BranchRefSig (trace "1" $ compPointer n1 n2) (usig, bsig''))
                             bstc -- was usig'
                 else error "illegal composition"
             _ -> modifyCtx unitNames rsmap bstc
@@ -677,7 +677,7 @@ modifyCtx (un : unitNames) rsmap bstc =
           case rsmap Map.! un of
             ComponentRefSig n2  rsmap' -> modifyCtx unitNames rsmap $
              Map.insert un
-             (BranchRefSig  (compPointer n1 n2) (usig, Just $
+             (BranchRefSig  (trace "2" $ compPointer n1 n2) (usig, Just $
                BranchStaticContext $ modifyCtx (Map.keys rsmap') rsmap' bstc'))
              bstc
             _ -> let f = if Map.size bstc' == 1 then
@@ -698,7 +698,7 @@ refSigComposition :: RefSig -> RefSig -> Result RefSig
 refSigComposition (BranchRefSig n1 (usig1, Just (UnitSigAsBranchSig usig2)))
                   (BranchRefSig n2 (usig3, bsig)) =
   if (equalSigs usig2 usig3) then
-    return $ BranchRefSig (compPointer n1 n2) (usig1, bsig)
+    return $ BranchRefSig (trace "3" $ compPointer n1 n2) (usig1, bsig)
     else fail $ "Signatures: \n" ++ show usig2 ++ "\n and \n " ++ show usig3 ++
                 "  do not compose"
 
@@ -706,7 +706,7 @@ refSigComposition _rsig1@(BranchRefSig n1
                        (usig1, Just (BranchStaticContext bstc)))
                   _rsig2@(ComponentRefSig n2 rsmap) =
   if matchesContext rsmap bstc then
-          return $ BranchRefSig (compPointer n1 n2)
+          return $ BranchRefSig (trace "4" $ compPointer n1 n2)
                    (usig1,Just $ BranchStaticContext $
                           modifyCtx (Map.keys rsmap) rsmap bstc)
       else fail ("Signatures do not match:" ++ show (Map.keys bstc) ++ " "
@@ -719,7 +719,7 @@ refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
          $ filter (`elem` Map.keys rsmap1) $ Map.keys rsmap2
   let unionMap = Map.union (Map.fromList upd) $
                  Map.union rsmap1 rsmap2
-  return $ ComponentRefSig (compPointer n1 n2) unionMap
+  return $ ComponentRefSig (trace "5" $ compPointer n1 n2) unionMap
 
 refSigComposition _rsig1 _rsig2 =
   fail "composition of refinement signatures"
@@ -953,7 +953,7 @@ compPointer (NPBranch n1 f1) (NPComp f2) =
        NPBranch n1 (Map.unionWith (\_ y -> y) f1 f2 )
 compPointer (NPComp f1) (NPComp f2) =
        NPComp (Map.unionWith (\_ y -> y) f1  f2)
-compPointer _ _  = error "compPointer"
+compPointer x y  = error $ "compPointer:" ++ show x ++ " " ++ show y
 
 -- sources
 

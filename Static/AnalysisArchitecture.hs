@@ -42,7 +42,7 @@ import Common.Amalgamate
 import Common.DocUtils
 import qualified Data.Map as Map
 
-import Data.Graph.Inductive.Graph as Graph (Node, nodes)
+import Data.Graph.Inductive.Graph as Graph (Node)
 import Control.Monad(foldM)
 
 --import Debug.Trace
@@ -788,10 +788,10 @@ anaUnitSpec lgraph dg opts impsig rN usp = case usp of
                        np' =
                              compPointer (NPUnit x) p'
                      in return (setPointerInRef rsig np', dg', usp)
-           Just (RTLeaves leaves) -> let
+           Just (RTLeaves _leaves) -> let
                p = getPointerFromRef rsig
              in case p of
-                  NPComp f2 -> error "nyi arch sig as ref"
+                  NPComp _f2 -> error "nyi arch sig as ref"
                   _ -> error "can't compose signatures!"
     _ -> fatal_error (ustr ++ " is not an unit specification") pos
   Closed_unit_spec usp' _ -> do
@@ -859,9 +859,6 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
 -- here i would have to keep track of the first node inserted
 -- and return it as root
 -- and in the loop i would have to insert a refinement link
-       --trace ("Compose - \n"++ show csig) $
-       usig <- getUnitSigFromRef csig
-       --let (n, dg'') = addNodeRT dg' usig "Composed refinements here"
        return ([], Nothing, Nothing, csig, dg', compRef)
   Component_ref urlist range ->  do
        (dg', anaRefs, resultMap, pMap) <-
