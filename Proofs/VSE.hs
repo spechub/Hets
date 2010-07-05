@@ -70,7 +70,7 @@ getSubGraph n dg =
         ns = nodes g
         sns = gfold pre' (\ c s -> Set.insert (node' c) s)
           (\ m s -> Set.union s $ fromMaybe Set.empty m, Set.empty) [n] g
-    in foldr delNodeDG dg $ Set.toList $ Set.difference (Set.fromList ns) sns
+    in delNodesDG (Set.toList $ Set.difference (Set.fromList ns) sns) dg
 
 -- | applies basic inference to a given node and whole import tree above
 prove :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
@@ -158,9 +158,9 @@ getLinksTo ln dg (n, lbl) = do
   let (ls, rs) = partition (\ (s, _, el) -> s /= n
            && isGlobalDef (dgl_type el)
            && isInc (getRealDGLinkType el)) $ innDG dg n
-  mapM_ (\ e -> do
-      putStrLn "ignored unsupported link (non-inclusion or theorem link):"
-      putStrLn $ " " ++ show (prettyLEdge e)) rs
+  mapM_ (\ e -> putStrLn
+        $ "ignored unsupported link (non-inclusion or theorem link):\n "
+        ++ show (prettyLEdge e)) rs
   return $ show $ prettySExpr $ SList
     $ map (\ (s, _, el) -> let
     ltype = dgl_type el
