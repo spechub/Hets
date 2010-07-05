@@ -1305,25 +1305,24 @@ lookupInAllRefNodesDG ref dg = case ref of
 -- ** lookup nodes by their names or other properties
 
 -- | lookup a node in the graph with a predicate.
-lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph
-               -> Maybe (LNode DGNodeLab)
-lookupNodeWith f dg = find f $ labNodesDG dg
+lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph -> [LNode DGNodeLab]
+lookupNodeWith f dg = filter f $ labNodesDG dg
 
 -- | lookup a node in the graph by its name, using showName
 -- to convert nodenames. See also 'getDGNodesByName'.
-lookupNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
 
 -- | lookup a local node in the graph by its name, using showName
 -- to convert nodenames. See also 'lookupNodeByName'.
-lookupLocalNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+lookupLocalNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupLocalNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = not (isDGRef lbl) && getDGNodeName lbl == s
 
 -- | lookup a local node in the graph by its name, using showName
 -- to convert nodenames. See also 'lookupNodeByName'.
-lookupRefNodeByName :: String -> LibName -> DGraph -> Maybe (LNode DGNodeLab)
+lookupRefNodeByName :: String -> LibName -> DGraph -> [LNode DGNodeLab]
 lookupRefNodeByName s ln dg = lookupNodeWith f dg where
     f (_, lbl) = case nodeInfo lbl of
                    DGRef { ref_libname = libn } ->

@@ -132,14 +132,15 @@ lookupNode e (ln, dg) ucd =
     let mn = getModule ucd in
     if cdInLib ucd ln then
         case lookupLocalNodeByName mn dg of
-          Nothing -> error $ "lookupNode: Node not found: " ++ mn
-          Just lnode -> Just (ln, lnode)
+          []-> error $ "lookupNode: Node not found: " ++ mn
+          lnode : _ -> Just (ln, lnode)
     else case lookupLib e $ fromJust $ getUri ucd of
            Nothing -> Nothing
            Just (ln', dg') ->
                case lookupRefNodeByName mn ln' dg of
-                 Just lnode -> Just (ln', lnode)
-                 _ -> fmap (\ n -> (ln', n)) $ lookupLocalNodeByName mn dg'
+                 lnode : _ -> Just (ln', lnode)
+                 [] -> listToMaybe
+                   $ map (\ n -> (ln', n)) $ lookupLocalNodeByName mn dg'
 
 lookupNSMap :: ImpEnv -> LibName -> Maybe LibName -> String -> NameSymbolMap
 lookupNSMap e ln mLn nm =
@@ -303,9 +304,9 @@ importTheory e (ln, dg) cd = do
       (e', ln', refDg) <- readLib e u
       case lookupLocalNodeByName (getModule ucd) refDg of
         -- don't add the node to the refDG but to the original DG!
-        Just nd -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
+        nd : _ -> let (lnode, dg') = addNodeAsRefToDG nd ln' dg
                    in return (e', ln', dg', lnode)
-        Nothing -> error $ "importTheory: couldn't find node: " ++ show cd
+        [] -> error $ "importTheory: couldn't find node: " ++ show cd
 
 
 -- | Adds a view or theory to the DG, the ImpEnv may also be modified.
