@@ -1367,10 +1367,6 @@ gelemDG n = gelem n . dgBody
 noNodesDG :: DGraph -> Int
 noNodesDG = noNodes . dgBody
 
--- | get all nodes which links to the given node in a given DG
-preDG :: DGraph -> Node -> [Node]
-preDG = pre . dgBody
-
 -- | get all the incoming ledges of the given node in a given DG
 innDG :: DGraph -> Node -> [LEdge DGLinkLab]
 innDG = inn . dgBody
