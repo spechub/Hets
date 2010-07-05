@@ -179,7 +179,7 @@ integrateScc nodeList ontoMap dg =
         newName = makeName $ mkSimpleId $ (\z -> take ((length z) -1) z) $
                     foldr (\x y -> x ++ "_" ++ y) "" dgnNames
         newTheory = integrateTheory theories
-        newNodeNum = noNodesDG dg
+        newNodeNum = noNodes $ dgBody dg
     in ( Map.insert (getNameFromNode newName)
                     (foldl integrateOntologyFile emptyOntologyFile
                            ontologies)

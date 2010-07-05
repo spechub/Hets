@@ -1363,10 +1363,6 @@ isEmptyDG = isEmpty . dgBody
 gelemDG :: Node -> DGraph -> Bool
 gelemDG n = gelem n . dgBody
 
--- | get the number of nodes of a given DG
-noNodesDG :: DGraph -> Int
-noNodesDG = noNodes . dgBody
-
 -- | get all the incoming ledges of the given node in a given DG
 innDG :: DGraph -> Node -> [LEdge DGLinkLab]
 innDG = inn . dgBody
