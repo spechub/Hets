@@ -268,8 +268,13 @@ makeImportMapping le ln dg toInfo s (from, _, lbl)
                            , " not exported."]) nullRange
                     >> return (s, Nothing)
     | isGlobalDef $ dgl_type lbl =
-        let (lb', ln') = getNodeData le ln $ labDG dg from in
-        case dgn_theory lb' of
+        let (lb', ln') = getNodeData le ln $ labDG dg from
+            edgName = getDGLinkName lbl
+            impname = if null edgName
+                      then "gn_imp_" ++ showEdgeId (dgl_id lbl)
+                      else edgName
+        in
+         case dgn_theory lb' of
           G_theory lid (ExtSign sig _) _ sens _ ->
               do
                 let sn = getDGNodeName lb'
@@ -278,9 +283,8 @@ makeImportMapping le ln dg toInfo s (from, _, lbl)
                     SigMap nm _ = nSigMapToSigMap nsigm
                 (morph, expSymbs) <-
                     makeMorphism (lid, nm) toInfo $ dgl_morphism lbl
-                let impnm = showEdgeId $ dgl_id lbl
                 cd <- mkCD s' ln ln' sn
-                return (s', Just ((impnm, cd, morph), expSymbs))
+                return (s', Just ((impname, cd, morph), expSymbs))
     | otherwise = return (s, Nothing)
 
 -- | Given a TheoremLink we output the view
@@ -291,7 +295,7 @@ exportLinkLab le ln dg s (from, to, lbl) =
         gmorph = dgl_morphism lbl
         edgName = getDGLinkName lbl
         viewname = if null edgName
-                   then "gn_" ++ showEdgeId (dgl_id lbl)
+                   then "gn_vn_" ++ showEdgeId (dgl_id lbl)
                    else edgName
         (lb1, ln1) = getNodeData le ln $ labDG dg from
         (lb2, ln2) = getNodeData le ln $ labDG dg to
