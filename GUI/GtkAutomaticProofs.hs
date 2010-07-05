@@ -71,14 +71,14 @@ data FNode = FNode { name     :: String
 toGtkGoals :: FNode -> [Goal]
 toGtkGoals fn = case results fn of
   G_theory _ _ _ sens _ ->
-    let sens' = OMap.toList $ OMap.filter (not . isAxiom) sens
-        toGoal s = case lookup s sens' of
-                     Nothing -> Goal GOpen s
+    let sens' = OMap.filter (not . isAxiom) sens
+        in foldr (\ s t -> case OMap.lookup s sens' of
+                     Nothing -> t
                      Just tm -> case thmStatus tm of
-                                  [] -> Goal GOpen s
+                                  [] -> Goal GOpen s : t
                                   l -> Goal (GtkUtils.basicProofToGStatus
-                                       (maximum $ map snd l)) s
-        in map toGoal $ goals fn
+                                       (maximum $ map snd l)) s : t
+                 ) [] $ goals fn
 
 showStatus :: FNode -> String
 showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
@@ -283,7 +283,8 @@ performAutoProof :: -- include proven Theorems in subsequent proofs
                   -> ListStore FNode 
                     -- selected nodes
                   -> [(Int, FNode)]
-                    -- return TODO comment!
+                    -- no return value, since results are stored by changing
+                    -- FNode data
                   -> IO()
 performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   let count' = fromIntegral $ length nodes
@@ -335,7 +336,17 @@ autoProofAtNode useTh timeout (_, l) p_cm =
                 Nothing -> do return Nothing
 
                 Just d' -> do
-                  let ps' = markProved (snd p_cm) lid1 d' st
+                  let ps' = st { goalMap = markProvedGoalMap (snd p_cm) lid1 d' (goalMap st) }
+{- I'm trying to diplay all Reasons of those goals that are actually in ps', not simply in d',
+   to ensure they are wrote back into return value
+                  let d'' = foldr (\ a b -> case snd a of
+                                    BasicProof _ pt -> pt : b
+                                    _ -> b ) [] $ concatMap thmStatus $ OMap.elems $ OMap.filter (not . isAxiom) $ goalMap ps'
+                  let ors = concatMap (\ a -> case goalStatus a of
+                              Open (Reason s) -> (concat s) ++ "\n"
+                              _ -> [] ) d''
+                  putStrLn ors
+-}
  -- TODO Open Reason is not written back into GTheory, but only Proved Goals
  -- this need to be fixed.
                   case theory ps' of
