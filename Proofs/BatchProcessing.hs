@@ -199,7 +199,12 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         -- runGivenProver will return ATPBatchStopped. We have to stop the
         -- recursion in that case
         -- add proved goals as axioms
-        let res = proofStatus res_cfg
+        let res0 = proofStatus res_cfg
+            res = res0 { goalStatus =
+              case goalStatus res0 of
+                Open (Reason l) | err == ATPTLimitExceeded ->
+                  Open (Reason $ "Timeout" : l)
+                r -> r }
             pst' = addToLP g res pst
             goalsProcessedSoFar' = goalsProcessedSoFar+1
             ioProofStatus = reverse (res:resDone)
