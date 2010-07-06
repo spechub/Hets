@@ -116,7 +116,7 @@ initFNodes = foldr (\ n@(_,l) t -> case globalTheory l of
 unchecked :: FNode -> Bool
 unchecked fn = case results fn of
                  G_theory _ _ _ sens _ ->
-                   all null $ map (thmStatus . snd) $ OMap.toList $ OMap.filter (not . isAxiom) sens
+                   any null $ map thmStatus $ OMap.elems $ OMap.filter (not . isAxiom) sens
 
 
 -- | Displays the consistency checker window
