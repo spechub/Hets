@@ -230,7 +230,7 @@ showProverWindow res ln le = postGUIAsync $ do
 
   onClicked btnNodesUnchecked
     $ selectWith unchecked upd
-  -- onClicked btnNodesTimeout $ selectWith (n -> any (gStatus == GTimeout) (toGtkGoals n)) upd
+  onClicked btnNodesTimeout $ selectWith (\n -> any ((== GTimeout) . gStatus) (toGtkGoals n)) upd
 
   onClicked btnResults $ showModelView mView "Models" listNodes []
   onClicked btnClose $ widgetDestroy window
