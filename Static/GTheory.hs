@@ -257,8 +257,7 @@ propagateProofs :: G_theory -> G_theory -> G_theory
 propagateProofs locTh@(G_theory lid1 sig ind lsens _)
   (G_theory lid2 _ _ gsens _) =
   case coerceThSens lid2 lid1 "" gsens of
-    Just psens ->
-      let ps = OMap.filter isProvenSenStatus psens in
+    Just ps ->
       if Map.null ps then locTh else
           G_theory lid1 sig ind (proveSens lid1 $ Map.union ps lsens) startThId
     Nothing -> error "propagateProofs"
