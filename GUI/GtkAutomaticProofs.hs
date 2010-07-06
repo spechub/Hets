@@ -26,6 +26,7 @@ import Static.DevGraph
 import Static.PrintDevGraph ()
 import Static.GTheory
 import Static.History
+import Static.ComputeTheory
 
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
@@ -257,15 +258,17 @@ showProverWindow res ln le = postGUIAsync $ do
 
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
-    let changes = foldl (\ cs fn ->
+    let dg' = foldl (\ cs fn ->
                       -- where the proving did not return anything, node is not updated
                       if unchecked fn then cs
                         else
                           let (i, l) = node fn
-                              n' = (i, l {dgn_theory = results fn})
-                          in SetNodeLab l n' : cs
-                    ) [] nodes'
-        dg' = changesDGH dg changes
+                              l' = l {dgn_theory = results fn}
+                              n = (i, l' { globalTheory = computeLabelTheory le dg (i, l') })
+                              dg0 = changeDGH cs $ SetNodeLab l n
+                              dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
+                              dg2 = togglePending dg1 $ changedPendingEdges dg1
+                          in dg2 ) dg nodes'
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
   widgetShow window
@@ -292,10 +295,10 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
            res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
-           let res' = case res of
-                        Nothing -> results fn
-                        Just gt -> propagateProofs (results fn) gt
-           postGUISync $ listStoreSetValue listNodes row fn { results = res' }
+           case res of
+             Just gt -> postGUISync $ listStoreSetValue listNodes row 
+               fn { results = propagateProofs (results fn) gt }
+             Nothing -> return ()
            return $ count + 1) 0 nodes
 
 autoProofAtNode :: -- use theorems is subsequent proofs
@@ -310,7 +313,7 @@ autoProofAtNode :: -- use theorems is subsequent proofs
                   -> IO (Maybe G_theory)
 autoProofAtNode useTh timeout (_, l) p_cm =
   case globalTheory l of
-    Nothing -> do return Nothing
+    Nothing -> return Nothing
 
     Just g_th@( G_theory lid _ _ _ _ ) -> do
       -- recompute the theory (to make effective the selected axioms, goals)
@@ -319,11 +322,11 @@ autoProofAtNode useTh timeout (_, l) p_cm =
       let st = recalculateSublogicAndSelectedTheory pf_st
       -- try to prepare the theory
       case maybeResult $ prepareForProving st p_cm of
-        Nothing -> do return Nothing
+        Nothing -> return Nothing
 
         Just (G_theory_with_prover lid1 th p) ->
           case proveCMDLautomaticBatch p of
-            Nothing -> do return Nothing
+            Nothing -> return Nothing
 
             Just fn -> do 
               -- mVar to poll the prover for results
@@ -332,29 +335,17 @@ autoProofAtNode useTh timeout (_, l) p_cm =
                                        (TacticScript $ show timeout) th []
               takeMVar mV
               d <- takeMVar answ
-              case maybeResult d of
-                Nothing -> do return Nothing
+              return $ case maybeResult d of
+                Nothing -> Nothing
 
-                Just d' -> do
+                Just d' ->
                   let ps' = st { goalMap = markProvedGoalMap (snd p_cm) lid1 d' (goalMap st) }
-{- I'm trying to diplay all Reasons of those goals that are actually in ps', not simply in d',
-   to ensure they are wrote back into return value
-                  let d'' = foldr (\ a b -> case snd a of
-                                    BasicProof _ pt -> pt : b
-                                    _ -> b ) [] $ concatMap thmStatus $ OMap.elems $ OMap.filter (not . isAxiom) $ goalMap ps'
-                  let ors = concatMap (\ a -> case goalStatus a of
-                              Open (Reason s) -> (concat s) ++ "\n"
-                              _ -> [] ) d''
-                  putStrLn ors
--}
- -- TODO Open Reason is not written back into GTheory, but only Proved Goals
- -- this need to be fixed.
-                  case theory ps' of
+                  in case theory ps' of
                     G_theory lidT sigT indT sensT _ ->
                       case coerceThSens (logicId ps') lidT "" (goalMap ps') of
-                        Nothing -> do return Nothing
+                        Nothing -> Nothing
 
-                        Just gMap -> return $ Just $
+                        Just gMap -> Just $
                           G_theory lidT sigT indT (Map.union sensT gMap) startThId
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
