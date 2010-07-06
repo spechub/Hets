@@ -28,7 +28,6 @@ module Proofs.AbstractState
     , recalculateSublogicAndSelectedTheory
     , GetPName (..)
     , markProved
-    , markProvedGoalMap
     , G_theory_with_prover (..)
     , G_theory_with_cons_checker (..)
     , prepareForProving

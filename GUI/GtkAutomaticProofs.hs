@@ -81,6 +81,8 @@ toGtkGoals fn = case results fn of
                                        (maximum $ map snd l)) s : t
                  ) [] $ goals fn
 
+-- TODO add prefix / display for partially proven goals ( like [1/3] .. )
+
 showStatus :: FNode -> String
 showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
                  (gStatus g) ++ show (gName g)) $ toGtkGoals fn
@@ -170,6 +172,10 @@ showProverWindow res ln le = postGUIAsync $ do
         widgetSetSensitive btnCheck b
 
   toggleButtonSetActive cbInclThms False
+
+-- TODO select all nodes as initial status
+
+-- TODO select SPASS Prover if possible
 
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
@@ -297,10 +303,15 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
            res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
+
+-- TODO also write Timeouts and other Open Goals back into new G_theory
+-- maybe modify the propagateProofs method so that non-proved are not filtered
+
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row 
                fn { results = propagateProofs (results fn) gt }
              Nothing -> return ()
+
            return $ count + 1) 0 nodes
 
 autoProofAtNode :: -- use theorems is subsequent proofs
@@ -337,16 +348,11 @@ autoProofAtNode useTh timeout (_, l) p_cm =
                                        (TacticScript $ show timeout) th []
               takeMVar mV
               d <- takeMVar answ
-              case maybeResult d of
-                Nothing -> return Nothing
-
-                Just d' -> do
-                  let opres = concatMap (\ a -> case goalStatus a of
-                                Open (Reason sl) -> concat sl ++ "\n"
-                                _ -> [] ) d'
-                      ps' = st { goalMap = markProvedGoalMap (snd p_cm) lid1 d' (goalMap st) }
-                  putStrLn opres
-                  return $ case theory ps' of
+              return $ case maybeResult d of
+                Nothing -> Nothing
+                Just d' -> 
+                  let ps' = markProved (snd p_cm) lid1 d' st
+                  in case theory ps' of
                     G_theory lidT sigT indT sensT _ ->
                       case coerceThSens (logicId ps') lidT "" (goalMap ps') of
                         Nothing -> Nothing
