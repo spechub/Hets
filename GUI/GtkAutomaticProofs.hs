@@ -169,6 +169,8 @@ showProverWindow res ln le = postGUIAsync $ do
         widgetSetSensitive btnStop $ not b
         widgetSetSensitive btnCheck b
 
+  toggleButtonSetActive cbInclThms False
+
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
 
@@ -335,12 +337,16 @@ autoProofAtNode useTh timeout (_, l) p_cm =
                                        (TacticScript $ show timeout) th []
               takeMVar mV
               d <- takeMVar answ
-              return $ case maybeResult d of
-                Nothing -> Nothing
+              case maybeResult d of
+                Nothing -> return Nothing
 
-                Just d' ->
-                  let ps' = st { goalMap = markProvedGoalMap (snd p_cm) lid1 d' (goalMap st) }
-                  in case theory ps' of
+                Just d' -> do
+                  let opres = concatMap (\ a -> case goalStatus a of
+                                Open (Reason sl) -> concat sl ++ "\n"
+                                _ -> [] ) d'
+                      ps' = st { goalMap = markProvedGoalMap (snd p_cm) lid1 d' (goalMap st) }
+                  putStrLn opres
+                  return $ case theory ps' of
                     G_theory lidT sigT indT sensT _ ->
                       case coerceThSens (logicId ps') lidT "" (goalMap ps') of
                         Nothing -> Nothing
