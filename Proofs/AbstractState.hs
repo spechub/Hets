@@ -457,9 +457,7 @@ markProved :: (Logic lid1 sublogics1
     -> ProofState lid1 sentence1
     -> ProofState lid1 sentence1
 markProved c lid status st =
-      st { goalMap = markProvedGoalMap c lid
-                                       (filterValidProofStatus st status)
-                                       (goalMap st)}
+      st { goalMap = markProvedGoalMap c lid status (goalMap st)}
 
 -- | mark all newly proven goals with their proof tree
 markProvedGoalMap :: (Ord a, Logic lid sublogics
@@ -472,26 +470,3 @@ markProvedGoalMap c lid status thSens = foldl upd thSens status
     where upd m pStat = OMap.update (updStat pStat) (goalName pStat) m
           updStat ps s = Just $
                 s { senAttr = ThmStatus $ (c, BasicProof lid ps) : thmStatus s}
-
-filterValidProofStatus :: (Logic lid sublogics1
-                                  basic_spec1
-                                  sentence
-                                  symb_items1
-                                  symb_map_items1
-                                  sign1
-                                  morphism1
-                                  symbol1
-                                  raw_symbol1
-                                  proof_tree1) =>
-                           ProofState lid sentence
-                        -> [ProofStatus proof_tree]
-                        -> [ProofStatus proof_tree]
-filterValidProofStatus st =
-    case selectedTheory st of
-      G_theory _ _ _ sens _ ->
-          filter (provedOrDisproved (includedAxioms st == OMap.keys sens))
-    where provedOrDisproved allSentencesIncluded senStat =
-              isProvedStat senStat ||
-             (allSentencesIncluded && case goalStatus senStat of
-                                      Disproved -> True
-                                      _ -> False)
