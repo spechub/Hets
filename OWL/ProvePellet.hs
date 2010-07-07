@@ -145,9 +145,6 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   Runs the Pellet service.
 -}
 
-getEnvSec :: String -> IO String
-getEnvSec s = getEnvDef s ""
-
 consCheck :: String
           -> TacticScript
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
@@ -155,18 +152,15 @@ consCheck :: String
           -> IO (CCStatus ProofTree)
 consCheck thName _ tm freedefs = case tTarget tm of
   Theory sig nSens -> do
-    let saveOWL = False
-        proverStateI = pelletProverState sig (toNamedList nSens) freedefs
+    let proverStateI = pelletProverState sig (toNamedList nSens) freedefs
         problemS = showOWLProblemS proverStateI
-        simpleOptions = "consistency "
         tmpFileName = basename thName
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
           , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
-        proofStatM :: ExitCode -> String -> [String]
-                   -> Int -> CCStatus ProofTree
-        proofStatM exitCode _ out tUsed = case exitCode of
+        proofStatM :: ExitCode -> [String] -> Int -> CCStatus ProofTree
+        proofStatM exitCode out tUsed = case exitCode of
           ExitSuccess ->   -- consistent
             (pStatus out tUsed) { ccResult = Just True }
           ExitFailure 1 -> -- not consistent
@@ -183,13 +177,11 @@ consCheck thName _ tm freedefs = case tTarget tm of
             pStatus out tUsed
     (progTh, pPath) <- check4Pellet
     if progTh then do
-        when saveOWL (writeFile (tmpFileName ++ ".owl") problemS)
         t <- getCurrentTime
         tempDir <- getTemporaryDirectory
         let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
                                   ++ "-" ++ show (utctDayTime t) ++ ".owl"
-            tmpURI = "file://" ++ timeTmpFile
-            command = "sh pellet.sh " ++ simpleOptions ++ tmpURI
+            command = "sh pellet.sh consistency file://" ++ timeTmpFile
         writeFile timeTmpFile problemS
         setCurrentDirectory pPath
         (_, outh, errh, proch) <- runInteractiveCommand command
@@ -198,12 +190,12 @@ consCheck thName _ tm freedefs = case tTarget tm of
         eOut <- hGetContents errh
         let (exCode, output, tUsed) = analyseOutput outp eOut
         removeFile timeTmpFile
-        return $ proofStatM exCode simpleOptions output tUsed
+        return $ proofStatM exCode output tUsed
       else return $ pStatus ["Pellet not found"] (0 :: Int)
 
 check4Pellet :: IO (Bool, FilePath)
 check4Pellet = do
-  pPath <- getEnvSec "PELLET_PATH"
+  pPath <- getEnvDef "PELLET_PATH" ""
   progTh <- doesFileExist $ pPath ++ "/pellet.sh"
   return (progTh, pPath)
 
