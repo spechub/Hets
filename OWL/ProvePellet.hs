@@ -24,7 +24,6 @@ import OWL.Sublogic
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
-import GUI.Utils (infoDialog)
 
 import Proofs.BatchProcessing
 
@@ -173,9 +172,7 @@ consCheck thName _ tm freedefs = case tTarget tm of
         proverStateI = pelletProverState sig (toNamedList nSens) freedefs
         problemS     = showOWLProblemS thName proverStateI []
         simpleOptions = "consistency "
-        extraOptions  = ""
-        saveFileName  = reverse $ fst $ span (/='/') $ reverse thName
-        tmpFileName   = saveFileName
+        tmpFileName   = basename thName
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
           , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
@@ -197,18 +194,16 @@ consCheck thName _ tm freedefs = case tTarget tm of
             $ "Pellet returned an error.\n" ++ unlines out }
           ExitFailure _ -> -- another errors
             pStatus out tUsed
-    (progTh, progEx) <- check4Pellet
-    case (progTh, progEx) of
-      (True,True) -> do
-        when saveOWL (writeFile (saveFileName ++".owl") problemS)
+    (progTh, pPath) <- check4Pellet
+    if progTh then do
+        when saveOWL (writeFile (tmpFileName ++".owl") problemS)
         t <- getCurrentTime
         tempDir <- getTemporaryDirectory
         let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
                                   ++ "-" ++ show (utctDayTime t) ++ ".owl"
             tmpURI = "file://" ++ timeTmpFile
-            command = "sh pellet.sh " ++ simpleOptions ++ extraOptions ++ tmpURI
+            command = "sh pellet.sh " ++ simpleOptions ++ tmpURI
         writeFile timeTmpFile problemS
-        pPath <- getEnvSec "PELLET_PATH"
         setCurrentDirectory pPath
         (_, outh, errh, proch) <- runInteractiveCommand command
         waitForProcess proch
@@ -217,20 +212,13 @@ consCheck thName _ tm freedefs = case tTarget tm of
         let (exCode, output, tUsed) = analyseOutput outp eOut
         removeFile timeTmpFile
         return $ proofStatM exCode simpleOptions output tUsed
-      (b, _) -> do
-        let mess = "Pellet not " ++ if b then "executable" else "found"
-        infoDialog "Pellet prover" mess
-        return $ pStatus [mess] (0 :: Int)
+      else return $ pStatus ["Pellet not found"] (0 :: Int)
 
-check4Pellet :: IO (Bool, Bool)
+check4Pellet :: IO (Bool, FilePath)
 check4Pellet = do
   pPath <- getEnvSec "PELLET_PATH"
   progTh <- doesFileExist $ pPath ++ "/pellet.sh"
-  progEx <- if progTh
-    then do progPerms <- getPermissions $ pPath ++ "/pellet.sh"
-            return $ executable progPerms
-    else return False
-  return (progTh, progEx)
+  return (progTh, pPath)
 
 -- TODO: Pellet Prove for single goals.
 runPellet :: PelletProverState
@@ -243,14 +231,44 @@ runPellet :: PelletProverState
           -> IO (ATPRetval, GenericConfig ProofTree)
           -- ^ (retval, configuration with proof status and complete output)
 runPellet sps cfg savePellet thName nGoal = do
-  (progTh, progEx) <- check4Pellet
-  case (progTh,progEx) of
-    (True,True) -> do
+  let simpleOptions = extraOpts cfg
+      tLimit        = fromMaybe 800 $ timeLimit cfg
+      extraOptions  = "entail -e "
+      goalSuffix    = '_' : senAttr nGoal
+      tmpFileName   = basename thName ++ goalSuffix
+      proofStat exitCode options out tUsed = case exitCode of
+        ExitSuccess -> (ATPSuccess, (provedStatus options tUsed)
+                       { usedAxioms = map senAttr $ initialState sps })
+        ExitFailure 2 -> ( ATPError (unlines ("Internal error.":out))
+                       , defaultProofStatus options)
+        ExitFailure 112 -> (ATPTLimitExceeded, defaultProofStatus options)
+        ExitFailure 105 -> (ATPBatchStopped, defaultProofStatus options)
+        ExitFailure _ -> (ATPSuccess, disProvedStatus options)
+      tScript opts = TacticScript $ show ATPTacticScript
+                     { tsTimeLimit = configTimeLimit cfg
+                     , tsExtraOpts = opts }
+      defaultProofStatus opts =
+        (openProofStatus (senAttr nGoal) (proverName pelletProver)
+         emptyProofTree)
+        { tacticScript = tScript opts }
+      disProvedStatus opts = (defaultProofStatus opts) {goalStatus = Disproved}
+      provedStatus opts ut = ProofStatus
+                  { goalName = senAttr nGoal
+                  , goalStatus = Proved True
+                  , usedAxioms = []
+                  , usedProver = proverName pelletProver
+                  , proofTree =  emptyProofTree
+                  , usedTime =
+                      timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
+                  , tacticScript = tScript opts }
+  (progTh, pPath) <- check4Pellet
+  if progTh then do
       let prob   = showOWLProblemS thName sps []
           entail = showOWLProblemS thName
                      (sps { initialState = [ nGoal {isAxiom = True } ] }) []
-      when savePellet $ do writeFile (saveFileName ++".owl") prob
-                           writeFile (saveFileName ++".entail.owl") entail
+      when savePellet $ do
+        writeFile (tmpFileName ++".owl") prob
+        writeFile (tmpFileName ++".entail.owl") entail
       t <- getCurrentTime
       tempDir <- getTemporaryDirectory
       let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
@@ -261,7 +279,6 @@ runPellet sps cfg savePellet thName nGoal = do
       writeFile entailsFile entail
       let command = "sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
                       ++ " file://" ++ timeTmpFile
-      pPath <- getEnvSec "PELLET_PATH"
       setCurrentDirectory pPath
       (mExit, outh, errh) <- timeoutCommand tLimit command
       ((err, retval),output, tUsed) <- if isJust mExit then do
@@ -278,44 +295,9 @@ runPellet sps cfg savePellet thName nGoal = do
                        , timeUsed =
                            timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
                        })
-    (True,False) -> return
-      ( ATPError "Pellet prover found, but file is not executable."
-      , emptyConfig (proverName pelletProver) (senAttr nGoal) emptyProofTree)
-    (False,_) -> return
+    else return
       ( ATPError "Could not find pellet prover. Is $PELLET_PATH set?"
       , emptyConfig (proverName pelletProver) (senAttr nGoal) emptyProofTree)
-
-  where
-    simpleOptions = extraOpts cfg
-    tLimit        = fromMaybe 800 $ timeLimit cfg
-    extraOptions  = "entail -e "
-    goalSuffix    = '_' : senAttr nGoal
-    saveFileName  = thName ++ goalSuffix
-    tmpFileName   = reverse (takeWhile (/= '/') $ reverse thName) ++ goalSuffix
-    proofStat exitCode options out tUsed = case exitCode of
-      ExitSuccess -> (ATPSuccess, (provedStatus options tUsed)
-                       { usedAxioms = map senAttr $ initialState sps })
-      ExitFailure 2 -> ( ATPError (unlines ("Internal error.":out))
-                       , defaultProofStatus options)
-      ExitFailure 112 -> (ATPTLimitExceeded, defaultProofStatus options)
-      ExitFailure 105 -> (ATPBatchStopped, defaultProofStatus options)
-      ExitFailure _ -> (ATPSuccess, disProvedStatus options)
-    tScript opts = TacticScript $ show ATPTacticScript
-                     { tsTimeLimit = configTimeLimit cfg
-                     , tsExtraOpts = opts }
-    defaultProofStatus opts =
-      (openProofStatus (senAttr nGoal) (proverName pelletProver) emptyProofTree)
-        { tacticScript = tScript opts }
-    disProvedStatus opts = (defaultProofStatus opts) {goalStatus = Disproved}
-    provedStatus opts ut =
-      ProofStatus { goalName = senAttr nGoal
-                  , goalStatus = Proved True
-                  , usedAxioms = []
-                  , usedProver = proverName pelletProver
-                  , proofTree =  emptyProofTree
-                  , usedTime =
-                      timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
-                  , tacticScript = tScript opts }
 
 analyseOutput :: String -> String -> (ExitCode, [String], Int)
 analyseOutput err outp =
@@ -382,4 +364,4 @@ genPelletProblemS :: String
 genPelletProblemS thName pps m_nGoal = PelletProblem
   { identifier = thName
   , problemProverState =
-      pps { initialState = initialState pps ++ maybe [] (:[]) m_nGoal } }
+      pps { initialState = initialState pps ++ maybeToList m_nGoal } }
