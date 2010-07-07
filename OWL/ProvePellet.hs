@@ -260,7 +260,7 @@ runPellet sps cfg savePellet thName nGoal = do
       writeFile timeTmpFile prob
       writeFile entailsFile entail
       let command = "sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
-                      ++ " " ++ timeTmpFile
+                      ++ " file://" ++ timeTmpFile
       pPath <- getEnvSec "PELLET_PATH"
       setCurrentDirectory pPath
       (mExit, outh, errh) <- timeoutCommand tLimit command
