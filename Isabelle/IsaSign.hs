@@ -122,6 +122,8 @@ data Sentence =
   | Instance { tName :: TName
              , arityArgs :: [Sort]
              , arityRes :: Sort
+             -- | Definitons for the instansiation with the name of the sentence (String)
+             , definitions :: [(String, Term)]
              , instProof :: IsaProof }
   | ConstDef { senTerm :: Term }
   | RecDef { keyWord :: String
@@ -387,7 +389,7 @@ data ProofMethod
       deriving (Show, Eq, Ord)
 
 toIsaProof :: ProofEnd -> IsaProof
-toIsaProof e = IsaProof [] e
+toIsaProof = IsaProof []
 
 mkOops :: IsaProof
 mkOops = toIsaProof Oops

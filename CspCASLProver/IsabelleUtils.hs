@@ -24,24 +24,24 @@ module CspCASLProver.IsabelleUtils
     , writeIsaTheory
     ) where
 
-import Common.AS_Annotation (makeNamed, Named, SenAttr(..))
+import Common.AS_Annotation (makeNamed, Named, SenAttr (..))
 import Common.ProofUtils (prepareSenNames)
 
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 
---import CspCASLProver.Consts
+-- import CspCASLProver.Consts
 
 import qualified Data.Map as Map
 
 import Isabelle.IsaConsts (primrecS)
 import Isabelle.IsaParse (parseTheory)
 import Isabelle.IsaPrint (getAxioms, printIsaTheory)
-import Isabelle.IsaSign  (DomainEntry, IsaProof(..), mkCond, mkSen
-                         , mkVName, Sentence(..), Sign(..), Sort
-                         , Term(..), Typ(..))
+import Isabelle.IsaSign (DomainEntry, IsaProof (..), mkCond, mkSen
+                         , mkVName, Sentence (..), Sign (..), Sort
+                         , Term (..), Typ (..))
 import Isabelle.Translate (transString)
 
-import Logic.Prover (Theory(..), toNamedList)
+import Logic.Prover (Theory (..), toNamedList)
 
 import Text.ParserCombinators.Parsec (parse)
 
@@ -68,19 +68,20 @@ addDef name lhs rhs isaTh =
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- | Function to add an instance of command to an Isabelle theory. The
---   sort parameters here are basically strings.
-addInstanceOf :: String -> [Sort] -> Sort -> IsaProof -> IsaTheory -> IsaTheory
-addInstanceOf name args res pr isaTh =
+-- sort parameters here are basically strings.
+addInstanceOf :: String -> [Sort] -> Sort -> [(String, Term)] -> IsaProof ->
+                 IsaTheory -> IsaTheory
+addInstanceOf name args res defs prf isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
-        sen = Instance name args res pr
+        sen = Instance name args res defs prf
         namedSen = (makeNamed name sen)
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- | Add a lemmas sentence (definition) that allow us to group large collections
---   of lemmas in to a single lemma. This cuts down on the repreated addition of
---   lemmas in the proofs.
-addLemmasCollection ::String -> [String] -> IsaTheory -> IsaTheory
+-- of lemmas in to a single lemma. This cuts down on the repreated addition of
+-- lemmas in the proofs.
+addLemmasCollection :: String -> [String] -> IsaTheory -> IsaTheory
 addLemmasCollection lemmaname lemmas isaTh =
     if null lemmas
     then isaTh
@@ -108,16 +109,16 @@ addTheoremWithProof :: String -> [Term] -> Term -> IsaProof -> IsaTheory ->
 addTheoremWithProof name conds concl proof' isaTh =
     let isaTh_sign = fst isaTh
         isaTh_sen = snd isaTh
-        sen = if (null conds)
+        sen = if null conds
               then ((mkSen concl) {thmProof = Just proof'})
               else ((mkCond conds concl) {thmProof = Just proof'})
         namedSen = (makeNamed name sen) {isAxiom = False}
     in (isaTh_sign, isaTh_sen ++ [namedSen])
 
 -- | Prepare a theory for writing it out to a file. This function is based off
---   the function Isabelle.IsaProve.prepareTheory. The difference being that
---   this function does not mark axioms nor theorms as to be added to the
---   simplifier in Isabelle.
+-- the function Isabelle.IsaProve.prepareTheory. The difference being that
+-- this function does not mark axioms nor theorms as to be added to the
+-- simplifier in Isabelle.
 prepareTheory :: Theory Sign Sentence ()
     -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
 prepareTheory (Theory sig nSens) = let
@@ -128,26 +129,26 @@ prepareTheory (Theory sig nSens) = let
        Map.fromList $ zip (map senAttr nSens') $ map senAttr oSens)
 
 -- | Add a DomainEntry to the domain tab of an Isabelle signature.
-updateDomainTab :: DomainEntry  -> IsaTheory -> IsaTheory
+updateDomainTab :: DomainEntry -> IsaTheory -> IsaTheory
 updateDomainTab domEnt (isaSign, isaSens) =
     let oldDomTab = domainTab isaSign
-        isaSignUpdated = isaSign {domainTab = (oldDomTab ++ [[domEnt]])}
+        isaSignUpdated = isaSign {domainTab = oldDomTab ++ [[domEnt]]}
     in (isaSignUpdated, isaSens)
 
 -- | Write out an Isabelle Theory. The theory should just run through
---   in Isabelle without any user interactions. This is based heavily
---   off Isabelle.IsaProve.isaProve
+-- in Isabelle without any user interactions. This is based heavily
+-- off Isabelle.IsaProve.isaProve
 writeIsaTheory :: String -> Theory Sign Sentence () -> IO ()
 writeIsaTheory thName th = do
   let (sig, axs, ths, _) = prepareTheory th
       -- thms = map senAttr ths
       thBaseName = reverse . takeWhile (/= '/') $ reverse thName
       -- useaxs = filter (\ s ->
-      --      sentence s /= mkSen true && (isDef s ||
-      --         isSuffixOf "def" (senAttr s))) axs
+      -- sentence s /= mkSen true && (isDef s ||
+      -- isSuffixOf "def" (senAttr s))) axs
       -- defaultProof = Just $ IsaProof
-      --  (if null useaxs then [] else [Using $ map senAttr useaxs])
-      --  $ By Auto
+      -- (if null useaxs then [] else [Using $ map senAttr useaxs])
+      -- $ By Auto
       thy = shows (printIsaTheory thBaseName sig $ axs ++ ths) "\n"
       thyFile = thBaseName ++ ".thy"
   -- Check if the Isabelle theory is a valid Isabelle theory
@@ -159,13 +160,13 @@ writeIsaTheory thName th = do
       -- callSystem $ isabelle ++ " " ++ thyFile
       -- ok <- checkFinalThyFile (ho, bo) thyFile
       -- if ok then getAllProofDeps m thBaseName thms
-      --    else return []
+      -- else return []
       writeFile thyFile thy
       return ()
     -- The Isabelle theory is not a valid theory (according to Hets)
     -- as it cannot be parsed.
     Left err -> do
-      putStrLn $ show err
+      print err
       putStrLn $ "Sorry, a generated theory cannot be parsed, see: "
                    ++ thyFile
       writeFile thyFile thy

@@ -634,8 +634,14 @@ axclassS = "axclass"
 classesS :: String
 classesS = "classes"
 
+definitionS :: String
+definitionS = "definition"
+
 instanceS :: String
 instanceS = "instance"
+
+instantiationS :: String
+instantiationS = "instantiation"
 
 typedeclS :: String
 typedeclS = "typedecl"

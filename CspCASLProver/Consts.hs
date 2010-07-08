@@ -25,7 +25,6 @@ module CspCASLProver.Consts
     , cspFThyS
     , eq_PreAlphabetS
     , eq_PreAlphabetV
-    , eqvTypeClassS
     , equivTypeClassS
     , eventS
     , eventType
@@ -135,11 +134,6 @@ eq_PreAlphabetS = "eq_PreAlphabet"
 --   elements of the PreAlphabet.
 eq_PreAlphabetV :: VName
 eq_PreAlphabetV   = VName eq_PreAlphabetS $ Nothing
-
--- | String for the name of the axiomatic type class of equivalence
---   relations part 1
-eqvTypeClassS :: String
-eqvTypeClassS  = "eqv"
 
 -- | String for the name of the axiomatic type class of equivalence
 --   relations part 2

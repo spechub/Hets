@@ -54,7 +54,7 @@ transTheory c m sign sens = do
   (sign'',sens'') <- transSentencesI c sign' (map sentence sens)
   return (sign'', concatMap (\ (t, l) ->
          map (\ (r, ars) -> makeNamed ""
-              $ Instance t (map snd ars) [r] $ toIsaProof DotDot) l)
+              $ Instance t (map snd ars) [r] [] $ toIsaProof DotDot) l)
          (filter (not . flip elem
                    ["unitT", "intT", "integerT", "charT", "ratT"] . fst)
           $ Map.toList $ arities $ tsig sign'') ++ sens'')

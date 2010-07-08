@@ -228,18 +228,27 @@ printSentence s = case s of
                    $+$ pretty pr
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
-  Instance { tName = t, arityArgs = args, arityRes = res, instProof = prf } ->
-      text instanceS <+> text t <> doubleColon <> (case args of
+  Instance { tName = t, arityArgs = args, arityRes = res, definitions = defs,
+             instProof = prf } ->
+      text instantiationS <+> text t <> doubleColon <> (case args of
         []  -> empty
         _ -> parens $ hsep $ punctuate comma $ map (printSortAux True) args)
-        <+> printSortAux True res <+> pretty prf
+        <+> printSortAux True res $+$ text beginS $++$ printDefs defs $++$
+            text instanceS <+> pretty prf $+$ text endS
+      where printDefs :: [(String, Term)] -> Doc
+            printDefs defs' = vcat (map printDef defs')
+            printDef :: (String, Term) -> Doc
+            printDef (name, def) =
+                text definitionS <+>
+                     printNamedSen (makeNamed name (ConstDef def))
+
   Sentence { isRefuteAux = b, metaTerm = t } -> printPlainMetaTerm (not b) t
   ConstDef t -> printTerm t
   Lemmas name lemmas -> if null lemmas
                         then empty -- only have this lemmas if we have some in
                                    -- the list
                         else text lemmasS <+> text name <+>
-                             equals <+> (sep $ map text lemmas)
+                             equals <+> sep (map text lemmas)
 
 printSetDecl :: SetDecl -> Doc
 printSetDecl setdecl =

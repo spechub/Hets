@@ -32,7 +32,7 @@ module CspCASLProver.Utils
     , addProjFlatFun
     ) where
 
-import CASL.AS_Basic_CASL (SORT, OpKind(..), TERM(..))
+import CASL.AS_Basic_CASL (SORT, OpKind (..), TERM(..))
 import qualified CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASLSign
 import qualified CASL.Inject as CASLInject
@@ -67,7 +67,7 @@ import Isabelle.Translate(transString)
 -------------------------------------------------------------------------
 
 -- | Add the PreAlphabet (built from a list of sorts) to an Isabelle
---  theory.
+-- theory.
 addPreAlphabet :: [SORT] -> IsaTheory -> IsaTheory
 addPreAlphabet sortList isaTh =
    let preAlphabetDomainEntry = mkPreAlphabetDE sortList
@@ -153,13 +153,13 @@ addCompareWithFun caslSign isaTh sort =
                 -- Test 4 =  test equality at: super sorts  vs super sorts
                 allTests = concat [test1, test2, test3, test4]
                 test1 = if sort == sort' then [binEq x y] else []
-                test2 = if (Set.member sort sort'SuperSet)
+                test2 = if Set.member sort sort'SuperSet
                         then [binEq x (mkInjection sort' sort y)]
                         else []
-                test3 = if (Set.member sort' sortSuperSet)
+                test3 = if Set.member sort' sortSuperSet
                         then [binEq (mkInjection sort sort' x) y]
                         else []
-                test4 = if (null commonSuperList)
+                test4 = if null commonSuperList
                         then []
                         else map test4_atSort commonSuperList
                 test4_atSort s = binEq (mkInjection sort  s x)
@@ -190,7 +190,7 @@ addAllGaAxiomsCollections caslSign pfolSign isaTh =
      $ addLemmasCollection lemmasNotDefBotAxS (getCollectionNotDefBotAx sorts)
      $ addLemmasCollection lemmasTotalityAxS (getCollectionTotAx pfolSign)
      $ addLemmasCollection lemmasTransAxS (getCollectionTransAx caslSign)
-     $ isaTh
+       isaTh
 
 --------------------------------------------------------
 -- Functions for producing the Justification theorems --
@@ -212,7 +212,7 @@ addJustificationTheorems caslSign pfolSign isaTh =
        $ addAllDecompositionTheorem caslSign pfolSign sorts sortRel
        $ addSymmetryTheorem sorts
        $ addReflexivityTheorem
-       $ isaTh
+         isaTh
 
 -- | Add the reflexivity theorem and proof to an Isabelle Theory
 addReflexivityTheorem :: IsaTheory -> IsaTheory
@@ -246,7 +246,7 @@ addSymmetryTheorem _ isaTh =
         inductY = [Apply [Induct y, Auto] True]
         proof' = IsaProof {
                    -- Add in front of inductY a apply induct on x
-                   proof = ((Apply [(Induct x)] False) : inductY),
+                   proof = Apply [Induct x] False : inductY,
                    end = Done
                  }
     in addTheoremWithProof name thmConds thmConcl proof' isaTh
@@ -381,8 +381,8 @@ addTransitivityTheorem sorts sortRel isaTh =
                 (getColInjectivityThmName sortRel)
           $ addLemmasCollection lemmasCCProverDecompositionThmsS
                 (getColDecompositionThmName sortRel)
-          $ isaTh
-        numSorts = length(sorts)
+            isaTh
+        numSorts = length sorts
         name = transitivityS
         x = mkFree "x"
         y = mkFree "y"
@@ -424,9 +424,7 @@ addTransitivityTheorem sorts sortRel isaTh =
 --   Isabelle theory
 addInstansanceOfEquiv :: IsaTheory  -> IsaTheory
 addInstansanceOfEquiv  isaTh =
-    let eqvSort = [IsaClass eqvTypeClassS]
-        eqvProof = IsaProof []  (By (Other "intro_classes"))
-        equivSort = [IsaClass equivTypeClassS]
+    let equivSort = [IsaClass equivTypeClassS]
         equivProof = IsaProof [Apply [Other "intro_classes"] False,
                                Apply [Other ("unfold " ++ preAlphabetSimS
                                              ++ "_def")] False,
@@ -441,11 +439,9 @@ addInstansanceOfEquiv  isaTh =
         y = mkFree "y"
         defLhs = binEqvSim x y
         defRhs = binEq_PreAlphabet x y
-    in   addInstanceOf preAlphabetS [] equivSort equivProof
-       $ addDef preAlphabetSimS defLhs defRhs
-       $ addInstanceOf preAlphabetS [] eqvSort eqvProof
-       $ isaTh
-
+        def = IsaEq defLhs defRhs
+    in addInstanceOf preAlphabetS [] equivSort
+           [(preAlphabetSimS, def)] equivProof isaTh
 
 -------------------------------------------------------------
 -- Functions for producing the alphabet type               --
@@ -460,7 +456,7 @@ addAlphabetType  isaTh =
         abbrsNew = Map.insert alphabetS ([], preAlphabetQuotType) myabbrs
 
         isaTh_sign_updated = isaTh_sign {
-                               tsig = (isaTh_sign_tsig {abbrs =abbrsNew})
+                               tsig = isaTh_sign_tsig {abbrs =abbrsNew}
                              }
     in (isaTh_sign_updated, snd isaTh)
 
@@ -519,7 +515,7 @@ addChooseFunction isaTh sort =
         sortConsOp = termAppl (conDouble (mkPreAlphabetConstructor sort))
         bin_eq = binEq (classOp $ sortConsOp y) x
         subset = SubSet y sortType bin_eq
-        lhs = mkChooseFunOp sort $ x
+        lhs = mkChooseFunOp sort x
         rhs = contentsOp (Set subset)
     in  -- Add defintion to theory
         addDef chooseFunName lhs rhs
@@ -591,7 +587,7 @@ addIntegrationTheorem_A caslSign isaTh (s1,s2) =
         s1ConsOp = termAppl (conDouble (mkPreAlphabetConstructor s1))
         s2ConsOp = termAppl (conDouble (mkPreAlphabetConstructor s2))
         rhs = binEq (classOp $ s1ConsOp x) (classOp $ s2ConsOp y)
-        lhs = if (null commonSuperList)
+        lhs = if null commonSuperList
               then false
               else
                   -- BUG pick any common sort for now (this does hold
