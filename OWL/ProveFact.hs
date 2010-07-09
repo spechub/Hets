@@ -28,10 +28,11 @@ import Proofs.BatchProcessing
 import Common.AS_Annotation
 import Common.ProofTree
 import qualified Common.Result as Result
+import Common.ProverTools
 import Common.Utils
 
 import Data.Time (timeToTimeOfDay)
-import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
+import Data.Time.Clock (secondsToDiffTime)
 import System.Posix.Time
 
 import System.Exit
@@ -79,7 +80,7 @@ factProver = mkAutomaticProver "Fact" sl_top factGUI
 factGUI :: String -- ^ theory name
           -> Theory Sign Axiom ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
-          -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
+          -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 factGUI thName th freedefs =
   genericATPgui (atpFun thName) True (proverName factProver) thName th
                 freedefs emptyProofTree
@@ -100,7 +101,7 @@ factCMDLautomaticBatch ::
         -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (ThreadId, MVar ())
         -- ^ fst: identifier of the batch thread for killing it
-        --   snd: MVar to wait for the end of the thread
+        -- snd: MVar to wait for the end of the thread
 factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                          thName defTS th freedefs =
   genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -127,8 +128,8 @@ atpFun thName = ATPFunctions
   , proverHelpText = "Fact++"
   , batchTimeEnv = "HETS_FACT_BATCH_TIME_LIMIT"
   , fileExtensions = FileExtensions { problemOutput = ".owl"  -- owl-hets
-                                    ,  proverOutput = ".fact"
-                                    ,  theoryConfiguration = ".pconf" }
+                                    , proverOutput = ".fact"
+                                    , theoryConfiguration = ".pconf" }
   , runProver = runFact
   , createProverOptions = extraOpts }
 
@@ -136,7 +137,7 @@ atpFun thName = ATPFunctions
   Inserts a named OWL axiom into pellet prover state.
 -}
 insertOWLAxiom :: FactProverState -- ^ prover state containing
-                                    --   initial logical part
+                                    -- initial logical part
                -> Named Axiom -- ^ goal to add
                -> FactProverState
 insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
@@ -158,36 +159,34 @@ consCheck thName _ tm freedefs = case tTarget tm of
    do
     let saveOWL = False
         proverStateI = factProverState sig (toNamedList nSens) freedefs
-        problemS     = showOWLProblemS thName proverStateI []
-        saveFileName  = reverse $ fst $ span (/='/') $ reverse thName
-        tmpFileName   = saveFileName
+        problemS = showOWLProblemS thName proverStateI []
+        tmpFileName = basename thName ++ ".owl"
+        jar = "OWLFact.jar"
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
           , ccProofTree = ProofTree $ out ++ "\n\n" ++ problemS
-          , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ tUsed }
-    when saveOWL (writeFile (saveFileName ++".owl") problemS)
-    t <- getCurrentTime
-    tempDir <- getTemporaryDirectory
-    pPath <- getEnvSec "HETS_OWL_TOOLS"
-    setCurrentDirectory pPath
-    let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
-                                                 ++ "-" ++ show (utctDayTime t) ++ ".owl"
-        tmpURI = "file://" ++ timeTmpFile
-        command = "java -Djava.library.path=lib/native/`uname -m` -jar " ++ pPath ++ "/OWLFact.jar " ++ tmpURI
-    writeFile timeTmpFile problemS
-    t_start <- epochTime
-    (_, outh, errh, proch) <- runInteractiveCommand command
-    ex_code <- waitForProcess proch
-    t_end <- epochTime
-    let t_u = round (realToFrac (t_end - t_start) :: Double)
-    outp <- hGetContents outh
-    eOut <- hGetContents errh
-    removeFile timeTmpFile
-    let cRes = case ex_code of
-                 ExitFailure 10 -> (pStatus (outp ++ eOut) t_u) { ccResult = Just True }
-                 ExitFailure 20 -> (pStatus (outp ++ eOut) t_u) { ccResult = Just False}
-                 _              -> (pStatus (outp ++ eOut) t_u) { ccResult = Nothing}
-    return $ cRes
+          , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime tUsed }
+    when saveOWL (writeFile tmpFileName problemS)
+    (progTh, toolPath) <- check4HetsOWLjar jar
+    if progTh then withinDirectory toolPath $ do
+        tempDir <- getTemporaryDirectory
+        timeTmpFile <- writeTempFile problemS tempDir tmpFileName
+        let command = "java -Djava.library.path=lib/native/`uname -m` -jar "
+              ++ jar ++ " file://" ++ timeTmpFile
+        t_start <- epochTime
+        (_, outh, errh, proch) <- runInteractiveCommand command
+        ex_code <- waitForProcess proch
+        t_end <- epochTime
+        outp <- hGetContents outh
+        eOut <- hGetContents errh
+        removeFile timeTmpFile
+        let t_u = round (realToFrac (t_end - t_start) :: Double)
+            pStat = pStatus (outp ++ eOut) t_u
+        return $ case ex_code of
+          ExitFailure 10 -> pStat { ccResult = Just True }
+          ExitFailure 20 -> pStat { ccResult = Just False}
+          _ -> pStat
+       else return $ pStatus "OWLFact not found" 0
 
 showOWLProblemS :: String -- ^ theory name
                 -> FactProverState -- ^ prover state containing
@@ -197,7 +196,7 @@ showOWLProblemS :: String -- ^ theory name
 showOWLProblemS thName pst _ =
     let namedSens = initialState $ problemProverState
                     $ genFactProblemS thName pst Nothing
-        sign      = ontologySign $ problemProverState
+        sign = ontologySign $ problemProverState
                     $ genFactProblemS thName pst Nothing
     in show $ printOWLBasicTheory (sign, filter isAxiom namedSens)
 
@@ -208,7 +207,7 @@ genFactProblemS :: String
 genFactProblemS thName pps m_nGoal = FactProblem
   { identifier = thName
   , problemProverState =
-      pps { initialState = initialState pps ++ maybe [] (:[]) m_nGoal } }
+      pps { initialState = initialState pps ++ maybeToList m_nGoal } }
 
 {- |
   Pretty printing DL goal in Manchester-OWL-Syntax.
@@ -222,7 +221,7 @@ showOWLProblem :: String -- ^ theory name
 showOWLProblem thName pst nGoal _ =
   let namedSens = initialState $ problemProverState
                     $ genFactProblemS thName pst Nothing
-      sign      = ontologySign $ problemProverState
+      sign = ontologySign $ problemProverState
                     $ genFactProblemS thName pst Nothing
   in return $ show (printOWLBasicTheory (sign, filter isAxiom namedSens))
        ++ "\n\nEntailments:\n\n" ++ show (printOWLBasicTheory (sign, [nGoal]))
@@ -232,7 +231,7 @@ showOWLProblem thName pst nGoal _ =
 -}
 runFact :: FactProverState
           -- ^ logical part containing the input Sign and axioms and possibly
-          --   goals that have been proved earlier as additional axioms
+          -- goals that have been proved earlier as additional axioms
           -> GenericConfig ProofTree -- ^ configuration to use
           -> Bool -- ^ True means save TPTP file
           -> String -- ^ name of the theory in the DevGraph
@@ -240,55 +239,54 @@ runFact :: FactProverState
           -> IO (ATPRetval, GenericConfig ProofTree)
           -- ^ (retval, configuration with proof status and complete output)
 runFact sps cfg saveFact thName nGoal = do
-      let prob   = showOWLProblemS thName sps []
+      let prob = showOWLProblemS thName sps []
           entail = showOWLProblemS thName
                      (sps { initialState = [ nGoal {isAxiom = True } ] }) []
-      when saveFact $ do writeFile (saveFileName ++".owl") prob
-                         writeFile (saveFileName ++".entail.owl") entail
-      t <- getCurrentTime
-      tempDir <- getTemporaryDirectory
-      let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
-                                ++ "-" ++ show (utctDayTime t) ++ ".owl"
-          entailsFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
-                          ++ "-" ++ show (utctDayTime t) ++ ".entails.owl"
-      writeFile timeTmpFile prob
-      writeFile entailsFile entail
-      pPath <- getEnvSec "HETS_OWL_TOOLS"
-      let command = "java -Djava.library.path=lib/native/`uname -m` -jar " ++
-                    pPath ++ "/OWLFactProver.jar file://" ++ timeTmpFile ++
-                    " file://" ++ entailsFile
-      setCurrentDirectory pPath
-      t_start <- epochTime
-      (mExit, outh, errh) <- timeoutCommand tLimit command
-      t_end <- epochTime
-      let t_u = round (realToFrac (t_end - t_start) :: Double)
-      ((err, retval),output, tUsed) <- if isJust mExit then do
-        output  <- hGetContents outh
-        eOut    <- hGetContents errh
-        let outp = lines $ output ++ eOut
-        return (proofStat (fromJust mExit) simpleOptions outp t_u, outp, t_u)
-        else return
-          ((ATPTLimitExceeded, defaultProofStatus simpleOptions), [], tLimit)
-      removeFile timeTmpFile
-      removeFile entailsFile
-      return (err, cfg { proofStatus = retval
-                       , resultOutput = output
-                       , timeUsed =
-                           timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
-                       })
+          jar = "OWLFactProver.jar"
+      when saveFact $ do
+        writeFile tmpFileName prob
+        writeFile (tmpFileName ++ ".entail.owl") entail
+      (progTh, toolPath) <- check4HetsOWLjar jar
+      if progTh then withinDirectory toolPath $ do
+          tempDir <- getTemporaryDirectory
+          timeTmpFile <- writeTempFile prob tempDir tmpFileName
+          let entailsFile = timeTmpFile ++ ".entail.owl"
+              command = "java -Djava.library.path=lib/native/`uname -m` -jar "
+                ++ jar ++ " file://" ++ timeTmpFile ++ " file://" ++ entailsFile
+          writeFile entailsFile entail
+          t_start <- epochTime
+          (mExit, outh, errh) <- timeoutCommand tLimit command
+          t_end <- epochTime
+          let t_u = round (realToFrac (t_end - t_start) :: Double)
+          ((err, retval), output, tUsed) <- case mExit of
+            Just ex -> do
+              output <- hGetContents outh
+              eOut <- hGetContents errh
+              let outp = lines $ output ++ eOut
+              return (proofStat ex simpleOptions outp t_u, outp, t_u)
+            Nothing -> return
+              ( (ATPTLimitExceeded, defaultProofStatus simpleOptions)
+              , [], tLimit)
+          removeFile timeTmpFile
+          removeFile entailsFile
+          return (err, cfg
+            { proofStatus = retval
+            , resultOutput = output
+            , timeUsed = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
+            })
+        else return (ATPError "OWLFactProver not found", cfg)
   where
     simpleOptions = extraOpts cfg
-    tLimit        = fromMaybe 800 $ timeLimit cfg
-    goalSuffix    = '_' : senAttr nGoal
-    saveFileName  = thName ++ goalSuffix
-    tmpFileName   = reverse (takeWhile (/= '/') $ reverse thName) ++ goalSuffix
+    tLimit = fromMaybe 800 $ timeLimit cfg
+    goalSuffix = '_' : senAttr nGoal
+    tmpFileName = basename thName ++ goalSuffix ++ ".owl"
     proofStat exitCode options out tUsed = case exitCode of
       ExitFailure 10 -> (ATPSuccess, (provedStatus options tUsed)
                        { usedAxioms = map senAttr $ initialState sps })
       ExitFailure 20 -> (ATPSuccess, disProvedStatus options)
-      ExitFailure _ -> ( ATPError (unlines ("Internal error.":out))
+      ExitFailure _ -> ( ATPError (unlines ("Internal error." : out))
                        , defaultProofStatus options)
-      ExitSuccess -> ( ATPError (unlines ("Internal error.":out))
+      ExitSuccess -> ( ATPError (unlines ("Internal error." : out))
                        , defaultProofStatus options)
     tScript opts = TacticScript $ show ATPTacticScript
                      { tsTimeLimit = configTimeLimit cfg
@@ -302,7 +300,7 @@ runFact sps cfg saveFact thName nGoal = do
                   , goalStatus = Proved True
                   , usedAxioms = []
                   , usedProver = proverName factProver
-                  , proofTree =  emptyProofTree
+                  , proofTree = emptyProofTree
                   , usedTime =
                       timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
                   , tacticScript = tScript opts }
