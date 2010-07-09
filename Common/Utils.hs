@@ -43,6 +43,7 @@ module Common.Utils
   , getEnvDef
   , filterMapWithList
   , timeoutCommand
+  , withinDirectory
   ) where
 
 import Data.Char
@@ -53,6 +54,7 @@ import qualified Data.Set as Set
 
 import System.Exit
 import System.IO
+import System.Directory
 import System.Environment
 import System.Process
 import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
@@ -362,3 +364,13 @@ timeoutCommand time cmd = do
   res <- takeMVar wait
   killThread (if isJust res then tid2 else tid1) `catch` print
   return (res, outh, errh)
+
+{- | runs an action in a different directory without changing the current
+     directory globally. -}
+withinDirectory :: FilePath -> IO a -> IO a
+withinDirectory p a = do
+  d <- getCurrentDirectory
+  setCurrentDirectory p
+  r <- a
+  setCurrentDirectory d
+  return r

@@ -12,7 +12,11 @@ See <http://www.w3.org/2004/OWL/> for details on OWL, and
 <http://pellet.owldl.com/> for Pellet (version 2.0.0-rc6)
 -}
 
-module OWL.ProvePellet (pelletProver, pelletConsChecker) where
+module OWL.ProvePellet
+  ( runTimedPellet
+  , pelletProver
+  , pelletConsChecker
+  ) where
 
 import Logic.Prover
 
@@ -41,6 +45,7 @@ import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
 import System.IO
 import System.Directory
 import System.Process
+import System.Timeout
 
 import Control.Monad (when)
 import Control.Concurrent
@@ -72,7 +77,8 @@ pelletProver = mkAutomaticProver pelletS sl_top pelletGUI
   pelletCMDLautomaticBatch
 
 pelletConsChecker :: ConsChecker Sign Axiom OWLSub OWLMorphism ProofTree
-pelletConsChecker = mkConsChecker pelletS sl_top consCheck
+pelletConsChecker = (mkConsChecker pelletS sl_top consCheck)
+  { ccNeedsTimer = False }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -150,32 +156,52 @@ consCheck :: String
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
           -> IO (CCStatus ProofTree)
-consCheck thName _ tm freedefs = case tTarget tm of
+consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
   Theory sig nSens -> do
     let proverStateI = pelletProverState sig (toNamedList nSens) freedefs
-        problemS = showOWLProblemS proverStateI
-        tmpFileName = basename thName
+        prob = showOWLProblemS proverStateI
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
-          , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
+          , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ prob
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
-    (progTh, pPath) <- check4Pellet
-    if progTh then do
-        t <- getCurrentTime
-        tempDir <- getTemporaryDirectory
-        let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
-                                  ++ "-" ++ show (utctDayTime t) ++ ".owl"
-            command = "sh pellet.sh consistency file://" ++ timeTmpFile
-        writeFile timeTmpFile problemS
-        setCurrentDirectory pPath
-        (_, outh, errh, proch) <- runInteractiveCommand command
-        waitForProcess proch
-        outp <- hGetContents outh
-        eOut <- hGetContents errh
-        let (_, exCode, out, tUsed) = analyseOutput outp eOut
-        removeFile timeTmpFile
-        return $ (pStatus out tUsed) { ccResult = exCode }
-      else return $ pStatus ["Pellet not found"] (0 :: Int)
+        tLim = readMaybe tl
+    res <- runTimedPellet "consistency" (basename thName) prob tLim
+    return $ case res of
+      Nothing -> pStatus ["Timeout after " ++ tl ++ " seconds"]
+                 (fromMaybe 0 tLim)
+      Just (progTh, outp, eOut) -> if progTh then
+          let (_, exCode, out, tUsed) = analyseOutput outp eOut
+          in (pStatus out tUsed) { ccResult = exCode }
+        else pStatus ["Pellet not found"] (0 :: Int)
+
+runPelletAux :: String -- ^ pellet subcommand
+  -> FilePath  -- ^ basename of problem file without extension
+  -> String    -- ^ problem content
+  -> IO (Bool, String, String) -- ^ (success, stdout, stderr)
+runPelletAux opts tmpFileName prob = do
+  (progTh, pPath) <- check4Pellet
+  if progTh then withinDirectory pPath $ do
+      tempDir <- getTemporaryDirectory
+      let tmpFile = tmpFileName ++ ".owl"
+      (timeTmpFile, hdl) <- openTempFile tempDir tmpFile
+      hPutStr hdl prob
+      hFlush hdl
+      hClose hdl
+      (_, outS, errS) <-
+        readProcessWithExitCode "sh"
+          ("pellet.sh" : words opts ++ ["file://" ++ timeTmpFile]) ""
+      removeFile timeTmpFile
+      return (True, outS, errS)
+    else return (False, "", "")
+
+runTimedPellet :: String -- ^ pellet subcommand
+  -> FilePath  -- ^ basename of problem file without extension
+  -> String    -- ^ problem content
+  -> Maybe Int -- ^ time limit in seconds
+  -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
+runTimedPellet opts tmpFileName prob m = do
+  timeout (maybe maxBound (1000000 *) m)
+       $ runPelletAux opts tmpFileName prob
 
 check4Pellet :: IO (Bool, FilePath)
 check4Pellet = do
