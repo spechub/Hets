@@ -45,7 +45,6 @@ import Data.Maybe
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 
-import System.IO
 import System.Directory
 import System.Process
 import System.Timeout

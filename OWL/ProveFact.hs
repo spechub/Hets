@@ -42,7 +42,6 @@ import System.Directory
 
 import Control.Concurrent
 import Control.Monad (when)
-import Control.Concurrent.MVar
 
 import Data.Maybe
 

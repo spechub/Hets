@@ -41,7 +41,6 @@ import Control.Monad
 
 import System.Cmd (system)
 import System.Directory (getTemporaryDirectory)
-import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 
 -- | The identity of the comorphism
