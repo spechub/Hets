@@ -32,12 +32,12 @@ import Common.ProofTree
 import Common.Result as Result
 import Common.Utils
 
+import Data.Char (isDigit)
 import Data.List (isPrefixOf)
 import Data.Maybe
 import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
 
-import System.Exit
 import System.IO
 import System.Directory
 import System.Process
@@ -159,22 +159,6 @@ consCheck thName _ tm freedefs = case tTarget tm of
           { ccResult = Nothing
           , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ problemS
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
-        proofStatM :: ExitCode -> [String] -> Int -> CCStatus ProofTree
-        proofStatM exitCode out tUsed = case exitCode of
-          ExitSuccess ->   -- consistent
-            (pStatus out tUsed) { ccResult = Just True }
-          ExitFailure 1 -> -- not consistent
-            (pStatus out tUsed) { ccResult = Just False }
-          ExitFailure 2 -> -- error by runing pellet
-            (pStatus out tUsed) { ccProofTree = ProofTree "Cannot run pellet." }
-          ExitFailure 3 -> -- timeout
-            (pStatus out tUsed)
-            { ccProofTree = ProofTree $ unlines out ++ "\n\ntimeout" }
-          ExitFailure 4 -> -- error by runing pellet
-            (pStatus out tUsed) { ccProofTree = ProofTree
-            $ "Pellet returned an error.\n" ++ unlines out }
-          ExitFailure _ -> -- another errors
-            pStatus out tUsed
     (progTh, pPath) <- check4Pellet
     if progTh then do
         t <- getCurrentTime
@@ -188,9 +172,9 @@ consCheck thName _ tm freedefs = case tTarget tm of
         waitForProcess proch
         outp <- hGetContents outh
         eOut <- hGetContents errh
-        let (exCode, output, tUsed) = analyseOutput outp eOut
+        let (_, exCode, out, tUsed) = analyseOutput outp eOut
         removeFile timeTmpFile
-        return $ proofStatM exCode output tUsed
+        return $ (pStatus out tUsed) { ccResult = exCode }
       else return $ pStatus ["Pellet not found"] (0 :: Int)
 
 check4Pellet :: IO (Bool, FilePath)
@@ -215,30 +199,12 @@ runPellet sps cfg savePellet thName nGoal = do
       extraOptions = "entail -e "
       goalSuffix = '_' : senAttr nGoal
       tmpFileName = basename thName ++ goalSuffix
-      proofStat exitCode options out tUsed = case exitCode of
-        ExitSuccess -> (ATPSuccess, (provedStatus options tUsed)
-                       { usedAxioms = map senAttr $ initialState sps })
-        ExitFailure 2 -> ( ATPError (unlines ("Internal error." : out))
-                       , defaultProofStatus options)
-        ExitFailure 112 -> (ATPTLimitExceeded, defaultProofStatus options)
-        ExitFailure 105 -> (ATPBatchStopped, defaultProofStatus options)
-        ExitFailure _ -> (ATPSuccess, disProvedStatus options)
-      tScript opts = TacticScript $ show ATPTacticScript
+      tScript = TacticScript $ show ATPTacticScript
                      { tsTimeLimit = configTimeLimit cfg
-                     , tsExtraOpts = opts }
-      defaultProofStatus opts =
-        (openProofStatus (senAttr nGoal) pelletS emptyProofTree)
-        { tacticScript = tScript opts }
-      disProvedStatus opts = (defaultProofStatus opts) {goalStatus = Disproved}
-      provedStatus opts ut = ProofStatus
-                  { goalName = senAttr nGoal
-                  , goalStatus = Proved True
-                  , usedAxioms = []
-                  , usedProver = pelletS
-                  , proofTree = emptyProofTree
-                  , usedTime =
-                      timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
-                  , tacticScript = tScript opts }
+                     , tsExtraOpts = simpleOptions }
+      defaultProofStatus out =
+        (openProofStatus (senAttr nGoal) pelletS $ ProofTree out)
+        { tacticScript = tScript }
   (progTh, pPath) <- check4Pellet
   if progTh then do
       let prob = showOWLProblemS sps
@@ -262,10 +228,22 @@ runPellet sps cfg savePellet thName nGoal = do
       ((err, retval), output, tUsed) <- if isJust mExit then do
         output <- hGetContents outh
         eOut <- hGetContents errh
-        let (exCode, outp, tUsed) = analyseOutput output eOut
-        return (proofStat exCode simpleOptions outp tUsed, outp, tUsed)
+        let (atpr, exCode, outp, tUsed) = analyseOutput output eOut
+            openStat = defaultProofStatus $ unlines outp
+            disProvedStatus = openStat
+               { goalStatus = Disproved
+               , usedTime =
+                   timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
+            provedStatus = disProvedStatus
+                  { goalStatus = Proved True
+                  , usedAxioms = map senAttr $ initialState sps }
+            proofStat = case exCode of
+              Just True -> provedStatus
+              Just False -> disProvedStatus
+              _ -> openStat
+        return ((atpr, proofStat), outp, tUsed)
         else return
-          ((ATPTLimitExceeded, defaultProofStatus simpleOptions), [], tLimit)
+          ((ATPTLimitExceeded, defaultProofStatus ""), [], tLimit)
       removeFile timeTmpFile
       removeFile entailsFile
       return (err, cfg { proofStatus = retval
@@ -277,31 +255,25 @@ runPellet sps cfg savePellet thName nGoal = do
       ( ATPError "Could not find pellet prover. Is $PELLET_PATH set?"
       , emptyConfig pelletS (senAttr nGoal) emptyProofTree)
 
-analyseOutput :: String -> String -> (ExitCode, [String], Int)
+analyseOutput :: String -> String -> (ATPRetval, Maybe Bool, [String], Int)
 analyseOutput err outp =
-  let errL = lines err
-      outL = lines outp
-      anaHelp x [] = x
-      anaHelp (exCode, output, to) (line : ls) =
-        let (okey, ovalue) = span (/= ':') line in
-        if "Usage: java Pellet" `isPrefixOf` line
-          -- error by running pellet.
-          then (ExitFailure 2, output ++ [line], to)
-          else if okey == "Consistent"    -- consistent state
-            then if tail (tail ovalue) == "Yes" then
-              anaHelp (ExitSuccess, output ++ [line], to) ls
-              else anaHelp (ExitFailure 1, output ++ [line], to) ls
-            else if "Time" `isPrefixOf` okey  -- get cup time
-              then anaHelp (exCode, output ++ [line],
-                     read $ fst $ span (/= ' ') $ tail ovalue :: Int) ls
-              else if "All axioms are entailed" `isPrefixOf` line
-                then anaHelp (ExitSuccess, output ++ [line], to) ls
-                else if "Non-entailments:" `isPrefixOf` line
-                  then anaHelp (ExitFailure 5, output ++ [line], to) ls
-                  else if "ERROR:" `isPrefixOf` line
-                    then anaHelp (ExitFailure 4, output ++ [line], to) ls
-                    else anaHelp (exCode, output ++ [line], to) ls
-  in anaHelp (ExitFailure 1, [], -1) (outL ++ errL)
+  let ls = lines outp ++ lines err
+      anaHelp (atp, exCode, to) line =
+        case words line of
+          "Consistent:" : v : _ -> case v of
+              "Yes" -> (ATPSuccess, Just True, to)
+              "No" -> (ATPSuccess, Just False, to)
+              _ -> (atp, exCode, to)
+          "All" : "axioms" : "are" : "entailed" : _ ->
+            (ATPSuccess, Just True, to)
+          "Non-entailments:" : _ -> (ATPSuccess, Just False, to)
+          "Usage:" : "java" : "Pellet" : _ -> (ATPError line, Nothing, to)
+          "ERROR:" : _ -> (ATPError line, Nothing, to)
+          tm : num : _ | isPrefixOf "Time" tm && all isDigit num ->
+            (atp, exCode, read num)
+          _ -> (atp, exCode, to)
+      (atpr, st, tmo) = foldl anaHelp (ATPError "", Nothing, -1) ls
+  in (atpr, st, ls, tmo)
 
 showOWLProblemS :: PelletProverState -- ^ prover state containing
                                      -- initial logical part
