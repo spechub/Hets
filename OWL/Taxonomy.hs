@@ -95,8 +95,9 @@ relBuild s = case s of
 runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 runClassifier sig sen = do
   let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
-  res <- runTimedPellet "classify" "PelletClassifier" th Nothing 800
+      tLimit = 800
+  res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
   return $ case res of
-    Nothing -> fail "Time is up (800 seconds)!"
+    Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
     Just (progTh, out, _) ->
       if progTh then return out else fail "Pellet not found"
