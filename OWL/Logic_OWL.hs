@@ -75,7 +75,7 @@ instance StaticAnalysis OWL OntologyFile Axiom
                Sign
                OWLMorphism
                Entity RawSymb where
-{- these functions are implemented in OWL.StaticAna and OWL.Sign. -}
+      -- these functions are implemented in OWL.StaticAna and OWL.Sign.
       basic_analysis OWL = Just basicOWLAnalysis
       stat_symb_items OWL = return . statSymbItems
       stat_symb_map_items OWL = statSymbMapItems
@@ -95,33 +95,21 @@ instance StaticAnalysis OWL OntologyFile Axiom
       theory_to_taxonomy OWL = onto2Tax
 #endif
 
-{-   this function will be implemented in OWL.Taxonomy
-         theory_to_taxonomy OWL = convTaxo
--}
-
 instance Logic OWL OWLSub OntologyFile Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree where
-    --     stability _ = Testing
-    -- default implementations are fine
-    -- the prover uses HTk and IO functions from uni
          empty_proof_tree OWL = emptyProofTree
 #ifdef UNI_PACKAGE
-         provers OWL = unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletProver ++
-           (unsafeFileCheck "OWLFactProver.jar" "HETS_OWL_TOOLS" factProver)
+         provers OWL = unsafeFileCheck pelletJar pelletEnv pelletProver ++
+           (unsafeFileCheck "OWLFactProver.jar" hetsOWLenv factProver)
          cons_checkers OWL =
-             (unsafeFileCheck "pellet.sh" "PELLET_PATH" pelletConsChecker) ++
-             (unsafeFileCheck "OWLFact.jar" "HETS_OWL_TOOLS" factConsChecker)
-         conservativityCheck OWL =
-           unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
-              (ConservativityChecker "Locality_BOTTOM_BOTTOM"
-               $ conserCheck "BOTTOM_BOTTOM")
-           ++ unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
-              (ConservativityChecker "Locality_TOP_BOTTOM"
-               $ conserCheck "TOP_BOTTOM")
-           ++ unsafeFileCheck "OWLLocality.jar" "HETS_OWL_TOOLS"
-              (ConservativityChecker "Locality_TOP_TOP"
-               $ conserCheck "TOP_TOP")
+             (unsafeFileCheck pelletJar pelletEnv pelletConsChecker) ++
+             (unsafeFileCheck "OWLFact.jar" hetsOWLenv factConsChecker)
+         conservativityCheck OWL = concatMap
+           (\ ct -> unsafeFileCheck localityJar hetsOWLenv
+              $ ConservativityChecker ("Locality_" ++ ct)
+                      $ conserCheck ct)
+           ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
 #endif
 
 instance SemiLatticeWithTop OWLSub where

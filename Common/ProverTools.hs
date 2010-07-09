@@ -71,3 +71,22 @@ check4File :: String -- ^ file name
 check4File name env a = do
       ex <- check4FileAux name env
       return [a | not $ null ex ]
+
+-- | check for java and the jar file in the directory of the variable
+check4jarFile :: String -- ^ environment Variable
+  -> String -- ^ jar file name
+  -> IO (Bool, FilePath)
+check4jarFile var jar = do
+  noJava <- missingExecutableInPath "java"
+  pPath <- getEnvDef var ""
+  hasJar <- doesFileExist $ pPath </> jar
+  return (not noJava && hasJar, pPath)
+
+-- | environment variable for HETS_OWL_TOOLS
+hetsOWLenv :: String
+hetsOWLenv = "HETS_OWL_TOOLS"
+
+-- | check for the jar file under HETS_OWL_TOOLS
+check4HetsOWLjar :: String -- ^ jar file name
+  -> IO (Bool, FilePath)
+check4HetsOWLjar = check4jarFile hetsOWLenv

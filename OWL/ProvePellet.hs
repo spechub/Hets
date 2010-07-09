@@ -14,6 +14,8 @@ See <http://www.w3.org/2004/OWL/> for details on OWL, and
 
 module OWL.ProvePellet
   ( runTimedPellet
+  , pelletJar
+  , pelletEnv
   , pelletProver
   , pelletConsChecker
   ) where
@@ -34,6 +36,7 @@ import Proofs.BatchProcessing
 import Common.AS_Annotation
 import Common.ProofTree
 import Common.Result as Result
+import Common.ProverTools
 import Common.Utils
 
 import Data.Char (isDigit)
@@ -67,6 +70,12 @@ pelletProverState sig oSens _ = PelletProverState
 
 pelletS :: String
 pelletS = "Pellet"
+
+pelletJar :: String
+pelletJar = "lib/pellet-cli.jar"
+
+pelletEnv :: String
+pelletEnv = "PELLET_PATH"
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical
@@ -181,7 +190,7 @@ runPelletAux :: String -- ^ pellet subcommand
   -> Maybe String -- ^ entail content
   -> IO (Bool, String, String) -- ^ (success, stdout, stderr)
 runPelletAux opts tmpFileName prob entail = do
-  (progTh, pPath) <- check4Pellet
+  (progTh, pPath) <- check4jarFile pelletEnv pelletJar
   if progTh then withinDirectory pPath $ do
       tempDir <- getTemporaryDirectory
       let tmpFile = tmpFileName ++ ".owl"
@@ -195,8 +204,8 @@ runPelletAux opts tmpFileName prob entail = do
       hFlush hdl
       hClose hdl
       (_, outS, errS) <-
-        readProcessWithExitCode "sh"
-          ("pellet.sh"
+        readProcessWithExitCode "java"
+          ("-Xmx512m" : "-jar" : pelletJar
            : (if doEntail then ["entail", "-e", entFile] else words opts)
            ++ ["file://" ++ timeTmpFile]) ""
       removeFile timeTmpFile
@@ -213,13 +222,6 @@ runTimedPellet :: String -- ^ pellet subcommand
 runTimedPellet opts tmpFileName prob entail secs =
   timeout (1000000 * secs) $ runPelletAux opts tmpFileName prob entail
 
-check4Pellet :: IO (Bool, FilePath)
-check4Pellet = do
-  pPath <- getEnvDef "PELLET_PATH" ""
-  progTh <- doesFileExist $ pPath ++ "/pellet.sh"
-  return (progTh, pPath)
-
--- TODO: Pellet Prove for single goals.
 runPellet :: PelletProverState
           -- ^ logical part containing the input Sign and axioms and possibly
           -- goals that have been proved earlier as additional axioms

@@ -11,11 +11,15 @@ This module implements conservativity checks for OWL 2.0 based on the
 the syntactic locality checker written in Java from the OWL-Api.
 -}
 
-module OWL.Conservativity (conserCheck) where
+module OWL.Conservativity
+  ( localityJar
+  , conserCheck
+  ) where
 
 import Common.AS_Annotation
 import Common.Consistency
 import Common.Result
+import Common.ProverTools
 import Common.Utils
 
 import GUI.Utils ()
@@ -29,14 +33,16 @@ import System.Directory
 import System.Exit
 import System.IO
 
+localityJar :: String
+localityJar = "OWLLocality.jar"
+
 -- | Conservativity Check for Propositional Logic
 conserCheck :: String                        -- ^ Conser type
            -> (Sign, [Named Axiom])       -- ^ Initial sign and formulas
            -> OWLMorphism                    -- ^ morphism between specs
            -> [Named Axiom]               -- ^ Formulas of extended spec
            -> IO (Result (Maybe (Conservativity, [Axiom])))
-conserCheck ct (sig, forms) =
-  doConservCheck "OWLLocality.jar" ct sig forms
+conserCheck ct = uncurry $ doConservCheck localityJar ct
 
 -- | Real conservativity check in IO Monad
 doConservCheck :: String            -- ^ Jar name
@@ -46,16 +52,10 @@ doConservCheck :: String            -- ^ Jar name
                -> OWLMorphism       -- ^ Morphism
                -> [Named Axiom]  -- ^ Formulas of Onto 2
                -> IO (Result (Maybe (Conservativity, [Axiom])))
-doConservCheck jar ct sig1 sen1 mor sen2 = do
+doConservCheck jar ct sig1 sen1 mor sen2 =
   let ontoFile = printOWLBasicTheory (otarget mor, filter isAxiom sen2)
       sigFile = printOWLBasicTheory (sig1, filter isAxiom sen1)
-  runLocalityChecker jar ct (show ontoFile) (show sigFile)
-
-check4Tool :: String -> IO (Bool, FilePath)
-check4Tool jar = do
-  pPath <- getEnvDef "HETS_OWL_TOOLS" ""
-  progTh <- doesFileExist $ pPath ++ "/" ++ jar
-  return (progTh, pPath)
+  in runLocalityChecker jar ct (show ontoFile) (show sigFile)
 
 -- | Invoke the Java checker
 runLocalityChecker :: String            -- ^ Jar name
@@ -64,7 +64,7 @@ runLocalityChecker :: String            -- ^ Jar name
                    -> String            -- ^ String
                    -> IO (Result (Maybe (Conservativity, [Axiom])))
 runLocalityChecker jar ct onto sig = do
-  (progTh, toolPath) <- check4Tool jar
+  (progTh, toolPath) <- check4HetsOWLjar jar
   if progTh then withinDirectory toolPath $ do
       tempDir <- getTemporaryDirectory
       (sigFile, hdl) <- openTempFile tempDir "ConservativityCheck.sig.owl"
