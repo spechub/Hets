@@ -13,7 +13,8 @@ Isabelle Abstract syntax constants for CSP-Prover operations.
 -}
 
 module CspCASLProver.CspProverConsts
-    ( cspProver_NamedProcOp
+    ( cspProverbinEqF
+    , cspProver_NamedProcOp
     , cspProver_skipOp
     , cspProver_stopOp
     , cspProver_divOp
@@ -42,6 +43,14 @@ import Isabelle.IsaConsts (binVNameAppl, con, termAppl)
 
 -- Symbols for CspProver
 -- These symbols and priorities have come from the CSP-Prover source code
+
+-- | binary junctors
+
+cspProverEqV :: VName
+cspProverEqV = VName "op =F" $ Just $ AltSyntax "(_ =F/ _)" [50, 51] 50
+
+cspProverbinEqF :: Term -> Term -> Term
+cspProverbinEqF = binVNameAppl cspProverEqV
 
 -- | Name Process symbol
 cspProver_NamedProcS :: String

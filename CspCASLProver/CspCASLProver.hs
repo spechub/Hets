@@ -61,7 +61,7 @@ cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
 
 -- | The main cspCASLProver function
 cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a ->
-                      IO ([ProofStatus ()])
+                      IO [ProofStatus ()]
 cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
   let -- get the CASL signature of the data part of the CspcASL theory
       caslSign = ccSig2CASLSign ccSign
@@ -72,10 +72,9 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
                               CASLSen sen -> Just sen
                               ProcessEq _ _ _ _ -> Nothing
       -- All named CASL sentences from the datapart
-      caslNamedSens = Maybe.catMaybes $
-                      map (mapNamedM caslSenFilter) ccNamedSens
+      caslNamedSens = Maybe.mapMaybe (mapNamedM caslSenFilter) ccNamedSens
       -- Generate data encoding. This may fail.
-      Result diag (dataTh) = produceDataEncoding caslSign caslNamedSens
+      Result diag dataTh = produceDataEncoding caslSign caslNamedSens
   in case dataTh of
     Nothing -> do
       -- Data translation failed
@@ -191,7 +190,7 @@ produceIntegrationTheorems thName caslSign =
 -- process translation.
 produceProcesses :: String -> CspCASLSign -> [Named CspCASLSen] ->
                     CASLSign -> CASLSign -> Theory Isa.Sign Isa.Sentence ()
-produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
+produceProcesses thName ccSign ccNamedSens pcfolSign cfolSign =
     let caslSign = ccSig2CASLSign ccSign
         cspSign = ccSig2CspSign ccSign
         sortList = Set.toList (sortSet caslSign)
@@ -203,10 +202,12 @@ produceProcesses thName ccSign ccNnamedSens pcfolSign cfolSign =
                                                     , cspFThyS] }
         -- Start with our empty isabelle theory and add the
         -- processes the the process refinement theorems.
-        (isaSign, isaSens) = addProcMap ccNnamedSens ccSign pcfolSign cfolSign
-                           $ addProcNameDatatype cspSign
-                           $ addFlatTypes sortList
-                           $ addProjFlatFun
-                           $ addEventDataType sortRel' chanNameMap
-                            (isaSignEmpty, [])
+        (isaSign, isaSens) =
+            addProcTheorems ccNamedSens ccSign pcfolSign cfolSign
+          $ addProcMap ccNamedSens ccSign pcfolSign cfolSign
+          $ addProcNameDatatype cspSign
+          $ addFlatTypes sortList
+          $ addProjFlatFun
+          $ addEventDataType sortRel' chanNameMap
+            (isaSignEmpty, [])
     in Theory isaSign (toThSens isaSens)

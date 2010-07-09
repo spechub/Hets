@@ -14,8 +14,8 @@ Provides translations from Csp Processes to Isabelle terms
 -}
 module CspCASLProver.TransProcesses
     ( transProcess
-    , VarSource(..)
-    )where
+    , VarSource (..)
+    ) where
 
 import qualified CASL.AS_Basic_CASL as CASL_AS_Basic_CASL
 import CASL.Fold as CASL_Fold
@@ -29,8 +29,8 @@ import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process
-import CspCASL.SignCSP (CspCASLSign, CspSign(..),
-                        ccSig2CASLSign, ccSig2CspSign, ProcProfile(..))
+import CspCASL.SignCSP (CspCASLSign, CspSign (..),
+                        ccSig2CASLSign, ccSig2CspSign, ProcProfile (..))
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -41,27 +41,25 @@ import qualified Data.Map as Map
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
 
-
-
 -- | The origin of a variable
 data VarSource
     -- | indicates that the variable originated from a prefix choice operator.
     = PrefixChoice
     -- | indicates that the variable originated from a channel nondeterministic
-    --   send or channel receive where the sort is the declared sort of the
-    --   channel.
+    -- send or channel receive where the sort is the declared sort of the
+    -- channel.
     | ChanSendOrRec CASL_AS_Basic_CASL.SORT
     -- | indicates that the variable originated from global parameter to the
-    --   process.
+    -- process.
     | GlobalParameter
 
 -- | The target of the sort translation
 data SortTarget
     -- | Indicates the translated sort will be used as a normal communication
-    --   e.g., as a prefix choice or event set.
+    -- e.g., as a prefix choice or event set.
     = NormalComm
     -- | Indicates that the sort will be used as a communication set with a
-    --   channel of certain declared sort.
+    -- channel of certain declared sort.
     | ChanComm CASL_AS_Basic_CASL.SORT
 
 -- | The taraget of the term translation
@@ -77,10 +75,10 @@ data TermTarget
 type VSM = Map.Map CASL_AS_Basic_CASL.VAR VarSource
 
 -- | Translate a Process into CspProver (Isabelle). We need the data part (CASL
---   signature) for translating the translation of terms. We also need the
---   global variables so we can treat local and global variables different. We
---   need the PCFOL and CFOL signature of the data part after translation to
---   PCFOL and CFOL to pass along to the term and formula translations.
+-- signature) for translating the translation of terms. We also need the
+-- global variables so we can treat local and global variables different. We
+-- need the PCFOL and CFOL signature of the data part after translation to
+-- PCFOL and CFOL to pass along to the term and formula translations.
 transProcess :: CspCASLSign -> CASL_Sign.Sign () () ->
                 CASL_Sign.Sign () () -> VSM -> PROCESS -> Term
 transProcess ccSign pcfolSign cfolSign vsm pr =
@@ -91,7 +89,7 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
         cspSign = ccSig2CspSign ccSign
         caslSign = ccSig2CASLSign ccSign
         getProcParamSort procName index =
-            let procMap = procSet $ cspSign
+            let procMap = procSet cspSign
                 paramSortList = case Map.lookup procName procMap of
                              Nothing -> error "CspCASLProver.TransProcesses.transProcess: Process name not found in process map."
                              Just pp -> case pp of
@@ -101,7 +99,7 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
          -- precedence 0
          Skip _ -> cspProver_skipOp
          Stop _ -> cspProver_stopOp
-         Div  _ -> cspProver_divOp
+         Div _ -> cspProver_divOp
          -- Run -> App (cspProver_runOp) (head (transEventSet es)) NotCont
          Run _ _ -> conDouble "RunNotSupportedYet"
          -- Chaos -> App (cspProver_chaosOp) (head (transEventSet es)) NotCont
@@ -119,10 +117,10 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
                         vsm termTar term
                  -- Create a list of translated parameters, we number the
                  -- parameters from zero
-                 paramTerms = map transParam $ zip fqParams [0..]
-             in if (null fqParams)
+                 paramTerms = map transParam $ zip fqParams [0 ..]
+             in if null fqParams
                 -- If there are no parameters we just get the process name term
-                then cspProver_NamedProcOp $ pnTerm
+                then cspProver_NamedProcOp pnTerm
                 -- Otherwise we get the process name term applied to the
                 -- parameters
                 else cspProver_NamedProcOp $ foldl termAppl pnTerm paramTerms
@@ -159,7 +157,7 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
          GeneralisedParallel p es q _ ->
              cspProver_general_parallelOp (transProcess' vsm p)
                                               (transEventSet es)
-                                              (transProcess' vsm  q)
+                                              (transProcess' vsm q)
 
          AlphabetisedParallel p les res q _ ->
              cspProver_alphabetised_parallelOp (transProcess' vsm p)
@@ -193,12 +191,12 @@ transCommType comm =
             TypedChanName cn _ -> rangeOp (conDouble $ convertChannelString cn)
 
 -- | Translate a process event into CspProver (Isabelle). We need to know the
---   data part (CASL signature) in order to use the same translation for CASL
---   terms as the data encoding into Isabelle did. We need the Csp signature for
---   getting the declared channel sorts. We need the PCFOL and CFOL signature of
---   the data part after translation to PCFOL and CFOL to pass along to the term
---   and formula translations. We need the vsm to pass it on to the term
---   translation.
+-- data part (CASL signature) in order to use the same translation for CASL
+-- terms as the data encoding into Isabelle did. We need the Csp signature for
+-- getting the declared channel sorts. We need the PCFOL and CFOL signature of
+-- the data part after translation to PCFOL and CFOL to pass along to the term
+-- and formula translations. We need the vsm to pass it on to the term
+-- translation.
 transEvent :: CspCASLSign -> CASL_Sign.Sign () () ->
               CASL_Sign.Sign () () -> VSM ->
               EVENT -> PROCESS -> Term
@@ -313,18 +311,18 @@ transEvent ccSign pcfolSign cfolSign vsm event p =
              ++ "Expected a FQEvent not a non-FQEvent"
 
 -- | Translate a variable into CspProver (Isabelle). Notice
---   that this does not work on fully qualified CASL variables (TERMs)
---   but instead on VAR.
+-- that this does not work on fully qualified CASL variables (TERMs)
+-- but instead on VAR.
 transVar :: CASL_AS_Basic_CASL.VAR -> Term
 transVar v = conDouble $ tokStr v
 
 -- | Translate a sort into CspProver (Isabelle) depending on the target of the
--- | sort.
+-- sort.
 transSort :: SortTarget -> CASL_AS_Basic_CASL.SORT -> Term
 transSort target s =
     let sBar = conDouble $ mkSortBarString s
     in case target of
-         NormalComm -> binImageOp (conDouble flatS) $ sBar
+         NormalComm -> binImageOp (conDouble flatS) sBar
          ChanComm t -> binImageOp
                        (conDouble $ mkSortBarAbsString t) sBar
 
@@ -336,16 +334,16 @@ transChanName chanName =
 -- transRenaming :: RENAMING -> Term
 -- transRenaming _ = conDouble "RenamingNotDoneYet"
 
--------------------------------------------------------------------------
+-- -----------------------------------------------------------------------
 -- Functions the translations of CASL terms and formulae               --
--------------------------------------------------------------------------
+-- -----------------------------------------------------------------------
 
 -- | Produce a record that is used to translate CASL terms and formulae to
---   Isabelle Terms. This record is the same as the CFOL2IsabelleHOL.transRecord
---   but deals with variables by applying a case on the origin of the
---   variable. The Isabelle terms produced when this record is used are always
---   of basic types i.e., can be used as parameters for function in the data
---   encoding.
+-- Isabelle Terms. This record is the same as the CFOL2IsabelleHOL.transRecord
+-- but deals with variables by applying a case on the origin of the
+-- variable. The Isabelle terms produced when this record is used are always
+-- of basic types i.e., can be used as parameters for function in the data
+-- encoding.
 cspCaslTransRecord :: CASL_Sign.Sign f e -> Set.Set String ->
                       CFOL2IsabelleHOL.FormulaTranslator f e ->
                       Set.Set String -> VSM -> Record f Term Term
@@ -369,11 +367,11 @@ cspCaslTransRecord caslSign tyToks trForm strs vsm =
     }
 
 -- | Translate a CASL term into an Isabelle term. The result of this function
--- | depends on the term target. a target of TermPrefix indicates we must land
--- | in the alphabet and have a flat constructor wrapped around the
--- | translation. A ChanSendOrParam indicates that the translated term will be
--- | used in a channel send operator or as a parameter to a named process. The
--- | translation also changes depending on the source of the variables used.
+-- depends on the term target. a target of TermPrefix indicates we must land
+-- in the alphabet and have a flat constructor wrapped around the
+-- translation. A ChanSendOrParam indicates that the translated term will be
+-- used in a channel send operator or as a parameter to a named process. The
+-- translation also changes depending on the source of the variables used.
 transCASLTerm :: CASL_Sign.Sign () () -> CASL_Sign.Sign () () ->
                  CASL_Sign.Sign () () -> VSM -> TermTarget ->
                  CASL_AS_Basic_CASL.TERM () -> Term
@@ -424,16 +422,16 @@ transCASLTerm caslSign pcfolSign cfolSign vsm termTarget caslTerm =
                                                          vsm caslTerm
               in case termTarget of
                    TermPrefix -> flatOp isaCaslTerm
-                   ChanSendOrParam t -> (mkSortBarAbsOp t) isaCaslTerm
+                   ChanSendOrParam t -> mkSortBarAbsOp t isaCaslTerm
 
 -- | Translate a CASL Term to an Isabelle Term using the exact translation as is
---   done in the comorphism composition
---   CASL2PCFOL;defaultCASL2SubCFOL;CFOL2IsabelleHOL with out customised
---   variable translation (see cspCaslTransRecord for where that customisation
---   is define). The resulting Isabelle term of this function will be of the
---   underlying sort types, thus can be used as parameters of CASL functions in
---   the data part. We need the PCFOL and CFOL signature of the data part after
---   translation to CFOL to translate the formula.
+-- done in the comorphism composition
+-- CASL2PCFOL;defaultCASL2SubCFOL;CFOL2IsabelleHOL with out customised
+-- variable translation (see cspCaslTransRecord for where that customisation
+-- is define). The resulting Isabelle term of this function will be of the
+-- underlying sort types, thus can be used as parameters of CASL functions in
+-- the data part. We need the PCFOL and CFOL signature of the data part after
+-- translation to CFOL to translate the formula.
 transCaslTermComputation :: CASL_Sign.Sign () () -> CASL_Sign.Sign () () ->
                             VSM -> CASL_AS_Basic_CASL.TERM () -> Term
 transCaslTermComputation pcfolSign cfolSign vsm term =
@@ -457,15 +455,15 @@ transCaslTermComputation pcfolSign cfolSign vsm term =
         strs = CFOL2IsabelleHOL.getAssumpsToks cfolSign
         toIsabelle = foldTerm $ cspCaslTransRecord cfolSign
                      tyToks trForm strs vsm
-        --CFOL2IsabelleHOL.transFORMULA cfolSign tyToks trForm strs
-    in toIsabelle $ rmPartial $ termNoSub
+        -- CFOL2IsabelleHOL.transFORMULA cfolSign tyToks trForm strs
+    in toIsabelle $ rmPartial termNoSub
 
 -- | Translate a fully qualified CASL formula into an Isabelle Term using the
---   exact translation as is done in the comorphism composition
---   CASL2PCFOL;defaultCASL2SubCFOL;CFOL2IsabelleHOL except translate CASL terms
---   using the CASL term translation for computation, where the terms will be
---   translated such that they are of the underlying sort types and thus can be
---   used as operands to the formula operators.
+-- exact translation as is done in the comorphism composition
+-- CASL2PCFOL;defaultCASL2SubCFOL;CFOL2IsabelleHOL except translate CASL terms
+-- using the CASL term translation for computation, where the terms will be
+-- translated such that they are of the underlying sort types and thus can be
+-- used as operands to the formula operators.
 transFormula :: CASL_Sign.Sign () () -> CASL_Sign.Sign () () -> VSM ->
                 CASL_AS_Basic_CASL.FORMULA () -> Term
 transFormula pcfolSign cfolSign vsm formula =
@@ -489,5 +487,5 @@ transFormula pcfolSign cfolSign vsm formula =
         strs = CFOL2IsabelleHOL.getAssumpsToks cfolSign
         toIsabelle = foldFormula $ cspCaslTransRecord cfolSign
                      tyToks trForm strs vsm
-        --CFOL2IsabelleHOL.transFORMULA cfolSign tyToks trForm strs
-    in toIsabelle $ rmPartial $ formulaNoSub
+        -- CFOL2IsabelleHOL.transFORMULA cfolSign tyToks trForm strs
+    in toIsabelle $ rmPartial formulaNoSub
