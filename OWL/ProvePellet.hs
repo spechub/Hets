@@ -40,7 +40,7 @@ import Data.Char (isDigit)
 import Data.List (isPrefixOf)
 import Data.Maybe
 import Data.Time (timeToTimeOfDay)
-import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
+import Data.Time.Clock (secondsToDiffTime)
 
 import System.IO
 import System.Directory
@@ -165,10 +165,11 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
           , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ prob
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
         tLim = readMaybe tl
-    res <- runTimedPellet "consistency" (basename thName) prob tLim
+    res <- runTimedPellet "consistency" (basename thName) prob Nothing
+      $ fromMaybe (-1) $ readMaybe tl
     return $ case res of
       Nothing -> pStatus ["Timeout after " ++ tl ++ " seconds"]
-                 (fromMaybe 0 tLim)
+                 (fromMaybe (0 :: Int) tLim)
       Just (progTh, outp, eOut) -> if progTh then
           let (_, exCode, out, tUsed) = analyseOutput outp eOut
           in (pStatus out tUsed) { ccResult = exCode }
@@ -177,31 +178,40 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
 runPelletAux :: String -- ^ pellet subcommand
   -> FilePath  -- ^ basename of problem file without extension
   -> String    -- ^ problem content
+  -> Maybe String -- ^ entail content
   -> IO (Bool, String, String) -- ^ (success, stdout, stderr)
-runPelletAux opts tmpFileName prob = do
+runPelletAux opts tmpFileName prob entail = do
   (progTh, pPath) <- check4Pellet
   if progTh then withinDirectory pPath $ do
       tempDir <- getTemporaryDirectory
       let tmpFile = tmpFileName ++ ".owl"
       (timeTmpFile, hdl) <- openTempFile tempDir tmpFile
+      let entFile = timeTmpFile ++ ".entail.owl"
+          doEntail = isJust entail
+      case entail of
+        Just c -> writeFile entFile c
+        Nothing -> return ()
       hPutStr hdl prob
       hFlush hdl
       hClose hdl
       (_, outS, errS) <-
         readProcessWithExitCode "sh"
-          ("pellet.sh" : words opts ++ ["file://" ++ timeTmpFile]) ""
+          ("pellet.sh"
+           : (if doEntail then ["entail", "-e", entFile] else words opts)
+           ++ ["file://" ++ timeTmpFile]) ""
       removeFile timeTmpFile
+      when doEntail $ removeFile entFile
       return (True, outS, errS)
     else return (False, "", "")
 
 runTimedPellet :: String -- ^ pellet subcommand
   -> FilePath  -- ^ basename of problem file without extension
   -> String    -- ^ problem content
-  -> Maybe Int -- ^ time limit in seconds
+  -> Maybe String -- ^ entail content
+  -> Int    -- ^ time limit in seconds
   -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
-runTimedPellet opts tmpFileName prob m = do
-  timeout (maybe maxBound (1000000 *) m)
-       $ runPelletAux opts tmpFileName prob
+runTimedPellet opts tmpFileName prob entail secs =
+  timeout (1000000 * secs) $ runPelletAux opts tmpFileName prob entail
 
 check4Pellet :: IO (Bool, FilePath)
 check4Pellet = do
@@ -222,7 +232,6 @@ runPellet :: PelletProverState
 runPellet sps cfg savePellet thName nGoal = do
   let simpleOptions = extraOpts cfg
       tLimit = fromMaybe 800 $ timeLimit cfg
-      extraOptions = "entail -e "
       goalSuffix = '_' : senAttr nGoal
       tmpFileName = basename thName ++ goalSuffix
       tScript = TacticScript $ show ATPTacticScript
@@ -231,29 +240,18 @@ runPellet sps cfg savePellet thName nGoal = do
       defaultProofStatus out =
         (openProofStatus (senAttr nGoal) pelletS $ ProofTree out)
         { tacticScript = tScript }
-  (progTh, pPath) <- check4Pellet
-  if progTh then do
-      let prob = showOWLProblemS sps
-          entail = showOWLProblemS
+      prob = showOWLProblemS sps
+      entail = showOWLProblemS
                      sps { initialState = [ nGoal {isAxiom = True } ] }
-      when savePellet $ do
+  when savePellet $ do
         writeFile (tmpFileName ++ ".owl") prob
         writeFile (tmpFileName ++ ".entail.owl") entail
-      t <- getCurrentTime
-      tempDir <- getTemporaryDirectory
-      let timeTmpFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
-                                ++ "-" ++ show (utctDayTime t) ++ ".owl"
-          entailsFile = tempDir ++ "/" ++ tmpFileName ++ show (utctDay t)
-                          ++ "-" ++ show (utctDayTime t) ++ ".entails.owl"
-      writeFile timeTmpFile prob
-      writeFile entailsFile entail
-      let command = "sh pellet.sh " ++ extraOptions ++ " " ++ entailsFile
-                      ++ " file://" ++ timeTmpFile
-      setCurrentDirectory pPath
-      (mExit, outh, errh) <- timeoutCommand tLimit command
-      ((err, retval), output, tUsed) <- if isJust mExit then do
-        output <- hGetContents outh
-        eOut <- hGetContents errh
+  res <- runTimedPellet "" tmpFileName prob (Just entail) tLimit
+  ((err, retval), output, tUsed) <- return $ case res of
+    Nothing ->
+      ((ATPTLimitExceeded, defaultProofStatus "Timeout"), [], tLimit)
+    Just (progTh, output, eOut) ->
+      if progTh then
         let (atpr, exCode, outp, tUsed) = analyseOutput output eOut
             openStat = defaultProofStatus $ unlines outp
             disProvedStatus = openStat
@@ -267,19 +265,15 @@ runPellet sps cfg savePellet thName nGoal = do
               Just True -> provedStatus
               Just False -> disProvedStatus
               _ -> openStat
-        return ((atpr, proofStat), outp, tUsed)
-        else return
-          ((ATPTLimitExceeded, defaultProofStatus ""), [], tLimit)
-      removeFile timeTmpFile
-      removeFile entailsFile
-      return (err, cfg { proofStatus = retval
-                       , resultOutput = output
-                       , timeUsed =
-                           timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
-                       })
-    else return
-      ( ATPError "Could not find pellet prover. Is $PELLET_PATH set?"
-      , emptyConfig pelletS (senAttr nGoal) emptyProofTree)
+        in ((atpr, proofStat), outp, tUsed)
+      else
+       ((ATPError "Could not find pellet prover. Is $PELLET_PATH set?"
+       , defaultProofStatus ""), [], 0)
+  return (err, cfg
+    { proofStatus = retval
+    , resultOutput = output
+    , timeUsed = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
+    })
 
 analyseOutput :: String -> String -> (ATPRetval, Maybe Bool, [String], Int)
 analyseOutput err outp =
