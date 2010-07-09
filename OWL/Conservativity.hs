@@ -67,15 +67,12 @@ runLocalityChecker jar ct onto sig = do
   (progTh, toolPath) <- check4HetsOWLjar jar
   if progTh then withinDirectory toolPath $ do
       tempDir <- getTemporaryDirectory
-      (sigFile, hdl) <- openTempFile tempDir "ConservativityCheck.sig.owl"
+      sigFile <- writeTempFile sig tempDir "ConservativityCheck.sig.owl"
       let tLimit = 800
           ontoFile = sigFile ++ ".onto.owl"
           command = "java -jar " ++ jar ++ " file://" ++ ontoFile
                      ++ " file://" ++ sigFile ++ " " ++ ct
       writeFile ontoFile onto
-      hPutStr hdl sig
-      hFlush hdl
-      hClose hdl
       (mExit, outh, _) <- timeoutCommand tLimit command
       removeFile ontoFile
       removeFile sigFile

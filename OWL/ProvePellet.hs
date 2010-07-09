@@ -194,15 +194,12 @@ runPelletAux opts tmpFileName prob entail = do
   if progTh then withinDirectory pPath $ do
       tempDir <- getTemporaryDirectory
       let tmpFile = tmpFileName ++ ".owl"
-      (timeTmpFile, hdl) <- openTempFile tempDir tmpFile
+      timeTmpFile <- writeTempFile prob tempDir tmpFile
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
-      hPutStr hdl prob
-      hFlush hdl
-      hClose hdl
       (_, outS, errS) <-
         readProcessWithExitCode "java"
           ("-Xmx512m" : "-jar" : pelletJar

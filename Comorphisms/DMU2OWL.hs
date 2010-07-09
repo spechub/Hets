@@ -70,11 +70,8 @@ runOntoDMU :: String -> IO String
 runOntoDMU str = if null str then return "" else do
   tmpDir <- getTemporaryDirectory
   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
-  (tmpFile, hndl) <- openTempFile tmpDir "ontoDMU.xml"
+  tmpFile <- writeTempFile str tmpDir "ontoDMU.xml"
   let outFile = tmpFile ++ ".het"
-  hPutStr hndl str
-  hFlush hndl
-  hClose hndl
   system $ "java -jar " ++ ontoDMUpath ++ " -f " ++ tmpFile
     ++ " -o " ++ outFile
   readFile outFile

@@ -44,6 +44,7 @@ module Common.Utils
   , filterMapWithList
   , timeoutCommand
   , withinDirectory
+  , writeTempFile
   ) where
 
 import Data.Char
@@ -374,3 +375,15 @@ withinDirectory p a = do
   r <- a
   setCurrentDirectory d
   return r
+
+-- | calls openTempFile but directly writes content and closes the file
+writeTempFile :: String -- ^ Content
+  -> FilePath -- ^ Directory in which to create the file
+  -> String   -- ^ File name template
+  -> IO FilePath -- ^ create file
+writeTempFile str tmpDir file = do
+  (tmpFile, hdl) <- openTempFile tmpDir file
+  hPutStr hdl str
+  hFlush hdl
+  hClose hdl
+  return tmpFile

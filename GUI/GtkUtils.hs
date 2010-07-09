@@ -103,7 +103,7 @@ import Data.Char (toLower)
 import System.Directory ( removeFile, getTemporaryDirectory, doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
-import System.IO (hFlush, hClose, hPutStr, openTempFile)
+import Common.Utils (writeTempFile)
 
 import Logic.Prover
 
@@ -113,11 +113,8 @@ import Interfaces.GenericATPState
 getGladeXML :: (String, String) -> IO GladeXML
 getGladeXML (name, xmlstr) = do
   temp <- getTemporaryDirectory
-  (filename, handle) <- openTempFile temp name
-  hPutStr handle xmlstr
-  hFlush handle
+  filename <- writeTempFile xmlstr temp name
   mxml <- xmlNew filename
-  hClose handle
   removeFile filename
   case mxml of
     Just xml -> return xml
