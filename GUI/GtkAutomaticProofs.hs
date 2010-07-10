@@ -53,6 +53,11 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
+
+
+-- TODO comment code !!!!!
+
+
 -- | Data structure for saving the user-selected prover and comorphism
 data Finder = Finder { fName      :: String
                      , finder     :: G_prover
@@ -83,15 +88,21 @@ toGtkGoals fn = case results fn of
 
 -- TODO add prefix / display for partially proven goals ( like [1/3] .. )
 
+goalsToPrefix :: [Goal] -> String
+goalsToPrefix gs = let proven = length $ filter (\ g -> gStatus g == GProved) gs
+                   in "[" ++ show proven ++ "/" ++ show (length gs) ++ "] "
+
 showStatus :: FNode -> String
 showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
                  (gStatus g) ++ show (gName g)) $ toGtkGoals fn
 
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show fn = let gs = gStatus $ minimum $ toGtkGoals fn in
-    "<span color=\"" ++ GtkUtils.statusToColor gs ++ "\">"
-     ++ GtkUtils.statusToPrefix gs ++ name fn ++ "</span>"
+  show fn = let gs = toGtkGoals fn 
+                gmin = gStatus $ minimum gs
+            in
+    "<span color=\"" ++ GtkUtils.statusToColor gmin ++ "\">"
+     ++ goalsToPrefix gs ++ name fn ++ "</span>"
 
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
@@ -173,7 +184,7 @@ showProverWindow res ln le = postGUIAsync $ do
 
   toggleButtonSetActive cbInclThms False
 
--- TODO select all nodes as initial status
+-- TODO select all nodes as initial status (or all those that are not fully proved)
 
 -- TODO select SPASS Prover if possible
 
@@ -303,15 +314,10 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
            res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
-
--- TODO also write Timeouts and other Open Goals back into new G_theory
--- maybe modify the propagateProofs method so that non-proved are not filtered
-
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row 
                fn { results = propagateProofs (results fn) gt }
              Nothing -> return ()
-
            return $ count + 1) 0 nodes
 
 autoProofAtNode :: -- use theorems is subsequent proofs
