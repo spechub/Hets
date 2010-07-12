@@ -30,6 +30,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.SFKT
+import Common.Id
 import Common.Utils (nubOrd)
 
 import qualified Data.Map as Map
@@ -46,7 +47,8 @@ insertColimitInGraph le dgraph = do
   let diag = makeDiagram dgraph (nodesDG dgraph) $ labEdgesDG dgraph
   (gth, morFun) <- gWeaklyAmalgamableCocone diag
   let -- a better node name, gn_Signature_Colimit?
-      newNode = newInfoNodeLab emptyNodeName (newNodeInfo DGProof) gth
+      newNode = newInfoNodeLab (makeName $ genToken "Colimit")
+                               (newNodeInfo DGProof) gth
       newNodeNr = getNewNodeDG dgraph
       edgeList = map (\n -> (n, newNodeNr, globDefLink
                       (morFun Map.! n) SeeTarget))
