@@ -219,7 +219,7 @@ mkNotDefBotAxiomName = mkAxNameSingle "notDefBottom"
 
 -- | Make the name for the totality axiom
 mkTotalityAxiomName :: OP_NAME -> String
-mkTotalityAxiomName f = "ga_totality_" ++ show f
+mkTotalityAxiomName f = "ga_strictness_" ++ show f
 
 generateAxioms :: Bool -> Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
 generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
