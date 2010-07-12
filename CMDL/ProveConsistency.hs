@@ -240,7 +240,6 @@ checkNode sTxt ndpf ndnm mp mcm mSt =
           do
           let st' = st { proverRunning = True}
           -- store initial input of the prover
-          print sTxt
           swapMVar mSt $ Just $ Element st' nd
           cstat <- fn (theoryName st)
                       (P.TacticScript $ show $ tsTimeLimit sTxt)
