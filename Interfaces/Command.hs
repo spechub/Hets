@@ -45,6 +45,7 @@ data GlobCmd =
   | Hiding
   | Heterogeneity
   | ProveCurrent  -- CMDL prover activation
+  | CheckConsistencyCurrent
   | DropTranslation -- stop composing comorphisms to previous ones
     deriving (Eq, Ord, Enum, Bounded)
 
@@ -77,6 +78,7 @@ menuTextGlobCmd cmd = case cmd of
   Freeness -> "Freeness"
   Heterogeneity -> "Heterogeneity"
   ProveCurrent -> "Prove"
+  CheckConsistencyCurrent -> "Check consistency"
   DropTranslation -> "Drop-Translations"
 
 -- | even some short names for the command line interface
@@ -308,7 +310,7 @@ showCmd c = let cn = cmdNameStr c in case c of
   SetAxioms as -> unwords $ cn : as
   CommentCmd s -> cn ++ s
   GroupCmd l -> intercalate "\n" $ map showCmd l
-  InspectCmd _ t -> cn  ++ " " ++ fromMaybe "" t
+  InspectCmd _ t -> cn ++ " " ++ fromMaybe "" t
   ChangeCmd _ t -> cmdNameStr c ++ " " ++ t
   _ -> cn
 
@@ -334,12 +336,12 @@ commandList =
   ++ map mkSelectCmd selectCmdList
   ++ [TimeLimit 0, SetAxioms []]
   ++ map IncludeProvenTheorems [False, True]
-  ++ map (\ s -> InspectCmd s (Just "")) inspectCmdList
-  ++ map (\c -> ChangeCmd c "") changeCmdList
+  ++ map (flip InspectCmd $ Just "") inspectCmdList
+  ++ map (flip ChangeCmd "") changeCmdList
 
 {- unsafe commands are needed to
 delete or add
 Links, Nodes, Symbols from Signatures, and sentences
 
 A sequence of such unsafe operations should be checked by hets, if they will
-result in a consistent development graph, possibly indicating why not.  -}
+result in a consistent development graph, possibly indicating why not. -}

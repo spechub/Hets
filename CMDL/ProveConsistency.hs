@@ -20,7 +20,7 @@ module CMDL.ProveConsistency
 
 
 import Interfaces.DataTypes
-import Interfaces.GenericATPState(ATPTacticScript)
+import Interfaces.GenericATPState(ATPTacticScript(..))
 import Interfaces.Utils (updateNodeProof)
 
 import CMDL.DataTypes(CmdlState(intState))
@@ -224,7 +224,7 @@ checkNode sTxt ndpf ndnm mp mcm mSt =
                do
                 p_cm'@(prv',acm'@(Comorphism cid)) <-
                           lookupKnownConsChecker st
-                putStrLn ("Analyzing node " ++ ndnm)
+                putStrLn ("Analyzing node for consistency " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
                 putStrLn ("Using consistency checker " ++ getPName prv')
                 return $ case prepareForConsChecking st p_cm' of
@@ -240,11 +240,16 @@ checkNode sTxt ndpf ndnm mp mcm mSt =
           do
           let st' = st { proverRunning = True}
           -- store initial input of the prover
+          print sTxt
           swapMVar mSt $ Just $ Element st' nd
-          fn (theoryName st)
-                      (P.TacticScript $ show sTxt)
+          cstat <- fn (theoryName st)
+                      (P.TacticScript $ show $ tsTimeLimit sTxt)
                       th []
           swapMVar mSt $ Just $ Element st nd
+          putStrLn $ case P.ccResult cstat of
+            Nothing -> "Timeout"
+            Just b -> "node " ++ ndnm ++ " is "
+              ++ (if b then "" else "in") ++ "consistent"
           return ""
 
 -- | Given a proofstatus the function does the actual call of the

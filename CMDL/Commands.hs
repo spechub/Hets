@@ -26,7 +26,7 @@ import CMDL.DgCommands (cDgSelect, cUse, cExpand, cAddView, commandDgAll,
                         wrapResultDgAll)
 import CMDL.ProveConsistency (cConsChecker, cProver)
 import CMDL.UndoRedo (cRedo, cUndo)
-import CMDL.ConsCommands (cConservCheck)
+import CMDL.ConsCommands (cConservCheck, cConsistCheck)
 
 -- | Generates a command description given all parameters
 genCmd :: Command -> CmdlCmdPriority ->
@@ -106,6 +106,7 @@ getCommands =
   , genSelectCmd Prover cProver
   , genSelectCmd Goal $ cGoalsAxmGeneral ActionSet ChangeGoals
   , proveAll
+  , genGlobCmd CheckConsistencyCurrent cConsistCheck
   , genGlobCmd DropTranslation cDropTranslations
   , genSelectCmd ConsistencyChecker cConsChecker
   , genSelectCmd ConservativityChecker cConservCheck
