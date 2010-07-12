@@ -52,5 +52,5 @@ date
 updateOMDoc
 
 cd /home/linux-bkb/twelf/twelf-mod
-svn up
+svn up --force
 sml build/twelf-server-smlnj.sml
