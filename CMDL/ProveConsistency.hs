@@ -240,15 +240,16 @@ checkNode sTxt ndpf ndnm mp mcm mSt =
           do
           let st' = st { proverRunning = True}
           -- store initial input of the prover
+          let tLimit = show $ tsTimeLimit sTxt
           swapMVar mSt $ Just $ Element st' nd
           cstat <- fn (theoryName st)
-                      (P.TacticScript $ show $ tsTimeLimit sTxt)
+                      (P.TacticScript tLimit)
                       th []
           swapMVar mSt $ Just $ Element st nd
           putStrLn $ case P.ccResult cstat of
-            Nothing -> "Timeout"
+            Nothing -> "Timeout after " ++ tLimit ++ "seconds."
             Just b -> "node " ++ ndnm ++ " is "
-              ++ (if b then "" else "in") ++ "consistent"
+              ++ (if b then "" else "in") ++ "consistent."
           return ""
 
 -- | Given a proofstatus the function does the actual call of the
