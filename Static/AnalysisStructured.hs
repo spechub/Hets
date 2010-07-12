@@ -41,6 +41,7 @@ import Static.DevGraph
 import Static.GTheory
 
 import Syntax.AS_Structured
+import Syntax.Print_AS_Structured ()
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.Consistency
@@ -184,9 +185,9 @@ anaFreeOrCofreeSpec addSyms lg opts dg nsig name dglType asp pos =
             $ item asp
       let (ns@(NodeSig node _), dg2) =
               insGSig dg' name (DGFreeOrCofree dglType) gsigma
-      nsigma <- return $ case nsig of
-           EmptyNode cl -> emptyG_sign cl
-           JustNode nds -> getSig nds
+          nsigma = case nsig of
+            EmptyNode cl -> emptyG_sign cl
+            JustNode nds -> getSig nds
       incl <- ginclusion lg nsigma gsigma
       return (replaceAnnoted sp' asp, ns,
               insLink dg2 incl (FreeOrCofreeDefLink dglType nsig)
@@ -250,7 +251,7 @@ anaSpecAux conser addSyms lg dg nsig name opts sp = case sp of
       let (ns@(NodeSig node _), dg'') =
             insGSig dg' name (DGTranslation $ Renamed ren) $ cod mor
            -- ??? too simplistic for non-comorphism inter-logic translations
-      let dg3 =  insLink dg'' mor globalDef SeeTarget n' node
+      let dg3 = insLink dg'' mor globalDef SeeTarget n' node
       return (Translation (replaceAnnoted sp1' asp) ren, ns, dg3)
   Reduction asp restr ->
    do let sp1 = item asp
@@ -619,7 +620,7 @@ anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
           -- domain of rmap should be checked to match symbols from sys' ???
       mor1 <- ext_generated_sign lid1 (sys `Set.union` sys'') sigma1
       let extsig1 = makeExtSign lid1 $ dom mor1
-      mor2 <- ext_induced_from_morphism lid1 rmap $ extsig1
+      mor2 <- ext_induced_from_morphism lid1 rmap extsig1
       mor1' <- coerceMorphism lid1 (targetLogic cid) "" mor1
       extsig1' <- coerceSign lid1 (sourceLogic cid) "" extsig1
       return (GMorphism cid extsig1' ind0 mor1' startMorId
@@ -886,11 +887,12 @@ homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
 homogenizeGM (Logic lid) gsis =
   foldM homogenize1 (G_symb_map_items_list lid []) gsis
   where
-  homogenize1 itl2@(G_symb_map_items_list lid2 sis) sm = case sm of
+  homogenize1 (G_symb_map_items_list lid2 sis) sm = case sm of
     Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1) -> do
          sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
-    _ -> return itl2
+    Syntax.AS_Structured.G_logic_translation lc ->
+         fail $ "translation not supported by " ++ showDoc lc ""
 
 -- | check if structured analysis should be performed
 isStructured :: HetcatsOpts -> Bool
