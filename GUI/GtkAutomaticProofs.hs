@@ -86,8 +86,6 @@ toGtkGoals fn = case results fn of
                                        (maximum $ map snd l)) s : t
                  ) [] $ goals fn
 
--- TODO add prefix / display for partially proven goals ( like [1/3] .. )
-
 goalsToPrefix :: [Goal] -> String
 goalsToPrefix gs = let proven = length $ filter (\ g -> gStatus g == GProved) gs
                    in "[" ++ show proven ++ "/" ++ show (length gs) ++ "] "
@@ -114,7 +112,7 @@ instance Ord FNode where
                  c  -> c
 
 -- | gets all Nodes from the DGraph as input and creates a list of FNodes only
--- | containing Nodes to be considered.
+-- containing Nodes to be considered.
 initFNodes :: [LNode DGNodeLab] -> [FNode]
 initFNodes = foldr (\ n@(_,l) t -> case globalTheory l of
                       Nothing -> t
@@ -131,6 +129,11 @@ unchecked fn = case results fn of
                  G_theory _ _ _ sens _ ->
                    any null $ map thmStatus $ OMap.elems $ OMap.filter (not . isAxiom) sens
 
+timedout :: FNode -> Bool
+timedout fn = any (\ a -> gStatus a == GTimeout) $ toGtkGoals fn
+
+allProved :: FNode -> Bool
+allProved fn = all (\ a -> gStatus a == GProved) $ toGtkGoals fn
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
@@ -183,10 +186,6 @@ showProverWindow res ln le = postGUIAsync $ do
         widgetSetSensitive btnCheck b
 
   toggleButtonSetActive cbInclThms False
-
--- TODO select all nodes as initial status (or all those that are not fully proved)
-
--- TODO select SPASS Prover if possible
 
   widgetSetSensitive btnStop False
   widgetSetSensitive btnCheck False
@@ -241,7 +240,7 @@ showProverWindow res ln le = postGUIAsync $ do
 
   onClicked btnNodesUnchecked
     $ selectWith unchecked upd
-  onClicked btnNodesTimeout $ selectWith (\n -> any ((== GTimeout) . gStatus) (toGtkGoals n)) upd
+  onClicked btnNodesTimeout $ selectWith timedout upd
 
   onClicked btnResults $ showModelView mView "Models" listNodes []
   onClicked btnClose $ widgetDestroy window
@@ -289,6 +288,11 @@ showProverWindow res ln le = postGUIAsync $ do
                               dg2 = togglePending dg1 $ changedPendingEdges dg1
                           in dg2 ) dg nodes'
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
+
+-- | setting up the selected items at startup
+  selectWith (not . allProved) upd
+
+-- TODO select SPASS Prover if possible
 
   widgetShow window
 
