@@ -18,9 +18,10 @@ module CMDL.ProveConsistency
        , sigIntHandler
        ) where
 
-
+import Interfaces.Command
 import Interfaces.DataTypes
 import Interfaces.GenericATPState(ATPTacticScript(..))
+import Interfaces.History
 import Interfaces.Utils (updateNodeProof)
 
 import CMDL.DataTypes(CmdlState(intState))
@@ -33,12 +34,14 @@ import Proofs.AbstractState
 
 import Static.DevGraph
 import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
+import Static.History
 
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Logic
 import qualified Logic.Prover as P
 
+import Common.Consistency
 import Common.LibName(LibName)
 import Common.Result(Result(Result))
 import Common.Utils(trim)
@@ -201,9 +204,11 @@ checkNode :: -- Tactic script
               -- selected
               Maybe AnyComorphism ->
               MVar (Maybe Int_NodeInfo)  ->
+              MVar IntState ->
+              LibName ->
               -- returns an error message if anything happens
-               IO String
-checkNode sTxt ndpf ndnm mp mcm mSt =
+              IO String
+checkNode sTxt ndpf ndnm mp mcm mSt miSt ln =
   case ndpf of
     Element pf_st nd ->
      do
@@ -250,7 +255,27 @@ checkNode sTxt ndpf ndnm mp mcm mSt =
             Nothing -> "Timeout after " ++ tLimit ++ "seconds."
             Just b -> "node " ++ ndnm ++ " is "
               ++ (if b then "" else "in") ++ "consistent."
-          return ""
+          ist <- readMVar miSt
+          case i_state ist of
+            Nothing -> return "no library"
+            Just iist -> case P.ccResult cstat of
+             Nothing -> return ""
+             Just b -> do
+              let le = i_libEnv iist
+                  dg = lookupDGraph ln le
+                  nl = labDG dg nd
+                  nn = getDGNodeName nl
+                  newDg0 = changeDGH dg $ SetNodeLab nl (nd,
+                    markNodeConsistency
+                    (if b then Cons else Inconsistent) "" nl)
+                  newDg = groupHistory dg (DGRule "Consistency check") newDg0
+                  nst = add2history
+                    (CommentCmd $ "consistency check done on " ++ nn ++ "\n")
+                    ist $ [DgCommandChange ln]
+                  nwst = nst { i_state =
+                           Just iist { i_libEnv = Map.insert ln newDg le } }
+              swapMVar miSt nwst
+              return ""
 
 -- | Given a proofstatus the function does the actual call of the
 -- prover for proving the node or check consistency
@@ -442,12 +467,14 @@ doLoop miSt mThr mSt mOut ls checkCons = do
                          Just ll -> getDGNodeName ll
                  putStrLn ("Analyzing node " ++ nodeName x)
                  err <- if checkCons
-                           then checkNode  (script pS)
-                                           x
-                                           (nodeName x)
-                                           (consChecker pS)
-                                           (cComorphism pS)
-                                           mSt
+                           then checkNode (script pS)
+                                          x
+                                          (nodeName x)
+                                          (consChecker pS)
+                                          (cComorphism pS)
+                                          mSt
+                                          miSt
+                                          (i_ln pS)
                            else proveNode (useTheorems pS)
                                           (save2file pS)
                                           (script pS)
