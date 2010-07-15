@@ -22,28 +22,24 @@ import Static.GTheory
 
 import Taxonomy.MMiSSOntology
 import Taxonomy.MMiSSOntologyGraph
-import GUI.AbstractGraphView (OurGraph)
+import GUI.Utils
 
 import Common.Taxonomy
 import Common.Result as Res
 import Common.ExtSign
 
-import Driver.Options
-
 displayConceptGraph :: String -> G_theory -> IO ()
-displayConceptGraph s th = do displayGraph KConcept s th
-                              return ()
-    -- putStrLn "display of Concept Graph not yet implemented"
+displayConceptGraph = displayGraph KConcept
 
 displaySubsortGraph :: String -> G_theory -> IO ()
-displaySubsortGraph s th = do displayGraph KSubsort s th
-                              return ()
+displaySubsortGraph = displayGraph KSubsort
 
-displayGraph :: TaxoGraphKind -> String -> G_theory -> IO (Maybe OurGraph)
+displayGraph :: TaxoGraphKind -> String -> G_theory -> IO ()
 displayGraph kind thyName (G_theory lid (ExtSign sign _) _ sens _) =
     case theory_to_taxonomy lid kind
                        (emptyMMiSSOntology thyName AutoInsert)
                        sign $ toNamedList sens of
-     Res.Result [] (Just taxo) -> fmap Just $ displayClassGraph taxo Nothing
-     Res.Result dias _ -> do showDiags defaultHetcatsOpts dias
-                             return Nothing
+     Res.Result [] (Just taxo) -> do
+       displayClassGraph taxo Nothing
+       return ()
+     Res.Result dias _ -> errorDialog "Error" $ showRelDiags 2 dias

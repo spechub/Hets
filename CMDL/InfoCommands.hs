@@ -35,7 +35,6 @@ module CMDL.InfoCommands
 
 
 #ifdef UNI_PACKAGE
-import Common.UniUtils
 import GUI.Taxonomy
 #endif
 
@@ -49,9 +48,9 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph (showLEdge)
 
-import Common.AS_Annotation (SenAttr(isAxiom))
+import Common.AS_Annotation (SenAttr (isAxiom))
 import Common.DocUtils (showDoc)
-import Common.Taxonomy (TaxoGraphKind(..))
+import Common.Taxonomy (TaxoGraphKind (..))
 import Common.Utils (trim)
 import qualified Common.OrderedMap as OMap
 
@@ -76,8 +75,8 @@ cShowDgGoals state
      let nodeGoals = nodeNames $ getAllGoalNodes state
 
          -- list of all nodes
-         ls  = getAllNodes dgState
-         lsGE= getAllGoalEdges state
+         ls = getAllNodes dgState
+         lsGE = getAllGoalEdges state
          -- list of all goal edge names
          edgeGoals = createEdgeNames ls lsGE
      -- print sorted version of the list
@@ -94,14 +93,14 @@ getGoalThS useTrans x state
       let nwth = case th of
                   G_theory x1 x2 x3 thSens x4 ->
                     G_theory x1 x2 x3
-                       (OMap.filter (\s-> not (isAxiom s) &&
+                       (OMap.filter (\ s -> not (isAxiom s) &&
                                           not (isProvenSenStatus s))
                        thSens) x4
       in [showDoc nwth "\n"]
 
---local function that computes the theory of a node
---that takes into consideration translated theories in
---the selection too and returns the theory as a string
+-- local function that computes the theory of a node
+-- that takes into consideration translated theories in
+-- the selection too and returns the theory as a string
 getThS :: CmdlUseTranslation -> Int -> CmdlState -> [String]
 getThS useTrans x state =
   case getTh useTrans x state of
@@ -111,7 +110,7 @@ getThS useTrans x state =
 getInfoFromNodes :: String -> ([Node] -> [String]) -> CmdlState -> IO CmdlState
 getInfoFromNodes input f state =
   case i_state $ intState state of
-    Nothing      -> return state
+    Nothing -> return state
     Just dgState -> let (errors, nodes) = getInputNodes input dgState
                      in return (if null nodes
                                   then genErrorMsg errors state
@@ -163,7 +162,7 @@ showEdgeInfo :: LEdge DGLinkLab -> String
 showEdgeInfo e@(_, _, l) = showLEdge e ++ "\n" ++ showDoc l ""
 
 -- show all information of selection
-cInfoCurrent::CmdlState -> IO CmdlState
+cInfoCurrent :: CmdlState -> IO CmdlState
 cInfoCurrent state =
   case i_state $ intState state of
     -- nothing selected
@@ -180,28 +179,28 @@ cInfo input state =
     -- error message
     Nothing -> return $ genErrorMsg "No library loaded" state
     Just dgS ->
-     let (nds,edg,nbEdg,errs) = decomposeIntoGoals input
+     let (nds, edg, nbEdg, errs) = decomposeIntoGoals input
          tmpErrs = prettyPrintErrList errs
-     in case (nds,edg,nbEdg) of
-          ([],[],[]) -> return $ genErrorMsg ("Nothing from the input "
-                                       ++"could be processed") state
-          (_,_,_) ->
+     in case (nds, edg, nbEdg) of
+          ([], [], []) -> return $ genErrorMsg ("Nothing from the input "
+                                       ++ "could be processed") state
+          (_, _, _) ->
             let lsNodes = getAllNodes dgS
                 lsEdges = getAllEdges dgS
-                (errs'',listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
-                (errs',listNodes) = obtainNodeList nds lsNodes
+                (errs'', listEdges) = obtainEdgeList edg nbEdg lsNodes lsEdges
+                (errs', listNodes) = obtainNodeList nds lsNodes
                 strsNode = map showNodeInfo listNodes
                 strsEdge = map showEdgeInfo listEdges
                 tmpErrs' = tmpErrs ++ prettyPrintErrList errs'
-                tmpErrs''= tmpErrs'++ prettyPrintErrList errs''
+                tmpErrs'' = tmpErrs' ++ prettyPrintErrList errs''
              in return $ genMessage tmpErrs''
                          (intercalate "\n\n" (strsNode ++ strsEdge)) state
 
-taxoShowGeneric:: TaxoGraphKind -> CmdlState -> [LNode DGNodeLab] -> IO()
+taxoShowGeneric :: TaxoGraphKind -> CmdlState -> [LNode DGNodeLab] -> IO ()
 #ifdef UNI_PACKAGE
 taxoShowGeneric kind state ls =
   case ls of
-    (nb,nlab):ll ->
+    (nb, nlab) : ll ->
      case i_state $ intState state of
       Nothing -> return ()
       Just _ ->
@@ -210,20 +209,9 @@ taxoShowGeneric kind state ls =
         Just th ->
          do
           -- display graph
-          graph <- displayGraph kind
+          displayGraph kind
                     (showName $ dgn_name nlab) th
-          case graph of
-           -- if successfully displayed sync the two threads
-           -- so that one does not loose control on the
-           -- interface while the graph is displayed
-           Just g ->
-            do sync (destroyed g)
-               -- go to next
-               taxoShowGeneric kind state ll
-           Nothing ->
-               -- graph was not displayed, then just
-               -- go to next
-               taxoShowGeneric kind state ll
+          taxoShowGeneric kind state ll
         -- theory couldn't be computed so just go next
         _ -> taxoShowGeneric kind state ll
     _ -> return ()
@@ -234,7 +222,7 @@ taxoShowGeneric _ _ _ = return ()
 cShowTaxoGraph :: TaxoGraphKind -> String -> CmdlState -> IO CmdlState
 cShowTaxoGraph kind input state =
   case i_state $ intState state of
-    Nothing  -> return state
+    Nothing -> return state
     Just dgState ->
       do
         let (errors, nodes) = getInputDGNodes input dgState
@@ -259,7 +247,7 @@ cNodeNumber input state =
        in return $ genMessage errors (intercalate "\n" ls) state
 
 -- print the name of all edges
-cEdges::CmdlState -> IO CmdlState
+cEdges :: CmdlState -> IO CmdlState
 cEdges state
  = case i_state $ intState state of
     Nothing -> return state
@@ -287,7 +275,7 @@ cHistory isUndo state = genMessage []
   ) state
 
 -- print the name of all nodes
-cNodes::CmdlState -> IO CmdlState
+cNodes :: CmdlState -> IO CmdlState
 cNodes state
  = case i_state $ intState state of
     -- no library loaded, so nothing to print
@@ -309,14 +297,14 @@ cHelp allcmds state = do
                        req = formatReq $ show $ cmdReq cm
                        descL = formatDesc $ describeCmd cmd
                        desc = head descL ++
-                              concatMap ((++) ('\n' : replicate descStart ' '))
+                              concatMap (('\n' : replicate descStart ' ') ++)
                               (tail descL)
                    putStrLn $ formatLine (name, req, desc)) allcmds
   return state
   where
     maxLineWidth = 80
-    maxNameLen  = maximum $ map (length . cmdNameStr  . cmdDescription) allcmds
-    maxParamLen = maximum $ map (length . formatReq   . show . cmdReq ) allcmds
+    maxNameLen = maximum $ map (length . cmdNameStr . cmdDescription) allcmds
+    maxParamLen = maximum $ map (length . formatReq . show . cmdReq ) allcmds
     descStart = maxNameLen + 1 + maxParamLen + 1
     descWidth = maxLineWidth - descStart
     formatReq :: String -> String
@@ -329,5 +317,5 @@ cHelp allcmds state = do
                        [""] . words
     formatLine :: (String, String, String) -> String
     formatLine (c1, c2, c3) =
-      c1 ++ replicate (maxNameLen  - length c1 + 1) ' ' ++
+      c1 ++ replicate (maxNameLen - length c1 + 1) ' ' ++
       c2 ++ replicate (maxParamLen - length c2 + 1) ' ' ++ c3
