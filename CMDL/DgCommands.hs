@@ -33,13 +33,13 @@ import CMDL.DataTypes
 import CMDL.DataTypesUtils
     (getAllNodes, add2hist, genErrorMsg, genMessage, getIdComorphism,
      getInputDGNodes)
-import CMDL.Utils(decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
+import CMDL.Utils (decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
 import Proofs.AbstractState (getProvers, initialState)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
 import Static.AnalysisLibrary
-import Static.GTheory (G_theory(G_theory), sublogicOfTh)
+import Static.GTheory (G_theory (G_theory), sublogicOfTh)
 import Static.DevGraph
 import Static.ComputeTheory (computeTheory)
 
@@ -51,12 +51,12 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Logic.Comorphism (hasModelExpansion)
 import Logic.Grothendieck (findComorphismPaths)
-import Logic.Prover (ProverKind(ProveCMDLautomatic))
+import Logic.Prover (ProverKind (ProveCMDLautomatic))
 
 import Syntax.AS_Structured
 import Syntax.AS_Library
 
-import Common.LibName (LibName(getLibId))
+import Common.LibName (LibName (getLibId))
 import Common.Utils (trim)
 import Common.Result
 import Common.ResultT
@@ -103,7 +103,7 @@ commandDg fn input state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
     Just ist -> do
      let (_, edg, nbEdg, errs) = decomposeIntoGoals input
-         tmpErrs =  prettyPrintErrList errs
+         tmpErrs = prettyPrintErrList errs
      case (edg, nbEdg) of
        ([], []) ->
          -- leave the internal state intact so that the interface can recover
@@ -117,13 +117,14 @@ commandDg fn input state = case i_state $ intState state of
         case listEdges of
          [] -> return $ genErrorMsg (tmpErrs' ++ "No edge in input string\n")
                               state
-         _  -> case fn (i_ln ist) listEdges (i_libEnv ist) of
+         _ -> case fn (i_ln ist) listEdges (i_libEnv ist) of
              Result _ (Just nwLibEnv) ->
                -- name added later !!
                  return $ add2hist [IStateChange $ Just ist]
                    $ genMessage tmpErrs' [] state
                      { intState = (intState state)
-                         { i_state=Just$ emptyIntIState nwLibEnv $ i_ln ist } }
+                         { i_state = Just $ emptyIntIState nwLibEnv
+                             $ i_ln ist } }
              Result diag Nothing ->
                return $ genErrorMsg (concatMap diagString diag) state
 
@@ -159,7 +160,7 @@ cUse input state = do
 -- of edges.
 cDgThmHideShift :: String -> CmdlState -> IO CmdlState
 cDgThmHideShift input state = case i_state $ intState state of
-    Nothing      -> return $ genErrorMsg "No library loaded" state
+    Nothing -> return $ genErrorMsg "No library loaded" state
     Just dgState ->
       let (errors, nodes) = getInputDGNodes input dgState
        in if null nodes
@@ -196,7 +197,7 @@ selectANode x dgState = let
     -- result as one element list, otherwise an
     -- empty list
       case gth x of
-       Result _ (Just th@(G_theory lid _ _ _ _)) -> do
+       Just th@(G_theory lid _ _ _ _) -> do
        -- le not used and should be
          let sl = sublogicOfTh th
          tmp <- initialState

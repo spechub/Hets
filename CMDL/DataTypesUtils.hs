@@ -48,7 +48,7 @@ import Static.ComputeTheory(computeTheory)
 import Data.Graph.Inductive.Graph(LNode, LEdge, Node)
 import Data.List (find)
 
-import Common.Result(Result(maybeResult, Result))
+import Common.Result(Result(Result))
 
 import Logic.Comorphism(AnyComorphism(..), mkIdComorphism)
 import Logic.Grothendieck(G_sublogics(..))
@@ -160,8 +160,7 @@ getTh useTrans x st
     -- compute the theory for a given node
        fn n = case i_state $ intState st of
                Nothing -> Nothing
-               Just ist -> maybeResult $
-                 computeTheory (i_libEnv ist) (i_ln ist) n
+               Just ist -> computeTheory (i_libEnv ist) (i_ln ist) n
    in
     case useTrans of
      Dont_translate -> fn x

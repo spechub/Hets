@@ -150,7 +150,7 @@ joinResult = joinResultWith (\ _ b -> b)
 
 -- | join a list of results that are independently computed
 mapR :: (a -> Result b) -> [a] -> Result [b]
-mapR ana = foldr (joinResultWith (:)) (Result [] $ Just []) . map ana
+mapR ana = foldr (joinResultWith (:) . ana) $ Result [] $ Just []
 
 -- | a failing result with a proper position
 fatal_error :: String -> Range -> Result a
@@ -205,11 +205,11 @@ adjustPos p r =
   r {diags = map (adjustDiagPos p) $ diags r}
 
 -- | Propagate errors using the error function
-propagateErrors :: Result a -> a
-propagateErrors r =
+propagateErrors :: String -> Result a -> a
+propagateErrors pos r =
   case (hasErrors $ diags r, maybeResult r) of
     (False, Just x) -> x
-    _ -> error $ showRelDiags 2 $ diags r
+    _ -> error $ pos ++ ' ' : showRelDiags 2 (diags r)
 
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String

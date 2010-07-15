@@ -98,7 +98,7 @@ writeLibEnv opts filePrefix lenv ln ot =
         dg = lookupDGraph ln lenv in case ot of
       Prf -> toShATermString (ln, lookupHistory ln lenv)
              >>= writeVerbFile opts f
-      XmlOut ->  writeVerbFile opts f $ ppTopElement $ ToXml.dGraph lenv dg
+      XmlOut -> writeVerbFile opts f $ ppTopElement $ ToXml.dGraph lenv dg
       OmdocOut -> do
           let Result ds mOmd = exportLibEnv (recurse opts) (outdir opts) ln lenv
           showDiags opts ds
@@ -115,7 +115,7 @@ writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
 writeSoftFOL opts f gTh ln i c n msg = do
       let cc = case c of
                  ConsistencyCheck -> True
-                 ProveTheory  -> False
+                 ProveTheory -> False
       mDoc <- printTheoryAsSoftFOL ln i n cc
               $ (if cc then theoremsToAxioms else id) gTh
       maybe (putIfVerbose opts 0 $
@@ -133,7 +133,7 @@ writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
              -> IO ()
 writeIsaFile opts filePrefix raw_gTh ln i = do
   let Result ds mTh = createIsaTheory raw_gTh
-      addThn = (++ "_" ++ show i)
+      addThn = (++ '_' : show i)
       fp = addThn filePrefix
   showDiags opts ds
   case mTh of
@@ -223,7 +223,7 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
         Left _ -> putIfVerbose opts 0
           $ "could not parse SparQTable from file: " ++ modelSparQ opts
         Right y -> let Result d _ = modelCheck i th2 y in
-            if length d > 0 then  showDiags opts {verbose = 2 } $ take 10 d
+            if length d > 0 then showDiags opts {verbose = 2 } $ take 10 d
             else putIfVerbose opts 0 "Modelcheck suceeded, no errors found"
     _ ->
       putIfVerbose opts 0 $ "could not translate Theory to CASL:\n "
@@ -231,10 +231,8 @@ modelSparQCheck opts gTh@(G_theory lid (ExtSign sign0 _) _ sens0 _) i =
 
 writeTheoryFiles :: HetcatsOpts -> [OutType] -> FilePath -> LibEnv
                  -> GlobalAnnos -> LibName -> SIMPLE_ID -> Int -> IO ()
-writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n = do
-    let Result ds mcTh = computeTheory lenv ln n
-    showDiags opts ds
-    case mcTh of
+writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
+    case computeTheory lenv ln n of
       Nothing -> putIfVerbose opts 0 $ "could not compute theory of spec "
                  ++ show i
       Just raw_gTh0 -> do
@@ -266,7 +264,7 @@ writeSpecFiles opts file lenv ln dg = do
         outTypes = outtypes opts
         specOutTypes = filter ( \ ot -> case ot of
             ThyFile -> True
-            DfgFile _  -> True
+            DfgFile _ -> True
             TPTPFile _ -> True
             XmlOut -> True
             OmdocOut -> True
@@ -283,8 +281,8 @@ writeSpecFiles opts file lenv ln dg = do
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (ExtGenSig _ (NodeSig n _))) ->
             writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n
-        _ -> if allSpecs then return () else
-                 putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
+        _ -> unless allSpecs
+               $ putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
       ) $ if ignore then [] else
         if allSpecs then Map.keys gctx else ns
     mapM_ ( \ n ->

@@ -71,7 +71,7 @@ markHiding le dgraph =
      ingoingEdges = innDG dg n
      defEdges = filter (liftE isDefEdge) ingoingEdges
      hidingDefEdges = filter (liftE isHidingDef ) defEdges
-     next = map (\ (s, _, _) ->  s) defEdges
+     next = map (\ (s, _, _) -> s) defEdges
      in fst $ labelNodeDG (n, lbl { labelHasHiding =
             if isDGRef lbl
             then nodeHasHiding (lookupDGraph (dgn_libname lbl) le)
@@ -79,7 +79,7 @@ markHiding le dgraph =
             else not (null hidingDefEdges) || any (nodeHasHiding dg) next }) dg)
      dgraph $ topsortedNodes dgraph
 
-computeTheory :: LibEnv -> LibName -> Node -> Result G_theory
+computeTheory :: LibEnv -> LibName -> Node -> Maybe G_theory
 computeTheory libEnv ln = globalNodeTheory $ lookupDGraph ln libEnv
 
 theoremsToAxioms :: G_theory -> G_theory
@@ -89,8 +89,8 @@ theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
 getGlobalTheory :: DGNodeLab -> Result G_theory
 getGlobalTheory = maybe (fail "no global theory") return . globalTheory
 
-globalNodeTheory :: DGraph -> Node -> Result G_theory
-globalNodeTheory dg = getGlobalTheory . labDG dg
+globalNodeTheory :: DGraph -> Node -> Maybe G_theory
+globalNodeTheory dg = globalTheory . labDG dg
 
 computeLibEnvTheories :: LibEnv -> LibEnv
 computeLibEnvTheories le =

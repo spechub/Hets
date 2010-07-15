@@ -56,12 +56,13 @@ import Control.Concurrent.MVar
 
 atcLogicLookup :: LogicGraph -> String -> String -> AnyLogic
 atcLogicLookup lg s l =
-  propagateErrors $ lookupLogic ("ConvertibleLG " ++ s ++ ":") l lg
+  propagateErrors " atcLogicLookup"
+  $ lookupLogic ("ConvertibleLG " ++ s ++ ":") l lg
 
 -- the same class as ShATermConvertible, but allowing a logic graph as input
 class Typeable t => ShATermLG t where
-    toShATermLG    :: ATermTable -> t -> IO (ATermTable, Int)
-    fromShATermLG  :: LogicGraph -> Int -> ATermTable -> (ATermTable, t)
+    toShATermLG :: ATermTable -> t -> IO (ATermTable, Int)
+    fromShATermLG :: LogicGraph -> Int -> ATermTable -> (ATermTable, t)
 
 toShATermLG' :: ShATermLG t => ATermTable -> t -> IO (ATermTable, Int)
 toShATermLG' att t = do
@@ -87,11 +88,11 @@ instance ShATermConvertible a => ShATermLG a where
 
 instance ShATermLG G_basic_spec where
   toShATermLG att0 (G_basic_spec lid basic_spec) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 basic_spec
-         return $ addATerm (ShAAppl "G_basic_spec" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 basic_spec
+         return $ addATerm (ShAAppl "G_basic_spec" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_basic_spec" [i1,i2] _ ->
+            ShAAppl "G_basic_spec" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_basic_spec" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -100,12 +101,12 @@ instance ShATermLG G_basic_spec where
 
 instance ShATermLG G_sign where
   toShATermLG att0 (G_sign lid sign si) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 sign
-         (att3,i3) <- toShATermLG' att2 si
-         return $ addATerm (ShAAppl "G_sign" [i1,i2,i3] []) att3
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 sign
+         (att3, i3) <- toShATermLG' att2 si
+         return $ addATerm (ShAAppl "G_sign" [i1, i2, i3] []) att3
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_sign" [i1,i2,i3] _ ->
+            ShAAppl "G_sign" [i1, i2, i3] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_sign" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -115,11 +116,11 @@ instance ShATermLG G_sign where
 
 instance ShATermLG G_symbol where
   toShATermLG att0 (G_symbol lid symbol) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 symbol
-         return $ addATerm (ShAAppl "G_symbol" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 symbol
+         return $ addATerm (ShAAppl "G_symbol" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_symbol" [i1,i2] _ ->
+            ShAAppl "G_symbol" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_symbol" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -128,11 +129,11 @@ instance ShATermLG G_symbol where
 
 instance (Ord a, ShATermLG a) => ShATermLG (G_symbolmap a) where
   toShATermLG att0 (G_symbolmap lid m) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 m
-         return $ addATerm (ShAAppl "G_symbolmap" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 m
+         return $ addATerm (ShAAppl "G_symbolmap" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_symbolmap" [i1,i2] _ ->
+            ShAAppl "G_symbolmap" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_symbolmap" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -141,11 +142,11 @@ instance (Ord a, ShATermLG a) => ShATermLG (G_symbolmap a) where
 
 instance (Ord a, ShATermLG a) => ShATermLG (G_mapofsymbol a) where
   toShATermLG att0 (G_mapofsymbol lid m) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 m
-         return $ addATerm (ShAAppl "G_mapofsymbol" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 m
+         return $ addATerm (ShAAppl "G_mapofsymbol" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_mapofsymbol" [i1,i2] _ ->
+            ShAAppl "G_mapofsymbol" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_mapofsymbol" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -155,11 +156,11 @@ instance (Ord a, ShATermLG a) => ShATermLG (G_mapofsymbol a) where
 
 instance ShATermLG G_symb_items_list where
   toShATermLG att0 (G_symb_items_list lid symb_items) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 symb_items
-         return $ addATerm (ShAAppl "G_symb_items_list" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 symb_items
+         return $ addATerm (ShAAppl "G_symb_items_list" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_symb_items_list" [i1,i2] _ ->
+            ShAAppl "G_symb_items_list" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_symb_items_list" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -168,11 +169,11 @@ instance ShATermLG G_symb_items_list where
 
 instance ShATermLG G_symb_map_items_list where
   toShATermLG att0 (G_symb_map_items_list lid symb_map_items) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 symb_map_items
-         return $ addATerm (ShAAppl "G_symb_map_items_list" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 symb_map_items
+         return $ addATerm (ShAAppl "G_symb_map_items_list" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_symb_map_items_list" [i1,i2] _ ->
+            ShAAppl "G_symb_map_items_list" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_symb_map_items_list" i1'
                 of { Logic lid ->
@@ -182,11 +183,11 @@ instance ShATermLG G_symb_map_items_list where
 
 instance ShATermLG G_sublogics where
   toShATermLG att0 (G_sublogics lid sublogics) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 sublogics
-         return $ addATerm (ShAAppl "G_sublogics" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 sublogics
+         return $ addATerm (ShAAppl "G_sublogics" [i1, i2] []) att2
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_sublogics" [i1,i2] _ ->
+            ShAAppl "G_sublogics" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_sublogics" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -195,12 +196,12 @@ instance ShATermLG G_sublogics where
 
 instance ShATermLG G_morphism where
   toShATermLG att0 (G_morphism lid morphism mi) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 morphism
-         (att3,i3) <- toShATermLG' att2 mi
-         return $ addATerm (ShAAppl "G_morphism" [i1,i2,i3] []) att3
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 morphism
+         (att3, i3) <- toShATermLG' att2 mi
+         return $ addATerm (ShAAppl "G_morphism" [i1, i2, i3] []) att3
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "G_morphism" [i1,i2,i3] _ ->
+            ShAAppl "G_morphism" [i1, i2, i3] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_morphism" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -210,29 +211,30 @@ instance ShATermLG G_morphism where
 
 instance ShATermLG AnyComorphism where
   toShATermLG att0 (Comorphism cid) = do
-         (att1,i1) <- toShATermLG' att0 (language_name cid)
+         (att1, i1) <- toShATermLG' att0 (language_name cid)
          return $ addATerm (ShAAppl "Comorphism" [i1] []) att1
   fromShATermLG lg ix att =
          case getShATerm ix att of
             ShAAppl "Comorphism" [i1] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
-                (att1, propagateErrors $ lookupComorphism i1' lg)}
+                (att1, propagateErrors "ATC.Grothendieck.AnyComorphism"
+                $ lookupComorphism i1' lg)}
             u -> fromShATermError "AnyComorphism" u
 
 instance ShATermLG GMorphism where
   toShATermLG att0 (GMorphism cid sign1 si morphism2 mi) = do
-         (att1,i1) <- toShATermLG' att0 (language_name cid)
-         (att2,i2) <- toShATermLG' att1 sign1
-         (att3,i3) <- toShATermLG' att2 si
-         (att4,i4) <- toShATermLG' att3 morphism2
-         (att5,i5) <- toShATermLG' att4 mi
-         return $ addATerm (ShAAppl "GMorphism" [i1,i2,i3,i4,i5] []) att5
+         (att1, i1) <- toShATermLG' att0 (language_name cid)
+         (att2, i2) <- toShATermLG' att1 sign1
+         (att3, i3) <- toShATermLG' att2 si
+         (att4, i4) <- toShATermLG' att3 morphism2
+         (att5, i5) <- toShATermLG' att4 mi
+         return $ addATerm (ShAAppl "GMorphism" [i1, i2, i3, i4, i5] []) att5
   fromShATermLG lg ix att =
          case getShATerm ix att of
-            ShAAppl "GMorphism" [i1,i2,i3,i4,i5] _ ->
+            ShAAppl "GMorphism" [i1, i2, i3, i4, i5] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
-                case propagateErrors $ lookupComorphism i1' lg
-                of { Comorphism cid ->
+                case propagateErrors "ATC.Grothendieck.GMorphism"
+                  $ lookupComorphism i1' lg of { Comorphism cid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
                 case fromShATermLG' lg i3 att2 of { (att3, i3') ->
                 case fromShATermLG' lg i4 att3 of { (att4, i4') ->
@@ -242,7 +244,7 @@ instance ShATermLG GMorphism where
 
 instance ShATermLG AnyLogic where
   toShATermLG att0 (Logic lid) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
          return $ addATerm (ShAAppl "Logic" [i1] []) att1
   fromShATermLG lg ix att = case getShATerm ix att of
             ShAAppl "Logic" [i1] _ ->
@@ -252,14 +254,14 @@ instance ShATermLG AnyLogic where
 
 instance ShATermLG BasicProof where
   toShATermLG att0 (BasicProof lid p) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 p
-         return $ addATerm (ShAAppl "BasicProof" [i1,i2] []) att2
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 p
+         return $ addATerm (ShAAppl "BasicProof" [i1, i2] []) att2
   toShATermLG att0 o = do
          (att1, i1) <- toShATermLG' att0 (show o)
          return $ addATerm (ShAAppl "BasicProof" [i1] []) att1
   fromShATermLG lg ix att = case getShATerm ix att of
-            ShAAppl "BasicProof" [i1,i2] _ ->
+            ShAAppl "BasicProof" [i1, i2] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "BasicProof" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->
@@ -303,31 +305,31 @@ instance (ShATermLG a, ShATermLG b) => ShATermLG (a, b) where
   toShATermLG att0 (x, y) = do
       (att1, x') <- toShATermLG' att0 x
       (att2, y') <- toShATermLG' att1 y
-      return $ addATerm (ShAAppl "" [x',y'] []) att2
+      return $ addATerm (ShAAppl "" [x', y'] []) att2
   fromShATermLG lg ix att0 = case getShATerm ix att0 of
-            ShAAppl "" [a,b] _ ->
+            ShAAppl "" [a, b] _ ->
                     case fromShATermLG' lg a att0 of { (att1, a') ->
                     case fromShATermLG' lg b att1 of { (att2, b') ->
                     (att2, (a', b'))}}
             u -> fromShATermError "(,)" u
 
 instance (ShATermLG a, ShATermLG b, ShATermLG c) => ShATermLG (a, b, c) where
-  toShATermLG att0 (x,y,z) = do
+  toShATermLG att0 (x, y, z) = do
       (att1, x') <- toShATermLG' att0 x
       (att2, y') <- toShATermLG' att1 y
       (att3, z') <- toShATermLG' att2 z
-      return $ addATerm (ShAAppl "" [x',y',z'] []) att3
+      return $ addATerm (ShAAppl "" [x', y', z'] []) att3
   fromShATermLG lg ix att0 = case getShATerm ix att0 of
-            ShAAppl "" [a,b,c] _ ->
+            ShAAppl "" [a, b, c] _ ->
                     case fromShATermLG' lg a att0 of { (att1, a') ->
                     case fromShATermLG' lg b att1 of { (att2, b') ->
                     case fromShATermLG' lg c att2 of { (att3, c') ->
                     (att3, (a', b', c'))}}}
             u -> fromShATermError "(,,)" u
 
-instance (Ord a,ShATermLG a) => ShATermLG (Set.Set a) where
+instance (Ord a, ShATermLG a) => ShATermLG (Set.Set a) where
   toShATermLG att set = do
-      (att1, i) <-  toShATermLG' att $ Set.toList set
+      (att1, i) <- toShATermLG' att $ Set.toList set
       return $ addATerm (ShAAppl "Set" [i] []) att1
   fromShATermLG lg ix att0 =
         case getShATerm ix att0 of
@@ -363,16 +365,16 @@ instance (ShATermLG a) => ShATermLG (IntMap.IntMap a) where
 
 
 instance ShATermLG G_theory where
-  toShATermLG  att0 (G_theory lid sign si sens ti) = do
-         (att1,i1) <- toShATermLG' att0 (language_name lid)
-         (att2,i2) <- toShATermLG' att1 sign
-         (att3,i3) <- toShATermLG' att2 si
-         (att4,i4) <- toShATermLG' att3 sens
-         (att5,i5) <- toShATermLG' att4 ti
-         return $ addATerm (ShAAppl "G_theory" [i1,i2,i3,i4,i5] []) att5
+  toShATermLG att0 (G_theory lid sign si sens ti) = do
+         (att1, i1) <- toShATermLG' att0 (language_name lid)
+         (att2, i2) <- toShATermLG' att1 sign
+         (att3, i3) <- toShATermLG' att2 si
+         (att4, i4) <- toShATermLG' att3 sens
+         (att5, i5) <- toShATermLG' att4 ti
+         return $ addATerm (ShAAppl "G_theory" [i1, i2, i3, i4, i5] []) att5
   fromShATermLG lg ix att =
          case getShATerm ix att of
-            ShAAppl "G_theory" [i1,i2,i3,i4,i5] _ ->
+            ShAAppl "G_theory" [i1, i2, i3, i4, i5] _ ->
                 case fromShATermLG' lg i1 att of { (att1, i1') ->
                 case atcLogicLookup lg "G_theory" i1' of { Logic lid ->
                 case fromShATermLG' lg i2 att1 of { (att2, i2') ->

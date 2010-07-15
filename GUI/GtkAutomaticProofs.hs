@@ -96,7 +96,7 @@ showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
 
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show fn = let gs = toGtkGoals fn 
+  show fn = let gs = toGtkGoals fn
                 gmin = gStatus $ minimum gs
             in
     "<span color=\"" ++ GtkUtils.statusToColor gmin ++ "\">"
@@ -118,7 +118,7 @@ initFNodes = foldr (\ n@(_,l) t -> case globalTheory l of
                       Nothing -> t
                       Just gt -> let gt' = dgn_theory l
                                      gs = case gt' of
-                                            G_theory _ _ _ s _ 
+                                            G_theory _ _ _ s _
                                               -> OMap.keys $ OMap.filter (not . isAxiom) s
                                  in if null gs then t else
                                  (FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt') : t
@@ -300,13 +300,13 @@ showProverWindow res ln le = postGUIAsync $ do
 performAutoProof :: -- include proven Theorems in subsequent proofs
                      Bool
                     -- Timeout (sec)
-                  -> Int 
+                  -> Int
                     -- Progress bar
-                  -> (Double -> String -> IO ()) 
+                  -> (Double -> String -> IO ())
                     -- selcted Prover and Comorphism
                   -> Finder
                     -- Display function for node selection box
-                  -> ListStore FNode 
+                  -> ListStore FNode
                     -- selected nodes
                   -> [(Int, FNode)]
                     -- no return value, since results are stored by changing
@@ -314,12 +314,12 @@ performAutoProof :: -- include proven Theorems in subsequent proofs
                   -> IO()
 performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   let count' = fromIntegral $ length nodes
-      c = cs !! i 
+      c = cs !! i
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
            res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
            case res of
-             Just gt -> postGUISync $ listStoreSetValue listNodes row 
+             Just gt -> postGUISync $ listStoreSetValue listNodes row
                fn { results = propagateProofs (results fn) gt }
              Nothing -> return ()
            return $ count + 1) 0 nodes
@@ -340,7 +340,8 @@ autoProofAtNode useTh timeout (_, l) p_cm =
 
     Just g_th@( G_theory lid _ _ _ _ ) -> do
       -- recompute the theory (to make effective the selected axioms, goals)
-      let knpr = propagateErrors $ knownProversWithKind ProveCMDLautomatic
+      let knpr = propagateErrors "autoProofAtNode"
+            $ knownProversWithKind ProveCMDLautomatic
       pf_st <- initialState lid "" g_th knpr [p_cm]
       let st = recalculateSublogicAndSelectedTheory pf_st
       -- try to prepare the theory
@@ -351,7 +352,7 @@ autoProofAtNode useTh timeout (_, l) p_cm =
           case proveCMDLautomaticBatch p of
             Nothing -> return Nothing
 
-            Just fn -> do 
+            Just fn -> do
               -- mVar to poll the prover for results
               answ <- newMVar (return [])
               (_, mV) <- fn useTh False answ (theoryName st)
@@ -360,7 +361,7 @@ autoProofAtNode useTh timeout (_, l) p_cm =
               d <- takeMVar answ
               return $ case maybeResult d of
                 Nothing -> Nothing
-                Just d' -> 
+                Just d' ->
                   let ps' = markProved (snd p_cm) lid1 d' st
                   in case theory ps' of
                     G_theory lidT sigT indT sensT _ ->
@@ -422,7 +423,7 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
         Just f@(Finder { comorphism = cc' }) -> let c = cc !! i in
           Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
     ) m' old
- 
+
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
                  -> ConnectId ComboBox -> IO ()
 updateComorphism view list cbComorphism sh = do

@@ -427,12 +427,11 @@ getTheoryOfNode gInfo descr dgraph = do
   ost <- readIORef $ intState gInfo
   case i_state ost of
     Nothing -> return ()
-    Just ist -> do
-      let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
-      showDiagMess (hetcatsOpts gInfo) ds
-      maybe (return ())
-        (displayTheoryWithWarning "Theory" (getNameOfNode descr dgraph)
-          $ addHasInHidingWarning dgraph descr) res
+    Just ist -> case computeTheory (i_libEnv ist) (libName gInfo) descr of
+      Nothing ->
+        errorDialog "Error" $ "no global theory for node " ++ show descr
+      Just th -> displayTheoryWithWarning "Theory" (getNameOfNode descr dgraph)
+          (addHasInHidingWarning dgraph descr) th
 
 {- | translate the theory of a node in a window;
      used by the node menu -}
@@ -444,8 +443,7 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
     Nothing -> return ()
     Just ist -> do
       let libEnv = i_libEnv ist
-          Result ds moTh = computeTheory libEnv ln node
-      case moTh of
+      case computeTheory libEnv ln node of
         Just th@(G_theory lid sign _ sens _) -> do
           -- find all comorphism paths starting from lid
           let paths = findComorphismPaths logicGraph (sublogicOfTh th)
@@ -470,7 +468,8 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
                   (addHasInHidingWarning dgraph node)
                   $ G_theory lidT (mkExtSign sign'') startSigId (toThSens sens1)
                              startThId
-        Nothing -> showDiagMess opts ds
+        Nothing ->
+          errorDialog "Error" $ "no global theory for node " ++ show node
 
 -- | Show proof status of a node
 showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()

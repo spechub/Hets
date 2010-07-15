@@ -39,7 +39,6 @@ import Static.PrintDevGraph ()
 import Static.ComputeTheory (computeTheory)
 import qualified Proofs.VSE as VSE
 
-import Common.Result
 import Common.DocUtils
 import Common.Consistency
 
@@ -399,10 +398,10 @@ createMenuTaxonomy gInfo = let
     ost <- readIORef $ intState gInfo
     case i_state ost of
       Nothing -> return ()
-      Just ist -> do
-        let Result ds res = computeTheory (i_libEnv ist) (libName gInfo) descr
-        showDiagMess (hetcatsOpts gInfo) ds
-        maybe (return ()) (displayFun $ show descr) res
+      Just ist -> case computeTheory (i_libEnv ist) (libName gInfo) descr of
+        Just th -> displayFun (show descr) th
+        Nothing -> errorDialog "Error"
+          $ "no global theory for node " ++ show descr
   in Menu (Just "Taxonomy graphs")
     [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) gInfo
     , createMenuButton "Concept graph" (passTh displayConceptGraph) gInfo ]

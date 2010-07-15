@@ -263,7 +263,7 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
  = do
     let thT =
          case computeTheory libEnv ln target of
-          Result _ (Just th1) -> th1
+          Just th1 -> th1
           _ -> error "checkconservativityOfEdge: computeTheory"
     G_theory lidT _ _ sensT _ <- return thT
     GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
@@ -279,7 +279,7 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                  _ -> error "checkconservativityOfEdge: comp"
     let thS =
          case computeTheory libEnv ln source of
-           Result _ (Just th1) -> th1
+           Just th1 -> th1
            _ -> error "checkconservativityOfEdge: computeTheory"
     G_theory lidS signS _ sensS _ <- return thS
     case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
@@ -287,7 +287,7 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                        , libEnv, link, SizedList.empty)
      Just signS' -> do
       sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
-      let transSensSrc = propagateErrors
+      let transSensSrc = propagateErrors "checkConservativityEdge2"
            $ mapThSensValueM (map_sen lidT compMor) sensS'
       if length (conservativityCheck lidT) < 1
           then return ("No conservativity checkers available",
@@ -301,8 +301,8 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
              else
               do
                let chCons = checkConservativity $
-                            fromMaybe (error "checkconservativityOfEdge")
-                               $ maybeResult checkerR
+                            propagateErrors "checkconservativityOfEdge3"
+                            checkerR
                    inputThSens = nubBy (\ a b -> sentence a == sentence b) $
                                  toNamedList $
                                  sensT `OMap.difference` transSensSrc

@@ -46,10 +46,6 @@ readLib fp0 = do
       let dg = lookupDGraph ln le
       return . catMaybes . Map.fold (\ ge -> case ge of
         SpecEntry (ExtGenSig _ (NodeSig n _)) ->
-           if null $ outDG dg n then
-               (maybeResult (computeTheory le ln n) :)
+           if null $ outDG dg n then (computeTheory le ln n :)
            else id
         _ -> id) [] $ globalEnv dg
-
-
-
