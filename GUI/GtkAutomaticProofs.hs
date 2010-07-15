@@ -12,7 +12,7 @@ This module provides a GUI for the consistency checker.
 -}
 
 module GUI.GtkAutomaticProofs
-  (showAutomaticProofs, Finder(..))
+  (showAutomaticProofs, Finder (..))
   where
 
 import Graphics.UI.Gtk
@@ -53,11 +53,6 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
-
-
--- TODO comment code !!!!!
-
-
 -- | Data structure for saving the user-selected prover and comorphism
 data Finder = Finder { fName      :: String
                      , finder     :: G_prover
@@ -74,6 +69,8 @@ data FNode = FNode { name     :: String
                    , goals    :: [String]
                    , results  :: G_theory }
 
+-- | mostly for the purpose of proper display, the resulting G_theory of each
+-- FNode can be converted into a list of Goals ( GtkUtils.Goal ).
 toGtkGoals :: FNode -> [Goal]
 toGtkGoals fn = case results fn of
   G_theory _ _ _ sens _ ->
@@ -87,9 +84,11 @@ toGtkGoals fn = case results fn of
                  ) [] $ goals fn
 
 goalsToPrefix :: [Goal] -> String
-goalsToPrefix gs = let proven = length $ filter (\ g -> gStatus g == GProved) gs
-                   in "[" ++ show proven ++ "/" ++ show (length gs) ++ "] "
+goalsToPrefix gs = let p = length $ filter (\ g -> gStatus g == GProved) gs
+                   in "[" ++ show p ++ "/" ++ show (length gs) ++ "] "
 
+-- | Displays every goal of a Node with a prefix showing the status and the
+-- goal name.
 showStatus :: FNode -> String
 showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
                  (gStatus g) ++ show (gName g)) $ toGtkGoals fn
@@ -114,20 +113,22 @@ instance Ord FNode where
 -- | gets all Nodes from the DGraph as input and creates a list of FNodes only
 -- containing Nodes to be considered.
 initFNodes :: [LNode DGNodeLab] -> [FNode]
-initFNodes = foldr (\ n@(_,l) t -> case globalTheory l of
+initFNodes = foldr (\ n@(_, l) t -> case globalTheory l of
                       Nothing -> t
-                      Just gt -> let gt' = dgn_theory l
-                                     gs = case gt' of
-                                            G_theory _ _ _ s _
-                                              -> OMap.keys $ OMap.filter (not . isAxiom) s
-                                 in if null gs then t else
-                                 (FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt') : t
-             ) []
+                      Just gt ->
+                        let gt' = dgn_theory l
+                            gs = case gt' of
+                                   G_theory _ _ _ s _ ->
+                                     OMap.keys $ OMap.filter (not . isAxiom) s
+                        in if null gs then t else
+                       (FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt') : t
+              ) []
 
 unchecked :: FNode -> Bool
 unchecked fn = case results fn of
                  G_theory _ _ _ sens _ ->
-                   any null $ map thmStatus $ OMap.elems $ OMap.filter (not . isAxiom) sens
+                   all null $ map thmStatus $ OMap.elems
+                            $ OMap.filter (not . isAxiom) sens
 
 timedout :: FNode -> Bool
 timedout fn = any (\ a -> gStatus a == GTimeout) $ toGtkGoals fn
@@ -214,13 +215,15 @@ showProverWindow res ln le = postGUIAsync $ do
   setListSelectorSingle trvFinder update
 
   let upd = updateNodes trvNodes listNodes
-        (\ s -> do labelSetLabel lblSublogic $ show s
-                   updateFinder  trvFinder listFinder s)
-        (do labelSetLabel lblSublogic "No sublogic"
-            listStoreClear listFinder
-            activate widgets False
-            widgetSetSensitive btnCheck False)
-        (activate widgets True >> widgetSetSensitive btnCheck True)
+              (\ s -> do
+                labelSetLabel lblSublogic $ show s
+                updateFinder  trvFinder listFinder s )
+              (do
+                labelSetLabel lblSublogic "No sublogic"
+                listStoreClear listFinder
+                activate widgets False
+                widgetSetSensitive btnCheck False)
+              (activate widgets True >> widgetSetSensitive btnCheck True)
 
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
     btnNodesInvert upd
@@ -231,7 +234,7 @@ showProverWindow res ln le = postGUIAsync $ do
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
-        mapM_ ( \ p@(row:[]) -> do
+        mapM_ ( \ p@(row : []) -> do
           fn <- listStoreGetValue listNodes row
           (if f fn then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs
@@ -277,16 +280,19 @@ showProverWindow res ln le = postGUIAsync $ do
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
     let dg' = foldl (\ cs fn ->
-                      -- where the proving did not return anything, node is not updated
+                      -- where the proving did not return anything, the node is
+                      -- not updated
                       if unchecked fn then cs
-                        else
-                          let (i, l) = node fn
-                              l' = l {dgn_theory = results fn}
-                              n = (i, l' { globalTheory = computeLabelTheory le dg (i, l') })
-                              dg0 = changeDGH cs $ SetNodeLab l n
-                              dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
-                              dg2 = togglePending dg1 $ changedPendingEdges dg1
-                          in dg2 ) dg nodes'
+                        else let
+                          (i, l) = node fn
+                          l' = l {dgn_theory = results fn}
+                          n = (i, l' { globalTheory = computeLabelTheory
+                                                           le dg (i, l') })
+                          dg0 = changeDGH cs $ SetNodeLab l n
+                          dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
+                          dg2 = togglePending dg1 $ changedPendingEdges dg1
+                        in dg2 ) dg nodes'
+
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
 -- | setting up the selected items at startup
@@ -311,7 +317,7 @@ performAutoProof :: -- include proven Theorems in subsequent proofs
                   -> [(Int, FNode)]
                     -- no return value, since results are stored by changing
                     -- FNode data
-                  -> IO()
+                  -> IO ()
 performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   let count' = fromIntegral $ length nodes
       c = cs !! i
@@ -369,7 +375,8 @@ autoProofAtNode useTh timeout (_, l) p_cm =
                         Nothing -> Nothing
 
                         Just gMap -> Just $
-                          G_theory lidT sigT indT (Map.union sensT gMap) startThId
+                          G_theory lidT sigT indT (Map.union sensT gMap)
+                                   startThId
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
 sortNodes trvNodes listNodes = do
@@ -402,7 +409,8 @@ updateFinder view list sl = do
               let n = getPName pr
                   f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ getProvers ProveCMDLautomatic (Just sl) $ findComorphismPaths logicGraph sl
+              $ getProvers ProveCMDLautomatic (Just sl)
+              $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
