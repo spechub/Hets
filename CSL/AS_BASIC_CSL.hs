@@ -59,7 +59,7 @@ data BASIC_ITEMS =
     deriving Show
 
 -- | Extended Parameter Datatype
-data EXTPARAM = EP Id.Token String EXPRESSION deriving (Eq, Ord, Show)
+data EXTPARAM = EP Id.Token String (Maybe EXPRESSION) deriving (Eq, Ord, Show)
 
 -- | Datatype for expressions
 data EXPRESSION =

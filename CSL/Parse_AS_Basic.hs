@@ -183,7 +183,7 @@ listexp = do
 extparam :: CharParser st EXTPARAM
 extparam = do
   i <- identifier
-  pair (oneOfKeys ["=", "<=", ">=", "!=", "<", ">"]) expression >--> EP i
+  pair (oneOfKeys ["=", "<=", ">=", "!=", "<", ">", "-|"]) (optionMaybe expression) >--> EP i
 
 -- ---------------------------------------------------------------------------
 
