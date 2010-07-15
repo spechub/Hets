@@ -30,7 +30,7 @@ import Static.History
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
-import Logic.Comorphism (AnyComorphism(..))
+import Logic.Comorphism (AnyComorphism (..))
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
@@ -127,7 +127,6 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
   btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
   btnStop           <- xmlGetWidget xml castToButton "btnStop"
-  --btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
   trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
 
   windowSetTitle window "Consistency Checker"
@@ -156,7 +155,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
 
   let dg = lookupDGraph ln le
       nodes = labNodesDG dg
-      selNodes = partition (\ (FNode { node = (_,l)}) -> case globalTheory l of
+      selNodes = partition (\ (FNode { node = (_, l)}) -> case globalTheory l of
         Just (G_theory _ _ _ sens _) -> Map.null sens
         Nothing -> True)
       sls = map sublogicOfTh $ mapMaybe (globalTheory . snd) nodes
@@ -168,7 +167,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
                    Cons -> ConsistencyStatus CSConsistent t
                    _ -> ConsistencyStatus CSUnchecked t
       (emptyNodes, others) = selNodes
-        $ map (\ (n@(_,l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
+        $ map (\ (n@(_, l), s) -> FNode (getDGNodeName l) n s $ n2CS l)
         $ zip nodes sls
 
   -- setup data
@@ -188,12 +187,14 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   setListSelectorSingle trvFinder update
 
   let upd = updateNodes trvNodes listNodes
-        (\ b s -> do labelSetLabel lblSublogic $ show s
-                     updateFinder trvFinder listFinder b s)
-        (do labelSetLabel lblSublogic "No sublogic"
-            listStoreClear listFinder
-            activate widgets False
-            widgetSetSensitive btnCheck False)
+        (\ b s -> do
+           labelSetLabel lblSublogic $ show s
+           updateFinder trvFinder listFinder b s)
+        (do
+          labelSetLabel lblSublogic "No sublogic"
+          listStoreClear listFinder
+          activate widgets False
+          widgetSetSensitive btnCheck False)
         (activate widgets True >> widgetSetSensitive btnCheck True)
 
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
@@ -205,7 +206,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
-        mapM_ ( \ p@(row:[]) -> do
+        mapM_ ( \ p@(row : []) -> do
           (FNode { status = s }) <- listStoreGetValue listNodes row
           (if f s then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs
@@ -229,7 +230,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
       Nothing -> error "Consistency checker: internal error"
-      Just (_,f) -> return f
+      Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
       check inclThms ln le dg f timeout listNodes updat nodes'
@@ -306,8 +307,8 @@ updateFinder view list useNonBatch sl = do
     listStoreClear list
     mapM_ (listStoreAppend list) $ mergeFinder old new
     maybe (selectFirst view)
-      (\ (_,f) -> let i = findIndex ((fName f ==) . fName) new in
-        maybe (selectFirst view) (treeSelectionSelectPath sel . (:[])) i
+      (\ (_, f) -> let i = findIndex ((fName f ==) . fName) new in
+        maybe (selectFirst view) (treeSelectionSelectPath sel . (: [])) i
       ) selected'
 
 -- | Try to select previous selected comorphism if possible
@@ -321,7 +322,7 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
     ) m' old
 
 check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
-      -> (Double -> String -> IO ()) -> [(Int,FNode)] -> IO ()
+      -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
 check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
   timeout listNodes update nodes = let
     count' = fromIntegral $ length nodes
@@ -394,7 +395,7 @@ showModelViewAux lock title list other = do
     mn <- getSelectedSingle trvNodes listNodes
     case mn of
       Nothing -> textBufferSetText buffer ""
-      Just (_,n) -> textBufferSetText buffer $ show $ status n
+      Just (_, n) -> textBufferSetText buffer $ show $ status n
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window
@@ -406,8 +407,8 @@ showModelViewAux lock title list other = do
     nodes'' <- listStoreToList list
     let nodes' = sort $ filterNodes nodes''
     updateListData listNodes $ sort (other ++ nodes')
-    maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (:[]))
-      $ maybe Nothing (\ (_,n) -> findIndex ((name n ==) . name) nodes') sel'
+    maybe (selectFirst trvNodes) (treeSelectionSelectPath sel . (: []))
+      $ maybe Nothing (\ (_, n) -> findIndex ((name n ==) . name) nodes') sel'
 
   selectFirst trvNodes
 
@@ -422,4 +423,3 @@ showModelView lock title list other = do
   isNotOpen <- isEmptyMVar lock
   if isNotOpen then showModelViewAux lock title list other
     else join (readMVar lock)
-
