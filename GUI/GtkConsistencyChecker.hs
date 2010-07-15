@@ -79,55 +79,56 @@ instance Ord FNode where
   compare (FNode { name = n1, status = s1 })
           (FNode { name = n2, status = s2 }) = case compare s1 s2 of
     EQ -> compare n1 n2
-    c  -> c
+    c -> c
 
 cStatusToColor :: ConsistencyStatus -> String
 cStatusToColor s = case sType s of
-  CSUnchecked    -> "black"
-  CSConsistent   -> "green"
+  CSUnchecked -> "black"
+  CSConsistent -> "green"
   CSInconsistent -> "red"
-  CSTimeout      -> "blue"
-  CSError        -> "darkred"
+  CSTimeout -> "blue"
+  CSError -> "darkred"
 
 cStatusToPrefix :: ConsistencyStatus -> String
 cStatusToPrefix s = case sType s of
-  CSUnchecked    -> "[ ] "
-  CSConsistent   -> "[+] "
+  CSUnchecked -> "[ ] "
+  CSConsistent -> "[+] "
   CSInconsistent -> "[-] "
-  CSTimeout      -> "[t] "
-  CSError        -> "[f] "
+  CSTimeout -> "[t] "
+  CSError -> "[f] "
 
 -- | Displays the consistency checker window
-showConsistencyChecker :: GInfo -> LibEnv -> IO (Result LibEnv)
-showConsistencyChecker (GInfo { libName = ln }) le = do
+showConsistencyChecker :: Maybe Int -> GInfo -> LibEnv -> IO (Result LibEnv)
+showConsistencyChecker mn (GInfo { libName = ln }) le = do
   wait <- newEmptyMVar
-  showConsistencyCheckerAux wait ln le
+  showConsistencyCheckerAux wait mn ln le
   le' <- takeMVar wait
   return $ Result [] $ Just le'
 
 -- | Displays the consistency checker window
-showConsistencyCheckerAux :: MVar LibEnv -> LibName -> LibEnv -> IO ()
-showConsistencyCheckerAux res ln le = postGUIAsync $ do
-  xml               <- getGladeXML ConsistencyChecker.get
+showConsistencyCheckerAux
+  :: MVar LibEnv -> Maybe Int -> LibName -> LibEnv -> IO ()
+showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window            <- xmlGetWidget xml castToWindow "NodeChecker"
-  btnClose          <- xmlGetWidget xml castToButton "btnClose"
-  btnResults         <- xmlGetWidget xml castToButton "btnResults"
+  window <- xmlGetWidget xml castToWindow "NodeChecker"
+  btnClose <- xmlGetWidget xml castToButton "btnClose"
+  btnResults <- xmlGetWidget xml castToButton "btnResults"
   -- get nodes view and buttons
-  trvNodes          <- xmlGetWidget xml castToTreeView "trvNodes"
-  btnNodesAll       <- xmlGetWidget xml castToButton "btnNodesAll"
-  btnNodesNone      <- xmlGetWidget xml castToButton "btnNodesNone"
-  btnNodesInvert    <- xmlGetWidget xml castToButton "btnNodesInvert"
+  trvNodes <- xmlGetWidget xml castToTreeView "trvNodes"
+  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
+  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
+  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
   btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
-  btnNodesTimeout   <- xmlGetWidget xml castToButton "btnNodesTimeout"
-  cbInclThms        <- xmlGetWidget xml castToCheckButton "cbInclThms"
+  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
+  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism      <- xmlGetWidget xml castToComboBox "cbComorphism"
-  lblSublogic       <- xmlGetWidget xml castToLabel "lblSublogic"
-  sbTimeout         <- xmlGetWidget xml castToSpinButton "sbTimeout"
-  btnCheck          <- xmlGetWidget xml castToButton "btnCheck"
-  btnStop           <- xmlGetWidget xml castToButton "btnStop"
-  trvFinder         <- xmlGetWidget xml castToTreeView "trvFinder"
+  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
+  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
+  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
+  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
+  btnStop <- xmlGetWidget xml castToButton "btnStop"
+  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
 
   windowSetTitle window "Consistency Checker"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
@@ -154,7 +155,7 @@ showConsistencyCheckerAux res ln le = postGUIAsync $ do
   mView <- newEmptyMVar
 
   let dg = lookupDGraph ln le
-      nodes = labNodesDG dg
+      nodes = filter (maybe (const True) (==) mn . fst) $ labNodesDG dg
       selNodes = partition (\ (FNode { node = (_, l)}) -> case globalTheory l of
         Just (G_theory _ _ _ sens _) -> Map.null sens
         Nothing -> True)
@@ -363,13 +364,13 @@ setSelectedComorphism view list cbComorphism = do
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> [FNode]
                  -> IO ()
 showModelViewAux lock title list other = do
-  xml      <- getGladeXML ConsistencyChecker.get
+  xml <- getGladeXML ConsistencyChecker.get
   -- get objects
-  window   <- xmlGetWidget xml castToWindow "ModelView"
+  window <- xmlGetWidget xml castToWindow "ModelView"
   btnClose <- xmlGetWidget xml castToButton "btnResClose"
-  frNodes  <- xmlGetWidget xml castToFrame "frResNodes"
+  frNodes <- xmlGetWidget xml castToFrame "frResNodes"
   trvNodes <- xmlGetWidget xml castToTreeView "trvResNodes"
-  tvModel  <- xmlGetWidget xml castToTextView "tvResModel"
+  tvModel <- xmlGetWidget xml castToTextView "tvResModel"
 
   windowSetTitle window title
 

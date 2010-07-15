@@ -265,13 +265,11 @@ createGlobalMenu gInfo@
                                      updateGraph gInfo []
                                    )
      , Button "Consistency checker"
-         (performProofMenuAction (GlobCmd ProveCurrent)
-           $ showConsistencyChecker gInfo)
+         (performProofMenuAction (GlobCmd CheckConsistencyCurrent)
+           $ showConsistencyChecker Nothing gInfo)
      , Button "Automatic proofs"
          (performProofMenuAction (GlobCmd ProveCurrent)
            $ showAutomaticProofs gInfo)
-
-
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
        -- History ? or just some partial history in ch ?
@@ -345,6 +343,9 @@ createMenuNode shape color gInfo internal = shape
         , createMenuButtonShowProofStatusOfNode
         , createMenuButtonProveAtNode
         , createMenuButtonProveStructured
+#ifdef GTKGLADE
+        , createMenuButtonCCCAtNode
+#endif
         , createMenuButtonCheckCons
         ]))
   $$$ emptyNodeTypeParms
@@ -420,10 +421,20 @@ createMenuButtonProveStructured gInfo =
     proofMenu gInfo (SelectCmd Prover $ "VSE structured: " ++ show descr)
               $ VSE.prove (libName gInfo, descr)) gInfo
 
+#ifdef GTKGLADE
+createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonCCCAtNode gInfo =
+  createMenuButton "Check consistency" (consCheckNode gInfo) gInfo
+
+consCheckNode :: GInfo -> Int -> DGraph -> IO ()
+consCheckNode gInfo descr _ = proofMenu gInfo (GlobCmd CheckConsistencyCurrent)
+  $ showConsistencyChecker (Just descr) gInfo
+#endif
+
 createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonCheckCons gInfo =
   createMenuButton "Check conservativity"
-    (`checkconservativityOfNode` gInfo) gInfo
+    (checkconservativityOfNode gInfo) gInfo
 
 createMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonShowNodeInfo =

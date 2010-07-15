@@ -57,7 +57,7 @@ import Proofs.EdgeUtils
 import Proofs.InferBasic (basicInferenceNode)
 import Proofs.StatusUtils (lookupHistory, removeContraryChanges)
 
-import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
+import GUI.Taxonomy (displayConceptGraph, displaySubsortGraph)
 import GUI.GraphTypes
 import qualified GUI.GraphAbstraction as GA
 import GUI.Utils
@@ -130,7 +130,7 @@ updateGraphAux gInfo' ln changes dg = do
       flags <- readIORef opts
       let edges = if flagHideEdges flags then hideEdgesAux dg else []
           (nodes, comp) = if flagHideNodes flags then hideNodesAux dg edges
-                          else ([],[])
+                          else ([], [])
       GA.showTemporaryMessage gi
         "Applying development graph calculus proof rule..."
       GA.deactivateGraphWindow gi
@@ -150,7 +150,8 @@ hideNames (GInfo { options = opts
                  , internalNames = updaterIORef }) = do
   flags <- readIORef opts
   updater <- readIORef updaterIORef
-  mapM_ (\(s,upd) -> upd (\_ -> if flagHideNames flags then "" else s)) updater
+  mapM_ (\ (s, upd) -> upd (const $ if flagHideNames flags then "" else s))
+        updater
 
 -- | Toggles to display internal node names
 toggleHideNames :: GInfo -> IO ()
@@ -192,7 +193,7 @@ hideEdgesAux dg = map dgl_id
                _ -> False
            )
   $ foldl (\ e c -> case c of
-                      InsertEdge (_, _, lbl) -> lbl:e
+                      InsertEdge (_, _, lbl) -> lbl : e
                       DeleteEdge (_, _, lbl) -> delete lbl e
                       _ -> e
           ) [] $ flattenHistory (SizedList.toList $ proofHistory dg) []
@@ -210,8 +211,8 @@ toggleHideEdges gInfo@(GInfo { graphInfo = gi
 -- | generates from list of HistElem one list of DGChanges
 flattenHistory :: [HistElem] -> [DGChange] -> [DGChange]
 flattenHistory [] cs = cs
-flattenHistory ((HistElem c):r) cs = flattenHistory r $ c:cs
-flattenHistory ((HistGroup _ ph):r) cs =
+flattenHistory (HistElem c : r) cs = flattenHistory r $ c : cs
+flattenHistory (HistGroup _ ph : r) cs =
   flattenHistory r $ flattenHistory (SizedList.toList ph) cs
 
 -- | selects all nodes of a type with outgoing edges
@@ -222,74 +223,74 @@ selectNodesByType dg types =
 
 hasUnprovenEdges :: DGraph -> Node -> Bool
 hasUnprovenEdges dg =
-  foldl (\ b (_,_,l) -> case edgeTypeModInc $ getRealDGLinkType l of
+  foldl (\ b (_, _, l) -> case edgeTypeModInc $ getRealDGLinkType l of
                           ThmType { isProvenEdge = False } -> False
                           _ -> b) True . (\ n -> innDG dg n ++ outDG dg n)
 
 -- | compresses a list of types to the highest one
 compressTypes :: Bool -> [DGEdgeType] -> (DGEdgeType, Bool)
 compressTypes _ [] = error "compressTypes: wrong usage"
-compressTypes b (t:[]) = (t,b)
-compressTypes b (t1:t2:r)
-  | t1 == t2 = compressTypes b (t1:r)
-  | t1 > t2 = compressTypes False (t1:r)
-  | otherwise = compressTypes False (t2:r)
+compressTypes b (t : []) = (t, b)
+compressTypes b (t1 : t2 : r)
+  | t1 == t2 = compressTypes b (t1 : r)
+  | t1 > t2 = compressTypes False (t1 : r)
+  | otherwise = compressTypes False (t2 : r)
 
 -- | innDG with filter of not shown edges
 fInnDG :: [EdgeId] -> DGraph -> Node -> [LEdge DGLinkLab]
-fInnDG ignore dg = filter (\ (_,_,l) -> notElem (dgl_id l) ignore) . innDG dg
+fInnDG ignore dg = filter (\ (_, _, l) -> notElem (dgl_id l) ignore) . innDG dg
 
 -- | outDG with filter of not shown edges
 fOutDG :: [EdgeId] -> DGraph -> Node -> [LEdge DGLinkLab]
-fOutDG ignore dg = filter (\ (_,_,l) -> notElem (dgl_id l) ignore) . outDG dg
+fOutDG ignore dg = filter (\ (_, _, l) -> notElem (dgl_id l) ignore) . outDG dg
 
 -- | returns a list of compressed edges
 getCompressedEdges :: DGraph -> [Node] -> [EdgeId]
-                   -> [(Node,Node,DGEdgeType, Bool)]
+                   -> [(Node, Node, DGEdgeType, Bool)]
 getCompressedEdges dg hidden ign = filterDuplicates $ getShortPaths
-  $ concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden [] ign) inEdges
+  $ concatMap (\ e@(_, t, _) -> map (e :) $ getPaths dg t hidden [] ign) inEdges
   where
-    inEdges = filter (\ (_,t,_) -> elem t hidden)
+    inEdges = filter (\ (_, t, _) -> elem t hidden)
                      $ concatMap (fOutDG ign dg)
-                     $ foldr (\ n i -> if elem n hidden
-                                       || elem n i then i else n:i) []
-                     $ map (\ (s,_,_) -> s) $ concatMap (fInnDG ign dg) hidden
+                     $ foldr (\ (n, _, _) i -> if elem n hidden
+                                       || elem n i then i else n : i) []
+                     $ concatMap (fInnDG ign dg) hidden
 
 -- | filter duplicate paths
-filterDuplicates :: [(Node,Node,DGEdgeType, Bool)]
-                 -> [(Node,Node,DGEdgeType, Bool)]
+filterDuplicates :: [(Node, Node, DGEdgeType, Bool)]
+                 -> [(Node, Node, DGEdgeType, Bool)]
 filterDuplicates [] = []
 filterDuplicates r@((s, t, _, _) : _) = edges ++ filterDuplicates others
   where
-    (same,others) = partition (\ (s',t', _, _) -> s == s' && t == t') r
-    (mtypes,stypes) = partition (\ (_,_,_,b) -> not b) same
-    stypes' = foldr (\e es -> if elem e es then es else e:es) [] stypes
-    (et',_) = compressTypes False $ map (\ (_,_,et,_) -> et) mtypes
-    edges = if null mtypes then stypes' else (s,t,et',False):stypes'
+    (same, others) = partition (\ (s', t', _, _) -> s == s' && t == t') r
+    (mtypes, stypes) = partition (\ (_, _, _, b) -> not b) same
+    stypes' = foldr (\ e es -> if elem e es then es else e : es) [] stypes
+    (et', _) = compressTypes False $ map (\ (_, _, et, _) -> et) mtypes
+    edges = if null mtypes then stypes' else (s, t, et', False) : stypes'
 
 -- | returns the pahts of a given node through hidden nodes
 getPaths :: DGraph -> Node -> [Node] -> [Node] -> [EdgeId]
          -> [[LEdge DGLinkLab]]
 getPaths dg node hidden seen' ign = if elem node hidden then
   if null edges then []
-    else concatMap (\ e@(_,t,_) -> map (e:) $ getPaths dg t hidden seen ign)
+    else concatMap (\ e@(_, t, _) -> map (e :) $ getPaths dg t hidden seen ign)
                    edges
   else [[]]
   where
-    seen = node:seen'
-    edges = filter (\ (_,t,_) -> notElem t seen) $ fOutDG ign dg node
+    seen = node : seen'
+    edges = filter (\ (_, t, _) -> notElem t seen) $ fOutDG ign dg node
 
 -- | returns source and target node of a path with the compressed type
 getShortPaths :: [[LEdge DGLinkLab]]
-              -> [(Node,Node,DGEdgeType,Bool)]
+              -> [(Node, Node, DGEdgeType, Bool)]
 getShortPaths [] = []
 getShortPaths (p : r) =
   (s, t, et, b)
     : getShortPaths r
   where
-    (s,_,_) = head p
-    (_,t,_) = last p
-    (et, b) = compressTypes True $ map (\ (_,_,e) -> getRealDGLinkType e) p
+    (s, _, _) = head p
+    (_, t, _) = last p
+    (et, b) = compressTypes True $ map (\ (_, _, e) -> getRealDGLinkType e) p
 
 -- | Let the user select a Node to focus
 focusNode :: GInfo -> IO ()
@@ -344,7 +345,7 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
           case m of
             Nothing -> errorDialog "Error"
                          $ "Could not read original development graph from '"
-                           ++ libfile ++  "'"
+                           ++ libfile ++ "'"
             Just (_, libEnv) -> case Map.lookup ln libEnv of
               Nothing -> errorDialog "Error" $ "Could not get original"
                            ++ "development graph for '" ++ showDoc ln "'"
@@ -390,7 +391,7 @@ proofMenu gInfo@(GInfo { hetcatsOpts = hOpts
               lln = map DgCommandChange $ calcGlobalHistory
                                                    proofStatus newProofStatus
               nst = add2history cmd ost lln
-              nwst = nst { i_state = Just ist { i_libEnv=newProofStatus}}
+              nwst = nst { i_state = Just ist { i_libEnv = newProofStatus}}
           doDump hOpts "PrintHistory" $ do
             putStrLn "History"
             print $ prettyHistory history
@@ -452,7 +453,7 @@ translateTheoryOfNode gInfo@(GInfo { hetcatsOpts = opts
           case sel of
             Nothing -> errorDialog "Error" "no node logic translation chosen"
             Just i -> do
-              Comorphism cid <- return (paths!!i)
+              Comorphism cid <- return (paths !! i)
               -- adjust lid's
               let lidS = sourceLogic cid
                   lidT = targetLogic cid
@@ -476,14 +477,14 @@ showProofStatusOfNode :: GInfo -> Int -> DGraph -> IO ()
 showProofStatusOfNode _ descr dgraph =
   let dgnode = labDG dgraph descr
       stat = showStatusAux dgnode
-      title =  "Proof status of node "++showName (dgn_name dgnode)
+      title = "Proof status of node " ++ showName (dgn_name dgnode)
   in createTextDisplay title stat
 
 showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode = case dgn_theory dgnode of
   G_theory _ _ _ sens _ ->
      let goals = OMap.filter (not . isAxiom) sens
-         (proven,open) = OMap.partition isProvenSenStatus goals
+         (proven, open) = OMap.partition isProvenSenStatus goals
          consGoal = "\nconservativity of this node"
       in "Proven proof goals:\n"
          ++ showDoc proven ""
@@ -554,8 +555,8 @@ runProveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
       unlockGlobal gInfo
   _ -> return ()
 
-checkconservativityOfNode :: Int -> GInfo -> DGraph -> IO ()
-checkconservativityOfNode descr gInfo dgraph = do
+checkconservativityOfNode :: GInfo -> Int -> DGraph -> IO ()
+checkconservativityOfNode gInfo descr dgraph = do
   let iSt = intState gInfo
       ln = libName gInfo
       nlbl = labDG dgraph descr
@@ -619,14 +620,14 @@ checkconservativityOfEdge descr gInfo me = case me of
 
 -- | show library referened by a DGRef node (=node drawn as a box)
 showReferencedLibrary :: Int -> GInfo -> ConvFunc -> LibFunc -> IO ()
-showReferencedLibrary descr gInfo@(GInfo{ libName = ln })
+showReferencedLibrary descr gInfo@(GInfo { libName = ln })
                       convGraph showLib = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let le = i_libEnv ist
-       refNode =  labDG (lookupDGraph ln le) descr
+       refNode = labDG (lookupDGraph ln le) descr
        refLibname = if isDGRef refNode then dgn_libname refNode
                     else error "showReferencedLibrary"
    case Map.lookup refLibname le of
@@ -691,7 +692,7 @@ saveUDGraph gInfo@(GInfo { graphInfo = gi
    Nothing -> return ()
    Just _ -> do
     maybeFilePath <- fileSaveDialog (rmSuffix (libNameToFile ln) ++ ".udg")
-                                    [ ("uDrawGraph",["*.udg"])
+                                    [ ("uDrawGraph", ["*.udg"])
                                     , ("All Files", ["*"])] Nothing
     case maybeFilePath of
      Just filepath -> do
@@ -706,18 +707,17 @@ nodes2String :: GInfo -> Map.Map DGNodeType (Shape value, String)
              -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
              -> IO String
 nodes2String gInfo@(GInfo { graphInfo = gi
-                          , libName = ln  }) nodemap linkmap = do
+                          , libName = ln }) nodemap linkmap = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return []
   Just ist -> do
    let le = i_libEnv ist
-   nodes <- filterM (\(n,_) -> do b <- GA.isHiddenNode gi n
-                                  return $ not b)
+   nodes <- filterM (fmap not . GA.isHiddenNode gi . fst)
                     $ labNodesDG $ lookupDGraph ln le
-   nstring <- foldM (\s node -> do
-                      s' <- (node2String gInfo nodemap linkmap node)
-                      return $ (if null s then "" else s ++ ",\n") ++ s')
+   nstring <- foldM (\ s ->
+                      fmap ((if null s then s else s ++ ",\n") ++)
+                        . node2String gInfo nodemap linkmap)
                     "" nodes
    return $ "[" ++ nstring ++ "]"
 
@@ -735,7 +735,7 @@ node2String gInfo nodemap linkmap (nid, dgnode) = do
     object = "a(\"OBJECT\",\"" ++ label ++ "\"),"
     color' = "a(\"COLOR\",\"" ++ color ++ "\"),"
     shape' = "a(\"_GO\",\"" ++ map toLower (show shape) ++ "\")"
-  links  <- links2String gInfo linkmap nid
+  links <- links2String gInfo linkmap nid
   return $ "l(\"" ++ show nid ++ "\",n(\"" ++ show ntype ++ "\","
            ++ "[" ++ object ++ color' ++ shape' ++ "],"
            ++ "\n  [" ++ links ++ "]))"
@@ -744,7 +744,7 @@ node2String gInfo nodemap linkmap (nid, dgnode) = do
 links2String :: GInfo -> Map.Map DGEdgeType (EdgePattern GA.EdgeValue, String)
              -> Int -> IO String
 links2String gInfo@(GInfo { graphInfo = gi
-                          , libName = ln })  linkmap nodeid = do
+                          , libName = ln }) linkmap nodeid = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return []
@@ -769,12 +769,12 @@ link2String linkmap (nodeid1, nodeid2, edge) = do
     Nothing -> error $ "SaveGraph: can't lookup linktype: " ++ show ltype
     Just (l, c) -> return (l, c)
   let
-    nm   = "\"" ++ show linkid ++ ":" ++ show nodeid1 ++ "->"
+    nm = "\"" ++ show linkid ++ ":" ++ show nodeid1 ++ "->"
              ++ show nodeid2 ++ "\""
     color' = "a(\"EDGECOLOR\",\"" ++ color ++ "\"),"
-    line'  = "a(\"EDGEPATTERN\",\"" ++ map toLower (show line) ++ "\")"
+    line' = "a(\"EDGEPATTERN\",\"" ++ map toLower (show line) ++ "\")"
   return $ "l(" ++ nm ++ ",e(\"" ++ show ltype ++ "\","
-           ++ "[" ++ color' ++ line' ++"],"
+           ++ "[" ++ color' ++ line' ++ "],"
            ++ "r(\"" ++ show nodeid2 ++ "\")))"
 
 -- | Returns the name of the Node
@@ -783,5 +783,3 @@ getNodeLabel (GInfo { options = opts }) dgnode = do
   flags <- readIORef opts
   return $ if flagHideNames flags && isInternalNode dgnode
            then "" else getDGNodeName dgnode
-
-
