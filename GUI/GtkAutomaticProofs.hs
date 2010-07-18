@@ -67,6 +67,8 @@ data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
                    , goals    :: [String]
+                     -- after proving, a new GTheory with the new Proofstatus
+                     -- is computed
                    , results  :: G_theory }
 
 -- | mostly for the purpose of proper display, the resulting G_theory of each
@@ -83,6 +85,8 @@ toGtkGoals fn = case results fn of
                                        (maximum $ map snd l)) s : t
                  ) [] $ goals fn
 
+-- | as a Prefix for display purpose, the ratio of proven and total goals
+-- is shown
 goalsToPrefix :: [Goal] -> String
 goalsToPrefix gs = let p = length $ filter (\ g -> gStatus g == GProved) gs
                    in "[" ++ show p ++ "/" ++ show (length gs) ++ "] "
@@ -104,6 +108,8 @@ instance Show FNode where
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
 
+-- | for comparison, the goal status of each node is considered. only with
+-- equal goal status, nodes are sorted by name.
 instance Ord FNode where
   compare f1 f2 = let gmin f = minimum $ toGtkGoals f
             in case compare (gmin f1) (gmin f2) of
@@ -112,6 +118,7 @@ instance Ord FNode where
 
 -- | gets all Nodes from the DGraph as input and creates a list of FNodes only
 -- containing Nodes to be considered.
+-- The results status field is initialised with the nodes local theory
 initFNodes :: [LNode DGNodeLab] -> [FNode]
 initFNodes = foldr (\ n@(_, l) t -> case globalTheory l of
                       Nothing -> t
@@ -124,17 +131,21 @@ initFNodes = foldr (\ n@(_, l) t -> case globalTheory l of
                        (FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt') : t
               ) []
 
+-- | returns True if a node has not been proved jet
 unchecked :: FNode -> Bool
 unchecked fn = case results fn of
                  G_theory _ _ _ sens _ ->
                    all null $ map thmStatus $ OMap.elems
                             $ OMap.filter (not . isAxiom) sens
 
+-- | returns True if at least one goal has been timed out
 timedout :: FNode -> Bool
 timedout fn = any (\ a -> gStatus a == GTimeout) $ toGtkGoals fn
 
+-- | returns True only if every goal has been proved
 allProved :: FNode -> Bool
 allProved fn = all (\ a -> gStatus a == GProved) $ toGtkGoals fn
+
 
 -- | Displays the consistency checker window
 showAutomaticProofs :: GInfo -> LibEnv -> IO (Result LibEnv)
@@ -229,6 +240,8 @@ showProverWindow res ln le = postGUIAsync $ do
     btnNodesInvert upd
 
 -- bindings
+-- this function handles the selction of nodes, getting as input parameter
+-- a function f (FNode -> Bool).
   let selectWith f u = do
         signalBlock shN
         sel <- treeViewGetSelection trvNodes
@@ -277,6 +290,8 @@ showProverWindow res ln le = postGUIAsync $ do
         activate checkWidgets True
         exit
 
+  -- after window is closed, the results are written back into the DGraph.
+  -- for each node a DGChange object is created and applied to the DGraph.
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
     let dg' = foldl (\ cs fn ->
