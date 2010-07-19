@@ -310,11 +310,10 @@ showProverWindow res ln le = postGUIAsync $ do
 
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 
--- | setting up the selected items at startup
+  -- setting up the selected items at startup
   selectWith (not . allProved) upd
 
--- TODO select SPASS Prover if possible
-
+  -- TODO select SPASS Prover if possible
   widgetShow window
 
 
