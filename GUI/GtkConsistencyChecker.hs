@@ -155,7 +155,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
   mView <- newEmptyMVar
 
   let dg = lookupDGraph ln le
-      nodes = filter (maybe (const True) (==) mn . fst) $ labNodesDG dg
+      nodes = labNodesDG dg
       selNodes = partition (\ (FNode { node = (_, l)}) -> case globalTheory l of
         Just (G_theory _ _ _ sens _) -> Map.null sens
         Nothing -> True)
@@ -202,17 +202,18 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
     btnNodesInvert upd
 
   -- bindings
-  let selectWith f u = do
+  let selectWithAux f u = do
         signalBlock shN
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
         mapM_ ( \ p@(row : []) -> do
-          (FNode { status = s }) <- listStoreGetValue listNodes row
-          (if f s then treeSelectionSelectPath else treeSelectionUnselectPath)
+          fn <- listStoreGetValue listNodes row
+          (if f fn then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs
         signalUnblock shN
         u
+      selectWith f = selectWithAux $ f . status
 
   onClicked btnNodesUnchecked
     $ selectWith (== ConsistencyStatus CSUnchecked "") upd
@@ -264,8 +265,8 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
         dg' = changesDGH dg changes
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
 
-  selectWith (== ConsistencyStatus CSUnchecked "") upd
-
+  selectWithAux (maybe ((== ConsistencyStatus CSUnchecked "") . status)
+          (\ n -> (== n) . fst . node) mn) upd
   widgetShow window
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
