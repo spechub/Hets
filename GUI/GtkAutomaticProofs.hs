@@ -8,7 +8,7 @@ Maintainer  :  tekknix@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-This module provides a GUI for the consistency checker.
+This module provides a GUI for the automatic proofs module.
 -}
 
 module GUI.GtkAutomaticProofs
@@ -240,6 +240,7 @@ showProverWindow res ln le = postGUIAsync $ do
     btnNodesInvert upd
 
 -- bindings
+
 -- this function handles the selction of nodes, getting as input parameter
 -- a function f (FNode -> Bool).
   let selectWith f u = do
