@@ -239,10 +239,10 @@ showProverWindow res ln le = postGUIAsync $ do
   shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
     btnNodesInvert upd
 
--- bindings
+  -- bindings
 
--- this function handles the selction of nodes, getting as input parameter
--- a function f (FNode -> Bool).
+  -- this function handles the selction of nodes, getting as input parameter
+  -- a function f (FNode -> Bool).
   let selectWith f u = do
         signalBlock shN
         sel <- treeViewGetSelection trvNodes

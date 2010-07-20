@@ -17,6 +17,7 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
+import GUI.GtkDisprove
 import qualified GUI.Glade.ProverGUI as ProverGUI
 import GUI.HTkProofDetails -- not implemented in Gtk
 
@@ -204,8 +205,13 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
 
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
+    -- TODO implement disprove function on ONE GOAL only
+    -- call consistencyCheck on negated selected sentence
+    -- if consistent, mark node DISPROVED and write back into dgraph
+
+    -- maybe disable button if more than one goal selected
     onClicked btnDisprove $ infoDialog "Disprove selected goal"
-      $ "not implemented yet\n"
+      $ "only works on single selection\n"
       ++ "see http://trac.informatik.uni-bremen.de:8080/hets/ticket/776"
 
     onClicked btnProve $ do

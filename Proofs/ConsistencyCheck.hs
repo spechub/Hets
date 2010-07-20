@@ -64,6 +64,9 @@ instance Eq ConsistencyStatus where
 instance Ord ConsistencyStatus where
   compare = comparing sType
 
+-- TODO instead of LibEnv.. get FreeDefs as Input. create wrapper that calcs FreeDefs
+-- from LibEnv, DGraph and LibName (so that the call remains the same).
+
 consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
