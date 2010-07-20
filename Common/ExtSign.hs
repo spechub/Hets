@@ -19,21 +19,21 @@ import Common.DocUtils
 
 -- | signatures with symbol sets.
 -- (The Ord instance is needed for the ATC generation)
-data Ord symbol => ExtSign sign symbol = ExtSign
+data ExtSign sign symbol = ExtSign
   { plainSign :: sign
   , nonImportedSymbols :: Set.Set symbol
   } deriving Show
 
-instance (Ord symbol, Ord sign) => Eq (ExtSign sign symbol) where
+instance (Ord sign) => Eq (ExtSign sign symbol) where
     a == b = compare a b == EQ
 
-instance (Ord symbol, Ord sign) => Ord (ExtSign sign symbol) where
+instance (Ord sign) => Ord (ExtSign sign symbol) where
   compare (ExtSign s1 _) (ExtSign s2 _) = compare s1 s2
 
-instance (Pretty sign, Ord symbol, Pretty symbol)
+instance (Pretty sign, Pretty symbol)
     => Pretty (ExtSign sign symbol) where
   pretty (ExtSign s sys) =
     sep [pretty s, if Set.null sys then empty else pretty sys]
 
-mkExtSign :: Ord symbol => sign -> ExtSign sign symbol
+mkExtSign :: sign -> ExtSign sign symbol
 mkExtSign s = ExtSign s Set.empty

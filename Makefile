@@ -200,7 +200,7 @@ drifted_files = Common/AS_Annotation.hs \
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs Common/LibName.hs Common/ExtSign.hs \
+    Logic/Prover.hs Common/LibName.hs \
     Common/Consistency.hs Common/ProofTree.hs Static/DevGraph.hs \
     Common/Id.hs Common/Result.hs Common/OrderedMap.hs \
     Common/Lib/Graph.hs
