@@ -21,7 +21,7 @@ import Common.DocUtils
 -- (The Ord instance is needed for the ATC generation)
 data Ord symbol => ExtSign sign symbol = ExtSign
   { plainSign :: sign
-  , nonImportedSymbols :: (Set.Set symbol)
+  , nonImportedSymbols :: Set.Set symbol
   } deriving Show
 
 instance (Ord symbol, Ord sign) => Eq (ExtSign sign symbol) where
