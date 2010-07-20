@@ -24,9 +24,6 @@ Proof rule "basic inference" in the development graphs calculus.
 
 module Proofs.InferBasic
   ( basicInferenceNode
-  , consistencyCheck
-  , SType (..)
-  , ConsistencyStatus (..)
   ) where
 
 import Static.GTheory
@@ -35,14 +32,12 @@ import Static.ComputeTheory
 
 import Proofs.EdgeUtils
 import Proofs.AbstractState
+import Proofs.FreeDefLinks
 
-import Common.DocUtils (showDoc)
-import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.AS_Annotation
-import qualified Common.Lib.Graph as Tree
 
 import Logic.Logic
 import Logic.Prover
@@ -59,73 +54,10 @@ import Interfaces.DataTypes
 import Interfaces.Utils
 
 import Data.IORef
-import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph
 import Data.Maybe
-import Data.Time.LocalTime (timeToTimeOfDay)
-import Data.Time.Clock (secondsToDiffTime)
-import Data.Ord (comparing)
 
 import Control.Monad.Trans
-
-import System.Timeout
-
-getCFreeDefLinks :: DGraph -> Node
-                        -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
-getCFreeDefLinks dg tgt =
-  let isGlobalOrCFreeEdge = liftOr isGlobalEdge $ liftOr isFreeEdge isCofreeEdge
-      paths = map reverse $ Tree.getAllPathsTo tgt
-        $ elfilter (isGlobalOrCFreeEdge . dgl_type) $ dgBody dg
-      myfilter p = filter ( \ ((_, _, lbl) : _) -> p $ dgl_type lbl)
-  in (myfilter isFreeEdge paths, myfilter isCofreeEdge paths)
-
-mkFreeDefMor :: [Named sentence] -> morphism -> morphism
-                -> FreeDefMorphism sentence morphism
-mkFreeDefMor sens m1 m2 = FreeDefMorphism
-  { freeDefMorphism = m1
-  , pathFromFreeDef = m2
-  , freeTheory = sens
-  , isCofree = False }
-
-getFreeDefMorphism :: Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LibName -> DGraph -> [LEdge DGLinkLab]
-   -> Maybe (FreeDefMorphism sentence morphism)
-getFreeDefMorphism lid libEnv ln dg path = case path of
-  [] -> error "getFreeDefMorphism"
-  (s, t, l) : rp -> do
-    gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
-    G_theory lidth (ExtSign _sign _) _ axs _ <-
-      computeTheory libEnv ln s
-    if isHomogeneous gmor then do
-        cfmor <- coerceMorphism (targetLogic cid) lid "getFreeDefMorphism1" fmor
-        sens <- coerceSens lidth lid "getFreeDefMorphism4" (toNamedList axs)
-        case rp of
-          [] -> do
-            G_theory lid2 (ExtSign sig _) _ _ _ <-
-                     return $ dgn_theory $ labDG dg t
-            sig2 <- coercePlainSign lid2 lid "getFreeDefMorphism2" sig
-            return $ mkFreeDefMor sens cfmor $ ide sig2
-          _ -> do
-            pm@(GMorphism cid2 _ _ pmor _) <- calculateMorphismOfPath rp
-            if isHomogeneous pm then do
-                cpmor <- coerceMorphism (targetLogic cid2) lid
-                         "getFreeDefMorphism3" pmor
-                return $ mkFreeDefMor sens cfmor cpmor
-              else Nothing
-      else Nothing
-
-getCFreeDefMorphs :: Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LibName -> DGraph -> Node
-   -> [FreeDefMorphism sentence morphism]
-getCFreeDefMorphs lid libEnv ln dg node = let
-  (frees, cofrees) = getCFreeDefLinks dg node
-  myget = mapMaybe (getFreeDefMorphism lid libEnv ln dg)
-  mkCoFree m = m { isCofree = True }
-  in myget frees ++ map mkCoFree (myget cofrees)
 
 selectProver :: GetPName a => [(a, AnyComorphism)]
              -> ResultT IO (a, AnyComorphism)
@@ -175,79 +107,6 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
       , recalculateSublogicF = return . recalculateSublogicAndSelectedTheory
       } thName (hidingLabelWarning lbl) thForProof kpMap
       (getProvers ProveGUI (Just sublogic) cms)
-
-data SType = CSUnchecked
-           | CSTimeout
-           | CSError
-           | CSInconsistent
-           | CSConsistent
-           deriving (Eq, Ord)
-
-data ConsistencyStatus = ConsistencyStatus { sType :: SType
-                                           , sMessage :: String }
-
-instance Show ConsistencyStatus where
-  show cs = case sType cs of
-    CSUnchecked -> "Unchecked"
-    _ -> sMessage cs
-
-instance Eq ConsistencyStatus where
-  (==) cs1 cs2 = compare cs1 cs2 == EQ
-
-instance Ord ConsistencyStatus where
-  compare = comparing sType
-
-consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
-                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
-consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
-  le dg (n', lbl) t'' = do
-  let lidS = sourceLogic cid
-      lidT = targetLogic cid
-      thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-      t = t'' * 1000000
-      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
-      ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
-      mTimeout = "No results within: " ++ show t'
-  case do
-        (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
-        let namedSens = toNamedList axs
-            sens = if includeTheorems then
-              map (\ s -> s { isAxiom = True }) namedSens
-              else namedSens
-        bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
-        (sig2, sens2) <- wrapMapTheory cid bTh'
-        incl <- subsig_inclusion lidT (empty_signature lidT) sig2
-        return (sig1, TheoryMorphism
-          { tSource = emptyTheory lidT
-          , tTarget = Theory sig2 $ toThSens sens2
-          , tMorphism = incl }) of
-    Result ds Nothing ->
-      return $ ConsistencyStatus CSError $ unlines $ map diagString ds
-    Result _ (Just (sig1, mor)) -> do
-      cc' <- coerceConsChecker lid4 lidT "" cc
-      ret <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
-        (ccAutomatic cc' thName ts mor $ getCFreeDefMorphs lidT le ln dg n')
-      return $ case ret of
-        Just ccStatus -> case ccResult ccStatus of
-          Just b -> if b then let
-            Result ds ms = extractModel cid sig1 $ ccProofTree ccStatus
-            msgLines = map diagString ds ++ lines (show $ ccProofTree ccStatus)
-            in case ms of
-            Nothing -> ConsistencyStatus CSConsistent $ unlines
-              ("consistent, but could not reconstruct a model" : msgLines)
-            Just (sig3, sens3) -> let
-              thTxt = showDoc
-                (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
-                        startThId) ""
-              in ConsistencyStatus CSConsistent $
-                 case filterDiags 2 ds of
-                   [] -> thTxt
-                   _ -> unlines $ lines thTxt ++ "%[" : msgLines ++ ["]%"]
-            else ConsistencyStatus CSInconsistent $ show (ccProofTree ccStatus)
-          Nothing -> if ccUsedTime ccStatus >= t' then
-            ConsistencyStatus CSTimeout mTimeout
-            else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
-        Nothing -> ConsistencyStatus CSTimeout mTimeout
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1

@@ -12,8 +12,8 @@ This module provides a GUI for the consistency checker.
 -}
 
 module GUI.GtkConsistencyChecker
-  (showConsistencyChecker)
-  where
+  ( showConsistencyChecker
+  ) where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
@@ -45,7 +45,7 @@ import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, when)
 
 import Proofs.AbstractState
-import Proofs.InferBasic
+import Proofs.ConsistencyCheck
 
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
