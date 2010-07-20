@@ -99,7 +99,25 @@ cStatusToPrefix s = case sType s of
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: Maybe Int -> GInfo -> LibEnv -> IO (Result LibEnv)
-showConsistencyChecker mn (GInfo { libName = ln }) le = do
+showConsistencyChecker mn gi@(GInfo { libName = ln }) le =
+  case mn of
+    Nothing -> showConsistencyCheckerMain mn gi le
+    Just n -> let
+      dg = lookupDGraph ln le
+      lbl = labDG dg n
+      in if case globalTheory lbl of
+        Just (G_theory _ _ _ sens _) -> Map.null sens
+        Nothing -> True
+        then do
+          infoDialog "No sentences" $ "Node " ++
+            getDGNodeName lbl
+            ++ " has no sentences and is thus trivially consistent"
+          return $ return le
+        else showConsistencyCheckerMain mn gi le
+
+-- | Displays the consistency checker window
+showConsistencyCheckerMain :: Maybe Int -> GInfo -> LibEnv -> IO (Result LibEnv)
+showConsistencyCheckerMain mn (GInfo { libName = ln }) le = do
   wait <- newEmptyMVar
   showConsistencyCheckerAux wait mn ln le
   le' <- takeMVar wait
