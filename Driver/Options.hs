@@ -46,6 +46,7 @@ module Driver.Options
 import Driver.Version
 
 import Common.Utils
+import Common.IO
 import Common.Id
 import Common.Result
 import Common.ResultT
@@ -57,6 +58,7 @@ import System.Exit
 
 import Control.Monad
 import Control.Monad.Trans
+import Data.Char
 import Data.List
 
 -- | short version without date for ATC files
@@ -146,6 +148,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , applyAutomatic :: Bool
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
+  , ioEncoding :: Enc
   , listen :: Int }
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -175,6 +178,7 @@ defaultHetcatsOpts = HcOpt
   , applyAutomatic = False
   , computeNormalForm = False
   , dumpOpts = []
+  , ioEncoding = Latin1
   , listen   = -1 }
 
 instance Show HetcatsOpts where
@@ -188,6 +192,10 @@ instance Show HetcatsOpts where
     ++ (if xmlFlag opts then showOpt xmlS else "")
     ++ (if connectP opts /= -1 then showOpt connectS else "")
     ++ (if listen opts /= -1 then showOpt listenS else "")
+    ++ concatMap (showEqOpt "dump") (dumpOpts opts)
+    ++ case ioEncoding opts of
+         Latin1 -> ""
+         Utf8 -> showEqOpt "encoding" "utf8"
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
@@ -227,6 +235,7 @@ data Flag =
   | Connect Int String
   | XML
   | Dump String
+  | IOEncoding Enc
   | Listen Int
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -254,6 +263,7 @@ makeOpts opts flg = case flg of
     Quiet         -> opts { verbose = 0 }
     Uncolored     -> opts { uncolored = True }
     Dump s        -> opts { dumpOpts = s : dumpOpts opts }
+    IOEncoding e  -> opts { ioEncoding = e }
     Help          -> opts -- skipped
     Version       -> opts -- skipped
 
@@ -324,7 +334,7 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn, 
+  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn,
     PrfIn, OmdocIn, ProofCommand, CommonLogicIn]
 
 aInTypes :: [InType]
@@ -470,6 +480,8 @@ options = let
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
+    , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
+      "latin1 (default) or utf8 encoding"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
@@ -502,7 +514,7 @@ options = let
 -- parser functions returning Flags --
 
 -- | 'parseVerbosity' parses a 'Verbose' Flag from user input
-parseVerbosity :: (Maybe String) -> Flag
+parseVerbosity :: Maybe String -> Flag
 parseVerbosity ms = case ms of
     Nothing -> Verbose 2
     Just s -> case reads s of
@@ -511,7 +523,7 @@ parseVerbosity ms = case ms of
 
 divideIntoPortHost :: String -> Bool -> (String, String) -> (String, String)
 divideIntoPortHost s sw (accP, accH) = case s of
-    ':' : ll -> divideIntoPortHost ll True (accP,accH)
+    ':' : ll -> divideIntoPortHost ll True (accP, accH)
     c : ll -> if sw then divideIntoPortHost ll True (accP, c : accH)
               else divideIntoPortHost ll False (c : accP, accH)
     [] -> (accP, accH)
@@ -519,16 +531,22 @@ divideIntoPortHost s sw (accP, accH) = case s of
 -- | 'parseConnect' parses a port Flag from user input
 parseConnect :: String -> Flag
 parseConnect s
- = let (sP,sH) = divideIntoPortHost s False ([],[])
+ = let (sP, sH) = divideIntoPortHost s False ([], [])
    in case reads sP of
-                [(i,"")] -> Connect i sH
+                [(i, "")] -> Connect i sH
                 _        -> Connect (-1) sH
 
 parseListen :: String -> Flag
 parseListen s
  = case reads s of
-                [(i,"")] -> Listen i
+                [(i, "")] -> Listen i
                 _        -> Listen (-1)
+
+parseEncoding :: String -> Flag
+parseEncoding s = case map toLower $ trim s of
+  "latin1" -> IOEncoding Latin1
+  "utf8" -> IOEncoding Utf8
+  r -> hetsError (r ++ " is not a valid encoding")
 
 -- | intypes useable for downloads
 downloadExtensions :: [String]
@@ -558,7 +576,7 @@ existsAnSource opts file = do
                   GuessIn -> if defLogic opts == "DMU"
                                 then [".xml"] else
                              if defLogic opts == "Framework"
-                                then [".elf",".thy",".maude",".het"] else
+                                then [".elf", ".thy", ".maude", ".het"] else
                              downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
@@ -662,37 +680,38 @@ hetcatsOpts argv =
                infs <- checkInFiles non_opts
                let hcOpts = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = infs }
-               if null infs && not (interactive hcOpts)&&(connectP hcOpts <0)&&
-                  (listen hcOpts <0) then
-                   hetsError "missing input files"
+               if null infs && not (interactive hcOpts)
+                 && connectP hcOpts < 0 && listen hcOpts < 0
+                   then hetsError "missing input files"
                    else return hcOpts
         (_, _, errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
-checkFlags fs =
-    let collectFlags = (collectDirs
+checkFlags fs = do
+    let collectFlags = collectDirs
                         . collectOutTypes
                         . collectVerbosity
                         . collectSpecOpts
                         -- collect some more here?
-                   )
-    in do if not $ null [ () | Help <- fs]
-             then do putStrLn hetsUsage
-                     exitWith ExitSuccess
-             else return [] -- fall through
-          if not $ null [ () | Version <- fs]
-             then do putStrLn ("version of hets: " ++ hetcats_version)
-                     exitWith ExitSuccess
-             else return [] -- fall through
-          collectFlags fs
+    if not $ null [ () | Help <- fs]
+      then do
+        putStrLn hetsUsage
+        exitWith ExitSuccess
+      else return [] -- fall through
+    if not $ null [ () | Version <- fs]
+      then do
+        putStrLn ("version of hets: " ++ hetcats_version)
+        exitWith ExitSuccess
+       else return [] -- fall through
+    collectFlags fs
 
 -- | 'checkInFiles' checks all given input files for sanity
 checkInFiles :: [String] -> IO [FilePath]
 checkInFiles fs = do
     let ifs = filter (not . checkUri) fs
         efs = filter hasExtension ifs
-        hasExtension f = any (flip isSuffixOf f) downloadExtensions
+        hasExtension f = any (`isSuffixOf` f) downloadExtensions
     bs <- mapM doesFileExist efs
     if and bs
       then return fs
@@ -748,21 +767,21 @@ checkOutDir _ = return ()
 -- auxiliary functions: collect flags --
 
 collectDirs :: [Flag] -> IO [Flag]
-collectDirs fs =
+collectDirs fs = do
     let (ods, fs1) = partition isOutDir fs
         (lds, fs2) = partition isLibDir fs1
         isOutDir (OutDir _) = True
         isOutDir _          = False
         isLibDir (LibDirs _) = True
         isLibDir _          = False
-    in do ods' <- checkOutDirs ods
-          lds' <- checkLibDirs lds
-          return $ ods' ++ lds' ++ fs2
+    ods' <- checkOutDirs ods
+    lds' <- checkLibDirs lds
+    return $ ods' ++ lds' ++ fs2
 
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
-    let (vs,fs') = partition isVerb fs
-        verbosity = (sum . map (\(Verbose x) -> x)) vs
+    let (vs, fs') = partition isVerb fs
+        verbosity = (sum . map (\ (Verbose x) -> x)) vs
         isVerb (Verbose _) = True
         isVerb _           = False
         vfs = Verbose verbosity : fs'
@@ -771,7 +790,7 @@ collectVerbosity fs =
 
 collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
-    let (ots,fs') = partition isOType fs
+    let (ots, fs') = partition isOType fs
         isOType (OutTypes _) = True
         isOType _            = False
         otypes = foldl concatOTypes [] ots
@@ -780,7 +799,7 @@ collectOutTypes fs =
 
 collectSpecOpts :: [Flag] -> [Flag]
 collectSpecOpts fs =
-    let (rfs,fs') = partition isSpecOpt fs
+    let (rfs, fs') = partition isSpecOpt fs
         isSpecOpt (Specs _) = True
         isSpecOpt _ = False
         specs = foldl concatSpecOpts [] rfs
@@ -809,7 +828,7 @@ doDump :: HetcatsOpts -> String -> IO () -> IO ()
 doDump opts str = when (elem str $ dumpOpts opts)
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
-showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
+showDiags :: HetcatsOpts -> [Diagnosis] -> IO ()
 showDiags opts ds =
     runResultT (showDiags1 opts $ liftR $ Result ds Nothing) >> return ()
 
