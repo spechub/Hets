@@ -12,7 +12,7 @@ Portability :  non-portable (via Logic.Logic)
 a not yet implemented comorphism
 -}
 
-module Comorphisms.OWL2CASL (OWL2CASL(..)) where
+module Comorphisms.OWL2CASL (OWL2CASL (..)) where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -68,13 +68,13 @@ instance Comorphism
     RawSymbol       -- rawsymbol codomain
     ProofTree       -- proof tree domain
     where
-      sourceLogic OWL2CASL    = OWL
+      sourceLogic OWL2CASL = OWL
       sourceSublogic OWL2CASL = sl_top
-      targetLogic OWL2CASL    = CASL
-      mapSublogic OWL2CASL _  = Just $ cFol
+      targetLogic OWL2CASL = CASL
+      mapSublogic OWL2CASL _ = Just $ cFol
         { cons_features = emptyMapConsFeature }
-      map_theory OWL2CASL     = mapTheory
-      map_morphism OWL2CASL   = mapMorphism
+      map_theory OWL2CASL = mapTheory
+      map_morphism OWL2CASL = mapMorphism
       isInclusionComorphism OWL2CASL = True
       has_model_expansion OWL2CASL = True
 
@@ -89,12 +89,12 @@ mapMorphism oMor =
               i1 = uriToId u1
               i2 = uriToId u2
               in case ty of
-                OWLClass -> Map.insert (i1, conceptPred) i2
+                Class -> Map.insert (i1, conceptPred) i2
                 ObjectProperty -> Map.insert (i1, objectPropPred) i2
                 DataProperty -> Map.insert (i1, dataPropPred) i2
                 _ -> id) Map.empty emap
           ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
-                Individual ->
+                NamedIndividual ->
                     Map.insert (uriToId u1, indiConst) (uriToId u2, Total)
                 _ -> id) Map.empty emap
       return (embedMorphism () cdm ccd)
@@ -206,15 +206,15 @@ mapTheory (owlSig, owlSens) =
     do
       cSig <- mapSign owlSig
       let pSig = loadDataInformation sublogic
-      (cSensI, nSig) <- foldM (\ (x,y) z ->
+      (cSensI, nSig) <- foldM (\ (x, y) z ->
                            do
                              (sen, sig) <- mapSentence y z
-                             return (sen:x, uniteCASLSign sig y)
+                             return (sen : x, uniteCASLSign sig y)
                              ) ([], cSig) owlSens
       let cSens = concatMap (\ x ->
                              case x of
                                Nothing -> []
-                               Just  a -> [a]
+                               Just a -> [a]
                         ) cSensI
       return (uniteCASLSign nSig pSig, predefinedSentences ++ cSens)
 
@@ -241,7 +241,7 @@ mapAxiom cSig ax =
             case pAx of
               SubClassOf sub super ->
                   do
-                    domT <- mapDescription cSig sub   a
+                    domT <- mapDescription cSig sub a
                     codT <- mapDescription cSig super a
                     return (Just $ Quantification Universal
                                [Var_decl [mkNName a] thing nullRange]
@@ -256,11 +256,11 @@ mapAxiom cSig ax =
                     let decrsP =
                             case eD of
                               Equivalent ->
-                                  map (\(x,y) -> Equivalence x y nullRange)
+                                  map (\ (x, y) -> Equivalence x y nullRange)
                                       decrsS
-                              Disjoint   ->
-                                  map (\(x,y) -> Negation
-                                       (Conjunction [x,y] nullRange) nullRange)
+                              Disjoint ->
+                                  map (\ (x, y) -> Negation
+                                       (Conjunction [x, y] nullRange) nullRange)
                                   decrsS
                     return (Just $ Quantification Universal
                               [Var_decl [mkNName a] thing nullRange]
@@ -269,9 +269,9 @@ mapAxiom cSig ax =
                                ) nullRange, cSig)
               DisjointUnion cls sD ->
                   do
-                    decrs  <- mapDescriptionList cSig a sD
+                    decrs <- mapDescriptionList cSig a sD
                     decrsS <- mapDescriptionListP cSig a $ comPairs sD sD
-                    let decrsP = map (\ (x, y) -> Conjunction [x,y] nullRange)
+                    let decrsP = map (\ (x, y) -> Conjunction [x, y] nullRange)
                                  decrsS
                     mcls <- mapClassURI cSig cls (mkNName a)
                     return (Just $ Quantification Universal
@@ -283,7 +283,7 @@ mapAxiom cSig ax =
                                   Conjunction
                                   [
                                    Disjunction decrs nullRange
-                                  ,Negation
+                                  , Negation
                                    (
                                     Conjunction decrsP nullRange
                                    )
@@ -308,12 +308,12 @@ mapAxiom cSig ax =
                                 (
                                  case disOrEq of
                                    Equivalent ->
-                                       map (\(x,y) ->
+                                       map (\ (x, y) ->
                                                 Equivalence x y nullRange) pairs
-                                   Disjoint   ->
-                                       map (\(x,y) ->
+                                   Disjoint ->
+                                       map (\ (x, y) ->
                                                 (Negation
-                                                 (Conjunction [x,y] nullRange)
+                                                 (Conjunction [x, y] nullRange)
                                                  nullRange
                                                 )
                                            ) pairs
@@ -324,13 +324,13 @@ mapAxiom cSig ax =
               ObjectPropertyDomainOrRange domOrRn objP descr ->
                         do
                           tobjP <- mapObjProp cSig objP a b
-                          tdsc  <- mapDescription cSig descr $
+                          tdsc <- mapDescription cSig descr $
                                    case domOrRn of
                                      ObjDomain -> a
-                                     ObjRange  -> b
+                                     ObjRange -> b
                           let vars = case domOrRn of
                                        ObjDomain -> (mkNName a, mkNName b)
-                                       ObjRange  -> (mkNName b, mkNName a)
+                                       ObjRange -> (mkNName b, mkNName a)
                           return (Just $ Quantification Universal
                                      [Var_decl [fst vars] thing nullRange]
                                      (
@@ -352,7 +352,7 @@ mapAxiom cSig ax =
                     so2 <- mapObjProp cSig o2 b a
                     return (Just $ Quantification Universal
                              [Var_decl [mkNName a] thing nullRange
-                             ,Var_decl [mkNName b] thing nullRange]
+                             , Var_decl [mkNName b] thing nullRange]
                              (
                               Equivalence
                               so1
@@ -368,8 +368,8 @@ mapAxiom cSig ax =
                           so2 <- mapObjProp cSig o a c
                           return (Just $ Quantification Universal
                                      [Var_decl [mkNName a] thing nullRange
-                                     ,Var_decl [mkNName b] thing nullRange
-                                     ,Var_decl [mkNName c] thing nullRange
+                                     , Var_decl [mkNName b] thing nullRange
+                                     , Var_decl [mkNName c] thing nullRange
                                      ]
                                      (
                                       Implication
@@ -396,8 +396,8 @@ mapAxiom cSig ax =
                           so2 <- mapObjProp cSig o b c
                           return (Just $ Quantification Universal
                                      [Var_decl [mkNName a] thing nullRange
-                                     ,Var_decl [mkNName b] thing nullRange
-                                     ,Var_decl [mkNName c] thing nullRange
+                                     , Var_decl [mkNName b] thing nullRange
+                                     , Var_decl [mkNName c] thing nullRange
                                      ]
                                      (
                                       Implication
@@ -418,7 +418,7 @@ mapAxiom cSig ax =
                                       nullRange
                                      )
                                      nullRange, cSig)
-                    Reflexive  ->
+                    Reflexive ->
                         do
                           so <- mapObjProp cSig o a a
                           return (Just $ Quantification Universal
@@ -466,7 +466,7 @@ mapAxiom cSig ax =
                           return
                            (Just $ Quantification Universal
                                [Var_decl [mkNName a] thing nullRange
-                               ,Var_decl [mkNName b] thing nullRange]
+                               , Var_decl [mkNName b] thing nullRange]
                                (
                                 Implication
                                 so1
@@ -482,7 +482,7 @@ mapAxiom cSig ax =
                           return
                            (Just $ Quantification Universal
                                [Var_decl [mkNName a] thing nullRange
-                               ,Var_decl [mkNName b] thing nullRange]
+                               , Var_decl [mkNName b] thing nullRange]
                                (
                                 Implication
                                 so1
@@ -498,7 +498,7 @@ mapAxiom cSig ax =
                           return
                            (Just $ Quantification Universal
                                [Var_decl [mkNName a] thing nullRange
-                               ,Var_decl [mkNName b] thing nullRange]
+                               , Var_decl [mkNName b] thing nullRange]
                                (
                                 Implication
                                  (Conjunction [so1, so2] nullRange)
@@ -524,8 +524,8 @@ mapAxiom cSig ax =
                           return
                            (Just $ Quantification Universal
                                [Var_decl [mkNName a] thing nullRange
-                               ,Var_decl [mkNName b] thing nullRange
-                               ,Var_decl [mkNName c] thing nullRange]
+                               , Var_decl [mkNName b] thing nullRange
+                               , Var_decl [mkNName c] thing nullRange]
                                (
                                 Implication
                                 (
@@ -539,7 +539,7 @@ mapAxiom cSig ax =
               SubDataPropertyOf dP1 dP2 ->
                   do
                     l <- mapDataProp cSig dP1 a b
-                    r <- mapDataProp cSig dP2  a b
+                    r <- mapDataProp cSig dP2 a b
                     return (Just $ Quantification Universal
                                [ Var_decl [mkNName a] thing nullRange
                                , Var_decl [mkNName b] dataS nullRange]
@@ -562,12 +562,12 @@ mapAxiom cSig ax =
                                 (
                                  case disOrEq of
                                    Equivalent ->
-                                       map (\(x,y) ->
+                                       map (\ (x, y) ->
                                                 Equivalence x y nullRange) pairs
-                                   Disjoint   ->
-                                       map (\(x,y) ->
+                                   Disjoint ->
+                                       map (\ (x, y) ->
                                                 (Negation
-                                                 (Conjunction [x,y] nullRange)
+                                                 (Conjunction [x, y] nullRange)
                                                  nullRange
                                                 )
                                            ) pairs
@@ -589,7 +589,7 @@ mapAxiom cSig ax =
                                          [Var_decl [snd vars] dataS nullRange]
                                          (Implication oEx odes True nullRange)
                                          nullRange) nullRange, cSig)
-                            DataRange  rn  ->
+                            DataRange rn ->
                                 do
                                   odes <- mapDataRange cSig rn b
                                   let vars = (mkNName a, mkNName b)
@@ -605,8 +605,8 @@ mapAxiom cSig ax =
                           so2 <- mapDataProp cSig o a c
                           return (Just $ Quantification Universal
                                      [Var_decl [mkNName a] thing nullRange
-                                     ,Var_decl [mkNName b] dataS nullRange
-                                     ,Var_decl [mkNName c] dataS nullRange
+                                     , Var_decl [mkNName b] dataS nullRange
+                                     , Var_decl [mkNName c] dataS nullRange
                                      ]
                                      (
                                       Implication
@@ -641,7 +641,7 @@ mapAxiom cSig ax =
                              nullRange, cSig)
               ClassAssertion indi cls ->
                   do
-                    inD  <- mapIndivURI cSig indi
+                    inD <- mapIndivURI cSig indi
                     ocls <- mapDescription cSig cls a
                     return (Just $ Quantification Universal
                              [Var_decl [mkNName a] thing nullRange]
@@ -672,7 +672,7 @@ mapAxiom cSig ax =
                                 return (Just $ Quantification Universal
                                            [Var_decl [mkNName a]
                                                      thing nullRange
-                                           ,Var_decl [mkNName b]
+                                           , Var_decl [mkNName b]
                                                      thing nullRange]
                                          (
                                           Implication
@@ -684,7 +684,7 @@ mapAxiom cSig ax =
                                              nullRange)
                                             inS
                                             nullRange
-                                           ,Strong_equation
+                                           , Strong_equation
                                             (Qual_var (mkNName b) thing
                                              nullRange)
                                             inT
@@ -712,7 +712,7 @@ mapAxiom cSig ax =
                           return (Just $ Quantification Universal
                                              [Var_decl [mkNName a]
                                                        thing nullRange
-                                             ,Var_decl [mkNName b]
+                                             , Var_decl [mkNName b]
                                                        dataS nullRange]
                                     (
                                      Implication
@@ -723,7 +723,7 @@ mapAxiom cSig ax =
                                        (Qual_var (mkNName a) thing nullRange)
                                        inS
                                        nullRange
-                                      ,Strong_equation
+                                      , Strong_equation
                                        (Qual_var (mkNName b) dataS nullRange)
                                        inT
                                        nullRange
@@ -737,7 +737,7 @@ mapAxiom cSig ax =
                                     nullRange, cSig)
               Declaration _ ->
                   return (Nothing, cSig)
-        EntityAnno _  ->
+        EntityAnno _ ->
               return (Nothing, cSig)
 
 {- | Mapping along ObjectPropsList for creation of pairs for commutative
@@ -746,12 +746,12 @@ mapComObjectPropsList :: CASLSign                    -- ^ CASLSignature
                       -> [ObjectPropertyExpression]
                       -> Int                         -- ^ First variable
                       -> Int                         -- ^ Last  variable
-                      -> Result [(CASLFORMULA,CASLFORMULA)]
+                      -> Result [(CASLFORMULA, CASLFORMULA)]
 mapComObjectPropsList cSig props num1 num2 =
       mapM (\ (x, z) -> do
                               l <- mapObjProp cSig x num1 num2
                               r <- mapObjProp cSig z num1 num2
-                              return (l,r)
+                              return (l, r)
                        ) $ comPairs props props
 
 -- | mapping of data constants
@@ -761,7 +761,7 @@ mapConstant :: CASLSign
 mapConstant _ c =
     do
       let cl = case c of
-                 Constant l _  -> l
+                 Constant l _ -> l
       return $ Application
                (
                 Qual_op_name
@@ -800,19 +800,19 @@ mapSubObjProp cSig prop oP num1 =
                      nullRange
         SubObjectPropertyChain props ->
             do
-              let zprops   = zip (tail props) [(num2+1) ..]
+              let zprops = zip (tail props) [(num2 + 1) ..]
                   (_, vars) = unzip zprops
-              oProps   <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
+              oProps <- mapM (\ (z, x, y) -> mapObjProp cSig z x y) $
                                 zip3 props ((num1 : vars) ++ [num2]) $
                                      tail ((num1 : vars) ++ [num2])
-              ooP      <- mapObjProp cSig oP num1 num2
+              ooP <- mapObjProp cSig oP num1 num2
               return $ Quantification Universal
                      [ Var_decl [mkNName num1] thing nullRange
                      , Var_decl [mkNName num2] thing nullRange]
                      (
                       Quantification Universal
                          (
-                          map (\x -> Var_decl [mkNName x] thing nullRange) vars
+                          map (\ x -> Var_decl [mkNName x] thing nullRange) vars
                          )
                          (
                           Implication
@@ -831,7 +831,7 @@ mapComDataPropsList :: CASLSign
                       -> [DataPropertyExpression]
                       -> Int                         -- ^ First variable
                       -> Int                         -- ^ Last  variable
-                      -> Result [(CASLFORMULA,CASLFORMULA)]
+                      -> Result [(CASLFORMULA, CASLFORMULA)]
 mapComDataPropsList cSig props num1 num2 =
       mapM (\ (x, z) -> do
                               l <- mapDataProp cSig x num1 num2
@@ -887,11 +887,11 @@ mapObjPropI cSig ob lP rP =
         OpURI u ->
           do
             lT <- case lP of
-                    OVar   num1   -> return $ Qual_var (mkNName num1)
+                    OVar num1 -> return $ Qual_var (mkNName num1)
                                      thing nullRange
                     OIndi indivID -> mapIndivURI cSig indivID
             rT <- case rP of
-                    OVar   num1   -> return $ Qual_var (mkNName num1)
+                    OVar num1 -> return $ Qual_var (mkNName num1)
                                      thing nullRange
                     OIndi indivID -> mapIndivURI cSig indivID
             ur <- uriToIdM u
@@ -950,8 +950,8 @@ uriToId urI =
                       a
                   else
                       '_'
-        nP = map repl $ namePrefix   ur
-        lP = map repl $ localPart    ur
+        nP = map repl $ namePrefix ur
+        lP = map repl $ localPart ur
         nU = map repl $ namespaceUri ur
     in stringToId $ nU ++ "" ++ nP ++ "" ++ lP
 
@@ -972,14 +972,14 @@ mapDescriptionListP :: CASLSign
 mapDescriptionListP cSig n lst =
     do
       let (l, r) = unzip lst
-      llst  <- mapDescriptionList cSig n l
-      rlst  <- mapDescriptionList cSig n r
+      llst <- mapDescriptionList cSig n l
+      rlst <- mapDescriptionList cSig n r
       let olst = zip llst rlst
       return olst
 
 -- | Build a name
 mkNName :: Int -> Token
-mkNName i = mkSimpleId $ hetsPrefix ++  mkNName_H i
+mkNName i = mkSimpleId $ hetsPrefix ++ mkNName_H i
     where
       mkNName_H k =
           case k of
@@ -988,10 +988,10 @@ mkNName i = mkSimpleId $ hetsPrefix ++  mkNName_H i
 
 -- | Get all distinct pairs for commutative operations
 comPairs :: [t] -> [t1] -> [(t, t1)]
-comPairs [] []     = []
-comPairs _  []     = []
-comPairs [] _      = []
-comPairs (a:as) (_:bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
+comPairs [] [] = []
+comPairs _ [] = []
+comPairs [] _ = []
+comPairs (a : as) (_ : bs) = zip (replicate (length bs) a) bs ++ comPairs as bs
 
 -- | mapping of Data Range
 mapDataRange :: CASLSign
@@ -1028,7 +1028,7 @@ mapDescription cSig des var =
           do
             desO <- mapM (flip (mapDescription cSig) var) desL
             return $ case jt of
-              UnionOf        -> Disjunction desO nullRange
+              UnionOf -> Disjunction desO nullRange
               IntersectionOf -> Conjunction desO nullRange
       ObjectComplementOf descr ->
              do
@@ -1037,15 +1037,15 @@ mapDescription cSig des var =
       ObjectOneOf indS ->
           do
             indO <- mapM (mapIndivURI cSig) indS
-            let varO  = Qual_var (mkNName var) thing nullRange
+            let varO = Qual_var (mkNName var) thing nullRange
             let forms = map (mkStEq varO) indO
             return $ Disjunction forms nullRange
       ObjectValuesFrom qt oprop descr ->
         do
           opropO <- mapObjProp cSig oprop var (var + 1)
-          descO  <- mapDescription cSig descr (var + 1)
+          descO <- mapDescription cSig descr (var + 1)
           case qt of
-            SomeValuesFrom  ->
+            SomeValuesFrom ->
                 return $ Quantification Existential [Var_decl [mkNName
                                                                (var + 1)]
                                                        thing nullRange]
@@ -1074,14 +1074,14 @@ mapDescription cSig des var =
             Cardinality ct n oprop d
                  ->
                    do
-                     let vlst =  [(var+1) .. (n+var)]
-                         vlstM = [(var+1) .. (n+var+1)]
-                     dOut <- (\x -> case x of
+                     let vlst = [(var + 1) .. (n + var)]
+                         vlstM = [(var + 1) .. (n + var + 1)]
+                     dOut <- (\ x -> case x of
                                       Nothing -> return []
-                                      Just  y ->
+                                      Just y ->
                                             mapM (mapDescription cSig y) vlst
                                  ) d
-                     let dlst = map (\(x,y) ->
+                     let dlst = map (\ (x, y) ->
                                      Negation
                                      (
                                         Strong_equation
@@ -1091,18 +1091,18 @@ mapDescription cSig des var =
                                      )
                                      nullRange
                                     ) $ comPairs vlst vlst
-                         dlstM = map (\(x,y) ->
+                         dlstM = map (\ (x, y) ->
                                         Strong_equation
                                          (Qual_var (mkNName x) thing nullRange)
                                          (Qual_var (mkNName y) thing nullRange)
                                          nullRange
                                     ) $ comPairs vlstM vlstM
 
-                         qVars = map (\x ->
+                         qVars = map (\ x ->
                                           Var_decl [mkNName x]
                                                     thing nullRange
                                      ) vlst
-                         qVarsM = map (\x ->
+                         qVarsM = map (\ x ->
                                           Var_decl [mkNName x]
                                                     thing nullRange
                                      ) vlstM
@@ -1135,5 +1135,5 @@ mapDescription cSig des var =
                                            nullRange
 
       DataValuesFrom _ _ _ _ -> fail "data handling nyi"
-      DataHasValue _ _       -> fail "data handling nyi"
-      DataCardinality _      -> fail "data handling nyi"
+      DataHasValue _ _ -> fail "data handling nyi"
+      DataCardinality _ -> fail "data handling nyi"

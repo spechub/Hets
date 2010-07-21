@@ -1,13 +1,16 @@
 {- |
 Module      :  $Header$
-Description :  Manchester syntax parser for OWL 1.1
-Copyright   :  (c) DFKI GmbH, Uni Bremen 2007-2008
+Description :  Manchester syntax parser for OWL 2
+Copyright   :  (c) DFKI GmbH, Uni Bremen 2007-2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
+Manchester syntax parser for OWL 2
+<http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
+adpated from
 Manchester syntax parser for OWL 1.1
 <http://www.webont.org/owled/2008dc/papers/owled2008dc_paper_11.pdf>
 <http://www.faqs.org/rfcs/rfc3987.html>
@@ -21,7 +24,6 @@ import OWL.Keywords
 import OWL.ColonKeywords
 
 import Common.Keywords
-import Common.Token (casl_reserved_words)
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
@@ -36,7 +38,7 @@ characters = [minBound .. maxBound]
 
 owlKeywords :: [String]
 owlKeywords = notS : stringS : map show entityTypes
-  ++ map show characters ++ casl_reserved_words ++ keywords
+  ++ map show characters ++ keywords
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
@@ -183,12 +185,11 @@ datatypeKeys =
   ]
 
 uriP :: CharParser st QName
-uriP = let
-  mkLow = map toLower
-  in skips $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
-  if null p then notElem (mkLow $ localPart q) $ map mkLow owlKeywords
-   else notElem (mkLow p)
-     $ map (mkLow . takeWhile (/= ':')) colonKeywords
+uriP =
+  skips $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
+  if null p then notElem (localPart q) owlKeywords
+   else notElem p
+     $ map (takeWhile (/= ':')) colonKeywords
 
 -- | parse a possibly kinded list of comma separated uris aka symbols
 symbItems :: GenParser Char st SymbItems
@@ -258,7 +259,8 @@ languageTag = atMost1 4 letter
 stringConstant :: CharParser st Constant
 stringConstant = do
   s <- stringLit
-  do  string cTypeS
+  do
+      string cTypeS
       d <- datatypeUri
       return $ Constant s $ Typed d
     <|> do
@@ -477,7 +479,7 @@ restrictionOrAtomic = do
        _ -> unexpected "inverse object property"
   <|> atomic
 
-optNot :: (a -> a) -> CharParser st a  -> CharParser st a
+optNot :: (a -> a) -> CharParser st a -> CharParser st a
 optNot f p = (keyword notS >> fmap f p) <|> p
 
 primary :: CharParser st Description
@@ -550,7 +552,7 @@ entityAnnos qn ty = do
 
 classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = OWLClassDescription curi in
-    entityAnnos curi OWLClass
+    entityAnnos curi Class
   <|> do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList
@@ -576,7 +578,7 @@ classFrame = do
   curi <- owlClassUri
   as <- flat $ many $ classFrameBit curi
   return $ if null as
-    then [PlainAxiom [] $ Declaration $ Entity OWLClass curi]
+    then [PlainAxiom [] $ Declaration $ Entity Class curi]
     else as
 
 domainOrRange :: CharParser st ObjDomainOrRange
@@ -690,7 +692,8 @@ fact :: QName -> CharParser st PlainAxiom
 fact iuri = do
   pn <- option Positive $ keyword notS >> return Negative
   u <- uriP
-  do  c <- constant
+  do
+      c <- constant
       return $ DataPropertyAssertion $ Assertion u pn iuri c
     <|> do
       t <- individualUri
@@ -698,7 +701,7 @@ fact iuri = do
 
 iFrameBit :: QName -> CharParser st [Axiom]
 iFrameBit iuri =
-    entityAnnos iuri Individual
+    entityAnnos iuri NamedIndividual
   <|> do
     pkeyword typesC
     ds <- descriptionAnnotatedList
@@ -719,7 +722,7 @@ individualFrame = do
   iuri <- individualUri
   as <- flat $ many $ iFrameBit iuri
   return $ if null as
-    then [PlainAxiom [] $ Declaration $ Entity Individual iuri]
+    then [PlainAxiom [] $ Declaration $ Entity NamedIndividual iuri]
     else as
 
 equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint

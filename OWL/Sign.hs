@@ -52,7 +52,7 @@ data SignAxiom =
   | Conceptmembership IndividualID Description
     deriving (Show, Eq, Ord)
 
-data RoleKind = FuncRole | RefRole  deriving (Show, Eq, Ord)
+data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord)
 
 data RoleType = IRole | DRole deriving (Show, Eq, Ord)
 
@@ -65,7 +65,7 @@ data DomainOrRangeOrFunc a =
     deriving (Show, Eq, Ord)
 
 emptySign :: Sign
-emptySign =  Sign
+emptySign = Sign
   { ontologyID = nullQName
   , concepts = Set.empty
   , primaryConcepts = Set.empty
@@ -131,8 +131,8 @@ isSubSign a b =
 
 symOf :: Sign -> Set.Set Entity
 symOf s = Set.unions
-  [ Set.map (Entity OWLClass) $ concepts s
+  [ Set.map (Entity Class) $ concepts s
   , Set.map (Entity Datatype) $ datatypes s
   , Set.map (Entity ObjectProperty) $ indValuedRoles s
   , Set.map (Entity DataProperty) $ dataValuedRoles s
-  , Set.map (Entity Individual) $ individuals s ]
+  , Set.map (Entity NamedIndividual) $ individuals s ]

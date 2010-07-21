@@ -24,12 +24,12 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-signColimit :: Gr Sign (Int,OWLMorphism) ->
+signColimit :: Gr Sign (Int, OWLMorphism) ->
                (Sign, Map.Map Int OWLMorphism)
 signColimit graph = let
-   conGraph = emap (getEntityTypeMap OWLClass) $ nmap concepts graph
-   dataGraph = emap (getEntityTypeMap Datatype)$ nmap datatypes graph
-   indGraph = emap (getEntityTypeMap Individual) $ nmap individuals graph
+   conGraph = emap (getEntityTypeMap Class) $ nmap concepts graph
+   dataGraph = emap (getEntityTypeMap Datatype) $ nmap datatypes graph
+   indGraph = emap (getEntityTypeMap NamedIndividual) $ nmap individuals graph
    objGraph = emap (getEntityTypeMap ObjectProperty) $
               nmap indValuedRoles graph
    dataPropGraph = emap (getEntityTypeMap DataProperty) $
@@ -40,12 +40,12 @@ signColimit graph = let
    (obj, funO) = addIntToSymbols $ computeColimitSet objGraph
    (dp, funDP) = addIntToSymbols $ computeColimitSet dataPropGraph
    oid = nullQName
-   morFun i = foldl Map.union Map.empty $
-               [ setEntityTypeMap OWLClass $
+   morFun i = foldl Map.union Map.empty
+               [ setEntityTypeMap Class $
                    Map.findWithDefault (error "maps") i funC,
                  setEntityTypeMap Datatype $
                    Map.findWithDefault (error "maps") i funD,
-                 setEntityTypeMap Individual $
+                 setEntityTypeMap NamedIndividual $
                    Map.findWithDefault (error "maps") i funI,
                  setEntityTypeMap ObjectProperty $
                    Map.findWithDefault (error "maps") i funO,
@@ -53,19 +53,18 @@ signColimit graph = let
                    Map.findWithDefault (error "maps") i funDP
                 ]
    morMaps = Map.fromAscList $
-              map (\x -> (x,morFun x)) $ nodes graph
+              map (\ x -> (x, morFun x)) $ nodes graph
    nameMap = foldl Map.union Map.empty $
-             map (\(_,l)-> namespaceMap l)$ labNodes graph
+             map (\ (_, l) -> namespaceMap l) $ labNodes graph
       -- here it will be a union with clashing symbols renamed
       -- if their corresponding values are not the same
-   pCs = foldl Set.union Set.empty $
-         map (\(i,pcs) -> Set.map
-                         (\x -> Map.findWithDefault (error "errorColimit") x $
+   pCs = Set.unions $
+         map (\ (i, l) -> Set.map
+                         (\ x -> Map.findWithDefault (error "errorColimit") x $
                                 Map.findWithDefault (error "error i") i funC)
-                         pcs ) $
-         map (\(i,l)-> (i, primaryConcepts l))$
-         labNodes graph
-   colimSign = emptySign{
+                         $ primaryConcepts l )
+         $ labNodes graph
+   colimSign = emptySign {
                   ontologyID = oid,
                   concepts = con,
                   primaryConcepts = pCs,
@@ -76,30 +75,29 @@ signColimit graph = let
                   namespaceMap = nameMap
                 }
    colimMor = Map.fromAscList $
-                map (\(i, ssig) -> let
+                map (\ (i, ssig) -> let
                          mm = Map.findWithDefault (error "mor") i morMaps
-                         om = OWLMorphism{
+                         om = OWLMorphism {
                                osource = ssig,
                                otarget = colimSign,
                                mmaps = mm
                               }
-                                   in (i,om)
-                     )$ labNodes graph
+                                   in (i, om)
+                     ) $ labNodes graph
   in (colimSign, colimMor)
 
 instance SymbolName QName where
  addIntAsSuffix (QN p l b n, i) = QN p (l ++ show i) b n
 
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
-                    -> (Int,Map.Map QName QName)
-getEntityTypeMap e (i,phi) = let
+                    -> (Int, Map.Map QName QName)
+getEntityTypeMap e (i, phi) = let
  f = Map.filterWithKey
-      (\(Entity x _)_ -> x == e) $ mmaps phi
- in (i,Map.fromList $
-    map (\(Entity _ x, y) -> (x,y)) $
+      (\ (Entity x _) _ -> x == e) $ mmaps phi
+ in (i, Map.fromList $
+    map (\ (Entity _ x, y) -> (x, y)) $
     Map.toAscList f)
 
 setEntityTypeMap :: EntityType -> Map.Map QName QName
-                    ->  Map.Map Entity QName
-setEntityTypeMap e f = Map.mapKeys (\x -> Entity e x) f
-
+                    -> Map.Map Entity QName
+setEntityTypeMap = Map.mapKeys . Entity

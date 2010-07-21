@@ -31,10 +31,11 @@ modEntity f (Entity ty u) = do
   let chg = f u
   put $ case ty of
     Datatype -> s { datatypes = chg $ datatypes s }
-    OWLClass -> s { concepts = chg $ concepts s }
+    Class -> s { concepts = chg $ concepts s }
     ObjectProperty -> s { indValuedRoles = chg $ indValuedRoles s }
     DataProperty -> s { dataValuedRoles = chg $ dataValuedRoles s }
-    Individual -> s { individuals = chg $ individuals s }
+    NamedIndividual -> s { individuals = chg $ individuals s }
+    AnnotationProperty -> s -- ignore
 
 addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
@@ -55,7 +56,7 @@ anaDataPropExpr :: DataPropertyExpression -> State Sign ()
 anaDataPropExpr = addEntity . Entity DataProperty
 
 anaIndividual :: IndividualURI -> State Sign ()
-anaIndividual = addEntity . Entity Individual
+anaIndividual = addEntity . Entity NamedIndividual
 
 anaConstant :: Constant -> State Sign ()
 anaConstant (Constant _ ty) = case ty of
@@ -75,11 +76,11 @@ anaDescription :: Description -> State Sign ()
 anaDescription desc = case desc of
   OWLClassDescription u ->
       case u of
-        QN _ "Thing" _ _ -> addEntity $ Entity OWLClass $
+        QN _ "Thing" _ _ -> addEntity $ Entity Class $
                           QN "owl" "Thing" False ""
-        QN _ "Nothing" _ _ -> addEntity $ Entity OWLClass $
+        QN _ "Nothing" _ _ -> addEntity $ Entity Class $
                           QN "owl" "Nothing" False ""
-        v -> addEntity $ Entity OWLClass v
+        v -> addEntity $ Entity Class v
   ObjectJunction _ ds -> mapM_ anaDescription ds
   ObjectComplementOf d -> anaDescription d
   ObjectOneOf is -> mapM_ anaIndividual is
@@ -112,7 +113,7 @@ anaPlainAxiom pa = case pa of
   EquivOrDisjointClasses _ ds ->
     mapM_ anaDescription ds
   DisjointUnion u ds -> do
-    addEntity $ Entity OWLClass u
+    addEntity $ Entity Class u
     mapM_ anaDescription ds
   SubObjectPropertyOf sop op -> do
     mapM_ (addEntity . Entity ObjectProperty)
@@ -168,7 +169,7 @@ basicOWLAnalysis (ofile, inSign, _) =
         (sens, accSign) = runState
           (mapM anaAxiom $ axiomsList $ ontology ofile')
           inSign {namespaceMap = integNamespace
-                 ,ontologyID   = uri $ ontology ofile'
+                 , ontologyID = uri $ ontology ofile'
                  }
     in Result diags1
            $ Just (ofile', ExtSign accSign syms, concat sens)
@@ -180,7 +181,7 @@ basicOWLAnalysis (ofile, inSign, _) =
           if null iuri then []
             else
              let uri' = take (length iuri - 1) iuri
-             in  if elem uri' importList
+             in if elem uri' importList
                   then []
                   else
                     [mkDiag
@@ -221,7 +222,7 @@ findImplied anno sent =
 
 isToProve :: [OWL.AS.Annotation] -> Bool
 isToProve [] = False
-isToProve (anno:r) =
+isToProve (anno : r) =
     case anno of
       ExplicitAnnotation auri (Constant value (Typed _)) ->
           if localPart auri == "Implied" then value == "true"

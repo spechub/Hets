@@ -79,10 +79,10 @@ inducedFromMor rm sig = do
             if Set.member s syms
             then return $ if u == v then m else Map.insert s u m
             else fail $ "unknown symbol: " ++ showDoc s ""
-        (AnUri v, AnUri u) -> case filter (flip Set.member syms)
-          $ map (\ ty -> Entity ty v) entityTypes of
+        (AnUri v, AnUri u) -> case filter (`Set.member` syms)
+          $ map (`Entity` v) entityTypes of
           [] -> fail $ "unknown symbol: " ++ showDoc v ""
-          l -> return $ if u == v then m else foldr (flip Map.insert u) m l
+          l -> return $ if u == v then m else foldr (`Map.insert` u) m l
         _ -> error "OWL.Morphism.inducedFromMor") Map.empty $ Map.toList rm
   return OWLMorphism
     { osource = sig
@@ -214,10 +214,10 @@ mapDataExpr :: Map.Map Entity URI -> DataPropertyExpression
 mapDataExpr m dpe = getUri DataProperty dpe m
 
 getClassUri :: URI -> Map.Map Entity URI -> URI
-getClassUri = getUri OWLClass
+getClassUri = getUri Class
 
 getIndUri :: URI -> Map.Map Entity URI -> URI
-getIndUri = getUri Individual
+getIndUri = getUri NamedIndividual
 
 mapCard :: (a -> b) -> (c -> d) -> Cardinality a c -> Cardinality b d
 mapCard f g (Cardinality ty i a mb) =
@@ -228,7 +228,7 @@ mapDescr m desc = case desc of
     OWLClassDescription u -> OWLClassDescription $ getClassUri u m
     ObjectJunction ty ds -> ObjectJunction ty $ map (mapDescr m) ds
     ObjectComplementOf d -> ObjectComplementOf $ mapDescr m d
-    ObjectOneOf is -> ObjectOneOf $ map (flip getIndUri m) is
+    ObjectOneOf is -> ObjectOneOf $ map (`getIndUri` m) is
     ObjectValuesFrom ty o d -> ObjectValuesFrom ty (mapObjExpr m o)
       $ mapDescr m d
     ObjectExistsSelf o -> ObjectExistsSelf $ mapObjExpr m o
@@ -283,11 +283,10 @@ mapPlainAxiom m pax = case pax of
       (mapDataDomOrRange m dd) $ mapDataExpr m d
     FunctionalDataProperty d -> FunctionalDataProperty $ mapDataExpr m d
     SameOrDifferentIndividual ty is -> SameOrDifferentIndividual ty
-      $ map (flip getIndUri m) is
+      $ map (`getIndUri` m) is
     ClassAssertion i d -> ClassAssertion (getIndUri i m) $ mapDescr m d
     ObjectPropertyAssertion a -> ObjectPropertyAssertion
-      $ mapAssertion m (mapObjExpr m) (flip getIndUri m) a
+      $ mapAssertion m (mapObjExpr m) (`getIndUri` m) a
     DataPropertyAssertion a -> DataPropertyAssertion
       $ mapAssertion m (mapDataExpr m) id a
     Declaration (Entity ty u) -> Declaration $ Entity ty $ getUri ty u m
-

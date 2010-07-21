@@ -108,10 +108,11 @@ type OntologyMap = Map.Map String OntologyFile
 
 data EntityType =
     Datatype
-  | OWLClass
+  | Class
   | ObjectProperty
   | DataProperty
-  | Individual
+  | AnnotationProperty
+  | NamedIndividual
     deriving (Typeable, Enum, Bounded, Show, Read, Eq, Ord)
 
 -- | Syntax of Entities
