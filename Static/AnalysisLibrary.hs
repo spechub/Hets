@@ -65,7 +65,6 @@ import System.FilePath
 import LF.Twelf2DG
 
 import Framework.Analysis
-import Debug.Trace
 
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
@@ -88,7 +87,7 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
             fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
-        input <- readEncFile Latin1 file
+        input <- readEncFile (ioEncoding opts) file
         putIfVerbose opts 2 $ "Reading file " ++ file
         if takeExtension file /= ('.' : show TwelfIn)
            then runResultT $
@@ -97,7 +96,7 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
              res <- anaTwelfFile opts file
              case res of
                   Nothing -> fail ""
-                  Just (lname,lenv) -> return $ Result [] $
+                  Just (lname, lenv) -> return $ Result [] $
                       Just (lname, Map.union lenv libenv)
 
 -- | parsing and static analysis for string (=contents of file)
@@ -287,7 +286,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     let spstr = tokStr spn
         nName = makeName spn
     analyzing opts $ "spec " ++ spstr
-    (gen', gsig@(GenSig _ args allparams), dg') <-
+    (gen', gsig@(GenSig _ _args allparams), dg') <-
       liftR $ anaGenericity lgraph dg opts nName gen
     (sanno1, impliesA) <- liftR $ getSpecAnnos pos asp
     when impliesA $ liftR $ plain_error ()
@@ -300,8 +299,8 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
     if Map.member spn genv
       then liftR $ plain_error (libItem', dg'', libenv)
                (alreadyDefined spstr) pos
-      else do
-        --let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
+      else
+        -- let (_n, dg''') = addSpecNodeRT dg'' (UnitSig args body) $ show spn
         return
          ( libItem'
          , dg'' { globalEnv = Map.insert spn (SpecEntry
@@ -313,7 +312,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
   Arch_spec_defn asn asp pos -> do
     let asstr = tokStr asn
     analyzing opts $ "arch spec " ++ asstr
-    (_, _, diag, archSig, dg', asp') <- --trace (show $ refTree dg)$
+    (_, _, diag, archSig, dg', asp') <- -- trace (show $ refTree dg)$
                                       liftR $ anaArchSpec lgraph dg opts
                                       emptyExtStUnitCtx Nothing $ item asp
     let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
@@ -327,13 +326,13 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
                            Map.insert (show asn)
                              (let
                                gr = nmap
-                                     (\x-> x{dn_desc =
-                                        (take 20 $ dn_desc x) ++ "..."})
+                                     (\ x -> x { dn_desc =
+                                      take 20 (dn_desc x) ++ "..." })
                                      $ diagGraph diag
-                              in diag{diagGraph = gr})
+                              in diag {diagGraph = gr})
                            $ archSpecDiags dg''}
-            trace (show $ refTree $  dg3) $
-             return (asd', dg3
+            -- trace (show $ refTree dg3) $
+            return (asd', dg3
                { globalEnv = Map.insert asn (ArchEntry archSig) genv },
                       libenv)
   Unit_spec_defn usn usp pos -> do
@@ -363,7 +362,7 @@ anaLibItem lgraph opts topLns libenv dg itm = case itm of
       then liftR (plain_error (itm, dg', libenv)
                              (alreadyDefined rnstr)
                              pos)
-      else --trace (show $ refTree dg') $
+      else -- trace (show $ refTree dg') $
            return ( rsd', dg' { globalEnv = Map.insert rn (RefEntry rsig) genv }
                   , libenv)
   Logic_decl (Logic_name logTok _) _ -> do

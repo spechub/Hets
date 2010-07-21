@@ -38,7 +38,7 @@ import ATC.AS_Library ()
 import ATC.DevGraph ()
 import ATC.Grothendieck
 
-import Syntax.AS_Library (LIB_DEFN())
+import Syntax.AS_Library (LIB_DEFN ())
 import Syntax.Print_AS_Library ()
 import Syntax.ToXml
 
@@ -70,7 +70,8 @@ writeLibDefn :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
 writeLibDefn ga file opts ld = do
     let (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
-        printAscii fn = writeEncFile Latin1 fn $ showGlobalDoc ga ld "\n"
+        printAscii fn = writeEncFile (ioEncoding opts) fn
+          $ showGlobalDoc ga ld "\n"
         write_type :: OutType -> IO ()
         write_type ty = case ty of
             PrettyOut pty -> do
