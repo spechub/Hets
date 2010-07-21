@@ -99,13 +99,12 @@ genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
 
-graphS, ppS, envS, deltaS, prfS, owlS, omdocS, hsS, experimentalS :: String
+graphS, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 deltaS = ".delta"
 prfS = "prf"
-owlS = "owl"
 omdocS = "omdoc"
 hsS = "hs"
 experimentalS = "exp"
@@ -157,17 +156,17 @@ defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = HcOpt
   { analysis = Basic
   , guiType = NoGui
-  , infiles  = []
+  , infiles = []
   , specNames = []
   , transNames = []
-  , intype   = GuessIn
-  , libdirs   = []
+  , intype = GuessIn
+  , libdirs = []
   , modelSparQ = ""
-  , outdir   = ""
+  , outdir = ""
   , outtypes = [] -- no default
-  , recurse  = False
+  , recurse = False
   , defLogic = "CASL"
-  , verbose  = 1
+  , verbose = 1
   , outputToStdout = True
   , caslAmalg = [Cell]
   , interactive = False
@@ -179,7 +178,7 @@ defaultHetcatsOpts = HcOpt
   , computeNormalForm = False
   , dumpOpts = []
   , ioEncoding = Latin1
-  , listen   = -1 }
+  , listen = -1 }
 
 instance Show HetcatsOpts where
   show opts = showEqOpt verboseS (show $ verbose opts)
@@ -242,30 +241,30 @@ data Flag =
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts flg = case flg of
     Interactive -> opts { interactive = True }
-    XML         -> opts { xmlFlag = True }
-    Listen x    -> opts { listen = x }
+    XML -> opts { xmlFlag = True }
+    Listen x -> opts { listen = x }
     Connect x y -> opts { connectP = x, connectH = y }
     Analysis x -> opts { analysis = x }
-    Gui x      -> opts { guiType = x }
-    InType x   -> opts { intype = x }
-    LibDirs x   -> opts { libdirs = splitOn ':' x }
+    Gui x -> opts { guiType = x }
+    InType x -> opts { intype = x }
+    LibDirs x -> opts { libdirs = splitOn ':' x }
     ModelSparQ x -> opts { modelSparQ = x }
-    OutDir x   -> opts { outdir = x }
+    OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
-    Recurse    -> opts { recurse = True }
+    Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
     NormalForm -> opts { computeNormalForm = True }
-    Specs x    -> opts { specNames = x }
-    Trans x    -> opts { transNames = x }
-    Verbose x  -> opts { verbose = x }
+    Specs x -> opts { specNames = x }
+    Trans x -> opts { transNames = x }
+    Verbose x -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
-    CASLAmalg x   -> opts { caslAmalg = x }
-    Quiet         -> opts { verbose = 0 }
-    Uncolored     -> opts { uncolored = True }
-    Dump s        -> opts { dumpOpts = s : dumpOpts opts }
-    IOEncoding e  -> opts { ioEncoding = e }
-    Help          -> opts -- skipped
-    Version       -> opts -- skipped
+    CASLAmalg x -> opts { caslAmalg = x }
+    Quiet -> opts { verbose = 0 }
+    Uncolored -> opts { uncolored = True }
+    Dump s -> opts { dumpOpts = s : dumpOpts opts }
+    IOEncoding e -> opts { ioEncoding = e }
+    Help -> opts -- skipped
+    Version -> opts -- skipped
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -283,7 +282,7 @@ data GuiType = UseGui | NoGui
 instance Show GuiType where
   show g = case g of
     UseGui -> showOpt guiS
-    NoGui  -> ""
+    NoGui -> ""
 
 -- | 'InType' describes the type of input the infile contains
 data InType =
@@ -306,7 +305,7 @@ instance Show InType where
     ATermIn at -> genTermS ++ show at
     CASLIn -> "casl"
     HetCASLIn -> "het"
-    OWLIn -> owlS
+    OWLIn -> "owl"
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -345,7 +344,7 @@ data SPFType = ConsistencyCheck | ProveTheory
 instance Show SPFType where
   show x = case x of
     ConsistencyCheck -> cS
-    ProveTheory  -> ""
+    ProveTheory -> ""
 
 spfTypes :: [SPFType]
 spfTypes = [ConsistencyCheck, ProveTheory]
@@ -402,7 +401,7 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
-    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
+    readsPrec _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
 
 data Delta = Delta | Fully
 
@@ -519,7 +518,7 @@ parseVerbosity ms = case ms of
     Nothing -> Verbose 2
     Just s -> case reads s of
       [(i, "")] -> Verbose i
-      _  -> hetsError (s ++ " is not a valid INT")
+      _ -> hetsError (s ++ " is not a valid INT")
 
 divideIntoPortHost :: String -> Bool -> (String, String) -> (String, String)
 divideIntoPortHost s sw (accP, accH) = case s of
@@ -534,13 +533,13 @@ parseConnect s
  = let (sP, sH) = divideIntoPortHost s False ([], [])
    in case reads sP of
                 [(i, "")] -> Connect i sH
-                _        -> Connect (-1) sH
+                _ -> Connect (-1) sH
 
 parseListen :: String -> Flag
 parseListen s
  = case reads s of
                 [(i, "")] -> Listen i
-                _        -> Listen (-1)
+                _ -> Listen (-1)
 
 parseEncoding :: String -> Flag
 parseEncoding s = case map toLower $ trim s of
@@ -771,9 +770,9 @@ collectDirs fs = do
     let (ods, fs1) = partition isOutDir fs
         (lds, fs2) = partition isLibDir fs1
         isOutDir (OutDir _) = True
-        isOutDir _          = False
+        isOutDir _ = False
         isLibDir (LibDirs _) = True
-        isLibDir _          = False
+        isLibDir _ = False
     ods' <- checkOutDirs ods
     lds' <- checkLibDirs lds
     return $ ods' ++ lds' ++ fs2
@@ -783,7 +782,7 @@ collectVerbosity fs =
     let (vs, fs') = partition isVerb fs
         verbosity = (sum . map (\ (Verbose x) -> x)) vs
         isVerb (Verbose _) = True
-        isVerb _           = False
+        isVerb _ = False
         vfs = Verbose verbosity : fs'
     in if not $ null [() | Quiet <- fs'] then Verbose 0 : fs' else
        if null vs then Verbose 1 : fs' else vfs
@@ -792,7 +791,7 @@ collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
     let (ots, fs') = partition isOType fs
         isOType (OutTypes _) = True
-        isOType _            = False
+        isOType _ = False
         otypes = foldl concatOTypes [] ots
         concatOTypes = (\ os (OutTypes ot) -> os ++ ot)
     in if null otypes then fs' else OutTypes otypes : fs'
