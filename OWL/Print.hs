@@ -43,7 +43,7 @@ printSign s =
        pon = printURIreference $ if on == nullQName
              then dummyQName
              else on
-   in vcat (map (\ (c, l) -> text $ namespaceC ++" " ++ c ++ " <" ++ l ++">")
+   in vcat (map (\ (c, l) -> text $ prefixC ++" " ++ c ++ ": <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
@@ -215,7 +215,7 @@ printAxiom axiom = case axiom of
    ObjectPropertyDomainOrRange ty opExp desc ->
        opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ text inversesC <+> pretty opExp2
+       opStart <+> pretty opExp1 $+$ text inverseOfC <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->
        opStart <+> pretty opExp $+$ printCharact (show ch)
    -- DataPropertyAxiom

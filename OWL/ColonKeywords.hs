@@ -20,45 +20,38 @@ module OWL.ColonKeywords where
 
 colonKeywords :: [String]
 colonKeywords =
-  [ annotationsC
+  [ annotationPropertyC
+  , annotationsC
   , characteristicsC
   , classC
   , classesC
-  , dataPropertiesC
   , dataPropertyC
+  , datatypeC
   , differentFromC
   , differentIndividualsC
-  , disjointClassesC
-  , disjointDataPropertiesC
-  , disjointObjectPropertyC
   , disjointUnionOfC
   , disjointWithC
   , domainC
-  , equivalentClassesC
-  , equivalentDataPropertiesC
-  , equivalentObjectPropertiesC
   , equivalentToC
   , factsC
+  , hasKeyC
   , importC
   , individualC
   , inverseOfC
-  , inversesC
-  , namespaceC
-  , objectPropertiesC
   , objectPropertyC
   , ontologyC
-  , paraphraseC
+  , prefixC
+  , propertiesC
   , rangeC
   , sameAsC
   , sameIndividualC
   , subClassOfC
   , subPropertyChainC
   , subPropertyOfC
-  , superPropertyChainC
-  , superPropertyOfC
-  , typesC
-  , valuePartitionC
-  ]
+  , typesC ]
+
+annotationPropertyC :: String
+annotationPropertyC = "AnnotationProperty:"
 
 annotationsC :: String
 annotationsC = "Annotations:"
@@ -72,26 +65,17 @@ classC = "Class:"
 classesC :: String
 classesC = "Classes:"
 
-dataPropertiesC :: String
-dataPropertiesC = "DataProperties:"
-
 dataPropertyC :: String
 dataPropertyC = "DataProperty:"
+
+datatypeC :: String
+datatypeC = "Datatype:"
 
 differentFromC :: String
 differentFromC = "DifferentFrom:"
 
 differentIndividualsC :: String
 differentIndividualsC = "DifferentIndividuals:"
-
-disjointClassesC :: String
-disjointClassesC = "DisjointClasses:"
-
-disjointDataPropertiesC :: String
-disjointDataPropertiesC = "DisjointDataProperties:"
-
-disjointObjectPropertyC :: String
-disjointObjectPropertyC = "DisjointObjectProperty:"
 
 disjointUnionOfC :: String
 disjointUnionOfC = "DisjointUnionOf:"
@@ -102,20 +86,14 @@ disjointWithC = "DisjointWith:"
 domainC :: String
 domainC = "Domain:"
 
-equivalentClassesC :: String
-equivalentClassesC = "EquivalentClasses:"
-
-equivalentDataPropertiesC :: String
-equivalentDataPropertiesC = "EquivalentDataProperties:"
-
-equivalentObjectPropertiesC :: String
-equivalentObjectPropertiesC = "EquivalentObjectProperties:"
-
 equivalentToC :: String
 equivalentToC = "EquivalentTo:"
 
 factsC :: String
 factsC = "Facts:"
+
+hasKeyC :: String
+hasKeyC = "HasKey:"
 
 importC :: String
 importC = "Import:"
@@ -126,23 +104,17 @@ individualC = "Individual:"
 inverseOfC :: String
 inverseOfC = "InverseOf:"
 
-inversesC :: String
-inversesC = "Inverses:"
-
-namespaceC :: String
-namespaceC = "Namespace:"
-
-objectPropertiesC :: String
-objectPropertiesC = "ObjectProperties:"
-
 objectPropertyC :: String
 objectPropertyC = "ObjectProperty:"
 
 ontologyC :: String
 ontologyC = "Ontology:"
 
-paraphraseC :: String
-paraphraseC = "Paraphrase:"
+prefixC :: String
+prefixC = "Prefix:"
+
+propertiesC :: String
+propertiesC = "Properties:"
 
 rangeC :: String
 rangeC = "Range:"
@@ -162,14 +134,5 @@ subPropertyChainC = "SubPropertyChain:"
 subPropertyOfC :: String
 subPropertyOfC = "SubPropertyOf:"
 
-superPropertyChainC :: String
-superPropertyChainC = "SuperPropertyChain:"
-
-superPropertyOfC :: String
-superPropertyOfC = "SuperPropertyOf:"
-
 typesC :: String
 typesC = "Types:"
-
-valuePartitionC :: String
-valuePartitionC = "ValuePartition:"

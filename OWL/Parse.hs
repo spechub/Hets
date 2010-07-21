@@ -567,10 +567,6 @@ classFrameBit curi = let duri = OWLClassDescription curi in
     as <- annotations
     ds <- sepByComma description
     return [PlainAxiom as $ DisjointUnion curi ds]
-  <|> do -- no documented
-    pkeyword paraphraseC
-    skips stringLit
-    return []
 
 classFrame :: CharParser st [Axiom]
 classFrame = do
@@ -623,7 +619,7 @@ objectFrameBit ouri = let opExp = OpURI ouri in
     return [PlainAxiom (concatMap fst ds)
            $ EquivOrDisjointObjectProperties e $ opExp : map snd ds]
   <|> do
-    pkeyword inversesC <|> pkeyword inverseOfC -- protege output
+    pkeyword inverseOfC
     ds <- objPropExprAList
     return $ map (\ (as, i) -> PlainAxiom as
       $ InverseObjectProperties opExp i) ds
@@ -743,15 +739,11 @@ misc = do
     ds <- sepByComma description
     return $ PlainAxiom as $ EquivOrDisjointClasses e ds
   <|> do
-    e <- equivOrDisjointKeyword objectPropertiesC
+    e <- equivOrDisjointKeyword propertiesC
     as <- annotations
     es <- sepByComma objectPropertyExpr
+    -- indistinguishable from dataProperties
     return $ PlainAxiom as $ EquivOrDisjointObjectProperties e es
-  <|> do
-    e <- equivOrDisjointKeyword dataPropertiesC
-    as <- annotations
-    ds <- sepByComma uriP
-    return $ PlainAxiom as $ EquivOrDisjointDataProperties e ds
   <|> do
     s <- sameOrDifferentIndu
     as <- annotations
@@ -765,8 +757,8 @@ frames = flat $ many $ classFrame
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
-  pkeyword namespaceC
-  p <- skips prefix
+  pkeyword prefixC
+  p <- skips (option "" prefix << char ':')
   i <- skips fullIri
   return (p, i)
 
