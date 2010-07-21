@@ -374,7 +374,7 @@ instance Show OutType where
     GraphOut f -> graphS ++ show f
     Prf -> prfS
     EnvOut -> envS
-    OWLOut -> owlS
+    OWLOut -> "omn"
     OmdocOut -> omdocS
     XmlOut -> xmlS
     ExperimentalOut -> experimentalS
