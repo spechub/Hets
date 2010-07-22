@@ -556,15 +556,16 @@ entityAnnos qn ty = do
 datatypeFrame :: CharParser st [Axiom]
 datatypeFrame = do
     pkeyword datatypeC
-    datatypeUri
-    many realAnnotations
+    duri <- datatypeUri
+    as1 <- many realAnnotations
     option () $ do
       pkeyword equivalentToC
       annotations
       dataRange
       return ()
-    many realAnnotations
-    return []
+    as2 <- many realAnnotations
+    return [ PlainAxiom (concat $ as1 ++ as2)
+           $ Declaration $ Entity Datatype duri ]
 
 classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = OWLClassDescription curi in
@@ -756,9 +757,9 @@ sameOrDifferentIndu =
 annotationPropertyFrame :: CharParser st [Axiom]
 annotationPropertyFrame = do
   pkeyword annotationPropertyC
-  uriP
-  many apBit
-  return []  -- ignore
+  ap <- uriP
+  many apBit -- ignore
+  return [PlainAxiom [] $ Declaration $ Entity AnnotationProperty ap]
 
 apBit :: CharParser st ()
 apBit = (realAnnotations >> return ())

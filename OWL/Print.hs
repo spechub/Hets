@@ -39,6 +39,7 @@ printSign s =
    let cs = concepts s
        ps = primaryConcepts s
        ds = Set.difference cs ps
+       ts = datatypes s
        on = ontologyID s
        pon = printURIreference $ if on == nullQName
              then dummyQName
@@ -46,6 +47,7 @@ printSign s =
    in vcat (map (\ (c, l) -> hsep $ map text [namespaceC, c, '<' : l ++ ">"])
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon
+   $++$ vcat (map (\ t -> text datatypeC <+> pretty t) $ Set.toList ts)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ds)
    $++$ vcat (map (\ o -> opStart <+> pretty o) $ Set.toList $ indValuedRoles s)

@@ -17,7 +17,7 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
-import GUI.GtkDisprove
+-- import GUI.GtkDisprove
 import qualified GUI.Glade.ProverGUI as ProverGUI
 import GUI.HTkProofDetails -- not implemented in Gtk
 
