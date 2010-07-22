@@ -140,7 +140,7 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp =
     case obExp of
      OpURI ou -> pretty ou
-     InverseOp iopExp -> text inverseS <> parens (printObjPropExp iopExp)
+     InverseOp iopExp -> text inverseS <+> printObjPropExp iopExp
 
 instance Pretty DataRange where
     pretty = printDataRange
@@ -189,7 +189,7 @@ printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
    let d = fsep [pretty a, pretty b] in
    text factsC <+> case p of
      Positive -> d
-     Negative -> text notS <+> parens d
+     Negative -> text notS <+> d
 
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of

@@ -187,7 +187,7 @@ datatypeKeys =
 
 uriP :: CharParser st QName
 uriP =
-  skips $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
+  skips $ try $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
   if null p then notElem (localPart q) owlKeywords
    else notElem p
      $ map (takeWhile (/= ':')) colonKeywords
