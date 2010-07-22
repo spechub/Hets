@@ -43,7 +43,7 @@ printSign s =
        pon = printURIreference $ if on == nullQName
              then dummyQName
              else on
-   in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " <" ++ l ++">")
+   in vcat (map (\ (c, l) -> hsep $ map text [namespaceC, c, '<' : l ++ ">"])
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
@@ -161,7 +161,9 @@ instance Pretty DatatypeFacet where
 
 instance Pretty Constant where
     pretty (Constant lexi ty) =
-     text (if take 1 lexi == "\"" then lexi else show lexi) <> case ty of
+     text (case lexi of
+             '"' : _ -> lexi
+             _ -> show lexi) <> case ty of
       Typed u -> text cTypeS <> pretty u
       Untyped tag -> if null tag then empty else text asP <> text tag
 

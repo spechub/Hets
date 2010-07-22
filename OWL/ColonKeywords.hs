@@ -24,7 +24,6 @@ colonKeywords =
   , annotationsC
   , characteristicsC
   , classC
-  , classesC
   , dataPropertyC
   , datatypeC
   , differentFromC
@@ -41,7 +40,6 @@ colonKeywords =
   , objectPropertyC
   , ontologyC
   , prefixC
-  , propertiesC
   , rangeC
   , sameAsC
   , sameIndividualC
@@ -49,6 +47,9 @@ colonKeywords =
   , subPropertyChainC
   , subPropertyOfC
   , typesC ]
+
+namespaceC :: String
+namespaceC = "Namespace:"
 
 annotationPropertyC :: String
 annotationPropertyC = "AnnotationProperty:"

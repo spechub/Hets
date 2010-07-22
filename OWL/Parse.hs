@@ -762,7 +762,7 @@ nsEntry = do
     i <- skips fullIri
     return (p, i)
   <|> do
-    pkeyword "Namespace:"
+    pkeyword namespaceC
     p <- skips prefix
     i <- skips fullIri
     return (p, i)
