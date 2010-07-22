@@ -757,10 +757,15 @@ frames = flat $ many $ classFrame
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
-  pkeyword prefixC
-  p <- skips (option "" prefix << char ':')
-  i <- skips fullIri
-  return (p, i)
+    pkeyword prefixC
+    p <- skips (option "" prefix << char ':')
+    i <- skips fullIri
+    return (p, i)
+  <|> do
+    pkeyword "Namespace:"
+    p <- skips prefix
+    i <- skips fullIri
+    return (p, i)
 
 importEntry :: CharParser st QName
 importEntry = pkeyword importC >> uriP
