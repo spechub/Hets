@@ -39,7 +39,7 @@ printSign s =
    let cs = concepts s
        ps = primaryConcepts s
        ds = Set.difference cs ps
-       ts = datatypes s
+       ts = Set.filter ((`notElem` datatypeKeys) . localPart) $ datatypes s
        on = ontologyID s
        pon = printURIreference $ if on == nullQName
              then dummyQName

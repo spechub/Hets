@@ -169,22 +169,6 @@ fullIri = do
 uriQ :: CharParser st QName
 uriQ = fullIri <|> abbrIri
 
--- boolean not documented
-datatypeKeys :: [String]
-datatypeKeys =
-  [ booleanS
-  , dATAS
-  , decimalS
-  , floatS
-  , integerS
-  , negativeIntegerS
-  , nonNegativeIntegerS
-  , nonPositiveIntegerS
-  , positiveIntegerS
-  , stringS
-  , universalS
-  ]
-
 uriP :: CharParser st QName
 uriP =
   skips $ try $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in

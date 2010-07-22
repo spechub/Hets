@@ -157,6 +157,22 @@ data ObjectPropertyExpression =
 
 type DataPropertyExpression = DataPropertyURI
 
+-- | data type strings (some are not listed in the grammar)
+datatypeKeys :: [String]
+datatypeKeys =
+  [ booleanS
+  , dATAS
+  , decimalS
+  , floatS
+  , integerS
+  , negativeIntegerS
+  , nonNegativeIntegerS
+  , nonPositiveIntegerS
+  , positiveIntegerS
+  , stringS
+  , universalS
+  ]
+
 -- | Syntax of Data Range
 data DatatypeFacet =
     LENGTH
