@@ -203,7 +203,7 @@ addXElem e = let q = elName e in
               return $ AddElem $ add_attrs as $ node qn cs
             | hasLocalQN pIS q -> liftM (AddPI n) $ getText e
           _ -> failX "unknown change" q
-  else failX "no xupdate element" q
+  else return $ AddElem e
 
 {-
 xupdate:element
