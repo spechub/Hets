@@ -27,6 +27,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
+import Common.Token (casl_structured_reserved_words)
 import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
@@ -38,7 +39,7 @@ characters = [minBound .. maxBound]
 
 owlKeywords :: [String]
 owlKeywords = notS : stringS : map show entityTypes
-  ++ map show characters ++ keywords
+  ++ map show characters ++ keywords ++ casl_structured_reserved_words
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'
@@ -305,8 +306,6 @@ commaP = skipChar ',' >> return ()
 sepByComma :: CharParser st a -> CharParser st [a]
 sepByComma p = sepBy1 p commaP
 
--- keywords need to be case insensitive
-
 -- | parse character case insensitive
 ichar :: Char -> CharParser st Char
 ichar c = char (toUpper c) <|> char (toLower c) <?> show [c]
@@ -335,7 +334,7 @@ atomic = parensP description
 
 objectPropertyExpr :: CharParser st ObjectPropertyExpression
 objectPropertyExpr = do
-    keyword inverseOfS
+    keyword inverseS
     fmap InverseOp objectPropertyExpr
   <|> fmap OpURI uriP
 
@@ -363,10 +362,16 @@ dataRangeRestriction = do
   option d $ fmap (DatatypeRestriction d) $ bracketsP
     $ sepByComma facetValuePair
 
+dataConjunct :: CharParser st DataRange
+dataConjunct = fmap head $ sepBy1 dataPrimary $ keyword andS
+
 dataRange :: CharParser st DataRange
-dataRange = do
+dataRange = fmap head $ sepBy1 dataConjunct $ keyword orS
+
+dataPrimary :: CharParser st DataRange
+dataPrimary = do
     keyword notS
-    fmap DataComplementOf dataRange
+    fmap DataComplementOf dataPrimary
    <|> fmap DataOneOf (bracesP $ sepByComma constant)
    <|> dataRangeRestriction
 
@@ -501,8 +506,6 @@ entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
   entityTypes
 
--- AnnotationProperty is missing
-
 entity :: CharParser st Entity
 entity = do
   t <- entityType
@@ -550,6 +553,19 @@ entityAnnos qn ty = do
     as <- realAnnotations
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
+datatypeFrame :: CharParser st [Axiom]
+datatypeFrame = do
+    pkeyword datatypeC
+    datatypeUri
+    many realAnnotations
+    option () $ do
+      pkeyword equivalentToC
+      annotations
+      dataRange
+      return ()
+    many realAnnotations
+    return []
+
 classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = OWLClassDescription curi in
     entityAnnos curi Class
@@ -567,6 +583,11 @@ classFrameBit curi = let duri = OWLClassDescription curi in
     as <- annotations
     ds <- sepByComma description
     return [PlainAxiom as $ DisjointUnion curi ds]
+  <|> do
+    pkeyword hasKeyC
+    annotations
+    many objectPropertyExpr
+    return []
 
 classFrame :: CharParser st [Axiom]
 classFrame = do
@@ -732,6 +753,20 @@ sameOrDifferentIndu =
   (pkeyword sameIndividualC >> return Same)
   <|> (pkeyword differentIndividualsC >> return Different)
 
+annotationPropertyFrame :: CharParser st [Axiom]
+annotationPropertyFrame = do
+  pkeyword annotationPropertyC
+  uriP
+  many apBit
+  return []  -- ignore
+
+apBit :: CharParser st ()
+apBit = (realAnnotations >> return ())
+  <|> do
+    pkeyword domainC <|> pkeyword rangeC <|> subPropertyKey
+    sepByComma $ optAnnos uriP
+    return ()
+
 misc :: CharParser st Axiom
 misc = do
     e <- equivOrDisjointKeyword classesC
@@ -751,9 +786,9 @@ misc = do
     return $ PlainAxiom as $ SameOrDifferentIndividual s is
 
 frames :: CharParser st [Axiom]
-frames = flat $ many $ classFrame
+frames = flat $ many $ datatypeFrame <|> classFrame
   <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
-  <|> single misc
+  <|> annotationPropertyFrame <|> single misc
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do

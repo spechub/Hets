@@ -140,7 +140,7 @@ printObjPropExp :: ObjectPropertyExpression -> Doc
 printObjPropExp obExp =
     case obExp of
      OpURI ou -> pretty ou
-     InverseOp iopExp -> text inverseOfS <> parens (printObjPropExp iopExp)
+     InverseOp iopExp -> text inverseS <> parens (printObjPropExp iopExp)
 
 instance Pretty DataRange where
     pretty = printDataRange

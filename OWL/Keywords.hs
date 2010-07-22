@@ -28,7 +28,7 @@ keywords =
   , functionalS
   , hasS
   , integerS
-  , inverseOfS
+  , inverseS
   , lengthS
   , maxLengthS
   , maxS
@@ -81,8 +81,8 @@ hasS = "has"
 integerS :: String
 integerS = "integer"
 
-inverseOfS :: String
-inverseOfS = "inverseOf"
+inverseS :: String
+inverseS = "inverse"
 
 lengthS :: String
 lengthS = "length"
