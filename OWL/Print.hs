@@ -43,7 +43,7 @@ printSign s =
        pon = printURIreference $ if on == nullQName
              then dummyQName
              else on
-   in vcat (map (\ (c, l) -> text $ prefixC ++" " ++ c ++ ": <" ++ l ++">")
+   in vcat (map (\ (c, l) -> text $ "Namespace: " ++ c ++ " <" ++ l ++">")
            $ Map.toList $ namespaceMap s)
    $++$ text ontologyC <+> pon
    $++$ vcat (map (\ c -> classStart <+> pretty c) $ Set.toList ps)
