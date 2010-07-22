@@ -37,11 +37,13 @@ import Logic.Prover
 
 import qualified Comorphisms.KnownProvers as KnownProvers
 
+import Static.DevGraph (DGNodeLab)
 import Static.GTheory
 
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe ( fromJust, fromMaybe, isJust )
+import Data.Graph.Inductive.Graph (LNode)
 
 data GProver = GProver { pName :: String
                        , comorphism :: [AnyComorphism]
@@ -57,11 +59,12 @@ showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
   -> String -- ^ theory name
   -> String -- ^ warning information
   -> G_theory -- ^ theory
+  -> LNode DGNodeLab -- ^ node the proving is applied to
   -> KnownProvers.KnownProversMap -- ^ map of known provers
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
   -> IO (Result G_theory)
-showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
+showProverGUI lid prGuiAcs thName warn th n knownProvers comorphList = do
   initState <- (initialState lid thName th knownProvers comorphList
                 >>= recalculateSublogicF prGuiAcs)
   state <- newMVar initState
@@ -210,12 +213,23 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
     -- if consistent, mark node DISPROVED and write back into dgraph
 
     -- maybe disable button if more than one goal selected
-    onClicked btnDisprove $ infoDialog "Disprove selected goal"
-      $ "only works on single selection\n"
-      ++ "see http://trac.informatik.uni-bremen.de:8080/hets/ticket/776"
+    onClicked btnDisprove $ do 
+      selGoal <- getSelectedMultiple trvGoals listGoals
+      case selGoal of
+        -- [(_, g)] -> disproveNode (proverToConsChecker $ getSelectedSingle
+          --            trvProvers listProvers) (comboBoxGetActive cbComorphism)
+            --          (gName g) 
+        _ -> infoDialog "Disprove selected goal"
+               "please select one goal only!"
 
     onClicked btnProve $ do
       s' <- takeMVar state
+      putStrLn $ "prover: " ++ case selectedProver s' of
+                                 Just pr -> pr
+                                 Nothing -> "none"
+      putStrLn $ "conschecker: " ++ case selectedProver s' of
+                                      Just cc -> cc
+                                      Nothing -> "none"
       activate prove False
       forkIOWithPostProcessing (proveF prGuiAcs s')
         $ \ (Result ds ms) -> do

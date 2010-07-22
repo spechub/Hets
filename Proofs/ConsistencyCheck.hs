@@ -12,6 +12,7 @@ devGraph rule that calls consistency checker for specific logics
 
 module Proofs.ConsistencyCheck
   ( consistencyCheck
+  , consistencyCheckAux
   , SType (..)
   , ConsistencyStatus (..)
   ) where
@@ -36,7 +37,6 @@ import Logic.Comorphism
 import Logic.Coerce
 
 import Data.Graph.Inductive.Graph
-import Data.Maybe
 import Data.Time.LocalTime (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Ord (comparing)
@@ -70,10 +70,18 @@ instance Ord ConsistencyStatus where
 consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
-  le dg (n', lbl) t'' = do
+  le dg (n', lbl) t'' = undefined 
+
+
+
+consistencyCheckAux :: Bool -> G_cons_checker -> AnyComorphism 
+ --                 -> [FreeDefMorphism sentence morphism]
+                    -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+consistencyCheckAux includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) 
+                    (n', lbl) t'' = do
   let lidS = sourceLogic cid
       lidT = targetLogic cid
-      thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
+      thName = getDGNodeName lbl -- shows (getLibId ln) "_" ++ getDGNodeName lbl
       t = t'' * 1000000
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
       ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
@@ -96,7 +104,7 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
     Result _ (Just (sig1, mor)) -> do
       cc' <- coerceConsChecker lid4 lidT "" cc
       ret <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
-        (ccAutomatic cc' thName ts mor $ getCFreeDefMorphs lidT le ln dg n')
+        (ccAutomatic cc' thName ts mor []) -- $ getCFreeDefMorphs lidT le ln dg n')
       return $ case ret of
         Just ccStatus -> case ccResult ccStatus of
           Just b -> if b then let
