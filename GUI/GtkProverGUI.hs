@@ -17,7 +17,7 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
--- import GUI.GtkDisprove
+import GUI.GtkDisprove
 import qualified GUI.Glade.ProverGUI as ProverGUI
 import GUI.HTkProofDetails -- not implemented in Gtk
 
@@ -64,7 +64,7 @@ showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
   -> IO (Result G_theory)
-showProverGUI lid prGuiAcs thName warn th n knownProvers comorphList = do
+showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
   initState <- (initialState lid thName th knownProvers comorphList
                 >>= recalculateSublogicF prGuiAcs)
   state <- newMVar initState
@@ -216,20 +216,16 @@ showProverGUI lid prGuiAcs thName warn th n knownProvers comorphList = do
     onClicked btnDisprove $ do 
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
-        -- [(_, g)] -> disproveNode (proverToConsChecker $ getSelectedSingle
-          --            trvProvers listProvers) (comboBoxGetActive cbComorphism)
-            --          (gName g) 
+        [(_, g)] -> infoDialog "Disprove selected goal"
+               "currently being implemented. please wait."
+-- do
+   --       selectedCM <- comboBoxGetActive cbComorphism
+     --     disproveNode cbComorphism (gName g) node 10 
         _ -> infoDialog "Disprove selected goal"
                "please select one goal only!"
 
     onClicked btnProve $ do
       s' <- takeMVar state
-      putStrLn $ "prover: " ++ case selectedProver s' of
-                                 Just pr -> pr
-                                 Nothing -> "none"
-      putStrLn $ "conschecker: " ++ case selectedProver s' of
-                                      Just cc -> cc
-                                      Nothing -> "none"
       activate prove False
       forkIOWithPostProcessing (proveF prGuiAcs s')
         $ \ (Result ds ms) -> do

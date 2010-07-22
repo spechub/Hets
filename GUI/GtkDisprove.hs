@@ -1,4 +1,16 @@
+{- |
+Module      :  $Header$
+Description :  Gtk Module to enable disproving Theorems
+Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
+Maintainer  :  tekknix@informatik.uni-bremen.de
+Stability   :  provisional
+Portability :  portable
+
+This module provides a disproving module that checks consistency of inverted
+theorems.
+-}
 
 module GUI.GtkDisprove where
 
