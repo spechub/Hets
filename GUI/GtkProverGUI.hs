@@ -216,11 +216,12 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     onClicked btnDisprove $ do 
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
-        [(_, g)] -> infoDialog "Disprove selected goal"
-               "currently being implemented. please wait."
--- do
-   --       selectedCM <- comboBoxGetActive cbComorphism
-     --     disproveNode cbComorphism (gName g) node 10 
+        [(_, g)] -> do
+          selectedCm <- getSelectedComorphism trvProvers listProvers cbComorphism
+          -- TODO get proper timeout limit
+          csStatus <- disproveNode selectedCm (gName g) node 10
+          infoDialog "Disprove selected goal" $ "result: " ++ show csStatus
+            ++ "\nused comorphism: " ++ show selectedCm
         _ -> infoDialog "Disprove selected goal"
                "please select one goal only!"
 
@@ -296,6 +297,15 @@ setSelectedComorphism view list cbComorphism = do
       sel <- comboBoxGetActive cbComorphism
       listStoreSetValue list i f { selected = sel }
     Nothing -> return ()
+
+getSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> IO (AnyComorphism)
+getSelectedComorphism view list cbComorphism = do
+  mpr <- getSelectedSingle view list
+  sel <- comboBoxGetActive cbComorphism
+  return $ case mpr of
+             Just (_, pr) -> comorphism pr !! sel
+             Nothing -> error "GtkProverGUI.getSelectedComorphism"
+
 
 updateSublogic :: Label -> ProofActions lid sentence
                -> KnownProvers.KnownProversMap -> ProofState lid sentence
