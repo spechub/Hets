@@ -139,7 +139,7 @@ primFormula =
            (l, ps) <- propId `Lexer.separatedBy` AnnoState.anComma
            f <- impFormula
            return $ if length l < 1 then error "nothing quantified"
-                    else AS_BASIC.ForAll l f (Id.tokPos c)
+                    else AS_BASIC.Exists l f (Id.tokPos c)
     <|> fmap AS_BASIC.Predication propId
 
 -- | Parser for formulae containing 'and' and 'or'

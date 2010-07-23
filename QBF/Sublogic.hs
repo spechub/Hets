@@ -145,12 +145,12 @@ slSym ps _ = ps
 
 -- | determines sublogic for formula
 slForm :: QBFSL -> AS_BASIC.FORMULA -> QBFSL
-slForm ps f = slFlForm ps $ Tools.flatten f
+slForm ps = slFlForm ps . Tools.flatten
 
 -- | determines sublogic for flattened formula
 slFlForm :: QBFSL -> [AS_BASIC.FORMULA] -> QBFSL
-slFlForm ps f = foldl sublogicsMax ps
-  $ map (\ x -> State.evalState (anaForm ps x) 0) f
+slFlForm ps = foldl sublogicsMax ps
+  . map (\ x -> State.evalState (anaForm ps x) 0)
 
 -- analysis of single "clauses"
 anaForm :: QBFSL -> AS_BASIC.FORMULA -> State.State Int QBFSL
@@ -209,8 +209,8 @@ anaForm ps f =
       AS_BASIC.Exists _ _ _ -> return needPF
 
 moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
-moreThanNLit form n = foldl (\ y x -> if x then y + 1 else y) 0
-  (map isPosLiteral form) > n
+moreThanNLit = (>) . foldl (\ y x -> if x then y + 1 else y) 0
+  . map isPosLiteral
 
 -- determines wheter a Formula is a literal
 isLiteral :: AS_BASIC.FORMULA -> Bool
@@ -291,7 +291,6 @@ prSymM :: QBFSL -> AS_BASIC.SYMBITEMS -> Maybe AS_BASIC.SYMBITEMS
 prSymM _ = Just
 
 -- keep an element if its computed sublogic is in the given sublogic
---
 
 prFormulaM :: QBFSL -> AS_BASIC.FORMULA -> Maybe AS_BASIC.FORMULA
 prFormulaM sl form

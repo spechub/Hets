@@ -34,7 +34,6 @@ import Propositional.Sign
 import QBF.Morphism
 import QBF.AS_BASIC_QBF
 import QBF.ATC_QBF ()
-import QBF.Fold
 import QBF.Symbol as Symbol
 import QBF.Parse_AS_Basic
 import QBF.Analysis
@@ -43,6 +42,9 @@ import QBF.Tools
 
 import ATC.ProofTree ()
 import Common.ProofTree
+
+import Common.ProverTools
+import QBF.ProveDepQBF
 
 import qualified Data.Map as Map
 
@@ -111,6 +113,7 @@ instance Logic QBF
       empty_proof_tree QBF = emptyProofTree
     -- supplied provers
       provers QBF = []
+        ++ unsafeProverCheck "depqbf" "PATH" depQBFProver
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis QBF

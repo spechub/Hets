@@ -1,7 +1,21 @@
 logic QBF
 
-spec S =
- props a, b
- . a
- . forall p p <=> not not p
+spec testProver1 =
+     prop a, b, c
+     . a
+     . not b
+     . forall p p \/ a => a %implied
+     . forall p p \/ b => b %implied
+     . exists p p /\ c => a %implied
+     . forall p,d p /\ d %implied
+end
 
+spec testProver2 =
+     prop a, b
+     . a
+     . not b
+     . (exists p p <=> a) /\ (exists p p <=> b) %implied
+
+spec testProver3 =
+     prop a, b, c
+     . (exists p p <=> a /\ (b => c)) \/ (forall d d => (c => (b => (a <=> (forall e e <=> b))))) %implied

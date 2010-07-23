@@ -44,12 +44,12 @@ instance Pretty Symbol where
     pretty = printSymbol
 
 printSymbol :: Symbol -> Doc
-printSymbol x = pretty $ symName x
+printSymbol = pretty . symName
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
-           Sign.items x
+symOf = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty .
+           Sign.items
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
@@ -71,7 +71,7 @@ symbolToRaw = id
 
 -- | does a smybol match a raw symbol?
 matches :: Symbol -> Symbol -> Bool
-matches s1 s2 = s1 == s2
+matches = (==)
 
 -- | application function for Symbol Maps
 applySymMap :: Map.Map Symbol Symbol -> Symbol -> Symbol

@@ -234,12 +234,10 @@ propsOfFormula (AS_BASIC.Predication x) = Sign.Sign
                          {Sign.items = Set.singleton $
                                        Id.simpleIdToId x }
 propsOfFormula (AS_BASIC.Conjunction xs _) = List.foldl
-                                     (\ sig frm -> Sign.unite sig
-                                                        $ propsOfFormula frm)
+                                     (\ sig frm -> Sign.unite sig $ propsOfFormula frm)
                                      Sign.emptySig xs
 propsOfFormula (AS_BASIC.Disjunction xs _) = List.foldl
-                                     (\ sig frm -> Sign.unite sig
-                                                        $ propsOfFormula frm)
+                                     (\ sig frm -> Sign.unite sig $ propsOfFormula frm)
                                      Sign.emptySig xs
 propsOfFormula (AS_BASIC.ForAll xs f _) = sigDiff
                          (propsOfFormula f)
