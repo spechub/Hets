@@ -26,6 +26,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.AS_Annotation
+import Common.OrderedMap as OMap
 
 import Logic.Logic
 import Logic.Prover
@@ -43,12 +44,14 @@ import System.Timeout
  -- TODO use return value of consistencyCheck and mark node
  -- TODO implement in GtkProverGui
 
-disproveNode :: 
+disproveNode :: Logic lid sublogics
+                     basic_spec sentence symb_items symb_map_items
+                     sign morphism symbol raw_symbol proof_tree =>
               AnyComorphism -> String -> LNode DGNodeLab
              -> ProofState lid sentence -> Int -> IO (ProofState lid sentence)
-disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = undefined {- do
+disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = do
   case (fst . head) $ getConsCheckers [ac] of
-    (G_cons_checker lid4 cc) -> 
+    (G_cons_checker lid4 cc) ->
       let
         lidS = sourceLogic cid
         lidT = targetLogic cid
@@ -60,10 +63,10 @@ disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = undefined {- do
       in case do
         (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
         let axs' = OMap.filter isAxiom axs
-            negSen = case OMap.lookup selGoal sens of 
-                       Nothing -> error "GtkDisprove.disproveNode(1)" 
-                       Just sen ->  
-                         case negation lid $ sentence sen of 
+            negSen = case OMap.lookup selGoal axs of
+                       Nothing -> error "GtkDisprove.disproveNode(1)"
+                       Just sen ->
+                         case negation lid1 $ sentence sen of
                            Nothing -> error "GtkDisprove.disproveNode(2)"
                            Just sen' -> sen { sentence = sen' }
             sens = toNamedList $ OMap.insert selGoal negSen axs'
@@ -75,22 +78,20 @@ disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = undefined {- do
           , tTarget = Theory sig2 $ toThSens sens2
           , tMorphism = incl }) of
       Result ds Nothing -> return state -- node is not changed
-    
       Result _ (Just (sig1, mor)) -> do
         cc' <- coerceConsChecker lid4 lidT "" cc
-        ccS <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
+        ccS <- (if ccNeedsTimer cc' then timeout t else ((return . Just) =<<))
           (ccAutomatic cc' thName ts mor [])
         return $ case ccS of
-                   Just ccStatus -> 
+                   Just ccStatus ->
                      case ccResult ccStatus of
-                       Just b -> if b 
+                       Just b -> if b
                                    then let ps'' = openProofStatus selGoal
-                                              (getPName cc) (ccProofTree ccStatus)
+                                              (ccName cc') (ccProofTree ccStatus)
                                             ps' = ps'' { goalStatus = Disproved }
                                      in markProved ac lidT [ps'] state
                                    else state
                        Nothing -> state
-                   Nothing -> state 
--}
+                   Nothing -> state
 
 
