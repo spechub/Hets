@@ -19,25 +19,18 @@ import Static.DevGraph
 import Static.ComputeTheory
 
 import Proofs.AbstractState
-import Proofs.FreeDefLinks
 
-import Common.DocUtils (showDoc)
 import Common.ExtSign
-import Common.LibName
 import Common.Result
 import Common.AS_Annotation
 import Common.OrderedMap as OMap
 
 import Logic.Logic
 import Logic.Prover
-import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
 
 import Data.Graph.Inductive.Graph
-import Data.Time.LocalTime (timeToTimeOfDay)
-import Data.Time.Clock (secondsToDiffTime)
-import Data.Ord (comparing)
 
 import System.Timeout
 
@@ -49,7 +42,7 @@ disproveNode :: Logic lid sublogics
                      sign morphism symbol raw_symbol proof_tree =>
               AnyComorphism -> String -> LNode DGNodeLab
              -> ProofState lid sentence -> Int -> IO (ProofState lid sentence)
-disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = do
+disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
   case (fst . head) $ getConsCheckers [ac] of
     (G_cons_checker lid4 cc) ->
       let
@@ -57,9 +50,7 @@ disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = do
         lidT = targetLogic cid
         thName = getDGNodeName lbl
         t = t'' * 1000000
-        t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
         ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
-        mTimeout = "No results within: " ++ show t'
       in case do
         (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
         let axs' = OMap.filter isAxiom axs
@@ -77,8 +68,8 @@ disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = do
           { tSource = emptyTheory lidT
           , tTarget = Theory sig2 $ toThSens sens2
           , tMorphism = incl }) of
-      Result ds Nothing -> return state -- node is not changed
-      Result _ (Just (sig1, mor)) -> do
+      Result _ Nothing -> return state -- node is not changed
+      Result _ (Just (_, mor)) -> do
         cc' <- coerceConsChecker lid4 lidT "" cc
         ccS <- (if ccNeedsTimer cc' then timeout t else ((return . Just) =<<))
           (ccAutomatic cc' thName ts mor [])
