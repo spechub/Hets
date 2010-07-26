@@ -12,7 +12,6 @@ devGraph rule that calls consistency checker for specific logics
 
 module Proofs.ConsistencyCheck
   ( consistencyCheck
-  , consistencyCheckAux
   , SType (..)
   , ConsistencyStatus (..)
   ) where
@@ -117,57 +116,5 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
           Nothing -> if ccUsedTime ccStatus >= t' then
             ConsistencyStatus CSTimeout mTimeout
             else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
-        Nothing -> ConsistencyStatus CSTimeout mTimeout 
-
-consistencyCheckAux :: Bool -> G_cons_checker -> AnyComorphism 
- --                 -> [FreeDefMorphism sentence morphism]
-                    -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
-consistencyCheckAux includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) 
-                    (n', lbl) t'' = do
-  let lidS = sourceLogic cid
-      lidT = targetLogic cid
-      thName = getDGNodeName lbl -- shows (getLibId ln) "_" ++ getDGNodeName lbl
-      t = t'' * 1000000
-      t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
-      ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
-      mTimeout = "No results within: " ++ show t'
-  case do
-        (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
-        let namedSens = toNamedList axs
-            sens = if includeTheorems then
-              map (\ s -> s { isAxiom = True }) namedSens
-              else namedSens
-        bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
-        (sig2, sens2) <- wrapMapTheory cid bTh'
-        incl <- subsig_inclusion lidT (empty_signature lidT) sig2
-        return (sig1, TheoryMorphism
-          { tSource = emptyTheory lidT
-          , tTarget = Theory sig2 $ toThSens sens2
-          , tMorphism = incl }) of
-    Result ds Nothing ->
-      return $ ConsistencyStatus CSError $ unlines $ map diagString ds
-    Result _ (Just (sig1, mor)) -> do
-      cc' <- coerceConsChecker lid4 lidT "" cc
-      ret <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
-        (ccAutomatic cc' thName ts mor []) -- $ getCFreeDefMorphs lidT le ln dg n')
-      return $ case ret of
-        Just ccStatus -> case ccResult ccStatus of
-          Just b -> if b then let
-            Result ds ms = extractModel cid sig1 $ ccProofTree ccStatus
-            msgLines = map diagString ds ++ lines (show $ ccProofTree ccStatus)
-            in case ms of
-            Nothing -> ConsistencyStatus CSConsistent $ unlines
-              ("consistent, but could not reconstruct a model" : msgLines)
-            Just (sig3, sens3) -> let
-              thTxt = showDoc
-                (G_theory lidS (mkExtSign sig3) startSigId (toThSens sens3)
-                        startThId) ""
-              in ConsistencyStatus CSConsistent $
-                 case filterDiags 2 ds of
-                   [] -> thTxt
-                   _ -> unlines $ lines thTxt ++ "%[" : msgLines ++ ["]%"]
-            else ConsistencyStatus CSInconsistent $ show (ccProofTree ccStatus)
-          Nothing -> if ccUsedTime ccStatus >= t' then
-            ConsistencyStatus CSTimeout mTimeout
-            else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
         Nothing -> ConsistencyStatus CSTimeout mTimeout
+

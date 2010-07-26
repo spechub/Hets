@@ -217,10 +217,11 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
         [(_, g)] -> do
+          s' <- takeMVar state
           selectedCm <- getSelectedComorphism trvProvers listProvers cbComorphism
           -- TODO get proper timeout limit
-          csStatus <- disproveNode selectedCm (gName g) node 10
-          infoDialog "Disprove selected goal" $ "result: " ++ show csStatus
+          s'' <- disproveNode selectedCm (gName g) node s' 10
+          infoDialog "Disprove selected goal" $ "result: " ++ show (goalMap s'')
             ++ "\nused comorphism: " ++ show selectedCm
         _ -> infoDialog "Disprove selected goal"
                "please select one goal only!"
