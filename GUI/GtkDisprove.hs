@@ -40,7 +40,6 @@ import Data.Ord (comparing)
 
 import System.Timeout
 
- -- TODO write error messages with content!
  -- TODO use return value of consistencyCheck and mark node
  -- TODO implement in GtkProverGui
 
@@ -60,7 +59,14 @@ disproveNode ac@(Comorphism cid) selGoal (i, lbl) state t'' = undefined {- do
         mTimeout = "No results within: " ++ show t'
       in case do
         (G_theory lid1 (ExtSign sign _) _ axs _) <- getGlobalTheory lbl
-        let sens = toNamedList axs
+        let axs' = OMap.filter isAxiom axs
+            negSen = case OMap.lookup selGoal sens of 
+                       Nothing -> error "GtkDisprove.disproveNode(1)" 
+                       Just sen ->  
+                         case negation lid $ sentence sen of 
+                           Nothing -> error "GtkDisprove.disproveNode(2)"
+                           Just sen' -> sen { sentence = sen' }
+            sens = toNamedList $ OMap.insert selGoal negSen axs'
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2
