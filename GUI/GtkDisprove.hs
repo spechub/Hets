@@ -27,6 +27,7 @@ import Common.AS_Annotation
 import Common.OrderedMap as OMap
 
 import Debug.Trace
+import GUI.GtkUtils
 
 import Logic.Logic
 import Logic.Prover
@@ -46,6 +47,8 @@ disproveNode :: Logic lid sublogics
               AnyComorphism -> String -> LNode DGNodeLab
              -> ProofState lid sentence -> Int -> IO (ProofState lid sentence)
 disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
+  let info s = infoDialog ("Disprove " ++ selGoal) s
+  -- TODO select proper consChecker AND consider case of empty list!
   case (fst . head) $ getConsCheckers [ac] of
     (G_cons_checker lid4 cc) ->
       let
@@ -63,8 +66,12 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
                          case negation lid1 $ sentence sen of
                            Nothing -> error "GtkDisprove.disproveNode(2)"
                            Just sen' -> sen { sentence = sen', isAxiom = True }
+            -- TODO create new Theory with inverted theorem and get Sublogic
+            -- as well as new, proper Comorphism!
             sens = toNamedList $ OMap.insert selGoal negSen axs'
         trace (showDoc sens "") $ return ()
+        -- TODO create proper logic instead of lidS (from new Comorphism, from
+        -- new subLogic)
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2
@@ -72,7 +79,9 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
           { tSource = emptyTheory lidT
           , tTarget = Theory sig2 $ toThSens sens2
           , tMorphism = incl }) of
-      Result _ Nothing -> return state -- node is not changed
+      Result _ Nothing -> do
+        info "Error: could not construct TheoryMorphism"
+        return state -- node is not changed
       Result _ (Just (_, mor)) -> do
         cc' <- coerceConsChecker lid4 lidT "" cc
         putStrLn $ ccName cc'
@@ -86,10 +95,16 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
                                             (ccName cc') (ccProofTree ccStatus)
                                           ps = ps' { goalStatus = Disproved }
                                    in do
-                                   putStrLn "disprove successful"
+                                   info "Goal has been disproved!"
                                    return $ markProved ac lidT [ps] state
-                                 else return state
-                       Nothing -> return state
-                   Nothing -> return state
+                                 else do
+                                   info "Goal could not be disproved(1)!"
+                                   return state
+                       Nothing -> do
+                         info "Goal could not be disproved(2)!"
+                         return state
+                   Nothing -> do
+                     info "Goal could not be disproved(3)!"
+                     return state
 
 

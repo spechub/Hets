@@ -23,7 +23,6 @@ import GUI.HTkProofDetails -- not implemented in Gtk
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
-import Common.DocUtils (showDoc)
 import Common.Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
@@ -210,9 +209,6 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
     -- TODO implement disprove function on ONE GOAL only
-    -- call consistencyCheck on negated selected sentence
-    -- if consistent, mark node DISPROVED and write back into dgraph
-
     -- maybe disable button if more than one goal selected
     onClicked btnDisprove $ do 
       selGoal <- getSelectedMultiple trvGoals listGoals
@@ -221,15 +217,12 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
           s' <- takeMVar state
           selectedCm <- getSelectedComorphism trvProvers listProvers cbComorphism
           -- TODO get proper timeout limit
+          -- infoDialogs are part of disproveNode module!
           s <- disproveNode selectedCm (gName g) node s' 1
           putMVar state =<< update s
           listStoreSetValue listGoals i $ fromJust $ find 
             (\g' -> gName g' == gName g) $ toGoals s
-          infoDialog "Disprove selected goal"
-            $ case OMap.lookup (gName g) $ goalMap s of
-                        Just ab -> showDoc ab ""
-                        Nothing -> "cannot display returned goalStatus" 
-                
+ 
         _ -> infoDialog "Disprove selected goal"
                "please select one goal only!"
 
