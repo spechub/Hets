@@ -20,10 +20,13 @@ import Static.ComputeTheory
 
 import Proofs.AbstractState
 
+import Common.DocUtils (showDoc)
 import Common.ExtSign
 import Common.Result
 import Common.AS_Annotation
 import Common.OrderedMap as OMap
+
+import Debug.Trace
 
 import Logic.Logic
 import Logic.Prover
@@ -61,7 +64,7 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
                            Nothing -> error "GtkDisprove.disproveNode(2)"
                            Just sen' -> sen { sentence = sen' }
             sens = toNamedList $ OMap.insert selGoal negSen axs'
-        putStrLn $ showDoc sens ""
+        trace (showDoc sens "") $ return ()
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2
