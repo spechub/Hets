@@ -223,7 +223,7 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
           -- TODO get proper timeout limit
           s <- disproveNode selectedCm (gName g) node s' 1
           putMVar state =<< update s
-          postGUISync $ listStoreSetValue listGoals i g {gStatus = GDisproved} 
+          listStoreSetValue listGoals i g {gStatus = GDisproved} 
           infoDialog "Disprove selected goal"
             $ case OMap.lookup (gName g) $ goalMap s of
                         Just ab -> showDoc ab ""
