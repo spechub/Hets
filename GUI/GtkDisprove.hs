@@ -74,16 +74,18 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
         putStrLn $ ccName cc'
         ccS <- (if ccNeedsTimer cc' then timeout t else ((return . Just) =<<))
           (ccAutomatic cc' thName ts mor [])
-        return $ case ccS of
+        case ccS of
                    Just ccStatus ->
                      case ccResult ccStatus of
                        Just b -> if b
-                                   then let ps' = openProofStatus selGoal
-                                              (ccName cc') (ccProofTree ccStatus)
-                                            ps = ps' { goalStatus = Disproved }
-                                     in markProved ac lidT [ps] state
-                                   else state
-                       Nothing -> state
-                   Nothing -> state
+                                 then let ps' = openProofStatus selGoal
+                                            (ccName cc') (ccProofTree ccStatus)
+                                          ps = ps' { goalStatus = Disproved }
+                                   in do
+                                   putStrLn "disprove successful"
+                                   return $ markProved ac lidT [ps] state
+                                 else return state
+                       Nothing -> return state
+                   Nothing -> return state
 
 

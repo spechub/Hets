@@ -217,12 +217,13 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     onClicked btnDisprove $ do 
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
-        [(_, g)] -> do
+        [(i, g)] -> do
           s' <- takeMVar state
           selectedCm <- getSelectedComorphism trvProvers listProvers cbComorphism
           -- TODO get proper timeout limit
           s <- disproveNode selectedCm (gName g) node s' 1
           putMVar state =<< update s
+          postGUISync $ listStoreSetValue listGoals i g {gStatus = GDisproved} 
           infoDialog "Disprove selected goal"
             $ case OMap.lookup (gName g) $ goalMap s of
                         Just ab -> showDoc ab ""
