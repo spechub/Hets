@@ -56,10 +56,10 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
         let axs' = OMap.filter isAxiom axs
             negSen = case OMap.lookup selGoal axs of
                        Nothing -> error "GtkDisprove.disproveNode(1)"
-                       Just sen ->
+                       Just sen -> sen {-
                          case negation lid1 $ sentence sen of
                            Nothing -> error "GtkDisprove.disproveNode(2)"
-                           Just sen' -> sen { sentence = sen' }
+                           Just sen' -> sen { sentence = sen' } -}
             sens = toNamedList $ OMap.insert selGoal negSen axs'
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
@@ -71,16 +71,17 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
       Result _ Nothing -> return state -- node is not changed
       Result _ (Just (_, mor)) -> do
         cc' <- coerceConsChecker lid4 lidT "" cc
+        putStrLn $ ccName cc'
         ccS <- (if ccNeedsTimer cc' then timeout t else ((return . Just) =<<))
           (ccAutomatic cc' thName ts mor [])
         return $ case ccS of
                    Just ccStatus ->
                      case ccResult ccStatus of
                        Just b -> if b
-                                   then let ps'' = openProofStatus selGoal
+                                   then let ps' = openProofStatus selGoal
                                               (ccName cc') (ccProofTree ccStatus)
-                                            ps' = ps'' { goalStatus = Disproved }
-                                     in markProved ac lidT [ps'] state
+                                            ps = ps' { goalStatus = Disproved }
+                                     in markProved ac lidT [ps] state
                                    else state
                        Nothing -> state
                    Nothing -> state

@@ -23,6 +23,7 @@ import GUI.HTkProofDetails -- not implemented in Gtk
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
+import Common.DocUtils (showDoc)
 import Common.Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
@@ -220,9 +221,13 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
           s' <- takeMVar state
           selectedCm <- getSelectedComorphism trvProvers listProvers cbComorphism
           -- TODO get proper timeout limit
-          s'' <- disproveNode selectedCm (gName g) node s' 10
-          infoDialog "Disprove selected goal" $ "result: " ++ show (goalMap s'')
-            ++ "\nused comorphism: " ++ show selectedCm
+          s <- disproveNode selectedCm (gName g) node s' 1
+          putMVar state =<< update s
+          infoDialog "Disprove selected goal"
+            $ case OMap.lookup (gName g) $ goalMap s of
+                        Just ab -> showDoc ab ""
+                        Nothing -> "cannot display returned goalStatus" 
+                
         _ -> infoDialog "Disprove selected goal"
                "please select one goal only!"
 
