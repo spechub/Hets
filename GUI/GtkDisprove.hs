@@ -56,11 +56,12 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
         let axs' = OMap.filter isAxiom axs
             negSen = case OMap.lookup selGoal axs of
                        Nothing -> error "GtkDisprove.disproveNode(1)"
-                       Just sen -> sen {-
+                       Just sen ->
                          case negation lid1 $ sentence sen of
                            Nothing -> error "GtkDisprove.disproveNode(2)"
-                           Just sen' -> sen { sentence = sen' } -}
+                           Just sen' -> sen { sentence = sen' }
             sens = toNamedList $ OMap.insert selGoal negSen axs'
+        putStrLn $ showDoc sens ""
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)
         (sig2, sens2) <- wrapMapTheory cid bTh'
         incl <- subsig_inclusion lidT (empty_signature lidT) sig2
