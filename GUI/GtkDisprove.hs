@@ -62,7 +62,7 @@ disproveNode ac@(Comorphism cid) selGoal (_, lbl) state t'' = do
                        Just sen ->
                          case negation lid1 $ sentence sen of
                            Nothing -> error "GtkDisprove.disproveNode(2)"
-                           Just sen' -> sen { sentence = sen' }
+                           Just sen' -> sen { sentence = sen', isAxiom = True }
             sens = toNamedList $ OMap.insert selGoal negSen axs'
         trace (showDoc sens "") $ return ()
         bTh'@(sig1, _) <- coerceBasicTheory lid1 lidS "" (sign, sens)

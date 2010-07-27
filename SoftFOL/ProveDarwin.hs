@@ -201,7 +201,7 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
       readProcessWithExitCode bin (words options ++ [timeTmpFile]) ""
     let l = lines pout
         (res, _, tUsed) = parseOutput l
-    removeFile timeTmpFile
+    -- removeFile timeTmpFile
     return (res, l, tUsed)
 
 runDarwin
