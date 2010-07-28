@@ -299,11 +299,11 @@ pTerm = do
   ms <- many $ pMinus
   e <- pParens pExpr <|> pMorphism
   rs <- many $ choice $ map (pSymS . (: [])) "+*~"
-  let p = foldl (\ r c -> case c of
-        "+" -> UnExp K1 r
-        "*" -> UnExp K0 r
-        "~" -> UnExp Co r
-        _ -> error "pTerm post strings") e rs
+  let p = foldl (\ r c -> UnExp (case c of
+        "+" -> K1
+        "*" -> K0
+        "~" -> Co
+        _ -> error "pTerm post strings") r) e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms
 
 main :: IO ()
