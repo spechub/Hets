@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from Propositional to QBF
@@ -33,11 +34,8 @@ import qualified QBF.Morphism as QMor
 import qualified QBF.Symbol as QSymbol
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Common.AS_Annotation
-import Common.Id
 import Common.Result
-import Common.DocUtils
 
 -- | lid of the morphism
 data Prop2QBF = Prop2QBF deriving Show

@@ -70,6 +70,8 @@ import Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
 import Comorphisms.HasCASL2PCoClTyConsHOL
 import Comorphisms.CASL2TopSort
 import Comorphisms.DFOL2CASL
+import Comorphisms.QBF2Prop
+import Comorphisms.Prop2QBF
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
@@ -168,7 +170,9 @@ comorphismList =
     , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
     , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types
     , Comorphism $ CASL2SubCFOL False NoMembershipOrCast -- keep free types
-    , Comorphism CASL2TopSort ]
+    , Comorphism CASL2TopSort
+    , Comorphism QBF2Prop
+    , Comorphism Prop2QBF ]
 
 inclusionList :: [AnyComorphism]
 inclusionList =
