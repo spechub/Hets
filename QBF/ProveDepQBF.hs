@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  needs POSIX
 
 Check out
-http://www.uni-koblenz.de/~bpelzer/ekrhyper/
+<http://www.uni-koblenz.de/~bpelzer/ekrhyper/>
 for details. For the ease of maintenance we are using e-krhyper in
 its CASC-mode, aka tptp-input. It works for single input files and
 fof-style.
@@ -70,8 +70,8 @@ atpFun thName = ATPFunctions
   , batchTimeEnv = ""
   , fileExtensions = FileExtensions
       { problemOutput = ".qdimacs"
-      , proverOutput = "" -- ^ prover doesn't output any files
-      , theoryConfiguration = "" -- ^ prover doesn't use any configuration files
+      , proverOutput = ""        -- prover doesn't output any files
+      , theoryConfiguration = "" -- prover doesn't use any configuration files
       }
   , runProver = runDepQBF
   , createProverOptions = extraOpts }
