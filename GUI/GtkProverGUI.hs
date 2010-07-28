@@ -208,17 +208,12 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
 
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
-    -- TODO implement disprove function on ONE GOAL only
-    -- maybe disable button if more than one goal selected
     onClicked btnDisprove $ do 
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
         [(i, g)] -> do
           s' <- takeMVar state
-          selectedCm <- getSelectedComorphism trvProvers listProvers cbComorphism
-          -- TODO get proper timeout limit
-          -- infoDialogs are part of disproveNode module!
-          s <- disproveNode selectedCm (gName g) node s' 1
+          s <- disproveThmSingle (gName g) node s' 1 $ map snd comorphList
           putMVar state =<< update s
           listStoreSetValue listGoals i $ fromJust $ find 
             (\g' -> gName g' == gName g) $ toGoals s
@@ -298,15 +293,6 @@ setSelectedComorphism view list cbComorphism = do
       sel <- comboBoxGetActive cbComorphism
       listStoreSetValue list i f { selected = sel }
     Nothing -> return ()
-
-getSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> IO (AnyComorphism)
-getSelectedComorphism view list cbComorphism = do
-  mpr <- getSelectedSingle view list
-  sel <- comboBoxGetActive cbComorphism
-  return $ case mpr of
-             Just (_, pr) -> comorphism pr !! sel
-             Nothing -> error "GtkProverGUI.getSelectedComorphism"
-
 
 updateSublogic :: Label -> ProofActions lid sentence
                -> KnownProvers.KnownProversMap -> ProofState lid sentence
