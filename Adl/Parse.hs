@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  ADL syntax parser
-Copyright   :  (c) Christian Maeder DFKI GmbH 2010
+Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
