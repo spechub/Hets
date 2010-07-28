@@ -33,6 +33,7 @@ import Common.Utils (getEnvSave, readMaybe)
 
 import Text.XML.Light
 import Network.HTTP
+import Network.HTTP.HandleStream as S
 
 import Data.Char
 import Data.List
@@ -282,7 +283,7 @@ callMathServ call =
     do
        serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readMaybe
        let r = mkSoapRequest call serverPort
-       res <- simpleHTTP r
+       res <- S.simpleHTTP r
        return $ case res of
                   Left mErr -> Left $ show mErr
                   Right resp -> unpackSoapEnvelope $ Right $ rspBody resp
