@@ -48,9 +48,11 @@ pKey = forget . pKeyS
 pSymC :: String -> String -> CharParser st String
 pSymC s cs = try (string s << notFollowedBy (oneOf cs)) << skip
 
+-- do not parse a double colon
 pColon :: CharParser st String
 pColon = pSymC ":" ":"
 
+-- do not parse --, ->, or -|
 pMinus :: CharParser st String
 pMinus = pSymC "-" "->|"
 
