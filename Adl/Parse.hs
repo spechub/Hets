@@ -10,9 +10,10 @@ Portability :  portable
 
 -}
 
-module Adl.Parse where
+module Main where
 
 import Common.Parsec
+import System.Environment
 import Text.ParserCombinators.Parsec
 import Haskell.Wrapper
 
@@ -32,37 +33,57 @@ keywordstxt =
   , "ONE", "BIND", "TOPHP", "BINDING"
   ]
 
-keywordsops :: [String]
-keywordsops =
-  [ "-|", "|-", "-", "->", ">", "=", "~", "+", ";", "!", "*", "::", ":"
-  , "\\/", "/\\", "\\", "/", "<>" ]
-
-specialchars :: String
-specialchars = "()[].,{}"
-
 skip :: CharParser st ()
-skip = skipMany $ spaces <|> forget (nestComment <|> lineComment)
+skip = skipMany $ forget space <|> forget (nestComment <|> lineComment)
+
+pChar :: CharParser st Char
+pChar = alphaNum <|> char '_'
+
+pKeyS :: String -> CharParser st String
+pKeyS s = try (string s << notFollowedBy pChar) << skip
 
 pKey :: String -> CharParser st ()
 pKey = forget . pKeyS
 
-pKeyS :: String -> CharParser st String
-pKeyS s = try (string s << notFollowedBy letter) << skip
+pSymC :: String -> String -> CharParser st String
+pSymC s cs = try (string s << notFollowedBy (oneOf cs)) << skip
 
-pSym :: String -> CharParser st ()
-pSym = forget . pSymS
+pColon :: CharParser st String
+pColon = pSymC ":" ":"
+
+pMinus :: CharParser st String
+pMinus = pSymC "-" "->|"
 
 pSymS :: String -> CharParser st String
 pSymS s = tryString s << skip
 
+pSym :: String -> CharParser st ()
+pSym = forget . pSymS
+
+pComma :: CharParser st ()
+pComma = pSym ","
+
+pEqual :: CharParser st ()
+pEqual = pSym "="
+
+pGenParens :: String -> String -> CharParser st a -> CharParser st a
+pGenParens o c p =
+  pSym o >> p << pSym c
+
+pParens :: CharParser st a -> CharParser st a
+pParens = pGenParens "(" ")"
+
+pSqBrackets :: CharParser st a -> CharParser st a
+pSqBrackets = pGenParens "[" "]"
+
 pConid :: CharParser st String
-pConid = reserved keywordstxt (upper <:> many letter) << skip
+pConid = reserved keywordstxt (upper <:> many pChar) << skip
 
 pVarid :: CharParser st String
-pVarid = (lower <:> many letter) << skip
+pVarid = (lower <:> many pChar) << skip
 
 pString :: CharParser st String
-pString = stringLit <|> charLit
+pString = (stringLit <|> charLit) << skip
 
 pADLid :: CharParser st String
 pADLid = pConid <|> pVarid <|> pString
@@ -75,14 +96,14 @@ pContext = do
   pKey "CONTEXT"
   pConid
   option () $ do
-    pSym ":"
+    pColon
     pExpr
     forget $ optionL $ do
       pKey "BINDING"
-      sepBy1 pBind $ pSym ","
+      sepBy1 pBind pComma
   optionL $ do
     pKey "EXTENDS"
-    sepBy1 pConid $ pSym ","
+    sepBy1 pConid pComma
   ps <- many pContextElement
   pKey "ENDCONTEXT"
   return $ concat ps
@@ -99,17 +120,16 @@ pContextElement = pPattern <|> fmap (const [])
 pPattern :: CharParser st [PatElem]
 pPattern = pKey "PATTERN" >> (pConid <|> pString)
            >> many pPatElem
-           <<  pKey "ENDPATTERN"
+           << pKey "ENDPATTERN"
 
 pPatElem :: CharParser st PatElem
-pPatElem = fmap Pr pRuleDef
-  <|> pGen <|> pDeclaration <|> fmap (const Ignored)
+pPatElem = pDeclaration <|> fmap Pr pRuleDef
+  <|> pGen <|> fmap (const Ignored)
           (pConceptDef <|> pKeyDef <|> pExplain)
 
 pDeclaration :: CharParser st PatElem
 pDeclaration = do
-  n <- pVarid
-  pSym "::"
+  n <- try $ pVarid << pSym "::"
   c1 <- pConcept
   s <- pSymS "*" <|> pSymS "->"
   let ps = if s == "->" then [Uni, Tot] else []
@@ -119,19 +139,16 @@ pDeclaration = do
   optionL $ do
     pKey "EXPLANATION"
     pString
-  optionL $ do
-    pSym "="
+  option () $ do
+    pEqual
     pContent
+    return ()
   pSym "."
   return $ Pm (ps ++ as) $ Sgn n c1 c2
 
 pProps :: CharParser st [Prop]
-pProps = do
- pSym "["
- ps <- sepBy1 (choice $ map (\ p -> pKey (showProp p) >> return p) allProps)
-   $ pSym ","
- pSym "]"
- return ps
+pProps = pSqBrackets $
+  sepBy (choice $ map (\ p -> pKey (showProp p) >> return p) allProps) pComma
 
 pPragma :: CharParser st [String]
 pPragma = pKey "PRAGMA" >> many1 pString
@@ -149,31 +166,63 @@ pKeyDef = do
   pKey "KEY"
   pLabelProps
   pConcept
-  pSym "("
-  sepBy1 pKeyAtt $ pSym ","
-  pSym ")"
+  pParens $ sepBy1 pKeyAtt pComma
   return Ignored
 
 pLabelProps :: CharParser st ()
 pLabelProps = do
   pADLid
-  optionL $ do
-    pSym "{"
-    ns <- sepBy1 pADLid $ pSym ","
-    pSym "}"
-    return ns
-  pKey ":"
+  optionL $ pGenParens "{" "}" $ sepBy1 pADLid pComma
+  forget $ pColon
 
 pKeyAtt :: CharParser st Expression
 pKeyAtt = do
  option () $ try pLabelProps
  pExpr
 
-pObjDef = undefined
-pSqlplug = undefined
-pPhpplug = undefined
-pExplain = undefined
-pContent = undefined
+pObjDef :: CharParser st PatElem
+pObjDef = pKey "SERVICE" >> pObj >> return Ignored
+
+pObj :: CharParser st Expression
+pObj = pLabelProps >> pExpr
+  << optionL (pKey "ALWAYS" >> many pProp')
+  << optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
+
+pProp' :: CharParser st String
+pProp' = choice $ map pKeyS ["UNI", "TOT", "PROP"]
+
+pSqlplug :: CharParser st PatElem
+pSqlplug = pKey "SQLPLUG" >> pObj >> return Ignored
+
+pPhpplug :: CharParser st PatElem
+pPhpplug = pKey "PHPPLUG" >> pObj >> return Ignored
+
+pExplain :: CharParser st PatElem
+pExplain = do
+  pKey "EXPLAIN"
+  choice $ map pKey
+    [ "CONCEPT", "RELATION", "RULE", "KEY", "SERVICE", "PATTERN"
+    , "POPULATION", "SQLPLUG", "PHPPLUG" ]
+  pADLid
+  pLanguageID
+  pRefID
+  pExpl
+  return Ignored
+
+pLanguageID :: CharParser st String
+pLanguageID = pKey "IN" >> (pKeyS "DUTCH" <|> pKeyS "ENGLISH")
+
+pRefID :: CharParser st String
+pRefID = optionL $ pKey "REF" >> pString
+
+pExpl :: CharParser st String
+pExpl = nestedComment "{+" "-}"
+
+pContent :: CharParser st PatElem
+pContent = pSqBrackets (sepBy pRecord $ pSym ";") >> return Ignored
+
+pRecord :: CharParser st (String, String)
+pRecord = pParens $ pair pString $ pComma >> pString
 
 pRuleDef :: CharParser st Rule
 pRuleDef = do
@@ -206,13 +255,12 @@ pGen = do
   return $ Pg c1 c2
 
 pTwo :: CharParser st (Concept, Concept)
-pTwo = option (Anything, Anything) $ do
-  pSym "["
+pTwo = option (Anything, Anything)
+  $ pSqBrackets $ do
   c1 <- pConcept
   c2 <- option c1 $ do
-    pKey "*"
+    pSym "*"
     pConcept
-  pSym "]"
   return (c1, c2)
 
 pConcept :: CharParser st Concept
@@ -220,46 +268,48 @@ pConcept = fmap C $ pConid <|> pString <|> pKeyS "ONE"
 
 pMorphism :: CharParser st Expression
 pMorphism = do
-  nm <- pKeyS "I" <|> pKeyS "V" <|> pVarid <|> charLit
+  nm <- pKeyS "I" <|> pKeyS "V" <|> pVarid <|> (charLit << skip)
   (c1, c2) <- pTwo
   return $ Tm $ Sgn nm c1 c2
 
 pExpr :: CharParser st Expression
-pExpr = do
-  es <- sepBy1 pFactorI $ pSym "\\/"
-  return $ case es of
-    [e] -> e
-    _ -> MulExp Fu es
+pExpr = pPrec Fu pFactorI "\\/"
 
 pFactorI :: CharParser st Expression
-pFactorI = do
-  es <- sepBy1 pFactor $ pSym "/\\"
-  return $ case es of
-    [e] -> e
-    _ -> MulExp Fi es
+pFactorI = pPrec Fi pFactor "/\\"
 
 pFactor :: CharParser st Expression
-pFactor = do
-  es <- sepBy1 pTermD $ pSym "!"
-  return $ case es of
-    [e] -> e
-    _ -> MulExp Fd es
+pFactor = pPrec Fd pTermD "!"
 
 pTermD :: CharParser st Expression
-pTermD = do
-  es <- sepBy1 pTerm $ pSym ";"
+pTermD = pPrec Fc pTerm ";"
+
+pPrec :: MulOp -> CharParser st Expression -> String
+  -> CharParser st Expression
+pPrec f p sep = do
+  es <- sepBy1 p $ pSym sep
   return $ case es of
     [e] -> e
-    _ -> MulExp Fc es
+    _ -> MulExp f es
 
 pTerm :: CharParser st Expression
 pTerm = do
-  ms <- many $ char '-'
-  e <- (pSym "(" >> pExpr << pSym ")") <|> pMorphism
-  rs <- many $ choice $ map char "+*~"
+  ms <- many $ pMinus
+  e <- pParens pExpr <|> pMorphism
+  rs <- many $ choice $ map (pSymS . (: [])) "+*~"
   let p = foldl (\ r c -> case c of
-        '+' -> UnExp K1 r
-        '*' -> UnExp K0 r
-        '~' -> UnExp Co r
+        "+" -> UnExp K1 r
+        "*" -> UnExp K0 r
+        "~" -> UnExp Co r
         _ -> error "pTerm post strings") e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms
+
+main :: IO ()
+main = getArgs >>= mapM_ process
+
+process :: String -> IO ()
+process f = do
+  s <- readFile f
+  case parse (skip >> pArchitecture << eof) f s of
+             Right x -> print x
+             Left err -> fail $ show err

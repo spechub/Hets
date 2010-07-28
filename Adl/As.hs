@@ -75,3 +75,4 @@ data PatElem
   | Pg Concept Concept -- generic and specific concept
   | Pm [Prop] Relation
   | Ignored
+    deriving Show
