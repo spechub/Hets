@@ -42,7 +42,11 @@ import qualified CASL.Sublogic as CSL
 import qualified CASL.Sign as CSign
 import qualified CASL.Morphism as CMor
 
--- import CommonLogic.CASLSig
+import Comorphisms.GetPreludeLib
+import System.IO.Unsafe
+import Static.GTheory
+import Logic.Prover
+import Logic.Coerce
 
 data CommonLogic2CASL = CommonLogic2CASL deriving Show
 
@@ -51,17 +55,17 @@ instance Language CommonLogic2CASL where
 
 instance Comorphism
     CommonLogic2CASL        -- comorphism
-    ClLogic.CommonLogic             -- lid domain
+    ClLogic.CommonLogic     -- lid domain
     ()                      -- sublogics domain
     ClBasic.BASIC_SPEC              -- Basic spec domain
     ClBasic.SENTENCE                -- sentence domain
     ClBasic.NAME                    -- symbol items domain
-    ClBasic.SYMB_MAP_ITEMS                      -- symbol map items domain
-    ClSign.Sign                    -- signature domain
-    ClMor.Morphism                -- morphism domain
-    ClSymbol.Symbol                  -- symbol domain
-    ClSymbol.Symbol                  -- rawsymbol domain
-    ProofTree                     -- proof tree codomain
+    ClBasic.SYMB_MAP_ITEMS          -- symbol map items domain
+    ClSign.Sign            -- signature domain
+    ClMor.Morphism         -- morphism domain
+    ClSymbol.Symbol        -- symbol domain
+    ClSymbol.Symbol        -- rawsymbol domain
+    ProofTree              -- proof tree codomain
     CLogic.CASL            -- lid codomain
     CSL.CASL_Sublogics     -- sublogics codomain
     CLogic.CASLBasicSpec   -- Basic spec codomain
@@ -77,51 +81,85 @@ instance Comorphism
       sourceLogic CommonLogic2CASL = ClLogic.CommonLogic
       sourceSublogic CommonLogic2CASL = ()
       targetLogic CommonLogic2CASL = CLogic.CASL
-      mapSublogic CommonLogic2CASL = mapSub
+      mapSublogic CommonLogic2CASL = Just . mapSub -- Just . mapSub
       map_theory CommonLogic2CASL = mapTheory -- TODO
-      map_morphism CommonLogic2CASL = mapMor  -- TODO
+      map_morphism CommonLogic2CASL = mapMor  -- TODO prop
       map_sentence CommonLogic2CASL = mapSentence
 
-mapSub :: () -> Maybe CSL.CASL_Sublogics
-mapSub _ = Nothing
+-- | Creates CASL Sig
+baseCASLSig :: [AS_Anno.Named CBasic.CASLFORMULA]
+baseCASLSig =
+     let lib = head $ unsafePerformIO $ readLib "CommonLogic/CommonLogic.casl"
+     in case lib of
+        G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
+                                     in do
+                                         sens' <- coerceSens lid CLogic.CASL ""
+                                                    sens
+                                         -- filter (not . ctorCons) sens'
+                                         sens'
+
+mapSub :: () -> CSL.CASL_Sublogics
+mapSub _ = CSL.caslTop
+        { CSL.cons_features = CSL.emptyMapConsFeature
+        , CSL.sub_features = CSL.NoSub }
 
 mapMor :: ClMor.Morphism -> Result CMor.CASLMor
-mapMor _ = Result { diags = [], maybeResult = Nothing }
+mapMor mor = Result [] $ Just (CMor.embedMorphism ()
+    (mapSig $ ClMor.source mor) $ mapSig $ ClMor.target mor)
+    { CMor.pred_map = trMor $ ClMor.propMap mor }
 
+-- | Helper for map mor
+trMor :: Map.Map Id.Id Id.Id -> Map.Map (Id.Id, CSign.PredType) Id.Id
+trMor mp =
+    let
+        pt = CSign.PredType {CSign.predArgs = []}
+    in
+      Map.foldWithKey
+             (\ k a ->
+              Map.insert (k, pt) a
+             )
+      Map.empty
+      mp
+
+-- |
 mapTheory :: (ClSign.Sign,
               [AS_Anno.Named ClBasic.SENTENCE])
               -> Result
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
-mapTheory (sig, form) = Result [] $
-     Just (mapSig sig, [injcons, discons, genlist] ++ (map trNamedForm form))
+mapTheory (sig, form) = Result [] $ Just (mapSig sig, baseCASLSig ++ (map
+           trNamedForm form))
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
-               CSign.opMap = Set.fold (\x -> Map.insert x
+               CSign.opMap = Set.fold (\ x -> Map.insert x
                                 ( Set.singleton $ CSign.OpType
-                                                   { CSign.opKind = CBasic.Total
-                                                   , CSign.opArgs = []
-                                                   , CSign.opRes = individual
-                                                   }))
+                                   { CSign.opKind = CBasic.Total
+                                   , CSign.opArgs = []
+                                   , CSign.opRes = individual }))
                                 Map.empty $ ClSign.items sign
                }) caslSig
 
+-- | setting casl sign: sorts, cons, fun, nil, pred
 caslSig :: CSign.CASLSign
 caslSig = (CSign.emptySign ())
                { CSign.sortSet = Set.fromList [list, individual]
                , CSign.opMap = Map.fromList [
-                          (cons,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total,
-                                                      CSign.opArgs = [individual,list],
-                                                      CSign.opRes = list}])
-                         ,(fun,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total,
-                                                     CSign.opArgs = [individual,list],
-                                                     CSign.opRes = individual}])
-                         ,(nil,Set.fromList [CSign.OpType {CSign.opKind = CBasic.Total,
-                                                     CSign.opArgs = [],
-                                                     CSign.opRes = list}])]
+                         (cons, Set.fromList [CSign.OpType
+                                          {CSign.opKind = CBasic.Total,
+                                           CSign.opArgs = [individual, list],
+                                           CSign.opRes = list}])
+                         , (fun, Set.fromList [CSign.OpType
+                                          {CSign.opKind = CBasic.Total,
+                                           CSign.opArgs = [individual, list],
+                                           CSign.opRes = individual}])
+                         , (nil, Set.fromList [CSign.OpType
+                                          {CSign.opKind = CBasic.Total,
+                                           CSign.opArgs = [],
+                                           CSign.opRes = list}])]
                , CSign.predMap = Map.fromList
-                  [(rel, Set.fromList [CSign.PredType {CSign.predArgs = [individual,list]}])]
+                [(rel, Set.fromList [CSign.PredType
+                          {CSign.predArgs = [individual, list]}])]
                }
 
 list :: Id.Id
@@ -142,48 +180,6 @@ cons = Id.stringToId "cons"
 nil :: Id.Id
 nil = Id.stringToId "nil"
 
-x1 :: Id.Token
-x1 = Id.mkSimpleId "X1"
-x2 :: Id.Token
-x2 = Id.mkSimpleId "X2"
-y1 :: Id.Token
-y1 = Id.mkSimpleId "Y1"
-y2 :: Id.Token
-y2 = Id.mkSimpleId "Y2"
-
-{-
-%% free
-generated type list ::= cons(individual; list) | nil
-                                             %(ga_generated_list)%
--}
-
-injcons :: AS_Anno.Named (CBasic.CASLFORMULA)
-injcons = AS_Anno.makeNamed "ga_injective_cons" (CBasic.Quantification CBasic.Universal 
-          [CBasic.Var_decl [x1] individual Id.nullRange
-          , CBasic.Var_decl [x2] list Id.nullRange
-          , CBasic.Var_decl [y1] individual Id.nullRange
-          , CBasic.Var_decl [y2] list Id.nullRange]
-          (CBasic.Equivalence (CBasic.Strong_equation (CBasic.Application (CBasic.Op_name cons) 
-          [CBasic.varOrConst x1, CBasic.varOrConst x2] Id.nullRange)
-          (CBasic.Application (CBasic.Op_name cons) 
-          [CBasic.varOrConst y1, CBasic.varOrConst y2] Id.nullRange) Id.nullRange)
-           (CBasic.Conjunction [CBasic.Strong_equation (CBasic.varOrConst x1) 
-           (CBasic.varOrConst y1) Id.nullRange, CBasic.Strong_equation (CBasic.varOrConst x2) 
-           (CBasic.varOrConst y2) Id.nullRange] Id.nullRange) Id.nullRange) Id.nullRange)
-
-discons :: AS_Anno.Named (CBasic.CASLFORMULA)
-discons = AS_Anno.makeNamed "ga_disjoint_nil_cons" (CBasic.Quantification CBasic.Universal 
-          [CBasic.Var_decl [y1] individual Id.nullRange
-          , CBasic.Var_decl [y2] list Id.nullRange] 
-          (CBasic.Negation (CBasic.Strong_equation (CBasic.Application (CBasic.Op_name nil) 
-          [] Id.nullRange) (CBasic.Application (CBasic.Op_name cons) 
-          [CBasic.varOrConst y1, CBasic.varOrConst y2] Id.nullRange) Id.nullRange) 
-           Id.nullRange) Id.nullRange)
-
-genlist :: AS_Anno.Named (CBasic.CASLFORMULA)
-genlist = AS_Anno.makeNamed "ga_generated_list" 
-           (CBasic.Sort_gen_ax [CBasic.Constraint list [] nil] True)
-
 trNamedForm :: AS_Anno.Named (ClBasic.SENTENCE)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
 trNamedForm form = AS_Anno.mapNamed trForm form
@@ -199,35 +195,50 @@ trForm form =
              ClBasic.Negation s -> CBasic.Negation (trForm s) rn
              ClBasic.Conjunction ss -> CBasic.Conjunction (map trForm ss) rn
              ClBasic.Disjunction ss -> CBasic.Disjunction (map trForm ss) rn
-             ClBasic.Implication s1 s2 -> CBasic.Implication (trForm s1) (trForm s2) True rn
-             ClBasic.Biconditional s1 s2 -> CBasic.Equivalence (trForm s1) (trForm s2) rn
+             ClBasic.Implication s1 s2 -> CBasic.Implication
+                                             (trForm s1) (trForm s2) True rn
+             ClBasic.Biconditional s1 s2 -> CBasic.Equivalence
+                                             (trForm s1) (trForm s2) rn
      ClBasic.Quant_sent qs rn
         -> case qs of
-             ClBasic.Universal bs s -> CBasic.Quantification CBasic.Universal
-                                           [CBasic.Var_decl (map bindingSeq bs) individual
-                                             Id.nullRange] (trForm s) rn --FIX
-             ClBasic.Existential bs s -> CBasic.Quantification CBasic.Existential
-                                           [CBasic.Var_decl (map bindingSeq bs) individual
-                                             Id.nullRange] (trForm s) rn --FIX
+             ClBasic.Universal bs s ->
+               CBasic.Quantification CBasic.Universal
+               [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
+               (trForm s) rn -- FIX
+             ClBasic.Existential bs s ->
+               CBasic.Quantification CBasic.Existential
+               [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
+               (trForm s) rn -- FIX
      ClBasic.Atom_sent at rn
         -> case at of
              ClBasic.Equation trm1 trm2 ->
                 CBasic.Strong_equation (termForm trm1) (termForm trm2) rn
              ClBasic.Atom trm ts -> CBasic.Predication
-                                    (CBasic.Pred_name rel) ([termForm trm] ++
-                                    (consSeq ts):[]) Id.nullRange
+                                       (CBasic.Qual_pred_name rel
+                                       (CBasic.Pred_type [individual, list]
+                                        Id.nullRange)
+                                        Id.nullRange) ([termForm trm] ++
+                                    (consSeq ts) : []) Id.nullRange
      ClBasic.Comment_sent _ s _ -> trForm s -- FIX
      ClBasic.Irregular_sent s _ -> trForm s -- FIX
 
 termForm :: ClBasic.TERM -> CBasic.TERM a
 termForm trm = case trm of
-                 ClBasic.Name_term name -> CBasic.varOrConst name
+                 ClBasic.Name_term name -> CBasic.Application
+                     (CBasic.Qual_op_name (Id.simpleIdToId name)
+                       (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
+                       Id.nullRange)
+                     [] $ Id.tokPos name
                  ClBasic.Funct_term term _ _ -> termForm term -- FIX
                  ClBasic.Comment_term term _ _ -> termForm term -- FIX
 
-consSeq  :: [ClBasic.TERM_SEQ] -> CBasic.TERM a
-consSeq [] = CBasic.Application (CBasic.Op_name nil) [] Id.nullRange
-consSeq (x:xs) = CBasic.Application (CBasic.Op_name cons) [termSeqForm x, consSeq xs] Id.nullRange
+consSeq :: [ClBasic.TERM_SEQ] -> CBasic.TERM a
+consSeq [] = CBasic.Application (CBasic.Qual_op_name nil
+  (CBasic.Op_type CBasic.Total [] list Id.nullRange)
+  Id.nullRange) [] Id.nullRange
+consSeq (x : xs) = CBasic.Application (CBasic.Qual_op_name cons
+  (CBasic.Op_type CBasic.Total [individual, list] list Id.nullRange)
+  Id.nullRange) [termSeqForm x, consSeq xs] Id.nullRange
 
 termSeqForm :: ClBasic.TERM_SEQ -> CBasic.TERM a
 termSeqForm ts = case ts of

@@ -1,0 +1,9 @@
+(and (P a) (P b))
+(P a) %implied
+
+(Cube a) %(one)%
+(Dodec b) %(two)%
+(or (Cube a) (Cube b)) %implied
+
+(and (P b) (P c))
+(and (P a) (P c)) %(transitivity)% %implied
