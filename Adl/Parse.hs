@@ -13,11 +13,14 @@ Portability :  portable
 module Main where
 
 import Common.Parsec
+import Common.DocUtils
+import Common.Doc hiding (space)
 import System.Environment
 import Text.ParserCombinators.Parsec
 import Haskell.Wrapper
 
 import Adl.As
+import Adl.Print ()
 
 keywordstxt :: [String]
 keywordstxt =
@@ -37,7 +40,7 @@ skip :: CharParser st ()
 skip = skipMany $ forget space <|> forget (nestComment <|> lineComment)
 
 pChar :: CharParser st Char
-pChar = alphaNum <|> char '_'
+pChar = alphaNum <|> oneOf "_'"
 
 pKeyS :: String -> CharParser st String
 pKeyS s = try (string s << notFollowedBy pChar) << skip
@@ -233,11 +236,11 @@ pRuleDef = do
   r <- option (Truth e1) $ do
     sym <- choice $ map pSymS ["=", "|-", "-|"]
     e2 <- pExpr
-    return $ case sym of
-      "=" -> Rule e1 Equivalence e2
-      "|-" -> Rule e1 Implication e2
-      "-|" -> Rule e2 Implication e1
-      _ -> error "pRuleDef"
+    return $ Rule e1 (case sym of
+      "=" -> Equivalence
+      "|-" -> Implication
+      "-|" -> ReverseImpl
+      _ -> error "pRuleDef") e2
   option "" $ do
     pKey "EXPLANATION"
     pString
@@ -288,8 +291,8 @@ pTermD = pPrec Fc pTerm ";"
 
 pPrec :: MulOp -> CharParser st Expression -> String
   -> CharParser st Expression
-pPrec f p sep = do
-  es <- sepBy1 p $ pSym sep
+pPrec f p s = do
+  es <- sepBy1 p $ pSym s
   return $ case es of
     [e] -> e
     _ -> MulExp f es
@@ -313,5 +316,5 @@ process :: String -> IO ()
 process f = do
   s <- readFile f
   case parse (skip >> pArchitecture << eof) f s of
-             Right x -> print x
+             Right es -> print $ vcat $ map pretty es
              Left err -> fail $ show err

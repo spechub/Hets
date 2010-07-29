@@ -46,7 +46,7 @@ data Expression
   | UnExp UnOp Expression
     deriving (Eq, Ord, Show)
 
-data RuleType = Implication | Equivalence deriving (Eq, Ord, Show)
+data RuleType = Implication | ReverseImpl | Equivalence deriving (Eq, Ord, Show)
 
 data Rule
   = Rule Expression RuleType Expression
