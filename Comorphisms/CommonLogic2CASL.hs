@@ -128,7 +128,7 @@ mapTheory :: (ClSign.Sign,
                   (CSign.CASLSign,
                    [AS_Anno.Named CBasic.CASLFORMULA])
 mapTheory (sig, form) = Result [] $ Just (mapSig sig, baseCASLSig ++ (map
-           trNamedForm form))
+           (trNamedForm sig) form))
 
 mapSig :: ClSign.Sign -> CSign.CASLSign
 mapSig sign = CSign.uniteCASLSign ((CSign.emptySign ()) {
@@ -180,35 +180,38 @@ cons = Id.stringToId "cons"
 nil :: Id.Id
 nil = Id.stringToId "nil"
 
-trNamedForm :: AS_Anno.Named (ClBasic.SENTENCE)
+-- todo maybe input here axioms
+trNamedForm :: ClSign.Sign -> AS_Anno.Named (ClBasic.SENTENCE)
             -> AS_Anno.Named (CBasic.CASLFORMULA)
-trNamedForm form = AS_Anno.mapNamed trForm form
+trNamedForm sig form = AS_Anno.mapNamed (trForm sig) form
 
 mapSentence :: ClSign.Sign -> ClBasic.SENTENCE -> Result CBasic.CASLFORMULA
-mapSentence _ form = Result [] $ Just $ trForm form
+mapSentence sig form = Result [] $ Just $ trForm sig form
 
-trForm :: ClBasic.SENTENCE -> CBasic.CASLFORMULA
-trForm form =
+trForm :: ClSign.Sign -> ClBasic.SENTENCE -> CBasic.CASLFORMULA
+trForm sig form =
    case form of
      ClBasic.Bool_sent bs rn
         -> case bs of
-             ClBasic.Negation s -> CBasic.Negation (trForm s) rn
-             ClBasic.Conjunction ss -> CBasic.Conjunction (map trForm ss) rn
-             ClBasic.Disjunction ss -> CBasic.Disjunction (map trForm ss) rn
-             ClBasic.Implication s1 s2 -> CBasic.Implication
-                                             (trForm s1) (trForm s2) True rn
+             ClBasic.Negation s -> CBasic.Negation (trForm sig s) rn
+             ClBasic.Conjunction ss ->
+                CBasic.Conjunction (map (trForm sig) ss) rn
+             ClBasic.Disjunction ss ->
+                CBasic.Disjunction (map (trForm sig) ss) rn
+             ClBasic.Implication s1 s2 ->
+                CBasic.Implication (trForm sig s1) (trForm sig s2) True rn
              ClBasic.Biconditional s1 s2 -> CBasic.Equivalence
-                                             (trForm s1) (trForm s2) rn
+                                             (trForm sig s1) (trForm sig s2) rn
      ClBasic.Quant_sent qs rn
         -> case qs of
              ClBasic.Universal bs s ->
                CBasic.Quantification CBasic.Universal
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (trForm s) rn -- FIX
+               (trForm sig s) rn -- FIX
              ClBasic.Existential bs s ->
                CBasic.Quantification CBasic.Existential
                [CBasic.Var_decl (map bindingSeq bs) individual Id.nullRange]
-               (trForm s) rn -- FIX
+               (trForm sig s) rn -- FIX
      ClBasic.Atom_sent at rn
         -> case at of
              ClBasic.Equation trm1 trm2 ->
@@ -218,9 +221,9 @@ trForm form =
                                        (CBasic.Pred_type [individual, list]
                                         Id.nullRange)
                                         Id.nullRange) ([termForm trm] ++
-                                    (consSeq ts) : []) Id.nullRange
-     ClBasic.Comment_sent _ s _ -> trForm s -- FIX
-     ClBasic.Irregular_sent s _ -> trForm s -- FIX
+                                    (consSeq sig ts) : []) Id.nullRange
+     ClBasic.Comment_sent _ s _ -> trForm sig s -- FIX
+     ClBasic.Irregular_sent s _ -> trForm sig s -- FIX
 
 termForm :: ClBasic.TERM -> CBasic.TERM a
 termForm trm = case trm of
@@ -229,21 +232,32 @@ termForm trm = case trm of
                        (CBasic.Op_type CBasic.Total [] individual Id.nullRange)
                        Id.nullRange)
                      [] $ Id.tokPos name
+                 -- ClBasic.Name_term name -> CBasic.Qual_var name individual
+                 -- Id.nullRange
                  ClBasic.Funct_term term _ _ -> termForm term -- FIX
                  ClBasic.Comment_term term _ _ -> termForm term -- FIX
 
-consSeq :: [ClBasic.TERM_SEQ] -> CBasic.TERM a
-consSeq [] = CBasic.Application (CBasic.Qual_op_name nil
+consSeq :: ClSign.Sign -> [ClBasic.TERM_SEQ] -> CBasic.TERM a
+consSeq _ [] = CBasic.Application (CBasic.Qual_op_name nil
   (CBasic.Op_type CBasic.Total [] list Id.nullRange)
   Id.nullRange) [] Id.nullRange
-consSeq (x : xs) = CBasic.Application (CBasic.Qual_op_name cons
+consSeq sig (x : xs) = CBasic.Application (CBasic.Qual_op_name cons
   (CBasic.Op_type CBasic.Total [individual, list] list Id.nullRange)
-  Id.nullRange) [termSeqForm x, consSeq xs] Id.nullRange
+  Id.nullRange) [termSeqForm sig x, consSeq sig xs] Id.nullRange
 
-termSeqForm :: ClBasic.TERM_SEQ -> CBasic.TERM a
-termSeqForm ts = case ts of
-                   ClBasic.Term_seq trm -> termForm trm
-                   ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
+termSeqForm :: ClSign.Sign -> ClBasic.TERM_SEQ -> CBasic.TERM a
+termSeqForm sig ts = case ts of
+        -- ClBasic.Term_seq trm -> termForm trm
+        ClBasic.Term_seq trm -> case trm of
+             ClBasic.Name_term name -> if not subSig then
+                CBasic.Qual_var name individual Id.nullRange else
+                    termForm trm
+               where subSig = ClSign.isSubSigOf new sig
+                     new    = ClSign.Sign
+                      { ClSign.items = Set.singleton $ Id.simpleIdToId name }
+             ClBasic.Funct_term term _ _ -> termForm term
+             ClBasic.Comment_term term _ _ -> termForm term
+        ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm
 
 bindingSeq :: ClBasic.NAME_OR_SEQMARK -> CBasic.VAR
 bindingSeq bs = case bs of
