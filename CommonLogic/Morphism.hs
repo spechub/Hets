@@ -13,7 +13,7 @@ Morphism of Common Logic
 -}
 
 module CommonLogic.Morphism
-  ( Morphism (..) 
+  ( Morphism (..)
   , pretty                      -- pretty printing
   , idMor                       -- identity morphism
   , isLegalMorphism             -- check if morhpism is ok
@@ -26,7 +26,6 @@ module CommonLogic.Morphism
   , morphismUnion
   ) where
 
-
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Result as Result
@@ -37,11 +36,8 @@ import Common.DocUtils
 
 import CommonLogic.AS_CommonLogic as AS_BASIC
 import CommonLogic.Sign as Sign
--- import Common.DefaultMorphism
 
--- type Morphism = DefaultMorphism Sign
-
---   maps of sets
+-- maps of sets
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
@@ -60,8 +56,8 @@ isLegalMorphism :: Morphism -> Bool
 isLegalMorphism pmor =
     let psource = items $ source pmor
         ptarget = items $ target pmor
-        pdom    = Map.keysSet $ propMap pmor
-        pcodom  = Set.map (applyMorphism pmor) psource
+        pdom = Map.keysSet $ propMap pmor
+        pcodom = Set.map (applyMorphism pmor) psource
     in Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
 
 -- | Application funtion for morphisms
@@ -106,34 +102,29 @@ mapSentence :: Morphism -> AS_BASIC.SENTENCE -> Result.Result AS_BASIC.SENTENCE
 mapSentence mor = return . mapSentenceH mor
 
 mapSentenceH :: Morphism -> AS_BASIC.SENTENCE -> AS_BASIC.SENTENCE
-mapSentenceH _ frm = case frm of -- mor fix
-  AS_BASIC.Quant_sent qs _ -> case qs of
-    AS_BASIC.Universal _ sen -> sen -- fix
-    AS_BASIC.Existential _ sen -> sen -- fix
-  AS_BASIC.Bool_sent bs _ -> case bs of
-    AS_BASIC.Conjunction sens -> head sens --fix
-    AS_BASIC.Disjunction sens -> head sens --fix
-    AS_BASIC.Negation sen -> sen
-    AS_BASIC.Implication s1 _ -> s1
-    AS_BASIC.Biconditional s1 _ -> s1
-  AS_BASIC.Atom_sent atom rn -> AS_BASIC.Atom_sent atom rn
-  AS_BASIC.Comment_sent _ sen _ -> sen
-  AS_BASIC.Irregular_sent sen _ -> sen
-    
+mapSentenceH mor frm = case frm of
+  AS_BASIC.Quant_sent qs rn -> case qs of
+    AS_BASIC.Universal xs sen -> AS_BASIC.Quant_sent
+       (AS_BASIC.Universal xs (mapSentenceH mor sen)) rn -- fix
+    AS_BASIC.Existential xs sen -> AS_BASIC.Quant_sent
+       (AS_BASIC.Existential xs (mapSentenceH mor sen)) rn -- fix
+  AS_BASIC.Bool_sent bs rn -> case bs of
+    AS_BASIC.Conjunction sens -> AS_BASIC.Bool_sent
+           (AS_BASIC.Conjunction (map (mapSentenceH mor) sens)) rn
+    AS_BASIC.Disjunction sens -> AS_BASIC.Bool_sent
+           (AS_BASIC.Disjunction (map (mapSentenceH mor) sens)) rn
+    AS_BASIC.Negation sen -> AS_BASIC.Bool_sent
+           (AS_BASIC.Negation (mapSentenceH mor sen)) rn
+    AS_BASIC.Implication s1 s2 -> AS_BASIC.Bool_sent
+           (AS_BASIC.Implication (mapSentenceH mor s1) (mapSentenceH mor s2)) rn
+    AS_BASIC.Biconditional s1 s2 -> AS_BASIC.Bool_sent
+           (AS_BASIC.Biconditional (mapSentenceH mor s1) (mapSentenceH mor s2))
+            rn
+  AS_BASIC.Atom_sent atom rn -> AS_BASIC.Atom_sent atom rn -- fix
+  AS_BASIC.Comment_sent cm sen rn -> AS_BASIC.Comment_sent cm sen rn -- unused
+  AS_BASIC.Irregular_sent sen rn -> AS_BASIC.Irregular_sent sen rn -- unused
 
 {-
-  AS_BASIC.Quant_sent form rn -> case form of
-  AS_BASIC.Negation form rn -> AS_BASIC.Negation (mapSentenceH mor form) rn
-  AS_BASIC.Conjunction form rn ->
-      AS_BASIC.Conjunction (map (mapSentenceH mor) form) rn
-  AS_BASIC.Disjunction form rn ->
-      AS_BASIC.Disjunction (map (mapSentenceH mor) form) rn
-  AS_BASIC.Implication form1 form2 rn -> AS_BASIC.Implication
-      (mapSentenceH mor form1) (mapSentenceH mor form2) rn
-  AS_BASIC.Equivalence form1 form2 rn -> AS_BASIC.Equivalence
-      (mapSentenceH mor form1) (mapSentenceH mor form2) rn
-  AS_BASIC.True_atom rn -> AS_BASIC.True_atom rn
-  AS_BASIC.False_atom rn -> AS_BASIC.False_atom rn
   AS_BASIC.Predication predH -> AS_BASIC.Predication
       $ id2SimpleId $ applyMorphism mor $ Id.simpleIdToId predH
 -}

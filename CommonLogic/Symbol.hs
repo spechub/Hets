@@ -12,15 +12,15 @@ Definition of symbols for common logic
 -}
 
 module CommonLogic.Symbol (
-        Symbol (..) 
-       ,printSymbol
-       ,symOf
-       ,getSymbolMap
-       ,getSymbolName
-       ,symbolToRaw
-       ,idToRaw
-       ,matches
-       ,addSymbToSign
+        Symbol (..)
+       , printSymbol
+       , symOf
+       , getSymbolMap
+       , getSymbolName
+       , symbolToRaw
+       , idToRaw
+       , matches
+       , addSymbToSign
        )
        where
 
@@ -33,11 +33,11 @@ import qualified Data.Map as Map
 
 import qualified CommonLogic.Sign as Sign
 import CommonLogic.Morphism as Morphism
---
+
 newtype Symbol = Symbol {symName :: Id.Id}
                  deriving (Show, Eq, Ord)
 
-instance Id.GetRange Symbol where 
+instance Id.GetRange Symbol where
     getRange = Id.getRange . symName
 
 instance Pretty Symbol where
@@ -47,7 +47,7 @@ printSymbol :: Symbol -> Doc
 printSymbol x = pretty $ symName x
 
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
+symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
            Sign.items x
 
 -- | Determines the symbol map of a morhpism

@@ -75,7 +75,6 @@ data SENTENCE = Quant_sent QUANT_SENT Id.Range
 
 data QUANT_SENT = Universal [NAME_OR_SEQMARK] SENTENCE
                 | Existential [NAME_OR_SEQMARK] SENTENCE
-                  --
                   deriving (Show, Ord, Eq)
 
 data BOOL_SENT = Conjunction [SENTENCE]
@@ -145,7 +144,7 @@ printComment s = case s of
 
 printQuantSent :: QUANT_SENT -> Doc
 printQuantSent s = case s of
-   Universal x y -> text forallS <+> parens (sep $ map pretty x)<+> pretty y
+   Universal x y -> text forallS <+> parens (sep $ map pretty x) <+> pretty y
    Existential x y -> text existsS <+> parens (sep $ map pretty x) <+> pretty y
 
 printBoolSent :: BOOL_SENT -> Doc
@@ -205,7 +204,7 @@ printPhrase s = case s of
 
 printModule :: MODULE -> Doc
 printModule (Mod x z _) = pretty x <+> pretty z
-printModule (Mod_ex x y z _)  = pretty x <+> fsep (map pretty y) <+> pretty z
+printModule (Mod_ex x y z _) = pretty x <+> fsep (map pretty y) <+> pretty z
 
 printImportation :: IMPORTATION -> Doc
 printImportation (Imp_name x) = pretty x

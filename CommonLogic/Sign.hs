@@ -12,17 +12,17 @@ Definition of signatures for common logic
 -}
 
 module CommonLogic.Sign
-    (Sign (..)                     --
-    ,pretty                        -- pretty printing
-    ,emptySig                      -- empty signature
-    ,isSubSigOf                    -- 
-    ,sigDiff                       -- Difference of Signatures
-    ,unite                         -- union of signatures
-    ,uniteL                        -- union of a list ofsignatures
-    ,sigUnion                      -- Union for Logic.Logic
-    ,isSeqMark                     -- is sequence marker?
-    ,isStringSeqMark
-    ,sigUnionL                     -- union of a list ofsignatures
+    (Sign (..)
+    , pretty                        -- pretty printing
+    , emptySig                      -- empty signature
+    , isSubSigOf                    -- sub signature of signature
+    , sigDiff                       -- Difference of Signatures
+    , unite                         -- union of signatures
+    , uniteL                        -- union of a list ofsignatures
+    , sigUnion                      -- Union for Logic.Logic
+    , isSeqMark                     -- is sequence marker?
+    , isStringSeqMark
+    , sigUnionL                     -- union of a list ofsignatures
     ) where
 
 import qualified Data.Set as Set
@@ -32,8 +32,9 @@ import Common.Doc
 import Common.DocUtils
 
 -- | Datatype for common logic Signatures
---TODO: function testing whether an ID is a sequence marker
+
 newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
+-- TODO function testing whether an ID is a sequence marker
 
 instance Pretty Sign where
     pretty = printSign
@@ -53,14 +54,14 @@ isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
 
 -- | difference of Signatures
 sigDiff :: Sign -> Sign -> Sign
-sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) $ items sig2}
+sigDiff sig1 sig2 = Sign {items = Set.difference (items sig1) $ items sig2}
 
--- | 
+-- | Unite Signatures
 sigUnion :: Sign -> Sign -> Result Sign
 sigUnion s1 = Result [Diag Debug "All fine sigUnion" nullRange]
       . Just . unite s1
 
--- | 
+-- | Unite Signature in a list
 sigUnionL :: [Sign] -> Result Sign
 sigUnionL (sig : sigL) = sigUnion sig (uniteL sigL)
 sigUnionL [] = return emptySig
@@ -68,7 +69,7 @@ sigUnionL [] = return emptySig
 unite :: Sign -> Sign -> Sign
 unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}
 
---TODO:
+-- TODO
 isSeqMark :: Id -> Bool
 isSeqMark _ = True
 

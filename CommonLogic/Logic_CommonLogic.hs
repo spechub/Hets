@@ -79,6 +79,8 @@ instance Logic CommonLogic
     Symbol            -- raw_symbol
     ProofTree                -- proof_tree
     where 
+       empty_proof_tree CommonLogic = emptyProofTree
+       provers CommonLogic = []
 {-
          omdoc_metatheory CommonLogic = Just clMetaTheory
          export_senToOmdoc CommonLogic = exportSenToOmdoc
