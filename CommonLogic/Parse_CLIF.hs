@@ -320,7 +320,7 @@ parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
 parseBasicItems = parseAxItems
               <|> try parseSentences
               <|> try parseClText
-              <|> try parseKif
+              -- <|> try parseKif
 
 parseSentences :: AnnoState.AParser st BASIC_ITEMS
 parseSentences = do 
@@ -363,6 +363,11 @@ parseAxItems = do
        let _  = Id.catRange (d:ds)
            ns = init fs ++ [Annotation.appendAnno (last fs) an]
        return $ Axiom_items ns
+       -- return $ Axiom_items [Annotation.Annoted a nullRange [] [] ] 
+
+-- a :: SENTENCE
+-- a = Atom_sent (Atom (Name_term (Token "Cube" nullRange)) [Term_seq (Name_term 
+--       (Token "a" nullRange))]) nullRange
 
 -- | Toplevel parser for formulae
 aFormula :: AnnoState.AParser st (Annotation.Annoted SENTENCE)
