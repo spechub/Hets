@@ -28,7 +28,7 @@ instance Pretty Relation where
     text n <> case (c1, c2) of
       (Anything, Anything) -> empty
       _ | c1 == c2 -> brackets $ pretty c1
-      _ -> brackets $ ppWithCommas [c1, c2]
+      _ -> brackets $ hcat [pretty c1, text "*", pretty c2]
 
 instance Pretty UnOp where
   pretty o = text $ case o of
@@ -41,8 +41,8 @@ instance Pretty MulOp where
   pretty o = text $ case o of
     Fc -> ";"
     Fd -> "!"
-    Fi -> "/\\"
-    Fu -> "\\/"
+    Fi -> " /\\ "
+    Fu -> " \\/ "
 
 prettyParen :: (Expression -> Bool) -> Expression -> Doc
 prettyParen p e = (if p e then parens else id) $ pretty e
@@ -51,7 +51,7 @@ instance Pretty Expression where
   pretty e = case e of
     Tm r -> pretty r
     MulExp o es ->
-      fsep $ punctuate (pretty o) $ map
+      fcat $ punctuate (pretty o) $ map
         (prettyParen (\ a -> case a of
            MulExp p _ -> p >= o
            _ -> False)) es
@@ -76,6 +76,12 @@ instance Pretty Rule where
 instance Pretty Prop where
   pretty = text . showProp
 
+instance Pretty Object where
+  pretty (Object n e as os) = sep
+    [ fsep [text n <> colon, pretty e]
+    , if null as then empty else fsep $ text "ALWAYS" : map pretty as
+    , if null os then empty else text "=" <+> brackets (ppWithCommas os) ]
+
 instance Pretty PatElem where
   pretty e = case e of
     Pr r -> pretty r
@@ -88,4 +94,5 @@ instance Pretty PatElem where
       , text $ if f then "->" else "*", pretty c2
       , if null ns then empty else brackets $ ppWithCommas ns]
       <> text "."
+    Service o -> sep [text "SERVICE", pretty o]
     Ignored -> empty

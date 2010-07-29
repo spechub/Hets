@@ -62,6 +62,7 @@ data Prop
   | Asy          -- ^ antisymmetric
   | Trn          -- ^ transitive
   | Rfx          -- ^ reflexive
+  | Prop         -- ^ meta property
     deriving (Enum, Eq, Ord, Show)
 
 showProp :: Prop -> String
@@ -70,9 +71,17 @@ showProp = map toUpper . show
 allProps :: [Prop]
 allProps = [Uni .. Rfx]
 
+data Object = Object
+  { label :: String
+  , expr :: Expression
+  , props :: [Prop]
+  , subobjs :: [Object]
+  } deriving Show
+
 data PatElem
   = Pr Rule
   | Pg Concept Concept -- generic and specific concept
   | Pm [Prop] Relation
+  | Service Object
   | Ignored
     deriving Show

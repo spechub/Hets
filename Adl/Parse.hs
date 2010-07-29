@@ -117,9 +117,10 @@ pBind :: CharParser st String
 pBind = pKey "BIND" >> pDeclaration << pKey "TOPHP" >> (pConid <|> pString)
 
 pContextElement :: CharParser st [PatElem]
-pContextElement = pPattern <|> fmap (const [])
-  (pDeclaration <|> pConceptDef <|> pKeyDef
-  <|> pObjDef <|> pSqlplug <|> pPhpplug <|> pExplain
+pContextElement = pPattern
+  <|> fmap (: [])
+      (choice [pObjDef, pDeclaration, pConceptDef, pKeyDef, pExplain])
+  <|> fmap (const []) (pSqlplug <|> pPhpplug
   <|> (pKey "POPULATION" >> pMorphism << pKey "CONTAINS" >> pContent))
 
 pPattern :: CharParser st [PatElem]
@@ -174,27 +175,31 @@ pKeyDef = do
   pParens $ sepBy1 pKeyAtt pComma
   return Ignored
 
-pLabelProps :: CharParser st ()
+pLabelProps :: CharParser st String
 pLabelProps = do
-  pADLid
+  n <- pADLid
   optionL $ pGenParens "{" "}" $ sepBy1 pADLid pComma
-  forget $ pColon
+  pColon
+  return n
 
 pKeyAtt :: CharParser st Expression
 pKeyAtt = do
- option () $ try pLabelProps
+ optionMaybe $ try pLabelProps
  pExpr
 
 pObjDef :: CharParser st PatElem
-pObjDef = pKey "SERVICE" >> pObj >> return Ignored
+pObjDef = pKey "SERVICE" >> fmap Service pObj
 
-pObj :: CharParser st Expression
-pObj = pLabelProps >> pExpr
-  << optionL (pKey "ALWAYS" >> many pProp')
-  << optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
+pObj :: CharParser st Object
+pObj = do
+  n <- pLabelProps
+  e <- pExpr
+  as <- optionL (pKey "ALWAYS" >> many pProp')
+  os <- optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
+  return $ Object n e as os
 
-pProp' :: CharParser st String
-pProp' = choice $ map pKeyS ["UNI", "TOT", "PROP"]
+pProp' :: CharParser st Prop
+pProp' = choice $ map (\ p -> pKey (showProp p) >> return p) [Uni, Tot, Prop]
 
 pSqlplug :: CharParser st PatElem
 pSqlplug = pKey "SQLPLUG" >> pObj >> return Ignored
