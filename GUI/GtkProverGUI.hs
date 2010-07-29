@@ -213,7 +213,7 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
       case selGoal of
         [(i, g)] -> do
           s' <- takeMVar state
-          s <- disproveThmSingle (gName g) node s' 1 $ map snd comorphList
+          s <- disproveThmSingle (gName g) node s' 1
           putMVar state =<< update s
           listStoreSetValue listGoals i $ fromJust $ find 
             (\g' -> gName g' == gName g) $ toGoals s
