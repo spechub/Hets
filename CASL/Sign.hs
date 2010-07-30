@@ -302,13 +302,6 @@ interSig ef a b = let s = sortSet a `Set.intersection` sortSet b in
   , annoMap = interMapSet (annoMap a) $ annoMap b
   , extendedInfo = ef (extendedInfo a) $ extendedInfo b }
 
-isEmptySig :: (e -> Bool) -> Sign f e -> Bool
-isEmptySig ie s =
-    Set.null (sortSet s) &&
-    Rel.null (sortRel s) &&
-    Map.null (opMap s) &&
-    Map.null (predMap s) && ie (extendedInfo s)
-
 isSubMapSet :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> Map.Map a (Set.Set b)
             -> Bool
 isSubMapSet = Map.isSubmapOfBy Set.isSubsetOf
@@ -521,7 +514,7 @@ toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 -- | adds a symbol to a given signature
 addSymbToSign :: Sign e f -> Symbol -> Result (Sign e f)
 addSymbToSign sig sy =
-    let addSort' cs s = 
+    let addSort' cs s =
             cs { sortSet = Set.insert s $ sortSet cs }
         addToMap' m n t = Map.insertWith Set.union n (Set.singleton t) m
         addOp' cs n ot = cs { opMap = addToMap' (opMap cs) n ot }
