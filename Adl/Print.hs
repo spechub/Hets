@@ -96,3 +96,6 @@ instance Pretty PatElem where
       <> dot
     Service o -> sep [keyword "SERVICE", pretty o]
     Ignored -> empty
+
+instance Pretty Context where
+  pretty (Context ps) = vcat $ map pretty ps

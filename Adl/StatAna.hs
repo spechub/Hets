@@ -25,9 +25,9 @@ import Common.Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-basicAna :: ([PatElem], Sign, GlobalAnnos)
-  -> Result ([PatElem], ExtSign Sign Relation, [Named Sen])
-basicAna (ps, sig, _) =
+basicAna :: (Context, Sign, GlobalAnnos)
+  -> Result (Context, ExtSign Sign Relation, [Named Sen])
+basicAna (c@(Context ps), sig, _) =
   let (rs, ss) = foldr (\ p (r, s) ->
         case p of
           Pr u -> (r, makeNamed "" (Assertion u) : s)
@@ -35,4 +35,4 @@ basicAna (ps, sig, _) =
                                  makeNamed (decnm d ++ "_" ++ showProp q)
                                  $ DeclProp d q) qs ++ s)
           _ -> (r, s)) ([], []) ps
-  in return (ps, mkExtSign sig, ss)
+  in return (c, mkExtSign sig, ss)

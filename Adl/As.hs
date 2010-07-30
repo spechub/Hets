@@ -85,3 +85,5 @@ data PatElem
   | Service Object
   | Ignored
     deriving Show
+
+data Context = Context [PatElem] deriving Show

@@ -93,8 +93,8 @@ pString = (stringLit <|> sQuoted) << skip
 pADLid :: CharParser st String
 pADLid = pConid <|> pVarid <|> pString
 
-pArchitecture :: CharParser st [PatElem]
-pArchitecture = flat $ many1 pContext
+pArchitecture :: CharParser st Context
+pArchitecture = fmap Context $ flat $ many1 pContext
 
 pContext :: CharParser st [PatElem]
 pContext = do

@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  the Logic instance for ADL
@@ -22,17 +22,13 @@ import Adl.Sign
 import Adl.StatAna
 import Adl.ATC_Adl ()
 
-import qualified Common.Lib.Rel as Rel
 import Common.Id
-import Common.GlobalAnnotations
-import Common.Result
 import Common.DefaultMorphism
 import Common.ProofTree
 
 import ATC.ProofTree ()
 
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 data Adl = Adl deriving Show
 
@@ -53,7 +49,7 @@ instance Sentences Adl
       map_sen Adl _ = return . id
 
 instance Syntax Adl
-    [PatElem]
+    Context
     ()
     ()
     where
@@ -63,7 +59,7 @@ instance Syntax Adl
 
 instance Logic Adl
     ()                -- Sublogics
-    [PatElem]         -- basic_spec
+    Context           -- basic_spec
     Sen               -- sentence
     ()                -- symb_items
     ()                -- symb_map_items
@@ -76,11 +72,11 @@ instance Logic Adl
        empty_proof_tree Adl = emptyProofTree
        provers Adl = []
 
-instance GetRange PatElem
+instance GetRange Context
 instance GetRange Relation
 
 instance StaticAnalysis Adl
-    [PatElem]
+    Context
     Sen
     ()
     ()

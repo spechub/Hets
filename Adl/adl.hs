@@ -13,7 +13,6 @@ Portability :  portable
 module Main where
 
 import Common.DocUtils (pretty)
-import Common.Doc (vcat)
 import Common.Parsec ((<<))
 import System.Environment (getArgs)
 import Text.ParserCombinators.Parsec (parse, eof)
@@ -28,5 +27,5 @@ process :: String -> IO ()
 process f = do
   s <- readFile f
   case parse (skip >> pArchitecture << eof) f s of
-             Right es -> print $ vcat $ map pretty es
+             Right es -> print $ pretty es
              Left err -> fail $ show err

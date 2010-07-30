@@ -16,7 +16,6 @@ import Adl.As
 import Adl.Print ()
 
 import qualified Common.Lib.Rel as Rel
-import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
