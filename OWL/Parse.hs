@@ -216,10 +216,6 @@ uriPair = uriP >>= \ u -> do
 datatypeUri :: CharParser st QName
 datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
 
-stringLit :: CharParser st String
-stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
-                        <|> char '\\' <:> single anyChar) $ char '\"'
-
 optSign :: CharParser st String
 optSign = optionL (single $ oneOf "+-")
 

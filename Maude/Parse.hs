@@ -39,7 +39,3 @@ lineComment :: CharParser st String
 lineComment = (tryString "---" <|> tryString "***")
               <++> many (noneOf "\n\r")
               <++> many (oneOf "\n\r")
-
-stringLit :: CharParser st String
-stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
-                        <|> char '\\' <:> single anyChar) $ char '\"'

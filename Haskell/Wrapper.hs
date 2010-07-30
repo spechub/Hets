@@ -51,12 +51,5 @@ lineComment =
        << notFollowedBy (oneOf "!#$%&*+./<=>?@\\^|~"))
   <++> many (noneOf "\n")
 
-stringLit :: CharParser st String
-stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
-                        <|> char '\\' <:> single anyChar) $ char '\"'
-
 charLit :: CharParser st String
-charLit = tryString "'''" <|>
-          enclosedBy (flat $ many $ single (noneOf "\\\'")
-                      <|> char '\\' <:> single anyChar)
-          (char '\'')
+charLit = tryString "'''" <|> sQuoted

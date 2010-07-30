@@ -80,6 +80,19 @@ nestedComment op cl = case (op, cl) of
     <++> string cl
   _ -> error "nestedComment"
 
+-- | a literal enclosed in quotes and a backslash as escape character
+quotedLit :: Char -> CharParser st String
+quotedLit q = enclosedBy (flat $ many $ single (noneOf $ '\\' : [q])
+                        <|> char '\\' <:> single anyChar) $ char q
+
+-- | text in double quotes
+stringLit :: CharParser st String
+stringLit = quotedLit '"'
+
+-- | text in single quotes
+sQuoted :: CharParser st String
+sQuoted = quotedLit '\''
+
 -- | non-nested block
 plainBlock :: String -> String -> CharParser st String
 plainBlock op cl = tryString op >> manyTill anyChar (tryString cl)
