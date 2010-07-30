@@ -309,6 +309,8 @@ CSL_files = CSL/Sign.hs CSL/Morphism.hs CSL/AS_BASIC_CSL.hs CSL/Symbol.hs
 CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs \
   CommonLogic/Symbol.hs CommonLogic/Morphism.hs
 
+Adl_files = Adl/As.hs Adl/Sign.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -381,6 +383,9 @@ CSL/ATC_CSL.der.hs: $(CSL_files) $(GENRULES)
 
 CommonLogic/ATC_CommonLogic.der.hs: $(CommonLogic_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(CommonLogic_files)
+
+Adl/ATC_Adl.der.hs: $(Adl_files) $(GENRULES)
+	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(Adl_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
