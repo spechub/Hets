@@ -31,7 +31,7 @@ import Static.ComputeTheory
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 
 import Logic.Grothendieck
-import Logic.Comorphism (AnyComorphism (..))
+import Logic.Comorphism (AnyComorphism (..), hasModelExpansion)
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
@@ -425,6 +425,7 @@ updateFinder view list sl = do
                   f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
               $ getProvers ProveCMDLautomatic (Just sl)
+              $ filter hasModelExpansion
               $ findComorphismPaths logicGraph sl
   when (old /= new) $ do
     -- update list and try to select previous finder
