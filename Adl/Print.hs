@@ -28,21 +28,21 @@ instance Pretty Relation where
     text n <> case (c1, c2) of
       (Anything, Anything) -> empty
       _ | c1 == c2 -> brackets $ pretty c1
-      _ -> brackets $ hcat [pretty c1, text "*", pretty c2]
+      _ -> brackets $ hcat [pretty c1, cross, pretty c2]
 
 instance Pretty UnOp where
-  pretty o = text $ case o of
-    K0 -> "*"
-    K1 -> "+"
-    Cp -> "-" -- prefix!
-    Co -> "~"
+  pretty o = case o of
+    K0 -> text "*"
+    K1 -> text "+"
+    Cp -> text "-" -- prefix!
+    Co -> breve
 
 instance Pretty MulOp where
-  pretty o = text $ case o of
-    Fc -> ";"
-    Fd -> "!"
-    Fi -> " /\\ "
-    Fu -> " \\/ "
+  pretty o = case o of
+    Fc -> semi
+    Fd -> dagger
+    Fi -> space <> andDoc <> space
+    Fu -> space <> orDoc <> space
 
 prettyParen :: (Expression -> Bool) -> Expression -> Doc
 prettyParen p e = (if p e then parens else id) $ pretty e
@@ -63,10 +63,10 @@ instance Pretty Expression where
       , pretty o ]
 
 instance Pretty RuleType where
-  pretty t = text $ case t of
-    Implication -> "|-"
-    ReverseImpl -> "-|"
-    Equivalence -> "="
+  pretty t = case t of
+    Implication -> vdash
+    ReverseImpl -> dashv
+    Equivalence -> equals
 
 instance Pretty Rule where
   pretty r = case r of
@@ -79,20 +79,20 @@ instance Pretty Prop where
 instance Pretty Object where
   pretty (Object n e as os) = sep
     [ fsep [text n <> colon, pretty e]
-    , if null as then empty else fsep $ text "ALWAYS" : map pretty as
-    , if null os then empty else text "=" <+> brackets (ppWithCommas os) ]
+    , if null as then empty else fsep $ keyword "ALWAYS" : map pretty as
+    , if null os then empty else equals <+> brackets (ppWithCommas os) ]
 
 instance Pretty PatElem where
   pretty e = case e of
     Pr r -> pretty r
-    Pg c1 c2 -> fsep [text "GEN", pretty c1, text "ISA", pretty c2]
+    Pg c1 c2 -> fsep [keyword "GEN", pretty c1, keyword "ISA", pretty c2]
     Pm ps (Sgn n c1 c2) ->
       let f = elem Uni ps && elem Tot ps
           ns = if f then delete Tot $ delete Uni ps else ps
       in fsep
       [ text n, text "::", pretty c1
-      , text $ if f then "->" else "*", pretty c2
+      , if f then funArrow else cross, pretty c2
       , if null ns then empty else brackets $ ppWithCommas ns]
-      <> text "."
-    Service o -> sep [text "SERVICE", pretty o]
+      <> dot
+    Service o -> sep [keyword "SERVICE", pretty o]
     Ignored -> empty

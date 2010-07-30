@@ -154,6 +154,10 @@ module Common.Doc
     , hiding_proc
     , ren_proc_open
     , ren_proc_close
+    , dagger
+    , vdash
+    , dashv
+    , breve
       -- * docifying annotations and ids
     , annoDoc
     , codeToken
@@ -344,16 +348,16 @@ vsep = foldr ($++$) empty
 vcat :: [Doc] -> Doc          -- ^List version of '$+$'
 vcat = Cat Vert . rmEmpties
 
-cat    :: [Doc] -> Doc          -- ^ Either hcat or vcat
+cat :: [Doc] -> Doc          -- ^ Either hcat or vcat
 cat = Cat HorizOrVert . rmEmpties
 
-sep    :: [Doc] -> Doc          -- ^ Either hsep or vcat
+sep :: [Doc] -> Doc          -- ^ Either hsep or vcat
 sep = Cat HorizOrVert . punctuate space . rmEmpties
 
-fcat   :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of cat
+fcat :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of cat
 fcat = Cat Fill . rmEmpties
 
-fsep   :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of sep
+fsep :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of sep
 fsep = Cat Fill . punctuate space . rmEmpties
 
 keyword, topSigKey, topKey, indexed, structId :: String -> Doc
@@ -363,8 +367,12 @@ structId = Text StructId
 topKey = Text (TopKey 4)
 topSigKey = Text (TopKey 5)
 
-lambdaSymb :: String
+lambdaSymb, daggerS, vdashS, dashvS, breveS :: String
 lambdaSymb = "\\"
+daggerS = "!"
+vdashS = "|-"
+dashvS = "-|"
+breveS = "~"
 
 -- | docs possibly rendered differently for Text or LaTeX
 quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
@@ -372,7 +380,7 @@ quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
    inDoc, andDoc, orDoc, implies, equiv, prefix_proc, sequential,
    interleave, synchronous, genpar_open, genpar_close, alpar_open,
    alpar_sep, alpar_close, external_choice, internal_choice, hiding_proc,
-   ren_proc_open, ren_proc_close :: Doc
+   ren_proc_open, ren_proc_close, dagger, vdash, dashv, breve :: Doc
 
 quMarkD = text quMark
 dot = text dotS
@@ -413,6 +421,10 @@ internal_choice = symbol internal_choiceS
 hiding_proc = text hiding_procS -- otherwise it clashes with lambda
 ren_proc_open = symbol ren_proc_openS
 ren_proc_close = symbol ren_proc_closeS
+dagger = symbol daggerS
+vdash = symbol vdashS
+dashv = symbol dashvS
+breve = symbol breveS
 
 -- | we know how to print annotations
 annoDoc :: Annotation -> Doc
@@ -720,6 +732,10 @@ latexSymbols = Map.union (Map.fromList
     , (inS, "\\in")
     , (lAnd, "\\wedge")
     , (lOr, "\\vee")
+    , (daggerS, "\\dag")
+    , (vdashS, "\\vdash")
+    , (dashvS, "\\dashv")
+    , (breveS, "\\breve{~}")
     , (implS, "\\Rightarrow")
     , (equivS, "\\Leftrightarrow")
     , (prefix_procS, "\\rightarrow") -- clash with funS
