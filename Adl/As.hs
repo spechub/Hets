@@ -21,9 +21,9 @@ data Concept
     deriving (Eq, Ord, Show)
 
 data Relation = Sgn
-  { decnm   :: String  -- ^ the name
-  , desrc   :: Concept -- ^ the source concept
-  , detrg   :: Concept -- ^ the target concept
+  { decnm :: String  -- ^ the name
+  , desrc :: Concept -- ^ the source concept
+  , detrg :: Concept -- ^ the target concept
   } deriving (Eq, Ord, Show)
 
 data UnOp

@@ -10,17 +10,12 @@ Portability :  portable
 
 -}
 
-module Main where
+module Adl.Parse where
 
 import Common.Parsec
-import Common.DocUtils
-import Common.Doc hiding (space)
-import System.Environment
 import Text.ParserCombinators.Parsec
-import Haskell.Wrapper
 
 import Adl.As
-import Adl.Print ()
 
 keywordstxt :: [String]
 keywordstxt =
@@ -36,8 +31,13 @@ keywordstxt =
   , "ONE", "BIND", "TOPHP", "BINDING"
   ]
 
+-- | a line comment starts with --. In haskell this may be part of an operator.
+lineComment :: CharParser st String
+lineComment = tryString "--" <++> many (noneOf "\n")
+
 skip :: CharParser st ()
-skip = skipMany $ forget space <|> forget (nestComment <|> lineComment)
+skip = skipMany $ forget space
+  <|> forget (nestedComment "{-" "-}" <|> lineComment)
 
 pChar :: CharParser st Char
 pChar = alphaNum <|> oneOf "_'"
@@ -88,7 +88,7 @@ pVarid :: CharParser st String
 pVarid = (lower <:> many pChar) << skip
 
 pString :: CharParser st String
-pString = (stringLit <|> charLit) << skip
+pString = (stringLit <|> sQuoted) << skip
 
 pADLid :: CharParser st String
 pADLid = pConid <|> pVarid <|> pString
@@ -278,7 +278,7 @@ pConcept = fmap C $ pConid <|> pString <|> pKeyS "ONE"
 
 pMorphism :: CharParser st Expression
 pMorphism = do
-  nm <- pKeyS "I" <|> pKeyS "V" <|> pVarid <|> (charLit << skip)
+  nm <- pKeyS "I" <|> pKeyS "V" <|> pVarid <|> (sQuoted << skip)
   (c1, c2) <- pTwo
   return $ Tm $ Sgn nm c1 c2
 
@@ -304,7 +304,7 @@ pPrec f p s = do
 
 pTerm :: CharParser st Expression
 pTerm = do
-  ms <- many $ pMinus
+  ms <- many pMinus
   e <- pParens pExpr <|> pMorphism
   rs <- many $ choice $ map (pSymS . (: [])) "+*~"
   let p = foldl (\ r c -> UnExp (case c of
@@ -313,13 +313,3 @@ pTerm = do
         "~" -> Co
         _ -> error "pTerm post strings") r) e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms
-
-main :: IO ()
-main = getArgs >>= mapM_ process
-
-process :: String -> IO ()
-process f = do
-  s <- readFile f
-  case parse (skip >> pArchitecture << eof) f s of
-             Right es -> print $ vcat $ map pretty es
-             Left err -> fail $ show err
