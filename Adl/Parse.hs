@@ -93,8 +93,10 @@ pString = (stringLit <|> sQuoted) << skip
 pADLid :: CharParser st String
 pADLid = pConid <|> pVarid <|> pString
 
+-- | parse contexts but do not require CONTEXT blocks
 pArchitecture :: CharParser st Context
-pArchitecture = fmap Context $ flat $ many1 pContext
+pArchitecture = fmap Context $ flat $ many1
+  $ pContext <|> flat (many1 pContextElement)
 
 pContext :: CharParser st [PatElem]
 pContext = do
@@ -116,10 +118,10 @@ pContext = do
 pBind :: CharParser st String
 pBind = pKey "BIND" >> pDeclaration << pKey "TOPHP" >> (pConid <|> pString)
 
+-- | parse a context element but do not require the PATTERN block
 pContextElement :: CharParser st [PatElem]
-pContextElement = pPattern
-  <|> fmap (: [])
-      (choice [pObjDef, pDeclaration, pConceptDef, pKeyDef, pExplain])
+pContextElement = pPattern <|> many1 pPatElem
+  <|> fmap (: []) pObjDef
   <|> fmap (const []) (pSqlplug <|> pPhpplug
   <|> (pKey "POPULATION" >> pMorphism << pKey "CONTAINS" >> pContent))
 
