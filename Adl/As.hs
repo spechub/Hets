@@ -80,7 +80,7 @@ data Object = Object
 
 data PatElem
   = Pr Rule
-  | Pg Concept Concept -- generic and specific concept
+  | Pg Concept Concept -- specific and generic concept
   | Pm [Prop] Relation
   | Service Object
   | Ignored
