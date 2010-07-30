@@ -13,6 +13,7 @@ Portability :  portable
 module Adl.Parse where
 
 import Common.Parsec
+import Common.Token (casl_structured_reserved_words)
 import Text.ParserCombinators.Parsec
 
 import Adl.As
@@ -85,7 +86,7 @@ pConid :: CharParser st String
 pConid = reserved keywordstxt (upper <:> many pChar) << skip
 
 pVarid :: CharParser st String
-pVarid = (lower <:> many pChar) << skip
+pVarid = reserved casl_structured_reserved_words (lower <:> many pChar) << skip
 
 pString :: CharParser st String
 pString = (stringLit <|> sQuoted) << skip
