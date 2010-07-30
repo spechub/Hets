@@ -85,6 +85,7 @@ instance Comorphism
       map_theory CommonLogic2CASL = mapTheory -- TODO
       map_morphism CommonLogic2CASL = mapMor  -- TODO prop
       map_sentence CommonLogic2CASL = mapSentence
+      has_model_expansion CommonLogic2CASL = True
 
 -- | Creates CASL Sig
 baseCASLSig :: [AS_Anno.Named CBasic.CASLFORMULA]

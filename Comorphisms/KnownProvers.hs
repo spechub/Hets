@@ -89,8 +89,9 @@ knownProversWithKind pk =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
        qCs <- quickCheckComorphisms
-       return $ foldl insProvers Map.empty $
-              idComorphisms ++ isaCs ++ spassCs ++ qCs
+       return $ foldl insProvers Map.empty
+         $ filter hasModelExpansion
+         $ idComorphisms ++ isaCs ++ spassCs ++ qCs
 #ifdef CASLEXTENSIONS
               ++ [Comorphism cspCASLTrace]
 #endif
@@ -139,7 +140,7 @@ isaComorphisms = do
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
        -- CommonLogic
-       commonlogic2IHOL <- 
+       commonlogic2IHOL <-
            compComorphism (Comorphism CommonLogic2CASL) subpc2IHOL
        return
          [ Comorphism CFOL2IsabelleHOL
