@@ -407,10 +407,10 @@ nameDGLink :: NodeName -> DGLinkLab -> DGLinkLab
 nameDGLink nn l = l { dglName = nn }
 
 defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
-defDGLink m ty orig = let nn = makeName $ case getLinkOriginName orig of
-                                            Just sid -> sid
-                                            _ -> mkSimpleId ""
-                      in mkDGLink m ty orig nn defaultEdgeId
+-- See svn-version 13804 for a naming concept which unfortunately introduced
+-- same names for different links.
+defDGLink m ty orig = mkDGLink m ty orig (makeName $ mkSimpleId "")
+                      defaultEdgeId
 
 globDefLink :: GMorphism -> DGLinkOrigin -> DGLinkLab
 globDefLink m = defDGLink m globalDef
