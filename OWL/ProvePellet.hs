@@ -196,14 +196,13 @@ runPelletAux opts tmpFileName prob entail = do
       timeTmpFile <- writeTempFile prob tempDir tmpFile
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
+          args = "-Xmx512m" : "-jar" : pelletJar
+           : (if doEntail then ["entail", "-e", entFile] else words opts)
+           ++ ["file://" ++ timeTmpFile]
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
-      (_, outS, errS) <-
-        readProcessWithExitCode "java"
-          ("-Xmx512m" : "-jar" : pelletJar
-           : (if doEntail then ["entail", "-e", entFile] else words opts)
-           ++ ["file://" ++ timeTmpFile]) ""
+      (_, outS, errS) <- readProcessWithExitCode "java" args ""
       removeFile timeTmpFile
       when doEntail $ removeFile entFile
       return (True, outS, errS)
@@ -282,7 +281,7 @@ analyseOutput err outp =
               "Yes" -> (ATPSuccess, Just True, to)
               "No" -> (ATPSuccess, Just False, to)
               _ -> (atp, exCode, to)
-          "All" : "axioms" : "are" : "entailed" : _ ->
+          "All" : "axioms" : "are" : e : _ | isPrefixOf "entailed" e ->
             (ATPSuccess, Just True, to)
           "Non-entailments:" : _ -> (ATPSuccess, Just False, to)
           "Usage:" : "java" : "Pellet" : _ -> (ATPError line, Nothing, to)
@@ -291,7 +290,9 @@ analyseOutput err outp =
             (atp, exCode, read num)
           _ -> (atp, exCode, to)
       (atpr, st, tmo) = foldl anaHelp (ATPError "", Nothing, -1) ls
-  in (atpr, st, ls, tmo)
+  in case atpr of
+       ATPError s | null s -> (ATPError "unexpected pellet output", st, ls, tmo)
+       _ -> (atpr, st, ls, tmo)
 
 showOWLProblemS :: PelletProverState -- ^ prover state containing
                                      -- initial logical part
