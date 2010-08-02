@@ -91,7 +91,7 @@ latexHeader = unlines
 
 -- where is the pdflatex command for the generation of PDF-files
 pdflatexCmd :: String
-pdflatexCmd = "/usr/local/bin/pdflatex"
+pdflatexCmd = "/opt/csw/bin/pdflatex"
 
 --- site independant configuration
 
