@@ -38,6 +38,7 @@ import Common.AS_Annotation as AS_Anno
 import CSL.AS_BASIC_CSL
 import CSL.Keywords
 import Text.ParserCombinators.Parsec as Parsec
+import Control.Monad
 
 -- the basic lexer, test using e.g. runParser identifier 0 "" "asda2_3"
 
@@ -155,8 +156,8 @@ expatom :: CharParser st EXPRESSION
 expatom = signednumber <|> (oParenT >> expression << cParenT) <|> expsymbol
 
 expsymbol :: CharParser st EXPRESSION
-expsymbol = 
-    do 
+expsymbol =
+    do
       ident <- prefixidentifier  -- EXTENDED
       ep <- option ([],[])
             $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
@@ -183,7 +184,8 @@ listexp = do
 extparam :: CharParser st EXTPARAM
 extparam = do
   i <- identifier
-  pair (oneOfKeys ["=", "<=", ">=", "!=", "<", ">", "-|"]) (optionMaybe expression) >-+-> EP i
+  liftM2 (EP i) (oneOfKeys ["=", "<=", ">=", "!=", "<", ">", "-|"])
+    $ optionMaybe expression
 
 -- ---------------------------------------------------------------------------
 
@@ -337,7 +339,7 @@ singleCase = do
   lstring ":"
   statements <- many1 (AnnoState.dotT >> AnnoState.allAnnoParser command)
   return (cond, map AS_Anno.item statements)
-  
+
 
 caseExpr :: CharParser (AnnoState.AnnoState st) CMD
 caseExpr = many1 singleCase >-> Cond << lstring "end"
@@ -383,7 +385,7 @@ parseDomain = do
     "][" -> f False False
     "]]" -> f False True
     _ -> parseError "parseDomain: malformed domain parens"
-  
+
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC

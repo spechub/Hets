@@ -43,11 +43,6 @@ infixl 4 >->
 (>->) :: Monad m => m a -> (a -> b) -> m b
 (>->) p f = liftM f p
 
-infixl 2 >-+->
-
-(>-+->) :: Monad m => m (a,b) -> (a -> b -> c) -> m c
-(>-+->) p f = p >-> uncurry f
-
 single :: Monad m => m a -> m [a]
 single = liftM return
 
