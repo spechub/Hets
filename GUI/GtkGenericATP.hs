@@ -230,10 +230,10 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
             afterEachProofAttempt gPSF nSen nextSen cfg@(retval,_) = do
               cont <- goalProcessed stateMVar timeout opts numGoals prName
                                     gPSF nSen False cfg
-              case retval of
-                ATPError m -> errorDialog "Error" m
-                _ -> return ()
               postGUISync $ do
+                case retval of
+                  ATPError m -> errorDialog "Error" m
+                  _ -> return ()
                 s' <- readMVar stateMVar
                 updateGoals s' trvGoals listGoals
                 let progress = fromIntegral gPSF / fromIntegral numGoals
