@@ -41,11 +41,11 @@ instance Sentences Adl
     Sen
     Sign
     Morphism
-    Relation
+    Symbol
     where
       sym_of Adl = singletonList . symOf
       symmap_of Adl _ = Map.empty
-      sym_name Adl = stringToId . decnm
+      sym_name Adl = symName
       map_sen Adl _ = return . id
 
 instance Syntax Adl
@@ -65,8 +65,8 @@ instance Logic Adl
     ()                -- symb_map_items
     Sign              -- sign
     Morphism          -- morphism
-    Relation          -- symbol
-    Relation          -- raw_symbol
+    Symbol            -- symbol
+    RawSymbol         -- raw_symbol
     ProofTree         -- proof_tree
     where
        empty_proof_tree Adl = emptyProofTree
@@ -82,12 +82,12 @@ instance StaticAnalysis Adl
     ()
     Sign
     Morphism
-    Relation
-    Relation
+    Symbol
+    RawSymbol
     where
       basic_analysis Adl = Just basicAna
       empty_signature Adl = emptySign
       is_subsig Adl = isSubSignOf
       signature_union Adl = signUnion
-      symbol_to_raw Adl = id
-      matches Adl = (==)
+      symbol_to_raw Adl = Symbol
+      matches Adl = symMatch

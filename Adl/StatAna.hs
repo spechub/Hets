@@ -15,20 +15,15 @@ module Adl.StatAna where
 import Adl.As
 import Adl.Sign
 
-import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.ExtSign
-import Common.Id
 import Common.GlobalAnnotations
 import Common.Result
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-
 basicAna :: (Context, Sign, GlobalAnnos)
-  -> Result (Context, ExtSign Sign Relation, [Named Sen])
+  -> Result (Context, ExtSign Sign Symbol, [Named Sen])
 basicAna (c@(Context ps), sig, _) =
-  let (rs, ss) = foldr (\ p (r, s) ->
+  let (_, ss) = foldr (\ p (r, s) ->
         case p of
           Pr u -> (r, makeNamed "" (Assertion u) : s)
           Pm qs d -> (d : r, map (\ q ->
