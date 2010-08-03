@@ -7,7 +7,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
 Portability :  portable
- 
+
 -}
 
 module LF.AS
@@ -22,8 +22,6 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
-
-import Data.List
 
 -- grammar for basic specs
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]

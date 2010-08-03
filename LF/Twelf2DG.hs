@@ -10,8 +10,6 @@ Portability :  portable
 -}
 module LF.Twelf2DG where
 
-import System.FilePath
-
 import Static.DevGraph
 import Static.ComputeTheory
 import Static.GTheory
@@ -25,7 +23,6 @@ import LF.Sign
 import LF.Morphism
 import LF.Logic_LF
 
-import Data.List
 import Data.Graph.Inductive.Graph (Node)
 import qualified Data.Map as Map
 
@@ -33,8 +30,6 @@ import Common.LibName
 import Common.Id
 import Common.Keywords
 import qualified Common.Consistency as Cons
-
-import Control.Monad
 
 import Driver.Options
 
@@ -57,7 +52,7 @@ makeLibEnv libs bs = fst $
             let (sigs,morphs) = Map.findWithDefault
                     (error "Library cannot be found.") b libs
                 ln = emptyLibName b
-                le1 = Map.insert ln emptyDG le 
+                le1 = Map.insert ln emptyDG le
                 (le2,nm1) = addNodes le1 nm b sigs
                 le3 = addLinks le2 nm1 b morphs
                 dg = computeDGraphTheories le3 $ lookupDGraph ln le3
@@ -124,7 +119,7 @@ addMorphToDG morph dg nm le =
       (node1,dg1) = addRefNode (source morph) (b,dg) nm le
       (node2,dg2) = addRefNode (target morph) (b,dg1) nm le
       (_,dg3) = insLEdgeDG (node1,node2,linkLabel) dg2
-      
+
       in if (k == Definitional && null n) then dg3 else
         let n' = if (k == Postulated) then m else m ++ sigDelimS ++ n
             name = Token n' nullRange

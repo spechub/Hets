@@ -21,7 +21,6 @@ import Network.URI
 import LF.Sign
 import LF.Morphism
 
-import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -315,7 +314,7 @@ lookupSig (b,m) ((libs,_),(base,(sigs,_))) =
                  fst $ Map.findWithDefault er b libs
       in Map.findWithDefault er m sigs1
   where er = error "Signature cannot be found."
-      
+
 -- finds the morphism by base, module, and name
 lookupMorph :: LINK -> LIBS_EXT -> Morphism
 lookupMorph (b,m,n) ((libs,_),(base,(_,morphs))) =
@@ -326,7 +325,7 @@ lookupMorph (b,m,n) ((libs,_),(base,(_,morphs))) =
               [(_,morph)] -> morph
               _ -> er
   where er = error "Morphism cannot be found."
-         
+
 -- adds the signature to the signature collection
 addSigToGraph :: Sign -> LIBS_EXT -> LIBS_EXT
 addSigToGraph sig (lb,(b,(sigs,morphs))) =
@@ -347,13 +346,13 @@ addMorphToGraph m (lb,(b,(sigs,morphs))) =
 -- computes the correct targets of morphisms
 computeTargets :: GRAPH -> LIBS_EXT -> GRAPH
 computeTargets (sigs,morphs) libs =
-   let morphs2 = Map.foldWithKey 
+   let morphs2 = Map.foldWithKey
           (\ k@((_,_),_,t) morph morphs1 ->
              let morph1 = morph { target = lookupSig t libs }
                  in Map.insert k morph1 morphs1
           ) Map.empty morphs
        in (sigs,morphs2)
- 
+
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
 -- CONSTRUCTING THE LIBRARY OF LF SIGNATURES AND MORPHISMS
@@ -481,7 +480,7 @@ addConst e (libs,sig) = do
   let val = case findChildren definitionQN e of
                  [] -> Nothing
                  [v] -> Just $ definition2exp v ref
-                 _ ->  error $ "Constant element must have at most " ++
+                 _ -> error $ "Constant element must have at most " ++
                                "one definition child."
   let sig1 = addDef (Def sym typ val) sig
   return (libs,sig1)
@@ -569,7 +568,7 @@ ombvar2decls e ref =
 
 -- converts an OMATTR element to a variable declaration
 omattr2vardecl :: Element -> NODE -> (VAR,EXP)
-omattr2vardecl e ref = 
+omattr2vardecl e ref =
   case findChildren omatpQN e of
        [omatp] ->
          case findChildren omvQN e of
@@ -776,7 +775,7 @@ retrieveMorphH :: BASE -> MODULE -> [NAME] -> LIBS_EXT ->
 retrieveMorphH b m ns libs = do
   libs1 <- addFromFile (fromLibName b) libs
   case ns of
-    [] -> error "Empty morphism name."  
+    [] -> error "Empty morphism name."
     [n] -> do
         let mor = lookupMorph (b,m,n) libs1
         return (mor,libs1)
