@@ -202,8 +202,8 @@ mkGenName i@(Id ts cs r) = case ts of
 isGeneratedToken :: Token -> Bool
 isGeneratedToken = isPrefixOf genNamePrefix . tokStr
 
--- | append a number to the first token of a (possible compound) Id,
--- | or generate a new identifier for /invisible/ ones
+{- | append a number to the first token of a (possible compound) Id,
+   or generate a new identifier for /invisible/ ones -}
 appendNumber :: Id -> Int -> Id
 appendNumber (Id tokList idList range) nr = let
   isAlphaToken tok = case tokStr tok of
@@ -219,8 +219,8 @@ appendNumber (Id tokList idList range) nr = let
            [tok {tokStr = -- avoid gn_gn_
                 (if isGeneratedToken tok then "" else genNamePrefix)
                  ++ tokStr tok ++ show n}]
-                 -- only underline words may be
-                 -- prefixed with genNamePrefix or extended with a number
+                 {- only underline words may be
+                    prefixed with genNamePrefix or extended with a number -}
            ++ tokens
  in Id (genTok tokList [] nr) idList range
 
@@ -311,8 +311,8 @@ splitMixToken ts = case ts of
            then (toks, h : pls)
            else (h : toks, pls)
 
--- | return open and closing list bracket and a compound list
--- from a bracket 'Id'  (parsed by 'Common.AnnoParser.caslListBrackets')
+{- | return open and closing list bracket and a compound list
+   from a bracket 'Id'  (parsed by 'Common.AnnoParser.caslListBrackets') -}
 getListBrackets :: Id -> ([Token], [Token], [Id])
 getListBrackets (Id b cs _) =
     let (b1, rest) = break isPlace b
@@ -326,8 +326,8 @@ getListBrackets (Id b cs _) =
      commas with proper position information that should be preserved
      by the input function -}
 expandPos :: (Token -> a) -> (String, String) -> [a] -> Range -> [a]
--- expandPos f ("{", "}") [a,b] [(1,1), (1,3), 1,5)] =
--- [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions)
+{- expandPos f ("{", "}") [a,b] [(1,1), (1,3), 1,5)] =
+   [ t"{" , a , t"," , b , t"}" ] where t = f . Token (and proper positions) -}
 expandPos f (o, c) ts (Range ps) =
     if null ts then if null ps then map (f . mkSimpleId) [o, c]
        else map f (zipWith Token [o, c] [Range [head ps] , Range [last ps]])
@@ -342,18 +342,18 @@ expandPos f (o, c) ts (Range ps) =
           else map mkSimpleId ocs
     in head seps : concat (zipWith (\ t s -> [t, s]) ts (tail seps))
 
--- | reconstruct the token list of an 'Id'
--- including square brackets and commas of (nested) compound lists.
+{- | reconstruct the token list of an 'Id'
+   including square brackets and commas of (nested) compound lists. -}
 getPlainTokenList :: Id -> [Token]
 getPlainTokenList = getTokenList place
 
--- | reconstruct the token list of an 'Id'.
--- Replace top-level places with the input String
+{- | reconstruct the token list of an 'Id'.
+   Replace top-level places with the input String -}
 getTokenList :: String -> Id -> [Token]
 getTokenList placeStr (Id ts cs ps) =
     let convert = map (\ t -> if isPlace t then t {tokStr = placeStr} else t)
-        -- reconstruct tokens of a compound list
-        -- although positions will be replaced (by scan)
+        {- reconstruct tokens of a compound list
+           although positions will be replaced (by scan) -}
         getCompoundTokenList comps = concat .
             expandPos (: []) ("[", "]") (map getPlainTokenList comps)
     in if null cs then convert ts else

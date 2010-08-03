@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Description :  parser for CASL 'Id's based on "Common.Lexer"
@@ -10,8 +9,8 @@ Stability   :  provisional
 Portability :  portable
 
 Parser for CASL 'Id's based on "Common.Lexer"
-
 -}
+
 {- http://www.cofi.info/Documents/CASL/Summary/
    from 25 March 2001
 
@@ -126,8 +125,8 @@ casl_reserved_fwords = formula_words ++ casl_reserved_words
 
 -- * a single 'Token' parser taking lists of key symbols and words as parameter
 
--- | a simple 'Token' parser depending on reserved signs and words
--- (including a quoted char, dot-words or a single digit)
+{- | a simple 'Token' parser depending on reserved signs and words
+   (including a quoted char, dot-words or a single digit) -}
 sid :: ([String], [String]) -> GenParser Char st Token
 sid (kOps, kWords) = pToken (scanQuotedChar <|> scanDotWords
                 <|> scanDigit <|> reserved kOps scanAnySigns
@@ -143,8 +142,8 @@ braceP p = oBraceT <:> p <++> single cBraceT
 bracketP :: GenParser Char st [Token] -> GenParser Char st [Token]
 bracketP p = oBracketT <:> p <++> single cBracketT
 
--- | an 'sid' optionally followed by other mixfix components
--- (without no two consecutive 'sid's)
+{- | an 'sid' optionally followed by other mixfix components
+   (without no two consecutive 'sid's) -}
 innerMix1 :: ([String], [String]) -> GenParser Char st [Token]
 innerMix1 l = sid l <:> optionL (innerMix2 l)
 
@@ -162,21 +161,21 @@ innerList l = optionL (innerMix1 l <|> innerMix2 l <?> "token")
 topMix1 :: ([String], [String]) -> GenParser Char st [Token]
 topMix1 l = sid l <:> optionL (topMix2 l)
 
--- | mixfix components starting with braces ('braceP')
--- that may follow 'sid' outside 'innerList'.
--- (Square brackets after a 'sid' will be taken as a compound list.)
+{- | mixfix components starting with braces ('braceP')
+   that may follow 'sid' outside 'innerList'.
+   (Square brackets after a 'sid' will be taken as a compound list.) -}
 topMix2 :: ([String], [String]) -> GenParser Char st [Token]
 topMix2 l = flat (many1 (braceP $ innerList l)) <++> optionL (topMix1 l)
 
--- | mixfix components starting with square brackets ('bracketP')
--- that may follow a place ('placeT') (outside 'innerList')
+{- | mixfix components starting with square brackets ('bracketP')
+   that may follow a place ('placeT') (outside 'innerList') -}
 topMix3 :: ([String], [String]) -> GenParser Char st [Token]
 topMix3 l = let p = innerList l in
                 bracketP p <++> flat (many (braceP p))
                              <++> optionL (topMix1 l)
 
--- | any ('topMix1', 'topMix2', 'topMix3') mixfix components
--- that may follow a place ('placeT') at the top level
+{- | any ('topMix1', 'topMix2', 'topMix3') mixfix components
+   that may follow a place ('placeT') at the top level -}
 afterPlace :: ([String], [String]) -> GenParser Char st [Token]
 afterPlace l = topMix1 l <|> topMix2 l <|> topMix3 l
 
@@ -184,13 +183,13 @@ afterPlace l = topMix1 l <|> topMix2 l <|> topMix3 l
 middle :: ([String], [String]) -> GenParser Char st [Token]
 middle l = many1 placeT <++> optionL (afterPlace l)
 
--- | many (balanced, top-level) mixfix components ('afterPlace')
--- possibly interspersed with multiple places ('placeT')
+{- | many (balanced, top-level) mixfix components ('afterPlace')
+   possibly interspersed with multiple places ('placeT') -}
 tokStart :: ([String], [String]) -> GenParser Char st [Token]
 tokStart l = afterPlace l <++> flat (many (middle l))
 
--- | any (balanced, top-level) mixfix components
--- possibly starting with places but no single 'placeT' only.
+{- | any (balanced, top-level) mixfix components
+   possibly starting with places but no single 'placeT' only. -}
 start :: ([String], [String]) -> GenParser Char st [Token]
 start l = tokStart l <|> placeT <:> (tokStart l <|>
                                  many1 placeT <++> optionL (tokStart l))
@@ -232,8 +231,8 @@ consId :: [String] -> GenParser Char st Id
 consId ks = mixId (barS : ks ++ casl_reserved_fops,
                    ks ++ casl_reserved_fwords) $ casl_keys ks
 
--- | Casl sorts are simple words ('varId'),
--- but may have a compound list ('comps')
+{- | Casl sorts are simple words ('varId'),
+   but may have a compound list ('comps') -}
 sortId :: [String] -> GenParser Char st Id
 sortId ks =
     do s <- varId ks
