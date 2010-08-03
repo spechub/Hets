@@ -22,6 +22,7 @@ import Common.Id
 import Control.Monad
 import Data.Char
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 -- OWL = domain
 import OWL.Logic_OWL
@@ -34,10 +35,9 @@ import CommonLogic.Logic_CommonLogic
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Sign
 import CommonLogic.Symbol
-import CommonLogic.Morphism
+import qualified CommonLogic.Morphism as CLM
 
 import Common.ProofTree
-import Common.DefaultMorphism
 
 data OWL2CommonLogic = OWL2CommonLogic deriving Show
 
@@ -61,12 +61,12 @@ instance Comorphism
     BASIC_SPEC   -- Basic spec codomain
     SENTENCE     -- sentence codomain
     NAME      -- symbol items codomain
-    ()--SYMB_MAP_ITEMS  -- symbol map items codomain
+    SYMB_MAP_ITEMS  -- symbol map items codomain
     Sign        -- signature codomain
-    Morphism         -- morphism codomain
+    CLM.Morphism         -- morphism codomain
     Symbol          -- symbol codomain
     Symbol       -- rawsymbol codomain
-    ()       -- proof tree domain
+    ProofTree       -- proof tree domain
     where
       sourceLogic OWL2CommonLogic    = OWL
       sourceSublogic OWL2CommonLogic = sl_top
@@ -78,12 +78,13 @@ instance Comorphism
       has_model_expansion OWL2CommonLogic = True
 
 -- | Mapping of OWL morphisms to CommonLogic morphisms
-mapMorphism :: OWLMorphism -> Result Morphism
+mapMorphism :: OWLMorphism -> Result CLM.Morphism
 mapMorphism oMor =
   do
     dm <- mapSign $ osource oMor
     cd <- mapSign $ otarget oMor
-    return  (ideOfDefaultMorphism  (unite dm cd))
+    mapp <- mapMap $ mmaps oMor 
+    return  (CLM.mkMorphism dm cd mapp)
 
 -- | OWL topsort Thing
 thing :: NAME --Id
@@ -96,6 +97,10 @@ data VarOrIndi = OVar Int | OIndi URI
 
 hetsPrefix :: String
 hetsPrefix = ""
+
+mapMap :: Map.Map Entity URI -> Result (Map.Map Id Id)
+mapMap m = 
+  return $ Map.map uriToId $ Map.mapKeys entityToId m
 
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result Sign         -- ^ CommonLogic signature
@@ -638,6 +643,11 @@ mapComObjectPropsList cSig props num1 num2 =
         return (l, r)
         ) $ comPairs props props
 
+-- | Extracts Id from Entities
+entityToId :: Entity -> Id
+entityToId e = 
+  case e of 
+       Entity _ urI -> uriToId urI
 
 -- | mapping of data constants
 mapConstant :: Sign
