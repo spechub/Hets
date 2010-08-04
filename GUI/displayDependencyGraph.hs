@@ -4,7 +4,7 @@ Description :  create a slightly faked dependency graph of the hets directories
 Copyright   :  (c) jianchun wang and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  wjch868@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 

@@ -1,12 +1,12 @@
 {- |
 Module      :  $Header$
-Description :  Central datastructures for development graphs
+Description :  flattening parts of development graphs
 Copyright   :  (c) Igor Stassiy, DFKI Bremen 2008
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  i.stassiy@jacobs-university.de
+
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
-
 
 In this module we introduce flattening of the graph:
 

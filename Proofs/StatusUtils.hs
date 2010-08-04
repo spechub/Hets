@@ -4,7 +4,7 @@ Description :  the proof status with manipulating functions
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  ken@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
