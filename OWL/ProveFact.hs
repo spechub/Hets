@@ -30,10 +30,9 @@ import Common.ProofTree
 import qualified Common.Result as Result
 import Common.ProverTools
 import Common.Utils
+import Common.Timing
 
-import Data.Time (timeToTimeOfDay)
-import Data.Time.Clock (secondsToDiffTime)
-import System.Posix.Time
+import Data.Time.LocalTime (midnight)
 
 import System.Exit
 import System.IO
@@ -99,8 +98,8 @@ factCMDLautomaticBatch ::
         -> Theory Sign Axiom ProofTree -- ^ theory
         -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (ThreadId, MVar ())
-        -- ^ fst: identifier of the batch thread for killing it
-        -- snd: MVar to wait for the end of the thread
+        {- ^ fst: identifier of the batch thread for killing it
+        snd: MVar to wait for the end of the thread -}
 factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                          thName defTS th freedefs =
   genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -135,8 +134,8 @@ atpFun thName = ATPFunctions
 {- |
   Inserts a named OWL axiom into pellet prover state.
 -}
-insertOWLAxiom :: FactProverState -- ^ prover state containing
-                                    -- initial logical part
+insertOWLAxiom :: FactProverState {- ^ prover state containing
+                                    initial logical part -}
                -> Named Axiom -- ^ goal to add
                -> FactProverState
 insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
@@ -164,7 +163,7 @@ consCheck thName _ tm freedefs = case tTarget tm of
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
           , ccProofTree = ProofTree $ out ++ "\n\n" ++ problemS
-          , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime tUsed }
+          , ccUsedTime = tUsed }
     when saveOWL (writeFile tmpFileName problemS)
     (progTh, toolPath) <- check4HetsOWLjar jar
     if progTh then withinDirectory toolPath $ do
@@ -172,24 +171,24 @@ consCheck thName _ tm freedefs = case tTarget tm of
         timeTmpFile <- writeTempFile problemS tempDir tmpFileName
         let command = "java -Djava.library.path=lib/native/`uname -m` -jar "
               ++ jar ++ " file://" ++ timeTmpFile
-        t_start <- epochTime
+        t_start <- getHetsTime
         (_, outh, errh, proch) <- runInteractiveCommand command
         ex_code <- waitForProcess proch
-        t_end <- epochTime
+        t_end <- getHetsTime
         outp <- hGetContents outh
         eOut <- hGetContents errh
         removeFile timeTmpFile
-        let t_u = round (realToFrac (t_end - t_start) :: Double)
+        let t_u = diffHetsTime t_end t_start
             pStat = pStatus (outp ++ eOut) t_u
         return $ case ex_code of
           ExitFailure 10 -> pStat { ccResult = Just True }
           ExitFailure 20 -> pStat { ccResult = Just False}
           _ -> pStat
-       else return $ pStatus "OWLFact not found" 0
+       else return $ pStatus "OWLFact not found" midnight
 
 showOWLProblemS :: String -- ^ theory name
-                -> FactProverState -- ^ prover state containing
-                                     -- initial logical part
+                -> FactProverState {- ^ prover state containing
+                                     initial logical part -}
                 -> [String] -- ^ extra options
                 -> String -- ^ formatted output of the goal
 showOWLProblemS thName pst _ =
@@ -212,8 +211,8 @@ genFactProblemS thName pps m_nGoal = FactProblem
   Pretty printing DL goal in Manchester-OWL-Syntax.
 -}
 showOWLProblem :: String -- ^ theory name
-               -> FactProverState -- ^ prover state containing
-                                    -- initial logical part
+               -> FactProverState {- ^ prover state containing
+                                    initial logical part -}
                -> Named Axiom -- ^ goal to print
                -> [String] -- ^ extra options
                -> IO String -- ^ formatted output of the goal
@@ -229,8 +228,8 @@ showOWLProblem thName pst nGoal _ =
    Invocation of the Fact Prover.
 -}
 runFact :: FactProverState
-          -- ^ logical part containing the input Sign and axioms and possibly
-          -- goals that have been proved earlier as additional axioms
+          {- ^ logical part containing the input Sign and axioms and possibly
+          goals that have been proved earlier as additional axioms -}
           -> GenericConfig ProofTree -- ^ configuration to use
           -> Bool -- ^ True means save TPTP file
           -> String -- ^ name of the theory in the DevGraph
@@ -253,10 +252,10 @@ runFact sps cfg saveFact thName nGoal = do
               command = "java -Djava.library.path=lib/native/`uname -m` -jar "
                 ++ jar ++ " file://" ++ timeTmpFile ++ " file://" ++ entailsFile
           writeFile entailsFile entail
-          t_start <- epochTime
+          t_start <- getHetsTime
           (mExit, outh, errh) <- timeoutCommand tLimit command
-          t_end <- epochTime
-          let t_u = round (realToFrac (t_end - t_start) :: Double)
+          t_end <- getHetsTime
+          let t_u = diffHetsTime t_end t_start
           ((err, retval), output, tUsed) <- case mExit of
             Just ex -> do
               output <- hGetContents outh
@@ -265,13 +264,13 @@ runFact sps cfg saveFact thName nGoal = do
               return (proofStat ex simpleOptions outp t_u, outp, t_u)
             Nothing -> return
               ( (ATPTLimitExceeded, defaultProofStatus simpleOptions)
-              , [], tLimit)
+              , [], t_u)
           removeFile timeTmpFile
           removeFile entailsFile
           return (err, cfg
             { proofStatus = retval
             , resultOutput = output
-            , timeUsed = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
+            , timeUsed = tUsed
             })
         else return (ATPError "OWLFactProver not found", cfg)
   where
@@ -300,6 +299,5 @@ runFact sps cfg saveFact thName nGoal = do
                   , usedAxioms = []
                   , usedProver = proverName factProver
                   , proofTree = emptyProofTree
-                  , usedTime =
-                      timeToTimeOfDay $ secondsToDiffTime $ toInteger ut
+                  , usedTime = ut
                   , tacticScript = tScript opts }

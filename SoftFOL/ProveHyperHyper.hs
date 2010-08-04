@@ -23,6 +23,7 @@ import Common.ProofTree
 import qualified Common.Result as Result
 import Common.AS_Annotation as AS_Anno
 import Common.SZSOntology
+import Common.Timing
 
 import SoftFOL.Sign
 import SoftFOL.Translate
@@ -34,7 +35,6 @@ import Interfaces.GenericATPState
 
 import System.IO
 import System.Process
-import System.Posix.Time
 import System.Directory
 
 import Control.Monad (when)
@@ -44,9 +44,8 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
-import Data.Time (timeToTimeOfDay)
-import Data.Time.LocalTime(TimeOfDay(..))
-import Data.Time.Clock (UTCTime(..), secondsToDiffTime, getCurrentTime)
+import Data.Time.LocalTime (TimeOfDay, midnight)
+import Data.Time.Clock (UTCTime(..), getCurrentTime)
 
 -- Prover
 
@@ -202,21 +201,14 @@ runHyper sps cfg saveTPTP thName nGoal =
              writeFile stpTmpFile  $ prob
              let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
                            " " ++ stpRunFile
-             t_start <- epochTime
+             t_start <- getHetsTime
              (_, stdouth, stderrh, proch) <- runInteractiveCommand command
              waitForProcess proch
-             t_end <- epochTime
+             t_end <- getHetsTime
              removeFile stpPrelFile
              removeFile stpRunFile
              removeFile stpTmpFile
-             let t_t = (round (realToFrac
-                               (t_end - t_start + 1) :: Double) :: Integer)
-             let t_u = timeToTimeOfDay $ secondsToDiffTime $
-                       if t_t == 0
-                       then
-                           1
-                       else
-                           t_t
+             let t_u = diffHetsTime t_end t_start
              stdoutC <- hGetContents stdouth
              stderrC <- hGetContents stderrh
              (pStat, ret) <- examineProof sps cfg stdoutC stderrC nGoal t_u tl
@@ -240,16 +232,14 @@ runHyper sps cfg saveTPTP thName nGoal =
                                    , usedAxioms = []
                                    , usedProver = proverName hyperProver
                                    , proofTree =  emptyProofTree
-                                  , usedTime = timeToTimeOfDay $
-                                               secondsToDiffTime $ 0
+                                   , usedTime = midnight
                                    , tacticScript = tScript $
                                                     (filter
                                                      (\x -> "#" `isPrefixOf` x)$
                                                      lines $ (prelTxt $ show tl)
                                                                ++ runTxt)}
                      , resultOutput = ["Parse Error"]
-                     , timeUsed = timeToTimeOfDay $
-                                               secondsToDiffTime $ 0
+                     , timeUsed = midnight
                      })
 
 {- | Mapping type from SZS to Hets -}
@@ -378,27 +368,20 @@ consCheck thName (TacticScript tl) tm freedefs =
               writeFile stpTmpFile  $ prob
               let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
                             " " ++ stpRunFile
-              t_start <- epochTime
+              t_start <- getHetsTime
               (_, stdouth, stderrh, proch) <- runInteractiveCommand command
               waitForProcess proch
-              t_end <- epochTime
+              t_end <- getHetsTime
               removeFile stpPrelFile
               removeFile stpRunFile
               removeFile stpTmpFile
               stdoutC <- hGetContents stdouth
               stderrC <- hGetContents stderrh
-              let t_t = (round (realToFrac
-                                (t_end - t_start + 1) :: Double) :: Integer)
-                  t_u = timeToTimeOfDay $ secondsToDiffTime $
-                        if t_t == 0
-                         then
-                             1
-                         else
-                             t_t
-              let outstate =  CCStatus
+              let t_u = diffHetsTime t_end t_start
+                  outstate =  CCStatus
                               { ccResult = Nothing
                               , ccProofTree = ProofTree $ stdoutC ++ stderrC
-                              , ccUsedTime =  t_u }
+                              , ccUsedTime = t_u }
               case getHyperResult $ lines stdoutC of
                 HProved -> return outstate
                            {

@@ -22,6 +22,8 @@ import Logic.Prover
 import Common.ProofTree
 import qualified Common.Result as Result
 import Common.AS_Annotation as AS_Anno
+import Common.Timing
+import Common.Utils
 
 import Propositional.Sign
 import QBF.ProverState
@@ -33,10 +35,9 @@ import GUI.GenericATP
 import Proofs.BatchProcessing
 import Interfaces.GenericATPState
 
+import System.Directory
 import System.IO
 import System.Process
-import System.Posix.Time
-import System.Directory
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
@@ -44,9 +45,7 @@ import System.Exit (ExitCode (..))
 
 import Data.List
 
-import Data.Time (timeToTimeOfDay)
-import Data.Time.LocalTime (TimeOfDay (..))
-import Data.Time.Clock (UTCTime (..), secondsToDiffTime, getCurrentTime)
+import Data.Time.LocalTime (TimeOfDay)
 
 -- Prover
 
@@ -82,7 +81,7 @@ atpFun thName = ATPFunctions
 depQBFGUI :: String -- ^ theory name
            -> Theory Sign AS.FORMULA ProofTree
            -> [FreeDefMorphism AS.FORMULA Morphism] -- ^ freeness constraints
-           -> IO ([ProofStatus ProofTree]) -- ^ proof status for each goal
+           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 depQBFGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName depQBFProver) thName th
                   freedefs emptyProofTree
@@ -101,8 +100,8 @@ depQBFCMDLautomaticBatch ::
         -> Theory Sign AS.FORMULA ProofTree
         -> [FreeDefMorphism AS.FORMULA Morphism] -- ^ freeness constraints
         -> IO (Concurrent.ThreadId, Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           -- snd: MVar to wait for the end of the thread
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 depQBFCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -113,8 +112,8 @@ uniteOptions :: [String] -> String
 uniteOptions = intercalate " "
 
 runDepQBF :: QBFProverState
-           -- ^ logical part containing the input Sign and axioms and possibly
-           -- goals that have been proved earlier as additional axioms
+           {- ^ logical part containing the input Sign and axioms and possibly
+           goals that have been proved earlier as additional axioms -}
            -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save QDIMACS file
            -> String -- ^ name of the theory in the DevGraph
@@ -123,9 +122,7 @@ runDepQBF :: QBFProverState
            -- ^ (retval, configuration with proof status and complete output)
 runDepQBF ps cfg saveQDIMACS thName nGoal =
     let
-        saveFile = thName ++ '_' : AS_Anno.senAttr nGoal
-        tmpFile = reverse (fst $ span (/= '/') $ reverse thName) ++
-                       '_' : AS_Anno.senAttr nGoal
+        saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".qdimacs"
         simpleOptions = uniteOptions $ extraOpts cfg
         tl = configTimeLimit cfg
     in
@@ -133,25 +130,16 @@ runDepQBF ps cfg saveQDIMACS thName nGoal =
              prob <- showQDIMACSProblem thName ps nGoal []
              when saveQDIMACS
                  (writeFile (saveFile ++ ".qdimacs") prob)
-             t <- getCurrentTime
-             let stpTmpFile = "/tmp/" ++ tmpFile ++ show (utctDay t) ++
-                                    "-" ++ show (utctDayTime t) ++ ".qdimacs"
-             writeFile stpTmpFile prob
+             tempDir <- getTemporaryDirectory
+             stpTmpFile <- writeTempFile prob tempDir saveFile
              let command = "depqbf " ++ show tl ++ " "
                              ++ simpleOptions ++ " " ++ stpTmpFile
-             t_start <- epochTime
+             t_start <- getHetsTime
              (_, stdouth, stderrh, proch) <- runInteractiveCommand command
              exitCode <- waitForProcess proch
-             t_end <- epochTime
+             t_end <- getHetsTime
              removeFile stpTmpFile
-             let t_t = (round (realToFrac
-                               (t_end - t_start + 1) :: Double) :: Integer)
-             let t_u = timeToTimeOfDay $ secondsToDiffTime $
-                       if t_t == 0
-                       then
-                           1
-                       else
-                           t_t
+             let t_u = diffHetsTime t_end t_start
              stdoutC <- hGetContents stdouth
              stderrC <- hGetContents stderrh
              let exitCode' = case exitCode of
