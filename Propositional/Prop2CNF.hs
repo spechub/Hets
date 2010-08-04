@@ -61,7 +61,7 @@ import qualified Common.Id as Id
 import qualified Common.Result as Result
 
 import Control.Monad (when)
-import qualified Common.Exception as Exception
+import qualified Control.Exception as Exception
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -129,7 +129,7 @@ runSpass sps saveDFG =
                       destroy spass
                       _ <- waitForChildProcess spass
                       return ("SPASS not found... Bailing out!!! Cause was: "
-                              ++ show excep
+                              ++ show (excep :: Exception.SomeException)
                              )
                    )
     where
@@ -162,7 +162,7 @@ showDFGProblem :: String -- ^ theory name
                   -> [String] -- ^ extra options
                   -> IO String -- ^ formatted output of the goal
 showDFGProblem thName pst opts = do
-  prob <- Conv.genSoftFOLProblem thName (PState.initialLogicalPart pst) $ Nothing
+  prob <- Conv.genSoftFOLProblem thName (PState.initialLogicalPart pst) Nothing
   -- add SPASS command line settings and extra options
   let prob' = prob { Sig.settings = (Sig.settings prob) ++
                      (PState.parseSPASSCommands opts) }

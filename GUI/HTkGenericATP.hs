@@ -4,7 +4,7 @@ Description :  Generic Prover GUI.
 Copyright   :  (c) Klaus Luettich, Rainer Grabbe, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
 
@@ -22,7 +22,7 @@ import Common.Result
 
 import Data.List
 import Data.Maybe
-import qualified Common.Exception as Exception
+import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
 
 import HTk.Toolkit.SpinButton
@@ -42,14 +42,13 @@ import Proofs.BatchProcessing
   For values <= 0 a default value is used.
 -}
 setTimeLimit :: Int -> GenericConfig proofTree -> GenericConfig proofTree
-setTimeLimit n c = if n > 0 then c {timeLimit = Just n}
-                   else c {timeLimit = Nothing}
+setTimeLimit n c = c { timeLimit = if n > 0 then Just n else Nothing }
 
 {- |
   Utility function to set the extra options of a Config.
 -}
 setExtraOpts :: [String] -> GenericConfig proofTree -> GenericConfig proofTree
-setExtraOpts opts c = c {extraOpts = opts}
+setExtraOpts opts c = c { extraOpts = opts }
 
 -- ** Constants
 
@@ -119,7 +118,7 @@ statusRunning = (Blue, "Running")
   displayed by the GUI.
 -}
 toGuiStatus :: GenericConfig proofTree -- ^ current prover configuration
-            -> (ProofStatus a) -- ^ status to convert
+            -> ProofStatus a -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
   Proved c -> if c then statusProved else statusProvedButInconsistent
@@ -139,9 +138,9 @@ data OpFrame = OpFrame { ofFrame :: Frame
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'GenericATPState.GenericState'.
 -}
-goalsView :: GenericState sign sentence proofTree pst -- ^ current global
-                                                       -- prover state
-          -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
+goalsView
+    :: GenericState sign sentence proofTree pst -- ^ current global prover state
+    -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map ((\ g ->
                       let cfg = Map.lookup g (configsMap s)
                           statind = maybe LBIndicatorOpen
@@ -159,14 +158,15 @@ goalsView s = map ((\ g ->
 {- |
   Retrieves the value of the time limit 'Entry'. Ignores invalid input.
 -}
-getValueSafe :: Int -- ^ default time limt
-             -> Entry Int -- ^ time limit 'Entry'
-             -> IO Int -- ^ user-requested time limit or default in case of a
-                       -- parse error
+getValueSafe
+    :: Int       -- ^ default time limt
+    -> Entry Int -- ^ time limit 'Entry'
+    -> IO Int    -- ^ user-requested time limit or default for errors
 getValueSafe defaultTimeLimit timeEntry =
-    Exception.catchJust Exception.userErrors (getValue timeEntry :: IO Int)
-      $ \ s -> do
-         putStrLn $ "Warning: Error " ++ show s ++ " was ignored"
+    Exception.catch (getValue timeEntry :: IO Int)
+      $ \ e -> do
+         putStrLn $ "Warning: Error " ++ show (e :: Exception.SomeException)
+            ++ " was ignored"
          return defaultTimeLimit
 
 {- |
@@ -202,24 +202,20 @@ batchInfoText tl gTotal gDone =
 {- |
    Updates the display of the status of the current goal.
 -}
-updateDisplay :: GenericState sign sentence proofTree pst
-                 -- ^ current global prover state
-              -> Bool -- ^ set to 'True' if you want the 'ListBox' to be
-                      -- updated
-              -> ListBox String -- ^ 'ListBox' displaying the status of all
-                                -- goals (see 'goalsView')
-{-
-              -> Scrollbar -- ^ 'ScrollBar' containing the current scrollbar
-                           -- status of upper 'ListBox'.
--}
-              -> Label -- ^ 'Label' displaying the status of the currently
-                       -- selected goal (see 'toGuiStatus')
-              -> Entry Int -- ^ 'Entry' containing the time limit of the current
-                           -- goal
-              -> Entry String -- ^ 'Entry' containing the extra options
-              -> ListBox String -- ^ 'ListBox' displaying all axioms used to
-                                -- prove a goal (if any)
-              -> IO ()
+updateDisplay
+    :: GenericState sign sentence proofTree pst
+       -- ^ current global prover state
+    -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
+    -> ListBox String
+       -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
+    -> Label
+       {- ^ 'Label' displaying the status of the currently selected goal
+       (see 'toGuiStatus') -}
+    -> Entry Int -- ^ 'Entry' containing the time limit of the current goal
+    -> Entry String -- ^ 'Entry' containing the extra options
+    -> ListBox String
+       -- ^ 'ListBox' displaying all axioms used to prove a goal (if any)
+    -> IO ()
 updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
 {- the code in comments only works with an updated uni version that
    will be installed when switching to ghc-6.6.1 -}
@@ -251,12 +247,13 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
                 return ())
           (currentGoal st)
 
-newOptionsFrame :: Container par =>
-                par -- ^ the parent container
-             -> (Entry Int -> Spin -> IO a)
-             -- ^ Function called by pressing one spin button
-             -> Bool -- ^ extra options input line
-             -> IO OpFrame
+newOptionsFrame
+    :: Container par
+    => par -- ^ the parent container
+    -> (Entry Int -> Spin -> IO a)
+       -- ^ Function called by pressing one spin button
+    -> Bool -- ^ extra options input line
+    -> IO OpFrame
 newOptionsFrame con updateFn isExtraOps = do
   right <- newFrame con []
 
@@ -308,17 +305,18 @@ newOptionsFrame con updateFn isExtraOps = do
   Invokes the prover GUI. Users may start the batch prover run on all goals,
   or use a detailed GUI for proving each goal manually.
 -}
-genericATPgui :: (Ord proofTree, Ord sentence)
-              => ATPFunctions sign sentence mor proofTree pst
-                        -- ^ prover specific functions
-              -> Bool   -- ^ prover supports extra options
-              -> String -- ^ prover name
-              -> String -- ^ theory name
-              -> Theory sign sentence proofTree
-                        -- ^ theory with signature and sentences
-              -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
-              -> proofTree                      -- ^ initial empty proofTree
-              -> IO ([ProofStatus proofTree]) -- ^ proof status for each goal
+genericATPgui
+    :: (Ord proofTree, Ord sentence)
+    => ATPFunctions sign sentence mor proofTree pst
+       -- ^ prover specific functions
+    -> Bool   -- ^ prover supports extra options
+    -> String -- ^ prover name
+    -> String -- ^ theory name
+    -> Theory sign sentence proofTree
+       -- ^ theory with signature and sentences
+    -> [FreeDefMorphism sentence mor] -- ^ freeness constraints
+    -> proofTree                      -- ^ initial empty proofTree
+    -> IO [ProofStatus proofTree]     -- ^ proof status for each goal
 genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
   -- create initial backing data structure
   let initState = initialGenericState prName
@@ -694,9 +692,8 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                         adjustOrSetConfig
                            (\ c -> c {timeLimitExceeded = isTimeLimitExceeded
                                                             retval,
-                                      proofStatus =
-                                          ((proofStatus cfg)
-                                           {usedTime = timeUsed cfg}),
+                                      proofStatus = (proofStatus cfg)
+                                           {usedTime = timeUsed cfg},
                                       resultOutput = resultOutput cfg,
                                       timeUsed = timeUsed cfg})
                            prName goal pt (configsMap s')}
@@ -739,13 +736,13 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                 openGoalsMap = filterOpenGoals $ configsMap s
                 numGoals = Map.size openGoalsMap
                 firstGoalName = fromMaybe "--" $
-                                find (flip Map.member openGoalsMap) $
+                                find (`Map.member` openGoalsMap) $
                                 map AS_Anno.senAttr (goalsList s)
             if numGoals > 0
              then do
               let afterEachProofAttempt =
-                -- this function is called after the prover returns from a
-                -- proof attempt (... -> IO Bool)
+                {- this function is called after the prover returns from a
+                proof attempt (... -> IO Bool) -}
                    (\ gPSF nSen nextSen cfg@(retval, _) -> do
                      cont <- goalProcessed stateMVar tLimit extOpts'
                                            numGoals prName gPSF nSen False cfg

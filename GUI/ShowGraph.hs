@@ -33,7 +33,7 @@ import Common.UniUtils
 
 import Data.IORef
 import Control.Concurrent
-import Common.Exception
+import Control.Exception
 import Common.ProverTools
 
 import Interfaces.DataTypes
@@ -59,7 +59,7 @@ showGraph file opts env = case env of
       case eitherGTK of
         Right _ -> return ()
         Left e -> do
-          putIfVerbose opts 5 $ "Error: " ++ show e
+          putIfVerbose opts 5 $ "Error: " ++ show (e :: SomeException)
           error $ "Can't initialize GTK."
       _ <- forkIO thr
       mainGUI
@@ -75,7 +75,7 @@ workThread file opts ln le = do
         (gInfo, wishInst) <- case eitherHTK of
           Right a -> return a
           Left e -> do
-            putIfVerbose opts 5 $ "Error: " ++ show e
+            putIfVerbose opts 5 $ "Error: " ++ show (e :: SomeException)
             error "Can't initialize GUI (wish)."
         useHTk -- use TK from this point on
         ost <- readIORef $ intState gInfo

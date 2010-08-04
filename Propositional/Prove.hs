@@ -43,7 +43,7 @@ import qualified Common.Result as Result
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
-import qualified Common.Exception as Exception
+import qualified Control.Exception as Exception
 
 import Data.List
 import Data.Maybe
@@ -175,8 +175,8 @@ zchaffProveCMDLautomaticBatch ::
         -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
         -- ^ free definitions
         -> IO (Concurrent.ThreadId, Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           -- snd: MVar to wait for the end of the thread
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 zchaffProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -209,9 +209,9 @@ atpFun thName = ATPFunctions
 -}
 
 runZchaff :: PState.PropProverState
-           -- logical part containing the input Sign and
-           -- axioms and possibly goals that have been proved
-           -- earlier as additional axioms
+           {- logical part containing the input Sign and
+           axioms and possibly goals that have been proved
+           earlier as additional axioms -}
            -> GenericConfig ProofTree
            -- configuration to use
            -> Bool
@@ -236,7 +236,8 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       destroy zchaff
                       _ <- waitForChildProcess zchaff
                       deleteJunk
-                      excepToATPResult (LP.proverName zchaffProver) nGoal excep)
+                      excepToATPResult (LP.proverName zchaffProver)
+                        (AS_Anno.senAttr nGoal) excep)
     where
       deleteJunk = do
         catch (removeFile zFileName) (const $ return ())
@@ -334,33 +335,6 @@ reEndto :: String
 reEndto = "TIME OUT"
 reEndmo :: String
 reEndmo = "MEM OUT"
-
--- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
-excepToATPResult :: String
-                 -- ^ name of running prover
-                 -> AS_Anno.Named AS_BASIC.FORMULA
-                 -- ^ goal to prove
-                 -> Exception.Exception
-                 -- ^ occured exception
-                 -> IO (ATPRetval,
-                        GenericConfig ProofTree)
-                    -- ^ (retval,
-                    -- configuration with proof status and complete output)
-excepToATPResult prName nGoal excep = return $ case excep of
-    -- this is supposed to distinguish "fd ... vanished"
-    -- errors from other exceptions
-    Exception.IOException e ->
-        (ATPError ("Internal error communicating with " ++
-                            prName ++ ".\n"
-                            ++ show e), emptyCfg)
-    Exception.AsyncException Exception.ThreadKilled ->
-        (ATPBatchStopped, emptyCfg)
-    _ -> (ATPError ("Error running " ++ prName ++ ".\n"
-                             ++ show excep),
-          emptyCfg)
-  where
-    emptyCfg = emptyConfig prName (AS_Anno.senAttr nGoal)
-               emptyProofTree
 
 {- |
   Creates a list of all options the zChaff prover runs with.

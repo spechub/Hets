@@ -5,7 +5,7 @@ Copyright   :  (c) Rene Wagner, Klaus Luettich, Rainer Grabbe,
                    Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
 
@@ -76,7 +76,7 @@ atpFun thName = ATPFunctions
       goalOutput = showTPTPProblem thName,
       proverHelpText = mathServHelpText,
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-      fileExtensions = FileExtensions{problemOutput = ".tptp",
+      fileExtensions = FileExtensions {problemOutput = ".tptp",
                                       proverOutput = ".spass",
                                       theoryConfiguration = ".spcf"},
       runProver = runMSBroker,
@@ -90,11 +90,11 @@ atpFun thName = ATPFunctions
 -}
 mathServBrokerGUI :: String -- ^ theory name
                   -> Theory Sign Sentence ProofTree
-                  -- ^ theory consisting of a SoftFOL.Sign.Sign
-                  --   and a list of Named SoftFOL.Sign.Sentence
+                  {- ^ theory consisting of a SoftFOL.Sign.Sign
+                  and a list of Named SoftFOL.Sign.Sentence -}
                   -> [FreeDefMorphism SPTerm SoftFOLMorphism]
                   -- ^ freeness constraints
-                  -> IO([ProofStatus ProofTree])
+                  -> IO [ProofStatus ProofTree]
                      -- ^ proof status for each goal
 mathServBrokerGUI thName th freedefs =
     genericATPgui (atpFun thName) False (proverName mathServBroker) thName th
@@ -114,12 +114,12 @@ mathServBrokerCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> Theory Sign Sentence ProofTree {- ^ theory consisting of a
+           'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence' -}
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+        -> IO (Concurrent.ThreadId, Concurrent.MVar ())
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 mathServBrokerCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -132,22 +132,22 @@ mathServBrokerCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   configuration with  proof status and complete prover output.
 -}
 runMSBroker :: SoftFOLProverState
-            -- ^ logical part containing the input Sign and axioms and possibly
-            --   goals that have been proved earlier as additional axioms
+            {- ^ logical part containing the input Sign and axioms and possibly
+            goals that have been proved earlier as additional axioms -}
             -> GenericConfig ProofTree -- ^ configuration to use
             -> Bool -- ^ True means save TPTP file
             -> String -- ^ name of the theory in the DevGraph
             -> AS_Anno.Named SPTerm -- ^ goal to prove
             -> IO (ATPRetval, GenericConfig ProofTree)
             -- ^ (retval, configuration with proof status and complete output)
-runMSBroker sps cfg saveTPTP thName nGoal = do
+runMSBroker sps cfg saveTPTP thName nGoal =
   Exception.catch (do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
-            ++ ['[':brokerName++"]"]
+            ++ ['[' : brokerName ++ "]"]
     when saveTPTP
-        (writeFile (thName++'_':AS_Anno.senAttr nGoal++".tptp") prob)
+        (writeFile (thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp") prob)
     mathServOut <- callMathServ
-        MathServCall{mathServService = Broker,
+        MathServCall {mathServService = Broker,
                      mathServOperation = ProblemOpt,
                      problem = prob,
                      proverTimeLimit = configTimeLimit cfg,
@@ -155,4 +155,4 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
     msResponse <- parseMathServOut mathServOut
     return (mapMathServResponse msResponse cfg nGoal $
             proverName mathServBroker))
-    (excepToATPResult (proverName mathServBroker) nGoal)
+   $ excepToATPResult (proverName mathServBroker) $ AS_Anno.senAttr nGoal

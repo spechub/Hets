@@ -5,7 +5,7 @@ Copyright   :  (c) Rene Wagner, Klaus Luettich, Rainer Grabbe,
                    Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
 
@@ -69,7 +69,7 @@ atpFun thName = ATPFunctions
       goalOutput = showTPTPProblem thName,
       proverHelpText = vampireHelpText,
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-      fileExtensions = FileExtensions{problemOutput = ".tptp",
+      fileExtensions = FileExtensions {problemOutput = ".tptp",
                                       proverOutput = ".vamp",
                                       theoryConfiguration = ".spcf"},
       runProver = runVampire,
@@ -83,10 +83,10 @@ atpFun thName = ATPFunctions
 -}
 vampireGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
-           -- ^ theory consisting of a SoftFOL.Sign.Sign
-           --   and a list of Named SoftFOL.Sign.Sentence
-          -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
+           {- ^ theory consisting of a SoftFOL.Sign.Sign
+           and a list of Named SoftFOL.Sign.Sentence -}
+           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
+           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 vampireGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName vampire) thName th
                  freedefs emptyProofTree
@@ -105,12 +105,12 @@ vampireCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> Theory Sign Sentence ProofTree {- ^ theory consisting of a
+           'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence' -}
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+        -> IO (Concurrent.ThreadId, Concurrent.MVar ())
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -121,27 +121,26 @@ vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   Runs the Vampire service.
 -}
 runVampire :: SoftFOLProverState
-           -- ^ logical part containing the input Sign and axioms and possibly
-           --   goals that have been proved earlier as additional axioms
+           {- ^ logical part containing the input Sign and axioms and possibly
+           goals that have been proved earlier as additional axioms -}
            -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save TPTP file
            -> String -- ^ name of the theory in the DevGraph
            -> AS_Anno.Named SPTerm -- ^ goal to prove
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
-runVampire sps cfg saveTPTP thName nGoal = do
---    putStrLn ("running MathServ VampireService...")
+runVampire sps cfg saveTPTP thName nGoal =
   Exception.catch (do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++
                                                  ["Requested prover: Vampire"]
     when saveTPTP
-        (writeFile (thName++'_':AS_Anno.senAttr nGoal++".tptp") prob)
+        (writeFile (thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp") prob)
     mathServOut <- callMathServ
-        MathServCall{ mathServService = VampireService,
+        MathServCall { mathServService = VampireService,
                       mathServOperation = TPTPProblem,
                       problem = prob,
                       proverTimeLimit = configTimeLimit cfg,
                       extraOptions = Just $ unwords $ extraOpts cfg}
     msResponse <- parseMathServOut mathServOut
     return (mapMathServResponse msResponse cfg nGoal $ proverName vampire))
-    (excepToATPResult (proverName vampire) nGoal)
+   $ excepToATPResult (proverName vampire) $ AS_Anno.senAttr nGoal
