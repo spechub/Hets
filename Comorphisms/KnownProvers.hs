@@ -133,6 +133,8 @@ isaComorphisms = do
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
        maude2IHOL <- compComorphism (Comorphism Maude2CASL) subpc2IHOL
+       commonlogic2IHOL <-
+           compComorphism (Comorphism CommonLogic2CASL) subpc2IHOL
 #endif
 #ifndef NOOWLLOGIC
        owl2HOL  <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
@@ -140,8 +142,6 @@ isaComorphisms = do
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
        -- CommonLogic
-       commonlogic2IHOL <-
-           compComorphism (Comorphism CommonLogic2CASL) subpc2IHOL
        return
          [ Comorphism CFOL2IsabelleHOL
          , subpc2IHOLviaHasCASL
@@ -151,6 +151,7 @@ isaComorphisms = do
          , mod2IHOL
          , maude2IHOL
          , casl_dl2CASL
+         , commonlogic2IHOL
 #endif
 #ifdef PROGRAMATICA
          , Comorphism Haskell2IsabelleHOLCF
@@ -160,8 +161,7 @@ isaComorphisms = do
 #endif
          , subHasCASL
          , Comorphism PCoClTyConsHOL2PairsInIsaHOL
-         , prop2IHOL
-         , commonlogic2IHOL ]
+         , prop2IHOL ]
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
@@ -181,6 +181,7 @@ spassComorphisms =
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
        maude2SPASS <- compComorphism (Comorphism Maude2CASL) partOut
+       commonlogic2SPASS <- compComorphism (Comorphism CommonLogic2CASL) partOut
 #endif
 #ifndef NOOWLLOGIC
        owl2spass <- compComorphism (Comorphism OWL2CASL) partOut
@@ -188,7 +189,6 @@ spassComorphisms =
        -- Fixme: constraint empty mapping is not available after Modal2CASL
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        -- CommonLogic
-       commonlogic2SPASS <- compComorphism (Comorphism CommonLogic2CASL) partOut
        return
          [ Comorphism SuleCFOL2SoftFOL
          , partOut
