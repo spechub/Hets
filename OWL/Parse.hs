@@ -37,6 +37,7 @@ import qualified Data.Map as Map
 characters :: [Character]
 characters = [minBound .. maxBound]
 
+-- | OWL and CASL structured keywords including 'andS' and 'notS'
 owlKeywords :: [String]
 owlKeywords = notS : stringS : map show entityTypes
   ++ map show characters ++ keywords ++ casl_structured_reserved_words
@@ -58,8 +59,8 @@ iunreserved c = isAlphaNum c || elem c "-._~" || ord c >= 160 && ord c <= 55295
 pctEncoded :: CharParser st String
 pctEncoded = char '%' <:> hexDigit <:> single hexDigit
 
--- comma and parens are removed here
--- but would cause no problems for full IRIs within angle brackets
+{- comma and parens are removed here
+   but would cause no problems for full IRIs within angle brackets -}
 subDelims :: Char -> Bool
 subDelims c = elem c "!$&'*+;="
 
@@ -128,8 +129,8 @@ ipathAbempty = flat $ many (char '/' <:> isegment)
 ipathAbsolute :: CharParser st String
 ipathAbsolute = char '/' <:> optionL (isegmentNz <++> ipathAbempty)
 
--- within abbreviated IRIs only ipath-noscheme should be used
--- that excludes colons via isegment-nz-nc
+{- within abbreviated IRIs only ipath-noscheme should be used
+   that excludes colons via isegment-nz-nc -}
 ipathRootless :: CharParser st String
 ipathRootless = isegmentNz <++> ipathAbempty
 
@@ -173,8 +174,9 @@ uriP :: CharParser st QName
 uriP =
   skips $ try $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
   if null p then notElem (localPart q) owlKeywords
-   else notElem p
-     $ map (takeWhile (/= ':')) colonKeywords
+   else notElem p $ map (takeWhile (/= ':'))
+        $ colonKeywords
+        ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
 -- | parse a possibly kinded list of comma separated uris aka symbols
 symbItems :: GenParser Char st SymbItems
@@ -523,10 +525,13 @@ realAnnotations = do
 descriptionAnnotatedList :: CharParser st [([Annotation], Description)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
 
+equivOrDisjointL :: [EquivOrDisjoint]
+equivOrDisjointL = [Equivalent, Disjoint]
+
 equivOrDisjoint :: CharParser st EquivOrDisjoint
 equivOrDisjoint = choice
   $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
-  [Equivalent, Disjoint]
+  equivOrDisjointL
 
 entityAnnos :: QName -> EntityType -> CharParser st [Axiom]
 entityAnnos qn ty = do
@@ -724,9 +729,9 @@ individualFrame = do
     else as
 
 equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
-equivOrDisjointKeyword ext =
-  (pkeyword ("Equivalent" ++ ext) >> return Equivalent)
-  <|> (pkeyword ("Disjoint" ++ ext) >> return Disjoint)
+equivOrDisjointKeyword ext = choice
+  $ map (\ f -> pkeyword (show f ++ ext) >> return f)
+  equivOrDisjointL
 
 -- note the plural when different
 sameOrDifferentIndu :: CharParser st SameOrDifferent
