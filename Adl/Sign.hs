@@ -74,7 +74,7 @@ data RawSymbol
 
 instance GetRange RawSymbol
 instance Pretty RawSymbol where
-  pretty s = case s of
+  pretty r = case r of
     Symbol s -> pretty s
     AnId i -> pretty i
 

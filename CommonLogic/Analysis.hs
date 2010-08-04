@@ -16,7 +16,6 @@ module CommonLogic.Analysis
 
 import Common.ExtSign
 import Common.Result as Result
-import CommonLogic.Sign as Sign
 import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as CL
 import qualified Common.AS_Annotation as AS_Anno
@@ -29,7 +28,7 @@ import CommonLogic.Sign as Sign
 
 data DIAG_FORM = DiagForm
     {
-        formula :: AS_Anno.Named (CL.SENTENCE),
+        formula :: AS_Anno.Named CL.SENTENCE,
       diagnosis :: Result.Diagnosis
     }
 
@@ -37,14 +36,15 @@ data DIAG_FORM = DiagForm
 makeSig :: CL.BASIC_SPEC -> Sign.Sign -> Sign.Sign
 makeSig (CL.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
 
-retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted (CL.BASIC_ITEMS) -> Sign.Sign
-retrieveBasicItem sig x = case (AS_Anno.item x) of
+retrieveBasicItem :: Sign.Sign -> AS_Anno.Annoted CL.BASIC_ITEMS -> Sign.Sign
+retrieveBasicItem sig x = case AS_Anno.item x of
                             CL.Axiom_items xs -> List.foldl retrieveSign sig xs
 
-retrieveSign :: Sign.Sign -> AS_Anno.Annoted (CL.SENTENCE) -> Sign.Sign
-retrieveSign sig x = Sign.unite sig $ propsOfFormula (AS_Anno.item x)
+retrieveSign :: Sign.Sign -> AS_Anno.Annoted CL.SENTENCE -> Sign.Sign
+retrieveSign sig = Sign.unite sig . propsOfFormula . AS_Anno.item
 
 -- retrieve CL.Sentence out of BASIC_SPEC
+
 -- retrieveSentence :: CL.BASIC_SPEC -> [AS_Anno.Named (CL.SENTENCE)]
 
 -- | retrieve sentences
@@ -52,28 +52,25 @@ makeFormulas :: CL.BASIC_SPEC -> Sign.Sign -> [DIAG_FORM]
 makeFormulas (CL.Basic_spec bspec) sig =
     List.foldl (\ xs bs -> retrieveFormulaItem xs bs sig) [] bspec
 
-retrieveFormulaItem :: [DIAG_FORM] -> AS_Anno.Annoted (CL.BASIC_ITEMS)
+retrieveFormulaItem :: [DIAG_FORM] -> AS_Anno.Annoted CL.BASIC_ITEMS
                        -> Sign.Sign -> [DIAG_FORM]
 retrieveFormulaItem axs x sig =
-   case (AS_Anno.item x) of
-      (CL.Axiom_items ax) ->
+   case AS_Anno.item x of
+      CL.Axiom_items ax ->
           List.foldl (\ xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
 
 data NUM_FORM = NumForm
     {
-      nfformula :: AS_Anno.Annoted (CL.SENTENCE)
+      nfformula :: AS_Anno.Annoted CL.SENTENCE
     , nfnum :: Int
     }
 
-numberFormulae :: [AS_Anno.Annoted (CL.SENTENCE)] -> Int -> [NUM_FORM]
+numberFormulae :: [AS_Anno.Annoted CL.SENTENCE] -> Int -> [NUM_FORM]
 numberFormulae [] _ = []
-numberFormulae (x : xs) i
-    | label == "" = NumForm {nfformula = x, nfnum = i} : (numberFormulae xs
-        $ i + 1)
-    | otherwise = NumForm {nfformula = x, nfnum = 0} : (numberFormulae xs
-        $ i)
-    where
-      label = AS_Anno.getRLabel x
+numberFormulae (x : xs) i =
+  if null $ AS_Anno.getRLabel x
+  then NumForm {nfformula = x, nfnum = i} : numberFormulae xs (i + 1)
+  else NumForm {nfformula = x, nfnum = 0} : numberFormulae xs i
 
 addFormula :: [DIAG_FORM]
            -> NUM_FORM
@@ -95,15 +92,15 @@ addFormula formulae nf _ = formulae ++
       lnum = AS_Anno.opt_pos f
 
 -- | generates a named formula
-makeNamed :: AS_Anno.Annoted (CL.SENTENCE) -> Int -> AS_Anno.Named (CL.SENTENCE)
-makeNamed f i = (AS_Anno.makeNamed (if label == "" then "Ax_" ++ show i
+makeNamed :: AS_Anno.Annoted CL.SENTENCE -> Int -> AS_Anno.Named CL.SENTENCE
+makeNamed f i = (AS_Anno.makeNamed (if null label then "Ax_" ++ show i
                                        else label) $ AS_Anno.item f)
                     { AS_Anno.isAxiom = not isTheorem }
    where
       label = AS_Anno.getRLabel f
       annos = AS_Anno.r_annos f
-      isImplies = foldl (\ y x -> AS_Anno.isImplies x || y) False annos
-      isImplied = foldl (\ y x -> AS_Anno.isImplied x || y) False annos
+      isImplies = any AS_Anno.isImplies annos
+      isImplied = any AS_Anno.isImplied annos
       isTheorem = isImplies || isImplied
 
 -- | Retrives the signature of a sentence
@@ -147,13 +144,13 @@ propsOfTermSeq s = case s of
       Id.simpleIdToId sqm}
 
 uniteMap :: (a -> Sign.Sign) -> [a] -> Sign
-uniteMap p xs = List.foldl (\ sig frm -> Sign.unite sig $ p frm)
-   Sign.emptySig xs
+uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
+   Sign.emptySig
 
 basicCommonLogicAnalysis :: (CL.BASIC_SPEC, Sign.Sign, a)
   -> Result (CL.BASIC_SPEC,
              ExtSign Sign.Sign Symbol.Symbol,
-             [AS_Anno.Named (CL.SENTENCE)])
+             [AS_Anno.Named CL.SENTENCE])
 basicCommonLogicAnalysis (bs, sig, _) =
    Result.Result [] $ if exErrs then Nothing else
      Just (bs, ExtSign sigItems newSyms, sentences)
@@ -170,12 +167,10 @@ basicCommonLogicAnalysis (bs, sig, _) =
 inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                     -> Sign.Sign
                     -> Result.Result Morphism.Morphism
-inducedFromMorphism _ _ = Result [] $ Nothing
+inducedFromMorphism _ _ = Result [] Nothing
 
 inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                       -> ExtSign Sign.Sign Symbol.Symbol
                       -> ExtSign Sign.Sign Symbol.Symbol
                       -> Result.Result Morphism.Morphism
--- inducedFromToMorphism imap (ExtSign sig _) (ExtSign tsig _) =
--- Result [] $ Nothing
-inducedFromToMorphism _ (ExtSign _ _) (ExtSign _ _) = Result [] $ Nothing
+inducedFromToMorphism _ (ExtSign _ _) (ExtSign _ _) = Result [] Nothing
