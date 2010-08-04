@@ -4,7 +4,7 @@ Description :  Help functions for all automatic theorem provers.
 Copyright   :  (c) Rainer Grabbe
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rainer25@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
 
