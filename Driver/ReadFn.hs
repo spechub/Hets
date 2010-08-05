@@ -117,4 +117,4 @@ fileToLibName opts efile =
                   [] -> file
                   (path, _) : _ -> drop (length path) file
                    -- cut off libdir prefix
-    in emptyLibName $ filter (/= '.') nfile
+    in emptyLibName $ filter (`notElem` ". ") nfile
