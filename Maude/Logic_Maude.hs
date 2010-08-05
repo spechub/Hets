@@ -16,7 +16,7 @@ module Maude.Logic_Maude where
 
 import Logic.Logic
 
-import Maude.AS_Maude (MaudeText(..))
+import Maude.AS_Maude (MaudeText (..))
 import Maude.Parse (mStuff)
 import Maude.Symbol   (Symbol)
 import Maude.Sentence (Sentence)
@@ -132,7 +132,7 @@ instance Logic Maude
     -- provers
     -- cons_checkers
     -- conservativityCheck
-    -- empty_proof_tree
+    empty_proof_tree Maude = ()
 
 instance LogicFram Maude
          () MaudeText Sentence () () Sign Morphism Symbol Symbol ()
