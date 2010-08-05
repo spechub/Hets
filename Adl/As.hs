@@ -66,8 +66,8 @@ data Prop
   | Prop         -- ^ meta property
     deriving (Enum, Eq, Ord, Show)
 
-showProp :: Prop -> String
-showProp = map toUpper . show
+showUp :: Show a => a -> String
+showUp = map toUpper . show
 
 allProps :: [Prop]
 allProps = [Uni .. Rfx]
@@ -108,18 +108,20 @@ data RuleKind = SignalOn | Signals | Maintains deriving (Eq, Ord, Show)
 
 showRuleKind :: RuleKind -> String
 showRuleKind k = if k == SignalOn then "ON"
-             else map toUpper $ show k
+             else showUp k
 
 data RuleHeader = Always | RuleHeader RuleKind Token deriving Show
 
 data Pair = Pair Token Token deriving Show
+
+data Plugin = Service | Sqlplug | Phpplug deriving Show
 
 data PatElem
   = Pr RuleHeader Rule
   | Pg Concept Concept -- specific and generic concept
   | Pk KeyDef
   | Pm [RangedProp] Relation Bool -- True indicates population
-  | Service Object
+  | Plug Plugin Object
   | Population Bool Relation [Pair] -- True indicates declaration
     deriving Show
 

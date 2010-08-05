@@ -74,7 +74,7 @@ instance Pretty Rule where
     Truth e -> pretty e
 
 instance Pretty Prop where
-  pretty = text . showProp
+  pretty = text . showUp
 
 instance Pretty RangedProp where
   pretty = pretty . propProp
@@ -129,7 +129,7 @@ instance Pretty PatElem where
       , if f then funArrow else cross, pretty c2
       , if null ns then empty else brackets $ ppWithCommas ns]
       <> if b then empty else dot
-    Service o -> sep [keyword "SERVICE", pretty o]
+    Plug p o -> sep [keyword $ showUp p, pretty o]
     Population b r l -> let d = prettyContent l in
       if b then equals <+> d <> dot else fsep
         [ keyword "POPULATION"

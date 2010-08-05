@@ -31,7 +31,7 @@ basicAna (c@(Context ps), sig, _) =
             : s)
           Pm qs d _ ->
             (d : r, map (\ q -> makeNamed (show (decnm d) ++ "_"
-                                           ++ showProp (propProp q))
+                                           ++ showUp (propProp q))
                          $ DeclProp d q) qs ++ s)
           _ -> (r, s)) ([], []) ps
   in return (c, mkExtSign sig, ss)

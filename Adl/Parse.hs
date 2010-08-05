@@ -126,7 +126,6 @@ pBind = pKey "BIND" >> pDeclaration << pKey "TOPHP" >> (pConid <|> pString)
 pContextElement :: CharParser st [PatElem]
 pContextElement = pPattern <|> flat (many1 pPatElem)
   <|> single (pObjDef <|> pPopulation)
-  <|> pSqlplug <|> pPhpplug
 
 pPopulation :: CharParser st PatElem
 pPopulation = do
@@ -166,7 +165,7 @@ pDeclaration = do
 
 pRangedProp :: Prop -> CharParser st RangedProp
 pRangedProp p = liftM2 (flip RangedProp)
-    (liftM tokPos $ parseToken $ pKeyS $ showProp p) $ return p
+    (liftM tokPos $ parseToken $ pKeyS $ showUp p) $ return p
 
 pProps :: CharParser st [RangedProp]
 pProps = pSqBrackets $ sepBy
@@ -202,7 +201,9 @@ pKeyAtt :: CharParser st KeyAtt
 pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) pExpr
 
 pObjDef :: CharParser st PatElem
-pObjDef = pKey "SERVICE" >> fmap Service pObj
+pObjDef = liftM2 Plug
+  (choice $ map (\ p -> pKey (showUp p) >> return p)
+   [Service, Sqlplug, Phpplug]) pObj
 
 pObj :: CharParser st Object
 pObj = do
@@ -214,12 +215,6 @@ pObj = do
 
 pProp' :: CharParser st RangedProp
 pProp' = choice $ map pRangedProp [Uni, Tot, Prop]
-
-pSqlplug :: CharParser st [PatElem]
-pSqlplug = pKey "SQLPLUG" >> pObj >> return []
-
-pPhpplug :: CharParser st [PatElem]
-pPhpplug = pKey "PHPPLUG" >> pObj >> return []
 
 pExplain :: CharParser st [PatElem]
 pExplain = do
