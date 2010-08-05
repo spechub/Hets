@@ -25,10 +25,11 @@ import Data.Time.Clock
 import Data.Time
 import Control.Monad
 
+newtype HetsTime = HetsTime
 #ifdef UNIX
-newtype HetsTime = HetsTime EpochTime
+  EpochTime
 #else
-newtype HetsTime = HetsTime UTCTime
+  UTCTime
 #endif
 
 getHetsTime :: IO HetsTime
