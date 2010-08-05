@@ -13,10 +13,15 @@ Portability :  portable
 module Adl.Print () where
 
 import Adl.As
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.GlobalAnnotations
+import Common.Id
+import Common.Keywords
 
 import Data.List
+import qualified Data.Map as Map
 
 instance Pretty Concept where
   pretty c = case c of
@@ -25,42 +30,71 @@ instance Pretty Concept where
 
 instance Pretty Relation where
   pretty (Sgn n c1 c2) =
-    pretty n <> case (c1, c2) of
+    (if tokStr n `elem` ["I", "V"] then keyword (tokStr n) else pretty n)
+    <> case (c1, c2) of
       (Anything, Anything) -> empty
       _ | c1 == c2 -> brackets $ pretty c1
       _ -> brackets $ hcat [pretty c1, cross, pretty c2]
 
+pOp :: UnOp -> Id
+pOp o = stringToId $ case o of
+    K0 -> "*"
+    K1 -> "+"
+    Cp -> "-" -- prefix!
+    Co -> "~"
+
 instance Pretty UnOp where
-  pretty o = case o of
-    K0 -> text "*"
-    K1 -> text "+"
-    Cp -> text "-" -- prefix!
-    Co -> breve
+  pretty = idDoc . pOp
+
+inOp :: MulOp -> Id
+inOp o = stringToId $ case o of
+    Fc -> ";"
+    Fd -> "!"
+    Fi -> lAnd
+    Fu -> lOr
 
 instance Pretty MulOp where
-  pretty o = case o of
-    Fc -> semi
-    Fd -> dagger
-    Fi -> space <> andDoc <> space
-    Fu -> space <> orDoc <> space
+  pretty o = let i = idDoc (inOp o) in case o of
+    Fc -> i
+    Fd -> i
+    _ -> space <> i <> space
 
 prettyParen :: (Expression -> Bool) -> Expression -> Doc
 prettyParen p e = (if p e then parens else id) $ pretty e
 
+minusId :: Id
+minusId = mkId [mkSimpleId "-", placeTok]
+
+displayMap :: DisplayMap
+displayMap = Map.fromList $ map ( \ (i, l) -> (i, Map.singleton DF_LATEX l))
+  [ (minusId, [mkSimpleId "\\overline{", placeTok, mkSimpleId "}"])
+  , (inOp Fi, [mkSimpleId "\\cap"])
+  , (inOp Fu, [mkSimpleId "\\cup"])
+  , (inOp Fd, [mkSimpleId "\\dag"])
+  , (pOp Co, [mkSimpleId "{^\\smile}"])
+  , (pOp K0, [mkSimpleId "\\texttt{*}"])
+  , (pOp K1, [mkSimpleId "\\texttt{+}"])
+  ]
+
+adlGA :: GlobalAnnos
+adlGA = emptyGlobalAnnos
+  { display_annos = displayMap }
+
 instance Pretty Expression where
-  pretty e = case e of
+  pretty e = useGlobalAnnos adlGA $ case e of
     Tm r -> pretty r
     MulExp o es ->
-      fcat $ punctuate (pretty o) $ map
+      fcat . punctuate (pretty o) $ map
         (prettyParen (\ a -> case a of
            MulExp p _ -> p >= o
            _ -> False)) es
-    UnExp o r -> hcat $ (if o == Cp then reverse else id)
-      [ prettyParen (\ a -> case a of
+    UnExp o r -> (if o == Cp
+                  then idApplDoc minusId . (: [])
+                  else (<> pretty o))
+      $ prettyParen (\ a -> case a of
         MulExp _ _ -> True
         UnExp p _ -> o /= Cp && p == Cp
         _ -> False) r
-      , pretty o ]
 
 instance Pretty RuleType where
   pretty t = case t of
