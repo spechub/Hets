@@ -10,7 +10,7 @@ Portability :  portable
 
 -}
 
-module Adl.Print () where
+module Adl.Print (adlGA) where
 
 import Adl.As
 import Common.AS_Annotation
