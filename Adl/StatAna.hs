@@ -25,9 +25,13 @@ basicAna :: (Context, Sign, GlobalAnnos)
 basicAna (c@(Context ps), sig, _) =
   let (_, ss) = foldr (\ p (r, s) ->
         case p of
-          Pr u -> (r, makeNamed "" (Assertion u) : s)
-          Pm qs d -> (d : r, map (\ q ->
-                                 makeNamed (decnm d ++ "_" ++ showProp q)
-                                 $ DeclProp d q) qs ++ s)
+          Pr h u -> (r, case h of
+              Always -> makeNamed "" $ Assertion Nothing u
+              RuleHeader k t -> makeNamed (show t) $ Assertion (Just k) u
+            : s)
+          Pm qs d _ ->
+            (d : r, map (\ q -> makeNamed (show (decnm d) ++ "_"
+                                           ++ showProp (propProp q))
+                         $ DeclProp d q) qs ++ s)
           _ -> (r, s)) ([], []) ps
   in return (c, mkExtSign sig, ss)

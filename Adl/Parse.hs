@@ -12,11 +12,14 @@ Portability :  portable
 
 module Adl.Parse where
 
+import Adl.As
+
+import Common.Id
+import Common.Lexer (parseToken)
 import Common.Parsec
 import Common.Token (casl_structured_reserved_words)
+import Control.Monad
 import Text.ParserCombinators.Parsec
-
-import Adl.As
 
 keywordstxt :: [String]
 keywordstxt =
@@ -91,8 +94,8 @@ pVarid = reserved casl_structured_reserved_words (lower <:> many pChar) << skip
 pString :: CharParser st String
 pString = (stringLit <|> sQuoted) << skip
 
-pADLid :: CharParser st String
-pADLid = pConid <|> pVarid <|> pString
+pADLid :: CharParser st Token
+pADLid = parseToken $ pConid <|> pVarid <|> pString
 
 -- | parse contexts but do not require CONTEXT blocks
 pArchitecture :: CharParser st Context
@@ -121,74 +124,82 @@ pBind = pKey "BIND" >> pDeclaration << pKey "TOPHP" >> (pConid <|> pString)
 
 -- | parse a context element but do not require the PATTERN block
 pContextElement :: CharParser st [PatElem]
-pContextElement = pPattern <|> many1 pPatElem
-  <|> fmap (: []) pObjDef
-  <|> fmap (const []) (pSqlplug <|> pPhpplug
-  <|> (pKey "POPULATION" >> pMorphism << pKey "CONTAINS" >> pContent))
+pContextElement = pPattern <|> flat (many1 pPatElem)
+  <|> single (pObjDef <|> pPopulation)
+  <|> pSqlplug <|> pPhpplug
+
+pPopulation :: CharParser st PatElem
+pPopulation = do
+  pKey "POPULATION"
+  r <- pMorphism
+  pKey "CONTAINS"
+  pContent False r
 
 pPattern :: CharParser st [PatElem]
 pPattern = pKey "PATTERN" >> (pConid <|> pString)
-           >> many pPatElem
+           >> flat (many pPatElem)
            << pKey "ENDPATTERN"
 
-pPatElem :: CharParser st PatElem
-pPatElem = pDeclaration <|> fmap Pr pRuleDef
-  <|> pGen <|> fmap (const Ignored)
-          (pConceptDef <|> pKeyDef <|> pExplain)
+pPatElem :: CharParser st [PatElem]
+pPatElem = pDeclaration <|> pConceptDef <|> pExplain
+  <|> single (pRuleDef <|> pGen <|> pKeyDef)
 
-pDeclaration :: CharParser st PatElem
+pDeclaration :: CharParser st [PatElem]
 pDeclaration = do
-  n <- try $ pVarid << pSym "::"
+  n <- try $ parseToken pVarid << pSym "::"
   c1 <- pConcept
-  s <- pSymS "*" <|> pSymS "->"
-  let ps = if s == "->" then [Uni, Tot] else []
+  s <- parseToken $ pSymS "*" <|> pSymS "->"
+  let ps = if tokStr s == "->" then
+        map (flip RangedProp $ tokPos s) [Uni, Tot] else []
   c2 <- pConcept
   as <- optionL pProps
   optionL pPragma
   optionL $ do
     pKey "EXPLANATION"
     pString
-  option () $ do
+  let r = Sgn n c1 c2
+  p <- optionL $ do
     pEqual
-    pContent
-    return ()
+    single $ pContent True r
   pSym "."
-  return $ Pm (ps ++ as) $ Sgn n c1 c2
+  return $ Pm (ps ++ as) r (not $ null p) : p
 
-pProps :: CharParser st [Prop]
-pProps = pSqBrackets $
-  sepBy (choice $ map (\ p -> pKey (showProp p) >> return p) allProps) pComma
+pRangedProp :: Prop -> CharParser st RangedProp
+pRangedProp p = liftM2 (flip RangedProp)
+    (liftM tokPos $ parseToken $ pKeyS $ showProp p) $ return p
+
+pProps :: CharParser st [RangedProp]
+pProps = pSqBrackets $ sepBy
+  (choice $ map pRangedProp allProps) pComma
 
 pPragma :: CharParser st [String]
 pPragma = pKey "PRAGMA" >> many1 pString
 
-pConceptDef :: CharParser st PatElem
+pConceptDef :: CharParser st [PatElem]
 pConceptDef = do
   pKey "CONCEPT"
   pConcept
   pString
   optionL pString
-  return Ignored
+  return []
 
 pKeyDef :: CharParser st PatElem
 pKeyDef = do
   pKey "KEY"
-  pLabelProps
-  pConcept
-  pParens $ sepBy1 pKeyAtt pComma
-  return Ignored
+  t <- pLabelProps
+  c <- pConcept
+  l <- pParens $ sepBy1 pKeyAtt pComma
+  return $ Pk $ KeyDef t c l
 
-pLabelProps :: CharParser st String
+pLabelProps :: CharParser st Token
 pLabelProps = do
   n <- pADLid
   optionL $ pGenParens "{" "}" $ sepBy1 pADLid pComma
   pColon
   return n
 
-pKeyAtt :: CharParser st Expression
-pKeyAtt = do
- optionMaybe $ try pLabelProps
- pExpr
+pKeyAtt :: CharParser st KeyAtt
+pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) pExpr
 
 pObjDef :: CharParser st PatElem
 pObjDef = pKey "SERVICE" >> fmap Service pObj
@@ -201,16 +212,16 @@ pObj = do
   os <- optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
   return $ Object n e as os
 
-pProp' :: CharParser st Prop
-pProp' = choice $ map (\ p -> pKey (showProp p) >> return p) [Uni, Tot, Prop]
+pProp' :: CharParser st RangedProp
+pProp' = choice $ map pRangedProp [Uni, Tot, Prop]
 
-pSqlplug :: CharParser st PatElem
-pSqlplug = pKey "SQLPLUG" >> pObj >> return Ignored
+pSqlplug :: CharParser st [PatElem]
+pSqlplug = pKey "SQLPLUG" >> pObj >> return []
 
-pPhpplug :: CharParser st PatElem
-pPhpplug = pKey "PHPPLUG" >> pObj >> return Ignored
+pPhpplug :: CharParser st [PatElem]
+pPhpplug = pKey "PHPPLUG" >> pObj >> return []
 
-pExplain :: CharParser st PatElem
+pExplain :: CharParser st [PatElem]
 pExplain = do
   pKey "EXPLAIN"
   choice $ map pKey
@@ -220,7 +231,7 @@ pExplain = do
   pLanguageID
   pRefID
   pExpl
-  return Ignored
+  return []
 
 pLanguageID :: CharParser st String
 pLanguageID = pKey "IN" >> (pKeyS "DUTCH" <|> pKeyS "ENGLISH")
@@ -231,15 +242,16 @@ pRefID = optionL $ pKey "REF" >> pString
 pExpl :: CharParser st String
 pExpl = nestedComment "{+" "-}"
 
-pContent :: CharParser st PatElem
-pContent = pSqBrackets (sepBy pRecord $ pSym ";") >> return Ignored
+pContent :: Bool -> Relation -> CharParser st PatElem
+pContent b r = fmap (Population b r) $ pSqBrackets $ sepBy pRecord $ pSym ";"
 
-pRecord :: CharParser st (String, String)
-pRecord = pParens $ pair pString $ pComma >> pString
+pRecord :: CharParser st Pair
+pRecord = let ps = parseToken pString in
+  pParens $ liftM2 Pair ps $ pComma >> ps
 
-pRuleDef :: CharParser st Rule
+pRuleDef :: CharParser st PatElem
 pRuleDef = do
-  option "" pSignalOrAlways
+  h <- option Always pSignalOrAlways
   e1 <- pExpr
   r <- option (Truth e1) $ do
     sym <- choice $ map pSymS ["=", "|-", "-|"]
@@ -252,12 +264,14 @@ pRuleDef = do
   option "" $ do
     pKey "EXPLANATION"
     pString
-  return r
+  return $ Pr h r
 
-pSignalOrAlways :: CharParser st String
+pSignalOrAlways :: CharParser st RuleHeader
 pSignalOrAlways =
-  (pKey "SIGNAL" >> pADLid << pKey "ON")
-  <|> (pKey "RULE" >> pADLid << (pKey "MAINTAINS" <|> pKey "SIGNALS"))
+  fmap (RuleHeader SignalOn) (pKey "SIGNAL" >> pADLid << pKey "ON")
+  <|> (pKey "RULE" >> liftM2 (flip RuleHeader) pADLid
+         (choice $ map (\ r -> pKey (showRuleKind r) >> return r)
+         [Maintains, Signals]))
 
 pGen :: CharParser st PatElem
 pGen = do
@@ -277,13 +291,13 @@ pTwo = option (Anything, Anything)
   return (c1, c2)
 
 pConcept :: CharParser st Concept
-pConcept = fmap C $ pConid <|> pString <|> pKeyS "ONE"
+pConcept = fmap C . parseToken $ pConid <|> pString <|> pKeyS "ONE"
 
-pMorphism :: CharParser st Expression
+pMorphism :: CharParser st Relation
 pMorphism = do
-  nm <- pKeyS "I" <|> pKeyS "V" <|> pVarid <|> (sQuoted << skip)
+  nm <- parseToken $ pKeyS "I" <|> pKeyS "V" <|> pVarid <|> (sQuoted << skip)
   (c1, c2) <- pTwo
-  return $ Tm $ Sgn nm c1 c2
+  return $ Sgn nm c1 c2
 
 pExpr :: CharParser st Expression
 pExpr = pPrec Fu pFactorI "\\/"
@@ -308,7 +322,7 @@ pPrec f p s = do
 pTerm :: CharParser st Expression
 pTerm = do
   ms <- many pMinus
-  e <- pParens pExpr <|> pMorphism
+  e <- pParens pExpr <|> fmap Tm pMorphism
   rs <- many $ choice $ map (pSymS . (: [])) "+*~"
   let p = foldl (\ r c -> UnExp (case c of
         "+" -> K1

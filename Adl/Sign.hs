@@ -62,10 +62,10 @@ instance Pretty Symbol where
     Con c -> pretty c
 
 symName :: Symbol -> Id
-symName s = stringToId $ case s of
+symName s = simpleIdToId $ case s of
   Rel r -> decnm r
   Con (C c) -> c
-  Con c -> show c
+  Con c -> mkSimpleId $ show c
 
 data RawSymbol
   = Symbol Symbol
@@ -83,9 +83,14 @@ symMatch s r = case r of
   Symbol t -> s == t
   AnId i -> symName s == i
 
+idToSimpleId :: Id -> Token
+idToSimpleId i = case i of
+  Id [t] [] _ -> t
+  _ -> error $ "idToSimpleId: " ++ show i
+
 symOf :: Sign -> Set.Set Symbol
 symOf = Set.unions . map (\ (i, s) ->
-          Set.map (\ t -> Rel $ Sgn (show i) (relSrc t) $ relTrg t) s)
+          Set.map (\ t -> Rel $ Sgn (idToSimpleId i) (relSrc t) $ relTrg t) s)
         . Map.toList . rels
 
 instance GetRange Sign
@@ -93,12 +98,12 @@ instance Pretty Sign where
   pretty = pretty . symOf
 
 data Sen
-  = DeclProp Relation Prop
-  | Assertion Rule
+  = DeclProp Relation RangedProp
+  | Assertion (Maybe RuleKind) Rule
     deriving (Eq, Ord, Show)
 
 instance GetRange Sen
 instance Pretty Sen where
   pretty s = case s of
-    DeclProp r p -> pretty $ Pm [p] r
-    Assertion r -> pretty r
+    DeclProp r p -> pretty $ Pm [p] r False
+    Assertion _ r -> pretty $ Pr Always r

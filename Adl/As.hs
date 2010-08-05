@@ -13,15 +13,16 @@ Portability :  portable
 module Adl.As where
 
 import Data.Char
+import Data.Ord
+import Common.Id
 
 data Concept
-  = C String -- ^ The name of this Concept
-  | Anything -- ^ Really Anything!
-  | NOthing -- ^ Nothing at all
+  = C Token -- ^ The name of this Concept
+  | Anything -- ^ Really anything as introduced by I and V
     deriving (Eq, Ord, Show)
 
 data Relation = Sgn
-  { decnm :: String  -- ^ the name
+  { decnm :: Token  -- ^ the name
   , desrc :: Concept -- ^ the source concept
   , detrg :: Concept -- ^ the target concept
   } deriving (Eq, Ord, Show)
@@ -36,7 +37,7 @@ data UnOp
 data MulOp
   = Fc -- ^ composition ;
   | Fd -- ^ relative addition !
-  | Fi -- ^ intersection
+  | Fi -- ^ intersection /\.
   | Fu -- ^ union \/
     deriving (Eq, Ord, Show)
 
@@ -71,19 +72,55 @@ showProp = map toUpper . show
 allProps :: [Prop]
 allProps = [Uni .. Rfx]
 
+data RangedProp = RangedProp
+  { propProp :: Prop
+  , propRange :: Range }
+
+instance Show RangedProp where
+  show = show . propProp
+
+instance Ord RangedProp where
+  compare = comparing propProp
+
+instance Eq RangedProp where
+  p1 == p2 = compare p1 p2 == EQ
+
+-- | create a ranged property
+rProp :: Prop -> RangedProp
+rProp p = RangedProp p nullRange
+
 data Object = Object
-  { label :: String
+  { label :: Token
   , expr :: Expression
-  , props :: [Prop]
+  , props :: [RangedProp]
   , subobjs :: [Object]
   } deriving Show
 
+data KeyAtt = KeyAtt (Maybe Token) Expression deriving Show
+
+data KeyDef = KeyDef
+  { kdlbl :: Token
+  , kdcpt :: Concept
+  , kdats :: [KeyAtt]
+  } deriving Show
+
+data RuleKind = SignalOn | Signals | Maintains deriving (Eq, Ord, Show)
+
+showRuleKind :: RuleKind -> String
+showRuleKind k = if k == SignalOn then "ON"
+             else map toUpper $ show k
+
+data RuleHeader = Always | RuleHeader RuleKind Token deriving Show
+
+data Pair = Pair Token Token deriving Show
+
 data PatElem
-  = Pr Rule
+  = Pr RuleHeader Rule
   | Pg Concept Concept -- specific and generic concept
-  | Pm [Prop] Relation
+  | Pk KeyDef
+  | Pm [RangedProp] Relation Bool -- True indicates population
   | Service Object
-  | Ignored
+  | Population Bool Relation [Pair] -- True indicates declaration
     deriving Show
 
 data Context = Context [PatElem] deriving Show
