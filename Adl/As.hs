@@ -125,4 +125,4 @@ data PatElem
   | Population Bool Relation [Pair] -- True indicates declaration
     deriving Show
 
-data Context = Context [PatElem] deriving Show
+data Context = Context (Maybe Token) [PatElem] deriving Show

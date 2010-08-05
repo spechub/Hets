@@ -172,4 +172,7 @@ instance Pretty PatElem where
         , d ]
 
 instance Pretty Context where
-  pretty (Context ps) = vcat $ map pretty ps
+  pretty (Context m ps) = let l = vcat $ map pretty ps in case m of
+    Nothing -> l
+    Just t -> vcat
+      [keyword "CONTEXT" <+> pretty t, l, keyword "ENDCONTEXT"]

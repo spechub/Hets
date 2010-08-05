@@ -22,7 +22,7 @@ import Common.Result
 
 basicAna :: (Context, Sign, GlobalAnnos)
   -> Result (Context, ExtSign Sign Symbol, [Named Sen])
-basicAna (c@(Context ps), sig, _) =
+basicAna (c@(Context _ ps), sig, _) =
   let (_, ss) = foldr (\ p (r, s) ->
         case p of
           Pr h u -> (r, case h of
