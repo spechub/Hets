@@ -129,13 +129,12 @@ primFormula = do
        return $ AS_BASIC.Negation k $ Id.tokPos c
     <|> parenFormula
     <|> do
-           (c, b) <- pair forallKey (return True)
-                 <|> pair existsKey (return False)
+           (c, q) <- pair forallKey (return AS_BASIC.ForAll)
+                 <|> pair existsKey (return AS_BASIC.Exists)
            (l, _) <- propId `Lexer.separatedBy` AnnoState.anComma
            f <- impFormula
            return $ if length l < 1 then error "nothing quantified"
-                   else (if b then AS_BASIC.ForAll
-                        else AS_BASIC.Exists) l f $ Id.tokPos c
+                   else q l f $ Id.tokPos c
     <|> fmap AS_BASIC.Predication propId
 
 -- | Parser for formulae containing 'and' and 'or'
