@@ -44,7 +44,7 @@ diffHetsTime (HetsTime t1) (HetsTime t2) =
    timeToTimeOfDay $ secondsToDiffTime $ round
    (realToFrac (
 #ifdef UNIX
-   flip subtract
+   (-)
 #else
    diffUTCTime
 #endif
