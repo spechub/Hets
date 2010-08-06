@@ -132,6 +132,7 @@ primFormula = do
            (c, q) <- pair forallKey (return AS_BASIC.ForAll)
                  <|> pair existsKey (return AS_BASIC.Exists)
            (l, _) <- propId `Lexer.separatedBy` AnnoState.anComma
+           _ <- AnnoState.dotT
            f <- impFormula
            return $ if length l < 1 then error "nothing quantified"
                    else q l f $ Id.tokPos c
