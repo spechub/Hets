@@ -41,6 +41,8 @@ import Logic.Prover (proverName,hasProverKind,ProverKind(..))
 import CASL.Logic_CASL
 import CASL.Sublogic
 
+import Comorphisms.QBF2Prop
+import Comorphisms.Prop2QBF
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
@@ -144,6 +146,8 @@ isaComorphisms = do
        -- CommonLogic
        return
          [ Comorphism CFOL2IsabelleHOL
+         , Comorphism QBF2Prop
+         , Comorphism Prop2QBF
          , subpc2IHOLviaHasCASL
          , subpc2IHOL
 #ifdef CASLEXTENSIONS

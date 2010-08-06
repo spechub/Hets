@@ -76,8 +76,8 @@ instance Comorphism Prop2QBF
       map_symbol Prop2QBF _ = mapSym
       map_sentence Prop2QBF _ = trForm
       map_morphism Prop2QBF = mapMor
-      -- has_model_expansion Prop2QBF = True
-      -- is_weakly_amalgamable Prop2QBF = True
+      has_model_expansion Prop2QBF = True
+      is_weakly_amalgamable Prop2QBF = True
       isInclusionComorphism Prop2QBF = True
 
 -- | Translation of the signature

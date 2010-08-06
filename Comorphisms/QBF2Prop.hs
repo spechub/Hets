@@ -78,8 +78,8 @@ instance Comorphism QBF2Prop
       map_symbol QBF2Prop _ = mapSym
       map_sentence QBF2Prop _ = trForm
       map_morphism QBF2Prop = mapMor
-      -- has_model_expansion QBF2Prop = True
-      -- is_weakly_amalgamable QBF2Prop = True
+      has_model_expansion QBF2Prop = True
+      is_weakly_amalgamable QBF2Prop = True
       isInclusionComorphism QBF2Prop = True
 
 -- | Translation of the signature
