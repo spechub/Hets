@@ -1,17 +1,17 @@
 {- |
 Module      :  $Header$
 Description :  Interface to the theorem prover e-krhyper in CASC-mode.
-Copyright   :  (c) Dominik Luecke, Uni Bremen 2010
+Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Maintainer  :  luecke@informatik.uni-bremen.de
+Maintainer  :  jonathan.von_schroeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Check out
-<http://www.uni-koblenz.de/~bpelzer/ekrhyper/>
-for details. For the ease of maintenance we are using e-krhyper in
-its CASC-mode, aka tptp-input. It works for single input files and
-fof-style.
+see <http://fmv.jku.at/depqbf/ for more information
+on the depqbf prover and <http://www.qbflib.org/qdimacs.html>
+and <http://www.qbflib.org/Draft/qDimacs.ps.gz>
+for more information on the qdimacs input format
+
 -}
 
 module QBF.ProveDepQBF (depQBFProver)

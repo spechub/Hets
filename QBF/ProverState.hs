@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Help functions for all automatic theorem provers.
-Copyright   :  (c) Rainer Grabbe
+Copyright   :  (c) Jonatzhan von Schroeder, DFKI GmbH 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
