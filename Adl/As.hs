@@ -13,7 +13,6 @@ Portability :  portable
 module Adl.As where
 
 import Data.Char
-import Data.Ord
 import Common.Id
 
 data Concept
@@ -75,15 +74,7 @@ allProps = [Uni .. Rfx]
 data RangedProp = RangedProp
   { propProp :: Prop
   , propRange :: Range }
-
-instance Show RangedProp where
-  show = show . propProp
-
-instance Ord RangedProp where
-  compare = comparing propProp
-
-instance Eq RangedProp where
-  p1 == p2 = compare p1 p2 == EQ
+    deriving (Eq, Ord, Show) -- should be fine since ranges are always equal
 
 -- | create a ranged property
 rProp :: Prop -> RangedProp
