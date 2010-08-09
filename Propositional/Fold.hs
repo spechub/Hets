@@ -69,11 +69,13 @@ bothLits fs = let
 getConj :: FORMULA -> [FORMULA]
 getConj f = case f of
   Conjunction xs _ -> xs
+  True_atom _ -> []
   _ -> [f]
 
 getDisj :: FORMULA -> [FORMULA]
 getDisj f = case f of
   Disjunction xs _ -> xs
+  False_atom _ -> []
   _ -> [f]
 
 flatConj :: [FORMULA] -> Set.Set FORMULA

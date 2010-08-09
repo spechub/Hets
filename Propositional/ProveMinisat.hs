@@ -34,7 +34,6 @@ import GUI.GenericATP
 
 import Common.ProofTree
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
 import Common.Utils (basename, timeoutCommand)
@@ -90,16 +89,10 @@ consCheck :: MiniSatVer -> String -> LP.TacticScript
 consCheck v thName _ tm _ = case LP.tTarget tm of
   LP.Theory sig nSens -> do
     let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-        tmpFile = "/tmp/" ++ basename thName ++ "_cc.dimacs"
+        tmpFile = "/tmp/" ++ basename thName ++ "_cc.minisat.dimacs"
         bin = msatName v
     dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc") sig
-          axioms
-          [(AS_Anno.makeNamed "consistency" $
-            AS_BASIC.False_atom Id.nullRange)
-          { AS_Anno.isAxiom = False
-          , AS_Anno.isDef = False
-          , AS_Anno.wasTheorem = False
-          }]
+          axioms Nothing
     outputHf <- openFile tmpFile ReadWriteMode
     hPutStr outputHf dimacsOutput
     hClose outputHf

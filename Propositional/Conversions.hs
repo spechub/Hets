@@ -21,6 +21,8 @@ module Propositional.Conversions
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 
+import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -39,36 +41,32 @@ goalDIMACSProblem :: String                   -- ^ name of the theory
 goalDIMACSProblem thName pState conjec _ = do
     let sign = PState.initialSignature pState
         axs = PState.initialAxioms pState
-    showDIMACSProblem thName sign axs [conjec]
+    showDIMACSProblem thName sign axs $ Just conjec
 
 -- | Translation of a Propositional Formula to a String in DIMACS Format
 showDIMACSProblem :: String                     -- ^ name of the theory
                   -> Sig.Sign                   -- ^ Signature
                   -> [AS_Anno.Named AS.FORMULA] -- ^ Axioms
-                  -> [AS_Anno.Named AS.FORMULA] -- ^ Conjectures
+                  -> Maybe (AS_Anno.Named AS.FORMULA) -- ^ Conjectures
                   -> IO String                  -- ^ Output
-showDIMACSProblem name fSig axs cons = do
-    let negatedCons = if null cons then [] else
-          [(AS_Anno.makeNamed "myCons"
-            $ negForm Id.nullRange
-            $ mkConj (map AS_Anno.sentence cons) Id.nullRange)
-          { AS_Anno.isAxiom = False
-          , AS_Anno.isDef = False
-          , AS_Anno.wasTheorem = False } ]
+showDIMACSProblem name fSig axs mcons = do
+    let negatedCons = case mcons of
+          Nothing -> []
+          Just cons -> [AS_Anno.mapNamed (negForm Id.nullRange) cons]
         tAxs = map (AS_Anno.mapNamed cnf) axs
-        tCon = map (AS_Anno.mapNamed cnf) negatedCons
+        tCon = fmap (AS_Anno.mapNamed cnf) negatedCons
         flatSens = getConj . flip mkConj Id.nullRange . map AS_Anno.sentence
         tfAxs = flatSens tAxs
         tfCon = flatSens tCon
         numVars = Set.size $ Sig.items fSig
         numClauses = length tfAxs + length tfCon
         sigMap = createSignMap fSig 1 Map.empty
-        fct sr xv = sr ++ mapClause xv sigMap
-    return $ "c " ++ name ++ "\n" ++
-           "p cnf " ++ show numVars ++ " " ++ show numClauses ++ "\n"
-           ++ (if null tfAxs then "" else "c Axioms\n" ++ foldl fct "" tfAxs)
-           ++ if null tfCon then "" else
-              "c Conjectures\n" ++ foldl fct "" tfCon
+        fct = map (++ " 0") . concatMap (`mapClauseAux` sigMap)
+    return $ unlines $
+       [ "c " ++ name, "p cnf " ++ show numVars ++ " " ++ show numClauses]
+       ++ (if null tfAxs then [] else "c Axioms" : fct tfAxs)
+       ++ if null tfCon || isNothing mcons then []
+          else "c Conjectures" : fct tfCon
 
 -- | Create signature map
 createSignMap :: Sig.Sign
@@ -87,15 +85,20 @@ createSignMap sig inNum inMap =
 mapClause :: AS.FORMULA
           -> Map.Map Id.Token Integer
           -> String
-mapClause form mapL =
+mapClause form = unlines . map (++ " 0") . mapClauseAux form
+
+-- | Mapping of a single Clause
+mapClauseAux :: AS.FORMULA
+          -> Map.Map Id.Token Integer
+          -> [String]
+mapClauseAux form mapL =
     case form of
-      AS.Disjunction ts _ ->
-        foldl (\ sr xv -> sr ++ mapLiteral xv mapL ++ " ") "" ts
-        ++ " 0 \n"
-      AS.Negation (AS.Predication _) _ -> mapLiteral form mapL ++ " 0 \n"
-      AS.Predication _ -> mapLiteral form mapL ++ " 0 \n"
-      AS.True_atom _ -> "1 -1 0 \n"
-      AS.False_atom _ -> "1 0 \n -1 0 \n"
+      AS.Conjunction ts _ -> map (`mapLiteral` mapL) ts
+      AS.Disjunction ts _ -> [intercalate " " $ map (`mapLiteral` mapL) ts]
+      AS.Negation _ _ -> [mapLiteral form mapL]
+      AS.Predication _ -> [mapLiteral form mapL]
+      AS.True_atom _ -> ["1 -1"]
+      AS.False_atom _ -> ["-1", "1"]
       _ -> error "Impossible Case alternative"
 
 -- | Mapping of a single literal
@@ -104,9 +107,7 @@ mapLiteral :: AS.FORMULA
            -> String
 mapLiteral form mapL =
     case form of
-      AS.Negation (AS.Predication tok) _ ->
-        '-' : show (Map.findWithDefault 0 tok mapL)
+      AS.Negation f _ ->
+        '-' : mapLiteral f mapL
       AS.Predication tok -> show (Map.findWithDefault 0 tok mapL)
-      AS.True_atom _ -> "1 -1 0 \n"
-      AS.False_atom _ -> "1 0 \n-1 0 \n"
       _ -> error "Impossible Case"

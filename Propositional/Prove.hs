@@ -37,7 +37,6 @@ import Common.UniUtils as CP
 import Common.ProofTree
 import Common.Utils (readMaybe, basename)
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Id as Id
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
 
@@ -92,25 +91,10 @@ consCheck thName _ tm _ =
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
                 thName_clean = basename thName
-                tmpFile = "/tmp/" ++ thName_clean ++ "_cc.dimacs"
+                tmpFile = "/tmp/" ++ thName_clean ++ "_cc.zchaff.dimacs"
                 resultFile = tmpFile ++ ".result"
             dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc")
-                             sig [(AS_Anno.makeNamed "myAxioms" $
-                                     AS_BASIC.Implication
-                                     (
-                                      AS_BASIC.Conjunction
-                                      (map AS_Anno.sentence axioms)
-                                      Id.nullRange
-                                     )
-                                     (AS_BASIC.False_atom Id.nullRange)
-                                     Id.nullRange
-                                    )
-                                    {
-                                      AS_Anno.isAxiom = True
-                                    , AS_Anno.isDef = False
-                                    , AS_Anno.wasTheorem = False
-                                    }
-                                   ] []
+                             sig axioms Nothing
             outputHf <- openFile tmpFile ReadWriteMode
             hPutStr outputHf dimacsOutput
             hClose outputHf
@@ -132,8 +116,8 @@ consCheck thName _ tm _ =
           $ filter AS_Anno.isAxiom f
         searchResult :: String -> Maybe Bool
         searchResult hf = let ls = lines hf in
-          if any (isInfixOf reUNSAT) ls then Just True else
-          if any (isInfixOf reSAT) ls then Just False
+          if any (isInfixOf reUNSAT) ls then Just False else
+          if any (isInfixOf reSAT) ls then Just True
           else Nothing
 
 -- ** GUI
@@ -239,9 +223,7 @@ runZchaff pState cfg saveDIMACS thName nGoal =
                       excepToATPResult (LP.proverName zchaffProver)
                         (AS_Anno.senAttr nGoal) excep)
     where
-      deleteJunk = do
-        catch (removeFile zFileName) (const $ return ())
-        catch (removeFile "resolve_trace") (const $ return ())
+      deleteJunk = catch (removeFile zFileName) (const $ return ())
       thName_clean = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
       zFileName = "/tmp/problem_" ++ thName_clean
       allOptions = zFileName : createZchaffOptions cfg
