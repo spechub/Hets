@@ -22,7 +22,6 @@ import Adl.Sign
 import Adl.StatAna
 import Adl.ATC_Adl ()
 
-import Common.Id
 import Common.DefaultMorphism
 import Common.ProofTree
 
@@ -71,9 +70,6 @@ instance Logic Adl
     where
        empty_proof_tree Adl = emptyProofTree
        provers Adl = []
-
-instance GetRange Context
-instance GetRange Relation
 
 instance StaticAnalysis Adl
     Context
