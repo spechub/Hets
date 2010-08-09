@@ -208,13 +208,36 @@ runZchaff :: PState.PropProverState
                  , GenericConfig ProofTree
                  )
            -- (retval, configuration with proof status and complete output)
-runZchaff pState cfg saveDIMACS thName nGoal =
-    do
+runZchaff pState cfg saveDIMACS thName nGoal = do
       prob <- Cons.goalDIMACSProblem thName pState nGoal []
       when saveDIMACS (writeFile thName_clean prob)
       writeFile zFileName prob
       zchaff <- newChildProcess "zchaff" [CP.arguments allOptions]
-      Exception.catch (runZchaffReal zchaff)
+      let runZchaffReal = do
+                zchaffOut <- parseIt zchaff isEnd
+                (res, usedAxs, tUsed) <- analyzeZchaff zchaffOut pState
+                let defaultProofStatus =
+                      (LP.openProofStatus (AS_Anno.senAttr nGoal)
+                             (LP.proverName zchaffProver)
+                                        emptyProofTree)
+                      {LP.tacticScript = LP.TacticScript $ show
+                            ATPTacticScript
+                             { tsTimeLimit = configTimeLimit cfg
+                             , tsExtraOpts = []} }
+                let (err, retval) = case res of
+                      Right p -> (ATPSuccess,
+                        defaultProofStatus
+                                {LP.goalStatus = p
+                                , LP.usedAxioms = filter
+                                    (/= AS_Anno.senAttr nGoal) usedAxs
+                                , LP.proofTree = ProofTree zchaffOut })
+                      Left a -> (a, defaultProofStatus)
+                deleteJunk
+                return (err,
+                        cfg {proofStatus = retval,
+                            resultOutput = [zchaffOut],
+                            timeUsed = tUsed})
+      Exception.catch runZchaffReal
                    (\ excep -> do
                       -- kill zchaff process
                       destroy zchaff
@@ -227,73 +250,22 @@ runZchaff pState cfg saveDIMACS thName nGoal =
       thName_clean = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
       zFileName = "/tmp/problem_" ++ thName_clean
       allOptions = zFileName : createZchaffOptions cfg
-      runZchaffReal zchaff =
-          do
-                zchaffOut <- parseIt zchaff isEnd
-                (res, usedAxs, output, tUsed) <- analyzeZchaff zchaffOut pState
-                let (err, retval) = proofStat res usedAxs [] (head output)
-                deleteJunk
-                return (err,
-                        cfg {proofStatus = retval,
-                            resultOutput = output,
-                            timeUsed = tUsed})
-                where
-                  proofStat res usedAxs options out
-                           | isJust res && elem (fromJust res) proved =
-                               (ATPSuccess,
-                                (defaultProofStatus options)
-                                {LP.goalStatus = LP.Proved True
-                                , LP.usedAxioms = filter
-                                    (/= AS_Anno.senAttr nGoal) usedAxs
-                                , LP.proofTree = ProofTree out })
-                           | isJust res && elem (fromJust res) disproved =
-                               (ATPSuccess,
-                                (defaultProofStatus options)
-                                {LP.goalStatus = LP.Disproved} )
-                           | isJust res && elem (fromJust res) timelimit =
-                               (ATPTLimitExceeded, defaultProofStatus options)
-                           | isNothing res =
-                               (ATPError "Internal error.",
-                                defaultProofStatus options)
-                           | otherwise = (ATPSuccess,
-                                          defaultProofStatus options)
-                  defaultProofStatus opts =
-                      (LP.openProofStatus (AS_Anno.senAttr nGoal)
-                             (LP.proverName zchaffProver)
-                                        emptyProofTree)
-                      {LP.tacticScript = LP.TacticScript $ show
-                            ATPTacticScript
-                             { tsTimeLimit = configTimeLimit cfg
-                             , tsExtraOpts = opts} }
-
-proved :: [String]
-proved = ["Proof found."]
-
-disproved :: [String]
-disproved = ["Completion found."]
-
-timelimit :: [String]
-timelimit = ["Ran out of time."]
 
 -- | analysis of output
-analyzeZchaff :: String
-              -> PState.PropProverState
-              -> IO (Maybe String, [String], [String], TimeOfDay)
+analyzeZchaff :: String -> PState.PropProverState
+  -> IO (Either ATPRetval LP.GoalStatus, [String], TimeOfDay)
 analyzeZchaff str' pState =
-    let output = [str']
-        unsat = isInfixOf reUNSAT str'
+    let unsat = isInfixOf reUNSAT str'
         sat = isInfixOf reSAT str'
         timeLine = fromMaybe "0" $ stripPrefix reTIME str'
         timeout = isInfixOf reEndto str' || isInfixOf reEndmo str'
         time = calculateTime timeLine
         usedAx = map AS_Anno.senAttr $ PState.initialAxioms pState
-    in return $ if timeout
-      then (Just $ head timelimit, usedAx, output, time)
-      else if sat && not unsat
-           then (Just $ head disproved, usedAx, output, time)
-           else if not sat && unsat
-                then (Just $ head proved, usedAx, output, time)
-                else (Nothing, usedAx, output, time)
+    in return (case () of
+         _ | timeout -> Left ATPTLimitExceeded
+         _ | sat && not unsat -> Right LP.Disproved
+         _ | not sat && unsat -> Right $ LP.Proved True
+         _ -> Left $ ATPError "Internal error.", usedAx, time)
 
 -- | Calculated the time need for the proof in seconds
 calculateTime :: String -> TimeOfDay
