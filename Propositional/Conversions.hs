@@ -93,11 +93,10 @@ mapClauseAux :: AS.FORMULA
           -> [String]
 mapClauseAux form mapL =
     case form of
-      AS.Conjunction ts _ -> map (`mapLiteral` mapL) ts
       AS.Disjunction ts _ -> [intercalate " " $ map (`mapLiteral` mapL) ts]
       AS.Negation _ _ -> [mapLiteral form mapL]
       AS.Predication _ -> [mapLiteral form mapL]
-      AS.True_atom _ -> ["1 -1"]
+      AS.True_atom _ -> []
       AS.False_atom _ -> ["-1", "1"]
       _ -> error "Impossible Case alternative"
 
