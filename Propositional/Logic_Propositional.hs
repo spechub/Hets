@@ -37,7 +37,6 @@ import Propositional.Symbol as Symbol
 import Propositional.Parse_AS_Basic
 import Propositional.Analysis
 import Propositional.Sublogic as Sublogic
-import Propositional.Tools
 
 #ifdef UNI_PACKAGE
 import Common.ProverTools
@@ -50,6 +49,7 @@ import Propositional.ProveMinisat
 
 import ATC.ProofTree ()
 import Common.ProofTree
+import Common.Id
 
 import qualified Data.Map as Map
 
@@ -79,7 +79,7 @@ instance Category Sign Morphism where
 -- | Instance of Sentences for propositional logic
 instance Sentences Propositional FORMULA
     Sign Morphism Symbol where
-    negation Propositional = Just . negateFormula
+    negation Propositional = Just . negForm nullRange
     -- returns the set of symbols
     sym_of Propositional = singletonList . symOf
     -- returns the symbol map

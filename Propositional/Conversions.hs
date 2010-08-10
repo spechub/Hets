@@ -20,6 +20,7 @@ module Propositional.Conversions
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
+import Common.DocUtils
 
 import Data.List
 import Data.Maybe
@@ -91,22 +92,19 @@ mapClause form = unlines . map (++ " 0") . mapClauseAux form
 mapClauseAux :: AS.FORMULA
           -> Map.Map Id.Token Integer
           -> [String]
-mapClauseAux form mapL =
-    case form of
-      AS.Disjunction ts _ -> [intercalate " " $ map (`mapLiteral` mapL) ts]
-      AS.Negation _ _ -> [mapLiteral form mapL]
-      AS.Predication _ -> [mapLiteral form mapL]
+mapClauseAux form mapL = case form of
+      -- unused case: AS.Conjunction ts _ -> map (`mapLiteral` mapL) ts
       AS.True_atom _ -> []
       AS.False_atom _ -> ["-1", "1"]
-      _ -> error "Impossible Case alternative"
+      _ -> [mapLiteral form mapL]
 
 -- | Mapping of a single literal
 mapLiteral :: AS.FORMULA
            -> Map.Map Id.Token Integer
            -> String
-mapLiteral form mapL =
-    case form of
-      AS.Negation f _ ->
-        '-' : mapLiteral f mapL
+mapLiteral f mapL = case f of
+      AS.Disjunction ts _ -> intercalate " " $ map (`mapLiteral` mapL) ts
+      AS.Negation n _ ->
+        '-' : mapLiteral n mapL
       AS.Predication tok -> show (Map.findWithDefault 0 tok mapL)
-      _ -> error "Impossible Case"
+      _ -> error $ "Impossible clause case: " ++ showDoc f ""
