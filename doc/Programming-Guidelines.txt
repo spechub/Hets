@@ -71,28 +71,28 @@ All Haskell source files start with a haddock header of the form:
 <pre>
 {- |
 Module      :  <File name or $Header$ to be replaced automatically>
-Description :  <Short text displayed on contents page>
-Copyright   :  (c) <You> and <Your affiliation>
-License     :  similar to LGPL, see LICENSE.txt
+Description :  <optional short text displayed on contents page>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  <license>
 
-Maintainer  :  Christian.Maeder@dfki.de
-Stability   :  provisional
-Portability :  portable
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
 
 <module description starting at first column>
 -}
 </pre>
 
-A possible compiler pragma (like {-# OPTIONS -cpp #-}) may precede
+A possible compiler pragma (like {-# LANGUAGE CPP #-}) may precede
 this header. The following hierarchical module name must of course
 match the file name.
 
 Make sure that the description is changed to meet the module (if the
 header was copied from elsewhere). Insert your email address as maintainer.
 
-Try to write portable (Haskell98) code. If you (indirectly) import
-a module that uses i.e. multi-parameter type classes and functional
-dependencies the code becomes "non-portable (MPTC with FD)".
+Try to write portable (Haskell98) code. If you use i.e. multi-parameter
+type classes and functional dependencies the code becomes
+"non-portable (MPTC with FD)".
 
 The \$Header\$ entry will be automatically expanded.
 
@@ -111,6 +111,8 @@ The last character in your file should be a newline! Under solaris
 you'll get a warning if this is not the case and sometimes last lines
 without newlines are ignored (i.e. "#endif" without newline). Emacs
 usually asks for a final newline.
+
+You may use http://hackage.haskell.org/package/scan to check your file format.
 
 The whole module should not be too long (about 400 lines)
 
@@ -289,7 +291,7 @@ Probably wrong:
         f $ x ++ g $ x
 
 But the scope of an expression is also limited by the layout rule, so
-it is usually save to use "$" on right hand sides.
+it is usually safe to use "$" on right hand sides.
 
 Ok:
         do f $ l
