@@ -96,13 +96,13 @@ inclusionMap s1 s2 = Morphism
   { source = s1
   , target = s2
   , propMap = Map.empty }
-  
--- | creates a Morphism 
+
+-- | creates a Morphism
 mkMorphism :: Sign.Sign -> Sign.Sign -> Map.Map Id Id -> Morphism
-mkMorphism s t p = 
-  Morphism { source = s 
-	   , target = t
-	   , propMap = p }
+mkMorphism s t p =
+  Morphism { source = s
+           , target = t
+           , propMap = p }
 
 -- | sentence translation along signature morphism
 -- here just the renaming of formulae

@@ -443,27 +443,27 @@ anaUnitBindings :: LogicGraph -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> [UNIT_BINDING]
     -> Result ([(SIMPLE_ID, NodeSig)], DGraph, [UNIT_BINDING])
 anaUnitBindings lgraph dg opts uctx@(buc, _) bs = case bs of
- 	  [] -> return ([], dg, [])
- 	  Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
- 	       curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
- 	       (BranchRefSig _ (_usig@(UnitSig argSigs nsig),_), dg', usp') <-
- 	           anaUnitSpec lgraph dg opts (EmptyNode curl) Nothing usp
- 	       let ub' = Unit_binding un usp' poss
- 	       case null argSigs of
- 	            False -> plain_error ([], dg', [])
- 	                     ("An argument unit " ++
- 	                      ustr ++ " must not be parameterized") unpos
- 	            _ ->
- 	                do (args, dg'', ubs') <- anaUnitBindings lgraph
- 	                       dg' opts uctx ubs
- 	                   let args' = (un, nsig) : args
- 	                   if Map.member un buc
- 	                      then plain_error (args', dg'', ub' : ubs')
- 	                           (alreadyDefinedUnit un) unpos
- 	                      else case lookup un args of
+          [] -> return ([], dg, [])
+          Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
+               curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
+               (BranchRefSig _ (_usig@(UnitSig argSigs nsig),_), dg', usp') <-
+                   anaUnitSpec lgraph dg opts (EmptyNode curl) Nothing usp
+               let ub' = Unit_binding un usp' poss
+               case null argSigs of
+                    False -> plain_error ([], dg', [])
+                             ("An argument unit " ++
+                              ustr ++ " must not be parameterized") unpos
+                    _ ->
+                        do (args, dg'', ubs') <- anaUnitBindings lgraph
+                               dg' opts uctx ubs
+                           let args' = (un, nsig) : args
+                           if Map.member un buc
+                              then plain_error (args', dg'', ub' : ubs')
+                                   (alreadyDefinedUnit un) unpos
+                              else case lookup un args of
                                     Just _ ->
                                           plain_error (args', dg'', ub' : ubs')
- 	                                  (alreadyDefinedUnit un) unpos
+                                          (alreadyDefinedUnit un) unpos
                                     Nothing -> return (args', dg'', ub' : ubs')
 
 -- | Analyse a list of unit terms
