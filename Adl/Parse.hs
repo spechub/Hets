@@ -89,7 +89,8 @@ pConid :: CharParser st String
 pConid = reserved keywordstxt (upper <:> many pChar) << skip
 
 pVarid :: CharParser st String
-pVarid = reserved casl_structured_reserved_words (lower <:> many pChar) << skip
+pVarid = reserved casl_structured_reserved_words
+  ((lower <|> char '_') <:> many pChar) << skip
 
 pString :: CharParser st String
 pString = (stringLit <|> sQuoted) << skip
