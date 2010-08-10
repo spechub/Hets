@@ -49,11 +49,11 @@ rules :: [(Tag, Data -> Doc)]
 rules = map (\ (a, b, _, _, _) -> (a, b)) hetcatsrules
 
 vsep :: [Doc] -> Doc
-vsep = vcat . map ($$ (text ""))
+vsep = vcat . map ($$ text "")
 
--- Main Pass - Takes parsed data and rules and combines to create instances...
--- Returns all parsed data, ande commands calling for files to be imported if
--- datatypes aren't located in this module.
+{- Main Pass - Takes parsed data and rules and combines to create instances...
+Returns all parsed data, ande commands calling for files to be imported if
+datatypes aren't located in this module. -}
 
 process :: String -> ToDo -> ([Doc], [Data], ToDo)
 process modname i =

@@ -1,4 +1,4 @@
-{-----------------------------------------------------------------------------
+{- ---------------------------------------------------------------------------
 
                  A LIBRARY OF MONADIC PARSER COMBINATORS
 
@@ -17,10 +17,10 @@ to the library have been made in the move from Gofer to Haskell:
    * The parser datatype is defined using "newtype", to avoid the overhead
      of tagging and untagging parsers with the P constructor.
 
------------------------------------------------------------------------------}
--- Added to April 1997, for offside rule, {- -} comments, annotations,
--- extra characters in identifiers .. -
--- extra combinator parsers for skipping over input
+-----------------------------------------------------------------------------
+Added to April 1997, for offside rule, block comments, annotations,
+extra characters in identifiers .. -
+extra combinator parsers for skipping over input -}
 
 
 module ParseLib2
@@ -28,167 +28,199 @@ module ParseLib2
     chainl1, chainr, chainr1, ops, bracket, char, digit, lower, upper,
     letter, alphanum, string, ident, nat, int, spaces, comment, junk,
     parse, token, natural, integer, symbol, identifier,
-    many1_offside,many_offside,off,
-    opt, skipUntil, skipUntilOff,skipUntilParse,skipNest) where
+    many1_offside, many_offside, off,
+    opt, skipUntil, skipUntilOff, skipUntilParse, skipNest) where
 
 import Data.Char
 import Control.Monad
 
 infixr 5 +++
 
---- The parser monad ---------------------------------------------------------
+-- * The parser monad ---------------------------------------------------------
 
-newtype Parser a   = P (Pos -> Pstring -> [(a,Pstring)])
+newtype Parser a = P (Pos -> Pstring -> [(a, Pstring)])
 
-type Pstring = (Pos,String)
-type Pos = (Int,Int)
+type Pstring = (Pos, String)
+type Pos = (Int, Int)
 
 instance Functor Parser where
    -- fmap         :: (a -> b) -> (Parser a -> Parser b)
-   fmap f (P p)     = P (\pos inp -> [(f v, out) | (v,out) <- p pos inp])
+   fmap f (P p) = P (\ pos inp -> [(f v, out) | (v, out) <- p pos inp])
 
 instance Monad Parser where
    -- return      :: a -> Parser a
-   return v        = P (\ _ inp -> [(v,inp)])
+   return v = P (\ _ inp -> [(v, inp)])
 
    -- >>=         :: Parser a -> (a -> Parser b) -> Parser b
-   (P p) >>= f     = P (\pos inp -> concat [papply (f v) pos out
-                                                | (v,out) <- p pos inp])
-   fail _          = P (\ _ _ -> [])
+   (P p) >>= f = P (\ pos inp -> concat [papply (f v) pos out
+                                                | (v, out) <- p pos inp])
+   fail _ = P (\ _ _ -> [])
 
 instance MonadPlus Parser where
    -- mzero            :: Parser a
-   mzero                = P (\ _ _ -> [])
+   mzero = P (\ _ _ -> [])
    -- mplus            :: Parser a -> Parser a -> Parser a
-   (P p) `mplus` (P q)    = P (\pos inp -> (p pos inp ++ q pos inp))
+   (P p) `mplus` (P q) = P (\ pos inp -> (p pos inp ++ q pos inp))
 
 -- bits which donn't fit into Haskell's type classes just yet :-(
 
 env :: Parser Pos
-env = P(\pos inp -> [(pos,inp)])
+env = P (\ pos inp -> [(pos, inp)])
 
 setenv :: Pos -> Parser a -> Parser a
-setenv s (P m) = P $  \_ -> m s
+setenv s (P m) = P $ \ _ -> m s
 
 update :: (Pstring -> Pstring) -> Parser Pstring
-update f = P( \ _ s -> [(s,f s)])
+update f = P ( \ _ s -> [(s, f s)])
 
 fetch :: Parser Pstring
 fetch = update id
 
---- Other primitive parser combinators ---------------------------------------
+-- * Other primitive parser combinators ---------------------------------------
 
-item              :: Parser Char
-item = do (pos,x:_) <- update newstate
-          defpos <- env
-          if onside pos defpos then return x else mzero
+item :: Parser Char
+item = do
+  (pos, x : _) <- update newstate
+  defpos <- env
+  if onside pos defpos then return x else mzero
 
-first             :: Parser a -> Parser a
-first (P p)       = P (\pos inp -> case p pos inp of
-                                   []     -> []
+first :: Parser a -> Parser a
+first (P p) = P (\ pos inp -> case p pos inp of
+                                   [] -> []
                                    x : _ -> [x])
 
-papply            :: Parser a -> Pos -> Pstring -> [(a,Pstring)]
-papply (P p) pos inp   = p pos inp
+papply :: Parser a -> Pos -> Pstring -> [(a, Pstring)]
+papply (P p) = p
 
 -- layout handling functions
 
 onside :: Pos -> Pos -> Bool
-onside (l,c) (dl,dc) = (c > dc) || (l == dl)
+onside (l, c) (dl, dc) = (c > dc) || (l == dl)
 
 newstate :: Pstring -> Pstring
-newstate i@((l,c), xxs) = case xxs of
+newstate i@((l, c), xxs) = case xxs of
   [] -> i
-  x : xs -> ((l',c'),xs)
+  x : xs -> ((l', c'), xs)
         where
-        (l',c') = case x of
-                        '\n' -> (l+1,0)
-                        '\t' -> (l,((c `div` 8) +1)*8)
-                        _    -> (l,c+1)
+        (l', c') = case x of
+                        '\n' -> (l + 1, 0)
+                        '\t' -> (l, ((c `div` 8) + 1) * 8)
+                        _ -> (l, c + 1)
 
---- Derived combinators ------------------------------------------------------
+-- * Derived combinators ------------------------------------------------------
 
-(+++)             :: Parser a -> Parser a -> Parser a
-p +++ q            = first (p `mplus` q)
+(+++) :: Parser a -> Parser a -> Parser a
+p +++ q = first (p `mplus` q)
 
-sat               :: (Char -> Bool) -> Parser Char
-sat p              = do {x <- item; if p x then return x else mzero}
+sat :: (Char -> Bool) -> Parser Char
+sat p = do
+  x <- item
+  if p x then return x else mzero
 
-many              :: Parser a -> Parser [a]
-many p             = (many1 p +++ return [])
+many :: Parser a -> Parser [a]
+many p = many1 p +++ return []
 
-many1             :: Parser a -> Parser [a]
-many1 p            = do {x <- p; xs <- many p; return (x:xs)}
+many1 :: Parser a -> Parser [a]
+many1 p = do
+  x <- p
+  xs <- many p
+  return (x : xs)
 
-sepby             :: Parser a -> Parser b -> Parser [a]
-p `sepby` sep      = (p `sepby1` sep) +++ return []
+sepby :: Parser a -> Parser b -> Parser [a]
+sepby p sep = sepby1 p sep +++ return []
 
-sepby1            :: Parser a -> Parser b -> Parser [a]
-p `sepby1` sep     = do {x <- p; xs <- many (do {sep; p}); return (x:xs)}
+sepby1 :: Parser a -> Parser b -> Parser [a]
+sepby1 p sep = do
+  x <- p
+  xs <- many (sep >> p)
+  return (x : xs)
 
-chainl            :: Parser a -> Parser (a -> a -> a) -> a -> Parser a
-chainl p op v      = (p `chainl1` op) +++ return v
+chainl :: Parser a -> Parser (a -> a -> a) -> a -> Parser a
+chainl p op v = chainl1 p op +++ return v
 
-chainl1           :: Parser a -> Parser (a -> a -> a) -> Parser a
-p `chainl1` op     = do {x <- p; rest x}
+chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainl1 p op = p >>= rest
                      where
-                        rest x = do {f <- op; y <- p; rest (f x y)}
-                                 +++ return x
+                        rest x = do
+                            f <- op
+                            y <- p
+                            rest (f x y)
+                          +++ return x
 
-chainr            :: Parser a -> Parser (a -> a -> a) -> a -> Parser a
-chainr p op v      = (p `chainr1` op) +++ return v
+chainr :: Parser a -> Parser (a -> a -> a) -> a -> Parser a
+chainr p op v = chainr1 p op +++ return v
 
-chainr1           :: Parser a -> Parser (a -> a -> a) -> Parser a
-p `chainr1` op     = do {x <- p; rest x}
+chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainr1 p op = p >>= rest
                      where
-                        rest x = do {f <- op; y <- p `chainr1` op; return (f x y)}
-                                 +++ return x
+                        rest x = do
+                            f <- op
+                            y <- p `chainr1` op
+                            return (f x y)
+                          +++ return x
 
-ops               :: [(Parser a, b)] -> Parser b
-ops xs             = foldr1 (+++) [do {p; return op} | (p,op) <- xs]
+ops :: [(Parser a, b)] -> Parser b
+ops xs = foldr1 (+++) [p >> return op | (p, op) <- xs]
 
-bracket           :: Parser a -> Parser b -> Parser c -> Parser b
-bracket open p close = do {open; x <- p; close; return x}
+bracket :: Parser a -> Parser b -> Parser c -> Parser b
+bracket open p close = do
+  open
+  x <- p
+  close
+  return x
 
---- Useful parsers -----------------------------------------------------------
+-- * Useful parsers -----------------------------------------------------------
 
-char              :: Char -> Parser Char
-char x             = sat (\y -> x == y)
+char :: Char -> Parser Char
+char x = sat (x ==)
 
-digit             :: Parser Char
-digit              = sat isDigit
+digit :: Parser Char
+digit = sat isDigit
 
-lower             :: Parser Char
-lower              = sat isLower
+lower :: Parser Char
+lower = sat isLower
 
-upper             :: Parser Char
-upper              = sat isUpper
+upper :: Parser Char
+upper = sat isUpper
 
-letter            :: Parser Char
-letter             = sat isAlpha
+letter :: Parser Char
+letter = sat isAlpha
 
-alphanum          :: Parser Char
-alphanum           = sat (\x -> isAlphaNum x || x `elem` ['\'','_','.','#'])
+alphanum :: Parser Char
+alphanum = sat (\ x -> isAlphaNum x || x `elem` "'_.#")
 
-string            :: String -> Parser String
-string ""          = return ""
-string (x:xs)      = do {char x; string xs; return (x:xs)}
+string :: String -> Parser String
+string "" = return ""
+string (x : xs) = do
+  char x
+  string xs
+  return (x : xs)
 
-ident             :: Parser String
-ident              = do {x <- lower; xs <- many alphanum; return (x:xs)}
+ident :: Parser String
+ident = do
+  x <- lower
+  xs <- many alphanum
+  return (x : xs)
 
-nat               :: Parser Int
-nat                = do {x <- digit; return (digitToInt x)} `chainl1` return op
+nat :: Parser Int
+nat = do
+    x <- digit
+    return (digitToInt x)
+  `chainl1` return op
                      where
-                        m `op` n = 10*m + n
+                        m `op` n = 10 * m + n
 
-int               :: Parser Int
-int                = do {char '-'; n <- nat; return (-n)} +++ nat
+int :: Parser Int
+int = do
+    char '-'
+    n <- nat
+    return (-n)
+  +++ nat
 
---- Lexical combinators ------------------------------------------------------
+-- * Lexical combinators ------------------------------------------------------
 
-spaces            :: Parser ()
-spaces             = do {many1 (sat isJunk); return ()}
+spaces :: Parser ()
+spaces = many1 (sat isJunk) >> return ()
 
 isJunk :: Char -> Bool
 isJunk x = isSpace x || (not . isPrint) x || isControl x
@@ -196,79 +228,87 @@ isJunk x = isSpace x || (not . isPrint) x || isControl x
 comment :: Parser ()
 comment = onelinecomment `mplus` bracecomment
 
-onelinecomment    :: Parser ()
-onelinecomment     = do {string "--"; many (sat (\x -> x /= '\n')); return ()}
+onelinecomment :: Parser ()
+onelinecomment = do
+  string "--"
+  many (sat (/= '\n'))
+  return ()
 
-bracecomment      :: Parser ()
+bracecomment :: Parser ()
 bracecomment = skipNest
-         (do{string "{-"; sat (`notElem` ['!','@','*'])})
-         (do{sat (`notElem` ['!','@','*']);string "-}"})
+         (string "{-" >> sat (`notElem` "!@*"))
+         (sat (`notElem` "!@*") >> string "-}")
 
-junk              :: Parser ()
-junk               = do _ <- setenv (0,-1) (many (spaces +++ comment))
-                        return ()
+junk :: Parser ()
+junk = do
+  _ <- setenv (0, -1) (many (spaces +++ comment))
+  return ()
 
-parse             :: Parser a -> Parser a
-parse p            = do {junk; p}
+parse :: Parser a -> Parser a
+parse = (junk >>)
 
-token             :: Parser a -> Parser a
-token p            = do {v <- p; junk; return v}
+token :: Parser a -> Parser a
+token p = do
+  v <- p
+  junk
+  return v
 
---- Token parsers ------------------------------------------------------------
+-- * Token parsers ------------------------------------------------------------
 
-natural           :: Parser Int
-natural            = token nat
+natural :: Parser Int
+natural = token nat
 
-integer           :: Parser Int
-integer            = token int
+integer :: Parser Int
+integer = token int
 
-symbol            :: String -> Parser String
-symbol xs          = token (string xs)
+symbol :: String -> Parser String
+symbol xs = token (string xs)
 
 
-identifier        :: [String] -> Parser String
-identifier ks      = token (do {x <- ident; if not (elem x ks) then return x
-                                                               else mzero})
---- Offside Parsers ---------------------------------------------------------
+identifier :: [String] -> Parser String
+identifier ks = token $ do
+  x <- ident
+  if notElem x ks then return x else mzero
+
+-- * Offside Parsers ---------------------------------------------------------
 
 many1_offside :: Parser a -> Parser [a]
-many1_offside p = do (pos,_) <- fetch
-                     vs <- setenv pos (many1 (off p))
-                     return vs
+many1_offside p = do
+  (pos, _) <- fetch
+  setenv pos (many1 (off p))
 
 many_offside :: Parser a -> Parser [a]
 many_offside p = many1_offside p +++ mzero
 
-
 off :: Parser a -> Parser a
-off p = do (_,dc) <- env
-           ((l,c),_) <- fetch
-           if c == dc then setenv (l,dc) p else mzero
+off p = do
+  (_, dc) <- env
+  ((l, c), _) <- fetch
+  if c == dc then setenv (l, dc) p else mzero
 
-
-------------------------------------------------------------------------------
 -- Noel's own favourite parsers
 
 skipUntil :: Parser a -> Parser a
-skipUntil p = p +++ do token (many1 (sat (not . isSpace)))
-                       skipUntil p
+skipUntil p = p +++ do
+  token (many1 (sat (not . isSpace)))
+  skipUntil p
 
 skipNest :: Parser a -> Parser b -> Parser ()
-skipNest start finish  = let
-    x = do{ finish;return()}
-        +++ do{skipNest start finish;x} +++ do{item;x}
-    in do{start; x}
+skipNest start finish = let
+    x = (finish >> return ())
+        +++ (skipNest start finish >> x) +++ (item >> x)
+    in start >> x
 
--- this are messy, but make writing incomplete parsers a whole lot
--- easier.
+{- this are messy, but make writing incomplete parsers a whole lot
+easier. -}
 skipUntilOff :: Parser a -> Parser [a]
 skipUntilOff p = fmap (concatMap justs) . many_offside $
         fmap Just p +++ fmap (const Nothing) (many1 (token (many1 item)))
 
 
-skipUntilParse :: Char ->  Parser a  -> Parser [a]
+skipUntilParse :: Char -> Parser a -> Parser [a]
 skipUntilParse u p = fmap (concatMap justs) . many $
-        do r<- p
+        do r <- p
            token (char u)
            return (Just r)
         +++
@@ -277,8 +317,8 @@ skipUntilParse u p = fmap (concatMap justs) . many $
            return Nothing
 
 justs :: Maybe t -> [t]
-justs (Just a)  = [a]
-justs Nothing   = []
+justs (Just a) = [a]
+justs Nothing = []
 
 opt :: Parser [a] -> Parser [a]
 opt p = p +++ return []

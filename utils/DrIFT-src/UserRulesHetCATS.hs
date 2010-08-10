@@ -22,7 +22,7 @@ hetcatsrules =
   [ ("ShATermConvertible", shatermfn False, "", "", Nothing)
   , ("ShATermLG", shatermfn True, "", "", Nothing)
   , ("XmlContent", userRuleXmlNew, "Representation"
-                            , "encode terms as XML (HaXml>=1.14)", Nothing)
+    , "encode terms as XML (HaXml>=1.14)", Nothing)
   , ("Binary", binaryfn False, "", "", Nothing)
   , ("BinaryLG", binaryfn True, "", "", Nothing)
   , ("Typeable", typeablefn, "", "", Nothing)
@@ -36,9 +36,10 @@ ppCons' :: Body -> [Doc] -> Doc
 ppCons' b = fsep . (text (constructor b) :)
 
 -- XmlContent
+userRuleXmlNew :: Data -> Doc
 userRuleXmlNew dat =
-  let cs  = body dat		-- constructors
-      cvs = mknss cs namesupply	-- variables
+  let cs = body dat             -- constructors
+      cvs = mknss cs namesupply -- variables
   in
   instanceheader "HTypeable" dat $$
   block [toHTfn cs cvs dat] $$
@@ -61,11 +62,12 @@ userRuleXmlNew dat =
                                                                 cvs cs))))
                       $$ text "}"
                       )
-    : zipWith3 showsfn [0..] cvs cs)
+    : zipWith3 showsfn [0 ..] cvs cs)
 
+toHTfn :: [Body] -> [[Doc]] -> Data -> Doc
 toHTfn cs cvs dat =
-  let typ  = name dat
-      fvs  = vars dat
+  let typ = name dat
+      fvs = vars dat
       pats = concat (zipWith mkpat cvs cs)
   in
   text "toHType v =" $$
@@ -81,14 +83,17 @@ toHTfn cs cvs dat =
        nest 4 (vcat (map (<+> text "= v") pats)) $$
        nest 4 (vcat (map (simplest typ (zip cvs cs)) fvs))
 
-namesupply   = [text [x,y] | x <- ['a' .. 'z'],
-                             y <- ['a' .. 'z'] ++ ['A' .. 'Z']]
+namesupply :: [Doc]
+namesupply =
+  [text [x, y] | x <- ['a' .. 'z'], y <- ['a' .. 'z'] ++ ['A' .. 'Z']]
 
-mknss []     _  = []
-mknss (c:cs) ns =
-  let (thisns,rest) = splitAt (length (types c)) ns
-  in thisns: mknss cs rest
+mknss :: [Body] -> [a] -> [[a]]
+mknss [] _ = []
+mknss (c : cs) ns =
+  let (thisns, rest) = splitAt (length (types c)) ns
+  in thisns : mknss cs rest
 
+mkpat :: [Doc] -> Body -> [Doc]
 mkpat ns c =
   if null ns then []
   else [mypattern (constructor c) (types c) ns]
@@ -105,93 +110,86 @@ toConstr ns c =
        , bracketList (map text fvs)
        , bracketList (map (text "toHType" <+>) ns)
        ]
-
   where
+    deepvars (Arrow _ _) = []
+    -- deepvars (Apply t1 t2)  = deepvars t1 ++ deepvars t2
+    deepvars (LApply _ ts) = concatMap deepvars ts
+    deepvars (Var s) = [s]
+    deepvars (Con _) = []
+    deepvars (Tuple ts) = concatMap deepvars ts
+    deepvars (List t) = deepvars t
 
-    deepvars (Arrow t1 t2)  = []
-    --deepvars (Apply t1 t2)  = deepvars t1 ++ deepvars t2
-    deepvars (LApply c ts)  = concatMap deepvars ts
-    deepvars (Var s)        = [s]
-    deepvars (Con s)        = []
-    deepvars (Tuple ts)     = concatMap deepvars ts
-    deepvars (List t)       = deepvars t
-
+simplest :: String -> [([Doc], Body)] -> String -> Doc
 simplest typ cs fv =
-  let npats = [ (depth,(n,pat)) | (ns,c) <- cs
-                                , (n,t) <- zip ns (types c)
-                                , (depth, pat) <- [ find fv t ]
+  let npats = [ (depth, (n, pat)) | (ns, c) <- cs
+                                , (n, t) <- zip ns (types c)
+                                , (depth, pat) <- [ findT fv t ]
               ]
-      (_,(n,pat)) = foldl closest (Nothing,error "free tyvar not found") npats
+      (_, (r, rpat)) =
+          foldl closest (Nothing, error "free tyvar not found") npats
   in
-  parens pat <+> text "= toHType" <+> n
-
+  parens rpat <+> text "= toHType" <+> r
   where
-
-    find :: String -> Type -> (Maybe Int,Doc)
-    find v (Arrow t1 t2) =
-      (Nothing, error "can't derive Haskell2Xml/HTypeable for arrow type")
-    find v (LApply c ts)
-        | c == Con typ = (Nothing, text "_")
-        | otherwise       = let (_,cpat)  = find v c
-                                dpats     = map (find v) ts
-                                (ds,pats) = unzip dpats
-                            in perhaps (combine ds)
-                                       (cpat <+>
-                                        bracketList (map (snd . uncurry perhaps)
-                                                     dpats) <+>
-                                        text "_")
-    find v (Var s) =
-      perhaps (if v == s then Just 0 else Nothing) (text v)
-    find v (Con s) = (Nothing, text "Defined" <+>
-                                      text "\"" <> text s <> text "\"")
-    find v (Tuple ts)     = let dpats = map (find v) ts
-                                (ds,pats) = unzip dpats
-                            in perhaps (combine ds)
-                                       (text "Tuple" <+>
-                                        bracketList
-                                        (map (snd . uncurry perhaps) dpats))
-    find v (List t)       = let (d,pat) = find v t
-                            in perhaps (inc d) (text "List" <+> parens pat)
-
-    perhaps Nothing doc   = (Nothing, text "_")
-    perhaps jn doc        = (jn, doc)
-    combine ds   = let js = [ n | Just n <- ds ]
-                   in if null js then Nothing else inc (Just (minimum js))
-    inc Nothing  = Nothing
-    inc (Just n) = Just (n + 1)
-
-    closest :: (Maybe Int,a) -> (Maybe Int,a) -> (Maybe Int,a)
-    closest (Nothing,_)  b@(Just _,_) = b
-    closest a@(Just n,_) b@(Just m,_) | n< m  = a
-                                      | m<=n  = b
-    closest a b = a
+    findT :: String -> Type -> (Maybe Int, Doc)
+    findT v ty = case ty of
+      Arrow _ _ ->
+        (Nothing, error "can't derive Haskell2Xml/HTypeable for arrow type")
+      LApply c ts
+        | c == Con typ -> (Nothing, text "_")
+        | otherwise -> let
+            (_, cpat) = findT v c
+            dpats = map (findT v) ts
+            (ds, _) = unzip dpats
+            in perhaps (combine ds)
+               $ cpat <+> bracketList (map (snd . uncurry perhaps) dpats)
+               <+> text "_"
+      Var s -> perhaps (if v == s then Just 0 else Nothing) (text v)
+      Con s -> (Nothing, text "Defined" <+> text "\"" <> text s <> text "\"")
+      Tuple ts -> let
+        dpats = map (findT v) ts
+        (ds, _) = unzip dpats
+        in perhaps (combine ds)
+           $ text "Tuple" <+> bracketList (map (snd . uncurry perhaps) dpats)
+      List t -> let (d, pat) = findT v t
+        in perhaps (inc d) (text "List" <+> parens pat)
+    perhaps jn doc = (jn, maybe (text "_") (const doc) jn)
+    combine ds = let js = [ n | Just n <- ds ] in
+        if null js then Nothing else inc (Just (minimum js))
+    inc = fmap (+ 1)
+    closest :: (Maybe Int, a) -> (Maybe Int, a) -> (Maybe Int, a)
+    closest a b = case (a, b) of
+      ((Nothing, _), (Just _, _)) -> b
+      ((Just n, _), (Just m, _)) | m >= n -> b
+      _ -> a
 
 
 -- showsfn (n = index) (ns = variables) (cn = constructor body)
+showsfn :: Int -> [Doc] -> Body -> Doc
 showsfn n ns cn =
   let cons = constructor cn
-      typ  = types cn
-      sc   = parens (text "showConstr" <+> text (show n) <+>
+      typ = types cn
+      sc = parens (text "showConstr" <+> text (show n) <+>
                      parens (text "toHType" <+> text "v"))
-      cfn []  = text "[]"
+      cfn [] = text "[]"
       cfn [x] = parens (text "toContents" <+> x)
-      cfn xs  = parens
+      cfn xs = parens
         (text "concat" <+> bracketList (map (text "toContents" <+>) xs))
   in
   text "toContents" <+>
   text "v@" <> mypattern cons typ ns <+> text "=" $$
   nest 4 (text "[mkElemC" <+> sc <+> cfn ns <> text "]")
 
+preorder :: [Body] -> [b] -> [b]
 preorder cs =
-    map snd . reverse . sortBy (\(a,_) (b,_)-> compare a b)
+    map snd . reverse . sortBy (\ (a, _) (b, _) -> compare a b)
     . zip (map constructor cs)
 
 
 -- parseFn (ns = variables) (cn = constructor body)
-parseFn single ns cn =
+parseFn :: Bool -> t -> Body -> Doc
+parseFn single _ cn =
   let cons = constructor cn
       arity = length (types cn)
-      var v = text ";" <+> v <+> text "<- parseContents"
       intro = if single then empty
               else text "|" <+> text (show cons)
                    <+> text "`isPrefixOf` t -> interior e $"
@@ -199,18 +197,19 @@ parseFn single ns cn =
   case arity of
     0 -> intro <+> nest 8 (text "return" <+> text cons)
     1 -> intro <+> nest 8 (text "fmap" <+> text cons <+> text "parseContents")
-    _ -> intro $$  nest 8 (text "return" <+> text cons
+    _ -> intro $$ nest 8 (text "return" <+> text cons
                           <+> fsep (replicate arity
                                     (text "`apply` parseContents")))
 
+instanceheader :: String -> Data -> Doc
 instanceheader cls dat =
-  let fv     = vars dat
-      tycon  = name dat
-      ctx    = map (\v-> text cls <+> text v)
+  let fv = vars dat
+      tycon = name dat
+      ctx = map (\ v -> text cls <+> text v)
       parenSpace = parens . hcat . sepWith space
   in
   hsep [ text "instance"
-       , opt fv (\v -> parenList (ctx v) <+> text "=>")
+       , opt fv (\ v -> parenList (ctx v) <+> text "=>")
        , text cls
        , opt1 (texts (tycon : fv)) parenSpace id
        , text "where"
@@ -218,14 +217,13 @@ instanceheader cls dat =
 
 mypattern :: Constructor -> [a] -> [Doc] -> Doc
 mypattern c l ns =
-  if null l then text c
-  else parens (hsep (text c : take (length l) ns))
+  if null l then text c else parens (hsep (text c : take (length l) ns))
 
 -- begin of GetRange derivation
 getrangefn :: Data -> Doc
 getrangefn dat =
        instanceSkeleton "GetRange" [] dat
-       $$ (if any ((elem posLC) . types) (body dat) then
+       $$ (if any (elem posLC . types) (body dat) then
               text "  getRange x = case x of"
               $$ block (map makeGetPosFn $ body dat)
           else text "  getRange = const nullRange")
@@ -239,9 +237,8 @@ makeGetPosFn :: Body -> Doc
 makeGetPosFn b =
        let (r, vs) = mapAccumL accFun True (types b)
            p = text "p"
-           accFun f t = if f && t == posLC
-                 then (False, p)
-                 else (f, text "_")
+           accFun f t =
+               if f && t == posLC then (False, p) else (f, text "_")
        in ppCons' b vs <+> rArrow <+> if r then text "nullRange" else p
 
 makeSpanFn :: Body -> Doc
@@ -266,8 +263,8 @@ binaryfn forLG dat =
      $$ text ("  get" ++ (if forLG then "LG lg" else "") ++ " = "
               ++ if moreCs then "getWord8 >>= \\ tag -> case tag of" else "do")
      $$ block (zipWith (makeGetBinary forLG moreCs) cs [0 .. ] ++
-       if moreCs then [u <+> rArrow <+> text "fromBinaryError"
-         <+> doubleQuotes (text dn) <+> u] else [])
+       [u <+> rArrow <+> text "fromBinaryError"
+         <+> doubleQuotes (text dn) <+> u | moreCs])
 
 makePutBinary :: Bool -> Bool -> Body -> Int -> Doc
 makePutBinary forLG moreCs b i =
@@ -355,7 +352,7 @@ typeablefn dat =
     let vs = vars dat
         dn = strippedName dat
         ntext str = str ++ if null vs then "" else show $ length vs
-        tcname = text $ "_tc" ++ dn  ++ "Tc"
+        tcname = text $ "_tc" ++ dn ++ "Tc"
     in tcname <+> text ":: TyCon"
        $$ tcname <+> equals <+> text "mkTyCon"
            <+> doubleQuotes (text $ name dat)

@@ -3,8 +3,8 @@
 module RuleUtils where
 
 import Text.PrettyPrint.HughesPJ
-import DataP (Statement(..), Data(..), Type(..), Class,
-              Body(..), Constructor)
+import DataP (Statement (..), Data (..), Type (..), Class,
+              Body (..), Constructor)
 
 -- Rule Declarations
 
@@ -40,14 +40,14 @@ bracketList = brackets . fsep . sepWith comma
 sepWith :: Doc -> [Doc] -> [Doc]
 sepWith _ [] = []
 sepWith _ [x] = [x]
-sepWith a (x:xs) = (x <> a) : sepWith a xs
+sepWith a (x : xs) = (x <> a) : sepWith a xs
 
---optional combinator, applys fn if arg is non-[]
+-- optional combinator, applys fn if arg is non-[]
 opt :: [a] -> ([a] -> Doc) -> Doc
 opt [] _ = empty
 opt a f = f a
 
---equivalent of `opt' for singleton lists
+-- equivalent of `opt' for singleton lists
 opt1 :: [a] -> ([a] -> Doc) -> (a -> Doc) -> Doc
 opt1 [] _ _ = empty
 opt1 [x] _ g = g x
@@ -60,11 +60,11 @@ commentLine x = text "--" <+> x -- useful for warnings / error messages
 commentBlock :: Doc -> Doc
 commentBlock x = text "{-" <+> x <+> text "-}"
 
---- Utility Functions -------------------------------------------------------
+-- - Utility Functions -------------------------------------------------------
 
 -- Instances
 
-strippedName :: Data -> [Char]
+strippedName :: Data -> String
 strippedName = reverse . takeWhile (/= '.') . reverse . name
 
 -- instance header, handling class constraints etc.
@@ -75,26 +75,26 @@ simpleInstance s d = hsep [text "instance"
                 , text s
                 , opt1 (texts (strippedName d : vars d)) parenSpace id]
    where
-   constr = map (\(c,v) -> text c <+> text v) (constraints d) ++
-                      map (\x -> text s <+> text x) (vars d)
+   constr = map (\ (c, v) -> text c <+> text v) (constraints d) ++
+                      map (\ x -> text s <+> text x) (vars d)
    parenSpace = parens . hsep
 
 
--- instanceSkeleton handles most instance declarations, where instance
--- functions are not related to one another.  A member function is generated
--- using a (IFunction,Doc) pair.  The IFunction is applied to each body of the
---  type, creating a block of pattern - matching cases. Default cases can be
--- given using the Doc in the pair.  If a default case is not required, set
--- Doc to 'empty'
+{- instanceSkeleton handles most instance declarations, where instance
+functions are not related to one another.  A member function is generated
+using a (IFunction,Doc) pair.  The IFunction is applied to each body of the
+type, creating a block of pattern - matching cases. Default cases can be
+given using the Doc in the pair.  If a default case is not required, set
+Doc to 'empty' -}
 
 type IFunction = Body -> Doc -- instance function
 
-instanceSkeleton :: Class -> [(IFunction,Doc)] -> Data -> Doc
-instanceSkeleton s ii  d = (simpleInstance s d <+> text "where")
+instanceSkeleton :: Class -> [(IFunction, Doc)] -> Data -> Doc
+instanceSkeleton s ii d = (simpleInstance s d <+> text "where")
                                 $$ block functions
         where
         functions = concatMap f ii
-        f (i,dflt) = map i (body d) ++ [dflt]
+        f (i, dflt) = map i (body d) ++ [dflt]
 
 -- little variable name generator, generates unique names a - z
 varNames :: [a] -> [Doc]
@@ -102,7 +102,7 @@ varNames l = zipWith (const char) l ['a' .. 'z']
 
 -- variant generating aa' - aZ'
 varNames' :: [a] -> [Doc]
-varNames' = map (<> (char '\'')) . varNames
+varNames' = map (<> char '\'') . varNames
 
 -- pattern matching a constructor and args
 pattern :: Constructor -> [a] -> Doc
@@ -116,7 +116,7 @@ pattern' c l = parens $ fsep (text c : varNames' l)
 
 -- test that a datatype has at least one record constructor
 hasRecord :: Data -> Bool
-hasRecord d =   statement d == DataStmt
+hasRecord d = statement d == DataStmt
                 && any (not . null . labels) (body d)
 
 tuple :: [Doc] -> Doc

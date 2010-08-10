@@ -6,7 +6,7 @@
 # A Makefile to compile DrIFT in a comfortable way for various plattforms.
 
 DrIFT: DrIFT.hs
-	ghc -Wall --make $<
+	ghc -Wall -fno-warn-unused-do-bind --make $<
 
 ### clean up
 .PHONY : clean
