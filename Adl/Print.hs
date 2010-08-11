@@ -65,7 +65,7 @@ converseId = mkId [placeTok, mkSimpleId $ show Co]
 displayMap :: DisplayMap
 displayMap = Map.fromList $ map ( \ (i, l) -> (i, Map.singleton DF_LATEX l))
   [ (minusId, [mkSimpleId "\\overline{", placeTok, mkSimpleId "}"])
-  , (converseId, [mkSimpleId "{{", placeTok, mkSimpleId "}^\\smile}"])
+  , (converseId, [mkSimpleId "\\widetilde{", placeTok, mkSimpleId "}"])
   , (inOp Fi, [mkSimpleId "\\cap"])
   , (inOp Fu, [mkSimpleId "\\cup"])
   , (inOp Fd, [mkSimpleId "\\dag"])
