@@ -104,7 +104,7 @@ instance Pretty RangedProp where
 
 instance Pretty Object where
   pretty (Object n e as os) = sep
-    [ fsep [pretty n <> colon, case e of
+    [ fsep [commentText (tokStr n) <> colon, case e of
           MulExp Re _ -> parens
           _ -> id
         $ pretty e]
@@ -167,4 +167,4 @@ instance Pretty Context where
   pretty (Context m ps) = let l = vcat $ map pretty ps in case m of
     Nothing -> l
     Just t -> vcat
-      [keyword "CONTEXT" <+> pretty t, l, keyword "ENDCONTEXT"]
+      [keyword "CONTEXT" <+> structId (tokStr t), l, keyword "ENDCONTEXT"]

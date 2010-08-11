@@ -71,7 +71,7 @@ Examples can be produced using: hets -v2 -o pp.het,pp.tex
 
 module Common.Doc
     ( -- * the document type
-      Doc            -- Abstract
+      Doc
       -- * primitive documents
     , empty
     , space
@@ -88,6 +88,8 @@ module Common.Doc
     , rbrace
       -- * converting strings into documents
     , text
+    , codeToken
+    , commentText
     , keyword
     , topSigKey
     , topKey
@@ -116,7 +118,7 @@ module Common.Doc
     , punctuate
     , sepByCommas
     , sepBySemis
-      -- * symbols
+      -- * symbols possibly rendered differently for Text or LaTeX
     , dot
     , bullet
     , defn
@@ -160,7 +162,6 @@ module Common.Doc
     , breve
       -- * docifying annotations and ids
     , annoDoc
-    , codeToken
     , idDoc
     , idLabelDoc
     , predIdApplDoc
@@ -212,6 +213,7 @@ data ComposeKind
     | Fill
       deriving Eq
 
+-- | an abstract data type
 data Doc
     = Empty          -- creates an empty line if composed vertically
     | AnnoDoc Annotation -- we know how to print annotations
@@ -374,7 +376,7 @@ vdashS = "|-"
 dashvS = "-|"
 breveS = "~"
 
--- | docs possibly rendered differently for Text or LaTeX
+-- docs possibly rendered differently for Text or LaTeX
 quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
    cfun, pcfun, exequal, forallDoc, exists, unique, cross, bar, notDoc,
    inDoc, andDoc, orDoc, implies, equiv, prefix_proc, sequential,
