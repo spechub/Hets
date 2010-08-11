@@ -104,7 +104,10 @@ instance Pretty RangedProp where
 
 instance Pretty Object where
   pretty (Object n e as os) = sep
-    [ fsep [pretty n <> colon, pretty e]
+    [ fsep [pretty n <> colon, case e of
+          MulExp Re _ -> parens
+          _ -> id
+        $ pretty e]
     , if null as then empty else fsep $ keyword "ALWAYS" : map pretty as
     , if null os then empty else equals <+> brackets (ppWithCommas os) ]
 
