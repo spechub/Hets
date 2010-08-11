@@ -1,0 +1,158 @@
+#!/bin/bash -e
+#
+# Haddock checker and license changing script
+# for the Hets repository
+#
+# c.prodescu@jacobs-university.de
+#
+
+
+NEW_LICENSE='GPLv2 or higher'
+
+EMPTY_HADDOCK_HEADER=./utils/header_script/empty_header
+EMPTY_HEADER_MARK='$EmptyHeader$'
+
+START_HADDOCK_HEADER='{- |'
+END_HADDOCK_HEADER='-}'
+
+SECTIONS='Module Description Copyright License Maintainer Stability Portability'
+
+FILEFORMATS=".hs .haskell "
+
+LOGFILE=$PWD/script_log
+
+#testing if empty_header is available
+while [ 1 ]
+do
+	if [ -e $EMPTY_HADDOCK_HEADER ];
+	then
+		echo Using haddock template header from $EMPTY_HADDOCK_HEADER
+		break
+	else
+		echo Provide path to empty haddock header:
+		read EMPTY_HADDOCK_HEADER
+		if [ -e $EMPTY_HADDOCK_HEADER ];
+		then
+			break
+		fi
+	fi
+done
+#printing the time stamp in the log file
+$(date > $LOGFILE)
+while [ 1 ]
+do
+#reading filename
+	read filename
+#testing if filename exists
+	if [ -e $filename ];
+	then
+#testing if filename defines a directory instead of a file
+		if [ -d $filename ];
+		then
+			echo "Skipping directory $filename"
+		else
+#checking if the file format is proper
+			THISFORMAT=`echo $filename | grep -o '\.[^.]*$'`
+			if [[ "$FILEFORMATS" =~ "$THISFORMAT " ]];		##REGEXP requieres bash instead of sh
+			then
+#testing if file has write permissions
+				if [ -w $filename ];
+				then
+#checking file for proper haddock header
+#determining the start and end of the haddock header
+					START=`fgrep -n -i -e "$START_HADDOCK_HEADER" $filename | head -n 1`
+#checking if any header exists
+					if [ -z "$START" ];
+					then
+#no haddock header found, inserting default one	
+						echo "$filename: NO HEADER FOUND. Inserting blank header"
+						cat $EMPTY_HADDOCK_HEADER $filename > /tmp/sed_script_tmp
+						cat /tmp/sed_script_tmp > $filename
+						echo "$filename:" >> $LOGFILE
+						echo " :: Empty haddock header" >> $LOGFILE
+						echo >> $LOGFILE
+					else
+						START=${START%%:*}
+						LENGTH=`cat $filename | tail -n +$START | grep -n -i -e "$END_HADDOCK_HEADER" | head -n 1`
+						if [ -z "$LENGTH" ];
+						then
+							echo "$filename: ERROR - broken haddock header"
+							echo "$filename: ERROR - broken haddock header" >> $LOGFILE
+							continue
+						else
+							echo "$filename:"
+						fi
+						LENGTH=${LENGTH%%:*}
+						END=`expr $START + $LENGTH - 1`
+						echo " :: Haddock header successfully parsed (lines $START to $END)"
+#testing if header is not just a blank template
+						if cat $filename | tail -n +$START | head -n $LENGTH | grep -q -i -e module;
+						then
+							MODULEHEADER="`cat $filename | tail -n +$START | head -n $LENGTH | grep -i -e module`"
+							if [[ "$MODULEHEADER" =~ "$EMPTY_HEADER_MARK" ]];
+							then
+								echo " :: Empty haddock template"
+								echo "$filename" >> $LOGFILE
+								echo " :: Empty haddock template" >> $LOGFILE
+								echo >> $LOGFILE
+								continue
+							else
+								echo " :: Testing sections..."
+							fi
+#testing if proper sections are available in the header
+							SECTIONSOK=1
+							for section in $SECTIONS
+							do
+#testing if current section is present in the header
+								THISSECTION=`cat $filename | tail -n +$START | head -n $LENGTH | grep -i -e $section | head -c 1`
+								if [ -z "$THISSECTION" ];
+								then
+									if [ $SECTIONSOK -eq 1 ];
+									then
+										echo "$filename:" >>$LOGFILE
+										SECTIONSOK=0
+									fi
+									echo " :: $section missing" >>$LOGFILE
+								else
+									echo " :: $section found"
+								fi
+							done
+							if [ $SECTIONSOK -eq 1 ];
+							then
+								echo " :: Changing License for $filename"
+							else
+								echo " :: Changing License for $filename"
+								echo >> $LOGFILE
+							fi
+#changing license to $NEW_LICENSE
+							cat $filename > /tmp/sed_script_tmp
+							cat /tmp/sed_script_tmp \
+							| sed "s/similar\ to\ LGPL,\ see\ HetCATS\/LICENSE.txt\ or\ LIZENZ.txt/$NEW_LICENSE/g" \
+							| sed "s/similar to LGPL, see HetCATS\/LICENCE.txt or LIZENZ.txt/$NEW_LICENSE/g" \
+							| sed "s/Similar\ to\ LGPL,\ see\ HetCATS\/LICENSE.txt\ or\ LIZENZ.txt/$NEW_LICENSE/g" \
+							| sed "s/similar\ to\ LGPL,\ see\ LICENSE.txt\ or\ LIZENZ.txt/$NEW_LICENSE/g" \
+							| sed "s/similar\ to\ LGPL,\ see HetCATS\/LICENSE.txt/$NEW_LICENSE/g" \
+							| sed "s/similar\ to\ LGPL,\ see LICENSE.txt/$NEW_LICENSE/g" \
+							| sed "s/similar\ to\ LGPL,\ see HetCATS\/LICENSE.txt\ or\ LIZENZ.txt/$NEW_LICENSE/g" \
+							| sed "s/similar\ to\ LGPL,\ see Hets\/LICENSE.txt/$NEW_LICENSE/g" \
+							| sed "s/LGPL,\ see\ LICENSE.txt\ or\ LIZENZ.txt/$NEW_LICENSE/g" \
+							| sed "s/AGPLv2\ or\ higher/$NEW_LICENSE/g" \
+							> $filename
+						else
+							echo "$filename:" >> $LOGFILE
+							echo " :: Broken haddock header - no Module entry" >> $LOGFILE
+							echo >> $LOGFILE
+							echo " :: Broken haddock header - no Module entry"
+						fi
+					fi
+				else
+					echo "No write permissions for $filename"
+				fi
+			else
+				echo "Skipping non haskell $filename"
+			fi
+		fi
+	else
+		echo "$filename: ERROR - invalid file name"
+	fi
+done
