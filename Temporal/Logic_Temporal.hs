@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for temporal logic
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  hartke@informatik.uni-bremen.de
 Stability   :  experimental

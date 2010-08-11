@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  VSE refinement as comorphism
 Copyright   :  (c) M. Codescu, DFKI Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Mihai.Codescu@dfki.de
 Stability   :  provisional

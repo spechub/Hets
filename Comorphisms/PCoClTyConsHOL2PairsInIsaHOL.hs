@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  normalising translation of a HasCASL subset to Isabelle
 Copyright   :  (c) C. Maeder, DFKI 2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

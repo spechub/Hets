@@ -4,7 +4,7 @@ Description :  Utilities for CspCASLProver related to the actual
                construction of Isabelle theories.
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                Swansea University 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

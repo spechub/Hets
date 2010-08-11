@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Interface to send structured theories to the VSE prover
 Copyright   :  (c) C. Maeder, DFKI 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

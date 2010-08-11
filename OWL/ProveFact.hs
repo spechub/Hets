@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Domink Luecke, Uni Bremen 2009-2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

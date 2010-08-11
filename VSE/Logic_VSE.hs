@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  the incomplete Logic instance for VSE
 Copyright   :  (c) C. Maeder, DFKI 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  compute ingoing free definition links for provers
 Copyright   :  C. Maeder DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

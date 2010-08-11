@@ -1,7 +1,7 @@
 {- |
 Module      :  $Id$
 Copyright   :  (c) Felix Reckers, Uni Bremen 2002-2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

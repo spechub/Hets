@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Helper functions for Prop2CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental

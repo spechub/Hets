@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Definition of signatures for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental

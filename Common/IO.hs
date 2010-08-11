@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  wrapper module for changed IO handling since ghc-6.12.1
 Copyright   :  (c) Christian Maeder DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

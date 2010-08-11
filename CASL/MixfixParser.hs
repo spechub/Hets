@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Mixfix analysis of terms
 Copyright   :  Christian Maeder and Uni Bremen 2002-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

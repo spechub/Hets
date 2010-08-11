@@ -2,7 +2,7 @@
 Module      :
 Description :  extended modal logic extension of CASL
 Copyright   :
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :
 Stability   :  experimental

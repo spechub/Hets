@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  static analysis for Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
-License     :  similar to LGPL, see Hets/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

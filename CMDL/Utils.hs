@@ -2,7 +2,7 @@
 Module      :$Header$
 Description : utilitary functions used throughout the CMDL interface
 Copyright   : uni-bremen and DFKI
-License     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     : GPLv2 or higher
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable

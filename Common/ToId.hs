@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  converting (ie. kif) strings to CASL identifiers
 Copyright   :  (c) T.Mossakowski, C.Maeder and Uni Bremen 2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Exports a development graph to an omdoc structure
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Additional (manual) ATerm-Conversions for OMDoc
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  hiben@informatik.uni-bremen.de
 Stability   :  provisional

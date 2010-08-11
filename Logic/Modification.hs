@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  interface (type class) for comorphism modifications in Hets
 Copyright   :  (c) Mihai Codescu, Uni Bremen 2002-2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  mcodescu@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)

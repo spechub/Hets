@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  extracted annotated items as strings from BASIC_SPEC
 Copyright   :  (c) Christian Maeder and Ewaryst Schulz  and DFKI GmbH 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental

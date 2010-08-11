@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  from a list of words create haskell constants
 Copyright   :  (c) Christian Maeder, DFKI Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

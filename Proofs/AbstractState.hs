@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  State data structure used by the goal management GUI.
 Copyright   :  (c) Uni Bremen 2005-2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

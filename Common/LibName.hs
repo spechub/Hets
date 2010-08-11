@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  library names for HetCASL and development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable

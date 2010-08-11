@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for ExtModal
 Copyright   :  DFKI GmbH 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  codruta.liliana@gmail.com
 Stability   :  experimental
 Portability :  non-portable (imports Logic)

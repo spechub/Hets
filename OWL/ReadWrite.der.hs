@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang, C. Maeder, Uni Bremen 2004-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

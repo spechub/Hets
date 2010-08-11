@@ -1,7 +1,7 @@
 {- | Module     : $Header$
  -  Description : Parser implementation for parsing formulas
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
- -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  License     : GPLv2 or higher
  -  Maintainer  : g.calin@jacobs-university.de
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)

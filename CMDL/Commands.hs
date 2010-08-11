@@ -2,7 +2,7 @@
 Module      :$Header$
 Description : list of all commands of CMDL interface
 Copyright   : uni-bremen and DFKI
-License     : similar to LGPL, see Hets/LICENSE.txt or LIZENZ.txt
+License     : GPLv2 or higher or LIZENZ.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable

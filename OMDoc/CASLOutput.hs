@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Hets-to-OMDoc morphism conversion
 Copyright   :  (c) Elena Digor, Jacobs University Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  edigor@jacobs-university.de
 Stability   :  provisional

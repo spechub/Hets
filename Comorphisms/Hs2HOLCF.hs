@@ -2,7 +2,7 @@
 Module      :  $Header: /repository/HetCATS/Comorphisms/Hs2HOLCF.hs,v 1.42 2007/05/25 10:49:58 paolot Exp $
 Description :  theory translation for the embedding comorphism from Haskell to Isabelle
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  paolot@informatik.uni-bremen.de
 Stability   :  provisional

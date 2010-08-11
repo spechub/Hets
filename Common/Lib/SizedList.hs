@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  lists with their size similar to Data.Edison.Seq.SizedSeq
 Copyright   :  C. Maeder DFKI Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Basic analysis for common logic
 Copyright   :  (c) Karl Luc, Uni Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  experimental

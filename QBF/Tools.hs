@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  folding function for propositional formulas extended with QBFs
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  <jonathan.von_schroeder@dfki.de>
 Stability   :  provisional

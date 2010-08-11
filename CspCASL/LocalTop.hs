@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  Local top element analysis for CspCASL specifications
 Copyright   :  (c) Andy Gimblett, Swansea University 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  compute the differences of two unshared ATerms
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
-License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

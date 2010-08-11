@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Goal management GUI.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Uni Bremen 2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

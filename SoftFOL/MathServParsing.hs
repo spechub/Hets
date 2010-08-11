@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Functions for parsing MathServ output as a MathServResponse
 Copyright   :  (c) Rainer Grabbe, DFKI GmbH
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  uniquely show mixfix terms with sufficient parenthesis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  checking consistency of indices
 Copyright   :  (c) Jianchun Wang, C. Maeder, Uni Bremen 2002-2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

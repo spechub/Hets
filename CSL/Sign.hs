@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Signature for propositional logic
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  abstract syntax for CASL_DL logic extension of CASL
 Copyright   :  (c) Klaus Luettich, Dominik Luecke, Uni Bremen 2004-2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

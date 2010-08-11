@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Inclusion of CASL_DL into CASL
 Copyright   :  (c) Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

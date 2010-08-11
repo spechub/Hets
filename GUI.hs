@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  graphical user interface modules
 Copyright   :  (c) Uni Bremen 2005-2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional

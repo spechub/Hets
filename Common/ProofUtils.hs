@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description:   functions useful for all prover connections in Hets
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

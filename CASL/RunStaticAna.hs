@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  make static analysis checkable by RunParsers
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

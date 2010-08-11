@@ -2,7 +2,7 @@
 Module      :  PredefinedSign.hs
 Description :  with inlined axioms
 Copyright   :  (c) Uni and DFKI Bremen 2005-2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

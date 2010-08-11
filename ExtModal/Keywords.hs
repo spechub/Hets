@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Keywords for extended modal logic
 Copyright   :  DFKI GmbH 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  codruta.liliana@gmail.com
 Stability   :  experimental

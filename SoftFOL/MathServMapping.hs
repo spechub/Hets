@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Maps a MathServResponse into a prover configuration.
 Copyright   :  (c) Rainer Grabbe
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

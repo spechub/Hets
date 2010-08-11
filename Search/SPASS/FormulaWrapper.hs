@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  A formula wrapper from formulae defined in SoftFOL.Sign to data Formula defined in Common.Normalization
 Copyright   :  (c) Immanuel Normann, Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  inormann@jacobs-university.de
 Stability   :  provisional

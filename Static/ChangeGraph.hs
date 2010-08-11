@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  functions for changing a development graphs
 Copyright   :  (c)  Christian Maeder, DFKI GmbH 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

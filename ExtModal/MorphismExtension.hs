@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Morphism extension for modal signature morphisms
 Copyright   :  DFKI GmbH 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  codruta.liliana@gmail.com
 Stability   :  experimental
 Portability :  portable

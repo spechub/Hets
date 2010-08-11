@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Isabelle Abstract syntax constants for CSP-Prover operations
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

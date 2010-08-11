@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  parser for CASL (heterogeneous) structured specifications
 Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)

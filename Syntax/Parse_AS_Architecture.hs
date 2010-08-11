@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  parser for CASL architectural specifications
 Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (via imports)

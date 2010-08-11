@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  devGraph rule that calls consistency checker for specific logics
 Copyright   :  (c) C. Maeder DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

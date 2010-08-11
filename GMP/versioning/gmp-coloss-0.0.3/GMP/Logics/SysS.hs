@@ -2,7 +2,7 @@
  -  Description : Implementation of logic instance of 'System S'
  -  Copyright   : (c) Daniel Hausmann & Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL 
- -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  License     : GPLv2 or higher
  -  Maintainer  : hausmann@dfki.de
  -  Stability   : provisional
  -  Portability : portable

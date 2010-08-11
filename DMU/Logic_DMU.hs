@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for DMU
 Copyright   :  (c) Christian Maeder DFKI, Uni Bremen 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

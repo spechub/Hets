@@ -1,7 +1,7 @@
 {- |
 Module      :  $Id$
 Copyright   :  (c) Andy Gimblett and Markus Roggenbach and Uni Bremen 2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  provisional

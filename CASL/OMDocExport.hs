@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  CASL-to-OMDoc conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional

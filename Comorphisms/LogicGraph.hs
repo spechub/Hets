@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  unstable

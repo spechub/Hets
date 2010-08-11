@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  xml output of Hets development graphs
 Copyright   :  (c) Ewaryst Schulz, Uni Bremen 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)

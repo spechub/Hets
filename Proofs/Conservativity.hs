@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  conservativity proof rule for development graphs
 Copyright   :  (c) Markus Gross, DFKI 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  mgross@informatik.uni-bremen.de
 Stability   :  provisional

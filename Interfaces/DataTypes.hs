@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Common Data types to be used between interfaces
 Copyright   :  (c) Uni Bremen 2002-2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  r.pascanu@gmail.com
 Stability   :  provisional

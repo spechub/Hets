@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  add to all names in the nodes of the libenv a list of paths
 Copyright   :  (c) Ewaryst Schulz DFKI Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

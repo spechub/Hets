@@ -4,7 +4,7 @@ Module      :  $Header$
 Description :  embedding from CASL to VSE, plus wrapping procedures
                with default implementations
 Copyright   :  (c) M.Codescu, DFKI Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Mihai.Codescu@dfki.de
 Stability   :  provisional

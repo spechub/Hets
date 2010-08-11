@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Comorphism from OWL 1.1 to CASL_Dl
 Copyright   :  (c) Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

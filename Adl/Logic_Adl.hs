@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  the Logic instance for ADL
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

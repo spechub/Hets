@@ -2,7 +2,7 @@
 Module      :
 Copyright   :  (c) Cui Jian, Till Mossakowski, Uni Bremen 2002-2006
 Description :  simple version of theorem hide shift proof rule
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

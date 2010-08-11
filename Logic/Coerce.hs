@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  coerce logic entities dynamically
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2005-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)

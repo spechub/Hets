@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  create a development graph from Haskell modules
 Copyright   :  (c) Christian Maeder, Uni Bremen 2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

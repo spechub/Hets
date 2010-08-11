@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
-License     :  Asimilar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  paolot@informatik.uni-bremen.de
 Stability   :  provisional

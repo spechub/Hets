@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Maude Development Graphs
 Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  ariesco@fdi.ucm.es
 Stability   :  experimental

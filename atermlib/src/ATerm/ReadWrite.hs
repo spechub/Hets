@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  read and write ATerms to and from strings
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2005
-License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

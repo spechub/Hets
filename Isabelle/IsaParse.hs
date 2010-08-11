@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  parser for an Isabelle theory
 Copyright   :  (c) C. Maeder and Uni Bremen 2005-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

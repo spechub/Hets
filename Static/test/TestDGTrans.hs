@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Test Logic translation for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.

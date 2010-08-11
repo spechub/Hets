@@ -3,7 +3,7 @@
     Module      :  $Header$
     Description :  Check for truth in one-point model
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
-    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+    License     :  GPLv2 or higher
 
     Maintainer  :  xinga@informatik.uni-bremen.de
     Stability   :  provisional

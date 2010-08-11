@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  conversions to and from old SML aterm format
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2002-2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

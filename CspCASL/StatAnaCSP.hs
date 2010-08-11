@@ -3,7 +3,7 @@ Module      :  $Id$
 Description :  Static analysis of CspCASL
 Copyright   :  (c) Andy Gimblett, Liam O'Reilly Markus Roggenbach,
                    Swansea University 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  a.m.gimblett@swansea.ac.uk
 Stability   :  provisional

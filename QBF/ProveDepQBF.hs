@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Interface to the theorem prover e-krhyper in CASC-mode.
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  jonathan.von_schroeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX

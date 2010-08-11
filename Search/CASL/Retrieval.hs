@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Interface for CASL morphism search
 Copyright   :  (c) Immanuel Normann, Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  inormann@jacobs-university.de
 Stability   :  provisional

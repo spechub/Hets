@@ -1,3 +1,15 @@
+{- |
+Module      :  $EmptyHeader$
+Description :  <optional short description entry>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  GPLv2 or higher
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<optional description>
+-}
 {-
 Adaptation and extension of a parser for data definitions given in
 appendix of G. Huttons's paper - Monadic Parser Combinators.

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Manchester syntax parser for OWL 2
 Copyright   :  (c) DFKI GmbH, Uni Bremen 2007-2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

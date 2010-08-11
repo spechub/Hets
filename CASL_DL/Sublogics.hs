@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  sublogic analysis for CASL_DL
 Copyright   :  (c) Dominik Luecke 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental

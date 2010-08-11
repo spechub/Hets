@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  colimit of an arbitrary diagram in Set
 Copyright   :  (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov,
         and Daniel P. Friedman
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  Mihai.Codescu@dfki.de
 Stability   :  provisional
 Portability :  portable

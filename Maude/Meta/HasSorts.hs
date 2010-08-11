@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Accessing the Sorts of Maude data types
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  mkhl@informatik.uni-bremen.de
 Stability   :  experimental

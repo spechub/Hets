@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  monotonicities of the overload relation
 Copyright   :  (c) C. Maeder DFKI Uni Bremen 2002-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

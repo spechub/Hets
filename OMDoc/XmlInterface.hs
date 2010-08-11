@@ -7,7 +7,7 @@
 Module      :  $Header$
 Description :  OMDoc-XML conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional

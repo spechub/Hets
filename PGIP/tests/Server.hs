@@ -4,7 +4,7 @@ Description :  A test module for trying API communication via sockets.
                The code is based on the TCP syslog server example in Real
                World Haskell.
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  mchan@inf.ed.ac.uk
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)

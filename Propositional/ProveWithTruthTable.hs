@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Provers for propositional logic
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  experimental

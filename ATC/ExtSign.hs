@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  generated Typeable, ShATermConvertible instances
 Copyright   :  (c) DFKI Bremen 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

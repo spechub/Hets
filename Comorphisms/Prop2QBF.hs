@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Comorphism from Propositional to QBF
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  <jonathan.von_schroeder@dfki.de>
 Stability   :  experimental

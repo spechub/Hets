@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  rename symbols of sentences according to a signature morphisms
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

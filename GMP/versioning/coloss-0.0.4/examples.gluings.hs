@@ -1,3 +1,15 @@
+{- |
+Module      :  $EmptyHeader$
+Description :  <optional short description entry>
+Copyright   :  (c) <Authors or Affiliations>
+License     :  GPLv2 or higher
+
+Maintainer  :  <email>
+Stability   :  unstable | experimental | provisional | stable | frozen
+Portability :  portable | non-portable (<reason>)
+
+<optional description>
+-}
 -- Example gluings. To run these examples,
 -- try gen (flatten seg) from the (imported) module Combination.
 -- this will generate a file ``MySat.hs'' which can be loaded into

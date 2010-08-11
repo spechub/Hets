@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  pretty print abstract syntax of CoCASL
 Copyright   :  (c) T. Mossakowski, Uni Bremen 2004-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 Maintainer  :  hausmann@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable

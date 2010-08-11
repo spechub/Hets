@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  QuickCheck model checker for CASL.CFOL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Extension of CFOL2IsabelleHOL to CoCASL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  hausmann@informatik.uni-bremen.de
 Stability   :  provisional

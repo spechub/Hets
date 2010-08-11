@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Parser for basic specs
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental

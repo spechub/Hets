@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  basics of the common algebraic specification language
 Copyright   :  (c) Christian Maeder and DFKI Lab Bremen 2007
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Conversion of Twelf files to LF signatures and morphisms
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental

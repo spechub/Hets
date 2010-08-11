@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  embedding CASL into HasCASL
 Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2003-2005
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

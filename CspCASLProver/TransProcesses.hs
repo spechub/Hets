@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Provides transformations from Csp Processes to Isabelle terms
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

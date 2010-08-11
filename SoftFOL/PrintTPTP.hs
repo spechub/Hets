@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Pretty printing for SPASS signatures in TPTP syntax.
 Copyright   :  (c) Rene Wagner, Rainer Grabbe, Uni Bremen 2005-2006
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

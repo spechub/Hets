@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Comorphism from CommonLogic to CASL
 Copyright   :  (c) Uni Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  translate CASL to S-Expressions
 Copyright   :  (c) C. Maeder, DFKI 2008
-License     :  similar to LGPL, see HetCATS/LICENSE.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

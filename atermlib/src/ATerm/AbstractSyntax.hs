@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  the abstract syntax of shared ATerms and their lookup table
 Copyright   :  (c) Klaus Luettich, C. Maeder, Uni Bremen 2002-2006
-License     :  similar to LGPL, see LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

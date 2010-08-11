@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Definition of signature morphisms for
                first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental

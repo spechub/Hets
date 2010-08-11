@@ -1,7 +1,7 @@
 {- | Module     : $Header$
  -  Description : Abstract syntax for the Compositional Modal Prover
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
- -  License     : Similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ -  License     : GPLv2 or higher
  -  Maintainer  : g.calin@jacobs-alumni.de
  -  Stability   : provisional
  -  Portability : non-portable (various -fglasgow-exts extensions)
