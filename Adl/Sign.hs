@@ -55,7 +55,14 @@ data Symbol
   | Con Concept
     deriving (Eq, Ord, Show)
 
-instance GetRange Symbol
+instance GetRange Symbol where
+  getRange s = case s of
+    Rel r -> getRange r
+    Con c -> getRange c
+  rangeSpan s = case s of
+    Rel r -> rangeSpan r
+    Con c -> rangeSpan c
+
 instance Pretty Symbol where
   pretty s = case s of
     Rel r -> pretty r
@@ -72,7 +79,14 @@ data RawSymbol
   | AnId Id
     deriving (Eq, Ord, Show)
 
-instance GetRange RawSymbol
+instance GetRange RawSymbol where
+  getRange r = case r of
+    Symbol s -> getRange s
+    AnId i -> getRange i
+  rangeSpan r = case r of
+    Symbol s -> rangeSpan s
+    AnId i -> rangeSpan i
+
 instance Pretty RawSymbol where
   pretty r = case r of
     Symbol s -> pretty s
@@ -89,11 +103,20 @@ idToSimpleId i = case i of
   _ -> error $ "idToSimpleId: " ++ show i
 
 symOf :: Sign -> Set.Set Symbol
-symOf = Set.unions . map (\ (i, s) ->
-          Set.map (\ t -> Rel $ Sgn (idToSimpleId i) (relSrc t) $ relTrg t) s)
+symOf = Set.unions . map (\ (i, l) ->
+          Set.fromList
+            . concatMap
+              (\ p -> let
+                   s = relSrc p
+                   t = relTrg p
+                   in [ Con s, Con t, Rel $ Sgn (idToSimpleId i) s t])
+            $ Set.toList l)
         . Map.toList . rels
 
-instance GetRange Sign
+instance GetRange Sign where
+  getRange = getRange . symOf
+  rangeSpan = rangeSpan . symOf
+
 instance Pretty Sign where
   pretty = pretty . symOf
 
@@ -102,7 +125,14 @@ data Sen
   | Assertion (Maybe RuleKind) Rule
     deriving (Eq, Ord, Show)
 
-instance GetRange Sen
+instance GetRange Sen where
+  getRange s = case s of
+    DeclProp _ p -> getRange p
+    Assertion _ r -> getRange r
+  rangeSpan s = case s of
+    DeclProp r p -> joinRanges [rangeSpan r, rangeSpan p]
+    Assertion _ r -> rangeSpan r
+
 instance Pretty Sen where
   pretty s = case s of
     DeclProp r p -> pretty $ Pm [p] r False

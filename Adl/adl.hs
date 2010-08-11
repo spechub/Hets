@@ -10,6 +10,8 @@ Stability   :  provisional
 Portability :  portable
 -}
 
+module Main (main) where
+
 import Common.DocUtils (pretty)
 import Common.Parsec ((<<))
 import System.Environment (getArgs)

@@ -14,6 +14,7 @@ module Adl.As where
 
 import Data.Char
 import Common.Id
+import Common.Keywords
 
 data Concept
   = C Token -- ^ The name of this Concept
@@ -44,14 +45,34 @@ data UnOp
   | K1 -- ^ Transitive closure +
   | Cp -- ^ Complement -
   | Co -- ^ Converse ~
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord)
+
+instance Show UnOp where
+  show o = case o of
+    K0 -> "*"
+    K1 -> "+"
+    Cp -> "-" -- prefix!
+    Co -> "~"
 
 data MulOp
   = Fc -- ^ composition ;
   | Fd -- ^ relative addition !
   | Fi -- ^ intersection /\.
   | Fu -- ^ union \/
-    deriving (Eq, Ord, Show)
+  | Ri -- ^ Rule implication |-
+  | Rr -- ^ Rule reverse implication -|
+  | Re -- ^ Rule equivalence
+    deriving (Eq, Ord)
+
+instance Show MulOp where
+  show o = case o of
+    Fc -> ";"
+    Fd -> "!"
+    Fi -> lAnd
+    Fu -> lOr
+    Ri -> "|-"
+    Rr -> "-|"
+    Re -> "="
 
 data Expression
   = Tm Relation
@@ -69,20 +90,7 @@ instance GetRange Expression where
     UnExp _ f -> rangeSpan f
     MulExp _ es -> joinRanges $ map rangeSpan es
 
-data RuleType = Implication | ReverseImpl | Equivalence deriving (Eq, Ord, Show)
-
-data Rule
-  = Rule Expression RuleType Expression
-  | Truth Expression
-    deriving (Eq, Ord, Show)
-
-instance GetRange Rule where
-  getRange r = case r of
-    Rule e1 _ e2 -> concatMapRange getRange [e1, e2]
-    Truth e -> getRange e
-  rangeSpan r = case r of
-    Rule e1 _ e2 -> joinRanges [rangeSpan e1, rangeSpan e2]
-    Truth e -> rangeSpan e
+type Rule = Expression
 
 data Prop
   = Uni          -- ^ univalent

@@ -18,7 +18,6 @@ import Common.Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.Id
-import Common.Keywords
 
 import Data.List
 import qualified Data.Map as Map
@@ -37,21 +36,16 @@ instance Pretty Relation where
       _ -> brackets $ hcat [pretty c1, cross, pretty c2]
 
 pOp :: UnOp -> Id
-pOp o = stringToId $ case o of
-    K0 -> "*"
-    K1 -> "+"
-    Cp -> "-" -- prefix!
-    Co -> "~"
+pOp o = case o of
+  Co -> converseId
+  Cp -> minusId
+  _ -> stringToId $ show o
 
 instance Pretty UnOp where
-  pretty = idDoc . pOp
+  pretty = idDoc . stringToId . show
 
 inOp :: MulOp -> Id
-inOp o = stringToId $ case o of
-    Fc -> ";"
-    Fd -> "!"
-    Fi -> lAnd
-    Fu -> lOr
+inOp = stringToId . show
 
 instance Pretty MulOp where
   pretty o = let i = idDoc (inOp o) in case o of
@@ -63,15 +57,21 @@ prettyParen :: (Expression -> Bool) -> Expression -> Doc
 prettyParen p e = (if p e then parens else id) $ pretty e
 
 minusId :: Id
-minusId = mkId [mkSimpleId "-", placeTok]
+minusId = mkId [mkSimpleId $ show Cp, placeTok]
+
+converseId :: Id
+converseId = mkId [placeTok, mkSimpleId $ show Co]
 
 displayMap :: DisplayMap
 displayMap = Map.fromList $ map ( \ (i, l) -> (i, Map.singleton DF_LATEX l))
   [ (minusId, [mkSimpleId "\\overline{", placeTok, mkSimpleId "}"])
+  , (converseId, [mkSimpleId "{{", placeTok, mkSimpleId "}^\\smile}"])
   , (inOp Fi, [mkSimpleId "\\cap"])
   , (inOp Fu, [mkSimpleId "\\cup"])
   , (inOp Fd, [mkSimpleId "\\dag"])
-  , (pOp Co, [mkSimpleId "{^\\smile}"])
+  , (inOp Ri, [mkSimpleId "\\vdash"])
+  , (inOp Rr, [mkSimpleId "\\dashv"])
+  , (stringToId $ show Co, [mkSimpleId "{^\\smile}"])
   , (pOp K0, [mkSimpleId "\\texttt{*}"])
   , (pOp K1, [mkSimpleId "\\texttt{+}"])
   ]
@@ -86,26 +86,15 @@ instance Pretty Expression where
     MulExp o es ->
       fcat . punctuate (pretty o) $ map
         (prettyParen (\ a -> case a of
-           MulExp p _ -> p >= o
+           MulExp p _ -> p >= o || o == Rr && p == Ri
            _ -> False)) es
-    UnExp o r -> (if o == Cp
-                  then idApplDoc minusId . (: [])
+    UnExp o r -> (if o >= Cp
+                  then idApplDoc (pOp o) . (: [])
                   else (<> pretty o))
       $ prettyParen (\ a -> case a of
         MulExp _ _ -> True
         UnExp p _ -> o /= Cp && p == Cp
         _ -> False) r
-
-instance Pretty RuleType where
-  pretty t = case t of
-    Implication -> vdash
-    ReverseImpl -> dashv
-    Equivalence -> equals
-
-instance Pretty Rule where
-  pretty r = case r of
-    Rule e1 t e2 -> hsep [pretty e1, pretty t, pretty e2]
-    Truth e -> pretty e
 
 instance Pretty Prop where
   pretty = text . showUp

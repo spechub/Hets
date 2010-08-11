@@ -209,7 +209,7 @@ pObjDef = liftM2 Plug
 pObj :: CharParser st Object
 pObj = do
   n <- pLabelProps
-  e <- pExpr
+  e <- pImpl -- exclude equivalence because of a subsequent pEqual
   as <- optionL (pKey "ALWAYS" >> many pProp')
   os <- optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
   return $ Object n e as os
@@ -248,15 +248,7 @@ pRecord = let ps = parseToken pString in
 pRuleDef :: CharParser st PatElem
 pRuleDef = do
   h <- option Always pSignalOrAlways
-  e1 <- pExpr
-  r <- option (Truth e1) $ do
-    sym <- choice $ map pSymS ["=", "|-", "-|"]
-    e2 <- pExpr
-    return $ Rule e1 (case sym of
-      "=" -> Equivalence
-      "|-" -> Implication
-      "-|" -> ReverseImpl
-      _ -> error "pRuleDef") e2
+  r <- pExpr
   option "" $ do
     pKey "EXPLANATION"
     pString
@@ -296,21 +288,31 @@ pMorphism = do
   return $ Sgn nm c1 c2
 
 pExpr :: CharParser st Expression
-pExpr = pPrec Fu pFactorI "\\/"
+pExpr = pPrec Re pImpl
+
+pImpl :: CharParser st Expression
+pImpl = do
+  e <- pExprI
+  option e $ do
+    o <- choice $ map (\ p -> pSymS (show p) >> return p) [Ri, Rr]
+    es <- sepBy1 pExprI $ pSym (show o)
+    return $ MulExp o $ e : es
+
+pExprI :: CharParser st Expression
+pExprI = pPrec Fu pFactorI
 
 pFactorI :: CharParser st Expression
-pFactorI = pPrec Fi pFactor "/\\"
+pFactorI = pPrec Fi pFactor
 
 pFactor :: CharParser st Expression
-pFactor = pPrec Fd pTermD "!"
+pFactor = pPrec Fd pTermD
 
 pTermD :: CharParser st Expression
-pTermD = pPrec Fc pTerm ";"
+pTermD = pPrec Fc pTerm
 
-pPrec :: MulOp -> CharParser st Expression -> String
-  -> CharParser st Expression
-pPrec f p s = do
-  es <- sepBy1 p $ pSym s
+pPrec :: MulOp -> CharParser st Expression -> CharParser st Expression
+pPrec f p = do
+  es <- sepBy1 p $ pSym (show f)
   return $ case es of
     [e] -> e
     _ -> MulExp f es
@@ -319,10 +321,6 @@ pTerm :: CharParser st Expression
 pTerm = do
   ms <- many pMinus
   e <- pParens pExpr <|> fmap Tm pMorphism
-  rs <- many $ choice $ map (pSymS . (: [])) "+*~"
-  let p = foldl (\ r c -> UnExp (case c of
-        "+" -> K1
-        "*" -> K0
-        "~" -> Co
-        _ -> error "pTerm post strings") r) e rs
+  rs <- many $ choice $ map (\ p -> pSymS (show p) >> return p) [K0, K1, Co]
+  let p = foldl (flip UnExp) e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms
