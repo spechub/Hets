@@ -4,7 +4,6 @@
 \usepackage{charter} ::: charter
 \usepackage{courier} ::: courier
 \usepackage{helvet} ::: helvet
-\usepackage{mathpple} ::: mathpple
 \usepackage{mathptm} ::: mathptm
 \usepackage{mathptmx} ::: mathptmx
 \usepackage{newcent} ::: newcent
