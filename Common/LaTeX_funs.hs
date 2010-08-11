@@ -154,9 +154,11 @@ sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
                    -> Map.Map Char [String]  -> String -> Int
 sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
-          sum_char_width' [c] r
-              | c == ' '  = r + lookupWithDefault_cFM "~"
-              | otherwise = r + lookupWithDefault_cFM [c]
+          sum_char_width' [c] r = r + case c of
+              '}' -> 0
+              '{' -> 0
+              ' ' -> lookupWithDefault_cFM ['~']
+              _ -> lookupWithDefault_cFM [c]
           sum_char_width' full@(c1:rest@(c2:cs)) r
               | isLigature [c1, c2] = case Map.lookup [c1, c2] cFM of
                                         Just l  -> sum_char_width' cs (r+l)
