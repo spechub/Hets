@@ -38,7 +38,7 @@ trim = let f = reverse . dropWhile isSpace
            in f . f
 
 basicSpec :: AParser st BASIC_SPEC
-basicSpec = 
+basicSpec =
   fmap Basic_spec (trailingAnnosParser basicItem)
   <|>
   (oBraceT >> cBraceT >> return (Basic_spec []))
@@ -48,7 +48,7 @@ basicItem = do
  do d <- twelfStat
     dotT
     return $ Decl $ trim d
- <|> 
+ <|>
  do dotT
     f <- twelfStat
     return $ Form $ trim f
@@ -58,11 +58,11 @@ twelfStat = do ss <- many1 (twelfToken <|> whiteSp)
                return $ concat ss
 
 twelfToken :: AParser st String
-twelfToken = reserved casl_structured_reserved_words $
+twelfToken = reserved criticalKeywords $
                many1 $ scanLPD <|> oneOf twelfTokenChars
 
 twelfName :: AParser st String
-twelfName = reserved casl_structured_reserved_words $
+twelfName = reserved criticalKeywords $
               many1 $ scanLPD <|> oneOf twelfNameChars
 
 whiteSp :: AParser st String
@@ -77,7 +77,7 @@ symbMapItems = do
   return $ Symb_map_items xs
 
 symbOrMap :: AParser st SYMB_OR_MAP
-symbOrMap = do 
+symbOrMap = do
   s <- twelfName
   ( do asKey mapsTo
        t <- twelfStat

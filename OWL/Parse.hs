@@ -27,7 +27,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
-import Common.Token (casl_structured_reserved_words)
+import Common.Token (criticalKeywords)
 import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
@@ -40,7 +40,7 @@ characters = [minBound .. maxBound]
 -- | OWL and CASL structured keywords including 'andS' and 'notS'
 owlKeywords :: [String]
 owlKeywords = notS : stringS : map show entityTypes
-  ++ map show characters ++ keywords ++ casl_structured_reserved_words
+  ++ map show characters ++ keywords ++ criticalKeywords
 
 ncNameStart :: Char -> Bool
 ncNameStart c = isAlpha c || c == '_'

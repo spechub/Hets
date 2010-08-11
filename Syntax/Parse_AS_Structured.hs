@@ -273,10 +273,8 @@ translation l sp ftrans frestr =
 
 groupSpecLookhead :: AParser st Token
 groupSpecLookhead = oBraceT <|> followedWith (simpleId << annos)
-  (asKey withS <|> asKey hideS <|> asKey revealS <|> asKey andS
-   <|> asKey thenS <|> cBraceT <|> asKey fitS <|> asKey viewS
-   <|> asKey specS <|> asKey archS <|> asKey unitS <|> asKey withinS
-   <|> asKey endS <|> oBracketT <|> cBracketT
+  (choice (map asKey criticalKeywords)
+   <|> cBraceT <|> oBracketT <|> cBracketT
    <|> (eof >> return (Token "" nullRange)))
 
 specD :: LogicGraph -> AParser st SPEC

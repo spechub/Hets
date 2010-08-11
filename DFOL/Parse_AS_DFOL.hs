@@ -19,7 +19,7 @@ module DFOL.Parse_AS_DFOL
 
 import qualified Common.Lexer as Lexer
 import Common.Parsec
-import Common.Token (casl_structured_reserved_words)
+import Common.Token (criticalKeywords)
 import qualified Common.Keywords as Keywords
 import qualified Common.AnnoState as AnnoState
 import DFOL.AS_DFOL
@@ -35,7 +35,7 @@ dfolKeys = [Keywords.trueS,
             "Univ",
             "Sort",
             "Form",
-            "Pi"] ++ casl_structured_reserved_words
+            "Pi"] ++ criticalKeywords
 
 -- parser for basic spec
 basicSpec :: AnnoState.AParser st BASIC_SPEC

@@ -17,7 +17,7 @@ import Adl.As
 import Common.Id
 import Common.Lexer (parseToken)
 import Common.Parsec
-import Common.Token (casl_structured_reserved_words)
+import Common.Token (criticalKeywords)
 import Control.Monad
 import Text.ParserCombinators.Parsec
 
@@ -89,7 +89,7 @@ pConid :: CharParser st String
 pConid = reserved keywordstxt (upper <:> many pChar) << skip
 
 pVarid :: CharParser st String
-pVarid = reserved casl_structured_reserved_words
+pVarid = reserved criticalKeywords
   ((lower <|> char '_') <:> many pChar) << skip
 
 pString :: CharParser st String

@@ -102,13 +102,33 @@ casl_basic_reserved_words =
 
 -- | reserved keywords
 casl_structured_reserved_words :: [String]
-casl_structured_reserved_words =
-    [andS, archS, behaviourallyS, closedS, cofreeS, endS,
-     fitS, freeS, fromS, getS, givenS,
-     hideS, lambdaS, libraryS, localS, logicS, newlogicS,
-     refinedS, refinementS,
-     resultS, revealS, specS, thenS, toS,
-     unitS, unitS ++ sS, versionS, viewS, withS, withinS]
+casl_structured_reserved_words = libraryS :
+    continuationKeywords ++ otherStartKeywords
+    ++ criticalKeywords
+
+-- | keywords terminating a basic spec or starting a new library item
+criticalKeywords :: [String]
+criticalKeywords = terminatingKeywords ++ startingKeywords
+
+-- | keywords terminating a basic spec
+terminatingKeywords :: [String]
+terminatingKeywords =
+    [andS, endS, fitS, hideS, revealS, thenS, withS, withinS]
+
+-- | keywords starting a library item
+startingKeywords :: [String]
+startingKeywords =
+    [archS, fromS, logicS, newlogicS, refinementS, specS, unitS, viewS]
+
+-- | keywords that may follow a defining equal sign
+otherStartKeywords :: [String]
+otherStartKeywords =
+    [closedS, cofreeS, freeS, localS, unitS ++ sS]
+
+-- | other intermediate keywords
+continuationKeywords :: [String]
+continuationKeywords =
+    [behaviourallyS, getS, givenS, lambdaS, refinedS, resultS, toS, versionS]
 
 -- | reserved keywords
 casl_reserved_words :: [String]
