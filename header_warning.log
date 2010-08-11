@@ -1,0 +1,612 @@
+Wed Aug 11 12:20:46 CEST 2010
+./Common/testxpath.hs:
+ :: Empty haddock header
+
+./Common/testxupdate.hs:
+ :: Empty haddock header
+
+./Common/SFKT.hs:
+ :: Empty haddock header
+
+./Common/ATerm/ATermDiffMain.hs:
+ :: Empty haddock header
+
+./Common/ATerm/ATermLibTest.hs:
+ :: Empty haddock header
+
+./Modal/ModalSign.hs:
+ :: Description missing
+
+./Modal/StatAna.hs:
+ :: Description missing
+
+./Modal/AS_Modal.der.hs:
+ :: Description missing
+
+./Modal/Utils.hs:
+ :: Empty haddock header
+
+./Modal/Parse_AS.hs:
+ :: Description missing
+
+./Modal/Print_AS.hs:
+ :: Description missing
+
+./PGIP/tests/SyslogTypes.hs:
+ :: Broken haddock header - no Module entry
+
+./COL.hs:
+ :: Broken haddock header - no Module entry
+
+./DFOL/Tests/Test_AS_DFOL.hs:
+ :: Broken haddock header - no Module entry
+
+./DFOL/Tests/Test_Structuring.hs:
+ :: Broken haddock header - no Module entry
+
+./DFOL/Tests/Test_Parse_AS_DFOL.hs:
+ :: Broken haddock header - no Module entry
+
+./DFOL/Tests/Test_Analysis_DFOL.hs:
+ :: Broken haddock header - no Module entry
+
+./Temporal/NuSmvLtl.hs:
+ :: Empty haddock header
+
+./Temporal/Ctl.hs:
+ :: Empty haddock header
+
+./Temporal/ModalCaslToNuSmvLtl.hs:
+ :: Empty haddock header
+
+./Temporal/ModalCasl.hs:
+ :: Empty haddock header
+
+./Temporal/ModalCaslToMu.hs:
+ :: Empty haddock header
+
+./Temporal/NuSmv.hs:
+ :: Empty haddock header
+
+./Temporal/ModalCaslToCtl.hs:
+ :: Empty haddock header
+
+./Temporal/Mu.hs:
+ :: Empty haddock header
+
+./Temporal/Main.hs:
+ :: Empty haddock header
+
+./Temporal/Kripke.hs:
+ :: Empty haddock header
+
+./CoCASL/LTS/lts.hs:
+ :: Description missing
+
+./CASL_DL.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./Lottery/Zaehler.hs:
+ :: Empty haddock header
+
+./Lottery/Test.hs:
+ :: Empty haddock header
+
+./ExtModal/StatAna.hs:
+ :: Description missing
+
+./ExtModal/Parse_AS.hs:
+ :: Broken haddock header - no Module entry
+
+./ExtModal/Print_AS.hs:
+ :: Description missing
+
+./ExtModal/AS_ExtModal.der.hs:
+ :: Description missing
+
+./ExtModal/ExtModalSystems.hs:
+ :: Empty haddock header
+
+./ExtModal/ExtModalSign.hs:
+ :: Description missing
+
+./GUI/ShowRefTree.hs:
+ :: Description missing
+
+./GUI/Taxonomy.hs:
+ :: Description missing
+
+./GUI/ShowLibGraph.hs:
+ :: Description missing
+
+./GUI/hets_cgi.hs:
+ :: Description missing
+
+./GUI/ShowGraph.hs:
+ :: Description missing
+
+./GUI/ShowLogicGraph.hs:
+ :: Description missing
+
+./GUI/HTkUtils.hs:
+ :: Description missing
+
+./Modifications/ModalEmbedding.hs:
+ :: Empty haddock header
+
+./CspCASL/testwrap.hs:
+ :: Description missing
+
+./CspCASL.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./Maude/Shellout.hs:
+ :: Empty haddock header
+
+./Logic.hs:
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./Proofs.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./test/childProcessTest.hs:
+ :: Empty haddock header
+
+./test/Map.hs:
+ :: Empty haddock header
+
+./OWL.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./hets.hs:
+ :: Description missing
+
+./Propositional.hs:
+ :: Broken haddock header - no Module entry
+
+./Haskell/ProgramaticaPrelude.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOLCF/incmpl.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOLCF/PPrel.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOLCF/ex_fibon.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOLCF/ex_mutrec.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/wcard.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/ex_class.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/ex_let.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/Map2.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/mrec3.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/mrec.hs:
+ :: Empty haddock header
+
+./Haskell/test/HOL/ex_list.hs:
+ :: Empty haddock header
+
+./Driver.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./mini/Logic.hs:
+ :: Empty haddock header
+
+./mini/StaticAnalysis.hs:
+ :: Empty haddock header
+
+./mini/Grothendieck.hs:
+ :: Empty haddock header
+
+./mini/Structured.hs:
+ :: Empty haddock header
+
+./mini/Proof.hs:
+ :: Empty haddock header
+
+./mini/Parser.hs:
+ :: Empty haddock header
+
+./mini/Main.hs:
+ :: Empty haddock header
+
+./GMP/CombLogic.hs:
+ :: Broken haddock header - no Module entry
+
+./GMP/versioning/coloss-0.0.4/examples.gluings.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/gg.head.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/examples.hml.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/examples.pml.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/gg.util.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/Combination.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/examples.coalition.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/gg.tmpl.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/Generic.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/examples.gml.hs:
+ :: Empty haddock header
+
+./GMP/versioning/coloss-0.0.4/examples.segala.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-coloss-0.0.2/GMP/CompGeneric.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/GMPSAT.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/ModalK.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/ModalKD.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/extra/LWBParser.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/extra/TestGenGML.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/extra/ToRacer.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/extra/IneqSolvTester.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/MajorityL.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/Lexer.hs:
+ :: Empty haddock header
+
+./GMP/versioning/gmp-0.0.1/GMP/Main.hs:
+ :: Empty haddock header
+
+./GMP/GenericSequent.hs:
+ :: Empty haddock header
+
+./GMP/Proof.hs:
+ :: Empty haddock header
+
+./GMP/SegExamples.hs:
+ :: Empty haddock header
+
+./GMP/CompositionalityExperiment.hs:
+ :: Empty haddock header
+
+./CMDL.hs:
+ :: Broken haddock header - no Module entry
+
+./Taxonomy.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./Comorphisms/test/sublogicGraph.hs:
+ :: Empty haddock header
+
+./Comorphisms/test/showKP.hs:
+ :: Empty haddock header
+
+./Comorphisms/CspCASL2Modal.hs:
+ :: Description missing
+
+./Comorphisms/CASL2TopSort.hs:
+ :: Description missing
+
+./Comorphisms/Hs2HOLCFaux.hs:
+ :: Description missing
+
+./Comorphisms/CASL2CspCASL.hs:
+ :: Description missing
+
+./Comorphisms/Modal2CASL.inline.hs:
+ :: Description missing
+
+./Syntax/hetpa.hs:
+ :: Empty haddock header
+
+./CSL/Symbol.hs:
+ :: Empty haddock header
+
+./CSL/Parse_Test.hs:
+ :: Empty haddock header
+
+./Static.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./Test.hs:
+ :: Empty haddock header
+
+./RelationalScheme.hs:
+ :: Broken haddock header - no Module entry
+
+./CASL_DL/Comorphism_specs/makePreludeString.hs:
+ :: Empty haddock header
+
+./CASL_DL/PredefinedGlobalAnnos.hs:
+ :: Description missing
+
+./CASL_DL/Parse_AS.hs:
+ :: Empty haddock header
+
+./CASL_DL/Print_AS.hs:
+ :: Description missing
+
+./Static/test/TestDGTrans.hs:
+ :: Description missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./Haskell.hs:
+ :: Description missing
+
+./ATC/ATCTest.hs:
+ :: Empty haddock header
+
+./ATC/ATCTest2.hs:
+ :: Empty haddock header
+
+./HasCASL/PrintLe.hs:
+ :: License missing
+
+./OWL/Namespace.hs:
+ :: Description missing
+
+./OWL/OWLAnalysis.hs:
+ :: Description missing
+
+./OWL/StaticAnalysis.hs:
+ :: Description missing
+
+./OWL/Sign.hs:
+ :: Description missing
+
+./OWL/ProveFact.hs:
+ :: Description missing
+
+./OWL/AS.hs:
+ :: Description missing
+
+./OWL/OWLParser.hs:
+ :: Description missing
+
+./OWL/Conservativity.hs:
+ :: Description missing
+
+./OWL/Print.hs:
+ :: Description missing
+
+./OWL/StructureAnalysis.hs:
+ :: Description missing
+
+./OWL/ReadWrite.der.hs:
+ :: Description missing
+
+./CommonLogic/ClTests.hs:
+ :: Empty haddock header
+
+./CommonLogic/OMDocImport.hs:
+ :: Empty haddock header
+
+./CommonLogic/OMDocExport.hs:
+ :: Empty haddock header
+
+./CommonLogic/OMDoc.hs:
+ :: Empty haddock header
+
+./Search/Common/Intersection.hs:
+ :: Empty haddock header
+
+./Search/Common/Data.hs:
+ :: Empty haddock header
+
+./Search/DB/FormulaDB/Profile.hs:
+ :: Empty haddock header
+
+./Search/DB/FormulaDB/Inclusion.hs:
+ :: Empty haddock header
+
+./Search/DB/FormulaDB/Statistics.hs:
+ :: Empty haddock header
+
+./Search/DB/FormulaDB.hs:
+ :: Empty haddock header
+
+./Search/SPASS/ReusedTheorems.hs:
+ :: Empty haddock header
+
+./Search/SPASS/Intersection.hs:
+ :: Empty haddock header
+
+./Search/SPASS/UnWrap.hs:
+ :: Empty haddock header
+
+./Taxonomy/taxonomyTool.hs:
+ :: Empty haddock header
+
+./Taxonomy/OntoParser.hs:
+ :: Description missing
+
+./Taxonomy/MMiSSOntology.hs:
+ :: Description missing
+
+./Taxonomy/MMiSSOntologyGraph.hs:
+ :: Description missing
+
+./SoftFOL/tests/PrintTests.hs:
+ :: Empty haddock header
+
+./SoftFOL/tests/PrintTPTPTests.hs:
+ :: Empty haddock header
+
+./SoftFOL/tests/GUI_tests.hs:
+ :: Empty haddock header
+
+./SoftFOL/tests/Sokrates.hs:
+ :: Description missing
+
+./SoftFOL/tests/CMDL_tests.hs:
+ :: Description missing
+ :: Copyright missing
+ :: License missing
+ :: Maintainer missing
+ :: Stability missing
+ :: Portability missing
+
+./SoftFOL.hs:
+ :: Broken haddock header - no Module entry
+
+./utils/Setup.hs:
+ :: Empty haddock header
+
+./utils/appendHaskellPreludeString.hs:
+ :: Description missing
+
+./utils/itcor/GenItCorrections.hs:
+ :: Empty haddock header
+
+./utils/DrIFT-src/ChaseImports.hs:
+ :: Empty haddock header
+
+./utils/DrIFT-src/RuleUtils.hs:
+ :: Empty haddock header
+
+./utils/DrIFT-src/UserRulesHetCATS.hs:
+ :: Description missing
+
+./utils/DrIFT-src/ParseLib2.hs:
+ :: Empty haddock header
+
+./utils/DrIFT-src/DataP.hs:
+ :: Empty haddock header
+
+./utils/DrIFT-src/CommandP.hs:
+ :: Empty haddock header
+
+./utils/DrIFT-src/DrIFT.hs:
+ :: Broken haddock header - no Module entry
+
+./utils/GenerateRules/ParseFile.hs:
+ :: Description missing
+
+./utils/InlineAxioms/InlineAxioms.hs:
+ :: Description missing
+
+./utils/InlineAxioms/ExtInlineAxioms.hs:
+ :: Description missing
+
+./ToHaskell/test/BoolEx.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/OpDecls.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/Expr.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/Test.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/Sorting.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/Pair.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/Builtin.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/ListEx.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/PatternEq.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/NatEx.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/Foldl.hascasl.hs:
+ :: Empty haddock header
+
+./ToHaskell/test/FiniteSet.hascasl.hs:
+ :: Empty haddock header
+
+./ConstraintCASL/AS_ConstraintCASL.hs:
+ :: Description missing
+
+./ConstraintCASL/Print_AS.hs:
+ :: Description missing
+
+./ConstraintCASL/Formula.hs:
+ :: Description missing
+
