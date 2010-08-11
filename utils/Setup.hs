@@ -1,14 +1,14 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Id$
+Description :  Cabal Setup file
+Copyright   :  (c) DFKI GmbH 2010
 License     :  GPLv2 or higher
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  stable
+Portability :  portable
 
-<optional description>
+a file for Cabal
 -}
 import Distribution.Simple
 main = defaultMain
