@@ -199,16 +199,21 @@ exportNodeLab le ln dg s (n, lb) =
                   nsens = toNamedList sens
                   (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                   sigm@(SigMap nm _) = nSigMapToSigMap nsigm
-              -- imports is a list of Maybe (String, OMCD, (OMName, UniqName)),
-              -- symbol-set pairs. We construct the concrete OMImages later
-              -- (see makeImport) in order to prevent multiple imported
+
+              -- imports is a list of Maybe (triples, exported-symbol
+              -- set) pairs as described in 'makeImportMapping'. We
+              -- construct the concrete OMImages later (see
+              -- makeImport) in order to prevent multiple imported
               -- constants to be declared by open as a new constant.
-              -- We must use open for the first occurence and conass for
-              -- the others, i.e., Left resp. Right constructors of
-              -- the OMImage datatype
+              -- We must use open for the first occurence and conass
+              -- for the others, i.e., Left resp. Right constructors
+              -- of the OMImage datatype
               (s'', imports) <-
                   mapAccumLM (makeImportMapping le ln dg (lid, nm)) s'
                                  $ innDG dg n
+
+              -- mappingL: list of the triples described above
+              -- symsetL: used to compute the local symbols (not imported)
               let (mappingL, symsetL) = unzip $ catMaybes imports
                   (_, importL) = mapAccumL makeImport Set.empty mappingL
               extra <- export_theoryToOmdoc lid sigm sig nsens
@@ -235,13 +240,16 @@ getNodeData le ln lb =
         in (labDG dg' $ ref_node ni, lnRef)
     else (lb, ln)
 
--- See the comment in exportNodeLab for details about this function
-makeImport :: Set.Set OMName -> (String, OMCD, [(OMName, UniqName)])
-           -> (Set.Set OMName, TCElement)
+-- See the comment in exportNodeLab for details about this function.
+-- The set is only to accumulate the mapped symbols (the targets, not
+-- the sources!) in order to decide whether to just map the symbol to
+-- a previously mapped symbol or to create an alias!
+makeImport :: Set.Set UniqName -> (String, OMCD, [(OMName, UniqName)])
+           -> (Set.Set UniqName, TCElement)
 makeImport s (n, cd, mapping) =
-    let f s' p@(omn, _)
-            | Set.notMember omn s' =
-                (Set.insert omn s', makeMorphismEntry True p)
+    let f s' p@(_, un)
+            | Set.notMember un s' =
+                (Set.insert un s', makeMorphismEntry True p)
             | otherwise = (s', makeMorphismEntry False p)
         (s'', morph) = mapAccumL f s mapping
     in (s'', TCImport n cd morph)
@@ -256,8 +264,14 @@ makeImportMapping :: forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
         LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> ExpEnv
                -> LEdge DGLinkLab
-               -> Result (ExpEnv, Maybe ( (String, OMCD, [(OMName, UniqName)])
-                                        , Set.Set symbol))
+               -> Result (ExpEnv
+                          -- the triple consists of:
+                          --   name of the import
+                          --   target CD
+                          --   actual mapping as returned by makeMorphism
+                         , Maybe ( (String, OMCD, [(OMName, UniqName)])
+                                 -- symbols exported by the morphism
+                                 , Set.Set symbol))
 makeImportMapping le ln dg toInfo s (from, _, lbl)
     | isHidingEdge $ dgl_type lbl =
         warning () (concat [ "Hiding link with ", show (dgl_id lbl)
@@ -405,7 +419,6 @@ mapEntry _ m1 m2 (s1, s2) =
     let e = error "mapEntry: symbolmapping is missing"
         un1 = Map.findWithDefault e s1 m1
         un2 = Map.findWithDefault e s2 m2
-    -- we don't check whether the path is empty or not...
     in (omName un1, un2)
 
 
