@@ -1,3 +1,5 @@
+{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, FlexibleInstances
+  , TypeSynonymInstances #-}
 {- |
 Module      :  $EmptyHeader$
 Description :  <optional short description entry>
@@ -10,8 +12,6 @@ Portability :  portable | non-portable (<reason>)
 
 <optional description>
 -}
-{-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, FlexibleInstances
-  , TypeSynonymInstances #-}
 -- institution modification
 -- CASL -------------------------id------------------> CASL
 -- CASL ---CASL2Modal----> ModalCASL --Modal2CASL----> CASL

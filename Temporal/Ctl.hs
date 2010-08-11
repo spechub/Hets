@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts #-}
 {- |
 Module      :  $EmptyHeader$
 Description :  <optional short description entry>
@@ -10,7 +11,6 @@ Portability :  portable | non-portable (<reason>)
 
 <optional description>
 -}
-{-# OPTIONS -fglasgow-exts #-}
 
 module Ctl where
 

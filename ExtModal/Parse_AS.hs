@@ -1,4 +1,4 @@
-{-
+{- |
 Module      :  $Header$
 Description :  Parser for extended modal logic
 Copyright   :  DFKI GmbH 2009

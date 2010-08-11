@@ -3,7 +3,7 @@ Module      : $Header$
 Description : after parsing XML message a list of XMLcommands is produced,
               containing commands that need to be executed
 Copyright   : uni-bremen and DFKI
-Licence     : GPLv2 or higher
+License     : GPLv2 or higher
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable

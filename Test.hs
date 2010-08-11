@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-unused-binds #-}
 {- |
 Module      :  $EmptyHeader$
 Description :  <optional short description entry>
@@ -10,7 +11,6 @@ Portability :  portable | non-portable (<reason>)
 
 <optional description>
 -}
-{-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-unused-binds #-}
 
 import Syntax.AS_Library
 import Static.AnalysisLibrary

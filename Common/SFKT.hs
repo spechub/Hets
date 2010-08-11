@@ -1,7 +1,8 @@
+{-# LANGUAGE RankNTypes #-}
 {- |
 Module      :  $EmptyHeader$
 Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Copyright   :  (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov and Daniel P. Friedman
 License     :  GPLv2 or higher
 
 Maintainer  :  <email>
@@ -10,13 +11,8 @@ Portability :  portable | non-portable (<reason>)
 
 <optional description>
 -}
-{-# LANGUAGE RankNTypes #-}
 
 -- Implementation of LogicT based on the two-continuation model of streams
-
-{- Copyright (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov,
-        and Daniel P. Friedman
--}
 
 module Common.SFKT (
   SFKT, runM, observe
