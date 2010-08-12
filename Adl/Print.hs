@@ -53,7 +53,7 @@ instance Pretty MulOp where
     Fd -> i
     _ -> space <> i <> space
 
-prettyParen :: (Expression -> Bool) -> Expression -> Doc
+prettyParen :: (Rule -> Bool) -> Rule -> Doc
 prettyParen p e = (if p e then parens else id) $ pretty e
 
 minusId :: Id
@@ -80,7 +80,7 @@ adlGA :: GlobalAnnos
 adlGA = emptyGlobalAnnos
   { display_annos = displayMap }
 
-instance Pretty Expression where
+instance Pretty Rule where
   pretty e = useGlobalAnnos adlGA $ case e of
     Tm r -> pretty r
     MulExp o es ->
@@ -104,10 +104,7 @@ instance Pretty RangedProp where
 
 instance Pretty Object where
   pretty (Object n e as os) = sep
-    [ fsep [commentText (tokStr n) <> colon, case e of
-          MulExp Re _ -> parens
-          _ -> id
-        $ pretty e]
+    [ fsep [commentText (tokStr n) <> colon, pretty e]
     , if null as then empty else fsep $ keyword "ALWAYS" : map pretty as
     , if null os then empty else equals <+> brackets (ppWithCommas os) ]
 

@@ -74,13 +74,13 @@ instance Show MulOp where
     Rr -> "-|"
     Re -> "="
 
-data Expression
+data Rule
   = Tm Relation
-  | MulExp MulOp [Expression]
-  | UnExp UnOp Expression
+  | MulExp MulOp [Rule]
+  | UnExp UnOp Rule
     deriving (Eq, Ord, Show)
 
-instance GetRange Expression where
+instance GetRange Rule where
   getRange e = case e of
     Tm r -> getRange r
     UnExp _ f -> getRange f
@@ -89,8 +89,6 @@ instance GetRange Expression where
     Tm r -> rangeSpan r
     UnExp _ f -> rangeSpan f
     MulExp _ es -> joinRanges $ map rangeSpan es
-
-type Rule = Expression
 
 data Prop
   = Uni          -- ^ univalent
@@ -125,12 +123,12 @@ rProp p = RangedProp p nullRange
 
 data Object = Object
   { label :: Token
-  , expr :: Expression
+  , expr :: Rule
   , props :: [RangedProp]
   , subobjs :: [Object]
   } deriving Show
 
-data KeyAtt = KeyAtt (Maybe Token) Expression deriving Show
+data KeyAtt = KeyAtt (Maybe Token) Rule deriving Show
 
 instance GetRange KeyAtt where
   getRange (KeyAtt _ e) = getRange e

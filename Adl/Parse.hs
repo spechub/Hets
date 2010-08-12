@@ -109,7 +109,7 @@ pContext = do
   c <- parseToken pConid
   option () $ do
     pColon
-    pExpr
+    pRule
     forget $ optionL $ do
       pKey "BINDING"
       sepBy1 pBind pComma
@@ -199,7 +199,7 @@ pLabelProps = do
   return n
 
 pKeyAtt :: CharParser st KeyAtt
-pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) pExpr
+pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) pRule
 
 pObjDef :: CharParser st PatElem
 pObjDef = liftM2 Plug
@@ -209,7 +209,7 @@ pObjDef = liftM2 Plug
 pObj :: CharParser st Object
 pObj = do
   n <- pLabelProps
-  e <- pImpl -- exclude equivalence because of a subsequent pEqual
+  e <- pRule
   as <- optionL (pKey "ALWAYS" >> many pProp')
   os <- optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
   return $ Object n e as os
@@ -248,7 +248,7 @@ pRecord = let ps = parseToken pString in
 pRuleDef :: CharParser st PatElem
 pRuleDef = do
   h <- option Always pSignalOrAlways
-  r <- pExpr
+  r <- pRule
   option "" $ do
     pKey "EXPLANATION"
     pString
@@ -287,40 +287,41 @@ pMorphism = do
   (c1, c2) <- pTwo
   return $ Sgn nm c1 c2
 
-pExpr :: CharParser st Expression
-pExpr = pPrec Re pImpl
+pRule :: CharParser st Rule
+pRule = pPrec Re pImpl
 
-pImpl :: CharParser st Expression
+pImpl :: CharParser st Rule
 pImpl = do
-  e <- pExprI
+  e <- pExpr
   option e $ do
     o <- choice $ map (\ p -> pSymS (show p) >> return p) [Ri, Rr]
-    es <- sepBy1 pExprI $ pSym (show o)
+    es <- sepBy1 pExpr $ pSym (show o)
     return $ MulExp o $ e : es
 
-pExprI :: CharParser st Expression
-pExprI = pPrec Fu pFactorI
+pExpr :: CharParser st Rule
+pExpr = pPrec Fu pFactorI
 
-pFactorI :: CharParser st Expression
+pFactorI :: CharParser st Rule
 pFactorI = pPrec Fi pFactor
 
-pFactor :: CharParser st Expression
+pFactor :: CharParser st Rule
 pFactor = pPrec Fd pTermD
 
-pTermD :: CharParser st Expression
+pTermD :: CharParser st Rule
 pTermD = pPrec Fc pTerm
 
-pPrec :: MulOp -> CharParser st Expression -> CharParser st Expression
+pPrec :: MulOp -> CharParser st Rule -> CharParser st Rule
 pPrec f p = do
-  es <- sepBy1 p $ pSym (show f)
+  es <- sepBy1 p $ try $ pSym (show f) >> notFollowedBy (char '[')
+                   -- to aovid conflict in objects
   return $ case es of
     [e] -> e
     _ -> MulExp f es
 
-pTerm :: CharParser st Expression
+pTerm :: CharParser st Rule
 pTerm = do
   ms <- many pMinus
-  e <- pParens pExpr <|> fmap Tm pMorphism
+  e <- pParens pRule <|> fmap Tm pMorphism
   rs <- many $ choice $ map (\ p -> pSymS (show p) >> return p) [K0, K1, Co]
   let p = foldl (flip UnExp) e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms
