@@ -90,6 +90,25 @@ addIsa c1 c2 = do
       else addMsgs [mkDiag Error "unknown ISA" c2]
     else addMsgs [mkDiag Error "unknown GEN" c2]
 
+-- | analyze rule and return resolved one
+anaRule :: Rule -> State Env [Rule]
+anaRule rule = do
+  s <- gets sign
+  let m = rels s
+      i = isas s
+  case rule of
+   Tm r -> return $ Set.fold
+      (\ (RelType f t) l ->
+           if isSubConcept i f (desrc r) && isSubConcept i t (detrg r)
+           then Tm r { desrc = f, detrg = t } : l else l) []
+      $ Map.findWithDefault Set.empty (simpleIdToId $ decnm r) m
+   _ -> return []
+
+isSubConcept :: Rel.Rel Concept -> Concept -> Concept -> Bool
+isSubConcept r c1 c2 = case c2 of
+  Anything -> True
+  _ -> Rel.path c1 c2 r
+
 anaPatElem :: PatElem -> State Env ()
 anaPatElem pe = case pe of
     Pr h u -> addSens [case h of
