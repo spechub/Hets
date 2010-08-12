@@ -16,6 +16,7 @@ import Adl.As
 import Adl.Print ()
 
 import qualified Common.Lib.Rel as Rel
+import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
@@ -51,8 +52,8 @@ signUnion s1 s2 = return s1
   , isas = Rel.union (isas s1) (isas s2) }
 
 data Symbol
-  = Rel Relation
-  | Con Concept
+  = Con Concept
+  | Rel Relation
     deriving (Eq, Ord, Show)
 
 instance GetRange Symbol where
@@ -118,7 +119,9 @@ instance GetRange Sign where
   rangeSpan = rangeSpan . symOf
 
 instance Pretty Sign where
-  pretty = pretty . symOf
+  pretty s = ppWithCommas (Set.toList $ symOf s)
+    $+$ vcat (map (\ (c1, c2) -> pretty $ Pg c1 c2)
+              . Rel.toList . Rel.transReduce . Rel.transClosure $ isas s)
 
 data Sen
   = DeclProp Relation RangedProp
