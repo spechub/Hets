@@ -27,13 +27,16 @@ instance Pretty Concept where
     C s -> pretty s
     _ -> text $ show c
 
-instance Pretty Relation where
-  pretty (Sgn n c1 c2) = let s = tokStr n in
-    (if isBRel s then keyword s else pretty n)
-    <> case (c1, c2) of
+instance Pretty RelType where
+  pretty (RelType c1 c2) = case (c1, c2) of
       (Anything, Anything) -> empty
       _ | c1 == c2 -> brackets $ pretty c1
       _ -> brackets $ hcat [pretty c1, cross, pretty c2]
+
+instance Pretty Relation where
+  pretty (Sgn n t) = let s = tokStr n in
+    (if isBRel s then keyword s else pretty n)
+    <> pretty t
 
 pOp :: UnOp -> Id
 pOp o = case o of
@@ -142,7 +145,7 @@ instance Pretty PatElem where
     Pr k r -> pretty k <+> pretty r
     Pg c1 c2 -> fsep [keyword "GEN", pretty c1, keyword "ISA", pretty c2]
     Pk k -> pretty k
-    Pm ps (Sgn n c1 c2) b ->
+    Pm ps (Sgn n (RelType c1 c2)) b ->
       let u = rProp Uni
           t = rProp Tot
           f = elem u ps && elem t ps

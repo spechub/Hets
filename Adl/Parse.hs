@@ -157,7 +157,7 @@ pDeclaration = do
   optionL $ do
     pKey "EXPLANATION"
     pString
-  let r = Sgn n c1 c2
+  let r = Sgn n $ RelType c1 c2
   p <- optionL $ do
     pEqual
     single $ pContent True r
@@ -273,14 +273,14 @@ pGen = do
   c2 <- pConcept
   return $ Pg c1 c2
 
-pTwo :: CharParser st (Concept, Concept)
-pTwo = option (Anything, Anything)
+pTwo :: CharParser st RelType
+pTwo = option (RelType Anything Anything)
   $ pSqBrackets $ do
   c1 <- pConcept
   c2 <- option c1 $ do
     pSym "*"
     pConcept
-  return (c1, c2)
+  return $ RelType c1 c2
 
 pConcept :: CharParser st Concept
 pConcept = fmap C . parseToken $ pConid <|> pString <|> pKeyS "ONE"
@@ -288,8 +288,8 @@ pConcept = fmap C . parseToken $ pConid <|> pString <|> pKeyS "ONE"
 pMorphism :: CharParser st Relation
 pMorphism = do
   nm <- parseToken $ choiceP pKey bRels <|> pVarid <|> (sQuoted << skip)
-  (c1, c2) <- pTwo
-  return $ Sgn nm c1 c2
+  ty <- pTwo
+  return $ Sgn nm ty
 
 pRule :: CharParser st Rule
 pRule = pPrec Re pImpl

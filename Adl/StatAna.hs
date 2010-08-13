@@ -63,9 +63,10 @@ addSyms sys = do
 
 symsOf :: Relation -> Set.Set Symbol
 symsOf r = let
-    s = desrc r
-    t = detrg r
-    in Set.fromList [Con s, Con t, Rel $ Sgn (decnm r) s t]
+    y = relType r
+    s = relSrc y
+    t = relTrg y
+    in Set.fromList [Con s, Con t, Rel r]
 
 addRel :: Relation -> State Env ()
 addRel r = do
@@ -74,7 +75,7 @@ addRel r = do
        m = rels s
        i = simpleIdToId $ decnm r
        l = Map.findWithDefault Set.empty i m
-       v = RelType (desrc r) $ detrg r
+       v = relType r
    put e { sign = s { rels = Map.insert i (Set.insert v l) m } }
 
 addIsa :: Concept -> Concept -> State Env ()
@@ -120,14 +121,14 @@ typeRule s rule =
   let m = rels s
       i = isas s
   in case rule of
-   Tm r@(Sgn n rs rt) ->
-      if isBRel (tokStr n) then [TypedRule rule $ RelType rs rt] else
+   Tm (Sgn n ty@(RelType rs rt)) ->
+      if isBRel (tokStr n) then [TypedRule rule ty] else
       Set.fold
       (\ (RelType f t) l -> maybeToList (do
               a <- compatible i f rs
               b <- compatible i t rt
-              return $ TypedRule (Tm r { desrc = a, detrg = b })
-                $ RelType a b) ++ l) []
+              let y = RelType a b
+              return $ TypedRule (Tm $ Sgn n y) y) ++ l) []
       $ Map.findWithDefault Set.empty (simpleIdToId n) m
    UnExp o r ->
      map (\ (TypedRule e t@(RelType a b)) -> TypedRule (UnExp o e)

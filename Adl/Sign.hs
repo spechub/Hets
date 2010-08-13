@@ -25,11 +25,6 @@ import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-data RelType = RelType
-  { relSrc :: Concept
-  , relTrg :: Concept
-  } deriving (Eq, Ord, Show)
-
 type RelMap = Map.Map Id (Set.Set RelType)
 
 data Sign = Sign
@@ -108,10 +103,10 @@ symOf :: Sign -> Set.Set Symbol
 symOf = Set.unions . map (\ (i, l) ->
           Set.fromList
             . concatMap
-              (\ p -> let
-                   s = relSrc p
-                   t = relTrg p
-                   in [ Con s, Con t, Rel $ Sgn (idToSimpleId i) s t])
+              (\ y -> let
+                   s = relSrc y
+                   t = relTrg y
+                   in [Con s, Con t, Rel $ Sgn (idToSimpleId i) y])
             $ Set.toList l)
         . Map.toList . rels
 
@@ -122,7 +117,7 @@ instance GetRange Sign where
 instance Pretty Sign where
   pretty s =
     vcat (map pretty $ concatMap (\ (i, l) ->
-               map (\ (RelType f t) -> Pm [] (Sgn (idToSimpleId i) f t) False)
+               map (\ t -> Pm [] (Sgn (idToSimpleId i) t) False)
                $ Set.toList l) $ Map.toList $ rels s)
     $+$ vcat (map (\ (c1, c2) -> pretty $ Pg c1 c2)
               . Rel.toList . Rel.transReduce . Rel.transClosure $ isas s)

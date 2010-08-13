@@ -29,16 +29,25 @@ instance GetRange Concept where
       C t -> rangeSpan t
       Anything -> []
 
+data RelType = RelType
+  { relSrc :: Concept -- ^ the source concept
+  , relTrg :: Concept -- ^ the target concept
+  } deriving (Eq, Ord, Show)
+
+instance GetRange RelType where
+    getRange = getRange . relSrc
+    rangeSpan (RelType c1 c2) =
+      joinRanges [rangeSpan c1, rangeSpan c2]
+
 data Relation = Sgn
   { decnm :: Token  -- ^ the name
-  , desrc :: Concept -- ^ the source concept
-  , detrg :: Concept -- ^ the target concept
+  , relType :: RelType
   } deriving (Eq, Ord, Show)
 
 instance GetRange Relation where
     getRange = getRange . decnm
-    rangeSpan (Sgn t c1 c2) =
-      joinRanges [rangeSpan t, rangeSpan c1, rangeSpan c2]
+    rangeSpan (Sgn n t) =
+      joinRanges [rangeSpan n, rangeSpan t]
 
 -- | builtin relation over Anything
 bRels :: [String]
