@@ -174,6 +174,8 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
           signalUnblock shP
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
+          lgoals <- getSelectedMultiple trvGoals listGoals
+          widgetSetSensitive (castToWidget btnDisprove) (length lgoals == 1)
           return s
 
     activate noGoal (not $ Map.null $ goalMap initState)
@@ -213,13 +215,12 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
       case selGoal of
         [(i, g)] -> do
           s' <- takeMVar state
-          s <- disproveThmSingle (gName g) node s' 1
+          pr <- getSelectedSingle trvProvers listProvers
+          s <- disproveThmSingle (gName g) (maybe "" (pName . snd) pr) node s' 1
           putMVar state =<< update s
           listStoreSetValue listGoals i $ fromJust $ find 
             (\g' -> gName g' == gName g) $ toGoals s
- 
-        _ -> infoDialog "Disprove selected goal"
-               "please select one goal only!"
+        _ -> error "GtkProverGUI.onClicked_btnDisprove"
 
     onClicked btnProve $ do
       s' <- takeMVar state
