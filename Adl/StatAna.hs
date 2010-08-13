@@ -130,9 +130,15 @@ typeRule s rule =
               let y = RelType a b
               return $ TypedRule (Tm $ Sgn n y) y) ++ l) []
       $ Map.findWithDefault Set.empty (simpleIdToId n) m
-   UnExp o r ->
-     map (\ (TypedRule e t@(RelType a b)) -> TypedRule (UnExp o e)
-          $ if o == Co then RelType b a else t) $ typeRule s r
+   UnExp o r -> concatMap
+     (\ (TypedRule e t@(RelType a b)) -> map (TypedRule $ UnExp o e)
+          $ case o of
+              Co -> [RelType b a]
+              Cp -> [t]
+              _ -> case compatible i a b of
+                     Nothing -> []
+                     Just c -> [RelType c c]
+     ) $ typeRule s r
    MulExp o es -> case es of
      [] -> error "typeRule"
      r : t -> if null t then typeRule s r else
