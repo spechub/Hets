@@ -213,13 +213,9 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     onClicked btnDisprove $ do 
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
-        [(i, g)] -> do
-          s' <- takeMVar state
+        [(_, g)] -> do
           pr <- getSelectedSingle trvProvers listProvers
-          s <- disproveThmSingle (gName g) (maybe "" (pName . snd) pr) node s' 1
-          putMVar state =<< update s
-          listStoreSetValue listGoals i $ fromJust $ find 
-            (\g' -> gName g' == gName g) $ toGoals s
+          disproveThmSingle (gName g) (maybe "" (pName . snd) pr) node 1
         _ -> error "GtkProverGUI.onClicked_btnDisprove"
 
     onClicked btnProve $ do
