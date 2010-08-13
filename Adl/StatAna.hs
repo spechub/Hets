@@ -180,12 +180,10 @@ anaAtts (KeyAtt m r) = do
   n <- anaRule r
   return $ KeyAtt m n
 
-anaObject :: Object -> State Env Object
-anaObject (Object l r ps os) = do
-  e <- anaRule r
-  -- the subobject are restricted so this is still wrong
-  ns <- mapM anaObject os
-  return $ Object l e ps ns
+anaObject :: Object -> State Env ()
+anaObject (Object _ r _ os) = do
+  anaRule r
+  mapM_ (anaObject . \ o -> o { expr = MulExp Fc [r, expr o]}) os
 
 anaPatElem :: PatElem -> State Env PatElem
 anaPatElem pe = case pe of
@@ -210,7 +208,7 @@ anaPatElem pe = case pe of
          addMsgs [mkDiag Error "unknown KEY concept" c]
        natts <- mapM anaAtts atts
        return $ Pk $ KeyDef l c natts
-    Plug p o -> do
-      n <- anaObject o
-      return $ Plug p n
+    Plug _ o -> do
+      anaObject o
+      return pe
     _ -> return pe
