@@ -22,8 +22,8 @@ import Proofs.AbstractState
 import Common.ExtSign
 import Common.Result
 import Common.AS_Annotation
-import Common.DocUtils (pretty)
-import Common.OrderedMap as OMap
+import Common.Utils (nubOrd)
+import qualified Common.OrderedMap as OMap
 
 import Comorphisms.LogicGraph
 
@@ -61,9 +61,11 @@ disproveThmSingle selGoal selPr (_, lbl) t'' =
                 g_th = G_theory lid1 (ExtSign sign symb) i1 sens' i2
                 subL = sublogicOfTh g_th
                 lcc = getConsCheckers $ findComorphismPaths logicGraph subL
-            case selectConsChecker selPr lcc of
+            case find (\ (p, _) -> getPName p == selPr) lcc of
               Nothing -> 
-                info "failed to find (any) Consistency Checker for inverted theorem"
+                info $ "failed to find Consistency Checker for the selected prover\n\n"
+                  ++ "possible ConsCheckers are:\n" ++ intercalate "\n" 
+                   (nubOrd $ map (getPName . fst) lcc)
               Just (G_cons_checker lid4 cc, Comorphism cid) -> do
                 let lidS = sourceLogic cid
                     lidT = targetLogic cid
@@ -88,18 +90,11 @@ disproveThmSingle selGoal selPr (_, lbl) t'' =
                     case ccS of
                       Just ccStatus -> do
                            info $ "the ConsistencyChecker " ++ ccName cc' ++ " has returned "
-                             ++ "the following results\n" ++ case ccResult ccStatus of
-                               Nothing -> "ConsistencyStatus unknonw"
-                               Just b -> if b then "Consistent" else "Inconsistent"
-                             ++ "\n" ++ show (ccProofTree ccStatus)
+                             ++ "the following " ++ case ccResult ccStatus of
+                               Nothing -> ""
+                               Just b -> if b then "consistent" else "inconsistent"
+                             ++ " results:\n" ++ show (ccProofTree ccStatus)
                       Nothing -> do
                            info $ "the ConsistencyChecker has not returned any results\n"
                              ++ "ConsistencyChecker used: " ++ ccName cc'
 
-selectConsChecker :: String -> [(G_cons_checker, AnyComorphism)] 
-                  -> Maybe (G_cons_checker, AnyComorphism)
-selectConsChecker s cc = case cc of
-  [] -> Nothing
-  h : _ -> case find (\ (c,_) -> getPName c == s) cc of
-                            Nothing -> Just h
-                            Just c' -> Just c'
