@@ -28,8 +28,8 @@ instance Pretty Concept where
     _ -> text $ show c
 
 instance Pretty Relation where
-  pretty (Sgn n c1 c2) =
-    (if tokStr n `elem` ["I", "V"] then keyword (tokStr n) else pretty n)
+  pretty (Sgn n c1 c2) = let s = tokStr n in
+    (if isBRel s then keyword s else pretty n)
     <> case (c1, c2) of
       (Anything, Anything) -> empty
       _ | c1 == c2 -> brackets $ pretty c1

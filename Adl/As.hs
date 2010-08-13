@@ -40,6 +40,13 @@ instance GetRange Relation where
     rangeSpan (Sgn t c1 c2) =
       joinRanges [rangeSpan t, rangeSpan c1, rangeSpan c2]
 
+-- | builtin relation over Anything
+bRels :: [String]
+bRels = ["I", "V"]
+
+isBRel :: String -> Bool
+isBRel s = elem s bRels
+
 data UnOp
   = K0 -- ^ Reflexive and transitive closure *
   | K1 -- ^ Transitive closure +

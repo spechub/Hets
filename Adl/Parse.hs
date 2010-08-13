@@ -201,9 +201,14 @@ pLabelProps = do
 pKeyAtt :: CharParser st KeyAtt
 pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) pRule
 
+choiceP :: (a -> CharParser st ()) -> [a] -> CharParser st a
+choiceP p = choice . map (\ a -> p a >> return a)
+
+choiceS :: Show a => (String -> CharParser st ()) -> [a] -> CharParser st a
+choiceS p = choiceP $ p . show
+
 pObjDef :: CharParser st PatElem
-pObjDef = liftM2 Plug
-  (choice $ map (\ p -> pKey (showUp p) >> return p)
+pObjDef = liftM2 Plug (choiceP (pKey . showUp)
    [Service, Sqlplug, Phpplug]) pObj
 
 pObj :: CharParser st Object
@@ -220,7 +225,7 @@ pProp' = choice $ map pRangedProp [Uni, Tot, Prop]
 pExplain :: CharParser st [PatElem]
 pExplain = do
   pKey "EXPLAIN"
-  choice $ map pKey
+  choiceP pKey
     [ "CONCEPT", "RELATION", "RULE", "KEY", "SERVICE", "PATTERN"
     , "POPULATION", "SQLPLUG", "PHPPLUG" ]
   pADLid
@@ -258,8 +263,7 @@ pSignalOrAlways :: CharParser st RuleHeader
 pSignalOrAlways =
   fmap (RuleHeader SignalOn) (pKey "SIGNAL" >> pADLid << pKey "ON")
   <|> (pKey "RULE" >> liftM2 (flip RuleHeader) pADLid
-         (choice $ map (\ r -> pKey (showRuleKind r) >> return r)
-         [Maintains, Signals]))
+         (choiceP (pKey . showRuleKind) [Maintains, Signals]))
 
 pGen :: CharParser st PatElem
 pGen = do
@@ -283,7 +287,7 @@ pConcept = fmap C . parseToken $ pConid <|> pString <|> pKeyS "ONE"
 
 pMorphism :: CharParser st Relation
 pMorphism = do
-  nm <- parseToken $ pKeyS "I" <|> pKeyS "V" <|> pVarid <|> (sQuoted << skip)
+  nm <- parseToken $ choiceP pKey bRels <|> pVarid <|> (sQuoted << skip)
   (c1, c2) <- pTwo
   return $ Sgn nm c1 c2
 
@@ -294,7 +298,7 @@ pImpl :: CharParser st Rule
 pImpl = do
   e <- pExpr
   option e $ do
-    o <- choice $ map (\ p -> pSymS (show p) >> return p) [Ri, Rr]
+    o <- choiceS pSym [Ri, Rr]
     es <- sepBy1 pExpr $ pSym (show o)
     return $ MulExp o $ e : es
 
@@ -322,6 +326,6 @@ pTerm :: CharParser st Rule
 pTerm = do
   ms <- many pMinus
   e <- pParens pRule <|> fmap Tm pMorphism
-  rs <- many $ choice $ map (\ p -> pSymS (show p) >> return p) [K0, K1, Co]
+  rs <- many $ choiceS pSym [K0, K1, Co]
   let p = foldl (flip UnExp) e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms
