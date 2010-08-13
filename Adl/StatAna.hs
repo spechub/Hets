@@ -23,15 +23,18 @@ import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Rel as Rel
 
+import Control.Monad
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe
 
 basicAna :: (Context, Sign, GlobalAnnos)
   -> Result (Context, ExtSign Sign Symbol, [Named Sen])
-basicAna (c@(Context _ ps), sig, _) =
-  let env = execState (mapM_ anaPatElem ps) (toEnv sig)
+basicAna (Context m ps, sig, _) =
+  let (nps, env) = runState (mapM anaPatElem ps) (toEnv sig)
   in Result (reverse $ msgs env)
-     $ Just (c, ExtSign (sign env) $ syms env, reverse $ sens env)
+     $ Just (Context m nps, ExtSign (sign env) $ syms env, reverse $ sens env)
 
 data Env = Env
   { sign :: Sign
@@ -91,34 +94,116 @@ addIsa c1 c2 = do
       else addMsgs [mkDiag Error "unknown ISA" c2]
     else addMsgs [mkDiag Error "unknown GEN" c2]
 
--- | analyze rule and return resolved one
-anaRule :: Rule -> State Env [Rule]
-anaRule rule = do
+data TypedRule = TypedRule Rule RelType
+
+anaRule :: Rule -> State Env Rule
+anaRule r = do
   s <- gets sign
+  case typeRule s r of
+    [] -> do
+      addMsgs [mkDiag Error "no typing found" r]
+      return r
+    TypedRule e (RelType c1 c2) : t -> do
+      if null t then do
+        case c1 of
+          Anything -> addMsgs [mkDiag Error "source concept is anything" r]
+          _ -> return ()
+        case c2 of
+          Anything -> addMsgs [mkDiag Error "target concept is anything" r]
+          _ -> return ()
+        else addMsgs [mkDiag Error "ambiguous typings found" r]
+      return e
+
+-- | analyze rule and return resolved one
+typeRule :: Sign -> Rule -> [TypedRule]
+typeRule s rule =
   let m = rels s
       i = isas s
-  case rule of
-   Tm r -> return $ Set.fold
-      (\ (RelType f t) l ->
-           if isSubConcept i f (desrc r) && isSubConcept i t (detrg r)
-           then Tm r { desrc = f, detrg = t } : l else l) []
-      $ Map.findWithDefault Set.empty (simpleIdToId $ decnm r) m
-   _ -> return []
+  in case rule of
+   Tm r@(Sgn n rs rt) ->
+      if isBRel (tokStr n) then [TypedRule rule $ RelType rs rt] else
+      Set.fold
+      (\ (RelType f t) l -> maybeToList (do
+              a <- compatible i f rs
+              b <- compatible i t rt
+              return $ TypedRule (Tm r { desrc = a, detrg = b })
+                $ RelType a b) ++ l) []
+      $ Map.findWithDefault Set.empty (simpleIdToId n) m
+   UnExp o r ->
+     map (\ (TypedRule e t@(RelType a b)) -> TypedRule (UnExp o e)
+          $ if o == Co then RelType b a else t) $ typeRule s r
+   MulExp o es -> case es of
+     [] -> error "typeRule"
+     r : t -> if null t then typeRule s r else
+       let rs = typeRule s r
+           ts = typeRule s $ MulExp o t
+       in
+         [ TypedRule fe ty
+         | TypedRule ne (RelType a b) <- rs
+         , TypedRule re (RelType p q) <- ts
+         , let fe = case re of
+                 MulExp op nt | op == o -> MulExp o $ ne : nt
+                 _ -> MulExp o [ne, re]
+         , let res = case o of
+                 Fc -> case compatible i b p of
+                         Nothing -> Nothing
+                         Just _ -> Just $ RelType a q
+                 Fd -> case compatible i a q of
+                         Nothing -> Nothing
+                         Just _ -> Just $ RelType p b
+                 _ -> do
+                   na <- compatible i a p
+                   nb <- compatible i b q
+                   return $ RelType na nb
+         , Just ty <- [res]]
+
+compatible :: Rel.Rel Concept -> Concept -> Concept -> Maybe Concept
+compatible r c1 c2 = case () of
+  _ | isSubConcept r c1 c2 -> Just c1
+    | isSubConcept r c2 c1 -> Just c2
+  _ -> Nothing
 
 isSubConcept :: Rel.Rel Concept -> Concept -> Concept -> Bool
-isSubConcept r c1 c2 = case c2 of
+isSubConcept r c1 c2 = c1 == c2 || case c2 of
   Anything -> True
   _ -> Rel.path c1 c2 r
 
-anaPatElem :: PatElem -> State Env ()
+anaAtts :: KeyAtt -> State Env KeyAtt
+anaAtts (KeyAtt m r) = do
+  n <- anaRule r
+  return $ KeyAtt m n
+
+anaObject :: Object -> State Env Object
+anaObject (Object l r ps os) = do
+  e <- anaRule r
+  -- the subobject are restricted so this is still wrong
+  ns <- mapM anaObject os
+  return $ Object l e ps ns
+
+anaPatElem :: PatElem -> State Env PatElem
 anaPatElem pe = case pe of
-    Pr h u -> addSens [case h of
-      Always -> makeNamed "" $ Assertion Nothing u
-      RuleHeader k t -> makeNamed (show t) $ Assertion (Just k) u]
+    Pr h u -> do
+      nu <- anaRule u
+      addSens [case h of
+        Always -> makeNamed "" $ Assertion Nothing u
+        RuleHeader k t -> makeNamed (show t) $ Assertion (Just k) u]
+      return $ Pr h nu
     Pm qs d _ -> do
       addRel d
       addSens $ map (\ q -> makeNamed (show (decnm d) ++ "_"
                                        ++ showUp (propProp q))
                     $ DeclProp d q) qs
-    Pg c1 c2 -> addIsa c1 c2
-    _ -> return ()
+      return pe
+    Pg c1 c2 -> do
+      addIsa c1 c2
+      return pe
+    Pk (KeyDef l c atts) -> do
+       ssyms <- gets $ symOf . sign
+       unless (Set.member (Con c) ssyms) $
+         addMsgs [mkDiag Error "unknown KEY concept" c]
+       natts <- mapM anaAtts atts
+       return $ Pk $ KeyDef l c natts
+    Plug p o -> do
+      n <- anaObject o
+      return $ Plug p n
+    _ -> return pe
