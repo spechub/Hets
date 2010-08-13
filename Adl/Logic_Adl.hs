@@ -46,6 +46,7 @@ instance Sentences Adl
       symmap_of Adl _ = Map.empty
       sym_name Adl = symName
       map_sen Adl _ = return . id
+      print_named Adl = printNSen
 
 instance Syntax Adl
     Context

@@ -30,7 +30,8 @@ basicAna :: (Context, Sign, GlobalAnnos)
   -> Result (Context, ExtSign Sign Symbol, [Named Sen])
 basicAna (c@(Context _ ps), sig, _) =
   let env = execState (mapM_ anaPatElem ps) (toEnv sig)
-  in Result (msgs env) $ Just (c, ExtSign (sign env) $ syms env, sens env)
+  in Result (reverse $ msgs env)
+     $ Just (c, ExtSign (sign env) $ syms env, reverse $ sens env)
 
 data Env = Env
   { sign :: Sign

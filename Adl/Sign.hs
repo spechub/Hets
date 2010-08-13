@@ -15,11 +15,12 @@ module Adl.Sign where
 import Adl.As
 import Adl.Print ()
 
-import qualified Common.Lib.Rel as Rel
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -119,7 +120,10 @@ instance GetRange Sign where
   rangeSpan = rangeSpan . symOf
 
 instance Pretty Sign where
-  pretty s = ppWithCommas (Set.toList $ symOf s)
+  pretty s =
+    vcat (map pretty $ concatMap (\ (i, l) ->
+               map (\ (RelType f t) -> Pm [] (Sgn (idToSimpleId i) f t) False)
+               $ Set.toList l) $ Map.toList $ rels s)
     $+$ vcat (map (\ (c1, c2) -> pretty $ Pg c1 c2)
               . Rel.toList . Rel.transReduce . Rel.transClosure $ isas s)
 
@@ -140,3 +144,13 @@ instance Pretty Sen where
   pretty s = case s of
     DeclProp r p -> pretty $ Pm [p] r False
     Assertion _ r -> pretty $ Pr Always r
+
+printNSen :: Named Sen -> Doc
+printNSen ns = let
+   s = sentence ns
+   n = senAttr ns
+   d = pretty s
+   in case s of
+   Assertion (Just k) r ->
+     pretty $ Pr (RuleHeader k $ mkSimpleId n) r
+   _ -> d <+> text ("-- " ++ n)
