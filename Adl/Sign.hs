@@ -37,6 +37,9 @@ emptySign = Sign
   { rels = Map.empty
   , isas = Rel.empty }
 
+closeSign :: Sign -> Sign
+closeSign s = s { isas = Rel.transClosure $ isas s }
+
 isSubSignOf :: Sign -> Sign -> Bool
 isSubSignOf s1 s2 =
   Map.isSubmapOfBy Set.isSubsetOf (rels s1) (rels s2)
@@ -65,11 +68,15 @@ instance Pretty Symbol where
     Rel r -> pretty r
     Con c -> pretty c
 
+conceptToId :: Concept -> Id
+conceptToId c = case c of
+  C t -> simpleIdToId t
+  _ -> stringToId (show c)
+
 symName :: Symbol -> Id
-symName s = simpleIdToId $ case s of
-  Rel r -> decnm r
-  Con (C c) -> c
-  Con c -> mkSimpleId $ show c
+symName s = case s of
+  Rel r -> simpleIdToId $ decnm r
+  Con c -> conceptToId c
 
 data RawSymbol
   = Symbol Symbol

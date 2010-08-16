@@ -89,6 +89,7 @@ import Comorphisms.CASL2VSERefine
 import Comorphisms.CASL2VSEImport
 import Comorphisms.Maude2CASL
 import Comorphisms.CommonLogic2CASL
+import Comorphisms.Adl2CASL
 #endif
 #ifndef NOOWLLOGIC
 import Comorphisms.OWL2CASL
@@ -147,6 +148,7 @@ comorphismList =
     , Comorphism CASL2VSERefine
     , Comorphism Maude2CASL
     , Comorphism CommonLogic2CASL
+    , Comorphism Adl2CASL
 #endif
 #ifndef NOOWLLOGIC
     , Comorphism OWL2CASL
@@ -207,7 +209,7 @@ modificationList :: [AnyModification]
 modificationList = [Modification MODAL_EMBEDDING]
 
 squareMap :: Map.Map (AnyComorphism, AnyComorphism) [Square]
-squareMap = Map.empty --for now
+squareMap = Map.empty -- for now
 
 logicGraph :: LogicGraph
 logicGraph = emptyLogicGraph
@@ -223,7 +225,7 @@ logicGraph = emptyLogicGraph
     , modifications = Map.fromList $ map addModificationName modificationList
     , squares = squareMap
     , qTATranslations =
-       Map.fromList $ map (\x@(Comorphism c)-> (show (sourceLogic c), x))
+       Map.fromList $ map (\ x@(Comorphism c) -> (show (sourceLogic c), x))
                        qtaList}
 
 lookupSquare_in_LG :: AnyComorphism -> AnyComorphism -> Result [Square]
@@ -244,7 +246,6 @@ lookupQTA_in_LG :: String -> Result AnyComorphism
 lookupQTA_in_LG coname =
  let
    qta = qTATranslations logicGraph
- in  if coname `elem` Map.keys qta then
+ in if coname `elem` Map.keys qta then
         return $ Map.findWithDefault (error "") coname qta
       else fail "no translation found"
-
