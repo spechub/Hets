@@ -39,8 +39,11 @@ import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
--- CASL things
+-- Logic things
 import Logic.Coerce
+import Logic.Logic
+
+-- CASL things
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -81,6 +84,43 @@ main = do
 
 proceed :: FilePath -> ResultT IO (LibName, LibEnv)
 proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv emptyDG
+
+
+-- read in a hets file and return the basic theory and the sentences
+getSigSens ::
+    Logic lid sublogics basic_spec sentence
+          symb_items symb_map_items sign
+          morphism symbol raw_symbol proof_tree
+    => lid -- logicname
+    -> String -- filename
+    -> String  -- name of spec
+    -> IO (sign,[(String, sentence)])
+getSigSens lid fname sp = do
+  Result _ res <- runResultT $ proceed fname
+  case res of
+    Just (ln, lenv) ->
+     let dg = lookupDGraph ln lenv
+         SpecEntry (ExtGenSig _ (NodeSig node _)) =
+            case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
+              Just x -> x
+              _ -> error ("Specification "++sp++" not found")
+     in
+      case match node (dgBody dg) of
+        (Just ctx, _) ->
+          case dgn_theory $ lab' ctx of
+           G_theory { gTheoryLogic = lid2
+                    , gTheorySign = gSig
+                    , gTheorySens = gSens } ->
+            case (coerceSign lid2 lid "" gSig,
+                  coerceThSens lid2 lid "" gSens) of
+             (Just sig, Just sens) ->
+                return (plainSign sig,
+                        map (\ (x, y) -> (x, sentence y)) $ OMap.toList sens)
+             _ -> error $ "Not a " ++ show lid ++ " sig"
+        _ -> error "Node 1 no in development graph"
+    Nothing -> error "Error occured"
+
+
 
 -- read in a CASL file and return the basic theory
 getCASLSigSens ::    String -- filename

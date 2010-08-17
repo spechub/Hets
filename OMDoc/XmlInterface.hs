@@ -339,7 +339,7 @@ instance XmlRepresentable TCElement where
     toXml (TCNotation (cd, nm) val) =
         inAContent
         el_notation
-        [Attr at_for $ showCDName cd nm, Attr at_role "constant"]
+        [Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "constant"]
         $ Just $ inAContent el_text [Attr at_value val] Nothing
     toXml (TCADT sds) = mkElement el_adt [] $ listToXml sds
     toXml (TCComment c) = makeComment c
@@ -359,7 +359,7 @@ instance XmlRepresentable TCElement where
               justReturn $ TCSymbol nm typ role defn
         | elemIsOf e el_notation =
             let musthave s v = missingMaybe "Notation" s v
-                nm = musthave "for" $ findAttr at_for e
+                nm = urlUnescape $ musthave "for" $ findAttr at_for e
                 role = musthave "role" $ findAttr at_role e
                 text = musthave "text" $ findChild el_text e
                 val = musthave "value" $ findAttr at_value text

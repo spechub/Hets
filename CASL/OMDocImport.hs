@@ -221,8 +221,9 @@ omdocToType e (OMA (c : args)) =
                           ++ show c
     in res
 
-omdocToType e oms@(OMS _) =
-    Left $ OpType Total [] $ lookupSortOMS "omdocToType" e oms
+omdocToType e oms@(OMS _)
+    | oms == const_predtype = Right $ PredType []
+    | otherwise = Left $ OpType Total [] $ lookupSortOMS "omdocToType" e oms
 
 omdocToType _ ome = error $ "omdocToType: Non-supported element: " ++ show ome
 
@@ -354,8 +355,6 @@ omdocToTerm' e@(ie, vm) f =
       _ -> error $ "omdocToTerm: no valid term " ++ show f
 
 
--- TODO: eventually export and reimport SortedTerms!
-
 omdocToFormula' :: TermEnv -> OMElement -> FORMULA f
 omdocToFormula' e@(ie, _) f =
     case f of
@@ -394,6 +393,12 @@ omdocToFormula' e@(ie, _) f =
       OMBIND binder args body ->
           mkBinder e (getQuantifier binder) args body
 
-      _ | f == const_true -> True_atom nullRange
-      _ | f == const_false -> False_atom nullRange
+      OMS _ | f == const_true -> True_atom nullRange
+            | f == const_false -> False_atom nullRange
+            -- Propositional Constants (0-ary predicates):
+            | otherwise ->
+                Predication (toPredSymb
+                             $ lookupPredOMS
+                                   ("omdocToFormula: can't handle constant "
+                                    ++ show f) ie f) [] nullRange
       _ | otherwise -> error $ "omdocToFormula: no valid formula " ++ show f

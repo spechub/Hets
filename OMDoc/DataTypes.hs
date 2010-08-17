@@ -222,7 +222,7 @@ nameDecode s =
 
 nameToString :: UniqName -> String
 nameToString (s, i) =
-    let s' = escapeURIString (\ c -> not $ elem c "/?%") s
+    let s' = escapeURIString (\ c -> not $ elem c "/?%#") s
     in if i > 0 then nameEncode ("over_" ++ show i) [s'] else s'
 
 -- * Constructing/Extracting Values

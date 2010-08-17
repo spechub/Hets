@@ -189,8 +189,9 @@ oms e x = let s = toSymbol x
 makeType :: Env -> OpKind -> [SORT] -> Maybe SORT -> OMElement
 makeType e _ [] (Just r) = oms e r
 makeType e total domain range =
-    OMA $ funtypeconstr : (map (oms e) $ domain ++ maybeToList range)
+    if null args then funtypeconstr else OMA $ funtypeconstr : map (oms e) args
         where
+          args = domain ++ maybeToList range
           funtypeconstr = case (total, range) of
                             (Total, Nothing) -> const_predtype
                             (Total, _) -> const_funtype
@@ -243,7 +244,7 @@ omdocRec e mf = Record
     , foldNegation = \ _ f _ -> (OMA [const_not , f])
     , foldTrue_atom = \ _ _ -> const_true
     , foldFalse_atom = \ _ _ -> const_false
-    , foldPredication = \ _ p ts _ -> OMA $ (oms e p) : ts
+    , foldPredication = \ _ p ts _ -> appOrConst e p ts
     , foldDefinedness = \ _ t _ -> OMA [const_def, t]
     , foldExistl_equation = \ _ t1 t2 _ -> (OMA [const_eeq , t1, t2])
     , foldStrong_equation = \ _ t1 t2 _ -> (OMA [const_eq , t1, t2])
