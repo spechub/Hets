@@ -32,11 +32,11 @@ import System.Exit (exitFailure)
 
 import Common.Result
 
-import Logic.Logic (provers, AnyLogic(Logic), top_sublogic) -- hiding (top)
-import Logic.Coerce()
+import Logic.Logic (provers, AnyLogic (Logic), top_sublogic) -- hiding (top)
+import Logic.Coerce ()
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Prover (proverName,hasProverKind,ProverKind(..))
+import Logic.Prover (proverName, hasProverKind, ProverKind (..))
 
 import CASL.Logic_CASL
 import CASL.Sublogic
@@ -56,6 +56,7 @@ import Comorphisms.Modal2CASL
 import Comorphisms.CASL_DL2CASL
 import Comorphisms.Maude2CASL
 import Comorphisms.CommonLogic2CASL
+import Comorphisms.Adl2CASL
 import CspCASL.Comorphisms
 #endif
 #ifndef NOOWLLOGIC
@@ -84,8 +85,8 @@ idComorphisms :: [AnyComorphism]
 idComorphisms = map (\ (Logic lid) ->
    Comorphism $ mkIdComorphism lid $ top_sublogic lid) logicList
 
--- | a map of known prover names for a specific prover kind
--- to a list of simple (composed) comorphisms
+{- | a map of known prover names for a specific prover kind
+to a list of simple (composed) comorphisms -}
 knownProversWithKind :: ProverKind -> Result KnownProversMap
 knownProversWithKind pk =
     do isaCs <- isaComorphisms
@@ -139,7 +140,7 @@ isaComorphisms = do
            compComorphism (Comorphism CommonLogic2CASL) subpc2IHOL
 #endif
 #ifndef NOOWLLOGIC
-       owl2HOL  <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
+       owl2HOL <- compComorphism (Comorphism OWL2CASL) subpc2IHOL
 #endif
        -- Propositional
        prop2IHOL <- compComorphism (Comorphism Prop2CASL) subpc2IHOL
@@ -186,13 +187,14 @@ spassComorphisms =
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
        maude2SPASS <- compComorphism (Comorphism Maude2CASL) partOut
        commonlogic2SPASS <- compComorphism (Comorphism CommonLogic2CASL) partOut
+       adl2SPASS <- compSPASS (Comorphism Adl2CASL)
 #endif
 #ifndef NOOWLLOGIC
        owl2spass <- compComorphism (Comorphism OWL2CASL) partOut
 #endif
-       -- Fixme: constraint empty mapping is not available after Modal2CASL
-       -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
-       -- CommonLogic
+       {- Fixme: constraint empty mapping is not available after Modal2CASL
+       mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
+       CommonLogic -}
        return
          [ Comorphism SuleCFOL2SoftFOL
          , partOut
@@ -202,6 +204,7 @@ spassComorphisms =
          , casl_dl2SPASS
          , maude2SPASS
          , commonlogic2SPASS
+         , adl2SPASS
 #endif
 #ifndef NOOWLLOGIC
          , owl2spass

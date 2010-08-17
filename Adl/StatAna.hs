@@ -191,8 +191,8 @@ anaPatElem pe = case pe of
     Pr h u -> do
       nu <- anaRule u
       addSens [case h of
-        Always -> makeNamed "" $ Assertion Nothing u
-        RuleHeader k t -> makeNamed (show t) $ Assertion (Just k) u]
+        Always -> makeNamed "" $ Assertion Nothing nu
+        RuleHeader k t -> makeNamed (show t) $ Assertion (Just k) nu]
       return $ Pr h nu
     Pm qs d _ -> do
       addRel d
