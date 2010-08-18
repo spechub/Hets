@@ -75,7 +75,7 @@ displayMap = Map.fromList $ map ( \ (i, l) -> (i, Map.singleton DF_LATEX l))
   , (inOp Ri, [mkSimpleId "\\vdash"])
   , (inOp Rr, [mkSimpleId "\\dashv"])
   , (inOp Re, [mkSimpleId "\\equiv"])
-  , (stringToId $ show Co, [mkSimpleId "{^\\smile}"])
+  , (stringToId $ show Co, [mkSimpleId "\\breve{~}"])
   , (pOp K0, [mkSimpleId "\\texttt{*}"])
   , (pOp K1, [mkSimpleId "\\texttt{+}"])
   ]
@@ -92,7 +92,7 @@ instance Pretty Rule where
         (prettyParen (\ a -> case a of
            MulExp p _ -> p >= o || o == Rr && p == Ri
            _ -> False)) es
-    UnExp o r -> (if o >= Cp
+    UnExp o r -> (if o == Cp
                   then idApplDoc (pOp o) . (: [])
                   else (<> pretty o))
       $ prettyParen (\ a -> case a of
