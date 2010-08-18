@@ -18,8 +18,7 @@ import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef)
 
 import CSL.Reduce_Interface (evalString, exportExp, connectCAS, disconnectCAS)
-import CSL.Parse_AS_Basic (mkOp)
-import CSL.AS_BASIC_CSL (EXPRESSION)
+import CSL.AS_BASIC_CSL (mkOp, EXPRESSION)
 import CSL.Interpreter
 
 import Data.Maybe
@@ -42,14 +41,11 @@ initReduce = do
   reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
   -- check that prog exists
   noProg <- missingExecutableInPath reducecmd
-  error $ "Could not find reduce under " ++ reducecmd
-{-
   if noProg
-  then error $ "Could not find reduce under " ++ reducecmd
-  else do
-    (inp, out, _, _) <- connectCAS reducecmd
-    return $ ReduceInterpreter { inh = inp, outh = out }
--}
+   then error $ "Could not find reduce under " ++ reducecmd
+   else do
+     (inp, out, _, _) <- connectCAS reducecmd
+     return $ ReduceInterpreter { inh = inp, outh = out }
 
 exitReduce :: ReduceInterpreter -> IO ()
 exitReduce r = disconnectCAS (inh r, outh r)
@@ -67,7 +63,9 @@ redClookup r n = do
 redEval :: EXPRESSION -> ReduceInterpreter -> IO EXPRESSION
 redEval e r = do
   el <- evalRedString r $ exportExp e ++ ";"
-  if null el then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated" else return $ head el
+  if null el
+   then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated"
+   else return $ head el
 
 
 evalRedString :: ReduceInterpreter -> String -> IO [EXPRESSION]

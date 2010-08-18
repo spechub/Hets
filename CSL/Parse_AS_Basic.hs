@@ -25,7 +25,6 @@ module CSL.Parse_AS_Basic ( parseBasicSpec
                           , signednumber
                           , oneOfKeys
                           , extparam
-                          , mkOp
                           )
     where
 
@@ -90,8 +89,6 @@ lexemeParser = (<< skip)
 
 -- ---------------------------------------------------------------------------
 
-mkOp :: String -> [EXPRESSION] -> EXPRESSION
-mkOp s el = Op s [] el nullRange
 
 {- | parsing of identifiers. an identifier is a letter followed by
      letters, numbers, or _, but not a keyword -}

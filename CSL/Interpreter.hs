@@ -14,6 +14,7 @@ Defines an interface for Calculators used to evaluate CPL programs
 
 module CSL.Interpreter where
 
+import Control.Monad
 import Data.Maybe
 import qualified Data.Map as Map
 import CSL.AS_BASIC_CSL
@@ -38,4 +39,14 @@ instance Monad m => CalculationSystem m (Map.Map String EXPRESSION) where
     names = return . Map.keys
     eval e = return . const e
 
+destructureAssignment :: CMD -> Maybe (String, EXPRESSION)
+destructureAssignment (Cmd ":=" [Op n [] [] _, e]) = Just (n, e)
+destructureAssignment _ = Nothing
 
+evaluate :: CalculationSystem m a => a -> CMD -> m a
+evaluate cs c = case destructureAssignment c of
+                  Just (n, e) -> assign cs n e
+                  _ -> error $ "evaluate: non-assignment: " ++ show c
+
+evaluateList :: CalculationSystem m a => a -> [CMD] -> m a
+evaluateList cs l = foldM evaluate cs l

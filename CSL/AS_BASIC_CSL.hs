@@ -25,13 +25,18 @@ module CSL.AS_BASIC_CSL
     , VAR_ITEM (..)       -- variable declaration
     , Domain (..)         -- domains for variable declarations
     , GroundConstant (..) -- constants for domain formation
-    , CMD (..)
+    , CMD (..)            -- Command datatype
+    , mkOp                -- Simple Operator constructor
     ) where
 
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
+
+-- | A simple operator constructor from given operator name and arguments
+mkOp :: String -> [EXPRESSION] -> EXPRESSION
+mkOp s el = Op s [] el nullRange
 
 -- | operator symbol declaration
 data OP_ITEM = Op_item [Id.Token] Id.Range
