@@ -71,6 +71,7 @@ instance Logic Adl
     where
        empty_proof_tree Adl = emptyProofTree
        provers Adl = []
+       stability Adl = Testing
 
 instance StaticAnalysis Adl
     Context
