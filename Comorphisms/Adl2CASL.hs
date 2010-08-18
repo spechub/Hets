@@ -40,6 +40,7 @@ import Common.DocUtils
 import Common.Id
 import Common.ProofTree
 import Common.Result
+import Common.Token
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 
@@ -104,8 +105,13 @@ mapSign s = (C.emptySign ())
                  Con (C i) -> Set.insert $ simpleIdToId i
                  _ -> id) Set.empty $ A.symOf s
   , sortRel = Rel.map conceptToId $ isas s
-  , predMap = Map.map (Set.map relTypeToPred) $ rels s
+  , predMap = Map.fromList . map (\ (i, l) -> (transRelId $ idToSimpleId i, l))
+      . Map.toList . Map.map (Set.map relTypeToPred) $ rels s
   }
+
+transRelId :: Token -> Id
+transRelId t@(Token s p) = simpleIdToId $
+   if elem s casl_reserved_fwords then Token ("P_" ++ s) p else t
 
 mapSen :: CASLSign -> Sen -> CASLFORMULA
 mapSen sig s = case s of
@@ -122,7 +128,7 @@ mapMor mor = return $ embedMorphism ()
 mapSym :: A.Symbol -> C.Symbol
 mapSym s = case s of
   Con c -> idToSortSymbol $ conceptToId c
-  Rel (Sgn n t) -> idToPredSymbol (simpleIdToId n) $ relTypeToPred t
+  Rel (Sgn n t) -> idToPredSymbol (transRelId n) $ relTypeToPred t
 
 next :: State Int Int
 next = do
@@ -134,14 +140,15 @@ getRelPred :: CASLSign -> Relation -> PRED_SYMB
 getRelPred sig m@(Sgn t (RelType c1 c2)) = let
   ty1 = conceptToId c1
   ty2 = conceptToId c2
+  i = transRelId t
   cs = filter (\ pt -> case predArgs pt of
                   [fr, to] -> leqSort sig ty1 fr && leqSort sig ty2 to
                   _ -> False)
-               $ Set.toList $ Map.findWithDefault Set.empty (simpleIdToId t)
+               $ Set.toList $ Map.findWithDefault Set.empty i
                $ predMap sig
   in case cs of
        ty : _ ->
-           Qual_pred_name (simpleIdToId t) (toPRED_TYPE ty) $ tokPos t
+           Qual_pred_name i (toPRED_TYPE ty) $ tokPos t
        _ -> error $ "getRelPred " ++ showDoc m ""
 
 getRelProp :: CASLSign -> Relation -> RangedProp -> CASLFORMULA
