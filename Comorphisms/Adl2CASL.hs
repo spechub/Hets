@@ -109,7 +109,7 @@ mapSign s = (C.emptySign ())
 
 mapSen :: CASLSign -> Sen -> CASLFORMULA
 mapSen sig s = case s of
-  DeclProp _ p -> True_atom $ getRange p
+  DeclProp r p -> getRelProp sig r p
   Assertion _ r ->
     let ((v1, s1), (v2, s2), f) = evalState (transRule sig r) 1 in
     mkForall [mkVarDecl v1 s1, mkVarDecl v2 s2] f nullRange
@@ -130,6 +130,62 @@ next = do
   put $ i + 1
   return i
 
+getRelPred :: CASLSign -> Relation -> PRED_SYMB
+getRelPred sig m@(Sgn t (RelType c1 c2)) = let
+  ty1 = conceptToId c1
+  ty2 = conceptToId c2
+  cs = filter (\ pt -> case predArgs pt of
+                  [fr, to] -> leqSort sig ty1 fr && leqSort sig ty2 to
+                  _ -> False)
+               $ Set.toList $ Map.findWithDefault Set.empty (simpleIdToId t)
+               $ predMap sig
+  in case cs of
+       ty : _ ->
+           Qual_pred_name (simpleIdToId t) (toPRED_TYPE ty) $ tokPos t
+       _ -> error $ "getRelPred " ++ showDoc m ""
+
+getRelProp :: CASLSign -> Relation -> RangedProp -> CASLFORMULA
+getRelProp sig r p =
+  let qp@(Qual_pred_name _ (Pred_type [fr, to] _) _) = getRelPred sig r
+      q = propRange p
+      q1 = Var_decl [mkSimpleId "a"] fr q
+      q2 = Var_decl [mkSimpleId "b"] to q
+      q3 = Var_decl [mkSimpleId "c"] fr q
+      t1 = toQualVar q1
+      t2 = toQualVar q2
+      t3 = toQualVar q3
+      pAppl = Predication qp [t1, t2] q
+      eqs = fr == to
+  in case propProp p of
+       Uni -> mkForall [q1, q2, q3]
+            (Implication
+             (Conjunction
+              [pAppl, Predication qp [t3, t2] q] q)
+             (Strong_equation t1 t3 q)
+             True q) q
+       Tot -> mkForall [q1] (Quantification Existential [q2] pAppl q) q
+       Sur -> mkForall [q2] (Quantification Existential [q1] pAppl q) q
+       Inj -> let
+         q4 = Var_decl [mkSimpleId "c"] to q
+         t4 = toQualVar q4
+         in mkForall [q1, q2, q4]
+            (Implication
+             (Conjunction
+              [pAppl, Predication qp [t1, t4] q] q)
+             (Strong_equation t2 t4 q)
+             True q) q
+       Sym | eqs ->
+         mkForall [q1, q2] (Equivalence pAppl (Predication qp [t2, t1] q) q) q
+       Asy | eqs -> mkForall [q1, q2]
+         (Implication pAppl (Negation (Predication qp [t2, t1] q) q) True q) q
+       Trn | eqs -> mkForall [q1, q2, q3]
+          (Implication
+           (Conjunction [pAppl, Predication qp [t2, t3] q] q)
+             (Predication qp [t1, t3] q)
+             True q) q
+       Rfx | eqs -> mkForall [q1] (Predication qp [t1, t1] q) q
+       pr -> error $ "getRelProp " ++ showDoc pr ""
+
 transRule :: CASLSign -> Rule
           -> State Int ((VAR, SORT), (VAR, SORT), CASLFORMULA)
 transRule sig rule =
@@ -142,7 +198,7 @@ transRule sig rule =
       disjunct fs = Disjunction fs nullRange
       mkExist vs f = Quantification Existential vs f nullRange
   in case rule of
-  Tm (Sgn t@(Token s p) (RelType c1 c2)) -> do
+  Tm m@(Sgn (Token s p) (RelType c1 c2)) -> do
       i <- next
       j <- next
       let v1 = mkNumVar "a" i
@@ -154,23 +210,16 @@ transRule sig rule =
           ty2 = if isI && leqSort sig ty1 ty2 then ty1' else ty2'
           q1 = Qual_var v1 ty1 p
           q2 = Qual_var v2 ty2 p
-          cs = filter (\ pt -> case predArgs pt of
-                  [fr, to] -> leqSort sig ty1 fr && leqSort sig ty2 to
-                  _ -> False)
-               $ Set.toList $ Map.findWithDefault Set.empty (simpleIdToId t)
-               $ predMap sig
       return ((v1, ty1), (v2, ty2),
         if s == "V" then True_atom p else
         if isI then
             if ty1 == ty2 then Strong_equation q1 q2 p else
                 error $ "transRule.I " ++ showDoc rule ""
-        else case cs of
-          ty@(PredType [fr, to]) : _ -> Predication
-            (Qual_pred_name (simpleIdToId t)
-             (toPRED_TYPE ty) p)
+        else
+          let qp@(Qual_pred_name _ (Pred_type [fr, to] _) _) = getRelPred sig m
+          in Predication qp
             [ if ty1 == fr then q1 else Sorted_term q1 fr p
-            , if ty2 == to then q2 else Sorted_term q2 to p] p
-          _ -> error $ "transRule.pred " ++ showDoc rule "")
+            , if ty2 == to then q2 else Sorted_term q2 to p] p)
   UnExp o e -> do
     (v1, v2@(t2, _), f) <- transRule sig e
     case o of
@@ -185,9 +234,9 @@ transRule sig rule =
             cf = mkExist [myVarDecl z]
                  $ conjunct [renameVar sig v z nf, renameVar sig w z nf]
         -- this is (and always will be) incomplete wrt to compositions
-        return (v, w, disjunct $ cf : nf :
-             [ mkStEq (toQualVar $ myVarDecl v) $ toQualVar $ myVarDecl w
-             | o == K0])
+        return (v, w, disjunct
+           $ [ mkStEq (toQualVar $ myVarDecl v) $ toQualVar $ myVarDecl w
+             | o == K0] ++ [nf, cf])
   MulExp o es -> case es of
     [] -> error "transRule2"
     r : t -> if null t then transRule sig r else do

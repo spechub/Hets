@@ -31,6 +31,7 @@ import Control.Monad
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Maybe
+import Data.List
 
 basicAna :: (Context, Sign, GlobalAnnos)
   -> Result (Context, ExtSign Sign Symbol, [Named Sen])
@@ -226,12 +227,15 @@ anaPatElem pe = case pe of
         Always -> makeNamed "" $ Assertion Nothing nu
         RuleHeader k t -> makeNamed (show t) $ Assertion (Just k) nu]
       return $ Pr h nu
-    Pm qs d _ -> do
+    Pm qs d@(Sgn _ (RelType c1 c2)) b -> do
       addRel d
+      let (nqs, ws) = if c1 == c2 then (qs, []) else
+            partition ((< Sym) . propProp) qs
+      addMsgs $ map (mkDiag Error "illegal property for skew relation") ws
       addSens $ map (\ q -> makeNamed (show (decnm d) ++ "_"
                                        ++ showUp (propProp q))
-                    $ DeclProp d q) qs
-      return pe
+                    $ DeclProp d q) nqs
+      return $ Pm nqs d b
     Pg c1 c2 -> do
       addIsa c1 c2
       return pe
