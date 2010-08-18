@@ -131,7 +131,7 @@ pdftitle={Hets User Guide}]
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\
--- Version 0.95 --}
+-- Version 0.96 --}
 \author{Till Mossakowski, Christian Maeder,
   Mihai Codescu, Dominik L\"{u}cke\\[1em]
 DFKI Lab Bremen, Bremen, Germany.\\[1em]
@@ -271,6 +271,7 @@ SoftFOL & x & - & x \\\hline
 Maude & x & x & - \\\hline
 VSE & x & x & x \\\hline
 \Isabelle & (x) & - & x \\\hline
+Adl & x & x & - \\\hline
 \end{tabular}
 \end{center}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
@@ -369,6 +370,9 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
   Three-dimensional Interactive Application'' (Catia).
 \item[Maude] is a rewrite system \url{http://maude.cs.uiuc.edu/} for
   first-order logic.
+\item[Adl] is ``A Description Language'' based on relational algebra originally
+  designed for requirements engineering of business rules
+  \url{https://lab.cs.ru.nl/BusinessRules/Requirements_engineering}.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
@@ -458,6 +462,7 @@ to first-order logic \cite{blackburn_p-etal:2001a} \\\hline
 OWL2CASL & inclusion \\\hline
 Propositional2CASL & inclusion \\\hline
 RelScheme2CASL & inclusion \\\hline
+Adl2CASL & inclusion taking relations to CASL predicates \\\hline
 \end{tabular}
 
 \section{Getting started}
@@ -1885,10 +1890,9 @@ You need to subscribe to the list before you can send a mail.
 But note that subscription is very easy!
 
 If your favourite logic is missing in \Hets, please tell us
-(hets-users@informatik.uni-bremen.de). We will take account your
-feedback when deciding which logics and proof tools to integrate next
-into \Hets. Help with integration of more logics and proof tools into
-\Hets is also welcome.
+(hets-users@informatik.uni-bremen.de). We will take your feedback into account
+when deciding which logics and proof tools to integrate next into \Hets. Help
+with integration of more logics and proof tools into \Hets is also welcome.
 
 \paragraph{Acknowledgement}
 The heterogeneous tool set \Hets would not have possible
@@ -1913,6 +1917,7 @@ Wiebke Herding,
 Hendrik Iben,
 Cui ``Ken'' Jian,
 Heng Jiang,
+Stef Joosten,
 Anton Kirilov,
 Tina Krausser,
 Martin K\"{u}hl,
@@ -1927,7 +1932,7 @@ Liam O'Reilly,
 Razvan Pascanu,
 Daniel Pratsch,
 Felix Reckers,
-Adrian Riesco,
+Adri\'{a}n Riesco,
 Markus Roggenbach,
 Pascal Schmidt,
 Ewaryst Schulz,
