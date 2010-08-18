@@ -17,6 +17,7 @@ import Common.AS_Annotation
 import Common.Id
 
 import Data.Time (midnight)
+import Data.Maybe (maybeToList)
 
 import Logic.Prover
 
@@ -147,19 +148,24 @@ skipReduceLineNr :: String -> String
 skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
                      $ dropWhile (/= ':') s
 
+
 -- | sends the given string to the CAS, reads the result and tries to parse it.
-procString :: (Handle, Handle) -> String -> String -> IO (ProofStatus [EXPRESSION])
-procString (inp, out) axname s = do
+evalString :: (Handle, Handle) -> String -> IO [EXPRESSION]
+evalString (inp, out) s = do
   putStrLn $ "Send CAS cmd " ++ s
   hPutStrLn inp s
   res <- getNextResultOutput out
   putStrLn $ "Result is " ++ res
   putStrLn $ "Parsing of --" ++ skipReduceLineNr res ++ "-- yields "
     ++ show (parseResult (skipReduceLineNr res))
-  case (parseResult (skipReduceLineNr res)) of
-    Just e -> return $ closedReduceProofStatus axname [e]
-    Nothing -> return $ openReduceProofStatus axname []
+  return $ maybeToList $ parseResult $ skipReduceLineNr res
 
+-- | wrap evalString into a ProofStatus
+procString :: (Handle, Handle) -> String -> String -> IO (ProofStatus [EXPRESSION])
+procString h axname s = do
+  res <- evalString h s
+  let f = if null res then openReduceProofStatus else closedReduceProofStatus
+  return $ f axname res
 
 -- | factors a given expression over the reals
 casfactorExp :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])

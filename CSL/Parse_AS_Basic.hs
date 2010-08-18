@@ -25,6 +25,7 @@ module CSL.Parse_AS_Basic ( parseBasicSpec
                           , signednumber
                           , oneOfKeys
                           , extparam
+                          , mkOp
                           )
     where
 
