@@ -161,7 +161,7 @@ pDeclaration = do
   p <- optionL $ do
     pEqual
     single $ pContent True r
-  pSym "."
+  option () $ pSym "."
   return $ Pm (ps ++ as) r (not $ null p) : p
 
 pRangedProp :: Prop -> CharParser st RangedProp
