@@ -1,0 +1,44 @@
+CONTEXT Test
+PATTERN Test
+r::A*B [SUR].
+s::B->C.
+t::D*E.
+u::D*C.
+
+GEN A ISA D
+GEN B ISA E
+
+--KEY label: Concept(label: expression, ...)
+KEY "Key Of B" : B("C of B" : s, "A of B" : r~)
+
+
+{- rules that need to hold are declared with a name and an expression that should yield the universal relation
+ - there are two equivalent ways to declare a signal rule, i.e. a rule that may be violated temporarily.
+ - operators = and |- will become operators in "data Expression", but at this moment they are defined in "data RuleType"
+-}
+--a maintained implication rule
+RULE example1 MAINTAINS r;s |- u
+--a signaled equivalence rule
+SIGNAL example2 ON r /\ t = r
+--a signal for everything in the domain A*B not in r or t
+RULE example3 SIGNALS r \/ t[A*B]
+
+
+ENDPATTERN
+
+{- a SERVICE makes a population accessible for viewing or changing (CRUD).
+ - This Service makes the populations of A,r,s and t accessible through an element of I[A] for example 'a'[A].
+ - This service yields prototype screens to view,edit,create,delete relations in the relation 'a';r, 'a';r;s, and 'a';t
+ - and prototype screens to create or delete a new element 'newA' in I[A]
+-}
+SERVICE "Service for concepts of type A" : I[A]
+= [ "related to E's" : t
+  , "Attribute of" : r
+    = ["with an s attribute"  : s]
+  ]
+--This other service on A is different because it cannot view,edit,create,delete in 'a';r only in 'a';r;s
+SERVICE "Another Service on A" : I[A]
+= [ "related to E's" : t
+  , "some name" : r;s
+  ]
+ENDCONTEXT
