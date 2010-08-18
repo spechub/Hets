@@ -16,12 +16,15 @@ import Adl.As
 import Adl.Sign
 
 import Common.AS_Annotation
+import Common.Doc
+import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Rel as Rel
+import Common.Utils
 
 import Control.Monad
 
@@ -96,16 +99,20 @@ addIsa c1 c2 = do
       else addMsgs [mkDiag Error "unknown ISA" c2]
     else addMsgs [mkDiag Error "unknown GEN" c2]
 
-data TypedRule = TypedRule Rule RelType
+data TypedRule = TypedRule Rule RelType deriving Show
+
+instance Pretty TypedRule where
+  pretty (TypedRule r (RelType c1 c2)) =
+    fsep [pretty r <+> text "::", pretty c1 <+> cross <+> pretty c2]
 
 anaRule :: Rule -> State Env Rule
 anaRule r = do
   s <- gets sign
   case typeRule s r of
     [] -> do
-      addMsgs [mkDiag Error "no typing found" r]
+      addMsgs [mkDiag Error "no typing found" $ findTypeFailure s r]
       return r
-    TypedRule e (RelType c1 c2) : t -> do
+    l@(TypedRule e (RelType c1 c2) : t) -> do
       if null t then do
         case c1 of
           Anything -> addMsgs [mkDiag Error "source concept is anything" r]
@@ -113,8 +120,21 @@ anaRule r = do
         case c2 of
           Anything -> addMsgs [mkDiag Error "target concept is anything" r]
           _ -> return ()
-        else addMsgs [mkDiag Error "ambiguous typings found" r]
+        else addMsgs [Diag Error
+          (unlines $ "ambiguous typings found:"
+            : map (`showDoc` "") l) $ getRangeSpan r]
       return e
+
+findTypeFailure :: Sign -> Rule -> Rule
+findTypeFailure s r = case r of
+  Tm _ -> r
+  UnExp _ e -> if null (typeRule s e) then findTypeFailure s e else r
+  MulExp o es -> case es of
+    [] -> error "findTypeFailure"
+    e : t ->
+      if null (typeRule s e) then findTypeFailure s e else
+      if null t then e else let n = MulExp o t in
+      if null (typeRule s n) then findTypeFailure s n else r
 
 -- | analyze rule and return resolved one
 typeRule :: Sign -> Rule -> [TypedRule]
@@ -122,9 +142,16 @@ typeRule s rule =
   let m = rels s
       i = isas s
   in case rule of
-   Tm (Sgn n ty@(RelType rs rt)) ->
-      if isBRel (tokStr n) then [TypedRule rule ty] else
-      Set.fold
+   Tm (Sgn n ty@(RelType rs rt)) -> let str = tokStr n in
+      if str == "V" then [TypedRule rule ty] else
+      if str == "I" then case (rs, rt) of
+        (Anything, Anything) ->
+          map (\ c -> let y = RelType c c in TypedRule (Tm $ Sgn n y) y)
+          . keepMins (flip $ isSubConcept i) . Set.toList $ conceptsOf s
+        _ -> case compatible i rs rt of
+          Just c -> let y = RelType c c in [TypedRule (Tm $ Sgn n y) y]
+          Nothing -> []
+      else Set.fold
       (\ (RelType f t) l -> maybeToList (do
               a <- compatible i f rs
               b <- compatible i t rt
@@ -181,6 +208,11 @@ anaAtts (KeyAtt m r) = do
   n <- anaRule r
   return $ KeyAtt m n
 
+conceptsOf :: Sign -> Set.Set Concept
+conceptsOf = Set.fold (\ sy -> case sy of
+  Con c -> Set.insert c
+  _ -> id) Set.empty . symOf
+
 anaObject :: Object -> State Env ()
 anaObject (Object _ r _ os) = do
   anaRule r
@@ -204,8 +236,8 @@ anaPatElem pe = case pe of
       addIsa c1 c2
       return pe
     Pk (KeyDef l c atts) -> do
-       ssyms <- gets $ symOf . sign
-       unless (Set.member (Con c) ssyms) $
+       csyms <- gets $ conceptsOf . sign
+       unless (Set.member c csyms) $
          addMsgs [mkDiag Error "unknown KEY concept" c]
        natts <- mapM anaAtts atts
        return $ Pk $ KeyDef l c natts
