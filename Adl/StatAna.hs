@@ -180,14 +180,11 @@ typeRule s rule =
          , let fe = case re of
                  MulExp op nt | op == o -> MulExp o $ ne : nt
                  _ -> MulExp o [ne, re]
-         , let res = case o of
-                 Fc -> case compatible i b p of
+         , let res = if elem o [Fc, Fd] then
+                 case compatible i b p of
                          Nothing -> Nothing
                          Just _ -> Just $ RelType a q
-                 Fd -> case compatible i a q of
-                         Nothing -> Nothing
-                         Just _ -> Just $ RelType p b
-                 _ -> do
+                 else do
                    na <- compatible i a p
                    nb <- compatible i b q
                    return $ RelType na nb

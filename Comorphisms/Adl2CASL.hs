@@ -242,15 +242,15 @@ transRule sig rule =
     r : t -> if null t then transRule sig r else do
        (v1, v2, f1) <- transRule sig r
        (v3, v4, f2) <- transRule sig $ MulExp o t
-       case o of
-         Fc -> let v23 = myMin v2 v3 in
-             return (v1, v4, mkExist [myVarDecl v23]
-                $ conjunct [renameVar sig v2 v23 f1, renameVar sig v3 v23 f2])
-         Fd -> let v14 = myMin v1 v4 in
-             return (v3, v2, mkForall [myVarDecl v14]
-                (disjunct [renameVar sig v1 v14 f1, renameVar sig v4 v14 f2])
-                nullRange)
-         _ -> do
+       if elem o [Fc, Fd] then return (v1, v4,
+         let v23 = myMin v2 v3
+             f3 = renameVar sig v2 v23 f1
+             f4 = renameVar sig v3 v23 f2
+             vs = [myVarDecl v23]
+             cs = [f3, f4]
+         in if o == Fc then mkExist vs $ conjunct cs
+              else mkForall vs (disjunct cs) nullRange)
+         else do
            let v13 = myMin v1 v3
                v24 = myMin v2 v4
                f3 = renameVar sig v1 v13 $ renameVar sig v2 v24 f1
