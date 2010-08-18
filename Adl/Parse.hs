@@ -22,17 +22,17 @@ import Control.Monad
 import Text.ParserCombinators.Parsec
 
 keywordstxt :: [String]
-keywordstxt =
+keywordstxt = map showUp allProps ++
   [ "CONTEXT", "ENDCONTEXT", "EXTENDS"
   , "PATTERN", "ENDPATTERN"
   , "SERVICE", "INITIAL", "SQLPLUG", "PHPPLUG"
   , "POPULATION", "CONTAINS"
-  , "UNI", "INJ", "SUR", "TOT", "SYM", "ASY", "TRN", "RFX", "PROP", "ALWAYS"
+  , "PROP", "ALWAYS"
   , "RULE", "MAINTAINS", "SIGNALS", "SIGNAL", "ON"
   , "RELATION", "CONCEPT", "KEY"
   , "IMPORT", "GEN", "ISA", "I", "V", "S"
   , "PRAGMA", "EXPLANATION", "EXPLAIN", "IN", "REF", "ENGLISH", "DUTCH"
-  , "ONE", "BIND", "TOPHP", "BINDING"
+  , "ONE", "BIND", "TOPHP", "BINDING", "BYPLUG"
   ]
 
 -- | a line comment starts with --. In haskell this may be part of an operator.
@@ -152,7 +152,9 @@ pDeclaration = do
   let ps = if tokStr s == "->" then
         map (flip RangedProp $ tokPos s) [Uni, Tot] else []
   c2 <- pConcept
+  pByplug
   as <- optionL pProps
+  pByplug
   optionL pPragma
   optionL $ do
     pKey "EXPLANATION"
@@ -175,10 +177,14 @@ pProps = pSqBrackets $ sepBy
 pPragma :: CharParser st [String]
 pPragma = pKey "PRAGMA" >> many1 pString
 
+pByplug :: CharParser st Bool
+pByplug = option False $ pKey "BYPLUG" >> return True
+
 pConceptDef :: CharParser st [PatElem]
 pConceptDef = do
   pKey "CONCEPT"
   pConcept
+  pByplug
   pString
   optionL pString
   return []
