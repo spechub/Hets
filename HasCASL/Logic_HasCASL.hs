@@ -86,7 +86,6 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     sym_name HasCASL = symName
     sym_of HasCASL = singletonList . symOf
     symmap_of HasCASL = morphismToSymbMap
-    parse_sentence HasCASL = Nothing
 
 instance StaticAnalysis HasCASL BasicSpec Sentence
                SymbItems SymbMapItems

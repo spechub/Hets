@@ -55,7 +55,6 @@ instance Syntax COL C_BASIC_SPEC
 
 instance Sentences COL COLFORMULA CSign COLMor Symbol where
       map_sen COL m = return . mapSen (const id) m
-      parse_sentence COL = Nothing
       sym_of COL = symOf
       symmap_of COL = morphismToSymbMap
       sym_name COL = symName

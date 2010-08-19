@@ -56,7 +56,6 @@ instance Syntax VSE VSEBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
 
 instance Sentences VSE Sentence VSESign VSEMor Symbol where
       map_sen VSE m = return . mapSen mapDlformula m
-      parse_sentence VSE = Nothing
       sym_of VSE = symOf
       symmap_of VSE = morphismToSymbMap
       sym_name VSE = symName

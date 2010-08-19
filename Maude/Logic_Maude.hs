@@ -31,7 +31,6 @@ import Maude.ATC_Maude ()
 import Maude.Shellout
 
 import Common.AS_Annotation
-import Common.DocUtils
 import Common.ExtSign
 import System.IO.Unsafe
 
@@ -69,9 +68,6 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
     -- sentences --
     map_sen Maude = Morphism.translateSentence
     simplify_sen Maude = Sign.simplifySentence
-    -- parse_sentence Maude = Nothing
-    print_sign Maude = pretty
-    -- print_named Maude = printAnnoted (addBullet . pretty) . fromLabelledSen
     -- symbols --
     sym_name Maude = Symbol.toId
     sym_of Maude = singletonList . Sign.symbols

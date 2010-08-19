@@ -79,7 +79,6 @@ map_DL_FORMULA mor (Cardinality ct pn varT natT qualT r) =
 
 instance Sentences CASL_DL DLFORMULA DLSign DLMor Symbol where
       map_sen CASL_DL m = return . mapSen map_DL_FORMULA m
-      parse_sentence CASL_DL = Nothing
       sym_of CASL_DL = symOf
       symmap_of CASL_DL = morphismToSymbMap
       sym_name CASL_DL = symName

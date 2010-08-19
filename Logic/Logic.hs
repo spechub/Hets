@@ -274,6 +274,7 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | parsing of sentences
       parse_sentence :: lid -> Maybe (AParser st sentence)
       parse_sentence _ = Nothing
+      -- | modified signature printing when followed by sentences
       print_sign :: lid -> sign -> Doc
       print_sign _ = pretty
       -- | print a sentence with comments

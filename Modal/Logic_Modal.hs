@@ -69,7 +69,6 @@ map_M_FORMULA mor (BoxOrDiamond b m f ps) =
 
 instance Sentences Modal ModalFORMULA MSign ModalMor Symbol where
       map_sen Modal m = return . mapSen map_M_FORMULA m
-      parse_sentence Modal = Nothing
       sym_of Modal = symOf
       symmap_of Modal = morphismToSymbMap
       sym_name Modal = symName

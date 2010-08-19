@@ -78,7 +78,6 @@ instance Show a => Sentences (GenCspCASL a)
     Symbol
     where
       map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
-      parse_sentence (GenCspCASL _) = Nothing
       sym_of (GenCspCASL _) = allSymOf CspCASL_Morphism.cspSymOf
       symmap_of (GenCspCASL _) =
          extMorphismToSymbMap CspCASL_Morphism.cspAddMorphismToSymbMap
