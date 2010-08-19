@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  A process interface for communication with other programs
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
-License     :  similar to LGPL
+License     :  GPLv2 or higher
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
@@ -95,7 +95,7 @@ getOutp hdl t = initIRS t True >>= getOutput hdl
 data CommandState = CS { inp :: Handle, outp :: Handle, err :: Handle,
                          pid :: SP.ProcessHandle }
 
--- | The IO State-Monad with state Maybe CommandState
+-- | The IO State-Monad with state CommandState
 type Command = IOS CommandState
 
 -- | run communication program
@@ -140,7 +140,7 @@ close :: Maybe String -> Command ExitCode
 close str = 
     do{ s <- get
       ; case str of Nothing -> return ()
-                    _ -> liftIO $ hPutStrLn (inp s) "quit"
+                    Just excmd -> liftIO $ hPutStrLn (inp s) excmd
       ; e <- liftIO $ SP.waitForProcess $ pid s
       ; return e }
 

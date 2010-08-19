@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Reduce instance for the CalculationSystem class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+License     :  GPLv2 or higher
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
@@ -100,6 +100,7 @@ redEval e = do
 -- * An alternative Communication Interface
 
 
+
 evalRedcString :: String -> RedcIO [EXPRESSION]
 evalRedcString s = do
   PC.call 0.1 s >>= return . maybeToList . redOutputToExpression
@@ -134,6 +135,7 @@ start = do
                   $ forM_ [ "off nat;", "load redlog;", "rlset reals;" ] PC.send
     _ -> error "Could not find reduce shell command!"
 
+-- close doesn't work fine
 close :: RedcIO ExitCode
 close = PC.close $ Just "quit;"
 
