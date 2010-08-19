@@ -70,6 +70,7 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
+    Common/testxupdate.hs Common/testxpath.hs \
     SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs
 
 ### list of directories to run checks in
@@ -193,7 +194,8 @@ drifted_files = Common/AS_Annotation.hs \
     CASL_DL/AS_CASL_DL.hs OWL/ReadWrite.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
-    QBF/AS_BASIC_QBF.hs \
+    ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
+    CommonLogic/AS_CommonLogic.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -533,6 +535,11 @@ bin_clean:
 clean_pretty:
 	$(RM) pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
                pretty/generated_words.tex
+	$(RM) test/*/*.{thy,pp.het,pp.tex,th,dfg.c,xml,log,dvi,aux,sty}
+	$(RM) test/*/log
+	$(RM) ToHaskell/test/*.{out,output}
+	$(RM) */test/temp*
+	$(RM) doc/UserGuide.{log,aux,bbl,blg,out,pdf}
 
 ### additionally removes the library files
 real_clean: clean
@@ -546,8 +553,10 @@ package_clean:
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
+	$(RM) CASL_DL/PredefinedSign.inline.hs CASL_DL/PredDatatypes.het
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
+	$(RM) -r docs
 
 maintainer-clean: distclean package_clean
 	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
