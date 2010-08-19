@@ -70,7 +70,7 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
-    SoftFOL/dfg.hs GUI/displayDependencyGraph.hs
+    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL HasCASL test
