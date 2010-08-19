@@ -159,12 +159,7 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
                  , toWidget btnGoalsNone
                  , toWidget btnGoalsInvert
                  , toWidget btnGoalsSelectOpen ]
-        prove = noProver ++ noAxiom ++ noTheory ++ noGoal ++
-                [ toWidget btnShowTheory
-                , toWidget btnShowSelectedTheory
-                , toWidget btnClose
-                , toWidget btnProofDetails
-                , toWidget btnDisplay ]
+        prove = [toWidget window]
         update s' = do
           signalBlock shP
           s <- setSelectedProver trvProvers listProvers cbComorphism shC
@@ -210,7 +205,7 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
 
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
-    onClicked btnDisprove $ do 
+    onClicked btnDisprove $ do
       selGoal <- getSelectedMultiple trvGoals listGoals
       case selGoal of
         [(_, g)] -> do
