@@ -15,6 +15,8 @@ module CSL.Reduce_Interface where
 
 import Common.AS_Annotation
 import Common.Id
+import Common.ProverTools (missingExecutableInPath)
+import Common.Utils (getEnvDef)
 
 import Data.Time (midnight)
 import Data.Maybe (maybeToList)
@@ -59,6 +61,16 @@ rlset reals;
 
 rlqe(exp...);
 -}
+
+-- | Left String is success, Right String is failure
+lookupRedShellCmd :: IO (Either String String)
+lookupRedShellCmd  = do
+  reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
+  -- check that prog exists
+  noProg <- missingExecutableInPath reducecmd
+  let f = if noProg then Right else Left
+  return $ f reducecmd
+
 
 -- | connects to the CAS, prepares the streams and sets initial options
 connectCAS :: String -> IO (Handle, Handle, Handle, ProcessHandle)
@@ -148,6 +160,9 @@ skipReduceLineNr :: String -> String
 skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
                      $ dropWhile (/= ':') s
 
+-- | try to get an EXPRESSION from a Reduce string
+redOutputToExpression :: String -> Maybe EXPRESSION
+redOutputToExpression = parseResult . skipReduceLineNr
 
 -- | sends the given string to the CAS, reads the result and tries to parse it.
 evalString :: (Handle, Handle) -> String -> IO [EXPRESSION]
@@ -157,8 +172,8 @@ evalString (inp, out) s = do
   res <- getNextResultOutput out
   putStrLn $ "Result is " ++ res
   putStrLn $ "Parsing of --" ++ skipReduceLineNr res ++ "-- yields "
-    ++ show (parseResult (skipReduceLineNr res))
-  return $ maybeToList $ parseResult $ skipReduceLineNr res
+    ++ show (redOutputToExpression res)
+  return $ maybeToList $ redOutputToExpression res
 
 -- | wrap evalString into a ProofStatus
 procString :: (Handle, Handle) -> String -> String -> IO (ProofStatus [EXPRESSION])

@@ -14,8 +14,6 @@ Interface for Reduce CAS system.
 module CSL.ReduceProve where
 
 import Common.AS_Annotation
-import Common.ProverTools (missingExecutableInPath)
-import Common.Utils (getEnvDef)
 
 import Data.List
 
@@ -64,26 +62,28 @@ reduceProve _ (Theory _ senMap) _freedefs =
         namedCmds = toNamedList senMap
         (_, namedGoals) = getAxioms namedCmds
     in
-    do
-      proofinfos <- processCmds namedGoals
-      return proofinfos
+      do
+        proofinfos <- processCmds namedGoals
+        return proofinfos
 
 -- | connect to CAS, stepwise process the cmds
 processCmds :: [Named CMD] -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
 processCmds cmds = do
   putStr "Connecting CAS.."
-  reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
-  -- check that prog exists
-  noProg <- missingExecutableInPath reducecmd
-  if noProg then do
-    putStrLn "failed"
-    putStrLn $ "Could not find reduce under " ++ reducecmd
-    return ([],[])
-    else do
-    (inp, out, _, _) <- connectCAS reducecmd
-    proofinfos <- processCmdsIntern (inp, out) cmds
-    disconnectCAS (inp, out)
-    return proofinfos
+  sc <- lookupRedShellCmd
+  case sc of
+    Right reducecmd -> 
+        do
+          putStrLn "failed"
+          putStrLn $ "Could not find reduce under " ++ reducecmd
+          return ([],[])
+    Left reducecmd ->
+        do
+          (inp, out, _, _) <- connectCAS reducecmd
+          proofinfos <- processCmdsIntern (inp, out) cmds
+          disconnectCAS (inp, out)
+          return proofinfos
+                      
 
 -- | internal function to process commands over an existing connection
 processCmdsIntern :: (Handle, Handle) -> [Named CMD]
