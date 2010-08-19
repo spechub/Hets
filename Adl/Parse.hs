@@ -88,20 +88,21 @@ pSqBrackets = pGenParens "[" "]"
 pConid :: CharParser st String
 pConid = reserved keywordstxt (upper <:> many pChar) << skip
 
-pVarid :: CharParser st String
-pVarid = reserved criticalKeywords
-  ((lower <|> char '_') <:> many pChar) << skip
+-- | with true argument exclude CASL keywords
+pVarid :: Bool -> CharParser st String
+pVarid b = (if b then reserved criticalKeywords else id)
+  $ ((lower <|> char '_') <:> many pChar) << skip
 
 pString :: CharParser st String
 pString = (stringLit <|> sQuoted) << skip
 
 pADLid :: CharParser st Token
-pADLid = parseToken $ pConid <|> pVarid <|> pString
+pADLid = parseToken $ pConid <|> pVarid False <|> pString
 
 -- | parse contexts but do not require CONTEXT blocks
 pArchitecture :: CharParser st Context
 pArchitecture = pContext
-  <|> fmap (Context Nothing) (flat $ many1 pContextElement)
+  <|> fmap (Context Nothing) (flat $ many1 $ pContextElement True)
 
 pContext :: CharParser st Context
 pContext = do
@@ -109,44 +110,45 @@ pContext = do
   c <- parseToken pConid
   option () $ do
     pColon
-    pRule
+    pRule False
     forget $ optionL $ do
       pKey "BINDING"
       sepBy1 pBind pComma
   optionL $ do
     pKey "EXTENDS"
     sepBy1 pConid pComma
-  ps <- many pContextElement
+  ps <- many $ pContextElement False
   pKey "ENDCONTEXT"
   return $ Context (Just c) $ concat ps
 
 pBind :: CharParser st String
-pBind = pKey "BIND" >> pDeclaration << pKey "TOPHP" >> (pConid <|> pString)
+pBind = pKey "BIND" >> pDeclaration False << pKey "TOPHP"
+  >> (pConid <|> pString)
 
 -- | parse a context element but do not require the PATTERN block
-pContextElement :: CharParser st [PatElem]
-pContextElement = pPattern <|> flat (many1 pPatElem)
+pContextElement :: Bool -> CharParser st [PatElem]
+pContextElement b = pPattern <|> flat (many1 $ pPatElem b)
   <|> single (pObjDef <|> pPopulation)
 
 pPopulation :: CharParser st PatElem
 pPopulation = do
   pKey "POPULATION"
-  r <- pMorphism
+  r <- pMorphism False
   pKey "CONTAINS"
   pContent False r
 
 pPattern :: CharParser st [PatElem]
 pPattern = pKey "PATTERN" >> (pConid <|> pString)
-           >> flat (many pPatElem)
+           >> flat (many $ pPatElem False)
            << pKey "ENDPATTERN"
 
-pPatElem :: CharParser st [PatElem]
-pPatElem = pDeclaration <|> pConceptDef <|> pExplain
-  <|> single (pRuleDef <|> pGen <|> pKeyDef)
+pPatElem :: Bool -> CharParser st [PatElem]
+pPatElem b = pDeclaration b <|> pConceptDef <|> pExplain
+  <|> single (pRuleDef b <|> pGen <|> pKeyDef)
 
-pDeclaration :: CharParser st [PatElem]
-pDeclaration = do
-  n <- try $ parseToken pVarid << pSym "::"
+pDeclaration :: Bool -> CharParser st [PatElem]
+pDeclaration b = do
+  n <- try $ parseToken (pVarid b) << pSym "::"
   c1 <- pConcept
   s <- parseToken $ pSymS "*" <|> pSymS "->"
   let ps = if tokStr s == "->" then
@@ -193,19 +195,20 @@ pKeyDef :: CharParser st PatElem
 pKeyDef = do
   pKey "KEY"
   t <- pLabelProps
-  c <- pConcept
-  l <- pParens $ sepBy1 pKeyAtt pComma
+  c <- pConcept <|> (pKey "I" >> pSqBrackets pConcept)
+  let ks = sepBy1 pKeyAtt pComma
+  l <- pParens ks <|> pSqBrackets ks
   return $ Pk $ KeyDef t c l
 
 pLabelProps :: CharParser st Token
 pLabelProps = do
   n <- pADLid
   optionL $ pGenParens "{" "}" $ sepBy1 pADLid pComma
-  pColon
+  option "" pColon
   return n
 
 pKeyAtt :: CharParser st KeyAtt
-pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) pRule
+pKeyAtt = liftM2 KeyAtt (optionMaybe $ try pLabelProps) $ pRule False
 
 choiceP :: (a -> CharParser st ()) -> [a] -> CharParser st a
 choiceP p = choice . map (\ a -> p a >> return a)
@@ -220,7 +223,7 @@ pObjDef = liftM2 Plug (choiceP (pKey . showUp)
 pObj :: CharParser st Object
 pObj = do
   n <- pLabelProps
-  e <- pRule
+  e <- pRule False <|> fmap (Tm . Sgn (mkSimpleId "I")) pTwo
   as <- optionL (pKey "ALWAYS" >> many pProp')
   os <- optionL (pEqual >> pSqBrackets (sepBy pObj pComma))
   return $ Object n e as os
@@ -256,10 +259,14 @@ pRecord :: CharParser st Pair
 pRecord = let ps = parseToken pString in
   pParens $ liftM2 Pair ps $ pComma >> ps
 
-pRuleDef :: CharParser st PatElem
-pRuleDef = do
+pRuleDef :: Bool -> CharParser st PatElem
+pRuleDef b = do
   h <- option Always pSignalOrAlways
-  r <- pRule
+  r <- pRule $ b && h == Always
+  option () $ do
+    pKey "COMPUTING"
+    pMorphism False
+    return ()
   option "" $ do
     pKey "EXPLANATION"
     pString
@@ -291,47 +298,47 @@ pTwo = option (RelType Anything Anything)
 pConcept :: CharParser st Concept
 pConcept = fmap C . parseToken $ pConid <|> pString <|> pKeyS "ONE"
 
-pMorphism :: CharParser st Relation
-pMorphism = do
-  nm <- parseToken $ choiceP pKey bRels <|> pVarid <|> (sQuoted << skip)
+pMorphism :: Bool -> CharParser st Relation
+pMorphism b = do
+  nm <- parseToken $ choiceP pKey bRels <|> pVarid b <|> (sQuoted << skip)
   ty <- pTwo
   return $ Sgn nm ty
 
-pRule :: CharParser st Rule
-pRule = pPrec Re pImpl
+pRule :: Bool -> CharParser st Rule
+pRule = pPrec Re . pImpl
 
-pImpl :: CharParser st Rule
-pImpl = do
-  e <- pExpr
+pImpl :: Bool -> CharParser st Rule
+pImpl b = do
+  e <- pExpr b
   option e $ do
     o <- choiceS pSym [Ri, Rr]
-    es <- sepBy1 pExpr $ pSym (show o)
+    es <- sepBy1 (pExpr False) $ pSym (show o)
     return $ MulExp o $ e : es
 
-pExpr :: CharParser st Rule
-pExpr = pPrec Fu pFactorI
+pExpr :: Bool -> CharParser st Rule
+pExpr = pPrec Fu . pFactorI
 
-pFactorI :: CharParser st Rule
-pFactorI = pPrec Fi pFactor
+pFactorI :: Bool -> CharParser st Rule
+pFactorI = pPrec Fi . pFactor
 
-pFactor :: CharParser st Rule
-pFactor = pPrec Fd pTermD
+pFactor :: Bool -> CharParser st Rule
+pFactor = pPrec Fd . pTermD
 
-pTermD :: CharParser st Rule
-pTermD = pPrec Fc pTerm
+pTermD :: Bool -> CharParser st Rule
+pTermD = pPrec Fc . pTerm
 
 pPrec :: MulOp -> CharParser st Rule -> CharParser st Rule
 pPrec f p = do
   es <- sepBy1 p $ try $ pSym (show f) >> notFollowedBy (char '[')
-                   -- to aovid conflict in objects
+                   -- to avoid conflict in objects
   return $ case es of
     [e] -> e
     _ -> MulExp f es
 
-pTerm :: CharParser st Rule
-pTerm = do
+pTerm :: Bool -> CharParser st Rule
+pTerm b = do
   ms <- many pMinus
-  e <- pParens pRule <|> fmap Tm pMorphism
+  e <- pParens (pRule False) <|> fmap Tm (pMorphism b)
   rs <- many $ choiceS pSym [K0, K1, Co]
   let p = foldl (flip UnExp) e rs
   return $ foldl (\ r _ -> UnExp Cp r) p ms

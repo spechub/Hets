@@ -166,7 +166,7 @@ showRuleKind :: RuleKind -> String
 showRuleKind k = if k == SignalOn then "ON"
              else showUp k
 
-data RuleHeader = Always | RuleHeader RuleKind Token deriving Show
+data RuleHeader = Always | RuleHeader RuleKind Token deriving (Eq, Show)
 
 data Pair = Pair Token Token deriving Show
 
