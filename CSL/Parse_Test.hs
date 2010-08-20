@@ -79,15 +79,16 @@ res32pure = case res32 of Right a -> a
 -- declares an equation and ask for the result
 castest = do
   reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
-  (inp, out, _, _) <- connectCAS reducecmd
+  (inpt, out, _, pid) <- connectCAS reducecmd
+  let sess = (inpt,out,pid)
   putStrLn "Send the command "
-  casDeclareEquation (inp,out) res32pure
-  procCmd (inp, out) (makeNamed "test" (Cmd "ask" [(Var (mkSimpleId "d_4"))]))
+  casDeclareEquation sess res32pure
+  procCmd sess (makeNamed "test" (Cmd "ask" [(Var (mkSimpleId "d_4"))]))
   -- putStrLn "query term.. "
   -- hPutStrLn inp "d_4;"
   -- res <- getNextResultOutput out
   -- putStrLn ( "Output is " ++ res)
-  disconnectCAS (inp, out)
+  disconnectCAS sess
   return ()
 
 -----------------------------------------------------------------------------

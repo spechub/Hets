@@ -35,8 +35,8 @@ setIOS s = IOS (\_ -> return ((),s))
 modifyIOS :: (s->s) -> IOS s s
 modifyIOS f = IOS (\s -> return (s, f s))
 
-runIOS :: IOS s a -> s -> IO (a, s)
-runIOS = unIOS
+runIOS :: s -> IOS s a -> IO (a, s)
+runIOS s cmd = unIOS cmd s
 
 
 instance Monad (IOS s) where

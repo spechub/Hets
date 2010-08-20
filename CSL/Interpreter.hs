@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Interpreter for CPL programs
@@ -20,7 +20,9 @@ import Data.Maybe
 import qualified Data.Map as Map
 import CSL.AS_BASIC_CSL
 
+-- ----------------------------------------------------------------------
 -- * Evaluator
+-- ----------------------------------------------------------------------
 
 -- | calculation interface, bundles the evaluation engine and the constant store
 class Monad m => CalculationSystem m where
@@ -28,22 +30,29 @@ class Monad m => CalculationSystem m where
     clookup :: String -> m (Maybe EXPRESSION)
     names :: m [String]
     eval :: EXPRESSION -> m EXPRESSION
+    check :: EXPRESSION -> m Bool
+    check = error "CalculationSystem-default: 'check' not implemented."
     values :: m [(String, EXPRESSION)]
     values = let f x = do
                    v <- clookup x
                    return (x, fromJust v)
              in names >>= mapM f
 
--- | Just an example which does not much... 
+-- | Just an example which does not much, for illustration purposes
 instance CalculationSystem (State (Map.Map String EXPRESSION)) where
     assign n e = liftM (Map.insert n e) get >> return ()
     clookup n = liftM (Map.lookup n) get
     names = liftM Map.keys get
     eval e = return e
+    check _ = return False
 
 destructureAssignment :: CMD -> Maybe (String, EXPRESSION)
 destructureAssignment (Cmd ":=" [Op n [] [] _, e]) = Just (n, e)
 destructureAssignment _ = Nothing
+
+destructureConstraint :: CMD -> Maybe EXPRESSION
+destructureConstraint (Cmd "constraint" [e]) = Just e
+destructureConstraint _ = Nothing
 
 evaluate :: CalculationSystem m => CMD -> m ()
 evaluate c = case destructureAssignment c of

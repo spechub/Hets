@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  interface to Reduce CAS
@@ -18,19 +19,87 @@ import Common.Id
 import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef)
 
-import Data.Time (midnight)
-import Data.Maybe (maybeToList)
-
 import Logic.Prover
 
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic
 import CSL.Lemma_Export
 
+import Control.Monad (replicateM_)
+import Data.Time (midnight)
+import Data.Maybe (maybeToList)
+import Data.List (intercalate)
+
 import System.IO
 import System.Process
 
-type Session = (Handle, Handle)
+-- ----------------------------------------------------------------------
+-- * Connection handling
+-- ----------------------------------------------------------------------
+
+-- | A session is a process connection
+class Session a where
+    outp :: a -> Handle
+    inp :: a -> Handle
+    err :: a -> Maybe Handle
+    err = const Nothing
+    proch :: a -> Maybe ProcessHandle
+    proch = const Nothing
+
+-- | The simplest session
+instance Session (Handle, Handle) where
+    inp = fst
+    outp = snd
+
+-- | Better use this session to properly close the connection
+instance Session (Handle, Handle, ProcessHandle) where
+    inp (x, _, _) = x
+    outp (_, x, _) = x
+    proch (_, _, x) = Just x
+
+
+-- | Left String is success, Right String is failure
+lookupRedShellCmd :: IO (Either String String)
+lookupRedShellCmd  = do
+  reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
+  -- check that prog exists
+  noProg <- missingExecutableInPath reducecmd
+  let f = if noProg then Right else Left
+  return $ f reducecmd
+
+
+-- | connects to the CAS, prepares the streams and sets initial options
+connectCAS :: String -> IO (Handle, Handle, Handle, ProcessHandle)
+connectCAS reducecmd = do
+    putStrLn "succeeded"
+    (inpt, out, errh, pid) <- runInteractiveCommand $ reducecmd ++ " -w"
+    hSetBuffering out NoBuffering
+    hSetBuffering inpt LineBuffering
+    hPutStrLn inpt "off nat;"
+    hPutStrLn inpt "load redlog;"
+    hPutStrLn inpt "rlset reals;"
+    -- read 7 lines 
+    replicateM_ 7 $ hGetLine out
+    putStrLn "done"
+    return (inpt, out, errh, pid)
+
+-- | closes the connection to the CAS
+disconnectCAS :: Session a => a -> IO ()
+disconnectCAS s = do
+  hPutStrLn (inp s) "quit;"
+  case proch s of
+    Nothing -> return ()
+
+    -- this is always better, because it closes also the shell-process,
+    -- hence use a Session-variant with ProcessHandle!
+    Just ph -> waitForProcess ph >> return ()
+  putStrLn "CAS disconnected"
+  return ()
+
+
+-- ----------------------------------------------------------------------
+-- * Prover specific
+-- ----------------------------------------------------------------------
 
 -- | returns the name of the reduce prover
 reduceS :: String
@@ -62,42 +131,56 @@ rlset reals;
 rlqe(exp...);
 -}
 
--- | Left String is success, Right String is failure
-lookupRedShellCmd :: IO (Either String String)
-lookupRedShellCmd  = do
-  reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
-  -- check that prog exists
-  noProg <- missingExecutableInPath reducecmd
-  let f = if noProg then Right else Left
-  return $ f reducecmd
+
+-- ----------------------------------------------------------------------
+-- * Reduce Pretty Printing
+-- ----------------------------------------------------------------------
+
+exportExps :: [EXPRESSION] -> String
+exportExps l = intercalate "," $ map exportExp l
+
+-- | those operators declared as infix in Reduce
+infixOps :: [String]
+infixOps = ["+", "-", "/", "**", "^", "=", "*", "and", "impl", "or"]
+
+-- | exports an expression to Reduce format
+exportExp :: EXPRESSION -> String
+exportExp (Var token) = tokStr token
+exportExp (Op s _ exps@[e1, e2] _) 
+    | elem s infixOps = concat ["(", exportExp e1, s, exportExp e2, ")"]
+    | otherwise       = concat [s, "(", exportExps exps, ")"]
+exportExp (Op s _ [] _) = s
+exportExp (Op s _ exps _) = concat [s, "(", exportExps exps, ")"]
+exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
+exportExp (Int i _) = show i
+exportExp (Double d _) = show d
+
+-- | exports command to Reduce Format
+exportReduce :: Named CMD -> String
+exportReduce namedcmd = case sentence namedcmd of
+  Cmd "simplify" exps -> exportExp $ head exps
+  Cmd "ask" exps -> exportExp $ head exps
+  Cmd cmd exps -> cmd ++ "(" ++ exportExps exps ++ ")"
+  _ -> error "exportReduce: not implemented for this case" -- TODO: implement
 
 
--- | connects to the CAS, prepares the streams and sets initial options
-connectCAS :: String -> IO (Handle, Handle, Handle, ProcessHandle)
-connectCAS reducecmd = do
-    putStrLn "succeeded"
-    (inp, out, err, pid) <- runInteractiveCommand $ reducecmd ++ " -w"
-    hSetBuffering out NoBuffering
-    hSetBuffering inp LineBuffering
-    hPutStrLn inp "off nat;"
-    hPutStrLn inp "load redlog;"
-    hPutStrLn inp "rlset reals;"
-    hGetLine out
-    hGetLine out
-    hGetLine out
-    hGetLine out
-    hGetLine out
-    hGetLine out
-    hGetLine out
-    putStrLn "done"
-    return (inp, out, err, pid)
+-- ----------------------------------------------------------------------
+-- * Reduce Parsing
+-- ----------------------------------------------------------------------
 
--- | closes the connection to the CAS
-disconnectCAS :: (Handle, Handle) -> IO ()
-disconnectCAS (inp, _) = do
-  hPutStrLn inp "quit;"
-  putStrLn "CAS disconnected"
-  return ()
+-- | removes the newlines 4: from the beginning of the string
+skipReduceLineNr :: String -> String
+skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
+                     $ dropWhile (/= ':') s
+
+-- | try to get an EXPRESSION from a Reduce string
+redOutputToExpression :: String -> Maybe EXPRESSION
+redOutputToExpression = parseResult . skipReduceLineNr
+
+
+-- ----------------------------------------------------------------------
+-- * Reduce Commands
+-- ----------------------------------------------------------------------
 
 
 {- | reads characters from the specified output until the next result is
@@ -111,130 +194,91 @@ getNextResultOutput out = do
                                                    r <- getNextResultOutput out
                                                    return (c : r)
 
-exportExps :: [EXPRESSION] -> String
-exportExps [] = ""
-exportExps (e1 : e2 : e3) = exportExp e1 ++ "," ++ exportExps (e2 : e3)
-exportExps (e1 : []) = exportExp e1
 
--- | those operators declared as infix in Reduce
-infixOps :: [String]
-infixOps = ["+", "-", "/", "**", "^", "=", "*", "and", "impl", "or"]
-
--- | exports an expression to Reduce format
-exportExp :: EXPRESSION -> String
-exportExp (Var token) = tokStr token
-exportExp (Op s _ [e1, e2] _) =
-  if elem s infixOps
-  then "(" ++ exportExp e1 ++ s ++ exportExp e2 ++ ")"
-  else s ++ "(" ++ exportExp e1 ++ "," ++ exportExp e2 ++ ")"
-exportExp (Op s _ exps _) = s ++ if (length exps == 0) then "" else "(" 
-                            ++ exportExps exps ++ 
-                                 if (length exps == 0) then ")" else ""
-exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
-exportExp (Int i _) = show i
-exportExp (Double d _) = show d
-
--- | exports command to Reduce Format
-exportReduce :: Named CMD -> String
-exportReduce namedcmd = case sentence namedcmd of
-  Cmd "simplify" exps -> exportExp $ head exps
-  Cmd "ask" exps -> exportExp $ head exps
-  Cmd cmd exps -> cmd ++ "(" ++ exportExps exps ++ ")"
-  _ -> error "exportReduce: not implemented for this case" -- TODO: implement
-
-procCmd :: (Handle, Handle) -> Named CMD
+procCmd :: Session a => a -> Named CMD
         -> IO (ProofStatus [EXPRESSION], [(Named CMD, ProofStatus [EXPRESSION])])
-procCmd (inp, out) cmd = case cmdstring of
-                                 "simplify" -> cassimplify (inp, out) cmd
-                                 "ask" -> casask (inp, out) cmd
-                                 "divide" -> casremainder (inp, out) cmd
-                                 "rlqe" -> casqelim (inp, out) cmd
-                                 "factorize" -> casfactorExp (inp, out) cmd
-                                 "int" -> casint (inp, out) cmd
-                                 "solve" -> cassolve (inp, out) cmd
-                                 _ -> error "Command not supported"
+procCmd sess cmd = case cmdstring of
+                     "simplify" -> cassimplify sess cmd
+                     "ask" -> casask sess cmd
+                     "divide" -> casremainder sess cmd
+                     "rlqe" -> casqelim sess cmd
+                     "factorize" -> casfactorExp sess cmd
+                     "int" -> casint sess cmd
+                     "solve" -> cassolve sess cmd
+                     _ -> error "Command not supported"
     where Cmd cmdstring _ = sentence cmd
 
--- | removes the newlines 4: from the beginning of the string
-skipReduceLineNr :: String -> String
-skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
-                     $ dropWhile (/= ':') s
-
--- | try to get an EXPRESSION from a Reduce string
-redOutputToExpression :: String -> Maybe EXPRESSION
-redOutputToExpression = parseResult . skipReduceLineNr
-
 -- | sends the given string to the CAS, reads the result and tries to parse it.
-evalString :: (Handle, Handle) -> String -> IO [EXPRESSION]
-evalString (inp, out) s = do
+evalString :: Session a => a -> String -> IO [EXPRESSION]
+evalString sess s = do
   putStrLn $ "Send CAS cmd " ++ s
-  hPutStrLn inp s
-  res <- getNextResultOutput out
+  hPutStrLn (inp sess) s
+  res <- getNextResultOutput (outp sess)
   putStrLn $ "Result is " ++ res
   putStrLn $ "Parsing of --" ++ skipReduceLineNr res ++ "-- yields "
     ++ show (redOutputToExpression res)
   return $ maybeToList $ redOutputToExpression res
 
 -- | wrap evalString into a ProofStatus
-procString :: (Handle, Handle) -> String -> String -> IO (ProofStatus [EXPRESSION])
+procString :: Session a => a -> String -> String -> IO (ProofStatus [EXPRESSION])
 procString h axname s = do
   res <- evalString h s
   let f = if null res then openReduceProofStatus else closedReduceProofStatus
   return $ f axname res
 
 -- | factors a given expression over the reals
-casfactorExp :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
-casfactorExp (inp, out) cmd =
+casfactorExp :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casfactorExp sess cmd =
   do
-    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
     return (proofstatus,[exportLemmaFactor cmd proofstatus])
 
 -- | solves a single equation over the reals
-cassolve :: (Handle, Handle) -> Named CMD -> IO (ProofStatus [EXPRESSION],[(Named CMD, ProofStatus [EXPRESSION])])
-cassolve (inp, out) cmd =
+cassolve :: Session a => a -> Named CMD -> IO (ProofStatus [EXPRESSION],[(Named CMD, ProofStatus [EXPRESSION])])
+cassolve sess cmd =
   do 
-    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
     return (proofstatus,[])
     
 
 
 
 -- | simplifies a given expression over the reals
-cassimplify :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
-cassimplify (inp, out) cmd = do
-  proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+cassimplify :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+cassimplify sess cmd = do
+  proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
   return (proofstatus,[exportLemmaSimplify cmd proofstatus])
 
 
 
 
 -- | asks value of a given expression 
-casask :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
-casask (inp, out) cmd = do
-  proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+casask :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casask sess cmd = do
+  proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
   return (proofstatus,[exportLemmaAsk cmd proofstatus])
 
 
 -- | computes the remainder of a division
-casremainder :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
-casremainder (inp, out) cmd =
+casremainder :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casremainder sess cmd =
   do
-    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";" 
+    proofstatus <- procString sess (senAttr cmd) $ exportReduce (makeNamed (senAttr cmd) (Cmd "divide" args)) ++ ";" 
     return (proofstatus,[exportLemmaRemainder cmd proofstatus])
   where Cmd _ args = sentence cmd
 
 -- | integrates the given expression
-casint :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
-casint (inp, out) cmd =
+casint :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casint sess cmd =
   do
-    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
     return (proofstatus,[exportLemmaInt cmd proofstatus])
 
 -- | performs quantifier elimination of a given expression
-casqelim :: (Handle, Handle) -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
-casqelim (inp, out) cmd =
+casqelim :: Session a => a -> Named CMD -> IO ((ProofStatus [EXPRESSION]),[(Named CMD, ProofStatus [EXPRESSION])])
+casqelim sess cmd =
   do
-    proofstatus <- procString (inp, out) (senAttr cmd) $ exportReduce cmd ++ ";"
+    proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
     return (proofstatus,[exportLemmaQelim cmd proofstatus])
 
 
@@ -246,26 +290,32 @@ exportLemmaQelim namedcmd ps =
             lemmaname = (ganame namedcmd)
 
 -- | declares an operator, such that it can used infix/prefix in CAS
-casDeclareOperators :: (Handle, Handle) -> [EXPRESSION] -> IO ()
-casDeclareOperators (inp, out) varlist = do
-  hPutStrLn inp $ "operator " ++ exportExps varlist ++ ";"
-  hGetLine out
+casDeclareOperators :: Session a => a -> [EXPRESSION] -> IO ()
+casDeclareOperators sess varlist = do
+  hPutStrLn (inp sess) $ "operator " ++ exportExps varlist ++ ";"
+  hGetLine (outp sess)
   return ()
 
 -- | declares an equation x := exp 
-casDeclareEquation :: (Handle, Handle) -> CMD -> IO ()
-casDeclareEquation (inp, out) (Cmd s exps) = 
+casDeclareEquation :: Session a => a -> CMD -> IO ()
+casDeclareEquation sess (Cmd s exps) = 
   if s == ":=" then 
     do
-      putStrLn $ (exportExp (exps !! 0)) ++ ":=" ++  (exportExp (exps !! 1))    
-      hPutStrLn inp $ (exportExp (exps !! 0)) ++ ":=" ++  (exportExp (exps !! 1)) ++ ";"
-      res <- getNextResultOutput out
+      putStrLn $ (exportExp (exps !! 0)) ++ ":=" ++  (exportExp (exps !! 1))
+      hPutStrLn (inp sess) $ (exportExp (exps !! 0))
+                    ++ ":=" ++  (exportExp (exps !! 1)) ++ ";"
+      res <- getNextResultOutput (outp sess)
       putStrLn $ "Declaration Result: " ++ res
       return ()
    else error "Expression is not an equation"
 
 casDeclareEquation _ _ =
     error "casDeclareEquation: not implemented for this case" -- TODO: implement
+
+
+-- ----------------------------------------------------------------------
+-- * Reduce Lemma Export
+-- ----------------------------------------------------------------------
 
 -- | generates the lemma for cmd with result ProofStatus
 exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])

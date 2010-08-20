@@ -79,17 +79,17 @@ processCmds cmds = do
           return ([],[])
     Left reducecmd ->
         do
-          (inp, out, _, _) <- connectCAS reducecmd
-          proofinfos <- processCmdsIntern (inp, out) cmds
-          disconnectCAS (inp, out)
+          (inpt, out, _, pid) <- connectCAS reducecmd
+          proofinfos <- processCmdsIntern (inpt, out, pid) cmds
+          disconnectCAS (inpt, out, pid)
           return proofinfos
                       
 
 -- | internal function to process commands over an existing connection
-processCmdsIntern :: (Handle, Handle) -> [Named CMD]
+processCmdsIntern :: Session a => a -> [Named CMD]
   -> IO ([ProofStatus [EXPRESSION]],[(Named CMD, ProofStatus [EXPRESSION])])
 processCmdsIntern _ [] = return ([],[])
-processCmdsIntern (inp, out) (x : xs) = do
-  (prooftree,newlemmas) <- procCmd (inp, out) x
-  (prooftrees,newlemmas2) <- processCmdsIntern (inp, out) xs
+processCmdsIntern sess (x : xs) = do
+  (prooftree,newlemmas) <- procCmd sess x
+  (prooftrees,newlemmas2) <- processCmdsIntern sess xs
   return (prooftree:prooftrees,newlemmas++newlemmas2)
