@@ -43,7 +43,7 @@
                     <child>
                       <widget class="GtkLabel" id="label2">
                         <property name="visible">True</property>
-                        <property name="label" translatable="yes">Nodes:</property>
+                        <property name="label" translatable="yes">Nodes or goals:</property>
                         <property name="use_markup">True</property>
                       </widget>
                       <packing>
