@@ -166,9 +166,9 @@ consCheck
 consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> do
         let proverStateI = spassProverState sig (toNamedList nSens) freedefs
-            extraOptions = "-pc false -pmtptp true " ++ case b of
-                Darwin -> "-fd true "
-                _ -> ""
+            extraOptions = "-pc false -pmtptp true -fd true " ++ case b of
+                Darwin -> ""
+                EDarwin -> "-eq Axioms "
               ++ "-to " ++ tl
             bin = proverBinary b
         prob <- showTPTPProblemM thName proverStateI []
