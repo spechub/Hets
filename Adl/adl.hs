@@ -19,6 +19,8 @@ import Text.ParserCombinators.Parsec (parse, eof)
 
 import Adl.Parse (skip, pArchitecture)
 import Adl.Print
+import Adl.Sign
+import Adl.StatAna
 #ifdef LATEX
   (adlGA)
 import Common.PrintLaTeX
@@ -34,7 +36,10 @@ process :: String -> IO ()
 process f = do
   s <- readFile f
   case parse (skip >> pArchitecture << eof) f s of
-    Right es ->
+    Right (Context m ps) ->
+      let (nps, env) = runState (mapM anaPatElem ps) (toEnv emptySign)
+          es = Context m nps
+      in
 #ifdef LATEX
       putStrLn
       . renderLatex Nothing
