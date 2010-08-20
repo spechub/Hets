@@ -29,8 +29,8 @@ import CommonLogic.Morphism
 
 import qualified Data.Map as Map
 
---import CommonLogic.OMDocExport
---import CommonLogic.OMDocImport
+-- import CommonLogic.OMDocExport
+-- import CommonLogic.OMDocImport
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -53,6 +53,7 @@ instance Sentences CommonLogic
     Morphism
     Symbol
     where
+      negation CommonLogic = Just . negForm
       sym_of CommonLogic = singletonList . symOf
       symmap_of CommonLogic = getSymbolMap -- returns the symbol map
       sym_name CommonLogic = getSymbolName -- returns the name of a symbol
@@ -78,7 +79,7 @@ instance Logic CommonLogic
     Symbol            -- symbol
     Symbol            -- raw_symbol
     ProofTree                -- proof_tree
-    where 
+    where
        empty_proof_tree CommonLogic = emptyProofTree
        provers CommonLogic = []
 {-
@@ -115,4 +116,3 @@ instance StaticAnalysis CommonLogic
       morphism_union CommonLogic = ()
       signature_colimit CommonLogic = ()
 -}
-

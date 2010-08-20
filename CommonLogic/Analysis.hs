@@ -174,3 +174,12 @@ inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
                       -> ExtSign Sign.Sign Symbol.Symbol
                       -> Result.Result Morphism.Morphism
 inducedFromToMorphism _ (ExtSign _ _) (ExtSign _ _) = Result [] Nothing
+
+-- negate sentence
+negForm :: CL.SENTENCE -> CL.SENTENCE
+negForm f = case f of
+  CL.Quant_sent _ r -> CL.Bool_sent (CL.Negation f) r
+  CL.Bool_sent bs r -> case bs of
+    CL.Negation s -> s
+    _ -> CL.Bool_sent (CL.Negation f) r
+  _ -> CL.Bool_sent (CL.Negation f) Id.nullRange
