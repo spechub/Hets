@@ -118,6 +118,6 @@ Executable hets
 
   if flag(gtkglade)
     build-depends:
-        glade >= 0.10.1
-      , gtk >= 0.10.1
+        glade >= 0.11.1
+      , gtk >= 0.11.2
     cpp-options: -DGTKGLADE
