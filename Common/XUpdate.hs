@@ -21,7 +21,6 @@ import Common.Utils
 import Text.XML.Light
 
 import Data.Char
-import Data.Either
 import Data.List
 import Data.Maybe
 

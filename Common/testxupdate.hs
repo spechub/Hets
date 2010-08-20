@@ -1,17 +1,18 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  analyse xml update input
+Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
 -}
+
+module Main (main) where
+
 import Common.XUpdate
-import Control.Monad.Error
+import Control.Monad.Error ()
 
 main :: IO ()
 main = do
