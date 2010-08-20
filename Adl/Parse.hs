@@ -102,7 +102,7 @@ pADLid = parseToken $ pConid <|> pVarid False <|> pString
 -- | parse contexts but do not require CONTEXT blocks
 pArchitecture :: CharParser st Context
 pArchitecture = pContext
-  <|> fmap (Context Nothing) (flat $ many1 $ pContextElement True)
+  <|> fmap (mkContext Nothing) (flat $ many1 $ pContextElement True)
 
 pContext :: CharParser st Context
 pContext = do
@@ -119,7 +119,7 @@ pContext = do
     sepBy1 pConid pComma
   ps <- many $ pContextElement False
   pKey "ENDCONTEXT"
-  return $ Context (Just c) $ concat ps
+  return $ mkContext (Just c) $ concat ps
 
 pBind :: CharParser st String
 pBind = pKey "BIND" >> pDeclaration False << pKey "TOPHP"

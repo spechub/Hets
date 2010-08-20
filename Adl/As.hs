@@ -13,6 +13,8 @@ Portability :  portable
 module Adl.As where
 
 import Data.Char
+import Data.List (sortBy)
+
 import Common.Id
 import Common.Keywords
 
@@ -185,3 +187,16 @@ data Context = Context (Maybe Token) [PatElem] deriving Show
 
 instance GetRange Context where
   getRange (Context mt _) = getRange mt
+
+comparePatElem :: PatElem -> PatElem -> Ordering
+comparePatElem p1 p2 = case (p1, p2) of
+  (Pm {}, Pm {}) -> EQ
+  (Pm {}, _) -> LT
+  (_, Pm {}) -> GT
+  (Pg {}, Pg {}) -> EQ
+  (Pg {}, _) -> LT
+  (_, Pg {}) -> GT
+  _ -> EQ
+
+mkContext :: Maybe Token -> [PatElem] -> Context
+mkContext m = Context m . sortBy comparePatElem

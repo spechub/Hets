@@ -36,7 +36,7 @@ import Data.List
 basicAna :: (Context, Sign, GlobalAnnos)
   -> Result (Context, ExtSign Sign Symbol, [Named Sen])
 basicAna (Context m ps, sig, _) =
-  let (nps, env) = runState (mapM anaPatElem ps) (toEnv sig)
+  let (nps, env) = runState (mapM anaPatElem ps) $ toEnv sig
   in Result (reverse $ msgs env)
      $ Just (Context m nps, ExtSign (closeSign $ sign env) $ syms env
             , reverse $ sens env)
@@ -98,7 +98,7 @@ addIsa c1 c2 = do
                        addMsgs [mkDiag Hint "redeclared ISA" c1]
                    else put e { sign = s { isas = Rel.insert c1 c2 r }}
       else addMsgs [mkDiag Error "unknown ISA" c2]
-    else addMsgs [mkDiag Error "unknown GEN" c2]
+    else addMsgs [mkDiag Error "unknown GEN" c1]
 
 data TypedRule = TypedRule Rule RelType deriving Show
 
