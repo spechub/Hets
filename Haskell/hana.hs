@@ -15,10 +15,7 @@ module Main where
 
 import Haskell.HatParser
 import Haskell.HatAna
-import ParseMonad
-import PropLexer
 import PropParser as HP
-import PropPosSyntax
 
 import System.Environment
 
