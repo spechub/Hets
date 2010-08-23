@@ -240,6 +240,7 @@ cp OWL/owl_parser $HETS_OWL_TOOLS/
 cp OWL/owl_locality $HETS_OWL_TOOLS/
 cp OWL/*.jar $HETS_OWL_TOOLS/
 cp OWL/lib/*.jar $HETS_OWL_TOOLS/lib/
+cp -r OWL/lib/native $HETS_OWL_TOOLS/lib/
 cp CASL/Termination/AProVE.jar $HETS_OWL_TOOLS/
 }
 
