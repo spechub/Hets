@@ -96,7 +96,10 @@ disconnectCAS s = do
   putStrLn "CAS disconnected"
   return ()
 
-
+sendToReduce :: Session a => a -> String -> IO ()
+sendToReduce sess s = do
+  hPutStrLn (inp sess) s
+  
 -- ----------------------------------------------------------------------
 -- * Prover specific
 -- ----------------------------------------------------------------------

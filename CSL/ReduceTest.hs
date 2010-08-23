@@ -15,6 +15,7 @@ This file is for experimenting with the ReduceInterpreters
 module CSL.ReduceTest where
 
 import CSL.ReduceInterpreter
+import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
@@ -22,6 +23,8 @@ import CSL.Sign
 
 import Common.Utils (getEnvDef)
 import Common.IOS
+import Common.Result (diags, printDiags)
+import Common.ResultT (runResultT)
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
@@ -42,7 +45,7 @@ sig = fmap fst . l1
 
 -- Check if the order is broken or not!
 sens :: Int -> IO [(String, CMD)]
-sens = fmap (reverse . snd) . l1
+sens = fmap snd . l1
 
 cmds :: Int -> IO [CMD]
 cmds = fmap (map snd) . sens
@@ -58,39 +61,40 @@ boolAssignEval cmd =
              Just (n, e) -> assign n e >> return (Left n)
              _ -> return $ Left ""
 
-
+{-
 -- booleans and assignments are returned
-redBA :: Int -- ^ Test-spec
+redsBA :: Int -- ^ Test-spec
       -> IO ([Either String Bool], ReduceInterpreter)
-redBA i = do
-  r <- redInit
+redsBA i = do
+  r <- redsInit
   cl <- cmds i
   runIOS r (mapM boolAssignEval cl)
 
 
 -- first reduce interpreter
-red :: Int -- ^ Test-spec
+reds :: Int -- ^ Test-spec
     -> IO ReduceInterpreter
-red i = do
-  r <- redInit
+reds i = do
+  r <- redsInit
+  sendToReduce r "on rounded; precision 30;"
   cl <- cmds i
   runIOS r (evaluateList cl)
   return r
 
+-}
 
 
-
--- use "redExit r" to disconnect where "r <- red"
+-- use "redsExit r" to disconnect where "r <- red"
 
 {- 
 -- many instances (connection/disconnection tests)
 
-l <- mapM (const red 1) [1..20]
-mapM redExit l
+l <- mapM (const reds 1) [1..20]
+mapM redsExit l
 
 
 -- BA-test:
-(l, r) <- redBA 2
+(l, r) <- redsBA 2
 
 'l' is a list of response values for each sentence in spec Test2
 'r' is the reduce connection
@@ -102,24 +106,26 @@ mapM redExit l
 
 -- run the assignments from the spec
 redc :: Int -- ^ verbosity level
+     -> Int -- ^ Test-spec
      -> IO PC.CommandState
-redc v = do
+redc v i = do
   r <- redcInit v
-  cl <- cmds 1
-  PC.runProg r (evaluateList cl)
+  cl <- cmds i
+  res <- PC.runProg r (runResultT $ evaluateList cl)
+  printDiags v (diags res)
   return r
 
 
 -- disconnect from reduce
-redcX :: PC.CommandState -> IO (Maybe ExitCode)
-redcX r = do
-  PC.runProg r redcExit
+-- redcX :: PC.CommandState -> IO (Maybe ExitCode)
+-- redcX r = do
+--   PC.runProg r redcExit
 
 
 --- Testing with many instances
 {-
 -- c-variant
-lc <- mapM (const $ redc 1) [1..20]
+lc <- mapM (const $ redc 1 1) [1..20]
 mapM redcX lc
 
 -}

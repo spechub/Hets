@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, UndecidableInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Reduce instance for the CalculationSystem class
@@ -7,7 +7,7 @@ License     :  GPLv2 or higher
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (various glasgow extensions)
 
 Reduce as CalculationSystem
 -}
@@ -15,19 +15,20 @@ Reduce as CalculationSystem
 module CSL.ReduceInterpreter where
 
 import Common.ProverTools (missingExecutableInPath)
-import Common.Utils (getEnvDef)
+import Common.Utils (getEnvDef, trimLeft)
 import Common.IOS
+import Common.ResultT
 
 import CSL.Reduce_Interface ( evalString, exportExp, connectCAS, disconnectCAS
-                            , redOutputToExpression, lookupRedShellCmd, Session (..))
+                            , lookupRedShellCmd, Session (..))
 import CSL.AS_BASIC_CSL (mkOp, EXPRESSION (..))
+import CSL.Parse_AS_Basic (parseResult)
 import CSL.Interpreter
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
-import Control.Monad (forM_)
-import Control.Monad.Trans (MonadIO (..))
+import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.State (MonadState (..))
 
 import Data.Maybe
@@ -45,23 +46,31 @@ data ReduceInterpreter = ReduceInterpreter { inh :: Handle
                                            , ph :: ProcessHandle }
 
 -- Types for two alternative reduce interpreter
-type RedIO = IOS ReduceInterpreter
+type RedsIO = ResultT (IOS ReduceInterpreter)
 
--- also a synonym for PC.Command !
-type RedcIO = IOS PC.CommandState
+type RedcIO = ResultT (IOS PC.CommandState)
 
-instance CalculationSystem RedIO where
-    assign  = redAssign
-    clookup = redClookup
-    eval = redEval
-    check = redCheck
+instance CalculationSystem RedsIO where
+    assign  = redAssign evalRedsString
+    clookup = redClookup evalRedsString
+    eval = redEval evalRedsString
+    check = redCheck evalRedsString
     names = error "ReduceInterpreter as CS: names are unsupported"
 
 instance CalculationSystem RedcIO where
-    assign  = redcAssign
-    clookup = redcClookup
-    eval = redcEval
-    names = error "ReduceInterpreter as CS: names are unsupported"
+    assign  = redAssign evalRedcString
+    clookup = redClookup evalRedcString
+    eval = redEval evalRedcString
+    check = redCheck evalRedcString
+    names = error "ReduceCommandInterpreter as CS: names are unsupported"
+
+
+instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
+    get = lift get
+    put = lift . put
+
+instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
+    liftIO = lift . liftIO
 
 -- ----------------------------------------------------------------------
 -- * Reduce syntax functions
@@ -89,6 +98,43 @@ getBooleanFromExpr e =
               ++ show e
 
 -- ----------------------------------------------------------------------
+-- * Generic Communication Interface
+-- ----------------------------------------------------------------------
+
+{- |
+   The generic interface abstracts over the concrete evaluation function
+-}
+
+redAssign :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> String
+          -> EXPRESSION -> s ()
+redAssign ef n e = do
+  ef $ printAssignment n e
+  return ()
+
+redClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> String
+           -> s (Maybe EXPRESSION)
+redClookup ef n = do
+  [e] <- ef $ printLookup n
+  if e == mkOp n [] then return Nothing else return $ Just e
+
+redEval :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> EXPRESSION
+        -> s EXPRESSION
+redEval ef e = do
+  el <- ef $ printEvaluation e
+  if null el
+   then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated"
+   else return $ head el
+
+redCheck :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> EXPRESSION
+         -> s Bool
+redCheck ef e = do
+  el <- ef $ printBooleanExpr e
+  if null el
+   then error $ "redCheck: expression " ++ show e ++ " couldn't be evaluated"
+   else return $ getBooleanFromExpr $ head el
+
+
+-- ----------------------------------------------------------------------
 -- * The Standard Communication Interface
 -- ----------------------------------------------------------------------
 
@@ -97,8 +143,13 @@ instance Session ReduceInterpreter where
     outp = outh
     proch = Just . ph
 
-redInit :: IO ReduceInterpreter
-redInit = do
+evalRedsString :: String -> RedsIO [EXPRESSION]
+evalRedsString s = do
+  r <- get
+  liftIO $ evalString r s
+
+redsInit :: IO ReduceInterpreter
+redsInit = do
   putStr "Connecting CAS.."
   reducecmd <- getEnvDef "HETS_REDUCE" "redcsl"
   -- check that prog exists
@@ -109,36 +160,8 @@ redInit = do
      (inpt, out, _, pid) <- connectCAS reducecmd
      return $ ReduceInterpreter { inh = inpt, outh = out, ph = pid }
 
-redExit :: ReduceInterpreter -> IO ()
-redExit = disconnectCAS
-
-redAssign :: String -> EXPRESSION -> RedIO ()
-redAssign n e = do
-  r <- get
-  liftIO $ evalString r $ printAssignment n e
-  return ()
-
-redClookup :: String -> RedIO (Maybe EXPRESSION)
-redClookup n = do
-  r <- get
-  [e] <- liftIO $ evalString r $ printLookup n
-  if e == mkOp n [] then return Nothing else return $ Just e
-
-redEval :: EXPRESSION -> RedIO EXPRESSION
-redEval e = do
-  r <- get
-  el <- liftIO $ evalString r $ printEvaluation e
-  if null el
-   then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated"
-   else return $ head el
-
-redCheck :: EXPRESSION -> RedIO Bool
-redCheck e = do
-  r <- get
-  el <- liftIO $ evalString r $ printBooleanExpr e
-  if null el
-   then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated"
-   else return $ getBooleanFromExpr $ head el
+redsExit :: ReduceInterpreter -> IO ()
+redsExit = disconnectCAS
 
 -- ----------------------------------------------------------------------
 -- * An alternative Communication Interface
@@ -152,25 +175,10 @@ redcDirect cs s = do
 
 evalRedcString :: String -> RedcIO [EXPRESSION]
 evalRedcString s = do
-  PC.call 0.1 s >>= return . maybeToList . redOutputToExpression
+  -- don't need to skip the reducelinenr here, because the Command-Interface
+  -- cleans the outpipe before sending (hence removes the reduce line nr)
+  lift (PC.call 0.1 s) >>= return . maybeToList . parseResult . trimLeft
 
-
-redcAssign :: String -> EXPRESSION -> RedcIO ()
-redcAssign n e = do
-  evalRedcString $ printAssignment n e
-  return ()
-
-redcClookup :: String -> RedcIO (Maybe EXPRESSION)
-redcClookup n = do
-  [e] <- evalRedcString $ printLookup n
-  if e == mkOp n [] then return Nothing else return $ Just e
-
-redcEval :: EXPRESSION -> RedcIO EXPRESSION
-redcEval e = do
-  el <- evalRedcString $ printEvaluation e
-  if null el
-   then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated"
-   else return $ head el
 
 -- | init the reduce communication
 redcInit :: Int -- ^ Verbosity level
@@ -180,9 +188,10 @@ redcInit v = do
   case rc of
     Left redcmd ->
         PC.runProgInit redcmd v
-              $ forM_ [ "off nat;", "load redlog;", "rlset reals;" ] PC.send
+              $ PC.send $ "off nat; load redlog; rlset reals; on rounded; "
+                    ++ "precision 30;"
     _ -> error "Could not find reduce shell command!"
 
 redcExit :: RedcIO (Maybe ExitCode)
-redcExit = PC.close $ Just "quit;"
+redcExit = lift $ PC.close $ Just "quit;"
 

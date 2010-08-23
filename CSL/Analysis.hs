@@ -126,15 +126,16 @@ analyzeFormula s f i
 -- | Extracts the axioms and the signature of a basic spec
 splitSpec :: BASIC_SPEC -> Sign.Sign -> (Sign.Sign, [DIAG_FORM])
 splitSpec (Basic_spec specitems) sig =
-    List.foldl (\ bs@(sign, axs) item ->
-                case (AS_Anno.item item) of
-                  Op_decl (Op_item tokens _) ->
-                      (addTokens sign tokens, axs)
-                  Var_decls _ -> bs -- TODO: implement
-                  Axiom_item annocmd ->
-                       -- addAxioms cmds sign
-                      (sign, (analyzeFormula sign annocmd (length axs)) : axs)
-               ) (sig, []) specitems
+    -- use foldr here, foldl would switch the order of the sentences
+    foldr (\ item bs@(sign, axs) ->
+               case (AS_Anno.item item) of
+                 Op_decl (Op_item tokens _) ->
+                     (addTokens sign tokens, axs)
+                 Var_decls _ -> bs -- TODO: implement
+                 Axiom_item annocmd ->
+                     -- addAxioms cmds sign
+                     (sign, (analyzeFormula sign annocmd (length axs)) : axs)
+          ) (sig, []) specitems
 
 -- | adds the specified tokens to the signature
 addTokens :: Sign.Sign -> [Token] -> Sign.Sign

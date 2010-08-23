@@ -14,7 +14,7 @@ Defines an interface for Calculators used to evaluate CPL programs
 
 module CSL.Interpreter where
 
-import Control.Monad (liftM, forM_)
+import Control.Monad (liftM, forM_, filterM, unless)
 import Control.Monad.State (State, MonadState (..))
 import Data.Maybe
 import qualified Data.Map as Map
@@ -55,9 +55,23 @@ destructureConstraint (Cmd "constraint" [e]) = Just e
 destructureConstraint _ = Nothing
 
 evaluate :: CalculationSystem m => CMD -> m ()
-evaluate c = case destructureAssignment c of
-                  Just (n, e) -> assign n e
-                  _ -> error $ "evaluate: non-assignment: " ++ show c
+evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e
+evaluate (Cond l) = do
+  cl <- filterM (check . fst) l
+  if null cl
+    then error "evaluate: non-exhaustive conditional"
+    else evaluateList $ snd $ head cl
+evaluate (Repeat e l) =
+    let f = do
+          -- first run of the repeat loop
+          evaluateList l
+          b <- check e
+          -- repeat f until condition holds
+          unless b f
+    in f
+evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
+
 
 evaluateList :: CalculationSystem m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
+
