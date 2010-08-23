@@ -3,7 +3,7 @@
 if [ -n "$1" ]
 then
 pre=$1
-else 
+else
 pre=`ghc --print-libdir | sed -e 's+/lib/.*++g'`
 fi
 
@@ -11,7 +11,7 @@ for p in \
  mtl-1.1.0.2 \
  parsec-2.1.0.1 \
  network-2.2.1.7 \
- fgl-5.4.2.2 \
+ fgl-5.4.2.3 \
  xml-1.3.7 \
  zlib-0.5.2.0 \
  HTTP-4000.0.9 \
