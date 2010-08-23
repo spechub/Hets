@@ -191,8 +191,12 @@ instance GetRange Context where
 comparePatElem :: PatElem -> PatElem -> Ordering
 comparePatElem p1 p2 = case (p1, p2) of
   (Pm {}, Pm {}) -> EQ
+  (Pm _ _ True, Population True _ _) -> EQ
   (Pm {}, _) -> LT
+  (Population True _ _, Pm _ _ True) -> EQ
+  (Population True _ _, _) -> LT
   (_, Pm {}) -> GT
+  (_, Population True _ _) -> GT
   (Pg {}, Pg {}) -> EQ
   (Pg {}, _) -> LT
   (_, Pg {}) -> GT
