@@ -23,7 +23,6 @@ import CSL.AS_BASIC_CSL
 import CSL.Morphism
 import CSL.Reduce_Interface
 import CSL.Sign
-import System.IO
 
 -- as mkProverTemplate, but with additionally functionality to export lemmas
 mkProverTemplateWithLemmaExport :: String -> sublogics

@@ -29,7 +29,6 @@ import CSL.Sign as Sign
 import qualified Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
-import qualified Data.List as List
 import qualified Data.Set as Set
 import CSL.AS_BASIC_CSL
 import CSL.Symbol

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Interpreter for CPL programs
@@ -18,6 +18,11 @@ import Control.Monad (liftM, forM_, filterM, unless)
 import Control.Monad.State (State, MonadState (..))
 import Data.Maybe
 import qualified Data.Map as Map
+import qualified Data.IntMap as IMap
+import Data.List (mapAccumL)
+import Prelude hiding (lookup)
+
+
 import CSL.AS_BASIC_CSL
 
 -- ----------------------------------------------------------------------
@@ -46,14 +51,6 @@ instance CalculationSystem (State (Map.Map String EXPRESSION)) where
     eval e = return e
     check _ = return False
 
-destructureAssignment :: CMD -> Maybe (String, EXPRESSION)
-destructureAssignment (Cmd ":=" [Op n [] [] _, e]) = Just (n, e)
-destructureAssignment _ = Nothing
-
-destructureConstraint :: CMD -> Maybe EXPRESSION
-destructureConstraint (Cmd "constraint" [e]) = Just e
-destructureConstraint _ = Nothing
-
 evaluate :: CalculationSystem m => CMD -> m ()
 evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e
 evaluate (Cond l) = do
@@ -75,3 +72,79 @@ evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
 evaluateList :: CalculationSystem m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
 
+-- ----------------------------------------------------------------------
+-- * Term translator
+-- ----------------------------------------------------------------------
+{-
+class InvMap m a b where
+    lookup :: m -> a -> b
+    revlookup :: m -> b -> a
+-}
+
+-- | A data structure for invertible maps, with automatic new key generation
+-- and insertion at lookup
+data BMap = BMap { mThere :: Map.Map String Int
+                 , mBack :: IMap.IntMap String
+                 , newkey :: Int
+                 , prefix :: String }
+
+-- ** Interface functions for BMap
+empty :: BMap
+empty = BMap Map.empty IMap.empty 1 "x"
+
+lookup :: BMap -> String -> (BMap, String)
+lookup m k =  let f _ _ x = x
+                  nv = newkey m
+                  (mNv', nm) = Map.insertLookupWithKey f k nv $ mThere m
+              in case mNv' of
+                   Just nv' -> (m, bmapIntToString m nv')
+                   Nothing ->  (m { mThere = nm
+                                  , mBack = IMap.insert nv k $ mBack m
+                                  , newkey = nv + 1 }
+                               , bmapIntToString m nv)
+
+revlookup :: BMap -> String -> String
+revlookup m s = let i = bmapStringToInt m s
+                    err = error $ "revlookup: No reverse mapping for " ++ s
+                in IMap.findWithDefault err i $ mBack m
+                    
+toList :: BMap -> [(String, String)]
+toList m = let prf = prefix m
+               f (x, y) = (x, prf ++ show y)
+           in map f $ Map.toList $ mThere m
+
+-- ** Internal functions for BMap
+bmapIntToString :: BMap -> Int -> String
+bmapIntToString m i = prefix m ++ show i
+
+bmapStringToInt :: BMap -> String -> Int
+bmapStringToInt m s = let prf = prefix m
+                          (prf', n) = splitAt (length prf) s
+                      in if prf == prf' then read n
+                         else error $ concat [ "bmapStringToInt: invalid string"
+                                             , " for prefix ", prf, ":", s ]
+
+
+-- ** Translation functions for (generic) BMaps
+
+-- | Translate EXPRESSION into a CAS compatible form
+translateEXPRESSION :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
+translateEXPRESSION m (Op s epl el rg) =
+    let (m', el') = mapAccumL translateEXPRESSION m el
+        (m'', s') = lookup m' s
+    in (m'', Op s' epl el' rg)
+translateEXPRESSION m (List el rg) =
+    let (m', el') = mapAccumL translateEXPRESSION m el
+    in (m', List el' rg)
+translateEXPRESSION m e = (m, e)
+
+-- | Retranslate CAS EXPRESSION back
+revtranslateEXPRESSION :: BMap -> EXPRESSION -> EXPRESSION
+revtranslateEXPRESSION m (Op s epl el rg) =
+    let el' = map (revtranslateEXPRESSION m) el
+        s' = revlookup m s
+    in Op s' epl el' rg
+revtranslateEXPRESSION m (List el rg) =
+    let el' = map (revtranslateEXPRESSION m) el
+    in List el' rg
+revtranslateEXPRESSION _ e = e

@@ -23,7 +23,7 @@ import CSL.Sign
 
 import Common.Utils (getEnvDef)
 import Common.IOS
-import Common.Result (diags, printDiags)
+import Common.Result (diags, printDiags, resultToMaybe)
 import Common.ResultT (runResultT)
 
 -- the process communication interface
@@ -32,6 +32,8 @@ import qualified Interfaces.Process as PC
 -- README: in order to work correctly link the Test.hs in the Hets-Root Dir to Main.hs (ln -s Test.hs Main.hs)
 import Main (getSigSens)
 
+import Data.Maybe (fromJust)
+import Data.Time.Clock
 import System.Exit (ExitCode)
 
 
@@ -50,6 +52,13 @@ sens = fmap snd . l1
 cmds :: Int -> IO [CMD]
 cmds = fmap (map snd) . sens
 
+destructureAssignment :: CMD -> Maybe (String, EXPRESSION)
+destructureAssignment (Cmd ":=" [Op n [] [] _, e]) = Just (n, e)
+destructureAssignment _ = Nothing
+
+destructureConstraint :: CMD -> Maybe EXPRESSION
+destructureConstraint (Cmd "constraint" [e]) = Just e
+destructureConstraint _ = Nothing
 
 
 -- for testing Booleans or Assignments
@@ -61,14 +70,14 @@ boolAssignEval cmd =
              Just (n, e) -> assign n e >> return (Left n)
              _ -> return $ Left ""
 
-{-
 -- booleans and assignments are returned
 redsBA :: Int -- ^ Test-spec
       -> IO ([Either String Bool], ReduceInterpreter)
 redsBA i = do
   r <- redsInit
   cl <- cmds i
-  runIOS r (mapM boolAssignEval cl)
+  (res, r') <- runIOS r (runResultT $ mapM boolAssignEval cl)
+  return (fromJust $ resultToMaybe res, r')
 
 
 -- first reduce interpreter
@@ -78,10 +87,9 @@ reds i = do
   r <- redsInit
   sendToReduce r "on rounded; precision 30;"
   cl <- cmds i
-  runIOS r (evaluateList cl)
+  runIOS r (runResultT $ evaluateList cl)
   return r
 
--}
 
 
 -- use "redsExit r" to disconnect where "r <- red"
@@ -104,10 +112,13 @@ mapM redsExit l
 
 -- * second reduce interpreter
 
+instance PC.CommandStateClass RITrans where
+    getCS = getRI
+
 -- run the assignments from the spec
 redc :: Int -- ^ verbosity level
      -> Int -- ^ Test-spec
-     -> IO PC.CommandState
+     -> IO RITrans
 redc v i = do
   r <- redcInit v
   cl <- cmds i
@@ -117,9 +128,19 @@ redc v i = do
 
 
 -- disconnect from reduce
--- redcX :: PC.CommandState -> IO (Maybe ExitCode)
--- redcX r = do
---   PC.runProg r redcExit
+redcX :: RITrans -> IO (Maybe ExitCode)
+redcX r = do
+  res <- PC.runProg r $ runResultT redcExit
+  return $ fromJust $ resultToMaybe res
+
+-- time measurement, pendant of the time shell command
+time :: IO a -> IO a
+time p = do
+  t <- getCurrentTime
+  res <- p
+  t' <- getCurrentTime
+  putStrLn $ show $ diffUTCTime t' t
+  return res
 
 
 --- Testing with many instances
@@ -127,5 +148,13 @@ redc v i = do
 -- c-variant
 lc <- mapM (const $ redc 1 1) [1..20]
 mapM redcX lc
+
+-- to communicate directly with reduce use:
+
+let r = head lc   OR    r <- redc x y
+
+let ri = getRI r
+
+redcDirect ri "some command;"
 
 -}

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, UndecidableInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances, UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Reduce instance for the CalculationSystem class
@@ -36,6 +36,7 @@ import System.IO (Handle)
 import System.Process (ProcessHandle)
 import System.Exit (ExitCode)
 
+import Prelude hiding (lookup)
 
 -- ----------------------------------------------------------------------
 -- * Reduce Calculator Instances
@@ -45,25 +46,32 @@ data ReduceInterpreter = ReduceInterpreter { inh :: Handle
                                            , outh ::Handle
                                            , ph :: ProcessHandle }
 
+-- | ReduceInterpreter with Translator based on the CommandState
+data RITrans = RITrans { getBMap :: BMap
+                       , getRI :: PC.CommandState }
+
+
 -- Types for two alternative reduce interpreter
 type RedsIO = ResultT (IOS ReduceInterpreter)
 
-type RedcIO = ResultT (IOS PC.CommandState)
+type RedcIO = ResultT (IOS RITrans)
+--type RedcIO = ResultT (IOS PC.CommandState)
 
 instance CalculationSystem RedsIO where
-    assign  = redAssign evalRedsString
-    clookup = redClookup evalRedsString
-    eval = redEval evalRedsString
-    check = redCheck evalRedsString
+    assign  = redAssign evalRedsString return
+    clookup = redClookup evalRedsString return
+    eval = redEval evalRedsString return
+    check = redCheck evalRedsString return
     names = error "ReduceInterpreter as CS: names are unsupported"
 
 instance CalculationSystem RedcIO where
-    assign  = redAssign evalRedcString
-    clookup = redClookup evalRedcString
-    eval = redEval evalRedcString
-    check = redCheck evalRedcString
+    assign  = redAssign evalRedcString redcTransE
+    clookup = redClookup evalRedcString redcTransS
+    eval = redEval evalRedcString redcTransE
+    check = redCheck evalRedcString redcTransE
     names = error "ReduceCommandInterpreter as CS: names are unsupported"
 
+-- some general lifted instances
 
 instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
     get = lift get
@@ -71,6 +79,9 @@ instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
 
 instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
     liftIO = lift . liftIO
+
+instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
+    liftR = lift . liftR
 
 -- ----------------------------------------------------------------------
 -- * Reduce syntax functions
@@ -105,32 +116,40 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-redAssign :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> String
-          -> EXPRESSION -> s ()
-redAssign ef n e = do
-  ef $ printAssignment n e
+redAssign :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+          -> (EXPRESSION -> s EXPRESSION)
+          -> String -> EXPRESSION -> s ()
+redAssign ef trans n e = do
+  e' <- trans e
+  ef $ printAssignment n e'
   return ()
 
-redClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> String
-           -> s (Maybe EXPRESSION)
-redClookup ef n = do
-  [e] <- ef $ printLookup n
+redClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+           -> (String -> s String)
+           -> String -> s (Maybe EXPRESSION)
+redClookup ef trans n = do
+  n' <- trans n
+  [e] <- ef $ printLookup n'
   if e == mkOp n [] then return Nothing else return $ Just e
 
-redEval :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> EXPRESSION
-        -> s EXPRESSION
-redEval ef e = do
-  el <- ef $ printEvaluation e
+redEval :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+        -> (EXPRESSION -> s EXPRESSION)
+        -> EXPRESSION -> s EXPRESSION
+redEval ef trans e = do
+  e' <- trans e
+  el <- ef $ printEvaluation e'
   if null el
-   then error $ "redEval: expression " ++ show e ++ " couldn't be evaluated"
+   then error $ "redEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-redCheck :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION]) -> EXPRESSION
-         -> s Bool
-redCheck ef e = do
-  el <- ef $ printBooleanExpr e
+redCheck :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+         -> (EXPRESSION -> s EXPRESSION)
+         -> EXPRESSION -> s Bool
+redCheck ef trans e = do
+  e' <- trans e
+  el <- ef $ printBooleanExpr e'
   if null el
-   then error $ "redCheck: expression " ++ show e ++ " couldn't be evaluated"
+   then error $ "redCheck: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ getBooleanFromExpr $ head el
 
 
@@ -167,31 +186,64 @@ redsExit = disconnectCAS
 -- * An alternative Communication Interface
 -- ----------------------------------------------------------------------
 
+-- TODO Proper handling of built-in ops (cos, Pi, etc, no-mapping!)
+
+
+wrapCommand :: IOS PC.CommandState a -> IOS RITrans a
+wrapCommand ios = do
+  r <- get
+  let map' x = r { getRI = x }
+  stmap map' getRI  ios
+
 -- | A direct way to communicate with Reduce
 redcDirect :: PC.CommandState -> String -> IO String
 redcDirect cs s = do
   (res, _) <- runIOS cs (PC.call 0.1 s)
   return res
 
+redcTransE :: EXPRESSION -> RedcIO EXPRESSION
+redcTransE e = do
+  r <- get
+  let bm = getBMap r
+      (bm', e') = translateEXPRESSION bm e
+  put r { getBMap = bm' }
+  return e'
+
+redcTransS :: String -> RedcIO String
+redcTransS s = do
+  r <- get
+  let bm = getBMap r
+      (bm', s') = lookup bm s
+  put r { getBMap = bm' }
+  return s'
+
+
 evalRedcString :: String -> RedcIO [EXPRESSION]
 evalRedcString s = do
+  -- 0.09 seconds is a critical value for the accepted response time of Reduce
+  res <- lift $ wrapCommand $ PC.call 0.1 s
+  r <- get
+  let bm = getBMap r
+      trans = revtranslateEXPRESSION bm
   -- don't need to skip the reducelinenr here, because the Command-Interface
   -- cleans the outpipe before sending (hence removes the reduce line nr)
-  lift (PC.call 0.1 s) >>= return . maybeToList . parseResult . trimLeft
-
+  return $ map trans $ maybeToList $ parseResult $ trimLeft res
 
 -- | init the reduce communication
 redcInit :: Int -- ^ Verbosity level
-         -> IO PC.CommandState
+         -> IO RITrans
 redcInit v = do
   rc <- lookupRedShellCmd
   case rc of
-    Left redcmd ->
-        PC.runProgInit redcmd v
-              $ PC.send $ "off nat; load redlog; rlset reals; on rounded; "
-                    ++ "precision 30;"
+    Left redcmd -> do
+               cs <- PC.runProgInit redcmd v
+                     $ PC.send $ "off nat; load redlog; rlset reals; "
+                           ++ "on rounded; precision 30;"
+               return RITrans { getBMap = empty, getRI = cs }
+
+
     _ -> error "Could not find reduce shell command!"
 
 redcExit :: RedcIO (Maybe ExitCode)
-redcExit = lift $ PC.close $ Just "quit;"
+redcExit = lift $ wrapCommand $ PC.close $ Just "quit;"
 
