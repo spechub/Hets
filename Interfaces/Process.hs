@@ -16,8 +16,7 @@ import Control.Monad (liftM, when)
 import Control.Monad.Trans (MonadIO (..))
 import Control.Monad.State (MonadState (..))
 
-import Data.Time.Clock
-import Data.Time.Clock.POSIX
+import Data.Time
 
 import qualified System.Process as SP
 import System.Exit
@@ -29,20 +28,39 @@ import Common.IOS
 -- * ReadState, controlled reading from a handle
 -- ----------------------------------------------------------------------
 
-type Time = NominalDiffTime
+type DTime = NominalDiffTime
+type Time = UTCTime
 
-data IntelligentReadState = IRS { timeout :: Time      -- ^ total timeout
+data IntelligentReadState = IRS { timeout :: DTime     -- ^ total timeout
                                 , started :: Time      -- ^ start timestamp
                                 , updated :: Time      -- ^ last update stamp
                                 , readtime :: Time     -- ^ stamp of last read
                                 , hasread :: Bool      -- ^ got data
-                                , waitForRead :: Bool
+                                , waitForRead :: Bool  -- ^  
+                                , waittimeInp :: Int   -- ^ same as waitForInp
                                 } deriving Show
 
-initIRS :: Time -> Bool -> IO IntelligentReadState
-initIRS t b = do
-  ts <- getPOSIXTime
-  return $ IRS t ts ts 0 False b
+data TimeConfig = TimeConfig { waitForInp :: Int
+                             -- ^ How many milliseconds waiting for next data
+                             , startTimeout :: DTime
+                             -- ^ Give the application some time to come up
+                             , cleanTimeout :: DTime
+                             -- ^ 
+                             } deriving Show
+
+defaultConfig :: TimeConfig
+defaultConfig = TimeConfig { waitForInp = 0
+                           , startTimeout = 0.001
+                           , cleanTimeout = 0.0001 }
+
+zeroTime :: Time
+zeroTime = UTCTime { utctDay = ModifiedJulianDay { toModifiedJulianDay = 0 }
+                   , utctDayTime = 0 } -- 17.11.1858 00:00:00
+
+initIRS :: Int -> DTime -> Bool -> IO IntelligentReadState
+initIRS w t b = do
+  ts <- getCurrentTime
+  return $ IRS t ts ts zeroTime False b w
 
 {- |
 This class provides an interface to control the output retrieval from an
@@ -56,16 +74,33 @@ class ReadState a where
     -- | A predicate to tell when to abort a read-try, usally when some
     -- timeout has passed
     abort :: a -> Bool
+    -- | Wait-time for new input
+    waitInp :: a   -- ^ the ReadState
+            -> Int -- ^ The milliseconds to wait for new input on the handle
 
+{- | Aborts the read attempt if one of the following holds:
+
+   1. the timeout is up
+        (= last update timestamp - start timestamp >= timeout)
+   2. between last RS-update and last read with data more than 10% of
+      timeout passed, AND
+        some data was already read OR the waitForRead flag is not set
+
+    This decision-tree is the reason why we call this ReadState 'Intelligent'
+-}
 instance ReadState IntelligentReadState where
-    increment irs@(IRS to st _ _ _ b) ngd =
+    increment irs ngd =
         do
-          ts <- getPOSIXTime
-          -- TODO: if-part also with irs-update
-          return $ if ngd then (IRS to st ts ts ngd b) else irs{updated = ts}
+          ts <- getCurrentTime
+          return $ if ngd then irs{ updated = ts, readtime = ts, hasread = ngd}
+                          else irs{ updated = ts }
           
-    abort (IRS to st lus slr gd b) =
-        to <= lus - st || ((not b || gd) && let tr = lus - slr in tr > 0 && to / tr < 10)
+    abort (IRS to st lus slr gd b _) =
+        to <= diffUTCTime lus st
+               || ((not b || gd)
+                   -- TODO: experiment with the 10 percent!
+                   && let tr = diffUTCTime lus slr in tr > 0 && to / tr < 10)
+    waitInp = waittimeInp
 
 getOutput :: (ReadState a) => Handle -> a -> IO String
 getOutput hdl rs = do
@@ -78,7 +113,8 @@ getOutput' :: (ReadState a) => a -> Handle -> String -> IO String
 getOutput' rs hdl s = do
   b <- if abort rs then return Nothing -- timeout gone
        -- eventually error on eof so abort
-       else catch (liftM Just $ hWaitForInput hdl 5) $ const $ return Nothing
+       else catch (liftM Just $ hWaitForInput hdl $ waitInp rs) $ const
+                $ return Nothing
   case b of Nothing -> return s
             Just b' ->
                 do
@@ -88,29 +124,32 @@ getOutput' rs hdl s = do
 
 -- | From given Time a ReadState is created and the output is fetched using
 -- getOutput
-getOutp :: Handle -> Time -> IO String
-getOutp hdl t = initIRS t True >>= getOutput hdl
+getOutp :: Handle -> Int -> DTime -> IO String
+getOutp hdl w t = initIRS w t True >>= getOutput hdl
 
 
 -- ----------------------------------------------------------------------
 -- * A Command Interface using the intelligent read state
 -- ----------------------------------------------------------------------
 
--- TODO: move the timeout-settings to a config type and integrate it
--- in CommandState
-
 -- | This is just a type to hold the information returned by
 --  System.Process.runInteractiveCommand
 data CommandState = CS { inp :: Handle, outp :: Handle, err :: Handle
-                       , pid :: SP.ProcessHandle,  verbosity:: Int }
+                       , pid :: SP.ProcessHandle,  verbosity:: Int 
+                       , tc :: TimeConfig }
+
+class CommandStateClass a where
+    getCS :: a -> CommandState
 
 -- | The IO State-Monad with state CommandState
 type Command = IOS CommandState
 
+
 -- | run stateless communication program
-runProg :: CommandState -- ^ initial comand state
-        -> Command a    -- ^ command to be run
-        -> IO a -- ^ terminal command state
+runProg :: CommandStateClass cs =>
+           cs        -- ^ initial comand state
+        -> IOS cs a  -- ^ command to be run
+        -> IO a      -- ^ terminal command state
 runProg cs cmd = fmap fst $ runIOS cs cmd
 
 -- | run program with initialization
@@ -127,31 +166,31 @@ start :: String -- ^ shell string to run the program
 start shcmd v = do
   when (v > 0) $ putStrLn $ "Running " ++ shcmd ++ " ..."
   (i,o,e,p) <- SP.runInteractiveCommand $ shcmd
-  let cs = CS i o e p v
+  let cs = CS i o e p v defaultConfig
 
   verbMessageIO cs 3 "start: Setting buffer modes"
   -- configure the handles 
   mapM_ (flip hSetBinaryMode False) [i, o, e]
   mapM_ (flip hSetBuffering NoBuffering) [o, e]
   hSetBuffering i LineBuffering
-  -- clear all output from the output pipe (wait 300 milliseconds)
+  -- clear all output from the output pipe (TIME: wait 300 milliseconds)
   verbMessageIO cs 3 "start: Clearing connection output."
-  x <- getOutp o 0.3
+  x <- getOutp o (waitForInp $ tc cs) $ startTimeout $ tc cs
   verbMessageIO cs 4 $ "start: Received\n--------------\n" ++ x
                     ++ "\n--------------"
   return cs
 
 -- | Just read output from the connection waiting at most Time
-readOutput :: Time -> Command String
+readOutput :: DTime -> Command String
 readOutput t = do
   s <- get
-  liftIO $ getOutp (outp s) t
+  liftIO $ getOutp (outp s) (waitForInp $ tc s) t
 
 -- | Just read error output from the connection waiting at most Time
-readErr :: Time -> Command String
+readErr :: DTime -> Command String
 readErr t = do
   s <- get
-  liftIO $ getOutp (err s) t
+  liftIO $ getOutp (err s) (waitForInp $ tc s) t
 
 -- | Send some String and don't wait for response
 send :: String -> Command ()
@@ -161,18 +200,18 @@ send str = do
   liftIO $ hPutStrLn (inp s) str
 
 -- | Send some String and wait Time for response
-call :: Time   -- ^ Waits this time until abort call (Use float for seconds)
+call :: DTime   -- ^ Waits this time until abort call (Use float for seconds)
      -> String -- ^ Send this string over the connection
      -> Command String -- ^ Response
 call t str = do
   s <- get
   -- first clear all output from the output pipe (wait 50 milliseconds)
   verbMessage s 3 "call: Clearing connection output."
-  x <- liftIO $ getOutp (outp s) 0.05
+  x <- liftIO $ getOutp (outp s) (waitForInp $ tc s) $ cleanTimeout $ tc s
   verbMessage s 4 $ "\n--------------\n" ++ x ++ "\n--------------"
   verbMessage s 2 $ "call: Sending " ++ str
   liftIO $ hPutStrLn (inp s) str
-  res <- liftIO $ getOutp (outp s) t
+  res <- liftIO $ getOutp (outp s) (waitForInp $ tc s) t
   verbMessage s 2 $ "call: Received " ++ res
   return res
 
@@ -185,7 +224,6 @@ verbMessage :: CommandState -> Int -> String -> Command String
 verbMessage cs v s = liftIO $ verbMessageIO cs v s
 
 
--- Close variants:
 
 -- | Send some exit command if there is one to close the connection.
 -- This is the best one, but may be blocked by the application.
@@ -204,6 +242,9 @@ close str = do
   verbMessage s 2 $ "close: process exited with code " ++ show e
   return $ Just e
 
+{-
+
+-- Close variants:
 
 -- | Send some exit command if there is one to close the connection
 -- , and in addition terminate after wait
@@ -247,3 +288,5 @@ close1 str = do
                               ++ "forcing termination..."
               liftIO $ SP.terminateProcess $ pid s
   return mE
+
+-}
