@@ -139,6 +139,17 @@ getText e = let s = trim $ strContent e in
     [] -> return s
     c : _ -> failX "unexpected child" $ elName c
 
+getXUpdateText :: Monad m => Element -> m String
+getXUpdateText e = let
+    msg = fail "expected single <xupdate:text> element"
+    in case elChildren e of
+  [] -> getText e
+  [s] -> let
+      q = elName s
+      u = qName q
+      in if isXUpdateQN q && u == "text" then getText s else msg
+  _ -> msg
+
 anaXUpdate :: Monad m => Element -> m Change
 anaXUpdate e = let
   q = elName e
@@ -154,7 +165,7 @@ anaXUpdate e = let
               noContent e $ Change (Variable vn) p
         _ -> case lookup u [("update", Update), ("rename", Rename)] of
           Just c -> do
-            s <- getText e
+            s <- getXUpdateText e
             return $ Change (c s) p
           Nothing -> case lookup u $ map (\ i -> (showInsert i, i))
                      [Before, After, Append] of
