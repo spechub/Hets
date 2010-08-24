@@ -16,7 +16,7 @@ http://www.mail-archive.com/haskell@haskell.org/msg07405.html
 
 -}
 
-module Common.IOS where
+module Common.IOS (IOS (..), runIOS, stmap) where
 
 import Control.Monad.Trans (MonadIO (..))
 import Control.Monad.State (MonadState (..))
@@ -32,12 +32,19 @@ getIOS = IOS (\s -> return (s,s))
 setIOS :: s -> IOS s ()
 setIOS s = IOS (\_ -> return ((),s))
 
+{- not needed
 modifyIOS :: (s->s) -> IOS s s
 modifyIOS f = IOS (\s -> return (s, f s))
+-}
 
 runIOS :: s -> IOS s a -> IO (a, s)
 runIOS s cmd = unIOS cmd s
 
+-- | Like fmap but changes the state type, this needs map and unmap functions
+stmap :: (s -> s') -> (s' -> s) -> IOS s a -> IOS s' a
+stmap map' unmap ios = let f (a, b) = (a, map' b)
+                       in IOS (\ s' -> fmap f $ unIOS ios $ unmap s')
+  
 
 instance Monad (IOS s) where
     return x = IOS (\s -> return (x,s))

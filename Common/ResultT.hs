@@ -39,15 +39,11 @@ instance MonadTrans ResultT where
         a <- m
         return $ return a
 
-liftR :: Monad m => Result a -> ResultT m a
-liftR = ResultT . return
-
+-- | Inspired by the MonadIO-class
 class Monad m => MonadResult m where
-    liftRes :: Result a -> ResultT m a
-    runResT :: ResultT m a -> m (Result a)
+    liftR :: Result a -> m a
 
 
--- TODO: Why can't I replace the methods liftR, runResultT by the interface-methods??
 instance Monad m => MonadResult (ResultT m) where
-    liftRes = liftR
-    runResT = runResultT
+    liftR = ResultT . return
+
