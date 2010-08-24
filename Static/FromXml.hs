@@ -26,8 +26,8 @@ import Data.List
 import Data.Maybe
 import Control.Monad
 
-anaUpdates = do
-  input <- readFile "Common/test/diff.AddingImports.decomposed.xml"
+anaUpdates f = do
+  input <- readFile f
   cs <- anaXUpdates input
   acs <- mapM changeDG cs
   mapM_ print acs
@@ -53,6 +53,7 @@ changeDG (Change csel pth) = do
         NodeElem _ (Just (SymbolRangeAttr _)) -> True
         SpecDefn _ True -> True
         ViewDefn _ (Just RangeAttr) -> True
+        NextLinkId -> True
         _ -> False
       then return . sc $ UpdateChDG s
       else fail "Static.FromXML.changeDG: unexpected update change"
@@ -174,6 +175,7 @@ data SelElem
   | SpecDefn SIMPLE_ID Bool -- range attribute
   | ViewDefn SIMPLE_ID (Maybe ViewDefnElem)
   | LinkElem EdgeId NodeName NodeName (Maybe LinkSubElem)
+  | NextLinkId
     deriving Show
 
 anaTopPath :: Monad m => Expr -> m SelElem
@@ -235,7 +237,9 @@ anaSteps stps = case stps of
              else err
      _ -> err
    [] -> fail "Static.FromXML.anaSteps: missing step"
-   stp : _ ->
+   stp : _ -> case attributeStep stp of
+     Just "nextlinkid" -> return NextLinkId
+     _ ->
        fail $ "Static.FromXML.anaSteps: unexpected step: " ++ showStep stp
 
 findAttrKey :: Monad m => String -> [Attr] -> m String
