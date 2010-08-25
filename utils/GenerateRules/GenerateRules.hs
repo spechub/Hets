@@ -56,8 +56,8 @@ genRules flags files =
            (datas, imports) = (( \ (x,y) -> (concat x,concat y)) . unzip) ids
            ds = datas \\ excs
            rule = intercalate ", " rules
-           fileHead = -- add -fvia-C -O0 to reduce *.o sizes for macs
-             "{-# OPTIONS -w #-}" ++
+           fileHead = -- add -O0 to reduce *.o sizes for ghc-6.12
+             "{-# OPTIONS -w -O0 #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) DFKI Bremen 2008" ++
