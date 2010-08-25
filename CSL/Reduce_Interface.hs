@@ -23,6 +23,7 @@ import Logic.Prover
 
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic
+import CSL.Analysis (arityOneOps, arityTwoOps, arityFlexOps)
 import CSL.Lemma_Export
 
 import Control.Monad (replicateM_)
@@ -185,6 +186,11 @@ redOutputToExpression = parseResult . skipReduceLineNr
 -- * Reduce Commands
 -- ----------------------------------------------------------------------
 
+
+cslReduceDefaultMapping :: [(String, String)]
+cslReduceDefaultMapping =
+    let idmapping = map (\ x -> (x, x))
+    in idmapping $ arityOneOps ++ arityTwoOps ++ arityFlexOps
 
 {- | reads characters from the specified output until the next result is
   complete, indicated by $ when using the maxima mode off nat; -}

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Test environment for the ReduceInterpreter
@@ -87,8 +86,8 @@ reds i = do
   r <- redsInit
   sendToReduce r "on rounded; precision 30;"
   cl <- cmds i
-  runIOS r (runResultT $ evaluateList cl)
-  return r
+  (_, r') <- runIOS r (runResultT $ evaluateList cl)
+  return r'
 
 
 
@@ -112,9 +111,6 @@ mapM redsExit l
 
 -- * second reduce interpreter
 
-instance PC.CommandStateClass RITrans where
-    getCS = getRI
-
 -- run the assignments from the spec
 redc :: Int -- ^ verbosity level
      -> Int -- ^ Test-spec
@@ -122,16 +118,36 @@ redc :: Int -- ^ verbosity level
 redc v i = do
   r <- redcInit v
   cl <- cmds i
-  res <- PC.runProg r (runResultT $ evaluateList cl)
+  (res, r') <- runIOS r (runResultT $ evaluateList cl)
   printDiags v (diags res)
-  return r
+  return r'
+
+redcTest :: RedcIO a -> RITrans -> IO a
+redcTest cmd r = fmap fromJust $ redcTestM cmd r
+
+redcTestM :: RedcIO a -> RITrans -> IO (Maybe a)
+redcTestM cmd r = fmap (resultToMaybe . fst) $ runIOS r $ runResultT cmd
+
+redcNames :: RITrans -> IO [String]
+redcNames = redcTest names
+
+redcValues :: RITrans -> IO [(String, EXPRESSION)]
+redcValues = redcTest values
+
+-- run the assignments from the spec
+redcCont :: Int -- ^ Test-spec
+         -> RITrans
+         -> IO RITrans
+redcCont i r = do
+  cl <- cmds i
+  (res, r') <- runIOS r (runResultT $ evaluateList cl)
+  printDiags (PC.verbosity $ getRI r') (diags res)
+  return r'
 
 
 -- disconnect from reduce
 redcX :: RITrans -> IO (Maybe ExitCode)
-redcX r = do
-  res <- PC.runProg r $ runResultT redcExit
-  return $ fromJust $ resultToMaybe res
+redcX = redcTest redcExit
 
 -- time measurement, pendant of the time shell command
 time :: IO a -> IO a
@@ -146,7 +162,7 @@ time p = do
 --- Testing with many instances
 {-
 -- c-variant
-lc <- mapM (const $ redc 1 1) [1..20]
+lc <- time $ mapM (const $ redc 1 1) [1..20]
 mapM redcX lc
 
 -- to communicate directly with reduce use:

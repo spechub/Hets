@@ -86,28 +86,57 @@ class InvMap m a b where
 data BMap = BMap { mThere :: Map.Map String Int
                  , mBack :: IMap.IntMap String
                  , newkey :: Int
-                 , prefix :: String }
+                 , prefix :: String
+                 , defaultMap :: BMapDefault }
+
+
+data BMapDefault = BMapDefault { mThr :: Map.Map String String
+                               , mBck :: Map.Map String String }
+
+-- ** Interface functions for BMapDefault
+
+fromList :: [(String, String)] -> BMapDefault
+fromList l = let f (x, y) = (y, x)
+             in BMapDefault (Map.fromList l) $ Map.fromList $ map f l
+
+defaultLookup :: BMapDefault -> String -> Maybe String
+defaultLookup bmd s = Map.lookup s $ mThr bmd
+
+defaultRevlookup :: BMapDefault -> String -> Maybe String
+defaultRevlookup bmd s = Map.lookup s $ mBck bmd
 
 -- ** Interface functions for BMap
 empty :: BMap
-empty = BMap Map.empty IMap.empty 1 "x"
+empty = BMap Map.empty IMap.empty 1 "x" $ fromList []
 
+initWithDefault :: [(String, String)] -> BMap
+initWithDefault l = BMap Map.empty IMap.empty 1 "x" $ fromList l
+
+-- | The only way to also insert a value is to use lookup. One should not
+-- insert values explicitly. Note that you don't control the inserted value.
 lookup :: BMap -> String -> (BMap, String)
-lookup m k =  let f _ _ x = x
-                  nv = newkey m
-                  (mNv', nm) = Map.insertLookupWithKey f k nv $ mThere m
-              in case mNv' of
-                   Just nv' -> (m, bmapIntToString m nv')
-                   Nothing ->  (m { mThere = nm
-                                  , mBack = IMap.insert nv k $ mBack m
-                                  , newkey = nv + 1 }
-                               , bmapIntToString m nv)
+lookup m k = 
+    case defaultLookup (defaultMap m) k of
+      Just s -> (m, s)
+      _ -> let f _ _ x = x
+               nv = newkey m
+               (mNv', nm) = Map.insertLookupWithKey f k nv $ mThere m
+           -- first check for default symbols
+           in case mNv' of
+                Just nv' -> (m, bmapIntToString m nv')
+                _ ->  (m { mThere = nm
+                         , mBack = IMap.insert nv k $ mBack m
+                         , newkey = nv + 1 }
+                      , bmapIntToString m nv)
 
 revlookup :: BMap -> String -> String
-revlookup m s = let i = bmapStringToInt m s
-                    err = error $ "revlookup: No reverse mapping for " ++ s
-                in IMap.findWithDefault err i $ mBack m
-                    
+revlookup m k = 
+    case defaultRevlookup (defaultMap m) k of
+      Just s -> s
+      _ -> let i = bmapStringToInt m k
+               err = error $ "revlookup: No reverse mapping for " ++ k
+           in IMap.findWithDefault err i $ mBack m
+
 toList :: BMap -> [(String, String)]
 toList m = let prf = prefix m
                f (x, y) = (x, prf ++ show y)

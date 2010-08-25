@@ -15,6 +15,7 @@ Portability :  portable
 module CSL.Analysis
     ( splitSpec
     , basicCSLAnalysis
+    , arityOneOps, arityTwoOps, arityFlexOps
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
@@ -44,8 +45,8 @@ data DIAG_FORM = DiagForm
     }
                deriving Show
 arityOneOps :: [String]
-arityOneOps = [ "cos", "sin", "tan", "sqrt", "fthrt", "--"
-              , "simplify", "rlqe", "factorize", "simplify"
+arityOneOps = [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
+              , "simplify", "rlqe", "factorize"
               ]
 
 arityTwoOps :: [String]

@@ -20,7 +20,7 @@ import Common.IOS
 import Common.ResultT
 
 import CSL.Reduce_Interface ( evalString, exportExp, connectCAS, disconnectCAS
-                            , lookupRedShellCmd, Session (..))
+                            , lookupRedShellCmd, Session (..), cslReduceDefaultMapping)
 import CSL.AS_BASIC_CSL (mkOp, EXPRESSION (..))
 import CSL.Parse_AS_Basic (parseResult)
 import CSL.Interpreter
@@ -52,26 +52,32 @@ data RITrans = RITrans { getBMap :: BMap
 
 
 -- Types for two alternative reduce interpreter
+
+-- Reds as (Red)uce (s)tandard interface
 type RedsIO = ResultT (IOS ReduceInterpreter)
 
+-- Redc as (Red)uce (c)ommand interface (it is build on CommandState)
 type RedcIO = ResultT (IOS RITrans)
---type RedcIO = ResultT (IOS PC.CommandState)
 
 instance CalculationSystem RedsIO where
-    assign  = redAssign evalRedsString return
+    assign  = redAssign evalRedsString return return
     clookup = redClookup evalRedsString return
     eval = redEval evalRedsString return
     check = redCheck evalRedsString return
     names = error "ReduceInterpreter as CS: names are unsupported"
 
 instance CalculationSystem RedcIO where
-    assign  = redAssign evalRedcString redcTransE
+    assign  = redAssign evalRedcString redcTransS redcTransE
     clookup = redClookup evalRedcString redcTransS
     eval = redEval evalRedcString redcTransE
     check = redCheck evalRedcString redcTransE
-    names = error "ReduceCommandInterpreter as CS: names are unsupported"
+    names = do
+      r <- get
+      return $ map fst $ toList $ getBMap r
 
--- some general lifted instances
+
+
+-- ** some general lifted instances, TODO: outsource them
 
 instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
     get = lift get
@@ -117,11 +123,13 @@ getBooleanFromExpr e =
 -}
 
 redAssign :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+          -> (String -> s String)
           -> (EXPRESSION -> s EXPRESSION)
           -> String -> EXPRESSION -> s ()
-redAssign ef trans n e = do
-  e' <- trans e
-  ef $ printAssignment n e'
+redAssign ef trans transE n e = do
+  e' <- transE e
+  n' <- trans n
+  ef $ printAssignment n' e'
   return ()
 
 redClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
@@ -129,8 +137,10 @@ redClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
            -> String -> s (Maybe EXPRESSION)
 redClookup ef trans n = do
   n' <- trans n
-  [e] <- ef $ printLookup n'
-  if e == mkOp n [] then return Nothing else return $ Just e
+  el <- ef $ printLookup n'
+  return $ listToMaybe el
+-- we don't want to return nothing on id-lookup: "x; --> x"
+--  if e == mkOp n [] then return Nothing else return $ Just e
 
 redEval :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
@@ -236,12 +246,11 @@ redcInit v = do
   rc <- lookupRedShellCmd
   case rc of
     Left redcmd -> do
-               cs <- PC.runProgInit redcmd v
-                     $ PC.send $ "off nat; load redlog; rlset reals; "
-                           ++ "on rounded; precision 30;"
-               return RITrans { getBMap = empty, getRI = cs }
-
-
+            cs <- PC.start redcmd v Nothing
+            (_, cs') <- runIOS cs $ PC.send $ "off nat; load redlog; "
+                        ++ "rlset reals; on rounded; precision 30;"
+            return RITrans { getBMap = initWithDefault cslReduceDefaultMapping
+                           , getRI = cs' }
     _ -> error "Could not find reduce shell command!"
 
 redcExit :: RedcIO (Maybe ExitCode)

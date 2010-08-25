@@ -17,6 +17,7 @@ import Control.Monad.Trans (MonadIO (..))
 import Control.Monad.State (MonadState (..))
 
 import Data.Time
+import Data.Maybe
 
 import qualified System.Process as SP
 import System.Exit
@@ -49,9 +50,9 @@ data TimeConfig = TimeConfig { waitForInp :: Int
                              } deriving Show
 
 defaultConfig :: TimeConfig
-defaultConfig = TimeConfig { waitForInp = 0
-                           , startTimeout = 0.001
-                           , cleanTimeout = 0.0001 }
+defaultConfig = TimeConfig { waitForInp = 1
+                           , startTimeout = 0.7
+                           , cleanTimeout = 0.001 }
 
 zeroTime :: Time
 zeroTime = UTCTime { utctDay = ModifiedJulianDay { toModifiedJulianDay = 0 }
@@ -138,35 +139,19 @@ data CommandState = CS { inp :: Handle, outp :: Handle, err :: Handle
                        , pid :: SP.ProcessHandle,  verbosity:: Int 
                        , tc :: TimeConfig }
 
-class CommandStateClass a where
-    getCS :: a -> CommandState
-
 -- | The IO State-Monad with state CommandState
 type Command = IOS CommandState
 
 
--- | run stateless communication program
-runProg :: CommandStateClass cs =>
-           cs        -- ^ initial comand state
-        -> IOS cs a  -- ^ command to be run
-        -> IO a      -- ^ terminal command state
-runProg cs cmd = fmap fst $ runIOS cs cmd
-
--- | run program with initialization
-runProgInit :: String       -- ^ shell string to run the program
-            -> Int          -- ^ Verbosity level
-            -> Command a    -- ^ command to be run
-            -> IO CommandState -- ^ terminal command state
-runProgInit s v cmd = start s v >>= \ cs -> fmap snd $ runIOS cs cmd
-
 -- | initialize the connection by running the given command string
 start :: String -- ^ shell string to run the program
       -> Int    -- ^ Verbosity level
+      -> Maybe TimeConfig
       -> IO CommandState
-start shcmd v = do
+start shcmd v mTc = do
   when (v > 0) $ putStrLn $ "Running " ++ shcmd ++ " ..."
   (i,o,e,p) <- SP.runInteractiveCommand $ shcmd
-  let cs = CS i o e p v defaultConfig
+  let cs = CS i o e p v $ fromMaybe defaultConfig mTc
 
   verbMessageIO cs 3 "start: Setting buffer modes"
   -- configure the handles 
