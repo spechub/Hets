@@ -283,7 +283,8 @@ analyseOutput err outp =
               _ -> (atp, exCode, to)
           "All" : "axioms" : "are" : e : _ | isPrefixOf "entailed" e ->
             (ATPSuccess, Just True, to)
-          "Non-entailments:" : _ -> (ATPSuccess, Just False, to)
+          ne : _ | isPrefixOf "Non-entailments" ne ->
+            (ATPSuccess, Just False, to)
           "Usage:" : "java" : "Pellet" : _ -> (ATPError line, Nothing, to)
           "ERROR:" : _ -> (ATPError line, Nothing, to)
           tm : num : _ | isPrefixOf "Time" tm && all isDigit num ->
