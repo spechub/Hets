@@ -130,7 +130,7 @@ getOutp hdl w t = initIRS w t True >>= getOutput hdl
 
 
 -- ----------------------------------------------------------------------
--- * A Command Interface using the intelligent read state
+-- * A Command Interface using the read state
 -- ----------------------------------------------------------------------
 
 -- | This is just a type to hold the information returned by

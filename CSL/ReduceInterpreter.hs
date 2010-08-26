@@ -21,7 +21,7 @@ import Common.ResultT
 
 import CSL.Reduce_Interface ( evalString, exportExp, connectCAS, disconnectCAS
                             , lookupRedShellCmd, Session (..), cslReduceDefaultMapping)
-import CSL.AS_BASIC_CSL (mkOp, EXPRESSION (..))
+import CSL.AS_BASIC_CSL (EXPRESSION (..))
 import CSL.Parse_AS_Basic (parseResult)
 import CSL.Interpreter
 
@@ -56,7 +56,7 @@ data RITrans = RITrans { getBMap :: BMap
 -- Reds as (Red)uce (s)tandard interface
 type RedsIO = ResultT (IOS ReduceInterpreter)
 
--- Redc as (Red)uce (c)ommand interface (it is build on CommandState)
+-- Redc as (Red)uce (c)ommand interface (it is built on CommandState)
 type RedcIO = ResultT (IOS RITrans)
 
 instance CalculationSystem RedsIO where
@@ -75,20 +75,6 @@ instance CalculationSystem RedcIO where
       r <- get
       return $ map fst $ toList $ getBMap r
 
-
-
--- ** some general lifted instances, TODO: outsource them
-
-instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
-    get = lift get
-    put = lift . put
-
-instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
-    liftIO = lift . liftIO
-
-instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
-    liftR = lift . liftR
-
 -- ----------------------------------------------------------------------
 -- * Reduce syntax functions
 -- ----------------------------------------------------------------------
@@ -105,7 +91,11 @@ printLookup n = n ++ ";"
 -- As reduce does not support boolean expressions as first class citizens
 -- we encode them in an if-stmt and transform the numeric response back.
 printBooleanExpr :: EXPRESSION -> String
-printBooleanExpr e = concat ["if ", exportExp e, " then 1 else 0;"]
+printBooleanExpr e = concat [ "on rounded;"
+                            , " if "
+                            , exportExp e, " then 1 else 0;"
+                            , " off rounded;"
+                            ]
 
 getBooleanFromExpr :: EXPRESSION -> Bool
 getBooleanFromExpr (Int 1 _) = True
@@ -196,8 +186,6 @@ redsExit = disconnectCAS
 -- * An alternative Communication Interface
 -- ----------------------------------------------------------------------
 
--- TODO Proper handling of built-in ops (cos, Pi, etc, no-mapping!)
-
 
 wrapCommand :: IOS PC.CommandState a -> IOS RITrans a
 wrapCommand ios = do
@@ -206,9 +194,9 @@ wrapCommand ios = do
   stmap map' getRI  ios
 
 -- | A direct way to communicate with Reduce
-redcDirect :: PC.CommandState -> String -> IO String
-redcDirect cs s = do
-  (res, _) <- runIOS cs (PC.call 0.1 s)
+redcDirect :: RITrans -> String -> IO String
+redcDirect rit s = do
+  (res, _) <- runIOS (getRI rit) (PC.call 0.5 s)
   return res
 
 redcTransE :: EXPRESSION -> RedcIO EXPRESSION
@@ -231,7 +219,7 @@ redcTransS s = do
 evalRedcString :: String -> RedcIO [EXPRESSION]
 evalRedcString s = do
   -- 0.09 seconds is a critical value for the accepted response time of Reduce
-  res <- lift $ wrapCommand $ PC.call 0.1 s
+  res <- lift $ wrapCommand $ PC.call 0.5 s
   r <- get
   let bm = getBMap r
       trans = revtranslateEXPRESSION bm
@@ -248,11 +236,10 @@ redcInit v = do
     Left redcmd -> do
             cs <- PC.start redcmd v Nothing
             (_, cs') <- runIOS cs $ PC.send $ "off nat; load redlog; "
-                        ++ "rlset reals; on rounded; precision 30;"
+                        ++ "rlset reals; " --on rounded; precision 30;"
             return RITrans { getBMap = initWithDefault cslReduceDefaultMapping
                            , getRI = cs' }
     _ -> error "Could not find reduce shell command!"
 
 redcExit :: RedcIO (Maybe ExitCode)
 redcExit = lift $ wrapCommand $ PC.close $ Just "quit;"
-

@@ -31,6 +31,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import CSL.AS_BASIC_CSL
 import CSL.Symbol
 
@@ -42,8 +43,8 @@ data DIAG_FORM = DiagForm
     {
       formula :: (AS_Anno.Named CMD),
       diagnosis :: Diagnosis
-    }
-               deriving Show
+    } deriving Show
+
 arityOneOps :: [String]
 arityOneOps = [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
               , "simplify", "rlqe", "factorize"
@@ -52,12 +53,12 @@ arityOneOps = [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
 arityTwoOps :: [String]
 arityTwoOps = [ "ex", "all", "and", "or", "impl"
               , "=", ">", "<=", ">=", "!=", "<"
-              , "+", "-", "*", "/", "**", "^"
+              , "+", "*", "/", "**", "^"
               , ":=", "int", "divide", "solve"
               ]
 
 arityFlexOps :: [String]
-arityFlexOps = [ "min", "max" ]
+arityFlexOps = [ "min", "max", "-" ]
 
 -- | extracts the operators + arity information for an operator
 extractOperatorsExp :: EXPRESSION -> [(String,Int)]
@@ -77,12 +78,13 @@ extractOperatorsCmd (Cond _) = [] -- TODO: to be implemented
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
 checkOperators _ ops =
-    let f (op, arit)
-            | elem op arityOneOps = arit == 1
-            | elem op arityTwoOps = arit == 2
-            | elem op arityFlexOps = arit > 0
-            -- .. otherwise it must be declared in the signature
-            | otherwise = True -- Sign.lookupSym s $ genName op
+    let f (op, arit) =
+            case Map.lookup op operatorInfo of
+              Just oim ->
+                  -- it must be registered with the given arity or as flex-op
+                  Map.member arit oim || Map.member (-1) oim
+              -- if not registered we accept it
+              _ -> True
     in all f ops
 
 -- | generates a named formula

@@ -27,12 +27,16 @@ module CSL.AS_BASIC_CSL
     , GroundConstant (..) -- constants for domain formation
     , CMD (..)            -- Command datatype
     , mkOp                -- Simple Operator constructor
+    , OpInfo (..)         -- Type for Operator information
+    , operatorInfo        -- Operator information for pretty printing
+                          -- and static analysis
     ) where
 
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
+import qualified Data.Map as Map
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
@@ -102,6 +106,10 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
+data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and 9
+                     , infx :: Bool -- ^ True = infix
+                     } deriving (Eq, Ord, Show)
+
 -- Pretty Printing;
 
 instance Pretty Domain where
@@ -127,17 +135,54 @@ instance Pretty SYMB_OR_MAP where
 instance Pretty CMD where
     pretty = printCMD
 
+-- | Map of operator names to arity-OpInfo-Map
+operatorInfo :: Map.Map String (Map.Map Int OpInfo)
+operatorInfo =
+        -- arity (-1 means flex), precedence, infix
+    let toSgl i p fx = Map.fromList [(i, OpInfo p fx)]
+        -- arityflex simple ops
+        aflex s = (s, toSgl (-1) 0 False)
+        -- arity1 simple ops
+        a1 s = (s, toSgl 1 0 False)
+        -- arity2 simple ops
+        a2 s = (s, toSgl 2 0 False)
+        -- arity2 infix with precedence
+        a2i p s = (s, toSgl 2 p True)
+    in Map.fromList $
+       map a1 [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
+              , "simplify", "rlqe", "factorize" ]
+       ++ map (a2i 2) [ "ex", "all", "and", "or", "impl" ]
+       ++ map (a2i 3) [ ":=", "=", ">", "<=", ">=", "!=", "<"]
+       ++ [a2i 4 "+"]
+       ++ map (a2i 5) ["/", "*"]
+       ++ map (a2i 6) ["^", "**"]
+       ++ map a2 [ "int", "divide", "solve" ]
+       ++ map aflex [ "min", "max" ]
+       -- special handling for overloaded "-"
+       ++ [("-", Map.fromList [(1, OpInfo 0 False), (2, OpInfo 4 True)])]
+
+
 printCMD :: CMD -> Doc
-printCMD (Cmd s exps) = if s==":="
-                        then printExpression (exps !! 0) <> text ":=" <> printExpression (exps !! 1)
-                        else (text s) <> (parens (sepByCommas (map printExpression exps)))
-printCMD (Repeat e stms) = text "repeat" <> vcat (map printCMD stms)
-                             <> text "until" <> printExpression e
-printCMD _ = error "printCMD: not implemented case" -- TODO: implement
+printCMD (Cmd s exps)
+    | s==":=" = printExpression (exps !! 0) <+> text s
+                <+> printExpression (exps !! 1)
+    | otherwise = (text s) <> (parens (sepByCommas (map printExpression exps)))
+printCMD (Repeat e stms) = 
+    text "re" <> (text "peat" $+$ vcat (map ((text "." <+>) . printCMD)  stms))
+    $+$ text "until" <+> printExpression e
+
+printCMD (Cond l) = vcat $ map (uncurry printCase) l
+
+printCase :: EXPRESSION -> [CMD] -> Doc
+printCase e l = text "ca"
+                <> (text "se" <+> printExpression e <> text ":"
+                     $+$ vcat (map ((text "." <+>) . printCMD)  l))
+
 
 getPrec :: EXPRESSION -> Integer
 getPrec (Op s _ exps _)
-    | elem s ["+", "-"] = 1
+    -- we check for the lenght here, because of unary -
+    | length exps == 2 && elem s ["+", "-"] = 1
     | elem s ["/", "*"] = 2
     | elem s ["^", "**"] = 3
     | length exps == 0 = 4
@@ -153,14 +198,15 @@ printInfix e@(Op s _ exps _) =
                   then printExpression $ exps !! 1
                   else parens (printExpression $ exps !! 1))
         where outerprec = getPrec e
-printInfix _ = error "printInfix: not implemented case" -- TODO: implement
+printInfix _ = error "printInfix: Impossible case"
 
 printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
 -- TODO: print extparams   
 printExpression e@(Op s _ exps _)
     | length exps == 2 && s/="min" && s/="max" = printInfix e
-    | otherwise = text s <+> parens (sepByCommas (map printExpression exps))
+    | length exps == 0 = text s
+    | otherwise = text s <> parens (sepByCommas (map printExpression exps))
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
 printExpression (Double d _) = text (show d)

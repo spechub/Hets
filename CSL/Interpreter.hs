@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  Interpreter for CPL programs
@@ -7,7 +7,7 @@ License     :  GPLv2 or higher
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (various glasgow extensions)
 
 Defines an interface for Calculators used to evaluate CPL programs
 -}
@@ -16,18 +16,32 @@ module CSL.Interpreter where
 
 import Control.Monad (liftM, forM_, filterM, unless)
 import Control.Monad.State (State, MonadState (..))
+import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.IntMap as IMap
 import Data.List (mapAccumL)
 import Prelude hiding (lookup)
 
+import Common.ResultT
 
 import CSL.AS_BASIC_CSL
 
 -- ----------------------------------------------------------------------
 -- * Evaluator
 -- ----------------------------------------------------------------------
+
+-- ** some general lifted instances, TODO: outsource them
+
+instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
+    get = lift get
+    put = lift . put
+
+instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
+    liftIO = lift . liftIO
+
+instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
+    liftR = lift . liftR
 
 -- | calculation interface, bundles the evaluation engine and the constant store
 class Monad m => CalculationSystem m where

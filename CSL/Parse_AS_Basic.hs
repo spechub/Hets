@@ -100,17 +100,14 @@ prefixidentifier :: CharParser st Id.Token
 prefixidentifier =
     lexemeParser $ Lexer.pToken $ Lexer.scanAnySigns <|> Lexer.scanAnyWords
 
--- | parser for numbers (both integers and floats) without signs
-number :: CharParser st Id.Token
-number = Lexer.pToken Lexer.scanFloat
-
--- | parses a possibly signed number
+-- | parses a possibly signed number (both integers and floats) 
 signednumber :: CharParser st EXPRESSION
-signednumber = do
-    (sign, nr) <- pair (option "" $ Lexer.keySign (string "-")) number
-    return $ if isFloating nr
-             then Double (read (sign ++ tokStr nr)) (tokPos nr)
-             else Int (read (sign ++ tokStr nr)) (tokPos nr)
+signednumber = 
+    let f c x = return $ c (read $ tokStr x) (tokPos x)
+        g x 
+            | isFloating x = f Double x
+            | otherwise  = f Int x
+    in Lexer.pToken Lexer.scanFloatExt >>= g
 
 numToGroundConstant :: EXPRESSION -> GroundConstant
 numToGroundConstant x = case x of
@@ -151,7 +148,7 @@ expexp = do
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
-expatom = signednumber <|> (oParenT >> expression << cParenT) <|> expsymbol
+expatom = try signednumber <|> (oParenT >> expression << cParenT) <|> expsymbol
 
 expsymbol :: CharParser st EXPRESSION
 expsymbol =

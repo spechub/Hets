@@ -22,6 +22,8 @@ import CSL.Parse_AS_Basic
 import Common.GlobalAnnotations
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
+import Common.Lexer
+import Common.Parsec
 import Common.Id
 import CSL.Symbol
 import Common.AS_Annotation
@@ -75,6 +77,79 @@ res32 = runParser command (emptyAnnos ()) "" "d_4 := 4.0"
 
 res32pure = case res32 of Right a -> a
 -- processCmds [(makeNamed "as" res32pure)]
+
+
+p001 = runParser signednumber () ""
+p002 = runParser scanFloatExt () ""
+p004 = runParser scanMyFloat () ""
+p01 = runParser scanFloatExt1 () ""
+p02 = runParser scanFloatExt2 () ""
+
+checknums :: [String]
+checknums = [ "1.", ".1", "2.e-13", ".2e+13", "-.1", "-.33E-12", "123", "001" ]
+
+
+-- | In addition to scanFloat, also '1.', '.1' and '2.e-13' are recognized
+scanMyFloat :: CharParser st String
+scanMyFloat =
+    let -- the 'E' component
+        compE = oneOf "eE" <:> getSNumber
+        -- the '.' component
+        compD n = char '.' <:> n
+        -- an optional number
+        getNumber' = option "0" getNumber
+        checkSign' '+' = []
+        checkSign' _ = "-"
+        checkSp "-." = "-0."
+        checkSp _ = "0."
+        getSNumber = withS getNumber
+        withS p = optionL (oneOf "+-" >-> checkSign') <++> p
+    in -- '1.' or '2.e-13' or '1.213'
+      try (getSNumber <++> (optionL (try $ compD getNumber') <++> optionL compE))
+      -- everything starting with a dot
+      <|> (choice (map string ["+.", "-.", "."])  >-> checkSp) <++> getNumber <++> optionL compE
+
+-- withS (compD getNumber >-> ("0"++)) <++> optionL compE
+
+scanFloatExt1 :: CharParser st String
+scanFloatExt1 =
+    let -- the 'E' component
+        compE = oneOf "eE" <:> optionL getSign <++> getNumber
+        -- the '.' component
+        compD n = char '.' <:> n
+        -- an optional number
+        getNumber' = option "0" getNumber
+        eatPlus '+' = ""
+        eatPlus _ = "-"
+        -- an optional number
+        getSign = oneOf "+-" >-> eatPlus
+    in -- '1.' or '2.e-13' or '1.213'
+      try (getSign <++> getNumber
+           <++> (optionL (try $ compD getNumber') <++> optionL compE))
+      -- everything starting with a dot
+      <|> getSign <++> (compD getNumber >-> ("0"++)) <++> optionL compE
+
+scanFloatExt2 :: CharParser st String
+scanFloatExt2 =
+    let -- the 'E' component
+        compE = oneOf "eE" <:> optionL getSign <++> getNumber
+        -- the '.' component
+        compD n = char '.' <:> n
+        -- an optional number
+        getNumber' = option "0" getNumber
+        eatPlus '+' = ""
+        eatPlus _ = "-"
+        -- an optional number
+        getSign = oneOf "+-" >-> eatPlus
+    in -- '1.' or '2.e-13' or '1.213'
+      getSign <++> 
+              ((getNumber <++> optionL (try $ compD getNumber') <++> optionL compE)
+               -- everything starting with a dot
+               <|> (compD getNumber >-> ("0"++)) <++> optionL compE)
+
+
+
+
 
 -- declares an equation and ask for the result
 castest = do
