@@ -270,7 +270,7 @@ cAddView input state = let iState = intState state in case i_state iState of
         dg = lookupDGraph ln libenv
         [vn, spec1, spec2] = words input
         mkSpecInst s = Spec_inst (mkSimpleId s) [] nullRange
-    Result ds tmp <- runResultT $ liftR $ anaViewDefn lg libenv dg opts
+    Result ds tmp <- runResultT $ liftR $ anaViewDefn lg ln libenv dg opts
       (mkSimpleId vn) (Genericity (Params []) (Imported []) nullRange)
       (View_type (emptyAnno $ mkSpecInst spec1)
        (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange

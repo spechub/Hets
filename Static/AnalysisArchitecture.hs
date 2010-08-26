@@ -37,6 +37,7 @@ import Syntax.AS_Structured
 
 import Common.AS_Annotation
 import Common.Id
+import Common.LibName
 import Common.Result
 import Common.Amalgamate
 import Common.DocUtils
@@ -51,7 +52,7 @@ import Control.Monad(foldM)
 -- @
 -- ARCH-SPEC ::= BASIC-ARCH-SPEC | GROUP-ARCH-SPEC | ARCH-SPEC-NAME
 -- @
-anaArchSpec :: LogicGraph -> DGraph
+anaArchSpec :: LogicGraph  -> LibName -> DGraph
   -> HetcatsOpts  -- ^ should only the structure be analysed?
   -> ExtStUnitCtx -- ^ for visibility levels
   -> Maybe Node
@@ -60,12 +61,12 @@ anaArchSpec :: LogicGraph -> DGraph
 {- ^ returns 1. the architectural signature of given ARCH-SPEC
 2. development graph resulting from structured specs within the arch
 spec and 3. ARCH_SPEC after possible conversions -}
-anaArchSpec lgraph dg opts sharedCtx nP archSp = case archSp of
+anaArchSpec lgraph ln dg opts sharedCtx nP archSp = case archSp of
   Basic_arch_spec udd uexpr pos ->
     do (branchMap, uctx, dg', udd') <-
-         anaUnitDeclDefns lgraph dg opts sharedCtx udd
+         anaUnitDeclDefns lgraph ln dg opts sharedCtx udd
        (nodes, usig, diag'', dg'', uexpr') <- -- trace "exp" $
-           anaUnitExpression lgraph dg' opts uctx $ item uexpr
+           anaUnitExpression lgraph ln dg' opts uctx $ item uexpr
        let (nodes', maybeRes) = case nodes of
                 [] -> ([], Nothing) -- don't think its possible
                 x:[] -> ([], Just x)
@@ -85,7 +86,7 @@ anaArchSpec lgraph dg opts sharedCtx nP archSp = case archSp of
 
                 dg3, Basic_arch_spec udd'
                            (replaceAnnoted uexpr' uexpr) pos)
-  Group_arch_spec asp _ -> anaArchSpec lgraph dg opts sharedCtx nP (item asp)
+  Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts sharedCtx nP (item asp)
   Arch_spec_name asn@(Token astr pos) -> case lookupGlobalEnvDG asn dg of
             Just (ArchEntry asig@(BranchRefSig
                         (NPBranch n f) (UnitSig nsList resNs, _))) -> do
@@ -120,27 +121,27 @@ anaArchSpec lgraph dg opts sharedCtx nP archSp = case archSp of
                               " is not an architectural specification") pos
 
 -- | Analyse a list of unit declarations and definitions
-anaUnitDeclDefns :: LogicGraph -> DGraph
+anaUnitDeclDefns :: LogicGraph ->  LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_DECL_DEFN]
     -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx,
                DGraph, [Annoted UNIT_DECL_DEFN])
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified list of unit declarations and
 definitions -}
-anaUnitDeclDefns lgraph dg opts sharedCtx =
-  anaUnitDeclDefns' lgraph dg opts sharedCtx Map.empty
+anaUnitDeclDefns lgraph ln dg opts sharedCtx =
+  anaUnitDeclDefns' lgraph ln dg opts sharedCtx Map.empty
 
-anaUnitDeclDefns' :: LogicGraph -> DGraph
+anaUnitDeclDefns' :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> Map.Map SIMPLE_ID RTPointer
     -> [Annoted UNIT_DECL_DEFN]
     -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx,
                DGraph, [Annoted UNIT_DECL_DEFN])
-anaUnitDeclDefns' lgraph dg opts uctx rNodes uds = case uds of
+anaUnitDeclDefns' lgraph ln dg opts uctx rNodes uds = case uds of
   udd : udds -> do
     (rNodes1, uctx', dg', udd') <- -- trace (show $ item udd)$
-        anaUnitDeclDefn lgraph dg opts uctx (item udd)
-    (rNodes2, uctx'', dg'', udds') <- --trace (show $ edges $ dgBody dg') $
-        anaUnitDeclDefns' lgraph dg' opts uctx' (Map.union rNodes1 rNodes) udds
+        anaUnitDeclDefn lgraph ln dg opts uctx (item udd)
+    (rNodes2, uctx'', dg'', udds') <- anaUnitDeclDefns' lgraph ln dg' opts
+      uctx' (Map.union rNodes1 rNodes) udds
     return (rNodes2, uctx'', dg'', replaceAnnoted udd' udd : udds')
   [] -> return (rNodes, uctx, dg, [])
 
@@ -169,19 +170,18 @@ nodeSigUnion lgraph dg nodeSigs orig = --trace (show $ length nodeSigs) $
      return (NodeSig node sigUnion, dg'')
 
 -- | Analyse unit declaration or definition
-anaUnitDeclDefn :: LogicGraph -> DGraph
-                   -> HetcatsOpts -> ExtStUnitCtx -> UNIT_DECL_DEFN
-                   -> Result (Map.Map SIMPLE_ID RTPointer,
-                              ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
+anaUnitDeclDefn :: LogicGraph -> LibName -> DGraph -> HetcatsOpts
+  -> ExtStUnitCtx -> UNIT_DECL_DEFN
+  -> Result (Map.Map SIMPLE_ID RTPointer, ExtStUnitCtx, DGraph, UNIT_DECL_DEFN)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
-anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
+anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
   Unit_decl un@(Token ustr unpos) usp uts pos -> do
        (dns, diag', dg', uts') <-
-           anaUnitImported lgraph dg opts uctx pos uts
+           anaUnitImported lgraph ln dg opts uctx pos uts
        let impSig = toMaybeNode dns
        (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
-           anaRefSpec lgraph dg' opts impSig un (buc, diag') Nothing usp
+           anaRefSpec lgraph ln dg' opts impSig un (buc, diag') Nothing usp
        usig <- getUnitSigFromRef rsig'
 
 -- this is wrong here!
@@ -244,7 +244,7 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
                                   dg''', ud')
   Unit_defn un uexp poss -> do
        (nodes, usig, diag, dg'', uexp') <-
-         anaUnitExpression lgraph dg opts uctx uexp
+         anaUnitExpression lgraph ln dg opts uctx uexp
        let ud' = Unit_defn un uexp' poss
            --(n, dg'') = addNodeRT dg' usig $ show un
        {- it's sufficient to check that un is not mapped in buc, we
@@ -278,16 +278,17 @@ anaUnitDeclDefn lgraph dg opts uctx@(buc, _) udd = case udd of
                              buc, diag), dg'', ud')
 
 -- | Analyse unit refs
-anaUnitRef :: LogicGraph -> DGraph
+anaUnitRef :: LogicGraph -> LibName -> DGraph
              -> HetcatsOpts -> ExtStUnitCtx -> Maybe RTLeaves -> UNIT_REF
              -> Result ((UNIT_NAME, RefSig), DGraph, UNIT_REF)
 {- ^ returns 1. extended static unit context 2. possibly modified
 development graph 3. possibly modified UNIT_DECL_DEFN -}
+
 -- this was definitely wrong in the original function!
 -- %%%%%%%%%%%%
 -- no need for ExtStUnitCtx, just pair (un, rsig)
 -- %%%%%%%%%%%
-anaUnitRef lgraph dg opts
+anaUnitRef lgraph ln dg opts
              _uctx@(_ggbuc, _diag') rN
              (Unit_ref un@(Token _ustr _unpos) usp pos) = do
 -- %%%%%%%%%%%%%%%%%%%%
@@ -302,19 +303,13 @@ anaUnitRef lgraph dg opts
   curl <- lookupCurrentLogic "UNIT_REF" lgraph
   --let dns = EmptyDiagNode curl
   let impSig = EmptyNode curl
-  ( _,_,_,rsig, dg'', usp') <- anaRefSpec lgraph dg opts impSig un
+  ( _,_,_,rsig, dg'', usp') <- anaRefSpec lgraph ln dg opts impSig un
                         emptyExtStUnitCtx n usp
   -- check if this is enough !!!!!!
   -- no sharing
   let ud' = Unit_ref un usp' pos
   return ((un, rsig), dg'', ud')
 
--- -- | Analyse unit refs
--- anaUnitRef :: LogicGraph -> DGraph
---              -> HetcatsOpts -> ExtStUnitCtx -> UNIT_REF
---              -> Result (ExtStUnitCtx, DGraph, UNIT_REF)
--- {- ^ returns 1. extended static unit context 2. possibly modified
--- development graph 3. possibly modified UNIT_DECL_DEFN -}
 -- -- unit declaration
 -- anaUnitRef lgraph dg opts
 --                    uctx@(buc, _) (Unit_ref un usp pos) =
@@ -332,17 +327,17 @@ anaUnitRef lgraph dg opts
 
 
 -- | Analyse unit imports
-anaUnitImported :: LogicGraph -> DGraph
+anaUnitImported :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> Range -> [Annoted UNIT_TERM]
     -> Result (MaybeDiagNode, Diag, DGraph, [Annoted UNIT_TERM])
-anaUnitImported lgraph dg opts uctx@(_, diag) poss terms =
+anaUnitImported lgraph ln dg opts uctx@(_, diag) poss terms =
   case terms of
   [] -> do
     curl <- lookupCurrentLogic "UnitImported" lgraph
     return (EmptyDiagNode curl, diag, dg, [])
   _ -> do
        (dnsigs, diag', dg', terms') <-
-           anaUnitImported' lgraph dg opts uctx terms
+           anaUnitImported' lgraph ln dg opts uctx terms
        (sig, dg'') <- --trace (show $ map (JustNode . getSigFromDiag) dnsigs)$
                       nodeSigUnion lgraph dg'
                       (map (JustNode . getSigFromDiag) dnsigs) DGImports
@@ -356,33 +351,33 @@ anaUnitImported lgraph dg opts uctx@(_, diag) poss terms =
                           sig $ showDoc terms ""
        return (JustDiagNode dnsig, diag'', dg'', terms')
 
-anaUnitImported' :: LogicGraph -> DGraph
+anaUnitImported' :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_TERM]
     -> Result ([DiagNodeSig], Diag, DGraph, [Annoted UNIT_TERM])
-anaUnitImported' lgraph dg opts uctx@(buc, diag) ts = case ts of
+anaUnitImported' lgraph ln dg opts uctx@(buc, diag) ts = case ts of
     [] -> return ([], diag, dg, [])
     ut : uts -> do
        (dnsig, diag', dg', ut') <- --trace (show ut)$
-           anaUnitTerm lgraph dg opts uctx (item ut)
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
        (dnsigs, diag'', dg'', uts') <- --trace (show dnsig)$
-           anaUnitImported' lgraph dg' opts (buc, diag') uts
+           anaUnitImported' lgraph ln dg' opts (buc, diag') uts
        return (dnsig : dnsigs, diag'', dg'', replaceAnnoted ut' ut : uts')
 
 -- | Analyse an unit expression
-anaUnitExpression :: LogicGraph -> DGraph
+anaUnitExpression :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> UNIT_EXPRESSION
     -> Result ([DiagNodeSig], UnitSig, Diag, DGraph, UNIT_EXPRESSION)
-anaUnitExpression lgraph dg opts uctx@(buc, diag)
+anaUnitExpression lgraph ln dg opts uctx@(buc, diag)
   uexp@(Unit_expression ubs ut poss) = case ubs of
   [] -> do
        (dnsig@(Diag_node_sig _ ns'), diag', dg', ut') <-
-           anaUnitTerm lgraph dg opts uctx (item ut)
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
        --trace ("in exp: "++ show dnsig) $
        return ([dnsig], UnitSig [] ns', diag', dg',
                Unit_expression [] (replaceAnnoted ut' ut) poss)
   _ -> do
        (args, dg', ubs') <-
-           anaUnitBindings lgraph dg opts uctx ubs
+           anaUnitBindings lgraph ln dg opts uctx ubs
        -- (resnsig, _dg'') <- nodeSigUnion lgraph dg'
        --                     (map (JustNode . snd) args) DGFormalParams
        -- build the extended diagram and new based unit context
@@ -411,7 +406,7 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
                -- compatibility of actual parameters: matchDiagram below
        (p@(Diag_node_sig _ pnsig), diag''', dg''', ut') <-
            --trace ("before:"++show diagI)$
-           anaUnitTerm lgraph dg' opts (buc', diagI) (item ut)
+           anaUnitTerm lgraph ln dg' opts (buc', diagI) (item ut)
        -- check amalgamability conditions
        let pos = getPosUnitExpression uexp
            checkSubSign dnsigs nsup =
@@ -439,22 +434,22 @@ anaUnitExpression lgraph dg opts uctx@(buc, diag)
 {- | Analyse a list of unit bindings. Ensures that the unit names are
 not present in extended static unit context and that there are no
 duplicates among them. -}
-anaUnitBindings :: LogicGraph -> DGraph
+anaUnitBindings :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> [UNIT_BINDING]
     -> Result ([(SIMPLE_ID, NodeSig)], DGraph, [UNIT_BINDING])
-anaUnitBindings lgraph dg opts uctx@(buc, _) bs = case bs of
+anaUnitBindings lgraph ln dg opts uctx@(buc, _) bs = case bs of
           [] -> return ([], dg, [])
           Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
                curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
                (BranchRefSig _ (_usig@(UnitSig argSigs nsig),_), dg', usp') <-
-                   anaUnitSpec lgraph dg opts (EmptyNode curl) Nothing usp
+                   anaUnitSpec lgraph ln dg opts (EmptyNode curl) Nothing usp
                let ub' = Unit_binding un usp' poss
                case null argSigs of
                     False -> plain_error ([], dg', [])
                              ("An argument unit " ++
                               ustr ++ " must not be parameterized") unpos
                     _ ->
-                        do (args, dg'', ubs') <- anaUnitBindings lgraph
+                        do (args, dg'', ubs') <- anaUnitBindings lgraph ln
                                dg' opts uctx ubs
                            let args' = (un, nsig) : args
                            if Map.member un buc
@@ -467,29 +462,29 @@ anaUnitBindings lgraph dg opts uctx@(buc, _) bs = case bs of
                                     Nothing -> return (args', dg'', ub' : ubs')
 
 -- | Analyse a list of unit terms
-anaUnitTerms :: LogicGraph -> DGraph
+anaUnitTerms :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_TERM]
     -> Result ([DiagNodeSig], Diag, DGraph, [Annoted UNIT_TERM])
-anaUnitTerms lgraph dg opts uctx@(buc, diag) ts = case ts of
+anaUnitTerms lgraph ln dg opts uctx@(buc, diag) ts = case ts of
   [] -> return ([], diag, dg, [])
   ut : uts -> do
        (dnsig, diag', dg', ut') <-
-           anaUnitTerm lgraph dg opts uctx (item ut)
-       (dnsigs, diag'', dg'', uts') <- anaUnitTerms lgraph
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
+       (dnsigs, diag'', dg'', uts') <- anaUnitTerms lgraph ln
                dg' opts (buc, diag') uts
        return (dnsig : dnsigs, diag'', dg'', replaceAnnoted ut' ut : uts')
 
 -- | Analyse an unit term
-anaUnitTerm :: LogicGraph -> DGraph -> HetcatsOpts -> ExtStUnitCtx
+anaUnitTerm :: LogicGraph -> LibName -> DGraph -> HetcatsOpts -> ExtStUnitCtx
   -> UNIT_TERM -> Result (DiagNodeSig, Diag, DGraph, UNIT_TERM)
-anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
+anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
   let pos = getPosUnitTerm utrm
       utStr = showDoc utrm ""
   in case utrm of
   Unit_reduction ut restr -> do
        let orig = DGRestriction $ Restricted restr
        (p, diag1, dg1, ut') <- --trace ("before:"++(show $ edges $ dgBody dg)) $
-           anaUnitTerm lgraph dg opts uctx (item ut)
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
        curl <- lookupCurrentLogic "UnitTerm" lgraph
        (incl, msigma) <- --trace ("p:" ++ show p) $
                          anaRestriction lgraph (emptyG_sign curl)
@@ -517,7 +512,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                                    (replaceAnnoted ut' ut) restr)
   Unit_translation ut ren -> do
        (dnsig@(Diag_node_sig p _), diag1, dg1, ut') <-
-           anaUnitTerm lgraph dg opts uctx (item ut)
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
        -- EmptyNode $ error ... should be replaced with local env!
        gMorph <- anaRenaming lgraph
                  (EmptyNode $ error "Static.AnalysisArchitecture")
@@ -532,7 +527,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                          (replaceAnnoted ut' ut) ren)
   Amalgamation uts poss -> do
        (dnsigs, diag1, dg', uts') <-
-           anaUnitTerms lgraph dg opts uctx uts
+           anaUnitTerms lgraph ln dg opts uctx uts
        -- compute sigma
        (sig, dg'') <- nodeSigUnion lgraph dg'
                       (map (JustNode . getSigFromDiag) dnsigs) DGUnion
@@ -544,9 +539,9 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
        return (q, diag', dg'', Amalgamation uts' poss)
   Local_unit udds ut poss -> do
        (_, uctx', dg1, udds')<-
-           anaUnitDeclDefns' lgraph dg opts uctx Map.empty udds
+           anaUnitDeclDefns' lgraph ln dg opts uctx Map.empty udds
        (dnsig, diag', dg', ut') <-
-           anaUnitTerm lgraph dg1 opts uctx' (item ut)
+           anaUnitTerm lgraph ln dg1 opts uctx' (item ut)
        return (dnsig, diag', dg',
                Local_unit udds' (replaceAnnoted ut' ut) poss)
   Unit_appl un fargus _ -> do
@@ -566,7 +561,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
-                       anaFitArgUnits lgraph dg' opts
+                       anaFitArgUnits lgraph ln dg' opts
                             uctx utrm pos argSigs fargus
                    let first (e, _, _) = e
                        second (_, e, _) = e
@@ -625,7 +620,7 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
-                       anaFitArgUnits lgraph dg' opts
+                       anaFitArgUnits lgraph ln dg' opts
                             uctx utrm pos argSigs fargus
                    let first (e, _, _) = e
                        second (_, e, _) = e
@@ -670,11 +665,11 @@ anaUnitTerm lgraph dg opts uctx@(buc, diag) utrm =
             _ -> fatal_error ("Undefined unit " ++ ustr) pos
   Group_unit_term ut poss -> do
        (dnsig, diag1, dg1, ut') <-
-           anaUnitTerm lgraph dg opts uctx (item ut)
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
        return (dnsig, diag1, dg1, Group_unit_term (replaceAnnoted ut' ut) poss)
 
 -- | Analyse unit arguments
-anaFitArgUnits :: LogicGraph -> DGraph
+anaFitArgUnits :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> UNIT_TERM
     -- ^ the whole application for diagnostic purposes
     -> Range
@@ -683,12 +678,12 @@ anaFitArgUnits :: LogicGraph -> DGraph
     -- ^ the signatures of unit's formal parameters
     -> [FIT_ARG_UNIT] -- ^ the arguments for the unit
     -> Result ([(G_morphism, NodeSig, DiagNodeSig)], DGraph, Diag)
-anaFitArgUnits lgraph dg opts uctx@(buc, diag)
+anaFitArgUnits lgraph ln dg opts uctx@(buc, diag)
                   appl pos nodeSigs fArgs = case (nodeSigs, fArgs) of
   (nsig : nsigs, fau : faus) -> do
        (gmorph, nsig', dnsig, dg1, diag1) <-
-           anaFitArgUnit lgraph dg opts uctx nsig fau
-       (morphSigs, dg', diag') <- anaFitArgUnits lgraph dg1 opts
+           anaFitArgUnit lgraph ln dg opts uctx nsig fau
+       (morphSigs, dg', diag') <- anaFitArgUnits lgraph ln dg1 opts
            (buc, diag1) appl pos nsigs faus
        return ((gmorph, nsig', dnsig) : morphSigs, dg', diag')
   ([], []) -> return ([], dg, diag)
@@ -697,15 +692,15 @@ anaFitArgUnits lgraph dg opts uctx@(buc, diag)
                     ++ showDoc appl "") pos
 
 -- | Analyse unit argument
-anaFitArgUnit :: LogicGraph -> DGraph
+anaFitArgUnit :: LogicGraph -> LibName -> DGraph
     -> HetcatsOpts -> ExtStUnitCtx -> NodeSig -> FIT_ARG_UNIT
     -> Result (G_morphism, NodeSig, DiagNodeSig, DGraph, Diag)
 -- ^ returns 1. the signature morphism 2. the target signature of the morphism
 -- 3. the diagram node 4. the modified DGraph 5. the modified diagram
-anaFitArgUnit lgraph dg opts uctx nsig
+anaFitArgUnit lgraph ln dg opts uctx nsig
                      (Fit_arg_unit ut symbMap poss) = do
        (p, diag', dg', _) <-
-           anaUnitTerm lgraph dg opts uctx (item ut)
+           anaUnitTerm lgraph ln dg opts uctx (item ut)
        -- compute gMorph (the morphism r|sigma/D(p))
        let adj = adjustPos poss
            gsigmaS = getSig nsig
@@ -724,16 +719,15 @@ anaFitArgUnit lgraph dg opts uctx nsig
        return (gMorph, nsig', p, dg'', diag')
 
 -- | Analyse unit specification
-anaUnitSpec :: LogicGraph
-              -> DGraph
-              -> HetcatsOpts   -- ^ should only the structure be analysed?
-              -> MaybeNode                   -- ^ the signature of imports
-              -> Maybe RTLeaves -- for building refinement trees
-              -> UNIT_SPEC -> Result (RefSig, DGraph, UNIT_SPEC)
+anaUnitSpec :: LogicGraph -> LibName -> DGraph
+  -> HetcatsOpts    -- ^ should only the structure be analysed?
+  -> MaybeNode      -- ^ the signature of imports
+  -> Maybe RTLeaves -- for building refinement trees
+  -> UNIT_SPEC -> Result (RefSig, DGraph, UNIT_SPEC)
 -- ^ returns 1. unit signature 2. the development graph resulting from
 -- structred specs inside the unit spec and 3. a UNIT_SPEC after possible
 -- conversions.
-anaUnitSpec lgraph dg opts impsig rN usp = case usp of
+anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
   Unit_type argSpecs resultSpec poss ->  case argSpecs of
     [] -> case resultSpec of
       Annoted (Spec_inst spn [] _) _ _ _
@@ -745,20 +739,20 @@ anaUnitSpec lgraph dg opts impsig rN usp = case usp of
             _ -> False ->
        {- if argspecs are empty and resultspec is a name of unit spec
           then this should be converted to a Spec_name -}
-        anaUnitSpec lgraph dg opts impsig rN (Spec_name spn)
+        anaUnitSpec lgraph ln dg opts impsig rN (Spec_name spn)
       _ ->  do -- a trivial unit type
-       (resultSpec', resultSig, dg') <- anaSpec False lgraph
+       (resultSpec', resultSig, dg') <- anaSpec False lgraph ln
            dg impsig emptyNodeName opts  (item resultSpec)
        let usig= UnitSig [] resultSig
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
     _ -> do -- a non-trivial unit type
-       (argSigs, dg1, argSpecs') <- anaArgSpecs lgraph dg opts argSpecs
+       (argSigs, dg1, argSpecs') <- anaArgSpecs lgraph ln dg opts argSpecs
        (sigUnion, dg2) <- nodeSigUnion lgraph dg1
                           (impsig : map JustNode argSigs) DGFormalParams
         -- if i have no imports, i can optimize?
         -- in that case, an identity morphism is introduced
-       (resultSpec', resultSig, dg3) <- anaSpec True lgraph
+       (resultSpec', resultSig, dg3) <- anaSpec True lgraph ln
            dg2 (JustNode sigUnion)
                 emptyNodeName opts (item resultSpec)
        let usig = UnitSig argSigs resultSig
@@ -796,27 +790,25 @@ anaUnitSpec lgraph dg opts impsig rN usp = case usp of
     _ -> fatal_error (ustr ++ " is not an unit specification") pos
   Closed_unit_spec usp' _ -> do
     curl <- lookupCurrentLogic "UnitSpec" lgraph
-    anaUnitSpec lgraph dg opts (EmptyNode curl) rN usp'
+    anaUnitSpec lgraph ln dg opts (EmptyNode curl) rN usp'
 
 -- | Analyse refinement specification
-anaRefSpec :: LogicGraph
-              -> DGraph
-              -> HetcatsOpts      -- ^ should only the structure be analysed?
-              -> MaybeNode                   -- ^ the signature of imports
-              -> SPEC_NAME -- for origin
-              -> ExtStUnitCtx
-              -> Maybe RTLeaves
-              -> REF_SPEC
-              -> Result ([DiagNodeSig], -- for lambda expressions
-                         Maybe DiagNodeSig, -- for tracing between levels
-                         Maybe Diag,
-                         RefSig, DGraph, REF_SPEC)
-anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
+anaRefSpec :: LogicGraph -> LibName -> DGraph
+   -> HetcatsOpts      -- ^ should only the structure be analysed?
+   -> MaybeNode        -- ^ the signature of imports
+   -> SPEC_NAME        -- for origin
+   -> ExtStUnitCtx
+   -> Maybe RTLeaves
+   -> REF_SPEC
+   -> Result ([DiagNodeSig], -- for lambda expressions
+              Maybe DiagNodeSig, -- for tracing between levels
+              Maybe Diag, RefSig, DGraph, REF_SPEC)
+anaRefSpec lgraph ln dg opts nsig rn sharedCtx nP rsp =
  case rsp of
   Unit_spec asp ->
     do
        (rsig, dg', asp') <-
-           anaUnitSpec lgraph dg opts nsig nP asp
+           anaUnitSpec lgraph ln dg opts nsig nP asp
        usig <- getUnitSigFromRef rsig
        let rP = getPointerFromRef rsig
            (rsig', dg3) = case rP of
@@ -833,7 +825,7 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
                 Just (RTLeaf y) -> Just y
                 _ -> error "nyi"
        (nodes,maybeRes, diag, rsig, dg', asp') <-
-           anaArchSpec lgraph dg opts sharedCtx x $ item asp
+           anaArchSpec lgraph ln dg opts sharedCtx x $ item asp
        return (nodes, maybeRes, Just diag, rsig, dg',
                Arch_unit_spec (replaceAnnoted asp' asp) poss)
 -- check whether it is indeed correct
@@ -843,7 +835,7 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
     do
        (dg', anaSpecs, _) <- foldM (\(dgr, rList, rN') rsp0 ->do
           (_,_,_,rsig', dgr',rsp')<-
-                               anaRefSpec lgraph dgr opts nsig
+                               anaRefSpec lgraph ln dgr opts nsig
                                (mkSimpleId $ (show  rn) ++ "gen_ref_name" ++
                                              (show $ length rList) )
                                sharedCtx rN' rsp0
@@ -864,7 +856,7 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
        (dg', anaRefs, resultMap, pMap) <-
          foldM (\(dgr, rList, cx, ps) uref0 -> do
           ((n,rs), dgr',uref')<-
-                    anaUnitRef lgraph dgr opts emptyExtStUnitCtx nP uref0
+                    anaUnitRef lgraph ln dgr opts emptyExtStUnitCtx nP uref0
           return (dgr', uref':rList , Map.insert n rs cx,
                   Map.insert n (getPointerFromRef rs) ps)
                            ) (dg, [], Map.empty, Map.empty) urlist
@@ -879,9 +871,9 @@ anaRefSpec lgraph dg opts nsig rn sharedCtx nP rsp =
    do
      -- beh will be ignored for now
      (_rsig@(BranchRefSig _ (usig,_)), dg', asp') <-
-           anaUnitSpec lgraph dg opts nsig nP uspec
+           anaUnitSpec lgraph ln dg opts nsig nP uspec
      (_, _, _, _rsig'@(BranchRefSig n2 (usig',bsig)), dgr',rsp') <-
-           anaRefSpec lgraph dg' opts nsig rn emptyExtStUnitCtx Nothing rspec
+           anaRefSpec lgraph ln dg' opts nsig rn emptyExtStUnitCtx Nothing rspec
              -- here Nothing is fine
      case (usig, usig') of
        (UnitSig _ls ns, UnitSig _ls' ns') -> do
@@ -942,18 +934,17 @@ anaSymbMapRef dg' ns ns' symbMap rn = do
 ------------------
 
 -- | Analyse a list of argument specifications
-anaArgSpecs :: LogicGraph -> DGraph -> HetcatsOpts
-             -> [Annoted SPEC]
-             -> Result ([NodeSig], DGraph, [Annoted SPEC])
-anaArgSpecs lgraph dg opts args = case args of
+anaArgSpecs :: LogicGraph -> LibName -> DGraph -> HetcatsOpts -> [Annoted SPEC]
+  -> Result ([NodeSig], DGraph, [Annoted SPEC])
+anaArgSpecs lgraph ln dg opts args = case args of
   [] -> return ([], dg, [])
   argSpec : argSpecs -> do
        l <- lookupLogic "anaArgSpecs" (currentLogic lgraph) lgraph
        (argSpec', argSig, dg') <-
-           anaSpec False lgraph dg (EmptyNode l) emptyNodeName
+           anaSpec False lgraph ln dg (EmptyNode l) emptyNodeName
                                            opts (item argSpec)
        (argSigs, dg'', argSpecs') <-
-           anaArgSpecs lgraph dg' opts argSpecs
+           anaArgSpecs lgraph ln dg' opts argSpecs
        return (argSig : argSigs, dg'', replaceAnnoted argSpec' argSpec
                           : argSpecs')
 
