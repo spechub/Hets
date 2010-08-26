@@ -1,4 +1,4 @@
-{-# OPTIONS -w #-}
+{-# OPTIONS -w -O0 #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang, C. Maeder, Uni Bremen 2004-2006
