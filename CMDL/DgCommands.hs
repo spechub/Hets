@@ -85,18 +85,18 @@ commandDgAll fn state = case i_state $ intState state of
   Nothing -> return $ genErrorMsg "No library loaded" state
   Just ist -> case fn (i_ln ist) (i_libEnv ist) of
     Result _ (Just nwLibEnv) ->
-         -- Name of function is not known here, so an empty text is
-         -- added as name, in a later stage (Shell.hs) the name will
-         -- be inserted
+         {- Name of function is not known here, so an empty text is
+         added as name, in a later stage (Shell.hs) the name will
+         be inserted -}
         return $ add2hist [IStateChange $ Just ist] $ state
              { intState = (intState state)
                  { i_state = Just $ emptyIntIState nwLibEnv $ i_ln ist } }
     Result diag Nothing ->
         return $ genErrorMsg (concatMap diagString diag) state
 
--- | Generic function for a dg command, all other dg
--- commands are derived from this command by simply
--- specifing the function
+{- | Generic function for a dg command, all other dg
+commands are derived from this command by simply
+specifing the function -}
 commandDg :: (LibName -> [LEdge DGLinkLab] -> LibEnv -> Result LibEnv)
           -> String -> CmdlState -> IO CmdlState
 commandDg fn input state = case i_state $ intState state of
@@ -128,8 +128,8 @@ commandDg fn input state = case i_state $ intState state of
              Result diag Nothing ->
                return $ genErrorMsg (concatMap diagString diag) state
 
--- | The function 'cUse' implements the Use commands, i.e.
--- given a path it tries to load the library  at that path
+{- | The function 'cUse' implements the Use commands, i.e.
+given a path it tries to load the library  at that path -}
 cUse :: String -> CmdlState -> IO CmdlState
 cUse input state = do
    let file = trim input
@@ -156,8 +156,8 @@ cUse input state = do
       , prompter = (prompter state)
           { fileLoaded = file } }
 
--- The only command that requires a list of nodes instead
--- of edges.
+{- The only command that requires a list of nodes instead
+of edges. -}
 cDgThmHideShift :: String -> CmdlState -> IO CmdlState
 cDgThmHideShift input state = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "No library loaded" state
@@ -183,9 +183,9 @@ cDgThmHideShift input state = case i_state $ intState state of
 -- selection commands
 selectANode :: Int -> IntIState -> [Int_NodeInfo]
 selectANode x dgState = let
-    -- computes the theory of a given node
-    -- (i.e. solves DGRef cases and so on,
-    -- see CASL Reference Manual, p.294, Def 4.9)
+    {- computes the theory of a given node
+    (i.e. solves DGRef cases and so on,
+    see CASL Reference Manual, p.294, Def 4.9) -}
     gth = computeTheory (i_libEnv dgState) (i_ln dgState)
     nodeName t = case lookup t $ getAllNodes dgState of
                 Nothing -> "Unknown node"
@@ -193,9 +193,9 @@ selectANode x dgState = let
     in case knownProversWithKind ProveCMDLautomatic of
      Result _ Nothing -> []
      Result _ (Just kpMap) ->
-    -- if compute theory was successful give the
-    -- result as one element list, otherwise an
-    -- empty list
+    {- if compute theory was successful give the
+    result as one element list, otherwise an
+    empty list -}
       case gth x of
        Just th@(G_theory lid _ _ _ _) -> do
        -- le not used and should be
@@ -213,8 +213,8 @@ selectANode x dgState = let
          return (initNodeInfo tmp x)
        _ -> []
 
--- | function swithces interface in proving mode and also
--- selects a list of nodes to be used inside this mode
+{- | function swithces interface in proving mode and also
+selects a list of nodes to be used inside this mode -}
 cDgSelect :: String -> CmdlState -> IO CmdlState
 cDgSelect input state = let iState = intState state in
   return $ case i_state iState of
@@ -223,14 +223,14 @@ cDgSelect input state = let iState = intState state in
       in if null nodes then genErrorMsg errors state else
       case maybeResult $ knownProversWithKind ProveCMDLautomatic of
         Nothing -> genErrorMsg (errors ++ "\nNo prover found") state
-        Just _ -> let -- elems is the list of all results (i.e.
-                      -- concat of all one element lists)
+        Just _ -> let {- elems is the list of all results (i.e.
+                      concat of all one element lists) -}
             elems = concatMap (flip selectANode dgState . fst) nodes
             nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
          in add2hist [IStateChange $ Just dgState] $ genMessage errors [] state
-           -- add the prove state to the status
-           -- containing all information selected
-           -- in the input
+           {- add the prove state to the status
+           containing all information selected
+           in the input -}
            { intState = iState
                { i_state = Just nwist
                    { elements = elems
@@ -283,8 +283,8 @@ cAddView input state = let iState = intState state in case i_state iState of
           { intState = iState
               { i_state = Just $ emptyIntIState newLibEnv' ln } }
 
--- | Function switches the interface in proving mode by
--- selecting all nodes
+{- | Function switches the interface in proving mode by
+selecting all nodes -}
 cDgSelectAll :: CmdlState -> IO CmdlState
 cDgSelectAll state = let iState = intState state in
   return $ case i_state iState of
@@ -295,14 +295,14 @@ cDgSelectAll state = let iState = intState state in
       Just _ -> let
           -- list of all nodes
           lsNodes = getAllNodes dgState
-          -- elems is the list of all results (i.e. concat
-          -- of all one element lists)
+          {- elems is the list of all results (i.e. concat
+          of all one element lists) -}
           elems = concatMap (flip selectANode dgState . fst) lsNodes
           nwist = emptyIntIState (i_libEnv dgState) (i_ln dgState)
                -- ADD TO HISTORY
         in add2hist [IStateChange $ Just dgState] $ state
-              -- add the prove state to the status containing
-              -- all information selected in the input
+              {- add the prove state to the status containing
+              all information selected in the input -}
               { intState = iState
                   { i_state = Just nwist
                       { elements = elems

@@ -195,9 +195,9 @@ anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType asp pos =
               insLink dg2 incl (FreeOrCofreeDefLink dglType nsig)
               SeeTarget n' node)
 
--- | analyze a SPEC
--- Bool Parameter determines if incoming symbols shall be ignored
--- options: here we need the info: shall only the structure be analysed?
+{- | analyze a SPEC. The Bool Parameter determines if incoming symbols shall
+be ignored. The options are needed to check: shall only the structure be
+analysed? -}
 anaSpec :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, DGraph)
 anaSpec = anaSpecAux None
@@ -261,8 +261,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
         anaSpec addSyms lg ln dg nsig (extName "Restriction" name) opts sp1
       let gsigma = getMaybeSig nsig
       (hmor, tmor) <- anaRestriction lg gsigma gsigma' opts restr
-      -- we treat hiding and revealing differently
-      -- in order to keep the dg as simple as possible
+      {- we treat hiding and revealing differently
+      in order to keep the dg as simple as possible -}
       case tmor of
        Nothing ->
         do let (ns@(NodeSig node _), dg'') =
@@ -273,8 +273,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
        Just tmor' -> do
         let gsigma1 = dom tmor'
             gsigma'' = cod tmor'
-           -- ??? too simplistic for non-comorphism inter-logic reductions
-        -- the case with identity translation leads to a simpler dg
+           {- ??? too simplistic for non-comorphism inter-logic reductions
+           the case with identity translation leads to a simpler dg -}
         if tmor' == ide (dom tmor')
          then do
            let (ns@(NodeSig node1 _), dg'') =
@@ -429,8 +429,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
   Data (Logic lidD) (Logic lidP) asp1 asp2 pos -> adjustPos pos $ do
       let sp1 = item asp1
           sp2 = item asp2
-      -- look for the inclusion comorphism from the current logic's data logic
-      -- into the current logic itself
+      {- look for the inclusion comorphism from the current logic's data logic
+      into the current logic itself -}
       Comorphism cid <- logicInclusion lg (Logic lidD) (Logic lidP)
       let lidD' = sourceLogic cid
           lidP' = targetLogic cid
@@ -617,8 +617,8 @@ anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
       let sys'' = Set.fromList
            [sy | sy <- Set.toList sys', rsy <-
                        Map.keys rmap, matches lid1 sy rsy]
-          -- domain of rmap intersected with sys'
-          -- domain of rmap should be checked to match symbols from sys' ???
+          {- domain of rmap intersected with sys'
+          domain of rmap should be checked to match symbols from sys' ??? -}
       mor1 <- ext_generated_sign lid1 (sys `Set.union` sys'') sigma1
       let extsig1 = makeExtSign lid1 $ dom mor1
       mor2 <- ext_induced_from_morphism lid1 rmap extsig1
@@ -655,8 +655,9 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
    if Set.all (\sy -> lookupFM symmap_mor sy == Just sy) symI
     then return ()
     else plain_error () "Fitting morphism must not affect import" pos
-   -} -- ??? does not work
-      -- ??? also output some symbol that is affected
+      -- does not work
+      -- also output symbols that are affected
+   -}
 
 anaFitArg :: LogicGraph -> LibName -> DGraph -> SIMPLE_ID -> MaybeNode
   -> NodeSig -> HetcatsOpts -> NodeName -> FIT_ARG
@@ -768,8 +769,8 @@ parLink lg nsig orig (NodeSig node gsigma') dg (NodeSig nA_i sigA_i) =
       incl <- ginclusion lg sigA_i gsigma'
       return $ insLink dg incl globalDef orig nA_i node
 
--- Extension of signature morphisms (for instantitations)
--- first some auxiliary functions
+{- Extension of signature morphisms (for instantitations)
+first some auxiliary functions -}
 
 mapID :: Map.Map Id (Set.Set Id) -> Id -> Result Id
 mapID idmap i@(Id toks comps pos1) =

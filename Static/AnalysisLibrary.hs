@@ -69,8 +69,8 @@ import Framework.Analysis
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
--- | parsing and static analysis for files
--- Parameters: logic graph, default logic, file name
+{- | parsing and static analysis for files
+Parameters: logic graph, default logic, file name -}
 anaSourceFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph
   -> FilePath -> ResultT IO (LibName, LibEnv)
 anaSourceFile = anaSource Nothing
@@ -99,8 +99,8 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
                   Just (lname, lenv) -> return $ Result [] $
                       Just (lname, Map.union lenv libenv)
 
--- | parsing and static analysis for string (=contents of file)
--- Parameters: logic graph, default logic, contents of file, filename
+{- | parsing and static analysis for string (=contents of file)
+Parameters: logic graph, default logic, contents of file, filename -}
 anaString :: Maybe LibName -- ^ suggested library name
   -> LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> String
   -> FilePath -> ResultT IO (LibName, LibEnv)
@@ -432,11 +432,11 @@ anaViewDefn lgraph ln libenv dg opts vn gen vt gsis pos = do
                 { globalEnv = Map.insert vn (ViewEntry vsig) genv }
                , libenv)
 
--- | analyze a VIEW_TYPE
--- The first three arguments give the global context
--- The AnyLogic is the current logic
--- The NodeSig is the signature of the parameter of the view
--- flag, whether just the structure shall be analysed
+{- | analyze a VIEW_TYPE
+The first three arguments give the global context
+The AnyLogic is the current logic
+The NodeSig is the signature of the parameter of the view
+flag, whether just the structure shall be analysed -}
 anaViewType :: LogicGraph -> LibName -> DGraph -> MaybeNode -> HetcatsOpts
   -> NodeName -> VIEW_TYPE -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
 anaViewType lg ln dg parSig opts name (View_type aspSrc aspTar pos) = do
@@ -510,8 +510,8 @@ getActualParent :: LibEnv -> LibName -> Node -> (LibName, LNode DGNodeLab)
 getActualParent libenv ln n =
    let refLab = labDG (lookupDGraph ln libenv) n in
    if isDGRef refLab then
-        -- recursively goes to parent of the current node, but
-        -- it actually would only be done once
+        {- recursively goes to parent of the current node, but
+        it actually would only be done once -}
         getActualParent libenv (dgn_libname refLab) (dgn_node refLab)
    else (ln, (n, refLab))
 

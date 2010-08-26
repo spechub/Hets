@@ -194,8 +194,8 @@ class (Ord object, Ord morphism)
     => Category object morphism | morphism -> object where
          -- | identity morphisms
          ide :: object -> morphism
-         -- | composition, in diagrammatic order,
-         -- if intermediate objects are equal (not checked!)
+         {- | composition, in diagrammatic order,
+         if intermediate objects are equal (not checked!) -}
          composeMorphisms :: morphism -> morphism -> Result morphism
          -- | domain and codomain of morphisms
          dom, cod :: morphism -> object
@@ -205,6 +205,7 @@ class (Ord object, Ord morphism)
          -- | test if the signature morphism an inclusion
          isInclusion :: morphism -> Bool
          isInclusion _ = False -- in general no inclusion
+
          -- | is a value of type morphism denoting a legal  morphism?
          legal_mor :: morphism -> Bool
 
@@ -260,14 +261,12 @@ class (Language lid, Category sign morphism, Ord sentence,
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
-
-      -- --------------------- sentences ---------------------------
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statFail l "map_sen"
       -- | simplification of sentences (leave out qualifications)
       simplify_sen :: lid -> sign -> sentence -> sentence
-      simplify_sen _ _ = id  -- default implementation
+      simplify_sen _ _ = id
       -- | negation of a sentence for disproving
       negation :: lid -> sentence -> Maybe sentence
       negation _ _ = Nothing
@@ -282,6 +281,7 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
 
       -- --------------------- symbols ---------------------------
+
       -- | dependency ordered list of symbol sets for a signature
       sym_of :: lid -> sign -> [Set.Set symbol]
       sym_of l _ = statError l "sym_of"
@@ -347,7 +347,6 @@ class ( Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec sentence symb_items symb_map_items
                  sign morphism symbol raw_symbol
       where
-         -- --------------------- static analysis ---------------------------
          {- | static analysis of basic specifications and symbol maps.
             The resulting bspec has analyzed axioms in it.
             The resulting sign is an extension of the input sign
@@ -355,13 +354,12 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             See CASL RefMan p. 138 ff. -}
          basic_analysis :: lid ->
                            Maybe ((basic_spec,  -- abstract syntax tree
-                            sign, -- input signature, for the local
-                                  -- environment, carrying the previously
-                                  -- declared symbols
+                            sign, {- input signature, for the local
+                                  environment, carrying the previously
+                                  declared symbols -}
                             GlobalAnnos) ->   -- global annotations
                            Result (basic_spec, ExtSign sign symbol
                                   , [Named sentence]))
-         -- default implementation
          basic_analysis _ = Nothing
          -- | a basic analysis with additional arguments
          extBasicAnalysis :: lid -> SIMPLE_ID -> LibId
@@ -378,12 +376,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol]
          stat_symb_items l _ = statFail l "stat_symb_items"
 
-         -- ----------------------- amalgamation ---------------------------
-         {- | Computation of colimits of signature diagram.
+         {- ----------------------- amalgamation ---------------------------
+            Computation of colimits of signature diagram.
             Indeed, it suffices to compute a coconce that is weakly amalgamable
             see Till Mossakowski,
             Heterogeneous specification and the heterogeneous tool set
             p. 25ff. -}
+
          -- | architectural sharing analysis, see CASL RefMan p. 247ff.
          ensures_amalgamability :: lid ->
               ([CASLAmalgOpt],        -- the program options
@@ -415,6 +414,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          qualify l _ _ _ _ = statFail l "qualify"
 
          -- ------------------ symbols and raw symbols ---------------------
+
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym
             in the CASL RefMan p. 192. -}
@@ -428,7 +428,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
          matches l _ _ = statError l "matches"
+
          -- ------------- operations on signatures and morphisms -----------
+
          -- | the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
          -- | adds a symbol to a given signature
@@ -478,11 +480,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          {- | Check whether a signature morphism is transportable.
             See CASL RefMan p. 304f. -}
          is_transportable :: lid -> morphism -> Bool
-         is_transportable _ _ = False -- safe default
+         is_transportable _ _ = False
          {- | Check whether the underlying symbol map of a signature morphism
             is injective -}
          is_injective :: lid -> morphism -> Bool
-         is_injective _ _ = False -- safe default
+         is_injective _ _ = False
          -- | generate an ontological taxonomy, if this makes sense
          theory_to_taxonomy :: lid
                             -> TaxoGraphKind
@@ -583,7 +585,6 @@ class (StaticAnalysis lid
 
          -- | stability of the implementation
          stability :: lid -> Stability
-         -- default
          stability _ = Experimental
 
          -- | for a process logic, return its data logic
@@ -604,14 +605,15 @@ class (StaticAnalysis lid
          proj_sublogic_epsilon _ _ = ide
 
          -- --------------------- provers ---------------------------
+
          -- | several provers can be provided. See module "Logic.Prover"
          provers :: lid -> [Prover sign sentence morphism sublogics proof_tree]
-         provers _ = [] -- default implementation
+         provers _ = []
          -- | consistency checkers
          cons_checkers :: lid
                        -> [ConsChecker sign sentence
                                        sublogics morphism proof_tree]
-         cons_checkers _ = [] -- default implementation
+         cons_checkers _ = []
          -- | conservativity checkers
          conservativityCheck :: lid
                              -> [ConservativityChecker sign sentence morphism]
@@ -623,8 +625,8 @@ class (StaticAnalysis lid
          -- --------------------- OMDoc ---------------------------
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
-         -- default implementation, no logic should throw an error here
-         -- and the base of omcd should be a parseable URI
+         {- default implementation, no logic should throw an error here
+         and the base of omcd should be a parseable URI -}
          omdoc_metatheory _lid = Nothing
 
 
@@ -636,12 +638,12 @@ class (StaticAnalysis lid
                           -> sentence -> Result OMDoc.TCorOMElement
          export_senToOmdoc l _ _ = statFail l "export_senToOmdoc"
 
-         -- | additional information which has to be exported can be
-         -- exported by this function
+         {- | additional information which has to be exported can be
+         exported by this function -}
          export_theoryToOmdoc :: lid -> OMDoc.SigMap symbol -> sign
                               -> [Named sentence] -> Result [OMDoc.TCElement]
-         -- default implementation does no extra export
-         -- , sufficient in some cases
+         {- default implementation does no extra export
+         , sufficient in some cases -}
          export_theoryToOmdoc _ _ _ _ = return []
 
 
@@ -653,8 +655,8 @@ class (StaticAnalysis lid
                     -> String -> Result (Maybe (Named sentence))
          omdocToSen l _ _ _ = statFail l "omdocToSen"
 
-         -- | Algebraic Data Types are imported with this function.
-         -- By default the input is returned without changes.
+         {- | Algebraic Data Types are imported with this function.
+         By default the input is returned without changes. -}
          addOMadtToTheory :: lid -> OMDoc.SigMapI symbol
                           -> (sign, [Named sentence]) -> [[OMDoc.OmdADT]]
                           -> Result (sign, [Named sentence])
@@ -666,9 +668,9 @@ class (StaticAnalysis lid
                       nullRange
            return t
 
-         -- | additional information which has to be imported can be
-         -- imported by this function. By default the input is returned
-         -- without changes.
+         {- | additional information which has to be imported can be
+         imported by this function. By default the input is returned
+         without changes. -}
          addOmdocToTheory :: lid -> OMDoc.SigMapI symbol
                           -> (sign, [Named sentence]) -> [OMDoc.TCElement]
                           -> Result (sign, [Named sentence])
@@ -709,24 +711,24 @@ class Logic lid sublogics basic_spec sentence
       -- | the base signature
       getBaseSig :: lid -> sign
       getBaseSig l = error $
-                    "Function getBaseSig nyi for logic " ++ (show l) ++ "."
+                    "Function getBaseSig nyi for logic " ++ shows l "."
 
       {- | generation of the object logic instances
            second argument is object logic name -}
       writeLogic :: lid -> String -> String
       writeLogic l = error $
-                       "Function writeLogic nyi for logic " ++ (show l) ++ "."
+                       "Function writeLogic nyi for logic " ++ shows l "."
 
       {- | generation of the Ltruth morphism declaration
            second argument is the object logic name
            third argument is the Ltruth morphism -}
       writeSyntax :: lid -> String -> morphism -> String
       writeSyntax l = error $
-                        "Function writeSyntax nyi for logic " ++ (show l) ++ "."
+                        "Function writeSyntax nyi for logic " ++ shows l "."
 
--- --------------------------------------------------------------
--- Derived functions
--- --------------------------------------------------------------
+{- --------------------------------------------------------------
+Derived functions
+-------------------------------------------------------------- -}
 
 -- | the empty theory
 emptyTheory :: StaticAnalysis lid
@@ -735,9 +737,9 @@ emptyTheory :: StaticAnalysis lid
         lid -> Theory sign sentence proof_tree
 emptyTheory lid = Theory (empty_signature lid) Map.empty
 
--- --------------------------------------------------------------
--- Existential type covering any logic
--- --------------------------------------------------------------
+{- --------------------------------------------------------------
+Existential type covering any logic
+-------------------------------------------------------------- -}
 
 -- | the disjoint union of all logics
 data AnyLogic = forall lid sublogics
