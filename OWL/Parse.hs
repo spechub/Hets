@@ -807,5 +807,6 @@ basicSpec = do
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+--      , ("", showQU dummyQName ++ "#") -- uncomment for API v3
       , ("owl2xml", "http://www.w3.org/2006/12/owl2-xml#") ]
       ++ map (\ (p, q) -> (p, showQU q)) nss }
