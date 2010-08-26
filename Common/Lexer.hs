@@ -180,6 +180,27 @@ scanFloat = getNumber
         <++> optionL (char 'E' <:> optionL (single $ oneOf "+-")
                         <++> getNumber))
 
+
+-- | In addition to scanFloat, also '1.', '.1' and '2.e-13' are recognized
+-- as well as preceding signs '+-'.
+scanFloatExt :: CharParser st String
+scanFloatExt =
+    let -- the 'E' component
+        compE = oneOf "eE" <:> getSNum
+        -- the '.' component
+        compD n = char '.' <:> n
+        -- an optional number
+        getNum' = option "0" getNumber
+        checkSign' '-' = "-"
+        checkSign' _ = ""
+        checkSp' = (++ "0.") . checkSign' . head
+        getSNum = optionL (oneOf "+-" >-> checkSign') <++> getNumber
+    in -- '1.' or '2.e-13' or '1.213'
+      try (getSNum <++> (optionL (try $ compD getNum') <++> optionL compE))
+      -- everything starting with a dot
+      <|> (choice (map string ["+.", "-.", "."])  >-> checkSp') <++> getNumber
+              <++> optionL compE
+
 scanDigit :: CharParser st String
 scanDigit = single digit
 
