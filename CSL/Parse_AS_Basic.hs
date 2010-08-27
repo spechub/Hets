@@ -100,20 +100,19 @@ prefixidentifier :: CharParser st Id.Token
 prefixidentifier =
     lexemeParser $ Lexer.pToken $ Lexer.scanAnySigns <|> Lexer.scanAnyWords
 
--- | parses a possibly signed number (both integers and floats) 
-signednumber :: CharParser st EXPRESSION
-signednumber = 
-    let f c x = return $ c (read $ tokStr x) (tokPos x)
-        g x 
-            | isFloating x = f Double x
-            | otherwise  = f Int x
-    in Lexer.pToken Lexer.scanFloatExt >>= g
+-- | parses a possibly signed number to an EXPRESSION
+signednumberExp :: CharParser st EXPRESSION
+signednumberExp = 
+    let f (eN, rg) = either (flip Int rg) (flip Double rg) eN
+    in signednumber >-> f
 
-numToGroundConstant :: EXPRESSION -> GroundConstant
-numToGroundConstant x = case x of
-                          Double d _ -> GCR d
-                          Int i _ -> GCI i
-                          _ -> error "numToGroundConstant: not a number"
+-- | parses a possibly signed number (both integers and floats) 
+signednumber :: CharParser st (Either APInt APFloat, Range)
+signednumber = 
+    let f c x = return (c $ read $ tokStr x, tokPos x)
+        g x | isFloating x = f Right x
+            | otherwise  = f Left x
+    in Lexer.pToken Lexer.scanFloatExt >>= g
 
 oneOfKeys :: [String] -> CharParser st String
 oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map tryString l
@@ -121,12 +120,9 @@ oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map tryString l
 expression :: CharParser st EXPRESSION
 expression = do
   exp1 <- factor
-  exps <- many
-    $ pair (oneOfKeys ["+", "-"]) factor
-  if null exps then return exp1
-     else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
-  <|>
-  listexp
+  exps <- many $ pair (oneOfKeys ["+", "-"]) factor
+  return $ if null exps then  exp1
+           else foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
 
 -- | parse a product of basic expressions
 factor :: CharParser st EXPRESSION
@@ -148,7 +144,8 @@ expexp = do
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
-expatom = try signednumber <|> (oParenT >> expression << cParenT) <|> expsymbol
+expatom = try signednumberExp <|> (oParenT >> expression << cParenT)
+          <|> listexp <|> intervalexp <|> expsymbol
 
 expsymbol :: CharParser st EXPRESSION
 expsymbol =
@@ -169,6 +166,18 @@ listexp = do
   elems <- Lexer.separatedBy formulaorexpression pComma
   (Lexer.keySign (string "}"))
   return (List (fst elems) nullRange)
+
+intervalexp :: CharParser st EXPRESSION
+intervalexp = do
+  (Lexer.keySign (string "["))
+  nums <- Lexer.separatedBy signednumber pComma
+  (Lexer.keySign (string "]"))
+  let getFloat = (error "intervalexp: Interval boundary has to be a float.") id
+  case fst nums of
+    [(x, rg1), (y, rg2)] -> return $ Interval (getFloat x) (getFloat y) $ Range
+                            $ joinRanges $ map rangeToList [rg1, rg2]
+    _ ->
+        error "intervalexp: Parse error: interval with other than two arguments"
 
 -- ---------------------------------------------------------------------------
 
@@ -368,10 +377,10 @@ varItem = do
 parseDomain :: CharParser st Domain
 parseDomain = do
   lp <- lexemeParser $ oneOf "{[]"
-  gcl <- sepBy1 (signednumber >-> numToGroundConstant) pComma
+  gcl <- sepBy1 (signednumber >-> either GCI GCR . fst) pComma
   rp <- lexemeParser $ oneOf "[]}"
   let f o c = case gcl of
-                [lb, rb] -> return $ Interval (lb, o) (rb, c)
+                [lb, rb] -> return $ IntVal (lb, o) (rb, c)
                 _ -> parseError "parseDomain: incorrect interval-list"
   case [lp, rp] of
     "{}" -> return $ Set gcl

@@ -23,13 +23,13 @@ import Logic.Prover
 
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic
-import CSL.Analysis (arityOneOps, arityTwoOps, arityFlexOps)
 import CSL.Lemma_Export
 
 import Control.Monad (replicateM_)
 import Data.Time (midnight)
 import Data.Maybe (maybeToList)
 import Data.List (intercalate)
+import qualified Data.Map as Map
 
 import System.IO
 import System.Process
@@ -158,6 +158,7 @@ exportExp (Op s _ exps _) = concat [s, "(", exportExps exps, ")"]
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
 exportExp (Double d _) = show d
+exportExp e = error $ "exportExp: expression not supported: " ++ show e
 
 -- | exports command to Reduce Format
 exportReduce :: Named CMD -> String
@@ -190,7 +191,7 @@ redOutputToExpression = parseResult . skipReduceLineNr
 cslReduceDefaultMapping :: [(String, String)]
 cslReduceDefaultMapping =
     let idmapping = map (\ x -> (x, x))
-    in idmapping $ arityOneOps ++ arityTwoOps ++ arityFlexOps
+    in idmapping $ Map.keys operatorInfo
 
 {- | reads characters from the specified output until the next result is
   complete, indicated by $ when using the maxima mode off nat; -}

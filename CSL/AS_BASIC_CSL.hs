@@ -30,6 +30,8 @@ module CSL.AS_BASIC_CSL
     , OpInfo (..)         -- Type for Operator information
     , operatorInfo        -- Operator information for pretty printing
                           -- and static analysis
+    , lookupOpInfo
+    , APInt, APFloat      -- arbitrary precision numbers
     ) where
 
 import Common.Id as Id
@@ -37,6 +39,13 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
+
+-- Arbitrary precision numbers
+type APInt = Integer
+-- TODO: use an arbitrary precision float here:
+-- The use of Other floats (such as Double) requires an instance for
+-- ShATermConvertible in Common.ATerm.ConvInstances
+type APFloat = Double
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
@@ -53,11 +62,11 @@ data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                   deriving Show
 
-data GroundConstant = GCI Int | GCR Float deriving (Eq, Ord, Show)
+data GroundConstant = GCI APInt | GCR APFloat deriving (Eq, Ord, Show)
 
 -- | A finite set or an interval. True = closed, False = opened
 data Domain = Set [GroundConstant]
-            | Interval (GroundConstant, Bool) (GroundConstant, Bool)
+            | IntVal (GroundConstant, Bool) (GroundConstant, Bool)
               deriving Show
 
 -- | basic items: an operator or variable declaration or an axiom
@@ -76,8 +85,10 @@ data EXPRESSION =
   -- token instead string Id vs Token:
   | Op String [EXTPARAM] [EXPRESSION] Id.Range
   | List [EXPRESSION] Id.Range
-  | Int Int Id.Range
-  | Double Float Id.Range
+  -- this means interval (interval
+  | Interval APFloat APFloat Id.Range
+  | Int APInt Id.Range
+  | Double APFloat Id.Range
   deriving (Eq, Ord, Show)
 
 data CMD = Cmd String [EXPRESSION]
@@ -135,43 +146,63 @@ instance Pretty SYMB_OR_MAP where
 instance Pretty CMD where
     pretty = printCMD
 
--- | Map of operator names to arity-OpInfo-Map
+-- | Mapping of operator names to arity-OpInfo-Map
 operatorInfo :: Map.Map String (Map.Map Int OpInfo)
 operatorInfo =
-        -- arity (-1 means flex), precedence, infix
-    let toSgl i p fx = Map.fromList [(i, OpInfo p fx)]
+    let -- arity (-1 means flex), precedence, infix
+        toSgl i p fx = Map.fromList [(i, OpInfo p fx)]
         -- arityflex simple ops
         aflex s = (s, toSgl (-1) 0 False)
+        -- arity0 simple ops
+        a0 s = (s, toSgl 0 0 False)
         -- arity1 simple ops
         a1 s = (s, toSgl 1 0 False)
         -- arity2 simple ops
         a2 s = (s, toSgl 2 0 False)
         -- arity2 infix with precedence
         a2i p s = (s, toSgl 2 p True)
-    in Map.fromList $
-       map a1 [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
-              , "simplify", "rlqe", "factorize" ]
-       ++ map (a2i 2) [ "ex", "all", "and", "or", "impl" ]
-       ++ map (a2i 3) [ ":=", "=", ">", "<=", ">=", "!=", "<"]
-       ++ [a2i 4 "+"]
-       ++ map (a2i 5) ["/", "*"]
-       ++ map (a2i 6) ["^", "**"]
-       ++ map a2 [ "int", "divide", "solve" ]
-       ++ map aflex [ "min", "max" ]
-       -- special handling for overloaded "-"
-       ++ [("-", Map.fromList [(1, OpInfo 0 False), (2, OpInfo 4 True)])]
+    in Map.fromList
+           $  [a0 "Pi"]
+           ++ map a1 [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
+                     , "simplify", "rlqe", "factorize" ]
+           ++ map (a2i 2) [ "ex", "all", "and", "or", "impl" ]
+           ++ map (a2i 3) [ ":=", "=", ">", "<=", ">=", "!=", "<"]
+           ++ [a2i 4 "+"]
+           ++ map (a2i 5) ["/", "*"]
+           ++ map (a2i 6) ["^", "**"]
+           ++ map a2 [ "int", "divide", "solve", "convergence" ]
+           ++ map aflex [ "min", "max" ]
+           -- special handling for overloaded "-"
+           ++ [("-", Map.fromList [(1, OpInfo 0 False), (2, OpInfo 4 True)])]
+
+-- | For the given name and arity we lookup an Opinfo. If an operator
+-- is registered for the given string but not for the arity we return: Left True
+lookupOpInfo :: String -- ^ operator name
+             -> Int -- ^ operator arity
+             -> Either Bool OpInfo
+lookupOpInfo op arit =
+    case Map.lookup op operatorInfo of
+      Just oim ->
+          case Map.lookup arit oim of
+            Just x -> Right x
+            Nothing ->
+                case Map.lookup (-1) oim of
+                  Just x -> Right x
+                  _ -> Left True
+      _ -> Left False
 
 
 printCMD :: CMD -> Doc
 printCMD (Cmd s exps)
     | s==":=" = printExpression (exps !! 0) <+> text s
                 <+> printExpression (exps !! 1)
+    | s=="constraint" = printExpression (exps !! 0)
     | otherwise = (text s) <> (parens (sepByCommas (map printExpression exps)))
 printCMD (Repeat e stms) = 
     text "re" <> (text "peat" $+$ vcat (map ((text "." <+>) . printCMD)  stms))
     $+$ text "until" <+> printExpression e
 
-printCMD (Cond l) = vcat $ map (uncurry printCase) l
+printCMD (Cond l) = vcat (map (uncurry printCase) l) $+$ text "end"
 
 printCase :: EXPRESSION -> [CMD] -> Doc
 printCase e l = text "ca"
@@ -179,22 +210,27 @@ printCase e l = text "ca"
                      $+$ vcat (map ((text "." <+>) . printCMD)  l))
 
 
-getPrec :: EXPRESSION -> Integer
+getPrec :: EXPRESSION -> Int
 getPrec (Op s _ exps _)
-    -- we check for the lenght here, because of unary -
-    | length exps == 2 && elem s ["+", "-"] = 1
-    | elem s ["/", "*"] = 2
-    | elem s ["^", "**"] = 3
-    | length exps == 0 = 4
-    | otherwise = 0
+    | length exps == 0 = 8 -- check maximum given prec in operatorInfo,
+                           -- this value must be higher
+    | otherwise =
+        case lookupOpInfo s $ length exps of
+          Right oi -> prec oi
+          Left True -> error $ 
+                       concat [ "getPrec: registered operator ", s, " used "
+                              , "with non-registered arity ", show $ length exps ]
+          _ -> 0
 getPrec _ = 9
 
 -- TODO: print extparams   
 printInfix :: EXPRESSION -> Doc
 printInfix e@(Op s _ exps _) =
+-- we mustn't omit the space between the operator and its arguments for text-
+-- operators such as "and", "or", but it would be good to omit it for "+-*/"
     (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0))
      else  (parens (printExpression $ (exps !! 0))))
-    <> text s <> (if outerprec<= getPrec (exps!!1)
+    <+> text s <+> (if outerprec<= getPrec (exps!!1)
                   then printExpression $ exps !! 1
                   else parens (printExpression $ exps !! 1))
         where outerprec = getPrec e
@@ -204,15 +240,24 @@ printExpression :: EXPRESSION -> Doc
 printExpression (Var token) = text (tokStr token)
 -- TODO: print extparams   
 printExpression e@(Op s _ exps _)
-    | length exps == 2 && s/="min" && s/="max" = printInfix e
     | length exps == 0 = text s
-    | otherwise = text s <> parens (sepByCommas (map printExpression exps))
+    | otherwise =
+        let asPrfx = text s <> parens (sepByCommas $ map printExpression exps)
+        in case lookupOpInfo s $ length exps  of
+             Right oi
+                 | infx oi -> printInfix e
+                 | otherwise -> asPrfx
+             _ -> asPrfx
+
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
 printExpression (Double d _) = text (show d)
+printExpression e =
+    error $ "printExpression: expression not supported: " ++ show e
 
 printOpItem :: OP_ITEM -> Doc
-printOpItem (Op_item tokens _) = (text "operator") <+> (sepByCommas (map pretty tokens))
+printOpItem (Op_item tokens _) =
+    text "operator" <+> sepByCommas (map pretty tokens)
 
 printVarItem :: VAR_ITEM -> Doc
 printVarItem (Var_item vars dom _) =
@@ -220,7 +265,7 @@ printVarItem (Var_item vars dom _) =
 
 printDomain :: Domain -> Doc
 printDomain (Set l) = braces $ sepByCommas $ map printGC l
-printDomain (Interval (c1, b1) (c2, b2)) =
+printDomain (IntVal (c1, b1) (c2, b2)) =
     hcat [ getIBorder True b1, sepByCommas $ map printGC [c1, c2]
          , getIBorder False b2]
 
@@ -308,10 +353,11 @@ instance GetRange SYMB_OR_MAP where
     Symb_map a b c -> joinRanges [rangeSpan a, rangeSpan b, rangeSpan c]
 
 instance GetRange EXPRESSION where
-  getRange = const nullRange
+  getRange = Range . rangeSpan
   rangeSpan x = case x of
                       Var token -> joinRanges [rangeSpan token]
                       Op _ _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
                       List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
                       Int _ a -> joinRanges [rangeSpan a]
                       Double _ a -> joinRanges [rangeSpan a]
+                      Interval _ _ a -> joinRanges [rangeSpan a]

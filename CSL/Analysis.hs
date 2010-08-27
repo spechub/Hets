@@ -15,7 +15,6 @@ Portability :  portable
 module CSL.Analysis
     ( splitSpec
     , basicCSLAnalysis
-    , arityOneOps, arityTwoOps, arityFlexOps
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
@@ -31,7 +30,6 @@ import qualified Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import CSL.AS_BASIC_CSL
 import CSL.Symbol
 
@@ -44,21 +42,6 @@ data DIAG_FORM = DiagForm
       formula :: (AS_Anno.Named CMD),
       diagnosis :: Diagnosis
     } deriving Show
-
-arityOneOps :: [String]
-arityOneOps = [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
-              , "simplify", "rlqe", "factorize"
-              ]
-
-arityTwoOps :: [String]
-arityTwoOps = [ "ex", "all", "and", "or", "impl"
-              , "=", ">", "<=", ">=", "!=", "<"
-              , "+", "*", "/", "**", "^"
-              , ":=", "int", "divide", "solve"
-              ]
-
-arityFlexOps :: [String]
-arityFlexOps = [ "min", "max", "-" ]
 
 -- | extracts the operators + arity information for an operator
 extractOperatorsExp :: EXPRESSION -> [(String,Int)]
@@ -79,11 +62,10 @@ extractOperatorsCmd (Cond _) = [] -- TODO: to be implemented
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool
 checkOperators _ ops =
     let f (op, arit) =
-            case Map.lookup op operatorInfo of
-              Just oim ->
-                  -- it must be registered with the given arity or as flex-op
-                  Map.member arit oim || Map.member (-1) oim
-              -- if not registered we accept it
+            case lookupOpInfo op arit of
+              -- if registered it must be registered with the given arity or
+              -- as flex-op, otherwise we don't accept it
+              Left True -> False
               _ -> True
     in all f ops
 
