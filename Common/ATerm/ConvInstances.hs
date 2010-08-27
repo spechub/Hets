@@ -94,6 +94,11 @@ instance Typeable TimeOfDay where
     typeOf _ = mkTyConApp timeOfDayTc []
 #endif
 
+instance ShATermConvertible Double where
+    toShATermAux att = toShATermAux att . toRational
+    fromShATermAux ix att0 = case fromShATermAux ix att0 of
+       (att, r) -> (att, fromRational r)
+
 instance ShATermConvertible TimeOfDay where
     toShATermAux att0 (TimeOfDay a b c) = do
         (att1, a') <- toShATerm' att0 a
