@@ -169,7 +169,8 @@ consCheck thName _ tm freedefs = case tTarget tm of
     if progTh then withinDirectory toolPath $ do
         tempDir <- getTemporaryDirectory
         timeTmpFile <- writeTempFile problemS tempDir tmpFileName
-        let command = "java -Djava.library.path=lib/native/`uname -m` -jar "
+        jni <- getEnvDef "HETS_JNI_LIBS" "lib/native/`uname -m`"
+        let command = "java -Djava.library.path=" ++ jni ++ " -jar "
               ++ jar ++ " file://" ++ timeTmpFile
         t_start <- getHetsTime
         (_, outh, errh, proch) <- runInteractiveCommand command
@@ -248,8 +249,9 @@ runFact sps cfg saveFact thName nGoal = do
       if progTh then withinDirectory toolPath $ do
           tempDir <- getTemporaryDirectory
           timeTmpFile <- writeTempFile prob tempDir tmpFileName
+          jni <- getEnvDef "HETS_JNI_LIBS" "lib/native/`uname -m`"
           let entailsFile = timeTmpFile ++ ".entail.owl"
-              command = "java -Djava.library.path=lib/native/`uname -m` -jar "
+              command = "java -Djava.library.path=" ++ jni ++ " -jar "
                 ++ jar ++ " file://" ++ timeTmpFile ++ " file://" ++ entailsFile
           writeFile entailsFile entail
           t_start <- getHetsTime
