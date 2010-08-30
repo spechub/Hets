@@ -38,6 +38,7 @@ import SoftFOL.ProveVampire
 #endif
 import SoftFOL.ProveDarwin
 #endif
+import SoftFOL.ProveMetis
 
 instance Pretty Sign where
   pretty = pretty . signToSPLogicalPart
@@ -90,6 +91,7 @@ instance Logic SoftFOL () () Sentence () ()
 #endif
            ++ unsafeProverCheck "darwin" "PATH" (darwinProver Darwin)
            ++ unsafeProverCheck "e-darwin" "PATH" (darwinProver EDarwin)
+           ++ (unsafeProverCheck "metis" "PATH" metisProver)
            ++ unsafeProverCheck "ekrh" "PATH" hyperProver
          cons_checkers SoftFOL =
            unsafeProverCheck "darwin" "PATH" (darwinConsChecker Darwin)

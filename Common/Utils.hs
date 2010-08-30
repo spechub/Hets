@@ -63,6 +63,12 @@ import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
 import Control.Monad
 import Control.Concurrent
 
+--import System.Process
+import System.Posix.Types
+import System.Posix.Signals
+import System.Process.Internals
+import Control.Concurrent.MVar
+
 -- | replace first (non-empty) sublist with second one in third argument list
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
 replace sl r = case sl of
@@ -351,6 +357,17 @@ getEnvDef :: String -- ^ environment variable
 getEnvDef envVar defValue = getEnvSave defValue envVar Just
 
 -- | runs a command with timeout
+
+
+
+getPID :: ProcessHandle -> IO CPid
+getPID (ProcessHandle p)= do
+  (OpenHandle pp) <- takeMVar p
+  return (toPID pp)
+
+toPID :: PHANDLE -> CPid
+toPID ph = toEnum $ fromEnum ph
+
 timeoutCommand :: Int -> String -> IO (Maybe ExitCode, Handle, Handle)
 timeoutCommand time cmd = do
   wait <- newEmptyMVar
@@ -361,7 +378,8 @@ timeoutCommand time cmd = do
   tid2 <- forkIO $ do
     threadDelay $ time * 1000000
     putMVar wait Nothing
-    terminateProcess proch
+    pid <- (getPID proch)
+    signalProcess killProcess $ pid +1
   res <- takeMVar wait
   killThread (if isJust res then tid2 else tid1) `catch` print
   return (res, outh, errh)
@@ -387,3 +405,4 @@ writeTempFile str tmpDir file = do
   hFlush hdl
   hClose hdl
   return tmpFile
+
