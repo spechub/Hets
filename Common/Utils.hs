@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  utility functions that can't be found in the libraries
@@ -64,8 +65,10 @@ import Control.Monad
 import Control.Concurrent
 
 --import System.Process
+#ifdef UNIX
 import System.Posix.Types
 import System.Posix.Signals
+#endif
 import System.Process.Internals
 import Control.Concurrent.MVar
 
@@ -358,8 +361,7 @@ getEnvDef envVar defValue = getEnvSave defValue envVar Just
 
 -- | runs a command with timeout
 
-
-
+#ifdef UNIX
 getPID :: ProcessHandle -> IO CPid
 getPID (ProcessHandle p)= do
   (OpenHandle pp) <- takeMVar p
@@ -367,6 +369,7 @@ getPID (ProcessHandle p)= do
 
 toPID :: PHANDLE -> CPid
 toPID ph = toEnum $ fromEnum ph
+#endif
 
 timeoutCommand :: Int -> String -> IO (Maybe ExitCode, Handle, Handle)
 timeoutCommand time cmd = do
@@ -378,8 +381,12 @@ timeoutCommand time cmd = do
   tid2 <- forkIO $ do
     threadDelay $ time * 1000000
     putMVar wait Nothing
+#ifdef UNIX
     pid <- (getPID proch)
     signalProcess killProcess $ pid +1
+#else
+    terminateProcess proch
+#endif
   res <- takeMVar wait
   killThread (if isJust res then tid2 else tid1) `catch` print
   return (res, outh, errh)
