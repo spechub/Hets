@@ -19,21 +19,21 @@ import Proofs.BatchProcessing
 
 import System.IO
 import System.Directory
-import GHC.IOBase
+import System.Exit
 import Common.Utils
 import Data.Time.Clock
 import Data.Time.LocalTime
 import Data.List
 import Maybe
 
-import Control.Monad 
+import Control.Monad
 import qualified Control.Concurrent as Concurrent
 
 
 {- | The Prover implementation. -}
 metisProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 metisProver = mkAutomaticProver "metis" () metisGUI
-  metisProveCMDLautomaticBatch 
+  metisProveCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -54,10 +54,10 @@ atpFun thName = ATPFunctions
       , theoryConfiguration = ""  }
   , runProver = runMetis
   , createProverOptions = extraOpts }
-		 
+
 
 {- |
-  Invokes the generic prover GUI. 
+  Invokes the generic prover GUI.
 -}
 metisGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
@@ -118,8 +118,8 @@ runMetis sps cfg saveTPTP thName nGoal = do
   (timeTmpFile,temphandel) <- openTempFile tmppath "tmp.tptp"
   hPutStr temphandel prob
   hClose temphandel
-  let command = "metis " ++( concat(extraOpts cfg))++ " " ++ timeTmpFile 
-  --recording time 
+  let command = "metis " ++( concat(extraOpts cfg))++ " " ++ timeTmpFile
+  --recording time
   start <- liftM utctDayTime $ getCurrentTime
   (end,outh,errh)<- timeoutCommand myTimeLimit command
   finish <- liftM utctDayTime $ getCurrentTime
@@ -140,8 +140,8 @@ runMetis sps cfg saveTPTP thName nGoal = do
 		 			   proofStatus= (proofStatus cfg){usedAxioms= getAxioms sps,
 									goalStatus= getGoalStatus $ words $ fromJust(find (isPrefixOf "SZS status")out ),
 									usedTime=executetime
-									}		
-					  })		
+									}
+					  })
        _ -> return(ATPError (unlines $ out++err), cfg{	resultOutput=out++err,
 						timeUsed=executetime,
 						proofStatus= (proofStatus cfg){usedTime=executetime}
@@ -150,7 +150,7 @@ runMetis sps cfg saveTPTP thName nGoal = do
   mapping from SZS Status to Goalstatus
 -}
 getGoalStatus :: [String] -> GoalStatus
-getGoalStatus l= case l of 
+getGoalStatus l= case l of
 			(_:_:"Theorem":_) -> Proved True
  			(_:_:"Proved":_) -> Proved True
  			(_:_:"Satisfiable":_) -> Proved True
