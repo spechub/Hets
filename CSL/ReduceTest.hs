@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Test environment for the ReduceInterpreter
@@ -13,6 +14,8 @@ This file is for experimenting with the ReduceInterpreters
 
 module CSL.ReduceTest where
 
+import CSL.MapleInterpreter
+
 import CSL.ReduceInterpreter
 import CSL.Reduce_Interface
 import CSL.Interpreter
@@ -23,7 +26,7 @@ import CSL.Sign
 import Common.Utils (getEnvDef)
 import Common.IOS
 import Common.Result (diags, printDiags, resultToMaybe)
-import Common.ResultT (runResultT)
+import Common.ResultT
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
@@ -69,6 +72,53 @@ boolAssignEval cmd =
              Just (n, e) -> assign n e >> return (Left n)
              _ -> return $ Left ""
 
+
+
+runTest :: ResultT (IOS b) a -> b -> IO a
+runTest cmd r = fmap fromJust $ runTestM cmd r
+
+runTestM :: ResultT (IOS b) a -> b -> IO (Maybe a)
+runTestM cmd r = fmap (resultToMaybe . fst) $ runIOS r $ runResultT cmd
+
+-- time measurement, pendant of the time shell command
+time :: IO a -> IO a
+time p = do
+  t <- getCurrentTime
+  res <- p
+  t' <- getCurrentTime
+  putStrLn $ show $ diffUTCTime t' t
+  return res
+
+evalL :: CalculationSystem (ResultT (IOS b)) => b
+      -> Int -- ^ Test-spec
+      -> IO b
+evalL s i = do
+  cl <- cmds i
+  (_, s') <- runIOS s (runResultT $ evaluateList cl)
+  return s'
+
+
+-- ----------------------------------------------------------------------
+-- * Maple interpreter
+-- ----------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- ----------------------------------------------------------------------
+-- * First reduce interpreter
+-- ----------------------------------------------------------------------
+
+
 -- booleans and assignments are returned
 redsBA :: Int -- ^ Test-spec
       -> IO ([Either String Bool], ReduceInterpreter)
@@ -85,9 +135,7 @@ reds :: Int -- ^ Test-spec
 reds i = do
   r <- redsInit
   sendToReduce r "on rounded; precision 30;"
-  cl <- cmds i
-  (_, r') <- runIOS r (runResultT $ evaluateList cl)
-  return r'
+  evalL r i
 
 
 
@@ -108,8 +156,9 @@ mapM redsExit l
 -}
 
 
-
+-- ----------------------------------------------------------------------
 -- * second reduce interpreter
+-- ----------------------------------------------------------------------
 
 -- run the assignments from the spec
 redc :: Int -- ^ verbosity level
@@ -117,22 +166,13 @@ redc :: Int -- ^ verbosity level
      -> IO RITrans
 redc v i = do
   r <- redcInit v
-  cl <- cmds i
-  (res, r') <- runIOS r (runResultT $ evaluateList cl)
-  printDiags v (diags res)
-  return r'
-
-redcTest :: RedcIO a -> RITrans -> IO a
-redcTest cmd r = fmap fromJust $ redcTestM cmd r
-
-redcTestM :: RedcIO a -> RITrans -> IO (Maybe a)
-redcTestM cmd r = fmap (resultToMaybe . fst) $ runIOS r $ runResultT cmd
+  evalL r i
 
 redcNames :: RITrans -> IO [String]
-redcNames = redcTest names
+redcNames = runTest names
 
 redcValues :: RITrans -> IO [(String, EXPRESSION)]
-redcValues = redcTest values
+redcValues = runTest values
 
 -- run the assignments from the spec
 redcCont :: Int -- ^ Test-spec
@@ -147,16 +187,7 @@ redcCont i r = do
 
 -- disconnect from reduce
 redcX :: RITrans -> IO (Maybe ExitCode)
-redcX = redcTest redcExit
-
--- time measurement, pendant of the time shell command
-time :: IO a -> IO a
-time p = do
-  t <- getCurrentTime
-  res <- p
-  t' <- getCurrentTime
-  putStrLn $ show $ diffUTCTime t' t
-  return res
+redcX = runTest redcExit
 
 
 --- Testing with many instances

@@ -11,22 +11,7 @@ Portability :  portable
 Parser for abstract syntax for CSL
 -}
 
-module CSL.Parse_AS_Basic ( parseBasicSpec
-                          , parseSymbItems
-                          , parseSymbMapItems
-                          , parseResult
-                          , expression
-                          , command
-                          , aFormula
-                          , parseBasicItems
-                          , parseOpDecl
-                          , parseAxItems
-                          , basicSpec
-                          , signednumber
-                          , oneOfKeys
-                          , extparam
-                          )
-    where
+module CSL.Parse_AS_Basic where
 
 import qualified Common.AnnoState as AnnoState
 import Common.Id as Id
@@ -162,22 +147,20 @@ expsymbol =
 -- | parses a list expression
 listexp :: CharParser st EXPRESSION
 listexp = do
-  (Lexer.keySign (string "{"))
+  Lexer.keySign $ string "{"
   elems <- Lexer.separatedBy formulaorexpression pComma
-  (Lexer.keySign (string "}"))
+  Lexer.keySign $ string "}"
   return (List (fst elems) nullRange)
 
 intervalexp :: CharParser st EXPRESSION
 intervalexp = do
-  (Lexer.keySign (string "["))
-  nums <- Lexer.separatedBy signednumber pComma
-  (Lexer.keySign (string "]"))
-  let getFloat = (error "intervalexp: Interval boundary has to be a float.") id
+  nums <- lstring "[" >> Lexer.separatedBy signednumber pComma << lstring "]"
+  let getFloat = either fromInteger id
   case fst nums of
     [(x, rg1), (y, rg2)] -> return $ Interval (getFloat x) (getFloat y) $ Range
                             $ joinRanges $ map rangeToList [rg1, rg2]
-    _ ->
-        error "intervalexp: Parse error: interval with other than two arguments"
+    _ -> parseError
+         "intervalexp: Parse error: interval with other than two arguments"
 
 -- ---------------------------------------------------------------------------
 

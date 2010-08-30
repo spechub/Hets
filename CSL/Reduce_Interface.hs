@@ -128,7 +128,8 @@ closedReduceProofStatus goalname proof_tree =
 
 {-
 For Quantifier Elimination:
-off nat;
+
+off nat; -- pretty-printing switch
 load redlog;
 rlset reals;
 
@@ -142,6 +143,7 @@ rlqe(exp...);
 
 exportExps :: [EXPRESSION] -> String
 exportExps l = intercalate "," $ map exportExp l
+
 
 -- | those operators declared as infix in Reduce
 infixOps :: [String]
@@ -158,7 +160,8 @@ exportExp (Op s _ exps _) = concat [s, "(", exportExps exps, ")"]
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
 exportExp (Double d _) = show d
-exportExp e = error $ "exportExp: expression not supported: " ++ show e
+exportExp (Interval l r _) =  concat [ "[", show l, ",", show r, "]" ]
+--exportExp e = error $ "exportExp: expression not supported: " ++ show e
 
 -- | exports command to Reduce Format
 exportReduce :: Named CMD -> String
@@ -191,7 +194,8 @@ redOutputToExpression = parseResult . skipReduceLineNr
 cslReduceDefaultMapping :: [(String, String)]
 cslReduceDefaultMapping =
     let idmapping = map (\ x -> (x, x))
-    in idmapping $ Map.keys operatorInfo
+    in ("^", "**") :
+         (idmapping $ Map.keys $ Map.delete "^" $ Map.delete "**" operatorInfo)
 
 {- | reads characters from the specified output until the next result is
   complete, indicated by $ when using the maxima mode off nat; -}
