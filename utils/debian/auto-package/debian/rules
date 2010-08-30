@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	make distclean
+	rm -rf debian/hets-core*
+
+override_dh_installman:
+	dh_installman debian/hets.1
+
+override_dh_install:
+	install -m 755 -d debian/hets-core/usr/lib/hets
+	install -m 755  hets debian/hets-core/usr/lib/hets
+	cp -r hets-lib debian/hets-core/usr/lib/hets
+	cp -r hets-owl-tools debian/hets-core/usr/lib/hets
+	install -m 755 -d debian/hets-core/usr/bin
+	cp debian/hets_script debian/hets-core/usr/bin/hets
