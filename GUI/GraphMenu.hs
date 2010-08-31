@@ -272,7 +272,6 @@ createGlobalMenu gInfo@
            $ showAutomaticProofs gInfo)
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
-       -- History ? or just some partial history in ch ?
         mkGlobProofButton cmd $ return . return . act ln) globLibAct
         ++ map (\ (cmd, act) -> mkGlobProofButton cmd $ return . act ln)
            globLibResultAct
