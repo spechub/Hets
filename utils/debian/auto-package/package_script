@@ -73,6 +73,7 @@ rm programatica
 rm -rf GMP Search mini Lottery
 rm -rf hets-lib/HasCASL/Pdl/diplom_dw
 cd ..
+tar -xf programatica.tar.gz -C $HETS_FOLDER
 touch .svn_clean
 echo ::Done
 
