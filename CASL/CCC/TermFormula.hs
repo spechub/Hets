@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  auxiliary functions on terms and formulas
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  xinga@informatik.uni-bremen.de
 Stability   :  provisional

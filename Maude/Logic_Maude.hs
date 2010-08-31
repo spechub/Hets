@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for Maude
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  mkhl@informatik.uni-bremen.de
 Stability   :  experimental

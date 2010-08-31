@@ -1,7 +1,7 @@
 {- | Module     : $Header$
  -  Description : Implemenation of main file for the prover
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
- -  License     : GPLv2 or higher
+ -  License     : GPLv2 or higher, see LICENSE.txt
  -  Maintainer  : daniel.hausmann@dfki.de
  -  Stability   : provisional
  -  Portability : portable

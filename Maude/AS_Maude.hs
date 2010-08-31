@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Abstract Maude Syntax
 Copyright   :  (c) DFKI GmbH 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ariesco@fdi.ucm.es
 Stability   :  experimental

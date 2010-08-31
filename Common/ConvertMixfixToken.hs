@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  generic conversion of mixfix tokens
 Copyright   :  Christian Maeder and Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

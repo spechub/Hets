@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  cpp choice between "GUI.ProofManagement" and "GUI.GtkProverGUI"
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

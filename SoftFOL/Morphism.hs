@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Symbol related functions for SoftFOL.
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

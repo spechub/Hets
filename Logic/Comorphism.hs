@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  interface and class for logic translations
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)

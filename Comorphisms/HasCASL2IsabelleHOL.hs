@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  old translation that is only better for case terms
 Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Comorphism from OWL 1.1 to Common Logic
 Copyright   :  (c) Uni Bremen DFKI 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  mata@informatik.uni-bremen.de
 Stability   :  provisional

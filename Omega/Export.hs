@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  export a development graph to an omega library
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

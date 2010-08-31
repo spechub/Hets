@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

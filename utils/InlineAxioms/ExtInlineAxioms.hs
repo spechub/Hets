@@ -1,7 +1,7 @@
 {- |
 Module      :  $Id$
 Copyright   :  (c) Jonathan von Schroeder, C.Maeder, DFKI GmbH 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -461,7 +461,7 @@ processFile prog file = do
               "{- |\nModule      :  " ++ file ++
              "\nDescription :  with inlined axioms" ++
              "\nCopyright   :  (c) Uni and DFKI Bremen 2005-2007" ++
-             "\nLicense     :  GPLv2 or higher" ++
+             "\nLicense     :  GPLv2 or higher, see LICENSE.txt" ++
              "\n\nMaintainer  :  Christian.Maeder@dfki.de" ++
              "\nStability   :  provisional" ++
              "\nPortability :  portable\n" ++

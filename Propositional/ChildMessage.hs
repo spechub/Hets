@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  get the output from a childProcess
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental

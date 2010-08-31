@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Florian Mossakowski, Uni Bremen 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

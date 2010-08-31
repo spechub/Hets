@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  static analysis for ConstraintCASL
 Copyright   :  (c) Uni Bremen 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

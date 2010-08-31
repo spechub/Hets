@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Coding of a CASL subset into SoftFOL
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

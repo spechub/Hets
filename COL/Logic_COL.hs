@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  COL instance of class Logic
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

@@ -1,7 +1,7 @@
 {- |
 Module      :  $Id$
 Copyright   :  (c) Andy Gimblett and Markus Roggenbach and Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  provisional

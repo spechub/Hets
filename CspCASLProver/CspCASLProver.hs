@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Interface to the CspCASLProver (Isabelle based) theorem prover
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach, Swansea University 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Maple instance for the CalculationSystem class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental

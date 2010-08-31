@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Morphism of Common Logic
 Copyright   :  (c) Uni Bremen DFKI 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  experimental

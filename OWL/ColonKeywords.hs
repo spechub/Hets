@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  String constants for OWL colon keywords to be used for parsing
   and printing
 Copyright   :  (c) Christian Maeder DFKI Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

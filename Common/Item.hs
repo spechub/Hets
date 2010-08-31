@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  positions, simple and mixfix identifiers
 Copyright   :  (c) Christian Maeder and Ewaryst Schulz and Uni Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental

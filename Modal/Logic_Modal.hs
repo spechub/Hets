@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for Modal CASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  converters for theories to MMiSSOntology
   (subsorting and concept taxonomies)
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

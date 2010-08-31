@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  final static analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

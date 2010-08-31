@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  support for partial orders
 Copyright   :  (c) Keith Wansbrough 200 and Uni Bremen 2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

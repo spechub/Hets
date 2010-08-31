@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  standard mixfix identifier
 Copyright   :  (c) Christian Maeder and DFKI Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

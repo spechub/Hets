@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Generic Prover GUI.
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional

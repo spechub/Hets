@@ -3,7 +3,7 @@
 Module      :  $Id$
 Description :  CspCASL signatures
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional

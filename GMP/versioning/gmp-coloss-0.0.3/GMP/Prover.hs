@@ -2,7 +2,7 @@
  -  Description : Implementation of the generic sequent calculus
  -  Copyright   : (c) Daniel Hausmann & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL 
- -  License     : GPLv2 or higher
+ -  License     : GPLv2 or higher, see LICENSE.txt
  -  Maintainer  : hausmann@dfki.de
  -  Stability   : provisional
  -  Portability : portable

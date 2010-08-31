@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Coding of Maude with preorder semantics into CASL
 Copyright   :  (c) Adrian Riesco and Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ariesco@fdi.ucm.es
 Stability   :  experimental

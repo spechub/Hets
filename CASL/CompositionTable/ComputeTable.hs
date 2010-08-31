@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Compute the composition table of a relational algebra
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

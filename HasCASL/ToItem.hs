@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  extracted annotated items for xml output from basic specs
 Copyright   :  (c) Christian Maeder and Ewaryst Schulz and DFKI GmbH 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

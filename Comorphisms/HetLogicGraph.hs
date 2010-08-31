@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Compute graph with logics and interesting sublogics
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  unstable

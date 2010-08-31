@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  static analysis of heterogeneous structured specifications
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)

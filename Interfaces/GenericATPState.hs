@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Help functions for GUI.GenericATP
 Copyright   :  (c) Klaus Luettich, Rainer Grabbe, Uni Bremen 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

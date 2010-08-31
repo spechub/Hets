@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  Heng Jiang, Uni Bremen 2004-2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  fold functions for types
 Copyright   :  (c) Christian Maeder and Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

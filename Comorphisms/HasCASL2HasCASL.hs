@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  translating executable formulas to programs
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

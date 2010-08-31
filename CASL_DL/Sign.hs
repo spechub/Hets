@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Signatures for DL logics, as extension of CASL signatures
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

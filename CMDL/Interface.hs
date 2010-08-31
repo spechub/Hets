@@ -4,7 +4,7 @@ Module      : $Header$
 Description : The definition of CMDL interface for
               standard input and file input
 Copyright   : uni-bremen and DFKI
-License     : GPLv2 or higher
+License     : GPLv2 or higher, see LICENSE.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable

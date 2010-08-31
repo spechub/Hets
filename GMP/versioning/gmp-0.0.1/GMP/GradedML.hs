@@ -2,7 +2,7 @@
 Module     : $Header$
 Description : Logic specific function implementation 4 Graded Modal Logic
 Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
-License     : GPLv2 or higher
+License     : GPLv2 or higher, see LICENSE.txt
 Maintainer  : g.calin@jacobs-university.de
 Stability   : provisional
 Portability : non-portable (various -fglasgow-exts extensions)

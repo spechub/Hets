@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Abstract syntax for Constraint Satisfaction Problems
 Copyright   :  (c) Tilman Thiry, Uni Freiburg 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  thiry@informatik.uni-freiburg.de
 Stability   :  experimental

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Coding of a CASL sublogic to Propositional
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  experimental

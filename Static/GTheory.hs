@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  theory datastructure for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)

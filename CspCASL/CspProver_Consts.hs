@@ -3,7 +3,7 @@ Module      :
 Description :  Isabelle Abstract syntax constants for CSP-Prover operations
 Copyright   :  (c) Andy Gimblett, Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

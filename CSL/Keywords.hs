@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  String constants for CSL keywords to be used for parsing
   and printing
 Copyright   :  Dominik Dietrich, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Dominik.Dietrich@dfki.de
 Stability   :  provisional

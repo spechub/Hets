@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Utilities for CspCASLProver related to Isabelle
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                Swansea University 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  central interface (type class) for logics in Hets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)

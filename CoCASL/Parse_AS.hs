@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Parser for CoCASL
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  hausmann@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable

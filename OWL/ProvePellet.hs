@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Interface to the OWL Ontology prover via Pellet.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  needs POSIX

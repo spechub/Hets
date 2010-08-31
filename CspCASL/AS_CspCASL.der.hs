@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  Abstract syntax fo CspCASL
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  provisional

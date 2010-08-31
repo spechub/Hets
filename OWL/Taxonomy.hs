@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Taxonomy extraction for OWL
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

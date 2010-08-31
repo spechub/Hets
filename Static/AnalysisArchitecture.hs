@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  static analysis of CASL architectural specifications
 Copyright   :  (c) Maciek Makowski, Warsaw University, C. Maeder 2004-2006
                Mihai Codescu, DFKI GmbH Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via imports)

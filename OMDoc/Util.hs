@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Helper-functions
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  hiben@informatik.uni-bremen.de
 Stability   :  provisional

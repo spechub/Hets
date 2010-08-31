@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  ordered maps (these keep insertion order)
 Copyright   :  (c)  Klaus Luettich and Uni Bremen 2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

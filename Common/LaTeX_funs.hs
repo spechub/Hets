@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  auxiliary functions for LaTeX printing
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

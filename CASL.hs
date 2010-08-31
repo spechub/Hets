@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  basics of the common algebraic specification language
 Copyright   :  (c) Christian Maeder and DFKI Lab Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

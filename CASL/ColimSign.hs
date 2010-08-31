@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  CASL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  mcodescu@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable

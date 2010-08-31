@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Utility functions for defining the Edinburgh Logical Framework
                as an instance of LogicFram
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental

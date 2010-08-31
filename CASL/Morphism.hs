@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  Symbols and signature morphisms for the CASL logic
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

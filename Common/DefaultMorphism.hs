@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  supply a default morphism for a given signature type
 Copyright   :  (c) C. Maeder, and Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

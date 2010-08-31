@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Utils extending Data.List and Data.Set
 Copyright   :  (c) Immanuel Normann, Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  inormann@jacobs-university.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  interface to Reduce CAS
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen, 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Dominik.Dietrich@dfki.de
 Stability   :  provisional

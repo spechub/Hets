@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Access to the .glade files stored as strings inside the binary
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional

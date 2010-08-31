@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  ADL syntax parser
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  flattening parts of development graphs
 Copyright   :  (c) Igor Stassiy, DFKI Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

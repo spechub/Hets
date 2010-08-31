@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Menu creation functions for the Graphdisplay
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2002-2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional

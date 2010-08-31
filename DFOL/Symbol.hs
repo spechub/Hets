@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Symbol definition for first-order logic with
                dependent types
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental

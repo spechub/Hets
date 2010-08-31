@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Gtk Module to enable disproving Theorems
 Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  tekknix@informatik.uni-bremen.de
 Stability   :  provisional

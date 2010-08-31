@@ -5,7 +5,7 @@
 Module      :  $Header$
 Description :  interface (type class) for logic projections (morphisms) in Hets
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for the Haskell logic
 Copyright   :  (c) Christian Maeder, Sonja Groening, Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

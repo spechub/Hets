@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Paolo Torrini and Till Mossakowski and Uni Bremen 2004-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  paolot@informatik.uni-bremen.de
 Stability   :  provisional

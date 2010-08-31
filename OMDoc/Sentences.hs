@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Hets-to-OMDoc conversion
 Copyright   :  (c) Elena Digor, Uni Bremen 2005-2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  e.digor@jacobs-university.de
 Stability   :  provisional

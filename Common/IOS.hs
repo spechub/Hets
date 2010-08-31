@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  An IO State Monad implementation
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)

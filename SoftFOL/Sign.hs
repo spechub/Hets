@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Data structures representing SPASS signatures.
 Copyright   :  (c) Rene Wagner, Heng Jiang, Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

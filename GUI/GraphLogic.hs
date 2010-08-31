@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Logic for manipulating the graph in the  Central GUI
 Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :$Header$
 Description : history management functions
 Copyright   : uni-bremen and DFKI
-License     : GPLv2 or higher
+License     : GPLv2 or higher, see LICENSE.txt
 Maintainer  : r.pascanu@jacobs-university.de
 Stability   : provisional
 Portability : portable

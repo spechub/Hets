@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Abstract syntax for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  provisional

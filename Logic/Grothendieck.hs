@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  Grothendieck logic (flattening of logic graph to a single logic)
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (overlapping instances, dynamics, existentials)

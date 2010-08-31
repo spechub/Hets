@@ -4,7 +4,7 @@
 Module      :  $EmptyHeader$
 Description :  <optional short description entry>
 Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  <email>
 Stability   :  unstable | experimental | provisional | stable | frozen

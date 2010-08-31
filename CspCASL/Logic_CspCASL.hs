@@ -4,7 +4,7 @@
 Module      :  $Header$
 Description :  CspCASL instance of type class logic
 Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  experimental

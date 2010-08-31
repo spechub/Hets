@@ -4,7 +4,7 @@ Module      :  $Header$
 Description :  Translation of first-order logic with dependent types (DFOL) to
                CASL
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental

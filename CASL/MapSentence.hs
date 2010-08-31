@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  rename symbols of sentences according to a signature morphisms
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

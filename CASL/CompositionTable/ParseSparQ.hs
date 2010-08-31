@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  parsing SparQ CompositionTables
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  fmossa@informatik.uni-bremen.de
 Stability   :  provisional

@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  checks validity of models regarding a composition table
 Copyright   :  (c) Uni Bremen 2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  fmossa@informatik.uni-bremen.de
 Stability   :  provisional

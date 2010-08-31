@@ -1,7 +1,7 @@
 {- |
 Module       : $Header$
 Copyright    : (c) Heng Jiang, Klaus Luettich Uni Bremen 2004-2006
-License      : GPLv2 or higher
+License      : GPLv2 or higher, see LICENSE.txt
 
 Maintainer   : Christian.Maeder@dfki.de
 Stability    : provisional

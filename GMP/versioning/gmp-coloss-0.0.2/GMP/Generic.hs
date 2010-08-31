@@ -2,7 +2,7 @@
  -  Description : Implementation of logic formula parser
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL 
- -  License     : GPLv2 or higher
+ -  License     : GPLv2 or higher, see LICENSE.txt
  -  Maintainer  : g.calin@jacobs-university.de
  -  Stability   : provisional
  -  Portability : portable

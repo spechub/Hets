@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  normalization of freeness
 Copyright   :  (c) Mihai Codescu, DFKI GmbH 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Mihai.Codescu@dfki.de
 Stability   :  provisional

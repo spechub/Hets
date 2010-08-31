@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  utility module for measuring execution time
 Copyright   :  (c) C. Maeder DFKI GmbH
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

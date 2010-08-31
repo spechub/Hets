@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  Parser for CspCASL processes
 Copyright   :  (c)
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  experimental

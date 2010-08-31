@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  GUI for showing and saving proof details.
 Copyright   :  (c) Rainer Grabbe 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

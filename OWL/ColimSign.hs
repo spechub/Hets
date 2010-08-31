@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  OWL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  mcodescu@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable

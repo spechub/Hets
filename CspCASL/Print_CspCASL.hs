@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  Pretty printing for CspCASL
 Copyright   :  (c) Andy Gimblett and Uni Bremen 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  a.m.gimblett@swansea.ac.uk
 Stability   :  provisional

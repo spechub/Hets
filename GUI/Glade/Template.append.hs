@@ -2,7 +2,7 @@
 Module      :  GUI.Glade.%s
 Description :  Glade xmlstring for %s
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  raider@informatik.uni-bremen.de
 Stability   :  provisional

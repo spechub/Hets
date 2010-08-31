@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  a standalone tptp parser
 Copyright   :  (c) C.Maeder, DFKI Lab Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

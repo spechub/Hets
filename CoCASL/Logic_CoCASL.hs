@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for CoCASL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  hausmann@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable

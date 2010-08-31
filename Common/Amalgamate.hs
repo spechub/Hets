@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  data types for amalgamability options and analysis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

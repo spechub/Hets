@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Interface to the Xml Parsing Facility
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional

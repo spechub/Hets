@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  abstract syntax for Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
-License     :  GPLv2 or higher or LIZENZ.txt
+License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

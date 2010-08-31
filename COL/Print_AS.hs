@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Pretty printing for COL
 Copyright   :  (c) Wiebke Herding, C. Maeder, Uni Bremen 2004-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

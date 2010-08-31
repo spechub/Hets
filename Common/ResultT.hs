@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  ResultT type and a monadic transformer instance
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

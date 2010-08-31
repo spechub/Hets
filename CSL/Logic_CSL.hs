@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Instance of class Logic for CSL
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental

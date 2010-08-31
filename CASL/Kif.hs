@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Parsing lists of lists with SUMO .kif files
 Copyright   :  (c) T.Mossakowski, C.Maeder and Uni Bremen 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

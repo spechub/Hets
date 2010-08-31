@@ -2,7 +2,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  provisional

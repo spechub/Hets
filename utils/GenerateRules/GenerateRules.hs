@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  generate DriFT directives
 Copyright   :  (c) Felix Reckers, C. Maeder, Uni Bremen 2002-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -61,7 +61,7 @@ genRules flags files =
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) DFKI Bremen 2008" ++
-             "\nLicense     :  GPLv2 or higher" ++
+             "\nLicense     :  GPLv2 or higher, see LICENSE.txt" ++
              "\n\nMaintainer  :  Christian.Maeder@dfki.de" ++
              "\nStability   :  provisional" ++
              "\nPortability :  non-portable(overlapping Typeable instances)\n"

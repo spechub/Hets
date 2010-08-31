@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Constants and related fucntions for CspCASLProver
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional

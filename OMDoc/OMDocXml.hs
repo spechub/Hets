@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  XML conversion for OMDoc-model (in\/out)
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  hiben@informatik.uni-bremen.de
 Stability   :  provisional

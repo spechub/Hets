@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  State type from Control.Monad.State but no class MonadState
 Copyright   :  C. Maeder and Uni Bremen 2002-2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental

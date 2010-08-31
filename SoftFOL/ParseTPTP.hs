@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  A parser for the TPTP Input Syntax
 Copyright   :  (c) C.Maeder, DFKI Lab Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

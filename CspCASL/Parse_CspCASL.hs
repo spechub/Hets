@@ -2,7 +2,7 @@
 Module      :  $Id$
 Description :  Parser for CspCASL specifications
 Copyright   :  (c) Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  a.m.gimblett@swan.ac.uk
 Stability   :  experimental

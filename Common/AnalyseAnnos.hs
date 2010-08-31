@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  analyse annotations and add them to global ones
 Copyright   :  (c) Christian Maeder, Klaus Luettich and Uni Bremen 2002-2003
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

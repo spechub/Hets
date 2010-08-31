@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  translating DMU xml to OWL
 Copyright   :  (c) Christian Maeder, DFKI and Uni Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

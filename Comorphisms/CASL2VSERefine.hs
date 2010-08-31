@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  VSE refinement as comorphism
 Copyright   :  (c) M. Codescu, DFKI Bremen 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Mihai.Codescu@dfki.de
 Stability   :  provisional

@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  John Hughes's and Simon Peyton Jones's Pretty Printer
   Combinators
 Copyright   :  (c) Hughes, Peyton Jones, K. Luettich, C. Maeder 1996-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

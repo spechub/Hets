@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Base64 character conversions
 Copyright   :  (c) Ian Lynagh, 2005, 2007, Christian Maeder, DFKI GmbH 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

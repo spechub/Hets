@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  A formula wrapper from formulae defined in CASL.AS_Basic_CASL to data Formula defined in Common.Normalization
 Copyright   :  (c) Immanuel Normann, Uni Bremen 2007
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  inormann@jacobs-university.de
 Stability   :  provisional

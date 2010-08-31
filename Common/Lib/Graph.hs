@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  Tree-based implementation of 'Graph' and 'DynGraph'
   using Data.Map
 Copyright   :  (c) Martin Erwig, Christian Maeder and Uni Bremen 1999-2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

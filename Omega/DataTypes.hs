@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  The Omega Data Types
 Copyright   :  (c) Ewaryst Schulz, DFKI 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  provisional

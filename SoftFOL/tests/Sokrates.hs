@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  rwagner@informatik.uni-bremen.de
 Stability   :  provisional

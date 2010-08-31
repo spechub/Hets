@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  Batch processing functions.
 Copyright   :  (c) Klaus Luettich, Rainer Grabbe 2006
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  luecke@informatik.uni-bremen.de
 Stability   :  provisional

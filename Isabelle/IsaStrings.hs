@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  predefined strings of several Isabelle logics
 Copyright   :  (c) Uni Bremen 2005
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional

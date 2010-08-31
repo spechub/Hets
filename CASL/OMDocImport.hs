@@ -2,7 +2,7 @@
 Module      :  $Header$
 Description :  OMDoc-to-CASL conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  provisional

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  embedding from CASL to CoCASL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2004
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional

@@ -3,7 +3,7 @@
 Module      :  $Header$
 Description :  Symbols and signature morphisms for the CspCASL logic
 Copyright   :  (c) Liam O'Reilly, Markus Roggenbach, Swansea University 2008
-License     :  GPLv2 or higher
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  csliam@swansea.ac.uk
 Stability   :  provisional
