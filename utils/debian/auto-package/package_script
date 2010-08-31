@@ -70,6 +70,8 @@ find . -name .svn -print0 | xargs -0 rm -rf
 make distclean
 rm OWL/java -rf
 rm programatica
+rm -rf GMP Search mini Lottery
+rm -rf hets-lib/HasCASL/Pdl/diplom_dw
 cd ..
 touch .svn_clean
 echo ::Done
