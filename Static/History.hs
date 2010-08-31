@@ -10,7 +10,21 @@ Portability :  non-portable(Logic)
 functions to keep the history entries in sync with the actual graph changes
 -}
 
-module Static.History where
+module Static.History
+  ( groupHistory
+  , changeDGH
+  , changesDGH
+  , updateDGOnly
+  , flatHistory
+  , negateChange
+  , getLastChange
+  , reverseHistory
+  , splitHistory
+  , applyProofHistory
+  , undoHistStep
+  , redoHistStep
+  , togglePending
+  ) where
 
 import Static.DevGraph
 
@@ -92,7 +106,7 @@ redoHistStep :: DGraph -> (DGraph, [DGChange])
 redoHistStep dg = let h = redoHistory dg in
   if SizedList.null h then (dg, []) else
       let he = SizedList.head h
-          cs = reverse $ flatHistory $ SizedList.singleton $ he
+          cs = reverse $ flatHistory $ SizedList.singleton he
           (ndg, ncs) = updateDGAndChanges dg cs
       in (ndg { proofHistory = SizedList.cons he $ proofHistory dg
               , redoHistory = SizedList.tail h }, ncs)
@@ -143,7 +157,7 @@ updateDGOnly g c =
       (ng, InsertEdge newEdge)
     DeleteEdge e -> (delLEdgeDG e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNodeDG n g in
-      (updRefInfo n $ newG, SetNodeLab o n)
+      (updRefInfo n newG, SetNodeLab o n)
 
 updRefInfo :: LNode DGNodeLab -> DGraph -> DGraph
 updRefInfo (n, lbl) = addToRefNodesDG n $ nodeInfo lbl
