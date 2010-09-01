@@ -71,7 +71,8 @@ make distclean
 rm OWL/java -rf
 rm programatica
 rm -rf GMP Search mini Lottery
-rm -rf hets-lib/HasCASL/Pdl/diplom_dw
+rm -rf hets-lib/HasCASL/Pdl
+rm -rf hets-lib/HasCASL/Hoare
 cd ..
 tar -xf programatica.tar.gz -C $HETS_FOLDER
 touch .svn_clean
