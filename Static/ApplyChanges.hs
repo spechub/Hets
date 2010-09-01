@@ -22,6 +22,11 @@ import Static.FromXml
 lookupNodeByNodeName :: NodeName -> DGraph -> [LNode DGNodeLab]
 lookupNodeByNodeName nn = lookupNodeWith ((== nn) . dgn_name . snd)
 
+applyChange :: Monad m => SelChangeDG -> DGraph -> m DGraph
+applyChange (SelChangeDG se ch) dg = case ch of
+  RemoveChDG -> remove se dg
+  _ -> fail "applyChange.unimplemented ChangeDG"
+
 remove :: Monad m => SelElem -> DGraph -> m DGraph
 remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
   NodeElem nn m -> case m of

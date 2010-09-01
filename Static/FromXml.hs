@@ -26,12 +26,6 @@ import Data.List
 import Data.Maybe
 import Control.Monad
 
-anaUpdates f = do
-  input <- readFile f
-  cs <- anaXUpdates input
-  acs <- mapM changeDG cs
-  mapM_ print acs
-
 data SelChangeDG = SelChangeDG SelElem ChangeDG deriving Show
 
 data ChangeDG

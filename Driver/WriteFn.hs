@@ -12,7 +12,7 @@ Portability :  non-portable(DevGraph)
 Writing various formats, according to Hets options
 -}
 
-module Driver.WriteFn (writeSpecFiles) where
+module Driver.WriteFn (writeSpecFiles, writeVerbFile) where
 
 import Control.Monad
 import Text.ParserCombinators.Parsec
