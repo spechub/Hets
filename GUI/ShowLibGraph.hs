@@ -154,7 +154,9 @@ changeLibGraph gInfo graph nodesEdges = do
       m <- anaLib opts { outtypes = [] } fn
       case m of
         Just (nln, nle) | nln == ln -> do
-          let ndg = lookupDGraph nln nle
+          let dg2 = lookupDGraph nln nle
+              ndg = changesDGH dg2 $ map negateChange $ flatHistory
+                  $ proofHistory dg2
           writeVerbFile opts f3 $ ppTopElement $ ToXml.dGraph nle ndg
           md <- withinDirectory gmocPath $ do
             putIfVerbose opts 1 "please wait"

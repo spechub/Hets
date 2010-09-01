@@ -82,8 +82,8 @@ data AddChangeDG
   | GMorphismDG
     { gmorphism :: String }
   | SymbolDG String
-  | Affected
-    { affected :: String }
+  | ConsStatusDG
+    { consStatus :: String }
   deriving Show
 
 data DeclsOrSign
@@ -138,9 +138,8 @@ addChangeDG ac = case ac of
       "GMorphism" -> return GMorphismDG
          { gmorphism = strContent e }
       "Symbol" -> return $ SymbolDG $ strContent e
+      "ConsStatus" -> return $ ConsStatusDG $ concat $ getElementTexts "text" e
       en -> fail $ "Static.FromXML.addChangeDG: unexpected element: " ++ en
-  AddAttr a -> return Affected
-      { affected = qName $ attrKey a }
   _ -> fail "Static.FromXML.addChangeDG: unexpected added change"
 
 getGMorphism :: Monad m => Element -> m String
@@ -291,7 +290,7 @@ getNodeSubElem stps =
              Nothing -> err
            _ -> err
          _ -> err
-  _ -> err
+  _ -> return Nothing
 
 getStepNumber :: Step -> Maybe Int
 getStepNumber (Step _ _ ps) =
