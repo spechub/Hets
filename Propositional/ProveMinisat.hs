@@ -37,6 +37,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
 import Common.Utils (basename, timeoutCommand)
+import Common.Timing
 
 import Control.Monad (when)
 import Control.Concurrent
@@ -154,8 +155,8 @@ minisatProveCMDLautomaticBatch :: MiniSatVer
   -> [LP.FreeDefMorphism AS_BASIC.FORMULA PMorphism.Morphism]
   -- ^ free definitions
   -> IO (ThreadId, MVar ())
-  -- ^ fst: identifier of the batch thread for killing it
-  -- snd: MVar to wait for the end of the thread
+  {- ^ fst: identifier of the batch thread for killing it
+  snd: MVar to wait for the end of the thread -}
 minisatProveCMDLautomaticBatch v inclProvedThs saveProblem_batch resultMVar
                                thName defTS th freedefs =
   genericCMDLautomaticBatch (atpFun v thName) inclProvedThs saveProblem_batch
@@ -189,9 +190,9 @@ atpFun v thName = ATPFunctions
 -}
 
 runminisat :: MiniSatVer -> PState.PropProverState
-           -- logical part containing the input Sign and
-           -- axioms and possibly goals that have been proved
-           -- earlier as additional axioms
+           {- logical part containing the input Sign and
+           axioms and possibly goals that have been proved
+           earlier as additional axioms -}
            -> GenericConfig ProofTree
            -- configuration to use
            -> Bool
@@ -218,15 +219,12 @@ runminisat v pState cfg saveDIMACS thName nGoal = do
         { tsTimeLimit = configTimeLimit cfg
         , tsExtraOpts = opts } }
     runStuff zFileName t = do
-      startTime <- getCurrentTime
-      (mExit, outH, _) <- timeoutCommand t $ bin ++ " \"" ++ zFileName ++ "\""
+      startTime <- getHetsTime
+      mExit <- timeoutCommand t bin [zFileName]
       case mExit of
-        Just exCode -> do
-          let stTime = utctDayTime startTime
-          endTime <- getCurrentTime
-          let edTime = utctDayTime endTime
-              usedTime = timeToTimeOfDay $ edTime - stTime
-          out <- hGetContents outH
+        Just (exCode, out, _) -> do
+          endTime <- getHetsTime
+          let usedTime = diffHetsTime endTime startTime
           return $ case exCode of
             ExitFailure 20 -> (ATPSuccess, cfg
               { proofStatus = (defaultProofStatus [])

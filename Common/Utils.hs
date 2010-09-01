@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  utility functions that can't be found in the libraries
@@ -33,7 +32,6 @@ module Common.Utils
   , splitBy
   , splitByList
   , numberSuffix
-  , matchPaths
   , basename
   , dirname
   , fileparse
@@ -54,23 +52,15 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import System.Exit
-import System.IO
 import System.Directory
 import System.Environment
-import System.Process
+import System.Exit
 import System.FilePath (joinPath, makeRelative, equalFilePath, takeDirectory)
+import System.IO
+import System.Process
+import System.Timeout
 
 import Control.Monad
-import Control.Concurrent
-
---import System.Process
-#ifdef UNIX
-import System.Posix.Types
-import System.Posix.Signals
-#endif
-import System.Process.Internals
-import Control.Concurrent.MVar
 
 -- | replace first (non-empty) sublist with second one in third argument list
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
@@ -210,32 +200,8 @@ splitByList sep l = split' [] [] l where
         Nothing -> split' (acc ++ [x]) bag xs
         Just l'' -> split' [] (bag ++ [acc]) l''
 
-{- | Returns all initial segments of the second list where the continuing
-     list matches a nonempty prefix of the first list. The first list is
-     concatenated to each such segment and the size of the matching prefix is
-     attached to the entry in the output list.
-     Subsumed entries are not returned. Example:
-
-   > prefixsAsInfixs "bac" "dbabacabd" ==
-   >    [(1, "dbabacabac"), (3, "dbabac"), (2, "dbac")]
--}
-prefixsAsInfixs :: (Eq a, Show a) => [a] -> [a] -> [(Int, [a])]
-prefixsAsInfixs [] _ = []
-prefixsAsInfixs sep l = f [] [] sep [] l where
-    -- acc: the input list until the current match
-    -- bag: the output bag containing all matches
-    updB bag acc c = (length c, acc ++ sep) : bag
-    f bag _ _ [] [] = bag
-    f bag acc _ c [] = updB bag acc c
-    f bag acc [] c l' = f (updB bag acc c) (acc ++ c) sep [] l'
-    f bag acc (s : sl) c xl@(x : xs)
-      | s == x = f bag acc sl (c ++ [x]) xs
-      | null c = f bag (acc ++ [x]) sep [] xs
-      | otherwise = f (updB bag acc c) (acc ++ [head c]) sep [] $ tail c ++ xl
-
-
--- | If the given string is terminated by a decimal number
--- this number and the nonnumber prefix is returned.
+{- | If the given string is terminated by a decimal number
+this number and the nonnumber prefix is returned. -}
 numberSuffix :: String -> Maybe (String, Int)
 numberSuffix s =
     let f a r@(x, y, b) =
@@ -250,29 +216,6 @@ numberSuffix s =
              Nothing
          (p, n, _) ->
              Just (take (1 + length s - length (show p)) s, n)
-
-{- | Matches first relative path against second absolute path. Example:
-
-   > matchPaths "a/b/c" "/x/y/a/d" == "/x/y/a/b/c"
-   >   (not "/x/y/a/a/b/c" !)
- -}
-matchPaths :: FilePath       -- ^ relative path
-           -> FilePath       -- ^ reference path for matching
-           -> Maybe FilePath -- ^ path
-matchPaths rFP refFP =
-    let rp = splitBy '/' rFP
-        refp = splitBy '/' refFP
-        rpI = init rp
-        refpI = init refp
-        matchs = prefixsAsInfixs rp refpI
-        cmp (n, s) (n', s') = case compare n n' of
-                                EQ -> compare (length s) (length s')
-                                od -> od
-        (_, bestmatch) = maximumBy cmp matchs
-    in if null rpI then Just $ intercalate "/" $ refpI ++ [rFP]
-       else case matchs of
-              [] -> Nothing
-              _ -> Just $ intercalate "/" bestmatch
 
 {- |
   A function inspired by a perl function from the standard perl-module
@@ -360,36 +303,11 @@ getEnvDef :: String -- ^ environment variable
 getEnvDef envVar defValue = getEnvSave defValue envVar Just
 
 -- | runs a command with timeout
-
-#ifdef UNIX
-getPID :: ProcessHandle -> IO CPid
-getPID (ProcessHandle p)= do
-  (OpenHandle pp) <- takeMVar p
-  return (toPID pp)
-
-toPID :: PHANDLE -> CPid
-toPID ph = toEnum $ fromEnum ph
-#endif
-
-timeoutCommand :: Int -> String -> IO (Maybe ExitCode, Handle, Handle)
-timeoutCommand time cmd = do
-  wait <- newEmptyMVar
-  (_, outh, errh, proch) <- runInteractiveCommand cmd
-  tid1 <- forkIO $ do
-    exit <- waitForProcess proch
-    putMVar wait $ Just exit
-  tid2 <- forkIO $ do
-    threadDelay $ time * 1000000
-    putMVar wait Nothing
-#ifdef UNIX
-    pid <- (getPID proch)
-    signalProcess killProcess $ pid +1
-#else
-    terminateProcess proch
-#endif
-  res <- takeMVar wait
-  killThread (if isJust res then tid2 else tid1) `catch` print
-  return (res, outh, errh)
+timeoutCommand :: Int -> FilePath -> [String]
+  -> IO (Maybe (ExitCode, String, String))
+timeoutCommand time cmd args =
+  timeout (time * 1000000) $
+    readProcessWithExitCode cmd args "" -- no input from stdin
 
 {- | runs an action in a different directory without changing the current
      directory globally. -}
@@ -412,4 +330,3 @@ writeTempFile str tmpDir file = do
   hFlush hdl
   hClose hdl
   return tmpFile
-

@@ -31,7 +31,6 @@ import OWL.Sign
 
 import System.Directory
 import System.Exit
-import System.IO
 
 localityJar :: String
 localityJar = "OWLLocality.jar"
@@ -70,25 +69,22 @@ runLocalityChecker jar ct onto sig = do
       sigFile <- writeTempFile sig tempDir "ConservativityCheck.sig.owl"
       let tLimit = 800
           ontoFile = sigFile ++ ".onto.owl"
-          command = "java -jar " ++ jar ++ " file://" ++ ontoFile
-                     ++ " file://" ++ sigFile ++ " " ++ ct
+          jargs = ["-jar", jar, "file://" ++ ontoFile, "file://" ++ sigFile, ct]
       writeFile ontoFile onto
-      (mExit, outh, _) <- timeoutCommand tLimit command
+      mExit <- timeoutCommand tLimit "java" jargs
       removeFile ontoFile
       removeFile sigFile
-      case mExit of
-        Just cont -> parseOutput outh cont
-        Nothing ->
-          return $ fail $ "Timelimit " ++ show tLimit ++ " exceeded"
+      return $ case mExit of
+        Just (cont, out, _) -> parseOutput out cont
+        Nothing -> fail $ "Timelimit " ++ show tLimit ++ " exceeded"
     else return $ fail $ jar ++ " not found"
 
-parseOutput :: Handle -- ^ handel of stdout
+parseOutput :: String
             -> ExitCode
-            -> IO (Result (Maybe (Conservativity, [Axiom])))
-parseOutput outh exit = do
-  ls1 <- hGetContents outh
+            -> Result (Maybe (Conservativity, [Axiom]))
+parseOutput ls1 exit = do
   let ls = lines ls1
-  return $ case exit of
+  case exit of
     ExitFailure 10 -> return $ Just (Cons, [])
     ExitFailure 20 -> fail $ unlines ls
     x -> fail $ "Internal program error: " ++ show x ++ "\n" ++ unlines ls

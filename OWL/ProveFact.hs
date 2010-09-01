@@ -246,22 +246,22 @@ runFact sps cfg saveFact thName nGoal = do
         writeFile tmpFileName prob
         writeFile (tmpFileName ++ ".entail.owl") entail
       (progTh, toolPath) <- check4HetsOWLjar jar
-      if progTh then withinDirectory toolPath $ do
+      arch <- fmap trim $ readProcess "uname" ["-m"] ""
+      if progTh && elem arch ["i686", "x86_64"] then
+        withinDirectory toolPath $ do
           tempDir <- getTemporaryDirectory
           timeTmpFile <- writeTempFile prob tempDir tmpFileName
-          jni <- getEnvDef "HETS_JNI_LIBS" "lib/native/`uname -m`"
+          jni <- getEnvDef "HETS_JNI_LIBS" $ "lib/native/" ++ arch
           let entailsFile = timeTmpFile ++ ".entail.owl"
-              command = "java -Djava.library.path=" ++ jni ++ " -jar "
-                ++ jar ++ " file://" ++ timeTmpFile ++ " file://" ++ entailsFile
+              jargs = ["-Djava.library.path=" ++ jni, "-jar"
+                , jar, "file://" ++ timeTmpFile, "file://" ++ entailsFile]
           writeFile entailsFile entail
           t_start <- getHetsTime
-          (mExit, outh, errh) <- timeoutCommand tLimit command
+          mExit <- timeoutCommand tLimit "java" jargs
           t_end <- getHetsTime
           let t_u = diffHetsTime t_end t_start
           ((err, retval), output, tUsed) <- case mExit of
-            Just ex -> do
-              output <- hGetContents outh
-              eOut <- hGetContents errh
+            Just (ex, output, eOut) -> do
               let outp = lines $ output ++ eOut
               return (proofStat ex simpleOptions outp t_u, outp, t_u)
             Nothing -> return
