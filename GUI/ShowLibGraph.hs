@@ -10,7 +10,11 @@ Portability :  non-portable
 This Modul provides a function to display a Library Dependency Graph.
 -}
 
-module GUI.ShowLibGraph (showLibGraph, mShowGraph) where
+module GUI.ShowLibGraph
+  ( showLibGraph
+  , mShowGraph
+  , closeOpenWindows
+  ) where
 
 import Driver.Options (HetcatsOpts (outtypes, verbose), putIfVerbose)
 import Driver.WriteFn (writeVerbFile)
@@ -27,7 +31,7 @@ import GUI.UDGUtils as UDG
 import GUI.Utils
 
 import GUI.GraphTypes
-import GUI.GraphLogic (translateGraph)
+import GUI.GraphLogic (translateGraph, showDGraph)
 import GUI.ShowLogicGraph (showLogicGraph)
 import GUI.GraphDisplay
 import qualified GUI.GraphAbstraction as GA
@@ -58,41 +62,46 @@ type NodeEdgeList = ([DaVinciNode LibName], [DaVinciArc (IO String)])
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv. -}
 showLibGraph :: LibFunc
-showLibGraph gInfo@(GInfo { windowCount = wc
-                          , libGraphLock = lock}) = do
+showLibGraph gi = do
+  let lock = libGraphLock gi
   isEmpty <- isEmptyMVar lock
   when isEmpty $ do
     putMVar lock ()
-    count <- takeMVar wc
-    putMVar wc $ count + 1
+    updateWindowCount gi succ
     graph <- newIORef daVinciSort
     nodesEdges <- newIORef (([], []) :: NodeEdgeList)
     let
       globalMenu =
         GlobalMenu (UDG.Menu Nothing
-          [ Button "Reload Library" $ reloadLibGraph gInfo graph nodesEdges
+          [ Button "Reload Library" $ reloadLibGraph gi graph nodesEdges
           , Button "Experimental reload changed Library"
-                       $ changeLibGraph gInfo graph nodesEdges
-          , Button "Translate Library" $ translate gInfo
+                       $ changeLibGraph gi graph nodesEdges
+          , Button "Translate Library" $ translate gi
           , Button "Show Logic Graph" $ showLogicGraph daVinciSort
           ])
       graphParms = globalMenu $$
                    GraphTitle "Library Graph" $$
                    OptimiseLayout True $$
-                   AllowClose (closeGInfo gInfo) $$
-                   FileMenuAct ExitMenuOption (Just (exitGInfo gInfo)) $$
+                   AllowClose (closeGInfo gi) $$
+                   FileMenuAct ExitMenuOption (Just (exitGInfo gi)) $$
                    emptyGraphParms
     graph' <- newGraph daVinciSort graphParms
-    addNodesAndEdges gInfo graph' nodesEdges
+    addNodesAndEdges gi graph' nodesEdges
     writeIORef graph graph'
     redraw graph'
+
+closeGInfo :: GInfo -> IO Bool
+closeGInfo gi = do
+  updateWindowCount gi pred
+  takeMVar (libGraphLock gi)
+  return True
 
 -- | Reloads all Libraries and the Library Dependency Graph
 reloadLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
                -> IO ()
-reloadLibGraph gInfo graph nodesEdges = do
+reloadLibGraph gi graph nodesEdges = do
   b <- warningDialog "Reload library" warnTxt
-  when b $ reloadLibGraph' gInfo graph nodesEdges
+  when b $ reloadLibGraph' gi graph nodesEdges
 
 warnTxt :: String
 warnTxt = unlines
@@ -103,20 +112,20 @@ warnTxt = unlines
 -- | Reloads all Libraries and the Library Dependency Graph
 reloadLibGraph' :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
                 -> IO ()
-reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
-                             , libName = ln }) graph nodesEdges = do
+reloadLibGraph' gi graph nodesEdges = do
   graph' <- readIORef graph
   (nodes, edges) <- readIORef nodesEdges
-  let libfile = libNameToFile ln
-  m <- anaLib opts { outtypes = [] } libfile
+  let ln = libName gi
+      libfile = libNameToFile ln
+  m <- anaLib (hetcatsOpts gi) { outtypes = [] } libfile
   case m of
     Nothing -> errorDialog "Error" $ "Error when reloading file '"
                                      ++ libfile ++ "'"
     Just (_, le) -> do
-      closeOpenWindows gInfo
+      closeOpenWindows gi
       mapM_ (deleteArc graph') edges
       mapM_ (deleteNode graph') nodes
-      addNodesAndEdges gInfo graph' nodesEdges
+      addNodesAndEdges gi graph' nodesEdges
       writeIORef graph graph'
       redraw graph'
       let ost = emptyIntState
@@ -125,15 +134,15 @@ reloadLibGraph' gInfo@(GInfo { hetcatsOpts = opts
             Just ist -> ost { i_state = Just $ ist { i_libEnv = le
                                                    , i_ln = ln }
                             , filename = libfile }
-      writeIORef (intState gInfo) nwst
-      mShowGraph gInfo ln
+      writeIORef (intState gi) nwst
+      mShowGraph gi ln
 
 changeLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
   -> IO ()
-changeLibGraph gInfo graph nodesEdges = do
-  let ln = libName gInfo
-      opts = hetcatsOpts gInfo
-  ost <- readIORef $ intState gInfo
+changeLibGraph gi graph nodesEdges = do
+  let ln = libName gi
+      opts = hetcatsOpts gi
+  ost <- readIORef $ intState gi
   graph' <- readIORef graph
   (nodes, edges) <- readIORef nodesEdges
   gmocPath <- getEnvDef "HETS_GMOC" ""
@@ -176,67 +185,68 @@ changeLibGraph gInfo graph nodesEdges = do
                     foldM (flip applyChange) ndg acs
                   fdg = fromMaybe ndg mdg
               printDiags (verbose opts) ds
-              closeOpenWindows gInfo
+              closeOpenWindows gi
               mapM_ (deleteArc graph') edges
               mapM_ (deleteNode graph') nodes
-              addNodesAndEdges gInfo graph' nodesEdges
+              addNodesAndEdges gi graph' nodesEdges
               writeIORef graph graph'
               redraw graph'
               let fle = Map.insert nln fdg nle
                   nwst = emptyIntState
                     { i_state = Just $ emptyIntIState fle nln
                     , filename = fn }
-              writeIORef (intState gInfo) nwst
-              mShowGraph gInfo ln
+              writeIORef (intState gi) nwst
+              mShowGraph gi ln
         _ -> errorDialog "Error" $ "Error when reloading file '"
              ++ fn ++ "'"
 
 -- | Translate Graph
 translate :: GInfo -> IO ()
-translate gInfo = do
+translate gi = do
   b <- warningDialog "Translate library" warnTxt
-  when b $ translate' gInfo
+  when b $ translate' gi
 
 -- | Translate Graph
 translate' :: GInfo -> IO ()
-translate' gInfo@(GInfo { libName = ln }) = do
-  mle <- translateGraph gInfo
+translate' gi = do
+  mle <- translateGraph gi
   case mle of
     Just le -> do
-      closeOpenWindows gInfo
-      let ost = emptyIntState
+      closeOpenWindows gi
+      let ln = libName gi
+          ost = emptyIntState
           nwst = case i_state ost of
             Nothing -> ost
             Just ist -> ost { i_state = Just $ ist { i_libEnv = le
                                                    , i_ln = ln }
                             , filename = libNameToFile ln }
-      writeIORef (intState gInfo) nwst
-      mShowGraph gInfo ln
+      writeIORef (intState gi) nwst
+      mShowGraph gi ln
     Nothing -> return ()
 
--- | Reloads the open graphs
+-- | closes the open graphs to be reopened later
 closeOpenWindows :: GInfo -> IO ()
-closeOpenWindows (GInfo { openGraphs = iorOpenGrpahs
-                        , windowCount = wCount }) = do
-  oGrpahs <- readIORef iorOpenGrpahs
-  mapM_ (GA.closeGraphWindow . graphInfo) $ Map.elems oGrpahs
-  writeIORef iorOpenGrpahs Map.empty
-  takeMVar wCount
-  putMVar wCount 1
+closeOpenWindows gi = do
+  let iorOpenGraphs = openGraphs gi
+  oGraphs <- readIORef iorOpenGraphs
+  mapM_ (GA.closeGraphWindow . graphInfo) $ Map.elems oGraphs
+  updateWindowCount gi (const 1)
+  writeIORef iorOpenGraphs Map.empty
 
 -- | Adds the Librarys and the Dependencies to the Graph
 addNodesAndEdges :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeEdgeList -> IO ()
-addNodesAndEdges gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
- ost <- readIORef $ intState gInfo
+addNodesAndEdges gi graph nodesEdges = do
+ ost <- readIORef $ intState gi
  case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let
     le = i_libEnv ist
+    opts = hetcatsOpts gi
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     keys = Map.keys le
     subNodeMenu = LocalMenu (UDG.Menu Nothing [
-      Button "Show Graph" $ mShowGraph gInfo,
+      Button "Show Graph" $ mShowGraph gi,
       Button "Show spec/View Names" $ showSpec le])
     subNodeTypeParms = subNodeMenu $$$
                        Box $$$
@@ -264,13 +274,7 @@ getLibDeps :: LibEnv -> [(LibName, LibName)]
 getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
 
 mShowGraph :: GInfo -> LibName -> IO ()
-mShowGraph gInfo@(GInfo {hetcatsOpts = opts}) ln = do
-  putIfVerbose opts 3 "Converting Graph"
-  gInfo' <- copyGInfo gInfo ln
-  convertGraph gInfo' "Development Graph" showLibGraph
-  let gi = graphInfo gInfo'
-  GA.showTemporaryMessage gi "Development Graph initialized."
-  return ()
+mShowGraph gi ln = showDGraph gi ln convertGraph showLibGraph
 
 -- | Displays the Specs of a Library in a Textwindow
 showSpec :: LibEnv -> LibName -> IO ()

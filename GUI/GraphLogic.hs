@@ -18,6 +18,7 @@ module GUI.GraphLogic
     , openProofStatus
     , saveProofStatus
     , proofMenu
+    , showDGraph
     , showReferencedLibrary
     , getTheoryOfNode
     , translateTheoryOfNode
@@ -358,7 +359,7 @@ openProofStatus gInfo@(GInfo { hetcatsOpts = opts
                 unlockGlobal gInfo
                 gInfo' <- copyGInfo gInfo ln
                 convGraph gInfo' "Proof Status " showLib
-                let gi = graphInfo gInfo
+                let gi = graphInfo gInfo'
                 GA.deactivateGraphWindow gi
                 GA.redisplay gi
                 GA.layoutImproveAll gi
@@ -618,24 +619,34 @@ checkconservativityOfEdge descr gInfo me = case me of
               runAndLock gInfo $ updateGraph gInfo $ reverse $ flatHistory ph
           unlockGlobal gInfo
 
+-- | show development graph for library
+showDGraph :: GInfo -> LibName -> ConvFunc -> LibFunc -> IO ()
+showDGraph gi ln convGraph showLib = do
+  putIfVerbose (hetcatsOpts gi) 3 $ "Converting graph for " ++ show ln
+  og <- readIORef $ openGraphs gi
+  case Map.lookup ln og of
+    Nothing -> do
+      updateWindowCount gi succ
+      gi' <- copyGInfo gi ln
+      convGraph gi' "Development Graph" showLib
+      GA.showTemporaryMessage (graphInfo gi') "Development Graph initialized."
+    Just gi' ->
+      GA.showTemporaryMessage (graphInfo gi') "Development Graph requested."
+
 -- | show library referened by a DGRef node (=node drawn as a box)
 showReferencedLibrary :: Int -> GInfo -> ConvFunc -> LibFunc -> IO ()
-showReferencedLibrary descr gInfo@(GInfo { libName = ln })
-                      convGraph showLib = do
+showReferencedLibrary descr gInfo convGraph showLib = do
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> return ()
   Just ist -> do
    let le = i_libEnv ist
+       ln = libName gInfo
        refNode = labDG (lookupDGraph ln le) descr
        refLibname = if isDGRef refNode then dgn_libname refNode
                     else error "showReferencedLibrary"
    case Map.lookup refLibname le of
-    Just _ -> do
-      gInfo' <- copyGInfo gInfo refLibname
-      convGraph gInfo' "development graph" showLib
-      let gi = graphInfo gInfo'
-      GA.showTemporaryMessage gi "Development Graph initialized."
+    Just _ -> showDGraph gInfo refLibname convGraph showLib
     Nothing -> error $ "The referenced library (" ++ show refLibname
                        ++ ") is unknown"
 
@@ -678,9 +689,6 @@ translateGraph gInfo@(GInfo { hetcatsOpts = opts }) = do
                       Nothing -> do
                         myErrMess $ diagsSl ++ diag
                         return Nothing
-
--- DaVinciGraph to String
--- Functions to convert a DaVinciGraph to a String to store as a .udg file
 
 -- | saves the uDrawGraph graph to a file
 saveUDGraph :: GInfo -> Map.Map DGNodeType (Shape value, String)

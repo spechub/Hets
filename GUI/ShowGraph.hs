@@ -21,7 +21,7 @@ import Common.LibName
 
 import GUI.GraphDisplay
 import GUI.GraphTypes
-import GUI.ShowLibGraph (showLibGraph, mShowGraph)
+import GUI.ShowLibGraph
 #ifdef GTKGLADE
 import Graphics.UI.Gtk
 #endif
@@ -93,6 +93,7 @@ workThread file opts ln le = do
         showLibGraph gInfo'
         mShowGraph gInfo' ln
         takeMVar $ exitMVar gInfo'
+        closeOpenWindows gInfo'
 #ifdef GTKGLADE
         postGUISync mainQuit
 #endif

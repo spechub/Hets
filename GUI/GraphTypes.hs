@@ -10,33 +10,33 @@ Portability :  non-portable (imports Logic)
 -}
 
 module GUI.GraphTypes
-    ( GInfo(..)
-    , closeGInfo
+    ( GInfo (..)
+    , updateWindowCount
     , exitGInfo
     , ConvFunc
     , LibFunc
     , DaVinciGraphTypeSyn
-    , Colors(..)
-    , Flags(..)
+    , Colors (..)
+    , Flags (..)
     , getColor
     , emptyGInfo
     , copyGInfo
     , lockGlobal
-    , tryLockGlobal
     , unlockGlobal
     ) where
 
-import GUI.GraphAbstraction(GraphInfo, initGraph)
+import GUI.GraphAbstraction (GraphInfo, initGraph)
 import GUI.UDGUtils
 
 import Common.LibName
 
-import Driver.Options(HetcatsOpts(uncolored), defaultHetcatsOpts)
+import Driver.Options (HetcatsOpts (uncolored), defaultHetcatsOpts)
 
 import Data.IORef
 import qualified Data.Map as Map
 
 import Control.Concurrent.MVar
+import Control.Monad (when)
 
 import Interfaces.DataTypes
 import Interfaces.Utils
@@ -52,7 +52,7 @@ data GInfo = GInfo
              { -- Global
                intState :: IORef IntState
              , hetcatsOpts :: HetcatsOpts
-             , windowCount :: MVar Integer
+             , windowCount :: MVar Int
              , exitMVar :: MVar ()
              , globalLock :: MVar ()
              , functionLock :: MVar ()
@@ -61,27 +61,18 @@ data GInfo = GInfo
                -- Local
              , libName :: LibName
              , graphInfo :: GraphInfo
-             , internalNames :: IORef [(String,(String -> String) -> IO ())]
+             , internalNames :: IORef [(String, (String -> String) -> IO ())]
              , options :: IORef Flags
              }
 
-closeGInfo :: GInfo -> IO Bool
-closeGInfo GInfo
-  { exitMVar = exit'
-  , windowCount = wc
-  , libGraphLock = lock
-  } = do
-  count <- takeMVar wc
-  if count <= 1
-    then putMVar exit' ()
-    else do
-      putMVar wc $ count - 1
-      takeMVar lock
-  return True
+updateWindowCount :: GInfo -> (Int -> Int) -> IO ()
+updateWindowCount gi f = do
+  c <- modifyMVar (windowCount gi) (\ a -> let b = f a in return (b, b))
+  when (c <= 0) $ exitGInfo gi
 
+-- | Returns the exit-function
 exitGInfo :: GInfo -> IO ()
-exitGInfo GInfo {exitMVar = exit'} = putMVar exit' ()
-
+exitGInfo gi = putMVar (exitMVar gi) ()
 
 {- | Type of the convertGraph function. Used as type of a parameter of some
      functions in GraphMenu and GraphLogic. -}
@@ -121,7 +112,7 @@ emptyGInfo = do
   gl <- newEmptyMVar
   fl <- newEmptyMVar
   exit <- newEmptyMVar
-  lgl  <- newEmptyMVar
+  lgl <- newEmptyMVar
   wc <- newMVar 0
   return GInfo { -- Global
                  intState = intSt
@@ -153,49 +144,43 @@ copyGInfo gInfo ln = do
                      , internalNames = iorIN
                      , options = flags
                      }
-  oGraphs <- readIORef $ openGraphs gInfo
-  writeIORef (openGraphs gInfo) $ Map.insert ln gInfo' oGraphs
+      ogs = openGraphs gInfo
+  oGraphs <- readIORef ogs
+  writeIORef ogs $ Map.insert ln gInfo' oGraphs
   return gInfo'
 
 {- | Acquire the global lock. If already locked it waits till it is unlocked
-     again.-}
+     again. -}
 lockGlobal :: GInfo -> IO ()
-lockGlobal (GInfo { globalLock = lock }) = putMVar lock ()
-
--- | Tries to acquire the global lock. Return False if already acquired.
-tryLockGlobal :: GInfo -> IO Bool
-tryLockGlobal (GInfo { globalLock = lock }) = tryPutMVar lock ()
+lockGlobal gi = putMVar (globalLock gi) ()
 
 -- | Releases the global lock.
 unlockGlobal :: GInfo -> IO ()
-unlockGlobal (GInfo { globalLock = lock }) = do
-  unlocked <- tryTakeMVar lock
-  case unlocked of
-    Just () -> return ()
-    Nothing -> error "Global lock wasn't locked."
+unlockGlobal gi =
+  tryTakeMVar (globalLock gi) >> return ()
 
 -- | Generates the colortable
 colors :: Map.Map (Colors, Bool, Bool) (String, String)
 colors = Map.fromList
-  [ ((Black,  False, False), ("gray0",           "gray0" ))
-  , ((Black,  False, True ), ("gray30",          "gray5" ))
-  , ((Blue,   False, False), ("RoyalBlue3",      "gray20"))
-  , ((Blue,   False, True ), ("RoyalBlue1",      "gray23"))
-  , ((Blue,   True,  False), ("SteelBlue3",      "gray27"))
-  , ((Blue,   True,  True ), ("SteelBlue1",      "gray30"))
-  , ((Coral,  False, False), ("coral3",          "gray40"))
-  , ((Coral,  False, True ), ("coral1",          "gray43"))
-  , ((Coral,  True,  False), ("LightSalmon2",    "gray47"))
-  , ((Coral,  True,  True ), ("LightSalmon",     "gray50"))
-  , ((Green,  False, False), ("MediumSeaGreen",  "gray60"))
-  , ((Green,  False, True ), ("PaleGreen3",      "gray63"))
-  , ((Green,  True,  False), ("PaleGreen2",      "gray67"))
-  , ((Green,  True,  True ), ("LightGreen",      "gray70"))
-  , ((Purple, False, False), ("purple2",         "gray74"))
-  , ((Yellow, False, False), ("gold",            "gray78"))
-  , ((Yellow, False, True ), ("yellow",          "gray81"))
-  , ((Yellow, True,  False), ("LightGoldenrod3", "gray85"))
-  , ((Yellow, True,  True ), ("LightGoldenrod",  "gray88"))
+  [ ((Black, False, False), ("gray0", "gray0" ))
+  , ((Black, False, True ), ("gray30", "gray5" ))
+  , ((Blue, False, False), ("RoyalBlue3", "gray20"))
+  , ((Blue, False, True ), ("RoyalBlue1", "gray23"))
+  , ((Blue, True, False), ("SteelBlue3", "gray27"))
+  , ((Blue, True, True ), ("SteelBlue1", "gray30"))
+  , ((Coral, False, False), ("coral3", "gray40"))
+  , ((Coral, False, True ), ("coral1", "gray43"))
+  , ((Coral, True, False), ("LightSalmon2", "gray47"))
+  , ((Coral, True, True ), ("LightSalmon", "gray50"))
+  , ((Green, False, False), ("MediumSeaGreen", "gray60"))
+  , ((Green, False, True ), ("PaleGreen3", "gray63"))
+  , ((Green, True, False), ("PaleGreen2", "gray67"))
+  , ((Green, True, True ), ("LightGreen", "gray70"))
+  , ((Purple, False, False), ("purple2", "gray74"))
+  , ((Yellow, False, False), ("gold", "gray78"))
+  , ((Yellow, False, True ), ("yellow", "gray81"))
+  , ((Yellow, True, False), ("LightGoldenrod3", "gray85"))
+  , ((Yellow, True, True ), ("LightGoldenrod", "gray88"))
   ]
 
 -- | Converts colors to grayscale if needed

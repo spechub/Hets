@@ -27,39 +27,38 @@ addnode and addlink.
 -}
 
 module GUI.GraphDisplay
-    (convertGraph,initializeConverter)
+    (convertGraph, initializeConverter)
     where
 
 import Static.DevGraph
 
 import GUI.GraphMenu
 import GUI.GraphTypes
-import GUI.GraphLogic(updateGraph)
+import GUI.GraphLogic (updateGraph)
 import GUI.GraphAbstraction
 
 import qualified GUI.HTkUtils as HTk
 
 import Data.IORef
-import qualified Data.Map as Map(lookup, insert)
+import qualified Data.Map as Map (lookup, insert)
 
 import Control.Concurrent.MVar
-import Control.Monad (unless)
+import Control.Monad
 
 import Interfaces.DataTypes
 
-initializeConverter :: IO (GInfo,HTk.HTk)
+initializeConverter :: IO (GInfo, HTk.HTk)
 initializeConverter = do
   wishInst <- HTk.initHTk [HTk.withdrawMainWin]
   gInfo <- emptyGInfo
-  return (gInfo,wishInst)
+  return (gInfo, wishInst)
 
 {- | converts the development graph given by its libname into an
     abstract graph and returns the descriptor of the latter, the
     graphInfo it is contained in and the conversion maps. -}
 convertGraph :: ConvFunc
-convertGraph gInfo@(GInfo { windowCount = wc
-                          , libName = ln
-                          }) title showLib = do
+convertGraph gInfo title showLib = do
+ let ln = libName gInfo
  ost <- readIORef $ intState gInfo
  case i_state ost of
   Nothing -> error "Something went wrong, no library loaded"
@@ -69,25 +68,20 @@ convertGraph gInfo@(GInfo { windowCount = wc
     Just dgraph -> case openlock dgraph of
       Just lock -> do
         notopen <- tryPutMVar lock ()
-        if notopen then
-          do
-            count <- takeMVar wc
-            putMVar wc $ count + 1
+        when notopen $ do
             initializeGraph gInfo title showLib
             unless (isEmptyDG dgraph) $ updateGraph gInfo (convert dgraph)
-          else error $ "development graph with libname " ++ show ln
-                       ++ " is already open"
       Nothing -> do
         lock <- newEmptyMVar
-        let nwle = Map.insert ln dgraph{openlock = Just lock} libEnv
+        let nwle = Map.insert ln dgraph {openlock = Just lock} libEnv
             nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
         writeIORef (intState gInfo) nwst
         convertGraph gInfo title showLib
     Nothing -> error $ "development graph with libname " ++ show ln
-                       ++" does not exist"
+                       ++ " does not exist"
 
--- | initializes an empty abstract graph with the needed node and edge types,
--- return type equals the one of convertGraph
+{- | initializes an empty abstract graph with the needed node and edge types,
+return type equals the one of convertGraph -}
 initializeGraph :: GInfo -> String -> LibFunc -> IO ()
 initializeGraph gInfo title showLib = do
  ost <- readIORef $ intState gInfo

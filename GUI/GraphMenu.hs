@@ -131,68 +131,66 @@ mapEdgeTypes =
 
 -- | Creates the graph. Runs makegraph
 createGraph :: GInfo -> String -> ConvFunc -> LibFunc -> IO ()
-createGraph gInfo@(GInfo { graphInfo = gi
-                         , hetcatsOpts = hetOpts
-                         , options = opts
-                         , libName = ln }) title convGraph showLib = do
-  ost <- readIORef $ intState gInfo
+createGraph gi title convGraph showLib = do
+  ost <- readIORef $ intState gi
   case i_state ost of
     Nothing -> return ()
     Just _ -> do
-      let file = rmSuffix (libNameToFile ln) ++ prfSuffix
+      let ln = libName gi
+          opts = options gi
+          file = rmSuffix (libNameToFile ln) ++ prfSuffix
       deselectEdgeTypes <- newIORef []
-      globMenu <- createGlobalMenu gInfo showLib deselectEdgeTypes
-      GA.makeGraph gi
+      globMenu <- createGlobalMenu gi showLib deselectEdgeTypes
+      GA.makeGraph (graphInfo gi)
                    title
-                   (createOpen gInfo file convGraph showLib)
-                   (createSave gInfo file)
-                   (createSaveAs gInfo file)
-                   (createClose gInfo)
-                   (Just (createExit gInfo))
+                   (createOpen gi file convGraph showLib)
+                   (createSave gi file)
+                   (createSaveAs gi file)
+                   (createClose gi)
+                   (Just (exitGInfo gi))
                    globMenu
-                   (createNodeTypes gInfo convGraph showLib)
-                   (createEdgeTypes gInfo)
-                   (getColor hetOpts Purple False False)
-                   $ runAndLock gInfo $ do
+                   (createNodeTypes gi convGraph showLib)
+                   (createEdgeTypes gi)
+                   (getColor (hetcatsOpts gi) Purple False False)
+                   $ runAndLock gi $ do
                        flags <- readIORef opts
                        writeIORef opts $ flags { flagHideNodes = False}
-                       updateGraph gInfo []
+                       updateGraph gi []
 
 -- | Returns the open-function
 createOpen :: GInfo -> FilePath -> ConvFunc -> LibFunc -> Maybe (IO ())
-createOpen gInfo file convGraph showLib = Just (
+createOpen gi file convGraph showLib = Just (
   do
     maybeFilePath <- fileOpenDialog file [ ("Proof", ["*.prf"])
                                          , ("All Files", ["*"])] Nothing
     case maybeFilePath of
       Just fPath -> do
-        openProofStatus gInfo fPath convGraph showLib
+        openProofStatus gi fPath convGraph showLib
         return ()
       Nothing -> fail "Could not open file."
   )
 
 -- | Returns the save-function
 createSave :: GInfo -> FilePath -> Maybe (IO ())
-createSave gInfo = Just . saveProofStatus gInfo
+createSave gi = Just . saveProofStatus gi
 
 -- | Returns the saveas-function
 createSaveAs :: GInfo -> FilePath -> Maybe (IO ())
-createSaveAs gInfo file = Just (
+createSaveAs gi file = Just (
   do
     maybeFilePath <- fileSaveDialog file [ ("Proof", ["*.prf"])
                                          , ("All Files", ["*"])] Nothing
     case maybeFilePath of
-      Just fPath -> saveProofStatus gInfo fPath
+      Just fPath -> saveProofStatus gi fPath
       Nothing -> fail "Could not save file."
   )
 
 -- | Returns the close-function
 createClose :: GInfo -> IO Bool
-createClose gInfo@(GInfo { windowCount = wc
-                         , openGraphs = oGrRef
-                         , exitMVar = exit
-                         , libName = ln }) = do
- ost <- readIORef $ intState gInfo
+createClose gi = do
+ let ln = libName gi
+     oGrRef = openGraphs gi
+ ost <- readIORef $ intState gi
  case i_state ost of
   Nothing -> return False
   Just ist -> do
@@ -207,69 +205,56 @@ createClose gInfo@(GInfo { windowCount = wc
         Nothing -> error $ "MVar of " ++ show ln ++ " not initialized"
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++ " does not exist"
-   count <- takeMVar wc
-   if count <= 1
-     then putMVar exit ()
-     else do
-       putMVar wc $ count - 1
-       oGraphs <- readIORef oGrRef
-       writeIORef oGrRef $ Map.delete ln oGraphs
+   updateWindowCount gi pred
+   oGraphs <- readIORef oGrRef
+   writeIORef oGrRef $ Map.delete ln oGraphs
    return True
-
--- | Returns the exit-function
-createExit :: GInfo -> IO ()
-createExit (GInfo {exitMVar = exit}) = putMVar exit ()
 
 -- | Creates the global menu
 createGlobalMenu :: GInfo -> LibFunc -> IORef [String]
                  -> IO [GlobalMenu]
-createGlobalMenu gInfo@
-  (GInfo { hetcatsOpts = opts
-         , libName = ln
-#ifdef GTKGLADE
-         , graphInfo = gi
-#endif
-         }) showLib
+createGlobalMenu gi showLib
 #ifdef GTKGLADE
   deselectEdgeTypes
 #else
   _
 #endif
  = do
- ost <- readIORef $ intState gInfo
+ ost <- readIORef $ intState gi
  case i_state ost of
   Nothing -> return []
   Just _ -> do
-   let ral = runAndLock gInfo
+   let ln = libName gi
+       opts = hetcatsOpts gi
+       ral = runAndLock gi
        performProofMenuAction cmd =
-           ral . proofMenu gInfo cmd
+           ral . proofMenu gi cmd
        mkGlobProofButton cmd =
          Button (menuTextGlobCmd cmd) . performProofMenuAction (GlobCmd cmd)
    return
     [GlobalMenu (Menu Nothing
-     [ Button "Undo" $ ral $ undo gInfo True
-     , Button "Redo" $ ral $ undo gInfo False
+     [ Button "Undo" $ ral $ undo gi True
+     , Button "Redo" $ ral $ undo gi False
      , Menu (Just "Hide/Show names/nodes/edges")
         [ Button "Hide/Show internal node names"
-                 $ ral $ toggleHideNames gInfo
+                 $ ral $ toggleHideNames gi
         , Button "Hide/Show unnamed nodes without open proofs"
-                 $ ral $ toggleHideNodes gInfo
+                 $ ral $ toggleHideNodes gi
         , Button "Hide/Show newly added proven edges"
-                 $ ral $ toggleHideEdges gInfo
+                 $ ral $ toggleHideEdges gi
       ]
-     , Button "Focus node" $ ral $ focusNode gInfo
+     , Button "Focus node" $ ral $ focusNode gi
 #ifdef GTKGLADE
      , Button "Select Linktypes" $ showLinkTypeChoice deselectEdgeTypes
-                                   (\ eTypes -> ral $ do
-                                     GA.hideSetOfEdgeTypes gi eTypes
-                                     updateGraph gInfo []
-                                   )
+       $ \ eTypes -> ral $ do
+             GA.hideSetOfEdgeTypes (graphInfo gi) eTypes
+             updateGraph gi []
      , Button "Consistency checker"
          (performProofMenuAction (GlobCmd CheckConsistencyCurrent)
-           $ showConsistencyChecker Nothing gInfo)
+           $ showConsistencyChecker Nothing gi)
      , Button "Automatic proofs"
          (performProofMenuAction (GlobCmd ProveCurrent)
-           $ showAutomaticProofs gInfo)
+           $ showAutomaticProofs gi)
 #endif
      , Menu (Just "Proofs") $ map (\ (cmd, act) ->
         mkGlobProofButton cmd $ return . return . act ln) globLibAct
@@ -278,50 +263,51 @@ createGlobalMenu gInfo@
         ++ [ Menu (Just "Flattening") $ map ( \ (cmd, act) ->
            mkGlobProofButton cmd $ return . act) globResultAct ]
      , Button "Dump Development Graph" $ do
-          ost2 <- readIORef $ intState gInfo
+          ost2 <- readIORef $ intState gi
           case i_state ost2 of
             Nothing -> putStrLn "no lib"
             Just ist2 -> print . pretty . lookupDGraph (i_ln ist2)
               $ i_libEnv ist2
-     , Button "Show Library Graph" $ ral $ showLibGraph gInfo showLib
-     , Button "Show RefinementTree" $ ral $ showLibGraph gInfo showRefTree
+     , Button "Show Library Graph" $ ral $ showLibGraph gi showLib
+     , Button "Show RefinementTree" $ ral $ showLibGraph gi showRefTree
      , Button "Save Graph for uDrawGraph" $ ral
-              $ saveUDGraph gInfo (mapNodeTypes opts) $ mapEdgeTypes opts
+              $ saveUDGraph gi (mapNodeTypes opts) $ mapEdgeTypes opts
      , Button "Save proof-script" $ ral
-              $ askSaveProofScript (graphInfo gInfo) $ intState gInfo
+              $ askSaveProofScript (graphInfo gi) $ intState gi
      ])
     ]
 
 -- | A list of all Node Types
 createNodeTypes :: GInfo -> ConvFunc -> LibFunc
                 -> [(DGNodeType, DaVinciNodeTypeParms GA.NodeValue)]
-createNodeTypes gInfo@(GInfo {hetcatsOpts = opts}) cGraph showLib = map
+createNodeTypes gi cGraph showLib = map
   (\ (n, s, c) -> (n, if isRefType n
-    then createMenuNodeRef s c gInfo cGraph showLib $ isInternalSpec n
-    else createMenuNode s c gInfo $ isInternalSpec n)) $ nodeTypes opts
+    then createMenuNodeRef s c gi cGraph showLib $ isInternalSpec n
+    else createMenuNode s c gi $ isInternalSpec n)) $ nodeTypes $ hetcatsOpts gi
 
 -- | the edge types (share strings to avoid typos)
 createEdgeTypes :: GInfo -> [(DGEdgeType, DaVinciArcTypeParms GA.EdgeValue)]
-createEdgeTypes gInfo@(GInfo {hetcatsOpts = opts}) =
+createEdgeTypes gi =
   map (\ (title, look, color, hasCons) ->
         (title, look
           $$$ Color color
-          $$$ (if hasCons then createEdgeMenuConsEdge gInfo
-                else createEdgeMenu gInfo)
+          $$$ (if hasCons then createEdgeMenuConsEdge gi
+                else createEdgeMenu gi)
           $$$ (if hasCons then createMenuValueTitleShowConservativity
                 $$$ emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue
                 else emptyArcTypeParms :: DaVinciArcTypeParms GA.EdgeValue))
-      ) $ edgeTypes opts
+      ) $ edgeTypes $ hetcatsOpts gi
 
 -- * methods to create the local menus of the different nodetypes
 
 titleNormal :: ValueTitle (String, t)
-titleNormal = ValueTitle (\ (s, _) -> return s)
+titleNormal = ValueTitle $ return . fst
 
 titleInternal :: GInfo -> ValueTitleSource (String, t)
-titleInternal (GInfo { internalNames = updaterIORef }) =
+titleInternal gi =
   ValueTitleSource (\ (s, _) -> do
                      b <- newSimpleBroadcaster ""
+                     let updaterIORef = internalNames gi
                      updater <- readIORef updaterIORef
                      let upd = (s, applySimpleUpdate b)
                      writeIORef updaterIORef $ upd : updater
@@ -330,11 +316,11 @@ titleInternal (GInfo { internalNames = updaterIORef }) =
 -- | local menu for the nodetypes spec and locallyEmpty_spec
 createMenuNode :: Shape GA.NodeValue -> String -> GInfo -> Bool
                -> DaVinciNodeTypeParms GA.NodeValue
-createMenuNode shape color gInfo internal = shape
+createMenuNode shape color gi internal = shape
   $$$ Color color
-  $$$ (if internal then Just $ titleInternal gInfo else Nothing)
+  $$$ (if internal then Just $ titleInternal gi else Nothing)
   $$$? (if internal then Nothing else Just titleNormal)
-  $$$? LocalMenu (Menu Nothing (map ($ gInfo)
+  $$$? LocalMenu (Menu Nothing (map ($ gi)
         [ createMenuButtonShowNodeInfo
         , createMenuButtonShowTheory
         , createMenuButtonTranslateTheory
@@ -353,17 +339,17 @@ createMenuNode shape color gInfo internal = shape
 -- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
 createMenuNodeRef :: Shape GA.NodeValue -> String -> GInfo -> ConvFunc
                   -> LibFunc -> Bool -> DaVinciNodeTypeParms GA.NodeValue
-createMenuNodeRef shape color gInfo convGraph showLib internal = shape
+createMenuNodeRef shape color gi convGraph showLib internal = shape
   $$$ Color color
-  $$$ (if internal then Just $ titleInternal gInfo else Nothing)
+  $$$ (if internal then Just $ titleInternal gi else Nothing)
   $$$? (if internal then Nothing else Just titleNormal)
   $$$? LocalMenu (Menu Nothing
-        [ createMenuButtonShowNodeInfo gInfo
-        , createMenuButtonShowTheory gInfo
-        , createMenuButtonShowProofStatusOfNode gInfo
-        , createMenuButtonProveAtNode gInfo
+        [ createMenuButtonShowNodeInfo gi
+        , createMenuButtonShowTheory gi
+        , createMenuButtonShowProofStatusOfNode gi
+        , createMenuButtonProveAtNode gi
         , Button "Show referenced library"
-            (\ (_, n) -> showReferencedLibrary n gInfo convGraph showLib)
+            (\ (_, n) -> showReferencedLibrary n gi convGraph showLib)
         ])
   $$$ emptyNodeTypeParms
 
@@ -372,68 +358,68 @@ type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 -- | menu button for local menus
 createMenuButton :: String -> (Int -> DGraph -> IO ())
                  -> GInfo -> ButtonMenu GA.NodeValue
-createMenuButton title menuFun gInfo@(GInfo { libName = ln }) = Button title
+createMenuButton title menuFun gi = Button title
   $ \ (_, descr) -> do
-    ost <- readIORef $ intState gInfo
+    ost <- readIORef $ intState gi
     case i_state ost of
       Nothing -> return ()
       Just ist -> do
         let le = i_libEnv ist
-            dGraph = lookupDGraph ln le
+            dGraph = lookupDGraph (libName gi) le
         menuFun descr dGraph
         return ()
 
 createMenuButtonShowTheory :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonShowTheory gInfo =
-  createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
+createMenuButtonShowTheory gi =
+  createMenuButton "Show theory" (getTheoryOfNode gi) gi
 
 createMenuButtonTranslateTheory :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonTranslateTheory gInfo =
-  createMenuButton "Translate theory" (translateTheoryOfNode gInfo) gInfo
+createMenuButtonTranslateTheory gi =
+  createMenuButton "Translate theory" (translateTheoryOfNode gi) gi
 
 -- | create a sub menu for taxonomy visualisation
 createMenuTaxonomy :: GInfo -> ButtonMenu GA.NodeValue
-createMenuTaxonomy gInfo = let
+createMenuTaxonomy gi = let
   passTh displayFun descr _ = do
-    ost <- readIORef $ intState gInfo
+    ost <- readIORef $ intState gi
     case i_state ost of
       Nothing -> return ()
-      Just ist -> case computeTheory (i_libEnv ist) (libName gInfo) descr of
+      Just ist -> case computeTheory (i_libEnv ist) (libName gi) descr of
         Just th -> displayFun (show descr) th
         Nothing -> errorDialog "Error"
           $ "no global theory for node " ++ show descr
   in Menu (Just "Taxonomy graphs")
-    [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) gInfo
-    , createMenuButton "Concept graph" (passTh displayConceptGraph) gInfo ]
+    [ createMenuButton "Subsort graph" (passTh displaySubsortGraph) gi
+    , createMenuButton "Concept graph" (passTh displayConceptGraph) gi ]
 
 createMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonShowProofStatusOfNode gInfo =
-  createMenuButton "Show proof status" (showProofStatusOfNode gInfo) gInfo
+createMenuButtonShowProofStatusOfNode gi =
+  createMenuButton "Show proof status" (showProofStatusOfNode gi) gi
 
 createMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonProveAtNode gInfo =
-  createMenuButton "Prove" (proveAtNode gInfo) gInfo
+createMenuButtonProveAtNode gi =
+  createMenuButton "Prove" (proveAtNode gi) gi
 
 createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonProveStructured gInfo =
+createMenuButtonProveStructured gi =
   createMenuButton "Prove VSE Structured" (\ descr _ ->
-    proofMenu gInfo (SelectCmd Prover $ "VSE structured: " ++ show descr)
-              $ VSE.prove (libName gInfo, descr)) gInfo
+    proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show descr)
+              $ VSE.prove (libName gi, descr)) gi
 
 #ifdef GTKGLADE
 createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonCCCAtNode gInfo =
-  createMenuButton "Check consistency" (consCheckNode gInfo) gInfo
+createMenuButtonCCCAtNode gi =
+  createMenuButton "Check consistency" (consCheckNode gi) gi
 
 consCheckNode :: GInfo -> Int -> DGraph -> IO ()
-consCheckNode gInfo descr _ = proofMenu gInfo (GlobCmd CheckConsistencyCurrent)
-  $ showConsistencyChecker (Just descr) gInfo
+consCheckNode gi descr _ = proofMenu gi (GlobCmd CheckConsistencyCurrent)
+  $ showConsistencyChecker (Just descr) gi
 #endif
 
 createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonCheckCons gInfo =
+createMenuButtonCheckCons gi =
   createMenuButton "Check conservativity"
-    (checkconservativityOfNode gInfo) gInfo
+    (checkconservativityOfNode gi) gi
 
 createMenuButtonShowNodeInfo :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonShowNodeInfo =
@@ -445,9 +431,9 @@ createEdgeMenu :: GInfo -> LocalMenu GA.EdgeValue
 createEdgeMenu = LocalMenu . createMenuButtonShowEdgeInfo
 
 createEdgeMenuConsEdge :: GInfo -> LocalMenu GA.EdgeValue
-createEdgeMenuConsEdge gInfo = LocalMenu $ Menu Nothing
-  [ createMenuButtonShowEdgeInfo gInfo
-  , createMenuButtonCheckconservativityOfEdge gInfo]
+createEdgeMenuConsEdge gi = LocalMenu $ Menu Nothing
+  [ createMenuButtonShowEdgeInfo gi
+  , createMenuButtonCheckconservativityOfEdge gi]
 
 createMenuButtonShowEdgeInfo :: GInfo -> ButtonMenu GA.EdgeValue
 createMenuButtonShowEdgeInfo _ = Button "Show info"
@@ -455,10 +441,10 @@ createMenuButtonShowEdgeInfo _ = Button "Show info"
 
 createMenuButtonCheckconservativityOfEdge :: GInfo
                                                -> ButtonMenu GA.EdgeValue
-createMenuButtonCheckconservativityOfEdge gInfo =
+createMenuButtonCheckconservativityOfEdge gi =
   Button "Check conservativity"
     (\ (_, EdgeId descr, maybeLEdge) ->
-      checkconservativityOfEdge descr gInfo maybeLEdge)
+      checkconservativityOfEdge descr gi maybeLEdge)
 
 createMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createMenuValueTitleShowConservativity = ValueTitle
