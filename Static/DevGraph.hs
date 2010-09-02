@@ -1033,11 +1033,6 @@ type LibEnv = Map.Map LibName DGraph
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
 
-emptyDGwithMVar :: IO DGraph
-emptyDGwithMVar = do
-  ol <- newEmptyMVar
-  return $ emptyDG { openlock = Just ol }
-
 -- * utility functions
 
 -- ** for node signatures
