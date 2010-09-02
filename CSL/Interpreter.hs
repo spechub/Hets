@@ -1,4 +1,6 @@
-{-# LANGUAGE FlexibleInstances, UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies, FlexibleInstances, FlexibleContexts
+  , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses
+  , TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Interpreter for CPL programs
@@ -43,11 +45,23 @@ instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
 instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
     liftR = lift . liftR
 
+
+-- | Abstraction from lists, sets, etc. for some simple operations
+class SimpleMember a b where
+    member :: b -> a -> Bool
+    count :: a -> Int
+    toList :: a -> [b]
+
+instance Ord a => SimpleMember (Map.Map a b) a where
+    member = Map.member
+    count = Map.size
+    toList = Map.keys
+
 -- | calculation interface, bundles the evaluation engine and the constant store
-class Monad m => CalculationSystem m where
+class (Monad m, SimpleMember a String) => CalculationSystem m a | m -> a where
     assign :: String -> EXPRESSION -> m () -- evtl. m Bool instead as success-flag
     clookup :: String -> m (Maybe EXPRESSION)
-    names :: m [String]
+    names :: m a
     eval :: EXPRESSION -> m EXPRESSION
     check :: EXPRESSION -> m Bool
     check = error "CalculationSystem-default: 'check' not implemented."
@@ -55,17 +69,18 @@ class Monad m => CalculationSystem m where
     values = let f x = do
                    v <- clookup x
                    return (x, fromJust v)
-             in names >>= mapM f
+             in names >>= mapM f . toList
+
 
 -- | Just an example which does not much, for illustration purposes
-instance CalculationSystem (State (Map.Map String EXPRESSION)) where
+instance CalculationSystem (State (Map.Map String EXPRESSION)) (Map.Map String EXPRESSION) where
     assign n e = liftM (Map.insert n e) get >> return ()
     clookup n = liftM (Map.lookup n) get
-    names = liftM Map.keys get
+    names = get
     eval e = return e
     check _ = return False
 
-evaluate :: CalculationSystem m => CMD -> m ()
+evaluate :: CalculationSystem m a => CMD -> m ()
 evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
@@ -83,7 +98,7 @@ evaluate (Repeat e l) =
 evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
 
 
-evaluateList :: CalculationSystem m => [CMD] -> m ()
+evaluateList :: CalculationSystem m a => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
 
 -- ----------------------------------------------------------------------
@@ -106,6 +121,14 @@ data BMap = BMap { mThere :: Map.Map String Int
 
 data BMapDefault = BMapDefault { mThr :: Map.Map String String
                                , mBck :: Map.Map String String }
+
+
+instance SimpleMember BMap String where
+    member k = Map.member k . mThere
+    count = Map.size . mThere
+    toList = Map.keys . mThere
+
+
 
 -- ** Interface functions for BMapDefault
 
@@ -151,10 +174,10 @@ revlookup m k =
                err = error $ "revlookup: No reverse mapping for " ++ k
            in IMap.findWithDefault err i $ mBack m
 
-toList :: BMap -> [(String, String)]
-toList m = let prf = prefix m
-               f (x, y) = (x, prf ++ show y)
-           in map f $ Map.toList $ mThere m
+bmToList :: BMap -> [(String, String)]
+bmToList m = let prf = prefix m
+                 f (x, y) = (x, prf ++ show y)
+             in map f $ Map.toList $ mThere m
 
 -- ** Internal functions for BMap
 bmapIntToString :: BMap -> Int -> String

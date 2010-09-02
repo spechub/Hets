@@ -34,9 +34,9 @@ import qualified Interfaces.Process as PC
 -- README: in order to work correctly link the Test.hs in the Hets-Root Dir to Main.hs (ln -s Test.hs Main.hs)
 import Main (getSigSens)
 
+import Control.Monad (liftM)
 import Data.Maybe (fromJust)
 import Data.Time.Clock
-import System.Exit (ExitCode)
 
 
 l1 :: Int -> IO (Sign, [(String, CMD)])
@@ -64,7 +64,7 @@ destructureConstraint _ = Nothing
 
 
 -- for testing Booleans or Assignments
-boolAssignEval :: CalculationSystem m => CMD -> m (Either String Bool)
+boolAssignEval :: CalculationSystem m a => CMD -> m (Either String Bool)
 boolAssignEval cmd =
     case destructureConstraint cmd of
       Just be -> check be >>= return . Right
@@ -89,7 +89,7 @@ time p = do
   putStrLn $ show $ diffUTCTime t' t
   return res
 
-evalL :: CalculationSystem (ResultT (IOS b)) => b
+evalL :: CalculationSystem (ResultT (IOS b)) a => b
       -> Int -- ^ Test-spec
       -> IO b
 evalL s i = do
@@ -169,7 +169,7 @@ redc v i = do
   evalL r i
 
 redcNames :: RITrans -> IO [String]
-redcNames = runTest names
+redcNames = runTest $ liftM toList names
 
 redcValues :: RITrans -> IO [(String, EXPRESSION)]
 redcValues = runTest values
@@ -185,16 +185,11 @@ redcCont i r = do
   return r'
 
 
--- disconnect from reduce
-redcX :: RITrans -> IO (Maybe ExitCode)
-redcX = runTest redcExit
-
-
 --- Testing with many instances
 {-
 -- c-variant
 lc <- time $ mapM (const $ redc 1 1) [1..20]
-mapM redcX lc
+mapM redcExit lc
 
 -- to communicate directly with reduce use:
 
