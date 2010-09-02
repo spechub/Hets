@@ -36,7 +36,6 @@ import Proofs.BatchProcessing
 import Interfaces.GenericATPState
 
 import System.Directory
-import System.IO
 import System.Process
 
 import Control.Monad (when)
@@ -108,9 +107,6 @@ depQBFCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
         resultMVar (proverName depQBFProver) thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
-uniteOptions :: [String] -> String
-uniteOptions = intercalate " "
-
 runDepQBF :: QBFProverState
            {- ^ logical part containing the input Sign and axioms and possibly
            goals that have been proved earlier as additional axioms -}
@@ -120,37 +116,26 @@ runDepQBF :: QBFProverState
            -> AS_Anno.Named AS.FORMULA -- ^ goal to prove
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
-runDepQBF ps cfg saveQDIMACS thName nGoal =
-    let
-        saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".qdimacs"
-        simpleOptions = uniteOptions $ extraOpts cfg
+runDepQBF ps cfg saveQDIMACS thName nGoal = do
+    let saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".qdimacs"
         tl = configTimeLimit cfg
-    in
-           do
-             prob <- showQDIMACSProblem thName ps nGoal []
-             when saveQDIMACS (writeFile saveFile prob)
-             stpTmpFile <- getTempFile prob saveFile
-             let command = "depqbf " ++ show tl ++ " "
-                             ++ simpleOptions ++ " " ++ stpTmpFile
-             t_start <- getHetsTime
-             (_, stdouth, stderrh, proch) <- runInteractiveCommand command
-             exitCode <- waitForProcess proch
-             t_end <- getHetsTime
-             removeFile stpTmpFile
-             let t_u = diffHetsTime t_end t_start
-             stdoutC <- hGetContents stdouth
-             stderrC <- hGetContents stderrh
-             let exitCode' = case exitCode of
-                                  ExitSuccess -> 0
-                                  ExitFailure i -> i
-             (pStat, ret) <- examineProof ps cfg
-               stdoutC stderrC exitCode' nGoal t_u tl
-             return (pStat, cfg
-                              {
-                                proofStatus = ret
-                              , resultOutput = lines (stdoutC ++ stderrC)
-                              , timeUsed = usedTime ret
-                             })
+    prob <- showQDIMACSProblem thName ps nGoal []
+    when saveQDIMACS (writeFile saveFile prob)
+    stpTmpFile <- getTempFile prob saveFile
+    t_start <- getHetsTime
+    (exitCode, stdoutC, stderrC) <- readProcessWithExitCode "depqbf"
+        (show tl : extraOpts cfg ++ [stpTmpFile]) ""
+    t_end <- getHetsTime
+    removeFile stpTmpFile
+    let t_u = diffHetsTime t_end t_start
+        exitCode' = case exitCode of
+                      ExitSuccess -> 0
+                      ExitFailure i -> i
+    (pStat, ret) <- examineProof ps cfg stdoutC stderrC exitCode' nGoal t_u tl
+    return (pStat, cfg
+            { proofStatus = ret
+            , resultOutput = lines (stdoutC ++ stderrC)
+            , timeUsed = usedTime ret })
 
 -- | examine Prover output
 examineProof :: QBFProverState
