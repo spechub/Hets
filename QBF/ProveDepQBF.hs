@@ -128,10 +128,8 @@ runDepQBF ps cfg saveQDIMACS thName nGoal =
     in
            do
              prob <- showQDIMACSProblem thName ps nGoal []
-             when saveQDIMACS
-                 (writeFile (saveFile ++ ".qdimacs") prob)
-             tempDir <- getTemporaryDirectory
-             stpTmpFile <- writeTempFile prob tempDir saveFile
+             when saveQDIMACS (writeFile saveFile prob)
+             stpTmpFile <- getTempFile prob saveFile
              let command = "depqbf " ++ show tl ++ " "
                              ++ simpleOptions ++ " " ++ stpTmpFile
              t_start <- getHetsTime

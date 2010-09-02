@@ -190,9 +190,8 @@ runPelletAux :: String -- ^ pellet subcommand
 runPelletAux opts tmpFileName prob entail = do
   (progTh, pPath) <- check4jarFile pelletEnv pelletJar
   if progTh then withinDirectory pPath $ do
-      tempDir <- getTemporaryDirectory
       let tmpFile = tmpFileName ++ ".owl"
-      timeTmpFile <- writeTempFile prob tempDir tmpFile
+      timeTmpFile <- getTempFile prob tmpFile
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
           args = "-Xmx512m" : "-jar" : pelletJar

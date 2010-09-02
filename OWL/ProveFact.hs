@@ -167,8 +167,7 @@ consCheck thName _ tm freedefs = case tTarget tm of
     when saveOWL (writeFile tmpFileName problemS)
     (progTh, toolPath) <- check4HetsOWLjar jar
     if progTh then withinDirectory toolPath $ do
-        tempDir <- getTemporaryDirectory
-        timeTmpFile <- writeTempFile problemS tempDir tmpFileName
+        timeTmpFile <- getTempFile problemS tmpFileName
         jni <- getEnvDef "HETS_JNI_LIBS" "lib/native/`uname -m`"
         let command = "java -Djava.library.path=" ++ jni ++ " -jar "
               ++ jar ++ " file://" ++ timeTmpFile
@@ -249,8 +248,7 @@ runFact sps cfg saveFact thName nGoal = do
       arch <- fmap trim $ readProcess "uname" ["-m"] ""
       if progTh && elem arch ["i686", "x86_64"] then
         withinDirectory toolPath $ do
-          tempDir <- getTemporaryDirectory
-          timeTmpFile <- writeTempFile prob tempDir tmpFileName
+          timeTmpFile <- getTempFile prob tmpFileName
           jni <- getEnvDef "HETS_JNI_LIBS" $ "lib/native/" ++ arch
           let entailsFile = timeTmpFile ++ ".entail.owl"
               jargs = ["-Djava.library.path=" ++ jni, "-jar"

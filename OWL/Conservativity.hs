@@ -65,8 +65,7 @@ runLocalityChecker :: String            -- ^ Jar name
 runLocalityChecker jar ct onto sig = do
   (progTh, toolPath) <- check4HetsOWLjar jar
   if progTh then withinDirectory toolPath $ do
-      tempDir <- getTemporaryDirectory
-      sigFile <- writeTempFile sig tempDir "ConservativityCheck.sig.owl"
+      sigFile <- getTempFile sig "ConservativityCheck.sig.owl"
       let tLimit = 800
           ontoFile = sigFile ++ ".onto.owl"
           jargs = ["-jar", jar, "file://" ++ ontoFile, "file://" ++ sigFile, ct]

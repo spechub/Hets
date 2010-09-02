@@ -31,7 +31,7 @@ import qualified Common.Result as Result
 import Common.ProofTree
 import Common.ProverTools
 import Common.SZSOntology
-import Common.Utils (basename, writeTempFile)
+import Common.Utils (basename, getTempFile)
 
 import Data.Char (isDigit)
 import Data.List
@@ -198,8 +198,7 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
   if noProg then
     return (bin ++ " not found. Check your $PATH", [], -1)
     else do
-    temp <- getTemporaryDirectory
-    timeTmpFile <- writeTempFile prob temp tmpFile
+    timeTmpFile <- getTempFile prob tmpFile
     (_, pout, _) <-
       readProcessWithExitCode bin (words options ++ [timeTmpFile]) ""
     let l = lines pout

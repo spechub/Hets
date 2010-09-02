@@ -41,7 +41,6 @@ import SoftFOL.Translate
 
 import System.Directory
 import System.Exit
-import System.IO
 
 -- | The Prover implementation.
 metisProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
@@ -121,16 +120,11 @@ runMetis :: SoftFOLProverState
            -- ^ (retval, configuration with proof status and complete output)
 runMetis sps cfg saveTPTP thName nGoal = do
   let
-        saveFile = thName ++ '_' : AS_Anno.senAttr nGoal
+        saveFile = thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
         myTimeLimit = configTimeLimit cfg
-
   prob <- showTPTPProblem thName sps nGoal []
-  when saveTPTP
-      (writeFile (saveFile ++ ".tptp") prob)
-  tmppath <- getTemporaryDirectory
-  (timeTmpFile, temphandel) <- openTempFile tmppath "tmp.tptp"
-  hPutStr temphandel prob
-  hClose temphandel
+  when saveTPTP (writeFile saveFile prob)
+  timeTmpFile <- getTempFile prob saveFile
   start <- getHetsTime
   end <- timeoutCommand myTimeLimit "metis" (extraOpts cfg ++ [timeTmpFile])
   finish <- getHetsTime

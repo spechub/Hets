@@ -45,6 +45,7 @@ module Common.Utils
   , timeoutCommand
   , withinDirectory
   , writeTempFile
+  , getTempFile
   ) where
 
 import Data.Char
@@ -340,3 +341,11 @@ writeTempFile str tmpDir file = do
   hFlush hdl
   hClose hdl
   return tmpFile
+
+-- | create file in temporary directory (the first argument is the content)
+getTempFile :: String -- ^ Content
+  -> String   -- ^ File name template
+  -> IO FilePath -- ^ create file
+getTempFile str file = do
+  tmpDir <- getTemporaryDirectory
+  writeTempFile str tmpDir file

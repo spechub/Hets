@@ -40,7 +40,6 @@ import Text.ParserCombinators.Parsec
 import Control.Monad
 
 import System.Cmd (system)
-import System.Directory (getTemporaryDirectory)
 import System.IO.Unsafe (unsafePerformIO)
 
 -- | The identity of the comorphism
@@ -67,9 +66,8 @@ mapTheory = readOWL . unsafePerformIO . runOntoDMU . fromText . fst
 
 runOntoDMU :: String -> IO String
 runOntoDMU str = if null str then return "" else do
-  tmpDir <- getTemporaryDirectory
   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
-  tmpFile <- writeTempFile str tmpDir "ontoDMU.xml"
+  tmpFile <- getTempFile str "ontoDMU.xml"
   let outFile = tmpFile ++ ".het"
   system $ "java -jar " ++ ontoDMUpath ++ " -f " ++ tmpFile
     ++ " -o " ++ outFile
