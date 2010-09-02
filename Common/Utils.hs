@@ -41,6 +41,7 @@ module Common.Utils
   , getEnvSave
   , getEnvDef
   , filterMapWithList
+  , timeoutSecs
   , timeoutCommand
   , withinDirectory
   , writeTempFile
@@ -302,11 +303,20 @@ getEnvDef :: String -- ^ environment variable
           -> IO String
 getEnvDef envVar defValue = getEnvSave defValue envVar Just
 
+-- | the timeout function taking seconds instead of microseconds
+timeoutSecs :: Int -> IO a -> IO (Maybe a)
+timeoutSecs time = timeout $ let
+  m = 1000000
+  u = div maxBound m
+  in if time > u then maxBound else
+     if time < 1 then 100000 -- 1/10 of a second
+     else m * time
+
 -- | runs a command with timeout
 timeoutCommand :: Int -> FilePath -> [String]
   -> IO (Maybe (ExitCode, String, String))
 timeoutCommand time cmd args =
-  timeout (time * 1000000) $
+  timeoutSecs time $
     readProcessWithExitCode cmd args "" -- no input from stdin
 
 {- | runs an action in a different directory without changing the current

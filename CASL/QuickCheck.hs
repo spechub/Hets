@@ -32,6 +32,7 @@ import Common.DocUtils
 import Common.Id
 import Common.ProofTree
 import Common.Result
+import Common.Utils (timeoutSecs)
 
 import qualified Data.Map as Map
 import Data.Maybe
@@ -39,8 +40,6 @@ import Data.List
 
 import Control.Monad.Error
 import Control.Concurrent
-
-import System.Timeout
 
 import GUI.GenericATP
 
@@ -77,7 +76,7 @@ runQuickCheck qm cfg _saveFile _thName nGoal = do
   (stat,Result d res) <- case timeLimit cfg of
     Nothing -> return (ATPSuccess, quickCheck qm nGoal)
     Just t -> do
-      mRes <- timeout (t * 1000000) $ return $ quickCheck qm nGoal
+      mRes <- timeoutSecs t $ return $ quickCheck qm nGoal
       return $ maybe (ATPTLimitExceeded,fail "time limit exceeded")
                      (\ x -> (ATPSuccess,x)) mRes
   let fstr = show(printTheoryFormula $ AS_Anno.mapNamed

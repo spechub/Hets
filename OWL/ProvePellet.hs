@@ -47,7 +47,6 @@ import Data.Time.Clock (secondsToDiffTime)
 
 import System.Directory
 import System.Process
-import System.Timeout
 
 import Control.Monad (when)
 import Control.Concurrent
@@ -215,7 +214,7 @@ runTimedPellet :: String -- ^ pellet subcommand
   -> Int    -- ^ time limit in seconds
   -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
 runTimedPellet opts tmpFileName prob entail secs =
-  timeout (1000000 * secs) $ runPelletAux opts tmpFileName prob entail
+  timeoutSecs secs $ runPelletAux opts tmpFileName prob entail
 
 runPellet :: PelletProverState
           -- ^ logical part containing the input Sign and axioms and possibly

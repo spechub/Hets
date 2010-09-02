@@ -22,7 +22,7 @@ import Proofs.AbstractState
 import Common.ExtSign
 import Common.Result
 import Common.AS_Annotation
-import Common.Utils (nubOrd)
+import Common.Utils
 import qualified Common.OrderedMap as OMap
 
 import Comorphisms.LogicGraph
@@ -38,8 +38,6 @@ import Logic.Grothendieck
 import Data.List
 import Data.Graph.Inductive.Graph
 
-import System.Timeout
-
 disproveThmSingle :: String -- ^ selected goal to disprove
                   -> String -- ^ selected prover
                   -> LNode DGNodeLab
@@ -49,7 +47,7 @@ disproveThmSingle selGoal selPr (_, lbl) t'' =
   let info s = infoDialog ("Disprove " ++ selGoal) s in
   case globalTheory lbl of
     Nothing -> info "Disprove failed: No global Theory"
-    Just (G_theory lid1 (ExtSign sign symb) i1 sens i2) -> 
+    Just (G_theory lid1 (ExtSign sign symb) i1 sens i2) ->
       case OMap.lookup selGoal sens of
         Nothing -> error "GtkDisprove.disproveThmSingle(1)"
         Just sen -> case negation lid1 $ sentence sen of
@@ -62,9 +60,9 @@ disproveThmSingle selGoal selPr (_, lbl) t'' =
                 subL = sublogicOfTh g_th
                 lcc = getConsCheckers $ findComorphismPaths logicGraph subL
             case find (\ (p, _) -> getPName p == selPr) lcc of
-              Nothing -> 
+              Nothing ->
                 info $ "failed to find Consistency Checker for the selected prover\n\n"
-                  ++ "possible ConsCheckers are:\n" ++ intercalate "\n" 
+                  ++ "possible ConsCheckers are:\n" ++ intercalate "\n"
                    (nubOrd $ map (getPName . fst) lcc)
               Just (G_cons_checker lid4 cc, Comorphism cid) -> do
                 let lidS = sourceLogic cid
@@ -82,10 +80,9 @@ disproveThmSingle selGoal selPr (_, lbl) t'' =
                     info "Disprove failed: TheoryMorphism could not be constructed"
                   Just mor -> do
                     let thName = getDGNodeName lbl
-                        t' = t'' * 1000000
                         ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
                     cc' <- coerceConsChecker lid4 lidT "" cc
-                    ccS <- (if ccNeedsTimer cc' then timeout t' else ((return . Just) =<<))
+                    ccS <- (if ccNeedsTimer cc' then timeoutSecs t'' else ((return . Just) =<<))
                       (ccAutomatic cc' thName ts mor [])
                     case ccS of
                       Just ccStatus -> do

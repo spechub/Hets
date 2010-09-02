@@ -28,6 +28,7 @@ import Common.ExtSign
 import Common.LibName
 import Common.Result
 import Common.AS_Annotation
+import Common.Utils (timeoutSecs)
 
 import Logic.Logic
 import Logic.Prover
@@ -39,8 +40,6 @@ import Data.Graph.Inductive.Graph
 import Data.Time.LocalTime (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Ord (comparing)
-
-import System.Timeout
 
 data SType = CSUnchecked
            | CSTimeout
@@ -63,8 +62,9 @@ instance Eq ConsistencyStatus where
 instance Ord ConsistencyStatus where
   compare = comparing sType
 
--- TODO instead of LibEnv.. get FreeDefs as Input. create wrapper that calcs FreeDefs
--- from LibEnv, DGraph and LibName (so that the call remains the same).
+{- TODO instead of LibEnv.. get FreeDefs as Input. create wrapper that calcs
+FreeDefs from LibEnv, DGraph and LibName (so that the call remains the same).
+ -}
 
 consistencyCheck :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
@@ -73,7 +73,6 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
   let lidS = sourceLogic cid
       lidT = targetLogic cid
       thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-      t = t'' * 1000000
       t' = timeToTimeOfDay $ secondsToDiffTime $ toInteger t''
       ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
       mTimeout = "No results within: " ++ show t'
@@ -94,7 +93,8 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
       return $ ConsistencyStatus CSError $ unlines $ map diagString ds
     Result _ (Just (sig1, mor)) -> do
       cc' <- coerceConsChecker lid4 lidT "" cc
-      ret <- (if ccNeedsTimer cc then timeout t else ((return . Just) =<<))
+      ret <- (if ccNeedsTimer cc then timeoutSecs t''
+              else ((return . Just) =<<))
         (ccAutomatic cc' thName ts mor $ getCFreeDefMorphs lidT le ln dg n')
       return $ case ret of
         Just ccStatus -> case ccResult ccStatus of
@@ -117,4 +117,3 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
             ConsistencyStatus CSTimeout mTimeout
             else ConsistencyStatus CSError $ show (ccProofTree ccStatus)
         Nothing -> ConsistencyStatus CSTimeout mTimeout
-
