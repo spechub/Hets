@@ -138,7 +138,7 @@ addChangeDG ac = case ac of
       "GMorphism" -> return GMorphismDG
          { gmorphism = strContent e }
       "Symbol" -> return $ SymbolDG $ strContent e
-      "ConsStatus" -> return $ ConsStatusDG $ concat $ getElementTexts "text" e
+      "ConsStatus" -> return $ ConsStatusDG $ strContent e
       en -> fail $ "Static.FromXML.addChangeDG: unexpected element: " ++ en
   _ -> fail "Static.FromXML.addChangeDG: unexpected added change"
 
