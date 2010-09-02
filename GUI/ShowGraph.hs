@@ -34,9 +34,13 @@ import Common.UniUtils
 import Data.IORef
 import Control.Concurrent
 import Control.Exception
+import Control.Monad
 import Common.ProverTools
 
 import Interfaces.DataTypes
+
+import System.Directory
+import System.FilePath
 
 -- | show development graph of a given library name in a window
 showGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
@@ -48,6 +52,12 @@ showGraph file opts env = case env of
     dv <- getDaVinciPath
     putIfVerbose opts 3 $ "uDrawGraph is: " ++ dv
     noUDrawGraph <- missingExecutableInPath dv
+    home <- getHomeDirectory
+    let uDrawFile = home </> ".uDrawGraph3.1.1"
+    hasUDrawFile <- doesFileExist uDrawFile
+    unless hasUDrawFile $ do
+       putIfVerbose opts 2 $ "creating file " ++ uDrawFile
+       writeFile uDrawFile ""
     if noWish || noUDrawGraph then
       error $ (if noWish then "wish" else "uDrawGraph") ++ " is missing"
       else do
