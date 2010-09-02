@@ -12,7 +12,6 @@ display the logic graph
 
 module GUI.ShowRefTree (showRefTree) where
 
-import Control.Concurrent.MVar
 import Control.Monad
 
 import Data.Graph.Inductive.Graph as Tree
@@ -28,12 +27,7 @@ import Static.DevGraph
 import qualified Data.Map as Map
 
 showRefTree :: LibFunc
-showRefTree gInfo@(GInfo { windowCount = wc}) = do
-  -- isEmpty <- isEmptyMVar lock
-  -- when isEmpty $ do
-  -- putMVar lock ()
-    count <- takeMVar wc
-    putMVar wc $ count + 1
+showRefTree gInfo = do
     graph <- newIORef daVinciSort
     nodesEdges <- newIORef (([], []) :: NodeEdgeListRef)
     let
@@ -43,8 +37,7 @@ showRefTree gInfo@(GInfo { windowCount = wc}) = do
       graphParms = globalMenu $$
                    GraphTitle "Refinement Tree" $$
                    OptimiseLayout True $$
-                   AllowClose (closeGInfo gInfo) $$
-                   FileMenuAct ExitMenuOption (Just (exitGInfo gInfo)) $$
+                   AllowClose (return True) $$
                    emptyGraphParms
     graph' <- newGraph daVinciSort graphParms
     addNodesAndEdgesRef gInfo graph' nodesEdges
@@ -116,12 +109,10 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
    writeIORef nodesEdges (subNodeList, subArcList ++ subArcListT ++ subArcListR)
 
 showDiagram :: GInfo -> DGraph -> RTNodeLab -> IO ()
-showDiagram gInfo@(GInfo { windowCount = wc}) dg rtlab = do
+showDiagram gInfo dg rtlab = do
  let asDiags = archSpecDiags dg
      name = rtn_name rtlab
  when (name `elem` Map.keys asDiags) $ do
-      count <- takeMVar wc
-      putMVar wc $ count + 1
       graph <- newIORef daVinciSort
       nodesEdges <- newIORef (([], []) :: NodeEdgeListDep)
       let
@@ -131,8 +122,7 @@ showDiagram gInfo@(GInfo { windowCount = wc}) dg rtlab = do
        graphParms = globalMenu $$
                    GraphTitle ("Dependency Diagram for " ++ name) $$
                    OptimiseLayout True $$
-                   AllowClose (closeGInfo gInfo) $$
-                   FileMenuAct ExitMenuOption (Just (exitGInfo gInfo)) $$
+                   AllowClose (return True) $$
                    emptyGraphParms
       graph' <- newGraph daVinciSort graphParms
       addNodesAndEdgesDeps (Map.findWithDefault (error "showDiagram")
@@ -143,9 +133,9 @@ showDiagram gInfo@(GInfo { windowCount = wc}) dg rtlab = do
 
 addNodesAndEdgesDeps :: Diag -> DaVinciGraphTypeSyn -> GInfo ->
                        IORef NodeEdgeListDep -> IO ()
-addNodesAndEdgesDeps diag graph
-  _gInfo@(GInfo { hetcatsOpts = opts}) nodesEdges = do
+addNodesAndEdgesDeps diag graph gi nodesEdges = do
    let
+    opts = hetcatsOpts gi
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
