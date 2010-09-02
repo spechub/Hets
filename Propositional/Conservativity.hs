@@ -19,8 +19,7 @@ import Common.Consistency
 import Common.Id
 import Common.Result
 import Common.ProverTools
-
-import Data.Time.Clock
+import Common.Utils (getTempFile)
 
 import System.Directory
 import System.Exit
@@ -99,20 +98,14 @@ showQDimacs inSym exSym sigMap fforms =
 -- | Runs sKizzo that has to reside in your path
 runSKizzo :: String                  -- ^ File in qdimacs syntax
           -> IO Conservativity
-runSKizzo qd =
-    do
+runSKizzo qd = do
       noProg <- missingExecutableInPath proverName
       if noProg then
         return $ Unknown (proverName ++ " not found in your $PATH$")
         else do
-              tmp <- getTemporaryDirectory
-              time <- getCurrentTime
-              let path = tmp ++ "/sKizzoTemp_" ++
-                         replaceBaddies (show time) ++ ".qdimacs"
-              writeFile path qd
-              let command = proverName ++ " " ++ defOptions ++ " " ++ path
-              (_, _, _, pid) <- runInteractiveCommand command
-              exCode <- waitForProcess pid
+              path <- getTempFile qd "sKizzoTemp.qdimacs"
+              (exCode, _, _) <- readProcessWithExitCode proverName
+                (words defOptions ++ [path]) ""
               removeFile path
               return $ case exCode of
                 ExitFailure n -> case n of
@@ -128,11 +121,3 @@ runSKizzo qd =
                   -6 -> Unknown "Out of memory"
                   _ -> Unknown $ "Unkown, exit was: " ++ show n
                 _ -> Unknown $ "Unkown, exit was: " ++ show exCode
-
--- | Helper to filter out problematic characters
-replaceBaddies :: String -> String
-replaceBaddies = map (\ x -> case x of
-                               ' ' -> '_'
-                               ':' -> '_'
-                               y -> y
-                      )
