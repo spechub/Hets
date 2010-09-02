@@ -64,7 +64,7 @@ destructureConstraint _ = Nothing
 
 
 -- for testing Booleans or Assignments
-boolAssignEval :: CalculationSystem m a => CMD -> m (Either String Bool)
+boolAssignEval :: CalculationSystem m => CMD -> m (Either String Bool)
 boolAssignEval cmd =
     case destructureConstraint cmd of
       Just be -> check be >>= return . Right
@@ -89,7 +89,7 @@ time p = do
   putStrLn $ show $ diffUTCTime t' t
   return res
 
-evalL :: CalculationSystem (ResultT (IOS b)) a => b
+evalL :: CalculationSystem (ResultT (IOS b)) => b
       -> Int -- ^ Test-spec
       -> IO b
 evalL s i = do

@@ -48,12 +48,12 @@ data MITrans = MITrans { getBMap :: BMap
 -- Maple interface, built on CommandState
 type MapleIO = ResultT (IOS MITrans)
 
-instance CalculationSystem MapleIO BMap where
+instance CalculationSystem MapleIO where
     assign  = mapleAssign evalMapleString mapleTransS mapleTransE
     clookup = mapleClookup evalMapleString mapleTransS
     eval = mapleEval evalMapleString mapleTransE
     check = mapleCheck evalMapleString mapleTransE
-    names = get >>= return . getBMap
+    names = get >>= return . SMem . getBMap
 
 
 -- ----------------------------------------------------------------------
@@ -99,7 +99,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (CalculationSystem s a, MonadResult s) => (String -> s [EXPRESSION])
+mapleAssign :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
           -> (String -> s String)
           -> (EXPRESSION -> s EXPRESSION)
           -> String -> EXPRESSION -> s ()
@@ -109,7 +109,7 @@ mapleAssign ef trans transE n e = do
   ef $ printAssignment n' e'
   return ()
 
-mapleClookup :: (CalculationSystem s a, MonadResult s) => (String -> s [EXPRESSION])
+mapleClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
            -> (String -> s String)
            -> String -> s (Maybe EXPRESSION)
 mapleClookup ef trans n = do
@@ -119,7 +119,7 @@ mapleClookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-mapleEval :: (CalculationSystem s a, MonadResult s) => (String -> s [EXPRESSION])
+mapleEval :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
 mapleEval ef trans e = do
@@ -129,7 +129,7 @@ mapleEval ef trans e = do
    then error $ "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-mapleCheck :: (CalculationSystem s a, MonadResult s) => (String -> s [EXPRESSION])
+mapleCheck :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
          -> (EXPRESSION -> s EXPRESSION)
          -> EXPRESSION -> s Bool
 mapleCheck ef trans e = do

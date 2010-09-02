@@ -60,19 +60,19 @@ type RedsIO = ResultT (IOS ReduceInterpreter)
 -- Redc as (Red)uce (c)ommand interface (it is built on CommandState)
 type RedcIO = ResultT (IOS RITrans)
 
-instance CalculationSystem RedsIO BMap where
+instance CalculationSystem RedsIO where
     assign  = redAssign evalRedsString return return
     clookup = redClookup evalRedsString return
     eval = redEval evalRedsString return
     check = redCheck evalRedsString return
     names = error "ReduceInterpreter as CS: names are unsupported"
 
-instance CalculationSystem RedcIO BMap where
+instance CalculationSystem RedcIO where
     assign  = redAssign evalRedcString redcTransS redcTransE
     clookup = redClookup evalRedcString redcTransS
     eval = redEval evalRedcString redcTransE
     check = redCheck evalRedcString redcTransE
-    names = get >>= return . getBMap
+    names = get >>= return . SMem . getBMap
 
 -- ----------------------------------------------------------------------
 -- * Reduce syntax functions
@@ -111,7 +111,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-redAssign :: (CalculationSystem s a, MonadResult s) =>
+redAssign :: (CalculationSystem s, MonadResult s) =>
              (String -> s [EXPRESSION])
           -> (String -> s String)
           -> (EXPRESSION -> s EXPRESSION)
@@ -122,7 +122,7 @@ redAssign ef trans transE n e = do
   ef $ printAssignment n' e'
   return ()
 
-redClookup :: (CalculationSystem s a, MonadResult s) =>
+redClookup :: (CalculationSystem s, MonadResult s) =>
               (String -> s [EXPRESSION])
            -> (String -> s String)
            -> String -> s (Maybe EXPRESSION)
@@ -133,7 +133,7 @@ redClookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-redEval :: (CalculationSystem s a, MonadResult s) =>
+redEval :: (CalculationSystem s, MonadResult s) =>
            (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
@@ -144,7 +144,7 @@ redEval ef trans e = do
    then error $ "redEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-redCheck :: (CalculationSystem s a, MonadResult s) =>
+redCheck :: (CalculationSystem s, MonadResult s) =>
             (String -> s [EXPRESSION])
          -> (EXPRESSION -> s EXPRESSION)
          -> EXPRESSION -> s Bool

@@ -1,6 +1,6 @@
 {-# LANGUAGE FunctionalDependencies, FlexibleInstances, FlexibleContexts
   , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses
-  , TypeSynonymInstances #-}
+  , TypeSynonymInstances, ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Interpreter for CPL programs
@@ -47,10 +47,17 @@ instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
 
 
 -- | Abstraction from lists, sets, etc. for some simple operations
-class SimpleMember a b where
+class SimpleMember a b | a -> b where
     member :: b -> a -> Bool
     count :: a -> Int
     toList :: a -> [b]
+
+data SMem b = forall a. SimpleMember a b => SMem a
+
+instance SimpleMember (SMem b) b where
+    member x (SMem a) = member x a
+    count (SMem a) = count a
+    toList (SMem a) = toList a
 
 instance Ord a => SimpleMember (Map.Map a b) a where
     member = Map.member
@@ -58,10 +65,10 @@ instance Ord a => SimpleMember (Map.Map a b) a where
     toList = Map.keys
 
 -- | calculation interface, bundles the evaluation engine and the constant store
-class (Monad m, SimpleMember a String) => CalculationSystem m a | m -> a where
+class (Monad m) => CalculationSystem m where
     assign :: String -> EXPRESSION -> m () -- evtl. m Bool instead as success-flag
     clookup :: String -> m (Maybe EXPRESSION)
-    names :: m a
+    names :: m (SMem String)
     eval :: EXPRESSION -> m EXPRESSION
     check :: EXPRESSION -> m Bool
     check = error "CalculationSystem-default: 'check' not implemented."
@@ -73,14 +80,14 @@ class (Monad m, SimpleMember a String) => CalculationSystem m a | m -> a where
 
 
 -- | Just an example which does not much, for illustration purposes
-instance CalculationSystem (State (Map.Map String EXPRESSION)) (Map.Map String EXPRESSION) where
+instance CalculationSystem (State (Map.Map String EXPRESSION))  where
     assign n e = liftM (Map.insert n e) get >> return ()
     clookup n = liftM (Map.lookup n) get
-    names = get
+    names = error "" -- get
     eval e = return e
     check _ = return False
 
-evaluate :: CalculationSystem m a => CMD -> m ()
+evaluate :: CalculationSystem m => CMD -> m ()
 evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
@@ -98,7 +105,7 @@ evaluate (Repeat e l) =
 evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
 
 
-evaluateList :: CalculationSystem m a => [CMD] -> m ()
+evaluateList :: CalculationSystem m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
 
 -- ----------------------------------------------------------------------
