@@ -36,7 +36,7 @@ import Common.ProofTree
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
-import Common.Utils (basename, timeoutCommand)
+import Common.Utils
 import Common.Timing
 
 import Control.Monad (when)
@@ -49,7 +49,6 @@ import Data.Time.Clock
 
 import System.Directory
 import System.Exit
-import System.IO
 import System.Process
 
 -- * Prover implementation
@@ -90,15 +89,12 @@ consCheck :: MiniSatVer -> String -> LP.TacticScript
 consCheck v thName _ tm _ = case LP.tTarget tm of
   LP.Theory sig nSens -> do
     let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-        tmpFile = "/tmp/" ++ basename thName ++ "_cc.minisat.dimacs"
+        tmpl = basename thName ++ "_cc.minisat.dimacs"
         bin = msatName v
     dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc") sig
           axioms Nothing
-    outputHf <- openFile tmpFile ReadWriteMode
-    hPutStr outputHf dimacsOutput
-    hClose outputHf
-    (_, _, _, pid) <- runInteractiveCommand $ bin ++ " \"" ++ tmpFile ++ "\""
-    exitCode <- waitForProcess pid
+    tmpFile <- getTempFile dimacsOutput tmpl
+    (exitCode, _, _) <- readProcessWithExitCode bin [tmpFile] ""
     removeFile tmpFile
     (res, out) <- case exitCode of
       ExitFailure 10 -> return (Just True, "consistent.")
@@ -206,9 +202,8 @@ runminisat :: MiniSatVer -> PState.PropProverState
 runminisat v pState cfg saveDIMACS thName nGoal = do
   prob <- Cons.goalDIMACSProblem thName pState nGoal []
   let thName_clean = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
-      zFileName = "/tmp/problem_" ++ thName_clean
   when saveDIMACS (writeFile thName_clean prob)
-  writeFile zFileName prob
+  zFileName <- getTempFile prob thName_clean
   runStuff zFileName $ fromMaybe 100 $ timeLimit cfg
   where
     bin = msatName v
