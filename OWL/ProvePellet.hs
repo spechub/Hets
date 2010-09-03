@@ -158,10 +158,10 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
         else pStatus ["Pellet not found"] (0 :: Int)
 
 runTimedPellet :: String -- ^ pellet subcommand
-  -> FilePath  -- ^ basename of problem file without extension
-  -> String    -- ^ problem content
-  -> Maybe String -- ^ entail content
-  -> Int    -- ^ time limit in seconds
+  -> FilePath            -- ^ basename of problem file
+  -> String              -- ^ problem content
+  -> Maybe String        -- ^ entail content
+  -> Int                 -- ^ time limit in seconds
   -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
 runTimedPellet opts tmpFileName prob entail secs = do
   (progTh, pPath) <- check4jarFile pelletEnv pelletJar
