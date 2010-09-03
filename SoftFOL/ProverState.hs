@@ -113,9 +113,7 @@ showTPTPProblemAux thName pst mGoal opts = do
                                            SPFlag "set_flag" [opt]) opts] }
   return $ show $ printTPTP prob'
 
-{- |
-  Translates SPASS command line into [SPSetting].
--}
+-- | Translates SPASS command line into [SPSetting]
 parseSPASSCommands :: [String] -- ^ SPASS command line options
                    -> [SPSetting] -- ^ parsed parameters and options
 parseSPASSCommands comLine =
@@ -126,3 +124,8 @@ parseSPASSCommands comLine =
                    -- if multiple '=', texts are concatenated
                  h : r -> SPFlag "set_flag" [h, concat r]
                 ) comLine ]
+
+-- | get all axioms possibly used in a proof
+getAxioms :: SoftFOLProverState -> [String]
+getAxioms = map AS_Anno.senAttr . concatMap formulae . filter isAxiomFormula
+  . formulaLists . initialLogicalPart

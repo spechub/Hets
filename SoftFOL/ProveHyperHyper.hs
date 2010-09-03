@@ -247,18 +247,9 @@ examineProof :: SoftFOLProverState
              -> ProofStatus ProofTree
              -> (ATPRetval, ProofStatus ProofTree)
 examineProof sps stdoutC stderrC defStatus =
-    let getAxioms =
-            let
-                fl = formulaLists $ initialLogicalPart sps
-                fs = concatMap formulae $ filter (\ x ->
-                                                      case originType x of
-                                                        SPOriginAxioms -> True
-                                                        _ -> False
-                                                 ) fl
-            in map AS_Anno.senAttr fs
-        outText = "\nOutput was:\n\n" ++ stdoutC ++ stderrC
+    let outText = "\nOutput was:\n\n" ++ stdoutC ++ stderrC
         provenStat = defStatus
-          { usedAxioms = getAxioms
+          { usedAxioms = getAxioms sps
           , proofTree = ProofTree stdoutC }
      in case getHyperResult $ lines stdoutC of
                HProved -> (ATPSuccess, provenStat { goalStatus = Proved True })

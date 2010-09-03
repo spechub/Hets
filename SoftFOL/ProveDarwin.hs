@@ -126,8 +126,8 @@ darwinCMDLautomaticBatch
   -- ^ theory consisting of a signature and sentences
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
   -> IO (Concurrent.ThreadId, Concurrent.MVar ())
-     -- ^ fst: identifier of the batch thread for killing it
-     -- snd: MVar to wait for the end of the thread
+     {- ^ fst: identifier of the batch thread for killing it
+     snd: MVar to wait for the end of the thread -}
 darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux Darwin
 
 darwinCMDLautomaticBatchAux
@@ -142,8 +142,8 @@ darwinCMDLautomaticBatchAux
   -- ^ theory consisting of a signature and sentences
   -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
   -> IO (Concurrent.ThreadId, Concurrent.MVar ())
-     -- ^ fst: identifier of the batch thread for killing it
-     -- snd: MVar to wait for the end of the thread
+     {- ^ fst: identifier of the batch thread for killing it
+     snd: MVar to wait for the end of the thread -}
 darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun b thName) inclProvedThs saveProblem_batch
@@ -151,11 +151,9 @@ darwinCMDLautomaticBatchAux b inclProvedThs saveProblem_batch resultMVar
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
-{- |
-  Runs the Darwin service. The tactic script only contains a string for the
-  time limit.
--}
 
+{- | Runs the Darwin service. The tactic script only contains a string for the
+  time limit. -}
 consCheck
   :: ProverBinary
   -> String
@@ -209,8 +207,8 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
 runDarwin
   :: ProverBinary
   -> SoftFOLProverState
-  -- ^ logical part containing the input Sign and axioms and possibly
-  -- goals that have been proved earlier as additional axioms
+  {- ^ logical part containing the input Sign and axioms and possibly
+  goals that have been proved earlier as additional axioms -}
   -> GenericConfig ProofTree -- ^ configuration to use
   -> Bool -- ^ True means save TPTP file
   -> String -- ^ name of the theory in the DevGraph
@@ -248,23 +246,13 @@ runDarwin b sps cfg saveTPTP thName nGoal = do
         provedStatus = defaultProofStatus
           { goalName = AS_Anno.senAttr nGoal
           , goalStatus = Proved True
-          , usedAxioms = getAxioms
+          , usedAxioms = getAxioms sps
           , usedProver = bin
           , usedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed
           }
-        getAxioms = let
-          fl = formulaLists $ initialLogicalPart sps
-          fs = concatMap formulae $ filter isAxiomFormula fl
-          in map AS_Anno.senAttr fs
     return (err, cfg {proofStatus = retval,
                       resultOutput = out,
                       timeUsed = ctime })
-
-isAxiomFormula :: SPFormulaList -> Bool
-isAxiomFormula fl =
-    case originType fl of
-      SPOriginAxioms -> True
-      _ -> False
 
 getSZSStatusWord :: String -> Maybe String
 getSZSStatusWord line = case words

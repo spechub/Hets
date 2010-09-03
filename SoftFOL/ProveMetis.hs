@@ -162,16 +162,3 @@ getGoalStatus l = let ll = lines l in
       | szsProved w -> Proved True
       | szsDisproved w -> Disproved
     _ -> Open (Reason z)
-
-{-
-  from ProveDarwin.hs
--}
-getAxioms :: SoftFOLProverState -> [String]
-getAxioms = map AS_Anno.senAttr . concatMap formulae . filter isAxiomFormula
-   . formulaLists . initialLogicalPart
-
-isAxiomFormula :: SPFormulaList -> Bool
-isAxiomFormula fl =
-    case originType fl of
-      SPOriginAxioms -> True
-      _ -> False

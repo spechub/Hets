@@ -98,7 +98,7 @@ singleSortNotGen spSig = singleSorted spSig &&
 -}
 data SFSymbol = SFSymbol { sym_ident :: SPIdentifier
                          , sym_type :: SFSymbType}
-              deriving (Show,Eq,Ord)
+              deriving (Show, Eq, Ord)
 
 instance GetRange SFSymbol
 
@@ -109,7 +109,7 @@ instance GetRange SFSymbol
 data SFSymbType = SFOpType [SPIdentifier] SPIdentifier
               | SFPredType [SPIdentifier]
               | SFSortType
-                deriving (Show,Eq,Ord)
+                deriving (Show, Eq, Ord)
 
 -- * Internal data structures
 
@@ -213,12 +213,16 @@ data SPFormulaList =
                         formulae   :: [SPFormula] }
       deriving (Eq, Ord, Show)
 
+-- | test the origin type of the formula list
+isAxiomFormula :: SPFormulaList -> Bool
+isAxiomFormula fl =
+    case originType fl of
+      SPOriginAxioms -> True
+      _ -> False
 
 -- *** Clause List
-{- |
-  SPASS Clause List
--}
 
+-- | SPASS Clause List
 data SPClauseList =
         SPClauseList  { coriginType :: SPOriginType,
                         clauseType  :: SPClauseType,
@@ -237,7 +241,6 @@ data SPOriginType =
 {- |
    Formulae can be in cnf or dnf
 -}
-
 data SPClauseType = SPCNF
                   | SPDNF
     deriving (Eq, Ord, Show)
@@ -269,9 +272,7 @@ data SPTerm =
 
 instance GetRange SPTerm
 
-{- | Literals for SPASS CNF and DNF -}
-
--- | the boolean indicates a negated literal
+-- | Literals for SPASS CNF and DNF (the boolean indicates a negated literal).
 data SPLiteral = SPLiteral Bool SPSymbol deriving (Eq, Ord, Show)
 
 toLiteral :: Monad m => SPTerm -> m SPLiteral
@@ -279,7 +280,7 @@ toLiteral t = case t of
       SPComplexTerm SPNot [SPComplexTerm arg []] ->
           return $ SPLiteral False arg
       SPComplexTerm arg [] -> return $ SPLiteral True arg
-      _ -> fail $ "expected literal"
+      _ -> fail "expected literal"
 
 {- |
   SPASS Quantifier Symbols.
@@ -320,9 +321,8 @@ showSPSymbol s = case s of
         _ -> map toLower $ drop 2 $ show s
 
 -- *** Proof List
-{- |
-  SPASS Proof List
--}
+
+-- | SPASS Proof List
 data SPProofList =
         SPProofList {proofType :: Maybe SPProofType,
                      plAssocList :: SPAssocList,
@@ -388,19 +388,19 @@ simpTerm :: SPSymbol -> SPTerm
 simpTerm s = compTerm s []
 
 mkConj :: SPTerm -> SPTerm -> SPTerm
-mkConj t1 t2 = compTerm SPAnd [t1,t2]
+mkConj t1 t2 = compTerm SPAnd [t1, t2]
 
 mkDisj :: SPTerm -> SPTerm -> SPTerm
-mkDisj t1 t2 = compTerm SPOr [t1,t2]
+mkDisj t1 t2 = compTerm SPOr [t1, t2]
 
 mkEq :: SPTerm -> SPTerm -> SPTerm
-mkEq t1 t2 = compTerm SPEqual [t1,t2]
+mkEq t1 t2 = compTerm SPEqual [t1, t2]
 
 -- ** SPASS Desciptions
 
 {- | A description is mandatory for a SPASS problem. It has to specify
   at least a 'name', the name of the 'author', the 'status' (see also
-  'SPLogState' below), and a (verbose) description.  -}
+  'SPLogState' below), and a (verbose) description. -}
 data SPDescription =
         SPDescription { name    :: String,
                         author  :: String,
@@ -428,18 +428,18 @@ data SPLogState =
 data SPSetting = SPGeneralSettings {entries :: [SPHypothesis]}
                | SPSettings {settingName :: SPSettingLabel,
                              settingBody :: [SPSettingBody]}
-                 deriving (Eq,Ord,Show)
+                 deriving (Eq, Ord, Show)
 
 data SPSettingBody = SPClauseRelation [SPCRBIND]   -- clauseFormulaRelation
                    | SPFlag String [String]  -- set_pred(x,y,...)
-                     deriving (Eq,Ord,Show)
+                     deriving (Eq, Ord, Show)
 
 data SPHypothesis = SPHypothesis [SPIdentifier]
-                    deriving (Eq,Ord,Show)
+                    deriving (Eq, Ord, Show)
 
 data SPSettingLabel = KIV | LEM | OTTER | PROTEIN | SATURATE
                     | ThreeTAP | SETHEO | SPASS
-                      deriving (Eq,Ord,Show)
+                      deriving (Eq, Ord, Show)
 
 showSettingLabel :: SPSettingLabel -> String
 showSettingLabel l = case l of
@@ -449,5 +449,5 @@ showSettingLabel l = case l of
 {- |
   A Tupel of the Clause Relation
 -}
-data SPCRBIND = SPCRBIND {clauseSPR::String, formulaSPR::String}
-                deriving (Eq,Ord,Show)
+data SPCRBIND = SPCRBIND {clauseSPR :: String, formulaSPR :: String}
+                deriving (Eq, Ord, Show)
