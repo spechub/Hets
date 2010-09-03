@@ -46,7 +46,6 @@ import Data.Time (timeToTimeOfDay)
 import Data.Time.Clock (secondsToDiffTime)
 
 import System.Directory
-import System.Process
 
 import Control.Monad (when)
 import Control.Concurrent
@@ -109,8 +108,8 @@ atpFun _ = ATPFunctions
 {- |
   Inserts a named OWL axiom into pellet prover state.
 -}
-insertOWLAxiom :: PelletProverState -- ^ prover state containing
-                                    -- initial logical part
+insertOWLAxiom :: PelletProverState {- ^ prover state containing
+                                    initial logical part -}
                -> Named Axiom -- ^ goal to add
                -> PelletProverState
 insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
@@ -145,8 +144,8 @@ pelletCMDLautomaticBatch ::
         -> Theory Sign Axiom ProofTree -- ^ theory
         -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
         -> IO (ThreadId, MVar ())
-        -- ^ fst: identifier of the batch thread for killing it
-        -- snd: MVar to wait for the end of the thread
+        {- ^ fst: identifier of the batch thread for killing it
+        snd: MVar to wait for the end of the thread -}
 pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                          thName defTS th freedefs =
   genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -154,10 +153,10 @@ pelletCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
     (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 -- * Main prover functions
+
 {- |
   Runs the Pellet service.
 -}
-
 consCheck :: String
           -> TacticScript
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
@@ -182,16 +181,16 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
           in (pStatus out tUsed) { ccResult = exCode }
         else pStatus ["Pellet not found"] (0 :: Int)
 
-runPelletAux :: String -- ^ pellet subcommand
+runTimedPellet :: String -- ^ pellet subcommand
   -> FilePath  -- ^ basename of problem file without extension
   -> String    -- ^ problem content
   -> Maybe String -- ^ entail content
-  -> IO (Bool, String, String) -- ^ (success, stdout, stderr)
-runPelletAux opts tmpFileName prob entail = do
+  -> Int    -- ^ time limit in seconds
+  -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
+runTimedPellet opts tmpFileName prob entail secs = do
   (progTh, pPath) <- check4jarFile pelletEnv pelletJar
   if progTh then withinDirectory pPath $ do
-      let tmpFile = tmpFileName ++ ".owl"
-      timeTmpFile <- getTempFile prob tmpFile
+      timeTmpFile <- getTempFile prob tmpFileName
       let entFile = timeTmpFile ++ ".entail.owl"
           doEntail = isJust entail
           args = "-Xmx512m" : "-jar" : pelletJar
@@ -200,24 +199,15 @@ runPelletAux opts tmpFileName prob entail = do
       case entail of
         Just c -> writeFile entFile c
         Nothing -> return ()
-      (_, outS, errS) <- readProcessWithExitCode "java" args ""
+      mex <- timeoutCommand secs "java" args
       removeFile timeTmpFile
       when doEntail $ removeFile entFile
-      return (True, outS, errS)
-    else return (False, "", "")
-
-runTimedPellet :: String -- ^ pellet subcommand
-  -> FilePath  -- ^ basename of problem file without extension
-  -> String    -- ^ problem content
-  -> Maybe String -- ^ entail content
-  -> Int    -- ^ time limit in seconds
-  -> IO (Maybe (Bool, String, String)) -- ^ timeout or (success, stdout, stderr)
-runTimedPellet opts tmpFileName prob entail secs =
-  timeoutSecs secs $ runPelletAux opts tmpFileName prob entail
+      return $ fmap (\ (_, outS, errS) -> (True, outS, errS)) mex
+    else return $ Just (False, "", "")
 
 runPellet :: PelletProverState
-          -- ^ logical part containing the input Sign and axioms and possibly
-          -- goals that have been proved earlier as additional axioms
+          {- ^ logical part containing the input Sign and axioms and possibly
+          goals that have been proved earlier as additional axioms -}
           -> GenericConfig ProofTree -- ^ configuration to use
           -> Bool -- ^ True means save TPTP file
           -> String -- ^ name of the theory in the DevGraph
@@ -228,7 +218,7 @@ runPellet sps cfg savePellet thName nGoal = do
   let simpleOptions = extraOpts cfg
       tLimit = fromMaybe 800 $ timeLimit cfg
       goalSuffix = '_' : senAttr nGoal
-      tmpFileName = basename thName ++ goalSuffix
+      tmpFileName = basename thName ++ goalSuffix ++ ".owl"
       tScript = TacticScript $ show ATPTacticScript
                      { tsTimeLimit = configTimeLimit cfg
                      , tsExtraOpts = simpleOptions }
@@ -239,7 +229,7 @@ runPellet sps cfg savePellet thName nGoal = do
       entail = showOWLProblemS
                      sps { initialState = [ nGoal {isAxiom = True } ] }
   when savePellet $ do
-        writeFile (tmpFileName ++ ".owl") prob
+        writeFile tmpFileName prob
         writeFile (tmpFileName ++ ".entail.owl") entail
   res <- runTimedPellet "" tmpFileName prob (Just entail) tLimit
   ((err, retval), output, tUsed) <- return $ case res of
@@ -293,8 +283,8 @@ analyseOutput err outp =
        ATPError s | null s -> (ATPError "unexpected pellet output", st, ls, tmo)
        _ -> (atpr, st, ls, tmo)
 
-showOWLProblemS :: PelletProverState -- ^ prover state containing
-                                     -- initial logical part
+showOWLProblemS :: PelletProverState {- ^ prover state containing
+                                     initial logical part -}
                 -> String -- ^ formatted output of the goal
 showOWLProblemS pst =
     let namedSens = initialState $ genPelletProblemS pst Nothing
@@ -304,8 +294,8 @@ showOWLProblemS pst =
 {- |
   Pretty printing OWL goal for pellet.
 -}
-showOWLProblem :: PelletProverState -- ^ prover state containing
-                                    -- initial logical part
+showOWLProblem :: PelletProverState {- ^ prover state containing
+                                    initial logical part -}
                -> Named Axiom -- ^ goal to print
                -> IO String -- ^ formatted output of the goal
 showOWLProblem pst nGoal =
