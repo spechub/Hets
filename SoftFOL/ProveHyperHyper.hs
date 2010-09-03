@@ -48,9 +48,12 @@ import Data.Time.LocalTime (TimeOfDay, midnight)
 
 -- Prover
 
+ekrhyperS :: String
+ekrhyperS = "ekrhyper"
+
 -- | The Prover implementation.
 hyperProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-hyperProver = mkAutomaticProver "ekrhyper" () hyperGUI hyperCMDLautomaticBatch
+hyperProver = mkAutomaticProver ekrhyperS () hyperGUI hyperCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -83,7 +86,7 @@ hyperGUI :: String -- ^ theory name
            -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
            -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 hyperGUI thName th freedefs =
-    genericATPgui (atpFun thName) True (proverName hyperProver) thName th
+    genericATPgui (atpFun thName) True ekrhyperS thName th
                   freedefs emptyProofTree
 
 {- |
@@ -106,7 +109,7 @@ hyperCMDLautomaticBatch ::
 hyperCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultMVar (proverName hyperProver) thName
+        resultMVar ekrhyperS thName
         (parseTacticScript batchTimeLimit [] defTS) th freedefs emptyProofTree
 
 prelTxt :: String -> String
@@ -130,11 +133,14 @@ prelTxt t =
     "% Start timer\n" ++
     "#(start_wallclock_timer(" ++ t ++ ".0)).\n"
 
+checkOption :: String -> Bool
+checkOption a = isPrefixOf "#(" a && isSuffixOf ")." a
+
 uniteOptions :: [String] -> [String]
 uniteOptions opts =
     case opts of
       a : b : cs ->
-          if "#(" `isPrefixOf` a && ")." `isSuffixOf` a
+          if checkOption a
            then
                a : uniteOptions (b : cs)
            else
@@ -165,60 +171,62 @@ runHyper sps cfg saveTPTP thName nGoal =
         saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
         simpleOptions = uniteOptions $ extraOpts cfg
         tl = configTimeLimit cfg
+        tScript = TacticScript $ show ATPTacticScript
+          { tsTimeLimit = tl
+          , tsExtraOpts = filter (isPrefixOf "#")
+              $ lines $ prelTxt (show tl) ++ runTxt }
+        defProofStat = ProofStatus
+          { goalName = senAttr nGoal
+          , goalStatus = openGoalStatus
+          , usedAxioms = []
+          , usedProver = ekrhyperS
+          , proofTree = emptyProofTree
+          , usedTime = midnight
+          , tacticScript = tScript }
     in
-      do
-        let chk = all (\ x ->
-                                 "#(" `isPrefixOf` x &&
-                                 ")." `isSuffixOf` x
-                            ) simpleOptions
-        if chk
+        if all checkOption simpleOptions
          then
            do
              prob <- showTPTPProblem thName sps nGoal []
              when saveTPTP (writeFile saveFile prob)
-             stpTmpFile <- getTempFile prob saveFile
-             let stpPrelFile = stpTmpFile ++ ".prelude.tme"
-                 stpRunFile = stpTmpFile ++ ".run.tme"
-             writeFile stpPrelFile $
-                           prelTxt (show tl) ++ "\n" ++ unlines simpleOptions
-             writeFile stpRunFile runTxt
-             t_start <- getHetsTime
-             (_, stdoutC, stderrC) <- readProcessWithExitCode "ekrh"
-                [stpPrelFile, stpTmpFile, stpRunFile] ""
-             t_end <- getHetsTime
-             removeFile stpPrelFile
-             removeFile stpRunFile
-             removeFile stpTmpFile
-             let t_u = diffHetsTime t_end t_start
-             (pStat, ret) <- examineProof sps cfg stdoutC stderrC nGoal t_u tl
+             (stdoutC, stderrC, t_u) <- runHyperProcess prob saveFile (show tl)
+               ('\n' : unlines simpleOptions) runTxt
+             let (pStat, ret) = examineProof sps stdoutC stderrC
+                   defProofStat { usedTime = t_u }
              return (pStat, cfg
-                              {
-                                proofStatus = ret
+                              { proofStatus = ret
                               , resultOutput = lines (stdoutC ++ stderrC)
-                              , timeUsed = usedTime ret
-                             })
-         else
-            do
-              let tScript opts = TacticScript $ show ATPTacticScript
-                                 { tsTimeLimit = tl
-                                 , tsExtraOpts = opts }
-              return
+                              , timeUsed = usedTime ret })
+         else return
                     (ATPError "Syntax error in options"
                     , cfg
-                     {proofStatus =
-                       ProofStatus { goalName = senAttr nGoal
-                                   , goalStatus = openGoalStatus
-                                   , usedAxioms = []
-                                   , usedProver = proverName hyperProver
-                                   , proofTree = emptyProofTree
-                                   , usedTime = midnight
-                                   , tacticScript = tScript $ filter
-                                                     ("#" `isPrefixOf`) $
-                                                     lines $ prelTxt (show tl)
-                                                    ++ runTxt }
+                     { proofStatus = defProofStat
                      , resultOutput = ["Parse Error"]
                      , timeUsed = midnight
                      })
+
+-- | call ekrh
+runHyperProcess
+  :: String -- ^ problem
+  -> String -- ^ file name template
+  -> String -- ^ time limit
+  -> String -- ^ extra options
+  -> String -- ^ run text
+  -> IO (String, String, TimeOfDay) -- ^ out, err, diff time
+runHyperProcess prob saveFile tl opts runTxtA = do
+  stpTmpFile <- getTempFile prob saveFile
+  let stpPrelFile = stpTmpFile ++ ".prelude.tme"
+      stpRunFile = stpTmpFile ++ ".run.tme"
+  writeFile stpPrelFile $ prelTxt tl ++ opts
+  writeFile stpRunFile runTxtA
+  t_start <- getHetsTime
+  (_, stdoutC, stderrC) <- readProcessWithExitCode "ekrh"
+    [stpPrelFile, stpTmpFile, stpRunFile] ""
+  t_end <- getHetsTime
+  removeFile stpPrelFile
+  removeFile stpRunFile
+  removeFile stpTmpFile
+  return (stdoutC, stderrC, diffHetsTime t_end t_start)
 
 -- | Mapping type from SZS to Hets
 data HyperResult = HProved | HDisproved | HTimeout | HError | HMemout
@@ -234,29 +242,12 @@ getHyperResult out = case map (takeWhile isAlpha . dropWhile isSpace)
 
 -- | examine SZS output
 examineProof :: SoftFOLProverState
-             -> GenericConfig ProofTree
              -> String
              -> String
-             -> AS_Anno.Named SPTerm
-             -> TimeOfDay
-             -> Int
-             -> IO (ATPRetval, ProofStatus ProofTree)
-examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
-    let
-        tScript opts = TacticScript $ show ATPTacticScript
-                       { tsTimeLimit = configTimeLimit cfg
-                       , tsExtraOpts = opts }
-        defaultStatus =
-            ProofStatus { goalName = senAttr nGoal
-                        , goalStatus = openGoalStatus
-                        , usedAxioms = []
-                        , usedProver = proverName hyperProver
-                        , proofTree = emptyProofTree
-                        , usedTime = tUsed
-                        , tacticScript = tScript $ filter
-                                         ("#" `isPrefixOf`) $
-                                         lines $ prelTxt (show tl) ++ runTxt}
-        getAxioms =
+             -> ProofStatus ProofTree
+             -> (ATPRetval, ProofStatus ProofTree)
+examineProof sps stdoutC stderrC defStatus =
+    let getAxioms =
             let
                 fl = formulaLists $ initialLogicalPart sps
                 fs = concatMap formulae $ filter (\ x ->
@@ -265,33 +256,22 @@ examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
                                                         _ -> False
                                                  ) fl
             in map AS_Anno.senAttr fs
-    in case getHyperResult $ lines stdoutC of
-               HProved -> return (ATPSuccess, defaultStatus
-                                  {
-                                    goalStatus = Proved True
-                                  , usedAxioms = getAxioms
-                                  , proofTree = ProofTree stdoutC
-                                  })
-               HTimeout -> return (ATPTLimitExceeded, defaultStatus)
-               HDisproved -> return (ATPSuccess, defaultStatus
-                                     {
-                                       goalStatus = Disproved
-                                     , usedAxioms = getAxioms
-                                     , proofTree = ProofTree stdoutC
-                                     })
-               HMemout -> return (ATPError ("Out of Memory."
-                                           ++ "\nOutput was:\n\n" ++
-                                              stdoutC ++ stderrC)
-                                , defaultStatus)
-               HError -> return (ATPError ("Internal Error in ekrhyper."
-                                           ++ "\nOutput was:\n\n" ++
-                                              stdoutC ++ stderrC)
-                                , defaultStatus)
+        outText = "\nOutput was:\n\n" ++ stdoutC ++ stderrC
+        provenStat = defStatus
+          { usedAxioms = getAxioms
+          , proofTree = ProofTree stdoutC }
+     in case getHyperResult $ lines stdoutC of
+               HProved -> (ATPSuccess, provenStat { goalStatus = Proved True })
+               HTimeout -> (ATPTLimitExceeded, defStatus)
+               HDisproved -> (ATPSuccess, provenStat { goalStatus = Disproved })
+               HMemout -> (ATPError ("Out of Memory." ++ outText), defStatus)
+               HError -> ( ATPError ("Internal Error in ekrhyper." ++ outText)
+                         , defStatus)
 
 -- Consistency Checker
 
 hyperConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-hyperConsChecker = (mkConsChecker "ekrhyper" () consCheck)
+hyperConsChecker = (mkConsChecker ekrhyperS () consCheck)
   { ccNeedsTimer = False }
 
 {- |
@@ -318,38 +298,16 @@ consCheck :: String
           -> IO (CCStatus ProofTree)
 consCheck thName (TacticScript tl) tm freedefs =
     case tTarget tm of
-      Theory sig nSens ->
-          let
-              proverStateI = spassProverState sig (toNamedList nSens) freedefs
-              problem = showTPTPProblemM thName proverStateI []
+      Theory sig nSens -> do
+          let proverStateI = spassProverState sig (toNamedList nSens) freedefs
               saveFile = basename thName ++ ".tptp"
-          in
-            do
-              prob <- problem
-              stpTmpFile <- getTempFile prob saveFile
-              let stpPrelFile = stpTmpFile ++ ".prelude.tme"
-                  stpRunFile = stpTmpFile ++ ".run.tme"
-              writeFile stpPrelFile $ prelTxt tl
-              writeFile stpRunFile runTxtC
-              t_start <- getHetsTime
-              (_, stdoutC, stderrC) <- readProcessWithExitCode "ekrh"
-                [stpPrelFile, stpTmpFile, stpRunFile] ""
-              t_end <- getHetsTime
-              removeFile stpPrelFile
-              removeFile stpRunFile
-              removeFile stpTmpFile
-              let t_u = diffHetsTime t_end t_start
-                  outstate = CCStatus
-                              { ccResult = Nothing
-                              , ccProofTree = ProofTree $ stdoutC ++ stderrC
-                              , ccUsedTime = t_u }
-              case getHyperResult $ lines stdoutC of
-                HProved -> return outstate
-                           {
-                             ccResult = Just True
-                           }
-                HDisproved -> return outstate
-                           {
-                             ccResult = Just False
-                           }
-                _ -> return outstate
+          prob <- showTPTPProblemM thName proverStateI []
+          (stdoutC, stderrC, t_u) <-
+            runHyperProcess prob saveFile tl "" runTxtC
+          return CCStatus
+            { ccResult = case getHyperResult $ lines stdoutC of
+                HProved -> Just True
+                HDisproved -> Just False
+                _ -> Nothing
+            , ccProofTree = ProofTree $ stdoutC ++ stderrC
+            , ccUsedTime = t_u }
