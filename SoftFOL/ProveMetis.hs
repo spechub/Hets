@@ -120,7 +120,7 @@ runMetis :: SoftFOLProverState
            -- ^ (retval, configuration with proof status and complete output)
 runMetis sps cfg saveTPTP thName nGoal = do
   let
-        saveFile = thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
+        saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
         myTimeLimit = configTimeLimit cfg
   prob <- showTPTPProblem thName sps nGoal []
   when saveTPTP (writeFile saveFile prob)
