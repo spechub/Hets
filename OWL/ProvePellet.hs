@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Interface to the OWL Ontology prover via Pellet.
+Description :  Interface to the OWL Ontology prover via Pellett.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
@@ -25,8 +25,8 @@ import Logic.Prover
 import OWL.AS
 import OWL.Morphism
 import OWL.Sign
-import OWL.Print
 import OWL.Sublogic
+import OWL.ProverState
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -49,21 +49,6 @@ import System.Directory
 
 import Control.Monad (when)
 import Control.Concurrent
-
-data PelletProverState = PelletProverState
-                           { ontologySign :: Sign
-                           , initialState :: [Named Axiom]
-                           } deriving (Show)
-
--- * Prover implementation
-pelletProverState :: Sign
-                  -> [Named Axiom]
-                  -> [FreeDefMorphism Axiom OWLMorphism]
-                  -- ^ freeness constraints
-                  -> PelletProverState
-pelletProverState sig oSens _ = PelletProverState
-  { ontologySign = sig
-  , initialState = filter isAxiom oSens }
 
 pelletS :: String
 pelletS = "Pellet"
@@ -91,9 +76,9 @@ pelletConsChecker = (mkConsChecker pelletS sl_top consCheck)
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Axiom OWLMorphism ProofTree PelletProverState
+       -> ATPFunctions Sign Axiom OWLMorphism ProofTree ProverState
 atpFun _ = ATPFunctions
-  { initialProverState = pelletProverState
+  { initialProverState = owlProverState
   , atpTransSenName = id   -- transSenName,
   , atpInsertSentence = insertOWLAxiom
   , goalOutput = \ a b _ -> showOWLProblem a b
@@ -104,15 +89,6 @@ atpFun _ = ATPFunctions
                                     , theoryConfiguration = ".pconf" }
   , runProver = runPellet
   , createProverOptions = extraOpts }
-
-{- |
-  Inserts a named OWL axiom into pellet prover state.
--}
-insertOWLAxiom :: PelletProverState {- ^ prover state containing
-                                    initial logical part -}
-               -> Named Axiom -- ^ goal to add
-               -> PelletProverState
-insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
 
 -- ** GUI
 
@@ -164,7 +140,7 @@ consCheck :: String
           -> IO (CCStatus ProofTree)
 consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
   Theory sig nSens -> do
-    let proverStateI = pelletProverState sig (toNamedList nSens) freedefs
+    let proverStateI = owlProverState sig (toNamedList nSens) freedefs
         prob = showOWLProblemS proverStateI
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
@@ -205,7 +181,7 @@ runTimedPellet opts tmpFileName prob entail secs = do
       return $ fmap (\ (_, outS, errS) -> (True, outS, errS)) mex
     else return $ Just (False, "", "")
 
-runPellet :: PelletProverState
+runPellet :: ProverState
           {- ^ logical part containing the input Sign and axioms and possibly
           goals that have been proved earlier as additional axioms -}
           -> GenericConfig ProofTree -- ^ configuration to use
@@ -282,23 +258,3 @@ analyseOutput err outp =
   in case atpr of
        ATPError s | null s -> (ATPError "unexpected pellet output", st, ls, tmo)
        _ -> (atpr, st, ls, tmo)
-
-showOWLProblemS :: PelletProverState {- ^ prover state containing
-                                     initial logical part -}
-                -> String -- ^ formatted output of the goal
-showOWLProblemS pst =
-    let namedSens = initialState pst
-        sign = ontologySign pst
-    in show $ printOWLBasicTheory (sign, filter isAxiom namedSens)
-
-{- |
-  Pretty printing OWL goal for pellet.
--}
-showOWLProblem :: PelletProverState {- ^ prover state containing
-                                    initial logical part -}
-               -> Named Axiom -- ^ goal to print
-               -> IO String -- ^ formatted output of the goal
-showOWLProblem pst nGoal =
-  let sign = ontologySign pst
-  in return $ showOWLProblemS pst
-       ++ "\n\nEntailments:\n\n" ++ show (printOWLBasicTheory (sign, [nGoal]))
