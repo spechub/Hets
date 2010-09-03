@@ -10,7 +10,12 @@ Portability :  portable
 Predefined signature part of CASL_DL.
 -}
 
-module CASL_DL.PredefinedSign(predefinedSign,topSort,topSortD,dataSig_CASL) where
+module CASL_DL.PredefinedSign
+  ( predefinedSign
+  , topSort
+  , topSortD
+  , dataSig_CASL
+  ) where
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -30,7 +35,7 @@ predefinedSign :: Sign DL_FORMULA CASL_DLSign
 predefinedSign = toCASL_DL_Sign $
    assert (Set.member topSortD $ sortSet dataSig_CASL) $
    foldl (addSig (\ _ _ -> ())) (emptySign ())
-           [dataSig_CASL,predefined_symbols]
+           [dataSig_CASL, predefined_symbols]
 
 toCASL_DL_Sign :: Sign (FORMULA ()) ()
                -> Sign DL_FORMULA CASL_DLSign
@@ -44,18 +49,17 @@ toCASL_DL_Sign sig =
       }
 
 topSort :: SORT
-topSort = Id [Token "Thing" nullRange] [] nullRange
+topSort = stringToId "Thing"
 
 topSortD :: SORT
-topSortD = Id [Token "DATA" nullRange] [] nullRange
+topSortD = stringToId "DATA"
 
 predefined_symbols :: Sign (FORMULA ()) ()
 predefined_symbols =
-    ((emptySign ()){ sortSet = Set.singleton topSort
+    ((emptySign ()) { sortSet = Set.singleton topSort
                    , predMap =
-                       Map.singleton (Id [Token "Nothing" nullRange] []
-                                         nullRange)
-                           (Set.singleton (PredType  [topSort]))
+                       Map.singleton (stringToId "Nothing")
+                           (Set.singleton (PredType [topSort]))
                    })
 
 dataSig_CASL :: Sign (FORMULA ()) ()
