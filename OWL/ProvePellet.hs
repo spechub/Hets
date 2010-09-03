@@ -287,8 +287,8 @@ showOWLProblemS :: PelletProverState {- ^ prover state containing
                                      initial logical part -}
                 -> String -- ^ formatted output of the goal
 showOWLProblemS pst =
-    let namedSens = initialState $ genPelletProblemS pst Nothing
-        sign = ontologySign $ genPelletProblemS pst Nothing
+    let namedSens = initialState pst
+        sign = ontologySign pst
     in show $ printOWLBasicTheory (sign, filter isAxiom namedSens)
 
 {- |
@@ -299,15 +299,6 @@ showOWLProblem :: PelletProverState {- ^ prover state containing
                -> Named Axiom -- ^ goal to print
                -> IO String -- ^ formatted output of the goal
 showOWLProblem pst nGoal =
-  let sign = ontologySign $ genPelletProblemS pst Nothing
+  let sign = ontologySign pst
   in return $ showOWLProblemS pst
        ++ "\n\nEntailments:\n\n" ++ show (printOWLBasicTheory (sign, [nGoal]))
-
-{- |
-  Generate an OWL problem.
--}
-genPelletProblemS :: PelletProverState
-                  -> Maybe (Named Axiom)
-                  -> PelletProverState
-genPelletProblemS pps m_nGoal =
-    pps { initialState = initialState pps ++ maybeToList m_nGoal }
