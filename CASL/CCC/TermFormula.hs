@@ -153,48 +153,6 @@ domainList fs = concatMap dm fs
                  Equivalence (Definedness t _) f' _ -> [(t,f')]
                  _                                  -> []
 
-
--- | check whether it is a implication
--- | Function seems to be unused.
-{-isImpli :: FORMULA f -> Bool
-isImpli f = case (quanti f) of
-               Quantification _ _ f' _ -> isImpliEquiv f'
-               Implication _ _ _ _ -> True
-               Negation f' _ -> isImpliEquiv f'
-               _ -> False-}
-
-
--- | check whether it is a implication or equivalence
--- | Function seems to be unused.
-{-isImpliEquiv :: FORMULA f -> Bool
-isImpliEquiv f = case (quanti f) of
-                     Quantification _ _ f' _ -> isImpliEquiv f'
-                     Implication _ _ _ _ -> True
-                     Equivalence _ _ _ -> True
-                     Negation f' _ -> isImpliEquiv f'
-                     _ -> False-}
-
-
--- | check whether it's leading symbol is a operation or predication
--- | Function seems to be unused.
-{-isOpPred :: FORMULA f -> Bool
-isOpPred f =
-    case f of
-      Quantification _ _ f' _ -> isOpPred f'
-      Negation f' _ -> isOpPred f'
-      Implication _ f' _ _ -> isOpPred f'
-      Equivalence f1 f2 _ -> isOpPred f1 && isOpPred f2
-      Definedness _ _ -> False
-      Predication _ _ _ -> True
-      Existl_equation t _ _ -> case (term t) of
-                                 Application _ _ _ -> True
-                                 _ -> False
-      Strong_equation t _ _ -> case (term t) of
-                                 Application _ _ _ -> True
-                                 _ -> False
-      _ -> False-}
-
-
 -- | check whether it is a application term
 isApp :: TERM t -> Bool
 isApp t = case t of
@@ -213,7 +171,7 @@ isVar t = case t of
             _                  -> False
 
 
--- extract the operation symbol from a term
+-- | extract the operation symbol from a term
 opSymbOfTerm :: TERM f -> OP_SYMB
 opSymbOfTerm t = case term t of
                    Application os _ _   -> os
