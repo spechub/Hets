@@ -48,7 +48,7 @@ import Data.Time.LocalTime (TimeOfDay, midnight)
 
 -- Prover
 
-{- | The Prover implementation. -}
+-- | The Prover implementation.
 hyperProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
 hyperProver = mkAutomaticProver "ekrhyper" () hyperGUI hyperCMDLautomaticBatch
 
@@ -78,10 +78,10 @@ atpFun thName = ATPFunctions
 -}
 hyperGUI :: String -- ^ theory name
            -> Theory Sign Sentence ProofTree
-           -- ^ theory consisting of a SoftFOL.Sign.Sign
-           --   and a list of Named SoftFOL.Sign.Sentence
+           {- ^ theory consisting of a SoftFOL.Sign.Sign
+           and a list of Named SoftFOL.Sign.Sentence -}
            -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
+           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 hyperGUI thName th freedefs =
     genericATPgui (atpFun thName) True (proverName hyperProver) thName th
                   freedefs emptyProofTree
@@ -97,12 +97,12 @@ hyperCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory Sign Sentence ProofTree -- ^ theory consisting of a
-           --   'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence'
+        -> Theory Sign Sentence ProofTree {- ^ theory consisting of a
+           'SoftFOL.Sign.Sign' and a list of Named 'SoftFOL.Sign.Sentence' -}
         -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+        -> IO (Concurrent.ThreadId, Concurrent.MVar ())
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 hyperCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
@@ -128,19 +128,18 @@ prelTxt t =
     "% Terminate if out of time\n" ++
     "#(set_parameter(timeout_termination_method,0)).\n\n" ++
     "% Start timer\n" ++
-    "#(start_wallclock_timer("++ t ++".0)).\n"
+    "#(start_wallclock_timer(" ++ t ++ ".0)).\n"
 
 uniteOptions :: [String] -> [String]
 uniteOptions opts =
     case opts of
-      []     ->   []
-      a:[]   -> a:[]
-      a:b:cs ->
-          if ("#(" `isPrefixOf` a && ")." `isSuffixOf` a)
+      a : b : cs ->
+          if "#(" `isPrefixOf` a && ")." `isSuffixOf` a
            then
-               a:(uniteOptions (b:cs))
+               a : uniteOptions (b : cs)
            else
-               (a ++ b):(uniteOptions cs)
+               (a ++ b) : uniteOptions cs
+      _ -> opts
 
 runTxt :: String
 runTxt =
@@ -153,8 +152,8 @@ runTxt =
     "#(print_szs_proof).\n"
 
 runHyper :: SoftFOLProverState
-           -- ^ logical part containing the input Sign and axioms and possibly
-           --   goals that have been proved earlier as additional axioms
+           {- ^ logical part containing the input Sign and axioms and possibly
+           goals that have been proved earlier as additional axioms -}
            -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save TPTP file
            -> String -- ^ name of the theory in the DevGraph
@@ -168,18 +167,18 @@ runHyper sps cfg saveTPTP thName nGoal =
         tl = configTimeLimit cfg
     in
       do
-        let chk = and $ map (\x ->
+        let chk = all (\ x ->
                                  "#(" `isPrefixOf` x &&
                                  ")." `isSuffixOf` x
                             ) simpleOptions
         if chk
          then
            do
-             prob <- showTPTPProblem thName sps nGoal $ []
+             prob <- showTPTPProblem thName sps nGoal []
              when saveTPTP (writeFile saveFile prob)
              stpTmpFile <- getTempFile prob saveFile
              let stpPrelFile = stpTmpFile ++ ".prelude.tme"
-                 stpRunFile  = stpTmpFile ++ ".run.tme"
+                 stpRunFile = stpTmpFile ++ ".run.tme"
              writeFile stpPrelFile $
                            prelTxt (show tl) ++ "\n" ++ unlines simpleOptions
              writeFile stpRunFile runTxt
@@ -203,7 +202,7 @@ runHyper sps cfg saveTPTP thName nGoal =
               let tScript opts = TacticScript $ show ATPTacticScript
                                  { tsTimeLimit = tl
                                  , tsExtraOpts = opts }
-              return $
+              return
                     (ATPError "Syntax error in options"
                     , cfg
                      {proofStatus =
@@ -211,18 +210,17 @@ runHyper sps cfg saveTPTP thName nGoal =
                                    , goalStatus = openGoalStatus
                                    , usedAxioms = []
                                    , usedProver = proverName hyperProver
-                                   , proofTree =  emptyProofTree
+                                   , proofTree = emptyProofTree
                                    , usedTime = midnight
-                                   , tacticScript = tScript $
-                                                    (filter
-                                                     (\x -> "#" `isPrefixOf` x)$
-                                                     lines $ (prelTxt $ show tl)
-                                                               ++ runTxt)}
+                                   , tacticScript = tScript $ filter
+                                                     ("#" `isPrefixOf`) $
+                                                     lines $ prelTxt (show tl)
+                                                    ++ runTxt }
                      , resultOutput = ["Parse Error"]
                      , timeUsed = midnight
                      })
 
-{- | Mapping type from SZS to Hets -}
+-- | Mapping type from SZS to Hets
 data HyperResult = HProved | HDisproved | HTimeout | HError | HMemout
 
 getHyperResult :: [String] -> HyperResult
@@ -234,7 +232,7 @@ getHyperResult out = case map (takeWhile isAlpha . dropWhile isSpace)
     | szsMemoryOut s -> HMemout
   _ -> HError
 
-{- | examine SZS output -}
+-- | examine SZS output
 examineProof :: SoftFOLProverState
              -> GenericConfig ProofTree
              -> String
@@ -253,18 +251,18 @@ examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
                         , goalStatus = openGoalStatus
                         , usedAxioms = []
                         , usedProver = proverName hyperProver
-                        , proofTree =  emptyProofTree
+                        , proofTree = emptyProofTree
                         , usedTime = tUsed
-                        , tacticScript = tScript $ (filter
-                                         (\x -> "#" `isPrefixOf` x) $
-                                         lines $ (prelTxt $ show tl) ++ runTxt)}
+                        , tacticScript = tScript $ filter
+                                         ("#" `isPrefixOf`) $
+                                         lines $ prelTxt (show tl) ++ runTxt}
         getAxioms =
             let
                 fl = formulaLists $ initialLogicalPart sps
-                fs = concatMap formulae $ filter (\x ->
+                fs = concatMap formulae $ filter (\ x ->
                                                       case originType x of
                                                         SPOriginAxioms -> True
-                                                        _              -> False
+                                                        _ -> False
                                                  ) fl
             in map AS_Anno.senAttr fs
     in case getHyperResult $ lines stdoutC of
@@ -272,14 +270,14 @@ examineProof sps cfg stdoutC stderrC nGoal tUsed tl =
                                   {
                                     goalStatus = Proved True
                                   , usedAxioms = getAxioms
-                                  , proofTree  = ProofTree stdoutC
+                                  , proofTree = ProofTree stdoutC
                                   })
                HTimeout -> return (ATPTLimitExceeded, defaultStatus)
                HDisproved -> return (ATPSuccess, defaultStatus
                                      {
                                        goalStatus = Disproved
                                      , usedAxioms = getAxioms
-                                     , proofTree  = ProofTree stdoutC
+                                     , proofTree = ProofTree stdoutC
                                      })
                HMemout -> return (ATPError ("Out of Memory."
                                            ++ "\nOutput was:\n\n" ++
@@ -317,20 +315,20 @@ consCheck :: String
           -> TacticScript
           -> TheoryMorphism Sign Sentence SoftFOLMorphism ProofTree
           -> [FreeDefMorphism SPTerm SoftFOLMorphism] -- ^ freeness constraints
-          -> IO(CCStatus ProofTree)
+          -> IO (CCStatus ProofTree)
 consCheck thName (TacticScript tl) tm freedefs =
     case tTarget tm of
       Theory sig nSens ->
           let
               proverStateI = spassProverState sig (toNamedList nSens) freedefs
-              problem     = showTPTPProblemM thName proverStateI []
-              saveFile = basename thName  ++ ".tptp"
+              problem = showTPTPProblemM thName proverStateI []
+              saveFile = basename thName ++ ".tptp"
           in
             do
               prob <- problem
               stpTmpFile <- getTempFile prob saveFile
               let stpPrelFile = stpTmpFile ++ ".prelude.tme"
-                  stpRunFile  = stpTmpFile ++ ".run.tme"
+                  stpRunFile = stpTmpFile ++ ".run.tme"
               writeFile stpPrelFile $ prelTxt tl
               writeFile stpRunFile runTxtC
               t_start <- getHetsTime
@@ -341,7 +339,7 @@ consCheck thName (TacticScript tl) tm freedefs =
               removeFile stpRunFile
               removeFile stpTmpFile
               let t_u = diffHetsTime t_end t_start
-                  outstate =  CCStatus
+                  outstate = CCStatus
                               { ccResult = Nothing
                               , ccProofTree = ProofTree $ stdoutC ++ stderrC
                               , ccUsedTime = t_u }
@@ -354,4 +352,4 @@ consCheck thName (TacticScript tl) tm freedefs =
                            {
                              ccResult = Just False
                            }
-                _          -> return outstate
+                _ -> return outstate
