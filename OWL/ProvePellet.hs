@@ -147,8 +147,8 @@ consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
           , ccProofTree = ProofTree $ unlines out ++ "\n\n" ++ prob
           , ccUsedTime = timeToTimeOfDay $ secondsToDiffTime $ toInteger tUsed }
         tLim = readMaybe tl
-    res <- runTimedPellet "consistency" (basename thName) prob Nothing
-      $ fromMaybe (-1) $ readMaybe tl
+    res <- runTimedPellet "consistency" (basename thName ++ ".owl") prob Nothing
+      $ fromMaybe maxBound $ readMaybe tl
     return $ case res of
       Nothing -> pStatus ["Timeout after " ++ tl ++ " seconds"]
                  (fromMaybe (0 :: Int) tLim)

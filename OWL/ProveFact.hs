@@ -10,15 +10,15 @@ Portability :  non-portable
 Fact++ prover for OWL
 -}
 
-module OWL.ProveFact where
+module OWL.ProveFact (factProver, factConsChecker) where
 
 import Logic.Prover
 
 import OWL.AS
 import OWL.Morphism
 import OWL.Sign
-import OWL.Print
 import OWL.Sublogic
+import OWL.ProverState
 
 import GUI.GenericATP
 import Interfaces.GenericATPState
@@ -32,37 +32,17 @@ import Common.ProverTools
 import Common.Utils
 import Common.Timing
 
-import Data.Time.LocalTime (midnight)
+import Data.Time (TimeOfDay, midnight)
 
 import System.Exit
-import System.IO
 import System.Process
 import System.Directory
+import System.FilePath
 
 import Control.Concurrent
 import Control.Monad (when)
 
 import Data.Maybe
-
-data FactProverState = FactProverState
-                           { ontologySign :: Sign
-                           , initialState :: [Named Axiom]
-                           } deriving (Show)
-
-data FactProblem = FactProblem
-                       { identifier :: String
-                       , problemProverState :: FactProverState
-                       } deriving (Show)
-
--- * Prover implementation
-factProverState :: Sign
-                  -> [Named Axiom]
-                  -> [FreeDefMorphism Axiom OWLMorphism]
-                  -- ^ freeness constraints
-                  -> FactProverState
-factProverState sig oSens _ = FactProverState
-  { ontologySign = sig
-  , initialState = filter isAxiom oSens }
 
 {- |
   The Prover implementation. First runs the batch prover (with graphical
@@ -117,12 +97,12 @@ factConsChecker = mkConsChecker "Fact" sl_top consCheck
   line interface.
 -}
 atpFun :: String -- ^ theory name
-       -> ATPFunctions Sign Axiom OWLMorphism ProofTree FactProverState
-atpFun thName = ATPFunctions
-  { initialProverState = factProverState
+       -> ATPFunctions Sign Axiom OWLMorphism ProofTree ProverState
+atpFun _ = ATPFunctions
+  { initialProverState = owlProverState
   , atpTransSenName = id   -- transSenName,
   , atpInsertSentence = insertOWLAxiom
-  , goalOutput = showOWLProblem thName
+  , goalOutput = \ a b _ -> showOWLProblem a b
   , proverHelpText = "Fact++"
   , batchTimeEnv = "HETS_FACT_BATCH_TIME_LIMIT"
   , fileExtensions = FileExtensions { problemOutput = ".owl"  -- owl-hets
@@ -132,19 +112,6 @@ atpFun thName = ATPFunctions
   , createProverOptions = extraOpts }
 
 {- |
-  Inserts a named OWL axiom into pellet prover state.
--}
-insertOWLAxiom :: FactProverState {- ^ prover state containing
-                                    initial logical part -}
-               -> Named Axiom -- ^ goal to add
-               -> FactProverState
-insertOWLAxiom pps s = pps { initialState = initialState pps ++ [s] }
-
--- * Main prover functions
-getEnvSec :: String -> IO String
-getEnvSec s = getEnvDef s ""
-
-{- |
   Runs the Fact++ consistency checker.
 -}
 consCheck :: String
@@ -152,82 +119,68 @@ consCheck :: String
           -> TheoryMorphism Sign Axiom OWLMorphism ProofTree
           -> [FreeDefMorphism Axiom OWLMorphism] -- ^ freeness constraints
           -> IO (CCStatus ProofTree)
-consCheck thName _ tm freedefs = case tTarget tm of
+consCheck thName (TacticScript tl) tm freedefs = case tTarget tm of
   Theory sig nSens ->
    do
     let saveOWL = False
-        proverStateI = factProverState sig (toNamedList nSens) freedefs
-        problemS = showOWLProblemS thName proverStateI []
+        proverStateI = owlProverState sig (toNamedList nSens) freedefs
+        problemS = showOWLProblemS proverStateI
         tmpFileName = basename thName ++ ".owl"
-        jar = "OWLFact.jar"
         pStatus out tUsed = CCStatus
           { ccResult = Nothing
           , ccProofTree = ProofTree $ out ++ "\n\n" ++ problemS
           , ccUsedTime = tUsed }
     when saveOWL (writeFile tmpFileName problemS)
-    (progTh, toolPath) <- check4HetsOWLjar jar
-    if progTh then withinDirectory toolPath $ do
-        timeTmpFile <- getTempFile problemS tmpFileName
-        jni <- getEnvDef "HETS_JNI_LIBS" "lib/native/`uname -m`"
-        let command = "java -Djava.library.path=" ++ jni ++ " -jar "
-              ++ jar ++ " file://" ++ timeTmpFile
-        t_start <- getHetsTime
-        (_, outh, errh, proch) <- runInteractiveCommand command
-        ex_code <- waitForProcess proch
-        t_end <- getHetsTime
-        outp <- hGetContents outh
-        eOut <- hGetContents errh
-        removeFile timeTmpFile
-        let t_u = diffHetsTime t_end t_start
-            pStat = pStatus (outp ++ eOut) t_u
-        return $ case ex_code of
+    res <- runTimedFact tmpFileName problemS Nothing
+      $ fromMaybe maxBound $ readMaybe tl
+    return $ case res of
+      Just (b, ex_code, out, t_u) -> let pStat = pStatus out t_u in if b then
+        case ex_code of
           ExitFailure 10 -> pStat { ccResult = Just True }
           ExitFailure 20 -> pStat { ccResult = Just False}
           _ -> pStat
-       else return $ pStatus "OWLFact not found" midnight
+        else pStat
+      Nothing -> pStatus "Timeout" midnight
 
-showOWLProblemS :: String -- ^ theory name
-                -> FactProverState {- ^ prover state containing
-                                     initial logical part -}
-                -> [String] -- ^ extra options
-                -> String -- ^ formatted output of the goal
-showOWLProblemS thName pst _ =
-    let namedSens = initialState $ problemProverState
-                    $ genFactProblemS thName pst Nothing
-        sign = ontologySign $ problemProverState
-                    $ genFactProblemS thName pst Nothing
-    in show $ printOWLBasicTheory (sign, filter isAxiom namedSens)
-
-genFactProblemS :: String
-                  -> FactProverState
-                  -> Maybe (Named Axiom)
-                  -> FactProblem
-genFactProblemS thName pps m_nGoal = FactProblem
-  { identifier = thName
-  , problemProverState =
-      pps { initialState = initialState pps ++ maybeToList m_nGoal } }
-
-{- |
-  Pretty printing DL goal in Manchester-OWL-Syntax.
--}
-showOWLProblem :: String -- ^ theory name
-               -> FactProverState {- ^ prover state containing
-                                    initial logical part -}
-               -> Named Axiom -- ^ goal to print
-               -> [String] -- ^ extra options
-               -> IO String -- ^ formatted output of the goal
-showOWLProblem thName pst nGoal _ =
-  let namedSens = initialState $ problemProverState
-                    $ genFactProblemS thName pst Nothing
-      sign = ontologySign $ problemProverState
-                    $ genFactProblemS thName pst Nothing
-  in return $ show (printOWLBasicTheory (sign, filter isAxiom namedSens))
-       ++ "\n\nEntailments:\n\n" ++ show (printOWLBasicTheory (sign, [nGoal]))
+runTimedFact :: FilePath -- ^ basename of problem file
+  -> String              -- ^ problem content
+  -> Maybe String        -- ^ entail content
+  -> Int                 -- ^ time limit in seconds
+  -> IO (Maybe (Bool, ExitCode, String, TimeOfDay))
+runTimedFact tmpFileName prob mEnt tLimit = do
+  let hasEnt = isJust mEnt
+      jar = if hasEnt then "OWLFactProver.jar" else "OWLFact.jar"
+      jlibName = "libFaCTPlusPlusJNI.so"
+  (progTh, toolPath) <- check4HetsOWLjar jar
+  hasJniLib <- doesFileExist $ "/lib/" ++ jlibName
+  (_, arch, _) <- readProcessWithExitCode "uname" ["-m"] ""
+  if progTh then
+        withinDirectory toolPath $ do
+          jni <- getEnvDef "HETS_JNI_LIBS" $ "lib/native/" ++ trim arch
+          hasJni <- doesFileExist $ jni </> jlibName
+          if hasJni || hasJniLib then do
+            timeTmpFile <- getTempFile prob tmpFileName
+            let entailsFile = timeTmpFile ++ ".entail.owl"
+                jargs = ["-Djava.library.path=" ++ jni | not hasJniLib]
+                  ++ ["-jar", jar, "file://" ++ timeTmpFile]
+                  ++ ["file://" ++ entailsFile | hasEnt ]
+            case mEnt of
+              Just entail -> writeFile entailsFile entail
+              _ -> return ()
+            t_start <- getHetsTime
+            mExit <- timeoutCommand tLimit "java" jargs
+            t_end <- getHetsTime
+            removeFile timeTmpFile
+            when hasEnt $ removeFile entailsFile
+            return $ fmap (\ (ex, out, err) ->
+                  (True, ex, out ++ err, diffHetsTime t_end t_start)) mExit
+            else return $ Just (False, ExitSuccess, "no " ++ jlibName, midnight)
+    else return $ Just (False, ExitSuccess, jar ++ " not found.", midnight)
 
 {- |
    Invocation of the Fact Prover.
 -}
-runFact :: FactProverState
+runFact :: ProverState
           {- ^ logical part containing the input Sign and axioms and possibly
           goals that have been proved earlier as additional axioms -}
           -> GenericConfig ProofTree -- ^ configuration to use
@@ -237,67 +190,50 @@ runFact :: FactProverState
           -> IO (ATPRetval, GenericConfig ProofTree)
           -- ^ (retval, configuration with proof status and complete output)
 runFact sps cfg saveFact thName nGoal = do
-      let prob = showOWLProblemS thName sps []
-          entail = showOWLProblemS thName
-                     (sps { initialState = [ nGoal {isAxiom = True } ] }) []
-          jar = "OWLFactProver.jar"
+      let prob = showOWLProblemS sps
+          entail = showOWLProblemS
+            sps { initialState = [ nGoal {isAxiom = True } ] }
       when saveFact $ do
         writeFile tmpFileName prob
         writeFile (tmpFileName ++ ".entail.owl") entail
-      (progTh, toolPath) <- check4HetsOWLjar jar
-      arch <- fmap trim $ readProcess "uname" ["-m"] ""
-      if progTh && elem arch ["i686", "x86_64"] then
-        withinDirectory toolPath $ do
-          timeTmpFile <- getTempFile prob tmpFileName
-          jni <- getEnvDef "HETS_JNI_LIBS" $ "lib/native/" ++ arch
-          let entailsFile = timeTmpFile ++ ".entail.owl"
-              jargs = ["-Djava.library.path=" ++ jni, "-jar"
-                , jar, "file://" ++ timeTmpFile, "file://" ++ entailsFile]
-          writeFile entailsFile entail
-          t_start <- getHetsTime
-          mExit <- timeoutCommand tLimit "java" jargs
-          t_end <- getHetsTime
-          let t_u = diffHetsTime t_end t_start
-          ((err, retval), output, tUsed) <- case mExit of
-            Just (ex, output, eOut) -> do
-              let outp = lines $ output ++ eOut
-              return (proofStat ex simpleOptions outp t_u, outp, t_u)
+      mExit <- runTimedFact tmpFileName prob (Just entail) tLimit
+      ((err, retval), output, tUsed) <- case mExit of
+            Just (b, ex, output, t_u) -> if b then do
+              let outp = lines output
+              return (proofStat ex outp t_u, outp, t_u)
+              else return ((ATPError output, defaultProofStatus), [], t_u)
             Nothing -> return
-              ( (ATPTLimitExceeded, defaultProofStatus simpleOptions)
-              , [], t_u)
-          removeFile timeTmpFile
-          removeFile entailsFile
-          return (err, cfg
+              ( (ATPTLimitExceeded, defaultProofStatus)
+              , [], midnight)
+      return (err, cfg
             { proofStatus = retval
             , resultOutput = output
             , timeUsed = tUsed
             })
-        else return (ATPError "OWLFactProver not found", cfg)
   where
-    simpleOptions = extraOpts cfg
     tLimit = fromMaybe 800 $ timeLimit cfg
     goalSuffix = '_' : senAttr nGoal
     tmpFileName = basename thName ++ goalSuffix ++ ".owl"
-    proofStat exitCode options out tUsed = case exitCode of
-      ExitFailure 10 -> (ATPSuccess, (provedStatus options tUsed)
+    proofStat exitCode out tUsed = case exitCode of
+      ExitFailure 10 -> (ATPSuccess, (provedStatus tUsed)
                        { usedAxioms = map senAttr $ initialState sps })
-      ExitFailure 20 -> (ATPSuccess, disProvedStatus options)
+      ExitFailure 20 -> (ATPSuccess, disProvedStatus)
       ExitFailure _ -> ( ATPError (unlines ("Internal error." : out))
-                       , defaultProofStatus options)
+                       , defaultProofStatus)
       ExitSuccess -> ( ATPError (unlines ("Internal error." : out))
-                       , defaultProofStatus options)
-    tScript opts = TacticScript $ show ATPTacticScript
+                       , defaultProofStatus)
+    tScript = TacticScript $ show ATPTacticScript
                      { tsTimeLimit = configTimeLimit cfg
-                     , tsExtraOpts = opts }
-    defaultProofStatus opts =
+                     , tsExtraOpts = extraOpts cfg }
+    defaultProofStatus =
       (openProofStatus (senAttr nGoal) (proverName factProver) emptyProofTree)
-        { tacticScript = tScript opts }
-    disProvedStatus opts = (defaultProofStatus opts) {goalStatus = Disproved}
-    provedStatus opts ut =
+        { tacticScript = tScript }
+    disProvedStatus = defaultProofStatus {goalStatus = Disproved}
+    provedStatus ut =
       ProofStatus { goalName = senAttr nGoal
                   , goalStatus = Proved True
                   , usedAxioms = []
                   , usedProver = proverName factProver
                   , proofTree = emptyProofTree
                   , usedTime = ut
-                  , tacticScript = tScript opts }
+                  , tacticScript = tScript }
