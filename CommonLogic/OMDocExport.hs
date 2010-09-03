@@ -1,31 +1,19 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
+module CommonLogic.OMDocExport
+       ( exportSymToOmdoc
+       , exportSenToOmdoc
+       ) where
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
--}
-module CommonLogic.OMDocExport where
-
-import CommonLogic.AS_CommonLogic
-import CommonLogic.Sign
+import CommonLogic.AS_CommonLogic as AS
 import CommonLogic.Symbol
+--import CommonLogic.Sign
 import CommonLogic.OMDoc
 
 import OMDoc.DataTypes
 
 import Common.Id
 import Common.Result
-import Common.AS_Annotation
-import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
-import Data.Maybe
 
 
 
@@ -50,10 +38,10 @@ exportSenToOmdoc' en vars s =  case s of
       Quant_sent qs _ -> case qs of 
                             Universal vars2 s2 -> OMBIND   const_forall
                                                            (map exportVar vars2)
-                                                           (exportSenToOmdoc' en (union vars vars2) s2)
+                                                            (exportSenToOmdoc' en (vars ++ vars2) s2)
                             Existential vars2 s2 -> OMBIND   const_exists
                                                              (map exportVar vars2)
-                                                              (exportSenToOmdoc' en (union vars vars2) s2) 
+                                                             (exportSenToOmdoc' en (vars ++ vars2) s2) 
       Bool_sent bs _ -> case bs of
                                    Conjunction ss -> OMA $ const_and : (map (exportSenToOmdoc' en vars) ss)
                                    Disjunction ss -> OMA $ const_or : (map (exportSenToOmdoc' en vars) ss)
@@ -65,42 +53,42 @@ exportSenToOmdoc' en vars s =  case s of
                                    Biconditional s1 s2 -> OMA [ const_equivalent,
                                                                 exportSenToOmdoc' en vars s1,
                                                                 exportSenToOmdoc' en vars s2]
-      Atom_sent at ir -> case at of
+      Atom_sent at _ -> case at of
                                    Equation t1 t2 -> OMA   [ const_eq ,
                                                              exportTerm en vars t1,
                                                              exportTerm en vars t2 ]
-                                   Atom pt tts -> OMA $   (exportTerm en pt) : (map (exportTermSeq en vars) tts)  
-      Comment_sent com s1 ir -> OMA [const_comment,
+                                   Atom pt tts -> OMA $   (exportTerm en vars pt) : (map (exportTermSeq en vars) tts)  
+      Comment_sent com s1 _ -> OMA [const_comment,
                                      exportSenToOmdoc' en vars s1]
-      Irregular_sent s1 ir -> OMA [const_irregular,
+      Irregular_sent s1 _ -> OMA [const_irregular,
                                     exportSenToOmdoc' en vars s1]  
 
 exportTerm :: Env -> [NAME_OR_SEQMARK] -> TERM -> OMElement
 exportTerm e vars t = case t of
-     Name_term n -> if finds (CommonLogic.AS_CommonLogic.Name n) vars
-                    then exportVar (CommonLogic.AS_CommonLogic.Name n)
-                    else oms e n 
-     Funct_term ft tss ir -> OMA $ (exportTerm e vars ft) : (map (exportTermSeq e vars) tss)
-     Comment_term t1 com ir -> OMA [ const_comment_term,
+     Name_term n -> if elem (AS.Name n) vars
+                    then exportVar (AS.Name n)
+                   else oms e n 
+     Funct_term ft tss _ -> OMA $ (exportTerm e vars ft) : (map (exportTermSeq e vars) tss)
+     Comment_term t1 com _ -> OMA [ const_comment_term,
                                      exportTerm e vars t1 ]
 
 
 exportTermSeq :: Env -> [NAME_OR_SEQMARK] ->  TERM_SEQ -> OMElement
 exportTermSeq e vars ts = case ts of
      Term_seq t -> exportTerm e vars t
-     Seq_marks s -> if finds (SeqMark s) vars
+     Seq_marks s -> if elem (SeqMark s) vars
                     then exportVar (SeqMark s)
                     else oms e s  
 
 exportVar :: NAME_OR_SEQMARK -> OMElement
-exportVar (CommonLogic.AS_CommonLogic.Name n) = OMV $ mkSimpleName $ tokStr n
+exportVar (AS.Name n) = OMV $ mkSimpleName $ tokStr n
 exportVar (SeqMark s) = OMV $ mkSimpleName $ tokStr s
 
 
 
 oms :: Env -> Token -> OMElement 
 oms e x = let s = toSymbol x 
-              err = error $ "oms: no mapping for the symbol"
+	      err = error $ "oms: no mapping for the symbol " ++ show s -- printId1 (symName s) ++ "\n" ++ show e ++ "\n\n\n" ++ ""
            in simpleOMS $ findInEnv err e s
 
 findInEnv ::(Ord k) => a -> Map.Map k a -> k -> a
@@ -108,16 +96,6 @@ findInEnv err m x = Map.findWithDefault err x m
 
 -- transform a NAME_OR_SEQMARK into a symbol. 
 toSymbol :: Token -> Symbol  
-toSymbol tk@(Token toks tokp) = Symbol (nameToId toks) 
+toSymbol = Symbol . simpleIdToId 
 
 
-
-finds :: NAME_OR_SEQMARK -> [NAME_OR_SEQMARK] -> Bool
-finds _ [] = False
-finds n  a@(m:vars) = if n == m
-                      then True
-                      else False
-
-union :: [a] -> [a] -> [a]
-union [] v2 = v2
-union a@(v:v1) v2 = v : (union v1 v2)
