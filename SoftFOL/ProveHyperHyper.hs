@@ -24,6 +24,7 @@ import qualified Common.Result as Result
 import Common.AS_Annotation as AS_Anno
 import Common.SZSOntology
 import Common.Timing
+import Common.Utils
 
 import SoftFOL.Sign
 import SoftFOL.Translate
@@ -33,7 +34,6 @@ import GUI.GenericATP
 import Proofs.BatchProcessing
 import Interfaces.GenericATPState
 
-import System.IO
 import System.Process
 import System.Directory
 
@@ -45,7 +45,6 @@ import Data.List
 import Data.Maybe
 
 import Data.Time.LocalTime (TimeOfDay, midnight)
-import Data.Time.Clock (UTCTime(..), getCurrentTime)
 
 -- Prover
 
@@ -164,15 +163,7 @@ runHyper :: SoftFOLProverState
            -- ^ (retval, configuration with proof status and complete output)
 runHyper sps cfg saveTPTP thName nGoal =
     let
-        saveFile = thName++'_':AS_Anno.senAttr nGoal
-        tmpFile  = (reverse $ fst $ span (/='/') $ reverse thName) ++
-                       '_':AS_Anno.senAttr nGoal
-        prelFile = "prelude_" ++ (reverse $ fst $ span (/='/') $ reverse
-                                          thName)
-                   ++ '_':AS_Anno.senAttr nGoal
-        runFile  = "run_" ++ (reverse $ fst $ span (/='/') $ reverse
-                                          thName)
-                   ++ '_':AS_Anno.senAttr nGoal
+        saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
         simpleOptions = uniteOptions $ extraOpts cfg
         tl = configTimeLimit cfg
     in
@@ -185,32 +176,21 @@ runHyper sps cfg saveTPTP thName nGoal =
          then
            do
              prob <- showTPTPProblem thName sps nGoal $ []
-             when saveTPTP
-                 (writeFile (saveFile ++".tptp") prob)
-             t <- getCurrentTime
-             let stpTmpFile  = "/tmp/" ++ tmpFile ++ (show $ utctDay t) ++
-                                    "-" ++ (show $ utctDayTime t) ++ ".tptp"
-                 stpPrelFile = "/tmp/" ++ prelFile ++ (show $ utctDay t) ++
-                                    "-" ++ (show $ utctDayTime t) ++ ".tme"
-                 stpRunFile  = "/tmp/" ++ runFile ++ (show $ utctDay t) ++
-                                    "-" ++ (show $ utctDayTime t) ++ ".tme"
+             when saveTPTP (writeFile saveFile prob)
+             stpTmpFile <- getTempFile prob saveFile
+             let stpPrelFile = stpTmpFile ++ ".prelude.tme"
+                 stpRunFile  = stpTmpFile ++ ".run.tme"
              writeFile stpPrelFile $
-                           ((prelTxt $ show tl) ++ "\n" ++ unlines
-                                                simpleOptions)
-             writeFile stpRunFile  $ runTxt
-             writeFile stpTmpFile  $ prob
-             let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
-                           " " ++ stpRunFile
+                           prelTxt (show tl) ++ "\n" ++ unlines simpleOptions
+             writeFile stpRunFile runTxt
              t_start <- getHetsTime
-             (_, stdouth, stderrh, proch) <- runInteractiveCommand command
-             waitForProcess proch
+             (_, stdoutC, stderrC) <- readProcessWithExitCode "ekrh"
+                [stpPrelFile, stpTmpFile, stpRunFile] ""
              t_end <- getHetsTime
              removeFile stpPrelFile
              removeFile stpRunFile
              removeFile stpTmpFile
              let t_u = diffHetsTime t_end t_start
-             stdoutC <- hGetContents stdouth
-             stderrC <- hGetContents stderrh
              (pStat, ret) <- examineProof sps cfg stdoutC stderrC nGoal t_u tl
              return (pStat, cfg
                               {
@@ -221,7 +201,7 @@ runHyper sps cfg saveTPTP thName nGoal =
          else
             do
               let tScript opts = TacticScript $ show ATPTacticScript
-                                 { tsTimeLimit = configTimeLimit cfg
+                                 { tsTimeLimit = tl
                                  , tsExtraOpts = opts }
               return $
                     (ATPError "Syntax error in options"
@@ -342,41 +322,24 @@ consCheck thName (TacticScript tl) tm freedefs =
     case tTarget tm of
       Theory sig nSens ->
           let
-              saveTPTP = False
               proverStateI = spassProverState sig (toNamedList nSens) freedefs
               problem     = showTPTPProblemM thName proverStateI []
-              saveFile = reverse $ fst $ span (/= '/') $ reverse thName
-              tmpFile  = (reverse $ fst $ span (/='/') $ reverse thName)
-              prelFile = "prelude_" ++ (reverse $ fst $ span (/='/') $ reverse
-                                        thName)
-              runFile  = "run_" ++ (reverse $ fst $ span (/='/') $ reverse
-                                            thName)
+              saveFile = basename thName  ++ ".tptp"
           in
             do
               prob <- problem
-              when saveTPTP
-                       (writeFile (saveFile ++".tptp") prob)
-              t <- getCurrentTime
-              let stpTmpFile  = "/tmp/" ++ tmpFile ++ (show $ utctDay t) ++
-                                "-" ++ (show $ utctDayTime t) ++ ".tptp"
-                  stpPrelFile = "/tmp/" ++ prelFile ++ (show $ utctDay t) ++
-                                "-" ++ (show $ utctDayTime t) ++ ".tme"
-                  stpRunFile  = "/tmp/" ++ runFile ++ (show $ utctDay t) ++
-                                "-" ++ (show $ utctDayTime t) ++ ".tme"
+              stpTmpFile <- getTempFile prob saveFile
+              let stpPrelFile = stpTmpFile ++ ".prelude.tme"
+                  stpRunFile  = stpTmpFile ++ ".run.tme"
               writeFile stpPrelFile $ prelTxt tl
-              writeFile stpRunFile  $ runTxtC
-              writeFile stpTmpFile  $ prob
-              let command = "ekrh " ++ stpPrelFile ++ " " ++ stpTmpFile ++
-                            " " ++ stpRunFile
+              writeFile stpRunFile runTxtC
               t_start <- getHetsTime
-              (_, stdouth, stderrh, proch) <- runInteractiveCommand command
-              waitForProcess proch
+              (_, stdoutC, stderrC) <- readProcessWithExitCode "ekrh"
+                [stpPrelFile, stpTmpFile, stpRunFile] ""
               t_end <- getHetsTime
               removeFile stpPrelFile
               removeFile stpRunFile
               removeFile stpTmpFile
-              stdoutC <- hGetContents stdouth
-              stderrC <- hGetContents stderrh
               let t_u = diffHetsTime t_end t_start
                   outstate =  CCStatus
                               { ccResult = Nothing
