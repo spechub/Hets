@@ -8,16 +8,6 @@ Stability   :  provisional
 Portability :  portable
 
 Predefined signature part of CASL_DL.
-
-This module is always compiled via C-code, because otherwise the
-object file cannot be generated. It yields this error:
-
-@Compiling CASL_DL.PredefinedSign ( ./CASL_DL/PredefinedSign.hs, ./CASL_DL/PredefinedSign.o )@
-
-@/tmp/ghc1072.s:31400:Fixup of 39588 too large for field width of 16 bits@
-
-@/tmp/ghc1072.s:31397:Fixup of 39600 too large for field width of 16 bits@
-
 -}
 
 module CASL_DL.PredefinedSign(predefinedSign,topSort,topSortD,dataSig_CASL) where
