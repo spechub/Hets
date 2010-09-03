@@ -23,7 +23,6 @@ import qualified Propositional.Morphism as PMorphism
 import qualified Propositional.ProverState as PState
 import qualified Propositional.Sign as Sig
 import Propositional.Sublogic (PropSL, top)
-import Propositional.ChildMessage
 
 import Proofs.BatchProcessing
 
@@ -32,26 +31,22 @@ import qualified Logic.Prover as LP
 import Interfaces.GenericATPState
 import GUI.GenericATP
 
-import Common.UniUtils as CP
-
 import Common.ProofTree
-import Common.Utils (readMaybe, basename)
+import Common.Utils
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.OrderedMap as OMap
 import qualified Common.Result as Result
 
 import Control.Monad (when)
 import qualified Control.Concurrent as Concurrent
-import qualified Control.Exception as Exception
 
 import Data.List
 import Data.Maybe
 import Data.Time (TimeOfDay, timeToTimeOfDay, midnight)
 
 import System.Directory
-import System.Cmd
+import System.Process
 import System.Exit
-import System.IO
 
 -- * Prover implementation
 
@@ -90,25 +85,17 @@ consCheck thName _ tm _ =
     case LP.tTarget tm of
       LP.Theory sig nSens -> do
             let axioms = getAxioms $ snd $ unzip $ OMap.toList nSens
-                thName_clean = basename thName
-                tmpFile = "/tmp/" ++ thName_clean ++ "_cc.zchaff.dimacs"
-                resultFile = tmpFile ++ ".result"
+                thName_clean = basename thName ++ "_cc.zchaff.dimacs"
             dimacsOutput <- PC.showDIMACSProblem (thName ++ "_cc")
                              sig axioms Nothing
-            outputHf <- openFile tmpFile ReadWriteMode
-            hPutStr outputHf dimacsOutput
-            hClose outputHf
-            exitCode <- system ("zchaff " ++ tmpFile ++ " >> " ++ resultFile)
-            removeFile tmpFile
-            if exitCode /= ExitSuccess then return $ LP.CCStatus
+            tmpFile <- getTempFile dimacsOutput thName_clean
+            (exitCode, resultHf, _) <-
+              readProcessWithExitCode zchaffS [tmpFile] ""
+            return $ if exitCode /= ExitSuccess then LP.CCStatus
                    (ProofTree $ "error by call zchaff " ++ thName)
                    midnight Nothing
-               else do
-                   resultHf <- readFile resultFile
-                   let isSAT = searchResult resultHf
-                   when (length resultHf > 0) $ removeFile resultFile
-                   return $ LP.CCStatus (ProofTree resultHf) midnight isSAT
-
+               else LP.CCStatus (ProofTree resultHf) midnight
+                       $ searchResult resultHf
     where
         getAxioms :: [LP.SenStatus AS_BASIC.FORMULA (LP.ProofStatus ProofTree)]
                   -> [AS_Anno.Named AS_BASIC.FORMULA]
@@ -210,21 +197,21 @@ runZchaff :: PState.PropProverState
            -- (retval, configuration with proof status and complete output)
 runZchaff pState cfg saveDIMACS thName nGoal = do
       prob <- Cons.goalDIMACSProblem thName pState nGoal []
+      let thName_clean =
+              basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
       when saveDIMACS (writeFile thName_clean prob)
-      writeFile zFileName prob
-      zchaff <- newChildProcess "zchaff" [CP.arguments allOptions]
-      let runZchaffReal = do
-                zchaffOut <- parseIt zchaff isEnd
-                (res, usedAxs, tUsed) <- analyzeZchaff zchaffOut pState
-                let defaultProofStatus =
-                      (LP.openProofStatus (AS_Anno.senAttr nGoal)
-                             (LP.proverName zchaffProver)
+      zFileName <- getTempFile prob thName_clean
+      (_, zchaffOut, _) <- readProcessWithExitCode zchaffS
+        (zFileName : createZchaffOptions cfg) ""
+      (res, usedAxs, tUsed) <- analyzeZchaff zchaffOut pState
+      let defaultProofStatus =
+                      (LP.openProofStatus (AS_Anno.senAttr nGoal) zchaffS
                                         emptyProofTree)
                       {LP.tacticScript = LP.TacticScript $ show
                             ATPTacticScript
                              { tsTimeLimit = configTimeLimit cfg
                              , tsExtraOpts = []} }
-                let (err, retval) = case res of
+          (err, retval) = case res of
                       Right p -> (ATPSuccess,
                         defaultProofStatus
                                 {LP.goalStatus = p
@@ -232,24 +219,11 @@ runZchaff pState cfg saveDIMACS thName nGoal = do
                                     (/= AS_Anno.senAttr nGoal) usedAxs
                                 , LP.proofTree = ProofTree zchaffOut })
                       Left a -> (a, defaultProofStatus)
-                deleteJunk
-                return (err,
-                        cfg {proofStatus = retval,
-                            resultOutput = [zchaffOut],
-                            timeUsed = tUsed})
-      Exception.catch runZchaffReal
-                   (\ excep -> do
-                      -- kill zchaff process
-                      destroy zchaff
-                      _ <- waitForChildProcess zchaff
-                      deleteJunk
-                      excepToATPResult (LP.proverName zchaffProver)
-                        (AS_Anno.senAttr nGoal) excep)
-    where
-      deleteJunk = catch (removeFile zFileName) (const $ return ())
-      thName_clean = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".dimacs"
-      zFileName = "/tmp/problem_" ++ thName_clean
-      allOptions = zFileName : createZchaffOptions cfg
+      catch (removeFile zFileName) (const $ return ())
+      return (err, cfg
+              { proofStatus = retval
+              , resultOutput = [zchaffOut]
+              , timeUsed = tUsed })
 
 -- | analysis of output
 analyzeZchaff :: String -> PState.PropProverState
@@ -280,10 +254,6 @@ reSAT :: String
 reSAT = "RESULT:\tSAT"
 reTIME :: String
 reTIME = "Total Run Time"
-
--- | We are searching for Flotter needed to determine the end of input
-isEnd :: String -> Bool
-isEnd inS = any (`isInfixOf` inS) ["RESULT:", reEndto, reEndmo]
 
 reEndto :: String
 reEndto = "TIME OUT"
