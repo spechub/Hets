@@ -39,7 +39,7 @@ import Text.ParserCombinators.Parsec
 
 import Control.Monad
 
-import System.Cmd (system)
+import System.Process
 import System.IO.Unsafe (unsafePerformIO)
 
 -- | The identity of the comorphism
@@ -68,10 +68,9 @@ runOntoDMU :: String -> IO String
 runOntoDMU str = if null str then return "" else do
   ontoDMUpath <- getEnvDef "HETS_ONTODMU" "DMU/OntoDMU.jar"
   tmpFile <- getTempFile str "ontoDMU.xml"
-  let outFile = tmpFile ++ ".het"
-  system $ "java -jar " ++ ontoDMUpath ++ " -f " ++ tmpFile
-    ++ " -o " ++ outFile
-  readFile outFile
+  (_, out, _) <- readProcessWithExitCode "java"
+    ["-jar",  ontoDMUpath, "-f", tmpFile] ""
+  return out
 
 readOWL :: Monad m => String -> m (Sign, [Named Axiom])
 readOWL str = case runParser (liftM2 const basicSpec eof) () "" str of
