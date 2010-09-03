@@ -11,19 +11,30 @@ Portability :  portable
 Termination proofs for equation systems, using AProVE
 -}
 
-module CASL.CCC.TerminationProof where
-
+module CASL.CCC.TerminationProof
+  ( terminationProof
+  , opSymName
+  , predSymName
+  ) where
 
 import CASL.AS_Basic_CASL
-import CASL.CCC.TermFormula (term, quanti, isApp, arguOfTerm, varOfAxiom, idStr,
-                            substiF, sameOpsApp)
-import CASL.ToDoc ()
+import CASL.CCC.TermFormula
+  ( term
+  , quanti
+  , isApp
+  , arguOfTerm
+  , varOfAxiom
+  , idStr
+  , substiF
+  , sameOpsApp)
 
 import Common.Id (Token (tokStr))
 import Common.Utils
 
 import System.Process
 import System.Directory
+
+import Data.List (intercalate)
 
 {-
    Automatic termination proof
@@ -74,33 +85,39 @@ opSymName = idStr . opSymbName
 predSymName :: PRED_SYMB -> String
 predSymName = idStr . predSymbName
 
+-- | create a predicate application
+predAppl :: PRED_SYMB -> [TERM f] -> String
+predAppl p ts = predSymName p
+  ++ if null ts then "" else apply "" $ termsPA ts
+
+-- | apply function string to argument string with brackets
+apply :: String -> String -> String
+apply f a = f ++ "(" ++ a ++ ")"
+
+-- | create an eq application
+applyEq :: TERM f -> TERM f -> String
+applyEq t1 t2 = apply "eq" $ term2TRS t1 ++ "," ++ term2TRS t2
+
 -- | translate a casl term to a term of TRS(Terme Rewrite Systems)
 term2TRS :: TERM f -> String
 term2TRS t = case term t of
     Qual_var var _ _ -> tokStr var
-    Application opn ts _ -> opSymName opn ++
-        if null ts then ""
-        else "(" ++ termsPA ts ++ ")"
+    Application o ts _ -> opSymName o ++ termsPA ts
     Sorted_term t' _ _ -> term2TRS t'
     Cast t' _ _ -> term2TRS t'
     Conditional t1 f t2 _ ->
-        "when_else(" ++ term2TRS t1 ++ "," ++ t_f_str f ++ "," ++
-          term2TRS t2 ++ ")"
+        apply "when_else" $ term2TRS t1 ++ "," ++ t_f_str f ++ "," ++
+              term2TRS t2
     _ -> error "CASL.CCC.TerminationProof.<term2TRS>"
   where t_f_str f = case f of                     -- condition of a term
-                    Strong_equation t1 t2 _ ->
-                        "eq(" ++ term2TRS t1 ++ "," ++ term2TRS t2 ++ ")"
-                    Predication ps ts _ -> predSymName ps ++
-                        if null ts then ""
-                        else "(" ++ termsPA ts ++ ")"
+                    Strong_equation t1 t2 _ -> applyEq t1 t2
+                    Predication ps ts _ -> predAppl ps ts
                     _ -> error "CASL.CCC.TerminationProof.<term2TRS_cond>"
-
 
 -- | translate a list of casl terms to the patterns of a term in TRS
 termsPA :: [TERM f] -> String
-termsPA ts =
-    if null ts then "" else tail $ concatMap ((\ s -> ',' : s) . term2TRS) ts
-
+termsPA ts = if null ts then "" else
+   apply "" . intercalate "," $ map term2TRS ts
 
 {- | translate a casl axiom to TRS-rule:
 a rule without condition is represented by "A -> B" in
@@ -109,10 +126,8 @@ follow the conditions after the symbol "|".
 For example : "A -> B | C -> D, E -> F, ..." -}
 axiom2TRS :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
 axiom2TRS f doms =
-  case (quanti f) of
+  case quanti f of
     Quantification _ _ f' _ -> axiom2TRS f' doms
-    Conjunction fs _ -> conjSub fs doms ++ " -> true"
-    Disjunction fs _ -> disjSub fs doms ++ " -> true"
     Implication f1 f2 _ _ ->
         case f2 of
           Equivalence f3 f4 _ ->
@@ -131,25 +146,16 @@ axiom2TRS f doms =
                        then axiom2TRS f2 doms ++ " | " ++
                             axiom2TRS (substiF st phi) doms
                        else axiom2TRS f2 doms ++
-                            " | def(" ++ term2TRS t ++ ") -> open"
+                            " | " ++ apply "def" (term2TRS t) ++ " -> open"
                 _ -> axiom2TRS f2 doms ++ " | " ++ axiom2TRS f1 doms
     Equivalence f1 f2 _ -> axiom2TRS f1 doms ++ " | " ++ axiom2TRS f2 doms
     Negation f' _ ->
         case f' of
-          Conjunction fs _ -> conjSub fs doms ++ " -> false"
-          Disjunction fs _ -> disjSub fs doms ++ " -> false"
-          Predication p_s ts _ -> predSymName p_s ++
-              if null ts
-              then " -> false"
-              else "(" ++ termsPA ts ++ ") -> false"
-          Strong_equation t1 t2 _ ->
-              "eq(" ++ term2TRS t1 ++ "," ++ term2TRS t2 ++ ") -> false"
+          Quantification {} ->
+              error "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
           Definedness t _ -> term2TRS t ++ " -> undefined"
-          _ -> error "CASL.CCC.TerminationProof.<axiom2TRS_Negation>"
-    Predication p_s ts _ -> predSymName p_s ++
-        if null ts then " -> true"
-        else "(" ++ termsPA ts ++ ") -> true"
-    Definedness t _ -> "def(" ++ term2TRS t ++ ") -> open"
+          _ -> axiomSub f' doms ++ " -> false"
+    Definedness t _ -> apply "def" (term2TRS t) ++ " -> open"
     Strong_equation t1 t2 _ ->
         case t2 of
           Conditional tt1 ff tt2 _ ->
@@ -159,53 +165,35 @@ axiom2TRS f doms =
               axiomSub ff doms ++ " -> false"
           _ -> if isApp t1
                then term2TRS t1 ++ " -> " ++ term2TRS t2
-               else "eq(" ++ term2TRS t1 ++ "," ++ term2TRS t2 ++
-                    ") -> true"
-    True_atom _ -> "true -> true"
+               else applyEq t1 t2 ++ " -> true"
     False_atom _ -> "false -> false"
-    _ -> error "CASL.CCC.TerminationProof.<axiom2TRS>"
+    _ -> axiomSub f doms ++ " -> true"
 
 
 {- | translate a casl axiom(without conditions) to a subrule of TRS,
 the handling of an implication in a subrule is yet to be correctly defined. -}
 axiomSub :: Eq f => FORMULA f -> [(TERM f, FORMULA f)] -> String
 axiomSub f doms =
-  case (quanti f) of
+  case quanti f of
     Quantification _ _ f' _ -> axiomSub f' doms
     Conjunction fs _ -> conjSub fs doms
     Disjunction fs _ -> disjSub fs doms
-    Negation f' _ ->
-        case f' of
-          Conjunction fs _ -> "not(" ++ conjSub fs doms ++ ")"
-          Disjunction fs _ -> "not(" ++ disjSub fs doms ++ ")"
-          Predication p_s ts _ ->
-              if null ts then "not(" ++ predSymName p_s ++ ")"
-              else "not(" ++ predSymName p_s ++ "(" ++ termsPA ts ++ "))"
-          Strong_equation t1 t2 _ ->
-              "not(eq(" ++ term2TRS t1 ++ "," ++ term2TRS t2 ++ "))"
-          _ -> error "CASL.CCC.TerminationProof.str_substr.<Negation>"
+    Negation f' _ -> apply "not" $ axiomSub f' doms
     True_atom _ -> "true"
     False_atom _ -> "false"
-    Predication p_s ts _ -> predSymName p_s ++
-        if null ts then ""
-        else "(" ++ termsPA ts ++ ")"
-    Definedness t _ -> "def(" ++ term2TRS t ++ ")"
-    Strong_equation t1 t2 _ -> "eq(" ++ term2TRS t1 ++ "," ++ term2TRS t2 ++ ")"
+    Predication p_s ts _ -> predAppl p_s ts
+    Definedness t _ -> apply "def" $ term2TRS t
+    Strong_equation t1 t2 _ -> applyEq t1 t2
     i@(Implication _ _ _ _) -> axiom2TRS i doms
     _ -> error "CASL.CCC.TerminationProof.axiomSub.<axiomSub>"
 
 
 -- | translate a list of conjunctive casl formulas to a subrule of TRS
 conjSub :: Eq f => [FORMULA f] -> [(TERM f, FORMULA f)] -> String
-conjSub fs doms =
-  if length fs == 2 then "and(" ++ axiomSub (head fs) doms ++ "," ++
-                                   axiomSub (last fs) doms ++ ")"
-  else "and(" ++ axiomSub (head fs) doms ++ "," ++ conjSub (tail fs) doms ++ ")"
-
+conjSub fs doms = foldr1 (\ x r -> apply "and" $ x ++ "," ++ r)
+  $ map (`axiomSub` doms) fs
 
 -- | translate a list of disjunctive casl formulas to a subrule of TRS
 disjSub :: Eq f => [FORMULA f] -> [(TERM f, FORMULA f)] -> String
-disjSub fs doms =
-  if length fs == 2 then "or(" ++ axiomSub (head fs) doms ++ "," ++
-                                  axiomSub (last fs) doms ++ ")"
-  else "or(" ++ axiomSub (head fs) doms ++ "," ++ disjSub (tail fs) doms ++ ")"
+disjSub fs doms = foldr1 (\ x r -> apply "or" $ x ++ "," ++ r)
+  $ map (`axiomSub` doms) fs
