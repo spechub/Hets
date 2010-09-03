@@ -29,8 +29,9 @@ import CommonLogic.Morphism
 
 import qualified Data.Map as Map
 
--- import CommonLogic.OMDocExport
--- import CommonLogic.OMDocImport
+import CommonLogic.OMDocExport
+import CommonLogic.OMDocImport as OMDocImport
+import CommonLogic.OMDoc
 
 data CommonLogic = CommonLogic deriving Show
 
@@ -54,7 +55,7 @@ instance Sentences CommonLogic
     Symbol
     where
       negation CommonLogic = Just . negForm
-      sym_of CommonLogic = singletonList . symOf
+      sym_of CommonLogic =  singletonList . symOf
       symmap_of CommonLogic = getSymbolMap -- returns the symbol map
       sym_name CommonLogic = getSymbolName -- returns the name of a symbol
       map_sen CommonLogic = mapSentence -- TODO
@@ -72,7 +73,7 @@ instance Logic CommonLogic
     ()                -- Sublogics
     BASIC_SPEC        -- basic_spec
     SENTENCE          -- sentence
-    NAME                -- symb_items
+    NAME              -- symb_items
     SYMB_MAP_ITEMS     -- symb_map_items
     Sign              -- sign
     Morphism          -- morphism
@@ -82,13 +83,13 @@ instance Logic CommonLogic
     where
        empty_proof_tree CommonLogic = emptyProofTree
        provers CommonLogic = []
-{-
-         omdoc_metatheory CommonLogic = Just clMetaTheory
-         export_senToOmdoc CommonLogic = exportSenToOmdoc
-         export_symToOmdoc CommonLogic = exportSymToOmdoc
-         omdocToSen CommonLogic = omdocToSen
-         omdocToSym CommonLogic = omdocToSym
--}
+
+       omdoc_metatheory CommonLogic = Just clMetaTheory
+       export_senToOmdoc CommonLogic = exportSenToOmdoc
+       export_symToOmdoc CommonLogic = exportSymToOmdoc
+       omdocToSen CommonLogic = OMDocImport.omdocToSen
+       omdocToSym CommonLogic = OMDocImport.omdocToSym
+
 
 instance StaticAnalysis CommonLogic
     BASIC_SPEC
