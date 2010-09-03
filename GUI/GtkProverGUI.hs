@@ -210,7 +210,7 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
       case selGoal of
         [(_, g)] -> do
           pr <- getSelectedSingle trvProvers listProvers
-          disproveThmSingle (gName g) (maybe "" (pName . snd) pr) node 1
+          disproveThmSingle (gName g) (maybe "" (pName . snd) pr) node 10
         _ -> error "GtkProverGUI.onClicked_btnDisprove"
 
     onClicked btnProve $ do
