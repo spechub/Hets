@@ -1,14 +1,14 @@
 {- |
 Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher
+Description :  Common Logic specific OMDoc constants
+Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2010
+License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  i.ignatov@jacobs-university.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
+Library of Common Logic specific OMDoc constants.
 -}
 module CommonLogic.OMDoc where
 

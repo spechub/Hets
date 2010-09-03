@@ -1,3 +1,19 @@
+{- |
+Module      :  $Header$
+Description :  OMDoc-to-CommonLogic conversion
+Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2009
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  i.ignatov@jacobs-university.de
+Stability   :  experimental
+Portability :  portable
+
+Common Logic implementation of the interface functions 
+omdocToSym and omdocToSen from class Logic. 
+The actual instantiation can be found in module "CommonLogic.Logic_CommonLogic".
+-}
+
+
 module CommonLogic.OMDocImport 
        ( omdocToSym
        , omdocToSen

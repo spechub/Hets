@@ -1,3 +1,20 @@
+{- |
+Module      :  $Header$
+Description :  CommonLogic-to-OMDoc conversion
+Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2009
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  i.ignatov@jacobs-university.de
+Stability   :  experimental
+Portability :  portable
+
+Common Logic implementation of the interface functions 
+export_senToOmdoc and export_symToOmdoc from class Logic. 
+The actual instantiation can be found in module "CommonLogic.Logic_CommonLogic".
+-}
+
+
+
 module CommonLogic.OMDocExport
        ( exportSymToOmdoc
        , exportSenToOmdoc
