@@ -1,16 +1,7 @@
-{- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
-License     :  GPLv2 or higher, see LICENSE.txt
-
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
-
-<optional description>
--}
-module CommonLogic.OMDocImport where
+module CommonLogic.OMDocImport 
+       ( omdocToSym
+       , omdocToSen
+       ) where
 
 
 import OMDoc.DataTypes
@@ -21,17 +12,16 @@ import CommonLogic.OMDoc
 
 import Common.Id
 import Common.Result
-import Common.AS_Annotation as AN
+import Common.AS_Annotation 
 
-import qualified Data.Map as Map
-import Data.List
+
 
 
 type Env = SigMapI Symbol
 
  --------------- TCSymbol is transformed into a CommonLogic Symbol with given name
 omdocToSym :: Env -> TCElement -> String -> Result Symbol
-omdocToSym _ tcs@(TCSymbol _ _ sr _) n =
+omdocToSym _ (TCSymbol _ _ sr _) n =
      case sr of
        Obj -> return $  (Symbol (nameToId n)) 
        _ -> fail $ concat ["omdocToSym: only objects are allowed as symbol roles, but found", show sr]
@@ -53,7 +43,9 @@ omdocToSen e (TCSymbol _ t sr _) n =
                Axiom -> res True
                Theorem -> res False
                _ -> return Nothing
-               
+omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
+                                   , " but found: ", show sym ]
+                             
 omdocToSen' :: Env -> OMElement -> SENTENCE                         
 omdocToSen' e om = case om of
                         OMBIND binder args body -> let vars = map toNameSeqmark args
@@ -79,12 +71,15 @@ omdocToSen' e om = case om of
                                 | omh == const_irregular -> let s:[] = map (omdocToSen' e) os
                                                              in Irregular_sent s nullRange
                                 | otherwise ->  Atom_sent (Atom (omdocToTerm e omh)  (map (omdocToTermSeq e) os)) nullRange
+                        _ -> error $ concat [ "omdocToSen': only applications and quantifications are allowed,"
+                                              , " but found: ", show om ]
 
 toNameSeqmark :: OMElement -> NAME_OR_SEQMARK 
 toNameSeqmark (OMV (OMName n _)) =  let dec = strToToken n
                                      in if isSeqMark n
                                         then SeqMark dec
                                         else AS.Name dec
+toNameSeqmark _ = error $ "toNameSeqmark: only variables allowed"
 
 omdocToTerm :: Env -> OMElement -> TERM
 omdocToTerm e (OMA (omh : om)) 
@@ -93,18 +88,26 @@ omdocToTerm e (OMA (omh : om))
                      | otherwise = let th = omdocToTerm e omh 
                                        ts = map (omdocToTermSeq e) om
                                     in Funct_term th ts nullRange
-omdocToTerm e (OMS (_, OMName n _)) = Name_term (strToToken n)
+omdocToTerm _ (OMS (_, OMName n _)) = Name_term (strToToken n)
+omdocToTerm _ (OMV (OMName n _)) = Name_term (strToToken n)
+omdocToTerm _ om = error $ "omdocToTerm: only applications and symbols allowed, but found: " ++ show om
+
 
 omdocToTermSeq :: Env -> OMElement -> TERM_SEQ 
 omdocToTermSeq e om@(OMA _) = Term_seq $ omdocToTerm e om
-omdocToTermSeq e (OMS (_,OMName n _)) = let dec = strToToken n 
+omdocToTermSeq _ (OMS (_,OMName n _)) = let dec = strToToken n 
                                          in if isSeqMark n
                                             then Seq_marks dec
                                             else Term_seq (Name_term dec)
+omdocToTermSeq _ (OMV (OMName n _)) = let dec = strToToken n 
+                                       in if isSeqMark n
+                                          then Seq_marks dec
+                                          else Term_seq (Name_term dec)
+omdocToTermSeq _ om = error $ "omdocToTermSeq: only applications, symbols and variables allowed, but found: " ++ show om 
 
 strToToken :: String -> Token
 strToToken s = Token s nullRange
 
 isSeqMark :: String -> Bool
-isSeqMark s@('.':_) = True
+isSeqMark ('.':_) = True
 isSeqMark _ = False
