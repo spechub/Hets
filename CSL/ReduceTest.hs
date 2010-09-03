@@ -21,6 +21,7 @@ import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
+import CSL.Parse_AS_Basic (parseResult)
 import CSL.Sign
 
 import Common.Utils (getEnvDef)
@@ -80,6 +81,11 @@ runTest cmd r = fmap fromJust $ runTestM cmd r
 runTestM :: ResultT (IOS b) a -> b -> IO (Maybe a)
 runTestM cmd r = fmap (resultToMaybe . fst) $ runIOS r $ runResultT cmd
 
+runTest_ :: ResultT (IOS b) a -> b -> IO (a, b)
+runTest_ cmd r = do
+  (res, r') <- runIOS r $ runResultT cmd
+  return (fromJust $ resultToMaybe res, r')
+
 -- time measurement, pendant of the time shell command
 time :: IO a -> IO a
 time p = do
@@ -98,19 +104,16 @@ evalL s i = do
   return s'
 
 
+
+toE :: String -> EXPRESSION
+toE = fromJust . parseResult
+
 -- ----------------------------------------------------------------------
 -- * Maple interpreter
 -- ----------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
+-- just call the methods in MapleInterpreter: mapleInit, mapleExit, mapleDirect
+-- , the CS-interface functions and evalL
 
 
 

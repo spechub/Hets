@@ -62,14 +62,14 @@ type RedcIO = ResultT (IOS RITrans)
 
 instance CalculationSystem RedsIO where
     assign  = redAssign evalRedsString return return
-    clookup = redClookup evalRedsString return
+    lookup = redLookup evalRedsString return
     eval = redEval evalRedsString return
     check = redCheck evalRedsString return
     names = error "ReduceInterpreter as CS: names are unsupported"
 
 instance CalculationSystem RedcIO where
     assign  = redAssign evalRedcString redcTransS redcTransE
-    clookup = redClookup evalRedcString redcTransS
+    lookup = redLookup evalRedcString redcTransS
     eval = redEval evalRedcString redcTransE
     check = redCheck evalRedcString redcTransE
     names = get >>= return . SMem . getBMap
@@ -122,11 +122,11 @@ redAssign ef trans transE n e = do
   ef $ printAssignment n' e'
   return ()
 
-redClookup :: (CalculationSystem s, MonadResult s) =>
+redLookup :: (CalculationSystem s, MonadResult s) =>
               (String -> s [EXPRESSION])
            -> (String -> s String)
            -> String -> s (Maybe EXPRESSION)
-redClookup ef trans n = do
+redLookup ef trans n = do
   n' <- trans n
   el <- ef $ printLookup n'
   return $ listToMaybe el
@@ -214,7 +214,7 @@ redcTransS :: String -> RedcIO String
 redcTransS s = do
   r <- get
   let bm = getBMap r
-      (bm', s') = lookup bm s
+      (bm', s') = lookupOrInsert bm s
   put r { getBMap = bm' }
   return s'
 

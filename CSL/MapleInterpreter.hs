@@ -23,15 +23,18 @@ import Common.ResultT
 import CSL.AS_BASIC_CSL (EXPRESSION (..))
 import CSL.Parse_AS_Basic (parseResult)
 import CSL.Interpreter
+import CSL.Transformation
 import CSL.Reduce_Interface (exportExp)
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
+import Control.Monad
 import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.State (MonadState (..))
 
 import Data.Maybe
+import qualified Data.Map as Map
 import System.Exit (ExitCode)
 
 import Prelude hiding (lookup)
@@ -42,7 +45,8 @@ import Prelude hiding (lookup)
 
 -- | MapleInterpreter with Translator based on the CommandState
 data MITrans = MITrans { getBMap :: BMap
-                       , getMI :: PC.CommandState }
+                       , getMI :: PC.CommandState
+                       , getCache :: Cache MapleIO String EXPRESSION }
 
 
 -- Maple interface, built on CommandState
@@ -50,10 +54,37 @@ type MapleIO = ResultT (IOS MITrans)
 
 instance CalculationSystem MapleIO where
     assign  = mapleAssign evalMapleString mapleTransS mapleTransE
-    clookup = mapleClookup evalMapleString mapleTransS
+    lookup = mapleLookup evalMapleString mapleTransS
     eval = mapleEval evalMapleString mapleTransE
     check = mapleCheck evalMapleString mapleTransE
     names = get >>= return . SMem . getBMap
+    lookupCache = get >>= return . SCache . getCache
+
+instance AssignmentContainer MapleIO where
+    isDefined s = liftM (member s) names
+
+-- | The maple cache writeback function, used to update the cache after
+-- a write.
+mapleCacheWB :: Cache MapleIO String EXPRESSION -> MapleIO ()
+mapleCacheWB c = do
+  mit <- get
+  put mit { getCache = c }
+
+-- ----------------------------------------------------------------------
+-- * Maple Transformation Instances
+-- ----------------------------------------------------------------------
+
+-- | Variable generator instance for internal variables on the Hets-side,
+-- in contrast to the newvar generation in lookupOrInsert of the BMap, which
+-- generates variables for the Maple-side. We use nevertheless the same counter.
+instance VarGen MapleIO where
+    genVar = do
+      s <- get
+      let i = newkey $ getBMap s
+      put $ s { getBMap = (getBMap s) { newkey = i + 1 } }
+      return $ ".." ++ show i
+
+-- instance VariableRangeContainer MapleIO where
 
 
 -- ----------------------------------------------------------------------
@@ -109,10 +140,10 @@ mapleAssign ef trans transE n e = do
   ef $ printAssignment n' e'
   return ()
 
-mapleClookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+mapleLookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
            -> (String -> s String)
            -> String -> s (Maybe EXPRESSION)
-mapleClookup ef trans n = do
+mapleLookup ef trans n = do
   n' <- trans n
   el <- ef $ printLookup n'
   return $ listToMaybe el
@@ -169,7 +200,7 @@ mapleTransS :: String -> MapleIO String
 mapleTransS s = do
   r <- get
   let bm = getBMap r
-      (bm', s') = lookup bm s
+      (bm', s') = lookupOrInsert bm s
   put r { getBMap = bm' }
   return s'
 
@@ -200,7 +231,14 @@ mapleInit v = do
                                  , "libname := \"", libpath, "\", libname;"
                                  , "with(intpakX);with(intCompare);" ]
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
-                           , getMI = cs' }
+                           , getMI = cs'
+                           , getCache = Cache { cachemap = Map.empty
+                                              , backupLookup = lookup
+                                              , cacheWriteback = mapleCacheWB }
+                           }
+{-
+-}
+
     _ -> error "Could not find maple shell command!"
 
 mapleExit :: MITrans -> IO (Maybe ExitCode)

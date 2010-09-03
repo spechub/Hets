@@ -16,12 +16,13 @@ and utilities for lemma generation
 
 module CSL.Transformation where
 
-import Control.Monad.State (State, get, put)
-import qualified Data.Set as Set
+import Control.Monad.State (StateT(..), State, get, put)
+import Control.Monad.Trans (lift)
+import qualified Data.Map as Map
 
 import CSL.Interpreter
 import CSL.AS_BASIC_CSL
-import Common.Id (nullRange)
+import Common.Id (nullRange, Token(..))
 
 -- ----------------------------------------------------------------------
 -- * Datatypes and Classes for Term- and Program Transformations
@@ -36,7 +37,6 @@ instance VarGen (State Int) where
       i <- get
       put $ i+1
       return $ "gv" ++ show i
-      
 
 instance VarGen (State (Int, String)) where
     genVar = do
@@ -45,22 +45,12 @@ instance VarGen (State (Int, String)) where
       return $ s ++ show i
 
 
-
 class Monad m => AssignmentContainer m where
     isDefined :: String -> m Bool
 
-data AssContainer = AssContainer { definedConstants :: Set.Set String
-                                 , varCounter :: Int }
-
-
-instance VarGen (State AssContainer) where
-    genVar = do
-      c <- get
-      put c { varCounter = varCounter c + 1 }
-      return $ "." ++ show (varCounter c)
-
-instance AssignmentContainer (State AssContainer) where
-    isDefined s = get >>= return . Set.member s . definedConstants
+class Monad m => VariableRangeContainer m where
+    addVarRange :: String -> (APFloat, APFloat) -> m ()
+    getVarRanges :: m [(String, (APFloat, APFloat))]
 
 
 -- | A class to construct EXPRESSIONs from simple tuple structures
@@ -98,6 +88,69 @@ instance (SExp a, SExp b) => SCmd (String, a, b) where
 -- ----------------------------------------------------------------------
 -- * Transformations of assignments to conditional statements
 -- ----------------------------------------------------------------------
+
+type VRC = Map.Map String (APFloat, APFloat)
+
+instance VarGen m => VarGen (StateT s m) where
+    genVar = lift genVar
+
+instance Monad m => VariableRangeContainer (StateT VRC m)
+    where
+      addVarRange s iRng = fmap (Map.insert s iRng) get >>= put
+      getVarRanges = fmap Map.toList get
+
+
+-- | Given an expression containing intervals we code out the intervals
+--   replacing them by variables and assign to those variables ranges
+--   (the intervals).
+replaceIntervals :: (VarGen c, CalculationSystem c) =>
+                    VRC -> EXPRESSION -> c (EXPRESSION, VRC)
+replaceIntervals s e = runStateT (replaceIntervals' e) s
+
+replaceIntervals' :: (VarGen m, VariableRangeContainer m) =>
+                    EXPRESSION -> m EXPRESSION
+replaceIntervals' x =
+    case x of
+      Interval from to rg -> do
+             y <- genVar
+             addVarRange y (from, to)
+             return $ Var $ Token y rg
+      Op s epl args rg -> do
+             nargs <- mapM replaceIntervals' args
+             return $ Op s epl nargs rg
+      List elms rg -> do
+             nelms <- mapM replaceIntervals' elms
+             return $ List nelms rg
+      _ -> return x
+
+-- TODO: we have to integrate the interval replacing into the substitution in
+-- order to minimize the number of new variables introduced, consider, e.g.,
+--   e = x*(x+1)
+-- and x = [1, 1.01] in the environment
+-- we would get e' = [1, 1.01]*([1, 1.01] + 1) and if we now replace intervals
+-- we get e'' = x1*(x2+1) with x1 = [1, 1.01] and x2 = [1, 1.01]
+-- The other way arround we would lookup once the x replace it with x1, and put
+-- x1 in [1, 1.01] to the conditionals-mapping
+-- | Replaces all occurrences of defined variables by their lookuped terms
+substituteDefined :: (AssignmentContainer c, CalculationSystem c) =>
+                     EXPRESSION -> c EXPRESSION
+substituteDefined x =
+    case x of
+      Op s epl args rg -> do
+             b <- isDefined s
+             nargs <- mapM substituteDefined args
+             if b && null args
+              then do
+                mE <- lookupCache >>= lookupCached s
+                case mE of
+                  Just e -> return e
+                  _ -> error "substituteDefined: defined constant not found"
+              else return $ Op s epl nargs rg
+      List elms rg -> do
+             nelms <- mapM substituteDefined elms
+             return $ List nelms rg
+      _ -> return x
+
 
 -- ----------------------------------------------------------------------
 -- * Transformations for Repeat

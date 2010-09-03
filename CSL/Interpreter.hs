@@ -33,7 +33,8 @@ import CSL.AS_BASIC_CSL
 -- * Evaluator
 -- ----------------------------------------------------------------------
 
--- ** some general lifted instances, TODO: outsource them
+-- ** some general lifted instances
+-- TODO: outsource them
 
 instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
     get = lift get
@@ -45,6 +46,7 @@ instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
 instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
     liftR = lift . liftR
 
+-- ** Some utility classes for abstraction of concrete realizations
 
 -- | Abstraction from lists, sets, etc. for some simple operations
 class SimpleMember a b | a -> b where
@@ -52,40 +54,62 @@ class SimpleMember a b | a -> b where
     count :: a -> Int
     toList :: a -> [b]
 
+-- | A cache with lookup and reset
+class Monad m => SimpleCache m a b c | a -> b c where
+    lookupCached :: b -> a -> m (Maybe c)
+    resetCache :: a -> m ()
+
+-- ** Abstraction wrapper for utility classes
 data SMem b = forall a. SimpleMember a b => SMem a
 
+data SCache m b c = forall a. SimpleCache m a b c => SCache a
+
+
+-- ** Instances for abstraction wrapper
 instance SimpleMember (SMem b) b where
     member x (SMem a) = member x a
     count (SMem a) = count a
     toList (SMem a) = toList a
 
-instance Ord a => SimpleMember (Map.Map a b) a where
-    member = Map.member
-    count = Map.size
-    toList = Map.keys
+instance Monad m => SimpleCache m (SCache m b c) b c where
+    lookupCached k (SCache c) = lookupCached k c
+    resetCache (SCache c) = resetCache c
 
+-- ** A simple Cache implemenation
+-- | We store all results from the backup lookup in the map, even the negative
+-- ones (Nothing returned).
+-- backupLookup and cacheWriteback are set once the data is created, only
+-- the cachemap is updated afterwards.
+data Cache m a b = Ord a => Cache { cachemap :: Map.Map a (Maybe b)
+                                  , backupLookup :: a -> m (Maybe b)
+                                  , cacheWriteback :: Cache m a b -> m () }
+
+instance (Monad m, Ord a) => SimpleCache m (Cache m a b) a b where
+    lookupCached k c =
+        case Map.lookup k (cachemap c) of
+          Nothing ->  do
+            mV <- backupLookup c k
+            cacheWriteback c c{ cachemap = Map.insert k mV (cachemap c) }
+            return mV
+          Just mV -> return mV
+    resetCache c = cacheWriteback c c{ cachemap = Map.empty }
+      
 -- | calculation interface, bundles the evaluation engine and the constant store
 class (Monad m) => CalculationSystem m where
     assign :: String -> EXPRESSION -> m () -- evtl. m Bool instead as success-flag
-    clookup :: String -> m (Maybe EXPRESSION)
+    lookup :: String -> m (Maybe EXPRESSION)
+    lookupCache :: m (SCache m String EXPRESSION)
+    lookupCache = error $ "CalculationSystem-default: no caching supported."
     names :: m (SMem String)
     eval :: EXPRESSION -> m EXPRESSION
     check :: EXPRESSION -> m Bool
     check = error "CalculationSystem-default: 'check' not implemented."
     values :: m [(String, EXPRESSION)]
     values = let f x = do
-                   v <- clookup x
+                   v <- lookup x
                    return (x, fromJust v)
              in names >>= mapM f . toList
 
-
--- | Just an example which does not much, for illustration purposes
-instance CalculationSystem (State (Map.Map String EXPRESSION))  where
-    assign n e = liftM (Map.insert n e) get >> return ()
-    clookup n = liftM (Map.lookup n) get
-    names = error "" -- get
-    eval e = return e
-    check _ = return False
 
 evaluate :: CalculationSystem m => CMD -> m ()
 evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e
@@ -111,11 +135,6 @@ evaluateList l = forM_ l evaluate
 -- ----------------------------------------------------------------------
 -- * Term translator
 -- ----------------------------------------------------------------------
-{-
-class InvMap m a b where
-    lookup :: m -> a -> b
-    revlookup :: m -> b -> a
--}
 
 -- | A data structure for invertible maps, with automatic new key generation
 -- and insertion at lookup
@@ -158,8 +177,8 @@ initWithDefault l = BMap Map.empty IMap.empty 1 "x" $ fromList l
 
 -- | The only way to also insert a value is to use lookup. One should not
 -- insert values explicitly. Note that you don't control the inserted value.
-lookup :: BMap -> String -> (BMap, String)
-lookup m k = 
+lookupOrInsert :: BMap -> String -> (BMap, String)
+lookupOrInsert m k = 
     case defaultLookup (defaultMap m) k of
       Just s -> (m, s)
       _ -> let f _ _ x = x
@@ -204,7 +223,7 @@ bmapStringToInt m s = let prf = prefix m
 translateEXPRESSION :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
 translateEXPRESSION m (Op s epl el rg) =
     let (m', el') = mapAccumL translateEXPRESSION m el
-        (m'', s') = lookup m' s
+        (m'', s') = lookupOrInsert m' s
     in (m'', Op s' epl el' rg)
 translateEXPRESSION m (List el rg) =
     let (m', el') = mapAccumL translateEXPRESSION m el
