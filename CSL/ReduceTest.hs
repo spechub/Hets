@@ -232,17 +232,16 @@ runTT c s vcc = do
   return $ WithAB vcc' s' r
 
 runTTi c s = do
-  (res, s') <- runIOS s (runResultT $ do vcc <- csVCCache
-                                         runStateT c vcc)
+  (res, s') <- runIOS s (runResultT $ runStateT c emptyVCCache)
   let (r, vcc') = fromJust $ resultToMaybe res
   return $ WithAB vcc' s' r
 
 --s -> t -> t1 -> IO (Common.Result.Result a, s)
-ttesd :: ( VarGen (ResultT (IOS s))
-         , VariableContainer a VarRange
-         , CalculationSystem (ResultT (IOS s))
-         , Cache (ResultT (IOS s)) a String EXPRESSION) =>
-        EXPRESSION -> s -> a -> IO (WithAB a s EXPRESSION)
+-- ttesd :: ( VarGen (ResultT (IOS s))
+--          , VariableContainer a VarRange
+--          , CalculationSystem (ResultT (IOS s))
+--          , Cache (ResultT (IOS s)) a String EXPRESSION) =>
+--         EXPRESSION -> s -> a -> IO (WithAB a s EXPRESSION)
 ttesd e = runTT (substituteDefined e)
 
 ttesdi e = runTTi (substituteDefined e)
@@ -250,4 +249,15 @@ ttesdi e = runTTi (substituteDefined e)
 -- -- substituteDefined with init
 --ttesdi s e = ttesd s vc e
 
+{-
+r <- mapleInit 1
+r' <- evalL r 3
+let e = toE "sin(x) + 2*cos(y) + x^2"
+w <- ttesdi e r'
+let vss = getA w
 
+w' <- ttesd e r' vss
+w' <- ttesd e r' vss
+
+mapleExit r
+-}
