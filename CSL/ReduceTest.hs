@@ -14,11 +14,12 @@ This file is for experimenting with the ReduceInterpreters
 
 module CSL.ReduceTest where
 
-import CSL.MapleInterpreter
+import CSL.MapleInterpreter 
 
 import CSL.ReduceInterpreter
 import CSL.Reduce_Interface
 import CSL.Interpreter
+import CSL.Transformation
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseResult)
@@ -32,9 +33,10 @@ import Common.ResultT
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
--- README: in order to work correctly link the Test.hs in the Hets-Root Dir to Main.hs (ln -s Test.hs Main.hs)
+-- README: IN ORDER TO WORK CORRECTLY LINK THE Test.hs IN THE HETS-ROOT DIR TO Main.hs (ln -s Test.hs Main.hs)
 import Main (getSigSens)
 
+import Control.Monad.State (StateT(..))
 import Control.Monad (liftM)
 import Data.Maybe (fromJust)
 import Data.Time.Clock
@@ -109,7 +111,7 @@ toE :: String -> EXPRESSION
 toE = fromJust . parseResult
 
 -- ----------------------------------------------------------------------
--- * Maple interpreter
+-- * MAPLE INTERPRETER
 -- ----------------------------------------------------------------------
 
 -- just call the methods in MapleInterpreter: mapleInit, mapleExit, mapleDirect
@@ -118,7 +120,7 @@ toE = fromJust . parseResult
 
 
 -- ----------------------------------------------------------------------
--- * First reduce interpreter
+-- * FIRST REDUCE INTERPRETER
 -- ----------------------------------------------------------------------
 
 
@@ -160,7 +162,7 @@ mapM redsExit l
 
 
 -- ----------------------------------------------------------------------
--- * second reduce interpreter
+-- * SECOND REDUCE INTERPRETER
 -- ----------------------------------------------------------------------
 
 -- run the assignments from the spec
@@ -203,3 +205,49 @@ let ri = getRI r
 redcDirect ri "some command;"
 
 -}
+
+
+
+
+-- ----------------------------------------------------------------------
+-- * TRANSFORMATION TESTS
+-- ----------------------------------------------------------------------
+
+data WithAB a b c = WithAB a b c
+
+instance Show c => Show (WithAB a b c) where
+    show (WithAB _ _ c) = show c
+
+getA (WithAB a _ _) = a
+getB (WithAB _ b _) = b
+getC (WithAB _ _ c) = c
+
+-- tt = transformation tests (normally Calculationsystem monad result)
+
+-- tte = tt with evaluation (normally gets a cs-state and has IO-result)
+
+runTT c s vcc = do
+  (res, s') <- runIOS s $ runResultT $ runStateT c vcc
+  let (r, vcc') = fromJust $ resultToMaybe res
+  return $ WithAB vcc' s' r
+
+runTTi c s = do
+  (res, s') <- runIOS s (runResultT $ do vcc <- csVCCache
+                                         runStateT c vcc)
+  let (r, vcc') = fromJust $ resultToMaybe res
+  return $ WithAB vcc' s' r
+
+--s -> t -> t1 -> IO (Common.Result.Result a, s)
+ttesd :: ( VarGen (ResultT (IOS s))
+         , VariableContainer a VarRange
+         , CalculationSystem (ResultT (IOS s))
+         , Cache (ResultT (IOS s)) a String EXPRESSION) =>
+        EXPRESSION -> s -> a -> IO (WithAB a s EXPRESSION)
+ttesd e = runTT (substituteDefined e)
+
+ttesdi e = runTTi (substituteDefined e)
+
+-- -- substituteDefined with init
+--ttesdi s e = ttesd s vc e
+
+

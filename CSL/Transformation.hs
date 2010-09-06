@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances, FlexibleContexts, UndecidableInstances #-}
 {- |
 Module      :  $Header$
 Description :  Program transformations
@@ -16,9 +16,12 @@ and utilities for lemma generation
 
 module CSL.Transformation where
 
-import Control.Monad.State (StateT(..), State, get, put)
+import Control.Monad.State (State, StateT(..), MonadState(get, put))
 import Control.Monad.Trans (lift)
+import Control.Monad (when)
 import qualified Data.Map as Map
+import Data.Maybe 
+import Prelude hiding (lookup)
 
 import CSL.Interpreter
 import CSL.AS_BASIC_CSL
@@ -43,14 +46,6 @@ instance VarGen (State (Int, String)) where
       (i, s) <- get
       put $ (i+1, s)
       return $ s ++ show i
-
-
-class Monad m => AssignmentContainer m where
-    isDefined :: String -> m Bool
-
-class Monad m => VariableRangeContainer m where
-    addVarRange :: String -> (APFloat, APFloat) -> m ()
-    getVarRanges :: m [(String, (APFloat, APFloat))]
 
 
 -- | A class to construct EXPRESSIONs from simple tuple structures
@@ -89,39 +84,121 @@ instance (SExp a, SExp b) => SCmd (String, a, b) where
 -- * Transformations of assignments to conditional statements
 -- ----------------------------------------------------------------------
 
-type VRC = Map.Map String (APFloat, APFloat)
+-- | A cache with lookup, lookupWithTransformation and reset
+class Monad m => Cache m a b c | a -> b c where
+    lookupCachedWithTrans :: (c -> m c) -> b -> a -> m (Maybe c, Maybe a)
+    -- ^ like lookupCached, but before writing the result to the cache transform
+    -- it with the given function
+    lookupCached :: b -> a -> m (Maybe c, Maybe a)
+    -- ^ if the value is not already cached lookup the value in the original
+    -- store and write the result to the cache, otherwise use the value in
+    -- the cache.
+    lookupCached = lookupCachedWithTrans return
+    resetCache :: a -> m a -- ^ remove all cached entries
+
+-- ** A simple Cache implemenation
+-- | We store all results from the backup lookup in the map, even the negative
+-- ones (Nothing returned).
+-- backupLookup and cacheWriteback are set once the data is created, only
+-- the cachemap is updated afterwards.
+data SimpleCache m a b = SimpleCache { cachemap :: Map.Map a (Maybe b)
+                                     , backupLookup :: a -> m (Maybe b) }
+
+instance (Monad m, Ord a) => Cache m (SimpleCache m a b) a b where
+    lookupCachedWithTrans f k c =
+        case Map.lookup k (cachemap c) of
+          Nothing ->  do
+            mV <- backupLookup c k
+            mV' <- case mV of
+                     Just v -> f v >>= return . Just
+                     _ -> return Nothing
+            return (mV', Just c { cachemap = Map.insert k mV' (cachemap c) })
+          Just mV -> return (mV, Nothing)
+    resetCache c = return c{ cachemap = Map.empty }
+
+instance Cache m a b c => Cache (StateT a m) a b c where
+    lookupCachedWithTrans f k = error "" -- lift . lookupCachedWithTrans f k
+    resetCache = lift . resetCache
+
+type VarRange = (APFloat, APFloat)
+
+-- | A variable-range-container datatype
+type VRC = Map.Map String VarRange
+
+
+class VariableContainer a b where
+    insertVar :: String -> b -> a -> a
+    toVarList :: a -> [(String, b)]
+
+instance VariableContainer (Map.Map String a) a where
+    insertVar = Map.insert
+    toVarList = Map.toList
+
+-- | Type to combine a variable container and a variable cache
+data VCCache m = VCCache { varcontainer :: Map.Map String VarRange
+                         , varcache :: SimpleCache m String EXPRESSION }
+
+-- | Given a lookupfunction we initialize the VCCache
+initVCCache :: (String -> m (Maybe EXPRESSION)) -> VCCache m
+initVCCache f = VCCache Map.empty $ SimpleCache Map.empty f
+
+-- | If VCCache is over a CalculationSystem we use its lookup function for init
+csVCCache :: CalculationSystem m => m (VCCache m)
+csVCCache = return $ initVCCache lookup
+
+instance VariableContainer (VCCache m) VarRange where
+    insertVar s v c = c { varcontainer = insertVar s v $ varcontainer c }
+    toVarList = toVarList . varcontainer
+
+instance Monad m => Cache m (VCCache m) String EXPRESSION where
+    lookupCached k c = do
+      (mE, mC) <- lookupCached k $ varcache c
+      return (mE, fmap ( \ x -> c { varcache = x } ) mC)
+    resetCache = error "resetCache: not implemented for VCCache"
+
+
+-- | If the state of a statemonad is a VariableContainer then we provide a
+--  simplified insert function, which hides the state handling
+insertVarM :: (VariableContainer a b, Monad m) => String -> b -> StateT a m ()
+insertVarM s iRng = fmap (insertVar s iRng) get >>= put
+
+-- | If the state of a statemonad is a VariableContainer then we provide a
+--  simplified insert function, which hides the state handling
+toVarListM :: (VariableContainer a b, Monad m) => StateT a m [(String, b)]
+toVarListM = fmap toVarList get
 
 instance VarGen m => VarGen (StateT s m) where
     genVar = lift genVar
 
-instance Monad m => VariableRangeContainer (StateT VRC m)
-    where
-      addVarRange s iRng = fmap (Map.insert s iRng) get >>= put
-      getVarRanges = fmap Map.toList get
-
+-- | If the state of a statemonad is a simple cache then we provide a simplified
+-- lookup function, which hides the state handling
+lookupInStateCache :: (Cache m a b c, MonadState a m) =>
+                      b -> m (Maybe c)
+lookupInStateCache s = do
+  st <- get
+  (mE, mSt) <- lookupCached s st
+  when (isJust mSt) $ put $ fromJust mSt
+  return mE
 
 -- | Given an expression containing intervals we code out the intervals
 --   replacing them by variables and assign to those variables ranges
 --   (the intervals).
-replaceIntervals :: (VarGen c, CalculationSystem c) =>
-                    VRC -> EXPRESSION -> c (EXPRESSION, VRC)
-replaceIntervals s e = runStateT (replaceIntervals' e) s
-
-replaceIntervals' :: (VarGen m, VariableRangeContainer m) =>
-                    EXPRESSION -> m EXPRESSION
-replaceIntervals' x =
-    case x of
+replaceIntervals ::
+    (VarGen c, VariableContainer a VarRange, CalculationSystem c) =>
+    EXPRESSION -> StateT a c EXPRESSION
+replaceIntervals e = 
+    case e of
       Interval from to rg -> do
              y <- genVar
-             addVarRange y (from, to)
+             insertVarM y (from, to)
              return $ Var $ Token y rg
       Op s epl args rg -> do
-             nargs <- mapM replaceIntervals' args
+             nargs <- mapM replaceIntervals args
              return $ Op s epl nargs rg
       List elms rg -> do
-             nelms <- mapM replaceIntervals' elms
+             nelms <- mapM replaceIntervals elms
              return $ List nelms rg
-      _ -> return x
+      _ -> return e
 
 -- TODO: we have to integrate the interval replacing into the substitution in
 -- order to minimize the number of new variables introduced, consider, e.g.,
@@ -132,8 +209,9 @@ replaceIntervals' x =
 -- The other way arround we would lookup once the x replace it with x1, and put
 -- x1 in [1, 1.01] to the conditionals-mapping
 -- | Replaces all occurrences of defined variables by their lookuped terms
-substituteDefined :: (AssignmentContainer c, CalculationSystem c) =>
-                     EXPRESSION -> c EXPRESSION
+substituteDefined :: ( VarGen c, VariableContainer a VarRange
+                     , CalculationSystem c, Cache c a String EXPRESSION)
+                    => EXPRESSION -> StateT a c EXPRESSION
 substituteDefined x =
     case x of
       Op s epl args rg -> do
@@ -141,7 +219,7 @@ substituteDefined x =
              nargs <- mapM substituteDefined args
              if b && null args
               then do
-                mE <- lookupCache >>= lookupCached s
+                mE <- lookupInStateCache s
                 case mE of
                   Just e -> return e
                   _ -> error "substituteDefined: defined constant not found"

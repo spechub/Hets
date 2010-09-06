@@ -17,7 +17,7 @@ Defines an interface for Calculators used to evaluate CPL programs
 module CSL.Interpreter where
 
 import Control.Monad (liftM, forM_, filterM, unless)
-import Control.Monad.State (State, MonadState (..))
+import Control.Monad.State (StateT, MonadState (..))
 import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Data.Maybe
 import qualified Data.Map as Map
@@ -46,6 +46,7 @@ instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
 instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
     liftR = lift . liftR
 
+
 -- ** Some utility classes for abstraction of concrete realizations
 
 -- | Abstraction from lists, sets, etc. for some simple operations
@@ -54,16 +55,8 @@ class SimpleMember a b | a -> b where
     count :: a -> Int
     toList :: a -> [b]
 
--- | A cache with lookup and reset
-class Monad m => SimpleCache m a b c | a -> b c where
-    lookupCached :: b -> a -> m (Maybe c)
-    resetCache :: a -> m ()
-
 -- ** Abstraction wrapper for utility classes
 data SMem b = forall a. SimpleMember a b => SMem a
-
-data SCache m b c = forall a. SimpleCache m a b c => SCache a
-
 
 -- ** Instances for abstraction wrapper
 instance SimpleMember (SMem b) b where
@@ -71,35 +64,10 @@ instance SimpleMember (SMem b) b where
     count (SMem a) = count a
     toList (SMem a) = toList a
 
-instance Monad m => SimpleCache m (SCache m b c) b c where
-    lookupCached k (SCache c) = lookupCached k c
-    resetCache (SCache c) = resetCache c
-
--- ** A simple Cache implemenation
--- | We store all results from the backup lookup in the map, even the negative
--- ones (Nothing returned).
--- backupLookup and cacheWriteback are set once the data is created, only
--- the cachemap is updated afterwards.
-data Cache m a b = Ord a => Cache { cachemap :: Map.Map a (Maybe b)
-                                  , backupLookup :: a -> m (Maybe b)
-                                  , cacheWriteback :: Cache m a b -> m () }
-
-instance (Monad m, Ord a) => SimpleCache m (Cache m a b) a b where
-    lookupCached k c =
-        case Map.lookup k (cachemap c) of
-          Nothing ->  do
-            mV <- backupLookup c k
-            cacheWriteback c c{ cachemap = Map.insert k mV (cachemap c) }
-            return mV
-          Just mV -> return mV
-    resetCache c = cacheWriteback c c{ cachemap = Map.empty }
-      
 -- | calculation interface, bundles the evaluation engine and the constant store
 class (Monad m) => CalculationSystem m where
     assign :: String -> EXPRESSION -> m () -- evtl. m Bool instead as success-flag
     lookup :: String -> m (Maybe EXPRESSION)
-    lookupCache :: m (SCache m String EXPRESSION)
-    lookupCache = error $ "CalculationSystem-default: no caching supported."
     names :: m (SMem String)
     eval :: EXPRESSION -> m EXPRESSION
     check :: EXPRESSION -> m Bool
@@ -110,6 +78,17 @@ class (Monad m) => CalculationSystem m where
                    return (x, fromJust v)
              in names >>= mapM f . toList
 
+
+instance CalculationSystem m => CalculationSystem (StateT s m) where
+    assign s = lift . assign s
+    lookup = lift . lookup
+    names = lift names
+    eval = lift . eval
+    check = lift . check
+    values = lift values
+
+isDefined :: CalculationSystem m => String -> m Bool
+isDefined s = liftM (member s) names
 
 evaluate :: CalculationSystem m => CMD -> m ()
 evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e

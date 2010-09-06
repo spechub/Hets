@@ -34,7 +34,6 @@ import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.State (MonadState (..))
 
 import Data.Maybe
-import qualified Data.Map as Map
 import System.Exit (ExitCode)
 
 import Prelude hiding (lookup)
@@ -45,8 +44,7 @@ import Prelude hiding (lookup)
 
 -- | MapleInterpreter with Translator based on the CommandState
 data MITrans = MITrans { getBMap :: BMap
-                       , getMI :: PC.CommandState
-                       , getCache :: Cache MapleIO String EXPRESSION }
+                       , getMI :: PC.CommandState }
 
 
 -- Maple interface, built on CommandState
@@ -58,17 +56,7 @@ instance CalculationSystem MapleIO where
     eval = mapleEval evalMapleString mapleTransE
     check = mapleCheck evalMapleString mapleTransE
     names = get >>= return . SMem . getBMap
-    lookupCache = get >>= return . SCache . getCache
 
-instance AssignmentContainer MapleIO where
-    isDefined s = liftM (member s) names
-
--- | The maple cache writeback function, used to update the cache after
--- a write.
-mapleCacheWB :: Cache MapleIO String EXPRESSION -> MapleIO ()
-mapleCacheWB c = do
-  mit <- get
-  put mit { getCache = c }
 
 -- ----------------------------------------------------------------------
 -- * Maple Transformation Instances
@@ -208,7 +196,7 @@ mapleTransS s = do
 evalMapleString :: String -> MapleIO [EXPRESSION]
 evalMapleString s = do
   -- 0.09 seconds is a critical value for the accepted response time of Maple
-  res <- lift $ wrapCommand $ PC.call 0.5 s
+  res <- lift $ wrapCommand $ PC.call 0.7 s
   r <- get
   let bm = getBMap r
       trans = revtranslateEXPRESSION bm
@@ -225,16 +213,13 @@ mapleInit v = do
   case rc of
     Left maplecmd -> do
             cs <- PC.start maplecmd v
-                  $ Just PC.defaultConfig { PC.startTimeout = 1 }
+                  $ Just PC.defaultConfig { PC.startTimeout = 3 }
             (_, cs') <- runIOS cs $ PC.call 1.0
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
                                  , "libname := \"", libpath, "\", libname;"
                                  , "with(intpakX);with(intCompare);" ]
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
                            , getMI = cs'
-                           , getCache = Cache { cachemap = Map.empty
-                                              , backupLookup = lookup
-                                              , cacheWriteback = mapleCacheWB }
                            }
 {-
 -}
