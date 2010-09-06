@@ -23,6 +23,7 @@ import GUI.UDGUtils
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
 import GUI.GtkAutomaticProofs
+import GUI.GtkAddSentence
 #endif
 
 import Control.Concurrent.MVar
@@ -329,6 +330,7 @@ createMenuNode shape color gi internal = shape
         , createMenuButtonProveAtNode
         , createMenuButtonProveStructured
 #ifdef GTKGLADE
+        , createMenuButtonAddSentence
         , createMenuButtonCCCAtNode
 #endif
         , createMenuButtonCheckCons
@@ -414,6 +416,10 @@ createMenuButtonCCCAtNode gi =
 consCheckNode :: GInfo -> Int -> DGraph -> IO ()
 consCheckNode gi descr _ = proofMenu gi (GlobCmd CheckConsistencyCurrent)
   $ showConsistencyChecker (Just descr) gi
+
+createMenuButtonAddSentence :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonAddSentence gi =
+  createMenuButton "Add sentence" (gtkAddSentence gi) gi
 #endif
 
 createMenuButtonCheckCons :: GInfo -> ButtonMenu GA.NodeValue
