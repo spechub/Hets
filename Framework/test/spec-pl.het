@@ -1,0 +1,7 @@
+logic FOL
+spec SP =
+  x : i.
+  f : i -> o.
+  
+  . f x
+end

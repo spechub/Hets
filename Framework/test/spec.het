@@ -1,7 +1,0 @@
-logic PL
-spec SP =
-  p : o.
-  q : o.
-  
-  . q
-end

@@ -13,3 +13,7 @@
   %include Equal %open.
 }.
 
+%view Base2FOL : Base -> FOL = {
+  o := o.
+  ded := [x] ded x.
+}.
