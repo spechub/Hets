@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# A sample application using the OWL API. 
-
-cd $HETS_OWL_TOOLS
-rm output.term 2>/dev/null
-java -jar $HETS_OWL_TOOLS/OWL2ATerm.jar $* || exit $?   
-# mv output.term $HETS_OWL_TOOLS
-# cd -

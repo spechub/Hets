@@ -236,8 +236,6 @@ Haskell/hana ToHaskell/test/*.hascasl.hs
 makeOWLTools ()
 {
 $MAKE initialize_java
-cp OWL/owl_parser $HETS_OWL_TOOLS/
-cp OWL/owl_locality $HETS_OWL_TOOLS/
 cp OWL/*.jar $HETS_OWL_TOOLS/
 cp OWL/lib/*.jar $HETS_OWL_TOOLS/lib/
 cp OWL/lib/native/i686/*.so $HETS_OWL_TOOLS/lib/native/i686

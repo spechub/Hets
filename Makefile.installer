@@ -72,8 +72,6 @@ hets-download : hets-lib-checkout
         cp hets.in $(IZPACK_HETS)/hets ; \
         cp utils/getDailyHets.sh $(IZPACK_SAMPLE) ; \
         make -f Makefile.orig initialize_java ; \
-        cp OWL/owl_parser $(IZPACK_JAVA) ; \
-        cp OWL/owl_locality $(IZPACK_JAVA) ; \
         cp OWL/OWLLocality.jar $(IZPACK_JAVA) ; \
         cp OWL/OWL2ATerm.jar $(IZPACK_JAVA) ; \
         cp OWL/lib/*.jar $(IZPACK_JAVA)/lib ; \

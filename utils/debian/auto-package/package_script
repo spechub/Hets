@@ -53,7 +53,7 @@ make initialize_java
 cd ..
 mkdir -p $HETS_FOLDER/hets-owl-tools
 cd $HETS_FOLDER/OWL
-cp -r tests OWL2ATerm.jar OWLFact.jar OWLFactProver.jar OWLLocality.jar owl_locality owl_parser $HETS_FOLDER/hets-owl-tools
+cp -r tests OWL2ATerm.jar OWLFact.jar OWLFactProver.jar OWLLocality.jar $HETS_FOLDER/hets-owl-tools
 cd ../..
 mkdir -p $HETS_FOLDER/hets-owl-tools/lib
 cp $HETS_FOLDER/OWL/lib/*.jar $HETS_FOLDER/hets-owl-tools/lib
