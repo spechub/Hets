@@ -29,6 +29,7 @@ import Common.GlobalAnnotations
 import Common.ExtSign
 import Common.LibName
 import Common.Result
+import Common.ProverTools
 import Common.Utils
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import ATerm.ReadWrite
@@ -41,12 +42,10 @@ import Logic.Grothendieck
 import Logic.Logic
 import Logic.Prover
 
-import System.IO
-import System.Time
-import System.Cmd (system)
 import System.Directory
 import System.Exit
-import System.Environment (getEnv)
+import System.FilePath
+import System.Process
 
 import qualified Data.Map as Map
 import qualified Data.List as List
@@ -59,53 +58,19 @@ import Data.Maybe (fromJust)
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
          -> IO OntologyMap        -- ^ map: uri -> OntologyFile
-parseOWL filename  =
-  do
-    pwd <- getEnv "PWD"
-    if null filename
-       then
-         error "empty file name!"
-       else do
-           currTime <- getClockTime
-           calend <- toCalendarTime currTime
-           tmpDir <- getTemporaryDirectory
-           (tmpFile, _) <- openTempFile tmpDir $
-             basename filename ++ "-" ++ buildTime calend ++ ".term"
-           if checkUri filename
-               then
-                 do exitCode <-
-                        system ("$HETS_OWL_TOOLS/owl_parser "
-                                ++ filename ++
-                               " " ++ tmpFile)
-                    run exitCode tmpFile
-               else if head filename == '/'
-                     then
-                      do
-                        exitCode <-
-                         system ("$HETS_OWL_TOOLS/owl_parser file://"
-                                 ++ filename ++ " " ++ tmpFile)
-                        run exitCode tmpFile
-                     else do
-                           exitCode <-
-                            system("$HETS_OWL_TOOLS/owl_parser file://"
-                                   ++ pwd ++ "/" ++ filename ++
-                                   " " ++ tmpFile)
-                           run exitCode tmpFile
-
-       where buildTime cTime =
-                 show (ctYear cTime) ++ show (ctMonth cTime)
-                 ++ show (ctDay cTime) ++ show (ctHour cTime)
-                 ++ show (ctMin cTime) ++ show (ctSec cTime)
-
-             run :: ExitCode -> FilePath -> IO OntologyMap
-             run exitCode tmpFile
-                 | exitCode == ExitSuccess =
-                     do
-                       putStrLn tmpFile
-                       t <- parseProc tmpFile
-                       -- system ("cat  " ++ tmpFile)
-                       return t
-                 | otherwise =  error ("process stop! " ++ show exitCode)
+parseOWL filename = do
+    let jar = "OWL2ATerm.jar"
+    absfile <- if checkUri filename then return filename else
+      fmap ("file://" ++) $ canonicalizePath filename
+    (hasJar, toolPath) <- check4HetsOWLjar jar
+    if hasJar then do
+       tmpFile <- getTempFile "" $ basename filename ++ ".term"
+       (exitCode, _, _) <- readProcessWithExitCode "java"
+         ["-jar", toolPath </> jar, absfile, tmpFile] ""
+       case exitCode of
+         ExitSuccess -> parseProc tmpFile
+         _ -> error ("process stop! " ++ show exitCode)
+      else error $ jar ++ " not found"
 
 -- | parse the tmp-ATerm-file from java-owl-parser
 parseProc :: FilePath -> IO OntologyMap
@@ -121,16 +86,14 @@ parseProc filename =
 
 -- | parse an ontology with all imported ontologies
 parsingAll :: [ATerm] -> [(String, OntologyFile)]
-parsingAll [] = []
-parsingAll (aterm:res) =
-             (aTerm2Ontology aterm):(parsingAll res)
+parsingAll = map aTerm2Ontology
 
 -- | translates ATerm to ontologyFile.
 aTerm2Ontology :: ATerm -> (String, OntologyFile)
-aTerm2Ontology (AAppl "UOPaar" [AAppl ouri _  _, ontoFile] _) =
-      (if head ouri == '"' then read ouri::String else ouri,
+aTerm2Ontology (AAppl "UOPaar" [AAppl ouri _ _, ontoFile] _) =
+      (if head ouri == '"' then read ouri :: String else ouri,
              propagateNspaces (namespaces parsedOntologFile) parsedOntologFile)
-    where parsedOntologFile = fromATerm ontoFile:: OntologyFile
+    where parsedOntologFile = fromATerm ontoFile :: OntologyFile
 
 aTerm2Ontology _ = error "false ontology file."
 
@@ -144,24 +107,23 @@ structureAna :: FilePath
 structureAna file opt ontoMap =
     do
        let (newOntoMap, dg) = buildDevGraph ontoMap
-       case  (analysis opt) of
+       case analysis opt of
          Structured -> do                   -- only structure analysis
             printMsg $ labNodesDG dg
-            putStrLn $ show $ dgBody dg
+            print $ dgBody dg
             return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
-         Skip       -> return $ fail ""     -- Nothing is ambiguous
-         _          -> staticAna file opt (newOntoMap, dg)
+         Skip -> return $ fail ""     -- Nothing is ambiguous
+         _ -> staticAna file opt (newOntoMap, dg)
      where -- output Analyzing messages for structured anaylsis
-           printMsg :: [LNode DGNodeLab] -> IO()
+           printMsg :: [LNode DGNodeLab] -> IO ()
            printMsg [] = putStrLn ""
-           printMsg ((_, node):rest) =
-               do putStrLn ("Analyzing ontology - printMsg " ++
-                            (showName $ dgn_name node))
+           printMsg ((_, node) : rest) =
+               do putStrLn $ "Analyzing ontology - printMsg "
+                    ++ showName (dgn_name node)
                   printMsg rest
 
--- simpleLibEnv and simpleLibName builded two simple lib-entities for
--- showGraph
+-- simpleLibEnv and simpleLibName builded two simple lib-entities for showGraph
 simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg = let
   minNode = minimum $ nodesDG dg
@@ -174,9 +136,9 @@ simpleLibEnv filename dg = let
 simpleLibName :: FilePath -> LibName
 simpleLibName s = emptyLibName $ "library_" ++ s
 
--- | static analysis if the HetcatesOpts is not only Structured.
--- | sequence call for nodesStaticAna on the basis of topologically
--- | sort of all nodes
+{- | static analysis if the HetcatesOpts is not only Structured.
+     sequence call for nodesStaticAna on the basis of topologically
+     sort of all nodes. -}
 staticAna :: FilePath
           -> HetcatsOpts
           -> (OntologyMap, DGraph)
@@ -185,7 +147,6 @@ staticAna :: FilePath
                        ))
 staticAna file opt (ontoMap, dg) =
     do let topNodes = DFS.topsort $ dgBody dg
---       putStrLn $ show ontoMap
        Result diagnoses res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
        case res of
@@ -193,10 +154,9 @@ staticAna file opt (ontoMap, dg) =
             showDiags opt $ List.nub diagnoses
             let dg'' = insEdgesDG (reverseLinks $ labEdgesDG dg')
                            (delEdgesDG (edgesDG dg') dg')
-            -- putStrLn $ show dg''
             return (Just (simpleLibName file,
                           simpleLibEnv file dg''))
-           _            -> error "no devGraph..."
+           _ -> error "no devGraph..."
 
 -- | get all the edges of the given DG
 edgesDG :: DGraph -> [Edge]
@@ -220,27 +180,27 @@ nodesStaticAna :: [Node]            -- ^ topologically sort of graph
                -> DGraph            -- ^ current graph
                -> [Diagnosis]       -- ^ diagnosis of result
                -> IO (Result (SignMap, DGraph, Namespace))
-                      -- ^ result is tuple of new map of signs and sentences,
-                      -- ^ new grpah, and new global namespace map.
+                      {- ^ result is tuple of new map of signs and sentences,
+                      new grpah, and new global namespace map. -}
 nodesStaticAna [] signMap _ ns dg diag =
     return $ Result diag (Just (signMap, dg, ns))
-nodesStaticAna (h:r) signMap ontoMap globalNs dg diag = do
+nodesStaticAna (h : r) signMap ontoMap globalNs dg diag = do
     Result digs res <-
-        -- Each node must be analyzed with the associated imported nodes.
-        -- Those search for imported nodes is by bfs accomplished.
+        {- Each node must be analyzed with the associated imported nodes.
+        Those search for imported nodes is by bfs accomplished. -}
         nodeStaticAna (getBFSnodeList h dg)
                           (emptySign, diag)
                           signMap ontoMap globalNs dg
     case res of
         Just (newSignMap, newDg, newGlobalNs) ->
-            nodesStaticAna r newSignMap ontoMap newGlobalNs newDg (diag++digs)
+            nodesStaticAna r newSignMap ontoMap newGlobalNs newDg (diag ++ digs)
         Nothing ->
                -- Warning or Error message
-            nodesStaticAna r signMap ontoMap globalNs dg (diag++digs)
+            nodesStaticAna r signMap ontoMap globalNs dg (diag ++ digs)
 
 -- | call to static analyse of single nodes
-nodeStaticAna :: [LNode DGNodeLab]   -- ^ imported nodes of one node
-                                     -- ^ (incl. itself)
+nodeStaticAna :: [LNode DGNodeLab]   {- ^ imported nodes of one node
+                                     (incl. itself) -}
               -> (Sign, [Diagnosis]) -- ^ here saved incoming sign, diagnoses
               -> SignMap             -- ^ an map of analyzed nodes
               -> OntologyMap         -- ^ an map of parsed ontology
@@ -248,24 +208,25 @@ nodeStaticAna :: [LNode DGNodeLab]   -- ^ imported nodes of one node
               -> DGraph              -- ^ current graph
               -> IO (Result (SignMap, DGraph, Namespace))
 nodeStaticAna [] _ _ _ _ _ = return $ Result [] Nothing  -- remove warning
+
 -- the last node in list is current top node.
 nodeStaticAna
-    ((n,topNode):[]) (inSig, oldDiags) signMap ontoMap globalNs dg =
+    ((n, topNode) : []) (inSig, oldDiags) signMap ontoMap globalNs dg =
   do
     let nn = dgn_name topNode
         nodeName = getName nn
-    putStrLn ("Analyzing ontology " ++ (show nodeName))
+    putStrLn $ "Analyzing ontology " ++ show nodeName
     case Map.lookup n signMap of
      Just _ ->
         return $ Result oldDiags (Just (signMap, dg, globalNs))
-     _   ->
+     _ ->
       do
         -- putStrLn $ show $ ontoMap
         let ontoF@(OntologyFile _ (Ontology mid _ _ _)) = fromJust $
                            Map.lookup (getNameFromNode nn) ontoMap
             Result diag res =
-                 -- static analysis of current ontology with all sign of
-                 -- imported ontology.
+                 {- static analysis of current ontology with all sign of
+                 imported ontology. -}
                  basicOWLAnalysis (ontoF, inSig, emptyGlobalAnnos)
         case res of
           Just (_, ExtSign accSig _, sent) ->
@@ -275,51 +236,49 @@ nodeStaticAna
                  newSent = map (renameNamespace tMap) sent
                  difSig = diffSig accSig inSig
                  newDifSig = renameNamespace tMap difSig
-                 newSig  = mkExtSign $ renameNamespace tMap accSig
-                 -- the new node (with sign and sentence) has the sign of
-                 -- accumulated sign with imported signs, but the sentences
-                 -- is only of current ontology, because all sentences of
-                 -- imported ontoloies can be automatically outputed by
-                 -- showTheory (see GUI)
+                 newSig = mkExtSign $ renameNamespace tMap accSig
+                 {- the new node (with sign and sentence) has the sign of
+                 accumulated sign with imported signs, but the sentences
+                 is only of current ontology, because all sentences of
+                 imported ontoloies can be automatically outputed by
+                 showTheory (see GUI) -}
                  newLNode = (n, topNode
                    { dgn_theory = G_theory OWL newSig startSigId
                                   (toThSens newSent) startThId })
-                 -- by remove of an node all associated edges are also deleted
-                 -- so the deges must be saved before remove the node, then
-                 -- appended again.
-                 -- The out edges (after reverse are inn edges) must
-                 -- also with new signature be changed.
+                 {- by remove of an node all associated edges are also deleted
+                 so the deges must be saved before remove the node, then
+                 appended again.
+                 The out edges (after reverse are inn edges) must
+                 also with new signature be changed. -}
                  ledges = innDG dg n ++
                           map (changeGMorOfEdges newSig) (outDG dg n)
                  newG = insEdgesDG ledges (insNodeDG newLNode
                                            (delNodeDG n dg))
 
              return $ Result (oldDiags ++ diag)
-                     (Just ((Map.insert n (newDifSig, newSent) signMap),
-                            newG, newGlobalNs))
-          _   -> do let actDiag = mkDiag Error
-                                    ("error by analysing of "
-                                     ++ (show mid)) ()
-                    putStrLn (show diag)
-                    return $ Result (actDiag:oldDiags) Nothing
-            -- The GMorphism of edge should also with new Signature be changed,
-            -- since with "show theory" the edges also with Sign one links
-            -- (see Static.DevGraph.joinG_sentences).
+                    $ Just (Map.insert n (newDifSig, newSent) signMap,
+                            newG, newGlobalNs)
+          _ -> do
+            let actDiag = mkDiag Error ("error by analysing of "
+                                        ++ show mid) ()
+            print diag
+            return $ Result (actDiag : oldDiags) Nothing
+            {- The GMorphism of edge should also with new Signature be changed,
+            since with "show theory" the edges also with Sign one links
+            (see Static.DevGraph.joinG_sentences). -}
       where changeGMorOfEdges newSign (n1, n2, edge) =
                 let newCMor = idComorphism (Logic OWL)
                     Result _ newGMor = gEmbedComorphism newCMor
                                        (G_sign OWL newSign startSigId)
-                in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
+                in (n1, n2, edge {dgl_morphism = fromJust newGMor})
 
--- The other nodes in list are examined whether they were already analyzed.
--- if yes then signs of it for further analysis are taken out; otherwise they
--- are first analyzed (with complete part tree of this node).
-nodeStaticAna ((n, _):r) (inSig, oldDiags) signMap ontoMap globalNs dg
- =
-  do
+{- The other nodes in list are examined whether they were already analyzed.
+if yes then signs of it for further analysis are taken out; otherwise they
+are first analyzed (with complete part tree of this node). -}
+nodeStaticAna ((n, _) : r) (inSig, oldDiags) signMap ontoMap globalNs dg =
    case Map.lookup n signMap of
      Just (sig, _) ->
-        nodeStaticAna r ((integSign sig inSig), oldDiags)
+        nodeStaticAna r (integSign sig inSig, oldDiags)
                              signMap ontoMap globalNs dg
      Nothing ->
        do
@@ -332,10 +291,11 @@ nodeStaticAna ((n, _):r) (inSig, oldDiags) signMap ontoMap globalNs dg
             do
              let (sig', _) = fromJust $ Map.lookup n signMap'
              nodeStaticAna r
-                  ((integSign sig' inSig), (oldDiags ++ digs'))
+                  (integSign sig' inSig, oldDiags ++ digs')
                   signMap' ontoMap globalNs' dg'
-          _  -> do error "Error by analysis : nodeStaticAna"
-                   nodeStaticAna r (inSig, oldDiags)
+          _ -> do
+            error "Error by analysis : nodeStaticAna"
+            nodeStaticAna r (inSig, oldDiags)
                                          signMap ontoMap globalNs dg
 
 -- | build up two sign
@@ -343,14 +303,12 @@ integSign :: Sign -> Sign -> Sign
 integSign inSig totalSig =
     let (newNamespace, transMap) =
             integrateNamespaces (namespaceMap totalSig) (namespaceMap inSig)
-    in  addSign (renameNamespace transMap inSig)
+    in addSign (renameNamespace transMap inSig)
                 (totalSig {namespaceMap = newNamespace})
 
 -- | turn edges over
 reverseLinks :: [LEdge DGLinkLab] -> [LEdge DGLinkLab]
-reverseLinks [] = []
-reverseLinks ((source, target, edge):r) =
-    (target, source, edge):(reverseLinks r)
+reverseLinks = map (\ (source, target, edge) -> (target, source, edge))
 
 -- | turn all edges over of graph
 reverseGraph :: DGraph -> DGraph
