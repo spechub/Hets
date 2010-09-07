@@ -561,10 +561,7 @@ applyChanges :: GraphInfo -- ^ The graph
              -> [(NodeId, NodeId, DGEdgeType, Bool)] -- ^ A list of new edges
              -> IO ()
 applyChanges gi changes nIds eIds compedges = do
-  (update, exit) <- pulseBar "Updating graph" "applying changes..."
   wrapperWrite (\ g -> applyChanges' g changes nIds eIds compedges) gi
-  update "finished"
-  exit
 
 -- | Converts and splits DGChanges to GAChanges
 convertChanges :: [DGChange] -- ^ Development graph changes

@@ -19,6 +19,7 @@ import Graphics.UI.Gtk.Glade
 import GUI.GtkUtils
 import qualified GUI.Glade.TextField as TextField
 import GUI.GraphTypes
+import GUI.GraphLogic
 
 import Interfaces.Utils
 
@@ -93,5 +94,6 @@ addSentence gi n lbl th = do
       let ln = libName gi
           iSt = intState gi
       ost <- readIORef iSt
-      let (ost', _) = updateNodeProof ln ost (n, lbl) th
+      let (ost', hist) = updateNodeProof ln ost (n, lbl) th
       writeIORef iSt ost'
+      runAndLock gi $ updateGraph gi hist
