@@ -409,7 +409,7 @@ addResults ist libname ndps =
                nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
                dGraph = lookupDGraph libname (i_libEnv pS)
                nl = labDG dGraph node
-               in fst $ updateNodeProof libname ist (node, nl) (Just nwTh)
+               in fst $ updateNodeProof libname ist (node, nl) nwTh
 
 -- | Signal handler that stops the prover from running
 -- when SIGINT is send

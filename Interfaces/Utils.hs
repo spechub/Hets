@@ -373,11 +373,10 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                       , newLibEnv, provenEdge, history)
 
 updateNodeProof :: LibName -> IntState -> LNode DGNodeLab
-                -> Maybe G_theory -> (IntState, Maybe [DGChange])
-updateNodeProof ln ost (v, dgnode) tres = case tres of
-  Just thry ->
+                -> G_theory -> (IntState, [DGChange])
+updateNodeProof ln ost (v, dgnode) thry =
     case i_state ost of
-      Nothing -> (ost, Nothing)
+      Nothing -> (ost, [])
       Just iist ->
         let le = i_libEnv iist
             dg = lookupDGraph ln le
@@ -394,5 +393,4 @@ updateNodeProof ln ost (v, dgnode) tres = case tres of
                     ost $ [DgCommandChange ln]
             nwst = nst { i_state =
                            Just iist { i_libEnv = Map.insert ln newDg le } }
-        in (nwst, Just history)
-  Nothing -> (ost, Nothing)
+        in (nwst, history)
