@@ -15,10 +15,6 @@ Here is the place where the class Logic is instantiated for CASL.
 
 module ConstraintCASL.Logic_ConstraintCASL where
 
-import Common.AS_Annotation
-import Common.Parsec((<<))
-import Text.ParserCombinators.Parsec
-
 import Logic.Logic
 
 import ConstraintCASL.AS_ConstraintCASL
@@ -58,7 +54,6 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
 instance Sentences ConstraintCASL ConstraintCASLFORMULA
                    ConstraintCASLSign ConstraintCASLMor Symbol where
       map_sen ConstraintCASL m = return . mapSen (const id) m
-      parse_sentence ConstraintCASL = Just (fmap item (aFormula [] << eof))
       sym_of ConstraintCASL = symOf
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName

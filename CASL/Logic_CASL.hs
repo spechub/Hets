@@ -16,14 +16,10 @@ Instance of class Logic for the CASL logic
 
 module CASL.Logic_CASL where
 
-import Common.AS_Annotation
-import Common.Parsec ((<<))
 import Common.ProofTree
 import Common.Consistency
 
 import ATC.ProofTree ()
-
-import Text.ParserCombinators.Parsec
 
 import Logic.Logic
 
@@ -206,7 +202,6 @@ instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
 instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       map_sen CASL m = return . mapSen (const id) m
       negation CASL = negateFormula
-      parse_sentence CASL = Just (fmap item (aFormula [] << eof))
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName

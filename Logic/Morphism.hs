@@ -208,8 +208,6 @@ instance Morphism cid
                           Just sigma2 -> S2 $
                               simplify_sen (morTargetLogic cid) sigma2 sen
                           Nothing -> error "simplify_sen"
- parse_sentence (SpanDomain cid) = fmap (fmap S2) $
-                                   parse_sentence (morTargetLogic cid)
  print_named (SpanDomain cid) = print_named (morTargetLogic cid)
      . mapNamed sentence2
  sym_of (SpanDomain cid) = sym_of (morSourceLogic cid)

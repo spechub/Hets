@@ -21,7 +21,6 @@ import ExtModal.Print_AS
 import ExtModal.StatAna
 import ExtModal.MorphismExtension
 
-import CASL.Formula
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
@@ -128,7 +127,6 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
     where
         map_sen ExtModal morph = return . mapSen map_EM_FORMULA morph
         simplify_sen ExtModal = simplifySen frmTypeAna simEMSen
-        parse_sentence ExtModal = Just $ primFormula ext_modal_reserved_words
         print_sign ExtModal sig = printSign
                 (printEModalSign $ simplifySen frmTypeAna simEMSen sig) sig
         sym_of ExtModal = symOf

@@ -219,16 +219,13 @@ showLogicGraph displaySrt = do
                        s3 =  case parse_symb_map_items lid of
                                Just _ ->  "Parser for symbol maps.\n"
                                Nothing -> ""
-                       s4 =  case parse_sentence lid of
-                               Just _ ->  "Parser for sentences.\n"
-                               Nothing -> ""
                        s5 =  case basic_analysis lid of
                                Just _ ->  "Analysis of basic specifications.\n"
                                Nothing -> ""
                        s6 =  case data_logic lid of
                                Just _ ->  "is a process logic.\n"
                                Nothing -> ""
-                   in  (s1 ++ s2 ++ s3 ++ s4 ++ s5 ++ s6)
+                   in  (s1 ++ s2 ++ s3 ++ s5 ++ s6)
         showSubLogicGraph subl =
           case subl of
             Logic sublid ->
@@ -404,16 +401,13 @@ showHetSublogicGraph displaySrt = do
                        s3 =  case parse_symb_map_items li of
                                Just _ ->  "Parser for symbol maps.\n"
                                Nothing -> ""
-                       s4 =  case parse_sentence li of
-                               Just _ ->  "Parser for sentences.\n"
-                               Nothing -> ""
                        s5 =  case basic_analysis li of
                                Just _ ->  "Analysis of basic specifications.\n"
                                Nothing -> ""
                        s6 =  case data_logic li of
                                Just _ ->  "is a process logic.\n"
                                Nothing -> ""
-                   in  (s1 ++ s2 ++ s3 ++ s4 ++ s5 ++ s6)
+                   in  (s1 ++ s2 ++ s3 ++ s5 ++ s6)
 
 showHSG :: IO ()
 showHSG = showHetSublogicGraph daVinciSort

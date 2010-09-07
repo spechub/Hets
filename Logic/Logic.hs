@@ -270,9 +270,6 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | negation of a sentence for disproving
       negation :: lid -> sentence -> Maybe sentence
       negation _ _ = Nothing
-      -- | parsing of sentences
-      parse_sentence :: lid -> Maybe (AParser st sentence)
-      parse_sentence _ = Nothing
       -- | modified signature printing when followed by sentences
       print_sign :: lid -> sign -> Doc
       print_sign _ = pretty
