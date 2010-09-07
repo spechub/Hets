@@ -20,6 +20,8 @@ import GUI.GtkUtils
 import qualified GUI.Glade.TextField as TextField
 import GUI.GraphTypes
 
+import Interfaces.Utils
+
 import Static.DevGraph
 import Static.GTheory
 
@@ -35,6 +37,7 @@ import Common.Result
 import Common.Utils
 
 import Control.Monad
+import Data.IORef
 
 import Text.ParserCombinators.Parsec
 
@@ -52,16 +55,16 @@ gtkAddSentence gi n dg = postGUIAsync $ do
   onClicked btnAbort $ widgetDestroy window
   onClicked btnAdd $ do
     sen <- entryGetText entry
-    abort <- anaSentence gi n dg lbl sen
+    abort <- anaSentence gi n lbl sen
     when abort $ widgetDestroy window
   widgetShow window
 
 errorFeedback :: Bool -> String -> IO Bool
 errorFeedback abort msg =
-   errorDialogExt "Error" msg >> return abort
+   errorDialog "Error" msg >> return abort
 
-anaSentence :: GInfo -> Int -> DGraph -> DGNodeLab -> String -> IO Bool
-anaSentence gi n dg lbl sen = case dgn_theory lbl of
+anaSentence :: GInfo -> Int -> DGNodeLab -> String -> IO Bool
+anaSentence gi n lbl sen = case dgn_theory lbl of
   G_theory lid sign si sens _ -> case parse_basic_spec lid of
     Nothing -> errorFeedback True "missing basic spec parser"
     Just p -> case basic_analysis lid of
@@ -75,16 +78,20 @@ anaSentence gi n dg lbl sen = case dgn_theory lbl of
             Nothing -> errorFeedback False $ showRelDiags 1 ds
             Just (_, ExtSign sig2 _, sens2) ->
               if is_subsig lid sig2 ps then case sens2 of
-                [ns] -> do
-                  print $ print_named lid ns
-                  addSentence gi n dg lbl
-                    $ G_theory lid sign si (joinSens (toThSens sens2) sens)
+                [_] -> case joinSens (toThSens sens2) sens of
+                  newSens -> do
+                    addSentence gi n lbl $ G_theory lid sign si newSens
                       startThId
-                  return True
+                    return True
                 [] -> errorFeedback False "no sentence recognized"
                 _ -> errorFeedback False $ "multiple sentences recognized\n"
                      ++ show (vcat $ map (print_named lid) sens2)
               else errorFeedback False "signature must not change"
 
-addSentence :: GInfo -> Int -> DGraph -> DGNodeLab -> G_theory -> IO ()
-addSentence _gi _n _dg _lbl _th = return ()
+addSentence :: GInfo -> Int -> DGNodeLab -> G_theory -> IO ()
+addSentence gi n lbl th = do
+      let ln = libName gi
+          iSt = intState gi
+      ost <- readIORef iSt
+      let (ost', _) = updateNodeProof ln ost (n, lbl) th
+      writeIORef iSt ost'
