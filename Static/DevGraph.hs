@@ -1164,11 +1164,6 @@ newNodeLab name = newInfoNodeLab name . newNodeInfo
 treatNodeLock :: (MVar () -> a) -> DGNodeLab -> a
 treatNodeLock f = maybe (error "MVar not initialised") f . dgn_lock
 
-{- | Acquire the local lock. If already locked it waits till it is unlocked
-     again. -}
-lockLocal :: DGNodeLab -> IO ()
-lockLocal = treatNodeLock $ flip putMVar ()
-
 -- | Tries to acquire the local lock. Return False if already acquired.
 tryLockLocal :: DGNodeLab -> IO Bool
 tryLockLocal = treatNodeLock $ flip tryPutMVar ()
