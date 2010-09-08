@@ -170,7 +170,7 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
           lgoals <- getSelectedMultiple trvGoals listGoals
-          widgetSetSensitive (castToWidget btnDisprove) (length lgoals == 1)
+          widgetSetSensitive (castToWidget btnDisprove) (False)
           return s
 
     activate noGoal (not $ Map.null $ goalMap initState)
@@ -206,13 +206,10 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
 
     onClicked btnDisprove $ do
-      selGoal <- getSelectedMultiple trvGoals listGoals
-      case selGoal of
-        [(_, g)] -> do
-          pr <- getSelectedSingle trvProvers listProvers
-          disproveThmSingle (gName g) (maybe "" (pName . snd) pr) node 10
-        _ -> error "GtkProverGUI.onClicked_btnDisprove"
-
+      s' <- takeMVar state
+      res <- showDisproveGUI node s'
+      putMVar state =<< update res
+ 
     onClicked btnProve $ do
       s' <- takeMVar state
       activate prove False
