@@ -30,8 +30,9 @@ my $DO_PDFTOTEXT = 1; # 0 = don't do it
 my $haskell_header =
 '{- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Description :  several tables needed for LaTeX formatting
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
+License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -163,7 +164,7 @@ sub fm_header {
 
 sub key_fm_header {
     my $map_name = "key_".$_[0]."_map";
-    return "\n$map_name :: Map Char [String] \n$map_name = fromList";
+    return "\n$map_name :: Map Char [String]\n$map_name = fromList";
 }
 
 
