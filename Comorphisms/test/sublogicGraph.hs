@@ -1,15 +1,14 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  non-portable (via imports)
 
-<optional description>
 -}
+
 module Main where
 
 import Comorphisms.HetLogicGraph
@@ -18,15 +17,15 @@ import Comorphisms.LogicGraph
 import Logic.Comorphism
 import Logic.Logic
 
-import Data.Maybe (catMaybes)
+import Data.Maybe (mapMaybe)
 import qualified Data.Map as Map
 
 main :: IO ()
 main = do
   testInj_mapSublogicAll
-  putStrLn ("Size of HetSublogicGraph (n,e): "++ show (size hetSublogicGraph))
+  putStrLn ("Size of HetSublogicGraph (n,e): " ++ show (size hetSublogicGraph))
 
-size :: HetSublogicGraph -> (Int,Int)
+size :: HetSublogicGraph -> (Int, Int)
 size hsg = (Map.size $ sublogicNodes hsg,
             Map.fold (\ x y -> length x + y) 0 $ comorphismEdges hsg)
 
@@ -36,9 +35,9 @@ testInj_mapSublogic :: (Comorphism cid
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid -> Bool
-testInj_mapSublogic cid = and $
-        map (`elem` all_sublogics (targetLogic cid)) $ catMaybes $
-        map (mapSublogic cid) (all_sublogics $ sourceLogic cid)
+testInj_mapSublogic cid =
+        all (`elem` all_sublogics (targetLogic cid))
+        $ mapMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
 
 testInj_mapSublogicAll :: IO ()
 testInj_mapSublogicAll = do

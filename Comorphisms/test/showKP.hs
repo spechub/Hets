@@ -1,17 +1,17 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  non-portable (via imports)
 
-<optional description>
 -}
+
 module Main where
 
 import Comorphisms.KnownProvers
+
 main :: IO ()
 main = showAllKnownProvers

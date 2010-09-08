@@ -1,15 +1,16 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
 -}
+
+module Main where
+
 import SoftFOL.Sign
 import SoftFOL.PrintTPTP
 
@@ -33,7 +34,7 @@ main = do
   putStrLn $ showPretty2 spQuantTermTest5 "\n"
 
   putStrLn "--- Formula-Test ---"
-  putStrLn $ show $ printFormula SPOriginAxioms spFormulaTest
+  print $ printFormula SPOriginAxioms spFormulaTest
   putStrLn "\n"
 
   putStrLn "--- FormulaList-Tests ---"
