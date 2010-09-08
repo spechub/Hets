@@ -1,16 +1,18 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-unused-binds #-}
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  ghci test file
+Copyright   :  (c)  C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  non-portable (import Logic)
 
-<optional description>
+load after calling make ghci
 -}
+
+module Main where
 
 import Syntax.AS_Library
 import Static.AnalysisLibrary
@@ -61,7 +63,7 @@ myHetcatsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"] }
 process :: FilePath -> IO (Maybe (LibName, LibEnv))
 process = anaLib myHetcatsOpts
 
-{- ln -s sample-ghci-script .ghci and call "make ghci" -}
+-- ln -s sample-ghci-script .ghci and call "make ghci"
 
 -- sample code
 getDevGraph :: FilePath -> IO DGraph
@@ -73,14 +75,14 @@ getDevGraph fname = do
         Nothing -> error "getDevGraph: lookup"
         Just dg -> return dg
 
-main :: IO()
+main :: IO ()
 main = do
   files <- getArgs
   mapM_ process files
   return ()
 
 
-{- Test functions for CASL signature -}
+-- Test functions for CASL signature
 
 proceed :: FilePath -> ResultT IO (LibName, LibEnv)
 proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv emptyDG
@@ -94,7 +96,7 @@ getSigSens ::
     => lid -- logicname
     -> String -- filename
     -> String  -- name of spec
-    -> IO (sign,[(String, sentence)])
+    -> IO (sign, [(String, sentence)])
 getSigSens lid fname sp = do
   Result _ res <- runResultT $ proceed fname
   case res of
@@ -103,7 +105,7 @@ getSigSens lid fname sp = do
          SpecEntry (ExtGenSig _ (NodeSig node _)) =
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
-              _ -> error ("Specification "++sp++" not found")
+              _ -> error ("Specification " ++ sp ++ " not found")
      in
       case match node (dgBody dg) of
         (Just ctx, _) ->
@@ -121,11 +123,10 @@ getSigSens lid fname sp = do
     Nothing -> error "Error occured"
 
 
-
 -- read in a CASL file and return the basic theory
-getCASLSigSens ::    String -- filename
+getCASLSigSens :: String -- filename
                   -> String  -- name of spec
-                  -> IO (CASLSign,[(String, CASLFORMULA)])
+                  -> IO (CASLSign, [(String, CASLFORMULA)])
 getCASLSigSens fname sp = do
   Result _ res <- runResultT $ proceed fname
   case res of
@@ -134,7 +135,7 @@ getCASLSigSens fname sp = do
          SpecEntry (ExtGenSig _ (NodeSig node _)) =
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
-              _ -> error ("Specification "++sp++" not found")
+              _ -> error ("Specification " ++ sp ++ " not found")
      in
       case match node (dgBody dg) of
         (Just ctx, _) ->
@@ -158,16 +159,17 @@ from Proofs/StatusUtils.hs -}
 {- try to print the DGChanges list before and after executing
 removeContraryChanges, in order to see what exactly is going on -}
 
-myTest :: IO()
+myTest :: IO ()
 myTest = do
     res <- process "../Hets-lib/Basic/RelationsAndOrders.casl"
     -- not ok with "RelationsAndOrders.casl " :(
     case res of
        Nothing -> error "myTest"
        Just (ln, lenv) -> do
-{-       (edges2, dgchanges2) <- myGlobal ln 2 lenv
+{-
+         (edges2, dgchanges2) <- myGlobal ln 2 lenv
          print dgchanges
--- print the DGChanges before execusion
+         -- print the DGChanges before execusion
          putStrLn $ "!!!!!The DGChanges before excecuting of " ++
                       "removeContraryChanges by the third excecuting of " ++
                       "GlobalDecomposition!!!!!"
@@ -175,14 +177,15 @@ myTest = do
          putStrLn $ "!!!!!the DGChanges afterwards by the third excecuting"
                     ++ " of GlobalDecomposition!!!!!"
          print $ myPrintShow $
--- removeContraryChanges dgchanges2
+         -- removeContraryChanges dgchanges2
          print $ myPrintEdges edges2
 -}
          (edges3, dgchanges3) <- myGlobal ln 3 lenv
          putStrLn $ "The global thm Edges before executing globDecomp for " ++
                     "the fourth time"
          print $ myPrintEdges edges3
-{-       putStrLn $ "!!!!!The DGChanges before excecuting of " ++
+{-
+         putStrLn $ "!!!!!The DGChanges before excecuting of " ++
                     "removeContraryChanges by the fouth excecuting of " ++
                     "GlobalDecomposition!!!!!"
          print $ myPrintShow dgchanges3
@@ -191,8 +194,9 @@ myTest = do
                     "GlobalDecomposition: !!!!!"
          print $ myPrintDGChanges dgchanges3
          print $ myPrintDGChanges $ removeContraryChanges dgchanges3
-{-       print (removeContraryChanges dgchanges)
--- print after...
+{-
+         print (removeContraryChanges dgchanges)
+         -- print after...
          print $ countD $ removeContraryChanges dgchanges
          dgchanges4<- myGlobal ln 4 lenv
          putStrLn "aaa"
@@ -212,20 +216,20 @@ countD = length . filter (isPrefixOf "delete edge" . showDGChange)
 
 -- my simulated execusion of globDecomp
 myGlobal :: LibName -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
-myGlobal ln n lenv =
+myGlobal ln n lenv = do
     let newLenv = executeGlobalDecompByNTimes n ln lenv
         -- try to do n times globDecomp
         dgraph = lookupDGraph ln newLenv
         globalThmEdges = filter (liftE isUnprovenGlobalThm) (labEdgesDG dgraph)
         ngraph = foldl globDecompAux dgraph globalThmEdges
         defEdgesToSource = myGoingIntoGTE dgraph globalThmEdges []
-    in do putStrLn "all the edges going into global Thm Edges"
-          print defEdgesToSource
-          return (globalThmEdges,
+    putStrLn "all the edges going into global Thm Edges"
+    print defEdgesToSource
+    return (globalThmEdges,
              flatHistory $ snd $ splitHistory dgraph ngraph)
             -- get the DGChanges by executing globDecomp
 
-myGoingIntoGTE :: DGraph -> [LEdge DGLinkLab] -> [String]->[String]
+myGoingIntoGTE :: DGraph -> [LEdge DGLinkLab] -> [String] -> [String]
 myGoingIntoGTE _ [] res = res
 myGoingIntoGTE dgraph ((source, _ , _) : ys) res =
     let defEdgesToSource = [e | e@(_, t, l) <- labEdgesDG dgraph,
@@ -238,4 +242,4 @@ executeGlobalDecompByNTimes :: Int -> LibName -> LibEnv -> LibEnv
 executeGlobalDecompByNTimes n ln lenv = case compare n 0 of
   LT -> error "excecuteGlobalDecompByNTimes"
   EQ -> lenv
-  GT -> executeGlobalDecompByNTimes (n-1) ln $ globDecomp ln lenv
+  GT -> executeGlobalDecompByNTimes (n - 1) ln $ globDecomp ln lenv

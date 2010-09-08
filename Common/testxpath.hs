@@ -1,15 +1,18 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  standalone parser for path expressions
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
+standalone parser for path expressions
 -}
+
+module Main (main) where
+
 import Common.XPath
 import Text.ParserCombinators.Parsec
 import Common.Parsec

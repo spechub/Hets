@@ -1,14 +1,12 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) (c) Klaus Luettich and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
 -}
 
 module Modal.Utils where
@@ -26,12 +24,12 @@ import Data.Maybe
 getModTermSort :: Id -> Id
 getModTermSort rs = case rs of
     Id _ [s] _ -> s
-    _  -> error "Modal.Utils.getModTermSort"
+    _ -> error "Modal.Utils.getModTermSort"
 
 addNonEmptyLabel :: String -> Maybe (Named a) -> Maybe (Named a)
 addNonEmptyLabel _ Nothing = Nothing
 addNonEmptyLabel l (Just s)
-    | null l    = Just s
+    | null l = Just s
     | otherwise = Just $ reName (const l) s
 
 modToTerm :: MODALITY -> Maybe (TERM M_FORMULA)
