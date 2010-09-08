@@ -1,20 +1,21 @@
 {-# LANGUAGE MultiParamTypeClasses, UndecidableInstances, FlexibleInstances
   , TypeSynonymInstances #-}
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) Mihai Codescu, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Mihai.Codescu@dfki.de
+Stability   :  experimental
+Portability :  non-portable (Logic)
 
-<optional description>
+institution modification
 -}
--- institution modification
--- CASL -------------------------id------------------> CASL
--- CASL ---CASL2Modal----> ModalCASL --Modal2CASL----> CASL
+
+{-
+   CASL -------------------------id------------------> CASL
+   CASL ---CASL2Modal----> ModalCASL --Modal2CASL----> CASL
+-}
 
 module Modifications.ModalEmbedding where
 

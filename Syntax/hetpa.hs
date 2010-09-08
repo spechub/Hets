@@ -1,18 +1,17 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  standalone HetCASL parser
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  non-portable (Grothendieck)
 
-<optional description>
+standalone HetCASL parser
 -}
-module Main
 
-where
+module Main where
 
 import Syntax.Parse_AS_Library
 import System.Environment

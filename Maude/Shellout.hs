@@ -1,14 +1,13 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  Maude Development Graphs
+Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  ariesco@fdi.ucm.es
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
 -}
 
 module Maude.Shellout (

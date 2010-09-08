@@ -1,15 +1,15 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
+testing random data
 -}
+
 module Main where
 
 import System.Environment
@@ -24,35 +24,36 @@ import qualified Data.Map as Map
 import Data.List (isPrefixOf)
 
 main :: IO ()
-main = do args <- getArgs
-          setStdGen (mkStdGen 50) -- setting an initial RandomGenerator
-                                  -- is like setting the seed in C
-          let (cmd,files) = (head args,tail args)
+main = do
+          args <- getArgs
+          setStdGen (mkStdGen 50) {- setting an initial RandomGenerator
+                                  is like setting the seed in C -}
+          let (cmd, files) = (head args, tail args)
           let cmdFun = case cmd of
                        "ReadWrite" -> testATC
                        cmds
-                           | isPrefixOf "BigMap" cmds  ->
+                           | isPrefixOf "BigMap" cmds ->
                                testDDataMap (drop 6 cmds)
-                           | isPrefixOf "BigList" cmds  ->
+                           | isPrefixOf "BigList" cmds ->
                                testListConv (drop 7 cmds)
                            | isPrefixOf "CheckBigMap" cmds ->
                                checkDDataMap (drop 11 cmds)
                            | isPrefixOf "CheckBigList" cmds ->
                                checkListConv (drop 12 cmds)
-                           | otherwise           -> usage cmd
+                           | otherwise -> usage cmd
           mapM_ cmdFun files
 
 usage :: String -> FilePath -> IO ()
 usage cmd _ = do
-  putStrLn ("unknown command: "++cmd)
-  putStrLn ("Known commands are: ReadWrite, [Check]Big{Map,List}<n>")
+  putStrLn ("unknown command: " ++ cmd)
+  putStrLn "Known commands are: ReadWrite, [Check]Big{Map,List}<n>"
   fail "no known command given"
 
-generateRandomLists :: String -> IO [(Int,Int)]
-generateRandomLists upstr  = do
+generateRandomLists :: String -> IO [(Int, Int)]
+generateRandomLists upstr = do
     up <- case readMaybe upstr of
       Just u -> do
-        putStrLn $ "generating list with "++ show u ++ " items"
+        putStrLn $ "generating list with " ++ show u ++ " items"
         return u
       Nothing -> do
         putStrLn "no upper_number read"
@@ -60,20 +61,19 @@ generateRandomLists upstr  = do
         return 2000
     genIList up
 
-genIList :: Int -> IO [(Int,Int)]
-genIList cnt
-    | cnt <= 0  = return []
-    | otherwise = do v <- getStdRandom (randomR (1,maxBound::Int))
-                     l <- genIList (cnt-1)
-                     return ((cnt,v):l)
+genIList :: Int -> IO [(Int, Int)]
+genIList cnt = if cnt <= 0 then return [] else do
+    v <- getStdRandom (randomR (1, maxBound :: Int))
+    l <- genIList (cnt - 1)
+    return ((cnt, v) : l)
 
-testDDataMap :: String ->  FilePath -> IO ()
+testDDataMap :: String -> FilePath -> IO ()
 testDDataMap upperstr fp = do
                   int_list <- generateRandomLists upperstr
                   let int_map = (Map.fromList int_list)
                       att0 = emptyATermTable
-                  (int_att,selectedATermIndex) <- toShATerm' att0 int_map
-                  putStrLn $ show (getTopIndex int_att,selectedATermIndex)
+                  (int_att, selectedATermIndex) <- toShATerm' att0 int_map
+                  print (getTopIndex int_att, selectedATermIndex)
                   writeFileSDoc fp $
                        writeSharedATermSDoc int_att
                   putStrLn "File written\nstart reading"
@@ -85,7 +85,7 @@ testDDataMap upperstr fp = do
                              then "consistent."
                              else "inconsistent!!"))
 
-checkDDataMap :: String ->  FilePath -> IO ()
+checkDDataMap :: String -> FilePath -> IO ()
 checkDDataMap upperstr fp = do
                   int_list <- generateRandomLists upperstr
                   let int_map = (Map.fromList int_list)
@@ -96,25 +96,25 @@ checkDDataMap upperstr fp = do
                              then "consistent."
                              else "inconsistent!!"))
 
-testListConv :: String ->  FilePath -> IO ()
+testListConv :: String -> FilePath -> IO ()
 testListConv upperstr fp = do
                   int_list <- generateRandomLists upperstr
                   let att0 = emptyATermTable
-                  (int_att,selectedATermIndex) <-
+                  (int_att, selectedATermIndex) <-
                           toShATerm' att0 $ reverse int_list
-                  putStrLn $ show (getTopIndex int_att,selectedATermIndex)
+                  print (getTopIndex int_att, selectedATermIndex)
                   writeFileSDoc fp $
                        writeSharedATermSDoc int_att
                   putStrLn "File written\nstart reading"
                   str <- readFile fp
-                  let read_list :: [(Int,Int)]
+                  let read_list :: [(Int, Int)]
                       read_list = fromShATerm (readATerm str)
                   putStrLn ("BigList of (Int,Int) is " ++
                             (if read_list == reverse int_list
                              then "consistent."
                              else "inconsistent!!"))
 
-checkListConv :: String ->  FilePath -> IO ()
+checkListConv :: String -> FilePath -> IO ()
 checkListConv upperstr fp = do
                   int_list <- generateRandomLists upperstr
                   str <- readFile fp
@@ -126,13 +126,14 @@ checkListConv upperstr fp = do
 
 
 resultFP :: String -> String
-resultFP fp = fp++".ttttt"
+resultFP fp = fp ++ ".ttttt"
 
 
 testATC :: FilePath -> IO ()
-testATC fp = do str <- readFile fp
-                let att = readATerm str
-                putStrLn ("Reading File "++fp++" ...")
-                let fp' = resultFP fp
-                putStrLn ("Writing File "++fp'++" ...")
-                writeFileSDoc fp' (writeSharedATermSDoc att)
+testATC fp = do
+    str <- readFile fp
+    let att = readATerm str
+    putStrLn ("Reading File " ++ fp ++ " ...")
+    let fp' = resultFP fp
+    putStrLn ("Writing File " ++ fp' ++ " ...")
+    writeFileSDoc fp' (writeSharedATermSDoc att)

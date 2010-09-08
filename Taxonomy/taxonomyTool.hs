@@ -1,20 +1,19 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
--}
-{- Module which tests parsing an MMiSS document file (given as input),
+Module which tests parsing a MMiSS document file (given as input),
    verifying it, structuring it, converting it to CodedValue and converting it
-   back again. -}
+   back again.
+ -}
 
-import System
+module Main where
+
 import System.IO
 
 import Taxonomy.OntoParser

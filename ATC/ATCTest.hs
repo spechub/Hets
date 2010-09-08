@@ -1,18 +1,17 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  non-portable (Logic)
 
-<optional description>
+test by reading sml aterms
 -}
+
 module Main where
 
-import System
 import Syntax.AS_Library
 import ATerm.AbstractSyntax
 import Common.Result
@@ -21,6 +20,8 @@ import ATC.Grothendieck
 import Driver.WriteLibDefn
 import Driver.ReadFn
 import Comorphisms.LogicList
+import Data.Maybe
+import System.Environment
 
 main :: IO ()
 main = getArgs >>= mapM_ testATC
@@ -29,17 +30,17 @@ testATC :: FilePath -> IO ()
 testATC fp = do
   libdefn <- read_sml_ATerm fp
   ld1 <- readWriteATerm1 libdefn
-  putStrLn $ show $ show libdefn == show ld1
+  print $ show libdefn == show ld1
   ld2 <- readWriteATerm2 libdefn
-  putStrLn $ show $ show libdefn == show ld2
+  print $ show libdefn == show ld2
 
 readWriteATerm1 :: LIB_DEFN -> IO LIB_DEFN
-readWriteATerm1 ld  = do
+readWriteATerm1 ld = do
     (att1, ix) <- toShATermLG' emptyATermTable ld
     return $ snd $ fromShATermLG' preLogicGraph ix att1
 
 readWriteATerm2 :: LIB_DEFN -> IO LIB_DEFN
-readWriteATerm2 ld  = do
+readWriteATerm2 ld = do
     str <- toShATermString ld
-    return $ maybe (error "readWriteATerm2")
-                         id $ maybeResult $ fromShATermString preLogicGraph str
+    return $ fromMaybe (error "readWriteATerm2")
+      $ maybeResult $ fromShATermString preLogicGraph str
