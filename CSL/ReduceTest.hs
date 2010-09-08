@@ -7,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (uses type-expression in type contexts)
 
 This file is for experimenting with the ReduceInterpreters
 -}
@@ -251,6 +251,7 @@ ttesdi e = runTTi (substituteDefined e)
 
 {-
 r <- mapleInit 1
+r <- redcInit 3
 r' <- evalL r 3
 let e = toE "sin(x) + 2*cos(y) + x^2"
 w <- ttesdi e r'
@@ -260,4 +261,17 @@ w' <- ttesd e r' vss
 w' <- ttesd e r' vss
 
 mapleExit r
+
+
+y <- fmap fromJust $ runTest (CSL.Interpreter.lookup "y") r'
+runTest (verificationCondition y $ toE "cos(x)") r'
+pretty it
+
+r <- mapleInit 4
+r <- redcInit 4
+r' <- evalL r 301
+let t = toE "cos(z)^2 + cos(z ^2) + sin(y) + sin(z)^2"
+t' <- runTest (eval t) r'
+vc <- runTest (verificationCondition t' t) r'
+pretty vc
 -}

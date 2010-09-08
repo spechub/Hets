@@ -7,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (various glasgow extensions)
 
 Program transformations from CSL specifications to CAS programs
 and utilities for lemma generation
@@ -17,8 +17,7 @@ and utilities for lemma generation
 module CSL.Transformation where
 
 import Control.Monad.State (State, StateT(..), MonadState(get, put))
-import Control.Monad.Trans (lift, MonadIO(..))
-import Control.Monad (when)
+import Control.Monad.Trans (lift)
 import qualified Data.Map as Map
 import Data.Maybe 
 import Prelude hiding (lookup)
@@ -76,6 +75,13 @@ instance (SExp a, SExp b) => SExp (String, a, b) where
 instance (SExp a, SExp b, SExp c) => SExp (String, a, b, c) where
     toExp (s, x, y, z) = Op s [] [toExp x, toExp y, toExp z] nullRange
 
+
+-- strangely, ghc says that we would have overlapping instances with 
+-- instance SExp a => SExp (String, a), but I can't see it. I introduce
+-- this strange looking instance
+instance (SExp a) => SExp ((), String, [a]) where
+    toExp (_, s, l) = Op s [] (map toExp l) nullRange
+
 -- | A class to construct CMDs from simple tuple structures
 class SCmd a where
     toCmd :: a -> CMD
@@ -83,11 +89,21 @@ class SCmd a where
 instance (SExp a, SExp b) => SCmd (String, a, b) where
     toCmd (s, x, y) = Cmd s [toExp x, toExp y]
 
+type VarRange = (APFloat, APFloat)
+
+class IntervalLike a where
+    toIntervalExp :: a -> EXPRESSION
+
+instance IntervalLike EXPRESSION where
+    toIntervalExp = id
+
+instance IntervalLike VarRange where
+    toIntervalExp (a, b) = Interval a b nullRange
+
 -- ----------------------------------------------------------------------
 -- * Transformations of assignments to conditional statements
 -- ----------------------------------------------------------------------
 
-type VarRange = (APFloat, APFloat)
 
 -- ** A simple cache implemenation with variable container
 -- | We store all results from the backup lookup in the map, even the negative
@@ -101,9 +117,11 @@ lookupCached :: MonadState VCCache m => (String -> m (Maybe EXPRESSION)) -> Stri
              -> m (Maybe EXPRESSION)
 lookupCached = lookupCachedWithTrans return
 
-lookupCachedWithTrans :: MonadState VCCache m => (EXPRESSION -> m EXPRESSION)
-                      ->  (String -> m (Maybe EXPRESSION)) -> String
-                      -> m (Maybe EXPRESSION)
+lookupCachedWithTrans :: MonadState VCCache m =>
+                          (EXPRESSION -> m EXPRESSION) -- ^ Transformation function
+                      ->  (String -> m (Maybe EXPRESSION)) -- ^ lookup function
+                      -> String -- ^ lookup key
+                      -> m (Maybe EXPRESSION) -- ^ lookuped and transformed result
 lookupCachedWithTrans f lk k = do
   c <- get
   case Map.lookup k (cachemap c) of
@@ -136,16 +154,8 @@ instance VariableContainer VCCache VarRange where
 
 -- | If the state of a statemonad is a VariableContainer then we provide a
 --  simplified insert function, which hides the state handling
-insertVarM :: (VariableContainer a b, MonadIO m, Show a, Show b) => String -> b -> StateT a m ()
-insertVarM s iRng = do
-  st <- get
-  liftIO $ putStrLn $ "state before: " ++ show st
-  let st' = insertVar s iRng st
-  liftIO $ putStrLn $ "state after: " ++ show st'
-  put st'
-  get >>= liftIO . putStrLn . ("state with get: " ++) . show
-  liftIO $ putStrLn $ s ++ ": " ++ show iRng
---  fmap (insertVar s iRng) get >>= put
+insertVarM :: (Monad m, VariableContainer a b) => String -> b -> StateT a m ()
+insertVarM s iRng = fmap (insertVar s iRng) get >>= put
 
 -- | If the state of a statemonad is a VariableContainer then we provide a
 --  simplified insert function, which hides the state handling
@@ -155,34 +165,33 @@ toVarListM = fmap toVarList get
 
 -- | Given an expression containing intervals we code out the intervals
 --   replacing them by variables and assign to those variables ranges
---   (the intervals).
+--   (the intervals). Does not replace toplevel intervals.
 replaceIntervals ::
-    (Show a, VarGen c, VariableContainer a VarRange, CalculationSystem c, MonadIO c) =>
+    (VarGen c, VariableContainer a VarRange, CalculationSystem c) =>
     EXPRESSION -> StateT a c EXPRESSION
-replaceIntervals e = 
+replaceIntervals e@(Interval _ _ _) = return e
+replaceIntervals e = replaceIntervals' e
+
+-- | Like replaceIntervals but works also on toplevel intervals
+replaceIntervals' ::
+    (VarGen c, VariableContainer a VarRange, CalculationSystem c) =>
+    EXPRESSION -> StateT a c EXPRESSION
+replaceIntervals' e = 
     case e of
       Interval from to rg -> do
              y <- genVar
              insertVarM y (from, to)
              return $ Var $ Token y rg
       Op s epl args rg -> do
-             nargs <- mapM replaceIntervals args
+             nargs <- mapM replaceIntervals' args
              return $ Op s epl nargs rg
       List elms rg -> do
-             nelms <- mapM replaceIntervals elms
+             nelms <- mapM replaceIntervals' elms
              return $ List nelms rg
       _ -> return e
 
--- TODO: we have to integrate the interval replacing into the substitution in
--- order to minimize the number of new variables introduced, consider, e.g.,
---   e = x*(x+1)
--- and x = [1, 1.01] in the environment
--- we would get e' = [1, 1.01]*([1, 1.01] + 1) and if we now replace intervals
--- we get e'' = x1*(x2+1) with x1 = [1, 1.01] and x2 = [1, 1.01]
--- The other way arround we would lookup once the x replace it with x1, and put
--- x1 in [1, 1.01] to the conditionals-mapping
 -- | Replaces all occurrences of defined variables by their lookuped terms
-substituteDefined :: ( VarGen c, CalculationSystem c, MonadIO c )
+substituteDefined :: ( VarGen c, CalculationSystem c)
                     => EXPRESSION -> StateT VCCache c EXPRESSION
 substituteDefined x =
     case x of
@@ -192,8 +201,12 @@ substituteDefined x =
              if b && null args
               then do
                 mE <- lookupCachedWithTrans replaceIntervals lookup s
-                --mE <- error ""
                 case mE of
+                  Just (Interval from to _) ->
+                      do
+                        -- enter the interval into the VariableContainer
+                        insertVarM s (from, to)
+                        return x
                   Just e -> return e
                   _ -> error "substituteDefined: defined constant not found"
               else return $ Op s epl nargs rg
@@ -201,6 +214,49 @@ substituteDefined x =
              nelms <- mapM substituteDefined elms
              return $ List nelms rg
       _ -> return x
+
+
+buildConditionalExpression :: VCCache -> EXPRESSION -> EXPRESSION
+buildConditionalExpression vcc e =
+    let condlist = map (uncurry toIntervalCondition)
+                   $ Map.toList $ varcontainer vcc
+    in case condlist of
+         [] -> e
+         [c] -> toExp ("impl", c, e)
+         _ -> toExp ("impl", toExp ((), "and", condlist), e)
+
+toIntervalCondition :: (SExp e, IntervalLike i) => e -> i -> EXPRESSION
+toIntervalCondition e i = toExp ("in", e, toIntervalExp i)
+
+-- | Produces a verification condition for the given Assignment c := t
+verificationCondition :: ( VarGen c, CalculationSystem c)
+                         => EXPRESSION -- ^ the lookuped value of a constant
+                         -> EXPRESSION -- ^ the definiens of this constant
+                         -> c EXPRESSION -- ^ the conditional statement,
+                                         -- conditional in occurring interval
+                                         -- variables
+verificationCondition c e = do
+  (_, vcc1) <- runStateT (replaceIntervals c) emptyVCCache
+  (e', vcc2) <- runStateT (substituteDefined e >>= replaceIntervals')
+                emptyVCCache
+
+  -- 1. c is an interval -> vcc2 => e' in c
+  -- 2. c contains intervals -> error, don't know how to build conditional
+  -- 3. e contains intervals -> error, can't bound interval expression by constant
+  -- 4. otherwise ->  e' = c
+  case c of
+    Interval _ _ _ -> 
+        do 
+          let vericond = toIntervalCondition e' c
+          return $ buildConditionalExpression vcc2 vericond
+    _ | not $ Map.null $ varcontainer vcc1 ->
+          error $ "verificationCondition: don't know how to build conditional"
+                    ++ "from interval expression"
+      | not $ Map.null $ varcontainer vcc2 ->
+          error $ "verificationCondition:  can't bound interval expression by"
+                    ++ "constant"
+      | otherwise -> return $ toExp ("=", e', c)
+
 
 
 -- ----------------------------------------------------------------------

@@ -24,6 +24,7 @@ import CSL.Reduce_Interface ( evalString, exportExp, connectCAS, disconnectCAS
                             , lookupRedShellCmd, Session (..), cslReduceDefaultMapping)
 import CSL.AS_BASIC_CSL (EXPRESSION (..))
 import CSL.Parse_AS_Basic (parseResult)
+import CSL.Transformation
 import CSL.Interpreter
 
 -- the process communication interface
@@ -45,7 +46,8 @@ import Prelude hiding (lookup)
 
 data ReduceInterpreter = ReduceInterpreter { inh :: Handle
                                            , outh ::Handle
-                                           , ph :: ProcessHandle }
+                                           , ph :: ProcessHandle
+                                           , varcounter :: Int }
 
 -- | ReduceInterpreter with Translator based on the CommandState
 data RITrans = RITrans { getBMap :: BMap
@@ -67,12 +69,26 @@ instance CalculationSystem RedsIO where
     check = redCheck evalRedsString return
     names = error "ReduceInterpreter as CS: names are unsupported"
 
+instance VarGen RedsIO where
+    genVar = do
+      s <- get
+      let i = varcounter s
+      put $ s { varcounter =i + 1 }
+      return $ "?" ++ show i
+
 instance CalculationSystem RedcIO where
     assign  = redAssign evalRedcString redcTransS redcTransE
     lookup = redLookup evalRedcString redcTransS
     eval = redEval evalRedcString redcTransE
     check = redCheck evalRedcString redcTransE
     names = get >>= return . SMem . getBMap
+
+instance VarGen RedcIO where
+    genVar = do
+      s <- get
+      let i = newkey $ getBMap s
+      put $ s { getBMap = (getBMap s) { newkey = i + 1 } }
+      return $ "?" ++ show i
 
 -- ----------------------------------------------------------------------
 -- * Reduce syntax functions
@@ -180,7 +196,8 @@ redsInit = do
    then error $ "Could not find reduce under " ++ reducecmd
    else do
      (inpt, out, _, pid) <- connectCAS reducecmd
-     return $ ReduceInterpreter { inh = inpt, outh = out, ph = pid }
+     return
+        $ ReduceInterpreter { inh = inpt, outh = out, ph = pid, varcounter = 1 }
 
 redsExit :: ReduceInterpreter -> IO ()
 redsExit = disconnectCAS

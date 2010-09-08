@@ -77,7 +77,7 @@ data BASIC_ITEMS =
     deriving Show
 
 -- | Extended Parameter Datatype
-data EXTPARAM = EP Id.Token String (Maybe EXPRESSION) deriving (Eq, Ord, Show)
+data EXTPARAM = EP Id.Token String (Maybe APInt) deriving (Eq, Ord, Show)
 
 -- | Datatype for expressions
 data EXPRESSION =
@@ -252,8 +252,8 @@ printExpression e@(Op s _ exps _)
 printExpression (List exps _) = sepByCommas (map printExpression exps)
 printExpression (Int i _) = text (show i)
 printExpression (Double d _) = text (show d)
-printExpression e =
-    error $ "printExpression: expression not supported: " ++ show e
+printExpression (Interval l r _) =
+    brackets $ sepByCommas $ map (text . show) [l, r]
 
 printOpItem :: OP_ITEM -> Doc
 printOpItem (Op_item tokens _) =

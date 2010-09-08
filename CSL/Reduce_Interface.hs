@@ -7,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Dominik.Dietrich@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (uses type-expression in class instances)
 
 Interface for Reduce CAS system.
 -}

@@ -70,7 +70,7 @@ instance VarGen MapleIO where
       s <- get
       let i = newkey $ getBMap s
       put $ s { getBMap = (getBMap s) { newkey = i + 1 } }
-      return $ ".." ++ show i
+      return $ "?" ++ show i
 
 -- instance VariableRangeContainer MapleIO where
 
@@ -88,7 +88,7 @@ cslMapleDefaultMapping =
                          , "<", "+", "-", "*", "/"]
 
 printAssignment :: String -> EXPRESSION -> String
-printAssignment n e = concat [n, ":=", exportExp e, ";"]
+printAssignment n e = concat [n, ":= '", exportExp e, "';"]
 
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = exportExp e ++ ";"
