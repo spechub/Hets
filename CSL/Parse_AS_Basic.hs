@@ -172,7 +172,7 @@ extparam :: CharParser st EXTPARAM
 extparam = do
   i <- identifier
   liftM2 (EP i) (oneOfKeys ["=", "<=", ">=", "!=", "<", ">", "-|"])
-    $ optionMaybe $ signednumber
+    $ option 0 $ signednumber
           >-> either id (error "extparam: floats not supported") . fst
 
 -- ---------------------------------------------------------------------------

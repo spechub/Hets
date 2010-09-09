@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  $Header$
-Description :  Test environment for the ReduceInterpreter
+Description :  Test environment for CSL
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -9,10 +9,11 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  non-portable (uses type-expression in type contexts)
 
-This file is for experimenting with the ReduceInterpreters
+This file is for experimenting with the Interpreter instances
+and general static analysis tools
 -}
 
-module CSL.ReduceTest where
+module CSL.InteractiveTests where
 
 import CSL.MapleInterpreter 
 
@@ -20,32 +21,46 @@ import CSL.ReduceInterpreter
 import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Transformation
+import CSL.ExtendedParameter
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic (parseResult)
+import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
 import CSL.Sign
 
 import Common.Utils (getEnvDef)
 import Common.IOS
 import Common.Result (diags, printDiags, resultToMaybe)
 import Common.ResultT
+import Common.Lexer as Lexer
+import Common.Parsec
+import Text.ParserCombinators.Parsec
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
--- README: IN ORDER TO WORK CORRECTLY LINK THE Test.hs IN THE HETS-ROOT DIR TO Main.hs (ln -s Test.hs Main.hs)
+-- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
 import Main (getSigSens)
 
 import Control.Monad.State (StateT(..))
 import Control.Monad (liftM)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Time.Clock
 
 
+-- ----------------------------------------------------------------------
+-- * general test functions
+-- ----------------------------------------------------------------------
+
+testspecs =
+    [ (44, ("/CSL/EN1591.het", "EN1591"))
+    ]
+
 l1 :: Int -> IO (Sign, [(String, CMD)])
 l1 i = do
+  let (lb, sp) = fromMaybe ("/CSL/Tests.het", "Test" ++ show i)
+                 $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  getSigSens CSL (hlib ++ "/CSL/Tests.het") $ "Test" ++ show i
+  getSigSens CSL (hlib ++ lb) sp
 
 sig :: Int -> IO Sign
 sig = fmap fst . l1
@@ -57,25 +72,22 @@ sens = fmap snd . l1
 cmds :: Int -> IO [CMD]
 cmds = fmap (map snd) . sens
 
-destructureAssignment :: CMD -> Maybe (String, EXPRESSION)
-destructureAssignment (Cmd ":=" [Op n [] [] _, e]) = Just (n, e)
-destructureAssignment _ = Nothing
 
-destructureConstraint :: CMD -> Maybe EXPRESSION
-destructureConstraint (Cmd "constraint" [e]) = Just e
-destructureConstraint _ = Nothing
-
-
--- for testing Booleans or Assignments
-boolAssignEval :: CalculationSystem m => CMD -> m (Either String Bool)
-boolAssignEval cmd =
-    case destructureConstraint cmd of
-      Just be -> check be >>= return . Right
-      _ -> case destructureAssignment cmd of
-             Just (n, e) -> assign n e >> return (Left n)
-             _ -> return $ Left ""
+-- time measurement, pendant of the time shell command
+time :: IO a -> IO a
+time p = do
+  t <- getCurrentTime
+  res <- p
+  t' <- getCurrentTime
+  putStrLn $ show $ diffUTCTime t' t
+  return res
 
 
+
+
+-- ----------------------------------------------------------------------
+-- * calculator test functions
+-- ----------------------------------------------------------------------
 
 runTest :: ResultT (IOS b) a -> b -> IO a
 runTest cmd r = fmap fromJust $ runTestM cmd r
@@ -88,14 +100,6 @@ runTest_ cmd r = do
   (res, r') <- runIOS r $ runResultT cmd
   return (fromJust $ resultToMaybe res, r')
 
--- time measurement, pendant of the time shell command
-time :: IO a -> IO a
-time p = do
-  t <- getCurrentTime
-  res <- p
-  t' <- getCurrentTime
-  putStrLn $ show $ diffUTCTime t' t
-  return res
 
 evalL :: CalculationSystem (ResultT (IOS b)) => b
       -> Int -- ^ Test-spec
@@ -106,9 +110,70 @@ evalL s i = do
   return s'
 
 
+-- ----------------------------------------------------------------------
+-- * different parser
+-- ----------------------------------------------------------------------
 
 toE :: String -> EXPRESSION
 toE = fromJust . parseResult
+
+-- parses a single extparam range such as: "I>0, J=1"
+toEP :: String -> [EXTPARAM]
+toEP [] = []
+toEP inp = case runParser (Lexer.separatedBy extparam pComma >-> fst) "" "" inp of
+             Left e -> error $ show e
+             Right s -> s
+
+
+-- parses lists of extparam ranges such as: "I>0, J=1; ....; I=10, J=1"
+toEPL :: String -> [[EXTPARAM]]
+toEPL [] = []
+toEPL inp = case runParser
+             (Lexer.separatedBy
+              (Lexer.separatedBy extparam pComma >-> fst) pSemi >-> fst) "" "" inp of
+              Left e -> error $ show e
+              Right s -> s
+
+toEP1 :: String -> EPExp
+toEP1 inp = case runParser extparam "" "" inp of
+             Left e -> error $ show e
+             Right s -> snd $ fromJust $ toEPExp s
+
+toEPs :: String -> EPExps
+toEPs = toEPExps . toEP
+
+toEPLs :: String -> [EPExps]
+toEPLs = map toEPExps . toEPL
+
+-- ----------------------------------------------------------------------
+-- * static analysis functions
+-- ----------------------------------------------------------------------
+
+
+-- let al = filter ( \ x -> case x of Cmd ":=" _ -> True ; _ -> False) l
+
+
+-- ----------------------------------------------------------------------
+-- * Extended Parameter tests
+-- ----------------------------------------------------------------------
+
+printOrdEPs :: String -> IO ()
+printOrdEPs s = let ft = forestFromEPs (flip makeEPLeaf ()) $ toEPLs s
+                in putStrLn $ showEPForest show ft
+--forestFromEPs :: (a -> EPTree b) -> [a] -> EPForest b
+
+
+compareEPgen :: Show a => (String -> a) -> (a -> a -> EPCompare) -> String -> String -> IO EPCompare
+compareEPgen p c a b =
+    let epA = p a
+        epB = p b
+    in do
+      putStrLn $ show epA
+      putStrLn $ show epB
+      return $ c epA epB
+
+compareEP' = compareEPgen toEP1 compareEP
+compareEPs' = compareEPgen toEPs compareEPs
 
 -- ----------------------------------------------------------------------
 -- * MAPLE INTERPRETER
@@ -123,15 +188,6 @@ toE = fromJust . parseResult
 -- * FIRST REDUCE INTERPRETER
 -- ----------------------------------------------------------------------
 
-
--- booleans and assignments are returned
-redsBA :: Int -- ^ Test-spec
-      -> IO ([Either String Bool], ReduceInterpreter)
-redsBA i = do
-  r <- redsInit
-  cl <- cmds i
-  (res, r') <- runIOS r (runResultT $ mapM boolAssignEval cl)
-  return (fromJust $ resultToMaybe res, r')
 
 
 -- first reduce interpreter

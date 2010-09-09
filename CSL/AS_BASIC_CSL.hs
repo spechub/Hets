@@ -77,7 +77,7 @@ data BASIC_ITEMS =
     deriving Show
 
 -- | Extended Parameter Datatype
-data EXTPARAM = EP Id.Token String (Maybe APInt) deriving (Eq, Ord, Show)
+data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
 -- | Datatype for expressions
 data EXPRESSION =
@@ -111,7 +111,7 @@ data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
                       -- pos: SYMB_KIND, commas
                       deriving (Show, Eq)
 
--- | symbol map or renaming (renaming then denotes the identity renaming
+-- | symbol map or renaming (renaming then denotes the identity renaming)
 data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB Id.Range
                    -- pos: "|->"
@@ -146,7 +146,8 @@ instance Pretty SYMB_OR_MAP where
 instance Pretty CMD where
     pretty = printCMD
 
--- | Mapping of operator names to arity-OpInfo-Map
+-- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
+--   behave differently for different arities).
 operatorInfo :: Map.Map String (Map.Map Int OpInfo)
 operatorInfo =
     let -- arity (-1 means flex), precedence, infix
@@ -175,8 +176,9 @@ operatorInfo =
            -- special handling for overloaded "-"
            ++ [("-", Map.fromList [(1, OpInfo 0 False), (2, OpInfo 4 True)])]
 
--- | For the given name and arity we lookup an Opinfo. If an operator
--- is registered for the given string but not for the arity we return: Left True
+-- | For the given name and arity we lookup an 'OpInfo', where arity=-1
+-- means flexible arity. If an operator is registered for the given
+-- string but not for the arity we return: Left True.
 lookupOpInfo :: String -- ^ operator name
              -> Int -- ^ operator arity
              -> Either Bool OpInfo
