@@ -145,7 +145,6 @@ import Common.Taxonomy
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.List ((\\))
 import Data.Typeable
 import Control.Monad (unless)
 
@@ -474,12 +473,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                  -> ExtSign sign symbol -> Result morphism
          induced_from_to_morphism l rm (ExtSign sig _) (ExtSign tar _) = do
            mor <- induced_from_morphism l rm sig
-           case cod mor of
-             itar -> if is_subsig l itar tar
-               then subsig_inclusion l itar tar >>= composeMorphisms mor
-               else fail $ "no " ++ language_name l ++
-                 " mapping found for: " ++ showDoc
-                 (Set.difference (symset_of l itar) $ symset_of l tar) ""
+           inclusion l (cod mor) tar >>= composeMorphisms mor
          {- | Check whether a signature morphism is transportable.
             See CASL RefMan p. 304f. -}
          is_transportable :: lid -> morphism -> Bool
@@ -500,9 +494,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
              sign morphism symbol raw_symbol
           => lid -> sign -> sign -> Result morphism
-inclusion lid s1 s2 = if is_subsig lid s1 s2 then subsig_inclusion lid s1 s2
-  else fail $ "Attempt to construct inclusion between non-subsignatures:\n"
-           ++ showDoc (sym_of lid s1 \\ sym_of lid s2) ""
+inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
+  else fail $ show $ fsep
+       [ text (language_name l)
+       , text "symbol(s) missing in target:"
+       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2 ]
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given
