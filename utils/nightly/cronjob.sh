@@ -257,8 +257,8 @@ makeCofiLib ()
 {
 cd /tmp
 rm -rf Hets-lib
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
-$TAR czvf lib.tgz --exclude=.svn --exclude=Pdl --exclude=Hoare Hets-lib
+svn export https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk Hets-lib
+$TAR czvf lib.tgz Hets-lib
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
 \cp -fp lib.tgz /home/www.informatik.uni-bremen.de/cofi/Libraries/daily/
