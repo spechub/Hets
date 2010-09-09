@@ -2,7 +2,7 @@
 
 export HETS_LIB=/usr/lib/hets/hets-lib
 export HETS_OWL_TOOLS=/usr/lib/hets/hets-owl-tools
-export HETS_ISABELLE_LIB=$HETS_LIB/Isabelle
+export HETS_ISABELLE_LIB=/usr/lib/hets/hets-lib/Isabelle
 export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
 export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
 export PELLET_PATH=/usr/share/pellet
