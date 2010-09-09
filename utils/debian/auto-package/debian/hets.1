@@ -1,13 +1,11 @@
-.TH HETS 1 "Jul 4, 2010"
+.TH HETS 1 "Sep 9, 2010"
 .UC 5
 .SH NAME
 hets \- calls the Heterogenous Tool Set
 .SH SYNOPSIS
 .B hets
-[OPTION...] file ... file [+RTS -?]
+[OPTION...] file ... file
 .SH DESCRIPTION
-.B hets 
-runs the command-line mode of the Heterogenous Tool Set.
 Hets is a parsing, static analysis and proof management tool combining
 various tools for different specification languages, thus providing a
 tool for the heterogeneous specification language HetCASL. The structuring
@@ -16,99 +14,116 @@ constructs for indicating the language and for language translations. Hence,
 Hets is based on a graph of logics and languages.
 .SH OPTIONS
 .TP
-.B \-v[0-5] \--verbose[=0-5]
-sets verbosity level, default is -v1
+.B \-v[0-5], \--verbose[=0-5]
+sets the verbosity level, default is -v1. A good warning level is -v2
+that also shows read and written files.
 .TP
-.B \-q \--quiet
-same as -v0, no output to stdout
+.B \-q, \--quiet
+same as -v0, no output is sent to stdout.
 .TP
-.B \-V \--version
-prints version details and exits
+.B \-V, \--version
+prints version details and exits.
 .TP
-.B \-h \--help \--usage
-prints help information and exits
+.B \-h, \--help, \--usage
+prints help information and exits.
 .TP
-.B \-g \--gui
-starts the graphical user interface to show graphs
+.B \-g, \--gui
+starts the graphical user interface to show graphs. Without this (and the -I)
+option hets will run in batch mode and process (aka analyse) all input files.
 .TP
-.B \-u \--uncolored
-no colors in shown graphs
+.B \-u, \--uncolored
+uses no colors in shown graphs.
 .TP
-.B \-I \--interactive
-runs in interactive mode
+.B \-I, \--interactive
+runs hets in interactive mode expecting input from the console after
+all input files given as arguments have been processed.
+If also the option -g is given a graph may pop up only after input has been
+terminated using Ctrl-D.
 .TP
-.B \-p \--just-parse
-skips static analysis, only parse
+.B \-p, \--just-parse
+skips static analysis, just parses input files.
 .TP
-.B \-s \--just-structured
-skips basic, just does structured analysis
+.B \-s, \--just-structured
+skips basic i.e. logic specific analysis, just does structured analysis.
 .TP
-.B \-l [LOGIC] \--logic[=LOGIC]
-selects logic, default is CASL
+.B \-l \fILOGIC\fR, \fB\--logic=\fR\fILOGIC\fR
+selects a logic if it is not given in source files, the default is CASL.
 .TP
-.B \-L [DIR] \--hets-libdirs[=DIR]
-manually sets the path to the library source directories. Use colon separated
-paths.
+.B \-L \fIDIR\fR, \fB\--hets-libdirs=\fR\fIDIR\fR
+manually sets the path to the library source directories.
+Use a colon separated paths for multiple directories.
 .TP
-.B \-m [FILE] \--modelSparQ[=FILE]
-sets lisp file for SparQ definitions
+.B \-m \fIFILE\fR, \fB--modelSparQ=\fR\fIFILE\fR
+sets lisp file for SparQ definitions (works for CASL only).
 .TP
-.B \-x \--xml
-uses xml packats to communicate
+.B \-x, \--xml
+uses xml packages (rather than plain text) to communicate.
 .TP
-.B \-c [HOSTNAME:PORT] \--connect[=HOSTNAME:PORT]
-runs interface comunicating via connection to the port
+.B \-c \fIHOSTNAME:PORT\fR, \fB--connect=\fR\fIHOSTNAME:PORT\fR
+runs the interface with the -I option by comunicating via a connection
+to the port.
 .TP
-.B \-s [PORT] \--listen[=PORT]
-runs interface by listening to the port
+.B \-s \fIPORT\fR, \fB--listen=\fR\fIPORT\fR
+runs the interface with the -I option by listening to the port
 .TP
-.B \-i [ITYPE] \--input-type[=ITYPE]
-manually sets the input type. Input file type can be one of: casl, het, owl,
-hs, exp, maude, elf, prf, omdoc, hpf, clf, [tree.]gen_trm[.baf]
+.B \-i \fIITYPE\fR, \fB--input-type=\fR\fIITYPE\fR
+manually sets the input type. Input file types can be one of: casl, het, owl,
+hs, maude, elf, prf, omdoc, hpf, clf.
 .TP
-.B \-d [STRING] \--dump[=STRING]
-dump various strings
+.B \-d \fISTRING\fR, \fB--dump=\fR\fISTRING\fR
+dump internal data depending on \fISTRING\fR.
 .TP
-.B \-O [DIR] \--output-dir[=DIR]
-manually sets the destination directory for output files
+.B \-e \fIENCODING\fR, \fB--encoding=\fR\fIENCODING\fR
+uses latin1 (default) or utf8 encoding for input and output files.
 .TP
-.B \-o [OTYPES] \--output-types[=OTYPES]
+.B \-O \fIDIR\fR, \fB--output-dir=\fR\fIDIR\fR
+manually sets the destination directory for output files.
+.TP
+.B \-o \fIOTYPES\fR, \fB--output-types=\fR\fIOTYPES\fR
 sets the output types, default is nothing. Output file types can be one (or
 more) of prf, env, owl, omdoc, xml, exp, hs, thy, comptable.xml,
 (sig|th)[.delta], pp.(het|tex|xml), graph.(exp.dot|dot), dfg[.c], tptp[.c].
-Use comma-separated list without blanks.
+(Use a comma-separated list without blanks.)
 .TP
-.B \-R \--recursive
-outputs also imported libraries
+.B \-R, \--recursive
+produces output files (given via -o) also for imported libraries
 .TP
-.B \-A \--apply-automatic-rule
-applies automatic dev-graph strategy
+.B \-A, \--apply-automatic-rule
+applies automatic dev-graph strategy directly after static analysis.
 .TP
-.B \-N \--normal-form
+.B \-N, \--normal-form
 computes normal forms. This takes a long time.
 .TP
-.B \-n [NSPECS] \--named-specs[=NSPECS]
-processes spec options. Spec can be one of: SIMPLE-ID. Use comma-separated
-list without blanks.
+.B \-n \fINSPECS\fR, \fB--named-specs=\fR\fINSPECS\fR
+Create certain output files only for the given named specs given as
+comma-separated list without blanks.
 .TP
-.B \-t [TRANS] \--translation[=TRANS]
-sets the translation options. Translations can be one of: SIMPLE-ID. Use
-colon-separated list without blanks.
+.B \-t \fITRANS\fR, \fB--translation=\fR\fITRANS\fR
+translates all specifications (or those listed using the above -n option)
+by the translation given as composition
+via a colon-separated list without blanks.
 .TP
-.B \-a [ANALYSIS] \--casl-amalg[=ANALYSIS]
-sets the CASL amalgamability options. The options can be: none, sharing,
-cell, colimit-thinness. Use comma-separated list without blanks.
+.B \-a \fIANALYSIS\fR, \fB--casl-amalg=\fR\fIANALYSIS\fR
+sets the CASL amalgamability options. The \fIANALYSIS\fR can be one (or more)
+from none, sharing, cell, or colimit-thinness
+as comma-separated list without blanks.
 .PP
 .SH "ENVIRONMENT VARIABLES"
 .TP
 .B HETS_LIB
-defines the path to the hets library
+defines paths to the hets libraries.
 .TP
 .B HETS_OWL_TOOLS
-defines the path to the hets owl tools library
+defines the path to the hets owl tools library.
 .TP
 .B HETS_ISABELLE_LIB
-defines the path to the Isabelle library
+defines the path to the Isabelle library.
+.TP
+.B HETS_GMOC
+defines the path to the Gmoc directory containing bin/gmoc and Configuration.xml
+.TP
+.B HETS_REDUCE
+defines the path to the executable redcsl
 .TP
 .B HETS_APROVE
 defines the path to AProVE.jar
@@ -117,47 +132,47 @@ defines the path to AProVE.jar
 defines the path to OntoDMU.jar
 .TP
 .B HETS_JNI_LIBS
-defines the path to the FaCT++JNI libraries directory
+defines the path to the FaCT++JNI library directory if it is not /lib
 .TP
 .B PELLET_PATH
-defines the path to the Pellet root directory
+defines the path to the Pellet root directory.
 .TP
 .B TWELF_LIB
-defines the path to the TWELF root directory
+defines the path to the TWELF root directory.
 .TP
 .B MAUDE_LIB
-defines the path to the MAUDE library directory
+defines the path to the MAUDE library directory.
 .TP
-.B CASL_LIB
-defines the path to the CASL hets library
-.TP
-These variables are set inside
+Some of these variables are set inside the script
 .B /usr/bin/hets
 .BR
 .SH "EXAMPLES"
 .TP
 .B hets -g -A /usr/lib/hets/hets-lib/Calculi/Space/RCCVerification.het
 Check if all nodes can be proven. Only one node is heterogeneous and needs
-the Isabelle prover.
+the Isabelle prover. Copy the file
+/usr/lib/hets/hets-lib/RCCVerification_RCC_FO_in_MetricSpace_T.thy
+to your working directory (with write access) to allow hets to reuse
+the given proofs.
 .TP
 .B hets -g /usr/lib/hets/hets-lib/Basic/LinearAlgebra_II.casl
-Check Edit/Prove/Automatic, followed by Edit/Undo
+Check Edit/Prove/Automatic, followed by Edit/Undo.
 .TP
 .B hets -g -i owl /usr/lib/hets/hets-owl-tools/tests/wine.rdf
-Check out the OWL parser
+Check out the OWL parser.
 .TP
 .B hets -g /usr/lib/hets/hets-lib/TestSuite/Conservative/Nat.casl
-Check conservativity of the link. This will result in "The link is mono"
+Check conservativity of the link. This will result in "The link is mono".
 .TP
 .B hets -g /usr/lib/hets/hets-lib/Ontology/Examples/Family.het
 Check OWL conservativity checker on the Family <-> FamilyBase links. One
-can be proven, while the other cannot
+can be proven, while the other cannot.
 .TP
 .B hets -g -A /usr/lib/hets/hets-lib/HidingOWL.het
 Choose Edit/Consistency Checker and prove the goals.
 .BR
 .SH "SEE ALSO"
-.BR 
+.BR
 .SH BUGS
 .TP
 .B Maude
@@ -170,7 +185,7 @@ For other bugs report at hets-devel@mailhost.informatik.uni-bremen.de or use the
 , the Heterogenous Tool Set is the work of University of Bremen
 <hets@informatik.uni-bremen.de>. This manual page was written by
 Corneliu-Claudiu Prodescu <cprodescu@googlemail.com> for the Debian GNU/Linux
-system but may be used by others under the same license as 
+system but may be used by others under the same license as
 .B hets
 itself. The complete user guide can be found at
 .B /usr/share/doc/hets/UserGuide.pdf
