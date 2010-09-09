@@ -41,6 +41,7 @@ import SoftFOL.Translate
 
 import System.Directory
 import System.Exit
+import System.Process
 
 -- | The Prover implementation.
 metisProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
@@ -119,29 +120,22 @@ runMetis :: SoftFOLProverState
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runMetis sps cfg saveTPTP thName nGoal = do
-  let
-        saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
-        myTimeLimit = configTimeLimit cfg
+  let saveFile = basename thName ++ '_' : AS_Anno.senAttr nGoal ++ ".tptp"
   prob <- showTPTPProblem thName sps nGoal []
   when saveTPTP (writeFile saveFile prob)
   timeTmpFile <- getTempFile prob saveFile
   start <- getHetsTime
-  end <- timeoutCommand myTimeLimit "metis" (extraOpts cfg ++ [timeTmpFile])
+  -- timeout does not work!
+  (ex, out, err) <- readProcessWithExitCode "metis"
+    (extraOpts cfg ++ [timeTmpFile]) ""
   finish <- getHetsTime
   let executetime = diffHetsTime finish start
       newCfg = cfg
         { timeUsed = executetime
         , proofStatus = (proofStatus cfg) {usedTime = executetime}}
+      finCfg = newCfg { resultOutput = lines $ out ++ err }
   removeFile timeTmpFile
-  return $ case end of
-    Nothing ->
-      ( ATPTLimitExceeded
-      , newCfg
-        { timeLimitExceeded = True
-        , resultOutput = ["TimeOut"] })
-    Just (ex, out, err) ->
-      let finCfg = newCfg { resultOutput = lines $ out ++ err }
-      in case ex of
+  return $ case ex of
          ExitSuccess ->
            ( ATPSuccess
            , finCfg
