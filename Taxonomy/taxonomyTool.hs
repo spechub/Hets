@@ -15,6 +15,8 @@ Module which tests parsing a MMiSS document file (given as input),
 module Main where
 
 import System.IO
+import System.Environment
+import System.Exit
 
 import Taxonomy.OntoParser
 import Taxonomy.MMiSSOntology
@@ -34,7 +36,7 @@ useMsg = do
 
 main :: IO ()
 main =
-   do args <- System.getArgs
+   do args <- getArgs
       if elem "--help" args then do
         useMsg
         exitWith ExitSuccess
