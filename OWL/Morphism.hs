@@ -23,7 +23,6 @@ module OWL.Morphism
   , statSymbItems
   , statSymbMapItems
   , inducedFromMor
-  , inducedFromToMor
   , symMapOf
   , mapSen
   ) where
@@ -35,7 +34,6 @@ import OWL.StaticAnalysis
 
 import Common.DocUtils
 import Common.Doc
-import Common.ExtSign
 import Common.Result
 import Common.Lib.State (execState)
 import Common.Lib.Rel (setToMap)
@@ -88,16 +86,6 @@ inducedFromMor rm sig = do
     { osource = sig
     , otarget = inducedSign mm sig
     , mmaps = mm }
-
-inducedFromToMor :: Map.Map RawSymb RawSymb -> ExtSign Sign Entity
-                 -> ExtSign Sign Entity -> Result OWLMorphism
-inducedFromToMor rm (ExtSign sig _) (ExtSign tar _) = do
-  mor <- inducedFromMor rm sig
-  let itar = otarget mor
-  if isSubSign itar tar
-    then return mor { otarget = tar }
-    else fail $ "no OWL mapping found for: " ++ showDoc
-         (Set.difference (symOf itar) $ symOf tar) ""
 
 symMapOf :: OWLMorphism -> Map.Map Entity Entity
 symMapOf mor = Map.union (symMap $ mmaps mor) $ setToMap $ symOf $ osource mor

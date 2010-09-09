@@ -16,7 +16,6 @@ module CommonLogic.Analysis
 
 import Common.ExtSign
 import Common.Result as Result
-import Common.DocUtils
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
 
@@ -175,18 +174,6 @@ inducedFromMorphism m s = let
        $ Map.toList m
   t = Sign.emptySig { items = Set.map (applyMap p) $ items s }
   in return $ mkMorphism s t p
-
-inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
-                      -> ExtSign Sign.Sign Symbol.Symbol
-                      -> ExtSign Sign.Sign Symbol.Symbol
-                      -> Result.Result Morphism.Morphism
-inducedFromToMorphism rm (ExtSign sig _) (ExtSign tar _) = do
-  mor <- inducedFromMorphism rm sig
-  let itar = target mor
-  if Sign.isSubSigOf itar tar
-    then return mor { target = tar }
-    else fail $ "no CommonLogic mapping found for: " ++ showDoc
-         (Set.difference (symOf itar) $ symOf tar) ""
 
 -- negate sentence
 negForm :: CL.SENTENCE -> CL.SENTENCE

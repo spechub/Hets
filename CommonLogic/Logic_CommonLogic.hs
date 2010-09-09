@@ -55,7 +55,7 @@ instance Sentences CommonLogic
     Symbol
     where
       negation CommonLogic = Just . negForm
-      sym_of CommonLogic =  singletonList . symOf
+      sym_of CommonLogic = singletonList . symOf
       symmap_of CommonLogic = getSymbolMap -- returns the symbol map
       sym_name CommonLogic = getSymbolName -- returns the name of a symbol
       map_sen CommonLogic = mapSentence -- TODO
@@ -101,16 +101,17 @@ instance StaticAnalysis CommonLogic
     Symbol
     Symbol
     where
-      basic_analysis CommonLogic    = Just basicCommonLogicAnalysis
-      empty_signature CommonLogic   = emptySig
-      is_subsig CommonLogic         = isSubSigOf
-      signature_union CommonLogic         = sigUnion
+      basic_analysis CommonLogic = Just basicCommonLogicAnalysis
+      empty_signature CommonLogic = emptySig
+      is_subsig CommonLogic = isSubSigOf
+      subsig_inclusion CommonLogic s = return . inclusionMap s
+      signature_union CommonLogic = sigUnion
       symbol_to_raw CommonLogic = symbolToRaw
       id_to_raw CommonLogic = idToRaw
       matches CommonLogic = Symbol.matches
-      induced_from_morphism CommonLogic = inducedFromMorphism -- TODO
-      induced_from_to_morphism CommonLogic = inducedFromToMorphism -- TODO
+      induced_from_morphism CommonLogic = inducedFromMorphism
       add_symb_to_sign CommonLogic = addSymbToSign -- TODO
+
 {-
       stat_symb_items CommonLogic = ()
       stat_symb_map_items CommonLogic = ()

@@ -87,7 +87,6 @@ instance StaticAnalysis OWL OntologyFile Axiom
       matches OWL = matchesSym
       symbol_to_raw OWL = ASymbol
       induced_from_morphism OWL = inducedFromMor
-      induced_from_to_morphism OWL = inducedFromToMor
       cogenerated_sign OWL = cogeneratedSign
       generated_sign OWL = generatedSign
       signature_colimit OWL = return . signColimit

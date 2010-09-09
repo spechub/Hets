@@ -472,8 +472,14 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          induced_from_to_morphism ::
              lid -> EndoMap raw_symbol -> ExtSign sign symbol
                  -> ExtSign sign symbol -> Result morphism
-         induced_from_to_morphism l _ _ _ =
-             statFail l "induced_from_to_morphism"
+         induced_from_to_morphism l rm (ExtSign sig _) (ExtSign tar _) = do
+           mor <- induced_from_morphism l rm sig
+           case cod mor of
+             itar -> if is_subsig l itar tar
+               then subsig_inclusion l itar tar >>= composeMorphisms mor
+               else fail $ "no " ++ language_name l ++
+                 " mapping found for: " ++ showDoc
+                 (Set.difference (symset_of l itar) $ symset_of l tar) ""
          {- | Check whether a signature morphism is transportable.
             See CASL RefMan p. 304f. -}
          is_transportable :: lid -> morphism -> Bool
