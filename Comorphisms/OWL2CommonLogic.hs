@@ -83,15 +83,8 @@ mapMorphism oMor =
   do
     dm <- mapSign $ osource oMor
     cd <- mapSign $ otarget oMor
-    mapp <- mapMap $ mmaps oMor 
+    mapp <- mapMap $ mmaps oMor
     return  (CLM.mkMorphism dm cd mapp)
-
--- | OWL topsort Thing
-thing :: NAME --Id
-thing = mkSimpleId "Thing" --stringToId "Thing"
-
-noThing :: NAME
-noThing = mkSimpleId "Nothing" --stringToId "Nothing"
 
 data VarOrIndi = OVar Int | OIndi URI
 
@@ -99,16 +92,13 @@ hetsPrefix :: String
 hetsPrefix = ""
 
 mapMap :: Map.Map Entity URI -> Result (Map.Map Id Id)
-mapMap m = 
+mapMap m =
   return $ Map.map uriToId $ Map.mapKeys entityToId m
 
 mapSign :: OS.Sign                 -- ^ OWL signature
         -> Result Sign         -- ^ CommonLogic signature
 mapSign sig =
-  let preds = Set.fromList [ (mkQName "Nothing")
-                           , (mkQName "Thing")]
-      conc = Set.unions [ preds
-                        , (OS.concepts sig)
+  let conc = Set.unions [ (OS.concepts sig)
                         , (OS.primaryConcepts sig)
                         , (OS.datatypes sig)
                         , (OS.indValuedRoles sig)
@@ -118,56 +108,6 @@ mapSign sig =
       itms = Set.map uriToId conc
   in return emptySig { items = itms }
 
-
-predefinedSentences :: [CommonAnno.Named SENTENCE]
-predefinedSentences =
-  [
-    (
-     CommonAnno.makeNamed "nothing in Nothing" $
-     Quant_sent
-     (
-      Universal
-      [Name (mkNName 1)]
-      ( Bool_sent (
-       Negation
-       (
-        Atom_sent
-        (
-         Atom
-         (
-          Name_term noThing
-         )
-         (
-          [ Term_seq (Name_term (mkNName 1)) ]
-         )
-        ) nullRange
-       )
-      ) nullRange))
-      nullRange
-    )
-    ,
-    (
-     CommonAnno.makeNamed "thing in Thing" $
-     Quant_sent
-     (
-      Universal
-      [Name (mkNName 1)]
-      (
-       Atom_sent
-       (
-        Atom
-        (
-         Name_term thing
-        )
-        (
-         [ Term_seq (Name_term (mkNName 1)) ]
-        )
-       ) nullRange
-      )
-     )
-      nullRange
-    )
-  ]
 
 mapTheory :: (OS.Sign, [CommonAnno.Named Axiom])
              -> Result (Sign, [CommonAnno.Named SENTENCE])
@@ -184,7 +124,7 @@ mapTheory (owlSig, owlSens) =
                 Nothing -> []
                 Just a -> [a]
          ) cSensI
-    return (nSig, predefinedSentences ++ cSens)
+    return (nSig, cSens)
 
 -- | mapping of OWL to CommonLogic_DL formulae
 mapSentence :: Sign                    -- ^ CommonLogic Signature
@@ -253,7 +193,7 @@ mapAxiom cSig ax =
                                    (Bool_sent (Disjunction decrs) nullRange)
                                   ,(Bool_sent (Negation
                                      (
-                                      Bool_sent (Conjunction 
+                                      Bool_sent (Conjunction
                                       ((fst decrsP) ++ (snd decrsP))) nullRange
                                      )
                                     ) nullRange)
@@ -266,7 +206,7 @@ mapAxiom cSig ax =
                   do
                     os <- mapSubObjProp cSig ch op c
                     return (Just os, cSig)
-              EquivOrDisjointObjectProperties disOrEq oExLst ->      
+              EquivOrDisjointObjectProperties disOrEq oExLst ->
                   do
                     pairs <- mapComObjectPropsList cSig oExLst (OVar a) (OVar b)
                     let sntLst = case disOrEq of
@@ -504,8 +444,8 @@ mapAxiom cSig ax =
                                  Bool_sent (Conjunction sntLst) nullRange
                     return (Just $ Quant_sent (Universal
                               [ Name (mkNName a)
-                              
-                              
+
+
                               , Name (mkNName b)]
                                snt)
                                nullRange, cSig)
@@ -533,7 +473,7 @@ mapAxiom cSig ax =
                                          [Name (snd vars)]
                                          (Bool_sent (Implication oEx odes) nullRange))
                                          nullRange)) nullRange, dSig)
-              FunctionalDataProperty o ->       
+              FunctionalDataProperty o ->
                         do
                           so1 <- mapDataProp cSig o (OVar a) (OVar b)
                           so2 <- mapDataProp cSig o (OVar a) (OVar c)
@@ -645,8 +585,8 @@ mapComObjectPropsList cSig props num1 num2 =
 
 -- | Extracts Id from Entities
 entityToId :: Entity -> Id
-entityToId e = 
-  case e of 
+entityToId e =
+  case e of
        Entity _ urI -> uriToId urI
 
 -- | mapping of data constants
@@ -1069,10 +1009,10 @@ mapDescription cSig des oVar aVar =
               let sent = Bool_sent ( Conjunction (drSent : senl)) nullRange
               case qt of
                    AllValuesFrom ->
-                    return $ (Quant_sent (Universal [Name varNN] 
+                    return $ (Quant_sent (Universal [Name varNN]
                           sent ) nullRange, drSig)
                    SomeValuesFrom ->
-                    return $ (Quant_sent (Existential [Name varNN] 
+                    return $ (Quant_sent (Existential [Name varNN]
                           sent ) nullRange, drSig)
          DataHasValue dpe c       ->
            do
