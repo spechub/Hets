@@ -181,7 +181,11 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 # call resulting binary with a final +RTS -p to get a file <binary>.prof
 # HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
 
-HC_OPTS += $(HC_WARN) $(HC_INCLUDE) $(HC_PROF)
+ifneq ($(findstring -O, $(CFLAGS)),)
+HC_DEBIAN_OPT=-O
+endif
+
+HC_OPTS += $(HC_WARN) $(HC_INCLUDE) $(HC_PROF) $(HC_DEBIAN_OPT)
 # -ddump-minimal-imports
 # uncomment the above line to generate .imports files for displayDependencyGraph
 
