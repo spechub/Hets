@@ -1,0 +1,105 @@
+#!/bin/sh -e
+#
+# Auto building script
+# for the Hets repository
+#
+# c.prodescu@jacobs-university.de
+#
+# Dependencies: hets-core dependencies, devscripts, ant
+#
+# VARIABLES
+
+HETS_VERSION=0.96
+HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
+HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+
+if [ -d $PWD/debian ]; then
+	echo Starting Hets debianize script
+else
+	echo No \"debian\" folder found.
+	echo Bye.
+	exit
+fi
+
+#getting revision number
+HETS_REVISION=`svn info $HETS_REPO | tail -n6 | head -n1 | awk '{ print $2 }'`
+echo ::Revision detected: $HETS_REVISION
+
+#setting full version
+HETS_FULL_VERSION="$HETS_VERSION"r"$HETS_REVISION"
+#setting folder name
+HETS_FOLDER=$PWD/hets-$HETS_FULL_VERSION
+echo ::Using folder $HETS_FOLDER
+
+#checking out latest Hets version
+if [ -e .svn_clean ]; then
+	rm .svn_clean
+	rm -rf $HETS_FOLDER
+fi
+echo ::Checking out $HETS_REPO ...
+svn -q export $HETS_REPO $HETS_FOLDER
+echo ::Done
+
+#checking out latest Hets-lib
+echo ::Checking out $HETS_LIB_REPO ...
+svn -q export $HETS_LIB_REPO $HETS_FOLDER/hets-lib
+echo ::Done
+
+#checking out Hets-owl-tools and compiling jar files
+HETS_OWL_TOOLS_FOLDER=$HETS_FOLDER/hets-owl-tools
+echo ::Compiling Hets OWL Tools
+cd $HETS_FOLDER && export JAVA_HOME=/usr/lib/jvm/java-6-sun
+make initialize_java
+cd ..
+mkdir -p $HETS_FOLDER/hets-owl-tools
+cd $HETS_FOLDER/OWL
+cp -r tests OWL2ATerm.jar OWLFact.jar OWLFactProver.jar OWLLocality.jar $HETS_FOLDER/hets-owl-tools
+cd ../..
+mkdir -p $HETS_FOLDER/hets-owl-tools/lib
+cp $HETS_FOLDER/OWL/lib/*.jar $HETS_FOLDER/hets-owl-tools/lib
+echo ::Done
+
+#copying OntoDMU and AProVE to hets-owl-tools
+cp $HETS_FOLDER/CASL/Termination/AProVE.jar $HETS_FOLDER/hets-owl-tools
+cp $HETS_FOLDER/DMU/OntoDMU.jar $HETS_FOLDER/hets-owl-tools
+
+#cleaning the svn/cvs folders
+echo ::Clearing svn/cvs folders
+cd $HETS_FOLDER
+make distclean
+rm OWL/java -rf
+rm programatica
+rm -rf GMP Search mini Lottery
+cd ..
+tar -xf programatica.tar.gz -C $HETS_FOLDER
+touch .svn_clean
+echo ::Done
+
+#creating orig.tar.gz
+echo ::Creating orig.tar.gz archive
+tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz hets-$HETS_FULL_VERSION
+echo ::Done
+
+#copying debian folder
+echo ::Creating debian folder
+cp -rf debian $HETS_FOLDER
+rm -rf $HETS_FOLDER/debian/.svn
+
+#modifying the changelog
+echo "hets ($HETS_FULL_VERSION-1) lucid; urgency=low" > .changelog
+echo >> .changelog
+echo "  * Initial release, automatically generated." >> .changelog
+echo >> .changelog
+echo " -- `cat changelog_name` <`cat changelog_email`>  `date -R`" >> .changelog
+
+#merging changelogs
+mv .changelog $HETS_FOLDER/debian/changelog
+echo ::Done
+
+#building
+echo ::Starting package building
+cd $HETS_FOLDER
+debuild -S -sa
+cd ..
+dput ppa:hets/hets hets_$HETS_FULL_VERSION-1_source.changes
+echo ::Done
