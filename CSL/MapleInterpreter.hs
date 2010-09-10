@@ -84,11 +84,11 @@ cslMapleDefaultMapping =
     let idmapping = map (\ x -> (x, x))
         ampmapping = map (\ x -> (x, "&" ++ x))
     in ("^", "&**") : idmapping ["and", "or", "impl" ]
-           ++ ampmapping [ "cos", "sin", "tan", "sqrt", "abs", ">", "<=", ">="
-                         , "<", "+", "-", "*", "/"]
+           ++ idmapping [ "cos", "sin", "tan", "sqrt", "abs", ">", "<=", ">="
+                        , "<", "+", "-", "*", "/"]
 
 printAssignment :: String -> EXPRESSION -> String
-printAssignment n e = concat [n, ":= '", exportExp e, "';"]
+printAssignment n e = concat [n, ":= ", exportExp e, ";"]
 
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = exportExp e ++ ";"
@@ -96,8 +96,8 @@ printEvaluation e = exportExp e ++ ";"
 printLookup :: String -> String
 printLookup n = n ++ ";"
 
--- As maple does not support boolean expressions as first class citizens
--- we encode them in an if-stmt and transform the numeric response back.
+-- | As maple does not evaluate boolean expressions we encode them in an
+-- if-stmt and transform the numeric response back.
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "if evalf("
                             , exportExp e, ") then 1 else 0 fi;"
@@ -249,3 +249,12 @@ removeOutputComments :: String -> String
 removeOutputComments s = 
     concat $ filter (\ x -> case x of '>' : _ -> False; _ -> True) $ lines s
  
+{- Some problems with the maximization in Maple:
+
+> Maximize(-x^6+t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);     
+Error, (in Optimization:-NLPSolve) no improved point could be found
+> Maximize(-x^t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);  
+Error, (in Optimization:-NLPSolve) complex value encountered
+
+-}
+

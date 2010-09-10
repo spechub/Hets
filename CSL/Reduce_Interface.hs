@@ -147,7 +147,8 @@ exportExps l = intercalate "," $ map exportExp l
 
 -- | those operators declared as infix in Reduce
 infixOps :: [String]
-infixOps = ["+", "-", "/", "**", "^", "=", "*", "and", "impl", "or"]
+infixOps = [ "+", "-", "/", "**", "^", "=", "<=", ">=", "<", ">", "*", "and"
+           , "impl", "or"]
 
 -- | exports an expression to Reduce format
 exportExp :: EXPRESSION -> String
