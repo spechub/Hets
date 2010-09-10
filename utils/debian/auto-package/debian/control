@@ -3,7 +3,7 @@ Section: misc
 Priority: extra
 Maintainer: Corneliu-Claudiu Prodescu <cprodescu@googlemail.com>
 Build-Depends: debhelper(>=7.4.15), ghc6, happy, libghc6-parsec2-dev, libghc6-tar-dev, libghc6-glade-dev, libghc6-haskeline-dev, libghc6-hexpat-dev, libghc6-http-dev, libghc6-fgl-dev, libghc6-xml-dev, libghc6-zlib-dev, libghc6-haskell-src-dev, libghc6-aterm-dev, libghc6-programatica-dev, libghc6-uni-udrawgraph-dev, spass, darwin, eprover, lib32stdc++6[amd64]
-Standards-Version: 3.8.4
+Standards-Version: 3.9.1
 Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
 
 Package: hets-core
