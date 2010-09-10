@@ -168,10 +168,11 @@ changeLibGraph gi graph nodesEdges = do
                   $ proofHistory dg2
           writeVerbFile opts f3 $ ppTopElement $ ToXml.dGraph nle ndg
           md <- withinDirectory gmocPath $ do
-            putIfVerbose opts 1 "please wait"
+            (_, exit) <- pulseBar "Gmoc" "calling bin/gmoc ..."
             output <- readProcess "bin/gmoc"
               ["-c", "Configuration.xml", "-itype", "file", "moc", f2, f1, f3]
               ""
+            exit
             return $ listToMaybe $ mapMaybe (stripPrefix "xupdates: ")
               $ lines output
           case md of
