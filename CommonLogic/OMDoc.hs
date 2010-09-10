@@ -1,5 +1,5 @@
 {- |
-Module      :  $EmptyHeader$
+Module      :  $Header$
 Description :  Common Logic specific OMDoc constants
 Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,15 +15,17 @@ module CommonLogic.OMDoc where
 import OMDoc.DataTypes
 
 
-clMetaTheory = CD ["commonlogic", "http://cds.omdoc.org/logics/commonlogic.omdoc"]
+clMetaTheory :: OMCD
+clMetaTheory =
+  CD ["commonlogic", "http://cds.omdoc.org/logics/commonlogic.omdoc"]
 
 const_cl :: String -> OMElement
 const_cl n = OMS (clMetaTheory, mkSimpleName n)
 
 
 const_symbol, const_forall, const_exists, const_and, const_or
- , const_not, const_implies, const_equivalent, const_eq, const_comment 
- , const_irregular, const_comment_term :: OMElement 
+ , const_not, const_implies, const_equivalent, const_eq, const_comment
+ , const_irregular, const_comment_term :: OMElement
 
 const_symbol = const_cl "symbol"
 const_forall = const_cl "forall"

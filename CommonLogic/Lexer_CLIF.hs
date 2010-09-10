@@ -17,8 +17,6 @@ Parser of common logic interface format
 
 module CommonLogic.Lexer_CLIF where
 
-import qualified Common.AnnoState as AnnoState
-import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic
 import Common.Id as Id
 import Common.Lexer as Lexer

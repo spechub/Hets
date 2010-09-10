@@ -1,16 +1,16 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  Parser of common logic interface format
+Copyright   :  (c) Karl Luc, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  kluc@informatik.uni-bremen.de
+Stability   :  provisional
+Portability :  portable
 
-<optional description>
--}
 -- Tests and examples of Common Logic AS and CLIF parse
+-}
+
 
 module CommonLogic.Tests where
 
@@ -21,8 +21,6 @@ import Common.Doc as Doc
 import Common.Id as Id
 
 import Text.ParserCombinators.Parsec
-
------------------------------------------------------------------------
 
 -- examples for abstract syntax
 
@@ -47,7 +45,7 @@ b2 = Negation s1
 b3 :: BOOL_SENT
 b3 = Implication s1 s1
 
-s1 :: SENTENCE 
+s1 :: SENTENCE
 s1 = Atom_sent at1 nullRange
 sa2 :: SENTENCE
 sa2 = Atom_sent at2 nullRange
@@ -74,21 +72,23 @@ bs2 = B_name b nullRange
 -- examples for pretty printing
 
 test :: Doc
-test = Doc.text "Atom:" <+> printAtom at1 
-   $+$ Doc.text "Atom_sent:" <+> printSentence s1 
+test = Doc.text "Atom:" <+> printAtom at1
+   $+$ Doc.text "Atom_sent:" <+> printSentence s1
    $+$ Doc.text "Bool_sent:" <+> printSentence s2
    $+$ Doc.text "Bool_sent:" <+> printSentence s4
    $+$ Doc.text "Bool_sent:" <+> printSentence s3
-   $+$ Doc.text "Bool_sent:" <+> printSentence (Bool_sent (Implication s1 sa2) nullRange)
-   $+$ Doc.text "Bool_sent:" <+> printSentence (Bool_sent (Biconditional s1 sa2) nullRange)
-   $+$ Doc.text "Quant_sent:" <+> printSentence 
+   $+$ Doc.text "Bool_sent:"
+           <+> printSentence (Bool_sent (Implication s1 sa2) nullRange)
+   $+$ Doc.text "Bool_sent:"
+           <+> printSentence (Bool_sent (Biconditional s1 sa2) nullRange)
+   $+$ Doc.text "Quant_sent:" <+> printSentence
        (Quant_sent (Existential [] s1) nullRange)
-   $+$ Doc.text "Quant_sent:" <+> printSentence 
+   $+$ Doc.text "Quant_sent:" <+> printSentence
        (Quant_sent (Universal [] s1) nullRange)
    $+$ Doc.text "Equation:" <+> printAtom (Equation t1 t1)
-   $+$ Doc.text "Functional Term:" <+> printTerm (Funct_term (t1) [ts1] nullRange)
+   $+$ Doc.text "Functional Term:" <+> printTerm (Funct_term t1 [ts1] nullRange)
    $+$ Doc.text "Sentence Functional:" <+> printSentence (
-            Atom_sent (Atom (Funct_term (t1) [ts1] nullRange) 
+            Atom_sent (Atom (Funct_term t1 [ts1] nullRange)
                       [Term_seq t1]) nullRange)
 
 -- examples for CLIF parser
