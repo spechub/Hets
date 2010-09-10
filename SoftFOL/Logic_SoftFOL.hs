@@ -51,11 +51,11 @@ data SoftFOL = SoftFOL deriving (Show)
 
 instance Language SoftFOL where
  description _ =
-  "SoftFOL - Softly typed First Order Logic for "++
+  "SoftFOL - Softly typed First Order Logic for " ++
        "Automated Theorem Proving Systems\n\n" ++
-  "This logic corresponds to the logic of SPASS, \n"++
+  "This logic corresponds to the logic of SPASS, \n" ++
   "but the generation of TPTP is also possible.\n" ++
-  "See http://spass.mpi-sb.mpg.de/\n"++
+  "See http://spass.mpi-sb.mpg.de/\n" ++
   "and http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
 instance Logic.Logic.Syntax SoftFOL () () ()
@@ -63,7 +63,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
 
 instance Sentences SoftFOL Sentence Sign
                            SoftFOLMorphism SFSymbol where
-      map_sen SoftFOL _ s = return s
+      map_sen SoftFOL _ = return
       sym_of SoftFOL = singletonList . symOf
       sym_name SoftFOL = symbolToId
       print_named SoftFOL = printFormula
@@ -72,7 +72,7 @@ instance Sentences SoftFOL Sentence Sign
 instance StaticAnalysis SoftFOL () Sentence
                () ()
                Sign
-               SoftFOLMorphism SFSymbol ()  where
+               SoftFOLMorphism SFSymbol () where
          empty_signature SoftFOL = emptySign
          is_subsig SoftFOL _ _ = True
          subsig_inclusion SoftFOL = defaultInclusion
@@ -81,20 +81,20 @@ instance Logic SoftFOL () () Sentence () ()
                Sign
                SoftFOLMorphism SFSymbol () ProofTree where
          stability _ = Testing
-    -- again default implementations are fine
-    -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
          provers SoftFOL =
            unsafeProverCheck "SPASS" "PATH" spassProver
 #ifndef NOMATHSERVER
            ++ [mathServBroker, vampire]
 #endif
-           ++ unsafeProverCheck "darwin" "PATH" (darwinProver Darwin)
+           ++ unsafeProverCheck "darwin" "PATH" (darwinProver $ Darwin False)
            ++ unsafeProverCheck "e-darwin" "PATH" (darwinProver EDarwin)
-           ++ (unsafeProverCheck "metis" "PATH" metisProver)
+           ++ unsafeProverCheck "metis" "PATH" metisProver
            ++ unsafeProverCheck "ekrh" "PATH" hyperProver
          cons_checkers SoftFOL =
-           unsafeProverCheck "darwin" "PATH" (darwinConsChecker Darwin)
+           unsafeProverCheck "darwin" "PATH" (darwinConsChecker $ Darwin False)
+           ++ unsafeProverCheck "darwin" "PATH"
+                (darwinConsChecker $ Darwin True)
            ++ unsafeProverCheck "e-darwin" "PATH" (darwinConsChecker EDarwin)
            ++ unsafeProverCheck "ekrh" "PATH" hyperConsChecker
 #endif

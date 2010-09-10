@@ -51,12 +51,19 @@ import Proofs.BatchProcessing
 
 -- * Prover implementation
 
-data ProverBinary = Darwin | EDarwin
+data ProverBinary = Darwin Bool | EDarwin
 
 proverBinary :: ProverBinary -> String
-proverBinary b = case b of
-  Darwin -> "darwin"
+proverBinary b = darwinExe b ++
+  case b of
+    Darwin True -> "-non-fd"
+    _ -> ""
+
+darwinExe :: ProverBinary -> String
+darwinExe b = case b of
+  Darwin _ -> "darwin"
   EDarwin -> "e-darwin"
+
 
 {- | The Prover implementation. First runs the batch prover (with
   graphical feedback), then starts the GUI prover. -}
@@ -128,7 +135,7 @@ darwinCMDLautomaticBatch
   -> IO (Concurrent.ThreadId, Concurrent.MVar ())
      {- ^ fst: identifier of the batch thread for killing it
      snd: MVar to wait for the end of the thread -}
-darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux Darwin
+darwinCMDLautomaticBatch = darwinCMDLautomaticBatchAux (Darwin False)
 
 darwinCMDLautomaticBatchAux
   :: ProverBinary -- ^ the actual binary
@@ -164,11 +171,12 @@ consCheck
 consCheck b thName (TacticScript tl) tm freedefs = case tTarget tm of
     Theory sig nSens -> do
         let proverStateI = spassProverState sig (toNamedList nSens) freedefs
-            extraOptions = "-pc false -pmtptp true -fd true " ++ case b of
-                Darwin -> ""
-                EDarwin -> "-eq Axioms "
+            fdOpt = "-pmtptp true -fd true "
+            extraOptions = "-pc false " ++ case b of
+                Darwin i -> if i then "" else fdOpt
+                EDarwin -> fdOpt ++ "-eq Axioms "
               ++ "-to " ++ tl
-            bin = proverBinary b
+            bin = darwinExe b
         prob <- showTPTPProblemM thName proverStateI []
         (exitCode, out, tUsed) <-
           runDarwinProcess bin False extraOptions thName prob
@@ -216,7 +224,7 @@ runDarwin
   -> IO (ATPRetval, GenericConfig ProofTree)
      -- ^ (retval, configuration with proof status and complete output)
 runDarwin b sps cfg saveTPTP thName nGoal = do
-    let bin = proverBinary b
+    let bin = darwinExe b
         options = extraOpts cfg
         extraOptions = maybe "-pc false"
              (("-pc false -to " ++) . show) (timeLimit cfg)
