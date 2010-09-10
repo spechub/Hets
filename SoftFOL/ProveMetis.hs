@@ -125,9 +125,10 @@ runMetis sps cfg saveTPTP thName nGoal = do
   when saveTPTP (writeFile saveFile prob)
   timeTmpFile <- getTempFile prob saveFile
   start <- getHetsTime
-  -- timeout does not work!
-  (ex, out, err) <- readProcessWithExitCode "metis"
-    (extraOpts cfg ++ [timeTmpFile]) ""
+  -- try timeout using perl
+  (ex, out, err) <- readProcessWithExitCode "perl"
+    ["-e", "alarm shift @ARGV; exec @ARGV"
+    , show (configTimeLimit cfg), "metis", timeTmpFile] ""
   finish <- getHetsTime
   let executetime = diffHetsTime finish start
       newCfg = cfg
@@ -142,7 +143,12 @@ runMetis sps cfg saveTPTP thName nGoal = do
              { proofStatus = (proofStatus finCfg)
                { usedAxioms = getAxioms sps
                , goalStatus = getGoalStatus out }})
-         _ -> (ATPError err, finCfg)
+         ExitFailure e -> if e == 14 then
+           ( ATPTLimitExceeded
+           , newCfg
+               { timeLimitExceeded = True
+               , resultOutput = ["TimeOut"] })
+           else (ATPError err, finCfg)
 
 {-
   mapping from SZS Status to Goalstatus
