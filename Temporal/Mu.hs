@@ -1,15 +1,13 @@
 {-# OPTIONS -fglasgow-exts #-}
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  experimental
+Portability :  non-portable (FlexibleContexts)
 
-<optional description>
 -}
 
 module Mu where

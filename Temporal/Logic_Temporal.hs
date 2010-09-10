@@ -5,7 +5,7 @@ Description :  Instance of class Logic for temporal logic
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  hartke@informatik.uni-bremen.de
+Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  experimental
 Portability :  non-portable (imports Logic.Logic)
 
