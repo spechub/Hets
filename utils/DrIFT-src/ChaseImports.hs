@@ -1,23 +1,21 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Id$
+Copyright   :  (c) DFKI GmbH
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
 
-<optional description>
--}
-{- this module coordinates the whole shebang.
+This module coordinates the whole shebang.
   Parses input and plucks out data and newtype declarations and
   processor commands.
   The commands are combined with the parsed data, and if any data is missing,
   derive goes hunting for it, looking in
   the path variable DERIVEPATH. Derive searches recusively though modules
   imported until all the types needed are found, or it runs out of links,
-  which causes an error -}
+  which causes an error.
+-}
 
 module ChaseImports where
 

@@ -1,16 +1,14 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Id$
+Copyright   :  (c) DFKI GmbH
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
 
-<optional description>
+utilities for writing new rules.
 -}
--- utilities for writing new rules.
 
 module RuleUtils where
 
