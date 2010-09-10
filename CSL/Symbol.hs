@@ -1,24 +1,23 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Description :  symbols for CSL
+Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  dominik.dietrich@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
 -}
-module CSL.Symbol
-where
+
+module CSL.Symbol where
 
 import Common.Id
 import Common.Doc
 import Common.DocUtils
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import CSL.Sign 
+import CSL.Sign
 import CSL.Morphism
 
 -- | Datatype for symbols
@@ -36,8 +35,7 @@ printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign -> Set.Set Symbol
-symOf x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
-           items x
+symOf = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty . items
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism -> Map.Map Symbol Symbol
@@ -47,7 +45,7 @@ getSymbolMap f =
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id
-getSymbolName sym = symName sym
+getSymbolName = symName
 
 -- | make a raw_symbol
 idToRaw :: Id -> Symbol
@@ -63,4 +61,4 @@ matches s1 s2 = s1 == s2
 
 -- | application function for Symbol Maps
 applySymMap :: Map.Map Symbol Symbol -> Symbol -> Symbol
-applySymMap smap idt = Map.findWithDefault idt idt $ smap
+applySymMap smap idt = Map.findWithDefault idt idt smap

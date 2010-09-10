@@ -1,19 +1,20 @@
 {- |
-Module      :  $EmptyHeader$
-Description :  <optional short description entry>
-Copyright   :  (c) <Authors or Affiliations>
+Module      :  $Header$
+Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  <email>
-Stability   :  unstable | experimental | provisional | stable | frozen
-Portability :  portable | non-portable (<reason>)
+Maintainer  :  dominik.dietrich@dfki.de
+Stability   :  experimental
+Portability :  portable
 
-<optional description>
 -}
+
+module Main where
+
 import CSL.Sign
-import CSL.Analysis         
+import CSL.Analysis
 import CSL.AS_BASIC_CSL
-import CSL.Morphism    
+import CSL.Morphism
 import CSL.Tools
 import CSL.Reduce_Interface
 import CSL.ReduceProve
@@ -142,7 +143,7 @@ scanFloatExt2 =
         -- an optional number
         getSign = oneOf "+-" >-> eatPlus
     in -- '1.' or '2.e-13' or '1.213'
-      getSign <++> 
+      getSign <++>
               ((getNumber <++> optionL (try $ compD getNumber') <++> optionL compE)
                -- everything starting with a dot
                <|> (compD getNumber >-> ("0"++)) <++> optionL compE)
@@ -170,7 +171,7 @@ castest = do
 ------------------------- test of static analysis... ------------------------
 -----------------------------------------------------------------------------
 
-testspec = 
+testspec =
     case runParser basicSpec (emptyAnnos ()) "" "operator f,h . solve(x^2=1,x) . solve(x*x=1,x)" of
       Right a -> a
 
@@ -184,7 +185,7 @@ res27 = basicCSLAnalysis (testspec, emptySig, [])
 
 -- getAtomsFromFile fp = readFile fp >>= return . getAtomsFrom
 
--- getAtomsFrom s = 
+-- getAtomsFrom s =
 --     case runParser basicSpec (emptyAnnos ()) "" s of
 --       Right a -> map (\ (x:l) -> (x, 1 + length l)) $ group $ sort $ getBSAtoms a
 --       _ -> error "no parse"
