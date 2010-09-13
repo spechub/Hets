@@ -76,6 +76,7 @@ showGraph file opts env = case env of
 #else
       thr
 #endif
+      shutdown
   Nothing -> putIfVerbose opts 0
     "missing development graph to display in a window"
 
@@ -104,8 +105,7 @@ workThread file opts ln le = do
         mShowGraph gInfo' ln
         takeMVar $ exitMVar gInfo'
         closeOpenWindows gInfo'
+        destroy wishInst
 #ifdef GTKGLADE
         postGUISync mainQuit
 #endif
-        destroy wishInst
-        shutdown
