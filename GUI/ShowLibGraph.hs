@@ -48,7 +48,7 @@ import Data.Maybe
 import Data.List
 
 import Control.Concurrent.MVar
-import Control.Monad (when, foldM)
+import Control.Monad
 
 import Interfaces.DataTypes
 import Interfaces.Utils
@@ -128,13 +128,9 @@ reloadLibGraph' gi graph nodesEdges = do
       addNodesAndEdges gi graph' nodesEdges
       writeIORef graph graph'
       redraw graph'
-      let ost = emptyIntState
-          nwst = case i_state ost of
-            Nothing -> ost
-            Just ist -> ost { i_state = Just $ ist { i_libEnv = le
-                                                   , i_ln = ln }
-                            , filename = libfile }
-      writeIORef (intState gi) nwst
+      writeIORef (intState gi) emptyIntState
+                 { i_state = Just $ emptyIntIState le ln
+                 , filename = libfile }
       mShowGraph gi ln
 
 changeLibGraph :: GInfo -> IORef DaVinciGraphTypeSyn -> IORef NodeEdgeList
@@ -168,38 +164,41 @@ changeLibGraph gi graph nodesEdges = do
                   $ proofHistory dg2
           writeVerbFile opts f3 $ ppTopElement $ ToXml.dGraph nle ndg
           md <- withinDirectory gmocPath $ do
-            (_, exit) <- pulseBar "Gmoc" "calling bin/gmoc ..."
+            (_, exitPulse) <- pulseBar "Gmoc" "calling bin/gmoc ..."
             output <- readProcess "bin/gmoc"
               ["-c", "Configuration.xml", "-itype", "file", "moc", f2, f1, f3]
               ""
-            exit
-            return $ listToMaybe $ mapMaybe (stripPrefix "xupdates: ")
-              $ lines output
+            exitPulse
+            let getFile pre =
+                  listToMaybe $ mapMaybe (stripPrefix pre) $ lines output
+            return $ liftM2 (,) (getFile "xupdates: ") $ getFile "Impacts: "
           case md of
             Nothing -> errorDialog "Error" "no xupdate file found"
-            Just xd -> do
-              putIfVerbose opts 1 $ "Reading " ++ xd
+            Just (xd, xi) -> do
+              putIfVerbose opts 2 $ "Reading " ++ xd
               xs <- readFile xd
+              xis <- readFile xi
+              putIfVerbose opts 3 $ "Ignoring Impacts:\n" ++ xis
               let Result ds mdg = do
                     cs <- anaXUpdates xs
                     acs <- mapM changeDG cs
-                    foldM (flip applyChange) ndg acs
-                  fdg = fromMaybe ndg mdg
-              printDiags (verbose opts) ds
-              closeOpenWindows gi
-              mapM_ (deleteArc graph') edges
-              mapM_ (deleteNode graph') nodes
-              addNodesAndEdges gi graph' nodesEdges
-              writeIORef graph graph'
-              redraw graph'
-              let fle = Map.insert nln fdg nle
-                  nwst = emptyIntState
-                    { i_state = Just $ emptyIntIState fle nln
-                    , filename = fn }
-              writeIORef (intState gi) nwst
-              mShowGraph gi ln
-        _ -> errorDialog "Error" $ "Error when reloading file '"
-             ++ fn ++ "'"
+                    foldM (flip applyChange) dg acs
+              case mdg of
+                Just fdg -> do
+                  closeOpenWindows gi
+                  mapM_ (deleteArc graph') edges
+                  mapM_ (deleteNode graph') nodes
+                  addNodesAndEdges gi graph' nodesEdges
+                  writeIORef graph graph'
+                  redraw graph'
+                  let fle = Map.insert ln fdg le
+                  writeIORef (intState gi) emptyIntState
+                        { i_state = Just $ emptyIntIState fle ln
+                        , filename = fn }
+                  mShowGraph gi ln
+                Nothing ->
+                  errorDialog "Error" $ showRelDiags (verbose opts) ds
+        _ -> errorDialog "Error" $ "Error when reloading file '" ++ fn ++ "'"
 
 -- | Translate Graph
 translate :: GInfo -> IO ()
