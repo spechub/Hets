@@ -84,31 +84,35 @@ obtained with \verb"loadLibraries".
 {\codesize
 \begin{verbatim}
 maude2casl msign nsens = (csign { CSign.sortSet = cs,
+                            CSign.sortRel = sbs',
                             CSign.opMap = cops',
                             CSign.assocOps = assoc_ops,
                             CSign.predMap = preds,
                             CSign.declaredSymbols = syms }, new_sens)
    where csign = CSign.emptySign ()
-         mk = arrangeKinds (MSign.sorts msign) (MSign.subsorts msign)
-         cs = kindsFromMap mk
-         ks = kindPredicates mk
-         rp = rewPredicates ks cs
+         ss = MSign.sorts msign
+         ss' = Set.map sym2id ss
+         mk = kindMapId $ MSign.kindRel msign
+         sbs = MSign.subsorts msign
+         sbs' = maudeSbs2caslSbs sbs mk
+         cs = Set.union ss' $ kindsFromMap mk
+         preds = rewPredicates cs
          rs = rewPredicatesSens cs
          ops = deleteUniversal $ MSign.ops msign
          ksyms = kinds2syms cs
-         (cops, assoc_ops, ops_forms, comps) = translateOps mk ops
-         ctor_sen = [ctorSen False (cs, Rel.empty, comps)]
+         (cops, assoc_ops, _) = translateOps mk ops
+         ctor_sen = []
          cops' = universalOps cs cops $ booleanImported ops
+         rs' = rewPredicatesCongSens cops'
          pred_forms = loadLibraries (MSign.sorts msign) ops
          ops_syms = ops2symbols cops'
          (no_owise_sens, owise_sens, mbs_rls_sens) = splitOwiseEqs nsens
          no_owise_forms = map (noOwiseSen2Formula mk) no_owise_sens
          owise_forms = map (owiseSen2Formula mk no_owise_forms) owise_sens
          mb_rl_forms = map (mb_rl2formula mk) mbs_rls_sens
-         preds = Map.unionWith (Set.union) ks rp
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
-         new_sens = concat [rs, ops_forms, no_owise_forms, owise_forms,
+         new_sens = concat [rs, rs', no_owise_forms, owise_forms,
                             mb_rl_forms, ctor_sen, pred_forms]
 \end{verbatim}
 }
@@ -149,9 +153,8 @@ the function \verb"rewPredicate":
 
 {\codesize
 \begin{verbatim}
-rewPredicates :: Map.Map Id (Set.Set CSign.PredType) -> Set.Set Id
-                 -> Map.Map Id (Set.Set CSign.PredType)
-rewPredicates m = Set.fold rewPredicate m
+rewPredicates :: Set.Set Id -> Map.Map Id (Set.Set CSign.PredType)
+rewPredicates = Set.fold rewPredicate Map.empty
 \end{verbatim}
 }
 
@@ -215,7 +218,7 @@ applying to each of them the function \verb"translateOpDeclSet":
 {\codesize
 \begin{verbatim}
 translateOps :: IdMap -> MSign.OpMap -> OpTransTuple
-translateOps im = Map.fold (translateOpDeclSet im) (Map.empty, Map.empty, [], Set.empty)
+translateOps im = Map.fold (translateOpDeclSet im) (Map.empty, Map.empty, Set.empty)
 \end{verbatim}
 }
 
@@ -247,78 +250,21 @@ operator to the corresponding accumulators:
 {\codesize
 \begin{verbatim}
 translateOpDecl :: IdMap -> MSign.OpDecl -> OpTransTuple -> OpTransTuple
-translateOpDecl im (syms, ats) (ops, assoc_ops, forms, cs) = (ops', assoc_ops', forms', cs')
-    where predOps = ops2pred im syms
-          sym = head $ Set.toList syms
-          (cop_id, ot) = fromJust $ maudeSym2CASLOp im sym
-          cop_type = Set.singleton ot
-          forms' = forms ++ predOps
-          ops' = Map.insertWith (Set.union) cop_id cop_type ops
-          assoc_ops' = if any MAS.assoc ats
-                       then Map.insertWith (Set.union) cop_id cop_type assoc_ops
-                       else assoc_ops
-          cs' = if any MAS.ctor ats
-                then Set.insert (Component cop_id ot) cs
-                else cs
-\end{verbatim}
-}
-
-We describe now how the predicates obtained from the membership
-axioms associated to each operator declaration are obtained. The function
-\verb"ops2pred" traverses the set of operator symbols, applying
-the function \verb"op2pred":
-
-{\codesize
-\begin{verbatim}
-ops2pred :: IdMap -> MSym.SymbolSet -> [Named CAS.CASLFORMULA]
-ops2pred im = Set.fold (op2pred im) []
-\end{verbatim}
-}
-
-When the symbol is an operator declaration, the function distinguishes
-if the result type if a sort, and thus a membership has to be generated,
-or it is a kind and only the accumulator is returned. In the first
-case, the list of arguments is traversed with the auxiliary
-\verb"ops2predPremises" to compute the premises of the predicate
-and the variables used. Note that only the arguments declared at the
-sort level generate premises, while the ones declared at the kind 
-are skipped. We apply these variables to the operator to create the
-conclusion, and finally an implication is created and universally
-quantified to obtain the final formula:
-
-{\codesize
-\begin{verbatim}
-op2pred :: IdMap -> MSym.Symbol -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
-op2pred im (MSym.Operator op ar co) acc = case co of
-               MSym.Sort s -> let 
-                  co' = token2id s
-                  kind = Map.findWithDefault (errorId "op-mb to predicate") co' im
-                  f = \ m x -> Map.lookup (token2id $ getName x) m
-                  ar' = mapMaybe (f im) ar
-                  op_type = CAS.Op_type CAS.Total ar' kind nullRange
-                  op' = CAS.Qual_op_name (token2id op) op_type nullRange
-                  (vars, prems) = ops2predPremises im ar 0
-                  pred_type = CAS.Pred_type [kind] nullRange
-                  pred_name = CAS.Qual_pred_name co' pred_type nullRange
-                  op_term = CAS.Application op' vars nullRange
-                  op_pred = CAS.Predication pred_name [op_term] nullRange
-                  conj_form = createConjForm prems
-                  imp_form = if null prems
-                             then op_pred
-                             else CAS.Implication conj_form op_pred True nullRange
-                  q_form = quantifyUniversally imp_form
-                  final_form = makeNamed "" q_form
-                              in final_form : acc
-               _ -> acc
-\end{verbatim}
-}
-
-When the received symbol is not an operator declaration the accumulator
-is returned:
-
-{\codesize
-\begin{verbatim}
-op2pred _ _ acc = acc
+translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
+                      [] -> (ops', assoc_ops', cs')
+                      _ -> translateOpDecl im (syms', ats) (ops', assoc_ops', cs')
+      where sym = head $ Set.toList syms
+            tl = tail $ Set.toList syms
+            syms' = Set.fromList tl
+            (cop_id, ot, _) = fromJust $ maudeSym2CASLOp im sym
+            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
+            ops' = Map.insertWith (Set.union) cop_id cop_type ops
+            assoc_ops' = if any MAS.assoc ats
+                         then Map.insertWith (Set.union) cop_id cop_type assoc_ops
+                         else assoc_ops
+            cs' = if any MAS.ctor ats
+                  then Set.insert (Component cop_id ot) cs
+                  else cs
 \end{verbatim}
 }
 
@@ -330,8 +276,7 @@ with the resulting formula:
 
 {\codesize
 \begin{verbatim}
-noOwiseSen2Formula ::  IdMap -> Named MSentence.Sentence
-                       -> Named CAS.CASLFORMULA
+noOwiseSen2Formula ::  IdMap -> Named MSentence.Sentence -> Named CAS.CASLFORMULA
 noOwiseSen2Formula im s = s'
        where MSentence.Equation eq = sentence s
              sen' = noOwiseEq2Formula im eq
@@ -351,16 +296,16 @@ of the equality formula:
 {\codesize
 \begin{verbatim}
 noOwiseEq2Formula :: IdMap -> MAS.Equation -> CAS.CASLFORMULA
+noOwiseEq2Formula im (MAS.Eq t t' [] _) = quantifyUniversally form
+      where ct = maudeTerm2caslTerm im t
+            ct' = maudeTerm2caslTerm im t'
+            form = CAS.Strong_equation ct ct' nullRange
 noOwiseEq2Formula im (MAS.Eq t t' conds@(_:_) _) = quantifyUniversally form
       where ct = maudeTerm2caslTerm im t
             ct' = maudeTerm2caslTerm im t'
             conds_form = conds2formula im conds
             concl_form = CAS.Strong_equation ct ct' nullRange
-            form = CAS.Implication conds_form concl_form True nullRange
-noOwiseEq2Formula im (MAS.Eq t t' [] _) = quantifyUniversally form
-      where ct = maudeTerm2caslTerm im t
-            ct' = maudeTerm2caslTerm im t'
-            form = CAS.Strong_equation ct ct' nullRange
+            form = createImpForm conds_form concl_form
 \end{verbatim}
 }
 
@@ -374,9 +319,8 @@ sort is changed to the corresponding kind:
 {\codesize
 \begin{verbatim}
 maudeTerm2caslTerm :: IdMap -> MAS.Term -> CAS.CASLTERM
-maudeTerm2caslTerm im (MAS.Var q ty) = CAS.Qual_var q kind nullRange
-        where kind = Map.findWithDefault (errorId "maude_term2CASL_term")
-                                         (token2id $ getName ty) im
+maudeTerm2caslTerm im (MAS.Var q ty) = CAS.Qual_var q ty' nullRange
+        where ty' = maudeType2caslSort ty im
 \end{verbatim}
 }
 
@@ -387,11 +331,10 @@ given sort:
 {\codesize
 \begin{verbatim}
 maudeTerm2caslTerm im (MAS.Const q ty) = CAS.Application op [] nullRange
-      where name = token2id q
-            ty' = token2id $ getName ty
-            kind = Map.findWithDefault (errorId "maude_term2CASL_term") ty' im
-            op_type = CAS.Op_type CAS.Total [] kind nullRange
-            op = CAS.Qual_op_name name op_type nullRange
+        where name = token2id q
+              ty' = maudeType2caslSort ty im
+              op_type = CAS.Op_type CAS.Total [] ty' nullRange
+              op = CAS.Qual_op_name name op_type nullRange
 \end{verbatim}
 }
 
@@ -402,13 +345,12 @@ valid CASL terms:
 {\codesize
 \begin{verbatim}
 maudeTerm2caslTerm im (MAS.Apply q ts ty) = CAS.Application op tts nullRange
-      where name = token2id q
-            tts = map (maudeTerm2caslTerm im) ts
-            ty' = token2id $ getName ty
-            kind = Map.findWithDefault (errorId "maude_term2CASL_term") ty' im
-            types_tts = getTypes tts
-            op_type = CAS.Op_type CAS.Total types_tts kind nullRange
-            op = CAS.Qual_op_name name op_type nullRange
+        where name = token2id q
+              tts = map (maudeTerm2caslTerm im) ts
+              ty' = maudeType2caslSort ty im
+              types_tts = getTypes tts
+              op_type = CAS.Op_type CAS.Total types_tts ty' nullRange
+              op = CAS.Qual_op_name name op_type nullRange
 \end{verbatim}
 }
 
@@ -443,17 +385,14 @@ cond2formula im (MAS.MatchCond t t') = CAS.Strong_equation ct ct' nullRange
 \end{verbatim}
 }
 
-\item Membership conditions are translated into formulas by using the sort
-as predicate name and its kind as the argument type:
+\item Membership conditions are translated into CASL memberships by translating
+the term and the sort:
 
 {\codesize
 \begin{verbatim}
-cond2formula im (MAS.MbCond t s) = CAS.Predication pred_name [ct] nullRange
+cond2formula im (MAS.MbCond t s) = CAS.Membership ct s' nullRange
       where ct = maudeTerm2caslTerm im t
             s' = token2id $ getName s
-            kind = Map.findWithDefault (errorId "mb cond to formula") s' im
-            pred_type = CAS.Pred_type [kind] nullRange
-            pred_name = CAS.Qual_pred_name s' pred_type nullRange
 \end{verbatim}
 }
 
@@ -480,7 +419,7 @@ with \verb"owiseSen2Formula", that traverses them and applies
 
 {\codesize
 \begin{verbatim}
-owiseSen2Formula ::  IdMap -> [Named CAS.CASLFORMULA] 
+owiseSen2Formula ::  IdMap -> [Named CAS.CASLFORMULA]
                      -> Named MSentence.Sentence -> Named CAS.CASLFORMULA
 owiseSen2Formula im owise_forms s = s'
        where MSentence.Equation eq = sentence s
@@ -504,7 +443,7 @@ owiseEq2Formula im no_owise_form eq = form
       where (eq_form, vars) = noQuantification $ noOwiseEq2Formula im eq
             (op, ts, _) = fromJust $ getLeftApp eq_form
             ex_form = existencialNegationOtherEqs op ts no_owise_form
-            imp_form = CAS.Implication ex_form eq_form True nullRange
+            imp_form = createImpForm ex_form eq_form
             form = CAS.Quantification CAS.Universal vars imp_form nullRange
 \end{verbatim}
 }

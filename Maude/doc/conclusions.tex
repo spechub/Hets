@@ -1,12 +1,50 @@
 %!TEX root = main.tex
 
-TBR
+We have presented in this paper how Maude has been integrated into
+\Hets, a parsing, static analysis and proof management tool that
+combines various tools for different specification languages. To
+achieve this integration, we consider preordered algebra semantics for
+Maude and define an institution comorphism from Maude to \CASL.  This
+integration allows to prove properties of Maude specifications like
+those expressed in Maude views. We have also implemented a
+normalization of the development graphs that allows us to prove
+freeness constraints. We have used this transformation to connect
+Maude to Isabelle \cite{Isabelle02}, a Higher Order Logic prover, and
+have demonstrated a small example proof about reversal of lists.
+Moreover, this encoding is suited for proofs of e.g.\ extensionality
+of sets, which require first-order logic, going beyond the abilities
+of existing Maude provers like ITP.
 
-Conclusions
-\begin{itemize}
-\item Although we have studied more complex institutions and comorphisms,
-we use the current one because Maude doesn't map labels in views.
-\end{itemize}
+Since interactive proofs are often not easy to conduct, future work
+will make proving more efficient by adopting automated induction
+strategies like rippling~\cite{DBLP:conf/tphol/DixonF04}.  We also
+have the idea to use the automatic first-order prover SPASS for
+induction proofs by integrating special induction strategies directly
+into \Hets.
+
+We have also studied the possible comorphisms from \CASL to Maude. We
+distinguish whether the formulas in the source theory are confluent and
+terminating or not. In the first case, that we plan to check with the
+Maude termination~\cite{MTT08} and confluence checker \cite{ChurchRoss10},
+we map formulas to equations,
+whose execution in Maude is more efficient, while in the second case
+we map formulas to rules.
+
+Finally, we also plan to relate \Hets' Modal Logic and Maude models in order to use
+the Maude model checker \cite[Chapter 13]{maude-book} for linear temporal
+logic.
+
+
+\textbf{Acknowledgments} We wish to thank Francisco Dur\'an for discussions 
+regarding freeness in Maude, Martin K\"uhl for cooperation
+on the implementation of the theory presented here,
+and Maksym Bortin for help with the Isabelle proofs.
+This work has been
+supported by the German Federal Ministry of Education and Research
+(Project 01 IW 07002 FormalSafe), the German Research Council (DFG)
+under grant KO-2428/9-1 and the MICINN Spanish project
+\emph{DESAFIOS10} (TIN2009-14599-C03-01).
+
 
 Future work
 \begin{itemize}

@@ -12,6 +12,10 @@
 \usepackage{hyperref}
 \usepackage{verbatim}
 \usepackage{amssymb}
+\usepackage{xspace}
+\usepackage{xypic}
+\usepackage{hetcasl}
+\usepackage{wrapfig}
 
 \usepackage{graphicx}
 \usepackage{proof}
@@ -20,6 +24,8 @@
 \newcommand{\ttlcb}{\texttt{\char'173}}
 \newcommand{\ttrcb}{\texttt{\char'175}}
 
+\newcommand{\rewrites}{\Rightarrow}
+
 \newtheorem{definition}{Definition} %[chapter]
 \newtheorem{proposition}{Proposition} %[chapter]
 \newtheorem{property}{Property} %[chapter]
@@ -27,6 +33,11 @@
 \newtheorem{theorem}{Theorem} %[chapter]
 \newenvironment{proof}{\par\addvspace{\bigskipamount}%
 \noindent\textit{Proof.}\ }{\qed\par\addvspace{\bigskipamount}}
+
+\newcommand{\stroke}{|}
+\newcommand{\forget}[1]{|_{#1}}
+\newcommand{\Mod}{\mathbf{Mod}}
+\newcommand{\Sen}{\mathbf{Sen}}
 
 \def\squareforqed{\hbox{\rlap{$\sqcap$}$\sqcup$}}
 \def\qed{\ifmmode\squareforqed\else{\unskip\nobreak\hfil
@@ -53,6 +64,45 @@
 \newcommand{\bigunion}{\mathop{ \mathgroup\symoperators \bigcup}}
 \newcommand{\fracc}[2]{\begin{array}{c}{#1}\\ \hline {#2} \end{array}}
 
+\newcommand{\Hets}{\textmd{\textsc{Hets}}\xspace}
+\newcommand{\CASL}{\textmd{\textsc{Casl}}\xspace}
+\newcommand{\CoFI}{\textmd{\textsc{CoFI}}\xspace}
+
+%% macros for development graphs
+
+\newcommand{\glinka}[3]{\!\xymatrix{{#1} \ar@{=>}[r]^{#2} & {#3}}\!\!}
+\newcommand{\longglinka}[3]{\!\xymatrix{#1 \ar@{=>}[rr]^{#2} && #3}\!\!}
+\newcommand{\llinka}[3]{\!\xymatrix{#1 \ar[r]^{#2} & #3}\!\!}
+\newcommand{\hlinka}[3]{\!\xymatrix{#1 \ar@{=>}[r]^{#2}_{\mathit{hide}} & #3}\!\!}
+\newcommand{\longhlinka}[3]{\!\xymatrix{#1 \ar@{=>}[rr]^{#2}_{\mathit{hide}} && #3}\!\!}
+\newcommand{\flinka}[3]{\!\xymatrix{#1 \ar@{=>}[r]^{#2}_{\mathit{free}} & #3}\!\!}
+\newcommand{\longflinka}[3]{\!\xymatrix{#1 \ar@{=>}[rr]^{#2}_{\mathit{free}} && #3}\!\!}
+
+\newcommand{\tglinka}[3]{\!\xymatrix{#1 \ar@{==>}[r]^{#2} & #3}\!\!}
+\newcommand{\longtglinka}[3]{\!\xymatrix{#1 \ar@{==>}[rr]^{#2} && #3}\!\!}
+\newcommand{\thlinka}[4]{\!\xymatrix{#1 \ar@{==>}[r]^{#2}_{{\mathit{hide}}\ #3} & #4}\!\!}
+\newcommand{\longthlinka}[4]{\!\xymatrix{#1 \ar@{==>}[rr]^{#2}_{{\mathit{hide}}\ #3} && #4}\!\!}
+\newcommand{\tflinka}[4]{\!\xymatrix{#1 \ar@{==>}[r]^{#2}_{\mathit{free}\ #3} & #4}\!\!}
+\newcommand{\tllinka}[3]{\!\xymatrix{#1 \ar@{-->}[r]^{#2} & #3}\!\!}
+
+\newcommand{\gclinka}[3]{\!\xymatrix{#1 \ar@{=>}[r]^{#2}_{\mathit{cons}} & #3}\!\!}
+\newcommand{\gdlinka}[3]{\!\xymatrix{#1 \ar@{=>}[r]^{#2}_{\mathit{def}} & #3}\!\!}
+\newcommand{\gmlinka}[3]{\!\xymatrix{#1 \ar@{=>}[r]^{#2}_{\mathit{mono}} & #3}\!\!}
+
+\newcommand{\tclinka}[3]{\!\xymatrix{#1 \ar@{==>}[r]^{#2}_{\mathit{cons}} & #3}\!\!}
+\newcommand{\tdlinka}[3]{\!\xymatrix{#1 \ar@{==>}[r]^{#2}_{\mathit{def}} & #3}\!\!}
+\newcommand{\tmlinka}[3]{\!\xymatrix{#1 \ar@{==>}[r]^{#2}_{\mathit{mono}} & #3}\!\!}
+
+\newcommand{\longtclinka}[3]{\!\xymatrix{#1 \ar@{==>}[rr]^{#2}_{\mathit{cons}} && #3}\!\!}
+\newcommand{\longtdlinka}[3]{\!\xymatrix{#1 \ar@{==>}[rr]^{#2}_{\mathit{def}} && #3}\!\!}
+\newcommand{\longtmlinka}[3]{\!\xymatrix{#1 \ar@{==>}[rr]^{#2}_{\mathit{mono}} && #3}\!\!}
+
+\newcommand{\greaches}[1]{\!\xymatrix{\ar@{=>>}[r]^{#1} & }\!\!}
+\newcommand{\lreaches}[1]{\!\xymatrix{\ar@{>=>>}[r]^{#1} & }\!\!}
+
+\newtheorem{fact}{Fact}
+
+
 \graphicspath{{images/}}
 
 \title{Integrating Maude into Hets%
@@ -61,14 +111,17 @@
 %Madrid program \emph{PROMESAS} (SÐ0505/TIC/0407).}
 }
 
-\author{Martin K\"uhl and Adri\'an Riesco\\[.7cm]
-%\normalsize Technical Report ??\\[1ex]
-%  \normalsize\textit{Departamento de Sistemas Inform\'aticos y Computaci\'on}\\
-%  \normalsize\textit{Universidad Complutense de Madrid}\\[.4cm]
-%  July 2009
+\author{Mihai Codescu, Till Mossakowski,
+Adri\'an Riesco, and Christian Maeder\\[.7cm]
+\normalsize Technical Report ??\\[1ex]
+  \normalsize\textit{Departamento de Sistemas Inform\'aticos y Computaci\'on}\\
+  \normalsize\textit{Universidad Complutense de Madrid}\\[.4cm]
+  September 2010
   }
 
+
 \date{}
+
 %\institute{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,8 +135,20 @@
 \mbox{}\vfill
 
 \begin{abstract}
-
-
+Maude modules can be understood as models that can be formally analyzed
+and verified with respect to different properties expressing various
+formal requirements.
+However, Maude lacks the formal tools to perform some of these analyses
+and thus they can only be done by hand.
+The Heterogeneous Tool Set \Hets is an institution-based
+combination of different logics and corresponding rewriting, model
+checking and proof tools.
+%
+We present in this paper an integration of Maude into \Hets that allows
+to use the logics and tools already integrated in \Hets with
+Maude specifications. To achieve such integration we have defined an
+institution for Maude based on preordered algebras and a comorphism
+between Maude and \CASL, the central logic in \Hets.
 
 \smallskip
 
@@ -103,40 +168,47 @@ Maude, CASL
 %\setcounter{page}{1}
 
 \section{Introduction}\label{sec:intro}
-%\input{intro}
-
-\section{Preliminaries: Institutions and comorphisms}
+\input{intro}
 
 \section{Rewriting logic and Maude}\label{sec:maude}
 \input{maude}
 
 \section{Hets}\label{sec:hets}
+\input{hets}
 
-\section{Building Development Graphs}
+\section{Relating the Maude and CASL Logics}\label{sec:comoprh}
+\input{inst}
+
+\section{Building Development Graphs}\label{sec:dg}
 \input{dg}
 
-\section{Comorphism}\label{sec:comoprh}
+\section{An example: reversing lists}\label{ex:rev}
+\input{example}
 
 \section{Implementation}\label{sec:implemen}
 
-\subsection{Parsing}\label{subsec:parsing}
-\subsubsection{Martin's parser}\label{subsec:lex-parser}
+We describe in this section how the integration described in the
+previous sections has been implemented. Section \ref{subsec:abs-syntax}
+shows the abstract syntax used to represent Maude modules in Haskell,
+Section \ref{subsec:maude-parser} presents how these data structures
+are generated in Maude, while Section \ref{sec:imp_dg} 
 
-\subsubsection{Abstract syntax}\label{subsec:abs-syntax}
+\subsection{Abstract syntax}\label{subsec:abs-syntax}
 \input{abs-syntax}
 
-\subsubsection{Maude parsing}\label{subsec:maude-parser}
+\subsection{Maude parsing}\label{subsec:maude-parser}
 \input{maude-parsing}
 
-\subsection{Data structures}\label{sec:da}
+%\subsection{Data structures}\label{sec:da}
 
-\subsection{Development Graph}\label{sec:dg}
+\subsection{Development Graph}\label{sec:imp_dg}
 \input{imp-dg}
 
 \subsection{Comorphism}\label{sec:comorphism}
 \input{imp-comorph}
 
-\subsection{Freeness constraints??}
+\subsection{Freeness constraints}
+\input{freeness}
 
 \section{Conclusions and future work}\label{sec:conclusions}
 \input{conclusions}

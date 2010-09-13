@@ -2,16 +2,7 @@
 
 In this section we show how the abstract syntax of Maude specifications
 is defined. This abstract syntax is based in the Maude grammar presented
-in \cite[Chapter 24]{maude-book}
-
-First, we define the type \verb"Qid", a synonym of \verb"Token" that
-will be used for identifiers:
-
-{\codesize
-\begin{verbatim}
-type Qid = Token
-\end{verbatim}
-}
+in \cite[Chapter 24]{maude-book}.
 
 The main datatype is \verb"Spec", that distinguishes between the
 different specifications available in Maude: modules, theories and
@@ -28,7 +19,7 @@ data Spec = SpecMod Module
 }
 
 A \verb"Module" is composed of the identifier of the module, a list
-of parameters and a list of statements
+of parameters, and a list of statements:
 
 {\codesize
 \begin{verbatim}
@@ -48,7 +39,7 @@ data View = View ModId ModExp ModExp [Renaming]
 }
 
 The \verb"Parameter" type contains the identifier of the parameter,
-a \verb"Sort", and its type, a module expression \verb"ModExp":
+a sort, and its type, a module expression:
 
 {\codesize
 \begin{verbatim}
@@ -59,7 +50,7 @@ data Parameter = Parameter Sort ModExp
 
 A \verb"Statement" can be any of the Maude statements:
 importation, sort, subsort, and operator declarations, and
-equation, membership, and rule statements:
+equation, membership axiom, and rule statements:
 
 {\codesize
 \begin{verbatim}
@@ -118,7 +109,7 @@ data Membership = Mb Term Sort [Condition] [StmntAttr]
 }
 
 Equations and rules share the same elements: the lefthand
-and righthand terms of the statement, a list of condition,
+and righthand terms of the statement, a list of conditions,
 and a list of statement attributes:
 
 {\codesize
@@ -131,7 +122,7 @@ data Rule = Rl Term Term [Condition] [StmntAttr]
 \end{verbatim}
 }
 
-Module expressions distinguish between
+We distinguish between the following module expressions:
 
 \begin{itemize}
 \item A single identifier:
@@ -177,8 +168,8 @@ available in Maude:
 
 \begin{itemize}
 
-\item Renaming of sorts, that indicates that the first sort is renamed
-with the second one:
+\item Renaming of sorts, that indicates that the first sort identifier
+is changed to the second one:
 
 {\codesize
 \begin{verbatim}
@@ -197,7 +188,7 @@ second one:
 
 \item Renaming of operators, that can be of three kinds: renaming
 of operators without profile, with profile, or a map between terms,
-as explained in ... FILL IT!!!
+as explained in Section \ref{subsec:dg_views}:
 
 {\codesize
 \begin{verbatim}
@@ -213,35 +204,56 @@ and the new attributes:
 
 {\codesize
 \begin{verbatim}
-data ToPartRenaming = To OpId [Attr]                    deriving (Show, Read, Ord, Eq)
+data ToPartRenaming = To OpId [Attr]
+                    deriving (Show, Read, Ord, Eq)
 \end{verbatim}
 }
 
 The \verb"Condition" type distinguishes between the different conditions
-available in Maude:
+available in Maude, namely equational conditions, membership conditions,
+matching conditions, and rewriting conditions:
 
 {\codesize
 \begin{verbatim}
-data Condition = EqCond Term Term               | MbCond Term Sort               | MatchCond Term Term               | RwCond Term Term               deriving (Show, Read, Ord, Eq)
+data Condition = EqCond Term Term
+               | MbCond Term Sort
+               | MatchCond Term Term
+               | RwCond Term Term
+               deriving (Show, Read, Ord, Eq)
 \end{verbatim}
 }
 
-\verb"Term"s are always represented in prefix notation. Notice that
+We define the type \verb"Qid", a synonym of \verb"Token" that
+will be used for identifiers:
+
+{\codesize
+\begin{verbatim}
+type Qid = Token
+\end{verbatim}
+}
+
+Terms are always represented in prefix notation. Notice that
 the case of an operator applied to a list of terms is slightly different
 to the Maude grammar because it also includes the type of the term.
 It will be used later in the implementation to rename operators whose
-profile has been specified (see Section \ref{sec:da} for details):
+profile has been specified:
 
 {\codesize
 \begin{verbatim}
-data Term = Const Qid Type          | Var Qid Type          | Apply Qid [Term] Type          deriving (Show, Read, Ord, Eq)
+data Term = Const Qid Type
+          | Var Qid Type
+          | Apply Qid [Term] Type
+          deriving (Show, Read, Ord, Eq)
 \end{verbatim}
 }
 
-Finally, the \verb"Type" distinguishes between Maude sorts and kinds:
-{\codesize
+Finally, the \verb"Type" distinguishes between sorts and kinds:
+
+{\codesize
 \begin{verbatim}
-data Type = TypeSort Sort          | TypeKind Kind          deriving (Show, Read, Ord, Eq)
+data Type = TypeSort Sort
+          | TypeKind Kind
+          deriving (Show, Read, Ord, Eq)
 \end{verbatim}
 }
 

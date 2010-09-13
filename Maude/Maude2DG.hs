@@ -728,7 +728,7 @@ directMaudeParsing fp = do
               hFlush hIn
               hPutStrLn hIn "in Maude/hets.prj"
               psps <- predefinedSpecs hIn hOut
-              sps <- traversePredefined hIn hOut ns'
+              sps <- traverseSpecs hIn hOut ns'
               (ok, errs) <- getErrors hErr
               if ok
                   then do
@@ -776,24 +776,24 @@ predefined = [ModName "TRUTH-VALUE", ModName "BOOL-OPS", ModName "TRUTH", ModNam
 -- | returns the specifications of the predefined modules by passing as
 -- parameter the list of names
 predefinedSpecs :: Handle -> Handle -> IO [Spec]
-predefinedSpecs hIn hOut = traversePredefined hIn hOut predefined
+predefinedSpecs hIn hOut = traverseSpecs hIn hOut predefined
 
 -- | returns the specifications of the predefined modules
-traversePredefined :: Handle -> Handle -> [NamedSpec] -> IO [Spec]
-traversePredefined _ _ [] = return []
-traversePredefined hIn hOut (ModName n : ns) = do
+traverseSpecs :: Handle -> Handle -> [NamedSpec] -> IO [Spec]
+traverseSpecs _ _ [] = return []
+traverseSpecs hIn hOut (ModName n : ns) = do
                  hPutStrLn hIn $ concat ["(hets ", n, " .)"]
                  hFlush hIn
                  sOutput <- getAllSpec hOut "" False
-                 ss <- traversePredefined hIn hOut ns
+                 ss <- traverseSpecs hIn hOut ns
                  let stringSpec = findSpec sOutput
                  let spec = read stringSpec :: Spec
                  return $ spec : ss
-traversePredefined hIn hOut (ViewName n : ns) = do
+traverseSpecs hIn hOut (ViewName n : ns) = do
                  hPutStrLn hIn $ concat ["(hetsView ", n, " .)"]
                  hFlush hIn
                  sOutput <- getAllSpec hOut "" False
-                 ss <- traversePredefined hIn hOut ns
+                 ss <- traverseSpecs hIn hOut ns
                  let stringSpec = findSpec sOutput
                  let spec = read stringSpec :: Spec
                  return $ spec : ss

@@ -77,8 +77,7 @@
           haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-   if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M /\
-       KS := getKinds(M) .
+   if mod H is IL sorts SS . SSDS ODS MAS EqS RS endm := M .
   ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
@@ -87,8 +86,7 @@
           haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
           haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-   if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M /\
-       KS := getKinds(M) .
+   if fth H is IL sorts SS . SSDS ODS MAS EqS endfth := M .
   ceq haskellify(M, M') = 
       'SpecTh '`( 'Module haskellifyHeader(H) ' ' 
       '`[ haskellifyImports(IL) comma(IL, SS)
@@ -98,8 +96,7 @@
           haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
           haskellifyEqSet(M', EqS) comma(IL, SS, SSDS, ODS, MAS, EqS, RS)
           haskellifyRlSet(M', RS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
-   if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M /\
-       KS := getKinds(M) .
+   if th H is IL sorts SS . SSDS ODS MAS EqS RS endth := M .
   
   op haskellify : Module Module View -> QidList .
   eq haskellify(M, M', view Q from ME to ME' is SMS OMS endv) = 

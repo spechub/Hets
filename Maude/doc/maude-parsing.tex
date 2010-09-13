@@ -3,3 +3,56 @@
 In this section we explain how the Maude specifications introduced in
 Hets are parsed in order to obtain its abstract syntax, described in
 Section \ref{subsec:abs-syntax}.
+
+The function \verb"haskellify" receives a module (the first parameter
+stands for the original module, while the second one contains the
+flattened one) and returns a list of quoted identifiers identifying an
+object of type \verb"Spec" as shown in the previous section.
+
+{\codesize
+\begin{verbatim}
+  op haskellify : Module Module -> QidList .
+  ceq haskellify(M, M') = 
+      'SpecMod '`( 'Module haskellifyHeader(H) ' ' 
+      '`[ haskellifyImports(IL) comma(IL, SS)
+          haskellifySorts(SS) comma(IL, SS, SSDS)
+          haskellifySubsorts(SSDS) comma(IL, SS, SSDS, ODS)
+          haskellifyOpDeclSet(M', ODS) comma(IL, SS, SSDS, ODS, MAS)
+          haskellifyMembAxSet(M', MAS) comma(IL, SS, SSDS, ODS, MAS, EqS)
+          haskellifyEqSet(M', EqS) '`] '`) '\n '@#$endHetsSpec$#@ '\n
+    if fmod H is IL sorts SS . SSDS ODS MAS EqS endfm := M .
+\end{verbatim}
+}
+
+This function prints the keyword \verb"SpecMod" and uses the \verb"haskellify"
+auxiliary functions to print the different parts of the module.
+The functions \verb"comma" introduce a comma whenever it is necessary.
+Since all the ``haskellify'' functions are very similar, we describe
+them by using \verb"haskellifyImports" as example. This function traverses
+all the imports in the list and applies the auxiliary function
+\verb"haskellifyImport" to each of them:
+
+{\codesize
+\begin{verbatim}
+  op haskellifyImports : ImportList -> QidList .
+  eq haskellifyImports(nil) = nil .
+  eq haskellifyImports(I IL) = 'ImportStmnt ' '`( haskellifyImport(I) '`)
+                               comma(IL) haskellifyImports(IL) .
+\end{verbatim}
+}
+
+This auxiliary function distinguishes between the importation modes,
+using the appropriate keyword for each of them:
+
+{\codesize
+\begin{verbatim}
+  op haskellifyImport : Import -> QidList .
+  eq haskellifyImport(protecting ME .) = 'Protecting haskellifyME(ME) .
+  eq haskellifyImport(including ME .) = 'Including haskellifyME(ME) .
+  eq haskellifyImport(extending ME .) = 'Extending haskellifyME(ME) .
+\end{verbatim}
+}
+
+\noindent where \verb"haskellifyME" is in charge of printing the 
+module expression.
+

@@ -544,8 +544,7 @@ splitOwiseEqs (s : ss) = res
 
 -- | translates a Maude equation defined without the "owise" attribute into
 -- a CASL formula
-noOwiseSen2Formula ::  IdMap -> Named MSentence.Sentence
-                       -> Named CAS.CASLFORMULA
+noOwiseSen2Formula ::  IdMap -> Named MSentence.Sentence -> Named CAS.CASLFORMULA
 noOwiseSen2Formula im s = s'
        where MSentence.Equation eq = sentence s
              sen' = noOwiseEq2Formula im eq

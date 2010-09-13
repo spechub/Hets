@@ -43,7 +43,7 @@ import qualified CASL.Morphism as CMor
 import Common.Result
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
-import Common.Id
+import Common.Id ()
 import qualified Data.Map as Map
 
 -- | lid of the morphism
@@ -112,19 +112,18 @@ signExtension sigma sigmaC =
   funs = (\ (x, _, _) -> x) $ translateOps (kindMapId kindR) $ MSign.ops sigma
   funSorts = atLeastOneSort $ MSign.ops sigma
   funs' = (\ (x, _, _) -> x) $ translateOps' (kindMapId kindR) funSorts
-  makeKind s = token2id $ mkSimpleId $ "kind_" ++ show s
   {- opTypeKind (CSign.OpType oK oArgs oRes) =
-              CSign.OpType oK (map makeKind oArgs) (makeKind oRes) -}
+              CSign.OpType oK (map kindId oArgs) (kindId oRes) -}
  in sigmaC
-         {CSign.sortSet = Set.union sorts $ Set.map makeKind sorts,
+         {CSign.sortSet = Set.union sorts $ Set.map kindId sorts,
           CSign.sortRel = Rel.union subsorts $ Rel.union
-                              (Rel.map makeKind subsorts)
+                              (Rel.map kindId subsorts)
                               $ Rel.fromSet
-                              $ Set.map (\ x -> (x, makeKind x)) sorts,
+                              $ Set.map (\ x -> (x, kindId x)) sorts,
           CSign.opMap = CSign.addOpMapSet funs funs',
            -- Map.map (\s -> Set.union s $ Set.map opTypeKind s) funs,
           CSign.predMap = rewPredicates $ Set.union sorts
-                          $ Set.map makeKind sorts
+                          $ Set.map kindId sorts
 
           }
 
@@ -135,7 +134,6 @@ morExtension :: MMor.Morphism ->  -- sigma:\Sigma -> \Sigma'
                 (CMor.CASLMor, CMor.CASLMor)
 morExtension phi tExt sCASL tCASL =
  let
-   makeKind s = genName $ "kind_" ++ show s
    changeMap f mapF = Map.mapKeys f $
                        Map.map f mapF
    sortF = changeMap MSymbol.toId $ MMor.sortMap phi
@@ -154,7 +152,7 @@ morExtension phi tExt sCASL tCASL =
              CMor.msource = sCASL,
              CMor.mtarget = tExt,
              CMor.sort_map = Map.union sortF $
-                              changeMap makeKind sortF,
+                              changeMap kindId sortF,
              CMor.op_map = Map.fromList $
                             foldl (++) [] $
                             map genOps $ Map.keys $

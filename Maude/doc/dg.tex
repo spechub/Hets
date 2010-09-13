@@ -1,9 +1,9 @@
 %!TEX root = main.tex
 
-Images???
-
-We show in this section the details of the generation of development
-graphs for Maude specifications.
+We describe in this section how Maude structuring mechanisms
+described in Section \ref{subsec:maude}
+are translated into development graphs. Then, we explain how these development
+graphs are normalized to deal with freeness constraints.
 
 \subsection{Parameterized modules}
 
@@ -50,37 +50,40 @@ graph remains unchanged.
 
 \subsection{Importations}
 
-Maude allow three different kinds of module importation:
-
+Each Maude module generates two nodes in the development
+graph. The first one contains the theory equipped with the usual
+loose semantics. The second one, linked
+to the first one with a free definition link (whose signature morphism
+is detailed below), contains the same signature but
+no local axioms and stands for the free models of the theory.
+Note that Maude theories only generate one node, since their initial
+semantics is not used by Maude specifications.
+When importing a module, we will select the node used depending on the
+chosen importation mode:
 \begin{itemize}
-\item Protecting, that means that \emph{no junk} and \emph{no confusion}
-are added to the imported module expression.
-\item Extending, that means that allows ``junk'' to be added to imported
-module expression, while ``confusion'' is forbidden.
-\item Including, that allows both ``junk'' and ``confusion'' to be
-added to the imported module expression.
+
+\item
+The \verb"protecting" mode generates a non-persistent free link between
+the current node and the node standing for the free semantics of the
+included one. 
+
+\item
+The \verb"extending" mode generates a global link with the annotation
+\textsf{PCons?}, that stands for proof-theoretic conservativity and that
+can be checked with a special conservativity checker that is
+integrated into \Hets.
+
+\item
+The \verb"including" mode generates a global definition link between the
+current node  and the node standing for the loose semantics of the
+included one.
 \end{itemize}
 
-Each of these importation modes generates links with different proofs
-obligations in the development graph:
+The summation module expression generates a new node that includes all 
+the information in its summands. Note that this new node can also need
+a node with its free model if it is imported in protecting mode.
 
-\begin{itemize}
-\item When a module expression $M_1$ is imported in protecting mode
-by a module $M_2$ a new node $M_1'$ with the same signature that $M_1$
-is generated and a free link between $M_1$ and $M_1'$
-placed, while a definition link between $M_1'$ and $M_2$.
-\item Extending mode generates a theorem link with the annotation
-\verb"PCons", standing for proof-theoretic conservativity. This
-constraint cannot be discharged in the current version of the system.
-\item Including mode generates a definition link from the imported module
-expression to the module that imports it.
-\end{itemize}
-
-The morphism in all these links depends of the type of module expression.
-It will be an inclusion if the module expression does not contains a
-renaming, while it be a morphism in other case.
-
-\subsection{Views}
+\subsection{Views}\label{subsec:dg_views}
 
 Maude views have a theory as source and either a module or a theory
 as target. All the sorts and operators declared in the source theory
@@ -89,7 +92,7 @@ have to be mapped to sorts and operators in the target
 A particular case of mapping between operators is the mapping between
 terms, that has the general form \emph{op $e$ to term $t$}
 where $e$ is a term consisting of a 
-single operator applied to variablesÑdeclared either on-the-ßy or with
+single operator applied to variables declared either on-the-fly or with
 variable declarations in the same view and the target term is any term
 with variables, those in the source $e$ in the corresponding sorts
 resulting from the mapping.
@@ -98,6 +101,360 @@ Since this shortcut allows to map operators with different profiles,
 
 
 
+%%%%%% PAPER
+
+Signature morphisms are produced in different ways; explicitly, 
+renaming of module expressions and  views lead to signature
+morphisms; however, implicitly we also find other morphisms:
+the sorts defined in the theories are qualified
+with the parameter in order to distinguish sorts with the same name that
+will be instantiated later by different ones; moreover, sorts defined
+(not imported) in parameterized modules can be parameterized as well,
+so when the theory is instantiated with a view these sorts are also
+renamed (e.g. the sort \verb"List{X}" for generic lists can become
+\verb"List{Nat}").
+
+The model class of parameterized modules
+consists of free extensions of the models of their parameters, that are
+persistent on sorts, but not on kinds. This notion of freeness has been 
+studied in \cite{BouhoulaJM00} under assumptions like existence of top sorts for kinds
+and sorted variables in formulas; our results hold under similar
+hypotheses. Thus,
+we use the same non-persistent free links described for protecting
+importation to link these modules with their corresponding theories.
+%
+% In order not to break the calculus, we 
+%need a way to normalize them. The idea is to replace them with a semantically 
+%equivalent development graph in CASL, as follows.
+%
+%a global definition link to
+%the theories
+%of their parameters. In this case, the above free definition link is
+%decorated with the inclusion signature morphism from the parameter
+%signature to the module's signature (while in the unparameterized
+%case, the parameter signature is taken to be empty).
+%
+Views do not generate nodes in the development graph but theorem links
+between the node corresponding to the source theory and the node with
+the free model of the target. However, Maude views
+provide a special kind of mapping between terms, that can in general
+map functions of different arity. When this mapping is used we generate
+a new inner node extending the signature of the target to include functions
+of the adequate arity.
+
+We illustrate how to build the development graph with an example. Consider
+the following Maude specifications:
+
+{\codesize
+\begin{verbatim}
+fmod M1 is                                         fmod M2 is
+ sort S1 .                                           sort S2 .
+ op _+_ : S1 S1 -> S1 [comm] .                     endfm
+endfm
+
+th T is                                            mod M3{X :: T} is
+ sort S1 .                                          sort S4 .
+ op _._ : S1 S1 -> S1 .                            endm
+ eq V1:S1 . V2:S1 = V2:S1 . V1:S1 [nonexec] . 
+endth
+
+mod M is                                           view V from T to M is
+ ex M1 + M2 * (sort S2 to S) .                      op _._ to _+_ .
+endm                                               endv
+\end{verbatim}
+}
+
+\begin{figure}[t]
+\begin{center}
+\includegraphics[scale=.47]{dg}
+\caption{Development Graph for Maude Specifications\label{fig:dg}}
+\end{center}
+\end{figure}
+
+\noindent \Hets builds the graph shown in Fig. \ref{fig:dg},
+where the following steps take place:
+\begin{itemize}
+\item Each module has generated a node with its name and
+another primed one that contains the initial model, while both of them
+are linked with a non-persistent free link. Note that theory \verb"T" did not
+generate this primed node.
+\item The summation expression has created a new node that includes the theories
+of \verb"M1" and \verb"M2", importing the latter with a renaming; this new
+node, since it is imported in \verb"extending" mode, uses a link with the
+\textsf{PCons?} annotation.
+\item There is a theorem link between \verb"T" and the free (here: initial) model of
+\verb"M". This link is labeled with the mapping defined in the view \verb"V".
+\item The parameterized module \verb"M3" includes the theory of its parameter
+with a renaming, that qualifies the sort. Note that these nodes are connected
+by means of a non-persistent freeness link.
+\end{itemize}
+
+It is straightforward to show:
+\begin{theorem}
+The translation of Maude modules into development graphs is
+semantics-preserving. %\ednote{Undefined semantics-preserving}
+\end{theorem}
+
+Once the development graph is built, we can apply the (logic
+independent) calculus rules that reduce global theorem links to local
+theorem links, which are in turn discharged by local theorem proving
+\cite{MAH-05-a}.  This can be used to prove Maude views, like e.g.\
+``natural numbers are a total order.''  We show in the next
+section how we deal with the freeness constraints imposed by free 
+definition links.
+
+\subsection{Normalization of free definition links}
+\label{sec:free}
+
+Maude uses initial and free semantics intensively. The semantics of
+freeness is, as mentioned, different from the one used in \CASL in
+that the free extensions of models are required to be persistent
+only on sorts and new error elements can be added on the
+interpretation of kinds. Attempts to design the translation to \CASL
+in such a way that Maude free links would be translated to usual free
+definition links in \CASL have been unsuccessful. We decided thus to
+introduce a special type of links to represent Maude's freeness in
+\CASL.  In order not to break the development graph calculus, we need
+a way to normalize them. The idea is to replace them with a
+semantically equivalent development graph in \CASL. The main idea is
+to make a free extension persistent by duplicating parameter sorts
+appropriately, such that the parameter is always explicitly included
+in the free extension.
+
+For any Maude signature $\Sigma$, let us define
+an extension $\Sigma^\# = (S^\#, \leq^\#, F^\#, P^\#)$ of the
+translation $\Phi(\Sigma)$ of $\Sigma$ to \CASL as follows:
+
+\begin{itemize}
+
+ \item $S^\#$ unites with the sorts of $\Phi(\Sigma)$ the set 
+       $\{[s] \mid s \in Sorts(\Sigma)\}$;
+
+ \item $\leq^\#$ extends the subsort relation $\leq$ with pairs
+       $(s, [s])$ for each sort $s$ and $([s],[s'])$ for any sorts $s \leq s'$;
+
+ \item $F^\#$ adds the function symbols $\{f:[w] \rightarrow [s]\}$ for all
+       function symbols on sorts $f:w \rightarrow s $;\footnote{$[x_1 \ldots x_n]$
+       is defined to be $[x_1] \ldots [x_n]$.}
+ \item $P^\#$ adds the predicate symbol $rew$ on all new sorts.
+\end{itemize}
+
+Now, we consider a Maude non-persistent free definition link and let
+$\sigma: \Sigma \rightarrow \Sigma'$ be the morphism labeling it.%
+\footnote{In Maude, this would usually be an injective renaming.}
+We define a \CASL signature morphism 
+ $\sigma^\# : \Phi(\Sigma) \rightarrow \Sigma'^\#$: on sorts, 
+ $\sigma^\#(s) := \sigma^{sort}(s)$ and $\sigma^\#([s]):=[\sigma^{sort}(s)]$;
+ on operation symbols, we can define $\sigma^ \#(f) := 
+ \sigma^{op}(f)$ and this is correct because the operation symbols were
+ introduced in $\Sigma'^\#$; $rew$ is mapped identically.
+
+
+The normalization of Maude freeness is then illustrated in Fig.\ref{nf}.
+Given a free non-persistent definition link $\flinka{M}{\sigma}{N}$, with 
+$\sigma:\Sigma\rightarrow \Sigma_N$, we first take the translation of the nodes
+to \CASL (nodes $M'$ and $N'$) and then introduce a new node, $K$, labeled with 
+$\Sigma^\#_N$, a global definition link from $M'$ to $M''$ labeled with the 
+inclusion $\iota_N$ of $\Sigma_N$ in $\Sigma^\#_N$, a free definition link from 
+$M''$ to $K$ labeled with 
+$\sigma^\#$ and a hiding definition link from $K$ to $N'$ labeled with the
+inclusion $\iota_N$.\footnote{The arrows without labels in Fig.\ref{nf} 
+correspond to heterogeneous links from Maude to CASL.}
+
+\begin{wrapfigure}[12]{r}[0cm]{3.5cm}
+\xymatrix{
+M \ar@{=>}[rr]_{n.p.free}^{\sigma} \ar@{=>}[d]& & N \ar@{=>}[dd]\\
+M'\ar@{=>}[d]^{\iota_N}& & \\
+M''\ar@{=>}[r]_{free}^{\sigma^\#} & K \ar@{=>}[r]_{hide}^{\iota_n} & N'
+}
+\caption{Normalization of Maude free links}\label{nf}
+
+\end{wrapfigure}
+
+Notice that the models of $N$ are Maude reducts of \CASL models of $K$, 
+reduced along the inclusion $\iota_N$. 
+
+The next step is to eliminate \CASL free definition links. 
+The idea is to use then a transformation specific to the second-order 
+extension of \CASL to normalize freeness. 
+The intuition behind this construction is that
+it mimics the quotient term algebra construction,
+that is, the free model is specified as the homomorphic image
+of an absolutely free model (i.e.\ term model).
+
+We are going to make use of the following known facts \cite{Reichel87}:
+
+\begin{fact}
+
+Extensions of theories in Horn form admit free extensions of models.
+
+\end{fact}
+
+\begin{fact}
+
+Extensions of theories in Horn form are monomorphic.
+
+\end{fact}
+
+Given a free definition link $\flinka{M}{\sigma}{N}$, with 
+$\sigma:\Sigma\rightarrow \Sigma^N$ such that $Th(M)$ is in Horn 
+form, replace it with 
+\xymatrix{
+M \ar@{=>}[r]^{incl} &
+K \ar@{=>}[r]^{incl}_{hide} &
+N'
+}, where $N'$ has the same signature as $N$, $incl$ denotes inclusions and 
+the node $K$ is constructed as follows. 
+
+The signature $\Sigma^K$ consists of the signature $\Sigma^M$ disjointly 
+united with a copy of $\Sigma^M$, denoted $\iota(\Sigma_M)$ which makes all function symbols total 
+(let us denote $\iota(x)$ the corresponding symbol in this copy for each
+symbol $x$ from the signature $\Sigma^M$) and augmented with new operations 
+$h: \iota(s) \rightarrow ?s$, for any sort $s$ of $\Sigma^M$ and 
+$make_s:s\rightarrow \iota(s)$, for any sort $s$ of the source
+signature $\Sigma$ of the morphism $\sigma$  labelling the free definition link.
+
+The axioms $\psi^K$ of the node $K$ consist of:
+
+\begin{itemize}
+
+\item
+sentences imposing the bijectivity of \textit{make};
+
+\item axiomatization of the sorts in $\iota(\Sigma_M)$ as free types
+with all operations as constructors, including $make$ for the sorts
+in $\iota(\Sigma)$;
+
+\item homomorphism conditions for $h$:
+ $$ h(\iota(f)(x_1, \dots, x_n)) = f(h(x_1), \dots, h(x_n)) $$
+ 
+and
+
+$$\iota(p)(t_1, \dots, t_n) \Rightarrow p(h(t_1), \dots, h(t_n))$$
+
+\item surjectivity of homomorphisms:
+
+$$\forall y : s . \exists x:\iota(s) . h(x) \EEQ y$$
+
+\item a second-order formula saying that the kernel of $h$ is the least
+partial predicative congruence\footnote
+{A partial predicative congruence consists of a symmetric 
+and transitive binary relation for each sort and a relation
+of appropriate type for each predicate symbol.} satisfying
+$Th(M)$. This is done by quantifying over a predicate symbol for each sort
+for the binary relation and one predicate symbol for each relation symbol
+as follows: 
+
+$$\begin{array}{l}
+ \forall \{P_s : \iota(s),  \iota(s)\}_{s \in Sorts(\Sigma_M)} ,
+           \{P_{p:w} : \iota(w)\} _{p:w \in \Sigma_M} \\
+ .~ 
+\mathit{symmetry}
+ \land \mathit{transitivity}
+ \land  \mathit{congruence}
+\land \mathit{satThM}
+\implies \mathit{largerThenKerH}
+\end{array}
+$$
+
+where $\mathit{symmetry}$ stands for
+$$\bigwedge_{s\in Sorts(\Sigma^M)} \forall x:{\iota(s)},y:{\iota(s)}.P_s(x,y)\implies P_s(y, x),$$
+$\mathit{transitivity}$ stands for
+$$\bigwedge_{s\in Sorts(\Sigma^M)} \forall x:{\iota(s)},y:{\iota(s)},z:{\iota(s)}.P_s(x, y)\land P_s(y, z)\implies P_s(x, z),$$
+$\mathit{congruence}$ stands for
+$$
+\begin{array}{l}
+\bigwedge_{f_{w\rightarrow s}\in\Sigma^M} \forall x_1\ldots x_n:{\iota(w)},y_1\ldots y_n:{\iota(w)}\,.\,\,\\
+D(\iota(f_{w,s})(\bar{x}))\land D(\iota(f_{w,s})(\bar{y}))\land P_w(\bar{x},\bar{y})
+\implies P_s(\iota(f_{w,s})(\bar{x}),\iota(f_{w,s})(\bar{y}))
+\end{array}
+$$ 
+
+and
+
+$$
+\begin{array}{l}
+\bigwedge_{p_w \in\Sigma^M} \forall x_1\ldots x_n:{\iota(w)},y_1\ldots y_n:{\iota(w)}\,.\,\,\\
+D(\iota(f_{w,s})(\bar{x}))\land D(\iota(f_{w,s})(\bar{y}))\land P_w(\bar{x},\bar{y})
+\implies P_{p:w}(\bar{x}) \Leftrightarrow P_{p:w}(\bar{y})
+\end{array}
+$$
+\noindent where $D$ indicates definedness. $\mathit{satThM}$ stands for
+$$Th(M)[\EEQ/P_s; p:w/P_{p:w}; D(t)/P_s(t,t); t=u/P_s(t,u)\lor(\neg P_s(t,t)\land\neg P_s(u,u))]$$
+where, for a set of formulas $\Psi$, $\Psi[sy_1/sy'_1;\ldots ;sy_n/sy'_n]$
+denotes the simultaneous substitution of $sy'_i$ for $sy_i$ in
+all formulas of $\Psi$ (while possibly instantiating the meta-variables
+$t$ and $u$).
+%
+Finally $\mathit{largerThenKerH}$ stands for
+$$\begin{array}{l}
+\bigwedge_{s\in Sorts(\Sigma^M)} \forall x:{\iota(s)},y:{\iota(s)}.h(x)\EEQ h(y)\implies P_s(x, y)\\
+\bigwedge \land_{p_w\in\Sigma^M} \forall \bar{x}:{\iota(w)}.\iota(p:w)(\bar{x})
+\implies P_{p:w}(\bar{x})
+\end{array}
+$$
+
+
+\end{itemize}
+
+\begin{proposition}
+
+The models of the nodes $N$ and $N'$ are
+the same.
+
+\end{proposition}%\ednote{AR: Proof in appendix?}
+
+{\noindent\it Proof.}
+%
+Let $n$ be a $N$-model. To prove that $n$ is also a $N'$-model,
+we need to show that it has a $K$-expansion.
+
+Let us define the following $\Sigma_K$ model, denoted $k$:
+
+\begin{itemize}
+
+\item on $\Sigma_M$, $k$ coincides with $n$;
+
+\item on $\iota(\Sigma_M)$, the interpretation of sorts and function symbols 
+is given by the free types axioms (i.e. sorts are interpreted as set of terms, 
+operations $\iota(f)$ map terms $t_1,..t_n$ to the term
+$\iota(f)(t_1,..,t_n)$).  We define interpretation of predicates after defining $h$;
+
+\item $make$ assigns to each $x$ the term $make(x)$;
+
+\item the homomorphism $h$ is defined inductively as follows:
+
+ \begin{itemize}
+
+  \item $h(make(x)) = x$, if $x \in n_s$ and $s\in Sorts(\Sigma)$;
+
+ \item $h(make(t)) = h(t)$, otherwise;
+
+ \item $h(\iota(f)(t_1,..t_n))$ is defined iff $f(h(t_1), ..h(t_n))$ is defined in $n$
+          and then  $h(\iota(f)(t_1,..t_n)) = f(h(t_1), ..h(t_n))$;
+ \end{itemize}
+
+\item for predicates in $\iota(\Sigma_M)$ we define
+         $\iota(p)(t_1,..t_n)$ iff $p(h(t_1),..,h(t_n))$.
+
+\end{itemize}
+
+Notice that the first three types of axioms of the node $K$ hold by construction and also
+notice that $ker(h)$ satisfies $Th(M)$ because $n$ is a $M$-model.
+The surjectivity of $h$ and the minimality of $ker(h)$ are exactly the
+``no junk'' and the ``no confusion'' properties of the free model $n$.  
+
+For the other inclusion, let $n'$ be a model of $N'$, $n_0$ be its $\Sigma$-reduct and
+$k'$ a $K$-expansion of $n'$.
+Using the fact that the theory of $M$ is in Horn form, we get an expansion of $n_0$ to a
+$\sigma$-free model $n$. We have seen that all free models are also models of $N'$ and moreover
+we have seen that $ker(k_h)$ is the least predicative congruence satisfying $Th(M)$. The free types 
+axioms of $K$ fix the interpretation of $\iota(\Sigma_M)$ and therefore $ker(k'_h)$ and
+$ker(k_h)$ are both minimal on the same set, and must be the same. This and the surjectivity
+of $k_h$ and $k'_h$ allow us to define easily
+an isomorphism between $n$ and $n'$ and because $n'$ is isomorphic with a free model it must be free as well.
+
+\qed
 
 
 
