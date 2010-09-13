@@ -1005,8 +1005,6 @@ data DGraph = DGraph
   , morMap :: Map.Map MorId G_morphism -- ^ theory map
   , proofHistory :: ProofHistory -- ^ applied proof steps
   , redoHistory :: ProofHistory -- ^ undone proofs steps
-  , openlock :: Maybe (MVar ())
-  -- ^ control of graph display
   } deriving Show
 
 emptyDG :: DGraph
@@ -1024,8 +1022,7 @@ emptyDG = DGraph
   , thMap = Map.empty
   , morMap = Map.empty
   , proofHistory = SizedList.empty
-  , redoHistory = SizedList.empty
-  , openlock = Nothing }
+  , redoHistory = SizedList.empty }
 
 type LibEnv = Map.Map LibName DGraph
 

@@ -40,9 +40,8 @@ import GUI.GraphAbstraction
 import qualified GUI.HTkUtils as HTk
 
 import Data.IORef
-import qualified Data.Map as Map (lookup, insert)
+import qualified Data.Map as Map (lookup)
 
-import Control.Concurrent.MVar
 import Control.Monad
 
 import Interfaces.DataTypes
@@ -65,18 +64,9 @@ convertGraph gInfo title showLib = do
   Just ist -> do
    let libEnv = i_libEnv ist
    case Map.lookup ln libEnv of
-    Just dgraph -> case openlock dgraph of
-      Just lock -> do
-        notopen <- tryPutMVar lock ()
-        when notopen $ do
+    Just dgraph -> do
             initializeGraph gInfo title showLib
             unless (isEmptyDG dgraph) $ updateGraph gInfo (convert dgraph)
-      Nothing -> do
-        lock <- newEmptyMVar
-        let nwle = Map.insert ln dgraph {openlock = Just lock} libEnv
-            nwst = ost { i_state = Just $ ist { i_libEnv = nwle}}
-        writeIORef (intState gInfo) nwst
-        convertGraph gInfo title showLib
     Nothing -> error $ "development graph with libname " ++ show ln
                        ++ " does not exist"
 

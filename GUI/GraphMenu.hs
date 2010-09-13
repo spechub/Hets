@@ -26,8 +26,6 @@ import GUI.GtkAutomaticProofs
 import GUI.GtkAddSentence
 #endif
 
-import Control.Concurrent.MVar
-
 import Data.IORef
 import qualified Data.Map as Map
 
@@ -189,26 +187,10 @@ createSaveAs gi file = Just (
 -- | Returns the close-function
 createClose :: GInfo -> IO Bool
 createClose gi = do
- let ln = libName gi
-     oGrRef = openGraphs gi
- ost <- readIORef $ intState gi
- case i_state ost of
-  Nothing -> return False
-  Just ist -> do
-   let le = i_libEnv ist
-   case Map.lookup ln le of
-    Just dgraph -> case openlock dgraph of
-        Just lock -> do
-          notopen <- isEmptyMVar lock
-          if notopen then
-            error "development graph seems to be closed already"
-            else takeMVar lock
-        Nothing -> error $ "MVar of " ++ show ln ++ " not initialized"
-    Nothing -> error $ "development graph with libname " ++ show ln
-                       ++ " does not exist"
+   let oGrRef = openGraphs gi
    updateWindowCount gi pred
    oGraphs <- readIORef oGrRef
-   writeIORef oGrRef $ Map.delete ln oGraphs
+   writeIORef oGrRef $ Map.delete (libName gi) oGraphs
    return True
 
 -- | Creates the global menu
