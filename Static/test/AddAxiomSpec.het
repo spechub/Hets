@@ -1,0 +1,4 @@
+sort s, t;
+ops a, o : s
+. a = o
+. def o
