@@ -112,9 +112,8 @@ fileToLibName opts efile =
     let paths = libdirs opts
         file = rmSuffix efile -- cut of extension
         pps = filter snd $ map (\ p -> (p, isPrefixOf p file)) paths
-        nfile = dropWhile (== '/') $         -- cut off leading slashes
-                case pps of
+        nfile = case pps of
                   [] -> file
                   (path, _) : _ -> drop (length path) file
                    -- cut off libdir prefix
-    in emptyLibName $ filter (`notElem` ". ") nfile
+    in emptyLibName $ dropWhile (== '/') $ filter (`notElem` ". ") nfile
