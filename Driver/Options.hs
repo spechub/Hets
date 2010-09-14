@@ -134,6 +134,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , modelSparQ :: FilePath
   , outdir :: FilePath
   , outtypes :: [OutType]
+  , xupdate :: FilePath
   , recurse :: Bool
   , verbose :: Int
   , defLogic :: String
@@ -164,6 +165,7 @@ defaultHetcatsOpts = HcOpt
   , modelSparQ = ""
   , outdir = ""
   , outtypes = [] -- no default
+  , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
   , verbose = 1
@@ -225,6 +227,7 @@ data Flag =
   | InType InType
   | LibDirs String
   | OutDir FilePath
+  | XUpdate FilePath
   | ModelSparQ FilePath
   | OutTypes [OutType]
   | Specs [SIMPLE_ID]
@@ -251,6 +254,7 @@ makeOpts opts flg = case flg of
     ModelSparQ x -> opts { modelSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
     NormalForm -> opts { computeNormalForm = True }
@@ -496,6 +500,8 @@ options = let
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
+    , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
+      "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
       "output also imported libraries"
     , Option "A" [applyAutomaticRuleS] (NoArg ApplyAutomatic)

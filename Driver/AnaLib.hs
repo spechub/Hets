@@ -22,6 +22,8 @@ import Proofs.NormalForm
 import Static.DevGraph
 import Static.History
 import Static.AnalysisLibrary
+import Static.FromXml
+import Static.ApplyChanges
 
 import Comorphisms.LogicGraph
 
@@ -29,6 +31,7 @@ import Common.Result
 import Common.ResultT
 import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
+import Common.XUpdate
 
 import Driver.Options
 import Driver.ReadFn
@@ -80,8 +83,20 @@ anaLibExt opts file libEnv initDG = do
                 envN = fromMaybe lenv $ maybeResult envRes
                 nEnv = if applyAutomatic opts || hasPrfOut opts
                        then automatic ln envN else envN
+                xd = xupdate opts
             showDiags opts $ diags envRes
-            return $ Just (ln, nEnv)
+            uEnv <- if null xd then return nEnv else do
+              putIfVerbose opts 2 $ "Reading " ++ xd
+              xs <- readFile xd
+              let Result es mdg = do
+                    cs <- anaXUpdates xs
+                    acs <- mapM changeDG cs
+                    foldM (flip applyChange) (lookupDGraph ln nEnv) acs
+              showDiags opts es
+              return $ case mdg of
+                Nothing -> nEnv
+                Just fdg -> Map.insert ln fdg nEnv
+            return $ Just (ln, uEnv)
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LibName -> IO LibEnv
 readPrfFile opts ps ln = do
