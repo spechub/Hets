@@ -14,12 +14,14 @@ module Static.ApplyChanges where
 
 import Static.DevGraph
 import Static.History
+import Static.FromXml
+
+import Common.Utils (readMaybe)
 
 import Data.Graph.Inductive.Graph as Graph
 
 import Control.Monad
 
-import Static.FromXml
 import Debug.Trace
 
 lookupNodeByNodeName :: NodeName -> DGraph -> [LNode DGNodeLab]
@@ -99,4 +101,7 @@ update str se dg =
       [] -> fail $ err ++ "node not found: " ++ s
       _ -> fail $ err ++ "ambiguous node: " ++ s
     Just nse -> fail $ err ++ "cannot remove node symbols\n" ++ show nse
+  NextLinkId -> case readMaybe str of
+    Just i -> return dg { getNewEdgeId = EdgeId i }
+    Nothing -> fail $ err ++ "could not update nextlinkid using: " ++ str
   _ -> fail $ err ++ "unimplemented selection:\n" ++ show se
