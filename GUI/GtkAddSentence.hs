@@ -39,6 +39,7 @@ import Common.Utils
 
 import Control.Monad
 import Data.IORef
+import Data.Maybe
 
 import Text.ParserCombinators.Parsec
 
@@ -78,7 +79,8 @@ anaSentence gi n lbl sen = case dgn_theory lbl of
           in case res of
             Nothing -> errorFeedback False $ showRelDiags 1 ds
             Just (_, ExtSign sig2 _, sens2) ->
-              if is_subsig lid sig2 ps then case sens2 of
+              let Result es mm = inclusion lid sig2 ps in
+              if isJust mm then case sens2 of
                 [_] -> case joinSens (toThSens sens2) sens of
                   newSens -> do
                     addSentence gi n lbl $ G_theory lid sign si newSens
@@ -87,7 +89,8 @@ anaSentence gi n lbl sen = case dgn_theory lbl of
                 [] -> errorFeedback False "no sentence recognized"
                 _ -> errorFeedback False $ "multiple sentences recognized\n"
                      ++ show (vcat $ map (print_named lid) sens2)
-              else errorFeedback False "signature must not change"
+              else errorFeedback False $ "signature must not change\n"
+                   ++ showRelDiags 1 es
 
 addSentence :: GInfo -> Int -> DGNodeLab -> G_theory -> IO ()
 addSentence gi n lbl th = do
