@@ -18,6 +18,7 @@ import OWL.AS
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.List
 
 import Common.AS_Annotation
 import Common.Result
@@ -225,6 +226,6 @@ isToProve [] = False
 isToProve (anno : r) =
     case anno of
       ExplicitAnnotation auri (Constant value (Typed _)) ->
-          if localPart auri == "Implied" then value == "true"
+          if localPart auri == "Implied" then isInfixOf "true" value
             else isToProve r
       _ -> isToProve r
