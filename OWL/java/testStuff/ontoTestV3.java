@@ -1,15 +1,13 @@
-import org.semanticweb.owl.apibinding.OWLManager;
-import org.semanticweb.owl.io.OWLXMLOntologyFormat;
-import org.semanticweb.owl.model.*;
-
-import java.net.URI;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.OWLXMLOntologyFormat;
+import org.semanticweb.owlapi.model.*;
 
 import java.util.Set;
 import java.util.Iterator;
 
-import org.semanticweb.owl.io.ToStringRenderer;
+import org.semanticweb.owlapi.io.ToStringRenderer;
 
-public  class ontoTestV2 {
+public  class ontoTestV3 {
 
     private static Set<OWLAxiom> axioms;
     private static ToStringRenderer out;
@@ -17,7 +15,7 @@ public  class ontoTestV2 {
     public static void main(String[] args) {
 	try {
 	    loader(args[0]);
-	    out = org.semanticweb.owl.io.ToStringRenderer.getInstance();
+	    out = org.semanticweb.owlapi.io.ToStringRenderer.getInstance();
 	    Iterator<OWLAxiom> it = axioms.iterator();
 	    while (it.hasNext()) {
 		System.out.println(out.getRendering(it.next()));
@@ -34,9 +32,9 @@ public  class ontoTestV2 {
     {
 	OWLOntologyManager manager = 
 	    OWLManager.createOWLOntologyManager();
-	URI physicalURI = URI.create(onto);
+	IRI physicalURI = IRI.create(onto);
 	OWLOntology ontology = 
-	    manager.loadOntologyFromPhysicalURI(physicalURI);
+	    manager.loadOntologyFromOntologyDocument(physicalURI);
 	axioms = ontology.getAxioms();
     }
 }
