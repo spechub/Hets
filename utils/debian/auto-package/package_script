@@ -43,6 +43,8 @@ echo ::Done
 #checking out latest Hets-lib
 echo ::Checking out $HETS_LIB_REPO ...
 svn -q export $HETS_LIB_REPO $HETS_FOLDER/hets-lib
+export HETS_LIB=$HETS_FOLDER/hets-lib
+export HETS_ISABELLE_LIB=$HETS_FOLDER/hets-lib/Isabelle
 echo ::Done
 
 #checking out Hets-owl-tools and compiling jar files
@@ -99,7 +101,7 @@ echo ::Done
 #building
 echo ::Starting package building
 cd $HETS_FOLDER
-debuild -us -uc
+debuild -e HETS_LIB -e HETS_ISABELLE_LIB -us -uc
 cd ..
 echo ::Done
 ls
