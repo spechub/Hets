@@ -8,6 +8,8 @@ Stability   :  provisional
 Portability :  portable
 -}
 
+module Main where
+
 import Interfaces.Command
 
 import CMDL.ParseProofScript
