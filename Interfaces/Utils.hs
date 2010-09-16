@@ -211,7 +211,7 @@ conservativityChoser useGUI checkers = case checkers of
   [] -> return $ fail "No conservativity checker available"
   hd : tl ->
     if useGUI && not (null tl) then do
-      chosenOne <- listBox "Pic a conservativity checker"
+      chosenOne <- listBox "Pick a conservativity checker"
                                 $ Prelude.map checkerId checkers
       case chosenOne of
         Nothing -> return $ fail "No conservativity checker chosen"
