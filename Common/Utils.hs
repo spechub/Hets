@@ -23,6 +23,7 @@ module Common.Utils
   , trimRight
   , nubOrd
   , nubOrdOn
+  , atMaybe
   , readMaybe
   , mapAccumLM
   , mapAccumLCM
@@ -126,6 +127,12 @@ nubOrdOn :: Ord b => (a -> b) -> [a] -> [a]
 nubOrdOn g = let f a s = let e = g a in
                    if Set.member e s then Nothing else Just (Set.insert e s)
   in nubWith f Set.empty
+
+-- | safe variant of !!
+atMaybe :: [a] -> Int -> Maybe a
+atMaybe l i = if i < 0 then Nothing else case l of
+  [] -> Nothing
+  x : r -> if i == 0 then Just x else atMaybe r (i - 1)
 
 readMaybe :: Read a => String -> Maybe a
 readMaybe s = case filter (all isSpace . snd) $ reads s of

@@ -10,15 +10,24 @@ Portability :  non-portable(Grothendieck)
 adjust development graph according to xupdate information
 -}
 
-module Static.ApplyChanges where
+module Static.ApplyChanges (applyChange) where
 
 import Static.DevGraph
+import Static.GTheory
 import Static.History
 import Static.FromXml
 
-import Common.Utils (readMaybe)
+import Logic.Coerce
+import Logic.Grothendieck
+import Logic.Logic
+import Logic.ExtSign
+
+import Common.DocUtils
+import Common.Result
+import Common.Utils (readMaybe, atMaybe)
 
 import Data.Graph.Inductive.Graph as Graph
+import qualified Data.Set as Set
 
 import Control.Monad
 
@@ -33,7 +42,6 @@ applyChange (SelChangeDG se ch) dg = case ch of
   UpdateChDG str -> update str se dg
   AddChDG _ ls ->
     foldM (add se) dg ls
-
 
 add :: Monad m => SelElem -> DGraph -> AddChangeDG -> m DGraph
 add se dg ch = case ch of
@@ -73,8 +81,7 @@ remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
         Nothing -> fail $ err ++ "cannot remove all declarations from: " ++ s
         Just (si, b) -> if b then
           trace ("ignore removing symbol attributes from: " ++ s) $ return dg
-          else fail $ err ++ "cannot remove symbol "
-              ++ show si ++ " of: " ++ s
+          else removeNthSymbol si dg i
     _ -> fail $ err ++ "ambiguous node: " ++ s
   LinkElem eId src tar m -> let e = showEdgeId eId in case m of
     Nothing ->
@@ -109,3 +116,26 @@ update str se dg =
     Just i -> return dg { getNewEdgeId = EdgeId i }
     Nothing -> fail $ err ++ "could not update nextlinkid using: " ++ str
   _ -> fail $ err ++ "unimplemented selection:\n" ++ show se
+
+removeNthSymbol :: Monad m => Int -> DGraph -> LNode DGNodeLab -> m DGraph
+removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
+  case nodeInfo lbl of
+  DGRef _ _ -> fail $ "cannot remove symbols from ref-node: " ++ nn
+  DGNode orig _ -> case orig of
+    DGBasicSpec _ syms -> case atMaybe (Set.toList syms) (n - 1) of
+      Nothing -> fail $ "symbol " ++ show n ++ " not found in node: " ++ nn
+        ++ "\n" ++ showDoc syms ""
+      Just (G_symbol lid sym) -> case dgn_theory lbl of
+        G_theory lid2 sig _ sens _ ->
+          let Result ds mr = ext_cogenerated_sign lid2
+                (Set.singleton $ coerceSymbol lid lid2 sym) sig
+          in case mr of
+            Nothing -> fail $ "hiding " ++ showDoc sym " in " ++ nn ++
+              " failed:\n" ++ showRelDiags 1 ds
+            Just mor -> let
+              newLbl = lbl { dgn_theory = G_theory lid2
+                               (makeExtSign lid2 $ dom mor) startSigId
+                               sens startThId
+                           , globalTheory = Nothing } -- needs recomputation
+              in return $ changeDGH dg $ SetNodeLab lbl (v, newLbl)
+    _ -> fail $ "cannot remove symbol from non-basic-spec node: " ++ nn
