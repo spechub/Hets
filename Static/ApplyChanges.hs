@@ -31,7 +31,7 @@ applyChange :: Monad m => SelChangeDG -> DGraph -> m DGraph
 applyChange (SelChangeDG se ch) dg = case ch of
   RemoveChDG -> remove se dg
   UpdateChDG str -> update str se dg
-  AddChDG _ ls  ->
+  AddChDG _ ls ->
     foldM (add se) dg ls
 
 
@@ -62,16 +62,20 @@ add se dg ch = case ch of
 
 remove :: Monad m => SelElem -> DGraph -> m DGraph
 remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
-  NodeElem nn m -> let s = showName nn in case m of
-    Nothing -> case lookupNodeByNodeName nn dg of
-      [i] -> return $ changeDGH dg (DeleteNode i)
-      [] -> trace ("cannot remove: " ++ s) $ return dg -- assume node is gone
-      _ -> fail $ err ++ "ambiguous node: " ++ s
-    Just nse -> case nse of
-       DeclSymbol -> fail $ err ++ "cannot remove node symbols of: " ++ s
-       SymbolRangeAttr i ->
-          fail $ err ++ "cannot remove symbol range attribute "
-            ++ show i ++ " of: " ++ s
+  NodeElem nn m -> let s = showName nn in case lookupNodeByNodeName nn dg of
+    [] -> case m of
+      Nothing ->
+        trace ("cannot remove: " ++ s) $ return dg -- assume node is gone
+      Just _ -> fail $ err ++ "missing node:" ++ s
+    [i] -> case m of
+      Nothing -> return $ changeDGH dg (DeleteNode i)
+      Just (DeclSymbol md) -> case md of
+        Nothing -> fail $ err ++ "cannot remove all declarations from: " ++ s
+        Just (si, b) -> if b then
+          trace ("ignore removing symbol attributes from: " ++ s) $ return dg
+          else fail $ err ++ "cannot remove symbol "
+              ++ show si ++ " of: " ++ s
+    _ -> fail $ err ++ "ambiguous node: " ++ s
   LinkElem eId src tar m -> let e = showEdgeId eId in case m of
     Nothing ->
       case (lookupNodeByNodeName src dg, lookupNodeByNodeName tar dg) of

@@ -44,7 +44,7 @@ changeDG (Change csel pth) = do
       return . sc $ AddChDG i as
     Remove -> return $ sc RemoveChDG
     Update s -> if case se of
-        NodeElem _ (Just (SymbolRangeAttr _)) -> True
+        NodeElem _ (Just (DeclSymbol (Just (_, True)))) -> True
         SpecDefn _ True -> True
         ViewDefn _ (Just RangeAttr) -> True
         NextLinkId -> True
@@ -155,8 +155,7 @@ getDeclsOrSign e = case findChildrenByLocalName "Declarations" e of
     _ -> fail "Static.FromXML.getDeclsOrSign"
 
 data NodeSubElem
-  = DeclSymbol
-  | SymbolRangeAttr Int
+  = DeclSymbol (Maybe (Int, Bool))  -- ^ True addresses just the attribute
     deriving Show
 
 data ViewDefnElem = RangeAttr | ViewMorphism deriving Show
@@ -280,17 +279,21 @@ getNodeSubElem stps =
   let err = fail $ "Static.FromXML.getNodeSubElem: " ++ showSteps False stps
   in case stps of
   [] -> return Nothing
-  d : s : rst | checkStepElement "Declarations" d
-    && checkStepElement "Symbol" s
-    -> case rst of
-         [] -> return $ Just DeclSymbol
-         [a] -> case attributeStep a of
-           Just "range" -> case getStepNumber s of
-             Just i -> return $ Just $ SymbolRangeAttr i
-             Nothing -> err
-           _ -> err
-         _ -> err
-  _ -> return Nothing
+  d : rst1 | checkStepElement "Declarations" d
+    -> case rst1 of
+    [] -> return $ Just $ DeclSymbol Nothing
+    s : rst2 | checkStepElement "Symbol" s
+      -> case getStepNumber s of
+      Just i -> let jd b = return . Just . DeclSymbol $ Just (i, b) in
+        case rst2 of
+        [] -> jd False
+        [a] -> case attributeStep a of
+          Just "range" -> jd True
+          _ -> err
+        _ -> err
+      _ -> err
+    _ -> err
+  _ -> err
 
 getStepNumber :: Step -> Maybe Int
 getStepNumber (Step _ _ ps) =
