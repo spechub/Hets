@@ -45,6 +45,8 @@ import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
+import Common.Prec (PrecMap)
+import Common.GlobalAnnotations (AssocMap)
 
 import Driver.Options (downloadExtensions)
 import Driver.WriteLibDefn (getFilePrefixGeneric)
@@ -70,6 +72,10 @@ data GSigMap = GSigMap (G_symbolmap (Int, UniqName)) (NameMap String)
 -- | We need this type to store the original dependency order.
 -- This type is the logic dependent analogue to the GSigMap
 type NumberedSigMap a = (Map.Map a (Int, UniqName), NameMap String)
+
+-- | This type is for passing the syntax related information such as operator
+-- precedence and assoc-info
+type SyntaxTable = (PrecMap, AssocMap)
 
 -- | Removes the numbering from the symbol map
 nSigMapToSigMap :: NumberedSigMap a -> SigMap a
@@ -456,7 +462,8 @@ exportSymbol :: forall lid sublogics
         lid -> SigMap symbol -> [Set.Set symbol] -> symbol -> UniqName
             -> Result [TCElement]
 exportSymbol lid (SigMap sm _) sl sym n =
-    let symNotation = maybeToList $ notationFromUniqName n
+    let symNotation = mkNotation n $ Just $ ( sym_name lid sym
+                                            , error "No SyntaxTable")
     in if all (Set.notMember sym) sl
        then do
          symConst <- export_symToOmdoc lid sm sym $ nameToString n
@@ -485,11 +492,26 @@ exportSentence lid (SigMap sm thm) nsen = do
                     >> return [adt]
     Right omobj ->
         return $ [TCSymbol omname omobj symRole Nothing]
-                   ++ (maybeToList $ notationFromUniqName un)
+                   ++ mkNotation un Nothing
 
-notationFromUniqName :: UniqName -> Maybe TCElement
-notationFromUniqName un =
+-- | We only export simple constant-notations if the OMDoc element name differs
+-- from the hets-name.
+-- If the placecount of the id (if provided) is nonzero then we export the
+-- application-notation elements for pretty printing in OMDoc.
+mkNotation :: UniqName -> Maybe (Id, SyntaxTable) -> [TCElement]
+mkNotation un _ = -- mIdSTbl =
     let n = nameToString un
         orign = fst un
-    in if n == orign then Nothing
-       else Just $ TCNotation (mkSimpleQualName un) orign
+    in if n == orign then []
+       else [TCNotation (mkSimpleQualName un) orign]
+
+{-
+  TODO: integrate the syntaxtable extraction from the signature in exportNodeLab
+
+  -- howto get the notation information from the globannos...
+    let gannos = globAnnos sig
+        -- data PrecMap = PrecMap { precMap :: Map.Map Id Int, maxWeight :: Int}
+        precmap = mkPrecIntMap $ prec_annos gannos
+        -- type AssocMap = Map.Map Id AssocEither
+        assocmap = assoc_annos
+-}

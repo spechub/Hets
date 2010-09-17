@@ -48,12 +48,59 @@ data TLElement = TLTheory String (Maybe OMCD) [TCElement]
                | TLView String OMCD OMCD TCMorphism
                  deriving (Show, Read, Eq, Ord)
 
+{-
+ NOTATIONS
+
+OMDoc currently supports two kinds of notations: smart and flexible.
+
+a) The smart ones look like this:
+
+<notation for="??+" role="application" fixity="f" precedence="p" implicit="i"/>
+
+Here f \in {in, pre, post}, p is an integer (higher precedence =
+higher binding), and i is the number of implicit arguments (0 by
+default).
+
+In this case, you would additionally give
+ <notation for="??+" role="constant"><text value="+"/></notation>
+This notation is called to render operation itself, i.e.,
+produces the operator symbol.
+
+b) The flexible ones look like this
+
+<notation for="??something" role="application" precedence="P">
+ <component index="1" precedence="p1"/>
+ <text value="["/>
+ <component index="2" precedence="p2"/>
+ <text value="/"/>
+ <component index="3" precedence="p3"/>
+ <text value="]"/>
+</notation>
+
+Here <component index="i"/> recurses into argument number i.
+P is the output precedence, p1,p2,p3 are the input precedences.
+
+You can also use <component index="0"/>. That renders the operator
+symbol by calling the notation
+ <notation for="??+" role="constant">...</notation>
+
+2) The smart ones have two major advantages:
+  - They can be read back easily.
+  - They are independent of the output format.
+In 1b) above, we would need one notation for Hets-syntax, one for MathML etc
+-}
+
 -- | Theory constitutive elements for OMDoc
 data TCElement =
     -- | Symbol to represent sorts, constants, predicate symbols, etc.
     TCSymbol String OMElement SymbolRole (Maybe OMElement)
     -- | A notation for the given symbol
   | TCNotation OMQualName String
+    -- | A smart notation for the given symbol with fixity, precedence and the
+    -- number of implicit arguments
+  | TCSmartNotation OMQualName Fixity Int Int
+    -- | A smart notation for the given symbol
+  | TCFlexibleNotation OMQualName
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
@@ -88,6 +135,9 @@ data OmdADT =
 
 -- | Roles of the declared symbols can be object or type
 data SymbolRole = Obj | Typ | Axiom | Theorem deriving (Eq, Ord)
+
+-- | Fixity of notation patterns
+data Fixity = Infix | Prefix | Postfix deriving (Show, Read, Eq, Ord)
 
 -- | Type of the algebraic data type
 data ADTType = Free | Generated deriving (Eq, Ord)
