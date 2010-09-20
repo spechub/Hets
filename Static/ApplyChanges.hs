@@ -125,7 +125,7 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
     DGBasicSpec _ syms -> case atMaybe (Set.toList syms) (n - 1) of
       Nothing -> fail $ "symbol " ++ show n ++ " not found in node: " ++ nn
         ++ "\n" ++ showDoc syms ""
-      Just (G_symbol lid sym) -> case dgn_theory lbl of
+      Just gs@(G_symbol lid sym) -> case dgn_theory lbl of
         G_theory lid2 sig _ sens _ ->
           let Result ds mr = ext_cogenerated_sign lid2
                 (Set.singleton $ coerceSymbol lid lid2 sym) sig
@@ -136,6 +136,8 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
               newLbl = lbl { dgn_theory = G_theory lid2
                                (makeExtSign lid2 $ dom mor) startSigId
                                sens startThId
+                           , nodeInfo = newNodeInfo $
+                                DGBasicSpec Nothing $ Set.delete gs syms
                            , globalTheory = Nothing } -- needs recomputation
               in return $ changeDGH dg $ SetNodeLab lbl (v, newLbl)
     _ -> fail $ "cannot remove symbol from non-basic-spec node: " ++ nn

@@ -128,7 +128,10 @@ dgOriginHeader o = case o of
 instance Pretty DGOrigin where
   pretty o = text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
     $+$ case o of
-          DGBasicSpec gbs syms -> specBraces (pretty gbs) $+$
+          DGBasicSpec mgbs syms -> case mgbs of
+              Nothing -> Doc.empty
+              Just gbs -> specBraces (pretty gbs)
+            $+$
               if Set.null syms then Doc.empty else
                   text "new symbols:" $+$ pretty syms
           DGTranslation (Renamed r) -> pretty r
@@ -209,7 +212,7 @@ instance Pretty DGLinkOrigin where
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String
 showLEdge (s, t, l) = "edge " ++ showEdgeId (dgl_id l)
-  ++ " " ++ (showName $ dglName l)
+  ++ " " ++ showName (dglName l)
   ++ "(" ++ showNodeId s ++ " --> " ++ show t ++ ")"
 
 -- | only print the origin and parts of the type
@@ -382,4 +385,3 @@ prettyHistory = vcat . map prettyHistElem . SizedList.toList
 
 prettyLibEnv :: LibEnv -> Doc
 prettyLibEnv = printMap id vsep ($+$)
-

@@ -226,7 +226,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                _ -> res
        let gsysd = Set.map (G_symbol lid) sysd
            (ns, dg') = insGTheory dg0 name
-             (DGBasicSpec (G_basic_spec lid bspec') gsysd)
+             (DGBasicSpec (Just $ G_basic_spec lid bspec') gsysd)
              $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
@@ -778,9 +778,10 @@ mapID idmap i@(Id toks comps pos1) =
     Nothing -> do
       compsnew <- mapM (mapID idmap) comps
       return (Id toks compsnew pos1)
-    Just ids -> if Set.null ids then return i else
-      if Set.null $ Set.deleteMin ids then return $ Set.findMin ids else
-         plain_error i
+    Just ids -> case Set.toList ids of
+      [] -> return i
+      [h] -> return h
+      _ -> plain_error i
              ("Identifier component " ++ showId i
               " can be mapped in various ways:\n"
               ++ showDoc ids "") $ getRange i

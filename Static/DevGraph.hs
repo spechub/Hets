@@ -123,7 +123,7 @@ instance Eq Restricted where
 data DGOrigin =
     DGEmpty
   | DGBasic
-  | DGBasicSpec G_basic_spec (Set.Set G_symbol)
+  | DGBasicSpec (Maybe G_basic_spec) (Set.Set G_symbol)
   | DGExtension
   | DGLogicCoercion
   | DGTranslation Renamed
