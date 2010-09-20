@@ -7,7 +7,7 @@ from the command line (of type \verb"HetcatsOpts") and the path of
 the Maude file to be parsed and returns a pair with the library
 name and its environment. This environment contains two development
 graphs, the first one containing the modules used in the Maude prelude
-and another one with the user specification.
+and another one with the user specification:
 
 {\codesize
 \begin{verbatim}
@@ -30,7 +30,7 @@ This environment is computed with the function
 a pair of development graphs.
 These graphs are obtained with the function \verb"maude2DG", that receives
 the predefined specifications (obtained with \verb"predefinedSpecs")
-and the user defined specifications (obtained with \verb"traverseSpecs").
+and the user defined specifications (obtained with \verb"traverseSpecs"):
 
 {\codesize
 \begin{verbatim}
@@ -69,10 +69,10 @@ directMaudeParsing fp = do
 \end{verbatim}
 }
 
-This function first computes the data structures associated to the
+The function \verb"maude2DG" first computes the data structures associated to the
 predefined specifications and then uses them to compute the development
 graph related to the specifications introduced by the user. These
-data structures are computed with \verb"insertSpecs".
+data structures are computed with \verb"insertSpecs":
 
 {\codesize
 \begin{verbatim}
@@ -209,7 +209,7 @@ graph. It contains:
 
 \begin{itemize}
 \item Two values of type \verb"TokenInfoMap". The first one includes all
-the information including the one from the predefined module, while the
+the information including the one from the predefined modules, while the
 second one only contains information related to the current development
 graph.
 \item The updated \verb"ViewMap".
@@ -251,7 +251,7 @@ function \verb"getParams".
 \item These declarations are processed with \verb"processParameters",
 that returns a tuple of type \verb"ParamInfo" shown above.
 \item Given the parameters names, we traverse the list of sorts to check
-if the module defines parameterized sorts with \verb"getSortsParameterizedBy".
+whether the module defines parameterized sorts with \verb"getSortsParameterizedBy".
 \item The links between the theories in the parameters and the current module
 are created with \verb"createEdgesParams".
 \end{itemize}
@@ -336,7 +336,7 @@ insertSpec (SpecTh sp_th) pdg ptim tim vm ths dg = (ptimUp, tim3, vm, tok : ths,
 \end{verbatim}
 }
 
-The introduction of views follows the following steps:
+The introduction of views follows these steps:
 
 \begin{itemize}
 \item The function \verb"isInstantiated" checks whether the target of the
@@ -434,9 +434,9 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) = (tok, tim3, morph, p
 
 \item The renaming module expression recursively parses the inner expression, computes the morphism from the given renamings with \verb"fromSignRenamings",
 taking special care of the renaming of the parameterized sorts with
-\verb"applyRenamingParamSorts". Eventually, the final morphism is obtained
-from the composition of the morphisms computed for the inner expression and
-the one computed from the renamings:
+\verb"applyRenamingParamSorts". Once the values are computed, the final morphism
+is obtained from the composition of the morphisms computed for the inner
+expression and the one computed from the renamings:
 
 
 {\codesize
@@ -496,10 +496,11 @@ processModExp tim vm dg (InstantiationModExp modExp views) =
 
 We present the function \verb"insertNode" to describe how nodes are
 introduced in the development graph. This function receives the
-identifier of the node, its signature\footnote{Note that when this
-function is used there are not sentences.}, the \verb"TokenInfoMap" map,
-a list of sorts, and information about the parameters and
-returns the updated map and graph. First, it checks if
+identifier of the node, its signature,\footnote{Note that when the
+function \texttt{insertNode} is used there are not sentences.}
+the \verb"TokenInfoMap" map, a list of sorts, and information
+about the parameters and returns the updated map and the new development
+graph. First, it checks whether
 the node is already in the development graph. If it is in the graph,
 the current map and graph are returned, while in other case the extended
 signature is computed with \verb"makeExtSign" and used to create a graph

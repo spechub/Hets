@@ -1,13 +1,13 @@
 %!TEX root = main.tex
 
 In this section we explain how the Maude specifications introduced in
-Hets are parsed in order to obtain its abstract syntax, described in
-Section \ref{subsec:abs-syntax}.
+Hets are parsed in order to obtain the abstract syntax described in
+the previous section.
 
 The function \verb"haskellify" receives a module (the first parameter
 stands for the original module, while the second one contains the
 flattened one) and returns a list of quoted identifiers identifying an
-object of type \verb"Spec" as shown in the previous section.
+object of type \verb"Spec":
 
 {\codesize
 \begin{verbatim}

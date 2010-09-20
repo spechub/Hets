@@ -191,7 +191,9 @@ We describe in this section how the integration described in the
 previous sections has been implemented. Section \ref{subsec:abs-syntax}
 shows the abstract syntax used to represent Maude modules in Haskell,
 Section \ref{subsec:maude-parser} presents how these data structures
-are generated in Maude, while Section \ref{sec:imp_dg} 
+are generated in Maude, while Section \ref{sec:imp_dg} explains how
+they are translated into a Development Graph. Finally, Section \ref{sec:imp_free}
+outlines how the freeness constraints are implemented.
 
 \subsection{Abstract syntax}\label{subsec:abs-syntax}
 \input{abs-syntax}
@@ -207,7 +209,7 @@ are generated in Maude, while Section \ref{sec:imp_dg}
 \subsection{Comorphism}\label{sec:comorphism}
 \input{imp-comorph}
 
-\subsection{Freeness constraints}
+\subsection{Freeness constraints}\label{sec:imp_free}
 \input{freeness}
 
 \section{Conclusions and future work}\label{sec:conclusions}

@@ -1,9 +1,9 @@
 %!TEX root = main.tex
 
 We show in this section the main functions used to implement the comorphism
-from Maude to CASL described in Section \ref{sec:comoprh}.
+from Maude to \CASL described in Section \ref{sec:comoprh}.
 The main function in this transformation is
-\verb"maude2casl", that computes the CASL signature and sentences
+\verb"maude2casl", that computes the \CASL signature and sentences
 given the Maude signature and sentences:
 
 {\codesize
@@ -16,40 +16,38 @@ maude2casl :: MSign.Sign -> [Named MSentence.Sentence]
 This function splits the work into different stages:
 
 \begin{itemize}
-\item First, given the sorts and the subsort relations, a map is built
-with the function \verb"arrangeKinds" were each sort is related to its
-kind. These kinds are used to:
+
+\item
+The function \verb"rewPredicates" generates the \verb"rew" predicates for
+each sort to simulate the rewrite rules in the Maude specification.
+
+\item
+The function \verb"rewPredicatesSens" creates the formulas associated to
+the \verb"rew" predicates created above, stating that they are reflexive
+and transitive.
+
+\item
+The \CASL operators are obtained from the Maude operators:
 
 \begin{itemize}
-\item Generate the predicates 
-that assign a concrete sort to each term with \verb"kindPredicates" .
-\item Generate the \verb"rew" predicates to define the rewrite rules
-between terms of each kind with \verb"rewPredicates".
-\item Create the formulas associated to the \verb"rew" predicates
-shown above, stating that they are reflexive and transitive, with
-\verb"rewPredicatesSens".
-\end{itemize}
+\item
+The function \verb"translateOps" splits the Maude operator map
+into a tuple of \CASL operators and \CASL associative operators.
 
-\item Then CASL operators are obtained from the Maude operators:
-
-\begin{itemize}
-\item The function \verb"translateOps" translates the Maude operator map
-into a tuple of CASL operators, CASL associative operators,
-the membership axioms (i.e. CASL predicates) induced by each Maude operator,
-and a set of operators with the \verb"ctor" attribute, that will be
-used to generate the sentence about datatypes with \verb"ctorSen".
-\item Since CASL does not allow the definition
+\item
+Since \CASL does not allow the definition
 of polymorphic operators, these operators are removed from the map
 with \verb"deleteUniversal" and for each one of these Maude operators we
-create a set of CASL operators with all the possible profiles with
+create a set of \CASL operators with all the possible profiles with
 \verb"universalOps".
+
 \end{itemize}
 
-\item CASL sentences are obtained from the Maude sentences and from
-predefined CASL libraries:
+\item \CASL sentences are obtained from the Maude sentences and from
+predefined \CASL libraries:
 
 \begin{itemize}
-\item In the computation of the CASL formulas we split Maude sentences in
+\item In the computation of the \CASL formulas we split Maude sentences in
 equations defined without the \verb"owise" attribute, equations defined
 with \verb"owise", and the rest of statements with the function
 \verb"splitOwiseEqs".
@@ -63,15 +61,14 @@ parameter the definition of the formulas defined without the \verb"owise"
 attribute, in order to state that the equations defined with \verb"owise"
 are applied when the rest of possible equations cannot.
 \item The rest of statements, namely memberships and rules, are translated
-as predicates as described in Section \ref{sec:comoprh} with the function
-\verb"mb_rl2formula".
+with the function \verb"mb_rl2formula".
 \item There are some built-in operators in Maude that are not defined by
 means of equations. To allow the user to reason about them we provide
-some libraries with the definitions of these operators as CASL formulas,
+some libraries with the definitions of these operators as \CASL formulas,
 obtained with \verb"loadLibraries".
 \end{itemize}
 
-\item Finally, the CASL symbols are created:
+\item Finally, the \CASL symbols are created:
 
 \begin{itemize}
 \item The kinds are translated to symbols with \verb"kinds2syms".
@@ -101,7 +98,6 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          ops = deleteUniversal $ MSign.ops msign
          ksyms = kinds2syms cs
          (cops, assoc_ops, _) = translateOps mk ops
-         ctor_sen = []
          cops' = universalOps cs cops $ booleanImported ops
          rs' = rewPredicatesCongSens cops'
          pred_forms = loadLibraries (MSign.sorts msign) ops
@@ -113,42 +109,12 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
          new_sens = concat [rs, rs', no_owise_forms, owise_forms,
-                            mb_rl_forms, ctor_sen, pred_forms]
-\end{verbatim}
-}
-
-Given a map of \verb"Id" with keys the sorts in the Maude specification and
-value their associated kind, the function \verb"kindPredicates" computes
-the predicates that assign the proper sort to each term.
-\verb"kindPredicates" traverses the map applying the function
-\verb"kindPredicate":
-
-{\codesize
-\begin{verbatim}
-kindPredicates :: IdMap -> Map.Map Id (Set.Set CSign.PredType)
-kindPredicates = Map.foldWithKey kindPredicate Map.empty
-\end{verbatim}
-}
-
-Where \verb"kindPredicate" receives the identifier of a sort,
-the identifier of its kind and the accumulated map of CASL predicates
-and then distinguishes if the sort is \verb"Universal", and thus has to be
-skipped, or it is any other sort and the map has to be extended with a
-new unary predicate named as the sort and with arity the kind:
-
-{\codesize
-\begin{verbatim}
-kindPredicate :: Id -> Id -> Map.Map Id (Set.Set CSign.PredType)
-                 -> Map.Map Id (Set.Set CSign.PredType)
-kindPredicate sort kind mis = case sort == (str2id "Universal") of
-                  True -> mis
-                  False -> let ar = Set.singleton $ CSign.PredType [kind]
-                           in Map.insertWith (Set.union) sort ar mis
+                            mb_rl_forms, pred_forms]
 \end{verbatim}
 }
 
 The \verb"rew" predicates are declared with the function
-\verb"rewPredicates", that traverses the set of kinds applying
+\verb"rewPredicates", that traverses the set of sorts applying
 the function \verb"rewPredicate":
 
 {\codesize
@@ -159,20 +125,20 @@ rewPredicates = Set.fold rewPredicate Map.empty
 }
 
 This function defines a binary predicate using as name the constant
-\verb"rewID" and the kind as type of the arguments:
+\verb"rewID" and the sort as type of the arguments:
 
 {\codesize
 \begin{verbatim}
 rewPredicate :: Id -> Map.Map Id (Set.Set CSign.PredType)
                 -> Map.Map Id (Set.Set CSign.PredType)
-rewPredicate kind m = Map.insertWith (Set.union) rewID ar m
-   where ar = Set.singleton $ CSign.PredType [kind, kind]
+rewPredicate sort m = Map.insertWith (Set.union) rewID ar m
+   where ar = Set.singleton $ CSign.PredType [sort, sort]
 \end{verbatim}
 }
 
 Once these predicates has been declared, we have to introduce
 formulas to state their properties. The function \verb"rewPredicatesSens"
-accomplishes this task by traversing the set of kinds and applying
+accomplishes this task by traversing the set of sorts and applying
 \verb"rewPredicateSens":
 
 {\codesize
@@ -182,33 +148,33 @@ rewPredicatesSens = Set.fold rewPredicateSens []
 \end{verbatim}
 }
 
-This function generates the formulas for each kind:
+This function generates the formulas for each sort:
 
 {\codesize
 \begin{verbatim}
 rewPredicateSens :: Id -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
-rewPredicateSens kind acc = ref : trans : acc
-        where ref = reflSen kind
-              trans = transSen kind
+rewPredicateSens sort acc = ref : trans : acc
+        where ref = reflSen sort
+              trans = transSen sort
 \end{verbatim}
 }
 
 We describe the formula for the reflexivity, being the transitivity
-analogous. A new variable of the required kind is created with
+analogous. A new variable of the required sort is created with
 the auxiliary function \verb"newVar", then the qualified predicate
 name is created with the \verb"rewID" constant and applied to the
 variable. Finally, the formula is named with the prefix \verb"rew_refl_"
-followed by the name of the kind:
+followed by the name of the sort:
 
 {\codesize
 \begin{verbatim}
 reflSen :: Id -> Named CAS.CASLFORMULA
-reflSen kind = makeNamed name $ quantifyUniversally form
-        where v = newVar kind
-              pred_type = CAS.Pred_type [kind, kind] nullRange
+reflSen sort = makeNamed name $ quantifyUniversally form
+        where v = newVar sort
+              pred_type = CAS.Pred_type [sort, sort] nullRange
               pn = CAS.Qual_pred_name rewID pred_type nullRange
               form = CAS.Predication pn [v, v] nullRange
-              name = "rew_refl_" ++ show kind
+              name = "rew_refl_" ++ show sort
 \end{verbatim}
 }
 
@@ -223,8 +189,7 @@ translateOps im = Map.fold (translateOpDeclSet im) (Map.empty, Map.empty, Set.em
 }
 
 Since the values in the Maude operator map are sets of operator declarations
-(see Section \ref{sec:da} for details)
-the function \verb"translateOpDeclSet" has to traverse these sets, applying
+the auxiliary function \verb"translateOpDeclSet" has to traverse these sets, applying
 \verb"translateOpDecl" to each operator declaration:
 
 {\codesize
@@ -236,16 +201,10 @@ translateOpDeclSet im ods tpl = Set.fold (translateOpDecl im) tpl ods
 
 The function \verb"translateOpDecl" receives an operator declaration,
 that consists of all the operators declared with the same profile at
-the kind level, thus from all these declarations only one CASL operator
-must be generated, although we still need the memberships associated
-to each profile. First, these memberships are translated into CASL
-predicates with the function \verb"ops2pred", explained below.
-Then, we take the first profile in the set and transform
-it with \verb"maudeSym2CASLOp", that returns a pair with a valid CASL
-operator identifier and the operator type; we use these values
-to expand the operator map. Finally, the function checks if the operator
-has the attributes \texttt{assoc} or \texttt{ctor} to add the
-operator to the corresponding accumulators:
+the kind level. The function traverses these operators, transforming
+them into \CASL operators with the function \verb"ops2pred" and returning
+a tuple containing the operators, the associative operators, and the
+constructors:
 
 {\codesize
 \begin{verbatim}
@@ -257,7 +216,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
             tl = tail $ Set.toList syms
             syms' = Set.fromList tl
             (cop_id, ot, _) = fromJust $ maudeSym2CASLOp im sym
-            cop_type = Set.singleton ot -- Set.union (Set.singleton ot) (Set.singleton ot')
+            cop_type = Set.singleton ot
             ops' = Map.insertWith (Set.union) cop_id cop_type ops
             assoc_ops' = if any MAS.assoc ats
                          then Map.insertWith (Set.union) cop_id cop_type assoc_ops
@@ -269,7 +228,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
 }
 
 As said above, Maude equations that are not defined with the \verb"owise"
-attribute are translated to CASL with \verb"noOwiseSen2Formula". This
+attribute are translated to \CASL with \verb"noOwiseSen2Formula". This
 function extracts the current equation from the named sentence, translates
 it with \verb"noOwiseEq2Formula" and creates a new named sentence
 with the resulting formula:
@@ -286,7 +245,7 @@ noOwiseSen2Formula im s = s'
 
 The function \verb"noOwiseEq2Formula" distinguishes whether the equation
 is conditional or not. In both cases, the Maude terms in the equation
-are translated into CASL terms with \verb"maudeTerm2caslTerm", and a
+are translated into \CASL terms with \verb"maudeTerm2caslTerm", and a
 strong equation is used to create a formula. If the equation has no
 conditions this formula is universally quantified and returned as result,
 while if it has conditions each of them generates a formula and their
@@ -313,7 +272,7 @@ noOwiseEq2Formula im (MAS.Eq t t' conds@(_:_) _) = quantifyUniversally form
 
 \begin{itemize}
 
-\item Variables are translated into qualified CASL variables, and their
+\item Variables are translated into qualified \CASL variables, and their
 sort is changed to the corresponding kind:
 
 {\codesize
@@ -340,7 +299,7 @@ maudeTerm2caslTerm im (MAS.Const q ty) = CAS.Application op [] nullRange
 
 \item The application of an operator to a list of terms is translated
 into another application, translating recursively the arguments into
-valid CASL terms:
+valid \CASL terms:
 
 {\codesize
 \begin{verbatim}
@@ -385,7 +344,7 @@ cond2formula im (MAS.MatchCond t t') = CAS.Strong_equation ct ct' nullRange
 \end{verbatim}
 }
 
-\item Membership conditions are translated into CASL memberships by translating
+\item Membership conditions are translated into \CASL memberships by translating
 the term and the sort:
 
 {\codesize
@@ -448,34 +407,33 @@ owiseEq2Formula im no_owise_form eq = form
 \end{verbatim}
 }
 
-The rest of Maude sentences are translated in a similar way to the one
-shown for the conditions above.
-The rest of the sentences generated in the comorphism are obtained
-from external libraries with the function \verb"readLib". We describe
-below how sentences defining the behavior of the natural numbers are
-loaded: once the library is obtained, we transform the theory sentences
-into named sentences with \verb"toNamedList" and then we ``coerce''
-them with \verb"coerceSens" to indicate that they are CASL sentences.
-Finally, the sentence about the generators is filtered and the result
-returned:
+%The rest of Maude sentences are translated in a similar way to the one
+%shown for the conditions above.
+%The rest of the sentences generated in the comorphism are obtained
+%from external libraries with the function \verb"readLib". We describe
+%below how sentences defining the behavior of the natural numbers are
+%loaded: once the library is obtained, we transform the theory sentences
+%into named sentences with \verb"toNamedList" and then we ``coerce''
+%them with \verb"coerceSens" to indicate that they are \CASL sentences.
+%Finally, the sentence about the generators is filtered and the result
+%returned:
 
-{\codesize
-\begin{verbatim}
-loadNaturalNatSens :: [Named CAS.CASLFORMULA]
-loadNaturalNatSens = 
-       let lib = head $ unsafePerformIO $ readLib "Maude/MaudeNumbers.casl"
-       in case lib of
-           G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
-                                        in do
-                                            sens' <- coerceSens lid CASL "" sens
-                                            filter (not . ctorCons) sens'
-\end{verbatim}
-}
+%{\codesize
+%\begin{verbatim}
+%loadNaturalNatSens :: [Named CAS.CASLFORMULA]
+%loadNaturalNatSens = 
+%       let lib = head $ unsafePerformIO $ readLib "Maude/MaudeNumbers.casl"
+%       in case lib of
+%           G_theory lid _ _ thSens _ -> let sens = toNamedList thSens
+%                                        in do
+%                                            sens' <- coerceSens lid CASL "" sens
+%                                            filter (not . ctorCons) sens'
+%\end{verbatim}
+%}
 
 The translation from sorts, operators and predicates to symbols
-works in a similar
-way to the transformations shown above, so we only describe the 
-how the symbols corresponding with predicates are obtained. The function
+works in a similar way to the transformations shown above, so we only
+describe  how the predicate symbols are obtained. The function
 \verb"preds2syms" traverses the map of predicates and inserts each
 obtained symbol into the set with \verb"pred2sym":
 

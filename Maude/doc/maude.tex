@@ -248,9 +248,44 @@ view can be any module expression, with the source module expression
 evaluating to a theory and the target module expression evaluating to a
 module or a theory.
 
+EXPLICAR LOS TIPOS DE MAPPINGS
+
 \subsection{Parameterized modules}\label{subsec:pmod}
 
+System modules and functional modules can be parameterized. A parameterized
+system module has syntax
 
+$$
+\verb"mod M{" X_1 :: T_1 , \ldots , X_n :: T_n \verb"} is ... endm"
+$$
+
+\noindent with $n \geq 1$. Parameterized functional modules have completely
+analogous syntax.
+
+The \verb"{"$X_1 :: T_1 , \ldots , X_n :: T_n$\verb"}" part is called the
+interface, where each pair $X_i :: T_i$ is a parameter, and each $X_i$ is an
+identifier---the parameter name or parameter label---and each $T_i$ is
+an expression that yields a theory---the parameter theory. Each parameter
+name in an interface must be unique, although there is no uniqueness
+restriction on the parameter theories of a module. The parameter theories
+of a functional module must be functional theories.
+
+In a parameterized module $M$, all the sorts and statement labels
+coming from theories in its interface must be qualified by their names. Thus,
+given a parameter $X_i :: T_i$, each sort $S$ in $T_i$ must be
+qualified as $X_i\texttt{\$}S$, and each label $l$ of a statement occurring in
+$T_i$ must be qualified as $X_i\texttt{\$}l$. In fact, the parameterized module
+$M$ is flattened as follows. For each parameter $X_i :: T_i$, 
+a renamed copy of the theory $T_i$, called $X_i :: T_i$ is included.
+The renaming  maps each sort $S$ to $X_i\texttt{\$}S$, and each label $l$
+of a statement occurring in $T_i$ to $X_i\texttt{\$}l$. The renaming has
+no effect on importations of modules. Thus, if $T_i$ includes a theory $T'$,
+when the renamed
+theory $X_i :: T_i$ is created and included into $M$, and the renamed
+theory $X_i :: T'$ will also be created and included into $X_i :: T_i$. 
+However, the renaming will have no effect on modules imported by either the
+$T_i$ or $T'$; for example, if \verb"BOOL" is imported by one of these
+theories, it is not renamed, but imported in the same way into $M$.
 
 
 

@@ -1,13 +1,14 @@
 %!TEX root = main.tex
 
-In this section we show how the abstract syntax of Maude specifications
-is defined. This abstract syntax is based in the Maude grammar presented
+In this section we show how the abstract syntax for Maude specifications
+is defined in Haskell. This abstract syntax is based in the Maude grammar presented
 in \cite[Chapter 24]{maude-book}.
 
-The main datatype is \verb"Spec", that distinguishes between the
-different specifications available in Maude: modules, theories and
-views. Although both modules and theories contain the same information,
-their semantics are different and need different constructors.
+The main datatype of this abstract syntax is \verb"Spec", that
+distinguishes between the different specifications available in Maude:
+modules, theories and views. Although both modules and theories contain
+the same information, their semantics are different and need different
+constructors:
 
 {\codesize
 \begin{verbatim}
@@ -39,7 +40,8 @@ data View = View ModId ModExp ModExp [Renaming]
 }
 
 The \verb"Parameter" type contains the identifier of the parameter,
-a sort, and its type, a module expression:
+a sort (used as the parameter identifier), and its type (which is a
+module expression):
 
 {\codesize
 \begin{verbatim}
@@ -188,7 +190,7 @@ second one:
 
 \item Renaming of operators, that can be of three kinds: renaming
 of operators without profile, with profile, or a map between terms,
-as explained in Section \ref{subsec:dg_views}:
+as explained in Section \ref{subsec:views}:
 
 {\codesize
 \begin{verbatim}
