@@ -158,16 +158,10 @@ instance (Show f, Pretty e) => Pretty (Sign f e) where
 instance Pretty Symbol where
   pretty sy = let n = pretty (symName sy) in
     case symbType sy of
-       SortAsItemType -> n
-       OtherTypeKind s -> text s <+> n
-       PredAsItemType pt -> let p = n <+> colon <+> pretty pt in
-         case predArgs pt of
-           [_] -> text predS <+> p
-           _ -> p
-       OpAsItemType ot -> let o = n <+> colon <> pretty ot in
-         case opArgs ot of
-           [] | opKind ot == Total -> text opS <+> o
-           _ -> o
+       SortAsItemType -> keyword sortS <+> n
+       OtherTypeKind s -> keyword s <+> n
+       PredAsItemType pt -> keyword predS <+> n <+> colon <+> pretty pt
+       OpAsItemType ot -> keyword opS <+> n <+> colon <> pretty ot
 
 instance Pretty SymbType where
   pretty st = case st of
