@@ -12,6 +12,7 @@ Portability :  non-portable (via imports)
 module PGIP.Server where
 
 import Driver.Options
+import Driver.ReadFn
 
 import Network.Wai.Handler.SimpleServer
 import Network.Wai
@@ -19,29 +20,48 @@ import Network.Wai
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
 
-hetsServer :: HetcatsOpts -> IO ()
-hetsServer _opts = run 8000 $ \ re -> do
-  s <- getSource (requestBody re)
-  return $ Response status200 [] $ ResponseLBS $ BS.pack
-    $ unlines $
-    [ "RequestMethod: " ++ B8.unpack (requestMethod re)
-    , "HTTP/" ++ B8.unpack (httpVersion re)
-    , "PathInfo: " ++ B8.unpack (pathInfo re)
-    , "QueryString: " ++ B8.unpack (queryString re)
-    , "Server: " ++ B8.unpack (serverName re) ++ ":" ++ show (serverPort re)
-    , "Headers:" ]
-    ++ map (\ (k, v) -> "  " ++ B8.unpack (ciOriginal k)
-            ++ ": " ++ B8.unpack v) (requestHeaders re)
-    ++
-    [ if isSecure re then "secure https" else "not secure"
-    , "Body: " ++ s
-    , "RemoteHost: " ++ B8.unpack (remoteHost re)]
+import Static.DevGraph
+import Static.DotGraph
+import Static.AnalysisLibrary
 
-getSource :: Source -> IO String
-getSource s = do
-  mp <- runSource s
-  case mp of
-    Nothing -> return ""
-    Just (bs, r) -> do
-      rs <- getSource r
-      return $ B8.unpack bs ++ rs
+import Comorphisms.LogicGraph
+
+import Text.XML.Light
+
+import Common.Result
+import Common.ResultT
+
+import Control.Monad.Trans
+
+import qualified Data.Set as Set
+
+import System.Process
+import System.Exit
+
+hetsServer :: HetcatsOpts -> IO ()
+hetsServer opts = run 8000 $ \ re ->
+  case B8.unpack (requestMethod re) of
+    "GET" -> do
+       Result ds ms <-
+         getGraph opts $ dropWhile (== '/') $ B8.unpack (pathInfo re)
+       return $ case ms of
+         Nothing -> Response status400 [] $ ResponseLBS $ BS.pack
+           $ showRelDiags 1 ds
+         Just s -> Response status200 [] $ ResponseLBS $ BS.pack s
+    _ -> return $ Response status405 [] $ ResponseLBS BS.empty
+
+getGraph :: HetcatsOpts -> FilePath -> IO (Result String)
+getGraph opts file = runResultT $ do
+  (ln, le) <- anaLibFileOrGetEnv logicGraph opts { verbose = 0 }
+      Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
+  let dg = lookupDGraph ln le
+  (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
+      $ dotGraph False dg
+  case exCode of
+      ExitSuccess -> liftR $ extractSVG out
+      _ -> fail err
+
+extractSVG :: String -> Result String
+extractSVG str = case parseXMLDoc str of
+  Nothing -> fail "did not recognize svg element"
+  Just e -> return $ showTopElement e
