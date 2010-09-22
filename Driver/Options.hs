@@ -149,6 +149,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
   , ioEncoding :: Enc
+  , serve :: Bool
   , listen :: Int }
 
 -- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
@@ -180,6 +181,7 @@ defaultHetcatsOpts = HcOpt
   , computeNormalForm = False
   , dumpOpts = []
   , ioEncoding = Latin1
+  , serve = False
   , listen = -1 }
 
 instance Show HetcatsOpts where
@@ -238,6 +240,7 @@ data Flag =
   | XML
   | Dump String
   | IOEncoding Enc
+  | Serve
   | Listen Int
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -267,6 +270,7 @@ makeOpts opts flg = case flg of
     Uncolored -> opts { uncolored = True }
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
     IOEncoding e -> opts { ioEncoding = e }
+    Serve -> opts { serve = True }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -475,6 +479,8 @@ options = let
       "lisp file for SparQ definitions"
     , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
+    , Option "X" ["server"] (NoArg Serve)
+       "start hets as web-server"
     , Option "c" [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
       "run interface comunicating via connecting to the port"
     , Option "S" [listenS] (ReqArg parseListen "PORT")
@@ -687,7 +693,7 @@ hetcatsOpts argv =
                infs <- checkInFiles non_opts
                let hcOpts = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = infs }
-               if null infs && not (interactive hcOpts)
+               if null infs && not (interactive hcOpts) && not (serve hcOpts)
                  && connectP hcOpts < 0 && listen hcOpts < 0
                    then hetsError "missing input files"
                    else return hcOpts

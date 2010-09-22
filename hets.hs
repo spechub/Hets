@@ -45,6 +45,9 @@ import CMDL.ProcessScript
 import CMDL.DataTypes
 import PGIP.XMLparsing
 import PGIP.XMLstate (isRemote)
+#ifdef SERVER
+import PGIP.Server
+#endif
 
 import Maude.Maude2DG (anaMaudeFile)
 import LF.Twelf2DG (anaTwelfFile)
@@ -53,6 +56,9 @@ import OMDoc.Import (anaOMDocFile)
 main :: IO ()
 main =
     getArgs >>= hetcatsOpts >>= \ opts ->
+#ifdef SERVER
+     if serve opts then hetsServer opts else
+#endif
      if isRemote opts || interactive opts
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do

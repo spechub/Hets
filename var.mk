@@ -60,6 +60,12 @@ ifneq ($(findstring 1.0, $(PROGRAMATICAVERSION)),)
 PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
+WAIVERSION = $(shell $(HCPKG) field wai-extra version)
+ifneq ($(findstring 0.2.2, $(WAIVERSION)),)
+SERVER_FLAG = -DSERVER
+endif
+
+
 ifneq ($(strip $(UNI_PACKAGE)),)
 TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
@@ -68,7 +74,7 @@ endif
 HC_OPTS_WITHOUTGLADE = -threaded \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
-  $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) \
+  $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(SERVER_FLAG) \
   -DCASLEXTENSIONS
 
 # for profiling (or a minimal hets) comment out the previous two package lines
