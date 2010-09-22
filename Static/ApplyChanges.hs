@@ -41,9 +41,9 @@ lookupNodeByNodeName nn = lookupNodeWith ((== nn) . dgn_name . snd)
 getNodeByName :: Monad m => String -> NodeName -> DGraph -> m (LNode DGNodeLab)
 getNodeByName msg nn dg = let s = showName nn in
   case lookupNodeByNodeName nn dg of
-    [] -> fail $ msg ++ " missing node:" ++ s
+    [] -> fail $ msg ++ "missing node:" ++ s
     [i] -> return i
-    _ -> fail $ msg ++ " ambiguous node: " ++ s
+    _ -> fail $ msg ++ "ambiguous node: " ++ s
 
 applyChange :: Monad m => SelChangeDG -> DGraph -> m DGraph
 applyChange (SelChangeDG se ch) dg = case ch of
@@ -79,9 +79,9 @@ add se dg ch = case ch of
       $ return dg
 
 addSymbol :: Monad m => String -> SelElem -> DGraph -> m DGraph
-addSymbol str se dg = case se of
+addSymbol str se dg = let err = "Static.ApplyChanges.addSymbol: " in case se of
   NodeElem nn (Just (DeclSymbol Nothing)) -> do
-    (v, lbl) <- getNodeByName "addSymbol" nn dg
+    (v, lbl) <- getNodeByName err nn dg
     case extendByBasicSpec str (dgn_theory lbl) of
        (Success nGt nSens nSyms _, _) ->
           if nSens == 0 && Set.size nSyms == 1 then let
@@ -93,25 +93,22 @@ addSymbol str se dg = case se of
               finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
                                   (v, newLbl) }
               in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
-          else fail $ "just add a single symbol to: " ++ showName nn
-       (_, err) -> fail $ "addSymbol: " ++ err
-  _ -> fail $ "cannot add symbol to: " ++ show se
+          else fail $ err ++ "just add a single symbol to: " ++ showName nn
+       (_, msg) -> fail $ err ++ msg
+  _ -> fail $ err ++ "cannot add symbol to: " ++ show se
 
 remove :: Monad m => SelElem -> DGraph -> m DGraph
 remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
-  NodeElem nn m -> let s = showName nn in case lookupNodeByNodeName nn dg of
-    [] -> case m of
-      Nothing ->
-        trace ("cannot remove: " ++ s) $ return dg -- assume node is gone
-      Just _ -> fail $ err ++ "missing node:" ++ s
-    [i] -> case m of
+  NodeElem nn m -> do
+    i <- getNodeByName err nn dg
+    let s = showName nn
+    case m of
       Nothing -> return $ changeDGH dg (DeleteNode i)
       Just (DeclSymbol md) -> case md of
         Nothing -> fail $ err ++ "cannot remove all declarations from: " ++ s
         Just (si, b) -> if b then
           trace ("ignore removing symbol attributes from: " ++ s) $ return dg
           else removeNthSymbol si dg i
-    _ -> fail $ err ++ "ambiguous node: " ++ s
   LinkElem eId src tar m -> let e = showEdgeId eId in case m of
     Nothing ->
       case (lookupNodeByNodeName src dg, lookupNodeByNodeName tar dg) of
