@@ -12,6 +12,7 @@ adjust development graph according to xupdate information
 
 module Static.ApplyChanges (applyChange) where
 
+import Static.ComputeTheory
 import Static.DevGraph
 import Static.GTheory
 import Static.History
@@ -28,6 +29,7 @@ import Common.Utils (readMaybe, atMaybe)
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 import Control.Monad
 
@@ -35,6 +37,13 @@ import Debug.Trace
 
 lookupNodeByNodeName :: NodeName -> DGraph -> [LNode DGNodeLab]
 lookupNodeByNodeName nn = lookupNodeWith ((== nn) . dgn_name . snd)
+
+getNodeByName :: Monad m => String -> NodeName -> DGraph -> m (LNode DGNodeLab)
+getNodeByName msg nn dg = let s = showName nn in
+  case lookupNodeByNodeName nn dg of
+    [] -> fail $ msg ++ " missing node:" ++ s
+    [i] -> return i
+    _ -> fail $ msg ++ " ambiguous node: " ++ s
 
 applyChange :: Monad m => SelChangeDG -> DGraph -> m DGraph
 applyChange (SelChangeDG se ch) dg = case ch of
@@ -63,10 +72,30 @@ add se dg ch = case ch of
              ++ "\n" ++ gm
              ++ "\nvia: " ++ show se)
       $ return dg
+    SymbolDG str -> addSymbol str se dg
     _ ->
       trace ("ignore adding: " ++ show ch
              ++ "\nat: " ++ show se)
       $ return dg
+
+addSymbol :: Monad m => String -> SelElem -> DGraph -> m DGraph
+addSymbol str se dg = case se of
+  NodeElem nn (Just (DeclSymbol Nothing)) -> do
+    (v, lbl) <- getNodeByName "addSymbol" nn dg
+    case extendByBasicSpec str (dgn_theory lbl) of
+       (Success nGt nSens nSyms _, _) ->
+          if nSens == 0 && Set.size nSyms == 1 then let
+              newLbl = lbl { dgn_theory = nGt
+                           , nodeInfo = case nodeInfo lbl of
+                               DGNode (DGBasicSpec _ syms) _ -> newNodeInfo $
+                                 DGBasicSpec Nothing $ Set.union nSyms syms
+                               i -> i }
+              finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
+                                  (v, newLbl) }
+              in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
+          else fail $ "just add a single symbol to: " ++ showName nn
+       (_, err) -> fail $ "addSymbol: " ++ err
+  _ -> fail $ "cannot add symbol to: " ++ show se
 
 remove :: Monad m => SelElem -> DGraph -> m DGraph
 remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
@@ -137,7 +166,8 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
                                (makeExtSign lid2 $ dom mor) startSigId
                                sens startThId
                            , nodeInfo = newNodeInfo $
-                                DGBasicSpec Nothing $ Set.delete gs syms
-                           , globalTheory = Nothing } -- needs recomputation
-              in return $ changeDGH dg $ SetNodeLab lbl (v, newLbl)
+                                DGBasicSpec Nothing $ Set.delete gs syms }
+              finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
+                                  (v, newLbl) }
+              in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
     _ -> fail $ "cannot remove symbol from non-basic-spec node: " ++ nn

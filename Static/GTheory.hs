@@ -24,6 +24,7 @@ import Logic.Coerce
 import qualified Common.OrderedMap as OMap
 
 import ATerm.Lib
+import Common.AnnoState (emptyAnnos)
 import Common.Lib.Graph as Tree
 import Common.Amalgamate --for now
 import Common.Keywords
@@ -31,12 +32,19 @@ import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
+import Common.GlobalAnnotations
+import Common.Parsec
 import Common.Result
+import Common.Utils
 
 import Data.Graph.Inductive.Graph as Graph
 
-import qualified Data.Map as Map
+import Text.ParserCombinators.Parsec
 
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+import Data.Maybe
 import Data.Typeable
 
 import Control.Monad (foldM)
@@ -355,3 +363,32 @@ gEnsuresAmalgamability options gd sink = let
           ensures_amalgamability lid (options, diag, sink', Graph.empty)
     else error "heterogeneous amalgability check not yet implemented"
 
+data BasicExtResponse = GiveUpFailure | TryAgainFailure
+  | Success G_theory Int (Set.Set G_symbol) Bool
+
+extendByBasicSpec :: String -> G_theory -> (BasicExtResponse, String)
+extendByBasicSpec str (G_theory lid eSig@(ExtSign sign syms) si sens _) =
+  case parse_basic_spec lid of
+    Nothing -> (GiveUpFailure, "missing basic spec parser")
+    Just p -> case basic_analysis lid of
+      Nothing -> (GiveUpFailure, "missing basic analysis")
+      Just f -> case runParser (p << eof) (emptyAnnos ()) "" $ trimLeft str of
+        Left err -> (TryAgainFailure, show err)
+        Right bs -> let
+          Result ds res = f (bs, sign, emptyGlobalAnnos)
+          in case res of
+            Nothing -> (TryAgainFailure, showRelDiags 1 ds)
+            Just (_, ExtSign sign2 syms2, sens2) ->
+              let Result es mm = inclusion lid sign2 sign
+                  sameSig = isJust mm
+                  finExtSign = ExtSign sign2 $ Set.union syms syms2
+              in
+              (Success (G_theory lid (if sameSig then eSig else finExtSign)
+                      (if sameSig then si else startSigId)
+                      (joinSens (toThSens sens2) sens) startThId)
+                      (length sens2)
+                      (Set.map (G_symbol lid) $ Set.difference syms2 syms)
+                      sameSig
+              , if sameSig then if null sens2 then "" else
+                            show (vcat $ map (print_named lid) sens2)
+                       else showRelDiags 1 es)
