@@ -107,7 +107,7 @@ writeLibEnv opts filePrefix lenv ln ot =
                            $ map (\ (libn, od) -> (libn, xmlOut od)) omd
                Nothing -> putIfVerbose opts 0 "could not translate to OMDoc"
       GraphOut (Dot showInternalNodeLabels) -> writeVerbFile opts f
-        $ dotGraph showInternalNodeLabels dg
+        $ dotGraph f showInternalNodeLabels dg
       _ -> return ()
 
 writeSoftFOL :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID

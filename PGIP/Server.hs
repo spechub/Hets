@@ -56,7 +56,7 @@ getGraph opts file = runResultT $ do
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
   let dg = lookupDGraph ln le
   (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
-      $ dotGraph False dg
+      $ dotGraph file False dg
   case exCode of
       ExitSuccess -> liftR $ extractSVG out
       _ -> fail err
