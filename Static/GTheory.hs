@@ -360,21 +360,21 @@ gEnsuresAmalgamability options gd sink =
        _ -> error "heterogeneous amalgability check: no nodes"
     else error "heterogeneous amalgability check not yet implemented"
 
-data BasicExtResponse = GiveUpFailure | TryAgainFailure
+data BasicExtResponse = Failure Bool  -- True means fatal (give up)
   | Success G_theory Int (Set.Set G_symbol) Bool
 
 extendByBasicSpec :: String -> G_theory -> (BasicExtResponse, String)
 extendByBasicSpec str (G_theory lid eSig@(ExtSign sign syms) si sens _) =
   case parse_basic_spec lid of
-    Nothing -> (GiveUpFailure, "missing basic spec parser")
+    Nothing -> (Failure True, "missing basic spec parser")
     Just p -> case basic_analysis lid of
-      Nothing -> (GiveUpFailure, "missing basic analysis")
+      Nothing -> (Failure True, "missing basic analysis")
       Just f -> case runParser (p << eof) (emptyAnnos ()) "" $ trimLeft str of
-        Left err -> (TryAgainFailure, show err)
+        Left err -> (Failure False, show err)
         Right bs -> let
           Result ds res = f (bs, sign, emptyGlobalAnnos)
           in case res of
-            Nothing -> (TryAgainFailure, showRelDiags 1 ds)
+            Nothing -> (Failure False, showRelDiags 1 ds)
             Just (_, ExtSign sign2 syms2, sens2) ->
               let Result es mm = inclusion lid sign2 sign
                   sameSig = isJust mm

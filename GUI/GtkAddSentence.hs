@@ -26,22 +26,8 @@ import Interfaces.Utils
 import Static.DevGraph
 import Static.GTheory
 
-import Logic.Logic
-import Logic.Prover
-
-import Common.AnnoState (emptyAnnos)
-import Common.Doc
-import Common.ExtSign
-import Common.GlobalAnnotations
-import Common.Parsec
-import Common.Result
-import Common.Utils
-
 import Control.Monad
 import Data.IORef
-import Data.Maybe
-
-import Text.ParserCombinators.Parsec
 
 gtkAddSentence :: GInfo -> Int -> DGraph -> IO ()
 gtkAddSentence gi n dg = postGUIAsync $ do
@@ -66,31 +52,15 @@ errorFeedback abort msg =
    errorDialog "Error" msg >> return abort
 
 anaSentence :: GInfo -> Int -> DGNodeLab -> String -> IO Bool
-anaSentence gi n lbl sen = case dgn_theory lbl of
-  G_theory lid sign si sens _ -> case parse_basic_spec lid of
-    Nothing -> errorFeedback True "missing basic spec parser"
-    Just p -> case basic_analysis lid of
-      Nothing -> errorFeedback True "missing basic analysis"
-      Just f -> case runParser (p << eof) (emptyAnnos ()) "" $ trimLeft sen of
-        Left err -> errorFeedback False $ show err
-        Right bs -> let
-          ps = plainSign sign
-          Result ds res = f (bs, ps, emptyGlobalAnnos)
-          in case res of
-            Nothing -> errorFeedback False $ showRelDiags 1 ds
-            Just (_, ExtSign sig2 _, sens2) ->
-              let Result es mm = inclusion lid sig2 ps in
-              if isJust mm then case sens2 of
-                [_] -> case joinSens (toThSens sens2) sens of
-                  newSens -> do
-                    addSentence gi n lbl $ G_theory lid sign si newSens
-                      startThId
-                    return True
-                [] -> errorFeedback False "no sentence recognized"
-                _ -> errorFeedback False $ "multiple sentences recognized\n"
-                     ++ show (vcat $ map (print_named lid) sens2)
-              else errorFeedback False $ "signature must not change\n"
-                   ++ showRelDiags 1 es
+anaSentence gi n lbl sen = case extendByBasicSpec sen $ dgn_theory lbl of
+  (Success gTh num _ sameSig, str)
+    | not sameSig -> errorFeedback False $ "signature must not change\n" ++ str
+    | num < 1 -> errorFeedback False "no sentence recognized"
+    | num > 1 -> errorFeedback False $ "multiple sentences recognized\n" ++ str
+    | otherwise -> do
+         addSentence gi n lbl gTh
+         return True
+  (Failure b, str) -> errorFeedback b str
 
 addSentence :: GInfo -> Int -> DGNodeLab -> G_theory -> IO ()
 addSentence gi n lbl th = do
