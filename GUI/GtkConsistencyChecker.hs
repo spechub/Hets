@@ -11,9 +11,7 @@ Portability :  portable
 This module provides a GUI for the consistency checker.
 -}
 
-module GUI.GtkConsistencyChecker
-  ( showConsistencyChecker
-  ) where
+module GUI.GtkConsistencyChecker where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
@@ -64,11 +62,11 @@ instance Eq Finder where
 data FNode = FNode { name :: String
                    , node :: LNode DGNodeLab
                    , sublogic :: G_sublogics
-                   , status :: ConsistencyStatus }
+                   , cStatus :: ConsistencyStatus }
 
 -- | Get a markup string containing name and color
 instance Show FNode where
-  show FNode { name = n, status = s } =
+  show FNode { name = n, cStatus = s } =
     "<span color=\"" ++ cStatusToColor s ++ "\">" ++ cStatusToPrefix s ++ n ++
     "</span>"
 
@@ -76,8 +74,8 @@ instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
 
 instance Ord FNode where
-  compare (FNode { name = n1, status = s1 })
-          (FNode { name = n2, status = s2 }) = case compare s1 s2 of
+  compare (FNode { name = n1, cStatus = s1 })
+          (FNode { name = n2, cStatus = s2 }) = case compare s1 s2 of
     EQ -> compare n1 n2
     c -> c
 
@@ -231,7 +229,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
             sel p) rs
         signalUnblock shN
         u
-      selectWith f = selectWithAux $ f . status
+      selectWith f = selectWithAux $ f . cStatus
 
   onClicked btnNodesUnchecked
     $ selectWith (== ConsistencyStatus CSUnchecked "") upd
@@ -271,7 +269,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
 
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
-    let changes = foldl (\ cs (FNode { node = (i, l), status = s }) ->
+    let changes = foldl (\ cs (FNode { node = (i, l), cStatus = s }) ->
                       if (\ st -> st /= CSConsistent && st /= CSInconsistent)
                          $ sType s then cs
                         else
@@ -283,7 +281,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
         dg' = changesDGH dg changes
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
 
-  selectWithAux (maybe ((== ConsistencyStatus CSUnchecked "") . status)
+  selectWithAux (maybe ((== ConsistencyStatus CSUnchecked "") . cStatus)
           (\ n -> (== n) . fst . node) mn) upd
   widgetShow window
 
@@ -350,7 +348,7 @@ check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
            res <- consistencyCheck inclThms cc c ln le dg n timeout
-           postGUISync $ listStoreSetValue listNodes row fn { status = res }
+           postGUISync $ listStoreSetValue listNodes row fn { cStatus = res }
            return $ count + 1) 0 nodes
 
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
@@ -406,7 +404,7 @@ showModelViewAux lock title list other = do
   textBufferApplyTag buffer font start end
 
   -- setup list view
-  let filterNodes = filter ((/= ConsistencyStatus CSUnchecked "") . status)
+  let filterNodes = filter ((/= ConsistencyStatus CSUnchecked "") . cStatus)
 
   nodes <- listStoreToList list
   listNodes <- setListData trvNodes show $ sort $ filterNodes $ other ++ nodes
@@ -415,7 +413,7 @@ showModelViewAux lock title list other = do
     mn <- getSelectedSingle trvNodes listNodes
     case mn of
       Nothing -> textBufferSetText buffer ""
-      Just (_, n) -> textBufferSetText buffer $ show $ status n
+      Just (_, n) -> textBufferSetText buffer $ show $ cStatus n
 
   -- setup actions
   onClicked btnClose $ widgetDestroy window

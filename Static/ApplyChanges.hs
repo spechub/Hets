@@ -109,6 +109,7 @@ remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
         Just (si, b) -> if b then
           trace ("ignore removing symbol attributes from: " ++ s) $ return dg
           else removeNthSymbol si dg i
+      Just (Axioms si) -> removeNthAxiom si dg i
   LinkElem eId src tar m -> let e = showEdgeId eId in case m of
     Nothing ->
       case (lookupNodeByNodeName src dg, lookupNodeByNodeName tar dg) of
@@ -168,3 +169,7 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
                                   (v, newLbl) }
               in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
     _ -> fail $ "cannot remove symbol from non-basic-spec node: " ++ nn
+
+removeNthAxiom :: Monad m => Int -> DGraph -> LNode DGNodeLab -> m DGraph
+removeNthAxiom n dg (v, lbl) = let nn = getDGNodeName lbl in
+  fail "removeNthAxiom"

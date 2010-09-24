@@ -156,6 +156,7 @@ getDeclsOrSign e = case findChildrenByLocalName "Declarations" e of
 
 data NodeSubElem
   = DeclSymbol (Maybe (Int, Bool))  -- ^ True addresses just the attribute
+  | Axioms Int
     deriving Show
 
 data ViewDefnElem = RangeAttr | ViewMorphism deriving Show
@@ -293,6 +294,10 @@ getNodeSubElem stps =
         _ -> err
       _ -> err
     _ -> err
+  [a] | checkStepElement "Axioms" a
+    -> case getStepNumber a of
+         Just i -> return $ Just $ Axioms i
+         _ -> err
   _ -> err
 
 getStepNumber :: Step -> Maybe Int
