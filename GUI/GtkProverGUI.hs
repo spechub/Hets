@@ -17,7 +17,6 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
-import GUI.GtkDisprove
 import qualified GUI.Glade.ProverGUI as ProverGUI
 import GUI.HTkProofDetails -- not implemented in Gtk
 
@@ -37,13 +36,11 @@ import Logic.Prover
 
 import qualified Comorphisms.KnownProvers as KnownProvers
 
-import Static.DevGraph (DGNodeLab)
 import Static.GTheory
 
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe ( fromJust, fromMaybe, isJust )
-import Data.Graph.Inductive.Graph (LNode)
 
 data GProver = GProver { pName :: String
                        , comorphism :: [AnyComorphism]
@@ -59,12 +56,11 @@ showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
   -> String -- ^ theory name
   -> String -- ^ warning information
   -> G_theory -- ^ theory
-  -> LNode DGNodeLab -- ^ node the proving is applied to
   -> KnownProvers.KnownProversMap -- ^ map of known provers
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
   -> IO (Result G_theory)
-showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
+showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
   initState <- (initialState lid thName th knownProvers comorphList
                 >>= recalculateSublogicF prGuiAcs)
   state <- newMVar initState
@@ -98,7 +94,6 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     btnDisplay            <- xmlGetWidget xml castToButton "btnDisplay"
     btnProofDetails       <- xmlGetWidget xml castToButton "btnProofDetails"
     btnProve              <- xmlGetWidget xml castToButton "btnProve"
-    btnDisprove           <- xmlGetWidget xml castToButton "btnDisprove"
     cbComorphism          <- xmlGetWidget xml castToComboBox "cbComorphism"
     lblSublogic           <- xmlGetWidget xml castToLabel "lblSublogic"
     -- prover
@@ -169,7 +164,6 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
           signalUnblock shP
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
-          widgetSetSensitive (castToWidget btnDisprove) True
           return s
 
     activate noGoal (not $ Map.null $ goalMap initState)
@@ -203,11 +197,6 @@ showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
     onClicked btnDisplay $ readMVar state >>= displayGoals
 
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
-
-    onClicked btnDisprove $ do
-      s' <- takeMVar state
-      res <- showDisproveGUI node s'
-      putMVar state =<< update res
 
     onClicked btnProve $ do
       s' <- takeMVar state

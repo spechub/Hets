@@ -17,10 +17,8 @@ module GUI.ProverGUI
 
 import Logic.Comorphism
 import Logic.Logic
-import Static.DevGraph (DGNodeLab)
 import Static.GTheory
 import Common.Result as Result
-import Data.Graph.Inductive.Graph (LNode)
 import Proofs.AbstractState
 import qualified Comorphisms.KnownProvers as KnownProvers
 
@@ -47,7 +45,6 @@ proverGUI ::
   -> String -- ^ theory name
   -> String -- ^ warning information
   -> G_theory -- ^ theory
-  -> LNode DGNodeLab -- ^ node the proving is applied to
   -> KnownProvers.KnownProversMap -- ^ map of known provers
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
@@ -55,7 +52,7 @@ proverGUI ::
 #ifdef GTKGLADE
 proverGUI = showProverGUI
 #elif defined UNI_PACKAGE
-proverGUI lid prGuiAcs thName warningTxt th _ knownProvers comorphList = do
+proverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
   guiMVar <- newMVar Nothing
   proofManagementGUI lid prGuiAcs thName warningTxt th knownProvers comorphList
                      guiMVar

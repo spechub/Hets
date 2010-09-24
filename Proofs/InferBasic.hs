@@ -90,7 +90,7 @@ proveTheory _ =
 basicInferenceNode :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
                    -> LibEnv -> IORef IntState
                    -> IO (Result G_theory)
-basicInferenceNode lg ln dGraph n@(node, lbl) libEnv intSt =
+basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
   runResultT $ do
     -- compute the theory of the node, and its name
     -- may contain proved theorems
@@ -105,7 +105,7 @@ basicInferenceNode lg ln dGraph n@(node, lbl) libEnv intSt =
       { proveF = proveKnownPMap lg intSt freedefs
       , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
       , recalculateSublogicF = return . recalculateSublogicAndSelectedTheory
-      } thName (hidingLabelWarning lbl) thForProof n kpMap
+      } thName (hidingLabelWarning lbl) thForProof kpMap
       (getProvers ProveGUI (Just sublogic) cms)
 
 proveKnownPMap :: (Logic lid sublogics1

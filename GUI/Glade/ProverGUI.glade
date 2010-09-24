@@ -160,17 +160,6 @@
                           <widget class="GtkHBox" id="hbox1">
                             <property name="visible">True</property>
                             <child>
-                              <widget class="GtkButton" id="btnDisprove">
-                                <property name="label" translatable="yes">Disprove</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
-                              </widget>
-                              <packing>
-                                <property name="position">3</property>
-                              </packing>
-                            </child>
-                            <child>
                               <widget class="GtkButton" id="btnDisplay">
                                 <property name="label" translatable="yes">Display</property>
                                 <property name="visible">True</property>
