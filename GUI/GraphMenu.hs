@@ -333,6 +333,9 @@ createMenuNodeRef shape color gi convGraph showLib internal = shape
         , createMenuButtonShowTheory gi
         , createMenuButtonShowProofStatusOfNode gi
         , createMenuButtonProveAtNode gi
+#ifdef GTKGLADE
+        , createMenuButtonDisproveAtNode gi
+#endif
         , Button "Show referenced library"
             (\ (_, n) -> showReferencedLibrary n gi convGraph showLib)
         ])

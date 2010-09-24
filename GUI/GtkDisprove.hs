@@ -63,12 +63,13 @@ showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
   Nothing -> error "GtkDisprove.showDisproveGUI"
   Just gt@(G_theory lid1 (ExtSign sign symb) _ sens _) -> let
     fgoal g = let th = negate_th gt g 
-                  n' = (i, lbl { dgn_theory = th })
-              in FNode { name = g, node = n', sublogic = sublogicOfTh th,
+                  l = lbl { dgn_theory = th }
+                  l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+              in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
                    cStatus = ConsistencyStatus CSUnchecked "" }
     fgoals = map fgoal $ OMap.keys $ OMap.filter (not . isAxiom) sens
     in do
-      showDisproveWindow gi le dg gt fgoals
+      showDisproveWindow (libName gi) le dg gt fgoals
 
 negate_th :: G_theory -> String -> G_theory
 negate_th g_th goal = case g_th of
@@ -89,8 +90,8 @@ negate_th g_th goal = case g_th of
 -- and holds the functionality to call the ConsistencyChecker for the
 -- (previously negated) selected Theorems.
 
-showDisproveWindow :: GInfo -> LibEnv -> DGraph -> G_theory -> [FNode] -> IO ()
-showDisproveWindow gi le dg g_th fgoals = postGUIAsync $ do
+showDisproveWindow :: LibName -> LibEnv -> DGraph -> G_theory -> [FNode] -> IO ()
+showDisproveWindow ln le dg g_th fgoals = postGUIAsync $ do
   xml <- getGladeXML ConsistencyChecker.get
   -- get objects
   window <- xmlGetWidget xml castToWindow "NodeChecker"
@@ -200,7 +201,7 @@ showDisproveWindow gi le dg g_th fgoals = postGUIAsync $ do
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
-      --check inclThms ln le dg f timeout listNodes updat nodes'
+      check inclThms ln le dg f timeout listNodes updat nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -216,6 +217,7 @@ showDisproveWindow gi le dg g_th fgoals = postGUIAsync $ do
         activate checkWidgets True
         pexit
 
+-- TODO if FNode is Consistent, it must be set to Disproved in DGraph!
 {-  onDestroy window $ do
     nodes' <- listStoreToList listNodes
     let changes = foldl (\ cs (FNode { node = (i, l), cStatus = s }) ->
@@ -233,60 +235,4 @@ showDisproveWindow gi le dg g_th fgoals = postGUIAsync $ do
   selectWith (== ConsistencyStatus CSUnchecked "") upd
   widgetShow window
 
-disproveThmSingle :: FNode
-                  -> Finder
-                  -> Int -- ^ timeout limit
-                  -> ProofState lid sentence
-                  -> IO (ProofState lid sentence)
-disproveThmSingle fgoal fdr t'' state = undefined {-
-  let info s = infoDialog ("Disprove " ++ selGoal) s in
-  case globalTheory lbl of
-    Nothing -> info "Disprove failed: No global Theory"
-    Just (G_theory lid1 (ExtSign sign symb) i1 sens i2) ->
-      case OMap.lookup selGoal sens of
-        Nothing -> error "GtkDisprove.disproveThmSingle(1)"
-        Just sen -> case negation lid1 $ sentence sen of
-          Nothing -> info "Disprove failed: negation is not defined"
-          Just s' -> do
-            let negSen = sen { sentence = s', isAxiom = True }
-                axs = OMap.filter isAxiom sens
-                sens' = OMap.insert selGoal negSen axs
-                g_th = G_theory lid1 (ExtSign sign symb) i1 sens' i2
-                subL = sublogicOfTh g_th
-                lcc = getConsCheckers $ findComorphismPaths logicGraph subL
-            case find (\ (p, _) -> getPName p == selPr) lcc of
-              Nothing ->
-                info $ "failed to find Consistency Checker for the selected prover\n\n"
-                  ++ "possible ConsCheckers are:\n" ++ intercalate "\n"
-                   (nubOrd $ map (getPName . fst) lcc)
-              Just (G_cons_checker lid4 cc, Comorphism cid) -> do
-                let lidS = sourceLogic cid
-                    lidT = targetLogic cid
-                    res = do
-                      bTh' <- coerceBasicTheory lid1 lidS "" (sign, toNamedList sens')
-                      (sig2, sens2) <- wrapMapTheory cid bTh'
-                      incl <- subsig_inclusion lidT (empty_signature lidT) sig2
-                      return TheoryMorphism
-                        { tSource = emptyTheory lidT
-                        , tTarget = Theory sig2 $ toThSens sens2
-                        , tMorphism = incl }
-                case maybeResult res of
-                  Nothing ->
-                    info "Disprove failed: TheoryMorphism could not be constructed"
-                  Just mor -> do
-                    let thName = getDGNodeName lbl
-                        ts = TacticScript $ if ccNeedsTimer cc then "" else show t''
-                    cc' <- coerceConsChecker lid4 lidT "" cc
-                    ccS <- (if ccNeedsTimer cc' then timeoutSecs t'' else ((return . Just) =<<))
-                      (ccAutomatic cc' thName ts mor [])
-                    case ccS of
-                      Just ccStatus -> do
-                           info $ "the ConsistencyChecker " ++ ccName cc' ++ " has returned "
-                             ++ "the following " ++ case ccResult ccStatus of
-                               Nothing -> ""
-                               Just b -> if b then "consistent" else "inconsistent"
-                             ++ " results:\n" ++ show (ccProofTree ccStatus)
-                      Nothing -> do
-                           info $ "the ConsistencyChecker has not returned any results\n"
-                             ++ "ConsistencyChecker used: " ++ ccName cc'
--}
+
