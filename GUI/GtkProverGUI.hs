@@ -17,6 +17,7 @@ import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
+import GUI.GtkDisprove
 import qualified GUI.Glade.ProverGUI as ProverGUI
 import GUI.HTkProofDetails -- not implemented in Gtk
 
@@ -63,7 +64,7 @@ showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
   -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                                 -- for sublogic of G_theory
   -> IO (Result G_theory)
-showProverGUI lid prGuiAcs thName warn th _node knownProvers comorphList = do
+showProverGUI lid prGuiAcs thName warn th node knownProvers comorphList = do
   initState <- (initialState lid thName th knownProvers comorphList
                 >>= recalculateSublogicF prGuiAcs)
   state <- newMVar initState
@@ -168,7 +169,7 @@ showProverGUI lid prGuiAcs thName warn th _node knownProvers comorphList = do
           signalUnblock shP
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
-          widgetSetSensitive (castToWidget btnDisprove) False
+          widgetSetSensitive (castToWidget btnDisprove) True
           return s
 
     activate noGoal (not $ Map.null $ goalMap initState)
@@ -202,6 +203,11 @@ showProverGUI lid prGuiAcs thName warn th _node knownProvers comorphList = do
     onClicked btnDisplay $ readMVar state >>= displayGoals
 
     onClicked btnProofDetails $ forkIO_ $ readMVar state >>= doShowProofDetails
+
+    onClicked btnDisprove $ do
+      s' <- takeMVar state
+      res <- showDisproveGUI node s'
+      putMVar state =<< update res
 
     onClicked btnProve $ do
       s' <- takeMVar state
