@@ -312,6 +312,7 @@ createMenuNode shape color gi internal = shape
         , createMenuButtonProveAtNode
         , createMenuButtonProveStructured
 #ifdef GTKGLADE
+        , createMenuButtonDisproveAtNode
         , createMenuButtonAddSentence
         , createMenuButtonCCCAtNode
 #endif
@@ -383,6 +384,10 @@ createMenuButtonShowProofStatusOfNode gi =
 createMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveAtNode gi =
   createMenuButton "Prove" (proveAtNode gi) gi
+
+createMenuButtonDisproveAtNode :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonDisproveAtNode gi =
+  createMenuButton "Disprove" (disproveAtNode gi) gi
 
 createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveStructured gi =

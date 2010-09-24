@@ -47,7 +47,6 @@ import Common.Utils
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
-import Control.Monad (foldM_, join, when)
 
 import Proofs.AbstractState
 
@@ -56,31 +55,20 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
-data Finder = Finder { fName :: String
-                     , finder :: G_cons_checker
-                     , comorphism :: [AnyComorphism]
-                     , selected :: Int }
-
-data FGoal = FGoal { name :: String
-                   , neg_th :: G_theory }
-                     -- checkers :: [(G_Cons_Checker, [AnyComorphism])] }
+import Proofs.ConsistencyCheck
+import GUI.GtkConsistencyChecker
                    
-showDisproveGUI :: LNode DGNodeLab -> ProofState lid sentence
-                -> IO (ProofState lid sentence)
-showDisproveGUI (_,lbl) pstate = case globalTheory lbl of
+showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
+showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
   Nothing -> error "GtkDisprove.showDisproveGUI"
   Just gt@(G_theory lid1 (ExtSign sign symb) _ sens _) -> let
-    goals = OMap.keys $ OMap.filter (not . isAxiom) sens
-    neg_theories = map (negate_th gt) goals
-    consCheckers = concatMap (\th -> getConsCheckers $ 
-                      findComorphismPaths logicGraph $
-                      sublogicOfTh th) neg_theories
-    fgoals = zipWith (\ a b -> FGoal {name = a, neg_th = b}) goals neg_theories
+    fgoal g = let th = negate_th gt g 
+                  n' = (i, lbl { dgn_theory = th })
+              in FNode { name = g, node = n', sublogic = sublogicOfTh th,
+                   cStatus = ConsistencyStatus CSUnchecked "" }
+    fgoals = map fgoal $ OMap.keys $ OMap.filter (not . isAxiom) sens
     in do
-      wait <- newEmptyMVar
-      showDisproveWindow gt pstate fgoals consCheckers wait
-      st' <- takeMVar wait
-      return st'
+      showDisproveWindow gi le dg gt fgoals
 
 negate_th :: G_theory -> String -> G_theory
 negate_th g_th goal = case g_th of
@@ -101,11 +89,8 @@ negate_th g_th goal = case g_th of
 -- and holds the functionality to call the ConsistencyChecker for the
 -- (previously negated) selected Theorems.
 
--- TODO 
-showDisproveWindow :: G_theory -> ProofState lid sentence -> [FGoal]
-                   -> [(G_cons_checker, AnyComorphism)] 
-                   -> MVar (ProofState lid sentence) -> IO ()
-showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
+showDisproveWindow :: GInfo -> LibEnv -> DGraph -> G_theory -> [FNode] -> IO ()
+showDisproveWindow gi le dg g_th fgoals = postGUIAsync $ do
   xml <- getGladeXML ConsistencyChecker.get
   -- get objects
   window <- xmlGetWidget xml castToWindow "NodeChecker"
@@ -152,10 +137,8 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
   mView <- newEmptyMVar
 
   -- setup data
-  let toFinder (gc,c) = Finder { fName = getPName gc, finder = gc,
-                                 comorphism = [c], selected = 1 }
-  listNodes <- setListData trvNodes name fgoals
-  listFinder <- setListData trvFinder fName [toFinder (head finders)]
+  listNodes <- setListData trvNodes show $ sort fgoals
+  listFinder <- setListData trvFinder fName []
 
   -- setup comorphism combobox
   comboBoxSetModelText cbComorphism
@@ -167,11 +150,9 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
         mf <- getSelectedSingle trvFinder listFinder
         updateComorphism trvFinder listFinder cbComorphism shC
         widgetSetSensitive btnCheck $ isJust mf
-      update' s' = do
-          return s'
   setListSelectorSingle trvFinder update
 
-{-  let upd = updateNodes trvNodes listNodes
+  let upd = updateNodes trvNodes listNodes
         (\ b s -> do
            labelSetLabel lblSublogic $ show s
            updateFinder trvFinder listFinder b s)
@@ -181,14 +162,13 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
           activate widgets False
           widgetSetSensitive btnCheck False)
         (activate widgets True >> widgetSetSensitive btnCheck True)
--}
 
---  shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
-  --  btnNodesInvert
+  shN <- setListSelectorMultiple trvNodes btnNodesAll btnNodesNone
+    btnNodesInvert upd
 
   -- bindings
-  let selectWith f = do
-    --    signalBlock shN
+  let selectWithAux f u = do
+        signalBlock shN
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
@@ -196,14 +176,16 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
           fn <- listStoreGetValue listNodes row
           (if f fn then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs
-      --  signalUnblock shN
-        
-  onClicked btnNodesUnchecked
-    $ selectWith (\ a -> True)
-  onClicked btnNodesTimeout $ selectWith (\ a -> True)
+        signalUnblock shN
+        u
+      selectWith f = selectWithAux $ f . cStatus
 
---  onClicked btnResults $ showModelView mView "Models" listNodes emptyNodes
-  --onClicked btnClose $ widgetDestroy window
+  onClicked btnNodesUnchecked
+    $ selectWith (== ConsistencyStatus CSUnchecked "") upd
+  onClicked btnNodesTimeout $ selectWith (== ConsistencyStatus CSTimeout "") upd
+
+  onClicked btnResults $ showModelView mView "Models" listNodes []
+  onClicked btnClose $ widgetDestroy window
   onClicked btnStop $ takeMVar threadId >>= killThread >>= putMVar wait
 
   onClicked btnCheck $ do
@@ -211,22 +193,14 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
     timeout <- spinButtonGetValueAsInt sbTimeout
     inclThms <- toggleButtonGetActive cbInclThms
     (updat, pexit) <- progressBar "Checking consistency" "please wait..."
-    goals <- getSelectedMultiple trvNodes listNodes
+    nodes' <- getSelectedMultiple trvNodes listNodes
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
       Nothing -> error "Consistency checker: internal error"
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
-      let count' = fromIntegral $ length goals
-          -- c = comorphism f !! selected f
-      foldM_ (\ count fg -> do
-           postGUISync $ updat (count / count') $ name fg
-           s' <- takeMVar res
-           s'' <- disproveThmSingle fg f timeout s'
-           --postGUISync $ listStoreSetValue listNodes row fn { status = res }
-           putMVar res =<< update' s''
-           return $ count + 1) 0 fgoals
+      --check inclThms ln le dg f timeout listNodes updat nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -234,17 +208,17 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
       postGUIAsync $ do
         switch True
         tryTakeMVar threadId
-        --showModelView mView "Results of consistency check" listNodes emptyNodes
-        --signalBlock shN
-        --sortNodes trvNodes listNodes
-        --signalUnblock shN
-        --upd
+        showModelView mView "Results of consistency check" listNodes []
+        signalBlock shN
+        sortNodes trvNodes listNodes
+        signalUnblock shN
+        upd
         activate checkWidgets True
         pexit
 
-  --onDestroy window $ do
-    {-nodes' <- listStoreToList listNodes
-    let changes = foldl (\ cs (FNode { node = (i, l), status = s }) ->
+{-  onDestroy window $ do
+    nodes' <- listStoreToList listNodes
+    let changes = foldl (\ cs (FNode { node = (i, l), cStatus = s }) ->
                       if (\ st -> st /= CSConsistent && st /= CSInconsistent)
                          $ sType s then cs
                         else
@@ -253,45 +227,18 @@ showDisproveWindow g_th st fgoals finders res = postGUIAsync $ do
                                         else markNodeConsistent "" l)
                           in SetNodeLab l n : cs
                     ) [] nodes'
-        dg' = changesDGH dg changes -}
-    --putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
-
-  putMVar res =<< update' st
-  selectWith (\ a -> False)
+        dg' = changesDGH dg changes
+    putMVar res $ Map.insert ln (groupHistory dg (DGRule "Consistency") dg') le
+-}
+  selectWith (== ConsistencyStatus CSUnchecked "") upd
   widgetShow window
 
-updateComorphism :: TreeView -> ListStore Finder -> ComboBox
-                 -> ConnectId ComboBox -> IO ()
-updateComorphism view list cbComorphism sh = do
-  signalBlock sh
-  model <- comboBoxGetModelText cbComorphism
-  listStoreClear model
-  mfinder <- getSelectedSingle view list
-  case mfinder of
-    Just (_, f) -> do
-      mapM_ (comboBoxAppendText cbComorphism) $ expand f
-      comboBoxSetActive cbComorphism $ selected f
-    Nothing -> return ()
-  signalUnblock sh
-
-expand :: Finder -> [String]
-expand = map show . comorphism
-
-setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
-setSelectedComorphism view list cbComorphism = do
-  mfinder <- getSelectedSingle view list
-  case mfinder of
-    Just (i, f) -> do
-      sel <- comboBoxGetActive cbComorphism
-      listStoreSetValue list i f { selected = sel }
-    Nothing -> return ()
-
-disproveThmSingle :: FGoal
+disproveThmSingle :: FNode
                   -> Finder
                   -> Int -- ^ timeout limit
                   -> ProofState lid sentence
                   -> IO (ProofState lid sentence)
-disproveThmSingle (FGoal n th) fdr t'' state = undefined {-
+disproveThmSingle fgoal fdr t'' state = undefined {-
   let info s = infoDialog ("Disprove " ++ selGoal) s in
   case globalTheory lbl of
     Nothing -> info "Disprove failed: No global Theory"
