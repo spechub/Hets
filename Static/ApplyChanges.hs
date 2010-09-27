@@ -76,11 +76,10 @@ add se dg ch = case ch of
              ++ "\n" ++ gm
              ++ "\nvia: " ++ show se)
       $ return dg
-    SymbolDG str -> addSymbol str se dg
-    _ ->
-      trace ("ignore adding: " ++ show ch
-             ++ "\nat: " ++ show se)
-      $ return dg
+    StringElem en str -> case en of
+      "Symbol" -> addSymbol str se dg
+      _ -> trace ("ignore adding: " ++ show en ++ "\nat: " ++ show se)
+         $ return dg
 
 addSymbol :: Monad m => String -> SelElem -> DGraph -> m DGraph
 addSymbol str se dg = let err = "Static.ApplyChanges.addSymbol: " in case se of

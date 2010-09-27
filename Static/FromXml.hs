@@ -79,11 +79,7 @@ data AddChangeDG
     , linkType :: String
     , gmorphism :: String
     }
-  | GMorphismDG
-    { gmorphism :: String }
-  | SymbolDG String
-  | ConsStatusDG
-    { consStatus :: String }
+  | StringElem String String
   deriving Show
 
 data DeclsOrSign
@@ -135,11 +131,7 @@ addChangeDG ac = case ac of
           , linkType = concat $ getElementTexts "Type" e
           , gmorphism = gmor
           }
-      "GMorphism" -> return GMorphismDG
-         { gmorphism = strContent e }
-      "Symbol" -> return $ SymbolDG $ strContent e
-      "ConsStatus" -> return $ ConsStatusDG $ strContent e
-      en -> fail $ "Static.FromXML.addChangeDG: unexpected element: " ++ en
+      en -> return $ StringElem en $ strContent e
   _ -> fail "Static.FromXML.addChangeDG: unexpected added change"
 
 getGMorphism :: Monad m => Element -> m String
