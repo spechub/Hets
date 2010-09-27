@@ -20,6 +20,7 @@ import GUI.GraphLogic
 import GUI.Utils
 import GUI.UDGUtils
 #ifdef GTKGLADE
+import GUI.GtkDisprove
 import GUI.GtkLinkTypeChoice
 import GUI.GtkConsistencyChecker
 import GUI.GtkAutomaticProofs
@@ -388,10 +389,6 @@ createMenuButtonProveAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveAtNode gi =
   createMenuButton "Prove" (proveAtNode gi) gi
 
-createMenuButtonDisproveAtNode :: GInfo -> ButtonMenu GA.NodeValue
-createMenuButtonDisproveAtNode gi =
-  createMenuButton "Disprove" (disproveAtNode gi) gi
-
 createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveStructured gi =
   createMenuButton "Prove VSE Structured" (\ descr _ ->
@@ -399,6 +396,10 @@ createMenuButtonProveStructured gi =
               $ VSE.prove (libName gi, descr)) gi
 
 #ifdef GTKGLADE
+createMenuButtonDisproveAtNode :: GInfo -> ButtonMenu GA.NodeValue
+createMenuButtonDisproveAtNode gi =
+  createMenuButton "Disprove" (disproveAtNode gi) gi
+
 createMenuButtonCCCAtNode :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonCCCAtNode gi =
   createMenuButton "Check consistency" (consCheckNode gi) gi

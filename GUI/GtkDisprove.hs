@@ -12,7 +12,7 @@ This module provides a disproving module that checks consistency of inverted
 theorems.
 -}
 
-module GUI.GtkDisprove (showDisproveGUI) where
+module GUI.GtkDisprove (disproveAtNode) where
 
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
@@ -28,6 +28,7 @@ import Static.History
 import Static.ComputeTheory
 
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
+import Interfaces.DataTypes
 
 import Logic.Logic
 import Logic.Coerce
@@ -51,18 +52,55 @@ import Control.Concurrent.MVar
 import Proofs.AbstractState
 
 import Data.Graph.Inductive.Graph (LNode)
+import Data.IORef
+import qualified Data.Map as Map
+import Data.List
+import Logic.Logic
+import Logic.Coerce
+import Logic.Grothendieck
+import Logic.Comorphism
+import Logic.Prover
+
+import Comorphisms.LogicGraph (logicGraph)
+import Comorphisms.KnownProvers
+
+import qualified Common.OrderedMap as OMap
+import Common.AS_Annotation
+import Common.LibName (LibName)
+import Common.Result
+import Common.ExtSign
+import Common.Utils
+
+import Control.Concurrent (forkIO, killThread)
+import Control.Concurrent.MVar
+
+import Proofs.AbstractState
+
+import Data.Graph.Inductive.Graph (LNode)
+import Data.IORef
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
 import Proofs.ConsistencyCheck
 import GUI.GtkConsistencyChecker
-                   
+
+disproveAtNode :: GInfo -> Int -> DGraph -> IO ()
+disproveAtNode gInfo descr dgraph = do
+  let iSt = intState gInfo
+  ost <- readIORef iSt
+  case i_state ost of
+    Nothing -> return ()
+    Just ist -> do
+      let le = i_libEnv ist
+          dgn = labDG dgraph descr
+      showDisproveGUI gInfo le dgraph (descr, dgn)
+
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
 showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
   Nothing -> error "GtkDisprove.showDisproveGUI"
   Just gt@(G_theory lid1 (ExtSign sign symb) _ sens _) -> let
-    fgoal g = let th = negate_th gt g 
+    fgoal g = let th = negate_th gt g
                   l = lbl { dgn_theory = th }
                   l' = l { globalTheory = computeLabelTheory le dg (i, l) }
               in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,

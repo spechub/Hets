@@ -26,7 +26,6 @@ module GUI.GraphLogic
     , displayConceptGraph
     , showProofStatusOfNode
     , proveAtNode
-    , disproveAtNode
     , showNodeInfo
     , showDiagMess
     , showEdgeInfo
@@ -61,7 +60,6 @@ import Proofs.StatusUtils (lookupHistory, removeContraryChanges)
 
 import GUI.Taxonomy (displayConceptGraph, displaySubsortGraph)
 import GUI.GraphTypes
-import GUI.GtkDisprove
 import qualified GUI.GraphAbstraction as GA
 import GUI.Utils
 
@@ -536,17 +534,6 @@ proveAtNode gInfo descr dgraph = do
         when b action
         unlockLocal dgn'
         else errorDialog "Error" "Proofwindow already open"
-
-disproveAtNode :: GInfo -> Int -> DGraph -> IO ()
-disproveAtNode gInfo descr dgraph = do
-  let iSt = intState gInfo
-  ost <- readIORef iSt
-  case i_state ost of
-    Nothing -> return ()
-    Just ist -> do
-      let le = i_libEnv ist
-          dgn = labDG dgraph descr
-      showDisproveGUI gInfo le dgraph (descr, dgn)
 
 runProveAtNode :: GInfo -> LNode DGNodeLab
                -> Result G_theory -> IO ()
