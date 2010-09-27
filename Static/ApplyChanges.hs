@@ -113,7 +113,8 @@ remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
         Just (si, b) -> if b then
           trace ("ignore removing symbol attributes from: " ++ s) $ return dg
           else removeNthSymbol si dg i
-      Just (Axioms si) -> removeNthAxiom si dg i
+      Just (Axioms si) -> removeNthAxOrTh True si dg i
+      Just (Theorems si) -> removeNthAxOrTh False si dg i
   LinkElem eId src tar m -> let e = showEdgeId eId in case m of
     Nothing ->
       case (lookupNodeByNodeName src dg, lookupNodeByNodeName tar dg) of
@@ -174,14 +175,16 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
               in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
     _ -> fail $ "cannot remove symbol from non-basic-spec node: " ++ nn
 
-removeNthAxiom :: Monad m => Int -> DGraph -> LNode DGNodeLab -> m DGraph
-removeNthAxiom n dg (v, lbl) = let nn = getDGNodeName lbl in
+removeNthAxOrTh :: Monad m => Bool -> Int -> DGraph -> LNode DGNodeLab
+  -> m DGraph
+removeNthAxOrTh b n dg (v, lbl) = let nn = getDGNodeName lbl in
   case dgn_theory lbl of
         G_theory lid sig si thsens _ -> let
-          axs = toNamedList $ OMap.filter isAxiom thsens
-          in case atMaybe axs $ n - 1 of
-          Nothing -> fail $ "axiom " ++ show n ++ " not found in node: " ++ nn
-            ++ "\n" ++ intercalate ", " (map senAttr axs)
+          sens = toNamedList $ OMap.filter ((if b then id else not) . isAxiom)
+                thsens
+          in case atMaybe sens $ n - 1 of
+          Nothing -> fail $ "sentence " ++ show n ++ " not found in node: "
+            ++ nn ++ "\n" ++ intercalate ", " (map senAttr sens)
           Just ns -> let
             newLbl = lbl { dgn_theory = G_theory lid sig si
                            (Map.delete (senAttr ns) thsens) startThId }
