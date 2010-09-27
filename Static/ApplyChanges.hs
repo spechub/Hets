@@ -19,16 +19,20 @@ import Static.History
 import Static.FromXml
 
 import Logic.Coerce
+import Logic.ExtSign
 import Logic.Grothendieck
 import Logic.Logic
-import Logic.ExtSign
+import Logic.Prover
 
+import Common.AS_Annotation
 import Common.DocUtils
+import qualified Common.OrderedMap as OMap
 import Common.Result
 import Common.Utils (readMaybe, atMaybe)
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
+import Data.List
 import qualified Data.Map as Map
 
 import Control.Monad
@@ -149,7 +153,7 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
   case nodeInfo lbl of
   DGRef _ _ -> fail $ "cannot remove symbols from ref-node: " ++ nn
   DGNode orig _ -> case orig of
-    DGBasicSpec _ syms -> case atMaybe (Set.toList syms) (n - 1) of
+    DGBasicSpec _ syms -> case atMaybe (Set.toList syms) $ n - 1 of
       Nothing -> fail $ "symbol " ++ show n ++ " not found in node: " ++ nn
         ++ "\n" ++ showDoc syms ""
       Just gs@(G_symbol lid sym) -> case dgn_theory lbl of
@@ -172,4 +176,15 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
 
 removeNthAxiom :: Monad m => Int -> DGraph -> LNode DGNodeLab -> m DGraph
 removeNthAxiom n dg (v, lbl) = let nn = getDGNodeName lbl in
-  fail "removeNthAxiom"
+  case dgn_theory lbl of
+        G_theory lid sig si thsens _ -> let
+          axs = toNamedList $ OMap.filter isAxiom thsens
+          in case atMaybe axs $ n - 1 of
+          Nothing -> fail $ "axiom " ++ show n ++ " not found in node: " ++ nn
+            ++ "\n" ++ intercalate ", " (map senAttr axs)
+          Just ns -> let
+            newLbl = lbl { dgn_theory = G_theory lid sig si
+                           (Map.delete (senAttr ns) thsens) startThId }
+            finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
+                                  (v, newLbl) }
+            in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
