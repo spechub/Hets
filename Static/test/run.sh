@@ -23,12 +23,29 @@ mv tmp/*.xupdate $dir/$b2.xupdate
 popd
 }
 
+propagateDiff ()
+{
+diff $1 $3 > patch
+patch $2 patch
+}
+
+createUpdates ()
+{
 for i in Spec.het
 do
    for j in Add Remove Modify
    do
-       for k in Symbol Axiom
+       for k in Symbol Axiom Theorem
        do createXUpdate $i $j$k$i
        done
    done
 done
+}
+
+callHets ()
+{
+for i in *.xupdate
+do
+hets -v2 -U $i Spec.het
+done
+}
