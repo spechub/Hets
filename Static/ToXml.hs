@@ -23,6 +23,7 @@ import Logic.Grothendieck
 
 import Common.AS_Annotation
 import Common.ConvertGlobalAnnos
+import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
@@ -81,7 +82,8 @@ gmorph ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
         psym = prettyElem "Symbol" ga
         in add_attr (mkNameAttr $ language_name cid)
            $ unode "GMorphism" $
-             subnodes "Axioms" (map (mkAxNode ga) tsens)
+             subnodes "Axioms"
+             (map (mkAxDocNode ga . print_named (targetLogic cid)) tsens)
              ++ map (\ (s, t) -> unode "map" [psym s, psym t]) sl
 
 prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
@@ -117,16 +119,16 @@ lnode ga lenv (_, lbl) =
                  (axs, thms) = OMap.partition isAxiom $ OMap.map
                                (mapValue $ simplify_sen lid sig) thsens
                  in subnodes "Axioms"
-                    (map (mkAxNode ga) $ toNamedList axs)
+                    (map (mkAxDocNode ga . print_named lid) $ toNamedList axs)
                     ++ subnodes "Theorems"
-                    (map (mkThmNode ga) $ OMap.toList thms)
+                    (map (\ (s, t) -> mkThmNode ga
+                            (print_named lid $ toNamed s t)
+                            (isProvenSenStatus t)
+                         ) $ OMap.toList thms)
 
-mkThmNode :: (GetRange s, Pretty s) => GlobalAnnos
-          -> (String, SenStatus s (AnyComorphism, BasicProof)) -> Element
-mkThmNode ga (n, th) = let s = sentence th in add_attrs
-  (mkNameAttr n : mkProvenAttr (isProvenSenStatus th)
-    : rangeAttrs (getRangeSpan s))
-  $ prettyElem "Theorem" ga s
+mkThmNode :: GlobalAnnos -> Doc -> Bool -> Element
+mkThmNode ga d a = add_attr
+  (mkProvenAttr a) .  unode "Theorem" . show $ useGlobalAnnos ga d
 
 -- | a status may be open, proven or outdated
 mkStatusAttr :: String -> Attr
@@ -135,10 +137,8 @@ mkStatusAttr = mkAttr "status"
 mkProvenAttr :: Bool -> Attr
 mkProvenAttr b = mkStatusAttr $ if b then "proven" else "open"
 
-mkAxNode :: (GetRange s, Pretty s) => GlobalAnnos -> SenAttr s String -> Element
-mkAxNode ga ax = let s = sentence ax in add_attrs
- (mkNameAttr (senAttr ax) : rangeAttrs (getRangeSpan s))
-  $ prettyElem "Axiom" ga s
+mkAxDocNode :: GlobalAnnos -> Doc -> Element
+mkAxDocNode ga = unode "Axiom" . show . useGlobalAnnos ga
 
 constStatus :: ConsStatus -> [Element]
 constStatus cs = case show $ pretty cs of

@@ -78,6 +78,7 @@ add se dg ch = case ch of
       $ return dg
     StringElem en str -> case en of
       "Symbol" -> addSymbol str se dg
+      _ | elem en ["Axiom", "Theorem"] -> addAxOrTh str se dg
       _ -> trace ("ignore adding: " ++ show en ++ "\nat: " ++ show se)
          $ return dg
 
@@ -99,6 +100,22 @@ addSymbol str se dg = let err = "Static.ApplyChanges.addSymbol: " in case se of
           else fail $ err ++ "just add a single symbol to: " ++ showName nn
        (_, msg) -> fail $ err ++ msg
   _ -> fail $ err ++ "cannot add symbol to: " ++ show se
+
+addAxOrTh :: Monad m => String -> SelElem -> DGraph -> m DGraph
+addAxOrTh str se dg = let err = "Static.ApplyChanges.addAxOrTh: " in case se of
+  NodeElem nn (Just _) -> do
+    (v, lbl) <- getNodeByName err nn dg
+    case extendByBasicSpec str (dgn_theory lbl) of
+       (Success nGt nSens _ sameSig, msg) ->
+          if nSens == 1 && sameSig then let
+              newLbl = lbl { dgn_theory = nGt }
+              finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
+                                  (v, newLbl) }
+              in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
+          else if nSens == 0 then fail $ err ++ "missing sentence for: " ++ str
+               else fail $ err ++ msg
+       (_, msg) -> fail $ err ++ msg
+  _ -> fail $ err ++ "cannot add sentence to: " ++ show se
 
 remove :: Monad m => SelElem -> DGraph -> m DGraph
 remove se dg = let err = "Static.ApplyChanges.remove: " in case se of
