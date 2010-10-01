@@ -42,8 +42,8 @@ module GUI.GraphAbstraction
 import GUI.UDGUtils
 import GUI.Utils (pulseBar)
 import qualified UDrawGraph.Types as DVT
-import Events.Destructible as Destructible
-import Reactor.BSem
+import Events.Destructible (destroy)
+import Events.Synchronized (synchronize)
 
 import ATC.DevGraph ()
 import Static.DevGraph
