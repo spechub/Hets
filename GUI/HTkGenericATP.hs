@@ -24,6 +24,7 @@ import Data.List
 import Data.Maybe
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
+import Control.Monad
 
 import HTk.Toolkit.SpinButton
 import HTk.Toolkit.Separator

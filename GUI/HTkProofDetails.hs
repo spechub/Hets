@@ -20,6 +20,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 import Data.IORef
+import Control.Monad (when)
 
 import GUI.Utils (fileSaveDialog)
 

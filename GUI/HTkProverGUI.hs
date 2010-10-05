@@ -22,7 +22,7 @@ import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 
 import Data.List
-
+import Control.Monad (when)
 import qualified Control.Concurrent as Conc
 
 import HTk.Toolkit.Separator
