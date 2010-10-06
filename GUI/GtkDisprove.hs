@@ -232,17 +232,17 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
     case g_th of
       G_theory lid _s _i1 sens _i2 -> let
         sens' = foldr (\ fg t -> if (sType . cStatus) fg == CSConsistent
-              then let
-                n' = name fg
-                es = Map.findWithDefault (error
-                         "GtkDisprove.showDisproveWindow") n' t
-                s = OMap.ele es
-                ps = openProofStatus n' (fName f) (empty_proof_tree lid)
-                bp = BasicProof lid ps { goalStatus = Disproved }
-                c = comorphism f !! selected f
-                s' = s { senAttr = ThmStatus $ (c, bp) : thmStatus s }
-                  in Map.insert n' es { OMap.ele = s' } t
-              else t ) sens fnodes'
+          then let
+            n' = name fg
+            es = Map.findWithDefault (error
+                   "GtkDisprove.showDisproveWindow") n' t
+            s = OMap.ele es
+            ps = openProofStatus n' (fName f) (empty_proof_tree lid)
+            bp = BasicProof lid ps { goalStatus = Disproved }
+            c = comorphism f !! selected f
+            s' = s { senAttr = ThmStatus $ (c, bp) : thmStatus s }
+            in Map.insert n' es { OMap.ele = s' } t
+          else t ) sens fnodes'
         in putMVar res $ return (G_theory lid _s _i1 sens' _i2)
 
   selectWith (== ConsistencyStatus CSUnchecked "") upd
