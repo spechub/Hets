@@ -61,7 +61,7 @@ PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
 WAIVERSION = $(shell $(HCPKG) field wai-extra version)
-ifneq ($(findstring 0.2.2, $(WAIVERSION)),)
+ifneq ($(findstring 0.2., $(WAIVERSION)),)
 SERVER_FLAG = -DSERVER
 endif
 
