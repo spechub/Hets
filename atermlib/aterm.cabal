@@ -1,6 +1,6 @@
 name:            aterm
 version:         0.1.0.0
-license:         LGPL
+license:         GPL-2
 license-file:    LICENSE.txt
 author:          Klaus Luettich, Christian Maeder
 maintainer:      Christian Maeder <Christian Maeder@dfki.de>
@@ -12,20 +12,11 @@ category:        Data, Parsing
 stability:       provisional
 build-type:      Simple
 cabal-version:   >= 1.4
-tested-with:     GHC ==6.8.3, GHC ==6.10.4
-extra-source-files: LIZENZ.txt
-
-flag split-base
-flag base4
+tested-with:     GHC ==6.10.4, GHC ==6.12.3
 
 library
-  if flag(split-base)
-    build-depends:   base >= 3.0, containers, array
-  else
-    build-depends:   base < 3.0
 
-  if flag(base4)
-    build-depends:   ghc-prim
+  build-depends:   base >= 4.0 && < 5, ghc-prim, containers, array
 
   hs-source-dirs:  src
 
