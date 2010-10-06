@@ -20,12 +20,14 @@ import Graphics.UI.Gtk.Glade
 import GUI.GtkUtils as GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
+import GUI.GraphLogic hiding (openProofStatus)
 import GUI.GtkConsistencyChecker
 
 import Proofs.ConsistencyCheck
 
 import Interfaces.GenericATPState (guiDefaultTimeLimit)
 import Interfaces.DataTypes
+import Interfaces.Utils (updateNodeProof)
 
 import Logic.Logic
 import Logic.Prover
@@ -42,12 +44,17 @@ import Common.ExtSign
 
 import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
+import Control.Monad (unless)
 
 import Data.Graph.Inductive.Graph (LNode)
 import Data.IORef
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
+
+
+-- TODO read current goalstatus properly during startup!
+-- TODO (display results properly in the results window)
 
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
 showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
@@ -63,6 +70,7 @@ showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
       wait <- newEmptyMVar
       showDisproveWindow wait (libName gi) le dg gt fgoals
       res <- takeMVar wait
+      runDisproveAtNode gi (i,lbl) res
       return ()
 
 negate_th :: G_theory -> String -> G_theory
@@ -89,13 +97,33 @@ disproveAtNode gInfo descr dgraph = do
           dgn = labDG dgraph descr
       showDisproveGUI gInfo le dgraph (descr, dgn)
 
+runDisproveAtNode :: GInfo -> LNode DGNodeLab
+               -> Result G_theory -> IO ()
+runDisproveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
+  Just rTh ->
+    let oldTh = dgn_theory dgnode in
+    unless (rTh == oldTh) $ do
+      showDiagMessAux 2 ds
+      lockGlobal gInfo
+      let ln = libName gInfo
+          iSt = intState gInfo
+      ost <- readIORef iSt
+      let (ost', hist) = updateNodeProof ln ost (v, dgnode) rTh
+      case i_state ost' of
+        Nothing -> return ()
+        Just _ -> do
+          writeIORef iSt ost'
+          runAndLock gInfo $ updateGraph gInfo hist
+      unlockGlobal gInfo
+  _ -> return ()
+
+
 -- | Displays a GUI to set TimeoutLimit and select the ConsistencyChecker
 -- and holds the functionality to call the ConsistencyChecker for the
 -- (previously negated) selected Theorems.
 
 -- TODO proveAtNode anschauen, nach hasLock (..), tryLockLocal,
                      -- MVar auf LNode DGNodeLab
--- TODO rueckgabe von G_theory (Result ..) und einbingung in GraphLogic
 
 showDisproveWindow :: MVar (Result G_theory) -> LibName -> LibEnv 
                    -> DGraph -> G_theory -> [FNode] -> IO ()

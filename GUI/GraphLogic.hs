@@ -28,6 +28,7 @@ module GUI.GraphLogic
     , proveAtNode
     , showNodeInfo
     , showDiagMess
+    , showDiagMessAux
     , showEdgeInfo
     , checkconservativityOfNode
     , checkconservativityOfEdge
