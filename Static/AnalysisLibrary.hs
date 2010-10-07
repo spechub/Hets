@@ -85,7 +85,7 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
         return $ fail $ "no file for library '" ++ fname ++ "' found."
     Just file ->
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
-            fail $ "no matching source file for '" ++ fname ++ "' found."
+          return $ fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
         input <- readEncFile (ioEncoding opts) file
         putIfVerbose opts 2 $ "Reading file " ++ file
