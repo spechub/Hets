@@ -48,7 +48,8 @@ hetsServer opts = run 8000 $ \ re ->
   case B8.unpack (requestMethod re) of
     "GET" -> do
          let path = dropWhile (== '/') $ B8.unpack (pathInfo re)
-         dirs <- getHetsLibContent opts path
+             query = B8.unpack $ queryString re
+         dirs <- getHetsLibContent opts path query
          if null dirs then do
            Result ds ms <- getGraph opts path
            return $ case ms of
@@ -56,7 +57,10 @@ hetsServer opts = run 8000 $ \ re ->
                $ showRelDiags 1 ds
              Just s -> mkOkResponse s
            else return $ mkOkResponse $ htmlHead ++
-                unlines (map showElement dirs)
+                ppElement (unode "html"
+                [ unode "head" $ unode "title" $ "Listing of"
+                   ++ if null path then " repository" else ": " ++ path
+                , unode "body" $ headElems path ++ [unode "ul" dirs]])
     _ -> return $ mkResponse status405 ""
 
 mkResponse :: Status -> String -> Response
@@ -81,12 +85,12 @@ extractSVG str = case parseXMLDoc str of
   Nothing -> fail "did not recognize svg element"
   Just e -> return $ showTopElement e
 
-getHetsLibContent :: HetcatsOpts -> String -> IO [Element]
-getHetsLibContent opts dir = do
+getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
+getHetsLibContent opts dir query = do
   let hlibs = libdirs opts
   ds <- if null dir then return hlibs else
        filterM doesDirectoryExist $ map (</> dir) hlibs
-  fmap (map mkHtmlRef . sort . filter (not . isPrefixOf ".") . concat)
+  fmap (map (mkHtmlRef query) . sort . filter (not . isPrefixOf ".") . concat)
     $ mapM getDirContents ds
 
 -- | a variant that adds a trailing slash
@@ -96,10 +100,16 @@ getDirContents d = do
     mapM (\ f -> doesDirectoryExist (d </> f) >>= \ b -> return
             $ if b then addTrailingPathSeparator f else f) fs
 
-mkHtmlRef :: String -> Element
-mkHtmlRef entry = unode "br"
-   $ add_attr (mkAttr "href" entry)
+mkHtmlRef :: String -> String -> Element
+mkHtmlRef query entry = unode "li"
+   $ add_attr (mkAttr "href" $ entry ++ query)
          $ unode "a" entry
+
+headElems :: String -> [Element]
+headElems path = unode "strong" "Choose query type:" :
+  map (\ q -> add_attr (mkAttr "href"
+                       $ if q == "default" then "/" </> path else '?' : q)
+      $ unode "a" q) ["default", "graph", "pp.het", "pp.tex", "xml"]
 
 htmlHead :: String
 htmlHead =
