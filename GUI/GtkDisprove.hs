@@ -55,6 +55,9 @@ import Data.Maybe
 
 -- TODO read current goalstatus properly during startup!
 -- TODO (display results properly in the results window)
+-- TODO better error dialogs!
+
+-- TODO leave function with dialog if no goals are found
 
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
 showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
@@ -63,8 +66,14 @@ showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
     fgoal g = let th = negate_th gt g
                   l = lbl { dgn_theory = th }
                   l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+                  no_cs = ConsistencyStatus CSUnchecked ""
+                  stat = case OMap.lookup g sens of
+                    Nothing -> no_cs
+                    Just tm -> case thmStatus tm of
+                      [] -> no_cs
+                      ts -> basicProofToConStatus $ maximum $ map snd ts
               in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
-                   cStatus = ConsistencyStatus CSUnchecked "" }
+                   cStatus = stat }
     fgoals = map fgoal $ OMap.keys $ OMap.filter (not . isAxiom) sens
     in do
       wait <- newEmptyMVar
@@ -78,10 +87,11 @@ negate_th g_th goal = case g_th of
   G_theory lid1 (ExtSign sign symb) i1 sens i2 ->
       let axs = OMap.filter isAxiom sens
           negSen = case OMap.lookup goal sens of
-                     Nothing -> error "GtkDisprove.disproveThmSingle(1)"
+                     Nothing -> error "GtkDisprove.negate_th(1)"
                      Just sen ->
                        case negation lid1 $ sentence sen of
-                         Nothing -> error "GtkDisprove.disproveThmSingle(2)"
+                         -- TODO find proper way to face this error without crash!
+                         Nothing -> error "GtkDisprove.negate_th(2)"
                          Just sen' -> sen { sentence = sen', isAxiom = True }
           sens' = OMap.insert goal negSen axs
       in G_theory lid1 (ExtSign sign symb) i1 sens' i2
@@ -97,8 +107,7 @@ disproveAtNode gInfo descr dgraph = do
           dgn = labDG dgraph descr
       showDisproveGUI gInfo le dgraph (descr, dgn)
 
-runDisproveAtNode :: GInfo -> LNode DGNodeLab
-               -> Result G_theory -> IO ()
+runDisproveAtNode :: GInfo -> LNode DGNodeLab -> Result G_theory -> IO ()
 runDisproveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
   Just rTh ->
     let oldTh = dgn_theory dgnode in
@@ -253,10 +262,10 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
         activate checkWidgets True
         pexit
 
--- TODO if FNode is Consistent, it must be set to Disproved in DGraph!
   onDestroy window $ do
     fnodes' <- listStoreToList listGoals
-    Just (_, f) <- getSelectedSingle trvFinder listFinder 
+    -- TODO face the case that no prover can be selected!
+    Just (_, f) <- getSelectedSingle trvFinder listFinder
     case g_th of
       G_theory lid _s _i1 sens _i2 -> let
         sens' = foldr (\ fg t -> if (sType . cStatus) fg == CSConsistent

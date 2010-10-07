@@ -14,6 +14,7 @@ module Proofs.ConsistencyCheck
   ( consistencyCheck
   , SType (..)
   , ConsistencyStatus (..)
+  , basicProofToConStatus
   ) where
 
 import Static.GTheory
@@ -61,6 +62,21 @@ instance Eq ConsistencyStatus where
 
 instance Ord ConsistencyStatus where
   compare = comparing sType
+
+{- converts a GTheory.BasicProof to ConsistencyStatus.
+The conversion is not exact, but sufficient since this function is only
+implemented in GtkDisprove for proper display of goalstatus.
+-}
+basicProofToConStatus :: BasicProof -> ConsistencyStatus
+basicProofToConStatus bp = ConsistencyStatus (basicProofToSType bp) ""
+
+basicProofToSType :: BasicProof -> SType
+basicProofToSType bp = case bp of
+  BasicProof _ st -> case goalStatus st of
+    Open r -> CSUnchecked
+    Disproved -> CSError -- because there is no CSDisproved
+    Proved c -> if c then CSConsistent else CSInconsistent
+  _ -> CSConsistent
 
 {- TODO instead of LibEnv.. get FreeDefs as Input. create wrapper that calcs
 FreeDefs from LibEnv, DGraph and LibName (so that the call remains the same).
