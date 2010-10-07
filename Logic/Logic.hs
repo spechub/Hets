@@ -140,6 +140,7 @@ import Common.Id
 import Common.Item
 import Common.Lib.Graph
 import Common.LibName
+import Common.Prec (PrecMap)
 import Common.Result
 import Common.Taxonomy
 
@@ -546,6 +547,9 @@ class SublogicName l where
 instance SublogicName () where
     sublogicName () = ""
 
+-- | a type for syntax information eventually stored in the signature
+type SyntaxTable = (PrecMap, AssocMap)
+
 {- Type class logic. The central type class of Hets, providing the
    interface for logics. This type class is instantiated for many logics,
    and it is used for the logic independent parts of Hets.
@@ -623,10 +627,14 @@ class (StaticAnalysis lid
 
          -- --------------------- OMDoc ---------------------------
 
+         syntaxTable :: lid -> sign -> Maybe SyntaxTable
+         {- default implementation -}
+         syntaxTable _ _ = Nothing
+
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
          {- default implementation, no logic should throw an error here
          and the base of omcd should be a parseable URI -}
-         omdoc_metatheory _lid = Nothing
+         omdoc_metatheory _ = Nothing
 
 
          export_symToOmdoc :: lid -> OMDoc.NameMap symbol
