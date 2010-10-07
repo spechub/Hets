@@ -1,13 +1,18 @@
 %!TEX root = main.tex
 
 In this section we explain how the Maude specifications introduced in
-Hets are parsed in order to obtain the abstract syntax described in
-the previous section.
+\Hets are parsed in order to obtain the abstract syntax described in
+the previous section. We are able to implement this parsing in Maude
+itself thanks to Maude metalevel \cite[Chapter 14]{maude-book}, a
+module that allows to use Maude entities such as modules, equations,
+or rules as usual data by efficiently implementing the \emph{reflective}
+capabilities of rewriting logic \cite{ClavelMeseguerPalomino07}.
 
 The function \verb"haskellify" receives a module (the first parameter
 stands for the original module, while the second one contains the
-flattened one) and returns a list of quoted identifiers identifying an
-object of type \verb"Spec":
+flattened one) and returns a list of quoted identifiers creating an
+object of type \verb"Spec", that can be read by Haskell since this data
+type derives the class \verb"Read":
 
 {\codesize
 \begin{verbatim}
@@ -54,5 +59,45 @@ using the appropriate keyword for each of them:
 }
 
 \noindent where \verb"haskellifyME" is in charge of printing the 
-module expression.
+module expression. When it is just an identifier, it prints it 
+preceded by the word \verb"ModId":
 
+{\codesize
+\begin{verbatim}
+  op haskellifyME : ModuleExpression -> QidList .
+  eq haskellifyME(Q) = ' '`( 'ModExp ' '`( 'ModId qid2token(Q) '`) '`) ' .
+\end{verbatim}
+}
+
+The summation module expression recursively prints the summands, and uses
+the keyword \verb"SummationModExp" to indicate the type of module expression:
+
+{\codesize
+\begin{verbatim}
+  eq haskellifyME(ME + ME') = ' '`( 'SummationModExp haskellifyME(ME) 
+                              haskellifyME(ME')  '`) ' .
+\end{verbatim}
+}
+
+To print a renaming we recursively apply \verb"haskellifyME" for the inner
+module expression and then we use the auxiliary function \verb"haskellifyMaps" to 
+print the renamings. In this case we use tje constant \verb"no-module" as argument
+because it will only be used when parsing mappings from views, since it may
+be needed to parse terms:
+
+{\codesize
+\begin{verbatim}
+  eq haskellifyME(ME * (RNMS)) = ' '`( 'RenamingModExp haskellifyME(ME) 
+                                 '`[ haskellifyMaps(no-module, no-module, RNMS) '`]  '`) ' .
+\end{verbatim}
+}
+
+Finally, an instantiation is printed by using an auxiliary function \verb"haskellifyPL"
+in charge of the parameters:
+
+{\codesize
+\begin{verbatim}
+  eq haskellifyME(ME {PL}) = ' '`( 'InstantiationModExp haskellifyME(ME) 
+                             '`[ haskellifyPL(PL)  '`]  '`) ' .
+\end{verbatim}
+}

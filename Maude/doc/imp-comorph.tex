@@ -1,15 +1,15 @@
 %!TEX root = main.tex
 
-We show in this section the main functions used to implement the comorphism
-from Maude to \CASL described in Section \ref{sec:comoprh}.
-The main function in this transformation is
+We show in this section how the comorphism
+from Maude to \CASL described in Section \ref{sec:comoprh} is implemented.
+The function in charge of the comorphism is
 \verb"maude2casl", that computes the \CASL signature and sentences
 given the Maude signature and sentences:
 
 {\codesize
 \begin{verbatim}
-maude2casl :: MSign.Sign -> [Named MSentence.Sentence]
-              -> (CSign.CASLSign, [Named CAS.CASLFORMULA])
+maude2casl :: MSign.Sign -> [Named MSentence.Sentence] -> (CSign.CASLSign, 
+                                                           [Named CAS.CASLFORMULA])
 \end{verbatim}
 }
 
@@ -124,7 +124,7 @@ rewPredicates = Set.fold rewPredicate Map.empty
 \end{verbatim}
 }
 
-This function defines a binary predicate using as name the constant
+This function defines a binary predicate using as identifier the constant
 \verb"rewID" and the sort as type of the arguments:
 
 {\codesize
@@ -159,8 +159,8 @@ rewPredicateSens sort acc = ref : trans : acc
 \end{verbatim}
 }
 
-We describe the formula for the reflexivity, being the transitivity
-analogous. A new variable of the required sort is created with
+We describe the formula for the reflexivity, being the formula for the
+transitivity analogous. A new variable of the required sort is created with
 the auxiliary function \verb"newVar", then the qualified predicate
 name is created with the \verb"rewID" constant and applied to the
 variable. Finally, the formula is named with the prefix \verb"rew_refl_"
@@ -273,7 +273,7 @@ noOwiseEq2Formula im (MAS.Eq t t' conds@(_:_) _) = quantifyUniversally form
 \begin{itemize}
 
 \item Variables are translated into qualified \CASL variables, and their
-sort is changed to the corresponding kind:
+type is translated to the corresponding type in \CASL:
 
 {\codesize
 \begin{verbatim}
@@ -283,9 +283,8 @@ maudeTerm2caslTerm im (MAS.Var q ty) = CAS.Qual_var q ty' nullRange
 \end{verbatim}
 }
 
-\item Constants are translated into the applications of the constant
-name to the empty list of arguments, using again the kind of the
-given sort:
+\item Constants are translated as functions applied
+to the empty list of arguments:
 
 {\codesize
 \begin{verbatim}
@@ -378,8 +377,8 @@ with \verb"owiseSen2Formula", that traverses them and applies
 
 {\codesize
 \begin{verbatim}
-owiseSen2Formula ::  IdMap -> [Named CAS.CASLFORMULA]
-                     -> Named MSentence.Sentence -> Named CAS.CASLFORMULA
+owiseSen2Formula ::  IdMap -> [Named CAS.CASLFORMULA] -> Named MSentence.Sentence 
+                     -> Named CAS.CASLFORMULA
 owiseSen2Formula im owise_forms s = s'
        where MSentence.Equation eq = sentence s
              sen' = owiseEq2Formula im owise_forms eq
@@ -396,8 +395,7 @@ does not hold that is used as premise of the equation:
 
 {\codesize
 \begin{verbatim}
-owiseEq2Formula :: IdMap -> [Named CAS.CASLFORMULA] -> MAS.Equation
-                   -> CAS.CASLFORMULA
+owiseEq2Formula :: IdMap -> [Named CAS.CASLFORMULA] -> MAS.Equation -> CAS.CASLFORMULA
 owiseEq2Formula im no_owise_form eq = form
       where (eq_form, vars) = noQuantification $ noOwiseEq2Formula im eq
             (op, ts, _) = fromJust $ getLeftApp eq_form

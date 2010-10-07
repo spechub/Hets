@@ -5,50 +5,11 @@ described in Section \ref{sec:maude}
 are translated into development graphs. Then, we explain how these development
 graphs are normalized to deal with freeness constraints.
 
-\subsection{Parameterized modules}
+\subsection{Creating the development graph}
+We describe here how Maude modules, theories, and views are translated into
+development graphs, illustrating it with an example.
 
-As we have seen in Section \ref{subsec:pmod}, parameterized modules 
-receive a list of parameters $P_i$ each one associated to a module
-expression $M_i$. Since these module expressions are theories, they
-can have sorts that are not instantiated yet, so to avoid clash of
-names these sorts are qualified with the parameter name. These
-qualifications induce an implicit morphism in the definition links
-of the development graph between the theory and the parameterized
-module.
-
-\subsection{Module expressions}\label{subsec:me}
-
-Maude module expressions allow to combine and modify the information
-contained in Maude modules.
-
-\begin{itemize}
-\item The summation expression of the module expressions $\mathit{ME}_1$ and
-$\mathit{ME}_2$ generates a new node in the development graph
-$(\mathit{ME}_1 + \mathit{ME}_2)$ with
-the union of the information in both expressions. A definition link
-is also created between the original expressions and the resulting one.
-\item The renaming expression $\mathit{ME} * (R)$ creates a morphism with
-the information given in $R$ that will be used in the link 
-\item The instantiation module expression\footnote{This module expression
-cannot be used in Core Maude in all places where the rest of expressions
-can be used, for more information see \cite{maude-book}} assigns a view
-or a parameter to each of the
-
-Note that an instantiation generates some implicit morphisms and modifies
-the ones stated in the views:
-\begin{itemize}
-\item When the parameter is instantiated with a view
-\item As explained in the previous section, parameterized modules can
-define sorts of the form \verb"name{X1, ..., Xn}", where \verb"X1, ..., Xn"
-are parameter names that can be instantiated or bound by new parameters.
-Thus, in addition to the morphism
-\end{itemize}
-
-\item When the module expression is a simple identifier the development
-graph remains unchanged.
-\end{itemize}
-
-\subsection{Importations}
+\subsubsection{Modules}
 
 Each Maude module generates two nodes in the development
 graph. The first one contains the theory equipped with the usual
@@ -58,14 +19,52 @@ is detailed below), contains the same signature but
 no local axioms and stands for the free models of the theory.
 Note that Maude theories only generate one node, since their initial
 semantics is not used by Maude specifications.
-When importing a module, we will select the node used depending on the
+
+The model class of parameterized modules
+consists of free extensions of the models of their parameters, that are
+persistent on sorts, but not on kinds. This notion of freeness has been 
+studied in \cite{BouhoulaJM00} under assumptions like existence of top sorts for kinds
+and sorted variables in formulas; our results hold under similar
+hypotheses. We use non-persistent free links to link these modules with
+their corresponding theories.
+
+\subsubsection{Module expressions}\label{subsec:me}
+
+Maude module expressions allow to combine and modify the information
+contained in Maude modules.
+
+\begin{itemize}
+
+\item
+When the module expression is a simple identifier the development
+graph remains unchanged.
+
+\item
+The summation expression of the module expressions $\mathit{ME}_1$ and
+$\mathit{ME}_2$ generates a new node in the development graph
+$(\mathit{ME}_1 + \mathit{ME}_2)$ with
+the union of the information in both summands. A definition link
+is also created between the original expressions and the resulting one.
+
+\item
+The renaming expression $\mathit{ME} * (R)$ creates a morphism with
+the information given in $R$ that will be used as to label the link.
+
+\end{itemize}
+
+\subsubsection{Importations}
+
+As explained above, each Maude module generates two nodes in the development
+graph;
+when importing a module, we will select the node used depending on the
 chosen importation mode:
 \begin{itemize}
 
 \item
 The \verb"protecting" mode generates a non-persistent free link between
 the current node and the node standing for the free semantics of the
-included one. 
+included one. Note that we used the same links for the parameters in
+parameterized modules.
 
 \item
 The \verb"extending" mode generates a global link with the annotation
@@ -79,18 +78,14 @@ current node  and the node standing for the loose semantics of the
 included one.
 \end{itemize}
 
-The summation module expression generates a new node that includes all 
-the information in its summands. Note that this new node can also need
-a node with its free model if it is imported in protecting mode.
-
-\subsection{Views}\label{subsec:dg_views}
+\subsubsection{Views}\label{subsec:dg_views}
 
 Maude views have a theory as source and either a module or a theory
-as target. All the sorts and operators declared in the source theory
-have to be mapped to sorts and operators in the target
+as target. All the sorts and the operators declared in the source theory
+have to be mapped to sorts and operators in the target.
 
 A particular case of mapping between operators is the mapping between
-terms, that has the general form \emph{op $e$ to term $t$}
+terms, that has the general form $\verb"op" \; e \; \verb"to term" \; t$
 where $e$ is a term consisting of a 
 single operator applied to variables declared either on-the-fly or with
 variable declarations in the same view and the target term is any term
@@ -98,49 +93,33 @@ with variables, those in the source $e$ in the corresponding sorts
 resulting from the mapping.
 Since this shortcut allows to map operators with different profiles,
 
+Views generate a theorem
+link between the theory and the module satisfying it.
+Note that an instantiation generates some implicit morphisms and modifies
+the ones stated in the views, see Section \ref{subsec:adv_feat} for details:
+\begin{itemize}
 
+\item
+Sorts and labels are qualified by the parameter name in order to distinguish
+different labels/sorts with the same name defined in different theories. Thus,
+the mapping indicated by the view (more specifically, the source sorts) is
+modified depending on the name of the parameter.
+
+\item
+As explained in the Section \ref{subsec:pmod}, parameterized modules can
+define parameterized sorts, that is, sorts that use the parameters as part of
+the sort name and hence they are modified by the mapping in the view.
+Moreover, when the target of a view is a theory the identifiers of these sorts
+are extended with the name of the view and the name of the new parameter.
+%
+Thus, the sort morphism is extended with these new renamings.
+
+\end{itemize}
 
 
 %%%%%% PAPER
 
-Signature morphisms are produced in different ways; explicitly, 
-renaming of module expressions and  views lead to signature
-morphisms; however, implicitly we also find other morphisms:
-the sorts defined in the theories are qualified
-with the parameter in order to distinguish sorts with the same name that
-will be instantiated later by different ones; moreover, sorts defined
-(not imported) in parameterized modules can be parameterized as well,
-so when the theory is instantiated with a view these sorts are also
-renamed (e.g. the sort \verb"List{X}" for generic lists can become
-\verb"List{Nat}").
-
-The model class of parameterized modules
-consists of free extensions of the models of their parameters, that are
-persistent on sorts, but not on kinds. This notion of freeness has been 
-studied in \cite{BouhoulaJM00} under assumptions like existence of top sorts for kinds
-and sorted variables in formulas; our results hold under similar
-hypotheses. Thus,
-we use the same non-persistent free links described for protecting
-importation to link these modules with their corresponding theories.
-%
-% In order not to break the calculus, we 
-%need a way to normalize them. The idea is to replace them with a semantically 
-%equivalent development graph in CASL, as follows.
-%
-%a global definition link to
-%the theories
-%of their parameters. In this case, the above free definition link is
-%decorated with the inclusion signature morphism from the parameter
-%signature to the module's signature (while in the unparameterized
-%case, the parameter signature is taken to be empty).
-%
-Views do not generate nodes in the development graph but theorem links
-between the node corresponding to the source theory and the node with
-the free model of the target. However, Maude views
-provide a special kind of mapping between terms, that can in general
-map functions of different arity. When this mapping is used we generate
-a new inner node extending the signature of the target to include functions
-of the adequate arity.
+\subsubsection{Development graph: An example}
 
 We illustrate how to build the development graph with an example. Consider
 the following Maude specifications:
@@ -171,7 +150,7 @@ endm                                               endv
 \end{center}
 \end{figure}
 
-\noindent \Hets builds the graph shown in Fig. \ref{fig:dg},
+\noindent \Hets builds the graph shown in Figure \ref{fig:dg},
 where the following steps take place:
 \begin{itemize}
 \item Each module has generated a node with its name and
@@ -235,7 +214,7 @@ translation $\Phi(\Sigma)$ of $\Sigma$ to \CASL as follows:
 
  \item $F^\#$ adds the function symbols $\{f:[w] \rightarrow [s]\}$ for all
        function symbols on sorts $f:w \rightarrow s $;\footnote{$[x_1 \ldots x_n]$
-       is defined to be $[x_1] \ldots [x_n]$.}
+       is defined to be $[x_1] \ldots [x_n]$.} and
  \item $P^\#$ adds the predicate symbol $rew$ on all new sorts.
 \end{itemize}
 
@@ -250,7 +229,7 @@ We define a \CASL signature morphism
  introduced in $\Sigma'^\#$; $rew$ is mapped identically.
 
 
-The normalization of Maude freeness is then illustrated in Fig.\ref{nf}.
+The normalization of Maude freeness is then illustrated in Figure \ref{nf}.
 Given a free non-persistent definition link $\flinka{M}{\sigma}{N}$, with 
 $\sigma:\Sigma\rightarrow \Sigma_N$, we first take the translation of the nodes
 to \CASL (nodes $M'$ and $N'$) and then introduce a new node, $K$, labeled with 
@@ -258,18 +237,19 @@ $\Sigma^\#_N$, a global definition link from $M'$ to $M''$ labeled with the
 inclusion $\iota_N$ of $\Sigma_N$ in $\Sigma^\#_N$, a free definition link from 
 $M''$ to $K$ labeled with 
 $\sigma^\#$ and a hiding definition link from $K$ to $N'$ labeled with the
-inclusion $\iota_N$.\footnote{The arrows without labels in Fig.\ref{nf} 
+inclusion $\iota_N$.\footnote{The arrows without labels in Figure \ref{nf} 
 correspond to heterogeneous links from Maude to \CASL.}
 
-\begin{wrapfigure}[12]{r}[0cm]{3.5cm}
+\begin{figure}
+$$
 \xymatrix{
 M \ar@{=>}[rr]_{n.p.free}^{\sigma} \ar@{=>}[d]& & N \ar@{=>}[dd]\\
 M'\ar@{=>}[d]^{\iota_N}& & \\
 M''\ar@{=>}[r]_{free}^{\sigma^\#} & K \ar@{=>}[r]_{hide}^{\iota_n} & N'
 }
+$$
 \caption{Normalization of Maude free links}\label{nf}
-
-\end{wrapfigure}
+\end{figure}
 
 Notice that the models of $N$ are Maude reducts of \CASL models of $K$, 
 reduced along the inclusion $\iota_N$. 

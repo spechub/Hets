@@ -19,12 +19,21 @@
 
 \usepackage{graphicx}
 \usepackage{proof}
+\usepackage{hetcasl}
+
+% Images
+%\renewcommand{\topfraction}{0.95} 
+%\renewcommand{\textfraction}{0.1} 
+%\renewcommand{\floatpagefraction}{0.75} 
 
 % Texttt curly brackets
 \newcommand{\ttlcb}{\texttt{\char'173}}
 \newcommand{\ttrcb}{\texttt{\char'175}}
 
-\newcommand{\rewrites}{\Rightarrow}
+\def\squareforqed{\hbox{\rlap{$\sqcap$}$\sqcup$}}
+\def\qed{\ifmmode\squareforqed\else{\unskip\nobreak\hfil
+\penalty50\hskip1em\null\nobreak\hfil\squareforqed
+\parfillskip=0pt\finalhyphendemerits=0\endgraf}\fi}
 
 \newtheorem{definition}{Definition} %[chapter]
 \newtheorem{proposition}{Proposition} %[chapter]
@@ -38,12 +47,7 @@
 \newcommand{\forget}[1]{|_{#1}}
 \newcommand{\Mod}{\mathbf{Mod}}
 \newcommand{\Sen}{\mathbf{Sen}}
-
-\def\squareforqed{\hbox{\rlap{$\sqcap$}$\sqcup$}}
-\def\qed{\ifmmode\squareforqed\else{\unskip\nobreak\hfil
-\penalty50\hskip1em\null\nobreak\hfil\squareforqed
-\parfillskip=0pt\finalhyphendemerits=0\endgraf}\fi}
-
+\newcommand{\red}{\upharpoonright}
 
 \newcommand{\codesize}{\small}
 \newcommand{\field}[1]{\mathbb{#1}}
@@ -67,6 +71,10 @@
 \newcommand{\Hets}{\textmd{\textsc{Hets}}\xspace}
 \newcommand{\CASL}{\textmd{\textsc{Casl}}\xspace}
 \newcommand{\CoFI}{\textmd{\textsc{CoFI}}\xspace}
+
+\newcommand{\free}[2]{\mbox{\textbf{free} $#1$ \textbf{along} $#2$}}
+
+\newcommand{\rewrites}{\Rightarrow}
 
 %% macros for development graphs
 
@@ -113,7 +121,7 @@
 
 \author{Mihai Codescu, Till Mossakowski,
 Adri\'an Riesco, and Christian Maeder\\[.7cm]
-\normalsize Technical Report ??\\[1ex]
+\normalsize Technical Report 07/10\\[1ex]
   \normalsize\textit{Departamento de Sistemas Inform\'aticos y Computaci\'on}\\
   \normalsize\textit{Universidad Complutense de Madrid}\\[.4cm]
   September 2010
@@ -142,7 +150,7 @@ However, Maude lacks the formal tools to perform some of these analyses
 and thus they can only be done by hand.
 The Heterogeneous Tool Set \Hets is an institution-based
 combination of different logics and corresponding rewriting, model
-checking and proof tools.
+checking, and proof tools.
 %
 We present in this paper an integration of Maude into \Hets that allows
 to use the logics and tools already integrated in \Hets with
@@ -153,7 +161,7 @@ between Maude and \CASL, the central logic in \Hets.
 \smallskip
 
 \noindent\textbf{Keywords:} rewriting logic, heterogeneous specifications,
-Maude, CASL
+Maude, \CASL
 \end{abstract}
 
 \vfill
@@ -192,7 +200,7 @@ previous sections has been implemented. Section \ref{subsec:abs-syntax}
 shows the abstract syntax used to represent Maude modules in Haskell,
 Section \ref{subsec:maude-parser} presents how these data structures
 are generated in Maude, while Section \ref{sec:imp_dg} explains how
-they are translated into a Development Graph. Finally, Section \ref{sec:imp_free}
+they are translated into a development graph. Finally, Section \ref{sec:imp_free}
 outlines how the freeness constraints are implemented.
 
 \subsection{Abstract syntax}\label{subsec:abs-syntax}
@@ -201,7 +209,8 @@ outlines how the freeness constraints are implemented.
 \subsection{Maude parsing}\label{subsec:maude-parser}
 \input{maude-parsing}
 
-%\subsection{Data structures}\label{sec:da}
+\subsection{Logic}\label{sec:logic_imp}
+\input{logic-imp}
 
 \subsection{Development Graph}\label{sec:imp_dg}
 \input{imp-dg}
@@ -212,7 +221,7 @@ outlines how the freeness constraints are implemented.
 \subsection{Freeness constraints}\label{sec:imp_free}
 \input{freeness}
 
-\section{Conclusions and future work}\label{sec:conclusions}
+\section{Concluding remarks and future work}\label{sec:conclusions}
 \input{conclusions}
 
 {\small

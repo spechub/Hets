@@ -1,6 +1,6 @@
 %!TEX root = main.tex
 
-As mentioned in the introduction, Maude modules are executable rewriting logic especifications.
+As mentioned in the introduction, Maude modules are executable rewriting logic specifications.
 Rewriting logic \cite{Meseguer92-tcs} is a logic of change very suitable
 for the specification of concurrent systems that is parameterized
 by an underlying equational logic, for which Maude uses membership
@@ -206,10 +206,89 @@ memberships in $E$, then there is a rewrite of $u$ with some rule in
 $R$ to a term $u'$ such that $u' =_E t'$ (that is, the equation $t' = u'$
 can be deduced from $E$).
 
-\subsection{Theories}\label{subsec:theories}
+\subsection{Advanced features}\label{subsec:adv_feat}
+
+In addition to the modules presented thus far, we present in this section
+some other Maude features that will be used throughout this paper.
+
+\subsubsection{Module operations}
+
+To ease the specification of large systems, Maude provides several
+mechanisms to structure them. We describe in this section these
+procedures, that will be used later to build the development graphs.
+
+Maude modules can import other modules in three different modes:
+\begin{itemize}
+\item
+The \verb"protecting" mode (abbreviated as \verb"pr") indicates that \emph{no
+junk and no confusion} can be added to the module, where junk refers to
+new terms in canonical form while confusion implies that different canonical
+terms in the initial module are made equal by equations in the imported module.
+
+\item
+The \verb"extending" mode (abbreviated as \verb"ex") indicates that junk is
+allowed but confusion is forbidden.
+
+\item
+The \verb"including" mode (abbreviated as \verb"inc") allows both
+junk and confusion.
+
+\end{itemize}
+
+More specifically, these importation modes do not import modules but
+\emph{module expressions} that, in addition to a single module identifier,
+can be:
+
+\begin{itemize}
+\item
+A summation of two module expressions $\mathit{ME}_1 \,\verb"+"\,\mathit{ME}_2$,
+which creates a new module that includes all the information in its summands.
+
+\item
+A renaming $\mathit{ME} \,\verb"*"\, \verb"("\mathit{Renaming}\verb")"$, where 
+$\mathit{Renaming}$ is a list of renamings. They can be renaming of sorts;
+
+$$
+\verb"sort"\; \mathit{sort}_1\; \verb"to"\; \mathit{sort}_2\; \verb"."
+$$
+
+of operators, distinguishing whether it renames all the operators
+with the given identifier (when the attributes are modified, only
+\verb"prec", \verb"gather", and \verb"format" are allowed)
+
+$$
+\verb"op"\; \mathit{id}_1\; \verb"to"\; \mathit{id}_2\; \verb"."
+$$
+\vspace{-3ex}
+$$
+\verb"op"\; \mathit{id}_1\; \verb"to"\; \mathit{id}_2\; \verb"[" \mathit{atts} \verb"]"
+\;  \verb"."
+$$
+
+\noindent or it renames the operators of the given arity;
+
+$$
+\verb"op"\; \mathit{id}_1 : \mathit{arity}\; \verb"->" \; \mathit{coarity}\;
+\verb"to"\; \mathit{id}_2\; \verb"."
+$$
+\vspace{-3ex}
+$$
+\verb"op"\; \mathit{id}_1 : \mathit{arity}\; \verb"->" \; \mathit{coarity}\;
+\verb"to"\; \mathit{id}_2\; \verb"[" \mathit{atts} \verb"]" \; \verb"."
+$$
+
+or of labels:
+
+$$
+\verb"label"\; \mathit{label}_1\; \verb"to"\; \mathit{label}_2\; \verb"."
+$$
+
+\end{itemize}
+
+\subsubsection{Theories}\label{subsec:theories}
 
 Theories are used to declare module interfaces, namely the syntactic
-and  semantic properties to be satisfied by the actual parameter modules
+and semantic properties to be satisfied by the actual parameter modules
 used in an instantiation. As for modules, Maude supports two different types
 of theories: functional theories and system theories, with the same structure
 of their module counterparts, but with a different semantics. Functional
@@ -225,14 +304,13 @@ issues regarding the mapping of such operators (see Section
 Like functional modules, functional theories are membership equational
 logic theories, but they do not need to be Church-Rosser and terminating,
 and  therefore some or all of their statements may be declared with the
-\verb"nonexec" attribute and can only be executed in a controlled way at 
-the metalevel.
+\verb"nonexec" attribute and can only be executed in a controlled way.
 
-\subsection{Views}\label{subsec:views}
+\subsubsection{Views}\label{subsec:views}
 
-We use views to specify how a particular target module or theory is claimed
-to satisfy a source theory. In general, there may be several ways in which 
-such requirements might be satisfied, if at all, by the target module or
+We use views to specify how a particular target module or theory
+satisfies a source theory. In general, there may be several ways in which 
+such requirements might be satisfied by the target module or
 theory; that is, there can be many different views, each specifying a
 particular interpretation of the source theory in the target. Each
 view declaration has an associated set of proof obligations, namely, for
@@ -248,11 +326,49 @@ view can be any module expression, with the source module expression
 evaluating to a theory and the target module expression evaluating to a
 module or a theory.
 
-EXPLICAR LOS TIPOS DE MAPPINGS
+The mappings allowed in views are:
 
-\subsection{Parameterized modules}\label{subsec:pmod}
+\begin{itemize}
 
-System modules and functional modules can be parameterized. A parameterized
+\item
+Mappings between sorts:
+
+$$
+\verb"sort"\; \mathit{sort}_1\; \verb"to"\; \mathit{sort}_2\; \verb"."
+$$
+
+\item
+Mappings between operators, where the user can specify the arity and coarity
+of the operator to disambiguate them:
+
+$$
+\verb"op"\; \mathit{id}_1\; \verb"to"\; \mathit{id}_2\; \verb"."
+$$
+\vspace{-3ex}
+$$
+\verb"op"\; \mathit{id}_1 : \mathit{arity}\; \verb"->" \; \mathit{coarity}\;
+\verb"to"\; \mathit{id}_2\; \verb"."
+$$
+
+\item
+In addition to these mappings, the user can map a term $\mathit{term}_1$, that
+can only be a single operator applied to variables, to any term $\mathit{term}_2$
+in the target module, where the sort of the variables in the first term has been
+translated by using the sort mappings. Note that in that case the arity of the
+operator in the source theory and the one in the target module can be different:
+
+$$
+\verb"op"\; \mathit{term}_1\; \verb"to term"\; \mathit{term}_2\; .
+$$
+
+\end{itemize}
+
+Notice that we cannot map labels, and thus we cannot identify the statements in
+the theory with those in the target module.
+
+\subsubsection{Parameterized modules}\label{subsec:pmod}
+
+Maude modules can be parameterized. A parameterized
 system module has syntax
 
 $$
@@ -286,8 +402,18 @@ theory $X_i :: T'$ will also be created and included into $X_i :: T_i$.
 However, the renaming will have no effect on modules imported by either the
 $T_i$ or $T'$; for example, if \verb"BOOL" is imported by one of these
 theories, it is not renamed, but imported in the same way into $M$.
+%
+Moreover, sorts declared in parameterized modules can also be parameterized,
+and these may duplicate, omit, or reorder parameters.
 
-
+The parameters in parameterized modules are bound to the formal parameters
+by \emph{instantiation}. The 
+instantiation requires a view from each formal parameter to its corresponding 
+actual parameter. Each such view is then used to bind the names of sorts, 
+operators, etc. in the formal parameters to the corresponding sorts, operators 
+(or expressions), etc. in the actual target.
+The instantiation of a parameterized module must be made with views 
+explicitly defined previously.
 
 
 
