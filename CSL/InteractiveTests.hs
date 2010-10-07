@@ -331,3 +331,13 @@ t' <- runTest (eval t) r'
 vc <- runTest (verificationCondition t' t) r'
 pretty vc
 -}
+
+{-
+-- exampleRun
+r <- mapleInit 4
+let t = toE "factor(x^5-15*x^4+85*x^3-225*x^2+274*x-120)"
+t' <- runTest (eval t) r
+vc <- runTest (verificationCondition t' t) r
+pretty vc
+
+-}

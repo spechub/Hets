@@ -83,9 +83,15 @@ cslMapleDefaultMapping :: [(String, String)]
 cslMapleDefaultMapping = 
     let idmapping = map (\ x -> (x, x))
         ampmapping = map (\ x -> (x, "&" ++ x))
-    in ("^", "&**") : idmapping ["and", "or", "impl" ]
-           ++ idmapping [ "cos", "sin", "tan", "sqrt", "abs", ">", "<=", ">="
-                        , "<", "+", "-", "*", "/"]
+        possibleIntervalOps = [ "cos", "sin", "tan", "sqrt", "abs", ">", "<="
+                              , ">=", "<", "+", "-", "*", "/"]
+        logicOps = ["and", "or", "impl" ]
+        otherOps = ["factor", "xOfMaximum"]
+        specialOp = ("^", "^")
+--        specialOp = ("^", "&**")
+    in specialOp : idmapping logicOps
+           ++ idmapping possibleIntervalOps
+                  ++ idmapping otherOps
 
 printAssignment :: String -> EXPRESSION -> String
 printAssignment n e = concat [n, ":= ", exportExp e, ";"]
@@ -212,7 +218,7 @@ mapleInit v = do
              $ error "mapleInit: Environment variable HETS_MAPLELIB not set."
   case rc of
     Left maplecmd -> do
-            cs <- PC.start maplecmd v
+            cs <- PC.start (maplecmd ++ " -q") v
                   $ Just PC.defaultConfig { PC.startTimeout = 3 }
             (_, cs') <- runIOS cs $ PC.call 1.0
                         $ concat [ "interface(prettyprint=0); Digits := 10;"

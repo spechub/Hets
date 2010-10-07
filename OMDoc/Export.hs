@@ -30,7 +30,8 @@ module OMDoc.Export where
 
 import Logic.Logic ( Logic( omdoc_metatheory, export_theoryToOmdoc
                           , export_symToOmdoc, export_senToOmdoc)
-                   , Sentences(sym_name, symmap_of), symlist_of)
+                   , Sentences(sym_name, symmap_of), symlist_of
+                   , SyntaxTable)
 import Logic.Coerce
 import Logic.Prover
 import Logic.Grothendieck
@@ -45,8 +46,6 @@ import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
-import Common.Prec (PrecMap)
-import Common.GlobalAnnotations (AssocMap)
 
 import Driver.Options (downloadExtensions)
 import Driver.WriteLibDefn (getFilePrefixGeneric)
@@ -73,15 +72,11 @@ data GSigMap = GSigMap (G_symbolmap (Int, UniqName)) (NameMap String)
 -- This type is the logic dependent analogue to the GSigMap
 type NumberedSigMap a = (Map.Map a (Int, UniqName), NameMap String)
 
--- | This type is for passing the syntax related information such as operator
--- precedence and assoc-info
-type SyntaxTable = (PrecMap, AssocMap)
-
 -- | Removes the numbering from the symbol map
 nSigMapToSigMap :: NumberedSigMap a -> SigMap a
 nSigMapToSigMap (nMap, sMap) = SigMap (Map.map snd nMap) sMap
 
--- | Computes a dependency sorted symbol unique name list
+-- | Computes a dependency sorted (symbol - unique name) list
 nSigMapToOrderedList :: NumberedSigMap a -> [(a, UniqName)]
 nSigMapToOrderedList (nMap, _) = let
     compByPos (_, (pos1, _)) (_, (pos2, _)) = compare pos1 pos2
@@ -513,5 +508,5 @@ mkNotation un _ = -- mIdSTbl =
         -- data PrecMap = PrecMap { precMap :: Map.Map Id Int, maxWeight :: Int}
         precmap = mkPrecIntMap $ prec_annos gannos
         -- type AssocMap = Map.Map Id AssocEither
-        assocmap = assoc_annos
+        assocmap = assoc_annos gannos
 -}
