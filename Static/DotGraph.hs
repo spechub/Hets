@@ -44,7 +44,7 @@ nodeAttribute showInternal la =
                     ++ ["style=filled, fillcolor=grey" | hasOpenGoals la])
  where inter l = if isInternalNode l && not showInternal
                     then "label=\"\", height=0.2, width=0.35"
-                    else "label=" ++ getDGNodeName la
+                    else "label=\"" ++ getDGNodeName la ++ "\""
 
 dotNode :: Bool -> LNode DGNodeLab -> String
 dotNode showInternal (n, ncontents) =
