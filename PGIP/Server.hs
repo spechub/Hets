@@ -23,6 +23,7 @@ import qualified Data.ByteString.Char8 as B8
 import Static.DevGraph
 import Static.DotGraph
 import Static.AnalysisLibrary
+import Static.ToXml as ToXml
 
 import Comorphisms.LogicGraph
 
@@ -31,6 +32,7 @@ import Text.XML.Light
 import Common.Result
 import Common.ResultT
 import Common.ToXml
+import Common.Utils
 
 import Control.Monad.Trans (lift)
 import Control.Monad
@@ -51,7 +53,7 @@ hetsServer opts = run 8000 $ \ re ->
              query = B8.unpack $ queryString re
          dirs <- getHetsLibContent opts path query
          if null dirs then do
-           Result ds ms <- getGraph opts path
+           Result ds ms <- getGraph opts path query
            return $ case ms of
              Nothing -> mkResponse status400
                $ showRelDiags 1 ds
@@ -69,16 +71,25 @@ mkResponse st = Response st [] . ResponseLBS . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-getGraph :: HetcatsOpts -> FilePath -> IO (Result String)
-getGraph opts file = runResultT $ do
+getGraph :: HetcatsOpts -> FilePath -> String -> IO (Result String)
+getGraph opts file query = runResultT $ do
   (ln, le) <- anaLibFileOrGetEnv logicGraph opts { verbose = 0 }
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
   let dg = lookupDGraph ln le
-  (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
-      $ dotGraph file False dg
-  case exCode of
-      ExitSuccess -> liftR $ extractSVG out
-      _ -> fail err
+      qstr = dropWhile (== '?') query
+      qs = splitOn '&' qstr
+      qqs = map (splitOn '=') qs
+  case findDisplayTypes qqs of
+    Just str -> case str of
+      "dg" -> do
+        (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
+          $ dotGraph file False dg
+        case exCode of
+          ExitSuccess -> liftR $ extractSVG out
+          _ -> fail err
+      "xml" -> liftR $ return $ ppTopElement $ ToXml.dGraph le dg
+      _ -> error "getGraph"
+    Nothing -> fail "no query type chosen"
 
 extractSVG :: String -> Result String
 extractSVG str = case parseXMLDoc str of
@@ -106,10 +117,16 @@ mkHtmlRef query entry = unode "li"
          $ unode "a" entry
 
 headElems :: String -> [Element]
-headElems path = unode "strong" "Choose query type:" :
+headElems path = let d = "default" in unode "strong" "Choose query type:" :
   map (\ q -> add_attr (mkAttr "href"
-                       $ if q == "default" then "/" </> path else '?' : q)
-      $ unode "a" q) ["default", "graph", "pp.het", "pp.tex", "xml"]
+                       $ if q == d then "/" </> path else '?' : q)
+      $ unode "a" q) (d : displayTypes)
+
+displayTypes :: [String]
+displayTypes = ["dg", "xml"]
+
+findDisplayTypes :: [[String]] -> Maybe String
+findDisplayTypes = find (`elem` displayTypes) . map head
 
 htmlHead :: String
 htmlHead =
