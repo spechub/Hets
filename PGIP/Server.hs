@@ -36,6 +36,7 @@ import Control.Monad.Trans (lift)
 import Control.Monad
 
 import qualified Data.Set as Set
+import Data.List
 
 import System.Process
 import System.Directory
@@ -85,12 +86,19 @@ getHetsLibContent opts dir = do
   let hlibs = libdirs opts
   ds <- if null dir then return hlibs else
        filterM doesDirectoryExist $ map (</> dir) hlibs
-  fmap (map (mkHtmlRef dir) . filter (`notElem` [".", ".."]) . concat)
-    $ mapM getDirectoryContents ds
+  fmap (map mkHtmlRef . sort . filter (not . isPrefixOf ".") . concat)
+    $ mapM getDirContents ds
 
-mkHtmlRef :: String -> String -> Element
-mkHtmlRef dir entry = unode "br"
-   $ add_attr (mkAttr "href" ("/" </> dir </> entry))
+-- | a variant that adds a trailing slash
+getDirContents :: FilePath -> IO [FilePath]
+getDirContents d = do
+    fs <- getDirectoryContents d
+    mapM (\ f -> doesDirectoryExist (d </> f) >>= \ b -> return
+            $ if b then addTrailingPathSeparator f else f) fs
+
+mkHtmlRef :: String -> Element
+mkHtmlRef entry = unode "br"
+   $ add_attr (mkAttr "href" entry)
          $ unode "a" entry
 
 htmlHead :: String
