@@ -29,16 +29,17 @@ import Comorphisms.LogicGraph
 
 import Text.XML.Light
 
+import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.ToXml
-import Common.Utils
 
 import Control.Monad.Trans (lift)
 import Control.Monad
 
 import qualified Data.Set as Set
 import Data.List
+import Data.Ord
 
 import System.Process
 import System.Directory
@@ -51,9 +52,9 @@ hetsServer opts = run 8000 $ \ re ->
     "GET" -> do
          let path = dropWhile (== '/') $ B8.unpack (pathInfo re)
              query = B8.unpack $ queryString re
-         dirs <- getHetsLibContent opts path query
-         if null dirs then do
-           Result ds ms <- getGraph opts path query
+         dirs@(_ : cs) <- getHetsLibContent opts path query
+         if null cs then do
+           Result ds ms <- getHetsResult opts path query
            return $ case ms of
              Nothing -> mkResponse status400
                $ showRelDiags 1 ds
@@ -71,37 +72,48 @@ mkResponse st = Response st [] . ResponseLBS . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-getGraph :: HetcatsOpts -> FilePath -> String -> IO (Result String)
-getGraph opts file query = runResultT $ do
+getDGraph :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv, DGraph)
+getDGraph opts file = do
   (ln, le) <- anaLibFileOrGetEnv logicGraph opts { verbose = 0 }
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
-  let dg = lookupDGraph ln le
-      qstr = dropWhile (== '?') query
-      qs = splitOn '&' qstr
-      qqs = map (splitOn '=') qs
-  case findDisplayTypes qqs of
-    Just str -> case str of
-      "dg" -> do
-        (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
+  return (ln, le, lookupDGraph ln le)
+
+getSVG :: FilePath -> DGraph -> ResultT IO String
+getSVG file dg = do
+    (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
           $ dotGraph file False dg
-        case exCode of
-          ExitSuccess -> liftR $ extractSVG out
-          _ -> fail err
-      "xml" -> liftR $ return $ ppTopElement $ ToXml.dGraph le dg
-      _ -> error "getGraph"
-    Nothing -> fail "no query type chosen"
+    case exCode of
+      ExitSuccess -> liftR $ extractSVG out
+      _ -> fail err
 
 extractSVG :: String -> Result String
 extractSVG str = case parseXMLDoc str of
   Nothing -> fail "did not recognize svg element"
   Just e -> return $ showTopElement e
 
+cmpFilePath :: FilePath -> FilePath -> Ordering
+cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
+  EQ -> compare f1 f2
+  c -> c
+
+getHetsResult :: HetcatsOpts -> FilePath -> String -> IO (Result String)
+getHetsResult opts file query = let callHets = getDGraph opts file in
+  runResultT $ case dropWhile (== '?') query of
+    qstr | elem qstr ["", "d"]
+      -> do
+        (_, _, dg) <- callHets
+        getSVG file dg
+    "xml" -> do
+        (_, le, dg) <- callHets
+        liftR $ return $ ppTopElement $ ToXml.dGraph le dg
+    qstr -> fail $ "unexpected query type: " ++ qstr
+
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do
   let hlibs = libdirs opts
   ds <- if null dir then return hlibs else
        filterM doesDirectoryExist $ map (</> dir) hlibs
-  fs <- fmap (sort . filter (not . isPrefixOf ".") . concat)
+  fs <- fmap (sortBy cmpFilePath . filter (not . isPrefixOf ".") . concat)
     $ mapM getDirContents ds
   return $ map (mkHtmlRef query) $ getParent dir : fs
 
