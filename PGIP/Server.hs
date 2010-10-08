@@ -16,6 +16,7 @@ import Driver.ReadFn
 
 import Network.Wai.Handler.SimpleServer
 import Network.Wai
+import Network.Wai.Parse
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
@@ -69,6 +70,13 @@ hetsServer opts = run 8000 $ \ re ->
                 [ unode "head" $ unode "title" $ "Listing of"
                    ++ if null path then " repository" else ": " ++ path
                 , unode "body" $ headElems path ++ [unode "ul" dirs]])
+    "POST" -> do
+      (_, files) <- parseRequestBody lbsSink re
+      return $ case files of
+        [] -> mkResponse status400 "no file uploaded"
+        [(_, f)] -> mkOkResponse $ BS.unpack $ fileContent f
+        _ -> mkResponse status400 $ "cannot handle multiple files "
+              ++ show (map (fileName . snd) files)
     _ -> return $ mkResponse status405 ""
 
 mkResponse :: Status -> String -> Response
