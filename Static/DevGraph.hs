@@ -1285,7 +1285,7 @@ lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph -> [LNode DGNodeLab]
 lookupNodeWith f dg = filter f $ labNodesDG dg
 
 -- | lookup a node in the graph by its name, using showName
--- to convert nodenames. See also 'getDGNodesByName'.
+-- to convert nodenames.
 lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
@@ -1450,10 +1450,6 @@ insEdgesDG = flip $ foldr insLEdgeNubDG
 -- | merge a list of lnodes and ledges into a given DG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
 mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
-
--- | get nodes by name
-getDGNodesByName :: (NodeName -> Bool) -> DGraph -> [LNode DGNodeLab]
-getDGNodesByName p = filter (p . dgn_name . snd) . labNodesDG
 
 -- | get links by name (inefficiently)
 getDGLinksByName :: (NodeName -> Bool) -> DGraph -> [LEdge DGLinkLab]
