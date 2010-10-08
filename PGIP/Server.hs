@@ -20,7 +20,9 @@ import Network.Wai
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
 
+import Static.ComputeTheory
 import Static.DevGraph
+import Static.PrintDevGraph
 import Static.DotGraph
 import Static.AnalysisLibrary
 import Static.ToXml as ToXml
@@ -29,10 +31,12 @@ import Comorphisms.LogicGraph
 
 import Text.XML.Light
 
+import Common.DocUtils
 import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.ToXml
+import Common.Utils
 
 import Control.Monad.Trans (lift)
 import Control.Monad
@@ -40,6 +44,7 @@ import Control.Monad
 import qualified Data.Set as Set
 import Data.List
 import Data.Ord
+import Data.Graph.Inductive.Graph (lab)
 
 import System.Process
 import System.Directory
@@ -106,7 +111,30 @@ getHetsResult opts file query = let callHets = getDGraph opts file in
     "xml" -> do
         (_, le, dg) <- callHets
         liftR $ return $ ppTopElement $ ToXml.dGraph le dg
-    qstr -> fail $ "unexpected query type: " ++ qstr
+    "menu" | file == "dg" -> return "displaying the possible menus (missing)"
+    qstr -> let
+      (kst, rst) = span (`notElem` "&;") qstr
+      midstr = case stripPrefix "id=" $ drop 1 rst of
+                 Nothing -> Nothing
+                 Just idstr -> readMaybe idstr :: Maybe Int
+      in case (kst, midstr) of
+        ("edge", Just i) -> do
+          (_, _, dg) <- callHets
+          case getDGLinksById (EdgeId i) dg of
+            [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
+            [] -> fail $ "no edge found with id: " ++ show i
+            _ -> fail $ "multiple edges found with id: " ++ show i
+        (_, Just i) | elem kst ["node", "theory"] -> do
+          (_, _, dg) <- callHets
+          case lab (dgBody dg) i of
+            Nothing -> fail $ "no node id: " ++ show i
+            Just dgnode -> return
+              $ (if isDGRef dgnode then ("reference " ++) else
+               if isInternalNode dgnode then ("internal " ++) else id)
+              "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
+               ++ if kst == "node" then showDoc dgnode ""
+                  else showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
+        _ -> fail $ "unexpected query: " ++ qstr
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do
