@@ -1451,9 +1451,9 @@ insEdgesDG = flip $ foldr insLEdgeNubDG
 mkGraphDG :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> DGraph -> DGraph
 mkGraphDG ns ls = insEdgesDG ls . insNodesDG ns
 
--- | get links by name (inefficiently)
-getDGLinksByName :: (NodeName -> Bool) -> DGraph -> [LEdge DGLinkLab]
-getDGLinksByName p = filter (\ (_, _, l) -> p $ dglName l) . labEdgesDG
+-- | get links by id (inefficiently)
+getDGLinksById :: EdgeId -> DGraph -> [LEdge DGLinkLab]
+getDGLinksById e = filter (\ (_, _, l) -> e == dgl_id l) . labEdgesDG
 
 -- ** top-level functions
 
