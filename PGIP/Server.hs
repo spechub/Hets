@@ -101,8 +101,12 @@ getHetsLibContent opts dir query = do
   let hlibs = libdirs opts
   ds <- if null dir then return hlibs else
        filterM doesDirectoryExist $ map (</> dir) hlibs
-  fmap (map (mkHtmlRef query) . sort . filter (not . isPrefixOf ".") . concat)
+  fs <- fmap (sort . filter (not . isPrefixOf ".") . concat)
     $ mapM getDirContents ds
+  return $ map (mkHtmlRef query) $ getParent dir : fs
+
+getParent :: String -> String
+getParent = ("/" </>) . takeDirectory . dropTrailingPathSeparator
 
 -- | a variant that adds a trailing slash
 getDirContents :: FilePath -> IO [FilePath]
@@ -111,16 +115,16 @@ getDirContents d = do
     mapM (\ f -> doesDirectoryExist (d </> f) >>= \ b -> return
             $ if b then addTrailingPathSeparator f else f) fs
 
+aRef :: String -> String -> Element
+aRef lnk txt = add_attr (mkAttr "href" lnk) $ unode "a" txt
+
 mkHtmlRef :: String -> String -> Element
-mkHtmlRef query entry = unode "li"
-   $ add_attr (mkAttr "href" $ entry ++ query)
-         $ unode "a" entry
+mkHtmlRef query entry = unode "dir" $ aRef (entry ++ query) entry
 
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
-  map (\ q -> add_attr (mkAttr "href"
-                       $ if q == d then "/" </> path else '?' : q)
-      $ unode "a" q) (d : displayTypes)
+  map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
+      (d : displayTypes)
 
 displayTypes :: [String]
 displayTypes = ["dg", "xml"]
