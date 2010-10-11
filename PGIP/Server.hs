@@ -154,7 +154,8 @@ getHetsLibContent opts dir query = do
   return $ map (mkHtmlRef query) $ getParent dir : fs
 
 getParent :: String -> String
-getParent = ("/" </>) . takeDirectory . dropTrailingPathSeparator
+getParent = addTrailingPathSeparator . ("/" </>) . takeDirectory
+  . dropTrailingPathSeparator
 
 -- | a variant that adds a trailing slash
 getDirContents :: FilePath -> IO [FilePath]
