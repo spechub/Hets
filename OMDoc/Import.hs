@@ -711,3 +711,6 @@ classifyTC tc clf =
       TCImport n from morph ->
           clf { importInfo = (ImportInfo from n morph) : importInfo clf }
       TCComment _ -> clf
+      TCSmartNotation _ _ _ _ -> error "classifyTC: unexpected SmartNotation"
+      TCFlexibleNotation _ _ _ -> error "classifyTC: unexpected FlexibleNotation"
+

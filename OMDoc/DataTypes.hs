@@ -99,8 +99,9 @@ data TCElement =
     -- | A smart notation for the given symbol with fixity, precedence and the
     -- number of implicit arguments
   | TCSmartNotation OMQualName Fixity Int Int
-    -- | A smart notation for the given symbol
-  | TCFlexibleNotation OMQualName
+    -- | A smart notation for the given symbol, the argument- and
+    -- text-components have to alternate in the component list
+  | TCFlexibleNotation OMQualName Int [NotationComponent]
     -- | Algebraic Data Type represents free/generated types
   | TCADT [OmdADT]
     -- | Import statements for referencing other theories
@@ -137,13 +138,19 @@ data OmdADT =
 data SymbolRole = Obj | Typ | Axiom | Theorem deriving (Eq, Ord)
 
 -- | Fixity of notation patterns
-data Fixity = Infix | Prefix | Postfix deriving (Show, Read, Eq, Ord)
+data Fixity = Infix | Prefix | Postfix deriving (Eq, Ord)
 
 -- | Type of the algebraic data type
 data ADTType = Free | Generated deriving (Eq, Ord)
 
 -- | Totality for selectors of an adt
 data Totality = Yes | No deriving (Eq, Ord)
+
+-- | A component can be a text-component, e.g., <text value="["/>, or an
+-- argument-component such as <component index="1" precedence="p1"/>
+data NotationComponent = TextComp String | ArgComp Int Int
+    deriving (Show, Read, Eq, Ord)
+
 
 instance Show SymbolRole where
     show Obj = "object"
@@ -159,6 +166,11 @@ instance Show Totality where
     show Yes = "yes"
     show No = "no"
 
+instance Show Fixity where
+    show Infix = "infix"
+    show Prefix = "prefix"
+    show Postfix = "postfix"
+
 instance Read SymbolRole where
     readsPrec _ = readShow [Obj, Typ, Axiom, Theorem]
 
@@ -167,6 +179,9 @@ instance Read ADTType where
 
 instance Read Totality where
     readsPrec _ = readShow [Yes, No]
+
+instance Read Fixity where
+    readsPrec _ = readShow [Infix, Prefix, Postfix]
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String, path :: [String] }

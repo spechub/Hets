@@ -51,7 +51,7 @@ toQNOM s = blank_name { qName = s , qPrefix = Just "om" }
 -- | often used element names
 
 el_omdoc, el_theory, el_view, el_structure, el_type, el_adt, el_sortdef
- , el_constructor, el_argument, el_insort, el_selector, el_open
+ , el_constructor, el_argument, el_insort, el_selector, el_open, el_component
  , el_conass, el_constant, el_notation, el_text, el_definition, el_omobj
  , el_ombind, el_oms, el_ombvar, el_omattr, el_omatp, el_omv, el_oma :: QName
 
@@ -72,6 +72,7 @@ el_constant = toQN "constant"
 el_notation = toQN "notation"
 el_text = toQN "text"
 el_definition = toQN "definition"
+el_component = toQN "component"
 
 el_omobj = toQN "OMOBJ"
 
@@ -83,8 +84,9 @@ el_omatp = toQNOM "OMATP"
 el_omv = toQNOM "OMV"
 el_oma = toQNOM "OMA"
 
-at_version, at_module, at_name, at_meta, at_role, at_type, at_total
- , at_for, at_from, at_to, at_value, at_base, at_as :: QName
+at_version, at_module, at_name, at_meta, at_role, at_type, at_total, at_for
+ , at_from, at_to, at_value, at_base, at_as, at_precedence, at_fixity, at_index
+ , at_implicit :: QName
 
 at_version = toQN "version"
 at_module = toQN "module"
@@ -99,7 +101,10 @@ at_to = toQN "to"
 at_value = toQN "value"
 at_base = toQN "base"
 at_as = toQN "as"
-
+at_precedence = toQN "precedence"
+at_fixity = toQN "fixity"
+at_implicit = toQN "implicit"
+at_index = toQN "index"
 
 attr_om :: Attr
 attr_om = Attr (blank_name { qName = "om" , qPrefix = Just "xmlns" })
@@ -341,6 +346,17 @@ instance XmlRepresentable TCElement where
         el_notation
         [Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "constant"]
         $ Just $ inAContent el_text [Attr at_value val] Nothing
+    toXml (TCSmartNotation (cd, nm) fixity prec implicit) =
+        inAContent
+        el_notation
+        [ Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "application"
+        , Attr at_fixity $ show fixity, Attr at_precedence $ show prec
+        , Attr at_implicit $ show implicit ] Nothing
+    toXml (TCFlexibleNotation (cd, nm) prec comps) =
+        mkElement
+        el_notation
+        [ Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "application"
+        , Attr at_precedence $ show prec ] $ map notationComponentToXml comps
     toXml (TCADT sds) = mkElement el_adt [] $ listToXml sds
     toXml (TCComment c) = makeComment c
     toXml (TCImport nm from morph) =
@@ -556,3 +572,11 @@ constantToXml n r tp prf =
               ++ map (inContent el_definition . Just . toOmobj . toXml)
                      (maybeToList prf))
              Nothing
+
+
+notationComponentToXml :: NotationComponent -> Content
+notationComponentToXml (TextComp val) = mkElement el_text [Attr at_value val] []
+notationComponentToXml (ArgComp ind prec) =
+    mkElement el_component [ Attr at_index $ show ind
+                           , Attr at_precedence $ show prec] []
+

@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TupleSections, ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Exports a development graph to an omdoc structure
@@ -31,7 +31,7 @@ module OMDoc.Export where
 import Logic.Logic ( Logic( omdoc_metatheory, export_theoryToOmdoc
                           , export_symToOmdoc, export_senToOmdoc)
                    , Sentences(sym_name, symmap_of), symlist_of
-                   , SyntaxTable)
+                   , SyntaxTable, syntaxTable)
 import Logic.Coerce
 import Logic.Prover
 import Logic.Grothendieck
@@ -46,6 +46,7 @@ import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.AS_Annotation
+import Common.Prec (maxWeight, precMap)
 
 import Driver.Options (downloadExtensions)
 import Driver.WriteLibDefn (getFilePrefixGeneric)
@@ -217,8 +218,9 @@ exportNodeLab le ln dg s (n, lb) =
               -- symsetL: used to compute the local symbols (not imported)
               let (mappingL, symsetL) = unzip $ catMaybes imports
                   (_, importL) = mapAccumL makeImport Set.empty mappingL
+                  mSynTbl = syntaxTable lid sig
               extra <- export_theoryToOmdoc lid sigm sig nsens
-              consts <- mapR (uncurry $ exportSymbol lid sigm symsetL)
+              consts <- mapR (uncurry $ exportSymbol lid sigm mSynTbl symsetL)
                         $ nSigMapToOrderedList nsigm
               -- create the OMDoc elements for the sentences
               thms <- mapR (exportSentence lid sigm) nsens
@@ -454,11 +456,10 @@ exportSymbol :: forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-        lid -> SigMap symbol -> [Set.Set symbol] -> symbol -> UniqName
-            -> Result [TCElement]
-exportSymbol lid (SigMap sm _) sl sym n =
-    let symNotation = mkNotation n $ Just $ ( sym_name lid sym
-                                            , error "No SyntaxTable")
+        lid -> SigMap symbol -> Maybe SyntaxTable -> [Set.Set symbol] -> symbol
+            -> UniqName -> Result [TCElement]
+exportSymbol lid (SigMap sm _) mSynTbl sl sym n =
+    let symNotation = mkNotation n $ fmap (sym_name lid sym,) mSynTbl
     in if all (Set.notMember sym) sl
        then do
          symConst <- export_symToOmdoc lid sm sym $ nameToString n
@@ -494,19 +495,64 @@ exportSentence lid (SigMap sm thm) nsen = do
 -- If the placecount of the id (if provided) is nonzero then we export the
 -- application-notation elements for pretty printing in OMDoc.
 mkNotation :: UniqName -> Maybe (Id, SyntaxTable) -> [TCElement]
-mkNotation un _ = -- mIdSTbl =
+mkNotation un mIdSTbl =
     let n = nameToString un
         orign = fst un
-    in if n == orign then []
-       else [TCNotation (mkSimpleQualName un) orign]
+        qn = mkSimpleQualName un
+        l = if n == orign then []
+            else [TCNotation qn orign]
+    in case mIdSTbl of
+         Just (symid, (pMap, aMap))
+             | isMixfix symid ->
+                 let p = Map.findWithDefault (maxWeight pMap) symid
+                         $ precMap pMap
+                     -- we use numbers instead of associativity values
+                     a = case Map.lookup symid aMap of
+                           Just ALeft -> -1
+                           Just ARight -> 1
+                           _ -> 0
+                 in mkApplicationNotation qn symid p a : l
+             | otherwise -> l
+         _ -> l
 
-{-
-  TODO: integrate the syntaxtable extraction from the signature in exportNodeLab
+-- | This function requires mixfix Ids as input and generates Notation
+-- structures, see 'OMDoc.DataTypes'.
+mkApplicationNotation :: OMQualName -> Id -> Int -> Int -> TCElement
+mkApplicationNotation qn symid@(Id toks _ _) prec asc
+    | placeCount symid == 1 =
+        case toks of [a, b]
+                         | isPlace a
+                             -> mkSmartNotation qn (tokStr b) Postfix prec asc
+                         | otherwise
+                             -> mkSmartNotation qn (tokStr a) Prefix prec asc
+                     _ -> mkFlexibleNotation qn symid prec asc
+    | placeCount symid == 2 = 
+        case toks of [_, b, _]
+                         | not (isPlace b)
+                             -> mkSmartNotation qn (tokStr b) Infix prec asc
+                         | otherwise
+                             -> mkFlexibleNotation qn symid prec asc
+                     _ -> mkFlexibleNotation qn symid prec asc
+    | otherwise = mkFlexibleNotation qn symid prec asc
 
-  -- howto get the notation information from the globannos...
-    let gannos = globAnnos sig
-        -- data PrecMap = PrecMap { precMap :: Map.Map Id Int, maxWeight :: Int}
-        precmap = mkPrecIntMap $ prec_annos gannos
-        -- type AssocMap = Map.Map Id AssocEither
-        assocmap = assoc_annos gannos
--}
+-- | See OMDoc.DataTypes for a description of SmartNotation. We set
+-- the number of implicit arguments to 0. In presence of associativity
+-- and infix we generate flexible notation as described in the
+-- Isabelle2009 reference manual §6.1.3: Infixes.
+mkSmartNotation :: OMQualName -> String -> Fixity -> Int -> Int -> TCElement
+mkSmartNotation qn op fx prec asc =
+    let f p1 p2 = TCFlexibleNotation qn prec
+                  [ArgComp 1 p1, TextComp op, ArgComp 2 p2]
+    in case fx of
+         Infix | asc > 0 -> f (prec+1) prec
+               | asc < 0 -> f prec (prec+1)
+               | otherwise -> TCSmartNotation qn fx prec 0
+         _ -> TCSmartNotation qn fx prec 0
+
+
+mkFlexibleNotation :: OMQualName -> Id -> Int -> Int -> TCElement
+mkFlexibleNotation qn opid prec _ =
+    let f acc tok = if isPlace tok then (acc+1, ArgComp acc prec)
+                    else (acc, TextComp $ tokStr tok)
+    in TCFlexibleNotation qn prec $ snd $ mapAccumL f 1 $ getTokens opid
+
