@@ -105,6 +105,8 @@ evaluate (Repeat e l) =
           -- repeat f until condition holds
           unless b f
     in f
+evaluate (Sequence l) = evaluateList l
+
 evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
 
 

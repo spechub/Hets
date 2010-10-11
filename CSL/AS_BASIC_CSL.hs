@@ -92,6 +92,7 @@ data EXPRESSION =
   deriving (Eq, Ord, Show)
 
 data CMD = Cmd String [EXPRESSION]
+         | Sequence [CMD] -- program sequence
          | Cond [(EXPRESSION, [CMD])]
          | Repeat EXPRESSION [CMD] -- constraint, statements
            deriving (Show, Eq, Ord)
@@ -203,6 +204,9 @@ printCMD (Cmd s exps)
 printCMD (Repeat e stms) = 
     text "re" <> (text "peat" $+$ vcat (map ((text "." <+>) . printCMD)  stms))
     $+$ text "until" <+> printExpression e
+printCMD (Sequence stms) = 
+    text "se" <> (text "quence" $+$ vcat (map ((text "." <+>) . printCMD)  stms))
+    $+$ text "end"
 
 printCMD (Cond l) = vcat (map (uncurry printCase) l) $+$ text "end"
 

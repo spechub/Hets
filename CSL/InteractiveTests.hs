@@ -340,4 +340,19 @@ t' <- runTest (eval t) r
 vc <- runTest (verificationCondition t' t) r
 pretty vc
 
+
+-- exampleRun2
+
+r <- mapleInit 4
+r' <- evalL r 1011
+let t = toE "factor(x^5-z4*x^4+z3*x^3-z2*x^2+z1*x-z0)"
+t' <- runTest (eval t) r'
+vc <- runTest (verificationCondition t' t) r'
+pretty vc
+
+let l = ["z4+z3+20", "z2 + 3*z4 + 4", "3 * z3 - 30", "5 * z4 + 10", "15"]
+let tl = map toE l
+tl' <- mapM (\x -> runTest (eval x) r') tl
+vcl <- mapM (\ (x, y) -> runTest (verificationCondition x y) r') $ zip tl' tl
+mapM_ putStrLn $ map pretty vcl
 -}

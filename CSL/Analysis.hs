@@ -57,6 +57,7 @@ extractOperatorsCmd (Cmd cmd exps) =
     (cmd, length exps) : concatMap extractOperatorsExp exps
 extractOperatorsCmd (Repeat _ _) = [] -- TODO: to be implemented
 extractOperatorsCmd (Cond _) = [] -- TODO: to be implemented
+extractOperatorsCmd (Sequence _) = [] -- TODO: to be implemented
 
 -- | checks whether the command is correctly declared 
 checkOperators :: Sign.Sign -> [(String,Int)] -> Bool

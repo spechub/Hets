@@ -107,7 +107,7 @@ expression = do
   exp1 <- factor
   exps <- many $ pair (oneOfKeys ["+", "-"]) factor
   return $ if null exps then  exp1
-           else foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
+           else foldl (\ b a -> mkOp (fst a) [b, snd a]) exp1 exps
 
 -- | parse a product of basic expressions
 factor :: CharParser st EXPRESSION
@@ -116,7 +116,7 @@ factor = do
   exps <- many
     $ pair (oneOfKeys ["*", "/"]) factor
   if null exps then return exp1
-     else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
+     else return $ foldl (\ b a -> mkOp (fst a) [b, snd a]) exp1 exps
 
 -- | parse a sequence of exponentiations
 expexp :: CharParser st EXPRESSION
@@ -284,7 +284,7 @@ formulaorexpression = try aFormula <|> expression
 -- | parser for commands
 command :: CharParser (AnnoState.AnnoState st) CMD
 command = reduceCommand <|> try assignment <|> repeatExpr <|> caseExpr
-          <|> constraint
+          <|> sequenceExpr <|> constraint
 
 reduceCommand :: CharParser st CMD
 reduceCommand = do
@@ -311,6 +311,13 @@ constraint = do
         return $ Cmd "constraint" [exp']
     _ -> fail "Malformed constraint"
 
+
+sequenceExpr :: CharParser (AnnoState.AnnoState st) CMD
+sequenceExpr = do
+  lstring "sequence"
+  statements <- many1 (AnnoState.dotT >> AnnoState.allAnnoParser command)
+  lstring "end"
+  return $ Sequence $ map AS_Anno.item statements
 
 repeatExpr :: CharParser (AnnoState.AnnoState st) CMD
 repeatExpr = do
