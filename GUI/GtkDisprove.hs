@@ -54,46 +54,49 @@ import Data.Maybe
 
 
 -- TODO (display results properly in the results window)
--- TODO better error dialogs!
-
--- TODO leave function with dialog if no goals are found
 
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
 showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
-  Nothing -> error "GtkDisprove.showDisproveGUI"
+  Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
   Just gt@(G_theory _ _ _ sens _) -> let
-    fgoal g = let th = negate_th gt g
-                  l = lbl { dgn_theory = th }
-                  l' = l { globalTheory = computeLabelTheory le dg (i, l) }
-                  no_cs = ConsistencyStatus CSUnchecked ""
-                  stat = case OMap.lookup g sens of
-                    Nothing -> no_cs
-                    Just tm -> case thmStatus tm of
-                      [] -> no_cs
-                      ts -> basicProofToConStatus $ maximum $ map snd ts
-              in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
+    fg g th = let
+      l = lbl { dgn_theory = th }
+      l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+      no_cs = ConsistencyStatus CSUnchecked ""
+      stat = case OMap.lookup g sens of
+        Nothing -> no_cs
+        Just tm -> case thmStatus tm of
+          [] -> no_cs
+          ts -> basicProofToConStatus $ maximum $ map snd ts
+      in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
                    cStatus = stat }
-    fgoals = map fgoal $ OMap.keys $ OMap.filter (not . isAxiom) sens
-    in do
-      wait <- newEmptyMVar
-      showDisproveWindow wait (libName gi) le dg gt fgoals
-      res <- takeMVar wait
-      runDisproveAtNode gi (i,lbl) res
-      return ()
+    fgoals = foldr (\ g t -> case negate_th gt g of
+      Nothing -> t
+      Just nt -> fg g nt : t) [] 
+        $ OMap.keys $ OMap.filter (not . isAxiom) sens
+    in if null fgoals
+      then do
+        infoDialog "Disprove (error)"
+          "found no goals suitable for disprove function"
+      else do
+        wait <- newEmptyMVar
+        showDisproveWindow wait (libName gi) le dg gt fgoals
+        res <- takeMVar wait
+        runDisproveAtNode gi (i,lbl) res
+        return ()
 
-negate_th :: G_theory -> String -> G_theory
+negate_th :: G_theory -> String -> Maybe G_theory
 negate_th g_th goal = case g_th of
   G_theory lid1 (ExtSign sign symb) i1 sens i2 ->
-      let axs = OMap.filter isAxiom sens
-          negSen = case OMap.lookup goal sens of
-                     Nothing -> error "GtkDisprove.negate_th(1)"
-                     Just sen ->
-                       case negation lid1 $ sentence sen of
-                         -- TODO find proper way to face this error without crash!
-                         Nothing -> error "GtkDisprove.negate_th(2)"
-                         Just sen' -> sen { sentence = sen', isAxiom = True }
-          sens' = OMap.insert goal negSen axs
-      in G_theory lid1 (ExtSign sign symb) i1 sens' i2
+    case OMap.lookup goal sens of
+      Nothing -> Nothing
+      Just sen ->
+        case negation lid1 $ sentence sen of
+          Nothing -> Nothing
+          Just sen' -> let
+            negSen = sen { sentence = sen', isAxiom = True }
+            sens' = OMap.insert goal negSen $ OMap.filter isAxiom sens
+            in Just $ G_theory lid1 (ExtSign sign symb) i1 sens' i2
 
 disproveAtNode :: GInfo -> Int -> DGraph -> IO ()
 disproveAtNode gInfo descr dgraph = do
@@ -263,7 +266,6 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
 
   onDestroy window $ do
     fnodes' <- listStoreToList listGoals
-    -- TODO face the case that no prover can be selected!
     maybe_F <- getSelectedSingle trvFinder listFinder
     case maybe_F of
       Just (_, f) -> case g_th of
