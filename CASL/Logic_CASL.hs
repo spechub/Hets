@@ -266,6 +266,8 @@ instance Logic CASL CASL_Sublogics
          omdocToSym CASL = OMI.omdocToSym
          addOMadtToTheory CASL = OMI.addOMadtToTheory
          addOmdocToTheory CASL = OMI.addOmdocToTheory
+         syntaxTable CASL = Just . getSyntaxTable
+
 
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]

@@ -24,6 +24,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.Prec (mkPrecIntMap, PrecMap)
 import Common.Doc
 import Common.DocUtils
 
@@ -115,6 +116,10 @@ emptySign e = Sign
     , annoMap = Map.empty
     , globAnnos = emptyGlobalAnnos
     , extendedInfo = e }
+
+getSyntaxTable :: Sign f e -> (PrecMap, AssocMap)
+getSyntaxTable sig = let gannos = globAnnos sig
+                     in (mkPrecIntMap $ prec_annos gannos, assoc_annos gannos)
 
 
 class SignExtension e where
