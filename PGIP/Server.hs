@@ -87,7 +87,7 @@ mkOkResponse = mkResponse status200
 
 getDGraph :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv, DGraph)
 getDGraph opts file = do
-  (ln, le) <- anaLibFileOrGetEnv logicGraph opts { verbose = 0 }
+  (ln, le) <- anaLibFileOrGetEnv logicGraph opts { outputToStdout = False }
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
   return (ln, le, lookupDGraph ln le)
 
