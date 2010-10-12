@@ -84,7 +84,7 @@ cStatusToColor s = case sType s of
   CSUnchecked -> "black"
   CSConsistent -> "green"
   CSInconsistent -> "red"
-  CSDisproved -> "orange"
+  CSDisproved -> "red"
   CSTimeout -> "blue"
   CSError -> "darkred"
 
@@ -93,7 +93,7 @@ cStatusToPrefix s = case sType s of
   CSUnchecked -> "[ ] "
   CSConsistent -> "[+] "
   CSInconsistent -> "[-] "
-  CSDisproved -> "[d] "
+  CSDisproved -> "[-] "
   CSTimeout -> "[t] "
   CSError -> "[f] "
 
