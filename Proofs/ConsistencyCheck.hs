@@ -46,6 +46,7 @@ data SType = CSUnchecked
            | CSTimeout
            | CSError
            | CSInconsistent
+           | CSDisproved
            | CSConsistent
            deriving (Eq, Ord)
 
@@ -73,8 +74,8 @@ basicProofToConStatus bp = ConsistencyStatus (basicProofToSType bp) ""
 basicProofToSType :: BasicProof -> SType
 basicProofToSType bp = case bp of
   BasicProof _ st -> case goalStatus st of
-    Open r -> CSUnchecked
-    Disproved -> CSError -- because there is no CSDisproved
+    Open _ -> CSUnchecked
+    Disproved -> CSDisproved
     Proved c -> if c then CSConsistent else CSInconsistent
   _ -> CSConsistent
 

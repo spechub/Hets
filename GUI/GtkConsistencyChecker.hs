@@ -84,6 +84,7 @@ cStatusToColor s = case sType s of
   CSUnchecked -> "black"
   CSConsistent -> "green"
   CSInconsistent -> "red"
+  CSDisproved -> "orange"
   CSTimeout -> "blue"
   CSError -> "darkred"
 
@@ -92,6 +93,7 @@ cStatusToPrefix s = case sType s of
   CSUnchecked -> "[ ] "
   CSConsistent -> "[+] "
   CSInconsistent -> "[-] "
+  CSDisproved -> "[d] "
   CSTimeout -> "[t] "
   CSError -> "[f] "
 
@@ -251,7 +253,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
-      check inclThms ln le dg f timeout listNodes updat nodes'
+      check False inclThms ln le dg f timeout listNodes updat nodes'
       putMVar wait ()
     putMVar threadId tid
     forkIO_ $ do
@@ -339,16 +341,20 @@ mergeFinder old new = let m' = Map.fromList $ map (\ f -> (fName f, f)) new in
           Map.insert n (f { selected = fromMaybe 0 $ findIndex (== c) cc' }) m
     ) m' old
 
-check :: Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int -> ListStore FNode
-      -> (Double -> String -> IO ()) -> [(Int, FNode)] -> IO ()
-check inclThms ln le dg (Finder { finder = cc, comorphism = cs, selected = i})
-  timeout listNodes update nodes = let
+check :: Bool -> Bool -> LibName -> LibEnv -> DGraph -> Finder -> Int
+      -> ListStore FNode -> (Double -> String -> IO ()) -> [(Int, FNode)]
+      -> IO ()
+check dispr inclThms ln le dg (Finder _ cc cs i) timeout listNodes update
+  nodes = let
     count' = fromIntegral $ length nodes
     c = cs !! i in
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
            res <- consistencyCheck inclThms cc c ln le dg n timeout
-           postGUISync $ listStoreSetValue listNodes row fn { cStatus = res }
+           let res' = case dispr && (sType res) == CSConsistent of
+                        True -> ConsistencyStatus CSDisproved (sMessage res)
+                        False -> res
+           postGUISync $ listStoreSetValue listNodes row fn { cStatus = res' }
            return $ count + 1) 0 nodes
 
 updateComorphism :: TreeView -> ListStore Finder -> ComboBox
