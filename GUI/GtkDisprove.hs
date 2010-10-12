@@ -52,46 +52,41 @@ import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
 
-
+-- | this method holds the functionality to convert the nodes goals to the
+-- FNode datatype from GUI.GtkConsistencyChecker. The goals are being negated
+-- by negate_th and this theory is stored in FNodes DGNodeLab local and global
+-- theory.
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
-showDisproveGUI gi _ dg' (i, _) = do
-  lockedEnv <- ensureLockAtNode gi i dg'
-  case lockedEnv of
-    Nothing -> do return ()
-    Just (dg, lbl, le) -> do
-      acquired <- tryLockLocal lbl
-      if acquired then do
-        case globalTheory lbl of
-          Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
-          Just gt@(G_theory _ _ _ sens _) -> let
-            fg g th = let
-              l = lbl { dgn_theory = th }
-              l' = l { globalTheory = computeLabelTheory le dg (i, l) }
-              no_cs = ConsistencyStatus CSUnchecked ""
-              stat = case OMap.lookup g sens of
-                Nothing -> no_cs
-                Just tm -> case thmStatus tm of
-                  [] -> no_cs
-                  ts -> basicProofToConStatus $ maximum $ map snd ts
-              in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
-                     cStatus = stat }
-            fgoals = foldr (\ g t -> case negate_th gt g of
-              Nothing -> t
-              Just nt -> fg g nt : t) [] 
-                $ OMap.keys $ OMap.filter (not . isAxiom) sens
-            in if null fgoals
-              then do
-                errorDialogExt "Disprove (error)"
-                  "found no goals suitable for disprove function"
-              else do
-                wait <- newEmptyMVar
-                showDisproveWindow wait (libName gi) le dg gt fgoals
-                res <- takeMVar wait
-                runDisproveAtNode gi (i,lbl) res
-                return ()
-        unlockLocal lbl
-        else errorDialogExt "Error" "Disproofwindow already open"
+showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
+  Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
+  Just gt@(G_theory _ _ _ sens _) -> let
+    fg g th = let
+      l = lbl { dgn_theory = th }
+      l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+      no_cs = ConsistencyStatus CSUnchecked ""
+      stat = case OMap.lookup g sens of
+        Nothing -> no_cs
+        Just tm -> case thmStatus tm of
+          [] -> no_cs
+          ts -> basicProofToConStatus $ maximum $ map snd ts
+      in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
+                 cStatus = stat }
+    fgoals = foldr (\ g t -> case negate_th gt g of
+      Nothing -> t
+      Just nt -> fg g nt : t) [] 
+        $ OMap.keys $ OMap.filter (not . isAxiom) sens
+    in if null fgoals
+      then do
+        errorDialogExt "Error (disprove)"
+          "found no goals suitable for disprove function"
+      else do
+        wait <- newEmptyMVar
+        showDisproveWindow wait (libName gi) le dg gt fgoals
+        res <- takeMVar wait
+        runDisproveAtNode gi (i,lbl) res
 
+-- | negates a single sentence within a G_theory and returns a theorie
+-- containing all axioms in addition to the one negated sentence.
 negate_th :: G_theory -> String -> Maybe G_theory
 negate_th g_th goal = case g_th of
   G_theory lid1 (ExtSign sign symb) i1 sens i2 ->
@@ -105,17 +100,22 @@ negate_th g_th goal = case g_th of
             sens' = OMap.insert goal negSen $ OMap.filter isAxiom sens
             in Just $ G_theory lid1 (ExtSign sign symb) i1 sens' i2
 
+-- | this function is being called from outside and manages the locking-
+-- mechanism of the node being called upon.
 disproveAtNode :: GInfo -> Int -> DGraph -> IO ()
 disproveAtNode gInfo descr dgraph = do
-  let iSt = intState gInfo
-  ost <- readIORef iSt
-  case i_state ost of
-    Nothing -> return ()
-    Just ist -> do
-      let le = i_libEnv ist
-          dgn = labDG dgraph descr
-      showDisproveGUI gInfo le dgraph (descr, dgn)
-
+  lockedEnv <- ensureLockAtNode gInfo descr dgraph
+  case lockedEnv of
+    Nothing -> do return ()
+    Just (dg, lbl, le) -> do
+      acquired <- tryLockLocal lbl
+      if acquired then do
+      showDisproveGUI gInfo le dg (descr, lbl)
+      unlockLocal lbl
+      else errorDialogExt "Error" "Proof or disproof window already open"
+      
+-- | after results have been collected, this function is called to store
+-- the results for this node within the dgraphs history.
 runDisproveAtNode :: GInfo -> LNode DGNodeLab -> Result G_theory -> IO ()
 runDisproveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
   Just rTh ->
@@ -139,10 +139,6 @@ runDisproveAtNode gInfo (v, dgnode) (Result ds mres) = case mres of
 -- | Displays a GUI to set TimeoutLimit and select the ConsistencyChecker
 -- and holds the functionality to call the ConsistencyChecker for the
 -- (previously negated) selected Theorems.
-
--- TODO proveAtNode anschauen, nach hasLock (..), tryLockLocal,
-                     -- MVar auf LNode DGNodeLab
-
 showDisproveWindow :: MVar (Result G_theory) -> LibName -> LibEnv 
                    -> DGraph -> G_theory -> [FNode] -> IO ()
 showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
@@ -255,6 +251,10 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
+      -- call the check function from GUI.GtkConsistencyChecker.
+      -- first argument means disprove-mode and leads the ConsistencyChecker
+      -- to mark consistent sentences as disproved (since consistent with
+      -- negated sentence)
       check True inclThms ln le dg f timeout listGoals updat goals'
       putMVar wait ()
     putMVar threadId tid
@@ -271,6 +271,9 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
         activate checkWidgets True
         pexit
 
+  -- after window closes a new G_theory is created containing the results.
+  -- only successful disprove attempts are returned; for each one, a new
+  -- BasicProof is created and set to disproved.
   onDestroy window $ do
     fnodes' <- listStoreToList listGoals
     maybe_F <- getSelectedSingle trvFinder listFinder
@@ -294,4 +297,3 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
 
   selectWith (== ConsistencyStatus CSUnchecked "") upd
   widgetShow window
-
