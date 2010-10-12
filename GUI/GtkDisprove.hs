@@ -160,7 +160,7 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
   btnStop <- xmlGetWidget xml castToButton "btnStop"
   trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
 
-  windowSetTitle window "Consistency Checker"
+  windowSetTitle window "Disprove"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
 
   let widgets = [ toWidget sbTimeout
@@ -244,7 +244,7 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
     goals' <- getSelectedMultiple trvGoals listGoals
     mf <- getSelectedSingle trvFinder listFinder
     f <- case mf of
-      Nothing -> error "Consistency checker: internal error"
+      Nothing -> error "Disprove: internal error"
       Just (_, f) -> return f
     switch False
     tid <- forkIO $ do
@@ -256,7 +256,7 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
       postGUIAsync $ do
         switch True
         tryTakeMVar threadId
-        showModelView mView "Results of consistency check" listGoals []
+        showModelView mView "Results of disproving" listGoals []
         signalBlock shN
         sortNodes trvGoals listGoals
         signalUnblock shN
