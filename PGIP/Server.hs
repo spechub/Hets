@@ -53,11 +53,16 @@ import System.Exit
 import System.FilePath
 
 hetsServer :: HetcatsOpts -> IO ()
-hetsServer opts = run 8000 $ \ re ->
-  case B8.unpack (requestMethod re) of
+hetsServer opts1 = do
+  tempDir <- getTemporaryDirectory
+  let tempHetsLib = tempDir </> "MyHetsLib"
+      opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
+  createDirectoryIfMissing False tempHetsLib
+  run 8000 $ \ re ->
+    let query = B8.unpack $ queryString re in
+    case B8.unpack (requestMethod re) of
     "GET" -> do
          let path = dropWhile (== '/') $ B8.unpack (pathInfo re)
-             query = B8.unpack $ queryString re
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then do
            Result ds ms <- getHetsResult opts path query
@@ -65,19 +70,26 @@ hetsServer opts = run 8000 $ \ re ->
              Nothing -> mkResponse status400
                $ showRelDiags 1 ds
              Just s -> mkOkResponse s
-           else return $ mkOkResponse $ htmlHead ++
-                ppElement (unode "html"
+           else mkHtmlPage path dirs
+    "POST" -> do
+      (_, files) <- parseRequestBody tempFileSink re
+      case files of
+        [] -> return $ mkResponse status400 "no file uploaded"
+        [(_, f)] -> do
+           copyFile (fileContent f) (tempHetsLib </> B8.unpack (fileName f))
+           dirs <- getHetsLibContent opts "" query
+           mkHtmlPage "" dirs
+        _ -> return $ mkResponse status400 $ "cannot handle multiple files "
+              ++ show (map (fileName . snd) files)
+    _ -> return $ mkResponse status405 ""
+
+mkHtmlPage :: FilePath -> [Element] -> IO Response
+mkHtmlPage path dirs =
+  return $ mkOkResponse $ htmlHead
+    ++ ppElement (unode "html"
                 [ unode "head" $ unode "title" $ "Listing of"
                    ++ if null path then " repository" else ": " ++ path
                 , unode "body" $ headElems path ++ [unode "ul" dirs]])
-    "POST" -> do
-      (_, files) <- parseRequestBody lbsSink re
-      return $ case files of
-        [] -> mkResponse status400 "no file uploaded"
-        [(_, f)] -> mkOkResponse $ BS.unpack $ fileContent f
-        _ -> mkResponse status400 $ "cannot handle multiple files "
-              ++ show (map (fileName . snd) files)
-    _ -> return $ mkResponse status405 ""
 
 mkResponse :: Status -> String -> Response
 mkResponse st = Response st [] . ResponseLBS . BS.pack
@@ -173,7 +185,7 @@ mkHtmlRef query entry = unode "dir" $ aRef (entry ++ query) entry
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
   map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes)
+      (d : displayTypes) ++ [downloadHtml]
 
 displayTypes :: [String]
 displayTypes = ["dg", "xml"]
@@ -186,3 +198,24 @@ htmlHead =
     let dtd = "PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
         url = "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\""
     in concat ["<!DOCTYPE html ", dtd, " ", url, ">\n"]
+
+inputNode :: Element
+inputNode = unode "input" ()
+
+downloadHtml :: Element
+downloadHtml = add_attrs
+  [ mkAttr "action" "/"
+  , mkAttr "enctype" "multipart/form-data"
+  , mkAttr "method" "post" ]
+  $ unode "form"
+  [ add_attrs
+    [ mkAttr "type" "file"
+    , mkAttr "name" "file"
+    , mkAttr "size" "40"]
+    inputNode
+  , add_attrs
+    [ mkAttr "type" "submit"
+    , mkAttr "value" "download"]
+    inputNode ]
+
+
