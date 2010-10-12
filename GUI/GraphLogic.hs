@@ -504,26 +504,38 @@ hidingWarnDiag dgn = if labelHasHiding dgn then
   warningDialog "Warning" $ unwords $ hidingWarning ++ ["Try anyway?"]
   else return True
 
+
+ensureLockAtNode :: GInfo -> Int -> DGraph
+                 -> IO (Maybe (DGraph, DGNodeLab, LibEnv))
+ensureLockAtNode gi descr dg = do
+  let ln = libName gi
+      iSt = intState gi
+  ost <- readIORef iSt
+  case i_state ost of
+    Nothing -> return Nothing
+    Just ist -> let 
+      le = i_libEnv ist
+      dgn = labDG dg descr in if hasLock dgn 
+        then do
+          return $ Just (dg, dgn, le)
+        else do
+          lockGlobal gi
+          (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
+          let nwle = Map.insert ln dgraph' le
+              nwst = ost { i_state = Just $ ist { i_libEnv = nwle} }
+          writeIORef iSt nwst
+          unlockGlobal gi
+          return $ Just (dgraph', dgn', nwle)
+  
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: GInfo -> Int -> DGraph -> IO ()
 proveAtNode gInfo descr dgraph = do
   let ln = libName gInfo
       iSt = intState gInfo
-  ost <- readIORef iSt
-  case i_state ost of
+  lockedEnv <- ensureLockAtNode gInfo descr dgraph
+  case lockedEnv of
     Nothing -> return ()
-    Just ist -> do
-      let le = i_libEnv ist
-          dgn = labDG dgraph descr
-      (dgraph', dgn', le') <- if hasLock dgn then return (dgraph, dgn, le)
-        else do
-          lockGlobal gInfo
-          (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
-          let nwle = Map.insert ln dgraph' le
-              nwst = ost { i_state = Just $ ist { i_libEnv = nwle} }
-          writeIORef iSt nwst
-          unlockGlobal gInfo
-          return (dgraph', dgn', nwle)
+    Just (dgraph', dgn', le') -> do
       acquired <- tryLockLocal dgn'
       if acquired then do
         let action = do

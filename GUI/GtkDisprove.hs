@@ -53,8 +53,6 @@ import Data.List
 import Data.Maybe
 
 
--- TODO (display results properly in the results window)
-
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
 showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
   Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
