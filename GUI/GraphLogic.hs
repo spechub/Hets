@@ -26,6 +26,7 @@ module GUI.GraphLogic
     , displayConceptGraph
     , showProofStatusOfNode
     , proveAtNode
+    , ensureLockAtNode
     , showNodeInfo
     , showDiagMess
     , showDiagMessAux

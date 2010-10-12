@@ -17,7 +17,7 @@ module GUI.GtkDisprove (disproveAtNode) where
 import Graphics.UI.Gtk
 import Graphics.UI.Gtk.Glade
 
-import GUI.GtkUtils as GtkUtils
+import GUI.GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
 import GUI.GraphLogic hiding (openProofStatus)
@@ -54,34 +54,43 @@ import Data.Maybe
 
 
 showDisproveGUI :: GInfo -> LibEnv -> DGraph -> LNode DGNodeLab -> IO ()
-showDisproveGUI gi le dg (i,lbl) = case globalTheory lbl of
-  Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
-  Just gt@(G_theory _ _ _ sens _) -> let
-    fg g th = let
-      l = lbl { dgn_theory = th }
-      l' = l { globalTheory = computeLabelTheory le dg (i, l) }
-      no_cs = ConsistencyStatus CSUnchecked ""
-      stat = case OMap.lookup g sens of
-        Nothing -> no_cs
-        Just tm -> case thmStatus tm of
-          [] -> no_cs
-          ts -> basicProofToConStatus $ maximum $ map snd ts
-      in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
-                   cStatus = stat }
-    fgoals = foldr (\ g t -> case negate_th gt g of
-      Nothing -> t
-      Just nt -> fg g nt : t) [] 
-        $ OMap.keys $ OMap.filter (not . isAxiom) sens
-    in if null fgoals
-      then do
-        infoDialog "Disprove (error)"
-          "found no goals suitable for disprove function"
-      else do
-        wait <- newEmptyMVar
-        showDisproveWindow wait (libName gi) le dg gt fgoals
-        res <- takeMVar wait
-        runDisproveAtNode gi (i,lbl) res
-        return ()
+showDisproveGUI gi _ dg' (i, _) = do
+  lockedEnv <- ensureLockAtNode gi i dg'
+  case lockedEnv of
+    Nothing -> do return ()
+    Just (dg, lbl, le) -> do
+      acquired <- tryLockLocal lbl
+      if acquired then do
+        case globalTheory lbl of
+          Nothing -> error "GtkDisprove.showDisproveGUI(no global theory found)"
+          Just gt@(G_theory _ _ _ sens _) -> let
+            fg g th = let
+              l = lbl { dgn_theory = th }
+              l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+              no_cs = ConsistencyStatus CSUnchecked ""
+              stat = case OMap.lookup g sens of
+                Nothing -> no_cs
+                Just tm -> case thmStatus tm of
+                  [] -> no_cs
+                  ts -> basicProofToConStatus $ maximum $ map snd ts
+              in FNode { name = g, node = (i,l'), sublogic = sublogicOfTh th,
+                     cStatus = stat }
+            fgoals = foldr (\ g t -> case negate_th gt g of
+              Nothing -> t
+              Just nt -> fg g nt : t) [] 
+                $ OMap.keys $ OMap.filter (not . isAxiom) sens
+            in if null fgoals
+              then do
+                errorDialogExt "Disprove (error)"
+                  "found no goals suitable for disprove function"
+              else do
+                wait <- newEmptyMVar
+                showDisproveWindow wait (libName gi) le dg gt fgoals
+                res <- takeMVar wait
+                runDisproveAtNode gi (i,lbl) res
+                return ()
+        unlockLocal lbl
+        else errorDialogExt "Error" "Disproofwindow already open"
 
 negate_th :: G_theory -> String -> Maybe G_theory
 negate_th g_th goal = case g_th of
