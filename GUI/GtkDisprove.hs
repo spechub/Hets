@@ -270,7 +270,7 @@ showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
     case maybe_F of
       Just (_, f) -> case g_th of
         G_theory lid _s _i1 sens _i2 -> let
-          sens' = foldr (\ fg t -> if (sType . cStatus) fg == CSDisproved
+          sens' = foldr (\ fg t -> if (sType . cStatus) fg == CSInconsistent
             then let
               n' = name fg
               es = Map.findWithDefault (error

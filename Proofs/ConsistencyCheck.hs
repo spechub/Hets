@@ -46,7 +46,6 @@ data SType = CSUnchecked
            | CSTimeout
            | CSError
            | CSInconsistent
-           | CSDisproved
            | CSConsistent
            deriving (Eq, Ord)
 
@@ -74,10 +73,9 @@ basicProofToConStatus bp = ConsistencyStatus (basicProofToSType bp) ""
 basicProofToSType :: BasicProof -> SType
 basicProofToSType bp = case bp of
   BasicProof _ st -> case goalStatus st of
-    Open _ -> CSUnchecked
-    Disproved -> CSDisproved
-    Proved c -> if c then CSConsistent else CSInconsistent
-  _ -> CSConsistent
+    Disproved -> CSInconsistent
+    _ -> CSUnchecked
+  _ -> CSUnchecked
 
 {- TODO instead of LibEnv.. get FreeDefs as Input. create wrapper that calcs
 FreeDefs from LibEnv, DGraph and LibName (so that the call remains the same).

@@ -84,7 +84,6 @@ cStatusToColor s = case sType s of
   CSUnchecked -> "black"
   CSConsistent -> "green"
   CSInconsistent -> "red"
-  CSDisproved -> "red"
   CSTimeout -> "blue"
   CSError -> "darkred"
 
@@ -93,9 +92,14 @@ cStatusToPrefix s = case sType s of
   CSUnchecked -> "[ ] "
   CSConsistent -> "[+] "
   CSInconsistent -> "[-] "
-  CSDisproved -> "[-] "
   CSTimeout -> "[t] "
   CSError -> "[f] "
+
+cInvert :: ConsistencyStatus -> ConsistencyStatus
+cInvert cs = case sType cs of
+  CSConsistent -> ConsistencyStatus CSInconsistent (sMessage cs)
+  CSInconsistent -> ConsistencyStatus CSConsistent (sMessage cs)
+  _ -> cs
 
 -- | Displays the consistency checker window
 showConsistencyChecker :: Maybe Int -> GInfo -> LibEnv -> IO (Result LibEnv)
@@ -351,9 +355,7 @@ check dispr inclThms ln le dg (Finder _ cc cs i) timeout listNodes update
   foldM_ (\ count (row, fn@(FNode { name = n', node = n })) -> do
            postGUISync $ update (count / count') n'
            res <- consistencyCheck inclThms cc c ln le dg n timeout
-           let res' = case dispr && (sType res) == CSConsistent of
-                        True -> ConsistencyStatus CSDisproved (sMessage res)
-                        False -> res
+           let res' = if dispr then cInvert res else res
            postGUISync $ listStoreSetValue listNodes row fn { cStatus = res' }
            return $ count + 1) 0 nodes
 
