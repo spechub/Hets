@@ -313,16 +313,14 @@ casDeclareOperators sess varlist = do
 
 -- | declares an equation x := exp 
 casDeclareEquation :: Session a => a -> CMD -> IO ()
-casDeclareEquation sess (Cmd s exps) = 
-  if s == ":=" then 
+casDeclareEquation sess (Ass c def) = 
     do
-      putStrLn $ (exportExp (exps !! 0)) ++ ":=" ++  (exportExp (exps !! 1))
-      hPutStrLn (inp sess) $ (exportExp (exps !! 0))
-                    ++ ":=" ++  (exportExp (exps !! 1)) ++ ";"
+      putStrLn $ (exportExp c) ++ ":=" ++  (exportExp def)
+      hPutStrLn (inp sess) $ (exportExp c)
+                    ++ ":=" ++  (exportExp def) ++ ";"
       res <- getNextResultOutput (outp sess)
       putStrLn $ "Declaration Result: " ++ res
       return ()
-   else error "Expression is not an equation"
 
 casDeclareEquation _ _ =
     error "casDeclareEquation: not implemented for this case" -- TODO: implement

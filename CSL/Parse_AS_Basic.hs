@@ -301,7 +301,7 @@ assignment = do
   ident <- expsymbol
   lexemeParser $ tryString ":="
   exp' <- expression
-  return $ Cmd ":=" [ident, exp']
+  return $ Ass ident exp'
 
 constraint :: CharParser st CMD
 constraint = do
@@ -389,19 +389,19 @@ basicSpec =
   <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (Basic_spec []))
 
 -- | Parser for basic items
-parseBasicItems :: AnnoState.AParser st BASIC_ITEMS
+parseBasicItems :: AnnoState.AParser st BASIC_ITEM
 parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseAxItems
 
 -- | parser for predicate declarations
-parseOpDecl :: AnnoState.AParser st BASIC_ITEMS
+parseOpDecl :: AnnoState.AParser st BASIC_ITEM
 parseOpDecl = opItem >-> Op_decl
 
 -- | parser for predicate declarations
-parseVarDecl :: AnnoState.AParser st BASIC_ITEMS
+parseVarDecl :: AnnoState.AParser st BASIC_ITEM
 parseVarDecl = varItems >-> Var_decls
 
 -- | parser for Axiom_item
-parseAxItems :: AnnoState.AParser st BASIC_ITEMS
+parseAxItems :: AnnoState.AParser st BASIC_ITEM
 parseAxItems = do
   AnnoState.dotT
   cmd <- (AnnoState.allAnnoParser command)

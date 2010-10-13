@@ -15,7 +15,7 @@ This file contains the abstract syntax for CSL as well as pretty printer for it.
 module CSL.AS_BASIC_CSL
     ( EXPRESSION (..)     -- datatype for numerical expressions (e.g. polynomials)
     , EXTPARAM (..)       -- datatype for extended parameters (e.g. [I=0])
-    , BASIC_ITEMS (..)    -- Items of a Basic Spec
+    , BASIC_ITEM (..)    -- Items of a Basic Spec
     , BASIC_SPEC (..)     -- Basic Spec
     , SYMB_ITEMS (..)     -- List of symbols
     , SYMB (..)           -- Symbols
@@ -28,6 +28,7 @@ module CSL.AS_BASIC_CSL
     , CMD (..)            -- Command datatype
     , mkOp                -- Simple Operator constructor
     , OpInfo (..)         -- Type for Operator information
+    , BindInfo (..)       -- Type for Binder information
     , operatorInfo        -- Operator information for pretty printing
                           -- and static analysis
     , lookupOpInfo
@@ -59,7 +60,7 @@ data OP_ITEM = Op_item [Id.Token] Id.Range
 data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
                 deriving Show
 
-newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
+newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEM)]
                   deriving Show
 
 data GroundConstant = GCI APInt | GCR APFloat deriving (Eq, Ord, Show)
@@ -67,10 +68,10 @@ data GroundConstant = GCI APInt | GCR APFloat deriving (Eq, Ord, Show)
 -- | A finite set or an interval. True = closed, False = opened
 data Domain = Set [GroundConstant]
             | IntVal (GroundConstant, Bool) (GroundConstant, Bool)
-              deriving Show
+              deriving (Eq, Ord, Show)
 
 -- | basic items: an operator or variable declaration or an axiom
-data BASIC_ITEMS =
+data BASIC_ITEM =
     Op_decl OP_ITEM
     | Var_decls [VAR_ITEM]
     | Axiom_item (AS_Anno.Annoted CMD)
@@ -91,7 +92,8 @@ data EXPRESSION =
   | Double APFloat Id.Range
   deriving (Eq, Ord, Show)
 
-data CMD = Cmd String [EXPRESSION]
+data CMD = Ass EXPRESSION EXPRESSION
+         | Cmd String [EXPRESSION]
          | Sequence [CMD] -- program sequence
          | Cond [(EXPRESSION, [CMD])]
          | Repeat EXPRESSION [CMD] -- constraint, statements
@@ -118,8 +120,15 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
+data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
+                                                  -- binding variables
+                         , boundBodyPos :: [Int] -- ^ argument positions of
+                                                 -- bound terms
+                         } deriving (Eq, Ord, Show)
+
 data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and 9
                      , infx :: Bool -- ^ True = infix
+                     , bind :: Maybe BindInfo -- ^ More info for binders
                      } deriving (Eq, Ord, Show)
 
 -- Pretty Printing;
@@ -132,7 +141,7 @@ instance Pretty VAR_ITEM where
     pretty = printVarItem
 instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
-instance Pretty BASIC_ITEMS where
+instance Pretty BASIC_ITEM where
     pretty = printBasicItems
 instance Pretty EXPRESSION where
     pretty = printExpression
@@ -152,7 +161,10 @@ instance Pretty CMD where
 operatorInfo :: Map.Map String (Map.Map Int OpInfo)
 operatorInfo =
     let -- arity (-1 means flex), precedence, infix
-        toSgl i p fx = Map.fromList [(i, OpInfo p fx)]
+        toSgl i p fx = Map.fromList [(i, OpInfo p fx Nothing)]
+
+        toSglBind i p fx bv bb =
+            Map.fromList [(i, OpInfo p fx $ Just $ BindInfo [bv] [bb])]
         -- arityflex simple ops
         aflex s = (s, toSgl (-1) 0 False)
         -- arity0 simple ops
@@ -161,6 +173,8 @@ operatorInfo =
         a1 s = (s, toSgl 1 0 False)
         -- arity2 simple ops
         a2 s = (s, toSgl 2 0 False)
+        -- arity2 binder
+        a2bind bv bb s = (s, toSglBind 2 0 False bv bb)
         -- arity2 infix with precedence
         a2i p s = (s, toSgl 2 p True)
     in Map.fromList
@@ -168,14 +182,17 @@ operatorInfo =
            ++ map a1 [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
                      , "simplify", "rlqe", "factorize" ]
            ++ map (a2i 2) [ "ex", "all", "and", "or", "impl" ]
-           ++ map (a2i 3) [ ":=", "=", ">", "<=", ">=", "!=", "<"]
+           ++ map (a2i 3) [ "=", ">", "<=", ">=", "!=", "<"]
            ++ [a2i 4 "+"]
            ++ map (a2i 5) ["/", "*"]
            ++ map (a2i 6) ["^", "**"]
            ++ map a2 [ "int", "divide", "solve", "convergence" ]
            ++ map aflex [ "min", "max" ]
+           ++ map (a2bind 1 0) [ "Maximum", "ArgAtMaximum" ]
+ 
            -- special handling for overloaded "-"
-           ++ [("-", Map.fromList [(1, OpInfo 0 False), (2, OpInfo 4 True)])]
+           ++ [("-", Map.fromList [ (1, OpInfo 0 False Nothing)
+                                  , (2, OpInfo 4 True Nothing)])]
 
 -- | For the given name and arity we lookup an 'OpInfo', where arity=-1
 -- means flexible arity. If an operator is registered for the given
@@ -196,9 +213,11 @@ lookupOpInfo op arit =
 
 
 printCMD :: CMD -> Doc
-printCMD (Cmd s exps)
-    | s==":=" = printExpression (exps !! 0) <+> text s
-                <+> printExpression (exps !! 1)
+printCMD (Ass c def)
+    = printExpression c <+> text ":=" <+> printExpression def
+printCMD c@(Cmd s exps) -- TODO: remove the case := later
+    | s==":=" = error $ "printCMD: use Ass for assignment representation! "
+                ++ show c
     | s=="constraint" = printExpression (exps !! 0)
     | otherwise = (text s) <> (parens (sepByCommas (map printExpression exps)))
 printCMD (Repeat e stms) = 
@@ -229,7 +248,14 @@ getPrec (Op s _ exps _)
           _ -> 0
 getPrec _ = 9
 
--- TODO: print extparams   
+printExtparam :: EXTPARAM -> Doc
+printExtparam (EP p op i) =
+    pretty p <> text op <> (text $ if op == "-|" then  "" else show i)
+
+printExtparams :: [EXTPARAM] -> Doc
+printExtparams [] = empty
+printExtparams l = brackets $ sepByCommas $ map printExtparam l
+
 printInfix :: EXPRESSION -> Doc
 printInfix e@(Op s _ exps _) =
 -- we mustn't omit the space between the operator and its arguments for text-
@@ -243,12 +269,12 @@ printInfix e@(Op s _ exps _) =
 printInfix _ = error "printInfix: Impossible case"
 
 printExpression :: EXPRESSION -> Doc
-printExpression (Var token) = text (tokStr token)
--- TODO: print extparams   
-printExpression e@(Op s _ exps _)
-    | length exps == 0 = text s
+printExpression (Var token) = text $ tokStr token
+printExpression e@(Op s epl exps _)
+    | length exps == 0 = text s <> printExtparams epl
     | otherwise =
-        let asPrfx = text s <> parens (sepByCommas $ map printExpression exps)
+        let asPrfx = text s <> printExtparams epl
+                     <> parens (sepByCommas $ map printExpression exps)
         in case lookupOpInfo s $ length exps  of
              Right oi
                  | infx oi -> printInfix e
@@ -287,7 +313,7 @@ printGC (GCR d) = text (show d)
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
-printBasicItems :: BASIC_ITEMS -> Doc
+printBasicItems :: BASIC_ITEM -> Doc
 printBasicItems (Axiom_item x) = pretty x
 printBasicItems (Op_decl x) = pretty x
 printBasicItems (Var_decls x) = text "vars" <+> (sepBySemis $ map pretty x)
@@ -310,50 +336,53 @@ printSymbMapItems (Symb_map_items xs _) = fsep $ map pretty xs
 -- Instances for GetRange
 
 instance GetRange OP_ITEM where
-  getRange = const nullRange
+  getRange = Range . rangeSpan
   rangeSpan x = case x of
     Op_item a b -> joinRanges [rangeSpan a, rangeSpan b]
 
 instance GetRange VAR_ITEM where
-  getRange = const nullRange
+  getRange = Range . rangeSpan
   rangeSpan x = case x of
     Var_item a _ b -> joinRanges [rangeSpan a, rangeSpan b]
 
 
 instance GetRange BASIC_SPEC where
-  getRange = const nullRange
+  getRange = Range . rangeSpan
   rangeSpan x = case x of
     Basic_spec a -> joinRanges [rangeSpan a]
 
-instance GetRange BASIC_ITEMS where
-  getRange = const nullRange
+instance GetRange BASIC_ITEM where
+  getRange = Range . rangeSpan
   rangeSpan x = case x of
     Op_decl a -> joinRanges [rangeSpan a]
     Var_decls a -> joinRanges [rangeSpan a]
     Axiom_item a -> joinRanges [rangeSpan a]
 
 instance GetRange CMD where
-    getRange = const nullRange
+    getRange = Range . rangeSpan
+    rangeSpan (Ass c def) = joinRanges (map rangeSpan [c, def])
     rangeSpan (Cmd _ exps) = joinRanges (map rangeSpan exps)
-    rangeSpan _ = error "rangeSpan(CMD): not implemented" -- TODO: implement
+    -- parsing guruantees l <> null
+    rangeSpan (Repeat c l) = joinRanges [rangeSpan c, rangeSpan $ head l]
+    -- parsing guruantees l <> null
+    rangeSpan (Sequence l) = rangeSpan $ head l
+    rangeSpan (Cond l) = rangeSpan $ head l
 
 instance GetRange SYMB_ITEMS where
-  getRange = const nullRange
-  rangeSpan x = case x of
-    Symb_items a b -> joinRanges [rangeSpan a, rangeSpan b]
+  getRange = Range . rangeSpan
+  rangeSpan (Symb_items a b) = joinRanges [rangeSpan a, rangeSpan b]
 
 instance GetRange SYMB where
-  getRange = const nullRange
-  rangeSpan x = case x of
-    Symb_id a -> joinRanges [rangeSpan a]
+  getRange = Range . rangeSpan
+  rangeSpan (Symb_id a) = joinRanges [rangeSpan a]
+    
 
 instance GetRange SYMB_MAP_ITEMS where
-  getRange = const nullRange
-  rangeSpan x = case x of
-    Symb_map_items a b -> joinRanges [rangeSpan a, rangeSpan b]
+  getRange = Range . rangeSpan
+  rangeSpan (Symb_map_items a b) = joinRanges [rangeSpan a, rangeSpan b]
 
 instance GetRange SYMB_OR_MAP where
-  getRange = const nullRange
+  getRange = Range . rangeSpan
   rangeSpan x = case x of
     Symb a -> joinRanges [rangeSpan a]
     Symb_map a b c -> joinRanges [rangeSpan a, rangeSpan b, rangeSpan c]
@@ -361,9 +390,9 @@ instance GetRange SYMB_OR_MAP where
 instance GetRange EXPRESSION where
   getRange = Range . rangeSpan
   rangeSpan x = case x of
-                      Var token -> joinRanges [rangeSpan token]
-                      Op _ _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
-                      List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
-                      Int _ a -> joinRanges [rangeSpan a]
-                      Double _ a -> joinRanges [rangeSpan a]
-                      Interval _ _ a -> joinRanges [rangeSpan a]
+    Var token -> joinRanges [rangeSpan token]
+    Op _ _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
+    List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
+    Int _ a -> joinRanges [rangeSpan a]
+    Double _ a -> joinRanges [rangeSpan a]
+    Interval _ _ a -> joinRanges [rangeSpan a]

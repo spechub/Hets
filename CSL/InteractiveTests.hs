@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Test environment for CSL
@@ -45,7 +45,7 @@ import Control.Monad.State (StateT(..))
 import Control.Monad (liftM)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Time.Clock
-
+import qualified Data.Map as Map
 
 -- ----------------------------------------------------------------------
 -- * general test functions
@@ -144,14 +144,6 @@ toEPs = toEPExps . toEP
 
 toEPLs :: String -> [EPExps]
 toEPLs = map toEPExps . toEPL
-
--- ----------------------------------------------------------------------
--- * static analysis functions
--- ----------------------------------------------------------------------
-
-
--- let al = filter ( \ x -> case x of Cmd ":=" _ -> True ; _ -> False) l
-
 
 -- ----------------------------------------------------------------------
 -- * Extended Parameter tests
@@ -356,3 +348,84 @@ tl' <- mapM (\x -> runTest (eval x) r') tl
 vcl <- mapM (\ (x, y) -> runTest (verificationCondition x y) r') $ zip tl' tl
 mapM_ putStrLn $ map pretty vcl
 -}
+
+-- ----------------------------------------------------------------------
+-- * Utilities
+-- ----------------------------------------------------------------------
+
+-- ----------------------------------------------------------------------
+-- ** Operator extraction
+-- ----------------------------------------------------------------------
+
+addOp :: Map.Map String Int -> String -> Map.Map String Int
+addOp mp s = Map.insertWith (+) s 1 mp
+
+class OpExtractor a where
+    extr :: Map.Map String Int -> a -> Map.Map String Int
+
+instance OpExtractor EXPRESSION where
+    extr m (Op op _ l _) = extr (addOp m op) l
+    extr m (Interval _ _ _) = addOp m "!Interval"
+    extr m (Int _ _) = addOp m "!Int"
+    extr m (Double _ _) = addOp m "!Double"
+    extr m (List l _) = extr (addOp m "!List") l
+    extr m (Var _) = addOp m "!Var"
+
+instance OpExtractor [EXPRESSION] where
+    extr = foldl extr
+
+instance OpExtractor (EXPRESSION, [CMD]) where
+    extr m (e,l) = extr (extr m e) l
+
+instance OpExtractor CMD where
+    extr m (Ass c def) = extr m [c, def]
+    extr m (Cmd _ l) = extr m l
+    extr m (Sequence l) = extr m l
+    extr m (Cond l) = foldl extr m l
+    extr m (Repeat e l) = extr m (e,l)
+
+instance OpExtractor [CMD] where
+    extr = foldl extr
+
+extractOps :: OpExtractor a => a -> Map.Map String Int
+extractOps = extr Map.empty
+
+-- -- ----------------------------------------------------------------------
+-- -- ** Assignment extraction
+-- -- ----------------------------------------------------------------------
+
+-- addOp :: Map.Map String Int -> String -> Map.Map String Int
+-- addOp mp s = Map.insertWith (+) s 1 mp
+
+-- class OpExtractor a where
+--     extr :: Map.Map String Int -> a -> Map.Map String Int
+
+-- instance OpExtractor EXPRESSION where
+--     extr m (Op op _ l _) = extr (addOp m op) l
+--     extr m (Interval _ _ _) = addOp m "!Interval"
+--     extr m (Int _ _) = addOp m "!Int"
+--     extr m (Double _ _) = addOp m "!Double"
+--     extr m (List l _) = extr (addOp m "!List") l
+--     extr m (Var _) = addOp m "!Var"
+
+-- instance OpExtractor [EXPRESSION] where
+--     extr = foldl extr
+
+-- instance OpExtractor (EXPRESSION, [CMD]) where
+--     extr m (e,l) = extr (extr m e) l
+
+-- instance OpExtractor CMD where
+--     extr m (Cmd _ l) = extr m l
+--     extr m (Sequence l) = extr m l
+--     extr m (Cond l) = foldl extr m l
+--     extr m (Repeat e l) = extr m (e,l)
+
+-- instance OpExtractor [CMD] where
+--     extr = foldl extr
+
+-- extractOps :: OpExtractor a => a -> Map.Map String Int
+-- extractOps = extr Map.empty
+
+-- -- ----------------------------------------------------------------------
+-- -- * static analysis functions
+-- -- ----------------------------------------------------------------------

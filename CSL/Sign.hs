@@ -25,21 +25,33 @@ module CSL.Sign
     ) where
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
 
+import CSL.AS_BASIC_CSL
+
 -- | Datatype for CSL Signatures
 -- Signatures are just sets of Tokens for the operators
-newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
+data Sign = Sign { items :: Set.Set Id
+                 , vardecls :: Map.Map Token Domain
+                 } deriving (Eq, Ord, Show)
+
+-- | The empty signature, use this one to create new signatures
+emptySig :: Sign
+emptySig = Sign { items = Set.empty
+                , vardecls = Map.empty }
 
 instance Pretty Sign where
     pretty = printSign
 
 -- | checks whether a Id is declared in the signature
 lookupSym :: Sign -> Id -> Bool
-lookupSym (Sign s) item = Set.member item s
+lookupSym sig item = Set.member item $ items sig
+
+-- TODO: adapt the operations to new signature components
 
 -- | pretty printer for CSL signatures
 printSign :: Sign -> Doc
@@ -52,15 +64,11 @@ isLegalSignature _ = True
 
 -- | Basic function to extend a given signature by adding an item (id) to it
 addToSig :: Sign -> Id -> Sign
-addToSig sig tok = Sign {items = Set.insert tok $ items sig}
+addToSig sig tok = emptySig {items = Set.insert tok $ items sig}
 
 -- | Union of signatures
 unite :: Sign -> Sign -> Sign
-unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}
-
--- | The empty signature
-emptySig :: Sign
-emptySig = Sign {items = Set.empty}
+unite sig1 sig2 = emptySig {items = Set.union (items sig1) $ items sig2}
 
 -- | Determines if sig1 is subsignature of sig2
 isSubSigOf :: Sign -> Sign -> Bool
@@ -68,7 +76,7 @@ isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
 
 -- | difference of Signatures
 sigDiff :: Sign -> Sign -> Sign
-sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) $ items sig2}
+sigDiff sig1 sig2 = emptySig {items = Set.difference (items sig1) $ items sig2}
 
 -- | union of Signatures
 -- or do I have to care about more things here?

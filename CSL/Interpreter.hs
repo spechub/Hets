@@ -91,7 +91,8 @@ isDefined :: CalculationSystem m => String -> m Bool
 isDefined s = liftM (member s) names
 
 evaluate :: CalculationSystem m => CMD -> m ()
-evaluate (Cmd ":=" [Op n [] [] _, e]) = assign n e
+evaluate (Ass (Op n [] [] _) e) = assign n e
+evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
   if null cl

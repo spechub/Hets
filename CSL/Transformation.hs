@@ -89,6 +89,9 @@ class SCmd a where
 instance (SExp a, SExp b) => SCmd (String, a, b) where
     toCmd (s, x, y) = Cmd s [toExp x, toExp y]
 
+instance (SExp a, SExp b) => SCmd (a, b) where
+    toCmd (x, y) = Ass (toExp x) $ toExp y
+
 type VarRange = (APFloat, APFloat)
 
 class IntervalLike a where
@@ -269,7 +272,7 @@ verificationCondition c e = do
 transRepeat :: VarGen m =>  EXPRESSION -> [CMD] -> m CMD
 transRepeat e cl = do
     (l, e') <- transRepeatCondition e
-    let f (v1, v2, tm) = (toCmd (":=", v1, v2), toCmd (":=", v2, tm))
+    let f (v1, v2, tm) = (toCmd (v1, v2), toCmd (v2, tm))
         (l1, l2) = unzip $ map f l
     return $ Repeat e' $ l1 ++ cl ++ l2
 
