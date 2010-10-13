@@ -43,6 +43,7 @@ import Control.Monad.Trans (lift)
 import Control.Monad
 
 import qualified Data.Set as Set
+import Data.Char (isAlphaNum)
 import Data.List
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
@@ -76,9 +77,12 @@ hetsServer opts1 = do
       case files of
         [] -> return $ mkResponse status400 "no file uploaded"
         [(_, f)] -> do
-           copyFile (fileContent f) (tempHetsLib </> B8.unpack (fileName f))
-           dirs <- getHetsLibContent opts "" query
-           mkHtmlPage "" dirs
+           let fn = B8.unpack (fileName f)
+           if any isAlphaNum fn then do
+             copyFile (fileContent f) (tempHetsLib </> B8.unpack (fileName f))
+             dirs <- getHetsLibContent opts "" query
+             mkHtmlPage "" dirs
+            else return $ mkResponse status400 $ "illegal file name: " ++ fn
         _ -> return $ mkResponse status400 $ "cannot handle multiple files "
               ++ show (map (fileName . snd) files)
     _ -> return $ mkResponse status405 ""
@@ -185,7 +189,7 @@ mkHtmlRef query entry = unode "dir" $ aRef (entry ++ query) entry
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
   map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes) ++ [downloadHtml]
+      (d : displayTypes) ++ [uploadHtml]
 
 displayTypes :: [String]
 displayTypes = ["dg", "xml"]
@@ -202,8 +206,8 @@ htmlHead =
 inputNode :: Element
 inputNode = unode "input" ()
 
-downloadHtml :: Element
-downloadHtml = add_attrs
+uploadHtml :: Element
+uploadHtml = add_attrs
   [ mkAttr "action" "/"
   , mkAttr "enctype" "multipart/form-data"
   , mkAttr "method" "post" ]
@@ -215,7 +219,7 @@ downloadHtml = add_attrs
     inputNode
   , add_attrs
     [ mkAttr "type" "submit"
-    , mkAttr "value" "download"]
+    , mkAttr "value" "submit"]
     inputNode ]
 
 
