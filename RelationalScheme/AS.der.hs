@@ -47,7 +47,7 @@ data RSQualId = RSQualId
                 , column :: Id
                 , q_pos  :: Range
                 }
-                deriving (Eq, Ord)
+                deriving (Eq, Ord, Show)
 
 data RSRel = RSRel
              {
@@ -56,45 +56,35 @@ data RSRel = RSRel
              , r_type :: RSRelType
              , r_pos  :: Range
              }
-             deriving (Eq, Ord)
+             deriving (Eq, Ord, Show)
 
 data RSRelationships =  RSRelationships [Annoted RSRel] Range
-                        deriving (Eq, Ord)
+                        deriving (Eq, Ord, Show)
 
 data RSScheme = RSScheme RSTables RSRelationships Range
-                deriving (Eq, Ord)
+                deriving (Eq, Ord, Show)
 
 type Sentence = RSRel
 
 -- Pretty printing stuff
 
-instance Show RSScheme where
-    show s = case s of
-                RSScheme t r _ -> (show t) ++ "\n" ++ (show r)
+instance Pretty RSScheme where
+  pretty (RSScheme t r _) = pretty t $++$ pretty r
 
-instance Show RSRelationships where
-    show r = case r of
-                RSRelationships r1 _ ->
-                    case r1 of
-                        [] -> ""
-                        _  -> rsRelationships ++ "\n" ++
-                                        (unlines $ map (show . item) r1)
+instance Pretty RSRelationships where
+  pretty (RSRelationships rs _) = if null rs then empty else
+    keyword rsRelationships $+$ vcat (map pretty rs)
 
-instance Show RSRel where
-    show r = case r of
-        RSRel i1 i2 tp _ ->
-            let
-                hi1 = case head $ i1 of
-                    RSQualId a _ _ -> a
-                hi2 = case head $ i2 of
-                    RSQualId a _ _ -> a
-            in
-                show hi1 ++ "[" ++ (concatComma $ map show i1) ++ "] " ++ rsArrow ++ " "++
-                show hi2 ++ "[" ++ (concatComma $ map show i2) ++ "]" ++ show tp
+instance Pretty RSRel where
+  pretty (RSRel i1 i2 tp _) =
+    let tbl is = case is of
+               [] -> empty
+               t : _ -> pretty (table t)
+             <> brackets (ppWithCommas is)
+    in fsep [tbl i1, funArrow, tbl i2, keyword (show tp)]
 
-instance Show RSQualId where
-    show q = case q of
-        RSQualId _ i2 _ -> (show i2)
+instance Pretty RSQualId where
+  pretty = pretty . column
 
 instance Show RSRelType where
     show r = case r of
@@ -103,11 +93,6 @@ instance Show RSRelType where
         RSmany_to_one  -> rsmto1
         RSmany_to_many -> rsmtom
 
-instance Pretty RSScheme where
-    pretty = text . show
-
-instance Pretty RSRel where
-    pretty = text . show
 
 map_qualId :: RSMorphism -> RSQualId -> Result RSQualId
 map_qualId mor qid =
