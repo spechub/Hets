@@ -24,7 +24,6 @@ module RelationalScheme.Sign
         ,   RSTMap(..)
         ,   emptyRSSign
         ,   isRSSubsig
-        ,   concatComma
         ,   idMor
         ,   rsInclusion
         ,   uniteSig
@@ -70,7 +69,7 @@ data RSColumn = RSColumn
                     ,   c_data :: RSDatatype
                     ,   c_key  :: RSIsKey
                     }
-                deriving (Eq, Ord)
+                deriving (Eq, Ord, Show)
 
 data RSTable = RSTable
                 {
@@ -79,13 +78,13 @@ data RSTable = RSTable
                 ,   rsannos :: [Annotation]
                 ,   t_keys  :: Set.Set (Id, RSDatatype)
                 }
-                deriving (Eq)
+                deriving (Eq, Show)
 
 data RSTables = RSTables
                     {
                         tables :: Set.Set RSTable
                     }
-                deriving (Eq, Ord)
+                deriving (Eq, Ord, Show)
 
 instance GetRange RSTables
 
@@ -199,20 +198,16 @@ rsInclusion t1 t2 = return $ RSMorphism
 
 -- pretty printing stuff
 
-instance Show RSColumn where
-    show c = (if c_key c
-              then rsKey ++ " "
-              else "") ++ (show $ c_name c) ++ ":" ++ (show $ c_data c)
+instance Pretty RSColumn where
+    pretty c = (if c_key c then keyword rsKey else empty) <+>
+       pretty (c_name c) <+> colon <+> keyword (show $ c_data c)
 
-instance Show RSTable where
-    show t = (show $ t_name t) ++ "(" ++ concatComma (map show $ columns t) ++ ")"
-
-instance Show RSTables where
-    show t = rsTables ++ "\n" ++
-             (unlines $ map show $ Set.toList $ tables t)
+instance Pretty RSTable where
+    pretty t = pretty (t_name t) <> parens (ppWithCommas $ columns t)
+               $+$ printAnnotationList (rsannos t)
 
 instance Pretty RSTables where
-    pretty = text . show
+    pretty t = keyword rsTables $+$ vcat (map pretty $ Set.toList $ tables t)
 
 instance Pretty RSMorphism where
     pretty = text . show
@@ -238,12 +233,6 @@ instance Show RSDatatype where
         RSnonNegInteger -> rsNonNegInteger
         RSlong          -> rsLong
         RSPointer       -> rsPointer
-
-concatComma :: [String] -> String
-concatComma [] = ""
-concatComma (x:[]) = x
-concatComma (x:xs) = x ++ ", " ++ concatComma xs
-
 
 -- we need an explicit instance declaration of Ord that
 -- correctly deals with tables
