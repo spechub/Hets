@@ -32,6 +32,9 @@ data Record a b c = Record
     , foldDouble :: c -> EXPRESSION -> APFloat -> Range -> b
     }
 
+-- | Produces an error with given message on all entries. Use this if you
+-- overwrite only the EXPRESSION part and you do not use the CMD part anyway
+-- , e.g., if you use the record in foldTerm
 emptyRecord :: String -> Record a b c
 emptyRecord s =
     Record { foldAss = error s
@@ -48,6 +51,7 @@ emptyRecord s =
            , foldDouble = error s
            }
 
+-- | The identity transformation
 idRecord :: Record CMD EXPRESSION c
 idRecord =
     Record { foldAss = \ _ v _ _ -> v
@@ -64,6 +68,26 @@ idRecord =
            , foldDouble = \ _ v _ _ -> v
            }
 
+-- | Passes the transformation through the CMD part and is the identity
+-- on the EXPRESSION part
+passRecord :: Record CMD EXPRESSION c
+passRecord =
+    Record { foldAss = \ _ _ -> Ass
+           , foldCmd = \ _ _ -> Cmd
+           , foldSequence = \ _ _ -> Sequence
+           , foldCond = \ _ _ -> Cond
+           , foldRepeat = \ _ _ -> Repeat
+
+           , foldVar = \ _ v _ -> v
+           , foldOp = \ _ v _ _ _ _ -> v
+           , foldList = \ _ v _ _ -> v
+           , foldInterval = \ _ v _ _ _ -> v
+           , foldInt = \ _ v _ _ -> v
+           , foldDouble = \ _ v _ _ -> v
+           }
+
+-- | Returns the first constant on the CMD part and the second
+-- on the EXPRESSION part
 constRecord :: a -> b -> Record a b c
 constRecord a b =
     Record { foldAss = \ _ _ _ _ -> a

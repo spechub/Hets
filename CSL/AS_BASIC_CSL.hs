@@ -32,6 +32,7 @@ module CSL.AS_BASIC_CSL
     , operatorInfo        -- Operator information for pretty printing
                           -- and static analysis
     , lookupOpInfo
+    , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers
     ) where
 
@@ -210,6 +211,19 @@ lookupOpInfo op arit =
                   Just x -> Right x
                   _ -> Left True
       _ -> Left False
+
+-- | For the given name and arity we lookup an 'BindInfo', where arity=-1
+-- means flexible arity.
+lookupBindInfo :: String -- ^ operator name
+             -> Int -- ^ operator arity
+             -> Maybe BindInfo
+lookupBindInfo op arit =
+    case Map.lookup op operatorInfo of
+      Just oim ->
+          case Map.lookup arit oim of
+            Just x -> bind x
+            _ -> Nothing
+      _ -> Nothing
 
 
 printCMD :: CMD -> Doc

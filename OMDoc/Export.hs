@@ -28,9 +28,9 @@ export_theoryToOmdoc
 
 module OMDoc.Export where
 
-import Logic.Logic ( Logic( omdoc_metatheory, export_theoryToOmdoc
+import Logic.Logic ( Logic ( omdoc_metatheory, export_theoryToOmdoc
                           , export_symToOmdoc, export_senToOmdoc)
-                   , Sentences(sym_name, symmap_of), symlist_of
+                   , Sentences (sym_name, symmap_of), symlist_of
                    , SyntaxTable, syntaxTable)
 import Logic.Coerce
 import Logic.Prover
@@ -63,14 +63,14 @@ import System.FilePath
 
 -- * Name Mapping interface
 
--- | A structure similar to SigMap but with a Grothendieck map instead.
--- The numbered UniqName just stores the original position of the symbol
--- in the signature, and will be exploited in order to output the symbols
--- in the correct dependency order.
+{- | A structure similar to SigMap but with a Grothendieck map instead.
+The numbered UniqName just stores the original position of the symbol
+in the signature, and will be exploited in order to output the symbols
+in the correct dependency order. -}
 data GSigMap = GSigMap (G_symbolmap (Int, UniqName)) (NameMap String)
 
--- | We need this type to store the original dependency order.
--- This type is the logic dependent analogue to the GSigMap
+{- | We need this type to store the original dependency order.
+This type is the logic dependent analogue to the GSigMap -}
 type NumberedSigMap a = (Map.Map a (Int, UniqName), NameMap String)
 
 -- | Removes the numbering from the symbol map
@@ -111,17 +111,17 @@ fromSignAndNamedSens :: forall lid sublogics
         lid -> sign -> [Named sentence] -> NumberedSigMap symbol
 fromSignAndNamedSens lid sig nsens =
     let syms = symlist_of lid sig
-        -- The accumulator var is a map of names to integer values designating
-        -- the next identifier to use for this name to make it unique.
-        -- acc: Map String Int
+        {- The accumulator var is a map of names to integer values designating
+        the next identifier to use for this name to make it unique.
+        acc: Map String Int -}
         newName acc s =
             let (v, acc') = Map.insertLookupWithKey (const (+)) s 1 acc
             in (acc', (s, fromMaybe 0 v))
-        -- We need to store in addition to the name-int-map an integer to
-        -- increment in order to remember the original order of the signature
-        -- elements after having destroyed it by making a map from the list.
-        -- for that reason we use the following accumvar:
-        -- acc: (Int, Map String Int)
+        {- We need to store in addition to the name-int-map an integer to
+        increment in order to remember the original order of the signature
+        elements after having destroyed it by making a map from the list.
+        for that reason we use the following accumvar:
+        acc: (Int, Map String Int) -}
         symF (i, acc) x = let (acc', nn) = newName acc $ show $ sym_name lid x
                           in ((i + 1, acc'), (x, (i, nn)))
         sensF acc x = let n = senAttr x
@@ -131,8 +131,8 @@ fromSignAndNamedSens lid sig nsens =
     in (Map.fromList symL, Map.fromList sensL)
 
 
--- | Looks up the key in the map and if it doesn't exist adds the
--- value for this key which results from the given sign and sentences.
+{- | Looks up the key in the map and if it doesn't exist adds the
+value for this key which results from the given sign and sentences. -}
 lookupWithInsert :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -152,8 +152,8 @@ lookupWithInsert lid sig sens s k =
 
 -- * LibEnv traversal
 
--- | Translates the given LibEnv to a list of OMDocs. If the first argument
--- is false only the DG to the given LibName is translated and returned.
+{- | Translates the given LibEnv to a list of OMDocs. If the first argument
+is false only the DG to the given LibName is translated and returned. -}
 exportLibEnv :: Bool -- recursive
              -> FilePath -- outdir
              -> LibName -> LibEnv
@@ -162,7 +162,7 @@ exportLibEnv b odir ln le =
     let cmbnF (x, _) y = (x, y)
         inputList = if b then Map.toList le else [(ln, lookupDGraph ln le)]
         fpm = initFilePathMapping odir le
-        im = (emptyEnv ln){ getFilePathMapping = fpm }
+        im = (emptyEnv ln) { getFilePathMapping = fpm }
         f (ln', o) = let fp = Map.findWithDefault
                               (error $ "exportLibEnv: filepath not mapped")
                               ln' fpm
@@ -202,20 +202,20 @@ exportNodeLab le ln dg s (n, lb) =
                   (s', nsigm) = lookupWithInsert lid sig nsens s (ln', sn)
                   sigm@(SigMap nm _) = nSigMapToSigMap nsigm
 
-              -- imports is a list of Maybe (triples, exported-symbol
-              -- set) pairs as described in 'makeImportMapping'. We
-              -- construct the concrete OMImages later (see
-              -- makeImport) in order to prevent multiple imported
-              -- constants to be declared by open as a new constant.
-              -- We must use open for the first occurence and conass
-              -- for the others, i.e., Left resp. Right constructors
-              -- of the OMImage datatype
+              {- imports is a list of Maybe (triples, exported-symbol
+              set) pairs as described in 'makeImportMapping'. We
+              construct the concrete OMImages later (see
+              makeImport) in order to prevent multiple imported
+              constants to be declared by open as a new constant.
+              We must use open for the first occurence and conass
+              for the others, i.e., Left resp. Right constructors
+              of the OMImage datatype -}
               (s'', imports) <-
                   mapAccumLM (makeImportMapping le ln dg (lid, nm)) s'
                                  $ innDG dg n
 
-              -- mappingL: list of the triples described above
-              -- symsetL: used to compute the local symbols (not imported)
+              {- mappingL: list of the triples described above
+              symsetL: used to compute the local symbols (not imported) -}
               let (mappingL, symsetL) = unzip $ catMaybes imports
                   (_, importL) = mapAccumL makeImport Set.empty mappingL
                   mSynTbl = syntaxTable lid sig
@@ -243,10 +243,10 @@ getNodeData le ln lb =
         in (labDG dg' $ ref_node ni, lnRef)
     else (lb, ln)
 
--- See the comment in exportNodeLab for details about this function.
--- The set is only to accumulate the mapped symbols (the targets, not
--- the sources!) in order to decide whether to just map the symbol to
--- a previously mapped symbol or to create an alias!
+{- See the comment in exportNodeLab for details about this function.
+The set is only to accumulate the mapped symbols (the targets, not
+the sources!) in order to decide whether to just map the symbol to
+a previously mapped symbol or to create an alias! -}
 makeImport :: Set.Set UniqName -> (String, OMCD, [(OMName, UniqName)])
            -> (Set.Set UniqName, TCElement)
 makeImport s (n, cd, mapping) =
@@ -257,8 +257,8 @@ makeImport s (n, cd, mapping) =
         (s'', morph) = mapAccumL f s mapping
     in (s'', TCImport n cd morph)
 
--- | If the link is a global definition link we compute the Import
--- and return also the set of (by the link) exported symbols.
+{- | If the link is a global definition link we compute the Import
+and return also the set of (by the link) exported symbols. -}
 makeImportMapping :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -268,10 +268,10 @@ makeImportMapping :: forall lid sublogics
         LibEnv -> LibName -> DGraph -> (lid, NameMap symbol) -> ExpEnv
                -> LEdge DGLinkLab
                -> Result (ExpEnv
-                          -- the triple consists of:
-                          --   name of the import
-                          --   target CD
-                          --   actual mapping as returned by makeMorphism
+                          {- the triple consists of:
+                          name of the import
+                          target CD
+                          actual mapping as returned by makeMorphism -}
                          , Maybe ( (String, OMCD, [(OMName, UniqName)])
                                  -- symbols exported by the morphism
                                  , Set.Set symbol))
@@ -353,8 +353,8 @@ makeMorphismEntry :: Bool -> (OMName, UniqName)
 makeMorphismEntry useOpen (n, un) =
     (n, if useOpen then Left $ nameToString un else Right $ simpleOMS un)
 
--- | From the given GMorphism we compute the symbol-mapping and return
--- also the set of (by the morphism) exported symbols (= image of morphism)
+{- | From the given GMorphism we compute the symbol-mapping and return
+also the set of (by the morphism) exported symbols (= image of morphism) -}
 makeMorphism :: forall lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -373,28 +373,28 @@ makeMorphism :: forall lid1 sublogics1
 makeMorphism (l1, symM1) (l2, symM2)
                  (GMorphism cid (ExtSign sig _) _ mor _)
 
--- l1 = logic1
--- l2 = logic2
--- lS = source-logic-cid
--- lT = target-logic-cid
+{- l1 = logic1
+l2 = logic2
+lS = source-logic-cid
+lT = target-logic-cid -}
 
 -- metaknowledge: l1 = lS, l2 = lT
 
--- sigmap1 :: l1
--- sigmap2 :: l2
+{- sigmap1 :: l1
+sigmap2 :: l2 -}
 
--- mor :: of target-logic-cid
--- symmap_of lT mor :: EndoMap symbolT
+{- mor :: of target-logic-cid
+symmap_of lT mor :: EndoMap symbolT -}
 
--- comorphism based map:
--- (sglElem (show cid) . map_symbol cid sig . coerceSymbol l1 lS)
--- :: symbol1 -> symbolT
+{- comorphism based map:
+(sglElem (show cid) . map_symbol cid sig . coerceSymbol l1 lS)
+:: symbol1 -> symbolT -}
 
--- we need sigmap1 :: lT
--- we need sigmap2 :: lT
--- for sigmap2 we take a simple coerce
--- for sigmap1 we take a simple coerce if we know that l1 = l2
--- otherwise a comorphism fmap composed with a simple coerce
+{- we need sigmap1 :: lT
+we need sigmap2 :: lT
+for sigmap2 we take a simple coerce
+for sigmap1 we take a simple coerce if we know that l1 = l2
+otherwise a comorphism fmap composed with a simple coerce -}
 
     = let lS = sourceLogic cid
           lT = targetLogic cid
@@ -459,7 +459,7 @@ exportSymbol :: forall lid sublogics
         lid -> SigMap symbol -> Maybe SyntaxTable -> [Set.Set symbol] -> symbol
             -> UniqName -> Result [TCElement]
 exportSymbol lid (SigMap sm _) mSynTbl sl sym n =
-    let symNotation = mkNotation n $ fmap (\ x -> (sym_name lid sym,x)) mSynTbl
+    let symNotation = mkNotation n $ fmap (\ x -> (sym_name lid sym, x)) mSynTbl
     in if all (Set.notMember sym) sl
        then do
          symConst <- export_symToOmdoc lid sm sym $ nameToString n
@@ -490,10 +490,10 @@ exportSentence lid (SigMap sm thm) nsen = do
         return $ [TCSymbol omname omobj symRole Nothing]
                    ++ mkNotation un Nothing
 
--- | We only export simple constant-notations if the OMDoc element name differs
--- from the hets-name.
--- If the placecount of the id (if provided) is nonzero then we export the
--- application-notation elements for pretty printing in OMDoc.
+{- | We only export simple constant-notations if the OMDoc element name differs
+from the hets-name.
+If the placecount of the id (if provided) is nonzero then we export the
+application-notation elements for pretty printing in OMDoc. -}
 mkNotation :: UniqName -> Maybe (Id, SyntaxTable) -> [TCElement]
 mkNotation un mIdSTbl =
     let n = nameToString un
@@ -515,44 +515,39 @@ mkNotation un mIdSTbl =
              | otherwise -> l
          _ -> l
 
--- | This function requires mixfix Ids as input and generates Notation
--- structures, see 'OMDoc.DataTypes'.
+{- | This function requires mixfix Ids as input and generates Notation
+structures, see 'OMDoc.DataTypes'. -}
 mkApplicationNotation :: OMQualName -> Id -> Int -> Int -> TCElement
 mkApplicationNotation qn symid@(Id toks _ _) prec asc
-    | placeCount symid == 1 =
-        case toks of [a, b]
-                         | isPlace a
-                             -> mkSmartNotation qn (tokStr b) Postfix prec asc
-                         | otherwise
-                             -> mkSmartNotation qn (tokStr a) Prefix prec asc
-                     _ -> mkFlexibleNotation qn symid prec asc
-    | placeCount symid == 2 = 
-        case toks of [_, b, _]
-                         | not (isPlace b)
-                             -> mkSmartNotation qn (tokStr b) Infix prec asc
-                         | otherwise
-                             -> mkFlexibleNotation qn symid prec asc
-                     _ -> mkFlexibleNotation qn symid prec asc
+    | placeCount symid == 1 = case toks of
+       [a, b]
+           | isPlace a -> mkSmartNotation qn (tokStr b) Postfix prec asc
+           | otherwise -> mkSmartNotation qn (tokStr a) Prefix prec asc
+       _ -> mkFlexibleNotation qn symid prec asc
+    | placeCount symid == 2 = case toks of
+       [_, b, _]
+           | not (isPlace b) -> mkSmartNotation qn (tokStr b) Infix prec asc
+           | otherwise -> mkFlexibleNotation qn symid prec asc
+       _ -> mkFlexibleNotation qn symid prec asc
     | otherwise = mkFlexibleNotation qn symid prec asc
 
--- | See OMDoc.DataTypes for a description of SmartNotation. We set
--- the number of implicit arguments to 0. In presence of associativity
--- and infix we generate flexible notation as described in the
--- Isabelle2009 reference manual §6.1.3: Infixes.
+{- | See OMDoc.DataTypes for a description of SmartNotation. We set
+the number of implicit arguments to 0. In presence of associativity
+and infix we generate flexible notation as described in the
+Isabelle2009 reference manual §6.1.3: Infixes. -}
 mkSmartNotation :: OMQualName -> String -> Fixity -> Int -> Int -> TCElement
 mkSmartNotation qn op fx prec asc =
     let f p1 p2 = TCFlexibleNotation qn prec
                   [ArgComp 1 p1, TextComp op, ArgComp 2 p2]
     in case fx of
-         Infix | asc > 0 -> f (prec+1) prec
-               | asc < 0 -> f prec (prec+1)
+         Infix | asc > 0 -> f (prec + 1) prec
+               | asc < 0 -> f prec (prec + 1)
                | otherwise -> TCSmartNotation qn fx prec 0
          _ -> TCSmartNotation qn fx prec 0
 
 
 mkFlexibleNotation :: OMQualName -> Id -> Int -> Int -> TCElement
 mkFlexibleNotation qn opid prec _ =
-    let f acc tok = if isPlace tok then (acc+1, ArgComp acc prec)
+    let f acc tok = if isPlace tok then (acc + 1, ArgComp acc prec)
                     else (acc, TextComp $ tokStr tok)
     in TCFlexibleNotation qn prec $ snd $ mapAccumL f 1 $ getTokens opid
-

@@ -10,7 +10,6 @@ Portability :  portable
 
 -}
 
--- todo: add static analysis for repeat
 
 module CSL.Analysis
     ( splitSpec
@@ -142,21 +141,69 @@ basicCSLAnalysis (bs, sig, _) =
 
 -- | A function which regroups all updates on a CMD during the static analysis.
 staticUpdate :: CMD -> CMD
-staticUpdate = handleFunAssignment
+staticUpdate = handleFunAssignment . handleBinder
 
--- | Replaces the function-arguments in functional assignments by variables
--- instead of operators.
+-- | Replaces the function-arguments in functional assignments by variables.
 handleFunAssignment :: CMD -> CMD
 handleFunAssignment (Ass (Op f epl al@(_:_) rg) e) =
-   let opToVar' s (Op v _ _ rg') =
-           (Set.insert v s, Var Token{ tokStr = v, tokPos = rg' })
-       opToVar' _ x =
-           error $ "handleFunAssignment: not supported varexpression " ++ show x
-       (env, al') = mapAccumL opToVar' Set.empty al
-   in Ass (Op f epl al' rg) $ constsToVars env e
+   let (env, al') = varSet al in Ass (Op f epl al' rg) $ constsToVars env e
 
 handleFunAssignment x = x
 
+-- | If element x is at position i in the first list and there is an entry (i,y)
+-- in the second list then the resultlist has element y at position i. All non-
+-- mentioned positions by the second list have identical values in the first
+-- and the result list.
+replacePositions :: [a] -> [(Int, a)] -> [a]
+replacePositions l posl =
+    let f (x, _) (y, _) = compare x y
+        -- the actual merge function
+        g _ l' [] = l'
+        g _ [] _ = error "replacePositions: positions left for replacement"
+        g i (a:l1) l2'@((j,b):l2) =
+            if i == j then b:g (i+1) l1 l2 else a:g (i+1) l1 l2'
+    -- works only if the positions are in ascending order
+    in g 0 l $ sortBy f posl
+
+-- | Replaces the binding-arguments in binders by variables.
+handleBinder :: CMD -> CMD
+handleBinder cmd =
+    let substBinderArgs bvl bbl args =
+            -- compute the var set from the given positions
+            let (vs, vl) = varSet $ map (args!!) bvl
+                -- compute the substituted bodyexpressionlist
+                bl = map (constsToVars vs . (args!!)) bbl
+            in replacePositions args $ zip (bvl ++ bbl) $ vl ++ bl
+        substRec =
+            passRecord
+            { foldAss = \ _ cmd' _ def ->
+                case cmd' of
+                  -- we do not want to recurse into the left hand side hence
+                  -- we take the original value
+                  Ass c _ -> Ass c def
+                  _ -> error "handleBinder: impossible case"
+
+            , foldOp = \ _ _ s epl' args rg' ->
+                case lookupBindInfo s $ length args of
+                  Just (BindInfo bvl bbl) ->
+                       Op s epl' (substBinderArgs bvl bbl args) rg'
+                  _ -> Op s epl' args rg'
+            , foldList = \ _ _ l rg' -> List l rg'
+            }
+    in foldCMD substRec () cmd
+
+
+
+-- | Transforms Op-Expressions to a set of op-names and a Var-list
+varSet :: [EXPRESSION] -> (Set.Set String, [EXPRESSION])
+varSet l =
+    let opToVar' s (Op v _ _ rg') =
+            (Set.insert v s, Var Token{ tokStr = v, tokPos = rg' })
+        opToVar' _ x =
+            error $ "varSet: not supported varexpression " ++ show x
+    in mapAccumL opToVar' Set.empty l
+
+-- | Replaces Op occurrences to Var if the op is in the given set
 constsToVars :: Set.Set String -> EXPRESSION -> EXPRESSION
 constsToVars env e =
     let substRec =
