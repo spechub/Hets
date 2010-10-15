@@ -617,9 +617,9 @@ makeSmallMath smll math =
 needsMathMode :: Int -> String -> Bool
 needsMathMode i s = case s of
     [] -> i > 0
-    c : r -> if c == '{' then needsMathMode (i + 1) r else
-             if c == '}' then i == 0 || needsMathMode (i - 1) r
-             else needsMathMode i r
+    '{' : r -> needsMathMode (i + 1) r
+    '}' : r -> i == 0 || needsMathMode (i - 1) r
+    _ : r -> needsMathMode i r
 
 isMathLatex :: Doc -> Bool
 isMathLatex d = case d of
@@ -696,10 +696,12 @@ textToLatex dis b k s = case s of
     HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
                              , textToLatex dis b Comment s
                              , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
+    -- HetsLabel may be avoided by the Label case
     IdLabel appl tk i -> let d = textToLatex dis b tk s
                              si = showId i ""
         in if b || appl == IdAppl && not (Set.member i dis)
                || not (isLegalLabel si)
+           -- make this case True to avoid labels
            then d else Pretty.hcat
             [ latex_macro $ '\\' : shows appl "Label{"
             , d
@@ -882,6 +884,7 @@ codeOutAnno m a = case a of
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapLines (case l of
                   [x] -> if isLegalLabel x
+                         -- change this to False to avoid HetsLabel at all
                             then HetsLabel
                             else Comment
                   _ -> Comment) (percent <> lparen) l annoRparen
@@ -939,10 +942,10 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
                 Just (Weight q ta la ra) ->
                     let pArg = parens dc
                         d = if isBoth pa i ta then pArg else dc
-                        oArg = if q >= e &&
-                               (p < e || elem i [eqId, exEq]
-                                      && notElem ta [eqId, exEq])
-                               then d else if isDiffAssoc assocs pa i ta
+                        oArg = if (q < e || p >= e &&
+                                         (notElem i [eqId, exEq]
+                                         || elem ta [eqId, exEq]))
+                                  && isDiffAssoc assocs pa i ta
                                then pArg else d
                     in (if isLeftArg i l then
                        if checkArg ARight ga (i, p) (ta, q) ra
