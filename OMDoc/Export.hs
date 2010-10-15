@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, ExistentialQuantification #-}
+{-# LANGUAGE ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Exports a development graph to an omdoc structure
@@ -459,7 +459,7 @@ exportSymbol :: forall lid sublogics
         lid -> SigMap symbol -> Maybe SyntaxTable -> [Set.Set symbol] -> symbol
             -> UniqName -> Result [TCElement]
 exportSymbol lid (SigMap sm _) mSynTbl sl sym n =
-    let symNotation = mkNotation n $ fmap (sym_name lid sym,) mSynTbl
+    let symNotation = mkNotation n $ fmap (\ x -> (sym_name lid sym,x)) mSynTbl
     in if all (Set.notMember sym) sl
        then do
          symConst <- export_symToOmdoc lid sm sym $ nameToString n
