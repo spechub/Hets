@@ -18,7 +18,7 @@ module CASL.ToDoc
     , printTheoryFormula
     , pluralS
     , isJunct
-    , ListCheck(..)
+    , ListCheck (..)
     , recoverType
     , printALTERNATIVE
     , typeString
@@ -73,7 +73,7 @@ printBASIC_ITEMS fB fS fF sis = case sis of
               (printAnnoted $ printSIG_ITEMS fS fF) l]
     Var_items l _ -> topSigKey (varS ++ pluralS l) <+>
                            fsep (punctuate semi $ map printVarDecl l)
-    Local_var_axioms l f _  ->
+    Local_var_axioms l f _ ->
             fsep [fsep $ forallDoc : punctuate semi (map printVarDecl l)
                  , printAnnotedBulletFormulas fF f]
     Axiom_items f _ -> printAnnotedBulletFormulas fF f
@@ -95,7 +95,7 @@ printSIG_ITEMS fS fF sis = case sis of
         NonEmptySorts -> sortS
         PossiblyEmptySorts -> esortS) ++ pluralS l) <+>
          semiAnnos (printSortItem fF) l
-    Op_items l _  -> topSigKey (opS ++ pluralS l) <+>
+    Op_items l _ -> topSigKey (opS ++ pluralS l) <+>
         let pp = printOpItem fF in
         if null l then empty else if case item $ last l of
             Op_decl _ _ a@(_ : _) _ -> case last a of
@@ -114,18 +114,18 @@ printSIG_ITEMS fS fF sis = case sis of
              semiAnnos printDATATYPE_DECL l
     Ext_SIG_ITEMS s -> fS s
 
-printDATATYPE_DECL :: DATATYPE_DECL ->Doc
+printDATATYPE_DECL :: DATATYPE_DECL -> Doc
 printDATATYPE_DECL (Datatype_decl s a r) =
     let pa = printAnnoted printALTERNATIVE in case a of
     [] -> printDATATYPE_DECL (Datatype_decl s [emptyAnno $ Subsorts [s] r] r)
-    h : t  -> sep [idLabelDoc s, colon <> colon <> sep
+    h : t -> sep [idLabelDoc s, colon <> colon <> sep
                       ((equals <+> pa h) :
                        map ((bar <+>) . pa) t)]
 
 instance Pretty DATATYPE_DECL where
     pretty = printDATATYPE_DECL
 
-printCOMPONENTS :: COMPONENTS ->Doc
+printCOMPONENTS :: COMPONENTS -> Doc
 printCOMPONENTS c = case c of
     Cons_select k l s _ -> fsep $ punctuate comma (map idLabelDoc l)
            ++ [case k of
@@ -133,10 +133,10 @@ printCOMPONENTS c = case c of
            Partial -> colon <> quMarkD, idDoc s]
     Sort s -> idDoc s
 
-instance Pretty COMPONENTS  where
+instance Pretty COMPONENTS where
     pretty = printCOMPONENTS
 
-printALTERNATIVE :: ALTERNATIVE ->Doc
+printALTERNATIVE :: ALTERNATIVE -> Doc
 printALTERNATIVE a = case a of
   Alt_construct k n l _ -> case l of
     [] -> idLabelDoc n
@@ -191,7 +191,7 @@ printPredItem mf p = case p of
     Pred_decl l t _ -> fsep $ punctuate comma (map idLabelDoc l)
         ++ [colon <+> printPredType t]
     Pred_defn i h f _ ->
-        sep[ cat [idLabelDoc i, printPredHead h]
+        sep [ cat [idLabelDoc i, printPredHead h]
            , equiv <+> printAnnoted (printFormula mf) f]
 
 instance Pretty f => Pretty (PRED_ITEM f) where
@@ -221,7 +221,7 @@ instance Pretty OP_HEAD where
 printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
 printOpItem mf p = case p of
     Op_decl l t a _ -> fsep $ punctuate comma (map idLabelDoc l)
-        ++ [colon <> (if null a then id else (<> comma))(printOpType t)]
+        ++ [colon <> (if null a then id else (<> comma)) (printOpType t)]
         ++ punctuate comma (map (printAttr mf) a)
     Op_defn i h@(Op_head _ l _ _) t _ ->
         sep [ (if null l then sep else cat) [idLabelDoc i, printOpHead h]
@@ -296,7 +296,7 @@ printType :: TYPE -> Doc
 printType t = case t of
     O_type ot -> printOpType ot
     P_type pt -> space <> printPredType pt
-    A_type s  -> space <> idDoc s
+    A_type s -> space <> idDoc s
 
 print_kind_text :: SYMB_KIND -> [a] -> Doc
 print_kind_text k l = case k of
@@ -308,7 +308,7 @@ pluralS_symb_list k l = (case k of
     Implicit -> error "pluralS_symb_list"
     Sorts_kind -> sortS
     OtherKinds s -> s
-    Ops_kind   -> opS
+    Ops_kind -> opS
     Preds_kind -> predS) ++ (if isSingle l then "" else "s")
 
 instance Pretty SYMB_OR_MAP where
@@ -332,6 +332,14 @@ printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
 printSymbMapItems (Symb_map_items k l _) =
     print_kind_text k l <+> sepByCommas (map printSymbOrMap l)
 
+-- possibly use "printInfix False vcat"
+printInfix :: Bool -- ^ attach separator to right argument?
+           -> ([Doc] -> Doc) -- ^ combinator for two docs
+           -> Doc -> Doc -> Doc -- ^ left, separator and right arguments
+           -> Doc
+printInfix b join l s r =
+     join $ if b then [l, s <+> r] else [l <+> s, r]
+
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
     { foldQuantification = \ _ q l r _ ->
@@ -352,11 +360,12 @@ printRecord mf = Record
                    then parens l else l
               nr = if isImpl b oR || not b && isQuant oR
                    then parens r else r
-          in if b then sep [nl, hsep [implies, nr]]
-             else sep [nr, hsep [text ifS, nl]]
+          in if b then printInfix True sep nl implies nr
+             else printInfix True sep nr (text ifS) nl
     , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
-          sep [if isQuant oL then parens l else
-                   mkEquivDoc oL l, hsep [equiv, mkEquivDoc oR r]]
+          printInfix True sep
+            (if isQuant oL then parens l else mkEquivDoc oL l)
+            equiv $ mkEquivDoc oR r
     , foldNegation = \ (Negation o _) r _ ->
           hsep [notDoc, mkJunctDoc False o r]
     , foldTrue_atom = \ _ _ -> text trueS
@@ -366,8 +375,8 @@ printRecord mf = Record
           Qual_pred_name _ _ _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ sepByCommas l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]
-    , foldExistl_equation = \ _ l r _ -> sep [l, hsep[exequal, r]]
-    , foldStrong_equation = \ _ l r _ -> sep [l, hsep [equals, r]]
+    , foldExistl_equation = \ _ l r _ -> printInfix True sep l exequal r
+    , foldStrong_equation = \ _ l r _ -> printInfix True sep l equals r
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ (Sort_gen_ax constrs b) _ _ ->
@@ -390,9 +399,9 @@ printRecord mf = Record
           Op_name i -> idApplDoc i $ zipConds ol l
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
               if null l then d else fcat [d, parens $ sepByCommas l]
-    , foldSorted_term = \ _ r t _ -> fsep[idApplDoc typeId [r], idDoc t]
+    , foldSorted_term = \ _ r t _ -> fsep [idApplDoc typeId [r], idDoc t]
     , foldCast = \ _ r t _ ->
-          fsep[idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
+          fsep [idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
           fsep [if isCond ol then parens l else l,
                 text whenS <+> f, text elseS <+> r]
@@ -439,7 +448,7 @@ isQuant f = case f of
     Conjunction l _ -> case l of
         [] -> False
         _ -> isQuant $ last l
-    Disjunction l _ ->  case l of
+    Disjunction l _ -> case l of
         [] -> False
         _ -> isQuant $ last l
     Implication a b impl _ -> isQuant $ if impl then b else a
@@ -478,8 +487,7 @@ isCond t = case t of
     Conditional _ _ _ _ -> True
     _ -> False
 
--- |
--- a helper class for calculating the pluralS of e.g. ops
+{- | a helper class for calculating the pluralS of e.g. ops -}
 class ListCheck a where
     innerList :: a -> [()]
 
@@ -492,16 +500,15 @@ instance ListCheck Id where
 instance ListCheck a => ListCheck [a] where
     innerList = concatMap innerList
 
--- |
--- an instance of ListCheck for Annoted stuff
+{- | an instance of ListCheck for Annoted stuff -}
 instance ListCheck a => ListCheck (Annoted a) where
     innerList = innerList . item
 
--- |
--- pluralS checks a list with elements in class ListCheck for a list
--- greater than zero. It returns an empty String if the list and all
--- nested lists have only one element. If the list or an nested list
--- has more than one element a String containig one "s" is returned.
+{- |
+pluralS checks a list with elements in class ListCheck for a list
+greater than zero. It returns an empty String if the list and all
+nested lists have only one element. If the list or an nested list
+has more than one element a String containig one "s" is returned. -}
 pluralS :: ListCheck a => a -> String
 pluralS l = if isSingle $ innerList l then "" else "s"
 
