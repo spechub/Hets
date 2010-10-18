@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for reduce
-Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
+Copyright   :  (c) Dominik Dietrich, Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  dominik.dietrich@dfki.de
+Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  portable
 
@@ -57,7 +57,7 @@ extractOperatorsFromCmd cmd =
             , foldSequence = \ _ _ l -> concat l
 
             , foldOp = \ _ _ s epl exps _ ->
-                       (s, length exps, length epl) : concat exps
+                       (show s, length exps, length epl) : concat exps
             , foldList = \ _ _ l _ -> concat l
             }
 
@@ -73,7 +73,7 @@ checkOperator (op, arit, epc) =
                         ++ "* No extended parameters allowed\n"
             | null s = Nothing
             | otherwise = Just $ err s
-    in case lookupOpInfo op arit of
+    in case lookupOpInfoForStatAna op arit of
          Left False -> Nothing
          -- if registered it must be registered with the given arity or
          -- as flex-op, otherwise we don't accept it
@@ -193,12 +193,11 @@ handleBinder cmd =
     in foldCMD substRec () cmd
 
 
-
 -- | Transforms Op-Expressions to a set of op-names and a Var-list
 varSet :: [EXPRESSION] -> (Set.Set String, [EXPRESSION])
 varSet l =
     let opToVar' s (Op v _ _ rg') =
-            (Set.insert v s, Var Token{ tokStr = v, tokPos = rg' })
+            (Set.insert (show v) s, Var Token{ tokStr = show v, tokPos = rg' })
         opToVar' _ x =
             error $ "varSet: not supported varexpression " ++ show x
     in mapAccumL opToVar' Set.empty l
@@ -210,9 +209,9 @@ constsToVars env e =
             idRecord
             { foldOp =
                   \ env' _ s epl' args rg' ->
-                      if Set.member s env' then
+                      if Set.member (show s) env' then
                           if null args
-                          then Var (Token { tokStr = s, tokPos = rg' })
+                          then Var (Token { tokStr = show s, tokPos = rg' })
                           else error $ "constsToVars: variable must not have"
                                    ++ " arguments:" ++ show args
                       else Op s epl' args rg'

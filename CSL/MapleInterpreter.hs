@@ -86,7 +86,7 @@ cslMapleDefaultMapping =
         possibleIntervalOps = [ "cos", "sin", "tan", "sqrt", "abs", ">", "<="
                               , ">=", "<", "+", "-", "*", "/"]
         logicOps = ["and", "or", "impl" ]
-        otherOps = ["factor", "ArgAtMaximum", "Maximum"]
+        otherOps = ["factor", "maximize"]
         specialOp = ("^", "^")
 --        specialOp = ("^", "&**")
     in specialOp : idmapping logicOps

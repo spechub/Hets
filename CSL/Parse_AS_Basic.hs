@@ -141,7 +141,7 @@ expsymbol =
       exps <- option ([],[])
               $ oParenT >> Lexer.separatedBy formulaorexpression pComma
                     << cParenT
-      return $ Op (tokStr ident) (fst ep) (fst exps) nullRange
+      return $ Op (OpString $ tokStr ident) (fst ep) (fst exps) nullRange
 
 
 -- | parses a list expression

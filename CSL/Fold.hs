@@ -25,7 +25,7 @@ data Record a b c = Record
     , foldRepeat :: c -> CMD -> b -> [a] -> a
 
     , foldVar :: c -> EXPRESSION -> Token -> b
-    , foldOp :: c -> EXPRESSION -> String -> [EXTPARAM] -> [b] -> Range -> b
+    , foldOp :: c -> EXPRESSION -> OPID -> [EXTPARAM] -> [b] -> Range -> b
     , foldList :: c -> EXPRESSION -> [b] -> Range -> b
     , foldInterval :: c -> EXPRESSION -> APFloat -> APFloat -> Range -> b
     , foldInt :: c -> EXPRESSION -> APInt -> Range -> b

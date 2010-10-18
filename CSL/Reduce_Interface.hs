@@ -154,10 +154,11 @@ infixOps = [ "+", "-", "/", "**", "^", "=", "<=", ">=", "<", ">", "*", "and"
 exportExp :: EXPRESSION -> String
 exportExp (Var token) = tokStr token
 exportExp (Op s _ exps@[e1, e2] _) 
-    | elem s infixOps = concat ["(", exportExp e1, s, exportExp e2, ")"]
-    | otherwise       = concat [s, "(", exportExps exps, ")"]
-exportExp (Op s _ [] _) = s
-exportExp (Op s _ exps _) = concat [s, "(", exportExps exps, ")"]
+    | elem (show s) infixOps =
+        concat ["(", exportExp e1, show s, exportExp e2, ")"]
+    | otherwise       = concat [show s, "(", exportExps exps, ")"]
+exportExp (Op s _ [] _) = show s
+exportExp (Op s _ exps _) = concat [show s, "(", exportExps exps, ")"]
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
 exportExp (Double d _) = show d
@@ -196,7 +197,7 @@ cslReduceDefaultMapping :: [(String, String)]
 cslReduceDefaultMapping =
     let idmapping = map (\ x -> (x, x))
     in ("^", "**") :
-         (idmapping $ Map.keys $ Map.delete "^" $ Map.delete "**" operatorInfo)
+           (idmapping $ Map.keys $ Map.delete "^" operatorInfoMap)
 
 {- | reads characters from the specified output until the next result is
   complete, indicated by $ when using the maxima mode off nat; -}
@@ -296,14 +297,6 @@ casqelim sess cmd =
     proofstatus <- procString sess (senAttr cmd) $ exportReduce cmd ++ ";"
     return (proofstatus,[exportLemmaQelim cmd proofstatus])
 
-
-exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaQelim namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
-
 -- | declares an operator, such that it can used infix/prefix in CAS
 casDeclareOperators :: Session a => a -> [EXPRESSION] -> IO ()
 casDeclareOperators sess varlist = do
@@ -330,47 +323,33 @@ casDeclareEquation _ _ =
 -- * Reduce Lemma Export
 -- ----------------------------------------------------------------------
 
+exportLemmaGeneric :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaGeneric namedcmd ps =
+  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [mkOp "Proof" []])
+      where Cmd _ exps = sentence namedcmd
+            lemma = Cmd "=" [head exps, head (proofTree ps)]
+            lemmaname = (ganame namedcmd)
+
+exportLemmaQelim :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
+exportLemmaQelim = exportLemmaGeneric
+
 -- | generates the lemma for cmd with result ProofStatus
 exportLemmaFactor :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaFactor namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+exportLemmaFactor = exportLemmaGeneric
 
 exportLemmaSolve :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaSolve namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+exportLemmaSolve = exportLemmaGeneric
 
 exportLemmaSimplify :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaSimplify namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+exportLemmaSimplify = exportLemmaGeneric
 
 exportLemmaAsk :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaAsk namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+exportLemmaAsk = exportLemmaGeneric
 
 exportLemmaRemainder :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaRemainder namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+exportLemmaRemainder = exportLemmaGeneric
 
 
 exportLemmaInt :: Named CMD -> ProofStatus [EXPRESSION] -> (Named CMD, ProofStatus [EXPRESSION])
-exportLemmaInt namedcmd ps =
-  ((makeNamed lemmaname lemma), closedReduceProofStatus lemmaname [(Op "Proof" [] [] nullRange)])
-      where Cmd _ exps = sentence namedcmd
-            lemma = Cmd "=" [head exps, head (proofTree ps)]
-            lemmaname = (ganame namedcmd)
+exportLemmaInt = exportLemmaGeneric
 

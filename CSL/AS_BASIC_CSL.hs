@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for CSL
-Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
+Copyright   :  (c) Dominik Dietrich, Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  dominik.dietrich@dfki.de
+Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  portable
 
@@ -21,6 +21,8 @@ module CSL.AS_BASIC_CSL
     , SYMB (..)           -- Symbols
     , SYMB_MAP_ITEMS (..) -- Symbol map
     , SYMB_OR_MAP (..)    -- Symbol or symbol map
+    , OPNAME (..)         -- predefined operator names
+    , OPID (..)           -- identifier for operators
     , OP_ITEM (..)        -- operator declaration
     , VAR_ITEM (..)       -- variable declaration
     , Domain (..)         -- domains for variable declarations
@@ -31,7 +33,8 @@ module CSL.AS_BASIC_CSL
     , BindInfo (..)       -- Type for Binder information
     , operatorInfo        -- Operator information for pretty printing
                           -- and static analysis
-    , lookupOpInfo
+    , operatorInfoMap     -- allows efficient lookup of ops by printname
+    , lookupOpInfoForStatAna
     , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers
     ) where
@@ -51,7 +54,7 @@ type APFloat = Double
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
-mkOp s el = Op s [] el nullRange
+mkOp s el = Op (OpString s) [] el nullRange -- TODO: integrate predefined ops here
 
 -- | operator symbol declaration
 data OP_ITEM = Op_item [Id.Token] Id.Range
@@ -81,11 +84,64 @@ data BASIC_ITEM =
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
+data OPNAME = OP_neq | OP_mult | OP_div | OP_plus | OP_minus | OP_neg
+            | OP_lt | OP_le | OP_eq | OP_gt | OP_ge | OP_Pi
+            | OP_pow | OP_abs | OP_all | OP_and | OP_convergence | OP_cos
+            | OP_divide | OP_ex | OP_factor | OP_factorize | OP_fthrt | OP_impl
+            | OP_int | OP_max | OP_maximize | OP_min | OP_or | OP_rlqe
+            | OP_simplify | OP_sin | OP_solve | OP_sqrt | OP_tan
+              deriving (Eq, Ord)
+
+instance Show OPNAME where
+    show x =
+        case x of
+          OP_neq -> "!="
+          OP_mult -> "*"
+          OP_plus -> "+"
+          OP_minus -> "-"
+          OP_neg -> "-"
+          OP_div -> "/"
+          OP_lt -> "<"
+          OP_le -> "<="
+          OP_eq -> "="
+          OP_gt -> ">"
+          OP_ge -> ">="
+          OP_Pi -> "Pi"
+          OP_pow -> "^"
+          OP_abs -> "abs"
+          OP_all -> "all"
+          OP_and -> "and"
+          OP_convergence -> "convergence"
+          OP_cos -> "cos"
+          OP_divide -> "divide"
+          OP_ex -> "ex"
+          OP_factor -> "factor"
+          OP_factorize -> "factorize"
+          OP_fthrt -> "fthrt"
+          OP_impl -> "impl"
+          OP_int -> "int"
+          OP_max -> "max"
+          OP_maximize -> "maximize"
+          OP_min -> "min"
+          OP_or -> "or"
+          OP_rlqe -> "rlqe"
+          OP_simplify -> "simplify"
+          OP_sin -> "sin"
+          OP_solve -> "solve"
+          OP_sqrt -> "sqrt"
+          OP_tan -> "tan"
+
+data OPID = OpId OPNAME | OpString String deriving (Eq, Ord)
+
+instance Show OPID where
+    show (OpId n) = show n
+    show (OpString s) = s
+
 -- | Datatype for expressions
 data EXPRESSION =
     Var Id.Token
   -- token instead string Id vs Token:
-  | Op String [EXTPARAM] [EXPRESSION] Id.Range
+  | Op OPID [EXTPARAM] [EXPRESSION] Id.Range
   | List [EXPRESSION] Id.Range
   -- this means interval (interval
   | Interval APFloat APFloat Id.Range
@@ -129,6 +185,8 @@ data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
 
 data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and 9
                      , infx :: Bool -- ^ True = infix
+                     , arity :: Int -- ^ the operator arity
+                     , opname :: OPNAME -- ^ The actual operator name
                      , bind :: Maybe BindInfo -- ^ More info for binders
                      } deriving (Eq, Ord, Show)
 
@@ -159,50 +217,61 @@ instance Pretty CMD where
 
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
 --   behave differently for different arities).
-operatorInfo :: Map.Map String (Map.Map Int OpInfo)
+operatorInfoMap :: Map.Map String (Map.Map Int OpInfo)
+operatorInfoMap = foldl f Map.empty operatorInfo
+    where f m oi = Map.insertWith Map.union (show $ opname oi)
+                   (Map.fromList [(arity oi, oi)]) m
+
+-- | Same as operatorInfoMap but with keys of type OPNAME instead of String
+operatorInfoNameMap :: Map.Map OPNAME (Map.Map Int OpInfo)
+operatorInfoNameMap = foldl f Map.empty operatorInfo
+    where f m oi = Map.insertWith Map.union (opname oi)
+                   (Map.fromList [(arity oi, oi)]) m
+      
+
+
+-- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
+--   behave differently for different arities).
+operatorInfo :: [OpInfo]
 operatorInfo =
     let -- arity (-1 means flex), precedence, infix
-        toSgl i p fx = Map.fromList [(i, OpInfo p fx Nothing)]
-
-        toSglBind i p fx bv bb =
-            Map.fromList [(i, OpInfo p fx $ Just $ BindInfo [bv] [bb])]
+        toSgl n i p fx = OpInfo p fx i n Nothing
+        toSglBind n i p fx bv bb =
+            OpInfo p fx i n $ Just $ BindInfo [bv] [bb]
         -- arityflex simple ops
-        aflex s = (s, toSgl (-1) 0 False)
+        aflex s = toSgl s (-1) 0 False
         -- arity0 simple ops
-        a0 s = (s, toSgl 0 0 False)
+        a0 s = toSgl s 0 0 False
         -- arity1 simple ops
-        a1 s = (s, toSgl 1 0 False)
+        a1 s = toSgl s 1 0 False
         -- arity2 simple ops
-        a2 s = (s, toSgl 2 0 False)
+        a2 s = toSgl s 2 0 False
         -- arity2 binder
-        a2bind bv bb s = (s, toSglBind 2 0 False bv bb)
+        a2bind bv bb s = toSglBind s 2 0 False bv bb
         -- arity2 infix with precedence
-        a2i p s = (s, toSgl 2 p True)
-    in Map.fromList
-           $  [a0 "Pi"]
-           ++ map a1 [ "cos", "sin", "tan", "sqrt", "fthrt", "--", "abs"
-                     , "simplify", "rlqe", "factorize" ]
-           ++ map (a2i 2) [ "ex", "all", "and", "or", "impl" ]
-           ++ map (a2i 3) [ "=", ">", "<=", ">=", "!=", "<"]
-           ++ [a2i 4 "+"]
-           ++ map (a2i 5) ["/", "*"]
-           ++ map (a2i 6) ["^", "**"]
-           ++ map a2 [ "int", "divide", "solve", "convergence" ]
-           ++ map aflex [ "min", "max" ]
-           ++ map (a2bind 1 0) [ "Maximum", "ArgAtMaximum" ]
- 
-           -- special handling for overloaded "-"
-           ++ [("-", Map.fromList [ (1, OpInfo 0 False Nothing)
-                                  , (2, OpInfo 4 True Nothing)])]
+        a2i p s = toSgl s 2 p True
+    in [a0 OP_Pi]
+           ++ map a1 [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
+                     , OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
+           ++ map (a2i 2) [ OP_ex, OP_all, OP_and, OP_or, OP_impl ]
+           ++ map (a2i 3) [ OP_eq, OP_gt, OP_le, OP_ge, OP_neq, OP_lt]
+           ++ map (a2i 4) [ OP_plus, OP_minus]
+           ++ map (a2i 5) [OP_div, OP_mult]
+           ++ map (a2i 6) [OP_pow]
+           ++ map a2 [ OP_int, OP_divide, OP_solve, OP_convergence ]
+           ++ map aflex [ OP_min, OP_max ]
+           ++ map (a2bind 1 0) [ OP_maximize ]
 
 -- | For the given name and arity we lookup an 'OpInfo', where arity=-1
 -- means flexible arity. If an operator is registered for the given
 -- string but not for the arity we return: Left True.
-lookupOpInfo :: String -- ^ operator name
+-- This function is designed for the lookup of operators in not statically
+-- analyzed terms. For statically analyzed terms use lookupOpInfo.
+lookupOpInfoForStatAna :: String -- ^ operator name
              -> Int -- ^ operator arity
              -> Either Bool OpInfo
-lookupOpInfo op arit =
-    case Map.lookup op operatorInfo of
+lookupOpInfoForStatAna op arit =
+    case Map.lookup op operatorInfoMap of
       Just oim ->
           case Map.lookup arit oim of
             Just x -> Right x
@@ -212,18 +281,37 @@ lookupOpInfo op arit =
                   _ -> Left True
       _ -> Left False
 
+-- | For the given name and arity we lookup an 'OpInfo', where arity=-1
+-- means flexible arity. If an operator is registered for the given
+-- string but not for the arity we return: Left True.
+lookupOpInfo :: OPID -- ^ operator id
+             -> Int -- ^ operator arity
+             -> Either Bool OpInfo
+lookupOpInfo (OpId op) arit =
+    case Map.lookup op operatorInfoNameMap of
+      Just oim ->
+          case Map.lookup arit oim of
+            Just x -> Right x
+            Nothing ->
+                case Map.lookup (-1) oim of
+                  Just x -> Right x
+                  _ -> Left True
+      _ -> error $ "lookupOpInfo: no opinfo for " ++ show op
+lookupOpInfo (OpString _) _ = Left False
+
 -- | For the given name and arity we lookup an 'BindInfo', where arity=-1
 -- means flexible arity.
-lookupBindInfo :: String -- ^ operator name
+lookupBindInfo :: OPID -- ^ operator name
              -> Int -- ^ operator arity
              -> Maybe BindInfo
-lookupBindInfo op arit =
-    case Map.lookup op operatorInfo of
+lookupBindInfo (OpId op) arit =
+    case Map.lookup op operatorInfoNameMap of
       Just oim ->
           case Map.lookup arit oim of
             Just x -> bind x
             _ -> Nothing
-      _ -> Nothing
+      _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
+lookupBindInfo (OpString _) _ = Nothing
 
 
 printCMD :: CMD -> Doc
@@ -251,15 +339,15 @@ printCase e l = text "ca"
 
 getPrec :: EXPRESSION -> Int
 getPrec (Op s _ exps _)
-    | length exps == 0 = 8 -- check maximum given prec in operatorInfo,
-                           -- this value must be higher
-    | otherwise =
-        case lookupOpInfo s $ length exps of
-          Right oi -> prec oi
-          Left True -> error $ 
-                       concat [ "getPrec: registered operator ", s, " used "
-                              , "with non-registered arity ", show $ length exps ]
-          _ -> 0
+ | length exps == 0 = 8 -- check maximum given prec in operatorInfo,
+                        -- this value must be higher
+ | otherwise =
+     case lookupOpInfo s $ length exps of
+       Right oi -> prec oi
+       Left True -> error $ 
+                    concat [ "getPrec: registered operator ", show s, " used "
+                           , "with non-registered arity ", show $ length exps ]
+       _ -> 0
 getPrec _ = 9
 
 printExtparam :: EXTPARAM -> Doc
@@ -276,18 +364,18 @@ printInfix e@(Op s _ exps _) =
 -- operators such as "and", "or", but it would be good to omit it for "+-*/"
     (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0))
      else  (parens (printExpression $ (exps !! 0))))
-    <+> text s <+> (if outerprec<= getPrec (exps!!1)
-                  then printExpression $ exps !! 1
-                  else parens (printExpression $ exps !! 1))
+    <+> text (show s) <+> (if outerprec<= getPrec (exps!!1)
+                           then printExpression $ exps !! 1
+                           else parens (printExpression $ exps !! 1))
         where outerprec = getPrec e
 printInfix _ = error "printInfix: Impossible case"
 
 printExpression :: EXPRESSION -> Doc
-printExpression (Var token) = text $ tokStr token
+printExpression (Var token) = text $ "$" ++ tokStr token
 printExpression e@(Op s epl exps _)
-    | length exps == 0 = text s <> printExtparams epl
+    | length exps == 0 = text (show s) <> printExtparams epl
     | otherwise =
-        let asPrfx = text s <> printExtparams epl
+        let asPrfx = text (show s) <> printExtparams epl
                      <> parens (sepByCommas $ map printExpression exps)
         in case lookupOpInfo s $ length exps  of
              Right oi
