@@ -24,9 +24,9 @@ import CSL.AS_BASIC_CSL
 import CSL.Keywords
 import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad
+import Data.Maybe
 
--- the basic lexer, test using e.g. runParser identifier 0 "" "asda2_3"
-
+-- TODO: extract range information for the basic term and command types
 
 -- ---------------------------------------------------------------------------
 
@@ -36,8 +36,10 @@ import Control.Monad
 
 parseBasicSpec :: Maybe (AnnoState.AParser st BASIC_SPEC)
 parseBasicSpec = Just basicSpec
+
 parseSymbItems :: Maybe (GenParser Char st SYMB_ITEMS)
 parseSymbItems = Just symbItems
+
 parseSymbMapItems :: Maybe (GenParser Char st SYMB_MAP_ITEMS)
 parseSymbMapItems = Just symbMapItems
 
@@ -67,6 +69,34 @@ lstring = lexemeParser . string
 -- | parser for symbols followed by whitechars
 lexemeParser :: CharParser st a -> CharParser st a
 lexemeParser = (<< skip)
+
+getOpName :: String -> [OPNAME] -> OPNAME
+getOpName s l = f l
+    where f (x:xs) = if s == show x then x else f xs
+          f [] = error $ "getOpName: no op found for " ++ s ++ " in " ++ show l
+
+mkFromOps :: [OPNAME] -> String -> [EXPRESSION] -> EXPRESSION
+mkFromOps l s exps = mkPredefOp (getOpName s l) exps
+
+-- | Lookup the string in the predefined operator map
+mkAndAnalyzeOp :: String -> [EXTPARAM] -> [EXPRESSION] -> Range -> EXPRESSION
+mkAndAnalyzeOp s eps exps rg =
+    let err msg = "At operator " ++ s ++ "\n" ++ msg
+        -- an error-message producing function
+        g msg | not $ null eps = Just $ err msg
+                                 ++ "* No extended parameters allowed\n"
+              | null msg = Nothing
+              | otherwise = Just $ err msg
+        opOrErr mOp x = case x of
+                          Just msg -> error msg
+                          _ -> OpId $ opname $ fromJust mOp
+        op = case lookupOpInfoForStatAna s (length exps) of
+               Left False -> OpString s
+               -- if registered it must be registered with the given arity or
+               -- as flex-op, otherwise we don't accept it
+               Left True -> opOrErr Nothing $ g "* Wrong arity\n"
+               Right opinfo -> opOrErr (Just opinfo) $ g ""
+    in Op op eps exps rg
 
 -- ---------------------------------------------------------------------------
 
@@ -104,19 +134,21 @@ oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map tryString l
 
 expression :: CharParser st EXPRESSION
 expression = do
+  let ops = [OP_plus, OP_minus]
   exp1 <- factor
-  exps <- many $ pair (oneOfKeys ["+", "-"]) factor
+  exps <- many $ pair (oneOfKeys $ map show ops) factor
   return $ if null exps then  exp1
-           else foldl (\ b a -> mkOp (fst a) [b, snd a]) exp1 exps
+           else foldl (\ b a -> mkFromOps ops (fst a) [b, snd a]) exp1 exps
 
 -- | parse a product of basic expressions
 factor :: CharParser st EXPRESSION
 factor = do
+  let ops = [OP_mult, OP_div]
   exp1 <- expexp
   exps <- many
-    $ pair (oneOfKeys ["*", "/"]) factor
+    $ pair (oneOfKeys $ map show ops) factor
   if null exps then return exp1
-     else return $ foldl (\ b a -> mkOp (fst a) [b, snd a]) exp1 exps
+     else return $ foldl (\ b a -> mkFromOps ops (fst a) [b, snd a]) exp1 exps
 
 -- | parse a sequence of exponentiations
 expexp :: CharParser st EXPRESSION
@@ -125,7 +157,7 @@ expexp = do
   exps <- many
     $ pair (oneOfKeys ["**", "^"]) expexp
   if null exps then return exp1
-    else return $ foldr (\ a b -> mkOp (fst a) [b, snd a]) exp1 exps
+    else return $ foldr (\ a b -> mkPredefOp OP_pow [b, snd a]) exp1 exps
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
@@ -141,7 +173,7 @@ expsymbol =
       exps <- option ([],[])
               $ oParenT >> Lexer.separatedBy formulaorexpression pComma
                     << cParenT
-      return $ Op (OpString $ tokStr ident) (fst ep) (fst exps) nullRange
+      return $ mkAndAnalyzeOp (tokStr ident) (fst ep) (fst exps) nullRange
 
 
 -- | parses a list expression
@@ -195,38 +227,40 @@ parseVar = do
 
 
 
-quantFormula :: String -> CharParser st EXPRESSION
+quantFormula :: OPNAME -> CharParser st EXPRESSION
+ -- TODO: static analysis requires probably a better representation of quantifiers
 quantFormula q = do
-  Lexer.keySign (string q)
+  Lexer.keySign (string $ show q)
   oParenT
   vars <- ( parseVar <|> parseVarList)
   pComma
   expr <- formulaorexpression
   cParenT
-  return (mkOp q [vars, expr])
+  return (mkPredefOp q [vars, expr])
 
 
 -- | parser for atoms
 truefalseFormula :: CharParser st EXPRESSION
 truefalseFormula =
     do
-      lexemeParser (Lexer.keyWord (tryString "true"))
-      return (mkOp "True" [])
+      lexemeParser (Lexer.keyWord (tryString $ show OP_true))
+      return (mkPredefOp OP_true [])
     <|>
     do
-      lexemeParser (Lexer.keyWord (tryString "false"))
-      return (mkOp "False" [])
-    <|> quantFormula "ex" <|> quantFormula "all"
+      lexemeParser (Lexer.keyWord (tryString $ show OP_false))
+      return (mkPredefOp OP_false [])
+    <|> quantFormula OP_ex <|> quantFormula OP_all
 
 -- | parser for predicates
 predFormula :: CharParser st EXPRESSION
 predFormula = do
+  let ops = [ OP_leq, OP_geq, OP_neq, OP_eq, OP_lt, OP_gt ]
   exp1 <- expression
   mExp2 <- optionMaybe
-           $ pair (oneOfKeys ["<=", ">=", "!="]
+           $ pair (oneOfKeys (map show $ take 3 ops) -- the first 3 print as 2-chars
                    <|> lexemeParser (single $ oneOf "=<>")) expression
   case mExp2 of
-    Just (op, exp2) -> return $ mkOp op [exp1, exp2]
+    Just (op, exp2) -> return $ mkFromOps ops op [exp1, exp2]
     _ -> return $ exp1
 
 atomicFormula :: CharParser st EXPRESSION
@@ -238,9 +272,9 @@ aFormula = try negFormula <|> impOrFormula
 
 negFormula :: CharParser st EXPRESSION
 negFormula = do
-  lexemeParser (Lexer.keyWord (tryString "not"))
+  lexemeParser (Lexer.keyWord (tryString $ show OP_not))
   f <- atomicFormula
-  return (mkOp "not" [f])
+  return (mkPredefOp OP_not [f])
 
 -- | parses a formula within brackets
 parenFormula :: CharParser st EXPRESSION
@@ -253,24 +287,22 @@ parenFormula = do
 -- | parser for implications and ors (same precedence)
 impOrFormula :: CharParser st EXPRESSION
 impOrFormula = do
+  let ops = [ OP_or, OP_impl ]
   f1 <- andFormula
   opfs <- many $ pair (lexemeParser $ Lexer.keyWord
-                      $ tryString "or" <|> tryString "impl") impOrFormula
+                      $ tryString (show OP_or) <|> tryString (show OP_impl))
+          impOrFormula
   if null opfs then return f1
-   else return $ foldr (\ (a1, a2) b -> mkOp (case a1 of
-                                   "or" -> "or"
-                                   "impl" -> "impl"
-                                   _ -> error "impl or or expected")
-                                    [b, a2]
-                                 ) f1 opfs
+   else return $ foldr (\ (a1, a2) b -> mkFromOps ops a1 [b, a2]) f1 opfs
 
 -- | a parser for and sequence of and formulas
 andFormula :: CharParser st EXPRESSION
 andFormula = do
   f1 <- atomicFormula
-  opfs <- many $ pair (lexemeParser $ keyWord $ tryString "and") atomicFormula
+  opfs <- many $ pair (lexemeParser $ keyWord $ tryString $ show OP_and)
+          atomicFormula
   if null opfs then return f1
-   else return $ foldr (\ a b -> (mkOp "and" [b, snd a])) f1 opfs
+   else return $ foldr (\ a b -> (mkPredefOp OP_and [b, snd a])) f1 opfs
 
 -- ---------------------------------------------------------------------------
 

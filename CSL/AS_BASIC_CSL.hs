@@ -29,6 +29,7 @@ module CSL.AS_BASIC_CSL
     , GroundConstant (..) -- constants for domain formation
     , CMD (..)            -- Command datatype
     , mkOp                -- Simple Operator constructor
+    , mkPredefOp          -- Simple Operator constructor for predefined ops
     , OpInfo (..)         -- Type for Operator information
     , BindInfo (..)       -- Type for Binder information
     , operatorInfo        -- Operator information for pretty printing
@@ -45,6 +46,7 @@ import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
 
+
 -- Arbitrary precision numbers
 type APInt = Integer
 -- TODO: use an arbitrary precision float here:
@@ -54,7 +56,11 @@ type APFloat = Double
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
-mkOp s el = Op (OpString s) [] el nullRange -- TODO: integrate predefined ops here
+mkOp s el = Op (OpString s) [] el nullRange
+
+-- | A simple operator constructor from given operator id and arguments
+mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
+mkPredefOp n el = Op (OpId n) [] el nullRange
 
 -- | operator symbol declaration
 data OP_ITEM = Op_item [Id.Token] Id.Range
@@ -84,12 +90,27 @@ data BASIC_ITEM =
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
-data OPNAME = OP_neq | OP_mult | OP_div | OP_plus | OP_minus | OP_neg
-            | OP_lt | OP_le | OP_eq | OP_gt | OP_ge | OP_Pi
-            | OP_pow | OP_abs | OP_all | OP_and | OP_convergence | OP_cos
-            | OP_divide | OP_ex | OP_factor | OP_factorize | OP_fthrt | OP_impl
-            | OP_int | OP_max | OP_maximize | OP_min | OP_or | OP_rlqe
-            | OP_simplify | OP_sin | OP_solve | OP_sqrt | OP_tan
+data OPNAME = OP_mult -- arithmetic operators
+            | OP_div | OP_plus | OP_minus | OP_neg | OP_pow
+
+            -- roots, trigonometric and other operators
+            | OP_fthrt | OP_sqrt
+            | OP_abs | OP_max | OP_min
+            | OP_cos | OP_sin | OP_tan | OP_Pi
+
+            -- special CAS operators
+            | OP_maximize | OP_factor
+            | OP_divide | OP_factorize | OP_int | OP_rlqe | OP_simplify | OP_solve
+
+            -- comparison predicates
+            | OP_neq | OP_lt | OP_leq | OP_eq | OP_gt | OP_geq | OP_convergence
+
+            -- boolean constants and connectives
+            | OP_false | OP_true | OP_not | OP_and | OP_or | OP_impl
+
+            -- quantifiers
+            | OP_ex | OP_all
+
               deriving (Eq, Ord)
 
 instance Show OPNAME where
@@ -102,10 +123,10 @@ instance Show OPNAME where
           OP_neg -> "-"
           OP_div -> "/"
           OP_lt -> "<"
-          OP_le -> "<="
+          OP_leq -> "<="
           OP_eq -> "="
           OP_gt -> ">"
-          OP_ge -> ">="
+          OP_geq -> ">="
           OP_Pi -> "Pi"
           OP_pow -> "^"
           OP_abs -> "abs"
@@ -123,6 +144,7 @@ instance Show OPNAME where
           OP_max -> "max"
           OP_maximize -> "maximize"
           OP_min -> "min"
+          OP_not -> "not"
           OP_or -> "or"
           OP_rlqe -> "rlqe"
           OP_simplify -> "simplify"
@@ -130,6 +152,8 @@ instance Show OPNAME where
           OP_solve -> "solve"
           OP_sqrt -> "sqrt"
           OP_tan -> "tan"
+          OP_false -> "False"
+          OP_true -> "True"
 
 data OPID = OpId OPNAME | OpString String deriving (Eq, Ord)
 
@@ -149,6 +173,7 @@ data EXPRESSION =
   | Double APFloat Id.Range
   deriving (Eq, Ord, Show)
 
+-- TODO: add Range-support to this type
 data CMD = Ass EXPRESSION EXPRESSION
          | Cmd String [EXPRESSION]
          | Sequence [CMD] -- program sequence
@@ -250,11 +275,11 @@ operatorInfo =
         a2bind bv bb s = toSglBind s 2 0 False bv bb
         -- arity2 infix with precedence
         a2i p s = toSgl s 2 p True
-    in [a0 OP_Pi]
+    in map a0 [ OP_Pi, OP_true, OP_false ]
            ++ map a1 [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
                      , OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
            ++ map (a2i 2) [ OP_ex, OP_all, OP_and, OP_or, OP_impl ]
-           ++ map (a2i 3) [ OP_eq, OP_gt, OP_le, OP_ge, OP_neq, OP_lt]
+           ++ map (a2i 3) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt]
            ++ map (a2i 4) [ OP_plus, OP_minus]
            ++ map (a2i 5) [OP_div, OP_mult]
            ++ map (a2i 6) [OP_pow]

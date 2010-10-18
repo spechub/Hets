@@ -93,6 +93,21 @@ cslMapleDefaultMapping =
            ++ idmapping possibleIntervalOps
                   ++ idmapping otherOps
 
+cslMapleDefaultMapping :: [(OPNAME, String)]
+cslMapleDefaultMapping = 
+    let idmapping = map (\ x -> (x, show x))
+        ampmapping = map (\ x -> (x, "&" ++ show x))
+        possibleIntervalOps = [ OP_mult, OP_div, OP_plus, OP_minus, OP_neg
+                              , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
+                              , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
+        logicOps = [ OP_and, OP_or, OP_impl ]
+        otherOps = [OP_factor, OP_maximize]
+        specialOp = (OP_pow, "^")
+--        specialOp = (OP_pow, "&**")
+    in specialOp : idmapping logicOps
+           ++ idmapping possibleIntervalOps
+                  ++ idmapping otherOps
+
 printAssignment :: String -> EXPRESSION -> String
 printAssignment n e = concat [n, ":= ", exportExp e, ";"]
 

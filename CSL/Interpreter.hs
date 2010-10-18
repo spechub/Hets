@@ -127,8 +127,8 @@ data BMap = BMap { mThere :: Map.Map String Int
                  , defaultMap :: BMapDefault }
 
 
-data BMapDefault = BMapDefault { mThr :: Map.Map String String
-                               , mBck :: Map.Map String String }
+data BMapDefault = BMapDefault { mThr :: Map.Map OPID String
+                               , mBck :: Map.Map String OPID }
 
 
 instance SimpleMember BMap String where
@@ -140,23 +140,28 @@ instance SimpleMember BMap String where
 
 -- ** Interface functions for BMapDefault
 
-fromList :: [(String, String)] -> BMapDefault
+fromList :: [(OPID, String)] -> BMapDefault
 fromList l = let f (x, y) = (y, x)
              in BMapDefault (Map.fromList l) $ Map.fromList $ map f l
 
-defaultLookup :: BMapDefault -> String -> Maybe String
+defaultLookup :: BMapDefault -> OPID -> Maybe String
 defaultLookup bmd s = Map.lookup s $ mThr bmd
 
-defaultRevlookup :: BMapDefault -> String -> Maybe String
+defaultRevlookup :: BMapDefault -> String -> Maybe OPID
 defaultRevlookup bmd s = Map.lookup s $ mBck bmd
 
 -- ** Interface functions for BMap
 empty :: BMap
 empty = BMap Map.empty IMap.empty 1 "x" $ fromList []
 
-initWithDefault :: [(String, String)] -> BMap
-initWithDefault l = BMap Map.empty IMap.empty 1 "x" $ fromList l
+initWithDefault :: [(OPNAME, String)] -> BMap
+initWithDefault l =
+    let f (x, y) = (OpId x, y)
+    in BMap Map.empty IMap.empty 1 "x" $ fromList $ map f l
 
+-- TODO: the lookup function should be splitted into a variant with OPID
+-- or strings should be considered as OpString x
+-- TODO: adapt lookup and revlookup
 -- | The only way to also insert a value is to use lookup. One should not
 -- insert values explicitly. Note that you don't control the inserted value.
 lookupOrInsert :: BMap -> String -> (BMap, String)

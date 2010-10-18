@@ -35,13 +35,13 @@ printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign -> Set.Set Symbol
-symOf = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty . items
+symOf = Set.map Symbol . Map.keysSet . items
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism -> Map.Map Symbol Symbol
 getSymbolMap f =
-  foldr (\ x -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
-  Map.empty $ Set.toList $ items $ source f
+  Map.foldWithKey (\ x _ -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
+  Map.empty $ items $ source f
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id

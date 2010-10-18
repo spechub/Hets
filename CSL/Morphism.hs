@@ -74,7 +74,7 @@ composeMor f g =
   , operatorMap = if Map.null gMap then fMap else
       Set.fold ( \ i -> let j = applyMap gMap (applyMap fMap i) in
                         if i == j then id else Map.insert i j)
-                                  Map.empty $ items fSource }
+                                  Map.empty $ Map.keysSet $ items fSource }
 
 -- | constructs the inclusion map for a given signature
 inclusionMap :: Sign.Sign -> Sign.Sign -> Morphism
@@ -108,8 +108,8 @@ morphismUnion mor1 mor2 =
       pmap2 = operatorMap mor2
       p1 = source mor1
       p2 = source mor2
-      up1 = Set.difference (items p1) $ Map.keysSet pmap1
-      up2 = Set.difference (items p2) $ Map.keysSet pmap2
+      up1 = Set.difference (Map.keysSet $ items p1) $ Map.keysSet pmap1
+      up2 = Set.difference (Map.keysSet $ items p2) $ Map.keysSet pmap2
       (pds, pmap) = foldr ( \ (i, j) (ds, m) -> case Map.lookup i m of
           Nothing -> (ds, Map.insert i j m)
           Just k -> if j == k then (ds, m) else

@@ -29,56 +29,17 @@ import Common.Id
 import Common.Result
 import Common.Utils (mapAccumLM)
 
-import Control.Monad (unless)
-
-import qualified Data.Set as Set
-import Data.List
-import Data.Maybe
 import CSL.AS_BASIC_CSL
 import CSL.Symbol
 import CSL.Fold
 import CSL.Sign as Sign
 
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.List
+import Data.Maybe
 
 -- * Diagnosis Types and Functions
-
-
--- | extracts the operators, arity and extparam-count information
--- for an operator
-extractOperatorsFromCmd :: CMD -> [(String, Int, Int)]
-extractOperatorsFromCmd cmd =
-    foldCMD r () cmd where
-        r = (constRecord [] [])
-            { foldAss = \ _ _ c def -> c ++ def
-            , foldCmd = \ _ _ cmd' exps ->
-                        (cmd', length exps, 0) : concat exps
-            , foldRepeat = \ _ _ c l -> concat $ c:l
-            , foldCond = \ _ _ l -> concat $ concatMap (uncurry (:)) l
-            , foldSequence = \ _ _ l -> concat l
-
-            , foldOp = \ _ _ s epl exps _ ->
-                       (show s, length exps, length epl) : concat exps
-            , foldList = \ _ _ l _ -> concat l
-            }
-
--- | checks whether the operator is correctly used which means that
--- for a predefined operator the following must hold:
--- (1) the actual arity must match the signature arity
--- (2) no extended params allowed
-checkOperator :: (String, Int, Int)
-               -> Maybe String -- ^ Points to the actual problem if any
-checkOperator (op, arit, epc) =
-    let err s = "At operator " ++ op ++ "\n" ++ s
-        g s | epc > 0 = Just $ err s
-                        ++ "* No extended parameters allowed\n"
-            | null s = Nothing
-            | otherwise = Just $ err s
-    in case lookupOpInfoForStatAna op arit of
-         Left False -> Nothing
-         -- if registered it must be registered with the given arity or
-         -- as flex-op, otherwise we don't accept it
-         Left True -> g "* Wrong arity\n"
-         _ -> g ""
 
 -- | generates a named formula
 withName :: Annoted CMD -> Int -> Named CMD
@@ -97,11 +58,17 @@ withName f i = (makeNamed (if label == "" then "Ax_" ++ show i
 -- It analyzes the formula and returns a formula with diagnosis
 analyzeFormula :: Sign.Sign -> (Annoted CMD) -> Int -> Result (Named CMD)
 analyzeFormula _ f i =
-    do 
-      let cmd = item f
-          x = concat $ mapMaybe checkOperator $ extractOperatorsFromCmd cmd
-      unless (null x) $ mkError x cmd
-      return $ withName f{ item = staticUpdate cmd } i
+    return $ withName f{ item = staticUpdate $ item f } i
+
+{- TODO: we want to proceed as follows:
+ 1. Extract the operators from the definitions and store their arity in the optype
+ 2. Check if all applications are valid w.r.t. the arity
+ 3. compute the variables as is done by staticUpdate
+ 4. split the definitions and the program and process the extended parameters
+ 5. handle conditional assignments
+ 6. build the dependency relation and store it in the signature
+
+-}
 
 -- | Extracts the axioms and the signature of a basic spec
 splitSpec :: BASIC_SPEC -> Sign.Sign -> Result (Sign.Sign, [Named CMD])
@@ -123,20 +90,24 @@ anaBasicItem acc@(sign, i) itm =
 
 -- | adds the specified tokens to the signature
 addTokens :: Sign.Sign -> [Token] -> Sign.Sign
-addTokens sign tokens = let f res itm = addToSig res $ simpleIdToId itm
+addTokens sign tokens = let f res itm = addToSig res (simpleIdToId itm)
+                                        $ optypeFromArity 0
                         in foldl f sign tokens
 
 
--- | stepwise extends an initially empty signature by the basic spec
--- bs. The resulting spec contains analyzed axioms in it. The result
--- contains: (1) the basic spec (2) the new signature + the added
--- symbols (3) sentences of the spec
+{- | stepwise extends an initially empty signature by the basic spec bs.
+ The resulting spec contains analyzed axioms in it. The result contains:
+ (1) the basic spec
+ (2) the new signature + the added symbols
+ (3) sentences of the spec
+-}
 basicCSLAnalysis :: (BASIC_SPEC, Sign, a)
                  -> Result (BASIC_SPEC, ExtSign Sign Symbol, [Named CMD])
 basicCSLAnalysis (bs, sig, _) =
     do 
       (newSig, ncmds) <- splitSpec bs sig
-      let newSyms = Set.map Symbol $ Set.difference (items newSig) $ items sig
+      let newSyms = Set.map Symbol $ Map.keysSet
+                    $ Map.difference (items newSig) $ items sig
       return (bs, ExtSign newSig newSyms, ncmds)
 
 -- | A function which regroups all updates on a CMD during the static analysis.
