@@ -35,6 +35,7 @@ module CSL.AS_BASIC_CSL
     , operatorInfo        -- Operator information for pretty printing
                           -- and static analysis
     , operatorInfoMap     -- allows efficient lookup of ops by printname
+    , operatorInfoNameMap -- allows efficient lookup of ops by opname
     , lookupOpInfoForStatAna
     , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers

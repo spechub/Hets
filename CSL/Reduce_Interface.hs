@@ -193,11 +193,11 @@ redOutputToExpression = parseResult . skipReduceLineNr
 -- ----------------------------------------------------------------------
 
 
-cslReduceDefaultMapping :: [(String, String)]
+cslReduceDefaultMapping :: [(OPNAME, String)]
 cslReduceDefaultMapping =
-    let idmapping = map (\ x -> (x, x))
-    in ("^", "**") :
-           (idmapping $ Map.keys $ Map.delete "^" operatorInfoMap)
+    let idmapping = map (\ x -> (x, show x))
+    in (OP_pow, "**") :
+           (idmapping $ Map.keys $ Map.delete OP_pow operatorInfoNameMap)
 
 {- | reads characters from the specified output until the next result is
   complete, indicated by $ when using the maxima mode off nat; -}

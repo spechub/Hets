@@ -91,8 +91,7 @@ isDefined :: CalculationSystem m => String -> m Bool
 isDefined s = liftM (member s) names
 
 evaluate :: CalculationSystem m => CMD -> m ()
-evaluate (Ass (Op n [] [] _) e) = assign n e
-evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
+evaluate (Ass (Op (OpString n) [] [] _) e) = assign n e
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
   if null cl
@@ -109,6 +108,10 @@ evaluate (Repeat e l) =
 evaluate (Sequence l) = evaluateList l
 
 evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
+evaluate a@(Ass (Op (OpId _) _ _ _) _) =
+    error $ "evaluate: OPNAME in left hand side of assignment not allowed "
+              ++ show a
+evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 
 
 evaluateList :: CalculationSystem m => [CMD] -> m ()
@@ -124,11 +127,11 @@ data BMap = BMap { mThere :: Map.Map String Int
                  , mBack :: IMap.IntMap String
                  , newkey :: Int
                  , prefix :: String
-                 , defaultMap :: BMapDefault }
+                 , defaultMap :: BMapDefault OPID }
 
 
-data BMapDefault = BMapDefault { mThr :: Map.Map OPID String
-                               , mBck :: Map.Map String OPID }
+data BMapDefault a = BMapDefault { mThr :: Map.Map a String
+                                 , mBck :: Map.Map String a }
 
 
 instance SimpleMember BMap String where
@@ -137,17 +140,16 @@ instance SimpleMember BMap String where
     toList = Map.keys . mThere
 
 
-
 -- ** Interface functions for BMapDefault
 
-fromList :: [(OPID, String)] -> BMapDefault
+fromList :: Ord a => [(a, String)] -> BMapDefault a
 fromList l = let f (x, y) = (y, x)
              in BMapDefault (Map.fromList l) $ Map.fromList $ map f l
 
-defaultLookup :: BMapDefault -> OPID -> Maybe String
+defaultLookup :: Ord a => BMapDefault a -> a -> Maybe String
 defaultLookup bmd s = Map.lookup s $ mThr bmd
 
-defaultRevlookup :: BMapDefault -> String -> Maybe OPID
+defaultRevlookup :: BMapDefault a -> String -> Maybe a
 defaultRevlookup bmd s = Map.lookup s $ mBck bmd
 
 -- ** Interface functions for BMap
@@ -164,28 +166,44 @@ initWithDefault l =
 -- TODO: adapt lookup and revlookup
 -- | The only way to also insert a value is to use lookup. One should not
 -- insert values explicitly. Note that you don't control the inserted value.
-lookupOrInsert :: BMap -> String -> (BMap, String)
-lookupOrInsert m k = 
-    case defaultLookup (defaultMap m) k of
-      Just s -> (m, s)
+-- For (Left "...") we throw an error if this value is in the defaultMap,
+-- for (Right (OpId ...)) we throw an error if it isn't.
+lookupOrInsert :: BMap
+               -> Either String OPID -- ^ If you provide a string it is
+                                     -- interpreted as an OpString
+               -> (BMap, String)
+lookupOrInsert m k =
+    let (k', str, isL, isOpName) = case k of
+                              Left s -> (OpString s, s, True, False)
+                              Right oi@(OpId _) -> (oi, "", False, True)
+                              Right os@(OpString x) -> (os, x, False, False)
+    in
+      case defaultLookup (defaultMap m) k' of
+      Just s -> if isL
+                then error $ "lookupOrInsert: default functions should be "
+                     ++ "passed in as OPIDs but got the string " ++ str
+                else (m, s)
       _ -> let f _ _ x = x
                nv = newkey m
-               (mNv', nm) = Map.insertLookupWithKey f k nv $ mThere m
+               (mNv', nm) = Map.insertLookupWithKey f str nv $ mThere m
            -- first check for default symbols
-           in case mNv' of
+           in if isOpName
+              then error $ "lookupOrInsert: OPNAMEs should be registered in the"
+                       ++ " default mapping but could not find " ++ show k'
+              else case mNv' of
                 Just nv' -> (m, bmapIntToString m nv')
                 _ ->  (m { mThere = nm
-                         , mBack = IMap.insert nv k $ mBack m
+                         , mBack = IMap.insert nv str $ mBack m
                          , newkey = nv + 1 }
                       , bmapIntToString m nv)
 
-revlookup :: BMap -> String -> String
+revlookup :: BMap -> String -> OPID
 revlookup m k = 
     case defaultRevlookup (defaultMap m) k of
       Just s -> s
       _ -> let i = bmapStringToInt m k
                err = error $ "revlookup: No reverse mapping for " ++ k
-           in IMap.findWithDefault err i $ mBack m
+           in OpString $ IMap.findWithDefault err i $ mBack m
 
 bmToList :: BMap -> [(String, String)]
 bmToList m = let prf = prefix m
@@ -208,21 +226,21 @@ bmapStringToInt m s = let prf = prefix m
 
 -- | Translate EXPRESSION into a CAS compatible form
 translateEXPRESSION :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
-translateEXPRESSION m (Op s epl el rg) =
+translateEXPRESSION m (Op oi epl el rg) =
     let (m', el') = mapAccumL translateEXPRESSION m el
-        (m'', s') = lookupOrInsert m' s
-    in (m'', Op s' epl el' rg)
+        (m'', s) = lookupOrInsert m' $ Right oi
+    in (m'', Op (OpString s) epl el' rg)
 translateEXPRESSION m (List el rg) =
     let (m', el') = mapAccumL translateEXPRESSION m el
     in (m', List el' rg)
 translateEXPRESSION m e = (m, e)
 
--- | Retranslate CAS EXPRESSION back
+-- | Retranslate CAS EXPRESSION back, we do not allow OPNAMEs as OpIds
 revtranslateEXPRESSION :: BMap -> EXPRESSION -> EXPRESSION
-revtranslateEXPRESSION m (Op s epl el rg) =
+revtranslateEXPRESSION m (Op (OpString s) epl el rg) =
     let el' = map (revtranslateEXPRESSION m) el
-        s' = revlookup m s
-    in Op s' epl el' rg
+        oi = revlookup m s
+    in Op oi epl el' rg
 revtranslateEXPRESSION m (List el rg) =
     let el' = map (revtranslateEXPRESSION m) el
     in List el' rg

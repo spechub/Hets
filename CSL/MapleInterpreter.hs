@@ -20,7 +20,7 @@ import Common.Utils (getEnvDef, trimLeft)
 import Common.IOS
 import Common.ResultT
 
-import CSL.AS_BASIC_CSL (EXPRESSION (..))
+import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseResult)
 import CSL.Interpreter
 import CSL.Transformation
@@ -79,24 +79,10 @@ instance VarGen MapleIO where
 -- * Maple syntax functions
 -- ----------------------------------------------------------------------
 
-cslMapleDefaultMapping :: [(String, String)]
-cslMapleDefaultMapping = 
-    let idmapping = map (\ x -> (x, x))
-        ampmapping = map (\ x -> (x, "&" ++ x))
-        possibleIntervalOps = [ "cos", "sin", "tan", "sqrt", "abs", ">", "<="
-                              , ">=", "<", "+", "-", "*", "/"]
-        logicOps = ["and", "or", "impl" ]
-        otherOps = ["factor", "maximize"]
-        specialOp = ("^", "^")
---        specialOp = ("^", "&**")
-    in specialOp : idmapping logicOps
-           ++ idmapping possibleIntervalOps
-                  ++ idmapping otherOps
-
 cslMapleDefaultMapping :: [(OPNAME, String)]
 cslMapleDefaultMapping = 
     let idmapping = map (\ x -> (x, show x))
-        ampmapping = map (\ x -> (x, "&" ++ show x))
+--        ampmapping = map (\ x -> (x, "&" ++ show x))
         possibleIntervalOps = [ OP_mult, OP_div, OP_plus, OP_minus, OP_neg
                               , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
                               , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
@@ -209,7 +195,7 @@ mapleTransS :: String -> MapleIO String
 mapleTransS s = do
   r <- get
   let bm = getBMap r
-      (bm', s') = lookupOrInsert bm s
+      (bm', s') = lookupOrInsert bm $ Left s
   put r { getBMap = bm' }
   return s'
 

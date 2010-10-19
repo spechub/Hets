@@ -120,24 +120,24 @@ toE = fromJust . parseResult
 -- parses a single extparam range such as: "I>0, J=1"
 toEP :: String -> [EXTPARAM]
 toEP [] = []
-toEP inp = case runParser (Lexer.separatedBy extparam pComma >-> fst) "" "" inp of
+toEP s = case runParser (Lexer.separatedBy extparam pComma >-> fst) "" "" s of
              Left e -> error $ show e
-             Right s -> s
+             Right s' -> s'
 
 
 -- parses lists of extparam ranges such as: "I>0, J=1; ....; I=10, J=1"
 toEPL :: String -> [[EXTPARAM]]
 toEPL [] = []
-toEPL inp = case runParser
+toEPL s = case runParser
              (Lexer.separatedBy
-              (Lexer.separatedBy extparam pComma >-> fst) pSemi >-> fst) "" "" inp of
+              (Lexer.separatedBy extparam pComma >-> fst) pSemi >-> fst) "" "" s of
               Left e -> error $ show e
-              Right s -> s
+              Right s' -> s'
 
 toEP1 :: String -> EPExp
-toEP1 inp = case runParser extparam "" "" inp of
+toEP1 s = case runParser extparam "" "" s of
              Left e -> error $ show e
-             Right s -> snd $ fromJust $ toEPExp s
+             Right s' -> snd $ fromJust $ toEPExp s'
 
 toEPs :: String -> EPExps
 toEPs = toEPExps . toEP
@@ -305,6 +305,11 @@ let e = toE "sin(x) + 2*cos(y) + x^2"
 w <- ttesdi e r'
 let vss = getA w
 
+-- show value for const x
+runTest (CSL.Interpreter.lookup "x") r' >>= return . pretty
+
+runTest (CSL.Interpreter.eval $ toE "cos(x-x)") r' >>= return . pretty
+
 w' <- ttesd e r' vss
 w' <- ttesd e r' vss
 
@@ -364,7 +369,7 @@ class OpExtractor a where
     extr :: Map.Map String Int -> a -> Map.Map String Int
 
 instance OpExtractor EXPRESSION where
-    extr m (Op op _ l _) = extr (addOp m op) l
+    extr m (Op op _ l _) = extr (addOp m $ show op) l
     extr m (Interval _ _ _) = addOp m "!Interval"
     extr m (Int _ _) = addOp m "!Int"
     extr m (Double _ _) = addOp m "!Double"

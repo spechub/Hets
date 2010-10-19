@@ -22,7 +22,7 @@ import Common.ResultT
 
 import CSL.Reduce_Interface ( evalString, exportExp, connectCAS, disconnectCAS
                             , lookupRedShellCmd, Session (..), cslReduceDefaultMapping)
-import CSL.AS_BASIC_CSL (EXPRESSION (..))
+import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseResult)
 import CSL.Transformation
 import CSL.Interpreter
@@ -231,7 +231,7 @@ redcTransS :: String -> RedcIO String
 redcTransS s = do
   r <- get
   let bm = getBMap r
-      (bm', s') = lookupOrInsert bm s
+      (bm', s') = lookupOrInsert bm $ Left s
   put r { getBMap = bm' }
   return s'
 

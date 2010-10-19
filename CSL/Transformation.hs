@@ -24,6 +24,7 @@ import Prelude hiding (lookup)
 
 import CSL.Interpreter
 import CSL.AS_BASIC_CSL
+import CSL.Parse_AS_Basic
 import Common.Id (nullRange, Token(..))
 
 -- ----------------------------------------------------------------------
@@ -64,23 +65,24 @@ instance SExp APFloat where
     toExp f = Double f nullRange
 
 instance SExp String where
-    toExp s = Op s [] [] nullRange
+    toExp s = mkAndAnalyzeOp s [] [] nullRange
 
 instance SExp a => SExp (String, a) where
-    toExp (s, x) = Op s [] [toExp x] nullRange
+    toExp (s, x) = mkAndAnalyzeOp s [] [toExp x] nullRange
 
 instance (SExp a, SExp b) => SExp (String, a, b) where
-    toExp (s, x, y) = Op s [] [toExp x, toExp y] nullRange
+    toExp (s, x, y) = mkAndAnalyzeOp s [] [toExp x, toExp y] nullRange
 
 instance (SExp a, SExp b, SExp c) => SExp (String, a, b, c) where
-    toExp (s, x, y, z) = Op s [] [toExp x, toExp y, toExp z] nullRange
+    toExp (s, x, y, z) =
+        mkAndAnalyzeOp s [] [toExp x, toExp y, toExp z] nullRange
 
 
 -- strangely, ghc says that we would have overlapping instances with 
 -- instance SExp a => SExp (String, a), but I can't see it. I introduce
 -- this strange looking instance
 instance (SExp a) => SExp ((), String, [a]) where
-    toExp (_, s, l) = Op s [] (map toExp l) nullRange
+    toExp (_, s, l) = mkAndAnalyzeOp s [] (map toExp l) nullRange
 
 -- | A class to construct CMDs from simple tuple structures
 class SCmd a where
@@ -193,13 +195,17 @@ replaceIntervals' e =
              return $ List nelms rg
       _ -> return e
 
+-- TODO: add support for function terms
 -- | Replaces all occurrences of defined variables by their lookuped terms
 substituteDefined :: ( VarGen c, CalculationSystem c)
                     => EXPRESSION -> StateT VCCache c EXPRESSION
 substituteDefined x =
     case x of
-      Op s epl args rg -> do
-             b <- isDefined s
+      Op oi epl args rg -> do
+             let (s, isOpName) = case oi of
+                                   OpId _ -> ("", True)
+                                   OpString os -> (os, False)
+             b <- if isOpName then return False else isDefined s
              nargs <- mapM substituteDefined args
              if b && null args
               then do
@@ -212,7 +218,7 @@ substituteDefined x =
                         return x
                   Just e -> return e
                   _ -> error "substituteDefined: defined constant not found"
-              else return $ Op s epl nargs rg
+              else return $ Op oi epl nargs rg
       List elms rg -> do
              nelms <- mapM substituteDefined elms
              return $ List nelms rg
@@ -285,15 +291,15 @@ transRepeatCondition :: VarGen m => EXPRESSION -- ^ The repeat condition
                         --  condition
 transRepeatCondition c =
     case c of
-      Op "convergence" [] [lt, tm] _ -> do
+      Op (OpId OP_convergence) [] [lt, tm] _ -> do
              v1 <- genVar
              v2 <- genVar
              return ([(v1, v2, tm)], transConvergence v1 v2 lt)
-      Op o [] al rg
-          | elem o ["and", "or"] -> do
+      Op oi@(OpId on) [] al rg
+          | elem on [OP_and, OP_or] -> do
              l <- mapM transRepeatCondition al
              let (ssel, el) = unzip l
-             return (concat ssel, Op o [] el rg)
+             return (concat ssel, Op oi [] el rg)
           | otherwise -> return ([], c)
       _ -> return ([], c)
 
