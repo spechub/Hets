@@ -22,6 +22,11 @@ import Logic.Prover
 import Logic.ExtSign
 import Logic.Grothendieck
 
+import Common.ExtSign
+import Common.Id
+import Common.LibName
+import Common.Result
+import Common.AS_Annotation
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -30,8 +35,9 @@ import HolLight.Logic_HolLight
 import Driver.Options
 
 import Data.Map as Map
+import Data.Set as Set
 
-data SenInfo = SenInfo Int Bool [Int] String
+data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
 
 term_sig :: Term -> Sign
 term_sig (Var s _) = Sign (Set.singleton s)
@@ -40,21 +46,21 @@ term_sig (Abs t1 t2) = sigUnion (term_sig t1) (term_sig t2)
 term_sig _ = Sign Set.empty
 
 anaHol2HetsFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-directHolParsing _ fp = do
+anaHol2HetsFile _ fp = do
   s <- readFile fp
-  let s' = (read s) :: [(Term,SenInfo)] in
-  let (dg,lnks,m) = foldl (\(t,SenInfo id axiom inc name) (dg,ls,mp) ->
-                   let gt = G_theory HolLight (makeExtSign HolLight (term_sig t)) startSigId (toThSens [makeNamed name (Sentence name t Nothing)]) startThId in
-                   let (n,dg') = insGTheory dg (mkName (mkSimpleId name)) DGEmpty gt in
-                   (dg1',ls++(map (\i -> (i,n)) inc),Map.insert id (n) mp)
-                 ) (emptyDG,[],Map.emoty) s' in
-  let dg' = foldl (\(i,n) d ->
-            let s = case Map.lookup i m
-                      Just n1 -> n1
+  let s' = (read s) :: [(Term,SenInfo)]
+  let (dg,lnks,m) = foldl (\(dg,ls,mp) (t,SenInfo id axiom inc name) ->
+                     let gt = G_theory HolLight (makeExtSign HolLight (term_sig t)) startSigId (toThSens [makeNamed name (Sentence name t Nothing)]) startThId in
+                     let (n,dg') = insGTheory dg (NodeName (mkSimpleId name) "" 0 [])  DGEmpty gt in
+                   (dg',ls++(Prelude.map (\i -> (i,n)) inc),Map.insert id (n) mp)
+                 ) (emptyDG,[],Map.empty) s'
+  let dg' = foldl (\d (i,n) ->
+            let n1 = case Map.lookup i m of
+                      Just s -> s
                       Nothing -> error "encountered internal error while importing data exported from Hol Light" in
-            let incl = subsig_inclusion HolLight (plainSign (getSig n1)) (plainSign (getSig n)) in
+            let incl = subsig_inclusion HolLight (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') in
             let gm = case maybeResult incl of
-                     Nothgin -> error "encountered an internal error importing data exported from Hol Light"
+                     Nothing -> error "encountered an internal error importing data exported from Hol Light"
                      Just inc -> gEmbed $ mkG_morphism HolLight inc in
             insLink d gm globalDef TEST (getNode n1) (getNode n)
 

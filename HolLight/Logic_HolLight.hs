@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for HolLight
@@ -24,16 +24,13 @@ module HolLight.Logic_HolLight where
 import Logic.Logic
 
 import HolLight.Sign (Sign,emptySig,isSubSig)
-import HolLight.Sentence (Sentence)
+import HolLight.Sentence (Sentence) 
 import HolLight.ATC_HolLight ()
-import HolLight.Parse_AS_Basic
-
 
 import Common.DefaultMorphism
+import Common.Id
 
 type HolLightMorphism = DefaultMorphism Sign
-
-data HolText = HolText String
 
 -- | Lid for HolLight logic
 data HolLight = HolLight deriving Show
@@ -43,19 +40,20 @@ instance Language HolLight where
         ++ "for more information please refer to\n"
         ++ "http://www.cl.cam.ac.uk/~jrh13/hol-light/"
 
-instance Syntax HolLight BasicSpec () () where
+instance GetRange Sentence
+
+instance Syntax HolLight () () () where
     parse_basic_spec HolLight = Nothing --Just basicSpec
     -- default implementation should be sufficient
 
-instance Sentences HolLight () Sentence () () Sign HolLightMorphism () () where
-    map_sen HolLight _ s = s
-    --print_named HolLight = printNamedSen
+instance Sentences HolLight Sentence Sign HolLightMorphism () where
+    map_sen HolLight _ s = return s
     --other default implementations should be sufficient
 
 -- | Instance of Logic for propositional logc
 instance Logic HolLight
     ()                        -- sublogic
-    HolText                   -- basic_spec
+    ()                        -- basic_spec
     Sentence                  -- sentence
     ()                        -- symb_items
     ()                        -- symb_map_items
@@ -70,7 +68,7 @@ instance Logic HolLight
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis HolLight
-    HolText                  -- basic_spec
+    ()                      -- basic_spec
     Sentence                 -- sentence
     ()                       -- symb_items
     ()                       -- symb_map_items
@@ -84,4 +82,4 @@ instance StaticAnalysis HolLight
            is_subsig HolLight = isSubSig
            subsig_inclusion HolLight = defaultInclusion
 
-instance LogicFram HolLight () HolText Sentence () () Sign HolLightMorphism () () ()
+instance LogicFram HolLight () () Sentence () () Sign HolLightMorphism () () ()

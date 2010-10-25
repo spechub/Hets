@@ -17,18 +17,24 @@ Definition of sentences for HolLight logic
 -}
 module HolLight.Sentence where
 
+import Common.Doc
+import Common.DocUtils
+
 data Sentence = Sentence {
   name :: String,
   term :: Term,
   proof :: Maybe HolProof
   } deriving (Eq, Ord, Show)
 
+instance Pretty Sentence where
+  pretty = pretty . show
+
 data HolProof = NoProof deriving (Eq, Ord, Show)
 
-data HolType = TyVar String | TyApp String [HolType] deriving (Eq, Ord, Show)
+data HolType = TyVar String | TyApp String [HolType] deriving (Eq, Ord, Show, Read)
 
 data Term = Var String HolType
      | Const String HolType
      | Comb Term Term
-     | Abs Term Term deriving (Eq, Ord, Show)
+     | Abs Term Term deriving (Eq, Ord, Show, Read)
 
