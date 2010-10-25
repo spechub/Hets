@@ -25,7 +25,7 @@ import Logic.Logic
 
 import HolLight.Sign (Sign,emptySig,isSubSig)
 import HolLight.Sentence (Sentence)
-import HolLight.ATC_QBF ()
+import HolLight.ATC_HolLight ()
 import HolLight.Parse_AS_Basic
 
 import Common.DefaultMorphism (DefaultMorphism)
