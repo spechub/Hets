@@ -9,7 +9,7 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of sentences for HolLight logic
-  
+
   Ref.
 
   <http://www.cl.cam.ac.uk/~jrh13/hol-light/>
@@ -21,7 +21,7 @@ data Sentence = Sentence {
   name :: String,
   term :: Term,
   proof :: Maybe HolProof
-} deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show)
 
 data HolProof = NoProof deriving (Eq, Ord, Show)
 

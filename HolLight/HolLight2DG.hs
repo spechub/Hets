@@ -22,6 +22,7 @@ import Logic.Prover
 import Logic.ExtSign
 import Logic.Grothendieck
 
+
 import HolLight.Sign
 import HolLight.Sentence
 import HolLight.Logic_HolLight
@@ -45,19 +46,21 @@ directHolParsing _ fp = do
   let (dg,lnks,m) = foldl (\(t,SenInfo id axiom inc name) (dg,ls,mp) ->
                    let gt = G_theory HolLight (makeExtSign HolLight (term_sig t)) startSigId (toThSens [makeNamed name (Sentence name t Nothing)]) startThId in
                    let (n,dg') = insGTheory dg (mkName (mkSimpleId name)) DGEmpty gt in
-                   (dg1',ls++(map (\i -> (i,n)) inc),Map.insert id (n) mp) 
+                   (dg1',ls++(map (\i -> (i,n)) inc),Map.insert id (n) mp)
                  ) (emptyDG,[],Map.emoty) s' in
-  let dg' = foldl (\(i,n) d -> 
+  let dg' = foldl (\(i,n) d ->
             let s = case Map.lookup i m
                       Just n1 -> n1
                       Nothing -> error "encountered internal error while importing data exported from Hol Light" in
             let incl = subsig_inclusion HolLight (plainSign (getSig n1)) (plainSign (getSig n)) in
             let gm = case maybeResult incl of
-                     Nothgin -> error "encountered an internal error importing data exported from Hol Light" 
+                     Nothgin -> error "encountered an internal error importing data exported from Hol Light"
                      Just inc -> gEmbed $ mkG_morphism HolLight inc in
             insLink d gm globalDef TEST (getNode n1) (getNode n)
 
            ) dg lnks
   let ln = emptyLibName fp
       lib = Map.singleton ln $
-              computeDGraphTheories Map.empty dg in
+              computeDGraphTheories Map.empty dg
+  return $ Just (ln, lib)
+

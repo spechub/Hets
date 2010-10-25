@@ -14,14 +14,12 @@ Parser for abstract syntax for propositional logic
   <http://en.wikipedia.org/wiki/Propositional_logic>
 -}
 
-module HolLight.Parse_AS_Basic
-  ( basicSpec                      -- Parser for basic specs
-  ) where
+module HolLight.Parse_AS_Basic where
 
 import qualified Common.AnnoState as AnnoState
 
 data BasicSpec = BasicSpec
 
-basicSpec :: AnnoState.AParser st AS_BASIC.BASICSPEC
-basicSpec = error "not implemented"
+--basicSpec :: AnnoState.AParser st AS_BASIC.BASIC_SPEC
+--basicSpec = error "not implemented"
 

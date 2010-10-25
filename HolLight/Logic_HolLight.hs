@@ -28,9 +28,10 @@ import HolLight.Sentence (Sentence)
 import HolLight.ATC_HolLight ()
 import HolLight.Parse_AS_Basic
 
-import Common.DefaultMorphism (DefaultMorphism)
 
-type HolLightMorphism = DefaultMorphim Sign
+import Common.DefaultMorphism
+
+type HolLightMorphism = DefaultMorphism Sign
 
 data HolText = HolText String
 
@@ -42,8 +43,8 @@ instance Language HolLight where
         ++ "for more information please refer to\n"
         ++ "http://www.cl.cam.ac.uk/~jrh13/hol-light/"
 
-instance Syntax HolLight BasicSpec () ()
-    parse_basic_spec HolLight = Just basicSpec
+instance Syntax HolLight BasicSpec () () where
+    parse_basic_spec HolLight = Nothing --Just basicSpec
     -- default implementation should be sufficient
 
 instance Sentences HolLight () Sentence () () Sign HolLightMorphism () () where
@@ -52,7 +53,7 @@ instance Sentences HolLight () Sentence () () Sign HolLightMorphism () () where
     --other default implementations should be sufficient
 
 -- | Instance of Logic for propositional logc
-instance Logic QBF
+instance Logic HolLight
     ()                        -- sublogic
     HolText                   -- basic_spec
     Sentence                  -- sentence
@@ -68,7 +69,7 @@ instance Logic QBF
       empty_proof_tree _ = ()
 
 -- | Static Analysis for propositional logic
-instance StaticAnalysis QBF
+instance StaticAnalysis HolLight
     HolText                  -- basic_spec
     Sentence                 -- sentence
     ()                       -- symb_items
@@ -81,6 +82,6 @@ instance StaticAnalysis QBF
            --basic_analysis HolLight = Just basicHolAnalysis
            empty_signature HolLight = emptySig
            is_subsig HolLight = isSubSig
-           default_inclusion HolLight = defaultInclusion
+           subsig_inclusion HolLight = defaultInclusion
 
 instance LogicFram HolLight () HolText Sentence () () Sign HolLightMorphism () () ()
