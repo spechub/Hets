@@ -3,49 +3,49 @@
   <DGNode name="s__IU1" refname="s" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.29">i</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.29">sort i</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s__PU1" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.14">p</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.14">sort p</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s" refname="s" relxpath="/">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.39">s</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.39">sort s</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__IU1" refname="v" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.28">j</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.28">sort j</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__PU1" refname="v" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.13">r</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.13">sort r</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__S" refname="v" relxpath="/Source">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.39">p</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.39">sort p</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__T" refname="v" relxpath="/Target">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.51">q</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.51">sort q</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__PU1" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.15">p2</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.15">sort p2</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1V" refname="s" relxpath="/Parameters/Union/Spec[1]">
@@ -55,7 +55,7 @@
   <DGNode name="s2__A1A1" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.35">t</Symbol>
+      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.35">sort t</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1" refname="s2" relxpath="/Actuals/Spec[1]">
@@ -96,8 +96,8 @@
     <Type>GlobalDef</Type>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>p</Symbol>
-        <Symbol>q</Symbol>
+        <Symbol>sort p</Symbol>
+        <Symbol>sort q</Symbol>
       </map>
     </GMorphism>
   </DGLink>
@@ -121,8 +121,8 @@
     <ProofBasis linkref="16" />
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>r</Symbol>
-        <Symbol>t</Symbol>
+        <Symbol>sort r</Symbol>
+        <Symbol>sort t</Symbol>
       </map>
     </GMorphism>
   </DGLink>
@@ -132,8 +132,8 @@
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>r</Symbol>
-        <Symbol>t</Symbol>
+        <Symbol>sort r</Symbol>
+        <Symbol>sort t</Symbol>
       </map>
     </GMorphism>
   </DGLink>
@@ -144,8 +144,8 @@
     <ProofBasis linkref="17" />
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>p</Symbol>
-        <Symbol>q</Symbol>
+        <Symbol>sort p</Symbol>
+        <Symbol>sort q</Symbol>
       </map>
     </GMorphism>
   </DGLink>
@@ -155,8 +155,8 @@
     <Rule>local-inference</Rule>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>p</Symbol>
-        <Symbol>q</Symbol>
+        <Symbol>sort p</Symbol>
+        <Symbol>sort q</Symbol>
       </map>
     </GMorphism>
   </DGLink>
@@ -168,8 +168,8 @@
     <Type>GlobalDef</Type>
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>r</Symbol>
-        <Symbol>t</Symbol>
+        <Symbol>sort r</Symbol>
+        <Symbol>sort t</Symbol>
       </map>
     </GMorphism>
   </DGLink>
@@ -190,8 +190,8 @@
   <VIEW-DEFN name="v" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.6" formal-param="v__PU1" source="v__S" target="v__T">
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
-        <Symbol>p</Symbol>
-        <Symbol>q</Symbol>
+        <Symbol>sort p</Symbol>
+        <Symbol>sort q</Symbol>
       </map>
     </GMorphism>
   </VIEW-DEFN>
