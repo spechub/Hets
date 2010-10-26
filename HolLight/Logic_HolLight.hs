@@ -23,8 +23,9 @@ module HolLight.Logic_HolLight where
 
 import Logic.Logic
 
-import HolLight.Sign (Sign,emptySig,isSubSig)
-import HolLight.Sentence (Sentence) 
+import HolLight.Sign
+import HolLight.Sublogic
+import HolLight.Sentence (Sentence)
 import HolLight.ATC_HolLight ()
 
 import Common.DefaultMorphism
@@ -34,6 +35,7 @@ type HolLightMorphism = DefaultMorphism Sign
 
 -- | Lid for HolLight logic
 data HolLight = HolLight deriving Show
+
 
 instance Language HolLight where
     description _ = "Hol Light\n"
@@ -50,9 +52,41 @@ instance Sentences HolLight Sentence Sign HolLightMorphism () where
     map_sen HolLight _ s = return s
     --other default implementations should be sufficient
 
+-- | Sublogics
+instance SemiLatticeWithTop HolLightSL where
+    join _ _ = Top
+    top = Top
+
+instance MinSublogic HolLightSL () where
+     minSublogic _ = Top
+
+instance MinSublogic HolLightSL Sign where
+    minSublogic _ = Top
+
+instance SublogicName HolLightSL where
+    sublogicName = show
+
+instance MinSublogic HolLightSL HolLightMorphism where
+    minSublogic _ = Top
+
+instance MinSublogic HolLightSL Sentence where
+    minSublogic _ = Top
+
+instance ProjectSublogic HolLightSL () where
+    projectSublogic _ = id
+
+instance ProjectSublogic HolLightSL Sign where
+    projectSublogic _ = id
+
+instance ProjectSublogic HolLightSL HolLightMorphism where
+    projectSublogic _ = id
+
+instance ProjectSublogicM HolLightSL () where
+    projectSublogicM _ = Just
+
 -- | Instance of Logic for propositional logc
 instance Logic HolLight
-    ()                        -- sublogic
+    HolLightSL                -- sublogic
     ()                        -- basic_spec
     Sentence                  -- sentence
     ()                        -- symb_items
@@ -81,5 +115,3 @@ instance StaticAnalysis HolLight
            empty_signature HolLight = emptySig
            is_subsig HolLight = isSubSig
            subsig_inclusion HolLight = defaultInclusion
-
-instance LogicFram HolLight () () Sentence () () Sign HolLightMorphism () () ()

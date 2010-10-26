@@ -17,7 +17,6 @@ Definition of sentences for HolLight logic
 -}
 module HolLight.Sentence where
 
-import Common.Doc
 import Common.DocUtils
 import HolLight.Sign
 
