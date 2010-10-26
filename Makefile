@@ -62,7 +62,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Framework Maude ExtModal CommonLogic CSL QBF Adl
+    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -278,6 +278,9 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs \
     Propositional/Sublogic.hs
 
+HolLight_files = HolLight/Sentence.hs HolLight/Sign.hs \
+                 HolLight/Sublogic.hs
+
 QBF_files = Propositional/Sign.hs QBF/Morphism.hs \
     QBF/AS_BASIC_QBF.hs QBF/Symbol.hs \
     QBF/Sublogic.hs
@@ -329,6 +332,10 @@ Propositional/ATC_Propositional.der.hs: $(Propositional_files) $(GENRULES)
 
 QBF/ATC_QBF.der.hs: $(QBF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(QBF_files)
+
+
+HolLight/ATC_HolLight.der.hs: $(HolLight_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(HolLight_files)
 
 HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(HasCASL_files)
