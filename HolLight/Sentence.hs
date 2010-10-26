@@ -19,6 +19,7 @@ module HolLight.Sentence where
 
 import Common.Doc
 import Common.DocUtils
+import HolLight.Sign
 
 data Sentence = Sentence {
   name :: String,
@@ -31,7 +32,6 @@ instance Pretty Sentence where
 
 data HolProof = NoProof deriving (Eq, Ord, Show)
 
-data HolType = TyVar String | TyApp String [HolType] deriving (Eq, Ord, Show, Read)
 
 data Term = Var String HolType
      | Const String HolType
