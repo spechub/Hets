@@ -43,6 +43,7 @@ import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
 import QBF.Logic_QBF
+import HolLight.Logic_HolLight
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
@@ -83,6 +84,7 @@ logicList =
   , Logic SoftFOL
   , Logic Propositional
   , Logic QBF
+  , Logic HolLight
 #ifdef PROGRAMATICA
   , Logic Haskell
 #endif
