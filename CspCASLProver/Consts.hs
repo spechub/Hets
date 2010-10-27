@@ -340,7 +340,7 @@ quotEqualityS :: String
 quotEqualityS = "quot_equality"
 
 quotientThyS :: String
-quotientThyS = "Quotient"
+quotientThyS = "Quotient_Type"
 
 reflexivityTheoremS :: String
 reflexivityTheoremS = "eq_refl"
