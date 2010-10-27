@@ -600,7 +600,7 @@ anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
 
 anaRestriction :: LogicGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
   -> Result (GMorphism, Maybe GMorphism)
-anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
+anaRestriction lg gSigma gSigma'@(G_sign lid0 sig0 _) opts restr =
   if isStructured opts then return (ide gSigma, Nothing) else
   case restr of
     Hidden rstr pos -> do
@@ -608,10 +608,8 @@ anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
       return (mor, Nothing)
     Revealed (G_symb_map_items_list lid1 sis) pos -> adjustPos pos $ do
       (G_sign lid sigma _, _) <- gSigCoerce lg gSigma (Logic lid1)
-      sigma0 <- coerceSign lid lid1 "" sigma
-      (G_sign lid' sigma' _, Comorphism cid) <-
-          gSigCoerce lg gSigma' (Logic lid1)
-      sigma1 <- coerceSign lid' lid1 "" sigma'
+      sigma0 <- coerceSign lid lid1 "reveal1" sigma
+      sigma1 <- coerceSign lid0 lid1 "reveal2" sig0
       let sys = ext_sym_of lid1 sigma0 -- local env
           sys' = ext_sym_of lid1 sigma1 -- "big" signature
       rmap <- stat_symb_map_items lid1 sis
@@ -619,13 +617,12 @@ anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
            [sy | sy <- Set.toList sys', rsy <-
                        Map.keys rmap, matches lid1 sy rsy]
           {- domain of rmap intersected with sys'
-          domain of rmap should be checked to match symbols from sys' ??? -}
+          rmap is checked by ext_induced_from_morphism below -}
       mor1 <- ext_generated_sign lid1 (sys `Set.union` sys'') sigma1
       let extsig1 = makeExtSign lid1 $ dom mor1
       mor2 <- ext_induced_from_morphism lid1 rmap extsig1
-      mor1' <- coerceMorphism lid1 (targetLogic cid) "" mor1
-      extsig1' <- coerceSign lid1 (sourceLogic cid) "" extsig1
-      return (GMorphism cid extsig1' ind0 mor1' startMorId
+      return (gEmbed2 (G_sign lid1 extsig1 startSigId)
+                      $ G_morphism lid1 mor1 startMorId
              , Just $ gEmbed $ mkG_morphism lid1 mor2)
 
 partitionGmaps :: [G_mapping] -> ([G_mapping], [G_mapping])
