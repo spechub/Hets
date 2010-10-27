@@ -258,10 +258,11 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
   Reduction asp restr ->
    do let sp1 = item asp
           orig = DGRestriction $ Restricted restr
-      (sp1', NodeSig n' gsigma', dg') <-
-        anaSpec addSyms lg ln dg nsig (extName "Restriction" name) opts sp1
-      let gsigma = getMaybeSig nsig
-      (hmor, tmor) <- anaRestriction lg gsigma gsigma' opts restr
+          rname = extName "Restriction" name
+      (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts sp1
+      (NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname
+        $ getRestrLogic restr
+      (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
       {- we treat hiding and revealing differently
       in order to keep the dg as simple as possible -}
       case tmor of
@@ -561,6 +562,12 @@ anaRenaming :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
   -> Result GMorphism
 anaRenaming lg lenv gSigma opts (Renaming ren pos) =
       foldM (anaRen lg opts lenv pos) (ide gSigma) ren
+
+getRestrLogic :: RESTRICTION -> AnyLogic
+getRestrLogic restr = case restr of
+  Hidden (G_symb_list (G_symb_items_list lid _) : _) _ -> Logic lid
+  Revealed (G_symb_map_items_list lid _) _ -> Logic lid
+  _ -> error "getRestrLogic"
 
 -- analysis of restrictions
 anaRestr :: LogicGraph -> G_sign -> Range -> GMorphism -> G_hiding
@@ -924,8 +931,7 @@ getSpecAnnos pos a = do
   return (sanno1, impliesA)
 
 -- only consider addSyms for the first spec
-anaExtension
-    :: LogicGraph -> HetcatsOpts -> LibName -> Range
+anaExtension :: LogicGraph -> HetcatsOpts -> LibName -> Range
     -> ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
     -> (NodeName, Annoted SPEC)
     -> Result ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
