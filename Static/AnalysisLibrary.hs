@@ -416,9 +416,19 @@ anaViewDefn lgraph ln libenv dg opts vn gen vt gsis pos = do
     then plain_error (View_defn vn gen' vt' gsis pos, dg'', libenv)
                     (alreadyDefined $ tokStr vn) pos
     else do
-      (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS (Logic lidT)
-      tmor <- gEmbedComorphism imor gsigmaS
-      emor <- fmap gEmbed $ anaGmaps lgraph opts pos gsigmaS' gsigmaT gsis
+      let (tsis, hsis) = partitionGmaps gsis
+      (gsigmaS', tmor) <- if null tsis then do
+          (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS (Logic lidT)
+          tmor <- gEmbedComorphism imor gsigmaS
+          return (gsigmaS', tmor)
+        else do
+          mor <- anaRenaming lgraph allparams gsigmaS opts (Renaming tsis pos)
+          let gsigmaS'' = cod mor
+          (gsigmaS', imor) <- gSigCoerce lgraph gsigmaS'' (Logic lidT)
+          tmor <- gEmbedComorphism imor gsigmaS''
+          fmor <- comp mor tmor
+          return (gsigmaS', fmor)
+      emor <- fmap gEmbed $ anaGmaps lgraph opts pos gsigmaS' gsigmaT hsis
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
           voidView = nodeS == nodeT && isHomInclusion gmor

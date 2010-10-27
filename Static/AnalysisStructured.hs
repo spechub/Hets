@@ -20,6 +20,7 @@ module Static.AnalysisStructured
     , isStructured
     , anaRenaming
     , anaRestriction
+    , partitionGmaps
     , homogenizeGM
     , anaGmaps
     , insGSig
@@ -627,6 +628,13 @@ anaRestriction lg gSigma gSigma'@(G_sign _lid0 _sig0 ind0) opts restr =
       return (GMorphism cid extsig1' ind0 mor1' startMorId
              , Just $ gEmbed $ mkG_morphism lid1 mor2)
 
+partitionGmaps :: [G_mapping] -> ([G_mapping], [G_mapping])
+partitionGmaps l = let
+  (hs, rs) = span (\ sm -> case sm of
+    G_symb_map _ -> True
+    G_logic_translation _ -> False) $ reverse l
+  in (reverse rs, reverse hs)
+
 anaGmaps :: LogicGraph -> HetcatsOpts -> Range -> G_sign -> G_sign
   -> [G_mapping] -> Result G_morphism
 anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
@@ -885,16 +893,15 @@ applyGS lg (ExtGenSig (GenSig nsigI _ gsigmaP) nsigB) args = do
       mor4 <- coerceMorphism gid (targetLogic bid) "applyGS3" mor3
       return (gsig, GMorphism bid sigB' indB mor4 mId)
 
-homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
-             -> Result G_symb_map_items_list
+homogenizeGM :: AnyLogic -> [G_mapping] -> Result G_symb_map_items_list
 homogenizeGM (Logic lid) gsis =
   foldM homogenize1 (G_symb_map_items_list lid []) gsis
   where
   homogenize1 (G_symb_map_items_list lid2 sis) sm = case sm of
-    Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1) -> do
+    G_symb_map (G_symb_map_items_list lid1 sis1) -> do
          sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
-    Syntax.AS_Structured.G_logic_translation lc ->
+    G_logic_translation lc ->
          fail $ "translation not supported by " ++ showDoc lc ""
 
 -- | check if structured analysis should be performed
