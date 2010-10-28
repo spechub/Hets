@@ -15,7 +15,7 @@ Each Maude module generates two nodes in the development
 graph. The first one contains the theory equipped with the usual
 loose semantics. The second one, linked
 to the first one with a free definition link (whose signature morphism
-is detailed below), contains the same signature but
+is detailed in Section \ref{sec:free}), contains the same signature but
 no local axioms and stands for the free models of the theory.
 Note that Maude theories only generate one node, since their initial
 semantics is not used by Maude specifications.
@@ -23,7 +23,7 @@ semantics is not used by Maude specifications.
 The model class of parameterized modules
 consists of free extensions of the models of their parameters, that are
 persistent on sorts, but not on kinds. This notion of freeness has been 
-studied in \cite{BouhoulaJM00} under assumptions like existence of top sorts for kinds
+studied in \cite{BouhoulaJouannaudMeseguer00} under assumptions like existence of top sorts for kinds
 and sorted variables in formulas; our results hold under similar
 hypotheses. We use non-persistent free links to link these modules with
 their corresponding theories.
@@ -31,7 +31,7 @@ their corresponding theories.
 \subsubsection{Module expressions}\label{subsec:me}
 
 Maude module expressions allow to combine and modify the information
-contained in Maude modules.
+contained in Maude modules:
 
 \begin{itemize}
 
@@ -40,7 +40,7 @@ When the module expression is a simple identifier the development
 graph remains unchanged.
 
 \item
-The summation expression of the module expressions $\mathit{ME}_1$ and
+The summation of the module expressions $\mathit{ME}_1$ and
 $\mathit{ME}_2$ generates a new node in the development graph
 $(\mathit{ME}_1 + \mathit{ME}_2)$ with
 the union of the information in both summands. A definition link
@@ -48,7 +48,8 @@ is also created between the original expressions and the resulting one.
 
 \item
 The renaming expression $\mathit{ME} * (R)$ creates a morphism with
-the information given in $R$ that will be used as to label the link.
+the information given in $R$ that will be used to label the link between
+the node standing for the module expression and the node importing it.
 
 \end{itemize}
 
@@ -56,14 +57,14 @@ the information given in $R$ that will be used as to label the link.
 
 As explained above, each Maude module generates two nodes in the development
 graph;
-when importing a module, we will select the node used depending on the
+when importing a module, we will select between these nodes depending on the
 chosen importation mode:
 \begin{itemize}
 
 \item
 The \verb"protecting" mode generates a non-persistent free link between
 the current node and the node standing for the free semantics of the
-included one. Note that we used the same links for the parameters in
+included one. We use the same links for the parameters in
 parameterized modules.
 
 \item
@@ -84,14 +85,18 @@ Maude views have a theory as source and either a module or a theory
 as target. All the sorts and the operators declared in the source theory
 have to be mapped to sorts and operators in the target.
 
-A particular case of mapping between operators is the mapping between
-terms, that has the general form $\verb"op" \; e \; \verb"to term" \; t$
-where $e$ is a term consisting of a 
-single operator applied to variables declared either on-the-fly or with
-variable declarations in the same view and the target term is any term
-with variables, those in the source $e$ in the corresponding sorts
-resulting from the mapping.
+As seen in Section \ref{subsec:views}, a particular case of mapping
+between operators is the mapping between
+terms, that has the general form $\verb"op" \; e \; \verb"to term" \; t$.
+%where $e$ is a term consisting of a 
+%single operator applied to variables declared either on-the-fly or with
+%variable declarations in the same view and the target term is any term
+%with variables, those in the source $e$ in the corresponding sorts
+%resulting from the mapping.
 Since this shortcut allows to map operators with different profiles,
+in these cases it generates an auxiliary node with the signature of the
+target specification extended by an extra operator of the appropriate arity;
+this node will be used as new target.
 
 Views generate a theorem
 link between the theory and the module satisfying it.
@@ -119,10 +124,10 @@ Thus, the sort morphism is extended with these new renamings.
 
 %%%%%% PAPER
 
-\subsubsection{Development graph: An example}
+\subsubsection{Development graph: An example\label{subsubsec:dg_ex}}
 
 We illustrate how to build the development graph with an example. Consider
-the following Maude specifications:
+the following Maude specification:
 
 {\codesize
 \begin{verbatim}
@@ -161,24 +166,29 @@ generate this primed node.
 of \verb"M1" and \verb"M2", importing the latter with a renaming; this new
 node, since it is imported in \verb"extending" mode, uses a link with the
 \textsf{PCons?} annotation.
-\item There is a theorem link between \verb"T" and the free (here: initial) model of
-\verb"M". This link is labeled with the mapping defined in the view \verb"V".
+\item There is a theorem link between \verb"T" and the free (here, initial) model of
+\verb"M". This link is labeled with the mapping defined in the view \verb"V",
+namely \verb"op _._ to _+_ .".
 \item The parameterized module \verb"M3" includes the theory of its parameter
 with a renaming, that qualifies the sort. Note that these nodes are connected
-by means of a non-persistent freeness link.
+by means of a non-persistent free link.
 \end{itemize}
 
 It is straightforward to show:
 \begin{theorem}
 The translation of Maude modules into development graphs is
-semantics-preserving. %\ednote{Undefined semantics-preserving}
+semantics-preserving.
 \end{theorem}
 
 Once the development graph is built, we can apply the (logic
 independent) calculus rules that reduce global theorem links to local
 theorem links, which are in turn discharged by local theorem proving
 \cite{MAH-05-a}.  This can be used to prove Maude views, like e.g.\
-``natural numbers are a total order.''  We show in the next
+``natural numbers are a total order.'' For example, we could prove
+the view \verb"V" above
+
+
+We show in the next
 section how we deal with the freeness constraints imposed by free 
 definition links.
 
@@ -206,7 +216,7 @@ translation $\Phi(\Sigma)$ of $\Sigma$ to \CASL as follows:
 
 \begin{itemize}
 
- \item $S^\#$ unites with the sorts of $\Phi(\Sigma)$ the set 
+ \item $S^\#$ unites the sorts of $\Phi(\Sigma)$ and the set 
        $\{[s] \mid s \in Sorts(\Sigma)\}$;
 
  \item $\leq^\#$ extends the subsort relation $\leq$ with pairs
@@ -243,9 +253,9 @@ correspond to heterogeneous links from Maude to \CASL.}
 \begin{figure}
 $$
 \xymatrix{
-M \ar@{=>}[rr]_{n.p.free}^{\sigma} \ar@{=>}[d]& & N \ar@{=>}[dd]\\
+M \ar@{=>}[rr]_{n.p.\mathit{free}}^{\sigma} \ar@{=>}[d]& & N \ar@{=>}[dd]\\
 M'\ar@{=>}[d]^{\iota_N}& & \\
-M''\ar@{=>}[r]_{free}^{\sigma^\#} & K \ar@{=>}[r]_{hide}^{\iota_n} & N'
+M''\ar@{=>}[r]_{\mathit{free}}^{\sigma^\#} & K \ar@{=>}[r]_{\mathit{hide}}^{\iota_n} & N'
 }
 $$
 \caption{Normalization of Maude free links}\label{nf}
@@ -277,21 +287,22 @@ Extensions of theories in Horn form are monomorphic.
 \end{fact}
 
 Given a free definition link $\flinka{M}{\sigma}{N}$, with 
-$\sigma:\Sigma\rightarrow \Sigma^N$ such that $Th(M)$ is in Horn 
+$\sigma:\Sigma\rightarrow \Sigma^N$ such that $\mathit{Th}(M)$ is in Horn 
 form, replace it with 
 \xymatrix{
-M \ar@{=>}[r]^{incl} &
-K \ar@{=>}[r]^{incl}_{hide} &
+M \ar@{=>}[r]^{\mathit{incl}} &
+K \ar@{=>}[r]^{\mathit{incl}}_{\mathit{hide}} &
 N'
-}, where $N'$ has the same signature as $N$, $incl$ denotes inclusions and 
+}, where $N'$ has the same signature as $N$, $\mathit{incl}$ denotes inclusions and 
 the node $K$ is constructed as follows. 
 
 The signature $\Sigma^K$ consists of the signature $\Sigma^M$ disjointly 
 united with a copy of $\Sigma^M$, denoted $\iota(\Sigma_M)$ which makes all function symbols total 
 (let us denote $\iota(x)$ the corresponding symbol in this copy for each
 symbol $x$ from the signature $\Sigma^M$) and augmented with new operations 
-$h: \iota(s) \rightarrow ?s$, for any sort $s$ of $\Sigma^M$ and 
-$make_s:s\rightarrow \iota(s)$, for any sort $s$ of the source
+$h: \iota(s) \rightarrow? \, s$, for any sort $s$ of $\Sigma^M$
+%(and $\to?$ indicating it is a partial function)
+and $\mathit{make}_s:s\rightarrow \iota(s)$, for any sort $s$ of the source
 signature $\Sigma$ of the morphism $\sigma$  labelling the free definition link.
 
 The axioms $\psi^K$ of the node $K$ consist of:
@@ -302,7 +313,7 @@ The axioms $\psi^K$ of the node $K$ consist of:
 sentences imposing the bijectivity of \textit{make};
 
 \item axiomatization of the sorts in $\iota(\Sigma_M)$ as free types
-with all operations as constructors, including $make$ for the sorts
+with all operations as constructors, including $\mathit{make}$ for the sorts
 in $\iota(\Sigma)$;
 
 \item homomorphism conditions for $h$:
@@ -316,9 +327,9 @@ $$\iota(p)(t_1, \dots, t_n) \Rightarrow p(h(t_1), \dots, h(t_n))$$
 
 $$\forall y : s . \exists x:\iota(s) . h(x) \EEQ y$$
 
-\item a second-order formula saying that the kernel of $h$ is the least
-partial predicative congruence\footnote
-{A partial predicative congruence consists of a symmetric 
+\item a second-order formula saying that the kernel of $h$ ($\mathit{ker}(h)$)
+is the least partial predicative congruence\footnote
+{A \emph{partial predicative congruence} consists of a symmetric 
 and transitive binary relation for each sort and a relation
 of appropriate type for each predicate symbol.} satisfying
 $Th(M)$. This is done by quantifying over a predicate symbol for each sort
@@ -341,7 +352,7 @@ where $\mathit{symmetry}$ stands for
 $$\bigwedge_{s\in Sorts(\Sigma^M)} \forall x:{\iota(s)},y:{\iota(s)}.P_s(x,y)\implies P_s(y, x),$$
 $\mathit{transitivity}$ stands for
 $$\bigwedge_{s\in Sorts(\Sigma^M)} \forall x:{\iota(s)},y:{\iota(s)},z:{\iota(s)}.P_s(x, y)\land P_s(y, z)\implies P_s(x, z),$$
-$\mathit{congruence}$ stands for
+$\mathit{congruence}$ is the conjunction of
 $$
 \begin{array}{l}
 \bigwedge_{f_{w\rightarrow s}\in\Sigma^M} \forall x_1\ldots x_n:{\iota(w)},y_1\ldots y_n:{\iota(w)}\,.\,\,\\
@@ -397,8 +408,8 @@ Let us define the following $\Sigma_K$ model, denoted $k$:
 
 \item on $\iota(\Sigma_M)$, the interpretation of sorts and function symbols 
 is given by the free types axioms (i.e. sorts are interpreted as set of terms, 
-operations $\iota(f)$ map terms $t_1,..t_n$ to the term
-$\iota(f)(t_1,..,t_n)$).  We define interpretation of predicates after defining $h$;
+operations $\iota(f)$ map terms $t_1, \ldots, t_n$ to the term
+$\iota(f)(t_1, \ldots, t_n)$).  We define interpretation of predicates after defining $h$;
 
 \item $make$ assigns to each $x$ the term $make(x)$;
 
@@ -406,16 +417,17 @@ $\iota(f)(t_1,..,t_n)$).  We define interpretation of predicates after defining 
 
  \begin{itemize}
 
-  \item $h(make(x)) = x$, if $x \in n_s$ and $s\in Sorts(\Sigma)$;
+  \item $h(\mathit{make}(x)) = x$, if $x \in n_s$ and $s\in \mathit{Sorts}(\Sigma)$;
 
- \item $h(make(t)) = h(t)$, otherwise;
+ \item $h(\mathit{make}(t)) = h(t)$, otherwise;
 
- \item $h(\iota(f)(t_1,..t_n))$ is defined iff $f(h(t_1), ..h(t_n))$ is defined in $n$
-          and then  $h(\iota(f)(t_1,..t_n)) = f(h(t_1), ..h(t_n))$;
+ \item $h(\iota(f)(t_1, \dots, t_n))$ is defined iff $f(h(t_1), \ldots, h(t_n))$
+       is defined in $n$
+       and then  $h(\iota(f)(t_1, \ldots, t_n)) = f(h(t_1), \ldots, h(t_n))$;
  \end{itemize}
 
 \item for predicates in $\iota(\Sigma_M)$ we define
-         $\iota(p)(t_1,..t_n)$ iff $p(h(t_1),..,h(t_n))$.
+         $\iota(p)(t_1, \ldots, t_n)$ iff $p(h(t_1), \ldots, h(t_n))$.
 
 \end{itemize}
 

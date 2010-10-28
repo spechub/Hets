@@ -110,6 +110,7 @@
 
 \newtheorem{fact}{Fact}
 
+\newcommand{\mi}[1]{\mathit{#1}}
 
 \graphicspath{{images/}}
 
@@ -181,26 +182,33 @@ Maude, \CASL
 \section{Rewriting logic and Maude}\label{sec:maude}
 \input{maude}
 
-\section{Hets}\label{sec:hets}
+\section{\Hets}\label{sec:hets}
 \input{hets}
 
-\section{Relating the Maude and CASL Logics}\label{sec:comoprh}
+\section{Relating the Maude and \CASL logics}\label{sec:comoprh}
 \input{inst}
 
-\section{Building Development Graphs}\label{sec:dg}
+\section{Building development graphs}\label{sec:dg}
 \input{dg}
 
-\section{An example: reversing lists}\label{ex:rev}
+\section{An example: Reversing lists}\label{ex:rev}
 \input{example}
 
 \section{Implementation}\label{sec:implemen}
 
 We describe in this section how the integration described in the
-previous sections has been implemented. Section \ref{subsec:abs-syntax}
-shows the abstract syntax used to represent Maude modules in Haskell,
+previous sections has been implemented. We have used Maude to parse
+Maude modules, taking advantage of the reflective capabilities of rewriting
+logic \cite{ClavelMeseguerPalomino07}, while the rest of the system
+has been implemented in Haskell, the implementation language of \Hets.
+%
+Section \ref{subsec:abs-syntax}
+shows the abstract syntax used to represent Maude modules in Haskell, while
 Section \ref{subsec:maude-parser} presents how these data structures
-are generated in Maude, while Section \ref{sec:imp_dg} explains how
-they are translated into a development graph. Finally, Section \ref{sec:imp_free}
+are generated in Maude. Section \ref{sec:logic_imp} shows how
+Maude signatures, sentences, and morphisms are obtained, and
+Section \ref{sec:imp_dg} explains how
+they are introduced into a development graph. Finally, Section \ref{sec:imp_free}
 outlines how the freeness constraints are implemented.
 
 \subsection{Abstract syntax}\label{subsec:abs-syntax}
@@ -212,7 +220,7 @@ outlines how the freeness constraints are implemented.
 \subsection{Logic}\label{sec:logic_imp}
 \input{logic-imp}
 
-\subsection{Development Graph}\label{sec:imp_dg}
+\subsection{Development graph}\label{sec:imp_dg}
 \input{imp-dg}
 
 \subsection{Comorphism}\label{sec:comorphism}

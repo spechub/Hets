@@ -1,10 +1,11 @@
 %!TEX root = main.tex
 
 In this section we explain how the Maude specifications introduced in
-\Hets are parsed in order to obtain the abstract syntax described in
+\Hets are parsed in order to obtain a term following the abstract syntax
+described in
 the previous section. We are able to implement this parsing in Maude
 itself thanks to Maude metalevel \cite[Chapter 14]{maude-book}, a
-module that allows to use Maude entities such as modules, equations,
+module that allows the programmer to use Maude entities such as modules, equations,
 or rules as usual data by efficiently implementing the \emph{reflective}
 capabilities of rewriting logic \cite{ClavelMeseguerPalomino07}.
 
@@ -81,7 +82,7 @@ the keyword \verb"SummationModExp" to indicate the type of module expression:
 
 To print a renaming we recursively apply \verb"haskellifyME" for the inner
 module expression and then we use the auxiliary function \verb"haskellifyMaps" to 
-print the renamings. In this case we use tje constant \verb"no-module" as argument
+print the renamings. In this case we use the constant \verb"no-module" as argument
 because it will only be used when parsing mappings from views, since it may
 be needed to parse terms:
 

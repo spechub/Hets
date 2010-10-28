@@ -2,8 +2,8 @@
 
 We show in this section how the comorphism
 from Maude to \CASL described in Section \ref{sec:comoprh} is implemented.
-The function in charge of the comorphism is
-\verb"maude2casl", that computes the \CASL signature and sentences
+The function in charge of computing the comorphism is
+\verb"maude2casl", that returns the \CASL signature and sentences
 given the Maude signature and sentences:
 
 {\codesize
@@ -32,7 +32,8 @@ The \CASL operators are obtained from the Maude operators:
 \begin{itemize}
 \item
 The function \verb"translateOps" splits the Maude operator map
-into a tuple of \CASL operators and \CASL associative operators.
+into a tuple of \CASL operators and \CASL associative operators,
+(which are required for parsing purposes).
 
 \item
 Since \CASL does not allow the definition
@@ -136,7 +137,7 @@ rewPredicate sort m = Map.insertWith (Set.union) rewID ar m
 \end{verbatim}
 }
 
-Once these predicates has been declared, we have to introduce
+Once these predicates have been declared, we have to introduce
 formulas to state their properties. The function \verb"rewPredicatesSens"
 accomplishes this task by traversing the set of sorts and applying
 \verb"rewPredicateSens":
@@ -388,7 +389,7 @@ owiseSen2Formula im owise_forms s = s'
 
 This function receives all the formulas defined without the \verb"owise"
 attribute and, for each formula with the same operator in the lefthand
-side that the current equation (obtained with \verb"getLeftApp"), it
+side as the current equation (obtained with \verb"getLeftApp"), it
 generates with \verb"existencialNegationOtherEqs" a negative existential
 quantification stating that the arguments do not match or the condition
 does not hold that is used as premise of the equation:
@@ -429,7 +430,7 @@ owiseEq2Formula im no_owise_form eq = form
 %\end{verbatim}
 %}
 
-The translation from sorts, operators and predicates to symbols
+The translation from sorts, operators, and predicates to symbols
 works in a similar way to the transformations shown above, so we only
 describe  how the predicate symbols are obtained. The function
 \verb"preds2syms" traverses the map of predicates and inserts each

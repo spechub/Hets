@@ -3,8 +3,8 @@
 As mentioned in the introduction, Maude modules are executable rewriting logic specifications.
 Rewriting logic \cite{Meseguer92-tcs} is a logic of change very suitable
 for the specification of concurrent systems that is parameterized
-by an underlying equational logic, for which Maude uses membership
-equational logic \cite{BouhoulaJouannaudMeseguer00,Meseguer97},
+by an underlying equational logic, for which Maude uses \emph{membership
+equational logic} \cite{BouhoulaJouannaudMeseguer00,Meseguer97},
 which, in addition to equations, allows the statement of membership
 axioms characterizing the elements of a sort. In the following sections we
 present both logics and how their specifications are represented as Maude modules.
@@ -64,7 +64,9 @@ $t \rightarrow t'$. Such a statement holds in an algebra, denoted
 $\model \models t \rightarrow t'$, exactly when $\model \models t = t'$, i.e., when
 $\den{t} = \den{t'}$. Moreover, under those assumptions an equational condition $u = v$
 in a conditional equation can be checked by finding a common term $t$ such
-that $u \rightarrow t$ and $v \rightarrow t$.
+that $u \rightarrow t$ and $v \rightarrow t$. Since these are \emph{executability}
+requirements they are not necessary for using \Hets; in fact, these are some of
+the properties we expect to check in the near future.
 
 \subsection{Maude functional modules} \label{maudefmod}
 
@@ -144,7 +146,7 @@ form\footnote{There is no need for the condition listing first equations,
 then  memberships, and then rewrites: this is just a notational
 abbreviation, they can be listed in any order.} 
 \[
-(\forall X) \; e \Rightarrow e' \Leftarrow \bigwedge_{i=1}^{n} u_i = u'_i \wedge
+(\forall X) \; t \Rightarrow t' \Leftarrow \bigwedge_{i=1}^{n} u_i = u'_i \wedge
                       \bigwedge_{j=1}^{m}  v_j : s_j \wedge
                       \bigwedge_{k=1}^{l} w_k \Rightarrow w'_k
 \]
@@ -152,10 +154,9 @@ where the head is a rewrite and the conditions can be equations,
 memberships, and rewrites; both sides of a rewrite must have the same kind. 
 From these rewrite rules, one can deduce rewrites of the form
 $t \Rightarrow t'$ by means of general deduction rules introduced
-in \cite{Meseguer92-tcs} (see also \cite{BruniMeseguer06}).
+in \cite{Meseguer92-tcs} (for a generalization see also \cite{BruniMeseguer06}).
 
-Models of rewrite theories are called \emph{$\mathcal{R}$-systems}
-in \cite{Meseguer92-tcs}.
+Models of rewrite theories are called \emph{$\mathcal{R}$-systems}.
 Such systems are defined as categories that possess a
 $(\Sigma,E)$-algebra structure, together with a natural transformation
 for each rule in the set $R$. More intuitively, the idea is that we have a
@@ -209,19 +210,20 @@ can be deduced from $E$).
 \subsection{Advanced features}\label{subsec:adv_feat}
 
 In addition to the modules presented thus far, we present in this section
-some other Maude features that will be used throughout this paper.
+some other Maude features that will be used throughout this paper. More
+information on these topics can be found in \cite{maude-book}.
 
 \subsubsection{Module operations}
 
 To ease the specification of large systems, Maude provides several
-mechanisms to structure them. We describe in this section these
+mechanisms to structure its modules. We describe in this section these
 procedures, that will be used later to build the development graphs.
 
 Maude modules can import other modules in three different modes:
 \begin{itemize}
 \item
 The \verb"protecting" mode (abbreviated as \verb"pr") indicates that \emph{no
-junk and no confusion} can be added to the module, where junk refers to
+junk and no confusion} can be added to the imported module, where junk refers to
 new terms in canonical form while confusion implies that different canonical
 terms in the initial module are made equal by equations in the imported module.
 
@@ -246,7 +248,7 @@ which creates a new module that includes all the information in its summands.
 
 \item
 A renaming $\mathit{ME} \,\verb"*"\, \verb"("\mathit{Renaming}\verb")"$, where 
-$\mathit{Renaming}$ is a list of renamings. They can be renaming of sorts;
+$\mathit{Renaming}$ is a list of renamings. They can be renaming of sorts:
 
 $$
 \verb"sort"\; \mathit{sort}_1\; \verb"to"\; \mathit{sort}_2\; \verb"."
@@ -265,7 +267,7 @@ $$
 \;  \verb"."
 $$
 
-\noindent or it renames the operators of the given arity;
+\noindent or it renames the operators of the given arity:
 
 $$
 \verb"op"\; \mathit{id}_1 : \mathit{arity}\; \verb"->" \; \mathit{coarity}\;
@@ -300,11 +302,47 @@ also have rules. Although there is no restriction on the operator attributes
 that can be used in a theory, there are some subtle restrictions and
 issues regarding the mapping of such operators (see Section
 \ref{subsec:views}).
-
+%
 Like functional modules, functional theories are membership equational
-logic theories, but they do not need to be Church-Rosser and terminating,
-and  therefore some or all of their statements may be declared with the
-\verb"nonexec" attribute and can only be executed in a controlled way.
+logic theories, but they do not need to be Church-Rosser and terminating.
+%and  therefore some or all of their statements may be declared with the
+%\verb"nonexec" attribute and can only be executed in a controlled way.
+
+For example, we can define a theory for some processes. First, we indicate
+that a sort for processes is required:
+
+{\codesize
+\begin{verbatim}
+fth PROCESS is
+ pr BOOL .
+
+ sort Process .
+\end{verbatim}
+}
+
+Then, we state that two operators, one updating the processes and another
+one checking whether a process has finished, have to be defined:
+ 
+{\codesize
+\begin{verbatim}
+ op update : Process -> Process .
+ op finished : Process -> Bool .
+\end{verbatim}
+}
+
+Finally, we define an operator \verb"_<_" over processes that is required
+to be irreflexive and transitive:
+
+{\codesize
+\begin{verbatim}
+ vars X Y Z : Process .
+ 
+ op _<_ : Process Process -> Bool .
+ eq X < X = false [nonexec label irreflexive] .
+ ceq X < Z = true if X < Y /\ Y < Z [nonexec label transitive] .
+endfth
+\end{verbatim}
+}
 
 \subsubsection{Views}\label{subsec:views}
 
@@ -312,19 +350,19 @@ We use views to specify how a particular target module or theory
 satisfies a source theory. In general, there may be several ways in which 
 such requirements might be satisfied by the target module or
 theory; that is, there can be many different views, each specifying a
-particular interpretation of the source theory in the target. Each
-view declaration has an associated set of proof obligations, namely, for
-each axiom in the source theory it should be the case that the axiom's
-translation by the view holds true in the target. Since the target can
-be a module interpreted initially, verifying such proof obligations may
-in general require inductive proof techniques. Such proof obligations
-are not discharged or checked by the system. 
+particular interpretation of the source theory in the target.
 In the definition of a view we have to indicate its name, the source
 theory, the target module or theory, and the mapping of each sort and
 operator in the source theory. The source and target of a
 view can be any module expression, with the source module expression
 evaluating to a theory and the target module expression evaluating to a
 module or a theory.
+Each view declaration has an associated set of proof obligations, namely, for
+each axiom in the source theory it should be the case that the axiom's
+translation by the view holds true in the target. Since the target can
+be a module interpreted initially, verifying such proof obligations may
+in general require inductive proof techniques. Such proof obligations
+are not discharged or checked by the system. 
 
 The mappings allowed in views are:
 
@@ -339,7 +377,7 @@ $$
 
 \item
 Mappings between operators, where the user can specify the arity and coarity
-of the operator to disambiguate them:
+of the operators to disambiguate them:
 
 $$
 \verb"op"\; \mathit{id}_1\; \verb"to"\; \mathit{id}_2\; \verb"."
@@ -353,7 +391,7 @@ $$
 \item
 In addition to these mappings, the user can map a term $\mathit{term}_1$, that
 can only be a single operator applied to variables, to any term $\mathit{term}_2$
-in the target module, where the sort of the variables in the first term has been
+in the target module, where the sorts of the variables in the first term have been
 translated by using the sort mappings. Note that in that case the arity of the
 operator in the source theory and the one in the target module can be different:
 
@@ -365,6 +403,47 @@ $$
 
 Notice that we cannot map labels, and thus we cannot identify the statements in
 the theory with those in the target module.
+
+We can now create a view \verb"NatProcess" from the theory \verb"PROCESS" in the
+previous section to \verb"NAT", the predefined modules for natural numbers:
+
+{\codesize
+\begin{verbatim}
+ view NatProcess from PROCESS to NAT is
+\end{verbatim}
+}
+
+We need a sort in \verb"NAT" to identify processes. We use \verb"Nat", the sort
+for natural numbers:
+
+{\codesize
+\begin{verbatim}
+  sort Process to Nat .
+\end{verbatim}
+}
+
+Since we identify now processes with natural numbers, we can \verb"update" a process
+by applying the successor function, which is declared as \verb"s_" in \verb"NAT":
+
+{\codesize
+\begin{verbatim}
+  op update to s_ .
+\end{verbatim}
+}
+
+We map the operator \verb"finished?" in a different way: we create a term
+with this operator with a variable as argument, and it is mapped to a term
+in the syntax of the target module. In that case we consider a process has
+finished if it reaches \verb"100":
+
+{\codesize
+\begin{verbatim}
+  op finished?(P:Process) to term P:Nat < 100 .
+\end{verbatim}
+}
+
+Since the \verb"NAT" module already contains an operator \verb"_<_" it is not
+necessary to explicitly indicate the mapping.
 
 \subsubsection{Parameterized modules}\label{subsec:pmod}
 
@@ -379,8 +458,8 @@ $$
 analogous syntax.
 
 The \verb"{"$X_1 :: T_1 , \ldots , X_n :: T_n$\verb"}" part is called the
-interface, where each pair $X_i :: T_i$ is a parameter, and each $X_i$ is an
-identifier---the parameter name or parameter label---and each $T_i$ is
+interface, where each pair $X_i :: T_i$ is a parameter, each $X_i$ is an
+identifier---the parameter name or parameter label---, and each $T_i$ is
 an expression that yields a theory---the parameter theory. Each parameter
 name in an interface must be unique, although there is no uniqueness
 restriction on the parameter theories of a module. The parameter theories
@@ -397,7 +476,7 @@ The renaming  maps each sort $S$ to $X_i\texttt{\$}S$, and each label $l$
 of a statement occurring in $T_i$ to $X_i\texttt{\$}l$. The renaming has
 no effect on importations of modules. Thus, if $T_i$ includes a theory $T'$,
 when the renamed
-theory $X_i :: T_i$ is created and included into $M$, and the renamed
+theory $X_i :: T_i$ is created and included into $M$, the renamed
 theory $X_i :: T'$ will also be created and included into $X_i :: T_i$. 
 However, the renaming will have no effect on modules imported by either the
 $T_i$ or $T'$; for example, if \verb"BOOL" is imported by one of these
@@ -415,12 +494,51 @@ operators, etc. in the formal parameters to the corresponding sorts, operators
 The instantiation of a parameterized module must be made with views 
 explicitly defined previously.
 
+We can define a parameterized modules for multisets of the processes shown in
+Section \ref{subsec:views}. This module defines the sort \verb"MSet{X}" for
+multisets, which is a supersort of Process:
 
+{\codesize
+\begin{verbatim}
+fmod PROCESS_MSET{X :: PROCESS} is
+ sort MSet{X} .
+ subsort X$Process < MSet{X} .
+\end{verbatim}
+}
 
+The constructors of multisets are \verb"empty" for the empty multiset and
+the juxtaposition operator \verb"__" for bigger multisets:
 
+{\codesize
+\begin{verbatim}
+ op empty : -> MSet{X} [ctor] .
+ op __ : MSet{X} MSet{X} -> MSet{X} [ctor assoc id: empty] .
+\end{verbatim}
+}
 
+We can also use the operators declared in the view. For example, we can remove
+a process from the multiset if it is finished: 
 
+{\codesize
+\begin{verbatim}
+ var P : X$Process .
+ var MS : MSet{X} .
+ 
+ ceq P MS = MS if finished?(P) .
+endfm
+\end{verbatim}
+}
 
+We can use the view \verb"NatProcess" to instantiate this parameterized module
+and create lists of processes identified as natural numbers.
+
+{\codesize
+\begin{verbatim}
+fmod NAT_PROCSES_MSET is
+ pr PROCESS_MSET{NatProcess} .
+endfm
+\end{verbatim}
+}
 
 
 
