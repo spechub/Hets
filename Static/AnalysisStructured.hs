@@ -260,8 +260,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           orig = DGRestriction $ Restricted restr
           rname = extName "Restriction" name
       (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts sp1
-      (NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname
-        $ getRestrLogic restr
+      rLid <- getRestrLogic restr
+      (NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
       {- we treat hiding and revealing differently
       in order to keep the dg as simple as possible -}
@@ -563,11 +563,15 @@ anaRenaming :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
 anaRenaming lg lenv gSigma opts (Renaming ren pos) =
       foldM (anaRen lg opts lenv pos) (ide gSigma) ren
 
-getRestrLogic :: RESTRICTION -> AnyLogic
+getRestrLogic :: RESTRICTION -> Result AnyLogic
 getRestrLogic restr = case restr of
-  Hidden (G_symb_list (G_symb_items_list lid _) : _) _ -> Logic lid
-  Revealed (G_symb_map_items_list lid _) _ -> Logic lid
-  _ -> error "getRestrLogic"
+  Revealed (G_symb_map_items_list lid _) _ -> return $ Logic lid
+  Hidden l _ -> case l of
+    [] -> error "getRestrLogic"
+    h : _ -> case h of
+      G_symb_list (G_symb_items_list lid _) -> return $ Logic lid
+      G_logic_projection (Logic_code _ _ _ pos1) ->
+        fatal_error "no analysis of logic projections yet" pos1
 
 -- analysis of restrictions
 anaRestr :: LogicGraph -> G_sign -> Range -> GMorphism -> G_hiding
@@ -602,7 +606,7 @@ anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
             Nothing -> id
             Just sy1 -> Set.insert sy1) Set.empty sys1)
           startSigId mor2 startMorId
-      G_logic_projection (Logic_code _tok _src _tar pos1) ->
+      G_logic_projection (Logic_code _ _ _ pos1) ->
         fatal_error "no analysis of logic projections yet" pos1
 
 anaRestriction :: LogicGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
