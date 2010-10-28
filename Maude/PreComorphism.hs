@@ -198,6 +198,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          ops = deleteUniversal $ MSign.ops msign
          ksyms = kinds2syms cs
          (cops, assoc_ops, _) = translateOps mk ops -- (cops, assoc_ops, comps)
+         axSens = axiomsSens mk ops
          ctor_sen = [] -- [ctorSen False (cs, Rel.empty, comps)]
          cops' = universalOps cs cops $ booleanImported ops
          rs' = rewPredicatesCongSens cops'
@@ -210,7 +211,7 @@ maude2casl msign nsens = (csign { CSign.sortSet = cs,
          preds_syms = preds2syms preds
          syms = Set.union ksyms $ Set.union ops_syms preds_syms
          new_sens = concat [rs, rs', no_owise_forms, owise_forms,
-                            mb_rl_forms, ctor_sen, pred_forms]
+                            mb_rl_forms, ctor_sen, pred_forms, axSens]
 
 -- | translates the Maude subsorts into CASL subsorts, and adds the subsorts
 -- for the kinds
@@ -455,6 +456,46 @@ nonEqualitySens kind = [form'', comp_form'']
                form'' = makeNamed name1 form'
                comp_form'' = makeNamed name2 comp_form'
 
+-- | generates the sentences for the operator attributes
+axiomsSens :: IdMap -> MSign.OpMap -> [Named CAS.CASLFORMULA]
+axiomsSens im om = Map.fold (axiomsSensODS im) [] om
+
+axiomsSensODS :: IdMap -> MSign.OpDeclSet -> [Named CAS.CASLFORMULA] 
+                 -> [Named CAS.CASLFORMULA]
+axiomsSensODS im ods l = Set.fold (axiomsSensOD im) l ods
+
+axiomsSensOD :: IdMap -> MSign.OpDecl -> [Named CAS.CASLFORMULA] -> [Named CAS.CASLFORMULA]
+axiomsSensOD im (ss, ats) l = Set.fold (axiomsSensSS im ats) l ss
+
+axiomsSensSS :: IdMap -> [MAS.Attr] -> MSym.Symbol -> [Named CAS.CASLFORMULA]
+                -> [Named CAS.CASLFORMULA]
+axiomsSensSS im ats (MSym.Operator q ar co) l = concat [l, l1]
+       where l1 = if elem MAS.Comm ats
+                  then commSen im q ar co
+                  else []
+axiomsSensSS _ _ _ l = l
+
+commSen :: IdMap -> MAS.Qid -> MSym.Symbols -> MSym.Symbol -> [Named CAS.CASLFORMULA]
+commSen im q ar@[ar1, ar2] co = [form']
+       where q' = token2id q
+             f = \ x -> maudeSymbol2caslSort x im
+             ar1' = f ar1
+             ar2' = f ar2
+             ot = CAS.Op_type CAS.Total (map f ar) (f co) nullRange
+             os = CAS.Qual_op_name q' ot nullRange
+             v1 = newVarIndex 1 ar1'
+             v2 = newVarIndex 2 ar2'
+             t1 = CAS.Application os [v1, v2] nullRange
+             t2 = CAS.Application os [v2, v1] nullRange
+             form = CAS.Strong_equation t1 t2 nullRange
+             name = "comm_" ++ (ms2vcs (show q')) ++ "_" ++ show ar1'
+             form' = makeNamed name $ quantifyUniversally form
+commSen _ _ _ _ = []
+
+-- (newVarIndex 1 (hd ar))
+
+--  maudeSymbol2caslSort x im
+
 -- | translates the Maude operator map into a tuple of CASL operators, CASL
 -- associative operators, membership induced from each Maude operator,
 -- and the set of sorts with the ctor attribute
@@ -492,7 +533,7 @@ translateOpDecl im (syms, ats) (ops, assoc_ops, cs) = case tl of
 maudeSym2CASLOp :: IdMap -> MSym.Symbol -> Maybe (Id, CSign.OpType, CSign.OpType)
 maudeSym2CASLOp im (MSym.Operator op ar co) = Just (token2id op, ot, ot')
       where f = token2id . getName
-            g = \ x -> maudeSymbol2caslSort x im -- \ x -> Map.findWithDefault (errorId "Maude_sym2CASL_sym") (f x) im
+            g = \ x -> maudeSymbol2caslSort x im
             ot = CSign.OpType CAS.Total (map g ar) (g co)
             ot' = CSign.OpType CAS.Total (map f ar) (f co)
 maudeSym2CASLOp _ _ = Nothing
