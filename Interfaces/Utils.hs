@@ -289,25 +289,15 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
       sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
       let transSensSrc = propagateErrors "checkConservativityEdge2"
            $ mapThSensValueM (map_sen lidT compMor) sensS'
-      if length (conservativityCheck lidT) < 1
-          then return ("No conservativity checkers available",
-                       libEnv, link, SizedList.empty)
-          else
-           do
-            checkerR <- conservativityChoser useGUI $ conservativityCheck lidT
-            if hasErrors $ diags checkerR
-             then return ("No conservativity checker chosen",
-                          libEnv, link, SizedList.empty)
-             else
-              do
-               let chCons = checkConservativity $
-                            propagateErrors "checkconservativityOfEdge3"
-                            checkerR
-                   inputThSens = nubBy (\ a b -> sentence a == sentence b) $
-                                 toNamedList $
+      checkerR <- conservativityChoser useGUI $ conservativityCheck lidT
+      case maybeResult checkerR of
+        Nothing -> return (concatMap diagString $ diags checkerR,
+                           libEnv, link, SizedList.empty)
+        Just theChecker -> do
+               let inputThSens = toNamedList $
                                  sensT `OMap.difference` transSensSrc
                Result ds res <-
-                       chCons
+                       checkConservativity theChecker
                           (plainSign signS', toNamedList sensS')
                           compMor inputThSens
                let consShow = case res of
