@@ -42,16 +42,31 @@ import Common.Utils
 import Control.Monad.Trans (lift)
 import Control.Monad
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Char (isAlphaNum)
+import Data.IORef
 import Data.List
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
+import Data.Time.Clock
 
 import System.Process
 import System.Directory
 import System.Exit
 import System.FilePath
+
+data Key = PlainLibName FilePath | Key Int
+  deriving (Eq, Ord)
+
+data Session = Session
+  { sessLibEnv :: LibEnv
+  , sessLibName :: LibName
+  , previousKeys :: [Key]
+  , sessStart :: UTCTime }
+
+sessGraph :: Session -> DGraph
+sessGraph (Session le ln _ _) = lookupDGraph ln le
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
@@ -59,6 +74,7 @@ hetsServer opts1 = do
   let tempHetsLib = tempDir </> "MyHetsLib"
       opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
   createDirectoryIfMissing False tempHetsLib
+  sessRef <- newIORef Map.empty
   run 8000 $ \ re ->
     let query = B8.unpack $ queryString re in
     case B8.unpack (requestMethod re) of
@@ -66,7 +82,7 @@ hetsServer opts1 = do
          let path = dropWhile (== '/') $ B8.unpack (pathInfo re)
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then do
-           Result ds ms <- getHetsResult opts path query
+           Result ds ms <- getHetsResult opts sessRef path query
            return $ case ms of
              Nothing -> mkResponse status400
                $ showRelDiags 1 ds
@@ -101,11 +117,16 @@ mkResponse st = Response st [] . ResponseLBS . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-getDGraph :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv, DGraph)
-getDGraph opts file = do
+getDGraph :: HetcatsOpts -> IORef (Map.Map Key Session) -> FilePath
+  -> ResultT IO Session
+getDGraph opts sessRef file = do
   (ln, le) <- anaLibFileOrGetEnv logicGraph opts { outputToStdout = False }
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
-  return (ln, le, lookupDGraph ln le)
+  time <- lift getCurrentTime
+  let sess = Session le ln [] time
+  lift $ atomicModifyIORef sessRef
+    (\ m -> (Map.insert (PlainLibName file) sess m, Map.size m))
+  return sess
 
 getSVG :: FilePath -> DGraph -> ResultT IO String
 getSVG file dg = do
@@ -125,16 +146,21 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
-getHetsResult :: HetcatsOpts -> FilePath -> String -> IO (Result String)
-getHetsResult opts file query = let callHets = getDGraph opts file in
+getHetsResult :: HetcatsOpts -> IORef (Map.Map Key Session) -> FilePath
+  -> String -> IO (Result String)
+getHetsResult opts sessRef file query =
+  let callHets = getDGraph opts sessRef file
+      getSessGraph = fmap sessGraph callHets
+  in
   runResultT $ case dropWhile (== '?') query of
     qstr | elem qstr ["", "d"]
       -> do
-        (_, _, dg) <- callHets
+        dg <- getSessGraph
         getSVG file dg
     "xml" -> do
-        (_, le, dg) <- callHets
-        liftR $ return $ ppTopElement $ ToXml.dGraph le dg
+        sess <- callHets
+        liftR $ return $ ppTopElement $ ToXml.dGraph (sessLibEnv sess)
+          $ sessGraph sess
     "menu" | file == "dg" -> return "displaying the possible menus (missing)"
     qstr -> let
       (kst, rst) = span (`notElem` "&;") qstr
@@ -143,13 +169,13 @@ getHetsResult opts file query = let callHets = getDGraph opts file in
                  Just idstr -> readMaybe idstr :: Maybe Int
       in case (kst, midstr) of
         ("edge", Just i) -> do
-          (_, _, dg) <- callHets
+          dg <- getSessGraph
           case getDGLinksById (EdgeId i) dg of
             [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
             [] -> fail $ "no edge found with id: " ++ show i
             _ -> fail $ "multiple edges found with id: " ++ show i
         (_, Just i) | elem kst ["node", "theory"] -> do
-          (_, _, dg) <- callHets
+          dg <- getSessGraph
           case lab (dgBody dg) i of
             Nothing -> fail $ "no node id: " ++ show i
             Just dgnode -> return
@@ -221,5 +247,3 @@ uploadHtml = add_attrs
     [ mkAttr "type" "submit"
     , mkAttr "value" "submit"]
     inputNode ]
-
-
