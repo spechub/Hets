@@ -30,6 +30,7 @@ import qualified Data.Map as Map
 import Common.SExpr
 
 import Logic.Coerce
+import Logic.Comorphism (targetLogic)
 import Logic.Logic
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
@@ -289,8 +290,8 @@ writeSpecFiles opts file lenv ln dg = do
         if allSpecs then Map.keys gctx else ns
     unless noViews $
       mapM_ ( \ i -> case Map.lookup i gctx of
-        Just (ViewEntry (ExtViewSig _ gmor _)) ->
-            putStrLn $ showDoc gmor ""
+        Just (ViewEntry (ExtViewSig _ (GMorphism cid _ _ m _) _)) ->
+            print $ printMorphism (targetLogic cid) m
         _ -> putIfVerbose opts 0 $ "Unknown view name: " ++ show i
         ) vs
     mapM_ ( \ n ->

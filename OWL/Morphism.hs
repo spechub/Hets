@@ -24,6 +24,7 @@ module OWL.Morphism
   , statSymbMapItems
   , inducedFromMor
   , symMapOf
+  , prMorAsPairList
   , mapSen
   ) where
 
@@ -106,6 +107,9 @@ instance Pretty OWLMorphism where
        else fsep
          [ pretty $ mmaps m
          , colon <+> srcD, mapsto <+> specBraces (space <> pretty t) ]
+
+prMorAsPairList :: OWLMorphism -> Doc
+prMorAsPairList = pretty . Map.toList . symMapOf
 
 legalMor :: OWLMorphism -> Bool
 legalMor m = let mm = mmaps m in

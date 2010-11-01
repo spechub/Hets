@@ -264,15 +264,23 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statFail l "map_sen"
+
       -- | simplification of sentences (leave out qualifications)
       simplify_sen :: lid -> sign -> sentence -> sentence
       simplify_sen _ _ = id
+
       -- | negation of a sentence for disproving
       negation :: lid -> sentence -> Maybe sentence
       negation _ _ = Nothing
+
       -- | modified signature printing when followed by sentences
       print_sign :: lid -> sign -> Doc
       print_sign _ = pretty
+
+      -- | modified printing of a morphism as user output
+      printMorphism :: lid -> morphism -> Doc
+      printMorphism _ = pretty
+
       -- | print a sentence with comments
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
@@ -628,7 +636,6 @@ class (StaticAnalysis lid
          -- --------------------- OMDoc ---------------------------
 
          syntaxTable :: lid -> sign -> Maybe SyntaxTable
-         {- default implementation -}
          syntaxTable _ _ = Nothing
 
          omdoc_metatheory :: lid -> Maybe OMDoc.OMCD
