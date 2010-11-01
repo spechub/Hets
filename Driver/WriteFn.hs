@@ -291,7 +291,8 @@ writeSpecFiles opts file lenv ln dg = do
     unless noViews $
       mapM_ ( \ i -> case Map.lookup i gctx of
         Just (ViewEntry (ExtViewSig _ (GMorphism cid _ _ m _) _)) ->
-            print $ printMorphism (targetLogic cid) m
+            writeVerbFile opts (filePrefix ++ "_" ++ show i ++ ".view")
+              $ shows (printMorphism (targetLogic cid) m) "\n"
         _ -> putIfVerbose opts 0 $ "Unknown view name: " ++ show i
         ) vs
     mapM_ ( \ n ->
