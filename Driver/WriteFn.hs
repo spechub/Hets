@@ -260,6 +260,7 @@ writeSpecFiles opts file lenv ln dg = do
     let gctx = globalEnv dg
         ga = globalAnnos dg
         ns = specNames opts
+        vs = viewNames opts
         filePrefix = snd $ getFilePrefix opts file
         outTypes = outtypes opts
         specOutTypes = filter ( \ ot -> case ot of
@@ -275,6 +276,7 @@ writeSpecFiles opts file lenv ln dg = do
             ComptableXml -> True
             _ -> False) outTypes
         allSpecs = null ns
+        noViews = null vs
         ignore = null specOutTypes && modelSparQ opts == ""
     mapM_ (writeLibEnv opts filePrefix lenv ln) $
           if null $ dumpOpts opts then outTypes else EnvOut : outTypes
@@ -285,6 +287,12 @@ writeSpecFiles opts file lenv ln dg = do
                $ putIfVerbose opts 0 $ "Unknown spec name: " ++ show i
       ) $ if ignore then [] else
         if allSpecs then Map.keys gctx else ns
+    unless noViews $
+      mapM_ ( \ i -> case Map.lookup i gctx of
+        Just (ViewEntry (ExtViewSig _ gmor _)) ->
+            putStrLn $ showDoc gmor ""
+        _ -> putIfVerbose opts 0 $ "Unknown view name: " ++ show i
+        ) vs
     mapM_ ( \ n ->
       writeTheoryFiles opts specOutTypes filePrefix lenv ga ln
          (genToken $ 'n' : show n) n)

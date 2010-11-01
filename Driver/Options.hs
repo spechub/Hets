@@ -69,7 +69,7 @@ bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
-verboseS, intypeS, outtypesS, skipS, structS, transS,
+verboseS, intypeS, outtypesS, skipS, structS, transS, viewS,
      guiS, libdirsS, outdirS, amalgS, specS, recursiveS,
      interactiveS, modelSparQS, connectS, xmlS, listenS,
      applyAutomaticRuleS, normalFormS :: String
@@ -86,6 +86,7 @@ outdirS = "output-dir"
 amalgS = "casl-amalg"
 specS = "named-specs"
 transS = "translation"
+viewS = "view"
 recursiveS = "recursive"
 interactiveS = "interactive"
 connectS = "connect"
@@ -129,6 +130,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , infiles :: [FilePath] -- ^ files to be read
   , specNames :: [SIMPLE_ID] -- ^ specs to be processed
   , transNames :: [SIMPLE_ID] -- ^ comorphism to be processed
+  , viewNames :: [SIMPLE_ID] -- ^ views to be processed
   , intype :: InType
   , libdirs :: [FilePath]
   , modelSparQ :: FilePath
@@ -161,6 +163,7 @@ defaultHetcatsOpts = HcOpt
   , infiles = []
   , specNames = []
   , transNames = []
+  , viewNames = []
   , intype = GuessIn
   , libdirs = []
   , modelSparQ = ""
@@ -207,6 +210,7 @@ instance Show HetcatsOpts where
     ++ (if computeNormalForm opts then showOpt normalFormS else "")
     ++ showEqOpt specS (intercalate "," $ map show $ specNames opts)
     ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
+    ++ showEqOpt viewS (intercalate "," $ map show $ viewNames opts)
     ++ showEqOpt amalgS (tail $ init $ show $
                                       case caslAmalg opts of
                                       [] -> [NoAnalysis]
@@ -234,6 +238,7 @@ data Flag =
   | OutTypes [OutType]
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
+  | Views [SIMPLE_ID]
   | CASLAmalg [CASLAmalgOpt]
   | Interactive
   | Connect Int String
@@ -263,6 +268,7 @@ makeOpts opts flg = case flg of
     NormalForm -> opts { computeNormalForm = True }
     Specs x -> opts { specNames = x }
     Trans x -> opts { transNames = x }
+    Views x -> opts { viewNames = x }
     Verbose x -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
     CASLAmalg x -> opts { caslAmalg = x }
@@ -514,8 +520,10 @@ options = let
       "apply automatic dev-graph strategy"
     , Option "N" [normalFormS] (NoArg NormalForm)
       "compute normal forms (takes long)"
-    , Option "n" [specS] (ReqArg parseSpecOpts "NSPECS")
+    , Option "n" [specS] (ReqArg (Specs . parseSIdOpts) "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
+    , Option "w" [viewS] (ReqArg (Views . parseSIdOpts) "NVIEWS")
+      ("process views option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option "t" [transS] (ReqArg parseTransOpt "TRANS")
       ("translation option " ++ crS ++
           "is a colon-separated list without blank" ++
@@ -650,9 +658,9 @@ parseOutTypes str = case reads $ bracket str of
     [(l, "")] -> OutTypes l
     _ -> hetsError (str ++ " is not a valid OTYPES")
 
--- | 'parseSpecOpts' parses a 'Specs' Flag from user input
-parseSpecOpts :: String -> Flag
-parseSpecOpts = Specs . map mkSimpleId . splitOn ','
+-- | parses a comma separated list from user input
+parseSIdOpts :: String -> [SIMPLE_ID]
+parseSIdOpts = map mkSimpleId . splitOn ','
 
 -- | 'parseTransOpt' parses a 'Trans' Flag from user input
 parseTransOpt :: String -> Flag
