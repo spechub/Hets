@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-glasgow-exts #-}
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
