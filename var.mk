@@ -1,6 +1,6 @@
 # to be include by Makefile
 
-HC = ghc -optl-s -XTemplateHaskell
+HC = ghc -L/usr/lib -optl-s -XTemplateHaskell
 HCPKG = ghc-pkg
 
 TIMEVERSION = $(shell $(HCPKG) latest time)
