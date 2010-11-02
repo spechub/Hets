@@ -86,7 +86,7 @@ el_oma = toQNOM "OMA"
 
 at_version, at_module, at_name, at_meta, at_role, at_type, at_total, at_for
  , at_from, at_to, at_value, at_base, at_as, at_precedence, at_fixity, at_index
- , at_implicit :: QName
+ , at_associativity, at_style, at_implicit :: QName
 
 at_version = toQN "version"
 at_module = toQN "module"
@@ -103,6 +103,8 @@ at_base = toQN "base"
 at_as = toQN "as"
 at_precedence = toQN "precedence"
 at_fixity = toQN "fixity"
+at_associativity = toQN "associativity"
+at_style = toQN "style"
 at_implicit = toQN "implicit"
 at_index = toQN "index"
 
@@ -341,17 +343,20 @@ instance XmlRepresentable TLElement where
 instance XmlRepresentable TCElement where
     toXml (TCSymbol sname symtype role defn) =
         constantToXml sname (show role) symtype defn
-    toXml (TCNotation (cd, nm) val) =
+    toXml (TCNotation (cd, nm) val mStl) =
         inAContent
         el_notation
-        [Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "constant"]
+        ( [Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "constant"]
+          ++ maybe [] ((:[]) . Attr at_style) mStl )
         $ Just $ inAContent el_text [Attr at_value val] Nothing
-    toXml (TCSmartNotation (cd, nm) fixity prec implicit) =
+    toXml (TCSmartNotation (cd, nm) fixity assoc prec implicit) =
         inAContent
         el_notation
-        [ Attr at_for $ urlEscape $ showCDName cd nm, Attr at_role "application"
-        , Attr at_fixity $ show fixity, Attr at_precedence $ show prec
-        , Attr at_implicit $ show implicit ] Nothing
+        ( [ Attr at_for $ urlEscape $ showCDName cd nm
+          , Attr at_role "application", Attr at_fixity $ show fixity
+          , Attr at_associativity $ show assoc, Attr at_precedence $ show prec ]
+          ++ if implicit == 0 then [] else [Attr at_implicit $ show implicit] )
+        Nothing
     toXml (TCFlexibleNotation (cd, nm) prec comps) =
         mkElement
         el_notation
@@ -377,10 +382,11 @@ instance XmlRepresentable TCElement where
             let musthave s v = missingMaybe "Notation" s v
                 nm = urlUnescape $ musthave "for" $ findAttr at_for e
                 role = musthave "role" $ findAttr at_role e
+                mStl = findAttr at_style e
                 text = musthave "text" $ findChild el_text e
                 val = musthave "value" $ findAttr at_value text
             in if role == "constant"
-               then justReturn $ TCNotation (readCDName nm) val
+               then justReturn $ TCNotation (readCDName nm) val mStl
                else return Nothing
         | elemIsOf e el_structure =
             let musthave at s = missingMaybe "Structure" s $ findAttr at e

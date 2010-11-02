@@ -703,7 +703,7 @@ classifyTC tc clf =
       TCSymbol _ _ sr _
           | elem sr [Obj, Typ] -> clf { sigElems = tc : sigElems clf }
           | otherwise -> clf { sentences = tc : sentences clf }
-      TCNotation (cd, omn) n ->
+      TCNotation (cd, omn) n (Just "hets") ->
           if cdIsEmpty cd then
               clf { notations = Map.insert omn n $ notations clf }
           else clf
@@ -711,6 +711,8 @@ classifyTC tc clf =
       TCImport n from morph ->
           clf { importInfo = (ImportInfo from n morph) : importInfo clf }
       TCComment _ -> clf
-      TCSmartNotation _ _ _ _ -> error "classifyTC: unexpected SmartNotation"
+      TCSmartNotation _ _ _ _ _ -> error "classifyTC: unexpected SmartNotation"
       TCFlexibleNotation _ _ _ -> error "classifyTC: unexpected FlexibleNotation"
+      -- just for the case TCNotation with a style different from hets
+      _ -> clf
 

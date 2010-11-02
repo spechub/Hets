@@ -500,7 +500,7 @@ mkNotation un mIdSTbl =
         orign = fst un
         qn = mkSimpleQualName un
         l = if n == orign then []
-            else [TCNotation qn orign]
+            else [TCNotation qn orign $ Just "hets"]
     in case mIdSTbl of
          Just (symid, (pMap, aMap))
              | isMixfix symid ->
@@ -508,46 +508,43 @@ mkNotation un mIdSTbl =
                          $ precMap pMap
                      -- we use numbers instead of associativity values
                      a = case Map.lookup symid aMap of
-                           Just ALeft -> -1
-                           Just ARight -> 1
-                           _ -> 0
-                 in mkApplicationNotation qn symid p a : l
+                           Just ALeft -> LeftAssoc
+                           Just ARight -> RightAssoc
+                           _ -> NoneAssoc
+                     (appNotation, opStr) = mkApplicationNotation qn symid p a
+                     l' = appNotation : l
+                     l'' = TCNotation qn opStr Nothing : l'
+                 in if null opStr then l' else l''
              | otherwise -> l
          _ -> l
 
 {- | This function requires mixfix Ids as input and generates Notation
-structures, see 'OMDoc.DataTypes'. -}
-mkApplicationNotation :: OMQualName -> Id -> Int -> Int -> TCElement
+   structures, see 'OMDoc.DataTypes'. If smart notations are produced we also
+   provide a string for a constant notation. -}
+mkApplicationNotation :: OMQualName -> Id -> Int -> Assoc -> (TCElement, String)
 mkApplicationNotation qn symid@(Id toks _ _) prec asc
     | placeCount symid == 1 = case toks of
        [a, b]
-           | isPlace a -> mkSmartNotation qn (tokStr b) Postfix prec asc
-           | otherwise -> mkSmartNotation qn (tokStr a) Prefix prec asc
-       _ -> mkFlexibleNotation qn symid prec asc
+           | isPlace a ->
+               (mkSmartNotation qn (tokStr b) Postfix prec asc, tokStr b)
+           | otherwise ->
+               (mkSmartNotation qn (tokStr a) Prefix prec asc, tokStr a)
+       _ -> (mkFlexibleNotation qn symid prec, "")
     | placeCount symid == 2 = case toks of
        [_, b, _]
-           | not (isPlace b) -> mkSmartNotation qn (tokStr b) Infix prec asc
-           | otherwise -> mkFlexibleNotation qn symid prec asc
-       _ -> mkFlexibleNotation qn symid prec asc
-    | otherwise = mkFlexibleNotation qn symid prec asc
+           | not (isPlace b) ->
+               (mkSmartNotation qn (tokStr b) Infix prec asc, tokStr b)
+           | otherwise -> (mkFlexibleNotation qn symid prec, "")
+       _ -> (mkFlexibleNotation qn symid prec, "")
+    | otherwise = (mkFlexibleNotation qn symid prec, "")
 
 {- | See OMDoc.DataTypes for a description of SmartNotation. We set
-the number of implicit arguments to 0. In presence of associativity
-and infix we generate flexible notation as described in the
-Isabelle2009 reference manual §6.1.3: Infixes. -}
-mkSmartNotation :: OMQualName -> String -> Fixity -> Int -> Int -> TCElement
-mkSmartNotation qn op fx prec asc =
-    let f p1 p2 = TCFlexibleNotation qn prec
-                  [ArgComp 1 p1, TextComp op, ArgComp 2 p2]
-    in case fx of
-         Infix | asc > 0 -> f (prec + 1) prec
-               | asc < 0 -> f prec (prec + 1)
-               | otherwise -> TCSmartNotation qn fx prec 0
-         _ -> TCSmartNotation qn fx prec 0
+the number of implicit arguments to 0. -}
+mkSmartNotation :: OMQualName -> String -> Fixity -> Int -> Assoc -> TCElement
+mkSmartNotation qn _ fx prec asc = TCSmartNotation qn fx asc prec 0
 
-
-mkFlexibleNotation :: OMQualName -> Id -> Int -> Int -> TCElement
-mkFlexibleNotation qn opid prec _ =
+mkFlexibleNotation :: OMQualName -> Id -> Int -> TCElement
+mkFlexibleNotation qn opid prec =
     let f acc tok = if isPlace tok then (acc + 1, ArgComp acc prec)
                     else (acc, TextComp $ tokStr tok)
     in TCFlexibleNotation qn prec $ snd $ mapAccumL f 1 $ getTokens opid

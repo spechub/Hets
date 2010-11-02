@@ -94,11 +94,11 @@ In 1b) above, we would need one notation for Hets-syntax, one for MathML etc
 data TCElement =
     -- | Symbol to represent sorts, constants, predicate symbols, etc.
     TCSymbol String OMElement SymbolRole (Maybe OMElement)
-    -- | A notation for the given symbol
-  | TCNotation OMQualName String
-    -- | A smart notation for the given symbol with fixity, precedence and the
-    -- number of implicit arguments
-  | TCSmartNotation OMQualName Fixity Int Int
+    -- | A notation for the given symbol with an optional style
+  | TCNotation OMQualName String (Maybe String)
+    -- | A smart notation for the given symbol with fixity, associativity,
+    -- precedence and the number of implicit arguments
+  | TCSmartNotation OMQualName Fixity Assoc Int Int
     -- | A smart notation for the given symbol, the argument- and
     -- text-components have to alternate in the component list
   | TCFlexibleNotation OMQualName Int [NotationComponent]
@@ -140,6 +140,9 @@ data SymbolRole = Obj | Typ | Axiom | Theorem deriving (Eq, Ord)
 -- | Fixity of notation patterns
 data Fixity = Infix | Prefix | Postfix deriving (Eq, Ord)
 
+-- | Associativity of notation patterns
+data Assoc = LeftAssoc | RightAssoc | NoneAssoc deriving (Eq, Ord)
+
 -- | Type of the algebraic data type
 data ADTType = Free | Generated deriving (Eq, Ord)
 
@@ -167,9 +170,14 @@ instance Show Totality where
     show No = "no"
 
 instance Show Fixity where
-    show Infix = "infix"
-    show Prefix = "prefix"
-    show Postfix = "postfix"
+    show Infix = "in"
+    show Prefix = "pre"
+    show Postfix = "post"
+
+instance Show Assoc where
+    show LeftAssoc = "left"
+    show RightAssoc = "right"
+    show NoneAssoc = "none"
 
 instance Read SymbolRole where
     readsPrec _ = readShow [Obj, Typ, Axiom, Theorem]
@@ -182,6 +190,9 @@ instance Read Totality where
 
 instance Read Fixity where
     readsPrec _ = readShow [Infix, Prefix, Postfix]
+
+instance Read Assoc where
+    readsPrec _ = readShow [LeftAssoc, RightAssoc, NoneAssoc]
 
 -- | Names used for OpenMath variables and symbols
 data OMName = OMName { name :: String, path :: [String] }
@@ -297,7 +308,7 @@ nameToString (s, i) =
 tcName :: TCElement -> OMName
 tcName tc = case tc of
               TCSymbol s _ _ _ -> mkSimpleName s
-              TCNotation qn _ -> unqualName qn
+              TCNotation qn _ _ -> unqualName qn
               TCImport s _ _ -> mkSimpleName s
               _ -> error "tcName: No name for this value."
 
