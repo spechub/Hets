@@ -42,7 +42,7 @@ import Common.Utils
 import Control.Monad.Trans (lift)
 import Control.Monad
 
-import qualified Data.Map as Map
+import qualified Data.IntMap as Map
 import qualified Data.Set as Set
 import Data.Char (isAlphaNum)
 import Data.IORef
@@ -56,13 +56,10 @@ import System.Directory
 import System.Exit
 import System.FilePath
 
-data Key = PlainLibName FilePath | Key Int
-  deriving (Eq, Ord)
-
 data Session = Session
   { sessLibEnv :: LibEnv
   , sessLibName :: LibName
-  , previousKeys :: [Key]
+  , previousKeys :: [Int]
   , sessStart :: UTCTime }
 
 sessGraph :: Session -> DGraph
@@ -103,13 +100,18 @@ hetsServer opts1 = do
               ++ show (map (fileName . snd) files)
     _ -> return $ mkResponse status405 ""
 
+mkHtmlString :: FilePath -> [Element] -> String
+mkHtmlString path dirs = htmlHead ++ mkHtmlElem
+  ("Listing of" ++ if null path then " repository" else ": " ++ path)
+  (headElems path ++ [unode "ul" dirs])
+
+mkHtmlElem :: String -> [Element] -> String
+mkHtmlElem title body = ppElement $ unode "html"
+                [ unode "head" $ unode "title" title
+                , unode "body" body ]
+
 mkHtmlPage :: FilePath -> [Element] -> IO Response
-mkHtmlPage path dirs =
-  return $ mkOkResponse $ htmlHead
-    ++ ppElement (unode "html"
-                [ unode "head" $ unode "title" $ "Listing of"
-                   ++ if null path then " repository" else ": " ++ path
-                , unode "body" $ headElems path ++ [unode "ul" dirs]])
+mkHtmlPage path = return . mkOkResponse . mkHtmlString path
 
 mkResponse :: Status -> String -> Response
 mkResponse st = Response st [] . ResponseLBS . BS.pack
@@ -117,16 +119,22 @@ mkResponse st = Response st [] . ResponseLBS . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-getDGraph :: HetcatsOpts -> IORef (Map.Map Key Session) -> FilePath
-  -> ResultT IO Session
-getDGraph opts sessRef file = do
-  (ln, le) <- anaLibFileOrGetEnv logicGraph opts { outputToStdout = False }
+getDGraph :: HetcatsOpts -> IORef (Map.IntMap Session) -> FilePath
+  -> ResultT IO (Session, Int)
+getDGraph opts sessRef file = case readMaybe file of
+  Nothing -> do
+    (ln, le) <- anaLibFileOrGetEnv logicGraph opts { outputToStdout = False }
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
-  time <- lift getCurrentTime
-  let sess = Session le ln [] time
-  lift $ atomicModifyIORef sessRef
-    (\ m -> (Map.insert (PlainLibName file) sess m, Map.size m))
-  return sess
+    time <- lift getCurrentTime
+    let sess = Session le ln [] time
+    k <- lift $ atomicModifyIORef sessRef
+      (\ m -> let k = Map.size m in (Map.insert k sess m, k))
+    return (sess, k)
+  Just k -> do
+    m <- lift $ readIORef sessRef
+    case Map.lookup k m of
+      Nothing -> liftR $ fail "unknown development graph"
+      Just sess -> return (sess, k)
 
 getSVG :: FilePath -> DGraph -> ResultT IO String
 getSVG file dg = do
@@ -146,19 +154,24 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
-getHetsResult :: HetcatsOpts -> IORef (Map.Map Key Session) -> FilePath
+getHetsResult :: HetcatsOpts -> IORef (Map.IntMap Session) -> FilePath
   -> String -> IO (Result String)
 getHetsResult opts sessRef file query =
   let callHets = getDGraph opts sessRef file
-      getSessGraph = fmap sessGraph callHets
+      getSessGraph = fmap (sessGraph . fst) callHets
   in
   runResultT $ case dropWhile (== '?') query of
-    qstr | elem qstr ["", "d"]
+    qstr | elem qstr ["", "svg", "d"]
       -> do
         dg <- getSessGraph
         getSVG file dg
+    "dg" -> do
+        (_, k) <- callHets
+        liftR $ return $ htmlHead ++ mkHtmlElem "Current development graph"
+           (map (\ d -> aRef ('/' : show k ++ "?" ++ d) d)
+                ["xml", "svg"])
     "xml" -> do
-        sess <- callHets
+        (sess, _) <- callHets
         liftR $ return $ ppTopElement $ ToXml.dGraph (sessLibEnv sess)
           $ sessGraph sess
     "menu" | file == "dg" -> return "displaying the possible menus (missing)"
@@ -218,7 +231,7 @@ headElems path = let d = "default" in unode "strong" "Choose query type:" :
       (d : displayTypes) ++ [uploadHtml]
 
 displayTypes :: [String]
-displayTypes = ["dg", "xml"]
+displayTypes = ["svg", "dg", "xml"]
 
 findDisplayTypes :: [[String]] -> Maybe String
 findDisplayTypes = find (`elem` displayTypes) . map head
