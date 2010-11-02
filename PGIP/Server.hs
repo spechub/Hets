@@ -161,15 +161,17 @@ getHetsResult opts sessRef file query =
       getSessGraph = fmap (sessGraph . fst) callHets
   in
   runResultT $ case dropWhile (== '?') query of
-    qstr | elem qstr ["", "svg", "d"]
-      -> do
+    "svg" -> do
         dg <- getSessGraph
         getSVG file dg
-    "dg" -> do
-        (_, k) <- callHets
-        liftR $ return $ htmlHead ++ mkHtmlElem "Current development graph"
-           (map (\ d -> aRef ('/' : show k ++ "?" ++ d) d)
-                ["xml", "svg"])
+    "" -> do
+        (sess, k) <- callHets
+        let ln = show $ sessLibName sess
+        liftR $ return $ htmlHead ++ mkHtmlElem
+           ("Current development graph for " ++ ln)
+           (unode "strong" ("library " ++ ln) :
+            map (\ d -> aRef ('/' : show k ++ "?" ++ d) d)
+                displayTypes)
     "xml" -> do
         (sess, _) <- callHets
         liftR $ return $ ppTopElement $ ToXml.dGraph (sessLibEnv sess)
@@ -231,7 +233,7 @@ headElems path = let d = "default" in unode "strong" "Choose query type:" :
       (d : displayTypes) ++ [uploadHtml]
 
 displayTypes :: [String]
-displayTypes = ["svg", "dg", "xml"]
+displayTypes = ["svg", "xml"]
 
 findDisplayTypes :: [[String]] -> Maybe String
 findDisplayTypes = find (`elem` displayTypes) . map head
