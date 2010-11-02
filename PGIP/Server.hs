@@ -28,6 +28,9 @@ import Static.DotGraph
 import Static.AnalysisLibrary
 import Static.ToXml as ToXml
 
+import Interfaces.Command
+import Interfaces.CmdAction
+
 import Comorphisms.LogicGraph
 
 import Text.XML.Light
@@ -119,6 +122,10 @@ mkResponse st = Response st [] . ResponseLBS . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
+addNewSess :: IORef (Map.IntMap Session) -> Session -> IO Int
+addNewSess sessRef sess = atomicModifyIORef sessRef
+      (\ m -> let k = Map.size m in (Map.insert k sess m, k))
+
 getDGraph :: HetcatsOpts -> IORef (Map.IntMap Session) -> FilePath
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef file = case readMaybe file of
@@ -127,8 +134,7 @@ getDGraph opts sessRef file = case readMaybe file of
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
     time <- lift getCurrentTime
     let sess = Session le ln [] time
-    k <- lift $ atomicModifyIORef sessRef
-      (\ m -> let k = Map.size m in (Map.insert k sess m, k))
+    k <- lift $ addNewSess sessRef sess
     return (sess, k)
   Just k -> do
     m <- lift $ readIORef sessRef
@@ -165,17 +171,22 @@ getHetsResult opts sessRef file query =
         dg <- getSessGraph
         getSVG file dg
     "" -> do
-        (sess, k) <- callHets
-        let ln = show $ sessLibName sess
-        liftR $ return $ htmlHead ++ mkHtmlElem
-           ("Current development graph for " ++ ln)
-           (unode "strong" ("library " ++ ln) :
-            map (\ d -> aRef ('/' : show k ++ "?" ++ d) d)
-                displayTypes)
+        sk <- callHets
+        liftR $ return $ sessAns sk
     "xml" -> do
         (sess, _) <- callHets
         liftR $ return $ ppTopElement $ ToXml.dGraph (sessLibEnv sess)
           $ sessGraph sess
+    qstr | elem qstr $ map (cmdlGlobCmd . fst) globLibAct -> do
+        (sess, k) <- callHets
+        case find ((qstr ==) . cmdlGlobCmd . fst) globLibAct of
+          Nothing -> error "getHetsResult.globLibAct"
+          Just (_, act) -> do
+            let newSess = sess
+                  { sessLibEnv = act (sessLibName sess) $ sessLibEnv sess
+                  , previousKeys = k : previousKeys sess }
+            nk <- lift $ addNewSess sessRef newSess
+            liftR $ return $ sessAns (newSess, nk)
     "menu" | file == "dg" -> return "displaying the possible menus (missing)"
     qstr -> let
       (kst, rst) = span (`notElem` "&;") qstr
@@ -200,6 +211,14 @@ getHetsResult opts sessRef file query =
                ++ if kst == "node" then showDoc dgnode ""
                   else showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
         _ -> fail $ "unexpected query: " ++ qstr
+
+sessAns :: (Session, Int) -> String
+sessAns (sess, k) =  let ln = show $ sessLibName sess in
+  htmlHead ++ mkHtmlElem
+           ("Current development graph for " ++ ln)
+           (unode "strong" ("library " ++ ln) :
+            map (\ d -> aRef ('/' : show k ++ "?" ++ d) d)
+                displayTypes)
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do
@@ -233,7 +252,7 @@ headElems path = let d = "default" in unode "strong" "Choose query type:" :
       (d : displayTypes) ++ [uploadHtml]
 
 displayTypes :: [String]
-displayTypes = ["svg", "xml"]
+displayTypes = ["svg", "xml"] ++ map (cmdlGlobCmd . fst) globLibAct
 
 findDisplayTypes :: [[String]] -> Maybe String
 findDisplayTypes = find (`elem` displayTypes) . map head
