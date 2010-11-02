@@ -13,7 +13,7 @@ This module defines an ordering on extended parameters and other analysis tools.
 Extended parameter relations have the property
  -}
 
-module CSL.EPRelation where
+module CSL.EPRelation (EP.compareEP, EP.EPExp, EP.toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest) where
 
 import qualified Data.Map as Map
 import Data.Maybe
@@ -23,8 +23,8 @@ import Data.Traversable (fmapDefault)
 
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
-import CSL.GeneralExtendedParameter
----import CSL.ExtendedParameter
+import CSL.GeneralExtendedParameter as EP
+---import CSL.ExtendedParameter as EP
     (showEP, toEPExp, EPExp, compareEP)
 
 -- ----------------------------------------------------------------------

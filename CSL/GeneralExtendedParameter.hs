@@ -42,7 +42,7 @@ import Common.Id (tokStr)
 -- ----------------------------------------------------------------------
 
 
-data BaseInterval = LOpen APInt | ROpen APInt | Between APInt APInt
+data BaseInterval = LOpen APInt | ROpen APInt | Between APInt APInt deriving Show
 
 -- | Normalized generalized representation of an extended parameter constraint
 type EPExp = [BaseInterval]

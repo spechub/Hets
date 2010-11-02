@@ -21,7 +21,8 @@ import CSL.ReduceInterpreter
 import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Transformation
-import CSL.ExtendedParameter
+import CSL.TreePO (EPCompare)
+import CSL.EPRelation (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
