@@ -213,12 +213,15 @@ getHetsResult opts sessRef file query =
         _ -> fail $ "unexpected query: " ++ qstr
 
 sessAns :: (Session, Int) -> String
-sessAns (sess, k) =  let ln = show $ sessLibName sess in
-  htmlHead ++ mkHtmlElem
+sessAns (sess, k) =
+  let ln = show $ sessLibName sess
+      ref d = aRef ('/' : show k ++ "?" ++ d) d
+  in htmlHead ++ mkHtmlElem
            ("Current development graph for " ++ ln)
            (unode "strong" ("library " ++ ln) :
-            map (\ d -> aRef ('/' : show k ++ "?" ++ d) d)
-                displayTypes)
+            map ref displayTypes
+            ++ [unode "ul" $
+                map (unode "li" . ref . cmdlGlobCmd . fst) globLibAct])
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do
@@ -252,7 +255,7 @@ headElems path = let d = "default" in unode "strong" "Choose query type:" :
       (d : displayTypes) ++ [uploadHtml]
 
 displayTypes :: [String]
-displayTypes = ["svg", "xml"] ++ map (cmdlGlobCmd . fst) globLibAct
+displayTypes = ["svg", "xml"]
 
 findDisplayTypes :: [[String]] -> Maybe String
 findDisplayTypes = find (`elem` displayTypes) . map head
