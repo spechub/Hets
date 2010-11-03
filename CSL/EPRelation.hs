@@ -13,7 +13,12 @@ This module defines an ordering on extended parameters and other analysis tools.
 Extended parameter relations have the property
  -}
 
-module CSL.EPRelation (EP.compareEP, EP.EPExp, EP.toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest) where
+module CSL.EPRelation
+ ( EP.compareEP, EP.EPExp, EP.toEPExp, compareEPs, EPExps
+ , toEPExps, forestFromEPs, makeEPLeaf, showEPForest
+ , smtVMFromVars, smtExps, smtRange, smtPredDef, smtVarDef, smtVars, smtGenericStmt, smtEQStmt, smtLEStmt, smtDisjStmt
+ )
+    where
 
 import qualified Data.Map as Map
 import Data.Maybe
@@ -21,11 +26,12 @@ import Data.Tree
 import Data.List (intercalate)
 import Data.Traversable (fmapDefault)
 
+import CSL.EPBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
-import CSL.GeneralExtendedParameter as EP
----import CSL.ExtendedParameter as EP
-    (showEP, toEPExp, EPExp, compareEP)
+---import CSL.GeneralExtendedParameter as EP
+import CSL.ExtendedParameter as EP
+    (toBoolRep, showEP, toEPExp, EPExp, compareEP)
 
 -- ----------------------------------------------------------------------
 -- * Datatypes for efficient Extended Parameter comparison
@@ -45,6 +51,55 @@ showEPs eps =
 -- | Conversion function into the more efficient representation.
 toEPExps :: [EXTPARAM] -> EPExps
 toEPExps = Map.fromList . mapMaybe toEPExp
+
+
+
+data EPRange = Union EPRange EPRange | Intersection EPRange EPRange
+             | Difference EPRange EPRange | Atom EPExps
+
+-- ----------------------------------------------------------------------
+-- * SMT output generation
+-- ----------------------------------------------------------------------
+
+type VarMap = Map.Map String Int
+
+smtVMFromVars :: [String] -> VarMap
+smtVMFromVars l = Map.fromList $ zip l $ [1 .. length l]
+
+smtExps :: VarMap -> EPExps -> BoolRep
+smtExps m eps = And $ map f $ Map.assocs eps where
+    err = error "smtExps: No matching"
+    f (k, v) = toBoolRep ("x" ++ show (Map.findWithDefault err k m)) v
+
+smtRange :: VarMap -> EPRange -> BoolRep
+smtRange m (Union a b) = Or [smtRange m a, smtRange m b]
+smtRange m (Intersection a b) = And [smtRange m a, smtRange m b]
+smtRange m (Difference a b) = And [smtRange m a, Not $ smtRange m b]
+smtRange m (Atom eps) = smtExps m eps
+
+smtPredDef :: VarMap -> String -> BoolRep -> String
+smtPredDef m s b = "(define B::(-> int int bool) (lambda (x::int y::int) (and (<= 2 x) (<= x 5) (<= 1 y) (<= y 10))))"
+
+smtVarDef :: VarMap -> String
+smtVarDef m =
+    unlines $ map (\ x -> "(define " ++ x ++ " ::int)") $ smtVars m "y"
+
+smtVars :: VarMap -> String -> [String]
+smtVars m s = map ((s++) . show) [1 .. Map.size m]
+
+smtGenericStmt :: VarMap -> String -> String -> String -> String
+smtGenericStmt m s a b =
+    let vl = concat $ map (" "++) $ smtVars m "y"
+    in "(assert (not (" ++ s ++ " (" ++ a ++ vl ++ ") (" ++ b ++ vl ++ "))))"
+
+smtEQStmt :: VarMap -> String -> String -> String
+smtEQStmt m a b = smtGenericStmt m "=" a b
+
+smtLEStmt :: VarMap -> String -> String -> String
+smtLEStmt m a b = smtGenericStmt m "=>" a b
+
+smtDisjStmt :: VarMap -> String -> String -> String
+smtDisjStmt m a b = smtGenericStmt m "and" a b
 
 
 -- ----------------------------------------------------------------------

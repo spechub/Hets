@@ -27,6 +27,7 @@ Extended parameters may be based on one of the following
 
 module CSL.ExtendedParameter where
 
+import CSL.EPBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
 --import Common.Lib.Rel
@@ -43,7 +44,7 @@ instance Show NormEP where
     show LeftOf = "<="
     show RightOf = ">="
     show Equal = "="
-    show Except = "!="
+    show Except = "/="
 
 type EPExp = (NormEP, APInt)
 
@@ -63,6 +64,9 @@ toEPExp (EP t r i) =
       "-|" -> Nothing
       _ -> error $ "toEPExp: unsupported relation: " ++ r
 
+
+toBoolRep :: String -> EPExp -> BoolRep
+toBoolRep s (x, i) = Fun (show x) [s, show i]
 
 -- ----------------------------------------------------------------------
 -- * Extended Parameter comparison

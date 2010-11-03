@@ -22,7 +22,7 @@ import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Transformation
 import CSL.TreePO (EPCompare)
-import CSL.EPRelation (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
+import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
@@ -149,6 +149,10 @@ toEPLs = map toEPExps . toEPL
 -- ----------------------------------------------------------------------
 -- * Extended Parameter tests
 -- ----------------------------------------------------------------------
+
+-- test for smt-export
+-- let m = smtVMFromVars ["I", "J", "K"]
+-- smtExps m $ toEPs "I=0"
 
 printOrdEPs :: String -> IO ()
 printOrdEPs s = let ft = forestFromEPs (flip makeEPLeaf ()) $ toEPLs s

@@ -27,6 +27,7 @@ instance Show EPCompare where
     show (Comparable EQ) = "="
     show (Incomparable x) = show x
 
+
 -- ----------------------------------------------------------------------
 -- * Combining comparison results
 -- ----------------------------------------------------------------------
