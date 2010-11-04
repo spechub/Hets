@@ -96,7 +96,7 @@ getSigSens ::
     => lid -- logicname
     -> String -- filename
     -> String  -- name of spec
-    -> IO (sign, [(String, sentence)])
+    -> IO (sign, [Named sentence])
 getSigSens lid fname sp = do
   Result _ res <- runResultT $ proceed fname
   case res of
@@ -117,9 +117,9 @@ getSigSens lid fname sp = do
                   coerceThSens lid2 lid "" gSens) of
              (Just sig, Just sens) ->
                 return (plainSign sig,
-                        map (\ (x, y) -> (x, sentence y)) $ OMap.toList sens)
+                        map (\ (x, y) -> y{senAttr = x}) $ OMap.toList sens)
              _ -> error $ "Not a " ++ show lid ++ " sig"
-        _ -> error "Node 1 no in development graph"
+        _ -> error "Node 1 not in development graph"
     Nothing -> error "Error occured"
 
 

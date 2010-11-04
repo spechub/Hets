@@ -14,6 +14,8 @@ Portability :  portable
 module CSL.Analysis
     ( splitSpec
     , basicCSLAnalysis
+    , splitAS
+    , Guard(..)
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
@@ -33,6 +35,7 @@ import CSL.AS_BASIC_CSL
 import CSL.Symbol
 import CSL.Fold
 import CSL.Sign as Sign
+import CSL.EPRelation
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -40,6 +43,10 @@ import Data.List
 import Data.Maybe
 
 -- * Diagnosis Types and Functions
+
+{- TODO: we want to proceed as follows:
+ 1. Check if all applications are valid w.r.t. the arity
+-}
 
 -- | generates a named formula
 withName :: Annoted CMD -> Int -> Named CMD
@@ -60,15 +67,6 @@ analyzeFormula :: Sign.Sign -> (Annoted CMD) -> Int -> Result (Named CMD)
 analyzeFormula _ f i =
     return $ withName f{ item = staticUpdate $ item f } i
 
-{- TODO: we want to proceed as follows:
- 1. Extract the operators from the definitions and store their arity in the optype
- 2. Check if all applications are valid w.r.t. the arity
- 3. compute the variables as is done by staticUpdate
- 4. split the definitions and the program and process the extended parameters
- 5. handle conditional assignments
- 6. build the dependency relation and store it in the signature
-
--}
 
 -- | Extracts the axioms and the signature of a basic spec
 splitSpec :: BASIC_SPEC -> Sign.Sign -> Result (Sign.Sign, [Named CMD])
@@ -121,10 +119,11 @@ handleFunAssignment (Ass (Op f epl al@(_:_) rg) e) =
 
 handleFunAssignment x = x
 
--- | If element x is at position i in the first list and there is an entry (i,y)
--- in the second list then the resultlist has element y at position i. All non-
--- mentioned positions by the second list have identical values in the first
--- and the result list.
+{- | If element x is at position i in the first list and there is an entry (i,y)
+   in the second list then the resultlist has element y at position i. All 
+   positions not mentioned by the second list have identical values in the first
+   and the result list. 
+-}
 replacePositions :: [a] -> [(Int, a)] -> [a]
 replacePositions l posl =
     let f (x, _) (y, _) = compare x y
@@ -189,3 +188,61 @@ constsToVars env e =
             , foldList = \ _ _ l rg' -> List l rg'
             }
     in foldTerm substRec env e
+
+-- * Further analysis in order to run this specification
+
+{- TODO: we want to proceed here as follows:
+   1. split the definitions and the program and process the extended parameters
+   2. build the dependency relation ( and store it in the signature ?)
+
+   Not checked is:
+   1. if all defined symbols have the same arity
+-}
+
+
+-- | A guard consists of the guard range and the corresponding expression
+-- together with a name
+data Guard a = Guard a EXPRESSION String
+
+instance Show a => Show (Guard a) where
+    show (Guard a e _) = show a ++ ": " ++ show e
+
+instance Functor Guard where
+    fmap f (Guard x e s) = Guard (f x) e s
+
+-- | A guarded constant consists of the argument list (for function definitions)
+-- and a list of guard-expressions
+data Guarded a = Guarded { argvars :: [String]
+                         , guards :: [Guard a] }
+
+instance Show a => Show (Guarded a) where
+    show (Guarded vl gl) = show vl ++ " " ++ show gl
+
+
+type GuardedMap a = Map.Map String (Guarded a)
+
+analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
+analyzeGuarded x = x{ guards = map (fmap $ Atom . toEPExps) $ guards x }
+
+addAssignment :: String -> EXPRESSION -> EXPRESSION -> GuardedMap [EXTPARAM]
+              -> GuardedMap [EXTPARAM]
+addAssignment n (Op (OpString s) epl al _) def m =
+    let f (Var tok) = tokStr tok
+        f x = error $ "addAssignment: not a variable " ++ show x
+        combf x y | argvars x == argvars y = y { guards = guards y ++ guards x }
+                  | otherwise =
+                      error "addAssignment: the argument vars does not match."
+        grd = Guarded (map f al) [Guard epl def n]
+    in Map.insertWith combf s grd m
+
+addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
+
+-- | Splits the Commands into the AssignmentStore
+splitAS :: [Named CMD] -> (GuardedMap EPRange, [Named CMD])
+splitAS cl =
+    let f nc (m,l) = case sentence nc of
+                       Ass c def -> (addAssignment (senAttr nc) c def m, l)
+                       _ -> (m, nc:l)
+        (cm, pr) = foldr f (Map.empty, []) cl
+    in (Map.map analyzeGuarded cm, pr)
+

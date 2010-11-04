@@ -21,6 +21,7 @@ import CSL.ReduceInterpreter
 import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Transformation
+import CSL.EPBasic
 import CSL.TreePO (EPCompare)
 import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import CSL.Logic_CSL
@@ -34,6 +35,7 @@ import Common.Result (diags, printDiags, resultToMaybe)
 import Common.ResultT
 import Common.Lexer as Lexer
 import Common.Parsec
+import Common.AS_Annotation
 import Text.ParserCombinators.Parsec
 
 -- the process communication interface
@@ -43,6 +45,7 @@ import qualified Interfaces.Process as PC
 import Main (getSigSens)
 
 import Control.Monad.State (StateT(..))
+import Control.Monad.Trans (MonadIO (..))
 import Control.Monad (liftM)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Time.Clock
@@ -56,7 +59,7 @@ testspecs =
     [ (44, ("/CSL/EN1591.het", "EN1591"))
     ]
 
-l1 :: Int -> IO (Sign, [(String, CMD)])
+l1 :: Int -> IO (Sign, [Named CMD])
 l1 i = do
   let (lb, sp) = fromMaybe ("/CSL/Tests.het", "Test" ++ show i)
                  $ Prelude.lookup i testspecs
@@ -67,24 +70,29 @@ sig :: Int -> IO Sign
 sig = fmap fst . l1
 
 -- Check if the order is broken or not!
-sens :: Int -> IO [(String, CMD)]
+sens :: Int -> IO [Named CMD]
 sens = fmap snd . l1
 
 cmds :: Int -> IO [CMD]
-cmds = fmap (map snd) . sens
-
+cmds = fmap (map sentence) . sens
 
 -- time measurement, pendant of the time shell command
-time :: IO a -> IO a
+time :: MonadIO m => m a -> m a
 time p = do
-  t <- getCurrentTime
+  t <- liftIO getCurrentTime
   res <- p
-  t' <- getCurrentTime
-  putStrLn $ show $ diffUTCTime t' t
+  t' <- liftIO getCurrentTime
+  liftIO $ putStrLn $ show $ diffUTCTime t' t
   return res
 
 
+{-
+show guarded assignments:
 
+:m +CSL.Analysis
+sl <- sens 3
+fst $ splitAS s
+-}
 
 -- ----------------------------------------------------------------------
 -- * calculator test functions
@@ -150,9 +158,29 @@ toEPLs = map toEPExps . toEPL
 -- * Extended Parameter tests
 -- ----------------------------------------------------------------------
 
--- test for smt-export
--- let m = smtVMFromVars ["I", "J", "K"]
--- smtExps m $ toEPs "I=0"
+{-
+smtEQScript vMap (epList!!0) (epList!!1)
+test for smt-export
+let m = varMapFromList ["I", "J", "K"]
+let be = boolExps m $ toEPs "I=0"
+smtBoolExp be
+
+compare-check for yices
+let l3 = [(x,y) | x <- epList, y <- epList]
+let l2 = map (uncurry $ smtCompare vMap) l3
+putStrLn $ unlines $ map show $ zip l2 l3
+-}
+
+epList :: [EPRange]
+epList =
+    let l = map (Atom . toEPs)
+            ["I=1,J=0", "I=0,J=0", "I=0", "I=1", "J=0", "I>0", "I>2", "I>0,J>2"]
+    in foldl Intersection (head l) (tail l) : foldl Union (head l) (tail l) : l
+         
+
+vMap :: Map.Map String Int
+vMap = varMapFromSet $ namesInList epList
+
 
 printOrdEPs :: String -> IO ()
 printOrdEPs s = let ft = forestFromEPs (flip makeEPLeaf ()) $ toEPLs s

@@ -66,7 +66,7 @@ toEPExp (EP t r i) =
 
 
 toBoolRep :: String -> EPExp -> BoolRep
-toBoolRep s (x, i) = Fun (show x) [s, show i]
+toBoolRep s (x, i) = Pred (show x) [s, show i]
 
 -- ----------------------------------------------------------------------
 -- * Extended Parameter comparison
