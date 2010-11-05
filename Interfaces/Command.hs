@@ -94,7 +94,7 @@ cmdlGlobCmd cmd = case cmd of
   Conservativity -> "cons"
   ThmHideShift -> "thm-hide"
   HideThmShift -> "hide-thm"
-  _ -> map toLower $ menuTextGlobCmd cmd
+  _ -> map (\ c -> if c == ' ' then '-' else toLower c) $ menuTextGlobCmd cmd
 
 isDgRule :: GlobCmd -> Bool
 isDgRule c = c <= HideThmShift
@@ -120,9 +120,10 @@ describeGlobCmd c =
   Hiding -> "Delete all hiding links"
   ProveCurrent -> "Applies selected prover to selected goals"
   DropTranslation -> "Drops any selected comorphism"
-  _ -> if isDgRule c then "Apply rule " ++ t else
-    if isFlatteningCmd c then "Flatten out " ++ t else
-    if isUndoOrRedo c then mt ++ " last change" else t
+  _ | isDgRule c -> "Apply rule " ++ t
+    | isFlatteningCmd c -> "Flatten out " ++ t
+    | isUndoOrRedo c -> mt ++ " last change"
+  _ -> t
 
 globCmdNameStr :: GlobCmd -> String
 globCmdNameStr c = let s = cmdlGlobCmd c in

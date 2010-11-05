@@ -210,14 +210,14 @@ getHetsResult opts sessRef file query =
 
 sessAns :: (Session, Int) -> String
 sessAns (sess, k) =
-  let ln = show $ sessLibName sess
+  let ln = show $ getLibId $ sessLibName sess
       ref d = aRef ('/' : show k ++ "?" ++ d) d
   in htmlHead ++ mkHtmlElem
-           ("Current development graph for " ++ ln)
+           ('(' : shows k ")" ++ ln)
            (unode "strong" ("library " ++ ln) :
             map ref displayTypes
             ++ [unode "ul" $
-                map (unode "li" . ref . cmdlGlobCmd . fst) globLibAct])
+                map (unode "li" . ref) globalCommands])
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do
