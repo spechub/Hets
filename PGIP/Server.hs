@@ -211,14 +211,36 @@ getHetsResult opts sessRef file query =
 
 sessAns :: (Session, Int) -> String
 sessAns (sess, k) =
-  let ln = show $ getLibId $ sessLibName sess
+  let libName = sessLibName sess
+      libEnv = sessLibEnv sess
+      ln = show $ getLibId libName
       ref d = aRef ('/' : show k ++ "?" ++ d) d
+      dg = lookupDGraph libName libEnv
+      libref l = let s = show (getLibId l) in
+        aRef ('/' : s ++ "?dg=" ++ show k ++ "&xml") s
+      noderef f (n, lbl) = let s = show n in
+        aRef ('/' : show k ++ f ++ s) $ s ++ " " ++ getDGNodeName lbl
+      nRef n = [noderef "?node=" n, unode "strong" "---"
+               , noderef "?theory=" n]
+      edgeref e@(_, _, lbl) =
+        aRef ('/' : show k ++ "?edge=" ++ showEdgeId (dgl_id lbl))
+                 $ showLEdge e
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
            (unode "strong" ("library " ++ ln) :
-            map ref displayTypes
+            map ref displayTypes ++ [unode "p" "commands:"]
             ++ [unode "ul" $
-                map (unode "li" . ref) globalCommands])
+                map (unode "li" . ref) globalCommands]
+            ++ [unode "p" "imported libraries:"]
+            ++ [unode "ul" $
+                map (unode "li" . libref) $ Map.keys libEnv]
+            ++ [unode "p" "nodes with local and global theories:"]
+            ++ [unode "ul" $
+                map (unode "li" . nRef) $ labNodesDG dg]
+            ++ [unode "p" "edges:"]
+            ++ [unode "ul" $
+                map (unode "li" . edgeref) $ labEdgesDG dg]
+           )
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
 getHetsLibContent opts dir query = do

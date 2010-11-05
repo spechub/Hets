@@ -212,7 +212,7 @@ instance Pretty DGLinkOrigin where
 -- | only shows the edge and node ids
 showLEdge :: LEdge DGLinkLab -> String
 showLEdge (s, t, l) = "edge " ++ showEdgeId (dgl_id l)
-  ++ " " ++ showName (dglName l)
+  ++ " " ++ getDGLinkName l
   ++ "(" ++ showNodeId s ++ " --> " ++ show t ++ ")"
 
 -- | only print the origin and parts of the type
