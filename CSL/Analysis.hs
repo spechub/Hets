@@ -37,6 +37,7 @@ import CSL.Fold
 import CSL.Sign as Sign
 import CSL.EPRelation
 
+import qualified Data.Tree as Tr
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
@@ -201,28 +202,31 @@ constsToVars env e =
 
 
 -- | A guard consists of the guard range and the corresponding expression
--- together with a name
-data Guard a = Guard a EXPRESSION String
+-- together with a name, a set of not propagated parameters and a set of
+-- constrained parameters (in the extended parameter specification)
+data Guard a = Guard { range :: a
+                     , definition :: EXPRESSION
+                     , assName :: String
+                     , filtered :: Set.Set String
+                     , constrained :: Set.Set String } deriving Show
 
-instance Show a => Show (Guard a) where
-    show (Guard a e _) = show a ++ ": " ++ show e
+-- TODO: pretty instance for Guard and Guarded to output the guards nicely!
 
 instance Functor Guard where
-    fmap f (Guard x e s) = Guard (f x) e s
+    fmap f (Guard x e an fs ct) = Guard (f x) e an fs ct
 
 -- | A guarded constant consists of the argument list (for function definitions)
 -- and a list of guard-expressions
 data Guarded a = Guarded { argvars :: [String]
-                         , guards :: [Guard a] }
+                         , guards :: [Guard a] } deriving Show
 
-instance Show a => Show (Guarded a) where
-    show (Guarded vl gl) = show vl ++ " " ++ show gl
+instance Functor Guarded where
+    fmap f grdd = grdd { guards = map (fmap f) $ guards grdd }
+
 
 
 type GuardedMap a = Map.Map String (Guarded a)
 
-analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
-analyzeGuarded x = x{ guards = map (fmap $ Atom . toEPExps) $ guards x }
 
 addAssignment :: String -> EXPRESSION -> EXPRESSION -> GuardedMap [EXTPARAM]
               -> GuardedMap [EXTPARAM]
@@ -232,7 +236,8 @@ addAssignment n (Op (OpString s) epl al _) def m =
         combf x y | argvars x == argvars y = y { guards = guards y ++ guards x }
                   | otherwise =
                       error "addAssignment: the argument vars does not match."
-        grd = Guarded (map f al) [Guard epl def n]
+        grd = Guarded (map f al) [uncurry (Guard epl def n)
+                                              $ filteredConstrainedParams epl]
     in Map.insertWith combf s grd m
 
 addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
@@ -246,3 +251,41 @@ splitAS cl =
         (cm, pr) = foldr f (Map.empty, []) cl
     in (Map.map analyzeGuarded cm, pr)
 
+
+-- | Transforms the old guards where inclusion overlapping was allowed into
+-- disjoint new guards.
+analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
+analyzeGuarded x =
+    let f grd = (grd, toEPExps $ range grd)
+        -- builds a forest mirroring the inclusion relation of the guard ranges
+        frst = forestFromEPs f $ guards x
+        -- compute the new range information with the disjointness property
+        g l rl sf =
+            let nodeRg = Atom $ eplabel rl
+                newRg = case map (Atom . eplabel . Tr.rootLabel) sf of
+                          [] -> nodeRg
+                          -- we make nodeRg disjoint with its children
+                          -- by removing the union of the children from it
+                          rgl -> if isStarEP (eplabel rl)
+                                 then Complement $ Union rgl
+                                 else Intersection
+                                          [nodeRg, Complement $ Union rgl]
+            in (nodelabel rl) { range = newRg } : l
+        newguards = foldForest g [] frst
+    in x { guards = newguards }
+
+-- | Folds the forest in top-down direction constructing the accumulator
+-- from the labels and children of each node.
+foldForest :: (b -> a -> Tr.Forest a -> b) -> b -> Tr.Forest a -> b
+foldForest f = foldl g where g x tr = f x (Tr.rootLabel tr) $ Tr.subForest tr
+
+
+{- NOTE: I do not need this anymore, but this is a nice utility function,
+ could be stored together with foldForest somewhere else
+
+-- | Maps through the forest in top-down direction building new labels
+-- from the old ones together with the old children
+mapForest :: (a -> Forest a -> b) -> Forest a -> Forest b
+mapForest f a = unfoldForest g a
+    where g t = let sf = subForest t in (f (rootLabel t) sf, sf)
+-}

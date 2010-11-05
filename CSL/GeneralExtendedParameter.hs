@@ -59,7 +59,7 @@ instance Ord ExtNumber where
                       (LeftInf, _) -> LT
                       (RightInf, _) -> GT
                       (Regular i, Regular j) -> compare i j
-                      _ -> swapCompare $ compare (b, a)
+                      _ -> swapCompare $ compare b a
 
 type BaseInterval = (ExtNumber, ExtNumber)
 
@@ -118,7 +118,7 @@ leftOf (_,b) (_,d) = b <= d
 compareBI :: BaseInterval -> BaseInterval -> EPCompare
 compareBI i1@(a,b) i2@(c,d)
     | i1 == i2 = Comparable EQ
-    | b < c or a > d = Incomparable Disjoint
+    | b < c || a > d = Incomparable Disjoint
     | a <= c = if b < d then Incomparable Overlap else Comparable GT
     | b <= d = Comparable LT
     | otherwise = Incomparable Overlap
@@ -140,11 +140,15 @@ compareBIEP i1 (i2:l) =
                          _ -> Incomparable Overlap
 
 
+-- TODO: implement this comparison procedure
+
 -- | Compares two 'EPExp': They are uncompareable if they overlap or are disjoint.
 compareEP :: EPExp -> EPExp -> EPCompare
 compareEP [] [] =  Comparable EQ
 compareEP _ [] =  Comparable GT
 compareEP [] _ =  Comparable LT
+compareEP _ _ = error "GeneralExtendedParameter: TODO"
+{-
 compareEP ep1@(i1:l1) ep2@(i2:l2) =
     case compareBI i1 i2 of
       Comparable EQ -> case compareEP l1 l2 of
@@ -152,6 +156,4 @@ compareEP ep1@(i1:l1) ep2@(i2:l2) =
     i1 == i2 -> wenn compareEP l1 l2 disjoint dann overlap sonst ergebnis
     i1 > i2 -> wenn compareEP 
     
-
-
-
+-}

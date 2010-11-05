@@ -61,7 +61,8 @@ testspecs =
 
 l1 :: Int -> IO (Sign, [Named CMD])
 l1 i = do
-  let (lb, sp) = fromMaybe ("/CSL/Tests.het", "Test" ++ show i)
+  let (lb, sp) = fromMaybe (if i > 0 then ("/CSL/Tests.het", "Test" ++ show i)
+                            else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
   getSigSens CSL (hlib ++ lb) sp
@@ -169,13 +170,16 @@ compare-check for yices
 let l3 = [(x,y) | x <- epList, y <- epList]
 let l2 = map (uncurry $ smtCompare vMap) l3
 putStrLn $ unlines $ map show $ zip l2 l3
+
+sl <- sens (-3)
+fst $ splitAS sl
 -}
 
 epList :: [EPRange]
 epList =
     let l = map (Atom . toEPs)
             ["I=1,J=0", "I=0,J=0", "I=0", "I=1", "J=0", "I>0", "I>2", "I>0,J>2"]
-    in foldl Intersection (head l) (tail l) : foldl Union (head l) (tail l) : l
+    in Intersection l : Union l : l
          
 
 vMap :: Map.Map String Int
@@ -183,7 +187,7 @@ vMap = varMapFromSet $ namesInList epList
 
 
 printOrdEPs :: String -> IO ()
-printOrdEPs s = let ft = forestFromEPs (flip makeEPLeaf ()) $ toEPLs s
+printOrdEPs s = let ft = forestFromEPs ((,) ()) $ toEPLs s
                 in putStrLn $ showEPForest show ft
 --forestFromEPs :: (a -> EPTree b) -> [a] -> EPForest b
 

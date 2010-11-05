@@ -30,7 +30,6 @@ module CSL.ExtendedParameter where
 import CSL.EPBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
---import Common.Lib.Rel
 import Common.Id (tokStr)
 
 -- ----------------------------------------------------------------------

@@ -15,10 +15,10 @@ Extended parameter relations have the property
  -}
 
 module CSL.EPRelation
- ( EP.compareEP, EP.EPExp, EP.toEPExp, compareEPs, EPExps
- , toEPExps, forestFromEPs, makeEPLeaf, showEPForest, varMapFromSet
+ ( EP.compareEP, EP.EPExp, EP.toEPExp, compareEPs, EPExps, filteredConstrainedParams
+ , toEPExps, forestFromEPs, makeEPLeaf, showEPForest, varMapFromSet, EPNodeLabel(..)
  , varMapFromList, boolExps, boolRange, smtPredDef, smtVarDef, smtVars
- , smtGenericStmt, smtEQStmt, smtLEStmt, smtDisjStmt
+ , smtGenericStmt, smtEQStmt, smtLEStmt, smtDisjStmt, isStarEP
  , namesInList, EPRange(..), smtAllScripts, smtAllScript, smtScriptHead, smtGenericScript
  , smtEQScript, smtLEScript, smtDisjScript, smtResponse, smtCompare, smtCompare', smtMultiResponse
  )
@@ -29,7 +29,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.Tree
-import Data.List (intercalate, isInfixOf)
+import Data.List
 import Data.Traversable (fmapDefault)
 import System.Process
 import System.IO.Unsafe
@@ -40,6 +40,9 @@ import CSL.AS_BASIC_CSL
 ---import CSL.GeneralExtendedParameter as EP
 import CSL.ExtendedParameter as EP
     (toBoolRep, showEP, toEPExp, EPExp, compareEP)
+import Common.Id (tokStr)
+
+import Common.Doc
 
 -- ----------------------------------------------------------------------
 -- * Datatypes for efficient Extended Parameter comparison
@@ -49,30 +52,47 @@ import CSL.ExtendedParameter as EP
 -- particularly for comparison
 type EPExps = Map.Map String EPExp
 
-showEPs :: EPExps -> String
-showEPs eps =
-    let outp = intercalate ";"
-               $ map showEP $ Map.toList eps
-    in if null outp then "*" else outp
+prettyEPs :: EPExps -> Doc
+prettyEPs eps
+    | Map.null eps = text "*"
+    | otherwise = brackets $ sepByCommas $ map (text . showEP) $ Map.toList eps
 
+showEPs :: EPExps -> String
+showEPs = show . prettyEPs
+
+isStarEP :: EPExps -> Bool 
+isStarEP = Map.null
 
 -- | Conversion function into the more efficient representation.
 toEPExps :: [EXTPARAM] -> EPExps
 toEPExps = Map.fromList . mapMaybe toEPExp
 
+-- | Sets representing the Parameters for which there is a propagation break
+-- (filtered) and for which there is a constraint (constrained)
+filteredConstrainedParams :: [EXTPARAM] -> (Set.Set String, Set.Set String)
+filteredConstrainedParams = foldl f (Set.empty, Set.empty)
+    where f (fs, cs) (EP t "-|" _) = (Set.insert (tokStr t) fs, cs)
+          f (fs, cs) (EP t _ _) = (fs, Set.insert (tokStr t) cs)
 
 
-data EPRange = Union EPRange EPRange | Intersection EPRange EPRange
-             | Difference EPRange EPRange | Atom EPExps
+data EPRange = Union [EPRange] | Intersection [EPRange]
+             | Complement EPRange | Atom EPExps
+
+prettyEPRange :: EPRange -> Doc
+prettyEPRange re =
+    let f s a b = parens $ hsep [prettyEPRange a, text s, prettyEPRange b]
+        g s l = parens $ hsep $ text s : map prettyEPRange l
+    in case re of
+      Union [r1, r2] -> f "Un" r1 r2
+      Intersection [r1, r2] -> f "In" r1 r2
+      Complement r -> g "C" [r]
+      Union l -> g "Union" l
+      Intersection l -> g "Intersection" l
+      Atom eps -> prettyEPs eps
+
 
 showEPRange :: EPRange -> String
-showEPRange re =
-    let f s a b = concat ["(", showEPRange a, " ", s, " ", showEPRange b, ")"]
-    in case re of
-      Union r1 r2 -> f "Un" r1 r2
-      Intersection r1 r2 -> f "In" r1 r2
-      Difference r1 r2 -> f "\\" r1 r2
-      Atom eps -> showEPs eps
+showEPRange = show . prettyEPRange
 
 instance Show EPRange where
     show = showEPRange
@@ -80,10 +100,11 @@ instance Show EPRange where
 mapRange :: (EPExps -> b) -> EPRange -> [b]
 mapRange f re =
     case re of
-      Union r1 r2 -> concatMap (mapRange f) [r1, r2]
-      Intersection r1 r2 -> concatMap (mapRange f) [r1, r2]
-      Difference r1 r2 -> concatMap (mapRange f) [r1, r2]
+      Union l -> g l
+      Intersection l -> g l
+      Complement r -> mapRange f r
       Atom eps -> [f eps]
+    where g = concatMap (mapRange f)
 
 class RangeUtils a where
     names :: a -> Set.Set String
@@ -118,11 +139,13 @@ boolExps m eps = And $ map f $ Map.assocs eps where
     f (k, v) = toBoolRep ("x" ++ show (Map.findWithDefault err k m)) v
 
 boolRange :: VarMap -> EPRange -> BoolRep
-boolRange m (Union a b) = Or [boolRange m a, boolRange m b]
-boolRange m (Intersection a b) = And [boolRange m a, boolRange m b]
-boolRange m (Difference a b) = And [boolRange m a, Not $ boolRange m b]
+boolRange m (Union l) = Or $ map (boolRange m) l
+boolRange m (Intersection l) = And $ map (boolRange m) l
+boolRange m (Complement a) = Not $ boolRange m a
 boolRange m (Atom eps) = boolExps m eps
 
+
+-- TODO: put this rather into another module and replace EPRange by BoolRep
 
 smtPredDef :: VarMap -> String -> BoolRep -> String
 smtPredDef m s b = concat [ "(define ", s, "::(-> "
@@ -272,8 +295,8 @@ data EPNodeLabel a = EPNL { eplabel :: EPExps
 type EPTree a = Tree (EPNodeLabel a)
 type EPForest a = Forest (EPNodeLabel a)
 
-makeEPLeaf :: EPExps -> a -> EPTree a
-makeEPLeaf eps x = Node { rootLabel = EPNL { eplabel = eps, nodelabel = x }
+makeEPLeaf :: a -> EPExps -> EPTree a
+makeEPLeaf x eps = Node { rootLabel = EPNL { eplabel = eps, nodelabel = x }
                         , subForest = [] }
 
 -- | Inserts a node to an 'EPForest'.
@@ -293,14 +316,18 @@ insertEPNode :: EPTree a -- ^ Node to insert
              -> EPTree a -- ^ Tree to insert the given node in
              -> Maybe (EPTree a) -- ^ Resulting tree
 insertEPNode n t =
-    case compareEPs (eplabel $ rootLabel n) $ eplabel $ rootLabel t of
-      Comparable EQ -> error "insertEPNode: equality overlap"
-      Incomparable Overlap -> error "insertEPNode: overlap"
+    case compareEPs ep1 ep2 of
+      Comparable EQ -> error $ concat [ "insertEPNode: equality overlap "
+                                      , show ep1, " = ", show ep2 ]
+      Incomparable Overlap -> error $ concat [ "insertEPNode: overlap "
+                                      , show ep1, " = ", show ep2 ]
       Incomparable Disjoint -> Nothing
       Comparable GT -> aInB t n
       Comparable LT -> aInB n t
     where
       aInB a b = Just b { subForest = insertEPNodeToForest a (subForest b) }
+      ep1 = eplabel $ rootLabel n
+      ep2 = eplabel $ rootLabel t
 
 -- | Returns a graphical representation of the forest.
 showEPForest :: (a -> String) -> EPForest a -> String
@@ -313,8 +340,13 @@ showEPForest pr =
 
 -- | This function is not a simple map, but inserts the nodes correctly
 -- to the tree.
-forestFromEPs :: (a -> EPTree b) -> [a] -> EPForest b
-forestFromEPs f l = foldr (insertEPNodeToForest . f) [] l
+forestFromEPsGen :: (a -> EPTree b) -> [a] -> EPForest b
+forestFromEPsGen f l = foldr (insertEPNodeToForest . f) [] l
+
+-- | This function is not a simple map, but inserts the nodes correctly
+-- to the tree.
+forestFromEPs :: (a -> (b, EPExps)) -> [a] -> EPForest b
+forestFromEPs f = forestFromEPsGen $ uncurry makeEPLeaf . f
 
 -- ----------------------------------------------------------------------
 -- * Handling of Extended Parameter indexed assignments
