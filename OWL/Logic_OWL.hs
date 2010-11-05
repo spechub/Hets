@@ -67,7 +67,6 @@ instance Sentences OWL Axiom Sign OWLMorphism Entity where
     print_named OWL namedSen =
         pretty (sentence namedSen) <>
           if isAxiom namedSen then empty else space <> text "%implied"
-    printMorphism OWL = prMorAsPairList
     sym_of OWL = singletonList . symOf
     symmap_of OWL = symMapOf
 

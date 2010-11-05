@@ -277,10 +277,6 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_sign :: lid -> sign -> Doc
       print_sign _ = pretty
 
-      -- | modified printing of a morphism as user output
-      printMorphism :: lid -> morphism -> Doc
-      printMorphism _ = pretty
-
       -- | print a sentence with comments
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
