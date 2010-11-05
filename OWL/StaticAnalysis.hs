@@ -172,8 +172,12 @@ basicOWLAnalysis (ofile, inSign, _) =
           inSign {namespaceMap = integNamespace
                  , ontologyID = uri $ ontology ofile'
                  }
+        noDecl s = case sentence s of
+                     PlainAxiom _ (Declaration _) -> False
+                     _ -> True
     in Result diags1
-           $ Just (ofile', ExtSign accSign syms, concat sens)
+           $ Just (ofile', ExtSign accSign syms
+                  , filter noDecl $ concat sens)
     where
         oName = uri $ ontology ofile
 
