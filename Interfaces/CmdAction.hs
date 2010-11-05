@@ -15,9 +15,9 @@ module Interfaces.CmdAction where
 
 import Proofs.QualifyNames (qualifyLibEnv)
 import Proofs.DGFlattening
-import Proofs.Freeness(freeness)
+import Proofs.Freeness (freeness)
 import Proofs.NormalForm (normalForm)
-import Proofs.Automatic(automatic)
+import Proofs.Automatic (automatic)
 import Proofs.Global (globSubsume, globDecomp)
 import Proofs.Local (localInference, locDecomp)
 import Proofs.Composition (composition, compositionCreatingEdges)
@@ -51,8 +51,14 @@ globLibResultAct =
   , (Colimit, computeColimit)
   , (NormalForm, normalForm)
   , (Freeness, freeness)
---  , (ThmFreeShift, theoremFreeShift)
+-- , (ThmFreeShift, theoremFreeShift)
   ]
+
+allGlobLibAct :: [(GlobCmd, LibName -> LibEnv -> Result LibEnv)]
+allGlobLibAct =
+  map (\ (a, b) -> (a, \ n -> return . b n)) globLibAct
+  ++ globLibResultAct
+  ++ map (\ (a, b) -> (a, const b)) globResultAct
 
 globResultAct :: [(GlobCmd, LibEnv -> Result LibEnv)]
 globResultAct =

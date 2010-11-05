@@ -184,11 +184,12 @@ getHetsResult opts sessRef file query =
                 $ ToXml.dGraph (sessLibEnv sess) dg
               _ -> liftR $ return $ sessAns sk
             GlobCmdQuery s ->
-              case find ((s ==) . cmdlGlobCmd . fst) globLibAct of
+              case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
+                newLib <- liftR $ act (sessLibName sess) $ sessLibEnv sess
                 let newSess = sess
-                      { sessLibEnv = act (sessLibName sess) $ sessLibEnv sess
+                      { sessLibEnv = newLib
                       , previousKeys = k : previousKeys sess }
                 nk <- lift $ addNewSess sessRef newSess
                 liftR $ return $ sessAns (newSess, nk)
