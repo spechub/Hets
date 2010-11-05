@@ -9,7 +9,9 @@ Portability :  non-portable (via imports)
 
 -}
 
-module PGIP.Server where
+module PGIP.Server (hetsServer) where
+
+import PGIP.Query
 
 import Driver.Options
 import Driver.ReadFn
@@ -40,14 +42,14 @@ import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.ToXml
-import Common.Utils
 
 import Control.Monad.Trans (lift)
 import Control.Monad
 
-import qualified Data.IntMap as Map
+import qualified Data.Map as Map
+import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
-import Data.Char (isAlphaNum)
+import Data.Char
 import Data.IORef
 import Data.List
 import Data.Ord
@@ -63,10 +65,14 @@ data Session = Session
   { sessLibEnv :: LibEnv
   , sessLibName :: LibName
   , previousKeys :: [Int]
-  , sessStart :: UTCTime }
+  , _sessStart :: UTCTime }
 
-sessGraph :: Session -> DGraph
-sessGraph (Session le ln _ _) = lookupDGraph ln le
+sessGraph :: DGQuery -> Session -> Maybe DGraph
+sessGraph dgQ (Session le ln _ _) = case dgQ of
+  DGQuery _ (Just path) ->
+      fmap snd $ find (\ (n, _) -> show (getLibId n) == path)
+        $ Map.toList le
+  _ -> Map.lookup ln le
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
@@ -74,7 +80,7 @@ hetsServer opts1 = do
   let tempHetsLib = tempDir </> "MyHetsLib"
       opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
   createDirectoryIfMissing False tempHetsLib
-  sessRef <- newIORef Map.empty
+  sessRef <- newIORef IntMap.empty
   run 8000 $ \ re ->
     let query = B8.unpack $ queryString re in
     case B8.unpack (requestMethod re) of
@@ -122,23 +128,23 @@ mkResponse st = Response st [] . ResponseLBS . BS.pack
 mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
-addNewSess :: IORef (Map.IntMap Session) -> Session -> IO Int
+addNewSess :: IORef (IntMap.IntMap Session) -> Session -> IO Int
 addNewSess sessRef sess = atomicModifyIORef sessRef
-      (\ m -> let k = Map.size m in (Map.insert k sess m, k))
+      (\ m -> let k = IntMap.size m in (IntMap.insert k sess m, k))
 
-getDGraph :: HetcatsOpts -> IORef (Map.IntMap Session) -> FilePath
+getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
-getDGraph opts sessRef file = case readMaybe file of
-  Nothing -> do
+getDGraph opts sessRef dgQ = case dgQ of
+  NewDGQuery file -> do
     (ln, le) <- anaLibFileOrGetEnv logicGraph opts { outputToStdout = False }
       Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
     time <- lift getCurrentTime
     let sess = Session le ln [] time
     k <- lift $ addNewSess sessRef sess
     return (sess, k)
-  Just k -> do
+  DGQuery k _ -> do
     m <- lift $ readIORef sessRef
-    case Map.lookup k m of
+    case IntMap.lookup k m of
       Nothing -> liftR $ fail "unknown development graph"
       Just sess -> return (sess, k)
 
@@ -160,57 +166,47 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
-getHetsResult :: HetcatsOpts -> IORef (Map.IntMap Session) -> FilePath
+getHetsResult :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> FilePath
   -> String -> IO (Result String)
 getHetsResult opts sessRef file query =
-  let callHets = getDGraph opts sessRef file
-      getSessGraph = fmap (sessGraph . fst) callHets
-  in
-  runResultT $ case dropWhile (== '?') query of
-    "svg" -> do
-        dg <- getSessGraph
-        getSVG file dg
-    "" -> do
-        sk <- callHets
-        liftR $ return $ sessAns sk
-    "xml" -> do
-        (sess, _) <- callHets
-        liftR $ return $ ppTopElement $ ToXml.dGraph (sessLibEnv sess)
-          $ sessGraph sess
-    qstr | elem qstr $ map (cmdlGlobCmd . fst) globLibAct -> do
-        (sess, k) <- callHets
-        case find ((qstr ==) . cmdlGlobCmd . fst) globLibAct of
-          Nothing -> error "getHetsResult.globLibAct"
-          Just (_, act) -> do
-            let newSess = sess
-                  { sessLibEnv = act (sessLibName sess) $ sessLibEnv sess
-                  , previousKeys = k : previousKeys sess }
-            nk <- lift $ addNewSess sessRef newSess
-            liftR $ return $ sessAns (newSess, nk)
-    "menu" | file == "dg" -> return "displaying the possible menus (missing)"
-    qstr -> let
-      (kst, rst) = span (`notElem` "&;") qstr
-      midstr = case stripPrefix "id=" $ drop 1 rst of
-                 Nothing -> Nothing
-                 Just idstr -> readMaybe idstr :: Maybe Int
-      in case (kst, midstr) of
-        ("edge", Just i) -> do
-          dg <- getSessGraph
-          case getDGLinksById (EdgeId i) dg of
-            [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
-            [] -> fail $ "no edge found with id: " ++ show i
-            _ -> fail $ "multiple edges found with id: " ++ show i
-        (_, Just i) | elem kst ["node", "theory"] -> do
-          dg <- getSessGraph
-          case lab (dgBody dg) i of
-            Nothing -> fail $ "no node id: " ++ show i
-            Just dgnode -> return
-              $ (if isDGRef dgnode then ("reference " ++) else
-               if isInternalNode dgnode then ("internal " ++) else id)
-              "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
-               ++ if kst == "node" then showDoc dgnode ""
-                  else showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
-        _ -> fail $ "unexpected query: " ++ qstr
+  runResultT $ case anaUri file $ dropWhile (== '?')
+                 $ filter (not . isSpace) query of
+    Left err -> fail err
+    Right (Query dgQ qk) -> do
+      sk@(sess, k) <- getDGraph opts sessRef dgQ
+      case sessGraph dgQ sess of
+        Nothing -> fail $ "unknown library given by: " ++ file
+        Just dg ->
+          case qk of
+            DisplayQuery ms -> case ms of
+              Just "svg" -> getSVG file dg
+              Just "xml" -> liftR $ return $ ppTopElement
+                $ ToXml.dGraph (sessLibEnv sess) dg
+              _ -> liftR $ return $ sessAns sk
+            GlobCmdQuery s ->
+              case find ((s ==) . cmdlGlobCmd . fst) globLibAct of
+              Nothing -> fail "getHetsResult.GlobCmdQuery"
+              Just (_, act) -> do
+                let newSess = sess
+                      { sessLibEnv = act (sessLibName sess) $ sessLibEnv sess
+                      , previousKeys = k : previousKeys sess }
+                nk <- lift $ addNewSess sessRef newSess
+                liftR $ return $ sessAns (newSess, nk)
+            NodeQuery i ms -> case lab (dgBody dg) i of
+              Nothing -> fail $ "no node id: " ++ show i
+              Just dgnode -> return
+                $ (if isDGRef dgnode then ("reference " ++) else
+                  if isInternalNode dgnode then ("internal " ++) else id)
+                  "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
+                  ++ case ms of
+                       Just "theory" ->
+                           showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
+                       _ -> showDoc dgnode ""
+            EdgeQuery i _ ->
+              case getDGLinksById i dg of
+              [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
+              [] -> fail $ "no edge found with id: " ++ showEdgeId i
+              _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
 sessAns :: (Session, Int) -> String
 sessAns (sess, k) =
@@ -253,12 +249,6 @@ headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
   map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
       (d : displayTypes) ++ [uploadHtml]
-
-displayTypes :: [String]
-displayTypes = ["svg", "xml"]
-
-findDisplayTypes :: [[String]] -> Maybe String
-findDisplayTypes = find (`elem` displayTypes) . map head
 
 htmlHead :: String
 htmlHead =
