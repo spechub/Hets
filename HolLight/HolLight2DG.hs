@@ -14,18 +14,16 @@ module HolLight.HolLight2DG where
 
 import Static.GTheory
 import Static.DevGraph
+import Static.History
 import Static.ComputeTheory
-import Static.AnalysisStructured
 
-import Logic.Logic
 import Logic.Prover
 import Logic.ExtSign
 import Logic.Grothendieck
 
-import Common.ExtSign
-import Common.Id
+
 import Common.LibName
-import Common.Result
+--import Common.Result
 import Common.AS_Annotation
 
 import HolLight.Sign
@@ -34,39 +32,71 @@ import HolLight.Logic_HolLight
 
 import Driver.Options
 
-import Data.Map as Map
-import Data.Set as Set
+import qualified Data.Map as Map
+--import qualified Data.Set as Set
 
-data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
+importData :: FilePath -> IO ((Sign,[Sentence]))
+importData fp = do
+    s <- readFile fp
+    let (o,tps,ts) = (read s) :: ([(String, HolType)], [HolType], [(String,Term)])
+    let opsM = foldl (\m (k,v) -> Map.insert k v m) Map.empty o
+    let sg = Sign {
+     types = tps,
+     ops = opsM }
+    let sens = map (\(n,t) -> Sentence { name = n, term = t, proof = Nothing }) ts
+    return (sg, sens)
 
-term_sig :: Term -> Sign
-term_sig (Var s _) = Sign (Set.singleton s)
-term_sig (Comb t1 t2) = sigUnion (term_sig t1) (term_sig t2)
-term_sig (Abs t1 t2) = sigUnion (term_sig t1) (term_sig t2)
-term_sig _ = Sign Set.empty
+anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
+anaHolLightFile _opts path = do
+   (sig, sens) <- importData path
+   let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
+                     (toThSens $ map (makeNamed "") sens) startThId
+       labelK = newInfoNodeLab
+                     emptyNodeName
+                     (newNodeInfo DGEmpty)
+                     gt
+       k =  getNewNodeDG emptyDG
+       insN = [InsertNode (k, labelK)]
+       newDG = changesDGH emptyDG insN
+       ln = emptyLibName path
+       le = Map.insert ln newDG Map.empty
+       labCh = [SetNodeLab labelK (k, labelK
+                          { globalTheory = computeLabelTheory le newDG
+                               (k, labelK) })]
+       newDG1 = changesDGH newDG labCh
+       le' = Map.insert ln newDG1 le
+   return (Just (ln, le'))
 
-anaHol2HetsFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-anaHol2HetsFile _ fp = do
-  s <- readFile fp
-  let s' = (read s) :: [(Term,SenInfo)]
-  let (dg,lnks,m) = foldl (\(dg,ls,mp) (t,SenInfo id axiom inc name) ->
-                     let gt = G_theory HolLight (makeExtSign HolLight (term_sig t)) startSigId (toThSens [makeNamed name (Sentence name t Nothing)]) startThId in
-                     let (n,dg') = insGTheory dg (NodeName (mkSimpleId name) "" 0 [])  DGEmpty gt in
-                   (dg',ls++(Prelude.map (\i -> (i,n)) inc),Map.insert id (n) mp)
-                 ) (emptyDG,[],Map.empty) s'
-  let dg' = foldl (\d (i,n) ->
-            let n1 = case Map.lookup i m of
-                      Just s -> s
-                      Nothing -> error "encountered internal error while importing data exported from Hol Light" in
-            let incl = subsig_inclusion HolLight (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') in
-            let gm = case maybeResult incl of
-                     Nothing -> error "encountered an internal error importing data exported from Hol Light"
-                     Just inc -> gEmbed $ mkG_morphism HolLight inc in
-            insLink d gm globalDef TEST (getNode n1) (getNode n)
+-- data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
 
-           ) dg lnks
-  let ln = emptyLibName fp
-      lib = Map.singleton ln $
-              computeDGraphTheories Map.empty dg
-  return $ Just (ln, lib)
+-- term_sig :: Term -> Sign
+-- term_sig (Var s _) = Sign (Set.singleton s)
+-- term_sig (Comb t1 t2) = sigUnion (term_sig t1) (term_sig t2)
+-- term_sig (Abs t1 t2) = sigUnion (term_sig t1) (term_sig t2)
+-- term_sig _ = Sign Set.empty
+
+-- anaHol2HetsFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
+-- anaHol2HetsFile _ fp = do
+--   s <- readFile fp
+--   let s' = (read s) :: [(Term,SenInfo)]
+--   let (dg,lnks,m) = foldl (\(dg,ls,mp) (t,SenInfo id axiom inc name) ->
+--                      let gt = G_theory HolLight (makeExtSign HolLight (term_sig t)) startSigId (toThSens [makeNamed name (Sentence name t Nothing)]) startThId in
+--                      let (n,dg') = insGTheory dg (NodeName (mkSimpleId name) "" 0 [])  DGEmpty gt in
+--                    (dg',ls++(Prelude.map (\i -> (i,n)) inc),Map.insert id (n) mp)
+--                  ) (emptyDG,[],Map.empty) s'
+--   let dg' = foldl (\d (i,n) ->
+--             let n1 = case Map.lookup i m of
+--                       Just s -> s
+--                       Nothing -> error "encountered internal error while importing data exported from Hol Light" in
+--             let incl = subsig_inclusion HolLight (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') in
+--             let gm = case maybeResult incl of
+--                      Nothing -> error "encountered an internal error importing data exported from Hol Light"
+--                      Just inc -> gEmbed $ mkG_morphism HolLight inc in
+--             insLink d gm globalDef TEST (getNode n1) (getNode n)
+
+--            ) dg lnks
+--   let ln = emptyLibName fp
+--       lib = Map.singleton ln $
+--               computeDGraphTheories Map.empty dg
+--   return $ Just (ln, lib)
 

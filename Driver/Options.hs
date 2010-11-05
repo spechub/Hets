@@ -307,6 +307,7 @@ data InType =
   | HaskellIn
   | MaudeIn
   | TwelfIn
+  | HolLightIn
   | PrfIn
   | OmdocIn
   | ExperimentalIn -- ^ for testing new functionality
@@ -325,6 +326,7 @@ instance Show InType where
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
     TwelfIn -> "elf"
+    HolLightIn -> "hol"
     PrfIn -> prfS
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
@@ -350,7 +352,7 @@ instance Show ATType where
 plainInTypes :: [InType]
 plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn,
-    PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In]
+    HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

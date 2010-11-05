@@ -52,6 +52,7 @@ import PGIP.Server
 import Maude.Maude2DG (anaMaudeFile)
 import LF.Twelf2DG (anaTwelfFile)
 import OMDoc.Import (anaOMDocFile)
+import HolLight.HolLight2DG(anaHolLightFile)
 
 main :: IO ()
 main =
@@ -81,6 +82,7 @@ processFile opts file = do
         return . getMaybeLib $ intState st
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
+      HolLightIn -> anaHolLightFile opts file
       OmdocIn -> anaOMDocFile opts file
       CommonLogicIn -> anaLibExt (opts { defLogic = "CommonLogic" }) file
         emptyLibEnv emptyDG

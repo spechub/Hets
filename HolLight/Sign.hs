@@ -22,4 +22,4 @@ emptySig :: Sign
 emptySig = Sign{types =[], ops = Map.empty}
 
 isSubSig :: Sign -> Sign -> Bool
-isSubSig _s1 _s2 = False -- for now!
+isSubSig _s1 _s2 = True -- for now!
