@@ -67,12 +67,12 @@ data Session = Session
   , previousKeys :: [Int]
   , _sessStart :: UTCTime }
 
-sessGraph :: DGQuery -> Session -> Maybe DGraph
+sessGraph :: DGQuery -> Session -> Maybe (LibName, DGraph)
 sessGraph dgQ (Session le ln _ _) = case dgQ of
   DGQuery _ (Just path) ->
-      fmap snd $ find (\ (n, _) -> show (getLibId n) == path)
+      find (\ (n, _) -> show (getLibId n) == path)
         $ Map.toList le
-  _ -> Map.lookup ln le
+  _ -> fmap (\ dg -> (ln, dg)) $ Map.lookup ln le
 
 hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
@@ -176,23 +176,23 @@ getHetsResult opts sessRef file query =
       sk@(sess, k) <- getDGraph opts sessRef dgQ
       case sessGraph dgQ sess of
         Nothing -> fail $ "unknown library given by: " ++ file
-        Just dg ->
+        Just (ln, dg) ->
           case qk of
             DisplayQuery ms -> case ms of
               Just "svg" -> getSVG file dg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph (sessLibEnv sess) dg
-              _ -> liftR $ return $ sessAns sk
+              _ -> liftR $ return $ sessAns ln sk
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
-                newLib <- liftR $ act (sessLibName sess) $ sessLibEnv sess
+                newLib <- liftR $ act ln $ sessLibEnv sess
                 let newSess = sess
                       { sessLibEnv = newLib
                       , previousKeys = k : previousKeys sess }
                 nk <- lift $ addNewSess sessRef newSess
-                liftR $ return $ sessAns (newSess, nk)
+                liftR $ return $ sessAns ln (newSess, nk)
             NodeQuery i ms -> case lab (dgBody dg) i of
               Nothing -> fail $ "no node id: " ++ show i
               Just dgnode -> return
@@ -209,37 +209,45 @@ getHetsResult opts sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
-sessAns :: (Session, Int) -> String
-sessAns (sess, k) =
-  let libName = sessLibName sess
-      libEnv = sessLibEnv sess
+sessAns :: LibName -> (Session, Int) -> String
+sessAns libName (sess, k) =
+  let libEnv = sessLibEnv sess
       ln = show $ getLibId libName
-      ref d = aRef ('/' : show k ++ "?" ++ d) d
-      dg = lookupDGraph libName libEnv
-      libref l = let s = show (getLibId l) in
-        aRef ('/' : s ++ "?dg=" ++ show k ++ "&xml") s
-      noderef f (n, lbl) = let s = show n in
-        aRef ('/' : show k ++ f ++ s) $ s ++ " " ++ getDGNodeName lbl
-      nRef n = [noderef "?node=" n, unode "strong" "---"
-               , noderef "?theory=" n]
+      mkPath l =
+        '/' : concat [ show (getLibId l) ++ "?dg=" | l /= sessLibName sess ]
+        ++ show k
+      extPath l = mkPath l ++
+        if l /= sessLibName sess then "&" else "?"
+      ref d = aRef (extPath libName ++ d) d
+      libref l =
+        aRef (mkPath l) (show $ getLibId l) : map (\ d ->
+         aRef (extPath l ++ d) d) displayTypes
+      noderef (n, lbl) = let s = show n in
+        unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
+        aRef (extPath libName ++ c ++ "=" ++ s) c) nodeCommands
       edgeref e@(_, _, lbl) =
-        aRef ('/' : show k ++ "?edge=" ++ showEdgeId (dgl_id lbl))
+        aRef (extPath libName ++ "edge=" ++ showEdgeId (dgl_id lbl))
                  $ showLEdge e
+      dg = lookupDGraph libName libEnv
+      nlabs = labNodesDG dg
+      elabs = labEdgesDG dg
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
-           (unode "strong" ("library " ++ ln) :
+           (unode "b" ("library " ++ ln) :
             map ref displayTypes ++ [unode "p" "commands:"]
             ++ [unode "ul" $
                 map (unode "li" . ref) globalCommands]
             ++ [unode "p" "imported libraries:"]
             ++ [unode "ul" $
                 map (unode "li" . libref) $ Map.keys libEnv]
-            ++ [unode "p" "nodes with local and global theories:"]
+            ++ [unode "p" (show (length nlabs)
+                           ++ " nodes with local and global theories:")]
             ++ [unode "ul" $
-                map (unode "li" . nRef) $ labNodesDG dg]
-            ++ [unode "p" "edges:"]
+                map (unode "li" . noderef) nlabs]
+            ++ [unode "p" (show (length elabs) ++ " edges:")]
             ++ [unode "ul" $
-                map (unode "li" . edgeref) $ labEdgesDG dg]
+                map (unode "li" . edgeref)
+                $ sortBy (comparing (\ (_, _, l) -> dgl_id l)) elabs]
            )
 
 getHetsLibContent :: HetcatsOpts -> String -> String -> IO [Element]
