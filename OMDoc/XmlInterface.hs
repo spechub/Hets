@@ -354,8 +354,10 @@ instance XmlRepresentable TCElement where
         el_notation
         ( [ Attr at_for $ urlEscape $ showCDName cd nm
           , Attr at_role "application", Attr at_fixity $ show fixity
-          , Attr at_associativity $ show assoc, Attr at_precedence $ show prec ]
-          ++ if implicit == 0 then [] else [Attr at_implicit $ show implicit] )
+          , Attr at_precedence $ show prec ]
+          ++ if implicit == 0 then [] else [Attr at_implicit $ show implicit]
+          ++ if assoc == NoneAssoc then [] else [Attr at_associativity
+                                                          $ show assoc] )
         Nothing
     toXml (TCFlexibleNotation (cd, nm) prec comps) =
         mkElement

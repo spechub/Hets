@@ -89,7 +89,7 @@ import Network.URI
 {- | There are three important maps for each theory:
  1. OMName -> symbol, the NameSymbolMap stores for each OMDoc name the
                       translated hets symbol
- 2. OMName -> String, the nameMap stores the notation information of the
+ 2. OMName -> String, the NameMap stores the notation information of the
                       OMDoc names, identity mappings are NOT stored here!
  3. SigMapI symbol, this signature map is just a container to store map 1 and 2
 -}
@@ -490,11 +490,12 @@ updateSymbolMap lid mor nsmap l =
               sm' = coerceMapofsymbol lid' lid sm
           in G_mapofsymbol lid $ foldl f sm' l
 
--- | Computes a symbol map for the given TCMorphism. The symbols are looked
--- up in the provided maps. For each symbol not found in the target map we
--- return a OMName, raw symbol pair in order to insert the missing entries
--- in the target name symbol map later. If notations are not present, all
--- lookup failures end up in errors.
+{- | Computes a symbol map for the given TCMorphism. The symbols are looked
+   up in the provided maps. For each symbol not found in the target map we
+   return a OMName, raw symbol pair in order to insert the missing entries
+   in the target name symbol map later. If notations are not present, all
+   lookup failures end up in errors.
+-}
 computeSymbolMap :: forall lid sublogics
         basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree .
@@ -516,7 +517,7 @@ computeSymbolMap mNots nsmapS nsmapT morph lid =
               -- function for notation lookup
               g = lookupNotationInMap
                   $ fromMaybe (error "computeSymbolMap: no notations") mNots
-              -- function for the map functor
+              -- function for map
               f (omn, omimg) =
                   let tSymName = case omimg of
                                    Left s -> mkSimpleName s
