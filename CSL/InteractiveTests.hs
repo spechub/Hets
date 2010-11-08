@@ -23,6 +23,7 @@ import CSL.Interpreter
 import CSL.Transformation
 import CSL.EPBasic
 import CSL.TreePO (EPCompare)
+import CSL.ExtendedParameter
 import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
@@ -178,7 +179,7 @@ fst $ splitAS sl
 epList :: [EPRange]
 epList =
     let l = map (Atom . toEPs)
-            ["I=1,J=0", "I=0,J=0", "I=0", "I=1", "J=0", "I>0", "I>2", "I>0,J>2"]
+            ["", "I=1,J=0", "I=0,J=0", "I=0", "I=1", "J=0", "I>0", "I>2", "I>0,J>2"]
     in Intersection l : Union l : l
          
 

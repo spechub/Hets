@@ -14,15 +14,7 @@ This module defines an ordering on extended parameters and other analysis tools.
 Extended parameter relations have the property
  -}
 
-module CSL.EPRelation
- ( EP.compareEP, EP.EPExp, EP.toEPExp, compareEPs, EPExps, filteredConstrainedParams
- , toEPExps, forestFromEPs, makeEPLeaf, showEPForest, varMapFromSet, EPNodeLabel(..)
- , varMapFromList, boolExps, boolRange, smtPredDef, smtVarDef, smtVars
- , smtGenericStmt, smtEQStmt, smtLEStmt, smtDisjStmt, isStarEP
- , namesInList, EPRange(..), smtAllScripts, smtAllScript, smtScriptHead, smtGenericScript
- , smtEQScript, smtLEScript, smtDisjScript, smtResponse, smtCompare, smtCompare', smtMultiResponse
- )
-    where
+module CSL.EPRelation where
 
 
 import qualified Data.Map as Map
@@ -37,7 +29,6 @@ import System.IO.Unsafe
 import CSL.EPBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
----import CSL.GeneralExtendedParameter as EP
 import CSL.ExtendedParameter as EP
     (toBoolRep, showEP, toEPExp, EPExp, compareEP)
 import Common.Id (tokStr)
@@ -60,8 +51,19 @@ prettyEPs eps
 showEPs :: EPExps -> String
 showEPs = show . prettyEPs
 
+-- | A star expression is the unconstrained expression corresponding to the
+-- whole space of extended parameter values
 isStarEP :: EPExps -> Bool 
 isStarEP = Map.null
+
+-- | 'isStarEP' lifted for Range expressions.
+isStarRange :: EPRange -> Bool 
+isStarRange (Atom e) = isStarEP e
+isStarRange _ = False
+
+-- | The star range.
+starRange :: EPRange
+starRange = Atom Map.empty
 
 -- | Conversion function into the more efficient representation.
 toEPExps :: [EXTPARAM] -> EPExps
@@ -76,7 +78,7 @@ filteredConstrainedParams = foldl f (Set.empty, Set.empty)
 
 
 data EPRange = Union [EPRange] | Intersection [EPRange]
-             | Complement EPRange | Atom EPExps
+             | Complement EPRange | Atom EPExps | Empty
 
 prettyEPRange :: EPRange -> Doc
 prettyEPRange re =
@@ -88,6 +90,7 @@ prettyEPRange re =
       Complement r -> g "C" [r]
       Union l -> g "Union" l
       Intersection l -> g "Intersection" l
+      Empty -> text "Empty"
       Atom eps -> prettyEPs eps
 
 
@@ -97,29 +100,128 @@ showEPRange = show . prettyEPRange
 instance Show EPRange where
     show = showEPRange
 
-mapRange :: (EPExps -> b) -> EPRange -> [b]
-mapRange f re =
+-- | Behaves as a map on the list of leafs of the range expression
+-- (from left to right)
+mapRangeLeafs :: (EPExps -> b) -> EPRange -> [b]
+mapRangeLeafs f re =
     case re of
       Union l -> g l
       Intersection l -> g l
-      Complement r -> mapRange f r
+      Complement r -> mapRangeLeafs f r
       Atom eps -> [f eps]
-    where g = concatMap (mapRange f)
+      Empty -> []
+    where g = concatMap (mapRangeLeafs f)
+
+-- | Maps an EP expression transformer over the given range expression
+mapRange :: (EPExps -> EPExps) -> EPRange -> EPRange
+mapRange f re =
+    case re of
+      Union l -> Union $ g l
+      Intersection l -> Intersection $ g l
+      Complement r -> Complement $ mapRange f r
+      Atom eps -> Atom $ f eps
+      _ -> re
+    where g = map (mapRange f)
 
 class RangeUtils a where
-    names :: a -> Set.Set String
+    rangeNames :: a -> Set.Set String
 
 instance RangeUtils EPExps where
-    names = Map.keysSet
+    rangeNames = Map.keysSet
 
 instance RangeUtils EPRange where
-    names = Set.unions . mapRange names
+    rangeNames = Set.unions . mapRangeLeafs rangeNames
 
 namesInList :: RangeUtils a => [a] -> Set.Set String
-namesInList = Set.unions . map names
+namesInList = Set.unions . map rangeNames
+
+-- TODO: check the todos at the end for projection-fix
+
+-- | Project the expression on the complement of the given list, this means
+-- that we remove all constraints on the provided parameternames from the EPs.
+projectEPs :: [String] -> EPExps -> EPExps
+projectEPs [] e = e
+projectEPs l e = foldr Map.delete e l
+
+-- | Project the range on the complement of the given list by projecting each
+-- atomic EP expression. We simplify expressions containing star EPs.
+projectRange :: [String] -> EPRange -> EPRange
+projectRange [] r = r
+projectRange l e = simplifyRange $ mapRange (projectEPs l) e
+
+{- | Removes all star- and empty-entries from inside of the range expression.
+
+ Union [,*,] -> *                        (top element)
+ Intersection [,*,] -> Intersection [,]  (neutral element)
+ Complement * -> Empty                   (bottom element)
+
+ For Empty its the dual behaviour
+-}
+simplifyRange :: EPRange -> EPRange
+simplifyRange re =
+    case re of
+      Union l -> f [] l
+      Intersection l -> g [] l
+      Complement r ->
+          case simplifyRange r of
+            Empty -> starRange
+            r' | isStarRange r' -> Empty
+               | otherwise -> Complement r'
+      _ -> re
+    where -- returns either a simplified list or a new expression
+      f acc [] = if null acc then Empty else Union acc
+      f acc (r:l) =
+          case simplifyRange r of
+            Empty -> f acc l
+            r' | isStarRange r' -> r'
+               | otherwise -> f (acc++[r']) l
+      g acc [] = if null acc then starRange else Intersection acc
+      g acc (r:l) =
+          case simplifyRange r of
+            Empty -> Empty
+            r' | isStarRange r' -> g acc l
+               | otherwise -> g (acc++[r']) l
 
 -- ----------------------------------------------------------------------
--- * SMT output generation
+-- * Extended Parameter comparison
+-- ----------------------------------------------------------------------
+
+{- | Compares two 'EPExps': They are pairwise compared over the common 
+     extended parameter names (see also the operator-table in combineCmp).
+     This function can be optimized in returning directly disjoint
+     once a disjoint subresult encountered.
+-}
+compareEPs :: EPExps -> EPExps -> EPCompare
+compareEPs eps1 eps2 =
+    -- choose smaller map for fold, and remember if maps are swapped
+    let (eps, eps', sw) = if Map.size eps1 > Map.size eps2
+                          then (eps2, eps1, True) else (eps1, eps2, False)
+        -- foldfunction
+        f k ep (b, c) = let (cmp', c') = 
+                                case Map.lookup k eps' of
+                                  -- increment the counter
+                                  Just ep' -> (compareEP ep ep', c+1)
+                                  -- if key not present in reference map then
+                                  -- ep < *
+                                  _ -> (Comparable LT, c)
+                        in (combineCmp b cmp', c')
+
+        -- we fold over the smaller map, which can be more efficient.
+        -- We have to count the number of matched parameter names to see if
+        -- there are still EPs in eps' which indicates to compare with ">" at
+        -- the end of the fold.
+        (epc, cnt) = Map.foldWithKey f
+                     (Comparable EQ, 0) -- start the fold with "=",
+                                        -- the identity element
+                     eps -- the smaller map
+        epc' = if Map.size eps' > cnt
+               then combineCmp (Comparable GT) epc else epc
+
+    -- if the maps were swapped then swap the result
+    in if sw then swapCmp epc' else epc'
+
+-- ----------------------------------------------------------------------
+-- * SMT output generation for smt based comparison
 -- ----------------------------------------------------------------------
 
 type VarMap = Map.Map String Int
@@ -132,9 +234,10 @@ varMapFromList l = Map.fromList $ zip l $ [1 .. length l]
 varMapFromSet :: Set.Set String -> VarMap
 varMapFromSet = varMapFromList . Set.toList
 
--- | Builds a Boolean representation of the 
+-- | Builds a Boolean representation from the extended parameter expression
 boolExps :: VarMap -> EPExps -> BoolRep
-boolExps m eps = And $ map f $ Map.assocs eps where
+boolExps m eps | isStarEP eps = trueBool
+               | otherwise = And $ map f $ Map.assocs eps where
     err = error "boolExps: No matching"
     f (k, v) = toBoolRep ("x" ++ show (Map.findWithDefault err k m)) v
 
@@ -143,6 +246,7 @@ boolRange m (Union l) = Or $ map (boolRange m) l
 boolRange m (Intersection l) = And $ map (boolRange m) l
 boolRange m (Complement a) = Not $ boolRange m a
 boolRange m (Atom eps) = boolExps m eps
+boolRange _ Empty = falseBool
 
 
 -- TODO: put this rather into another module and replace EPRange by BoolRep
@@ -246,8 +350,7 @@ smtFullCompare m r1 r2 = smtStatusCompareTable $ unsafePerformIO $ smtCheck m r1
 
 smtCompare' :: VarMap -> EPRange -> EPRange -> EPCompare
 smtCompare' m r1 r2 =
-    let (c, _, _) =  smtStatusCompareTable $ unsafePerformIO
-                     $ mapM smtResponse $ smtAllScripts m r1 r2
+    let (c, _, _) = smtStatusCompareTable $ unsafePerformIO $ smtCheck' m r1 r2
     in c
 
 smtResponseToStatus :: String -> SMTStatus
@@ -348,54 +451,18 @@ forestFromEPsGen f l = foldr (insertEPNodeToForest . f) [] l
 forestFromEPs :: (a -> (b, EPExps)) -> [a] -> EPForest b
 forestFromEPs f = forestFromEPsGen $ uncurry makeEPLeaf . f
 
--- ----------------------------------------------------------------------
--- * Handling of Extended Parameter indexed assignments
--- ----------------------------------------------------------------------
-
--- | A type to store the different definiens of one constant dependent on the
--- extended parameter range
-type AssertionMap = Map.Map String (EPForest EXPRESSION)
--- TODO: implement
--- | Adds a command to the assertionmap. Non-assertion commands are ignored.
-insertAssignment :: CMD -> AssertionMap -> AssertionMap
-insertAssignment = error "TODO"
 
 
 -- ----------------------------------------------------------------------
--- * Extended Parameter comparison
+-- * Partitions based on 'EPRange'
 -- ----------------------------------------------------------------------
 
-{- | Compares two 'EPExps': They are pairwise compared over the common 
-     extended parameter names (see also the operator-table in combineCmp).
-     This function can be optimized in returning directly disjoint
-     once a disjoint subresult encountered.
--}
-compareEPs :: EPExps -> EPExps -> EPCompare
-compareEPs eps1 eps2 =
-    -- choose smaller map for fold, and remember if maps are swapped
-    let (eps, eps', sw) = if Map.size eps1 > Map.size eps2
-                          then (eps2, eps1, True) else (eps1, eps2, False)
-        -- foldfunction
-        f k ep (b, c) = let (cmp', c') = 
-                                case Map.lookup k eps' of
-                                  -- increment the counter
-                                  Just ep' -> (compareEP ep ep', c+1)
-                                  -- if key not present in reference map then
-                                  -- ep < *
-                                  _ -> (Comparable LT, c)
-                        in (combineCmp b cmp', c')
+-- TODO: correct the projections, build them by replacing matching EPs by star
+-- and non-matching by empty! So give already the instantiation instead of
+-- simply removing the I-part!!
 
-        -- we fold over the smaller map, which can be more efficient.
-        -- We have to count the number of matched parameter names to see if
-        -- there are still EPs in eps' which indicates to compare with ">" at
-        -- the end of the fold.
-        (epc, cnt) = Map.foldWithKey f
-                     (Comparable EQ, 0) -- start the fold with "=",
-                                        -- the identity element
-                     eps -- the smaller map
-        epc' = if Map.size eps' > cnt
-               then combineCmp (Comparable GT) epc else epc
+-- type Partition a = [(EPRange, a)]
 
-    -- if the maps were swapped then swap the result
-    in if sw then swapCmp epc' else epc'
+
+
 

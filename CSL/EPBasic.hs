@@ -24,6 +24,12 @@ data BoolRep = Not BoolRep | Impl BoolRep BoolRep | And [BoolRep]
              | Or [BoolRep] | Pred String [String]
 
 
+trueBool :: BoolRep
+trueBool = Pred "true" []
+
+falseBool :: BoolRep
+falseBool = Pred "false" []
+
 -- ----------------------------------------------------------------------
 -- * Output for SMT
 -- ----------------------------------------------------------------------
@@ -31,6 +37,7 @@ data BoolRep = Not BoolRep | Impl BoolRep BoolRep | And [BoolRep]
 
 smtBoolExp :: BoolRep -> String
 smtBoolExp br = let f s l = g s smtBoolExp l
+                    g s _ [] = s
                     g s h l = concat ["(", intercalate " " $ s : map h l, ")"]
                 in case br of
                      Not b -> f "not" [b]
