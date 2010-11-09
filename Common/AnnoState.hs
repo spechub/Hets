@@ -43,7 +43,7 @@ instance AParsable () where
   aparser = pzero
 
 -- | just the list of currently collected annotations
-data AnnoState st = AnnoState { toAnnos :: [Annotation], userState :: st }
+data AnnoState st = AnnoState { toAnnos :: [Annotation], _userState :: st }
 
 -- | no annotations
 emptyAnnos :: st -> AnnoState st
@@ -68,12 +68,6 @@ addAnnos = getState >>= parseAnnos >>= setState
 -- | add only annotations on consecutive lines to the internal state
 addLineAnnos :: AParser st ()
 addLineAnnos = getState >>= parseLineAnnos >>= setState
-
-getUserState :: AParser st st
-getUserState = fmap userState getState
-
-setUserState :: st -> AParser st ()
-setUserState st = getState >>= \ s -> setState s { userState = st }
 
 -- | extract all annotation from the internal state,
 -- resets the internal state to 'emptyAnnos'
