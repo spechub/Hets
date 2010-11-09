@@ -48,8 +48,8 @@ caslLetters ch = let c = ord ch in
 
 -- ['A'..'Z'] ++ ['a'..'z'] ++
 
--- see <http://www.htmlhelp.com/reference/charset/> starting from \192
--- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
+{- see <http://www.htmlhelp.com/reference/charset/> starting from \192
+\208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn -}
 
 caslLetter :: CharParser st Char
 caslLetter = satisfy caslLetters <?> "casl letter"
@@ -158,12 +158,12 @@ scanString = flat (many (caslChar <|> (char '\'' >> return "\\\'")))
 isString :: Token -> Bool
 isString = isPrefixOf "\"" . tokStr
 
-parseString :: Parser a -> String -> a
+parseString :: CharParser () a -> String -> a
 parseString p s = case parse p "" s of
                   Left _ -> error $ "parseString: " ++ s
                   Right x -> x
 
-splitString :: Parser a -> String -> (a, String)
+splitString :: CharParser () a -> String -> (a, String)
 splitString p = parseString $ do
   hd <- p
   tl <- getInput
@@ -181,8 +181,8 @@ scanFloat = getNumber
                         <++> getNumber))
 
 
--- | In addition to scanFloat, also '1.', '.1' and '2.e-13' are recognized
--- as well as preceding signs '+-'.
+{- | In addition to scanFloat, also '1.', '.1' and '2.e-13' are recognized
+as well as preceding signs '+-'. -}
 scanFloatExt :: CharParser st String
 scanFloatExt =
     let -- the 'E' component
@@ -198,7 +198,7 @@ scanFloatExt =
     in -- '1.' or '2.e-13' or '1.213'
       try (getSNum <++> (optionL (try $ compD getNum') <++> optionL compE))
       -- everything starting with a dot
-      <|> (choice (map string ["+.", "-.", "."])  >-> checkSp') <++> getNumber
+      <|> (choice (map string ["+.", "-.", "."]) >-> checkSp') <++> getNumber
               <++> optionL compE
 
 scanDigit :: CharParser st String
@@ -211,7 +211,7 @@ isNumber t = case tokStr t of
 
 isFloating :: Token -> Bool
 -- precondition: isNumber
-isFloating = any (flip elem ".E") . tokStr
+isFloating = any (`elem` ".E") . tokStr
 
 -- * skip whitespaces and nested comment out
 
@@ -312,12 +312,12 @@ placeS = tryString place <?> place
 placeT :: CharParser st Token
 placeT = pToken placeS
 
--- ParsecCombinator.notFollowedBy only allows to check for a single "tok"
--- thus a single Char.
+{- ParsecCombinator.notFollowedBy only allows to check for a single "tok"
+thus a single Char. -}
 
 notFollowedWith :: GenParser tok st a -> GenParser tok st b
                 -> GenParser tok st a
 notFollowedWith p1 p2 =
   try $ join $ (try (p1 >> p2) >> return pzero) <|> return p1
--- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
--- by Andrew Pimlott
+{- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
+by Andrew Pimlott -}
