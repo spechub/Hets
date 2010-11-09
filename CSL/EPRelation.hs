@@ -9,9 +9,8 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
 Portability :  non-portable
 
-This module defines an ordering on extended parameters and other analysis tools.
+This module defines an ordering on extended parameters and provides analysis tools.
 
-Extended parameter relations have the property
  -}
 
 module CSL.EPRelation where
@@ -137,17 +136,55 @@ namesInList = Set.unions . map rangeNames
 
 -- TODO: check the todos at the end for projection-fix
 
--- | Project the expression on the complement of the given list, this means
--- that we remove all constraints on the provided parameternames from the EPs.
-projectEPs :: [String] -> EPExps -> EPExps
-projectEPs [] e = e
-projectEPs l e = foldr Map.delete e l
 
--- | Project the range on the complement of the given list by projecting each
--- atomic EP expression. We simplify expressions containing star EPs.
-projectRange :: [String] -> EPRange -> EPRange
-projectRange [] r = r
-projectRange l e = simplifyRange $ mapRange (projectEPs l) e
+{- | 
+   (1) If the arguments are disjoint ->  'Nothing'
+   (2) If all extended parameter constraints from the first argument are 
+   subsumed by the second argument -> second argument with deleted entries for
+   these extended parameters
+   (3) Otherwise -> error: the first argument must be subsumed by or disjoint
+   with the second one.
+-}
+projectEPs :: EPExps -> EPExps -> Maybe EPExps
+projectEPs e1 e2
+    | isStarEP e1 = Just e2
+    | otherwise =
+        -- take first element from e1 delete it from e1 and proceed with it
+        let ((k, v), e1') = Map.deleteFindMin e1
+            e2' = Map.delete k e2
+        in case Map.lookup k e2 of
+             Nothing -> projectEPs e1' e2
+             Just v2 ->
+                 case compareEP v v2 of
+                   Incomparable Disjoint -> Nothing
+                   Comparable x -> if x /= GT then projectEPs e1' e2'
+                                   else error $ "projectEPs: e1 > e2 "
+                                            ++ show (e1,e2)
+                   _ -> error  $ "projectEPs: overlap " ++ show (e1,e2)
+    
+
+{- |
+   Given a range predicate, e.g, A x y z (here with three extended
+   parameters), we instantiate it partially with the given
+   instantiation, e.g., x=1, and obtain A 1 y z. The new predicate
+   does not depend on x anymore and can be built by replacing all
+   atomic subexpressions in A which talk about x (1) by the subexpression
+   where the constraint for x is removed if the given instantiation
+   satisfies this subexpression (e.g., x<10) or (2) by 'Empty' if this
+   constraint is not satisfied (e.g., x>1)
+-}
+projectRange :: EPExps -> EPRange -> EPRange
+projectRange e re = simplifyRange $ f re
+    where f rexp =
+              case rexp of
+                Union l -> Union $ map f l
+                Intersection l -> Intersection $ map f l
+                Complement r -> Complement $ f r
+                Atom eps -> case projectEPs e eps of
+                              Nothing -> Empty
+                              Just eps' -> Atom eps'
+                Empty -> Empty
+                    
 
 {- | Removes all star- and empty-entries from inside of the range expression.
 
@@ -457,12 +494,18 @@ forestFromEPs f = forestFromEPsGen $ uncurry makeEPLeaf . f
 -- * Partitions based on 'EPRange'
 -- ----------------------------------------------------------------------
 
--- TODO: correct the projections, build them by replacing matching EPs by star
--- and non-matching by empty! So give already the instantiation instead of
--- simply removing the I-part!!
+data Partition a = AllPartition a | Partition [(EPRange, a)]
 
--- type Partition a = [(EPRange, a)]
+instance Functor Partition where
+    fmap f (AllPartition x) = AllPartition $ f x
+    fmap f (Partition l) = Partition $ map g l
+        where g (er, x) = (er, f x)
 
+refinePartition :: Partition a -> Partition b -> Partition (a,b)
+refinePartition pa pb = error ""
+
+restrictPartition :: EPRange -> Partition a -> Partition a
+restrictPartition er pb = error ""
 
 
 

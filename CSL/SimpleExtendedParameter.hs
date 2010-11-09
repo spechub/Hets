@@ -37,7 +37,7 @@ import Common.Id (tokStr)
 -- ----------------------------------------------------------------------
 
 -- | Normalized representation of an extended param relation
-data NormEP = LeftOf | RightOf | Equal | Except deriving Eq
+data NormEP = LeftOf | RightOf | Equal | Except deriving (Eq, Ord)
 
 instance Show NormEP where
     show LeftOf = "<="

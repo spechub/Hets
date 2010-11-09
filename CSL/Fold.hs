@@ -17,25 +17,25 @@ module CSL.Fold where
 import Common.Id
 import CSL.AS_BASIC_CSL
 
-data Record a b c = Record
-    { foldAss :: c -> CMD -> b -> b -> a
-    , foldCmd :: c -> CMD -> String -> [b] -> a
-    , foldSequence :: c -> CMD -> [a] -> a
-    , foldCond :: c -> CMD -> [(b, [a])] -> a
-    , foldRepeat :: c -> CMD -> b -> [a] -> a
+data Record a b = Record
+    { foldAss :: CMD -> b -> b -> a
+    , foldCmd :: CMD -> String -> [b] -> a
+    , foldSequence :: CMD -> [a] -> a
+    , foldCond :: CMD -> [(b, [a])] -> a
+    , foldRepeat :: CMD -> b -> [a] -> a
 
-    , foldVar :: c -> EXPRESSION -> Token -> b
-    , foldOp :: c -> EXPRESSION -> OPID -> [EXTPARAM] -> [b] -> Range -> b
-    , foldList :: c -> EXPRESSION -> [b] -> Range -> b
-    , foldInterval :: c -> EXPRESSION -> APFloat -> APFloat -> Range -> b
-    , foldInt :: c -> EXPRESSION -> APInt -> Range -> b
-    , foldDouble :: c -> EXPRESSION -> APFloat -> Range -> b
+    , foldVar :: EXPRESSION -> Token -> b
+    , foldOp :: EXPRESSION -> OPID -> [EXTPARAM] -> [b] -> Range -> b
+    , foldList :: EXPRESSION -> [b] -> Range -> b
+    , foldInterval :: EXPRESSION -> APFloat -> APFloat -> Range -> b
+    , foldInt :: EXPRESSION -> APInt -> Range -> b
+    , foldDouble :: EXPRESSION -> APFloat -> Range -> b
     }
 
 -- | Produces an error with given message on all entries. Use this if you
 -- overwrite only the EXPRESSION part and you do not use the CMD part anyway
 -- , e.g., if you use the record in foldTerm
-emptyRecord :: String -> Record a b c
+emptyRecord :: String -> Record a b
 emptyRecord s =
     Record { foldAss = error s
            , foldCmd = error s
@@ -52,72 +52,72 @@ emptyRecord s =
            }
 
 -- | The identity transformation
-idRecord :: Record CMD EXPRESSION c
+idRecord :: Record CMD EXPRESSION
 idRecord =
-    Record { foldAss = \ _ v _ _ -> v
-           , foldCmd = \ _ v _ _ -> v
-           , foldSequence = \ _ v _ -> v
-           , foldCond = \ _ v _ -> v
-           , foldRepeat = \ _ v _ _ -> v
+    Record { foldAss = \ v _ _ -> v
+           , foldCmd = \ v _ _ -> v
+           , foldSequence = \ v _ -> v
+           , foldCond = \ v _ -> v
+           , foldRepeat = \ v _ _ -> v
 
-           , foldVar = \ _ v _ -> v
-           , foldOp = \ _ v _ _ _ _ -> v
-           , foldList = \ _ v _ _ -> v
-           , foldInterval = \ _ v _ _ _ -> v
-           , foldInt = \ _ v _ _ -> v
-           , foldDouble = \ _ v _ _ -> v
+           , foldVar = \ v _ -> v
+           , foldOp = \ v _ _ _ _ -> v
+           , foldList = \ v _ _ -> v
+           , foldInterval = \ v _ _ _ -> v
+           , foldInt = \ v _ _ -> v
+           , foldDouble = \ v _ _ -> v
            }
 
 -- | Passes the transformation through the CMD part and is the identity
 -- on the EXPRESSION part
-passRecord :: Record CMD EXPRESSION c
+passRecord :: Record CMD EXPRESSION
 passRecord =
-    Record { foldAss = \ _ _ -> Ass
-           , foldCmd = \ _ _ -> Cmd
-           , foldSequence = \ _ _ -> Sequence
-           , foldCond = \ _ _ -> Cond
-           , foldRepeat = \ _ _ -> Repeat
+    Record { foldAss = \ _ -> Ass
+           , foldCmd = \ _ -> Cmd
+           , foldSequence = \ _ -> Sequence
+           , foldCond = \ _ -> Cond
+           , foldRepeat = \ _ -> Repeat
 
-           , foldVar = \ _ v _ -> v
-           , foldOp = \ _ v _ _ _ _ -> v
-           , foldList = \ _ v _ _ -> v
-           , foldInterval = \ _ v _ _ _ -> v
-           , foldInt = \ _ v _ _ -> v
-           , foldDouble = \ _ v _ _ -> v
+           , foldVar = \ v _ -> v
+           , foldOp = \ v _ _ _ _ -> v
+           , foldList = \ v _ _ -> v
+           , foldInterval = \ v _ _ _ -> v
+           , foldInt = \ v _ _ -> v
+           , foldDouble = \ v _ _ -> v
            }
 
 -- | Returns the first constant on the CMD part and the second
 -- on the EXPRESSION part
-constRecord :: a -> b -> Record a b c
+constRecord :: a -> b -> Record a b
 constRecord a b =
-    Record { foldAss = \ _ _ _ _ -> a
-           , foldCmd = \ _ _ _ _ -> a
-           , foldSequence = \ _ _ _ -> a
-           , foldCond = \ _ _ _ -> a
-           , foldRepeat = \ _ _ _ _ -> a
+    Record { foldAss = \ _ _ _ -> a
+           , foldCmd = \ _ _ _ -> a
+           , foldSequence = \ _ _ -> a
+           , foldCond = \ _ _ -> a
+           , foldRepeat = \ _ _ _ -> a
 
-           , foldVar = \ _ _ _ -> b
-           , foldOp = \ _ _ _ _ _ _ -> b
-           , foldList = \ _ _ _ _ -> b
-           , foldInterval = \ _ _ _ _ _ -> b
-           , foldInt = \ _ _ _ _ -> b
-           , foldDouble = \ _ _ _ _ -> b
+           , foldVar = \ _ _ -> b
+           , foldOp = \ _ _ _ _ _ -> b
+           , foldList = \ _ _ _ -> b
+           , foldInterval = \ _ _ _ _ -> b
+           , foldInt = \ _ _ _ -> b
+           , foldDouble = \ _ _ _ -> b
            }
 
-foldCMD :: Record a b c -> c -> CMD -> a
-foldCMD r acc f = case f of
-   Ass c def -> foldAss r acc f (foldTerm r acc c) $ foldTerm r acc def
-   Cmd s l -> foldCmd r acc f s $ map (foldTerm r acc) l
-   Sequence l -> foldSequence r acc f $ map (foldCMD r acc) l
-   Cond l -> foldCond r acc f $ map cf l where
-                     cf (x, y) = (foldTerm r acc x, map (foldCMD r acc) y)
-   Repeat c l -> foldRepeat r acc f (foldTerm r acc c) $ map (foldCMD r acc) l
+foldCMD :: Record a b -> CMD -> a
+foldCMD r f = case f of
+   Ass c def -> foldAss r f (foldTerm r c) $ foldTerm r def
+   Cmd s l -> foldCmd r f s $ map (foldTerm r) l
+   Sequence l -> foldSequence r f $ map (foldCMD r) l
+   Cond l -> foldCond r f $ map cf l where
+                     cf (x, y) = (foldTerm r x, map (foldCMD r) y)
+   Repeat c l -> foldRepeat r f (foldTerm r c) $ map (foldCMD r) l
 
-foldTerm :: Record a b c -> c -> EXPRESSION -> b
-foldTerm r acc t = case t of
-    Var tok -> foldVar r acc t tok
-    Op s epl al rg -> foldOp r acc t s epl (map (foldTerm r acc) al) rg
-    List l rg -> foldList r acc t (map (foldTerm r acc) l) rg
-    Interval from to rg -> foldInterval r acc t from to rg
-    Int i rg -> foldInt r acc t i rg
-    Double f rg -> foldDouble r acc t f rg
+foldTerm :: Record a b -> EXPRESSION -> b
+foldTerm r t = case t of
+    Var tok -> foldVar r t tok
+    Op s epl al rg -> foldOp r t s epl (map (foldTerm r) al) rg
+    List l rg -> foldList r t (map (foldTerm r) l) rg
+    Interval from to rg -> foldInterval r t from to rg
+    Int i rg -> foldInt r t i rg
+    Double f rg -> foldDouble r t f rg

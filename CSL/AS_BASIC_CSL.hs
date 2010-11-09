@@ -167,6 +167,7 @@ data EXPRESSION =
     Var Id.Token
   -- token instead string Id vs Token:
   | Op OPID [EXTPARAM] [EXPRESSION] Id.Range
+  -- TODO: don't need them anymore, they should be removed soon
   | List [EXPRESSION] Id.Range
   -- this means interval (interval
   | Interval APFloat APFloat Id.Range
@@ -240,6 +241,7 @@ instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
 instance Pretty CMD where
     pretty = printCMD
+
 
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
 --   behave differently for different arities).

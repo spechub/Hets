@@ -16,6 +16,7 @@ module CSL.Analysis
     , basicCSLAnalysis
     , splitAS
     , Guard(..)
+    , epElimination
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
@@ -147,21 +148,21 @@ handleBinder cmd =
             in replacePositions args $ zip (bvl ++ bbl) $ vl ++ bl
         substRec =
             passRecord
-            { foldAss = \ _ cmd' _ def ->
+            { foldAss = \ cmd' _ def ->
                 case cmd' of
                   -- we do not want to recurse into the left hand side hence
                   -- we take the original value
                   Ass c _ -> Ass c def
                   _ -> error "handleBinder: impossible case"
 
-            , foldOp = \ _ _ s epl' args rg' ->
+            , foldOp = \ _ s epl' args rg' ->
                 case lookupBindInfo s $ length args of
                   Just (BindInfo bvl bbl) ->
                        Op s epl' (substBinderArgs bvl bbl args) rg'
                   _ -> Op s epl' args rg'
-            , foldList = \ _ _ l rg' -> List l rg'
+            , foldList = \ _ l rg' -> List l rg'
             }
-    in foldCMD substRec () cmd
+    in foldCMD substRec cmd
 
 
 -- | Transforms Op-Expressions to a set of op-names and a Var-list
@@ -179,18 +180,20 @@ constsToVars env e =
     let substRec =
             idRecord
             { foldOp =
-                  \ env' _ s epl' args rg' ->
-                      if Set.member (show s) env' then
+                  \ _ s epl' args rg' ->
+                      if Set.member (show s) env then
                           if null args
                           then Var (Token { tokStr = show s, tokPos = rg' })
                           else error $ "constsToVars: variable must not have"
                                    ++ " arguments:" ++ show args
                       else Op s epl' args rg'
-            , foldList = \ _ _ l rg' -> List l rg'
+            , foldList = \ _ l rg' -> List l rg'
             }
-    in foldTerm substRec env e
+    in foldTerm substRec e
 
 -- * Further analysis in order to run this specification
+
+-- ** Datatypes and guarded definitions
 
 {- TODO: we want to proceed here as follows:
    1. split the definitions and the program and process the extended parameters
@@ -289,3 +292,95 @@ mapForest :: (a -> Forest a -> b) -> Forest a -> Forest b
 mapForest f a = unfoldForest g a
     where g t = let sf = subForest t in (f (rootLabel t) sf, sf)
 -}
+
+-- ** Extended Parameter Elimination
+
+
+{- | 
+   Given a dependency ordered list of constant definitions we compute all
+   definitions not depending on extended parameter propagation, therefore
+   eliminating them. For each constant we produce probably many new constants
+   that we call elim-constants. The definition of elim-constant N can be
+   looked up in @(guards x)!!N@.
+-}
+epElimination :: [(String, Guarded EPRange)] -> [(String, Guarded EPRange)]
+epElimination = snd . mapAccumL f Map.empty
+    -- for efficient lookup, we build a map in addition to the list containing
+    -- the same information
+    where f m (s, g) =
+              let g' = g{ guards = concatMap (eliminateGuard m) (guards g) }
+              in (Map.insert s g' m, (s, g'))
+
+{- | 
+   The given map already contains only elim-constants. We extract the 
+   (partly instantiated) constants from the definition in the guard and
+   create a partition from their guarded entry in the map. We use
+   'refineDefPartitions' to create the refinement and from this we produce
+   the new guards.
+-}
+eliminateGuard :: GuardedMap EPRange -> Guard EPRange -> [Guard EPRange]
+eliminateGuard m grd =
+    let err s = error $ "eliminateGuard: lookup failed for " ++ s
+        f s _ _ = restrictPartition (range grd) $ partitionFromGuarded
+                    $ Map.findWithDefault (err s) s m
+        -- (Map.Map PIConst Int)
+        err2 s = error $ "eliminateGuard: pim-lookup failed for " ++ s
+        fldOp pim _ (OpString s) epl args rg =
+            let i = Map.findWithDefault (err2 s) (mkPIConst s epl) pim
+            in Op (OpString $ s ++ show i) [] args rg
+        fldOp _ v _ _ _ _ = v
+        h pim = foldTerm passRecord{ foldOp = fldOp pim } $ definition grd
+        g (er, pim) = grd{ range = er, definition = h pim }
+    in case refineDefPartitions $ extractUserDefined f $ definition grd of
+         AllPartition _ -> error $ "eliminateGuard: AllPartition " ++ show grd
+         Partition l ->
+             -- for each entry in the refined partition create a new guard
+             map g l
+
+
+-- | Returns the simplified partition representation of the 'Guarded' object
+partitionFromGuarded :: Guarded EPRange -> Partition Int
+partitionFromGuarded grdd =
+    Partition $ zipWith (\ a b -> (range a, b)) (guards grdd) [0..]
+
+
+-- | A partially instantiated constant
+type PIConst = (String, Maybe EPExps)
+
+mkPIConst :: String -> [EXTPARAM] -> PIConst
+mkPIConst s epl = (s, if null epl then Nothing else Just $ toEPExps epl)
+
+-- | Returns a map of user defined (partially instantiated) constants
+-- to the result of this constant under the given function.
+extractUserDefined :: (String -> [EXTPARAM] -> [EXPRESSION] -> a) -> EXPRESSION
+                   -> Map.Map PIConst a
+extractUserDefined f e = g Map.empty e
+    where
+      g m x =
+       case x of
+         Op (OpString s) epl al _ ->
+             let pic = mkPIConst s epl
+                 m' = Map.insert pic (f s epl al) m
+             in foldl g m' al
+         -- ignoring lists (TODO: they should be removed soon anyway)
+         _ -> m
+
+{- |
+   Given a map holding for each constant, probably partly instantiated,
+   a partition labeled by the corresponding elim-constants we build a
+   partition which refines each of the given partitions labeled by a mapping
+   of partly instantiated constants to the corresponding elim-constant
+-}
+refineDefPartitions :: Map.Map PIConst (Partition Int)
+                -> Partition (Map.Map PIConst Int)
+refineDefPartitions =
+    Map.foldWithKey refineDefPartition $ AllPartition Map.empty
+
+refineDefPartition :: PIConst -> Partition Int -> Partition (Map.Map PIConst Int)
+                   -> Partition (Map.Map PIConst Int)
+refineDefPartition c ps pm =
+    let p = refinePartition ps pm
+        f (s, m) = Map.insert c s m
+    in fmap f p
+
+
