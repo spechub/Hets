@@ -169,7 +169,7 @@ smtBoolExp be
 
 compare-check for yices
 let l3 = [(x,y) | x <- epList, y <- epList]
-let l2 = map (uncurry $ smtCompare vMap) l3
+let l2 = map (uncurry $ smtCompareUnsafe vMap) l3
 putStrLn $ unlines $ map show $ zip l2 l3
 
 sl <- sens (-3)

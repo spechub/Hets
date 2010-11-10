@@ -38,6 +38,7 @@ import CSL.Fold
 import CSL.Sign as Sign
 import CSL.EPRelation
 
+import Control.Monad
 import qualified Data.Tree as Tr
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -303,13 +304,18 @@ mapForest f a = unfoldForest g a
    that we call elim-constants. The definition of elim-constant N can be
    looked up in @(guards x)!!N@.
 -}
-epElimination :: [(String, Guarded EPRange)] -> [(String, Guarded EPRange)]
-epElimination = snd . mapAccumL f Map.empty
+epElimination :: CompareIO m => [(String, Guarded EPRange)]
+              -> m [(String, Guarded EPRange)]
+epElimination = f Map.empty
     -- for efficient lookup, we build a map in addition to the list containing
     -- the same information
-    where f m (s, g) =
-              let g' = g{ guards = concatMap (eliminateGuard m) (guards g) }
-              in (Map.insert s g' m, (s, g'))
+
+    where
+      f _ [] = return []
+      f m ((s, g):l) = do
+        newguards <- liftM concat $ mapM (eliminateGuard m) $ guards g
+        let g' = g{ guards = newguards }
+        liftM ((s, g') :) $ f (Map.insert s g' m) l
 
 {- | 
    The given map already contains only elim-constants. We extract the 
@@ -318,10 +324,11 @@ epElimination = snd . mapAccumL f Map.empty
    'refineDefPartitions' to create the refinement and from this we produce
    the new guards.
 -}
-eliminateGuard :: GuardedMap EPRange -> Guard EPRange -> [Guard EPRange]
-eliminateGuard m grd =
+eliminateGuard :: CompareIO m => GuardedMap EPRange -> Guard EPRange
+               -> m [Guard EPRange]
+eliminateGuard m grd = do
     let err s = error $ "eliminateGuard: lookup failed for " ++ s
-        f s _ _ = restrictPartition (range grd) $ partitionFromGuarded
+        f s epl _ = restrictPartition (range grd) $ partitionFromGuarded epl
                     $ Map.findWithDefault (err s) s m
         -- (Map.Map PIConst Int)
         err2 s = error $ "eliminateGuard: pim-lookup failed for " ++ s
@@ -331,17 +338,27 @@ eliminateGuard m grd =
         fldOp _ v _ _ _ _ = v
         h pim = foldTerm passRecord{ foldOp = fldOp pim } $ definition grd
         g (er, pim) = grd{ range = er, definition = h pim }
-    in case refineDefPartitions $ extractUserDefined f $ definition grd of
-         AllPartition _ -> error $ "eliminateGuard: AllPartition " ++ show grd
-         Partition l ->
-             -- for each entry in the refined partition create a new guard
-             map g l
+    partMap <- extractUserDefined f $ definition grd
+    rePart <- refineDefPartitions partMap
+    case rePart of
+      AllPartition _ -> error $ "eliminateGuard: AllPartition " ++ show grd
+      Partition l ->
+          -- for each entry in the refined partition create a new guard
+          return $ map g l
 
 
 -- | Returns the simplified partition representation of the 'Guarded' object
-partitionFromGuarded :: Guarded EPRange -> Partition Int
-partitionFromGuarded grdd =
-    Partition $ zipWith (\ a b -> (range a, b)) (guards grdd) [0..]
+-- probably instantiated by the provided extended parameter list.
+partitionFromGuarded :: [EXTPARAM] -> Guarded EPRange -> Partition Int
+partitionFromGuarded epl grdd =
+    -- it is crucial here that the zipping takes place with the original guard
+    -- list, otherwise the indexes doesn't match their definitions
+    Partition $ mapMaybe f $ zip (guards grdd) [0..] where
+        ep = toEPExps epl
+        f (a, b) | null epl = Just (range a, b)
+                 | otherwise = case projectRange ep $ range a of
+                                 Empty -> Nothing
+                                 x -> Just (x, b)
 
 
 -- | A partially instantiated constant
@@ -352,18 +369,19 @@ mkPIConst s epl = (s, if null epl then Nothing else Just $ toEPExps epl)
 
 -- | Returns a map of user defined (partially instantiated) constants
 -- to the result of this constant under the given function.
-extractUserDefined :: (String -> [EXTPARAM] -> [EXPRESSION] -> a) -> EXPRESSION
-                   -> Map.Map PIConst a
+extractUserDefined :: Monad m => (String -> [EXTPARAM] -> [EXPRESSION] -> m a)
+                   -> EXPRESSION -> m (Map.Map PIConst a)
 extractUserDefined f e = g Map.empty e
     where
       g m x =
        case x of
-         Op (OpString s) epl al _ ->
+         Op (OpString s) epl al _ -> do
+             v <- f s epl al
              let pic = mkPIConst s epl
-                 m' = Map.insert pic (f s epl al) m
-             in foldl g m' al
+                 m' = Map.insert pic v m
+             foldM g m' al
          -- ignoring lists (TODO: they should be removed soon anyway)
-         _ -> m
+         _ -> return m
 
 {- |
    Given a map holding for each constant, probably partly instantiated,
@@ -371,16 +389,13 @@ extractUserDefined f e = g Map.empty e
    partition which refines each of the given partitions labeled by a mapping
    of partly instantiated constants to the corresponding elim-constant
 -}
-refineDefPartitions :: Map.Map PIConst (Partition Int)
-                -> Partition (Map.Map PIConst Int)
+refineDefPartitions :: CompareIO m => Map.Map PIConst (Partition Int)
+                    -> m (Partition (Map.Map PIConst Int))
 refineDefPartitions =
-    Map.foldWithKey refineDefPartition $ AllPartition Map.empty
+    foldM refineDefPartition (AllPartition Map.empty) . Map.toList
 
-refineDefPartition :: PIConst -> Partition Int -> Partition (Map.Map PIConst Int)
-                   -> Partition (Map.Map PIConst Int)
-refineDefPartition c ps pm =
-    let p = refinePartition ps pm
-        f (s, m) = Map.insert c s m
-    in fmap f p
-
-
+refineDefPartition :: CompareIO m => Partition (Map.Map PIConst Int)
+                   -> (PIConst, Partition Int)
+                   -> m (Partition (Map.Map PIConst Int))
+refineDefPartition pm (c, ps) =
+    liftM (fmap $ uncurry $ Map.insert c) $ refinePartition ps pm

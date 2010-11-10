@@ -16,6 +16,8 @@ This module defines an ordering on extended parameters and provides analysis too
 module CSL.EPRelation where
 
 
+import Control.Monad.Trans
+import Control.Monad.Reader
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
@@ -377,18 +379,21 @@ smtStatusCompareTable l =
       [Sat, Sat, Sat, Sat] -> (Incomparable Overlap, False, False)
       x -> error $ "smtStatusCompareTable: malformed status " ++ show x
 
-smtCompare :: VarMap -> EPRange -> EPRange -> EPCompare
-smtCompare m r1 r2 = 
-    let (c, _, _) = smtStatusCompareTable $ unsafePerformIO $ smtCheck m r1 r2
-    in c
+tripleFst :: (a, b, c) -> a
+tripleFst (x, _, _) = x
 
-smtFullCompare :: VarMap -> EPRange -> EPRange -> (EPCompare, Bool, Bool)
-smtFullCompare m r1 r2 = smtStatusCompareTable $ unsafePerformIO $ smtCheck m r1 r2
+smtCompare :: VarMap -> EPRange -> EPRange -> IO (EPCompare, Bool, Bool)
+smtCompare m r1 r2 = liftM smtStatusCompareTable $ smtCheck m r1 r2
 
-smtCompare' :: VarMap -> EPRange -> EPRange -> EPCompare
-smtCompare' m r1 r2 =
-    let (c, _, _) = smtStatusCompareTable $ unsafePerformIO $ smtCheck' m r1 r2
-    in c
+smtCompareUnsafe :: VarMap -> EPRange -> EPRange -> EPCompare
+smtCompareUnsafe m r1 r2 = tripleFst $ unsafePerformIO $ smtCompare m r1 r2
+
+smtFullCompareUnsafe :: VarMap -> EPRange -> EPRange -> (EPCompare, Bool, Bool)
+smtFullCompareUnsafe m r1 r2 = unsafePerformIO $ smtCompare m r1 r2
+
+smtCompareUnsafe' :: VarMap -> EPRange -> EPRange -> EPCompare
+smtCompareUnsafe' m r1 r2 = tripleFst $ smtStatusCompareTable $ unsafePerformIO $ smtCheck' m r1 r2
+
 
 smtResponseToStatus :: String -> SMTStatus
 smtResponseToStatus s
@@ -494,6 +499,19 @@ forestFromEPs f = forestFromEPsGen $ uncurry makeEPLeaf . f
 -- * Partitions based on 'EPRange'
 -- ----------------------------------------------------------------------
 
+class MonadIO m => CompareIO m where
+    rangeFullCmp :: EPRange -> EPRange -> m (EPCompare, Bool, Bool)
+
+rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
+rangeCmp x y = liftM tripleFst $ rangeFullCmp x y
+
+type SmtComparer = ReaderT VarMap IO
+
+instance CompareIO SmtComparer where
+    rangeFullCmp r1 r2 = do
+      vm <- ask
+      lift $ smtCompare vm r1 r2
+
 data Partition a = AllPartition a | Partition [(EPRange, a)]
 
 instance Functor Partition where
@@ -501,11 +519,30 @@ instance Functor Partition where
     fmap f (Partition l) = Partition $ map g l
         where g (er, x) = (er, f x)
 
-refinePartition :: Partition a -> Partition b -> Partition (a,b)
-refinePartition pa pb = error ""
+refinePartition :: CompareIO m => Partition a -> Partition b
+                -> m (Partition (a,b))
+refinePartition (AllPartition x) pb = return $ fmap ((,) x) pb
+refinePartition (Partition l) pb = error "" -- fmap ((,) x) pb
 
-restrictPartition :: EPRange -> Partition a -> Partition a
-restrictPartition er pb = error ""
+
+restrictPartition :: CompareIO m => EPRange -> Partition a -> m (Partition a)
+restrictPartition er p
+    | isStarRange er = return p
+    | otherwise =
+        case p of
+          AllPartition x -> return $ Partition [(er, x)]
+          Partition p' -> liftM Partition $ f p' where
+               f [] = return []
+               f ((er', x):l) = do
+                 cmp <- rangeCmp er er'
+                 let er'' = Intersection [er, er']
+                 case cmp of
+                   Comparable EQ -> return [(er', x)]
+                   Comparable LT -> return [(er, x)]
+                   Comparable GT -> liftM ((er', x) :) $ f l
+                   Incomparable Disjoint -> f l
+                   Incomparable Overlap -> liftM ((er'', x) :) $ f l
+               
 
 
 
