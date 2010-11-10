@@ -76,47 +76,47 @@ expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", "e
 
 parse error at 20.15:
 unexpected ")"
-expecting __, "[" or ":"
+expecting "__", "[" or ":"
 
 parse error at 21.8:
 unexpected "<"
-expecting simple-id, "{", "[" or __
+expecting simple-id, "{", "[" or "__"
 
 parse error at 22.13:
 unexpected "?"
-expecting __ or "%"
+expecting "__" or "%"
 
 parse error at 23.13:
 unexpected "?"
-expecting __ or "%"
+expecting "__" or "%"
 
 parse error at 24.13:
 unexpected "?"
-expecting __ or "%"
+expecting "__" or "%"
 
 parse error at 25.13:
 unexpected "?"
-expecting __ or "%"
+expecting "__" or "%"
 
 parse error at 26.9:
 unexpected "a"
-expecting "{", "[", __, "%", "," or ":"
+expecting "{", "[", "__", "%", "," or ":"
 
 parse error at 27.13:
 unexpected ".!" or "!"
-expecting "?", words, __, casl sign, "[", "{", "(", "%", ":", cross, ->, ";" or dot
+expecting "?", words, "__", casl sign, "[", "{", "(", "%", ":", "*", "->", ";" or "."
 
 parse error at 28.13:
 unexpected ".!" or "!"
-expecting "?", words, __, casl sign, "[", "{", "(", "%", ":", cross, ->, ";" or dot
+expecting "?", words, "__", casl sign, "[", "{", "(", "%", ":", "*", "->", ";" or "."
 
 parse error at 29.10:
 unexpected "a"
-expecting "{", "[", __, "%", "," or ":"
+expecting "{", "[", "__", "%", "," or ":"
 
 parse error at 30.14:
 unexpected ".!" or "!"
-expecting "?", words, __, casl sign, "[", "{", "(", "%", ":", cross, ->, ";" or dot
+expecting "?", words, "__", casl sign, "[", "{", "(", "%", ":", "*", "->", ";" or "."
 
 parse error at 31.1:
 unexpected "pred"
@@ -156,5 +156,5 @@ expecting casl char, "_", "%", "=e=", "=", id/literal, "{", "[", "(", "if", "whe
 
 parse error at 40.11:
 unexpected "@"
-expecting "%", ":", quoted char, digit, words, __, casl sign, "_", "[", "{", "(", "," or ")"
+expecting "%", ":", quoted char, digit, words, "__", casl sign, "_", "[", "{", "(", "," or ")"
 

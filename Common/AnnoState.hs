@@ -186,7 +186,7 @@ anSemi = wrapAnnos Common.Lexer.semiT
 
 equalT :: AParser st Token
 equalT = wrapAnnos $ pToken $ reserved [exEqual]
-         $ choice $ map (keySign . string) [exEqual, equalS]
+         (choice (map (keySign . string) [exEqual, equalS]) <?> show equalS)
 
 colonT :: AParser st Token
 colonT = asKey colonS
@@ -195,7 +195,7 @@ lessT :: AParser st Token
 lessT = asKey lessS
 
 dotT :: AParser st Token
-dotT = asKey dotS <|> asKey cDot <?> "dot"
+dotT = asKey dotS <|> asKey cDot <?> show dotS
 
 asT :: AParser st Token
 asT = asKey asS

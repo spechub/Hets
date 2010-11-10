@@ -282,4 +282,4 @@ colonST = pToken $ try $ string colonS << notFollowedBy
 
 -- | parse the product key sign ('prodS' or 'timesS')
 crossT :: GenParser Char st Token
-crossT = pToken (toKey prodS <|> toKey timesS) <?> "cross"
+crossT = pToken (toKey prodS <|> toKey timesS) <?> show prodS

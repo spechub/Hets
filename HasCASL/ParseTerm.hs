@@ -293,7 +293,7 @@ prodType = do
 parseType :: AParser st Type
 parseType = do
     t1 <- prodType
-    do  a <- arrowT <?> funS
+    do  a <- arrowT <?> show funS
         t2 <- parseType
         return $ mkTypeAppl
             (TypeName a (toRaw $ funKindWithRange $ posOfId a) 0) [t1, t2]

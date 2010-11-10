@@ -4,11 +4,11 @@ expecting "\\" or "\""
 
 parse error at 2.2:
 unexpected "1"
-expecting "{", "[", __ or end of input
+expecting "{", "[", "__" or end of input
 
 parse error at 3.2:
 unexpected "."
-expecting "{", "[", __ or end of input
+expecting "{", "[", "__" or end of input
 
 parse error at 4.2:
 unexpected "'"
@@ -50,7 +50,7 @@ expecting id
 
 parse error at 14.2:
 unexpected "b"
-expecting "{", "[", __ or end of input
+expecting "{", "[", "__" or end of input
 
 parse error at 15.1:
 unexpected "as"
@@ -66,11 +66,11 @@ expecting id
 
 parse error at 18.4-18.5:
 unexpected "_"
-expecting casl char, "{", "[", __ or end of input
+expecting casl char, "{", "[", "__" or end of input
 
 parse error at 19.3:
 unexpected end of input
-expecting simple-id, "{", "[" or __
+expecting simple-id, "{", "[" or "__"
 
 parse error at 20.1-20.2:
 unexpected "."
@@ -122,11 +122,11 @@ expecting id
 
 parse error at 32.5:
 unexpected "]"
-expecting simple-id, "{", "[" or __
+expecting simple-id, "{", "[" or "__"
 
 parse error at 33.6:
 unexpected "]"
-expecting simple-id, "{", "[" or __
+expecting simple-id, "{", "[" or "__"
 
 parse error at 34.10:
 unexpected "]"
@@ -142,15 +142,15 @@ expecting id
 
 parse error at 37.15:
 unexpected "<"
-expecting __ or end of input
+expecting "__" or end of input
 
 parse error at 38.4:
 unexpected "="
-expecting "{", "[", __ or end of input
+expecting "{", "[", "__" or end of input
 
 parse error at 39.6:
 unexpected "%"
-expecting __ or end of input
+expecting "__" or end of input
 
 parse error at 40.1:
 unexpected "\""
@@ -158,15 +158,15 @@ expecting id
 
 parse error at 41.8:
 unexpected ">"
-expecting __ or end of input
+expecting "__" or end of input
 
 parse error at 42.5:
 unexpected "]"
-expecting simple-id, "{", "[" or __
+expecting simple-id, "{", "[" or "__"
 
 parse error at 43.5:
 unexpected "]"
-expecting simple-id, "{", "[" or __
+expecting simple-id, "{", "[" or "__"
 
 parse error at 44.3:
 unexpected "="

@@ -1,4 +1,4 @@
 parse error at 1.1:
 unexpected "i"
-expecting "%", "esort", "sort", "op", "pred", "type", "etype", "free", "generated", "var", "forall", dot or "axiom"
+expecting "%", "esort", "sort", "op", "pred", "type", "etype", "free", "generated", "var", "forall", "." or "axiom"
 

@@ -307,7 +307,7 @@ commaSep1 :: CharParser st a -> CharParser st [a]
 commaSep1 p = fmap fst $ separatedBy p commaT
 
 placeS :: CharParser st String
-placeS = tryString place <?> place
+placeS = tryString place
 
 placeT :: CharParser st Token
 placeT = pToken placeS

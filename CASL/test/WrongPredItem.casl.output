@@ -4,7 +4,7 @@ expecting casl char, "_", "%", "," or ":"
 
 parse error at 2.8:
 unexpected "="
-expecting "{", "[", __, "%", ",", "<=>", "(" or ":"
+expecting "{", "[", "__", "%", ",", "<=>", "(" or ":"
 
 parse error at 3.8:
 unexpected ")"
@@ -12,9 +12,9 @@ expecting "%" or words
 
 parse error at 4.8:
 unexpected "#"
-expecting "{", "[", __, "%", ",", "(" or ":"
+expecting "{", "[", "__", "%", ",", "(" or ":"
 
 parse error at 5.7:
 unexpected "?"
-expecting casl char, "_", "{", "[", __, "%", ",", "<=>" or "("
+expecting casl char, "_", "{", "[", "__", "%", ",", "<=>" or "("
 
