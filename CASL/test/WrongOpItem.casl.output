@@ -3,6 +3,6 @@ unexpected "-"
 expecting "[", "%", ",", ";" or end of input
 
 parse error at 2.8:
-unexpected =e= or "="
+unexpected "=e=" or "="
 expecting casl char, "_", "[", cross, "->", "%", ",", ";" or end of input
 

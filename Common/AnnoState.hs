@@ -185,10 +185,8 @@ anSemi :: AParser st Token
 anSemi = wrapAnnos Common.Lexer.semiT
 
 equalT :: AParser st Token
-equalT = wrapAnnos $ pToken
-         ((lookAhead (keySign $ string exEqual)
-                          >> unexpected exEqual)
-         <|> keySign (string equalS))
+equalT = wrapAnnos $ pToken $ reserved [exEqual]
+         $ choice $ map (keySign . string) [exEqual, equalS]
 
 colonT :: AParser st Token
 colonT = asKey colonS
