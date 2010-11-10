@@ -10,9 +10,7 @@ data HolType = TyVar String | TyApp String [HolType]
 data HolKind = TyAbstractApp [HolKind] | Kind
 
 
-data Sign = Sign {
-               types :: [HolType],
-               ops :: Map.Map String HolType }
+data Sign = Sign { types :: [HolType] }
   deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
