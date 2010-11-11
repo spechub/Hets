@@ -24,6 +24,7 @@ import CSL.Transformation
 import CSL.EPBasic
 import CSL.TreePO (EPCompare)
 import CSL.ExtendedParameter
+import CSL.SMTComparison
 import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import CSL.Logic_CSL
 import CSL.AS_BASIC_CSL
@@ -161,16 +162,17 @@ toEPLs = map toEPExps . toEPL
 -- ----------------------------------------------------------------------
 
 {-
-smtEQScript vMap (epList!!0) (epList!!1)
+smtEQScript vMap (boolRange vMap $ epList!!0) (boolRange vMap $ epList!!1)
 test for smt-export
 let m = varMapFromList ["I", "J", "K"]
+
 let be = boolExps m $ toEPs "I=0"
 smtBoolExp be
 
 compare-check for yices
-let l3 = [(x,y) | x <- epList, y <- epList]
-let l2 = map (uncurry $ smtCompareUnsafe vMap) l3
-putStrLn $ unlines $ map show $ zip l2 l3
+let l2 = [(x,y) | x <- epList, y <- epList]
+let l3 = map (\ (x, y) -> smtCompareUnsafe vEnv (boolRange vMap x) (boolRange vMap y)) l2
+putStrLn $ unlines $ map show $ zip l3 l2
 
 sl <- sens (-3)
 fst $ splitAS sl
@@ -181,10 +183,17 @@ epList =
     let l = map (Atom . toEPs)
             ["", "I=1,J=0", "I=0,J=0", "I=0", "I=1", "J=0", "I>0", "I>2", "I>0,J>2"]
     in Intersection l : Union l : l
-         
+
+epDomain :: [(String, EPExps)]
+epDomain = zip ["I", "J"] $ map toEPs ["I>=0", "J>=0"]
 
 vMap :: Map.Map String Int
 vMap = varMapFromSet $ namesInList epList
+
+-- vTypes = Map.map (const Nothing) vMap
+vTypes = Map.fromList $ map (\ (x,y) -> (x, Just $ boolExps vMap y)) epDomain
+
+vEnv = VarEnv { varmap = vMap, vartypes = vTypes }
 
 
 printOrdEPs :: String -> IO ()

@@ -22,18 +22,14 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Data.Tree
-import Data.List
 import Data.Traversable (fmapDefault)
-import System.Process
-import System.IO.Unsafe
 
 import CSL.EPBasic
+import CSL.SMTComparison
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
-import CSL.ExtendedParameter as EP
-    (toBoolRep, showEP, toEPExp, EPExp, compareEP)
+import CSL.ExtendedParameter
 import Common.Id (tokStr)
-
 import Common.Doc
 
 -- ----------------------------------------------------------------------
@@ -77,6 +73,19 @@ filteredConstrainedParams = foldl f (Set.empty, Set.empty)
     where f (fs, cs) (EP t "-|" _) = (Set.insert (tokStr t) fs, cs)
           f (fs, cs) (EP t _ _) = (fs, Set.insert (tokStr t) cs)
 
+
+{-| This type represents the domain of the extended parameters. It can have
+    0 entries = no restriction
+    1 entry = opened rectangle, at least one parameter is one sided restricted
+    2 entries = probably closed rectangle, at least one parameter is restricted
+                from both sides
+
+    The domain is the intersection of both entries (if there are two)
+
+    The domain is important for building partitions, because the partitions are
+    defined only on the domain, not on the unrestricted space.
+-}
+type EPDomain = [EPExps]
 
 data EPRange = Union [EPRange] | Intersection [EPRange]
              | Complement EPRange | Atom EPExps | Empty
@@ -135,9 +144,6 @@ instance RangeUtils EPRange where
 
 namesInList :: RangeUtils a => [a] -> Set.Set String
 namesInList = Set.unions . map rangeNames
-
--- TODO: check the todos at the end for projection-fix
-
 
 {- | 
    (1) If the arguments are disjoint ->  'Nothing'
@@ -260,10 +266,8 @@ compareEPs eps1 eps2 =
     in if sw then swapCmp epc' else epc'
 
 -- ----------------------------------------------------------------------
--- * SMT output generation for smt based comparison
+-- * SMT based comparison - utility functions
 -- ----------------------------------------------------------------------
-
-type VarMap = Map.Map String Int
 
 -- | Generates from a list of Extended Parameter names an id-mapping
 varMapFromList :: [String] -> VarMap
@@ -273,7 +277,8 @@ varMapFromList l = Map.fromList $ zip l $ [1 .. length l]
 varMapFromSet :: Set.Set String -> VarMap
 varMapFromSet = varMapFromList . Set.toList
 
--- | Builds a Boolean representation from the extended parameter expression
+-- | Builds a Boolean representation from the extended parameter expression.
+-- Variable names are composed from the string "x" together with an integer.
 boolExps :: VarMap -> EPExps -> BoolRep
 boolExps m eps | isStarEP eps = trueBool
                | otherwise = And $ map f $ Map.assocs eps where
@@ -286,137 +291,6 @@ boolRange m (Intersection l) = And $ map (boolRange m) l
 boolRange m (Complement a) = Not $ boolRange m a
 boolRange m (Atom eps) = boolExps m eps
 boolRange _ Empty = falseBool
-
-
--- TODO: put this rather into another module and replace EPRange by BoolRep
-
-smtPredDef :: VarMap -> String -> BoolRep -> String
-smtPredDef m s b = concat [ "(define ", s, "::(-> "
-                          , concatMap (const "int ") $ smtVars m ""
-                          , "bool) (lambda ("
-                          , concatMap (++ "::int ") $ smtVars m "x", ") "
-                          , smtBoolExp b, "))" ]
-
-smtVarDef :: VarMap -> String
-smtVarDef m =
-    unlines $ map (\ x -> "(define " ++ x ++ " ::int)") $ smtVars m "y"
-
-smtVars :: VarMap -> String -> [String]
-smtVars m s = map ((s++) . show) [1 .. Map.size m]
-
-smtGenericStmt :: VarMap -> String -> String -> String -> String
-smtGenericStmt m s a b =
-    let vl = concat $ map (" "++) $ smtVars m "y"
-    in "(assert+ (not (" ++ s ++ " (" ++ a ++ vl ++ ") (" ++ b ++ vl ++ "))))"
-
-smtEQStmt :: VarMap -> String -> String -> String
-smtEQStmt m a b = smtGenericStmt m "=" a b
-
-smtLEStmt :: VarMap -> String -> String -> String
-smtLEStmt m a b = smtGenericStmt m "=>" a b
-
-smtDisjStmt :: VarMap -> String -> String -> String
-smtDisjStmt m a b = 
-    let vl = concat $ map (" "++) $ smtVars m "y"
-    in "(assert+ (and (" ++ a ++ vl ++ ") (" ++ b ++ vl ++ ")))"
-
-
-smtAllScript :: VarMap -> EPRange -> EPRange -> String
-smtAllScript m r1 r2 =
-    unlines [ smtScriptHead m r1 r2
-            , smtEQStmt m "A" "B", "(check) (retract 1)"
-            , smtLEStmt m "A" "B", "(check) (retract 2)"
-            , smtLEStmt m "B" "A", "(check) (retract 3)"
-            , smtDisjStmt m "A" "B", "(check)" ]
-
-
-smtAllScripts :: VarMap -> EPRange -> EPRange -> [String]
-smtAllScripts m r1 r2 =
-    let h = smtScriptHead m r1 r2
-    in [ unlines [h, smtEQStmt m "A" "B", "(check)"]
-       , unlines [h, smtLEStmt m "A" "B", "(check)"]
-       , unlines [h, smtLEStmt m "B" "A", "(check)"]
-       , unlines [h, smtDisjStmt m "A" "B", "(check)"]
-       ]
-
-smtScriptHead :: VarMap -> EPRange -> EPRange -> String
-smtScriptHead m r1 r2 = unlines [ "(set-arith-only! true)"
-                                , smtPredDef m "A" $ boolRange m r1
-                                , smtPredDef m "B" $ boolRange m r2
-                                , smtVarDef m ]
-
-smtGenericScript :: VarMap -> (VarMap -> String -> String -> String)
-                 -> EPRange -> EPRange -> String
-smtGenericScript m f r1 r2 = smtScriptHead m r1 r2 ++ "\n" ++ f m "A" "B"
-
-smtEQScript :: VarMap -> EPRange -> EPRange -> String
-smtEQScript m r1 r2 = smtGenericScript m smtEQStmt r1 r2
-
-smtLEScript :: VarMap -> EPRange -> EPRange -> String
-smtLEScript m r1 r2 = smtGenericScript m smtLEStmt r1 r2
-
-smtDisjScript :: VarMap -> EPRange -> EPRange -> String
-smtDisjScript m r1 r2 = smtGenericScript m smtDisjStmt r1 r2
-
-data SMTStatus = Sat | Unsat deriving (Show, Eq)
-
-smtCheck :: VarMap -> EPRange -> EPRange -> IO [SMTStatus]
-smtCheck m r1 r2 = smtMultiResponse $ smtAllScript m r1 r2
-
-smtCheck' :: VarMap -> EPRange -> EPRange -> IO [SMTStatus]
-smtCheck' m r1 r2 = mapM smtResponse $ smtAllScripts m r1 r2
-
--- | The result states of the smt solver are translated to the
--- adequate compare outcome. The boolean value is true if the corresponding
--- set is empty.
-smtStatusCompareTable :: [SMTStatus] -> (EPCompare, Bool, Bool)
-smtStatusCompareTable l =
-    case l of
-      [Unsat, Unsat, Unsat, x] -> let b = x == Unsat in (Comparable EQ, b, b)
-      [Sat, Unsat, Sat, x] -> let b = x == Unsat in (Comparable LT, b, b)
-      [Sat, Sat, Unsat, x] -> let b = x == Unsat in (Comparable GT, b, b)
-      [Sat, Sat, Sat, Unsat] -> (Incomparable Disjoint, False, False)
-      [Sat, Sat, Sat, Sat] -> (Incomparable Overlap, False, False)
-      x -> error $ "smtStatusCompareTable: malformed status " ++ show x
-
-tripleFst :: (a, b, c) -> a
-tripleFst (x, _, _) = x
-
-smtCompare :: VarMap -> EPRange -> EPRange -> IO (EPCompare, Bool, Bool)
-smtCompare m r1 r2 = liftM smtStatusCompareTable $ smtCheck m r1 r2
-
-smtCompareUnsafe :: VarMap -> EPRange -> EPRange -> EPCompare
-smtCompareUnsafe m r1 r2 = tripleFst $ unsafePerformIO $ smtCompare m r1 r2
-
-smtFullCompareUnsafe :: VarMap -> EPRange -> EPRange -> (EPCompare, Bool, Bool)
-smtFullCompareUnsafe m r1 r2 = unsafePerformIO $ smtCompare m r1 r2
-
-smtCompareUnsafe' :: VarMap -> EPRange -> EPRange -> EPCompare
-smtCompareUnsafe' m r1 r2 = tripleFst $ smtStatusCompareTable $ unsafePerformIO $ smtCheck' m r1 r2
-
-
-smtResponseToStatus :: String -> SMTStatus
-smtResponseToStatus s
-    | s == "sat" = Sat
-    | s == "unsat" = Unsat
-    | s == "" = Sat
-    | isInfixOf "Error" s = error $ "yices-error: " ++ s
-    | otherwise = error $ "unknown yices error"
-
-smtMultiResponse :: String -> IO [SMTStatus]
-smtMultiResponse inp = do
-  s <- readProcess "yices" [] inp
-  return $ map smtResponseToStatus $ lines s
-
-smtResponse :: String -> IO SMTStatus
-smtResponse inp = do
-  s <- readProcess "yices" [] inp
---  putStrLn "------ yices output ------"
---  putStrLn s
-  return $ smtResponseToStatus $
-         case lines s of
-           [] -> ""
-           x:_ ->  x
 
 -- ----------------------------------------------------------------------
 -- * Trees to store Extended Parameter indexed values
@@ -493,8 +367,6 @@ forestFromEPsGen f l = foldr (insertEPNodeToForest . f) [] l
 forestFromEPs :: (a -> (b, EPExps)) -> [a] -> EPForest b
 forestFromEPs f = forestFromEPsGen $ uncurry makeEPLeaf . f
 
-
-
 -- ----------------------------------------------------------------------
 -- * Partitions based on 'EPRange'
 -- ----------------------------------------------------------------------
@@ -505,12 +377,13 @@ class MonadIO m => CompareIO m where
 rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
 rangeCmp x y = liftM tripleFst $ rangeFullCmp x y
 
-type SmtComparer = ReaderT VarMap IO
+type SmtComparer = ReaderT VarEnv IO
 
 instance CompareIO SmtComparer where
     rangeFullCmp r1 r2 = do
-      vm <- ask
-      lift $ smtCompare vm r1 r2
+      ve <- ask
+      let vm = varmap ve
+      lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
 
 data Partition a = AllPartition a | Partition [(EPRange, a)]
 
@@ -542,7 +415,3 @@ restrictPartition er p
                    Comparable GT -> liftM ((er', x) :) $ f l
                    Incomparable Disjoint -> f l
                    Incomparable Overlap -> liftM ((er'', x) :) $ f l
-               
-
-
-
