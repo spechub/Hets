@@ -10,14 +10,15 @@ data HolType = TyVar String | TyApp String [HolType]
 data HolKind = TyAbstractApp [HolKind] | Kind
 
 
-data Sign = Sign { types :: [HolType] }
+data Sign = Sign { types :: [HolType]
+                 , ops :: Map.Map String HolType } -- ewaryst: Added this, because of compilation error!
   deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
   pretty _ = empty -- TO DO!
 
 emptySig :: Sign
-emptySig = Sign{types =[], ops = Map.empty}
+emptySig = Sign{types =[] , ops = Map.empty}
 
 isSubSig :: Sign -> Sign -> Bool
 isSubSig _s1 _s2 = True -- for now!
