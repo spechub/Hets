@@ -16,6 +16,8 @@ module CSL.Analysis
     , basicCSLAnalysis
     , splitAS
     , Guard(..)
+    , Guarded(..)
+    , dependencySortAS
     , epElimination
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
@@ -284,15 +286,9 @@ foldForest :: (b -> a -> Tr.Forest a -> b) -> b -> Tr.Forest a -> b
 foldForest f = foldl g where g x tr = f x (Tr.rootLabel tr) $ Tr.subForest tr
 
 
-{- NOTE: I do not need this anymore, but this is a nice utility function,
- could be stored together with foldForest somewhere else
+dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
+dependencySortAS = Map.toList
 
--- | Maps through the forest in top-down direction building new labels
--- from the old ones together with the old children
-mapForest :: (a -> Forest a -> b) -> Forest a -> Forest b
-mapForest f a = unfoldForest g a
-    where g t = let sf = subForest t in (f (rootLabel t) sf, sf)
--}
 
 -- ** Extended Parameter Elimination
 

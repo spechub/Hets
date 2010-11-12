@@ -75,8 +75,11 @@ filteredConstrainedParams = foldl f (Set.empty, Set.empty)
 
 
 {-| This type represents the domain of the extended parameters. It can have
+
     0 entries = no restriction
+
     1 entry = opened rectangle, at least one parameter is one sided restricted
+
     2 entries = probably closed rectangle, at least one parameter is restricted
                 from both sides
 
@@ -147,9 +150,11 @@ namesInList = Set.unions . map rangeNames
 
 {- | 
    (1) If the arguments are disjoint ->  'Nothing'
+
    (2) If all extended parameter constraints from the first argument are 
    subsumed by the second argument -> second argument with deleted entries for
    these extended parameters
+
    (3) Otherwise -> error: the first argument must be subsumed by or disjoint
    with the second one.
 -}
@@ -176,9 +181,13 @@ projectEPs e1 e2
    parameters), we instantiate it partially with the given
    instantiation, e.g., x=1, and obtain A 1 y z. The new predicate
    does not depend on x anymore and can be built by replacing all
-   atomic subexpressions in A which talk about x (1) by the subexpression
+   atomic subexpressions in A which talk about x
+
+   (1) by the subexpression
    where the constraint for x is removed if the given instantiation
-   satisfies this subexpression (e.g., x<10) or (2) by 'Empty' if this
+   satisfies this subexpression (e.g., x<10) or
+
+   (2) by 'Empty' if this
    constraint is not satisfied (e.g., x>1)
 -}
 projectRange :: EPExps -> EPRange -> EPRange
@@ -197,7 +206,9 @@ projectRange e re = simplifyRange $ f re
 {- | Removes all star- and empty-entries from inside of the range expression.
 
  Union [,*,] -> *                        (top element)
+
  Intersection [,*,] -> Intersection [,]  (neutral element)
+
  Complement * -> Empty                   (bottom element)
 
  For Empty its the dual behaviour
@@ -392,12 +403,39 @@ instance Functor Partition where
     fmap f (Partition l) = Partition $ map g l
         where g (er, x) = (er, f x)
 
+{- | Two partitions are refined to a result partition which is finer than each
+   of the input partitions.
+   
+   The annotations of the new partition are as follows:
+   
+   a set @x@ in the new partition gets the annotation @(a,b)@ where @x'@ comes
+   from the first partition and is annotated with @a@ and @x''@ comes
+   from the second partition and is annotated with @b@ and @x@ is a subset of
+   both, @x'@ and @x''@.
+-}
 refinePartition :: CompareIO m => Partition a -> Partition b
                 -> m (Partition (a,b))
 refinePartition (AllPartition x) pb = return $ fmap ((,) x) pb
-refinePartition (Partition l) pb = error "" -- fmap ((,) x) pb
+refinePartition pa (AllPartition x) = return $ fmap (flip (,) x) pa
+refinePartition (Partition l) (Partition l') =
+   liftM (Partition . concat) $ mapM (f l') l
+   where
+    f [] _ = return []
+    f ((er', y):ll) a@(er, x) = do
+      cmp <- rangeCmp er er'
+      let er'' = Intersection [er, er']
+      case cmp of
+        Comparable GT -> liftM ((er', (x, y)) :) $ f ll a
+        Incomparable Disjoint -> f ll a
+        Incomparable Overlap -> liftM ((er'', (x, y)) :) $ f ll a
+        -- this case combine LT and EQ
+        _ -> return [(er, (x, y))]
 
 
+{- | The partition is restricted explicitly to the given range, that is,
+   each set of the partition is intersected with the set from the range
+   and the empty sets are filtered out.
+-}
 restrictPartition :: CompareIO m => EPRange -> Partition a -> m (Partition a)
 restrictPartition er p
     | isStarRange er = return p
