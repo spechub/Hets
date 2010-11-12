@@ -280,14 +280,6 @@ compareEPs eps1 eps2 =
 -- * SMT based comparison - utility functions
 -- ----------------------------------------------------------------------
 
--- | Generates from a list of Extended Parameter names an id-mapping
-varMapFromList :: [String] -> VarMap
-varMapFromList l = Map.fromList $ zip l $ [1 .. length l]
-
--- | Generates from a list of Extended Parameter names an id-mapping
-varMapFromSet :: Set.Set String -> VarMap
-varMapFromSet = varMapFromList . Set.toList
-
 -- | Builds a Boolean representation from the extended parameter expression.
 -- Variable names are composed from the string "x" together with an integer.
 boolExps :: VarMap -> EPExps -> BoolRep
@@ -389,6 +381,9 @@ rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
 rangeCmp x y = liftM tripleFst $ rangeFullCmp x y
 
 type SmtComparer = ReaderT VarEnv IO
+
+execSMTComparer :: VarEnv -> SmtComparer a -> IO a
+execSMTComparer ve smt = runReaderT smt ve
 
 instance CompareIO SmtComparer where
     rangeFullCmp r1 r2 = do

@@ -18,7 +18,10 @@ module CSL.Analysis
     , Guard(..)
     , Guarded(..)
     , dependencySortAS
+    , getDependencyRelation
     , epElimination
+    , topsortDirect
+    , topsort
 -- basicCSLAnalysis
 -- ,mkStatSymbItems
 -- ,mkStatSymbMapItem
@@ -248,7 +251,13 @@ addAssignment n (Op (OpString s) epl al _) def m =
 
 addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
 
--- | Splits the Commands into the AssignmentStore
+{-  TODO:
+    1. analysis for missing definitions and undeclared extparams
+    2. Integrating extparam domain definitions
+    3. check for each constant if the Guards exhaust the extparam domain (in splitAS)
+-}
+
+-- | Splits the Commands into the AssignmentStore and a program sequence
 splitAS :: [Named CMD] -> (GuardedMap EPRange, [Named CMD])
 splitAS cl =
     let f nc (m,l) = case sentence nc of
@@ -286,8 +295,56 @@ foldForest :: (b -> a -> Tr.Forest a -> b) -> b -> Tr.Forest a -> b
 foldForest f = foldl g where g x tr = f x (Tr.rootLabel tr) $ Tr.subForest tr
 
 
+-- ** Dependency Sorting
+
 dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
-dependencySortAS = Map.toList
+dependencySortAS grdm = map f $ topsortDirect $ getDependencyRelation grdm
+    where f x = (x, Map.findWithDefault (err x) x grdm)
+          err x = error $ "dependencySortAS: impossible lookup error at " ++ x
+
+
+type Rel2 a = Map.Map a (Set.Set a)
+type BackRef a = Map.Map a [a]
+
+getDependencyRelation :: GuardedMap a -> Rel2 String
+getDependencyRelation = Map.map g where
+    g grdd = Set.unions $ map (setOfUserDefined . definition) $ guards grdd
+
+getBackRef :: Ord a => Rel2 a -> BackRef a
+getBackRef d =
+    let uf k n m  = Map.insertWith (++) n [k] m
+        -- for each entry in the set insert k into the list
+        f k s m = Set.fold (uf k) m s
+    -- from each entry in d add entries in the map
+    in Map.foldWithKey f Map.empty d
+
+
+topsortDirect :: (Show a, Ord a) => Rel2 a -> [a]
+topsortDirect d = topsort d $ getBackRef d
+
+-- | This function is based on the Kahn-algorithm. It requires a representation
+-- of a relation which has for each entry of the domain an entry in the map.
+-- 
+-- E.g., 1 |-> {2}, 2 |-> {3, 4} is not allowed because the entries
+-- 3 |-> {}, 4 |-> {} are missing
+topsort :: (Show a, Ord a) => Rel2 a -> BackRef a -> [a]
+topsort d br =
+ let f d' acc []
+         | Map.null d' = acc
+         | otherwise =
+             let (s, v) = Map.findMin d'
+             in error $ "contains cycles: " ++ concat [ show s, " -> ", show v ]
+     f d' acc (n:l) =
+         let cl = Map.findWithDefault [] n br
+             (nl, d'') = foldl (remEdge n) ([], d') cl
+         in f d'' (n:acc) $ l ++ nl
+     uf n a = let b = Set.delete n a in if Set.null b then Nothing else Just b
+     -- returns a new list of empty-nodes and a new def-map
+     remEdge n (nl, m) s = let c = Map.size m
+                               m' = Map.update (uf n) s m
+                           in (if Map.size m' < c then s:nl else nl, m')
+     (me, mne) = Map.partition Set.null d
+ in f mne [] $ Map.keys me
 
 
 -- ** Extended Parameter Elimination
@@ -334,7 +391,7 @@ eliminateGuard m grd = do
         fldOp _ v _ _ _ _ = v
         h pim = foldTerm passRecord{ foldOp = fldOp pim } $ definition grd
         g (er, pim) = grd{ range = er, definition = h pim }
-    partMap <- extractUserDefined f $ definition grd
+    partMap <- mapUserDefined f $ definition grd
     rePart <- refineDefPartitions partMap
     case rePart of
       AllPartition _ -> error $ "eliminateGuard: AllPartition " ++ show grd
@@ -365,9 +422,9 @@ mkPIConst s epl = (s, if null epl then Nothing else Just $ toEPExps epl)
 
 -- | Returns a map of user defined (partially instantiated) constants
 -- to the result of this constant under the given function.
-extractUserDefined :: Monad m => (String -> [EXTPARAM] -> [EXPRESSION] -> m a)
+mapUserDefined :: Monad m => (String -> [EXTPARAM] -> [EXPRESSION] -> m a)
                    -> EXPRESSION -> m (Map.Map PIConst a)
-extractUserDefined f e = g Map.empty e
+mapUserDefined f e = g Map.empty e
     where
       g m x =
        case x of
@@ -378,6 +435,16 @@ extractUserDefined f e = g Map.empty e
              foldM g m' al
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> return m
+
+-- | Returns a set of user defined constants ignoring instantiation.
+setOfUserDefined :: EXPRESSION -> Set.Set String
+setOfUserDefined e = g Set.empty e
+    where
+      g s x =
+       case x of
+         Op (OpString n) _ al _ -> foldl g (Set.insert n s) al 
+         -- ignoring lists (TODO: they should be removed soon anyway)
+         _ -> s
 
 {- |
    Given a map holding for each constant, probably partly instantiated,

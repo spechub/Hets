@@ -181,6 +181,21 @@ sl <- sens (-3)
 fst $ splitAS sl
 -}
 
+-- TODO: build a tester for the ep-elimination proc
+-- testSMTComparer :: [String] ->
+
+varEnvFromList :: [String] -> VarEnv
+varEnvFromList l = error ""
+
+-- | Generates from a list of Extended Parameter names an id-mapping
+varMapFromList :: [String] -> VarMap
+varMapFromList l = Map.fromList $ zip l $ [1 .. length l]
+
+-- | Generates from a list of Extended Parameter names an id-mapping
+varMapFromSet :: Set.Set String -> VarMap
+varMapFromSet = varMapFromList . Set.toList
+
+
 epList :: [EPRange]
 epList =
     let l = map (Atom . toEPs)
@@ -486,57 +501,3 @@ extractOps = extr Map.empty
 -- -- ----------------------------------------------------------------------
 
 
--- TODO: move this to analysis!
-toDef :: [String] -> Def
-toDef l = Map.fromList $ map (\ x -> (head x, Set.fromList $ tail x)) $ map (map (:[])) l
-
--- toDef ["043", "124", "23", "34", "4"] -- entnommen spec Test1011
-
-type Def = Map.Map String (Set.Set String)
-type BackRef = Map.Map String [String]
-
-buildDBR :: Guarded a -> (Def, BackRef)
-buildDBR = error ""
-
-getBackRef :: Def -> BackRef
-getBackRef d =
-    let uf k n m  = Map.insertWith (++) n [k] m
-        -- for each entry in the set insert k into the list
-        f k s m = Set.fold (uf k) m s
-    -- from each entry in d add entries in the map
-    in Map.foldWithKey f Map.empty d
-
-{-
-Set.fold :: (a -> b -> b) -> b -> Set a -> b
-
-Map.foldWithKey :: (k -> a -> b -> b) -> b -> Map k a -> b
--}
--- Kahn-algorithm
-topsort :: Def -> BackRef -> [String]
-topsort d br =
- let f d' [] = if Map.null d' then [] else error $ "contains cycles: " ++ let (s, v) = Map.findMin d' in concat [ s, " -> ", show v ]
-     f d' (n:l) =
-         let cl = Map.findWithDefault [] n br
-             (nl, d'') = foldl (remEdge n) ([], d') cl
-         in n : (f d'' $ l ++ nl)
-     uf n a = let b = Set.delete n a in if Set.null b then Nothing else Just b
-     -- returns a new list of empty-nodes and a new def-map
-     remEdge n (nl, m) s = let c = Map.size m
-                               m' = Map.update (uf n) s m
-                           in (if Map.size m' < c then s:nl else nl, m')
-     (me, mne) = Map.partition Set.null d
- in f mne $ Map.keys me
-
--- L ← Empty list that will contain the sorted elements
--- S ← Set of all nodes with no incoming edges
--- while S is non-empty do
---     remove a node n from S
---     insert n into L
---     for each node m with an edge e from n to m do
---         remove edge e from the graph
---         if m has no other incoming edges then
---             insert m into S
--- if graph has edges then
---     output error message (graph has at least one cycle)
--- else 
---     output message (proposed topologically sorted order: L)
