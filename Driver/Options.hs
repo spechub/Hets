@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  Datatypes and functions for options that hets understands.
@@ -154,8 +155,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , serve :: Bool
   , listen :: Int }
 
--- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
--- basic values when the user specifies nothing else
+{- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
+basic values when the user specifies nothing else -}
 defaultHetcatsOpts :: HetcatsOpts
 defaultHetcatsOpts = HcOpt
   { analysis = Basic
@@ -215,7 +216,7 @@ instance Show HetcatsOpts where
                                       case caslAmalg opts of
                                       [] -> [NoAnalysis]
                                       l -> l)
-    ++ " " ++ intercalate " " (infiles opts)
+    ++ " " ++ unwords (infiles opts)
 
 -- | every 'Flag' describes an option (see usage info)
 data Flag =
@@ -428,8 +429,8 @@ instance Show Delta where
     Delta -> deltaS
     Fully -> ""
 
--- | 'PrettyType' describes the type of output we want the pretty-printer
--- to generate
+{- | 'PrettyType' describes the type of output we want the pretty-printer
+to generate -}
 data PrettyType = PrettyAscii | PrettyLatex | PrettyXml
 
 instance Show PrettyType where
@@ -452,8 +453,8 @@ instance Show GraphType where
 graphList :: [GraphType]
 graphList = [Dot True, Dot False]
 
--- | 'options' describes all available options and is used to generate usage
--- information
+{- | 'options' describes all available options and is used to generate usage
+information -}
 options :: [OptDescr Flag]
 options = let
     listS = "is a comma-separated list without blanks"
@@ -469,10 +470,12 @@ options = let
       "print version number and exit"
     , Option "h" ["help", "usage"] (NoArg Help)
       "print usage information and exit"
+#ifdef UNI_PACKAGE
     , Option "g" [guiS] (NoArg (Gui UseGui))
       "show graphs in windows"
     , Option "u" ["uncolored"] (NoArg Uncolored)
       "no colors in shown graphs"
+#endif
     , Option "I" [interactiveS] (NoArg Interactive)
       "run in interactive mode"
     , Option "p" [skipS] (NoArg $ Analysis Skip)
@@ -487,8 +490,10 @@ options = let
       "lisp file for SparQ definitions"
     , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
+#ifdef SERVER
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
+#endif
     , Option "c" [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
       "run interface comunicating via connecting to the port"
     , Option "S" [listenS] (ReqArg parseListen "PORT")
@@ -590,17 +595,17 @@ envSuffix = '.' : envS
 prfSuffix :: String
 prfSuffix = '.' : prfS
 
--- |
--- checks if a source file for the given file name exists
+{- |
+checks if a source file for the given file name exists -}
 existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 existsAnSource opts file = do
        let base = rmSuffix file
+           defLog = (defLogic opts ==)
            exts = case intype opts of
-                  GuessIn -> if defLogic opts == "DMU"
-                                then [".xml"] else
-                             if defLogic opts == "Framework"
-                                then [".elf", ".thy", ".maude", ".het"] else
-                             downloadExtensions
+                  GuessIn
+                    | defLog "DMU" -> [".xml"]
+                    | defLog "Framework" -> [".elf", ".thy", ".maude", ".het"]
+                  GuessIn -> downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
            names = file : map (base ++) (exts ++ [envSuffix])
@@ -629,9 +634,9 @@ removePrfOut :: HetcatsOpts -> HetcatsOpts
 removePrfOut opts =
      opts { outtypes = filter (not . isPrfOut) $ outtypes opts }
 
--- |
--- gets two Paths and checks if the first file is not older than the
--- second one and should return True for two identical files
+{- |
+gets two Paths and checks if the first file is not older than the
+second one and should return True for two identical files -}
 checkRecentEnv :: HetcatsOpts -> FilePath -> FilePath -> IO Bool
 checkRecentEnv opts fp1 base2 = catch (do
     fp1_time <- getModificationTime fp1
@@ -697,7 +702,7 @@ hetcatsOpts :: [String] -> IO HetcatsOpts
 hetcatsOpts argv =
   let argv' = filter (not . isUni) argv
       isUni = isPrefixOf "--uni"
-   in case (getOpt Permute options argv') of
+   in case getOpt Permute options argv' of
         (opts, non_opts, []) ->
             do flags <- checkFlags opts
                infs <- checkInFiles non_opts
@@ -813,26 +818,22 @@ collectVerbosity fs =
 
 collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
-    let (ots, fs') = partition isOType fs
-        isOType (OutTypes _) = True
-        isOType _ = False
-        otypes = foldl concatOTypes [] ots
-        concatOTypes = (\ os (OutTypes ot) -> os ++ ot)
-    in if null otypes then fs' else OutTypes otypes : fs'
+    let (ots, fs') = foldr (\ f (os, rs) -> case f of
+           OutTypes ot -> (ot ++ os, rs)
+           _ -> (os, f : rs)) ([], []) fs
+    in if null ots then fs' else OutTypes ots : fs'
 
 collectSpecOpts :: [Flag] -> [Flag]
 collectSpecOpts fs =
-    let (rfs, fs') = partition isSpecOpt fs
-        isSpecOpt (Specs _) = True
-        isSpecOpt _ = False
-        specs = foldl concatSpecOpts [] rfs
-        concatSpecOpts = (\ os (Specs ot) -> os ++ ot)
+    let (specs, fs') = foldr (\ f (os, rs) -> case f of
+           Specs ot -> (ot ++ os, rs)
+           _ -> (os, f : rs)) ([], []) fs
     in if null specs then fs' else Specs specs : fs'
 
 -- auxiliary functions: error messages --
 
--- | 'hetsError' is a generic Error messaging function that prints the Error
--- and usage information, if the user caused the Error
+{- | 'hetsError' is a generic Error messaging function that prints the Error
+and usage information, if the user caused the Error -}
 hetsError :: String -> a
 hetsError = error . (++ '\n' : hetsUsage)
 
@@ -841,8 +842,8 @@ hetsUsage :: String
 hetsUsage = let header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
   in usageInfo header options
 
--- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'
--- Verbosity exceeds the given level
+{- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'
+Verbosity exceeds the given level -}
 putIfVerbose :: HetcatsOpts -> Int -> String -> IO ()
 putIfVerbose opts level =
     when (outputToStdout opts) . when (verbose opts >= level) . putStrLn
