@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, OverlappingInstances #-}
 {- |
 Module      :  $Header$
 Description :  substitution of terms
@@ -6,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable
 
 substitution and let-reduction of terms
 -}

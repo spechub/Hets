@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  add to all names in the nodes of the libenv a list of paths
