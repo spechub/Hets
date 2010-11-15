@@ -31,6 +31,7 @@ import CSL.AS_BASIC_CSL
 import CSL.ExtendedParameter
 import Common.Id (tokStr)
 import Common.Doc
+import Common.DocUtils
 
 -- ----------------------------------------------------------------------
 -- * Datatypes for efficient Extended Parameter comparison
@@ -106,6 +107,15 @@ prettyEPRange re =
       Empty -> text "Empty"
       Atom eps -> prettyEPs eps
 
+mkUnion :: [EPRange] -> EPRange
+mkUnion [] = error "mkUnion: empty list"
+mkUnion [x] = x
+mkUnion l = Union l
+
+mkIntersection :: [EPRange] -> EPRange
+mkIntersection [] = error "mkIntersection: empty list"
+mkIntersection [x] = x
+mkIntersection l = Intersection l
 
 showEPRange :: EPRange -> String
 showEPRange = show . prettyEPRange
@@ -370,6 +380,12 @@ forestFromEPsGen f l = foldr (insertEPNodeToForest . f) [] l
 forestFromEPs :: (a -> (b, EPExps)) -> [a] -> EPForest b
 forestFromEPs f = forestFromEPsGen $ uncurry makeEPLeaf . f
 
+instance Pretty a => Pretty (EPNodeLabel a) where
+    pretty x = parens $ prettyEPs (eplabel x) <> colon <+> pretty (nodelabel x)
+
+instance Pretty a => Show (EPNodeLabel a) where
+    show = show . pretty
+
 -- ----------------------------------------------------------------------
 -- * Partitions based on 'EPRange'
 -- ----------------------------------------------------------------------
@@ -448,3 +464,12 @@ restrictPartition er p
                    Comparable GT -> liftM ((er', x) :) $ f l
                    Incomparable Disjoint -> f l
                    Incomparable Overlap -> liftM ((er'', x) :) $ f l
+
+prettyPartition :: (a -> Doc) -> Partition a -> Doc
+prettyPartition f (AllPartition x) = braces $ braces $ f x
+prettyPartition f (Partition l) = braces $ sepByCommas $ map (braces . g) l
+    where g (r, x) = f x <+> text "|" <+> prettyEPRange r
+
+
+instance Pretty a => Show (Partition a) where
+    show = show . prettyPartition pretty

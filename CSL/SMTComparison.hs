@@ -39,22 +39,20 @@ import CSL.EPBasic
 -- i.e., v::VarMap => Set.fromList (Map.elems v) = {1..Map.size v}
 type VarMap = Map.Map String Int
 
-type VarTypes = Map.Map String (Maybe BoolRep)
+type VarTypes = Map.Map String BoolRep
 
 data VarEnv = VarEnv { varmap :: VarMap
                      , vartypes :: VarTypes }
 
 -- | Type alias and subtype definitions for the domain of the extended params
 smtTypeDef :: VarEnv -> String
-smtTypeDef m = Map.foldWithKey f "" $ vartypes m
-    where err = error "smtTypeDef: No matching"
-          lu s = show $ Map.findWithDefault err s $ varmap m
-          g k a = case a of
+smtTypeDef m = Map.foldWithKey f "" $ varmap m
+    where g k a = case Map.lookup k $ vartypes m of
                     Just br ->
-                        concat [ "(define-type t", lu k, " (subtype (x"
-                               , lu k, "::int) ", smtBoolExp br, "))" ]
+                        concat [ "(define-type t", show a, " (subtype (x"
+                               , show a, "::int) ", smtBoolExp br, "))" ]
                     Nothing ->
-                        concat [ "(define-type t", lu k, " int)" ]
+                        concat [ "(define-type t", show a, " int)" ]
           f k a s = s ++ g k a ++ "\n"
 
 -- | Predicate definition
@@ -181,7 +179,9 @@ smtResponseToStatus s
 
 smtMultiResponse :: String -> IO [SMTStatus]
 smtMultiResponse inp = do
+  putStrLn $ "\n\n" ++ inp ++ "\n\n\n\n\n\n\n\n\n\n"
   s <- readProcess "yices" [] inp
+  putStrLn "---------------- DONE ----------------\n\n"
   return $ map smtResponseToStatus $ lines s
 
 smtResponse :: String -> IO SMTStatus

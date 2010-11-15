@@ -12,7 +12,7 @@ Portability :  portable
 
 
 module CSL.Analysis
-    ( splitSpec
+{-    ( splitSpec
     , basicCSLAnalysis
     , splitAS
     , Guard(..)
@@ -28,7 +28,7 @@ module CSL.Analysis
 -- ,inducedFromMorphism
 -- ,inducedFromToMorphism
 -- , signatureColimit
-    )
+    ) -}
     where
 
 import Common.ExtSign
@@ -36,6 +36,8 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.Utils (mapAccumLM)
+import Common.Doc
+import Common.DocUtils
 
 import CSL.AS_BASIC_CSL
 import CSL.Symbol
@@ -217,21 +219,40 @@ data Guard a = Guard { range :: a
                      , definition :: EXPRESSION
                      , assName :: String
                      , filtered :: Set.Set String
-                     , constrained :: Set.Set String } deriving Show
+                     , constrained :: Set.Set String }
 
--- TODO: pretty instance for Guard and Guarded to output the guards nicely!
+prettyGuard :: (a -> Doc) -> Guard a -> Doc
+prettyGuard f g = f (range g) <+> text "-->" <+> pretty (definition g)
 
 instance Functor Guard where
     fmap f (Guard x e an fs ct) = Guard (f x) e an fs ct
 
+instance Pretty a => Pretty (Guard a) where
+    pretty = prettyGuard pretty
+
+instance Pretty a => Show (Guard a) where
+    show = show . pretty
+
 -- | A guarded constant consists of the argument list (for function definitions)
 -- and a list of guard-expressions
 data Guarded a = Guarded { argvars :: [String]
-                         , guards :: [Guard a] } deriving Show
+                         , guards :: [Guard a] }
+
+
+prettyGuarded :: (a -> Doc) -> Guarded a -> Doc
+prettyGuarded f grdd = vcat $ map (prettyGuard f) $ guards grdd
 
 instance Functor Guarded where
     fmap f grdd = grdd { guards = map (fmap f) $ guards grdd }
 
+instance Pretty a => Pretty (Guarded a) where
+    pretty = prettyGuarded pretty
+
+instance Pretty a => Show (Guarded a) where
+    show = show . pretty
+
+instance Pretty EPRange where
+    pretty = prettyEPRange
 
 
 type GuardedMap a = Map.Map String (Guarded a)
@@ -282,9 +303,9 @@ analyzeGuarded x =
                           -- we make nodeRg disjoint with its children
                           -- by removing the union of the children from it
                           rgl -> if isStarEP (eplabel rl)
-                                 then Complement $ Union rgl
+                                 then Complement $ mkUnion rgl
                                  else Intersection
-                                          [nodeRg, Complement $ Union rgl]
+                                          [nodeRg, Complement $ mkUnion rgl]
             in (nodelabel rl) { range = newRg } : l
         newguards = foldForest g [] frst
     in x { guards = newguards }
@@ -292,22 +313,28 @@ analyzeGuarded x =
 -- | Folds the forest in top-down direction constructing the accumulator
 -- from the labels and children of each node.
 foldForest :: (b -> a -> Tr.Forest a -> b) -> b -> Tr.Forest a -> b
-foldForest f = foldl g where g x tr = f x (Tr.rootLabel tr) $ Tr.subForest tr
+foldForest f = foldl g where
+     g x tr = let sf = Tr.subForest tr
+              in foldl g (f x (Tr.rootLabel tr) sf) sf
 
 
 -- ** Dependency Sorting
 
 dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
-dependencySortAS grdm = map f $ topsortDirect $ getDependencyRelation grdm
-    where f x = (x, Map.findWithDefault (err x) x grdm)
-          err x = error $ "dependencySortAS: impossible lookup error at " ++ x
+dependencySortAS grdm = mapMaybe f $ topsortDirect $ getDependencyRelation grdm
+    where f x = fmap ((,) x) $ Map.lookup x grdm
 
 
 type Rel2 a = Map.Map a (Set.Set a)
 type BackRef a = Map.Map a [a]
 
+-- | @r dependsOn r'@ if @r'@ occurs in the definition term of @r@. In this case
+-- the set which corresponds to the 'Map.Map' entry of @r@ contains @r'@.
 getDependencyRelation :: GuardedMap a -> Rel2 String
-getDependencyRelation = Map.map g where
+getDependencyRelation gm = Map.fold f dr dr where
+    f s m = Map.union m $ Map.fromAscList
+            $ map (flip (,) Set.empty) $ Set.toAscList s
+    dr = Map.map g gm
     g grdd = Set.unions $ map (setOfUserDefined . definition) $ guards grdd
 
 getBackRef :: Ord a => Rel2 a -> BackRef a
@@ -337,7 +364,7 @@ topsort d br =
      f d' acc (n:l) =
          let cl = Map.findWithDefault [] n br
              (nl, d'') = foldl (remEdge n) ([], d') cl
-         in f d'' (n:acc) $ l ++ nl
+         in f d'' (acc ++ [n]) $ l ++ nl
      uf n a = let b = Set.delete n a in if Set.null b then Nothing else Just b
      -- returns a new list of empty-nodes and a new def-map
      remEdge n (nl, m) s = let c = Map.size m
@@ -394,7 +421,7 @@ eliminateGuard m grd = do
     partMap <- mapUserDefined f $ definition grd
     rePart <- refineDefPartitions partMap
     case rePart of
-      AllPartition _ -> error $ "eliminateGuard: AllPartition " ++ show grd
+      AllPartition x -> return [g (starRange, x)]
       Partition l ->
           -- for each entry in the refined partition create a new guard
           return $ map g l
@@ -433,6 +460,8 @@ mapUserDefined f e = g Map.empty e
              let pic = mkPIConst s epl
                  m' = Map.insert pic v m
              foldM g m' al
+         -- handle also non-userdefined ops.
+         Op _ _ al _ -> foldM g m al 
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> return m
 
@@ -443,6 +472,8 @@ setOfUserDefined e = g Set.empty e
       g s x =
        case x of
          Op (OpString n) _ al _ -> foldl g (Set.insert n s) al 
+         -- handle also non-userdefined ops.
+         Op _ _ al _ -> foldl g s al 
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> s
 

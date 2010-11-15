@@ -229,6 +229,8 @@ instance Pretty BASIC_SPEC where
     pretty = printBasicSpec
 instance Pretty BASIC_ITEM where
     pretty = printBasicItems
+instance Pretty EXTPARAM where
+    pretty = printExtparam
 instance Pretty EXPRESSION where
     pretty = printExpression
 instance Pretty SYMB_ITEMS where

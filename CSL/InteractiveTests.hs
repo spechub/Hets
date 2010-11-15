@@ -22,7 +22,7 @@ import CSL.Reduce_Interface
 import CSL.Interpreter
 import CSL.Transformation
 import CSL.EPBasic
-import CSL.TreePO (EPCompare)
+import CSL.TreePO
 import CSL.ExtendedParameter
 import CSL.SMTComparison
 import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
@@ -51,7 +51,7 @@ import Main (getSigSens)
 import Control.Monad.State (StateT(..))
 import Control.Monad.Trans (MonadIO (..))
 import Control.Monad (liftM)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe
 import Data.Time.Clock
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -177,12 +177,97 @@ let l2 = [(x,y) | x <- epList, y <- epList]
 let l3 = map (\ (x, y) -> smtCompareUnsafe vEnv (boolRange vMap x) (boolRange vMap y)) l2
 putStrLn $ unlines $ map show $ zip l3 l2
 
-sl <- sens (-3)
-fst $ splitAS sl
+:l CSL/InteractiveTests.hs
+:m +CSL.Analysis
+sl <- sens (-82)
+let grdm = fst $ splitAS sl
+let sgm = dependencySortAS grdm
+
+let grdd = snd $ Map.elemAt 0 grdm
+let sgm = dependencySortAS grdm
+
+getDependencyRelation grdm
+
+analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
+
+:l CSL/InteractiveTests.hs
+:m +CSL.Analysis
+
+gm <- fmap grddMap $ sens (-3)
+
+let (_, xg) = Map.elemAt 1 gm
+let (_, yg) = Map.elemAt 2 gm
+
+let f grd = (grd, toEPExps $ range grd)
+let frst = forestFromEPs f $ guards xg
+
+putStrLn $ showEPForest show frst
+
+foldForest (\ x y z -> x ++ [(y, length z)]) [] frst 
+
+
 -}
 
--- TODO: build a tester for the ep-elimination proc
--- testSMTComparer :: [String] ->
+toEPR :: String -> EPRange
+toEPR = Atom . toEPs
+
+-- Test for partitioning taken from E82 in CSL/ExtParamExamples.het
+el1 :: [EPRange]
+el1 = let x1 = toEPR "I>=0" in [x1, Complement x1]
+
+el2 :: [EPRange]
+el2 = let l = map toEPR ["I=1", "I>1"] in Complement (Union l) : l
+
+el3 :: [EPRange]
+el3 = let x1 = toEPR "I>0" in [x1, Complement x1]
+
+checkForPartition :: [EPRange] -> IO Bool
+checkForPartition l = execSMTComparer vEnv1 $ f g l where
+    f a [] = return True
+    f a (x:l') = do
+      res <- mapM (a x) l'
+      res' <- f a l'
+      return $ and $ res' : res
+    g x y = fmap (Incomparable Disjoint ==) $ rangeCmp x y
+
+
+part1 :: Partition Int
+part1 = AllPartition 10
+
+part2 :: Partition Char
+part2 = Partition $ zip el1 ['a' ..]
+
+part3 :: Partition Int
+part3 = Partition $ zip el2 [1 ..]
+
+part4 :: Partition Int
+part4 = Partition $ zip el3 [91 ..]
+
+refinePart a b = execSMTComparer vEnv1 $ refinePartition a b
+
+
+analyzeCSL :: [Named CMD] -> IO ([(String, Guarded EPRange)], [Named CMD])
+analyzeCSL ncl = do
+  let (as, progs) = splitAS ncl
+  elimAS  <- elimEPs $ dependencySortAS as
+  return (elimAS, progs)
+
+
+elimEPs :: [(String, Guarded EPRange)] -> IO [(String, Guarded EPRange)]
+elimEPs = execSMTComparer vEnv . epElimination
+
+
+grddMap :: [Named CMD] -> GuardedMap [EXTPARAM]
+grddMap = foldr (uncurry $ addAssignment "?") Map.empty . assignments
+
+assignments :: [Named CMD] -> [(EXPRESSION, EXPRESSION)]
+assignments = assignments' . map sentence
+
+assignments' :: [CMD] -> [(EXPRESSION, EXPRESSION)]
+assignments' = mapMaybe getAss
+
+getAss (Ass c def) = Just (c,def)
+getAss _ = Nothing
 
 varEnvFromList :: [String] -> VarEnv
 varEnvFromList l = error ""
@@ -209,9 +294,13 @@ vMap :: Map.Map String Int
 vMap = varMapFromSet $ namesInList epList
 
 -- vTypes = Map.map (const Nothing) vMap
-vTypes = Map.fromList $ map (\ (x,y) -> (x, Just $ boolExps vMap y)) epDomain
+vTypes = Map.fromList $ map (\ (x,y) -> (x, boolExps vMap y)) epDomain
 
-vEnv = VarEnv { varmap = vMap, vartypes = vTypes }
+vEnv = VarEnv { varmap = vMap, vartypes = Map.empty }
+
+vEnv1 = VarEnv { varmap = Map.fromList [("I", 1)], vartypes = Map.empty }
+
+vEnvX = VarEnv { varmap = vMap, vartypes = vTypes }
 
 
 printOrdEPs :: String -> IO ()
