@@ -103,7 +103,7 @@ instance Pretty Sign where
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
-        pr'subs = vcat . Map.foldWithKey pr'pair []
+        pr'subs = vcat . Map.foldrWithKey pr'pair []
         -- print operator declarations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
@@ -145,7 +145,7 @@ instance HasOps Sign where
         opmap = ops sign
         update src tgt = mapOpDecl subrel src tgt []
         in sign {
-            ops = Map.foldWithKey update opmap mp
+            ops = Map.foldrWithKey update opmap mp
             -- NOTE: Leaving out Sentences for now.
         }
 
@@ -225,7 +225,7 @@ inlineSign sign = let
         pr'sups = hsep . map pretty . Set.elems
         pr'pair sub sups = (:) . hsep $
             [keyword "subsort", pretty sub, less, pr'sups sups, dot]
-        pr'subs = vcat . Map.foldWithKey pr'pair []
+        pr'subs = vcat . Map.foldrWithKey pr'pair []
         -- print operator decparations
         pr'decl attrs symb = hsep
             [keyword "op", pretty symb, pretty attrs, dot]
@@ -430,7 +430,7 @@ kindsFromMap kr = foldr (\ (_,y) z -> Set.insert y z) Set.empty krl
       where krl = Map.toList kr
 
 getSortsKindRel :: KindRel -> SymbolSet
-getSortsKindRel = Map.foldWithKey f Set.empty
+getSortsKindRel = Map.foldrWithKey f Set.empty
       where f = \ k _ s -> Set.insert k s
 
 renameSortKindRel :: Map Symbol Symbol -> KindRel -> KindRel

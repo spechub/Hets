@@ -186,7 +186,7 @@ addComps :: Map.Map (String, String) AnyComorphism
          -> Map.Map (String, String) AnyComorphism
 addComps cm = Map.unions
    $ cm : map (\ ((l1, l2), c1) ->
-         Map.foldWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
+         Map.foldrWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
               case compComorphism c1 c2 of
                 Just c3 -> Map.insert (l1, l4) c3 m
                 _ -> m

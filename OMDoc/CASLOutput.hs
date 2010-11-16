@@ -48,7 +48,7 @@ mappedsorts :: [(Hets.WithOrigin Hets.Identifier Graph.Node, String)]
 
 mappedsorts fromSortIds e_fname toSortIds ln collectionMap uniqueNames from to
   caslmorph =
-      Map.foldWithKey
+      Map.foldrWithKey
         (\origsort newsort ms ->
           let
             oname =
@@ -122,7 +122,7 @@ mappedpreds::(Show b1) =>
                   (String, (Maybe URI.URI, String)))]
 mappedpreds fromPredIds e_fname caslmorph toPredIds ln collectionMap uniqueNames
         fromRel from toRel to=
-      Map.foldWithKey
+      Map.foldrWithKey
         (\(origpred, optype) newpred mp ->
           let
             oname =
@@ -216,7 +216,7 @@ mappedops::[((Hets.WithOrigin Hets.Identifier b1, OpType), String)]
                                  (String, (Maybe URI.URI, String)))]
 mappedops fromOpIds e_fname caslmorph toOpIds ln collectionMap uniqueNames
                   fromRel from toRel to =
-      Map.foldWithKey
+      Map.foldrWithKey
         (\(origop, ootype) (newop, nfk) mo ->
           let
             oname =

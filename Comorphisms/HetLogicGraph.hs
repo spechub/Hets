@@ -203,7 +203,7 @@ mapSublogic_preImage :: (Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid -> Map.Map G_sublogics (Set.Set G_sublogics)
 mapSublogic_preImage cid =
-    Map.foldWithKey toG_sublogics Map.empty $
+    Map.foldrWithKey toG_sublogics Map.empty $
     preImageMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
     where toG_sublogics s2 set_s1 =
              Map.insert (G_sublogics (targetLogic cid) s2)

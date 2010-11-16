@@ -495,7 +495,7 @@ integrateOntologyFile of1@( OntologyFile ns1
 -- | reverse a map: (key, value) -> (value, key)
 reverseMap :: Ord a => Map.Map k a -> Map.Map a k
 reverseMap oldMap =
-    Map.foldWithKey transport Map.empty oldMap
+    Map.foldrWithKey transport Map.empty oldMap
   where
    transport :: Ord a => k -> a -> Map.Map a k -> Map.Map a k
    transport mKey mElem newMap

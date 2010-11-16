@@ -408,8 +408,8 @@ insertLink onto source target relName = do
 isComplete :: MMiSSOntology -> [String]
 isComplete onto = case mode onto of
     ThrowError -> []
-    _ -> Map.foldWithKey checkClass [] (classes onto)
-            ++ Map.foldWithKey checkRel [] (relations onto)
+    _ -> Map.foldrWithKey checkClass [] (classes onto)
+            ++ Map.foldrWithKey checkRel [] (relations onto)
   where
     mkMsg str nam = [str ++ nam ++ " is not properly defined."]
     checkClass className (ClassDecl _ _ _ _ inserted _) l =

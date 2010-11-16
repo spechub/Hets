@@ -204,11 +204,11 @@ postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
                  Set.insert topSortD
                         (subsortsOf topSortD predefinedSign)
 
-          checkPreds = Map.foldWithKey chPred [] (predMap diff_sig)
+          checkPreds = Map.foldrWithKey chPred [] (predMap diff_sig)
           chPred p ts ds = ds ++
               Set.fold (\ t -> chArgs "pred" p $ predArgs t) [] ts
 
-          checkOps = Map.foldWithKey chOp [] (opMap diff_sig)
+          checkOps = Map.foldrWithKey chOp [] (opMap diff_sig)
           chOp o ts ds = ds ++
               Set.fold (\ t -> chArgs "op" o $ opArgs t) [] ts
 
@@ -378,7 +378,7 @@ checkSymbolMapDL ::  RawSymbolMap -> Result RawSymbolMap
           matches, symOf, statSymbMapItems
 -}
 checkSymbolMapDL rsm =
-    let syms = Map.foldWithKey checkSourceSymbol [] rsm
+    let syms = Map.foldrWithKey checkSourceSymbol [] rsm
     in if null syms
        then return rsm
        else Result (ds syms) Nothing

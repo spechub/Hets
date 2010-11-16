@@ -1616,7 +1616,7 @@ getConservativityOfPath path = minimum [getConservativity e | e <- path]
 -- | Creates a LibName relation wrt dependencies via reference nodes
 getLibDepRel :: LibEnv -> Rel.Rel LibName
 getLibDepRel = Rel.transClosure
-  . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
+  . Rel.fromSet . Map.foldrWithKey (\ ln dg s ->
     foldr ((\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id)
            . snd) s $ labNodesDG dg) Set.empty
 

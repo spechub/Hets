@@ -329,10 +329,10 @@ mapProcessName mor pn =
 inducedCspSign :: Sort_map -> CspAddMorphism -> CspSign -> CspSign
 inducedCspSign sm m sig = let
   cm = channelMap m
-  newChans = Map.foldWithKey (\ c s ->
+  newChans = Map.foldrWithKey (\ c s ->
     Map.insert (Map.findWithDefault c c cm)
        (mapSort sm s)) Map.empty $ chans sig
-  newProcs = Map.foldWithKey (\ p f ->
+  newProcs = Map.foldrWithKey (\ p f ->
     Map.insert (Map.findWithDefault p p $ processMap m)
        (mapProcProfile sm cm f)) Map.empty $ procSet sig
   in sig { chans = newChans
@@ -352,9 +352,9 @@ mapCommTypeAux sm cm ct = case ct of
 
 inducedCspMorphExt :: RawSymbolMap -> CspSign -> Result CspAddMorphism
 inducedCspMorphExt rmap sig = do
-  cm <- Map.foldWithKey (insFun channelS rmap)
+  cm <- Map.foldrWithKey (insFun channelS rmap)
               (return Map.empty) (chans sig)
-  pm <- Map.foldWithKey (insFun processS rmap)
+  pm <- Map.foldrWithKey (insFun processS rmap)
               (return Map.empty) (procSet sig)
   return emptyCspAddMorphism
     { channelMap = cm

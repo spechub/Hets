@@ -82,7 +82,7 @@ signToSPLogicalPart s =
                    $ map (xTerm . snd) $ number args] }
     predArgRestrictions =
           SPFormulaList { originType = SPOriginAxioms
-                        , formulae = Map.foldWithKey toArgRestriction []
+                        , formulae = Map.foldrWithKey toArgRestriction []
                                      $ predMap s
                         }
     toArgRestriction psym tset acc

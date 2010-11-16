@@ -301,7 +301,7 @@ shapeRel te subL =
            Just (s1, atoms0) ->
                let atoms = filter isAtomic atoms0
                    r = Rel.transClosure $ Rel.fromList atoms
-                   es = Map.foldWithKey ( \ t1 st l1 ->
+                   es = Map.foldrWithKey ( \ t1 st l1 ->
                              case t1 of
                              TypeName _ _ 0 -> Set.fold ( \ t2 l2 ->
                                  case t2 of
@@ -432,14 +432,14 @@ shapeRelAndSimplify doFail te cs mTy = do
 
 -- | Downsets of type variables made monomorphic need to be considered
 fromTypeVars :: LocalTypeVars -> [(Type, Type)]
-fromTypeVars = Map.foldWithKey
+fromTypeVars = Map.foldrWithKey
     (\ t (TypeVarDefn _ vk rk _) c -> case vk of
               Downset ty -> (TypeName t rk 0, monoType ty) : c
               _ -> c) []
 
 -- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type
-fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
+fromTypeMap = Map.foldrWithKey (\ t ti r -> let k = typeKind ti in
                     Set.fold ( \ j -> Rel.insert (TypeName t k 0)
                                 $ TypeName j k 0) r
                                     $ superTypes ti) Rel.empty

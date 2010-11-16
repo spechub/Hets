@@ -212,7 +212,7 @@ instance Pretty Morphism where
           fm = funMap m
           -- the types in funs are already mapped
           -- key und value types only differ wrt. partiality
-          ds = Map.foldWithKey ( \ (i, _) (j, t) ->
+          ds = Map.foldrWithKey ( \ (i, _) (j, t) ->
                 ((pretty i <+> mapsto <+>
                   pretty j <+> colon <+> pretty t) :))
                [] fm

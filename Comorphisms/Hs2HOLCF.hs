@@ -937,7 +937,7 @@ transClassInfo c p = case snd p of
 ------------------- translation of Abbrs (from KEnv) --------------------
 
 getAbbrs ::  Continuity -> TyMap -> Abbrs
-getAbbrs c = Map.foldWithKey (\ k v -> case v of
+getAbbrs c = Map.foldrWithKey (\ k v -> case v of
            Nothing -> id
            Just p -> Map.insert k p) Map.empty
                . liftMapByList Map.toList Map.fromList

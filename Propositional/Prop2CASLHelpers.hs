@@ -117,7 +117,7 @@ trMor mp =
     let
         pt = CSign.PredType{CSign.predArgs = []}
     in
-      Map.foldWithKey
+      Map.foldrWithKey
              (\ k a ->
               Map.insert (k, pt) a
              )

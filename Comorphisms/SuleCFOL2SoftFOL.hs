@@ -189,7 +189,7 @@ transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (FuncMap, IdTypeSPIdMap)
 transFuncMap idMap sign =
-    Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
+    Map.foldrWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) =
               if Set.null typeSet then
                   error ("SuleCFOL2SoftFOL: empty sets are not " ++
@@ -234,7 +234,7 @@ transPredMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (PredMap, IdTypeSPIdMap,[Named SPTerm])
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty,idMap,[]) (CSign.predMap sign)
+    Map.foldrWithKey toSPPredType (Map.empty,idMap,[]) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im,sen) =
               if Set.null typeSet then
                   error ("SuleCFOL2SoftFOL: empty sets are not " ++
@@ -497,7 +497,7 @@ mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 mkInjSentences :: IdTypeSPIdMap
                -> FuncMap
                -> [Named SPTerm]
-mkInjSentences idMap = Map.foldWithKey genInjs []
+mkInjSentences idMap = Map.foldrWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args, res) =
               assert (length args == 1)
@@ -544,7 +544,7 @@ transSign sign = (SPSign.emptySign { SPSign.sortRel =
 
 nonEmptySortSens :: Set.Set SPIdentifier -> SortMap -> [Named SPTerm]
 nonEmptySortSens emptySorts sm =
-    Map.foldWithKey
+    Map.foldrWithKey
       (\ s _ res ->
          if s `Set.member` emptySorts then res else extSen s : res)
       [] sm

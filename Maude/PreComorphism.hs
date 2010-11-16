@@ -69,7 +69,7 @@ mapMorphism morph =
 -- | translates the Maude morphism between operators into a CASL morpshim between
 -- operators
 maudeOpMap2CASLOpMap :: IdMap -> MMorphism.OpMap -> CMorphism.Op_map
-maudeOpMap2CASLOpMap im = Map.foldWithKey (translateOpMapEntry im) Map.empty
+maudeOpMap2CASLOpMap im = Map.foldrWithKey (translateOpMapEntry im) Map.empty
 
 -- | translates the mapping between two symbols representing operators into
 -- a CASL operators map
@@ -108,7 +108,7 @@ maudeSort2caslId im sym = Map.findWithDefault (errorId "sort to id") (token2id $
 -- | creates the predicate map for the CASL morphism from the Maude sort map and
 -- the map between sorts and kinds
 createPredMap :: IdMap -> MMorphism.SortMap -> CMorphism.Pred_map
-createPredMap im = Map.foldWithKey (createPredMap4sort im) Map.empty
+createPredMap im = Map.foldrWithKey (createPredMap4sort im) Map.empty
 
 -- | creates an entry of the predicate map for a single sort
 createPredMap4sort :: IdMap -> MSym.Symbol -> MSym.Symbol -> CMorphism.Pred_map
@@ -243,7 +243,7 @@ sortSym2id _ = token2id $ mkSimpleId $ "error_translation"
 
 -- | generates the sentences to state that the rew predicates are a congruence
 rewPredicatesCongSens :: CSign.OpMap -> [Named CAS.CASLFORMULA]
-rewPredicatesCongSens = Map.foldWithKey rewPredCongSet []
+rewPredicatesCongSens = Map.foldrWithKey rewPredCongSet []
 
 -- | generates the sentences to state that the rew predicates are a congruence
 -- for the operator types in the set
@@ -917,7 +917,7 @@ rewPredicate kind m = Map.insertWith (Set.union) rewID ar m
 
 -- | create the predicates that assign sorts to each term
 kindPredicates :: IdMap -> Map.Map Id (Set.Set CSign.PredType)
-kindPredicates = Map.foldWithKey kindPredicate Map.empty
+kindPredicates = Map.foldrWithKey kindPredicate Map.empty
 
 -- | create the predicates that assign the current sort to the
 -- corresponding terms
@@ -992,7 +992,7 @@ quantifyUniversally form = if null var_decl
 -- | traverses a map with sorts as keys and sets of variables as value and creates
 -- a list of variable declarations
 listVarDecl :: Map.Map Id (Set.Set Token) -> [CAS.VAR_DECL]
-listVarDecl = Map.foldWithKey f []
+listVarDecl = Map.foldrWithKey f []
       where f = \ sort var_set acc -> CAS.Var_decl (Set.toList var_set) sort nullRange : acc
 
 -- | removes a quantification from a formula
@@ -1010,7 +1010,7 @@ kind2sym k = CSign.Symbol k CSign.SortAsItemType
 
 -- | translates the CASL predicates into CASL symbols
 preds2syms :: Map.Map Id (Set.Set CSign.PredType) -> Set.Set CSign.Symbol
-preds2syms = Map.foldWithKey pred2sym Set.empty
+preds2syms = Map.foldrWithKey pred2sym Set.empty
 
 -- | translates a CASL predicate into a CASL symbol
 pred2sym :: Id -> Set.Set CSign.PredType -> Set.Set CSign.Symbol -> Set.Set CSign.Symbol
@@ -1023,7 +1023,7 @@ createSym4id pn pt acc = Set.insert sym acc
 
 -- | translates the CASL operators into CASL symbols
 ops2symbols :: CSign.OpMap -> Set.Set CSign.Symbol
-ops2symbols = Map.foldWithKey op2sym Set.empty
+ops2symbols = Map.foldrWithKey op2sym Set.empty
 
 -- | translates a CASL operator into a CASL symbol
 op2sym :: Id -> Set.Set CSign.OpType -> Set.Set CSign.Symbol -> Set.Set CSign.Symbol

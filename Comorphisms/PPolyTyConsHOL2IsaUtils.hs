@@ -85,7 +85,7 @@ transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
 
 -- all possible tokens of mixfix identifiers that must not be used as variables
 getAssumpsToks :: Assumps -> Set.Set String
-getAssumpsToks = Map.foldWithKey (\ i ops s ->
+getAssumpsToks = Map.foldrWithKey (\ i ops s ->
     Set.union s $ Set.unions
         $ map (\ (_, o) -> getConstIsaToks i o baseSign)
                      $ number $ Set.toList ops) Set.empty
@@ -109,7 +109,7 @@ transSignature env toks = do
         { baseSig = baseSign
     -- translation of typeconstructors
         , tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName Map.empty
+             { arities = Map.foldrWithKey extractTypeName Map.empty
                $ typeMap env }
         , constTab = ct }
 

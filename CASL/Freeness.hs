@@ -149,7 +149,7 @@ larger_then_ker_h ss mis = conj
 -- | computes the second part of the conjunction of the formula "largerThanKerH"
 -- from the kernel of H
 ltkh_preds :: Map.Map Id (Set.Set PredType) -> [CASLFORMULA]
-ltkh_preds = Map.foldWithKey ltkh_preds_set []
+ltkh_preds = Map.foldrWithKey ltkh_preds_set []
 
 -- | computes the second part of the conjunction of the formula "largerThanKerH"
 -- from the kernel of H for a concrete predicate identifier
@@ -211,7 +211,7 @@ no_gen _ = True
 -- | computes the axiom for the congruence of the kernel of h
 congruence_axs :: OpMap -> CASLFORMULA
 congruence_axs om = conj
-     where axs = Map.foldWithKey congruence_ax [] om
+     where axs = Map.foldrWithKey congruence_ax [] om
            conj = mk_conj axs
 
 -- | computes the axiom for the congruence of the kernel of h
@@ -337,7 +337,7 @@ quantifyPredsSort s f = q_form
 -- | applies the second order quantification to the formula for the given
 -- predicates
 quantifyPredsPreds :: Map.Map Id (Set.Set PredType) -> CASLFORMULA -> CASLFORMULA
-quantifyPredsPreds preds f = Map.foldWithKey quantifyPredsPredTypes f preds
+quantifyPredsPreds preds f = Map.foldrWithKey quantifyPredsPredTypes f preds
 
 -- | applies the second order quantification to the formula for the given
 -- profiles
@@ -452,7 +452,7 @@ sort_surj s = form'
 
 -- | generates the axioms for the homomorphisms applied to the predicates
 homomorphism_axs_preds :: Map.Map Id (Set.Set PredType) -> [Named CASLFORMULA]
-homomorphism_axs_preds = Map.foldWithKey g []
+homomorphism_axs_preds = Map.foldrWithKey g []
       where f = \ p_name pt sens -> (homomorphism_form_pred p_name pt) : sens
             g = \ p_name set_pt sens -> Set.fold (f p_name) sens set_pt
 
@@ -474,7 +474,7 @@ homomorphism_form_pred name (PredType args) = named_form
 
 -- | generates the axioms for the homomorphisms applied to the operators
 homomorphism_axs_ops :: OpMap -> [Named CASLFORMULA]
-homomorphism_axs_ops = Map.foldWithKey g []
+homomorphism_axs_ops = Map.foldrWithKey g []
       where f = \ op_name ot sens -> (homomorphism_form_op op_name ot) : sens
             g = \ op_name set_ot sens -> Set.fold (f op_name) sens set_ot
 
@@ -515,7 +515,7 @@ createVars i (s : ss) = var : ts
 
 -- | computes the set of components from the map of operators
 ops2comp :: OpMap -> Set.Set Component
-ops2comp = Map.foldWithKey g Set.empty
+ops2comp = Map.foldrWithKey g Set.empty
       where f = \ n ot s -> Set.insert (Component n ot) s
             g = \ name sot s -> Set.fold (f name) s sot
 
@@ -619,13 +619,13 @@ iota_sort_map_mor = Set.fold f Map.empty
 
 -- | creates the map between operators in the morphism iota
 iota_op_map_mor :: OpMap -> Op_map
-iota_op_map_mor = Map.foldWithKey g Map.empty
+iota_op_map_mor = Map.foldrWithKey g Map.empty
      where f = \ name ot om -> Map.insert (name, ot) (mkFreeName name, Total) om
            g = \ k sot m -> Set.fold (f k) m sot
 
 -- | creates the map between predicates in the morphism iota
 iota_pred_map_mor :: Map.Map Id (Set.Set PredType) -> Pred_map
-iota_pred_map_mor = Map.foldWithKey g Map.empty
+iota_pred_map_mor = Map.foldrWithKey g Map.empty
      where f = \ name pt pm -> Map.insert (name, pt) (mkFreeName name) pm
            g = \ k spt m -> Set.fold (f k) m spt
 
@@ -798,7 +798,7 @@ quantifyUniversally form = if null var_decl
 -- | traverses a map with sorts as keys and sets of variables as value and creates
 -- a list of variable declarations
 listVarDecl :: Map.Map Id (Set.Set Token) -> [VAR_DECL]
-listVarDecl = Map.foldWithKey f []
+listVarDecl = Map.foldrWithKey f []
       where f = \ sort var_set acc -> Var_decl (Set.toList var_set) sort nullRange : acc
 
 -- | removes a quantification from a formula

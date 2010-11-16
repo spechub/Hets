@@ -49,7 +49,7 @@ dGraph lenv dg =
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
          ++ map (lnode ga lenv) lnodes
          ++ map (ledge ga dg) (labEdges body)
-         ++ Map.foldWithKey (globalEntry ga dg) [] (globalEnv dg)
+         ++ Map.foldrWithKey (globalEntry ga dg) [] (globalEnv dg)
 
 genSig :: DGraph -> GenSig -> [Attr]
 genSig dg (GenSig _ _ allparams) = case allparams of

@@ -1217,7 +1217,7 @@ processSpecMapOM
   let
     e_fname = "OMDoc.OMDocInput.processSpecMapOM: "
     importsFromMap =
-      Map.foldWithKey
+      Map.foldrWithKey
         (\sourcename (ts, _ , _, _) iFM ->
           let
             references = filter isRefSpec ts
@@ -2222,7 +2222,7 @@ createFFXIMap
   go
   tsmap
   =
-  Map.foldWithKey
+  Map.foldrWithKey
     (\sn (tslist, txns) m ->
       Map.insert sn (ffxiFromTheorySpecifications go txns tslist) m
     )

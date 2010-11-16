@@ -118,7 +118,7 @@ matchQualId e rsy =
 
 anaRawMap :: Env -> Env -> RawSymbolMap -> Result RawSymbolMap
 anaRawMap s1 s2 =
-    Map.foldWithKey ( \ i v rm -> do
+    Map.foldrWithKey ( \ i v rm -> do
             m <- rm
             j <- matchQualId s1 i
             w <- matchQualId s2 v

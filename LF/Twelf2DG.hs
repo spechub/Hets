@@ -65,7 +65,7 @@ makeLibEnv libs bs = fst $
 addNodes :: LibEnv -> NODE_MAP -> BASE -> SIGS -> (LibEnv,NODE_MAP)
 addNodes le nm b sigs =
   let ln = emptyLibName b
-      (dg2,nm1) = Map.foldWithKey
+      (dg2,nm1) = Map.foldrWithKey
          (\ m sig (dg,nmap) ->
             let (n,dg1) = addSigToDG sig dg
                 nmap1 = Map.insert (b,m) n nmap

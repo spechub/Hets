@@ -447,7 +447,7 @@ hideSetOfEdgeTypes' :: AbstractionGraph -- ^ The graph
                     -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
                     -> IO AbstractionGraph
 hideSetOfEdgeTypes' g eTypes = do
-  let (hEdges, sEdges) = Map.foldWithKey (\ eid e (he, se) ->
+  let (hEdges, sEdges) = Map.foldrWithKey (\ eid e (he, se) ->
          if elem (gaeType e) eTypes then (eid : he, se) else (he, eid : se))
          ([], []) $ edges g'
       g' = g { edgeTypes = Map.mapWithKey

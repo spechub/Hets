@@ -53,7 +53,7 @@ symOf  x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
-getSymbolMap f = Map.foldWithKey
+getSymbolMap f = Map.foldrWithKey
                  (\ k a -> Map.insert Symbol{symName=k} Symbol{symName=a})
                  Map.empty $ Morphism.propMap f
 
