@@ -40,7 +40,7 @@ symOf = Set.map Symbol . Map.keysSet . items
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism -> Map.Map Symbol Symbol
 getSymbolMap f =
-  Map.foldWithKey (\ x _ -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
+  Map.foldrWithKey (\ x _ -> Map.insert (Symbol x) (Symbol $ applyMap (operatorMap f) x))
   Map.empty $ items $ source f
 
 -- | Determines the name of a symbol

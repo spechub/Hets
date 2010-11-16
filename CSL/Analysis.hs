@@ -343,7 +343,7 @@ getBackRef d =
         -- for each entry in the set insert k into the list
         f k s m = Set.fold (uf k) m s
     -- from each entry in d add entries in the map
-    in Map.foldWithKey f Map.empty d
+    in Map.foldrWithKey f Map.empty d
 
 
 topsortDirect :: (Show a, Ord a) => Rel2 a -> [a]
@@ -410,7 +410,6 @@ eliminateGuard m grd = do
     let err s = error $ "eliminateGuard: lookup failed for " ++ s
         f s epl _ = restrictPartition (range grd) $ partitionFromGuarded epl
                     $ Map.findWithDefault (err s) s m
-        -- (Map.Map PIConst Int)
         err2 s = error $ "eliminateGuard: pim-lookup failed for " ++ s
         fldOp pim _ (OpString s) epl args rg =
             let i = Map.findWithDefault (err2 s) (mkPIConst s epl) pim

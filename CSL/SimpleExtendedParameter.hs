@@ -47,6 +47,15 @@ instance Show NormEP where
 
 type EPExp = (NormEP, APInt)
 
+cmpOp :: NormEP -> APInt -> APInt -> Bool
+cmpOp LeftOf = (<=)
+cmpOp RightOf = (>=)
+cmpOp Equal= (==)
+cmpOp Except = (/=)
+
+evalEP :: Int -> EPExp -> Bool
+evalEP i (n, j) = cmpOp n (toInteger i) j
+
 showEP :: (String, EPExp) -> String
 showEP (s, (n, i)) = s ++ show n ++ show i
 

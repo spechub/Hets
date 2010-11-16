@@ -41,6 +41,10 @@ import Common.DocUtils
 -- particularly for comparison
 type EPExps = Map.Map String EPExp
 
+evalEPs :: (String -> Int) -> EPExps -> Bool
+evalEPs f eps = Map.foldrWithKey g True eps where
+    g k v b = evalEP (f k) v && b
+
 prettyEPs :: EPExps -> Doc
 prettyEPs eps
     | Map.null eps = text "*"
@@ -93,6 +97,16 @@ type EPDomain = [EPExps]
 
 data EPRange = Union [EPRange] | Intersection [EPRange]
              | Complement EPRange | Atom EPExps | Empty
+
+evalRange :: (String -> Int) -> EPRange -> Bool
+evalRange f re =
+    case re of
+      Complement r -> not $ evalRange f r
+      Union l -> or $ map (evalRange f) l
+      Intersection l -> and $ map (evalRange f) l
+      Empty -> False
+      Atom eps -> evalEPs f eps
+    
 
 prettyEPRange :: EPRange -> Doc
 prettyEPRange re =
@@ -248,6 +262,36 @@ simplifyRange re =
             r' | isStarRange r' -> g acc l
                | otherwise -> g (acc++[r']) l
 
+
+-- ----------------------------------------------------------------------
+-- * Models for 'EPRange' expressions
+-- ----------------------------------------------------------------------
+
+data Model a = Model [(Int, Int)] (Map.Map [Int] a)
+
+boolModelChar :: Bool -> Char
+boolModelChar b = if b then '*' else ' '
+
+modelToString :: (a -> Char) -> Model a -> String
+modelToString f (Model l vm) =
+    case l of
+      [(a, b)] -> map (f . (vm Map.!) . (:[])) [a..b] ++ "\n"
+      [(a, b), (c, d)] ->
+          let g y = map (f . (vm Map.!)) [[x, y]| x <- [a..b]]
+          in unlines $ map g [c..d]
+      [] -> ""
+      _ -> concat ["Cannot output a ", show $ length l, "-dim model"]
+
+modelOf :: Map.Map String (Int, Int) -> EPRange -> Model Bool
+modelOf rm re = let
+    f l s = l !! (Map.findIndex s rm)
+    crossprod l [] = map (:[]) l
+    crossprod l l' = concatMap (\ x -> map (:x) l) l'
+    g (a, b) l = crossprod [a..b] l
+    inpl = Map.fold g [] rm
+    h x = (x, evalRange (f x) re)
+    in Model (Map.elems rm) $ Map.fromList $ map h inpl
+
 -- ----------------------------------------------------------------------
 -- * Extended Parameter comparison
 -- ----------------------------------------------------------------------
@@ -276,7 +320,7 @@ compareEPs eps1 eps2 =
         -- We have to count the number of matched parameter names to see if
         -- there are still EPs in eps' which indicates to compare with ">" at
         -- the end of the fold.
-        (epc, cnt) = Map.foldWithKey f
+        (epc, cnt) = Map.foldrWithKey f
                      (Comparable EQ, 0) -- start the fold with "=",
                                         -- the identity element
                      eps -- the smaller map

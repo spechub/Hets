@@ -208,18 +208,60 @@ foldForest (\ x y z -> x ++ [(y, length z)]) [] frst
 
 -}
 
+-- * Model Generation
+frmAround "" = ""
+frmAround s = let l = lines s
+                  hd = "--" ++ map (const '-') (head l)
+              in unlines $ hd : map (('|':) . (++"|")) l ++ [hd]
+
+modelRg1 :: Map.Map String (Int, Int)
+modelRg1 = Map.fromList [("I", (-5, 5))]
+modelRg2 :: Map.Map String (Int, Int)
+modelRg2 = Map.fromList [("I", (-5, 5)), ("J", (-5, 5))]
+modelRg3 :: Map.Map String (Int, Int)
+modelRg3 = Map.fromList [("I", (-5, 5)), ("J", (-5, 5)), ("K", (-5, 5))]
+
+printModel :: Map.Map String (Int, Int) -> EPRange -> String
+printModel x y = modelToString boolModelChar $ modelOf x y
+
+pM1::EPRange -> IO ()
+pM2::EPRange -> IO ()
+pM1s::[EPRange] -> IO ()
+pM2s::[EPRange] -> IO ()
+
+pM2 = putStr . frmAround . printModel modelRg2
+pM1 = putStr . frmAround . printModel modelRg1
+pM1s = mapM_ pM1
+pM2s = mapM_ pM2
+
 toEPR :: String -> EPRange
 toEPR = Atom . toEPs
 
 -- Test for partitioning taken from E82 in CSL/ExtParamExamples.het
-el1 :: [EPRange]
-el1 = let x1 = toEPR "I>=0" in [x1, Complement x1]
+el11 :: [EPRange]
+el11 = let x1 = toEPR "I>=0" in [x1, Complement x1]
 
-el2 :: [EPRange]
-el2 = let l = map toEPR ["I=1", "I>1"] in Complement (Union l) : l
+el12 :: [EPRange]
+el12 = let l = map toEPR ["I=1", "I>1"] in Complement (Union l) : l
 
-el3 :: [EPRange]
-el3 = let x1 = toEPR "I>0" in [x1, Complement x1]
+el13 :: [EPRange]
+el13 = let x1 = toEPR "I>0" in [x1, Complement x1]
+
+
+el21 :: [EPRange]
+el21 = let x1 = toEPR "I>=0" in [x1, Complement x1]
+
+el22 :: [EPRange]
+el22 = let l = map toEPR ["I>=0, J>=0", "I<4, J<=4"]
+           inter = Intersection l
+           uni = Union l
+       in uni : inter : Intersection [uni, Complement inter] : l
+
+el23 :: [EPRange]
+el23 = let x1 = toEPR "I>0" in [x1, Complement x1]
+
+
+-- * Partition tests
 
 checkForPartition :: [EPRange] -> IO Bool
 checkForPartition l = execSMTComparer vEnv1 $ f g l where
@@ -235,13 +277,13 @@ part1 :: Partition Int
 part1 = AllPartition 10
 
 part2 :: Partition Char
-part2 = Partition $ zip el1 ['a' ..]
+part2 = Partition $ zip el11 ['a' ..]
 
 part3 :: Partition Int
-part3 = Partition $ zip el2 [1 ..]
+part3 = Partition $ zip el12 [1 ..]
 
 part4 :: Partition Int
-part4 = Partition $ zip el3 [91 ..]
+part4 = Partition $ zip el13 [91 ..]
 
 refinePart a b = execSMTComparer vEnv1 $ refinePartition a b
 
@@ -252,6 +294,57 @@ analyzeCSL ncl = do
   elimAS  <- elimEPs $ dependencySortAS as
   return (elimAS, progs)
 
+
+-- * elim proc testing
+
+{-
+:l CSL/InteractiveTests.hs
+:m +CSL.Analysis
+sl <- sens (-82)
+let grdm = fst $ splitAS sl
+let sgm = dependencySortAS grdm
+-}
+
+
+
+pgX :: (EPRange -> IO a) -> Guard EPRange -> IO ()
+pgX fM grd = do
+  fM $ range grd
+  putStr "Def: "
+  putStrLn $ show $ pretty $ definition grd
+  putStrLn ""
+
+pg1 :: Guard EPRange -> IO ()
+pg1 = pgX pM1
+
+pg2 :: Guard EPRange -> IO ()
+pg2 = pgX pM2
+
+pgrddX :: (EPRange -> IO a) -> Guarded EPRange -> IO ()
+pgrddX fM grdd = mapM_ (pgX fM) $ guards grdd
+  
+pgrdd2 :: Guarded EPRange -> IO ()
+pgrdd2 = pgrddX pM2
+
+printASX :: (EPRange -> IO a) -> [(String, Guarded EPRange)] -> IO ()
+printASX fM l = mapM_ f l where
+    f (s, grdd) = do
+      putStr s
+      putStrLn ":"
+      pgrddX fM grdd
+      putStrLn ""
+
+printAS1 :: [(String, Guarded EPRange)] -> IO ()
+printAS1 = printASX pM1
+
+printAS2 :: [(String, Guarded EPRange)] -> IO ()
+printAS2 = printASX pM2
+
+testElim :: Int -> IO [(String, Guarded EPRange)]
+testElim i = prepareAS i >>= elimEPs
+
+prepareAS :: Int -> IO [(String, Guarded EPRange)]
+prepareAS = liftM (dependencySortAS . fst . splitAS) . sens
 
 elimEPs :: [(String, Guarded EPRange)] -> IO [(String, Guarded EPRange)]
 elimEPs = execSMTComparer vEnv . epElimination
