@@ -186,7 +186,7 @@ image f s =
 
 -- | map the values of a relation
 map :: (Ord a, Ord b) => (a -> b) -> Rel a -> Rel b
-map f (Rel m) = Rel $ Map.foldWithKey
+map f (Rel m) = Rel $ Map.foldrWithKey
     ( \ a -> Map.insertWith Set.union (f a) . Set.map f) Map.empty m
 
 -- | Restriction of a relation under a set
