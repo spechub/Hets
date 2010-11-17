@@ -1,5 +1,5 @@
 name: Hets
-version: 0.96
+version: 0.97
 Description: The Heterogeneous Tool Set
 homepage: http://www.dfki.de/sks/hets
 bug-reports: http://trac.informatik.uni-bremen.de:8080/hets
@@ -40,9 +40,6 @@ flag programatica
     http://programatica.cs.pdx.edu/
     installed via "make" within Hets if cvs sources are checked out
     in the same parent directory as Hets
-
-flag tabular
-  description: use truth table prover
 
 flag tar
   description: save VSE proofs in tar archives
