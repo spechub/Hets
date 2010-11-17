@@ -311,7 +311,7 @@ printCfgText :: Map.Map ATPIdentifier (GenericConfig proof_tree)
 printCfgText mp = text "* Configuration *" $+$ dc
              $++$ text "* Results *" $+$ dr
   where
-  (dc, dr) = Map.foldrWithKey (\ k cfg (dCfg, dRes) ->
+  (dc, dr) = Map.foldWithKey (\ k cfg (dCfg, dRes) ->
       let r = proofStatus cfg
       in
       (quotes (text k) <+> equals <+> specBraces (

@@ -183,7 +183,7 @@ hetsToOMDoc
       {-
       multiOrigins = Hets.getMultiOrigins lenv
       interesting =
-        Map.foldrWithKey
+        Map.foldWithKey
           (\mln mset i ->
             let
               keepSets =
@@ -198,7 +198,7 @@ hetsToOMDoc
           Map.empty
           multiOrigins
       tryReal =
-        Map.foldrWithKey
+        Map.foldWithKey
           (\mln mset tR ->
             let
               remapped =

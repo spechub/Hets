@@ -182,7 +182,7 @@ transOpMap sRel subSortMap = Map.map (rmOrAddParts True . Set.map transType)
 procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
   -> [Named (FORMULA ())] -> [Named (FORMULA ())]
 procOpMapping subSortMap opName =
-  (++) . Map.foldrWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
+  (++) . Map.foldWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
   where
     procProfMapOpMapping :: [SORT] -> (OpKind, Set.Set [Maybe PRED_NAME])
                          -> [Named (FORMULA ())] -> [Named (FORMULA ())]
@@ -212,11 +212,11 @@ generateAxioms :: SubSortMap -> Map.Map PRED_NAME (Set.Set PredType)
   -> Map.Map OP_NAME (Set.Set OpType) -> [Named (FORMULA ())]
 generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
     where -- generate argument restrictions for operations
-          axs = Map.foldrWithKey (procOpMapping subSortMap) [] oMap
+          axs = Map.foldWithKey (procOpMapping subSortMap) [] oMap
           p_axs =
           -- generate argument restrictions for predicates
-           Map.foldrWithKey (\ pName ->
-              (++) . Map.foldrWithKey
+           Map.foldWithKey (\ pName ->
+              (++) . Map.foldWithKey
                              (\ sl -> genArgRest
                                       (genSenName "p" pName $ length sl)
                                       (genPredication pName)

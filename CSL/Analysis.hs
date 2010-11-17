@@ -343,7 +343,7 @@ getBackRef d =
         -- for each entry in the set insert k into the list
         f k s m = Set.fold (uf k) m s
     -- from each entry in d add entries in the map
-    in Map.foldrWithKey f Map.empty d
+    in Map.foldWithKey f Map.empty d
 
 
 topsortDirect :: (Show a, Ord a) => Rel2 a -> [a]

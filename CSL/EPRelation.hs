@@ -42,7 +42,7 @@ import Common.DocUtils
 type EPExps = Map.Map String EPExp
 
 evalEPs :: (String -> Int) -> EPExps -> Bool
-evalEPs f eps = Map.foldrWithKey g True eps where
+evalEPs f eps = Map.foldWithKey g True eps where
     g k v b = evalEP (f k) v && b
 
 prettyEPs :: EPExps -> Doc
@@ -320,7 +320,7 @@ compareEPs eps1 eps2 =
         -- We have to count the number of matched parameter names to see if
         -- there are still EPs in eps' which indicates to compare with ">" at
         -- the end of the fold.
-        (epc, cnt) = Map.foldrWithKey f
+        (epc, cnt) = Map.foldWithKey f
                      (Comparable EQ, 0) -- start the fold with "=",
                                         -- the identity element
                      eps -- the smaller map

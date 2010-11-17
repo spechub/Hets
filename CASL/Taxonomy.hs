@@ -73,7 +73,7 @@ convSign KSubsort onto sign =
 convPred :: Sign f e -> MMiSSOntology -> WithError MMiSSOntology
 convPred s o =
     -- first only binary preds; later also unary preds
-    Map.foldrWithKey addPred (hasValue o) $ predMap s
+    Map.foldWithKey addPred (hasValue o) $ predMap s
     where addPred pn tSet wOnto =
            weither (const wOnto) insBinaryPred wOnto
            where insBinaryPred on =

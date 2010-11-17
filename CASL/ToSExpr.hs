@@ -149,13 +149,13 @@ morToSExprs m =
       sm = sort_map m
   in map (\ (s, t) -> SList [SSymbol "map", sortToSSymbol s, sortToSSymbol t])
      (Map.toList sm)
-     ++ Map.foldrWithKey (\ i s -> case Set.toList s of
+     ++ Map.foldWithKey (\ i s -> case Set.toList s of
           [] -> id
           ot : _ -> let (j, nt) = mapOpSym sm (op_map m) (i, ot) in
              if i == j then id else
                (SList [ SSymbol "map", opIdToSSymbol src i ot
                       , opIdToSSymbol tar j nt] :)) [] (opMap src)
-     ++ Map.foldrWithKey (\ i s -> case Set.toList s of
+     ++ Map.foldWithKey (\ i s -> case Set.toList s of
           [] -> id
           ot : _ -> let (j, nt) = mapPredSym sm (pred_map m) (i, ot) in
              if i == j then id else

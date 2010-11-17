@@ -315,13 +315,13 @@ morphismToSymbMapAux b mor = let
          if b && s == t then id else
              Map.insert (idToSortSymbol s) $ idToSortSymbol t)
       Map.empty $ sortSet src
-    opSymMap = Map.foldrWithKey
+    opSymMap = Map.foldWithKey
       ( \ i s m -> Set.fold
         ( \ t -> let (j, k) = mapOpSym sorts ops (i, t) in
                  if b && i == j && opKind k == opKind t then id else
                      Map.insert (idToOpSymbol i t) $ idToOpSymbol j k)
         m s) Map.empty $ opMap src
-    predSymMap = Map.foldrWithKey
+    predSymMap = Map.foldWithKey
       ( \ i s m -> Set.fold
         ( \ t -> let (j, k) = mapPredSym sorts preds (i, t) in
                  if b && i == j then id else
@@ -358,7 +358,7 @@ composeM comp mor1 mor2 = do
       pMap2 = pred_map mor2
       sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
       oMap = if Map.null oMap2 then oMap1 else
-                 Map.foldrWithKey ( \ i t m ->
+                 Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ ot ->
                        let (ni, nt) = mapOpSym sMap2 oMap2
                              $ mapOpSym sMap1 oMap1 (i, ot)
@@ -367,7 +367,7 @@ composeM comp mor1 mor2 = do
                           Map.insert (i, mkPartial ot) (ni, k)) m t)
                      Map.empty $ opMap src
       pMap = if Map.null pMap2 then pMap1 else
-                 Map.foldrWithKey ( \ i t m ->
+                 Map.foldWithKey ( \ i t m ->
                    Set.fold ( \ pt ->
                        let ni = fst $ mapPredSym sMap2 pMap2
                              $ mapPredSym sMap1 pMap1 (i, pt)
@@ -382,7 +382,7 @@ composeM comp mor1 mor2 = do
 
 legalSign :: Sign f e -> Bool
 legalSign sigma =
-  Map.foldrWithKey (\ s sset -> (&& legalSort s && all legalSort
+  Map.foldWithKey (\ s sset -> (&& legalSort s && all legalSort
                                 (Set.toList sset)))
                   True (Rel.toMap (sortRel sigma))
   && Map.fold (\ ts -> (&& all legalOpType (Set.toList ts)))
@@ -422,14 +422,14 @@ inducedSignAux f sm om pm em src =
   , predMap = inducedPredMap sm pm $ predMap src }
 
 inducedOpMap :: Sort_map -> Op_map -> OpMap -> OpMap
-inducedOpMap sm fm = Map.foldrWithKey
+inducedOpMap sm fm = Map.foldWithKey
   ( \ i -> flip $ Set.fold ( \ ot ->
       let (j, nt) = mapOpSym sm fm (i, ot)
       in Rel.setInsert j nt)) Map.empty
 
 inducedPredMap :: Sort_map -> Pred_map -> Map.Map Id (Set.Set PredType)
                -> Map.Map Id (Set.Set PredType)
-inducedPredMap sm pm = Map.foldrWithKey
+inducedPredMap sm pm = Map.foldWithKey
   ( \ i -> flip $ Set.fold ( \ ot ->
       let (j, nt) = mapPredSym sm pm (i, ot)
       in Rel.setInsert j nt)) Map.empty

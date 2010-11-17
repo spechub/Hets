@@ -108,14 +108,14 @@ closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 
 symOf :: Env -> SymbolSet
 symOf sigma =
-    let classes = Map.foldrWithKey ( \ i ->
+    let classes = Map.foldWithKey ( \ i ->
                           Set.insert . idToClassSymbol sigma i . rawKind)
                   Set.empty $ classMap sigma
-        types = Map.foldrWithKey ( \ i ti ->
+        types = Map.foldWithKey ( \ i ti ->
                         if Map.member i bTypes then id else
                         Set.insert $ idToTypeSymbol sigma i $ typeKind ti)
                 classes $ typeMap sigma
-        ops = Map.foldrWithKey ( \ i ts s ->
+        ops = Map.foldWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
                       Set.fold (Set.insert . idToOpSymbol sigma i . opType)
                          s ts)

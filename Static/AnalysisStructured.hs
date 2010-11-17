@@ -830,15 +830,15 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
       symbMapToRawSymbMap =
-          Map.foldrWithKey (\ sy1 sy2 -> Map.insert (symbol_to_raw lid sy1)
+          Map.foldWithKey (\ sy1 sy2 -> Map.insert (symbol_to_raw lid sy1)
                                                   (symbol_to_raw lid sy2))
                           Map.empty
       rh = symbMapToRawSymbMap h
-      idh = Map.foldrWithKey
+      idh = Map.foldWithKey
              (\ sy1 sy2 -> Rel.setInsert (sym_name lid sy1) (sym_name lid sy2))
              Map.empty h
   idhExt <- extID idsB idh
-  let rIdExt = Map.foldrWithKey (\ id1 id2 -> Map.insert
+  let rIdExt = Map.foldWithKey (\ id1 id2 -> Map.insert
                                 (id_to_raw lid id1) (id_to_raw lid id2))
                 Map.empty
                 (foldr Map.delete idhExt $ Map.keys idh)

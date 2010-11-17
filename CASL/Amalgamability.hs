@@ -88,7 +88,7 @@ ops diag =
         mkNodeOps n opId opTypes ol =
             ol ++ Set.fold (mkNodeOp n opId) [] opTypes
         appendOps ol (n, Sign { opMap = m }) =
-            ol ++ Map.foldrWithKey (mkNodeOps n) [] m
+            ol ++ Map.foldWithKey (mkNodeOps n) [] m
     in foldl appendOps [] (labNodes diag)
 
 
@@ -101,7 +101,7 @@ preds diag =
         mkNodePreds n predId predTypes pl =
             pl ++ Set.fold (mkNodePred n predId) [] predTypes
         appendPreds pl (n, Sign { predMap = m }) =
-            pl ++ Map.foldrWithKey (mkNodePreds n) [] m
+            pl ++ Map.foldWithKey (mkNodePreds n) [] m
     in foldl appendPreds [] (labNodes diag)
 
 

@@ -81,14 +81,14 @@ inducedFromMorphism rmap1 sigma = do
     let tarTypeMap = addUnit (classMap sigma) tarTypeMap0
         tarAliases = filterAliases tarTypeMap
   -- compute the op map (as a Map)
-    op_Map <- Map.foldrWithKey
+    op_Map <- Map.foldWithKey
       (opFun rmap sigma myClassIdMap tarAliases myTypeIdMap)
       (return Map.empty) assMap
   -- compute target signature
     let tarTypeMap2 = Map.map
           (mapRestTypeInfo myClassIdMap tarAliases myTypeIdMap op_Map)
                         tarTypeMap
-        sigma' = Map.foldrWithKey
+        sigma' = Map.foldWithKey
           (mapOps myClassIdMap tarAliases myTypeIdMap op_Map) sigma
                    { typeMap = tarTypeMap2
                    , classMap = tarClassMap

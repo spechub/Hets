@@ -46,7 +46,7 @@ data VarEnv = VarEnv { varmap :: VarMap
 
 -- | Type alias and subtype definitions for the domain of the extended params
 smtTypeDef :: VarEnv -> String
-smtTypeDef m = Map.foldrWithKey f "" $ varmap m
+smtTypeDef m = Map.foldWithKey f "" $ varmap m
     where g k a = case Map.lookup k $ vartypes m of
                     Just br ->
                         concat [ "(define-type t", show a, " (subtype (x"

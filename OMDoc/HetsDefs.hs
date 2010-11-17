@@ -792,7 +792,7 @@ hasOperator
   let
     opsMap = Map.findWithDefault Map.empty nnwo opsmapdgwo
     withId =
-      Map.foldrWithKey
+      Map.foldWithKey
         (\idwo os wI ->
           if woItem idwo == opid
             then
@@ -1179,7 +1179,7 @@ fixIdentMap::
     Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
   ->Map.Map (LibName, IdentifierWON) (LibName, IdentifierWON)
 fixIdentMap identMap =
-  Map.foldrWithKey
+  Map.foldWithKey
     (\key value m ->
       let
         value' =
@@ -1215,7 +1215,7 @@ findMultiOriginUnifications
         Map.map (\s -> Set.fromList (concatMap Set.toList (Set.toList s))) multimap
       idents = identifyFlatNames lenv flatted
       targetMap =
-        Map.foldrWithKey
+        Map.foldWithKey
           (\ln setofsets tM ->
             Set.fold
               (\origins tM' ->
@@ -1254,7 +1254,7 @@ findMultiOriginUnifications
           )
           targetMap
       rearranged =
-        Map.foldrWithKey
+        Map.foldWithKey
           (\lgTt lgM rM ->
             foldl
               (\rM' group ->
@@ -1371,7 +1371,7 @@ makeUniqueGlobalCounts::
 makeUniqueGlobalCounts
   unnMap
   =
-  Map.foldrWithKey
+  Map.foldWithKey
     (\ln idset m ->
       let
         newidset =
@@ -2432,7 +2432,7 @@ makeCollectionMap
                   nodegenopswo
               nodeopswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) opswomap
               identsO =
-                Map.foldrWithKey
+                Map.foldWithKey
                   (\idwo ots iMap ->
                     Set.fold
                       (\ot iMap' ->
@@ -2525,7 +2525,7 @@ makeCollectionMap
                   nodeopswo
               nodepredswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) predswomap
               identsP =
-                Map.foldrWithKey
+                Map.foldWithKey
                   (\idwo pts iMap ->
                     Set.fold
                       (\pt iMap' ->
@@ -2772,7 +2772,7 @@ traceAllIdentifierOrigins
         IdId
         (sortSet caslsign)
     predidentifiers =
-      Map.foldrWithKey
+      Map.foldWithKey
         (\predid ptset pis ->
           let
             piset =
@@ -2785,7 +2785,7 @@ traceAllIdentifierOrigins
         Set.empty
         (predMap caslsign)
     opidentifiers =
-      Map.foldrWithKey
+      Map.foldWithKey
         (\opid otset ois ->
           let
             oiset =
@@ -3270,7 +3270,7 @@ traceAllIdentifierOriginsMulti
         IdId
         (sortSet caslsign)
     predidentifiers =
-      Map.foldrWithKey
+      Map.foldWithKey
         (\predid ptset pis ->
           let
             piset =
@@ -3283,7 +3283,7 @@ traceAllIdentifierOriginsMulti
         Set.empty
         (predMap caslsign)
     opidentifiers =
-      Map.foldrWithKey
+      Map.foldWithKey
         (\opid otset ois ->
           let
             oiset =

@@ -80,11 +80,11 @@ transSignature sign =
     baseSig = baseSign,
     -- translation of typeconstructors
     tsig = emptyTypeSig
-             { arities = Map.foldrWithKey extractTypeName
+             { arities = Map.foldWithKey extractTypeName
                                         Map.empty
                                         (typeMap sign) },
     -- translation of operation declarations
-    constTab = Map.foldrWithKey insertOps
+    constTab = Map.foldWithKey insertOps
                                Map.empty
                                (assumps sign),
     -- translation of datatype declarations

@@ -105,19 +105,19 @@ transSig sign =
           )  -}
    let sorSet     = sortSet sign
        fws        = freshWorldSort sorSet
-       flexOps'   = Map.foldrWithKey (addWorld_OP fws)
+       flexOps'   = Map.foldWithKey (addWorld_OP fws)
                                     Map.empty $ flexibleOps
        flexPreds' = addWorldRels True relsTermMod $
                     addWorldRels False relsMod $
-                    Map.foldrWithKey (addWorld_PRED fws)
+                    Map.foldWithKey (addWorld_PRED fws)
                                     Map.empty $ flexiblePreds
        rigOps'    = rigidOps $ extendedInfo sign
        rigPreds'  = rigidPreds $ extendedInfo sign
        flexibleOps   = diffMapSet (opMap sign) rigOps'
        flexiblePreds = diffMapSet (predMap sign) rigPreds'
        relations = Map.union relsMod relsTermMod
-       genRels f mp = Map.foldrWithKey (\me _ nm -> f me nm) Map.empty mp
-       genModFrms f mp = Map.foldrWithKey f [] mp
+       genRels f mp = Map.foldWithKey (\me _ nm -> f me nm) Map.empty mp
+       genModFrms f mp = Map.foldWithKey f [] mp
        relSymbS me = Id [mkSimpleId "g_R"] [mkId [me]] nullRange
        relSymbT me = Id [mkSimpleId "g_R_t"] [me] nullRange
        relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm)

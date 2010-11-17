@@ -49,7 +49,7 @@ buildDevGraph ontoMap =
       else (ontoMap', dg)
 
    where (ontoMap', dg) =
-             Map.foldrWithKey graphFromMap
+             Map.foldWithKey graphFromMap
                     (ontoMap, emptyDG)
                     ontoMap
          sscList = DFS.scc $ dgBody dg

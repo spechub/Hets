@@ -346,7 +346,7 @@ addMorphToGraph m (lb,(b,(sigs,morphs))) =
 -- computes the correct targets of morphisms
 computeTargets :: GRAPH -> LIBS_EXT -> GRAPH
 computeTargets (sigs,morphs) libs =
-   let morphs2 = Map.foldrWithKey
+   let morphs2 = Map.foldWithKey
           (\ k@((_,_),_,t) morph morphs1 ->
              let morph1 = morph { target = lookupSig t libs }
                  in Map.insert k morph1 morphs1

@@ -85,7 +85,7 @@ mapMorphism oMor =
       cdm <- mapSign $ osource oMor
       ccd <- mapSign $ otarget oMor
       let emap = mmaps oMor
-          preds = Map.foldrWithKey (\ (Entity ty u1) u2 -> let
+          preds = Map.foldWithKey (\ (Entity ty u1) u2 -> let
               i1 = uriToId u1
               i2 = uriToId u2
               in case ty of
@@ -93,7 +93,7 @@ mapMorphism oMor =
                 ObjectProperty -> Map.insert (i1, objectPropPred) i2
                 DataProperty -> Map.insert (i1, dataPropPred) i2
                 _ -> id) Map.empty emap
-          ops = Map.foldrWithKey (\ (Entity ty u1) u2 -> case ty of
+          ops = Map.foldWithKey (\ (Entity ty u1) u2 -> case ty of
                 NamedIndividual ->
                     Map.insert (uriToId u1, indiConst) (uriToId u2, Total)
                 _ -> id) Map.empty emap
