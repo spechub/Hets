@@ -45,7 +45,7 @@ else
 endif
 
 HTTPVERSION = $(shell $(HCPKG) field HTTP version)
-ifneq ($(findstring 4000.0., $(HTTPVERSION)),)
+ifneq ($(findstring 4000., $(HTTPVERSION)),)
 else
 HTTP_PACKAGE = -DNOMATHSERVER
 endif
