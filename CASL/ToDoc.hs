@@ -345,42 +345,46 @@ printRecord mf = Record
     { foldQuantification = \ _ q l r _ ->
           fsep $ printQuant q : punctuate semi (map printVarDecl l)
                                 ++ [addBullet r]
-    , foldConjunction = \ (Conjunction ol _) l _ -> case ol of
-          [] -> text trueS
-          _ -> fsep $ prepPunctuate (andDoc <> space)
+    , foldConjunction = \ o l _ -> case o of
+          Conjunction ol@(_ : _) _ -> fsep $ prepPunctuate (andDoc <> space)
                $ zipWith (mkJunctDoc True) (init ol) (init l) ++
                  [mkJunctDoc False (last ol) (last l)]
-    , foldDisjunction = \ (Disjunction ol _) l _ -> case ol of
-          [] -> text falseS
-          _ -> fsep $ prepPunctuate (orDoc <> space)
+          _ -> text trueS
+    , foldDisjunction = \ o l _ -> case o of
+          Disjunction ol@(_ : _) _ -> fsep $ prepPunctuate (orDoc <> space)
                $ zipWith (mkJunctDoc True) (init ol) (init l) ++
                  [mkJunctDoc False (last ol) (last l)]
-    , foldImplication = \ (Implication oL oR b _) l r _ _ ->
-          let nl = if isAnyImpl oL || b && isQuant oL
+          _ -> text falseS
+    , foldImplication = \ o l r _ _ ->
+          let Implication oL oR b _ = o
+              nl = if isAnyImpl oL || b && isQuant oL
                    then parens l else l
               nr = if isImpl b oR || not b && isQuant oR
                    then parens r else r
           in if b then printInfix True sep nl implies nr
              else printInfix True sep nr (text ifS) nl
-    , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
-          printInfix True sep
+    , foldEquivalence = \ o l r _ -> case o of
+          Equivalence oL oR _ -> printInfix True sep
             (if isQuant oL then parens l else mkEquivDoc oL l)
             equiv $ mkEquivDoc oR r
-    , foldNegation = \ (Negation o _) r _ ->
-          hsep [notDoc, mkJunctDoc False o r]
+          _ -> error "CASL.ToDoc.printRecord.foldEquivalence"
+    , foldNegation = \ orig r _ -> case orig of
+          Negation o _ -> hsep [notDoc, mkJunctDoc False o r]
+          _ -> error "CASL.ToDoc.printRecord.foldNegation"
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
-    , foldPredication = \ (Predication _ ol _) p l _ -> case p of
-          Pred_name i -> predIdApplDoc i $ zipConds ol l
-          Qual_pred_name _ _ _ -> if null l then printPredSymb p else
+    , foldPredication = \ o p l _ -> case (p, o) of
+          (Pred_name i, Predication _ ol _) -> predIdApplDoc i $ zipConds ol l
+          _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ sepByCommas l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]
     , foldExistl_equation = \ _ l r _ -> printInfix True sep l exequal r
     , foldStrong_equation = \ _ l r _ -> printInfix True sep l equals r
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
     , foldMixfix_formula = \ _ r -> r
-    , foldSort_gen_ax = \ (Sort_gen_ax constrs b) _ _ ->
-        let l = recoverType constrs
+    , foldSort_gen_ax = \ o _ _ ->
+        let Sort_gen_ax constrs b = o
+            l = recoverType constrs
             genAx = sep [ keyword generatedS <+> keyword (typeS ++ pluralS l)
                         , semiAnnos printDATATYPE_DECL l]
         in if b then text "%% free" $+$ genAx else genAx
@@ -395,19 +399,20 @@ printRecord mf = Record
     , foldExtFORMULA = const mf
     , foldQual_var = \ _ v s _ ->
           parens $ fsep [text varS, sidDoc v, colon <+> idDoc s]
-    , foldApplication = \ (Application _ ol _) o l _ -> case o of
-          Op_name i -> idApplDoc i $ zipConds ol l
-          Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
+    , foldApplication = \ orig o l _ -> case (o, orig) of
+          (Op_name i, Application _ ol _) -> idApplDoc i $ zipConds ol l
+          _ -> let d = parens $ printOpSymb o in
               if null l then d else fcat [d, parens $ sepByCommas l]
     , foldSorted_term = \ _ r t _ -> fsep [idApplDoc typeId [r], idDoc t]
     , foldCast = \ _ r t _ ->
           fsep [idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
-    , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
-          fsep [if isCond ol then parens l else l,
+    , foldConditional = \ o l f r _ -> case o of
+          Conditional ol _ _ _ -> fsep [if isCond ol then parens l else l,
                 text whenS <+> f, text elseS <+> r]
+          _ -> error "CASL.ToDoc.printRecord.foldConditional"
     , foldMixfix_qual_pred = const printPredSymb
-    , foldMixfix_term = \ (Mixfix_term ol) l -> case ol of
-          [_, Mixfix_parenthesized _ _] -> fcat l
+    , foldMixfix_term = \ o l -> case o of
+          Mixfix_term [_, Mixfix_parenthesized _ _] -> fcat l
           _ -> fsep l
     , foldMixfix_token = const sidDoc
     , foldMixfix_sorted_term = \ _ s _ -> colon <+> idDoc s
@@ -487,7 +492,7 @@ isCond t = case t of
     Conditional _ _ _ _ -> True
     _ -> False
 
-{- | a helper class for calculating the pluralS of e.g. ops -}
+-- | a helper class for calculating the pluralS of e.g. ops
 class ListCheck a where
     innerList :: a -> [()]
 
@@ -500,7 +505,7 @@ instance ListCheck Id where
 instance ListCheck a => ListCheck [a] where
     innerList = concatMap innerList
 
-{- | an instance of ListCheck for Annoted stuff -}
+-- | an instance of ListCheck for Annoted stuff
 instance ListCheck a => ListCheck (Annoted a) where
     innerList = innerList . item
 
