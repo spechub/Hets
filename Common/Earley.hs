@@ -67,8 +67,8 @@ import qualified Data.Map as Map
 takeDiff :: [a] -> [b] -> [b]
 takeDiff l1 l2 = zipWith const l2 $ dropPrefix l1 l2
 
--- | update token positions.
--- return remaining positions
+{- | update token positions.
+return remaining positions -}
 setToksPos :: [Token] -> Range -> ([Token], Range)
 setToksPos (h : ts) (Range (p : ps)) =
     let (rt, rp) = setToksPos ts (Range ps)
@@ -78,8 +78,8 @@ setToksPos ts ps = (ts, ps)
 reverseRange :: Range -> Range
 reverseRange = Range . reverse . rangeToList
 
--- | update positions in 'Id'.
--- return remaining positions
+{- | update positions in 'Id'.
+return remaining positions -}
 setPlainIdePos :: Id -> Range -> (Id, Range)
 setPlainIdePos (Id ts cs _) ps =
     if null cs then
@@ -94,15 +94,15 @@ setPlainIdePos (Id ts cs _) ps =
                          let (c1, qs) = setPlainIdePos a restPs
                              qsPL = rangeToList qs
                          in if isNullRange qs then error "setPlainIdePos1"
-                            else (c1: prevCs,
+                            else (c1 : prevCs,
                                   Range (head qsPL : rangeToList seps),
                                   Range (tail qsPL)))
                            ([], Range [head ps2PL], Range (tail ps2PL)) cs
              (newPls, ps7) = setToksPos pls ps4
            in (Id (front ++ newPls) (reverse newCs) (reverseRange ps3), ps7)
 
--- no special index type anymore (assuming not much more development)
--- the info Int denotes fast precedence
+{- no special index type anymore (assuming not much more development)
+the info Int denotes fast precedence -}
 
 data Item a = Item
     { rule :: Id        -- the rule to match
@@ -110,8 +110,7 @@ data Item a = Item
     , lWeight :: Id     -- weights for lower precedence pre- and postfixes
     , rWeight :: Id     -- given by the 'Id's itself
     , posList :: Range  -- positions of Id tokens
-    , args :: [a]       -- currently collected arguments
-      -- both in reverse order
+    , args :: [a]       -- collected arguments are in reverse order
     , ambigArgs :: [[a]] -- field for ambiguities
     , ambigs :: [[a]]   -- field for ambiguities
     , rest :: [Token]   -- part of the rule after the "dot"
@@ -161,7 +160,7 @@ varId :: Id
 varId = mkId [varTok]
 
 listId :: (Id, Id) -> Id
-listId (f,c) = Id [listTok] [f,c] nullRange
+listId (f, c) = Id [listTok] [f, c] nullRange
 
 isListId :: Id -> Bool
 isListId (Id ts _ _) = not (null ts) && head ts == listTok
@@ -213,7 +212,7 @@ asListAppl toExpr i ra br
   | isListId i =
       let Id _ [f, c] _ = i
           mkList [] ps = toExpr c [] ps
-          mkList (hd:tl) ps = toExpr f [hd, mkList tl ps] ps
+          mkList (hd : tl) ps = toExpr f [hd, mkList tl ps] ps
       in mkList ra br
   | elem i [typeId, exprId, parenId, varId] = case ra of
          [arg] -> arg
@@ -242,7 +241,7 @@ lookUp ce k = Map.findWithDefault [] k ce
 -- | recognize next token (possible introduce new tuple variable)
 scanItem :: (a -> a -> a) -> (a, Token) -> Item a -> [Item a]
 scanItem addType (trm, t)
-  p@Item{ rest = ts, args = pArgs, posList = pRange } = case ts of
+  p@Item { rest = ts, args = pArgs, posList = pRange } = case ts of
        [] -> []
        hd : tt -> let
           q = p { posList = case rangeToList $ tokPos t of
@@ -270,7 +269,7 @@ scan :: (a -> a -> a) -> (a, Token) -> [Item a] -> [Item a]
 scan f = concatMap . scanItem f
 
 mkAmbigs :: ToExpr a -> Item a -> [a]
-mkAmbigs toExpr p@Item{ args = l, ambigArgs = aArgs } =
+mkAmbigs toExpr p@Item { args = l, ambigArgs = aArgs } =
     map ( \ aas -> fst $
           mkExpr toExpr
           p { args = takeDiff aas l ++ aas
@@ -278,7 +277,7 @@ mkAmbigs toExpr p@Item{ args = l, ambigArgs = aArgs } =
 
 addArg :: GlobalAnnos -> ToExpr a -> Item a -> Item a -> Item a
 addArg ga toExpr argItem@Item { ambigs = ams, posList = aRange }
-  p@Item{ args = pArgs, rule = op, posList = pRange, ambigs = pAmbs
+  p@Item { args = pArgs, rule = op, posList = pRange, ambigs = pAmbs
         , rest = pRest} =
     let (arg, _) = mkExpr toExpr argItem
         newAms = mkAmbigs toExpr argItem
@@ -331,8 +330,7 @@ checkPrecs ga argItem@Item { rule = arg, info = argPrec }
 
 reduceCompleted :: GlobalAnnos -> Table a -> ToExpr a -> [Item a] -> [Item a]
 reduceCompleted ga table toExpr =
-    foldr mergeItems [] . map (reduce ga table toExpr) .
-          filter (null . rest)
+    foldr (mergeItems . reduce ga table toExpr) [] . filter (null . rest)
 
 recReduce :: GlobalAnnos -> Table a -> ToExpr a -> [Item a] -> [Item a]
 recReduce ga table toExpr items =
@@ -347,17 +345,17 @@ complete toExpr ga table items =
         in reducedItems ++ items
 
 doPredict :: [Item a] -> ([Item a], [Item a])
-doPredict = partition ( \ Item{ rest = ts } ->
+doPredict = partition ( \ Item { rest = ts } ->
                       not (null ts) && head ts == termTok)
 
 ordItem :: Item a -> Item a -> Ordering
-ordItem Item{ index = i1, rest = r1, rule = n1 }
-    Item{ index = i2, rest = r2, rule = n2 } =
+ordItem Item { index = i1, rest = r1, rule = n1 }
+    Item { index = i2, rest = r2, rule = n2 } =
     compare (i1, r1, n1) (i2, r2, n2)
 
 ambigItems :: Item a -> Item a -> Item a
-ambigItems i1@Item{ ambigArgs = ams1, args = as1 }
-    Item{ ambigArgs = ams2, args = as2 } =
+ambigItems i1@Item { ambigArgs = ams1, args = as1 }
+    Item { ambigArgs = ams2, args = as2 } =
     i1 { ambigArgs = case ams1 ++ ams2 of
          [] -> [as1, as2]
          ams -> ams }
@@ -365,11 +363,11 @@ ambigItems i1@Item{ ambigArgs = ams1, args = as1 }
 mergeItems :: [Item a] -> [Item a] -> [Item a]
 mergeItems [] i2 = i2
 mergeItems i1 [] = i1
-mergeItems (i1:r1) (i2:r2) =
+mergeItems (i1 : r1) (i2 : r2) =
     case ordItem i1 i2 of
-    LT -> i1 : mergeItems r1 (i2:r2)
+    LT -> i1 : mergeItems r1 (i2 : r2)
     EQ -> ambigItems i1 i2 : mergeItems r1 r2
-    GT -> i2 : mergeItems (i1:r1) r2
+    GT -> i2 : mergeItems (i1 : r1) r2
 
 -- | the whole state for mixfix resolution
 data Chart a = Chart
@@ -380,10 +378,10 @@ data Chart a = Chart
     , addRules :: Token -> [Rule]
     , solveDiags :: [Diagnosis] }
 
--- | make one scan, complete, and predict step.
--- The first function adds a type to the result.
--- The second function filters based on argument and operator info.
--- If filtering yields 'Nothing' further filtering by precedence is applied.
+{- | make one scan, complete, and predict step.
+The first function adds a type to the result.
+The second function filters based on argument and operator info.
+If filtering yields 'Nothing' further filtering by precedence is applied. -}
 nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos
           -> Chart a -> (a, Token) -> Chart a
 nextChart addType toExpr ga st term@(_, tok) = let
@@ -415,7 +413,7 @@ type Rules = ([Rule], [Rule]) -- postfix and prefix rules
 
 -- | presort rules
 partitionRules :: [Rule] -> Rules
-partitionRules = partition ( \ (_, _, t : _) -> t == termTok)
+partitionRules = partition ( \ (_, _, ts) -> null ts || head ts == termTok)
 
 -- | create the initial chart
 initChart :: (Token -> [Rule]) -> Rules -> Chart a
