@@ -68,7 +68,7 @@ smtVarDef :: VarEnv -> String
 smtVarDef m =
     unlines
     $ smtGenericVars m (\ i -> let j = show i
-                               in concat ["(define y", j, "::t", j, ")"])
+                               in concat ["(define x", j, "::t", j, ")"])
 
 smtVars :: VarEnv -> String -> [String]
 smtVars m s = smtGenericVars m ((s++) . show)
@@ -78,7 +78,7 @@ smtGenericVars m f = map f [1 .. Map.size $ varmap m]
 
 smtGenericStmt :: VarEnv -> String -> String -> String -> String
 smtGenericStmt m s a b =
-    let vl = concat $ map (" "++) $ smtVars m "y"
+    let vl = concat $ map (" "++) $ smtVars m "x"
     in concat ["(assert+ (not (", s, " (", a, vl, ") (", b, vl, "))))"]
 
 smtEQStmt :: VarEnv -> String -> String -> String
@@ -89,7 +89,7 @@ smtLEStmt m a b = smtGenericStmt m "=>" a b
 
 smtDisjStmt :: VarEnv -> String -> String -> String
 smtDisjStmt m a b = 
-    let vl = concat $ map (" "++) $ smtVars m "y"
+    let vl = concat $ map (" "++) $ smtVars m "x"
     in concat ["(assert+ (and (", a, vl, ") (", b, vl, ")))"]
 
 
@@ -112,12 +112,15 @@ smtAllScripts m r1 r2 =
        ]
 
 smtScriptHead :: VarEnv -> BoolRep -> BoolRep -> String
-smtScriptHead m r1 r2 = unlines [ -- "(set-arith-only! true)"
-                                  smtTypeDef m
-                                , smtPredDef m "A" r1
-                                , smtPredDef m "B" r2
-                                , smtVarDef m ]
+smtScriptHead = smtScriptHead'
 
+smtScriptHeadOrig :: VarEnv -> BoolRep -> BoolRep -> String
+smtScriptHeadOrig m r1 r2 =
+    unlines [ smtTypeDef m
+            , smtPredDef m "A" r1
+            , smtPredDef m "B" r2
+            , smtVarDef m ]
+    
 smtGenericScript :: VarEnv -> (VarEnv -> String -> String -> String)
                  -> BoolRep -> BoolRep -> String
 smtGenericScript m f r1 r2 = smtScriptHead m r1 r2 ++ "\n" ++ f m "A" "B"
@@ -182,4 +185,45 @@ smtResponse inp = do
          case lines s of
            [] -> ""
            x:_ ->  x
+
+-- * Alternative Script Generation (without subtypes)
+
+
+smtScriptHead' :: VarEnv -> BoolRep -> BoolRep -> String
+smtScriptHead' m r1 r2 =
+    unlines [ "(set-arith-only! true)"
+            , smtPredDef' m "A" r1
+            , smtPredDef' m "B" r2
+            , smtVarDef' m
+            , smtVarConstraint' m
+            ]
+
+-- | Predicate definition
+smtPredDef' :: VarEnv -> String -> BoolRep -> String
+smtPredDef' m s b = concat [ "(define ", s, "::(->"
+                          , concat $ smtGenericVars m $ const " int"
+                          , " bool) (lambda ("
+                          , concat $ smtGenericVars m
+                                       (\ i -> let j = show i
+                                               in concat [" x", j, "::int"])
+                          , ") ", smtBoolExp b, "))" ]
+
+smtVarDef' :: VarEnv -> String
+smtVarDef' m =
+    unlines
+    $ smtGenericVars m (\ i -> let j = show i
+                               in concat ["(define x", j, "::int)"])
+
+-- | Subtype constraints
+smtVarConstraint' :: VarEnv -> String
+smtVarConstraint' m = h l where
+    h [] = ""
+    h l' = concat ["(assert (and ", concat l' , "))"]
+    l = Map.foldWithKey f [] $ varmap m
+    g k = case Map.lookup k $ vartypes m of
+            Just br -> " " ++ smtBoolExp br
+            Nothing -> ""
+    f k _ l' = case g k of
+                "" -> l'
+                x -> l' ++ [x]
 

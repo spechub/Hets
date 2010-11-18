@@ -20,6 +20,7 @@ import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Static.History
+import Static.ComputeTheory
 
 import Driver.Options
 import Driver.AnaLib
@@ -88,16 +89,16 @@ proceed :: FilePath -> ResultT IO (LibName, LibEnv)
 proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv emptyDG
 
 
--- read in a hets file and return the basic theory and the sentences
-getSigSens ::
+getSigSensComplete ::
     Logic lid sublogics basic_spec sentence
           symb_items symb_map_items sign
           morphism symbol raw_symbol proof_tree
-    => lid -- logicname
+    => Bool -- complete theory or not
+    -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
     -> IO (sign, [Named sentence])
-getSigSens lid fname sp = do
+getSigSensComplete b lid fname sp = do
   Result _ res <- runResultT $ proceed fname
   case res of
     Just (ln, lenv) ->
@@ -106,10 +107,8 @@ getSigSens lid fname sp = do
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
               _ -> error ("Specification " ++ sp ++ " not found")
-     in
-      case match node (dgBody dg) of
-        (Just ctx, _) ->
-          case dgn_theory $ lab' ctx of
+         f gth =
+          case gth of
            G_theory { gTheoryLogic = lid2
                     , gTheorySign = gSig
                     , gTheorySens = gSens } ->
@@ -119,8 +118,30 @@ getSigSens lid fname sp = do
                 return (plainSign sig,
                         map (\ (x, y) -> y{senAttr = x}) $ OMap.toList sens)
              _ -> error $ "Not a " ++ show lid ++ " sig"
-        _ -> error "Node 1 not in development graph"
+
+     in if b then
+            case computeTheory lenv ln node of
+              Just gth -> f gth
+              _ -> error "computeTheory failed"
+        else
+            case match node (dgBody dg) of
+              (Just ctx, _) ->
+                  f $ dgn_theory $ lab' ctx
+              _ -> error "Node 1 not in development graph"
+
     Nothing -> error "Error occured"
+
+
+-- read in a hets file and return the basic theory and the sentences
+getSigSens ::
+    Logic lid sublogics basic_spec sentence
+          symb_items symb_map_items sign
+          morphism symbol raw_symbol proof_tree
+    => lid -- logicname
+    -> String -- filename
+    -> String  -- name of spec
+    -> IO (sign, [Named sentence])
+getSigSens = getSigSensComplete False
 
 
 -- read in a CASL file and return the basic theory
@@ -128,29 +149,9 @@ getCASLSigSens :: String -- filename
                   -> String  -- name of spec
                   -> IO (CASLSign, [(String, CASLFORMULA)])
 getCASLSigSens fname sp = do
-  Result _ res <- runResultT $ proceed fname
-  case res of
-    Just (ln, lenv) ->
-     let dg = lookupDGraph ln lenv
-         SpecEntry (ExtGenSig _ (NodeSig node _)) =
-            case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
-              Just x -> x
-              _ -> error ("Specification " ++ sp ++ " not found")
-     in
-      case match node (dgBody dg) of
-        (Just ctx, _) ->
-          case dgn_theory $ lab' ctx of
-           G_theory { gTheoryLogic = lid
-                    , gTheorySign = gSig
-                    , gTheorySens = gSens } ->
-            case (coerceSign lid CASL "" gSig,
-                  coerceThSens lid CASL "" gSens) of
-             (Just sig, Just sens) ->
-                return (plainSign sig,
-                        map (\ (x, y) -> (x, sentence y)) $ OMap.toList sens)
-             _ -> error "Not a CASL sig"
-        _ -> error "Node 1 no in development graph"
-    Nothing -> error "Error occured"
+  (x, y) <- getSigSens CASL fname sp
+  let f z = (senAttr z, sentence z)
+  return (x, map f y)
 
 
 {- myTest for globDecomp(or more possiblely for removeContraryChanges

@@ -30,6 +30,15 @@ trueBool = Pred "true" []
 falseBool :: BoolRep
 falseBool = Pred "false" []
 
+mapPred :: (String -> [String] -> BoolRep) -> BoolRep -> BoolRep
+mapPred f br =
+    case br of
+      Not x -> Not $ mapPred f x
+      Impl x y -> Impl (mapPred f x) $ mapPred f y
+      And l -> And $ map (mapPred f) l
+      Or l -> Or $ map (mapPred f) l
+      Pred s l -> f s l
+
 -- ----------------------------------------------------------------------
 -- * Output for SMT
 -- ----------------------------------------------------------------------

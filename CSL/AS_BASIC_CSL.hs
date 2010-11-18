@@ -98,7 +98,7 @@ data OPNAME = OP_mult -- arithmetic operators
 
             -- roots, trigonometric and other operators
             | OP_fthrt | OP_sqrt
-            | OP_abs | OP_max | OP_min
+            | OP_abs | OP_max | OP_min | OP_sign
             | OP_cos | OP_sin | OP_tan | OP_Pi
 
             -- special CAS operators
@@ -133,6 +133,7 @@ instance Show OPNAME where
           OP_Pi -> "Pi"
           OP_pow -> "^"
           OP_abs -> "abs"
+          OP_sign -> "sign"
           OP_all -> "all"
           OP_and -> "and"
           OP_convergence -> "convergence"
@@ -297,7 +298,7 @@ operatorInfo =
         a2i p s = toSgl s 2 p True
     in map a0 [ OP_Pi, OP_true, OP_false ]
            ++ map a1 [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
-                     , OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
+                     , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
            ++ map (a2i 2) [ OP_ex, OP_all, OP_and, OP_or, OP_impl ]
            ++ map (a2i 3) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt]
            ++ map (a2i 4) [ OP_plus, OP_minus]

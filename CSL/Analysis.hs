@@ -523,3 +523,20 @@ refineDefPartition :: CompareIO m => Partition (Map.Map PIConst Int)
                    -> m (Partition (Map.Map PIConst Int))
 refineDefPartition pm (c, ps) =
     liftM (fmap $ uncurry $ Map.insert c) $ refinePartition ps pm
+
+
+-- * Various Outputs of Guarded Assignments
+
+-- | All in the given AssignmentStore undefined constants
+undefinedConstants :: GuardedMap a -> Set.Set String
+undefinedConstants gm =
+     Map.keysSet
+            $ Map.difference (Map.filter Set.null $ getDependencyRelation gm) gm
+
+-- | Turn the output of the elimination procedure into single (unguarded)
+--  (probably functional) definitions.
+getElimAS :: [(String, Guarded EPRange)] ->
+             [(ConstantName, [String], EXPRESSION)]
+getElimAS = concatMap f where
+    f (s, grdd) = zipWith (g s $ argvars grdd) [0..] $ guards grdd
+    g s args i grd = (ElimConstant s i, args, definition grd)

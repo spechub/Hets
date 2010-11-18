@@ -13,6 +13,22 @@ This file is for experimenting with the Interpreter instances
 and general static analysis tools
 -}
 
+
+{-
+MAIN TESTING FUNCTIONS:
+
+interesting i's: 44, 46
+
+udefC i == show all undefined constants of spec i
+elimDefs i == ep-eliminated AS for spec i
+prettyEDefs i == pretty output for elimDefs
+testElim i == raw elimination proc for spec i
+prepareAS i == the assignment store after extraction from spec i and further analysis
+testSMT i == returns the length of elimDefs-output and measures time, good for testing of smt comparison
+
+-}
+
+
 module CSL.InteractiveTests where
 
 import CSL.MapleInterpreter 
@@ -38,6 +54,8 @@ import Common.Result (diags, printDiags, resultToMaybe)
 import Common.ResultT
 import Common.Lexer as Lexer
 import Common.Parsec
+import Common.Doc
+import Common.DocUtils
 import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
 import Text.ParserCombinators.Parsec
@@ -46,7 +64,7 @@ import Text.ParserCombinators.Parsec
 import qualified Interfaces.Process as PC
 
 -- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
-import Main (getSigSens)
+import Main (getSigSens, getSigSensComplete)
 
 import Control.Monad.State.Class
 import Control.Monad.State (StateT(..))
@@ -66,6 +84,7 @@ import qualified Data.Set as Set
 testspecs =
     [ (44, ("/CSL/EN1591.het", "EN1591"))
     , (45, ("/CSL/flange2.het", "Flange2"))
+    , (46, ("/CSL/flange2.het", "Flange2Complete"))
     ]
 
 l1 :: Int -> IO (Sign, [Named CMD])
@@ -74,7 +93,7 @@ l1 i = do
                             else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  getSigSens CSL (hlib ++ lb) sp
+  getSigSensComplete True CSL (hlib ++ lb) sp
 
 sig :: Int -> IO Sign
 sig = fmap fst . l1
@@ -136,7 +155,7 @@ evalL s i = do
 toE :: String -> EXPRESSION
 toE = fromJust . parseResult
 
--- parses a single extparam range such as: "I>0, J=1"
+-- parses a single extparam range such as: "I>0, F=1"
 toEP :: String -> [EXTPARAM]
 toEP [] = []
 toEP s = case runParser (Lexer.separatedBy extparam pComma >-> fst) "" "" s of
@@ -144,7 +163,7 @@ toEP s = case runParser (Lexer.separatedBy extparam pComma >-> fst) "" "" s of
              Right s' -> s'
 
 
--- parses lists of extparam ranges such as: "I>0, J=1; ....; I=10, J=1"
+-- parses lists of extparam ranges such as: "I>0, F=1; ....; I=10, F=1"
 toEPL :: String -> [[EXTPARAM]]
 toEPL [] = []
 toEPL s = case runParser
@@ -171,7 +190,7 @@ toEPLs = map toEPExps . toEPL
 {-
 smtEQScript vMap (boolRange vMap $ epList!!0) (boolRange vMap $ epList!!1)
 test for smt-export
-let m = varMapFromList ["I", "J", "K"]
+let m = varMapFromList ["I", "J", "F"]
 
 let be = boolExps m $ toEPs "I=0"
 smtBoolExp be
@@ -220,7 +239,33 @@ let b = []
 crossprod a b
 [x : y | x <- a, y <- b]
 -}
- 
+
+-- undefinedConstants :: GuardedMap a -> Set.Set String
+-- getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, [String], EXPRESSION)]
+
+
+
+{-
+MAIN TESTING FUNCTIONS:
+
+udefC i == show all undefined constants of spec i
+elimDefs i == ep-eliminated AS for spec i
+prettyEDefs i == pretty output for elimDefs
+testElim i == raw elimination proc for spec i
+prepareAS i == the assignment store after extraction from spec i and further analysis
+testSMT i == returns the length of elimDefs-output and measures time, good for testing of smt comparison
+-}
+
+
+testSMT = time . fmap length . elimDefs
+
+udefC = liftM (undefinedConstants . fst . splitAS) . sens
+elimDefs = liftM getElimAS . testElim
+
+prettyEDefs i = liftM (unlines . map f) (elimDefs i)  >>= putStrLn where
+    f (c, args, e) = concat [show c, g args, " := ", show $ pretty e]
+    g [] = ""
+    g l = show $ parens $ sepByCommas $ map text l
 
 -- irreflexive triangle of a list l: for i < j . (l_i, l_j)
 irrTriang :: [a] -> [(a,a)]
@@ -236,9 +281,9 @@ frmAround s = let l = lines s
 modelRg1 :: Map.Map String (Int, Int)
 modelRg1 = Map.fromList [("I", (-5, 5))]
 modelRg2 :: Map.Map String (Int, Int)
-modelRg2 = Map.fromList [("I", (-5, 5)), ("J", (-5, 5))]
+modelRg2 = Map.fromList [("I", (-5, 5)), ("F", (-5, 5))]
 modelRg3 :: Map.Map String (Int, Int)
-modelRg3 = Map.fromList [("I", (-5, 5)), ("J", (-5, 5)), ("K", (-5, 5))]
+modelRg3 = Map.fromList [("I", (-5, 5)), ("J", (-5, 5)), ("F", (-5, 5))]
 
 printModel :: Map.Map String (Int, Int) -> EPRange -> String
 printModel x y = modelToString boolModelChar $ modelOf x y
@@ -271,7 +316,7 @@ el21 :: [EPRange]
 el21 = let x1 = toEPR "I>=0" in [x1, Complement x1]
 
 el22 :: [EPRange]
-el22 = let l = map toEPR ["I>=0, J>=0", "I<4, J<=4"]
+el22 = let l = map toEPR ["I>=0, F>=0", "I<4, F<=4"]
            inter = Intersection l
            uni = Union l
        in uni : inter : Intersection [uni, Complement inter] : l
@@ -283,7 +328,7 @@ el23 = let x1 = toEPR "I>0" in [x1, Complement x1]
 -- * Partition tests
 
 checkForPartition :: [EPRange] -> IO Bool
-checkForPartition l = execSMTComparer vEnv1 $ f g l where
+checkForPartition l = execSMTTester' vEnv1 $ f g l where
     f a [] = return True
     f a (x:l') = do
       res <- mapM (a x) l'
@@ -306,7 +351,7 @@ part4 = Partition $ zip el13 [91 ..]
 
 parts = [part1, part2, part3, part4]
 
-refinePart a b = execSMTComparer vEnv1 $ refinePartition a b
+refinePart a b = execSMTTester' vEnv1 $ refinePartition a b
 
 allRefin = do
   m1 <- mapM (uncurry refinePart) $ irrTriang parts
@@ -397,6 +442,12 @@ execSMTTester ve smt = do
   (x, s) <- runStateT smt $ teFromVE ve
   return (x, counter s)
 
+execSMTTester' :: VarEnv -> SmtTester a -> IO a
+execSMTTester' ve smt = do
+  (x, i) <- execSMTTester ve smt
+  putStrLn $ "SMT-Checks: " ++ show i
+  return x
+
 instance CompareIO SmtTester where
     rangeFullCmp r1 r2 = do
       env <- get
@@ -410,9 +461,7 @@ instance CompareIO SmtTester where
 -- elimTestInit :: Int -> [(String, Guarded EPRange)] -> IO [Guard EPRange]
 elimTestInit i gl = do
   let grd = (guards $ snd $ head gl)!!i
-  (a, i) <- execSMTTester vEnv $ eliminateGuard Map.empty grd
-  putStrLn $ "SMT-Checks: " ++ show i
-  return a
+  execSMTTester' vEnv $ eliminateGuard Map.empty grd
 
 pgX :: (EPRange -> IO a) -> Guard EPRange -> IO ()
 pgX fM grd = do
@@ -465,9 +514,7 @@ getASana = liftM (Map.toList . fmap analyzeGuarded . fst . splitAS) . sens
 elimEPs :: [(String, Guarded EPRange)] -> IO [(String, Guarded EPRange)]
 elimEPs l = do
   -- execSMTComparer vEnv $ epElimination l
-  (a, i) <- execSMTTester vEnv $ epElimination l
-  putStrLn $ "SMT-Checks: " ++ show i
-  return a
+  execSMTTester' vEnv $ epElimination l
 
 
 grddMap :: [Named CMD] -> GuardedMap [EXTPARAM]
@@ -497,11 +544,11 @@ varMapFromSet = varMapFromList . Set.toList
 epList :: [EPRange]
 epList =
     let l = map (Atom . toEPs)
-            ["", "I=1,J=0", "I=0,J=0", "I=0", "I=1", "J=0", "I>0", "I>2", "I>0,J>2"]
+            ["", "I=1,F=0", "I=0,F=0", "I=0", "I=1", "F=0", "I>0", "I>2", "I>0,F>2"]
     in Intersection l : Union l : l
 
 epDomain :: [(String, EPExps)]
-epDomain = zip ["I", "J"] $ map toEPs ["I>=0", "J>=0"]
+epDomain = zip ["I", "F"] $ map toEPs ["I>=0", "F>=0"]
 
 vMap :: Map.Map String Int
 vMap = varMapFromSet $ namesInList epList
@@ -509,11 +556,11 @@ vMap = varMapFromSet $ namesInList epList
 -- vTypes = Map.map (const Nothing) vMap
 vTypes = Map.fromList $ map (\ (x,y) -> (x, boolExps vMap y)) epDomain
 
-vEnv = VarEnv { varmap = vMap, vartypes = Map.empty }
+vEnvX = VarEnv { varmap = vMap, vartypes = Map.empty }
 
 vEnv1 = VarEnv { varmap = Map.fromList [("I", 1)], vartypes = Map.empty }
 
-vEnvX = VarEnv { varmap = vMap, vartypes = vTypes }
+vEnv = VarEnv { varmap = vMap, vartypes = vTypes }
 
 
 printOrdEPs :: String -> IO ()

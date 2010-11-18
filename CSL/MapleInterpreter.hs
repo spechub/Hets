@@ -85,7 +85,7 @@ cslMapleDefaultMapping =
                               , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
                               , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
         logicOps = [ OP_and, OP_or, OP_impl ]
-        otherOps = [OP_factor, OP_maximize]
+        otherOps = [OP_factor, OP_maximize, OP_sign]
         specialOp = (OP_pow, "^")
 --        specialOp = (OP_pow, "&**")
     in specialOp : idmapping logicOps
