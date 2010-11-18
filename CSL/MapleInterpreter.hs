@@ -2,7 +2,7 @@
   , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
-Description :  Maple instance for the CalculationSystem class
+Description :  Maple instance for the AssignmentStore class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -10,7 +10,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  non-portable (various glasgow extensions)
 
-Maple as CalculationSystem
+Maple as AssignmentStore
 -}
 
 module CSL.MapleInterpreter where
@@ -50,7 +50,7 @@ data MITrans = MITrans { getBMap :: BMap
 -- Maple interface, built on CommandState
 type MapleIO = ResultT (IOS MITrans)
 
-instance CalculationSystem MapleIO where
+instance AssignmentStore MapleIO where
     assign  = mapleAssign evalMapleString mapleTransS mapleTransE
     lookup = mapleLookup evalMapleString mapleTransS
     eval = mapleEval evalMapleString mapleTransE
@@ -71,8 +71,6 @@ instance VarGen MapleIO where
       let i = newkey $ getBMap s
       put $ s { getBMap = (getBMap s) { newkey = i + 1 } }
       return $ "?" ++ show i
-
--- instance VariableRangeContainer MapleIO where
 
 
 -- ----------------------------------------------------------------------
@@ -125,19 +123,19 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
-          -> (String -> s String)
+mapleAssign :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+          -> (ConstantName -> s String)
           -> (EXPRESSION -> s EXPRESSION)
-          -> String -> EXPRESSION -> s ()
+          -> ConstantName -> EXPRESSION -> s ()
 mapleAssign ef trans transE n e = do
   e' <- transE e
   n' <- trans n
   ef $ printAssignment n' e'
   return ()
 
-mapleLookup :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
-           -> (String -> s String)
-           -> String -> s (Maybe EXPRESSION)
+mapleLookup :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+           -> (ConstantName -> s String)
+           -> ConstantName -> s (Maybe EXPRESSION)
 mapleLookup ef trans n = do
   n' <- trans n
   el <- ef $ printLookup n'
@@ -145,7 +143,7 @@ mapleLookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-mapleEval :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+mapleEval :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
 mapleEval ef trans e = do
@@ -155,7 +153,7 @@ mapleEval ef trans e = do
    then error $ "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-mapleCheck :: (CalculationSystem s, MonadResult s) => (String -> s [EXPRESSION])
+mapleCheck :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
          -> (EXPRESSION -> s EXPRESSION)
          -> EXPRESSION -> s Bool
 mapleCheck ef trans e = do
@@ -191,7 +189,7 @@ mapleTransE e = do
   put r { getBMap = bm' }
   return e'
 
-mapleTransS :: String -> MapleIO String
+mapleTransS :: ConstantName -> MapleIO String
 mapleTransS s = do
   r <- get
   let bm = getBMap r

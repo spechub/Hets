@@ -91,7 +91,7 @@ mkAndAnalyzeOp s eps exps rg =
                           Just msg -> error msg
                           _ -> OpId $ opname $ fromJust mOp
         op = case lookupOpInfoForStatAna s (length exps) of
-               Left False -> OpString s
+               Left False -> OpUser $ SimpleConstant s
                -- if registered it must be registered with the given arity or
                -- as flex-op, otherwise we don't accept it
                Left True -> opOrErr Nothing $ g "* Wrong arity\n"

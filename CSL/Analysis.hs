@@ -8,6 +8,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  portable
 
+Static Analysis for 
 -}
 
 
@@ -276,7 +277,7 @@ type GuardedMap a = Map.Map String (Guarded a)
 
 addAssignment :: String -> EXPRESSION -> EXPRESSION -> GuardedMap [EXTPARAM]
               -> GuardedMap [EXTPARAM]
-addAssignment n (Op (OpString s) epl al _) def m =
+addAssignment n (Op (OpUser s) epl al _) def m =
     let f (Var tok) = tokStr tok
         f x = error $ "addAssignment: not a variable " ++ show x
         combf x y | argvars x == argvars y = y { guards = guards y ++ guards x }
@@ -284,7 +285,7 @@ addAssignment n (Op (OpString s) epl al _) def m =
                       error "addAssignment: the argument vars does not match."
         grd = Guarded (map f al) [uncurry (Guard epl def n)
                                               $ filteredConstrainedParams epl]
-    in Map.insertWith combf s grd m
+    in Map.insertWith combf (show s) grd m
 
 addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
 
@@ -451,10 +452,9 @@ mappedElimConst :: (Map.Map PIConst Int)
                 -> EXPRESSION
 mappedElimConst m oi e al rg = Op newOi [] al rg
     where err = error $ "mappedElimConst: No entry for " ++ show oi
-          f pic = let i = Map.findWithDefault err pic m
-                  in if i > 0 then "__" ++ show i else ""
+          f c = Map.findWithDefault err (mkPIConst (show c) e) m
           newOi = case oi of
-                    OpString s -> OpString $ s ++ (f $ mkPIConst s e)
+                    OpUser c -> OpUser $ toElimConst c $ f c
                     _ -> oi
 
 -- | Returns the simplified partition representation of the 'Guarded' object
@@ -485,9 +485,9 @@ mapUserDefined f e = g Map.empty e
     where
       g m x =
        case x of
-         Op (OpString s) epl al _ -> do
-             v <- f s epl al
-             let pic = mkPIConst s epl
+         Op (OpUser s) epl al _ -> do
+             v <- f (show s) epl al
+             let pic = mkPIConst (show s) epl
                  m' = Map.insert pic v m
              foldM g m' al
          -- handle also non-userdefined ops.
@@ -501,7 +501,7 @@ setOfUserDefined e = g Set.empty e
     where
       g s x =
        case x of
-         Op (OpString n) _ al _ -> foldl g (Set.insert n s) al 
+         Op (OpUser n) _ al _ -> foldl g (Set.insert (show n) s) al
          -- handle also non-userdefined ops.
          Op _ _ al _ -> foldl g s al 
          -- ignoring lists (TODO: they should be removed soon anyway)

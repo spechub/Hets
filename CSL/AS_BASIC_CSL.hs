@@ -23,6 +23,7 @@ module CSL.AS_BASIC_CSL
     , SYMB_OR_MAP (..)    -- Symbol or symbol map
     , OPNAME (..)         -- predefined operator names
     , OPID (..)           -- identifier for operators
+    , ConstantName (..)   -- names of user-defined constants
     , OP_ITEM (..)        -- operator declaration
     , VAR_ITEM (..)       -- variable declaration
     , Domain (..)         -- domains for variable declarations
@@ -30,6 +31,7 @@ module CSL.AS_BASIC_CSL
     , CMD (..)            -- Command datatype
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
+    , toElimConst         -- Constant naming for elim constants, see Analysis.hs
     , OpInfo (..)         -- Type for Operator information
     , BindInfo (..)       -- Type for Binder information
     , operatorInfo        -- Operator information for pretty printing
@@ -57,7 +59,7 @@ type APFloat = Double
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
-mkOp s el = Op (OpString s) [] el nullRange
+mkOp s el = Op (OpUser $ SimpleConstant s) [] el nullRange
 
 -- | A simple operator constructor from given operator id and arguments
 mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
@@ -156,11 +158,24 @@ instance Show OPNAME where
           OP_false -> "False"
           OP_true -> "True"
 
-data OPID = OpId OPNAME | OpString String deriving (Eq, Ord)
+data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord)
+
+-- | We differentiate between simple constant names and indexed constant names
+-- resulting from the extended parameter elimination.
+data ConstantName = SimpleConstant String | ElimConstant String Int
+                    deriving (Eq, Ord)
 
 instance Show OPID where
     show (OpId n) = show n
-    show (OpString s) = s
+    show (OpUser s) = show s
+
+instance Show ConstantName where
+    show (SimpleConstant s) = s
+    show (ElimConstant s i) = if i > 0 then s ++ "__" ++ show i else s
+
+toElimConst :: ConstantName -> Int -> ConstantName
+toElimConst (SimpleConstant s) i = ElimConstant s i
+toElimConst ec _ = error $ "toElimConst: already an elim const " ++ show ec
 
 -- | Datatype for expressions
 data EXPRESSION =
@@ -327,7 +342,7 @@ lookupOpInfo (OpId op) arit =
                   Just x -> Right x
                   _ -> Left True
       _ -> error $ "lookupOpInfo: no opinfo for " ++ show op
-lookupOpInfo (OpString _) _ = Left False
+lookupOpInfo (OpUser _) _ = Left False
 
 -- | For the given name and arity we lookup an 'BindInfo', where arity=-1
 -- means flexible arity.
@@ -341,7 +356,7 @@ lookupBindInfo (OpId op) arit =
             Just x -> bind x
             _ -> Nothing
       _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
-lookupBindInfo (OpString _) _ = Nothing
+lookupBindInfo (OpUser _) _ = Nothing
 
 
 printCMD :: CMD -> Doc

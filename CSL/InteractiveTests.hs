@@ -119,7 +119,7 @@ runTest_ cmd r = do
   return (fromJust $ resultToMaybe res, r')
 
 
-evalL :: CalculationSystem (ResultT (IOS b)) => b
+evalL :: AssignmentStore (ResultT (IOS b)) => b
       -> Int -- ^ Test-spec
       -> IO b
 evalL s i = do
@@ -557,10 +557,10 @@ redc v i = do
   r <- redcInit v
   evalL r i
 
-redcNames :: RITrans -> IO [String]
+redcNames :: RITrans -> IO [ConstantName]
 redcNames = runTest $ liftM toList names
 
-redcValues :: RITrans -> IO [(String, EXPRESSION)]
+redcValues :: RITrans -> IO [(ConstantName, EXPRESSION)]
 redcValues = runTest values
 
 -- run the assignments from the spec
@@ -623,7 +623,7 @@ runTTi c s = do
 --s -> t -> t1 -> IO (Common.Result.Result a, s)
 -- ttesd :: ( VarGen (ResultT (IOS s))
 --          , VariableContainer a VarRange
---          , CalculationSystem (ResultT (IOS s))
+--          , AssignmentStore (ResultT (IOS s))
 --          , Cache (ResultT (IOS s)) a String EXPRESSION) =>
 --         EXPRESSION -> s -> a -> IO (WithAB a s EXPRESSION)
 ttesd e = runTT (substituteDefined e)

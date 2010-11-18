@@ -24,7 +24,7 @@ import Prelude hiding (lookup)
 
 import CSL.Interpreter
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic
+import CSL.Parse_AS_Basic (mkAndAnalyzeOp)
 import Common.Id (nullRange, Token(..))
 
 -- ----------------------------------------------------------------------
@@ -66,6 +66,10 @@ instance SExp APFloat where
 
 instance SExp String where
     toExp s = mkAndAnalyzeOp s [] [] nullRange
+
+instance SExp ConstantName where
+    toExp (SimpleConstant s) = mkAndAnalyzeOp s [] [] nullRange
+    toExp x = error $ "toExp: elim-constant not supported " ++ show x
 
 instance SExp a => SExp (String, a) where
     toExp (s, x) = mkAndAnalyzeOp s [] [toExp x] nullRange
@@ -115,18 +119,22 @@ instance IntervalLike VarRange where
 -- ones (Nothing returned).
 -- backupLookup is set once the data is created, the cachemap and varcontainer
 -- are updated afterwards.
-data VCCache = VCCache { varcontainer :: Map.Map String VarRange
-                       , cachemap :: Map.Map String (Maybe EXPRESSION) } deriving Show
+data VCCache = VCCache { varcontainer :: Map.Map ConstantName VarRange
+                       , cachemap :: Map.Map ConstantName (Maybe EXPRESSION) }
+               deriving Show
 
-lookupCached :: MonadState VCCache m => (String -> m (Maybe EXPRESSION)) -> String
-             -> m (Maybe EXPRESSION)
+lookupCached :: MonadState VCCache m => (ConstantName -> m (Maybe EXPRESSION))
+             -> ConstantName -> m (Maybe EXPRESSION)
 lookupCached = lookupCachedWithTrans return
 
 lookupCachedWithTrans :: MonadState VCCache m =>
-                          (EXPRESSION -> m EXPRESSION) -- ^ Transformation function
-                      ->  (String -> m (Maybe EXPRESSION)) -- ^ lookup function
-                      -> String -- ^ lookup key
-                      -> m (Maybe EXPRESSION) -- ^ lookuped and transformed result
+                          (EXPRESSION -> m EXPRESSION)
+                      -- ^ Transformation function
+                      ->  (ConstantName -> m (Maybe EXPRESSION))
+                      -- ^ lookup function
+                      -> ConstantName -- ^ lookup key
+                      -> m (Maybe EXPRESSION)
+                         -- ^ looked up and transformed result
 lookupCachedWithTrans f lk k = do
   c <- get
   case Map.lookup k (cachemap c) of
@@ -150,8 +158,8 @@ emptyVCCache = VCCache Map.empty Map.empty
 
 
 class VariableContainer a b where
-    insertVar :: String -> b -> a -> a
-    toVarList :: a -> [(String, b)]
+    insertVar :: ConstantName -> b -> a -> a
+    toVarList :: a -> [(ConstantName, b)]
 
 instance VariableContainer VCCache VarRange where
     insertVar s v c = c { varcontainer = Map.insert s v $ varcontainer c }
@@ -159,12 +167,13 @@ instance VariableContainer VCCache VarRange where
 
 -- | If the state of a statemonad is a VariableContainer then we provide a
 --  simplified insert function, which hides the state handling
-insertVarM :: (Monad m, VariableContainer a b) => String -> b -> StateT a m ()
+insertVarM :: (Monad m, VariableContainer a b) => ConstantName -> b
+           -> StateT a m ()
 insertVarM s iRng = fmap (insertVar s iRng) get >>= put
 
 -- | If the state of a statemonad is a VariableContainer then we provide a
 --  simplified insert function, which hides the state handling
-toVarListM :: (VariableContainer a b, Monad m) => StateT a m [(String, b)]
+toVarListM :: (VariableContainer a b, Monad m) => StateT a m [(ConstantName, b)]
 toVarListM = fmap toVarList get
 
 
@@ -172,20 +181,20 @@ toVarListM = fmap toVarList get
 --   replacing them by variables and assign to those variables ranges
 --   (the intervals). Does not replace toplevel intervals.
 replaceIntervals ::
-    (VarGen c, VariableContainer a VarRange, CalculationSystem c) =>
+    (VarGen c, VariableContainer a VarRange, AssignmentStore c) =>
     EXPRESSION -> StateT a c EXPRESSION
 replaceIntervals e@(Interval _ _ _) = return e
 replaceIntervals e = replaceIntervals' e
 
 -- | Like replaceIntervals but works also on toplevel intervals
 replaceIntervals' ::
-    (VarGen c, VariableContainer a VarRange, CalculationSystem c) =>
+    (VarGen c, VariableContainer a VarRange, AssignmentStore c) =>
     EXPRESSION -> StateT a c EXPRESSION
 replaceIntervals' e = 
     case e of
       Interval from to rg -> do
              y <- genVar
-             insertVarM y (from, to)
+             insertVarM (SimpleConstant y) (from, to)
              return $ Var $ Token y rg
       Op s epl args rg -> do
              nargs <- mapM replaceIntervals' args
@@ -197,14 +206,14 @@ replaceIntervals' e =
 
 -- TODO: add support for function terms
 -- | Replaces all occurrences of defined variables by their lookuped terms
-substituteDefined :: ( VarGen c, CalculationSystem c)
+substituteDefined :: ( VarGen c, AssignmentStore c)
                     => EXPRESSION -> StateT VCCache c EXPRESSION
 substituteDefined x =
     case x of
       Op oi epl args rg -> do
              let (s, isOpName) = case oi of
-                                   OpId _ -> ("", True)
-                                   OpString os -> (os, False)
+                                   OpId _ -> (error "substituteDefined", True)
+                                   OpUser os -> (os, False)
              b <- if isOpName then return False else isDefined s
              nargs <- mapM substituteDefined args
              if b && null args
@@ -238,7 +247,7 @@ toIntervalCondition :: (SExp e, IntervalLike i) => e -> i -> EXPRESSION
 toIntervalCondition e i = toExp ("in", e, toIntervalExp i)
 
 -- | Produces a verification condition for the given Assignment c := t
-verificationCondition :: ( VarGen c, CalculationSystem c)
+verificationCondition :: ( VarGen c, AssignmentStore c)
                          => EXPRESSION -- ^ the lookuped value of a constant
                          -> EXPRESSION -- ^ the definiens of this constant
                          -> c EXPRESSION -- ^ the conditional statement,

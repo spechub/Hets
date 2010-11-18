@@ -2,7 +2,7 @@
   , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
-Description :  Reduce instance for the CalculationSystem class
+Description :  Reduce instance for the AssignmentStore class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -10,7 +10,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  non-portable (various glasgow extensions)
 
-Reduce as CalculationSystem
+Reduce as AssignmentStore
 -}
 
 module CSL.ReduceInterpreter where
@@ -62,9 +62,9 @@ type RedsIO = ResultT (IOS ReduceInterpreter)
 -- Redc as (Red)uce (c)ommand interface (it is built on CommandState)
 type RedcIO = ResultT (IOS RITrans)
 
-instance CalculationSystem RedsIO where
-    assign  = redAssign evalRedsString return return
-    lookup = redLookup evalRedsString return
+instance AssignmentStore RedsIO where
+    assign  = redAssign evalRedsString redsTransS return
+    lookup = redLookup evalRedsString redsTransS
     eval = redEval evalRedsString return
     check = redCheck evalRedsString return
     names = error "ReduceInterpreter as CS: names are unsupported"
@@ -76,7 +76,7 @@ instance VarGen RedsIO where
       put $ s { varcounter =i + 1 }
       return $ "?" ++ show i
 
-instance CalculationSystem RedcIO where
+instance AssignmentStore RedcIO where
     assign  = redAssign evalRedcString redcTransS redcTransE
     lookup = redLookup evalRedcString redcTransS
     eval = redEval evalRedcString redcTransE
@@ -127,21 +127,21 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-redAssign :: (CalculationSystem s, MonadResult s) =>
+redAssign :: (AssignmentStore s, MonadResult s) =>
              (String -> s [EXPRESSION])
-          -> (String -> s String)
+          -> (ConstantName -> s String)
           -> (EXPRESSION -> s EXPRESSION)
-          -> String -> EXPRESSION -> s ()
+          -> ConstantName -> EXPRESSION -> s ()
 redAssign ef trans transE n e = do
   e' <- transE e
   n' <- trans n
   ef $ printAssignment n' e'
   return ()
 
-redLookup :: (CalculationSystem s, MonadResult s) =>
+redLookup :: (AssignmentStore s, MonadResult s) =>
               (String -> s [EXPRESSION])
-           -> (String -> s String)
-           -> String -> s (Maybe EXPRESSION)
+           -> (ConstantName -> s String)
+           -> ConstantName -> s (Maybe EXPRESSION)
 redLookup ef trans n = do
   n' <- trans n
   el <- ef $ printLookup n'
@@ -149,7 +149,7 @@ redLookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-redEval :: (CalculationSystem s, MonadResult s) =>
+redEval :: (AssignmentStore s, MonadResult s) =>
            (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
@@ -160,7 +160,7 @@ redEval ef trans e = do
    then error $ "redEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-redCheck :: (CalculationSystem s, MonadResult s) =>
+redCheck :: (AssignmentStore s, MonadResult s) =>
             (String -> s [EXPRESSION])
          -> (EXPRESSION -> s EXPRESSION)
          -> EXPRESSION -> s Bool
@@ -180,6 +180,9 @@ instance Session ReduceInterpreter where
     inp = inh
     outp = outh
     proch = Just . ph
+
+redsTransS :: ConstantName -> RedsIO String
+redsTransS = return . show
 
 evalRedsString :: String -> RedsIO [EXPRESSION]
 evalRedsString s = do
@@ -227,7 +230,7 @@ redcTransE e = do
   put r { getBMap = bm' }
   return e'
 
-redcTransS :: String -> RedcIO String
+redcTransS :: ConstantName -> RedcIO String
 redcTransS s = do
   r <- get
   let bm = getBMap r

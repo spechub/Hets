@@ -65,21 +65,21 @@ instance SimpleMember (SMem b) b where
     toList (SMem a) = toList a
 
 -- | calculation interface, bundles the evaluation engine and the constant store
-class (Monad m) => CalculationSystem m where
-    assign :: String -> EXPRESSION -> m () -- evtl. m Bool instead as success-flag
-    lookup :: String -> m (Maybe EXPRESSION)
-    names :: m (SMem String)
+class (Monad m) => AssignmentStore m where
+    assign :: ConstantName -> EXPRESSION -> m ()
+    lookup :: ConstantName -> m (Maybe EXPRESSION)
+    names :: m (SMem ConstantName)
     eval :: EXPRESSION -> m EXPRESSION
     check :: EXPRESSION -> m Bool
-    check = error "CalculationSystem-default: 'check' not implemented."
-    values :: m [(String, EXPRESSION)]
+    check = error "AssignmentStore-default: 'check' not implemented."
+    values :: m [(ConstantName, EXPRESSION)]
     values = let f x = do
                    v <- lookup x
                    return (x, fromJust v)
              in names >>= mapM f . toList
 
 
-instance CalculationSystem m => CalculationSystem (StateT s m) where
+instance AssignmentStore m => AssignmentStore (StateT s m) where
     assign s = lift . assign s
     lookup = lift . lookup
     names = lift names
@@ -87,11 +87,11 @@ instance CalculationSystem m => CalculationSystem (StateT s m) where
     check = lift . check
     values = lift values
 
-isDefined :: CalculationSystem m => String -> m Bool
+isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
 
-evaluate :: CalculationSystem m => CMD -> m ()
-evaluate (Ass (Op (OpString n) [] [] _) e) = assign n e
+evaluate :: AssignmentStore m => CMD -> m ()
+evaluate (Ass (Op (OpUser n) [] [] _) e) = assign n e
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
   if null cl
@@ -114,7 +114,7 @@ evaluate a@(Ass (Op (OpId _) _ _ _) _) =
 evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 
 
-evaluateList :: CalculationSystem m => [CMD] -> m ()
+evaluateList :: AssignmentStore m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
 
 -- ----------------------------------------------------------------------
@@ -123,8 +123,8 @@ evaluateList l = forM_ l evaluate
 
 -- | A data structure for invertible maps, with automatic new key generation
 -- and insertion at lookup
-data BMap = BMap { mThere :: Map.Map String Int
-                 , mBack :: IMap.IntMap String
+data BMap = BMap { mThere :: Map.Map ConstantName Int
+                 , mBack :: IMap.IntMap ConstantName
                  , newkey :: Int
                  , prefix :: String
                  , defaultMap :: BMapDefault OPID }
@@ -134,7 +134,7 @@ data BMapDefault a = BMapDefault { mThr :: Map.Map a String
                                  , mBck :: Map.Map String a }
 
 
-instance SimpleMember BMap String where
+instance SimpleMember BMap ConstantName where
     member k = Map.member k . mThere
     count = Map.size . mThere
     toList = Map.keys . mThere
@@ -161,31 +161,30 @@ initWithDefault l =
     let f (x, y) = (OpId x, y)
     in BMap Map.empty IMap.empty 1 "x" $ fromList $ map f l
 
--- TODO: the lookup function should be splitted into a variant with OPID
--- or strings should be considered as OpString x
--- TODO: adapt lookup and revlookup
 -- | The only way to also insert a value is to use lookup. One should not
 -- insert values explicitly. Note that you don't control the inserted value.
 -- For (Left "...") we throw an error if this value is in the defaultMap,
 -- for (Right (OpId ...)) we throw an error if it isn't.
 lookupOrInsert :: BMap
-               -> Either String OPID -- ^ If you provide a string it is
-                                     -- interpreted as an OpString
+               -> Either ConstantName OPID -- ^ If you provide a 'ConstantName'
+                                           -- it is interpreted as an OpUser
                -> (BMap, String)
 lookupOrInsert m k =
-    let (k', str, isL, isOpName) = case k of
-                              Left s -> (OpString s, s, True, False)
-                              Right oi@(OpId _) -> (oi, "", False, True)
-                              Right os@(OpString x) -> (os, x, False, False)
+    let err pc = error $ "lookupOrInsert: predefined constant encountered "
+                 ++ show pc
+        (k', c, isL, isOpName) = case k of
+                              Left s -> (OpUser s, s, True, False)
+                              Right oi@(OpId _) -> (oi, err oi, False, True)
+                              Right os@(OpUser x) -> (os, x, False, False)
     in
       case defaultLookup (defaultMap m) k' of
       Just s -> if isL
                 then error $ "lookupOrInsert: default functions should be "
-                     ++ "passed in as OPIDs but got the string " ++ str
+                     ++ "passed in as OPIDs but got the constant " ++ show c
                 else (m, s)
       _ -> let f _ _ x = x
                nv = newkey m
-               (mNv', nm) = Map.insertLookupWithKey f str nv $ mThere m
+               (mNv', nm) = Map.insertLookupWithKey f c nv $ mThere m
            -- first check for default symbols
            in if isOpName
               then error $ "lookupOrInsert: OPNAMEs should be registered in the"
@@ -193,7 +192,7 @@ lookupOrInsert m k =
               else case mNv' of
                 Just nv' -> (m, bmapIntToString m nv')
                 _ ->  (m { mThere = nm
-                         , mBack = IMap.insert nv str $ mBack m
+                         , mBack = IMap.insert nv c $ mBack m
                          , newkey = nv + 1 }
                       , bmapIntToString m nv)
 
@@ -203,9 +202,9 @@ revlookup m k =
       Just s -> s
       _ -> let i = bmapStringToInt m k
                err = error $ "revlookup: No reverse mapping for " ++ k
-           in OpString $ IMap.findWithDefault err i $ mBack m
+           in OpUser $ IMap.findWithDefault err i $ mBack m
 
-bmToList :: BMap -> [(String, String)]
+bmToList :: BMap -> [(ConstantName, String)]
 bmToList m = let prf = prefix m
                  f (x, y) = (x, prf ++ show y)
              in map f $ Map.toList $ mThere m
@@ -229,7 +228,7 @@ translateEXPRESSION :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
 translateEXPRESSION m (Op oi epl el rg) =
     let (m', el') = mapAccumL translateEXPRESSION m el
         (m'', s) = lookupOrInsert m' $ Right oi
-    in (m'', Op (OpString s) epl el' rg)
+    in (m'', Op (OpUser $ SimpleConstant s) epl el' rg)
 translateEXPRESSION m (List el rg) =
     let (m', el') = mapAccumL translateEXPRESSION m el
     in (m', List el' rg)
@@ -237,10 +236,14 @@ translateEXPRESSION m e = (m, e)
 
 -- | Retranslate CAS EXPRESSION back, we do not allow OPNAMEs as OpIds
 revtranslateEXPRESSION :: BMap -> EXPRESSION -> EXPRESSION
-revtranslateEXPRESSION m (Op (OpString s) epl el rg) =
-    let el' = map (revtranslateEXPRESSION m) el
-        oi = revlookup m s
-    in Op oi epl el' rg
+revtranslateEXPRESSION m (Op (OpUser c) epl el rg) =
+    case c of
+      SimpleConstant s ->
+          let el' = map (revtranslateEXPRESSION m) el
+              oi = revlookup m s
+          in Op oi epl el' rg
+      _ -> error $ "revtranslateEXPRESSION: elim constants on CAS side not"
+           ++  " supported " ++ show c
 revtranslateEXPRESSION m (List el rg) =
     let el' = map (revtranslateEXPRESSION m) el
     in List el' rg
