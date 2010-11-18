@@ -48,8 +48,9 @@ import qualified Interfaces.Process as PC
 -- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
 import Main (getSigSens)
 
+import Control.Monad.State.Class
 import Control.Monad.State (StateT(..))
-import Control.Monad.Trans (MonadIO (..))
+import Control.Monad.Trans (MonadIO (..), lift)
 import Control.Monad (liftM)
 import Data.Maybe
 import Data.Time.Clock
@@ -382,10 +383,36 @@ let sgm = dependencySortAS grdm
 -}
 
 
+data TestEnv = TestEnv { counter :: Int
+                       , varenv :: VarEnv }
+
+
+teFromVE :: VarEnv -> TestEnv
+teFromVE ve = TestEnv { counter = 0, varenv = ve }
+
+type SmtTester = StateT TestEnv IO
+
+execSMTTester :: VarEnv -> SmtTester a -> IO (a, Int)
+execSMTTester ve smt = do
+  (x, s) <- runStateT smt $ teFromVE ve
+  return (x, counter s)
+
+instance CompareIO SmtTester where
+    rangeFullCmp r1 r2 = do
+      env <- get
+      let f x = x{counter = counter x + 1}
+          ve = varenv env
+          vm = varmap ve
+      modify f
+      lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+
+
 -- elimTestInit :: Int -> [(String, Guarded EPRange)] -> IO [Guard EPRange]
 elimTestInit i gl = do
   let grd = (guards $ snd $ head gl)!!i
-  execSMTComparer vEnv $ eliminateGuard Map.empty grd
+  (a, i) <- execSMTTester vEnv $ eliminateGuard Map.empty grd
+  putStrLn $ "SMT-Checks: " ++ show i
+  return a
 
 pgX :: (EPRange -> IO a) -> Guard EPRange -> IO ()
 pgX fM grd = do
@@ -436,7 +463,11 @@ getASana :: Int -> IO [(String, Guarded EPRange)]
 getASana = liftM (Map.toList . fmap analyzeGuarded . fst . splitAS) . sens
 
 elimEPs :: [(String, Guarded EPRange)] -> IO [(String, Guarded EPRange)]
-elimEPs = execSMTComparer vEnv . epElimination
+elimEPs l = do
+  -- execSMTComparer vEnv $ epElimination l
+  (a, i) <- execSMTTester vEnv $ epElimination l
+  putStrLn $ "SMT-Checks: " ++ show i
+  return a
 
 
 grddMap :: [Named CMD] -> GuardedMap [EXTPARAM]

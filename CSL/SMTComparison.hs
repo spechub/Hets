@@ -26,7 +26,6 @@ import Control.Monad
 import qualified Data.Map as Map
 import Data.List
 import System.Process
-import System.IO.Unsafe
 
 import CSL.TreePO
 import CSL.EPBasic
@@ -159,16 +158,6 @@ tripleFst (x, _, _) = x
 smtCompare :: VarEnv -> BoolRep -> BoolRep -> IO (EPCompare, Bool, Bool)
 smtCompare m r1 r2 = liftM smtStatusCompareTable $ smtCheck m r1 r2
 
-smtCompareUnsafe :: VarEnv -> BoolRep -> BoolRep -> EPCompare
-smtCompareUnsafe m r1 r2 = tripleFst $ unsafePerformIO $ smtCompare m r1 r2
-
-smtFullCompareUnsafe :: VarEnv -> BoolRep -> BoolRep -> (EPCompare, Bool, Bool)
-smtFullCompareUnsafe m r1 r2 = unsafePerformIO $ smtCompare m r1 r2
-
-smtCompareUnsafe' :: VarEnv -> BoolRep -> BoolRep -> EPCompare
-smtCompareUnsafe' m r1 r2 = tripleFst $ smtStatusCompareTable $ unsafePerformIO $ smtCheck' m r1 r2
-
-
 smtResponseToStatus :: String -> SMTStatus
 smtResponseToStatus s
     | s == "sat" = Sat
@@ -179,9 +168,9 @@ smtResponseToStatus s
 
 smtMultiResponse :: String -> IO [SMTStatus]
 smtMultiResponse inp = do
-  putStrLn $ "\n\n" ++ inp ++ "\n\n\n\n\n\n\n\n\n\n"
+--  putStrLn $ "\n\n" ++ inp ++ "\n\n\n\n\n\n\n\n\n\n"
   s <- readProcess "yices" [] inp
-  putStrLn "---------------- DONE ----------------\n\n"
+--  putStrLn "---------------- DONE ----------------\n\n"
   return $ map smtResponseToStatus $ lines s
 
 smtResponse :: String -> IO SMTStatus
