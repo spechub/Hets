@@ -133,8 +133,10 @@ getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, CasS.OpType)
 getConstructors f s = case sentence f of
    Cas.Sort_gen_ax cs _ -> let
        (_, ops, _) = Cas.recover_Sort_gen_ax cs
-       in foldr ( \ (Cas.Qual_op_name i t _) ->
-             Set.insert (i, (CasS.toOpType t) { CasS.opKind = Cas.Partial }))
+       in foldr ( \ o -> case o of
+             Cas.Qual_op_name i t _ ->
+               Set.insert (i, (CasS.toOpType t) { CasS.opKind = Cas.Partial })
+             _ -> error "CASL2HasCASL.getConstructors")
              s ops
    _ -> s
 
@@ -215,8 +217,9 @@ toSentence f = case f of
               $ if null args then [] else
               [map (\ a -> Select Nothing a HasCASL.As.Total) args])
           $ filter ( \ (_, t) -> CasS.opRes t == s)
-                $ map ( \ (Cas.Qual_op_name i t _) ->
-                        (trId i, CasS.toOpType t)) ops) sorts
+                $ map ( \ o -> case o of
+                        Cas.Qual_op_name i t _ -> (trId i, CasS.toOpType t)
+                        _ -> error "CASL2HasCASL.toSentence") ops) sorts
    _ -> Formula $ toTerm f
 
 toTerm :: Pretty f => Cas.FORMULA f -> Term
@@ -239,13 +242,15 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   , foldNegation = \ _ frm ps -> mkTerm notId notType [] ps frm
   , foldTrue_atom = \ _ -> unitTerm trueId
   , foldFalse_atom = \ _ -> unitTerm falseId
-  , foldExistl_equation = \ (Cas.Existl_equation c1 _ _) t1 t2 ps ->
-        mkEqTerm exEq (typeOfTerm c1) ps t1 t2
-  , foldStrong_equation = \ (Cas.Strong_equation c1 _ _) t1 t2 ps ->
-        mkEqTerm eqId (typeOfTerm c1) ps t1 t2
-  , foldPredication = \ _ (Cas.Qual_pred_name ui pty@(Cas.Pred_type ts _) ps)
-        args qs ->
-        let i = trId ui
+  , foldExistl_equation = \ o t1 t2 ps -> case o of
+        Cas.Existl_equation c1 _ _ -> mkEqTerm exEq (typeOfTerm c1) ps t1 t2
+        _ -> error "CASL2HasCASL.transRecord.foldExistl_equation"
+  , foldStrong_equation = \ o t1 t2 ps -> case o of
+        Cas.Strong_equation c1 _ _ -> mkEqTerm eqId (typeOfTerm c1) ps t1 t2
+        _ -> error "CASL2HasCASL.transRecord.foldStrong_equation"
+  , foldPredication = \ _ qpn args qs ->
+        let Cas.Qual_pred_name ui pty@(Cas.Pred_type ts _) ps = qpn
+            i = trId ui
             sc = simpleTypeScheme $ fromPREDTYPE pty
             p = QualOp Pred (PolyId i [] ps) sc [] Infer ps
             in if null args then p else TypedTerm
@@ -253,8 +258,9 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
                (\ tr ty -> TypedTerm tr Inferred (toType ty) ps)
                 args ts) qs) qs)
               Inferred unitType ps
-  , foldDefinedness = \ (Cas.Definedness c _) t ps ->
-        mkTerm defId defType [typeOfTerm c] ps t
+  , foldDefinedness = \ o t ps -> case o of
+        Cas.Definedness c _ -> mkTerm defId defType [typeOfTerm c] ps t
+        _ -> error "CASL2HasCASL.transRecord.foldDefinedness"
   , foldMembership = \ _ t -> TypedTerm t InType . toType
   , foldQuantOp = \ _ uo ty frm -> let o = trId uo in
          QuantifiedTerm Universal
@@ -266,8 +272,9 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
          (qualName2var p frm) nullRange
   , foldQual_var = \ _ v ty ->
         QualVar . VarDecl (simpleIdToId v) (toType ty) Other
-  , foldApplication = \ _ (Cas.Qual_op_name ui ot ps) args qs  ->
-        let i = trId ui
+  , foldApplication = \ _ qon args qs ->
+        let Cas.Qual_op_name ui ot ps = qon
+            i = trId ui
             o = QualOp Op (PolyId i [] ps) (fromOPTYPE ot) [] Infer ps
             at = CasS.toOpType ot
         in if null args then o else TypedTerm
@@ -277,11 +284,13 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
            Inferred (toType $ CasS.opRes at) ps
   , foldSorted_term = \ _ trm -> TypedTerm trm OfType . toType
   , foldCast = \ _ trm -> TypedTerm trm AsType . toType
-  , foldConditional = \ (Cas.Conditional c1 _ _ _) t1 f t2 ps ->
-        mkTerm whenElse whenType [typeOfTerm c1] ps $ TupleTerm [t1, f, t2] ps
+  , foldConditional = \ o t1 f t2 ps -> case o of
+        Cas.Conditional c1 _ _ _ -> mkTerm whenElse whenType [typeOfTerm c1] ps
+          $ TupleTerm [t1, f, t2] ps
+        _ -> error "CASL2HasCASL.transRecord.foldConditional"
   , foldSort_gen_ax = \ _ cs _ ->
       error $ "unexpected sort generation constraint: "
-      ++ unlines (map (flip showDoc "") $ recoverType cs)
+      ++ unlines (map (`showDoc` "") $ recoverType cs)
       ++ "in: " ++ str
   }
 
@@ -298,5 +307,3 @@ qualName2var i = HasFold.foldTerm mapRec
 trId :: Id -> Id
 trId i@(Id ts cs ps) = if null cs && all isPlace ts then
   Id [genNumVar "empty" $ length ts] cs ps else i
-
-

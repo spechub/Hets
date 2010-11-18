@@ -25,7 +25,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation
 
-import Logic.Grothendieck()
+import Logic.Grothendieck ()
 
 import Syntax.AS_Structured
 
@@ -57,11 +57,13 @@ printExtension :: [Annoted SPEC] -> [Doc]
 printExtension l = case l of
     [] -> []
     x : r -> printOptUnion x ++
-             concatMap (( \ (d : s) -> (topKey thenS <+> d) : s) .
+             concatMap (( \ u -> case u of
+                            [] -> []
+                            d : s -> (topKey thenS <+> d) : s) .
                         printOptUnion) r
 
 printSPEC :: SPEC -> Doc
-printSPEC  spec = case spec of
+printSPEC spec = case spec of
     Basic_spec aa _ -> pretty aa
     EmptySpec _ -> specBraces empty
     Translation aa ab -> sep [condBracesTransReduct aa, printRENAMING ab]
@@ -93,7 +95,7 @@ printRESTRICTION rest = case rest of
     Hidden aa _ -> keyword hideS <+> ppWithCommas aa
     Revealed aa _ -> keyword revealS <+> pretty aa
 
-printLogicEncoding :: (Pretty a) =>  a -> Doc
+printLogicEncoding :: (Pretty a) => a -> Doc
 printLogicEncoding enc = keyword logicS <+> pretty enc
 
 instance Pretty G_mapping where
@@ -143,9 +145,8 @@ printLogic_name (Logic_name mlog slog) = let d = structSimpleId mlog in
       Nothing -> d
       Just sub -> d <> dot <> structSimpleId sub
 
------------------------------------------------
 {- |
-  specealized printing of 'FIT_ARG's
+  specialized printing of 'FIT_ARG's
 -}
 print_fit_arg_list :: [Annoted FIT_ARG] -> Doc
 print_fit_arg_list = cat . map (brackets . pretty)
@@ -157,7 +158,7 @@ printGroupSpec :: Annoted SPEC -> Doc
 printGroupSpec s = let d = pretty s in
     case skip_Group $ item s of
                  Spec_inst _ _ _ -> d
-                 _  -> specBraces d
+                 _ -> specBraces d
 
 {- |
   generate grouping braces for Tanslations and Reductions
@@ -165,10 +166,10 @@ printGroupSpec s = let d = pretty s in
 condBracesTransReduct :: Annoted SPEC -> Doc
 condBracesTransReduct s = let d = pretty s in
     case skip_Group $ item s of
-                 Extension _ _    -> specBraces d
-                 Union _ _        -> specBraces d
+                 Extension _ _ -> specBraces d
+                 Union _ _ -> specBraces d
                  Local_spec _ _ _ -> specBraces d
-                 _                -> d
+                 _ -> d
 
 {- |
   generate grouping braces for Within
@@ -176,17 +177,17 @@ condBracesTransReduct s = let d = pretty s in
 condBracesWithin :: Annoted SPEC -> Doc
 condBracesWithin s = let d = pretty s in
     case skip_Group $ item s of
-                 Extension _ _    -> specBraces d
-                 Union _ _        -> specBraces d
-                 _                -> d
+                 Extension _ _ -> specBraces d
+                 Union _ _ -> specBraces d
+                 _ -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces
 -}
 condBracesAnd :: Annoted SPEC -> Doc
 condBracesAnd s = let d = pretty s in
     case skip_Group $ item s of
-                 Extension _ _    -> specBraces d
-                 _                -> d
+                 Extension _ _ -> specBraces d
+                 _ -> d
 
 -- | only skip groups without annotations
 skipVoidGroup :: SPEC -> SPEC

@@ -15,7 +15,7 @@ Coding out subtyping in analogy to (SubPCFOL= -> PCFOL=),
 The higher kinded builtin function arrow subtypes must be ignored.
 -}
 
-module Comorphisms.HasCASL2PCoClTyConsHOL (HasCASL2PCoClTyConsHOL(..)) where
+module Comorphisms.HasCASL2PCoClTyConsHOL (HasCASL2PCoClTyConsHOL (..)) where
 
 import Logic.Logic
 import Logic.Comorphism
@@ -86,9 +86,10 @@ f2Formula s = case s of
 
 t2term :: Term -> Term
 t2term = foldTerm mapRec
-    { foldTypedTerm = \ (TypedTerm trm _ _ _) ntrm q ty ps ->
-      let origTerm = TypedTerm ntrm q ty ps in
-      case getTypeOf trm of
+    { foldTypedTerm = \ o ntrm q ty ps ->
+      let origTerm = TypedTerm ntrm q ty ps
+          TypedTerm trm _ _ _ = o
+      in case getTypeOf trm of
         Nothing -> origTerm -- assume this to be the exact type
         Just sty -> if eqStrippedType ty sty
           then if q == InType then unitTerm trueId ps else
@@ -102,7 +103,7 @@ t2term = foldTerm mapRec
               rty = case getTypeAppl ty of
                       (TypeName l _ _, [lt]) | l == lazyTypeId -> lt
                       _ -> ty
-              -- not not create injections into lazy types
-              -- (via strippedType all function arrows became partial)
+              {- do not create injections into lazy types
+              (via strippedType all function arrows became partial) -}
               rtrm = mkTerm injName (mkInjOrProjType FunArr) [sty, rty] ps ntrm
               in TypedTerm rtrm q ty ps }
