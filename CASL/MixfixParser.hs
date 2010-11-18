@@ -155,22 +155,26 @@ multiArgsId = mkId (exprTok : getPlainTokenList tupleId)
 -- | additional scan rules
 addRule :: GlobalAnnos -> [Rule] -> Bool -> IdSets -> Token -> [Rule]
 addRule ga uRules hasInvisible ((consts, ops), preds) tok =
-    let addP = Set.fold (\ i@(Id (t : _) _ _) ->
-               Map.insertWith (++) t
-                [ mixRule (if Set.member i consts then 1 else 0) i
-                , mkSingleArgRule 0 i, mkArgsRule 0 i])
-        addO = Set.fold (\ i@(Id (t : _) _ _) ->
-               Map.insertWith (++) t
-                 $ [mkRule i | not (isSimpleId i)
-                   || Set.member i (Set.union consts preds) ]
-                 ++ [mkSingleArgRule 1 i, mkArgsRule 1 i])
-        addC = Set.fold (\ i@(Id (t : _) _ _) ->
-               Map.insertWith (++) t [mkRule i])
-        lm = foldr ( \ r@(_, _, t : _) -> Map.insertWith (++) t [r])
-             Map.empty $ listRules 1 ga
+    let addP = Set.fold (\ i -> case i of
+                 Id (t : _) _ _ -> Map.insertWith (++) t
+                   [ mixRule (if Set.member i consts then 1 else 0) i
+                   , mkSingleArgRule 0 i, mkArgsRule 0 i]
+                 _ -> error "addRule.addP")
+        addO = Set.fold (\ i -> case i of
+                 Id (t : _) _ _ -> Map.insertWith (++) t
+                   $ [mkRule i | not (isSimpleId i)
+                      || Set.member i (Set.union consts preds) ]
+                   ++ [mkSingleArgRule 1 i, mkArgsRule 1 i]
+                 _ -> error "addRule.addO")
+        addC = Set.fold (\ i -> case i of
+                 Id (t : _) _ _ -> Map.insertWith (++) t [mkRule i]
+                 _ -> error "addRule.addC")
+        lm = foldr (\ r -> case r of
+               (_, _, t : _) -> Map.insertWith (++) t [r]
+               _ -> error "addRule.lm") Map.empty $ listRules 1 ga
         (spreds, rpreds) = Set.partition isSimpleId preds
-        -- do not add simple ids as preds as these may be variables
-        -- with higher precedence
+        {- do not add simple ids as preds as these may be variables
+        with higher precedence -}
         ops2 = Set.union ops spreds
         sops = Set.union consts ops2
         rConsts = Set.difference consts $ Set.union ops preds
