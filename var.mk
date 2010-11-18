@@ -1,6 +1,6 @@
 # to be include by Makefile
 
-HC = ghc -fcontext-stack=31 -optl-s -XTemplateHaskell
+HC = ghc -optl-s -XTemplateHaskell
 HCPKG = ghc-pkg
 
 TIMEVERSION = $(shell $(HCPKG) latest time)
@@ -71,7 +71,7 @@ TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif
 
-HC_OPTS_WITHOUTGLADE = -threaded \
+HC_OPTS_WITHOUTGLADE = -fcontext-stack=31 -threaded \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(SERVER_FLAG) \
