@@ -516,9 +516,8 @@ toTextAux = foldDoc anyRecord
     , foldText = \ _ k s -> case k of
           TopKey n -> Pretty.text $ s ++ replicate (n - length s) ' '
           _ -> Pretty.text s
-    , foldCat = \ (Cat _ ds) c l -> case ds of
-        [] -> Pretty.empty
-        _ -> if all hasSpace $ init ds then
+    , foldCat = \ d c l -> case d of
+        Cat _ ds@(_ : _) -> if all hasSpace $ init ds then
           (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hsep
@@ -529,6 +528,7 @@ toTextAux = foldDoc anyRecord
           Horiz -> Pretty.hcat
           HorizOrVert -> Pretty.cat
           Fill -> Pretty.fcat) l
+        _ -> Pretty.empty
     , foldAttr = \ _ k d -> case k of
           FlushRight -> let l = length $ show d in
             if l < 66 then Pretty.nest (66 - l) d else d
@@ -551,8 +551,9 @@ toLatexRecord :: Set.Set Id -> Bool -> DocRecord Pretty.Doc
 toLatexRecord dis tab = anyRecord
     { foldEmpty = const Pretty.empty
     , foldText = const $ textToLatex dis False
-    , foldCat = \ (Cat c os) _ _ ->
-          if any isNative os then Pretty.hcat $
+    , foldCat = \ o _ _ -> case o of
+        Cat c os@(d : r)
+          | any isNative os -> Pretty.hcat $
              latex_macro "{\\Ax{"
              : map (foldDoc (toLatexRecord dis False)
                        { foldText = \ _ k s ->
@@ -565,10 +566,8 @@ toLatexRecord dis tab = anyRecord
                             _ -> textToLatex dis False k s
                         }) os
               ++ [latex_macro "}}"]
-          else case os of
-               [] -> Pretty.empty
-               [d] -> foldDoc (toLatexRecord dis tab) d
-               d : r -> (if tab && c /= Horiz then
+          | null r -> foldDoc (toLatexRecord dis tab) d
+          | otherwise -> (if tab && c /= Horiz then
                              (latex_macro setTab Pretty.<>)
                          . (latex_macro startTab Pretty.<>)
                          . (Pretty.<> latex_macro endTab)
@@ -582,6 +581,7 @@ toLatexRecord dis tab = anyRecord
                             Vert -> map (foldDoc $ toLatexRecord dis False) os
                             _ -> foldDoc (toLatexRecord dis False) d :
                                      map (foldDoc $ toLatexRecord dis True) r
+        _ -> Pretty.empty
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
           Small -> case o of
@@ -594,22 +594,25 @@ toLatexRecord dis tab = anyRecord
 makeSmallMath :: Bool -> Bool -> Doc -> Doc
 makeSmallMath smll math =
     foldDoc idRecord
-    { foldAttr = \ (Attr k d) _ _ -> case k of
-                       Small -> makeSmallMath True math d
-                       _ -> Attr k $ makeSmallMath smll math d
-    , foldCat = \ o@(Cat c l) _ _ ->
-                    if any isNative l then
+    { foldAttr = \ o _ _ -> case o of
+                       Attr Small d -> makeSmallMath True math d
+                       Attr k d -> Attr k $ makeSmallMath smll math d
+                       _ -> error "makeSmallMath.foldAttr"
+    , foldCat = \ o _ _ -> case o of
+                  Cat c l
+                    | any isNative l ->
                         (if smll then Attr Small else id)
                         -- flatten math mode bits
                            $ Cat Horiz $ map
                                  (makeSmallMath False True . rmSpace) l
-                    else if math then Cat Horiz
+                    | math -> Cat Horiz
                          $ map (makeSmallMath False True) l
-                    else if smll && allHoriz o then
+                    | smll && allHoriz o ->
                     -- produce fewer small blocks with wrong size though
                              Attr Small $ Cat Horiz $
                               map (makeSmallMath False math) l
-                         else Cat c $ map (makeSmallMath smll math) l
+                    | otherwise -> Cat c $ map (makeSmallMath smll math) l
+                  _ -> error "makeSmallMath.foldCat"
     , foldText = \ d _ _ -> if smll then Attr Small d else d
     }
 
@@ -767,8 +770,10 @@ codeOut ga precs d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno m
     , foldIdDoc = \ _ lk -> codeOutId lk m
     , foldIdApplDoc = \ o _ _ -> codeOutAppl ga precs d m o
-    , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
-          let ng = fg ga in codeOut ng (mkPrecIntMap $ prec_annos ng) d
+    , foldChangeGlobalAnnos = \ o _ _ ->
+          let ChangeGlobalAnnos fg e = o
+              ng = fg ga
+          in codeOut ng (mkPrecIntMap $ prec_annos ng) d
              (maybe m (\ f -> Map.map (Map.! f) .
                       Map.filter (Map.member f) $ display_annos ng) d) e
     }
