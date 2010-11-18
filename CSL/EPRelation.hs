@@ -20,6 +20,7 @@ import Control.Monad.Trans
 import Control.Monad.Reader
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List
 import Data.Maybe
 import Data.Tree
 import Data.Traversable (fmapDefault)
@@ -275,7 +276,7 @@ boolModelChar b = if b then '*' else ' '
 modelToString :: (a -> Char) -> Model a -> String
 modelToString f (Model l vm) =
     case l of
-      [(a, b)] -> map (f . (vm Map.!) . (:[])) [a..b] ++ "\n"
+      [(a, b)] -> map (f . (\ x -> Map.findWithDefault (error $ "modelToString: elem not in map " ++ show x ++ "\n" ++ (show $ Map.keys vm)) x vm) . (:[])) [a..b] ++ "\n"
       [(a, b), (c, d)] ->
           let g y = map (f . (vm Map.!)) [[x, y]| x <- [a..b]]
           in unlines $ map g [c..d]
@@ -285,10 +286,8 @@ modelToString f (Model l vm) =
 modelOf :: Map.Map String (Int, Int) -> EPRange -> Model Bool
 modelOf rm re = let
     f l s = l !! (Map.findIndex s rm)
-    crossprod l [] = map (:[]) l
-    crossprod l l' = concatMap (\ x -> map (:x) l) l'
-    g (a, b) l = crossprod [a..b] l
-    inpl = Map.fold g [] rm
+    g (a, b) l = [x : y | y <- l, x <- [a..b]]
+    inpl = Map.fold g [[]] rm
     h x = (x, evalRange (f x) re)
     in Model (Map.elems rm) $ Map.fromList $ map h inpl
 
@@ -355,7 +354,6 @@ boolRange _ Empty = falseBool
 
 {- | We use trees with special labels of this type.
 
-
      In two assignments of the same constant we don't allow the
      extended parameter part to overlap. Hence we can store the
      definiens of assignments in a tree indexed by the extended
@@ -375,15 +373,38 @@ makeEPLeaf :: a -> EPExps -> EPTree a
 makeEPLeaf x eps = Node { rootLabel = EPNL { eplabel = eps, nodelabel = x }
                         , subForest = [] }
 
--- | Inserts a node to an 'EPForest'.
-insertEPNodeToForest :: EPTree a -- ^ Node to insert
+-- | Inserts a node to an 'EPForest'. We need to check if the new node subsumes
+-- a nonempty subset of the given forrest.
+insertEPNodeToForest :: EPTree a -- ^ Node to insert, assumed to have an
+                                 -- empty subforest (the subforest is ignored)
                      -> EPForest a -- ^ Forest to insert the given node in
                      -> EPForest a -- ^ Resulting forest
 insertEPNodeToForest n [] = [n]
-insertEPNodeToForest n (t:ft) = case insertEPNode n t of
-                                  Just t' -> t': ft
-                                  Nothing -> t : insertEPNodeToForest n ft
-    
+insertEPNodeToForest n ft@(t:rft) = 
+    if null ssf then
+        case insertEPNode n t of
+          Just t' -> t': rft
+          Nothing -> t : insertEPNodeToForest n rft
+    else n{subForest = ssf}:nssf
+        where (ssf, nssf) = getSubsumedForest (eplabel $ rootLabel n) ft
+
+-- | Splits the given forest to a by the 'EPExps' subsumed part and a not
+-- subsumed part. Errors are reported in situations which would lead to invalid
+-- forests when used in the 'insertEPNodeToForest'-method.
+getSubsumedForest :: EPExps -- ^ Expression to be checked against the forest
+                  -> EPForest a -- ^ Forest to be checked for being subsumed
+                  -> (EPForest a, EPForest a) -- ^ Subsumed forest and the rest
+getSubsumedForest eps ft = partition p ft where
+    ep2 = eplabel . rootLabel
+    p t = case compareEPs eps (ep2 t) of
+            Comparable EQ ->
+                error $ concat [ "getSubsumedForest: equality "
+                               , "overlap", show eps, " = ", show (ep2 t) ]
+            Incomparable Overlap ->
+                error $ concat [ "getSubsumedForest: overlap "
+                               , show eps, " = ", show (ep2 t) ]
+            Comparable GT -> True
+            _ -> False
 
 -- | Inserts a node to an 'EPTree' and if the nodes are disjoint
 --   'Nothing' is returned. Both insert methods return an error if an
@@ -515,5 +536,6 @@ prettyPartition f (Partition l) = braces $ sepByCommas $ map (braces . g) l
     where g (r, x) = f x <+> text "|" <+> prettyEPRange r
 
 
-instance Pretty a => Show (Partition a) where
-    show = show . prettyPartition pretty
+instance Show a => Show (Partition a) where
+    show = show . prettyPartition (text . show)
+

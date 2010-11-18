@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Test environment for CSL
@@ -60,8 +60,11 @@ import qualified Data.Set as Set
 -- * general test functions
 -- ----------------------------------------------------------------------
 
+-- TODO: check with inherited sentences (flange2)!
+-- TODO: build a new OpString entry for elim constants (see Analysis.hs)
 testspecs =
     [ (44, ("/CSL/EN1591.het", "EN1591"))
+    , (45, ("/CSL/flange2.het", "Flange2"))
     ]
 
 l1 :: Int -> IO (Sign, [Named CMD])
@@ -188,8 +191,6 @@ let sgm = dependencySortAS grdm
 
 getDependencyRelation grdm
 
-analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
-
 :l CSL/InteractiveTests.hs
 :m +CSL.Analysis
 
@@ -207,6 +208,23 @@ foldForest (\ x y z -> x ++ [(y, length z)]) [] frst
 
 
 -}
+
+crossprod l [] = map (:[]) l
+crossprod l l' = concatMap (\ x -> map (:x) l) l'
+
+{-
+let a = [(-5)..5]
+let b = [[]]
+let b = []
+crossprod a b
+[x : y | x <- a, y <- b]
+-}
+ 
+
+-- irreflexive triangle of a list l: for i < j . (l_i, l_j)
+irrTriang :: [a] -> [(a,a)]
+irrTriang [] = []
+irrTriang (x:l) = map ((,) x) l ++ irrTriang l
 
 -- * Model Generation
 frmAround "" = ""
@@ -276,8 +294,8 @@ checkForPartition l = execSMTComparer vEnv1 $ f g l where
 part1 :: Partition Int
 part1 = AllPartition 10
 
-part2 :: Partition Char
-part2 = Partition $ zip el11 ['a' ..]
+part2 :: Partition Int
+part2 = Partition $ zip el11 [33 ..]
 
 part3 :: Partition Int
 part3 = Partition $ zip el12 [1 ..]
@@ -285,15 +303,73 @@ part3 = Partition $ zip el12 [1 ..]
 part4 :: Partition Int
 part4 = Partition $ zip el13 [91 ..]
 
+parts = [part1, part2, part3, part4]
+
 refinePart a b = execSMTComparer vEnv1 $ refinePartition a b
 
+allRefin = do
+  m1 <- mapM (uncurry refinePart) $ irrTriang parts
+  m2 <- mapM (uncurry refinePart) $ irrTriang m1
+  return (m1, m2)
 
-analyzeCSL :: [Named CMD] -> IO ([(String, Guarded EPRange)], [Named CMD])
-analyzeCSL ncl = do
-  let (as, progs) = splitAS ncl
-  elimAS  <- elimEPs $ dependencySortAS as
-  return (elimAS, progs)
+allRShow = do
+  (a, b) <- allRefin
+  showPart1s a
+  putStrLn "=============================================="
+  showPart1s b
 
+allRCmp = do
+  (a, b) <- allRefin
+  cmpRg1s a
+  putStrLn "=============================================="
+  cmpRg1s b
+
+
+showPart1s :: Show a => [Partition a] -> IO ()
+showPart1s = let f x = showPart1 x >> putStrLn "==="
+             in  mapM_ f
+
+showPartX :: Show a => (EPRange -> IO ()) -> Partition a -> IO ()
+showPart1 :: Show a => Partition a -> IO ()
+showPart2 :: Show a => Partition a -> IO ()
+
+showPartX _ (AllPartition x) = do
+  putStrLn $ show x
+  putStrLn "All\n\n"
+
+showPartX fM (Partition l) =
+  let f (re, x) = do
+        putStrLn $ show x
+        fM re
+        putStrLn "\n"
+  in mapM_ f l
+
+showPart1 = showPartX pM1
+showPart2 = showPartX pM2
+
+class HasRanges a where
+    getRanges :: a -> [EPRange]
+
+instance HasRanges (Partition a) where
+    getRanges (AllPartition x) = []
+    getRanges (Partition l) = map fst l
+
+instance HasRanges a => HasRanges [a] where
+    getRanges = concatMap getRanges
+
+instance HasRanges (Guarded EPRange) where
+    getRanges = map range . guards
+
+instance HasRanges (String, Guarded EPRange) where
+    getRanges = map range . guards . snd
+
+cmpRg1 :: HasRanges a => a -> IO ()
+cmpRg1 = putStrLn . concat . map (printModel modelRg1) . getRanges
+
+cmpRg1s :: HasRanges a => [a] -> IO ()
+cmpRg1s = let f = putStrLn . concat . map (printModel modelRg1) . getRanges
+              g x = f x >> putStrLn "==="
+          in mapM_ g
 
 -- * elim proc testing
 
@@ -306,6 +382,10 @@ let sgm = dependencySortAS grdm
 -}
 
 
+-- elimTestInit :: Int -> [(String, Guarded EPRange)] -> IO [Guard EPRange]
+elimTestInit i gl = do
+  let grd = (guards $ snd $ head gl)!!i
+  execSMTComparer vEnv $ eliminateGuard Map.empty grd
 
 pgX :: (EPRange -> IO a) -> Guard EPRange -> IO ()
 pgX fM grd = do
@@ -344,7 +424,16 @@ testElim :: Int -> IO [(String, Guarded EPRange)]
 testElim i = prepareAS i >>= elimEPs
 
 prepareAS :: Int -> IO [(String, Guarded EPRange)]
-prepareAS = liftM (dependencySortAS . fst . splitAS) . sens
+prepareAS = liftM (dependencySortAS . fmap analyzeGuarded . fst . splitAS) . sens
+
+-- get the first guarded-entry from the AS
+-- grdd <- fmap (snd . head) $ getAS (-821)
+
+getAS :: Int -> IO [(String, Guarded [EXTPARAM])]
+getAS = liftM (Map.toList . fst . splitAS) . sens
+
+getASana :: Int -> IO [(String, Guarded EPRange)]
+getASana = liftM (Map.toList . fmap analyzeGuarded . fst . splitAS) . sens
 
 elimEPs :: [(String, Guarded EPRange)] -> IO [(String, Guarded EPRange)]
 elimEPs = execSMTComparer vEnv . epElimination

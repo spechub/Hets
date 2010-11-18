@@ -221,6 +221,7 @@ data Guard a = Guard { range :: a
                      , filtered :: Set.Set String
                      , constrained :: Set.Set String }
 
+
 prettyGuard :: (a -> Doc) -> Guard a -> Doc
 prettyGuard f g = f (range g) <+> text "-->" <+> pretty (definition g)
 
@@ -237,6 +238,21 @@ instance Pretty a => Show (Guard a) where
 -- and a list of guard-expressions
 data Guarded a = Guarded { argvars :: [String]
                          , guards :: [Guard a] }
+
+{- Comment it in if needed later
+
+undefinedGuard :: String -> a -> Guard a
+undefinedGuard s x = Guard { range = x
+                           , definition = err
+                           , assName = err
+                           , filtered = err
+                           , constrained = err }
+    where err = error $ "undefinedGuard: " ++ s
+
+undefinedGuarded :: String -> a -> Guarded a
+undefinedGuarded s x = Guarded { argvars = []
+                               , guards = [undefinedGuard s x] }
+-}
 
 
 prettyGuarded :: (a -> Doc) -> Guarded a -> Doc
@@ -279,13 +295,12 @@ addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
 -}
 
 -- | Splits the Commands into the AssignmentStore and a program sequence
-splitAS :: [Named CMD] -> (GuardedMap EPRange, [Named CMD])
+splitAS :: [Named CMD] -> (GuardedMap [EXTPARAM], [Named CMD])
 splitAS cl =
     let f nc (m,l) = case sentence nc of
                        Ass c def -> (addAssignment (senAttr nc) c def m, l)
                        _ -> (m, nc:l)
-        (cm, pr) = foldr f (Map.empty, []) cl
-    in (Map.map analyzeGuarded cm, pr)
+    in foldr f (Map.empty, []) cl
 
 
 -- | Transforms the old guards where inclusion overlapping was allowed into
@@ -320,6 +335,9 @@ foldForest f = foldl g where
 
 -- ** Dependency Sorting
 
+-- | Returns a dependency sorted list of constants with their guarded
+-- definitions. Requires as input an analyzed Assignment store:
+-- @(fmap analyzeGuarded . fst . splitAS)@ produces an adequate input.
 dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 dependencySortAS grdm = mapMaybe f $ topsortDirect $ getDependencyRelation grdm
     where f x = fmap ((,) x) $ Map.lookup x grdm
@@ -407,24 +425,37 @@ epElimination = f Map.empty
 eliminateGuard :: CompareIO m => GuardedMap EPRange -> Guard EPRange
                -> m [Guard EPRange]
 eliminateGuard m grd = do
-    let err s = error $ "eliminateGuard: lookup failed for " ++ s
-        f s epl _ = restrictPartition (range grd) $ partitionFromGuarded epl
-                    $ Map.findWithDefault (err s) s m
-        err2 s = error $ "eliminateGuard: pim-lookup failed for " ++ s
-        fldOp pim _ (OpString s) epl args rg =
-            let i = Map.findWithDefault (err2 s) (mkPIConst s epl) pim
-            in Op (OpString $ s ++ show i) [] args rg
-        fldOp _ v _ _ _ _ = v
-        h pim = foldTerm passRecord{ foldOp = fldOp pim } $ definition grd
+    let f s epl _ = restrictPartition (range grd)
+                    $ case Map.lookup s m of
+                        Just grdd -> partitionFromGuarded epl grdd
+                        Nothing -> AllPartition 0
+        h pim = foldTerm passRecord{ foldOp = const $ mappedElimConst pim }
+                $ definition grd
         g (er, pim) = grd{ range = er, definition = h pim }
     partMap <- mapUserDefined f $ definition grd
     rePart <- refineDefPartitions partMap
     case rePart of
-      AllPartition x -> return [g (starRange, x)]
+      AllPartition x -> return [g (range grd, x)]
       Partition l ->
           -- for each entry in the refined partition create a new guard
           return $ map g l
 
+
+-- | Helper function of 'eliminateGuard' for substitution of operatornames
+-- by mapped entries given in the @'Map.Map' 'PIConst' 'Int'@.
+mappedElimConst :: (Map.Map PIConst Int)
+                -> OPID  -- ^ the original operator id
+                -> [EXTPARAM] -- ^ the extended parameter instantiation
+                -> [EXPRESSION] -- ^ the new arguments
+                -> Range -- ^ the original range
+                -> EXPRESSION
+mappedElimConst m oi e al rg = Op newOi [] al rg
+    where err = error $ "mappedElimConst: No entry for " ++ show oi
+          f pic = let i = Map.findWithDefault err pic m
+                  in if i > 0 then "__" ++ show i else ""
+          newOi = case oi of
+                    OpString s -> OpString $ s ++ (f $ mkPIConst s e)
+                    _ -> oi
 
 -- | Returns the simplified partition representation of the 'Guarded' object
 -- probably instantiated by the provided extended parameter list.
