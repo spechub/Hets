@@ -386,13 +386,13 @@ createFirstLevel :: DGraph -> [Node] -> (DGraph, [([Node], Node, G_sign)])
 createFirstLevel dg nds =
   let
    combs = getAllCombinations 2 nds
-   init_level = map (\ [x, y] -> let
+   init_level = map (\ l -> let  [x, y] = l
                                  signx = signOf $ dgn_theory (labDG dg x)
                                  signy = signOf $ dgn_theory (labDG dg y)
                                  n_sign = getIntersectionOfAll [signx
                                                                , signy]
                                 in
-                                 ([x, y], n_sign)) combs
+                                 (l, n_sign)) combs
    n_empty = filter (\ (_, sign@(G_sign lid _ _)) ->
                                sign /= emptyG_sign (Logic lid)) init_level
   in
