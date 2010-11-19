@@ -120,15 +120,17 @@ szsOutput = blank (string "SZS") >> blank (string "output")
 
 tptpModel :: Parser [(String, SPTerm)]
 tptpModel = do
-  manyTill anyChar
+  _ <- manyTill anyChar
     (try (szsOutput >> blank (string "start"))
      <|> try (blank $ string "START OF MODEL"))
-  manyTill anyChar newline
+  _ <- manyTill anyChar newline
   skipAll
   ts <- many1 (formAnno << skipAll)
   (szsOutput >> blank (string "end"))
     <|> (string "END OF MODEL" >> return ())
-  return $ map (\ (FormAnno _ (Name n) _ t _) -> (n, t)) ts
+  return $ foldr (\ t l -> case t of
+    FormAnno _ (Name n) _ e _ -> (n, e) : l
+    _ -> l) [] ts
 
 printable :: Char -> Bool
 printable c = let i = ord c in i >= 32 && i <= 126
@@ -207,13 +209,12 @@ upperWord :: Parser String
 upperWord = luWord upper
 
 singleQuoted :: Parser String
-singleQuoted = do
-  let quote = '\''
+singleQuoted =
+  let quote = '\'' in fmap concat $
   char quote
-  s <- many1 $ tryString "\\'" <|> single
-       (satisfy $ \ c -> printable c && c /= quote)
-  char quote
-  return $ concat s
+  >> many1 (tryString "\\'" <|> single
+       (satisfy $ \ c -> printable c && c /= quote))
+  << char quote
 
 formKind :: Parser FormKind
 formKind = choice $ map (\ k -> key (tryString $ show k) >> return k)
@@ -279,11 +280,8 @@ real = do
   return $ d ++ f ++ e
 
 formData :: Parser GenData
-formData = do
-  char '$'
-  k <- formKind
-  f <- parens form
-  return $ GenFormData $ FormData k f
+formData =
+  liftM GenFormData $ liftM2 FormData (char '$' >> formKind) $ parens form
 
 orOp :: Parser ()
 orOp = keyChar '|'
