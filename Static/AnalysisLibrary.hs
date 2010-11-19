@@ -43,6 +43,7 @@ import Common.ResultT
 import Common.LibName
 import Common.Id
 import Common.IO
+import qualified Common.Unlit as Unlit
 
 import Driver.Options
 import Driver.ReadFn
@@ -87,7 +88,8 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
           return $ fail $ "no matching source file for '" ++ fname ++ "' found."
         else do
-        input <- readEncFile (ioEncoding opts) file
+        inputLit <- readEncFile (ioEncoding opts) file
+        let input = (if unlit opts then Unlit.unlit else id) inputLit
         putIfVerbose opts 2 $ "Reading file " ++ file
         if takeExtension file /= ('.' : show TwelfIn)
            then runResultT $
