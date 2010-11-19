@@ -87,8 +87,8 @@ flatHide = mkFlatStr "hiding"
 flatHet :: DGRule
 flatHet = mkFlatStr "heterogeneity"
 
--- given a node in a library, gives the node at the end of the reference chain
--- in the library
+{- given a node in a library, gives the node at the end of the reference chain
+in the library -}
 lookUpReferenceChain :: LibEnv -> LibName -> Node -> (LibName, Node)
 lookUpReferenceChain lib_Env libName nd = let
   dg = lookupDGraph libName lib_Env
@@ -114,8 +114,8 @@ dgFlatImports libEnv ln dg = let
    updateNode lib_Env l_n n =
     let
      labRf = labDG (lookupDGraph l_n lib_Env) n
-      -- have to consider references here. computeTheory is applied
-      -- to the node at the end of the chain of references only.
+      {- have to consider references here. computeTheory is applied
+      to the node at the end of the chain of references only. -}
     in case computeTheory lib_Env l_n n of
          Just ndgn_theory ->
            SetNodeLab labRf (n, labRf {dgn_theory = ndgn_theory})
@@ -137,8 +137,8 @@ dgFlatImports libEnv ln dg = let
 libFlatImports :: LibEnv -> Result LibEnv
 libFlatImports lib = return $ Map.mapWithKey (dgFlatImports lib) lib
 
--- this function performs flattening of imports with renamings
--- links for a given developement graph
+{- this function performs flattening of imports with renamings
+links for a given developement graph -}
 dgFlatRenamings :: LibEnv -> LibName -> DGraph -> DGraph
 dgFlatRenamings lib_Env l_n dg =
   let
@@ -148,8 +148,8 @@ dgFlatRenamings lib_Env l_n dg =
        DGEdgeType { edgeTypeModInc = GlobalDef, isInc = False} -> True
        _ -> False ) l_edges
    fin_dg = applyUpdDG renamings dg
-  -- no need to care about references as each node
-  -- is preserved during flattening.
+  {- no need to care about references as each node
+  is preserved during flattening. -}
   in computeDGraphTheories lib_Env fin_dg
     where
      updateDGWithChanges :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -208,8 +208,8 @@ dgFlatHiding dg = let
    hids = filter (\ (_, _, x) -> (case dgl_type x of
                                          HidingDefLink -> True
                                          _ -> False)) $ labEdgesDG dg
-  -- no need to care about references either, as nodes are preserved
-  -- after flattening, as well as references.
+  {- no need to care about references either, as nodes are preserved
+  after flattening, as well as references. -}
    n_dg = changesDGH dg $ map DeleteEdge hids
   in groupHistory dg flatHide n_dg
 
@@ -217,8 +217,8 @@ dgFlatHiding dg = let
 libFlatHiding :: LibEnv -> Result LibEnv
 libFlatHiding = fmap (Map.map dgFlatHiding) . normalFormLibEnv
 
--- this function performs flattening of heterogeniety
--- for a given developement graph
+{- this function performs flattening of heterogeniety
+for a given developement graph -}
 dgFlatHeterogen :: LibEnv -> LibName -> DGraph -> DGraph
 dgFlatHeterogen libEnv ln dg = let
   het_comorph = filter
@@ -234,8 +234,8 @@ dgFlatHeterogen libEnv ln dg = let
    updateNodes lib_Env l_n nds = case nds of
     [] -> lib_Env
     (hd, isHetDef) : tl -> let
-      -- have to consider references here. computeTheory is applied to the
-      -- node at the end of the chain of references only.
+      {- have to consider references here. computeTheory is applied to the
+      node at the end of the chain of references only. -}
       (lname, nd) = lookUpReferenceChain lib_Env l_n hd
       odg = lookupDGraph lname lib_Env
       labRf = labDG odg nd
@@ -253,16 +253,16 @@ libFlatHeterogen :: LibEnv -> Result LibEnv
 libFlatHeterogen lib =
   return $ Map.mapWithKey (dgFlatHeterogen lib) lib
 
--- this function performs flattening of non-disjoint unions for the given
--- DGraph
+{- this function performs flattening of non-disjoint unions for the given
+DGraph -}
 dgFlatDUnions :: LibEnv -> DGraph -> DGraph
 dgFlatDUnions le dg =
  let
   all_nodes = nodesDG dg
   imp_nds = filter (\ x -> length (innDG dg x) > 1) all_nodes
- -- lower_nodes = filter (\ x -> (outDG dg x == [])) (nodesDG dg)
- -- as previously, no need to care about reference nodes,
- -- as previous one remain same.
+ {- lower_nodes = filter (\ x -> (outDG dg x == [])) (nodesDG dg)
+ as previously, no need to care about reference nodes,
+ as previous one remain same. -}
  in computeDGraphTheories le $ applyToAllNodes dg imp_nds
 
 -- this funciton given a list og G_sign returns intersection of them
@@ -283,8 +283,8 @@ getIntersectionOfAll signs =
             if n_signtr == emptyG_sign (Logic lid2) then n_signtr
             else getIntersectionOfAll (n_signtr : tl)
 
--- this function given a list of all possible combinations of nodes
--- of a given length
+{- this function given a list of all possible combinations of nodes
+of a given length -}
 getAllCombinations :: Int -> [Node] -> [[Node]]
 getAllCombinations 0 _ = [ [] ]
 getAllCombinations n xs = [ y : ys | y : xs' <- tails xs
@@ -306,8 +306,8 @@ searchForMatch _ [] = Nothing
 searchForMatch l (tripl@(nds, _, _) : tl) =
   if containedInList l nds then Just tripl else searchForMatch l tl
 
- -- take a combination of nodes, previous level,
- -- and get the signature for the next level
+ {- take a combination of nodes, previous level,
+ and get the signature for the next level -}
 matchCombinations :: [Node] -> [([Node], Node, G_sign)]
                   -> Maybe ([Node], G_sign)
 matchCombinations [] _ = Nothing
@@ -358,17 +358,17 @@ createLinks dg (nd, lb) (hd : tl) =
   in
    createLinks n_dg (nd, lb) tl
 
--- given an element in the level and a lower link, function searches
--- elements in the given level, which are suitable for inserting a link
--- connecting given element.
+{- given an element in the level and a lower link, function searches
+elements in the given level, which are suitable for inserting a link
+connecting given element. -}
 searchForLink :: ([Node], Node, G_sign) -> [([Node], Node, G_sign)] -> [Node]
 searchForLink el@(nds1, _, _) down_level = case down_level of
   [] -> []
   (nds2, nd2, _) : tl -> [ nd2 | containedInList nds2 nds1 ]
                          ++ searchForLink el tl
 
--- given two levels of the graph, insert links between them, so that the
--- signatures are imported properly
+{- given two levels of the graph, insert links between them, so that the
+signatures are imported properly -}
 linkLevels :: DGraph -> [([Node], Node, G_sign)] -> [([Node], Node, G_sign)]
            -> DGraph
 linkLevels dg up_level down_level = case up_level of
@@ -380,19 +380,18 @@ linkLevels dg up_level down_level = case up_level of
            in
             linkLevels n_dg tl down_level
 
--- given a list of the lower nodes, gives a DGraph with a first level
--- of nodes inserted in this graph
+{- given a list of the lower nodes, gives a DGraph with a first level
+of nodes inserted in this graph -}
 createFirstLevel :: DGraph -> [Node] -> (DGraph, [([Node], Node, G_sign)])
 createFirstLevel dg nds =
   let
    combs = getAllCombinations 2 nds
-   init_level = map (\ l -> let  [x, y] = l
-                                 signx = signOf $ dgn_theory (labDG dg x)
-                                 signy = signOf $ dgn_theory (labDG dg y)
-                                 n_sign = getIntersectionOfAll [signx
-                                                               , signy]
-                                in
-                                 (l, n_sign)) combs
+   init_level = map (\ l -> let
+                         [x, y] = l
+                         signx = signOf $ dgn_theory (labDG dg x)
+                         signy = signOf $ dgn_theory (labDG dg y)
+                         n_sign = getIntersectionOfAll [signx, signy]
+                         in (l, n_sign)) combs
    n_empty = filter (\ (_, sign@(G_sign lid _ _)) ->
                                sign /= emptyG_sign (Logic lid)) init_level
   in
@@ -410,8 +409,8 @@ createFirstLevel dg nds =
          in
           (lnk_dg, atch_level)
 
--- given a level of nodes and a graph, constructs upper level,
--- inserting the nodes of the new level to the DGraph
+{- given a level of nodes and a graph, constructs upper level,
+inserting the nodes of the new level to the DGraph -}
 createNewLevel :: DGraph -> [Node] -> [([Node], Node, G_sign)]
                -> (DGraph, [([Node], Node, G_sign)])
 createNewLevel c_dg nds tripls = case tripls of
@@ -432,8 +431,8 @@ createNewLevel c_dg nds tripls = case tripls of
            in
             (lnk_dg, atch_level)
 
- -- iterate the procedure for all levels
- -- (the level passed is already inserted in the graph)
+ {- iterate the procedure for all levels
+ (the level passed is already inserted in the graph) -}
 iterateForAllLevels :: DGraph -> [Node] -> [([Node], Node, G_sign)] -> DGraph
 iterateForAllLevels i_dg nds init_level =
   if length init_level < 2 then i_dg else
@@ -451,16 +450,16 @@ applyToAllNodes a_dg nds = case nds of
             final_dg = iterateForAllLevels init_dg inc_nds init_level
            in
             applyToAllNodes final_dg tl
--- given a lower level of nodes, gives upper level of nodes,
--- which are ingoing nodes for the lower level
+{- given a lower level of nodes, gives upper level of nodes,
+which are ingoing nodes for the lower level -}
 filterIngoing :: DGraph -> [Node] -> [Node]
 filterIngoing dg nds = case nds of
   [] -> []
   hd : tl -> let ind = map (\ (x, _, _) -> x) (innDG dg hd) in
              ind ++ filterIngoing dg (ind ++ tl)
 
--- this function takes a node and performs flattening
--- of non-disjoint unions for the ingoing tree of nodes to the given node
+{- this function takes a node and performs flattening
+of non-disjoint unions for the ingoing tree of nodes to the given node -}
 singleTreeFlatDUnions :: LibEnv -> LibName -> Node -> Result LibEnv
 singleTreeFlatDUnions libEnv libName nd = let
   dg = lookupDGraph libName libEnv
@@ -468,7 +467,7 @@ singleTreeFlatDUnions libEnv libName nd = let
   n_dg = applyToAllNodes dg in_nds
   in return $ Map.insert libName n_dg libEnv
 
--- this functions performs flattening of
--- non-disjoint unions for the whole library
+{- this functions performs flattening of
+non-disjoint unions for the whole library -}
 libFlatDUnions :: LibEnv -> Result LibEnv
 libFlatDUnions le = return $ Map.map (dgFlatDUnions le) le
