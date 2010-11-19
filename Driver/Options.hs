@@ -283,7 +283,7 @@ makeOpts opts flg = case flg of
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
-    Unlit -> opts { serve = True }
+    Unlit -> opts { unlit = True }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
