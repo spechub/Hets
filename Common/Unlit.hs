@@ -15,19 +15,16 @@ module Common.Unlit (unlit) where
 import Data.List
 
 unlit :: String -> String
-unlit s = let cs = getCode False $ lines s in
+unlit s = let cs = getCode True $ lines s in
   if all null cs then "" else unlines cs
 
 -- keep code positions intact
 getCode :: Bool -> [String] -> [String]
-getCode c l = case l of
+getCode d l = case l of
   [] -> []
-  s : r
-    | c && isPrefixOf "\\end{code}" s
-      -> "" : getCode False r
-    | c -> s : getCode c r
-    | isPrefixOf "\\begin{code}" s
-      -> "" : getCode True r
-    | otherwise -> (case s of
-      '>' : t -> ' ' : t
-      _ -> "") : getCode c r
+  s : r -> if not d && isPrefixOf "\\end{code}" s
+           || d && isPrefixOf "\\begin{code}" s
+      then "" : getCode (not d) r
+      else (case s of
+      '>' : t | d -> ' ' : t
+      _ -> if d then "" else s) : getCode d r
