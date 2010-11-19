@@ -521,9 +521,10 @@ simpProg :: Sign () e -> Program -> Program
 simpProg sig =
   foldProg (mapProg (simplifyTerm dummyMin (const id) sig)
   $ simplifySen dummyMin (const id) sig)
-    { foldBlock = \ (Ranged (Block vs p) r) _ _ ->
-                  Ranged (Block vs $ simpProg
-                           (execState (mapM_ addVars vs) sig) p) r }
+    { foldBlock = \ (Ranged b r) _ _ -> case b of
+                  Block vs p -> Ranged (Block vs $ simpProg
+                           (execState (mapM_ addVars vs) sig) p) r
+                  _ -> error "VSE.Ana.simpProg" }
 
 simpDefproc :: Sign () Procs -> Defproc -> Defproc
 simpDefproc sign (Defproc k i vs p r) =
@@ -551,9 +552,11 @@ freeProgVars sig = let ft = freeTermVars sig in
   { foldAssign = \ _ v t -> (case Map.lookup v $ varMap sig of
       Just s -> Set.insert (v, s)
       Nothing -> Set.insert (v, sortOfTerm t)) $ ft t
-  , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
-      Set.difference (freeProgVars (execState (mapM_ addVars vs) sig) p)
-        $ Set.fromList $ flatVAR_DECLs vs }
+  , foldBlock = \ (Ranged b _) _ _ -> case b of
+      Block vs p ->
+        Set.difference (freeProgVars (execState (mapM_ addVars vs) sig) p)
+          $ Set.fromList $ flatVAR_DECLs vs
+      _ -> error "VSE.Ana.freeProgVars" }
 
 freeDlVars :: Sign Dlformula e -> Dlformula -> VarSet
 freeDlVars sig (Ranged f _) = case f of
