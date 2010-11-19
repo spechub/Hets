@@ -161,7 +161,9 @@ anaLibFile lgraph opts topLns libenv initDG ln =
     Nothing -> do
             putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
             res <- anaLibFileOrGetEnv lgraph
-              (if recurse opts then opts else opts { outtypes = [] })
+              (if recurse opts then opts else opts
+                      { outtypes = []
+                      , unlit = False })
               (Set.insert ln topLns) libenv initDG ln $ libNameToFile ln
             putMessageIORes opts 1 $ "... loaded " ++ lnstr
             return res
