@@ -73,7 +73,7 @@ bracket s = "[" ++ s ++ "]"
 verboseS, intypeS, outtypesS, skipS, structS, transS, viewS,
      guiS, libdirsS, outdirS, amalgS, specS, recursiveS,
      interactiveS, modelSparQS, connectS, xmlS, listenS,
-     applyAutomaticRuleS, normalFormS :: String
+     applyAutomaticRuleS, normalFormS, unlitS :: String
 
 modelSparQS = "modelSparQ"
 verboseS = "verbose"
@@ -95,6 +95,7 @@ xmlS = "xml"
 listenS = "listen"
 applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
+unlitS = "unlit"
 
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
@@ -152,6 +153,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
   , ioEncoding :: Enc
+  , unlit :: Bool
   , serve :: Bool
   , listen :: Int }
 
@@ -185,6 +187,7 @@ defaultHetcatsOpts = HcOpt
   , computeNormalForm = False
   , dumpOpts = []
   , ioEncoding = Latin1
+  , unlit = False
   , serve = False
   , listen = -1 }
 
@@ -203,6 +206,7 @@ instance Show HetcatsOpts where
     ++ case ioEncoding opts of
          Latin1 -> ""
          Utf8 -> showEqOpt "encoding" "utf8"
+    ++ (if unlit opts then showOpt unlitS else "")
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
@@ -246,6 +250,7 @@ data Flag =
   | XML
   | Dump String
   | IOEncoding Enc
+  | Unlit
   | Serve
   | Listen Int
 
@@ -278,6 +283,7 @@ makeOpts opts flg = case flg of
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
+    Unlit -> opts { serve = True }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -506,6 +512,7 @@ options = let
       "dump various strings"
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
       "latin1 (default) or utf8 encoding"
+    , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
@@ -808,13 +815,10 @@ collectDirs fs = do
 
 collectVerbosity :: [Flag] -> [Flag]
 collectVerbosity fs =
-    let (vs, fs') = partition isVerb fs
-        verbosity = (sum . map (\ (Verbose x) -> x)) vs
-        isVerb (Verbose _) = True
-        isVerb _ = False
-        vfs = Verbose verbosity : fs'
-    in if not $ null [() | Quiet <- fs'] then Verbose 0 : fs' else
-       if null vs then Verbose 1 : fs' else vfs
+    let (v, fs') = foldr (\ f (n, rs) -> case f of
+           Verbose x -> (if n < 0 then x else n + x, rs)
+           _ -> (n, f : rs)) (-1, []) fs
+    in if v < 0 || not (null [() | Quiet <- fs']) then fs' else Verbose v : fs'
 
 collectOutTypes :: [Flag] -> [Flag]
 collectOutTypes fs =
