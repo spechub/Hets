@@ -262,13 +262,15 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
         resType s (Qual_op_name _ t _) = res_OP_TYPE t == s
         getIndex s = fromMaybe (-1) $ findIndex (== s) sortList
         addIndices (Op_name _) =
-          error "CASL/StaticAna: Internal error in function addIndices"
+          error "CASL.StaticAna.addIndices"
         addIndices os@(Qual_op_name _ t _) =
             (os, map getIndex $ args_OP_TYPE t)
         collectOps s =
           Constraint s (map addIndices $ filter (resType s) allSyms) s
         constrs = map collectOps sortList
-        resList = Set.fromList $ map (\ (Qual_op_name _ t _) -> res_OP_TYPE t)
+        resList = Set.fromList $ map (\ o -> case o of
+                    Qual_op_name _ t _ -> res_OP_TYPE t
+                    Op_name _ -> error "CASL.StaticAna.resList")
                   allSyms
         noConsList = Set.difference sorts resList
         voidOps = Set.difference resList sorts
@@ -321,11 +323,6 @@ getGenSig si = case si of
                            Set.unions (map (getOps . item) al))
       Datatype_items _ dl _ -> getDataGenSig dl
       _ -> emptyGenAx
-
-isPartAlt :: ALTERNATIVE -> Bool
-isPartAlt a = case a of
-  Subsorts _ _ -> False
-  Alt_construct p _ _ _ -> p == Partial
 
 isConsAlt :: ALTERNATIVE -> Bool
 isConsAlt a = case a of
@@ -636,15 +633,17 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
        case gk of
          Free -> do
            let allts = map item al
-               pfs = filter isPartAlt allts
                (alts, subs) = partition isConsAlt allts
                sbs = concatMap getAltSubsorts subs
                comps = map (getConsType s) alts
                ttrips = map ((\ (a, vs, t, ses) -> (a, vs, t, catSels ses))
                                . selForms1 "X" ) comps
                sels = concatMap (\ (_, _, _, ses) -> ses) ttrips
-           addDiags $ map (\ (Alt_construct _ i _ _) -> mkDiag Error
-               "illegal free partial constructor" i) pfs
+           addDiags $ foldr (\ a ds -> case a of
+             Alt_construct p i _ _ | p == Partial ->
+               mkDiag Error
+               "illegal free partial constructor" i : ds
+             _ -> ds) [] allts
            addSentences $ map makeInjective
                             $ filter (\ (_, _, ces) -> not $ null ces)
                               comps
@@ -847,8 +846,8 @@ basicAnalysis :: (GetRange f, Pretty f, FreeVars f)
               -> Mix b s f e -- ^ for mixfix analysis
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
   -> Result (BASIC_SPEC b s f, ExtSign (Sign f e) Symbol, [Named (FORMULA f)])
-            -- ^ (BS with analysed mixfix formulas for pretty printing,
-            -- differences to input Sig,accumulated Sig,analysed Sentences)
+            {- ^ (BS with analysed mixfix formulas for pretty printing,
+            differences to input Sig,accumulated Sig,analysed Sentences) -}
 basicAnalysis mef anab anas mix (bs, inSig, ga) =
     let allIds = unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
                  : getExtIds mix (extendedInfo inSig) :
