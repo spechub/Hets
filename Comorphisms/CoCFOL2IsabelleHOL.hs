@@ -12,7 +12,7 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from CoCASL to Isabelle-HOL.
 -}
 
-module Comorphisms.CoCFOL2IsabelleHOL (CoCFOL2IsabelleHOL(..)) where
+module Comorphisms.CoCFOL2IsabelleHOL (CoCFOL2IsabelleHOL (..)) where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -54,13 +54,14 @@ instance Comorphism CoCFOL2IsabelleHOL
                Symbol RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic CoCFOL2IsabelleHOL = CoCASL
     sourceSublogic CoCFOL2IsabelleHOL = SL.cFol
     targetLogic CoCFOL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory CoCFOL2IsabelleHOL = transTheory sigTrCoCASL formTrCoCASL
+    map_theory CoCFOL2IsabelleHOL =
+      return . transTheory sigTrCoCASL formTrCoCASL
     map_morphism = mapDefaultMorphism
     map_sentence CoCFOL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign (typeToks sign)

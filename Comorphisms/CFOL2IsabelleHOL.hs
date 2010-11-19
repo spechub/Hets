@@ -13,7 +13,7 @@ The embedding comorphism from CASL to Isabelle-HOL.
 -}
 
 module Comorphisms.CFOL2IsabelleHOL
-    ( CFOL2IsabelleHOL(..)
+    ( CFOL2IsabelleHOL (..)
     , transTheory
     , transVar
     , typeToks
@@ -52,12 +52,12 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.Id
 import Common.ProofTree
-import Common.Result
 import Common.Utils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Data.List as List
+import Data.List
+import Data.Maybe
 
 -- | The identity of the comorphism
 data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving Show
@@ -90,13 +90,13 @@ instance Comorphism CFOL2IsabelleHOL
                Symbol RawSymbol ProofTree
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic CFOL2IsabelleHOL = CASL
     sourceSublogic CFOL2IsabelleHOL = SL.cFol
     targetLogic CFOL2IsabelleHOL = Isabelle
     mapSublogic cid sl = if sl `isSubElem` sourceSublogic cid
                        then Just () else Nothing
-    map_theory CFOL2IsabelleHOL = transTheory sigTrCASL formTrCASL
+    map_theory CFOL2IsabelleHOL = return . transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
     map_sentence CFOL2IsabelleHOL sign =
       return . mapSen formTrCASL sign (typeToks sign)
@@ -104,24 +104,22 @@ instance Comorphism CFOL2IsabelleHOL
     is_weakly_amalgamable CFOL2IsabelleHOL = True
     isInclusionComorphism CFOL2IsabelleHOL = True
 
----------------------------- Signature -----------------------------
+-- -------------------------- Signature -----------------------------
 baseSign :: BaseSig
 baseSign = Main_thy
 
 typeToks :: CASL.Sign.Sign f e -> Set.Set String
-typeToks = Set.map (\ s -> showIsaTypeT s baseSign) . sortSet
+typeToks = Set.map (`showIsaTypeT` baseSign) . sortSet
 
 transTheory :: Pretty f => SignTranslator f e ->
                FormulaTranslator f e ->
                (CASL.Sign.Sign f e, [Named (FORMULA f)])
-                   -> Result IsaTheory
-transTheory trSig trForm (sign, sens) = do
-  gens <-
-      mapM (\ (Sort_gen_ax constr False) -> inductionScheme constr) genTypes
-  fmap (trSig sign (extendedInfo sign)) $ return (IsaSign.emptySign {
+                   -> IsaTheory
+transTheory trSig trForm (sign, sens) =
+  trSig sign (extendedInfo sign) (IsaSign.emptySign {
     baseSig = baseSign,
     tsig = emptyTypeSig {arities =
-               Set.fold (\s -> let s1 = showIsaTypeT s baseSign in
+               Set.fold (\ s -> let s1 = showIsaTypeT s baseSign in
                                  Map.insert s1 [(isaTerm, [])])
                                Map.empty (sortSet sign)},
     constTab = Map.foldWithKey insertPreds
@@ -133,18 +131,17 @@ transTheory trSig trForm (sign, sens) = do
          map (mapNamed myMapSen) real_sens)
      -- for now, no new sentences
   where
+    gens =
+        map (inductionScheme . fst) genTypes
     tyToks = typeToks sign
     myMapSen = mkSen . transFORMULA sign tyToks trForm (getAssumpsToks sign)
-    (real_sens, sort_gen_axs) = List.partition
-        (\ s -> case sentence s of
-                Sort_gen_ax _ _ -> False
-                _ -> True) sens
-    unique_sort_gen_axs = nubOrdOn (\ (Sort_gen_ax cs _) ->
-                                    Set.fromList $ map newSort cs)
-                          $ map sentence sort_gen_axs
-    (freeTypes, genTypes) = List.partition (\ (Sort_gen_ax _ b) -> b)
-                            unique_sort_gen_axs
-    dtDefs = makeDtDefs sign tyToks freeTypes
+    (real_sens, sort_gen_axs) = foldr ( \ s (rs, cs) -> case sentence s of
+                Sort_gen_ax c b -> (rs, (c, b) : cs)
+                _ -> (s : rs, cs)) ([], []) sens
+    unique_sort_gen_axs = nubOrdOn (Set.fromList . map newSort . fst)
+                          sort_gen_axs
+    (freeTypes, genTypes) = partition snd unique_sort_gen_axs
+    dtDefs = makeDtDefs sign tyToks $ map fst freeTypes
     ga = globAnnos sign
     insertOps op ts m = if isSingleton ts then
       let t = Set.findMin ts in Map.insert
@@ -161,22 +158,20 @@ transTheory trSig trForm (sign, sens) = do
              (mkIsaConstIT True ga (length $ predArgs t) pre i baseSign tyToks)
              (transPredType t) m1) m $ number $ Set.toList ts
 
-makeDtDefs :: CASL.Sign.Sign f e -> Set.Set String -> [FORMULA f]
-           -> [[(Typ,[(VName,[Typ])])]]
+makeDtDefs :: CASL.Sign.Sign f e -> Set.Set String -> [[Constraint]]
+           -> [[(Typ, [(VName, [Typ])])]]
 makeDtDefs sign = map . makeDtDef sign
 
-makeDtDef :: CASL.Sign.Sign f e -> Set.Set String -> FORMULA f
-          -> [(Typ,[(VName,[Typ])])]
-makeDtDef sign tyToks nf = case nf of
-  Sort_gen_ax constrs True -> map makeDt srts where
-    (srts,ops,_maps) = recover_Sort_gen_ax constrs
+makeDtDef :: CASL.Sign.Sign f e -> Set.Set String -> [Constraint]
+          -> [(Typ, [(VName, [Typ])])]
+makeDtDef sign tyToks constrs = map makeDt srts where
+    (srts, ops, _maps) = recover_Sort_gen_ax constrs
     makeDt s = (transSort s, map makeOp (filter (hasTheSort s) ops))
     makeOp opSym = (transOpSymb sign tyToks opSym, transArgs opSym)
     hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
     hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"
     transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
     transArgs _ = error "CFOL2IsabelleHOL.transArgs"
-  _ -> error "CFOL2IsabelleHOL.makeDtDef"
 
 transSort :: SORT -> Typ
 transSort s = Type (showIsaTypeT s baseSign) [] []
@@ -188,7 +183,7 @@ transOpType ot = mkCurryFunType (map transSort $ opArgs ot)
 transPredType :: PredType -> Typ
 transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
------------------------------- Formulas ------------------------------
+-- ---------------------------- Formulas ------------------------------
 
 getAssumpsToks :: CASL.Sign.Sign f e -> Set.Set String
 getAssumpsToks sign = Map.foldWithKey ( \ i ops s ->
@@ -212,7 +207,7 @@ quantifyIsa q (v, _) phi =
   termAppl (conDouble q) (Abs (mkFree v) phi NotCont)
 
 quantify :: Set.Set String -> QUANTIFIER -> (VAR, SORT) -> Term -> Term
-quantify toks q (v,t) phi  =
+quantify toks q (v, t) phi =
   quantifyIsa (qname q) (transVar toks v, transSort t) phi
   where
   qname Universal = allS
@@ -223,29 +218,27 @@ transOpSymb :: CASL.Sign.Sign f e -> Set.Set String -> OP_SYMB -> VName
 transOpSymb sign tyToks (Qual_op_name op ot _) = let
   ga = globAnnos sign
   l = length $ args_OP_TYPE ot in
-  case (do ots <- Map.lookup op (opMap sign)
-           if isSingleton ots
+  fromMaybe (error $ "CASL2Isabelle unknown op: " ++ show op) $ do
+         ots <- Map.lookup op (opMap sign)
+         if isSingleton ots
              then return $ mkIsaConstT False ga l op baseSign tyToks
              else do
-               i <- List.elemIndex (toOpType ot) (Set.toList ots)
-               return $ mkIsaConstIT False ga l op (i+1) baseSign tyToks) of
-    Just vn -> vn
-    Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
+               i <- elemIndex (toOpType ot) (Set.toList ots)
+               return $ mkIsaConstIT False ga l op (i + 1) baseSign tyToks
 transOpSymb _ _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 
 transPredSymb :: CASL.Sign.Sign f e -> Set.Set String -> PRED_SYMB -> VName
 transPredSymb sign tyToks (Qual_pred_name p pt@(Pred_type args _) _) = let
   ga = globAnnos sign
   l = length args in
-  case (do pts <- Map.lookup p (predMap sign)
-           if isSingleton pts
+             -- for predicate names in induction schemes
+  fromMaybe (mkIsaConstT True ga (-1) p baseSign tyToks) $ do
+         pts <- Map.lookup p (predMap sign)
+         if isSingleton pts
              then return $ mkIsaConstT True ga l p baseSign tyToks
              else do
-                   i <- List.elemIndex (toPredType pt) (Set.toList pts)
-                   return $ mkIsaConstIT True ga l p (i+1) baseSign tyToks) of
-    Just vn -> vn
-    Nothing -> mkIsaConstT True ga (-1) p baseSign tyToks
-    -- for predicate names in induction schemes
+                   i <- elemIndex (toPredType pt) (Set.toList pts)
+                   return $ mkIsaConstIT True ga l p (i + 1) baseSign tyToks
 transPredSymb _ _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> Set.Set String
@@ -283,7 +276,7 @@ transRecord sign tyToks tr toks = Record
           foldl termAppl (con $ transOpSymb sign tyToks opsymb) args
     , foldSorted_term = \ _ t _ _ -> t -- no subsorting assumed
     , foldCast = \ _ t _ _ -> t -- no subsorting assumed
-    , foldConditional = \ _  t1 phi t2 _ -> -- equal types assumed
+    , foldConditional = \ _ t1 phi t2 _ -> -- equal types assumed
           If phi t1 t2 NotCont
     , foldMixfix_qual_pred = error "transRecord: Mixfix_qual_pred"
     , foldMixfix_term = error "transRecord: Mixfix_term"
