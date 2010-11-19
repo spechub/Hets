@@ -69,9 +69,9 @@ isValidMorph m@(Morphism sig1 sig2 map1) =
       checkDom = Set.isSubsetOf (Map.keysSet map1) sym1
       checkCod = Set.isSubsetOf (Set.map (mapSymbol m) sym1) sym2
       checkTypes = map (checkTypePres m) $ Set.toList sym1
-      in and $ [checkDom,checkCod] ++ checkTypes
+      in and $ [checkDom, checkCod] ++ checkTypes
 
-checkTypePres:: Morphism -> NAME -> Bool
+checkTypePres :: Morphism -> NAME -> Bool
 checkTypePres m n =
   let Just type1 = getSymbolType n $ source m
       Just type2 = getSymbolType (mapSymbol m n) $ target m
@@ -81,7 +81,7 @@ checkTypePres m n =
    no key/value pairs of the form (k,k) -}
 canForm :: Morphism -> Morphism
 canForm (Morphism sig1 sig2 map1) =
-  let map2 = Map.fromList $ filter (\ (k,a) -> k /= a) $ Map.toList map1
+  let map2 = Map.fromList $ filter (\ (k, a) -> k /= a) $ Map.toList map1
       in Morphism sig1 sig2 map2
 
 -- constructs the inclusion morphism between signatures
@@ -92,8 +92,8 @@ inclusionMorph sig1 sig2 =
             then Result.Result [] $ Just m
             else Result.Result [noSubsigError sig1 sig2] Nothing
 
--- generated and cogenerated signatures
-{- Algorithm description:
+{- generated and cogenerated signatures
+Algorithm description:
 
 FOR GENERATED SIGNATURES
 
@@ -152,7 +152,8 @@ coGenSig flag syms sig@(Sign ds) =
             then let incl = if flag
                                then cogSig names ds1 sig
                                else genSig names (Set.empty) names sig
-                     ds2 = filter (\ ([n],_) -> Set.member n incl) ds1
+                     ds2 = map (\ (n, t) -> ([n], t))
+                           $ filter (\ (n, _) -> Set.member n incl) ds1
                      in inclusionMorph (Sign ds2) sig
             else Result.Result [symsNotInSigError names sig] Nothing
 
@@ -169,9 +170,9 @@ genSig incl done todo sig =
               todo1 = Set.union ns1 $ Set.delete n todo
               in genSig incl1 done1 todo1 sig
 
-cogSig :: Set.Set NAME -> [DECL] -> Sign -> Set.Set NAME
+cogSig :: Set.Set NAME -> [SDECL] -> Sign -> Set.Set NAME
 cogSig excl [] sig = Set.difference (getSymbols sig) excl
-cogSig excl (([n],t):ds) sig =
+cogSig excl ((n, t) : ds) sig =
   if (Set.member n excl)
      then cogSig excl ds sig
      else let ns = Set.toList $ getFreeVars t
@@ -180,7 +181,6 @@ cogSig excl (([n],t):ds) sig =
                     then let excl1 = Set.insert n excl
                              in cogSig excl1 ds sig
                     else cogSig excl ds sig
-cogSig _ _ _ = Set.empty
 
 -- morphism union
 morphUnion :: Morphism -> Morphism -> Result.Result Morphism
@@ -207,10 +207,10 @@ combineMaps :: Map.Map NAME NAME -> Map.Map NAME NAME ->
                Result.Result (Map.Map NAME NAME)
 combineMaps map1 map2 = combineMapsH map1 $ Map.toList map2
 
-combineMapsH :: Map.Map NAME NAME -> [(NAME,NAME)] ->
+combineMapsH :: Map.Map NAME NAME -> [(NAME, NAME)] ->
                 Result.Result (Map.Map NAME NAME)
 combineMapsH map1 [] = Result.Result [] $ Just map1
-combineMapsH map1 ((k,v):ds) =
+combineMapsH map1 ((k, v) : ds) =
   if (Map.member k map1)
      then let Just v1 = Map.lookup k map1
               in if (v == v1)
@@ -231,7 +231,7 @@ applyMorph m t =
       in translate map1 syms t
 
 toTermMap :: Map.Map NAME NAME -> Map.Map NAME TERM
-toTermMap m = Map.fromList $ map (\ (k,a) -> (k, Identifier a))
+toTermMap m = Map.fromList $ map (\ (k, a) -> (k, Identifier a))
                $ Map.toList m
 
 -- equality
@@ -251,7 +251,7 @@ printMorph m =
                 text "Mapping:", printSymMap $ symMap m]
 
 printSymMap :: Map.Map NAME NAME -> Doc
-printSymMap m = vcat $ map (\ (k,a) -> pretty k <+> text "|->" <+> pretty a)
+printSymMap m = vcat $ map (\ (k, a) -> pretty k <+> text "|->" <+> pretty a)
                      $ Map.toList m
 
 -- induces a signature morphism from the source signature and a symbol map
@@ -266,9 +266,9 @@ inducedFromMorphism map1 sig1 =
 buildSig :: Sign -> Map.Map NAME NAME -> Result.Result Sign
 buildSig (Sign ds) map1 = buildSigH (expandDecls ds) emptySig map1
 
-buildSigH :: [DECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
+buildSigH :: [SDECL] -> Sign -> Map.Map NAME NAME -> Result.Result Sign
 buildSigH [] sig _ = Result.Result [] $ Just sig
-buildSigH (([n1],t1):ds) sig map1 =
+buildSigH ((n1, t1) : ds) sig map1 =
   let n2 = Map.findWithDefault n1 n1 map1
       map2 = toTermMap map1
       syms = Set.map (\ n -> Map.findWithDefault n n map1)
@@ -280,8 +280,7 @@ buildSigH (([n1],t1):ds) sig map1 =
                        then buildSigH ds sig map1
                        else Result.Result [incompatibleViewError1 n2 t2 t3]
                                           Nothing
-            else buildSigH ds (addSymbolDecl ([n2],t2) sig) map1
-buildSigH _ _ _ = Result.Result [] Nothing
+            else buildSigH ds (addSymbolDecl ([n2], t2) sig) map1
 
 -- induces a signature morphism from the source and target sigs and a symbol map
 inducedFromToMorphism :: Map.Map Symbol Symbol -> ExtSign Sign Symbol ->
@@ -294,9 +293,9 @@ inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
             then Result.Result [] $ Just m
             else buildMorph (expandDecls ds) m
 
-buildMorph :: [DECL] -> Morphism -> Result.Result Morphism
+buildMorph :: [SDECL] -> Morphism -> Result.Result Morphism
 buildMorph [] m = Result.Result [] $ Just m
-buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) =
+buildMorph ((n1, t1) : ds) m@(Morphism _ sig2 map1) =
   if (Map.member n1 map1)
      then let n2 = mapSymbol m n1
               t2 = applyMorph m t1
@@ -309,16 +308,15 @@ buildMorph (([n1],t1):ds) m@(Morphism _ sig2 map1) =
               in case ss of
                       [s] -> buildMorph ds $
                                  m {symMap = Map.insert n1 s $ symMap m}
-                      []  -> Result.Result [noSymToMapError n1 t2] Nothing
-                      _   -> Result.Result [manySymToMapError n1 t2 ss] Nothing
-buildMorph _ _ = Result.Result [] Nothing
+                      [] -> Result.Result [noSymToMapError n1 t2] Nothing
+                      _ -> Result.Result [manySymToMapError n1 t2 ss] Nothing
 
 getSymsOfType :: Sign -> TYPE -> [NAME]
 getSymsOfType (Sign ds) t = getSymsOfTypeH ds t
 
 getSymsOfTypeH :: [DECL] -> TYPE -> [NAME]
 getSymsOfTypeH [] _ = []
-getSymsOfTypeH ((ns,t1):ds) t =
+getSymsOfTypeH ((ns, t1) : ds) t =
   if (t1 == t)
      then ns ++ (getSymsOfTypeH ds t)
      else getSymsOfTypeH ds t

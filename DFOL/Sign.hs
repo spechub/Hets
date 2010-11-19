@@ -119,7 +119,7 @@ getSymbolArity n sig = case (getArgumentTypes n sig) of
 -- get a list of symbols of the given kind
 getSymbolsByKind :: Sign -> KIND -> Set.Set NAME
 getSymbolsByKind sig kind =
-   Set.filter (\n -> (getSymbolKind n sig) == Just kind) $ getSymbols sig
+   Set.filter (\ n -> (getSymbolKind n sig) == Just kind) $ getSymbols sig
 
 -- get the list of types of the arguments of the given symbol
 getArgumentTypes :: NAME -> Sign -> Maybe [TYPE]
@@ -131,7 +131,7 @@ getArgumentTypes n sig = case typM of
 getArgumentTypesH :: TYPE -> [TYPE]
 getArgumentTypesH (Pi ds t) =
   types1 ++ types2
-  where types1 = concatMap (\ (ns,t1) -> take (length ns) $ repeat t1) ds
+  where types1 = concatMap (\ (ns, t1) -> take (length ns) $ repeat t1) ds
         types2 = getArgumentTypesH t
 getArgumentTypesH (Func ts t) = ts ++ (getArgumentTypesH t)
 getArgumentTypesH _ = []
@@ -168,11 +168,11 @@ fillArgumentNames ns = fillArgumentNamesH ns 0
 
 fillArgumentNamesH :: [Maybe NAME] -> Int -> [NAME]
 fillArgumentNamesH [] _ = []
-fillArgumentNamesH (nameM:namesM) i =
+fillArgumentNamesH (nameM : namesM) i =
   case nameM of
-       Just name -> name:(fillArgumentNamesH namesM i)
-       Nothing -> (Token ("gen_x_" ++ show i) nullRange):
-                  (fillArgumentNamesH namesM (i+1))
+       Just name -> name : (fillArgumentNamesH namesM i)
+       Nothing -> (Token ("gen_x_" ++ show i) nullRange) :
+                  (fillArgumentNamesH namesM (i + 1))
 
 -- pretty printing
 instance Pretty Sign where
@@ -187,7 +187,7 @@ printSig (Sign []) = text "EmptySig"
 printSig (Sign ds) = vcat $ map printSigDecl $ compactDecls ds
 
 printSigDecl :: DECL -> Doc
-printSigDecl (ns,t) = printNames ns <+> text "::" <+> pretty t
+printSigDecl (ns, t) = printNames ns <+> text "::" <+> pretty t
 
 printKind :: KIND -> Doc
 printKind SortKind = text "sort"
@@ -201,18 +201,17 @@ printKind PredKind = text "pred"
 sigUnion :: Sign -> Sign -> Result.Result Sign
 sigUnion sig (Sign ds) = sigUnionH (expandDecls ds) sig
 
-sigUnionH :: [DECL] -> Sign -> Result.Result Sign
+sigUnionH :: [SDECL] -> Sign -> Result.Result Sign
 sigUnionH [] sig = Result.Result [] $ Just sig
-sigUnionH (([n],t):ds) sig =
+sigUnionH ((n, t) : ds) sig =
   if (isConstant n sig)
      then let Just t1 = getSymbolType n sig
               in if (t == t1)
                     then sigUnionH ds sig
                     else Result.Result [incompatibleUnionError n t t1] Nothing
      else let t1 = translate Map.empty (getSymbols sig) t
-              sig1 = addSymbolDecl ([n],t1) sig
+              sig1 = addSymbolDecl ([n], t1) sig
               in sigUnionH ds sig1
-sigUnionH _ _ = Result.Result [] Nothing
 
 {- Intersection of signatures. The intersection of two DFOL signatures Sig1 and
    Sig2 is defined as the largest valid signature contained both in Sig1 and
@@ -221,31 +220,30 @@ sigUnionH _ _ = Result.Result [] Nothing
 sigIntersection :: Sign -> Sign -> Result.Result Sign
 sigIntersection (Sign ds) sig = sigIntersectionH (expandDecls ds) emptySig sig
 
-sigIntersectionH :: [DECL] -> Sign -> Sign -> Result.Result Sign
+sigIntersectionH :: [SDECL] -> Sign -> Sign -> Result.Result Sign
 sigIntersectionH [] sig _ = Result.Result [] $ Just sig
-sigIntersectionH (([n],t):ds) sig sig2 =
+sigIntersectionH ((n, t) : ds) sig sig2 =
   let present = if (isConstant n sig2)
                    then let Just t1 = getSymbolType n sig2
                         in if (t == t1)
                               then True
                               else False
                    else False
-      Diagn _ valid = isValidDecl ([n],t) sig emptyContext
-      in if (and [present,valid])
-            then let sig1 = addSymbolDecl ([n],t) sig
+      Diagn _ valid = isValidDecl ([n], t) sig emptyContext
+      in if (and [present, valid])
+            then let sig1 = addSymbolDecl ([n], t) sig
                      in sigIntersectionH ds sig1 sig2
             else sigIntersectionH ds sig sig2
-sigIntersectionH _ _ _ = Result.Result [] Nothing
 
 -- determines whether a declaration is valid w.r.t. a signature and a context
 isValidDecl :: DECL -> Sign -> CONTEXT -> DIAGN Bool
-isValidDecl (ns,t) sig cont = andD [validNames, validType]
+isValidDecl (ns, t) sig cont = andD [validNames, validType]
                               where validNames = areValidNames ns sig cont
-                                    validType  = isValidType t sig cont
+                                    validType = isValidType t sig cont
 
 -- checks if a variable declaration is valid w.r.t. a signature and a context
 isValidVarDecl :: DECL -> Sign -> CONTEXT -> DIAGN Bool
-isValidVarDecl d@(_,t) sig cont = andD [discourseType,validDec]
+isValidVarDecl d@(_, t) sig cont = andD [discourseType, validDec]
                                   where discourseType = isDiscourseType t
                                         validDec = isValidDecl d sig cont
 
@@ -257,8 +255,8 @@ areValidNames names sig cont =
       then Diagn [] True
       else Diagn [redeclaredNamesError overlap cont] False
    where declaredSyms = Set.union (getSymbols sig) (getVars cont)
-         newSyms      = Set.fromList names
-         overlap      = Set.intersection newSyms declaredSyms
+         newSyms = Set.fromList names
+         overlap = Set.intersection newSyms declaredSyms
 
 -- determines whether a type is valid w.r.t. a signature and a context
 isValidType :: TYPE -> Sign -> CONTEXT -> DIAGN Bool
@@ -266,12 +264,12 @@ isValidType Sort _ _ = Diagn [] True
 isValidType Form _ _ = Diagn [] True
 isValidType (Univ t) sig cont = hasType t Sort sig cont
 isValidType (Func ts t) sig cont =
-   andD [validDoms,validCod,discourseDoms]
-   where validDoms = andD $ map (\t1 -> isValidType t1 sig cont) ts
-         validCod  = isValidType t sig cont
+   andD [validDoms, validCod, discourseDoms]
+   where validDoms = andD $ map (\ t1 -> isValidType t1 sig cont) ts
+         validCod = isValidType t sig cont
          discourseDoms = andD $ map isDiscourseType ts
 isValidType (Pi [] t) sig cont = isValidType t sig cont
-isValidType (Pi (d:ds) t) sig cont =
+isValidType (Pi (d : ds) t) sig cont =
    andD [validDecl, validType]
    where validDecl = isValidVarDecl d sig cont
          validType = isValidType (Pi ds t) sig (addVarDecl d cont)
@@ -294,16 +292,16 @@ hasType term expectedType sig cont =
                          False
    where Result.Result diag inferredTypeM = getTermType term sig cont
 
--- determines the type of a term w.r.t. a signature and a context
-{- returns the type in recursive form, with bound variables different
+{- determines the type of a term w.r.t. a signature and a context
+returns the type in recursive form, with bound variables different
    from signature constants -}
 getTermType :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getTermType term sig cont = getTermTypeH (termRecForm term) sig cont
 
-getTermTypeH ::TERM -> Sign -> CONTEXT -> Result.Result TYPE
+getTermTypeH :: TERM -> Sign -> CONTEXT -> Result.Result TYPE
 getTermTypeH (Identifier n) sig cont =
    case fromContext of
-        Just _  -> Result.Result [] fromContext
+        Just _ -> Result.Result [] fromContext
         Nothing -> case fromSig of
                         Just type1 ->
                           let type2 = renameBoundVars (typeRecForm type1)
@@ -319,12 +317,12 @@ getTermTypeH (Appl f [a]) sig cont =
         Just typeA ->
           case typeFM of
                Nothing -> Result.Result diagF Nothing
-               Just (Func (dom:doms) cod) ->
+               Just (Func (dom : doms) cod) ->
                  if (dom == typeA)
                     then Result.Result [] $ Just $ typeRecForm
                             $ Func doms cod
                     else Result.Result [wrongTypeError dom typeA a cont] Nothing
-               Just (Pi [([x],t)] typ) ->
+               Just (Pi [([x], t)] typ) ->
                  if (t == typeA)
                     then Result.Result [] $ Just $ substitute x a typ
                     else Result.Result [wrongTypeError t typeA a cont] Nothing

@@ -12,6 +12,7 @@ Portability :  portable
 module DFOL.AS_DFOL
   ( NAME
   , DECL
+  , SDECL
   , BASIC_SPEC (..)
   , BASIC_ITEM (..)
   , TYPE (..)
@@ -49,6 +50,7 @@ import Data.List
 
 type NAME = Token
 type DECL = ([NAME], TYPE)
+type SDECL = (NAME, TYPE)
 
 -- grammar for basic specification
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
@@ -447,7 +449,5 @@ compactDecls (d1 : d2 : ds) =
             then compactDecls $ (ns1 ++ ns2, t1) : ds
             else d1 : compactDecls (d2 : ds)
 
-expandDecls :: [DECL] -> [DECL]
-expandDecls [] = []
-expandDecls (([], _) : ds) = expandDecls ds
-expandDecls ((n : ns, t) : ds) = ([n], t) : expandDecls ((ns, t) : ds)
+expandDecls :: [DECL] -> [SDECL]
+expandDecls = concatMap (\ (ns, t) -> map (\ n -> (n, t)) ns)
