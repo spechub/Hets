@@ -28,6 +28,6 @@ getCode c l = case l of
     | c -> s : getCode c r
     | isPrefixOf "\\begin{code}" s
       -> "" : getCode True r
-    | otherwise -> case s of
-      '>' : t -> (' ' : t) : getCode c r
-      _ -> "" : getCode c r
+    | otherwise -> (case s of
+      '>' : t -> ' ' : t
+      _ -> "") : getCode c r
