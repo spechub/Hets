@@ -67,6 +67,7 @@ import qualified Interfaces.Process as PC
 import Main (getSigSens, getSigSensComplete)
 
 import Control.Monad.State.Class
+import Control.Monad.Reader
 import Control.Monad.State (StateT(..))
 import Control.Monad.Trans (MonadIO (..), lift)
 import Control.Monad (liftM)
@@ -74,6 +75,7 @@ import Data.Maybe
 import Data.Time.Clock
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import System.IO
 
 -- ----------------------------------------------------------------------
 -- * general test functions
@@ -244,18 +246,15 @@ crossprod a b
 -- getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, [String], EXPRESSION)]
 
 
+-- Use this Constant printer for test output
+instance ConstantPrinter (Reader (ConstantName -> Doc)) where
+    printConstant c = asks ($ c)
 
-{-
-MAIN TESTING FUNCTIONS:
+ppConst :: ConstantName -> Doc
+ppConst (SimpleConstant s) = text s
+ppConst (ElimConstant s i) = text s <> text (show $ 1+i)
 
-udefC i == show all undefined constants of spec i
-elimDefs i == ep-eliminated AS for spec i
-prettyEDefs i == pretty output for elimDefs
-testElim i == raw elimination proc for spec i
-prepareAS i == the assignment store after extraction from spec i and further analysis
-testSMT i == returns the length of elimDefs-output and measures time, good for testing of smt comparison
--}
-
+prettyEXP e = runReader (printExpression e) ppConst
 
 testSMT = time . fmap length . elimDefs
 
@@ -263,7 +262,7 @@ udefC = liftM (undefinedConstants . fst . splitAS) . sens
 elimDefs = liftM getElimAS . testElim
 
 prettyEDefs i = liftM (unlines . map f) (elimDefs i)  >>= putStrLn where
-    f (c, args, e) = concat [show c, g args, " := ", show $ pretty e]
+    f (c, args, e) = concat [show $ ppConst c, g args, " := ", show $ prettyEXP e]
     g [] = ""
     g l = show $ parens $ sepByCommas $ map text l
 
@@ -429,17 +428,23 @@ let sgm = dependencySortAS grdm
 
 
 data TestEnv = TestEnv { counter :: Int
-                       , varenv :: VarEnv }
+                       , varenv :: VarEnv
+                       , loghdl :: Handle }
 
+logf :: FilePath
+logf = "/tmp/CSL.log"
 
-teFromVE :: VarEnv -> TestEnv
-teFromVE ve = TestEnv { counter = 0, varenv = ve }
+teFromVE :: VarEnv -> IO TestEnv
+teFromVE ve = do
+  hdl <- openFile logf WriteMode
+  return TestEnv { counter = 0, varenv = ve, loghdl = hdl }
 
 type SmtTester = StateT TestEnv IO
 
 execSMTTester :: VarEnv -> SmtTester a -> IO (a, Int)
 execSMTTester ve smt = do
-  (x, s) <- runStateT smt $ teFromVE ve
+  (x, s) <- teFromVE ve >>= runStateT smt
+  hClose $ loghdl s
   return (x, counter s)
 
 execSMTTester' :: VarEnv -> SmtTester a -> IO a
@@ -449,14 +454,25 @@ execSMTTester' ve smt = do
   return x
 
 instance CompareIO SmtTester where
+    logMessage x = do
+      hdl <- gets loghdl
+      liftIO $ hPutStrLn hdl x
     rangeFullCmp r1 r2 = do
       env <- get
       let f x = x{counter = counter x + 1}
           ve = varenv env
           vm = varmap ve
+          hdl = loghdl env
       modify f
-      lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+      lift $ writeRangesToLog hdl r1 r2
+      res <- lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+      lift $ hPutStrLn hdl $ "=" ++ show res
+      return res
 
+writeRangesToLog :: Handle -> EPRange -> EPRange -> IO ()
+writeRangesToLog hdl r1 r2= do
+  let [d1, d2] = map diagnoseEPRange [r1, r2]
+  hPutStr hdl $ show $ text "Cmp" <> parens (d1 <> comma <+> d2)
 
 -- elimTestInit :: Int -> [(String, Guarded EPRange)] -> IO [Guard EPRange]
 elimTestInit i gl = do

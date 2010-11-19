@@ -41,6 +41,10 @@ module CSL.AS_BASIC_CSL
     , lookupOpInfoForStatAna
     , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers
+    -- Printer
+    , printExpression
+    , printCMD
+    , ConstantPrinter (..)
     ) where
 
 import Common.Id as Id
@@ -48,7 +52,7 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
-
+import Control.Monad
 
 -- Arbitrary precision numbers
 type APInt = Integer
@@ -248,7 +252,7 @@ instance Pretty BASIC_ITEM where
 instance Pretty EXTPARAM where
     pretty = printExtparam
 instance Pretty EXPRESSION where
-    pretty = printExpression
+    pretty = head . printExpression
 instance Pretty SYMB_ITEMS where
     pretty = printSymbItems
 instance Pretty SYMB where
@@ -258,7 +262,7 @@ instance Pretty SYMB_MAP_ITEMS where
 instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
 instance Pretty CMD where
-    pretty = printCMD
+    pretty = head . printCMD
 
 
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
@@ -359,28 +363,52 @@ lookupBindInfo (OpId op) arit =
       _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
 lookupBindInfo (OpUser _) _ = Nothing
 
+-- * Pretty Printing
 
-printCMD :: CMD -> Doc
-printCMD (Ass c def)
-    = printExpression c <+> text ":=" <+> printExpression def
+-- | A monad for printing of constants. This turns the pretty printing facility
+-- more flexible w.r.t. the output of 'ConstantName'.
+class Monad m => ConstantPrinter m where
+    printConstant :: ConstantName -> m Doc
+    printConstant = return . text . show
+
+printOPID :: ConstantPrinter m => OPID -> m Doc
+printOPID (OpUser c) = printConstant c
+printOPID oi = return $ text $ show oi
+
+instance ConstantPrinter []
+
+printCMD :: ConstantPrinter m => CMD -> m Doc
+printCMD (Ass c def) = do
+  [c', def'] <- mapM printExpression [c, def]
+  return $ c' <+> text ":=" <+> def'
 printCMD c@(Cmd s exps) -- TODO: remove the case := later
-    | s==":=" = error $ "printCMD: use Ass for assignment representation! "
-                ++ show c
-    | s=="constraint" = printExpression (exps !! 0)
-    | otherwise = (text s) <> (parens (sepByCommas (map printExpression exps)))
-printCMD (Repeat e stms) = 
-    text "re" <> (text "peat" $+$ vcat (map ((text "." <+>) . printCMD)  stms))
-    $+$ text "until" <+> printExpression e
+    | s == ":=" = error $ "printCMD: use Ass for assignment representation! "
+                  ++ show c
+    | s == "constraint" = printExpression (exps !! 0)
+    | otherwise = let f l = text s <> parens (sepByCommas l)
+                  in liftM f $ mapM printExpression exps
+printCMD (Repeat e stms) = do
+  e' <- printExpression e
+  let f l = text "re" <>
+               (text "peat" $+$ vcat (map (text "." <+>)  l))
+               $+$ text "until" <+> e'
+  liftM f $ mapM printCMD stms
+  
 printCMD (Sequence stms) = 
-    text "se" <> (text "quence" $+$ vcat (map ((text "." <+>) . printCMD)  stms))
-    $+$ text "end"
+    let f l = text "se" <> (text "quence" $+$ vcat (map (text "." <+>) l))
+              $+$ text "end"
+    in liftM f $ mapM printCMD stms
 
-printCMD (Cond l) = vcat (map (uncurry printCase) l) $+$ text "end"
+printCMD (Cond l) = let f l' = vcat l' $+$ text "end"
+                    in liftM f $ mapM (uncurry printCase) l
 
-printCase :: EXPRESSION -> [CMD] -> Doc
-printCase e l = text "ca"
-                <> (text "se" <+> printExpression e <> text ":"
-                     $+$ vcat (map ((text "." <+>) . printCMD)  l))
+printCase :: ConstantPrinter m => EXPRESSION -> [CMD] -> m Doc
+printCase e l = do
+  e' <- printExpression e
+  let f l' = text "ca" <> (text "se" <+> e' <> text ":"
+                                       $+$ vcat (map (text "." <+>)  l'))
+  liftM f $ mapM printCMD l
+
 
 
 getPrec :: EXPRESSION -> Int
@@ -404,36 +432,39 @@ printExtparams :: [EXTPARAM] -> Doc
 printExtparams [] = empty
 printExtparams l = brackets $ sepByCommas $ map printExtparam l
 
-printInfix :: EXPRESSION -> Doc
-printInfix e@(Op s _ exps _) =
+printInfix :: ConstantPrinter m => EXPRESSION -> m Doc
+printInfix e@(Op s _ exps _) = do
 -- we mustn't omit the space between the operator and its arguments for text-
 -- operators such as "and", "or", but it would be good to omit it for "+-*/"
-    (if (outerprec<=(getPrec (exps!!0))) then (printExpression $ (exps !! 0))
-     else  (parens (printExpression $ (exps !! 0))))
-    <+> text (show s) <+> (if outerprec<= getPrec (exps!!1)
-                           then printExpression $ exps !! 1
-                           else parens (printExpression $ exps !! 1))
-        where outerprec = getPrec e
+  oi <- printOPID s
+  let outerprec = getPrec e
+      f l = (if (outerprec<=(getPrec (exps!!0))) then l !! 0
+             else  parens (l !! 0)) <+> oi
+            <+> (if outerprec<= getPrec (exps!!1)
+                 then l !! 1
+                 else parens (l !! 1))
+  liftM f $ mapM printExpression exps
 printInfix _ = error "printInfix: Impossible case"
 
-printExpression :: EXPRESSION -> Doc
-printExpression (Var token) = text $ "$" ++ tokStr token
+printExpression :: ConstantPrinter m => EXPRESSION -> m Doc
+printExpression (Var token) = return $ text $ "$" ++ tokStr token
 printExpression e@(Op s epl exps _)
-    | length exps == 0 = text (show s) <> printExtparams epl
+    | length exps == 0 = liftM (<> printExtparams epl) $ printOPID s
     | otherwise =
-        let asPrfx = text (show s) <> printExtparams epl
-                     <> parens (sepByCommas $ map printExpression exps)
+        let f pexps = (<> (printExtparams epl <> parens (sepByCommas pexps)))
+            asPrfx pexps = liftM (f pexps) $ printOPID s
+            asPrfx' = mapM printExpression exps >>= asPrfx
         in case lookupOpInfo s $ length exps  of
              Right oi
                  | infx oi -> printInfix e
-                 | otherwise -> asPrfx
-             _ -> asPrfx
+                 | otherwise -> asPrfx'
+             _ -> asPrfx'
 
-printExpression (List exps _) = sepByCommas (map printExpression exps)
-printExpression (Int i _) = text (show i)
-printExpression (Double d _) = text (show d)
+printExpression (List exps _) = liftM sepByCommas (mapM printExpression exps)
+printExpression (Int i _) = return $ text (show i)
+printExpression (Double d _) = return $ text (show d)
 printExpression (Interval l r _) =
-    brackets $ sepByCommas $ map (text . show) [l, r]
+    return $ brackets $ sepByCommas $ map (text . show) [l, r]
 
 printOpItem :: OP_ITEM -> Doc
 printOpItem (Op_item tokens _) =

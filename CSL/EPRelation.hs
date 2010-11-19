@@ -20,6 +20,7 @@ import Control.Monad.Trans
 import Control.Monad.Reader
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Char
 import Data.List
 import Data.Maybe
 import Data.Tree
@@ -99,6 +100,14 @@ type EPDomain = [EPExps]
 data EPRange = Union [EPRange] | Intersection [EPRange]
              | Complement EPRange | Atom EPExps | Empty
 
+-- | In some cases 'EPRange' can be translated back to 'EPExps'
+tryDowncast :: EPRange -> Maybe EPExps
+tryDowncast (Complement (Atom x)) =
+    if Map.size x == 1 then Just $ Map.map complementEP x else Nothing
+tryDowncast (Atom x) = Just x
+tryDowncast _ = Nothing
+
+
 evalRange :: (String -> Int) -> EPRange -> Bool
 evalRange f re =
     case re of
@@ -107,8 +116,29 @@ evalRange f re =
       Intersection l -> and $ map (evalRange f) l
       Empty -> False
       Atom eps -> evalEPs f eps
+
+
+-- | A diagnostic output for 'EPRange' which highlights problems in the
+-- internal representation
+diagnoseEPRange :: EPRange -> Doc
+diagnoseEPRange re =
+    let asIfx s l = parens $ fsep $ punctuate (text s) $ map diagnoseEPRange l
+        diag s re' = text "DIAG" <>
+                     (parens $ text s <> comma <+> diagnoseEPRange re')
+    in case re of
+      Union [] -> diag "EmptyUnion" Empty
+      Union [x] -> diag "SingletonUnion" x
+      Union l -> asIfx [' ', chr 8746] l
+      Intersection [] -> diag "EmptyIntersection" Empty
+      Intersection [x] -> diag "SingletonIntersection" x
+      Intersection [x, Complement r] -> asIfx [' ', chr 8726] [x,r]
+      Intersection l -> asIfx [' ', chr 8745] l
+      Complement r -> text [chr 8705] <> diagnoseEPRange r
+      Empty -> text [chr 8709]
+      Atom eps -> prettyEPs eps
     
 
+-- | Pretty output for 'EPRange'
 prettyEPRange :: EPRange -> Doc
 prettyEPRange re =
     let f s a b = parens $ hsep [prettyEPRange a, text s, prettyEPRange b]
@@ -240,23 +270,26 @@ projectRange e re = simplifyRange $ f re
 -}
 simplifyRange :: EPRange -> EPRange
 simplifyRange re =
-    case re of
-      Union l -> f [] l
-      Intersection l -> g [] l
-      Complement r ->
-          case simplifyRange r of
-            Empty -> starRange
-            r' | isStarRange r' -> Empty
-               | otherwise -> Complement r'
-      _ -> re
+    case tryDowncast re of
+      Just eps -> Atom eps
+      _ -> 
+          case re of
+            Union l -> f [] l
+            Intersection l -> g [] l
+            Complement r ->
+                case simplifyRange r of
+                  Empty -> starRange
+                  r' | isStarRange r' -> Empty
+                     | otherwise -> Complement r'
+            _ -> re
     where -- returns either a simplified list or a new expression
-      f acc [] = if null acc then Empty else Union acc
+      f acc [] = if null acc then Empty else mkUnion acc
       f acc (r:l) =
           case simplifyRange r of
             Empty -> f acc l
             r' | isStarRange r' -> r'
                | otherwise -> f (acc++[r']) l
-      g acc [] = if null acc then starRange else Intersection acc
+      g acc [] = if null acc then starRange else mkIntersection acc
       g acc (r:l) =
           case simplifyRange r of
             Empty -> Empty
@@ -328,6 +361,31 @@ compareEPs eps1 eps2 =
 
     -- if the maps were swapped then swap the result
     in if sw then swapCmp epc' else epc'
+
+
+{-
+  we need to take into account the global constraints on the range of the
+  extended parameters, e.g., I in [1,5] or I>=0...
+  This complicates the simple comparison and we postpone it for the moment.
+
+-- | We try to decide the relation between the given ranges without using
+-- an external decision procedure.
+trySimpleFullCmp :: EPRange -> EPRange -> Maybe (EPCompare, Bool, Bool)
+trySimpleFullCmp r1 r2
+    | isStarRange r1 && r1 == r2 = Just (Comparable EQ, False, False)
+    | r1 == Empty && r1 == r2 = Just (Comparable EQ, True, True)
+    | otherwise =
+        case map tryDowncast [r1, r2] of
+          [Just eps1, Just eps2] -> Just (compareEPs eps1 eps2, False, False)
+          _ -> Nothing
+
+-- | Same as 'trySimpleFullCmp' but without deciding if the ranges are empty or not
+trySimpleCmp :: EPRange -> EPRange -> Maybe (EPCompare, Bool, Bool)
+trySimpleCmp r1 r2
+
+    | isStarRange r1 = Just (Comparable GT, False, r2 == Empty)
+    | isStarRange r2 = Just (Comparable LT, r1 == Empty, False)
+-}
 
 -- ----------------------------------------------------------------------
 -- * SMT based comparison - utility functions
@@ -457,6 +515,8 @@ instance Pretty a => Show (EPNodeLabel a) where
 
 class MonadIO m => CompareIO m where
     rangeFullCmp :: EPRange -> EPRange -> m (EPCompare, Bool, Bool)
+    logMessage :: String -> m ()
+    logMessage _ = return ()
 
 rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
 rangeCmp x y = liftM tripleFst $ rangeFullCmp x y
@@ -467,10 +527,11 @@ execSMTComparer :: VarEnv -> SmtComparer a -> IO a
 execSMTComparer ve smt = runReaderT smt ve
 
 instance CompareIO SmtComparer where
+    logMessage = liftIO . putStrLn
     rangeFullCmp r1 r2 = do
-      ve <- ask
-      let vm = varmap ve
-      lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+            ve <- ask
+            let vm = varmap ve
+            lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
 
 data Partition a = AllPartition a | Partition [(EPRange, a)]
 

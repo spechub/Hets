@@ -76,6 +76,13 @@ toEPExp (EP t r i) =
 toBoolRep :: String -> EPExp -> BoolRep
 toBoolRep s (x, i) = Pred (show x) [s, show i]
 
+complementEP :: EPExp -> EPExp
+complementEP (x, i) = case x of
+                        LeftOf -> (RightOf, i+1)
+                        RightOf -> (LeftOf, i-1)
+                        Equal -> (Except, i)
+                        Except -> (Equal, i)
+                   
 -- ----------------------------------------------------------------------
 -- * Extended Parameter comparison
 -- ----------------------------------------------------------------------

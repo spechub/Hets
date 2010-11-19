@@ -435,6 +435,7 @@ eliminateGuard m grd = do
         g (er, pim) = grd{ range = er, definition = h pim }
     partMap <- mapUserDefined f $ definition grd
     rePart <- refineDefPartitions partMap
+    logMessage $ "eliminating Guard " ++ assName grd
     case rePart of
       AllPartition x -> return [g (range grd, x)]
       Partition l ->
@@ -521,7 +522,8 @@ refineDefPartitions =
 refineDefPartition :: CompareIO m => Partition (Map.Map PIConst Int)
                    -> (PIConst, Partition Int)
                    -> m (Partition (Map.Map PIConst Int))
-refineDefPartition pm (c, ps) =
+refineDefPartition pm (c, ps) = do
+    logMessage $ "refining partition for " ++ show c
     liftM (fmap $ uncurry $ Map.insert c) $ refinePartition ps pm
 
 
