@@ -433,9 +433,9 @@ eliminateGuard m grd = do
         h pim = foldTerm passRecord{ foldOp = const $ mappedElimConst pim }
                 $ definition grd
         g (er, pim) = grd{ range = er, definition = h pim }
+    logMessage $ "eliminating Guard " ++ assName grd
     partMap <- mapUserDefined f $ definition grd
     rePart <- refineDefPartitions partMap
-    logMessage $ "eliminating Guard " ++ assName grd
     case rePart of
       AllPartition x -> return [g (range grd, x)]
       Partition l ->
@@ -542,3 +542,10 @@ getElimAS :: [(String, Guarded EPRange)] ->
 getElimAS = concatMap f where
     f (s, grdd) = zipWith (g s $ argvars grdd) [0..] $ guards grdd
     g s args i grd = (ElimConstant s i, args, definition grd)
+
+-- | The elim-constant to 'EPRange' mapping.
+elimConstants :: [(String, Guarded EPRange)] ->
+             [(String, Map.Map ConstantName EPRange)]
+elimConstants = map f where
+    f (s, grdd) = (s, Map.fromList $ zipWith (g s) [0..] $ guards grdd)
+    g s i grd = (ElimConstant s i, range grd)

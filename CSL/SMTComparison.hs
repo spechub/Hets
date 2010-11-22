@@ -25,6 +25,7 @@ module CSL.SMTComparison where
 import Control.Monad
 import qualified Data.Map as Map
 import Data.List
+import System.IO
 import System.Process
 
 import CSL.TreePO
@@ -41,7 +42,8 @@ type VarMap = Map.Map String Int
 type VarTypes = Map.Map String BoolRep
 
 data VarEnv = VarEnv { varmap :: VarMap
-                     , vartypes :: VarTypes }
+                     , vartypes :: VarTypes
+                     , loghandle :: Maybe Handle }
 
 -- | Type alias and subtype definitions for the domain of the extended params
 smtTypeDef :: VarEnv -> String
@@ -137,7 +139,7 @@ smtDisjScript m r1 r2 = smtGenericScript m smtDisjStmt r1 r2
 data SMTStatus = Sat | Unsat deriving (Show, Eq)
 
 smtCheck :: VarEnv -> BoolRep -> BoolRep -> IO [SMTStatus]
-smtCheck m r1 r2 = smtMultiResponse $ smtAllScript m r1 r2
+smtCheck m r1 r2 = smtMultiResponse (loghandle m) $ smtAllScript m r1 r2
 
 smtCheck' :: VarEnv -> BoolRep -> BoolRep -> IO [SMTStatus]
 smtCheck' m r1 r2 = mapM smtResponse $ smtAllScripts m r1 r2
@@ -169,11 +171,16 @@ smtResponseToStatus s
     | isInfixOf "Error" s = error $ "yices-error: " ++ s
     | otherwise = error $ "unknown yices error"
 
-smtMultiResponse :: String -> IO [SMTStatus]
-smtMultiResponse inp = do
---  putStrLn $ "\n\n" ++ inp ++ "\n\n\n\n\n\n\n\n\n\n"
+maybeWrite :: Maybe Handle -> String -> IO ()
+maybeWrite mH s = case mH of
+                    Just hdl -> hPutStrLn hdl s
+                    _ -> return ()
+
+smtMultiResponse :: Maybe Handle -> String -> IO [SMTStatus]
+smtMultiResponse mH inp = do
+  maybeWrite mH $ "---------- Yices input ----------\n" ++ inp
   s <- readProcess "yices" [] inp
---  putStrLn "---------------- DONE ----------------\n\n"
+  maybeWrite mH $ "---------- Yices raw output ----------\n" ++ s
   return $ map smtResponseToStatus $ lines s
 
 smtResponse :: String -> IO SMTStatus

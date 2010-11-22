@@ -260,6 +260,14 @@ testSMT = time . fmap length . elimDefs
 
 udefC = liftM (undefinedConstants . fst . splitAS) . sens
 elimDefs = liftM getElimAS . testElim
+elimConsts = liftM elimConstants . testElim
+
+
+prettyEConsts i = elimConsts i  >>= mapM_ f where
+    f (_, m) = mapM_ g $ Map.toList m
+    g (c, er) =
+        putStrLn $ (show $ ppConst c) ++ " :: " ++ show (prettyEPRange er)
+
 
 prettyEDefs i = liftM (unlines . map f) (elimDefs i)  >>= putStrLn where
     f (c, args, e) = concat [show $ ppConst c, g args, " := ", show $ prettyEXP e]
@@ -437,7 +445,8 @@ logf = "/tmp/CSL.log"
 teFromVE :: VarEnv -> IO TestEnv
 teFromVE ve = do
   hdl <- openFile logf WriteMode
-  return TestEnv { counter = 0, varenv = ve, loghdl = hdl }
+  let ve' = ve{ loghandle = Just hdl }
+  return TestEnv { counter = 0, varenv = ve', loghdl = hdl }
 
 type SmtTester = StateT TestEnv IO
 
@@ -465,8 +474,9 @@ instance CompareIO SmtTester where
           hdl = loghdl env
       modify f
       lift $ writeRangesToLog hdl r1 r2
+      liftIO $ hPutStrLn hdl ""
       res <- lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
-      lift $ hPutStrLn hdl $ "=" ++ show res
+      lift $ writeRangesToLog hdl r1 r2 >> hPutStrLn hdl ("=" ++ show res)
       return res
 
 writeRangesToLog :: Handle -> EPRange -> EPRange -> IO ()
@@ -572,11 +582,12 @@ vMap = varMapFromSet $ namesInList epList
 -- vTypes = Map.map (const Nothing) vMap
 vTypes = Map.fromList $ map (\ (x,y) -> (x, boolExps vMap y)) epDomain
 
-vEnvX = VarEnv { varmap = vMap, vartypes = Map.empty }
+vEnvX = VarEnv { varmap = vMap, vartypes = Map.empty, loghandle = Nothing }
 
-vEnv1 = VarEnv { varmap = Map.fromList [("I", 1)], vartypes = Map.empty }
+vEnv1 = VarEnv { varmap = Map.fromList [("I", 1)], vartypes = Map.empty, loghandle = Nothing }
 
-vEnv = VarEnv { varmap = vMap, vartypes = vTypes }
+--vEnv = VarEnv { varmap = vMap, vartypes = vTypes, loghandle = Nothing }
+vEnv = vEnvX
 
 
 printOrdEPs :: String -> IO ()
