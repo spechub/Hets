@@ -86,6 +86,24 @@ passRecord =
            , foldDouble = \ v _ _ -> v
            }
 
+-- | Passes the transformation through the 'CMD' part by concatenating the
+-- processed list from left to right and identity on expression part
+listCMDRecord :: Record [a] EXPRESSION
+listCMDRecord =
+    Record { foldAss = \ _ _ _ -> []
+           , foldCmd = \ _ _ _ -> []
+           , foldSequence = \ _ -> concat
+           , foldCond = \ _ -> concat . concatMap snd
+           , foldRepeat = \ _ _ -> concat
+
+           , foldVar = \ v _ -> v
+           , foldOp = \ v _ _ _ _ -> v
+           , foldList = \ v _ _ -> v
+           , foldInterval = \ v _ _ _ -> v
+           , foldInt = \ v _ _ -> v
+           , foldDouble = \ v _ _ -> v
+           }
+
 -- | Returns the first constant on the CMD part and the second
 -- on the EXPRESSION part
 constRecord :: a -> b -> Record a b

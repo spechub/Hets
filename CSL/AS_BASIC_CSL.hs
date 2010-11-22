@@ -69,6 +69,8 @@ mkOp s el = Op (OpUser $ SimpleConstant s) [] el nullRange
 mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
 mkPredefOp n el = Op (OpId n) [] el nullRange
 
+-- * CSL Basic Data Structures
+
 -- | operator symbol declaration
 data OP_ITEM = Op_item [Id.Token] Id.Range
                deriving Show
@@ -185,11 +187,9 @@ toElimConst ec _ = error $ "toElimConst: already an elim const " ++ show ec
 -- | Datatype for expressions
 data EXPRESSION =
     Var Id.Token
-  -- token instead string Id vs Token:
   | Op OPID [EXTPARAM] [EXPRESSION] Id.Range
-  -- TODO: don't need them anymore, they should be removed soon
+  -- TODO: don't need lists anymore, they should be removed soon
   | List [EXPRESSION] Id.Range
-  -- this means interval (interval
   | Interval APFloat APFloat Id.Range
   | Int APInt Id.Range
   | Double APFloat Id.Range
@@ -224,6 +224,8 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
+-- * Predefined Operators: info for parsing/printing and static analysis
+
 data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
                                                   -- binding variables
                          , boundBodyPos :: [Int] -- ^ argument positions of
@@ -236,33 +238,6 @@ data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and 9
                      , opname :: OPNAME -- ^ The actual operator name
                      , bind :: Maybe BindInfo -- ^ More info for binders
                      } deriving (Eq, Ord, Show)
-
--- Pretty Printing;
-
-instance Pretty Domain where
-    pretty = printDomain
-instance Pretty OP_ITEM where
-    pretty = printOpItem
-instance Pretty VAR_ITEM where
-    pretty = printVarItem
-instance Pretty BASIC_SPEC where
-    pretty = printBasicSpec
-instance Pretty BASIC_ITEM where
-    pretty = printBasicItems
-instance Pretty EXTPARAM where
-    pretty = printExtparam
-instance Pretty EXPRESSION where
-    pretty = head . printExpression
-instance Pretty SYMB_ITEMS where
-    pretty = printSymbItems
-instance Pretty SYMB where
-    pretty = printSymbol
-instance Pretty SYMB_MAP_ITEMS where
-    pretty = printSymbMapItems
-instance Pretty SYMB_OR_MAP where
-    pretty = printSymbOrMap
-instance Pretty CMD where
-    pretty = head . printCMD
 
 
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
@@ -364,6 +339,31 @@ lookupBindInfo (OpId op) arit =
 lookupBindInfo (OpUser _) _ = Nothing
 
 -- * Pretty Printing
+
+instance Pretty Domain where
+    pretty = printDomain
+instance Pretty OP_ITEM where
+    pretty = printOpItem
+instance Pretty VAR_ITEM where
+    pretty = printVarItem
+instance Pretty BASIC_SPEC where
+    pretty = printBasicSpec
+instance Pretty BASIC_ITEM where
+    pretty = printBasicItems
+instance Pretty EXTPARAM where
+    pretty = printExtparam
+instance Pretty EXPRESSION where
+    pretty = head . printExpression
+instance Pretty SYMB_ITEMS where
+    pretty = printSymbItems
+instance Pretty SYMB where
+    pretty = printSymbol
+instance Pretty SYMB_MAP_ITEMS where
+    pretty = printSymbMapItems
+instance Pretty SYMB_OR_MAP where
+    pretty = printSymbOrMap
+instance Pretty CMD where
+    pretty = head . printCMD
 
 -- | A monad for printing of constants. This turns the pretty printing facility
 -- more flexible w.r.t. the output of 'ConstantName'.

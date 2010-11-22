@@ -200,6 +200,10 @@ constsToVars env e =
             }
     in foldTerm substRec e
 
+-- * Utils for 'CMD' and 'EXPRESSION'
+subAssignments :: CMD -> [(EXPRESSION, EXPRESSION)]
+subAssignments = foldCMD listCMDRecord{ foldAss = \ _ c def -> [(c, def)] }
+
 -- * Further analysis in order to run this specification
 
 -- ** Datatypes and guarded definitions
@@ -379,7 +383,8 @@ topsort d br =
          | Map.null d' = acc
          | otherwise =
              let (s, v) = Map.findMin d'
-             in error $ "contains cycles: " ++ concat [ show s, " -> ", show v ]
+             in error $ concat [ "topsort: Dependency relation contains cycles "
+                               , show s, " -> ", show v ]
      f d' acc (n:l) =
          let cl = Map.findWithDefault [] n br
              (nl, d'') = foldl (remEdge n) ([], d') cl

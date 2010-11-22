@@ -95,7 +95,9 @@ l1 i = do
                             else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  getSigSensComplete True CSL (hlib ++ lb) sp
+  res <- getSigSensComplete True CSL (hlib ++ lb) sp
+  putStrLn "\n"
+  return res
 
 sig :: Int -> IO Sign
 sig = fmap fst . l1
@@ -528,6 +530,12 @@ testElim i = prepareAS i >>= elimEPs
 prepareAS :: Int -> IO [(String, Guarded EPRange)]
 prepareAS = liftM (dependencySortAS . fmap analyzeGuarded . fst . splitAS) . sens
 
+prepareProg :: Int -> IO [Named CMD]
+prepareProg = liftM (snd . splitAS) . sens
+
+progAssignments :: Int -> IO [(EXPRESSION, EXPRESSION)]
+progAssignments = liftM subAss . prepareProg
+
 -- get the first guarded-entry from the AS
 -- grdd <- fmap (snd . head) $ getAS (-821)
 
@@ -552,6 +560,9 @@ assignments = assignments' . map sentence
 assignments' :: [CMD] -> [(EXPRESSION, EXPRESSION)]
 assignments' = mapMaybe getAss
 
+subAss :: [Named CMD] -> [(EXPRESSION, EXPRESSION)]
+subAss = concatMap subAssignments . map sentence
+
 getAss (Ass c def) = Just (c,def)
 getAss _ = Nothing
 
@@ -574,7 +585,7 @@ epList =
     in Intersection l : Union l : l
 
 epDomain :: [(String, EPExps)]
-epDomain = zip ["I", "F"] $ map toEPs ["I>=0", "F>=0"]
+epDomain = zip ["I", "F"] $ map toEPs ["I>= -1", "F>=0"]
 
 vMap :: Map.Map String Int
 vMap = varMapFromSet $ namesInList epList
