@@ -1,6 +1,11 @@
 name: programatica
-version: 1.0
-Cabal-Version:  >= 1.2
+version: 1.0.0.1
+license:        OtherLicense
+license-file:   LICENSE.txt
+category:       Programatica
+synopsis:       a programatica package
+description: a subset of the programatica sources
+cabal-version:  >= 1.2
 maintainer: Thomas Hallgren <hallgren@cse.ogi.edu>
 stability: stable
 homepage: http://www.cse.ogi.edu/PacSoft/projects/programatica
@@ -234,8 +239,7 @@ Library
   UniqueNames,
   WorkModule
  hs-source-dirs:
-  base/AST, base/TI, base/parse2, base/parse2/Lexer, base/parse2/Parser,
-  base/parse2/LexerGen, base/parse2/LexerSpec, base/tests/HbcLibraries,
+  base/AST, base/TI, base/parse2, base/parse2/Lexer,
   base/pretty, base/syntax, base/lib, base/lib/Monads, base/Modules, base/defs,
   base/transforms, base/transforms/Deriving, property,
   property/syntax, property/AST, property/transforms,
@@ -250,9 +254,8 @@ Library
   FunctionalDependencies,
   TypeSynonymInstances,
   EmptyDataDecls
- ghc-options: -O
  build-depends: haskell98, mtl
  if flag(splitBase)
-    build-depends: base >= 3.0, array, containers, pretty
+    build-depends: base >= 3.0 && < 5, array, containers, pretty
  else
     build-depends: base < 3.0
