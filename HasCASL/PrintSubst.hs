@@ -16,12 +16,9 @@ module HasCASL.PrintSubst where
 
 import HasCASL.Subst
 
-import HasCASL.As
-import HasCASL.Le
-import HasCASL.PrintAs
-import HasCASL.PrintLe
+import HasCASL.As()
+import HasCASL.PrintAs()
 
-import Common.Id
 import Common.Doc
 import Common.DocUtils
 
@@ -37,7 +34,7 @@ instance Pretty a => Pretty (SRule a) where
 
 instance Pretty Subst where
     pretty (Subst (a,b,_)) =
-        vcat [ text "Substitution", text $ map (const '=') [1..70]
+        vcat [ text "Substitution", text $ replicate 70 '='
              , prettyRuleMap "Termmap" a, prettyRuleMap "Typemap" b]
 
 prettyRuleMap :: (Pretty key, Pretty val)

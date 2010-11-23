@@ -16,17 +16,12 @@ module HasCASL.MatchingWithDefinitions where
 import HasCASL.Subst
 
 import HasCASL.As
-import HasCASL.AsUtils
-import HasCASL.FoldTerm
 import HasCASL.Le
 
 import Common.Id
-import Common.Lib.State
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List as List
-import Data.Maybe
 
 import Control.Monad
 
@@ -74,7 +69,7 @@ getConstructors a = let constrs = Map.map (Set.filter isConstructor) a
 termIsConstructor :: Assumps -> Term -> Bool
 termIsConstructor a t = case toSConst t of
                           Nothing -> False
-                          Just sc@(SConst n ts) -> 
+                          Just (SConst n ts) -> 
                               case Map.lookup n (getConstructors a) of
                                 Just s -> Set.member ts s
                                 _ -> False
@@ -106,14 +101,14 @@ defaultmatch a s c = let (nch, nc) = defaultNoclashFromAssumps a in
 
 match :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
       -> (Term -> Term -> Bool) -> Term -> Term -> m (Subst, [(Term, Term)])
-match map consts noclashHead noclash t1 t2 =
-    matchAux map consts noclashHead noclash (eps, []) (t1, t2)
+match m consts noclashHead noclash t1 t2 =
+    matchAux m consts noclashHead noclash (eps, []) (t1, t2)
 
 
 matchAux :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
          -> (Term -> Term -> Bool) -> (Subst, [(Term, Term)]) -> (Term, Term)
          -> m (Subst, [(Term, Term)])
-matchAux map consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
+matchAux m consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
     case terms of
       -- handle the skip-cases first
       (TypedTerm term _ _ _, _) -> match' term t2
@@ -141,7 +136,7 @@ matchAux map consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
       -- all other terms are not expected and accepted here
       _ -> fail "matchAux: unhandled term"
 
-      where matchF = matchAux map consts noclashHead noclash -- used for fold
+      where matchF = matchAux m consts noclashHead noclash -- used for fold
             match' = curry $ matchF output
             addMapping k =
                 let sc = toSC k in
@@ -163,7 +158,7 @@ matchAux map consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
                                | otherwise -> clash
 
 
-            defExpansion = lookupContent map
+            defExpansion = lookupContent m
             clash = fail $ "matchAux: Clash for " ++ show (t1,t2)
             tupleClash l l' = fail $ "matchAux: Clash for tuples "
                               ++ show (l, l')

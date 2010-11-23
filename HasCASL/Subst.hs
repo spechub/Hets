@@ -26,7 +26,6 @@ import Common.Lib.State
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.List as List
 import Data.Maybe
 
 
@@ -380,8 +379,8 @@ getResult rr = case rr of
 
 getResultType :: ReductionResult a -> String
 getResultType rr = case rr of
-                     Reduced a -> "Reduced"
-                     NotReduced a -> "NotReduced"
+                     Reduced _ -> "Reduced"
+                     NotReduced _ -> "NotReduced"
                      CannotReduce rf s _ -> "CannotReduce: " ++ show rf
                                             ++ ", " ++ s
 
