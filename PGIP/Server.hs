@@ -56,6 +56,7 @@ import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
 import Data.Time.Clock
 
+import System.Random
 import System.Process
 import System.Directory
 import System.Exit
@@ -64,8 +65,11 @@ import System.FilePath
 data Session = Session
   { sessLibEnv :: LibEnv
   , sessLibName :: LibName
-  , previousKeys :: [Int]
+  , _previousKeys :: [Int]
   , _sessStart :: UTCTime }
+
+randomKey :: IO Int
+randomKey = randomRIO (100000000, 999999999)
 
 sessGraph :: DGQuery -> Session -> Maybe (LibName, DGraph)
 sessGraph dgQ (Session le ln _ _) = case dgQ of
@@ -129,8 +133,18 @@ mkOkResponse :: String -> Response
 mkOkResponse = mkResponse status200
 
 addNewSess :: IORef (IntMap.IntMap Session) -> Session -> IO Int
-addNewSess sessRef sess = atomicModifyIORef sessRef
-      (\ m -> let k = IntMap.size m in (IntMap.insert k sess m, k))
+addNewSess sessRef sess = do
+  k <- randomKey
+  atomicModifyIORef sessRef
+      (\ m -> (IntMap.insert k sess m, k))
+
+nextSess :: IORef (IntMap.IntMap Session) -> LibEnv -> Int -> IO Session
+nextSess sessRef newLib k =
+    atomicModifyIORef sessRef
+      (\ m -> case IntMap.lookup k m of
+      Nothing -> error "nextSess"
+      Just s -> let newSess = s { sessLibEnv = newLib }
+        in (IntMap.insert k newSess m, newSess))
 
 getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
@@ -188,11 +202,8 @@ getHetsResult opts sessRef file query =
               Nothing -> fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln $ sessLibEnv sess
-                let newSess = sess
-                      { sessLibEnv = newLib
-                      , previousKeys = k : previousKeys sess }
-                nk <- lift $ addNewSess sessRef newSess
-                liftR $ return $ sessAns ln (newSess, nk)
+                newSess <- lift $ nextSess sessRef newLib k
+                liftR $ return $ sessAns ln (newSess, k)
             NodeQuery i ms -> case lab (dgBody dg) i of
               Nothing -> fail $ "no node id: " ++ show i
               Just dgnode -> return
