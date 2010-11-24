@@ -196,6 +196,8 @@ getHetsResult opts sessRef file query =
               Just "svg" -> getSVG file dg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph (sessLibEnv sess) dg
+              Just "session" -> liftR $ return $ ppElement
+                $ aRef (mkPath sess ln k) (show k)
               _ -> liftR $ return $ sessAns ln sk
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
@@ -220,24 +222,31 @@ getHetsResult opts sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
+
+mkPath :: Session -> LibName -> Int -> String
+mkPath sess l k =
+        '/' : concat [ show (getLibId l) ++ "?session="
+                     | l /= sessLibName sess ]
+        ++ show k
+
+extPath :: Session -> LibName -> Int -> String
+extPath sess l k = mkPath sess l k ++
+        if l /= sessLibName sess then "&" else "?"
+
 sessAns :: LibName -> (Session, Int) -> String
 sessAns libName (sess, k) =
   let libEnv = sessLibEnv sess
       ln = show $ getLibId libName
-      mkPath l =
-        '/' : concat [ show (getLibId l) ++ "?dg=" | l /= sessLibName sess ]
-        ++ show k
-      extPath l = mkPath l ++
-        if l /= sessLibName sess then "&" else "?"
-      ref d = aRef (extPath libName ++ d) d
+      ref d = aRef (extPath sess libName k ++ d) d
       libref l =
-        aRef (mkPath l) (show $ getLibId l) : map (\ d ->
-         aRef (extPath l ++ d) d) displayTypes
+        aRef (mkPath sess l k) (show $ getLibId l) : map (\ d ->
+         aRef (extPath sess l k ++ d) d) displayTypes
+      libPath = extPath sess libName k
       noderef (n, lbl) = let s = show n in
         unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
-        aRef (extPath libName ++ c ++ "=" ++ s) c) nodeCommands
+        aRef (libPath ++ c ++ "=" ++ s) c) nodeCommands
       edgeref e@(_, _, lbl) =
-        aRef (extPath libName ++ "edge=" ++ showEdgeId (dgl_id lbl))
+        aRef (libPath ++ "edge=" ++ showEdgeId (dgl_id lbl))
                  $ showLEdge e
       dg = lookupDGraph libName libEnv
       nlabs = labNodesDG dg

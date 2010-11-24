@@ -62,7 +62,7 @@ import Data.List
 import Data.Maybe
 
 displayTypes :: [String]
-displayTypes = ["svg", "xml"]
+displayTypes = ["svg", "xml", "session"]
 
 nodeCommands :: [String]
 nodeCommands = ["node", "theory"]
@@ -114,14 +114,14 @@ anaUri path query = case anaQuery query of
 anaQuery :: String -> Either String (Maybe Int, QueryKind)
 anaQuery qstr =
        let q = map (splitOn '=') $ concatMap (splitOn ';') $ splitOn '&' qstr
-           isNat s = all isDigit s && length s < 9
+           isNat s = all isDigit s && length s < 11
            (q1, qm) = partition (\ l -> case l of
                         [x] -> isNat x || elem x
                                (displayTypes ++ globalCommands
                                 ++ nodeCommands ++ edgeCommands)
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
-                        [x, y] -> elem x (["dg", "id"]
+                        [x, y] -> elem x (["dg", "id", "session"]
                                           ++ nodeCommands ++ edgeCommands)
                                    && isNat y
                                   || x == "command" &&
@@ -134,7 +134,7 @@ anaQuery qstr =
            (es, is) = partition (`elem` edgeCommands) r3
            (fs2, p1) = partition ((== "format") . head) q2
            (cs2, p2) = partition ((== "command") . head) p1
-           (is2, p3) = partition ((== "dg") . head) p2
+           (is2, p3) = partition ((`elem` ["dg", "session"]) . head) p2
            (ns2, p4) = partition ((`elem` nodeCommands) . head) p3
            (es2, ids) = partition ((`elem` edgeCommands) . head) p4
            snds = map $ head . tail
@@ -146,15 +146,18 @@ anaQuery qstr =
            aids = nubOrd . snds $ ns2 ++ es2 ++ ids
            mi = fmap read $ listToMaybe ais
        in if null qr && length ais < 2 then case (afs, ags, ans, aes, aids) of
-         (_, [], [], [], []) -> if length afs > 1 then Left "non-unique format"
+         (_, [], [], [], []) -> if length afs > 1
+           then Left $ "non-unique format " ++ show afs
            else Right (mi, DisplayQuery $ listToMaybe afs)
-         (_, c : r, [], [], _) -> if null r then
-           Right (mi, GlobCmdQuery c) else Left "non-unique command"
+         (_, c : r, [], [], _) -> if null r
+           then Right (mi, GlobCmdQuery c)
+           else Left $ "non-unique command " ++ show r
          (_, [], _, [], i : s) -> if null s && length ans < 2 then
            Right (mi, NodeQuery (read i) $ listToMaybe ans)
-           else Left "non-unique node"
+           else Left $ "non-unique node " ++ show (ans ++ aids)
          (_, [], [], e : r, i : s) -> if null r && null s then
            Right (mi, EdgeQuery (EdgeId $ read i) e)
-           else Left "non-unique edge"
-         _ -> Left "non-unique query"
-       else Left $ if null qr then "non-unique dg" else "ill-formed query"
+           else Left $ "non-unique edge " ++ show (aes ++ aids)
+         _ -> Left $ "non-unique query " ++ show q
+       else Left $ if null qr then "non-unique dg " ++ show q else
+                       "ill-formed query " ++ show qr
