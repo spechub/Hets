@@ -1,0 +1,35 @@
+http://www.dfki.de/sks/hets/intel-mac/gtk2-framework.dmg
+
+The gtk-2.14 framework can be used under Snow Leopard after:
+- adding the pkg-config of the framework to the PATH
+
+- cabal install gtk2hs-buildtools
+
+- adding ~/.cabal/bin to the PATH
+
+- add -m32 to gcc
+
+  gcc -m32 $@
+
+- cabal install gtk-0.11.2
+  gtk-0.12.0 does not work!
+  The gio package is not necessary, but it will be installed
+  when installing glade (even if gtk was installed without by:
+  cabal install gtk-0.11.2 -f -have-gio).
+
+- cabal install glade-0.11.1
+
+http://r.research.att.com/libs/GTK_2.18.5-X11.pkg
+has pango-1.26.2 that is rejected by pango.cabal.
+(Changing pango.cabal seems to work, though.)
+
+gtk+-2.0 and libglade2 from Macports will work, too.
+For linking -L/usr/lib should be added to ghc's command line
+otherwise the wrong libiconv is used for the base and haskeline package.
+
+quartz-gtk was tried several times without success.
+uDrawGraph and (Aqua-) tcl/tk work without X (and uDrawGraph will not change)
+
+ghc-6.10.4 does not work with the wai-extra cabal package
+ghc-6.12.3 does not exist in 64Bit mode
+ghc-7.10.1 does not support programatica #884
