@@ -62,7 +62,7 @@ import Data.List
 import Data.Maybe
 
 displayTypes :: [String]
-displayTypes = ["svg", "xml", "session"]
+displayTypes = ["svg", "xml", "dot", "session"]
 
 nodeCommands :: [String]
 nodeCommands = ["node", "theory"]

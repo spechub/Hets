@@ -196,6 +196,7 @@ getHetsResult opts sessRef file query =
               Just "svg" -> getSVG file dg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph (sessLibEnv sess) dg
+              Just "dot" -> liftR $ return $ dotGraph file False dg
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)
               _ -> liftR $ return $ sessAns ln sk
