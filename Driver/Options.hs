@@ -463,7 +463,7 @@ graphList = [Dot True, Dot False]
 information -}
 options :: [OptDescr Flag]
 options = let
-    listS = "is a comma-separated list without blanks"
+    listS = "is a comma-separated list"
        ++ crS ++ "of one or more from:"
     crS = "\n  "
     bS = "| "
@@ -483,7 +483,7 @@ options = let
       "no colors in shown graphs"
 #endif
     , Option "I" [interactiveS] (NoArg Interactive)
-      "run in interactive mode"
+      "run in interactive (console) mode"
     , Option "p" [skipS] (NoArg $ Analysis Skip)
       "skip static analysis, only parse"
     , Option "s" [structS] (NoArg $ Analysis Structured)
@@ -491,7 +491,8 @@ options = let
     , Option "l" ["logic"] (ReqArg DefaultLogic "LOGIC")
       "choose logic, default is CASL"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
-      "colon separated paths of library source directories"
+      ("colon-separated list of directories"
+       ++ crS ++ "containing HetCASL libraries")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option "x" [xmlS] (NoArg XML)
@@ -500,12 +501,14 @@ options = let
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
 #endif
-    , Option "c" [connectS] (ReqArg parseConnect "HOSTNAME:PORT")
-      "run interface comunicating via connecting to the port"
+    , Option "c" [connectS] (ReqArg parseConnect "HOST:PORT")
+      ("run (console) interface via connection"
+       ++ crS ++ "to given host and port")
     , Option "S" [listenS] (ReqArg parseListen "PORT")
       "run interface by listening to the port"
     , Option "i" [intypeS] (ReqArg parseInType "ITYPE")
-      ("input file type can be one of:" ++ crS ++ joinBar
+      ("input file type can be one of:" ++
+       concatMap (\ t -> crS ++ bS ++ t)
        (map show plainInTypes ++
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option "d" ["dump"] (ReqArg Dump "STRING")
@@ -540,7 +543,7 @@ options = let
       ("process views option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option "t" [transS] (ReqArg parseTransOpt "TRANS")
       ("translation option " ++ crS ++
-          "is a colon-separated list without blank" ++
+          "is a colon-separated list" ++
           crS ++ "of one or more from: SIMPLE-ID")
     , Option "a" [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ listS ++
