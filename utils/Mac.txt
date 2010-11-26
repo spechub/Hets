@@ -26,10 +26,30 @@ has pango-1.26.2 that is rejected by pango.cabal.
 gtk+-2.0 and libglade2 from Macports will work, too.
 For linking -L/usr/lib should be added to ghc's command line
 otherwise the wrong libiconv is used for the base and haskeline package.
+(This is not necessary for the ghc from Macports.)
 
-quartz-gtk was tried several times without success.
+I've mananged to use quartz-gtk as follows:
+sudo port uninstall libglade2 gtk2 pango cairo
+sudo port install gtk2 +no_x11 +quartz +universal
+sudo port install libglade2 +no_x11 +quartz +universal
+
+From the gtk-0.12.0 sources remove "drawableGetID" in
+Graphics/UI/Gtk/General/Structs.hsc and Graphics/UI/Gtk/Gdk/Drawable.chs
+otherwise the linker reports: Undefined symbols:
+  "_gdk_x11_drawable_get_xid", referenced from:
+      _s24wg_info in libHSgtk-0.12.0.a(Structs.o)
+
 uDrawGraph and (Aqua-) tcl/tk work without X (and uDrawGraph will not change)
+(So hets cannot be called remotely.)
 
 ghc-6.10.4 does not work with the wai-extra cabal package
 ghc-6.12.3 does not exist in 64Bit mode
 ghc-7.10.1 does not support programatica #884
+
+In order to address a proper emacs for isabelle set:
+  export HETS_ISABELLE=\
+   'isabelle emacs -p /Applications/Emacs.app/Contents/MacOS/Emacs'
+
+The current hets-0.97-installer-intel-mac.jar contains a binary without gtk,
+so consistency checks are not supported. Also pellet (and fact) is not
+included.
