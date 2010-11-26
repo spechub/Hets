@@ -9,7 +9,7 @@
 #
 # VARIABLES
 
-HETS_VERSION=0.96
+HETS_VERSION=0.97
 HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
 HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
