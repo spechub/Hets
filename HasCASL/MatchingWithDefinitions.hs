@@ -25,29 +25,6 @@ import qualified Data.Set as Set
 
 import Control.Monad
 
-{-
-  
-* OVERVIEW OF THE ALGORITHM
-
-Input: 
-- map = constant->term mapping for constant definition expansion
-- consts = set of constants to match, the others will be added as constraints
-- noclash = a function taking two constants which produced a clash
-            and returning whether or not this clash should be ignored and
-            the corresponding term-pair should be added to the constraints
-- t1 = term pattern
-- t2 = concrete term to be matched against the pattern
-
-
-Output:
-a lazy list of:
-- s = a substitution containing the equalities which make the pattern and the term equal
-- cstr = constraint list of equalities which have to be satisfied: in the case
-         where a constant in t2 is encountered which cannot be expanded, but the corresponding pattern
-         part is still not atomic, or where we get a clash between non-constructor terms
-
--}
-
 
 
 {-
@@ -78,6 +55,7 @@ termIsConstructor a t = case toSConst t of
 noclashHeadInduced :: (Term -> Bool) -> Term -> Term -> Bool
 noclashHeadInduced p t1 t2 = not (p t1) || not (p t2)
 
+-- TODO: find out if we need to check for equality in the first case!
 -- | The noclash here is induced only by the noclashHead function
 noclashInduced :: (Term -> Term -> Bool) -> Term -> Term -> Bool
 noclashInduced p (ApplTerm f1 _ _) (ApplTerm f2 _ _) = p f1 f2
@@ -98,6 +76,33 @@ defaultmatch :: (Monad m) => Assumps -> Subst -> Set.Set SubstConst
 defaultmatch a s c = let (nch, nc) = defaultNoclashFromAssumps a in
                      match s c nch nc
 
+{- |
+  
+* OVERVIEW OF THE ALGORITHM
+
+Input: 
+- map = constant->term mapping for constant definition expansion
+- consts = set of constants to match, the others will be added as constraints
+- noclash = a function taking two constants which produced a clash
+            and returning whether or not this clash should be ignored and
+            the corresponding term-pair should be added to the constraints
+  actually we have two functions here:
+    1. noclash-head: checks whether application-term heads produce a clash
+    2. noclash: checks whether terms in general produce a clash.
+                Only invoked after definition expansion.
+- t1 = term pattern
+- t2 = concrete term to be matched against the pattern
+
+
+Output:
+- s = a substitution containing the equalities which make the pattern and the term equal
+- cstr = constraint list of equalities which have to be satisfied: in the case
+         where a constant in t2 is encountered which cannot be expanded, but the corresponding pattern
+         part is still not atomic, or where we get a clash between non-constructor terms
+
+To support backtracking we should implement the output as a (lazy) list
+
+-}
 match :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
       -> (Term -> Term -> Bool) -> Term -> Term -> m (Subst, [(Term, Term)])
 match m consts noclashHead noclash t1 t2 =
