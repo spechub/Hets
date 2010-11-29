@@ -25,8 +25,6 @@ import qualified Data.Set as Set
 
 import Control.Monad
 
-------------------------- Preliminaries -------------------------
-
 {-
   
 * OVERVIEW OF THE ALGORITHM
@@ -51,9 +49,10 @@ a lazy list of:
 -}
 
 
------------------------ simple matching -----------------------
 
 {-
+  Simple matching:
+
   The default behaviour of the match is to signal only a clash
   if two constructors that are different are tried to be matched.
   For that reason we provide a facility for extracting the testfunctions
@@ -110,7 +109,7 @@ matchAux :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
          -> m (Subst, [(Term, Term)])
 matchAux m consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
     case terms of
-      -- handle the skip-cases first
+      -- handle the 'skip-cases' first
       (TypedTerm term _ _ _, _) -> match' term t2
       (_, TypedTerm term _ _ _) -> match' t1 term
 

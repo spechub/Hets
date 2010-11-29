@@ -29,7 +29,7 @@ import qualified Data.Set as Set
 import Data.Maybe
 
 
-------------------------- Subst type -------------------------
+-- * Datatypes for substitution and some preliminaries
 
 -- | The constants for which terms can be substituted
 data SubstConst = SConst Id TypeScheme
@@ -158,8 +158,6 @@ class STLike a where
 class Substable a where
     subst :: Subst -> a -> a
 
----- instances
-
 
 
 instance LookupSubst Term Term where
@@ -218,7 +216,7 @@ typevarId :: TypeArg -> Id
 typevarId (TypeArg n _ _ _ _ _ _)= n
 
 
-------------------------- Substitution -------------------------
+-- * Substitution
 
 {-
 
@@ -310,7 +308,7 @@ substCaseEq s (ProgEq lh rh rg) =
     in ProgEq lh (subst (inScope bvars $ removeListC s bvars) rh) rg
 
 
------------------------ Substitution for let reduction -----------------------
+-- * Substitution for let reduction
 
 -- | substitutes the symbols, bound by progeqs, in the term
 substEqs :: Term -> [ProgEq] -> ReductionResult Term
@@ -333,7 +331,7 @@ substFromEq s (ProgEq lh rh _) =
       Nothing -> CannotReduce HasPatternsOrFunctions "substFromEq" s
 
 
-------------------------- Reduction -------------------------
+-- * Reduction
 
 data ReductionFailure = HasPatternsOrFunctions | HasCycles deriving Show
 
