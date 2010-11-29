@@ -83,10 +83,12 @@ main = do
   return ()
 
 
--- Test functions for CASL signature
 
 proceed :: FilePath -> ResultT IO (LibName, LibEnv)
-proceed = anaSourceFile logicGraph myHetcatsOpts Set.empty emptyLibEnv emptyDG
+proceed = proceed' myHetcatsOpts
+
+proceed' :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
+proceed' hopts = anaSourceFile logicGraph hopts Set.empty emptyLibEnv emptyDG
 
 
 getSigSensComplete ::
@@ -94,12 +96,13 @@ getSigSensComplete ::
           symb_items symb_map_items sign
           morphism symbol raw_symbol proof_tree
     => Bool -- complete theory or not
+    -> HetcatsOpts -- options
     -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
     -> IO (sign, [Named sentence])
-getSigSensComplete b lid fname sp = do
-  Result _ res <- runResultT $ proceed fname
+getSigSensComplete b hopts lid fname sp = do
+  Result _ res <- runResultT $ proceed' hopts fname
   case res of
     Just (ln, lenv) ->
      let dg = lookupDGraph ln lenv
@@ -137,11 +140,15 @@ getSigSens ::
     Logic lid sublogics basic_spec sentence
           symb_items symb_map_items sign
           morphism symbol raw_symbol proof_tree
-    => lid -- logicname
+    => HetcatsOpts -- options
+    -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
     -> IO (sign, [Named sentence])
 getSigSens = getSigSensComplete False
+
+
+-- Test functions for CASL signature
 
 
 -- read in a CASL file and return the basic theory
@@ -149,7 +156,7 @@ getCASLSigSens :: String -- filename
                   -> String  -- name of spec
                   -> IO (CASLSign, [(String, CASLFORMULA)])
 getCASLSigSens fname sp = do
-  (x, y) <- getSigSens CASL fname sp
+  (x, y) <- getSigSens myHetcatsOpts CASL fname sp
   let f z = (senAttr z, sentence z)
   return (x, map f y)
 
