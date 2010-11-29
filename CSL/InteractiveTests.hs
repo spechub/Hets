@@ -60,11 +60,13 @@ import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
 import Text.ParserCombinators.Parsec
 
+import Driver.Options
+
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
 -- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
-import Main (getSigSens, getSigSensComplete)
+import Main (getSigSens, getSigSensComplete, myHetcatsOpts)
 
 import Control.Monad.State.Class
 import Control.Monad.Reader
@@ -77,12 +79,16 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import System.IO
 
+
 -- ----------------------------------------------------------------------
 -- * general test functions
 -- ----------------------------------------------------------------------
 
--- TODO: check with inherited sentences (flange2)!
--- TODO: build a new OpString entry for elim constants (see Analysis.hs)
+
+-- see also myHetcatsOpts in Test.hs
+myHetsOpts :: HetcatsOpts
+myHetsOpts = myHetcatsOpts { verbose = 0 }
+
 testspecs =
     [ (44, ("/CSL/EN1591.het", "EN1591"))
     , (45, ("/CSL/flange2.het", "Flange2"))
@@ -95,7 +101,7 @@ l1 i = do
                             else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  res <- getSigSensComplete True CSL (hlib ++ lb) sp
+  res <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
   putStrLn "\n"
   return res
 
