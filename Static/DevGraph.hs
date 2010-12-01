@@ -34,6 +34,7 @@ also shall be visible in the displayed development graph.
 module Static.DevGraph where
 
 import Syntax.AS_Structured
+import Syntax.AS_Library
 import Static.GTheory
 
 import Logic.Logic
@@ -61,6 +62,7 @@ import Data.Graph.Inductive.Graph as Graph
 import Data.Graph.Inductive.Query.DFS
 import Data.List
 import Data.Maybe
+import Data.Ord
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -157,8 +159,8 @@ data DGNodeInfo = DGNode
   , ref_node :: Node             -- pointer to ref'd node
   } deriving (Show, Eq)
 
--- | node inscriptions in development graphs.
--- Nothing entries indicate "not computed yet"
+{- | node inscriptions in development graphs.
+Nothing entries indicate "not computed yet" -}
 data DGNodeLab =
   DGNodeLab
   { dgn_name :: NodeName        -- name in the input language
@@ -209,8 +211,8 @@ getNodeCons nl = case getNodeConsStatus nl of
 getNodeConservativity :: LNode DGNodeLab -> Conservativity
 getNodeConservativity = getNodeCons . snd
 
--- | test if a node conservativity is open,
--- return input for refs or nodes with normal forms
+{- | test if a node conservativity is open,
+return input for refs or nodes with normal forms -}
 hasOpenNodeConsStatus :: Bool -> DGNodeLab -> Bool
 hasOpenNodeConsStatus b lbl = if isJust $ dgn_nf lbl then b else
   hasOpenConsStatus b $ getNodeConsStatus lbl
@@ -372,9 +374,9 @@ data DGLinkType =
   | HidingDefLink
   | FreeOrCofreeDefLink FreeOrCofree MaybeNode -- the "parameter" node
   | HidingFreeOrCofreeThm (Maybe FreeOrCofree) GMorphism ThmLinkStatus
-    -- DGLink S1 S2 m2 (DGLinkType m1 p) n
-    -- corresponds to a span of morphisms
-    -- S1 <--m1-- S --m2--> S2
+    {- DGLink S1 S2 m2 (DGLinkType m1 p) n
+    corresponds to a span of morphisms
+    S1 <--m1-- S --m2--> S2 -}
     deriving (Show, Eq)
 
 -- | extract theorem link status from link type
@@ -409,8 +411,8 @@ nameDGLink :: NodeName -> DGLinkLab -> DGLinkLab
 nameDGLink nn l = l { dglName = nn }
 
 defDGLink :: GMorphism -> DGLinkType -> DGLinkOrigin -> DGLinkLab
--- See svn-version 13804 for a naming concept which unfortunately introduced
--- same names for different links.
+{- See svn-version 13804 for a naming concept which unfortunately introduced
+same names for different links. -}
 defDGLink m ty orig = mkDGLink m ty orig (makeName $ mkSimpleId "")
                       defaultEdgeId
 
@@ -552,8 +554,8 @@ type StUnitCtx = Map.Map SIMPLE_ID ImpUnitSigOrSig
 emptyStUnitCtx :: StUnitCtx
 emptyStUnitCtx = Map.empty
 
--- data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
--- this type is superseeded by RefSig
+{- data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
+this type is superseeded by RefSig -}
 
 
 type RefSigMap = Map.Map SIMPLE_ID RefSig
@@ -594,7 +596,7 @@ setPointerInRef (ComponentRefSig _ x) y = ComponentRefSig y x
 
 setUnitSigInRef :: RefSig -> UnitSig -> RefSig
 setUnitSigInRef (BranchRefSig x (_, y)) usig = BranchRefSig x (usig, y)
-setUnitSigInRef _ _ = error $ "setUnitSigInRef"
+setUnitSigInRef _ _ = error "setUnitSigInRef"
 
 getUnitSigFromRef :: RefSig -> Result UnitSig
 getUnitSigFromRef (BranchRefSig _ (usig, _)) = return usig
@@ -632,8 +634,8 @@ equalSigs (UnitSig ls1 ns1) (UnitSig ls2 ns2) =
 namesMatchCtx :: [SIMPLE_ID] -> BStContext -> RefSigMap -> Bool
 namesMatchCtx [] _ _ = True
 namesMatchCtx (un : unitNames) bstc rsmap =
- case (Map.findWithDefault (error "namesMatchCtx")
-            un bstc) of
+ case Map.findWithDefault (error "namesMatchCtx")
+            un bstc of
   BranchRefSig _ (_usig, mbsig) -> case mbsig of
     Nothing -> False -- should not be the case
     Just bsig -> case bsig of
@@ -647,10 +649,10 @@ namesMatchCtx (un : unitNames) bstc rsmap =
          ComponentRefSig _ rsmap' ->
                 matchesContext rsmap' bstc' &&
                  namesMatchCtx unitNames bstc rsmap
-  -- This is where I introduce something new wrt to the original paper:
-  -- if bstc' has only one element
-  -- it suffices to have the signature of that element
-  -- matching the signature from rsmap'
+  {- This is where I introduce something new wrt to the original paper:
+  if bstc' has only one element
+  it suffices to have the signature of that element
+  matching the signature from rsmap' -}
          _ -> Map.size bstc' == 1 &&
                 let un1 = head $ Map.keys bstc'
                     rsmap' = Map.mapKeys (\ x -> if x == un then un1 else x)
@@ -670,7 +672,7 @@ modifyCtx (un : unitNames) rsmap bstc =
           case rsmap Map.! un of
             BranchRefSig n2 (usig'', bsig'') -> if equalSigs usig' usig'' then
                  modifyCtx unitNames rsmap $
-                 Map.insert un (BranchRefSig  (compPointer n1 n2)
+                 Map.insert un (BranchRefSig (compPointer n1 n2)
                             (usig, bsig'')) bstc -- was usig'
                 else error "illegal composition"
             _ -> modifyCtx unitNames rsmap bstc
@@ -851,9 +853,9 @@ updateSigRT dg n usig =
  in case l of
      Nothing -> dg
      Just oldL -> let
-       newL = oldL{rtn_type = RTPlain usig}
+       newL = oldL {rtn_type = RTPlain usig}
        (g', _) = Tree.labelNode (n, newL) g
-                  in dg{refTree = g'}
+                  in dg {refTree = g'}
 
 updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameSpecRT dg n s =
@@ -863,7 +865,7 @@ updateNodeNameSpecRT dg n s =
 addSubTree :: DGraph -> Maybe RTLeaves -> RTPointer -> (DGraph, RTPointer)
 addSubTree dg Nothing (NPComp h) =
   foldl
-   (\(d, NPComp cp) (k, p)-> let
+   (\ (d, NPComp cp) (k, p) -> let
          (d', p') = addSubTree d Nothing p
        in (d', NPComp (Map.insert k p' cp)))
    (dg, NPComp Map.empty) $ Map.toList h
@@ -871,7 +873,7 @@ addSubTree dg Nothing p = let
    s = refSource p
    (dg', f) = copySubTree dg s Nothing
    p' = mapRTNodes f p
-  in  (dg', p')
+  in (dg', p')
 addSubTree dg (Just (RTLeaf x)) p = let
    s = refSource p
    (dg', f) = copySubTree dg s $ Just x
@@ -879,8 +881,8 @@ addSubTree dg (Just (RTLeaf x)) p = let
   in (dg', p')
 addSubTree dg (Just (RTLeaves g)) (NPComp h) =
  foldl
-   (\(d, NPComp cp) (k, p)-> let
-         l = Map.findWithDefault (error $ "addSubTree:"++ show k) k g
+   (\ (d, NPComp cp) (k, p) -> let
+         l = Map.findWithDefault (error $ "addSubTree:" ++ show k) k g
          (d', p') = addSubTree d (Just l) p
        in (d', NPComp (Map.insert k p' cp)))
    (dg, NPComp Map.empty) $ Map.toList h
@@ -954,8 +956,8 @@ data RTPointer =
         -- here the leaves can be either NPUnit or NPComp
  | NPRef Node Node
  | NPComp (Map.Map SIMPLE_ID RTPointer)
-         -- here the leaves can be NPUnit or NPComp
-         -- and roots are needed for inserting edges
+         {- here the leaves can be NPUnit or NPComp
+         and roots are needed for inserting edges -}
  deriving (Show, Eq)
 
 
@@ -1002,8 +1004,8 @@ refTarget (NPComp f) = RTLeaves $ Map.map refTarget f
 refTarget (NPBranch _ f) = RTLeaves $ Map.map refTarget f
 refTarget x = error ("refTarget:" ++ show x)
 
--- I copied these types from ArchDiagram
--- to store the diagrams of the arch specs in the dgraph
+{- I copied these types from ArchDiagram
+to store the diagrams of the arch specs in the dgraph -}
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
  deriving Show
@@ -1025,6 +1027,7 @@ data Diag = Diagram {
   resp. 'G_theory' with 'thMap' and 'gTheorySelfIdx'. -}
 data DGraph = DGraph
   { globalAnnos :: GlobalAnnos -- ^ global annos of library
+  , optLibDefn :: Maybe LIB_DEFN
   , globalEnv :: GlobalEnv -- ^ name entities (specs, views) of a library
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
@@ -1044,6 +1047,7 @@ data DGraph = DGraph
 emptyDG :: DGraph
 emptyDG = DGraph
   { globalAnnos = emptyGlobalAnnos
+  , optLibDefn = Nothing
   , globalEnv = Map.empty
   , dgBody = Graph.empty
   , refTree = Graph.empty
@@ -1318,20 +1322,20 @@ lookupInAllRefNodesDG ref dg = case ref of
 lookupNodeWith :: (LNode DGNodeLab -> Bool) -> DGraph -> [LNode DGNodeLab]
 lookupNodeWith f dg = filter f $ labNodesDG dg
 
--- | lookup a node in the graph by its name, using showName
--- to convert nodenames.
+{- | lookup a node in the graph by its name, using showName
+to convert nodenames. -}
 lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
 
--- | lookup a local node in the graph by its name, using showName
--- to convert nodenames. See also 'lookupNodeByName'.
+{- | lookup a local node in the graph by its name, using showName
+to convert nodenames. See also 'lookupNodeByName'. -}
 lookupLocalNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupLocalNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = not (isDGRef lbl) && getDGNodeName lbl == s
 
--- | lookup a local node in the graph by its name, using showName
--- to convert nodenames. See also 'lookupNodeByName'.
+{- | lookup a local node in the graph by its name, using showName
+to convert nodenames. See also 'lookupNodeByName'. -}
 lookupRefNodeByName :: String -> LibName -> DGraph -> [LNode DGNodeLab]
 lookupRefNodeByName s ln dg = lookupNodeWith f dg where
     f (_, lbl) = case nodeInfo lbl of
@@ -1441,7 +1445,7 @@ insNodesDG ns dg = dg { dgBody = insNodes ns $ dgBody dg }
 -- | delete a labeled edge out of the given DG
 delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdgeDG e g = g
-    { dgBody = Tree.delLEdge (\ l1 l2 -> compare (dgl_id l1) $ dgl_id l2) e
+    { dgBody = Tree.delLEdge (comparing dgl_id) e
       $ dgBody g }
 
 -- | insert a labeled edge into a given DG, return possibly new id of edge
@@ -1453,18 +1457,18 @@ insLEdgeDG (s, t, l) g =
       e = (s, t, if newId then l { dgl_id = nId } else l)
   in (e, g
     { getNewEdgeId = if newId then succ nId else max nId $ succ eId
-    , dgBody = fst $ Tree.insLEdge True (\ l1 l2 ->
-        if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
-        then EQ else compare (dgl_id l1) $ dgl_id l2) e $ dgBody g })
+    , dgBody = fst $ Tree.insLEdge True compareLinks e $ dgBody g })
+
+compareLinks :: DGLinkLab -> DGLinkLab -> Ordering
+compareLinks l1 l2 = if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
+        then EQ else comparing dgl_id l1 l2
 
 {- | tries to insert a labeled edge into a given DG, but if this edge
      already exists, then does nothing. -}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdgeNubDG (v, w, l) g =
   let oldEdgeId = getNewEdgeId g
-      (ng, change) = Tree.insLEdge False (\ l1 l2 ->
-        if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
-        then EQ else compare (dgl_id l1) $ dgl_id l2)
+      (ng, change) = Tree.insLEdge False compareLinks
         (v, w, l { dgl_id = oldEdgeId }) $ dgBody g
   in
      g { getNewEdgeId = if change then succ oldEdgeId else oldEdgeId

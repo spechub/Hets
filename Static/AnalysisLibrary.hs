@@ -140,11 +140,11 @@ anaString mln lgraph opts topLns libenv initDG input file = do
           lift $ putIfVerbose opts 1 $ "Analyzing "
                ++ (if noLibName then "file " ++ file ++ " as " else "")
                ++ "library " ++ show ln
-          (_, ld, _, lenv) <- anaLibDefn lgraph opts topLns libenv initDG ast
+          (_, ld, ga, lenv) <- anaLibDefn lgraph opts topLns libenv initDG ast
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
               Just dg -> lift $ do
-                  writeLibDefn (globalAnnos dg) file opts ld
+                  writeLibDefn ga file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts ln file ld dg)
                   return (ln, lenv)
@@ -210,16 +210,17 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG ln file = ResultT $ do
 >       mapM_ (putStrLn . show) diags
 -}
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
-  -> ResultT IO (LibName, LIB_DEFN, DGraph, LibEnv)
+  -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
 anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) = do
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos emptyGlobalAnnos ans
   (libItems', dg', libenv', _) <- foldM (anaLibItemAux opts topLns ln)
       ([], dg { globalAnnos = gannos }, libenv, lgraph) (map item alibItems)
   let dg1 = computeDGraphTheories libenv' $ markFree libenv' $
             markHiding libenv' dg'
-  return (ln, Lib_defn ln
-      (zipWith replaceAnnoted (reverse libItems') alibItems)
-      pos ans, dg1, Map.insert ln dg1 libenv')
+      newLD = Lib_defn ln
+        (zipWith replaceAnnoted (reverse libItems') alibItems) pos ans
+      dg2 = dg1 { optLibDefn = Just newLD }
+  return (ln, newLD, gannos, Map.insert ln dg2 libenv')
 
 anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> ([LIB_ITEM], DGraph, LibEnv, LogicGraph)

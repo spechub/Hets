@@ -19,7 +19,6 @@ import Driver.WriteLibDefn
 import Driver.ReadFn
 import Driver.Version
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Common.Result as CRes
@@ -49,9 +48,9 @@ import System.Posix.Process
 
 import Control.Monad
 
------- Configuration section -------------------------
+-- ---- Configuration section -------------------------
 
---- site specific configuration
+-- - site specific configuration
 
 -- a valid email address for the contact field / link
 contactUrl :: String
@@ -61,9 +60,9 @@ contactUrl = "mailto:" ++ contactText
 contactText :: String
 contactText = "hets-devel@informatik.uni-bremen.de"
 
--- a directory which must be accessable and exposed by the web server,
--- where all the generated files are stored. This string must end with
--- a slash!
+{- a directory which must be accessable and exposed by the web server,
+where all the generated files are stored. This string must end with
+a slash! -}
 baseDirGenerated :: String
 baseDirGenerated = "/home/www.informatik.uni-bremen.de/cofi/hets-tmp/"
 
@@ -75,8 +74,8 @@ logFile = baseDirGenerated ++ "hets.log"
 baseUrlGenerated :: String
 baseUrlGenerated = "http://www.informatik.uni-bremen.de/cofi/hets-tmp/"
 
--- the directory where the Hets-lib repository is checked out. Must be
--- accessable by the cgi script
+{- the directory where the Hets-lib repository is checked out. Must be
+accessable by the cgi script -}
 caslLibDir :: String
 caslLibDir = "/home/cofi/Hets-lib"
 
@@ -93,7 +92,7 @@ latexHeader = unlines
 pdflatexCmd :: String
 pdflatexCmd = "/opt/csw/bin/pdflatex"
 
---- site independant configuration
+-- - site independant configuration
 
 cofiUrl :: String
 cofiUrl =
@@ -114,7 +113,7 @@ hetsManualUrl = hetsUrl ++ "UserGuide.pdf"
 hetcaslStyUrl :: String
 hetcaslStyUrl = hetsUrl ++ "hetcasl.sty"
 
------- End of Configuration section ------------------
+-- ---- End of Configuration section ------------------
 
 webOpts :: HetcatsOpts
 webOpts = defaultHetcatsOpts
@@ -124,13 +123,13 @@ webOpts = defaultHetcatsOpts
 
 data SelectedBoxes = SB
   { outputTree :: Bool
-  , outputTxt  :: Bool
-  , outputTex  :: Bool
-  , archive    :: Bool
+  , outputTxt :: Bool
+  , outputTex :: Bool
+  , archive :: Bool
   } deriving Show
 
 data Output = OP
-  { asciiTxt  :: String
+  { asciiTxt :: String
   , parseTree :: String }
 
 defaultOutput :: Output
@@ -147,7 +146,7 @@ instance Show RESL where
 main :: IO ()
 main = run mainCGI
 
-mainCGI :: CGI()
+mainCGI :: CGI ()
 mainCGI = ask $ html $ do
       CGI.head $ title $ text "Hets Web Interface"
       CGI.body $ makeForm $ page1 $ "Hets " ++ hetcats_version
@@ -169,7 +168,7 @@ page1 title1 = do
       text "output pretty print LaTeX"
       selectTree <- checkboxInputField (attr "valus" "yes")
       text "output xml tree"
-      selectAchiv <- p $ b $ checkboxInputField(attr "checked" "checked") ##
+      selectAchiv <- p $ b $ checkboxInputField (attr "checked" "checked") ##
         text "If this checkbox is selected, your input will be logged!"
       -- submit/reset botton
       p $ do
@@ -192,9 +191,9 @@ handle (F5 input box1 box2 box3 box4) = do
         str = CGI.value input
         selectedBoxes = SB
           { outputTree = CGI.value box1
-          , outputTxt  = CGI.value box2
-          , outputTex  = CGI.value box3
-          , archive    = CGI.value box4 }
+          , outputTxt = CGI.value box2
+          , outputTex = CGI.value box3
+          , archive = CGI.value box4 }
     RESL res <- io $ fmap RESL $ anaInput str selectedBoxes outputfile
     ask $ html $ do
           CGI.head $ title $ text "HETS results"
@@ -221,37 +220,35 @@ anaInput contents selectedBoxes outputfiles =
                        mres
 
       diagFilter d = case CRes.diagKind d of
-                     CRes.Hint  -> False
+                     CRes.Hint -> False
                      CRes.Debug -> False
-                     _     -> True
+                     _ -> True
 
       process_result :: [CRes.Diagnosis]
-                      -> (LibName, LIB_DEFN, DGraph, LibEnv)
+                      -> (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
                       -> FilePath
                       -> SelectedBoxes
                       -> IO (CRes.Result Output)
-      process_result ds (libName, libDefn, _, libEnv) outputfile conf = do
-             let gannos = globalAnnos $ Map.findWithDefault emptyDG
-                          libName libEnv
-                 fMode = foldl unionFileModes nullFileMode
+      process_result ds (_, libDefn, gannos, _) outputfile conf = do
+             let fMode = foldl unionFileModes nullFileMode
                                 [ownerReadMode, ownerWriteMode,
                                  groupReadMode, groupWriteMode,
                                  otherReadMode]
              when (outputTex conf) $ do
                     let pptexFile = outputfile ++ ".pp.tex"
                         latexFile = outputfile ++ ".tex"
-                        pdfFile   = outputfile ++ ".pdf"
-                        tmpFile   = outputfile ++ ".tmp"
+                        pdfFile = outputfile ++ ".pdf"
+                        tmpFile = outputfile ++ ".tmp"
                     writeLibDefnLatex webOpts
                          gannos pptexFile libDefn
                     writeFile latexFile (latexHeader ++
-                                         "\\input{"++ pptexFile ++
+                                         "\\input{" ++ pptexFile ++
                                          "}\n \\end{document}\n")
                     setFileMode pptexFile fMode
                     setFileMode latexFile fMode
 
-                    system ("(cd "++ baseDirGenerated ++" ; ls -lh "++
-                            pdflatexCmd ++" ; "++ pdflatexCmd ++ " " ++
+                    system ("(cd " ++ baseDirGenerated ++ " ; ls -lh " ++
+                            pdflatexCmd ++ " ; " ++ pdflatexCmd ++ " " ++
                            latexFile ++ ") > " ++ tmpFile)
                     setFileMode pdfFile fMode
              when (outputTxt conf) $ do
@@ -265,11 +262,11 @@ anaInput contents selectedBoxes outputfiles =
              return (CRes.Result ds $ Just $ selectOut conf libDefn gannos)
       selectOut :: SelectedBoxes -> LIB_DEFN -> GlobalAnnos -> Output
       selectOut conf ld ga = defaultOutput
-        { asciiTxt  = if outputTxt conf then showGlobalDoc ga ld "" else ""
+        { asciiTxt = if outputTxt conf then showGlobalDoc ga ld "" else ""
         , parseTree = if outputTree conf then ppElement $ xmlLibDefn ga ld
             else "" }
       -- log file
-      saveLog :: Bool -> IO()
+      saveLog :: Bool -> IO ()
       saveLog willSave = when willSave $ do
             fd <- openFd logFile ReadWrite Nothing
                                defaultFileFlags {append = True}
@@ -300,9 +297,9 @@ printR :: String -> CRes.Result Output -> SelectedBoxes
        -> WithHTML x CGI ()
 printR str (CRes.Result ds mres) conf outputFile =
   do h3 $ text "You have submitted the HetCASL library:"
-     mapM_ (\l -> text l >> br CGI.empty) $ lines str
+     mapM_ (\ l -> text l >> br CGI.empty) $ lines str
      h3 $ text "Diagnostic messages of parsing and static analysis:"
-     mapM_ (\l -> text l >> br CGI.empty) (Prelude.map show ds)
+     mapM_ (\ l -> text (show l) >> br CGI.empty) ds
      maybe CGI.empty printRes mres
      hr_S CGI.empty
      p $ do
@@ -343,5 +340,5 @@ printR str (CRes.Result ds mres) conf outputFile =
                  text "You can download the "
                  hlink (read $ adjustOutfile ".pp.xml") $ text "XML file"
                  text " here. The file will be deleted after 30 minutes.\n"
-       formatTxt = p . mapM_ (\l -> text l >> br CGI.empty) . lines
+       formatTxt = p . mapM_ (\ l -> text l >> br CGI.empty) . lines
        heading3 = h3 . text
