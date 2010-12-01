@@ -103,9 +103,9 @@ hetsServer opts1 = do
       case files of
         [] -> return $ mkResponse status400 "no file uploaded"
         [(_, f)] -> do
-           let fn = B8.unpack (fileName f)
+           let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
-             copyFile (fileContent f) (tempHetsLib </> B8.unpack (fileName f))
+             copyFile (fileContent f) (tempHetsLib </> fn)
              dirs <- getHetsLibContent opts "" query
              mkHtmlPage "" dirs
             else return $ mkResponse status400 $ "illegal file name: " ++ fn
