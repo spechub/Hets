@@ -29,6 +29,7 @@ import Static.PrintDevGraph
 import Static.DotGraph
 import Static.AnalysisLibrary
 import Static.ToXml as ToXml
+import Static.ApplyChanges
 
 import Interfaces.Command
 import Interfaces.CmdAction
@@ -86,17 +87,12 @@ hetsServer opts1 = do
   createDirectoryIfMissing False tempHetsLib
   sessRef <- newIORef IntMap.empty
   run 8000 $ \ re ->
-    let query = B8.unpack $ queryString re in
-    case B8.unpack (requestMethod re) of
+    let query = B8.unpack $ queryString re
+        path = dropWhile (== '/') $ B8.unpack (pathInfo re)
+    in case B8.unpack (requestMethod re) of
     "GET" -> do
-         let path = dropWhile (== '/') $ B8.unpack (pathInfo re)
          dirs@(_ : cs) <- getHetsLibContent opts path query
-         if null cs then do
-           Result ds ms <- getHetsResult opts sessRef path query
-           return $ case ms of
-             Nothing -> mkResponse status400
-               $ showRelDiags 1 ds
-             Just s -> mkOkResponse s
+         if null cs then getHetsResponse opts [] sessRef path query
            else mkHtmlPage path dirs
     "POST" -> do
       (_, files) <- parseRequestBody tempFileSink re
@@ -109,8 +105,7 @@ hetsServer opts1 = do
              dirs <- getHetsLibContent opts "" query
              mkHtmlPage "" dirs
             else return $ mkResponse status400 $ "illegal file name: " ++ fn
-        _ -> return $ mkResponse status400 $ "cannot handle multiple files "
-              ++ show (map (fileName . snd) files)
+        _ -> getHetsResponse opts (map snd files) sessRef path query
     _ -> return $ mkResponse status405 ""
 
 mkHtmlString :: FilePath -> [Element] -> String
@@ -180,14 +175,25 @@ cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
   EQ -> compare f1 f2
   c -> c
 
-getHetsResult :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> FilePath
+getHetsResponse :: HetcatsOpts -> [FileInfo FilePath]
+  -> IORef (IntMap.IntMap Session) -> FilePath
+  -> String -> IO Response
+getHetsResponse opts updates sessRef path query = do
+  Result ds ms <- getHetsResult opts updates sessRef path query
+  return $ case ms of
+    Nothing -> mkResponse status400 $ showRelDiags 1 ds
+    Just s -> mkOkResponse s
+
+getHetsResult :: HetcatsOpts -> [FileInfo FilePath]
+  -> IORef (IntMap.IntMap Session) -> FilePath
   -> String -> IO (Result String)
-getHetsResult opts sessRef file query =
+getHetsResult opts updates sessRef file query =
   runResultT $ case anaUri file $ dropWhile (== '?')
                  $ filter (not . isSpace) query of
     Left err -> fail err
     Right (Query dgQ qk) -> do
       sk@(sess, k) <- getDGraph opts sessRef dgQ
+      let libEnv = sessLibEnv sess
       case sessGraph dgQ sess of
         Nothing -> fail $ "unknown library given by: " ++ file
         Just (ln, dg) ->
@@ -195,16 +201,25 @@ getHetsResult opts sessRef file query =
             DisplayQuery ms -> case ms of
               Just "svg" -> getSVG file dg
               Just "xml" -> liftR $ return $ ppTopElement
-                $ ToXml.dGraph (sessLibEnv sess) dg
+                $ ToXml.dGraph libEnv dg
               Just "dot" -> liftR $ return $ dotGraph file False dg
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)
               _ -> liftR $ return $ sessAns ln sk
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
-              Nothing -> fail "getHetsResult.GlobCmdQuery"
+              Nothing -> case updates of
+                [ch0, imp0] | s == "update" -> do
+                  let ch = if takeExtension (B8.unpack $ fileName imp0)
+                        == ".xupdate" then imp0 else ch0
+                  str <- lift $ readFile $ fileContent ch
+                  newDg <- liftR $ applyXUpdates str dg
+                  let newLib = Map.insert ln newDg libEnv
+                  newSess <- lift $ nextSess sessRef newLib k
+                  liftR $ return $ sessAns ln (newSess, k)
+                _ -> fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
-                newLib <- liftR $ act ln $ sessLibEnv sess
+                newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sessRef newLib k
                 liftR $ return $ sessAns ln (newSess, k)
             NodeQuery i ms -> case lab (dgBody dg) i of

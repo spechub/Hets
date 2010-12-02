@@ -113,11 +113,12 @@ anaUri path query = case anaQuery query of
 -- | a leading question mark is removed
 anaQuery :: String -> Either String (Maybe Int, QueryKind)
 anaQuery qstr =
-       let q = map (splitOn '=') $ concatMap (splitOn ';') $ splitOn '&' qstr
+       let globals = "update" : globalCommands
+           q = map (splitOn '=') $ concatMap (splitOn ';') $ splitOn '&' qstr
            isNat s = all isDigit s && length s < 11
            (q1, qm) = partition (\ l -> case l of
                         [x] -> isNat x || elem x
-                               (displayTypes ++ globalCommands
+                               (displayTypes ++ globals
                                 ++ nodeCommands ++ edgeCommands)
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
@@ -125,11 +126,11 @@ anaQuery qstr =
                                           ++ nodeCommands ++ edgeCommands)
                                    && isNat y
                                   || x == "command" &&
-                                     elem y globalCommands
+                                     elem y globals
                                   || x == "format" && elem y displayTypes
                         _ -> False) qm
            (fs, r1) = partition (`elem` displayTypes) $ map head q1
-           (gs, r2) = partition (`elem` globalCommands) r1
+           (gs, r2) = partition (`elem` globals) r1
            (ns, r3) = partition (`elem` nodeCommands) r2
            (es, is) = partition (`elem` edgeCommands) r3
            (fs2, p1) = partition ((== "format") . head) q2
