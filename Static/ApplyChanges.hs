@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 adjust development graph according to xupdate information
 -}
 
-module Static.ApplyChanges (applyChange) where
+module Static.ApplyChanges (applyXUpdates) where
 
 import Static.ComputeTheory
 import Static.DevGraph
@@ -29,6 +29,7 @@ import Common.DocUtils
 import qualified Common.OrderedMap as OMap
 import Common.Result
 import Common.Utils (readMaybe, atMaybe)
+import Common.XUpdate
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Set as Set
@@ -48,6 +49,12 @@ getNodeByName msg nn dg = let s = showName nn in
     [] -> fail $ msg ++ "missing node:" ++ s
     [i] -> return i
     _ -> fail $ msg ++ "ambiguous node: " ++ s
+
+applyXUpdates :: Monad m => String -> DGraph -> m DGraph
+applyXUpdates xs dg = do
+    cs <- anaXUpdates xs
+    acs <- mapM changeDG cs
+    foldM (flip applyChange) dg acs
 
 applyChange :: Monad m => SelChangeDG -> DGraph -> m DGraph
 applyChange (SelChangeDG se ch) dg = case ch of
@@ -106,14 +113,14 @@ addAxOrTh str se dg = let err = "Static.ApplyChanges.addAxOrTh: " in case se of
   NodeElem nn (Just _) -> do
     (v, lbl) <- getNodeByName err nn dg
     case extendByBasicSpec str (dgn_theory lbl) of
-       (Success nGt nSens _ sameSig, msg) ->
-          if nSens == 1 && sameSig then let
+       (Success nGt nSens _ sameSig, msg) -> case nSens of
+          1 | sameSig -> let
               newLbl = lbl { dgn_theory = nGt }
               finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
                                   (v, newLbl) }
               in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
-          else if nSens == 0 then fail $ err ++ "missing sentence for: " ++ str
-               else fail $ err ++ msg
+          0 -> fail $ err ++ "missing sentence for: " ++ str
+          _ -> fail $ err ++ msg
        (_, msg) -> fail $ err ++ msg
   _ -> fail $ err ++ "cannot add sentence to: " ++ show se
 

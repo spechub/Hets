@@ -24,7 +24,6 @@ import Driver.AnaLib
 import Static.DevGraph
 import Static.History
 import Static.ToXml as ToXml
-import Static.FromXml
 import Static.ApplyChanges
 
 import GUI.UDGUtils as UDG
@@ -40,7 +39,6 @@ import Common.LibName
 import Common.Utils
 import qualified Common.Lib.Rel as Rel
 import Common.Result
-import Common.XUpdate
 
 import Data.IORef
 import qualified Data.Map as Map
@@ -179,10 +177,7 @@ changeLibGraph gi graph nodesEdges = do
               xs <- readFile xd
               xis <- readFile xi
               putIfVerbose opts 3 $ "Ignoring Impacts:\n" ++ xis
-              let Result ds mdg = do
-                    cs <- anaXUpdates xs
-                    acs <- mapM changeDG cs
-                    foldM (flip applyChange) dg acs
+              let Result ds mdg = applyXUpdates xs dg
               case mdg of
                 Just fdg -> do
                   closeOpenWindows gi
