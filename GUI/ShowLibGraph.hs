@@ -152,15 +152,18 @@ changeLibGraph gi graph nodesEdges = do
           f3 = fn ++ ".new.xh"
           dgold = changesDGH dg $ map negateChange $ flatHistory
                   $ proofHistory dg
-      writeVerbFile opts f1 $ ppTopElement $ ToXml.dGraph le dg
-      writeVerbFile opts f2 $ ppTopElement $ ToXml.dGraph le dgold
+          writeXml l' f' g' =
+              writeVerbFile opts f' $ ppTopElement
+                $ ToXml.dGraph l' (getFilePath ln) g'
+      writeXml le f1 dg
+      writeXml le f2 dgold
       m <- anaLib opts { outtypes = [] } fn
       case m of
         Just (nln, nle) | nln == ln -> do
           let dg2 = lookupDGraph nln nle
               ndg = changesDGH dg2 $ map negateChange $ flatHistory
                   $ proofHistory dg2
-          writeVerbFile opts f3 $ ppTopElement $ ToXml.dGraph nle ndg
+          writeXml nle f3 ndg
           md <- withinDirectory gmocPath $ do
             (_, exitPulse) <- pulseBar "Gmoc" "calling bin/gmoc ..."
             output <- readProcess "bin/gmoc"

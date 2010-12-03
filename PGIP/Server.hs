@@ -228,7 +228,7 @@ getHetsResult opts updates sessRef file query =
             DisplayQuery ms -> case ms of
               Just "svg" -> getSVG file dg
               Just "xml" -> liftR $ return $ ppTopElement
-                $ ToXml.dGraph libEnv dg
+                $ ToXml.dGraph libEnv (getFilePath ln) dg
               Just "dot" -> liftR $ return $ dotGraph file False dg
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)

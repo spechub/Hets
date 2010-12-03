@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 Xml of Hets DGs
 -}
 
-module Static.ToXml where
+module Static.ToXml (dGraph) where
 
 import Static.DevGraph
 import Static.GTheory
@@ -39,12 +39,13 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-dGraph :: LibEnv -> DGraph -> Element
-dGraph lenv dg =
+dGraph :: LibEnv -> FilePath -> DGraph -> Element
+dGraph lenv file dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
-  in add_attr (mkAttr "nextlinkid" $ showEdgeId $ getNewEdgeId dg)
+  in add_attrs [ mkAttr "filename" file
+               , mkAttr "nextlinkid" $ showEdgeId $ getNewEdgeId dg ]
      $ unode "DGraph" $
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)
          ++ map (lnode ga lenv) lnodes
@@ -128,7 +129,7 @@ lnode ga lenv (_, lbl) =
 
 mkThmNode :: GlobalAnnos -> Doc -> Bool -> Element
 mkThmNode ga d a = add_attr
-  (mkProvenAttr a) .  unode "Theorem" . show $ useGlobalAnnos ga d
+  (mkProvenAttr a) . unode "Theorem" . show $ useGlobalAnnos ga d
 
 -- | a status may be open, proven or outdated
 mkStatusAttr :: String -> Attr

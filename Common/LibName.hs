@@ -20,6 +20,7 @@ import Common.Keywords
 import Common.Utils
 
 import Data.List
+import Data.Ord
 import System.Time
 
 import Data.Graph.Inductive.Graph
@@ -98,8 +99,7 @@ setFilePath fp mt ln =
 getFilePath :: LibName -> FilePath
 getFilePath ln =
     case getLibId ln of
-      IndirectLink n _ fp _ ->
-          if null fp then error "getFilePath: empty fp in " ++ n else fp
+      IndirectLink _ _ fp _ -> fp
       _ -> error "getFilePath: No IndirectLink"
 
 data VersionNumber = VersionNumber [String] Range
@@ -148,7 +148,7 @@ instance Eq LibName where
   ln1 == ln2 = compare ln1 ln2 == EQ
 
 instance Ord LibName where
-  compare ln1 ln2 = compare (getLibId ln1) $ getLibId ln2
+  compare = comparing getLibId
 
 instance Pretty LibName where
     pretty = fsep . prettyLibName
@@ -156,8 +156,6 @@ instance Pretty LibName where
 instance Pretty LibId where
     pretty = structId . show
 
--- The Int type is used to represent Node, which is a typesynonym for Int.
--- We can't use Node here
 data LinkPath a = LinkPath a [(LibId, Node)] deriving (Ord, Eq)
 
 type SLinkPath = LinkPath String
