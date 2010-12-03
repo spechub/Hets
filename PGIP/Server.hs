@@ -9,7 +9,7 @@ Portability :  non-portable (via imports)
 
 -}
 
-module PGIP.Server (hetsServer) where
+module PGIP.Server (hetsServer, sourceToBs) where
 
 import PGIP.Query
 
@@ -107,6 +107,16 @@ hetsServer opts1 = do
             else return $ mkResponse status400 $ "illegal file name: " ++ fn
         _ -> getHetsResponse opts (map snd files) sessRef path query
     _ -> return $ mkResponse status405 ""
+
+-- for debugging purposes copied from Network.Wai.Parse
+sourceToBs :: Source -> IO B8.ByteString
+sourceToBs = fmap B8.concat . go id
+  where
+    go front (Source src) = do
+        res <- src
+        case res of
+            Nothing -> return $ front []
+            Just (bs, src') -> go (front . (:) bs) src'
 
 mkHtmlString :: FilePath -> [Element] -> String
 mkHtmlString path dirs = htmlHead ++ mkHtmlElem
@@ -238,7 +248,6 @@ getHetsResult opts updates sessRef file query =
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
 
-
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
         '/' : concat [ show (getLibId l) ++ "?session="
@@ -253,11 +262,11 @@ sessAns :: LibName -> (Session, Int) -> String
 sessAns libName (sess, k) =
   let libEnv = sessLibEnv sess
       ln = show $ getLibId libName
-      ref d = aRef (extPath sess libName k ++ d) d
       libref l =
         aRef (mkPath sess l k) (show $ getLibId l) : map (\ d ->
          aRef (extPath sess l k ++ d) d) displayTypes
       libPath = extPath sess libName k
+      ref d = aRef (libPath ++ d) d
       noderef (n, lbl) = let s = show n in
         unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
         aRef (libPath ++ c ++ "=" ++ s) c) nodeCommands
@@ -269,8 +278,10 @@ sessAns libName (sess, k) =
       elabs = labEdgesDG dg
   in htmlHead ++ mkHtmlElem
            ('(' : shows k ")" ++ ln)
-           (unode "b" ("library " ++ ln) :
-            map ref displayTypes ++ [unode "p" "commands:"]
+           (unode "b" ("library " ++ ln)
+            : map ref displayTypes
+            ++ loadXUpdate (libPath ++ "update")
+            : [unode "p" "commands:"]
             ++ [unode "ul" $
                 map (unode "li" . ref) globalCommands]
             ++ [unode "p" "imported libraries:"]
@@ -326,18 +337,35 @@ htmlHead =
 inputNode :: Element
 inputNode = unode "input" ()
 
-uploadHtml :: Element
-uploadHtml = add_attrs
-  [ mkAttr "action" "/"
-  , mkAttr "enctype" "multipart/form-data"
-  , mkAttr "method" "post" ]
-  $ unode "form"
-  [ add_attrs
+loadNode :: String -> Element
+loadNode name = add_attrs
     [ mkAttr "type" "file"
-    , mkAttr "name" "file"
+    , mkAttr "name" name
     , mkAttr "size" "40"]
     inputNode
-  , add_attrs
+
+submitNode :: Element
+submitNode = add_attrs
     [ mkAttr "type" "submit"
     , mkAttr "value" "submit"]
-    inputNode ]
+    inputNode
+
+mkForm :: String -> [Element] -> Element
+mkForm a = add_attrs
+  [ mkAttr "action" a
+  , mkAttr "enctype" "multipart/form-data"
+  , mkAttr "method" "post" ]
+  . unode "form"
+
+uploadHtml :: Element
+uploadHtml = mkForm "/"
+  [ loadNode "file"
+  , submitNode ]
+
+loadXUpdate :: String -> Element
+loadXUpdate a = mkForm a
+  [ unode "i" "xupdate"
+  , loadNode "xupdate"
+  , unode "i" "impacts"
+  , loadNode "impacts"
+  , submitNode ]
