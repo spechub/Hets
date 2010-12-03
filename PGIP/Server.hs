@@ -90,7 +90,7 @@ hetsServer opts1 = do
     let query = B8.unpack $ queryString re
         path = dropWhile (== '/') $ B8.unpack (pathInfo re)
     in case B8.unpack (requestMethod re) of
-    "GET" -> do
+    "GET" -> if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then getHetsResponse opts [] sessRef path query
            else mkHtmlPage path dirs
@@ -117,6 +117,23 @@ sourceToBs = fmap B8.concat . go id
         case res of
             Nothing -> return $ front []
             Just (bs, src') -> go (front . (:) bs) src'
+
+mkMenuResponse :: IO Response
+mkMenuResponse = return $ mkOkResponse $ ppTopElement $ unode "menus" mkMenus
+
+mkMenus :: [Element]
+mkMenus = menuTriple "" "Get menu triples" "menus"
+  : menuTriple "/DGraph" "update" "update"
+  : map (\ (c, _) -> menuTriple "/" (menuTextGlobCmd c) $ cmdlGlobCmd c)
+    allGlobLibAct
+  ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
+  ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
+
+menuTriple :: String -> String -> String -> Element
+menuTriple q d c = unode "triple"
+                [ unode "xquery" q
+                , unode "displayname" d
+                , unode "command" c ]
 
 mkHtmlString :: FilePath -> [Element] -> String
 mkHtmlString path dirs = htmlHead ++ mkHtmlElem
@@ -280,7 +297,7 @@ sessAns libName (sess, k) =
            ('(' : shows k ")" ++ ln)
            (unode "b" ("library " ++ ln)
             : map ref displayTypes
-            ++ loadXUpdate (libPath ++ "update")
+            ++ menuElement : loadXUpdate (libPath ++ "update")
             : [unode "p" "commands:"]
             ++ [unode "ul" $
                 map (unode "li" . ref) globalCommands]
@@ -326,7 +343,10 @@ mkHtmlRef query entry = unode "dir" $ aRef (entry ++ query) entry
 headElems :: String -> [Element]
 headElems path = let d = "default" in unode "strong" "Choose query type:" :
   map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes) ++ [uploadHtml]
+      (d : displayTypes) ++ [menuElement, uploadHtml]
+
+menuElement :: Element
+menuElement = aRef "?menus" "menus"
 
 htmlHead :: String
 htmlHead =
