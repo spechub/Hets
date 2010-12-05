@@ -28,21 +28,20 @@ import Common.AS_Annotation
 
 import HolLight.Sign
 import HolLight.Sentence
+import HolLight.Term
 import HolLight.Logic_HolLight
 
 import Driver.Options
 
 import qualified Data.Map as Map
---import qualified Data.Set as Set
+import qualified Data.Set as Set
 
 importData :: FilePath -> IO ((Sign,[Sentence]))
 importData fp = do
     s <- readFile fp
-    let (o,tps,ts) = (read s) :: ([(String, HolType)], [HolType], [(String,Term)])
-    let opsM = foldl (\m (k,v) -> Map.insert k v m) Map.empty o
+    let (tps,ts) = (read s) :: ([HolType], [(String,Term)])
     let sg = Sign {
-     types = tps,
-     ops = opsM }
+     types = Set.fromList tps }
     let sens = map (\(n,t) -> Sentence { name = n, term = t, proof = Nothing }) ts
     return (sg, sens)
 

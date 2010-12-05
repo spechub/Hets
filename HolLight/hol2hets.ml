@@ -184,7 +184,17 @@ let (export,export_all) = let is_axiom th = let p = can (term_match [] (concl th
                         hashtbl_to_list sens in
                    (e,e_a);;
 
-let pp_term_sen_list fmt =
+let get_parse_type fmt s =
+  if is_prefix s then Format.fprintf fmt "Prefix"
+  else if can get_infix_status s then
+         match get_infix_status s with
+                (i,"right") -> Format.fprintf fmt "(InfixR %u)" i
+              | (i,"left") -> Format.fprintf fmt "(InfixL %u)" i
+              | _ -> Format.fprintf fmt "Normal"
+  else if parses_as_binder s then Format.fprintf fmt "Binder"
+  else Format.fprintf fmt "Normal"
+
+let pp_d fmt =
                       let rec pp_list pp_el fmt = function
 		        | [h] -> Format.fprintf fmt "%a" pp_el h
 			| h::t ->
@@ -196,13 +206,31 @@ let pp_term_sen_list fmt =
                         | Tyvar s -> Format.fprintf fmt "TyVar %S" s
 			| Tyapp (s,ts) -> Format.fprintf fmt "TyApp %S [%a]" s (pp_list pp_hol_type) ts in
                       let rec pp_term fmt = function
-                        | Var (s,h) -> Format.fprintf fmt "Var %S (%a)" s pp_hol_type h
-		        | Const (s,h) -> Format.fprintf fmt "Const %S (%a)" s pp_hol_type h
+                        | Var (s,h) -> Format.fprintf fmt "Var %S (%a) %a" s pp_hol_type h get_parse_type s
+		        | Const (s,h) -> Format.fprintf fmt "Const %S (%a) %a" s pp_hol_type h get_parse_type s
 		        | Comb (t1,t2) -> Format.fprintf fmt "Comb (%a) (%a)" pp_term t1 pp_term t2
 		        | Abs (t1,t2) -> Format.fprintf fmt "Abs (%a) (%a)" pp_term t1 pp_term t2 in
-                      let pp_sen fmt s = Format.fprintf fmt "SenInfo %u %a [%a] %S" s.id pp_bool s.axiom (pp_list (fun f -> Format.fprintf f "%u")) s.incoming s.tname in
-                      let pp_term_sen_tuple fmt (t,s) = Format.fprintf fmt "(%a, %a)" pp_term t pp_sen s in
-                    Format.fprintf fmt "[%a]" (pp_list pp_term_sen_tuple);;
+                      let pp_str_term_tuple fmt (s,t) = Format.fprintf fmt "(%S, %a)" s pp_term t in
+                      let pp_data (ts,sens) = Format.fprintf fmt "@[<h>([%a], [%a])@]" (pp_list pp_hol_type) ts (pp_list pp_str_term_tuple) sens in 
+                    pp_data;;
+
+let export_sig_sen () = let sens = map (fun (n,t) -> (n,concl t)) (!theorems) in
+                     let sens_size = List.length sens in
+                     let types = Hashtbl.create sens_size in
+                     let htbl_to_list htbl f = Hashtbl.fold (fun k v l -> (f k v)::l) htbl [] in
+                     let in_types = Hashtbl.mem types in
+                     let rec get_types = function
+                      | Var (s,t) -> if in_types t then () else Hashtbl.add types t 0
+                      | Const (s,t) -> if in_types t then () else Hashtbl.add types t 0
+                      | Comb (t1,t2) -> get_types t1; get_types t2
+                      | Abs (t1,t2) -> get_types t1; get_types t2 in
+                     let _ = map (get_types o snd) sens in
+                     (htbl_to_list types (fun k _ -> k),sens);;
+
+let export_sig_sen_to_file fname = let out_ch = open_out fname in
+                               let fmt = Format.formatter_of_out_channel out_ch in
+                               pp_d fmt (export_sig_sen());
+                               close_out out_ch;;
 
 theorems := [];;
 sentences := [];;

@@ -24,9 +24,11 @@ import Common.Result
 import Common.AS_Annotation
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import HolLight.Sign
 import HolLight.Sentence
+import HolLight.Term
 import HolLight.Logic_HolLight
 import HolLight.Sublogic
 
@@ -79,8 +81,8 @@ tp2DTyp tp = IsaSign.Hide{
               }
 
 translateTerm :: Term -> IsaSign.Term
-translateTerm (Var s _tp) = IsaSign.Free $ IsaSign.mkVName s
-translateTerm (Const s tp) = IsaSign.Const (IsaSign.mkVName s)
+translateTerm (Var s _tp _) = IsaSign.Free $ IsaSign.mkVName s
+translateTerm (Const s tp _) = IsaSign.Const (IsaSign.mkVName s)
                                 $ tp2DTyp tp
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
@@ -99,23 +101,18 @@ mapTheory (sig, n_sens) = let
                           in return (sig', n_sens')
 
 mapSign :: Sign -> IsaSign.Sign
-mapSign (Sign t o) = IsaSign.emptySign{
+mapSign (Sign t) = IsaSign.emptySign{
                        IsaSign.baseSig = IsaSign.MainHC_thy,
-                       IsaSign.tsig = mapTypes t,
-                       IsaSign.constTab = mapOps o
+                       IsaSign.tsig = mapTypes t
                       }
-
-mapOps :: Map.Map String HolType -> IsaSign.ConstTab
-mapOps f = Map.fromList $
-            map (\(x,y) -> (IsaSign.mkVName x, tp2Typ y)) $ Map.toList f
 
 tp2Typ :: HolType -> IsaSign.Typ
 tp2Typ (TyVar s) = IsaSign.Type s holType []
 tp2Typ (TyApp s tps) = IsaSign.Type s holType $ map tp2Typ tps
 
-mapTypes :: [HolType] -> IsaSign.TypeSig
+mapTypes :: Set.Set HolType -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
-                IsaSign.arities = Map.fromList $ map extractTypeName tps}
+                IsaSign.arities = Map.fromList $ map extractTypeName (Set.toList tps)}
  where
     extractTypeName t@(TyVar s) = (s, [(isaTerm, [(tp2Typ t, holType)])])
     extractTypeName t@(TyApp s _tps') = (s, [(isaTerm, [(tp2Typ t, holType)])])

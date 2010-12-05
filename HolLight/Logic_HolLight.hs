@@ -25,7 +25,7 @@ import Logic.Logic
 
 import HolLight.Sign
 import HolLight.Sublogic
-import HolLight.Sentence (Sentence)
+import HolLight.Sentence (Sentence,printNamedSen)
 import HolLight.ATC_HolLight ()
 
 import Common.DefaultMorphism
@@ -50,6 +50,7 @@ instance Syntax HolLight () () () where
 
 instance Sentences HolLight Sentence Sign HolLightMorphism () where
     map_sen HolLight _ s = return s
+    print_named HolLight = printNamedSen
     --other default implementations should be sufficient
 
 -- | Sublogics

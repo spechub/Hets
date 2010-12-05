@@ -49,9 +49,9 @@ generateAxioms sig =
 
 module Main where
 
-import Language.Haskell.Pretty as HP
-import Language.Haskell.Syntax
-import Language.Haskell.Parser
+import Language.Haskell.Exts.Pretty as HP
+import Language.Haskell.Exts.Syntax
+import Language.Haskell.Exts.Parser
 
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
@@ -191,217 +191,251 @@ deletePos cs@(c : s) = case deletePrefixes ["[inlineAxioms", "[(line "] cs of
 -- parse Haskell expression and insert list comprehensions for x_i variables
 -- We rely on show for Ids giving just strings, such that these are
 -- recognized as Haskell ids
-listComp :: ResType -> String -> HsExp
+listComp :: ResType -> String -> Exp
 listComp rt s = case rt of
                 InAxioms -> lcHsExp 0 expr
                 InSign -> expr
   where
   modStr = "module M where\nf="++deletePos s
   expr = case parseModule modStr of
-    ParseOk (HsModule _ _ _ _ [HsPatBind _ _ (HsUnGuardedRhs expr1) _])
+    ParseOk (Module _ _ _ _ _ _ [PatBind _ _ _ (UnGuardedRhs expr1) _])
         -> expr1
     err -> error ("inlineAxioms: " ++ show err)
 
 
 -- parse inline for Haskell decls and exps
 
-piHsFieldUpdate :: HsFieldUpdate -> HsFieldUpdate
-piHsFieldUpdate (HsFieldUpdate qn expr) = HsFieldUpdate qn (piHsExp expr)
+piHsFieldUpdate :: FieldUpdate -> FieldUpdate
+piHsFieldUpdate (FieldUpdate qn expr) = FieldUpdate qn (piHsExp expr)
+piHsFieldUpdate f = f
 
-piHsStmt :: HsStmt -> HsStmt
-piHsStmt (HsGenerator loc pat expr) = HsGenerator loc pat (piHsExp expr)
-piHsStmt (HsQualifier expr) = HsQualifier (piHsExp expr)
-piHsStmt (HsLetStmt decls) = HsLetStmt (map piHsDecl decls)
+piHsQualStmt :: QualStmt -> QualStmt
+piHsQualStmt (QualStmt stmt) = QualStmt (piHsStmt stmt)
+piHsQualStmt (ThenTrans expr) = ThenTrans (piHsExp expr)
+piHsQualStmt (ThenBy expr1 expr2) = ThenBy (piHsExp expr1) (piHsExp expr2)
+piHsQualStmt (GroupBy expr) = GroupBy (piHsExp expr)
+piHsQualStmt (GroupUsing expr) = GroupUsing (piHsExp expr)
+piHsQualStmt (GroupByUsing expr1 expr2) = GroupByUsing (piHsExp expr1) (piHsExp expr2)
 
-piHsGuardedAlt :: HsGuardedAlt -> HsGuardedAlt
-piHsGuardedAlt (HsGuardedAlt loc expr1 expr2) =
-  HsGuardedAlt loc (piHsExp expr1) (piHsExp expr2)
+piHsBind :: IPBind -> IPBind
+piHsBind (IPBind loc name expr) = IPBind loc name (piHsExp expr)
 
-piHsGuardedAlts :: HsGuardedAlts -> HsGuardedAlts
-piHsGuardedAlts (HsUnGuardedAlt expr) = HsUnGuardedAlt (piHsExp expr)
-piHsGuardedAlts (HsGuardedAlts alts) = HsGuardedAlts (map piHsGuardedAlt alts)
+piHsBinds :: Binds -> Binds
+piHsBinds (BDecls decls) = BDecls (map piHsDecl decls)
+piHsBinds (IPBinds binds) = IPBinds (map piHsBind binds)
 
-piHsAlt :: HsAlt -> HsAlt
-piHsAlt (HsAlt loc pat alts decls) =
-  HsAlt loc pat (piHsGuardedAlts alts) (map piHsDecl decls)
+piHsStmt :: Stmt -> Stmt
+piHsStmt (Generator loc pat expr) = Generator loc pat (piHsExp expr)
+piHsStmt (Qualifier expr) = Qualifier (piHsExp expr)
+piHsStmt (LetStmt binds) = LetStmt (piHsBinds binds)
+piHsStmt (RecStmt stmts) = RecStmt (map piHsStmt stmts)
 
-piHsExp :: HsExp -> HsExp
-piHsExp (HsInfixApp expr1 qOp expr3) =
-  HsInfixApp (piHsExp expr1) qOp (piHsExp expr3)
-piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent typeStr)))
-                      (HsCon (UnQual (HsIdent logStr))))
-               (HsLit (HsString str))) =
+piHsGuardedAlt :: GuardedAlt -> GuardedAlt
+piHsGuardedAlt (GuardedAlt loc stmts expr) =
+  GuardedAlt loc (map piHsStmt stmts) (piHsExp expr)
+
+piHsGuardedAlts :: GuardedAlts -> GuardedAlts
+piHsGuardedAlts (UnGuardedAlt expr) = UnGuardedAlt (piHsExp expr)
+piHsGuardedAlts (GuardedAlts alts) = GuardedAlts (map piHsGuardedAlt alts)
+
+piHsAlt :: Alt -> Alt
+piHsAlt (Alt loc pat alts binds) =
+  Alt loc pat (piHsGuardedAlts alts) (piHsBinds binds)
+
+piHsExp :: Exp -> Exp
+piHsExp (InfixApp expr1 qOp expr3) =
+  InfixApp (piHsExp expr1) qOp (piHsExp expr3)
+piHsExp (App (App (Var (UnQual (Ident typeStr)))
+                      (Con (UnQual (Ident logStr))))
+               (Lit (String str))) =
   listComp (parseResType typeStr) $
            lookupLogic_in_LG (parseResType typeStr)
                              "inlineAxioms: " logStr str
-piHsExp (HsApp expr1 expr2) =
-  HsApp (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsNegApp expr) =
-  HsNegApp (piHsExp expr)
-piHsExp (HsLambda loc pats expr) =
-  HsLambda loc pats (piHsExp expr)
-piHsExp (HsLet decls expr) =
-  HsLet (map piHsDecl decls) (piHsExp expr)
-piHsExp (HsIf expr1 expr2 expr3) =
-  HsIf (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
-piHsExp (HsCase expr alts) = HsCase (piHsExp expr) (map piHsAlt alts)
-piHsExp (HsDo stmts) = HsDo (map piHsStmt stmts)
-piHsExp (HsTuple exprs) = HsTuple (map piHsExp exprs)
-piHsExp (HsList exprs) = HsList (map piHsExp exprs)
-piHsExp (HsParen expr) = HsParen (piHsExp expr)
-piHsExp (HsLeftSection expr1 qOp) = HsLeftSection (piHsExp expr1) qOp
-piHsExp (HsRightSection qOp expr2) =  HsRightSection qOp (piHsExp expr2)
-piHsExp (HsRecConstr qn fields) = HsRecConstr qn (map piHsFieldUpdate fields)
-piHsExp (HsRecUpdate expr fields) =
-  HsRecUpdate (piHsExp expr) (map piHsFieldUpdate fields)
-piHsExp (HsEnumFrom expr) = HsEnumFrom (piHsExp expr)
-piHsExp (HsEnumFromTo expr1 expr2) =
-  HsEnumFromTo (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsEnumFromThen expr1 expr2) =
-  HsEnumFromThen (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsEnumFromThenTo expr1 expr2 expr3) =
-  HsEnumFromThenTo (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
-piHsExp (HsListComp expr stmts) =
-  HsListComp (piHsExp expr) (map piHsStmt stmts)
-piHsExp (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (piHsExp expr) qt
+piHsExp (App expr1 expr2) =
+  App (piHsExp expr1) (piHsExp expr2)
+piHsExp (NegApp expr) =
+  NegApp (piHsExp expr)
+piHsExp (Lambda loc pats expr) =
+  Lambda loc pats (piHsExp expr)
+piHsExp (Let (BDecls decls) expr) =
+  Let (BDecls (map piHsDecl decls)) (piHsExp expr)
+piHsExp (If expr1 expr2 expr3) =
+  If (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
+piHsExp (Case expr alts) = Case (piHsExp expr) (map piHsAlt alts)
+piHsExp (Do stmts) = Do (map piHsStmt stmts)
+piHsExp (Tuple exprs) = Tuple (map piHsExp exprs)
+piHsExp (List exprs) = List (map piHsExp exprs)
+piHsExp (Paren expr) = Paren (piHsExp expr)
+piHsExp (LeftSection expr1 qOp) = LeftSection (piHsExp expr1) qOp
+piHsExp (RightSection qOp expr2) =  RightSection qOp (piHsExp expr2)
+piHsExp (RecConstr qn fields) = RecConstr qn (map piHsFieldUpdate fields)
+piHsExp (RecUpdate expr fields) =
+  RecUpdate (piHsExp expr) (map piHsFieldUpdate fields)
+piHsExp (EnumFrom expr) = EnumFrom (piHsExp expr)
+piHsExp (EnumFromTo expr1 expr2) =
+  EnumFromTo (piHsExp expr1) (piHsExp expr2)
+piHsExp (EnumFromThen expr1 expr2) =
+  EnumFromThen (piHsExp expr1) (piHsExp expr2)
+piHsExp (EnumFromThenTo expr1 expr2 expr3) =
+  EnumFromThenTo (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
+piHsExp (ListComp expr stmts) =
+  ListComp (piHsExp expr) (map piHsQualStmt stmts)
+piHsExp (ExpTypeSig loc expr qt) = ExpTypeSig loc (piHsExp expr) qt
 piHsExp expr = expr
 
-piHsGuardedRhs :: HsGuardedRhs ->HsGuardedRhs
-piHsGuardedRhs (HsGuardedRhs loc expr1 expr2) =
-  HsGuardedRhs loc (piHsExp expr1) (piHsExp expr2)
+piHsGuardedRhs :: GuardedRhs ->GuardedRhs
+piHsGuardedRhs (GuardedRhs loc stmts expr) =
+  GuardedRhs loc (map piHsStmt stmts) (piHsExp expr)
 
-piHsRhs :: HsRhs -> HsRhs
-piHsRhs (HsUnGuardedRhs expr) = HsUnGuardedRhs (piHsExp expr)
-piHsRhs (HsGuardedRhss rhss) = HsGuardedRhss (map piHsGuardedRhs rhss)
+piHsRhs :: Rhs -> Rhs
+piHsRhs (UnGuardedRhs expr) = UnGuardedRhs (piHsExp expr)
+piHsRhs (GuardedRhss rhss) = GuardedRhss (map piHsGuardedRhs rhss)
 
-piHsMatch :: HsMatch -> HsMatch
-piHsMatch (HsMatch loc qn pats rhs decls) =
-  HsMatch loc qn pats (piHsRhs rhs) (map piHsDecl decls)
+piHsMatch :: Match -> Match
+piHsMatch (Match loc qn pats t rhs binds) =
+  Match loc qn pats t (piHsRhs rhs) (piHsBinds binds)
 
-piHsDecl :: HsDecl -> HsDecl
-piHsDecl (HsFunBind ms) = HsFunBind (map piHsMatch ms)
-piHsDecl (HsPatBind loc pat rhs decls) =
-  HsPatBind loc pat (piHsRhs rhs) (map piHsDecl decls)
+piHsDecl :: Decl -> Decl
+piHsDecl (FunBind ms) = FunBind (map piHsMatch ms)
+piHsDecl (PatBind loc pat t rhs binds) =
+  PatBind loc pat t (piHsRhs rhs) (piHsBinds binds)
 piHsDecl decl = decl
 
-parseInline :: HsModule -> HsModule
-parseInline (HsModule loc modu expr imp decls) =
-  HsModule loc modu expr imp (map piHsDecl decls)
+parseInline :: Module -> Module
+parseInline (Module loc modu opts warn expr imp decls) =
+  Module loc modu opts warn expr imp (map piHsDecl decls)
 
 
 -- transformation of x_i to list comprehension x_i<-x
 
-lcHsFieldUpdate :: HsFieldUpdate -> HsFieldUpdate
-lcHsFieldUpdate (HsFieldUpdate qn expr) = HsFieldUpdate qn (lcHsExp 0 expr)
+lcHsFieldUpdate :: FieldUpdate -> FieldUpdate
+lcHsFieldUpdate (FieldUpdate qn expr) = FieldUpdate qn (lcHsExp 0 expr)
+lcHsFieldUpdate f = f
 
-lcHsStmt :: HsStmt -> HsStmt
-lcHsStmt (HsGenerator loc pat expr) = HsGenerator loc pat (lcHsExp 0 expr)
-lcHsStmt (HsQualifier expr) = HsQualifier (lcHsExp 0 expr)
-lcHsStmt (HsLetStmt decls) = HsLetStmt (map lcHsDecl decls)
+lcHsQualStmt :: QualStmt -> QualStmt
+lcHsQualStmt (QualStmt stmt) = QualStmt (lcHsStmt stmt)
+lcHsQualStmt (ThenTrans expr) = ThenTrans (lcHsExp 0 expr)
+lcHsQualStmt (ThenBy expr1 expr2) = ThenBy (lcHsExp 0 expr1) (lcHsExp 0 expr2)
+lcHsQualStmt (GroupBy expr) = GroupBy (lcHsExp 0 expr)
+lcHsQualStmt (GroupUsing expr) = GroupUsing (lcHsExp 0 expr)
+lcHsQualStmt (GroupByUsing expr1 expr2) = GroupByUsing (lcHsExp 0 expr1) (lcHsExp 0 expr2)
 
-lcHsGuardedAlt :: HsGuardedAlt -> HsGuardedAlt
-lcHsGuardedAlt (HsGuardedAlt loc expr1 expr2) =
-  HsGuardedAlt loc (lcHsExp 0 expr1) (lcHsExp 0 expr2)
+lcHsStmt :: Stmt -> Stmt
+lcHsStmt (Generator loc pat expr) = Generator loc pat (lcHsExp 0 expr)
+lcHsStmt (Qualifier expr) = Qualifier (lcHsExp 0 expr)
+lcHsStmt (LetStmt binds) = LetStmt (lcHsBinds binds)
+lcHsStmt (RecStmt stmts) = RecStmt (map lcHsStmt stmts)
 
-lcHsGuardedAlts :: HsGuardedAlts -> HsGuardedAlts
-lcHsGuardedAlts (HsUnGuardedAlt expr) = HsUnGuardedAlt (lcHsExp 0 expr)
-lcHsGuardedAlts (HsGuardedAlts alts) = HsGuardedAlts (map lcHsGuardedAlt alts)
+lcHsGuardedAlt :: GuardedAlt -> GuardedAlt
+lcHsGuardedAlt (GuardedAlt loc stmts expr) =
+  GuardedAlt loc (map lcHsStmt stmts) (lcHsExp 0 expr)
 
-lcHsAlt :: HsAlt -> HsAlt
-lcHsAlt (HsAlt loc pat alts decls) =
-  HsAlt loc pat (lcHsGuardedAlts alts) (map lcHsDecl decls)
+lcHsGuardedAlts :: GuardedAlts -> GuardedAlts
+lcHsGuardedAlts (UnGuardedAlt expr) = UnGuardedAlt (lcHsExp 0 expr)
+lcHsGuardedAlts (GuardedAlts alts) = GuardedAlts (map lcHsGuardedAlt alts)
+
+lcHsAlt :: Alt -> Alt
+lcHsAlt (Alt loc pat alts binds) =
+  Alt loc pat (lcHsGuardedAlts alts) (lcHsBinds binds)
 
 -- look for a variable of form x_i or x_..._i and return it as a string,
 -- if present. Also return the number of underscores
 
-indexVar :: HsExp -> [(String,Int)]
-indexVar (HsVar (UnQual (HsIdent v))) =
+indexVar :: Exp -> [(String,Int)]
+indexVar (Var (UnQual (Ident v))) =
   case reverse v of
     i : '_' : _ -> [(v, ord i - ord 'h')]
     _ -> []
 -- special treatment of CASL Var_decls, since these should not count
 -- as enumerated lists
-indexVar (HsVar _) = error "inlineAxioms: qualified var"
-indexVar (HsApp (HsCon (UnQual (HsIdent "Var_decl"))) (HsList exprs)) =
+indexVar (Var _) = error "inlineAxioms: qualified var"
+indexVar (App (Con (UnQual (Ident "Var_decl"))) (List exprs)) =
   concatMap indexVar exprs
-indexVar (HsApp expr1 expr2) =
+indexVar (App expr1 expr2) =
   indexVar expr1++indexVar expr2
-indexVar (HsTuple exprs) = concatMap indexVar exprs
-indexVar (HsParen expr) = indexVar expr
-indexVar (HsList exprs) =
+indexVar (Tuple exprs) = concatMap indexVar exprs
+indexVar (Paren expr) = indexVar expr
+indexVar (List exprs) =
   [(v, n - 1) | e <- exprs, (v, n) <- indexVar e, n > 1]
 indexVar _ = []
 
-lcHsExp :: Int -> HsExp -> HsExp
-lcHsExp n (HsInfixApp expr1 qOp expr3) =
-  HsInfixApp (lcHsExp n expr1) qOp (lcHsExp n expr3)
-lcHsExp n (HsApp expr1 expr2) =
-  HsApp (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsNegApp expr) =
-  HsNegApp (lcHsExp n expr)
-lcHsExp n (HsLambda loc pats expr) =
-  HsLambda loc pats (lcHsExp n expr)
-lcHsExp n (HsLet decls expr) =
-  HsLet (map lcHsDecl decls) (lcHsExp n expr)
-lcHsExp n (HsIf expr1 expr2 expr3) =
-  HsIf (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
-lcHsExp n (HsCase expr alts) = HsCase (lcHsExp n expr) (map lcHsAlt alts)
-lcHsExp _ (HsDo stmts) = HsDo (map lcHsStmt stmts)
-lcHsExp n (HsTuple exprs) = HsTuple (map (lcHsExp n) exprs)
-lcHsExp n (HsList exprs)
-  | null exprs = HsList []
-  | n > 0 = HsList $ map (lcHsExp (n - 1)) exprs
+lcHsExp :: Int -> Exp -> Exp
+lcHsExp n (InfixApp expr1 qOp expr3) =
+  InfixApp (lcHsExp n expr1) qOp (lcHsExp n expr3)
+lcHsExp n (App expr1 expr2) =
+  App (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (NegApp expr) =
+  NegApp (lcHsExp n expr)
+lcHsExp n (Lambda loc pats expr) =
+  Lambda loc pats (lcHsExp n expr)
+lcHsExp n (Let binds expr) =
+  Let (lcHsBinds binds) (lcHsExp n expr)
+lcHsExp n (If expr1 expr2 expr3) =
+  If (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
+lcHsExp n (Case expr alts) = Case (lcHsExp n expr) (map lcHsAlt alts)
+lcHsExp _ (Do stmts) = Do (map lcHsStmt stmts)
+lcHsExp n (Tuple exprs) = Tuple (map (lcHsExp n) exprs)
+lcHsExp n (List exprs)
+  | null exprs = List []
+  | n > 0 = List $ map (lcHsExp (n - 1)) exprs
   | otherwise = let expr = head exprs in
   case nub $ indexVar expr of
-    [] -> HsList (map (lcHsExp 0) exprs)
+    [] -> List (map (lcHsExp 0) exprs)
     vs@((v, k) : r) -> let
       vs' = map fst vs
       v0 = reverse . drop 2 . reverse
       len = length vs'
       ext = if len == 2 then "" else show len
-      mkZip = foldl HsApp $ HsVar $ Qual (Module "Data.List")
-                $ HsIdent $ "zip" ++ ext
-     in HsListComp (lcHsExp (max (k - 1) 0) expr)
-        [ HsGenerator (SrcLoc "" 0 0)
-              (if null r then HsPVar $ HsIdent v
-               else HsPTuple $ map (HsPVar . HsIdent) vs')
-              $ if null r then HsVar $ UnQual $ HsIdent $ v0 v
-               else mkZip $ map (HsVar . UnQual . HsIdent . v0) vs' ]
+      mkZip = foldl App $ Var $ Qual (ModuleName "Data.List")
+                $ Ident $ "zip" ++ ext
+     in ListComp (lcHsExp (max (k - 1) 0) expr)
+        [ QualStmt (Generator (SrcLoc "" 0 0)
+              (if null r then PVar $ Ident v
+               else PTuple $ map (PVar . Ident) vs')
+              $ if null r then Var $ UnQual $ Ident $ v0 v
+               else mkZip $ map (Var . UnQual . Ident . v0) vs') ]
                -- The list variable v0 is just v without index
-lcHsExp n (HsParen expr) = HsParen (lcHsExp n expr)
-lcHsExp n (HsLeftSection expr1 qOp) = HsLeftSection (lcHsExp n expr1) qOp
-lcHsExp n (HsRightSection qOp expr2) =  HsRightSection qOp (lcHsExp n expr2)
-lcHsExp _ (HsRecConstr qn fields) = HsRecConstr qn (map lcHsFieldUpdate fields)
-lcHsExp n (HsRecUpdate expr fields) =
-  HsRecUpdate (lcHsExp n expr) (map lcHsFieldUpdate fields)
-lcHsExp n (HsEnumFrom expr) = HsEnumFrom (lcHsExp n expr)
-lcHsExp n (HsEnumFromTo expr1 expr2) =
-  HsEnumFromTo (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsEnumFromThen expr1 expr2) =
-  HsEnumFromThen (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsEnumFromThenTo expr1 expr2 expr3) =
-  HsEnumFromThenTo (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
-lcHsExp n (HsListComp expr stmts) =
-  HsListComp (lcHsExp n expr) (map lcHsStmt stmts)
-lcHsExp n (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (lcHsExp n expr) qt
+lcHsExp n (Paren expr) = Paren (lcHsExp n expr)
+lcHsExp n (LeftSection expr1 qOp) = LeftSection (lcHsExp n expr1) qOp
+lcHsExp n (RightSection qOp expr2) =  RightSection qOp (lcHsExp n expr2)
+lcHsExp _ (RecConstr qn fields) = RecConstr qn (map lcHsFieldUpdate fields)
+lcHsExp n (RecUpdate expr fields) =
+  RecUpdate (lcHsExp n expr) (map lcHsFieldUpdate fields)
+lcHsExp n (EnumFrom expr) = EnumFrom (lcHsExp n expr)
+lcHsExp n (EnumFromTo expr1 expr2) =
+  EnumFromTo (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (EnumFromThen expr1 expr2) =
+  EnumFromThen (lcHsExp n expr1) (lcHsExp n expr2)
+lcHsExp n (EnumFromThenTo expr1 expr2 expr3) =
+  EnumFromThenTo (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
+lcHsExp n (ListComp expr stmts) =
+  ListComp (lcHsExp n expr) (map lcHsQualStmt stmts)
+lcHsExp n (ExpTypeSig loc expr qt) = ExpTypeSig loc (lcHsExp n expr) qt
 lcHsExp _ expr = expr
 
-lcHsGuardedRhs :: HsGuardedRhs ->HsGuardedRhs
-lcHsGuardedRhs (HsGuardedRhs loc expr1 expr2) =
-  HsGuardedRhs loc (lcHsExp 0 expr1) (lcHsExp 0 expr2)
+lcHsGuardedRhs :: GuardedRhs ->GuardedRhs
+lcHsGuardedRhs (GuardedRhs loc stmts expr2) =
+  GuardedRhs loc (map lcHsStmt stmts) (lcHsExp 0 expr2)
 
-lcHsRhs :: HsRhs -> HsRhs
-lcHsRhs (HsUnGuardedRhs expr) = HsUnGuardedRhs (lcHsExp 0 expr)
-lcHsRhs (HsGuardedRhss rhss) = HsGuardedRhss (map lcHsGuardedRhs rhss)
+lcHsRhs :: Rhs -> Rhs
+lcHsRhs (UnGuardedRhs expr) = UnGuardedRhs (lcHsExp 0 expr)
+lcHsRhs (GuardedRhss rhss) = GuardedRhss (map lcHsGuardedRhs rhss)
 
-lcHsMatch :: HsMatch -> HsMatch
-lcHsMatch (HsMatch loc qn pats rhs decls) =
-  HsMatch loc qn pats (lcHsRhs rhs) decls
+lcHsMatch :: Match -> Match
+lcHsMatch (Match loc qn pats t rhs decls) =
+  Match loc qn pats t (lcHsRhs rhs) decls
 
-lcHsDecl :: HsDecl -> HsDecl
-lcHsDecl (HsFunBind ms) = HsFunBind (map lcHsMatch ms)
-lcHsDecl (HsPatBind loc pat rhs decls) =
-  HsPatBind loc pat (lcHsRhs rhs) (map lcHsDecl decls)
+lcHsBind :: IPBind -> IPBind
+lcHsBind (IPBind loc name expr) = IPBind loc name (lcHsExp 0 expr)
+
+lcHsBinds :: Binds -> Binds
+lcHsBinds (BDecls decls) = BDecls (map lcHsDecl decls)
+lcHsBinds (IPBinds binds) = IPBinds (map lcHsBind binds)
+
+lcHsDecl :: Decl -> Decl
+lcHsDecl (FunBind ms) = FunBind (map lcHsMatch ms)
+lcHsDecl (PatBind loc pat t rhs binds) =
+  PatBind loc pat t (lcHsRhs rhs) (lcHsBinds binds)
 lcHsDecl decl = decl
 
 -- main functions
@@ -409,7 +443,10 @@ lcHsDecl decl = decl
 processFile :: String -> String -> IO ()
 processFile prog file = do
   src <- readFile file
-  let hsModRes = parseModuleWithMode (ParseMode file) src
+  let hsModRes = parseModuleWithMode (ParseMode { parseFilename = file,
+                                                  extensions = [],
+                                                  ignoreLanguagePragmas = False,
+                                                  fixities = [] }) src
       firstLineSrc = takeWhile (/='\n') src
       firstLine = if isPrefixOf "{-# LANGUAGE " firstLineSrc
                   then firstLineSrc ++"\n"

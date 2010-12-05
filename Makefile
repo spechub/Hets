@@ -283,7 +283,7 @@ Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
     Propositional/Sublogic.hs
 
 HolLight_files = HolLight/Sentence.hs HolLight/Sign.hs \
-                 HolLight/Sublogic.hs
+                 HolLight/Sublogic.hs HolLight/Term.hs
 
 QBF_files = Propositional/Sign.hs QBF/Morphism.hs \
     QBF/AS_BASIC_QBF.hs QBF/Symbol.hs \

@@ -1,24 +1,22 @@
 module HolLight.Sign where
 
-import qualified Data.Map as Map
+import qualified Data.Set as Set
+import qualified Data.List as List
 import Common.DocUtils
 import Common.Doc
+import HolLight.Term
+import HolLight.Helper
 
-data HolType = TyVar String | TyApp String [HolType]
-  deriving  (Eq, Ord, Show, Read)
-
-data HolKind = TyAbstractApp [HolKind] | Kind
-
-
-data Sign = Sign { types :: [HolType]
-                 , ops :: Map.Map String HolType } -- ewaryst: Added this, because of compilation error!
+data Sign = Sign { types :: Set.Set HolType }
   deriving (Eq, Ord, Show)
 
 instance Pretty Sign where
-  pretty _ = empty -- TO DO!
+  pretty s = let tps = Set.toList (types s)
+             in hcat ((text "`:"):(List.intersperse (text ", ")
+                      (map pp_print_type tps))++[text "`"])
 
 emptySig :: Sign
-emptySig = Sign{types =[] , ops = Map.empty}
+emptySig = Sign{types = Set.empty}
 
 isSubSig :: Sign -> Sign -> Bool
-isSubSig _s1 _s2 = True -- for now!
+isSubSig s1 s2 = (types s1) `Set.isSubsetOf` (types s2)

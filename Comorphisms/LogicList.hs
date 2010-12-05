@@ -41,6 +41,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
+import HolLight.Logic_HolLight
 import Propositional.Logic_Propositional
 import QBF.Logic_QBF
 import HolLight.Logic_HolLight
@@ -80,6 +81,7 @@ logicList :: [AnyLogic]
 logicList =
   [ Logic CASL
   , Logic HasCASL
+  , Logic HolLight
   , Logic Isabelle
   , Logic SoftFOL
   , Logic Propositional
