@@ -194,6 +194,10 @@ let get_parse_type fmt s =
   else if parses_as_binder s then Format.fprintf fmt "Binder"
   else Format.fprintf fmt "Normal"
 
+let get_term_info fmt (s0,ty0) = try let s = fst(find (fun (s,(s',ty)) -> s' = s0 & can (type_match ty ty0) []) (!the_interface))
+                                 in Format.fprintf fmt "(HolTermInfo (%a,Just (%S,%a)))" get_parse_type s0 s get_parse_type s
+                             with Failure _ -> Format.fprintf fmt "(HolTermInfo (%a,Nothing))" get_parse_type s0
+
 let pp_d fmt =
                       let rec pp_list pp_el fmt = function
 		        | [h] -> Format.fprintf fmt "%a" pp_el h
@@ -206,8 +210,8 @@ let pp_d fmt =
                         | Tyvar s -> Format.fprintf fmt "TyVar %S" s
 			| Tyapp (s,ts) -> Format.fprintf fmt "TyApp %S [%a]" s (pp_list pp_hol_type) ts in
                       let rec pp_term fmt = function
-                        | Var (s,h) -> Format.fprintf fmt "Var %S (%a) %a" s pp_hol_type h get_parse_type s
-		        | Const (s,h) -> Format.fprintf fmt "Const %S (%a) %a" s pp_hol_type h get_parse_type s
+                        | Var (s,h) -> Format.fprintf fmt "Var %S (%a) %a" s pp_hol_type h get_term_info (s,h)
+		        | Const (s,h) -> Format.fprintf fmt "Const %S (%a) %a" s pp_hol_type h get_term_info (s,h)
 		        | Comb (t1,t2) -> Format.fprintf fmt "Comb (%a) (%a)" pp_term t1 pp_term t2
 		        | Abs (t1,t2) -> Format.fprintf fmt "Abs (%a) (%a)" pp_term t1 pp_term t2 in
                       let pp_str_term_tuple fmt (s,t) = Format.fprintf fmt "(%S, %a)" s pp_term t in

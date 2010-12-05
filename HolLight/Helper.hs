@@ -22,8 +22,8 @@ fromRight e = case e of
   Left _ -> error "fromRight"
 
 is_prefix tm = case tm of
-  Var _ _ Prefix -> True
-  Const _ _ Prefix -> True
+  Var _ _ (HolTermInfo (Prefix,_)) -> True
+  Const _ _ (HolTermInfo (Prefix,_)) -> True
   _ -> False
 
 pp_print_type = sot 0
@@ -207,7 +207,7 @@ inst =
                                                Just y'' ->
                                                 case (dest_var y'',dest_var y) of
                                                   (Just (v1,_),Just (_,v2)) ->
-                                                    let z = (Var v1 v2 Normal)
+                                                    let z = (Var v1 v2 (HolTermInfo (Normal,Nothing)))
                                                     in case vsubst [(z,y)] t of
                                                          Just s -> inst' env tyin
                                                            (Abs z s)
@@ -233,7 +233,7 @@ eq_type = TyApp "fun" [
 mk_const (name,theta) = if name == "="
                         then Just (Const name
                                    (type_subst theta eq_type)
-                                   (InfixR 12))
+                                   (HolTermInfo ((InfixR 12),Nothing)))
                         else Nothing
 
 {- basics.ml -}
@@ -331,14 +331,21 @@ name_of tm = case tm of
   _ -> ""
 
 {- printer.ml - pp_print_term -}
-reverse_interface (s0,_) = s0
+reverse_interface (s,tm) = case tm of
+  Var s' _ ti -> case ti of
+    HolTermInfo (_,Just (s'',pt)) -> (s'',Just pt)
+    _ -> (s,Nothing)
+  Const s' _ ti -> case ti of
+    HolTermInfo (_,Just (s'',pt)) -> (s'',Just pt)
+    _ -> (s,Nothing)
+  _ -> (s,Nothing)
 
 dest_binary c tm = case (dest_comb tm) of {- original name: DEST_BINARY -}
   Just (il,r) -> case (dest_comb il) of
     Just (i,l) -> if (i == c) ||
       (is_const i && is_const c &&
-       (reverse_interface(fromJust(dest_const i))
-       == reverse_interface(fromJust(dest_const c))))
+       (fst(reverse_interface((fst(fromJust(dest_const i)),i)))
+       == fst(reverse_interface((fst(fromJust(dest_const c)),i)))))
       then Just (l,r)
       else Nothing 
     _ -> Nothing 
@@ -395,23 +402,23 @@ dest_clauses tm = let (s,args) = strip_comb tm
                        _ -> Nothing
 
 aright tm = case tm of
-  Var _ _ (InfixR _)  -> True
-  Const _ _ (InfixR _) -> True
+  Var _ _ (HolTermInfo ((InfixR _),_))  -> True
+  Const _ _ (HolTermInfo ((InfixR _),_)) -> True
   _ -> False
 
 get_prec tm = case tm of
-  Var _ _ (InfixR i)  -> i
-  Const _ _ (InfixR i) -> i
+  Var _ _ (HolTermInfo ((InfixR i),_))  -> i
+  Const _ _ (HolTermInfo ((InfixR i),_)) -> i
   _ -> 0
 
 parses_as_binder tm = case tm of
-  Var _ _ Binder  -> True
-  Const _ _ Binder -> True
+  Var _ _ (HolTermInfo (Binder,_))  -> True
+  Const _ _ (HolTermInfo (Binder,_)) -> True
   _ -> False
 
 can_get_infix_status tm = case tm of
-  Var _ _ (InfixR _) -> True
-  Var _ _ (InfixL _) -> True
-  Const _ _ (InfixR _) -> True
-  Const _ _ (InfixL _) -> True
+  Var _ _ (HolTermInfo (InfixR _,_)) -> True
+  Var _ _ (HolTermInfo (InfixL _,_)) -> True
+  Const _ _ (HolTermInfo (InfixR _,_)) -> True
+  Const _ _ (HolTermInfo (InfixL _,_)) -> True
   _ -> False

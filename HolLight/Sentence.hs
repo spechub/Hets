@@ -47,6 +47,11 @@ pp_print_term tm = print_term 0 tm
 
 prec_parens prec = if prec /= 0 then parens else id
 
+replace_pt tm pt = case tm of
+  Var s t _ -> Var s t (HolTermInfo (pt,Nothing))
+  Const s t _ -> Const s t (HolTermInfo (pt,Nothing))
+  _ -> tm
+
 print_term prec tm = 
  let _1 = case dest_numeral tm of
          Just i -> Just (text (show i))
@@ -73,7 +78,9 @@ print_term prec tm =
                (hop,args) -> case fromJust (type_of hop) of {- not really sure in which cases (type_of hop) == Nothing, but shouldn't happen if i understand the original ocaml code correctly-}
                   ty0 ->
                     let s0 = name_of hop in
-                    (reverse_interface (s0,ty0),ty0,args,hop) in
+                    case reverse_interface (s0,hop) of
+                      (s,Just pt) -> (s,ty0,args,replace_pt hop pt)
+                      _ -> (s0,ty0,args,hop) in
  let _5 = case (s,is_const tm,args==[]) of
          ("EMPTY",True,True) -> Just (braces empty)
          ("UNIV",True,True) -> case type_of tm of
@@ -168,7 +175,7 @@ print_term prec tm =
                     || (
                         case dest_comb (args!!0) of
                           Just (l,r) -> let (s0,ty0) = (name_of l,type_of l)
-                            in reverse_interface (s0,ty0) == "--"
+                            in fst(reverse_interface (s0,hop)) == "--"
                                || (case (dest_const l) of
                                     Just (f,_) -> elem f ["real_of_num",
                                                           "int_of_num"]
