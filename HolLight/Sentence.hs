@@ -194,7 +194,7 @@ print_term prec tm =
                       else
                         let (tmt,tms) = rev_splitlist (dest_binary hop) tm
                                          in tmt:tms in
-          let (newprec,unspaced_binops) = (get_prec hop,[",","..","$","==>"])
+          let (newprec,unspaced_binops) = (get_prec hop,[",","..","$"])
           in Just ((if newprec <= prec then parens else id) (hcat 
                     (print_term newprec (bargs!!0):(
                      map (\x ->

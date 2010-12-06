@@ -12,8 +12,10 @@ data Sign = Sign { types :: Set.Set HolType }
 
 instance Pretty Sign where
   pretty s = let tps = Set.toList (types s)
-             in hcat ((text "`:"):(List.intersperse (text ", ")
-                      (map pp_print_type tps))++[text "`"])
+             in hcat (List.intersperse (text ", ")
+                      (map (\tp -> hcat
+                                [text "`:",pp_print_type tp,text "`"])
+                           tps))
 
 emptySig :: Sign
 emptySig = Sign{types = Set.empty}
