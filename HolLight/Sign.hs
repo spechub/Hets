@@ -12,6 +12,7 @@ data Sign = Sign { types :: Set.Set HolType
                  , ops :: Map.Map String (Set.Set HolType) }
   deriving (Eq, Ord, Show)
 
+pretty_type_list :: [HolType] -> Doc
 pretty_type_list tps = hcat (List.intersperse (text ", ")
                              (map (\tp -> hcat
                                 [text "`:",pp_print_type tp,text "`"])
@@ -27,7 +28,7 @@ instance Pretty Sign where
              ), text " }"]
 
 emptySig :: Sign
-emptySig = Sign{types = Set.empty}
+emptySig = Sign{types = Set.empty, ops = Map.empty}
 
 isSubSig :: Sign -> Sign -> Bool
 isSubSig s1 s2 = (types s1) `Set.isSubsetOf` (types s2)
