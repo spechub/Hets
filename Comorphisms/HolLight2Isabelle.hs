@@ -101,7 +101,7 @@ mapTheory (sig, n_sens) = let
                           in return (sig', n_sens')
 
 mapSign :: Sign -> IsaSign.Sign
-mapSign (Sign t) = IsaSign.emptySign{
+mapSign (Sign t _) = IsaSign.emptySign{
                        IsaSign.baseSig = IsaSign.MainHC_thy,
                        IsaSign.tsig = mapTypes t
                       }

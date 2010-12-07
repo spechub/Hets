@@ -39,9 +39,10 @@ import qualified Data.Set as Set
 importData :: FilePath -> IO ((Sign,[Sentence]))
 importData fp = do
     s <- readFile fp
-    let (tps,ts) = (read s) :: ([HolType], [(String,Term)])
+    let (tps,opsM,ts) = (read s) :: ([HolType], [(String,[HolType])], [(String,Term)])
     let sg = Sign {
-     types = Set.fromList tps }
+     types = Set.fromList tps
+    ,ops = foldl (\m (k,v) -> Map.insert k (Set.fromList v) m) Map.empty opsM }
     let sens = map (\(n,t) -> Sentence { name = n, term = t, proof = Nothing }) ts
     return (sg, sens)
 

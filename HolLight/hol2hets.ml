@@ -215,21 +215,31 @@ let pp_d fmt =
 		        | Comb (t1,t2) -> Format.fprintf fmt "Comb (%a) (%a)" pp_term t1 pp_term t2
 		        | Abs (t1,t2) -> Format.fprintf fmt "Abs (%a) (%a)" pp_term t1 pp_term t2 in
                       let pp_str_term_tuple fmt (s,t) = Format.fprintf fmt "(%S, %a)" s pp_term t in
-                      let pp_data (ts,sens) = Format.fprintf fmt "@[<h>([%a], [%a])@]" (pp_list pp_hol_type) ts (pp_list pp_str_term_tuple) sens in 
+                      let pp_op_map fmt (s,ts) = Format.fprintf fmt "(%S, [%a])" s (pp_list pp_hol_type) ts  in
+                      let pp_data (ts,ops,sens) = Format.fprintf fmt "@[<h>([%a], [%a], [%a])@]" (pp_list pp_hol_type) ts (pp_list pp_op_map) ops (pp_list pp_str_term_tuple) sens in 
                     pp_data;;
 
 let export_sig_sen () = let sens = map (fun (n,t) -> (n,concl t)) (!theorems) in
                      let sens_size = List.length sens in
                      let types = Hashtbl.create sens_size in
+                     let ops = Hashtbl.create sens_size in
                      let htbl_to_list htbl f = Hashtbl.fold (fun k v l -> (f k v)::l) htbl [] in
                      let in_types = Hashtbl.mem types in
-                     let rec get_types = function
-                      | Var (s,t) -> if in_types t then () else Hashtbl.add types t 0
-                      | Const (s,t) -> if in_types t then () else Hashtbl.add types t 0
-                      | Comb (t1,t2) -> get_types t1; get_types t2
-                      | Abs (t1,t2) -> get_types t1; get_types t2 in
-                     let _ = map (get_types o snd) sens in
-                     (htbl_to_list types (fun k _ -> k),sens);;
+                     let rec get_types ignore not_abs = function
+                      | Var (s,t) -> if in_types t then () else Hashtbl.add types t 0;
+                                     if not_abs & not (List.mem s ignore) then
+                                       let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
+                                                  else Hashtbl.create 1
+                                       in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
+                                     else ()
+                      | Const (s,t) -> if in_types t then () else Hashtbl.add types t 0;
+                                       let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
+                                                  else Hashtbl.create 1
+                                       in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
+                      | Comb (t1,t2) -> get_types ignore true t1; get_types ignore true t2
+                      | Abs (t1,t2) -> get_types ((name_of t1)::ignore) false t1; get_types ((name_of t1)::ignore) true t2 in
+                     let _ = map ((get_types [] true) o snd) sens in
+                     (htbl_to_list types (fun k _ -> k),htbl_to_list ops (fun k v -> (k,htbl_to_list v (fun k' _ -> k'))),sens);;
 
 let export_sig_sen_to_file fname = let out_ch = open_out fname in
                                let fmt = Format.formatter_of_out_channel out_ch in
