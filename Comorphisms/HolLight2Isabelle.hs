@@ -101,10 +101,19 @@ mapTheory (sig, n_sens) = let
                           in return (sig', n_sens')
 
 mapSign :: Sign -> IsaSign.Sign
-mapSign (Sign t _) = IsaSign.emptySign{
+mapSign (Sign t o) = IsaSign.emptySign{
                        IsaSign.baseSig = IsaSign.MainHC_thy,
+                       IsaSign.constTab = mapOps o,
                        IsaSign.tsig = mapTypes t
                       }
+
+mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
+mapOps f = Map.fromList $
+            map (\(x,y) -> (IsaSign.mkVName x, tp2Typ y)) $
+            concatMap (\(x, s) -> Set.toList $ Set.map (\a -> (x,a)) s)
+            $ Map.toList f
+
+
 
 tp2Typ :: HolType -> IsaSign.Typ
 tp2Typ (TyVar s) = IsaSign.Type s holType []
