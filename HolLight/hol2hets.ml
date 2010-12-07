@@ -225,14 +225,20 @@ let export_sig_sen () = let sens = map (fun (n,t) -> (n,concl t)) (!theorems) in
                      let ops = Hashtbl.create sens_size in
                      let htbl_to_list htbl f = Hashtbl.fold (fun k v l -> (f k v)::l) htbl [] in
                      let in_types = Hashtbl.mem types in
+                     let rec get_primitive_types t =
+                      if (match t with
+                        Tyvar s -> true
+                       |Tyapp (s,[]) -> true
+                       |Tyapp (s,ts) -> List.map get_primitive_types ts; false) then if in_types t then () else Hashtbl.add types t 0
+                      else () in 
                      let rec get_types ignore not_abs = function
-                      | Var (s,t) -> if in_types t then () else Hashtbl.add types t 0;
+                      | Var (s,t) -> get_primitive_types t;
                                      if not_abs & not (List.mem s ignore) then
                                        let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
                                                   else Hashtbl.create 1
                                        in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
                                      else ()
-                      | Const (s,t) -> if in_types t then () else Hashtbl.add types t 0;
+                      | Const (s,t) -> get_primitive_types t;
                                        let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
                                                   else Hashtbl.create 1
                                        in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
