@@ -17,6 +17,7 @@ module CSL.Sign
     ,pretty                        -- pretty printing
     ,isLegalSignature              -- is a signature ok?
     ,addToSig                      -- adds an id to the given Signature
+    ,addVarItem                    -- adds a var item to the given Signature
     ,unite                         -- union of signatures
     ,emptySig                      -- empty signature
     ,isSubSigOf                    -- is subsiganture?
@@ -66,7 +67,9 @@ lookupSym sig item = Map.member item $ items sig
 -- | pretty printer for CSL signatures
 printSign :: Sign -> Doc
 printSign s =
-    hsep [text "operator", sepByCommas $ map pretty $ Map.keys $ items s]
+--    hsep [text "operator", sepByCommas $ map pretty $ Map.keys $ items s]
+    hsep [text "vars", sepBySemis $ map f $ Map.toList $ vardecls s] where
+        f (k, dom) = pretty k <+> text "in" <+> pretty dom
 
 -- | determines whether a signature is valid. all sets are ok, so glued to true
 isLegalSignature :: Sign -> Bool
@@ -75,6 +78,11 @@ isLegalSignature _ = True
 -- | Basic function to extend a given signature by adding an item (id) to it
 addToSig :: Sign -> Id -> OpType -> Sign
 addToSig sig tok ot = sig {items = Map.insert tok ot $ items sig}
+
+-- | Basic function to extend a given signature by adding a var item to it
+addVarItem :: Sign -> [Token] -> Domain -> Sign
+addVarItem sig toks dom = foldl addvi sig toks where
+    addvi sg tok = sg {vardecls = Map.insert tok dom $ vardecls sg}
 
 -- | Union of signatures
 unite :: Sign -> Sign -> Sign

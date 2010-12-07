@@ -447,6 +447,7 @@ printInfix e@(Op s _ exps _) = do
 printInfix _ = error "printInfix: Impossible case"
 
 printExpression :: ConstantPrinter m => EXPRESSION -> m Doc
+-- TODO: remove the $ when finished static analysis
 printExpression (Var token) = return $ text $ "$" ++ tokStr token
 printExpression e@(Op s epl exps _)
     | length exps == 0 = liftM (<> printExtparams epl) $ printOPID s

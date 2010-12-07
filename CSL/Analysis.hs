@@ -88,10 +88,10 @@ splitSpec (Basic_spec specitems) sig =
 
 anaBasicItem :: (Sign.Sign, Int) -> Annoted BASIC_ITEM
              -> Result ((Sign.Sign, Int), Maybe (Named CMD))
-anaBasicItem acc@(sign, i) itm =
+anaBasicItem (sign, i) itm =
     case item itm of
       Op_decl (Op_item tokens _) -> return ((addTokens sign tokens, i), Nothing)
-      Var_decls _ -> return (acc, Nothing) -- TODO: implement
+      Var_decls l -> return ((addVarDecls sign l, i), Nothing)
       Axiom_item annocmd ->
           do
             ncmd <- analyzeFormula sign annocmd i
@@ -103,6 +103,12 @@ addTokens sign tokens = let f res itm = addToSig res (simpleIdToId itm)
                                         $ optypeFromArity 0
                         in foldl f sign tokens
 
+
+
+-- | adds the specified var items to the signature
+addVarDecls :: Sign.Sign -> [VAR_ITEM] -> Sign.Sign
+addVarDecls sign vitems = foldl f sign vitems where
+    f res (Var_item toks dom _) = addVarItem res toks dom
 
 {- | stepwise extends an initially empty signature by the basic spec bs.
  The resulting spec contains analyzed axioms in it. The result contains:

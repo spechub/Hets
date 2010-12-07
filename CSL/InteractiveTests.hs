@@ -893,4 +893,22 @@ extractOps = extr Map.empty
 -- -- * static analysis functions
 -- -- ----------------------------------------------------------------------
 
+-- arithmetic operators
+opsArith = [ OP_mult, OP_div, OP_plus, OP_minus, OP_neg, OP_pow ]
 
+-- roots, trigonometric and other operators
+opsReal = [ OP_fthrt, OP_sqrt, OP_abs, OP_max, OP_min, OP_sign
+           , OP_cos, OP_sin, OP_tan, OP_Pi ]
+
+-- special CAS operators
+opsCas = [ OP_maximize, OP_factor
+           , OP_divide, OP_factorize, OP_int, OP_rlqe, OP_simplify, OP_solve ]
+
+-- comparison predicates
+opsCmp = [ OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq, OP_convergence ]
+
+-- boolean constants and connectives
+opsBool = [ OP_false, OP_true, OP_not, OP_and, OP_or, OP_impl ]
+
+-- quantifiers
+opsQuant = [ OP_ex, OP_all ]
