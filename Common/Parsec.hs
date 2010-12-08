@@ -62,18 +62,12 @@ optionL = option []
 tryString :: String -> CharParser st String
 tryString = try . string
 
--- | nested comments, open and closing strings must have at least two chars
+-- | nested comments, open and closing strings must have at least one char
 nestedComment :: String -> String -> CharParser st String
-nestedComment op cl = case (op, cl) of
-  (oh : ot : _, ch : ct : _) ->
-    tryString op <++>
-    flat (many $ single
-          (noneOf [oh, ch]
-           <|> try (char ch << notFollowedBy (char ct))
-           <|> try (char oh << notFollowedBy (char ot)))
-          <|> nestedComment op cl)
-    <++> string cl
-  _ -> error "nestedComment"
+nestedComment op cl =
+    let inComment = tryString cl
+           <|> (nestedComment op cl <|> single anyChar) <++> inComment
+    in tryString op <++> inComment
 
 -- | a literal enclosed in quotes and a backslash as escape character
 quotedLit :: Char -> CharParser st String
