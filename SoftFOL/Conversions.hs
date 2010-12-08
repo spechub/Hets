@@ -47,13 +47,13 @@ signToSPLogicalPart s =
               then Nothing
               else Just emptySymbolList
                        { functions =
-                             map (\(f, ts) ->
+                             map (\ (f, ts) ->
                                       SPSignSym {sym = f,
                                                  arity = length (fst (head
                                                             (Set.toList ts)))})
                                      (Map.toList (funcMap s)),
                          predicates =
-                             map (\(p, ts) ->
+                             map (\ (p, ts) ->
                                       SPSignSym {sym = p,
                                                  arity = length (head
                                                           (Set.toList ts))})
@@ -63,7 +63,7 @@ signToSPLogicalPart s =
     decList = if singleSorted s && null (Map.elems $ sortMap s) then []
                 else subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
-    subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b})
+    subsortDecl = map (\ (a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b})
                       (Rel.toList (Rel.transReduce (sortRel s)))
 
     termDecl = concatMap termDecls (Map.toList (funcMap s))
@@ -107,12 +107,12 @@ signToSPLogicalPart s =
            then error
              "SoftFOL.Conversions.makeTerm: no propositional constants"
            else SPQuantTerm {
-                   quantSym=SPForall,
-                   variableList=varListTerms,
-                   qFormula= compTerm SPImplies
+                   quantSym = SPForall,
+                   variableList = varListTerms,
+                   qFormula = compTerm SPImplies
                      [ compTerm (spSym psym) varListTerms
                      , foldl1 mkConj $ zipWith
-                       (\ v ->  foldl1 mkDisj . map (typedVarTerm v))
+                       (\ v -> foldl1 mkDisj . map (typedVarTerm v))
                        varList tss ]}
 
     predDecl = concatMap predDecls $ Map.toList $ predMap s
@@ -120,14 +120,15 @@ signToSPLogicalPart s =
     predDecls (p, tset) = -- assert (Set.size tset == 1)
                           concatMap (toPDecl p) (Set.toList tset)
     toPDecl p t
-        | null t    = []
+        | null t = []
         | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
-    genDecl = map (\ (ssym, Just gen) ->
-                       SPGenDecl {sortSym = ssym,
+    genDecl = Map.foldWithKey (\ ssym ->
+                       maybe id (\ gen ->
+                             (SPGenDecl {sortSym = ssym,
                                   freelyGenerated = freely gen,
-                                  funcList = byFunctions gen})
-              $ filter (isJust . snd) $ Map.toList $ sortMap s
+                                  funcList = byFunctions gen} :)))
+              [] $ sortMap s
 
 {- |
   Inserts a Named Sentence (axiom or goal) into an SPLogicalPart.
@@ -136,10 +137,10 @@ insertSentence :: SPLogicalPart -> Named Sentence -> SPLogicalPart
 insertSentence lp nSen = lp {formulaLists = fLists'}
   where
     insertFormula oType x [] =
-      [SPFormulaList {originType= oType, formulae= [x]}]
+      [SPFormulaList {originType = oType, formulae = [x]}]
     insertFormula oType x (l : ls) =
       if originType l == oType
-        then l{formulae = case formulae l of
+        then l {formulae = case formulae l of
                [f] | oType == SPOriginConjectures ->
                   [reName (const "ga_conjunction_of_theorem")
                    $ mapNamed (const $ mkConj (sentence f) $ sentence x) f]
@@ -178,9 +179,9 @@ genSoftFOLProblem thName lp m_nGoal =
 -}
 genVarList :: SPIdentifier -> [SPIdentifier] -> [SPIdentifier]
 genVarList chSym symList =
-    let reservSym = chSym:symList
-        varSource = filter (flip notElem reservSym)
-          $ map (mkSimpleId . showChar 'Y' . show) [(0::Int) ..]
+    let reservSym = chSym : symList
+        varSource = filter (`notElem` reservSym)
+          $ map (mkSimpleId . showChar 'Y' . show) [(0 :: Int) ..]
     in take (length symList) varSource
 
 predDecl2Term :: SPDeclaration -> Maybe SPTerm
@@ -193,15 +194,15 @@ predDecl2Term pd = case pd of
                        in if null varList
                           then Nothing
                           else Just
-                               SPQuantTerm{
-                                 quantSym=SPForall,
-                                 variableList=varListTerms,
-                                 qFormula=SPComplexTerm{
-                                   symbol=SPImplies,
-                                   arguments=[SPComplexTerm{
-                                                symbol=SPCustomSymbol
+                               SPQuantTerm {
+                                 quantSym = SPForall,
+                                 variableList = varListTerms,
+                                 qFormula = SPComplexTerm {
+                                   symbol = SPImplies,
+                                   arguments = [SPComplexTerm {
+                                                symbol = SPCustomSymbol
                                                            (predSym pd),
-                                                arguments=varListTerms},
+                                                arguments = varListTerms},
                                               foldl1 mkConj $
                                                 zipWith typedVarTerm
                                                         varList $ sortSyms pd]
