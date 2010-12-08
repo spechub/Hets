@@ -37,5 +37,4 @@ parbalanced = flat . many $ char '(' <:> parbalanced <++> string ")"
 
 lineComment :: CharParser st String
 lineComment = (tryString "---" <|> tryString "***")
-              <++> many (noneOf "\n\r")
-              <++> many (oneOf "\n\r")
+              <++> many (noneOf "\n")
