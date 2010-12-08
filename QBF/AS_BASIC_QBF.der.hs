@@ -84,23 +84,24 @@ instance Eq ID where
     ID t1 Nothing == ID t2 t3 = (t1 == t2) || (Just t1 == t3)
     ID _ (Just _) == ID _ Nothing = False
 
--- two QBFs are equivalent if bound variables
--- can be renamed such that the QBFs are equal
+{- two QBFs are equivalent if bound variables
+can be renamed such that the QBFs are equal -}
 qbfMakeEqual :: Maybe [ID] -> FORMULA -> [Id.Token]
              -> FORMULA -> [Id.Token] -> Maybe [ID]
 qbfMakeEqual (Just ids) f ts f1 ts1 = if length ts /= length ts1 then
                                           Nothing
                                       else case (f, f1) of
-  (Predication t, Predication t1) -> if t == t1 then Just ids else
-    if t `elem` ts && t1 `elem` ts1 then
-      if ID t (Just t1) `elem` ids then
+  (Predication t, Predication t1)
+    | t == t1 -> Just ids
+    | t `elem` ts && t1 `elem` ts1 -> let tt1 = ID t (Just t1) in
+      if tt1 `elem` ids then
         Just ids
       else
         if ID t Nothing `notElem` ids && ID t1 Nothing `notElem` ids then
-          Just (ID t (Just t1) : ids)
+          Just (tt1 : ids)
         else
           Nothing
-    else Nothing
+    | otherwise -> Nothing
   (Negation f_ _, Negation f1_ _) -> qbfMakeEqual (Just ids) f_ ts f1_ ts1
   (Conjunction (f_ : fs) _, Conjunction (f1_ : fs1) _) ->
     if length fs /= length fs1 then Nothing else
@@ -123,11 +124,12 @@ qbfMakeEqual (Just ids) f ts f1 ts1 = if length ts /= length ts1 then
     (Implication f2 f3 r1) ts1
   (ForAll ts_ f_ _, ForAll ts1_ f1_ _) -> case r of
     Nothing -> Nothing
-    (Just ids_) -> Just (ids ++ filter (\ (ID x (Just y)) ->
+    (Just ids_) -> Just (ids ++ filter (\ (ID x my) ->
+      let Just y = my in
       (x `elem` ts_ && y `notElem` ts1_) ||
       (x `elem` ts1_ && y `notElem` ts_)) d)
      where
-       d = (List.\\) ids_ ids
+       d = ids_ List.\\ ids
    where
      r = qbfMakeEqual (Just ids) f_ (ts ++ ts_) f1_ (ts1 ++ ts1_)
   (Exists ts_ f_ r, Exists ts1_ f1_ r1) -> qbfMakeEqual (Just ids)
@@ -168,8 +170,7 @@ data SYMBORMAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
--- All about pretty printing
--- we chose the easy way here :)
+-- All about pretty printing we chose the easy way here :)
 instance Pretty FORMULA where
     pretty = printFormula
 instance Pretty BASICSPEC where
