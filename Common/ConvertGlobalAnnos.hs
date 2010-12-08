@@ -29,6 +29,7 @@ import Common.DocUtils
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List (partition, groupBy, sortBy)
+import Data.Ord
 
 instance Pretty GlobalAnnos where
     pretty = printGlobalAnnos
@@ -36,7 +37,7 @@ instance Pretty GlobalAnnos where
 printGlobalAnnos :: GlobalAnnos -> Doc
 printGlobalAnnos = printAnnotationList . convertGlobalAnnos
 
-convertGlobalAnnos::GlobalAnnos -> [Annotation]
+convertGlobalAnnos :: GlobalAnnos -> [Annotation]
 convertGlobalAnnos ga = convertPrec (prec_annos ga)
               ++ convertAssoc (assoc_annos ga)
               ++ convertDispl (display_annos ga)
@@ -51,10 +52,10 @@ convertPrec pg =
     in map (\ l -> let (f, r) = splitAt (div (length l) 2) l in
                    Prec_anno BothDirections f r nullRange)
            (filter ((> 1) . length) $ map Set.toList cs)
-       ++ map (\ l@((_, s) : _) ->
-        Prec_anno Lower (map fst l) (Set.toList s) nullRange)
+       ++ map (\ l ->
+        Prec_anno Lower (map fst l) (Set.toList $ snd $ head l) nullRange)
         (groupBy (\ a b -> snd a == snd b)
-          $ sortBy (\ a b -> compare (snd a) $ snd b)
+          $ sortBy (comparing snd)
             $ Map.toList $ Rel.toMap $ Rel.transReduce $ Rel.irreflex
                $ Rel.collaps cs pg)
 
