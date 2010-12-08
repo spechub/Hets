@@ -22,7 +22,6 @@ module CASL.OMDocExport
     ) where
 
 import OMDoc.DataTypes
---import OMDoc.Export
 
 import Common.Id
 import Common.Result
@@ -40,7 +39,7 @@ import CASL.OMDoc
 import qualified Data.Map as Map
 import Data.Maybe
 
------------------------------ TOPLEVEL Interface -----------------------------
+-- --------------------------- TOPLEVEL Interface -----------------------------
 
 type Env = NameMap Symbol
 
@@ -66,17 +65,17 @@ exportTheoryToOmdoc sigm sig _ =
     return $ map (subsortToOmdoc $ sigMapSymbs sigm) $ Rel.toList $ sortRel sig
 
 
--------------------------- Sentences --------------------------
+-- ------------------------ Sentences --------------------------
 
 subsortToOmdoc :: Env -> (SORT, SORT) -> TCElement
 subsortToOmdoc e (s1, s2) =
-    let oms1@(OMS (_, (OMName n1 _))) = oms e s1
-        oms2@(OMS (_, (OMName n2 _))) = oms e s2
+    let oms1@(OMS (_, OMName n1 _)) = oms e s1
+        oms2@(OMS (_, OMName n2 _)) = oms e s2
     in TCSymbol (nameEncode "ST" [n1, n2])
            (OMA [const_subsortof, oms1, oms2]) Axiom Nothing
 
 
--------------------------- Symbol Interface --------------------------
+-- ------------------------ Symbol Interface --------------------------
 
 class AsSymbol a where
     toSymbol :: a -> Symbol
@@ -104,7 +103,7 @@ instance AsSymbol PRED_SYMB where
     toSymbol (Pred_name n) = error $ "AsSymbol: Unqual. PRED_SYMB: " ++ show n
     toSymbol (Qual_pred_name n t _) = toSymbol (n, t)
 
--------------------------- OMDoc Constant Interface --------------------------
+-- ------------------------ OMDoc Constant Interface --------------------------
 
 class AsOMConstant a where
     toOMConstant :: Env -> a -> Result TCElement
@@ -130,7 +129,7 @@ instance AsOMConstant (String, SymbType) where
           PredAsItemType pt -> toOMConstant e (n, pt)
           OtherTypeKind tk -> error $ "toOMConstant: other typekind " ++ tk
 
--------------------------- ADT --------------------------
+-- ------------------------ ADT --------------------------
 
 makeADTs :: Env -> [Constraint] -> ADTType -> TCElement
 makeADTs e cs b =
@@ -154,9 +153,9 @@ makeADTArgument :: Env -> SORT -> OmdADT
 makeADTArgument e s = ADTArg (oms e s) Nothing
 
 
--------------------------- UTILS --------------------------
+-- ------------------------ UTILS --------------------------
 
-findInEnv ::(Ord k) => a -> Map.Map k a -> k -> a
+findInEnv :: (Ord k) => a -> Map.Map k a -> k -> a
 findInEnv err m x = Map.findWithDefault err x m
 
 
@@ -183,7 +182,7 @@ oms e x = let s = toSymbol x
           in simpleOMS $ findInEnv err e s
 
 
--------------------------- TYPES --------------------------
+-- ------------------------ TYPES --------------------------
 
 -- | Given an operator or predicate signature we construct the according type
 makeType :: Env -> OpKind -> [SORT] -> Maybe SORT -> OMElement
@@ -205,11 +204,11 @@ makeObjectType :: Env -> OpType -> OMElement
 makeObjectType e (OpType opkind opargs oprange) =
     makeType e opkind opargs (Just oprange)
 
--------------------------- TERMS --------------------------
+-- ------------------------ TERMS --------------------------
 
 appOrConst :: AsSymbol a => Env -> a -> [OMElement] -> OMElement
 appOrConst e o [] = oms e o
-appOrConst e o ts = OMA $ (oms e o) : ts
+appOrConst e o ts = OMA $ oms e o : ts
 
 -- | The object e1 and its type e2
 makeTyped :: OMElement -- ^ e1
@@ -237,19 +236,17 @@ omdocRec e mf = Record
     , foldConjunction = \ _ fs _ -> OMA $ const_and : fs
     , foldDisjunction = \ _ fs _ -> OMA $ const_or : fs
     , foldImplication = \ _ f1 f2 b _ ->
-        if b then (OMA [const_implies , f1, f2])
-        else (OMA [const_implied , f1, f2])
+        OMA [if b then const_implies else const_implied, f1, f2]
     , foldEquivalence = \ _ f1 f2 _ ->
-                        (OMA [const_equivalent , f1, f2])
-    , foldNegation = \ _ f _ -> (OMA [const_not , f])
+                        OMA [const_equivalent, f1, f2]
+    , foldNegation = \ _ f _ -> OMA [const_not, f]
     , foldTrue_atom = \ _ _ -> const_true
     , foldFalse_atom = \ _ _ -> const_false
     , foldPredication = \ _ p ts _ -> appOrConst e p ts
     , foldDefinedness = \ _ t _ -> OMA [const_def, t]
-    , foldExistl_equation = \ _ t1 t2 _ -> (OMA [const_eeq , t1, t2])
-    , foldStrong_equation = \ _ t1 t2 _ -> (OMA [const_eq , t1, t2])
-    , foldMembership = \ _ t s _ ->
-                       (OMA [const_in , t, oms e s])
+    , foldExistl_equation = \ _ t1 t2 _ -> OMA [const_eeq, t1, t2]
+    , foldStrong_equation = \ _ t1 t2 _ -> OMA [const_eq, t1, t2]
+    , foldMembership = \ _ t s _ -> OMA [const_in, t, oms e s]
     , foldMixfix_formula = \ t _ -> sfail "Mixfix_formula" $ getRange t
     , foldQuantOp = \ _ o _ _ -> sfail ("QuantOp " ++ show o) $ getRange o
     , foldQuantPred = \ _ p _ _ -> sfail ("QuantPred " ++ show p) $ getRange p
@@ -260,16 +257,13 @@ omdocRec e mf = Record
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
     , foldApplication = \ _ o ts _ -> appOrConst e o ts
     , foldSorted_term = \ _ r s _ -> makeTyped r $ oms e s
-    , foldCast = \ _ t s _ ->
-                 (OMA [const_cast , t, oms e s])
-    , foldConditional = \ _ e' f t _ -> (OMA [const_if , e' , f, t])
+    , foldCast = \ _ t s _ -> OMA [const_cast, t, oms e s]
+    , foldConditional = \ _ e' f t _ -> OMA [const_if, e', f, t]
     , foldMixfix_qual_pred = \ _ p -> sfail "Mixfix_qual_pred" $ getRange p
-    , foldMixfix_term = \ (Mixfix_term ts) _ ->
-        sfail "Mixfix_term" $ getRange ts
+    , foldMixfix_term = \ t _ -> sfail "Mixfix_term" $ getRange t
     , foldMixfix_token = \ _ t -> sfail "Mixfix_token" $ tokPos t
     , foldMixfix_sorted_term = \ _ _ r -> sfail "Mixfix_sorted_term" r
     , foldMixfix_cast = \ _ _ r -> sfail "Mixfix_cast" r
     , foldMixfix_parenthesized = \ _ _ r -> sfail "Mixfix_parenthesized" r
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
     , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
-
