@@ -23,7 +23,7 @@ data FoldTypeRec a = FoldTypeRec
   , foldTypeAppl :: Type -> a -> a -> a
   , foldExpandedType :: Type -> a -> a -> a
   , foldTypeAbs :: Type -> TypeArg -> a -> Range -> a
-  , foldKindedType :: Type -> a -> (Set.Set Kind) -> Range -> a
+  , foldKindedType :: Type -> a -> Set.Set Kind -> Range -> a
   , foldTypeToken :: Type -> Token -> a
   , foldBracketType :: Type -> BracketKind -> [a] -> Range -> a
   , foldMixfixType :: Type -> [a] -> a }
@@ -54,8 +54,8 @@ foldType r t = case t of
 replAlias :: (Id -> RawKind -> Int -> Type) -> Type -> Type
 replAlias m = foldType mapTypeRec
     { foldTypeName = const m
-    , foldExpandedType = \ (ExpandedType t1 _) r1 r2 -> case (t1, r1) of
-        (TypeName _ _ _, ExpandedType t3 _) | t1 == t3 ->
+    , foldExpandedType = \ et r1 r2 -> case (et, r1) of
+        (ExpandedType t1@(TypeName _ _ _) _, ExpandedType t3 _) | t1 == t3 ->
             ExpandedType t1 r2
         _ -> ExpandedType r1 r2 }
 

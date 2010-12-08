@@ -45,7 +45,7 @@ instance Pretty Variance where
 
 instance Pretty a => Pretty (AnyKind a) where
     pretty knd = case knd of
-        ClassKind ci ->  pretty ci
+        ClassKind ci -> pretty ci
         FunKind v k1 k2 _ -> fsep
             [ pretty v <> (case k1 of
                 FunKind _ _ _ _ -> parens
@@ -257,10 +257,11 @@ printTermRec = FoldRec
           (<> brackets (ppWithCommas tys))) $
           parens $ fsep [pretty br, pretty n, colon, printTypeScheme n $
                          if isPred br then unPredTypeScheme t else t]
-    , foldResolvedMixTerm =
-        \ (ResolvedMixTerm _ _ os _) n@(Id toks cs ps) tys ts _ ->
-          let pn = placeCount n in if pn == length ts || null ts then
-            let ds = zipArgs n os ts in
+    , foldResolvedMixTerm = \ rt n@(Id toks cs ps) tys ts _ ->
+          let pn = placeCount n
+              ResolvedMixTerm _ _ os _ = rt
+              ds = zipArgs n os ts
+          in if pn == length ts || null ts then
             if null tys then idApplDoc n ds
             else let (ftoks, _) = splitMixToken toks
                      fId = Id ftoks cs ps
@@ -269,19 +270,21 @@ printTermRec = FoldRec
                  in fsep $ (idApplDoc fId fts <> brackets (ppWithCommas tys))
                     : rts
           else idApplDoc applId [idDoc n, parens $ sepByCommas ts]
-    , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
-        case (o1, o2) of
+    , foldApplTerm = \ ot t1 t2 _ ->
+        case ot of
           -- comment out the following two guards for CASL applications
-          (ResolvedMixTerm n _ [] _, TupleTerm ts@(_ : _) _)
+          ApplTerm (ResolvedMixTerm n _ [] _) (TupleTerm ts@(_ : _) _) _
               | placeCount n == length ts ->
                   idApplDoc n (zipArgs n ts $ map printTerm ts)
-          (ResolvedMixTerm n _ [] _, _) | placeCount n == 1
+          ApplTerm (ResolvedMixTerm n _ [] _) o2 _ | placeCount n == 1
             -> idApplDoc n $ zipArgs n [o2] [t2]
-          _ -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
+          ApplTerm o1 o2 _
+            -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
+          _ -> error "printTermRec.foldApplTerm"
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
-     , foldTypedTerm = \ (TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of
-           TypedTerm {} | elem q [Inferred, OfType] -> parens
-           ApplTerm (ResolvedMixTerm n _ [] _) arg _ ->
+     , foldTypedTerm = \ ot t q typ _ -> fsep [(case ot of
+           TypedTerm (TypedTerm {}) _ _ _ | elem q [Inferred, OfType] -> parens
+           TypedTerm (ApplTerm (ResolvedMixTerm n _ [] _) arg _) _ _ _ ->
              let pn = placeCount n in case arg of
                TupleTerm ts@(_ : _) _ | pn == length ts -> parens
                _ | pn == 1 || hasRightQuant ot -> parens
@@ -290,7 +293,8 @@ printTermRec = FoldRec
            _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, printGenVarDecls vs, bullet <+> t]
-     , foldLambdaTerm = \ (LambdaTerm ops _ _ _) ps q t _ ->
+     , foldLambdaTerm = \ ot ps q t _ ->
+            let LambdaTerm ops _ _ _ = ot in
             fsep [ lambda
                  , case ops of
                       [p] -> case p of
@@ -303,12 +307,13 @@ printTermRec = FoldRec
                                 QualVar vd -> not $ isPatVarDecl vd
                                 _ -> False) ops
                            then printGenVarDecls $ map
-                                ( \ (QualVar vd) -> GenVarDecl vd) ops
+                                (\ pt -> let QualVar vd = pt in GenVarDecl vd)
+                                ops
                            else fcat $ map parens ps
                  , (case q of
                      Partial -> bullet
                      Total -> bullet <> text exMark) <+> t]
-     , foldCaseTerm = \ _ t es _  ->
+     , foldCaseTerm = \ _ t es _ ->
             fsep [text caseS, t, text ofS,
                   cat $ punctuate (space <> bar <> space) $
                        map (printEq0 funArrow) es]
@@ -379,10 +384,12 @@ printGenVarDecls = fsep . punctuate semi . map
   ( \ l -> case l of
      [x] -> pretty x
      GenVarDecl (VarDecl _ t _ _) : _ -> sep
-       [ ppWithCommas (map ( \ (GenVarDecl (VarDecl v _ _ _)) -> v) l)
+       [ ppWithCommas
+         $ map (\ g -> let GenVarDecl (VarDecl v _ _ _) = g in v) l
        , printVarDeclType t]
      GenTypeVarDecl (TypeArg _ e c _ _ _ _) : _ -> sep
-       [ ppWithCommas (map ( \ (GenTypeVarDecl v) -> varOfTypeArg v) l)
+       [ ppWithCommas
+         $ map (\ g -> let GenTypeVarDecl v = g in varOfTypeArg v) l
        , printVarKind e c]
      _ -> error "printGenVarDecls") . groupBy sameType
 
@@ -414,9 +421,9 @@ instance Pretty TypeArg where
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (Pretty a) => [a] -> Doc
 printList0 l = case l of
-    []  -> empty
+    [] -> empty
     [x] -> pretty x
-    _   -> parens $ ppWithCommas l
+    _ -> parens $ ppWithCommas l
 
 instance Pretty BasicSpec where
     pretty (BasicSpec l) = if null l then specBraces empty else
@@ -529,7 +536,7 @@ isSimpleType :: Type -> Bool
 isSimpleType t = case t of
     TypeName i _ _ -> not $ isMixfix i
     TypeToken _ -> True
-    MixfixType[TypeToken _, BracketType Squares (_ : _) _] -> True
+    MixfixType [TypeToken _, BracketType Squares (_ : _) _] -> True
     _ -> False
 
 instance Pretty ClassItem where
@@ -538,7 +545,7 @@ instance Pretty ClassItem where
 
 instance Pretty ClassDecl where
     pretty (ClassDecl l k _) = let cs = ppWithCommas l in
-        if k == universe then cs else  fsep [cs, less, pretty k]
+        if k == universe then cs else fsep [cs, less, pretty k]
 
 instance Pretty Vars where
     pretty vd = case vd of
@@ -572,7 +579,7 @@ prettyOpItem :: Bool -> OpItem -> Doc
 prettyOpItem b oi = case oi of
         OpDecl l t a _ -> fsep $ punctuate comma (map pretty l)
           ++ [colon <+>
-              (if null a then id else (<> comma))(printItScheme l b t)]
+              (if null a then id else (<> comma)) (printItScheme l b t)]
           ++ punctuate comma (map pretty a)
         OpDefn n ps s t _ -> fcat $
             (if null ps then (<> space) else id) (pretty n)
