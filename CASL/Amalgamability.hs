@@ -191,11 +191,8 @@ mergeEquivClassesBy cond rel =
     let -- create the initial map mapping tags to equivalence classes
         initialTagMap =
             let insEl tagMap (val, tag) =
-                    if Map.member tag tagMap
-                    then Map.update (\ (Eqcl eqcl) ->
-                                        Just (Eqcl (val : eqcl))) tag tagMap
-                    else Map.insert tag (Eqcl [val]) tagMap
-            in foldl insEl Map.empty rel
+                    Map.insertWith (++) tag [val] tagMap
+            in Map.map Eqcl $ foldl insEl Map.empty rel
 
         -- merge equivalence classes tagged with t1 and t2
         mergeInMap inTagMap t1 t2 =
@@ -904,8 +901,9 @@ cong diag adm simeq' sim' =
         -- compDiagRule: the combination of Comp and Diag rules
         compDiagRule w1@[_] w2@[_, _] = compDiagRule w2 w1
         compDiagRule [e1, e2] [d] =
-            let [ec1] = filter (\ (e : _) -> e == e1) sim'
-                [ec2] = filter (\ (e : _) -> e == e2) sim'
+            let findSim e3 = filter (\ l -> let e : _ = l in e == e3) sim'
+                [ec1] = findSim e1
+                [ec2] = findSim e2
                 matches' [] = False
                 matches' (((n1, _, s12), (n2, s21, _)) : eps) =
                     n1 == n2 && inRel sim' d (n1, s21, s12)
@@ -972,8 +970,7 @@ sim diag embs' =
 -- | Compute the CanonicalEmbs(D) set given \sim relation
 canonicalEmbs :: EquivRel DiagEmb
               -> [DiagEmb]
-canonicalEmbs = foldl (\ l (e : _) -> e : l) []
-
+canonicalEmbs = foldl (\ l cl -> let e : _ = cl in e : l) []
 
 -- | Convert given \cong_\tau relation to the canonical form
 -- w.r.t. given \sim relation
