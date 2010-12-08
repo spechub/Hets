@@ -13,12 +13,15 @@ Parsing the Maude language with Haskell and "Parsec".
 
 module Maude.Language (
     -- * Types
+
     -- ** The Named Spec type
     NamedSpec (..),
     -- ** Parser Result types
     ParseResult,
     RawResult,
+
     -- * Parsers for Maude
+
     -- ** The Abstract Parser
     maudeParser,
     -- ** The Raw Parser
@@ -28,13 +31,16 @@ module Maude.Language (
 ) where
 
 import Text.ParserCombinators.Parsec hiding (parseFromFile, parse)
-import qualified Text.ParserCombinators.Parsec.Token as Token
-import qualified Text.ParserCombinators.Parsec.Language as Language
 import qualified Text.ParserCombinators.Parsec as Parsec (parseFromFile)
+
+import Maude.Parse
+
+import Common.Parsec ((<:>), (<<), single)
 
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+import Data.Char (isSpace)
 import Data.List (nub)
 import Data.Maybe (fromJust, isNothing)
 
@@ -46,6 +52,7 @@ data NamedSpec = ModName String     -- ^ A Module or Theory
                deriving (Show, Read, Eq)
 
 -- ** Parser Result types
+
 -- | Parsed Result for a module tree
 type ParseResult = [NamedSpec]
 -- | Parsed Result for a single declaration
@@ -55,10 +62,6 @@ type RecResult = (Set FilePath, ParseResult)
 
 -- * Generic Parser combinators
 
--- | Run the argument but return unit
-void :: (Monad m) => m a -> m ()
-void parser = parser >> return ()
-
 -- | Run the argument but return 'Nothing'
 ignore :: (Monad m) => m a -> m (Maybe b)
 ignore parser = parser >> return Nothing
@@ -67,56 +70,26 @@ ignore parser = parser >> return Nothing
 succeed :: (Monad m) => a -> m (Maybe (Either b a))
 succeed = return . Just . Right
 
--- * Helper functions for Parsec.Language
-
--- | Run the argument after ensuring we aren't looking at whitespace
-nonSpace :: CharParser () a -> CharParser () a
-nonSpace parser = notFollowedBy space >> parser
-
--- | Match a literal backquote character
-backquote :: CharParser () Char
-backquote = char '`'
-
--- | A list of characters Maude considers "special"
+-- | A list of characters Maude considers special
 specialChars :: String
 specialChars = "()[]{},"
 
--- * Maude in Parsec.Language
-
--- | The Maude 'Parsec.Language.LanguageDef'
-maudeLanguageDef :: Language.LanguageDef ()
-maudeLanguageDef = Language.emptyDef {
-    -- TODO: Get comments right.
-    Language.commentStart   = "***(",
-    Language.commentEnd     = ")",
-    Language.commentLine    = "---", -- also: "***"
-    Language.nestedComments = True,
-    Language.caseSensitive  = True,
-    Language.identStart     = Token.opStart maudeLanguageDef,
-    Language.identLetter    = Token.opLetter maudeLanguageDef,
-    Language.opStart        = anyChar,
-    Language.opLetter       = let
-        special = backquote >>= flip option (oneOf specialChars)
-        other = noneOf specialChars
-        in nonSpace $ special <|> other
-}
-
--- | The Maude 'Parsec.Token.TokenParser'
-maudeTokenParser :: Token.TokenParser ()
-maudeTokenParser = Token.makeTokenParser maudeLanguageDef
-
--- Yes, this is how Parsec.Language is _supposed_ to be used...
+opLetter :: CharParser () Char
+opLetter = let
+  special = char '`' >>= flip option (oneOf specialChars)
+  in special <|> satisfy (\ c -> not $ isSpace c || elem c specialChars)
 
 identifier :: CharParser () String
-identifier = Token.identifier maudeTokenParser
+identifier = lexeme $ anyChar <:> many opLetter
+
 reserved :: String -> CharParser () ()
-reserved = Token.reserved maudeTokenParser
+reserved n = lexeme $ try (string n >> notFollowedBy opLetter)
+
 lexeme :: CharParser () a -> CharParser () a
-lexeme = Token.lexeme maudeTokenParser
+lexeme = (<< whiteSpace)
+
 whiteSpace :: CharParser () ()
-whiteSpace = Token.whiteSpace maudeTokenParser
-dot :: CharParser () String
-dot = Token.dot maudeTokenParser
+whiteSpace = skipMany $ single space <|> blockComment <|> lineComment
 
 -- * Helper functions for parsing Maude
 
@@ -129,13 +102,13 @@ something :: CharParser () String
 something = identifier
 -- Identifiers and operators are identical currently.
 
--- | Match a 'dot'-terminated statement
+-- | Match a dot-terminated statement
 statement :: CharParser () [String]
-statement = manyTill something dot
+statement = lexeme $ manyTill something $ char '.'
 
 -- | Match the rest of a line
 line :: CharParser () String
-line = manyTill anyChar $ eof <|> void (lexeme newline)
+line = lexeme $ many $ noneOf "\n"
 
 -- * Parsers for Maude source code and components
 
@@ -179,8 +152,8 @@ modul = let
         manyTill something $ reserved "is"
         manyTill statement $ reserved stop
         succeed $ ModName name
-    in  modul' "fmod" "endfm"
-    <|> modul' "mod"  "endm"
+    in modul' "fmod" "endfm"
+    <|> modul' "mod" "endm"
 
 -- | Parse a Maude theory
 theory :: CharParser () RawResult
@@ -191,8 +164,8 @@ theory = let
         reserved "is"
         manyTill statement $ reserved stop
         succeed $ ModName name
-    in  theory' "fth" "endfth"
-    <|> theory' "th"  "endth"
+    in theory' "fth" "endfth"
+    <|> theory' "th" "endth"
 
 -- | Parse a Maude view
 view :: CharParser () RawResult
@@ -221,8 +194,8 @@ parseFileAndCollect path results@(done, syms)
     | otherwise = do
         parsed <- parseFromFile path
         case parsed of
-            Left  err -> return $ Left err
-            Right res -> collectParseResults res ((Set.insert path done), syms)
+            Left err -> return $ Left err
+            Right res -> collectParseResults res (Set.insert path done, syms)
 
 -- | Collect the results from parsing a Maude source file
 collectParseResults :: [RawResult] -> RecResult ->
@@ -231,12 +204,12 @@ collectParseResults list results@(done, syms)
     | null list = return $ Right results
     | isNothing $ head list = collectParseResults (tail list) results
     | otherwise = case fromJust $ head list of
-        Right symb -> collectParseResults (tail list) (done, (symb:syms))
-        Left  path -> do
+        Right symb -> collectParseResults (tail list) (done, symb : syms)
+        Left path -> do
             parsed <- parseFileAndCollect path results
             case parsed of
                 Right res -> collectParseResults (tail list) res
-                Left  err -> return $ Left err
+                Left err -> return $ Left err
 
 -- | Parse a Maude source tree
 parse :: FilePath ->
@@ -244,5 +217,5 @@ parse :: FilePath ->
 parse path = do
     parsed <- parseFileAndCollect path (Set.empty, [])
     case parsed of
-        Left  err -> return $ Left err
+        Left err -> return $ Left err
         Right res -> return $ Right $ nub $ reverse $ snd res
