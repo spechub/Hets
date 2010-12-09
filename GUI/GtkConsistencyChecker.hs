@@ -229,7 +229,7 @@ showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
-        mapM_ ( \ p@(row : []) -> do
+        mapM_ ( \ ~p@(row : []) -> do
           fn <- listStoreGetValue listNodes row
           (if f fn then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs

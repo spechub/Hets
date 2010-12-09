@@ -52,6 +52,7 @@ import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Map as Map
 import Data.List
 import Data.Maybe
+import Data.Ord (comparing)
 
 -- | Data structure for saving the user-selected prover and comorphism
 data Finder = Finder { fName      :: String
@@ -67,12 +68,12 @@ data FNode = FNode { name     :: String
                    , node     :: LNode DGNodeLab
                    , sublogic :: G_sublogics
                    , goals    :: [String]
-                     -- after proving, a new GTheory with the new Proofstatus
-                     -- is computed
+                     {- after proving, a new GTheory with the new Proofstatus
+                     is computed -}
                    , results  :: G_theory }
 
--- | mostly for the purpose of proper display, the resulting G_theory of each
--- FNode can be converted into a list of Goals ( GtkUtils.Goal ).
+{- | mostly for the purpose of proper display, the resulting G_theory of each
+FNode can be converted into a list of Goals ( GtkUtils.Goal ). -}
 toGtkGoals :: FNode -> [Goal]
 toGtkGoals fn = case results fn of
   G_theory _ _ _ sens _ ->
@@ -85,14 +86,14 @@ toGtkGoals fn = case results fn of
                                        (maximum $ map snd l)) s : t
                  ) [] $ goals fn
 
--- | as a Prefix for display purpose, the ratio of proven and total goals
--- is shown
+{- | as a Prefix for display purpose, the ratio of proven and total goals
+is shown -}
 goalsToPrefix :: [Goal] -> String
 goalsToPrefix gs = let p = length $ filter (\ g -> gStatus g == GProved) gs
                    in "[" ++ show p ++ "/" ++ show (length gs) ++ "] "
 
--- | Displays every goal of a Node with a prefix showing the status and the
--- goal name.
+{- | Displays every goal of a Node with a prefix showing the status and the
+goal name. -}
 showStatus :: FNode -> String
 showStatus fn = intercalate "\n" . map (\ g -> GtkUtils.statusToPrefix
                  (gStatus g) ++ show (gName g)) $ toGtkGoals fn
@@ -108,17 +109,15 @@ instance Show FNode where
 instance Eq FNode where
   (==) f1 f2 = compare f1 f2 == EQ
 
--- | for comparison, the goal status of each node is considered. only with
--- equal goal status, nodes are sorted by name.
+{- | for comparison, the goal status of each node is considered. only with
+equal goal status, nodes are sorted by name. -}
 instance Ord FNode where
-  compare f1 f2 = let gmin f = minimum $ toGtkGoals f
-            in case compare (gmin f1) (gmin f2) of
-                 EQ -> compare (name f1) (name f2)
-                 c  -> c
+  compare = let gmin f = (minimum $ toGtkGoals f, name f)
+            in comparing gmin
 
--- | gets all Nodes from the DGraph as input and creates a list of FNodes only
--- containing Nodes to be considered.
--- The results status field is initialised with the nodes local theory
+{- | gets all Nodes from the DGraph as input and creates a list of FNodes only
+containing Nodes to be considered.
+The results status field is initialised with the nodes local theory -}
 initFNodes :: [LNode DGNodeLab] -> [FNode]
 initFNodes = foldr (\ n@(_, l) t -> case globalTheory l of
                       Nothing -> t
@@ -128,7 +127,7 @@ initFNodes = foldr (\ n@(_, l) t -> case globalTheory l of
                                    G_theory _ _ _ s _ ->
                                      OMap.keys $ OMap.filter (not . isAxiom) s
                         in if null gs then t else
-                       (FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt') : t
+                        FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt' : t
               ) []
 
 -- | returns True if a node has not been proved jet
@@ -241,14 +240,14 @@ showProverWindow res ln le = postGUIAsync $ do
 
   -- bindings
 
-  -- this function handles the selction of nodes, getting as input parameter
-  -- a function f (FNode -> Bool).
+  {- this function handles the selction of nodes, getting as input parameter
+  a function f (FNode -> Bool). -}
   let selectWith f u = do
         signalBlock shN
         sel <- treeViewGetSelection trvNodes
         treeSelectionSelectAll sel
         rs <- treeSelectionGetSelectedRows sel
-        mapM_ ( \ p@(row : []) -> do
+        mapM_ ( \ ~p@(row : []) -> do
           fn <- listStoreGetValue listNodes row
           (if f fn then treeSelectionSelectPath else treeSelectionUnselectPath)
             sel p) rs
@@ -291,13 +290,13 @@ showProverWindow res ln le = postGUIAsync $ do
         activate checkWidgets True
         exit
 
-  -- after window is closed, the results are written back into the DGraph.
-  -- for each node a DGChange object is created and applied to the DGraph.
+  {- after window is closed, the results are written back into the DGraph.
+  for each node a DGChange object is created and applied to the DGraph. -}
   onDestroy window $ do
     nodes' <- listStoreToList listNodes
     let dg' = foldl (\ cs fn ->
-                      -- where the proving did not return anything, the node is
-                      -- not updated
+                      {- where the proving did not return anything, the node is
+                      not updated -}
                       if unchecked fn then cs
                         else let
                           (i, l) = node fn
@@ -330,8 +329,8 @@ performAutoProof :: -- include proven Theorems in subsequent proofs
                   -> ListStore FNode
                     -- selected nodes
                   -> [(Int, FNode)]
-                    -- no return value, since results are stored by changing
-                    -- FNode data
+                    {- no return value, since results are stored by changing
+                    FNode data -}
                   -> IO ()
 performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
   let count' = fromIntegral $ length nodes

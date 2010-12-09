@@ -46,7 +46,7 @@ data GProver = GProver { pName :: String
                        , comorphism :: [AnyComorphism]
                        , selected :: Int }
 
-{- ProverGUI -}
+-- ProverGUI
 
 -- | Displays the consistency checker window
 showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
@@ -57,8 +57,8 @@ showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
   -> String -- ^ warning information
   -> G_theory -- ^ theory
   -> KnownProvers.KnownProversMap -- ^ map of known provers
-  -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
-                                -- for sublogic of G_theory
+  -> [(G_prover, AnyComorphism)]
+     -- ^ list of suitable comorphisms to provers for sublogic of G_theory
   -> IO (Result G_theory)
 showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
   initState <- (initialState lid thName th knownProvers comorphList
@@ -128,7 +128,7 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       sel <- treeViewGetSelection trvAxioms
       treeSelectionSelectAll sel
       rs <- treeSelectionGetSelectedRows sel
-      mapM_ ( \ p@(row:[]) -> do
+      mapM_ ( \ ~p@(row : []) -> do
         i <- listStoreGetValue listAxioms row
         (if wasTheorem $ fromJust $ OMap.lookup (stripPrefixAxiom i) axioms
           then treeSelectionUnselectPath else treeSelectionSelectPath) sel p) rs
@@ -179,9 +179,9 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       sel <- treeViewGetSelection trvGoals
       treeSelectionSelectAll sel
       rs <- treeSelectionGetSelectedRows sel
-      mapM_ ( \ p@(row:[]) -> do
+      mapM_ ( \ ~p@(row : []) -> do
         g <- listStoreGetValue listGoals row
-        (if gStatus g == GOpen || gStatus g == GTimeout
+        (if gStatus g `elem` [GOpen, GTimeout]
           then treeSelectionSelectPath else treeSelectionUnselectPath) sel p) rs
       signalUnblock shG
       modifyMVar_ state update
@@ -320,7 +320,7 @@ setSelectedAxioms :: TreeView -> ListStore String -> ProofState lid sentence
                   -> IO (ProofState lid sentence)
 setSelectedAxioms axs listAxs s = do
   axioms <- getSelectedMultiple axs listAxs
-  return s { includedAxioms   = map (stripPrefixAxiom . snd) axioms }
+  return s { includedAxioms = map (stripPrefixAxiom . snd) axioms }
 
 setSelectedTheorems :: TreeView -> ListStore String -> ProofState lid sentence
                     -> IO (ProofState lid sentence)
@@ -329,9 +329,7 @@ setSelectedTheorems ths listThs s = do
   return s { includedTheorems = map snd theorems }
 
 stripPrefixAxiom :: String -> String
-stripPrefixAxiom a = case stripPrefix "(Th) " a of
-  Just a' -> a'
-  Nothing -> a
+stripPrefixAxiom a = fromMaybe a $ stripPrefix "(Th) " a
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
 setSelectedProver :: TreeView -> ListStore GProver -> ComboBox
@@ -344,7 +342,7 @@ setSelectedProver trvProvers listProvers cbComorphism shC s = do
 
 toAxioms :: ThSens sentence (AnyComorphism, BasicProof) -> [String]
 toAxioms =
-  map (\ (k,s) -> if wasTheorem s then "(Th) " ++ k else k) . OMap.toList
+  map (\ (k, s) -> if wasTheorem s then "(Th) " ++ k else k) . OMap.toList
 
 toGoals :: ProofState lid sentence -> [Goal]
 toGoals = sort . map toGoal . OMap.toList . goalMap
