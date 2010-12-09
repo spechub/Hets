@@ -33,10 +33,10 @@ import Common.Id
 import Common.LibName
 import Common.Result
 import Common.Lib.Graph
+import Common.Utils (nubOrd)
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
-import Data.List (nub)
 import Control.Monad
 
 normalFormRule :: DGRule
@@ -63,9 +63,9 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
   if labelHasHiding nodelab then case dgn_nf nodelab of
     Just _ -> return dg -- already computed
     Nothing -> if isDGRef nodelab then do
-        -- the normal form of the node
-        -- is a reference to the normal form of the node it references
-        -- careful: here not refNf, but a new Node which references refN
+        {- the normal form of the node
+        is a reference to the normal form of the node it references
+        careful: here not refNf, but a new Node which references refN -}
        let refLib = dgn_libname nodelab
            refNode = dgn_node nodelab
            refGraph' = lookupDGraph refLib libEnv
@@ -107,19 +107,19 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                 ("cocone failure for " ++ getDGNodeName nodelab
                  ++ " (node " ++ shows node ")") nullRange
           Just (sign, mmap) -> do
-            -- we don't know that node is in fsub
-            -- if it's not, we have to find a tip accessible from node
-            -- and dgn_sigma = edgeLabel(node, tip); mmap (g Map.! tip)
+            {- we don't know that node is in fsub
+            if it's not, we have to find a tip accessible from node
+            and dgn_sigma = edgeLabel(node, tip); mmap (g Map.! tip) -}
             morNode <- if node `elem` nodes fsub then let
                         gn = Map.findWithDefault (error "gn") node g
                         phi = Map.findWithDefault (error "mor") gn mmap
                        in return phi else let
-                          leaves = filter (\x -> outdeg fsub x == 0) $
+                          leaves = filter (\ x -> outdeg fsub x == 0) $
                                      nodes fsub
-                          paths =  map (\(x, Result _ (Just f)) -> (x,f)) $
-                                      map (\x ->
-                                              (x, dijkstra diagram node x)) $
-                                      filter (\x -> node `elem` subgraph
+                          paths = map (\ x ->
+                                       (x, propagateErrors "normalFormDG"
+                                             $ dijkstra diagram node x))
+                                      $ filter (\ x -> node `elem` subgraph
                                                       diagram x) leaves
                                           in
                             case paths of
@@ -146,7 +146,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                 insNNF = InsertNode (nfNode, nfLabel)
                 makeEdge src tgt m = (src, tgt, globDefLink m DGLinkProof)
                 insStrMor = map (\ (x, f) -> InsertEdge $ makeEdge x nfNode f)
-                  $ nub $ map (\ (x, y) -> (g Map.! x, y))
+                  $ nubOrd $ map (\ (x, y) -> (g Map.! x, y))
                   $ (node, morNode) : Map.toList mmap
                 allChanges = insNNF : chLab : insStrMor
                 newDG = changesDGH dg allChanges
@@ -167,20 +167,20 @@ computeDiagram dgraph nodeList (gd, g) =
   [] -> (gd, g)
   _ ->
    let -- defInEdges is list of pairs (n, edges of target g(n))
-       defInEdges = map (\n -> (n,filter (\e@(s,t,_) -> s /= t &&
+       defInEdges = map (\ n -> (n, filter (\ e@(s, t, _) -> s /= t &&
                          liftE (liftOr isGlobalDef isHidingDef) e) $
-                        innDG dgraph $ g Map.! n))  nodeList
-       -- TO DO: no local links, and why edges with s=t are removed
-       --        add normal form nodes
-       -- sources of each edge must be added as new nodes
+                        innDG dgraph $ g Map.! n)) nodeList
+       {- TO DO: no local links, and why edges with s=t are removed
+       add normal form nodes
+       sources of each edge must be added as new nodes -}
        nodeIds = zip (newNodes (length $ concatMap snd defInEdges) gd)
-                     $ concatMap (\(n,l) -> map (\x -> (n,x)) l ) defInEdges
+                     $ concatMap (\ (n, l) -> map (\ x -> (n, x)) l ) defInEdges
        newLNodes = zip (map fst nodeIds) $
-                   map (\ (s,_,_) -> dgn_theory $ labDG dgraph s) $
+                   map (\ (s, _, _) -> dgn_theory $ labDG dgraph s) $
                    concatMap snd defInEdges
        g0 = Map.fromList $
-                     map (\ (newS, (_newT, (s,_t, _))) -> (newS,s)) nodeIds
-       morphEdge (n1,(n2, (_, _, el))) =
+                     map (\ (newS, (_newT, (s, _t, _))) -> (newS, s)) nodeIds
+       morphEdge (n1, (n2, (_, _, el))) =
          if isHidingDef $ dgl_type el
             then (n2, n1, (x, dgl_morphism el))
             else (n1, n2, (x, dgl_morphism el))
@@ -192,7 +192,7 @@ computeDiagram dgraph nodeList (gd, g) =
 
 finalSubcateg :: GDiagram -> GDiagram
 finalSubcateg graph = let
-    leaves = filter (\(n,_) -> outdeg graph n == 0)$ labNodes graph
+    leaves = filter (\ (n, _) -> outdeg graph n == 0) $ labNodes graph
  in buildGraph graph (map fst leaves) leaves [] $ nodes graph
 
 subgraph :: Gr a b -> Node -> [Node]
@@ -201,9 +201,9 @@ subgraph graph node = let
     case nList of
       [] -> descList
       _ -> let
-             newDescs = concatMap (\x -> pre graph x) nList
-             nList' = filter (\x -> not $ x `elem` nList) newDescs
-             descList' = nub $ descList ++ newDescs
+             newDescs = concatMap (pre graph) nList
+             nList' = filter (`notElem` nList) newDescs
+             descList' = nubOrd $ descList ++ newDescs
            in descs nList' descList'
  in descs [node] []
 
@@ -215,7 +215,7 @@ buildGraph :: GDiagram -> [Node]
 buildGraph oGraph leaves nList eList nodeList =
  case nodeList of
   [] -> mkGraph nList eList
-  n:nodeList' ->
+  n : nodeList' ->
      case outdeg oGraph n of
       1 -> buildGraph oGraph leaves nList eList nodeList'
        -- the node is simply removed
@@ -223,12 +223,10 @@ buildGraph oGraph leaves nList eList nodeList =
        -- the leaves have already been added to nList
       _ -> let
             Just l = lab oGraph n
-            nList' = (n, l):nList
-            accesLeaves = filter (\x -> n `elem` subgraph oGraph x) leaves
-            eList' = map ( \(x, Result _ (Just y)) -> (n,x,(1::Int,y))) $
-                     map (\x -> (x, dijkstra oGraph n x)) accesLeaves
+            nList' = (n, l) : nList
+            accesLeaves = filter (\ x -> n `elem` subgraph oGraph x) leaves
+            eList' = map (\ x -> (n, x, (1 :: Int,
+                       propagateErrors "buildGraph" $ dijkstra oGraph n x)))
+                       accesLeaves
            in buildGraph oGraph leaves nList' (eList ++ eList') nodeList'
        -- branch, must add n to the nList and edges in eList
-
-
-
