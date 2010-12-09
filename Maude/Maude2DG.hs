@@ -366,10 +366,7 @@ getOpDeclSet ods ss sm = Set.singleton (op_sym', ats)
 -- | applies the renaming in the map to the operator declaration
 applyRenamingOpSymbol :: Symbol -> SymbolMap -> SymbolSet
 applyRenamingOpSymbol (Operator q ar co) sm = Set.singleton $ Operator q ar' co'
-         where f x = if Map.member x sm
-                     then fromJust $ Map.lookup co sm
-                     else x
-                 -- this should be: Map.findWithDefault x x sm
+         where f x = Map.findWithDefault x x sm
                ar' = map f ar
                co' = f co
 applyRenamingOpSymbol _ _ = Set.empty
@@ -449,7 +446,7 @@ processModExp tim vm dg (SummationModExp modExp1 modExp2) =
   (tok, tim3, morph, ps', dg5) where
     (tok1, tim1, morph1, ps1, dg1) = processModExp tim vm dg modExp1
     (tok2, tim2, morph2, ps2, dg2) = processModExp tim1 vm dg1 modExp2
-    ps' = deleteRepeated $ ps1 ++ ps2
+    ps' = nubOrd $ ps1 ++ ps2
     tok = mkSimpleId $ concat ["{", show tok1, " + ", show tok2, "}"]
     (n1, _, ss1, _, _) = fromJust $ Map.lookup tok1 tim2
     (n2, _, ss2, _, _) = fromJust $ Map.lookup tok2 tim2
@@ -922,13 +919,6 @@ applyRenamingParamSort :: SymbolMap -> ParamSort -> [ParamSort] -> [ParamSort]
 applyRenamingParamSort sm (tok, params) acc = case Map.lookup tok sm of
     Nothing -> (tok, params) : acc
     Just tok' -> getSortsParameterizedBy params [tok'] ++ acc
-
--- | removes the repetitions from a list (use nub!)
-deleteRepeated :: [ParamSort] -> [ParamSort]
-deleteRepeated [] = []
-deleteRepeated (p : ps) = if elem p ps
-                          then deleteRepeated ps
-                          else p : deleteRepeated ps
 
 -- | returns the first element from the triple
 fstTpl :: (a, b, c) -> a
