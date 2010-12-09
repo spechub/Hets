@@ -12,7 +12,7 @@ Goal management GUI for the structured level similar to how 'SPASS.Prove'
 works for SPASS.
 -}
 
-module GUI.HTkProverGUI (proofManagementGUI,GUIMVar) where
+module GUI.HTkProverGUI (proofManagementGUI, GUIMVar) where
 
 import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
@@ -22,7 +22,6 @@ import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 
 import Data.List
-import Control.Monad (when)
 import qualified Control.Concurrent as Conc
 
 import HTk.Toolkit.Separator
@@ -53,7 +52,7 @@ data ProverStatusColour
   = Black
   -- | Running
   | Blue
-   deriving (Bounded,Enum,Show)
+   deriving (Bounded, Enum, Show)
 
 data SelButtonFrame = SBF { selAllEv :: Event ()
                           , deselAllEv :: Event ()
@@ -92,7 +91,7 @@ toGuiStatus st = if proverRunning st
 goalsView :: ProofState lid sentence  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView = map toStatus . OMap.toList . goalMap
-    where toStatus (l,st) =
+    where toStatus (l, st) =
               let tStatus = thmStatus st
                   si = if null tStatus
                        then LBIndicatorOpen
@@ -134,9 +133,9 @@ setSelectedProver :: ListBox String
                   -> IO ()
 setSelectedProver lb st = do
     let ind = case selectedProver st of
-              Just sp -> findIndex (==sp) $ Map.keys (proversMap st)
+              Just sp -> findIndex (== sp) $ Map.keys (proversMap st)
               Nothing -> Nothing
-    maybe (return ()) (\i -> selection i lb >> return ()) ind
+    maybe (return ()) (\ i -> selection i lb >> return ()) ind
 
 -- *** Callbacks
 
@@ -157,7 +156,7 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     -- update goals listbox
     when updateLb
          (do
-           (offScreen,_) <- view Vertical goalsLb
+           (offScreen, _) <- view Vertical goalsLb
            populateGoalsListBox goalsLb (goalsView st)
            moveto Vertical goalsLb offScreen)
     setSelectedProver pathsLb st
@@ -198,13 +197,13 @@ updateStateGetSelectedSens s lbAxs lbThs =
   or deselected
 -}
 
-doSelectAllEntries :: Bool -- ^ indicates wether all entries should be selected
-                         -- or deselected
+doSelectAllEntries :: Bool {- ^ indicates wether all entries should be selected
+                         or deselected -}
                  -> ListBox a
                  -> IO ()
 doSelectAllEntries selectAll lb =
   if selectAll
-     then selectionRange (0::Int) EndOfText lb >> return ()
+     then selectionRange (0 :: Int) EndOfText lb >> return ()
      else clearSelection lb
 
 {- |
@@ -262,7 +261,7 @@ newSelectButtonsFrame b3 = do
   return SBF
     { selAllEv = selectAll
     , deselAllEv = deselectAll
-    , sbfBtns = [deselectAllButton,selectAllButton]
+    , sbfBtns = [deselectAllButton, selectAllButton]
     , sbfBtnFrame = selFrame }
 
 newExtSelListBoxFrame :: (Container par) => par -> String -> Distance
@@ -280,7 +279,7 @@ newExtSelListBoxFrame b2 title hValue = do
   lbFrame <- newFrame b3 []
   pack lbFrame [Expand On, Fill Both, Anchor NorthWest]
 
-  lb <- newListBox lbFrame [bg "white",exportSelection False,
+  lb <- newListBox lbFrame [bg "white", exportSelection False,
                             selectMode Multiple,
                             height hValue] :: IO (ListBox String)
 
@@ -295,9 +294,8 @@ newExtSelListBoxFrame b2 title hValue = do
 
 
 -- *** Main GUI
-{- |
-  Invokes the GUI.
--}
+
+-- | Invokes the GUI.
 proofManagementGUI ::
   (Logic lid sublogics1
              basic_spec1
@@ -315,17 +313,17 @@ proofManagementGUI ::
   -> String -- ^ warning information
   -> G_theory -- ^ theory
   -> KnownProvers.KnownProversMap -- ^ map of known provers
-  -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
-                                -- for sublogic of G_theory
-  -> GUIMVar -- ^ allows only one Proof window per graph;
-             {- must be filled with Nothing and is filled with Nothing after
+  -> [(G_prover, AnyComorphism)] {- ^ list of suitable comorphisms to provers
+                                for sublogic of G_theory -}
+  -> GUIMVar {- ^ allows only one Proof window per graph;
+             must be filled with Nothing and is filled with Nothing after
                 closing the window; while the window is open it is filled with
                 the Toplevel -}
   -> IO (Result.Result G_theory)
 proofManagementGUI lid prGuiAcs thName warningTxt th
                    knownProvers comorphList guiMVar = do
-  -- KnownProvers.showKnownProvers knownProvers
-  -- initial backing data structure
+  {- KnownProvers.showKnownProvers knownProvers
+  initial backing data structure -}
   initState <- initialState lid thName th knownProvers comorphList
                 >>= recalculateSublogicF prGuiAcs
   stateMVar <- Conc.newMVar initState
@@ -423,7 +421,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
 
   pathsFrame <- newFrame rhb4 []
   pack pathsFrame []
-  pathsLb <- newListBox pathsFrame [value ([]::[String]), bg "white",
+  pathsLb <- newListBox pathsFrame [value ([] :: [String]), bg "white",
                                     selectMode Single, exportSelection False,
                                     height 4, width 28] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
@@ -494,7 +492,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   pack showSelThButton [Expand Off, Fill None, Side AtRight]
 
   closeButton <- newButton bottom [text "Close"]
-  pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
+  pack closeButton [Expand Off, Fill None, Side AtRight, PadX (pp 13)]
   -- put the labels in the listboxes
   populateGoalsListBox lb (goalsView initState)
   populateAxiomsList lbAxs initState
@@ -504,12 +502,12 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   doSelectAllEntries True lbAxs
   doSelectAllEntries True lbThs
   updateDisplay initState False lb pathsLb statusLabel
-  let goalSpecificWids = map EnW [displayGoalsButton,proveButton,
-                                  proofDetailsButton,moreButton]
-      wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++
+  let goalSpecificWids = map EnW [displayGoalsButton, proveButton,
+                                  proofDetailsButton, moreButton]
+      wids = [EnW pathsLb, EnW lbThs, EnW lb, EnW lbAxs] ++
              map EnW (selectOpenGoalsButton : closeButton : showThButton :
                       showSelThButton : deselectFormerTheoremsButton :
-                      axsBtns++goalBtns++thsBtns) ++
+                      axsBtns ++ goalBtns ++ thsBtns) ++
              goalSpecificWids
   enableWids goalSpecificWids
   pack main [Expand On, Fill Both]
@@ -526,9 +524,9 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
         when (Map.keys (proversMap s) /= Map.keys (proversMap s'))
              (do populatePathsListBox pathsLb (proversMap s')
                  setSelectedProver pathsLb s')
-        return s'{ selectedProver =
+        return s' { selectedProver =
                        maybe Nothing
-                             (\ sp -> find (==sp) $ Map.keys (proversMap s'))
+                             (\ sp -> find (== sp) $ Map.keys (proversMap s'))
                              (selectedProver s')}
   -- events
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
@@ -544,7 +542,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   close <- clicked closeButton
   showTh <- clicked showThButton
   showSelTh <- clicked showSelThButton
-  (closeWindow,_) <- bindSimple main Destroy
+  (closeWindow, _) <- bindSimple main Destroy
   -- event handlers
   _ <- spawnEvent $ forever
       $ selectGoals >>> do
@@ -567,7 +565,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
                              BasicProof _ pst ->
                                  isOpenGoal $ goalStatus pst
                              _ -> False
-             mapM_ (flip selection lb)
+             mapM_ (`selection` lb)
                    (findIndices isOpen $ OMap.toList $ goalMap s)
              enableWidsUponSelection lb goalSpecificWids
              s' <- updateStatusSublogic s
@@ -577,10 +575,10 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
             s <- Conc.takeMVar stateMVar
             aM <- axiomMap s
             let axiomList = OMap.toList aM
-                isNotFormerTheorem (_,st) = not $ wasTheorem st
+                isNotFormerTheorem (_, st) = not $ wasTheorem st
             sel <- getSelection lbAxs :: IO (Maybe [Int])
             clearSelection lbAxs
-            mapM_ (flip selection lbAxs) $
+            mapM_ (`selection` lbAxs) $
                   maybe [] (filter (isNotFormerTheorem . (!!) axiomList)) sel
             s' <- updateStatusSublogic s
             Conc.putMVar stateMVar s'
@@ -617,11 +615,11 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
             doDisplayGoals s'
             done
       +> selectProverPath >>> do
-            Conc.modifyMVar_ stateMVar (flip doSelectProverPath pathsLb)
+            Conc.modifyMVar_ stateMVar (`doSelectProverPath` pathsLb)
             done
       +> moreProverPaths >>> do
             s <- Conc.readMVar stateMVar
-            let s' = s{proverRunning = True}
+            let s' = s {proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- updateStatusSublogic s'
@@ -643,7 +641,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
             done
       +> doProve >>> do
             s <- Conc.takeMVar stateMVar
-            let s' = s{proverRunning = True}
+            let s' = s {proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- updateStatusSublogic s'
@@ -653,7 +651,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
                        errorDialog "Error" (showRelDiags 2 ds)
                        return s'
                    Just res -> return res
-            let s''' = s''{proverRunning = False,
+            let s''' = s'' {proverRunning = False,
                            accDiags = accDiags s'' ++ ds}
             Conc.putMVar stateMVar s'''
             mv <- Conc.tryTakeMVar lockMVar

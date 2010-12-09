@@ -20,7 +20,6 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 import Data.IORef
-import Control.Monad (when)
 
 import GUI.Utils (fileSaveDialog)
 
@@ -84,8 +83,7 @@ data Content = TacticScriptText | ProofTreeText deriving Eq
 
 -- ** help functions
 
-{- | Return number of new lines in a string.
--}
+-- | Return number of new lines in a string.
 numberOfLines :: String
               -> Int
 numberOfLines =
@@ -145,7 +143,7 @@ fillGoalDescription (cmo, basicProof) =
                      otherProof -> stat (show otherProof)
         printTS bp = case bp of
                      BasicProof _ ps ->
-                       indent (2 * stdIndent) $ (\(TacticScript xs) -> xs) $
+                       indent (2 * stdIndent) $ (\ (TacticScript xs) -> xs) $
                                                 tacticScript ps
                      _ -> Pretty.empty
         printPT bp = case bp of
@@ -221,7 +219,7 @@ doShowProofDetails prGUISt =
     win       <- createToplevel [text winTitleStr]
     bFrame    <- newFrame win [relief Groove, borderwidth (cm 0.05)]
     winTitle  <- newLabel bFrame [text winTitleStr,
-                                  font (Helvetica, Roman, 18::Int)]
+                                  font (Helvetica, Roman, 18 :: Int)]
     btnBox    <- newHBox bFrame []
     tsBut     <- newButton btnBox [text expand_tacticScripts, width 18]
     ptBut     <- newButton btnBox [text expand_proofTrees, width 18]
@@ -230,7 +228,7 @@ doShowProofDetails prGUISt =
     pack winTitle [Side AtTop, Expand Off, PadY 10]
 
     (sb, ed) <- newScrollBox bFrame
-        (flip newEditor [state Normal, size(80,40)]) []
+        (`newEditor` [state Normal, size (80, 40)]) []
     ed # state Disabled
     pack bFrame [Side AtTop, Expand On, Fill Both]
     pack sb     [Side AtTop, Expand On, Fill Both]
@@ -250,8 +248,8 @@ doShowProofDetails prGUISt =
             foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $
                                                      fillGoalDescription s2)
               resOMap $
-               zip (sortBy (\ (_,a) (_,b) -> compare a b) $ thmStatus st)
-                   [(0::Int)..]
+               zip (sortBy (\ (_, a) (_, b) -> compare a b) $ thmStatus st)
+                   [(0 :: Int) ..]
 
     stateRef <- newIORef elementMap
     ed # state Normal
@@ -264,7 +262,7 @@ doShowProofDetails prGUISt =
         opTextPT <- addTextTagButton sptDesc (proofTreeText goalDesc)
                        ProofTreeText ed (gName, ind) stateRef
         appendText ed "\n"
-        let goalDesc' = goalDesc{ tacticScriptText = opTextTS,
+        let goalDesc' = goalDesc { tacticScriptText = opTextTS,
                                   proofTreeText    = opTextPT }
         modifyIORef stateRef (OMap.update (\ _ -> Just goalDesc') (gName, ind))
       ) $ OMap.toList elementMap
@@ -284,8 +282,8 @@ doShowProofDetails prGUISt =
           disable sBut
           curDir <- getCurrentDirectory
           let f = curDir ++ '/' : thName ++ "-proof-details.txt"
-          mfile <- fileSaveDialog f [ ("Text",["*.txt"])
-                                    , ("All Files",["*"])] Nothing
+          mfile <- fileSaveDialog f [ ("Text", ["*.txt"])
+                                    , ("All Files", ["*"])] Nothing
           maybe done (writeTextToFile ed) mfile
           enable qBut
           enable sBut
@@ -340,8 +338,8 @@ toggleMultipleTags content expanded ed stateRef = do
 -}
 toggleTextTag :: Content -- ^ kind of text tag to toggle
               -> Editor -- ^ editor window to which button will be attached
-              -> (String, Int) -- ^ key in single proof descriptions
-                               -- (goal name and index)
+              -> (String, Int) {- ^ key in single proof descriptions
+                               (goal name and index) -}
               -> IORef (OMap.OMap (String, Int) GoalDescription)
                  -- ^ current state of all proof descriptions
               -> IO ()
@@ -365,9 +363,9 @@ toggleTextTag content ed (gName, ind) stateRef = do
         done
     let openText' = openText { textShown = not $ textShown openText }
         s' = OMap.update
-                 (\_ -> Just $ if content == TacticScriptText
-                          then gd{ tacticScriptText = openText' }
-                          else gd{ proofTreeText =  openText' } )
+                 (\ _ -> Just $ if content == TacticScriptText
+                          then gd { tacticScriptText = openText' }
+                          else gd { proofTreeText = openText' } )
                  (gName, ind) s
     writeIORef stateRef $ adaptTextPositions
          (if textShown openText then (-) else (+))
@@ -386,8 +384,8 @@ addTextTagButton :: String -- ^ caption for button
                  -> OpenText -- ^ conatins text to be outfolded if clicked
                  -> Content -- ^ either text from tacticScript or proofTree
                  -> Editor -- ^ editor window to which button will be attached
-                 -> (String, Int) -- ^ key in single proof descriptions
-                                  -- (goal name and index)
+                 -> (String, Int) {- ^ key in single proof descriptions
+                                  (goal name and index) -}
                  -> IORef (OMap.OMap (String, Int) GoalDescription)
                     -- ^ current state of all proof descriptions
                  -> IO OpenText -- ^ information about OpenText status

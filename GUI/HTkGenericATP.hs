@@ -24,7 +24,6 @@ import Data.List
 import Data.Maybe
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
-import Control.Monad (when, unless)
 
 import HTk.Toolkit.SpinButton
 import HTk.Toolkit.Separator
@@ -741,10 +740,9 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                 map AS_Anno.senAttr (goalsList s)
             if numGoals > 0
              then do
-              let afterEachProofAttempt =
+              let afterEachProofAttempt gPSF nSen nextSen cfg@(retval, _) = do
                 {- this function is called after the prover returns from a
                 proof attempt (... -> IO Bool) -}
-                   (\ gPSF nSen nextSen cfg@(retval, _) -> do
                      cont <- goalProcessed stateMVar tLimit extOpts'
                                            numGoals prName gPSF nSen False cfg
                      Conc.tryTakeMVar mVar_batchId >>=
@@ -782,7 +780,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                     enableWids wids
                                     enableWidsUponSelection lb goalSpecificWids
                                     cleanupThread mVar_batchId
-                               return cont'))
+                               return cont')
                     -- END of afterEachProofAttempt
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
               setCurrentGoalLabel batchCurrentGoalLabel firstGoalName
