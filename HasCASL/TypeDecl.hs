@@ -45,7 +45,7 @@ import HasCASL.TypeCheck
 import Control.Monad
 
 import Data.Maybe
-import Data.List(group)
+import Data.List (group)
 
 -- | resolve and type check a formula
 anaFormula :: Annoted Term -> State Env (Maybe (Annoted Term, Annoted Term))
@@ -87,10 +87,9 @@ mapAnMaybe f al = do
 anaTypeItems :: GenKind -> [Annoted TypeItem] -> State Env [Annoted TypeItem]
 anaTypeItems gk l = do
     ul <- mapAnMaybe ana1TypeItem l
-    tys <- mapM ( \ (Datatype d) -> dataPatToType d) $
-              filter ( \ t -> case t of
-                       Datatype _ -> True
-                       _ -> False) $ map item ul
+    tys <- fmap reverse $ foldM ( \ r i -> case item i of
+      Datatype d -> fmap (: r) $ dataPatToType d
+      _ -> return r) [] ul
     rl <- mapAnMaybe (anaTypeItem gk tys) ul
     addDataSen tys
     return rl
@@ -187,7 +186,7 @@ anaSubtypeDecl pats t ps = do
                        Just $ SubtypeDecl newPats newT ps
 
 anaSubtypeDefn :: Annoted TypeItem -> TypePattern -> Vars -> Type
-               -> (Annoted Term) -> Range -> State Env (Maybe TypeItem)
+               -> Annoted Term -> Range -> State Env (Maybe TypeItem)
 anaSubtypeDefn aitm pat v t f ps = do
     let Result ds m = convertTypePattern pat
     addDiags ds

@@ -13,7 +13,7 @@ constraint resolution
 
 module HasCASL.Constrain
     ( Constraints
-    , Constrain(..)
+    , Constrain (..)
     , noC
     , substC
     , joinC
@@ -71,7 +71,7 @@ joinC = Set.union
 noVars :: Constrain -> Bool
 noVars c = case c of
   Kinding ty _ -> null $ freeTVars ty
-  Subtyping t1 t2 -> null (freeTVars t1) &&  null (freeTVars t2)
+  Subtyping t1 t2 -> null (freeTVars t1) && null (freeTVars t2)
 
 partitionVarC :: Constraints -> (Constraints, Constraints)
 partitionVarC = Set.partition noVars
@@ -270,7 +270,7 @@ collapser r =
                          ++ showDoc c2 "'") nullRange) ws) Nothing
 
 extendSubst :: Subst -> (Type, Set.Set Type) -> Subst
-extendSubst s (t, vs) = Set.fold ( \ (TypeName _ _ n) ->
+extendSubst s (t, vs) = Set.fold ( \ ~(TypeName _ _ n) ->
               Map.insert n t) s vs
 
 -- | partition into qualification and subtyping constraints
@@ -324,7 +324,7 @@ shapeRel te subL =
 monotonic :: Int -> Type -> (Bool, Bool)
 monotonic v = foldType FoldTypeRec
   { foldTypeName = \ _ _ _ i -> (True, i /= v)
-  , foldTypeAppl = \ t@(TypeAppl tf _) ~(f1, f2) (a1, a2) ->
+  , foldTypeAppl = \ ~t@(TypeAppl tf _) ~(f1, f2) (a1, a2) ->
       -- avoid evaluation of (f1, f2) if it is not needed by "~"
      case redStep t of
       Just r -> monotonic v r
@@ -373,16 +373,17 @@ monoSubst r t =
                         sl = Set.delete tn $ foldl1 Set.intersection
                                       $ map (Rel.succs r)
                                       $ Set.toList s
-                    in Map.singleton i $ Set.findMin $ if Set.null sl then s
-                       else sl
-             else   let (i, (n, rk)) = head resta
-                        tn = TypeName n rk i
-                        s = Rel.succs r tn
-                        sl = Set.delete tn $ foldl1 Set.intersection
-                                        $ map (Rel.predecessors r)
-                                        $ Set.toList s
-                    in Map.singleton i $ Set.findMin $ if Set.null sl then s
-                       else sl
+                    in Map.singleton i $ Set.findMin
+                       $ if Set.null sl then s else sl
+             else let
+                 (i, (n, rk)) = head resta
+                 tn = TypeName n rk i
+                 s = Rel.succs r tn
+                 sl = Set.delete tn $ foldl1 Set.intersection
+                      $ map (Rel.predecessors r)
+                      $ Set.toList s
+                 in Map.singleton i $ Set.findMin
+                    $ if Set.null sl then s else sl
           else Map.fromDistinctAscList $ map ( \ (i, (n, rk)) ->
                 (i, Set.findMin $ Rel.predecessors r $
                   TypeName n rk i)) monos
