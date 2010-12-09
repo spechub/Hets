@@ -24,7 +24,7 @@ import Common.Doc
 import HolLight.Helper
 import HolLight.Term
 import Data.Maybe (fromJust,catMaybes,isNothing)
-import qualified Char
+import qualified Data.Char as Char
 
 data Sentence = Sentence {
   name :: String,
@@ -33,7 +33,7 @@ data Sentence = Sentence {
   } deriving (Eq, Ord, Show)
 
 printNamedSen :: Named Sentence -> Doc
-printNamedSen ns = 
+printNamedSen ns =
   let s = sentence ns
   in (hcat [text (name s), text " = `",
                     (pp_print_term . term) s,text "`"])
@@ -41,7 +41,7 @@ printNamedSen ns =
 
 instance Pretty Sentence where
   pretty s = (hcat [text (name s), text " = `",
-                    (pp_print_term . term) s,text "`"]) 
+                    (pp_print_term . term) s,text "`"])
 
 pp_print_term tm = print_term 0 tm
 
@@ -52,7 +52,7 @@ replace_pt tm pt = case tm of
   Const s t _ -> Const s t (HolTermInfo (pt,Nothing))
   _ -> tm
 
-print_term prec tm = 
+print_term prec tm =
  let _1 = case dest_numeral tm of
          Just i -> Just (text (show i))
          _ -> Nothing in
@@ -122,7 +122,7 @@ print_term prec tm =
          Just (e:eqs,bod) -> case mk_eq e of
            Just e' -> let eqs' = map (\(v,t) -> mk_eq (v,t)) eqs
              in if any ((==)Nothing) eqs' then Nothing else
-                Just ((prec_parens prec) 
+                Just ((prec_parens prec)
                         (hcat [
                           text "let ",
                           print_term 0 e',
@@ -195,7 +195,7 @@ print_term prec tm =
                         let (tmt,tms) = rev_splitlist (dest_binary hop) tm
                                          in tmt:tms in
           let (newprec,unspaced_binops) = (get_prec hop,[",","..","$"])
-          in Just ((if newprec <= prec then parens else id) (hcat 
+          in Just ((if newprec <= prec then parens else id) (hcat
                     (print_term newprec (bargs!!0):(
                      map (\x ->
                       if elem s unspaced_binops then hcat [text s,
@@ -205,17 +205,17 @@ print_term prec tm =
                   ))))
         else Nothing in
  let _14 = if (is_const hop || is_var hop) && args == [] then
-             let s' = if parses_as_binder hop || can_get_infix_status hop 
+             let s' = if parses_as_binder hop || can_get_infix_status hop
                          || is_prefix tm then parens (text s) else text s
              in Just s'
            else Nothing in
  let _15 = case dest_comb tm of
               Just (l,r) -> let mem = case dest_const l of
                                         Just (s',_) -> elem s'
-                                          ["real_of_num","int_of_num"] 
+                                          ["real_of_num","int_of_num"]
                                         _ -> False
                             in Just ((if prec == 1000 then parens else id)
-                                         (if not mem 
+                                         (if not mem
                                           then hcat [print_term 999 l, text " ",
                                                      print_term 1000 r]
                                           else hcat [print_term 999 l,
@@ -224,7 +224,7 @@ print_term prec tm =
  in head (catMaybes [_1,_2,_3,_4,_5,_6,_7,_8,_9,
                      _10,_11,_12,_13,_14,_15,Just empty])
 
-print_term_sequence sep prec tms = 
+print_term_sequence sep prec tms =
   if tms == [] then empty
   else hcat (punctuate (text sep) (map (print_term prec) tms))
 

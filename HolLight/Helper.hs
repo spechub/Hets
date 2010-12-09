@@ -14,7 +14,7 @@ module HolLight.Helper where
 
 import Data.Maybe (fromJust,isJust,maybe,catMaybes)
 import HolLight.Term
-import List (union,(\\))
+import Data.List (union,(\\))
 import Common.Doc
 
 fromRight e = case e of
@@ -72,7 +72,7 @@ variant avoid v = if not (any (vfree_in v) avoid) then Just v
                          Var s ty p -> variant avoid (Var (s++"'") ty p)
                          _ -> Nothing
 
-vsubst = 
+vsubst =
   let vsubst' ilist tm = case tm of
                            Var _ _ _ -> Just $ rev_assocd tm ilist tm
                            Const _ _ _ -> Just tm
@@ -97,8 +97,8 @@ vsubst =
                                              _ -> Nothing
                                            _ -> Nothing
                                          else Just (Abs v s')
-                                  _ -> Nothing 
-  in \ theta -> 
+                                  _ -> Nothing
+  in \ theta ->
     if theta == [] then (\ tm -> Just tm) else
     if all (\ (t,x) -> case (type_of t, dest_var x) of
                          (Just t',Just (_,x')) -> t' == x'
@@ -170,7 +170,7 @@ mk_eq (l,r) = case (type_of l,mk_const ("=",[])) of
                                   Just m1 -> mk_comb (m1,r)
                                   _ -> Nothing
                                 _ -> Nothing
-               _ -> Nothing    
+               _ -> Nothing
 
 inst =
   let inst' env tyin tm = case tm of
@@ -215,7 +215,7 @@ inst =
                                                   _ -> Left w'
                                                _ -> Left w'
                               _ -> Left tm
-  in (\tyin -> if tyin == [] then (\tm -> Right tm) else inst' [] tyin) 
+  in (\tyin -> if tyin == [] then (\tm -> Right tm) else inst' [] tyin)
 
 mk_comb (f,a) = case type_of f of
   Just (TyApp "fun" [ty,_]) -> case type_of a of
@@ -238,7 +238,7 @@ mk_const (name,theta) = if name == "="
 
 {- basics.ml -}
 dest_binder s tm = case tm of
-  Comb (Const s' _ _) (Abs x t) -> 
+  Comb (Const s' _ _) (Abs x t) ->
     if (s'==s) then Just (x,t)
     else Nothing
   _ -> Nothing
@@ -257,7 +257,7 @@ body tm = case dest_abs tm of
   Just (_,ret) -> Just ret
   _ -> Nothing
 
-dest_numeral tm = 
+dest_numeral tm =
   let dest_num tm = case dest_const tm of
                       Just ("_0",_) -> Just (toInteger 0)
                       _ -> case dest_comb tm of
@@ -284,7 +284,7 @@ dest_binary' s tm = case tm of
 
 dest_cons = dest_binary' "CONS"
 
-dest_list tm = let (tms,nil) = splitlist dest_cons tm 
+dest_list tm = let (tms,nil) = splitlist dest_cons tm
                in case dest_const nil of
                     Just ("NIL",_) -> Just tms
                     _ -> Nothing
@@ -304,12 +304,12 @@ dest_gabs tm =
                             _ -> Nothing
             _ -> Nothing
 
-is_gabs tm = isJust (dest_gabs tm) 
+is_gabs tm = isJust (dest_gabs tm)
 
 strip_gabs = splitlist dest_gabs
 
 dest_fun_ty ty = case ty of
-  TyApp "fun" [ty1,ty2] -> Just (ty1,ty2) 
+  TyApp "fun" [ty1,ty2] -> Just (ty1,ty2)
   _ -> Nothing
 
 dest_let tm = let (l,aargs) = strip_comb tm
@@ -322,7 +322,7 @@ dest_let tm = let (l,aargs) = strip_comb tm
                                                 Just ("LET_END",_) -> Just (eqs,bod)
                                                 _ -> Nothing
                              _ -> Nothing
-                   _ -> Nothing    
+                   _ -> Nothing
 
 {- printer.ml -}
 name_of tm = case tm of
@@ -347,8 +347,8 @@ dest_binary c tm = case (dest_comb tm) of {- original name: DEST_BINARY -}
        (fst(reverse_interface((fst(fromJust(dest_const i)),i)))
        == fst(reverse_interface((fst(fromJust(dest_const c)),i)))))
       then Just (l,r)
-      else Nothing 
-    _ -> Nothing 
+      else Nothing
+    _ -> Nothing
   _ -> Nothing
 
 powerof10 n = (10*(div n 10)) == n
