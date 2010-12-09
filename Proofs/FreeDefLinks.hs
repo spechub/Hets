@@ -39,7 +39,7 @@ getCFreeDefLinks dg tgt =
   let isGlobalOrCFreeEdge = liftOr isGlobalEdge $ liftOr isFreeEdge isCofreeEdge
       paths = map reverse $ Tree.getAllPathsTo tgt
         $ elfilter (isGlobalOrCFreeEdge . dgl_type) $ dgBody dg
-      myfilter p = filter ( \ ((_, _, lbl) : _) -> p $ dgl_type lbl)
+      myfilter p = filter ( \ ~((_, _, lbl) : _) -> p $ dgl_type lbl)
   in (myfilter isFreeEdge paths, myfilter isCofreeEdge paths)
 
 mkFreeDefMor :: [Named sentence] -> morphism -> morphism
