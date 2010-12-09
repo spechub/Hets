@@ -107,8 +107,7 @@ sRec sign mf = Record
     , foldCast = \ _ t s _ -> SList [SSymbol "cast", t, sortToSSymbol s]
     , foldConditional = \ _ e f t _ -> SList [SSymbol "condition", e, f, t]
     , foldMixfix_qual_pred = \ _ -> sfail "Mixfix_qual_pred" . getRange
-    , foldMixfix_term = \ (Mixfix_term ts) _ ->
-        sfail "Mixfix_term" $ getRange ts
+    , foldMixfix_term = \ t _ -> sfail "Mixfix_term" $ getRange t
     , foldMixfix_token = \ _ -> sfail "Mixfix_token" . tokPos
     , foldMixfix_sorted_term = \ _ _ -> sfail "Mixfix_sorted_term"
     , foldMixfix_cast = \ _ _ -> sfail "Mixfix_cast"

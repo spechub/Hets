@@ -865,7 +865,7 @@ updateNodeNameSpecRT dg n s =
 addSubTree :: DGraph -> Maybe RTLeaves -> RTPointer -> (DGraph, RTPointer)
 addSubTree dg Nothing (NPComp h) =
   foldl
-   (\ (d, NPComp cp) (k, p) -> let
+   (\ ~(d, NPComp cp) (k, p) -> let
          (d', p') = addSubTree d Nothing p
        in (d', NPComp (Map.insert k p' cp)))
    (dg, NPComp Map.empty) $ Map.toList h
@@ -881,7 +881,7 @@ addSubTree dg (Just (RTLeaf x)) p = let
   in (dg', p')
 addSubTree dg (Just (RTLeaves g)) (NPComp h) =
  foldl
-   (\ (d, NPComp cp) (k, p) -> let
+   (\ ~(d, NPComp cp) (k, p) -> let
          l = Map.findWithDefault (error $ "addSubTree:" ++ show k) k g
          (d', p') = addSubTree d (Just l) p
        in (d', NPComp (Map.insert k p' cp)))

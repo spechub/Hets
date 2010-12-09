@@ -31,12 +31,13 @@ import Common.SExpr
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Char (toLower)
-import Data.List(sortBy)
+import Data.List (sortBy)
+import Data.Ord (comparing)
 
 addUniformRestr :: Sign f Procs -> [Named Sentence] ->
                    (Sign f Procs, [Named Sentence])
 addUniformRestr sig nsens = let
-  namedConstr = filter (\ns -> case sentence ns of
+  namedConstr = filter (\ ns -> case sentence ns of
                                 ExtFORMULA
                                  (Ranged
                                    (RestrictedConstraint _ _ _)
@@ -49,17 +50,13 @@ addUniformRestr sig nsens = let
    let
     (genSorts, genOps, _maps) = recover_Sort_gen_ax constrs
     genUniform sorts ops s = let
-      hasResSort sn (Qual_op_name _ opType _) = res_OP_TYPE opType == sn
-      hasResSort _ _ = error "should have qual names"
-      ctors = sortBy (\ (Qual_op_name _ (Op_type _ args1 _ _) _)
-                        (Qual_op_name _ (Op_type _ args2 _ _) _) ->
-                        if length args1 < length args2 then LT else GT) $
-              filter (hasResSort s) ops
-      genCodeForCtor (Op_name _ ) _ = error "should have qual names"
-      genCodeForCtor (Qual_op_name ctor (Op_type _ args sn _) _) prg = let
+      hasResSort sn ~(Qual_op_name _ opType _) = res_OP_TYPE opType == sn
+      argLength ~(Qual_op_name _ (Op_type _ args _ _) _) = length args
+      ctors = sortBy (comparing argLength) $ filter (hasResSort s) ops
+      genCodeForCtor ~(Qual_op_name ctor (Op_type _ args sn _) _) prg = let
         decls = genVars args
         vs = map (\ (i, a) -> Var_decl [i] a nullRange) decls
-        recCalls = map (\(i, x) ->
+        recCalls = map (\ (i, x) ->
                          Ranged (Call (Predication
                                         (Qual_pred_name
                                           (gnUniformName s)
@@ -68,7 +65,7 @@ addUniformRestr sig nsens = let
                                       )) nullRange) $
                    filter (flip elem sorts . snd) decls
         recCallsSeq = if null recCalls then Ranged Skip nullRange else
-                      foldr1 (\p1 p2 -> Ranged (Seq p1 p2) nullRange) recCalls
+                      foldr1 (\ p1 p2 -> Ranged (Seq p1 p2) nullRange) recCalls
         in case recCalls of
          [] -> Ranged (
                 Block (Var_decl [yVar] s nullRange : vs)
@@ -92,7 +89,7 @@ addUniformRestr sig nsens = let
                                  (
                                   Qual_op_name
                                    (gnEqName s)
-                                   (Op_type Partial [s,s]
+                                   (Op_type Partial [s, s]
                                     uBoolean nullRange)
                                   nullRange
                                  ) [Qual_var
@@ -104,7 +101,7 @@ addUniformRestr sig nsens = let
                                     ] nullRange)
                                aTrue nullRange)
                           (Ranged Skip nullRange)
-                          prg)nullRange))
+                          prg) nullRange))
                 nullRange )) nullRange) ) nullRange
          _ -> Ranged (
                  Block (Var_decl [yVar] s nullRange : vs)
@@ -129,7 +126,7 @@ addUniformRestr sig nsens = let
                                  ( Application
                                  ( Qual_op_name
                                    (gnEqName s)
-                                   (Op_type Partial [s,s]
+                                   (Op_type Partial [s, s]
                                     uBoolean nullRange)
                                   nullRange
                                  ) [Qual_var
@@ -143,8 +140,8 @@ addUniformRestr sig nsens = let
                                (Ranged Skip nullRange) prg) nullRange))
                                nullRange )) nullRange)) nullRange) ) nullRange
                              in
-     [makeNamed "" $  ExtFORMULA $
-     Ranged (Defprocs  [
+     [makeNamed "" $ ExtFORMULA $
+     Ranged (Defprocs [
       Defproc Proc (gnUniformName s) [xVar]
       (Ranged (
         Block [] ( foldr genCodeForCtor (Ranged Abort nullRange)
@@ -175,14 +172,14 @@ addUniformRestr sig nsens = let
           nullRange) True nullRange) nullRange) {isAxiom = False}]
     procDefs = concatMap (genUniform genSorts genOps) genSorts
     procs' = Map.fromList $
-             map (\s -> (gnUniformName s,
+             map (\ s -> (gnUniformName s,
                          Profile [Procparam In s] Nothing)) genSorts
    in
     (Map.union procs procs', tSens ++ procDefs)
   restrToSExpr _ _ = error "should not be anything than restricted constraints"
   (newProcs, trSens) = foldl restrToSExpr (Map.empty, []) restrConstr
                             in
- (sig{
+ (sig {
    predMap = addMapSet (predMap sig) $ procsToPredMap $ Procs newProcs,
 
    extendedInfo = Procs $ Map.union newProcs (procsMap $ extendedInfo sig)},
@@ -255,7 +252,7 @@ progToSExpr sig = let
           SList $ SSymbol "call" : procIdToSSymbol sig i : map termToSExpr ts
         _ -> sfail "Call" r
   , foldReturn = \ _ t -> SList [SSymbol "return", termToSExpr t]
-  , foldBlock = \ (Ranged (Block vs p) _) _ _ ->
+  , foldBlock = \ ~(Ranged (Block vs p) _) _ _ ->
       let (vds, q) = addInits (toVarDecl vs) p
           ps = progToSExpr sig q
           nvs = map (vDeclToSExpr sig) vds
