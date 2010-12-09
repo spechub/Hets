@@ -282,9 +282,9 @@ printTermRec = FoldRec
             -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
           _ -> error "printTermRec.foldApplTerm"
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
-     , foldTypedTerm = \ ot t q typ _ -> fsep [(case ot of
-           TypedTerm (TypedTerm {}) _ _ _ | elem q [Inferred, OfType] -> parens
-           TypedTerm (ApplTerm (ResolvedMixTerm n _ [] _) arg _) _ _ _ ->
+     , foldTypedTerm = \ ~(TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of
+           TypedTerm {} | elem q [Inferred, OfType] -> parens
+           ApplTerm (ResolvedMixTerm n _ [] _) arg _ ->
              let pn = placeCount n in case arg of
                TupleTerm ts@(_ : _) _ | pn == length ts -> parens
                _ | pn == 1 || hasRightQuant ot -> parens
