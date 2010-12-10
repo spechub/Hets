@@ -72,6 +72,8 @@ writeLibDefn ga file opts ld = do
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn ga ld)
         printAscii fn = writeEncFile (ioEncoding opts) fn
           $ showGlobalDoc ga ld "\n"
+        printHtml fn = writeEncFile (ioEncoding opts) fn
+          $ renderHtml ga $ pretty ld
         write_type :: OutType -> IO ()
         write_type ty = case ty of
             PrettyOut pty -> do
@@ -80,6 +82,7 @@ writeLibDefn ga file opts ld = do
               case pty of
                 PrettyXml -> printXml fn
                 PrettyAscii -> printAscii fn
+                PrettyHtml -> printHtml fn
                 PrettyLatex -> writeLibDefnLatex opts ga fn ld
             _ -> return () -- implemented elsewhere
     putIfVerbose opts 3 ("Current OutDir: " ++ odir)

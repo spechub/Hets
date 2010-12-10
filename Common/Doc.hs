@@ -72,6 +72,7 @@ Examples can be produced using: hets -v2 -o pp.het,pp.tex
 module Common.Doc
     ( -- * the document type
       Doc
+    , renderHtml
       -- * primitive documents
     , empty
     , space
@@ -168,6 +169,7 @@ module Common.Doc
     , idApplDoc
       -- * transforming to existing formats
     , toText
+    , toHtml
     , toLatex
       -- * manipulating documents
     , flushRight
@@ -227,6 +229,13 @@ data Doc
 instance Show Doc where
     showsPrec _ doc cont =
         Pretty.renderStyle' cont Pretty.style $ toText emptyGlobalAnnos doc
+
+renderHtml :: GlobalAnnos -> Doc -> String
+renderHtml ga = concatMap (\ c -> case c of
+    '\n' -> c : "<br>"
+    ' ' -> "&nbsp;&nbsp;"
+    _ -> [c])
+  . Pretty.renderStyle' "" Pretty.style . toHtml ga
 
 isEmpty :: Doc -> Bool
 isEmpty d = case d of
@@ -536,6 +545,71 @@ toTextAux = foldDoc anyRecord
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
 
+-- * conversion to html
+
+-- | conversion to html
+toHtml :: GlobalAnnos -> Doc -> Pretty.Doc
+toHtml ga = let
+  dm = Map.map (Map.! DF_HTML)
+       . Map.filter (Map.member DF_HTML) $ display_annos ga
+  in foldDoc toHtmlRecord . codeOut ga
+                 (mkPrecIntMap $ prec_annos ga) (Just DF_HTML) dm
+
+toHtmlRecord :: DocRecord Pretty.Doc
+toHtmlRecord = anyRecord
+    { foldEmpty = const Pretty.empty
+    , foldText = const textToHtml
+    , foldCat = \ d c l -> case d of
+        Cat _ ds@(_ : _) -> if all hasSpace $ init ds then
+          (case c of
+          Vert -> Pretty.vcat
+          Horiz -> Pretty.hsep
+          HorizOrVert -> Pretty.sep
+          Fill -> Pretty.fsep) $ map (foldDoc toHtmlRecord . rmSpace) ds
+          else (case c of
+          Vert -> Pretty.vcat
+          Horiz -> Pretty.hcat
+          HorizOrVert -> Pretty.cat
+          Fill -> Pretty.fcat) l
+        _ -> Pretty.empty
+    , foldAttr = \ _ k d -> case k of
+          FlushRight -> let l = length $ show d in
+            if l < 66 then Pretty.nest (66 - l) d else d
+          _ -> d
+    , foldChangeGlobalAnnos = \ _ _ d -> d
+    }
+
+textToHtml :: TextKind -> String -> Pretty.Doc
+textToHtml k s = let
+  h = Pretty.text $ escapeHtml s ""
+  zeroText = Pretty.sp_text 0
+  tagB t = '<' : t ++ ">"
+  tagE t = tagB $ '/' : t
+  tag t d = Pretty.hcat [zeroText (tagB t), d, zeroText (tagE t) ]
+  tagBold = tag "strong"
+  hi = tag "em" h
+ in case k of
+    Native -> Pretty.text s
+    Keyword -> tagBold h
+    TopKey n -> let l = n - length s in
+      tagBold $ h Pretty.<> Pretty.text (replicate l ' ')
+    Comment -> tag "small" h
+    Indexed -> hi
+    StructId -> hi
+    _ -> h
+
+escChar :: Char -> ShowS
+escChar c = case c of
+  '\'' -> showString "&#39;"
+  '<' -> showString "&lt;"
+  '>' -> showString "&gt;"
+  '&' -> showString "&amp;"
+  '"' -> showString "&quot;"
+  _ -> showChar c
+
+escapeHtml :: String -> ShowS
+escapeHtml cs rs = foldr escChar rs cs
+
 -- * conversion to latex
 
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
@@ -679,7 +753,7 @@ getDeclIds = foldDoc anyRecord
 
 textToLatex :: Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
 textToLatex dis b k s = case s of
-  [] -> Pretty.text ""
+  "" -> Pretty.text ""
   h : _ -> let e = escapeLatex True s in case k of
     IdKind -> makeSmallLatex b $ if elem s $ map (: []) ",;[]() "
               then casl_normal_latex s
