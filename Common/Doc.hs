@@ -231,11 +231,20 @@ instance Show Doc where
         Pretty.renderStyle' cont Pretty.style $ toText emptyGlobalAnnos doc
 
 renderHtml :: GlobalAnnos -> Doc -> String
-renderHtml ga = concatMap (\ c -> case c of
-    '\n' -> c : "<br>"
-    ' ' -> "&nbsp;&nbsp;"
-    _ -> [c])
+renderHtml ga = replSpacesForHtml 0
   . Pretty.renderStyle' "" Pretty.style . toHtml ga
+
+replSpacesForHtml :: Int -> String -> String
+replSpacesForHtml n s = case s of
+  "" -> ""
+  c : r -> case c of
+    '\n' -> c : "<br />" ++ replSpacesForHtml 0 r
+    ' ' -> replSpacesForHtml (n + 1) r
+    _ -> (case n of
+      0 -> (c :)
+      1 -> ([' ', c] ++)
+      _ -> ((' ' : concat (replicate n "&nbsp; ") ++ [c]) ++))
+      $ replSpacesForHtml 0 r
 
 isEmpty :: Doc -> Bool
 isEmpty d = case d of
@@ -549,39 +558,41 @@ toTextAux = foldDoc anyRecord
 
 -- | conversion to html
 toHtml :: GlobalAnnos -> Doc -> Pretty.Doc
-toHtml ga = let
+toHtml ga d = let
   dm = Map.map (Map.! DF_HTML)
        . Map.filter (Map.member DF_HTML) $ display_annos ga
-  in foldDoc toHtmlRecord . codeOut ga
-                 (mkPrecIntMap $ prec_annos ga) (Just DF_HTML) dm
+  dis = getDeclIds d
+  in foldDoc (toHtmlRecord dis) $ codeOut ga
+                 (mkPrecIntMap $ prec_annos ga) (Just DF_HTML) dm d
 
-toHtmlRecord :: DocRecord Pretty.Doc
-toHtmlRecord = anyRecord
+toHtmlRecord :: Set.Set Id -> DocRecord Pretty.Doc
+toHtmlRecord dis = anyRecord
     { foldEmpty = const Pretty.empty
-    , foldText = const textToHtml
+    , foldText = const $ textToHtml dis
     , foldCat = \ d c l -> case d of
         Cat _ ds@(_ : _) -> if all hasSpace $ init ds then
           (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hsep
           HorizOrVert -> Pretty.sep
-          Fill -> Pretty.fsep) $ map (foldDoc toHtmlRecord . rmSpace) ds
+          Fill -> Pretty.fsep) $ map (foldDoc (toHtmlRecord dis) . rmSpace) ds
           else (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hcat
           HorizOrVert -> Pretty.cat
           Fill -> Pretty.fcat) l
         _ -> Pretty.empty
-    , foldAttr = \ _ k d -> case k of
-          FlushRight -> let l = length $ show d in
+    , foldAttr = \ o k d -> case k of
+          FlushRight -> let l = length $ show o in
             if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
 
-textToHtml :: TextKind -> String -> Pretty.Doc
-textToHtml k s = let
-  h = Pretty.text $ escapeHtml s ""
+textToHtml :: Set.Set Id -> TextKind -> String -> Pretty.Doc
+textToHtml dis k s = let
+  e = escapeHtml s ""
+  h = Pretty.text e
   zeroText = Pretty.sp_text 0
   tagB t = '<' : t ++ ">"
   tagE t = tagB $ '/' : t
@@ -596,6 +607,13 @@ textToHtml k s = let
     Comment -> tag "small" h
     Indexed -> hi
     StructId -> hi
+    HetsLabel -> tag "small" hi
+    IdLabel appl tk i -> let
+        d = textToHtml dis tk s
+        si = escapeHtml (showId i "") ""
+        in if not (Set.member i dis) then d else Pretty.hcat
+        [zeroText $ "<a " ++ (if appl == IdAppl then "href=\"#" else "name=\"")
+        ++ si ++ "\">", d, zeroText "</a>"]
     _ -> h
 
 escChar :: Char -> ShowS
