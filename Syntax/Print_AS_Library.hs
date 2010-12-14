@@ -22,7 +22,7 @@ import Syntax.AS_Structured
 import Syntax.AS_Library
 import Common.AS_Annotation
 
-import Syntax.Print_AS_Architecture()
+import Syntax.Print_AS_Architecture ()
 import Syntax.Print_AS_Structured
 
 instance Pretty LIB_DEFN where
@@ -72,15 +72,15 @@ instance Pretty LIB_ITEM where
                           $+$ keyword endS
         Arch_spec_defn si ab _ ->
             topKey archS <+>
-                   fsep[keyword specS, structSimpleId si <+> equals, pretty ab]
+                   fsep [keyword specS, structSimpleId si <+> equals, pretty ab]
                            $+$ keyword endS
         Unit_spec_defn si ab _ ->
             topKey unitS <+>
-                   fsep[keyword specS, structSimpleId si <+> equals, pretty ab]
+                   fsep [keyword specS, structSimpleId si <+> equals, pretty ab]
                            $+$ keyword endS
         Ref_spec_defn si ab _ ->
             keyword refinementS <+>
-                    fsep[structSimpleId si <+> equals, pretty ab]
+                    fsep [structSimpleId si <+> equals, pretty ab]
                             $+$ keyword endS
         Download_items l ab _ ->
             topKey fromS <+> fsep ((pretty l <+> keyword getS)
@@ -88,7 +88,7 @@ instance Pretty LIB_ITEM where
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
         Syntax.AS_Library.Newlogic_defn nl _ ->
-            pretty nl        
+            pretty nl
 
 instance Pretty GENERICITY where
     pretty (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
@@ -99,7 +99,7 @@ printPARAMS (Params aa) = cat $ map (brackets . rmTopKey . pretty ) aa
 printIMPORTED :: IMPORTED -> Doc
 printIMPORTED (Imported aa) = case aa of
     [] -> empty
-    _  -> sep [ keyword givenS
+    _ -> sep [ keyword givenS
               , sepByCommas $ map printGroupSpec aa]
 
 instance Pretty ITEM_NAME_OR_MAP where
