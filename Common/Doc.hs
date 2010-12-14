@@ -582,9 +582,11 @@ toHtmlRecord dis = anyRecord
           HorizOrVert -> Pretty.cat
           Fill -> Pretty.fcat) l
         _ -> Pretty.empty
-    , foldAttr = \ o k d -> case k of
-          FlushRight -> let l = length $ show o in
-            if l < 66 then Pretty.nest (66 - l) d else d
+    , foldAttr = \ a k d -> case k of
+          FlushRight ->
+              let Attr _ o = a
+                  l = length $ show $ toTextAux o
+              in if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
