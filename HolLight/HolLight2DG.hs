@@ -23,6 +23,7 @@ import Logic.Grothendieck
 
 
 import Common.LibName
+import Common.Id
 --import Common.Result
 import Common.AS_Annotation
 
@@ -36,36 +37,44 @@ import Driver.Options
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-importData :: FilePath -> IO ((Sign,[Sentence]))
+importData :: FilePath -> IO ([([Char],[([Char], Term)],([HolType], [([Char], [HolType])]))],[([Char],[Char])])
 importData fp = do
     s <- readFile fp
-    let (tps,opsM,ts) = (read s) :: ([HolType], [(String,[HolType])], [(String,Term)])
-    let sg = Sign {
-     types = Set.fromList tps
-    ,ops = foldl (\m (k,v) -> Map.insert k (Set.fromList v) m) Map.empty opsM }
-    let sens = map (\(n,t) -> Sentence { name = n, term = t, proof = Nothing }) ts
-    return (sg, sens)
+    let (libs,lnks) = (read s) :: ([([Char],[([Char], Term)],([HolType], [([Char], [HolType])]))],[([Char],[Char])])
+    return (libs, lnks)
+
+makeSig :: [HolType] -> [([Char],[HolType])] -> Sign
+makeSig tps opsM = Sign {
+                    types = Set.fromList tps
+                   ,ops = foldl (\m (k,v) -> Map.insert k (Set.fromList v) m) Map.empty opsM }
+
+makeSentence :: [Char] -> Term -> Sentence
+makeSentence n t = Sentence { name = n, term = t, proof = Nothing }
+
+_insNodeDG :: Sign -> [Sentence] -> [Char] -> DGraph -> DGraph
+_insNodeDG sig sens n dg = let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
+                                          (toThSens $ map (makeNamed "") sens) startThId
+                               labelK = newInfoNodeLab
+                                          (makeName (mkSimpleId n))
+                                          (newNodeInfo DGEmpty)
+                                          gt
+                               k = getNewNodeDG dg
+                               insN = [InsertNode (k,labelK)]
+                               newDG = changesDGH dg insN
+                               labCh = [SetNodeLab labelK (k, labelK
+                                         { globalTheory = computeLabelTheory Map.empty newDG
+                                           (k, labelK) })]
+                               newDG1 = changesDGH newDG labCh in newDG1
 
 anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaHolLightFile _opts path = do
-   (sig, sens) <- importData path
-   let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
-                     (toThSens $ map (makeNamed "") sens) startThId
-       labelK = newInfoNodeLab
-                     emptyNodeName
-                     (newNodeInfo DGEmpty)
-                     gt
-       k =  getNewNodeDG emptyDG
-       insN = [InsertNode (k, labelK)]
-       newDG = changesDGH emptyDG insN
-       ln = emptyLibName path
-       le = Map.insert ln newDG Map.empty
-       labCh = [SetNodeLab labelK (k, labelK
-                          { globalTheory = computeLabelTheory le newDG
-                               (k, labelK) })]
-       newDG1 = changesDGH newDG labCh
-       le' = Map.insert ln newDG1 le
-   return (Just (ln, le'))
+   (libs, _lnks) <- importData path
+   let dg' = foldr ( \(lname,terms,(tps,opsM)) dg ->
+           let sig = makeSig tps opsM
+               sens = map (\(n,t) -> makeSentence n t) terms in
+           _insNodeDG sig sens lname dg) emptyDG libs
+       le = Map.insert (emptyLibName "HolExport") dg' (Map.empty)
+   return (Just (emptyLibName "HolExport", le))
 
 -- data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
 

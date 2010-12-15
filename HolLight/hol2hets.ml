@@ -207,8 +207,8 @@ let pp_d fmt =
 			| [] -> ()
                       and pp_bool fmt x = Format.fprintf fmt "%s" (if x then "True" else "False") in
 	              let rec pp_hol_type fmt = function
-                        | Tyvar s -> Format.fprintf fmt "TyVar %S" s
-			| Tyapp (s,ts) -> Format.fprintf fmt "TyApp %S [%a]" s (pp_list pp_hol_type) ts in
+                        | Tyvar s -> Format.fprintf fmt "(TyVar %S)" s
+			| Tyapp (s,ts) -> Format.fprintf fmt "(TyApp %S [%a])" s (pp_list pp_hol_type) ts in
                       let rec pp_term fmt = function
                         | Var (s,h) -> Format.fprintf fmt "Var %S (%a) %a" s pp_hol_type h get_term_info (s,h)
 		        | Const (s,h) -> Format.fprintf fmt "Const %S (%a) %a" s pp_hol_type h get_term_info (s,h)
@@ -219,6 +219,17 @@ let pp_d fmt =
                       let pp_data (ts,ops,sens) = Format.fprintf fmt "@[<h>([%a], [%a], [%a])@]" (pp_list pp_hol_type) ts (pp_list pp_op_map) ops (pp_list pp_str_term_tuple) sens in 
                     pp_data;;
 
+(* this file needs to be imported right after all definitions that should not be exported have been loaded *)
+
+let old_constants = ref([]:string list);;
+if length (!old_constants) = 0 then
+  old_constants := map fst (constants())
+else ();;
+let old_types = ref([]:string list);;
+if length (!old_types) = 0 then
+  old_types := map fst (types())
+else ();;
+
 let export_sig_sen () = let sens = map (fun (n,t) -> (n,concl t)) (!theorems) in
                      let sens_size = List.length sens in
                      let types = Hashtbl.create sens_size in
@@ -227,21 +238,23 @@ let export_sig_sen () = let sens = map (fun (n,t) -> (n,concl t)) (!theorems) in
                      let in_types = Hashtbl.mem types in
                      let rec get_primitive_types t =
                       if (match t with
-                        Tyvar s -> true
-                       |Tyapp (s,[]) -> true
+                        Tyvar s -> not (mem s (!old_types))
+                       |Tyapp (s,[]) -> not (mem s (!old_types))
                        |Tyapp (s,ts) -> List.map get_primitive_types ts; false) then if in_types t then () else Hashtbl.add types t 0
                       else () in 
                      let rec get_types ignore not_abs = function
                       | Var (s,t) -> get_primitive_types t;
-                                     if not_abs & not (List.mem s ignore) then
+                                     if not_abs & not (List.mem s ignore) & not (mem s (!old_constants)) then
                                        let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
                                                   else Hashtbl.create 1
                                        in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
                                      else ()
                       | Const (s,t) -> get_primitive_types t;
-                                       let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
-                                                  else Hashtbl.create 1
-                                       in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
+                                       if not (mem s (!old_constants)) then
+                                         let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
+                                                    else Hashtbl.create 1
+                                         in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
+                                       else ()
                       | Comb (t1,t2) -> get_types ignore true t1; get_types ignore true t2
                       | Abs (t1,t2) -> get_types ((name_of t1)::ignore) false t1; get_types ((name_of t1)::ignore) true t2 in
                      let _ = map ((get_types [] true) o snd) sens in

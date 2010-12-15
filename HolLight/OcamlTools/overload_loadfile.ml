@@ -36,11 +36,20 @@ do_list (fun s -> Topdirs.dir_directory(Filename.concat ocaml_source_dir s))
 #load "primitive.cmo";;
 #load "printtyp.cmo";;
 
-#use "fusion.ml";;
-#use "thm.ml";;
-#use "term.ml";;
+let hol_dir = ref
+  (try Sys.getenv "HOLLIGHT_DIR" with Not_found -> Sys.getcwd());;
 
-type thm;;
+if let v = String.sub Sys.ocaml_version 0 4 in
+   v = "3.10" or v = "3.11"
+then (Topdirs.dir_directory "+camlp5";
+      Topdirs.dir_load Format.std_formatter "camlp5o.cma")
+else (Topdirs.dir_load Format.std_formatter "camlp4o.cma");;
+
+Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
+
+#use "/home/sternk/hol_light/sys.ml";;
+#use "/home/sternk/hol_light/lib.ml";;
+#use "/home/sternk/hol_light/fusion.ml";;
 
 module OldToploop = Toploop;;
 module OldTopdirs = Topdirs;;
@@ -50,13 +59,12 @@ let use_file s =
   else (Format.print_string("@@@@@@@@@@@@@@@@@@@@@@@@@@Error in included file "^s);
         Format.print_newline());;
 
-let (store_read_result,begin_load,end_load,get_libs,get_test) = let libs = ref []
+let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
   and stack = ref (Stack.create ())
   and known = ref (Hashtbl.create 10)
-  and test = ref []
   and bnds_size = ref 0 in
   let _read = ref [] in
-  let store_read_result s = _read := s; test := s::(!test)
+  let store_read_result s = _read := s
   and listify l = if l = [] then "[]"
     else "[\n"^(List.fold_right (fun a b -> a^";\n"^b) l "")^"\n]\n" in
   let file_of_string filename s =
@@ -104,18 +112,19 @@ let (store_read_result,begin_load,end_load,get_libs,get_test) = let libs = ref [
       List.iter (fun (t,tv) -> Hashtbl.replace lib_ths t tv)
         (!_read);
       Hashtbl.replace (!known) lib lib_ths in
-  let begin_load lib = (if (Stack.is_empty (!stack)) then ()
-                       else
-                         let plib = Stack.top (!stack)
-                         in map_new_syms plib;
-                           libs :=
-                           (lib,plib)::(!libs));
-                       Stack.push lib (!stack);
-                       Hashtbl.add (!known) lib (Hashtbl.create 10)
+  let begin_load lib = if lib <> "/home/sternk/hol_light/fusion.ml" then
+                        ((if (Stack.is_empty (!stack)) then ()
+                        else
+                          let plib = Stack.top (!stack)
+                          in map_new_syms plib;
+                            libs :=
+                            (lib,plib)::(!libs));
+                        Stack.push lib (!stack);
+                        Hashtbl.add (!known) lib (Hashtbl.create 10);
+                        true) else false
   and end_load () = map_new_syms (Stack.pop (!stack))
-  and get_libs () = (!known,!libs)
-  and get_test () = (!test) in
-  (store_read_result,begin_load,end_load,get_libs,get_test);
+  and get_libs () = (Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))),List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in
+  (store_read_result,begin_load,end_load,get_libs);
 
 module Topdirs =
     struct
@@ -124,14 +133,14 @@ module Topdirs =
       let dir_quit = OldTopdirs.dir_quit
       let dir_directory = OldTopdirs.dir_directory
       let dir_cd = OldTopdirs.dir_cd
-      let dir_load = fun f s -> begin_load s; OldTopdirs.dir_load f s; end_load()
-      let dir_use = fun f s -> begin_load s; OldTopdirs.dir_use f s; end_load()
+      let dir_load = fun f s -> if begin_load s then (OldTopdirs.dir_load f s; end_load()) else ()
+      let dir_use = fun f s -> if begin_load s then (OldTopdirs.dir_use f s; end_load()) else ()
       let dir_install_printer = OldTopdirs.dir_install_printer
       let dir_remove_printer = OldTopdirs.dir_remove_printer
       let dir_trace = OldTopdirs.dir_trace
       let dir_untrace = OldTopdirs.dir_untrace
       let dir_untrace_all = OldTopdirs.dir_untrace_all
-      let load_file = fun f s -> let _ = begin_load s and ret = OldTopdirs.load_file f s and _ = end_load() in ret
+      let load_file = fun f s -> if begin_load s then let ret = OldTopdirs.load_file f s and _ = end_load() in ret else true
     end
 
 module Toploop = 
@@ -153,8 +162,8 @@ module Toploop =
       let initialize_toplevel_env = OldToploop.initialize_toplevel_env
       let print_exception_outcome = OldToploop.print_exception_outcome
       let execute_phrase = OldToploop.execute_phrase
-      let use_file = fun f s -> let _ = begin_load s and ret = OldToploop.use_file f s and _ = end_load() in ret
-      let use_silently = fun f s -> let _ = begin_load s and ret = OldToploop.use_silently f s and _ = end_load in ret
+      let use_file = fun f s -> if begin_load s then let ret = OldToploop.use_file f s and _ = end_load() in ret else true
+      let use_silently = fun f s -> if begin_load s then let ret = OldToploop.use_silently f s and _ = end_load in ret else true
       let eval_path = OldToploop.eval_path
       let print_value = OldToploop.print_value
       let print_untyped_exception = OldToploop.print_untyped_exception
