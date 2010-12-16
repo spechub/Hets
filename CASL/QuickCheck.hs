@@ -13,7 +13,7 @@ QuickCheck model checker for CASL.CFOL.
 Initially, only finite enumeration domains are supported
 -}
 
-module CASL.QuickCheck(quickCheckProver) where
+module CASL.QuickCheck (quickCheckProver) where
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
@@ -38,7 +38,7 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 
-import Control.Monad.Error
+import Control.Monad
 import Control.Concurrent
 
 import GUI.GenericATP
@@ -64,8 +64,8 @@ data QModel = QModel
   Run the QuickCheck service.
 -}
 runQuickCheck :: QModel
-           -- ^ logical part containing the input Sign and axioms and possibly
-           --   goals that have been proved earlier as additional axioms
+           {- ^ logical part containing the input Sign and axioms and possibly
+           goals that have been proved earlier as additional axioms -}
            -> GenericConfig ProofTree -- ^ configuration to use
            -> Bool -- ^ True means save theory file
            -> String -- ^ name of the theory in the DevGraph
@@ -73,20 +73,20 @@ runQuickCheck :: QModel
            -> IO (ATPRetval, GenericConfig ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runQuickCheck qm cfg _saveFile _thName nGoal = do
-  (stat,Result d res) <- case timeLimit cfg of
+  (stat, Result d res) <- case timeLimit cfg of
     Nothing -> return (ATPSuccess, quickCheck qm nGoal)
     Just t -> do
       mRes <- timeoutSecs t $ return $ quickCheck qm nGoal
-      return $ maybe (ATPTLimitExceeded,fail "time limit exceeded")
-                     (\ x -> (ATPSuccess,x)) mRes
-  let fstr = show(printTheoryFormula $ AS_Anno.mapNamed
+      return $ maybe (ATPTLimitExceeded, fail "time limit exceeded")
+                     (\ x -> (ATPSuccess, x)) mRes
+  let fstr = show (printTheoryFormula $ AS_Anno.mapNamed
                        (simplifySen dummyMin dummy (sign qm)) nGoal)
       showDiagStrings = intercalate "\n" . map diagString -- no final newline
-      diagstr = case (res,d) of
-        (Just True, _) -> showDiagStrings(take 10 d)
+      diagstr = case (res, d) of
+        (Just True, _) -> showDiagStrings (take 10 d)
         (_, []) -> ""
         _ -> unlines ["Formula failed: ", fstr, " some Counterexamples: "]
-             ++ showDiagStrings(take 10 d)
+             ++ showDiagStrings (take 10 d)
       gstat = case res of
         Just True -> Proved True
         Just False -> Disproved
@@ -129,9 +129,9 @@ insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
                  qm { carrierSens = Map.insertWith (++) s [f] (carrierSens qm) }
                _ -> qm
       insertPred p args body q =
-        q { predDefs = Map.insertWith (++) p [(args,body)] (predDefs q)}
+        q { predDefs = Map.insertWith (++) p [(args, body)] (predDefs q)}
       insertOp op args body q =
-        q { opDefs = Map.insertWith (++) op [(args,body)] (opDefs q) }
+        q { opDefs = Map.insertWith (++) op [(args, body)] (opDefs q) }
   in case stripAllQuant f of
   -- insert a predicate or operation definition into a QModel
    Predication predsymb args _ ->
@@ -144,21 +144,20 @@ insertSen qm sen = if not $ AS_Anno.isAxiom sen then qm else
      insertOp opsymb args body qm1
    Existl_equation (Application opsymb args _) body _ ->
      insertOp opsymb args body qm1
-   -- treat equality as special predicate symbol, for detecting inequalities
-   -- also exploit that inequality is symmetric
+   {- treat equality as special predicate symbol, for detecting inequalities
+   also exploit that inequality is symmetric -}
    Negation (Strong_equation t1 t2 _) _ ->
-     insertPred eqSymb [t1,t2] (False_atom nullRange) $
-       insertPred eqSymb [t2,t1] (False_atom nullRange) qm1
+     insertPred eqSymb [t1, t2] (False_atom nullRange) $
+       insertPred eqSymb [t2, t1] (False_atom nullRange) qm1
    Negation (Existl_equation t1 t2 _) _ ->
-     insertPred eqSymb [t1,t2] (False_atom nullRange) $
-       insertPred eqSymb [t2,t1] (False_atom nullRange) qm1
+     insertPred eqSymb [t1, t2] (False_atom nullRange) $
+       insertPred eqSymb [t2, t1] (False_atom nullRange) qm1
    _ -> qm1
 
 -- | predicate symbol for equality (with dummy type)
 eqSymb :: PRED_SYMB
 eqSymb = Qual_pred_name eqId (Pred_type [] nullRange) nullRange
 
-----------------------------------------------------------------------------
 -- * Variable assignments
 
 data VariableAssignment = VariableAssignment QModel [(VAR, CASLTERM)]
@@ -187,18 +186,11 @@ concatAssignment :: VariableAssignment -> VariableAssignment
 concatAssignment (VariableAssignment qm l1) (VariableAssignment _ l2) =
   VariableAssignment qm $ l1 ++ l2
 
---------------------------------------------------------------------------
 -- * The quickcheck model checker
 
 quickCheck :: QModel -> AS_Anno.Named CASLFORMULA -> Result Bool
 quickCheck qm =
   calculateFormula True qm (emptyAssignment qm) . AS_Anno.sentence
-
--- needed for instance Monad (Either ([Diagnosis], Maybe a))
--- in calculateQuantification
-instance Error ([Diagnosis], Maybe a) where
-  noMsg = ([], Nothing)
-  strMsg x = ([Diag Error x nullRange], Nothing)
 
 calculateTerm :: QModel -> VariableAssignment -> CASLTERM -> Result CASLTERM
 calculateTerm qm ass trm = case trm of
@@ -222,10 +214,10 @@ applyOperation :: QModel -> VariableAssignment -> OP_SYMB -> [CASLTERM]
                -> Result CASLTERM
 applyOperation qm ass opsymb terms = do
   -- block infinite recursion
-  when ((opsymb,terms) `elem` evaluatedOps qm)
+  when ((opsymb, terms) `elem` evaluatedOps qm)
        (fail ("infinite recursion when calculating"
               ++ show (Application opsymb terms nullRange)))
-  let qm' = qm { evaluatedOps = (opsymb,terms):evaluatedOps qm }
+  let qm' = qm { evaluatedOps = (opsymb, terms) : evaluatedOps qm }
   -- evaluate argument terms
   args <- mapM (calculateTerm qm' ass) terms
   -- find appropriate operation definition
@@ -235,28 +227,28 @@ applyOperation qm ass opsymb terms = do
       return (Application opsymb terms nullRange)
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args $
+      (body, m) <- match bodies args $
                    showDoc (Application opsymb args nullRange) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of operation definition
       calculateTerm qm' ass' body
 
--- | match a list of arguments (second parameter) against a
---   a a list of bodies (first argument), each coming with a
---   list of formal parameters and a body term or formula
-match :: [([CASLTERM],a)] -> [CASLTERM] -> String
+{- | match a list of arguments (second parameter) against a
+a a list of bodies (first argument), each coming with a
+list of formal parameters and a body term or formula -}
+match :: [([CASLTERM], a)] -> [CASLTERM] -> String
       -> Result (a, [(VAR, CASLTERM)])
 match bodies args msg =
   case mapMaybe (match1 args) bodies of
     [] -> fail ("no matching found for " ++ msg)
-    (subst:_) -> return subst
+    subst : _ -> return subst
 
 -- match against a single body
 match1 :: [CASLTERM] -> ([CASLTERM], a) -> Maybe (a, [(VAR, CASLTERM)])
 match1 args (vars, body) = do
   substs <- mapM (uncurry match2) (zip vars args)
   let subst = concat substs
-  if consistent subst then return (body,subst) else Nothing
+  if consistent subst then return (body, subst) else Nothing
 
 match2 :: CASLTERM -> CASLTERM -> Maybe [(VAR, CASLTERM)]
 match2 (Qual_var v _ _) t = Just [(v, t)]
@@ -265,7 +257,7 @@ match2 (Application opsymb1 terms1 _) (Application opsymb2 terms2 _) =
    if opsymb1 == opsymb2 then do
      substs <- mapM (uncurry match2) (zip terms1 terms2)
      return (concat substs)
-   --  if not, try to exploit overloading relation
+   -- if not, try to exploit overloading relation
     else do
       let (opsymb1', terms1', w1) = stripInj opsymb1 terms1
           (opsymb2', terms2', w2) = stripInj opsymb2 terms2
@@ -281,8 +273,8 @@ stripInj :: OP_SYMB -> [CASLTERM] -> (OP_SYMB, [CASLTERM], [SORT])
 stripInj opsymb terms =
   let (opsymb', terms') =
         case (isInjName $ opSymbName opsymb, terms) of
-          (True, [Application o ts _]) -> (o,ts)
-          _ -> (opsymb,terms)
+          (True, [Application o ts _]) -> (o, ts)
+          _ -> (opsymb, terms)
       strip1 t1@(Application o [t2] _) =
         if isInjName $ opSymbName o then t2 else t1
       strip1 t1 = t1
@@ -294,7 +286,7 @@ consistent :: [(VAR, CASLTERM)] -> Bool
 consistent ass =
   isJust $ foldM insertAss Map.empty ass
   where
-  insertAss m (v,t) =
+  insertAss m (v, t) =
     case Map.lookup v m of
       Just t1 -> if t == t1 then return m else Nothing
       Nothing -> Just $ Map.insert v t m
@@ -322,15 +314,14 @@ calculateFormula isOuter qm varass f = case f of
     Quantification _ _ _ _ ->
        calculateQuantification isOuter qm varass f
     Conjunction formulas _ -> do
-       let (res,f1) =
-             foldl ternaryAnd (return True,f)
+       let (res, f1) =
+             foldl ternaryAnd (return True, f)
                (zip (map (calculateFormula False qm varass) formulas) formulas)
-       when isOuter
-          (case res of Result _ (Just False) ->
-                        (warning () ("Conjunction not fulfilled\n"
-                           ++"Formula that failed: "++showDoc f1 "") nullRange)
-                       _ -> return ()
-          )
+       when isOuter $ case maybeResult res of
+         Just False ->
+             warning () ("Conjunction not fulfilled\n"
+                         ++ "Formula that failed: " ++ showDoc f1 "") nullRange
+         _ -> return ()
        res
     Disjunction formulas _ ->
         foldl ternaryOr (return False)
@@ -363,38 +354,39 @@ calculateQuantification :: Bool -> QModel -> VariableAssignment -> CASLFORMULA
 calculateQuantification isOuter qm varass qf = case qf of
   Quantification quant vardecls f _ -> do
     assments <- generateVariableAssignments qm vardecls
-    let assments' = map (flip concatAssignment varass) assments
+    let assments' = map (`concatAssignment` varass) assments
     case quant of
       Universal -> do
         let resList = map (flip (calculateFormula False qm) f) assments'
-            (res,fass) = foldl ternaryAnd (return True,emptyAssignment qm)
+            (res, fass) = foldl ternaryAnd (return True, emptyAssignment qm)
                                           (zip resList assments')
-        when isOuter
-          (case res of Result _ (Just False) ->
-                        (warning () ("Universal quantification not fulfilled\n"
-                           ++ "Counterexample: " ++ show fass) nullRange)
-                       _ -> return ()
-          )
+        when isOuter $ case maybeResult res of
+          Just False ->
+              warning () ("Universal quantification not fulfilled\n"
+                          ++ "Counterexample: " ++ show fass) nullRange
+          _ -> return ()
         res
       Existential ->
         foldl ternaryOr (return False)
                         (map (flip (calculateFormula False qm) f) assments')
-      Unique_existential -> do
-        -- scan the assingments, stop scanning once the result is clear,
-        -- using the Left constructor of the Either monad
-        let combineEx1 (msgsSoFar,ass1) ass2 = do
-              let Result msgs res = calculateFormula False qm ass2 f
-              case (res, ass1) of
+      Unique_existential ->
+        {- scan the assingments, stop scanning once the result is clear,
+        using the Left constructor of the Either monad -}
+        let combineEx1 state ass2 = case state of
+              Right (msgsSoFar, ass1) ->
+                let Result msgs res = calculateFormula False qm ass2 f
+                in case (res, ass1) of
                 -- the first fulfilment
-                (Just True, Nothing) -> return (msgsSoFar ++ msgs, Just ass2)
+                (Just True, Nothing) -> Right (msgsSoFar ++ msgs, Just ass2)
                 -- the second fulfilment
                 (Just True, Just ass1') ->
                     Left (msgsSoFar ++ msgs, Just (ass1', ass2))
                 -- not fulfilled? Then nothing changes
-                (Just False, _) -> return (msgsSoFar ++ msgs, ass1)
+                (Just False, _) -> Right (msgsSoFar ++ msgs, ass1)
                 -- don't know? Then we don't know either
                 (Nothing, _) -> Left (msgsSoFar ++ msgs, Nothing)
-        case foldM combineEx1 ([], Nothing) assments' of
+              Left _ -> state
+        in case foldl combineEx1 (Right ([], Nothing)) assments' of
           Right (msgs, Just _) -> Result msgs (Just True)
           Right (msgs, Nothing) -> do
             Result msgs (Just ())
@@ -407,7 +399,7 @@ calculateQuantification isOuter qm varass qf = case qf of
             when isOuter
               (warning () ("Unique Existential quantification"
                 ++ " not fulfilled: at least two assignments found:\n"
-                ++ show ass1 ++ "\n" ++ show ass2 ++"\n") nullRange)
+                ++ show ass1 ++ "\n" ++ show ass2 ++ "\n") nullRange)
             return False
           Left (msgs, Nothing) ->
             Result msgs Nothing
@@ -420,7 +412,7 @@ applyPredicate qm ass predsymb terms = do
   when (elem (predsymb, terms) $ evaluatedPreds qm)
        (fail ("infinite recursion when calculating"
               ++ show (Predication predsymb terms nullRange)))
-  let qm' = qm { evaluatedPreds = (predsymb,terms):evaluatedPreds qm }
+  let qm' = qm { evaluatedPreds = (predsymb, terms) : evaluatedPreds qm }
   -- evaluate argument terms
   args <- mapM (calculateTerm qm' ass) terms
   -- find appropriate predicate definition
@@ -428,7 +420,7 @@ applyPredicate qm ass predsymb terms = do
     Nothing -> fail ("no predicate definition for " ++ showDoc predsymb "")
     Just bodies -> do
       -- bind formal to actual arguments
-      (body,m) <- match bodies args $
+      (body, m) <- match bodies args $
                    showDoc (Predication predsymb args nullRange) ""
       let ass' = foldl insertAssignment ass m
       -- evaluate body of predicate definition
@@ -462,7 +454,7 @@ termSort (Sort_gen_ax constr _) =
   case sorts of
      -- at the moment, we only treat one-sort constraints with constants
      [s] -> if all constant ops
-             then Just (s,map mkTerm ops)
+             then Just (s, map mkTerm ops)
              else Nothing
      _ -> Nothing
     where (sorts, ops, _) = recover_Sort_gen_ax constr
@@ -475,21 +467,19 @@ termSort (Quantification Universal [Var_decl [_] s _] (False_atom _) _) =
 termSort _ = Nothing
 
 -- | get the carrier set for a specific sort
-getCarrier:: QModel -> SORT -> Result [CASLTERM]
+getCarrier :: QModel -> SORT -> Result [CASLTERM]
 getCarrier qm s =
   case Map.lookup s (carrierSens qm) of
-    Nothing -> fail ("sort "++show s++" is not generated")
+    Nothing -> fail ("sort " ++ show s ++ " is not generated")
     Just sens -> case mapMaybe termSort sens of
-      [] -> fail ("sort "++show s++" is not generated by constants")
+      [] -> fail ("sort " ++ show s ++ " is not generated by constants")
       (_, terms) : _ -> return terms
   -- todo: generalise this
 
-
-----------------------------------------------------------------------------
 -- * Interfacing to Hets prover interface
 
 {- | The Prover implementation. First runs the batch prover (with
-  graphical feedback), then starts the GUI prover.  -}
+  graphical feedback), then starts the GUI prover. -}
 quickCheckProver :: Prover CASLSign CASLFORMULA CASLMor CASL_Sublogics ProofTree
 quickCheckProver = mkAutomaticProver "QuickCheck"
   (SL.top { has_part = False, which_logic = SL.FOL })
@@ -514,7 +504,7 @@ atpFun _thName = ATPFunctions
         "This only works if your theory contains enough generated or " ++
         "freely generated datatypes.",
       batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-      fileExtensions = FileExtensions{problemOutput = ".none1",
+      fileExtensions = FileExtensions {problemOutput = ".none1",
                                       proverOutput = ".none2",
                                       theoryConfiguration = ".none3"},
       runProver = runQuickCheck,
@@ -528,10 +518,10 @@ atpFun _thName = ATPFunctions
 -}
 quickCheckGUI :: String -- ^ theory name
            -> Theory CASLSign CASLFORMULA ProofTree
-           -- ^ theory consisting of a signature
-           --   and a list of named sentences
+           {- ^ theory consisting of a signature
+           and a list of named sentences -}
            -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
-           -> IO([ProofStatus ProofTree]) -- ^ proof status for each goal
+           -> IO [ProofStatus ProofTree] -- ^ proof status for each goal
 quickCheckGUI thName th freedefs = genericATPgui (atpFun thName) True
     (proverName quickCheckProver) thName th freedefs emptyProofTree
 
@@ -549,12 +539,12 @@ quickCheckCMDLautomaticBatch ::
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> TacticScript -- ^ default tactic script
-        -> Theory CASLSign CASLFORMULA ProofTree -- ^ theory consisting of a
-           --   signature and a list of named sentences
+        -> Theory CASLSign CASLFORMULA ProofTree {- ^ theory consisting of a
+           signature and a list of named sentences -}
         -> [FreeDefMorphism CASLFORMULA CASLMor] -- ^ freeness constraints
-        -> IO (ThreadId,MVar ())
-           -- ^ fst: identifier of the batch thread for killing it
-           --   snd: MVar to wait for the end of the thread
+        -> IO (ThreadId, MVar ())
+           {- ^ fst: identifier of the batch thread for killing it
+           snd: MVar to wait for the end of the thread -}
 quickCheckCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th freedefs =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
