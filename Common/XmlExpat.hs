@@ -63,13 +63,13 @@ strToQName s = case break (':' == ) s of
 
 
 
-parseXml :: BS.ByteString -> Either Element String
+parseXml :: BS.ByteString -> Either String Element
 parseXml bs =
     let (nd, pe) = Expat.parse Expat.defaultParserOptions bs
         contl = nodesToContent [nd]
     in case pe of
-         Just e -> Right $ "Expat.parse: " ++ show e
+         Just e -> Left $ "Expat.parse: " ++ show e
          _ -> case contl of
-                [Elem e] -> Left e
-                _ -> Right $ "Expat.parse: No unique root element."
+                [Elem e] -> Right e
+                _ -> Left $ "Expat.parse: No unique root element."
 

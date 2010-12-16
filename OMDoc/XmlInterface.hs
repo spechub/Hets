@@ -140,8 +140,8 @@ xmlOut obj = case toXml obj of (Elem e) -> ppTopElement e
 
 xmlIn :: XmlParseable a => a -> Result OMDoc
 xmlIn s = case parseXml s of
-            Left e -> fromXml e >>= maybeToMonad "xmlIn"
-            Right msg -> fail msg
+            Right e -> fromXml e >>= maybeToMonad "xmlIn"
+            Left msg -> fail msg
 
 
 listToXml :: XmlRepresentable a => [a] -> [Content]

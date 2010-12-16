@@ -31,7 +31,7 @@ import qualified Data.ByteString.Lazy as BS
 -- by using the hexpat or the XML.Light library, dependent on the haskell
 -- environment.
 class XmlParseable a where
-    parseXml :: a -> Either Element String
+    parseXml :: a -> Either String Element
 
 
 #ifdef HEXPAT
@@ -46,8 +46,8 @@ readXmlFile = BS.readFile
 #ifdef XMLBS
 instance XmlParseable BS.ByteString where
     parseXml s = case parseXMLDoc s of
-                   Just x -> Left x
-                   _ -> Right "parseXMLDoc: parse error"
+                   Just x -> Right x
+                   _ -> Left "parseXMLDoc: parse error"
 
 readXmlFile :: FilePath -> IO BS.ByteString
 readXmlFile = BS.readFile
@@ -55,8 +55,8 @@ readXmlFile = BS.readFile
 #else
 instance XmlParseable String where
     parseXml s = case parseXMLDoc s of
-                   Just x -> Left x
-                   _ -> Right "parseXMLDoc: parse error"
+                   Just x -> Right x
+                   _ -> Left "parseXMLDoc: parse error"
 
 readXmlFile :: FilePath -> IO String
 readXmlFile = readFile
