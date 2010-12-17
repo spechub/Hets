@@ -438,20 +438,9 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: aterm_pkg programatica_pkg
+packages: programatica_pkg
 
 programatica_pkg:
-
-aterm_sources = $(wildcard atermlib/src/ATerm/*.hs)
-
-aterm_pkg: $(aterm_sources) $(SETUP)
-	@if $(HCPKG) field aterm version; then \
-          echo "of aterm package found"; else \
-          cp -f LICENSE.txt atermlib; \
-          cp -f LIZENZ.txt atermlib; \
-          cp -f utils/Setup.hs atermlib; \
-          cp -f $(SETUP) atermlib; \
-          (cd atermlib; $(SETUPPACKAGE)) fi
 
 hets-opt:
 	$(MAKE) distclean
