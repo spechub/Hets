@@ -1,5 +1,5 @@
 <?xml version='1.0' ?>
-<DGraph nextlinkid="18">
+<DGraph filename="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het" nextlinkid="18">
   <DGNode name="s__IU1" refname="s" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
