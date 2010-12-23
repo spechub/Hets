@@ -19,7 +19,7 @@ module HolLight.Sentence where
 
 import Common.AS_Annotation
 import Common.DocUtils
-import HolLight.Sign
+import HolLight.Sign()
 import Common.Doc
 import HolLight.Helper
 import HolLight.Term
@@ -43,15 +43,19 @@ instance Pretty Sentence where
   pretty s = (hcat [text (name s), text " = `",
                     (pp_print_term . term) s,text "`"])
 
+pp_print_term :: Term -> Doc
 pp_print_term tm = print_term 0 tm
 
+prec_parens :: Num a => a -> Doc -> Doc
 prec_parens prec = if prec /= 0 then parens else id
 
+replace_pt :: Term -> HolParseType -> Term
 replace_pt tm pt = case tm of
   Var s t _ -> Var s t (HolTermInfo (pt,Nothing))
   Const s t _ -> Const s t (HolTermInfo (pt,Nothing))
   _ -> tm
 
+print_term :: Int -> Term -> Doc
 print_term prec tm =
  let _1 = case dest_numeral tm of
          Just i -> Just (text (show i))
@@ -74,13 +78,13 @@ print_term prec tm =
        else Nothing in
  let _4 = if is_gabs tm then Just (print_binder prec tm)
        else Nothing in
- let (s,ty0,args,hop) = case strip_comb tm of
-               (hop,args) -> case fromJust (type_of hop) of {- not really sure in which cases (type_of hop) == Nothing, but shouldn't happen if i understand the original ocaml code correctly-}
-                  ty0 ->
-                    let s0 = name_of hop in
-                    case reverse_interface (s0,hop) of
-                      (s,Just pt) -> (s,ty0,args,replace_pt hop pt)
-                      _ -> (s0,ty0,args,hop) in
+ let (s,_,args,hop) = case strip_comb tm of
+               (hop',args') -> case fromJust (type_of hop') of {- not really sure in which cases (type_of hop) == Nothing, but shouldn't happen if i understand the original ocaml code correctly-}
+                  ty0' ->
+                    let s0 = name_of hop' in
+                    case reverse_interface (s0,hop') of
+                      (s',Just pt) -> (s',ty0',args',replace_pt hop' pt)
+                      _ -> (s0,ty0',args',hop') in
  let _5 = case (s,is_const tm,args==[]) of
          ("EMPTY",True,True) -> Just (braces empty)
          ("UNIV",True,True) -> case type_of tm of
@@ -119,7 +123,7 @@ print_term prec tm =
             _ -> Nothing
          _ -> Nothing in
  let _6 = case dest_let tm of
-         Just (e:eqs,bod) -> case mk_eq e of
+         Just (e:eqs,_) -> case mk_eq e of
            Just e' -> let eqs' = map (\(v,t) -> mk_eq (v,t)) eqs
              in if any ((==)Nothing) eqs' then Nothing else
                 Just ((prec_parens prec)
@@ -174,7 +178,7 @@ print_term prec tm =
                 (if (all Char.isAlphaNum s) || s == "--"
                     || (
                         case dest_comb (args!!0) of
-                          Just (l,r) -> let (s0,ty0) = (name_of l,type_of l)
+                          Just (l,_) -> let (s0,_) = (name_of l,type_of l)
                             in fst(reverse_interface (s0,hop)) == "--"
                                || (case (dest_const l) of
                                     Just (f,_) -> elem f ["real_of_num",
@@ -224,44 +228,46 @@ print_term prec tm =
  in head (catMaybes [_1,_2,_3,_4,_5,_6,_7,_8,_9,
                      _10,_11,_12,_13,_14,_15,Just empty])
 
-print_term_sequence sep prec tms =
+print_term_sequence :: [Char] -> Int -> [Term] -> Doc
+print_term_sequence sep' prec tms =
   if tms == [] then empty
-  else hcat (punctuate (text sep) (map (print_term prec) tms))
+  else hcat (punctuate (text sep') (map (print_term prec) tms))
 
+print_binder :: Int -> Term -> Doc
 print_binder prec tm = case rator tm of
   Just r -> let absf = is_gabs tm in
     let s = if absf then "\\" else name_of r in
-    let collectvs tm = if absf then
-                         if is_abs tm then
-                           case (dest_abs tm) of
+    let collectvs tm' = if absf then
+                         if is_abs tm' then
+                           case (dest_abs tm') of
                              Just (v,t) -> let (vs,bod) = collectvs t
                                            in ((False,v):vs,bod)
-                             _ -> ([],tm)
-                         else if is_gabs tm then
-                           case (dest_gabs tm) of
+                             _ -> ([],tm')
+                         else if is_gabs tm' then
+                           case (dest_gabs tm') of
                              Just (v,t) -> let (vs,bod) = collectvs t
                                            in ((True,v):vs,bod)
-                             _ -> ([],tm)
-                         else ([],tm)
-                       else if is_comb tm then
-                         case rator tm of
-                          Just r -> if (name_of r) == s then
-                            case rand tm of
+                             _ -> ([],tm')
+                         else ([],tm')
+                       else if is_comb tm' then
+                         case rator tm' of
+                          Just r'' -> if (name_of r'') == s then
+                            case rand tm' of
                               Just r' -> if is_abs r' then
                                 case (dest_abs r') of
                                   Just (v,t) -> let (vs,bod) = collectvs t
                                                 in ((False,v):vs,bod)
-                                  _ -> ([],tm)
+                                  _ -> ([],tm')
                                 else if is_gabs r' then
                                   case (dest_gabs r') of
                                     Just (v,t) -> let (vs,bod) = collectvs t
                                                   in ((True,v):vs,bod)
-                                    _ -> ([],tm)
-                                else ([],tm)
-                              _ -> ([],tm)
-                            else ([],tm)
-                          _ -> ([],tm)
-                       else ([],tm) in
+                                    _ -> ([],tm')
+                                else ([],tm')
+                              _ -> ([],tm')
+                            else ([],tm')
+                          _ -> ([],tm')
+                       else ([],tm') in
     let (vs,bod) = collectvs tm in
       (prec_parens prec) (hcat ([
         text s,
@@ -281,10 +287,12 @@ print_binder prec tm = case rator tm of
        ))
   _ -> empty
 
+print_clauses :: [[Term]] -> Doc
 print_clauses cls = case cls of
   [] -> empty
   c:cls' -> vcat ((print_clause c):(map (\cl -> hcat [text "| ",print_clause cl]) cls'))
 
+print_clause :: [Term] -> Doc
 print_clause cl = case cl of
   [p,g,r] -> hcat [print_term 1 p,
                    text " when ",
