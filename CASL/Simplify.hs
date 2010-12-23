@@ -65,7 +65,7 @@ simplifyRecord mf = (mapRecord mf)
            True_atom _ -> f2
            False_atom _ -> nf1
            _ | f1 == f2 -> tf
-             | nf1 == f2 -> False_atom ps
+             | nf1 == f2 -> f1
            _ -> Implication f1 f2 b ps
     , foldEquivalence = \ _ f1 f2 ps ->
       let nf1 = negateForm f1 ps
