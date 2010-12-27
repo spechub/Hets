@@ -19,30 +19,47 @@ import Common.ToXml
 import Common.Utils
 
 -- | the pickler data type (without a state)
-data PU a = PU
-  { pickleToContent :: a -> Content
-  , unpickleContent :: Content -> Result a }
+data PU a b = PU
+  { pickle :: a -> b
+  , unpickle :: b -> Result a }
 
-xpPrim :: (Show a, Read a) => PU a
-xpPrim = PU
-  { pickleToContent = mkText . show
-  , unpickleContent = \ c -> case c of
-      Text t -> let s = cdData t in case readMaybe s of
+puPrim :: (Show a, Read a) => PU a String
+puPrim = PU
+  { pickle = show
+  , unpickle = \ s -> case readMaybe s of
         Nothing -> fail $ "unexpected text: " ++ s
         Just a -> return a
-      _ -> fail "expected primitive text data"
   }
 
-xpString :: PU String
-xpString = PU
-  { pickleToContent = mkText
-  , unpickleContent = \ c -> case c of
-      Text t -> return $ cdData t
-      _ -> fail "expected a string"
+puString :: PU String String
+puString = PU
+  { pickle = id
+  , unpickle = return . id
   }
+
+puWrap :: PU b c -> PU a b -> PU a c
+puWrap pbc pab = PU
+  { pickle = pickle pbc . pickle pab
+  , unpickle = \ c ->
+      unpickle pbc c >>= unpickle pab
+  }
+
+xpCData :: PU String Content
+xpCData = PU
+  { pickle = mkText
+  , unpickle = \ c -> case c of
+      Text d -> return $ cdData d
+      _ -> fail $ "expected text instead of:\n" ++ ppContent c
+  }
+
+xpString :: PU String Content
+xpString = puWrap xpCData puString
+
+xpPrim :: (Show a, Read a) => PU a Content
+xpPrim = puWrap xpCData puPrim
 
 class XmlPickler a where
-    xmlPickler :: PU a
+    xmlPickler :: PU a Content
 
 instance XmlPickler String where
     xmlPickler = xpString
@@ -53,51 +70,56 @@ instance XmlPickler Int where
 instance XmlPickler Integer where
     xmlPickler = xpPrim
 
-xpPair :: String -> PU a -> PU b -> PU (a, b)
-xpPair tag pua pub =
-  let err = fail $ "expected pair element with tag: " ++ tag
-  in PU
-  { pickleToContent = \ (a, b) ->
-      Elem $ unode tag [pickleToContent pua a, pickleToContent pub b]
-  , unpickleContent = \ c -> case c of
-      Elem e -> case elContent e of
-        [e1, e2] | qName (elName e) == tag -> do
-          a <- unpickleContent pua e1
-          b <- unpickleContent pub e2
-          return (a, b)
-        _ -> err
-      _ -> err
+puPair :: PU a b -> PU c d -> PU (a, c) (b, d)
+puPair pab pcd = PU
+  { pickle = \ (a, c) -> (pickle pab a, pickle pcd c)
+  , unpickle = \ (b, d) -> joinResultWith (,) (unpickle pab b) $ unpickle pcd d
   }
 
-xpList :: String -> PU a -> PU [a]
-xpList tag pua =
- let err = fail $ "expecting list element with tag: " ++ tag
- in PU
-  { pickleToContent = Elem . unode tag . map (pickleToContent pua)
-  , unpickleContent = \ c -> case c of
-      Elem e -> if qName (elName e) == tag then
-        mapM (unpickleContent pua) $ elContent e
-        else err
-      _ -> err
+tagContentList :: String -> PU [Content] Element
+tagContentList tag = PU
+  { pickle = unode tag
+  , unpickle = \ e -> if qName (elName e) == tag then return $ elContent e
+      else fail $ "expected <" ++ tag ++ "> element"
   }
+
+elemToContent :: PU Element Content
+elemToContent = PU
+  { pickle = Elem
+  , unpickle = \ c -> case c of
+      Elem e -> return e
+      _ -> fail $ "expected element instead of:\n" ++ ppContent c
+  }
+
+pairToList :: PU (a, a) [a]
+pairToList = PU
+  { pickle = \ (a, b) -> [a, b]
+  , unpickle = \ l -> case l of
+      [a, b] -> return (a, b)
+      _ -> fail "expected two elements"
+  }
+
+xpPair :: String -> PU a Content -> PU b Content -> PU (a, b) Element
+xpPair tag pua =
+  puWrap (tagContentList tag) . puWrap pairToList . puPair pua
+
+-- | unpickles last element first
+puList :: PU a b -> PU [a] [b]
+puList pab = PU
+  { pickle = map (pickle pab)
+  , unpickle = foldr (joinResultWith (:) . unpickle pab) $ return []
+  }
+
+xpList :: String -> PU a Content -> PU [a] Element
+xpList tag = puWrap (tagContentList tag) . puList
 
 -- | attribute pickler
-data AU a b = AU
-  { pickleToAttrs :: a -> [Attr]
-  , stripAttrContent :: a -> b
-  , unpickleAttrs :: b -> [Attr] -> Result a
-  }
-
-xa :: AU a b -> PU b -> PU a
+xa :: PU a (b, [Attr]) -> PU b Element -> PU a Element
 xa au pub = PU
-  { pickleToContent = \ a ->
-      Elem $ add_attrs (pickleToAttrs au a)
-        $ case pickleToContent pub (stripAttrContent au a) of
-            Elem e -> e
-            _ -> error "XmlPickler.xa"
-  , unpickleContent = \ c -> case c of
-      Elem e -> do
-        b <- unpickleContent pub c
-        unpickleAttrs au b $ elAttribs e
-      _ -> fail "XmlPickler.xa"
+  { pickle = \ a ->
+      let (b, attrs) = pickle au a
+      in add_attrs attrs $ pickle pub b
+  , unpickle = \ e -> do
+      b <- unpickle pub e
+      unpickle au (b, elAttribs e)
   }
