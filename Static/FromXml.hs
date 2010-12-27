@@ -287,14 +287,26 @@ getNodeSubElem stps =
         _ -> err
       _ -> err
     _ -> err
-  [a] | checkStepElement "Axioms" a
-    -> case getStepNumber a of
+    | checkStepElement "Axioms" d
+      -> case rst1 of
+       [] -> case getStepNumber d of
          Just i -> return $ Just $ Axioms i
          _ -> err
-    | checkStepElement "Theorems" a
-    -> case getStepNumber a of
+       [b] | checkStepElement "Axiom" b
+         -> case getStepNumber b of
+         Just i -> return $ Just $ Axioms i
+         _ -> err
+       _ -> err
+    | checkStepElement "Theorems" d
+      -> case rst1 of
+       [] -> case getStepNumber d of
          Just i -> return $ Just $ Theorems i
          _ -> err
+       [b] | checkStepElement "Theorem" b
+         -> case getStepNumber b of
+         Just i -> return $ Just $ Theorems i
+         _ -> err
+       _ -> err
   _ -> err
 
 getStepNumber :: Step -> Maybe Int

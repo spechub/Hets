@@ -54,7 +54,15 @@ applyXUpdates :: Monad m => String -> DGraph -> m DGraph
 applyXUpdates xs dg = do
     cs <- anaXUpdates xs
     acs <- mapM changeDG cs
-    foldM (flip applyChange) dg acs
+    foldM (flip applyChange) dg $ sortBy cmpSelChanges acs
+
+cmpSelChanges :: SelChangeDG -> SelChangeDG -> Ordering
+cmpSelChanges (SelChangeDG _ ch1) (SelChangeDG _ ch2) =
+  case (ch1, ch2) of
+    (RemoveChDG, RemoveChDG) -> EQ
+    (RemoveChDG, _) -> LT
+    (_, RemoveChDG) -> GT
+    _ -> EQ
 
 applyChange :: Monad m => SelChangeDG -> DGraph -> m DGraph
 applyChange (SelChangeDG se ch) dg = case ch of

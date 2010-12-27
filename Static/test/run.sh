@@ -8,8 +8,7 @@ mv $f.xml $f.xh
 hets -v2 -A -o xml $f
 mv $f.xml $f.xhi
 cp $1 $1.bak
-diff -u $1 $2 > patch
-patch $1 patch
+propagateDiff $1 $1 $2
 hets -v2 -o xml $f
 mv $f.xml $f.new.xh
 cp $1.bak $1
@@ -25,7 +24,7 @@ popd
 
 propagateDiff ()
 {
-diff $1 $3 > patch
+diff -u $1 $3 > patch
 patch $2 patch
 }
 
@@ -49,3 +48,7 @@ do
 hets -v2 -U $i Spec.het
 done
 }
+
+## uncomment the slow createUpdates if you do not have the .xupdates files
+#createUpdates
+callHets
