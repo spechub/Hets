@@ -18,6 +18,8 @@ import Common.Result
 import Common.ToXml
 import Common.Utils
 
+import Data.Maybe
+
 -- | the pickler data type (without a state)
 data PU a b = PU
   { pickle :: a -> b
@@ -31,10 +33,10 @@ puPrim = PU
         Just a -> return a
   }
 
-puString :: PU String String
-puString = PU
+puId :: PU String String
+puId = PU
   { pickle = id
-  , unpickle = return . id
+  , unpickle = return
   }
 
 puWrap :: PU b c -> PU a b -> PU a c
@@ -53,7 +55,7 @@ xpCData = PU
   }
 
 xpString :: PU String Content
-xpString = puWrap xpCData puString
+xpString = puWrap xpCData puId
 
 xpPrim :: (Show a, Read a) => PU a Content
 xpPrim = puWrap xpCData puPrim
@@ -113,13 +115,25 @@ puList pab = PU
 xpList :: String -> PU a Content -> PU [a] Element
 xpList tag = puWrap (tagContentList tag) . puList
 
+xpAttrs :: PU (Element, [Attr]) Element
+xpAttrs = PU
+  { pickle = \ (e, attrs) -> add_attrs attrs e
+  , unpickle = \ e -> return (e, elAttribs e)
+  }
+
 -- | attribute pickler
-xa :: PU a (b, [Attr]) -> PU b Element -> PU a Element
-xa au pub = PU
-  { pickle = \ a ->
-      let (b, attrs) = pickle au a
-      in add_attrs attrs $ pickle pub b
-  , unpickle = \ e -> do
-      b <- unpickle pub e
-      unpickle au (b, elAttribs e)
+xa :: PU a (b, c) -> PU c [Attr] -> PU b Element -> PU a Element
+xa split pua pub = puWrap xpAttrs $ puWrap (puPair pub pua) split
+
+tagAttr :: String -> PU String Attr
+tagAttr tag = PU
+  { pickle = mkAttr tag
+  , unpickle = \ a -> if qName (attrKey a) == tag then return $ attrVal a else
+      fail $ "expected attribute key: " ++ tag
+  }
+
+tagAttrs :: String -> PU String [Attr]
+tagAttrs tag = PU
+  { pickle = \ s -> if null s then [] else [mkAttr tag s]
+  , unpickle = return . fromMaybe "" . lookupAttrBy ((== tag) . qName)
   }
