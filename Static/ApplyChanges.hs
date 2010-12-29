@@ -53,8 +53,12 @@ getNodeByName msg nn dg = let s = showName nn in
 applyXUpdates :: Monad m => String -> DGraph -> m DGraph
 applyXUpdates xs dg = do
     cs <- anaXUpdates xs
-    acs <- mapM changeDG cs
-    foldM (flip applyChange) dg $ sortBy cmpSelChanges acs
+    let acs = foldr (\ c l -> case changeDG c of
+          Nothing -> l
+          Just s -> s : l) [] cs
+    return $ foldr (\ s g -> case applyChange s g of
+      Nothing -> g
+      Just ng -> ng) dg $ sortBy cmpSelChanges acs
 
 cmpSelChanges :: SelChangeDG -> SelChangeDG -> Ordering
 cmpSelChanges (SelChangeDG _ ch1) (SelChangeDG _ ch2) =
