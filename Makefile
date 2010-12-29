@@ -103,6 +103,7 @@ programatica_pkg: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
             -i `pwd`/Haskell/Programatica.patch || exit 0); \
           cp -f utils/programatica.cabal $(PFE_TOOLDIR); \
           cp -f $(SETUP) $(PFE_TOOLDIR); \
+          cp -f LICENSE.txt $(PFE_TOOLDIR); \
           (cd $(PFE_TOOLDIR); \
            ./Setup configure $(SETUPPREFIX) --user; \
            ./Setup build; ./Setup install) fi
