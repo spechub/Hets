@@ -16,9 +16,11 @@ dir=`pwd`
 b2=`basename $2 .het`
 pushd $HETS_GMOC
 rm -f tmp/*.xupdate
+rm -f tmp/*.imp
 bin/gmoc -c Configuration.xml -itype file moc \
   $dir/$f.xh $dir/$f.xhi $dir/$f.new.xh
 mv tmp/*.xupdate $dir/$b2.xupdate
+mv tmp/*.imp $dir/$b2.imp
 popd
 }
 
