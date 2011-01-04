@@ -57,12 +57,12 @@ data Morphism f e m = Morphism
   , extended_map :: m
   } deriving (Show, Eq, Ord)
 
-data DefMorExt e = DefMorExt deriving (Show, Eq, Ord)
+data DefMorExt e = DefMorExt e deriving (Show, Eq, Ord)
 
 emptyMorExt :: DefMorExt e
-emptyMorExt = DefMorExt
+emptyMorExt = DefMorExt $ error "emptyMorExt"
 
-instance Pretty (DefMorExt e) where
+instance Show e => Pretty (DefMorExt e) where
   pretty _ = empty
 
 class MorphismExtension e m | m -> e where
