@@ -26,6 +26,7 @@ hetcatsrules =
   , ("Binary", binaryfn False, "", "", Nothing)
   , ("BinaryLG", binaryfn True, "", "", Nothing)
   , ("Typeable", typeablefn, "", "", Nothing)
+  , ("XmlPickler", xmlpicklerfn, "", "", Nothing)
   , ("GetRange", getrangefn, "", "", Nothing)]
 
 -- useful helper things
@@ -34,6 +35,9 @@ addPrime = (<> char '\'')
 
 ppCons' :: Body -> [Doc] -> Doc
 ppCons' b = fsep . (text (constructor b) :)
+
+xmlpicklerfn :: Data -> Doc
+xmlpicklerfn _ = empty
 
 -- XmlContent
 userRuleXmlNew :: Data -> Doc
