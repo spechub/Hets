@@ -98,7 +98,7 @@ hetsServer opts1 = do
       (_, files) <- parseRequestBody tempFileSink re
       case files of
         [] -> return $ mkResponse status400 "no file uploaded"
-        [(_, f)] -> do
+        [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              copyFile (fileContent f) (tempHetsLib </> fn)
@@ -235,16 +235,17 @@ getHetsResult opts updates sessRef file query =
               _ -> liftR $ return $ sessAns ln sk
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
-              Nothing -> case updates of
-                [ch0, imp0] | s == "update" -> do
-                  let ch = if takeExtension (B8.unpack $ fileName imp0)
-                        == ".xupdate" then imp0 else ch0
+              Nothing -> if s == "update" then
+                case filter ((== ".xupdate") . takeExtension . B8.unpack
+                            . fileName) updates of
+                ch : _ -> do
                   str <- lift $ readFile $ fileContent ch
                   newDg <- liftR $ applyXUpdates str dg
                   let newLib = Map.insert ln newDg libEnv
                   newSess <- lift $ nextSess sessRef newLib k
                   liftR $ return $ sessAns ln (newSess, k)
-                _ -> fail "getHetsResult.GlobCmdQuery"
+                [] -> liftR $ return $ sessAns ln sk
+                else fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sessRef newLib k
