@@ -1,6 +1,6 @@
 library reduceTest
 
-logic CSL
+logic EnCL
 
 spec ReduceTest1 =
      operator f,h

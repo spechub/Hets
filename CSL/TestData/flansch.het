@@ -1,6 +1,6 @@
 library flansch
 
-logic CSL
+logic EnCL
 
 spec Flansch1 =
  . d_G1:=500.0

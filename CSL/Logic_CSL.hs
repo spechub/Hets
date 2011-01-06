@@ -31,11 +31,14 @@ import qualified Data.Map as Map
 import ATC.ProofTree ()
 
 -- | Lid for reduce logic
-data CSL = CSL deriving Show
+data CSL = CSL
+
+instance Show CSL where
+    show _ = "EnCL"
 
 instance Language CSL where
-    description _ = "CSL Logic\n"
---    language_name _ = "CSL"
+    description _ = "EnCL Logic\n"
+--    language_name _ = "EnCL"
 
 -- | Instance of Category for CSL logic
 instance Category Sign Morphism where
