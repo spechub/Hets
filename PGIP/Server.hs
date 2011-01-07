@@ -250,16 +250,19 @@ getHetsResult opts updates sessRef file query =
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sessRef newLib k
                 liftR $ return $ sessAns ln (newSess, k)
-            NodeQuery i ms -> case lab (dgBody dg) i of
+            NodeQuery i nc -> case lab (dgBody dg) i of
               Nothing -> fail $ "no node id: " ++ show i
               Just dgnode -> return
                 $ (if isDGRef dgnode then ("reference " ++) else
                   if isInternalNode dgnode then ("internal " ++) else id)
                   "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
-                  ++ case ms of
-                       Just "theory" ->
+                  ++ case nc of
+                       NcTheory ->
                            showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
-                       _ -> showDoc dgnode ""
+                       NcInfo -> showDoc dgnode ""
+                       NcProvers -> "showing provers nyi"
+                       NcTranslations -> "showing translations nyi"
+                       ProveNode _incl _mp _mt -> "proving nyi"
             EdgeQuery i _ ->
               case getDGLinksById i dg of
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""

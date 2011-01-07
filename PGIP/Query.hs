@@ -65,7 +65,10 @@ displayTypes :: [String]
 displayTypes = ["svg", "xml", "dot", "session"]
 
 nodeCommands :: [String]
-nodeCommands = ["node", "theory"]
+nodeCommands = ["node", "theory", "provers", "translations", "prove"]
+
+proveParams :: [String]
+proveParams = ["include", "prover", "translation"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
@@ -93,8 +96,17 @@ data Query = Query
 data QueryKind =
     DisplayQuery (Maybe String)
   | GlobCmdQuery String
-  | NodeQuery Int (Maybe String)
+  | NodeQuery Int NodeCommand
   | EdgeQuery EdgeId String
+
+
+data NodeCommand =
+    NcTheory | NcInfo | NcProvers | NcTranslations
+  | ProveNode
+  { ncInclTheorems :: Bool
+  , ncProver :: Maybe String
+  , ncTranslation :: Maybe String }
+  deriving Show
 
 -- | the path is not empty and leading slashes are removed
 anaUri :: FilePath -> String -> Either String Query
@@ -108,8 +120,6 @@ anaUri path query = case anaQuery query of
         qk
     Left err -> Left err
 
--- we have a library name
-
 -- | a leading question mark is removed
 anaQuery :: String -> Either String (Maybe Int, QueryKind)
 anaQuery qstr =
@@ -118,7 +128,7 @@ anaQuery qstr =
            isNat s = all isDigit s && length s < 11
            (q1, qm) = partition (\ l -> case l of
                         [x] -> isNat x || elem x
-                               (displayTypes ++ globals
+                               (displayTypes ++ globals ++ ["include"]
                                 ++ nodeCommands ++ edgeCommands)
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
@@ -128,16 +138,19 @@ anaQuery qstr =
                                   || x == "command" &&
                                      elem y globals
                                   || x == "format" && elem y displayTypes
+                                  || elem x proveParams
                         _ -> False) qm
            (fs, r1) = partition (`elem` displayTypes) $ map head q1
            (gs, r2) = partition (`elem` globals) r1
            (ns, r3) = partition (`elem` nodeCommands) r2
-           (es, is) = partition (`elem` edgeCommands) r3
+           (es, r4) = partition (`elem` edgeCommands) r3
+           (incls, is) = partition (== "include") r4
            (fs2, p1) = partition ((== "format") . head) q2
            (cs2, p2) = partition ((== "command") . head) p1
            (is2, p3) = partition ((`elem` ["dg", "session"]) . head) p2
            (ns2, p4) = partition ((`elem` nodeCommands) . head) p3
-           (es2, ids) = partition ((`elem` edgeCommands) . head) p4
+           (es2, p5) = partition ((`elem` edgeCommands) . head) p4
+           (pps, ids) = partition ((`elem` proveParams) . head) p5
            snds = map $ head . tail
            afs = nubOrd $ fs ++ snds fs2
            ags = nubOrd $ gs ++ snds cs2
@@ -146,19 +159,48 @@ anaQuery qstr =
            ais = nubOrd $ is ++ snds is2
            aids = nubOrd . snds $ ns2 ++ es2 ++ ids
            mi = fmap read $ listToMaybe ais
+           noPP = null pps && null incls
        in if null qr && length ais < 2 then case (afs, ags, ans, aes, aids) of
-         (_, [], [], [], []) -> if length afs > 1
+         (_, [], [], [], []) | noPP -> if length afs > 1
            then Left $ "non-unique format " ++ show afs
            else Right (mi, DisplayQuery $ listToMaybe afs)
-         (_, c : r, [], [], _) -> if null r
+         (_, c : r, [], [], _) | noPP -> if null r
            then Right (mi, GlobCmdQuery c)
            else Left $ "non-unique command " ++ show r
-         (_, [], _, [], i : s) -> if null s && length ans < 2 then
-           Right (mi, NodeQuery (read i) $ listToMaybe ans)
-           else Left $ "non-unique node " ++ show (ans ++ aids)
-         (_, [], [], e : r, i : s) -> if null r && null s then
+         (_, [], _, [], i : s) ->
+           anaNodeQuery mi ans (read i) s incls pps
+         (_, [], [], e : r, i : s) | noPP -> if null r && null s then
            Right (mi, EdgeQuery (EdgeId $ read i) e)
            else Left $ "non-unique edge " ++ show (aes ++ aids)
          _ -> Left $ "non-unique query " ++ show q
        else Left $ if null qr then "non-unique dg " ++ show q else
                        "ill-formed query " ++ show qr
+
+anaNodeQuery :: Maybe Int -> [String] -> Int -> [String] -> [String]
+  -> [[String]] -> Either String (Maybe Int, QueryKind)
+anaNodeQuery mi ans i s incls pps =
+  let ppps = foldr (\ l -> case l of
+                [x, y] -> ((x, y) :)
+                _ -> id) [] pps
+      pp = anaProveParams incls ppps in
+  if null s then
+     case ans of
+       [] -> Right (mi, NodeQuery i
+         $ if null incls && null pps then NcInfo else pp)
+       [cmd] -> case cmd of
+         "prove" -> Right (mi, NodeQuery i pp)
+         "node" -> Right (mi, NodeQuery i NcInfo)
+         _ -> case find (\ n -> drop 2 (map toLower $ show n) == cmd)
+                         [NcTheory, NcProvers, NcTranslations] of
+           Nothing -> Left $ "unknown node command " ++ cmd
+           Just n -> Right (mi, NodeQuery i n)
+       _ -> Left $ "non-unique node command " ++ show ans
+  else Left $ "non-unique node ids " ++ show (show i : s)
+
+anaProveParams :: [String] -> [(String, String)] -> NodeCommand
+anaProveParams incls pps =
+  ProveNode (not (null incls) || case lookup "include" pps of
+    Nothing -> True
+    Just str -> notElem (map toLower str) ["f", "false"])
+    (lookup "prover" pps)
+    (lookup "translation" pps)
