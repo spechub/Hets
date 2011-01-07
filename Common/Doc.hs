@@ -13,12 +13,12 @@ This module contains a document data type 'Doc' for displaying
 (and maybe html as well)
 
 Inspired by John Hughes's and Simon Peyton Jones's Pretty Printer
-Combinators in "Text.PrettyPrint.HughesPJ", Thomas Hallgren's
-<http://www.cse.ogi.edu/~hallgren/Programatica/tools/pfe.cgi?PrettyDoc>,
+Combinators in Text.PrettyPrint.HughesPJ, Thomas Hallgren's
+PrettyDoc within programatica,
 Daan Leijen's PPrint: A prettier printer 2001, and Olaf Chiti's Pretty
 printing with lazy Dequeues 2003
 
-The main combinators are those from "Text.PrettyPrint.HughesPJ" except
+The main combinators are those of HughesPJ except
 nest, hang and $$. Instead of $$ '$+$' must be used that always forces a
 line break. Indentation must be constructed using '<>' or '<+>', i.e.
 'text' \"spec\" '<+>' MultilineBlock.
@@ -28,7 +28,7 @@ exist. These can all be simulated using 'text' (and 'show'). There's
 an instance for 'Int' in "Common.DocUtils".
 
 Furthermore, documents can no longer be tested with isEmpty. 'empty'
-documents are silently ignored (as by "Text.PrettyPrint.HughesPJ") and
+documents are silently ignored (as by HughesPJ) and
 often it is more natural (or even necessary anyway) to test the
 original data structure for emptiness.
 
@@ -40,7 +40,7 @@ single line.
 Rendering of documents is achieved by translations to the old
 "Common.Lib.Pretty". For plain text simply 'show' can be
 used. Any document can be translated to LaTeX via 'toLatex' and then
-processed further by "Common.PrintLatex". If you like the output is a
+processed further by "Common.PrintLaTeX". If you like the output is a
 different question, but the result should be legal LaTeX in
 conjunction with the hetcasl.sty file.
 
