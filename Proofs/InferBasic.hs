@@ -59,14 +59,14 @@ import Data.Maybe
 
 import Control.Monad.Trans
 
-selectProver :: GetPName a => [(a, AnyComorphism)]
-             -> ResultT IO (a, AnyComorphism)
+selectProver :: [(G_prover, AnyComorphism)]
+             -> ResultT IO (G_prover, AnyComorphism)
 selectProver ps = case ps of
   [] -> fail "No prover available"
   [p] -> return p
   _ -> do
    sel <- lift $ listBox "Choose a translation to a prover-supported logic"
-     $ map (\ (aGN, cm) -> shows cm $ " (" ++ getPName aGN ++ ")") ps
+     $ map (\ (aGN, cm) -> shows cm $ " (" ++ getProverName aGN ++ ")") ps
    i <- case sel of
            Just j -> return j
            _ -> fail "Proofs.Proofs: selection"
@@ -92,8 +92,7 @@ basicInferenceNode :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
                    -> IO (Result G_theory)
 basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
   runResultT $ do
-    -- compute the theory of the node, and its name
-    -- may contain proved theorems
+    -- compute the theory (that may contain proved theorems) and its name
     thForProof@(G_theory lid1 _ _ _ _) <- liftR $ getGlobalTheory lbl
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         sublogic = sublogicOfTh thForProof

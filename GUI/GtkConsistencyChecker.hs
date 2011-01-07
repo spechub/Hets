@@ -319,7 +319,7 @@ updateFinder :: TreeView -> ListStore Finder -> Bool -> G_sublogics -> IO ()
 updateFinder view list useNonBatch sl = do
   old <- listStoreToList list
   let new = Map.elems $ foldr (\ (cc, c) m ->
-              let n = getPName cc
+              let n = getCcName cc
                   f = Map.findWithDefault (Finder n cc [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
               $ filter (\ (G_cons_checker _ cc, _) -> useNonBatch || ccBatch cc)

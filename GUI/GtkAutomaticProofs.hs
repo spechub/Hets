@@ -420,7 +420,7 @@ updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
 updateFinder view list sl = do
   old <- listStoreToList list
   let new = Map.elems $ foldr (\ (pr, c) m ->
-              let n = getPName pr
+              let n = getProverName pr
                   f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
               $ getProvers ProveCMDLautomatic (Just sl)

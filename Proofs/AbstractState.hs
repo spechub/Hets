@@ -17,6 +17,7 @@ It is also used by the CMDL interface.
 module Proofs.AbstractState
     ( G_prover (..)
     , getProverName
+    , getCcName
     , coerceProver
     , G_cons_checker (..)
     , coerceConsChecker
@@ -26,7 +27,6 @@ module Proofs.AbstractState
     , selectedGoalMap
     , axiomMap
     , recalculateSublogicAndSelectedTheory
-    , GetPName (..)
     , markProved
     , G_theory_with_prover (..)
     , G_theory_with_cons_checker (..)
@@ -92,6 +92,9 @@ data G_cons_checker = forall lid sublogics
        G_cons_checker lid
                 (ConsChecker sign sentence sublogics morphism proof_tree)
   deriving Typeable
+
+getCcName :: G_cons_checker -> String
+getCcName (G_cons_checker _ p) = ccName p
 
 coerceConsChecker ::
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -349,16 +352,6 @@ recalculateSublogicAndSelectedTheory st =
             in st { sublogicOfTheory = sLo
                   , selectedTheory = sTh
                   , proversMap = shrinkKnownProvers sLo (proversMap st) }
-
-class GetPName a where
-    getPName :: a -> String
-
-instance GetPName G_prover where
-    getPName = getProverName
-
-instance GetPName G_cons_checker where
-    getPName (G_cons_checker _ p) = ccName p
-
 
 getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
 getConsCheckers = concatMap (\ cm@(Comorphism cid) ->

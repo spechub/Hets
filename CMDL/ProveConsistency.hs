@@ -79,7 +79,7 @@ cProver input state =
        case cComorphism pS of
        -- if none use the theory  of the first selected node
        -- to find possible comorphisms
-       Nothing-> case find (\ (y, _)-> getPName y == inp)
+       Nothing-> case find (\ (y, _)-> getProverName y == inp)
                  $ getProversAutomatic sl of
                    Nothing -> return $ genErrorMsg ("No applicable prover with"
                                                 ++" this name found") state
@@ -94,10 +94,10 @@ cProver input state =
        -- if yes,  use the comorphism to find a list
        -- of provers
        Just x ->
-         case find (\ (y, _)-> getPName y == inp)
+         case find (\ (y, _)-> getProverName y == inp)
          $ getProvers P.ProveCMDLautomatic (Just sl) [x] of
             Nothing ->
-             case find (\(y,_) -> getPName y == inp)
+             case find (\(y,_) -> getProverName y == inp)
                $ getProversAutomatic sl of
                Nothing -> return $ genErrorMsg ("No applicable prover with"
                                           ++ " this name found") state
@@ -143,7 +143,7 @@ cConsChecker input state =
         --if none use the theory of the first selected node
         --to find possible comorphisms
         Nothing -> case find (\(y,_)->
-                                  getPName y == inp) $
+                                  getCcName y == inp) $
                              getConsCheckers $ findComorphismPaths
                                 logicGraph $ sublogicOfTh $ theory z of
                     Nothing -> return $ genErrorMsg ("No applicable "++
@@ -158,10 +158,10 @@ cConsChecker input state =
                                           }
                                       }
         Just x ->
-          case find(\(y,_) -> getPName y == inp)
+          case find(\(y,_) -> getCcName y == inp)
                      $ getConsCheckers [x] of
            Nothing ->
-            case find (\(y,_) -> getPName y == inp) $ getConsCheckers $
+            case find (\(y,_) -> getCcName y == inp) $ getConsCheckers $
                           findComorphismPaths logicGraph $ sublogicOfTh $
                           theory z of
              Nothing -> return $ genErrorMsg ("No applicable consistency "++
@@ -231,7 +231,7 @@ checkNode sTxt ndpf ndnm mp mcm mSt miSt ln =
                           lookupKnownConsChecker st
                 putStrLn ("Analyzing node for consistency " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
-                putStrLn ("Using consistency checker " ++ getPName prv')
+                putStrLn ("Using consistency checker " ++ getCcName prv')
                 return $ case prepareForConsChecking st p_cm' of
                           Result _ Nothing -> Nothing
                           Result _ (Just sm)-> Just (sm, acm')
@@ -328,7 +328,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
                           lookupKnownProver st P.ProveCMDLautomatic
                 putStrLn ("Analyzing node " ++ ndnm)
                 putStrLn ("Using the comorphism " ++ language_name cid)
-                putStrLn ("Using prover " ++ getPName prv')
+                putStrLn ("Using prover " ++ getProverName prv')
                 return $ case prepareForProving st p_cm' of
                           Result _ Nothing -> Nothing
                           Result _ (Just sm)-> Just (sm,acm')

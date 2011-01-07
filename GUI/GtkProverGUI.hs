@@ -356,7 +356,7 @@ toTheorem = OMap.keys . goalMap
 
 toProvers :: ProofState lid sentence -> [GProver]
 toProvers = Map.elems . foldr (\ (p', c) m ->
-    let n = getPName p'
+    let n = getProverName p'
         p = Map.findWithDefault (GProver n [] 0) n m in
     Map.insert n (p { comorphism = c : comorphism p}) m
   ) Map.empty . comorphismsToProvers
