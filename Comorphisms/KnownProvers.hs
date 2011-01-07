@@ -93,7 +93,6 @@ knownProversWithKind pk =
        spassCs <- spassComorphisms
        qCs <- quickCheckComorphisms
        return $ foldl insProvers Map.empty
-         $ filter hasModelExpansion
          $ idComorphisms ++ isaCs ++ spassCs ++ qCs
 #ifdef CASLEXTENSIONS
               ++ [Comorphism cspCASLTrace]

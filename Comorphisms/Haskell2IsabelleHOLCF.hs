@@ -42,7 +42,7 @@ instance Comorphism Haskell2IsabelleHOLCF
                () () ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic _ = Haskell
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
@@ -50,6 +50,7 @@ instance Comorphism Haskell2IsabelleHOLCF
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory (IsCont True) False sign sens
+    has_model_expansion _ = True
 
 data Haskell2IsabelleHOL = Haskell2IsabelleHOL deriving Show
 
@@ -63,7 +64,7 @@ instance Comorphism Haskell2IsabelleHOL
                () () ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
-               IsabelleMorphism () () ()  where
+               IsabelleMorphism () () () where
     sourceLogic _ = Haskell
     sourceSublogic _ = ()
     targetLogic _ = Isabelle
