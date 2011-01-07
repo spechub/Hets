@@ -260,8 +260,8 @@ getHetsResult opts updates sessRef file query =
                        NcTheory ->
                            showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
                        NcInfo -> showDoc dgnode ""
-                       NcProvers -> "showing provers nyi"
-                       NcTranslations -> "showing translations nyi"
+                       NcProvers _ -> "showing provers nyi"
+                       NcTranslations _ -> "showing translations nyi"
                        ProveNode _incl _mp _mt -> "proving nyi"
             EdgeQuery i _ ->
               case getDGLinksById i dg of

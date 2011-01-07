@@ -101,7 +101,10 @@ data QueryKind =
 
 
 data NodeCommand =
-    NcTheory | NcInfo | NcProvers | NcTranslations
+    NcTheory
+  | NcInfo
+  | NcProvers (Maybe String)
+  | NcTranslations (Maybe String)
   | ProveNode
   { ncInclTheorems :: Bool
   , ncProver :: Maybe String
@@ -178,22 +181,25 @@ anaQuery qstr =
 
 anaNodeQuery :: Maybe Int -> [String] -> Int -> [String] -> [String]
   -> [[String]] -> Either String (Maybe Int, QueryKind)
-anaNodeQuery mi ans i s incls pps =
-  let ppps = foldr (\ l -> case l of
+anaNodeQuery mi ans i s incls pss =
+  let pps = foldr (\ l -> case l of
                 [x, y] -> ((x, y) :)
-                _ -> id) [] pps
-      pp = anaProveParams incls ppps in
-  if null s then
-     case ans of
+                _ -> id) [] pss
+      pp = anaProveParams incls pps
+      noPP = null incls && null pps
+  in if null s then case ans of
        [] -> Right (mi, NodeQuery i
-         $ if null incls && null pps then NcInfo else pp)
+         $ if noPP then NcInfo else pp)
        [cmd] -> case cmd of
          "prove" -> Right (mi, NodeQuery i pp)
-         "node" -> Right (mi, NodeQuery i NcInfo)
-         _ -> case find (\ n -> drop 2 (map toLower $ show n) == cmd)
-                         [NcTheory, NcProvers, NcTranslations] of
-           Nothing -> Left $ "unknown node command " ++ cmd
-           Just n -> Right (mi, NodeQuery i n)
+         "node" | noPP -> Right (mi, NodeQuery i NcInfo)
+         "theory" | noPP -> Right (mi, NodeQuery i NcTheory)
+         "provers" | null incls ->
+            Right (mi, NodeQuery i $ NcProvers (lookup "translation" pps))
+         "translations" | null incls ->
+            Right (mi, NodeQuery i $ NcTranslations (lookup "prover" pps))
+         _ -> Left $ "unknown node command '" ++ cmd ++ "' "
+              ++ show (incls : pss)
        _ -> Left $ "non-unique node command " ++ show ans
   else Left $ "non-unique node ids " ++ show (show i : s)
 
