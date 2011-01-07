@@ -185,8 +185,15 @@ anaNodeQuery mi ans i s incls pss =
   let pps = foldr (\ l -> case l of
                 [x, y] -> ((x, y) :)
                 _ -> id) [] pss
-      pp = anaProveParams incls pps
+      incl = lookup "include" pps
+      trans = lookup "translation" pps
+      prover = lookup "prover" pps
+      pp = ProveNode (not (null incls) || case lookup "include" pps of
+        Nothing -> True
+        Just str -> notElem (map toLower str) ["f", "false"])
+        prover trans
       noPP = null incls && null pps
+      noIncl = null incls && isNothing incl
   in if null s then case ans of
        [] -> Right (mi, NodeQuery i
          $ if noPP then NcInfo else pp)
@@ -194,19 +201,11 @@ anaNodeQuery mi ans i s incls pss =
          "prove" -> Right (mi, NodeQuery i pp)
          "node" | noPP -> Right (mi, NodeQuery i NcInfo)
          "theory" | noPP -> Right (mi, NodeQuery i NcTheory)
-         "provers" | null incls ->
-            Right (mi, NodeQuery i $ NcProvers (lookup "translation" pps))
-         "translations" | null incls ->
-            Right (mi, NodeQuery i $ NcTranslations (lookup "prover" pps))
+         "provers" | noIncl && isNothing prover ->
+            Right (mi, NodeQuery i $ NcProvers trans)
+         "translations" | noIncl && isNothing trans ->
+            Right (mi, NodeQuery i $ NcTranslations prover)
          _ -> Left $ "unknown node command '" ++ cmd ++ "' "
               ++ show (incls : pss)
        _ -> Left $ "non-unique node command " ++ show ans
   else Left $ "non-unique node ids " ++ show (show i : s)
-
-anaProveParams :: [String] -> [(String, String)] -> NodeCommand
-anaProveParams incls pps =
-  ProveNode (not (null incls) || case lookup "include" pps of
-    Nothing -> True
-    Just str -> notElem (map toLower str) ["f", "false"])
-    (lookup "prover" pps)
-    (lookup "translation" pps)

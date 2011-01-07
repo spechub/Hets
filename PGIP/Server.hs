@@ -252,17 +252,19 @@ getHetsResult opts updates sessRef file query =
                 liftR $ return $ sessAns ln (newSess, k)
             NodeQuery i nc -> case lab (dgBody dg) i of
               Nothing -> fail $ "no node id: " ++ show i
-              Just dgnode -> return
-                $ (if isDGRef dgnode then ("reference " ++) else
-                  if isInternalNode dgnode then ("internal " ++) else id)
-                  "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
-                  ++ case nc of
-                       NcTheory ->
+              Just dgnode -> case nc of
+                ProveNode _incl _mp _mt -> fail "proving nyi"
+                _ -> let
+                  fstLine = (if isDGRef dgnode then ("reference " ++) else
+                    if isInternalNode dgnode then ("internal " ++) else id)
+                    "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
+                  in return $ case nc of
+                       NcTheory -> fstLine ++
                            showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
-                       NcInfo -> showDoc dgnode ""
+                       NcInfo -> fstLine ++ showDoc dgnode ""
                        NcProvers _ -> "showing provers nyi"
                        NcTranslations _ -> "showing translations nyi"
-                       ProveNode _incl _mp _mt -> "proving nyi"
+                       ProveNode {} -> error "getHetsResult.NodeQuery.ProveNode"
             EdgeQuery i _ ->
               case getDGLinksById i dg of
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
