@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  matching of terms modulo definition expansion
@@ -17,8 +18,10 @@ import HasCASL.Subst
 
 import HasCASL.As
 import HasCASL.Le
+import HasCASL.PrintAs
 
 import Common.Id
+import Common.DocUtils
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -122,7 +125,7 @@ matchAux m consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
       (ApplTerm f1 a1 _, _) ->
           case t2 of
             ApplTerm f2 a2 _ | f1 == f2 -> match' a1 a2
-                             | noclashHead f1 f2 -> addConstraint
+                             | noclashHead f1 f2 -> addLocalConstraint
             _ -> tryDefExpand
 
       (TupleTerm l _, _) -> 
@@ -151,20 +154,158 @@ matchAux m consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
                                   fail $ concat [ "matchAux: Conflicting "
                                                 , "substitution for ", show k]
                       _ -> return (addTerm sbst sc t2, ctrts)
-                else addConstraint
-            addConstraint | t1 == t2 = return output
-                          | otherwise = return (sbst, (t1,t2):ctrts)
+                else addLocalConstraint
+            addLocalConstraint | t1 == t2 = return output
+                               | otherwise = return (sbst, (t1,t2):ctrts)
             -- The definition expansion application case
             -- (for ApplTerm and TupleTerm) is handled uniformly
             tryDefExpand = case defExpansion t2 of
                              Just t2' -> match' t1 t2'
-                             _ | noclash t1 t2 -> addConstraint
+                             _ | noclash t1 t2 -> addLocalConstraint
                                | otherwise -> clash
 
 
             defExpansion = lookupContent m
-            clash = fail $ "matchAux: Clash for " ++ show (t1,t2)
+            clash = fail $ "matchAux: Clash for " ++ show (pretty (t1,t2))
             tupleClash l l' = fail $ "matchAux: Clash for tuples "
-                              ++ show (l, l')
+                              ++ show (pretty (l, l'))
 
+
+
+
+-- new version of matcher with simpler interface
+{- The rules of matching:
+
+   f,g are functions
+   c is a constant
+   v is a variable
+   t1, t2 are arbitrary terms
+   "good" functions are the list-constructor, the solidworks datatype constructors and all other constructors.
+
+   f != g
+
+   1a. f(x_i) f(y_i) -> match x_i y_i,                  if f is a "good" function
+                        AddConstraint f(x_i) = f(y_i),  otherwise
+
+   1b. f(...) g(...) -> AddConstraint f(...) = g(...)
+
+   2a. c t2 -> match t1 t2,           if c is defined by term t1
+               AddConstraint c = t2,  otherwise
+
+   2b. t1 c -> match t1 t2,           if c is defined by term t2
+               AddConstraint t1 = c,  otherwise
+
+   3. v t2 -> AddMatch v t2
+
+-}
+{- We need two classes:
+
+   1. A class for lookup definitions and checking for good functions
+
+   2. A class for storing the match (substitution plus constraints)
+-}
+
+class DefStore a where
+    isGood :: a -> Term -> Bool
+    getDefinition :: a -> Term -> Maybe Term
+
+class Match a where
+    addMatch :: a -> VarDecl -> Term -> a
+    addConstraint :: a -> Term -> Term -> a
+
+
+instance DefStore Env where
+    isGood _ _ = True
+    getDefinition = getOpDefinition
+
+type MatchResult = (Subst, [(Term, Term)])
+
+instance Match MatchResult where
+    addMatch mr@(sb, ctrts) k t =
+        let sc = toSC k
+        in case lookupContent sb sc of
+             Just t' | t == t' -> mr
+                     | otherwise ->
+                         error $ concat [ "addMatch: Conflicting "
+                                        , "substitution for ", show (pretty k) ]
+             _ -> (addTerm sb sc t, ctrts)
+
+    addConstraint (sb, ctrts) t1 t2 = (sb, (t1, t2):ctrts)
+
+newmatch :: (DefStore d, Match a) => d -> a -> Term -> Term -> Either String a
+newmatch def mtch t1 t2 =
+    case (t1, t2) of
+      -- handle the 'skip-cases' first
+      (TypedTerm term _ _ _, _) -> match' term t2
+      (_, TypedTerm term _ _ _) -> match' t1 term
+
+      -- check for clash, handle constraints and definition expansion
+      (ApplTerm f1 a1 _, _) ->
+          case t2 of
+            ApplTerm f2 a2 _
+                -- 1a1.
+                | f1 == f2 && isGood def f1 -> match' a1 a2
+                -- 1a2., 1b.
+                | otherwise -> addLocalConstraint
+
+            -- eventually 2b.
+            _ -> tryDefExpand2
+
+      (TupleTerm l _, _) -> 
+          case t2 of
+            TupleTerm l' _ | length l == length l' -> matchfold mtch $ zip l l'
+                           | otherwise -> tupleClash
+            -- eventually 2b.
+            _ -> tryDefExpand2
+
+      -- 3.: add the mapping v->t2 to output
+      (QualVar v, _) -> addMapping v
+      -- 2a.: follow the definition
+      (QualOp _ _ _ _ _ _, _) -> tryDefExpand1
+
+      -- all other terms are not expected and accepted here
+      _ -> Left "newmatch: unhandled term"
+
+      where match' = newmatch def mtch
+            -- The definition expansion application case
+            -- (for ApplTerm and TupleTerm) is handled uniformly
+            tryDefExpand1 = case getDefinition def t1 of
+                             Just t1' -> match' t1' t2
+                             _ -> addLocalConstraint
+            tryDefExpand2 = case getDefinition def t2 of
+                             Just t2' -> match' t1 t2'
+                             _ -> addLocalConstraint
+            addLocalConstraint = Right $ addConstraint mtch t1 t2
+            addMapping k = Right $ addMatch mtch k t2
+            matchfold mtch' (x:l) = case uncurry (newmatch def mtch') x of
+                                      Right mtch'' -> matchfold mtch'' l
+                                      err -> err
+            matchfold mtch' [] = Right mtch'
+            clash = Left $ "newmatch: Clash for " ++ show (pretty (t1,t2))
+            tupleClash = Left $ "newmatch: Clash for tuples "
+                              ++ show (pretty (t1,t2))
+
+
+startnewmatch :: Env -> Term -> Term -> Either String MatchResult
+startnewmatch e t1 t2 = newmatch e (eps, []) t1 t2
+
+------------------------- term tools -------------------------
+
+getOpInfo :: Env -> Term -> Maybe OpInfo
+getOpInfo e (QualOp _ (PolyId opid _ _) typ _ _ _) =
+    case Map.lookup opid (assumps e) of
+      Just soi ->
+          let fs = Set.filter f soi
+          in if Set.null fs then Nothing
+             else Just $ Set.findMin fs
+      _ -> Nothing
+    where
+      f oi = opType oi == typ
+getOpInfo _ _ = Nothing
+
+getOpDefinition :: Env -> Term -> Maybe Term
+getOpDefinition e t =
+    case fmap opDefn $ getOpInfo e t of
+      Just (Definition _ t') -> Just t'
+      _ -> Nothing
 
