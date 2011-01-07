@@ -97,7 +97,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         sublogic = sublogicOfTh thForProof
     -- select a suitable translation and prover
-        cms = filter hasModelExpansion $ findComorphismPaths lg sublogic
+        cms = findComorphismPaths lg sublogic
         freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
     kpMap <- liftR knownProversGUI
     ResultT $ proverGUI lid1 ProofActions
@@ -176,8 +176,7 @@ proveFineGrainedSelect lg intSt freedefs st =
            cmsToProvers =
              if sl == lastSublogic st
                then comorphismsToProvers st
-               else getProvers ProveGUI (Just sl) $
-                      filter hasModelExpansion $ findComorphismPaths lg sl
+               else getProvers ProveGUI (Just sl) $ findComorphismPaths lg sl
        pr <- selectProver cmsToProvers
        ResultT $ callProver st {lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers}

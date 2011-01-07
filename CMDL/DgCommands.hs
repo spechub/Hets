@@ -49,7 +49,6 @@ import Driver.Options
 import Comorphisms.KnownProvers (knownProversWithKind, shrinkKnownProvers)
 import Comorphisms.LogicGraph (logicGraph)
 
-import Logic.Comorphism (hasModelExpansion)
 import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProverKind (ProveCMDLautomatic))
 
@@ -206,7 +205,6 @@ selectANode x dgState = let
                 th
                 (shrinkKnownProvers sl kpMap)
                 (getProvers ProveCMDLautomatic (Just sl) $
-                 filter hasModelExpansion $
                  findComorphismPaths logicGraph sl
                 )
          -- all goals and axioms are selected initialy in the proof status

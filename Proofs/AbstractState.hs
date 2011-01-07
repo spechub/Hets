@@ -375,7 +375,7 @@ lookupKnownProver st pk =
 -- | Pairs each target prover of these comorphisms with its comorphism
 getProvers :: ProverKind -> Maybe G_sublogics -> [AnyComorphism]
   -> [(G_prover, AnyComorphism)]
-getProvers pk msl = foldl addProvers [] where
+getProvers pk msl = foldl addProvers [] . filter hasModelExpansion where
   addProvers acc cm = case cm of
     Comorphism cid -> let
       slid = sourceLogic cid
