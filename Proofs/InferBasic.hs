@@ -95,9 +95,6 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     -- compute the theory (that may contain proved theorems) and its name
     thForProof@(G_theory lid1 _ _ _ _) <- liftR $ getGlobalTheory lbl
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-        sublogic = sublogicOfTh thForProof
-    -- select a suitable translation and prover
-        cms = findComorphismPaths lg sublogic
         freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
     kpMap <- liftR knownProversGUI
     ResultT $ proverGUI lid1 ProofActions
@@ -105,7 +102,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
       , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
       , recalculateSublogicF = return . recalculateSublogicAndSelectedTheory
       } thName (hidingLabelWarning lbl) thForProof kpMap
-      (getProvers ProveGUI (Just sublogic) cms)
+      (getAllProvers ProveGUI (sublogicOfTh thForProof) lg)
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
@@ -176,7 +173,7 @@ proveFineGrainedSelect lg intSt freedefs st =
            cmsToProvers =
              if sl == lastSublogic st
                then comorphismsToProvers st
-               else getProvers ProveGUI (Just sl) $ findComorphismPaths lg sl
+               else getAllProvers ProveGUI sl lg
        pr <- selectProver cmsToProvers
        ResultT $ callProver st {lastSublogic = sublogicOfTheory st,
                                comorphismsToProvers = cmsToProvers}

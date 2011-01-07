@@ -281,8 +281,6 @@ cmdlCompletionFn allcmds allState input =
    ReqProvers -> do
        let bC : tl = words input
            tC = unwords tl
-           createProverList = map (getProverName . fst)
-             . getProvers ProveCMDLautomatic Nothing
       -- find the last comorphism used if none use the
       -- the comorphism of the first selected node
        case i_state $ intState allState of
@@ -291,24 +289,21 @@ cmdlCompletionFn allcmds allState input =
        -- provers here
                 return []
         Just proofState ->
-         case cComorphism proofState of
-          -- some comorphism was used
-          Just c -> do
-                    lst <- checkPresenceProvers $ createProverList [c]
-                    return $ map (app bC) $ filter (isPrefixOf tC) lst
-          Nothing ->
            case elements proofState of
              -- no elements selected
              [] -> return []
              -- use the first element to get a comorphism
              c : _ -> case c of
                 Element z _ -> do
-                              lst <- checkPresenceProvers
-                                         $ createProverList
-                                         $ findComorphismPaths
-                                        logicGraph (sublogicOfTh $ theory z)
-                              return $ map (app bC)
-                                     $ filter (isPrefixOf tC) lst
+                  let proverList =
+                        map (getProverName . fst)
+                        $ case cComorphism proofState of
+                          Nothing -> id
+                          Just com -> filter ((== com) . snd)
+                        $ getAllProvers ProveCMDLautomatic
+                          (sublogicOfTh $ theory z) logicGraph
+                  lst <- checkPresenceProvers proverList
+                  return $ map (app bC) $ filter (isPrefixOf tC) lst
    ReqComorphism ->
         case i_state $ intState allState of
          Nothing -> return []

@@ -32,7 +32,7 @@ module Proofs.AbstractState
     , G_theory_with_cons_checker (..)
     , prepareForProving
     , prepareForConsChecking
-    , getProvers
+    , getAllProvers
     , getConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
@@ -365,7 +365,7 @@ lookupKnownProver st pk =
         matchingPr s (gp, _) = case gp of
           G_prover _ p -> proverName p == s
         findProver (pr_n, cms) =
-            case filter (matchingPr pr_n) $ getProvers pk (Just sl)
+            case filter (matchingPr pr_n) $ getProvers pk sl
                  $ filter (lessSublogicComor sl) cms of
                [] -> fail "Proofs.InferBasic: no prover found"
                p : _ -> return p
@@ -373,9 +373,10 @@ lookupKnownProver st pk =
              findProver mt
 
 -- | Pairs each target prover of these comorphisms with its comorphism
-getProvers :: ProverKind -> Maybe G_sublogics -> [AnyComorphism]
+getProvers :: ProverKind -> G_sublogics -> [AnyComorphism]
   -> [(G_prover, AnyComorphism)]
-getProvers pk msl = foldl addProvers [] . filter hasModelExpansion where
+getProvers pk (G_sublogics lid sl) =
+  foldl addProvers [] . filter hasModelExpansion where
   addProvers acc cm = case cm of
     Comorphism cid -> let
       slid = sourceLogic cid
@@ -383,14 +384,15 @@ getProvers pk msl = foldl addProvers [] . filter hasModelExpansion where
       in acc ++ foldl
              (\ l p ->
                   if hasProverKind pk p
-                    && case msl of
-                      Just (G_sublogics lid sl) ->
-                        language_name lid == language_name slid
+                    && language_name lid == language_name slid
                          && maybe False (flip isSubElem $ proverSublogic p)
                            (mapSublogic cid $ forceCoerceSublogic lid slid sl)
-                      Nothing -> True
                   then (G_prover tlid p, cm) : l else l)
              [] (provers tlid)
+
+getAllProvers :: ProverKind -> G_sublogics -> LogicGraph
+  -> [(G_prover, AnyComorphism)]
+getAllProvers pk sl lg = getProvers pk sl $ findComorphismPaths lg sl
 
 {- | the list of proof statuses is integrated into the goalMap of the state
 after validation of the Disproved Statuses -}

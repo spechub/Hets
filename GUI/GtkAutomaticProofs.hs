@@ -423,8 +423,7 @@ updateFinder view list sl = do
               let n = getProverName pr
                   f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ getProvers ProveCMDLautomatic (Just sl)
-              $ findComorphismPaths logicGraph sl
+              $ getAllProvers ProveCMDLautomatic sl logicGraph
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list

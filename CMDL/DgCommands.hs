@@ -35,7 +35,7 @@ import CMDL.DataTypesUtils
      getInputDGNodes)
 import CMDL.Utils (decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
-import Proofs.AbstractState (getProvers, initialState)
+import Proofs.AbstractState (getAllProvers, initialState)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
 import Static.AnalysisLibrary
@@ -49,7 +49,6 @@ import Driver.Options
 import Comorphisms.KnownProvers (knownProversWithKind, shrinkKnownProvers)
 import Comorphisms.LogicGraph (logicGraph)
 
-import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProverKind (ProveCMDLautomatic))
 
 import Syntax.AS_Structured
@@ -204,9 +203,7 @@ selectANode x dgState = let
                 (shows (getLibId $ i_ln dgState) "_" ++ nodeName x)
                 th
                 (shrinkKnownProvers sl kpMap)
-                (getProvers ProveCMDLautomatic (Just sl) $
-                 findComorphismPaths logicGraph sl
-                )
+                (getAllProvers ProveCMDLautomatic sl logicGraph)
          -- all goals and axioms are selected initialy in the proof status
          return (initNodeInfo tmp x)
        _ -> []

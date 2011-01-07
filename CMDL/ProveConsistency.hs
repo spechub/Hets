@@ -56,8 +56,7 @@ import Control.Concurrent.MVar(MVar, newMVar, putMVar, takeMVar, readMVar,
 import Control.Monad
 
 getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
-getProversAutomatic sl =
-  getProvers P.ProveCMDLautomatic (Just sl) $ findComorphismPaths logicGraph sl
+getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
 
 -- | Select a prover
 cProver::String -> CmdlState -> IO CmdlState
@@ -74,35 +73,16 @@ cProver input state =
      -- check that some theories are selected
      case elements pS of
       [] -> return $ genErrorMsg "Nothing selected" state
-      Element z _ :_ -> let sl = sublogicOfTheory z in
-        -- see if any comorphism was used
-       case cComorphism pS of
-       -- if none use the theory  of the first selected node
-       -- to find possible comorphisms
-       Nothing-> case find (\ (y, _)-> getProverName y == inp)
-                 $ getProversAutomatic sl of
-                   Nothing -> return $ genErrorMsg ("No applicable prover with"
-                                                ++" this name found") state
-                   Just (p,_)-> return $ add2hist [ProverChange$ prover pS]$
-                                    state {
-                                         intState = (intState state) {
-                                            i_state = Just pS {
-                                                        prover = Just p
-                                              }
-                                         }
-                                 }
-       -- if yes,  use the comorphism to find a list
-       -- of provers
-       Just x ->
-         case find (\ (y, _)-> getProverName y == inp)
-         $ getProvers P.ProveCMDLautomatic (Just sl) [x] of
-            Nothing ->
-             case find (\(y,_) -> getProverName y == inp)
-               $ getProversAutomatic sl of
-               Nothing -> return $ genErrorMsg ("No applicable prover with"
-                                          ++ " this name found") state
-               Just (p,nCm@(Comorphism cid))->
-                 return $ add2hist [(ProverChange $ prover pS),
+      Element z _ :_ -> let
+        pl = filter ((== inp) . getProverName . fst)
+                  $ getProversAutomatic (sublogicOfTheory z)
+        in case case cComorphism pS of
+                   Nothing -> pl
+                   Just x -> filter ((== x) . snd) pl ++ pl of
+             [] -> return $ genErrorMsg
+                 "No applicable prover with this name found" state
+             (p, nCm@(Comorphism cid)) : _ ->
+               return $ add2hist [(ProverChange $ prover pS),
                                     (CComorphismChange $ cComorphism pS)]
                      $ genMessage "" ("Hint: Using default comorphism `"
                             ++ language_name cid ++ "`")
@@ -114,16 +94,6 @@ cProver input state =
                                              }
                                       }
                                }
-            Just (p,_) -> return
-                              $ add2hist [ProverChange $ prover pS]
-                                state {
-                                  intState = (intState state) {
-                                    i_state = Just pS {
-                                               prover = Just p
-                                               }
-                                     }
-                                  }
-
 
 -- | Selects a consistency checker
 cConsChecker::String -> CmdlState -> IO CmdlState
