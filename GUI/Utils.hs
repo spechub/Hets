@@ -26,7 +26,6 @@ module GUI.Utils
   , fileOpenDialog
   , fileSaveDialog
 
-  , displayTheory
   , displayTheoryWithWarning
 
   , progressBar
@@ -44,7 +43,6 @@ import GUI.GtkUtils
   , fileOpenDialogExt
   , listChoiceExt
   , textViewExt
-  , displayTheoryExt
   , displayTheoryWithWarningExt
   , progressBarExt
   , pulseBarExt
@@ -86,13 +84,6 @@ fileOpenDialog :: FilePath -- ^ Defaultname for file
                -> Maybe (FilePath -> IO ()) -- ^ Action on open
                -> IO (Maybe FilePath)
 fileOpenDialog = fileOpenDialogExt
-
--- | displays a theory in a window
-displayTheory :: String -- ^ Kind of theory
-              -> String -- ^ Name of theory
-              -> G_theory -- ^ Theory
-              -> IO ()
-displayTheory = displayTheoryExt
 
 -- | displays a theory with warning in a window
 displayTheoryWithWarning :: String -- ^ Kind of theory

@@ -37,7 +37,6 @@ module GUI.GtkUtils
   , pulseBar
 
   , textView
-  , displayTheory
   , displayTheoryWithWarning
 
   -- * Windows for use in Gtk windows
@@ -55,7 +54,6 @@ module GUI.GtkUtils
   , pulseBarExt
 
   , textViewExt
-  , displayTheoryExt
   , displayTheoryWithWarningExt
 
   -- * Frequently used functions inside Gtk thread
@@ -228,7 +226,7 @@ fileDialog fAction fname' filters mAction = do
   fname <- canonicalizePath fname'
   dlg <- case fAction of
     FileChooserActionOpen -> do
-      dlg' <-fileChooserDialogNew Nothing Nothing FileChooserActionOpen
+      dlg' <- fileChooserDialogNew Nothing Nothing FileChooserActionOpen
                                   [ (stockCancel, ResponseCancel)
                                   , (stockOpen,   ResponseAccept)]
       fileChooserSetCurrentFolder dlg' $ takeDirectory fname
@@ -301,7 +299,7 @@ fileSaveDialogExt p f = postGUISync . fileSaveDialog p f
 listChoiceAux :: String -- ^ Title
               -> (a -> String) -- ^ Name of element
               -> [a] -- ^ Rows to display
-              -> IO (Maybe (Int,a)) -- ^ Selected row
+              -> IO (Maybe (Int, a)) -- ^ Selected row
 listChoiceAux title showF items  = do
   xml     <- getGladeXML Utils.get
   -- get objects
@@ -334,7 +332,7 @@ listChoice :: String -- ^ Title
            -> IO (Maybe Int) -- ^ Selected row
 listChoice title items = do
   ret <- listChoiceAux title id items
-  return $ maybe Nothing (\ (i,_) -> Just i) ret
+  return $ maybe Nothing (\ (i, _) -> Just i) ret
 
 -- | create a window with title and list of options, return selected option
 listChoiceExt :: String -- ^ Title
@@ -406,7 +404,7 @@ pulseBarExt title description = do
 -- | Display text in an uneditable, scrollable editor. Not blocking!
 textView :: String -- ^ Title
          -> String -- ^ Message
-         -> Maybe (FilePath) -- ^ Filename
+         -> Maybe FilePath -- ^ Filename
          -> IO ()
 textView title message mfile = do
   xml     <- getGladeXML Utils.get
@@ -432,7 +430,7 @@ textView title message mfile = do
       onClicked btnSave $ do
         fileDialog FileChooserActionSave file
                    [("Nothing", ["*"]), ("Text", ["*.txt"])]
-                   $ Just (flip writeFile message)
+                   $ Just (`writeFile` message)
         return ()
       return ()
     Nothing -> return ()
@@ -446,24 +444,9 @@ textView title message mfile = do
 -- | Display text in an uneditable, scrollable editor. Not blocking!
 textViewExt :: String -- ^ Title
          -> String -- ^ Message
-         -> Maybe (FilePath) -- ^ Filename
+         -> Maybe FilePath -- ^ Filename
          -> IO ()
 textViewExt title message = postGUIAsync . textView title message
-
--- | displays a theory in a window
-displayTheory :: String -- ^ Kind of theory
-              -> String -- ^ Name of theory
-              -> G_theory -- ^ Theory
-              -> IO ()
-displayTheory kind name gth =
-  textView ( kind ++ " of " ++ name) (showDoc gth "\n") $ Just $ name ++ ".het"
-
--- | displays a theory in a window
-displayTheoryExt :: String -- ^ Kind of theory
-                 -> String -- ^ Name of theory
-                 -> G_theory -- ^ Theory
-                 -> IO ()
-displayTheoryExt kind name = postGUIAsync . displayTheory kind name
 
 -- | displays a theory with warning in a window
 displayTheoryWithWarning :: String -- ^ Kind of theory
@@ -487,7 +470,7 @@ displayTheoryWithWarningExt k n w =
 
 -- | Setup list with single selection
 setListSelectorSingle :: TreeView -> IO () -> IO (ConnectId TreeSelection)
-setListSelectorSingle view action= do
+setListSelectorSingle view action = do
   selector <- treeViewGetSelection view
   treeSelectionSetMode selector SelectionSingle
   afterSelectionChanged selector action
@@ -542,7 +525,7 @@ selectInvert view handle = do
   signalUnblock handle
 
 -- | Get selected item
-getSelectedSingle :: TreeView -> ListStore a -> IO (Maybe (Int,a))
+getSelectedSingle :: TreeView -> ListStore a -> IO (Maybe (Int, a))
 getSelectedSingle view list = do
   mModel <- treeViewGetModel view
   case mModel of
@@ -555,13 +538,13 @@ getSelectedSingle view list = do
         Just iter -> do
           path <- treeModelGetPath model iter
           case path of
-            row:[] -> do
+            row : [] -> do
               item <- listStoreGetValue list row
               return $ Just (row, item)
             _ -> error "List type not supported"
 
 -- | Get selected items and row number
-getSelectedMultiple :: TreeView -> ListStore a -> IO [(Int,a)]
+getSelectedMultiple :: TreeView -> ListStore a -> IO [(Int, a)]
 getSelectedMultiple view list = do
   selector <- treeViewGetSelection view
   rows' <- treeSelectionGetSelectedRows selector
@@ -579,7 +562,7 @@ setListData view getT listData = do
   col <- treeViewColumnNew
   treeViewColumnPackStart col ren True
   cellLayoutSetAttributes col ren store
-                          $ \i -> [ cellTextMarkup := Just $ getT i ]
+                          $ \ i -> [ cellTextMarkup := Just $ getT i ]
   treeViewAppendColumn view col
   return store
 
@@ -591,7 +574,7 @@ updateListData list listData = do
 
 -- | Activates or deactivates a list of widgets
 activate :: [Widget] -> Bool -> IO ()
-activate widgets active = mapM_ (flip widgetSetSensitive active) widgets
+activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
 
 -- | shortens a String to a given size and adds some dots
 shortenLabel :: Int -> String -> String
@@ -659,7 +642,8 @@ proofStatusToGStatus p = case goalStatus p  of
   Proved False -> GInconsistent
   Proved True  -> GProved
   Disproved    -> GDisproved
-  Open (Reason s) -> if any (isInfixOf "timeout" . map toLower) s then GTimeout else GOpen
+  Open (Reason s) ->
+    if any (isInfixOf "timeout" . map toLower) s then GTimeout else GOpen
 
 -- | Converts a BasicProof into a GStatus
 basicProofToGStatus :: BasicProof -> GStatus
