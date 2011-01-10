@@ -140,7 +140,6 @@ import GUI.HTkUtils
   , askFileNameAndSave
   , newFileDialogStr
   , fileDialogStr
-  , displayTheory
   , displayTheoryWithWarning
   , sync
   )
