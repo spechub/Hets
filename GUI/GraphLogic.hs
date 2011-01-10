@@ -435,8 +435,15 @@ getTheoryOfNode gInfo descr dgraph = do
     Just ist -> case computeTheory (i_libEnv ist) (libName gInfo) descr of
       Nothing ->
         errorDialog "Error" $ "no global theory for node " ++ show descr
-      Just th -> displayTheoryWithWarning "Theory" (getNameOfNode descr dgraph)
-          (addHasInHidingWarning dgraph descr) th
+      Just th -> displayTheoryOfNode (getNameOfNode descr dgraph)
+          (addHasInHidingWarning dgraph descr
+          ++ showGlobalDoc (globalAnnos dgraph) th "\n")
+
+-- | displays a theory with warning in a window
+displayTheoryOfNode :: String -- ^ Name of theory
+                    -> String -- ^ Body text
+                    -> IO ()
+displayTheoryOfNode n = createTextSaveDisplay ("Theory of " ++ n) (n ++ ".het")
 
 {- | translate the theory of a node in a window;
      used by the node menu -}
@@ -506,7 +513,6 @@ hidingWarnDiag dgn = if labelHasHiding dgn then
   warningDialog "Warning" $ unwords $ hidingWarning ++ ["Try anyway?"]
   else return True
 
-
 ensureLockAtNode :: GInfo -> Int -> DGraph
                  -> IO (Maybe (DGraph, DGNodeLab, LibEnv))
 ensureLockAtNode gi descr dg = do
@@ -518,8 +524,7 @@ ensureLockAtNode gi descr dg = do
     Just ist -> let
       le = i_libEnv ist
       dgn = labDG dg descr in if hasLock dgn
-        then do
-          return $ Just (dg, dgn, le)
+        then return $ Just (dg, dgn, le)
         else do
           lockGlobal gi
           (dgraph', dgn') <- initLocking (lookupDGraph ln le) (descr, dgn)
