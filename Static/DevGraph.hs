@@ -358,6 +358,7 @@ data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
 data FreeOrCofree = Free | Cofree | NPFree deriving (Show, Eq, Ord)
 
+-- | required and proven conservativity (with a proof)
 data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
   deriving (Show, Eq)
 
