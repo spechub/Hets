@@ -7,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (see extensions)
 
 Matching of terms modulo constant definition expansion and constraints
 -}
@@ -15,6 +15,7 @@ Matching of terms modulo constant definition expansion and constraints
 module HasCASL.MatchingWithDefinitions where
 
 import HasCASL.Subst
+import HasCASL.PrintSubst
 
 import HasCASL.As
 import HasCASL.Le
@@ -80,18 +81,31 @@ instance DefStore Env where
     getDefinition = getOpDefinition
     getEnv x = x
 
-type MatchResult = (Subst, [(Term, Term)])
+newtype MatchResult = MatchResult (Subst, [(Term, Term)]) deriving Show
+
+getMatchResult :: MatchResult -> (Subst, [(Term, Term)])
+getMatchResult (MatchResult x) = x
+
+emptyMatchResult :: MatchResult
+emptyMatchResult = MatchResult (emptySubstitution, [])
+
+instance PrettyInEnv MatchResult where
+    prettyInEnv e (MatchResult (sb, ctrts)) =
+        text "Match"
+                 <> vcat [ text "result", prettyInEnv e sb
+                         , text "Constraints", prettyTermMapping e ctrts ]
+
 
 instance Match MatchResult where
-    addMatch mr@(sb, ctrts) sc t =
+    addMatch mr@(MatchResult (sb, ctrts)) sc t =
         case lookupContent sb sc of
              Just t' | t == t' -> mr
                      | otherwise ->
                          error $ concat [ "addMatch: Conflicting "
                                         , "substitution for ", show sc ]
-             _ -> (addTerm sb sc t, ctrts)
+             _ -> MatchResult (addTerm sb sc t, ctrts)
 
-    addConstraint (sb, ctrts) t1 t2 = (sb, (t1, t2):ctrts)
+    addConstraint (MatchResult (sb, ctrts)) t1 t2 = MatchResult (sb, (t1, t2):ctrts)
 
     logMsg _ = appendFile "/tmp/matcher.out" . (++"\n")
 
@@ -151,7 +165,6 @@ newmatch def mtch t1 t2 =
                          ++ show (pretty (t1,t2))
             logg s a = do
                     let e = getEnv def
-                    putStrLn $ show $ pretty (globAnnos e)
                     logMsg mtch $ show $ useGlobalAnnos (globAnnos e)
                                $ text "Log" <+> text s
                                $++$ text "t1:" $+$ pretty (simplifyTerm e t1) $++$ text "t2:"
@@ -165,7 +178,7 @@ newmatch def mtch t1 t2 =
             msg2b = "2b: term constant"
 
 startnewmatch :: Env -> Term -> Term -> IO (Either String MatchResult)
-startnewmatch e t1 t2 = newmatch e (emptySubstitution, []) t1 t2
+startnewmatch e t1 t2 = newmatch e emptyMatchResult t1 t2
 
 ------------------------- term tools -------------------------
 
