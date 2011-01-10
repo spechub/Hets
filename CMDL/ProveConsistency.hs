@@ -84,7 +84,7 @@ cProver input state =
              (p, nCm@(Comorphism cid)) : _ ->
                return $ add2hist [(ProverChange $ prover pS),
                                     (CComorphismChange $ cComorphism pS)]
-                     $ genMessage "" ("Hint: Using default comorphism `"
+                     $ genMessage "" ("Hint: Using comorphism `"
                             ++ language_name cid ++ "`")
                             state {
                               intState = (intState state) {
