@@ -68,7 +68,7 @@ import GUI.Utils
 import Graphs.GraphConfigure
 import Reactor.InfoBus (encapsulateWaitTermAct)
 
-import Common.DocUtils (showDoc)
+import Common.DocUtils (showDoc, showGlobalDoc)
 import Common.AS_Annotation (isAxiom)
 import Common.ExtSign
 import Common.LibName
@@ -414,7 +414,8 @@ showNodeInfo descr dgraph = do
       title = (if isDGRef dgnode then ("reference " ++) else
                if isInternalNode dgnode then ("internal " ++) else id)
               "node " ++ getDGNodeName dgnode ++ " " ++ show descr
-  createTextDisplay title (title ++ "\n" ++ showDoc dgnode "")
+  createTextDisplay title $ title ++ "\n"
+    ++ showGlobalDoc (globalAnnos dgraph) dgnode ""
 
 showDiagMessAux :: Int -> [Diagnosis] -> IO ()
 showDiagMessAux v ds = let es = filterDiags v ds in
@@ -514,9 +515,9 @@ ensureLockAtNode gi descr dg = do
   ost <- readIORef iSt
   case i_state ost of
     Nothing -> return Nothing
-    Just ist -> let 
+    Just ist -> let
       le = i_libEnv ist
-      dgn = labDG dg descr in if hasLock dgn 
+      dgn = labDG dg descr in if hasLock dgn
         then do
           return $ Just (dg, dgn, le)
         else do
@@ -527,7 +528,7 @@ ensureLockAtNode gi descr dg = do
           writeIORef iSt nwst
           unlockGlobal gi
           return $ Just (dgraph', dgn', nwle)
-  
+
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: GInfo -> Int -> DGraph -> IO ()
 proveAtNode gInfo descr dgraph = do
