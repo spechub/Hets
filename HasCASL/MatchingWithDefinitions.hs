@@ -9,7 +9,7 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-matching of terms modulo constant definition expansion and constraints
+Matching of terms modulo constant definition expansion and constraints
 -}
 
 module HasCASL.MatchingWithDefinitions where
@@ -18,9 +18,12 @@ import HasCASL.Subst
 
 import HasCASL.As
 import HasCASL.Le
-import HasCASL.PrintAs
+import HasCASL.SimplifyTerm
+import HasCASL.PrintAs ()
 
 import Common.Id
+import Common.ConvertGlobalAnnos()
+import Common.Doc
 import Common.DocUtils
 
 import qualified Data.Map as Map
@@ -28,9 +31,176 @@ import qualified Data.Set as Set
 
 import Control.Monad
 
+{- New version of matcher with simpler interface.
+   
+   The rules of matching:
+
+   f,g are functions
+   c is a constant
+   v is a variable
+   t1, t2 are arbitrary terms
+   "good" functions are the list-constructor, the solidworks datatype constructors and all other constructors.
+
+   f != g
+
+   1a. f(x_i) f(y_i) -> match x_i y_i,                  if f is a "good" function
+                        AddConstraint f(x_i) = f(y_i),  otherwise
+
+   1b. f(...) g(...) -> AddConstraint f(...) = g(...)
+
+   2a. c t2 -> match t1 t2,           if c is defined by term t1
+               AddConstraint c = t2,  otherwise
+
+   2b. t1 c -> match t1 t2,           if c is defined by term t2
+               AddConstraint t1 = c,  otherwise
+
+   3. v t2 -> AddMatch v t2
+
+-}
+{- We need two classes:
+
+   1. A class for lookup definitions and checking for good functions
+
+   2. A class for storing the match (substitution plus constraints)
+-}
+
+class DefStore a where
+    isGood :: a -> Term -> Bool
+    getDefinition :: a -> Term -> Maybe Term
+    getEnv :: a -> Env
+
+class Match a where
+    addMatch :: a -> SubstConst -> Term -> a
+    addConstraint :: a -> Term -> Term -> a
+    logMsg :: a -> String -> IO ()
 
 
-{-
+instance DefStore Env where
+    isGood _ _ = True
+    getDefinition = getOpDefinition
+    getEnv x = x
+
+type MatchResult = (Subst, [(Term, Term)])
+
+instance Match MatchResult where
+    addMatch mr@(sb, ctrts) sc t =
+        case lookupContent sb sc of
+             Just t' | t == t' -> mr
+                     | otherwise ->
+                         error $ concat [ "addMatch: Conflicting "
+                                        , "substitution for ", show sc ]
+             _ -> (addTerm sb sc t, ctrts)
+
+    addConstraint (sb, ctrts) t1 t2 = (sb, (t1, t2):ctrts)
+
+    logMsg _ = appendFile "/tmp/matcher.out" . (++"\n")
+
+newmatch :: (DefStore d, Match a) => d -> a -> Term -> Term -> IO (Either String a)
+newmatch def mtch t1 t2 =
+    case (t1, t2) of
+      -- handle the 'skip-cases' first
+      (TypedTerm term _ _ _, _) -> match' term t2 -- logg "typed1" $ match' term t2
+      (_, TypedTerm term _ _ _) -> match' t1 term -- logg "typed2" $ match' t1 term
+
+      -- check for clash, handle constraints and definition expansion
+      (ApplTerm f1 a1 _, _) ->
+          case t2 of
+            ApplTerm f2 a2 _
+                -- 1a1.
+                | f1 == f2 && isGood def f1 -> logg msg1a1 $ match' a1 a2
+                -- 1a2., 1b.
+                | otherwise -> logg msg1a21b addLocalConstraint
+
+            -- eventually 2b.
+            _ -> logg msg2b $ tryDefExpand2
+
+      (TupleTerm l _, _) -> 
+          case t2 of
+            TupleTerm l' _ | length l == length l' -> logg msg1aT $ matchfold mtch $ zip l l'
+                           | otherwise -> logg "tclash" $ tupleClash
+            -- eventually 2b.
+            _ -> logg msg2bT $ tryDefExpand2
+
+      -- 3.: add the mapping v->t2 to output
+      (QualVar v, _) -> logg "mapped" $ addMapping v
+      -- 2a.: follow the definition of pattern
+      (QualOp _ popid typ _ _ _, _) -> logg msg2a $ tryDefExpand1 (popid, typ)
+
+      -- all other terms are not expected and accepted here
+      _ -> return $ Left "newmatch: unhandled term"
+
+      where match' = newmatch def mtch
+            -- The definition expansion application case
+            -- (for ApplTerm and TupleTerm) is handled uniformly
+            tryDefExpand1 oi = case getDefinition def t1 of
+                                 Just t1' -> match' t1' t2
+                                 _ -> addMapping oi
+            tryDefExpand2 = case getDefinition def t2 of
+                             Just t2' -> match' t1 t2'
+                             _ -> addLocalConstraint
+            addLocalConstraint = return $ Right $ addConstraint mtch t1 t2
+            addMapping t = return $ Right $ addMatch mtch (toSC t) t2
+            matchfold mtch' (x:l) = do
+                    res <- uncurry (newmatch def mtch') x
+                    case res of
+                      Right mtch'' -> matchfold mtch'' l
+                      err -> return $ err
+            matchfold mtch' [] = return $ Right mtch'
+            --clash = return $ Left $ "newmatch: Clash for " ++ show (pretty (t1,t2))
+            tupleClash = return $ Left $ "newmatch: Clash for tuples "
+                         ++ show (pretty (t1,t2))
+            logg s a = do
+                    let e = getEnv def
+                    putStrLn $ show $ pretty (globAnnos e)
+                    logMsg mtch $ show $ useGlobalAnnos (globAnnos e)
+                               $ text "Log" <+> text s
+                               $++$ text "t1:" $+$ pretty (simplifyTerm e t1) $++$ text "t2:"
+                               $+$ pretty (simplifyTerm e t2) $++$ text "==============="
+                    a
+            msg1a1 = "1a1: good same function"
+            msg1a21b = "1a2, 1b: not good or not same function"
+            msg1aT = "1aT: tuple: same tuple"
+            msg2bT = "2bT:"
+            msg2a = "2a: pattern constant"
+            msg2b = "2b: term constant"
+
+startnewmatch :: Env -> Term -> Term -> IO (Either String MatchResult)
+startnewmatch e t1 t2 = newmatch e (emptySubstitution, []) t1 t2
+
+------------------------- term tools -------------------------
+
+getOpInfo :: Env -> Term -> Maybe OpInfo
+getOpInfo e (QualOp _ (PolyId opid _ _) typ _ _ _) =
+    case Map.lookup opid (assumps e) of
+      Just soi ->
+          let fs = Set.filter f soi
+          in if Set.null fs then Nothing
+             else Just $ Set.findMin fs
+      _ -> Nothing
+    where
+      f oi = opType oi == typ
+getOpInfo _ _ = Nothing
+
+getOpDefinition :: Env -> Term -> Maybe Term
+getOpDefinition e t =
+    case fmap opDefn $ getOpInfo e t of
+      Just (Definition _ t') -> Just t'
+      _ -> Nothing
+
+
+
+
+
+
+
+
+
+
+
+
+-- OLD:
+
+{-  
   Simple matching:
 
   The default behaviour of the match is to signal only a clash
@@ -109,7 +279,7 @@ To support backtracking we should implement the output as a (lazy) list
 match :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
       -> (Term -> Term -> Bool) -> Term -> Term -> m (Subst, [(Term, Term)])
 match m consts noclashHead noclash t1 t2 =
-    matchAux m consts noclashHead noclash (eps, []) (t1, t2)
+    matchAux m consts noclashHead noclash (emptySubstitution, []) (t1, t2)
 
 
 matchAux :: (Monad m) => Subst -> Set.Set SubstConst -> (Term -> Term -> Bool)
@@ -173,139 +343,4 @@ matchAux m consts noclashHead noclash output@(sbst, ctrts) terms@(t1, t2) =
 
 
 
--- new version of matcher with simpler interface
-{- The rules of matching:
-
-   f,g are functions
-   c is a constant
-   v is a variable
-   t1, t2 are arbitrary terms
-   "good" functions are the list-constructor, the solidworks datatype constructors and all other constructors.
-
-   f != g
-
-   1a. f(x_i) f(y_i) -> match x_i y_i,                  if f is a "good" function
-                        AddConstraint f(x_i) = f(y_i),  otherwise
-
-   1b. f(...) g(...) -> AddConstraint f(...) = g(...)
-
-   2a. c t2 -> match t1 t2,           if c is defined by term t1
-               AddConstraint c = t2,  otherwise
-
-   2b. t1 c -> match t1 t2,           if c is defined by term t2
-               AddConstraint t1 = c,  otherwise
-
-   3. v t2 -> AddMatch v t2
-
--}
-{- We need two classes:
-
-   1. A class for lookup definitions and checking for good functions
-
-   2. A class for storing the match (substitution plus constraints)
--}
-
-class DefStore a where
-    isGood :: a -> Term -> Bool
-    getDefinition :: a -> Term -> Maybe Term
-
-class Match a where
-    addMatch :: a -> VarDecl -> Term -> a
-    addConstraint :: a -> Term -> Term -> a
-
-
-instance DefStore Env where
-    isGood _ _ = True
-    getDefinition = getOpDefinition
-
-type MatchResult = (Subst, [(Term, Term)])
-
-instance Match MatchResult where
-    addMatch mr@(sb, ctrts) k t =
-        let sc = toSC k
-        in case lookupContent sb sc of
-             Just t' | t == t' -> mr
-                     | otherwise ->
-                         error $ concat [ "addMatch: Conflicting "
-                                        , "substitution for ", show (pretty k) ]
-             _ -> (addTerm sb sc t, ctrts)
-
-    addConstraint (sb, ctrts) t1 t2 = (sb, (t1, t2):ctrts)
-
-newmatch :: (DefStore d, Match a) => d -> a -> Term -> Term -> Either String a
-newmatch def mtch t1 t2 =
-    case (t1, t2) of
-      -- handle the 'skip-cases' first
-      (TypedTerm term _ _ _, _) -> match' term t2
-      (_, TypedTerm term _ _ _) -> match' t1 term
-
-      -- check for clash, handle constraints and definition expansion
-      (ApplTerm f1 a1 _, _) ->
-          case t2 of
-            ApplTerm f2 a2 _
-                -- 1a1.
-                | f1 == f2 && isGood def f1 -> match' a1 a2
-                -- 1a2., 1b.
-                | otherwise -> addLocalConstraint
-
-            -- eventually 2b.
-            _ -> tryDefExpand2
-
-      (TupleTerm l _, _) -> 
-          case t2 of
-            TupleTerm l' _ | length l == length l' -> matchfold mtch $ zip l l'
-                           | otherwise -> tupleClash
-            -- eventually 2b.
-            _ -> tryDefExpand2
-
-      -- 3.: add the mapping v->t2 to output
-      (QualVar v, _) -> addMapping v
-      -- 2a.: follow the definition
-      (QualOp _ _ _ _ _ _, _) -> tryDefExpand1
-
-      -- all other terms are not expected and accepted here
-      _ -> Left "newmatch: unhandled term"
-
-      where match' = newmatch def mtch
-            -- The definition expansion application case
-            -- (for ApplTerm and TupleTerm) is handled uniformly
-            tryDefExpand1 = case getDefinition def t1 of
-                             Just t1' -> match' t1' t2
-                             _ -> addLocalConstraint
-            tryDefExpand2 = case getDefinition def t2 of
-                             Just t2' -> match' t1 t2'
-                             _ -> addLocalConstraint
-            addLocalConstraint = Right $ addConstraint mtch t1 t2
-            addMapping k = Right $ addMatch mtch k t2
-            matchfold mtch' (x:l) = case uncurry (newmatch def mtch') x of
-                                      Right mtch'' -> matchfold mtch'' l
-                                      err -> err
-            matchfold mtch' [] = Right mtch'
-            clash = Left $ "newmatch: Clash for " ++ show (pretty (t1,t2))
-            tupleClash = Left $ "newmatch: Clash for tuples "
-                              ++ show (pretty (t1,t2))
-
-
-startnewmatch :: Env -> Term -> Term -> Either String MatchResult
-startnewmatch e t1 t2 = newmatch e (eps, []) t1 t2
-
-------------------------- term tools -------------------------
-
-getOpInfo :: Env -> Term -> Maybe OpInfo
-getOpInfo e (QualOp _ (PolyId opid _ _) typ _ _ _) =
-    case Map.lookup opid (assumps e) of
-      Just soi ->
-          let fs = Set.filter f soi
-          in if Set.null fs then Nothing
-             else Just $ Set.findMin fs
-      _ -> Nothing
-    where
-      f oi = opType oi == typ
-getOpInfo _ _ = Nothing
-
-getOpDefinition :: Env -> Term -> Maybe Term
-getOpDefinition e t =
-    case fmap opDefn $ getOpInfo e t of
-      Just (Definition _ t') -> Just t'
-      _ -> Nothing
 

@@ -26,6 +26,7 @@ import Driver.Options
 import Driver.AnaLib
 
 import qualified Common.OrderedMap as OMap
+import Common.GlobalAnnotations
 import Common.AS_Annotation as Anno
 import Common.Result
 import Common.ResultT
@@ -100,7 +101,7 @@ getSigSensComplete ::
     -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
-    -> IO (sign, [Named sentence])
+    -> IO (sign, [Named sentence], GlobalAnnos, LibName, LibEnv)
 getSigSensComplete b hopts lid fname sp = do
   Result _ res <- runResultT $ proceed' hopts fname
   case res of
@@ -118,8 +119,10 @@ getSigSensComplete b hopts lid fname sp = do
             case (coerceSign lid2 lid "" gSig,
                   coerceThSens lid2 lid "" gSens) of
              (Just sig, Just sens) ->
-                return (plainSign sig,
-                        map (\ (x, y) -> y{senAttr = x}) $ OMap.toList sens)
+                return ( plainSign sig
+                       , map (\ (x, y) -> y{senAttr = x}) $ OMap.toList sens
+                       , globalAnnos dg
+                       , ln, lenv)
              _ -> error $ "Not a " ++ show lid ++ " sig"
 
      in if b then
@@ -144,7 +147,7 @@ getSigSens ::
     -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
-    -> IO (sign, [Named sentence])
+    -> IO (sign, [Named sentence], GlobalAnnos, LibName, LibEnv)
 getSigSens = getSigSensComplete False
 
 
@@ -156,7 +159,7 @@ getCASLSigSens :: String -- filename
                   -> String  -- name of spec
                   -> IO (CASLSign, [(String, CASLFORMULA)])
 getCASLSigSens fname sp = do
-  (x, y) <- getSigSens myHetcatsOpts CASL fname sp
+  (x, y, _, _, _) <- getSigSens myHetcatsOpts CASL fname sp
   let f z = (senAttr z, sentence z)
   return (x, map f y)
 

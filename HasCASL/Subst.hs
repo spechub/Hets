@@ -52,8 +52,8 @@ newtype Subst =
           --   by this mapping corresponding set s: (c, insert c' s)
           , Map.Map SubstConst (Set.Set SubstConst)) deriving Show
 
-eps :: Subst
-eps = Subst (Map.empty, Map.empty, Map.empty)
+emptySubstitution :: Subst
+emptySubstitution = Subst (Map.empty, Map.empty, Map.empty)
 
 size :: Subst -> Int
 size (Subst (m,t,_)) = Map.size m + Map.size t
@@ -106,10 +106,10 @@ substFromEqs eqs =
   let f sb (t1,t2) = case toSConst t1 of
                        Nothing -> sb
                        Just sc -> addTerm sb sc t2
-  in foldl f eps eqs
+  in foldl f emptySubstitution eqs
 
 substFromTermMap :: [(SubstConst, Term)] -> Subst
-substFromTermMap tmap = foldl (\sb -> uncurry $ addTerm sb) eps tmap
+substFromTermMap tmap = foldl (\sb -> uncurry $ addTerm sb) emptySubstitution tmap
 
 
 termEmpty :: Subst -> Bool
@@ -316,11 +316,12 @@ substEqs :: Term -> [ProgEq] -> ReductionResult Term
 -- the substitution. This leads to the fact that a successful reduction
 -- will be given a notreduced flag!
 -- TODO: remove this evil hack
-substEqs t eqs = toReduced $ (\x -> subst x t) <$> redFold substFromEq eps eqs
+substEqs t eqs = toReduced $ (\x -> subst x t) <$>
+                 redFold substFromEq emptySubstitution eqs
 --substEqs t eqs = error $ (show t) ++ "\n\n\n"
---                 ++ let redd = redFold substFromEq eps eqs
+--                 ++ let redd = redFold substFromEq emptySubstitution eqs
 --                    in (show $ getResult redd) ++ (show $ getResultType redd)
---substEqs t eqs = (\x -> error $ show x) <$> redFold substFromEq eps eqs
+--substEqs t eqs = (\x -> error $ show x) <$> redFold substFromEq emptySubstitution eqs
 
 
 substFromEq :: Subst -> ProgEq -> ReductionResult Subst

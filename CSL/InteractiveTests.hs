@@ -101,9 +101,9 @@ l1 i = do
                             else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  res <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
+  (sig, nsl, _, _, _) <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
   putStrLn "\n"
-  return res
+  return (sig, nsl)
 
 sig :: Int -> IO Sign
 sig = fmap fst . l1
