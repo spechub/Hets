@@ -18,6 +18,7 @@ module Static.ComputeTheory
     , computeDGraphTheories
     , computeLibEnvTheories
     , computeLabelTheory
+    , updateLabelTheory
     , markHiding
     , markFree
     ) where
@@ -34,6 +35,7 @@ import Common.Result
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
 import qualified Data.Map as Map
+import Data.Ord
 
 -- * nodes with incoming hiding definition links
 
@@ -134,7 +136,7 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
          -- translate theory and turn all imported theorems into axioms
          translateG_theory (dgl_morphism l) $ theoremsToAxioms th)
          $ sortBy
-            (\ (_, _, l1) (_, _, l2) -> compare (dgl_id l2) $ dgl_id l1)
+            (flip $ comparing (\ (_, _, l) -> dgl_id l))
             $ filter (liftE $ liftOr isGlobalDef isLocalDef)
             $ innDG dg n
       flatG_sentences localTh ths
@@ -142,3 +144,12 @@ computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
 reduceTheory :: G_theory -> G_theory
 reduceTheory (G_theory lid sig ind sens _) =
   G_theory lid sig ind (reduceSens sens) startThId
+
+updateLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> G_theory -> DGraph
+updateLabelTheory le dg (i, l) gth = let
+    l' = l { dgn_theory = gth }
+    n = (i, l' { globalTheory = computeLabelTheory le dg (i, l') })
+    dg0 = changeDGH dg $ SetNodeLab l n
+    dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
+    dg2 = togglePending dg1 $ changedPendingEdges dg1
+    in groupHistory dg (DGRule "Node proof") dg2

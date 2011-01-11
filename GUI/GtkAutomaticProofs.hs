@@ -297,15 +297,8 @@ showProverWindow res ln le = postGUIAsync $ do
                       {- where the proving did not return anything, the node is
                       not updated -}
                       if unchecked fn then cs
-                        else let
-                          (i, l) = node fn
-                          l' = l {dgn_theory = results fn}
-                          n = (i, l' { globalTheory = computeLabelTheory
-                                                           le dg (i, l') })
-                          dg0 = changeDGH cs $ SetNodeLab l n
-                          dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
-                          dg2 = togglePending dg1 $ changedPendingEdges dg1
-                        in dg2 ) dg nodes'
+                          else updateLabelTheory le cs (node fn) (results fn)
+                    ) dg nodes'
 
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
 

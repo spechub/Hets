@@ -364,19 +364,14 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
 
 updateNodeProof :: LibName -> IntState -> LNode DGNodeLab
                 -> G_theory -> (IntState, [DGChange])
-updateNodeProof ln ost (v, dgnode) thry =
+updateNodeProof ln ost n@(_, dgnode) thry =
     case i_state ost of
       Nothing -> (ost, [])
       Just iist ->
         let le = i_libEnv iist
             dg = lookupDGraph ln le
             nn = getDGNodeName dgnode
-            new = dgnode { dgn_theory = thry }
-            l = new { globalTheory = computeLabelTheory le dg (v, new) }
-            newDg0 = changeDGH dg $ SetNodeLab dgnode (v, l)
-            newDG1 = togglePending newDg0 $ changedLocalTheorems newDg0 (v, l)
-            newDG2 = togglePending newDG1 $ changedPendingEdges newDG1
-            newDg = groupHistory dg (DGRule "Node proof") newDG2
+            newDg = updateLabelTheory le dg n thry
             history = reverse $ flatHistory $ snd $ splitHistory dg newDg
             nst = add2history
                     (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
