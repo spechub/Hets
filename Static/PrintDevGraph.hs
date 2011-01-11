@@ -93,6 +93,9 @@ showNodeId i = "node " ++ show i
 instance Pretty NodeSig where
   pretty (NodeSig n sig) = fsep [ text (showNodeId n) <> colon, pretty sig ]
 
+instance Pretty NodeName where
+  pretty n = text $ showName n
+
 dgOriginSpec :: DGOrigin -> Maybe SIMPLE_ID
 dgOriginSpec o = case o of
     DGInst n -> Just n

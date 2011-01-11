@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports -fno-warn-unused-binds #-}
+
 {- |
 Module      :  $Header$
 Description :  ghci test file
@@ -84,13 +85,22 @@ main = do
   return ()
 
 
-
 proceed :: FilePath -> ResultT IO (LibName, LibEnv)
 proceed = proceed' myHetcatsOpts
 
 proceed' :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
 proceed' hopts = anaSourceFile logicGraph hopts Set.empty emptyLibEnv emptyDG
 
+data SigSens sign sentence = 
+    SigSens
+    { sigsensSignature :: sign
+    , sigsensNamedSentences :: [Named sentence]
+    , sigsensGlobalAnnos :: GlobalAnnos
+    , sigsensNode :: Node
+    , sigsensNodeLabel :: DGNodeLab
+    , sigsensDG :: DGraph
+    , sigsensLibname :: LibName
+    , sigsensLibenv :: LibEnv }
 
 getSigSensComplete ::
     Logic lid sublogics basic_spec sentence
@@ -101,7 +111,7 @@ getSigSensComplete ::
     -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
-    -> IO (sign, [Named sentence], GlobalAnnos, LibName, LibEnv)
+    -> IO (SigSens sign sentence)
 getSigSensComplete b hopts lid fname sp = do
   Result _ res <- runResultT $ proceed' hopts fname
   case res of
@@ -111,7 +121,7 @@ getSigSensComplete b hopts lid fname sp = do
             case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
               Just x -> x
               _ -> error ("Specification " ++ sp ++ " not found")
-         f gth =
+         f nL gth =
           case gth of
            G_theory { gTheoryLogic = lid2
                     , gTheorySign = gSig
@@ -119,20 +129,26 @@ getSigSensComplete b hopts lid fname sp = do
             case (coerceSign lid2 lid "" gSig,
                   coerceThSens lid2 lid "" gSens) of
              (Just sig, Just sens) ->
-                return ( plainSign sig
-                       , map (\ (x, y) -> y{senAttr = x}) $ OMap.toList sens
-                       , globalAnnos dg
-                       , ln, lenv)
+                return SigSens
+                           { sigsensSignature = plainSign sig
+                           , sigsensNamedSentences
+                               = map (\ (x, y) -> y{senAttr = x})
+                                 $ OMap.toList sens
+                           , sigsensGlobalAnnos = globalAnnos dg
+                           , sigsensNode = node
+                           , sigsensNodeLabel = nL
+                           , sigsensDG = dg
+                           , sigsensLibname = ln, sigsensLibenv = lenv }
              _ -> error $ "Not a " ++ show lid ++ " sig"
 
      in if b then
             case computeTheory lenv ln node of
-              Just gth -> f gth
+              Just gth -> f (labDG dg node) gth
               _ -> error "computeTheory failed"
         else
             case match node (dgBody dg) of
               (Just ctx, _) ->
-                  f $ dgn_theory $ lab' ctx
+                  let nL = lab' ctx in f nL $ dgn_theory nL
               _ -> error "Node 1 not in development graph"
 
     Nothing -> error "Error occured"
@@ -147,7 +163,7 @@ getSigSens ::
     -> lid -- logicname
     -> String -- filename
     -> String  -- name of spec
-    -> IO (sign, [Named sentence], GlobalAnnos, LibName, LibEnv)
+    -> IO (SigSens sign sentence)
 getSigSens = getSigSensComplete False
 
 
@@ -159,9 +175,9 @@ getCASLSigSens :: String -- filename
                   -> String  -- name of spec
                   -> IO (CASLSign, [(String, CASLFORMULA)])
 getCASLSigSens fname sp = do
-  (x, y, _, _, _) <- getSigSens myHetcatsOpts CASL fname sp
+  res <- getSigSens myHetcatsOpts CASL fname sp
   let f z = (senAttr z, sentence z)
-  return (x, map f y)
+  return (sigsensSignature res, map f $ sigsensNamedSentences res)
 
 
 {- myTest for globDecomp(or more possiblely for removeContraryChanges

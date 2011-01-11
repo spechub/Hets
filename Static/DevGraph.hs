@@ -326,15 +326,7 @@ data DGLinkOrigin =
 
 -- | name of the LinkOrigin if existent
 getLinkOriginName :: DGLinkOrigin -> Maybe SIMPLE_ID
-getLinkOriginName lo = case lo of
-                         DGLinkMorph sid -> Just sid
-                         DGLinkInst sid _ -> Just sid
-                         DGLinkInstArg sid -> Just sid
-                         DGLinkView sid _ -> Just sid
-                         DGLinkFitView sid -> Just sid
-                         DGLinkFitViewImp sid -> Just sid
-                         _ -> Nothing
-
+getLinkOriginName = error "use Static.PrintDevGraph.dgLinkOriginSpec instead."
 
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth

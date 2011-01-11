@@ -66,7 +66,7 @@ import Driver.Options
 import qualified Interfaces.Process as PC
 
 -- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
-import Main (getSigSens, getSigSensComplete, myHetcatsOpts)
+import Main (getSigSens, getSigSensComplete, myHetcatsOpts, SigSens(..))
 
 import Control.Monad.State.Class
 import Control.Monad.Reader
@@ -101,9 +101,9 @@ l1 i = do
                             else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  (sig, nsl, _, _, _) <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
+  res <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
   putStrLn "\n"
-  return (sig, nsl)
+  return (sigsensSignature res, sigsensNamedSentences res)
 
 sig :: Int -> IO Sign
 sig = fmap fst . l1
