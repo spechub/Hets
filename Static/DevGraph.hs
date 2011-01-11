@@ -185,10 +185,13 @@ isDGRef l = case nodeInfo l of
     DGNode {} -> False
     DGRef {} -> True
 
+sensWithKind :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
+             -> G_theory -> [String]
+sensWithKind f (G_theory _lid _sigma _ sens _) = Map.keys $ OMap.filter f sens
+
 hasSenKind :: (forall a . SenStatus a (AnyComorphism, BasicProof) -> Bool)
            -> DGNodeLab -> Bool
-hasSenKind f dgn = case dgn_theory dgn of
-  G_theory _lid _sigma _ sens _ -> not $ Map.null $ OMap.filter f sens
+hasSenKind f = not . null . sensWithKind f . dgn_theory
 
 -- | test if a given node label has local open goals
 hasOpenGoals :: DGNodeLab -> Bool
