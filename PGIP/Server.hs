@@ -290,13 +290,19 @@ getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
 
 showComorph :: AnyComorphism -> String
-showComorph (Comorphism cid) = drop 1 . dropWhile (/= ':') .
-  map (\ c -> if c == ';' then ':' else c)
+showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
+  . map (\ c -> if c == ';' then ':' else c)
   $ language_name cid
+
+removeFunnyChars :: String -> String
+removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-+")
+
+getWebProverName :: G_prover -> String
+getWebProverName = removeFunnyChars . getProverName
 
 getProvers :: Maybe String -> G_sublogics -> String
 getProvers mt subL = ppTopElement . unode "provers" . map (unode "prover")
-    . nubOrd . map (getProverName . fst)
+    . nubOrd . map (getWebProverName . fst)
     . case mt of
       Nothing -> id
       Just c -> filter ((== c) . showComorph . snd)
@@ -308,7 +314,7 @@ getComorphs mp subL = ppTopElement . unode "translations"
     . nubOrd . map (showComorph . snd)
     . case mp of
       Nothing -> id
-      Just p -> filter ((== p) . getProverName . fst)
+      Just p -> filter ((== p) . getWebProverName . fst)
     $ getAllAutomaticProvers subL
 
 mkPath :: Session -> LibName -> Int -> String
