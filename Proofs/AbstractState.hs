@@ -36,11 +36,14 @@ module Proofs.AbstractState
     , getConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
+    , autoProofAtNode
     ) where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
+
+import Control.Concurrent.MVar
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
@@ -419,3 +422,45 @@ markProvedGoalMap c lid status thSens = foldl upd thSens status
     where upd m pStat = OMap.update (updStat pStat) (goalName pStat) m
           updStat ps s = Just $
                 s { senAttr = ThmStatus $ (c, BasicProof lid ps) : thmStatus s}
+
+autoProofAtNode :: -- use theorems is subsequent proofs
+                    Bool
+                   -- Timeout Limit
+                  -> Int
+                   -- Node selected for proving
+                  -> G_theory
+                   -- selected Prover and Comorphism
+                  -> ( G_prover, AnyComorphism )
+                   -- returns new GoalStatus for the Node
+                  -> IO (Maybe G_theory)
+autoProofAtNode useTh timeout g_th@( G_theory lid _ _ _ _ ) p_cm = do
+      let knpr = propagateErrors "autoProofAtNode"
+            $ knownProversWithKind ProveCMDLautomatic
+      pf_st <- initialState lid "" g_th knpr [p_cm]
+      let st = recalculateSublogicAndSelectedTheory pf_st
+      -- try to prepare the theory
+      case maybeResult $ prepareForProving st p_cm of
+        Nothing -> return Nothing
+
+        Just (G_theory_with_prover lid1 th p) ->
+          case proveCMDLautomaticBatch p of
+            Nothing -> return Nothing
+
+            Just fn -> do
+              -- mVar to poll the prover for results
+              answ <- newMVar (return [])
+              (_, mV) <- fn useTh False answ (theoryName st)
+                                       (TacticScript $ show timeout) th []
+              takeMVar mV
+              d <- takeMVar answ
+              return $ case maybeResult d of
+                Nothing -> Nothing
+                Just d' ->
+                  let ps' = markProved (snd p_cm) lid1 d' st
+                  in case theory ps' of
+                    G_theory lidT sigT indT sensT _ ->
+                      case coerceThSens (logicId ps') lidT "" (goalMap ps') of
+                        Nothing -> Nothing
+                        Just gMap -> Just $
+                          G_theory lidT sigT indT (Map.union sensT gMap)
+                                   startThId

@@ -35,7 +35,6 @@ import Logic.Comorphism (AnyComorphism (..))
 import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
-import Comorphisms.KnownProvers
 
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation (isAxiom)
@@ -337,60 +336,14 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
       c = cs !! i
   in foldM_ (\ count (row, fn) -> do
            postGUISync $ update (count / count') $ name fn
-           res <- autoProofAtNode inclThms timeout (node fn) (pr, c)
+           res <- case globalTheory . snd $ node fn of
+                    Nothing -> return Nothing
+                    Just g_th -> autoProofAtNode inclThms timeout g_th (pr, c)
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row
                fn { results = propagateProofs (results fn) gt }
              Nothing -> return ()
            return $ count + 1) 0 nodes
-
-autoProofAtNode :: -- use theorems is subsequent proofs
-                    Bool
-                   -- Timeout Limit
-                  -> Int
-                   -- Node selected for proving
-                  -> LNode DGNodeLab
-                   -- selected Prover and Comorphism
-                  -> ( G_prover, AnyComorphism )
-                   -- returns new GoalStatus for the Node
-                  -> IO (Maybe G_theory)
-autoProofAtNode useTh timeout (_, l) p_cm =
-  case globalTheory l of
-    Nothing -> return Nothing
-
-    Just g_th@( G_theory lid _ _ _ _ ) -> do
-      -- recompute the theory (to make effective the selected axioms, goals)
-      let knpr = propagateErrors "autoProofAtNode"
-            $ knownProversWithKind ProveCMDLautomatic
-      pf_st <- initialState lid "" g_th knpr [p_cm]
-      let st = recalculateSublogicAndSelectedTheory pf_st
-      -- try to prepare the theory
-      case maybeResult $ prepareForProving st p_cm of
-        Nothing -> return Nothing
-
-        Just (G_theory_with_prover lid1 th p) ->
-          case proveCMDLautomaticBatch p of
-            Nothing -> return Nothing
-
-            Just fn -> do
-              -- mVar to poll the prover for results
-              answ <- newMVar (return [])
-              (_, mV) <- fn useTh False answ (theoryName st)
-                                       (TacticScript $ show timeout) th []
-              takeMVar mV
-              d <- takeMVar answ
-              return $ case maybeResult d of
-                Nothing -> Nothing
-                Just d' ->
-                  let ps' = markProved (snd p_cm) lid1 d' st
-                  in case theory ps' of
-                    G_theory lidT sigT indT sensT _ ->
-                      case coerceThSens (logicId ps') lidT "" (goalMap ps') of
-                        Nothing -> Nothing
-
-                        Just gMap -> Just $
-                          G_theory lidT sigT indT (Map.union sensT gMap)
-                                   startThId
 
 sortNodes :: TreeView -> ListStore FNode -> IO ()
 sortNodes trvNodes listNodes = do
