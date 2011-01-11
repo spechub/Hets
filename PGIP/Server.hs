@@ -258,10 +258,11 @@ getHetsResult opts updates sessRef file query =
                   fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
                     "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
+                  showN d = showGlobalDoc (globalAnnos dg) d "\n"
                   in return $ case nc of
-                       NcTheory -> fstLine ++
-                           showDoc (maybeResult $ getGlobalTheory dgnode) "\n"
-                       NcInfo -> fstLine ++ showDoc dgnode ""
+                       NcTheory -> fstLine
+                         ++ showN (maybeResult $ getGlobalTheory dgnode)
+                       NcInfo -> fstLine ++ showN dgnode
                        NcProvers _ -> "showing provers nyi"
                        NcTranslations _ -> "showing translations nyi"
                        ProveNode {} -> error "getHetsResult.NodeQuery.ProveNode"
