@@ -24,6 +24,7 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
 
 import Static.ComputeTheory
+import Static.GTheory
 import Static.DevGraph
 import Static.PrintDevGraph
 import Static.DotGraph
@@ -36,6 +37,13 @@ import Interfaces.CmdAction
 
 import Comorphisms.LogicGraph
 
+import Logic.Prover
+import Logic.Grothendieck
+import Logic.Comorphism
+import Logic.Logic
+
+import Proofs.AbstractState
+
 import Text.XML.Light
 
 import Common.DocUtils
@@ -43,6 +51,7 @@ import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.ToXml
+import Common.Utils
 
 import Control.Monad.Trans (lift)
 import Control.Monad
@@ -252,25 +261,55 @@ getHetsResult opts updates sessRef file query =
                 liftR $ return $ sessAns ln (newSess, k)
             NodeQuery i nc -> case lab (dgBody dg) i of
               Nothing -> fail $ "no node id: " ++ show i
-              Just dgnode -> case nc of
-                ProveNode _incl _mp _mt -> fail "proving nyi"
-                _ -> let
+              Just dgnode -> let
                   fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
                     "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
-                  in return $ case nc of
-                       NcTheory -> fstLine
-                         ++ showN (maybeResult $ getGlobalTheory dgnode)
-                       NcInfo -> fstLine ++ showN dgnode
-                       NcProvers _ -> "showing provers nyi"
-                       NcTranslations _ -> "showing translations nyi"
-                       ProveNode {} -> error "getHetsResult.NodeQuery.ProveNode"
+                  in case nc of
+                       NcInfo -> return $ fstLine ++ showN dgnode
+                       _ -> case maybeResult $ getGlobalTheory dgnode of
+                            Nothing -> fail $
+                              "cannot compute global theory of:\n" ++ fstLine
+                            Just gTh -> let subL = sublogicOfTh gTh in
+                              case nc of
+                              ProveNode _incl _mp _mt -> fail "proving nyi"
+                              _ -> return $ case nc of
+                                NcTheory -> fstLine ++ showN gTh
+                                NcProvers mt -> getProvers mt subL
+                                NcTranslations mp -> getComorphs mp subL
+                                _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById i dg of
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
+
+
+getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
+getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
+
+showComorph :: AnyComorphism -> String
+showComorph (Comorphism cid) = drop 1 . dropWhile (/= ':') .
+  map (\ c -> if c == ';' then ':' else c)
+  $ language_name cid
+
+getProvers :: Maybe String -> G_sublogics -> String
+getProvers mt subL = ppTopElement . unode "provers" . map (unode "prover")
+    . nubOrd . map (getProverName . fst)
+    . case mt of
+      Nothing -> id
+      Just c -> filter ((== c) . showComorph . snd)
+    $ getAllAutomaticProvers subL
+
+getComorphs :: Maybe String -> G_sublogics -> String
+getComorphs mp subL = ppTopElement . unode "translations"
+    . map (unode "comorphism")
+    . nubOrd . map (showComorph . snd)
+    . case mp of
+      Nothing -> id
+      Just p -> filter ((== p) . getProverName . fst)
+    $ getAllAutomaticProvers subL
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
