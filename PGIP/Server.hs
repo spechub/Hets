@@ -61,6 +61,7 @@ import qualified Data.IntMap as IntMap
 import qualified Data.Set as Set
 import Data.Char
 import Data.IORef
+import Data.Maybe
 import Data.List
 import Data.Ord
 import Data.Graph.Inductive.Graph (lab)
@@ -273,7 +274,11 @@ getHetsResult opts updates sessRef file query =
                               "cannot compute global theory of:\n" ++ fstLine
                             Just gTh -> let subL = sublogicOfTh gTh in
                               case nc of
-                              ProveNode _incl _mp _mt _ml -> fail "proving nyi"
+                              ProveNode incl mp mt tl -> do
+                                newLib <- proveNode libEnv ln dg (i, dgnode)
+                                  gTh subL incl mp mt tl
+                                newSess <- lift $ nextSess sessRef newLib k
+                                liftR $ return $ sessAns ln (newSess, k)
                               _ -> return $ case nc of
                                 NcTheory -> fstLine ++ showN gTh
                                 NcProvers mt -> getProvers mt subL
@@ -289,6 +294,18 @@ getHetsResult opts updates sessRef file query =
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
 
+filterByProver :: Maybe String -> [(G_prover, AnyComorphism)]
+  -> [(G_prover, AnyComorphism)]
+filterByProver mp = case mp of
+      Nothing -> id
+      Just p -> filter ((== p) . getWebProverName . fst)
+
+filterByComorph :: Maybe String -> [(G_prover, AnyComorphism)]
+  -> [(G_prover, AnyComorphism)]
+filterByComorph mt = case mt of
+      Nothing -> id
+      Just c -> filter ((== c) . showComorph . snd)
+
 showComorph :: AnyComorphism -> String
 showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
   . map (\ c -> if c == ';' then ':' else c)
@@ -303,19 +320,29 @@ getWebProverName = removeFunnyChars . getProverName
 getProvers :: Maybe String -> G_sublogics -> String
 getProvers mt subL = ppTopElement . unode "provers" . map (unode "prover")
     . nubOrd . map (getWebProverName . fst)
-    . case mt of
-      Nothing -> id
-      Just c -> filter ((== c) . showComorph . snd)
+    . filterByComorph mt
     $ getAllAutomaticProvers subL
 
 getComorphs :: Maybe String -> G_sublogics -> String
 getComorphs mp subL = ppTopElement . unode "translations"
     . map (unode "comorphism")
     . nubOrd . map (showComorph . snd)
-    . case mp of
-      Nothing -> id
-      Just p -> filter ((== p) . getWebProverName . fst)
+    . filterByProver mp
     $ getAllAutomaticProvers subL
+
+proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
+  -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
+  -> ResultT IO LibEnv
+proveNode le ln dg nl gTh subL useTh mp mt tl = case
+    filterByComorph mt . filterByProver mp
+    $ getAllAutomaticProvers subL of
+    [] -> fail "no prover found"
+    cp : _ -> do
+      res <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) gTh cp
+      case res of
+        Nothing -> fail "proving failed"
+        Just nTh ->
+          return $ Map.insert ln (updateLabelTheory le dg nl nTh) le
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
