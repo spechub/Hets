@@ -32,6 +32,8 @@ import qualified Data.Set as Set
 
 import Control.Monad
 
+-- import Debug.Trace
+
 {- New version of matcher with simpler interface.
    
    The rules of matching:
@@ -50,6 +52,7 @@ import Control.Monad
    1b. f(...) g(...) -> AddConstraint f(...) = g(...)
 
    2a. c t2 -> match t1 t2,           if c is defined by term t1
+               AddMatch c t2,         if c is mapable
                AddConstraint c = t2,  otherwise
 
    2b. t1 c -> match t1 t2,           if c is defined by term t2
@@ -67,6 +70,7 @@ import Control.Monad
 
 class DefStore a where
     isGood :: a -> Term -> Bool
+    isMapable :: a -> Term -> Bool
     getDefinition :: a -> Term -> Maybe Term
     getEnv :: a -> Env
 
@@ -78,6 +82,7 @@ class Match a where
 
 instance DefStore Env where
     isGood _ _ = True
+    isMapable _ t = show (pretty t) /= "(op [] : forall a : Type . List a)"
     getDefinition = getOpDefinition
     getEnv x = x
 
@@ -107,7 +112,7 @@ instance Match MatchResult where
 
     addConstraint (MatchResult (sb, ctrts)) t1 t2 = MatchResult (sb, (t1, t2):ctrts)
 
-    logMsg _ = appendFile "/tmp/matcher.out" . (++"\n")
+    logMsg _ _ = return () -- appendFile "/tmp/matcher.out" . (++"\n")
 
 newmatch :: (DefStore d, Match a) => d -> a -> Term -> Term -> IO (Either String a)
 newmatch def mtch t1 t2 =
@@ -148,10 +153,13 @@ newmatch def mtch t1 t2 =
             -- (for ApplTerm and TupleTerm) is handled uniformly
             tryDefExpand1 oi = case getDefinition def t1 of
                                  Just t1' -> match' t1' t2
-                                 _ -> addMapping oi
+                                 _ | isMapable def t1 -> addMapping oi
+                                   | otherwise -> addLocalConstraint
+
             tryDefExpand2 = case getDefinition def t2 of
                              Just t2' -> match' t1 t2'
                              _ -> addLocalConstraint
+
             addLocalConstraint = return $ Right $ addConstraint mtch t1 t2
             addMapping t = return $ Right $ addMatch mtch (toSC t) t2
             matchfold mtch' (x:l) = do
