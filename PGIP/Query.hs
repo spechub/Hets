@@ -68,7 +68,7 @@ nodeCommands :: [String]
 nodeCommands = ["node", "theory", "provers", "translations", "prove"]
 
 proveParams :: [String]
-proveParams = ["include", "prover", "translation"]
+proveParams = ["timeout", "include", "prover", "translation"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
@@ -108,7 +108,8 @@ data NodeCommand =
   | ProveNode
   { ncInclTheorems :: Bool
   , ncProver :: Maybe String
-  , ncTranslation :: Maybe String }
+  , ncTranslation :: Maybe String
+  , ncTimeout :: Maybe Int }
   deriving Show
 
 -- | the path is not empty and leading slashes are removed
@@ -135,13 +136,14 @@ anaQuery qstr =
                                 ++ nodeCommands ++ edgeCommands)
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
-                        [x, y] -> elem x (["dg", "id", "session"]
+                        [x, y] -> elem x (["dg", "id", "session", "timeout"]
                                           ++ nodeCommands ++ edgeCommands)
                                    && isNat y
                                   || x == "command" &&
                                      elem y globals
                                   || x == "format" && elem y displayTypes
-                                  || elem x proveParams
+                                  || elem x (tail proveParams)
+                                     -- without timeout, see above
                         _ -> False) qm
            (fs, r1) = partition (`elem` displayTypes) $ map head q1
            (gs, r2) = partition (`elem` globals) r1
@@ -188,12 +190,13 @@ anaNodeQuery mi ans i s incls pss =
       incl = lookup "include" pps
       trans = lookup "translation" pps
       prover = lookup "prover" pps
+      timeLimit = fmap read $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case lookup "include" pps of
         Nothing -> True
-        Just str -> notElem (map toLower str) ["f", "false"])
-        prover trans
+        Just str -> map toLower str `notElem` ["f", "false"])
+        prover trans timeLimit
       noPP = null incls && null pps
-      noIncl = null incls && isNothing incl
+      noIncl = null incls && isNothing incl && isNothing timeLimit
   in if null s then case ans of
        [] -> Right (mi, NodeQuery i
          $ if noPP then NcInfo else pp)

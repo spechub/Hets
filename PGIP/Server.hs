@@ -273,7 +273,7 @@ getHetsResult opts updates sessRef file query =
                               "cannot compute global theory of:\n" ++ fstLine
                             Just gTh -> let subL = sublogicOfTh gTh in
                               case nc of
-                              ProveNode _incl _mp _mt -> fail "proving nyi"
+                              ProveNode _incl _mp _mt _ml -> fail "proving nyi"
                               _ -> return $ case nc of
                                 NcTheory -> fstLine ++ showN gTh
                                 NcProvers mt -> getProvers mt subL
