@@ -260,30 +260,34 @@ getHetsResult opts updates sessRef file query =
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess sessRef newLib k
                 liftR $ return $ sessAns ln (newSess, k)
-            NodeQuery i nc -> case lab (dgBody dg) i of
-              Nothing -> fail $ "no node id: " ++ show i
-              Just dgnode -> let
-                  fstLine = (if isDGRef dgnode then ("reference " ++) else
+            NodeQuery ein nc -> do
+              nl@(i, dgnode) <- case ein of
+                Right n -> case lookupNodeByName n dg of
+                  p : _ -> return p
+                  [] -> fail $ "no node name: " ++ n
+                Left i -> case lab (dgBody dg) i of
+                  Nothing -> fail $ "no node id: " ++ show i
+                  Just dgnode -> return (i, dgnode)
+              let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
                     "node " ++ getDGNodeName dgnode ++ " " ++ show i ++ "\n"
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
-                  in case nc of
-                       NcInfo -> return $ fstLine ++ showN dgnode
-                       _ -> case maybeResult $ getGlobalTheory dgnode of
-                            Nothing -> fail $
-                              "cannot compute global theory of:\n" ++ fstLine
-                            Just gTh -> let subL = sublogicOfTh gTh in
-                              case nc of
-                              ProveNode incl mp mt tl -> do
-                                newLib <- proveNode libEnv ln dg (i, dgnode)
+              case nc of
+                NcInfo -> return $ fstLine ++ showN dgnode
+                _ -> case maybeResult $ getGlobalTheory dgnode of
+                  Nothing -> fail $
+                    "cannot compute global theory of:\n" ++ fstLine
+                  Just gTh -> let subL = sublogicOfTh gTh in case nc of
+                    ProveNode incl mp mt tl -> do
+                      newLib <- proveNode libEnv ln dg nl
                                   gTh subL incl mp mt tl
-                                newSess <- lift $ nextSess sessRef newLib k
-                                liftR $ return $ sessAns ln (newSess, k)
-                              _ -> return $ case nc of
-                                NcTheory -> fstLine ++ showN gTh
-                                NcProvers mt -> getProvers mt subL
-                                NcTranslations mp -> getComorphs mp subL
-                                _ -> error "getHetsResult.NodeQuery."
+                      newSess <- lift $ nextSess sessRef newLib k
+                      liftR $ return $ sessAns ln (newSess, k)
+                    _ -> return $ case nc of
+                      NcTheory -> fstLine ++ showN gTh
+                      NcProvers mt -> getProvers mt subL
+                      NcTranslations mp -> getComorphs mp subL
+                      _ -> error "getHetsResult.NodeQuery."
             EdgeQuery i _ ->
               case getDGLinksById i dg of
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""

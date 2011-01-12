@@ -93,12 +93,13 @@ data Query = Query
   , queryKind :: QueryKind
   }
 
+type NodeIdOrName = Either Int String
+
 data QueryKind =
     DisplayQuery (Maybe String)
   | GlobCmdQuery String
-  | NodeQuery Int NodeCommand
+  | NodeQuery NodeIdOrName NodeCommand
   | EdgeQuery EdgeId String
-
 
 data NodeCommand =
     NcTheory
@@ -124,12 +125,14 @@ anaUri path query = case anaQuery query of
         qk
     Left err -> Left err
 
+isNat :: String -> Bool
+isNat s = all isDigit s && length s < 11
+
 -- | a leading question mark is removed
 anaQuery :: String -> Either String (Maybe Int, QueryKind)
 anaQuery qstr =
        let globals = "update" : globalCommands
            q = map (splitOn '=') $ concatMap (splitOn ';') $ splitOn '&' qstr
-           isNat s = all isDigit s && length s < 11
            (q1, qm) = partition (\ l -> case l of
                         [x] -> isNat x || elem x
                                (displayTypes ++ globals ++ ["include"]
@@ -137,12 +140,13 @@ anaQuery qstr =
                         _ -> False) q
            (q2, qr) = partition (\ l -> case l of
                         [x, y] -> elem x (["dg", "id", "session", "timeout"]
-                                          ++ nodeCommands ++ edgeCommands)
+                                          ++ edgeCommands)
                                    && isNat y
                                   || x == "command" &&
                                      elem y globals
                                   || x == "format" && elem y displayTypes
-                                  || elem x (tail proveParams)
+                                  || elem x ("name" : tail proveParams
+                                             ++ nodeCommands)
                                      -- without timeout, see above
                         _ -> False) qm
            (fs, r1) = partition (`elem` displayTypes) $ map head q1
@@ -155,35 +159,46 @@ anaQuery qstr =
            (is2, p3) = partition ((`elem` ["dg", "session"]) . head) p2
            (ns2, p4) = partition ((`elem` nodeCommands) . head) p3
            (es2, p5) = partition ((`elem` edgeCommands) . head) p4
-           (pps, ids) = partition ((`elem` proveParams) . head) p5
+           (nns, p6) = partition ((== "name") . head) p5
+           (ids, pps) = partition ((== "id") . head) p6
            snds = map $ head . tail
            afs = nubOrd $ fs ++ snds fs2
            ags = nubOrd $ gs ++ snds cs2
            ans = nubOrd $ ns ++ map head ns2
            aes = nubOrd $ es ++ map head es2
            ais = nubOrd $ is ++ snds is2
-           aids = nubOrd . snds $ ns2 ++ es2 ++ ids
+           aids = nubOrd . snds $ ns2 ++ es2 ++ ids ++ nns
            mi = fmap read $ listToMaybe ais
            noPP = null pps && null incls
        in if null qr && length ais < 2 then case (afs, ags, ans, aes, aids) of
          (_, [], [], [], []) | noPP -> if length afs > 1
            then Left $ "non-unique format " ++ show afs
            else Right (mi, DisplayQuery $ listToMaybe afs)
-         (_, c : r, [], [], _) | noPP -> if null r
+         (_, c : r, [], [], []) | noPP -> if null r
            then Right (mi, GlobCmdQuery c)
            else Left $ "non-unique command " ++ show r
-         (_, [], _, [], i : s) ->
-           anaNodeQuery mi ans (read i) s incls pps
-         (_, [], [], e : r, i : s) | noPP -> if null r && null s then
-           Right (mi, EdgeQuery (EdgeId $ read i) e)
+         (_, [], _, [], [_]) | null es2 ->
+           anaNodeQuery mi ans (getIdOrName ids nns ns2) incls pps
+         (_, [], [], e : r, i : s) | noPP ->
+           if null r && null s && null nns && null ns2
+           then Right (mi, EdgeQuery (EdgeId $ read i) e)
            else Left $ "non-unique edge " ++ show (aes ++ aids)
          _ -> Left $ "non-unique query " ++ show q
        else Left $ if null qr then "non-unique dg " ++ show q else
                        "ill-formed query " ++ show qr
 
-anaNodeQuery :: Maybe Int -> [String] -> Int -> [String] -> [String]
+getIdOrName :: [[String]] -> [[String]] -> [[String]] -> NodeIdOrName
+getIdOrName ids nns ns2 = case ids of
+  (_ : v : _) : _ -> Left $ read v
+  _ -> case nns of
+    (_ : v : _) : _ -> Right v
+    _ -> case ns2 of
+      (_ : v : _) : _ -> if isNat v then Left $ read v else Right v
+      _ -> error "getIdOrName"
+
+anaNodeQuery :: Maybe Int -> [String] -> NodeIdOrName -> [String]
   -> [[String]] -> Either String (Maybe Int, QueryKind)
-anaNodeQuery mi ans i s incls pss =
+anaNodeQuery mi ans i incls pss =
   let pps = foldr (\ l -> case l of
                 [x, y] -> ((x, y) :)
                 _ -> id) [] pss
@@ -197,7 +212,7 @@ anaNodeQuery mi ans i s incls pss =
         prover trans timeLimit
       noPP = null incls && null pps
       noIncl = null incls && isNothing incl && isNothing timeLimit
-  in if null s then case ans of
+  in case ans of
        [] -> Right (mi, NodeQuery i
          $ if noPP then NcInfo else pp)
        [cmd] -> case cmd of
@@ -211,4 +226,3 @@ anaNodeQuery mi ans i s incls pss =
          _ -> Left $ "unknown node command '" ++ cmd ++ "' "
               ++ show (incls : pss)
        _ -> Left $ "non-unique node command " ++ show ans
-  else Left $ "non-unique node ids " ++ show (show i : s)
