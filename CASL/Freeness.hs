@@ -82,7 +82,7 @@ create_axs sg_ss sg_m sg_k sens = forms
             cong_ax = congruence_axs (opMap sg_m)
             satThM = sat_thm_ax sens
             prems = mk_conj [symm_ax, tran_ax, cong_ax, satThM]
-            ltkh = larger_then_ker_h ss_m (predMap sg_m)
+            ltkh = larger_than_ker_h ss_m (predMap sg_m)
             krnl_axs = [mkKernelAx ss_m (predMap sg_m) prems ltkh]
             forms = concat [ctor_sen, make_axs, h_axs_ops, h_axs_preds,
                             h_axs_surj, q_axs, krnl_axs]
@@ -140,8 +140,8 @@ make_form s = makeNamed ("ga_hom_make_"++show s) q_eq
             q_eq = quantifyUniversally eq
 
 -- | computes the last part of the axioms to assert the kernel of h
-larger_then_ker_h :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
-larger_then_ker_h ss mis = conj
+larger_than_ker_h :: Set.Set SORT -> Map.Map Id (Set.Set PredType) -> CASLFORMULA
+larger_than_ker_h ss mis = conj
      where ltkhs = ltkh_sorts ss
            ltkhp = ltkh_preds mis
            conj = mk_conj (ltkhs ++ ltkhp)

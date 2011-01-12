@@ -158,18 +158,26 @@ endm                                               endv
 \noindent \Hets builds the graph shown in Figure \ref{fig:dg},
 where the following steps take place:
 \begin{itemize}
-\item Each module has generated a node with its name and
+\item
+Each module has generated a node with its name and
 another primed one that contains the initial model, while both of them
-are linked with a non-persistent free link. Note that theory \verb"T" did not
-generate this primed node.
-\item The summation expression has created a new node that includes the theories
+are linked with a non-persistent free link (in blue in the illustration). Note that
+theory \verb"T" did not generate this primed node.
+
+\item
+The summation expression has created a new node that includes the theories
 of \verb"M1" and \verb"M2", importing the latter with a renaming; this new
 node, since it is imported in \verb"extending" mode, uses a link with the
 \textsf{PCons?} annotation.
-\item There is a theorem link between \verb"T" and the free (here, initial) model of
+
+\item
+There is a theorem link (red link in the figure) between \verb"T" and the
+free (here, initial) model of
 \verb"M". This link is labeled with the mapping defined in the view \verb"V",
 namely \verb"op _._ to _+_ .".
-\item The parameterized module \verb"M3" includes the theory of its parameter
+
+\item
+The parameterized module \verb"M3" includes the theory of its parameter
 with a renaming, that qualifies the sort. Note that these nodes are connected
 by means of a non-persistent free link.
 \end{itemize}
@@ -217,7 +225,7 @@ translation $\Phi(\Sigma)$ of $\Sigma$ to \CASL as follows:
 \begin{itemize}
 
  \item $S^\#$ unites the sorts of $\Phi(\Sigma)$ and the set 
-       $\{[s] \mid s \in Sorts(\Sigma)\}$;
+       $\{[s] \mid s \in \mi{Sorts}(\Sigma)\}$;
 
  \item $\leq^\#$ extends the subsort relation $\leq$ with pairs
        $(s, [s])$ for each sort $s$ and $([s],[s'])$ for any sorts $s \leq s'$;

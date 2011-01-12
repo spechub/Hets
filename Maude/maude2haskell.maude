@@ -507,8 +507,8 @@
   ceq noFlattenNoIter(M, ODS, Q[T1, T2, T3, TL]) = 
                          Q[T1, T']
    if op Q : Ty1 Ty2 -> Ty [assoc AtS] . ODS' := ODS /\
-      sortLeq(M, type(M, T1), Ty1) /\
-      sortLeq(M, type(M, T2), Ty2) /\
+---      sortLeq(M, type(M, T1), Ty1) /\
+---      sortLeq(M, type(M, T2), Ty2) /\
       T' := noFlattenNoIter(M, ODS, Q[T2, T3, TL]) .
   eq noFlattenNoIter(M, ODS, V) = V .
   eq noFlattenNoIter(M, ODS, Ct) = Ct .
@@ -615,7 +615,10 @@
   op sort2kindTerm : Module Term -> Term .
   eq sort2kindTerm(M, Q[TL]) = Q[sort2kindTerm*(M, TL)] .
   eq sort2kindTerm(M, V) = sort2kindVar(M, V) .
-  eq sort2kindTerm(M, Ct) = Ct .
+  ceq sort2kindTerm(M, Ct) = qid(string(Q) + "." + string(Ty')) --- Ct
+   if Q := getName(Ct) /\
+      Ty := getType(Ct) /\
+      Ty' := getKind(M, Ty) .
   
   op sort2kindTerm* : Module TermList -> TermList .
   eq sort2kindTerm*(M, empty) = empty .
