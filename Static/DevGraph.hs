@@ -324,10 +324,6 @@ data DGLinkOrigin =
   | DGLinkRefinement SIMPLE_ID
     deriving (Show, Eq)
 
--- | name of the LinkOrigin if existent
-getLinkOriginName :: DGLinkOrigin -> Maybe SIMPLE_ID
-getLinkOriginName = error "use Static.PrintDevGraph.dgLinkOriginSpec instead."
-
 {- | Rules in the development graph calculus,
    Sect. IV:4.4 of the CASL Reference Manual explains them in depth
    mutual recursive with 'DGLinkLab', 'DGLinkType', and 'ThmLinkStatus'
