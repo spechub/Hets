@@ -259,15 +259,17 @@ proveSensAux lid axs ths = let
            _ -> e) ths
 
 {- | mark all sentences of a local theory that have been proven via a prover
-     over a global theory (with the same signature) as proven.
-     Also mark duplicates of proven sentences as proven. -}
+over a global theory (with the same signature) as proven.  Also mark
+duplicates of proven sentences as proven.  Assume that the sentence names of
+the local theory are identical to the global theory. -}
 propagateProofs :: G_theory -> G_theory -> G_theory
 propagateProofs locTh@(G_theory lid1 sig ind lsens _)
   (G_theory lid2 _ _ gsens _) =
   case coerceThSens lid2 lid1 "" gsens of
     Just ps ->
       if Map.null ps then locTh else
-          G_theory lid1 sig ind (proveSens lid1 $ Map.union ps lsens) startThId
+          G_theory lid1 sig ind
+            (proveSens lid1 $ Map.intersection ps lsens) startThId
     Nothing -> error "propagateProofs"
 
 -- | Grothendieck diagrams
