@@ -152,7 +152,7 @@ joinG_sentences (G_theory lid1 sig1 ind sens1 _)
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
   return $ assert (plainSign sig1 == plainSign sig2')
-             $ G_theory lid1 sig1 ind (joinSens sens2' sens1) startThId
+             $ G_theory lid1 sig1 ind (joinSens sens1 sens2') startThId
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
