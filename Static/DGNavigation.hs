@@ -168,3 +168,9 @@ getParameterizedSpec n dgnav =
 getNamedSpec :: DevGraphNavigator a => String -> a -> Maybe (LNode DGNodeLab)
 getNamedSpec n dgnav = searchNode (isJust . dgnPredName n) dgnav
 
+-- | Combining a search function with an operation on nodes
+fromSearchResult :: (DevGraphNavigator a) =>
+                    (a -> Maybe (Graph.LNode DGNodeLab))
+                        -> (a -> Graph.Node -> b) -> a -> Maybe b
+
+fromSearchResult sf f dgnav = fmap (f dgnav . fst) $ sf dgnav
