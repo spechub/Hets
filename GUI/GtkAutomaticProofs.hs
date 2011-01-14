@@ -331,7 +331,8 @@ performAutoProof inclThms timeout update (Finder _ pr cs i) listNodes nodes =
            postGUISync $ update (count / count') $ name fn
            res <- case globalTheory . snd $ node fn of
                     Nothing -> return Nothing
-                    Just g_th -> autoProofAtNode inclThms timeout g_th (pr, c)
+                    Just g_th -> fmap fst
+                      $ autoProofAtNode inclThms timeout g_th (pr, c)
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row
                fn { results = propagateProofs (results fn) gt }

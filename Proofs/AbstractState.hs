@@ -432,19 +432,19 @@ autoProofAtNode :: -- use theorems is subsequent proofs
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
-                  -> IO (Maybe G_theory)
+                  -> IO (Maybe G_theory, Maybe [(String, String)])
 autoProofAtNode useTh timeout g_th@( G_theory lid _ _ _ _ ) p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
       pf_st <- initialState lid "" g_th knpr [p_cm]
       let st = recalculateSublogicAndSelectedTheory pf_st
       -- try to prepare the theory
-      case maybeResult $ prepareForProving st p_cm of
-        Nothing -> return Nothing
-
+      if null $ selectedGoals st then return (Nothing, Just []) else
+        case maybeResult $ prepareForProving st p_cm of
+        Nothing -> return (Nothing, Nothing)
         Just (G_theory_with_prover lid1 th p) ->
           case proveCMDLautomaticBatch p of
-            Nothing -> return Nothing
+            Nothing -> return (Nothing, Nothing)
 
             Just fn -> do
               -- mVar to poll the prover for results
@@ -454,13 +454,15 @@ autoProofAtNode useTh timeout g_th@( G_theory lid _ _ _ _ ) p_cm = do
               takeMVar mV
               d <- takeMVar answ
               return $ case maybeResult d of
-                Nothing -> Nothing
+                Nothing -> (Nothing, Nothing)
                 Just d' ->
                   let ps' = markProved (snd p_cm) lid1 d' st
                   in case theory ps' of
                     G_theory lidT sigT indT sensT _ ->
                       case coerceThSens (logicId ps') lidT "" (goalMap ps') of
-                        Nothing -> Nothing
-                        Just gMap -> Just $
+                        Nothing -> (Nothing, Nothing)
+                        Just gMap -> (Just $
                           G_theory lidT sigT indT (Map.union sensT gMap)
                                    startThId
+                          , Just $
+                          map (\ ps -> (goalName ps, show $ goalStatus ps)) d')

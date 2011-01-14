@@ -279,10 +279,13 @@ getHetsResult opts updates sessRef file query =
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
                     ProveNode incl mp mt tl -> do
-                      newLib <- proveNode libEnv ln dg nl
+                      (newLib, sens) <- proveNode libEnv ln dg nl
                                   gTh subL incl mp mt tl
-                      newSess <- lift $ nextSess sessRef newLib k
-                      liftR $ return $ sessAns ln (newSess, k)
+                      if null sens then return "nothing to prove" else do
+                        lift $ nextSess sessRef newLib k
+                        return $ ppTopElement $ unode "results" $
+                           map (\ (n, e) -> unode "goal"
+                             [unode "name" n, unode "result" e]) sens
                     _ -> return $ case nc of
                       NcTheory -> fstLine ++ showN gTh
                       NcProvers mt -> getProvers mt subL
@@ -293,7 +296,6 @@ getHetsResult opts updates sessRef file query =
               [e@(_, _, l)] -> return $ showLEdge e ++ "\n" ++ showDoc l ""
               [] -> fail $ "no edge found with id: " ++ showEdgeId i
               _ -> fail $ "multiple edges found with id: " ++ showEdgeId i
-
 
 getAllAutomaticProvers :: G_sublogics -> [(G_prover, AnyComorphism)]
 getAllAutomaticProvers subL = getAllProvers ProveCMDLautomatic subL logicGraph
@@ -336,17 +338,20 @@ getComorphs mp subL = ppTopElement . unode "translations"
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> ResultT IO LibEnv
+  -> ResultT IO (LibEnv, [(String, String)])
 proveNode le ln dg nl gTh subL useTh mp mt tl = case
     filterByComorph mt . filterByProver mp
     $ getAllAutomaticProvers subL of
     [] -> fail "no prover found"
     cp : _ -> do
-      res <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) gTh cp
-      case res of
+      (res, prfs) <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) gTh cp
+      case prfs of
         Nothing -> fail "proving failed"
-        Just nTh ->
-          return $ Map.insert ln (updateLabelTheory le dg nl nTh) le
+        Just sens -> if null sens then return (le, sens) else
+          case res of
+            Nothing -> error "proveNode"
+            Just nTh -> return
+              (Map.insert ln (updateLabelTheory le dg nl nTh) le, sens)
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
