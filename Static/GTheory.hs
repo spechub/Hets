@@ -269,7 +269,8 @@ propagateProofs locTh@(G_theory lid1 sig ind lsens _)
     Just ps ->
       if Map.null ps then locTh else
           G_theory lid1 sig ind
-            (proveSens lid1 $ Map.intersection ps lsens) startThId
+            (proveSens lid1 $ Map.union (Map.intersection ps lsens) lsens)
+            startThId
     Nothing -> error "propagateProofs"
 
 -- | Grothendieck diagrams
