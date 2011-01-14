@@ -1,4 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
 {- |
 Module      :  $Header$
 Description :  Access to the .glade files stored as strings inside the binary
@@ -637,7 +636,7 @@ spanString :: GStatus -> String -> String
 spanString s m = "<span color=\"" ++ statusToColor s ++ "\">" ++ m ++ "</span>"
 
 -- | Converts a ProofStatus into a GStatus
-proofStatusToGStatus :: forall a . ProofStatus a -> GStatus
+proofStatusToGStatus :: ProofStatus a -> GStatus
 proofStatusToGStatus p = case goalStatus p  of
   Proved False -> GInconsistent
   Proved True  -> GProved
