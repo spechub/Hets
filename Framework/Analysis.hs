@@ -32,7 +32,6 @@ import Logic.Logic
 import Logic.Comorphism
 import Logic.Coerce
 
-import Common.ExtSign
 import Common.Result
 import Common.DocUtils
 import Common.Parsec
@@ -101,38 +100,21 @@ retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
                           proof_tree
                    => lid -> LogicDef -> DGraph ->
                       Result (morphism, morphism, morphism)
-retrieveDiagram ml (LogicDef _ _ sy t _ m p) dg = do
-  lSyn <- lookupSig ml sy dg
-  ltruth <- lookupMorph ml t dg
+retrieveDiagram ml (LogicDef _ _ s m p _) dg = do
+  ltruth <- lookupMorph ml s dg
   lmod <- lookupMorph ml m dg
   lpf <- lookupMorph ml p dg
-
-  if (dom ltruth /= getBaseSig ml || cod ltruth /= lSyn) then
-     error $ "The morphism " ++ (show t) ++ " must go from Base to " ++
-             (show sy) ++ "." else do
-  if (dom lmod /= lSyn) then
-     error $ "The morphism " ++ (show m) ++ " must go from " ++
-             (show sy) ++ "." else do
-  if (dom lpf /= lSyn) then
-     error $ "The morphism " ++ (show p) ++ " must go from " ++
-             (show sy) ++ "." else do
+  if (dom ltruth /= getBaseSig ml) then
+     error $ "The morphism " ++ (show s) ++
+             " must originate from the Base signature for " ++
+             (show ml) ++ "." else do
+  if (dom lmod /= cod ltruth) then
+     error $ "The morphisms " ++ (show s) ++
+             " and " ++ (show m) ++ " must be composable." else do
+  if (dom lpf /= cod ltruth) then
+     error $ "The morphisms " ++ (show s) ++
+             " and " ++ (show p) ++ " must be composable." else do
   return (ltruth, lmod, lpf)
-
--- looks up a signature by name
-lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
-                   sign morphism symbol raw_symbol proof_tree
-             => lid -> SIG_NAME -> DGraph -> Result sign
-lookupSig l n dg = do
-  let extSig = case lookupGlobalEnvDG n dg of
-                 Just (SpecEntry es) -> es
-                 _ -> error $ "The signature " ++ (show n) ++
-                              " could not be found."
-  case extSig of
-    ExtGenSig _ (NodeSig _ (G_sign l' (ExtSign sig _) _)) ->
-      if Logic l /= Logic l'
-         then error $ "The signature " ++ (show n) ++
-                      " is not in the logic " ++ (show l) ++ "."
-         else coercePlainSign l' l "" sig
 
 -- looks up a morphism by name
 lookupMorph :: Logic lid sublogics basic_spec sentence symb_items symb_map_items

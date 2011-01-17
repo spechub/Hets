@@ -1,12 +1,11 @@
-from Framework/specs/logics/first-order/syntax/fol get FOL, Base2FOL
+from Framework/specs/logics/first-order/syntax/fol get Base2FOL
 from Framework/specs/logics/first-order/model_theory/fol get FOLMODView
 from Framework/specs/logics/first-order/proof_theory/fol get FOL2FOLPF
 
 newlogic FOL =
   meta LF
-  syntax FOL
-  truth Base2FOL
-  signatures P
+  syntax Base2FOL
   models FOLMODView
   proofs FOL2FOLPF
+  patterns P
 end

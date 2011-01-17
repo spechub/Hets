@@ -1,4 +1,4 @@
-logic FOL
+logic PL
 spec SP =
   x : i.
   f : i -> o.

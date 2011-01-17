@@ -164,18 +164,16 @@ libItem l =
        s3 <- asKey metaS
        f <- fram
        s4 <- asKey syntaxS
-       sy <- simpleId
-       s5 <- asKey truthS
-       t <- simpleIdOrDDottedId
-       s6 <- asKey signaturesS
-       si <- simpleId
-       s7 <- asKey modelsS
+       s <- simpleIdOrDDottedId
+       s5 <- asKey modelsS
        m <- simpleIdOrDDottedId
-       s8 <- asKey proofsS
+       s6 <- asKey proofsS
        p <- simpleIdOrDDottedId
+       s7 <- asKey patternsS
+       pa <- simpleId       
        q <- optEnd
-       return (Newlogic_defn (LogicDef n f sy t si m p)
-          (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
+       return (Newlogic_defn (LogicDef n f s m p pa)
+          (catRange ([s1, s2, s3, s4, s5, s6, s7] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l

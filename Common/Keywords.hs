@@ -244,11 +244,8 @@ metaS = "meta"
 syntaxS :: String
 syntaxS = "syntax"
 
-truthS :: String
-truthS = "truth"
-
-signaturesS :: String
-signaturesS = "signatures"
+patternsS :: String
+patternsS = "patterns"
 
 modelsS :: String
 modelsS = "models"

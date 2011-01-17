@@ -17,7 +17,6 @@ import Common.DocUtils
 import Common.Keywords
 
 type NAME = Token
-type SIG_NAME = Token
 type MORPH_NAME = Token
 type PATTERN_NAME = Token
 
@@ -28,17 +27,15 @@ data LogicDef = LogicDef
     newlogicName  :: NAME,     
     -- the framework used for defining the object logic
     meta          :: FRAM,
-     -- name of the signature specifying the syntax of the object logic
-    syntax        :: SIG_NAME,
     {- name of the morphism specifying the sentences and truth judgement of the
        object logic -}    
-    truth         :: MORPH_NAME,
-    -- name of the pattern specifying the signature category of the object logic
-    signatures    :: PATTERN_NAME,
-    -- name of the morphism specifying the model category of the object logic     
+    syntax        :: MORPH_NAME,
+    -- name of the morphism specifying the model category of the object logic 
     models        :: MORPH_NAME,
     -- name of the morphism specifying the proof category of the object logic     
-    proofs        :: MORPH_NAME
+    proofs        :: MORPH_NAME,
+    -- name of the pattern specifying the signature category of the object logic
+    patterns      :: PATTERN_NAME        
   } deriving (Ord, Eq, Show)
 
 instance GetRange LogicDef
@@ -49,14 +46,13 @@ instance Pretty FRAM where
     pretty = printFram
 
 printLogicDef :: LogicDef -> Doc
-printLogicDef (LogicDef l f sy t si m p) = 
+printLogicDef (LogicDef l f s m p pa) = 
   vcat [ text newlogicS <+> pretty l
        , text " " <+> text metaS <+> pretty f
-       , text " " <+> text syntaxS <+> pretty sy
-       , text " " <+> text truthS <+> pretty t
-       , text " " <+> text signaturesS <+> pretty si
+       , text " " <+> text syntaxS <+> pretty s
        , text " " <+> text modelsS <+> pretty m
        , text " " <+> text proofsS <+> pretty p
+       , text " " <+> text patternsS <+> pretty pa
        ] 
 
 printFram :: FRAM -> Doc
