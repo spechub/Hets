@@ -26,6 +26,8 @@ import Data.List (mapAccumL)
 import Prelude hiding (lookup)
 
 import Common.ResultT
+import Common.Doc
+import Common.DocUtils
 
 import CSL.AS_BASIC_CSL
 
@@ -64,9 +66,11 @@ instance SimpleMember (SMem b) b where
     count (SMem a) = count a
     toList (SMem a) = toList a
 
--- | calculation interface, bundles the evaluation engine and the constant store
+
+-- | Calculation interface, bundles the evaluation engine and the
+-- assignment store
 class (Monad m) => AssignmentStore m where
-    assign :: ConstantName -> EXPRESSION -> m ()
+    assign :: ConstantName -> AssDefinition -> m ()
     lookup :: ConstantName -> m (Maybe EXPRESSION)
     names :: m (SMem ConstantName)
     eval :: EXPRESSION -> m EXPRESSION
@@ -91,7 +95,8 @@ isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
 
 evaluate :: AssignmentStore m => CMD -> m ()
-evaluate (Ass (Op (OpUser n) [] [] _) e) = assign n e
+evaluate (Ass (Op (OpUser n) [] l _) e) =
+    assign n $ mkDefinition (toArgList l) e
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
   if null cl
@@ -109,13 +114,17 @@ evaluate (Sequence l) = evaluateList l
 
 evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
 evaluate a@(Ass (Op (OpId _) _ _ _) _) =
-    error $ "evaluate: OPNAME in left hand side of assignment not allowed "
-              ++ show a
+    error $ concat [ "evaluate: predefined constants in left hand side of "
+                   , "assignment not allowed ", show a ]
 evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 
 
 evaluateList :: AssignmentStore m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
+
+loadAS :: AssignmentStore m => [(ConstantName, AssDefinition)] -> m ()
+loadAS [] = return ()
+loadAS ((cn, assd):l) = loadAS l >> assign cn assd
 
 -- ----------------------------------------------------------------------
 -- * Term translator
@@ -128,10 +137,15 @@ data BMap = BMap { mThere :: Map.Map ConstantName Int
                  , newkey :: Int
                  , prefix :: String
                  , defaultMap :: BMapDefault OPID }
+            deriving Show
 
 
 data BMapDefault a = BMapDefault { mThr :: Map.Map a String
                                  , mBck :: Map.Map String a }
+
+instance Show a => Show (BMapDefault a) where
+    show _ = "BMapDefault"
+
 
 
 instance SimpleMember BMap ConstantName where
@@ -248,3 +262,32 @@ revtranslateEXPRESSION m (List el rg) =
     let el' = map (revtranslateEXPRESSION m) el
     in List el' rg
 revtranslateEXPRESSION _ e = e
+
+
+-- ** Pretty printing of BMap
+-- (Pretty a, Pretty b) => 
+
+-- pm = ppMap pa text braces vcat printMapping
+
+printMapping :: Doc -> Doc -> Doc
+printMapping x y = x <+> mapsto <+> y
+
+printBMapDefault :: (a -> Doc) -> BMapDefault a -> Doc
+printBMapDefault pa bm =
+    ppMap pa text box vcat printMapping $ mThr bm where
+        box = (text "BMapDefault" $+$) . braces
+
+printBMap :: BMap -> Doc
+printBMap bm =
+    braces $ text "BMap" $+$ md $++$ mdefault
+        where
+          md = printMap braces vcat printMapping $ mThere bm
+          mdefault = printBMapDefault pretty $ defaultMap bm
+
+instance Pretty a => Pretty (BMapDefault a) where
+    pretty = printBMapDefault pretty
+
+instance Pretty BMap where
+    pretty = printBMap
+
+

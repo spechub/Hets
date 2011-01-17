@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleInstances, FlexibleContexts, TypeSynonymInstances
-  , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE  TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Maple instance for the AssignmentStore class
@@ -8,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  non-portable (various glasgow extensions)
+Portability :  non-portable (via imports)
 
 Maple as AssignmentStore
 -}
@@ -17,7 +16,9 @@ module CSL.MapleInterpreter where
 
 import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef, trimLeft)
+import Common.DocUtils
 import Common.IOS
+import Common.Result
 import Common.ResultT
 
 import CSL.AS_BASIC_CSL
@@ -30,9 +31,10 @@ import CSL.Reduce_Interface (exportExp)
 import qualified Interfaces.Process as PC
 
 import Control.Monad
-import Control.Monad.Trans (MonadTrans (..))
+import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.State (MonadState (..))
 
+import Data.List hiding (lookup)
 import Data.Maybe
 import System.Exit (ExitCode)
 
@@ -92,8 +94,10 @@ cslMapleDefaultMapping =
            ++ idmapping possibleIntervalOps
                   ++ idmapping otherOps
 
-printAssignment :: String -> EXPRESSION -> String
-printAssignment n e = concat [n, ":= ", exportExp e, ";"]
+printAssignment :: String -> [String] -> EXPRESSION -> String
+printAssignment n [] e = concat [n, ":= ", exportExp e, ";"]
+printAssignment n l e = concat [n, ":= proc", args, exportExp e, " end proc;"]
+    where args = concat [ "(", intercalate ", " l, ") " ]
 
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = exportExp e ++ ";"
@@ -126,11 +130,13 @@ getBooleanFromExpr e =
 mapleAssign :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
           -> (ConstantName -> s String)
           -> (EXPRESSION -> s EXPRESSION)
-          -> ConstantName -> EXPRESSION -> s ()
-mapleAssign ef trans transE n e = do
+          -> ConstantName -> AssDefinition -> s ()
+mapleAssign ef trans transE n def = do
+  let e = getDefiniens def
+      args = getArguments def
   e' <- transE e
   n' <- trans n
-  ef $ printAssignment n' e'
+  ef $ printAssignment n' args e'
   return ()
 
 mapleLookup :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
@@ -194,6 +200,13 @@ mapleTransS s = do
   r <- get
   let bm = getBMap r
       (bm', s') = lookupOrInsert bm $ Left s
+
+  liftIO $ putStrLn $ "lookingUp " ++ show (printConstantName s) ++ " in "
+  liftIO $ putStrLn $ show $ pretty bm
+  liftIO $ putStrLn "{"
+  liftIO $ putStrLn $ show bm
+  liftIO $ putStrLn "}"
+
   put r { getBMap = bm' }
   return s'
 
@@ -236,6 +249,15 @@ mapleExit mit = do
   (ec, _) <- runIOS (getMI mit) $ PC.close $ Just "quit;"
   return ec
 
+execWithMaple :: MITrans -> MapleIO a -> IO (MITrans, a)
+execWithMaple s m = do
+  let err = error "execWithMaple: no result"
+  (res, mit) <- runIOS s $ runResultT m
+  return (mit, fromMaybe err $ maybeResult res)
+
+runWithMaple :: Int -> MapleIO a -> IO (MITrans, a)
+runWithMaple i m = mapleInit i >>= flip execWithMaple m
+
 -- ----------------------------------------------------------------------
 -- * The Maple system
 -- ----------------------------------------------------------------------
@@ -262,4 +284,3 @@ Error, (in Optimization:-NLPSolve) no improved point could be found
 Error, (in Optimization:-NLPSolve) complex value encountered
 
 -}
-

@@ -28,6 +28,11 @@ module CSL.AS_BASIC_CSL
     , VAR_ITEM (..)       -- variable declaration
     , Domain (..)         -- domains for variable declarations
     , GroundConstant (..) -- constants for domain formation
+    , AssDefinition (..)  -- A function or constant definition
+    , getDefiniens        -- accessor function for AssDefinition
+    , getArguments        -- accessor function for AssDefinition
+    , isFunDef            -- accessor function for AssDefinition
+    , mkDefinition        -- constructor for AssDefinition
     , CMD (..)            -- Command datatype
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
@@ -44,7 +49,10 @@ module CSL.AS_BASIC_CSL
     -- Printer
     , printExpression
     , printCMD
+    , printAssDefinition
+    , printConstantName
     , ConstantPrinter (..)
+    , toArgList
     ) where
 
 import Common.Id as Id
@@ -88,6 +96,25 @@ data GroundConstant = GCI APInt | GCR APFloat deriving (Eq, Ord, Show)
 data Domain = Set [GroundConstant]
             | IntVal (GroundConstant, Bool) (GroundConstant, Bool)
               deriving (Eq, Ord, Show)
+
+-- | A constant or function definition
+data AssDefinition = ConstDef EXPRESSION | FunDef [String] EXPRESSION
+              deriving (Eq, Ord, Show)
+
+mkDefinition :: [String] -> EXPRESSION -> AssDefinition
+mkDefinition l e = if null l then ConstDef e else FunDef l e
+
+getDefiniens :: AssDefinition -> EXPRESSION
+getDefiniens (ConstDef e) = e
+getDefiniens (FunDef _ e) = e
+
+getArguments :: AssDefinition -> [String]
+getArguments (FunDef l _) = l
+getArguments _ = []
+
+isFunDef :: AssDefinition -> Bool
+isFunDef (FunDef _ _) = True
+isFunDef _ = False
 
 -- | basic items: an operator or variable declaration or an axiom
 data BASIC_ITEM =
@@ -165,13 +192,14 @@ instance Show OPNAME where
           OP_false -> "False"
           OP_true -> "True"
 
-data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord)
+data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
 -- | We differentiate between simple constant names and indexed constant names
 -- resulting from the extended parameter elimination.
 data ConstantName = SimpleConstant String | ElimConstant String Int
-                    deriving (Eq, Ord)
+                    deriving (Eq, Ord, Show)
 
+{-
 instance Show OPID where
     show (OpId n) = show n
     show (OpUser s) = show s
@@ -179,6 +207,7 @@ instance Show OPID where
 instance Show ConstantName where
     show (SimpleConstant s) = s
     show (ElimConstant s i) = if i > 0 then s ++ "__" ++ show i else s
+-}
 
 toElimConst :: ConstantName -> Int -> ConstantName
 toElimConst (SimpleConstant s) i = ElimConstant s i
@@ -194,6 +223,13 @@ data EXPRESSION =
   | Int APInt Id.Range
   | Double APFloat Id.Range
   deriving (Eq, Ord, Show)
+
+-- | If the expression list is a variable list the list of the variable names
+-- is returned.
+toArgList :: [EXPRESSION] -> [String]
+toArgList [] = []
+toArgList (Var tok:l) = tokStr tok : toArgList l
+toArgList (x:_) = error $ "toArgList: unsupported as argument " ++ show (pretty x)
 
 -- TODO: add Range-support to this type
 data CMD = Ass EXPRESSION EXPRESSION
@@ -364,12 +400,31 @@ instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
 instance Pretty CMD where
     pretty = head . printCMD
+instance Pretty ConstantName where
+    pretty = printConstantName
+instance Pretty AssDefinition where
+    pretty = head . printAssDefinition
+instance Pretty OPID where
+    pretty = head . printOPID
+
 
 -- | A monad for printing of constants. This turns the pretty printing facility
 -- more flexible w.r.t. the output of 'ConstantName'.
 class Monad m => ConstantPrinter m where
     printConstant :: ConstantName -> m Doc
     printConstant = return . text . show
+
+-- | The default ConstantName printer
+printConstantName :: ConstantName -> Doc
+printConstantName (SimpleConstant s) = text s
+printConstantName (ElimConstant s i) =
+    text $ if i > 0 then s ++ "__" ++ show i else s
+
+printAssDefinition :: ConstantPrinter m => AssDefinition -> m Doc
+printAssDefinition (ConstDef e) = printExpression e >>= return . (text "->" <+>)
+printAssDefinition (FunDef l e) = do
+  ed <- printExpression e
+  return $ (parens $ sepByCommas $ map text l) <+> text "->" <+> ed
 
 printOPID :: ConstantPrinter m => OPID -> m Doc
 printOPID (OpUser c) = printConstant c

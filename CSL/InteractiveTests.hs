@@ -14,9 +14,71 @@ and general static analysis tools
 -}
 
 
+module CSL.InteractiveTests where
+
+
 {-
+import CSL.ReduceInterpreter
+import CSL.Reduce_Interface
+import CSL.Transformation
+import CSL.EPBasic
+import CSL.TreePO
+import CSL.ExtendedParameter
+import CSL.SMTComparison
+import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
+import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
+import Common.IOS
+import Common.Result (diags, printDiags, resultToMaybe)
+import Common.ResultT
+import Common.Lexer as Lexer
+import Common.Parsec
+import Common.Doc
+import qualified Common.Lib.Rel as Rel
+import Text.ParserCombinators.Parsec
+import Control.Monad.State (StateT(..))
+import Control.Monad.Trans (MonadIO (..), lift)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+import System.IO
+import Control.Monad (liftM)
+-- the process communication interface
+import qualified Interfaces.Process as PC
+-}
+
+
+-- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
+import Main (getSigSensComplete, myHetcatsOpts, SigSens(..))
+
+import CSL.MapleInterpreter 
+import CSL.Interpreter
+import CSL.Logic_CSL
+import CSL.Analysis
+import CSL.AS_BASIC_CSL
+import CSL.Sign
+
+import Common.Utils (getEnvDef)
+import Common.DocUtils
+import Common.AS_Annotation
+
+import Driver.Options
+
+import Control.Monad.State.Class
+import Control.Monad.Reader
+import Data.Char
+import Data.Maybe
+import Data.Time.Clock
+
+
+
+{-
+
 MAIN TESTING FUNCTIONS:
 
+test i assStoreAndProg
+test i loadAssignmentStore
+testWithMaple i loadAssignmentStore
+
+DEACTIVATED:
 interesting i's: 44, 46
 
 udefC i == show all undefined constants of spec i
@@ -28,77 +90,95 @@ testSMT i == returns the length of elimDefs-output and measures time, good for t
 
 -}
 
+help :: IO ()
+help = do
+  s <- readFile "CSL/InteractiveTests.hs"
+  let l = lines s
+  putStrLn $ unlines $ drop 73 $ take 87 l
 
-module CSL.InteractiveTests where
+-- ----------------------------------------------------------------------
+-- * Gluing the Analysis and Evaluation together
+-- ----------------------------------------------------------------------
 
-import CSL.MapleInterpreter 
+test :: (Pretty a, MonadIO m) => Int -> (Sign -> [Named CMD] -> m a) -> m ()
+test i f = liftIO (sigsens i) >>= uncurry f >>= liftIO . putStrLn . show . pretty
 
-import CSL.ReduceInterpreter
-import CSL.Reduce_Interface
-import CSL.Interpreter
-import CSL.Transformation
-import CSL.EPBasic
-import CSL.TreePO
-import CSL.ExtendedParameter
-import CSL.SMTComparison
-import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
-import CSL.Logic_CSL
-import CSL.Analysis
-import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
-import CSL.Sign
+-- | Returns sorted assignment store and program
+assStoreAndProg :: Sign -> [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
+assStoreAndProg _ ncl = do
+  let (asss, prog) = splitAS ncl
+      gm = fmap analyzeGuarded asss -- :: GuardedMap EPRange
+      sgl = dependencySortAS gm
+  return (getElimAS sgl, prog)
 
-import Common.Utils (getEnvDef)
-import Common.IOS
-import Common.Result (diags, printDiags, resultToMaybe)
-import Common.ResultT
-import Common.Lexer as Lexer
-import Common.Parsec
-import Common.Doc
-import Common.DocUtils
-import Common.AS_Annotation
-import qualified Common.Lib.Rel as Rel
-import Text.ParserCombinators.Parsec
+-- splitAS :: [Named CMD] -> (GuardedMap [EXTPARAM], [Named CMD])
+-- getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, AssDefinition)]
+-- dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 
-import Driver.Options
 
--- the process communication interface
-import qualified Interfaces.Process as PC
+loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Sign -> [Named CMD]
+                -> m ([(ConstantName, AssDefinition)], [Named CMD])
+loadAssignmentStore s ncl = do
+  res@(asss, _) <- liftIO $ assStoreAndProg s ncl
+  loadAS asss
+  return res
 
--- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
-import Main (getSigSens, getSigSensComplete, myHetcatsOpts, SigSens(..))
 
-import Control.Monad.State.Class
-import Control.Monad.Reader
-import Control.Monad.State (StateT(..))
-import Control.Monad.Trans (MonadIO (..), lift)
-import Control.Monad (liftM)
-import Data.Maybe
-import Data.Time.Clock
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import System.IO
+testWithMaple :: Int -> (Sign -> [Named CMD] -> MapleIO a) -> IO (MITrans, a)
+testWithMaple i f = do
+  x <- sigsens i
+  runWithMaple 4 $ uncurry f x
 
+-- evalL3 s i = evalL2 (mapleRun s) i
+
+evalL2 :: (AssignmentStore m, MonadState b m) =>
+          (m () -> IO b)
+              -> Int -- ^ Test-spec
+              -> IO b
+evalL2 f i = cmds i >>= f . evaluateList
+
+
+
+{-
+
+
+prepareAS :: Int -> IO [(String, Guarded EPRange)]
+prepareAS = liftM (dependencySortAS . fmap analyzeGuarded . fst . splitAS) . sens
+
+prepareProg :: Int -> IO [Named CMD]
+prepareProg = liftM (snd . splitAS) . sens
+
+
+-}
 
 -- ----------------------------------------------------------------------
 -- * general test functions
 -- ----------------------------------------------------------------------
 
 
+-- Testing of keyboard-input
+charInfo :: IO ()
+charInfo = do
+  c <- getChar
+--  when (c /= 'e') $ putStrLn "" >> putStrLn (c:[]) >> putStrLn (show $ ord c) >> charInfo
+  -- Escape-button = 27
+  when (ord c /= 27) $ putStrLn "" >> putStrLn (c:[]) >> putStrLn (show $ ord c) >> charInfo
+
 -- see also myHetcatsOpts in Test.hs
 myHetsOpts :: HetcatsOpts
 myHetsOpts = myHetcatsOpts { verbose = 0 }
 
+testspecs :: [(Int, ([Char], [Char]))]
 testspecs =
-    [ (44, ("/CSL/EN1591.het", "EN1591"))
-    , (45, ("/CSL/flange2.het", "Flange2"))
-    , (46, ("/CSL/flange2.het", "Flange2Complete"))
+    [ (44, ("/EnCL/EN1591.het", "EN1591"))
+    , (45, ("/EnCL/flange2.het", "Flange2"))
+    , (46, ("/EnCL/flange2.het", "Flange2Complete"))
     ]
 
-l1 :: Int -> IO (Sign, [Named CMD])
-l1 i = do
-  let (lb, sp) = fromMaybe (if i > 0 then ("/CSL/Tests.het", "Test" ++ show i)
-                            else ("/CSL/ExtParamExamples.het", "E" ++ show (- i)))
+sigsens :: Int -> IO (Sign, [Named CMD])
+sigsens i = do
+  let (lb, sp) = fromMaybe (if i > 0 then ("/EnCL/Tests.het", "Test" ++ show i)
+                            else ("/EnCL/ExtParamExamples.het", "E" ++ show (- i)))
                  $ Prelude.lookup i testspecs
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
   res <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
@@ -106,11 +186,11 @@ l1 i = do
   return (sigsensSignature res, sigsensNamedSentences res)
 
 sig :: Int -> IO Sign
-sig = fmap fst . l1
+sig = fmap fst . sigsens
 
 -- Check if the order is broken or not!
 sens :: Int -> IO [Named CMD]
-sens = fmap snd . l1
+sens = fmap snd . sigsens
 
 cmds :: Int -> IO [CMD]
 cmds = fmap (map sentence) . sens
@@ -133,6 +213,22 @@ sl <- sens 3
 fst $ splitAS s
 -}
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-
 -- ----------------------------------------------------------------------
 -- * calculator test functions
 -- ----------------------------------------------------------------------
@@ -239,19 +335,8 @@ foldForest (\ x y z -> x ++ [(y, length z)]) [] frst
 
 -}
 
-crossprod l [] = map (:[]) l
-crossprod l l' = concatMap (\ x -> map (:x) l) l'
-
-{-
-let a = [(-5)..5]
-let b = [[]]
-let b = []
-crossprod a b
-[x : y | x <- a, y <- b]
--}
-
 -- undefinedConstants :: GuardedMap a -> Set.Set String
--- getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, [String], EXPRESSION)]
+-- getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, AssDefinition)]
 
 
 -- Use this Constant printer for test output
@@ -278,7 +363,8 @@ prettyEConsts i = elimConsts i  >>= mapM_ f where
 
 
 prettyEDefs i = liftM (unlines . map f) (elimDefs i)  >>= putStrLn where
-    f (c, args, e) = concat [show $ ppConst c, g args, " := ", show $ prettyEXP e]
+    f (c, assdef) = concat [ show $ ppConst c, g $ getArguments assdef, " := "
+                           , show $ prettyEXP $ getDefiniens assdef]
     g [] = ""
     g l = show $ parens $ sepByCommas $ map text l
 
@@ -912,3 +998,4 @@ opsBool = [ OP_false, OP_true, OP_not, OP_and, OP_or, OP_impl ]
 
 -- quantifiers
 opsQuant = [ OP_ex, OP_all ]
+-}

@@ -131,12 +131,17 @@ redAssign :: (AssignmentStore s, MonadResult s) =>
              (String -> s [EXPRESSION])
           -> (ConstantName -> s String)
           -> (EXPRESSION -> s EXPRESSION)
-          -> ConstantName -> EXPRESSION -> s ()
-redAssign ef trans transE n e = do
-  e' <- transE e
-  n' <- trans n
-  ef $ printAssignment n' e'
-  return ()
+          -> ConstantName -> AssDefinition -> s ()
+redAssign ef trans transE n def =
+  let e = getDefiniens def
+      args = getArguments def
+  in if null args then
+         do
+           e' <- transE e
+           n' <- trans n
+           ef $ printAssignment n' e'
+           return ()
+     else error $ "redAssign: functional assignments unsupported: " ++ show n
 
 redLookup :: (AssignmentStore s, MonadResult s) =>
               (String -> s [EXPRESSION])

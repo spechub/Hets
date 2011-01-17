@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Abstract syntax for reduce
+Description :  Static Analysis for EnCL
 Copyright   :  (c) Dominik Dietrich, Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  portable
 
-Static Analysis for 
+Static Analysis for EnCL including elimination procedure for extended parameters
 -}
 
 
@@ -54,10 +54,6 @@ import Data.List
 import Data.Maybe
 
 -- * Diagnosis Types and Functions
-
-{- TODO: we want to proceed as follows:
- 1. Check if all applications are valid w.r.t. the arity
--}
 
 -- | generates a named formula
 withName :: Annoted CMD -> Int -> Named CMD
@@ -547,12 +543,12 @@ undefinedConstants gm =
             $ Map.difference (Map.filter Set.null $ getDependencyRelation gm) gm
 
 -- | Turn the output of the elimination procedure into single (unguarded)
---  (probably functional) definitions.
+--  (probably functional) definitions. Respects the input order of the list.
 getElimAS :: [(String, Guarded EPRange)] ->
-             [(ConstantName, [String], EXPRESSION)]
+             [(ConstantName, AssDefinition)]
 getElimAS = concatMap f where
     f (s, grdd) = zipWith (g s $ argvars grdd) [0..] $ guards grdd
-    g s args i grd = (ElimConstant s i, args, definition grd)
+    g s args i grd = (ElimConstant s i, mkDefinition args $ definition grd)
 
 -- | The elim-constant to 'EPRange' mapping.
 elimConstants :: [(String, Guarded EPRange)] ->
