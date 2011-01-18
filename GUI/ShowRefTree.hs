@@ -19,10 +19,17 @@ import Data.IORef
 
 import GUI.GraphTypes
 import GUI.UDGUtils as UDG
+import GUI.Utils
+import GUI.GraphLogic
 
 import Interfaces.DataTypes
+import Interfaces.Command
+import Common.Consistency
+import Driver.Options(doDump)
 
 import Static.DevGraph
+import Static.PrintDevGraph
+import Static.History
 
 import qualified Data.Map as Map
 
@@ -44,7 +51,7 @@ showRefTree gInfo = do
     writeIORef graph graph'
     redraw graph'
 
-type NodeEdgeListRef = ([DaVinciNode RTNodeLab], [DaVinciArc (IO RTLinkLab)])
+type NodeEdgeListRef = ([DaVinciNode Int], [DaVinciArc (IO RTLinkLab)])
 type NodeEdgeListDep = ([DaVinciNode DiagNodeLab], [DaVinciArc (IO String)])
 
 addNodesAndEdgesRef :: GInfo -> DaVinciGraphTypeSyn ->
@@ -59,13 +66,16 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
     dg = lookup' le $ i_ln ist
     rTree = refTree dg
-    vertexes = map snd $ Tree.labNodes rTree
+    vertexes = map fst $ Tree.labNodes rTree
     arcs = Tree.labEdges rTree
     subNodeMenu = LocalMenu (UDG.Menu Nothing [
-                   Button "Show dependency diagram" $ showDiagram gInfo dg])
+                   Button "Show dependency diagram" $ showDiagram gInfo dg,
+                   Button "Show spec" $ showSpec dg,
+                   Button "Check consistency" $ checkCons gInfo])
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
-                       ValueTitle (return . rtn_name) $$$
+                       ValueTitle (return . (\x -> rtn_name $
+                                                    labRT dg x)) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms
@@ -108,9 +118,85 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                     filter (\ (_, _, e) -> rtl_type e == RTRefine) arcs
    writeIORef nodesEdges (subNodeList, subArcList ++ subArcListT ++ subArcListR)
 
-showDiagram :: GInfo -> DGraph -> RTNodeLab -> IO ()
-showDiagram gInfo dg rtlab = do
+
+checkCons :: GInfo -> Int-> IO()
+checkCons gInfo n = do
+  lockGlobal gInfo
+  checkConsAux gInfo [n]
+
+checkConsAux :: GInfo -> [Int] -> IO()
+checkConsAux gInfo [] = unlockGlobal gInfo
+checkConsAux gInfo (n:ns) = do
+ ost <- readIORef $ intState gInfo
+ case i_state ost of
+  Nothing -> return ()
+  Just ist -> do
+   let
+    le = i_libEnv ist
+    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
+    dg = lookup' le $ i_ln ist
+    rtlab = labRT dg n
+    rt = refTree dg
+    changeConsStatus x = let
+        oldLab = labDG dg x
+        oldNInfo = nodeInfo oldLab
+        newLab = oldLab{nodeInfo = case oldNInfo of
+                                     DGNode o _ -> DGNode o $ mkConsStatus Cons
+                                     _ -> oldNInfo}
+       in [SetNodeLab oldLab (x, newLab)]
+    consLinks (s, t, l) = let
+        l' = l{dgl_type = case dgl_type l of
+                           ScopedLink a b _ ->
+                              ScopedLink a b $ mkConsStatus Cons
+                           dt -> dt}
+       in [DeleteEdge (s,t,l), InsertEdge (s,t,l')]
+    updateDG changes = do
+     let dg' = changesDGH dg changes
+         history = snd $ splitHistory dg dg'
+         le' = Map.insert (i_ln ist) dg' le
+         lln = map DgCommandChange $ calcGlobalHistory le le'
+         nst = add2history (HelpCmd) ost lln
+         nwst = nst { i_state = Just ist { i_libEnv = le'}}
+     doDump (hetcatsOpts gInfo) "PrintHistory" $ do
+             putStrLn "History"
+             print $ prettyHistory history
+     writeIORef (intState gInfo) nwst
+     updateGraph gInfo (reverse $ flatHistory history)
+   case rtn_type rtlab of
+     RTRef n' -> checkConsAux gInfo $ n':ns
+     RTPlain usig ->
+      let units = map (\(_,x,_) -> x) $
+                 filter (\(_ss, _tt, ll) -> rtl_type ll == RTComp)$ out rt n
+      in case units of
+          [] -> -- n is itself a unit, insert obligation
+             case usig of
+              UnitSig [] nsig _ -> do -- non-parametric unit, change node
+               let gn = getNode nsig
+                   changes = changeConsStatus gn
+               updateDG changes
+               checkConsAux gInfo ns
+              UnitSig _ _ Nothing -> error "consCheck2"
+              UnitSig _nsigs nsig (Just usig') -> do
+                let ss = getNode usig'
+                    tt = getNode nsig
+                    lEdges = filter (\(x,y,_) -> x == ss && y == tt)
+                              $ labEdges $ dgBody dg
+                    ll = if null lEdges then
+                            error "consCheck1"
+                         else head lEdges   -- parametric unit, change edge
+                    changes = consLinks ll
+                updateDG changes
+                checkConsAux gInfo ns
+          _ ->  checkConsAux gInfo $ units ++ ns
+
+showSpec :: DGraph -> Int  -> IO()
+showSpec dg n =
+    createTextDisplay "" (show $ labRT dg n)
+
+showDiagram :: GInfo -> DGraph -> Int -> IO ()
+showDiagram gInfo dg n = do
  let asDiags = archSpecDiags dg
+     rtlab = labRT dg n
      name = rtn_name rtlab
  when (name `elem` Map.keys asDiags) $ do
       graph <- newIORef daVinciSort

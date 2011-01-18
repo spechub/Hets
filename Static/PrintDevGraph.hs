@@ -345,7 +345,7 @@ instance Pretty ExtViewSig where
     , pretty gmor ]
 
 instance Pretty UnitSig where
-  pretty (UnitSig params usig) =
+  pretty (UnitSig params usig _) =
     (if null params then Doc.empty else pretty $ map getNode params)
     <+> pretty (getNode usig)
 

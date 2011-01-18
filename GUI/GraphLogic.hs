@@ -41,6 +41,8 @@ module GUI.GraphLogic
     , runAndLock
     , saveUDGraph
     , focusNode
+    , calcGlobalHistory 
+    , add2history
     ) where
 
 import Logic.Coerce (coerceSign)

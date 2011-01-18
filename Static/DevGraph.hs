@@ -67,7 +67,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.Result
-
 -- * types for structured specification analysis
 
 -- ** basic types
@@ -164,7 +163,7 @@ Nothing entries indicate "not computed yet" -}
 data DGNodeLab =
   DGNodeLab
   { dgn_name :: NodeName        -- name in the input language
-  , dgn_theory :: G_theory       -- local theory
+  , dgn_theory :: G_theory      -- local theory
   , globalTheory :: Maybe G_theory -- global theory
   , labelHasHiding :: Bool      -- has this node an ingoing hiding link
   , labelHasFree :: Bool        -- has incoming free definition link
@@ -536,7 +535,9 @@ data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
 {- ** types for architectural and unit specification analysis
     (as defined for basic static semantics in Chap. III:5.1) -}
 
-data UnitSig = UnitSig [NodeSig] NodeSig deriving (Show, Eq)
+data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig) deriving (Show, Eq)
+-- Maybe NodeSig stores the union of the parameters
+-- the node is needed for consistency checks
 
 data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
    deriving (Show, Eq)
@@ -619,7 +620,7 @@ matchesContext rsmap bstc =
   && namesMatchCtx (Map.keys rsmap) bstc rsmap
 
 equalSigs :: UnitSig -> UnitSig -> Bool
-equalSigs (UnitSig ls1 ns1) (UnitSig ls2 ns2) =
+equalSigs (UnitSig ls1 ns1 _) (UnitSig ls2 ns2 _) =
   length ls1 == length ls2 && getSig ns1 == getSig ns2
     && all (\ (x1, x2) -> getSig x1 == getSig x2) (zip ls1 ls2)
 
@@ -756,7 +757,7 @@ type ProofHistory = SizedList.SizedList HistElem
 data RTNodeType = RTPlain UnitSig | RTRef Node deriving (Eq)
 
 instance Show RTNodeType where
-  show (RTPlain _) = "RTPlain"
+  show (RTPlain u) = "RTPlain\n"  ++ show u
   show (RTRef n) = show n
 
 data RTNodeLab = RTNodeLab
@@ -770,7 +771,7 @@ instance Show RTNodeLab where
    name = rtn_name r
    t = rtn_type r
    t1 = case t of
-          RTPlain _u -> "plain: " -- ++ show u
+          RTPlain u -> "plain: " ++ show u
           RTRef n -> show n
   in name ++ " " ++ t1
 
@@ -778,7 +779,7 @@ data RTLinkType =
     RTRefine
   | RTComp
   | RTTyping
-  | RTGiven
+ -- | RTGiven obsolete
  deriving (Show, Eq)
 
 data RTLinkLab = RTLink
@@ -1387,6 +1388,11 @@ nodesDG = nodes . dgBody
 labDG :: DGraph -> Node -> DGNodeLab
 labDG dg = fromMaybe (error "labDG") . lab (dgBody dg)
 
+-- | tries to get the label of the given node in a given RT
+labRT :: DGraph -> Node -> RTNodeLab
+labRT dg = fromMaybe (error "labRT") . lab (refTree dg)
+
+
 -- | get the name of a node from the number of node
 getNameOfNode :: Node -> DGraph -> String
 getNameOfNode index gc = getDGNodeName $ labDG gc index
@@ -1439,6 +1445,15 @@ delLEdgeDG :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdgeDG e g = g
     { dgBody = Tree.delLEdge (comparing dgl_id) e
       $ dgBody g }
+
+-- | inserts an edge between two nodes, labelled with inclusion
+insInclEdgeDG :: LogicGraph -> DGraph -> NodeSig -> NodeSig ->
+                  Result DGraph
+insInclEdgeDG lgraph dg s t = do
+  incl <- ginclusion lgraph (getSig s) (getSig t)
+  let l = globDefLink incl DGLinkImports
+      (_, dg') =insLEdgeDG (getNode s, getNode t,l) dg
+  return dg'
 
 -- | insert a labeled edge into a given DG, return possibly new id of edge
 insLEdgeDG :: LEdge DGLinkLab -> DGraph -> (LEdge DGLinkLab, DGraph)

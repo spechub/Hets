@@ -86,7 +86,7 @@ anaArchSpec lgraph ln dg opts sharedCtx nP archSp = case archSp of
   Group_arch_spec asp _ -> anaArchSpec lgraph ln dg opts sharedCtx nP (item asp)
   Arch_spec_name asn@(Token astr pos) -> case lookupGlobalEnvDG asn dg of
             Just (ArchEntry asig@(BranchRefSig
-                        (NPBranch n f) (UnitSig nsList resNs, _))) -> do
+                        (NPBranch n f) (UnitSig nsList resNs _, _))) -> do
               let (rN, dg', asig') =
                         case nP of
                          Nothing -> let
@@ -179,25 +179,48 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
        let impSig = toMaybeNode dns
        (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
            anaRefSpec lgraph ln dg' opts impSig un (buc, diag') Nothing usp
-       usig@(UnitSig argSigs resultSig) <- getUnitSigFromRef rsig'
-       let (n, dg1, rsig0) =
+       usig@(UnitSig argSigs resultSig unionSig) <- getUnitSigFromRef rsig'
+       let (n, dg1, rsig0) = 
               case getPointerFromRef rsig' of
-               RTNone -> let (n', d') = addNodeRT dg0 usig $ show un
+               RTNone -> let
+                             (n', d') = addNodeRT dg0 usig $ show un
                              r' = setPointerInRef rsig' (NPUnit n')
                          in (n', d', r')
                _ -> (refSource $ getPointerFromRef rsig', dg0, rsig')
-           (dg'', rsig) = case impSig of
-                     EmptyNode _ -> (updateNodeNameRT dg1 n $ show un, rsig0)
-                     JustNode ns ->
-                      let
-                        dg2 = updateNodeNameRT dg1 n $ show un
-                        dgU = updateSigRT dg2 n $ UnitSig [] resultSig
-                        usig' = UnitSig (ns:argSigs) resultSig
-                        (newN, dgU') = addNodeRT dgU usig' ""
-                        newP = NPBranch n $ Map.fromList [(toSimpleId "", NPUnit newN)]
-                        rInt = mkRefSigFromUnit usig'
-                      in (addEdgesToNodeRT dgU' [newN] n, setPointerInRef rInt newP)
-           diag = fromMaybe diag' mDiag
+-- is this above needed? when can rsig' have no pointer?
+-- TO DO
+       (dg'', rsig) <- case impSig of
+         EmptyNode _ -> do
+          (resultSig', dg2) <- case unionSig of
+              Just x -> nodeSigUnion lgraph dg1
+                          ([JustNode x,JustNode resultSig]) DGImports
+              _ -> return (resultSig, dg1)
+          return (updateNodeNameRT dg2 n $ show un,
+                  setUnitSigInRef rsig0 $ UnitSig argSigs resultSig' unionSig)
+              -- S -> T becomes S -> S \cup T
+         JustNode ns -> do
+           let dg2 = updateNodeNameRT dg1 n $ show un
+                -- ^ this changes the name of the node in the RT
+           (argUnion, dg3) <- nodeSigUnion lgraph dg2
+                              ((map JustNode argSigs) ++ [impSig])
+                              DGImports
+                -- ^ union of the arguments with the imports
+           (resultSig', dg4) <- nodeSigUnion lgraph dg3
+                          [JustNode resultSig, JustNode argUnion] DGImports
+                -- ^ union of the arguments with the result
+                -- F : S -> T given M
+                -- becomes F : M * S -> S_M \cup S \cup T
+           let dgU = updateSigRT dg4 n $ UnitSig [] resultSig' Nothing
+                -- ^ now stores S \cup T
+           let usig' = UnitSig (ns:argSigs) resultSig' $ Just argUnion
+               (newN, dgU') = addNodeRT dgU usig' ""
+               newP = NPBranch n $ Map.fromList [(toSimpleId "", NPUnit newN)]
+               rUnit = UnitSig argSigs resultSig' $ Just argUnion
+               rSig = BranchRefSig newP (rUnit, Just $ BranchStaticContext $ 
+                         Map.insert (toSimpleId "") (mkRefSigFromUnit usig') Map.empty) 
+           return (addEdgesToNodeRT dgU' [newN] n, rSig)
+             -- check the pointer
+       let diag = fromMaybe diag' mDiag
            ud' = Unit_decl un usp' uts' pos
        case rsig of
           ComponentRefSig _ _ -> error $
@@ -208,9 +231,9 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
             then plain_error (Map.empty, uctx, dg'', ud')
                (alreadyDefinedUnit un) unpos
             else do
-                      (resultSig', dg''') <- nodeSigUnion lgraph dg''
-                          (JustNode resultSig : [impSig]) DGImports
-                      (basedParUSig, diag''') <- if null argSigs then do
+                      _usigN@(UnitSig argSigsN resultSig' unionSigN) <-
+                          getUnitSigFromRef rsig
+                      (basedParUSig, diag''') <- if null argSigsN then do
                           (dn', diag'') <- extendDiagramIncl lgraph diag
                              ((case dns of
                                 JustDiagNode dn -> [dn]
@@ -220,10 +243,12 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
                                  _ -> [])) resultSig' ustr
                           return (Based_unit_sig dn' rsig, diag'')
                           else if length nodes < 2 then do
-                                 let rsig'' = setPointerInRef
-                                              (setUnitSigInRef rsig $
-                                              UnitSig argSigs resultSig')
-                                              (NPUnit n)
+                                -- clarify the pointers here 
+                                 let rsig'' =
+                                      setPointerInRef
+                                       (setUnitSigInRef rsig $
+                                         UnitSig argSigsN resultSig' unionSigN)
+                                       (NPUnit n)
                                  return (Based_par_unit_sig dns rsig''
                                          , diag)
                                 else do
@@ -235,7 +260,7 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
                                          diag)
                       return (Map.fromList [(un, getPointerFromRef rsig)],
                        (Map.insert un basedParUSig buc, diag'''),
-                                  dg''', ud')
+                                  dg'', ud')
   Unit_defn un uexp poss -> do
        (nodes, usig, diag, dg'', uexp') <-
          anaUnitExpression lgraph ln dg opts uctx uexp
@@ -247,7 +272,7 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
                {- we can use Map.insert as there are no mappings for
                   un in ps and bs (otherwise there would have been a
                   mapping in (ctx uctx)) -}
-               UnitSig args _ ->
+               UnitSig args _ _ ->
                  if null args then
                    case nodes of
                      [dn] -> do
@@ -332,7 +357,7 @@ anaUnitExpression lgraph ln dg opts uctx@(buc, diag)
   [] -> do
        (dnsig@(Diag_node_sig _ ns'), diag', dg', ut') <-
            anaUnitTerm lgraph ln dg opts uctx (item ut)
-       return ([dnsig], UnitSig [] ns', diag', dg',
+       return ([dnsig], UnitSig [] ns' Nothing, diag', dg',
                Unit_expression [] (replaceAnnoted ut' ut) poss)
   _ -> do
        (args, dg', ubs') <-
@@ -346,7 +371,8 @@ anaUnitExpression lgraph ln dg opts uctx@(buc, diag)
                      mapping for un in buc so we can just use
                      Map.insert;
                    here RTNone actually makes sense -}
-                  let rsig = BranchRefSig RTNone (UnitSig [] nsig, Nothing)
+                  let rsig = BranchRefSig RTNone
+                               (UnitSig [] nsig Nothing, Nothing)
                       buc' = Map.insert un (Based_unit_sig dnsig rsig) buc0
                   (dnsigs, diag'', buc'') <- insNodes diag' args0 buc'
                   return (dnsig : dnsigs, diag'', buc'')
@@ -377,7 +403,8 @@ anaUnitExpression lgraph ln dg opts uctx@(buc, diag)
                -- add new node to the diagram
                let (_, diag4) = matchDiagram nU diag'''
                return (p : pardnsigs,
-                        UnitSig (map snd args) pnsig,
+                        UnitSig (map snd args) pnsig $ Just resnsig,
+                          -- check!
                         diag4, dg''',
                        Unit_expression ubs' (replaceAnnoted ut' ut) poss)
           else -- report an error
@@ -395,7 +422,7 @@ anaUnitBindings lgraph ln dg opts uctx@(buc, _) bs = case bs of
           [] -> return ([], dg, [])
           Unit_binding un@(Token ustr unpos) usp poss : ubs -> do
                curl <- lookupCurrentLogic "UNIT_BINDINGS" lgraph
-               (BranchRefSig _ (_usig@(UnitSig argSigs nsig), _), dg', usp') <-
+               (BranchRefSig _ (UnitSig argSigs nsig _, _), dg', usp') <-
                    anaUnitSpec lgraph ln dg opts (EmptyNode curl) Nothing usp
                let ub' = Unit_binding un usp' poss
                case argSigs of
@@ -506,7 +533,7 @@ anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
                   (ustr ++ " is a parameterless unit, "
                    ++ "but arguments have been given: " ++ argStr) pos
             Just (Based_par_unit_sig pI
-                     (BranchRefSig _ (UnitSig argSigs resultSig, _))) ->
+                     (BranchRefSig _ (UnitSig argSigs resultSig _, _))) ->
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
                    (morphSigs, dg'', diagA) <-
@@ -561,7 +588,7 @@ anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
                             (map third morphSigs) q
                    return (q, diag4, dg5, utrm)
             Just (Based_lambda_unit_sig nodes
-              (BranchRefSig _ (UnitSig argSigs resultSig, _))) ->
+              (BranchRefSig _ (UnitSig argSigs resultSig _, _))) ->
               case nodes of
                [] -> error "error in lambda expression"
                r : fs ->
@@ -689,10 +716,10 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
       _ -> do -- a trivial unit type
        (resultSpec', resultSig, dg') <- anaSpec False lgraph ln
            dg impsig emptyNodeName opts (item resultSpec)
-       let usig = UnitSig [] resultSig
+       let usig = UnitSig [] resultSig Nothing
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
-    _ -> do -- a non-trivial unit type
+    _ ->do -- a non-trivial unit type
        (argSigs, dg1, argSpecs') <- anaArgSpecs lgraph ln dg opts argSpecs
        (sigUnion, dg2) <- nodeSigUnion lgraph dg1
                           (impsig : map JustNode argSigs) DGFormalParams
@@ -701,14 +728,17 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
        (resultSpec', resultSig, dg3) <- anaSpec True lgraph ln
            dg2 (JustNode sigUnion)
                 emptyNodeName opts (item resultSpec)
-       let usig = UnitSig argSigs resultSig
+       let usig = UnitSig argSigs resultSig $ Just sigUnion
            rsig = mkRefSigFromUnit usig
        return (rsig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
   Spec_name usn@(Token ustr pos) -> case lookupGlobalEnvDG usn dg of
     Just (UnitEntry usig) -> return (mkRefSigFromUnit usig, dg, usp)
-    Just (SpecEntry (ExtGenSig _gsig@(GenSig _ args _) nsig) ) ->
-      return (mkRefSigFromUnit $ UnitSig args nsig, dg, usp)
+    Just (SpecEntry (ExtGenSig _gsig@(GenSig _ args unSig) nsig) ) -> do
+      let uSig = case unSig of
+                  JustNode n -> Just n
+                  _ -> Nothing
+      return (mkRefSigFromUnit $ UnitSig args nsig uSig, dg, usp)
     Just (RefEntry rsig) ->
       case rN of
        Nothing -> let
@@ -828,7 +858,7 @@ lambda expressions, like you do in the following -}
            anaRefSpec lgraph ln dg' opts nsig rn emptyExtStUnitCtx Nothing rspec
              -- here Nothing is fine
      case (usig, usig') of
-       (UnitSig _ls ns, UnitSig _ls' ns') -> do
+       (UnitSig _ls ns _, UnitSig _ls' ns' _) -> do
                dg'' <- anaSymbMapRef dgr' ns ns' gMapList rn
                let (s, dg3) = case nP of
                                Nothing -> addNodeRT dg'' usig $ name uspec
