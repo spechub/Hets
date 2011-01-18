@@ -180,7 +180,8 @@ handleBinder cmd =
 varSet :: [EXPRESSION] -> (Set.Set String, [EXPRESSION])
 varSet l =
     let opToVar' s (Op v _ _ rg') =
-            (Set.insert (show v) s, Var Token{ tokStr = show v, tokPos = rg' })
+            ( Set.insert (simpleName v) s
+            , Var Token{ tokStr = simpleName v, tokPos = rg' } )
         opToVar' _ x =
             error $ "varSet: not supported varexpression " ++ show x
     in mapAccumL opToVar' Set.empty l
@@ -189,17 +190,17 @@ varSet l =
 constsToVars :: Set.Set String -> EXPRESSION -> EXPRESSION
 constsToVars env e =
     let substRec =
-            idRecord
-            { foldOp =
-                  \ _ s epl' args rg' ->
-                      if Set.member (show s) env then
-                          if null args
-                          then Var (Token { tokStr = show s, tokPos = rg' })
-                          else error $ "constsToVars: variable must not have"
-                                   ++ " arguments:" ++ show args
-                      else Op s epl' args rg'
-            , foldList = \ _ l rg' -> List l rg'
-            }
+         idRecord
+         { foldOp =
+            \ _ s epl' args rg' ->
+                if Set.member (simpleName s) env then
+                    if null args
+                    then Var (Token { tokStr = simpleName s, tokPos = rg' })
+                    else error $ "constsToVars: variable must not have"
+                             ++ " arguments:" ++ show args
+                else Op s epl' args rg'
+         , foldList = \ _ l rg' -> List l rg'
+         }
     in foldTerm substRec e
 
 -- * Utils for 'CMD' and 'EXPRESSION'
@@ -274,16 +275,13 @@ instance Pretty a => Pretty (Guarded a) where
 instance Pretty a => Show (Guarded a) where
     show = show . pretty
 
-instance Pretty EPRange where
-    pretty = prettyEPRange
-
 
 type GuardedMap a = Map.Map String (Guarded a)
 
 
 addAssignment :: String -> EXPRESSION -> EXPRESSION -> GuardedMap [EXTPARAM]
               -> GuardedMap [EXTPARAM]
-addAssignment n (Op (OpUser s) epl al _) def m =
+addAssignment n (Op oid@(OpUser _) epl al _) def m =
     let f (Var tok) = tokStr tok
         f x = error $ "addAssignment: not a variable " ++ show x
         combf x y | argvars x == argvars y = y { guards = guards y ++ guards x }
@@ -291,7 +289,7 @@ addAssignment n (Op (OpUser s) epl al _) def m =
                       error "addAssignment: the argument vars does not match."
         grd = Guarded (map f al) [uncurry (Guard epl def n)
                                               $ filteredConstrainedParams epl]
-    in Map.insertWith combf (show s) grd m
+    in Map.insertWith combf (simpleName oid) grd m
 
 addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
 
@@ -460,23 +458,31 @@ mappedElimConst :: (Map.Map PIConst Int)
                 -> EXPRESSION
 mappedElimConst m oi e al rg = Op newOi [] al rg
     where err = error $ "mappedElimConst: No entry for " ++ show oi
-          f c = Map.findWithDefault err (mkPIConst (show c) e) m
+          i = Map.findWithDefault err (mkPIConst (simpleName oi) e) m
           newOi = case oi of
-                    OpUser c -> OpUser $ toElimConst c $ f c
+                    OpUser c -> OpUser $ toElimConst c i
                     _ -> oi
 
 -- | Returns the simplified partition representation of the 'Guarded' object
 -- probably instantiated by the provided extended parameter list.
 partitionFromGuarded :: [EXTPARAM] -> Guarded EPRange -> Partition Int
 partitionFromGuarded epl grdd =
-    -- it is crucial here that the zipping takes place with the original guard
-    -- list, otherwise the indexes doesn't match their definitions
-    Partition $ mapMaybe f $ zip (guards grdd) [0..] where
-        ep = toEPExps epl
-        f (a, b) | null epl = Just (range a, b)
-                 | otherwise = case projectRange ep $ range a of
-                                 Empty -> Nothing
-                                 x -> Just (x, b)
+    case guards grdd of
+      [] -> error "partitionFromGuarded: empty guard list"
+      [grd] | isStarRange $ range grd -> AllPartition 0
+            | otherwise ->
+                error $ "partitionFromGuarded: single guard not exhaustive: "
+                      ++ show grd
+        
+      grds ->
+        -- it is crucial here that the zipping takes place with the original guard
+        -- list, otherwise the indexes doesn't match their definitions
+        Partition $ mapMaybe f $ zip grds [0..] where
+            ep = toEPExps epl
+            f (a, b) | null epl = Just (range a, b)
+                     | otherwise = case projectRange ep $ range a of
+                                     Empty -> Nothing
+                                     x -> Just (x, b)
 
 
 -- | A partially instantiated constant
@@ -493,9 +499,9 @@ mapUserDefined f e = g Map.empty e
     where
       g m x =
        case x of
-         Op (OpUser s) epl al _ -> do
-             v <- f (show s) epl al
-             let pic = mkPIConst (show s) epl
+         Op oi@(OpUser _) epl al _ -> do
+             v <- f (simpleName oi) epl al
+             let pic = mkPIConst (simpleName oi) epl
                  m' = Map.insert pic v m
              foldM g m' al
          -- handle also non-userdefined ops.
@@ -509,7 +515,7 @@ setOfUserDefined e = g Set.empty e
     where
       g s x =
        case x of
-         Op (OpUser n) _ al _ -> foldl g (Set.insert (show n) s) al
+         Op oi@(OpUser _) _ al _ -> foldl g (Set.insert (simpleName oi) s) al
          -- handle also non-userdefined ops.
          Op _ _ al _ -> foldl g s al 
          -- ignoring lists (TODO: they should be removed soon anyway)
@@ -549,6 +555,18 @@ getElimAS :: [(String, Guarded EPRange)] ->
 getElimAS = concatMap f where
     f (s, grdd) = zipWith (g s $ argvars grdd) [0..] $ guards grdd
     g s args i grd = (ElimConstant s i, mkDefinition args $ definition grd)
+
+-- | Return the assignments in output format of 'getElimAS' but for assignments
+--  not beeing extended parameter eliminated (for simple specs).
+getSimpleAS :: [(String, Guarded EPRange)] ->
+             [(ConstantName, AssDefinition)]
+getSimpleAS = map f where
+    f (s, grdd) =
+        case guards grdd of
+          [grd] -> g s (argvars grdd) grd
+          _ -> error $ "getSimpleAS: only singleton guards supported: "
+               ++ show grdd
+    g s args grd = (SimpleConstant s, mkDefinition args $ definition grd)
 
 -- | The elim-constant to 'EPRange' mapping.
 elimConstants :: [(String, Guarded EPRange)] ->

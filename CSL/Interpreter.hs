@@ -14,7 +14,24 @@ Portability :  non-portable (various glasgow extensions)
 Defines an interface for Calculators used to evaluate CPL programs
 -}
 
-module CSL.Interpreter where
+module CSL.Interpreter
+    ( AssignmentStore(..)
+    , SMem(..)
+    , isDefined
+    , evaluate
+    , evaluateList
+    , loadAS
+    , BMap(..)
+    , BMapDefault(..)
+    , fromList, defaultLookup, defaultRevlookup, CSL.Interpreter.empty, initWithDefault
+    , lookupOrInsert
+    , revlookup
+    , translateArgVars
+    , translateExpr
+    , translateExprWithVars
+    , revtranslateExpr
+    )
+    where
 
 import Control.Monad (liftM, forM_, filterM, unless)
 import Control.Monad.State (StateT, MonadState (..))
@@ -25,6 +42,7 @@ import qualified Data.IntMap as IMap
 import Data.List (mapAccumL)
 import Prelude hiding (lookup)
 
+import Common.Id
 import Common.ResultT
 import Common.Doc
 import Common.DocUtils
@@ -71,6 +89,8 @@ instance SimpleMember (SMem b) b where
 -- assignment store
 class (Monad m) => AssignmentStore m where
     assign :: ConstantName -> AssDefinition -> m ()
+    assigns :: [(ConstantName, AssDefinition)] -> m ()
+    assigns = mapM_ $ uncurry assign
     lookup :: ConstantName -> m (Maybe EXPRESSION)
     names :: m (SMem ConstantName)
     eval :: EXPRESSION -> m EXPRESSION
@@ -122,9 +142,9 @@ evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 evaluateList :: AssignmentStore m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
 
+-- | Loads a dependency ordered assignment list into the store.
 loadAS :: AssignmentStore m => [(ConstantName, AssDefinition)] -> m ()
-loadAS [] = return ()
-loadAS ((cn, assd):l) = loadAS l >> assign cn assd
+loadAS = assigns . reverse
 
 -- ----------------------------------------------------------------------
 -- * Term translator
@@ -136,7 +156,8 @@ data BMap = BMap { mThere :: Map.Map ConstantName Int
                  , mBack :: IMap.IntMap ConstantName
                  , newkey :: Int
                  , prefix :: String
-                 , defaultMap :: BMapDefault OPID }
+                 , defaultMap :: BMapDefault OPID
+                 }
             deriving Show
 
 
@@ -145,7 +166,6 @@ data BMapDefault a = BMapDefault { mThr :: Map.Map a String
 
 instance Show a => Show (BMapDefault a) where
     show _ = "BMapDefault"
-
 
 
 instance SimpleMember BMap ConstantName where
@@ -218,10 +238,12 @@ revlookup m k =
                err = error $ "revlookup: No reverse mapping for " ++ k
            in OpUser $ IMap.findWithDefault err i $ mBack m
 
+{-
 bmToList :: BMap -> [(ConstantName, String)]
 bmToList m = let prf = prefix m
                  f (x, y) = (x, prf ++ show y)
              in map f $ Map.toList $ mThere m
+-}
 
 -- ** Internal functions for BMap
 bmapIntToString :: BMap -> Int -> String
@@ -237,31 +259,54 @@ bmapStringToInt m s = let prf = prefix m
 
 -- ** Translation functions for (generic) BMaps
 
--- | Translate EXPRESSION into a CAS compatible form
-translateEXPRESSION :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
-translateEXPRESSION m (Op oi epl el rg) =
-    let (m', el') = mapAccumL translateEXPRESSION m el
+type VarMap = Map.Map String Int
+
+varList :: [String] -> [(String, Int)]
+varList l = zip l [1..]
+
+varName :: BMap -> Int -> String
+varName _ i = "v" ++ show i
+
+translateArgVars :: BMap -> [String] -> [String]
+translateArgVars m = map f . varList where
+    f (_, i) = varName m i
+
+translateExprWithVars :: [String] -> BMap -> EXPRESSION -> (BMap, EXPRESSION)
+translateExprWithVars = translateExprGen . Map.fromList . varList
+
+translateExpr :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
+translateExpr = translateExprGen Map.empty
+
+-- | Translate EXPRESSION into a CAS compatible form. Variables are translated
+-- as constants with a namespace disjoint from that of the usual constants.
+translateExprGen :: VarMap -> BMap -> EXPRESSION -> (BMap, EXPRESSION)
+translateExprGen vm m (Op oi epl el rg) =
+    let (m', el') = mapAccumL (translateExprGen vm) m el
         (m'', s) = lookupOrInsert m' $ Right oi
     in (m'', Op (OpUser $ SimpleConstant s) epl el' rg)
-translateEXPRESSION m (List el rg) =
-    let (m', el') = mapAccumL translateEXPRESSION m el
+translateExprGen vm m (List el rg) =
+    let (m', el') = mapAccumL (translateExprGen vm) m el
     in (m', List el' rg)
-translateEXPRESSION m e = (m, e)
+translateExprGen vm m (Var tok) =
+    let err = error $ "translateExprGen: Variable not mapped: " ++ show tok
+        i = Map.findWithDefault err (tokStr tok) vm
+    in (m, Op (OpUser $ SimpleConstant $ varName m i) [] [] nullRange)
+translateExprGen _ m e = (m, e)
 
 -- | Retranslate CAS EXPRESSION back, we do not allow OPNAMEs as OpIds
-revtranslateEXPRESSION :: BMap -> EXPRESSION -> EXPRESSION
-revtranslateEXPRESSION m (Op (OpUser c) epl el rg) =
+revtranslateExpr :: BMap -> EXPRESSION -> EXPRESSION
+revtranslateExpr m (Op (OpUser c) epl el rg) =
     case c of
       SimpleConstant s ->
-          let el' = map (revtranslateEXPRESSION m) el
+          let el' = map (revtranslateExpr m) el
               oi = revlookup m s
           in Op oi epl el' rg
       _ -> error $ "revtranslateEXPRESSION: elim constants on CAS side not"
            ++  " supported " ++ show c
-revtranslateEXPRESSION m (List el rg) =
-    let el' = map (revtranslateEXPRESSION m) el
+revtranslateExpr m (List el rg) =
+    let el' = map (revtranslateExpr m) el
     in List el' rg
-revtranslateEXPRESSION _ e = e
+revtranslateExpr _ e = e
 
 
 -- ** Pretty printing of BMap

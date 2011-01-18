@@ -24,8 +24,6 @@ import CSL.Transformation
 import CSL.EPBasic
 import CSL.TreePO
 import CSL.ExtendedParameter
-import CSL.SMTComparison
-import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
 import Common.IOS
 import Common.Result (diags, printDiags, resultToMaybe)
@@ -37,9 +35,7 @@ import qualified Common.Lib.Rel as Rel
 import Text.ParserCombinators.Parsec
 import Control.Monad.State (StateT(..))
 import Control.Monad.Trans (MonadIO (..), lift)
-import qualified Data.Map as Map
 import qualified Data.Set as Set
-import System.IO
 import Control.Monad (liftM)
 -- the process communication interface
 import qualified Interfaces.Process as PC
@@ -68,6 +64,10 @@ import Data.Char
 import Data.Maybe
 import Data.Time.Clock
 
+import CSL.SMTComparison
+import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
+import System.IO
+import qualified Data.Map as Map
 
 
 {-
@@ -76,7 +76,7 @@ MAIN TESTING FUNCTIONS:
 
 test i assStoreAndProg
 test i loadAssignmentStore
-testWithMaple i loadAssignmentStore
+testWithMaple 4 46 (loadAssignmentStore True)
 
 DEACTIVATED:
 interesting i's: 44, 46
@@ -103,31 +103,53 @@ help = do
 test :: (Pretty a, MonadIO m) => Int -> (Sign -> [Named CMD] -> m a) -> m ()
 test i f = liftIO (sigsens i) >>= uncurry f >>= liftIO . putStrLn . show . pretty
 
--- | Returns sorted assignment store and program
-assStoreAndProg :: Sign -> [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
-assStoreAndProg _ ncl = do
+-- | Returns sorted assignment store and program after EP elimination
+assStoreAndProgElim :: Sign -> [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
+assStoreAndProgElim _ ncl = do
   let (asss, prog) = splitAS ncl
-      gm = fmap analyzeGuarded asss -- :: GuardedMap EPRange
+      gm = fmap analyzeGuarded asss
       sgl = dependencySortAS gm
-  return (getElimAS sgl, prog)
+      ve = VarEnv { varmap = Map.fromList $ zip ["I", "F"] [1..]
+                  , vartypes = Map.empty
+                  --, loghandle = Just stdout
+                  , loghandle = Nothing
+                  }
+      -- ve = emptyVarEnv $ Just stdout
+  el <- execSMTComparer ve $ epElimination sgl
+  return (getElimAS el, prog)
 
+
+
+-- | Returns sorted assignment store and program without EP elimination
+assStoreAndProgSimple :: Sign -> [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
+assStoreAndProgSimple _ ncl = do
+  let (asss, prog) = splitAS ncl
+      gm = fmap analyzeGuarded asss
+      sgl = dependencySortAS gm
+  return (getSimpleAS sgl, prog)
+
+
+
+-- emptyVarEnv
+-- execSMTComparer :: VarEnv -> SmtComparer a -> IO a
 -- splitAS :: [Named CMD] -> (GuardedMap [EXTPARAM], [Named CMD])
 -- getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, AssDefinition)]
 -- dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
+-- epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guarded EPRange)]
 
-
-loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Sign -> [Named CMD]
+loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> Sign -> [Named CMD]
                 -> m ([(ConstantName, AssDefinition)], [Named CMD])
-loadAssignmentStore s ncl = do
-  res@(asss, _) <- liftIO $ assStoreAndProg s ncl
+loadAssignmentStore b s ncl = do
+  let f = if b then assStoreAndProgElim else assStoreAndProgSimple
+  res@(asss, _) <- liftIO $ f s ncl
   loadAS asss
   return res
 
 
-testWithMaple :: Int -> (Sign -> [Named CMD] -> MapleIO a) -> IO (MITrans, a)
-testWithMaple i f = do
+testWithMaple :: Int -> Int -> (Sign -> [Named CMD] -> MapleIO a) -> IO (MITrans, a)
+testWithMaple verbosity i f = do
   x <- sigsens i
-  runWithMaple 4 $ uncurry f x
+  runWithMaple verbosity $ uncurry f x
 
 -- evalL3 s i = evalL2 (mapleRun s) i
 
@@ -136,6 +158,7 @@ evalL2 :: (AssignmentStore m, MonadState b m) =>
               -> Int -- ^ Test-spec
               -> IO b
 evalL2 f i = cmds i >>= f . evaluateList
+
 
 
 

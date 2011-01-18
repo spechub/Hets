@@ -168,6 +168,9 @@ showEPRange = show . prettyEPRange
 instance Show EPRange where
     show = showEPRange
 
+instance Pretty EPRange where
+    pretty = prettyEPRange
+
 -- | Behaves as a map on the list of leafs of the range expression
 -- (from left to right)
 mapRangeLeafs :: (EPExps -> b) -> EPRange -> [b]
@@ -535,6 +538,21 @@ instance CompareIO SmtComparer where
 
 data Partition a = AllPartition a | Partition [(EPRange, a)]
 
+instance Show a => Show (Partition a) where
+    show p = show $ prettyPartition (text . show) p
+
+prettyPartition :: (a -> Doc) -> Partition a -> Doc
+prettyPartition f (AllPartition x) = braces $ braces $ f x
+prettyPartition f (Partition l) = braces $ sepByCommas $ map (braces . g) l
+    where g (r, x) = f x <+> text "|" <+> prettyEPRange r
+
+
+instance Pretty a => Pretty (Partition a) where
+    pretty (AllPartition x) = text "AllPartition:" <+> pretty x
+    pretty (Partition l) = text "Partition:" <+>
+                           ppPairlist pretty pretty braces vcat f l
+                               where f a b = parens $ a <+> text "|" <+> b
+
 instance Functor Partition where
     fmap f (AllPartition x) = AllPartition $ f x
     fmap f (Partition l) = Partition $ map g l
@@ -550,8 +568,8 @@ instance Functor Partition where
    from the second partition and is annotated with @b@ and @x@ is a subset of
    both, @x'@ and @x''@.
 -}
-refinePartition :: CompareIO m => Partition a -> Partition b
-                -> m (Partition (a,b))
+refinePartition :: (CompareIO m, Pretty a, Pretty b) => Partition a
+                -> Partition b -> m (Partition (a,b))
 refinePartition (AllPartition x) pb = return $ fmap ((,) x) pb
 refinePartition pa (AllPartition x) = return $ fmap (flip (,) x) pa
 refinePartition (Partition l) (Partition l') =
@@ -573,13 +591,15 @@ refinePartition (Partition l) (Partition l') =
    each set of the partition is intersected with the set from the range
    and the empty sets are filtered out.
 -}
-restrictPartition :: CompareIO m => EPRange -> Partition a -> m (Partition a)
+restrictPartition :: (CompareIO m, Pretty a) =>
+                     EPRange -> Partition a -> m (Partition a)
 restrictPartition er p
     | isStarRange er = return p
     | otherwise =
         case p of
           AllPartition x -> return $ Partition [(er, x)]
-          Partition p' -> liftM Partition $ f p' where
+          Partition p' -> liftM Partition $ f p'
+              where
                f [] = return []
                f ((er', x):l) = do
                  cmp <- rangeCmp er er'
@@ -591,12 +611,4 @@ restrictPartition er p
                    Incomparable Disjoint -> f l
                    Incomparable Overlap -> liftM ((er'', x) :) $ f l
 
-prettyPartition :: (a -> Doc) -> Partition a -> Doc
-prettyPartition f (AllPartition x) = braces $ braces $ f x
-prettyPartition f (Partition l) = braces $ sepByCommas $ map (braces . g) l
-    where g (r, x) = f x <+> text "|" <+> prettyEPRange r
-
-
-instance Show a => Show (Partition a) where
-    show = show . prettyPartition (text . show)
 

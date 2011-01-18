@@ -150,15 +150,15 @@ infixOps :: [String]
 infixOps = [ "+", "-", "/", "**", "^", "=", "<=", ">=", "<", ">", "*", "and"
            , "impl", "or"]
 
--- | exports an expression to Reduce format
+-- | Exports an expression to Reduce format
 exportExp :: EXPRESSION -> String
 exportExp (Var token) = tokStr token
 exportExp (Op s _ exps@[e1, e2] _) 
-    | elem (show s) infixOps =
-        concat ["(", exportExp e1, show s, exportExp e2, ")"]
-    | otherwise       = concat [show s, "(", exportExps exps, ")"]
-exportExp (Op s _ [] _) = show s
-exportExp (Op s _ exps _) = concat [show s, "(", exportExps exps, ")"]
+    | elem (simpleName s) infixOps =
+        concat ["(", exportExp e1, simpleName s, exportExp e2, ")"]
+    | otherwise       = concat [simpleName s, "(", exportExps exps, ")"]
+exportExp (Op s _ [] _) = simpleName s
+exportExp (Op s _ exps _) = concat [simpleName s, "(", exportExps exps, ")"]
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
 exportExp (Double d _) = show d

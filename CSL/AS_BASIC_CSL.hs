@@ -53,6 +53,7 @@ module CSL.AS_BASIC_CSL
     , printConstantName
     , ConstantPrinter (..)
     , toArgList
+    , simpleName
     ) where
 
 import Common.Id as Id
@@ -198,6 +199,11 @@ data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 -- resulting from the extended parameter elimination.
 data ConstantName = SimpleConstant String | ElimConstant String Int
                     deriving (Eq, Ord, Show)
+
+simpleName :: OPID -> String
+simpleName (OpId n) = show n
+simpleName (OpUser (SimpleConstant s)) = s
+simpleName (OpUser x) = error "simpleName: ElimConstant not supported: " ++ show x
 
 {-
 instance Show OPID where

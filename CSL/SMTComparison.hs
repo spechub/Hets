@@ -45,6 +45,11 @@ data VarEnv = VarEnv { varmap :: VarMap
                      , vartypes :: VarTypes
                      , loghandle :: Maybe Handle }
 
+emptyVarEnv :: Maybe Handle -> VarEnv
+emptyVarEnv mHdl =  VarEnv { varmap = Map.empty
+                           , vartypes = Map.empty
+                           , loghandle = mHdl }
+
 -- | Type alias and subtype definitions for the domain of the extended params
 smtTypeDef :: VarEnv -> String
 smtTypeDef m = Map.foldWithKey f "" $ varmap m

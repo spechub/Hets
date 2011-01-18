@@ -231,7 +231,7 @@ redcTransE :: EXPRESSION -> RedcIO EXPRESSION
 redcTransE e = do
   r <- get
   let bm = getBMap r
-      (bm', e') = translateEXPRESSION bm e
+      (bm', e') = translateExpr bm e
   put r { getBMap = bm' }
   return e'
 
@@ -250,7 +250,7 @@ evalRedcString s = do
   res <- lift $ wrapCommand $ PC.call 0.5 s
   r <- get
   let bm = getBMap r
-      trans = revtranslateEXPRESSION bm
+      trans = revtranslateExpr bm
   -- don't need to skip the reducelinenr here, because the Command-Interface
   -- cleans the outpipe before sending (hence removes the reduce line nr)
   return $ map trans $ maybeToList $ parseResult $ trimLeft res

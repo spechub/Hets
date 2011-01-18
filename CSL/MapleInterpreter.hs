@@ -16,7 +16,7 @@ module CSL.MapleInterpreter where
 
 import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef, trimLeft)
-import Common.DocUtils
+import Common.DocUtils()
 import Common.IOS
 import Common.Result
 import Common.ResultT
@@ -53,10 +53,11 @@ data MITrans = MITrans { getBMap :: BMap
 type MapleIO = ResultT (IOS MITrans)
 
 instance AssignmentStore MapleIO where
-    assign  = mapleAssign evalMapleString mapleTransS mapleTransE
-    lookup = mapleLookup evalMapleString mapleTransS
-    eval = mapleEval evalMapleString mapleTransE
-    check = mapleCheck evalMapleString mapleTransE
+    assign  = mapleAssign (evalMapleString False) mapleTransS mapleTransVarE
+    assigns = mapleAssigns (evalMapleString False) mapleTransS mapleTransVarE
+    lookup = mapleLookup (evalMapleString True) mapleTransS
+    eval = mapleEval (evalMapleString True) mapleTransE
+    check = mapleCheck (evalMapleString True) mapleTransE
     names = get >>= return . SMem . getBMap
 
 
@@ -87,7 +88,8 @@ cslMapleDefaultMapping =
                               , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
                               , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
         logicOps = [ OP_and, OP_or, OP_impl ]
-        otherOps = [OP_factor, OP_maximize, OP_sign]
+        otherOps = [ OP_factor, OP_maximize, OP_sign, OP_Pi, OP_min, OP_max
+                   , OP_fthrt]
         specialOp = (OP_pow, "^")
 --        specialOp = (OP_pow, "&**")
     in specialOp : idmapping logicOps
@@ -129,15 +131,28 @@ getBooleanFromExpr e =
 
 mapleAssign :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
           -> (ConstantName -> s String)
-          -> (EXPRESSION -> s EXPRESSION)
+          -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
           -> ConstantName -> AssDefinition -> s ()
 mapleAssign ef trans transE n def = do
   let e = getDefiniens def
       args = getArguments def
-  e' <- transE e
+  (e', args') <- transE args e
   n' <- trans n
-  ef $ printAssignment n' args e'
+  ef $ printAssignment n' args' e'
   return ()
+
+mapleAssigns :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+          -> (ConstantName -> s String)
+          -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
+          -> [(ConstantName, AssDefinition)] -> s ()
+mapleAssigns ef trans transE l =
+    let f (n, def) = do
+          let e = getDefiniens def
+              args = getArguments def
+          (e', args') <- transE args e
+          n' <- trans n
+          return $ printAssignment n' args' e'
+    in mapM f l >>= ef . unlines >> return ()
 
 mapleLookup :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
            -> (ConstantName -> s String)
@@ -182,44 +197,53 @@ wrapCommand ios = do
   stmap map' getMI  ios
 
 -- | A direct way to communicate with Maple
-mapleDirect :: MITrans -> String -> IO String
-mapleDirect rit s = do
+mapleDirect :: Bool -> MITrans -> String -> IO String
+mapleDirect b rit s = do
   (res, _) <- runIOS (getMI rit) (PC.call 0.5 s)
-  return $ removeOutputComments res
+  return $ if b then removeOutputComments res else res
 
 mapleTransE :: EXPRESSION -> MapleIO EXPRESSION
 mapleTransE e = do
   r <- get
   let bm = getBMap r
-      (bm', e') = translateEXPRESSION bm e
+      (bm', e') = translateExpr bm e
   put r { getBMap = bm' }
   return e'
+
+mapleTransVarE :: [String] -> EXPRESSION -> MapleIO (EXPRESSION, [String])
+mapleTransVarE vl e = do
+  r <- get
+  let bm = getBMap r
+      args = translateArgVars bm vl
+      (bm', e') = translateExprWithVars vl bm e
+  put r { getBMap = bm' }
+  return (e', args)
 
 mapleTransS :: ConstantName -> MapleIO String
 mapleTransS s = do
   r <- get
   let bm = getBMap r
       (bm', s') = lookupOrInsert bm $ Left s
-
-  liftIO $ putStrLn $ "lookingUp " ++ show (printConstantName s) ++ " in "
-  liftIO $ putStrLn $ show $ pretty bm
-  liftIO $ putStrLn "{"
-  liftIO $ putStrLn $ show bm
-  liftIO $ putStrLn "}"
+  --     outs = [ "lookingUp " ++ show s ++ " in "
+  --            , show $ pretty bm, "{", show bm, "}" ]
+  -- liftIO $ putStrLn $ unlines outs
 
   put r { getBMap = bm' }
   return s'
 
 
-evalMapleString :: String -> MapleIO [EXPRESSION]
-evalMapleString s = do
+-- | Evaluate the given String as maple expression and eventually
+-- parse the result to an expression list.
+evalMapleString :: Bool -> String -> MapleIO [EXPRESSION]
+evalMapleString b s = do
   -- 0.09 seconds is a critical value for the accepted response time of Maple
   res <- lift $ wrapCommand $ PC.call 0.7 s
   r <- get
   let bm = getBMap r
-      trans = revtranslateEXPRESSION bm
-  return $ map trans $ maybeToList $ parseResult $ trimLeft
-             $ removeOutputComments res
+      trans = revtranslateExpr bm
+  return $ if b then map trans $ maybeToList $ parseResult $ trimLeft
+                      $ removeOutputComments res
+           else []
 
 -- | init the maple communication
 mapleInit :: Int -- ^ Verbosity level

@@ -31,6 +31,8 @@ import CSL.EPBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
 import Common.Id (tokStr)
+import Common.Doc
+import Common.DocUtils
 
 -- ----------------------------------------------------------------------
 -- * Datatypes for efficient Extended Parameter comparison
@@ -44,6 +46,9 @@ instance Show NormEP where
     show RightOf = ">="
     show Equal = "="
     show Except = "/="
+
+instance Pretty NormEP where
+    pretty x = text $ show x
 
 type EPExp = (NormEP, APInt)
 
