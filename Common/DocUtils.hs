@@ -160,6 +160,9 @@ instance (Pretty a, Pretty b, Pretty c, Pretty d) => Pretty (a, b, c, d) where
 instance Pretty Int where
     pretty = sidDoc . mkSimpleId . show
 
+instance Pretty Integer where
+    pretty = sidDoc . mkSimpleId . show
+
 instance Pretty a => Pretty [a] where
     pretty = pretties
 
@@ -178,9 +181,14 @@ printMap = ppMap pretty pretty
 
 ppMap :: (a -> Doc) -> (b -> Doc) -> (Doc -> Doc) -> ([Doc] -> Doc)
       -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
-ppMap fa fb brace inter pairDoc = brace . inter
+ppMap fa fb brace inter pairDoc =
+    ppPairlist fa fb brace inter pairDoc . Map.toList
+
+ppPairlist :: (a -> Doc) -> (b -> Doc) -> (Doc -> Doc) -> ([Doc] -> Doc)
+      -> (Doc -> Doc -> Doc) -> [(a, b)] -> Doc
+ppPairlist fa fb brace inter pairDoc = brace . inter
      . map ( \ (a, b) -> pairDoc (fa a) (fb b))
-     . Map.toList
+
 
 pairElems :: Doc -> Doc -> Doc
 pairElems a b = a <+> mapsto <+> b
