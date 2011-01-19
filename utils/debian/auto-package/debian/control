@@ -2,7 +2,7 @@ Source: hets
 Section: misc
 Priority: extra
 Maintainer: Corneliu-Claudiu Prodescu <cprodescu@googlemail.com>
-Build-Depends: debhelper(>=7.4.15), ghc6, happy, libghc6-parsec2-dev, libghc6-tar-dev, libghc6-glade-dev, libghc6-haskeline-dev, libghc6-hexpat-dev, libghc6-http-dev, libghc6-fgl-dev, libghc6-xml-dev, libghc6-zlib-dev, libghc6-haskell-src-dev, libghc6-aterm-dev, libghc6-programatica-dev, libghc6-uni-udrawgraph-dev, spass, darwin, lib32stdc++6[amd64]
+Build-Depends: debhelper(>=7.4.15), ghc6, happy, libghc6-parsec2-dev, libghc6-tar-dev, libghc6-glade-dev, libghc6-haskeline-dev, libghc6-hexpat-dev, libghc6-http-dev, libghc6-fgl-dev, libghc6-xml-dev, libghc6-zlib-dev, libghc6-haskell-src-dev, libghc6-aterm-dev, libghc6-programatica-dev, libghc6-uni-udrawgraph-dev, spass, darwin, lib32stdc++6[amd64], texlive-latex-base, texlive-pictures
 Standards-Version: 3.9.1
 Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
 
@@ -24,9 +24,18 @@ Depends: hets-core, protege-owl, libfactplusplusjni, pellet, ekrhyper, ${misc:De
 Description: Package containing the Hets-Ontology system.
  This is a meta-package containing the Hets-Ontology system.
 
+Package: hets-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: Package containing the documentation for Heterogeneous Tool Set.
+ This is a package containing the Haddock documentation of the Heterogenous
+ Tool Set.
+
 Package: hets
 Architecture: all
-Depends: hets-core, hets-ontology, isabelle, twelf, reduce, ${misc:Depends}
+Depends: hets-core, hets-ontology, hets-doc, isabelle, twelf, reduce, ${misc:Depends}
 Recommends: maude
 Description: Package containing the full Hets - the Heterogeneous Tool Set.
  This is a meta-package containing the full Hets system.
+

@@ -6,10 +6,12 @@
 
 override_dh_auto_clean:
 	make distclean
-	rm -rf debian/hets-core*
+	dh_auto_clean
 
 override_dh_auto_build:
 	make hets-opt
+	cd doc && pdflatex UserGuide.tex
+	make doc
 
 override_dh_auto_test:
 	yes X | make check
@@ -22,5 +24,7 @@ override_dh_install:
 	install -m 755  hets debian/hets-core/usr/lib/hets
 	cp -r hets-lib debian/hets-core/usr/lib/hets
 	cp -r hets-owl-tools debian/hets-core/usr/lib/hets
+	install -m 755 -d debian/hets-doc/usr/share/doc/hets-doc/html
+	cp docs/* debian/hets-doc/usr/share/doc/hets-doc/html
 	install -m 755 -d debian/hets-core/usr/bin
 	cp debian/hets_script debian/hets-core/usr/bin/hets
