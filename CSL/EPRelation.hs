@@ -460,10 +460,12 @@ getSubsumedForest eps ft = partition p ft where
     p t = case compareEPs eps (ep2 t) of
             Comparable EQ ->
                 error $ concat [ "getSubsumedForest: equality "
-                               , "overlap", show eps, " = ", show (ep2 t) ]
+                               , "overlap ", show $ prettyEPs eps, " = "
+                               , show $ prettyEPs (ep2 t) ]
             Incomparable Overlap ->
                 error $ concat [ "getSubsumedForest: overlap "
-                               , show eps, " = ", show (ep2 t) ]
+                               , show $ prettyEPs eps, " = "
+                               , show $ prettyEPs (ep2 t) ]
             Comparable GT -> True
             _ -> False
 

@@ -30,12 +30,10 @@ import Common.Result (diags, printDiags, resultToMaybe)
 import Common.ResultT
 import Common.Lexer as Lexer
 import Common.Parsec
-import Common.Doc
 import qualified Common.Lib.Rel as Rel
 import Text.ParserCombinators.Parsec
 import Control.Monad.State (StateT(..))
 import Control.Monad.Trans (MonadIO (..), lift)
-import qualified Data.Set as Set
 import Control.Monad (liftM)
 -- the process communication interface
 import qualified Interfaces.Process as PC
@@ -54,6 +52,7 @@ import CSL.Sign
 
 import Common.Utils (getEnvDef)
 import Common.DocUtils
+import Common.Doc
 import Common.AS_Annotation
 
 import Driver.Options
@@ -68,15 +67,26 @@ import CSL.SMTComparison
 import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
 import System.IO
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+import Data.List
 
 
 {-
 
 MAIN TESTING FUNCTIONS:
 
-test i assStoreAndProg
-test i loadAssignmentStore
-testWithMaple 4 46 (loadAssignmentStore True)
+test 44 assStoreAndProgSimple
+test 44 assStoreAndProgElim
+test 45 loadAssignmentStore
+(mit, _) <- testWithMaple 4 46 (loadAssignmentStore True)
+testResult 54 (depClosure ["F_G"])
+
+ncl <- sens 56
+inDefinition (undef ncl) ncl
+
+For engineering of the specification (to see how to fix missing constants):
+
+sens 56 >>= (\ ncl -> inDefinition (undef ncl) ncl) >>= mapM putStrLn >>= return . length
 
 DEACTIVATED:
 interesting i's: 44, 46
@@ -94,18 +104,23 @@ help :: IO ()
 help = do
   s <- readFile "CSL/InteractiveTests.hs"
   let l = lines s
-  putStrLn $ unlines $ drop 73 $ take 87 l
+      startP = ("MAIN TESTING FUNCTIONS:" /=)
+      endP = ("-}" /=)
+  putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
 
 -- ----------------------------------------------------------------------
 -- * Gluing the Analysis and Evaluation together
 -- ----------------------------------------------------------------------
 
-test :: (Pretty a, MonadIO m) => Int -> (Sign -> [Named CMD] -> m a) -> m ()
-test i f = liftIO (sigsens i) >>= uncurry f >>= liftIO . putStrLn . show . pretty
+test :: (Pretty a, MonadIO m) => Int -> ([Named CMD] -> m a) -> m ()
+test i f = testResult i f >>= liftIO . putStrLn . show . pretty
+
+testResult :: (Pretty a, MonadIO m) => Int -> ([Named CMD] -> m a) -> m a
+testResult i f = liftIO (sens i) >>= f
 
 -- | Returns sorted assignment store and program after EP elimination
-assStoreAndProgElim :: Sign -> [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
-assStoreAndProgElim _ ncl = do
+assStoreAndProgElim :: [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
+assStoreAndProgElim ncl = do
   let (asss, prog) = splitAS ncl
       gm = fmap analyzeGuarded asss
       sgl = dependencySortAS gm
@@ -121,14 +136,74 @@ assStoreAndProgElim _ ncl = do
 
 
 -- | Returns sorted assignment store and program without EP elimination
-assStoreAndProgSimple :: Sign -> [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
-assStoreAndProgSimple _ ncl = do
+assStoreAndProgSimple :: [Named CMD] -> IO ([(ConstantName, AssDefinition)], [Named CMD])
+assStoreAndProgSimple ncl = do
   let (asss, prog) = splitAS ncl
       gm = fmap analyzeGuarded asss
       sgl = dependencySortAS gm
   return (getSimpleAS sgl, prog)
 
+-- | Returns all constants where the given constants depend on
+depClosure :: [String] -> [Named CMD] -> IO [[String]]
+depClosure l ncl = do
+  let (asss, prog) = splitAS ncl
+      gm = fmap analyzeGuarded asss
+      dr = getDependencyRelation gm
+  return $ relLayer dr l
 
+-- | mark final
+markFinal :: [String] -> [Named CMD] -> IO [String]
+markFinal l ncl = do
+  let (asss, prog) = splitAS ncl
+      gm = fmap analyzeGuarded asss
+      dr = getDependencyRelation gm
+      f x = case Map.lookup x dr of
+              Just s -> if Set.null s then x ++ " *" else x
+              _ -> x ++ " *"
+  return $ map f l
+
+
+-- | definedIn
+definedIn :: [String] -> [Named CMD] -> IO [String]
+definedIn l ncl = return $ map g l where
+      g s = intercalate ", " (mapMaybe (f s) ncl) ++ ":" ++ s
+      f s nc = case sentence nc of
+                 Ass (Op oi _ _ _) def ->
+                     if simpleName oi == s then Just $ senAttr nc else Nothing
+                 _ -> Nothing
+
+inDefinition :: [String] -> [Named CMD] -> IO [String]
+inDefinition l ncl =
+  let (asss, prog) = splitAS ncl
+      gm = fmap analyzeGuarded asss
+      dr = getDependencyRelation gm
+      allDefs = allDefinitions ncl
+      br = Map.filterWithKey (\k _ -> elem k l) $ getBackRef dr
+      f m l' = map (g m) l'
+      g m x = Map.findWithDefault "" x m
+      h = f allDefs
+      f' (x,y) = x ++ ": " ++ intercalate ", " y
+  in return $ map f' $ Map.toList $ fmap h br
+
+
+allDefinitions :: [Named CMD] -> (Map.Map String String)
+allDefinitions ncl = Map.fromList $ mapMaybe f ncl where
+    f nc = case sentence nc of
+             Ass (Op oi _ _ _) def -> Just (simpleName oi, senAttr nc)
+             _ -> Nothing
+
+undef :: [Named CMD] -> [String]
+undef ncl = Set.toList $ undefinedConstants $ fst $ splitAS ncl
+
+-- printSetMap Common.Doc.empty Common.Doc.empty dr
+
+relLayer :: Ord a => Rel2 a -> [a] -> [[a]]
+relLayer _ [] = []
+relLayer r l = l : relLayer r succs where
+    succs = Set.toList $ Set.unions $ mapMaybe (flip Map.lookup r) l
+
+
+f2consts = ["alpha_F","alpha_L","E_F","E_F0","E_L","h_G0","h_H","h_Q","Z_F","Z_L","b_F","c_F","d_3e","d_E","d_F","d_Ge","e_F","e_P","h_S","h_T","k_Q","phi_S","b_Ge","d_0","d_3","d_4","d_5e","d_E","d_G2","d_S","e_E","e_F","gamma","lambda1","n_B","phi_S","theta","b_F","b_Gi","b_Gt","d_5","d_E","d_F","d_S","e_E","e_F","e_Q","e_S","p_B","phi_S","b_Gt","d_0","d_3","d_4","d_5e","d_G1","d_G2","d_S","e_S","n_B","d_5","d_G1","d_G2","p_B","d_3","n_B"]
 
 -- emptyVarEnv
 -- execSMTComparer :: VarEnv -> SmtComparer a -> IO a
@@ -137,19 +212,27 @@ assStoreAndProgSimple _ ncl = do
 -- dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 -- epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guarded EPRange)]
 
-loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> Sign -> [Named CMD]
+loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
                 -> m ([(ConstantName, AssDefinition)], [Named CMD])
-loadAssignmentStore b s ncl = do
+loadAssignmentStore b ncl = do
   let f = if b then assStoreAndProgElim else assStoreAndProgSimple
-  res@(asss, _) <- liftIO $ f s ncl
+  res@(asss, _) <- liftIO $ f ncl
   loadAS asss
   return res
 
 
-testWithMaple :: Int -> Int -> (Sign -> [Named CMD] -> MapleIO a) -> IO (MITrans, a)
-testWithMaple verbosity i f = do
-  x <- sigsens i
-  runWithMaple verbosity $ uncurry f x
+testWithMaple :: Int -> Int -> ([Named CMD] -> MapleIO a) -> IO (MITrans, a)
+testWithMaple verbosity i f = sens i >>= runWithMaple verbosity . f
+
+
+casConst :: MITrans -> String -> String
+casConst mit s =
+    fromMaybe "" $ rolookup (getBMap mit) $ Right $ OpUser $ SimpleConstant s
+
+
+enclConst :: MITrans -> String -> OPID
+enclConst mit s =
+    fromMaybe (error $ "enclConst: no mapping for " ++ s) $ revlookup (getBMap mit) s
 
 -- evalL3 s i = evalL2 (mapleRun s) i
 
@@ -196,6 +279,9 @@ testspecs =
     [ (44, ("/EnCL/EN1591.het", "EN1591"))
     , (45, ("/EnCL/flange2.het", "Flange2"))
     , (46, ("/EnCL/flange2.het", "Flange2Complete"))
+    , (54, ("/EnCL/EN1591S.het", "EN1591"))
+    , (55, ("/EnCL/flange2S.het", "Flange2"))
+    , (56, ("/EnCL/flange2S.het", "Flange2Complete"))
     ]
 
 sigsens :: Int -> IO (Sign, [Named CMD])

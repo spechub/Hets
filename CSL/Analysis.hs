@@ -328,7 +328,8 @@ analyzeGuarded x =
                                           [nodeRg, Complement $ mkUnion rgl]
             in (nodelabel rl) { range = newRg } : l
         newguards = foldForest g [] frst
-    in x { guards = newguards }
+    in -- trace (show $ pretty x) $
+       x { guards = newguards }
 
 -- | Folds the forest in top-down direction constructing the accumulator
 -- from the labels and children of each node.

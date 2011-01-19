@@ -54,6 +54,7 @@ module CSL.AS_BASIC_CSL
     , ConstantPrinter (..)
     , toArgList
     , simpleName
+    , showOPNAME
     ) where
 
 import Common.Id as Id
@@ -151,7 +152,10 @@ data OPNAME = OP_mult -- arithmetic operators
               deriving (Eq, Ord)
 
 instance Show OPNAME where
-    show x =
+    show = showOPNAME
+
+showOPNAME :: OPNAME -> String
+showOPNAME x =
         case x of
           OP_neq -> "!="
           OP_mult -> "*"
@@ -201,7 +205,7 @@ data ConstantName = SimpleConstant String | ElimConstant String Int
                     deriving (Eq, Ord, Show)
 
 simpleName :: OPID -> String
-simpleName (OpId n) = show n
+simpleName (OpId n) = showOPNAME n
 simpleName (OpUser (SimpleConstant s)) = s
 simpleName (OpUser x) = error "simpleName: ElimConstant not supported: " ++ show x
 
@@ -418,7 +422,7 @@ instance Pretty OPID where
 -- more flexible w.r.t. the output of 'ConstantName'.
 class Monad m => ConstantPrinter m where
     printConstant :: ConstantName -> m Doc
-    printConstant = return . text . show
+    printConstant = return . printConstantName
 
 -- | The default ConstantName printer
 printConstantName :: ConstantName -> Doc
@@ -427,14 +431,14 @@ printConstantName (ElimConstant s i) =
     text $ if i > 0 then s ++ "__" ++ show i else s
 
 printAssDefinition :: ConstantPrinter m => AssDefinition -> m Doc
-printAssDefinition (ConstDef e) = printExpression e >>= return . (text "->" <+>)
+printAssDefinition (ConstDef e) = printExpression e >>= return . (text "() ->" <+>)
 printAssDefinition (FunDef l e) = do
   ed <- printExpression e
   return $ (parens $ sepByCommas $ map text l) <+> text "->" <+> ed
 
 printOPID :: ConstantPrinter m => OPID -> m Doc
 printOPID (OpUser c) = printConstant c
-printOPID oi = return $ text $ show oi
+printOPID (OpId oi) = return $ text $ showOPNAME oi
 
 instance ConstantPrinter []
 
@@ -508,8 +512,7 @@ printInfix e@(Op s _ exps _) = do
 printInfix _ = error "printInfix: Impossible case"
 
 printExpression :: ConstantPrinter m => EXPRESSION -> m Doc
--- TODO: remove the $ when finished static analysis
-printExpression (Var token) = return $ text $ "$" ++ tokStr token
+printExpression (Var token) = return $ text $ tokStr token
 printExpression e@(Op s epl exps _)
     | length exps == 0 = liftM (<> printExtparams epl) $ printOPID s
     | otherwise =

@@ -26,6 +26,7 @@ module CSL.Interpreter
     , fromList, defaultLookup, defaultRevlookup, CSL.Interpreter.empty, initWithDefault
     , lookupOrInsert
     , revlookup
+    , rolookup
     , translateArgVars
     , translateExpr
     , translateExprWithVars
@@ -201,7 +202,8 @@ initWithDefault l =
 -- for (Right (OpId ...)) we throw an error if it isn't.
 lookupOrInsert :: BMap
                -> Either ConstantName OPID -- ^ If you provide a 'ConstantName'
-                                           -- it is interpreted as an OpUser
+                                           -- it is interpreted as an 'OpUser'
+                                           -- value
                -> (BMap, String)
 lookupOrInsert m k =
     let err pc = error $ "lookupOrInsert: predefined constant encountered "
@@ -212,31 +214,59 @@ lookupOrInsert m k =
                               Right os@(OpUser x) -> (os, x, False, False)
     in
       case defaultLookup (defaultMap m) k' of
-      Just s -> if isL
-                then error $ "lookupOrInsert: default functions should be "
-                     ++ "passed in as OPIDs but got the constant " ++ show c
-                else (m, s)
-      _ -> let f _ _ x = x
-               nv = newkey m
-               (mNv', nm) = Map.insertLookupWithKey f c nv $ mThere m
-           -- first check for default symbols
-           in if isOpName
-              then error $ "lookupOrInsert: OPNAMEs should be registered in the"
-                       ++ " default mapping but could not find " ++ show k'
-              else case mNv' of
-                Just nv' -> (m, bmapIntToString m nv')
-                _ ->  (m { mThere = nm
-                         , mBack = IMap.insert nv c $ mBack m
-                         , newkey = nv + 1 }
-                      , bmapIntToString m nv)
+        Just s -> if isL
+                  then error $ "lookupOrInsert: default functions should be "
+                           ++ "passed in as OPIDs but got the constant "
+                           ++ show c
+                  else (m, s)
+        Nothing
+          | isOpName ->
+              error $ "lookupOrInsert: OPNAMEs should be registered in the"
+                        ++ " default mapping but could not find " ++ show k'
+          | otherwise ->
+              let f _ _ x = x
+                  nv = newkey m
+                  (mNv', nm) = Map.insertLookupWithKey f c nv $ mThere m
+              -- first check for default symbols
+              in case mNv' of
+                   Just nv' -> (m, bmapIntToString m nv')
+                   _ ->  (m { mThere = nm
+                            , mBack = IMap.insert nv c $ mBack m
+                            , newkey = nv + 1 }
+                         , bmapIntToString m nv)
 
-revlookup :: BMap -> String -> OPID
+-- | A read-only version of 'lookupOrInsert'
+rolookup :: BMap
+         -> Either ConstantName OPID -- ^ If you provide a 'ConstantName'
+                                     -- it is interpreted as an 'OpUser' value
+         -> Maybe String
+rolookup m k =
+    let err pc = error $ "rolookup: predefined constant encountered "
+                 ++ show pc
+        (k', c, isL, isOpName) = case k of
+                              Left s -> (OpUser s, s, True, False)
+                              Right oi@(OpId _) -> (oi, err oi, False, True)
+                              Right os@(OpUser x) -> (os, x, False, False)
+    in
+      case defaultLookup (defaultMap m) k' of
+        Nothing
+          | isOpName ->
+              error $ "rolookup: OPNAMEs should be registered in the"
+                        ++ " default mapping but could not find " ++ show k'
+          | otherwise ->
+              fmap (bmapIntToString m) $ Map.lookup c $ mThere m
+        mS -> if isL
+              then error $ "lookupOrInsert: default functions should be "
+                       ++ "passed in as OPIDs but got the constant "
+                       ++ show c
+              else mS
+
+revlookup :: BMap -> String -> Maybe OPID
 revlookup m k = 
     case defaultRevlookup (defaultMap m) k of
-      Just s -> s
-      _ -> let i = bmapStringToInt m k
-               err = error $ "revlookup: No reverse mapping for " ++ k
-           in OpUser $ IMap.findWithDefault err i $ mBack m
+      Nothing -> fmap OpUser $ IMap.lookup (bmapStringToInt m k) $ mBack m
+      mS -> mS
+
 
 {-
 bmToList :: BMap -> [(ConstantName, String)]
@@ -299,9 +329,10 @@ revtranslateExpr m (Op (OpUser c) epl el rg) =
     case c of
       SimpleConstant s ->
           let el' = map (revtranslateExpr m) el
-              oi = revlookup m s
+              err = error $ "revtranslateExpr: no mapping for " ++ s
+              oi = fromMaybe err $ revlookup m s
           in Op oi epl el' rg
-      _ -> error $ "revtranslateEXPRESSION: elim constants on CAS side not"
+      _ -> error $ "revtranslateExpr: elim constants on CAS side not"
            ++  " supported " ++ show c
 revtranslateExpr m (List el rg) =
     let el' = map (revtranslateExpr m) el
