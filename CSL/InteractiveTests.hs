@@ -222,7 +222,8 @@ loadAssignmentStore b ncl = do
 
 
 testWithMaple :: Int -> Int -> ([Named CMD] -> MapleIO a) -> IO (MITrans, a)
-testWithMaple verbosity i f = sens i >>= runWithMaple verbosity . f
+testWithMaple verbosity i f =
+    sens i >>= runWithMaple verbosity ["EnCLFunctions"] . f
 
 
 casConst :: MITrans -> String -> String
@@ -234,18 +235,15 @@ enclConst :: MITrans -> String -> OPID
 enclConst mit s =
     fromMaybe (error $ "enclConst: no mapping for " ++ s) $ revlookup (getBMap mit) s
 
--- evalL3 s i = evalL2 (mapleRun s) i
+
+{-
+evalL3 s i = evalL2 (mapleRun s) i
 
 evalL2 :: (AssignmentStore m, MonadState b m) =>
           (m () -> IO b)
               -> Int -- ^ Test-spec
               -> IO b
 evalL2 f i = cmds i >>= f . evaluateList
-
-
-
-
-{-
 
 
 prepareAS :: Int -> IO [(String, Guarded EPRange)]

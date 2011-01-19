@@ -258,15 +258,17 @@ mapleInit v = do
                   $ Just PC.defaultConfig { PC.startTimeout = 3 }
             (_, cs') <- runIOS cs $ PC.call 1.0
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
-                                 , "libname := \"", libpath, "\", libname;"
-                                 , "with(intpakX);with(intCompare);" ]
+                                 , "libname := \"", libpath, "\", libname;" ]
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
                            , getMI = cs'
                            }
-{-
--}
-
     _ -> error "Could not find maple shell command!"
+
+-- | Loads a maple module such as intpakX or intCompare
+mapleLoadModule :: MITrans -> String -> IO String
+mapleLoadModule rit s =
+    fmap fst $ runIOS (getMI rit) (PC.call 0.5 $ "with(" ++ s ++ ");")
+
 
 mapleExit :: MITrans -> IO (Maybe ExitCode)
 mapleExit mit = do
@@ -279,8 +281,11 @@ execWithMaple s m = do
   (res, mit) <- runIOS s $ runResultT m
   return (mit, fromMaybe err $ maybeResult res)
 
-runWithMaple :: Int -> MapleIO a -> IO (MITrans, a)
-runWithMaple i m = mapleInit i >>= flip execWithMaple m
+runWithMaple :: Int -> [String] -> MapleIO a -> IO (MITrans, a)
+runWithMaple i l m = do
+  mit <- mapleInit i
+  mapM_ (mapleLoadModule mit) l
+  execWithMaple mit m
 
 -- ----------------------------------------------------------------------
 -- * The Maple system
