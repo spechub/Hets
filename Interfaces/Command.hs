@@ -33,6 +33,7 @@ data GlobCmd =
   | HideThmShift
   | Colimit
   | NormalForm
+  | TriangleCons
   | Freeness
   | ThmFreeShift
   | QualifyNames
@@ -68,6 +69,7 @@ menuTextGlobCmd cmd = case cmd of
   HideThmShift -> "Hide-Theorem-Shift"
   Colimit -> "Compute colimit"
   NormalForm -> "Compute normal form"
+  TriangleCons -> "Triangle-Cons"
   QualifyNames -> "Qualify all names"
   UndoCmd -> "Undo"
   RedoCmd -> "Redo"

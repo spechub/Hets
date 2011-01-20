@@ -25,6 +25,7 @@ import Proofs.HideTheoremShift (automaticHideTheoremShift)
 import Proofs.TheoremHideShift (theoremHideShift)
 import Proofs.Conservativity (conservativity)
 import Proofs.ComputeColimit (computeColimit)
+import Proofs.TriangleCons (triangleCons)
 
 import Static.DevGraph
 
@@ -50,6 +51,7 @@ globLibResultAct =
   [ (ThmHideShift, theoremHideShift)
   , (Colimit, computeColimit)
   , (NormalForm, normalForm)
+  , (TriangleCons, triangleCons)
   , (Freeness, freeness)
 -- , (ThmFreeShift, theoremFreeShift)
   ]
