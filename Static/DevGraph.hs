@@ -1530,7 +1530,7 @@ computeLocalLabelTheory libEnv nodeLab =
 
 -- ** test link types
 
-liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
+liftE :: (DGLinkType -> a) -> LEdge DGLinkLab -> a
 liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
 
 -- | or two predicates
