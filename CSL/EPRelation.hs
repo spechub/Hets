@@ -25,6 +25,7 @@ import Data.List
 import Data.Maybe
 import Data.Tree
 import Data.Traversable (fmapDefault)
+import System.IO
 
 import CSL.EPBasic
 import CSL.SMTComparison
@@ -532,7 +533,12 @@ execSMTComparer :: VarEnv -> SmtComparer a -> IO a
 execSMTComparer ve smt = runReaderT smt ve
 
 instance CompareIO SmtComparer where
-    logMessage = liftIO . putStrLn
+    logMessage s = do
+      ve <- ask
+      case loghandle ve of
+        Just hdl -> liftIO $ hPutStrLn hdl s
+        _ -> return ()
+
     rangeFullCmp r1 r2 = do
             ve <- ask
             let vm = varmap ve

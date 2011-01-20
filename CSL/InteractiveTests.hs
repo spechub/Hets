@@ -14,7 +14,6 @@ and general static analysis tools
 -}
 
 
-module CSL.InteractiveTests where
 
 
 {-
@@ -32,13 +31,15 @@ import Common.Lexer as Lexer
 import Common.Parsec
 import qualified Common.Lib.Rel as Rel
 import Text.ParserCombinators.Parsec
-import Control.Monad.State (StateT(..))
 import Control.Monad.Trans (MonadIO (..), lift)
 import Control.Monad (liftM)
 -- the process communication interface
 import qualified Interfaces.Process as PC
 -}
 
+import System.Environment
+
+import Control.Monad.State (StateT(..))
 
 import Static.SpecLoader (getSigSensComplete, SigSens(..))
 
@@ -77,7 +78,7 @@ MAIN TESTING FUNCTIONS:
 test 44 assStoreAndProgSimple
 test 44 assStoreAndProgElim
 test 45 loadAssignmentStore
-(mit, _) <- testWithMaple 4 66 (loadAssignmentStore True)
+(mit, _) <- testWithMaple 4 (loadAssignmentStore True) 66
 testResult 54 (depClosure ["F_G"])
 
 ncl <- sens 56
@@ -107,6 +108,25 @@ help = do
       endP = ("-}" /=)
   putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
 
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [lb, sp] ->
+        testWithMapleGen 4 (loadAssignmentStore False) lb sp >>= mapleLoop . fst
+    _ -> putStrLn $ "EnCL Processing: Only two arguments expected but given "
+         ++ show (length args)
+
+
+
+mapleLoop :: MITrans -> IO ()
+mapleLoop mit = do
+  x <- getLine
+  if x == "q" then mapleExit mit >> return ()
+              else mapleDirect False mit x >>= putStrLn >> mapleLoop mit
+                  
+         
+
 -- ----------------------------------------------------------------------
 -- * Gluing the Analysis and Evaluation together
 -- ----------------------------------------------------------------------
@@ -125,11 +145,11 @@ assStoreAndProgElim ncl = do
       sgl = dependencySortAS gm
       ve = VarEnv { varmap = Map.fromList $ zip ["I", "F"] [1..]
                   , vartypes = Map.empty
-                  --, loghandle = Just stdout
-                  , loghandle = Nothing
+                  , loghandle = Just stdout
+                  --, loghandle = Nothing
                   }
       -- ve = emptyVarEnv $ Just stdout
-  el <- execSMTComparer ve $ epElimination sgl
+  el <- execSMTTester' ve $ epElimination sgl
   return (getElimAS el, prog)
 
 
@@ -153,9 +173,13 @@ loadAssignmentStore b ncl = do
   return res
 
 
-testWithMaple :: Int -> Int -> ([Named CMD] -> MapleIO a) -> IO (MITrans, a)
-testWithMaple verbosity i f =
-    sens i >>= runWithMaple verbosity ["EnCLFunctions"] . f
+testWithMapleGen :: Int -> ([Named CMD] -> MapleIO a) -> String -> String -> IO (MITrans, a)
+testWithMapleGen verbosity f lb sp =
+    sigsensGen lb sp >>= runWithMaple verbosity ["EnCLFunctions"]
+                   . f . sigsensNamedSentences
+
+testWithMaple :: Int -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
+testWithMaple verbosity f = uncurry (testWithMapleGen verbosity f) . libFP
 
 
 
@@ -230,8 +254,6 @@ relLayer r l = l : relLayer r succs where
     succs = Set.toList $ Set.unions $ mapMaybe (flip Map.lookup r) l
 
 
-f2consts = ["alpha_F","alpha_L","E_F","E_F0","E_L","h_G0","h_H","h_Q","Z_F","Z_L","b_F","c_F","d_3e","d_E","d_F","d_Ge","e_F","e_P","h_S","h_T","k_Q","phi_S","b_Ge","d_0","d_3","d_4","d_5e","d_E","d_G2","d_S","e_E","e_F","gamma","lambda1","n_B","phi_S","theta","b_F","b_Gi","b_Gt","d_5","d_E","d_F","d_S","e_E","e_F","e_Q","e_S","p_B","phi_S","b_Gt","d_0","d_3","d_4","d_5e","d_G1","d_G2","d_S","e_S","n_B","d_5","d_G1","d_G2","p_B","d_3","n_B"]
-
 -- emptyVarEnv
 -- execSMTComparer :: VarEnv -> SmtComparer a -> IO a
 -- splitAS :: [Named CMD] -> (GuardedMap [EXTPARAM], [Named CMD])
@@ -249,25 +271,6 @@ enclConst mit s =
     fromMaybe (error $ "enclConst: no mapping for " ++ s) $ revlookup (getBMap mit) s
 
 
-{-
-evalL3 s i = evalL2 (mapleRun s) i
-
-evalL2 :: (AssignmentStore m, MonadState b m) =>
-          (m () -> IO b)
-              -> Int -- ^ Test-spec
-              -> IO b
-evalL2 f i = cmds i >>= f . evaluateList
-
-
-prepareAS :: Int -> IO [(String, Guarded EPRange)]
-prepareAS = liftM (dependencySortAS . fmap analyzeGuarded . fst . splitAS) . sens
-
-prepareProg :: Int -> IO [Named CMD]
-prepareProg = liftM (snd . splitAS) . sens
-
-
--}
-
 -- ----------------------------------------------------------------------
 -- * general test functions
 -- ----------------------------------------------------------------------
@@ -284,7 +287,7 @@ charInfo = do
 -- see also myHetcatsOpts in Test.hs
 myHetsOpts :: HetcatsOpts
 myHetsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"]
-                                   , verbose = 0 }
+                                , verbose = 0 }
 
 testspecs :: [(Int, ([Char], [Char]))]
 testspecs =
@@ -303,7 +306,7 @@ sigsensGen :: String -> String -> IO (SigSens Sign CMD)
 sigsensGen lb sp = do
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
   let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
-  res <- getSigSensComplete False myHetsOpts CSL fp sp
+  res <- getSigSensComplete True myHetsOpts CSL fp sp
   putStrLn "\n"
   return res
 
@@ -339,6 +342,72 @@ time p = do
   liftIO $ putStrLn $ show $ diffUTCTime t' t
   return res
 
+
+
+
+
+
+
+
+
+
+-- ----------------------------------------------------------------------
+-- * Smt testing instances
+-- ----------------------------------------------------------------------
+
+
+data TestEnv = TestEnv { counter :: Int
+                       , varenv :: VarEnv
+                       , loghdl :: Handle }
+
+logf :: FilePath
+logf = "/tmp/CSL.log"
+
+teFromVE :: VarEnv -> IO TestEnv
+teFromVE ve = do
+  hdl <- openFile logf WriteMode
+  let ve' = ve{ loghandle = Just hdl }
+  return TestEnv { counter = 0, varenv = ve', loghdl = hdl }
+
+type SmtTester = StateT TestEnv IO
+
+execSMTTester :: VarEnv -> SmtTester a -> IO (a, Int)
+execSMTTester ve smt = do
+  (x, s) <- teFromVE ve >>= runStateT smt
+  hClose $ loghdl s
+  return (x, counter s)
+
+execSMTTester' :: VarEnv -> SmtTester a -> IO a
+execSMTTester' ve smt = do
+  (x, i) <- execSMTTester ve smt
+  putStrLn $ "SMT-Checks: " ++ show i
+  return x
+
+instance CompareIO SmtTester where
+    logMessage x = do
+      hdl <- gets loghdl
+      liftIO $ hPutStrLn hdl x
+    rangeFullCmp r1 r2 = do
+      env <- get
+      let f x = x{counter = counter x + 1}
+          ve = varenv env
+          vm = varmap ve
+          hdl = loghdl env
+      modify f
+      lift $ writeRangesToLog hdl r1 r2
+      liftIO $ hPutStrLn hdl ""
+      res <- lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+      lift $ writeRangesToLog hdl r1 r2 >> hPutStrLn hdl ("=" ++ show res)
+      return res
+
+writeRangesToLog :: Handle -> EPRange -> EPRange -> IO ()
+writeRangesToLog hdl r1 r2= do
+  let [d1, d2] = map diagnoseEPRange [r1, r2]
+  hPutStr hdl $ show $ text "Cmp" <> parens (d1 <> comma <+> d2)
+
+-- ----------------------------------------------------------------------
+-- * Smt testing instances
+-- ----------------------------------------------------------------------
 
 {-
 show guarded assignments:
@@ -664,54 +733,6 @@ let sgm = dependencySortAS grdm
 -}
 
 
-data TestEnv = TestEnv { counter :: Int
-                       , varenv :: VarEnv
-                       , loghdl :: Handle }
-
-logf :: FilePath
-logf = "/tmp/CSL.log"
-
-teFromVE :: VarEnv -> IO TestEnv
-teFromVE ve = do
-  hdl <- openFile logf WriteMode
-  let ve' = ve{ loghandle = Just hdl }
-  return TestEnv { counter = 0, varenv = ve', loghdl = hdl }
-
-type SmtTester = StateT TestEnv IO
-
-execSMTTester :: VarEnv -> SmtTester a -> IO (a, Int)
-execSMTTester ve smt = do
-  (x, s) <- teFromVE ve >>= runStateT smt
-  hClose $ loghdl s
-  return (x, counter s)
-
-execSMTTester' :: VarEnv -> SmtTester a -> IO a
-execSMTTester' ve smt = do
-  (x, i) <- execSMTTester ve smt
-  putStrLn $ "SMT-Checks: " ++ show i
-  return x
-
-instance CompareIO SmtTester where
-    logMessage x = do
-      hdl <- gets loghdl
-      liftIO $ hPutStrLn hdl x
-    rangeFullCmp r1 r2 = do
-      env <- get
-      let f x = x{counter = counter x + 1}
-          ve = varenv env
-          vm = varmap ve
-          hdl = loghdl env
-      modify f
-      lift $ writeRangesToLog hdl r1 r2
-      liftIO $ hPutStrLn hdl ""
-      res <- lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
-      lift $ writeRangesToLog hdl r1 r2 >> hPutStrLn hdl ("=" ++ show res)
-      return res
-
-writeRangesToLog :: Handle -> EPRange -> EPRange -> IO ()
-writeRangesToLog hdl r1 r2= do
-  let [d1, d2] = map diagnoseEPRange [r1, r2]
-  hPutStr hdl $ show $ text "Cmp" <> parens (d1 <> comma <+> d2)
 
 -- elimTestInit :: Int -> [(String, Guarded EPRange)] -> IO [Guard EPRange]
 elimTestInit i gl = do

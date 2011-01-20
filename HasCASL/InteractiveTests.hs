@@ -12,7 +12,6 @@ Portability :  portable
 Test functions for MatchingWithDefinitions
 -}
 
-module HasCASL.InteractiveTests where
 
 import HasCASL.PrintSubst
 import HasCASL.MatchingWithDefinitions ( initialDefStore
@@ -25,6 +24,8 @@ import HasCASL.MatchingWithDefinitions ( initialDefStore
                                        -- , DefStore(..)
                                        )
 
+import System.Environment
+
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.Logic_HasCASL
@@ -36,8 +37,8 @@ import Data.Maybe
 
 -- global part imports
 
--- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
-import Main (getSigSensComplete, myHetcatsOpts, SigSens(..))
+import Static.SpecLoader (getSigSensComplete, SigSens(..))
+
 import Data.Time.Clock
 
 import Control.Monad
@@ -51,7 +52,7 @@ import Common.DocUtils
 
 -- For Navigation
 import qualified Data.Graph.Inductive.Graph as Graph
---import Static.PrintDevGraph
+import Static.PrintDevGraph()
 import Static.DevGraph
 import Static.DGNavigation
 
@@ -88,6 +89,15 @@ help = do
       startP = ("{- testruns:" /=)
       endP = ("-}" /=)
   putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
+
+main :: IO ()
+main = do
+  args <- getArgs
+  case args of
+    [lb, sp, patN, cN] ->
+        matchDesign lb sp patN cN
+    _ -> putStrLn $ "Design Matching: Only four arguments expected but given "
+         ++ show (length args)
   
 ------------------------- Global DG functions -------------------------
 
@@ -144,8 +154,8 @@ naviTest sigs s = do
 -- ** Spec extraction
 
 -- see also myHetcatsOpts in Test.hs
-myHetsOpts :: HetcatsOpts
-myHetsOpts = myHetcatsOpts { verbose = 2 }
+myHetsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"]
+                                , verbose = 0 }
 
 testspecs :: [(Int, (String, String))]
 testspecs =
@@ -321,11 +331,11 @@ testSpecMatchM sigs patN cN =
 
 ------------------------- Shortcuts -------------------------
 
-matchDesign :: String -- ^
-         -> String -- ^
-         -> String -- ^
-         -> String -- ^
-         -> IO ()
+matchDesign :: String -- ^ The filename of the library containing the specs to match
+            -> String -- ^ The specname importing the specs to match
+            -> String -- ^ The pattern specname
+            -> String -- ^ The concrete design specname
+            -> IO ()
 matchDesign lb sp patN cN = do
   sigs <- sigsensGen lb sp
   fromSigsNice sigs patN cN (findMatch noConstraints)
