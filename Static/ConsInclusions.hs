@@ -16,18 +16,12 @@ import Static.GTheory
 import Driver.Options
 import Driver.WriteFn
 
-import Logic.Coerce
-import Logic.Logic
-import Logic.Prover
-
 import Common.Consistency
 import Common.Doc
 import Common.DocUtils
-import Common.ExtSign
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.Maybe
-import qualified Data.Set as Set
 
 dumpConsInclusions :: HetcatsOpts -> DGraph -> IO ()
 dumpConsInclusions opts dg =
@@ -47,20 +41,11 @@ dumpConsIncl opts dg (s, t, l) = do
        file = "ConsIncl_" ++ nm ++ ".het"
        g1 = fromMaybe (dgn_theory src) $ globalTheory src
        g2 = fromMaybe (dgn_theory tar) $ globalTheory tar
-   case g1 of
-     G_theory lid1 sig1 _ _ _ -> case simplifyTh g2 of
-       G_theory lid2 sig2 _ sens2 _ -> do
-           insig <- coerceSign lid1 lid2 "dumpConsIncl" sig1
-           let syms = concatMap (Set.toList .
-                     (`Set.difference` symset_of lid2 (plainSign insig)))
-                       (sym_of lid2 $ plainSign sig2)
-               sens = toNamedList sens2
-           writeVerbFile opts file
+   writeVerbFile opts file
              $ show $ useGlobalAnnos ga $ vcat
              [ text $ "spec source_" ++ nm ++ " ="
              , prettyGTheory g1
              , text "end"
              , text $ "spec target_" ++ nm ++ " = source_" ++ nm
              , text "then %cons"
-             , if null syms && null sens then text "{}" else
-                   vcat $ map pretty syms ++ map (print_named lid2) sens ]
+             , prettyGTheory g2 ]
