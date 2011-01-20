@@ -14,15 +14,23 @@ import Static.DevGraph
 
 import Driver.Options
 
+import Common.Consistency
+
 import Data.Graph.Inductive.Graph as Graph
 
+dumpConsInclusions :: HetcatsOpts -> DGraph -> IO ()
 dumpConsInclusions opts dg =
-  mapM (dumpConsIncl opts dg )
+  mapM_ (dumpConsIncl opts dg )
   $ filter (\ (_, _, l) -> let e = getRealDGLinkType l in
                isInc e && edgeTypeModInc e == GlobalDef
+           && getCons (dgl_type l) == Cons
            )
   $ labEdgesDG dg
 
 dumpConsIncl :: HetcatsOpts -> DGraph -> LEdge DGLinkLab -> IO ()
-dumpConsIncl = undefined
+dumpConsIncl opts dg (s, t, l) = do
+   let src = labDG dg s
+       tar = labDG dg t
+   return ()
+
 
