@@ -40,8 +40,7 @@ import qualified Interfaces.Process as PC
 -}
 
 
--- README: In order to work correctly link the Test.hs in the Hets-root dir to Main.hs (ln -s Test.hs Main.hs)
-import Main (getSigSensComplete, myHetcatsOpts, SigSens(..))
+import Static.SpecLoader (getSigSensComplete, SigSens(..))
 
 import CSL.MapleInterpreter 
 import CSL.Interpreter
@@ -78,7 +77,7 @@ MAIN TESTING FUNCTIONS:
 test 44 assStoreAndProgSimple
 test 44 assStoreAndProgElim
 test 45 loadAssignmentStore
-(mit, _) <- testWithMaple 4 46 (loadAssignmentStore True)
+(mit, _) <- testWithMaple 4 66 (loadAssignmentStore True)
 testResult 54 (depClosure ["F_G"])
 
 ncl <- sens 56
@@ -142,6 +141,34 @@ assStoreAndProgSimple ncl = do
       gm = fmap analyzeGuarded asss
       sgl = dependencySortAS gm
   return (getSimpleAS sgl, prog)
+
+
+
+loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
+                -> m ([(ConstantName, AssDefinition)], [Named CMD])
+loadAssignmentStore b ncl = do
+  let f = if b then assStoreAndProgElim else assStoreAndProgSimple
+  res@(asss, _) <- liftIO $ f ncl
+  loadAS asss
+  return res
+
+
+testWithMaple :: Int -> Int -> ([Named CMD] -> MapleIO a) -> IO (MITrans, a)
+testWithMaple verbosity i f =
+    sens i >>= runWithMaple verbosity ["EnCLFunctions"] . f
+
+
+
+
+-- ----------------------------------------------------------------------
+-- * Temp tools
+-- ----------------------------------------------------------------------
+
+
+
+
+
+
 
 -- | Returns all constants where the given constants depend on
 depClosure :: [String] -> [Named CMD] -> IO [[String]]
@@ -212,20 +239,6 @@ f2consts = ["alpha_F","alpha_L","E_F","E_F0","E_L","h_G0","h_H","h_Q","Z_F","Z_L
 -- dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 -- epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guarded EPRange)]
 
-loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
-                -> m ([(ConstantName, AssDefinition)], [Named CMD])
-loadAssignmentStore b ncl = do
-  let f = if b then assStoreAndProgElim else assStoreAndProgSimple
-  res@(asss, _) <- liftIO $ f ncl
-  loadAS asss
-  return res
-
-
-testWithMaple :: Int -> Int -> ([Named CMD] -> MapleIO a) -> IO (MITrans, a)
-testWithMaple verbosity i f =
-    sens i >>= runWithMaple verbosity ["EnCLFunctions"] . f
-
-
 casConst :: MITrans -> String -> String
 casConst mit s =
     fromMaybe "" $ rolookup (getBMap mit) $ Right $ OpUser $ SimpleConstant s
@@ -270,27 +283,42 @@ charInfo = do
 
 -- see also myHetcatsOpts in Test.hs
 myHetsOpts :: HetcatsOpts
-myHetsOpts = myHetcatsOpts { verbose = 0 }
+myHetsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"]
+                                   , verbose = 0 }
 
 testspecs :: [(Int, ([Char], [Char]))]
 testspecs =
-    [ (44, ("/EnCL/EN1591.het", "EN1591"))
-    , (45, ("/EnCL/flange2.het", "Flange2"))
-    , (46, ("/EnCL/flange2.het", "Flange2Complete"))
-    , (54, ("/EnCL/EN1591S.het", "EN1591"))
-    , (55, ("/EnCL/flange2S.het", "Flange2"))
-    , (56, ("/EnCL/flange2S.het", "Flange2Complete"))
+    [ (44, ("EnCL/EN1591.het", "EN1591"))
+    , (45, ("EnCL/flange.het", "Flange"))
+    , (46, ("EnCL/flange.het", "FlangeComplete"))
+    , (54, ("EnCL/EN1591S.het", "EN1591"))
+    , (55, ("EnCL/flangeS.het", "Flange"))
+    , (56, ("EnCL/flangeS.het", "FlangeComplete"))
+    , (65, ("EnCL/flangeDefault.het", "FlangeDefault"))
+    , (66, ("EnCL/flangeExported.het", "FlangeComplete"))
     ]
+
+
+sigsensGen :: String -> String -> IO (SigSens Sign CMD)
+sigsensGen lb sp = do
+  hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
+  let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
+  res <- getSigSensComplete False myHetsOpts CSL fp sp
+  putStrLn "\n"
+  return res
+
+siggy :: Int -> IO (SigSens Sign CMD)
+siggy = uncurry sigsensGen . libFP
+
+libFP :: Int -> (String, String)
+libFP i = fromMaybe (if i > 0 then ("EnCL/Tests.het", "Test" ++ show i)
+                            else ("EnCL/ExtParamExamples.het", "E" ++ show (- i)))
+          $ Prelude.lookup i testspecs
 
 sigsens :: Int -> IO (Sign, [Named CMD])
 sigsens i = do
-  let (lb, sp) = fromMaybe (if i > 0 then ("/EnCL/Tests.het", "Test" ++ show i)
-                            else ("/EnCL/ExtParamExamples.het", "E" ++ show (- i)))
-                 $ Prelude.lookup i testspecs
-  hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  res <- getSigSensComplete True myHetsOpts CSL (hlib ++ lb) sp
-  putStrLn "\n"
-  return (sigsensSignature res, sigsensNamedSentences res)
+  res <- siggy i
+  return ( sigsensSignature res, sigsensNamedSentences res )
 
 sig :: Int -> IO Sign
 sig = fmap fst . sigsens

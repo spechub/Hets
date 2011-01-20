@@ -70,6 +70,9 @@ testSpecMatchM sigs "FlangePattern" "Component"
 fromSigsNiceL sigs "FlangePattern" "Component" allMatches
 fromSigsNice sigs "FlangePattern" "Component" (findMatch noConstraints)
 
+-- shortcut for the above statement
+matchDesign "/tmp/flange.het" "Match" "FlangePattern" "Component"
+
 -- get the actual parameter spec of FlangePattern
 navi sigs $ getActualParameterSpec "FlangePattern"
 
@@ -82,7 +85,9 @@ help :: IO ()
 help = do
   s <- readFile "HasCASL/InteractiveTests.hs"
   let l = lines s
-  putStrLn $ unlines $ drop 59 $ take 78 l
+      startP = ("{- testruns:" /=)
+      endP = ("-}" /=)
+  putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
   
 ------------------------- Global DG functions -------------------------
 
@@ -144,20 +149,25 @@ myHetsOpts = myHetcatsOpts { verbose = 2 }
 
 testspecs :: [(Int, (String, String))]
 testspecs =
-    [ (1, ("/HasCASL/Real3D/SolidWorks/Matchtest.het", "Matching1"))
-    , (2, ("/HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching0"))
-    , (3, ("/HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching1"))
-    , (4, ("/HasCASL/Real3D/SolidWorks/flange.het", "Match"))
+    [ (1, ("HasCASL/Real3D/SolidWorks/Matchtest.het", "Matching1"))
+    , (2, ("HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching0"))
+    , (3, ("HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching1"))
+    , (4, ("HasCASL/Real3D/SolidWorks/flange.het", "Match"))
     ]
 
-siggy :: Int -> IO (SigSens Env Sentence)
-siggy i = do
-  let (lb, sp) = fromMaybe (error "siggy: no such spec")
-                 $ Prelude.lookup i testspecs
+sigsensGen :: String -> String -> IO (SigSens Env Sentence)
+sigsensGen lb sp = do
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  res <- getSigSensComplete False myHetsOpts HasCASL (hlib ++ lb) sp
+  let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
+  res <- getSigSensComplete False myHetsOpts HasCASL fp sp
   putStrLn "\n"
   return res { sigsensSignature = (sigsensSignature res) { globAnnos = sigsensGlobalAnnos res } }
+
+siggy :: Int -> IO (SigSens Env Sentence)
+siggy = uncurry sigsensGen . libFP
+
+libFP :: Int -> (String, String)
+libFP i = fromMaybe (error "libFP: no such spec") $ Prelude.lookup i testspecs
 
 sigsens :: Int -> IO (Env, [Named Sentence])
 sigsens i = do
@@ -309,5 +319,14 @@ testSpecMatchM sigs patN cN =
             putStrLn s
 
 
+------------------------- Shortcuts -------------------------
 
+matchDesign :: String -- ^
+         -> String -- ^
+         -> String -- ^
+         -> String -- ^
+         -> IO ()
+matchDesign lb sp patN cN = do
+  sigs <- sigsensGen lb sp
+  fromSigsNice sigs patN cN (findMatch noConstraints)
 
