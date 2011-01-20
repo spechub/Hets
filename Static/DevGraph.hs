@@ -536,8 +536,8 @@ data ExtViewSig = ExtViewSig NodeSig GMorphism ExtGenSig deriving Show
     (as defined for basic static semantics in Chap. III:5.1) -}
 
 data UnitSig = UnitSig [NodeSig] NodeSig (Maybe NodeSig) deriving (Show, Eq)
--- Maybe NodeSig stores the union of the parameters
--- the node is needed for consistency checks
+{- Maybe NodeSig stores the union of the parameters
+the node is needed for consistency checks -}
 
 data ImpUnitSigOrSig = ImpUnitSig MaybeNode UnitSig | Sig NodeSig
    deriving (Show, Eq)
@@ -757,7 +757,7 @@ type ProofHistory = SizedList.SizedList HistElem
 data RTNodeType = RTPlain UnitSig | RTRef Node deriving (Eq)
 
 instance Show RTNodeType where
-  show (RTPlain u) = "RTPlain\n"  ++ show u
+  show (RTPlain u) = "RTPlain\n" ++ show u
   show (RTRef n) = show n
 
 data RTNodeLab = RTNodeLab
@@ -779,8 +779,7 @@ data RTLinkType =
     RTRefine
   | RTComp
   | RTTyping
- -- | RTGiven obsolete
- deriving (Show, Eq)
+  deriving (Show, Eq)
 
 data RTLinkLab = RTLink
   { rtl_type :: RTLinkType
@@ -1452,7 +1451,7 @@ insInclEdgeDG :: LogicGraph -> DGraph -> NodeSig -> NodeSig ->
 insInclEdgeDG lgraph dg s t = do
   incl <- ginclusion lgraph (getSig s) (getSig t)
   let l = globDefLink incl DGLinkImports
-      (_, dg') =insLEdgeDG (getNode s, getNode t,l) dg
+      (_, dg') = insLEdgeDG (getNode s, getNode t, l) dg
   return dg'
 
 -- | insert a labeled edge into a given DG, return possibly new id of edge

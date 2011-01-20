@@ -37,7 +37,7 @@ import Syntax.AS_Structured
 
 import Common.AS_Annotation
 import Common.Id
-import Common.ToId(toSimpleId)
+import Common.ToId (toSimpleId)
 import Common.LibName
 import Common.Result
 import Common.Amalgamate
@@ -180,44 +180,45 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
        (nodes, maybeRes, mDiag, rsig', dg0, usp') <-
            anaRefSpec lgraph ln dg' opts impSig un (buc, diag') Nothing usp
        usig@(UnitSig argSigs resultSig unionSig) <- getUnitSigFromRef rsig'
-       let (n, dg1, rsig0) = 
+       let (n, dg1, rsig0) =
               case getPointerFromRef rsig' of
                RTNone -> let
                              (n', d') = addNodeRT dg0 usig $ show un
                              r' = setPointerInRef rsig' (NPUnit n')
                          in (n', d', r')
                _ -> (refSource $ getPointerFromRef rsig', dg0, rsig')
--- is this above needed? when can rsig' have no pointer?
--- TO DO
+{- is this above needed? when can rsig' have no pointer?
+TO DO -}
        (dg'', rsig) <- case impSig of
          EmptyNode _ -> do
           (resultSig', dg2) <- case unionSig of
               Just x -> nodeSigUnion lgraph dg1
-                          ([JustNode x,JustNode resultSig]) DGImports
+                          [JustNode x, JustNode resultSig] DGImports
               _ -> return (resultSig, dg1)
           return (updateNodeNameRT dg2 n $ show un,
                   setUnitSigInRef rsig0 $ UnitSig argSigs resultSig' unionSig)
               -- S -> T becomes S -> S \cup T
          JustNode ns -> do
            let dg2 = updateNodeNameRT dg1 n $ show un
-                -- ^ this changes the name of the node in the RT
+                -- this changes the name of the node in the RT
            (argUnion, dg3) <- nodeSigUnion lgraph dg2
-                              ((map JustNode argSigs) ++ [impSig])
+                              (map JustNode argSigs ++ [impSig])
                               DGImports
-                -- ^ union of the arguments with the imports
+                -- union of the arguments with the imports
            (resultSig', dg4) <- nodeSigUnion lgraph dg3
                           [JustNode resultSig, JustNode argUnion] DGImports
-                -- ^ union of the arguments with the result
-                -- F : S -> T given M
-                -- becomes F : M * S -> S_M \cup S \cup T
+                {- union of the arguments with the result
+                   F : S -> T given M
+                   becomes F : M * S -> S_M \cup S \cup T -}
            let dgU = updateSigRT dg4 n $ UnitSig [] resultSig' Nothing
-                -- ^ now stores S \cup T
-           let usig' = UnitSig (ns:argSigs) resultSig' $ Just argUnion
+                -- now stores S \cup T
+               usig' = UnitSig (ns : argSigs) resultSig' $ Just argUnion
                (newN, dgU') = addNodeRT dgU usig' ""
                newP = NPBranch n $ Map.fromList [(toSimpleId "", NPUnit newN)]
                rUnit = UnitSig argSigs resultSig' $ Just argUnion
-               rSig = BranchRefSig newP (rUnit, Just $ BranchStaticContext $ 
-                         Map.insert (toSimpleId "") (mkRefSigFromUnit usig') Map.empty) 
+               rSig = BranchRefSig newP (rUnit, Just $ BranchStaticContext $
+                         Map.insert (toSimpleId "") (mkRefSigFromUnit usig')
+                            Map.empty)
            return (addEdgesToNodeRT dgU' [newN] n, rSig)
              -- check the pointer
        let diag = fromMaybe diag' mDiag
@@ -226,7 +227,7 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
           ComponentRefSig _ _ -> error $
                      "component refinement forbidden in arch spec: unit"
                      ++ show un
-          _ -> do
+          _ ->
            if Map.member un buc
             then plain_error (Map.empty, uctx, dg'', ud')
                (alreadyDefinedUnit un) unpos
@@ -243,7 +244,7 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
                                  _ -> [])) resultSig' ustr
                           return (Based_unit_sig dn' rsig, diag'')
                           else if length nodes < 2 then do
-                                -- clarify the pointers here 
+                                -- clarify the pointers here
                                  let rsig'' =
                                       setPointerInRef
                                        (setUnitSigInRef rsig $
@@ -272,9 +273,8 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
                {- we can use Map.insert as there are no mappings for
                   un in ps and bs (otherwise there would have been a
                   mapping in (ctx uctx)) -}
-               UnitSig args _ _ ->
-                 if null args then
-                   case nodes of
+               UnitSig args _ _ -> case args of
+                 [] -> case nodes of
                      [dn] -> do
                               let bsig = Based_unit_sig dn $
                                            mkBotSigFromUnit usig
@@ -282,14 +282,13 @@ anaUnitDeclDefn lgraph ln dg opts uctx@(buc, _) udd = case udd of
                                       (Map.insert un bsig buc, diag),
                                         dg'', ud')
                      _ -> error "anaUnitDeclDefn"
-                  else
-                   if length nodes < 2 then
-                     error "anaUnitDeclDefn:lambda expression"
-                   else
-                   return (Map.empty , (Map.insert un
+                 _ -> case nodes of
+                   _ : _ : _ ->
+                     return (Map.empty , (Map.insert un
                              (Based_lambda_unit_sig nodes $
                               mkBotSigFromUnit usig)
                              buc, diag), dg'', ud')
+                   _ -> error "anaUnitDeclDefn:lambda expression"
 
 -- | Analyse unit refs
 anaUnitRef :: LogicGraph -> LibName -> DGraph
@@ -306,7 +305,7 @@ anaUnitRef lgraph ln dg opts
                   (error "component not in map!") un f
            Just (NPBranch _ f) -> Just $ Map.findWithDefault
                   (error "component not in map!") un f
-           _ ->  error "components!"
+           _ -> error "components!"
   curl <- lookupCurrentLogic "UNIT_REF" lgraph
   let impSig = EmptyNode curl
   ( _, _, _, rsig, dg'', usp') <- anaRefSpec lgraph ln dg opts impSig un
@@ -613,7 +612,7 @@ anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
                    let sigMorExt = gEmbed gSigMorExt
                    sink <- inclusionSink lgraph (map third morphSigs) sigA
                    () <- assertAmalgamability opts pos diagA sink
-                   let eI = zip fs $ map (\ x -> (first x, third x)) morphSigs
+                   let eI = zip fs $ map (\ (x, _, z) -> (x, z)) morphSigs
                    {- insert an edge from f_i to targetNode_i
                    extendDiagramWithEdge does it
                    and then call it for pairs (f_i, targetNode_i) -}
@@ -719,7 +718,7 @@ anaUnitSpec lgraph ln dg opts impsig rN usp = case usp of
        let usig = UnitSig [] resultSig Nothing
        return (mkRefSigFromUnit usig , dg', Unit_type []
                             (replaceAnnoted resultSpec' resultSpec) poss)
-    _ ->do -- a non-trivial unit type
+    _ -> do -- a non-trivial unit type
        (argSigs, dg1, argSpecs') <- anaArgSpecs lgraph ln dg opts argSpecs
        (sigUnion, dg2) <- nodeSigUnion lgraph dg1
                           (impsig : map JustNode argSigs) DGFormalParams
