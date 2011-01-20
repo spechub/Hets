@@ -37,6 +37,7 @@ import Static.DevGraph
 import Static.PrintDevGraph ()
 
 import Static.ComputeTheory (computeTheory)
+import Static.ConsInclusions
 import qualified Proofs.VSE as VSE
 
 import Common.DocUtils
@@ -252,6 +253,12 @@ createGlobalMenu gi showLib
             Nothing -> putStrLn "no lib"
             Just ist2 -> print . pretty . lookupDGraph (i_ln ist2)
               $ i_libEnv ist2
+     , Button "Dump Cons Inclusions" $ do
+          ost2 <- readIORef $ intState gi
+          case i_state ost2 of
+            Nothing -> putStrLn "no lib"
+            Just ist2 -> dumpConsInclusions (hetcatsOpts gi)
+                          $ lookupDGraph (i_ln ist2) $ i_libEnv ist2
      , Button "Show Library Graph" $ ral $ showLibGraph gi showLib
      , Button "Show RefinementTree" $ ral $ showLibGraph gi showRefTree
      , Button "Save Graph for uDrawGraph" $ ral
