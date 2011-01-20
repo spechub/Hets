@@ -318,7 +318,7 @@ showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
   $ language_name cid
 
 removeFunnyChars :: String -> String
-removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.:-+")
+removeFunnyChars = filter (\ c -> isAlphaNum c || elem c "_.-")
 
 getWebProverName :: G_prover -> String
 getWebProverName = removeFunnyChars . getProverName
