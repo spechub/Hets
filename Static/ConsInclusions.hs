@@ -46,8 +46,9 @@ dumpConsIncl opts dg (s, t, l) = do
        nm = showEdgeId (dgl_id l)
        file = "ConsIncl_" ++ nm ++ ".het"
        g1 = fromMaybe (dgn_theory src) $ globalTheory src
+       g2 = fromMaybe (dgn_theory tar) $ globalTheory tar
    case g1 of
-     G_theory lid1 sig1 _ _ _ -> case dgn_theory tar of
+     G_theory lid1 sig1 _ _ _ -> case g2 of
        G_theory lid2 sig2 _ sens2 _ -> do
            insig <- coerceSign lid1 lid2 "dumpConsIncl" sig1
            let syms = concatMap (Set.toList .
