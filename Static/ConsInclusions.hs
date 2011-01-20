@@ -26,7 +26,7 @@ import Common.DocUtils
 import Common.ExtSign
 
 import Data.Graph.Inductive.Graph as Graph
-
+import Data.Maybe
 import qualified Data.Set as Set
 
 dumpConsInclusions :: HetcatsOpts -> DGraph -> IO ()
@@ -45,8 +45,9 @@ dumpConsIncl opts dg (s, t, l) = do
        ga = globalAnnos dg
        nm = showEdgeId (dgl_id l)
        file = "ConsIncl_" ++ nm ++ ".het"
-   case dgn_theory src of
-     g1@(G_theory lid1 sig1 _ _ _) -> case dgn_theory tar of
+       g1 = fromMaybe (dgn_theory src) $ globalTheory src
+   case g1 of
+     G_theory lid1 sig1 _ _ _ -> case dgn_theory tar of
        G_theory lid2 sig2 _ sens2 _ -> do
            insig <- coerceSign lid1 lid2 "dumpConsIncl" sig1
            let syms = concatMap (Set.toList .
