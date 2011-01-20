@@ -113,7 +113,7 @@ showConsistencyChecker mn gi@(GInfo { libName = ln }) le =
         Just (G_theory _ _ _ sens _) -> Map.null sens
         Nothing -> True
         then do
-          infoDialog "No sentences" $ "Node " ++
+          infoDialogExt "No sentences" $ "Node " ++
             getDGNodeName lbl
             ++ " has no sentences and is thus trivially consistent"
           return $ return le
