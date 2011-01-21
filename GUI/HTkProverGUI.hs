@@ -116,16 +116,15 @@ populatePathsListBox lb prvs = do
   return ()
 
 populateAxiomsList ::
-    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
        ListBox String
     -> ProofState lid1 sentence1
     -> IO ()
-populateAxiomsList lbAxs s =
-    do aM' <- axiomMap s
+populateAxiomsList lbAxs s = do
        lbAxs # value (map (\ (k, sen) -> if wasTheorem sen then "(Th) " ++ k
-                                           else k) $
-                              OMap.toList aM')
+                                           else k)
+                              $ OMap.toList $ axiomMap s)
        return ()
 
 setSelectedProver :: ListBox String
@@ -167,7 +166,7 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     return ()
 
 updateStateGetSelectedGoals ::
-    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
            ProofState lid1 sentence1
         -> ListBox String
@@ -178,18 +177,17 @@ updateStateGetSelectedGoals s lb =
                       maybe [] (map (OMap.keys (goalMap s) !!)) sel}
 
 updateStateGetSelectedSens ::
-    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
            ProofState lid1 sentence1
         -> ListBox String -- ^ axioms listbox
         -> ListBox String -- ^ theorems listbox
         -> IO (ProofState lid1 sentence1)
-updateStateGetSelectedSens s lbAxs lbThs =
-    do aM <- axiomMap s
+updateStateGetSelectedSens s lbAxs lbThs = do
        selA <- getSelection lbAxs :: IO (Maybe [Int])
        selT <- getSelection lbThs :: IO (Maybe [Int])
-       return (s { includedAxioms   = maybe [] (fil aM) selA
-                 , includedTheorems = maybe [] (fil (goalMap s)) selT })
+       return (s { includedAxioms = maybe [] (fil $ axiomMap s) selA
+                 , includedTheorems = maybe [] (fil $ goalMap s) selT })
     where fil = map . (!!) . OMap.keys
 
 {- |
@@ -210,7 +208,7 @@ doSelectAllEntries selectAll lb =
   Called whenever the button "Display" is clicked.
 -}
 doDisplayGoals ::
-    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
        ProofState lid1 sentence1
     -> IO ()
@@ -521,9 +519,9 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
         sublogicText <- getText sublogicLabel
         when (sublogicText /= newSublogicText)
              (sublogicLabel # text newSublogicText >> return ())
-        when (Map.keys (proversMap s) /= Map.keys (proversMap s'))
-             (do populatePathsListBox pathsLb (proversMap s')
-                 setSelectedProver pathsLb s')
+        when (Map.keys (proversMap s) /= Map.keys (proversMap s')) $ do
+               populatePathsListBox pathsLb (proversMap s')
+               setSelectedProver pathsLb s'
         return s' { selectedProver =
                        maybe Nothing
                              (\ sp -> find (== sp) $ Map.keys (proversMap s'))
@@ -573,8 +571,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
              done
       +> deselectFormerTheorems >>> do
             s <- Conc.takeMVar stateMVar
-            aM <- axiomMap s
-            let axiomList = OMap.toList aM
+            let axiomList = OMap.toList $ axiomMap s
                 isNotFormerTheorem (_, st) = not $ wasTheorem st
             sel <- getSelection lbAxs :: IO (Maybe [Int])
             clearSelection lbAxs
@@ -657,7 +654,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
             mv <- Conc.tryTakeMVar lockMVar
             case mv of
                 Nothing -> done
-                Just _  -> do
+                Just _ -> do
                   enable lb
                   updateDisplay s''' True lb pathsLb statusLabel
                   enableWids wids

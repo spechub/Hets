@@ -42,6 +42,7 @@ module Proofs.AbstractState
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
+import Data.Maybe
 
 import Control.Concurrent.MVar
 
@@ -283,14 +284,13 @@ selectedGoalMap st = filterMapWithList (selectedGoals st) (goalMap st)
 -- | returns the axioms of the state coerced into the state's logicId
 axiomMap ::
     ( Logic lid sublogics basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree
-    , Monad m )
+        sign morphism symbol raw_symbol proof_tree )
     => ProofState lid sentence
-    -> m (ThSens sentence (AnyComorphism, BasicProof))
+    -> ThSens sentence (AnyComorphism, BasicProof)
 axiomMap s =
     case theory s of
-    G_theory lid _ _ aM _ ->
-        coerceThSens lid (logicId s) "Proofs.GUIState.axiomMap" aM
+    G_theory lid _ _ aM _ -> fromMaybe (error "Proofs.GUIState.axiomMap")
+      $ coerceThSens lid (logicId s) "" aM
 
 {- |
   recalculation of sublogic upon (de)selection of goals, axioms and

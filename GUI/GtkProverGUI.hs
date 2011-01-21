@@ -101,7 +101,7 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
 
     windowSetTitle window $ "Prove: " ++ thName
 
-    axioms <- axiomMap initState
+    let axioms = axiomMap initState
 
     -- set list data
     listProvers <- setListData trvProvers pName []
