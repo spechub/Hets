@@ -244,8 +244,6 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
          induced_from_to_morphism CASL = inducedFromToMorphism () trueC const
          theory_to_taxonomy CASL = convTaxo
 
---       convSignOMDoc CASL = someFunctionFromOMDocFolderNowInCASLFolder
-
 instance Logic CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
@@ -254,10 +252,7 @@ instance Logic CASL CASL_Sublogics
          stability _ = Stable
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics _ = sublogics_all [()]
-         conservativityCheck CASL  =
-             [
-             ConservativityChecker "CCC" checkFreeType
-             ]
+         conservativityCheck CASL = [ConservativityChecker "CCC" checkFreeType]
          empty_proof_tree CASL = emptyProofTree
          omdoc_metatheory CASL = Just caslMetaTheory
          export_senToOmdoc CASL = exportSenToOmdoc
@@ -268,8 +263,6 @@ instance Logic CASL CASL_Sublogics
          addOMadtToTheory CASL = OMI.addOMadtToTheory
          addOmdocToTheory CASL = OMI.addOmdocToTheory
          syntaxTable CASL = Just . getSyntaxTable
-
-
 #ifdef UNI_PACKAGE
          provers CASL = [quickCheckProver]
 #endif
