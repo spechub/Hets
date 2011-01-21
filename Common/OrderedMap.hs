@@ -24,7 +24,7 @@ module Common.OrderedMap
   , map, mapWithKey
   , update
   , difference
-  , filter
+  , filter, filterWithKey
   , partition
   , fromList, toList
   , keys, elems
@@ -34,6 +34,7 @@ import Prelude hiding (lookup, map, filter, null)
 
 import qualified Data.Map as Map
 import qualified Data.List as List
+import Data.Ord
 
 data ElemWOrd a = EWOrd
   { order :: Int
@@ -44,7 +45,7 @@ instance Ord a => Eq (ElemWOrd a) where
     x == y = compare x y == EQ
 
 instance Ord a => Ord (ElemWOrd a) where
-    compare x y = ele x `compare` ele y
+    compare = comparing ele
 
 type OMap a b = Map.Map a (ElemWOrd b)
 
@@ -91,8 +92,9 @@ fromList = List.foldl ins Map.empty
     where ins m (k, e) = insert k e m
 
 toList :: Ord k => OMap k a -> [(k, a)]
-toList = List.map (\ (k, e) -> (k, ele e)) . List.sortBy comp . Map.toList
-    where comp (_, x) (_, y) = compare (order x) (order y)
+toList = List.map (\ (k, e) -> (k, ele e))
+  . List.sortBy (comparing $ order . snd)
+  . Map.toList
 
 keys :: Ord k => OMap k a -> [k]
 keys = List.map fst . toList
