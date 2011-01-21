@@ -46,8 +46,10 @@ import Proofs.AbstractState
 
 import Text.XML.Light
 
+import Common.AS_Annotation
 import Common.DocUtils
 import Common.LibName
+import qualified Common.OrderedMap as OMap
 import Common.Result
 import Common.ResultT
 import Common.ToXml
@@ -278,9 +280,9 @@ getHetsResult opts updates sessRef file query =
                   Nothing -> fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
-                    ProveNode incl mp mt tl -> do
+                    ProveNode incl mp mt tl thms -> do
                       (newLib, sens) <- proveNode libEnv ln dg nl
-                                  gTh subL incl mp mt tl
+                                  gTh subL incl mp mt tl thms
                       if null sens then return "nothing to prove" else do
                         lift $ nextSess sessRef newLib k
                         return $ ppTopElement $ unode "results" $
@@ -338,13 +340,23 @@ getComorphs mp subL = ppTopElement . unode "translations"
 
 proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> ResultT IO (LibEnv, [(String, String)])
-proveNode le ln dg nl gTh subL useTh mp mt tl = case
+  -> [String] -> ResultT IO (LibEnv, [(String, String)])
+proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     filterByComorph mt . filterByProver mp
     $ getAllAutomaticProvers subL of
-    [] -> fail "no prover found"
-    cp : _ -> do
-      (res, prfs) <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) gTh cp
+  [] -> fail "no prover found"
+  cp : _ -> case gTh of
+    G_theory lid sig si thsens _ -> do
+      mth <- if null thms then return gTh else
+        let newSens = OMap.filterWithKey
+              ( \ k e -> isAxiom e || elem k thms
+               || useTh && isProvenSenStatus e) thsens
+            ks = OMap.keys $ OMap.filter (not . isAxiom) thsens
+            diffs = Set.difference (Set.fromList thms) (Set.fromList ks)
+        in if Set.null diffs
+           then return $ G_theory lid sig si newSens startThId
+           else fail $ "unknown theorems: " ++ show diffs
+      (res, prfs) <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) mth cp
       case prfs of
         Nothing -> fail "proving failed"
         Just sens -> if null sens then return (le, sens) else

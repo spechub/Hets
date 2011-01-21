@@ -68,7 +68,7 @@ nodeCommands :: [String]
 nodeCommands = ["node", "theory", "provers", "translations", "prove"]
 
 proveParams :: [String]
-proveParams = ["timeout", "include", "prover", "translation"]
+proveParams = ["timeout", "include", "prover", "translation", "theorems"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
@@ -110,7 +110,8 @@ data NodeCommand =
   { ncInclTheorems :: Bool
   , ncProver :: Maybe String
   , ncTranslation :: Maybe String
-  , ncTimeout :: Maybe Int }
+  , ncTimeout :: Maybe Int
+  , ncTheorems :: [String] }
   deriving Show
 
 -- | the path is not empty and leading slashes are removed
@@ -205,11 +206,14 @@ anaNodeQuery mi ans i incls pss =
       incl = lookup "include" pps
       trans = lookup "translation" pps
       prover = lookup "prover" pps
+      theorems = case lookup "theorems" pps of
+        Nothing -> []
+        Just str -> splitOn '+' str
       timeLimit = fmap read $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case lookup "include" pps of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
-        prover trans timeLimit
+        prover trans timeLimit theorems
       noPP = null incls && null pps
       noIncl = null incls && isNothing incl && isNothing timeLimit
   in case ans of
