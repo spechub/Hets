@@ -7,5 +7,4 @@ newlogic FOL =
   syntax Base2FOL
   models FOLMODView
   proofs FOL2FOLPF
-  patterns P
 end

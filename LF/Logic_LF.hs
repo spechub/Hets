@@ -23,6 +23,8 @@ import LF.Framework
 
 import Logic.Logic
 
+import Common.Result
+
 import qualified Data.Map as Map
 
 data LF = LF deriving Show
@@ -43,7 +45,14 @@ instance Syntax LF BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_symb_items LF = Just symbItems
    parse_symb_map_items LF = Just symbMapItems
 
-instance Sentences LF Sentence Sign Morphism Symbol
+instance Sentences LF
+   Sentence
+   Sign
+   Morphism
+   Symbol
+   where
+   map_sen LF m = (Result []) . (translate m)
+   sym_of LF = singletonList . getSymbols
 
 instance Logic LF
    ()
@@ -67,8 +76,11 @@ instance StaticAnalysis LF
    Symbol
    Symbol
    where
-   empty_signature LF = emptySig
    basic_analysis LF = Just $ basicAnalysis
+   empty_signature LF = emptySig
+   signature_union LF = sigUnion
+   is_subsig LF = isSubsig
+   subsig_inclusion LF = inclusionMorph
 
 instance LogicFram LF
    ()

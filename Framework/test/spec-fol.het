@@ -1,7 +1,16 @@
 logic FOL
-spec SP =
+spec SP1 =
   c : i.
   p : i -> o.
   
   . p c
 end
+
+spec SP2 = 
+  p : i -> o.
+  d : i.
+
+  . p d
+end 
+
+spec SP3 = SP1 and SP2

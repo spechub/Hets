@@ -1,11 +1,20 @@
 logic LF
-spec SP =
+spec SP1 =
   o : type.
   ded : o -> type.
   i : type.
   p : o.
-  q : o.
+  q : o = p.
   f : i -> o.
 
   . ded q
 end
+
+spec SP2 = 
+  o : type.
+  p : o.
+  a : o = p.
+  q = p.
+end
+
+spec SP = SP1 and SP2

@@ -34,11 +34,14 @@ module LF.Sign
        , getSymType
        , getSymValue
        , recForm
+       , isSubsig
+       , sigUnion
        ) where
 
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+import Common.Result
 
 import Data.Maybe
 import qualified Data.List as List
@@ -322,4 +325,43 @@ ordSig :: Sign -> Sign -> Ordering
 ordSig (Sign _ m1 d1) (Sign _ m2 d2) = compare (m1,d1) (m2,d2)
 
 ordSym :: Symbol -> Symbol -> Ordering
-ordSym (Symbol _ m1 n1) (Symbol _ m2 n2) = compare (m1,n1) (m2,n2)    
+ordSym (Symbol _ m1 n1) (Symbol _ m2 n2) = compare (m1,n1) (m2,n2)
+
+{- Subsignature test. An LF signature Sig1 is a subsignature of Sig2 if
+   the definitions in Sig1 are a subset of the definitions in Sig2. -}
+isSubsig :: Sign -> Sign -> Bool
+isSubsig (Sign _ _ ds1) (Sign _ _ ds2) =
+  Set.isSubsetOf (Set.fromList ds1) (Set.fromList ds2)
+ 
+{- Union of signatures. The union of two LF signatures Sig1 and Sig2 is
+   defined as the smallest valid signature containing both Sig1 and Sig2 as
+   subsignatures. It is not always defined, namely in the case when the original
+   signatures give conflicting definitions for the same symbol. -}
+sigUnion :: Sign -> Sign -> Result Sign
+sigUnion (Sign _ _ ds1) (Sign _ _ ds2) = sigUnionH ds2 (Sign "" "" ds1)
+
+sigUnionH :: [DEF] -> Sign -> Result Sign
+sigUnionH [] sig = Result [] $ Just sig
+sigUnionH (d@(Def s t v) : ds) sig =
+  if (isConstant s sig)
+     then let Just t1 = getSymType s sig
+              v1 = getSymValue s sig 
+              in if (t == t1 && v == v1)
+                    then sigUnionH ds sig
+                    else Result [conflictDefsError s] Nothing
+     else let sig1 = addDef d sig
+              in sigUnionH ds sig1
+
+---------------------------------------------------------------------
+---------------------------------------------------------------------
+-- ERROR MESSAGES
+
+conflictDefsError :: Symbol -> Diagnosis
+conflictDefsError s =
+  Diag
+    { diagKind = Error
+    , diagString = "Symbol " ++ (show $ pretty s)
+                   ++ " has conflicting declarations in the signature union "
+                   ++ "and hence the union is not defined."
+    , diagPos = nullRange
+    }

@@ -158,22 +158,16 @@ libItem l =
        logN@(Logic_name t _) <- logicName
        return (Logic_decl logN (catRange [s, t]))
   <|> -- newlogic
-    do s1 <- asKey newlogicS
-       n <- simpleId
+    do (n, s1) <- newlogicP
        s2 <- equalT
-       s3 <- asKey metaS
-       f <- fram
-       s4 <- asKey syntaxS
-       s <- simpleIdOrDDottedId
-       s5 <- asKey modelsS
-       m <- simpleIdOrDDottedId
-       s6 <- asKey proofsS
-       p <- simpleIdOrDDottedId
-       s7 <- asKey patternsS
-       pa <- simpleId       
+       (f, s3) <- metaP
+       (s, s4) <- syntaxP
+       (m, s5) <- modelsP
+       (p, s6) <- proofsP
+       (pa, s7) <- patternsP
        q <- optEnd
        return (Newlogic_defn (LogicDef n f s m p pa)
-          (catRange ([s1, s2, s3, s4, s5, s6, s7] ++ maybeToList q)))
+          (catRange ([s1, s2, s3, s4, s5, s6, s7] ++ maybeToList q)))    
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -238,8 +232,20 @@ imports l = do
     (sps, ps) <- separatedBy (annoParser $ groupSpec l) anComma
     return (sps, catRange (s : ps))
 
-fram :: AParser st FRAM
-fram = do
+newlogicP :: AParser st (Token, Token)
+newlogicP = do
+  s <- asKey newlogicS
+  n <- simpleId
+  return (n, s)
+
+metaP :: AParser st (FRAM, Token)
+metaP = do
+  s <- asKey metaS
+  f <- framP
+  return (f, s)
+
+framP :: AParser st FRAM
+framP = do
     asKey lfS
     return LF
   <|> do
@@ -248,3 +254,31 @@ fram = do
   <|> do
     asKey maudeS
     return Maude
+
+syntaxP :: AParser st (Token, Token)
+syntaxP = do
+  s <- asKey syntaxS
+  t <- simpleIdOrDDottedId
+  return (t, s)
+
+modelsP :: AParser st (Token, Token)
+modelsP = do
+  s <- asKey modelsS
+  m <- simpleIdOrDDottedId
+  return (m, s)     
+
+proofsP :: AParser st (Token, Token)
+proofsP = do
+    s <- asKey proofsS
+    p <- simpleIdOrDDottedId
+    return (p, s)
+
+patternsP :: AParser st (Token, Token)
+patternsP = do
+    s <- asKey patternsS
+    p <- simpleId
+    return (p, s)
+  <|> return (nullT, nullT)
+
+nullT :: Token
+nullT = mkSimpleId ""

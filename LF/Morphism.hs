@@ -112,3 +112,9 @@ instance Pretty Morphism where
 printSymMap :: Map.Map Symbol EXP -> Doc
 printSymMap m =
   vcat $ map (\ (s,e) -> pretty s <+> text "|->" <+> pretty e) $ Map.toList m
+
+-- constructs the inclusion morphism between signatures
+inclusionMorph :: Sign -> Sign -> Result Morphism
+inclusionMorph sig1 sig2 = 
+  let m = Morphism "" "" "" sig1 sig2 Unknown Map.empty
+      in Result [] $ Just m        
