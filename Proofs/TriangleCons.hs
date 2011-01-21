@@ -29,6 +29,8 @@ import Data.Graph.Inductive.Graph
 
 import Control.Monad
 
+import Debug.Trace
+
 triangleConsRule :: DGRule
 triangleConsRule = DGRule "TriangleCons"
 
@@ -67,19 +69,19 @@ triangleConsDG dg (s,t,l) = do
                checkThm (edgeTypeModInc e)
              ) $ out g t
  case oThm of 
-   [] -> return dg -- no outgoing thm link found
+   [] -> trace "1" $ return dg -- no outgoing thm link found
    _ -> do
     let bases = filter (\((s',_,_), _) -> s == s') 
                 $ concatMap (\dge@(_, tt, _) -> 
                         map (\x-> (x,dge)) 
                          $ filter (\ (_, _, lx) -> 
                            let e = getRealDGLinkType lx in
-                             edgeTypeModInc e == GlobalDef
-                             && getCons (dgl_type lx) == Cons
+                             -- edgeTypeModInc e == GlobalDef &&
+                             getCons (dgl_type lx) == Cons
                            ) $ inn g tt)
                   oThm
     case bases of
-      [] -> return dg -- no cons link found
+      [] -> trace "2" $ return dg -- no cons link found
       ((_, _, cl), (_, _, tl)):_ -> do
         let changes = markCons cl tl
         return $ changesDGH dg changes
