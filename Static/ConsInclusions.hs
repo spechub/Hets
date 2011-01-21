@@ -17,14 +17,14 @@ import Driver.Options
 import Driver.WriteFn
 
 import Logic.Coerce
+import Logic.Grothendieck
 import Logic.Logic
-import Logic.Prover
 
-import Common.AS_Annotation
 import Common.Consistency
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
+import Common.Result
 import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph as Graph
@@ -55,12 +55,10 @@ dumpConsIncl opts dg (s, t, l) = do
            insig <- coerceSign lid1 lid2 "dumpConsIncl1" sig1
            inSens <- coerceThSens lid1 lid2 "dumpConsIncl2" sens1
            let pSig2 = plainSign sig2
-               syms = concatMap (Set.toList .
-                     (`Set.difference` symset_of lid2 (plainSign insig)))
-                       (sym_of lid2 pSig2)
+               diffSig = propagateErrors "dumpConsIncl3"
+                  $ signatureDiff lid2 pSig2 (plainSign insig)
                inSensSet = Set.fromList $ OMap.elems inSens
-               sens = toNamedList
-                 $ OMap.filter (`Set.notMember` inSensSet) sens2
+               sens = OMap.filter (`Set.notMember` inSensSet) sens2
            writeVerbFile opts file
              $ show $ useGlobalAnnos ga $ vcat
              [ text $ "spec source_" ++ nm ++ " ="
@@ -68,7 +66,6 @@ dumpConsIncl opts dg (s, t, l) = do
              , text "end"
              , text $ "spec target_" ++ nm ++ " = source_" ++ nm
              , text "then %cons"
-             , if null syms && null sens then text "{}" else
-                   vcat $ map pretty syms
-                      ++ map (print_named lid2
-                              . mapNamed (simplify_sen lid2 pSig2)) sens ]
+             , prettyGTheory
+               $ G_theory lid2 (mkExtSign diffSig) startSigId sens startThId
+             ]

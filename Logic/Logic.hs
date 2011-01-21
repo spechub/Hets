@@ -440,6 +440,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statFail l "signature_union"
+
+         -- | difference of signatures resulting in unclosed pre-signatures
+         signatureDiff :: lid -> sign -> sign -> Result sign
+         signatureDiff l _ _ = statFail l "signatureDiff"
+
          -- | intersection of signatures
          intersection :: lid -> sign -> sign -> Result sign
          intersection l _ _ = statFail l "intersection"
