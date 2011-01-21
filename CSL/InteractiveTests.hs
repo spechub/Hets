@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Test environment for CSL
@@ -79,6 +79,9 @@ test 44 assStoreAndProgSimple
 test 44 assStoreAndProgElim
 test 45 loadAssignmentStore
 (mit, _) <- testWithMaple 4 (loadAssignmentStore True) 66
+
+(mit, _) <- testWithMaple 4 (loadAssignmentStore False >=> stepProg . snd) 3
+
 testResult 54 (depClosure ["F_G"])
 
 ncl <- sens 56
@@ -164,6 +167,7 @@ assStoreAndProgSimple ncl = do
 
 
 
+
 loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
                 -> m ([(ConstantName, AssDefinition)], [Named CMD])
 loadAssignmentStore b ncl = do
@@ -171,6 +175,10 @@ loadAssignmentStore b ncl = do
   res@(asss, _) <- liftIO $ f ncl
   loadAS asss
   return res
+
+
+stepProg :: (AssignmentStore m, MonadIO m) => [Named CMD] -> m ()
+stepProg ncl = stepwise interactiveStepper $ Sequence $ map sentence ncl
 
 
 testWithMapleGen :: Int -> ([Named CMD] -> MapleIO a) -> String -> String -> IO (MITrans, a)

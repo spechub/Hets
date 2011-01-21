@@ -31,6 +31,8 @@ module CSL.Interpreter
     , translateExpr
     , translateExprWithVars
     , revtranslateExpr
+    , stepwise
+    , interactiveStepper
     )
     where
 
@@ -42,6 +44,7 @@ import qualified Data.Map as Map
 import qualified Data.IntMap as IMap
 import Data.List (mapAccumL)
 import Prelude hiding (lookup)
+import System.IO
 
 import Common.Id
 import Common.ResultT
@@ -142,6 +145,48 @@ evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 
 evaluateList :: AssignmentStore m => [CMD] -> m ()
 evaluateList l = forM_ l evaluate
+
+
+data EvalAtom = AssAtom ConstantName AssDefinition
+              | RepeatAtom EXPRESSION | CaseAtom EXPRESSION deriving Show
+
+prettyEvalAtom :: EvalAtom -> Doc
+prettyEvalAtom (AssAtom c def) = pretty c <+> pretty def
+prettyEvalAtom (RepeatAtom e) = text "Repeat condition:" <+> pretty e
+prettyEvalAtom (CaseAtom e) = text "Case condition:" <+> pretty e
+
+interactiveStepper :: (MonadIO m, AssignmentStore m) => EvalAtom -> m ()
+interactiveStepper x =
+    liftIO $ do
+      putStrLn $ "At step " ++ show (prettyEvalAtom x)
+      putStr "next>"
+      hFlush stdout
+      getChar
+      putStrLn "..."
+
+stepwise :: AssignmentStore m => (EvalAtom -> m ()) -> CMD -> m ()
+stepwise f (Ass (Op (OpUser n) [] l _) e) = do
+  let def = mkDefinition (toArgList l) e
+  assign n def
+  f $ AssAtom n def
+stepwise _ (Cond []) = error "stepwise: non-exhaustive conditional"
+stepwise f (Cond ((e, pl):cl)) = do
+  b <- check e
+  f $ CaseAtom e
+  stepwise f $ if b then Sequence pl else Cond cl
+stepwise f p@(Repeat e l) = do
+  stepwise f $ Sequence l
+  b <- check e
+  f $ RepeatAtom e
+  unless b $ stepwise f p
+stepwise f (Sequence l) = mapM_ (stepwise f) l
+
+stepwise _ (Cmd c _) = error $ "stepwise: unsupported command " ++ c
+stepwise _ a@(Ass (Op (OpId _) _ _ _) _) =
+    error $ concat [ "stepwise: predefined constants in left hand side of "
+                   , "assignment not allowed ", show a ]
+stepwise _ a@(Ass _ _) = error $ "stepwise: unsupported assignment " ++ show a
+
 
 -- | Loads a dependency ordered assignment list into the store.
 loadAS :: AssignmentStore m => [(ConstantName, AssDefinition)] -> m ()
