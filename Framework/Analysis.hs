@@ -19,6 +19,7 @@ import qualified Isabelle.Logic_Isabelle as Logic_Isabelle
 import qualified Maude.Logic_Maude as Logic_Maude
 
 import Data.List
+import Data.Maybe
 import qualified Data.Map as Map
 
 import Static.DevGraph
@@ -33,7 +34,6 @@ import Logic.Comorphism
 import Logic.Coerce
 
 import Common.Result
-import Common.DocUtils
 import Common.Parsec
 import Common.AnnoState
 import Common.Lexer
@@ -68,7 +68,7 @@ anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
 anaLogicDefH ml ld dg = do
   case retrieveDiagram ml ld dg of
        Result _ (Just (ltruth, lmod, lpf)) -> do
-           let l = show $ pretty $ newlogicName ld 
+           let l = tokStr $ newlogicName ld
            buildLogic ml l ltruth lmod lpf
            addLogic2LogicList l
            return $ addLogicDef2DG ld dg
@@ -99,19 +99,26 @@ retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol raw_symbol
                           proof_tree
                    => lid -> LogicDef -> DGraph ->
-                      Result (morphism, morphism, morphism)
+                      Result (morphism, Maybe morphism, Maybe morphism)
 retrieveDiagram ml (LogicDef _ _ s m p _) dg = do
   ltruth <- lookupMorph ml s dg
-  lmod <- lookupMorph ml m dg
-  lpf <- lookupMorph ml p dg
+  lmod <- if (m == nullTok)
+             then return Nothing
+             else do v <- lookupMorph ml m dg
+                     return $ Just v
+  lpf <- if (p == nullTok)
+            then return Nothing
+            else do v <- lookupMorph ml p dg
+                    return $ Just v 
+
   if (dom ltruth /= getBaseSig ml) then
      error $ "The morphism " ++ (show s) ++
              " must originate from the Base signature for " ++
              (show ml) ++ "." else do
-  if (dom lmod /= cod ltruth) then
+  if (isJust lmod && (dom $ fromJust lmod) /= cod ltruth) then
      error $ "The morphisms " ++ (show s) ++
              " and " ++ (show m) ++ " must be composable." else do
-  if (dom lpf /= cod ltruth) then
+  if (isJust lpf && (dom $ fromJust lpf) /= cod ltruth) then
      error $ "The morphisms " ++ (show s) ++
              " and " ++ (show p) ++ " must be composable." else do
   return (ltruth, lmod, lpf)
@@ -137,7 +144,8 @@ lookupMorph l n dg = do
 -- constructs the logic instance for the object logic
 buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
-              => lid -> String -> morphism -> morphism -> morphism -> IO ()
+              => lid -> String -> morphism -> Maybe morphism ->
+                 Maybe morphism -> IO ()
 buildLogic ml l ltruth _ _ = do
   exists <- doesDirectoryExist l
   if exists then

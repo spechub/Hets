@@ -263,22 +263,21 @@ syntaxP = do
 
 modelsP :: AParser st (Token, Token)
 modelsP = do
-  s <- asKey modelsS
-  m <- simpleIdOrDDottedId
-  return (m, s)     
+    s <- asKey modelsS
+    m <- simpleIdOrDDottedId
+    return (m, s)     
+  <|> return (nullTok, nullTok)
 
 proofsP :: AParser st (Token, Token)
 proofsP = do
     s <- asKey proofsS
     p <- simpleIdOrDDottedId
     return (p, s)
+  <|> return (nullTok, nullTok)
 
 patternsP :: AParser st (Token, Token)
 patternsP = do
     s <- asKey patternsS
     p <- simpleId
     return (p, s)
-  <|> return (nullT, nullT)
-
-nullT :: Token
-nullT = mkSimpleId ""
+  <|> return (nullTok, nullTok)

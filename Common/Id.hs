@@ -99,6 +99,10 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
+-- | null token
+nullTok :: Token
+nullTok = mkSimpleId ""
+
 -- | create a numbered string
 mkNumStr :: String -> Int -> String
 mkNumStr str n = str ++ show n
