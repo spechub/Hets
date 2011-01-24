@@ -16,13 +16,13 @@ module CSL.MapleInterpreter where
 
 import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef, trimLeft)
-import Common.DocUtils()
+import Common.DocUtils
 import Common.IOS
 import Common.Result
 import Common.ResultT
 
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic (parseResult)
+import CSL.Parse_AS_Basic (parseExpression, parseCommand)
 import CSL.Interpreter
 import CSL.Transformation
 import CSL.Reduce_Interface (exportExp)
@@ -53,12 +53,14 @@ data MITrans = MITrans { getBMap :: BMap
 type MapleIO = ResultT (IOS MITrans)
 
 instance AssignmentStore MapleIO where
-    assign  = mapleAssign (evalMapleString False) mapleTransS mapleTransVarE
-    assigns = mapleAssigns (evalMapleString False) mapleTransS mapleTransVarE
-    lookup = mapleLookup (evalMapleString True) mapleTransS
-    eval = mapleEval (evalMapleString True) mapleTransE
-    check = mapleCheck (evalMapleString True) mapleTransE
+    assign  = mapleAssign (evalMapleStringAss True) mapleTransS mapleTransVarE
+    assigns =
+        mapleAssigns (evalMapleStringAss False []) mapleTransS mapleTransVarE
+    lookup = mapleLookup evalMapleString mapleTransS
+    eval = mapleEval evalMapleString mapleTransE
+    check = mapleCheck evalMapleString mapleTransE
     names = get >>= return . SMem . getBMap
+    evalRaw s = get >>= liftIO . flip (mapleDirect True) s
 
 
 -- ----------------------------------------------------------------------
@@ -129,17 +131,22 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
-          -> (ConstantName -> s String)
-          -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
-          -> ConstantName -> AssDefinition -> s ()
+mapleAssign :: (AssignmentStore s, MonadResult s) =>
+               ([String] -> String -> s [EXPRESSION])
+            -> (ConstantName -> s String)
+            -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
+            -> ConstantName -> AssDefinition -> s EXPRESSION
 mapleAssign ef trans transE n def = do
   let e = getDefiniens def
       args = getArguments def
   (e', args') <- transE args e
   n' <- trans n
-  ef $ printAssignment n' args' e'
-  return ()
+  el <- ef args $ printAssignment n' args' e'
+  case el of
+    -- no plausibility check here. We could check if the operator is ":="
+    [rhs] -> return rhs
+    l -> error $ "mapleAssign: unparseable result for assignment of "
+         ++ (show $ pretty n) ++ "\n" ++ (show $ pretty l)
 
 mapleAssigns :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
           -> (ConstantName -> s String)
@@ -233,17 +240,35 @@ mapleTransS s = do
 
 
 -- | Evaluate the given String as maple expression and eventually
--- parse the result to an expression list.
-evalMapleString :: Bool -> String -> MapleIO [EXPRESSION]
-evalMapleString b s = do
+-- parse the result to a CMD list.
+evalMapleStringAss :: Bool -- ^ Use parser
+                     -> [String] -- ^ Use this argument list for variable trafo
+                     -> String -> MapleIO [EXPRESSION]
+evalMapleStringAss b args s = do
   -- 0.09 seconds is a critical value for the accepted response time of Maple
-  res <- lift $ wrapCommand $ PC.call 0.7 s
+  res <- lift $ wrapCommand $ PC.call 0.3 s
   r <- get
-  let bm = getBMap r
-      trans = revtranslateExpr bm
-  return $ if b then map trans $ maybeToList $ parseResult $ trimLeft
-                      $ removeOutputComments res
+  return $ if b
+           then
+               let bm = getBMap r
+                   trans = if null args then revtranslateExpr bm
+                           else revtranslateExprWithVars args bm
+               in case parseCommand $ trimLeft $ removeOutputComments res of
+                    Just (Ass _ e) -> [trans e]
+                    _ -> error $ "evalMapleStringAss: not an assignment "
+                               ++ s
            else []
+                 
+
+-- | Evaluate the given String as maple expression and
+-- parse the result to an expression list.
+evalMapleString :: String -> MapleIO [EXPRESSION]
+evalMapleString s = do
+  -- 0.09 seconds is a critical value for the accepted response time of Maple
+  res <- lift $ wrapCommand $ PC.call 0.3 s
+  r <- get
+  return $ map (revtranslateExpr $ getBMap r) $ maybeToList $ parseExpression
+             $ trimLeft $ removeOutputComments res
 
 -- | init the maple communication
 mapleInit :: Int -- ^ Verbosity level
@@ -256,7 +281,7 @@ mapleInit v = do
     Left maplecmd -> do
             cs <- PC.start (maplecmd ++ " -q") v
                   $ Just PC.defaultConfig { PC.startTimeout = 3 }
-            (_, cs') <- runIOS cs $ PC.call 1.0
+            (_, cs') <- runIOS cs $ PC.call 0.4
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
                                  , "libname := \"", libpath, "\", libname;" ]
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping

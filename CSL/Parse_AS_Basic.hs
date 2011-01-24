@@ -490,8 +490,15 @@ symbMaps = do
      return (s : is, c : ps)
     <|> return ([s], [])
 
-parseResult :: String -> Maybe EXPRESSION
-parseResult inp = case runParser formulaorexpression "" "" inp of
-               Left _ -> Nothing
-               Right s -> Just s
+parseCommand :: String -> Maybe CMD
+parseCommand inp =
+    case runParser command (AnnoState.emptyAnnos ()) "" inp of
+      Left _ -> Nothing
+      Right s -> Just s
+
+parseExpression :: String -> Maybe EXPRESSION
+parseExpression inp =
+    case runParser formulaorexpression "" "" inp of
+      Left _ -> Nothing
+      Right s -> Just s
 

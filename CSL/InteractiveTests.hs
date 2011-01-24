@@ -23,7 +23,6 @@ import CSL.Transformation
 import CSL.EPBasic
 import CSL.TreePO
 import CSL.ExtendedParameter
-import CSL.Parse_AS_Basic (parseResult, extparam, pComma, pSemi)
 import Common.IOS
 import Common.Result (diags, printDiags, resultToMaybe)
 import Common.ResultT
@@ -49,6 +48,7 @@ import CSL.Logic_CSL
 import CSL.Analysis
 import CSL.AS_BASIC_CSL
 import CSL.Sign
+import CSL.Parse_AS_Basic
 
 import Common.Utils (getEnvDef)
 import Common.DocUtils
@@ -64,7 +64,7 @@ import Data.Maybe
 import Data.Time.Clock
 
 import CSL.SMTComparison
-import CSL.EPRelation -- (compareEP, EPExp, toEPExp, compareEPs, EPExps, toEPExps, forestFromEPs, makeEPLeaf, showEPForest)
+import CSL.EPRelation
 import System.IO
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -112,23 +112,35 @@ help = do
   putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
 
 main :: IO ()
-main = do
-  args <- getArgs
+main = getArgs >>= main1
+
+main1 :: [String] -> IO ()
+main1 args = do
+  let exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
+      p ncl= do
+         (_, prog) <- loadAssignmentStore False ncl
+         stepProg prog
+         evalPrintLoop stdin stdout ">" exitWhen
+
   case args of
     [lb, sp] ->
-        testWithMapleGen 4 (loadAssignmentStore False) lb sp >>= mapleLoop . fst
+        testWithMapleGen 4 p lb sp >> return ()
     _ -> putStrLn $ "EnCL Processing: Only two arguments expected but given "
          ++ show (length args)
 
 
+instance Pretty Bool where
+    pretty = text . show
 
+
+{-
 mapleLoop :: MITrans -> IO ()
 mapleLoop mit = do
   x <- getLine
   if x == "q" then mapleExit mit >> return ()
               else mapleDirect False mit x >>= putStrLn >> mapleLoop mit
                   
-         
+-}       
 
 -- ----------------------------------------------------------------------
 -- * Gluing the Analysis and Evaluation together
@@ -351,11 +363,11 @@ time p = do
   return res
 
 
+toE :: String -> EXPRESSION
+toE = fromJust . parseExpression
 
-
-
-
-
+toCmd :: String -> CMD
+toCmd = fromJust . parseCommand
 
 
 
@@ -469,9 +481,6 @@ evalL s i = do
 -- ----------------------------------------------------------------------
 -- * different parser
 -- ----------------------------------------------------------------------
-
-toE :: String -> EXPRESSION
-toE = fromJust . parseResult
 
 -- parses a single extparam range such as: "I>0, F=1"
 toEP :: String -> [EXTPARAM]

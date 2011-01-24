@@ -31,8 +31,10 @@ module CSL.Interpreter
     , translateExpr
     , translateExprWithVars
     , revtranslateExpr
+    , revtranslateExprWithVars
     , stepwise
     , interactiveStepper
+    , evalPrintLoop
     )
     where
 
@@ -92,12 +94,13 @@ instance SimpleMember (SMem b) b where
 -- | Calculation interface, bundles the evaluation engine and the
 -- assignment store
 class (Monad m) => AssignmentStore m where
-    assign :: ConstantName -> AssDefinition -> m ()
+    assign :: ConstantName -> AssDefinition -> m EXPRESSION
     assigns :: [(ConstantName, AssDefinition)] -> m ()
     assigns = mapM_ $ uncurry assign
     lookup :: ConstantName -> m (Maybe EXPRESSION)
     names :: m (SMem ConstantName)
     eval :: EXPRESSION -> m EXPRESSION
+    evalRaw :: String -> m String
     check :: EXPRESSION -> m Bool
     check = error "AssignmentStore-default: 'check' not implemented."
     values :: m [(ConstantName, EXPRESSION)]
@@ -112,6 +115,7 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
     lookup = lift . lookup
     names = lift names
     eval = lift . eval
+    evalRaw = lift . evalRaw
     check = lift . check
     values = lift values
 
@@ -119,8 +123,9 @@ isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
 
 evaluate :: AssignmentStore m => CMD -> m ()
-evaluate (Ass (Op (OpUser n) [] l _) e) =
+evaluate (Ass (Op (OpUser n) [] l _) e) = do
     assign n $ mkDefinition (toArgList l) e
+    return ()
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
   if null cl
@@ -155,14 +160,21 @@ prettyEvalAtom (AssAtom c def) = pretty c <+> pretty def
 prettyEvalAtom (RepeatAtom e) = text "Repeat condition:" <+> pretty e
 prettyEvalAtom (CaseAtom e) = text "Case condition:" <+> pretty e
 
+evalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
+                  Handle -- ^ Input handle
+               -> Handle -- ^ Output handle
+               -> String -- ^ Command prompt
+               -> (String -> Bool) -- ^ Exit command predicate
+               -> m ()
+evalPrintLoop inp outp cp exitWhen = do
+  s <- liftIO $ hPutStr outp cp >> hFlush outp >> hGetLine inp
+  unless (exitWhen s) $ evalRaw s >>= liftIO . (hPutStrLn outp)
+             >> evalPrintLoop inp outp cp exitWhen
+
 interactiveStepper :: (MonadIO m, AssignmentStore m) => EvalAtom -> m ()
-interactiveStepper x =
-    liftIO $ do
-      putStrLn $ "At step " ++ show (prettyEvalAtom x)
-      putStr "next>"
-      hFlush stdout
-      getChar
-      putStrLn "..."
+interactiveStepper x = do
+  liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
+  evalPrintLoop stdin stdout "next>" null
 
 stepwise :: AssignmentStore m => (EvalAtom -> m ()) -> CMD -> m ()
 stepwise f (Ass (Op (OpUser n) [] l _) e) = do
@@ -306,11 +318,20 @@ rolookup m k =
                        ++ show c
               else mS
 
-revlookup :: BMap -> String -> Maybe OPID
-revlookup m k = 
+revlookup :: BMap -> String -> (Maybe OPID)
+revlookup m k = case revlookupGen IMap.empty m k of
+                  Left x -> x
+                  _ -> Nothing
+
+revlookupGen :: RevVarMap -> BMap -> String
+             -> Either (Maybe OPID) (Maybe EXPRESSION)
+revlookupGen vm m k = 
     case defaultRevlookup (defaultMap m) k of
-      Nothing -> fmap OpUser $ IMap.lookup (bmapStringToInt m k) $ mBack m
-      mS -> mS
+      Nothing ->
+          case bmapStringToInt m k of
+            Left i -> Left $ fmap OpUser $ IMap.lookup i $ mBack m
+            Right i -> Right $ fmap (Var . mkSimpleId) $ IMap.lookup i $ vm
+      mS -> Left mS
 
 
 {-
@@ -324,20 +345,32 @@ bmToList m = let prf = prefix m
 bmapIntToString :: BMap -> Int -> String
 bmapIntToString m i = prefix m ++ show i
 
-bmapStringToInt :: BMap -> String -> Int
-bmapStringToInt m s = let prf = prefix m
-                          (prf', n) = splitAt (length prf) s
-                      in if prf == prf' then read n
-                         else error $ concat [ "bmapStringToInt: invalid string"
-                                             , " for prefix ", prf, ":", s ]
+-- | Returns the 'Int' contained in the given constant. If this constant
+-- represents a user-defined constant then we return the left value, if
+-- it represents a variable then we return the right value
+bmapStringToInt :: BMap -> String -> Either Int Int
+bmapStringToInt m s =
+    let prf = prefix m
+        (prf', n) = splitAt (length prf) s
+        (prf'', n') = splitAt 1 s
+        out
+            | prf == prf' = Left $ read n
+            | prf'' == "v" = Right $ read n'
+            | otherwise = error $ concat [ "bmapStringToInt: invalid string"
+                                         , " for prefix ", prf, ":", s ]
+    in out
 
 
 -- ** Translation functions for (generic) BMaps
 
 type VarMap = Map.Map String Int
+type RevVarMap = IMap.IntMap String
 
 varList :: [String] -> [(String, Int)]
 varList l = zip l [1..]
+
+revVarList :: [String] -> [(Int, String)]
+revVarList l = zip [1..] l 
 
 varName :: BMap -> Int -> String
 varName _ i = "v" ++ show i
@@ -369,20 +402,28 @@ translateExprGen vm m (Var tok) =
 translateExprGen _ m e = (m, e)
 
 -- | Retranslate CAS EXPRESSION back, we do not allow OPNAMEs as OpIds
+
+revtranslateExprWithVars :: [String] -> BMap -> EXPRESSION -> EXPRESSION
+revtranslateExprWithVars = revtranslateExprGen . IMap.fromList . revVarList
+
 revtranslateExpr :: BMap -> EXPRESSION -> EXPRESSION
-revtranslateExpr m (Op (OpUser c) epl el rg) =
+revtranslateExpr = revtranslateExprGen IMap.empty
+
+revtranslateExprGen :: RevVarMap -> BMap -> EXPRESSION -> EXPRESSION
+revtranslateExprGen rvm m (Op (OpUser c) epl el rg) =
     case c of
       SimpleConstant s ->
-          let el' = map (revtranslateExpr m) el
-              err = error $ "revtranslateExpr: no mapping for " ++ s
-              oi = fromMaybe err $ revlookup m s
-          in Op oi epl el' rg
+          let el' = map (revtranslateExprGen rvm m) el
+          in case revlookupGen rvm m s of
+               Left (Just oi) -> Op oi epl el' rg
+               Right (Just v) -> v
+               _ -> error $ "revtranslateExpr: no mapping for " ++ s
       _ -> error $ "revtranslateExpr: elim constants on CAS side not"
            ++  " supported " ++ show c
-revtranslateExpr m (List el rg) =
-    let el' = map (revtranslateExpr m) el
+revtranslateExprGen rvm m (List el rg) =
+    let el' = map (revtranslateExprGen rvm m) el
     in List el' rg
-revtranslateExpr _ e = e
+revtranslateExprGen _ _ e = e
 
 
 -- ** Pretty printing of BMap

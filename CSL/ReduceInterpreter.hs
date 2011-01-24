@@ -23,7 +23,7 @@ import Common.ResultT
 import CSL.Reduce_Interface ( evalString, exportExp, connectCAS, disconnectCAS
                             , lookupRedShellCmd, Session (..), cslReduceDefaultMapping)
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic (parseResult)
+import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Transformation
 import CSL.Interpreter
 
@@ -253,7 +253,7 @@ evalRedcString s = do
       trans = revtranslateExpr bm
   -- don't need to skip the reducelinenr here, because the Command-Interface
   -- cleans the outpipe before sending (hence removes the reduce line nr)
-  return $ map trans $ maybeToList $ parseResult $ trimLeft res
+  return $ map trans $ maybeToList $ parseExpression $ trimLeft res
 
 -- | init the reduce communication
 redcInit :: Int -- ^ Verbosity level
