@@ -107,6 +107,8 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
     let new_ths = List.filter pred new_bnds in
     let new_th_names = List.map (fun (ident,_) -> Ident.name ident) new_ths in
     let lib_ths = Hashtbl.find (!known) lib in
+      (Format.print_string("MAP SYMS - Stack:"^(if (not(Stack.is_empty (!stack))) then Stack.top (!stack) else "")^", lib: "^lib);
+        Format.print_newline());
       bnds_size := List.length bnds;
       read_global_vals new_th_names;
       List.iter (fun (t,tv) -> Hashtbl.replace lib_ths t tv)
@@ -117,13 +119,18 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
                         else
                           let plib = Stack.top (!stack)
                           in map_new_syms plib;
+                             (Format.print_string("LIBLINK:"^lib);
+                              Format.print_newline());
                             libs :=
                             (lib,plib)::(!libs));
+                        (Format.print_string("Lib put on stack:"^lib);
+                         Format.print_newline());
                         Stack.push lib (!stack);
                         Hashtbl.add (!known) lib (Hashtbl.create 10);
                         true) else false
   and end_load () = map_new_syms (Stack.pop (!stack))
-  and get_libs () = (Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))),List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in
+  and get_libs () = (!known, !libs) in
+(*(Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))), *List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in*)
   (store_read_result,begin_load,end_load,get_libs);
 
 module Topdirs =

@@ -38,13 +38,13 @@ let pp_d fmt =
 (* this file needs to be imported right after all definitions that should not be exported have been loaded *)
 
 let old_constants = ref([]:string list);;
-if length (!old_constants) = 0 then
+(*if length (!old_constants) = 0 then
   old_constants := map fst (constants())
-else ();;
+else ();;*)
 let old_types = ref([]:string list);;
-if length (!old_types) = 0 then
+(*if length (!old_types) = 0 then
   old_types := map fst (types())
-else ();;
+else ();;*)
 
 let export_sig_sen (s,l) =
                      let types = Hashtbl.create 10 in
