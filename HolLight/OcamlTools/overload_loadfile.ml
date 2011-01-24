@@ -78,7 +78,7 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
      (let filename = Filename.temp_file "read_global_vals" ".ml" in
       file_of_string filename exptext;
       use_file filename;
-      ()) in (*Sys.remove filename) in*)
+      Sys.remove filename) in
   let map_new_syms lib = 
     let rec funpow n f x =
      if n < 1 then x else funpow (n-1) f (f x)
@@ -129,8 +129,16 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
                         Hashtbl.add (!known) lib (Hashtbl.create 10);
                         true) else false
   and end_load () = map_new_syms (Stack.pop (!stack))
-  and get_libs () = (!known, !libs) in
-(*(Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))), *List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in*)
+  and get_libs () = let empty = Hashtbl.fold (fun k v t -> if Hashtbl.length v == 0 then k::t else t) (!known) []
+                    and purge = fun names (h,l) -> (Hashtbl.fold (fun k v t -> (if List.mem k names then () else Hashtbl.add t k v); t) h (Hashtbl.create (Hashtbl.length h)),List.filter (fun (s,_) -> not(List.mem s names)) l)
+                    and childnodes = fun n l -> List.fold_left (fun ch (s,t) -> if t == n || List.mem t ch then s::ch else ch) [] l
+                    in let purgable = fun empty l -> List.filter (fun n ->
+                                                     List.fold_left (fun b n1 -> b & (List.mem n1 empty)) true (childnodes n l)
+                                                    ) empty
+                    in purge (purgable empty (!libs)) (!known,!libs)
+                     
+  in
+(*(Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))), List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in*)
   (store_read_result,begin_load,end_load,get_libs);
 
 module Topdirs =
