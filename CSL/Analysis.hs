@@ -32,6 +32,8 @@ module CSL.Analysis
     ) -}
     where
 
+import Debug.Trace
+
 import Common.ExtSign
 import Common.AS_Annotation
 import Common.Id
@@ -510,13 +512,30 @@ mapUserDefined f e = g Map.empty e
          -- ignoring lists (TODO: they should be removed soon anyway)
          _ -> return m
 
--- | Returns a set of user defined constants ignoring instantiation.
+-- | Returns a set of user defined constants ignoring 'EXTPARAM' instantiation.
 setOfUserDefined :: EXPRESSION -> Set.Set String
 setOfUserDefined e = g Set.empty e
     where
       g s x =
        case x of
          Op oi@(OpUser _) _ al _ -> foldl g (Set.insert (simpleName oi) s) al
+         -- handle also non-userdefined ops.
+         Op _ _ al _ -> foldl g s al 
+         -- ignoring lists (TODO: they should be removed soon anyway)
+         _ -> s
+
+-- | Returns a set of user defined constants with function instantiation,
+-- but ignoring 'EXTPARAM' instantiation.
+setOfUserDefinedICs :: EXPRESSION -> Set.Set InstantiatedConstant
+setOfUserDefinedICs e = g Set.empty e
+    where
+      f sc al = InstantiatedConstant { constName = sc, instantiation = al }
+      g s x =
+       case x of
+         Op (OpUser sc@(SimpleConstant _)) _ al _ ->
+             foldl g (Set.insert (f sc al) s) al
+         Op (OpUser _) _ _ _ ->
+             error "setOfUserDefinedICs: Elim constant encountered"
          -- handle also non-userdefined ops.
          Op _ _ al _ -> foldl g s al 
          -- ignoring lists (TODO: they should be removed soon anyway)
@@ -579,35 +598,40 @@ elimConstants = map f where
 
 -- * Dependency Graph datatype for various algorithms on Assignment Graphs
 
-data DepGraph a b = DepGraph
+data DepGraph a b c = DepGraph
     { dataMap :: Map.Map a
                  ( b         -- the annotation
                  , Set.Set a -- the direct successors (smaller elements)
-                 , Set.Set a -- the direct predecessors (bigger elements)
+                 , Set.Set c -- the direct predecessors (bigger elements)
                  )
     -- function returning for a given element and value the predecessors
     -- of this element
-    , getPredecessors :: a -> b -> [a]
+    , getPredecessors :: a -> b -> [c]
+    -- function returning for a given element and value the predecessors
+    -- of this element
+    , getKey :: c -> a
     }
 
-instance (Show a, Show b) => Show (DepGraph a b) where
+instance (Show a, Show b, Show c) => Show (DepGraph a b c) where
     show = show . dataMap
 
-prettyDepGraph :: (a -> Doc) -> (b -> Doc) -> DepGraph a b -> Doc
-prettyDepGraph pa pb gr =
+prettyDepGraph :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> DepGraph a b c 
+               -> Doc
+prettyDepGraph pa pb pc gr =
     ppMap pa pf ((text "DepGraph" <+>) . braces) vcat f $ dataMap gr where
         f a b = a <> text ":" <+> b
         pf (v, dss, dps) =
-            ps dss <+> text " << x << " <+> ps dps <> text ":" <+> pb v
-        ps = braces . (sepByCommas . map pa) . Set.toList
+            ps pa dss <+> text " << x << " <+> ps pc dps <> text ":" <+> pb v
+        ps g = braces . (sepByCommas . map g) . Set.toList
 
 
-instance (Pretty a, Pretty b) => Pretty (DepGraph a b) where
-    pretty = prettyDepGraph pretty pretty
+instance (Pretty a, Pretty b, Pretty c) => Pretty (DepGraph a b c) where
+    pretty = prettyDepGraph pretty pretty pretty
 
 
-emptyDepGraph :: (a -> b -> [a]) -> DepGraph a b
-emptyDepGraph f = DepGraph { dataMap = Map.empty, getPredecessors = f }
+emptyDepGraph :: (a -> b -> [c]) -> (c -> a) -> DepGraph a b c
+emptyDepGraph f pf = DepGraph { dataMap = Map.empty, getPredecessors = f
+                              , getKey = pf }
 
 
 -- TODO: merge the type Rel2 and DepGraph in order to work only on the
@@ -616,46 +640,74 @@ emptyDepGraph f = DepGraph { dataMap = Map.empty, getPredecessors = f }
 
 -- | It is important to have the elements given in an order with
 -- biggest elements first (elements which depend on nothing)
-depGraphFromDescList :: Ord a => (a -> b -> [a]) -> [(a,b)] -> DepGraph a b
-depGraphFromDescList f = foldl g (emptyDepGraph f) where
+depGraphFromDescList :: (Ord a, Ord c) => (a -> b -> [c]) -> (c -> a) -> [(a,b)]
+                     -> DepGraph a b c
+depGraphFromDescList f pf = foldl g (emptyDepGraph f pf) where
     g x (y, z) = updateGraph x y z
 
+upperLevel :: (Ord a, Ord c) => DepGraph a b c -> [a] -> Set.Set c
+upperLevel gr = Set.unions . mapMaybe f where
+    f a = fmap g $ Map.lookup a $ dataMap gr
+    g (_, _, dps) = dps
 
-upperLowerUntilGen :: (a -> (b, [a])) -- ^ follow function and value lookup
-                   -> (a -> b -> Bool) -- ^ cut-off predicate
-                   -> a -- ^ compare entries to this element
-                   -> [(a,b)]
-upperLowerUntilGen ff p key = if p key val then [] else combineDepthFirstToBreadthFirst $ map f fups
-    where (val, fups) = ff key
-          f k = if p k v then [] else (k, v):l
-                where (v, fups') = ff k
-                      l = combineDepthFirstToBreadthFirst $ map f fups'
+lowerLevel :: Ord a => DepGraph a b c -> [a] -> Set.Set a
+lowerLevel gr = Set.unions . mapMaybe f where
+    f a = fmap g $ Map.lookup a $ dataMap gr
+    g (_, dss, _) = dss
 
-combineDepthFirstToBreadthFirst :: [[a]] -> [a]
-combineDepthFirstToBreadthFirst ll = uncurry (++) $ f ll where
-    f [] = ([], [])
-    f ([]:l) = f l
-    f ((x:l'):l) = let (hds, tls) = f l in (x:hds, l' ++ tls)
 
-lowerUntil :: (Ord a, Show a) => (a -> b -> Bool) -- ^ cut-off predicate
-           -> DepGraph a b -- ^ dependency graph to be traversed
-           -> a -- ^ compare entries to this element
-           -> [(a,b)]
-lowerUntil p gr key = upperLowerUntilGen f p key where
-    f k = case Map.lookup k $ dataMap gr of
-            Just (v, dss, _) -> (v, Set.toList dss)
-            Nothing -> error $ "lowerUntil: No entry for " ++ show k
+setFilterLookup :: (Ord a, Ord b, Ord d, Show a) =>
+                   (d -> a) -- ^ projection function
+                -> (a -> b -> Bool) -- ^ filter predicate
+                -> DepGraph a b c -- ^ dependency graph for lookup
+                -> Set.Set d -- ^ filter this set
+                -> Set.Set (d,b)
+setFilterLookup pf fp gr s = Set.map h $ Set.filter g $ Set.map f s where
+    f x = (x, fmap ( \ (v, _, _) -> v ) $ Map.lookup (pf x) $ dataMap gr)
+    g (x, Just val) = fp (pf x) val
+    g _ = False
+    h (x, Just val) = (x, val)
+    h _ = error "setFilterLookup: Impossible case"
 
-upperUntil :: (Ord a, Show a) => (a -> b -> Bool) -- ^ cut-off predicate
-           -> DepGraph a b -- ^ dependency graph to be traversed
-           -> a -- ^ compare entries to this element
-           -> [(a,b)]
-upperUntil p gr key = upperLowerUntilGen f p key where
-    f k = case Map.lookup k $ dataMap gr of
-            Just (v, _, dps) -> (v, Set.toList dps)
-            Nothing -> error $ "upperUntil: No entry for " ++ show k
 
-updateGraph :: Ord a => DepGraph a b -> a -> b -> DepGraph a b
+lowerUntil :: (Pretty a, Ord a, Ord b, Show a) =>
+              (a -> b -> Bool) -- ^ cut-off predicate
+           -> DepGraph a b c -- ^ dependency graph to be traversed
+           -> [a] -- ^ compare entries to this element
+           -> Set.Set (a,b)
+lowerUntil _ _ [] = Set.empty
+lowerUntil cop gr al =
+    let s = lowerLevel gr al
+        cop' x = not . cop x
+        s' = setFilterLookup id cop' gr s
+        s'' = lowerUntil cop gr $ map fst $ Set.toList s'
+    in Set.union s' s''
+
+upperUntil :: (Ord a, Ord b, Ord c, Show a) =>
+              (a -> b -> Bool) -- ^ cut-off predicate
+           -> DepGraph a b c -- ^ dependency graph to be traversed
+           -> [a] -- ^ compare entries to this element
+           -> Set.Set (c,b)
+upperUntil _ _ [] = Set.empty
+upperUntil cop gr al =
+    let s = upperLevel gr al
+        cop' x = not . cop x
+        s' = setFilterLookup (getKey gr) cop' gr s
+        s'' = upperUntil cop gr $ map (getKey gr . fst) $ Set.toList s'
+    in Set.union s' s''
+
+
+-- | Updates the depgraph at the given key with the update function.
+-- The dependencies are NOT recomputed. No new elements are added to the graph.
+updateValue :: Ord a => DepGraph a b c -> (b -> b) -> a -> DepGraph a b c
+updateValue gr uf key = gr { dataMap = Map.adjust uf' key $ dataMap gr } where
+    uf' (x, y, z) = (uf x, y, z)
+
+
+-- | Updates the depgraph at the given key with the new value.
+-- The dependencies are recomputed. If the key does not exist in the graph
+-- it is added to the graph.
+updateGraph :: (Ord a, Ord c) => DepGraph a b c -> a -> b -> DepGraph a b c
 updateGraph gr key val =
     -- update the pred-set of all smaller entries
     let (mOv, nm) = Map.insertLookupWithKey f key nval $ dataMap gr
@@ -666,64 +718,27 @@ updateGraph gr key val =
                 Just (_, _, ops) ->
                     Set.fold rmFromSucc nm ops
                 _ -> nm
-        nm'' = foldl insSucc nm' npl
-        rmFromSucc c m = Map.adjust g1 c m
+        rmFromSucc c m = Map.adjust g1 (getKey gr c) m
         g1 (x, dss, dps) = (x, Set.delete key dss, dps)
-        insSucc m c = Map.adjust g2 c m
+        nm'' = foldl insSucc nm' npl
+        insSucc m c = Map.adjust g2 (getKey gr c) m
         g2 (x, dss, dps) = (x, Set.insert key dss, dps)
     in gr { dataMap = nm'' }
 
 data DepGraphAnno a = DepGraphAnno
     { annoDef :: AssDefinition
-    , annoVal :: a } deriving Show
+    , annoVal :: a } deriving (Show, Eq, Ord)
 
 instance Pretty a => Pretty (DepGraphAnno a) where
     pretty (DepGraphAnno { annoDef = def, annoVal = av }) =
         braces $ pretty def <> text ":" <+> pretty av
 
-type AssignmentDepGraph a = DepGraph ConstantName (DepGraphAnno a)
+type AssignmentDepGraph a =
+    DepGraph ConstantName (DepGraphAnno a) InstantiatedConstant
 
-{-
-a = ConstantName
-b = (DepGraphAnno a)
-
-getPs : (ConstantName -> (DepGraphAnno a) -> [ConstantName])
-map gg l :: [(ConstantName, DepGraphAnno a)]
-l :: [(ConstantName, AssDefinition)]
-gg :: (ConstantName, AssDefinition) -> (ConstantName, DepGraphAnno a)
-
-depGraphFromDescList :: Ord a => (a -> b -> [a]) -> [(a,b)] -> DepGraph a b
--}
 assDepGraphFromDescList :: (ConstantName -> AssDefinition -> a)
-                        -> [(ConstantName, AssDefinition)] -> AssignmentDepGraph a
-assDepGraphFromDescList f l = depGraphFromDescList getPs $ map g l where
+                        -> [(ConstantName, AssDefinition)]
+                        -> AssignmentDepGraph a
+assDepGraphFromDescList f l = depGraphFromDescList getPs constName $ map g l where
     g (cn, ad) = (cn, DepGraphAnno { annoDef = ad, annoVal = f cn ad })
-    getPs _ = map SimpleConstant . Set.toList . setOfUserDefined . getDefiniens . annoDef
-
-   
-{-
-
-adjust :: Ord k => (a -> a) -> k -> Map k a -> Map k a
-
-fold :: (a -> b -> b) -> b -> Set a -> b
-                    
-
-insertLookupWithKey :: Ord k => (k -> a -> a -> a) -> k -> a -> Map k a -> (Maybe a, Map k a)	Source
-
-O(log n). Combines insert operation with old value retrieval. 
-the expression (insertLookupWithKey f k x map) is a pair where
-1. element: is equal to (lookup k map) 
-2. element: is equal to (insertWithKey f k x map). 
-
-
-insertWithKey :: Ord k => (k -> a -> a -> a) -> k -> a -> Map k a -> Map k a	Source
-
-O(log n). Insert with a function, combining key, new value and old value.
-
-if key does not exist in the map: insertWithKey f key value mp  will insert the pair (key, value) into mp .
-
-if the key does exist: will insert the pair (key,f key new_value old_value).
-
-
--- type AssignmentDepGraph = DepGraph ConstantName ()
--}
+    getPs _ = Set.toList . setOfUserDefinedICs . getDefiniens . annoDef

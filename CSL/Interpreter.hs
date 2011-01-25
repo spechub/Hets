@@ -34,7 +34,7 @@ module CSL.Interpreter
     , revtranslateExprWithVars
     , stepwise
     , interactiveStepper
-    , evalPrintLoop
+    , readEvalPrintLoop
     )
     where
 
@@ -160,21 +160,21 @@ prettyEvalAtom (AssAtom c def) = pretty c <+> pretty def
 prettyEvalAtom (RepeatAtom e) = text "Repeat condition:" <+> pretty e
 prettyEvalAtom (CaseAtom e) = text "Case condition:" <+> pretty e
 
-evalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
+readEvalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
                   Handle -- ^ Input handle
                -> Handle -- ^ Output handle
                -> String -- ^ Command prompt
                -> (String -> Bool) -- ^ Exit command predicate
                -> m ()
-evalPrintLoop inp outp cp exitWhen = do
+readEvalPrintLoop inp outp cp exitWhen = do
   s <- liftIO $ hPutStr outp cp >> hFlush outp >> hGetLine inp
   unless (exitWhen s) $ evalRaw s >>= liftIO . (hPutStrLn outp)
-             >> evalPrintLoop inp outp cp exitWhen
+             >> readEvalPrintLoop inp outp cp exitWhen
 
 interactiveStepper :: (MonadIO m, AssignmentStore m) => EvalAtom -> m ()
 interactiveStepper x = do
   liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
-  evalPrintLoop stdin stdout "next>" null
+  readEvalPrintLoop stdin stdout "next>" null
 
 stepwise :: AssignmentStore m => (EvalAtom -> m ()) -> CMD -> m ()
 stepwise f (Ass (Op (OpUser n) [] l _) e) = do

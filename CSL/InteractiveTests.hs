@@ -49,6 +49,7 @@ import CSL.Analysis
 import CSL.AS_BASIC_CSL
 import CSL.Sign
 import CSL.Parse_AS_Basic
+import CSL.Verification
 
 import Common.Utils (getEnvDef)
 import Common.DocUtils
@@ -78,6 +79,7 @@ MAIN TESTING FUNCTIONS:
 test 44 assStoreAndProgSimple
 test 44 assStoreAndProgElim
 test 45 loadAssignmentStore
+
 (mit, _) <- testWithMaple 4 (loadAssignmentStore True) 66
 
 (mit, _) <- testWithMaple 4 (loadAssignmentStore False >=> stepProg . snd) 3
@@ -90,6 +92,20 @@ inDefinition (undef ncl) ncl
 For engineering of the specification (to see how to fix missing constants):
 
 sens 56 >>= (\ ncl -> inDefinition (undef ncl) ncl) >>= mapM putStrLn >>= return . length
+
+
+
+
+Verification Condition Testing:
+
+(as, prog) <- testResult 102 assStoreAndProgSimple
+let gr = assDepGraphFromDescList (const $ const True) as
+
+or short:
+
+gr <- fmap (assDepGraphFromDescList (const $ const True) . fst)testResult 102 assStoreAndProgSimple
+
+
 
 DEACTIVATED:
 interesting i's: 44, 46
@@ -120,7 +136,7 @@ main1 args = do
       p ncl= do
          (_, prog) <- loadAssignmentStore False ncl
          stepProg prog
-         evalPrintLoop stdin stdout ">" exitWhen
+         readEvalPrintLoop stdin stdout ">" exitWhen
 
   case args of
     [lb, sp] ->

@@ -22,7 +22,7 @@ import Common.Result
 import Common.ResultT
 
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic (parseExpression, parseCommand)
+import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
 import CSL.Transformation
 import CSL.Reduce_Interface (exportExp)
@@ -53,12 +53,12 @@ data MITrans = MITrans { getBMap :: BMap
 type MapleIO = ResultT (IOS MITrans)
 
 instance AssignmentStore MapleIO where
-    assign  = mapleAssign (evalMapleStringAss True) mapleTransS mapleTransVarE
+    assign  = mapleAssign (evalMapleString True) mapleTransS mapleTransVarE
     assigns =
-        mapleAssigns (evalMapleStringAss False []) mapleTransS mapleTransVarE
-    lookup = mapleLookup evalMapleString mapleTransS
-    eval = mapleEval evalMapleString mapleTransE
-    check = mapleCheck evalMapleString mapleTransE
+        mapleAssigns (evalMapleString False []) mapleTransS mapleTransVarE
+    lookup = mapleLookup (evalMapleString True []) mapleTransS
+    eval = mapleEval (evalMapleString True []) mapleTransE
+    check = mapleCheck (evalMapleString True []) mapleTransE
     names = get >>= return . SMem . getBMap
     evalRaw s = get >>= liftIO . flip (mapleDirect True) s
 
@@ -99,8 +99,9 @@ cslMapleDefaultMapping =
                   ++ idmapping otherOps
 
 printAssignment :: String -> [String] -> EXPRESSION -> String
-printAssignment n [] e = concat [n, ":= ", exportExp e, ";"]
-printAssignment n l e = concat [n, ":= proc", args, exportExp e, " end proc;"]
+printAssignment n [] e = concat [n, ":= ", exportExp e, ":", n, ";"]
+printAssignment n l e = concat [ n, ":= proc", args, exportExp e, " end proc:"
+                               , n, args, ";"]
     where args = concat [ "(", intercalate ", " l, ") " ]
 
 printEvaluation :: EXPRESSION -> String
@@ -143,7 +144,6 @@ mapleAssign ef trans transE n def = do
   n' <- trans n
   el <- ef args $ printAssignment n' args' e'
   case el of
-    -- no plausibility check here. We could check if the operator is ":="
     [rhs] -> return rhs
     l -> error $ "mapleAssign: unparseable result for assignment of "
          ++ (show $ pretty n) ++ "\n" ++ (show $ pretty l)
@@ -239,36 +239,22 @@ mapleTransS s = do
   return s'
 
 
--- | Evaluate the given String as maple expression and eventually
--- parse the result to a CMD list.
-evalMapleStringAss :: Bool -- ^ Use parser
-                     -> [String] -- ^ Use this argument list for variable trafo
-                     -> String -> MapleIO [EXPRESSION]
-evalMapleStringAss b args s = do
-  -- 0.09 seconds is a critical value for the accepted response time of Maple
-  res <- lift $ wrapCommand $ PC.call 0.3 s
-  r <- get
-  return $ if b
-           then
-               let bm = getBMap r
-                   trans = if null args then revtranslateExpr bm
-                           else revtranslateExprWithVars args bm
-               in case parseCommand $ trimLeft $ removeOutputComments res of
-                    Just (Ass _ e) -> [trans e]
-                    _ -> error $ "evalMapleStringAss: not an assignment "
-                               ++ s
-           else []
-                 
-
 -- | Evaluate the given String as maple expression and
 -- parse the result to an expression list.
-evalMapleString :: String -> MapleIO [EXPRESSION]
-evalMapleString s = do
+evalMapleString :: Bool -- ^ Use parser
+                -> [String] -- ^ Use this argument list for variable trafo
+                -> String -> MapleIO [EXPRESSION]
+evalMapleString b args s = do
   -- 0.09 seconds is a critical value for the accepted response time of Maple
   res <- lift $ wrapCommand $ PC.call 0.3 s
   r <- get
-  return $ map (revtranslateExpr $ getBMap r) $ maybeToList $ parseExpression
-             $ trimLeft $ removeOutputComments res
+  let bm = getBMap r
+      trans = if null args then revtranslateExpr bm
+              else revtranslateExprWithVars args bm
+  return $ if b
+           then map trans $ maybeToList $ parseExpression $ trimLeft
+                    $ removeOutputComments res
+           else []
 
 -- | init the maple communication
 mapleInit :: Int -- ^ Verbosity level

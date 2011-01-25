@@ -33,6 +33,8 @@ module CSL.AS_BASIC_CSL
     , getArguments        -- accessor function for AssDefinition
     , isFunDef            -- accessor function for AssDefinition
     , mkDefinition        -- constructor for AssDefinition
+    , InstantiatedConstant(..) -- for function constants we need to store the
+                               -- instantiation
     , CMD (..)            -- Command datatype
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
@@ -117,6 +119,15 @@ getArguments _ = []
 isFunDef :: AssDefinition -> Bool
 isFunDef (FunDef _ _) = True
 isFunDef _ = False
+
+data InstantiatedConstant = InstantiatedConstant
+    { constName :: ConstantName
+    , instantiation :: [EXPRESSION] } deriving (Show, Eq, Ord)
+
+instance Pretty InstantiatedConstant where
+    pretty (InstantiatedConstant { constName = cn, instantiation = el }) =
+        if null el then pretty cn
+        else pretty cn <> (parens $ sepByCommas $ map pretty el)
 
 -- | basic items: an operator or variable declaration or an axiom
 data BASIC_ITEM =

@@ -253,28 +253,27 @@ verificationCondition :: ( VarGen c, AssignmentStore c)
                          -> c EXPRESSION -- ^ the conditional statement,
                                          -- conditional in occurring interval
                                          -- variables
-verificationCondition c e = do
-  (_, vcc1) <- runStateT (replaceIntervals c) emptyVCCache
+verificationCondition val e = do
+  (_, vcc1) <- runStateT (replaceIntervals val) emptyVCCache
   (e', vcc2) <- runStateT (substituteDefined e >>= replaceIntervals')
                 emptyVCCache
 
-  -- 1. c is an interval -> vcc2 => e' in c
-  -- 2. c contains intervals -> error, don't know how to build conditional
+  -- 1. val is an interval -> vcc2 => e' in val
+  -- 2. val contains intervals -> error, don't know how to build conditional
   -- 3. e contains intervals -> error, can't bound interval expression by constant
-  -- 4. otherwise ->  e' = c
-  case c of
+  -- 4. otherwise ->  e' = val
+  case val of
     Interval _ _ _ -> 
         do 
-          let vericond = toIntervalCondition e' c
+          let vericond = toIntervalCondition e' val
           return $ buildConditionalExpression vcc2 vericond
     _ | not $ Map.null $ varcontainer vcc1 ->
-          error $ "verificationCondition: don't know how to build conditional"
-                    ++ "from interval expression"
+          error $ "verificationCondition: do not know how to build conditional"
+                    ++ " from interval expression"
       | not $ Map.null $ varcontainer vcc2 ->
-          error $ "verificationCondition:  can't bound interval expression by"
-                    ++ "constant"
-      | otherwise -> return $ toExp ("=", e', c)
-
+          error $ "verificationCondition: cannot bind interval expression by"
+                    ++ " constant"
+      | otherwise -> return $ toExp ("=", e', val)
 
 
 -- ----------------------------------------------------------------------
