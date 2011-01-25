@@ -1,6 +1,6 @@
 # to be include by Makefile
 
-HC = ghc -optl-s -XTemplateHaskell
+HC = ghc -optl-s -XTemplateHaskell -fcontext-stack=31 -threaded
 HCPKG = ghc-pkg
 
 TIMEVERSION = $(shell $(HCPKG) latest time)
@@ -65,13 +65,17 @@ ifneq ($(findstring 0.2., $(WAIVERSION)),)
 SERVER_FLAG = -DSERVER
 endif
 
+PARSEC1VERSION = $(shell $(HCPKG) field parsec1 version)
+ifneq ($(findstring 1.0., $(PARSEC1VERSION)),)
+PARSEC_FLAG = -hide-package parsec
+endif
 
 ifneq ($(strip $(UNI_PACKAGE)),)
 TESTTARGETFILES += Taxonomy/taxonomyTool.hs OWL/OWLParser.hs \
     Taxonomy/taxonomyTool.hs SoftFOL/tests/CMDL_tests.hs
 endif
 
-HC_OPTS_WITHOUTGLADE = -fcontext-stack=31 -threaded \
+HC_OPTS_WITHOUTGLADE = $(PARSEC_FLAG) \
   $(TIME_PACKAGE) $(TAR_PACKAGE) $(HTTP_PACKAGE) $(UNIX_PACKAGE) \
   $(UNI_PACKAGE) $(HASKELINE_PACKAGE) $(HEXPAT_PACKAGE) \
   $(XMLBYTESTRING_PACKAGE) $(PFE_FLAGS) $(SERVER_FLAG) \
