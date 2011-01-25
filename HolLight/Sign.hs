@@ -8,6 +8,7 @@ import Common.Doc
 import HolLight.Term
 import HolLight.Helper
 
+-- types should store the type kinds for every type constructor
 data Sign = Sign { types :: Set.Set HolType
                  , ops :: Map.Map String (Set.Set HolType) }
   deriving (Eq, Ord, Show)

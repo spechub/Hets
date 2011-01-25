@@ -14,6 +14,7 @@ translate 'Id' to Isabelle strings
 
 module Isabelle.Translate
     ( showIsaConstT, showIsaConstIT, showIsaTypeT, transConstStringT
+    , transTypeStringT
     , mkIsaConstT, mkIsaConstIT, transString, isaPrelude, IsaPreludes
     , getConstIsaToks ) where
 

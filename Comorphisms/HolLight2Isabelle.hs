@@ -19,6 +19,7 @@ import Logic.Logic
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
 import Isabelle.IsaConsts
+import Isabelle.Translate
 
 import Common.Result
 import Common.AS_Annotation
@@ -100,6 +101,8 @@ mapTheory (sig, n_sens) = let
   n_sens' = map mapNamedSen n_sens
                           in return (sig', n_sens')
 
+bs = IsaSign.MainHC_thy
+
 mapSign :: Sign -> IsaSign.Sign
 mapSign (Sign t o) = IsaSign.emptySign{
                        IsaSign.baseSig = IsaSign.MainHC_thy,
@@ -109,22 +112,24 @@ mapSign (Sign t o) = IsaSign.emptySign{
 
 mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
 mapOps f = Map.fromList $
-            map (\(x,y) -> (IsaSign.mkVName x, tp2Typ y)) $
+            map (\(x,y) -> (IsaSign.mkVName $ transConstStringT bs x, tp2Typ y)) $
             concatMap (\(x, s) -> Set.toList $ Set.map (\a -> (x,a)) s)
             $ Map.toList f
 
 
 
 tp2Typ :: HolType -> IsaSign.Typ
-tp2Typ (TyVar s) = IsaSign.Type s holType []
-tp2Typ (TyApp s tps) = IsaSign.Type s holType $ map tp2Typ tps
+tp2Typ (TyVar s) = IsaSign.Type (transTypeStringT bs s) holType []
+tp2Typ (TyApp s tps) = case tps of
+  [a1, a2] | s == "fun" -> mkFunType (tp2Typ a1) (tp2Typ a2)
+  _ -> IsaSign.Type (transTypeStringT bs s) holType $ map tp2Typ tps
 
 mapTypes :: Set.Set HolType -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
                 IsaSign.arities = Map.fromList $ map extractTypeName (Set.toList tps)}
  where
-    extractTypeName t@(TyVar s) = (s, [(isaTerm, [(tp2Typ t, holType)])])
-    extractTypeName t@(TyApp s _tps') = (s, [(isaTerm, [(tp2Typ t, holType)])])
+    extractTypeName t@(TyVar s) = (transTypeStringT bs s , [(isaTerm, [])])
+    extractTypeName t@(TyApp s _tps') = (transTypeStringT bs s, [(isaTerm, [])])
 
 
 mapNamedSen :: Named Sentence -> Named IsaSign.Sentence
