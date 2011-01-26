@@ -86,7 +86,7 @@ cp -rf debian $HETS_FOLDER
 rm -rf $HETS_FOLDER/debian/.svn
 
 #modifying the changelog
-echo "hets ($HETS_FULL_VERSION-1) lucid; urgency=low" > .changelog
+echo "hets ($HETS_FULL_VERSION-1ubuntu0) lucid; urgency=low" > .changelog
 echo >> .changelog
 echo "  * Initial release, automatically generated." >> .changelog
 echo >> .changelog
