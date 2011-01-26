@@ -45,6 +45,8 @@ import HolLight.Logic_HolLight
 import Propositional.Logic_Propositional
 import QBF.Logic_QBF
 import HolLight.Logic_HolLight
+import CSL.Logic_CSL
+import FreeCAD.Logic_FreeCAD
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
 #endif
@@ -68,7 +70,6 @@ import LF.Logic_LF
 import Framework.Logic_Framework
 --import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
-import CSL.Logic_CSL
 import CommonLogic.Logic_CommonLogic
 #endif
 #ifndef NOOWLLOGIC
@@ -87,6 +88,8 @@ logicList =
   , Logic Propositional
   , Logic QBF
   , Logic HolLight
+  , Logic FreeCAD
+  , Logic CSL
 #ifdef PROGRAMATICA
   , Logic Haskell
 #endif
@@ -107,7 +110,6 @@ logicList =
   , Logic LF
   , Logic Framework
   , Logic Maude
-  , Logic CSL
   , Logic CommonLogic
 #endif
 #ifndef NOOWLLOGIC
