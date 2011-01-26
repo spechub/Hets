@@ -54,12 +54,12 @@ res12 = runParser command (emptyAnnos ()) "" "gcd(f(x)+g(x)-l1-l2,f(x)-l1)"
 res13 = runParser command (emptyAnnos ()) "" "int(log(x),x)"
 res14 = runParser command (emptyAnnos ()) "" "qelim(all(x, ex(y, x2+xy+b>0 and x+ay2+b<=0)))"
 
-res15 = runParser aFormula (emptyAnnos ()) "" "True"
-res16 = runParser aFormula (emptyAnnos ()) "" "False"
+res15 = runParser aFormula (emptyAnnos ()) "" "true"
+res16 = runParser aFormula (emptyAnnos ()) "" "false"
 res17 = runParser aFormula (emptyAnnos ()) "" "2<=3"
 res18 = runParser aFormula (emptyAnnos ()) "" "2<3"
 res19 = runParser aFormula (emptyAnnos ()) "" "2<3 and 2<=3"
-res20 = runParser aFormula (emptyAnnos ()) "" "2<3 or True and False"
+res20 = runParser aFormula (emptyAnnos ()) "" "2<3 or true and false"
 
 -- the basic parser
 res21 = runParser parseBasicItems (emptyAnnos ()) "" "operator f,h"

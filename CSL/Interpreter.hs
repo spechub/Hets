@@ -35,6 +35,8 @@ module CSL.Interpreter
     , stepwise
     , interactiveStepper
     , readEvalPrintLoop
+    , EvalAtom(..)
+    , prettyEvalAtom
     )
     where
 
@@ -171,25 +173,31 @@ readEvalPrintLoop inp outp cp exitWhen = do
   unless (exitWhen s) $ evalRaw s >>= liftIO . (hPutStrLn outp)
              >> readEvalPrintLoop inp outp cp exitWhen
 
-interactiveStepper :: (MonadIO m, AssignmentStore m) => EvalAtom -> m ()
-interactiveStepper x = do
+interactiveStepper :: (MonadIO m, AssignmentStore m) => m () -> EvalAtom
+                   -> m Bool
+interactiveStepper prog x = do
   liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
+  b <- evaluateAtom prog x
   readEvalPrintLoop stdin stdout "next>" null
+  return b
 
-stepwise :: AssignmentStore m => (EvalAtom -> m ()) -> CMD -> m ()
+evaluateAtom :: AssignmentStore m => m () -> EvalAtom -> m Bool
+evaluateAtom _ (AssAtom n def) = assign n def >> return True
+evaluateAtom _ (CaseAtom e) = check e
+evaluateAtom prog (RepeatAtom e) = prog >> check e
+
+stepwise :: AssignmentStore m => (m () -> EvalAtom -> m Bool) -> CMD
+         -> m ()
 stepwise f (Ass (Op (OpUser n) [] l _) e) = do
   let def = mkDefinition (toArgList l) e
-  assign n def
-  f $ AssAtom n def
+  f (return ()) $ AssAtom n def
+  return ()
 stepwise _ (Cond []) = error "stepwise: non-exhaustive conditional"
 stepwise f (Cond ((e, pl):cl)) = do
-  b <- check e
-  f $ CaseAtom e
+  b <- f (return ()) $ CaseAtom e
   stepwise f $ if b then Sequence pl else Cond cl
 stepwise f p@(Repeat e l) = do
-  stepwise f $ Sequence l
-  b <- check e
-  f $ RepeatAtom e
+  b <- f (stepwise f $ Sequence l) $ RepeatAtom e
   unless b $ stepwise f p
 stepwise f (Sequence l) = mapM_ (stepwise f) l
 

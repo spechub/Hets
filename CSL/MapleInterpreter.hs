@@ -16,6 +16,7 @@ module CSL.MapleInterpreter where
 
 import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef, trimLeft)
+import Common.Doc
 import Common.DocUtils
 import Common.IOS
 import Common.Result
@@ -25,14 +26,16 @@ import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
 import CSL.Transformation
+import CSL.Verification
 import CSL.Reduce_Interface (exportExp)
+import CSL.Analysis
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
 import Control.Monad
 import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
-import Control.Monad.State (MonadState (..))
+import Control.Monad.State.Class
 
 import Data.List hiding (lookup)
 import Data.Maybe
@@ -46,7 +49,8 @@ import Prelude hiding (lookup)
 
 -- | MapleInterpreter with Translator based on the CommandState
 data MITrans = MITrans { getBMap :: BMap
-                       , getMI :: PC.CommandState }
+                       , getMI :: PC.CommandState
+                       , depGraph :: AssignmentDepGraph () }
 
 
 -- Maple interface, built on CommandState
@@ -62,6 +66,19 @@ instance AssignmentStore MapleIO where
     names = get >>= return . SMem . getBMap
     evalRaw s = get >>= liftIO . flip (mapleDirect True) s
 
+instance VCGenerator MapleIO where
+    getDepGraph = gets depGraph
+    updateConstant n def =
+        let f gr = updateGraph gr n
+                   $ DepGraphAnno { annoDef = def
+                                  , annoVal = () } 
+            mf mit = mit { depGraph = f $ depGraph mit }
+        in modify mf
+        
+    addVC n def e =
+        liftIO $ putStrLn $ show $
+               text "VC for" <+> pretty n <> pretty def <> text ":" <+> pretty e
+               
 
 -- ----------------------------------------------------------------------
 -- * Maple Transformation Instances
@@ -89,7 +106,7 @@ cslMapleDefaultMapping =
         possibleIntervalOps = [ OP_mult, OP_div, OP_plus, OP_minus, OP_neg
                               , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
                               , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
-        logicOps = [ OP_and, OP_or, OP_impl ]
+        logicOps = [ OP_and, OP_or, OP_impl, OP_true, OP_false ]
         otherOps = [ OP_factor, OP_maximize, OP_sign, OP_Pi, OP_min, OP_max
                    , OP_fthrt]
         specialOp = (OP_pow, "^")
@@ -110,6 +127,34 @@ printEvaluation e = exportExp e ++ ";"
 printLookup :: String -> String
 printLookup n = n ++ ";"
 
+
+{-
+The evalf makes the decision much faster. As we verify the result formally
+this should not be problematic in a formal context!
+
+
+In the following context "is" gives up if we do not use "evalf":
+
+x2 := cos(10+cos(10)/sin(10)+cos(10+cos(10)/sin(10))/sin(10+cos(10)/sin(10))
+      + cos(10+cos(10)/sin(10)+cos(10+cos(10)/sin(10))/sin(10+cos(10)/sin(10)))
+      / sin(10+cos(10)/sin(10)+cos(10+cos(10)/sin(10))/sin(10+cos(10)/sin(10))));
+is(abs(x2)<1.0e-4);
+-}
+printBooleanExpr :: EXPRESSION -> String
+printBooleanExpr e = concat [ "is(evalf(", exportExp e, "));" ]
+
+getBooleanFromExpr :: EXPRESSION -> Bool
+getBooleanFromExpr (Op (OpId OP_true) _ _ _) = True
+getBooleanFromExpr (Op (OpId OP_false) _ _ _) = False
+getBooleanFromExpr e =
+    error $ "getBooleanFromExpr: can't translate expression to boolean: "
+              ++ show e
+
+
+
+-- The evalf is mandatory if we use the if-statement for encoding
+{-
+
 -- | As maple does not evaluate boolean expressions we encode them in an
 -- if-stmt and transform the numeric response back.
 printBooleanExpr :: EXPRESSION -> String
@@ -123,6 +168,7 @@ getBooleanFromExpr (Int 0 _) = False
 getBooleanFromExpr e =
     error $ "getBooleanFromExpr: can't translate expression to boolean: "
               ++ show e
+-}
 
 -- ----------------------------------------------------------------------
 -- * Generic Communication Interface
@@ -246,7 +292,7 @@ evalMapleString :: Bool -- ^ Use parser
                 -> String -> MapleIO [EXPRESSION]
 evalMapleString b args s = do
   -- 0.09 seconds is a critical value for the accepted response time of Maple
-  res <- lift $ wrapCommand $ PC.call 0.3 s
+  res <- lift $ wrapCommand $ PC.call 0.6 s
   r <- get
   let bm = getBMap r
       trans = if null args then revtranslateExpr bm
@@ -257,9 +303,10 @@ evalMapleString b args s = do
            else []
 
 -- | init the maple communication
-mapleInit :: Int -- ^ Verbosity level
-         -> IO MITrans
-mapleInit v = do
+mapleInit :: AssignmentDepGraph ()
+          -> Int -- ^ Verbosity level
+          -> IO MITrans
+mapleInit adg v = do
   rc <- lookupMapleShellCmd
   libpath <- getEnvDef "HETS_MAPLELIB"
              $ error "mapleInit: Environment variable HETS_MAPLELIB not set."
@@ -272,6 +319,7 @@ mapleInit v = do
                                  , "libname := \"", libpath, "\", libname;" ]
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
                            , getMI = cs'
+                           , depGraph = adg
                            }
     _ -> error "Could not find maple shell command!"
 
@@ -292,9 +340,10 @@ execWithMaple s m = do
   (res, mit) <- runIOS s $ runResultT m
   return (mit, fromMaybe err $ maybeResult res)
 
-runWithMaple :: Int -> [String] -> MapleIO a -> IO (MITrans, a)
-runWithMaple i l m = do
-  mit <- mapleInit i
+runWithMaple :: AssignmentDepGraph () -> Int -> [String] -> MapleIO a
+             -> IO (MITrans, a)
+runWithMaple adg i l m = do
+  mit <- mapleInit adg i
   mapM_ (mapleLoadModule mit) l
   execWithMaple mit m
 

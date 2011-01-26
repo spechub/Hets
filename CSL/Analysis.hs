@@ -32,8 +32,6 @@ module CSL.Analysis
     ) -}
     where
 
-import Debug.Trace
-
 import Common.ExtSign
 import Common.AS_Annotation
 import Common.Id
@@ -330,8 +328,7 @@ analyzeGuarded x =
                                           [nodeRg, Complement $ mkUnion rgl]
             in (nodelabel rl) { range = newRg } : l
         newguards = foldForest g [] frst
-    in -- trace (show $ pretty x) $
-       x { guards = newguards }
+    in x { guards = newguards }
 
 -- | Folds the forest in top-down direction constructing the accumulator
 -- from the labels and children of each node.
@@ -645,8 +642,12 @@ depGraphFromDescList :: (Ord a, Ord c) => (a -> b -> [c]) -> (c -> a) -> [(a,b)]
 depGraphFromDescList f pf = foldl g (emptyDepGraph f pf) where
     g x (y, z) = updateGraph x y z
 
-upperLevel :: (Ord a, Ord c) => DepGraph a b c -> [a] -> Set.Set c
-upperLevel gr = Set.unions . mapMaybe f where
+maybeSetUnions :: Ord a => Set.Set (Maybe (Set.Set a)) -> Set.Set a
+maybeSetUnions s = Set.fold f Set.empty s where
+    f mS s' = maybe s' (Set.union s') mS
+
+upperLevel :: (Ord a, Ord c) => DepGraph a b c -> Set.Set a -> Set.Set c
+upperLevel gr = maybeSetUnions . Set.map f where
     f a = fmap g $ Map.lookup a $ dataMap gr
     g (_, _, dps) = dps
 
@@ -686,15 +687,28 @@ lowerUntil cop gr al =
 upperUntil :: (Ord a, Ord b, Ord c, Show a) =>
               (a -> b -> Bool) -- ^ cut-off predicate
            -> DepGraph a b c -- ^ dependency graph to be traversed
-           -> [a] -- ^ compare entries to this element
+           -> Set.Set a -- ^ compare entries to these elements
            -> Set.Set (c,b)
-upperUntil _ _ [] = Set.empty
-upperUntil cop gr al =
-    let s = upperLevel gr al
-        cop' x = not . cop x
-        s' = setFilterLookup (getKey gr) cop' gr s
-        s'' = upperUntil cop gr $ map (getKey gr . fst) $ Set.toList s'
-    in Set.union s' s''
+upperUntil cop gr es
+    | Set.null es = Set.empty
+    | otherwise =
+        let s = upperLevel gr es
+            cop' x = not . cop x
+            s' = setFilterLookup (getKey gr) cop' gr s
+            s'' = upperUntil cop gr $ Set.map (getKey gr . fst) s'
+        in Set.union s' s''
+
+-- | Reflexive version of 'upperUntil'
+upperUntilRefl :: (Ord a, Ord b, Show a) =>
+                  (a -> b -> Bool) -- ^ cut-off predicate
+               -> DepGraph a b a -- ^ dependency graph to be traversed
+               -> Set.Set a -- ^ compare entries to these elements
+               -> Set.Set (a,b)
+upperUntilRefl cop gr es
+    | Set.null es = Set.empty
+    | otherwise =
+        Set.union (setFilterLookup (getKey gr) (const $ const True) gr es)
+               $ upperUntil cop gr es
 
 
 -- | Updates the depgraph at the given key with the update function.
@@ -734,6 +748,19 @@ instance Pretty a => Pretty (DepGraphAnno a) where
         braces $ pretty def <> text ":" <+> pretty av
 
 type AssignmentDepGraph a =
+    DepGraph ConstantName (DepGraphAnno a) ConstantName
+
+assDepGraphFromDescList :: (ConstantName -> AssDefinition -> a)
+                        -> [(ConstantName, AssDefinition)]
+                        -> AssignmentDepGraph a
+assDepGraphFromDescList f l = depGraphFromDescList getPs id $ map g l where
+    g (cn, ad) = (cn, DepGraphAnno { annoDef = ad, annoVal = f cn ad })
+    getPs _ = map SimpleConstant . Set.toList . setOfUserDefined . getDefiniens
+              . annoDef
+
+
+{- OLD, using instantiated constants
+type AssignmentDepGraph a =
     DepGraph ConstantName (DepGraphAnno a) InstantiatedConstant
 
 assDepGraphFromDescList :: (ConstantName -> AssDefinition -> a)
@@ -742,3 +769,4 @@ assDepGraphFromDescList :: (ConstantName -> AssDefinition -> a)
 assDepGraphFromDescList f l = depGraphFromDescList getPs constName $ map g l where
     g (cn, ad) = (cn, DepGraphAnno { annoDef = ad, annoVal = f cn ad })
     getPs _ = Set.toList . setOfUserDefinedICs . getDefiniens . annoDef
+-}

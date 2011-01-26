@@ -33,6 +33,7 @@ module CSL.AS_BASIC_CSL
     , getArguments        -- accessor function for AssDefinition
     , isFunDef            -- accessor function for AssDefinition
     , mkDefinition        -- constructor for AssDefinition
+    , updateDefinition    -- updates the definiens
     , InstantiatedConstant(..) -- for function constants we need to store the
                                -- instantiation
     , CMD (..)            -- Command datatype
@@ -104,6 +105,11 @@ data Domain = Set [GroundConstant]
 -- | A constant or function definition
 data AssDefinition = ConstDef EXPRESSION | FunDef [String] EXPRESSION
               deriving (Eq, Ord, Show)
+
+updateDefinition :: EXPRESSION -> AssDefinition -> AssDefinition
+updateDefinition e' (ConstDef _) = ConstDef e'
+updateDefinition e' (FunDef l _) = FunDef l e'
+
 
 mkDefinition :: [String] -> EXPRESSION -> AssDefinition
 mkDefinition l e = if null l then ConstDef e else FunDef l e
@@ -205,8 +211,8 @@ showOPNAME x =
           OP_solve -> "solve"
           OP_sqrt -> "sqrt"
           OP_tan -> "tan"
-          OP_false -> "False"
-          OP_true -> "True"
+          OP_false -> "false"
+          OP_true -> "true"
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 

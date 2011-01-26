@@ -76,15 +76,14 @@ import Data.List
 
 MAIN TESTING FUNCTIONS:
 
-test 44 assStoreAndProgSimple
+test 64 assStoreAndProgSimple
 test 44 assStoreAndProgElim
 test 45 loadAssignmentStore
-
-(mit, _) <- testWithMaple 4 (loadAssignmentStore True) 66
-
-(mit, _) <- testWithMaple 4 (loadAssignmentStore False >=> stepProg . snd) 3
-
 testResult 54 (depClosure ["F_G"])
+
+(mit, _) <- testWithMaple 4 stepProg 3
+(mit, _) <- testWithMaple 4 verifyProg 3
+
 
 ncl <- sens 56
 inDefinition (undef ncl) ncl
@@ -195,7 +194,6 @@ assStoreAndProgSimple ncl = do
 
 
 
-
 loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
                 -> m ([(ConstantName, AssDefinition)], [Named CMD])
 loadAssignmentStore b ncl = do
@@ -208,11 +206,24 @@ loadAssignmentStore b ncl = do
 stepProg :: (AssignmentStore m, MonadIO m) => [Named CMD] -> m ()
 stepProg ncl = stepwise interactiveStepper $ Sequence $ map sentence ncl
 
+verifyProg :: (VCGenerator m, MonadIO m) => [Named CMD] -> m ()
+verifyProg ncl = stepwise verifyingStepper $ Sequence $ map sentence ncl
 
-testWithMapleGen :: Int -> ([Named CMD] -> MapleIO a) -> String -> String -> IO (MITrans, a)
-testWithMapleGen verbosity f lb sp =
-    sigsensGen lb sp >>= runWithMaple verbosity ["EnCLFunctions"]
-                   . f . sigsensNamedSentences
+
+testWithMapleGen :: Int -> ([Named CMD] -> MapleIO a) -> String -> String
+                 -> IO (MITrans, a)
+testWithMapleGen verbosity f lb sp = do
+  ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
+  -- get ordered assignment store and program
+  (as, prog) <- assStoreAndProgSimple ncl
+  -- build the dependency graph
+  let gr = assDepGraphFromDescList (const $ const ()) as
+      -- make sure that the assignment store is loaded into maple before
+      -- the execution of f
+      g x = loadAS as >> f x
+
+  -- start maple and run g
+  runWithMaple gr verbosity ["EnCLFunctions"] $ g prog
 
 testWithMaple :: Int -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
 testWithMaple verbosity f = uncurry (testWithMapleGen verbosity f) . libFP
