@@ -101,5 +101,5 @@ echo ::Starting package building
 cd $HETS_FOLDER
 debuild -S -sa
 cd ..
-dput ppa:hets/hets hets_$HETS_FULL_VERSION-1_source.changes
+dput ppa:hets/hets hets_$HETS_FULL_VERSION-1ubuntu1_source.changes
 echo ::Done
