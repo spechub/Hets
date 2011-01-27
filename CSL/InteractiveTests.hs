@@ -1199,3 +1199,5 @@ opsBool = [ OP_false, OP_true, OP_not, OP_and, OP_or, OP_impl ]
 -- quantifiers
 opsQuant = [ OP_ex, OP_all ]
 -}
+
+

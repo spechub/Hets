@@ -58,10 +58,10 @@ parseError s = do
                       , " col: ", show (Parsec.sourceColumn p), "\n", s]
 
 pComma :: CharParser st String
-pComma = lexemeParser $ Lexer.keySign $ string ","
+pComma = lexemeParser $ string ","
 
 pSemi :: CharParser st String
-pSemi = lexemeParser $ Lexer.keySign $ string ";"
+pSemi = lexemeParser $ string ";"
 
 lstring :: String -> CharParser st String
 lstring = lexemeParser . string
@@ -129,39 +129,46 @@ signednumber =
             | otherwise  = f Left x
     in Lexer.pToken Lexer.scanFloatExt >>= g
 
-oneOfKeys :: [String] -> CharParser st String
-oneOfKeys l = lexemeParser $ Lexer.keySign $ choice $ map tryString l
+-- | The version in Common.Lexer is not compatible with floating point numbers
+-- which may start with ".". This one does it.
+keySignNumCompat :: CharParser st a -> CharParser st a
+keySignNumCompat = try . (<< notFollowedBy (oneOf signNumCompatChars))
 
-expression :: CharParser st EXPRESSION
-expression = do
+signNumCompatChars :: String
+signNumCompatChars = "!#$&*+-/:<=>?@\\^|~" ++
+    "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
+
+oneOfKeys :: [String] -> CharParser st String
+oneOfKeys l = lexemeParser $ keySignNumCompat $ choice $ map tryString l
+
+plusmin :: CharParser st EXPRESSION
+plusmin = do
   let ops = [OP_plus, OP_minus]
   exp1 <- factor
   exps <- many $ pair (oneOfKeys $ map show ops) factor
   return $ if null exps then  exp1
-           else foldl (\ b a -> mkFromOps ops (fst a) [b, snd a]) exp1 exps
+           else foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
 
 -- | parse a product of basic expressions
 factor :: CharParser st EXPRESSION
 factor = do
   let ops = [OP_mult, OP_div]
   exp1 <- expexp
-  exps <- many
-    $ pair (oneOfKeys $ map show ops) factor
+  exps <- many $ pair (oneOfKeys $ map show ops) expexp
   if null exps then return exp1
-     else return $ foldl (\ b a -> mkFromOps ops (fst a) [b, snd a]) exp1 exps
+     else return $ foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
 
 -- | parse a sequence of exponentiations
 expexp :: CharParser st EXPRESSION
 expexp = do
   exp1 <- expatom
-  exps <- many
-    $ pair (oneOfKeys ["**", "^"]) expexp
+  exps <- many $ pair (oneOfKeys ["**", "^"]) expatom
   if null exps then return exp1
-    else return $ foldr (\ a b -> mkPredefOp OP_pow [b, snd a]) exp1 exps
+    else return $ foldl (\ a b -> mkPredefOp OP_pow [a, snd b]) exp1 exps
 
 -- | parse a basic expression
 expatom :: CharParser st EXPRESSION
-expatom = try signednumberExp <|> (oParenT >> expression << cParenT)
+expatom = try signednumberExp <|> (oParenT >> plusmin << cParenT)
           <|> listexp <|> intervalexp <|> expsymbol
 
 expsymbol :: CharParser st EXPRESSION
@@ -255,10 +262,10 @@ truefalseFormula =
 predFormula :: CharParser st EXPRESSION
 predFormula = do
   let ops = [ OP_leq, OP_geq, OP_neq, OP_eq, OP_lt, OP_gt ]
-  exp1 <- expression
+  exp1 <- plusmin
   mExp2 <- optionMaybe
            $ pair (oneOfKeys (map show $ take 3 ops) -- the first 3 print as 2-chars
-                   <|> lexemeParser (single $ oneOf "=<>")) expression
+                   <|> lexemeParser (single $ oneOf "=<>")) plusmin
   case mExp2 of
     Just (op, exp2) -> return $ mkFromOps ops op [exp1, exp2]
     _ -> return $ exp1
@@ -291,9 +298,9 @@ impOrFormula = do
   f1 <- andFormula
   opfs <- many $ pair (lexemeParser $ Lexer.keyWord
                       $ tryString (show OP_or) <|> tryString (show OP_impl))
-          impOrFormula
+          andFormula
   if null opfs then return f1
-   else return $ foldr (\ (a1, a2) b -> mkFromOps ops a1 [b, a2]) f1 opfs
+   else return $ foldl (\ a (op, b) -> mkFromOps ops op [a, b]) f1 opfs
 
 -- | a parser for and sequence of and formulas
 andFormula :: CharParser st EXPRESSION
@@ -302,7 +309,7 @@ andFormula = do
   opfs <- many $ pair (lexemeParser $ keyWord $ tryString $ show OP_and)
           atomicFormula
   if null opfs then return f1
-   else return $ foldr (\ a b -> (mkPredefOp OP_and [b, snd a])) f1 opfs
+   else return $ foldl (\ b a -> (mkPredefOp OP_and [b, snd a])) f1 opfs
 
 -- ---------------------------------------------------------------------------
 
@@ -311,7 +318,7 @@ andFormula = do
 -- ---------------------------------------------------------------------------
 
 formulaorexpression :: CharParser st EXPRESSION
-formulaorexpression = try aFormula <|> expression
+formulaorexpression = try aFormula <|> plusmin
 
 -- | parser for commands
 command :: CharParser (AnnoState.AnnoState st) CMD
@@ -332,7 +339,7 @@ assignment :: CharParser st CMD
 assignment = do
   ident <- expsymbol
   lexemeParser $ tryString ":="
-  exp' <- expression
+  exp' <- plusmin
   return $ Ass ident exp'
 
 constraint :: CharParser st CMD

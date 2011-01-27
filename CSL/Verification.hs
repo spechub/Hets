@@ -14,7 +14,7 @@ during program evaluation.
 
 module CSL.Verification where
 
-import qualified Data.Map as Map
+--import qualified Data.Map as Map
 import qualified Data.Set as Set
 import CSL.Interpreter
 import CSL.Transformation
@@ -28,7 +28,7 @@ import Control.Monad.Trans (MonadIO (..))
 -- * Verification Conditions
 -- ----------------------------------------------------------------------
 
-{- | Given an instantiated constant this data structure keeps 
+{- Given an instantiated constant this data structure keeps 
 
 * the value of this constant looked up in the assignment store
 
@@ -36,7 +36,6 @@ import Control.Monad.Trans (MonadIO (..))
 
 * the for this constant generated verification condition
 
--}
 data VCData = VCData
     { vcValue :: EXPRESSION
     , vcDef :: Maybe AssDefinition
@@ -45,9 +44,12 @@ data VCData = VCData
 
 type VCMap = Map.Map InstantiatedConstant VCData
 
+-}
+
+
 -- | Extra functionality of 'AssignmentStore's for VC generation
 class AssignmentStore m => VCGenerator m where
-    addVC :: ConstantName -> AssDefinition -> EXPRESSION -> m ()
+    addVC :: EvalAtom -> EXPRESSION -> m ()
 
     -- these constants should be already part of the pure assignment store
     getDepGraph :: m (AssignmentDepGraph ())
@@ -62,7 +64,14 @@ getVCPremises adg e =
     in map f $ Set.toList $ upperUntilRefl (const $ const False) adg scl
 
 mkVCPrem :: ConstantName -> AssDefinition -> EXPRESSION
-mkVCPrem n def = toExp ("=", n, getDefiniens def)
+mkVCPrem n def
+    | null args = toExp ("=", n, e)
+    | otherwise = f args
+    where e = getDefiniens def
+          args = getArguments def
+          f (x:l) = g x $ f l
+          f _ = toExp ("=", toExp(n, map mkVar args), e)
+          g v b = toExp ("all", mkVar v, b)
 
 mkVC :: ConstantName 
      -> AssDefinition
@@ -73,7 +82,7 @@ mkVC _ def evalE prl =
     let prem = foldl f (head prl) $ tail prl
         f a b = toExp ("and", a, b)
         conc = toExp ("=", getDefiniens def, evalE)
-    in toExp ("impl", prem, conc)
+    in if null prl then conc else toExp ("impl", prem, conc)
 
 mkBoolVC :: EXPRESSION -- ^ the Boolean term
          -> Bool -- ^ the evaluated Boolean term
@@ -88,19 +97,34 @@ mkBoolVC e evalB prl =
 verifyingStepper :: (VCGenerator m, MonadIO m) => m () -> EvalAtom -> m Bool
 verifyingStepper prog x = do
   liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
+  liftIO $ putStrLn ""
   b <- evaluateAndVerify prog x
   readEvalPrintLoop stdin stdout "next>" null
   return b
 
 evaluateAndVerify :: (VCGenerator m) => m () -> EvalAtom -> m Bool
-evaluateAndVerify _ (AssAtom n def) = do
+evaluateAndVerify _ ea@(AssAtom n def) = do
   adg <- getDepGraph
   let prl = getVCPremises adg $ getDefiniens def
   e <- assign n def
-  addVC n def $ mkVC n def e prl
+  addVC ea $ mkVC n def e prl
   -- update the depgraph in the assignment store
   updateConstant n $ updateDefinition e def
   return True
 
-evaluateAndVerify _ (CaseAtom e) = check e
-evaluateAndVerify prog (RepeatAtom e) = prog >> check e
+evaluateAndVerify _ ea@(CaseAtom e) = do
+  adg <- getDepGraph
+  let prl = getVCPremises adg e
+  b <- check e
+  addVC ea $ mkBoolVC e b prl
+  return b
+
+evaluateAndVerify prog ea@(RepeatAtom e) = do
+  prog
+  adg <- getDepGraph
+  let prl = getVCPremises adg e
+  b <- check e
+  addVC ea $ mkBoolVC e b prl
+  return b
+
+

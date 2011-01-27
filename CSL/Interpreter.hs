@@ -162,6 +162,9 @@ prettyEvalAtom (AssAtom c def) = pretty c <+> pretty def
 prettyEvalAtom (RepeatAtom e) = text "Repeat condition:" <+> pretty e
 prettyEvalAtom (CaseAtom e) = text "Case condition:" <+> pretty e
 
+instance Pretty EvalAtom where
+    pretty = prettyEvalAtom
+
 readEvalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
                   Handle -- ^ Input handle
                -> Handle -- ^ Output handle
@@ -321,7 +324,7 @@ rolookup m k =
           | otherwise ->
               fmap (bmapIntToString m) $ Map.lookup c $ mThere m
         mS -> if isL
-              then error $ "lookupOrInsert: default functions should be "
+              then error $ "rolookup: default functions should be "
                        ++ "passed in as OPIDs but got the constant "
                        ++ show c
               else mS
@@ -377,6 +380,9 @@ type RevVarMap = IMap.IntMap String
 varList :: [String] -> [(String, Int)]
 varList l = zip l [1..]
 
+addToVarMap :: VarMap -> String -> VarMap
+addToVarMap vm s = Map.insert s (Map.size vm + 1) vm 
+
 revVarList :: [String] -> [(Int, String)]
 revVarList l = zip [1..] l 
 
@@ -397,8 +403,13 @@ translateExpr = translateExprGen Map.empty
 -- as constants with a namespace disjoint from that of the usual constants.
 translateExprGen :: VarMap -> BMap -> EXPRESSION -> (BMap, EXPRESSION)
 translateExprGen vm m (Op oi epl el rg) =
-    let (m', el') = mapAccumL (translateExprGen vm) m el
-        (m'', s) = lookupOrInsert m' $ Right oi
+    let (m', s) = lookupOrInsert m $ Right oi
+        vm' = case lookupBindInfo oi $ length el of
+                Just bi -> 
+                    foldl addToVarMap vm
+                              $ toArgList $ map (el!!) $ bindingVarPos bi
+                _ -> vm
+        (m'', el') = mapAccumL (translateExprGen vm') m' el
     in (m'', Op (OpUser $ SimpleConstant s) epl el' rg)
 translateExprGen vm m (List el rg) =
     let (m', el') = mapAccumL (translateExprGen vm) m el
@@ -459,5 +470,3 @@ instance Pretty a => Pretty (BMapDefault a) where
 
 instance Pretty BMap where
     pretty = printBMap
-
-

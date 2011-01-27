@@ -74,6 +74,9 @@ instance SExp ConstantName where
 instance SExp a => SExp (String, a) where
     toExp (s, x) = mkAndAnalyzeOp s [] [toExp x] nullRange
 
+instance SExp a => SExp (ConstantName, [a]) where
+    toExp (n, l) = Op (OpUser n) [] (map toExp l) nullRange
+
 instance (SExp a, SExp b) => SExp (String, a, b) where
     toExp (s, x, y) = mkAndAnalyzeOp s [] [toExp x, toExp y] nullRange
 

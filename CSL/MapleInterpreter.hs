@@ -75,14 +75,16 @@ instance VCGenerator MapleIO where
             mf mit = mit { depGraph = f $ depGraph mit }
         in modify mf
         
-    addVC n def e =
+    addVC ea e =
         liftIO $ putStrLn $ show $
-               text "VC for" <+> pretty n <> pretty def <> text ":" <+> pretty e
+               text "VC for" <+> pretty ea <> text ":" $++$ pretty e
                
 
 -- ----------------------------------------------------------------------
 -- * Maple Transformation Instances
 -- ----------------------------------------------------------------------
+
+-- TODO: Review the vargen facility and the cache-stuff in Transformation
 
 -- | Variable generator instance for internal variables on the Hets-side,
 -- in contrast to the newvar generation in lookupOrInsert of the BMap, which
@@ -99,6 +101,12 @@ instance VarGen MapleIO where
 -- * Maple syntax functions
 -- ----------------------------------------------------------------------
 
+printExp :: EXPRESSION -> String
+printExp = exportExp
+--printExp = show . pretty
+
+-- TODO: The mapping should be OPNAME to OPNAME or we should remove the mapping
+-- just adapt the opinfo-map for pretty printing for each CAS!
 cslMapleDefaultMapping :: [(OPNAME, String)]
 cslMapleDefaultMapping = 
     let idmapping = map (\ x -> (x, show x))
@@ -107,7 +115,7 @@ cslMapleDefaultMapping =
                               , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
                               , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
         logicOps = [ OP_and, OP_or, OP_impl, OP_true, OP_false ]
-        otherOps = [ OP_factor, OP_maximize, OP_sign, OP_Pi, OP_min, OP_max
+        otherOps = [ OP_factor, OP_maxloc, OP_sign, OP_Pi, OP_min, OP_max
                    , OP_fthrt]
         specialOp = (OP_pow, "^")
 --        specialOp = (OP_pow, "&**")
@@ -116,13 +124,13 @@ cslMapleDefaultMapping =
                   ++ idmapping otherOps
 
 printAssignment :: String -> [String] -> EXPRESSION -> String
-printAssignment n [] e = concat [n, ":= ", exportExp e, ":", n, ";"]
-printAssignment n l e = concat [ n, ":= proc", args, exportExp e, " end proc:"
-                               , n, args, ";"]
+printAssignment n [] e = concat [n, ":= ", printExp e, ":", n, ";"]
+printAssignment n l e = concat [ n, ":= proc", args, printExp e
+                               , " end proc:", n, args, ";"]
     where args = concat [ "(", intercalate ", " l, ") " ]
 
 printEvaluation :: EXPRESSION -> String
-printEvaluation e = exportExp e ++ ";"
+printEvaluation e = printExp e ++ ";"
 
 printLookup :: String -> String
 printLookup n = n ++ ";"
@@ -141,7 +149,7 @@ x2 := cos(10+cos(10)/sin(10)+cos(10+cos(10)/sin(10))/sin(10+cos(10)/sin(10))
 is(abs(x2)<1.0e-4);
 -}
 printBooleanExpr :: EXPRESSION -> String
-printBooleanExpr e = concat [ "is(evalf(", exportExp e, "));" ]
+printBooleanExpr e = concat [ "is(evalf(", printExp e, "));" ]
 
 getBooleanFromExpr :: EXPRESSION -> Bool
 getBooleanFromExpr (Op (OpId OP_true) _ _ _) = True
@@ -159,7 +167,7 @@ getBooleanFromExpr e =
 -- if-stmt and transform the numeric response back.
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "if evalf("
-                            , exportExp e, ") then 1 else 0 fi;"
+                            , printExp e, ") then 1 else 0 fi;"
                             ]
 
 getBooleanFromExpr :: EXPRESSION -> Bool
@@ -178,7 +186,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (AssignmentStore s, MonadResult s) =>
+mapleAssign :: (AssignmentStore s, MonadResult s, MonadIO s) =>
                ([String] -> String -> s [EXPRESSION])
             -> (ConstantName -> s String)
             -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
@@ -188,6 +196,7 @@ mapleAssign ef trans transE n def = do
       args = getArguments def
   (e', args') <- transE args e
   n' <- trans n
+  liftIO $ putStrLn $ show e'
   el <- ef args $ printAssignment n' args' e'
   case el of
     [rhs] -> return rhs
@@ -372,4 +381,7 @@ Error, (in Optimization:-NLPSolve) no improved point could be found
 > Maximize(-x^t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);  
 Error, (in Optimization:-NLPSolve) complex value encountered
 
+
+-- works better:
+rhs(maximize(-(tan(x)-1/12)^2 -1, x=-1..1, location)[2,1,1,1]);
 -}

@@ -37,6 +37,7 @@ module CSL.AS_BASIC_CSL
     , InstantiatedConstant(..) -- for function constants we need to store the
                                -- instantiation
     , CMD (..)            -- Command datatype
+    , mkVar               -- Variable constructor
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
     , toElimConst         -- Constant naming for elim constants, see Analysis.hs
@@ -77,6 +78,10 @@ type APFloat = Double
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
 mkOp s el = Op (OpUser $ SimpleConstant s) [] el nullRange
+
+-- | A variable constructor
+mkVar :: String -> EXPRESSION
+mkVar = Var . mkSimpleId
 
 -- | A simple operator constructor from given operator id and arguments
 mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
@@ -145,28 +150,27 @@ data BASIC_ITEM =
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
-data OPNAME = OP_mult -- arithmetic operators
-            | OP_div | OP_plus | OP_minus | OP_neg | OP_pow
+data OPNAME =
+    -- arithmetic operators
+    OP_mult | OP_div | OP_plus | OP_minus | OP_neg | OP_pow
+    -- roots, trigonometric and other operators
+  | OP_fthrt | OP_sqrt | OP_abs | OP_max | OP_min | OP_sign
+  | OP_cos | OP_sin | OP_tan | OP_Pi
 
-            -- roots, trigonometric and other operators
-            | OP_fthrt | OP_sqrt
-            | OP_abs | OP_max | OP_min | OP_sign
-            | OP_cos | OP_sin | OP_tan | OP_Pi
+  -- special CAS operators
+  | OP_minimize | OP_minloc | OP_maximize | OP_maxloc | OP_factor
+  | OP_divide | OP_factorize | OP_int | OP_rlqe | OP_simplify | OP_solve
 
-            -- special CAS operators
-            | OP_maximize | OP_factor
-            | OP_divide | OP_factorize | OP_int | OP_rlqe | OP_simplify | OP_solve
+  -- comparison predicates
+  | OP_neq | OP_lt | OP_leq | OP_eq | OP_gt | OP_geq | OP_convergence
 
-            -- comparison predicates
-            | OP_neq | OP_lt | OP_leq | OP_eq | OP_gt | OP_geq | OP_convergence
+  -- boolean constants and connectives
+  | OP_false | OP_true | OP_not | OP_and | OP_or | OP_impl
 
-            -- boolean constants and connectives
-            | OP_false | OP_true | OP_not | OP_and | OP_or | OP_impl
+  -- quantifiers
+  | OP_ex | OP_all
 
-            -- quantifiers
-            | OP_ex | OP_all
-
-              deriving (Eq, Ord)
+    deriving (Eq, Ord)
 
 instance Show OPNAME where
     show = showOPNAME
@@ -202,7 +206,10 @@ showOPNAME x =
           OP_int -> "int"
           OP_max -> "max"
           OP_maximize -> "maximize"
+          OP_maxloc -> "maxloc"
           OP_min -> "min"
+          OP_minimize -> "minimize"
+          OP_minloc -> "minloc"
           OP_not -> "not"
           OP_or -> "or"
           OP_rlqe -> "rlqe"
@@ -295,7 +302,7 @@ data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
                                                  -- bound terms
                          } deriving (Eq, Ord, Show)
 
-data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and 9
+data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                      , infx :: Bool -- ^ True = infix
                      , arity :: Int -- ^ the operator arity
                      , opname :: OPNAME -- ^ The actual operator name
@@ -323,33 +330,52 @@ operatorInfoNameMap = foldl f Map.empty operatorInfo
 operatorInfo :: [OpInfo]
 operatorInfo =
     let -- arity (-1 means flex), precedence, infix
-        toSgl n i p fx = OpInfo p fx i n Nothing
-        toSglBind n i p fx bv bb =
-            OpInfo p fx i n $ Just $ BindInfo [bv] [bb]
+        toSgl n i p = OpInfo { prec = if p == 0 then maxPrecedence else p
+                             , infx = p > 0
+                             , arity = i
+                             , opname = n
+                             , bind = Nothing
+                             }
+        toSglBind n i bv bb =
+            OpInfo { prec = maxPrecedence
+                   , infx = False
+                   , arity = i
+                   , opname = n
+                   , bind = Just $ BindInfo [bv] [bb]
+                   }
         -- arityflex simple ops
-        aflex s = toSgl s (-1) 0 False
+        aflex s = toSgl s (-1) 0
         -- arity0 simple ops
-        a0 s = toSgl s 0 0 False
+        a0 s = toSgl s 0 0
         -- arity1 simple ops
-        a1 s = toSgl s 1 0 False
+        a1 s = toSgl s 1 0
         -- arity2 simple ops
-        a2 s = toSgl s 2 0 False
+        a2 s = toSgl s 2 0
         -- arity2 binder
-        a2bind bv bb s = toSglBind s 2 0 False bv bb
+        a2bind bv bb s = toSglBind s 2 bv bb
+        -- arity4 binder
+        a4bind bv bb s = toSglBind s 4 bv bb
         -- arity2 infix with precedence
-        a2i p s = toSgl s 2 p True
+        a2i p s = toSgl s 2 p
     in map a0 [ OP_Pi, OP_true, OP_false ]
            ++ map a1 [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
                      , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
-           ++ map (a2i 2) [ OP_ex, OP_all, OP_and, OP_or, OP_impl ]
-           ++ map (a2i 3) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt]
-           ++ map (a2i 4) [ OP_plus, OP_minus]
-           ++ map (a2i 5) [OP_div, OP_mult]
-           ++ map (a2i 6) [OP_pow]
+           ++ map (a2bind 0 1) [ OP_ex, OP_all ]
+           ++ map (a2i 3) [ OP_or, OP_impl ]
+           ++ map (a2i 4) [ OP_and ]
+           ++ map (a2i 5) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt]
+           ++ map (a2i 6) [ OP_plus ]
+           ++ map (a2i 7) [ OP_minus ]
+           ++ map (a2i 8) [OP_mult]
+           ++ map (a2i 9) [OP_div]
+           ++ map (a2i 10) [OP_pow]
            ++ map a2 [ OP_int, OP_divide, OP_solve, OP_convergence ]
            ++ map aflex [ OP_min, OP_max ]
-           ++ map (a2bind 1 0) [ OP_maximize ]
+           ++ map (a2bind 1 0) [ OP_maximize, OP_minimize ]
+           ++ map (a4bind 1 0) [ OP_maxloc, OP_minloc ]
 
+maxPrecedence :: Int
+maxPrecedence = 100
 -- | For the given name and arity we lookup an 'OpInfo', where arity=-1
 -- means flexible arity. If an operator is registered for the given
 -- string but not for the arity we return: Left True.
@@ -495,16 +521,20 @@ printCase e l = do
 
 getPrec :: EXPRESSION -> Int
 getPrec (Op s _ exps _)
- | length exps == 0 = 8 -- check maximum given prec in operatorInfo,
-                        -- this value must be higher
+ | length exps == 0 = maxPrecedence + 1
  | otherwise =
      case lookupOpInfo s $ length exps of
        Right oi -> prec oi
        Left True -> error $ 
                     concat [ "getPrec: registered operator ", show s, " used "
                            , "with non-registered arity ", show $ length exps ]
-       _ -> 0
-getPrec _ = 9
+       _ -> maxPrecedence -- this is probably a userdefine prefix function
+                          -- , binds strongly
+getPrec _ = maxPrecedence
+
+getOp :: EXPRESSION -> Maybe OPID
+getOp (Op s _ _ _) = Just s
+getOp _ = Nothing
 
 printExtparam :: EXTPARAM -> Doc
 printExtparam (EP p op i) =
@@ -515,17 +545,19 @@ printExtparams [] = empty
 printExtparams l = brackets $ sepByCommas $ map printExtparam l
 
 printInfix :: ConstantPrinter m => EXPRESSION -> m Doc
-printInfix e@(Op s _ exps _) = do
+printInfix e@(Op s _ exps@[e1, e2] _) = do
 -- we mustn't omit the space between the operator and its arguments for text-
 -- operators such as "and", "or", but it would be good to omit it for "+-*/"
   oi <- printOPID s
   let outerprec = getPrec e
-      f l = (if (outerprec<=(getPrec (exps!!0))) then l !! 0
-             else  parens (l !! 0)) <+> oi
-            <+> (if outerprec<= getPrec (exps!!1)
-                 then l !! 1
-                 else parens (l !! 1))
-  liftM f $ mapM printExpression exps
+      f cmp e' ed = if cmp outerprec $ getPrec e' then ed else parens ed
+      g [ed1, ed2] = let cmp = case getOp e1 of
+                                 Just op1 | op1 == s -> (<=)
+                                          | otherwise -> (<)
+                                 _ -> (<)
+                     in f cmp e1 ed1 <+> oi <+> f (<) e2 ed2
+      g _ = error "printInfix: Inner impossible case"
+  liftM g $ mapM printExpression exps
 printInfix _ = error "printInfix: Impossible case"
 
 printExpression :: ConstantPrinter m => EXPRESSION -> m Doc
