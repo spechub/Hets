@@ -31,37 +31,37 @@ import Logic.Comorphism
 import Interfaces.Command
 import Interfaces.GenericATPState
 
--- | Internal state of the interface, it contains the development graph
--- and a full history. While this in most cases describes the state of
--- development graph at a given time for GUI it is not the same for the
--- PGIP ( it does not describe selected nodes). If one switches from one
--- interface to the other passing this informations should be sufficient
--- with minimal loss of information ( like selected nodes, unfinished
--- script .. and so on)
+{- | Internal state of the interface, it contains the development graph
+   and a full history. While this in most cases describes the state of
+   development graph at a given time for GUI it is not the same for the
+   PGIP ( it does not describe selected nodes). If one switches from one
+   interface to the other passing this informations should be sufficient
+   with minimal loss of information ( like selected nodes, unfinished
+   script .. and so on) -}
 data IntState = IntState
-  { i_hist  :: IntHistory -- ^ global history management
+  { i_hist :: IntHistory -- ^ global history management
   , i_state :: Maybe IntIState -- ^ internal state
   , filename :: String }
 
 getMaybeLib :: IntState -> Maybe (LibName, LibEnv)
 getMaybeLib = fmap (\ s -> (i_ln s, i_libEnv s)) . i_state
 
--- | Contains the detailed global history as two list, a list of actions
--- for undo, and a list of action for redo commands
+{- | Contains the detailed global history as two list, a list of actions
+   for undo, and a list of action for redo commands -}
 data IntHistory = IntHistory
   { undoList :: [CmdHistory]
   , redoList :: [CmdHistory] }
 
--- | Contains command description needed for undo\/redo actions and
--- for displaying commands in the history
+{- | Contains command description needed for undo\/redo actions and
+   for displaying commands in the history -}
 data CmdHistory = CmdHistory
   { command :: Command
   , cmdHistory :: [UndoRedoElem] }
 
--- | History elements for the proof state, only LibName would be used
--- by GUI because it keeps track only to changes to the development graph,
--- the other are for PGIP but in order to integrate both they should use
--- same structure
+{- | History elements for the proof state, only LibName would be used
+   by GUI because it keeps track only to changes to the development graph,
+   the other are for PGIP but in order to integrate both they should use
+   same structure -}
 data UndoRedoElem =
     UseThmChange Bool
   | Save2FileChange Bool
@@ -83,8 +83,8 @@ data ListChange =
 data IntIState = IntIState
   { i_libEnv :: LibEnv
   , i_ln :: LibName
-  -- these are PGIP specific, but they need to be treated by the common
-  -- history mechanism , therefore they need to be here
+  {- these are PGIP specific, but they need to be treated by the common
+     history mechanism , therefore they need to be here -}
   , elements :: [Int_NodeInfo]
   , cComorphism :: Maybe AnyComorphism
   , prover :: Maybe G_prover
@@ -95,4 +95,3 @@ data IntIState = IntIState
   , loadScript :: Bool }
 
 data Int_NodeInfo = Element ProofState Int
-
