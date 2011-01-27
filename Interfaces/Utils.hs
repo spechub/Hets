@@ -33,6 +33,8 @@ import Interfaces.GenericATPState
 import qualified Interfaces.Command as IC
 import Interfaces.History
 
+import Control.Monad (unless)
+
 import Data.Graph.Inductive.Graph
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf, stripPrefix, nubBy)
@@ -185,17 +187,14 @@ addCommandHistoryToState :: IORef IntState
     -> ProofState                    -- current proofstate
     -> Maybe (G_prover, AnyComorphism) -- possible used translation
     -> [ProofStatus proof_tree]       -- goals included in prove
-    -> IO (Result ())
-addCommandHistoryToState intSt st pcm pt
-    | null $ filter wasProved pt = return $ Result [] $ Just ()
-    | otherwise = do
+    -> IO ()
+addCommandHistoryToState intSt st pcm pt =
+  unless (null $ filter wasProved pt) $ do
         ost <- readIORef intSt
         fn <- tryRemoveAbsolutePathComponent $ filename ost
         writeIORef intSt $ add2history
            (IC.GroupCmd $ proofTreeToProve (rmSuffix fn) st pcm pt)
            ost [ IStateChange $ i_state ost ]
-        return $ Result [] $ Just ()
-
 
 conservativityRule :: DGRule
 conservativityRule = DGRule "ConservativityCheck"
