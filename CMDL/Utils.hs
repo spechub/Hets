@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : utilitary functions used throughout the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -39,15 +39,15 @@ module CMDL.Utils
 import Data.List
 import Data.Maybe
 import Data.Char (isDigit, isSpace)
-import Data.Graph.Inductive.Graph(LNode, LEdge)
+import Data.Graph.Inductive.Graph (LNode, LEdge)
 
-import System.Directory(doesDirectoryExist, doesFileExist,
-                        getDirectoryContents)
+import System.Directory
+import System.FilePath
 
 import Static.GTheory
 import Static.DevGraph
 
-import Common.AS_Annotation(SenAttr(isAxiom))
+import Common.AS_Annotation (SenAttr (isAxiom))
 import Common.Utils
 import qualified Common.OrderedMap as OMap
 
@@ -61,32 +61,28 @@ anyIO fn ls = case ls of
       result <- fn e
       if result then return True else anyIO fn l
 
--- checks if provers in the prover list are availabe on
--- the current machine
+{- checks if provers in the prover list are availabe on
+   the current machine -}
 checkPresenceProvers :: [String] -> IO [String]
 checkPresenceProvers ls = case ls of
     [] -> return []
-    "SPASS" : l -> do
+    s@"SPASS" : l -> do
                   path <- getEnvDef "PATH" ""
                   let lsPaths = map trim $ splitOn ':' path
-                      completePath x = case x of
-                                        [] -> []
-                                        _ -> case last x of
-                                              '/' -> (x ++ "SPASS")
-                                              _ -> (x ++ "/SPASS")
+                      completePath x = x </> s
                   result <- anyIO (doesFileExist . completePath)
                                lsPaths
                   if result then do
                      contd <- checkPresenceProvers l
-                     return ("SPASS" : contd)
+                     return (s : contd)
                    else checkPresenceProvers l
     x : l -> do
             contd <- checkPresenceProvers l
             return (x : contd)
 
--- removes the extension of the file find in the
--- name of the prompter ( it delets everything
--- after the last . and assumes a prompter length of 2 )
+{- removes the extension of the file find in the
+   name of the prompter ( it delets everything
+   after the last . and assumes a prompter length of 2 ) -}
 delExtension :: String -> String
 delExtension str = let rstr = reverse str in
   reverse $ safeTail $ case dropWhile (/= '.') rstr of
@@ -95,7 +91,7 @@ delExtension str = let rstr = reverse str in
 
 -- | Checks if a string represents a int or not
 checkIntString :: String -> Bool
-checkIntString = not . any  (not . isDigit)
+checkIntString = not . any (not . isDigit)
 
 localArr :: String
 localArr = "..>"
@@ -119,26 +115,26 @@ checkArrowLink str = case find snd
   Nothing -> Nothing
   Just (a, _) -> Just (padBlanks a, drop (length a) str)
 
--- | Given a string inserts spaces before and after an
--- arrow
+{- | Given a string inserts spaces before and after an
+   arrow -}
 spacesAroundArrows :: String -> String
 spacesAroundArrows s = case s of
        [] -> []
-       hd : tl  -> case checkArrowLink $ trimLeft s of
+       hd : tl -> case checkArrowLink $ trimLeft s of
           Just (arr, rs) -> arr ++ spacesAroundArrows rs
           Nothing -> hd : spacesAroundArrows tl
 
--- | Given a string the function decomposes it into 4 lists,
--- one for node goals, the other for edges, the third for
--- numbered edges and the last for names that could not be
--- processed due to errors
+{- | Given a string the function decomposes it into 4 lists,
+   one for node goals, the other for edges, the third for
+   numbered edges and the last for names that could not be
+   processed due to errors -}
 decomposeIntoGoals :: String -> ([String], [String], [String], [String])
 decomposeIntoGoals input = let
-    -- the new input where words and arrows are separated
-    -- by exactly one space
+    {- the new input where words and arrows are separated
+       by exactly one space -}
     nwInput = words $ spacesAroundArrows input
-    -- funtion to parse the input and decompose it into
-    -- the three goal list
+    {- funtion to parse the input and decompose it into
+       the three goal list -}
     parse info nbOfArrows word sw listNode listEdge listNbEdge listError =
        case info of
         [] -> case nbOfArrows :: Integer of
@@ -150,7 +146,7 @@ decomposeIntoGoals input = let
                 Just (arr, _) ->
                   case word of
                    [] -> (listNode, listEdge, listNbEdge, word : listError)
-                   _  -> parse l (nbOfArrows + 1) (word ++ arr) True
+                   _ -> parse l (nbOfArrows + 1) (word ++ arr) True
                            listNode listEdge listNbEdge listError
                 Nothing ->
                   if sw
@@ -168,33 +164,33 @@ decomposeIntoGoals input = let
                            listNode listEdge listNbEdge (word : listError)
    in parse nwInput 0 [] True [] [] [] []
 
--- | mapAndSplit maps a function to a list. If the function can not
--- be applied to an element it is stored in a different list for
--- producing error message later on
+{- | mapAndSplit maps a function to a list. If the function can not
+   be applied to an element it is stored in a different list for
+   producing error message later on -}
 mapAndSplit :: (a -> Maybe b) -> [a] -> ([a], [b])
 mapAndSplit fn ls =
   let ps = zip ls $ map fn ls
       (oks, errs) = partition (isJust . snd) ps
   in (map fst errs, mapMaybe snd oks)
 
--- | concatMapAndSplit is similar to mapAndSplit, just that it behaves
--- in a similar manner to concatMap (i.e. sums up lists produced by
--- the function
-concatMapAndSplit :: (a -> [b]) -> [a] -> ([a],[b])
+{- | concatMapAndSplit is similar to mapAndSplit, just that it behaves
+   in a similar manner to concatMap (i.e. sums up lists produced by
+   the function -}
+concatMapAndSplit :: (a -> [b]) -> [a] -> ([a], [b])
 concatMapAndSplit fn ls =
   let ps = zip ls $ map fn ls
       (errs, oks) = partition (null . snd) ps
   in (map fst errs, concatMap snd oks)
 
--- | Given a list of node names and the list of all nodes
--- the function returns all the nodes that have their name
--- in the name list
-obtainNodeList :: [String] -> [LNode DGNodeLab] ->([String], [LNode DGNodeLab])
+{- | Given a list of node names and the list of all nodes
+   the function returns all the nodes that have their name
+   in the name list -}
+obtainNodeList :: [String] -> [LNode DGNodeLab] -> ([String], [LNode DGNodeLab])
 obtainNodeList lN allNodes = mapAndSplit
     (\ x -> find (\ (_, label) -> getDGNodeName label == x) allNodes) lN
 
 -- | Given a node decides if it contains goals or not
-nodeContainsGoals:: LNode DGNodeLab -> G_theory -> Bool
+nodeContainsGoals :: LNode DGNodeLab -> G_theory -> Bool
 nodeContainsGoals (_, l) th =
    (case th of
        G_theory _ _ _ sens _ ->
@@ -203,15 +199,15 @@ nodeContainsGoals (_, l) th =
            hasOpenNodeConsStatus False l
 
 -- | Given an edge decides if it contains goals or not
-edgeContainsGoals:: LEdge DGLinkLab -> Bool
+edgeContainsGoals :: LEdge DGLinkLab -> Bool
 edgeContainsGoals (_, _, l) = case thmLinkStatus $ dgl_type l of
      Just LeftOpen -> True
-     _             -> False
+     _ -> False
 
--- | Given a list of edges and the complete list of all
--- edges computes not only the names of edges but also the
--- numbered name of edges
-createEdgeNames:: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> [String]
+{- | Given a list of edges and the complete list of all
+   edges computes not only the names of edges but also the
+   numbered name of edges -}
+createEdgeNames :: [LNode DGNodeLab] -> [LEdge DGLinkLab] -> [String]
 createEdgeNames lsN lsE = let
   -- function that returns the name of a node given its number
    nameOf x ls = case lookup x ls of
@@ -221,9 +217,9 @@ createEdgeNames lsN lsE = let
    -- sorted and grouped list of edges
    edgs = groupBy ( \ x y -> ordFn x y == EQ) $ sortBy ordFn lsE
    allEds = concatMap (\ l -> case l of
-                             [(x, y, edgLab)] ->[(nameOf x lsN ++
+                             [(x, y, edgLab)] -> [nameOf x lsN ++
                                           arrowLink edgLab ++
-                                          nameOf y lsN)]
+                                          nameOf y lsN]
                              _ -> map (\ (x, y, edgLab) ->
                                    nameOf x lsN ++
                                    arrowLink edgLab ++
@@ -233,14 +229,14 @@ createEdgeNames lsN lsE = let
   in allEds
 
 
--- | Given a list of edge names and numbered edge names
--- and the list of all nodes and edges the function
--- identifies the edges that appear in the name lists
+{- | Given a list of edge names and numbered edge names
+   and the list of all nodes and edges the function
+   identifies the edges that appear in the name lists -}
 obtainEdgeList :: [String] -> [String] -> [LNode DGNodeLab]
-  -> [LEdge DGLinkLab] -> ([String],[LEdge DGLinkLab])
+  -> [LEdge DGLinkLab] -> ([String], [LEdge DGLinkLab])
 obtainEdgeList lsEdge lsNbEdge allNodes allEdges = let
-   -- function that searches through a list of nodes to
-   -- find the node number for a given name.
+   {- function that searches through a list of nodes to
+      find the node number for a given name. -}
        getNodeNb s ls =
           case find ( \ (_, label) ->
                         getDGNodeName label == s) ls of
@@ -275,7 +271,7 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges = let
                 Just y -> case mnb of
                  Nothing -> Nothing
                  Just nb -> let
-                   ls = filter(\ (x1, y1, elab) -> x == x1 && y == y1 &&
+                   ls = filter (\ (x1, y1, elab) -> x == x1 && y == y1 &&
                                    dgl_id elab == EdgeId nb) allEdges
                    in case ls of
                      [] -> Nothing
@@ -283,17 +279,17 @@ obtainEdgeList lsEdge lsNbEdge allNodes allEdges = let
              _ -> error "CMDL.Utils.obtainEdgeList2") lsNbEdge
    in (fst l1 ++ fst l2, snd l1 ++ snd l2)
 
--- | Giben a listof edgenamesand numbered edge names and
--- the list of all nodes and edges the function identifies
--- the edges that appearin the name list and are also goals
+{- | Giben a listof edgenamesand numbered edge names and
+   the list of all nodes and edges the function identifies
+   the edges that appearin the name list and are also goals -}
 obtainGoalEdgeList :: [String] -> [String] -> [LNode DGNodeLab]
                    -> [LEdge DGLinkLab] -> ([String], [LEdge DGLinkLab])
 obtainGoalEdgeList ls1 ls2 ls3 ls4 =
     let (l1, l2) = obtainEdgeList ls1 ls2 ls3 ls4
     in (l1, filter edgeContainsGoals l2)
 
--- | Function that given a string removes comments contained
--- in the string
+{- | Function that given a string removes comments contained
+   in the string -}
 stripComments :: String -> String
 stripComments input =
     let fn ls = case ls of
@@ -304,12 +300,12 @@ stripComments input =
                     '{' : _ -> []
                     _ -> '%' : fn ll
                 [] -> []
-                l : ll  -> l : fn ll
+                l : ll -> l : fn ll
    in trim $ fn input
 
--- | The function obtain the unfinished edge name from the
--- last position of the input or list of possible unfinished
--- edge names
+{- | The function obtain the unfinished edge name from the
+   last position of the input or list of possible unfinished
+   edge names -}
 unfinishedEdgeName :: String -> String
 unfinishedEdgeName input = let
       lastButN nb = lastString . reverse . drop nb . reverse
@@ -322,28 +318,28 @@ unfinishedEdgeName input = let
       wrds = words input
     in if isSpace $ lastChar input
     then
-     -- if so, then either the last word is an arrow, and
-     -- then we have the consider last two words, or it
-     -- is not an arrow and then we need to consider just
-     -- the last word
+     {- if so, then either the last word is an arrow, and
+        then we have the consider last two words, or it
+        is not an arrow and then we need to consider just
+        the last word -}
         case checkArrowLink $ lastString wrds of
           Just (arr1, _) ->
             case checkArrowLink $ prevPrevLast wrds of
-             Just(arr2, _) -> prev2PrevLast wrds
+             Just (arr2, _) -> prev2PrevLast wrds
                ++ arr2 ++ prevLast wrds ++ arr1
              _ -> prevLast wrds ++ arr1
           _ -> case checkArrowLink $ prevLast wrds of
-                -- an entire edge name was just inserted
-                -- before and now we need a fresh new start
+                {- an entire edge name was just inserted
+                   before and now we need a fresh new start -}
                 Just _ -> []
-                -- if just the first word of an edge was
-                -- inserted then return that
+                {- if just the first word of an edge was
+                   inserted then return that -}
                 _ -> case lastString wrds of
                       [] -> []
                       _ -> lastString wrds ++ " "
     else
-     -- then we could be in the middle of the first node
-     -- name, arrow or the second node name
+     {- then we could be in the middle of the first node
+        name, arrow or the second node name -}
       case checkArrowLink $ prevLast wrds of
            -- in the middle of the last word
           Just (arr1, _) -> case checkArrowLink $ prev2PrevLast wrds of
@@ -357,66 +353,66 @@ unfinishedEdgeName input = let
                 -- in the middle of the arrow
                 _ -> case prevLast wrds of
                       [] -> lastString wrds
-                      _  -> prevLast wrds ++ " " ++ lastString wrds
+                      _ -> prevLast wrds ++ " " ++ lastString wrds
 
--- | Given a list of files and folders the function filters
--- only directory names and files ending in extenstion
--- .casl or .het
+{- | Given a list of files and folders the function filters
+   only directory names and files ending in extenstion
+   .casl or .het -}
 fileFilter :: String -> [String] -> [String] -> IO [String]
 fileFilter lPath ls cons = case ls of
-    []  -> return cons
+    [] -> return cons
     x : l -> do
          -- check if current element is a directory
-         b <- doesDirectoryExist (lPath ++ x)
+         b <- doesDirectoryExist (lPath </> x)
          if b
            -- if it is,then add "/" to indicate is a folder
-           then fileFilter lPath l ((x ++ "/") : cons)
-           -- if it is not a folder then it must be a file
-           -- so check the extension
-           else if any (flip isSuffixOf x ) [".casl", ".het" ]
+           then fileFilter lPath l (addTrailingPathSeparator x : cons)
+           {- if it is not a folder then it must be a file
+              so check the extension -}
+           else if elem (takeExtensions x) [".casl", ".het" ]
                    then fileFilter lPath l (x : cons)
                    else fileFilter lPath l cons
 
--- | Given a list of files and folders the function expands
--- the list adding the content of all folders in the list
+{- | Given a list of files and folders the function expands
+   the list adding the content of all folders in the list -}
 fileExtend :: String -> [String] -> [String] -> IO [String]
 fileExtend lPath ls cons = case ls of
-    []  -> return cons
+    [] -> return cons
     x : l -> do
           -- check if current element is a directory
-          let lPathx = lPath ++ x
+          let lPathx = lPath </> x
           b <- doesDirectoryExist lPathx
           if b then
             -- if it is a folder add its content
             do ll <- getDirectoryContents lPathx
-               nll<- fileFilter lPathx ll []
-               let nll'= map (x ++) nll
+               nll <- fileFilter lPathx ll []
+               let nll' = map (x </>) nll
                fileExtend lPath l (nll' ++ cons)
             -- if it is not then leave the file alone
             else fileExtend lPath l (x : cons)
 
--- | The function behaves exactly as tail just that
--- in the case of empty list returns an empty list
--- instead of an error
+{- | The function behaves exactly as tail just that
+   in the case of empty list returns an empty list
+   instead of an error -}
 safeTail :: [a] -> [a]
 safeTail = drop 1
 
 safeLast :: a -> [a] -> a
 safeLast d l = if null l then d else last l
 
--- | The function behaves exactly like last just that
--- in case of an empty list returns the space
--- character (it works only for lists of chars)
+{- | The function behaves exactly like last just that
+   in case of an empty list returns the space
+   character (it works only for lists of chars) -}
 lastChar :: String -> Char
 lastChar = safeLast ' '
 
--- | The function behaves exactly like last just that
--- in case of an empty list returns the empty string
--- (it is meant only for list of strings)
-lastString::[String]->String
+{- | The function behaves exactly like last just that
+   in case of an empty list returns the empty string
+   (it is meant only for list of strings) -}
+lastString :: [String] -> String
 lastString = safeLast ""
 
 -- | The function nicely outputs a list of errors
 prettyPrintErrList :: [String] -> String
-prettyPrintErrList = (intercalate "\n")
+prettyPrintErrList = intercalate "\n"
   . map (\ x -> "Input " ++ x ++ " could not be processed")
