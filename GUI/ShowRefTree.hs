@@ -25,6 +25,7 @@ import GUI.GraphLogic
 import Interfaces.DataTypes
 import Interfaces.Command
 import Common.Consistency
+import Common.DocUtils
 import Driver.Options(doDump)
 
 import Static.DevGraph
@@ -217,15 +218,24 @@ showDiagram gInfo dg n = do
       writeIORef graph graph'
       redraw graph'
 
+showDiagSpec :: DiagNodeLab  -> IO()
+showDiagSpec l = do
+ createTextDisplay "" 
+   ("Desc:\n" ++ (dn_desc l) ++ "\n" ++
+    "Sig:\n" ++ (showDoc (dn_sig l) "")
+   )
+
 addNodesAndEdgesDeps :: Diag -> DaVinciGraphTypeSyn -> GInfo ->
                        IORef NodeEdgeListDep -> IO ()
 addNodesAndEdgesDeps diag graph gi nodesEdges = do
    let
     opts = hetcatsOpts gi
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
+    
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
-    subNodeMenu = LocalMenu (UDG.Menu Nothing [])
+    subNodeMenu = LocalMenu (UDG.Menu Nothing [Button "Show desc and sig" $ 
+                                showDiagSpec])
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
                        ValueTitle (return . dn_desc) $$$

@@ -73,10 +73,7 @@ import Common.Result
 
 -- | Node with signature in a DG
 data NodeSig = NodeSig { getNode :: Node, getSig :: G_sign }
-    deriving (Eq)
-
-instance Show NodeSig where
- show n = show $ getNode n
+    deriving (Eq, Show)
 
 {- | NodeSig or possibly the empty sig in a logic
      (but since we want to avoid lots of vsacuous nodes with empty sig,
