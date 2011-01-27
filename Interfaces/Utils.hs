@@ -83,11 +83,7 @@ getAllEdges :: IntIState -> [LEdge DGLinkLab]
 getAllEdges st = labEdgesDG $ lookupDGraph (i_ln st) (i_libEnv st)
 
 -- | Constructor for CMDLProofGUIState datatype
-initNodeInfo:: (Logic lid1 sublogics1
-         basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-         ProofState lid1 sentence1 -> Int
-         -> Int_NodeInfo
+initNodeInfo :: ProofState -> Int -> Int_NodeInfo
 initNodeInfo = Element
 
 emptyIntIState :: LibEnv -> LibName -> IntIState
@@ -126,7 +122,7 @@ tryRemoveAbsolutePathComponent f
 
 -- Converts a list of proof-trees to a prove
 proofTreeToProve :: FilePath
-     -> ProofState lid sentence -- current proofstate
+     -> ProofState                   -- current proofstate
      -> Maybe (G_prover, AnyComorphism)     -- possible used translation
      -> [ProofStatus proof_tree]           -- goals included in prove
      -> [IC.Command]
@@ -186,7 +182,7 @@ parseTimeLimit pt =
     tlStr = "Time limit: "
 
 addCommandHistoryToState :: IORef IntState
-    -> ProofState lid sentence         -- current proofstate
+    -> ProofState                    -- current proofstate
     -> Maybe (G_prover, AnyComorphism) -- possible used translation
     -> [ProofStatus proof_tree]       -- goals included in prove
     -> IO (Result ())

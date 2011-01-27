@@ -30,14 +30,12 @@ import CMDL.DataTypesUtils(getAllNodes, add2hist, genErrorMsg, genMessage)
 import CMDL.Utils(arrowLink, decomposeIntoGoals, prettyPrintErrList)
 import CMDL.ProveCommands(cDoLoop)
 
-import Proofs.AbstractState(ProofState(..))
+import Proofs.AbstractState (resetSelection)
 
 import Static.DevGraph
-import Static.GTheory(G_theory(G_theory))
 
 import Common.Consistency
 import Common.LibName(LibName)
-import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph(LNode, LEdge)
 import Data.List (groupBy, find, sortBy)
@@ -112,24 +110,14 @@ cConsistCheckAll state
          case elements pS of
           [] -> return $ genErrorMsg "Nothing selected" state
           ls ->
-            do
-             let ls' = map (\(Element st nb) ->
-                               case theory st of
-                                G_theory _ _ _ aMap _ ->
-                                 Element
-                                  (st {
-                                     selectedGoals = OMap.keys $
-                                                       goalMap st,
-                                     includedAxioms = OMap.keys aMap,
-                                     includedTheorems = OMap.keys $
-                                                         goalMap st
-                                     }) nb ) ls
-             let nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
+             let ls' = map (\ (Element st nb) ->
+                               Element (resetSelection st) nb) ls
+                 nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
                           state {
                            intState = (intState state) {
                               i_state = Just $ pS {
                                                   elements = ls' } } }
-             cConsistCheck nwSt
+             in cConsistCheck nwSt
 
 
 -- applies conservativity check to a given list

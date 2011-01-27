@@ -93,51 +93,31 @@ basicInferenceNode :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
 basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
   runResultT $ do
     -- compute the theory (that may contain proved theorems) and its name
-    thForProof@(G_theory lid1 _ _ _ _) <- liftR $ getGlobalTheory lbl
+    thForProof <- liftR $ getGlobalTheory lbl
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
         freedefs = getCFreeDefMorphs libEnv ln dGraph node
     kpMap <- liftR knownProversGUI
-    ResultT $ proverGUI lid1 ProofActions
+    ResultT $ proverGUI ProofActions
       { proveF = proveKnownPMap lg intSt freedefs
       , fineGrainedSelectionF = proveFineGrainedSelect lg intSt freedefs
       , recalculateSublogicF = return . recalculateSublogicAndSelectedTheory
       } thName (hidingLabelWarning lbl) thForProof kpMap
       (getAllProvers ProveGUI (sublogicOfTh thForProof) lg)
 
-proveKnownPMap :: (Logic lid sublogics1
-               basic_spec1
-               sentence
-               symb_items1
-               symb_map_items1
-               sign1
-               morphism1
-               symbol1
-               raw_symbol1
-               proof_tree1) =>
-       LogicGraph
+proveKnownPMap :: LogicGraph
     -> IORef IntState
     -> [GFreeDefMorphism]
-    -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
+    -> ProofState -> IO (Result ProofState)
 proveKnownPMap lg intSt freedefs st =
     maybe (proveFineGrainedSelect lg intSt freedefs st)
           (callProver st intSt False freedefs) $
           lookupKnownProver st ProveGUI
 
-callProver :: (Logic lid sublogics1
-               basic_spec1
-               sentence
-               symb_items1
-               symb_map_items1
-               sign1
-               morphism1
-               symbol1
-               raw_symbol1
-               proof_tree1) =>
-       ProofState lid sentence
+callProver :: ProofState
     -> IORef IntState
     -> Bool -- indicates if a translation was chosen
     -> [GFreeDefMorphism]
-    -> (G_prover, AnyComorphism) -> IO (Result (ProofState lid sentence))
+    -> (G_prover, AnyComorphism) -> IO (Result ProofState)
 callProver st intSt trans_chosen freedefs p_cm@(_, acm) =
        runResultT $ do
         (_, exit) <- lift $ pulseBar "prepare for proving" "please wait..."
@@ -151,29 +131,14 @@ callProver st intSt trans_chosen freedefs p_cm@(_, acm) =
               (if trans_chosen then Just p_cm else Nothing) ps
         return st'
 
-proveFineGrainedSelect ::
-    (Logic lid sublogics1
-               basic_spec1
-               sentence
-               symb_items1
-               symb_map_items1
-               sign1
-               morphism1
-               symbol1
-               raw_symbol1
-               proof_tree1) =>
-       LogicGraph
+proveFineGrainedSelect :: LogicGraph
     -> IORef IntState
     -> [GFreeDefMorphism]
-    -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
+    -> ProofState -> IO (Result ProofState)
 proveFineGrainedSelect lg intSt freedefs st =
     runResultT $ do
        let sl = sublogicOfTheory st
-           cmsToProvers =
-             if sl == lastSublogic st
-               then comorphismsToProvers st
-               else getAllProvers ProveGUI sl lg
+           cmsToProvers = getAllProvers ProveGUI sl lg
        pr <- selectProver cmsToProvers
-       ResultT $ callProver st {lastSublogic = sublogicOfTheory st,
-                               comorphismsToProvers = cmsToProvers}
+       ResultT $ callProver st { comorphismsToProvers = cmsToProvers }
                                intSt True freedefs pr

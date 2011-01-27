@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      : $Header$
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -33,7 +33,7 @@ import Comorphisms.LogicGraph(logicGraph)
 import Proofs.AbstractState
 
 import Static.DevGraph
-import Static.GTheory(G_theory(G_theory), coerceThSens, startThId, sublogicOfTh)
+import Static.GTheory (sublogicOfTh)
 import Static.History
 
 import Logic.Comorphism
@@ -371,12 +371,8 @@ addResults ist libname ndps =
     Nothing -> ist
     Just pS ->
       case ndps of
-       Element ps'' node -> case theory ps'' of
-         G_theory lidT sigT indT sensT _ ->
-           case coerceThSens (logicId ps'') lidT "" (goalMap ps'') of
-             Nothing -> ist
-             Just gMap -> let
-               nwTh = G_theory lidT sigT indT (Map.union sensT gMap) startThId
+       Element ps'' node -> let
+               nwTh = theory ps''
                dGraph = lookupDGraph libname (i_libEnv pS)
                nl = labDG dGraph node
                in fst $ updateNodeProof libname ist (node, nl) nwTh

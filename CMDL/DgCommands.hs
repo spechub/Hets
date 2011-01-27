@@ -35,11 +35,11 @@ import CMDL.DataTypesUtils
      getInputDGNodes)
 import CMDL.Utils (decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
-import Proofs.AbstractState (getAllProvers, initialState)
+import Proofs.AbstractState (comorphismsToProvers, getAllProvers, initialState)
 import Proofs.TheoremHideShift (theoremHideShiftFromList)
 
 import Static.AnalysisLibrary
-import Static.GTheory (G_theory (G_theory), sublogicOfTh)
+import Static.GTheory (sublogicOfTh)
 import Static.DevGraph
 import Static.ComputeTheory (computeTheory)
 
@@ -195,17 +195,17 @@ selectANode x dgState = let
     result as one element list, otherwise an
     empty list -}
       case gth x of
-       Just th@(G_theory lid _ _ _ _) -> do
+       Just th ->
        -- le not used and should be
          let sl = sublogicOfTh th
-         tmp <- initialState
-                lid
+             tmp = (initialState
                 (shows (getLibId $ i_ln dgState) "_" ++ nodeName x)
                 th
-                (shrinkKnownProvers sl kpMap)
-                (getAllProvers ProveCMDLautomatic sl logicGraph)
+                (shrinkKnownProvers sl kpMap))
+                { comorphismsToProvers =
+                    getAllProvers ProveCMDLautomatic sl logicGraph }
          -- all goals and axioms are selected initialy in the proof status
-         return (initNodeInfo tmp x)
+         in [initNodeInfo tmp x]
        _ -> []
 
 {- | function swithces interface in proving mode and also

@@ -28,7 +28,6 @@ import Static.DevGraph
 import Common.LibName
 import Proofs.AbstractState
 import Logic.Comorphism
-import Logic.Logic
 import Interfaces.Command
 import Interfaces.GenericATPState
 
@@ -95,11 +94,5 @@ data IntIState = IntIState
   , script :: ATPTacticScript
   , loadScript :: Bool }
 
-data Int_NodeInfo = forall lid1 sublogics1
-         basic_spec1 sentence1 symb_items1 symb_map_items1
-         sign1 morphism1 symbol1 raw_symbol1 proof_tree1 .
-         Logic lid1 sublogics1 basic_spec1 sentence1
-         symb_items1 symb_map_items1 sign1 morphism1
-         symbol1 raw_symbol1 proof_tree1 =>
-     Element (ProofState lid1 sentence1) Int
+data Int_NodeInfo = Element ProofState Int
 

@@ -16,7 +16,6 @@ module GUI.ProverGUI
   ( proverGUI ) where
 
 import Logic.Comorphism
-import Logic.Logic
 import Static.GTheory
 import Common.Result as Result
 import Proofs.AbstractState
@@ -29,32 +28,19 @@ import Control.Concurrent
 import GUI.HTkProverGUI
 #endif
 
-proverGUI ::
-  (Logic lid sublogics1
-             basic_spec1
-             sentence
-             symb_items1
-             symb_map_items1
-             sign1
-             morphism1
-             symbol1
-             raw_symbol1
-             proof_tree1) =>
-     lid
-  -> ProofActions lid sentence -- ^ record of possible GUI actions
+proverGUI :: ProofActions -- ^ record of possible GUI actions
   -> String -- ^ theory name
   -> String -- ^ warning information
   -> G_theory -- ^ theory
   -> KnownProvers.KnownProversMap -- ^ map of known provers
-  -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
-                                -- for sublogic of G_theory
+  -> [(G_prover, AnyComorphism)]  -- ^ list of suitable provers and comorphisms
   -> IO (Result.Result G_theory)
 #ifdef GTKGLADE
 proverGUI = showProverGUI
 #elif defined UNI_PACKAGE
-proverGUI lid prGuiAcs thName warningTxt th knownProvers comorphList = do
+proverGUI prGuiAcs thName warningTxt th knownProvers comorphList = do
   guiMVar <- newMVar Nothing
-  proofManagementGUI lid prGuiAcs thName warningTxt th knownProvers comorphList
+  proofManagementGUI prGuiAcs thName warningTxt th knownProvers comorphList
                      guiMVar
 #else
 proverGUI = error "not implemented"

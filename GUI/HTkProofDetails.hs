@@ -15,6 +15,7 @@ module GUI.HTkProofDetails (doShowProofDetails) where
 
 import qualified Common.Doc as Pretty
 import qualified Common.OrderedMap as OMap
+import Common.AS_Annotation
 
 import qualified Data.Map as Map
 import Data.Maybe
@@ -29,7 +30,6 @@ import GUI.HTkUtils
 
 import Proofs.AbstractState
 import Logic.Comorphism
-import Logic.Logic
 import Logic.Prover
 import Static.GTheory
 
@@ -198,20 +198,7 @@ adaptTextPositions f diff pos =
 {- |
   Called whenever the button /Show proof details/ is clicked.
 -}
-doShowProofDetails ::
-    (Logic lid
-           sublogics1
-           basic_spec1
-           sentence
-           symb_items1
-           symb_map_items1
-           sign1
-           morphism1
-           symbol1
-           raw_symbol1
-           proof_tree1) =>
-       ProofState lid sentence
-    -> IO ()
+doShowProofDetails :: ProofState -> IO ()
 doShowProofDetails prGUISt =
    do
     let thName = theoryName prGUISt
@@ -239,10 +226,10 @@ doShowProofDetails prGUISt =
     pack ptBut [PadX 5, PadY 5]
     pack sBut  [PadX 5, PadY 5]
     pack qBut  [PadX 8, PadY 5]
-
+    G_theory _ _ _ sSens _ <- return $ selectedTheory prGUISt
     let sttDesc = "Tactic script"
         sptDesc = "Proof tree"
-        sens = selectedGoalMap prGUISt
+        sens = OMap.filter (not . isAxiom) sSens
         elementMap = foldr insertSenSt Map.empty (reverse $ OMap.toList sens)
         insertSenSt (gN, st) resOMap =
             foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $

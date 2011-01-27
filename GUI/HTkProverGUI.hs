@@ -20,6 +20,7 @@ import Common.Result as Result
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
+import Common.Utils
 
 import Data.List
 import qualified Control.Concurrent as Conc
@@ -76,7 +77,7 @@ statusRunning = (Blue, "Waiting for Prover")
 {- | Converts a 'ProofState' into a ('ProverStatusColour',
      'String') tuple to be displayed by the GUI.
 -}
-toGuiStatus :: ProofState lid sentence
+toGuiStatus :: ProofState
             -> (ProverStatusColour, String)
 toGuiStatus st = if proverRunning st
   then statusRunning
@@ -88,15 +89,11 @@ toGuiStatus st = if proverRunning st
 
   Uses a status indicator internally.
 -}
-goalsView :: ProofState lid sentence  -- ^ current global state
+goalsView :: ProofState  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
-goalsView = map toStatus . OMap.toList . goalMap
+goalsView = map toStatus . getGoals
     where toStatus (l, st) =
-              let tStatus = thmStatus st
-                  si = if null tStatus
-                       then LBIndicatorOpen
-                       else indicatorFromBasicProof
-                                (maximum $ map snd tStatus)
+              let si = maybe LBIndicatorOpen indicatorFromBasicProof st
               in LBGoalView { statIndicator = si
                             , goalDescription = l}
 
@@ -115,20 +112,15 @@ populatePathsListBox lb prvs = do
   lb # value (Map.keys prvs)
   return ()
 
-populateAxiomsList ::
-    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-       ListBox String
-    -> ProofState lid1 sentence1
+populateAxiomsList :: ListBox String
+    -> ProofState
     -> IO ()
 populateAxiomsList lbAxs s = do
-       lbAxs # value (map (\ (k, sen) -> if wasTheorem sen then "(Th) " ++ k
-                                           else k)
-                              $ OMap.toList $ axiomMap s)
+       lbAxs # value (toAxioms s)
        return ()
 
 setSelectedProver :: ListBox String
-                  -> ProofState lid1 sentence1
+                  -> ProofState
                   -> IO ()
 setSelectedProver lb st = do
     let ind = case selectedProver st of
@@ -141,7 +133,7 @@ setSelectedProver lb st = do
 {- |
    Updates the display of the status of the selected goals.
 -}
-updateDisplay :: ProofState lid sentence -- ^ current global state
+updateDisplay :: ProofState -- ^ current global state
     -> Bool
     -- ^ set to 'True' if you want the 'ListBox' to be updated
     -> ListBox String
@@ -165,30 +157,27 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     statusLabel # foreground (show color)
     return ()
 
-updateStateGetSelectedGoals ::
-    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-           ProofState lid1 sentence1
+toGoals :: ProofState -> [String]
+toGoals = map fst . getGoals
+
+updateStateGetSelectedGoals :: ProofState
         -> ListBox String
-        -> IO (ProofState lid1 sentence1)
+        -> IO ProofState
 updateStateGetSelectedGoals s lb =
     do sel <- getSelection lb :: IO (Maybe [Int])
        return s {selectedGoals =
-                      maybe [] (map (OMap.keys (goalMap s) !!)) sel}
+                      maybe [] (map (toGoals s !!)) sel}
 
-updateStateGetSelectedSens ::
-    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-           ProofState lid1 sentence1
+updateStateGetSelectedSens :: ProofState
         -> ListBox String -- ^ axioms listbox
         -> ListBox String -- ^ theorems listbox
-        -> IO (ProofState lid1 sentence1)
+        -> IO ProofState
 updateStateGetSelectedSens s lbAxs lbThs = do
        selA <- getSelection lbAxs :: IO (Maybe [Int])
        selT <- getSelection lbThs :: IO (Maybe [Int])
-       return (s { includedAxioms = maybe [] (fil $ axiomMap s) selA
-                 , includedTheorems = maybe [] (fil $ goalMap s) selT })
-    where fil = map . (!!) . OMap.keys
+       return (s { includedAxioms = maybe [] (fil $ toAxioms s) selA
+                 , includedTheorems = maybe [] (fil $ toGoals s) selT })
+    where fil = map . (!!)
 
 {- |
  Depending on the first argument all entries in a ListBox are selected
@@ -207,30 +196,23 @@ doSelectAllEntries selectAll lb =
 {- |
   Called whenever the button "Display" is clicked.
 -}
-doDisplayGoals ::
-    (Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-       ProofState lid1 sentence1
-    -> IO ()
+doDisplayGoals :: ProofState -> IO ()
 doDisplayGoals s =
     case theory s of
-      G_theory lid1 (ExtSign sig1 _) _ _ _ -> do
+      G_theory lid1 (ExtSign sig1 _) _ sens1 _ -> do
        let thName = theoryName s
            goalsText = show . Pretty.vsep .
                           map (print_named lid1 .
                                AS_Anno.mapNamed (simplify_sen lid1 sig1))
                           . toNamedList
-           sens = selectedGoalMap s
-       sens' <- coerceThSens (logicId s) lid1 "" sens
+                          $ filterMapWithList (selectedGoals s) sens1
        createTextSaveDisplay ("Selected Goals from Theory " ++ thName)
-                          (thName ++ "-goals.txt") (goalsText sens')
+                          (thName ++ "-goals.txt") goalsText
 
 {- |
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
 -}
-doSelectProverPath :: ProofState lid sentence
-                   -> ListBox String
-                   -> IO (ProofState lid sentence)
+doSelectProverPath :: ProofState -> ListBox String -> IO ProofState
 doSelectProverPath s lb =
     do selected <- getSelection lb :: IO (Maybe [Int])
        return s {selectedProver =
@@ -294,19 +276,7 @@ newExtSelListBoxFrame b2 title hValue = do
 -- *** Main GUI
 
 -- | Invokes the GUI.
-proofManagementGUI ::
-  (Logic lid sublogics1
-             basic_spec1
-             sentence
-             symb_items1
-             symb_map_items1
-             sign1
-             morphism1
-             symbol1
-             raw_symbol1
-             proof_tree1) =>
-     lid
-  -> ProofActions lid sentence -- ^ record of possible GUI actions
+proofManagementGUI :: ProofActions -- ^ record of possible GUI actions
   -> String -- ^ theory name
   -> String -- ^ warning information
   -> G_theory -- ^ theory
@@ -318,12 +288,13 @@ proofManagementGUI ::
                 closing the window; while the window is open it is filled with
                 the Toplevel -}
   -> IO (Result.Result G_theory)
-proofManagementGUI lid prGuiAcs thName warningTxt th
+proofManagementGUI prGuiAcs thName warningTxt th
                    knownProvers comorphList guiMVar = do
   {- KnownProvers.showKnownProvers knownProvers
   initial backing data structure -}
-  initState <- initialState lid thName th knownProvers comorphList
-                >>= recalculateSublogicF prGuiAcs
+  initState <- recalculateSublogicF prGuiAcs
+    (initialState thName th knownProvers)
+    { comorphismsToProvers = comorphList }
   stateMVar <- Conc.newMVar initState
   lockMVar <- Conc.newMVar ()
   -- main window
@@ -495,7 +466,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
   populateGoalsListBox lb (goalsView initState)
   populateAxiomsList lbAxs initState
   populatePathsListBox pathsLb (proversMap initState)
-  lbThs # value (OMap.keys (goalMap initState))
+  lbThs # value (toGoals initState)
   doSelectAllEntries True lb
   doSelectAllEntries True lbAxs
   doSelectAllEntries True lbThs
@@ -555,6 +526,7 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
             done
       +> selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
+             G_theory _ _ _ sens _ <- return $ theory s
              clearSelection lb
              let isOpen (_, st) =
                      let thst = thmStatus st
@@ -564,14 +536,16 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
                                  isOpenGoal $ goalStatus pst
                              _ -> False
              mapM_ (`selection` lb)
-                   (findIndices isOpen $ OMap.toList $ goalMap s)
+                   (findIndices isOpen $ OMap.toList $ OMap.filter
+                    (not . isAxiom) sens)
              enableWidsUponSelection lb goalSpecificWids
              s' <- updateStatusSublogic s
              Conc.putMVar stateMVar s'
              done
       +> deselectFormerTheorems >>> do
             s <- Conc.takeMVar stateMVar
-            let axiomList = OMap.toList $ axiomMap s
+            G_theory _ _ _ sens _ <- return $ theory s
+            let axiomList = OMap.toList $ OMap.filter isAxiom sens
                 isNotFormerTheorem (_, st) = not $ wasTheorem st
             sel <- getSelection lbAxs :: IO (Maybe [Int])
             clearSelection lbAxs
@@ -685,9 +659,4 @@ proofManagementGUI lid prGuiAcs thName warningTxt th
                          (const $ Conc.putMVar guiMVar Nothing))
   -- read the global state back in
   s <- Conc.takeMVar stateMVar
-  case theory s of
-   G_theory lidT sigT indT sensT _ ->
-    do gMap <- coerceThSens (logicId s) lidT
-         "ProofManagement last coerce" (goalMap s)
-       return $ Result.Result (accDiags s)
-         $ Just $ G_theory lidT sigT indT (Map.union sensT gMap) startThId
+  return . Result.Result (accDiags s) . Just $ theory s

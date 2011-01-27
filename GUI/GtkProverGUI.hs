@@ -25,6 +25,7 @@ import qualified Common.Doc as Pretty
 import Common.Result
 import qualified Common.OrderedMap as OMap
 import Common.ExtSign
+import Common.Utils
 
 import Control.Concurrent.MVar
 
@@ -40,19 +41,17 @@ import Static.GTheory
 
 import qualified Data.Map as Map
 import Data.List
-import Data.Maybe ( fromJust, fromMaybe, isJust )
+import Data.Maybe (fromMaybe, isJust )
 
-data GProver = GProver { pName :: String
-                       , comorphism :: [AnyComorphism]
-                       , selected :: Int }
+data GProver = GProver
+  { pName :: String
+  , comorphism :: [AnyComorphism]
+  , selected :: Int }
 
 -- ProverGUI
 
 -- | Displays the consistency checker window
-showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
-                       symb_map_items sign morphism symbol raw_symbol proof_tree
-  => lid
-  -> ProofActions lid sentence -- ^ record of possible GUI actions
+showProverGUI :: ProofActions -- ^ record of possible GUI actions
   -> String -- ^ theory name
   -> String -- ^ warning information
   -> G_theory -- ^ theory
@@ -60,9 +59,10 @@ showProverGUI :: Logic lid sublogics basic_spec sentence symb_items
   -> [(G_prover, AnyComorphism)]
      -- ^ list of suitable comorphisms to provers for sublogic of G_theory
   -> IO (Result G_theory)
-showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
-  initState <- (initialState lid thName th knownProvers comorphList
-                >>= recalculateSublogicF prGuiAcs)
+showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
+  initState <- recalculateSublogicF prGuiAcs
+    (initialState thName th knownProvers)
+    { comorphismsToProvers = comorphList }
   state <- newMVar initState
   wait <- newEmptyMVar
   postGUIAsync $ do
@@ -101,13 +101,11 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
 
     windowSetTitle window $ "Prove: " ++ thName
 
-    let axioms = axiomMap initState
-
     -- set list data
     listProvers <- setListData trvProvers pName []
     listGoals <- setListData trvGoals showGoal $ toGoals initState
-    listAxioms <- setListData trvAxioms id $ toAxioms axioms
-    listTheorems <- setListData trvTheorems id $ toTheorem initState
+    listAxioms <- setListData trvAxioms id $ toAxioms initState
+    listTheorems <- setListData trvTheorems id $ selectedGoals initState
 
     -- setup comorphism combobox
     comboBoxSetModelText cbComorphism
@@ -130,7 +128,7 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
       rs <- treeSelectionGetSelectedRows sel
       mapM_ ( \ ~p@(row : []) -> do
         i <- listStoreGetValue listAxioms row
-        (if wasTheorem $ fromJust $ OMap.lookup (stripPrefixAxiom i) axioms
+        (if wasATheorem initState (stripPrefixAxiom i)
           then treeSelectionUnselectPath else treeSelectionSelectPath) sel p) rs
       signalUnblock shA
       modifyMVar_ state $ setSelectedAxioms trvAxioms listAxioms
@@ -165,10 +163,10 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
           activate noProver
             (isJust (selectedProver s) && not (null $ selectedGoals s))
           return s
-
-    activate noGoal (not $ Map.null $ goalMap initState)
-    activate noAxiom (not $ Map.null axioms)
-    activate noTheory (not $ Map.null $ goalMap initState)
+    let hasGoals = not . null $ selectedGoals initState
+    activate noGoal hasGoals
+    activate noAxiom (not . null $ includedAxioms initState)
+    activate noTheory hasGoals
 
     -- setup goal list
     shG <- setListSelectorMultiple trvGoals btnGoalsAll btnGoalsNone
@@ -223,26 +221,19 @@ showProverGUI lid prGuiAcs thName warn th knownProvers comorphList = do
 
   _ <- takeMVar wait
   s <- takeMVar state
-  case theory s of
-    G_theory lidT sigT indT sensT _ -> do
-      gMap <- coerceThSens (logicId s) lidT "ProverGUI last coerce" $ goalMap s
-      return Result { diags = accDiags s
-                    , maybeResult = Just $ G_theory lidT sigT indT
-                                             (Map.union sensT gMap) startThId }
+  return Result
+    { diags = accDiags s
+    , maybeResult = Just $ theory s }
 
 -- | Called whenever the button "Display" is clicked.
-displayGoals :: Logic lid sublogics basic_spec sentence symb_items
-                      symb_map_items sign morphism symbol raw_symbol proof_tree
-             => ProofState lid sentence -> IO ()
+displayGoals :: ProofState -> IO ()
 displayGoals s = case theory s of
-  G_theory lid1 (ExtSign sig1 _) _ _ _ -> do
+  G_theory lid1 (ExtSign sig1 _) _ sens1 _ -> do
     let thName = theoryName s
         goalsText = show . Pretty.vsep
           . map (print_named lid1 . AS_Anno.mapNamed (simplify_sen lid1 sig1))
-          . toNamedList
-        sens = selectedGoalMap s
-    sens' <- coerceThSens (logicId s) lid1 "" sens
-    textView ("Selected Goals from Theory " ++ thName) (goalsText sens')
+          . toNamedList $ filterMapWithList (selectedGoals s) sens1
+    textView ("Selected Goals from Theory " ++ thName) goalsText
              $ Just (thName ++ "-goals.txt")
 
 updateComorphism :: TreeView -> ListStore GProver -> ComboBox
@@ -271,16 +262,16 @@ setSelectedComorphism view list cbComorphism = do
       listStoreSetValue list i f { selected = sel }
     Nothing -> return ()
 
-updateSublogic :: Label -> ProofActions lid sentence
-               -> KnownProvers.KnownProversMap -> ProofState lid sentence
-               -> IO (ProofState lid sentence)
+updateSublogic :: Label -> ProofActions
+               -> KnownProvers.KnownProversMap -> ProofState
+               -> IO ProofState
 updateSublogic lbl prGuiAcs knownProvers s' = do
   s <- recalculateSublogicF prGuiAcs s' { proversMap = knownProvers }
   labelSetLabel lbl $ show $ sublogicOfTheory s
   return s
 
-updateProver :: TreeView -> ListStore GProver -> ProofState lid sentence
-             -> IO (ProofState lid sentence)
+updateProver :: TreeView -> ListStore GProver -> ProofState
+             -> IO ProofState
 updateProver trvProvers listProvers s = do
   let new = toProvers s
   old <- listStoreToList listProvers
@@ -299,7 +290,7 @@ updateProver trvProvers listProvers s = do
     Nothing -> selectFirst trvProvers
   return s
 
-updateGoals :: TreeView -> ListStore Goal -> ProofState lid sentence -> IO ()
+updateGoals :: TreeView -> ListStore Goal -> ProofState -> IO ()
 updateGoals trvGoals listGoals s = do
   let ng = toGoals s
   sel <- getSelectedMultiple trvGoals listGoals
@@ -310,20 +301,20 @@ updateGoals trvGoals listGoals s = do
       [fromMaybe (error "Goal not found!") $ findIndex ((n ==) . gName) ng]
     ) sel
 
-setSelectedGoals :: TreeView -> ListStore Goal -> ProofState lid sentence
-                 -> IO (ProofState lid sentence)
+setSelectedGoals :: TreeView -> ListStore Goal -> ProofState
+                 -> IO ProofState
 setSelectedGoals trvGoals listGoals s = do
   goals <- getSelectedMultiple trvGoals listGoals
   return s { selectedGoals = map (gName . snd) goals }
 
-setSelectedAxioms :: TreeView -> ListStore String -> ProofState lid sentence
-                  -> IO (ProofState lid sentence)
+setSelectedAxioms :: TreeView -> ListStore String -> ProofState
+                  -> IO ProofState
 setSelectedAxioms axs listAxs s = do
   axioms <- getSelectedMultiple axs listAxs
   return s { includedAxioms = map (stripPrefixAxiom . snd) axioms }
 
-setSelectedTheorems :: TreeView -> ListStore String -> ProofState lid sentence
-                    -> IO (ProofState lid sentence)
+setSelectedTheorems :: TreeView -> ListStore String -> ProofState
+                    -> IO ProofState
 setSelectedTheorems ths listThs s = do
   theorems <- getSelectedMultiple ths listThs
   return s { includedTheorems = map snd theorems }
@@ -333,28 +324,24 @@ stripPrefixAxiom a = fromMaybe a $ stripPrefix "(Th) " a
 
 -- | Called whenever a prover is selected from the "Pick Theorem Prover" list.
 setSelectedProver :: TreeView -> ListStore GProver -> ComboBox
-                  -> ConnectId ComboBox -> ProofState lid sentence
-                  -> IO (ProofState lid sentence)
+                  -> ConnectId ComboBox -> ProofState
+                  -> IO ProofState
 setSelectedProver trvProvers listProvers cbComorphism shC s = do
   mprover <- getSelectedSingle trvProvers listProvers
   updateComorphism trvProvers listProvers cbComorphism shC
   return s { selectedProver = maybe Nothing (Just . pName . snd) mprover }
 
-toAxioms :: ThSens sentence (AnyComorphism, BasicProof) -> [String]
-toAxioms =
-  map (\ (k, s) -> if wasTheorem s then "(Th) " ++ k else k) . OMap.toList
+wasATheorem :: ProofState -> String -> Bool
+wasATheorem st i = case theory st of
+   G_theory _ _ _ sens _ -> maybe False wasTheorem $ OMap.lookup i sens
 
-toGoals :: ProofState lid sentence -> [Goal]
-toGoals = sort . map toGoal . OMap.toList . goalMap
-  where toGoal (n, st) = let ts = thmStatus st in
+toGoals :: ProofState -> [Goal]
+toGoals = sort . map toGoal . getGoals
+  where toGoal (n, st) =
           Goal { gName = n
-               , gStatus = if null ts then GOpen
-                           else basicProofToGStatus $ maximum $ map snd ts }
+               , gStatus = maybe GOpen basicProofToGStatus st }
 
-toTheorem :: ProofState lid sentence -> [String]
-toTheorem = OMap.keys . goalMap
-
-toProvers :: ProofState lid sentence -> [GProver]
+toProvers :: ProofState -> [GProver]
 toProvers = Map.elems . foldr (\ (p', c) m ->
     let n = getProverName p'
         p = Map.findWithDefault (GProver n [] 0) n m in

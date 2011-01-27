@@ -36,6 +36,7 @@ import CMDL.Utils(checkIntString)
 
 import Static.GTheory(G_theory(G_theory))
 
+import Common.AS_Annotation
 import Common.Result(Result(Result))
 import qualified Common.OrderedMap as OMap
 import Common.Utils(trim)
@@ -44,7 +45,7 @@ import Data.List (find, nub)
 
 import Comorphisms.LogicGraph(lookupComorphism_in_LG)
 
-import Proofs.AbstractState(ProofState(..))
+import Proofs.AbstractState(ProofState(..), resetSelection)
 
 import Logic.Comorphism(compComorphism)
 
@@ -114,10 +115,12 @@ parseElements action gls gls_axm elems (acc1,acc2)
     [] -> (acc1,acc2)
     (Element st nb):ll ->
       let allgls = case gls_axm of
-                    ChangeGoals -> OMap.keys $ goalMap st
+                    ChangeGoals -> case theory st of
+                      G_theory _ _ _ aMap _ ->
+                        OMap.keys $ OMap.filter (not . isAxiom) aMap
                     ChangeAxioms-> case theory st of
-                                 G_theory _ _ _ aMap _ ->
-                                  OMap.keys aMap
+                      G_theory _ _ _ aMap _ ->
+                        OMap.keys $ OMap.filter isAxiom aMap
           selgls = case gls_axm of
                     ChangeGoals -> selectedGoals st
                     ChangeAxioms-> includedAxioms st
@@ -223,29 +226,19 @@ cProve = cDoLoop False
 cProveAll::CmdlState ->IO CmdlState
 cProveAll state
  = case i_state $ intState state of
-    Nothing -> return$ genErrorMsg "Nothing selected" state
+    Nothing -> return $ genErrorMsg "Nothing selected" state
     Just pS ->
         case elements pS of
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
-           do
-            let ls' = map (\(Element st nb) ->
-                              case theory st of
-                               G_theory _ _ _ aMap _ ->
-                                Element
-                                  (st {
-                                     selectedGoals = OMap.keys $
-                                                       goalMap st,
-                                     includedAxioms = OMap.keys aMap,
-                                     includedTheorems = OMap.keys $
-                                                         goalMap st
-                                    }) nb ) ls
-            let nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
+            let ls' = map (\ (Element st nb) ->
+                               Element (resetSelection st) nb) ls
+                nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
                       state {
                        intState = (intState state) {
                          i_state = Just $ pS {
                                            elements = ls' } } }
-            cProve nwSt
+            in cProve nwSt
 
 -- | Sets the use theorems flag of the interface
 cSetUseThms :: Bool -> CmdlState -> IO CmdlState

@@ -320,7 +320,7 @@ cmdlCompletionFn allcmds allState input =
                   cL = concatMap (\ (Comorphism cid) ->
                                   [ language_name cid
                                     | language_name (sourceLogic cid) ==
-                                      language_name (logicId st) ]
+                                      logicId st ]
                                  ) comorphismList
               in return $ map (app bC)
                         $ filter (isPrefixOf tC) cL
