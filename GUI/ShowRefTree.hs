@@ -16,6 +16,7 @@ import Control.Monad
 
 import Data.Graph.Inductive.Graph as Tree
 import Data.IORef
+import Data.Maybe
 
 import GUI.GraphTypes
 import GUI.UDGUtils as UDG
@@ -212,22 +213,25 @@ showDiagram gInfo dg n = do
                    AllowClose (return True) $$
                    emptyGraphParms
       graph' <- newGraph daVinciSort graphParms
-      addNodesAndEdgesDeps (Map.findWithDefault (error "showDiagram")
+      addNodesAndEdgesDeps dg (Map.findWithDefault (error "showDiagram")
                             name asDiags)
                            graph' gInfo nodesEdges
       writeIORef graph graph'
       redraw graph'
 
-showDiagSpec :: DiagNodeLab  -> IO()
-showDiagSpec l = do
+showDiagSpec :: DGraph -> DiagNodeLab  -> IO()
+showDiagSpec dg l = do
+ let NodeSig n _ = dn_sig l
+     nlab = labDG dg n
+     g1 = fromMaybe (dgn_theory nlab) $ globalTheory nlab
  createTextDisplay "" 
    ("Desc:\n" ++ (dn_desc l) ++ "\n" ++
-    "Sig:\n" ++ (showDoc (dn_sig l) "")
+    "Sig:\n" ++ (showDoc g1 "")
    )
 
-addNodesAndEdgesDeps :: Diag -> DaVinciGraphTypeSyn -> GInfo ->
+addNodesAndEdgesDeps :: DGraph ->  Diag -> DaVinciGraphTypeSyn -> GInfo ->
                        IORef NodeEdgeListDep -> IO ()
-addNodesAndEdgesDeps diag graph gi nodesEdges = do
+addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
    let
     opts = hetcatsOpts gi
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
@@ -235,7 +239,7 @@ addNodesAndEdgesDeps diag graph gi nodesEdges = do
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
     subNodeMenu = LocalMenu (UDG.Menu Nothing [Button "Show desc and sig" $ 
-                                showDiagSpec])
+                                showDiagSpec dg ])
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
                        ValueTitle (return . (\ x ->
