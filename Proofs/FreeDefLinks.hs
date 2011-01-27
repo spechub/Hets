@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Description :  compute ingoing free definition links for provers
@@ -32,9 +33,10 @@ import Logic.Coerce
 import Data.Graph.Inductive.Basic (elfilter)
 import Data.Graph.Inductive.Graph
 import Data.Maybe
+import Data.Typeable
 
 getCFreeDefLinks :: DGraph -> Node
-                        -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
+  -> ([[LEdge DGLinkLab]], [[LEdge DGLinkLab]])
 getCFreeDefLinks dg tgt =
   let isGlobalOrCFreeEdge = liftOr isGlobalEdge $ liftOr isFreeEdge isCofreeEdge
       paths = map reverse $ Tree.getAllPathsTo tgt
@@ -43,49 +45,50 @@ getCFreeDefLinks dg tgt =
   in (myfilter isFreeEdge paths, myfilter isCofreeEdge paths)
 
 mkFreeDefMor :: [Named sentence] -> morphism -> morphism
-                -> FreeDefMorphism sentence morphism
+  -> FreeDefMorphism sentence morphism
 mkFreeDefMor sens m1 m2 = FreeDefMorphism
   { freeDefMorphism = m1
   , pathFromFreeDef = m2
   , freeTheory = sens
   , isCofree = False }
 
-getFreeDefMorphism :: Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LibName -> DGraph -> [LEdge DGLinkLab]
-   -> Maybe (FreeDefMorphism sentence morphism)
-getFreeDefMorphism lid libEnv ln dg path = case path of
+data GFreeDefMorphism =
+  forall lid sublogics basic_spec sentence symb_items symb_map_items
+    sign morphism symbol raw_symbol proof_tree
+  . Logic lid sublogics basic_spec sentence symb_items symb_map_items
+      sign morphism symbol raw_symbol proof_tree
+  => GFreeDefMorphism lid (FreeDefMorphism sentence morphism)
+  deriving Typeable
+
+getFreeDefMorphism :: LibEnv -> LibName -> DGraph -> [LEdge DGLinkLab]
+  -> Maybe GFreeDefMorphism
+getFreeDefMorphism libEnv ln dg path = case path of
   [] -> error "getFreeDefMorphism"
   (s, t, l) : rp -> do
     gmor@(GMorphism cid _ _ fmor _) <- return $ dgl_morphism l
+    let tlid = targetLogic cid
     G_theory lidth (ExtSign _sign _) _ axs _ <-
       computeTheory libEnv ln s
     if isHomogeneous gmor then do
-        cfmor <- coerceMorphism (targetLogic cid) lid "getFreeDefMorphism1" fmor
-        sens <- coerceSens lidth lid "getFreeDefMorphism4" (toNamedList axs)
+        sens <- coerceSens lidth tlid "getFreeDefMorphism4" (toNamedList axs)
         case rp of
           [] -> do
             G_theory lid2 (ExtSign sig _) _ _ _ <-
                      return $ dgn_theory $ labDG dg t
-            sig2 <- coercePlainSign lid2 lid "getFreeDefMorphism2" sig
-            return $ mkFreeDefMor sens cfmor $ ide sig2
+            sig2 <- coercePlainSign lid2 tlid "getFreeDefMorphism2" sig
+            return $ GFreeDefMorphism tlid $ mkFreeDefMor sens fmor $ ide sig2
           _ -> do
             pm@(GMorphism cid2 _ _ pmor _) <- calculateMorphismOfPath rp
             if isHomogeneous pm then do
-                cpmor <- coerceMorphism (targetLogic cid2) lid
+                cpmor <- coerceMorphism (targetLogic cid2) tlid
                          "getFreeDefMorphism3" pmor
-                return $ mkFreeDefMor sens cfmor cpmor
+                return $ GFreeDefMorphism tlid $ mkFreeDefMor sens fmor cpmor
               else Nothing
       else Nothing
 
-getCFreeDefMorphs :: Logic lid sublogics
-         basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree =>
-   lid -> LibEnv -> LibName -> DGraph -> Node
-   -> [FreeDefMorphism sentence morphism]
-getCFreeDefMorphs lid libEnv ln dg node = let
+getCFreeDefMorphs :: LibEnv -> LibName -> DGraph -> Node -> [GFreeDefMorphism]
+getCFreeDefMorphs libEnv ln dg node = let
   (frees, cofrees) = getCFreeDefLinks dg node
-  myget = mapMaybe (getFreeDefMorphism lid libEnv ln dg)
-  mkCoFree m = m { isCofree = True }
+  myget = mapMaybe (getFreeDefMorphism libEnv ln dg)
+  mkCoFree (GFreeDefMorphism lid m) = GFreeDefMorphism lid m { isCofree = True }
   in myget frees ++ map mkCoFree (myget cofrees)

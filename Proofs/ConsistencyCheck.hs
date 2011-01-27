@@ -108,9 +108,12 @@ consistencyCheck includeTheorems (G_cons_checker lid4 cc) (Comorphism cid) ln
       return $ ConsistencyStatus CSError $ unlines $ map diagString ds
     Result _ (Just (sig1, mor)) -> do
       cc' <- coerceConsChecker lid4 lidT "" cc
+      let gfreeDMs = getCFreeDefMorphs le ln dg n'
+      freeDMs <- mapM (\ (GFreeDefMorphism fdlid fd) ->
+                       coerceFreeDefMorphism fdlid lidT "" fd) gfreeDMs
       ret <- (if ccNeedsTimer cc then timeoutSecs t''
               else ((return . Just) =<<))
-        (ccAutomatic cc' thName ts mor $ getCFreeDefMorphs lidT le ln dg n')
+        (ccAutomatic cc' thName ts mor freeDMs)
       return $ case ret of
         Just ccStatus -> case ccResult ccStatus of
           Just b -> if b then let

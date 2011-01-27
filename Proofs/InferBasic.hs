@@ -95,7 +95,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     -- compute the theory (that may contain proved theorems) and its name
     thForProof@(G_theory lid1 _ _ _ _) <- liftR $ getGlobalTheory lbl
     let thName = shows (getLibId ln) "_" ++ getDGNodeName lbl
-        freedefs = getCFreeDefMorphs lid1 libEnv ln dGraph node
+        freedefs = getCFreeDefMorphs libEnv ln dGraph node
     kpMap <- liftR knownProversGUI
     ResultT $ proverGUI lid1 ProofActions
       { proveF = proveKnownPMap lg intSt freedefs
@@ -116,7 +116,7 @@ proveKnownPMap :: (Logic lid sublogics1
                proof_tree1) =>
        LogicGraph
     -> IORef IntState
-    -> [FreeDefMorphism sentence morphism1]
+    -> [GFreeDefMorphism]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveKnownPMap lg intSt freedefs st =
     maybe (proveFineGrainedSelect lg intSt freedefs st)
@@ -136,15 +136,14 @@ callProver :: (Logic lid sublogics1
        ProofState lid sentence
     -> IORef IntState
     -> Bool -- indicates if a translation was chosen
-    -> [FreeDefMorphism sentence morphism1]
+    -> [GFreeDefMorphism]
     -> (G_prover, AnyComorphism) -> IO (Result (ProofState lid sentence))
 callProver st intSt trans_chosen freedefs p_cm@(_, acm) =
        runResultT $ do
         (_, exit) <- lift $ pulseBar "prepare for proving" "please wait..."
         G_theory_with_prover lid th p <- liftR $ prepareForProving st p_cm
-        let freedefs1 = fromMaybe [] $ mapM (coerceFreeDefMorphism (logicId st)
-                                            lid "Logic.InferBasic: callProver")
-                                            freedefs
+        freedefs1 <- mapM (\ (GFreeDefMorphism fdlid fd) ->
+                       coerceFreeDefMorphism fdlid lid "" fd) freedefs
         lift exit
         (ps, _) <- lift $ proveTheory lid p (theoryName st) th freedefs1
         let st' = markProved acm lid ps st
@@ -165,7 +164,7 @@ proveFineGrainedSelect ::
                proof_tree1) =>
        LogicGraph
     -> IORef IntState
-    -> [FreeDefMorphism sentence morphism1]
+    -> [GFreeDefMorphism]
     -> ProofState lid sentence -> IO (Result (ProofState lid sentence))
 proveFineGrainedSelect lg intSt freedefs st =
     runResultT $ do
