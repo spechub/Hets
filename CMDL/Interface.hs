@@ -37,7 +37,7 @@ import Data.List
 
 import Data.IORef
 import Control.Monad
-import Control.Monad.Trans (MonadIO(..))
+import Control.Monad.Trans (MonadIO (..))
 
 #ifdef HASKELINE
 shellSettings :: IORef CmdlState -> Settings IO
@@ -48,14 +48,14 @@ shellSettings st =
     , autoAddHistory = True
   }
 
--- We need an MVar here
--- because our CmdlState is not a Monad (and we use IO as Monad).
+{- We need an MVar here because our CmdlState is no Monad
+   (and we use IO as Monad). -}
 cmdlComplete :: IORef CmdlState -> CompletionFunc IO
 cmdlComplete st (left, _) = do
   state <- liftIO $ readIORef st
   comps <- liftIO $ cmdlCompletionFn getCommands state $ reverse left
   let (_, nodes) = case i_state $ intState state of
-                     Nothing      -> ("", [])
+                     Nothing -> ("", [])
                      Just dgState -> getSelectedDGNodes dgState
       cmds = "prove-all" : map (cmdNameStr . cmdDescription) getCommands
       cmdcomps = filter (isPrefixOf (reverse left)) cmds
@@ -85,7 +85,7 @@ shellLoop st isTerminal =
     minput <- if eof then return Nothing else liftM Just getLine
 #endif
     case minput of
-      Nothing    -> return state
+      Nothing -> return state
       Just input ->
         do
           let echo = trim $ stripComments input

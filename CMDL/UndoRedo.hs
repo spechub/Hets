@@ -15,13 +15,12 @@ module CMDL.UndoRedo
        , cRedo
        ) where
 
-import Interfaces.History(redoOneStep, undoOneStep)
-import Interfaces.Command(showCmd)
-import Interfaces.DataTypes(IntHistory(undoList, redoList),
-                            CmdHistory(command), IntState(i_hist))
+import Interfaces.History (redoOneStep, undoOneStep)
+import Interfaces.Command (showCmd)
+import Interfaces.DataTypes
 
-import CMDL.DataTypesUtils(genMessage)
-import CMDL.DataTypes(CmdlState(intState))
+import CMDL.DataTypesUtils (genMessage)
+import CMDL.DataTypes (CmdlState (intState))
 
 -- | Undoes the last command entered
 cUndo :: CmdlState -> IO CmdlState
@@ -40,6 +39,6 @@ cdo isUndo state =
       do
        nwIntState <- (if isUndo then undoOneStep else redoOneStep)
          $ intState state
-       return . genMessage [] ("Action '"++ showCmd (command action)
-                               ++  "' is now " ++ msg ++ "ne")
+       return . genMessage [] ("Action '" ++ showCmd (command action)
+                               ++ "' is now " ++ msg ++ "ne")
               $ state { intState = nwIntState }
