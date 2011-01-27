@@ -21,6 +21,7 @@ module CMDL.DataTypes
   , CmdlCmdPriority (..)
   , CmdlCmdFnClasses (..)
   , CmdlCmdRequirements (..)
+  , formatRequirement
   , CmdlChannel (..)
   , CmdlChannelType (..)
   , CmdlChannelProperties (..)
@@ -57,8 +58,8 @@ data CmdlUseTranslation =
 
 -- * CMDL datatypes
 
--- | CMDLState contains all information the CMDL interface
--- might use at any time.
+{- | CMDLState contains all information the CMDL interface
+   might use at any time. -}
 data CmdlState = CmdlState
   { intState :: IntState -- ^ common interface state
   , prompter :: CmdlPrompterState -- ^ promter of the interface
@@ -89,8 +90,8 @@ data CmdlPrompterState = CmdlPrompterState
   { fileLoaded :: String
   , prompterHead :: String }
 
--- | Description of a command ( in  order to have a uniform access to any of
--- the commands
+{- | Description of a command in order to have a uniform access to any of
+   the commands -}
 data CmdlCmdDescription = CmdlCmdDescription
   { cmdDescription :: Command
   , cmdPriority :: CmdlCmdPriority
@@ -103,26 +104,26 @@ cmdInput = cmdInputStr . cmdDescription
 cmdName :: CmdlCmdDescription -> String
 cmdName = cmdNameStr . cmdDescription
 
--- | Some commands have different status, for example 'end-script'
--- needs to be processed even though the interface is in reading script
--- state. The same happens with '}%' even though the interface is in
--- multi line comment state. In order not to treat this few commands
--- separately from the other it is easy just to give to all commands
--- different priorities
+{- | Some commands have different status, for example 'end-script'
+   needs to be processed even though the interface is in reading script
+   state. The same happens with '}%' even though the interface is in
+   multi line comment state. In order not to treat this few commands
+   separately from the other it is easy just to give to all commands
+   different priorities -}
 data CmdlCmdPriority =
     CmdNoPriority
   | CmdGreaterThanComments
   | CmdGreaterThanScriptAndComments
 
--- | Any command belongs to one of the following classes of functions,
--- a) f :: s -> IO s
--- b) f :: String -> s -> IO s
+{- | Any command belongs to one of the following classes of functions,
+   a) f :: s -> IO s
+   b) f :: String -> s -> IO s -}
 data CmdlCmdFnClasses =
     CmdNoInput (CmdlState -> IO CmdlState)
   | CmdWithInput (String -> CmdlState -> IO CmdlState)
 
--- | Datatype describing the types of commands according
--- to what they expect as input
+{- | Datatype describing the types of commands according
+   to what they expect as input -}
 data CmdlCmdRequirements =
     ReqNodes
   | ReqEdges
@@ -137,33 +138,33 @@ data CmdlCmdRequirements =
   | ReqNumber
   | ReqNothing
   | ReqUnknown
+  deriving Show
 
-instance Show CmdlCmdRequirements where
-  show cr = case cr of
-              ReqNodes           -> "Nodes"
-              ReqEdges           -> "Edges"
-              ReqProvers         -> "Prover"
-              ReqConsCheck       -> "ConsChecker"
-              ReqComorphism      -> "Comorphism"
-              ReqFile            -> "File"
-              ReqGNodes          -> "GoalNodes"
-              ReqGEdges          -> "GoalEdges"
-              ReqAxm             -> "Axiom"
-              ReqGoal            -> "Goal"
-              ReqNumber          -> "Number"
-              _                  -> ""
+formatRequirement :: CmdlCmdRequirements -> String
+formatRequirement r = let s = showRequirement r in
+  if null s then "" else '<' : s ++ ">"
 
+showRequirement :: CmdlCmdRequirements -> String
+showRequirement cr = case cr of
+    ReqConsCheck -> "ConsChecker"
+    ReqProvers -> "Prover"
+    ReqGNodes -> "GoalNodes"
+    ReqGEdges -> "GoalEdges"
+    ReqAxm -> "Axiom"
+    ReqNothing -> ""
+    ReqUnknown -> ""
+    _ -> drop 3 $ show cr
 
 -- Communication channel datatypes -----------------------------------------
 
--- | CMDLSocket takes care of opened sockets for comunication with other
--- application like the Broker in the case of PGIP
+{- | CMDLSocket takes care of opened sockets for comunication with other
+   application like the Broker in the case of PGIP -}
 data CmdlChannel = CmdlChannel
   { chName :: String
   , chType :: CmdlChannelType
   , chHandler :: Handle
   , chSocket :: Maybe CmdlSocket
-  , chProperties  :: CmdlChannelProperties }
+  , chProperties :: CmdlChannelProperties }
 
 -- | Channel type describes different type of channel
 data CmdlChannelType =
@@ -184,8 +185,8 @@ data CmdlSocket = CmdlSocket
   , socketHostName :: HostName
   , socketPortNumber :: PortNumber }
 
--- | Datatype describing the list of possible action on a list
--- of selected items
+{- | Datatype describing the list of possible action on a list
+   of selected items -}
 data CmdlListAction =
     ActionSet
   | ActionSetAll

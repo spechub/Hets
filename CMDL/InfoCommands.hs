@@ -293,7 +293,7 @@ cHelp allcmds state = do
   mapM_ (\ cm -> do
                    let cmd = cmdDescription cm
                        name = cmdNameStr cmd
-                       req = formatReq $ show $ cmdReq cm
+                       req = formatRequirement $ cmdReq cm
                        descL = formatDesc $ describeCmd cmd
                        desc = head descL ++
                               concatMap (('\n' : replicate descStart ' ') ++)
@@ -303,11 +303,9 @@ cHelp allcmds state = do
   where
     maxLineWidth = 80
     maxNameLen = maximum $ map (length . cmdNameStr . cmdDescription) allcmds
-    maxParamLen = maximum $ map (length . formatReq . show . cmdReq ) allcmds
+    maxParamLen = maximum $ map (length . formatRequirement . cmdReq ) allcmds
     descStart = maxNameLen + 1 + maxParamLen + 1
     descWidth = maxLineWidth - descStart
-    formatReq :: String -> String
-    formatReq r = if null r then "" else '<' : r ++ ">"
     formatDesc :: String -> [String]
     formatDesc = reverse . filter (not . null) . map trim .
                  foldl (\ l w -> if length (head l) + length w > descWidth
