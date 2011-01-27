@@ -54,7 +54,7 @@ import Logic.Prover
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
-import Comorphisms.LogicGraph(logicGraph)
+import Comorphisms.LogicGraph (logicGraph)
 
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
@@ -64,21 +64,21 @@ import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
 import Common.Consistency
 import Common.ExtSign
-import Common.AS_Annotation (SenAttr(..), makeNamed, mapNamed)
+import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
 
 #ifdef UNI_PACKAGE
 import GUI.Utils
 #endif
 
--- | Returns the list of all nodes, if it is not up to date
--- the function recomputes the list
-getAllNodes :: IntIState  -> [LNode DGNodeLab]
+{- | Returns the list of all nodes, if it is not up to date
+the function recomputes the list -}
+getAllNodes :: IntIState -> [LNode DGNodeLab]
 getAllNodes st
  = labNodesDG $ lookupDGraph (i_ln st) (i_libEnv st)
 
--- | Returns the list of all edges, if it is not up to date
--- the funcrion recomputes the list
+{- | Returns the list of all edges, if it is not up to date
+the funcrion recomputes the list -}
 getAllEdges :: IntIState -> [LEdge DGLinkLab]
 getAllEdges st = labEdgesDG $ lookupDGraph (i_ln st) (i_libEnv st)
 
@@ -90,7 +90,7 @@ emptyIntIState :: LibEnv -> LibName -> IntIState
 emptyIntIState le ln =
   IntIState {
     i_libEnv = le,
-    i_ln  = ln,
+    i_ln = ln,
     elements = [],
     cComorphism = Nothing,
     prover = Nothing,
@@ -106,19 +106,19 @@ emptyIntIState le ln =
 emptyIntState :: IntState
 emptyIntState =
     IntState { i_state = Just $ emptyIntIState emptyLibEnv $ emptyLibName ""
-             , i_hist  = IntHistory { undoList = []
+             , i_hist = IntHistory { undoList = []
                                     , redoList = [] }
              , filename = []
              }
 
--- If an absolute path is given,
--- it tries to remove the current working directory as prefix of it.
+{- If an absolute path is given,
+it tries to remove the current working directory as prefix of it. -}
 tryRemoveAbsolutePathComponent :: String -> IO String
 tryRemoveAbsolutePathComponent f
    | "/" `isPrefixOf` f = do
                            dir <- getCurrentDirectory
                            return $ fromMaybe f (stripPrefix (dir ++ "/") f)
-   | otherwise        = return f
+   | otherwise = return f
 
 -- Converts a list of proof-trees to a prove
 proofTreeToProve :: FilePath
@@ -131,22 +131,23 @@ proofTreeToProve fn st pcm pt =
     ++ maybe [] (\ (Comorphism cid) -> map (IC.SelectCmd
                 IC.ComorphismTranslation) $
                 drop 1 $ splitOn ';' $ language_name cid) trans
-    ++ maybe [] (( : []) . IC.SelectCmd IC.Prover) prvr
+    ++ maybe [] ((: []) . IC.SelectCmd IC.Prover) prvr
     ++ concatMap goalToCommands goals
     where
       -- selected prover
       prvr = maybe (selectedProver st) (Just . getProverName . fst) pcm
       -- selected translation
       trans = maybe Nothing (Just . snd) pcm
-      -- 1. filter out the not proven goals
-      -- 2. reverse the list, because the last proven goals are on top
-      -- 3. convert all proof-trees to goals
-      -- 4. merge goals with same used axioms
-      goals = mergeGoals $ Prelude.reverse
-                  $ Prelude.map (\ x -> (goalName x, parseTimeLimit x))
-                  $ Prelude.filter wasProved pt
+      {- 1. filter out the not proven goals
+      2. reverse the list, because the last proven goals are on top
+      3. convert all proof-trees to goals
+      4. merge goals with same used axioms -}
+      goals = mergeGoals $ reverse
+                  $ map (\ x -> (goalName x, parseTimeLimit x))
+                  $ filter wasProved pt
       -- axioms to include in prove
-      allax = case theory st of G_theory _ _ _ axs _ -> OMap.keys axs
+      allax = case theory st of
+                G_theory _ _ _ axs _ -> OMap.keys $ OMap.filter isAxiom axs
       nodeName = dropName fn $ theoryName st
       -- A goal is a pair of a name as String and time limit as Int
       goalToCommands :: (String, Int) -> [IC.Command]
@@ -156,29 +157,28 @@ proofTreeToProve fn st pcm pt =
 
 -- Merge goals with the same time-limit
 mergeGoals :: [(String, Int)] -> [(String, Int)]
-mergeGoals []     = []
-mergeGoals (h:[]) = [h]
-mergeGoals ((n,l):t)  | l == l' = mergeGoals $ (n ++ ' ':n', l):Prelude.tail t
-                      | otherwise = (n,l):mergeGoals t
-    where
-        (n',l') = Prelude.head t
+mergeGoals [] = []
+mergeGoals (h : []) = [h]
+mergeGoals ((n, l) : t@((n', l') : tl))
+  | l == l' = mergeGoals $ (n ++ ' ' : n', l) : tl
+  | otherwise = (n, l) : mergeGoals t
 
 dropName :: String -> String -> String
-dropName fch s = maybe s Prelude.tail (stripPrefix fch s)
+dropName fch s = maybe s tail (stripPrefix fch s)
 
 -- This checks wether a goal was proved or not
 wasProved :: ProofStatus proof_Tree -> Bool
 wasProved g = case goalStatus g of
-    Proved _  -> True
-    _         -> False
+    Proved _ -> True
+    _ -> False
 
 -- Converts a proof-tree into a goal.
 parseTimeLimit :: ProofStatus proof_tree -> Int
 parseTimeLimit pt =
-  if Prelude.null lns then 20 else read $ Prelude.drop (length tlStr) $ last lns
+  if null lns then 20 else read $ drop (length tlStr) $ last lns
   where
-    (TacticScript scrpt) = tacticScript pt
-    lns = Prelude.filter (isPrefixOf tlStr) $ splitOn '\n' scrpt
+    TacticScript scrpt = tacticScript pt
+    lns = filter (isPrefixOf tlStr) $ splitOn '\n' scrpt
     tlStr = "Time limit: "
 
 addCommandHistoryToState :: IORef IntState
@@ -208,7 +208,7 @@ conservativityChoser useGUI checkers = case checkers of
   hd : tl ->
     if useGUI && not (null tl) then do
       chosenOne <- listBox "Pick a conservativity checker"
-                                $ Prelude.map checkerId checkers
+                                $ map checkerId checkers
       case chosenOne of
         Nothing -> return $ fail "No conservativity checker chosen"
         Just i -> return $ return $ checkers !! i
@@ -220,8 +220,8 @@ conservativityChoser _ checkers = case checkers of
 #endif
    return $ return hd
 
-checkConservativityNode :: Bool -> (LNode DGNodeLab) -> LibEnv -> LibName
-                        -> IO (String, LibEnv, ProofHistory)
+checkConservativityNode :: Bool -> LNode DGNodeLab -> LibEnv -> LibName
+  -> IO (String, LibEnv, ProofHistory)
 checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
   let dg = lookupDGraph ln libEnv
       emptyTh = case dgn_sign nodeLab of
@@ -230,17 +230,17 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
       newN = getNewNodeDG dg
       newL = (newNodeLab emptyNodeName DGProof emptyTh)
              { globalTheory = Just emptyTh }
-      morphism = case resultToMaybe $ ginclusion logicGraph (dgn_sign newL) $
-                   dgn_sign nodeLab of
-             Just m  -> m
-             Nothing -> error "Utils.checkConservativityNode"
+      morphism = propagateErrors "Utils.checkConservativityNode"
+                 $ ginclusion logicGraph (dgn_sign newL) $
+                   dgn_sign nodeLab
       lnk = (newN, nodeId, defDGLink
         morphism (ScopedLink Global DefLink $ getNodeConsStatus nodeLab)
         SeeSource)
       (tmpDG, _) = updateDGOnly dg $ InsertNode (newN, newL)
       (tempDG, InsertEdge lnk') = updateDGOnly tmpDG $ InsertEdge lnk
       tempLibEnv = insert ln tempDG libEnv
-  (str, _, (_,_,lnkLab),_) <- checkConservativityEdge useGUI lnk' tempLibEnv ln
+  (str, _, (_, _, lnkLab), _) <-
+    checkConservativityEdge useGUI lnk' tempLibEnv ln
   if isPrefixOf "No conservativity" str
     then return (str, libEnv, SizedList.empty)
     else do
@@ -253,15 +253,12 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
              libEnv' = insert ln (groupHistory dg conservativityRule dg') libEnv
          return (str, libEnv', history)
 
-checkConservativityEdge :: Bool -> (LEdge DGLinkLab) -> LibEnv -> LibName
-                        -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
-checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
+checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
+  -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
+checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
  = do
-    let thT =
-         case computeTheory libEnv ln target of
-          Just th1 -> th1
-          _ -> error "checkconservativityOfEdge: computeTheory"
-    G_theory lidT _ _ sensT _ <- return thT
+    Just (G_theory lidT _ _ sensT _) <-
+      return $ computeTheory libEnv ln target
     GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
     morphism' <- coerceMorphism (targetLogic cid) lidT
                  "checkconservativityOfEdge" morphism
@@ -273,11 +270,8 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                >>= comp morphism' of
                  Result _ (Just phi) -> phi
                  _ -> error "checkconservativityOfEdge: comp"
-    let thS =
-         case computeTheory libEnv ln source of
-           Just th1 -> th1
-           _ -> error "checkconservativityOfEdge: computeTheory"
-    G_theory lidS signS _ sensS _ <- return thS
+    Just (G_theory lidS signS _ sensS _) <-
+      return $ computeTheory libEnv ln source
     case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
      Nothing -> return ( "no implementation for heterogeneous links"
                        , libEnv, link, SizedList.empty)
@@ -298,7 +292,7 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                           compMor inputThSens
                let consShow = case res of
                               Just (Just (cst, _)) -> cst
-                              _                    -> Unknown "Unknown"
+                              _ -> Unknown "Unknown"
                    cs' = consShow
                    consNew csv = if cs' >= csv
                               then Proven conservativityRule emptyProofBasis
@@ -317,25 +311,26 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                    nodelab = labDG dg target
                    obligations = case res of
                         Just (Just (_, os)) -> os
-                        _                   -> []
+                        _ -> []
                    namedNewSens = toThSens [(makeNamed "" o) {isAxiom = False} |
-                                             o<-obligations]
+                                             o <- obligations]
                G_theory glid gsign gsigid gsens gid <- return $ dgn_theory
                                                                   nodelab
                namedNewSens' <- coerceThSens lidT glid "" namedNewSens
                let oldSens = OMap.toList gsens
-                   -- Sort out the named sentences which have a different name,
-                   -- but same sentence
-                   mergedSens = nubBy (\(_,a) (_,b) -> sentence a == sentence b)
-                                $ oldSens ++ OMap.toList namedNewSens'
+                   {- Sort out the named sentences which have a different name,
+                   but same sentence -}
+                   mergedSens = nubBy
+                     (\ (_, a) (_, b) -> sentence a == sentence b)
+                     $ oldSens ++ OMap.toList namedNewSens'
                    (newTheory, nodeChange) =
                      (G_theory glid gsign gsigid (OMap.fromList mergedSens) gid,
                       length oldSens /= length mergedSens)
                    newTargetNode = (target
-                                   ,nodelab { dgn_theory = newTheory })
+                                   , nodelab { dgn_theory = newTheory })
                    nodeChanges = [SetNodeLab nodelab newTargetNode | nodeChange]
                    edgeChanges = if edgeChange then
-                            [ DeleteEdge (source,target,linklab)
+                            [ DeleteEdge (source, target, linklab)
                             , InsertEdge provenEdge ] else []
                    nextGr = changesDGH dg $ nodeChanges ++ edgeChanges
                    newLibEnv = insert ln
@@ -349,7 +344,7 @@ checkConservativityEdge useGUI link@(source,target,linklab) libEnv ln
                                  ++ show (Pretty.vsep $ map (print_named glid .
                                      mapNamed (simplify_sen glid sig1)) lst)
                    showRes = case res of
-                             Just (Just (cst,_)) -> "The link is "
+                             Just (Just (cst, _)) -> "The link is "
                               ++ showConsistencyStatus cst
                               ++ showObls (toNamedList namedNewSens')
                              _ -> "Could not determine whether link is "
@@ -371,7 +366,7 @@ updateNodeProof ln ost n@(_, dgnode) thry =
             history = reverse $ flatHistory $ snd $ splitHistory dg newDg
             nst = add2history
                     (CommentCmd $ "basic inference done on " ++ nn ++ "\n")
-                    ost $ [DgCommandChange ln]
+                    ost [DgCommandChange ln]
             nwst = nst { i_state =
                            Just iist { i_libEnv = Map.insert ln newDg le } }
         in (nwst, history)
