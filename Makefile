@@ -486,8 +486,8 @@ $(GENRULES): $(DRIFT) $(GENERATERULES_deps)
 
 # "-package hssource" for ghc-5.04.2
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
-	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) $(HC_PROF) \
-            -i../.. -o $(INLINEAXIOMS)
+	$(HC) $(PARSEC_FLAG) --make utils/InlineAxioms/InlineAxioms.hs \
+          $(HC_WARN) $(HC_PROF) -i../.. -o $(INLINEAXIOMS)
 
 utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 	$(HC) --make -o $@ $<
