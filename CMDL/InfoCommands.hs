@@ -41,8 +41,7 @@ import GUI.Taxonomy
 import CMDL.DataTypesUtils
 import CMDL.DataTypes
 import CMDL.Shell (nodeNames)
-import CMDL.Utils (createEdgeNames, decomposeIntoGoals, obtainEdgeList,
-                   obtainNodeList, prettyPrintErrList)
+import CMDL.Utils
 
 import Static.GTheory
 import Static.DevGraph
@@ -62,7 +61,7 @@ import Logic.Comorphism (AnyComorphism)
 
 import Interfaces.Command (cmdNameStr, describeCmd, showCmd)
 import Interfaces.DataTypes
-import Interfaces.Utils (getAllEdges)
+import Interfaces.Utils
 
 -- show list of all goals(i.e. prints their name)
 cShowDgGoals :: CmdlState -> IO CmdlState
@@ -83,8 +82,8 @@ cShowDgGoals state
       in return $ genMessage [] (unlines $ sort (nodeGoals ++ edgeGoals)) state
 
 
--- local function that computes the theory of a node but it
--- keeps only the goal theory
+{- local function that computes the theory of a node but it
+   keeps only the goal theory -}
 getGoalThS :: CmdlUseTranslation -> Int -> CmdlState -> [String]
 getGoalThS useTrans x state
  = case getTh useTrans x state of
@@ -98,9 +97,9 @@ getGoalThS useTrans x state
                        thSens) x4
       in [showDoc nwth "\n"]
 
--- local function that computes the theory of a node
--- that takes into consideration translated theories in
--- the selection too and returns the theory as a string
+{- local function that computes the theory of a node
+   that takes into consideration translated theories in
+   the selection too and returns the theory as a string -}
 getThS :: CmdlUseTranslation -> Int -> CmdlState -> [String]
 getThS useTrans x state =
   case getTh useTrans x state of
@@ -170,7 +169,7 @@ cInfoCurrent state =
     Just ps -> let (errors, nodes) = getSelectedDGNodes ps
                 in if null nodes
                      then return $ genErrorMsg errors state
-                     else cInfo (intercalate " " $ nodeNames nodes) state
+                     else cInfo (unwords $ nodeNames nodes) state
 
 -- show all information of input
 cInfo :: String -> CmdlState -> IO CmdlState

@@ -27,38 +27,39 @@ module CMDL.ProveCommands
        , cNotACommand
        ) where
 
-import CMDL.DataTypes(CmdlState(intState), CmdlGoalAxiom(..),
-                      CmdlListAction(..))
-import CMDL.DataTypesUtils(add2hist, genErrorMsg, genMessage, getIdComorphism)
-import CMDL.DgCommands(selectANode)
-import CMDL.ProveConsistency(doLoop, sigIntHandler)
-import CMDL.Utils(checkIntString)
+import CMDL.DataTypes (CmdlState (intState), CmdlGoalAxiom (..),
+                      CmdlListAction (..))
+import CMDL.DataTypesUtils (add2hist, genErrorMsg, genMessage, getIdComorphism)
+import CMDL.DgCommands (selectANode)
+import CMDL.ProveConsistency (doLoop, sigIntHandler)
+import CMDL.Utils (checkIntString)
 
-import Static.GTheory(G_theory(G_theory))
+import Static.GTheory (G_theory (G_theory))
 
 import Common.AS_Annotation
-import Common.Result(Result(Result))
+import Common.Result (Result (Result))
 import qualified Common.OrderedMap as OMap
-import Common.Utils(trim)
+import Common.Utils (trim)
 
 import Data.List (find, nub)
+import Data.Maybe (fromMaybe)
 
-import Comorphisms.LogicGraph(lookupComorphism_in_LG)
+import Comorphisms.LogicGraph (lookupComorphism_in_LG)
 
-import Proofs.AbstractState(ProofState(..), resetSelection)
+import Proofs.AbstractState (ProofState (..), resetSelection)
 
-import Logic.Comorphism(compComorphism)
+import Logic.Comorphism (compComorphism)
 
-import Control.Concurrent(forkIO)
-import Control.Concurrent.MVar(newEmptyMVar, newMVar, takeMVar)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar (newEmptyMVar, newMVar, takeMVar)
 
 #ifdef UNIX
-import System.Posix.Signals(Handler(Catch), installHandler, sigINT)
+import System.Posix.Signals (Handler (Catch), installHandler, sigINT)
 #endif
 
-import Interfaces.GenericATPState(ATPTacticScript(tsTimeLimit, tsExtraOpts))
-import Interfaces.DataTypes(ListChange(..), IntIState(..), Int_NodeInfo(..),
-                            UndoRedoElem(..), IntState(i_state))
+import Interfaces.GenericATPState (ATPTacticScript (tsTimeLimit, tsExtraOpts))
+import Interfaces.DataTypes (ListChange (..), IntIState (..), Int_NodeInfo (..),
+                            UndoRedoElem (..), IntState (i_state))
 
 -- | Drops any seleceted comorphism
 cDropTranslations :: CmdlState -> IO CmdlState
@@ -78,7 +79,7 @@ cDropTranslations state =
 
 
 -- | select comorphisms
-cTranslate::String -> CmdlState -> IO CmdlState
+cTranslate :: String -> CmdlState -> IO CmdlState
 cTranslate input state =
  case i_state $ intState state of
   -- nothing selected !
@@ -89,8 +90,8 @@ cTranslate input state =
     Result _ Nothing -> return $ genErrorMsg "Wrong comorphism name" state
     Result _ (Just cm) ->
       case cComorphism pS of
-       -- when selecting some theory the Id comorphism is automatically
-       -- generated
+       {- when selecting some theory the Id comorphism is automatically
+          generated -}
        Nothing -> return $ genErrorMsg "No theory selected" state
        Just ocm ->
         case compComorphism ocm cm of
@@ -108,50 +109,50 @@ cTranslate input state =
 
 parseElements :: CmdlListAction -> [String] -> CmdlGoalAxiom
                  -> [Int_NodeInfo]
-                 -> ([Int_NodeInfo],[ListChange])
-                 -> ([Int_NodeInfo],[ListChange])
-parseElements action gls gls_axm elems (acc1,acc2)
+                 -> ([Int_NodeInfo], [ListChange])
+                 -> ([Int_NodeInfo], [ListChange])
+parseElements action gls gls_axm elems (acc1, acc2)
  = case elems of
-    [] -> (acc1,acc2)
-    (Element st nb):ll ->
+    [] -> (acc1, acc2)
+    Element st nb : ll ->
       let allgls = case gls_axm of
                     ChangeGoals -> case theory st of
                       G_theory _ _ _ aMap _ ->
                         OMap.keys $ OMap.filter (not . isAxiom) aMap
-                    ChangeAxioms-> case theory st of
+                    ChangeAxioms -> case theory st of
                       G_theory _ _ _ aMap _ ->
                         OMap.keys $ OMap.filter isAxiom aMap
           selgls = case gls_axm of
                     ChangeGoals -> selectedGoals st
-                    ChangeAxioms-> includedAxioms st
-          fn' x y = x==y
+                    ChangeAxioms -> includedAxioms st
+          fn' x y = x == y
           fn ks x = case find (fn' x) ks of
                      Just _ ->
                       case action of
                        ActionDel -> False
-                       _         -> True
+                       _ -> True
                      Nothing ->
                       case action of
-                       ActionDel  -> True
-                       _          -> False
+                       ActionDel -> True
+                       _ -> False
           gls' = case action of
                    ActionDelAll -> []
-                   ActionDel -> filter (fn  selgls) gls
+                   ActionDel -> filter (fn selgls) gls
                    ActionSetAll -> allgls
                    ActionSet -> filter (fn allgls) gls
                    ActionAdd -> nub $ selgls ++ filter (fn allgls) gls
           nwelm = case gls_axm of
-                   ChangeGoals  -> Element (st {selectedGoals = gls'}) nb
-                   ChangeAxioms -> Element (st {includedAxioms= gls'}) nb
+                   ChangeGoals -> Element (st {selectedGoals = gls'}) nb
+                   ChangeAxioms -> Element (st {includedAxioms = gls'}) nb
           hchg = case gls_axm of
-                   ChangeGoals  -> GoalsChange (selectedGoals  st) nb
-                   ChangeAxioms -> AxiomsChange(includedAxioms st) nb
-       in parseElements action gls gls_axm ll (nwelm:acc1,hchg:acc2)
+                   ChangeGoals -> GoalsChange (selectedGoals st) nb
+                   ChangeAxioms -> AxiomsChange (includedAxioms st) nb
+       in parseElements action gls gls_axm ll (nwelm : acc1, hchg : acc2)
 
--- | A general function that implements the actions of setting,
--- adding or deleting goals or axioms from the selection list
+{- | A general function that implements the actions of setting,
+   adding or deleting goals or axioms from the selection list -}
 cGoalsAxmGeneral :: CmdlListAction -> CmdlGoalAxiom ->
-                    String ->CmdlState
+                    String -> CmdlState
                  -> IO CmdlState
 cGoalsAxmGeneral action gls_axm input state
  = case i_state $ intState state of
@@ -162,9 +163,9 @@ cGoalsAxmGeneral action gls_axm input state
       ls ->
        do
         let gls = words input
-        let (ls',hst) = parseElements action gls
+        let (ls', hst) = parseElements action gls
                            gls_axm
-                           ls ([],[])
+                           ls ([], [])
         return $ add2hist [ListChange hst] $
                     state {
                       intState = (intState state) {
@@ -185,13 +186,13 @@ cDoLoop checkCons state
          [] -> return $ genErrorMsg "Nothing selected" state
          ls ->
            do
-            --create initial mVars to comunicate
-            miSt   <- newMVar $ intState state
-            mSt    <- newMVar Nothing
-            mThr   <- newMVar Nothing
-            mW     <- newEmptyMVar
+            -- create initial mVars to comunicate
+            miSt <- newMVar $ intState state
+            mSt <- newMVar Nothing
+            mThr <- newMVar Nothing
+            mW <- newEmptyMVar
             -- fork
-            thrID <- forkIO(doLoop miSt mThr mSt mW ls checkCons)
+            thrID <- forkIO (doLoop miSt mThr mSt mW ls checkCons)
             -- install the handler that waits for SIG_INT
 #ifdef UNIX
             oldHandler <- installHandler sigINT (Catch $
@@ -203,27 +204,23 @@ cDoLoop checkCons state
 #ifdef UNIX
             installHandler sigINT oldHandler Nothing
 #endif
-
-            let nwpS = case i_state answ of
-                         Nothing  -> pS
-                         Just pS' -> pS'
-                nwls = concatMap(\(Element _ x) -> selectANode x nwpS) ls
-                hst = concatMap(\(Element stt x)  ->
-                                 [(AxiomsChange (includedAxioms stt) x),
-                                  (GoalsChange (selectedGoals stt) x)]) ls
-            return $ add2hist [(ListChange hst)] $
+            let nwpS = fromMaybe pS (i_state answ)
+                nwls = concatMap (\ (Element _ x) -> selectANode x nwpS) ls
+                hst = concatMap (\ (Element stt x) ->
+                                 [ AxiomsChange (includedAxioms stt) x
+                                 , GoalsChange (selectedGoals stt) x ]) ls
+            return $ add2hist [ListChange hst] $
                        state { intState = answ {
-                         i_state = Just $ nwpS { elements = nwls }
-                       }}
+                         i_state = Just $ nwpS { elements = nwls }}}
 
--- | Proves only selected goals from all nodes using selected
--- axioms
+{- | Proves only selected goals from all nodes using selected
+   axioms -}
 cProve :: CmdlState -> IO CmdlState
 cProve = cDoLoop False
 
--- | Proves all goals in the nodes selected using all axioms and
--- theorems
-cProveAll::CmdlState ->IO CmdlState
+{- | Proves all goals in the nodes selected using all axioms and
+   theorems -}
+cProveAll :: CmdlState -> IO CmdlState
 cProveAll state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -236,8 +233,7 @@ cProveAll state
                 nwSt = add2hist [ListChange [NodesChange $ elements pS]] $
                       state {
                        intState = (intState state) {
-                         i_state = Just $ pS {
-                                           elements = ls' } } }
+                         i_state = Just $ pS { elements = ls' } } }
             in cProve nwSt
 
 -- | Sets the use theorems flag of the interface
@@ -249,7 +245,7 @@ cSetUseThms val state
       return $ add2hist [UseThmChange $ useTheorems pS] $
           state {
            intState = (intState state) {
-             i_state=  Just pS {
+             i_state = Just pS {
                              useTheorems = val } } }
 
 -- | Sets the save2File value to either true or false
@@ -264,8 +260,8 @@ cSetSave2File val state
              i_state = Just ps { save2file = val } } }
 
 
--- | The function is called everytime when the input could
--- not be parsed as a command
+{- | The function is called everytime when the input could
+   not be parsed as a command -}
 cNotACommand :: String -> CmdlState -> IO CmdlState
 cNotACommand input state
  = case input of
@@ -274,7 +270,7 @@ cNotACommand input state
      -- anything else see if it is in a blocl of command
      s ->
       case i_state $ intState state of
-        Nothing -> return $ genErrorMsg ("Error on input line :"++s) state
+        Nothing -> return $ genErrorMsg ("Error on input line :" ++ s) state
         Just pS ->
           if loadScript pS
             then
@@ -287,7 +283,7 @@ cNotACommand input state
                              script = olds { tsExtraOpts = s : oldextOpts }
                              } } }
               return $ add2hist [ScriptChange $ script pS] nwSt
-            else return $ genErrorMsg ("Error on input line :"++s) state
+            else return $ genErrorMsg ("Error on input line :" ++ s) state
 
 -- | Function to signal the interface that the script has ended
 cEndScript :: CmdlState -> IO CmdlState
@@ -298,16 +294,16 @@ cEndScript state
      if loadScript ps
        then
          do
-          let nwSt= state {
+          let nwSt = state {
                       intState = (intState state) {
                        i_state = Just ps {
                          loadScript = False } } }
           return $ add2hist [LoadScriptChange $ loadScript ps] nwSt
        else return $ genErrorMsg "No previous call of begin-script" state
 
--- | Function to signal the interface that a scrips starts so it should
--- not try to parse the input
-cStartScript :: CmdlState-> IO CmdlState
+{- | Function to signal the interface that a scrips starts so it should
+   not try to parse the input -}
+cStartScript :: CmdlState -> IO CmdlState
 cStartScript state
  = case i_state $ intState state of
      Nothing -> return $ genErrorMsg "Nothing selected" state
@@ -319,7 +315,7 @@ cStartScript state
                                  loadScript = True } } }
 
 -- sets a time limit
-cTimeLimit :: String -> CmdlState-> IO CmdlState
+cTimeLimit :: String -> CmdlState -> IO CmdlState
 cTimeLimit input state
  = case i_state $ intState state of
     Nothing -> return $ genErrorMsg "Nothing selected" state

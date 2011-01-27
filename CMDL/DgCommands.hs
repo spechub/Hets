@@ -26,13 +26,11 @@ module CMDL.DgCommands
        ) where
 
 import Interfaces.DataTypes
-import Interfaces.Utils (emptyIntIState, getAllEdges, initNodeInfo)
+import Interfaces.Utils
 
 import CMDL.DataTypes
 
 import CMDL.DataTypesUtils
-    (getAllNodes, add2hist, genErrorMsg, genMessage, getIdComorphism,
-     getInputDGNodes)
 import CMDL.Utils (decomposeIntoGoals, obtainEdgeList, prettyPrintErrList)
 
 import Proofs.AbstractState (comorphismsToProvers, getAllProvers, initialState)
