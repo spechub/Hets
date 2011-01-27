@@ -238,7 +238,8 @@ addNodesAndEdgesDeps diag graph gi nodesEdges = do
                                 showDiagSpec])
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$
-                       ValueTitle (return . dn_desc) $$$
+                       ValueTitle (return . (\ x ->
+                                   take 20 (dn_desc x) ++ "..." )) $$$
                        Color (getColor opts Green True True) $$$
                        emptyNodeTypeParms
    subNodeType <- newNodeType graph subNodeTypeParms

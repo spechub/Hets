@@ -67,6 +67,8 @@ import LF.Twelf2DG
 
 import Framework.Analysis
 
+-- import Debug.Trace
+
 -- a set of library names to check for cyclic imports
 type LNS = Set.Set LibName
 
@@ -328,13 +330,14 @@ anaLibItem lgraph opts topLns currLn libenv dg itm = case itm of
             let dg'' = updateNodeNameRT dg'
                        (refSource $ getPointerFromRef archSig) $ show asn
                 dg3 = dg'' { archSpecDiags =
-                           Map.insert (show asn)
-                             (let
-                               gr = nmap
-                                     (\ x -> x { dn_desc =
-                                      take 20 (dn_desc x) ++ "..." })
-                                     $ diagGraph diag
-                              in diag {diagGraph = gr})
+                           Map.insert (show asn) diag
+                             --(let
+                             --  gr = nmap
+                             --        (\ x -> x { dn_desc =
+                             --         take 20 (dn_desc x) ++ "..." })
+                             --        $ 
+                             --       diagGraph diag
+                             -- in diag {diagGraph = gr})
                            $ archSpecDiags dg''}
             -- trace (show $ refTree dg3) $
             return (asd', dg3
