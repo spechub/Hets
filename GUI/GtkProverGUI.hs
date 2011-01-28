@@ -336,10 +336,7 @@ wasATheorem st i = case currentTheory st of
    G_theory _ _ _ sens _ -> maybe False wasTheorem $ OMap.lookup i sens
 
 toGoals :: ProofState -> [Goal]
-toGoals = sort . map toGoal . getGoals
-  where toGoal (n, st) =
-          Goal { gName = n
-               , gStatus = maybe GOpen basicProofToGStatus st }
+toGoals = sort . map toGtkGoal . getGoals
 
 toProvers :: ProofState -> [GProver]
 toProvers = Map.elems . foldr (\ (p', c) m ->

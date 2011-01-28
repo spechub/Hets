@@ -72,6 +72,7 @@ module GUI.GtkUtils
 
   -- * Datatypes and functions for prover
   , Goal (..)
+  , toGtkGoal
   , showGoal
   , GStatus (..)
   , statusToColor
@@ -585,6 +586,11 @@ data Goal = Goal
   { gStatus :: GStatus
   , gName :: String }
   deriving (Eq, Ord)
+
+toGtkGoal :: (String, Maybe BasicProof) -> Goal
+toGtkGoal (n, st) =
+          Goal { gName = n
+               , gStatus = maybe GOpen basicProofToGStatus st }
 
 showGoal :: Goal -> String
 showGoal (Goal { gName = n, gStatus = s }) =

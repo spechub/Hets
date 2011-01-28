@@ -36,8 +36,6 @@ import Logic.Prover
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import qualified Common.OrderedMap as OMap
-import Common.AS_Annotation (isAxiom)
 import Common.LibName (LibName)
 import Common.Result
 
@@ -74,16 +72,8 @@ data FNode = FNode { name     :: String
 {- | mostly for the purpose of proper display, the resulting G_theory of each
 FNode can be converted into a list of Goals ( GtkUtils.Goal ). -}
 toGtkGoals :: FNode -> [Goal]
-toGtkGoals fn = case results fn of
-  G_theory _ _ _ sens _ ->
-    let sens' = OMap.filter (not . isAxiom) sens
-        in foldr (\ s t -> case OMap.lookup s sens' of
-                     Nothing -> t
-                     Just tm -> case thmStatus tm of
-                                  [] -> Goal GOpen s : t
-                                  l -> Goal (GtkUtils.basicProofToGStatus
-                                       (maximum $ map snd l)) s : t
-                 ) [] $ goals fn
+toGtkGoals fn = map toGtkGoal . filter ((`elem` goals fn) . fst) . getThGoals
+  $ results fn
 
 {- | as a Prefix for display purpose, the ratio of proven and total goals
 is shown -}
@@ -122,19 +112,14 @@ initFNodes = foldr (\ n@(_, l) t -> case globalTheory l of
                       Nothing -> t
                       Just gt ->
                         let gt' = dgn_theory l
-                            gs = case gt' of
-                                   G_theory _ _ _ s _ ->
-                                     OMap.keys $ OMap.filter (not . isAxiom) s
+                            gs = map fst $ getThGoals gt'
                         in if null gs then t else
                         FNode (getDGNodeName l) n (sublogicOfTh gt) gs gt' : t
               ) []
 
 -- | returns True if a node has not been proved jet
 unchecked :: FNode -> Bool
-unchecked fn = case results fn of
-                 G_theory _ _ _ sens _ ->
-                   all null $ map thmStatus $ OMap.elems
-                            $ OMap.filter (not . isAxiom) sens
+unchecked fn = all (isNothing . snd) . getThGoals $ results fn
 
 -- | returns True if at least one goal has been timed out
 timedout :: FNode -> Bool
