@@ -38,6 +38,7 @@ import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.State.Class
 
 import Data.List hiding (lookup)
+import qualified Data.Set as Set
 import Data.Maybe
 import System.Exit (ExitCode)
 
@@ -50,7 +51,8 @@ import Prelude hiding (lookup)
 -- | MapleInterpreter with Translator based on the CommandState
 data MITrans = MITrans { getBMap :: BMap
                        , getMI :: PC.CommandState
-                       , depGraph :: AssignmentDepGraph () }
+                       , depGraph :: AssignmentDepGraph ()
+                       , channelTimeout :: PC.DTime }
 
 
 -- Maple interface, built on CommandState
@@ -65,6 +67,17 @@ instance AssignmentStore MapleIO where
     check = mapleCheck (evalMapleString True []) mapleTransE
     names = get >>= return . SMem . getBMap
     evalRaw s = get >>= liftIO . flip (mapleDirect True) s
+
+    getUndefinedConstants e = do
+      adg <- gets depGraph
+      let g = isNothing . depGraphLookup adg
+      return $ Set.filter g $ Set.map SimpleConstant $ setOfUserDefined e
+      
+    genNewKey = do
+      mit <- get
+      let (bm, i) = genKey $ getBMap mit
+      put mit { getBMap = bm }
+      return i
 
 instance VCGenerator MapleIO where
     getDepGraph = gets depGraph
@@ -116,7 +129,7 @@ cslMapleDefaultMapping =
                               , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
         logicOps = [ OP_and, OP_or, OP_impl, OP_true, OP_false ]
         otherOps = [ OP_factor, OP_maxloc, OP_sign, OP_Pi, OP_min, OP_max
-                   , OP_fthrt]
+                   , OP_fthrt, OP_reldist, OP_reldistLe]
         specialOp = (OP_pow, "^")
 --        specialOp = (OP_pow, "&**")
     in specialOp : idmapping logicOps
@@ -260,8 +273,8 @@ wrapCommand ios = do
 
 -- | A direct way to communicate with Maple
 mapleDirect :: Bool -> MITrans -> String -> IO String
-mapleDirect b rit s = do
-  (res, _) <- runIOS (getMI rit) (PC.call 0.5 s)
+mapleDirect b mit s = do
+  (res, _) <- runIOS (getMI mit) $ PC.call (channelTimeout mit) s
   return $ if b then removeOutputComments res else res
 
 mapleTransE :: EXPRESSION -> MapleIO EXPRESSION
@@ -301,9 +314,9 @@ evalMapleString :: Bool -- ^ Use parser
                 -> String -> MapleIO [EXPRESSION]
 evalMapleString b args s = do
   -- 0.09 seconds is a critical value for the accepted response time of Maple
-  res <- lift $ wrapCommand $ PC.call 0.6 s
-  r <- get
-  let bm = getBMap r
+  mit <- get
+  res <- lift $ wrapCommand $ PC.call (channelTimeout mit) s
+  let bm = getBMap mit
       trans = if null args then revtranslateExpr bm
               else revtranslateExprWithVars args bm
   return $ if b
@@ -314,8 +327,9 @@ evalMapleString b args s = do
 -- | init the maple communication
 mapleInit :: AssignmentDepGraph ()
           -> Int -- ^ Verbosity level
+          -> PC.DTime -- ^ timeout for response
           -> IO MITrans
-mapleInit adg v = do
+mapleInit adg v to = do
   rc <- lookupMapleShellCmd
   libpath <- getEnvDef "HETS_MAPLELIB"
              $ error "mapleInit: Environment variable HETS_MAPLELIB not set."
@@ -323,12 +337,13 @@ mapleInit adg v = do
     Left maplecmd -> do
             cs <- PC.start (maplecmd ++ " -q") v
                   $ Just PC.defaultConfig { PC.startTimeout = 3 }
-            (_, cs') <- runIOS cs $ PC.call 0.4
+            (_, cs') <- runIOS cs $ PC.call 0.5
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
                                  , "libname := \"", libpath, "\", libname;" ]
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
                            , getMI = cs'
                            , depGraph = adg
+                           , channelTimeout = to
                            }
     _ -> error "Could not find maple shell command!"
 
@@ -349,10 +364,12 @@ execWithMaple s m = do
   (res, mit) <- runIOS s $ runResultT m
   return (mit, fromMaybe err $ maybeResult res)
 
-runWithMaple :: AssignmentDepGraph () -> Int -> [String] -> MapleIO a
-             -> IO (MITrans, a)
-runWithMaple adg i l m = do
-  mit <- mapleInit adg i
+runWithMaple :: AssignmentDepGraph () -> Int
+          -> PC.DTime -- ^ timeout for response
+          -> [String] -> MapleIO a
+          -> IO (MITrans, a)
+runWithMaple adg i to l m = do
+  mit <- mapleInit adg i to
   mapM_ (mapleLoadModule mit) l
   execWithMaple mit m
 
@@ -371,8 +388,8 @@ lookupMapleShellCmd  = do
 
 -- | Removes lines starting with ">"
 removeOutputComments :: String -> String
-removeOutputComments s = 
-    concat $ filter (\ x -> case x of '>' : _ -> False; _ -> True) $ lines s
+removeOutputComments =
+    filter (/= '\\') . concat . filter (not . isPrefixOf ">") . lines
  
 {- Some problems with the maximization in Maple:
 

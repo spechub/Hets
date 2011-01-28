@@ -33,8 +33,9 @@ import Text.ParserCombinators.Parsec
 import Control.Monad.Trans (MonadIO (..), lift)
 import Control.Monad (liftM)
 -- the process communication interface
-import qualified Interfaces.Process as PC
 -}
+
+import Interfaces.Process as PC
 
 import System.Environment
 
@@ -81,8 +82,8 @@ test 44 assStoreAndProgElim
 test 45 loadAssignmentStore
 testResult 54 (depClosure ["F_G"])
 
-(mit, _) <- testWithMaple 4 stepProg 3
-(mit, _) <- testWithMaple 4 verifyProg 3
+(mit, _) <- testWithMaple 4 0.8 stepProg 3
+(mit, _) <- testWithMaple 4 0.8 verifyProg 3
 
 
 ncl <- sens 56
@@ -139,7 +140,7 @@ main1 args = do
 
   case args of
     [lb, sp] ->
-        testWithMapleGen 4 p lb sp >> return ()
+        testWithMapleGen 4 0.9 p lb sp >> return ()
     _ -> putStrLn $ "EnCL Processing: Only two arguments expected but given "
          ++ show (length args)
 
@@ -210,9 +211,8 @@ verifyProg :: (VCGenerator m, MonadIO m) => [Named CMD] -> m ()
 verifyProg ncl = stepwise verifyingStepper $ Sequence $ map sentence ncl
 
 
-testWithMapleGen :: Int -> ([Named CMD] -> MapleIO a) -> String -> String
-                 -> IO (MITrans, a)
-testWithMapleGen verbosity f lb sp = do
+testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String                 -> IO (MITrans, a)
+testWithMapleGen verb to f lb sp = do
   ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
   -- get ordered assignment store and program
   (as, prog) <- assStoreAndProgSimple ncl
@@ -223,10 +223,10 @@ testWithMapleGen verbosity f lb sp = do
       g x = loadAS as >> f x
 
   -- start maple and run g
-  runWithMaple gr verbosity ["EnCLFunctions"] $ g prog
+  runWithMaple gr verb to ["EnCLFunctions"] $ g prog
 
-testWithMaple :: Int -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
-testWithMaple verbosity f = uncurry (testWithMapleGen verbosity f) . libFP
+testWithMaple :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
+testWithMaple verb to f = uncurry (testWithMapleGen verb to f) . libFP
 
 
 

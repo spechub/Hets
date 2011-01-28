@@ -23,7 +23,9 @@ module CSL.Interpreter
     , loadAS
     , BMap(..)
     , BMapDefault(..)
-    , fromList, defaultLookup, defaultRevlookup, CSL.Interpreter.empty, initWithDefault
+    , fromList, defaultLookup, defaultRevlookup, CSL.Interpreter.empty
+    , initWithDefault
+    , genKey
     , lookupOrInsert
     , revlookup
     , rolookup
@@ -44,6 +46,7 @@ import Control.Monad (liftM, forM_, filterM, unless)
 import Control.Monad.State (StateT, MonadState (..))
 import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Data.Maybe
+import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.IntMap as IMap
 import Data.List (mapAccumL)
@@ -54,6 +57,7 @@ import Common.Id
 import Common.ResultT
 import Common.Doc
 import Common.DocUtils
+import Common.Utils
 
 import CSL.AS_BASIC_CSL
 
@@ -110,16 +114,24 @@ class (Monad m) => AssignmentStore m where
                    v <- lookup x
                    return (x, fromJust v)
              in names >>= mapM f . toList
+    getUndefinedConstants :: EXPRESSION -> m (Set.Set ConstantName)
+    getUndefinedConstants = error ""
+    genNewKey :: m Int
+    genNewKey = error ""
 
 
 instance AssignmentStore m => AssignmentStore (StateT s m) where
     assign s = lift . assign s
+    assigns = lift . assigns
     lookup = lift . lookup
     names = lift names
     eval = lift . eval
     evalRaw = lift . evalRaw
     check = lift . check
     values = lift values
+    getUndefinedConstants = lift . getUndefinedConstants
+    genNewKey = lift genNewKey
+
 
 isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
@@ -176,6 +188,8 @@ readEvalPrintLoop inp outp cp exitWhen = do
   unless (exitWhen s) $ evalRaw s >>= liftIO . (hPutStrLn outp)
              >> readEvalPrintLoop inp outp cp exitWhen
 
+-- | An atom evaluator for 'stepwise' which pauses at each atomic evaluation
+-- position.
 interactiveStepper :: (MonadIO m, AssignmentStore m) => m () -> EvalAtom
                    -> m Bool
 interactiveStepper prog x = do
@@ -184,11 +198,18 @@ interactiveStepper prog x = do
   readEvalPrintLoop stdin stdout "next>" null
   return b
 
+-- | The most primitive atom evaluator as expected by 'stepwise'.
 evaluateAtom :: AssignmentStore m => m () -> EvalAtom -> m Bool
 evaluateAtom _ (AssAtom n def) = assign n def >> return True
 evaluateAtom _ (CaseAtom e) = check e
 evaluateAtom prog (RepeatAtom e) = prog >> check e
 
+{- | It is assumed that the given function respects the evaluation semantics,
+   i.e., that for the assignment atom an assignment takes place and for the
+   repeat atom the passed program is evaluated and afterwards the condition is
+   checked and for the case atom the condition is checked. See 'evaluateAtom'
+   for an example.
+-}
 stepwise :: AssignmentStore m => (m () -> EvalAtom -> m Bool) -> CMD
          -> m ()
 stepwise f (Ass (Op (OpUser n) [] l _) e) = do
@@ -199,9 +220,24 @@ stepwise _ (Cond []) = error "stepwise: non-exhaustive conditional"
 stepwise f (Cond ((e, pl):cl)) = do
   b <- f (return ()) $ CaseAtom e
   stepwise f $ if b then Sequence pl else Cond cl
-stepwise f p@(Repeat e l) = do
-  b <- f (stepwise f $ Sequence l) $ RepeatAtom e
-  unless b $ stepwise f p
+stepwise f (Repeat e l) = do
+  -- only in the first entry of a repeat loop we need to transform the
+  -- until expression, in all consecutive runs of the same loop we just
+  -- need to update the values of the temporarily introduced constants.
+  (m, e') <- translateConvergence e
+  let al = Map.toList m
+      -- we check if the expression contains free constants
+      -- (undefined in the assignment graph) and in this case we replace the
+      -- definition of the constant by the undefined constant.
+      g (conve, i) = do
+        s <- getUndefinedConstants conve
+        let e'' = if Set.null s then conve else mkPredefOp OP_undef []
+        return (internalConstant i, mkDefinition [] e'')
+      reploop = do
+        mapM g al >>= assigns
+        b <- f (stepwise f $ Sequence l) $ RepeatAtom e'
+        unless b $ reploop
+  reploop
 stepwise f (Sequence l) = mapM_ (stepwise f) l
 
 stepwise _ (Cmd c _) = error $ "stepwise: unsupported command " ++ c
@@ -210,6 +246,22 @@ stepwise _ a@(Ass (Op (OpId _) _ _ _) _) =
                    , "assignment not allowed ", show a ]
 stepwise _ a@(Ass _ _) = error $ "stepwise: unsupported assignment " ++ show a
 
+translateConvergence :: AssignmentStore m =>
+                        EXPRESSION -> m (Map.Map EXPRESSION Int, EXPRESSION)
+translateConvergence e' = f Map.empty e' where
+    f m (Op (OpId OP_convergence) [] [e, x] rg) =
+        do
+          i <- genNewKey
+          let ilf _ _ v = v
+              (mI, m') = Map.insertLookupWithKey ilf e i m
+              i' = fromMaybe i mI
+              genC = Op (OpUser $ internalConstant i') [] [] rg
+          return (m', mkPredefOp OP_reldistLe [genC, e, x])
+    f m (Op oi epl el rg) =
+        liftM (\ (m', x) -> (m', Op oi epl x rg)) $ mapAccumLM f m el
+    -- ignoring lists, see TODO in AS_BASIC_CSL
+    f m e = return (m, e)
+    
 
 -- | Loads a dependency ordered assignment list into the store.
 loadAS :: AssignmentStore m => [(ConstantName, AssDefinition)] -> m ()
@@ -219,12 +271,38 @@ loadAS = assigns . reverse
 -- * Term translator
 -- ----------------------------------------------------------------------
 
+{- | For use for constants in the CAS namespace.
+   We only need to make sure that x<Num> is not already used in the
+   default namespace of the CAS in question. We take for all CAS the
+   same prefix, namely "x".
+-}
+constPrefix :: String
+constPrefix = "x"
+{- | The variable prefix is used for auxiliary variables in the CAS namespace.
+   We use the prefix "v". The same remarks are valid as for 'constPrefix'.
+-}
+varPrefix :: String
+varPrefix = "v"
+
+{- | For use for auxiliary constants in the EnCL specification
+   namespace. A dollar prefix is suitable here because this prefix is not
+   accepted by the input processor for user defined constants.
+-}
+internalPrefix :: String
+internalPrefix = "$"
+
+internalConstant :: Int -> ConstantName
+internalConstant i = SimpleConstant $ internalPrefix ++ show i
+
+-- | The undefined constant in the CAS namespace.
+undefConstant :: String
+undefConstant = show OP_undef
+
 -- | A data structure for invertible maps, with automatic new key generation
 -- and insertion at lookup
 data BMap = BMap { mThere :: Map.Map ConstantName Int
                  , mBack :: IMap.IntMap ConstantName
                  , newkey :: Int
-                 , prefix :: String
                  , defaultMap :: BMapDefault OPID
                  }
             deriving Show
@@ -243,6 +321,9 @@ instance SimpleMember BMap ConstantName where
     toList = Map.keys . mThere
 
 
+genKey :: BMap -> (BMap, Int)
+genKey bm = let i = newkey bm in (bm { newkey = i+1 }, i) 
+
 -- ** Interface functions for BMapDefault
 
 fromList :: Ord a => [(a, String)] -> BMapDefault a
@@ -257,12 +338,19 @@ defaultRevlookup bmd s = Map.lookup s $ mBck bmd
 
 -- ** Interface functions for BMap
 empty :: BMap
-empty = BMap Map.empty IMap.empty 1 "x" $ fromList []
+empty = BMap
+        { mThere =  Map.empty
+        , mBack = IMap.empty
+        , newkey =  1
+        , defaultMap = fromList []
+        }
 
 initWithDefault :: [(OPNAME, String)] -> BMap
 initWithDefault l =
     let f (x, y) = (OpId x, y)
-    in BMap Map.empty IMap.empty 1 "x" $ fromList $ map f l
+        -- this mapping should be always there, but may be overwritten
+        l' = (OP_undef, undefConstant):l
+    in CSL.Interpreter.empty {defaultMap = fromList $ map f l'}
 
 -- | The only way to also insert a value is to use lookup. One should not
 -- insert values explicitly. Note that you don't control the inserted value.
@@ -347,26 +435,26 @@ revlookupGen vm m k =
 
 {-
 bmToList :: BMap -> [(ConstantName, String)]
-bmToList m = let prf = prefix m
+bmToList m = let prf = constPrefix
                  f (x, y) = (x, prf ++ show y)
              in map f $ Map.toList $ mThere m
 -}
 
 -- ** Internal functions for BMap
 bmapIntToString :: BMap -> Int -> String
-bmapIntToString m i = prefix m ++ show i
+bmapIntToString _ i = constPrefix ++ show i
 
 -- | Returns the 'Int' contained in the given constant. If this constant
 -- represents a user-defined constant then we return the left value, if
 -- it represents a variable then we return the right value
 bmapStringToInt :: BMap -> String -> Either Int Int
-bmapStringToInt m s =
-    let prf = prefix m
+bmapStringToInt _ s =
+    let prf = constPrefix
         (prf', n) = splitAt (length prf) s
         (prf'', n') = splitAt 1 s
         out
             | prf == prf' = Left $ read n
-            | prf'' == "v" = Right $ read n'
+            | prf'' == varPrefix = Right $ read n'
             | otherwise = error $ concat [ "bmapStringToInt: invalid string"
                                          , " for prefix ", prf, ":", s ]
     in out
@@ -387,7 +475,7 @@ revVarList :: [String] -> [(Int, String)]
 revVarList l = zip [1..] l 
 
 varName :: BMap -> Int -> String
-varName _ i = "v" ++ show i
+varName _ i = varPrefix ++ show i
 
 translateArgVars :: BMap -> [String] -> [String]
 translateArgVars m = map f . varList where
@@ -446,9 +534,6 @@ revtranslateExprGen _ _ e = e
 
 
 -- ** Pretty printing of BMap
--- (Pretty a, Pretty b) => 
-
--- pm = ppMap pa text braces vcat printMapping
 
 printMapping :: Doc -> Doc -> Doc
 printMapping x y = x <+> mapsto <+> y

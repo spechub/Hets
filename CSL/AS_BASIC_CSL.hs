@@ -156,6 +156,7 @@ data OPNAME =
     -- roots, trigonometric and other operators
   | OP_fthrt | OP_sqrt | OP_abs | OP_max | OP_min | OP_sign
   | OP_cos | OP_sin | OP_tan | OP_Pi
+  | OP_reldist
 
   -- special CAS operators
   | OP_minimize | OP_minloc | OP_maximize | OP_maxloc | OP_factor
@@ -163,7 +164,10 @@ data OPNAME =
 
   -- comparison predicates
   | OP_neq | OP_lt | OP_leq | OP_eq | OP_gt | OP_geq | OP_convergence
+  | OP_reldistLe
 
+  -- undefined constant
+  | OP_undef
   -- boolean constants and connectives
   | OP_false | OP_true | OP_not | OP_and | OP_or | OP_impl
 
@@ -212,6 +216,8 @@ showOPNAME x =
           OP_minloc -> "minloc"
           OP_not -> "not"
           OP_or -> "or"
+          OP_reldist -> "reldist"
+          OP_reldistLe -> "reldistLe"
           OP_rlqe -> "rlqe"
           OP_simplify -> "simplify"
           OP_sin -> "sin"
@@ -220,6 +226,7 @@ showOPNAME x =
           OP_tan -> "tan"
           OP_false -> "false"
           OP_true -> "true"
+          OP_undef -> "undef"
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
@@ -343,23 +350,20 @@ operatorInfo =
                    , opname = n
                    , bind = Just $ BindInfo [bv] [bb]
                    }
+        -- arityX simple ops
+        aX i s = toSgl s i 0
         -- arityflex simple ops
-        aflex s = toSgl s (-1) 0
-        -- arity0 simple ops
-        a0 s = toSgl s 0 0
-        -- arity1 simple ops
-        a1 s = toSgl s 1 0
-        -- arity2 simple ops
-        a2 s = toSgl s 2 0
+        aflex = aX (-1)
         -- arity2 binder
         a2bind bv bb s = toSglBind s 2 bv bb
         -- arity4 binder
         a4bind bv bb s = toSglBind s 4 bv bb
         -- arity2 infix with precedence
         a2i p s = toSgl s 2 p
-    in map a0 [ OP_Pi, OP_true, OP_false ]
-           ++ map a1 [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
-                     , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
+    in map (aX 0) [ OP_undef, OP_Pi, OP_true, OP_false ]
+           ++ map (aX 1)
+                  [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
+                  , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
            ++ map (a2bind 0 1) [ OP_ex, OP_all ]
            ++ map (a2i 3) [ OP_or, OP_impl ]
            ++ map (a2i 4) [ OP_and ]
@@ -369,7 +373,9 @@ operatorInfo =
            ++ map (a2i 8) [OP_mult]
            ++ map (a2i 9) [OP_div]
            ++ map (a2i 10) [OP_pow]
-           ++ map a2 [ OP_int, OP_divide, OP_solve, OP_convergence ]
+           ++ map (aX 2)
+                  [OP_int, OP_divide, OP_solve, OP_convergence, OP_reldist]
+           ++ map (aX 3) [OP_reldistLe]
            ++ map aflex [ OP_min, OP_max ]
            ++ map (a2bind 1 0) [ OP_maximize, OP_minimize ]
            ++ map (a4bind 1 0) [ OP_maxloc, OP_minloc ]

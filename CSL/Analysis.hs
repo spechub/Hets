@@ -612,6 +612,10 @@ data DepGraph a b c = DepGraph
 instance (Show a, Show b, Show c) => Show (DepGraph a b c) where
     show = show . dataMap
 
+depGraphLookup :: Ord a =>
+                  DepGraph a b c -> a -> Maybe (b, Set.Set a, Set.Set c)
+depGraphLookup gr x = Map.lookup x $ dataMap gr
+
 prettyDepGraph :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> DepGraph a b c 
                -> Doc
 prettyDepGraph pa pb pc gr =
