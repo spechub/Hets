@@ -71,10 +71,10 @@ showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
           ts -> basicProofToConStatus $ maximum $ map snd ts
       in FNode { name = g, node = (i, l'), sublogic = sublogicOfTh th,
                  cStatus = stat }
-    fgoals = foldr (\ g t -> case negate_th gt g of
+    fgoals = foldr (\ (g, _) t -> case negate_th gt g of
       Nothing -> t
       Just nt -> fg g nt : t) []
-        $ OMap.keys $ OMap.filter (not . isAxiom) sens
+        $ getThGoals gt
     in if null fgoals
       then
         errorDialogExt "Error (disprove)"
