@@ -148,8 +148,7 @@ proofTreeToProve fn st pcm pt =
                   $ map (\ x -> (goalName x, parseTimeLimit x))
                   $ filter wasProved pt
       -- axioms to include in prove
-      allax = case theory st of
-                G_theory _ _ _ axs _ -> OMap.keys $ OMap.filter isAxiom axs
+      allax = map fst $ getAxioms st
       nodeName = dropName fn $ theoryName st
       -- A goal is a pair of a name as String and time limit as Int
       goalToCommands :: (String, Int) -> [IC.Command]

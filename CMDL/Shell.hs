@@ -24,9 +24,7 @@ import CMDL.DataTypes
 import CMDL.Utils
 import CMDL.DataTypesUtils
 
-import Common.AS_Annotation (SenAttr (isAxiom))
 import Common.Utils (trimLeft, trimRight)
-import qualified Common.OrderedMap as OMap
 
 import Comorphisms.LogicGraph (comorphismList, logicGraph)
 
@@ -277,7 +275,7 @@ cmdlCompletionFn allcmds allState input =
                                $ filter (isPrefixOf tC)
                                $ createConsCheckersList
                                $ findComorphismPaths logicGraph
-                                   (sublogicOfTh $ theory z)
+                                   (sublogicOfTheory z)
    ReqProvers -> do
        let bC : tl = words input
            tC = unwords tl
@@ -301,7 +299,7 @@ cmdlCompletionFn allcmds allState input =
                           Nothing -> id
                           Just com -> filter ((== com) . snd)
                         $ getAllProvers ProveCMDLautomatic
-                          (sublogicOfTh $ theory z) logicGraph
+                          (sublogicOfTheory z) logicGraph
                   lst <- checkPresenceProvers proverList
                   return $ map (app bC) $ filter (isPrefixOf tC) lst
    ReqComorphism ->
@@ -371,9 +369,8 @@ cmdlCompletionFn allcmds allState input =
                     then trimRight input
                     else unwords $ init $ words input
          return $ map (app bC) $ filter (isPrefixOf tC) $ nub
-           $ concatMap (\ (Element st _) ->
-                 case theory st of
-                  G_theory _ _ _ aMap _ -> OMap.keys aMap ) $ elements pS
+           $ concatMap (\ (Element st _) -> map fst $ getAxioms st)
+                $ elements pS
    ReqGoal ->
       case i_state $ intState allState of
        Nothing -> return []
@@ -389,13 +386,10 @@ cmdlCompletionFn allcmds allState input =
            $ concatMap (\ (Element _ nb) ->
                        case getTh Do_translate nb allState of
                         Nothing -> []
-                        Just th ->
-                          case th of
-                           G_theory _ _ _ sens _ ->
-                             OMap.keys $ OMap.filter
-                              (\ s -> not (isAxiom s) &&
-                               not (isProvenSenStatus s)) sens)
-                                     $ elements pS
+                        Just th -> map fst $ filter
+                            (maybe False (not . isProvedBasically) . snd)
+                            $ getThGoals th)
+                $ elements pS
    ReqNumber -> case words input of
                    [hd] -> return $ map (app hd) s0_9
                    _ : _ : [] -> if isSpace $ lastChar input

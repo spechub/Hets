@@ -28,6 +28,7 @@ module Proofs.AbstractState
     , initialState
     , resetSelection
     , toAxioms
+    , getAxioms
     , getGoals
     , recalculateSublogicAndSelectedTheory
     , markProved
@@ -135,7 +136,7 @@ data ProofState =
       { -- | theory name
         theoryName :: String,
         -- | Grothendieck theory
-        theory :: G_theory,
+        currentTheory :: G_theory,
         -- | currently known provers
         proversMap :: KnownProversMap,
         -- | currently selected goals
@@ -159,7 +160,7 @@ data ProofState =
       } deriving Show
 
 resetSelection :: ProofState -> ProofState
-resetSelection s = case theory s of
+resetSelection s = case currentTheory s of
   G_theory _ _ _ sens _ ->
     let (aMap, gMap) = OMap.partition isAxiom sens
     in s
@@ -167,17 +168,14 @@ resetSelection s = case theory s of
     , includedAxioms = Map.keys aMap }
 
 toAxioms :: ProofState -> [String]
-toAxioms st = case theory st of
-  G_theory _ _ _ sens _ -> map
-    (\ (k, s) -> if wasTheorem s then "(Th) " ++ k else k)
-    $ OMap.toList $ OMap.filter isAxiom sens
+toAxioms = map (\ (k, wTh) -> if wTh then "(Th) " ++ k else k)
+  . getAxioms
+
+getAxioms :: ProofState -> [(String, Bool)]
+getAxioms = getThAxioms . currentTheory
 
 getGoals :: ProofState -> [(String, Maybe BasicProof)]
-getGoals s = case theory s of
-  G_theory _ _ _ sens _ -> map toGoal . OMap.toList
-    $ OMap.filter (not . isAxiom) sens
-  where toGoal (n, st) = let ts = thmStatus st in
-               (n, if null ts then Nothing else Just $ maximum $ map snd ts)
+getGoals = getThGoals . currentTheory
 
 {- |
   Creates an initial State.
@@ -189,7 +187,7 @@ initialState :: String
 initialState thN th pm = resetSelection
        ProofState
          { theoryName = thN
-         , theory = th
+         , currentTheory = th
          , proversMap = pm
          , selectedGoals = []
          , includedAxioms = []
@@ -209,7 +207,7 @@ initialState thN th pm = resetSelection
          , selectedTheory = th }
 
 logicId :: ProofState -> String
-logicId s = case theory s of
+logicId s = case currentTheory s of
   G_theory lid _ _ _ _ -> language_name lid
 
 sublogicOfTheory :: ProofState -> G_sublogics
@@ -282,7 +280,7 @@ prepareForProving st (G_prover lid4 p, Comorphism cid) =
 
 -- | creates the currently selected theory
 makeSelectedTheory :: ProofState -> G_theory
-makeSelectedTheory s = case theory s of
+makeSelectedTheory s = case currentTheory s of
   G_theory lid sig si sens _ ->
     let (aMap, gMap) = OMap.partition isAxiom sens
         pMap = OMap.filter isProvenSenStatus gMap
@@ -380,7 +378,7 @@ markProved ::
   -> ProofState
   -> ProofState
 markProved c lid status st = st
-    { theory = markProvedGoalMap c lid status (theory st) }
+    { currentTheory = markProvedGoalMap c lid status (currentTheory st) }
 
 -- | mark all newly proven goals with their proof tree
 markProvedGoalMap ::
@@ -428,5 +426,5 @@ autoProofAtNode useTh timeout g_th p_cm = do
               return $ case maybeResult d of
                 Nothing -> (Nothing, Nothing)
                 Just d' ->
-                  ( Just $ theory $ markProved (snd p_cm) lid1 d' st
+                  ( Just $ currentTheory $ markProved (snd p_cm) lid1 d' st
                   , Just $ map (\ ps -> (goalName ps, show $ goalStatus ps)) d')

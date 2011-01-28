@@ -33,7 +33,6 @@ import Comorphisms.LogicGraph (logicGraph)
 import Proofs.AbstractState
 
 import Static.DevGraph
-import Static.GTheory (sublogicOfTh)
 import Static.History
 
 import Logic.Comorphism
@@ -112,7 +111,7 @@ cConsChecker input state =
         Nothing -> case find (\ (y, _) ->
                                   getCcName y == inp) $
                              getConsCheckers $ findComorphismPaths
-                                logicGraph $ sublogicOfTh $ theory z of
+                                logicGraph $ sublogicOfTheory z of
                     Nothing -> return $ genErrorMsg ("No applicable " ++
                                  "consistency checker with this name found")
                                  state
@@ -129,8 +128,7 @@ cConsChecker input state =
                      $ getConsCheckers [x] of
            Nothing ->
             case find (\ (y, _) -> getCcName y == inp) $ getConsCheckers $
-                          findComorphismPaths logicGraph $ sublogicOfTh $
-                          theory z of
+                          findComorphismPaths logicGraph $ sublogicOfTheory z of
              Nothing -> return $ genErrorMsg ("No applicable consistency " ++
                                  "checker with this name found") state
              Just (p, nCm@(Comorphism cid)) ->
@@ -365,10 +363,10 @@ addResults ist libname ndps =
     Just pS ->
       case ndps of
        Element ps'' node -> let
-               nwTh = theory ps''
                dGraph = lookupDGraph libname (i_libEnv pS)
                nl = labDG dGraph node
-               in fst $ updateNodeProof libname ist (node, nl) nwTh
+               in fst $ updateNodeProof libname ist (node, nl)
+                      $ currentTheory ps''
 
 {- | Signal handler that stops the prover from running
 when SIGINT is send -}

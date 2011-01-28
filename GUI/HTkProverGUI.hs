@@ -198,7 +198,7 @@ doSelectAllEntries selectAll lb =
 -}
 doDisplayGoals :: ProofState -> IO ()
 doDisplayGoals s =
-    case theory s of
+    case currentTheory s of
       G_theory lid1 (ExtSign sig1 _) _ sens1 _ -> do
        let thName = theoryName s
            goalsText = show . Pretty.vsep .
@@ -526,31 +526,23 @@ proofManagementGUI prGuiAcs thName warningTxt th
             done
       +> selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
-             G_theory _ _ _ sens _ <- return $ theory s
              clearSelection lb
-             let isOpen (_, st) =
-                     let thst = thmStatus st
-                     in null thst
-                        || case maximum $ map snd thst of
-                             BasicProof _ pst ->
-                                 isOpenGoal $ goalStatus pst
-                             _ -> False
+             let isOpen = maybe True (\ b -> case b of
+                     BasicProof _ pst -> isOpenGoal $ goalStatus pst
+                     _ -> False)
              mapM_ (`selection` lb)
-                   (findIndices isOpen $ OMap.toList $ OMap.filter
-                    (not . isAxiom) sens)
+                   (findIndices (isOpen . snd) $ getGoals s)
              enableWidsUponSelection lb goalSpecificWids
              s' <- updateStatusSublogic s
              Conc.putMVar stateMVar s'
              done
       +> deselectFormerTheorems >>> do
             s <- Conc.takeMVar stateMVar
-            G_theory _ _ _ sens _ <- return $ theory s
-            let axiomList = OMap.toList $ OMap.filter isAxiom sens
-                isNotFormerTheorem (_, st) = not $ wasTheorem st
+            let axiomList = getAxioms s
             sel <- getSelection lbAxs :: IO (Maybe [Int])
             clearSelection lbAxs
             mapM_ (`selection` lbAxs) $
-                  maybe [] (filter (isNotFormerTheorem . (!!) axiomList)) sel
+                  maybe [] (filter (not . snd . (!!) axiomList)) sel
             s' <- updateStatusSublogic s
             Conc.putMVar stateMVar s'
             done
@@ -659,4 +651,4 @@ proofManagementGUI prGuiAcs thName warningTxt th
                          (const $ Conc.putMVar guiMVar Nothing))
   -- read the global state back in
   s <- Conc.takeMVar stateMVar
-  return . Result.Result (accDiags s) . Just $ theory s
+  return . Result.Result (accDiags s) . Just $ currentTheory s

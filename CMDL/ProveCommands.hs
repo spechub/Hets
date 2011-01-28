@@ -34,11 +34,7 @@ import CMDL.DgCommands (selectANode)
 import CMDL.ProveConsistency (doLoop, sigIntHandler)
 import CMDL.Utils (checkIntString)
 
-import Static.GTheory (G_theory (G_theory))
-
-import Common.AS_Annotation
 import Common.Result (Result (Result))
-import qualified Common.OrderedMap as OMap
 import Common.Utils (trim)
 
 import Data.List (find, nub)
@@ -46,7 +42,7 @@ import Data.Maybe (fromMaybe)
 
 import Comorphisms.LogicGraph (lookupComorphism_in_LG)
 
-import Proofs.AbstractState (ProofState (..), resetSelection)
+import Proofs.AbstractState
 
 import Logic.Comorphism (compComorphism)
 
@@ -116,12 +112,8 @@ parseElements action gls gls_axm elems (acc1, acc2)
     [] -> (acc1, acc2)
     Element st nb : ll ->
       let allgls = case gls_axm of
-                    ChangeGoals -> case theory st of
-                      G_theory _ _ _ aMap _ ->
-                        OMap.keys $ OMap.filter (not . isAxiom) aMap
-                    ChangeAxioms -> case theory st of
-                      G_theory _ _ _ aMap _ ->
-                        OMap.keys $ OMap.filter isAxiom aMap
+                    ChangeGoals -> map fst $ getGoals st
+                    ChangeAxioms -> map fst $ getAxioms st
           selgls = case gls_axm of
                     ChangeGoals -> selectedGoals st
                     ChangeAxioms -> includedAxioms st

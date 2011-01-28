@@ -223,11 +223,11 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
   s <- takeMVar state
   return Result
     { diags = accDiags s
-    , maybeResult = Just $ theory s }
+    , maybeResult = Just $ currentTheory s }
 
 -- | Called whenever the button "Display" is clicked.
 displayGoals :: ProofState -> IO ()
-displayGoals s = case theory s of
+displayGoals s = case currentTheory s of
   G_theory lid1 (ExtSign sig1 _) _ sens1 _ -> do
     let thName = theoryName s
         goalsText = show . Pretty.vsep
@@ -332,7 +332,7 @@ setSelectedProver trvProvers listProvers cbComorphism shC s = do
   return s { selectedProver = maybe Nothing (Just . pName . snd) mprover }
 
 wasATheorem :: ProofState -> String -> Bool
-wasATheorem st i = case theory st of
+wasATheorem st i = case currentTheory st of
    G_theory _ _ _ sens _ -> maybe False wasTheorem $ OMap.lookup i sens
 
 toGoals :: ProofState -> [Goal]

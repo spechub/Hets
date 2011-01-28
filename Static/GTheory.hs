@@ -116,6 +116,20 @@ sublogicOfTh (G_theory lid (ExtSign sigma _) _ sens _) =
                        sens)
    in G_sublogics lid sub
 
+-- | get theorem names with their best proof results
+getThGoals :: G_theory -> [(String, Maybe BasicProof)]
+getThGoals (G_theory _ _ _ sens _) = map toGoal . OMap.toList
+    $ OMap.filter (not . isAxiom) sens
+  where toGoal (n, st) = let ts = thmStatus st in
+               (n, if null ts then Nothing else Just $ maximum $ map snd ts)
+
+-- | get axiom names plus True for former theorem
+getThAxioms :: G_theory -> [(String, Bool)]
+getThAxioms (G_theory _ _ _ sens _) = map
+    (\ (k, s) -> (k, wasTheorem s))
+    $ OMap.toList $ OMap.filter isAxiom sens
+
+
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
 simplifyTh (G_theory lid sigma@(ExtSign s _) ind1 sens ind2) =
@@ -216,9 +230,12 @@ instance Show BasicProof where
 
 -- | test a theory sentence
 isProvenSenStatus :: SenStatus a (AnyComorphism, BasicProof) -> Bool
-isProvenSenStatus = any isProvenSenStatusAux . thmStatus
-  where isProvenSenStatusAux (_, BasicProof _ pst) = isProvedStat pst
-        isProvenSenStatusAux _ = False
+isProvenSenStatus = any (isProvedBasically . snd) . thmStatus
+
+isProvedBasically :: BasicProof -> Bool
+isProvedBasically b = case b of
+  BasicProof _ pst -> isProvedStat pst
+  _ -> False
 
 {- | mark sentences as proven if an identical axiom or other proven sentence
      is part of the same theory. -}
