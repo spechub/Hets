@@ -1,4 +1,4 @@
-{-# LANGUAGE  TypeSynonymInstances #-}
+{-# LANGUAGE  FlexibleContexts, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Maple instance for the AssignmentStore class
@@ -19,8 +19,6 @@ import Common.Utils (getEnvDef, trimLeft)
 import Common.Doc
 import Common.DocUtils
 import Common.IOS
-import Common.Result
-import Common.ResultT
 
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseExpression)
@@ -35,6 +33,7 @@ import qualified Interfaces.Process as PC
 
 import Control.Monad
 import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
+import Control.Monad.Error (ErrorT(..), MonadError (..))
 import Control.Monad.State.Class
 
 import Data.List hiding (lookup)
@@ -56,7 +55,7 @@ data MITrans = MITrans { getBMap :: BMap
 
 
 -- Maple interface, built on CommandState
-type MapleIO = ResultT (IOS MITrans)
+type MapleIO = ErrorT ASError (IOS MITrans)
 
 instance AssignmentStore MapleIO where
     assign  = mapleAssign (evalMapleString True) mapleTransS mapleTransVarE
@@ -130,11 +129,10 @@ cslMapleDefaultMapping =
         logicOps = [ OP_and, OP_or, OP_impl, OP_true, OP_false ]
         otherOps = [ OP_factor, OP_maxloc, OP_sign, OP_Pi, OP_min, OP_max
                    , OP_fthrt, OP_reldist, OP_reldistLe]
-        specialOp = (OP_pow, "^")
+        specialOps = [(OP_pow, "^"), (OP_failure, "FAIL")]
 --        specialOp = (OP_pow, "&**")
-    in specialOp : idmapping logicOps
-           ++ idmapping possibleIntervalOps
-                  ++ idmapping otherOps
+    in specialOps ++ idmapping logicOps ++ idmapping possibleIntervalOps
+           ++ idmapping otherOps
 
 printAssignment :: String -> [String] -> EXPRESSION -> String
 printAssignment n [] e = concat [n, ":= ", printExp e, ":", n, ";"]
@@ -164,12 +162,12 @@ is(abs(x2)<1.0e-4);
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "is(evalf(", printExp e, "));" ]
 
-getBooleanFromExpr :: EXPRESSION -> Bool
-getBooleanFromExpr (Op (OpId OP_true) _ _ _) = True
-getBooleanFromExpr (Op (OpId OP_false) _ _ _) = False
-getBooleanFromExpr e =
-    error $ "getBooleanFromExpr: can't translate expression to boolean: "
-              ++ show e
+getBooleanFromExpr :: EXPRESSION -> Either String Bool
+getBooleanFromExpr (Op (OpId OP_true) _ _ _) = Right True
+getBooleanFromExpr (Op (OpId OP_false) _ _ _) = Right False
+getBooleanFromExpr (Op (OpId OP_failure) _ _ _) = Left "Maple FAILURE"
+getBooleanFromExpr e = Left $ "Cannot translate expression to boolean: "
+                       ++ show e
 
 
 
@@ -199,7 +197,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (AssignmentStore s, MonadResult s, MonadIO s) =>
+mapleAssign :: (AssignmentStore s, MonadIO s) =>
                ([String] -> String -> s [EXPRESSION])
             -> (ConstantName -> s String)
             -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
@@ -216,7 +214,7 @@ mapleAssign ef trans transE n def = do
     l -> error $ "mapleAssign: unparseable result for assignment of "
          ++ (show $ pretty n) ++ "\n" ++ (show $ pretty l)
 
-mapleAssigns :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+mapleAssigns :: (AssignmentStore s) => (String -> s [EXPRESSION])
           -> (ConstantName -> s String)
           -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
           -> [(ConstantName, AssDefinition)] -> s ()
@@ -229,7 +227,7 @@ mapleAssigns ef trans transE l =
           return $ printAssignment n' args' e'
     in mapM f l >>= ef . unlines >> return ()
 
-mapleLookup :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+mapleLookup :: (AssignmentStore s) => (String -> s [EXPRESSION])
            -> (ConstantName -> s String)
            -> ConstantName -> s (Maybe EXPRESSION)
 mapleLookup ef trans n = do
@@ -239,7 +237,7 @@ mapleLookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-mapleEval :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+mapleEval :: (AssignmentStore s) => (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
 mapleEval ef trans e = do
@@ -249,15 +247,22 @@ mapleEval ef trans e = do
    then error $ "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-mapleCheck :: (AssignmentStore s, MonadResult s) => (String -> s [EXPRESSION])
+mapleCheck :: (MonadError ASError s, AssignmentStore s) =>
+              (String -> s [EXPRESSION])
          -> (EXPRESSION -> s EXPRESSION)
          -> EXPRESSION -> s Bool
 mapleCheck ef trans e = do
   e' <- trans e
   el <- ef $ printBooleanExpr e'
   if null el
-   then error $ "mapleCheck: expression " ++ show e' ++ " couldn't be evaluated"
-   else return $ getBooleanFromExpr $ head el
+   then throwError $ CASError
+            $ "mapleCheck: expression " ++ show e' ++ " could not be evaluated"
+   else case getBooleanFromExpr $ head el of
+          Right b -> return b
+          Left s ->
+              throwError
+              $ CASError $ concat [ "mapleCheck: CAS error for expression "
+                                  , show e', "\n", s ]
 
 
 -- ----------------------------------------------------------------------
@@ -359,10 +364,12 @@ mapleExit mit = do
   return ec
 
 execWithMaple :: MITrans -> MapleIO a -> IO (MITrans, a)
-execWithMaple s m = do
-  let err = error "execWithMaple: no result"
-  (res, mit) <- runIOS s $ runResultT m
-  return (mit, fromMaybe err $ maybeResult res)
+execWithMaple mit m = do
+  let err s = error $ "execWithMaple: " ++ s
+  (res, mit') <- runIOS mit $ runErrorT m
+  case res of
+    Left s' -> err $ asErrorMsg s'
+    Right x -> return (mit', x)
 
 runWithMaple :: AssignmentDepGraph () -> Int
           -> PC.DTime -- ^ timeout for response

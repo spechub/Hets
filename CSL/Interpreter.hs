@@ -35,15 +35,19 @@ module CSL.Interpreter
     , revtranslateExpr
     , revtranslateExprWithVars
     , stepwise
+    , stepwiseSafe
     , interactiveStepper
     , readEvalPrintLoop
     , EvalAtom(..)
     , prettyEvalAtom
+    , asErrorMsg
+    , ASError(..)
     )
     where
 
 import Control.Monad (liftM, forM_, filterM, unless)
 import Control.Monad.State (StateT, MonadState (..))
+import Control.Monad.Error (Error(..), MonadError (..))
 import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Data.Maybe
 import qualified Data.Set as Set
@@ -132,6 +136,15 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
     getUndefinedConstants = lift . getUndefinedConstants
     genNewKey = lift genNewKey
 
+data ASError = CASError String | UserError String deriving Show
+
+asErrorMsg :: ASError -> String
+asErrorMsg (CASError s) = s
+asErrorMsg (UserError s) = s
+
+instance Error ASError where
+    noMsg = UserError ""
+    strMsg = UserError
 
 isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
@@ -182,11 +195,12 @@ readEvalPrintLoop  :: (MonadIO m, AssignmentStore m) =>
                -> Handle -- ^ Output handle
                -> String -- ^ Command prompt
                -> (String -> Bool) -- ^ Exit command predicate
-               -> m ()
+               -> m String
 readEvalPrintLoop inp outp cp exitWhen = do
   s <- liftIO $ hPutStr outp cp >> hFlush outp >> hGetLine inp
-  unless (exitWhen s) $ evalRaw s >>= liftIO . (hPutStrLn outp)
-             >> readEvalPrintLoop inp outp cp exitWhen
+  if exitWhen s then return s
+   else evalRaw s >>= liftIO . (hPutStrLn outp)
+            >> readEvalPrintLoop inp outp cp exitWhen
 
 -- | An atom evaluator for 'stepwise' which pauses at each atomic evaluation
 -- position.
@@ -210,6 +224,14 @@ evaluateAtom prog (RepeatAtom e) = prog >> check e
    checked and for the case atom the condition is checked. See 'evaluateAtom'
    for an example.
 -}
+stepwiseSafe :: (MonadError ASError m, AssignmentStore m) =>
+                (m () -> EvalAtom -> m Bool) -> CMD -> m (Maybe ASError)
+stepwiseSafe f cmd = catchError (stepwise f cmd >> return Nothing) g
+    where g = return . Just
+      
+
+
+
 stepwise :: AssignmentStore m => (m () -> EvalAtom -> m Bool) -> CMD
          -> m ()
 stepwise f (Ass (Op (OpUser n) [] l _) e) = do

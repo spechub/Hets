@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Generation of Verification Conditions
@@ -6,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable (via imports)
 
 This module provides functionality for the generation of verification conditions
 during program evaluation.
@@ -23,6 +24,8 @@ import CSL.AS_BASIC_CSL
 
 import System.IO
 import Control.Monad.Trans (MonadIO (..))
+import Control.Monad.Error (MonadError (..))
+import Control.Monad (when)
 
 -- ----------------------------------------------------------------------
 -- * Verification Conditions
@@ -94,12 +97,15 @@ mkBoolVC e evalB prl =
         conc = if evalB then e else toExp ("not", e)
     in if null prl then conc else toExp ("impl", prem, conc)
 
-verifyingStepper :: (VCGenerator m, MonadIO m) => m () -> EvalAtom -> m Bool
+verifyingStepper :: (VCGenerator m, MonadIO m, MonadError ASError m) =>
+                    m () -> EvalAtom -> m Bool
 verifyingStepper prog x = do
   liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
   liftIO $ putStrLn ""
   b <- evaluateAndVerify prog x
-  readEvalPrintLoop stdin stdout "next>" null
+  let breakPred s = s == "q" || null s
+  s <- readEvalPrintLoop stdin stdout "next>" breakPred
+  when (s == "q") $ throwError $ UserError "Quit Debugger" 
   return b
 
 evaluateAndVerify :: (VCGenerator m) => m () -> EvalAtom -> m Bool

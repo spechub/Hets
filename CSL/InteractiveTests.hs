@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Test environment for CSL
@@ -40,6 +40,7 @@ import Interfaces.Process as PC
 import System.Environment
 
 import Control.Monad.State (StateT(..))
+import Control.Monad.Error (MonadError(..))
 
 import Static.SpecLoader (getSigSensComplete, SigSens(..))
 
@@ -204,14 +205,17 @@ loadAssignmentStore b ncl = do
   return res
 
 
-stepProg :: (AssignmentStore m, MonadIO m) => [Named CMD] -> m ()
-stepProg ncl = stepwise interactiveStepper $ Sequence $ map sentence ncl
+stepProg :: (AssignmentStore m, MonadIO m, MonadError ASError m) =>
+            [Named CMD] -> m (Maybe ASError)
+stepProg ncl = stepwiseSafe interactiveStepper $ Sequence $ map sentence ncl
 
-verifyProg :: (VCGenerator m, MonadIO m) => [Named CMD] -> m ()
-verifyProg ncl = stepwise verifyingStepper $ Sequence $ map sentence ncl
+verifyProg :: (VCGenerator m, MonadIO m, MonadError ASError m) =>
+              [Named CMD] -> m (Maybe ASError)
+verifyProg ncl = stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
 
-testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String                 -> IO (MITrans, a)
+testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String
+                 -> IO (MITrans, a)
 testWithMapleGen verb to f lb sp = do
   ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
   -- get ordered assignment store and program

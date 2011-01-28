@@ -166,8 +166,9 @@ data OPNAME =
   | OP_neq | OP_lt | OP_leq | OP_eq | OP_gt | OP_geq | OP_convergence
   | OP_reldistLe
 
-  -- undefined constant
-  | OP_undef
+  -- special CAS constants
+  | OP_undef | OP_failure
+
   -- boolean constants and connectives
   | OP_false | OP_true | OP_not | OP_and | OP_or | OP_impl
 
@@ -227,6 +228,7 @@ showOPNAME x =
           OP_false -> "false"
           OP_true -> "true"
           OP_undef -> "undef"
+          OP_failure -> "fail"
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
@@ -360,7 +362,7 @@ operatorInfo =
         a4bind bv bb s = toSglBind s 4 bv bb
         -- arity2 infix with precedence
         a2i p s = toSgl s 2 p
-    in map (aX 0) [ OP_undef, OP_Pi, OP_true, OP_false ]
+    in map (aX 0) [ OP_failure, OP_undef, OP_Pi, OP_true, OP_false ]
            ++ map (aX 1)
                   [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
                   , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
