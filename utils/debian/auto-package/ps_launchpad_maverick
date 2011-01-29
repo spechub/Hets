@@ -5,7 +5,7 @@
 #
 # c.prodescu@jacobs-university.de
 #
-# Dependencies: hets-core dependencies, devscripts, ant
+# Dependencies: hets-core dependencies, devscripts, ant, sun-java6
 #
 # VARIABLES
 
@@ -32,10 +32,7 @@ HETS_FOLDER=$PWD/hets-$HETS_FULL_VERSION
 echo ::Using folder $HETS_FOLDER
 
 #checking out latest Hets version
-if [ -e .svn_clean ]; then
-	rm .svn_clean
-	rm -rf $HETS_FOLDER
-fi
+rm -rf $HETS_FOLDER
 echo ::Checking out $HETS_REPO ...
 svn -q export $HETS_REPO $HETS_FOLDER
 echo ::Done
@@ -49,7 +46,7 @@ echo ::Done
 HETS_OWL_TOOLS_FOLDER=$HETS_FOLDER/hets-owl-tools
 echo ::Compiling Hets OWL Tools
 cd $HETS_FOLDER && export JAVA_HOME=/usr/lib/jvm/java-6-sun
-make initialize_java
+make initialize_java 1>/dev/null 2>/dev/null
 cd ..
 mkdir -p $HETS_FOLDER/hets-owl-tools
 cd $HETS_FOLDER/OWL
@@ -72,7 +69,6 @@ rm programatica
 rm -rf GMP Search mini Lottery
 cd ..
 tar -xf programatica.tar.gz -C $HETS_FOLDER
-touch .svn_clean
 echo ::Done
 
 #creating orig.tar.gz
@@ -96,10 +92,32 @@ echo " -- `cat changelog_name` <`cat changelog_email`>  `date -R`" >> .changelog
 mv .changelog $HETS_FOLDER/debian/changelog
 echo ::Done
 
-#building
-echo ::Starting package building
-cd $HETS_FOLDER
-debuild -S -sa
-cd ..
-dput ppa:hets/hets hets_$HETS_FULL_VERSION-1ubuntu1_source.changes
+#
+# checking arguments to proceed further
+# ___________________________________________
+# |argument  | action                       |
+# -------------------------------------------
+# |<no args> | build and submit to launchpad|
+# |  local   | build a local package        |
+# -------------------------------------------
+#
+
+if [ "$#" = "0" ]; then
+   echo ::Starting package building and uploading;
+   cd $HETS_FOLDER;
+   debuild -S -sa
+   cd ..
+   dput ppa:hets/hets hets_$HETS_FULL_VERSION-1ubuntu0_source.changes
+else
+   if [ "$1" = "local" ]; then
+       echo ::Building local package
+       cd $HETS_FOLDER;
+       debuild -us -uc
+       cd ..
+   fi
+fi
+
+#done
+
 echo ::Done
+exit 0
