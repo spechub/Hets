@@ -14,7 +14,7 @@ and general static analysis tools
 -}
 
 
-
+module CSL.InteractiveTests where
 
 {-
 import CSL.ReduceInterpreter
@@ -36,8 +36,6 @@ import Control.Monad (liftM)
 -}
 
 import Interfaces.Process as PC
-
-import System.Environment
 
 import Control.Monad.State (StateT(..))
 import Control.Monad.Error (MonadError(..))
@@ -128,26 +126,23 @@ help = do
       endP = ("-}" /=)
   putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
 
-main :: IO ()
-main = getArgs >>= main1
+instance Pretty Bool where
+    pretty = text . show
 
-main1 :: [String] -> IO ()
-main1 args = do
+
+
+--------------------------- Shortcuts --------------------------
+
+evalWithVerification :: Int -> String -> String -> IO String
+evalWithVerification v lb sp = do
   let exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
       p ncl= do
          (_, prog) <- loadAssignmentStore False ncl
-         stepProg prog
+         verifyProg prog
          readEvalPrintLoop stdin stdout ">" exitWhen
 
-  case args of
-    [lb, sp] ->
-        testWithMapleGen 4 0.9 p lb sp >> return ()
-    _ -> putStrLn $ "EnCL Processing: Only two arguments expected but given "
-         ++ show (length args)
+  testWithMapleGen v 0.9 p lb sp >> return ""
 
-
-instance Pretty Bool where
-    pretty = text . show
 
 
 {-
@@ -248,7 +243,7 @@ testWithMaple verb to f = uncurry (testWithMapleGen verb to f) . libFP
 -- | Returns all constants where the given constants depend on
 depClosure :: [String] -> [Named CMD] -> IO [[String]]
 depClosure l ncl = do
-  let (asss, prog) = splitAS ncl
+  let (asss, _) = splitAS ncl
       gm = fmap analyzeGuarded asss
       dr = getDependencyRelation gm
   return $ relLayer dr l
@@ -256,7 +251,7 @@ depClosure l ncl = do
 -- | mark final
 markFinal :: [String] -> [Named CMD] -> IO [String]
 markFinal l ncl = do
-  let (asss, prog) = splitAS ncl
+  let (asss, _) = splitAS ncl
       gm = fmap analyzeGuarded asss
       dr = getDependencyRelation gm
       f x = case Map.lookup x dr of
@@ -270,13 +265,13 @@ definedIn :: [String] -> [Named CMD] -> IO [String]
 definedIn l ncl = return $ map g l where
       g s = intercalate ", " (mapMaybe (f s) ncl) ++ ":" ++ s
       f s nc = case sentence nc of
-                 Ass (Op oi _ _ _) def ->
+                 Ass (Op oi _ _ _) _ ->
                      if simpleName oi == s then Just $ senAttr nc else Nothing
                  _ -> Nothing
 
 inDefinition :: [String] -> [Named CMD] -> IO [String]
 inDefinition l ncl =
-  let (asss, prog) = splitAS ncl
+  let (asss, _) = splitAS ncl
       gm = fmap analyzeGuarded asss
       dr = getDependencyRelation gm
       allDefs = allDefinitions ncl
@@ -291,7 +286,7 @@ inDefinition l ncl =
 allDefinitions :: [Named CMD] -> (Map.Map String String)
 allDefinitions ncl = Map.fromList $ mapMaybe f ncl where
     f nc = case sentence nc of
-             Ass (Op oi _ _ _) def -> Just (simpleName oi, senAttr nc)
+             Ass (Op oi _ _ _) _ -> Just (simpleName oi, senAttr nc)
              _ -> Nothing
 
 undef :: [Named CMD] -> [String]

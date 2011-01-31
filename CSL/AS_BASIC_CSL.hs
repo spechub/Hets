@@ -482,10 +482,10 @@ printConstantName (ElimConstant s i) =
     text $ if i > 0 then s ++ "__" ++ show i else s
 
 printAssDefinition :: ConstantPrinter m => AssDefinition -> m Doc
-printAssDefinition (ConstDef e) = printExpression e >>= return . (text "() ->" <+>)
+printAssDefinition (ConstDef e) = printExpression e >>= return . (text "=" <+>)
 printAssDefinition (FunDef l e) = do
   ed <- printExpression e
-  return $ (parens $ sepByCommas $ map text l) <+> text "->" <+> ed
+  return $ (parens $ sepByCommas $ map text l) <+> text "=" <+> ed
 
 printOPID :: ConstantPrinter m => OPID -> m Doc
 printOPID (OpUser c) = printConstant c

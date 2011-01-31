@@ -100,7 +100,7 @@ mkBoolVC e evalB prl =
 verifyingStepper :: (VCGenerator m, MonadIO m, MonadError ASError m) =>
                     m () -> EvalAtom -> m Bool
 verifyingStepper prog x = do
-  liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
+  -- liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
   liftIO $ putStrLn ""
   b <- evaluateAndVerify prog x
   let breakPred s = s == "q" || null s

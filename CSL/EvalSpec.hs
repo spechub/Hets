@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  MatchCAD program
+Description :  EvalSpec program
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,31 +8,28 @@ Maintainer  :  ewaryst.schulz@dfki.de
 Stability   :  experimental
 Portability :  non-portable (via imports)
 
-Program for matching to HasCASL exported CAD designs against design patterns
+Program for evaluating EnCL specifications
 -}
 
 
 import System.Environment
 import System.Console.GetOpt
 
-import HasCASL.InteractiveTests
+import CSL.InteractiveTests
 import Data.Bits
 import Data.Maybe
 import Data.List
-
 
 
 main :: IO ()
 main = do
   args <- getArgs
   case processArgs args of
-    Left msg -> putStrLn $ "Design Matching: " ++ msg ++ "\n\n" ++ dmUsage
+    Left msg -> putStrLn $ "Evaluation: " ++ msg ++ "\n\n" ++ esUsage
     Right st -> runProg st >>= putStrLn
 
 runProg :: ProgSettings -> IO String
-runProg st
-    | translate st = matchTranslate (lib st) (spec st) (pattern st) $ design st
-    | otherwise = matchDesign (lib st) (spec st) (pattern st) $ design st
+runProg st = evalWithVerification (verbosity st) (lib st) (spec st) >> return ""
 
 ------------------------- Input Arguments -------------------------
 
@@ -49,16 +46,16 @@ processArgs args =
               ]
     in if null msg then Right $ getSettings flags else Left msg
 
-dmHeader :: String
-dmHeader = unlines
-           [ "Usage: matchcad [OPTION...] [file]"
+esHeader :: String
+esHeader = unlines
+           [ "Usage: evalspec [OPTION...] [file]"
                   , ""
-                  , "matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent"
+                  , "evalspec /tmp/f.het -sFlangeComplete"
                   , ""
                   ]
 
-dmUsage :: String
-dmUsage = usageInfo dmHeader options
+esUsage :: String
+esUsage = usageInfo esHeader options
 
 {- | 'options' describes all available options and is used to generate usage
 information -}
@@ -69,13 +66,6 @@ options = map f $
           , ( "spec"
             , "Name of specification importing both, the pattern and the design specification"
             , ReqArg PFSpec "SPECNAME")
-          , ( "pattern", "Name of the pattern specification"
-            , ReqArg PFPattern "SPECNAME")
-          , ( "design", "Name of the design specification"
-            , ReqArg PFDesign "SPECNAME")
-          , ( "translate"
-            , "If this flag is set the match is further translated to an EnCL specification"
-            , NoArg PFTrans)
           , ( "verbosity"
             , "A value from 0=quiet to 4=print out all information during processing"
             , OptArg (PFVerbosity . read . fromMaybe "4")  "0-4")
@@ -87,13 +77,9 @@ checkFlags :: [ProgFlag] -> [String]
 checkFlags = g . mapAccumL f (0::Int) where
     f i (PFLib _) = (setBit i 0, ())
     f i (PFSpec _) = (setBit i 1, ())
-    f i (PFPattern _) = (setBit i 2, ())
-    f i (PFDesign _) = (setBit i 3, ())
     f i _ = (i, ())
     g (i, _) = mapMaybe (h i) [ (0, "lib")
-                              , (1, "spec")
-                              , (2, "pattern")
-                              , (3, "design") ]
+                              , (1, "spec") ]
     h i (j, s)
       | testBit i j = Nothing
       | otherwise = Just $ s ++ " argument is missing"
@@ -102,9 +88,6 @@ data ProgSettings =
     ProgSettings
     { lib :: String
     , spec :: String
-    , pattern :: String
-    , design :: String
-    , translate :: Bool
     , verbosity :: Int }
 
 
@@ -112,30 +95,21 @@ defaultSettings :: ProgSettings
 defaultSettings = ProgSettings
                   { lib = error "uninitialized settings"
                   , spec = error "uninitialized settings"
-                  , pattern = error "uninitialized settings"
-                  , design = error "uninitialized settings"
-                  , translate = False
                   , verbosity = 4 }
 
 data ProgFlag =
     PFLib String
         | PFSpec String
-        | PFPattern String
-        | PFDesign String
         | PFVerbosity Int
         | PFQuiet
-        | PFTrans
 
 makeSettings :: ProgSettings -> ProgFlag -> ProgSettings
 makeSettings settings flg =
     case flg of
       PFLib s -> settings { lib = s }
       PFSpec s -> settings { spec = s }
-      PFPattern s -> settings { pattern = s }
-      PFDesign s -> settings { design = s }
       PFVerbosity i -> settings { verbosity = i }
       PFQuiet -> settings { verbosity = 0 }
-      PFTrans -> settings { translate = True }
       
 getSettings :: [ProgFlag] -> ProgSettings
 getSettings = foldl makeSettings defaultSettings

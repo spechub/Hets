@@ -39,9 +39,6 @@ import qualified Data.Map as Map
 import Data.Maybe
 import Data.List
 
-import Text.Read
-
-
 -- global part imports
 
 import Static.SpecLoader (getSigSensComplete, SigSens(..))
@@ -477,12 +474,24 @@ matchDesign :: String -- ^ The filename of the library containing the specs to m
             -> String -- ^ The specname importing the specs to match
             -> String -- ^ The pattern specname
             -> String -- ^ The concrete design specname
-            -> IO ()
+            -> IO String
 matchDesign lb sp patN cN = do
   sigs <- sigsensGen lb sp
   res <- fromSigs sigs patN cN (findMatch noConstraints)
-  putStrLn $ show $ prettyInSigs sigs res
-  return ()
+  return $ show $ prettyInSigs sigs res
+
+matchTranslate :: String -- ^ The filename of the library containing the specs to match
+            -> String -- ^ The specname importing the specs to match
+            -> String -- ^ The pattern specname
+            -> String -- ^ The concrete design specname
+            -> IO String
+matchTranslate lb sp patN cN = do
+  (_, m) <- getMatchMap lb sp patN cN
+  hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
+  tmpl <- readFile $ hlib ++ "/EnCL/flangeExported.het"
+  let f k v = " . " ++ k ++ " := " ++ show (v * 1000)
+  return $ processTemplate f m tmpl
+  
 
 getMatchMap :: String -- ^ The filename of the library containing the specs to match
             -> String -- ^ The specname importing the specs to match
