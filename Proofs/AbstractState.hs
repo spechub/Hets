@@ -163,9 +163,11 @@ resetSelection :: ProofState -> ProofState
 resetSelection s = case currentTheory s of
   G_theory _ _ _ sens _ ->
     let (aMap, gMap) = OMap.partition isAxiom sens
+        gs = Map.keys gMap
     in s
     { selectedGoals = Map.keys gMap
-    , includedAxioms = Map.keys aMap }
+    , includedAxioms = Map.keys aMap
+    , includedTheorems = gs }
 
 toAxioms :: ProofState -> [String]
 toAxioms = map (\ (k, wTh) -> if wTh then "(Th) " ++ k else k)
