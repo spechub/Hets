@@ -18,7 +18,6 @@ import Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
 import Common.Result as Result
 import qualified Data.Map as Map
-import qualified Common.OrderedMap as OMap
 import Common.ExtSign
 import Common.Utils
 
@@ -527,7 +526,7 @@ proofManagementGUI prGuiAcs thName warningTxt th
       +> selectOpenGoals >>> do
              s <- Conc.takeMVar stateMVar
              clearSelection lb
-             let isOpen = maybe True (\ b -> case b of
+             let isOpen = maybe True (\ bp -> case bp of
                      BasicProof _ pst -> isOpenGoal $ goalStatus pst
                      _ -> False)
              mapM_ (`selection` lb)
