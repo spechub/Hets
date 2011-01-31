@@ -46,10 +46,8 @@ import Proofs.AbstractState
 
 import Text.XML.Light
 
-import Common.AS_Annotation
 import Common.DocUtils
 import Common.LibName
-import qualified Common.OrderedMap as OMap
 import Common.Result
 import Common.ResultT
 import Common.ToXml
@@ -345,18 +343,12 @@ proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
     filterByComorph mt . filterByProver mp
     $ getAllAutomaticProvers subL of
   [] -> fail "no prover found"
-  cp : _ -> case gTh of
-    G_theory lid sig si thsens _ -> do
-      mth <- if null thms then return gTh else
-        let newSens = OMap.filterWithKey
-              ( \ k e -> isAxiom e || elem k thms
-               || useTh && isProvenSenStatus e) thsens
-            ks = OMap.keys $ OMap.filter (not . isAxiom) thsens
-            diffs = Set.difference (Set.fromList thms) (Set.fromList ks)
-        in if Set.null diffs
-           then return $ G_theory lid sig si newSens startThId
-           else fail $ "unknown theorems: " ++ show diffs
-      (res, prfs) <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) mth cp
+  cp : _ -> do
+      let ks = map fst $ getThGoals gTh
+          diffs = Set.difference (Set.fromList thms)
+                  $ Set.fromList ks
+      unless (Set.null diffs) $ fail $ "unknown theorems: " ++ show diffs
+      (res, prfs) <- lift $ autoProofAtNode useTh (fromMaybe 5 tl) thms gTh cp
       case prfs of
         Nothing -> fail "proving failed"
         Just sens -> if null sens then return (le, sens) else

@@ -400,17 +400,21 @@ autoProofAtNode :: -- use theorems is subsequent proofs
                     Bool
                    -- Timeout Limit
                   -> Int
+                   -- selected goals
+                  -> [String]
                    -- Node selected for proving
                   -> G_theory
                    -- selected Prover and Comorphism
                   -> ( G_prover, AnyComorphism )
                    -- returns new GoalStatus for the Node
                   -> IO (Maybe G_theory, Maybe [(String, String)])
-autoProofAtNode useTh timeout g_th p_cm = do
+autoProofAtNode useTh timeout goals g_th p_cm = do
       let knpr = propagateErrors "autoProofAtNode"
             $ knownProversWithKind ProveCMDLautomatic
           pf_st = initialState "" g_th knpr
-          st = recalculateSublogicAndSelectedTheory pf_st
+          sg_st = if null goals then pf_st else pf_st
+            { selectedGoals = filter (`elem` goals) $ selectedGoals pf_st }
+          st = recalculateSublogicAndSelectedTheory sg_st
       -- try to prepare the theory
       if null $ selectedGoals st then return (Nothing, Just []) else
         case maybeResult $ prepareForProving st p_cm of
