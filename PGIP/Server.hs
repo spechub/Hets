@@ -376,9 +376,17 @@ sessAns libName (sess, k) =
          aRef (extPath sess l k ++ d) d) displayTypes
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
-      noderef (n, lbl) = let s = show n in
+      noderef (n, lbl) =
+        let s = show n
+            gs = getThGoals $ dgn_theory lbl
+        in
         unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
-        aRef (libPath ++ c ++ "=" ++ s) c) nodeCommands
+        let isProve = c == "prove" in
+        if isProve && null gs then unode "i" "no goals" else
+        aRef (libPath ++ c ++ "=" ++ s
+              ++ if isProve then "&theorems="
+                 ++ encodeForQuery (unwords $ map fst gs)
+                 else "") c) nodeCommands
       edgeref e@(_, _, lbl) =
         aRef (libPath ++ "edge=" ++ showEdgeId (dgl_id lbl))
                  $ showLEdge e

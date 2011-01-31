@@ -60,6 +60,7 @@ import Static.DevGraph
 import Data.Char
 import Data.List
 import Data.Maybe
+import Numeric
 
 displayTypes :: [String]
 displayTypes = ["svg", "xml", "dot", "session"]
@@ -197,6 +198,24 @@ getIdOrName ids nns ns2 = case ids of
       (_ : v : _) : _ -> if isNat v then Left $ read v else Right v
       _ -> error "getIdOrName"
 
+encodeForQuery :: String -> String
+encodeForQuery = concatMap (\ c -> let n = ord c in case c of
+  _ | isAscii c && isAlphaNum c || elem c "_.-" -> [c]
+  ' ' -> "+"
+  _ | n <= 255 -> '%' : (if n < 16 then "0" else "") ++ showHex n ""
+  _ -> "") -- ignore real unicode stuff
+
+decodeQueryCode :: String -> String
+decodeQueryCode s = case s of
+  "" -> ""
+  c : r
+    | isAscii c && isAlphaNum c || elem c "_.-+"
+      -> (if c == '+' then ' ' else c) : decodeQueryCode r
+  '%' : h1 : h2 : r -> case readHex [h1, h2] of
+     (i, "") : _ -> chr i : decodeQueryCode r
+     _ -> error $ "decodeQueryCode hex: " ++ take 3 s
+  _ -> error $ "decodeQueryCode: " ++ take 3 s
+
 anaNodeQuery :: Maybe Int -> [String] -> NodeIdOrName -> [String]
   -> [[String]] -> Either String (Maybe Int, QueryKind)
 anaNodeQuery mi ans i incls pss =
@@ -208,7 +227,7 @@ anaNodeQuery mi ans i incls pss =
       prover = lookup "prover" pps
       theorems = case lookup "theorems" pps of
         Nothing -> []
-        Just str -> splitOn '+' str
+        Just str -> splitOn ' ' $ decodeQueryCode str
       timeLimit = fmap read $ lookup "timeout" pps
       pp = ProveNode (not (null incls) || case lookup "include" pps of
         Nothing -> True
