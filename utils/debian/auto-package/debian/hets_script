@@ -1,4 +1,94 @@
 #!/bin/sh -e
+#
+# this script is part of Hets
+# - Heterogenous Tool Set -
+#
+
+#
+# Handling switches
+#  -update 
+#  -revert
+#
+if [ "$#" = "1" ]; then
+    case "$1" in
+
+    -update)
+        if [ "`id -u`" = "0" ]; then
+            apt-get install hets-core
+            export HETS_DAILY_VERSION=`date +%Y%m%d`
+python << __END__
+import fcntl, os, sys;
+f = open("/var/lib/dpkg/lock", 'w')
+try:
+    fcntl.lockf(f, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    print "Retrieving latest Hets library...",
+    sys.stdout.flush()
+    os.system("svn export --force -q https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk \
+                             /usr/lib/hets/hets-lib")
+    print "Done"
+    print "Retrieving latest Hets binary...",
+    sys.stdout.flush()
+    os.system("rm -f /tmp/hets-$HETS_DAILY_VERSION*");
+    if  os.uname()[4] == "x86":
+        os.system("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux/daily/hets.bz2 \
+                         > /tmp/hets-$HETS_DAILY_VERSION.bz2")
+    else:
+        os.system("curl -sG http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/linux64/daily/hets.bz2 \
+                         > /tmp/hets-$HETS_DAILY_VERSION.bz2")
+    os.system("bunzip2 /tmp/hets-$HETS_DAILY_VERSION.bz2")
+    os.system("mv /usr/lib/hets/hets \
+                  /usr/lib/hets/hets.backup")
+    os.system("install -m 755 /tmp/hets-$HETS_DAILY_VERSION \
+                              /usr/lib/hets/hets")
+    os.system("rm /tmp/hets-$HETS_DAILY_VERSION")
+    print "Done"
+except IOError:
+    print "Could not acquire lock \"/var/lib/dpkg/lock\""
+    sys.exit(0)
+sys.exit(0)
+__END__
+            echo "Updated to `hets -V`."
+            exit 0
+        else
+            echo "Root access required for \"hets -update\""
+            exit 0
+        fi
+    ;;
+
+    -revert)
+        if [ "`id -u`" = "0" ]; then
+            if [ -f /usr/lib/hets/hets.backup ]; then
+python << __END__
+import fcntl, os, sys;
+f = open("/var/lib/dpkg/lock", 'w')
+try:
+    fcntl.lockf(f, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    print "Reverting to previous Hets binary... ",
+    os.system("mv /usr/lib/hets/hets.backup \
+                  /usr/lib/hets/hets");
+    print "Done"
+except IOError:
+    print "Could not acquire lock \"/var/lib/dpkg/lock\""
+    sys.exit(0)
+sys.exit(0)
+__END__
+                echo "Reverted to `hets -V`."
+                exit 0
+            else
+                echo "No hets.backup found to revert."
+                exit 0
+            fi
+        else
+            echo "Root access required for \"hets -update\""
+            exit 0
+        fi
+    esac
+fi
+
+#
+# Setting environment variables
+# and starting Hets
+#
 
 export HETS_LIB=/usr/lib/hets/hets-lib
 export HETS_OWL_TOOLS=/usr/lib/hets/hets-owl-tools
@@ -9,4 +99,5 @@ export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
 export MAUDE_LIB=/usr/lib/maude
 export GHCRTS='-H300m -M6g'
+
 /usr/lib/hets/hets $@

@@ -5,6 +5,10 @@ hets \- calls the Heterogenous Tool Set
 .SH SYNOPSIS
 .B hets
 [OPTION...] file ... file
+.TP
+.B hets -update
+.TP
+.B hets -revert
 .SH DESCRIPTION
 Hets is a parsing, static analysis and proof management tool combining
 various tools for different specification languages, thus providing a
@@ -13,6 +17,15 @@ constructs of this language are those of CASL, plus some new heterogeneous
 constructs for indicating the language and for language translations. Hence,
 Hets is based on a graph of logics and languages.
 .SH OPTIONS
+.TP
+.B \-update
+this switch doesn't start hets, but instead updates the entire application.
+First available packages are checked, then latest builds of the hets binary,
+as well as the latest version of the hets-library. This requires root access.
+.TP
+.B \-revert
+this switch is used to revert to the previous version, once hets -update was
+used. Notice that only the Hets binary is reverted. This requires root access.
 .TP
 .B \-v[0-5], \--verbose[=0-5]
 sets the verbosity level, default is -v1. A good warning level is -v2
