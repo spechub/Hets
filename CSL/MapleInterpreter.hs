@@ -197,7 +197,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (AssignmentStore s, MonadIO s) =>
+mapleAssign :: (MonadError ASError s, AssignmentStore s, MonadIO s) =>
                ([String] -> String -> s [EXPRESSION])
             -> (ConstantName -> s String)
             -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
@@ -211,7 +211,8 @@ mapleAssign ef trans transE n def = do
   el <- ef args $ printAssignment n' args' e'
   case el of
     [rhs] -> return rhs
-    l -> error $ "mapleAssign: unparseable result for assignment of "
+    l -> throwError $ ASError InterfaceError $
+         "mapleAssign: unparseable result for assignment of "
          ++ (show $ pretty n) ++ "\n" ++ (show $ pretty l)
 
 mapleAssigns :: (AssignmentStore s) => (String -> s [EXPRESSION])
@@ -237,14 +238,16 @@ mapleLookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-mapleEval :: (AssignmentStore s) => (String -> s [EXPRESSION])
+mapleEval :: (MonadError ASError s, AssignmentStore s) =>
+             (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
 mapleEval ef trans e = do
   e' <- trans e
   el <- ef $ printEvaluation e'
   if null el
-   then error $ "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
+   then throwError $ ASError InterfaceError $
+            "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
 mapleCheck :: (MonadError ASError s, AssignmentStore s) =>
@@ -255,14 +258,15 @@ mapleCheck ef trans e = do
   e' <- trans e
   el <- ef $ printBooleanExpr e'
   if null el
-   then throwError $ CASError
+   then throwError $ ASError CASError
             $ "mapleCheck: expression " ++ show e' ++ " could not be evaluated"
    else case getBooleanFromExpr $ head el of
           Right b -> return b
           Left s ->
               throwError
-              $ CASError $ concat [ "mapleCheck: CAS error for expression "
-                                  , show e', "\n", s ]
+              $ ASError CASError $
+                concat [ "mapleCheck: CAS error for expression "
+                       , show e', "\n", s ]
 
 
 -- ----------------------------------------------------------------------

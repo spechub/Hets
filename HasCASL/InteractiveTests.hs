@@ -12,19 +12,21 @@ Portability :  portable
 Test functions for MatchingWithDefinitions
 -}
 
+module HasCASL.InteractiveTests where
 
+
+import HasCASL.Subst
 import HasCASL.PrintSubst
 import HasCASL.MatchingWithDefinitions ( initialDefStore
                                        , gsymToSym
                                        , matchSpecs
                                        , matchCandidates
                                        , getCandidates
+                                       , getMatchResult
                                        , MatchResult(..)
                                        , DefinitionStore
                                        -- , DefStore(..)
                                        )
-
-import System.Environment
 
 import HasCASL.As
 import HasCASL.Le
@@ -33,7 +35,12 @@ import HasCASL.Logic_HasCASL
 import Common.AS_Annotation
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Data.Maybe
+import Data.List
+
+import Text.Read
+
 
 -- global part imports
 
@@ -80,6 +87,14 @@ navi sigs $ getActualParameterSpec "FlangePattern"
 -- get the local symbols for the actual parameter spec of FlangePattern
 naviGen sigs (show . pretty) $ (\ a -> getLocalSyms a $ fst $ fromJust $ getActualParameterSpec "FlangePattern" a)
 
+
+(res, m1) <- getMatchMap "/tmp/flange.het" "Match" "FlangePattern" "Component"
+
+tmpl <- readFile "/home/ewaryst/Hets-lib/EnCL/flangeExported.het"
+
+writeFile "/tmp/f1.het" $ processTemplate (\ k v -> " . " ++ k ++ " := " ++ show (v * 1000)) m1 tmpl
+
+
 -}
 
 help :: IO ()
@@ -90,15 +105,122 @@ help = do
       endP = ("-}" /=)
   putStrLn $ unlines $ takeWhile endP $ dropWhile startP l
 
-main :: IO ()
-main = do
-  args <- getArgs
-  case args of
-    [lb, sp, patN, cN] ->
-        matchDesign lb sp patN cN
-    _ -> putStrLn $ "Design Matching: Only four arguments expected but given "
-         ++ show (length args)
-  
+
+------------------------- Global DG functions -------------------------
+
+-- * Point evaluator
+
+type RealType = Double
+
+
+{-
+type EvalEnv = Map.Map String 
+
+evalInSubst :: Subst -> Term -> RealType
+evalInSubst s t =
+    case t of
+      
+    lookupS :: Subst -> a -> Maybe (SRule b)
+ruleContent :: SRule a -> a
+
+-}
+
+data Point = P (RealType, RealType, RealType) deriving (Read, Show)
+data Vector = V (RealType, RealType, RealType) deriving (Read, Show)
+
+diff :: (Point, Point) -> Vector
+diff(p,q) = V(c1(p)-c1(q), c2(p)-c2(q), c3(p)-c3(q))
+
+prod :: (Vector, Vector) -> RealType
+prod(V (x1, y1, z1),V (x2, y2, z2)) = x1*x2 + y1*y2 + z1*z2
+
+dist :: (Point, Point) -> RealType
+dist(p,q) = sqrt $ prod(diff(p,q), diff(p,q))
+
+diam :: (Point, Point) -> RealType
+diam(p,q) = 2*dist(p,q)
+
+
+c1 :: Point -> RealType
+c1 (P (x, _, _)) = x
+c2 :: Point -> RealType
+c2 (P (_, x, _)) = x
+c3 :: Point -> RealType
+c3 (P (_, _, x)) = x
+
+
+type EvalEnv = Map.Map String EvalTerm 
+
+data ETBinFun = ETdiff | ETdiam | ETprod | ETdist deriving Show
+
+data EvalTerm = ETbinary ETBinFun EvalTerm EvalTerm | ETpoint Point
+              | ETvector Vector | ETreal RealType | ETconst String deriving Show
+
+toEvalTerm :: Env -> Term -> Maybe EvalTerm
+toEvalTerm e t =
+    let s = show $ prettyWithAnnos e t
+        realL = (reads s) :: [(RealType, String)]
+        pointL = (reads s) :: [(Point, String)]
+        mT | not (null realL) = Just $ ETreal $ fst $ head realL
+           | not (null pointL) = Just $ ETpoint $ fst $ head pointL
+           | otherwise = Nothing
+    in mT
+           
+
+envFromSubst :: Env -> Subst -> EvalEnv
+envFromSubst e (Subst (m, _, _)) = Map.fromList $ mapMaybe f $ Map.toList m
+    where f (sc, sr) = fmap ((,) $ scName sc) $ toEvalTerm e $ ruleContent sr
+
+
+
+etPoint :: EvalTerm -> Point
+etPoint (ETpoint p) = p
+etPoint et = error $ "etPoint: no point: " ++ show et
+
+etVector :: EvalTerm -> Vector
+etVector (ETvector p) = p
+etVector et = error $ "etVector: no vector: " ++ show et
+
+etReal :: EvalTerm -> RealType
+etReal (ETreal p) = p
+etReal et = error $ "etReal: no real: " ++ show et
+
+evalInEnv :: EvalEnv -> EvalTerm -> EvalTerm
+evalInEnv e (ETbinary bf t1 t2) =
+    let t1' = evalInEnv e t1
+        t2' = evalInEnv e t2
+    in case bf of
+         ETprod -> ETreal $ prod (etVector t1', etVector t2')
+         ETdiam -> ETreal $ diam (etPoint t1', etPoint t2')
+         ETdist -> ETreal $ dist (etPoint t1', etPoint t2')
+         ETdiff -> ETvector $ diff (etPoint t1', etPoint t2')
+evalInEnv e (ETconst s) =
+    Map.findWithDefault (error $ "evalInEnv: lookup failure for " ++ s) s e
+evalInEnv _ x = x
+
+
+getRconsts :: Env -> Subst -> Map.Map String RealType
+getRconsts e s = getRealConstMap e s constsForEval
+
+getRealConstMap :: Env -> Subst -> [(String, EvalTerm)] -> Map.Map String RealType
+getRealConstMap e sbst l = Map.fromList $ map f l where 
+    ee = envFromSubst e sbst
+    f (s, et) = (s, etReal $ evalInEnv ee et)
+
+evalInSubst :: Env -> Subst -> EvalTerm -> EvalTerm
+evalInSubst e s t = evalInEnv (envFromSubst e s) t
+
+
+constsForEval :: [(String, EvalTerm)]
+constsForEval =
+    [ ("d_0", ETbinary ETdiam (ETconst "BoundaryTube") (ETconst "Offset"))
+    , ("d_3", ETbinary ETdiam (ETconst "BoltOffset") (ETconst "Offset"))
+    , ("d_4", ETbinary ETdiam (ETconst "BoundaryRing") (ETconst "Offset"))
+    , ("d_5", ETbinary ETdiam (ETconst "BoltBoundary") (ETconst "BoltOffset"))
+    , ("e_F", ETconst "RingHeight") ]
+
+
+
 ------------------------- Global DG functions -------------------------
 
 -- * DG Navigation
@@ -154,6 +276,7 @@ naviTest sigs s = do
 -- ** Spec extraction
 
 -- see also myHetcatsOpts in Test.hs
+myHetsOpts :: HetcatsOpts
 myHetsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"]
                                 , verbose = 0 }
 
@@ -170,7 +293,7 @@ sigsensGen lb sp = do
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
   let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
   res <- getSigSensComplete False myHetsOpts HasCASL fp sp
-  putStrLn "\n"
+--  putStrLn "\n"
   return res { sigsensSignature = (sigsensSignature res) { globAnnos = sigsensGlobalAnnos res } }
 
 siggy :: Int -> IO (SigSens Env Sentence)
@@ -219,6 +342,12 @@ niceOut e x = do
 --  putStrLn "======================================================================"
   putStrLn $ show $ useGlobalAnnos ga x
 
+
+prettyWithAnnos :: PrettyInEnv a => Env -> a -> Doc
+prettyWithAnnos e = useGlobalAnnos (globAnnos e) . prettyInEnv e
+
+prettyInSigs :: PrettyInEnv a => SigSens Env Sentence -> a -> Doc
+prettyInSigs sigs = prettyWithAnnos (sigsensSignature sigs)
 
 nice :: (MonadIO m, PrettyInEnv a) => SigSens Env Sentence -> m a -> m ()
 nice sigs x = do
@@ -329,6 +458,19 @@ testSpecMatchM sigs patN cN =
             putStrLn s
 
 
+------------------------- Template filler -------------------------
+
+
+processTemplate :: (String -> a -> String) -> Map.Map String a -> String -> String
+processTemplate f m s = unlines $ map g $ lines s where
+    l = Map.toList m
+    g ln = h ln l
+    h ln [] = ln
+    h ln ((k, v):l')
+      | isInfixOf k ln = f k v
+      | otherwise = h ln l'
+    
+
 ------------------------- Shortcuts -------------------------
 
 matchDesign :: String -- ^ The filename of the library containing the specs to match
@@ -338,5 +480,20 @@ matchDesign :: String -- ^ The filename of the library containing the specs to m
             -> IO ()
 matchDesign lb sp patN cN = do
   sigs <- sigsensGen lb sp
-  fromSigsNice sigs patN cN (findMatch noConstraints)
+  res <- fromSigs sigs patN cN (findMatch noConstraints)
+  putStrLn $ show $ prettyInSigs sigs res
+  return ()
+
+getMatchMap :: String -- ^ The filename of the library containing the specs to match
+            -> String -- ^ The specname importing the specs to match
+            -> String -- ^ The pattern specname
+            -> String -- ^ The concrete design specname
+            -> IO (MatchResult, Map.Map String RealType)
+getMatchMap lb sp patN cN = do
+  sigs <- sigsensGen lb sp
+  res <- fromSigs sigs patN cN (findMatch noConstraints)
+  let (sbst, _) = getMatchResult res
+      rcm = getRconsts (sigsensSignature sigs) sbst
+  return (res, rcm)
+
 

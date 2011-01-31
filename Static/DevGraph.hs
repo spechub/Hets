@@ -1317,16 +1317,16 @@ lookupNodeByName :: String -> DGraph -> [LNode DGNodeLab]
 lookupNodeByName s dg = lookupNodeWith f dg where
     f (_, lbl) = getDGNodeName lbl == s
 
-{- | lookup a local node in the graph by its name, using showName
+{- | filters all local nodes in the graph by their names, using showName
 to convert nodenames. See also 'lookupNodeByName'. -}
-lookupLocalNodeByName :: String -> DGraph -> [LNode DGNodeLab]
-lookupLocalNodeByName s dg = lookupNodeWith f dg where
+filterLocalNodesByName :: String -> DGraph -> [LNode DGNodeLab]
+filterLocalNodesByName s dg = lookupNodeWith f dg where
     f (_, lbl) = not (isDGRef lbl) && getDGNodeName lbl == s
 
-{- | lookup a local node in the graph by its name, using showName
+{- | filter all ref nodes in the graph by their names, using showName
 to convert nodenames. See also 'lookupNodeByName'. -}
-lookupRefNodeByName :: String -> LibName -> DGraph -> [LNode DGNodeLab]
-lookupRefNodeByName s ln dg = lookupNodeWith f dg where
+filterRefNodesByName :: String -> LibName -> DGraph -> [LNode DGNodeLab]
+filterRefNodesByName s ln dg = lookupNodeWith f dg where
     f (_, lbl) = case nodeInfo lbl of
                    DGRef { ref_libname = libn } ->
                        libn == ln && getDGNodeName lbl == s

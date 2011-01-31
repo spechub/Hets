@@ -16,6 +16,7 @@ module Static.DGNavigation where
 
 import Static.DevGraph
 
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -43,24 +44,40 @@ class DevGraphNavigator a where
     getLabel :: a -> Node -> DGNodeLab
     -- | get the local (not referenced) label of the given node
     getLocalLabel :: a -> Node -> DGNodeLab
+    getInLibEnv :: a -> (LibEnv -> DGraph -> b) -> b
 
 
 instance DevGraphNavigator DGNav where
     directInn (DGNav (_, dg, n)) = innDG dg n
     incoming (DGNav (_, dg, _)) = innDG dg
     getLabel (DGNav (_, dg, _)) = labDG dg
-    getLocalLabel (DGNav (le, dg, _)) n = lookupLocalNode le dg n
+    getLocalLabel (DGNav (le, dg, _)) n = snd $ lookupLocalNode le dg n
+    getInLibEnv (DGNav (le, dg, _)) f = f le dg
 
 
--- can be moved to Static/DevGraph.hs
-lookupLocalNode :: LibEnv -> DGraph -> Node -> DGNodeLab
+-- TODO: these three functions can be moved to Static/DevGraph.hs
+
+lookupLocalNodeByNameInEnv :: LibEnv -> String -> Maybe (LNode DGNodeLab)
+lookupLocalNodeByNameInEnv le s = f $ Map.elems le where
+    f [] = Nothing
+    f (dg:l) = case lookupNodeByName s dg of
+                 (nd, _):_ -> Just $ lookupLocalNode le dg nd
+                 _ -> f l
+
+lookupLocalNodeByName :: LibEnv -> DGraph -> String -> Maybe (LNode DGNodeLab)
+lookupLocalNodeByName le dg s =
+    case lookupNodeByName s dg of
+      (nd, _):_ -> Just $ lookupLocalNode le dg nd
+      _ -> Nothing
+
+lookupLocalNode :: LibEnv -> DGraph -> Node -> LNode DGNodeLab
 lookupLocalNode le = f
     where
       f dg n = case labDG dg n of
                  DGNodeLab { nodeInfo = DGRef { ref_libname = ln
                                               , ref_node = n' } } ->
                     f (lookupDGraph ln le) n'
-                 x -> x
+                 x -> (n, x)
 
 
 getLocalSyms :: DevGraphNavigator a => a -> Node -> Set.Set G_symbol
@@ -168,9 +185,10 @@ getParameterizedSpec n dgnav =
 getNamedSpec :: DevGraphNavigator a => String -> a -> Maybe (LNode DGNodeLab)
 getNamedSpec n dgnav = searchNode (isJust . dgnPredName n) dgnav
 
+
 -- | Combining a search function with an operation on nodes
 fromSearchResult :: (DevGraphNavigator a) =>
-                    (a -> Maybe (Graph.LNode DGNodeLab))
-                        -> (a -> Graph.Node -> b) -> a -> Maybe b
+                    (a -> Maybe (LNode DGNodeLab))
+                        -> (a -> Node -> b) -> a -> Maybe b
 
 fromSearchResult sf f dgnav = fmap (f dgnav . fst) $ sf dgnav

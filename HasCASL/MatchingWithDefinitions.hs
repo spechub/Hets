@@ -86,9 +86,9 @@ emptyMatchResult = MatchResult (emptySubstitution, [])
 
 instance PrettyInEnv MatchResult where
     prettyInEnv e (MatchResult (sb, ctrts)) =
-        text "Match"
-                 <> vcat [ text "result", prettyInEnv e sb
-                         , text "Constraints", prettyTermMapping e ctrts ]
+        vcat [ prettyInEnv e sb
+             , if null ctrts then empty else text "Constraints"
+             , prettyTermMapping e ctrts ]
 
 
 instance Match MatchResult where
@@ -367,8 +367,11 @@ getCandidates :: (DefStore d, DevGraphNavigator nav) =>
                    -> Maybe [[(MatchOp, MatchOp)]]
 getCandidates def dgnav tFilter patN cN =
     let
-        mGp = fromSearchResult (getNamedSpec patN) getLocalSyms dgnav
-        mGc = fromSearchResult (getNamedSpec cN) getLocalSyms dgnav
+--        g s dgnav' = getInLibEnv dgnav' lookupLocalNodeByName s
+        g = getNamedSpec
+        f s = fromSearchResult (g s) getLocalSyms dgnav
+        mGp = f patN
+        mGc = f cN
         pSyms = Set.map gsymToSym $ fromJust mGp
         cSyms = Set.map gsymToSym $ fromJust mGc
         cands = candidates (getDefinition def) tFilter pSyms cSyms

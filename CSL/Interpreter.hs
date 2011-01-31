@@ -42,6 +42,7 @@ module CSL.Interpreter
     , prettyEvalAtom
     , asErrorMsg
     , ASError(..)
+    , ErrorSource(..)
     )
     where
 
@@ -136,15 +137,15 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
     getUndefinedConstants = lift . getUndefinedConstants
     genNewKey = lift genNewKey
 
-data ASError = CASError String | UserError String deriving Show
+data ErrorSource = CASError | UserError | InterfaceError deriving Show
+data ASError = ASError ErrorSource String deriving Show
 
 asErrorMsg :: ASError -> String
-asErrorMsg (CASError s) = s
-asErrorMsg (UserError s) = s
+asErrorMsg (ASError _ s) = s
 
 instance Error ASError where
-    noMsg = UserError ""
-    strMsg = UserError
+    noMsg = ASError UserError ""
+    strMsg = ASError UserError
 
 isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names

@@ -105,7 +105,7 @@ verifyingStepper prog x = do
   b <- evaluateAndVerify prog x
   let breakPred s = s == "q" || null s
   s <- readEvalPrintLoop stdin stdout "next>" breakPred
-  when (s == "q") $ throwError $ UserError "Quit Debugger" 
+  when (s == "q") $ throwError $ ASError UserError "Quit Debugger" 
   return b
 
 evaluateAndVerify :: (VCGenerator m) => m () -> EvalAtom -> m Bool

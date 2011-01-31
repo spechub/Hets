@@ -43,6 +43,8 @@ type SubstType = Id
 --   will occur.
 data SRule a = Blocked a | Ready a deriving Show
 
+scName :: SubstConst -> String
+scName (SConst n _) = show n
 
 newtype Subst =
     Subst ( Map.Map SubstConst (SRule Term) -- the const->term mapping

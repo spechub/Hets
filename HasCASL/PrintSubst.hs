@@ -44,7 +44,7 @@ instance Pretty Subst where
     pretty (Subst (a,b,_)) =
         text "Subs"
                  <> vcat [ text "titution"
-                         , prettyRuleMap "Termmap" a, prettyRuleMap "Typemap" b]
+                         , prettyRuleMap "Terms" a, prettyRuleMap "Types" b]
 
 prettyRuleMap :: (Pretty key, Pretty val)
                  => String -> Map.Map key (SRule val) -> Doc
@@ -73,17 +73,19 @@ instance PrettyInEnv Subst where
     prettyInEnv e (Subst (a,b,_)) =
         text "Subs"
                  <> vcat [ text "titution"
-                         , prettyInEnvRuleMap e "Termmap" a
-                         , prettyInEnvRuleMap e "Typemap" b]
+                         , prettyInEnvRuleMap e "Terms" a
+                         , prettyInEnvRuleMap e "Types" b]
 
 prettyInEnvRuleMap :: (Pretty key, PrettyInEnv val)
                  => Env -> String -> Map.Map key (SRule val) -> Doc
-prettyInEnvRuleMap e t m | Map.null m = empty
-                         | otherwise =
-                             vcat $ (if null t then [] else 
-                                         [ text t <+> colon
-                                         , text $ map (const '-') [0..length t+1]])
-                                      ++ map (prettyInEnvRule e) (Map.toList m)
+prettyInEnvRuleMap e t m
+    | Map.null m = empty
+    | otherwise =
+        vcat 
+        $ (if null t then [] else 
+               [ text t <+> colon
+               , text $ map (const '-') [0..length t+1]])
+            ++ map (prettyInEnvRule e) (Map.toList m)
 
 prettyInEnvRule :: (Pretty key, PrettyInEnv val) => Env -> (key, SRule val) -> Doc
 prettyInEnvRule e (k, v) = pretty k <+> prettyInEnv e v
