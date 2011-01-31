@@ -330,10 +330,6 @@ charInfo = do
   -- Escape-button = 27
   when (ord c /= 27) $ putStrLn "" >> putStrLn (c:[]) >> putStrLn (show $ ord c) >> charInfo
 
--- see also myHetcatsOpts in Test.hs
-myHetsOpts :: HetcatsOpts
-myHetsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"]
-                                , verbose = 0 }
 
 testspecs :: [(Int, ([Char], [Char]))]
 testspecs =
@@ -352,7 +348,10 @@ sigsensGen :: String -> String -> IO (SigSens Sign CMD)
 sigsensGen lb sp = do
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
   let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
-  res <- getSigSensComplete True myHetsOpts CSL fp sp
+      ho = defaultHetcatsOpts { libdirs = [hlib]
+                              , verbose = 0 }
+
+  res <- getSigSensComplete True ho CSL fp sp
   putStrLn "\n"
   return res
 

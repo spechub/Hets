@@ -272,10 +272,6 @@ naviTest sigs s = do
 
 -- ** Spec extraction
 
--- see also myHetcatsOpts in Test.hs
-myHetsOpts :: HetcatsOpts
-myHetsOpts = defaultHetcatsOpts { libdirs = ["../Hets-lib"]
-                                , verbose = 0 }
 
 testspecs :: [(Int, (String, String))]
 testspecs =
@@ -289,7 +285,9 @@ sigsensGen :: String -> String -> IO (SigSens Env Sentence)
 sigsensGen lb sp = do
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
   let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
-  res <- getSigSensComplete False myHetsOpts HasCASL fp sp
+      ho = defaultHetcatsOpts { libdirs = [hlib]
+                              , verbose = 0 }
+  res <- getSigSensComplete False ho HasCASL fp sp
 --  putStrLn "\n"
   return res { sigsensSignature = (sigsensSignature res) { globAnnos = sigsensGlobalAnnos res } }
 
