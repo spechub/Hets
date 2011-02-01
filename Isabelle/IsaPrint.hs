@@ -31,6 +31,7 @@ import Common.Utils (number)
 
 import Data.Char
 import Data.List
+import Data.Maybe
 
 printIsaTheory :: String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn sign sens = let
@@ -69,17 +70,17 @@ printNamedSentences sens = case sens of
       $++$ vcat (map ( \ a -> text declareS <+> text (senAttr a)
                        <+> brackets (text simpS))
                 $ filter ( \ a -> case sentence a of
-                      b@Sentence{} -> isSimp b && senAttr a /= ""
+                      b@Sentence {} -> isSimp b && senAttr a /= ""
                       _ -> False) axs)
       $++$ printNamedSentences rest
     | isConstDef s ->
       let (defs, rest) = span isConstDef sens in
       text defsS $+$ vsep (map printNamedSen defs)
       $++$ printNamedSentences rest
-    | True ->
+    | otherwise ->
       printNamedSen s $++$ (case senAttr s of
         n | n == "" || isRecDef s -> empty
-          | True -> callSetup "record" (text $ show $ Quote n))
+          | otherwise -> callSetup "record" (text $ show $ Quote n))
       $++$ printNamedSentences r
 
 callSetup :: String -> Doc -> Doc
@@ -113,7 +114,7 @@ isRecDef s = case sentence s of
   RecDef {} -> True
   _ -> False
 
------------------------ Printing functions -----------------------------
+-- --------------------- Printing functions -----------------------------
 
 showBaseSig :: BaseSig -> String
 showBaseSig = takeWhile (/= '_') . show
@@ -151,7 +152,7 @@ printTypeAux :: SynFlag -> Typ -> (Doc, Int)
 printTypeAux a t = case t of
  TFree v s -> (let
         d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v
-                                then v  else '\'' : v
+                                then v else '\'' : v
         c = printSort s
      in if null s then d else case a of
          Quoted -> d <> doubleColon <> if null
@@ -161,7 +162,7 @@ printTypeAux a t = case t of
  Type name _ args -> case args of
     [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2
-    _  -> ((case args of
+    _ -> ((case args of
            [] -> empty
            [arg] -> let (d, i) = printTypeAux a arg in
                       if i < 1000 then parens d else d
@@ -175,9 +176,9 @@ printTypeOp x name r1 r2 =
         (d2, i2) = printTypeAux x r2
         (l, r) = Map.findWithDefault (0 :: Int, 0 :: Int)
                     name $ Map.fromList
-                    [ (funS, (1,0))
-                    , (cFunS, (1,0))
-                    , (lFunS, (1,0))
+                    [ (funS, (1, 0))
+                    , (cFunS, (1, 0))
+                    , (lFunS, (1, 0))
                     , (sSumS, (11, 10))
                     , (prodS, (21, 20))
                     , (sProdS, (21, 20))
@@ -205,7 +206,7 @@ printNamedSen ns =
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
-       else if null lab then dd else fsep[ (case s of
+       else if null lab then dd else fsep [ (case s of
     ConstDef {} -> text $ lab ++ "_def"
     Sentence {} ->
         (if b then empty else text theoremS)
@@ -220,17 +221,17 @@ printNamedSen ns =
 -- | sentence printing
 printSentence :: Sentence -> Doc
 printSentence s = case s of
-  TypeDef nt td pr ->  text typedefS
+  TypeDef nt td pr -> text typedefS
                    <+> printType nt
                    <+> equals
-                   <+> doubleQuotes(printSetDecl td)
+                   <+> doubleQuotes (printSetDecl td)
                    $+$ pretty pr
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
   Instance { tName = t, arityArgs = args, arityRes = res, definitions = defs,
              instProof = prf } ->
       text instantiationS <+> text t <> doubleColon <> (case args of
-        []  -> empty
+        [] -> empty
         _ -> parens $ hsep $ punctuate comma $ map (printSortAux True) args)
         <+> printSortAux True res $+$ text beginS $++$ printDefs defs $++$
             text instanceS <+> pretty prf $+$ text endS
@@ -244,8 +245,8 @@ printSentence s = case s of
   Sentence { isRefuteAux = b, metaTerm = t } -> printPlainMetaTerm (not b) t
   ConstDef t -> printTerm t
   Lemmas name lemmas -> if null lemmas
-                        then empty -- only have this lemmas if we have some in
-                                   -- the list
+                        then empty {- only have this lemmas if we have some in
+                                   the list -}
                         else text lemmasS <+> text name <+>
                              equals <+> sep (map text lemmas)
 
@@ -321,7 +322,7 @@ printTrm b trm = case trm of
           Just (AltSyntax s is i) -> if b && null is then
               (fsep $ replaceUnderlines s [], i) else (nvn, maxPrio)
     Free vn -> (text $ new vn, maxPrio)
-    Abs v t c -> ((text $ case c of
+    Abs v t c -> (text (case c of
         NotCont -> "%"
         IsCont _ -> "Lam") <+> printPlainTerm False v <> dot
                     <+> printPlainTerm b t, lowPrio)
@@ -355,9 +356,9 @@ printTrm b trm = case trm of
                           $ flatTuplex cs c)
                     , maxPrio)
         IsCont _ -> case cs of
-                        []  -> error "IsaPrint, printTrm"
+                        [] -> error "IsaPrint, printTrm"
                         [a] -> printTrm b a
-                        a:aa -> printTrm b $ App (App
+                        a : aa -> printTrm b $ App (App
                                   lpairTerm a $ IsCont False)
                                      (Tuplex aa c) (IsCont False)
     App f a c -> printMixfixAppl b c f [a]
@@ -380,7 +381,7 @@ printDocApp b c d l =
 replaceUnderlines :: String -> [Doc] -> [Doc]
 replaceUnderlines str l = case str of
     "" -> []
-    '\'': r@(q : s) -> if q `elem` "_/'()"
+    '\'' : r@(q : s) -> if q `elem` "_/'()"
                        then consDocBarSep (text [q]) $ replaceUnderlines s l
                        else consDocBarSep (text "'") $ replaceUnderlines r l
     '_' : r -> case l of
@@ -407,22 +408,24 @@ consDocBarSep d r = case r of
 -- end of term printing
 
 printClassrel :: Classrel -> Doc
-printClassrel = vcat . map printClassR . (orderCDecs . Map.toList)
+printClassrel = vcat . map printClassR . orderCDecs . Map.toList
 
-printClassR :: (IsaClass,[IsaClass]) -> Doc
-printClassR (y,ys) = case ys of
+printClassR :: (IsaClass, [IsaClass]) -> Doc
+printClassR (y, ys) = case ys of
   [] -> empty
   z : zs -> text axclassS <+> printClass y <+> less <+> printClass z
     $+$ vcat (map (\ x ->
                   text instanceS <+> printClass y <+> less <+>
                                   printClass x <+> text dotDot) zs)
 
-orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass,[IsaClass])]
-orderCDecs ls = let
-      ws = [(x,ys) | (x,Just ys) <- ls]
-   in quickSort crord ws
+orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass, [IsaClass])]
+orderCDecs =
+   sortBy crord . map (\ (x, y) -> (x, fromMaybe [] y))
  where
-   crord m n = elem (fst n) (snd m)
+   crord (x, xs) (y, ys)
+     | elem x ys = GT
+     | elem y xs = LT
+     | otherwise = EQ
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
@@ -431,7 +434,7 @@ printMonArities tn = vcat . map ( \ (t, cl) ->
 printThMorp :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
 printThMorp tn t xs = case xs of
    (IsaClass "Monad", _) ->
-      if (isSuffixOf "_mh" tn) || (isSuffixOf "_mhc" tn)
+      if isSuffixOf "_mh" tn || isSuffixOf "_mhc" tn
       then printMInstance tn t
       else error "IsaPrint, printInstance: monads not supported"
    _ -> empty
@@ -439,11 +442,11 @@ printThMorp tn t xs = case xs of
 printMInstance :: String -> TName -> Doc
 printMInstance tn t = let nM = text (t ++ "_tm")
                           nM2 = text (t ++ "_tm2")
- in prnThymorph nM "MonadType" tn t [("MonadType.M","'a")] []
+ in prnThymorph nM "MonadType" tn t [("MonadType.M", "'a")] []
     $+$ text "t_instantiate MonadOps mapping" <+> nM
     $+$ text "renames:" <+>
-       brackMapList (\x -> t ++ "_" ++ x)
-            [("MonadOpEta.eta","eta"),("MonadOpBind.bind","bind")]
+       brackMapList (\ x -> t ++ "_" ++ x)
+            [("MonadOpEta.eta", "eta"), ("MonadOpBind.bind", "bind")]
     $+$ text "without_syntax"
     $++$ text "defs "
     $+$ text (t ++ "_eta_def:") <+> doubleQuotes
@@ -454,22 +457,22 @@ printMInstance tn t = let nM = text (t ++ "_tm")
     $+$ runitLemma t
     $+$ assocLemma t
     $+$ etaInjLemma t
-    $++$ prnThymorph nM2 "MonadAxms" tn t [("MonadType.M","'a")]
-        [("MonadOpEta.eta",(t ++ "_eta")),
-         ("MonadOpBind.bind",(t ++ "_bind"))]
+    $++$ prnThymorph nM2 "MonadAxms" tn t [("MonadType.M", "'a")]
+        [("MonadOpEta.eta", t ++ "_eta"),
+         ("MonadOpBind.bind", t ++ "_bind")]
     $+$ text "t_instantiate Monad mapping" <+> nM2
     $+$ text "renames:" <+>
-       brackMapList (\x -> t ++ "_" ++ x)
-           [("Monad.kapp","kapp"),
-            ("Monad.lift","lift"),
-            ("Monad.lift","lift"),
-            ("Monad.mapF","mapF"),
-            ("Monad.bind'","mbbind"),
-            ("Monad.joinM","joinM"),
-            ("Monad.kapp2","kapp2"),
-            ("Monad.kapp3","kapp3"),
-            ("Monad.lift2","lift2"),
-            ("Monad.lift3","lift3")]
+       brackMapList (\ x -> t ++ "_" ++ x)
+           [("Monad.kapp", "kapp"),
+            ("Monad.lift", "lift"),
+            ("Monad.lift", "lift"),
+            ("Monad.mapF", "mapF"),
+            ("Monad.bind'", "mbbind"),
+            ("Monad.joinM", "joinM"),
+            ("Monad.kapp2", "kapp2"),
+            ("Monad.kapp3", "kapp3"),
+            ("Monad.lift2", "lift2"),
+            ("Monad.lift3", "lift3")]
     $+$ text "without_syntax"
     $++$ text " "
  where
@@ -485,17 +488,17 @@ printMInstance tn t = let nM = text (t ++ "_tm")
         <+> equals <+> text "t")
     $+$ text "sorry "
   assocLemma w = text lemmaS <+> text (w ++ "_assoc:")
-        <+> doubleQuotes ((text $ w ++ "_bind")
-        <+> parens ((text $ w ++ "_bind")
+        <+> doubleQuotes (text (w ++ "_bind")
+        <+> parens (text (w ++ "_bind")
         <+> parens (text $ "s::'a " ++ w) <+> text "t") <+> text "u"
         <+> equals <+> text (w ++ "_bind s")
-        <+> parens ((text "%x.") <+>
-                 (text $ w ++ "_bind") <+> text "(t x) u"))
+        <+> parens (text "%x." <+>
+                 text (w ++ "_bind") <+> text "(t x) u"))
     $+$ text "sorry "
   etaInjLemma w = text lemmaS <+> text (w ++ "_eta_inj:")
         <+> doubleQuotes (parens (text $ w ++ "_eta::'a => 'a " ++ w)
              <+> text "x"
-             <+> equals <+> (text $ w ++ "_eta y")
+             <+> equals <+> text (w ++ "_eta y")
              <+> text "==>" <+> text "x = y")
     $+$ text "sorry "
 
@@ -510,7 +513,7 @@ prnThymorph nm xn tn t ts ws = let qual s = tn ++ "." ++ s in
              | (a, b) <- ts])
      $+$ brackMapList qual ws
 
-brackMapList :: (String -> String) -> [(String,String)] -> Doc
+brackMapList :: (String -> String) -> [(String, String)] -> Doc
 brackMapList f ws = brackets $ hsep $ punctuate comma
   [ parens $ doubleQuotes (text a) <+> mapsto <+> doubleQuotes (text $ f b)
   | (a, b) <- ws]
@@ -525,10 +528,10 @@ printTycon :: (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
 printTycon (t, arity') = case arity' of
   [] -> error "IsaPrint.printTycon"
   (_, rs) : _ ->
-         if elem t ["lBool","intT","integerT","charT","ratT","lString"
-                    ,"unitT","unit","bool","int","char","rat","string"
-                    ,"lOrdering","sOrdering","either","*"
-                    ,"llist","list","lprod","lEither","lMaybe","option"]
+         if elem t ["lBool", "intT", "integerT", "charT", "ratT", "lString"
+                    , "unitT", "unit", "bool", "int", "char", "rat", "string"
+                    , "lOrdering", "sOrdering", "either", "*"
+                    , "llist", "list", "lprod", "lEither", "lMaybe", "option"]
          then empty else
             text typedeclS <+>
             (if null rs then empty else
@@ -584,12 +587,12 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
     where
     printAbbrs tab = if Map.null tab then empty else text typesS
                      $+$ vcat (map printAbbr $ Map.toList tab)
-    printAbbr (n, (vs, t)) = (case vs of
-       [] -> empty
-       [x] -> text ("\'" ++ x)
-       _ -> parens $ hsep $ punctuate comma $
-                                   map (\x -> text $ "\'" ++ x) vs)
-       <+> (text $ n) <+> equals <+> (doubleQuotes $ printType t)
+    printAbbr (n, (vs, t)) = case vs of
+        [] -> empty
+        [x] -> text ('\'' : x)
+        _ -> parens $ hsep $ punctuate comma $
+                                   map (text . ('\'' :)) vs
+      <+> text n <+> equals <+> doubleQuotes (printType t)
     printConstTab tab = if Map.null tab then empty else text constsS
                         $+$ vcat (map printConst $ Map.toList tab)
     printConst (vn, t) = text (new vn) <+> doubleColon <+>
@@ -612,37 +615,37 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
     printDOpArg o (a, i) = let
       d = case a of
             TFree _ _ -> printTyp Null a
-            _         -> doubleQuotes $ printTyp Null a
+            _ -> doubleQuotes $ printTyp Null a
       in if isDomain then
            parens $ text "lazy" <+>
                text (o ++ "_" ++ show i) <> doubleColon <> d
            else d
-    showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
-    showCaseLemmata1 dts = concat $ map showCaseLemma dts
+    showCaseLemmata dtDefs = text (concatMap showCaseLemmata1 dtDefs)
+    showCaseLemmata1 = concatMap showCaseLemma
     showCaseLemma (_, []) = ""
-    showCaseLemma (tyCons, (c : cns)) =
+    showCaseLemma (tyCons, c : cns) =
       let cs = "case caseVar of" ++ sp
-          sc b = showCons b c ++ (concat $ map (("   | " ++)
-                                                . (showCons b)) cns)
+          sc b = showCons b c ++ concatMap (("   | " ++) . showCons b) cns
           clSome = sc True
           cl = sc False
-          showCons b ((VName {new=cName}), args) =
-            let pat = cName ++ (concat $ map ((sp ++) . showArg) args)
+          showCons b (VName {new = cName}, args) =
+            let pat = cName ++ concatMap ((sp ++) . showArg) args
                             ++ sp ++ "=>" ++ sp
                 term = showCaseTerm cName args
             in
                if b then pat ++ "Some" ++ sp ++ lb ++ term ++ rb ++ "\n"
                  else pat ++ term ++ "\n"
-          showCaseTerm name args = if null name then sa
-                                     else [toLower (head name)] ++ sa
-            where sa = (concat $ map ((sp ++) . showArg) args)
+          showCaseTerm name args = case name of
+            "" -> sa
+            n : _ -> toLower n : sa
+            where sa = concatMap ((sp ++) . showArg) args
           showArg (TFree [] _) = "varName"
-          showArg (TFree (n:ns) _) = [toLower n] ++ ns
+          showArg (TFree (n : ns) _) = toLower n : ns
           showArg (Type [] _ _) = "varName"
-          showArg (Type m@(n:ns) _ s) =
-            if m == "typeAppl" || m == "fun" || m == "*"
-               then concat $ map showArg s
-               else [toLower n] ++ ns
+          showArg (Type m@(n : ns) _ s) =
+            if elem m ["typeAppl", "fun", "*"]
+               then concatMap showArg s
+               else toLower n : ns
           showName (TFree v _) = v
           showName (Type n _ _) = n
           proof' = "apply (case_tac caseVar)\napply (auto)\ndone\n"
@@ -679,9 +682,9 @@ printProofCommand :: ProofCommand -> Doc
 printProofCommand pc =
     case pc of
       Apply pms plus ->
-          let plusDoc = if plus then (text "+") else empty
-          in text applyS <+> (parens $
-                              (sepByCommas $ map pretty pms)) <> plusDoc
+          let plusDoc = if plus then text "+" else empty
+          in text applyS <+> parens
+                              (sepByCommas $ map pretty pms) <> plusDoc
       Using ls -> text usingS <+> fsep (map text ls)
       Back -> text backS
       Defer x -> text deferS <+> pretty x
@@ -728,8 +731,8 @@ printProofMethod pm =
                                         Nothing -> empty
                          in fsep $ [text simpS, modDoc, text "add:"] ++
                             map text names
-      Induct var -> (text inductS) <+> doubleQuotes (printTerm var)
+      Induct var -> text inductS <+> doubleQuotes (printTerm var)
       CaseTac t -> text caseTacS <+> doubleQuotes (printTerm t)
       SubgoalTac t -> text subgoalTacS <+> doubleQuotes (printTerm t)
-      Insert ts ->  fsep $ (text insertS:(map text ts))
+      Insert ts -> fsep (text insertS : map text ts)
       Other s -> text s
