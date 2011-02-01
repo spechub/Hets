@@ -97,15 +97,19 @@ mkBoolVC e evalB prl =
         conc = if evalB then e else toExp ("not", e)
     in if null prl then conc else toExp ("impl", prem, conc)
 
-verifyingStepper :: (VCGenerator m, MonadIO m, MonadError ASError m) =>
-                    m () -> EvalAtom -> m Bool
+verifyingStepper ::
+    (StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
+    m () -> EvalAtom -> m Bool
 verifyingStepper prog x = do
   -- liftIO $ putStrLn $ "At step " ++ show (prettyEvalAtom x)
-  liftIO $ putStrLn ""
+  -- liftIO $ putStrLn ""
   b <- evaluateAndVerify prog x
-  let breakPred s = s == "q" || null s
-  s <- readEvalPrintLoop stdin stdout "next>" breakPred
-  when (s == "q") $ throwError $ ASError UserError "Quit Debugger" 
+  dm <- getDebugMode
+  when dm $ do
+    let breakPred s = s == "q" || s == "c" || null s
+    s <- readEvalPrintLoop stdin stdout "next>" breakPred
+    when (s == "q") $ throwError $ ASError UserError "Quit Debugger"
+    when (s == "c") $ setDebugMode False
   return b
 
 evaluateAndVerify :: (VCGenerator m) => m () -> EvalAtom -> m Bool

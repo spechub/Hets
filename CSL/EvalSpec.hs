@@ -15,10 +15,14 @@ Program for evaluating EnCL specifications
 import System.Environment
 import System.Console.GetOpt
 
+import qualified Interfaces.Process as PC
 import CSL.InteractiveTests
+import Common.Utils
+
 import Data.Bits
 import Data.Maybe
 import Data.List
+
 
 
 main :: IO ()
@@ -29,7 +33,7 @@ main = do
     Right st -> runProg st >>= putStrLn
 
 runProg :: ProgSettings -> IO String
-runProg st = evalWithVerification (verbosity st) (lib st) (spec st) >> return ""
+runProg st = evalWithVerification (timeout st) (verbosity st) (lib st) (spec st) >> return ""
 
 ------------------------- Input Arguments -------------------------
 
@@ -66,9 +70,15 @@ options = map f $
           , ( "spec"
             , "Name of specification importing both, the pattern and the design specification"
             , ReqArg PFSpec "SPECNAME")
+          , ( "timeout"
+            , "Timeout for communication with external CAS system in deziseconds (tenth of a second)"
+            , ReqArg (PFTimeout . fromRational
+                      . fromMaybe (error "Could not parse timeout")
+                      . (readMaybe :: String -> Maybe Rational)
+                      . (++ "%10")) "1-1000")
           , ( "verbosity"
             , "A value from 0=quiet to 4=print out all information during processing"
-            , OptArg (PFVerbosity . read . fromMaybe "4")  "0-4")
+            , OptArg (PFVerbosity . read . fromMaybe "4") "0-4")
           , ( "quiet", "Equal to -v0", NoArg PFQuiet)
           ] where
     f (fs, descr, arg) = Option [head fs] [fs] arg descr
@@ -88,6 +98,7 @@ data ProgSettings =
     ProgSettings
     { lib :: String
     , spec :: String
+    , timeout :: PC.DTime
     , verbosity :: Int }
 
 
@@ -95,11 +106,13 @@ defaultSettings :: ProgSettings
 defaultSettings = ProgSettings
                   { lib = error "uninitialized settings"
                   , spec = error "uninitialized settings"
+                  , timeout = 1
                   , verbosity = 4 }
 
 data ProgFlag =
     PFLib String
         | PFSpec String
+        | PFTimeout PC.DTime
         | PFVerbosity Int
         | PFQuiet
 
@@ -110,6 +123,7 @@ makeSettings settings flg =
       PFSpec s -> settings { spec = s }
       PFVerbosity i -> settings { verbosity = i }
       PFQuiet -> settings { verbosity = 0 }
+      PFTimeout t -> settings { timeout = t }
       
 getSettings :: [ProgFlag] -> ProgSettings
 getSettings = foldl makeSettings defaultSettings

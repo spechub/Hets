@@ -43,6 +43,7 @@ module CSL.Interpreter
     , asErrorMsg
     , ASError(..)
     , ErrorSource(..)
+    , StepDebugger(..)
     )
     where
 
@@ -124,7 +125,6 @@ class (Monad m) => AssignmentStore m where
     genNewKey :: m Int
     genNewKey = error ""
 
-
 instance AssignmentStore m => AssignmentStore (StateT s m) where
     assign s = lift . assign s
     assigns = lift . assigns
@@ -136,6 +136,10 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
     values = lift values
     getUndefinedConstants = lift . getUndefinedConstants
     genNewKey = lift genNewKey
+
+class AssignmentStore m => StepDebugger m where
+    setDebugMode :: Bool -> m ()
+    getDebugMode :: m Bool
 
 data ErrorSource = CASError | UserError | InterfaceError deriving Show
 data ASError = ASError ErrorSource String deriving Show
@@ -229,8 +233,6 @@ stepwiseSafe :: (MonadError ASError m, AssignmentStore m) =>
                 (m () -> EvalAtom -> m Bool) -> CMD -> m (Maybe ASError)
 stepwiseSafe f cmd = catchError (stepwise f cmd >> return Nothing) g
     where g = return . Just
-      
-
 
 
 stepwise :: AssignmentStore m => (m () -> EvalAtom -> m Bool) -> CMD

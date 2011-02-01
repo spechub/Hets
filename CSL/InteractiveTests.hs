@@ -133,15 +133,19 @@ instance Pretty Bool where
 
 --------------------------- Shortcuts --------------------------
 
-evalWithVerification :: Int -> String -> String -> IO String
-evalWithVerification v lb sp = do
+evalWithVerification :: DTime -> Int -> String -> String -> IO String
+evalWithVerification to v lb sp = do
   let exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
       p ncl= do
          (_, prog) <- loadAssignmentStore False ncl
-         verifyProg prog
-         readEvalPrintLoop stdin stdout ">" exitWhen
+         liftIO $ putStrLn ""
+         liftIO $ putStrLn "****************** Assignment store loaded ******************"
+         liftIO $ putStrLn ""
+         mE <- verifyProg prog
+         when (isJust mE) $ liftIO $ putStrLn $ show $ fromJust mE
+         -- readEvalPrintLoop stdin stdout ">" exitWhen
 
-  testWithMapleGen v 0.9 p lb sp >> return ""
+  testWithMapleGen v to p lb sp >> return ""
 
 
 
@@ -204,9 +208,11 @@ stepProg :: (AssignmentStore m, MonadIO m, MonadError ASError m) =>
             [Named CMD] -> m (Maybe ASError)
 stepProg ncl = stepwiseSafe interactiveStepper $ Sequence $ map sentence ncl
 
-verifyProg :: (VCGenerator m, MonadIO m, MonadError ASError m) =>
+verifyProg :: (StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
               [Named CMD] -> m (Maybe ASError)
-verifyProg ncl = stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
+verifyProg ncl = do
+  setDebugMode True
+  stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
 
 testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String
@@ -215,14 +221,17 @@ testWithMapleGen verb to f lb sp = do
   ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
   -- get ordered assignment store and program
   (as, prog) <- assStoreAndProgSimple ncl
+  vchdl <- openFile "/tmp/vc.out" WriteMode
   -- build the dependency graph
   let gr = assDepGraphFromDescList (const $ const ()) as
       -- make sure that the assignment store is loaded into maple before
       -- the execution of f
-      g x = loadAS as >> f x
+      g x = loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
 
   -- start maple and run g
-  runWithMaple gr verb to ["EnCLFunctions"] $ g prog
+  res <- runWithMaple gr verb to ["EnCLFunctions"] $ g prog
+  hClose vchdl
+  return res
 
 testWithMaple :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
 testWithMaple verb to f = uncurry (testWithMapleGen verb to f) . libFP

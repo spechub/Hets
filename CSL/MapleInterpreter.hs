@@ -40,6 +40,7 @@ import Data.List hiding (lookup)
 import qualified Data.Set as Set
 import Data.Maybe
 import System.Exit (ExitCode)
+import System.IO
 
 import Prelude hiding (lookup)
 
@@ -51,6 +52,8 @@ import Prelude hiding (lookup)
 data MITrans = MITrans { getBMap :: BMap
                        , getMI :: PC.CommandState
                        , depGraph :: AssignmentDepGraph ()
+                       , debugMode :: Bool
+                       , vericondOut :: Maybe Handle
                        , channelTimeout :: PC.DTime }
 
 
@@ -87,10 +90,19 @@ instance VCGenerator MapleIO where
             mf mit = mit { depGraph = f $ depGraph mit }
         in modify mf
         
-    addVC ea e =
-        liftIO $ putStrLn $ show $
-               text "VC for" <+> pretty ea <> text ":" $++$ pretty e
+    addVC ea e = do
+      let
+          -- s = show $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
+          s = show $ pretty e <> text ";"
+          -- s = (++ "\n\n;\n\n") $ showRaw $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
+--          vcHdl = stdout
+      vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
+      liftIO $ hPutStrLn vcHdl s where
                
+
+instance StepDebugger MapleIO where
+    setDebugMode b = modify mf where mf mit = mit { debugMode = b }
+    getDebugMode = gets debugMode
 
 -- ----------------------------------------------------------------------
 -- * Maple Transformation Instances
@@ -207,7 +219,7 @@ mapleAssign ef trans transE n def = do
       args = getArguments def
   (e', args') <- transE args e
   n' <- trans n
-  liftIO $ putStrLn $ show e'
+  -- liftIO $ putStrLn $ show e'
   el <- ef args $ printAssignment n' args' e'
   case el of
     [rhs] -> return rhs
@@ -352,9 +364,12 @@ mapleInit adg v to = do
             return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
                            , getMI = cs'
                            , depGraph = adg
+                           , debugMode = False
+                           , vericondOut = Nothing
                            , channelTimeout = to
                            }
     _ -> error "Could not find maple shell command!"
+
 
 -- | Loads a maple module such as intpakX or intCompare
 mapleLoadModule :: MITrans -> String -> IO String

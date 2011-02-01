@@ -16,7 +16,7 @@
 
 (defun match-abstractflange ()
   (interactive)
-  (message "buffer name is %s" (buffer-file-name (current-buffer)))
+  (message (concatenate 'string "asd" (buffer-file-name (current-buffer))))
   (call-process "/bin/ls" nil (get-buffer-create "*Match-Result*") t)
   (switch-to-buffer (get-buffer "*Match-Result*"))
   )

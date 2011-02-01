@@ -1,2 +1,2 @@
 #!/bin/bash
-emacs $* -l CSLMode.el
+emacs -l CSLMode.el $*
