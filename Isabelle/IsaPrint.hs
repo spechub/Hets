@@ -158,7 +158,6 @@ printTypeAux a t = case t of
                      $ tail s then c else doubleQuotes c
          Unquoted -> d <> doubleColon <> c
          Null -> d, 1000)
- TVar iv s -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
  Type name _ args -> case args of
     [t1, t2] | elem name [prodS, sProdS, funS, cFunS, lFunS, sSumS] ->
        printTypeOp a name t1 t2
@@ -639,14 +638,12 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
             where sa = (concat $ map ((sp ++) . showArg) args)
           showArg (TFree [] _) = "varName"
           showArg (TFree (n:ns) _) = [toLower n] ++ ns
-          showArg (TVar v s) = showArg (TFree (unindexed v) s)
           showArg (Type [] _ _) = "varName"
           showArg (Type m@(n:ns) _ s) =
             if m == "typeAppl" || m == "fun" || m == "*"
                then concat $ map showArg s
                else [toLower n] ++ ns
           showName (TFree v _) = v
-          showName (TVar v _) = unindexed v
           showName (Type n _ _) = n
           proof' = "apply (case_tac caseVar)\napply (auto)\ndone\n"
       in

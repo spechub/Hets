@@ -1005,7 +1005,6 @@ typSim t1 t2 = case (t1, t2) of
   (IsaSign.Type _ _ ls1, IsaSign.Type _ _ ls2) ->
                    typeId t1 == typeId t2 && typLSim ls1 ls2
   (TFree _ _, TFree _ _) -> True
-  (TVar _ _, TVar _ _) -> True
   _ -> False
 
 typLSim :: [Typ] -> [Typ] -> Bool
@@ -1020,7 +1019,6 @@ typEq t1 t2 = t1 == noTypeT || t2 == noTypeT || case (t1, t2) of
       typeId t1 == typeId t2
           && typeSort t1 == typeSort t2 && typLEq ls1 ls2
   (TFree _ _, TFree _ _) -> typeSort t1 == typeSort t2
-  (TVar _ _, TVar _ _) -> typeSort t1 == typeSort t2
   _ -> False
 
 typLEq :: [Typ] -> [Typ] -> Bool
@@ -1035,7 +1033,6 @@ applyTyRen :: Int -> Typ -> Typ
 applyTyRen n t = case t of
       TFree x s -> TFree (x ++ "XX" ++ show n) s
       IsaSign.Type a b cs -> IsaSign.Type a b $ map (applyTyRen n) cs
-      _ -> t
 
 ------------------------- type var maps ---------------------------------
 
@@ -1067,7 +1064,6 @@ applyTVM :: Map.Map Typ Typ -> Typ -> Typ
 applyTVM f t = case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (applyTVM f) vs)
     IsaSign.TFree _ _ -> maybe t id $ Map.lookup t f
-    _ -> t
 
 ------------------------ replacement functions -------------------------
 -- constrains variables in t with sort constraints in cs
@@ -1091,7 +1087,6 @@ typeVarsRep :: (a -> TName -> Sort -> Maybe IsaType) -> a ->
 typeVarsRep f ls t = case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (typeVarsRep f ls) vs)
     IsaSign.TFree n s -> maybe t id $ f ls n s
-    IsaSign.TVar _ _ -> t
 
 -- replace type var in t with type x; used in instantiation; assumed
 -- that t has just one variable
@@ -1099,4 +1094,3 @@ replaceTyVar :: IsaType -> IsaType -> IsaType
 replaceTyVar x t = if x == noTypeT then t else case t of
     IsaSign.Type n s vs -> IsaSign.Type n s (map (replaceTyVar x) vs)
     IsaSign.TFree _ _ -> x
-    IsaSign.TVar _ _ -> x

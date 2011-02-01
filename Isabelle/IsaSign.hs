@@ -45,13 +45,6 @@ instance Eq VName where
 instance Ord VName where
     v1 <= v2 = new v1 <= new v2
 
-{- | Indexnames can be quickly renamed by adding an offset to
-   the integer part, for resolution. -}
-data Indexname = Indexname
-    { unindexed :: String
-    , indexOffset :: Int
-    } deriving (Ord, Eq, Show)
-
 {- Types are classified by sorts. -}
 
 data IsaClass = IsaClass String deriving (Ord, Eq, Show)
@@ -64,8 +57,6 @@ data Typ = Type  { typeId    :: TName,
                    typeSort  :: Sort,
                    typeArgs  :: [Typ] }
          | TFree { typeId    :: TName,
-                   typeSort  :: Sort }
-         | TVar  { indexname :: Indexname,
                    typeSort  :: Sort }
          deriving (Eq, Ord, Show)
 
