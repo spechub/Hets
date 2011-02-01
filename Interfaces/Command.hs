@@ -56,7 +56,7 @@ globCmdList = [minBound .. maxBound]
 -- list of command names in the gui interface
 menuTextGlobCmd :: GlobCmd -> String
 menuTextGlobCmd cmd = case cmd of
-  Automatic -> "Automatic"
+  Automatic -> "Auto-DG-Prover"
   GlobDecomp -> "Global-Decomposition"
   GlobSubsume -> "Global-Subsumption"
   LocalDecomp -> "Local-Decomposition"
