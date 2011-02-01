@@ -175,6 +175,7 @@ module Common.Doc
     , flushRight
     , changeGlobalAnnos
     , rmTopKey
+    , showRaw
     ) where
 
 import Common.AS_Annotation
@@ -204,16 +205,16 @@ data LabelKind = IdDecl | IdAppl deriving (Show, Eq)
 data TextKind =
     IdKind | IdSymb | Symbol | Comment | Keyword | TopKey Int
            | Indexed | StructId | Native | HetsLabel
-           | IdLabel LabelKind TextKind Id
+           | IdLabel LabelKind TextKind Id deriving Show
 
-data Format = Small | FlushRight
+data Format = Small | FlushRight deriving Show
 
 data ComposeKind
     = Vert   -- ($+$) (no support for $$!)
     | Horiz  -- (<>)
     | HorizOrVert -- either Horiz or Vert
     | Fill
-      deriving Eq
+      deriving (Eq, Show)
 
 -- | an abstract data type
 data Doc
@@ -225,6 +226,24 @@ data Doc
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
     | ChangeGlobalAnnos (GlobalAnnos -> GlobalAnnos) Doc
+
+showRawList :: [Doc] -> String
+showRawList l = "[" ++ intercalate ", " (map showRaw l) ++ "]"
+
+showRaw :: Doc -> String
+showRaw gd =
+    case gd of
+      Empty -> "Empty"
+      AnnoDoc an -> "AnnoDoc(" ++ show an ++ ")"
+      IdDoc lk n -> "IdDoc" ++ show (lk,n)
+      IdApplDoc b n l ->
+        "IdApplDoc(" ++ show b ++ ", " ++ show n ++ ", " ++ showRawList l ++ ")"
+      Text tk s -> "Text(" ++ show tk ++ ", " ++ s ++ ")"
+      Cat ck l ->
+        "Cat(" ++ show ck ++ ", " ++ showRawList l ++ ")"
+      Attr fm d -> "Attr(" ++ show fm ++ ", " ++ showRaw d ++ ")"
+      ChangeGlobalAnnos _ d -> "ChangeGlobalAnnos(" ++ showRaw d ++ ")"
+
 
 instance Show Doc where
     showsPrec _ doc cont =
