@@ -312,6 +312,19 @@ filterByComorph mt = case mt of
       Nothing -> id
       Just c -> filter ((== c) . showComorph . snd)
 
+getProverAndComorph :: Maybe String -> Maybe String -> G_sublogics
+   -> [(G_prover, AnyComorphism)]
+getProverAndComorph mp mc subL =
+   let ps = filterByComorph mc $ getAllAutomaticProvers subL
+       spps = case filterByProver (Just "SPASS") ps of
+          [] -> ps
+          fps -> fps
+   in case mp of
+        Nothing -> spps
+        _ -> case filterByProver mp ps of
+               [] -> spps
+               mps -> mps
+
 showComorph :: AnyComorphism -> String
 showComorph (Comorphism cid) = removeFunnyChars . drop 1 . dropWhile (/= ':')
   . map (\ c -> if c == ';' then ':' else c)
@@ -340,8 +353,7 @@ proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
   -> [String] -> ResultT IO (LibEnv, [(String, String)])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms = case
-    filterByComorph mt . filterByProver mp
-    $ getAllAutomaticProvers subL of
+    getProverAndComorph mp mt subL of
   [] -> fail "no prover found"
   cp : _ -> do
       let ks = map fst $ getThGoals gTh
@@ -379,14 +391,20 @@ sessAns libName (sess, k) =
       noderef (n, lbl) =
         let s = show n
             gs = getThGoals $ dgn_theory lbl
+            (ps, os) = partition (maybe False isProvedBasically . snd) gs
         in
         unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
         let isProve = c == "prove" in
         if isProve && null gs then unode "i" "no goals" else
         aRef (libPath ++ c ++ "=" ++ s
               ++ if isProve then "&theorems="
-                 ++ encodeForQuery (unwords $ map fst gs)
-                 else "") c) nodeCommands
+                 ++ encodeForQuery
+                   (unwords $ map fst $ if null os then gs else os)
+                 else "")
+              $ if isProve then
+                  c ++ "[" ++ show (length ps) ++ "/"
+                        ++ show (length gs) ++ "]"
+                else c) nodeCommands
       edgeref e@(_, _, lbl) =
         aRef (libPath ++ "edge=" ++ showEdgeId (dgl_id lbl))
                  $ showLEdge e
