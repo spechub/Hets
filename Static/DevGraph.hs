@@ -1332,6 +1332,39 @@ filterRefNodesByName s ln dg = lookupNodeWith f dg where
                        libn == ln && getDGNodeName lbl == s
                    _ -> False
 
+{- | Given a 'LibEnv' we search each DGraph in it for a (maybe referenced) node
+ with the given name. We return the labeled node and the Graph where this node
+ resides as local node. See also 'lookupLocalNode'. -}
+lookupLocalNodeByNameInEnv :: LibEnv -> String
+                           -> Maybe (DGraph, (LNode DGNodeLab))
+lookupLocalNodeByNameInEnv le s = f $ Map.elems le where
+    f [] = Nothing
+    f (dg:l) = case lookupNodeByName s dg of
+                 (nd, _):_ -> Just $ lookupLocalNode le dg nd
+                 _ -> f l
+
+{- | We search only the given 'DGraph' for a (maybe referenced) node with the
+ given name. We return the labeled node and the Graph where this node resides
+ as local node. See also 'lookupLocalNode'. -}
+lookupLocalNodeByName :: LibEnv -> DGraph -> String
+                      -> Maybe (DGraph, (LNode DGNodeLab))
+lookupLocalNodeByName le dg s =
+    case lookupNodeByName s dg of
+      (nd, _):_ -> Just $ lookupLocalNode le dg nd
+      _ -> Nothing
+
+{- | Given a Node and a 'DGraph' we follow the node to the graph where it is
+ defined as a local node. -}
+lookupLocalNode :: LibEnv -> DGraph -> Node -> (DGraph, LNode DGNodeLab)
+lookupLocalNode le = f
+    where
+      f dg n = case labDG dg n of
+                 DGNodeLab { nodeInfo = DGRef { ref_libname = ln
+                                              , ref_node = n' } } ->
+                    f (lookupDGraph ln le) n'
+                 x -> (dg, (n, x))
+
+
 -- ** treat reference nodes
 
 -- | add a new referenced node into the refNodes map of the given DG

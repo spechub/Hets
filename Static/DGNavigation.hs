@@ -16,7 +16,6 @@ module Static.DGNavigation where
 
 import Static.DevGraph
 
-import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
@@ -24,67 +23,65 @@ import Data.Maybe
 import Data.Graph.Inductive.Graph as Graph
 import Logic.Grothendieck
 
--- * Navigator Class and Instance
+-- * Navigator Class
 
-linkSource :: LEdge a -> Node
-linkLabel :: LEdge a -> a
-linkSource (x,_,_) = x
-linkLabel (_,_,x) = x
+class DevGraphNavigator a where
+    -- | get all the incoming ledges of the given node
+    incoming :: a -> Node -> [LEdge DGLinkLab]
+    -- | get all the incoming ledges of the given node and eventually
+    -- cross the border to an other 'DGraph'. The new 'DevGraphNavigator'
+    -- is returned with 'DGraph' set to the new graph and current node to
+    -- the given node.
+    incomingCrossBorder :: a -> Node -> (a, [LEdge DGLinkLab])
+    -- | get the label of the given node
+    getLabel :: a -> Node -> DGNodeLab
+    -- | get the local (not referenced) environment of the given node
+    getLocalNode :: a -> Node -> (DGraph, LNode DGNodeLab)
+    getInLibEnv :: a -> (LibEnv -> DGraph -> b) -> b
+    getCurrent :: a -> [LNode DGNodeLab]
+    relocate :: a -> DGraph -> [LNode DGNodeLab] -> a
+
+-- | get the local (not referenced) label of the given node
+getLocalLabel :: DevGraphNavigator a => a -> Node -> DGNodeLab
+getLocalLabel dgnav = snd . snd . getLocalNode dgnav
+
+followNode :: DevGraphNavigator a => a -> Node -> (a, LNode DGNodeLab)
+followNode dgnav n = (relocate dgnav dg [lbln], lbln)
+    where (dg, lbln) = getLocalNode dgnav n
+
+-- | get all the incoming ledges of the current node
+directInn :: DevGraphNavigator a => a -> [LEdge DGLinkLab]
+directInn dgnav = concatMap (incoming dgnav . fst) $ getCurrent dgnav
+
+
+-- * Navigator Instance
 
 -- | The navigator instance consists of a 'LibEnv' a current 'DGraph' and
 -- a current 'Node' which is the starting point for navigation through the DG.
-newtype DGNav = DGNav (LibEnv, DGraph, Node)
+data DGNav = DGNav { dgnLibEnv :: LibEnv
+                   , dgnDG :: DGraph
+                   , dgnCurrent :: [LNode DGNodeLab] }
 
-class DevGraphNavigator a where
-    -- | get all the incoming ledges of the current node
-    directInn :: a -> [LEdge DGLinkLab]
-    -- | get all the incoming ledges of the given node
-    incoming :: a -> Node -> [LEdge DGLinkLab]
-    -- | get the label of the given node
-    getLabel :: a -> Node -> DGNodeLab
-    -- | get the local (not referenced) label of the given node
-    getLocalLabel :: a -> Node -> DGNodeLab
-    getInLibEnv :: a -> (LibEnv -> DGraph -> b) -> b
+makeDGNav :: LibEnv -> DGraph -> [LNode DGNodeLab] -> DGNav
+makeDGNav le dg cnl = DGNav le dg cnl' where
+    cnl' | null cnl = filter f $ labNodesDG dg
+         | otherwise = cnl
+         where f (n, _) = null $ filter isDefLink $ outDG dg n
 
+isDefLink :: LEdge DGLinkLab -> Bool
+isDefLink = isDefEdge . dgl_type . linkLabel
 
 instance DevGraphNavigator DGNav where
-    directInn (DGNav (_, dg, n)) = innDG dg n
-    incoming (DGNav (_, dg, _)) = innDG dg
-    getLabel (DGNav (_, dg, _)) = labDG dg
-    getLocalLabel (DGNav (le, dg, _)) n = snd $ lookupLocalNode le dg n
-    getInLibEnv (DGNav (le, dg, _)) f = f le dg
+    -- we consider only the definition links in a DGraph
+    incoming dgn = filter isDefLink . innDG (dgnDG dgn)
+    incomingCrossBorder dgn n = (dgn', incoming dgn' n')
+        where (dgn', (n', _)) = followNode dgn n
+    getLabel = labDG . dgnDG
+    getLocalNode (DGNav{dgnLibEnv = le, dgnDG = dg}) n = lookupLocalNode le dg n
+    getInLibEnv (DGNav{dgnLibEnv = le, dgnDG = dg}) f = f le dg
+    getCurrent (DGNav{dgnCurrent = lblnl}) = lblnl
+    relocate dgn dg lblnl = dgn { dgnDG = dg, dgnCurrent = lblnl }
 
-
--- TODO: these three functions can be moved to Static/DevGraph.hs
-
-lookupLocalNodeByNameInEnv :: LibEnv -> String -> Maybe (LNode DGNodeLab)
-lookupLocalNodeByNameInEnv le s = f $ Map.elems le where
-    f [] = Nothing
-    f (dg:l) = case lookupNodeByName s dg of
-                 (nd, _):_ -> Just $ lookupLocalNode le dg nd
-                 _ -> f l
-
-lookupLocalNodeByName :: LibEnv -> DGraph -> String -> Maybe (LNode DGNodeLab)
-lookupLocalNodeByName le dg s =
-    case lookupNodeByName s dg of
-      (nd, _):_ -> Just $ lookupLocalNode le dg nd
-      _ -> Nothing
-
-lookupLocalNode :: LibEnv -> DGraph -> Node -> LNode DGNodeLab
-lookupLocalNode le = f
-    where
-      f dg n = case labDG dg n of
-                 DGNodeLab { nodeInfo = DGRef { ref_libname = ln
-                                              , ref_node = n' } } ->
-                    f (lookupDGraph ln le) n'
-                 x -> (n, x)
-
-
-getLocalSyms :: DevGraphNavigator a => a -> Node -> Set.Set G_symbol
-getLocalSyms dgnav n =
-    case dgn_origin $ getLocalLabel dgnav n of
-      DGBasicSpec _ s -> s
-      _ -> Set.empty
 
 -- * Basic search functionality
 
@@ -96,24 +93,31 @@ firstMaybe f (x:l) =
       Nothing -> firstMaybe f l
       y -> y
 
+-- | Searches all ancestor nodes of the current node and also the current node
+-- for a node matching the given predicate
 searchNode :: DevGraphNavigator a =>
                  (LNode DGNodeLab -> Bool) -> a -> Maybe (LNode DGNodeLab)
 searchNode p dgnav =
-    firstMaybe (searchNodeFrom p dgnav) $ map linkSource $ directInn dgnav
+    firstMaybe (searchNodeFrom False p dgnav . fst) $ getCurrent dgnav
+ -- searchNodeFrom False p dgnav $ fst $ getCurrent dgnav
 
-searchNodeFrom :: DevGraphNavigator a => (LNode DGNodeLab -> Bool) -> a
-                  -> Node -> Maybe (LNode DGNodeLab)
-searchNodeFrom p dgnav n =
+searchNodeFrom :: DevGraphNavigator a => Bool -- ^ Follow the node into an
+                                              --  other Lib
+               -> (LNode DGNodeLab -> Bool) -> a
+               -> Node -> Maybe (LNode DGNodeLab)
+searchNodeFrom fn p dgnav n =
     let ledgs = incoming dgnav n
         lbl = (n, getLabel dgnav n)
     in if p lbl then Just lbl
-       else firstMaybe (searchNodeFrom p dgnav) $ map linkSource ledgs
+       else firstMaybe (searchNodeFrom fn p dgnav) $ map linkSource ledgs
 
 
 searchLink :: DevGraphNavigator a =>
                  (LEdge DGLinkLab -> Bool) -> a -> Maybe (LEdge DGLinkLab)
 searchLink p dgnav =
-    firstMaybe (searchLinkFrom p dgnav) $ map linkSource $ directInn dgnav
+    firstMaybe (searchLinkFrom p dgnav . fst) $ getCurrent dgnav
+--searchLinkFrom p dgnav $ fst $ getCurrent dgnav
+--    firstMaybe (searchLinkFrom p dgnav) $ map linkSource $ directInn dgnav
 
 searchLinkFrom :: DevGraphNavigator a => (LEdge DGLinkLab -> Bool) -> a
                   -> Node -> Maybe (LEdge DGLinkLab)
@@ -192,3 +196,17 @@ fromSearchResult :: (DevGraphNavigator a) =>
                         -> (a -> Node -> b) -> a -> Maybe b
 
 fromSearchResult sf f dgnav = fmap (f dgnav . fst) $ sf dgnav
+
+-- * Other utils
+
+getLocalSyms :: DevGraphNavigator a => a -> Node -> Set.Set G_symbol
+getLocalSyms dgnav n =
+    case dgn_origin $ getLocalLabel dgnav n of
+      DGBasicSpec _ s -> s
+      _ -> Set.empty
+
+linkSource :: LEdge a -> Node
+linkLabel :: LEdge a -> a
+linkSource (x,_,_) = x
+linkLabel (_,_,x) = x
+
