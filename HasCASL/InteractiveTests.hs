@@ -223,8 +223,7 @@ constsForEval =
 -- * DG Navigation
 
 mkDGNav :: SigSens Env Sentence -> DGNav
-mkDGNav s = DGNav (sigsensLibenv s, sigsensDG s, sigsensNode s)
-
+mkDGNav s = makeDGNav (sigsensLibenv s) (sigsensDG s) []
 
 prettyEdge :: DGraph -> Graph.LEdge DGLinkLab -> Doc
 prettyEdge dg (n1, n2, dgl) =
@@ -379,6 +378,8 @@ fromSigs sigs s1 s2 f =
     Nothing ->  fail $ "Pattern spec " ++ s1 ++ " not found."
     Just (def, dgnav) -> f def dgnav s1 s2
 
+
+-- TODO: use actually not the actual parameter here, but the formal parameter! add to DGNavigation
 prepareDefStore :: SigSens Env Sentence -> String -> Maybe (DefinitionStore, DGNav)
 prepareDefStore sigs patN =
     let e = sigsensSignature sigs
