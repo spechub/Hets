@@ -86,7 +86,7 @@ anaLibExt opts file libEnv initDG = do
             uEnv <- if null xd then return nEnv else do
               putIfVerbose opts 2 $ "Reading " ++ xd
               xs <- readFile xd
-              let Result es mdg = applyXUpdates xs (lookupDGraph ln nEnv)
+              let Result es mdg = dgXUpdate xs nEnv (lookupDGraph ln nEnv)
               showDiags opts es
               return $ case mdg of
                 Nothing -> nEnv

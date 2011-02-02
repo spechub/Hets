@@ -10,7 +10,7 @@ Portability :  non-portable(Grothendieck)
 adjust development graph according to xupdate information
 -}
 
-module Static.ApplyChanges (applyXUpdates) where
+module Static.ApplyChanges (dgXUpdate) where
 
 import Static.ComputeTheory
 import Static.DevGraph
@@ -40,13 +40,22 @@ import Control.Monad
 
 import Debug.Trace
 
+dgXUpdate :: Monad m => String -> LibEnv -> DGraph -> m DGraph
+dgXUpdate xs le =
+  liftM (computeDGraphTheories le) . applyXUpdates xs
+
 lookupNodeByNodeName :: NodeName -> DGraph -> [LNode DGNodeLab]
-lookupNodeByNodeName nn = lookupNodeWith ((== nn) . dgn_name . snd)
+lookupNodeByNodeName nn = lookupNodeWith (eqNN nn . dgn_name . snd)
+
+eqNN :: NodeName -> NodeName -> Bool
+eqNN a b = getName a == getName b
+  && extString a == extString b
+  && extIndex a == extIndex b
 
 getNodeByName :: Monad m => String -> NodeName -> DGraph -> m (LNode DGNodeLab)
 getNodeByName msg nn dg = let s = showName nn in
   case lookupNodeByNodeName nn dg of
-    [] -> fail $ msg ++ "missing node:" ++ s
+    [] -> fail $ msg ++ "missing node: " ++ s
     [i] -> return i
     _ -> fail $ msg ++ "ambiguous node: " ++ s
 
@@ -54,11 +63,12 @@ applyXUpdates :: Monad m => String -> DGraph -> m DGraph
 applyXUpdates xs dg = do
     cs <- anaXUpdates xs
     let acs = foldr (\ c l -> case changeDG c of
-          Nothing -> l
+          Nothing -> trace ("skip1: " ++ show c) l
           Just s -> s : l) [] cs
     return $ foldr (\ s g -> case applyChange s g of
-      Nothing -> g
-      Just ng -> ng) dg $ sortBy cmpSelChanges acs
+      Left r -> trace ("skip2: " ++ shows s "\n" ++ r) g
+      Right ng -> trace ("succeeded: " ++ show s) ng) dg
+        $ sortBy cmpSelChanges acs
 
 cmpSelChanges :: SelChangeDG -> SelChangeDG -> Ordering
 cmpSelChanges (SelChangeDG _ ch1) (SelChangeDG _ ch2) =

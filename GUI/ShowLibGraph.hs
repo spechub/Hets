@@ -180,7 +180,7 @@ changeLibGraph gi graph nodesEdges = do
               xs <- readFile xd
               xis <- readFile xi
               putIfVerbose opts 3 $ "Ignoring Impacts:\n" ++ xis
-              let Result ds mdg = applyXUpdates xs dg
+              let Result ds mdg = dgXUpdate xs le dg
               case mdg of
                 Just fdg -> do
                   closeOpenWindows gi

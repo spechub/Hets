@@ -250,7 +250,8 @@ getHetsResult opts updates sessRef file query =
                             . fileName) updates of
                 ch : _ -> do
                   str <- lift $ readFile $ fileContent ch
-                  newDg <- liftR $ applyXUpdates str dg
+                  lift $ writeFile "/tmp/xupdate.xupdate" str
+                  newDg <- liftR $ dgXUpdate str libEnv dg
                   let newLib = Map.insert ln newDg libEnv
                   newSess <- lift $ nextSess sessRef newLib k
                   liftR $ return $ sessAns ln (newSess, k)
