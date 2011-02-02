@@ -908,7 +908,7 @@ getDomainTab c f =  let
   ls = remove_duplicates
      [getDomainEntry (getAConstTab c f) x |
                                  x <- Map.keys f, checkTyCons x]
-  in reverse $ getDepDoms ls
+  in getDepDoms ls
 
 getDomainEntry :: AConstTab -> HsId -> [DomainEntry]
 getDomainEntry ctab t = case t of
@@ -973,6 +973,6 @@ transInst c i = let (x, y) = prepInst i
                          IsCont _ -> pcpo
                          NotCont -> isaTerm
   in (transClass x,
-      reverse [(transType c [] a, w : map transClass b) | (a, b) <- y])
+      [(transType c [] a, w : map transClass b) | (a, b) <- y])
 
 --------------------------------------------------------------------------

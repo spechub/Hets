@@ -83,7 +83,7 @@ import Data.List
 import qualified Data.Map as Map
 
 import Common.AS_Annotation
-import Common.Utils (number)
+import Common.Utils (number, nubOrd)
 
 -- Haskell (Programatica)
 import SourceNames
@@ -140,8 +140,8 @@ type IsaTypeInsts = (TName, [(IsaClass, [(IsaType, [IsaClass])])])
 removeEL :: [[a]] -> [[a]]
 removeEL = filter (not . null)
 
-remove_duplicates :: Eq a => [a] -> [a]
-remove_duplicates = nub . reverse
+remove_duplicates :: Ord a => [a] -> [a]
+remove_duplicates = nubOrd
 
 --------------------------- filters -----------------------------------
 
@@ -163,7 +163,7 @@ liftMapByListD l1 l2 h k g f = l2 $ g [ (h a, k a) | a <- l1 f]
 getDepDoms :: IsaSign.DomainTab -> IsaSign.DomainTab
 getDepDoms ls = abGetDep deDepOn ls
 
-abGetDep :: Eq a => (a -> a -> Bool) -> [[a]] -> [[a]]
+abGetDep :: Ord a => (a -> a -> Bool) -> [[a]] -> [[a]]
 abGetDep f ls = case ls of
  x:xs ->
    remove_duplicates $
@@ -246,7 +246,7 @@ prepInst1 i =
   [(x, [getInstClass y | y <-
           getInstPrems i, showIsaHsTypeString (getInstType y)
                            == showIsaHsTypeString x])
-             | x <- remove_duplicates $ map getInstType (getInstPrems i)]
+             | x <- nub $ map getInstType (getInstPrems i)]
 
 --------------------- ISABELLE representation ---------------------------
 
