@@ -16,18 +16,37 @@ constants for Isabelle
 module Isabelle.IsaConsts where
 
 import Isabelle.IsaSign
+import qualified Data.Set as Set
 import Data.List
 
 -- | a topological sort with a @uses@ predicate
-quickSort :: (a -> a -> Bool) -> [a] -> [a]
-quickSort f ls = case ls of
+topSort :: (a -> a -> Bool) -> [a] -> [a]
+topSort f ls = case ls of
   [] -> []
-  a : as -> let (xs, ys) = partition (f a) as in
-    quickSort f xs ++ a : quickSort f ys
+  a : as -> let
+    (directPreds, rest) = partition (f a) as
+    in if null directPreds then a : topSort f as else
+           topSort f $ filter (not . flip f a) directPreds ++ a : rest
 
--- **** STRINGS ------------------------------------------------
+-- | extends a dependency relation to lists using any
+liftDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
+liftDep f as bs = any (\ a -> any (f a) bs) as
 
--- * boolean constants
+getTypeIds :: Typ -> Set.Set TName
+getTypeIds ty = case ty of
+  Type { typeId = n, typeArgs = args }
+    -> Set.insert n $ Set.unions $ map getTypeIds args
+  TFree {} -> Set.empty
+
+deDepOn :: DomainEntry -> DomainEntry -> Bool
+deDepOn (_, l) (t, _) =
+  Set.member (typeId t) $ Set.unions $ concatMap (map getTypeIds . snd) l
+
+ordDoms :: DomainTab -> DomainTab
+ordDoms = topSort (liftDep deDepOn)
+
+-- * boolean constants strings
+
 cTrue :: String
 cTrue = "True"
 
@@ -39,6 +58,7 @@ cNot :: String
 cNot = "Not"
 
 -- * quantor strings
+
 allS, exS, ex1S :: String
 allS = "ALL"
 exS = "EX"
@@ -147,10 +167,7 @@ fliftbinS = "fliftbin"
 flift2S :: String
 flift2S = "flift2"
 
-
--- **** CLASSES & SORTS ---------------------------------------
-
--- * Predifined CLASSES
+-- * Predefined CLASSES
 
 pcpo :: IsaClass
 pcpo = IsaClass pcpoS
@@ -171,7 +188,7 @@ sortT a = case a of
   NotCont -> holType
   IsCont _ -> dom
 
---------------------- POLY TYPES --------------------------------------
+-- ------------------- POLY TYPES --------------------------------------
 
 listT :: Continuity -> Typ -> Typ
 listT a t = case a of
@@ -181,12 +198,12 @@ listT a t = case a of
 charT :: Continuity -> Typ
 charT a = case a of
   IsCont _ -> Type "charT" (sortT a) []
-  NotCont  -> Type "char" (sortT a) []
+  NotCont -> Type "char" (sortT a) []
 
 ratT :: Continuity -> Typ
 ratT a = case a of
   IsCont _ -> Type "ratT" (sortT a) []
-  NotCont  -> Type "rat" (sortT a) []
+  NotCont -> Type "rat" (sortT a) []
 
 fracT :: Continuity -> Typ
 fracT a = Type "fracT" (sortT a) []
@@ -194,7 +211,7 @@ fracT a = Type "fracT" (sortT a) []
 integerT :: Continuity -> Typ
 integerT a = case a of
    IsCont _ -> Type "integerT" (sortT a) []
-   NotCont  -> Type "int" (sortT a) []
+   NotCont -> Type "int" (sortT a) []
 
 boolT :: Continuity -> Typ
 boolT a = case a of
@@ -209,24 +226,24 @@ orderingT a = case a of
 intT :: Continuity -> Typ
 intT a = case a of
    IsCont _ -> Type "intT" (sortT a) []
-   NotCont  -> Type "int" (sortT a) []
+   NotCont -> Type "int" (sortT a) []
 
 prodT :: Continuity -> Typ -> Typ -> Typ
 prodT a t1 t2 = case a of
    IsCont _ -> mkContProduct t1 t2
-   NotCont  -> prodType t1 t2
+   NotCont -> prodType t1 t2
 
 funT :: Continuity -> Typ -> Typ -> Typ
 funT c a b = case c of
    IsCont _ -> mkContFun a b
-   NotCont  -> mkFunType a b
+   NotCont -> mkFunType a b
 
 curryFunT :: Continuity -> [Typ] -> Typ -> Typ
 curryFunT c ls x = case c of
    IsCont _ -> mkCurryContFun ls x
-   NotCont  -> mkCurryFunType ls x
+   NotCont -> mkCurryFunType ls x
 
--- **** predefinded HOL TYPES ----------------------------------
+-- * predefined types
 
 noTypeT :: Typ
 noTypeT = Type "dummy" holType []
@@ -259,46 +276,45 @@ mkOptionType :: Typ -> Typ
 mkOptionType t = Type "option" holType [t]
 
 prodType :: Typ -> Typ -> Typ
-prodType t1 t2 = Type prodS holType [t1,t2]
+prodType t1 t2 = Type prodS holType [t1, t2]
 
 mkFunType :: Typ -> Typ -> Typ
-mkFunType s t = Type funS holType [s,t] -- was "-->" before
+mkFunType s t = Type funS holType [s, t] -- was "-->" before
 
-{-handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)-}
+-- handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)
 mkCurryFunType :: [Typ] -> Typ -> Typ
 mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
 
--- **** predefinded HOLCF TYPES --------------------------------------
+-- * predefinded HOLCF types
 
 voidDom :: Typ
 voidDom = Type "void" dom []
 
-{- should this be included (as primitive)? -}
+-- should this be included (as primitive)?
 flatDom :: Typ
 flatDom = Type "flat" dom []
 
 tLift :: Typ -> Typ
 tLift t = Type "lift" dom [t]
 
-{- sort is ok? -}
 mkContFun :: Typ -> Typ -> Typ
-mkContFun t1 t2 = Type lFunS dom [t1,t2]
+mkContFun t1 t2 = Type lFunS dom [t1, t2]
 
 mkStrictProduct :: Typ -> Typ -> Typ
-mkStrictProduct t1 t2 = Type sProdS dom [t1,t2]
+mkStrictProduct t1 t2 = Type sProdS dom [t1, t2]
 
 mkContProduct :: Typ -> Typ -> Typ
-mkContProduct t1 t2 = Type lProdS dom [t1,t2]
+mkContProduct t1 t2 = Type lProdS dom [t1, t2]
 
-{-handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)-}
+-- handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)
 mkCurryContFun :: [Typ] -> Typ -> Typ
-mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
+mkCurryContFun = flip $ foldr mkContFun
 
 mkStrictSum :: Typ -> Typ -> Typ
-mkStrictSum t1 t2 = Type lSumS dom [t1,t2]
+mkStrictSum t1 t2 = Type lSumS dom [t1, t2]
 
 
--- **** TERM FORMATION -------------------------------------------
+-- * term construction
 
 -- | 1000
 maxPrio :: Int
@@ -317,16 +333,16 @@ mkConstVD :: String -> Typ -> Term
 mkConstVD s t = Const (mkVName s) $ hideNN t
 
 mkConstV :: String -> DTyp -> Term
-mkConstV s t = Const (mkVName s) t
+mkConstV = Const . mkVName
 
 mkConstD :: VName -> Typ -> Term
-mkConstD s t = Const s $ hideNN t
+mkConstD s = Const s . hideNN
 
 mkConst :: VName -> DTyp -> Term
-mkConst s t = Const s t
+mkConst = Const
 
 mkFree :: String -> Term
-mkFree s = Free $ mkVName s
+mkFree = Free . mkVName
 
 -- | construct a constant with no type
 con :: VName -> Term
@@ -343,10 +359,9 @@ conDoubleC = conC . mkVName
 
 -- | apply VName operator to two term
 binVNameAppl :: VName -> Term -> Term -> Term
-binVNameAppl v t1 t2 = termAppl (termAppl (con v) t1) t2
+binVNameAppl v = termAppl . termAppl (con v)
 
--- * TERM CONSTRUCTORS
--- | binary junctors
+-- * binary junctors
 binConj, binDisj, binImpl, binEqv, binEq, binEqvSim, binUnion,
        binMembership, binImageOp
     :: Term -> Term -> Term
@@ -361,14 +376,13 @@ binMembership = binVNameAppl membershipV
 binImageOp = binVNameAppl imageV
 
 rangeOp :: Term -> Term
-rangeOp t = termAppl (con rangeV) t
+rangeOp = termAppl (con rangeV)
 
 -- | HOL function application
 termAppl :: Term -> Term -> Term
 termAppl t1 t2 = App t1 t2 NotCont
 
-
--- **** Poly terms for HOL-HOLCF ----------------------------------
+-- * terms for HOL-HOLCF
 
 andPT :: Continuity -> Term
 andPT a = case a of
@@ -398,7 +412,7 @@ nilPT a = conDoubleC $ case a of
 consPT :: Continuity -> Term
 consPT a = case a of
   NotCont -> conC consV
-  IsCont True  -> conDouble "llCons"
+  IsCont True -> conDouble "llCons"
   IsCont False -> conC lconsV
 
 truePT :: Continuity -> Term
@@ -430,19 +444,19 @@ fstPT :: Continuity -> Term
 fstPT a = case a of
               NotCont -> conDoubleC "fst"
               IsCont True -> conDouble "llfst"
-              IsCont False  -> conDoubleC "lfst"
+              IsCont False -> conDoubleC "lfst"
 
 sndPT :: Continuity -> Term
 sndPT a = case a of
               NotCont -> conDoubleC "snd"
               IsCont True -> conDouble "llsnd"
-              IsCont False  -> conDoubleC "lsnd"
+              IsCont False -> conDoubleC "lsnd"
 
 pairPT :: Continuity -> Term
 pairPT a = case a of
-     NotCont      ->  conDoubleC "pair"
-     IsCont True  ->  conDouble  "llpair"
-     IsCont False ->  conDoubleC "lpair"
+     NotCont -> conDoubleC "pair"
+     IsCont True -> conDouble "llpair"
+     IsCont False -> conDoubleC "lpair"
 
 nothingPT :: Continuity -> Term
 nothingPT a = conDouble $ if a == NotCont
@@ -476,12 +490,10 @@ neqPT :: Term
 neqPT = conDouble "neqH"
 
 eqTPT :: Typ -> Term
-eqTPT t = mkConstVD "eqH" t
+eqTPT = mkConstVD "eqH"
 
 neqTPT :: Typ -> Term
-neqTPT t = mkConstVD "neqH" t
-
--- **** TERMS ---------------------------------------------------
+neqTPT = mkConstVD "neqH"
 
 -- * Boolean constants
 
@@ -513,7 +525,7 @@ liftString = conDouble "liftList"
 lpairTerm :: Term
 lpairTerm = conDoubleC "lpair"
 
--- **** VNAMES -------------------------------------------------
+-- * constant names
 
 -- | Not VName
 notV :: VName
@@ -558,21 +570,21 @@ compV :: VName
 compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
 
 eqvSimV :: VName
-eqvSimV = VName eqvSimS $ Just $ AltSyntax "(_ \\<sim>/ _)" [50,51] 50
+eqvSimV = VName eqvSimS $ Just $ AltSyntax "(_ \\<sim>/ _)" [50, 51] 50
 
 unionV :: VName
-unionV = VName unionS $ Just $ AltSyntax "(_ \\<union>/ _)" [65,66] 65
+unionV = VName unionS $ Just $ AltSyntax "(_ \\<union>/ _)" [65, 66] 65
 
 membershipV :: VName
-membershipV = VName membershipS $ Just $ AltSyntax "(_ \\<in>/ _)" [65,66] 65
+membershipV = VName membershipS $ Just $ AltSyntax "(_ \\<in>/ _)" [65, 66] 65
 
 imageV :: VName
-imageV = VName imageS $ Just $ AltSyntax "(_ `/ _)" [65,66] 65
+imageV = VName imageS $ Just $ AltSyntax "(_ `/ _)" [65, 66] 65
 
 rangeV :: VName
 rangeV = VName rangeS Nothing
 
--- **** keywords in theory files from the Isar Reference Manual 2005
+-- * keywords in theory files from the Isar Reference Manual 2005
 
 endS :: String
 endS = "end"
@@ -747,7 +759,7 @@ ignoredKeys =
     , "ML_command", "ML_setup", "oracle"
     , "fix", "assume", "presume", "def", "note", "then", "from", "with"
     , "have", "show", "hence", "thus", "shows", "."
---    , "rule", "iprover","OF", "of", "where", "assumption", "this", "-"
+-- , "rule", "iprover","OF", "of", "where", "assumption", "this", "-"
     , "let", "is", "next", "apply_end", "defer", "prefer", "back"
     , "pr", "thm", "prf", "term", "prop", "typ", "full_prf"
     , "undo", "redo", "kill", "thms_containing", "thms_deps"
@@ -759,7 +771,7 @@ ignoredKeys =
     , "interpretation", "interpret", "obtain", "also", "finally"
     , "moreover", "ultimately" -- "trans", "sym", "symmetric"
     , "case", "judgment", "morphisms", "record", "rep_datatype"
-    , "recdef", "recdef_tc", "specification","ax_specification"
+    , "recdef", "recdef_tc", "specification", "ax_specification"
     , "inductive", "coinductive", "inductive_cases", "codatatype"
     , "code_module", "code_library", "consts_code", "types_code" ]
     ++ map (++ "_translation")
@@ -781,5 +793,5 @@ usedTopKeys = markups ++
 
 -- | all Isabelle keywords
 isaKeywords :: [String]
-isaKeywords = "::" : andS : theoryS : map (:[]) ":=<|"
+isaKeywords = "::" : andS : theoryS : map (: []) ":=<|"
               ++ usedTopKeys ++ ignoredKeys

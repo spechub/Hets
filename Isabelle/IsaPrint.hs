@@ -420,12 +420,9 @@ printClassR (y, ys) = case ys of
 
 orderCDecs :: [(IsaClass, Maybe [IsaClass])] -> [(IsaClass, [IsaClass])]
 orderCDecs =
-   sortBy crord . map (\ (x, y) -> (x, fromMaybe [] y))
+   topSort crord . map (\ (x, y) -> (x, fromMaybe [] y))
  where
-   crord (x, xs) (y, ys)
-     | elem x ys = GT
-     | elem y xs = LT
-     | otherwise = EQ
+   crord (_, xs) (y, _) = elem y xs
 
 printMonArities :: String -> Arities -> Doc
 printMonArities tn = vcat . map ( \ (t, cl) ->
@@ -559,21 +556,8 @@ printMonSign sig = let ars = arities $ tsig sig
                 in
     printMonArities (theoryName sig) ars
 
-cmpDomainEntries :: [(Typ, [(VName, [Typ])])] -> [(Typ, [(VName, [Typ])])]
-                 -> Ordering
-cmpDomainEntries l1 l2 = let
-    t1 = map fst l1
-    t2 = map fst l2
-    a1 = concatMap (concatMap snd . snd) l1
-    a2 = concatMap (concatMap snd . snd) l2
-    in case (null $ intersect t1 a2, null $ intersect t2 a1) of
-       (True, False) -> GT
-       (False, True) -> LT
-       (True, True) -> EQ
-       (False, False) -> error "cmpDomainEntries"
-
 printSign :: Sign -> Doc
-printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
+printSign sig = let dt = ordDoms $ domainTab sig
                     ars = arities $ tsig sig
                 in
     printAbbrs (abbrs $ tsig sig) $++$
@@ -583,7 +567,7 @@ printSign sig = let dt = sortBy cmpDomainEntries $ domainTab sig
     printConstTab (Map.difference (constTab sig)
                   $ constructors dt) $++$
     (if showLemmas sig
-         then showCaseLemmata (domainTab sig) else empty)
+         then showCaseLemmata dt else empty)
     where
     printAbbrs tab = if Map.null tab then empty else text typesS
                      $+$ vcat (map printAbbr $ Map.toList tab)

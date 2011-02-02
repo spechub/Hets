@@ -160,18 +160,16 @@ liftMapByListD l1 l2 h k g f = l2 $ g [ (h a, k a) | a <- l1 f]
 
 -------------------- generic checking of mutual dependencies ----------
 
+getDepDoms :: IsaSign.DomainTab -> IsaSign.DomainTab
+getDepDoms ls = abGetDep deDepOn ls
+
 abGetDep :: Eq a => (a -> a -> Bool) -> [[a]] -> [[a]]
 abGetDep f ls = case ls of
  x:xs ->
    remove_duplicates $
       removeEL (map remove_duplicates
-                   (checkDep (abCheckDep (mutRel f)) (xs) [x] []))
+                   (checkDep (liftDep (mutRel f)) (xs) [x] []))
  [] -> []
-
-{- called to check whether, given two lists of elements, one depends
-on the other. -}
-abCheckDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
-abCheckDep f as bs = any (\x -> any (f x) bs) as
 
 checkDep :: ([x] -> [x] -> Bool) -> [[x]] -> [[x]] -> [[x]] -> [[x]]
 checkDep f ls ms cs = case ls of
@@ -185,9 +183,6 @@ checkDep f ls ms cs = case ls of
 -- mutual dependence
 mutRel :: (a -> a -> Bool) -> a -> a -> Bool
 mutRel f x y = f x y && f y x
-
-depOn :: (a -> b -> Bool) -> (c -> a) -> (c -> [b]) -> c -> c -> Bool
-depOn f g h x y = any (f (g x)) (h y)
 
 -------------------- HASKELL representation -------------------------------
 ----------------------- check functions -----------------------------------
@@ -573,38 +568,6 @@ transTN c s1 s2 = let d = transPath s1 s2
 transPath :: String -> String -> String
 transPath s1 s2 = showIsaName s1 ++ "_" ++ showIsaName s2
 
----------------------- DATATYPES ---------------------------------------
----------------- getting mutually recursive domains in Isabelle --------
-
-getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
-getDepDoms ls = ordDoms $ abGetDep deDepOn ls
-
-ordDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
-ordDoms ls = quickSort (orLLift deDepOn) ls
-
-orLLift :: (a -> a -> Bool) -> [a] -> [a] -> Bool
-orLLift f as bs = case as of
-  [] -> False
-  x:xs -> if genOr (f x) bs == True then True
-          else (orLLift f xs bs)
-
-genOr :: (a -> Bool) -> [a] -> Bool
-genOr f ys = case ys of
-               [] -> False
-               x:xs -> if (f x) then True
-                       else (genOr f xs)
-
-deDepOn :: DomainEntry -> DomainEntry -> Bool
-deDepOn x y = depOn subTypForm fst (concatMap snd . snd) x y
-
-subTypForm :: Typ -> Typ -> Bool
-subTypForm t1 t2 = case t2 of
-      IsaSign.Type a b cs ->
-                  if a == IsaSign.typeId t1 &&
-                     b == IsaSign.typeSort t1 then True
-                  else any (subTypForm t1) cs
-      _ -> False
-
 ----------------- getting info about domaintab -------------------------
 
 type AConstTab = Map.Map VName (Typ,IsaVT)
@@ -868,6 +831,9 @@ getExpRole n = case (extFunTerm n) of
         TMet -> InstDef
         _    -> FunDef
    _         -> error "Hs2HOLCFaux, getExpRole"
+
+depOn :: (a -> b -> Bool) -> (c -> a) -> (c -> [b]) -> c -> c -> Bool
+depOn f g h x y = any (f (g x)) (h y)
 
 sentDepOn :: Named Sentence -> Named Sentence -> Bool
 sentDepOn x y = case getExpRole x of
