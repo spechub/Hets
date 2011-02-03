@@ -23,16 +23,15 @@ import Data.Maybe
 import Data.Graph.Inductive.Graph as Graph
 import Logic.Grothendieck
 
+import Common.Doc
+import Common.DocUtils
+import Syntax.AS_Library
+
 -- * Navigator Class
 
 class DevGraphNavigator a where
     -- | get all the incoming ledges of the given node
     incoming :: a -> Node -> [LEdge DGLinkLab]
-    -- | get all the incoming ledges of the given node and eventually
-    -- cross the border to an other 'DGraph'. The new 'DevGraphNavigator'
-    -- is returned with 'DGraph' set to the new graph and current node to
-    -- the given node.
-    incomingCrossBorder :: a -> Node -> (a, [LEdge DGLinkLab])
     -- | get the label of the given node
     getLabel :: a -> Node -> DGNodeLab
     -- | get the local (not referenced) environment of the given node
@@ -40,6 +39,16 @@ class DevGraphNavigator a where
     getInLibEnv :: a -> (LibEnv -> DGraph -> b) -> b
     getCurrent :: a -> [LNode DGNodeLab]
     relocate :: a -> DGraph -> [LNode DGNodeLab] -> a
+
+
+-- | Get all the incoming ledges of the given node and eventually
+-- cross the border to an other 'DGraph'. The new 'DevGraphNavigator'
+-- is returned with 'DGraph' set to the new graph and current node to
+-- the given node.
+followIncoming :: DevGraphNavigator a => a -> Node
+                    -> (a, LNode DGNodeLab, [LEdge DGLinkLab])
+followIncoming dgn n = (dgn', lbln, incoming dgn' n')
+    where (dgn', lbln@(n', _)) = followNode dgn n
 
 -- | get the local (not referenced) label of the given node
 getLocalLabel :: DevGraphNavigator a => a -> Node -> DGNodeLab
@@ -60,7 +69,14 @@ directInn dgnav = concatMap (incoming dgnav . fst) $ getCurrent dgnav
 -- a current 'Node' which is the starting point for navigation through the DG.
 data DGNav = DGNav { dgnLibEnv :: LibEnv
                    , dgnDG :: DGraph
-                   , dgnCurrent :: [LNode DGNodeLab] }
+                   , dgnCurrent :: [LNode DGNodeLab] } deriving Show
+
+
+instance Pretty DGNav where
+    pretty dgn = d1 <> text ":" <+> pretty (map fst $ dgnCurrent dgn)
+                      where d1 = case optLibDefn $ dgnDG dgn of
+                                   Just (Lib_defn ln _ _ _) -> pretty ln
+                                   Nothing -> text "DG"
 
 makeDGNav :: LibEnv -> DGraph -> [LNode DGNodeLab] -> DGNav
 makeDGNav le dg cnl = DGNav le dg cnl' where
@@ -74,8 +90,6 @@ isDefLink = isDefEdge . dgl_type . linkLabel
 instance DevGraphNavigator DGNav where
     -- we consider only the definition links in a DGraph
     incoming dgn = filter isDefLink . innDG (dgnDG dgn)
-    incomingCrossBorder dgn n = (dgn', incoming dgn' n')
-        where (dgn', (n', _)) = followNode dgn n
     getLabel = labDG . dgnDG
     getLocalNode (DGNav{dgnLibEnv = le, dgnDG = dg}) n = lookupLocalNode le dg n
     getInLibEnv (DGNav{dgnLibEnv = le, dgnDG = dg}) f = f le dg
@@ -96,36 +110,30 @@ firstMaybe f (x:l) =
 -- | Searches all ancestor nodes of the current node and also the current node
 -- for a node matching the given predicate
 searchNode :: DevGraphNavigator a =>
-                 (LNode DGNodeLab -> Bool) -> a -> Maybe (LNode DGNodeLab)
+                 (LNode DGNodeLab -> Bool) -> a -> Maybe (a, LNode DGNodeLab)
 searchNode p dgnav =
-    firstMaybe (searchNodeFrom False p dgnav . fst) $ getCurrent dgnav
- -- searchNodeFrom False p dgnav $ fst $ getCurrent dgnav
+    firstMaybe (searchNodeFrom p dgnav . fst) $ getCurrent dgnav
 
-searchNodeFrom :: DevGraphNavigator a => Bool -- ^ Follow the node into an
-                                              --  other Lib
-               -> (LNode DGNodeLab -> Bool) -> a
-               -> Node -> Maybe (LNode DGNodeLab)
-searchNodeFrom fn p dgnav n =
-    let ledgs = incoming dgnav n
-        lbl = (n, getLabel dgnav n)
-    in if p lbl then Just lbl
-       else firstMaybe (searchNodeFrom fn p dgnav) $ map linkSource ledgs
+searchNodeFrom :: DevGraphNavigator a => (LNode DGNodeLab -> Bool) -> a
+               -> Node -> Maybe (a, LNode DGNodeLab)
+searchNodeFrom p dgnav n =
+    let (dgnav', lbln, ledgs) = followIncoming dgnav n
+    in if p lbln then Just (dgnav', lbln)
+       else firstMaybe (searchNodeFrom p dgnav') $ map linkSource ledgs
 
 
 searchLink :: DevGraphNavigator a =>
-                 (LEdge DGLinkLab -> Bool) -> a -> Maybe (LEdge DGLinkLab)
+                 (LEdge DGLinkLab -> Bool) -> a -> Maybe (a, LEdge DGLinkLab)
 searchLink p dgnav =
     firstMaybe (searchLinkFrom p dgnav . fst) $ getCurrent dgnav
---searchLinkFrom p dgnav $ fst $ getCurrent dgnav
---    firstMaybe (searchLinkFrom p dgnav) $ map linkSource $ directInn dgnav
 
 searchLinkFrom :: DevGraphNavigator a => (LEdge DGLinkLab -> Bool) -> a
-                  -> Node -> Maybe (LEdge DGLinkLab)
+                  -> Node -> Maybe (a, LEdge DGLinkLab)
 searchLinkFrom p dgnav n =
-    let ledgs = incoming dgnav n
+    let (dgnav', _, ledgs) = followIncoming dgnav n
     in case find p ledgs of
-         Nothing -> firstMaybe (searchLinkFrom p dgnav) $ map linkSource ledgs
-         x -> x
+         Nothing -> firstMaybe (searchLinkFrom p dgnav') $ map linkSource ledgs
+         x -> fmap ((,) dgnav') x
 
 -- * Predicates to be used with 'searchNode'
 
@@ -161,41 +169,43 @@ dglPredInstance _ = Nothing
 
 -- | Search for the given name in an actual parameter link
 getActualParameterSpec :: DevGraphNavigator a => String -> a
-                       -> Maybe (LNode DGNodeLab)
+                       -> Maybe (a, LNode DGNodeLab)
 getActualParameterSpec n dgnav =
     -- search first actual param
     case searchLink (isJust . dglPredActualParam n) dgnav of
       Nothing -> Nothing
-      Just (sn, _, _) ->
+      Just (dgn', (sn, _, _)) ->
           -- get the spec for the param
           fmap f $ firstMaybe dglPredInstance $ incoming dgnav sn
-              where f edg =
-                        let sn' = linkSource edg in (sn', getLabel dgnav sn')
+              where f edg = let sn' = linkSource edg
+                            in (dgn', (sn', getLabel dgnav sn'))
+
 
 -- | Search for the given name in an instantiation node
 getParameterizedSpec :: DevGraphNavigator a => String -> a
-                     -> Maybe (LNode DGNodeLab)
+                     -> Maybe (a, LNode DGNodeLab)
 getParameterizedSpec n dgnav =
     -- search first actual param
     case searchNode (isJust . dgnPredParameterized n) dgnav of
       Nothing -> Nothing
-      Just (sn, _) ->
+      Just (dgn', (sn, _)) ->
           -- get the spec for the param
           fmap f $ firstMaybe dglPredInstance $ incoming dgnav sn
-              where f edg =
-                        let sn' = linkSource edg in (sn', getLabel dgnav sn')
+              where f edg = let sn' = linkSource edg
+                            in (dgn', (sn', getLabel dgnav sn'))
 
 -- | Search for the given name in any node
-getNamedSpec :: DevGraphNavigator a => String -> a -> Maybe (LNode DGNodeLab)
+getNamedSpec :: DevGraphNavigator a => String -> a -> Maybe (a, LNode DGNodeLab)
 getNamedSpec n dgnav = searchNode (isJust . dgnPredName n) dgnav
 
 
 -- | Combining a search function with an operation on nodes
 fromSearchResult :: (DevGraphNavigator a) =>
-                    (a -> Maybe (LNode DGNodeLab))
+                    (a -> Maybe (a, LNode DGNodeLab))
                         -> (a -> Node -> b) -> a -> Maybe b
-
-fromSearchResult sf f dgnav = fmap (f dgnav . fst) $ sf dgnav
+fromSearchResult sf f dgnav = case sf dgnav of
+                                Just (dgn', (n, _)) -> Just $ f dgn' n
+                                _ -> Nothing
 
 -- * Other utils
 
