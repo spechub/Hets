@@ -38,7 +38,8 @@ import qualified Data.Map as Map
 
 import Control.Monad
 
-import Debug.Trace
+trace :: String -> a -> a
+trace = const id
 
 dgXUpdate :: Monad m => String -> LibEnv -> DGraph -> m DGraph
 dgXUpdate xs le =
