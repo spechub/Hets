@@ -273,7 +273,7 @@ stepwise _ a@(Ass _ _) = error $ "stepwise: unsupported assignment " ++ show a
 translateConvergence :: AssignmentStore m =>
                         EXPRESSION -> m (Map.Map EXPRESSION Int, EXPRESSION)
 translateConvergence e' = f Map.empty e' where
-    f m (Op (OpId OP_convergence) [] [e, x] rg) =
+    f m (Op (OpId OP_convergence) [] [x, e] rg) =
         do
           i <- genNewKey
           let ilf _ _ v = v
