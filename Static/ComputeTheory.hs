@@ -126,7 +126,7 @@ recomputeNodeLabel le dg l@(n, lbl) =
 
 computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
 computeDGraphTheoriesAux le dgraph =
-  foldl (\ dg l@(n, lbl) -> changeDGH dg $ SetNodeLab lbl
+  foldl (\ dg l@(n, lbl) -> updatePending dg lbl
     (n, recomputeNodeLabel le dg l))
      dgraph $ topsortedNodes dgraph
 
@@ -159,6 +159,14 @@ updateLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> G_theory -> DGraph
 updateLabelTheory le dg (i, l) gth = let
     l' = l { dgn_theory = gth }
     n = (i, l' { globalTheory = computeLabelTheory le dg (i, l') })
+    in updatePending dg l n
+
+updatePending
+  :: DGraph
+  -> DGNodeLab -- ^ old label
+  -> LNode DGNodeLab -- ^ node with new label
+  -> DGraph
+updatePending dg l n = let
     dg0 = changeDGH dg $ SetNodeLab l n
     dg1 = togglePending dg0 $ changedLocalTheorems dg0 n
     dg2 = togglePending dg1 $ changedPendingEdges dg1
