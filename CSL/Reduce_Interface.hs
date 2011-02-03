@@ -185,7 +185,7 @@ skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
 
 -- | try to get an EXPRESSION from a Reduce string
 redOutputToExpression :: String -> Maybe EXPRESSION
-redOutputToExpression = parseExpression . skipReduceLineNr
+redOutputToExpression = parseExpression operatorInfoMap . skipReduceLineNr
 
 
 -- ----------------------------------------------------------------------

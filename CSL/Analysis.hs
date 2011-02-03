@@ -167,7 +167,7 @@ handleBinder cmd =
                   _ -> error "handleBinder: impossible case"
 
             , foldOp = \ _ s epl' args rg' ->
-                case lookupBindInfo s $ length args of
+                case lookupBindInfo operatorInfoNameMap s $ length args of
                   Just (BindInfo bvl bbl) ->
                        Op s epl' (substBinderArgs bvl bbl args) rg'
                   _ -> Op s epl' args rg'

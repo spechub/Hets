@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for CSL
@@ -37,6 +38,7 @@ module CSL.AS_BASIC_CSL
     , InstantiatedConstant(..) -- for function constants we need to store the
                                -- instantiation
     , CMD (..)            -- Command datatype
+    , mapExpr             -- maps function over EXPRESSION arguments
     , mkVar               -- Variable constructor
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
@@ -47,7 +49,7 @@ module CSL.AS_BASIC_CSL
                           -- and static analysis
     , operatorInfoMap     -- allows efficient lookup of ops by printname
     , operatorInfoNameMap -- allows efficient lookup of ops by opname
-    , lookupOpInfoForStatAna
+    , lookupOpInfoForParsing
     , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers
     -- Printer
@@ -55,10 +57,12 @@ module CSL.AS_BASIC_CSL
     , printCMD
     , printAssDefinition
     , printConstantName
-    , ConstantPrinter (..)
+    , ExpressionPrinter (..)
     , toArgList
     , simpleName
     , showOPNAME
+    , OpInfoMap
+    , OpInfoNameMap
     ) where
 
 import Common.Id as Id
@@ -67,6 +71,7 @@ import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 import qualified Data.Map as Map
 import Control.Monad
+import Control.Monad.Reader
 
 -- Arbitrary precision numbers
 type APInt = Integer
@@ -86,6 +91,14 @@ mkVar = Var . mkSimpleId
 -- | A simple operator constructor from given operator id and arguments
 mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
 mkPredefOp n el = Op (OpId n) [] el nullRange
+
+mapExpr :: (EXPRESSION -> EXPRESSION) -> EXPRESSION -> EXPRESSION
+mapExpr f e =
+    case e of
+      Op oi epl args rg -> Op oi epl (map f args) rg
+      List exps rg -> List (map f exps) rg
+      _ -> e
+
 
 -- * CSL Basic Data Structures
 
@@ -319,18 +332,29 @@ data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                      } deriving (Eq, Ord, Show)
 
 
+type OpInfoMap = Map.Map String (Map.Map Int OpInfo)
+type OpInfoNameMap = Map.Map OPNAME (Map.Map Int OpInfo)
+
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
 --   behave differently for different arities).
-operatorInfoMap :: Map.Map String (Map.Map Int OpInfo)
-operatorInfoMap = foldl f Map.empty operatorInfo
-    where f m oi = Map.insertWith Map.union (show $ opname oi)
+getOpInfoMap :: (OpInfo -> String) -> [OpInfo] -> OpInfoMap
+getOpInfoMap pf oinfo = foldl f Map.empty oinfo
+    where f m oi = Map.insertWith Map.union (pf oi)
                    (Map.fromList [(arity oi, oi)]) m
 
 -- | Same as operatorInfoMap but with keys of type OPNAME instead of String
-operatorInfoNameMap :: Map.Map OPNAME (Map.Map Int OpInfo)
-operatorInfoNameMap = foldl f Map.empty operatorInfo
+getOpInfoNameMap :: [OpInfo] -> OpInfoNameMap
+getOpInfoNameMap oinfo = foldl f Map.empty oinfo
     where f m oi = Map.insertWith Map.union (opname oi)
                    (Map.fromList [(arity oi, oi)]) m
+
+-- | opInfoMap for the predefined 'operatorInfo'
+operatorInfoMap :: OpInfoMap
+operatorInfoMap = getOpInfoMap (show . opname) operatorInfo
+
+-- | opInfoNameMap for the predefined 'operatorInfo'
+operatorInfoNameMap :: OpInfoNameMap
+operatorInfoNameMap = getOpInfoNameMap operatorInfo
       
 
 
@@ -389,11 +413,12 @@ maxPrecedence = 100
 -- string but not for the arity we return: Left True.
 -- This function is designed for the lookup of operators in not statically
 -- analyzed terms. For statically analyzed terms use lookupOpInfo.
-lookupOpInfoForStatAna :: String -- ^ operator name
+lookupOpInfoForParsing :: OpInfoMap -- ^ map to be used for lookup
+             -> String -- ^ operator name
              -> Int -- ^ operator arity
              -> Either Bool OpInfo
-lookupOpInfoForStatAna op arit =
-    case Map.lookup op operatorInfoMap of
+lookupOpInfoForParsing oiMap op arit =
+    case Map.lookup op oiMap of
       Just oim ->
           case Map.lookup arit oim of
             Just x -> Right x
@@ -406,11 +431,11 @@ lookupOpInfoForStatAna op arit =
 -- | For the given name and arity we lookup an 'OpInfo', where arity=-1
 -- means flexible arity. If an operator is registered for the given
 -- string but not for the arity we return: Left True.
-lookupOpInfo :: OPID -- ^ operator id
+lookupOpInfo :: OpInfoNameMap -> OPID -- ^ operator id
              -> Int -- ^ operator arity
              -> Either Bool OpInfo
-lookupOpInfo (OpId op) arit =
-    case Map.lookup op operatorInfoNameMap of
+lookupOpInfo oinm (OpId op) arit =
+    case Map.lookup op oinm of
       Just oim ->
           case Map.lookup arit oim of
             Just x -> Right x
@@ -419,21 +444,21 @@ lookupOpInfo (OpId op) arit =
                   Just x -> Right x
                   _ -> Left True
       _ -> error $ "lookupOpInfo: no opinfo for " ++ show op
-lookupOpInfo (OpUser _) _ = Left False
+lookupOpInfo _ (OpUser _) _ = Left False
 
 -- | For the given name and arity we lookup an 'BindInfo', where arity=-1
 -- means flexible arity.
-lookupBindInfo :: OPID -- ^ operator name
+lookupBindInfo :: OpInfoNameMap -> OPID -- ^ operator name
              -> Int -- ^ operator arity
              -> Maybe BindInfo
-lookupBindInfo (OpId op) arit =
-    case Map.lookup op operatorInfoNameMap of
+lookupBindInfo oinm (OpId op) arit =
+    case Map.lookup op oinm of
       Just oim ->
           case Map.lookup arit oim of
             Just x -> bind x
             _ -> Nothing
       _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
-lookupBindInfo (OpUser _) _ = Nothing
+lookupBindInfo _ (OpUser _) _ = Nothing
 
 -- * Pretty Printing
 
@@ -471,9 +496,11 @@ instance Pretty OPID where
 
 -- | A monad for printing of constants. This turns the pretty printing facility
 -- more flexible w.r.t. the output of 'ConstantName'.
-class Monad m => ConstantPrinter m where
+class Monad m => ExpressionPrinter m where
     printConstant :: ConstantName -> m Doc
     printConstant = return . printConstantName
+    getOINM :: m OpInfoNameMap
+    getOINM = return operatorInfoNameMap
 
 -- | The default ConstantName printer
 printConstantName :: ConstantName -> Doc
@@ -481,19 +508,25 @@ printConstantName (SimpleConstant s) = text s
 printConstantName (ElimConstant s i) =
     text $ if i > 0 then s ++ "__" ++ show i else s
 
-printAssDefinition :: ConstantPrinter m => AssDefinition -> m Doc
+printAssDefinition :: ExpressionPrinter m => AssDefinition -> m Doc
 printAssDefinition (ConstDef e) = printExpression e >>= return . (text "=" <+>)
 printAssDefinition (FunDef l e) = do
   ed <- printExpression e
   return $ (parens $ sepByCommas $ map text l) <+> text "=" <+> ed
 
-printOPID :: ConstantPrinter m => OPID -> m Doc
+printOPID :: ExpressionPrinter m => OPID -> m Doc
 printOPID (OpUser c) = printConstant c
 printOPID (OpId oi) = return $ text $ showOPNAME oi
 
-instance ConstantPrinter []
+-- a dummy instance, we take the simplest monad
+instance ExpressionPrinter []
 
-printCMD :: ConstantPrinter m => CMD -> m Doc
+-- | An 'OpInfoNameMap' can be interpreted as an 'ExpressionPrinter'
+instance ExpressionPrinter (Reader OpInfoNameMap) where
+    getOINM = ask
+    
+
+printCMD :: ExpressionPrinter m => CMD -> m Doc
 printCMD (Ass c def) = do
   [c', def'] <- mapM printExpression [c, def]
   return $ c' <+> text ":=" <+> def'
@@ -518,7 +551,7 @@ printCMD (Sequence stms) =
 printCMD (Cond l) = let f l' = vcat l' $+$ text "end"
                     in liftM f $ mapM (uncurry printCase) l
 
-printCase :: ConstantPrinter m => EXPRESSION -> [CMD] -> m Doc
+printCase :: ExpressionPrinter m => EXPRESSION -> [CMD] -> m Doc
 printCase e l = do
   e' <- printExpression e
   let f l' = text "ca" <> (text "se" <+> e' <> text ":"
@@ -527,18 +560,18 @@ printCase e l = do
 
 
 
-getPrec :: EXPRESSION -> Int
-getPrec (Op s _ exps _)
+getPrec :: OpInfoNameMap -> EXPRESSION -> Int
+getPrec oinm (Op s _ exps _)
  | length exps == 0 = maxPrecedence + 1
  | otherwise =
-     case lookupOpInfo s $ length exps of
+     case lookupOpInfo oinm s $ length exps of
        Right oi -> prec oi
        Left True -> error $ 
                     concat [ "getPrec: registered operator ", show s, " used "
                            , "with non-registered arity ", show $ length exps ]
        _ -> maxPrecedence -- this is probably a userdefine prefix function
                           -- , binds strongly
-getPrec _ = maxPrecedence
+getPrec _ _ = maxPrecedence
 
 getOp :: EXPRESSION -> Maybe OPID
 getOp (Op s _ _ _) = Just s
@@ -552,13 +585,14 @@ printExtparams :: [EXTPARAM] -> Doc
 printExtparams [] = empty
 printExtparams l = brackets $ sepByCommas $ map printExtparam l
 
-printInfix :: ConstantPrinter m => EXPRESSION -> m Doc
+printInfix :: ExpressionPrinter m => EXPRESSION -> m Doc
 printInfix e@(Op s _ exps@[e1, e2] _) = do
 -- we mustn't omit the space between the operator and its arguments for text-
 -- operators such as "and", "or", but it would be good to omit it for "+-*/"
   oi <- printOPID s
-  let outerprec = getPrec e
-      f cmp e' ed = if cmp outerprec $ getPrec e' then ed else parens ed
+  oinm <- getOINM
+  let outerprec = getPrec oinm e
+      f cmp e' ed = if cmp outerprec $ getPrec oinm e' then ed else parens ed
       g [ed1, ed2] = let cmp = case getOp e1 of
                                  Just op1 | op1 == s -> (<=)
                                           | otherwise -> (<)
@@ -568,15 +602,16 @@ printInfix e@(Op s _ exps@[e1, e2] _) = do
   liftM g $ mapM printExpression exps
 printInfix _ = error "printInfix: Impossible case"
 
-printExpression :: ConstantPrinter m => EXPRESSION -> m Doc
+printExpression :: ExpressionPrinter m => EXPRESSION -> m Doc
 printExpression (Var token) = return $ text $ tokStr token
 printExpression e@(Op s epl exps _)
     | length exps == 0 = liftM (<> printExtparams epl) $ printOPID s
-    | otherwise =
+    | otherwise = do
         let f pexps = (<> (printExtparams epl <> parens (sepByCommas pexps)))
             asPrfx pexps = liftM (f pexps) $ printOPID s
             asPrfx' = mapM printExpression exps >>= asPrfx
-        in case lookupOpInfo s $ length exps  of
+        oinm <- getOINM
+        case lookupOpInfo oinm s $ length exps  of
              Right oi
                  | infx oi -> printInfix e
                  | otherwise -> asPrfx'

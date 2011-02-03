@@ -25,16 +25,16 @@ import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
 import CSL.Transformation
 import CSL.Verification
-import CSL.Reduce_Interface (exportExp)
 import CSL.Analysis
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
 
 import Control.Monad
-import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
+--import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.Error (ErrorT(..), MonadError (..))
 import Control.Monad.State.Class
+import Control.Monad.Reader
 
 import Data.List hiding (lookup)
 import qualified Data.Set as Set
@@ -126,8 +126,18 @@ instance VarGen MapleIO where
 -- ----------------------------------------------------------------------
 
 printExp :: EXPRESSION -> String
-printExp = exportExp
+printExp e = show $ runReader (printExpression e) mapleOpInfoNameMap
+--printExp = exportExp
 --printExp = show . pretty
+-- :: ExpressionPrinter m => EXPRESSION -> m Doc
+
+
+
+mapleOpInfoMap :: OpInfoMap
+mapleOpInfoMap = operatorInfoMap
+
+mapleOpInfoNameMap :: OpInfoNameMap
+mapleOpInfoNameMap = operatorInfoNameMap
 
 -- TODO: The mapping should be OPNAME to OPNAME or we should remove the mapping
 -- just adapt the opinfo-map for pretty printing for each CAS!
@@ -319,7 +329,7 @@ mapleTransS :: ConstantName -> MapleIO String
 mapleTransS s = do
   r <- get
   let bm = getBMap r
-      (bm', s') = lookupOrInsert bm $ Left s
+      (bm', s') = lookupOrInsert bm s
   --     outs = [ "lookingUp " ++ show s ++ " in "
   --            , show $ pretty bm, "{", show bm, "}" ]
   -- liftIO $ putStrLn $ unlines outs
@@ -340,9 +350,14 @@ evalMapleString b args s = do
   let bm = getBMap mit
       trans = if null args then revtranslateExpr bm
               else revtranslateExprWithVars args bm
+  -- when b $ liftIO $ putStrLn $ "evalMapleString:"
+  -- when b $ liftIO $ putStrLn $ show $ maybeToList $ parseExpression mapleOpInfoMap $ trimLeft
+  --          $ removeOutputComments res
+  -- when b $ liftIO $ putStrLn $ show $ map trans $ maybeToList $ parseExpression mapleOpInfoMap $ trimLeft
+  --          $ removeOutputComments res
   return $ if b
-           then map trans $ maybeToList $ parseExpression $ trimLeft
-                    $ removeOutputComments res
+           then map trans $ maybeToList $ parseExpression mapleOpInfoMap
+                    $ trimLeft $ removeOutputComments res
            else []
 
 -- | init the maple communication
@@ -361,7 +376,7 @@ mapleInit adg v to = do
             (_, cs') <- runIOS cs $ PC.call 0.5
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
                                  , "libname := \"", libpath, "\", libname;" ]
-            return MITrans { getBMap = initWithDefault cslMapleDefaultMapping
+            return MITrans { getBMap = initWithOpMap mapleOpInfoMap
                            , getMI = cs'
                            , depGraph = adg
                            , debugMode = False

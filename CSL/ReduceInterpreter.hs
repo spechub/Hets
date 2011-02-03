@@ -253,7 +253,8 @@ evalRedcString s = do
       trans = revtranslateExpr bm
   -- don't need to skip the reducelinenr here, because the Command-Interface
   -- cleans the outpipe before sending (hence removes the reduce line nr)
-  return $ map trans $ maybeToList $ parseExpression $ trimLeft res
+  return $ map trans $ maybeToList $ parseExpression operatorInfoMap
+             $ trimLeft res
 
 -- | init the reduce communication
 redcInit :: Int -- ^ Verbosity level

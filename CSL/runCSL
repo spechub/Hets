@@ -1,2 +1,2 @@
 #!/bin/bash
-emacs -l CSLMode.el $*
+emacs -l ${HOME}/Hets/CSL/CSLMode.el $*

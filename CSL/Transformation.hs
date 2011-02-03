@@ -25,11 +25,15 @@ import Prelude hiding (lookup)
 import CSL.Interpreter
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (mkAndAnalyzeOp)
-import Common.Id (nullRange, Token(..))
+import Common.Id (nullRange, Token(..), Range)
 
 -- ----------------------------------------------------------------------
 -- * Datatypes and Classes for Term- and Program Transformations
 -- ----------------------------------------------------------------------
+
+
+mkOperator :: String -> [EXTPARAM] -> [EXPRESSION] -> Range -> EXPRESSION
+mkOperator = mkAndAnalyzeOp operatorInfoMap
 
 -- | A class to abstract from the concrete variable generation facility
 class Monad m => VarGen m where
@@ -65,31 +69,31 @@ instance SExp APFloat where
     toExp f = Double f nullRange
 
 instance SExp String where
-    toExp s = mkAndAnalyzeOp s [] [] nullRange
+    toExp s = mkOperator s [] [] nullRange
 
 instance SExp ConstantName where
-    toExp (SimpleConstant s) = mkAndAnalyzeOp s [] [] nullRange
+    toExp (SimpleConstant s) = mkOperator s [] [] nullRange
     toExp x = error $ "toExp: elim-constant not supported " ++ show x
 
 instance SExp a => SExp (String, a) where
-    toExp (s, x) = mkAndAnalyzeOp s [] [toExp x] nullRange
+    toExp (s, x) = mkOperator s [] [toExp x] nullRange
 
 instance SExp a => SExp (ConstantName, [a]) where
     toExp (n, l) = Op (OpUser n) [] (map toExp l) nullRange
 
 instance (SExp a, SExp b) => SExp (String, a, b) where
-    toExp (s, x, y) = mkAndAnalyzeOp s [] [toExp x, toExp y] nullRange
+    toExp (s, x, y) = mkOperator s [] [toExp x, toExp y] nullRange
 
 instance (SExp a, SExp b, SExp c) => SExp (String, a, b, c) where
     toExp (s, x, y, z) =
-        mkAndAnalyzeOp s [] [toExp x, toExp y, toExp z] nullRange
+        mkOperator s [] [toExp x, toExp y, toExp z] nullRange
 
 
 -- strangely, ghc says that we would have overlapping instances with 
 -- instance SExp a => SExp (String, a), but I can't see it. I introduce
 -- this strange looking instance
 instance (SExp a) => SExp ((), String, [a]) where
-    toExp (_, s, l) = mkAndAnalyzeOp s [] (map toExp l) nullRange
+    toExp (_, s, l) = mkOperator s [] (map toExp l) nullRange
 
 -- | A class to construct CMDs from simple tuple structures
 class SCmd a where

@@ -318,7 +318,7 @@ relLayer r l = l : relLayer r succs where
 
 casConst :: MITrans -> String -> String
 casConst mit s =
-    fromMaybe "" $ rolookup (getBMap mit) $ Right $ OpUser $ SimpleConstant s
+    fromMaybe "" $ rolookup (getBMap mit) $ SimpleConstant s
 
 
 enclConst :: MITrans -> String -> OPID
@@ -368,7 +368,7 @@ siggy :: Int -> IO (SigSens Sign CMD)
 siggy = uncurry sigsensGen . libFP
 
 libFP :: Int -> (String, String)
-libFP i = fromMaybe (if i > 0 then ("EnCL/Tests.het", "Test" ++ show i)
+libFP i = fromMaybe (if i >= 0 then ("EnCL/Tests.het", "Test" ++ show i)
                             else ("EnCL/ExtParamExamples.het", "E" ++ show (- i)))
           $ Prelude.lookup i testspecs
 
@@ -398,7 +398,7 @@ time p = do
 
 
 toE :: String -> EXPRESSION
-toE = fromJust . parseExpression
+toE = fromJust . parseExpression operatorInfoMap
 
 toCmd :: String -> CMD
 toCmd = fromJust . parseCommand

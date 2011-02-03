@@ -22,9 +22,8 @@ module CSL.Interpreter
     , evaluateList
     , loadAS
     , BMap(..)
-    , BMapDefault(..)
-    , fromList, defaultLookup, defaultRevlookup, CSL.Interpreter.empty
-    , initWithDefault
+    , CSL.Interpreter.empty
+    , initWithOpMap
     , genKey
     , lookupOrInsert
     , revlookup
@@ -319,25 +318,14 @@ internalPrefix = "$"
 internalConstant :: Int -> ConstantName
 internalConstant i = SimpleConstant $ internalPrefix ++ show i
 
--- | The undefined constant in the CAS namespace.
-undefConstant :: String
-undefConstant = show OP_undef
-
 -- | A data structure for invertible maps, with automatic new key generation
 -- and insertion at lookup
 data BMap = BMap { mThere :: Map.Map ConstantName Int
                  , mBack :: IMap.IntMap ConstantName
                  , newkey :: Int
-                 , defaultMap :: BMapDefault OPID
+                 , opMap :: OpInfoMap
                  }
             deriving Show
-
-
-data BMapDefault a = BMapDefault { mThr :: Map.Map a String
-                                 , mBck :: Map.Map String a }
-
-instance Show a => Show (BMapDefault a) where
-    show _ = "BMapDefault"
 
 
 instance SimpleMember BMap ConstantName where
@@ -349,98 +337,39 @@ instance SimpleMember BMap ConstantName where
 genKey :: BMap -> (BMap, Int)
 genKey bm = let i = newkey bm in (bm { newkey = i+1 }, i) 
 
--- ** Interface functions for BMapDefault
-
-fromList :: Ord a => [(a, String)] -> BMapDefault a
-fromList l = let f (x, y) = (y, x)
-             in BMapDefault (Map.fromList l) $ Map.fromList $ map f l
-
-defaultLookup :: Ord a => BMapDefault a -> a -> Maybe String
-defaultLookup bmd s = Map.lookup s $ mThr bmd
-
-defaultRevlookup :: BMapDefault a -> String -> Maybe a
-defaultRevlookup bmd s = Map.lookup s $ mBck bmd
-
 -- ** Interface functions for BMap
 empty :: BMap
 empty = BMap
         { mThere =  Map.empty
         , mBack = IMap.empty
         , newkey =  1
-        , defaultMap = fromList []
+        , opMap = operatorInfoMap
         }
 
-initWithDefault :: [(OPNAME, String)] -> BMap
-initWithDefault l =
-    let f (x, y) = (OpId x, y)
-        -- this mapping should be always there, but may be overwritten
-        l' = (OP_undef, undefConstant):l
-    in CSL.Interpreter.empty {defaultMap = fromList $ map f l'}
+initWithOpMap :: OpInfoMap -> BMap
+initWithOpMap m = CSL.Interpreter.empty { opMap = m }
 
 -- | The only way to also insert a value is to use lookup. One should not
 -- insert values explicitly. Note that you don't control the inserted value.
--- For (Left "...") we throw an error if this value is in the defaultMap,
--- for (Right (OpId ...)) we throw an error if it isn't.
 lookupOrInsert :: BMap
-               -> Either ConstantName OPID -- ^ If you provide a 'ConstantName'
-                                           -- it is interpreted as an 'OpUser'
-                                           -- value
+               -> ConstantName
                -> (BMap, String)
-lookupOrInsert m k =
-    let err pc = error $ "lookupOrInsert: predefined constant encountered "
-                 ++ show pc
-        (k', c, isL, isOpName) = case k of
-                              Left s -> (OpUser s, s, True, False)
-                              Right oi@(OpId _) -> (oi, err oi, False, True)
-                              Right os@(OpUser x) -> (os, x, False, False)
-    in
-      case defaultLookup (defaultMap m) k' of
-        Just s -> if isL
-                  then error $ "lookupOrInsert: default functions should be "
-                           ++ "passed in as OPIDs but got the constant "
-                           ++ show c
-                  else (m, s)
-        Nothing
-          | isOpName ->
-              error $ "lookupOrInsert: OPNAMEs should be registered in the"
-                        ++ " default mapping but could not find " ++ show k'
-          | otherwise ->
-              let f _ _ x = x
-                  nv = newkey m
-                  (mNv', nm) = Map.insertLookupWithKey f c nv $ mThere m
-              -- first check for default symbols
-              in case mNv' of
-                   Just nv' -> (m, bmapIntToString m nv')
-                   _ ->  (m { mThere = nm
-                            , mBack = IMap.insert nv c $ mBack m
-                            , newkey = nv + 1 }
-                         , bmapIntToString m nv)
+lookupOrInsert m c =
+    let f _ _ x = x
+        nv = newkey m
+        (mNv', nm) = Map.insertLookupWithKey f c nv $ mThere m
+    in case mNv' of
+         Just nv' -> (m, bmapIntToString m nv')
+         _ ->  (m { mThere = nm
+                  , mBack = IMap.insert nv c $ mBack m
+                  , newkey = nv + 1 }
+               , bmapIntToString m nv)
 
 -- | A read-only version of 'lookupOrInsert'
 rolookup :: BMap
-         -> Either ConstantName OPID -- ^ If you provide a 'ConstantName'
-                                     -- it is interpreted as an 'OpUser' value
+         -> ConstantName
          -> Maybe String
-rolookup m k =
-    let err pc = error $ "rolookup: predefined constant encountered "
-                 ++ show pc
-        (k', c, isL, isOpName) = case k of
-                              Left s -> (OpUser s, s, True, False)
-                              Right oi@(OpId _) -> (oi, err oi, False, True)
-                              Right os@(OpUser x) -> (os, x, False, False)
-    in
-      case defaultLookup (defaultMap m) k' of
-        Nothing
-          | isOpName ->
-              error $ "rolookup: OPNAMEs should be registered in the"
-                        ++ " default mapping but could not find " ++ show k'
-          | otherwise ->
-              fmap (bmapIntToString m) $ Map.lookup c $ mThere m
-        mS -> if isL
-              then error $ "rolookup: default functions should be "
-                       ++ "passed in as OPIDs but got the constant "
-                       ++ show c
-              else mS
+rolookup m c = fmap (bmapIntToString m) $ Map.lookup c $ mThere m
 
 revlookup :: BMap -> String -> (Maybe OPID)
 revlookup m k = case revlookupGen IMap.empty m k of
@@ -450,12 +379,9 @@ revlookup m k = case revlookupGen IMap.empty m k of
 revlookupGen :: RevVarMap -> BMap -> String
              -> Either (Maybe OPID) (Maybe EXPRESSION)
 revlookupGen vm m k = 
-    case defaultRevlookup (defaultMap m) k of
-      Nothing ->
-          case bmapStringToInt m k of
+    case bmapStringToInt m k of
             Left i -> Left $ fmap OpUser $ IMap.lookup i $ mBack m
             Right i -> Right $ fmap (Var . mkSimpleId) $ IMap.lookup i $ vm
-      mS -> Left mS
 
 
 {-
@@ -515,15 +441,18 @@ translateExpr = translateExprGen Map.empty
 -- | Translate EXPRESSION into a CAS compatible form. Variables are translated
 -- as constants with a namespace disjoint from that of the usual constants.
 translateExprGen :: VarMap -> BMap -> EXPRESSION -> (BMap, EXPRESSION)
+translateExprGen vm m (Op (OpUser c) epl el rg) =
+    let (m', s) = lookupOrInsert m c
+        (m'', el') = mapAccumL (translateExprGen vm) m' el
+    in (m'', Op (OpUser $ SimpleConstant s) epl el' rg)
 translateExprGen vm m (Op oi epl el rg) =
-    let (m', s) = lookupOrInsert m $ Right oi
-        vm' = case lookupBindInfo oi $ length el of
+    let vm' = case lookupBindInfo operatorInfoNameMap oi $ length el of
                 Just bi -> 
                     foldl addToVarMap vm
                               $ toArgList $ map (el!!) $ bindingVarPos bi
                 _ -> vm
-        (m'', el') = mapAccumL (translateExprGen vm') m' el
-    in (m'', Op (OpUser $ SimpleConstant s) epl el' rg)
+        (m', el') = mapAccumL (translateExprGen vm') m el
+    in (m', Op oi epl el' rg)
 translateExprGen vm m (List el rg) =
     let (m', el') = mapAccumL (translateExprGen vm) m el
     in (m', List el' rg)
@@ -550,12 +479,9 @@ revtranslateExprGen rvm m (Op (OpUser c) epl el rg) =
                Left (Just oi) -> Op oi epl el' rg
                Right (Just v) -> v
                _ -> error $ "revtranslateExpr: no mapping for " ++ s
-      _ -> error $ "revtranslateExpr: elim constants on CAS side not"
-           ++  " supported " ++ show c
-revtranslateExprGen rvm m (List el rg) =
-    let el' = map (revtranslateExprGen rvm m) el
-    in List el' rg
-revtranslateExprGen _ _ e = e
+      _ -> error $ "revtranslateExpr: elim constants on CAS side encountered "
+           ++ show c
+revtranslateExprGen rvm m e = mapExpr (revtranslateExprGen rvm m) e
 
 
 -- ** Pretty printing of BMap
@@ -563,20 +489,11 @@ revtranslateExprGen _ _ e = e
 printMapping :: Doc -> Doc -> Doc
 printMapping x y = x <+> mapsto <+> y
 
-printBMapDefault :: (a -> Doc) -> BMapDefault a -> Doc
-printBMapDefault pa bm =
-    ppMap pa text box vcat printMapping $ mThr bm where
-        box = (text "BMapDefault" $+$) . braces
-
 printBMap :: BMap -> Doc
 printBMap bm =
-    braces $ text "BMap" $+$ md $++$ mdefault
+    braces $ text "BMap" $+$ md
         where
           md = printMap braces vcat printMapping $ mThere bm
-          mdefault = printBMapDefault pretty $ defaultMap bm
-
-instance Pretty a => Pretty (BMapDefault a) where
-    pretty = printBMapDefault pretty
 
 instance Pretty BMap where
     pretty = printBMap

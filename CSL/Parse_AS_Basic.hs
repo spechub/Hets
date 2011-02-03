@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Parser for basic specs
@@ -6,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  dominik.dietrich@dfki.de
 Stability   :  experimental
-Portability :  portable
+Portability :  non-portable
 
 Parser for abstract syntax for CSL
 -}
@@ -46,6 +47,31 @@ parseSymbMapItems = Just symbMapItems
 
 -- ---------------------------------------------------------------------------
 
+-- * Parser State Class
+
+-- ---------------------------------------------------------------------------
+
+class OperatorState a where
+    lookupOperator :: a
+                   -> String -- ^ operator name
+                   -> Int -- ^ operator arity
+                   -> Either Bool OpInfo
+
+instance OperatorState () where
+    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+
+instance OperatorState String where
+    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+
+
+instance OperatorState (AnnoState.AnnoState st) where
+    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+
+instance OperatorState OpInfoMap where
+    lookupOperator = lookupOpInfoForParsing
+
+-- ---------------------------------------------------------------------------
+
 -- * Parser utils
 
 -- ---------------------------------------------------------------------------
@@ -79,8 +105,9 @@ mkFromOps :: [OPNAME] -> String -> [EXPRESSION] -> EXPRESSION
 mkFromOps l s exps = mkPredefOp (getOpName s l) exps
 
 -- | Lookup the string in the predefined operator map
-mkAndAnalyzeOp :: String -> [EXTPARAM] -> [EXPRESSION] -> Range -> EXPRESSION
-mkAndAnalyzeOp s eps exps rg =
+mkAndAnalyzeOp :: OperatorState st => st -> String -> [EXTPARAM] -> [EXPRESSION]
+               -> Range -> EXPRESSION
+mkAndAnalyzeOp st s eps exps rg =
     let err msg = "At operator " ++ s ++ "\n" ++ msg
         -- an error-message producing function
         g msg | not $ null eps = Just $ err msg
@@ -90,7 +117,7 @@ mkAndAnalyzeOp s eps exps rg =
         opOrErr mOp x = case x of
                           Just msg -> error msg
                           _ -> OpId $ opname $ fromJust mOp
-        op = case lookupOpInfoForStatAna s (length exps) of
+        op = case lookupOperator st s (length exps) of
                Left False -> OpUser $ SimpleConstant s
                -- if registered it must be registered with the given arity or
                -- as flex-op, otherwise we don't accept it
@@ -141,7 +168,7 @@ signNumCompatChars = "!#$&*+-/:<=>?@\\^|~" ++
 oneOfKeys :: [String] -> CharParser st String
 oneOfKeys l = lexemeParser $ keySignNumCompat $ choice $ map tryString l
 
-plusmin :: CharParser st EXPRESSION
+plusmin :: OperatorState st => CharParser st EXPRESSION
 plusmin = do
   let ops = [OP_plus, OP_minus]
   exp1 <- factor
@@ -150,7 +177,7 @@ plusmin = do
            else foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
 
 -- | parse a product of basic expressions
-factor :: CharParser st EXPRESSION
+factor :: OperatorState st => CharParser st EXPRESSION
 factor = do
   let ops = [OP_mult, OP_div]
   exp1 <- expexp
@@ -159,7 +186,7 @@ factor = do
      else return $ foldl (\ a b -> mkFromOps ops (fst b) [a, snd b]) exp1 exps
 
 -- | parse a sequence of exponentiations
-expexp :: CharParser st EXPRESSION
+expexp :: OperatorState st => CharParser st EXPRESSION
 expexp = do
   exp1 <- expatom
   exps <- many $ pair (oneOfKeys ["**", "^"]) expatom
@@ -167,11 +194,11 @@ expexp = do
     else return $ foldl (\ a b -> mkPredefOp OP_pow [a, snd b]) exp1 exps
 
 -- | parse a basic expression
-expatom :: CharParser st EXPRESSION
+expatom :: OperatorState st => CharParser st EXPRESSION
 expatom = try signednumberExp <|> (oParenT >> plusmin << cParenT)
           <|> listexp <|> intervalexp <|> expsymbol
 
-expsymbol :: CharParser st EXPRESSION
+expsymbol :: OperatorState st => CharParser st EXPRESSION
 expsymbol =
     do
       ident <- prefixidentifier  -- EXTENDED
@@ -180,11 +207,12 @@ expsymbol =
       exps <- option ([],[])
               $ oParenT >> Lexer.separatedBy formulaorexpression pComma
                     << cParenT
-      return $ mkAndAnalyzeOp (tokStr ident) (fst ep) (fst exps) nullRange
+      st <- getState
+      return $ mkAndAnalyzeOp st (tokStr ident) (fst ep) (fst exps) nullRange
 
 
 -- | parses a list expression
-listexp :: CharParser st EXPRESSION
+listexp :: OperatorState st => CharParser st EXPRESSION
 listexp = do
   Lexer.keySign $ string "{"
   elems <- Lexer.separatedBy formulaorexpression pComma
@@ -234,7 +262,7 @@ parseVar = do
 
 
 
-quantFormula :: OPNAME -> CharParser st EXPRESSION
+quantFormula :: OperatorState st => OPNAME -> CharParser st EXPRESSION
  -- TODO: static analysis requires probably a better representation of quantifiers
 quantFormula q = do
   Lexer.keySign (string $ show q)
@@ -247,7 +275,7 @@ quantFormula q = do
 
 
 -- | parser for atoms
-truefalseFormula :: CharParser st EXPRESSION
+truefalseFormula :: OperatorState st => CharParser st EXPRESSION
 truefalseFormula =
     do
       lexemeParser (Lexer.keyWord (tryString $ show OP_true))
@@ -259,7 +287,7 @@ truefalseFormula =
     <|> quantFormula OP_ex <|> quantFormula OP_all
 
 -- | parser for predicates
-predFormula :: CharParser st EXPRESSION
+predFormula :: OperatorState st => CharParser st EXPRESSION
 predFormula = do
   let ops = [ OP_leq, OP_geq, OP_neq, OP_eq, OP_lt, OP_gt ]
   exp1 <- plusmin
@@ -270,21 +298,21 @@ predFormula = do
     Just (op, exp2) -> return $ mkFromOps ops op [exp1, exp2]
     _ -> return $ exp1
 
-atomicFormula :: CharParser st EXPRESSION
+atomicFormula :: OperatorState st => CharParser st EXPRESSION
 atomicFormula = truefalseFormula <|> predFormula <|> parenFormula
 
 -- | parser for formulas
-aFormula :: CharParser st EXPRESSION
+aFormula :: OperatorState st => CharParser st EXPRESSION
 aFormula = try negFormula <|> impOrFormula
 
-negFormula :: CharParser st EXPRESSION
+negFormula :: OperatorState st => CharParser st EXPRESSION
 negFormula = do
   lexemeParser (Lexer.keyWord (tryString $ show OP_not))
   f <- atomicFormula
   return (mkPredefOp OP_not [f])
 
 -- | parses a formula within brackets
-parenFormula :: CharParser st EXPRESSION
+parenFormula :: OperatorState st => CharParser st EXPRESSION
 parenFormula = do
   lexemeParser oParenT
   f <- aFormula
@@ -292,7 +320,7 @@ parenFormula = do
   return f
 
 -- | parser for implications and ors (same precedence)
-impOrFormula :: CharParser st EXPRESSION
+impOrFormula :: OperatorState st => CharParser st EXPRESSION
 impOrFormula = do
   let ops = [ OP_or, OP_impl ]
   f1 <- andFormula
@@ -303,7 +331,7 @@ impOrFormula = do
    else return $ foldl (\ a (op, b) -> mkFromOps ops op [a, b]) f1 opfs
 
 -- | a parser for and sequence of and formulas
-andFormula :: CharParser st EXPRESSION
+andFormula :: OperatorState st => CharParser st EXPRESSION
 andFormula = do
   f1 <- atomicFormula
   opfs <- many $ pair (lexemeParser $ keyWord $ tryString $ show OP_and)
@@ -317,7 +345,7 @@ andFormula = do
 
 -- ---------------------------------------------------------------------------
 
-formulaorexpression :: CharParser st EXPRESSION
+formulaorexpression :: OperatorState st => CharParser st EXPRESSION
 formulaorexpression = try aFormula <|> plusmin
 
 -- | parser for commands
@@ -325,7 +353,7 @@ command :: CharParser (AnnoState.AnnoState st) CMD
 command = reduceCommand <|> try assignment <|> repeatExpr <|> caseExpr
           <|> sequenceExpr <|> constraint
 
-reduceCommand :: CharParser st CMD
+reduceCommand :: OperatorState st => CharParser st CMD
 reduceCommand = do
   cmd <- lexemeParser $ Lexer.keyWord $ choice $ map tryString
          ["solve", "simplify", "divide", "int", "rlqe", "factorize"]
@@ -335,14 +363,14 @@ reduceCommand = do
   cParenT
   return $ Cmd cmd $ arg1 : args
 
-assignment :: CharParser st CMD
+assignment :: OperatorState st => CharParser st CMD
 assignment = do
   ident <- expsymbol
   lexemeParser $ tryString ":="
   exp' <- plusmin
   return $ Ass ident exp'
 
-constraint :: CharParser st CMD
+constraint :: OperatorState st => CharParser st CMD
 constraint = do
   exp' <- try aFormula
   case exp' of
@@ -503,9 +531,9 @@ parseCommand inp =
       Left _ -> Nothing
       Right s -> Just s
 
-parseExpression :: String -> Maybe EXPRESSION
-parseExpression inp =
-    case runParser formulaorexpression "" "" inp of
+parseExpression :: OpInfoMap -> String -> Maybe EXPRESSION
+parseExpression st inp =
+    case runParser formulaorexpression st "" inp of
       Left _ -> Nothing
       Right s -> Just s
 
