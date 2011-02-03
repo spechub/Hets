@@ -237,6 +237,36 @@ isProvedBasically b = case b of
   BasicProof _ pst -> isProvedStat pst
   _ -> False
 
+getValidAxioms
+  :: G_theory -- ^ old global theory
+  -> G_theory -- ^ new global theory
+  -> [String] -- ^ unchanged axioms
+getValidAxioms
+  (G_theory lid1 _ _ sens1 _)
+  (G_theory lid2 _ _ sens2 _) =
+  case coerceThSens lid1 lid2 "" sens1 of
+    Nothing -> []
+    Just sens -> OMap.keys $ OMap.filterWithKey (\ k s ->
+      case OMap.lookup k sens of
+        Just s2 -> isAxiom s && isAxiom s2 && sentence s == sentence s2
+        _ -> False) sens2
+
+invalidateProofs
+  :: G_theory -- ^ old global theory
+  -> G_theory -- ^ new global theory
+  -> G_theory -- ^ local theory with proven goals
+  -> G_theory -- ^ new local theory with deleted proofs
+invalidateProofs oTh nTh (G_theory lid sig si sens _) =
+  let vAxs = getValidAxioms oTh nTh
+      validProofs (_, bp) = case bp of
+        BasicProof _ pst -> all (`elem` vAxs) $ usedAxioms pst
+        _ -> True
+      newSens = OMap.map
+        (\ s -> if isAxiom s then s else
+             s { senAttr = ThmStatus $ filter validProofs
+                   $ thmStatus s }) sens
+  in G_theory lid sig si newSens startThId
+
 {- | mark sentences as proven if an identical axiom or other proven sentence
      is part of the same theory. -}
 proveSens :: Logic lid sublogics basic_spec sentence symb_items

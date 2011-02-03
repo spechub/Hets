@@ -102,22 +102,32 @@ computeLibEnvTheories le =
                      in Map.insert ln dg le'
     in foldl upd Map.empty lns
 
-
 computeDGraphTheories :: LibEnv -> DGraph -> DGraph
 computeDGraphTheories le dgraph =
   let newDg = computeDGraphTheoriesAux le dgraph
   in groupHistory dgraph (DGRule "Compute theory") newDg
 
+recomputeNodeLabel :: LibEnv -> DGraph -> LNode DGNodeLab -> DGNodeLab
+recomputeNodeLabel le dg l@(n, lbl) =
+  case computeLabelTheory le dg l of
+    gTh@(Just th) ->
+      let (chg, lbl1) = case globalTheory lbl of
+            Nothing -> (False, lbl)
+            Just oTh -> (True, lbl
+              { dgn_theory = invalidateProofs oTh th $ dgn_theory lbl })
+          ngTh = if chg then computeLabelTheory le dg (n, lbl1) else gTh
+      in case ngTh of
+        Just nth@(G_theory _ _ _ sens _) ->
+          (if Map.null sens then markNodeConsistent "ByNoSentences" lbl1
+           else lbl1 { dgn_theory = proveLocalSens nth (dgn_theory lbl1) })
+           { globalTheory = ngTh }
+        Nothing -> lbl1
+    Nothing -> lbl
+
 computeDGraphTheoriesAux :: LibEnv -> DGraph -> DGraph
 computeDGraphTheoriesAux le dgraph =
   foldl (\ dg l@(n, lbl) -> changeDGH dg $ SetNodeLab lbl
-    (n,
-    let gth = computeLabelTheory le dg l in
-    (case gth of
-      Just th@(G_theory _ _ _ sens _) ->
-         if Map.null sens then markNodeConsistent "ByNoSentences"
-         else (\ lb -> lb { dgn_theory = proveLocalSens th (dgn_theory lbl) })
-      _ -> id) lbl { globalTheory = gth }))
+    (n, recomputeNodeLabel le dg l))
      dgraph $ topsortedNodes dgraph
 
 computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
