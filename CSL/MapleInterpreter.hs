@@ -53,6 +53,7 @@ data MITrans = MITrans { getBMap :: BMap
                        , getMI :: PC.CommandState
                        , depGraph :: AssignmentDepGraph ()
                        , debugMode :: Bool
+                       , symbolicMode :: Bool
                        , vericondOut :: Maybe Handle
                        , channelTimeout :: PC.DTime }
 
@@ -162,6 +163,13 @@ printAssignment n l e = concat [ n, ":= proc", args, printExp e
                                , " end proc:", n, args, ";"]
     where args = concat [ "(", intercalate ", " l, ") " ]
 
+printAssignmentWithEval :: String -> [String] -> EXPRESSION -> String
+printAssignmentWithEval n [] e =
+    concat [n, ":= evalf(", printExp e, "):", n, ";"]
+printAssignmentWithEval n l e = concat [ n, ":= proc", args, printExp e
+                                       , " end proc:", n, args, ";"]
+    where args = concat [ "(", intercalate ", " l, ") " ]
+
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = printExp e ++ ";"
 
@@ -230,7 +238,7 @@ mapleAssign ef trans transE n def = do
   (e', args') <- transE args e
   n' <- trans n
   -- liftIO $ putStrLn $ show e'
-  el <- ef args $ printAssignment n' args' e'
+  el <- ef args $ printAssignmentWithEval n' args' e'
   case el of
     [rhs] -> return rhs
     l -> throwError $ ASError InterfaceError $
@@ -380,6 +388,7 @@ mapleInit adg v to = do
                            , getMI = cs'
                            , depGraph = adg
                            , debugMode = False
+                           , symbolicMode = True
                            , vericondOut = Nothing
                            , channelTimeout = to
                            }

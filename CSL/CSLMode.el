@@ -21,3 +21,12 @@
   (switch-to-buffer (get-buffer "*Match-Result*"))
   )
 
+
+
+(setq myvarMenu 1)
+
+(defun match-abstractflange2 ()
+  (define-key global-map [menu-bar enclmenu match others a] '((concatenate 'string "Menu " myvarMenu) . nil))
+  (setq myvarMenu (+ 1 myvarMenu))
+  (message myvarMenu)
+  )
