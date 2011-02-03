@@ -65,6 +65,8 @@ import Static.DGNavigation
 
 -- Use this for new testing:
 
+(sigs, dgn) <- env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
+
 sigs <- siggy 4
 
 -- match the concrete design to the pattern
@@ -261,10 +263,16 @@ naviGen s pf sf =
     putStrLn $ pf $ sf $ mkDGNav s
 
 
+-- removing the additional new dgnavigator from the result
+naviSimplify :: (a -> Maybe (b, c)) -> a -> Maybe c
+naviSimplify f = fmap snd . f
+
 naviTest :: SigSens Env Sentence -> String -> IO ()
 naviTest sigs s = do
-  navi sigs $ getActualParameterSpec s
+  navi sigs $ naviSimplify $ getActualParameterSpec s
 --  collectNodes (sigsensDG sigs) [sigsensNode sigs]
+
+
 
 
 
@@ -279,6 +287,11 @@ testspecs =
     , (3, ("HasCASL/Real3D/SolidWorks/Matchtest2.het", "Matching1"))
     , (4, ("HasCASL/Real3D/SolidWorks/flange.het", "Match"))
     ]
+
+env :: String -> String -> IO (SigSens Env Sentence, DGNav)
+env lb sp = do
+  sigs <- sigsensGen lb sp
+  return (sigs, mkDGNav sigs)
 
 sigsensGen :: String -> String -> IO (SigSens Env Sentence)
 sigsensGen lb sp = do
@@ -505,3 +518,68 @@ getMatchMap lb sp patN cN = do
   return (res, rcm)
 
 
+{-
+(sigs, dgn) <- env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
+pretty $ linkSource $ snd $ fromJust $ searchLink (isJust . dglPredActualParam "FlangePattern") dgn
+liftM (pretty . linkSource . snd . fromJust . searchLink (isJust . dglPredActualParam "FlangePattern") . snd) $ env "HasCASL/Real3D/SolidWorks/flange.het" "Component"
+
+-}
+-- ** Temp
+
+printDG :: String -> String -> IO ()
+printDG lb sp = sigsensGen lb sp >>= putStrLn . printGE . globalEnv . sigsensDG
+
+printGE :: GlobalEnv -> String
+--printGE = show . pretty
+printGE = unlines . map f . Map.toList where
+    f (s, ge) = show $ pretty s <> text ":" <+> infoEntry ge
+
+infoEntry :: GlobalEntry -> Doc
+infoEntry ge =
+    case ge of
+      SpecEntry egs -> text "SpecEntry" <+> parens (infoEGS egs)
+      StructEntry evs -> text "StructEntry"
+      ViewEntry evs -> text "ViewEntry"
+      ArchEntry rs -> text "ArchEntry"
+      UnitEntry us -> text "UnitEntry"
+      RefEntry rs -> text "RefEntry"
+
+
+infoEGS :: ExtGenSig -> Doc
+infoEGS (ExtGenSig gs ns) = sepBySemis [infoGS gs, infoNS ns]
+
+infoGS :: GenSig -> Doc
+infoGS (GenSig mn1 nsl mn2) = sepByCommas [infoMN mn1, parens $ sepBySemis $ map infoNS nsl, infoMN mn2]
+
+infoNS :: NodeSig -> Doc
+infoNS = pretty . getNode
+
+infoMN :: MaybeNode -> Doc
+infoMN (JustNode ns) = infoNS ns
+infoMN (EmptyNode _) = text "EmptyNode"
+
+
+{-
+
+infoEGS :: DevGraphNavigator a => a -> ExtGenSig -> (a, Doc)
+infoEGS dgn (ExtGenSig gs ns) = sepBySemis [infoGS gs, infoNS ns]
+
+infoGS :: DevGraphNavigator a => a -> GenSig -> (a, Doc)
+infoGS dgn (GenSig mn1 nsl mn2) = 
+    (dgn', dl1) = mapAccumL infoMN dgn [mn1, mn2]
+sepByCommas [infoMN mn1, parens $ sepBySemis $ map infoNS nsl, infoMN mn2]
+
+infoNS :: DevGraphNavigator a => a -> NodeSig -> (a, Doc)
+infoNS dgn = pretty . getNode
+
+infoMN :: DevGraphNavigator a => a -> MaybeNode -> (a, Doc)
+infoMN dgn (JustNode ns) = infoNS ns
+infoMN dgn (EmptyNode _) = (dgn, text "EmptyNode")
+
+
+-- | import, formal parameters and united signature of formal params
+data GenSig = GenSig MaybeNode [NodeSig] MaybeNode deriving Show
+
+-- | genericity and body
+data ExtGenSig = ExtGenSig GenSig NodeSig deriving Show
+-}
