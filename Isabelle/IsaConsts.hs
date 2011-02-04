@@ -188,45 +188,48 @@ sortT a = case a of
   NotCont -> holType
   IsCont _ -> dom
 
+mkSTypeT :: Continuity -> String -> Typ
+mkSTypeT a s = Type s (sortT a) []
+
 -- ------------------- POLY TYPES --------------------------------------
 
 listT :: Continuity -> Typ -> Typ
-listT a t = case a of
-   IsCont _ -> Type "llist" (sortT a) [t]
-   NotCont -> Type "list" (sortT a) [t]
+listT a t = Type (case a of
+   IsCont _ -> "llist"
+   NotCont -> "list") (sortT a) [t]
 
 charT :: Continuity -> Typ
-charT a = case a of
-  IsCont _ -> Type "charT" (sortT a) []
-  NotCont -> Type "char" (sortT a) []
+charT a = mkSTypeT a $ case a of
+  IsCont _ -> "charT"
+  NotCont -> "char"
 
 ratT :: Continuity -> Typ
-ratT a = case a of
-  IsCont _ -> Type "ratT" (sortT a) []
-  NotCont -> Type "rat" (sortT a) []
+ratT a = mkSTypeT a $ case a of
+  IsCont _ -> "ratT"
+  NotCont -> "rat"
 
 fracT :: Continuity -> Typ
-fracT a = Type "fracT" (sortT a) []
+fracT a = mkSTypeT a "fracT"
 
 integerT :: Continuity -> Typ
-integerT a = case a of
-   IsCont _ -> Type "integerT" (sortT a) []
-   NotCont -> Type "int" (sortT a) []
+integerT a = mkSTypeT a $ case a of
+   IsCont _ -> "integerT"
+   NotCont -> "int"
 
 boolT :: Continuity -> Typ
-boolT a = case a of
-   IsCont _ -> Type "lBool" (sortT a) []
-   NotCont -> Type "bool" (sortT a) []
+boolT a = mkSTypeT a $ case a of
+   IsCont _ -> "lBool"
+   NotCont -> "bool"
 
 orderingT :: Continuity -> Typ
-orderingT a = case a of
-   IsCont _ -> Type "lOrdering" (sortT a) []
-   NotCont -> Type "sOrdering" (sortT a) []
+orderingT a = mkSTypeT a $ case a of
+   IsCont _ -> "lOrdering"
+   NotCont -> "sOrdering"
 
 intT :: Continuity -> Typ
-intT a = case a of
-   IsCont _ -> Type "intT" (sortT a) []
-   NotCont -> Type "int" (sortT a) []
+intT a = mkSTypeT a $ case a of
+   IsCont _ -> "intT"
+   NotCont -> "int"
 
 prodT :: Continuity -> Typ -> Typ -> Typ
 prodT a t1 t2 = case a of
@@ -245,8 +248,11 @@ curryFunT c ls x = case c of
 
 -- * predefined types
 
+mkSType :: String -> Typ
+mkSType = mkSTypeT NotCont
+
 noTypeT :: Typ
-noTypeT = Type "dummy" holType []
+noTypeT = mkSType "dummy"
 
 noType :: DTyp
 noType = Hide noTypeT NA Nothing
@@ -270,7 +276,7 @@ boolType :: Typ
 boolType = boolT NotCont
 
 mkListType :: Typ -> Typ
-mkListType t = Type "list" holType [t]
+mkListType = listT NotCont
 
 mkOptionType :: Typ -> Typ
 mkOptionType t = Type "option" holType [t]
@@ -287,31 +293,37 @@ mkCurryFunType = flip $ foldr mkFunType -- was "--->" before
 
 -- * predefinded HOLCF types
 
+mkSDomType :: String -> Typ
+mkSDomType s = Type s dom []
+
 voidDom :: Typ
-voidDom = Type "void" dom []
+voidDom = mkSDomType "void"
 
 -- should this be included (as primitive)?
 flatDom :: Typ
-flatDom = Type "flat" dom []
+flatDom = mkSDomType "flat"
 
 tLift :: Typ -> Typ
 tLift t = Type "lift" dom [t]
 
+mkBinDomType :: String -> Typ -> Typ -> Typ
+mkBinDomType s t1 t2 = Type s dom [t1, t2]
+
 mkContFun :: Typ -> Typ -> Typ
-mkContFun t1 t2 = Type lFunS dom [t1, t2]
+mkContFun = mkBinDomType lFunS
 
 mkStrictProduct :: Typ -> Typ -> Typ
-mkStrictProduct t1 t2 = Type sProdS dom [t1, t2]
+mkStrictProduct = mkBinDomType sProdS
 
 mkContProduct :: Typ -> Typ -> Typ
-mkContProduct t1 t2 = Type lProdS dom [t1, t2]
+mkContProduct = mkBinDomType lProdS
 
 -- handy for multiple args: [T1,...,Tn]--->T gives T1-->(T2--> ... -->T)
 mkCurryContFun :: [Typ] -> Typ -> Typ
 mkCurryContFun = flip $ foldr mkContFun
 
 mkStrictSum :: Typ -> Typ -> Typ
-mkStrictSum t1 t2 = Type lSumS dom [t1, t2]
+mkStrictSum = mkBinDomType lSumS
 
 
 -- * term construction
