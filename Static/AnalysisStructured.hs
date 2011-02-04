@@ -408,7 +408,9 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                anaAllFitArgs lg opts ln dg nsig name spname gs afitargs
        GMorphism cid _ _ _ _ <- return morDelta
        morDelta' <- case nsig of
-         EmptyNode _ -> return morDelta
+         EmptyNode _
+           | logicOfGsign gsigmaA == logicOfGsign gsigmaRes
+             -> return morDelta
          _ -> ginclusion lg gsigmaA gsigmaRes >>= comp morDelta
        (_, imor) <- gSigCoerce lg gsigmaB $ Logic $ sourceLogic cid
        tmor <- gEmbedComorphism imor gsigmaB
