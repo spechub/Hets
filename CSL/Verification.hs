@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Generation of Verification Conditions
@@ -22,10 +22,13 @@ import CSL.Transformation
 import CSL.Analysis
 import CSL.AS_BASIC_CSL
 
+import Common.Doc
+
 import System.IO
 import Control.Monad.Trans (MonadIO (..))
 import Control.Monad.Error (MonadError (..))
 import Control.Monad (when)
+import Control.Monad.Reader
 
 -- ----------------------------------------------------------------------
 -- * Verification Conditions
@@ -66,15 +69,17 @@ getVCPremises adg e =
         f (sc, depGrAnno) = mkVCPrem sc $ annoDef depGrAnno
     in map f $ Set.toList $ upperUntilRefl (const $ const False) adg scl
 
+mkCondition :: AssDefinition -> EXPRESSION -> EXPRESSION -> EXPRESSION
+mkCondition def lhs rhs = f args where
+    args = getArguments def
+    f (x:l) = g x $ f l
+    f _ = if isInterval rhs then toExp ("in", lhs, rhs)
+          else toExp ("=", lhs, rhs)
+    g v b = toExp ("all", mkVar v, b)
+    
 mkVCPrem :: ConstantName -> AssDefinition -> EXPRESSION
-mkVCPrem n def
-    | null args = toExp ("=", n, e)
-    | otherwise = f args
-    where e = getDefiniens def
-          args = getArguments def
-          f (x:l) = g x $ f l
-          f _ = toExp ("=", toExp(n, map mkVar args), e)
-          g v b = toExp ("all", mkVar v, b)
+mkVCPrem n def = mkCondition def (toExp(n, map mkVar $ getArguments def))
+                 $ getDefiniens def
 
 mkVC :: ConstantName 
      -> AssDefinition
@@ -84,7 +89,7 @@ mkVC :: ConstantName
 mkVC _ def evalE prl = 
     let prem = foldl f (head prl) $ tail prl
         f a b = toExp ("and", a, b)
-        conc = toExp ("=", getDefiniens def, evalE)
+        conc = mkCondition def (getDefiniens def) evalE
     in if null prl then conc else toExp ("impl", prem, conc)
 
 mkBoolVC :: EXPRESSION -- ^ the Boolean term
@@ -138,3 +143,30 @@ evaluateAndVerify prog ea@(RepeatAtom e) = do
   return b
 
 
+-- ----------------------------------------------------------------------
+-- * Printing Verification Conditions
+-- ----------------------------------------------------------------------
+
+showOpnameForVC :: OPNAME -> String
+showOpnameForVC x =
+        case x of
+          OP_ex -> "enclEX"
+          OP_all -> "enclAll"
+          OP_or -> "||"
+          OP_impl -> "-->"
+          OP_and -> "&&"
+          _ -> showOPNAME x
+
+
+data VCPrinter = VCPrinter
+
+-- | The VCPrinter can be interpreted as an 'ExpressionPrinter'
+instance ExpressionPrinter (Reader VCPrinter) where
+    getOINM = return operatorInfoNameMap
+    printOpname = return . text . showOpnameForVC
+    printInterval l r = return $
+                        text "Interval"
+                              <> parens (sepByCommas $ map (text . show) [l, r])
+
+printExpForVC :: EXPRESSION -> Doc
+printExpForVC e = runReader (printExpression e) VCPrinter

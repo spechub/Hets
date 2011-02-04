@@ -1,2 +1,2 @@
 #!/bin/bash
-emacs -l ${HOME}/Hets/CSL/CSLMode.el $*
+emacs -l ${HOME}/Hets/CSL/CSLMode.el $* --eval "(refresh-specmenu)" 

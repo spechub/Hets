@@ -94,7 +94,7 @@ instance VCGenerator MapleIO where
     addVC ea e = do
       let
           -- s = show $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
-          s = show $ pretty e <> text ";"
+          s = show $ printExpForVC e <> text ";"
           -- s = (++ "\n\n;\n\n") $ showRaw $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
 --          vcHdl = stdout
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
@@ -140,23 +140,6 @@ mapleOpInfoMap = operatorInfoMap
 mapleOpInfoNameMap :: OpInfoNameMap
 mapleOpInfoNameMap = operatorInfoNameMap
 
--- TODO: The mapping should be OPNAME to OPNAME or we should remove the mapping
--- just adapt the opinfo-map for pretty printing for each CAS!
-cslMapleDefaultMapping :: [(OPNAME, String)]
-cslMapleDefaultMapping = 
-    let idmapping = map (\ x -> (x, show x))
---        ampmapping = map (\ x -> (x, "&" ++ show x))
-        possibleIntervalOps = [ OP_mult, OP_div, OP_plus, OP_minus, OP_neg
-                              , OP_cos,  OP_sin, OP_tan, OP_sqrt, OP_abs
-                              , OP_neq, OP_lt, OP_leq, OP_eq, OP_gt, OP_geq ]
-        logicOps = [ OP_and, OP_or, OP_impl, OP_true, OP_false ]
-        otherOps = [ OP_factor, OP_maxloc, OP_sign, OP_Pi, OP_min, OP_max
-                   , OP_fthrt, OP_reldist, OP_reldistLe]
-        specialOps = [(OP_pow, "^"), (OP_failure, "FAIL")]
---        specialOp = (OP_pow, "&**")
-    in specialOps ++ idmapping logicOps ++ idmapping possibleIntervalOps
-           ++ idmapping otherOps
-
 printAssignment :: String -> [String] -> EXPRESSION -> String
 printAssignment n [] e = concat [n, ":= ", printExp e, ":", n, ";"]
 printAssignment n l e = concat [ n, ":= proc", args, printExp e
@@ -165,7 +148,9 @@ printAssignment n l e = concat [ n, ":= proc", args, printExp e
 
 printAssignmentWithEval :: String -> [String] -> EXPRESSION -> String
 printAssignmentWithEval n [] e =
-    concat [n, ":= evalf(", printExp e, "):", n, ";"]
+--    concat [n, ":= evalf(", printExp e, "):", n, " &+ 0", ";"]
+--    concat [n, ":= evalf(", printExp e, "):", n, ";"]
+    concat [n, ":= evalf(", printExp e, "):g(", n, ")", ";"]
 printAssignmentWithEval n l e = concat [ n, ":= proc", args, printExp e
                                        , " end proc:", n, args, ";"]
     where args = concat [ "(", intercalate ", " l, ") " ]
@@ -239,6 +224,7 @@ mapleAssign ef trans transE n def = do
   n' <- trans n
   -- liftIO $ putStrLn $ show e'
   el <- ef args $ printAssignmentWithEval n' args' e'
+--  el <- ef args $ printAssignment n' args' e'
   case el of
     [rhs] -> return rhs
     l -> throwError $ ASError InterfaceError $
@@ -421,6 +407,11 @@ runWithMaple :: AssignmentDepGraph () -> Int
 runWithMaple adg i to l m = do
   mit <- mapleInit adg i to
   mapM_ (mapleLoadModule mit) l
+
+  -- wraps an interval around the number
+  let debugFun = "g := proc(v) z:=abs(Float(v,1-Digits)):[v-z, v+z] end;"
+  runIOS (getMI mit) $ PC.call 0.3 debugFun
+        
   execWithMaple mit m
 
 -- ----------------------------------------------------------------------

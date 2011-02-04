@@ -67,6 +67,7 @@ import Data.Time.Clock
 import CSL.SMTComparison
 import CSL.EPRelation
 import System.IO
+import System.Directory
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
@@ -229,7 +230,11 @@ testWithMapleGen verb to f lb sp = do
       g x = loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
 
   -- start maple and run g
-  res <- runWithMaple gr verb to ["EnCLFunctions"] $ g prog
+  res <- runWithMaple gr verb to
+         [ "EnCLFunctions"
+         -- , "intpakX" -- Problems with the min,max functions, they are remapped by this package!
+         ]
+         $ g prog
   hClose vchdl
   return res
 
@@ -356,7 +361,8 @@ testspecs =
 sigsensGen :: String -> String -> IO (SigSens Sign CMD)
 sigsensGen lb sp = do
   hlib <- getEnvDef "HETS_LIB" $ error "Missing HETS_LIB environment variable"
-  let fp = if head lb == '/' then lb else hlib ++ "/" ++ lb
+  b <- doesFileExist lb
+  let fp = if b then lb else hlib ++ "/" ++ lb
       ho = defaultHetcatsOpts { libdirs = [hlib]
                               , verbose = 0 }
 

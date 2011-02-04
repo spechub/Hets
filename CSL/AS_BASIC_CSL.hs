@@ -32,7 +32,8 @@ module CSL.AS_BASIC_CSL
     , AssDefinition (..)  -- A function or constant definition
     , getDefiniens        -- accessor function for AssDefinition
     , getArguments        -- accessor function for AssDefinition
-    , isFunDef            -- accessor function for AssDefinition
+    , isFunDef            -- predicate for AssDefinition
+    , isInterval          -- predicate for EXPRESSION
     , mkDefinition        -- constructor for AssDefinition
     , updateDefinition    -- updates the definiens
     , InstantiatedConstant(..) -- for function constants we need to store the
@@ -49,6 +50,9 @@ module CSL.AS_BASIC_CSL
                           -- and static analysis
     , operatorInfoMap     -- allows efficient lookup of ops by printname
     , operatorInfoNameMap -- allows efficient lookup of ops by opname
+    , mergeOpArityMap     -- for combining two operator arity maps
+    , getOpInfoMap
+    , getOpInfoNameMap
     , lookupOpInfoForParsing
     , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers
@@ -144,6 +148,10 @@ isFunDef :: AssDefinition -> Bool
 isFunDef (FunDef _ _) = True
 isFunDef _ = False
 
+isInterval :: EXPRESSION -> Bool
+isInterval (Interval _ _ _) = True
+isInterval _ = False
+
 data InstantiatedConstant = InstantiatedConstant
     { constName :: ConstantName
     , instantiation :: [EXPRESSION] } deriving (Show, Eq, Ord)
@@ -178,6 +186,9 @@ data OPNAME =
   -- comparison predicates
   | OP_neq | OP_lt | OP_leq | OP_eq | OP_gt | OP_geq | OP_convergence
   | OP_reldistLe
+
+  -- containment predicate
+  | OP_in
 
   -- special CAS constants
   | OP_undef | OP_failure
@@ -242,6 +253,7 @@ showOPNAME x =
           OP_true -> "true"
           OP_undef -> "undef"
           OP_failure -> "fail"
+          OP_in -> "in"
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
@@ -331,9 +343,18 @@ data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                      , bind :: Maybe BindInfo -- ^ More info for binders
                      } deriving (Eq, Ord, Show)
 
+type ArityMap = Map.Map Int OpInfo
+type OpInfoArityMap a = Map.Map a ArityMap
+type OpInfoMap = OpInfoArityMap String
+type OpInfoNameMap = OpInfoArityMap OPNAME
 
-type OpInfoMap = Map.Map String (Map.Map Int OpInfo)
-type OpInfoNameMap = Map.Map OPNAME (Map.Map Int OpInfo)
+
+-- | Merges two OpInfoArityMaps together with the first map as default map
+-- and the second overwriting the default values
+mergeOpArityMap :: Ord a => OpInfoArityMap a -> OpInfoArityMap a
+                -> OpInfoArityMap a
+mergeOpArityMap = flip $ Map.unionWith Map.union
+
 
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
 --   behave differently for different arities).
@@ -393,7 +414,7 @@ operatorInfo =
            ++ map (a2bind 0 1) [ OP_ex, OP_all ]
            ++ map (a2i 3) [ OP_or, OP_impl ]
            ++ map (a2i 4) [ OP_and ]
-           ++ map (a2i 5) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt]
+           ++ map (a2i 5) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt, OP_in]
            ++ map (a2i 6) [ OP_plus ]
            ++ map (a2i 7) [ OP_minus ]
            ++ map (a2i 8) [OP_mult]
@@ -497,10 +518,15 @@ instance Pretty OPID where
 -- | A monad for printing of constants. This turns the pretty printing facility
 -- more flexible w.r.t. the output of 'ConstantName'.
 class Monad m => ExpressionPrinter m where
-    printConstant :: ConstantName -> m Doc
-    printConstant = return . printConstantName
     getOINM :: m OpInfoNameMap
     getOINM = return operatorInfoNameMap
+    printConstant :: ConstantName -> m Doc
+    printConstant = return . printConstantName
+    printOpname :: OPNAME -> m Doc
+    printOpname = return . text . showOPNAME
+    printInterval :: APFloat -> APFloat -> m Doc
+    printInterval l r =
+        return $ brackets $ sepByCommas $ map (text . show) [l, r]
 
 -- | The default ConstantName printer
 printConstantName :: ConstantName -> Doc
@@ -516,7 +542,7 @@ printAssDefinition (FunDef l e) = do
 
 printOPID :: ExpressionPrinter m => OPID -> m Doc
 printOPID (OpUser c) = printConstant c
-printOPID (OpId oi) = return $ text $ showOPNAME oi
+printOPID (OpId oi) = printOpname oi
 
 -- a dummy instance, we take the simplest monad
 instance ExpressionPrinter []
@@ -620,8 +646,7 @@ printExpression e@(Op s epl exps _)
 printExpression (List exps _) = liftM sepByCommas (mapM printExpression exps)
 printExpression (Int i _) = return $ text (show i)
 printExpression (Double d _) = return $ text (show d)
-printExpression (Interval l r _) =
-    return $ brackets $ sepByCommas $ map (text . show) [l, r]
+printExpression (Interval l r _) = printInterval l r
 
 printOpItem :: OP_ITEM -> Doc
 printOpItem (Op_item tokens _) =
