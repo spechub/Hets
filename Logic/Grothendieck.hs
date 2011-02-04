@@ -40,11 +40,11 @@ The Grothendieck logic is defined to be the
 module Logic.Grothendieck
   ( G_basic_spec (..)
   , G_sign (..)
-  , SigId(..)
+  , SigId (..)
   , startSigId
   , isHomSubGsign
   , isSubGsign
-  , langNameSig
+  , logicOfGsign
   , G_symbolmap (..)
   , G_mapofsymbol (..)
   , G_symbol (..)
@@ -54,7 +54,7 @@ module Logic.Grothendieck
   , isProperSublogic
   , joinSublogics
   , G_morphism (..)
-  , MorId(..)
+  , MorId (..)
   , startMorId
   , mkG_morphism
   , lessSublogicComor
@@ -205,8 +205,8 @@ instance Show G_sign where
 instance Pretty G_sign where
     pretty (G_sign _ (ExtSign s _) _) = pretty s
 
-langNameSig :: G_sign -> String
-langNameSig (G_sign lid _ _) = language_name lid
+logicOfGsign :: G_sign -> AnyLogic
+logicOfGsign (G_sign lid _ _) = Logic lid
 
 -- | Grothendieck maps with symbol as keys
 data G_symbolmap a = forall lid sublogics
@@ -214,7 +214,7 @@ data G_symbolmap a = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_symbolmap lid (Map.Map symbol a)
   deriving Typeable
 
@@ -237,7 +237,7 @@ data G_mapofsymbol a = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_mapofsymbol lid (Map.Map a symbol)
   deriving Typeable
 
@@ -260,7 +260,7 @@ data G_symbol = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
+          sign morphism symbol raw_symbol proof_tree =>
   G_symbol lid symbol
   deriving Typeable
 
@@ -289,7 +289,7 @@ data G_symb_items_list = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_symb_items_list lid [symb_items]
   deriving Typeable
 
@@ -311,7 +311,7 @@ data G_symb_map_items_list = forall lid sublogics
          sign morphism symbol raw_symbol proof_tree .
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree  =>
+          sign morphism symbol raw_symbol proof_tree =>
         G_symb_map_items_list lid [symb_map_items]
   deriving Typeable
 
@@ -413,7 +413,7 @@ data LogicGraph = LogicGraph
     , morphisms :: Map.Map String AnyMorphism
     , modifications :: Map.Map String AnyModification
     , squares :: Map.Map (AnyComorphism, AnyComorphism) [Square]
-    , qTATranslations:: Map.Map String AnyComorphism
+    , qTATranslations :: Map.Map String AnyComorphism
     } deriving Show
 
 emptyLogicGraph :: LogicGraph
@@ -441,7 +441,7 @@ instance Pretty LogicGraph where
 lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname $ logics logicGraph of
-    Nothing -> fail $ error_prefix ++" in LogicGraph logic \""
+    Nothing -> fail $ error_prefix ++ " in LogicGraph logic \""
                       ++ logname ++ "\" unknown"
     Just lid -> return lid
 
@@ -453,13 +453,13 @@ logicUnion :: LogicGraph -> AnyLogic -> AnyLogic
            -> Result (AnyComorphism, AnyComorphism)
 logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
   case logicInclusion lg l1 l2 of
-    Result _ (Just c) -> return (c,idComorphism l2)
+    Result _ (Just c) -> return (c, idComorphism l2)
     _ -> case logicInclusion lg l2 l1 of
-      Result _ (Just c) -> return (idComorphism l1,c)
-      _ -> case Map.lookup (ln1,ln2) (unions lg) of
+      Result _ (Just c) -> return (idComorphism l1, c)
+      _ -> case Map.lookup (ln1, ln2) (unions lg) of
         Just u -> return u
-        Nothing -> case Map.lookup (ln2,ln1) (unions lg) of
-          Just (c2,c1) -> return (c1,c2)
+        Nothing -> case Map.lookup (ln2, ln1) (unions lg) of
+          Just (c2, c1) -> return (c1, c2)
           Nothing -> fail $ "Union of logics " ++ ln1 ++
                      " and " ++ ln2 ++ " does not exist"
    where ln1 = language_name lid1
@@ -470,14 +470,14 @@ lookupCompComorphism :: Monad m => [String] -> LogicGraph -> m AnyComorphism
 lookupCompComorphism nameList logicGraph = do
   cs <- mapM lookupN nameList
   case cs of
-    c:cs1 -> foldM compComorphism c cs1
+    c : cs1 -> foldM compComorphism c cs1
     _ -> fail "Illegal empty comorphism composition"
   where
   lookupN name =
     case name of
-      'i':'d':'_':logic -> do
+      'i' : 'd' : '_' : logic -> do
          let (mainLogic, subLogicD) = span (/= '.') logic
-          --subLogicD will begin with a . which has to be removed
+          -- subLogicD will begin with a . which has to be removed
          sublogic <- if null subLogicD
                      then fail $ "missing sublogic for " ++ logic
                      else return $ tail subLogicD
@@ -486,44 +486,45 @@ lookupCompComorphism nameList logicGraph = do
          case filter (\ s -> sublogic == sublogicName s)
               $ all_sublogics lid of
            [] -> fail $ "unknown sublogic name " ++ sublogic
-           s : _ ->  return $ Comorphism $ mkIdComorphism lid s
+           s : _ -> return $ Comorphism $ mkIdComorphism lid s
       _ -> maybe (fail ("Cannot find logic comorphism " ++ name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
 -- | find a comorphism in a logic graph
 lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
-lookupComorphism= lookupCompComorphism . splitOn ';'
+lookupComorphism = lookupCompComorphism . splitOn ';'
 
 -- | find a modification in a logic graph
 lookupModification :: (Monad m) => String -> LogicGraph -> m AnyModification
 lookupModification input lG
         = case parse (parseModif lG << eof) "" input of
             Left err -> fail $ show err
-            Right x  -> x
+            Right x -> x
 
 parseModif :: (Monad m) => LogicGraph -> Parser (m AnyModification)
 parseModif lG = do
-             (xs, _) <- separatedBy (vertcomp lG) crossT
-             let r = do  y <- sequence xs
-                         case y of
-                           m:ms -> return $ foldM horCompModification m ms
-                           _ -> Nothing
-             case r of
-               Nothing -> fail "Illegal empty horizontal composition"
-               Just m -> return m
+  (xs, _) <- separatedBy (vertcomp lG) crossT
+  let r = do
+        y <- sequence xs
+        case y of
+          m : ms -> return $ foldM horCompModification m ms
+          _ -> Nothing
+  case r of
+    Nothing -> fail "Illegal empty horizontal composition"
+    Just m -> return m
 
 vertcomp :: (Monad m) => LogicGraph -> Parser (m AnyModification)
 vertcomp lG = do
-             (xs, _) <- separatedBy (pm lG) semiT
-             let r = do
-                      y <- sequence xs
-                      case y of
-                       m:ms -> return $ foldM vertCompModification m ms
-                       _  -> Nothing
-             --r has type Maybe (m AnyModification)
-             case r of
-               Nothing -> fail "Illegal empty vertical composition"
-               Just m -> return m
+  (xs, _) <- separatedBy (pm lG) semiT
+  let r = do
+        y <- sequence xs
+        case y of
+          m : ms -> return $ foldM vertCompModification m ms
+          _ -> Nothing
+             -- r has type Maybe (m AnyModification)
+  case r of
+    Nothing -> fail "Illegal empty vertical composition"
+    Just m -> return m
 
 pm :: (Monad m) => LogicGraph -> Parser (m AnyModification)
 pm lG = parseName lG <|> bracks lG
@@ -617,7 +618,7 @@ instance Category G_sign GMorphism where
   ide (G_sign lid sigma@(ExtSign s _) ind) =
     GMorphism (mkIdComorphism lid (top_sublogic lid))
               sigma ind (ide s) startMorId
-  --  composition of Grothendieck signature morphisms
+  -- composition of Grothendieck signature morphisms
   composeMorphisms (GMorphism r1 sigma1 ind1 mor1 _)
        (GMorphism r2 _sigma2 _ mor2 _) =
     do let lid1 = sourceLogic r1
@@ -630,14 +631,14 @@ instance Category G_sign GMorphism where
            mor' <- composeMorphisms mor1 mor2'
            return (GMorphism r1 sigma1 ind1 mor' startMorId)
          else do
-         -- coercion between target of first and
-         --   source of second Grothendieck morphism
+         {- coercion between target of first and
+         source of second Grothendieck morphism -}
          mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
-         -- map signature morphism component of first Grothendieck morphism
-         --  along the comorphism component of the second one ...
+         {- map signature morphism component of first Grothendieck morphism
+         along the comorphism component of the second one ... -}
          mor1'' <- map_morphism r2 mor1'
-         -- and then compose the result with the signature morphism component
-         --   of first one
+         {- and then compose the result with the signature morphism component
+         of first one -}
          mor <- composeMorphisms mor1'' mor2
          -- also if the first comorphism is the identity...
          if isIdComorphism (Comorphism r1) &&
@@ -662,7 +663,7 @@ instance Category G_sign GMorphism where
   legal_mor (GMorphism r (ExtSign s _) _ mor _) =
     legal_mor mor &&
     case maybeResult $ map_sign r s of
-      Just (sigma',_) -> sigma' == cod mor
+      Just (sigma', _) -> sigma' == cod mor
       Nothing -> False
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
@@ -682,7 +683,7 @@ gEmbed (G_morphism lid mor ind) = let sig = dom mor in
 gEmbedComorphism :: AnyComorphism -> G_sign -> Result GMorphism
 gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
   sig'@(ExtSign s _) <- coerceSign lid (sourceLogic cid) "gEmbedComorphism" sig
-  (sigTar,_) <- map_sign cid s
+  (sigTar, _) <- map_sign cid s
   return (GMorphism cid sig' ind (ide sigTar) startMorId)
 
 -- | heterogeneous union of two Grothendieck signatures
@@ -700,8 +701,8 @@ gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
           lidT2 = targetLogic cid2
       sigma1' <- coercePlainSign lid1 lidS1 "Union of signaturesa" sigma1
       sigma2' <- coercePlainSign lid2 lidS2 "Union of signaturesb" sigma2
-      (sigma1'',_) <- map_sign cid1 sigma1'  -- where to put axioms???
-      (sigma2'',_) <- map_sign cid2 sigma2'  -- where to put axioms???
+      (sigma1'', _) <- map_sign cid1 sigma1'  -- where to put axioms???
+      (sigma2'', _) <- map_sign cid2 sigma2'  -- where to put axioms???
       sigma2''' <- coercePlainSign lidT2 lidT1 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
       return (G_sign lidT1 (makeExtSign lidT1 sigma3) startSigId)
@@ -726,7 +727,7 @@ homogeneousMorManyUnion [] =
   fail "homogeneous union of emtpy list of morphisms"
 homogeneousMorManyUnion (gmor : gmors) =
   foldM ( \ (G_morphism lid2 mor2 _) (G_morphism lid1 mor1 _) -> do
-            mor1' <- coerceMorphism lid1 lid2  "homogeneousMorManyUnion" mor1
+            mor1' <- coerceMorphism lid1 lid2 "homogeneousMorManyUnion" mor1
             mor <- morphism_union lid2 mor1' mor2
             return (G_morphism lid2 mor startMorId)) gmor gmors
 
@@ -735,13 +736,13 @@ logicInclusion :: LogicGraph -> AnyLogic -> AnyLogic -> Result AnyComorphism
 logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
      let ln1 = language_name lid1
          ln2 = language_name lid2 in
-     if ln1==ln2 then
+     if ln1 == ln2 then
        return (idComorphism l1)
-      else case Map.lookup (ln1,ln2) (inclusions logicGraph) of
+      else case Map.lookup (ln1, ln2) (inclusions logicGraph) of
            Just (Comorphism i) ->
                return (Comorphism i)
            Nothing ->
-               fail ("No inclusion from "++ln1++" to "++ln2++" found")
+               fail ("No inclusion from " ++ ln1 ++ " to " ++ ln2 ++ " found")
 
 updateMorIndex :: MorId -> GMorphism -> GMorphism
 updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
@@ -770,7 +771,7 @@ inclusionAux guard lg (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
     Comorphism i <- logicInclusion lg (Logic lid1) (Logic lid2)
     ext1@(ExtSign sigma1' _) <-
         coerceSign lid1 (sourceLogic i) "Inclusion of signatures" sigma1
-    (sigma1'',_) <- map_sign i sigma1'
+    (sigma1'', _) <- map_sign i sigma1'
     ExtSign sigma2' _ <-
         coerceSign lid2 (targetLogic i) "Inclusion of signatures" sigma2
     mor <- (if guard then inclusion else subsig_inclusion)
@@ -786,15 +787,15 @@ genCompInclusion f mor1 mor2 = do
   mor <- composeMorphisms mor1 incl
   composeMorphisms mor mor2
 
--- | Composition of two Grothendieck signature morphisms
--- | with intermediate inclusion
+{- | Composition of two Grothendieck signature morphisms
+with intermediate inclusion -}
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion = genCompInclusion . inclusionAux False
 
 -- | Find all (composites of) comorphisms starting from a given logic
-findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
+findComorphismPaths :: LogicGraph -> G_sublogics -> [AnyComorphism]
 findComorphismPaths lg (G_sublogics lid sub) =
-  nubOrd $ map fst $ iterateComp (0::Int) [(idc, [idc])]
+  nubOrd $ map fst $ iterateComp (0 :: Int) [(idc, [idc])]
   where
   idc = Comorphism (mkIdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
@@ -812,7 +813,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
         in mapMaybe addCoMor $ filter (not . (`elem` cmps)) coMors
 
 -- | finds first comorphism with a matching sublogic
-findComorphism ::Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
+findComorphism :: Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
 findComorphism _ [] = fail "No matching comorphism found"
 findComorphism gsl@(G_sublogics lid sub) (Comorphism cid : rest) =
     let l2 = sourceLogic cid in
@@ -821,31 +822,32 @@ findComorphism gsl@(G_sublogics lid sub) (Comorphism cid : rest) =
     then return $ Comorphism cid
     else findComorphism gsl rest
 
--- | check transportability of Grothendieck signature morphisms
--- | (currently returns false for heterogeneous morphisms)
+{- | check transportability of Grothendieck signature morphisms
+(currently returns false for heterogeneous morphisms) -}
 isTransportable :: GMorphism -> Bool
 isTransportable (GMorphism cid _ ind1 mor ind2) =
     ind1 > startSigId && ind2 > startMorId
-    && isModelTransportable(Comorphism cid)
+    && isModelTransportable (Comorphism cid)
     && is_transportable (targetLogic cid) mor
 
 -- * Lax triangles and weakly amalgamable squares of lax triangles
--- a lax triangle looks like:
---             laxTarget
---   i -------------------------------------> k
---                   ^  laxModif
---                  | |
---   i ------------- > j -------------------> k
---        laxFst              laxSnd
---
--- and I_k is quasi-semi-exact
+
+{- a lax triangle looks like:
+            laxTarget
+  i -------------------------------------> k
+                  ^  laxModif
+                 | |
+  i ------------- > j -------------------> k
+       laxFst              laxSnd
+
+and I_k is quasi-semi-exact -}
 
 data LaxTriangle = LaxTriangle {
                      laxModif :: AnyModification,
                      laxFst, laxSnd, laxTarget :: AnyComorphism
                    } deriving (Show, Eq, Ord)
--- a weakly amalgamable square of lax triangles
--- consists of two lax triangles with the same laxTarget
+{- a weakly amalgamable square of lax triangles
+consists of two lax triangles with the same laxTarget -}
 
 data Square = Square {
                  leftTriangle, rightTriangle :: LaxTriangle
@@ -857,36 +859,36 @@ mkIdSquare :: AnyLogic -> Square
 mkIdSquare (Logic lid) = let
    idCom = Comorphism (mkIdComorphism lid (top_sublogic lid))
    idMod = idModification idCom
-   idTriangle = LaxTriangle{
+   idTriangle = LaxTriangle {
                  laxModif = idMod,
                  laxFst = idCom,
                  laxSnd = idCom,
                  laxTarget = idCom}
- in Square{leftTriangle = idTriangle, rightTriangle = idTriangle}
+ in Square {leftTriangle = idTriangle, rightTriangle = idTriangle}
 
-mkDefSquare :: AnyComorphism  -> Square
+mkDefSquare :: AnyComorphism -> Square
 mkDefSquare c1@(Comorphism cid1) = let
   idComS = Comorphism $ mkIdComorphism (sourceLogic cid1) $
            top_sublogic $ sourceLogic cid1
   idComT = Comorphism $ mkIdComorphism (targetLogic cid1) $
            top_sublogic $ targetLogic cid1
   idMod = idModification c1
-  lTriangle = LaxTriangle{
+  lTriangle = LaxTriangle {
                laxModif = idMod,
                laxFst = c1,
                laxSnd = idComS,
                laxTarget = c1
               }
-  rTriangle = LaxTriangle{
+  rTriangle = LaxTriangle {
                laxModif = idMod,
                laxFst = idComT,
                laxSnd = c1,
                laxTarget = c1
               }
- in Square{leftTriangle = lTriangle, rightTriangle = rTriangle}
+ in Square {leftTriangle = lTriangle, rightTriangle = rTriangle}
 
 mirrorSquare :: Square -> Square
-mirrorSquare s = Square{
+mirrorSquare s = Square {
                  leftTriangle = rightTriangle s,
                  rightTriangle = leftTriangle s}
 
@@ -896,4 +898,3 @@ lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
   sqL2 <- Map.lookup (com2, com1) $ squares lg
   return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
   -- maybe adjusted if comparing AnyModifications change
-
