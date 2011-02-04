@@ -56,7 +56,7 @@
     )
   )
 
-(defun refresh-specmenu ()
+(defun refresh-specmenu2 ()
   (interactive)
   (let
       ((entries (sort (append (extractspecs) (extractgets)) 'string<))
@@ -91,16 +91,79 @@
     )
   )
 
-(defun run-csl (spec1 spec2 trans)
+(defun refresh-evalmenu ()
   (interactive)
-;;  (message "selected %s and %s and %s" spec1 spec2 trans)
+  (let
+      ((entries (sort (append (extractspecs) (extractgets)) 'string<))
+       currentsym
+       )
+    
+    ;; delete the match menu
+    (global-unset-key [menu-bar enclmenu eval])
+    ;; generate match menu
+    (define-key-after global-map [menu-bar enclmenu eval] (cons "Evaluate" '(lambda () (interactive) (run-eval "FlangeComplete"))))
+    )
+  )
+
+(defun refresh-matchmenu ()
+  (interactive)
+  (let
+      ((entries (sort (append (extractspecs) (extractgets)) 'string<))
+       currentsym
+       )
+    
+    ;; delete the match menu
+    (global-unset-key [menu-bar enclmenu match])
+    ;; generate match menu
+    (define-key-after global-map [menu-bar enclmenu match] (cons "Match" (make-sparse-keymap)) 'kill-buffer)
+
+
+    (refresh-specmenu entries 'match 'run-match '("Show match" "Export parameter"))
+  )
+)
+
+
+(defun refresh-specmenu (entries menusym runfun runlist)
+  (interactive)
+    
+    ;; generate subentries  
+    (dolist (item entries)
+      (setq currentsym (gensym))
+      (define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym) (cons item (make-sparse-keymap)))
+      ;; submenus
+      (dolist (item2 entries)
+	(setq currentsym2 (gensym))
+	(define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym currentsym2) (cons item2 (make-sparse-keymap)))
+	(dolist (item3 runlist)
+	(define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym currentsym2 (gensym))
+	  (cons item3 `(lambda () (interactive) (,runfun ,item ,item2 ,item3))))
+	)
+
+	)
+    (define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym (gensym)) (cons "--" nil))
+    (define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym (gensym)) (cons "Select design spec" nil))
+
+      )
+    (define-key global-map (vector 'menu-bar 'enclmenu menusym (gensym)) (cons "--" nil))
+    (define-key global-map (vector 'menu-bar 'enclmenu menusym (gensym)) (cons "Select pattern spec" nil))
+  )
+
+
+(defun prepare-buffer (name)
+  (let ((buff (get-buffer-create name)))
+	(with-current-buffer buff (delete-region (point-min) (point-max)))
+	buff)
+  )
+
+(defun run-match (spec1 spec2 trans)
+  (interactive)
+  (message "Matching selected pattern with the design spec")
 ;; example command
 ;; matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent
 ;  (message (concatenate 'string "asd" (buffer-file-name (current-buffer))))
 ;  (call-process "/bin/ls" nil (get-buffer-create "*Match-Result*") t "-lh" "/tmp/")
 
- 
-  (call-process "matchcad" nil (get-buffer-create "*Match-Result*") t
+  (call-process "matchcad" nil (prepare-buffer "*Match-Result*") t
 		"-sMatch"
 		"-p" spec1
 		"-d" spec2
@@ -108,6 +171,30 @@
 		(buffer-file-name (current-buffer)))
 
   (switch-to-buffer (get-buffer "*Match-Result*"))
+
+  (when (string= trans "Export parameter")
+    (refresh-evalmenu)
+    )
+  nil
+  )
+
+(defun run-eval (spec1)
+  (interactive)
+;;  (message "selected %s and %s and %s" spec1 spec2 trans)
+;; example command
+;; matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent
+;  (message (concatenate 'string "asd" (buffer-file-name (current-buffer))))
+
+;  (message "Evaluating EnCL spec")
+  (message "Evaluating EnCL spec %s" spec1)
+  (let ((buff (prepare-buffer "*Eval-Result*"))
+	(fp (buffer-file-name (current-buffer))))
+
+    (message "Evaluating EnCL spec %s" spec1)
+    (switch-to-buffer buff)
+;;    (call-process "evalspec" nil buff t "-s" spec1 fp)
+;;    (start-process-shell-command "evalproc" buff (concatenate 'string "evalspec -s " spec1 " " fp))
+    nil)
   )
 
 (defun openspec (filename)
