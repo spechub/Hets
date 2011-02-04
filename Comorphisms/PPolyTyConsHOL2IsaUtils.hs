@@ -18,8 +18,8 @@ module Comorphisms.PPolyTyConsHOL2IsaUtils
   , simpForOption
   , typeToks
   , transSentence
-  , SimpKind(..)
-  , OldSimpKind(..)
+  , SimpKind (..)
+  , OldSimpKind (..)
   ) where
 
 import HasCASL.As as As
@@ -45,7 +45,7 @@ import Common.GlobalAnnotations
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.List
-import Data.Maybe (catMaybes, isNothing)
+import Data.Maybe
 import Control.Monad (foldM)
 
 mapTheory :: SimpKind -> Simplifier -> (Env, [Named Le.Sentence])
@@ -92,7 +92,7 @@ getAssumpsToks = Map.foldWithKey (\ i ops s ->
 
 typeToks :: Env -> Set.Set String
 typeToks =
-    Set.map (\ tyId -> showIsaTypeT tyId baseSign) . Map.keysSet . typeMap
+    Set.map (`showIsaTypeT` baseSign) . Map.keysSet . typeMap
 
 transSignature :: Env -> Set.Set String -> Result Isa.Sign
 transSignature env toks = do
@@ -100,7 +100,7 @@ transSignature env toks = do
             let getTypeArgs n k = case k of
                         ClassKind _ -> []
                         FunKind _ _ r _ ->
-                            (TFree ("'a" ++ show n) [], [isaTerm])
+                            (TFree ("'a" ++ show n) [], holType)
                                            : getTypeArgs (n + 1) r
             in Map.insert (showIsaTypeT tyId baseSign)
                   [(isaTerm, getTypeArgs (1 :: Int) $ typeKind typeInfo)] m
@@ -150,7 +150,7 @@ transPlainFunType fty =
     case fty of
     FunType (TupleType l) a -> case a of
         FunType _ _ -> transFunType fty
-        _ -> foldr mkFunType (transFunType a) $ map transFunType l
+        _ -> foldr (mkFunType . transFunType) (transFunType a) l
     _ -> transFunType fty
 
 data FunType = UnitType | BoolType
@@ -175,8 +175,8 @@ makePartialVal t = if isPartialVal t then t else case t of
 
 funType :: Type -> Result FunType
 funType t = case getTypeAppl t of
-   (TypeName tid _ n, tys) ->
-       if n == 0 then do
+   (TypeName tid _ n, tys)
+     | n == 0 -> do
            ftys <- mapM funType tys
            return $ case ftys of
              [] | tid == unitTypeId -> UnitType
@@ -185,9 +185,8 @@ funType t = case getTypeAppl t of
                   if isPartialArrow tid then makePartialVal t2 else t2
              (_ : _ : _) | isProductId tid -> TupleType ftys
              _ -> ApplType tid ftys
-       else if null tys then return $ TypeVar tid
-            else fatal_error "funType: no higher kinds" $ posOfId tid
-   _ -> fatal_error "funType: no type appl" $ getRange t
+     | null tys -> return $ TypeVar tid
+   _ -> fatal_error "funType: no flat type appl" $ getRange t
 
 -- * translation of a datatype declaration
 
@@ -225,7 +224,7 @@ transDataEntry env tyToks de@(DataEntry _ _ gk _ _ alts) =
       let transDName ti = Type (showIsaTypeT ti baseSign) []
                              . map transTypeArg
       return (transDName i tyArgs, nalts)
-    _ -> fatal_error ("not a free type: "  ++ show i)
+    _ -> fatal_error ("not a free type: " ++ show i)
          $ posOfId i
 
 -- arguments of a datatype's typeconstructor
@@ -321,16 +320,14 @@ transOpId sign tyToks op ts@(TypeScheme _ ty _) =
          Nothing -> error "transOpId"
          Just fty ->
            let args = isPlainFunType fty
-           in case (do
+           in fromMaybe (error $ "transOpId " ++ show op) $ do
            ops <- Map.lookup op (assumps sign)
            if isSingleton ops then return $
               mkIsaConstT (isPredType ty) ga args op baseSign tyToks
              else do
                  i <- elemIndex ts $ map opType $ Set.toList ops
                  return $ mkIsaConstIT (isPredType ty)
-                        ga args op (i+1) baseSign tyToks) of
-          Just str -> str
-          Nothing  -> error $ "transOpId " ++ show op
+                        ga args op (i + 1) baseSign tyToks
 
 transLetEq :: Env -> Set.Set String -> Bool -> Set.Set String
     -> Set.Set VarDecl -> ProgEq -> Result ((As.Term, Isa.Term), IsaTermCond)
@@ -456,7 +453,7 @@ transTerm sign tyToks collectConds toks pVars trm = case trm of
             unCurry f = let rf = termAppl uncurryOp $ con f in
               ITC fTy rf None
         return $ case (opId ==) of
-          is  | is trueId -> ITC fTy true None
+          is | is trueId -> ITC fTy true None
               | is falseId -> ITC fTy false None
               | is botId -> case instfTy of
                   PartialVal t -> ITC t (termAppl makeTotal noneOp) $ Cond false
@@ -686,7 +683,7 @@ restrict = conDouble "restrictOp"
 
 existEqualOp :: Isa.Term
 existEqualOp =
-  con $ VName "existEqualOp" $ Just $ AltSyntax "(_ =e=/ _)"  [50, 51] 50
+  con $ VName "existEqualOp" $ Just $ AltSyntax "(_ =e=/ _)" [50, 51] 50
 
 integrateCondInBool :: Cond -> Isa.Term
 integrateCondInBool c = let b = cond2bool c in
@@ -711,8 +708,8 @@ cond2bool c = case nub $ condToList c of
   [] -> true
   ncs -> foldr1 mkBinConj ncs
 
--- adjust actual argument to expected argument type of function
--- considering a definedness conditions
+{- adjust actual argument to expected argument type of function
+considering a definedness conditions -}
 adjustArgType :: FunType -> FunType -> Result ConvFun
 adjustArgType aTy ty = case (aTy, ty) of
     (TupleType l, _) -> adjustArgType (foldl1 PairType l) ty
@@ -739,17 +736,18 @@ adjustArgType aTy ty = case (aTy, ty) of
     (FunType a b, FunType c d) -> do
         aC <- adjustArgType a c -- function a -> c (a fixed)
         dC <- adjustArgType b d -- function d -> b (b fixed)
-        -- (d -> b) o (c -> d) o (a -> c) :: a -> b
-        -- not not integrate cond treatment via invertConv . invertConv
+
+        {- (d -> b) o (c -> d) o (a -> c) :: a -> b
+        do not integrate cond treatment via invertConv . invertConv -}
         return . mkCompFun (mkResFun . invertConv $ invertConv dC)
           . mkArgFun $ invertConv aC
     (TypeVar _, _) -> return IdOp
     (_, TypeVar _) -> return IdOp
-    (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
-        -> do l <- mapM (uncurry adjustArgType) $ zip l1 l2
-              if any (isNotIdOp . invertConv) l
-                then fail "cannot adjust type application"
-                else return IdOp
+    (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 -> do
+      l <- mapM (uncurry adjustArgType) $ zip l1 l2
+      if any (isNotIdOp . invertConv) l
+        then fail "cannot adjust type application"
+        else return IdOp
     _ -> fail $ "cannot adjust argument type\n" ++ show (aTy, ty)
 
 unpackOp :: Isa.Term -> Bool -> Bool -> FunType -> ConvFun -> Isa.Term
@@ -817,12 +815,11 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
                  mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
     (TypeVar _, _) -> return ((False, IdOp), (ty, IdOp))
     (_, TypeVar _) -> return ((False, IdOp), (aTy, IdOp))
-    (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
-        -> do l <- mapM (\ (a, b) -> adjustTypes a rTy b) $ zip l1 l2
-              if any (fst . fst) l || any (isNotIdOp . snd . snd) l
-                then fail "cannot adjust type application"
-                else return ((False, IdOp),
-                             (ApplType i1 $ map (fst . snd) l, IdOp))
+    (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 -> do
+      l <- mapM (\ (a, b) -> adjustTypes a rTy b) $ zip l1 l2
+      if any (fst . fst) l || any (isNotIdOp . snd . snd) l
+        then fail "cannot adjust type application"
+        else return ((False, IdOp), (ApplType i1 $ map (fst . snd) l, IdOp))
     _ -> fail $ "cannot adjust types\n" ++ show (aTy, ty)
 
 adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
@@ -1045,7 +1042,7 @@ mkApp sign tyToks collectConds toks pVars f arg = do
     aTr <- transTerm sign tyToks collectConds toks pVars arg
     let pv = case arg of -- dummy application of a unit argument
           TupleTerm [] _ -> return fTr
-          _ -> mkError "wrong function type"  f
+          _ -> mkError "wrong function type" f
         adjstAppl = if collectConds then adjustMkAppl else adjustMkApplOrig
     adjustPos (getRange [f, arg]) $ case fTy of
          FunType a r -> adjstAppl fTrm fCs False a r aTr
