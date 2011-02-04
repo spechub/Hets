@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Abstract syntax for CSL
@@ -355,7 +355,7 @@ operatorInfoMap = getOpInfoMap (show . opname) operatorInfo
 -- | opInfoNameMap for the predefined 'operatorInfo'
 operatorInfoNameMap :: OpInfoNameMap
 operatorInfoNameMap = getOpInfoNameMap operatorInfo
-      
+
 
 
 -- | Mapping of operator names to arity-'OpInfo'-maps (an operator may
@@ -524,7 +524,7 @@ instance ExpressionPrinter []
 -- | An 'OpInfoNameMap' can be interpreted as an 'ExpressionPrinter'
 instance ExpressionPrinter (Reader OpInfoNameMap) where
     getOINM = ask
-    
+
 
 printCMD :: ExpressionPrinter m => CMD -> m Doc
 printCMD (Ass c def) = do
@@ -542,8 +542,8 @@ printCMD (Repeat e stms) = do
                (text "peat" $+$ vcat (map (text "." <+>)  l))
                $+$ text "until" <+> e'
   liftM f $ mapM printCMD stms
-  
-printCMD (Sequence stms) = 
+
+printCMD (Sequence stms) =
     let f l = text "se" <> (text "quence" $+$ vcat (map (text "." <+>) l))
               $+$ text "end"
     in liftM f $ mapM printCMD stms
@@ -566,7 +566,7 @@ getPrec oinm (Op s _ exps _)
  | otherwise =
      case lookupOpInfo oinm s $ length exps of
        Right oi -> prec oi
-       Left True -> error $ 
+       Left True -> error $
                     concat [ "getPrec: registered operator ", show s, " used "
                            , "with non-registered arity ", show $ length exps ]
        _ -> maxPrecedence -- this is probably a userdefine prefix function
@@ -711,7 +711,7 @@ instance GetRange SYMB_ITEMS where
 instance GetRange SYMB where
   getRange = Range . rangeSpan
   rangeSpan (Symb_id a) = joinRanges [rangeSpan a]
-    
+
 
 instance GetRange SYMB_MAP_ITEMS where
   getRange = Range . rangeSpan
