@@ -356,8 +356,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       -- analyse spec with empty local env
       (sp', NodeSig n' gsigma', dg') <- anaSpec False lg ln dg
         (EmptyNode l) (extName "Closed" name) opts sp1
-      let gsigma = getMaybeSig nsig
-      gsigma2 <- gsigUnion lg gsigma gsigma'
+      gsigma2 <- gsigUnionMaybe lg nsig gsigma'
       let (ns@(NodeSig node _), dg2) = insGSig dg' name DGClosed gsigma2
       incl2 <- ginclusion lg gsigma' gsigma2
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
@@ -391,9 +390,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           return (sp, body, dg2)
              -- otherwise, we need to create a new one
         _ -> do
-           gsigma <- case nsig of
-             EmptyNode _ -> return gsigmaB
-             JustNode (NodeSig _ sigI) -> gsigUnion lg sigI gsigmaB
+           gsigma <- gsigUnionMaybe lg nsig gsigmaB
            let (fsig@(NodeSig node _), dg2) =
                  insGSig dg name (DGInst spname) gsigma
            incl <- ginclusion lg gsigmaB gsigma
@@ -449,9 +446,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           gsigmaD = G_sign lidP' sigmaD' startSigId
       (usig, udg) <- case nsig of
         EmptyNode _ -> return (nsig2, dg2)
-        _ -> do
-          let gsigma = getMaybeSig nsig
-          gsigma2 <- gsigUnion lg gsigma gsigmaD
+        JustNode ns2 -> do
+          gsigma2 <- gsigUnion lg (getSig ns2) gsigmaD
           let (ns@(NodeSig node2a _), dg2a) =
                 insGSig dg2 (extName "Union" name) DGUnion gsigma2
           incl2 <- ginclusion lg gsigmaD gsigma2
@@ -472,6 +468,11 @@ instMismatchError spname lp la = fatal_error $ tokStr spname ++ " expects "
 
 notFoundError :: String -> SIMPLE_ID -> Range -> Result a
 notFoundError str sid = fatal_error $ str ++ " " ++ tokStr sid ++ " not found"
+
+gsigUnionMaybe :: LogicGraph -> MaybeNode -> G_sign -> Result G_sign
+gsigUnionMaybe lg mn gsig = case mn of
+  EmptyNode _ -> return gsig
+  JustNode ns -> gsigUnion lg (getSig ns) gsig
 
 anaUnion :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> [Annoted SPEC]
@@ -707,7 +708,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
           pname = dgn_name $ labDG dg nP
           gsigmaI = getMaybeSig nsigI
       dg5 <- do
-        gsigmaIS <- gsigUnion lg gsigmaI gsigmaS
+        gsigmaIS <- gsigUnionMaybe lg nsigI gsigmaS
         unless (isSubGsign lg gsigmaP gsigmaIS
                 && isSubGsign lg gsigmaIS gsigmaP)
              (plain_error ()
@@ -768,7 +769,7 @@ anaAllFitArgs lg opts ln dg nsig name spname
            ([], dg, [], extName "Actuals" name) (zip params fitargs)
   let actualargs = reverse args
   (gsigma', morDelta) <- applyGS lg gs actualargs
-  gsigmaRes <- gsigUnion lg (getMaybeSig nsig) gsigma'
+  gsigmaRes <- gsigUnionMaybe lg nsig gsigma'
   let (ns, dg2) = insGSig dg' name (DGInst spname) gsigmaRes
   dg3 <- foldM (parLink lg nsig (DGLinkInstArg spname) ns) dg2
     $ map snd actualargs
