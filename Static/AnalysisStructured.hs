@@ -378,11 +378,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
   Spec_inst spname afitargs pos0 -> let
        pos = if null afitargs then tokPos spname else pos0
-       spstr = tokStr spname
     in adjustPos pos $ case lookupGlobalEnvDG spname dg of
     Just (SpecEntry gs@(ExtGenSig (GenSig _ params _)
                         body@(NodeSig nB gsigmaB))) ->
-     case (\ x y -> (x , x - y)) (length afitargs) (length params) of
+     case (length afitargs, length params) of
       -- the case without parameters leads to a simpler dg
       (0, 0) -> case nsig of
           -- if the node shall not be named and the logic does not change,
@@ -404,7 +403,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
            dg4 <- createConsLink DefLink conser lg dg3 nsig fsig SeeTarget
            return (sp, fsig, dg4)
       -- now the case with parameters
-      (_, 0) -> do
+      (la, lp) | la == lp -> do
        (ffitargs, dg', (morDelta, gsigmaA, ns@(NodeSig nA gsigmaRes))) <-
                anaAllFitArgs lg opts ln dg nsig name spname gs afitargs
        GMorphism cid _ _ _ _ <- return morDelta
@@ -419,13 +418,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
              _ -> insLink dg' morDelta'' globalDef (DGLinkMorph spname) nB nA
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
        return (Spec_inst spname ffitargs pos, ns, dg5)
- -- finally the case with conflicting numbers of formal and actual parameters
-      _ ->
-        fatal_error
-          (spstr ++ " expects " ++ show (length params) ++ " arguments"
-           ++ " but was given " ++ show (length afitargs)) pos
-    _ -> fatal_error
-                 ("Structured specification " ++ spstr ++ " not found") pos
+       | otherwise -> instMismatchError spname lp la pos
+    _ -> notFoundError "Structured specification" spname pos
 
   -- analyse "data SPEC1 SPEC2"
   Data (Logic lidD) (Logic lidP) asp1 asp2 pos -> adjustPos pos $ do
@@ -469,6 +463,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
+
+instMismatchError :: SIMPLE_ID -> Int -> Int -> Range -> Result a
+instMismatchError spname lp la = fatal_error $ tokStr spname ++ " expects "
+    ++ show lp ++ " arguments" ++ " but was given " ++ show la
+
+notFoundError :: String -> SIMPLE_ID -> Range -> Result a
+notFoundError str sid = fatal_error $ str ++ " " ++ tokStr sid ++ " not found"
 
 anaUnion :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> [Annoted SPEC]
@@ -726,11 +727,11 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
                     (DGLinkFitViewImp vn) nSrc n', n')
         gmor <- ginclusion lg gsigmaP gsigmaIS
         return $ insLink dg4 gmor globalThm (DGLinkFitView vn) nP iSrc
-      case (\ x y -> (x, x - y)) (length afitargs) (length params) of
+      case (length afitargs, length params) of
       -- the case without parameters leads to a simpler dg
         (0, 0) -> return (fv, dg5, (G_morphism lid morHom ind, target))
         -- now the case with parameters
-        (_, 0) -> do
+        (la, lp) | la == lp -> do
           (ffitargs, dg', (gmor_f, _, ns@(NodeSig nA _))) <-
             anaAllFitArgs lg opts ln dg5 (EmptyNode $ Logic lid)
               name vn gs afitargs
@@ -742,11 +743,8 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
               pos
           let dg9 = insLink dg' gmor_f globalDef (DGLinkMorph vn) nTar nA
           return (Fit_view vn ffitargs pos, dg9, (mkG_morphism lid1 theta, ns))
--- finally the case with conflicting numbers of formal and actual parameters
-        _ -> fatal_error
-          (tokStr spname ++ " expects " ++ show (length params) ++ " arguments"
-           ++ " but was given " ++ show (length afitargs)) pos
-    _ -> fatal_error ("View " ++ tokStr vn ++ " not found") pos
+         | otherwise -> instMismatchError spname lp la pos
+    _ -> notFoundError "View" vn pos
 
 anaFitArgs :: LogicGraph -> HetcatsOpts -> LibName -> SIMPLE_ID -> MaybeNode
   -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
