@@ -134,14 +134,16 @@ instance Pretty Bool where
 
 --------------------------- Shortcuts --------------------------
 
-evalWithVerification :: DTime -> Int -> String -> String -> IO String
-evalWithVerification to v lb sp = do
+evalWithVerification :: Bool -> Bool -> DTime -> Int -> String -> String -> IO String
+evalWithVerification smode dmode to v lb sp = do
   let exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
       p ncl= do
          (_, prog) <- loadAssignmentStore False ncl
          liftIO $ putStrLn ""
          liftIO $ putStrLn "****************** Assignment store loaded ******************"
          liftIO $ putStrLn ""
+         setSymbolicMode smode
+         setDebugMode dmode
          mE <- verifyProg prog
          when (isJust mE) $ liftIO $ putStrLn $ show $ fromJust mE
          -- readEvalPrintLoop stdin stdout ">" exitWhen
@@ -212,7 +214,6 @@ stepProg ncl = stepwiseSafe interactiveStepper $ Sequence $ map sentence ncl
 verifyProg :: (StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
               [Named CMD] -> m (Maybe ASError)
 verifyProg ncl = do
-  setDebugMode True
   stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
 

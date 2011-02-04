@@ -173,6 +173,8 @@
   (switch-to-buffer (get-buffer "*Match-Result*"))
 
   (when (string= trans "Export parameter")
+    (set-visited-file-name (concatenate 'string (make-temp-file "flangeParams") ".het"))
+    (save-buffer)
     (refresh-evalmenu)
     )
   nil
@@ -192,7 +194,8 @@
 
     (message "Evaluating EnCL spec %s" spec1)
     (switch-to-buffer buff)
-;;    (call-process "evalspec" nil buff t "-s" spec1 fp)
+    (call-process "evalspec" nil buff t "-s" spec1 "-t10" "-v2" fp)
+    (insert "\n\nEvaluation of EnCL specification finished.\n")
 ;;    (start-process-shell-command "evalproc" buff (concatenate 'string "evalspec -s " spec1 " " fp))
     nil)
   )

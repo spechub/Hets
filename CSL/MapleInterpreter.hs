@@ -93,8 +93,10 @@ instance VCGenerator MapleIO where
         
     addVC ea e = do
       let
-          -- s = show $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
-          s = show $ printExpForVC e <> text ";"
+          s = show
+              $ (text "Verification condition for" <+> pretty ea <> text ":")
+                    $++$ printExpForVC e
+          --s = show $ printExpForVC e <> text ";"
           -- s = (++ "\n\n;\n\n") $ showRaw $ text "VC for" <+> pretty ea <> text ":" $++$ pretty e
 --          vcHdl = stdout
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
@@ -104,6 +106,11 @@ instance VCGenerator MapleIO where
 instance StepDebugger MapleIO where
     setDebugMode b = modify mf where mf mit = mit { debugMode = b }
     getDebugMode = gets debugMode
+
+instance SymbolicEvaluator MapleIO where
+    setSymbolicMode b = modify mf where mf mit = mit { symbolicMode = b }
+    getSymbolicMode = gets symbolicMode
+
 
 -- ----------------------------------------------------------------------
 -- * Maple Transformation Instances
@@ -212,7 +219,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (MonadError ASError s, AssignmentStore s, MonadIO s) =>
+mapleAssign :: (MonadError ASError s, AssignmentStore s, MonadIO s, SymbolicEvaluator s) =>
                ([String] -> String -> s [EXPRESSION])
             -> (ConstantName -> s String)
             -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
@@ -223,7 +230,9 @@ mapleAssign ef trans transE n def = do
   (e', args') <- transE args e
   n' <- trans n
   -- liftIO $ putStrLn $ show e'
-  el <- ef args $ printAssignmentWithEval n' args' e'
+  b <- getSymbolicMode
+  let f = if b then printAssignment else printAssignmentWithEval
+  el <- ef args $ f n' args' e'
 --  el <- ef args $ printAssignment n' args' e'
   case el of
     [rhs] -> return rhs
@@ -374,7 +383,7 @@ mapleInit adg v to = do
                            , getMI = cs'
                            , depGraph = adg
                            , debugMode = False
-                           , symbolicMode = True
+                           , symbolicMode = False
                            , vericondOut = Nothing
                            , channelTimeout = to
                            }
@@ -400,7 +409,7 @@ execWithMaple mit m = do
     Left s' -> err $ asErrorMsg s'
     Right x -> return (mit', x)
 
-runWithMaple :: AssignmentDepGraph () -> Int
+runWithMaple :: AssignmentDepGraph () -> Int -- ^ Verbosity level
           -> PC.DTime -- ^ timeout for response
           -> [String] -> MapleIO a
           -> IO (MITrans, a)

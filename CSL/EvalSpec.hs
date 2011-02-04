@@ -24,7 +24,6 @@ import Data.Maybe
 import Data.List
 
 
-
 main :: IO ()
 main = do
   args <- getArgs
@@ -33,7 +32,8 @@ main = do
     Right st -> runProg st >>= putStrLn
 
 runProg :: ProgSettings -> IO String
-runProg st = evalWithVerification (timeout st) (verbosity st) (lib st) (spec st) >> return ""
+runProg st = evalWithVerification (symbolicmode st) (debugmode st) (timeout st)
+             (verbosity st) (lib st) (spec st) >> return ""
 
 ------------------------- Input Arguments -------------------------
 
@@ -80,6 +80,8 @@ options = map f $
             , "A value from 0=quiet to 4=print out all information during processing"
             , OptArg (PFVerbosity . read . fromMaybe "4") "0-4")
           , ( "quiet", "Equal to -v0", NoArg PFQuiet)
+          , ( "Symbolic", "Enables symbolic evaluation mode", NoArg (PFSymbolic True))
+          , ( "debug", "Enables debug mode", NoArg (PFDebug True))
           ] where
     f (fs, descr, arg) = Option [head fs] [fs] arg descr
 
@@ -99,7 +101,10 @@ data ProgSettings =
     { lib :: String
     , spec :: String
     , timeout :: PC.DTime
-    , verbosity :: Int }
+    , verbosity :: Int
+    , debugmode :: Bool
+    , symbolicmode :: Bool
+    }
 
 
 defaultSettings :: ProgSettings
@@ -107,7 +112,10 @@ defaultSettings = ProgSettings
                   { lib = error "uninitialized settings"
                   , spec = error "uninitialized settings"
                   , timeout = 1
-                  , verbosity = 4 }
+                  , verbosity = 4
+                  , debugmode = False
+                  , symbolicmode = False
+                  }
 
 data ProgFlag =
     PFLib String
@@ -115,6 +123,8 @@ data ProgFlag =
         | PFTimeout PC.DTime
         | PFVerbosity Int
         | PFQuiet
+        | PFDebug Bool
+        | PFSymbolic Bool
 
 makeSettings :: ProgSettings -> ProgFlag -> ProgSettings
 makeSettings settings flg =
@@ -124,6 +134,8 @@ makeSettings settings flg =
       PFVerbosity i -> settings { verbosity = i }
       PFQuiet -> settings { verbosity = 0 }
       PFTimeout t -> settings { timeout = t }
+      PFDebug b -> settings { debugmode = b }
+      PFSymbolic b -> settings { symbolicmode = b }
       
 getSettings :: [ProgFlag] -> ProgSettings
 getSettings = foldl makeSettings defaultSettings

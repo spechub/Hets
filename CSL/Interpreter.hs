@@ -43,6 +43,7 @@ module CSL.Interpreter
     , ASError(..)
     , ErrorSource(..)
     , StepDebugger(..)
+    , SymbolicEvaluator(..)
     )
     where
 
@@ -139,6 +140,11 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
 class AssignmentStore m => StepDebugger m where
     setDebugMode :: Bool -> m ()
     getDebugMode :: m Bool
+
+class AssignmentStore m => SymbolicEvaluator m where
+    setSymbolicMode :: Bool -> m ()
+    getSymbolicMode :: m Bool
+
 
 data ErrorSource = CASError | UserError | InterfaceError deriving Show
 data ASError = ASError ErrorSource String deriving Show
