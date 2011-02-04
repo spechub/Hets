@@ -116,3 +116,4 @@ instance StaticAnalysis HolLight
            empty_signature HolLight = emptySig
            is_subsig HolLight = isSubSig
            subsig_inclusion HolLight = defaultInclusion
+           signature_union HolLight = sigUnion

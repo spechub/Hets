@@ -38,15 +38,15 @@ import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-importData :: FilePath -> IO ([([Char],[([Char], Term)],([HolType], [([Char], [HolType])]))],[([Char],[Char])])
+importData :: FilePath -> IO ([([Char],[([Char], Term)],([(String,Int)], [([Char], [HolType])]))],[([Char],[Char])])
 importData fp = do
     s <- readFile fp
-    let (libs,lnks) = (read s) :: ([([Char],[([Char], Term)],([HolType], [([Char], [HolType])]))],[([Char],[Char])])
+    let (libs,lnks) = (read s) :: ([([Char],[([Char], Term)],([(String,Int)], [([Char], [HolType])]))],[([Char],[Char])])
     return (libs, lnks)
 
-makeSig :: [HolType] -> [([Char],[HolType])] -> Sign
+makeSig :: [(String,Int)] -> [([Char],[HolType])] -> Sign
 makeSig tps opsM = Sign {
-                    types = Set.fromList tps
+                    types = foldl (\m (k,v) -> Map.insert k v m) Map.empty tps
                    ,ops = foldl (\m (k,v) -> Map.insert k (Set.fromList v) m) Map.empty opsM }
 
 makeSentence :: [Char] -> Term -> Sentence

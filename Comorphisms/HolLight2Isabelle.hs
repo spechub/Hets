@@ -18,7 +18,7 @@ import Logic.Logic
 
 import qualified Isabelle.IsaSign as IsaSign
 import Isabelle.Logic_Isabelle
-import Isabelle.IsaConsts
+import Isabelle.IsaConsts as IsaConsts
 import Isabelle.Translate
 
 import Common.Result
@@ -81,10 +81,31 @@ tp2DTyp tp = IsaSign.Hide{
                 IsaSign.arit = Nothing
               }
 
+reduceTuples :: [Term] -> [Term]
+reduceTuples l = foldl (\acc t -> case t of
+                                    (Comb (Comb (Const "," _ _) a) b) -> (reduceTuples [a,b])++acc
+                                    _ ->t:acc) [] l
+
+constMap :: Map.Map String IsaSign.VName
+constMap = Map.fromList [("+",IsaConsts.plusV)
+                        ,("-",IsaConsts.minusV)
+                        ,("*",IsaConsts.timesV)
+                        ,("!",IsaSign.mkVName IsaConsts.allS)
+                        ,("?",IsaSign.mkVName IsaConsts.exS)
+                        ,("?!",IsaSign.mkVName IsaConsts.ex1S)
+                        ,("=",IsaConsts.eqV)
+                        ,("<=>",IsaConsts.eqV)
+                        ,("/\\",IsaConsts.conjV)
+                        ,("\\/",IsaConsts.disjV)
+                        ,("==>",IsaConsts.implV)
+                        ]
+
 translateTerm :: Term -> IsaSign.Term
+translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex (map translateTerm (reduceTuples [a,b])) IsaSign.NotCont
 translateTerm (Var s _tp _) = IsaSign.Free $ IsaSign.mkVName s
-translateTerm (Const s tp _) = IsaSign.Const (IsaSign.mkVName s)
-                                $ tp2DTyp tp
+translateTerm (Const s tp _) = IsaSign.Const (case Map.lookup s constMap of
+                                 Just v -> v
+                                 Nothing -> (IsaSign.mkVName s)) $ tp2DTyp tp
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
@@ -107,7 +128,7 @@ mapSign :: Sign -> IsaSign.Sign
 mapSign (Sign t o) = IsaSign.emptySign{
                        IsaSign.baseSig = IsaSign.MainHC_thy,
                        IsaSign.constTab = mapOps o,
-                       IsaSign.tsig = mapTypes t
+                       IsaSign.tsig = mapTypes t 
                       }
 
 mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
@@ -122,14 +143,15 @@ tp2Typ :: HolType -> IsaSign.Typ
 tp2Typ (TyVar s) = IsaSign.Type (transTypeStringT bs s) holType []
 tp2Typ (TyApp s tps) = case tps of
   [a1, a2] | s == "fun" -> mkFunType (tp2Typ a1) (tp2Typ a2)
+  [] | s == "bool" -> boolType
   _ -> IsaSign.Type (transTypeStringT bs s) holType $ map tp2Typ tps
 
-mapTypes :: Set.Set HolType -> IsaSign.TypeSig
+mapTypes :: Map.Map String Int -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
-                IsaSign.arities = Map.fromList $ map extractTypeName (Set.toList tps)}
+                IsaSign.arities = Map.fromList $ map extractTypeName (Map.toList tps)}
  where
-    extractTypeName t@(TyVar s) = (transTypeStringT bs s , [(isaTerm, [])])
-    extractTypeName t@(TyApp s _tps') = (transTypeStringT bs s, [(isaTerm, [])])
+    extractTypeName (s,a) = (transTypeStringT bs s , [(isaTerm, [])])
+    extractTypeName (s,a) = (transTypeStringT bs s, [(isaTerm, [])])
 
 
 mapNamedSen :: Named Sentence -> Named IsaSign.Sentence

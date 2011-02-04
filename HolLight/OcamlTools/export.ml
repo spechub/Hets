@@ -29,7 +29,8 @@ let pp_d fmt =
 		        | Abs (t1,t2) -> Format.fprintf fmt "Abs (%a) (%a)" pp_term t1 pp_term t2 in
                       let pp_str_term_tuple fmt (s,t) = Format.fprintf fmt "(%S, %a)" s pp_term t in
                       let pp_str_types_tuple fmt (s,ts) = Format.fprintf fmt "(%S,[%a])" s (pp_list pp_hol_type) ts in
-                      let pp_sig fmt (ts,ops) = Format.fprintf fmt "([%a],[%a])" (pp_list pp_hol_type) ts (pp_list pp_str_types_tuple) ops in
+                      let pp_types fmt (s,a) = Format.fprintf fmt "(%S,%u)" s a in
+                      let pp_sig fmt (ts,ops) = Format.fprintf fmt "([%a],[%a])" (pp_list pp_types) ts (pp_list pp_str_types_tuple) ops in
                       let pp_lib fmt (lname,ts,s) = Format.fprintf fmt "(%S,[%a],%a)" lname (pp_list pp_str_term_tuple) ts pp_sig s in
                       let pp_str_tuple fmt (s1,s2) = Format.fprintf fmt "(%S, %S)" s1 s2 in
                       let pp_data (ts,l) = Format.fprintf fmt "@[<h>([%a], [%a])@]" (pp_list pp_lib) ts (pp_list pp_str_tuple) l in 
@@ -51,31 +52,32 @@ let export_sig_sen (s,l) =
                      let ops = Hashtbl.create 10 in
                      let htbl_to_list htbl f = Hashtbl.fold (fun k v l -> (f k v)::l) htbl [] in
                      let in_types = Hashtbl.mem types in
-                     let rec get_primitive_types t =
-                      if (match t with
-                        Tyvar s -> not (mem s (!old_types))
-                       |Tyapp (s,[]) -> not (mem s (!old_types))
-                       |Tyapp (s,ts) -> List.map get_primitive_types ts; false) then if in_types t then () else Hashtbl.add types t 0
-                      else () in 
-                     let rec get_types ignore not_abs = function
-                      | Var (s,t) -> get_primitive_types t;
+                     let rec get_types t =
+                      match (match t with
+                        Tyvar s -> (s,0,not (mem s (!old_types)))
+                       |Tyapp (s,[]) -> (s,0,not (mem s (!old_types)))
+                       |Tyapp (s,ts) -> List.map get_types ts; (s,List.length ts,false)) with
+                         (s,a,true) -> if in_types s then () else Hashtbl.add types s a
+                        |(s,a,false) -> () in
+                     let rec get_ops ignore not_abs = function
+                      | Var (s,t) -> get_types t;
                                      if not_abs & not (List.mem s ignore) & not (mem s (!old_constants)) then
                                        let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
                                                   else Hashtbl.create 1
                                        in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
                                      else ()
-                      | Const (s,t) -> get_primitive_types t;
+                      | Const (s,t) -> get_types t;
                                        if not (mem s (!old_constants)) then
                                          let tmap = if Hashtbl.mem ops s then Hashtbl.find ops s
                                                     else Hashtbl.create 1
                                          in Hashtbl.replace tmap t 0;Hashtbl.replace ops s tmap
                                        else ()
-                      | Comb (t1,t2) -> get_types ignore true t1; get_types ignore true t2
-                      | Abs (t1,t2) -> get_types ((name_of t1)::ignore) false t1; get_types ((name_of t1)::ignore) true t2 in
+                      | Comb (t1,t2) -> get_ops ignore true t1; get_ops ignore true t2
+                      | Abs (t1,t2) -> get_ops ((name_of t1)::ignore) false t1; get_ops ((name_of t1)::ignore) true t2 in
                      ((htbl_to_list s (fun k v ->
                         let sens = htbl_to_list v (fun k' v' -> (k',concl v')) in
-                        let _ = List.map ((get_types [] true) o snd) sens in
-                        let l = (htbl_to_list types (fun k _ -> k),htbl_to_list ops (fun k v -> (k,htbl_to_list v (fun k' _ -> k')))) in
+                        let _ = List.map ((get_ops [] true) o snd) sens in
+                        let l = (htbl_to_list types (fun k v -> (k,v)),htbl_to_list ops (fun k v -> (k,htbl_to_list v (fun k' _ -> k')))) in
                           Hashtbl.clear types;
                           Hashtbl.clear ops;
                           (k,sens,l))),l)
