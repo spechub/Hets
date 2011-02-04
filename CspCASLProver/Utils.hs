@@ -80,12 +80,10 @@ addPreAlphabet sortList isaTh =
 -- | Make a Domain Entry for the PreAlphabet from a list of sorts.
 mkPreAlphabetDE :: [SORT] -> DomainEntry
 mkPreAlphabetDE sorts =
-    (Type {typeId = preAlphabetS, typeSort = [isaTerm], typeArgs = []},
+    (mkSType preAlphabetS,
          map (\ sort ->
                   (mkVName (mkPreAlphabetConstructor sort),
-                               [Type {typeId = convertSort2String sort,
-                                      typeSort = [isaTerm],
-                                      typeArgs = []}])
+                               [mkSType $ convertSort2String sort])
              ) sorts
     )
 
