@@ -53,7 +53,7 @@ makeSig tps opsM = Sign {
 makeSentence :: [Char] -> Term -> Sentence
 makeSentence n t = Sentence { name = n, term = t, proof = Nothing }
 
-_insNodeDG :: Sign -> [Sentence] -> [Char] -> (DGraph, Map.Map [Char] (Sign,Node)) -> (DGraph, Map.Map [Char] (Sign,Node))
+_insNodeDG :: Sign -> [Sentence] -> [Char] -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab)) -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab))
 _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
                                           (toThSens $ map (makeNamed "") sens) startThId
                                    labelK = newInfoNodeLab
@@ -61,7 +61,7 @@ _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight 
                                           (newNodeInfo DGEmpty)
                                           gt
                                    k = getNewNodeDG dg
-                                   m' = Map.insert n (sig,k) m
+                                   m' = Map.insert n (sig,k,labelK) m
                                    insN = [InsertNode (k,labelK)]
                                    newDG = changesDGH dg insN
                                    labCh = [SetNodeLab labelK (k, labelK
@@ -90,13 +90,20 @@ anaHolLightFile _opts path = do
                sens = map (\(n,t) -> makeSentence n t) terms in
            _insNodeDG sig sens lname (dg,m')) (emptyDG,Map.empty) libs''
        dg'' = foldr (\(source,target) dg -> case Map.lookup source m of
-                                           Just (sig,k) -> case Map.lookup target m of
-                                             Just (sig1,k1) -> case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
+                                           Just (sig,k,lk) -> case Map.lookup target m of
+                                             Just (sig1,k1,lk1) -> case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
                                                             Nothing -> dg 
                                                             Just incl ->
                                                               let inclM = gEmbed $ mkG_morphism HolLight incl
                                                                   insE = [InsertEdge (k, k1,globDefLink inclM DGLinkImports)]
-                                                              in changesDGH dg insE
+                                                                  newDG = changesDGH dg insE
+                                                                  updL = [SetNodeLab lk1 (k1, lk1
+                                                                          { globalTheory = computeLabelTheory Map.empty newDG
+                                                                           (k1, lk1) }),
+                                                                          SetNodeLab lk (k, lk
+                                                                          { globalTheory = computeLabelTheory Map.empty newDG
+                                                                           (k, lk) })]
+                                                              in changesDGH newDG updL
                                              Nothing -> dg
                                            Nothing -> dg) dg' _lnks
        le = Map.insert (emptyLibName "HolExport") dg'' (Map.empty)
