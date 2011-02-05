@@ -39,6 +39,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
+import qualified System.FilePath.Posix
+
 importData :: FilePath -> IO ([([Char],[([Char], Term)],([(String,Int)], [([Char], [HolType])]))],[([Char],[Char])])
 importData fp = do
     s <- readFile fp
@@ -56,8 +58,9 @@ makeSentence n t = Sentence { name = n, term = t, proof = Nothing }
 _insNodeDG :: Sign -> [Sentence] -> [Char] -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab)) -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab))
 _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
                                           (toThSens $ map (makeNamed "") sens) startThId
+                                   n' = snd (System.FilePath.Posix.splitFileName n)
                                    labelK = newInfoNodeLab
-                                          (makeName (mkSimpleId n))
+                                          (makeName (mkSimpleId n'))
                                           (newNodeInfo DGEmpty)
                                           gt
                                    k = getNewNodeDG dg
