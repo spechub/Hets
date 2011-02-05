@@ -16,7 +16,7 @@ data Sign = Sign { types :: Map.Map String Int
 
 pretty_types :: Map.Map String Int -> Doc
 pretty_types tps = hcat (List.intersperse (text ", ") (Map.foldWithKey (\k v a ->
-                              (hcat [text k,text ":",text (show v)]):a) [] tps))
+                              (hcat [text "arity_of(`:", text k,text "`)=",text (show v)]):a) [] tps))
 
 pretty_type_list :: [HolType] -> Doc
 pretty_type_list tps = hcat (List.intersperse (text ", ")

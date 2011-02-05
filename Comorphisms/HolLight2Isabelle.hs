@@ -98,14 +98,20 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
                         ,("/\\",IsaConsts.conjV)
                         ,("\\/",IsaConsts.disjV)
                         ,("==>",IsaConsts.implV)
+                        ,("~",IsaConsts.notV)
+                        ,("F",IsaSign.mkVName IsaConsts.cTrue)
+                        ,("T",IsaSign.mkVName IsaConsts.cFalse)
                         ]
+
+transConstS :: String -> IsaSign.VName
+transConstS s = case Map.lookup s constMap of
+                  Just v -> v
+                  Nothing -> IsaSign.mkVName $ transConstStringT bs s
 
 translateTerm :: Term -> IsaSign.Term
 translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex (map translateTerm (reduceTuples [a,b])) IsaSign.NotCont
 translateTerm (Var s _tp _) = IsaSign.Free $ IsaSign.mkVName s
-translateTerm (Const s tp _) = IsaSign.Const (case Map.lookup s constMap of
-                                 Just v -> v
-                                 Nothing -> (IsaSign.mkVName s)) $ tp2DTyp tp
+translateTerm (Const s tp _) = IsaSign.Const (transConstS s) $ tp2DTyp tp
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
@@ -133,10 +139,9 @@ mapSign (Sign t o) = IsaSign.emptySign{
 
 mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
 mapOps f = Map.fromList $
-            map (\(x,y) -> (IsaSign.mkVName $ transConstStringT bs x, tp2Typ y)) $
+            map (\(x,y) -> (transConstS x, tp2Typ y)) $
             concatMap (\(x, s) -> Set.toList $ Set.map (\a -> (x,a)) s)
-            $ Map.toList f
-
+            $ Map.toList (Map.delete "," f)
 
 
 tp2Typ :: HolType -> IsaSign.Typ
@@ -146,9 +151,14 @@ tp2Typ (TyApp s tps) = case tps of
   [] | s == "bool" -> boolType
   _ -> IsaSign.Type (transTypeStringT bs s) holType $ map tp2Typ tps
 
+arity2tp :: Int -> [(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])]
+arity2tp i = [(isaTerm,foldl (\l t -> t:l) []
+                       (take i (map (\k -> (IsaSign.TFree ("'a" ++ show (k)) [],[isaTerm]))
+                                (iterate (1+) 1))))]
+
 mapTypes :: Map.Map String Int -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
-                IsaSign.arities = Map.fromList $ map extractTypeName (Map.toList tps)}
+                IsaSign.arities = Map.fromList $ map extractTypeName (Map.toList (Map.delete "bool" tps))}
  where
     extractTypeName (s,a) = (transTypeStringT bs s , [(isaTerm, [])])
     extractTypeName (s,a) = (transTypeStringT bs s, [(isaTerm, [])])

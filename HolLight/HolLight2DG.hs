@@ -37,6 +37,7 @@ import Driver.Options
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.List as List
 
 importData :: FilePath -> IO ([([Char],[([Char], Term)],([(String,Int)], [([Char], [HolType])]))],[([Char],[Char])])
 importData fp = do
@@ -71,10 +72,23 @@ _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight 
 anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaHolLightFile _opts path = do
    (libs, _lnks) <- importData path
+   let sigM = Map.fromList (map (\(lname,t,sdata) -> (lname,(t,sdata))) libs)
+       leaves = let ns = map (\(lname,_,_) -> lname) libs
+                in (List.\\) ns (map (\(_,t) -> t) _lnks)
+   let libSigInclusions l n = (let pnodes = map snd $ filter ((n==).fst) _lnks
+                               in (case Map.lookup n l of
+                                     Just (_,(term,sdata)) -> foldl (\l' p -> case Map.lookup p l' of
+                                                                            Just (d,(term',sdata')) -> libSigInclusions (Map.insert p
+                                                                              (d,(term' `List.union` term,
+                                                                               sdata' `List.union` sdata)) l') p
+                                                                            Nothing -> l') l pnodes
+                                     Nothing -> l))
+   let libs' = foldl libSigInclusions sigM leaves
+   let libs'' = map (\(lname,(term,sdata)) -> (lname,term,sdata)) (Map.toList libs')
    let (dg',m) = foldr ( \(lname,terms,(tps,opsM)) (dg,m') ->
            let sig = makeSig tps opsM
                sens = map (\(n,t) -> makeSentence n t) terms in
-           _insNodeDG sig sens lname (dg,m')) (emptyDG,Map.empty) libs
+           _insNodeDG sig sens lname (dg,m')) (emptyDG,Map.empty) libs''
        dg'' = foldr (\(source,target) dg -> case Map.lookup source m of
                                            Just (sig,k) -> case Map.lookup target m of
                                              Just (sig1,k1) -> case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
