@@ -360,10 +360,10 @@ dest_fun_ty ty = case ty of
 
 dest_let :: Term -> Maybe ([(Term, Term)], Term)
 dest_let tm = let (l,aargs) = strip_comb tm
-              in case dest_const l of
-                   Just ("LET",_) ->
-                     let (vars,lebod) = strip_gabs (head aargs)
-                     in let eqs = zip vars (tail aargs)
+              in case (aargs,dest_const l) of
+                   (a:as,Just ("LET",_)) ->
+                     let (vars,lebod) = strip_gabs a
+                     in let eqs = zip vars as
                         in case dest_comb lebod of
                              Just (le,bod) -> case dest_const le of
                                                 Just ("LET_END",_) -> Just (eqs,bod)

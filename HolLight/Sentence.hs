@@ -137,7 +137,7 @@ print_term prec tm =
                         ]))
            _ -> Nothing
          _ -> Nothing in
- let _7 = if s == "DECIMAL" then
+ let _7 = if s == "DECIMAL" && length args > 2 then
          case (dest_numeral (args!!0), dest_numeral (args!!1)) of
            (Just n_num, Just n_den) -> if not(powerof10 n_den) then Nothing
              else let s_num = text (show (n_num `quot` n_den)) in
