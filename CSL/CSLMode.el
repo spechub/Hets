@@ -47,6 +47,7 @@
 	  (skip-chars-forward " ")
 	  (setq p1 (+ 1 (point)))
 	  (forward-word)
+	  (skip-chars-forward " ")
 	  (push (buffer-substring-no-properties p1 (point)) specs)
 	  (skip-chars-forward " ")
 	  )
@@ -56,59 +57,44 @@
     )
   )
 
-(defun refresh-specmenu2 ()
-  (interactive)
-  (let
-      ((entries (sort (append (extractspecs) (extractgets)) 'string<))
-       currentsym
-       )    
-    
-    ;; delete the match menu
-    (global-unset-key [menu-bar enclmenu match])
-    ;; generate match menu
-    (define-key-after global-map [menu-bar enclmenu match] (cons "Match" (make-sparse-keymap)) 'kill-buffer)
-    
-    ;; generate subentries  
-    (dolist (item entries)
-      (setq currentsym (gensym))
-      (define-key global-map (vector 'menu-bar 'enclmenu 'match currentsym) (cons item (make-sparse-keymap)))
-      ;; submenus
-      (dolist (item2 entries)
-	(setq currentsym2 (gensym))
-	(define-key global-map (vector 'menu-bar 'enclmenu 'match currentsym currentsym2) (cons item2 (make-sparse-keymap)))
-	(dolist (item3 '("Show match" "Export parameter"))
-	(define-key global-map (vector 'menu-bar 'enclmenu 'match currentsym currentsym2 (gensym))
-	  (cons item3 `(lambda () (interactive) (run-csl ,item ,item2 ,item3))))
-	)
-
-	)
-    (define-key global-map (vector 'menu-bar 'enclmenu 'match currentsym (gensym)) (cons "--" nil))
-    (define-key global-map (vector 'menu-bar 'enclmenu 'match currentsym (gensym)) (cons "Select design spec" nil))
-
-      )
-    (define-key global-map (vector 'menu-bar 'enclmenu 'match (gensym)) (cons "--" nil))
-    (define-key global-map (vector 'menu-bar 'enclmenu 'match (gensym)) (cons "Select pattern spec" nil))
-    )
-  )
-
 (defun refresh-evalmenu ()
   (interactive)
   (let
-      ((entries (sort (append (extractspecs) (extractgets)) 'string<))
+      ((entries (reverse (sort (append (extractspecs) (extractgets)) 'string<)))
        currentsym
+       (menusym 'eval)
+       (runfun 'run-eval)
+       (runlist '("Symbolic" "Approximately"))
        )
     
     ;; delete the match menu
     (global-unset-key [menu-bar enclmenu eval])
     ;; generate match menu
-    (define-key-after global-map [menu-bar enclmenu eval] (cons "Evaluate" '(lambda () (interactive) (run-eval "FlangeComplete"))))
+    (define-key-after global-map [menu-bar enclmenu eval] (cons "Evaluate" (make-sparse-keymap)))
+
+;    (refresh-specmenu entries menusym runfun runlist)
+
+    (dolist (item entries)
+    	(setq currentsym (gensym))
+    	(define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym) (cons item (make-sparse-keymap)))
+    	(dolist (item2 runlist)
+    	  (define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym (gensym))
+    	    (cons item2 `(lambda () (interactive) (,runfun ,item ,item2))))
+
+    	  )
+
+    	)
+;    (define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym (gensym)) (cons "--" nil))
+;    (define-key global-map (vector 'menu-bar 'enclmenu menusym currentsym (gensym)) (cons "Select design spec" nil))
+
     )
+
   )
 
 (defun refresh-matchmenu ()
   (interactive)
   (let
-      ((entries (sort (append (extractspecs) (extractgets)) 'string<))
+      ((entries (reverse (sort (append (extractspecs) (extractgets)) 'string<)))
        currentsym
        )
     
@@ -180,7 +166,7 @@
   nil
   )
 
-(defun run-eval (spec1)
+(defun run-eval (spec1 symbolic)
   (interactive)
 ;;  (message "selected %s and %s and %s" spec1 spec2 trans)
 ;; example command
@@ -192,10 +178,11 @@
   (let ((buff (prepare-buffer "*Eval-Result*"))
 	(fp (buffer-file-name (current-buffer))))
 
-    (message "Evaluating EnCL spec %s" spec1)
     (switch-to-buffer buff)
-    (call-process "evalspec" nil buff t "-s" spec1 "-t10" "-v2" fp)
-    (insert "\n\nEvaluation of EnCL specification finished.\n")
+    (insert "Starting evaluation of EnCL specification.\n")
+;    (call-process "evalspec" nil buff t "-s" spec1 "-t10" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
+    (start-process "evaluation of EnCL specification" buff "evalspec" "-s" spec1 "-t25" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
+;;    (insert "\n\nEvaluation of EnCL specification finished.\n")
 ;;    (start-process-shell-command "evalproc" buff (concatenate 'string "evalspec -s " spec1 " " fp))
     nil)
   )

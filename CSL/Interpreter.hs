@@ -44,6 +44,7 @@ module CSL.Interpreter
     , ErrorSource(..)
     , StepDebugger(..)
     , SymbolicEvaluator(..)
+    , MessagePrinter(..)
     )
     where
 
@@ -145,6 +146,9 @@ class AssignmentStore m => SymbolicEvaluator m where
     setSymbolicMode :: Bool -> m ()
     getSymbolicMode :: m Bool
 
+class AssignmentStore m => MessagePrinter m where
+    printMessage :: String -> m ()
+
 
 data ErrorSource = CASError | UserError | InterfaceError deriving Show
 data ASError = ASError ErrorSource String deriving Show
@@ -234,26 +238,33 @@ evaluateAtom prog (RepeatAtom e) = prog >> check e
    checked and for the case atom the condition is checked. See 'evaluateAtom'
    for an example.
 -}
-stepwiseSafe :: (MonadError ASError m, AssignmentStore m) =>
+stepwiseSafe :: (MonadError ASError m, MessagePrinter m) =>
                 (m () -> EvalAtom -> m Bool) -> CMD -> m (Maybe ASError)
 stepwiseSafe f cmd = catchError (stepwise f cmd >> return Nothing) g
     where g = return . Just
 
+printStep :: MessagePrinter m => String -> EvalAtom -> m ()
+printStep _ (AssAtom n def) = printMessage $ ("Evaluate Assignment: " ++) $ show $ pretty n <+> pretty def
+printStep _ (CaseAtom e) = printMessage $ ("Evaluate Case Step: " ++) $ show $ pretty e
+printStep s (RepeatAtom e) = printMessage $ (("Evaluate Repeat Step, " ++ s ++ ": ") ++) $ show $ pretty e
 
-stepwise :: AssignmentStore m => (m () -> EvalAtom -> m Bool) -> CMD
+stepwise :: MessagePrinter m => (m () -> EvalAtom -> m Bool) -> CMD
          -> m ()
 stepwise f (Ass (Op (OpUser n) [] l _) e) = do
   let def = mkDefinition (toArgList l) e
+  printStep "" $ AssAtom n def
   f (return ()) $ AssAtom n def
   return ()
 stepwise _ (Cond []) = error "stepwise: non-exhaustive conditional"
 stepwise f (Cond ((e, pl):cl)) = do
+  printStep "" $ CaseAtom e
   b <- f (return ()) $ CaseAtom e
   stepwise f $ if b then Sequence pl else Cond cl
 stepwise f (Repeat e l) = do
   -- only in the first entry of a repeat loop we need to transform the
   -- until expression, in all consecutive runs of the same loop we just
   -- need to update the values of the temporarily introduced constants.
+  printStep "entering loop" $ RepeatAtom e
   (m, e') <- translateConvergence e
   let al = Map.toList m
       -- we check if the expression contains free constants
@@ -266,11 +277,20 @@ stepwise f (Repeat e l) = do
       reploop = do
         mapM g al >>= assigns
         b <- f (stepwise f $ Sequence l) $ RepeatAtom e'
-        unless b $ reploop
+        unless b $ printStep "repeating loop" (RepeatAtom e) >> reploop
   reploop
 stepwise f (Sequence l) = mapM_ (stepwise f) l
 
-stepwise _ (Cmd c _) = error $ "stepwise: unsupported command " ++ c
+stepwise _ (Cmd c l) 
+    | c == "print" =
+        let p x x' = printMessage
+                     $ show $ pretty x <+> text "gets evaluated to"
+                           <+> pretty x'
+        in case l of
+             [] -> printMessage "Nothing to print"
+             [e] -> eval e >>= p e
+             _ -> mapM eval l >>= p l
+    | otherwise = error $ "stepwise: unsupported command " ++ c
 stepwise _ a@(Ass (Op (OpId _) _ _ _) _) =
     error $ concat [ "stepwise: predefined constants in left hand side of "
                    , "assignment not allowed ", show a ]

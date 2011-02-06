@@ -207,11 +207,11 @@ loadAssignmentStore b ncl = do
   return res
 
 
-stepProg :: (AssignmentStore m, MonadIO m, MonadError ASError m) =>
+stepProg :: (MessagePrinter m, MonadIO m, MonadError ASError m) =>
             [Named CMD] -> m (Maybe ASError)
 stepProg ncl = stepwiseSafe interactiveStepper $ Sequence $ map sentence ncl
 
-verifyProg :: (StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
+verifyProg :: (MessagePrinter m, StepDebugger m, VCGenerator m, MonadIO m, MonadError ASError m) =>
               [Named CMD] -> m (Maybe ASError)
 verifyProg ncl = do
   stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl

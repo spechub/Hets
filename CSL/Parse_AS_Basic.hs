@@ -356,7 +356,7 @@ command = reduceCommand <|> try assignment <|> repeatExpr <|> caseExpr
 reduceCommand :: OperatorState st => CharParser st CMD
 reduceCommand = do
   cmd <- lexemeParser $ Lexer.keyWord $ choice $ map tryString
-         ["solve", "simplify", "divide", "int", "rlqe", "factorize"]
+         ["solve", "simplify", "divide", "int", "rlqe", "factorize", "print"]
   oParenT
   arg1 <- formulaorexpression
   args <- many $ pComma >> formulaorexpression
@@ -395,12 +395,14 @@ repeatExpr = do
   return $ Repeat cstr $ map AS_Anno.item statements
 
 singleCase :: CharParser (AnnoState.AnnoState st) (EXPRESSION, [CMD])
-singleCase = do
-  lstring "case"
-  cond <- aFormula
-  lstring ":"
-  statements <- many1 (AnnoState.dotT >> AnnoState.allAnnoParser command)
-  return (cond, map AS_Anno.item statements)
+singleCase =
+    let p1 = lstring "else" >> return (mkPredefOp OP_true [])
+    in do 
+      lstring "case"
+      cond <- choice [try p1, aFormula]
+      lstring ":"
+      statements <- many1 (AnnoState.dotT >> AnnoState.allAnnoParser command)
+      return (cond, map AS_Anno.item statements)
 
 
 caseExpr :: CharParser (AnnoState.AnnoState st) CMD

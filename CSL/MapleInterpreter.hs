@@ -111,6 +111,8 @@ instance SymbolicEvaluator MapleIO where
     setSymbolicMode b = modify mf where mf mit = mit { symbolicMode = b }
     getSymbolicMode = gets symbolicMode
 
+instance MessagePrinter MapleIO where
+    printMessage = liftIO . putStrLn
 
 -- ----------------------------------------------------------------------
 -- * Maple Transformation Instances
@@ -164,6 +166,9 @@ printAssignmentWithEval n l e = concat [ n, ":= proc", args, printExp e
 
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = printExp e ++ ";"
+
+printEvaluationWithEval :: EXPRESSION -> String
+printEvaluationWithEval e = "evalf(" ++ printExp e ++ ");"
 
 printLookup :: String -> String
 printLookup n = n ++ ";"
@@ -219,7 +224,7 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (MonadError ASError s, AssignmentStore s, MonadIO s, SymbolicEvaluator s) =>
+mapleAssign :: (MonadError ASError s, MonadIO s, SymbolicEvaluator s) =>
                ([String] -> String -> s [EXPRESSION])
             -> (ConstantName -> s String)
             -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
@@ -263,13 +268,15 @@ mapleLookup ef trans n = do
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-mapleEval :: (MonadError ASError s, AssignmentStore s) =>
+mapleEval :: (MonadError ASError s, SymbolicEvaluator s) =>
              (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
 mapleEval ef trans e = do
   e' <- trans e
-  el <- ef $ printEvaluation e'
+  b <- getSymbolicMode
+  let f = if b then printEvaluation else printEvaluationWithEval
+  el <- ef $ f e'
   if null el
    then throwError $ ASError InterfaceError $
             "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
