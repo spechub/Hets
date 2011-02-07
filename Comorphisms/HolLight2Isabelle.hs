@@ -103,6 +103,9 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
                         ,("T",IsaSign.mkVName IsaConsts.cFalse)
                         ]
 
+ignore :: [String]
+ignore = ["+","-","*",",","!","?","?!","=","<=>","/\\","\\/","==>"]
+
 transConstS :: String -> IsaSign.VName
 transConstS s = case Map.lookup s constMap of
                   Just v -> v
@@ -141,7 +144,7 @@ mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
 mapOps f = Map.fromList $
             map (\(x,y) -> (transConstS x, tp2Typ y)) $
             concatMap (\(x, s) -> Set.toList $ Set.map (\a -> (x,a)) s)
-            $ Map.toList (Map.delete "," f)
+            $ Map.toList (foldl (\m i -> Map.delete i m) f ignore)
 
 
 tp2Typ :: HolType -> IsaSign.Typ
