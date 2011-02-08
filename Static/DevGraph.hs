@@ -775,7 +775,6 @@ instance Show RTNodeLab where
 data RTLinkType =
     RTRefine
   | RTComp
-  | RTTyping
   deriving (Show, Eq)
 
 data RTLinkLab = RTLink
@@ -801,26 +800,6 @@ addSpecNodeRT dg usig s =
   (n, dg') = addNodeRT dg usig s
   f = Map.insert s n $ specRoots dg'
  in (n, dg' {specRoots = f})
-
-addNodeRefRT :: DGraph -> Node -> String -> (Node, DGraph)
-addNodeRefRT dg n s =
- let
-   g = refTree dg
-   n' = Tree.getNewNode g
-   l = RTNodeLab {
-        rtn_type = RTRef n,
-        rtn_name = s}
-   g0 = insNode (n', l) g
-   dg' = addTypingEdgeRT dg {refTree = g0} n' n
- in (n', dg')
-
-addTypingEdgeRT :: DGraph -> Node -> Node -> DGraph
-addTypingEdgeRT dg n1 n2 = let
-   g0 = refTree dg
-   orderRT _ _ = GT
-   (g', _) = Tree.insLEdge True orderRT
-             (n1, n2, RTLink {rtl_type = RTTyping}) g0
- in dg {refTree = g'}
 
 updateNodeNameRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameRT dg n s =

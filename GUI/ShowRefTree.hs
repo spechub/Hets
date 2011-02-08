@@ -106,11 +106,12 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                     filter (\ (_, _, e) -> rtl_type e == RTComp) arcs
    subArcTypeT <- newArcType graph subArcTypeParmsT
    let insertSubArcT (n1, n2, e) = newArc graph subArcTypeT
-                                            (return e)
+                                             (return e)
                                             (lookup' nodes' n1)
                                             (lookup' nodes' n2)
    subArcListT <- mapM insertSubArcT $
-                    filter (\ (_, _, e) -> rtl_type e == RTTyping) arcs
+                    filter (\ (_, _, e) -> False) -- TODO: it was easier
+                    arcs
    subArcTypeR <- newArcType graph subArcTypeParmsR
    let insertSubArcR (n1, n2, e) = newArc graph subArcTypeR
                                             (return e)
@@ -118,7 +119,8 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                                             (lookup' nodes' n2)
    subArcListR <- mapM insertSubArcR $
                     filter (\ (_, _, e) -> rtl_type e == RTRefine) arcs
-   writeIORef nodesEdges (subNodeList, subArcList ++ subArcListT ++ subArcListR)
+   writeIORef nodesEdges (subNodeList, subArcList  ++ subArcListT
+                                       ++ subArcListR)
 
 
 checkCons :: GInfo -> Int-> IO()
@@ -224,7 +226,7 @@ showDiagSpec dg l = do
  let NodeSig n _ = dn_sig l
      nlab = labDG dg n
      g1 = fromMaybe (dgn_theory nlab) $ globalTheory nlab
- createTextDisplay "" 
+ createTextDisplay ""
    ("Desc:\n" ++ (dn_desc l) ++ "\n" ++
     "Sig:\n" ++ (showDoc g1 "")
    )
@@ -235,10 +237,10 @@ addNodesAndEdgesDeps dg diag graph gi nodesEdges = do
    let
     opts = hetcatsOpts gi
     lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
-    
+
     vertexes = map snd $ Tree.labNodes $ diagGraph diag
     arcs = Tree.labEdges $ diagGraph diag
-    subNodeMenu = LocalMenu (UDG.Menu Nothing [Button "Show desc and sig" $ 
+    subNodeMenu = LocalMenu (UDG.Menu Nothing [Button "Show desc and sig" $
                                 showDiagSpec dg ])
     subNodeTypeParms = subNodeMenu $$$
                        Ellipse $$$

@@ -45,8 +45,10 @@ import Common.DocUtils
 import qualified Data.Map as Map
 
 import Data.Maybe
-import Data.Graph.Inductive.Graph as Graph (Node)
+import Data.Graph.Inductive.Graph as Graph (Node, edges)
 import Control.Monad (foldM)
+
+import Debug.Trace
 
 {- | Analyse an architectural specification
 @
@@ -92,7 +94,7 @@ anaArchSpec lgraph ln dg opts sharedCtx nP archSp = case archSp of
                          Nothing -> let
                            (dg0, g) = copySubTree dg n Nothing
                            n0 = Map.findWithDefault (error "copy") n g
-                           (r1, d1) = addNodeRefRT dg0 n0 $ show asn
+                           (r1, d1) = (n0, dg0) -- TODO: this is not needed
                            a1 = setPointerInRef asig (NPBranch r1 $
                                  Map.map (mapRTNodes g) f)
                           in (r1, d1, a1)
@@ -599,7 +601,7 @@ anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
                    let first (e, _, _) = e
                        second (_, e, _) = e
                        third (_, _, e) = e
-                   (sigA, dg''') <- nodeSigUnion lgraph dg''
+                   (sigA, dg''') <- trace (show $ edges $ diagGraph diagA)$ nodeSigUnion lgraph dg''
                        (map (JustNode . second) morphSigs)
                               DGFitSpec
                    -- compute morphA (\sigma^A)
@@ -819,7 +821,7 @@ to ignore the nodes of the
 lambda expressions, like you do in the following -}
   Compose_ref rslist range ->
     do
-       (dg', anaSpecs, _) <- foldM (\ (dgr, rList, rN') rsp0 -> do
+       (dg', anaSpecs, _) <- foldM (\ (dgr, rList, rN') rsp0 -> trace (show rN') $ do
           (_, _, _, rsig', dgr', rsp') <-
                                anaRefSpec lgraph ln dgr opts nsig
                                (mkSimpleId $ show rn ++ "gen_ref_name" ++
