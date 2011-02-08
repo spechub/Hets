@@ -1,7 +1,7 @@
 {-# LANGUAGE  FlexibleContexts, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
-Description :  Maple instance for the AssignmentStore class
+Description :  Mathematica instance for the AssignmentStore class
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -9,10 +9,10 @@ Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
 Portability :  non-portable (via imports)
 
-Maple as AssignmentStore
+Mathematica as AssignmentStore based on the Mathlink interface
 -}
 
-module CSL.MapleInterpreter where
+module CSL.MathematicaInterpreter where
 
 import Common.ProverTools (missingExecutableInPath)
 import Common.Utils (getEnvDef, trimLeft)
@@ -23,6 +23,7 @@ import Common.IOS
 import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
+import CSL.Transformation
 import CSL.Verification
 import CSL.Analysis
 
@@ -43,14 +44,23 @@ import System.IO
 
 import Prelude hiding (lookup)
 
+
 -- ----------------------------------------------------------------------
--- * Maple Types and Instances
+-- * Tests
+-- ----------------------------------------------------------------------
+
+
+
+
+
+-- ----------------------------------------------------------------------
+-- * Mathematica Types and Instances
 -- ----------------------------------------------------------------------
 
 type ConnectInfo = (PC.CommandState, PC.DTime)
 
--- | MapleInterpreter with Translator based on the CommandState
-type MITrans = ASState ConnectInfo
+-- | MathematicaInterpreter with Translator based on the Mathlink interface
+type MathState = ASState ConnectInfo
 
 updateCS :: PC.CommandState -> ConnectInfo -> ConnectInfo
 updateCS cs (_, dt) = (cs, dt)
@@ -58,30 +68,30 @@ updateCS cs (_, dt) = (cs, dt)
 updateDT :: PC.DTime -> ConnectInfo -> ConnectInfo
 updateDT dt (cs, _) = (cs, dt)
 
-getChannelTimeout :: MITrans -> PC.DTime
+getChannelTimeout :: MathState -> PC.DTime
 getChannelTimeout = snd . getConnectInfo
 
-setChannelTimeout :: PC.DTime -> MITrans -> MITrans
+setChannelTimeout :: PC.DTime -> MathState -> MathState
 setChannelTimeout dt = fmap (updateDT dt)
 
-getMI :: MITrans -> PC.CommandState
+getMI :: MathState -> PC.CommandState
 getMI = fst . getConnectInfo
 
-setMI :: PC.CommandState -> MITrans -> MITrans
+setMI :: PC.CommandState -> MathState -> MathState
 setMI cs = fmap (updateCS cs)
 
--- Maple interface, built on CommandState
-type MapleIO = ErrorT ASError (IOS MITrans)
+-- Mathematica interface, built on CommandState
+type MathematicaIO = ErrorT ASError (IOS MathState)
 
-instance AssignmentStore MapleIO where
-    assign  = mapleAssign (evalMapleString True) mapleTransS mapleTransVarE
+instance AssignmentStore MathematicaIO where
+    assign  = mathematicaAssign (evalMathematicaString True) mathematicaTransS mathematicaTransVarE
     assigns =
-        mapleAssigns (evalMapleString False []) mapleTransS mapleTransVarE
-    lookup = mapleLookup (evalMapleString True []) mapleTransS
-    eval = mapleEval (evalMapleString True []) mapleTransE
-    check = mapleCheck (evalMapleString True []) mapleTransE
+        mathematicaAssigns (evalMathematicaString False []) mathematicaTransS mathematicaTransVarE
+    lookup = mathematicaLookup (evalMathematicaString True []) mathematicaTransS
+    eval = mathematicaEval (evalMathematicaString True []) mathematicaTransE
+    check = mathematicaCheck (evalMathematicaString True []) mathematicaTransE
     names = get >>= return . SMem . getBMap
-    evalRaw s = get >>= liftIO . flip (mapleDirect True) s
+    evalRaw s = get >>= liftIO . flip (mathematicaDirect True) s
 
     getUndefinedConstants e = do
       adg <- gets depGraph
@@ -102,7 +112,7 @@ instance AssignmentStore MapleIO where
             mf mit = mit { depGraph = f $ depGraph mit }
         in modify mf
 
-instance VCGenerator MapleIO where
+instance VCGenerator MathematicaIO where
     addVC ea e = do
       let
           s = show
@@ -115,34 +125,51 @@ instance VCGenerator MapleIO where
       liftIO $ hPutStrLn vcHdl s where
                
 
-instance StepDebugger MapleIO where
+instance StepDebugger MathematicaIO where
     setDebugMode b = modify mf where mf mit = mit { debugMode = b }
     getDebugMode = gets debugMode
 
-instance SymbolicEvaluator MapleIO where
+instance SymbolicEvaluator MathematicaIO where
     setSymbolicMode b = modify mf where mf mit = mit { symbolicMode = b }
     getSymbolicMode = gets symbolicMode
 
-instance MessagePrinter MapleIO where
+instance MessagePrinter MathematicaIO where
     printMessage = liftIO . putStrLn
 
 -- ----------------------------------------------------------------------
--- * Maple syntax functions
+-- * Mathematica Transformation Instances
+-- ----------------------------------------------------------------------
+
+-- TODO: Review the vargen facility and the cache-stuff in Transformation
+
+-- | Variable generator instance for internal variables on the Hets-side,
+-- in contrast to the newvar generation in lookupOrInsert of the BMap, which
+-- generates variables for the Mathematica-side. We use nevertheless the same counter.
+instance VarGen MathematicaIO where
+    genVar = do
+      s <- get
+      let i = newkey $ getBMap s
+      put $ s { getBMap = (getBMap s) { newkey = i + 1 } }
+      return $ "?" ++ show i
+
+
+-- ----------------------------------------------------------------------
+-- * Mathematica syntax functions
 -- ----------------------------------------------------------------------
 
 printExp :: EXPRESSION -> String
-printExp e = show $ runReader (printExpression e) mapleOpInfoNameMap
+printExp e = show $ runReader (printExpression e) mathematicaOpInfoNameMap
 --printExp = exportExp
 --printExp = show . pretty
 -- :: ExpressionPrinter m => EXPRESSION -> m Doc
 
 
 
-mapleOpInfoMap :: OpInfoMap
-mapleOpInfoMap = operatorInfoMap
+mathematicaOpInfoMap :: OpInfoMap
+mathematicaOpInfoMap = operatorInfoMap
 
-mapleOpInfoNameMap :: OpInfoNameMap
-mapleOpInfoNameMap = operatorInfoNameMap
+mathematicaOpInfoNameMap :: OpInfoNameMap
+mathematicaOpInfoNameMap = operatorInfoNameMap
 
 printAssignment :: String -> [String] -> EXPRESSION -> String
 printAssignment n [] e = concat [n, ":= ", printExp e, ":", n, ";"]
@@ -187,7 +214,7 @@ printBooleanExpr e = concat [ "is(evalf(", printExp e, "));" ]
 getBooleanFromExpr :: EXPRESSION -> Either String Bool
 getBooleanFromExpr (Op (OpId OP_true) _ _ _) = Right True
 getBooleanFromExpr (Op (OpId OP_false) _ _ _) = Right False
-getBooleanFromExpr (Op (OpId OP_failure) _ _ _) = Left "Maple FAILURE"
+getBooleanFromExpr (Op (OpId OP_failure) _ _ _) = Left "Mathematica FAILURE"
 getBooleanFromExpr e = Left $ "Cannot translate expression to boolean: "
                        ++ show e
 
@@ -196,7 +223,7 @@ getBooleanFromExpr e = Left $ "Cannot translate expression to boolean: "
 -- The evalf is mandatory if we use the if-statement for encoding
 {-
 
--- | As maple does not evaluate boolean expressions we encode them in an
+-- | As mathematica does not evaluate boolean expressions we encode them in an
 -- if-stmt and transform the numeric response back.
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "if evalf("
@@ -219,12 +246,12 @@ getBooleanFromExpr e =
    The generic interface abstracts over the concrete evaluation function
 -}
 
-mapleAssign :: (MonadError ASError s, MonadIO s, SymbolicEvaluator s) =>
+mathematicaAssign :: (MonadError ASError s, MonadIO s, SymbolicEvaluator s) =>
                ([String] -> String -> s [EXPRESSION])
             -> (ConstantName -> s String)
             -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
             -> ConstantName -> AssDefinition -> s EXPRESSION
-mapleAssign ef trans transE n def = do
+mathematicaAssign ef trans transE n def = do
   let e = getDefiniens def
       args = getArguments def
   (e', args') <- transE args e
@@ -237,14 +264,14 @@ mapleAssign ef trans transE n def = do
   case el of
     [rhs] -> return rhs
     l -> throwError $ ASError InterfaceError $
-         "mapleAssign: unparseable result for assignment of "
+         "mathematicaAssign: unparseable result for assignment of "
          ++ (show $ pretty n) ++ "\n" ++ (show $ pretty l)
 
-mapleAssigns :: (AssignmentStore s) => (String -> s [EXPRESSION])
+mathematicaAssigns :: (AssignmentStore s) => (String -> s [EXPRESSION])
           -> (ConstantName -> s String)
           -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
           -> [(ConstantName, AssDefinition)] -> s ()
-mapleAssigns ef trans transE l =
+mathematicaAssigns ef trans transE l =
     let f (n, def) = do
           let e = getDefiniens def
               args = getArguments def
@@ -253,46 +280,46 @@ mapleAssigns ef trans transE l =
           return $ printAssignment n' args' e'
     in mapM f l >>= ef . unlines >> return ()
 
-mapleLookup :: (AssignmentStore s) => (String -> s [EXPRESSION])
+mathematicaLookup :: (AssignmentStore s) => (String -> s [EXPRESSION])
            -> (ConstantName -> s String)
            -> ConstantName -> s (Maybe EXPRESSION)
-mapleLookup ef trans n = do
+mathematicaLookup ef trans n = do
   n' <- trans n
   el <- ef $ printLookup n'
   return $ listToMaybe el
 -- we don't want to return nothing on id-lookup: "x; --> x"
 --  if e == mkOp n [] then return Nothing else return $ Just e
 
-mapleEval :: (MonadError ASError s, SymbolicEvaluator s) =>
+mathematicaEval :: (MonadError ASError s, SymbolicEvaluator s) =>
              (String -> s [EXPRESSION])
         -> (EXPRESSION -> s EXPRESSION)
         -> EXPRESSION -> s EXPRESSION
-mapleEval ef trans e = do
+mathematicaEval ef trans e = do
   e' <- trans e
   b <- getSymbolicMode
   let f = if b then printEvaluation else printEvaluationWithEval
   el <- ef $ f e'
   if null el
    then throwError $ ASError InterfaceError $
-            "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
+            "mathematicaEval: expression " ++ show e' ++ " couldn't be evaluated"
    else return $ head el
 
-mapleCheck :: (MonadError ASError s, AssignmentStore s) =>
+mathematicaCheck :: (MonadError ASError s, AssignmentStore s) =>
               (String -> s [EXPRESSION])
          -> (EXPRESSION -> s EXPRESSION)
          -> EXPRESSION -> s Bool
-mapleCheck ef trans e = do
+mathematicaCheck ef trans e = do
   e' <- trans e
   el <- ef $ printBooleanExpr e'
   if null el
    then throwError $ ASError CASError
-            $ "mapleCheck: expression " ++ show e' ++ " could not be evaluated"
+            $ "mathematicaCheck: expression " ++ show e' ++ " could not be evaluated"
    else case getBooleanFromExpr $ head el of
           Right b -> return b
           Left s ->
               throwError
               $ ASError CASError $
-                concat [ "mapleCheck: CAS error for expression "
+                concat [ "mathematicaCheck: CAS error for expression "
                        , show e', "\n", s ]
 
 
@@ -301,28 +328,28 @@ mapleCheck ef trans e = do
 -- ----------------------------------------------------------------------
 
 
-wrapCommand :: IOS PC.CommandState a -> IOS MITrans a
+wrapCommand :: IOS PC.CommandState a -> IOS MathState a
 wrapCommand ios = do
   r <- get
   let map' x = setMI x r
   stmap map' getMI ios
 
--- | A direct way to communicate with Maple
-mapleDirect :: Bool -> MITrans -> String -> IO String
-mapleDirect b mit s = do
+-- | A direct way to communicate with Mathematica
+mathematicaDirect :: Bool -> MathState -> String -> IO String
+mathematicaDirect b mit s = do
   (res, _) <- runIOS (getMI mit) $ PC.call (getChannelTimeout mit) s
   return $ if b then removeOutputComments res else res
 
-mapleTransE :: EXPRESSION -> MapleIO EXPRESSION
-mapleTransE e = do
+mathematicaTransE :: EXPRESSION -> MathematicaIO EXPRESSION
+mathematicaTransE e = do
   r <- get
   let bm = getBMap r
       (bm', e') = translateExpr bm e
   put r { getBMap = bm' }
   return e'
 
-mapleTransVarE :: [String] -> EXPRESSION -> MapleIO (EXPRESSION, [String])
-mapleTransVarE vl e = do
+mathematicaTransVarE :: [String] -> EXPRESSION -> MathematicaIO (EXPRESSION, [String])
+mathematicaTransVarE vl e = do
   r <- get
   let bm = getBMap r
       args = translateArgVars bm vl
@@ -330,8 +357,8 @@ mapleTransVarE vl e = do
   put r { getBMap = bm' }
   return (e', args)
 
-mapleTransS :: ConstantName -> MapleIO String
-mapleTransS s = do
+mathematicaTransS :: ConstantName -> MathematicaIO String
+mathematicaTransS s = do
   r <- get
   let bm = getBMap r
       (bm', s') = lookupOrInsert bm s
@@ -343,95 +370,95 @@ mapleTransS s = do
   return s'
 
 
--- | Evaluate the given String as maple expression and
+-- | Evaluate the given String as mathematica expression and
 -- parse the result to an expression list.
-evalMapleString :: Bool -- ^ Use parser
+evalMathematicaString :: Bool -- ^ Use parser
                 -> [String] -- ^ Use this argument list for variable trafo
-                -> String -> MapleIO [EXPRESSION]
-evalMapleString b args s = do
-  -- 0.09 seconds is a critical value for the accepted response time of Maple
+                -> String -> MathematicaIO [EXPRESSION]
+evalMathematicaString b args s = do
+  -- 0.09 seconds is a critical value for the accepted response time of Mathematica
   mit <- get
   res <- lift $ wrapCommand $ PC.call (getChannelTimeout mit) s
   let bm = getBMap mit
       trans = if null args then revtranslateExpr bm
               else revtranslateExprWithVars args bm
-  -- when b $ liftIO $ putStrLn $ "evalMapleString:"
-  -- when b $ liftIO $ putStrLn $ show $ maybeToList $ parseExpression mapleOpInfoMap $ trimLeft
+  -- when b $ liftIO $ putStrLn $ "evalMathematicaString:"
+  -- when b $ liftIO $ putStrLn $ show $ maybeToList $ parseExpression mathematicaOpInfoMap $ trimLeft
   --          $ removeOutputComments res
-  -- when b $ liftIO $ putStrLn $ show $ map trans $ maybeToList $ parseExpression mapleOpInfoMap $ trimLeft
+  -- when b $ liftIO $ putStrLn $ show $ map trans $ maybeToList $ parseExpression mathematicaOpInfoMap $ trimLeft
   --          $ removeOutputComments res
   return $ if b
-           then map trans $ maybeToList $ parseExpression mapleOpInfoMap
+           then map trans $ maybeToList $ parseExpression mathematicaOpInfoMap
                     $ trimLeft $ removeOutputComments res
            else []
 
--- | init the maple communication
-mapleInit :: AssignmentDepGraph ()
+-- | init the mathematica communication
+mathematicaInit :: AssignmentDepGraph ()
           -> Int -- ^ Verbosity level
           -> PC.DTime -- ^ timeout for response
-          -> IO MITrans
-mapleInit adg v to = do
-  rc <- lookupMapleShellCmd
-  libpath <- getEnvDef "HETS_MAPLELIB"
-             $ error "mapleInit: Environment variable HETS_MAPLELIB not set."
+          -> IO MathState
+mathematicaInit adg v to = do
+  rc <- lookupMathematicaShellCmd
+  libpath <- getEnvDef "HETS_MATHEMATICALIB"
+             $ error "mathematicaInit: Environment variable HETS_MATHEMATICALIB not set."
   case rc of
-    Left maplecmd -> do
-            cs <- PC.start (maplecmd ++ " -q") v
+    Left mathematicacmd -> do
+            cs <- PC.start (mathematicacmd ++ " -q") v
                   $ Just PC.defaultConfig { PC.startTimeout = 3 }
             (_, cs') <- runIOS cs $ PC.call 0.5
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
                                  , "libname := \"", libpath, "\", libname;" ]
-            return ASState { getBMap = initWithOpMap mapleOpInfoMap
+            return ASState { getBMap = initWithOpMap mathematicaOpInfoMap
                            , getConnectInfo = (cs', to)
                            , depGraph = adg
                            , debugMode = False
                            , symbolicMode = False
                            , vericondOut = Nothing
                            }
-    _ -> error "Could not find maple shell command!"
+    _ -> error "Could not find mathematica shell command!"
 
 
--- | Loads a maple module such as intpakX or intCompare
-mapleLoadModule :: MITrans -> String -> IO String
-mapleLoadModule rit s =
+-- | Loads a mathematica module such as intpakX or intCompare
+mathematicaLoadModule :: MathState -> String -> IO String
+mathematicaLoadModule rit s =
     fmap fst $ runIOS (getMI rit) (PC.call 0.5 $ "with(" ++ s ++ ");")
 
 
-mapleExit :: MITrans -> IO (Maybe ExitCode)
-mapleExit mit = do
+mathematicaExit :: MathState -> IO (Maybe ExitCode)
+mathematicaExit mit = do
   (ec, _) <- runIOS (getMI mit) $ PC.close $ Just "quit;"
   return ec
 
-execWithMaple :: MITrans -> MapleIO a -> IO (MITrans, a)
-execWithMaple mit m = do
-  let err s = error $ "execWithMaple: " ++ s
+execWithMathematica :: MathState -> MathematicaIO a -> IO (MathState, a)
+execWithMathematica mit m = do
+  let err s = error $ "execWithMathematica: " ++ s
   (res, mit') <- runIOS mit $ runErrorT m
   case res of
     Left s' -> err $ asErrorMsg s'
     Right x -> return (mit', x)
 
-runWithMaple :: AssignmentDepGraph () -> Int -- ^ Verbosity level
+runWithMathematica :: AssignmentDepGraph () -> Int -- ^ Verbosity level
           -> PC.DTime -- ^ timeout for response
-          -> [String] -> MapleIO a
-          -> IO (MITrans, a)
-runWithMaple adg i to l m = do
-  mit <- mapleInit adg i to
-  mapM_ (mapleLoadModule mit) l
+          -> [String] -> MathematicaIO a
+          -> IO (MathState, a)
+runWithMathematica adg i to l m = do
+  mit <- mathematicaInit adg i to
+  mapM_ (mathematicaLoadModule mit) l
 
   -- wraps an interval around the number
   let debugFun = "g := proc(v) z:=abs(Float(v,1-Digits)):[v-z, v+z] end;"
   runIOS (getMI mit) $ PC.call 0.3 debugFun
         
-  execWithMaple mit m
+  execWithMathematica mit m
 
 -- ----------------------------------------------------------------------
--- * The Maple system
+-- * The Mathematica system
 -- ----------------------------------------------------------------------
 
 -- | Left String is success, Right String is failure
-lookupMapleShellCmd :: IO (Either String String)
-lookupMapleShellCmd  = do
-  cmd <- getEnvDef "HETS_MAPLE" "maple"
+lookupMathematicaShellCmd :: IO (Either String String)
+lookupMathematicaShellCmd  = do
+  cmd <- getEnvDef "HETS_MATHEMATICA" "mathematica"
   -- check that prog exists
   noProg <- missingExecutableInPath cmd
   let f = if noProg then Right else Left
@@ -442,14 +469,3 @@ removeOutputComments :: String -> String
 removeOutputComments =
     filter (/= '\\') . concat . filter (not . isPrefixOf ">") . lines
  
-{- Some problems with the maximization in Maple:
-
-> Maximize(-x^6+t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);     
-Error, (in Optimization:-NLPSolve) no improved point could be found
-> Maximize(-x^t*x^3-3, {t >= -1000, t <= 1000}, x=-2..0);  
-Error, (in Optimization:-NLPSolve) complex value encountered
-
-
--- works better:
-rhs(maximize(-(tan(x)-1/12)^2 -1, x=-1..1, location)[2,1,1,1]);
--}

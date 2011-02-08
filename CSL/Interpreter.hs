@@ -33,6 +33,7 @@ module CSL.Interpreter
     , translateExprWithVars
     , revtranslateExpr
     , revtranslateExprWithVars
+    , convergenceTerm
     , stepwise
     , stepwiseSafe
     , interactiveStepper
@@ -40,6 +41,7 @@ module CSL.Interpreter
     , EvalAtom(..)
     , prettyEvalAtom
     , asErrorMsg
+    , ASState(..)
     , ASError(..)
     , ErrorSource(..)
     , StepDebugger(..)
@@ -48,7 +50,7 @@ module CSL.Interpreter
     )
     where
 
-import Control.Monad (liftM, forM_, filterM, unless)
+import Control.Monad -- (liftM, forM_, filterM, unless)
 import Control.Monad.State (StateT, MonadState (..))
 import Control.Monad.Error (Error(..), MonadError (..))
 import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
@@ -67,6 +69,7 @@ import Common.DocUtils
 import Common.Utils
 
 import CSL.AS_BASIC_CSL
+import CSL.Analysis
 
 -- ----------------------------------------------------------------------
 -- * Evaluator
@@ -104,6 +107,21 @@ instance SimpleMember (SMem b) b where
     toList (SMem a) = toList a
 
 
+data ASState a =
+    ASState
+    { getBMap :: BMap
+    , getConnectInfo :: a
+    , depGraph :: AssignmentDepGraph ()
+    , debugMode :: Bool
+    , symbolicMode :: Bool
+    , vericondOut :: Maybe Handle
+    }
+
+instance Functor ASState where
+    fmap f s = s { getConnectInfo = f $ getConnectInfo s }
+
+
+
 -- | Calculation interface, bundles the evaluation engine and the
 -- assignment store
 class (Monad m) => AssignmentStore m where
@@ -122,9 +140,11 @@ class (Monad m) => AssignmentStore m where
                    return (x, fromJust v)
              in names >>= mapM f . toList
     getUndefinedConstants :: EXPRESSION -> m (Set.Set ConstantName)
-    getUndefinedConstants = error ""
+    getUndefinedConstants =
+        error "AssignmentStore: Unimplemented getUndefinedConstants"
     genNewKey :: m Int
-    genNewKey = error ""
+    getDepGraph :: m (AssignmentDepGraph ())
+    updateConstant :: ConstantName -> AssDefinition -> m ()
 
 instance AssignmentStore m => AssignmentStore (StateT s m) where
     assign s = lift . assign s
@@ -137,6 +157,8 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
     values = lift values
     getUndefinedConstants = lift . getUndefinedConstants
     genNewKey = lift genNewKey
+    getDepGraph = lift getDepGraph
+    updateConstant c = lift . updateConstant c
 
 class AssignmentStore m => StepDebugger m where
     setDebugMode :: Bool -> m ()
@@ -194,11 +216,13 @@ evaluateList l = forM_ l evaluate
 
 
 data EvalAtom = AssAtom ConstantName AssDefinition
-              | RepeatAtom EXPRESSION | CaseAtom EXPRESSION deriving Show
+              | CaseAtom EXPRESSION
+              | RepeatAtom EXPRESSION (Map.Map EXPRESSION Int) EXPRESSION
+                deriving Show
 
 prettyEvalAtom :: EvalAtom -> Doc
 prettyEvalAtom (AssAtom c def) = pretty c <+> pretty def
-prettyEvalAtom (RepeatAtom e) = text "Repeat condition:" <+> pretty e
+prettyEvalAtom (RepeatAtom e _ _) = text "Repeat condition:" <+> pretty e
 prettyEvalAtom (CaseAtom e) = text "Case condition:" <+> pretty e
 
 instance Pretty EvalAtom where
@@ -230,7 +254,7 @@ interactiveStepper prog x = do
 evaluateAtom :: AssignmentStore m => m () -> EvalAtom -> m Bool
 evaluateAtom _ (AssAtom n def) = assign n def >> return True
 evaluateAtom _ (CaseAtom e) = check e
-evaluateAtom prog (RepeatAtom e) = prog >> check e
+evaluateAtom prog (RepeatAtom _ _ e') = prog >> check e'
 
 {- | It is assumed that the given function respects the evaluation semantics,
    i.e., that for the assignment atom an assignment takes place and for the
@@ -244,9 +268,13 @@ stepwiseSafe f cmd = catchError (stepwise f cmd >> return Nothing) g
     where g = return . Just
 
 printStep :: MessagePrinter m => String -> EvalAtom -> m ()
-printStep _ (AssAtom n def) = printMessage $ ("Evaluate Assignment: " ++) $ show $ pretty n <+> pretty def
-printStep _ (CaseAtom e) = printMessage $ ("Evaluate Case Step: " ++) $ show $ pretty e
-printStep s (RepeatAtom e) = printMessage $ (("Evaluate Repeat Step, " ++ s ++ ": ") ++) $ show $ pretty e
+printStep _ (AssAtom n def) = printMessage $ ("Evaluate Assignment: " ++)
+                              $ show $ pretty n <+> pretty def
+printStep _ (CaseAtom e) = printMessage $ ("Evaluate Case Step: " ++)
+                           $ show $ pretty e
+printStep s (RepeatAtom e _ _) = printMessage
+                             $ (("Evaluate Repeat Step, " ++ s ++ ": ") ++)
+                                   $ show $ pretty e
 
 stepwise :: MessagePrinter m => (m () -> EvalAtom -> m Bool) -> CMD
          -> m ()
@@ -264,20 +292,15 @@ stepwise f (Repeat e l) = do
   -- only in the first entry of a repeat loop we need to transform the
   -- until expression, in all consecutive runs of the same loop we just
   -- need to update the values of the temporarily introduced constants.
-  printStep "entering loop" $ RepeatAtom e
   (m, e') <- translateConvergence e
+  let rAtom = RepeatAtom e m e'
+  printStep "entering loop" rAtom
   let al = Map.toList m
-      -- we check if the expression contains free constants
-      -- (undefined in the assignment graph) and in this case we replace the
-      -- definition of the constant by the undefined constant.
-      g (conve, i) = do
-        s <- getUndefinedConstants conve
-        let e'' = if Set.null s then conve else mkPredefOp OP_undef []
-        return (internalConstant i, mkDefinition [] e'')
       reploop = do
-        mapM g al >>= assigns
-        b <- f (stepwise f $ Sequence l) $ RepeatAtom e'
-        unless b $ printStep "repeating loop" (RepeatAtom e) >> reploop
+        -- mapM (uncurry convergenceTerm) al >>= assigns
+        mapM (uncurry convergenceTerm >=> f (return ()) . uncurry AssAtom) al
+        b <- f (stepwise f $ Sequence l) rAtom
+        unless b $ printStep "repeating loop" rAtom >> reploop
   reploop
 stepwise f (Sequence l) = mapM_ (stepwise f) l
 
@@ -295,6 +318,17 @@ stepwise _ a@(Ass (Op (OpId _) _ _ _) _) =
     error $ concat [ "stepwise: predefined constants in left hand side of "
                    , "assignment not allowed ", show a ]
 stepwise _ a@(Ass _ _) = error $ "stepwise: unsupported assignment " ++ show a
+
+
+-- | We check if the expression contains free constants
+-- (undefined in the assignment graph) and in this case we replace the
+-- definition of the constant by the undefined constant.
+convergenceTerm :: AssignmentStore m => EXPRESSION -> Int
+                -> m (ConstantName, AssDefinition)
+convergenceTerm conve i = do
+  s <- getUndefinedConstants conve
+  let e = if Set.null s then conve else mkPredefOp OP_undef []
+  return (internalConstant i, mkDefinition [] e)
 
 translateConvergence :: AssignmentStore m =>
                         EXPRESSION -> m (Map.Map EXPRESSION Int, EXPRESSION)

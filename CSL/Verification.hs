@@ -25,10 +25,11 @@ import CSL.AS_BASIC_CSL
 import Common.Doc
 
 import System.IO
-import Control.Monad.Trans (MonadIO (..))
-import Control.Monad.Error (MonadError (..))
-import Control.Monad (when)
 import Control.Monad.Reader
+import Control.Monad.Error (MonadError (..))
+
+--import Control.Monad.Trans (MonadIO (..))
+--import Control.Monad (when)
 
 -- ----------------------------------------------------------------------
 -- * Verification Conditions
@@ -57,10 +58,6 @@ type VCMap = Map.Map InstantiatedConstant VCData
 class AssignmentStore m => VCGenerator m where
     addVC :: EvalAtom -> EXPRESSION -> m ()
 
-    -- these constants should be already part of the pure assignment store
-    getDepGraph :: m (AssignmentDepGraph ())
-    updateConstant :: ConstantName -> AssDefinition -> m ()
-
 getVCPremises :: (Ord a) => AssignmentDepGraph a -- ^ 'DepGraph' for lookup
               -> EXPRESSION -- ^ generate premise for this term
               -> [EXPRESSION]
@@ -81,12 +78,12 @@ mkVCPrem :: ConstantName -> AssDefinition -> EXPRESSION
 mkVCPrem n def = mkCondition def (toExp(n, map mkVar $ getArguments def))
                  $ getDefiniens def
 
-mkVC :: ConstantName 
+mkVC :: ConstantName
      -> AssDefinition
      -> EXPRESSION -- ^ the evaluated term for the constant
      -> [EXPRESSION] -- ^ a list of premises from assignment graph
      -> EXPRESSION
-mkVC _ def evalE prl = 
+mkVC _ def evalE prl =
     let prem = foldl f (head prl) $ tail prl
         f a b = toExp ("and", a, b)
         conc = mkCondition def (getDefiniens def) evalE
@@ -134,12 +131,12 @@ evaluateAndVerify _ ea@(CaseAtom e) = do
   addVC ea $ mkBoolVC e b prl
   return b
 
-evaluateAndVerify prog ea@(RepeatAtom e) = do
+evaluateAndVerify prog ea@(RepeatAtom _ _ e') = do
   prog
   adg <- getDepGraph
-  let prl = getVCPremises adg e
-  b <- check e
-  addVC ea $ mkBoolVC e b prl
+  let prl = getVCPremises adg e'
+  b <- check e'
+  addVC ea $ mkBoolVC e' b prl
   return b
 
 

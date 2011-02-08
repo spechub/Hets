@@ -136,7 +136,7 @@ instance Pretty Bool where
 
 evalWithVerification :: Bool -> Bool -> DTime -> Int -> String -> String -> IO String
 evalWithVerification smode dmode to v lb sp = do
-  let exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
+  let -- exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
       p ncl= do
          (_, prog) <- loadAssignmentStore False ncl
          liftIO $ putStrLn ""
