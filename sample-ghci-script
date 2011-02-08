@@ -1,4 +1,4 @@
-:l Test.hs
+:l Scratch.hs
 :m +Common.Id
 :m +Logic.Grothendieck
 :m +Logic.Coerce
