@@ -28,6 +28,7 @@ import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
 import Common.SExpr
+import Common.IO
 
 import Logic.Coerce
 import Logic.Comorphism (targetLogic)
@@ -81,7 +82,7 @@ import OMDoc.Export (exportLibEnv)
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opts f str = do
     putIfVerbose opts 2 $ "Writing file: " ++ f
-    writeFile f str
+    writeEncFile (ioEncoding opts) f str
 
 -- | compute for each LibName in the List a path relative to the given FilePath
 writeVerbFiles :: HetcatsOpts -- ^ Hets options
