@@ -18,3 +18,12 @@ spec SP2 =
 end
 
 spec SP = SP1 and SP2
+
+spec SP' = SP then
+  b : o.
+  
+  .ded b
+end 
+
+
+

@@ -18,31 +18,38 @@ import Common.ExtSign
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import Common.Result
+import Common.DocUtils
 
 import qualified Data.Map as Map
 
 import System.IO.Unsafe
 
-gen_file :: String
-gen_file = "LF/test/gen_twelf_file.elf"
+sen_type_exp :: EXP
+sen_type_exp = Type
 
-gen_sig :: String
-gen_sig = "GEN_SIG"
+gen_file :: String
+gen_file = "gen_twelf_file.elf"
+
+gen_sig1 :: String
+gen_sig1 = "GEN_SIG"
+
+gen_sig2 :: String
+gen_sig2 = "GEN_SIG_SEN"
 
 gen_ax :: String
 gen_ax = "gen_ax"
 
-senSuf :: String -> String
-senSuf sn = sn ++ "_SEN"
-
 numSuf :: String -> Int -> String
 numSuf s i = s ++ "_" ++ show i
 
-wrapInSig :: String -> String -> String
-wrapInSig sn cont = "%sig " ++ sn ++ " = {\n" ++ cont ++ "}.\n"
+mkSig :: String -> String -> String
+mkSig n cont = "%sig " ++ n ++ " = {\n" ++ cont ++ "}.\n"
 
-wrapInIncl :: String -> String
-wrapInIncl sn = "%include " ++ sn ++ " %open.\n"
+mkIncl :: String -> String
+mkIncl n = "%include " ++ n ++ " %open.\n"
+
+mkRead :: String -> String
+mkRead n = "%read \"" ++ n ++ "\".\n" 
 
 getSigItems :: [Annoted BASIC_ITEM] -> [Annoted BASIC_ITEM]
 getSigItems = filter ( \ (Annoted i _ _ _) ->
@@ -77,33 +84,31 @@ makeNamedForm ((n,s),annos) =
 -- basic analysis for LF
 basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos) ->
                  Result (BASIC_SPEC, ExtSign Sign Symbol, [Named EXP])
-basicAnalysis (bs@(Basic_spec items), initsig, _) =
-  if initsig /= emptySig
-     then error "Structuring for LF nyi."
-     else do
-       let (sig,sen) = unsafePerformIO $
-             constructSigSen gen_file gen_sig items
-       let syms = getSymbols sig
-       let fs = makeNamedForms sen $ map r_annos $ getSenItems items
-       return (bs, ExtSign sig syms, fs)
+basicAnalysis (bs@(Basic_spec items), initsig, _) = do
+  let (sig,sens) = unsafePerformIO $ makeSigSen initsig items
+  let syms = getSymbols sig
+  let fs = makeNamedForms sens $ map r_annos $ getSenItems items
+  return (bs, ExtSign sig syms, fs)
 
 -- constructs the signatures and sentences
-constructSigSen :: BASE -> MODULE -> [Annoted BASIC_ITEM] ->
-                   IO (Sign,[(NAME,Sentence)])
-constructSigSen fp name items = do
-  file <- resolveToCur fp
-  makeTwelfFile file name (getSigItems items) (getSenItems items)
-  retrieveSigSen file name
+makeSigSen :: Sign -> [Annoted BASIC_ITEM] -> IO (Sign,[(NAME,Sentence)])
+makeSigSen sig items = do
+  let contents = makeFile sig (getSigItems items) (getSenItems items)
+  writeFile gen_file contents
+  libs <- twelf2SigMor gen_file
+  getSigSen libs
 
--- constructs a Twelf file to analyze the signature and sentences
-makeTwelfFile :: BASE -> MODULE -> [Annoted BASIC_ITEM] ->
-                 [Annoted BASIC_ITEM] -> IO ()
-makeTwelfFile file name sig_items sen_items = do
-  let sen_type = "type"
-  let sig1 = wrapInSig name $ printSigItems sig_items
-  let sig2 = wrapInSig (senSuf name) $ wrapInIncl name ++
-               printSenItems sen_type sen_items
-  writeFile file $ sig1 ++ "\n" ++ sig2
+{- constructs the contents of a Twelf file used to analyze the signature
+   and sentences -}
+makeFile :: Sign -> [Annoted BASIC_ITEM] -> [Annoted BASIC_ITEM] -> String
+makeFile sig sig_items sen_items =
+  let sen_type = show $ pretty sen_type_exp
+      cont1 = if (sig == emptySig) then "" else show (pretty sig) ++ "\n"
+      cont2 = printSigItems sig_items
+      cont3 = printSenItems sen_type sen_items
+      sig1 = mkSig gen_sig1 $ cont1 ++ cont2
+      sig2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont3
+      in sig1 ++ "\n" ++ sig2
 
 printSigItems :: [Annoted BASIC_ITEM] -> String
 printSigItems [] = ""
@@ -129,15 +134,14 @@ printSenItemsH sen_type num (i:is) =
 
 {- retrieves the signature and sentences corresponding to the
    original basic spec out of a Twelf file -}
-retrieveSigSen :: BASE -> MODULE -> IO (Sign,[(NAME,Sentence)])
-retrieveSigSen file name = do
-  libs <- twelf2SigMor file
-  let (sigs,_) = Map.findWithDefault (error $ "Library not found.")
+getSigSen :: LIBS -> IO (Sign,[(NAME,Sentence)])
+getSigSen libs = do
+  file <- resolveToCur gen_file
+  let (sigs,_) = Map.findWithDefault (error "Library not found.")
                    (toLibName file) libs
-  let name' = senSuf name
-  let sig = Map.findWithDefault (er name) name sigs
-  let sig' = Map.findWithDefault (er name') name' sigs
-  let sens = getSensFromDefs $ filter (\ d -> isLocalSym (getSym d) sig')
-               $ getDefs sig'
-  return (sig,sens)
+  let sig1 = Map.findWithDefault (er gen_sig1) gen_sig1 sigs
+  let sig2 = Map.findWithDefault (er gen_sig2) gen_sig2 sigs
+  let sens = getSensFromDefs $ filter (\ d -> isLocalSym (getSym d) sig2)
+               $ getDefs sig2
+  return (sig1,sens)
   where er n = error $ "Signature " ++ n ++ " not found."

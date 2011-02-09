@@ -94,6 +94,6 @@ instance LogicFram LF
    Symbol
    ()
    where
-   getBaseSig LF = baseSigLF
-   writeLogic LF = writeLogicLF
-   writeSyntax LF = writeSyntaxLF
+   base_sig LF = baseSig
+   write_logic LF = writeLogic
+   write_syntax LF = writeSyntax

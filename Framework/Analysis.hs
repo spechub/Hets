@@ -111,7 +111,7 @@ retrieveDiagram ml (LogicDef _ _ s m p _) dg = do
             else do v <- lookupMorph ml p dg
                     return $ Just v 
 
-  if (dom ltruth /= getBaseSig ml) then
+  if (dom ltruth /= base_sig ml) then
      error $ "The morphism " ++ (show s) ++
              " must originate from the Base signature for " ++
              (show ml) ++ "." else do
@@ -153,8 +153,8 @@ buildLogic ml l ltruth _ _ = do
              "Please choose a different object logic name." else do
 
   createDirectory l
-  let logicC = writeLogic ml l
-  let syntaxC = writeSyntax ml l ltruth
+  let logicC = write_logic ml l
+  let syntaxC = write_syntax ml l ltruth
   writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicC
   writeFile (l ++ "/" ++ "Syntax.hs") syntaxC
   return ()
