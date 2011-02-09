@@ -54,7 +54,7 @@ makeFileOL ltruth sig sig_items sen_items = do
                    Just t -> show $ pretty t
       lSyn = target ltruth
       locals = filter (\ d -> isLocalSym (getSym d) sig) $ getDefs sig
-      imp = mkRead $ fromLibName $ sigBase lSyn
+      imp = mkRead $ sigBase lSyn
       cont1 = if (sig == lSyn) then "" else (show $ vcat $ map pretty locals) ++ "\n"
       cont2 = printSigItems sig_items
       cont3 = printSenItems sen_type sen_items

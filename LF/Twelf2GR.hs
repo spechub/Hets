@@ -242,12 +242,6 @@ eqOMS e1 e2 =
          , getModuleAttr e1 == getModuleAttr e2
          , getBaseAttr e1 == getBaseAttr e2]
 
-toLibName :: FilePath -> FilePath
-toLibName fp = dropExtension fp
-
-fromLibName :: FilePath -> FilePath
-fromLibName fp = addExtension fp twelfE
-
 toOMDoc :: FilePath -> FilePath
 toOMDoc fp = replaceExtension fp omdocE
 
@@ -301,8 +295,8 @@ getBMN e (base,modul) =
    and morphisms from it -}
 addFromFile :: FilePath -> LIBS_EXT -> IO LIBS_EXT
 addFromFile fp libs@(lb@(l,_),(b,gr)) = do
-  let file = toLibName fp
-  if (file == b || Map.member file l)
+  --let file = toLibName fp
+  if (fp == b || Map.member fp l)
      then return libs
      else do lb' <- twelf2GR fp lb
              return (lb',(b,gr))
@@ -417,7 +411,7 @@ buildGraph file lb = do
                          if (n == viewQN) then addView e libs else
                          return libs
                )
-               (lb,(toLibName file,emptyGraph))
+               (lb,(file,emptyGraph))
                $ elChildren root
        _ -> fail "Not an OMDoc file."
 
@@ -447,8 +441,8 @@ addView e libs@(_,(file,_)) = do
   let (b2,m2) = parseRef to file
   libs1 <- addFromFile b1 libs
   libs2 <- addFromFile b2 libs1
-  let srcSig = lookupSig (toLibName b1,m1) libs2
-  let tarSig = lookupSig (toLibName b2,m2) libs2
+  let srcSig = lookupSig (b1,m1) libs2
+  let tarSig = lookupSig (b2,m2) libs2
   (morph,libs3) <- getViewMorph name srcSig tarSig (elChildren e) libs2
   let libs4 = addMorphToGraph morph libs3
   return libs4
@@ -524,7 +518,7 @@ oms2exp :: Element -> NODE -> EXP
 oms2exp e ref =
   if (eqOMS e typeOMS) then Type else
      let (b,m,n) = getBMN e ref
-         in Const $ Symbol (toLibName b) m n
+         in Const $ Symbol b m n
 
 -- converts an OMA element to an expression
 oma2exp :: Element -> NODE -> EXP
@@ -602,7 +596,7 @@ addIncl e (libs@(_,(file,_)),sig) = do
   let from = getFromAttr e
   let (b,m) = parseRef from file
   libs1 <- addFromFile b libs
-  let srcSig = lookupSig (toLibName b,m) libs1
+  let srcSig = lookupSig (b,m) libs1
   let tarSig = addInclSyms srcSig sig
   let morph = getInclMorph srcSig tarSig
   let libs2 = addMorphToGraph morph libs1
@@ -635,7 +629,7 @@ addStruct e (libs@(_,(file,_)),sig) = do
   let from = getFromAttr e
   let (b,m) = parseRef from file
   libs1 <- addFromFile b libs
-  let srcSig = lookupSig (toLibName b,m) libs1
+  let srcSig = lookupSig (b,m) libs1
   (tarSig,morph,libs2) <- processStruct name srcSig sig (elChildren e) libs1
   let libs3 = addMorphToGraph morph libs2
   return (libs3,tarSig)
@@ -723,7 +717,7 @@ strass2map :: Element -> (Map.Map Symbol EXP, LIBS_EXT) -> NODE -> NODE ->
 strass2map e (mapp,libs) src tar = do
   let (b,m,n) = getBMN e src
   case findChildren ommorQN e of
-       [ommor] -> do (mor1,libs1) <- retrieveMorph (toLibName b,m,n) libs
+       [ommor] -> do (mor1,libs1) <- retrieveMorph (b,m,n) libs
                      (mor2,libs2) <- ommor2mor ommor tar libs1
                      let map1 = Map.union mapp $ combineMorphs mor1 mor2
                      return (map1,libs2)
@@ -748,7 +742,7 @@ omel2mor e ref libs =
 oms2mor :: Element -> NODE -> LIBS_EXT -> IO (Morphism,LIBS_EXT)
 oms2mor e ref libs = do
   let (b,m,n) = getBMN e ref
-  retrieveMorph (toLibName b,m,n) libs
+  retrieveMorph (b,m,n) libs
 
 -- converts an OMA element to a morphism
 oma2mor :: Element -> NODE -> LIBS_EXT -> IO (Morphism,LIBS_EXT)
@@ -773,7 +767,7 @@ retrieveMorph (b,m,n) libs = retrieveMorphH b m (splitBy '/' n) libs
 retrieveMorphH :: BASE -> MODULE -> [NAME] -> LIBS_EXT ->
                   IO (Morphism,LIBS_EXT)
 retrieveMorphH b m ns libs = do
-  libs1 <- addFromFile (fromLibName b) libs
+  libs1 <- addFromFile b libs
   case ns of
     [] -> error "Empty morphism name."
     [n] -> do

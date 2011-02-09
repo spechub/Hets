@@ -138,7 +138,7 @@ getSigSen :: LIBS -> IO (Sign,[(NAME,Sentence)])
 getSigSen libs = do
   file <- resolveToCur gen_file
   let (sigs,_) = Map.findWithDefault (error "Library not found.")
-                   (toLibName file) libs
+                   file libs
   let sig1 = Map.findWithDefault (er gen_sig1) gen_sig1 sigs
   let sig2 = Map.findWithDefault (er gen_sig2) gen_sig2 sigs
   let sens = getSensFromDefs $ filter (\ d -> isLocalSym (getSym d) sig2)
