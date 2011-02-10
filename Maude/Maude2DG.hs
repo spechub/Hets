@@ -37,6 +37,7 @@ import Maude.Shellout
 import Maude.Logic_Maude
 import qualified Maude.Meta.HasName as HasName
 
+import Data.Char
 import Data.Maybe
 import Data.List (intersect)
 import qualified Data.Map as Map
@@ -854,7 +855,8 @@ traverseSpec hIn hOut ns = do
   let stringSpec = findSpec sOutput
   case readMaybe stringSpec of
     Nothing -> do
-      putStrLn $ "failed to read " ++ args ++ ":\n" ++ stringSpec
+      putStrLn $ "failed to read " ++ args ++ ":\n"
+        ++ if all isSpace stringSpec then sOutput else stringSpec
       return Nothing
     ms -> return ms
 

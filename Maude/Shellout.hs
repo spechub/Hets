@@ -30,7 +30,8 @@ import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
 import qualified Maude.Sentence as Sen
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, stripPrefix)
+import Data.Maybe (fromMaybe)
 
 import Common.Doc
 import Common.DocUtils ()
@@ -82,10 +83,12 @@ convertSpec _ = (Sign.empty, [])
 -- | extracts the string corresponding to a specification
 findSpec :: String -> String
 findSpec = let
-        findSpecBeg = dropWhile $ not . isPrefixOf "Spec"
+        findSpecBeg = dropWhile $ \ s ->
+          not $ isPrefixOf "Spec" s || isPrefixOf "Maude> Spec" s
         findSpecEnd = takeWhile $ not . isPrefixOf "@#$endHetsSpec$#@"
+        stripPrompt s = fromMaybe s $ stripPrefix "Maude> " s
         filterNil = filter $ (/=) '\NUL'
-    in filterNil . unlines . findSpecEnd . findSpecBeg . lines
+    in stripPrompt . filterNil . unlines . findSpecEnd . findSpecBeg . lines
 
 -- | extracts a Maude module or view
 getAllOutput :: Handle -> String -> Bool -> IO String
