@@ -53,7 +53,6 @@ import qualified Data.Map as Map
 type VAR = String
 type NAME = String
 type MODULE = String
--- after namespaces are implemented for Twelf, BASE should be a URI
 type BASE = String
 
 gen_base :: String
@@ -66,7 +65,7 @@ data Symbol = Symbol
             { symBase :: BASE
             , symModule :: MODULE
             , symName :: NAME
-            } deriving (Show)
+            } deriving (Ord, Eq, Show)
 
 instance GetRange Symbol
 
@@ -95,7 +94,7 @@ data Sign = Sign
           { sigBase :: BASE
           , sigModule :: MODULE
           , getDefs :: [DEF]
-          } deriving (Show)
+          } deriving (Eq, Ord, Show)
 
 emptySig :: Sign
 emptySig = Sign gen_base gen_module []
@@ -289,21 +288,9 @@ renameH m s (Lamb [(x,t)] a) =
       in Lamb [(x1,t1)] a1
 renameH _ _ t = t
 
--- equality and ordering
-instance Eq Sign where
-    sig1 == sig2 = eqSig sig1 sig2
-instance Eq Symbol where 
-    s1 == s2 = eqSym s1 s2
+-- equality
 instance Eq EXP where
     e1 == e2 = eqExp (recForm e1) (recForm e2)
-
-{- currently bases are ignored; should be changed after namespaces
-   for Twelf are implemented -}
-eqSig :: Sign -> Sign -> Bool
-eqSig (Sign _ m1 d1) (Sign _ m2 d2) = (m1,d1) == (m2,d2)
-
-eqSym :: Symbol -> Symbol -> Bool
-eqSym (Symbol _ m1 n1) (Symbol _ m2 n2) = (m1,n1) == (m2,n2)
 
 eqExp :: EXP -> EXP -> Bool
 eqExp Type Type = True
@@ -326,17 +313,6 @@ eqExp (Lamb [(n1,t1)] s1) (Lamb [(n2,t2)] s2) =
             else let s3 = rename (Map.singleton n2 n1) (Set.insert n1 vars) s2
                  in and [t1 == t2, s1 == s3]
 eqExp _ _ = False
-
-instance Ord Sign where
-    compare = ordSig
-instance Ord Symbol where
-    compare = ordSym
-
-ordSig :: Sign -> Sign -> Ordering
-ordSig (Sign _ m1 d1) (Sign _ m2 d2) = compare (m1,d1) (m2,d2)
-
-ordSym :: Symbol -> Symbol -> Ordering
-ordSym (Symbol _ m1 n1) (Symbol _ m2 n2) = compare (m1,n1) (m2,n2)
 
 {- Subsignature test. An LF signature Sig1 is a subsignature of Sig2 if
    the definitions in Sig1 are a subset of the definitions in Sig2. -}
