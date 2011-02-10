@@ -728,11 +728,9 @@ getImportsSortsStmnts (_ : stmts) p = getImportsSortsStmnts stmts p
 -- | builds the development graph of the specified Maude file
 directMaudeParsing :: FilePath -> IO (DGraph, DGraph)
 directMaudeParsing fp = do
-  ml <- getEnvDef "MAUDE_LIB" ""
-  if null ml then error "environment variable MAUDE_LIB is not set" else do
     ns <- parse fp
     let ns' = either (const []) id ns
-    (hIn, hOut, hErr, procH) <- runMaude
+    (inString, hIn, hOut, hErr, procH) <- runMaude
     exitCode <- getProcessExitCode procH
     case exitCode of
       Nothing -> do
@@ -740,7 +738,7 @@ directMaudeParsing fp = do
               hFlush hIn
               hPutStrLn hIn "."
               hFlush hIn
-              hPutStrLn hIn "in Maude/hets.prj"
+              hPutStrLn hIn inString
               psps <- predefinedSpecs hIn hOut
               sps <- traverseSpecs hIn hOut ns'
               (ok, errs) <- getErrors hErr

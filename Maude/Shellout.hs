@@ -19,12 +19,13 @@ module Maude.Shellout (
     getErrors
 ) where
 
+import System.FilePath
 import System.IO
 import System.Process
 
 import Maude.AS_Maude
 
-import Maude.Sign (Sign,inlineSign)
+import Maude.Sign (Sign, inlineSign)
 import Maude.Sentence (Sentence)
 import qualified Maude.Sign as Sign
 import qualified Maude.Sentence as Sen
@@ -40,20 +41,27 @@ maudePath = "maude"
 maudeArgs :: [String]
 maudeArgs = ["-interactive", "-no-banner", "-no-advise"]
 maudeHetsPath :: String
-maudeHetsPath = "Maude/hets.prj"
+maudeHetsPath = "hets.prj"
 
 -- | runs @maude@ in an interactive subprocess
-runMaude :: IO (Handle, Handle, Handle, ProcessHandle)
-runMaude = runInteractiveProcess maudePath maudeArgs Nothing Nothing
+runMaude :: IO (String, Handle, Handle, Handle, ProcessHandle)
+runMaude = do
+  ml <- getEnvDef "MAUDE_LIB" ""
+  hml <- getEnvDef "HETS_MAUDE_LIB" "Maude"
+  if null ml then error "environment variable MAUDE_LIB is not set" else do
+    (hIn, hOut, hErr, procH) <-
+        runInteractiveProcess maudePath maudeArgs Nothing Nothing
+    return ("in " ++ hml </> maudeHetsPath, hIn, hOut, hErr, procH)
 
--- | performs the basic analysis, extracting the signature and the sentences
--- of the given Maude text, that can use the signature accumulated thus far
+{- | performs the basic analysis, extracting the signature and the sentences
+of the given Maude text, that can use the signature accumulated thus far. -}
 basicAnalysis :: Sign -> MaudeText -> IO (Sign, [Sentence])
 basicAnalysis sign (MaudeText mt) = do
-    (hIn, hOut, _, _) <- runMaude
-    hPutStrLn hIn $ unwords ["in", maudeHetsPath]
+    (inString, hIn, hOut, _, _) <- runMaude
+    hPutStrLn hIn inString
     let sigStr = show $ parens
-          $ vcat [text "mod FROM-HETS is", inlineSign sign, text mt, text "endm"]
+          $ vcat [text "mod FROM-HETS is", inlineSign sign, text mt
+                 , text "endm"]
     hPutStrLn hIn sigStr
     hFlush hIn
     specOut <- hGetContents hOut
@@ -76,7 +84,7 @@ findSpec :: String -> String
 findSpec = let
         findSpecBeg = dropWhile $ not . isPrefixOf "Spec"
         findSpecEnd = takeWhile $ not . isPrefixOf "@#$endHetsSpec$#@"
-        filterNil   = filter $ (/=) '\NUL'
+        filterNil = filter $ (/=) '\NUL'
     in filterNil . unlines . findSpecEnd . findSpecBeg . lines
 
 -- | extracts a Maude module or view
