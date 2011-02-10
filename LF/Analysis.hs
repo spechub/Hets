@@ -28,10 +28,10 @@ sen_type_exp :: EXP
 sen_type_exp = Type
 
 gen_file :: String
-gen_file = "gen_twelf_file.elf"
+gen_file = gen_base
 
 gen_sig1 :: String
-gen_sig1 = "GEN_SIG"
+gen_sig1 = gen_module
 
 gen_sig2 :: String
 gen_sig2 = "GEN_SIG_SEN"
@@ -136,9 +136,8 @@ printSenItemsH sen_type num (i:is) =
    original basic spec out of a Twelf file -}
 getSigSen :: LIBS -> IO (Sign,[(NAME,Sentence)])
 getSigSen libs = do
-  file <- resolveToCur gen_file
   let (sigs,_) = Map.findWithDefault (error "Library not found.")
-                   file libs
+                   gen_file libs
   let sig1 = Map.findWithDefault (er gen_sig1) gen_sig1 sigs
   let sig2 = Map.findWithDefault (er gen_sig2) gen_sig2 sigs
   let sens = getSensFromDefs $ filter (\ d -> isLocalSym (getSym d) sig2)

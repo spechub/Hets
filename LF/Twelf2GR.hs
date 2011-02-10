@@ -6,7 +6,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
-Portability :  portable
+Portability :  portable    
 -}
 module LF.Twelf2GR where
 
@@ -262,40 +262,59 @@ resolve fp1 fp2 =
                Just f -> show f
   where er = error "Invalid file name."
 
+-- relativizes the first file path wrt to the second
+relativize :: FilePath -> FilePath -> FilePath
+relativize fp1 fp2 =
+  case parseURIReference fp1 of
+    Nothing -> er
+    Just uri1 -> do
+      case parseURIReference fp2 of
+        Nothing -> er
+        Just uri2 -> show $ relativeFrom uri1 uri2
+  where er = error "Invalid file name."
+
 -- resolves the file path wrt to the current directory
 resolveToCur :: FilePath -> IO FilePath
 resolveToCur fp = do
   dir <- getCurrentDirectory
   return $ resolve fp (dir ++ "/")
 
+-- relativizes the file path wrt to the current directory
+relativizeToCur :: FilePath -> IO FilePath
+relativizeToCur fp = do
+  dir <- getCurrentDirectory
+  return $ relativize fp (dir ++ "/")
+
 {- returns the referenced base and module resolved w.r.t.
-   the second argument -}
-parseRef :: String -> String -> NODE
+   the second argument and relativized to the current directory -}
+parseRef :: String -> String -> IO NODE
 parseRef ref base =
   case splitBy '?' ref of
-       [br,m] -> let b = fromOMDoc $ resolve br base
-                     in (b,m)
-       _ -> error "Invalid reference."
+       [br1,m] -> do let b = fromOMDoc $ resolve br1 base
+                     br2 <- relativizeToCur b
+                     return (br2,m)
+       _ -> fail "Invalid reference."
 
--- retrieves the base, module, and name attributes
-getBMN :: Element -> NODE -> (BASE,MODULE,NAME)
-getBMN e (base,modul) =
+{- retrieves the base, module, and name attributes resolved w.r.t.
+   the second argument and relativized to the current directory -}
+getBMN :: Element -> NODE -> IO (BASE,MODULE,NAME)
+getBMN e (base,modul) = do
   let n = case findAttr nameQN e of
                Nothing -> ""
                Just n' -> n'
-      m = case getModuleAttr e of
+  let m = case getModuleAttr e of
                Nothing -> modul
                Just m' -> m'
-      b = case getBaseAttr e of
+  let b = case getBaseAttr e of
                Nothing -> base
                Just b' -> fromOMDoc $ resolve b' base
-      in (b,m,n)
+  br <- relativizeToCur b
+  return (br,m,n)
 
 {- parses the referenced file if needed and imports all signatures
    and morphisms from it -}
 addFromFile :: FilePath -> LIBS_EXT -> IO LIBS_EXT
 addFromFile fp libs@(lb@(l,_),(b,gr)) = do
-  --let file = toLibName fp
   if (fp == b || Map.member fp l)
      then return libs
      else do lb' <- twelf2GR fp lb
@@ -362,8 +381,8 @@ twelf2SigMor fp = do
    which is needed later for the construction of DGraphs -}
 twelf2GR :: FilePath -> (LIBS,[BASE]) -> IO (LIBS,[BASE])
 twelf2GR fp lb = do
-  file <- resolveToCur fp
-  runTwelf file
+  runTwelf fp
+  file <- relativizeToCur fp
   le@((libs,bs),(b,gr)) <- buildGraph file lb
   let gr' = computeTargets gr le
   let libs' = Map.insert b gr' libs
@@ -372,7 +391,8 @@ twelf2GR fp lb = do
 
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
-runTwelf file = do
+runTwelf fp = do
+  file <- resolveToCur fp
   let dir = dropFileName file
   twelfdir <- getEnvDef "TWELF_LIB" ""
   if null twelfdir
@@ -417,8 +437,8 @@ buildGraph file lb = do
 
 -- transforms a theory element into a signature and adds it to the graph
 addSign :: Element -> LIBS_EXT -> IO LIBS_EXT
-addSign e libs@(_,(base,_)) = do
-  let sig = Sign base (getNameAttr e) []
+addSign e libs@(_,(file,_)) = do
+  let sig = Sign file (getNameAttr e) []
   (libs1,sig1) <-
      foldM (\ ls el ->
               let n = elName el
@@ -437,10 +457,10 @@ addView e libs@(_,(file,_)) = do
   let name = getNameAttr e
   let from = getFromAttr e
   let to = getToAttr e
-  let (b1,m1) = parseRef from file
-  let (b2,m2) = parseRef to file
+  (b1,m1) <- parseRef from file
+  (b2,m2) <- parseRef to file
   libs1 <- addFromFile b1 libs
-  libs2 <- addFromFile b2 libs1
+  libs2 <- addFromFile b2 libs1  
   let srcSig = lookupSig (b1,m1) libs2
   let tarSig = lookupSig (b2,m2) libs2
   (morph,libs3) <- getViewMorph name srcSig tarSig (elChildren e) libs2
@@ -468,122 +488,121 @@ addConst :: Element -> (LIBS_EXT,Sign) -> IO (LIBS_EXT,Sign)
 addConst e (libs,sig) = do
   let ref@(b,m) = (sigBase sig, sigModule sig)
   let sym = Symbol b m $ getNameAttr e
-  let typ = case findChildren typeQN e of
-                 [t] -> type2exp t ref
-                 _ -> error "Constant element must have a unique type child."
-  let val = case findChildren definitionQN e of
-                 [] -> Nothing
-                 [v] -> Just $ definition2exp v ref
-                 _ -> error $ "Constant element must have at most " ++
-                               "one definition child."
+  typ <- case findChildren typeQN e of
+              [t] -> type2exp t ref
+              _ -> fail "Constant element must have a unique type child."
+  val <- case findChildren definitionQN e of
+              [] -> return Nothing
+              [v] -> fmap Just $ definition2exp v ref                   
+              _ -> fail $ "Constant element must have at most " ++
+                          "one definition child."
   let sig1 = addDef (Def sym typ val) sig
   return (libs,sig1)
 
 {- converts a type element to an expression
    second argument is used for resolving symbol references -}
-type2exp :: Element -> NODE -> EXP
+type2exp :: Element -> NODE -> IO EXP
 type2exp e ref =
   case findChildren omobjQN e of
        [omobj] -> omobj2exp omobj ref
-       _ -> error "Type element must have a unique OMOBJ child."
+       _ -> fail "Type element must have a unique OMOBJ child."
 
 {- converts a definition element to an expression
    second argument is used for resolving symbol references -}
-definition2exp :: Element -> NODE -> EXP
+definition2exp :: Element -> NODE -> IO EXP
 definition2exp e ref =
   case findChildren omobjQN e of
        [omobj] -> omobj2exp omobj ref
-       _ -> error "Definition element must have a unique OMOBJ child."
+       _ -> fail "Definition element must have a unique OMOBJ child."
 
 -- converts an OMOBJ element to an expression
-omobj2exp :: Element -> NODE -> EXP
+omobj2exp :: Element -> NODE -> IO EXP
 omobj2exp e ref =
   case elChildren e of
        [el] -> omel2exp el ref
-       _ -> error "OMOBJ element must have a unique child."
+       _ -> fail "OMOBJ element must have a unique child."
 
 -- converts an Open Math element to an expression
-omel2exp :: Element -> NODE -> EXP
+omel2exp :: Element -> NODE -> IO EXP
 omel2exp e ref =
   let name = elName e
       in if (name == omsQN) then oms2exp e ref else
          if (name == omaQN) then oma2exp e ref else
          if (name == ombindQN) then ombind2exp e ref else
          if (name == omvQN) then omv2exp e ref else
-         error $ "Only OMA, OMS, and OMBIND elements correspond " ++
-                 "to an expression."
+         fail $ "Only OMA, OMS, and OMBIND elements correspond " ++
+                "to an expression."
 
 -- converts an OMS element to an expression
-oms2exp :: Element -> NODE -> EXP
+oms2exp :: Element -> NODE -> IO EXP
 oms2exp e ref =
-  if (eqOMS e typeOMS) then Type else
-     let (b,m,n) = getBMN e ref
-         in Const $ Symbol b m n
+  if (eqOMS e typeOMS) then return Type else do
+  (b,m,n) <- getBMN e ref
+  return $ Const $ Symbol b m n
 
 -- converts an OMA element to an expression
-oma2exp :: Element -> NODE -> EXP
+oma2exp :: Element -> NODE -> IO EXP
 oma2exp e ref =
   case elChildren e of
-    [] -> error "OMA element must have at least one child."
-    (f:as) ->
-      let as1 = map (\ a -> omel2exp a ref) as
-          in if (eqOMS f arrowOMS)
-                then case as1 of
-                       [] -> error $ "The -> constructor must be applied" ++
-                                     " to at least one argument."
-                       _ -> Func (init as1) (last as1)
-                else let f1 = omel2exp f ref
-                         in Appl f1 as1
+    [] -> fail "OMA element must have at least one child."
+    (f:as) -> do
+      as1 <- mapM (\ a -> omel2exp a ref) as
+      if (eqOMS f arrowOMS)
+         then case as1 of
+                   [] -> fail $ "The -> constructor must be applied" ++
+                                " to at least one argument."
+                   _ -> return $ Func (init as1) (last as1)
+         else do f1 <- omel2exp f ref
+                 return $ Appl f1 as1             
 
 -- converts an OMBIND element to an expression
-ombind2exp :: Element -> NODE -> EXP
+ombind2exp :: Element -> NODE -> IO EXP
 ombind2exp e ref =
   case elChildren e of
     [f,d,b] ->
       if (elName d /= ombvarQN)
-         then error "The second child of OMBIND must be OMBVAR."
-         else let d1 = ombvar2decls d ref
-                  b1 = omel2exp b ref
-                  in if (eqOMS f lambdaOMS) then Lamb d1 b1 else
-                     if (eqOMS f piOMS) then Pi d1 b1 else
-                     {- so far implicit binders are treated
-                        as explicit -}
-                     if (eqOMS f impLambdaOMS) then Lamb d1 b1 else
-                     if (eqOMS f impPiOMS) then Pi d1 b1 else
-                     error $ "The first child of OMBIND " ++
-                             "must be be Pi or Lambda."
-    _ -> error "OMBIND element must have exactly 3 children."
+         then fail "The second child of OMBIND must be OMBVAR."
+         else do d1 <- ombvar2decls d ref
+                 b1 <- omel2exp b ref
+                 if (eqOMS f lambdaOMS) then return $ Lamb d1 b1 else do
+                 if (eqOMS f piOMS) then return $ Pi d1 b1 else do
+                 {- so far implicit binders are treated
+                    as explicit -}
+                 if (eqOMS f impLambdaOMS) then return $ Lamb d1 b1 else do
+                 if (eqOMS f impPiOMS) then return $ Pi d1 b1 else do
+                 fail $ "The first child of OMBIND must be be Pi or Lambda."
+    _ -> fail "OMBIND element must have exactly 3 children."
 
 -- converts an OMBVAR element to a list of declaration
-ombvar2decls :: Element -> NODE -> CONTEXT
+ombvar2decls :: Element -> NODE -> IO CONTEXT
 ombvar2decls e ref =
-  let attrs = findChildren omattrQN e
-      in map (\ a -> omattr2vardecl a ref) attrs
+  mapM (\ a -> omattr2vardecl a ref) $ findChildren omattrQN e
 
 -- converts an OMATTR element to a variable declaration
-omattr2vardecl :: Element -> NODE -> (VAR,EXP)
+omattr2vardecl :: Element -> NODE -> IO (VAR,EXP)
 omattr2vardecl e ref =
   case findChildren omatpQN e of
-       [omatp] ->
+       [omatp] -> do
+         val <- omatp2exp omatp ref
          case findChildren omvQN e of
-              [omv] -> (getNameAttr omv, omatp2exp omatp ref)
-              _ -> error "OMATTR element must have a unique OMV child."
-       _ -> error "OMATTR element must have a unique OMATP child."
+              [omv] -> return (getNameAttr omv, val)
+              _ -> fail "OMATTR element must have a unique OMV child."
+       _ -> fail "OMATTR element must have a unique OMATP child."
 
 -- converts an OMATP element to an expression
-omatp2exp :: Element -> NODE -> EXP
+omatp2exp :: Element -> NODE -> IO EXP
 omatp2exp e ref =
   case elChildren e of
        [c1,c2] ->
           if (eqOMS c1 oftypeOMS)
              then omel2exp c2 ref
-             else error $ "The first child of OMATP " ++
-                          "must be the \"oftype\" symbol."
-       _ -> error "OMATP element must have exactly two children."
+             else fail $ "The first child of OMATP " ++
+                         "must be the \"oftype\" symbol."
+       _ -> fail "OMATP element must have exactly two children."
 
 -- converts an OMV element to an expression
-omv2exp :: Element -> NODE -> EXP
-omv2exp e _ = Var $ getNameAttr e
+omv2exp :: Element -> NODE -> IO EXP
+omv2exp e _ = return $ Var $ getNameAttr e
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -594,8 +613,8 @@ omv2exp e _ = Var $ getNameAttr e
 addIncl :: Element -> (LIBS_EXT,Sign) -> IO (LIBS_EXT,Sign)
 addIncl e (libs@(_,(file,_)),sig) = do
   let from = getFromAttr e
-  let (b,m) = parseRef from file
-  libs1 <- addFromFile b libs
+  (b,m) <- parseRef from file
+  libs1 <- addFromFile b libs  
   let srcSig = lookupSig (b,m) libs1
   let tarSig = addInclSyms srcSig sig
   let morph = getInclMorph srcSig tarSig
@@ -627,8 +646,8 @@ addStruct :: Element -> (LIBS_EXT,Sign) -> IO (LIBS_EXT,Sign)
 addStruct e (libs@(_,(file,_)),sig) = do
   let name = getNameAttr e
   let from = getFromAttr e
-  let (b,m) = parseRef from file
-  libs1 <- addFromFile b libs
+  (b,m) <- parseRef from file
+  libs1 <- addFromFile b libs  
   let srcSig = lookupSig (b,m) libs1
   (tarSig,morph,libs2) <- processStruct name srcSig sig (elChildren e) libs1
   let libs3 = addMorphToGraph morph libs2
@@ -694,12 +713,12 @@ constructMap els src tar libs = do
 conass2map :: Element -> (Map.Map Symbol EXP, LIBS_EXT) -> NODE -> NODE ->
               IO (Map.Map Symbol EXP, LIBS_EXT)
 conass2map e (mapp,libs) src tar = do
-  let (b,m,n) = getBMN e src
+  (b,m,n) <- getBMN e src
   case findChildren omobjQN e of
-       [omobj] -> do let expr = omobj2exp omobj tar
+       [omobj] -> do expr <- omobj2exp omobj tar
                      let map1 = Map.insert (Symbol b m n) expr mapp
                      return (map1,libs)
-       _ -> error "Constant assignment element must have a unique OMOBJ child."
+       _ -> fail "Constant assignment element must have a unique OMOBJ child."
 
 -- converts the included morphism into a map
 incl2map :: Element -> (Map.Map Symbol EXP, LIBS_EXT) -> NODE -> NODE ->
@@ -709,26 +728,26 @@ incl2map e (mapp,libs) _ tar =
        [ommor] -> do (mor,libs1) <- ommor2mor ommor tar libs
                      let map1 = Map.union mapp $ symMap mor
                      return (map1,libs1)
-       _ -> error "Include element must have a unique OMMOR child."
+       _ -> fail "Include element must have a unique OMMOR child."
 
 -- converts the structure assignment into a map
 strass2map :: Element -> (Map.Map Symbol EXP, LIBS_EXT) -> NODE -> NODE ->
               IO (Map.Map Symbol EXP, LIBS_EXT)
 strass2map e (mapp,libs) src tar = do
-  let (b,m,n) = getBMN e src
+  (b,m,n) <- getBMN e src
   case findChildren ommorQN e of
        [ommor] -> do (mor1,libs1) <- retrieveMorph (b,m,n) libs
                      (mor2,libs2) <- ommor2mor ommor tar libs1
                      let map1 = Map.union mapp $ combineMorphs mor1 mor2
                      return (map1,libs2)
-       _ -> error "Structure assignment element must have a unique OMMOR child."
+       _ -> fail "Structure assignment element must have a unique OMMOR child."
 
 -- converts an OMMOR element to a morphism
 ommor2mor :: Element -> NODE -> LIBS_EXT -> IO (Morphism,LIBS_EXT)
 ommor2mor e ref libs =
   case elChildren e of
        [el] -> omel2mor el ref libs
-       _ -> error "OMMOR element must have a unique child."
+       _ -> fail "OMMOR element must have a unique child."
 
 -- converts an Open Math element to a morphism
 omel2mor :: Element -> NODE -> LIBS_EXT -> IO (Morphism,LIBS_EXT)
@@ -736,12 +755,12 @@ omel2mor e ref libs =
   let name = elName e
       in if (name == omsQN) then oms2mor e ref libs else
          if (name == omaQN) then oma2mor e ref libs else
-         error "Only OMA and OMS elements correspond to a morphism."
+         fail "Only OMA and OMS elements correspond to a morphism."
 
 -- converts an OMS element to a morphism
 oms2mor :: Element -> NODE -> LIBS_EXT -> IO (Morphism,LIBS_EXT)
 oms2mor e ref libs = do
-  let (b,m,n) = getBMN e ref
+  (b,m,n) <- getBMN e ref
   retrieveMorph (b,m,n) libs
 
 -- converts an OMA element to a morphism
@@ -757,8 +776,8 @@ oma2mor e ref libs = do
                                    Result _ (Just mor') -> mor'
                                    _ -> error "Morphism cannot be retrieved."
                     return (mor,libs2)
-            else error "The first child of OMA in OMMOR must be composition."
-       _ -> error "OMA in OMMOR must have exactly three children."
+            else fail "The first child of OMA in OMMOR must be composition."
+       _ -> fail "OMA in OMMOR must have exactly three children."
 
 -- retrieves a morphism by the link name
 retrieveMorph :: LINK -> LIBS_EXT -> IO (Morphism,LIBS_EXT)
@@ -769,7 +788,7 @@ retrieveMorphH :: BASE -> MODULE -> [NAME] -> LIBS_EXT ->
 retrieveMorphH b m ns libs = do
   libs1 <- addFromFile b libs
   case ns of
-    [] -> error "Empty morphism name."
+    [] -> fail "Empty morphism name."
     [n] -> do
         let mor = lookupMorph (b,m,n) libs1
         return (mor,libs1)

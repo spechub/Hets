@@ -21,6 +21,8 @@ module LF.Sign
        , CONTEXT
        , DEF (..)
        , Sign (..)
+       , gen_base
+       , gen_module
        , emptySig
        , addDef
        , getSymbols
@@ -51,7 +53,14 @@ import qualified Data.Map as Map
 type VAR = String
 type NAME = String
 type MODULE = String
+-- after namespaces are implemented for Twelf, BASE should be a URI
 type BASE = String
+
+gen_base :: String
+gen_base = "gen_twelf_file.elf"
+
+gen_module :: String
+gen_module = "GEN_SIG"
 
 data Symbol = Symbol
             { symBase :: BASE
@@ -89,7 +98,7 @@ data Sign = Sign
           } deriving (Show)
 
 emptySig :: Sign
-emptySig = Sign "" "" []
+emptySig = Sign gen_base gen_module []
 
 addDef :: DEF -> Sign -> Sign
 addDef d (Sign b m ds) = Sign b m $ ds ++ [d]
@@ -288,6 +297,8 @@ instance Eq Symbol where
 instance Eq EXP where
     e1 == e2 = eqExp (recForm e1) (recForm e2)
 
+{- currently bases are ignored; should be changed after namespaces
+   for Twelf are implemented -}
 eqSig :: Sign -> Sign -> Bool
 eqSig (Sign _ m1 d1) (Sign _ m2 d2) = (m1,d1) == (m2,d2)
 
@@ -338,7 +349,8 @@ isSubsig (Sign _ _ ds1) (Sign _ _ ds2) =
    subsignatures. It is not always defined, namely in the case when the original
    signatures give conflicting definitions for the same symbol. -}
 sigUnion :: Sign -> Sign -> Result Sign
-sigUnion (Sign _ _ ds1) (Sign _ _ ds2) = sigUnionH ds2 (Sign "" "" ds1)
+sigUnion (Sign _ _ ds1) (Sign _ _ ds2) =
+  sigUnionH ds2 (Sign gen_base gen_module ds1)
 
 sigUnionH :: [DEF] -> Sign -> Result Sign
 sigUnionH [] sig = Result [] $ Just sig

@@ -14,3 +14,9 @@ spec SP2 =
 end 
 
 spec SP3 = SP1 and SP2
+
+spec SP4 = SP3 then
+  q : i -> o.
+  
+  . q d
+end

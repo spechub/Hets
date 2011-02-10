@@ -25,6 +25,7 @@ import Common.Doc
 import Common.DocUtils
 
 import System.IO.Unsafe
+import Debug.Trace
 
 -- basic analysis for object logics of LF
 basicAnalysisOL :: Morphism -> (BASIC_SPEC, Sign, GlobalAnnos) ->
@@ -39,7 +40,7 @@ basicAnalysisOL ltruth (bs@(Basic_spec items), initsig, _) = do
 makeSigSenOL :: Morphism -> Sign -> [Annoted BASIC_ITEM] ->
                 IO (Sign,[(NAME,Sentence)])
 makeSigSenOL ltruth sig items = do
-  let contents = makeFileOL ltruth sig (getSigItems items) (getSenItems items)
+  contents <- makeFileOL ltruth sig (getSigItems items) (getSenItems items)
   writeFile gen_file contents
   libs <- twelf2SigMor gen_file
   getSigSen libs
@@ -47,17 +48,18 @@ makeSigSenOL ltruth sig items = do
 {- constructs the contents of a Twelf file used to analyze the signature
    and sentences -}
 makeFileOL :: Morphism -> Sign -> [Annoted BASIC_ITEM] ->
-              [Annoted BASIC_ITEM] -> String
-makeFileOL ltruth sig sig_items sen_items = do
+              [Annoted BASIC_ITEM] -> IO String
+makeFileOL ltruth sig sig_items sen_items = trace (show sig) $ do 
   let sen_type = case mapSymbol sen_type_symbol ltruth of
                    Nothing -> error "Sentence type cannot be constructed."
                    Just t -> show $ pretty t
-      lSyn = target ltruth
-      locals = filter (\ d -> isLocalSym (getSym d) sig) $ getDefs sig
-      imp = mkRead $ sigBase lSyn
-      cont1 = if (sig == lSyn) then "" else (show $ vcat $ map pretty locals) ++ "\n"
-      cont2 = printSigItems sig_items
-      cont3 = printSenItems sen_type sen_items
-      sig1 = mkSig gen_sig1 $ mkIncl (sigModule lSyn) ++ cont1 ++ cont2
-      sig2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont3
-      in imp ++ "\n" ++ sig1 ++ "\n" ++ sig2
+  let lSyn = target ltruth
+  let locals = filter (\ d -> isLocalSym (getSym d) sig) $ getDefs sig
+  let imp = mkRead $ sigBase lSyn
+  let cont1 = if (sig == lSyn) then "" else
+        (show $ vcat $ map pretty locals) ++ "\n"
+  let cont2 = printSigItems sig_items
+  let cont3 = printSenItems sen_type sen_items
+  let sig1 = mkSig gen_sig1 $ mkIncl (sigModule lSyn) ++ cont1 ++ cont2
+  let sig2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont3
+  return $ imp ++ "\n" ++ sig1 ++ "\n" ++ sig2

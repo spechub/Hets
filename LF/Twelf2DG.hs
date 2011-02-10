@@ -38,7 +38,7 @@ type NODE_MAP = Map.Map NODE Node
 -- analyzes the given Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaTwelfFile _ fp = do
-  file <- resolveToCur fp
+  file <- relativizeToCur fp
   let name = emptyLibName file
   (libs,bs) <- twelf2GR file (Map.empty,[])
   let libenv = makeLibEnv libs bs

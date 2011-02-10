@@ -36,7 +36,7 @@ data Morphism = Morphism
 
 -- constructs an identity morphism
 idMorph :: Sign -> Morphism
-idMorph sig = Morphism "" "" "" sig sig Unknown Map.empty
+idMorph sig = Morphism gen_base gen_module "" sig sig Unknown Map.empty
 
 -- composes two morphisms
 compMorph :: Morphism -> Morphism -> Result Morphism
@@ -49,7 +49,7 @@ compMorph m1 m2 = do
                  )
                  Map.empty $
                  getDeclaredSyms $ source m1
-  return $ Morphism "" "" "" (source m1) (target m2) Unknown newmap
+  return $ Morphism gen_base gen_module "" (source m1) (target m2) Unknown newmap
 
 -- applies a morphism to a symbol in the source signature
 mapSymbol :: Symbol -> Morphism -> Maybe EXP
@@ -116,5 +116,5 @@ printSymMap m =
 -- constructs the inclusion morphism between signatures
 inclusionMorph :: Sign -> Sign -> Result Morphism
 inclusionMorph sig1 sig2 = 
-  let m = Morphism "" "" "" sig1 sig2 Unknown Map.empty
+  let m = Morphism gen_base gen_module "" sig1 sig2 Unknown Map.empty
       in Result [] $ Just m        
