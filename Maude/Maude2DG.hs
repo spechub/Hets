@@ -744,17 +744,12 @@ directMaudeParsing fp = do
               psps <- predefinedSpecs hIn hOut
               sps <- traverseSpecs hIn hOut ns'
               (ok, errs) <- getErrors hErr
+              hClose hIn
+              hClose hOut
+              hClose hErr
               if ok
-                  then do
-                        hClose hIn
-                        hClose hOut
-                        hClose hErr
-                        return $ maude2DG psps sps
-                  else do
-                        hClose hIn
-                        hClose hOut
-                        hClose hErr
-                        error errs
+                  then return $ maude2DG psps sps
+                  else fail errs
       Just ExitSuccess -> error "maude terminated immediately"
       Just (ExitFailure i) ->
           error $ "calling maude failed with exitCode: " ++ show i
@@ -845,25 +840,25 @@ parameter the list of names -}
 predefinedSpecs :: Handle -> Handle -> IO [Spec]
 predefinedSpecs hIn hOut = traverseSpecs hIn hOut predefined
 
--- | returns the specifications of the predefined modules
 traverseSpecs :: Handle -> Handle -> [NamedSpec] -> IO [Spec]
-traverseSpecs _ _ [] = return []
-traverseSpecs hIn hOut (ModName n : ns) = do
-                 hPutStrLn hIn $ concat ["(hets ", n, " .)"]
-                 hFlush hIn
-                 sOutput <- getAllSpec hOut "" False
-                 ss <- traverseSpecs hIn hOut ns
-                 let stringSpec = findSpec sOutput
-                 let spec = read stringSpec :: Spec
-                 return $ spec : ss
-traverseSpecs hIn hOut (ViewName n : ns) = do
-                 hPutStrLn hIn $ concat ["(hetsView ", n, " .)"]
-                 hFlush hIn
-                 sOutput <- getAllSpec hOut "" False
-                 ss <- traverseSpecs hIn hOut ns
-                 let stringSpec = findSpec sOutput
-                 let spec = read stringSpec :: Spec
-                 return $ spec : ss
+traverseSpecs hIn hOut = fmap catMaybes . mapM (traverseSpec hIn hOut)
+
+-- | returns the specifications of the predefined modules
+traverseSpec :: Handle -> Handle -> NamedSpec -> IO (Maybe Spec)
+traverseSpec hIn hOut ns = do
+  let args = case ns of
+          ModName n -> "(hets " ++ n
+          ViewName n -> "(hetsView " ++ n
+        ++ " .)"
+  hPutStrLn hIn args
+  hFlush hIn
+  sOutput <- getAllSpec hOut "" False
+  let stringSpec = findSpec sOutput
+  case readMaybe stringSpec of
+    Nothing -> do
+      putStrLn $ "failed to read " ++ args ++ ":\n" ++ stringSpec
+      return Nothing
+    ms -> return ms
 
 -- | returns the parameter names
 paramNames :: [Parameter] -> [Token]
