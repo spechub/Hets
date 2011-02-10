@@ -38,7 +38,7 @@ printIsaTheory tn sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = "$HETS_ISABELLE_LIB/"
-    use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
+    use = text usesS <+> doubleQuotes (text $ ld ++ "prelude.ML")
     in text theoryS <+> text tn
     $+$ text importsS <+> fsep ((if case b of
         Main_thy -> False
