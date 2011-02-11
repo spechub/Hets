@@ -95,9 +95,11 @@ export HETS_OWL_TOOLS=/usr/lib/hets/hets-owl-tools
 export HETS_ISABELLE_LIB=/usr/lib/hets/hets-lib/Isabelle
 export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
 export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
+export HETS_MAUDE_LIB=/usr/lib/hets/hets-maude-lib
 export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
-export MAUDE_LIB=/usr/lib/maude
+export HETS_LIB=/usr/lib/hets/hets-maude-lib
+export MAUDE_LIB=/usr/share/maude
 export GHCRTS='-H300m -M6g'
 
 /usr/lib/hets/hets $@

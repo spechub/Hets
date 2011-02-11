@@ -24,6 +24,9 @@ override_dh_install:
 	install -m 755  hets debian/hets-core/usr/lib/hets
 	cp -r hets-lib debian/hets-core/usr/lib/hets
 	cp -r hets-owl-tools debian/hets-core/usr/lib/hets
+	install -m 755 -d debian/hets-core/usr/lib/hets/hets-maude-lib
+	install -m 644 Maude/hets.prj debian/hets-core/usr/lib/hets/hets-maude-lib
+	cp Maude/*maude debian/hets-core/usr/lib/hets/hets-maude-lib
 	install -m 755 -d debian/hets-doc/usr/share/doc/hets-doc/html
 	cp docs/* debian/hets-doc/usr/share/doc/hets-doc/html
 	install -m 755 -d debian/hets-core/usr/bin
