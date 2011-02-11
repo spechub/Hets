@@ -45,6 +45,7 @@ import Logic.Logic
 import Proofs.AbstractState
 
 import Text.XML.Light
+import Text.XML.Light.Cursor
 
 import Common.DocUtils
 import Common.LibName
@@ -52,6 +53,7 @@ import Common.Result
 import Common.ResultT
 import Common.ToXml
 import Common.Utils
+import Common.XUpdate
 
 import Control.Monad.Trans (lift)
 import Control.Monad
@@ -199,13 +201,54 @@ getSVG file dg = do
     (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
           $ dotGraph file False dg
     case exCode of
-      ExitSuccess -> liftR $ extractSVG out
+      ExitSuccess -> liftR $ extractSVG dg out
       _ -> fail err
 
-extractSVG :: String -> Result String
-extractSVG str = case parseXMLDoc str of
+enrichSVG :: DGraph -> Element -> Element
+enrichSVG dg e = processSVG dg $ fromElement e
+
+processSVG :: DGraph -> Cursor -> Element
+processSVG dg c = case nextDF c of
+  Nothing -> case toTree (root c) of
+    Elem e -> e
+    _ -> error "processSVG"
+  Just c2 -> processSVG dg
+    $ modifyContent (addSVGAttribs dg) c2
+
+nodeAttrib :: DGNodeLab -> String
+nodeAttrib l = let nt = getRealDGNodeType l in
+  (if isRefType nt then "Ref" else "")
+  ++ (if isProvenNode nt then "P" else "Unp") ++ "roven"
+  ++ (if isProvenCons nt then "Cons" else "")
+  ++ (if isInternalSpec nt then "Internal" else "")
+  ++ (if hasOpenGoals l then "HasOpenGoals" else "")
+  ++ (if hasSenKind (const True) l then "" else "LocallyEmpty")
+  ++ if labelHasHiding l then "HasIngoingHidingLink" else ""
+
+edgeAttrib :: DGLinkLab -> String
+edgeAttrib l = show (pretty $ dgl_type l) ++
+  if dglPending l then "IncompleteProofChain" else ""
+
+addSVGAttribs :: DGraph -> Content -> Content
+addSVGAttribs dg c = case c of
+  Elem e -> case getAttrVal "id" e of
+    Just istr | all isDigit istr -> let i = read istr in
+      case getAttrVal "class" e of
+      Just "node" -> case lab (dgBody dg) i of
+        Nothing -> c
+        Just l -> Elem $ add_attr (mkAttr "type" $ nodeAttrib l) e
+      Just "edge" -> case getDGLinksById (EdgeId i) dg of
+        [(_, _, l)] ->
+           Elem $ add_attr (mkAttr "type" $ edgeAttrib l) e
+        _ -> c
+      _ -> c
+    _ -> c
+  _ -> c
+
+extractSVG :: DGraph -> String -> Result String
+extractSVG dg str = case parseXMLDoc str of
   Nothing -> fail "did not recognize svg element"
-  Just e -> return $ showTopElement e
+  Just e -> return $ showTopElement $ enrichSVG dg e
 
 cmpFilePath :: FilePath -> FilePath -> Ordering
 cmpFilePath f1 f2 = case comparing hasTrailingPathSeparator f2 f1 of
