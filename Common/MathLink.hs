@@ -218,6 +218,33 @@ mlGetNext = liftMLIO cMlGetNext
 mlGetArgCount :: ML CInt
 mlGetArgCount = askMLink >>= liftIO . mlGetA . cMlGetArgCount
 
+mlGetArgCount' :: ML Int
+mlGetArgCount' = liftM cintToInt mlGetArgCount
+
+
+
+cintToInteger :: CInt -> Integer
+cintToInteger = fromIntegral
+
+intToCInt :: Int -> CInt
+intToCInt = fromIntegral
+
+-- These two functions are unsafe, they may overflow...
+integerToCInt :: Integer -> CInt
+integerToCInt = fromIntegral
+
+cintToInt :: CInt -> Int
+cintToInt = fromIntegral
+
+
+
+cdblToDbl :: CDouble -> Double
+cdblToDbl = realToFrac
+
+dblToCDbl :: Double -> CDouble
+dblToCDbl = realToFrac
+
+
 
 
 -- cMlGetSymbol  :: MLINK -> Ptr CString -> IO CInt
@@ -237,10 +264,15 @@ mlGetString = do
 mlGetReal  :: ML CDouble
 mlGetReal = askMLink >>= liftIO . mlGetA . cMlGetReal
 
+mlGetReal'  :: ML Double
+mlGetReal' = liftM cdblToDbl mlGetReal
+
 -- cMlGetInteger  :: MLINK -> Ptr CInt -> IO CInt
 mlGetInteger  :: ML CInt
 mlGetInteger = askMLink >>= liftIO . mlGetA . cMlGetInteger
 
+mlGetInteger'  :: ML Integer
+mlGetInteger' = liftM cintToInteger mlGetInteger
 
 mlPutString  :: String -> ML CInt
 mlPutString s = liftMLIO f where
@@ -254,10 +286,21 @@ mlPutFunction  :: String -> CInt -> ML CInt
 mlPutFunction s i = liftMLIO f where
     f ml = withCString s $ flip (cMlPutFunction ml) i
 
+mlPutFunction'  :: String -> Int -> ML CInt
+mlPutFunction' s = mlPutFunction s . intToCInt
+
 mlPutInteger  :: CInt -> ML CInt
 mlPutInteger = liftMLIO . flip cMlPutInteger
 
+mlPutInteger'  :: Integer -> ML CInt
+mlPutInteger' = mlPutInteger . integerToCInt
+
+mlPutReal  :: CDouble -> ML CInt
+mlPutReal = liftMLIO . flip cMlPutReal
  
+mlPutReal'  :: Double -> ML CInt
+mlPutReal' = mlPutReal . dblToCDbl
+
 
 mlError  :: ML CInt
 mlError = liftMLIO cMlError

@@ -14,6 +14,7 @@ Mathematica as AssignmentStore based on the Mathlink interface
 
 module CSL.MathematicaInterpreter where
 
+import Common.Id
 import Common.Doc
 import Common.DocUtils
 
@@ -54,6 +55,11 @@ type MathState = ASState String
 type MathematicaIO = ErrorT ASError (StateT MathState ML)
 
 instance AssignmentStore MathematicaIO where
+    assign = error "AssignmentStore MathematicaIO"
+    lookup = error "AssignmentStore MathematicaIO"
+    eval = error "AssignmentStore MathematicaIO"
+    evalRaw = error "AssignmentStore MathematicaIO"
+
     names = get >>= return . SMem . getBMap
     getUndefinedConstants e = do
       adg <- gets depGraph
@@ -99,6 +105,32 @@ instance MessagePrinter MathematicaIO where
 -- * Mathematica syntax functions
 -- ----------------------------------------------------------------------
 
+mmShowOpId :: OPID -> String
+mmShowOpId (OpId x) =
+    case x of
+      OP_plus -> "Plus"
+      OP_mult -> "Times"
+      _ -> showOPNAME x
+mmShowOpId (OpUser (SimpleConstant s)) = s
+mmShowOpId _ = error "mmShowOpId: unsupported constant"
+
+
+sendExpression :: EXPRESSION -> ML ()
+sendExpression e =
+  case e of
+   Var token -> mlPutSymbol (tokStr token) >> return ()
+   Op oi _ [] _ -> mlPutSymbol (mmShowOpId oi) >> return ()
+   Op oi _ exps _ ->
+       mlPutFunction' (mmShowOpId oi) (length exps) >> mapM_ sendExpression exps
+   Int i _ -> mlPutInteger' i >> return ()
+   Double r _ -> mlPutReal' r >> return ()
+
+   List _ _ -> error "sendExpression: List not supported"
+   Interval _ _ _ -> error "sendExpression: Interval not supported"
+
+
+receiveExpression :: ML EXPRESSION
+receiveExpression = error ""
 
 -- ----------------------------------------------------------------------
 -- * Generic Communication Interface

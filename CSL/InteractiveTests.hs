@@ -42,6 +42,7 @@ import Control.Monad.Error (MonadError(..))
 
 import Static.SpecLoader (getSigSensComplete, SigSens(..))
 
+import CSL.MathematicaInterpreter
 import CSL.MapleInterpreter 
 import CSL.Interpreter
 import CSL.Logic_CSL
