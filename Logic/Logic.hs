@@ -379,7 +379,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
          {- ----------------------- amalgamation ---------------------------
             Computation of colimits of signature diagram.
-            Indeed, it suffices to compute a coconce that is weakly amalgamable
+            Indeed, it suffices to compute a cocone that is weakly amalgamable
             see Till Mossakowski,
             Heterogeneous specification and the heterogeneous tool set
             p. 25ff. -}

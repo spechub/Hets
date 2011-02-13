@@ -41,5 +41,20 @@ end
 
 spec S8 = S7 hide i
 
-spec S9 = S7 reveal d, i   
+spec S9 = S7 reveal d, i
+
+spec S10 =
+s :: Form
+t :: Sort
+a :: t
+end
+
+spec S11 =
+s :: Form
+l :: Form
+p :: Sort
+b :: p
+end
+
+view v4 : S10 to S11    
 

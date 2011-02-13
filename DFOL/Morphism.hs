@@ -236,7 +236,11 @@ toTermMap m = Map.fromList $ map (\ (k, a) -> (k, Identifier a))
 
 -- equality
 instance Eq Morphism where
-    m1 == m2 = (canForm m1) == (canForm m2)
+    m1 == m2 = eqMorph (canForm m1) (canForm m2)
+
+eqMorph :: Morphism -> Morphism -> Bool
+eqMorph (Morphism s1 t1 map1) (Morphism s2 t2 map2) =
+  (s1,t1,map1) == (s2,t2,map2) 
 
 -- pretty printing
 instance Pretty Morphism where
@@ -289,37 +293,27 @@ inducedFromToMorphism map1 (ExtSign sig1 _) (ExtSign sig2 _) =
   let map2 = toNameMap map1
       m = Morphism sig1 sig2 map2
       Sign ds = sig1
-      in if (isValidMorph m)
-            then Result.Result [] $ Just m
-            else buildMorph (expandDecls ds) m
+      in buildMorph (expandDecls ds) m
 
 buildMorph :: [SDECL] -> Morphism -> Result.Result Morphism
 buildMorph [] m = Result.Result [] $ Just m
-buildMorph ((n1, t1) : ds) m@(Morphism _ sig2 map1) =
+buildMorph ((n1, t1) : ds) m@(Morphism _ sig2 map1) = do
+  let t2 = applyMorph m t1
   if (Map.member n1 map1)
-     then let n2 = mapSymbol m n1
-              t2 = applyMorph m t1
-              Just t3 = getSymbolType n2 sig2
-              in if t2 == t3
-                    then buildMorph ds m
-                    else Result.Result [incompatibleViewError2 n2 t2 t3] Nothing
-     else let t2 = applyMorph m t1
-              ss = getSymsOfType sig2 t2
-              in case ss of
-                      [s] -> buildMorph ds $
-                                 m {symMap = Map.insert n1 s $ symMap m}
-                      [] -> Result.Result [noSymToMapError n1 t2] Nothing
-                      _ -> Result.Result [manySymToMapError n1 t2 ss] Nothing
-
-getSymsOfType :: Sign -> TYPE -> [NAME]
-getSymsOfType (Sign ds) t = getSymsOfTypeH ds t
-
-getSymsOfTypeH :: [DECL] -> TYPE -> [NAME]
-getSymsOfTypeH [] _ = []
-getSymsOfTypeH ((ns, t1) : ds) t =
-  if (t1 == t)
-     then ns ++ (getSymsOfTypeH ds t)
-     else getSymsOfTypeH ds t
+     then do
+        let n2 = mapSymbol m n1
+        let Just t3 = getSymbolType n2 sig2
+        if (t2 == t3) then buildMorph ds m else
+           Result.Result [incompatibleViewError2 n2 t2 t3] Nothing
+     else do
+        let t3 = getSymbolType n1 sig2
+        if (Just t2 == t3) then buildMorph ds m else do
+           let ss = getSymsOfType sig2 t2
+           case ss of
+                [s] -> buildMorph ds $
+                          m {symMap = Map.insert n1 s $ symMap m}
+                [] -> Result.Result [noSymToMapError n1 t2] Nothing
+                _ -> Result.Result [manySymToMapError n1 t2 ss] Nothing
 
 -- ERROR MESSAGES
 incompatibleMorphsError :: Morphism -> Morphism -> Result.Diagnosis

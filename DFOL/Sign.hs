@@ -37,6 +37,7 @@ module DFOL.Sign
    , getTermType
    , hasType
    , isValidType
+   , getSymsOfType
    ) where
 
 import DFOL.Utils
@@ -331,6 +332,17 @@ getTermTypeH (Appl f [a]) sig cont =
     where Result.Result diagF typeFM = getTermType f sig cont
           Result.Result diagA typeAM = getTermType a sig cont
 getTermTypeH _ _ _ = Result.Result [] Nothing
+
+-- returns all symbols of the specified type
+getSymsOfType :: Sign -> TYPE -> [NAME]
+getSymsOfType (Sign ds) t = getSymsOfTypeH ds t
+
+getSymsOfTypeH :: [DECL] -> TYPE -> [NAME]
+getSymsOfTypeH [] _ = []
+getSymsOfTypeH ((ns, t1) : ds) t =
+  if (t1 == t)
+     then ns ++ (getSymsOfTypeH ds t)
+     else getSymsOfTypeH ds t
 
 -- renames bound variables in a type to make it valid w.r.t. a sig and a context
 renameBoundVars :: TYPE -> Sign -> CONTEXT -> TYPE

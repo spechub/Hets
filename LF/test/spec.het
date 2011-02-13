@@ -23,7 +23,20 @@ spec SP' = SP then
   b : o.
   
   .ded b
-end 
+end
 
+spec SP3 = 
+nat : type.
+t1 : nat.
+t3 : nat.
+end
 
+spec SP4 =
+nat : type.
+s1 : nat.
+s2 : nat.
+s3 : nat.
+plus : nat -> nat -> nat.
+end
 
+view V1 : SP3 to SP4 = t1 |-> s1, t3 |-> plus s1 s3

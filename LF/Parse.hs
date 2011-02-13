@@ -27,15 +27,21 @@ import Data.Char
 
 import LF.AS
 
-twelfNameChars :: String
-twelfNameChars = "_-+*/<=>@^"
+chars1 :: String
+chars1 = "_-+*/<=>@^"
 
-twelfTokenChars :: String
-twelfTokenChars = twelfNameChars ++ ":{}[]()"
+chars2 :: String
+chars2 = chars1 ++ ":{}[]()"
+
+chars3 :: String
+chars3 = chars2 ++ ","
 
 trim :: String -> String
 trim = let f = reverse . dropWhile isSpace
            in f . f
+
+--------------------------------------------------------------------
+--------------------------------------------------------------------
 
 basicSpec :: AParser st BASIC_SPEC
 basicSpec =
@@ -45,42 +51,39 @@ basicSpec =
 
 basicItem :: AParser st BASIC_ITEM
 basicItem = do
- do d <- twelfStat
+ do d <- tokensP chars3
     dotT
     return $ Decl $ trim d
  <|>
  do dotT
-    f <- twelfStat
+    f <- tokensP chars3
     return $ Form $ trim f
 
-twelfStat :: AParser st String
-twelfStat = do ss <- many1 (twelfToken <|> whiteSp)
-               return $ concat ss
+tokenP :: String -> AParser st String
+tokenP chars = reserved criticalKeywords $
+   many1 $ scanLPD <|> oneOf chars
 
-twelfToken :: AParser st String
-twelfToken = reserved criticalKeywords $
-               many1 $ scanLPD <|> oneOf twelfTokenChars
+tokensP :: String -> AParser st String
+tokensP chars = do
+  ss <- many1 (tokenP chars  <|> whitesp)
+  return $ concat ss
 
-twelfName :: AParser st String
-twelfName = reserved criticalKeywords $
-              many1 $ scanLPD <|> oneOf twelfNameChars
-
-whiteSp :: AParser st String
-whiteSp = many1 $ oneOf whiteChars
+whitesp :: AParser st String
+whitesp = many1 $ oneOf whiteChars
 
 symbItems :: AParser st SYMB_ITEMS
-symbItems = fmap Symb_items $ fmap fst $ twelfName `separatedBy` anComma
+symbItems = fmap Symb_items $ fmap fst $
+   (tokenP chars1) `separatedBy` anComma
 
 symbMapItems :: AParser st SYMB_MAP_ITEMS
-symbMapItems = do
-  (xs, _) <- symbOrMap `separatedBy` anComma
-  return $ Symb_map_items xs
+symbMapItems = fmap Symb_map_items $ fmap fst $
+  symbOrMap `separatedBy` anComma
 
 symbOrMap :: AParser st SYMB_OR_MAP
 symbOrMap = do
-  s <- twelfName
+  s <- tokenP chars1
   ( do asKey mapsTo
-       t <- twelfStat
-       return $ Symb_map s t
+       t <- tokensP chars2
+       return $ Symb_map s $ trim t
     <|>
     return (Symb s) )

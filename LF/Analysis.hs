@@ -63,59 +63,13 @@ getSenItems = filter ( \ (Annoted i _ _ _) ->
     Decl _ -> False
     Form _ -> True )
 
-getSensFromDefs :: [DEF] -> [(NAME,Sentence)]
-getSensFromDefs [] = []
-getSensFromDefs ((Def s _ (Just v)):ds) = (symName s, v) : getSensFromDefs ds
-getSensFromDefs _ = error "Sentences cannot be retrieved from definitions."
-
-makeNamedForms :: [(NAME,Sentence)] -> [[Annotation]] -> [Named Sentence]
-makeNamedForms ss as = map makeNamedForm $ zip ss as
-
-makeNamedForm :: ((NAME,Sentence),[Annotation]) -> Named Sentence
-makeNamedForm ((n,s),annos) =
-  let implies = or $ map isImplies annos
-      implied = or $ map isImplied annos
-      isTheorem = implies || implied
-      in (makeNamed n s) {isAxiom = not isTheorem}
-
------------------------------------------------------------------
------------------------------------------------------------------
-
--- basic analysis for LF
-basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos) ->
-                 Result (BASIC_SPEC, ExtSign Sign Symbol, [Named EXP])
-basicAnalysis (bs@(Basic_spec items), initsig, _) = do
-  let (sig,sens) = unsafePerformIO $ makeSigSen initsig items
-  let syms = getSymbols sig
-  let fs = makeNamedForms sens $ map r_annos $ getSenItems items
-  return (bs, ExtSign sig syms, fs)
-
--- constructs the signatures and sentences
-makeSigSen :: Sign -> [Annoted BASIC_ITEM] -> IO (Sign,[(NAME,Sentence)])
-makeSigSen sig items = do
-  let contents = makeFile sig (getSigItems items) (getSenItems items)
-  writeFile gen_file contents
-  libs <- twelf2SigMor gen_file
-  getSigSen libs
-
-{- constructs the contents of a Twelf file used to analyze the signature
-   and sentences -}
-makeFile :: Sign -> [Annoted BASIC_ITEM] -> [Annoted BASIC_ITEM] -> String
-makeFile sig sig_items sen_items =
-  let sen_type = show $ pretty sen_type_exp
-      cont1 = if (sig == emptySig) then "" else show (pretty sig) ++ "\n"
-      cont2 = printSigItems sig_items
-      cont3 = printSenItems sen_type sen_items
-      sig1 = mkSig gen_sig1 $ cont1 ++ cont2
-      sig2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont3
-      in sig1 ++ "\n" ++ sig2
-
 printSigItems :: [Annoted BASIC_ITEM] -> String
-printSigItems [] = ""
-printSigItems (i:is) =
-  case i of
-    Annoted (Decl d) _ _ _ -> d ++ ".\n" ++ printSigItems is
-    _ -> printSigItems is
+printSigItems is =
+  concat $ map (\ (Annoted i _ _ _) ->
+     case i of
+          Decl d -> d ++ ".\n"
+          _ -> ""
+     ) is
 
 printSenItems :: String -> [Annoted BASIC_ITEM] -> String
 printSenItems sen_type items = printSenItemsH sen_type 0 items
@@ -132,15 +86,110 @@ printSenItemsH sen_type num (i:is) =
              printSenItemsH sen_type num' is
     _ -> printSenItemsH sen_type num is
 
-{- retrieves the signature and sentences corresponding to the
-   original basic spec out of a Twelf file -}
-getSigSen :: LIBS -> IO (Sign,[(NAME,Sentence)])
-getSigSen libs = do
-  let (sigs,_) = Map.findWithDefault (error "Library not found.")
-                   gen_file libs
-  let sig1 = Map.findWithDefault (er gen_sig1) gen_sig1 sigs
-  let sig2 = Map.findWithDefault (er gen_sig2) gen_sig2 sigs
-  let sens = getSensFromDefs $ filter (\ d -> isLocalSym (getSym d) sig2)
-               $ getDefs sig2
-  return (sig1,sens)
-  where er n = error $ "Signature " ++ n ++ " not found."
+makeNamedForms :: [(NAME,Sentence)] -> [[Annotation]] -> [Named Sentence]
+makeNamedForms ss as = map makeNamedForm $ zip ss as
+
+makeNamedForm :: ((NAME,Sentence),[Annotation]) -> Named Sentence
+makeNamedForm ((n,s),annos) =
+  let implies = or $ map isImplies annos
+      implied = or $ map isImplied annos
+      isTheorem = implies || implied
+      in (makeNamed n s) {isAxiom = not isTheorem}
+
+getSigFromLibs :: MODULE -> LIBS -> Sign
+getSigFromLibs n libs =
+  let (sigs,_) = Map.findWithDefault (error "Library not found.") gen_file libs
+  in Map.findWithDefault (error $ "Signature " ++ n ++ " not found.") n sigs
+
+getLocalDefs :: Sign -> [DEF]
+getLocalDefs sig = filter (\ (Def s _ _) -> isLocalSym s sig) $ getDefs sig
+
+getAnnoSyms :: [DEF] -> [(Symbol,(EXP,EXP))]
+getAnnoSyms ds =
+  map (\ (Def s t v) -> 
+        case v of
+          Nothing -> error $ "Symbol " ++ (show $ pretty s) ++
+                             "does not have a value."
+          Just v' -> (s,(v',t))
+      ) ds
+
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+
+-- basic analysis for LF
+basicAnalysis :: (BASIC_SPEC, Sign, GlobalAnnos) ->
+                 Result (BASIC_SPEC, ExtSign Sign Symbol, [Named EXP])
+basicAnalysis (bs@(Basic_spec items), initsig, _) = do
+  let (sig,sens) = unsafePerformIO $ makeSigSen initsig items
+  let syms = getSymbols sig
+  let fs = makeNamedForms sens $ map r_annos $ getSenItems items
+  return (bs, ExtSign sig syms, fs)
+
+-- constructs the signatures and sentences
+makeSigSen :: Sign -> [Annoted BASIC_ITEM] -> IO (Sign,[(NAME,Sentence)])
+makeSigSen sig items = do
+  -- make a Twelf file
+  let sen_type = show $ pretty sen_type_exp
+  let cont1 = if (sig == emptySig) then "" else show (pretty sig) ++ "\n"
+  let cont2 = printSigItems $ getSigItems items
+  let cont3 = printSenItems sen_type $ getSenItems items
+  let s1 = mkSig gen_sig1 $ cont1 ++ cont2
+  let s2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont3
+  let contents = s1 ++ "\n" ++ s2
+  writeFile gen_file contents
+  
+  -- run Twelf on the created file
+  libs <- twelf2SigMor gen_file
+
+  -- construct the signature and sentences
+  let sig1 = getSigFromLibs gen_sig1 libs
+  let sig2 = getSigFromLibs gen_sig2 libs
+  let sens = map (\ (s,(v,_)) -> (symName s, v)) $ getAnnoSyms $
+                getLocalDefs sig2
+  return (sig1,sens)              
+
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+
+-- symbol analysis for LF 
+symbAnalysis :: [SYMB_ITEMS] -> Result [String]
+symbAnalysis ss = Result [] $ Just $ concat $ map (\ (Symb_items s) -> s) ss
+
+-- symbol map analysis for LF 
+symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result (Map.Map String String)
+symbMapAnalysis ss = Result [] $ Just $
+  foldl (\ m s -> Map.union m (makeSymbMap s)) Map.empty ss
+
+makeSymbMap :: SYMB_MAP_ITEMS -> Map.Map String String
+makeSymbMap (Symb_map_items ss) =
+   foldl (\ m s -> case s of
+                     Symb s1 -> Map.insert s1 s1 m
+                     Symb_map s1 s2 -> Map.insert s1 s2 m
+         )
+         Map.empty
+         ss
+
+-----------------------------------------------------------------
+-----------------------------------------------------------------
+
+{- converts a mapping of raw symbols to a mapping of symbols to expressions
+   annotated with their type -}
+mapAnalysis :: Map.Map String String -> Sign -> Map.Map Symbol (EXP,EXP)
+mapAnalysis m sig = unsafePerformIO $ mapAnalysisIO m sig
+
+mapAnalysisIO :: Map.Map String String -> Sign -> IO (Map.Map Symbol (EXP,EXP))
+mapAnalysisIO m sig = do
+  -- make a Twelf file
+  let cont1 = show $ pretty sig
+  let cont2 = concat $ map (\ (k,v) -> k ++ " = " ++ v ++ ".\n") $ Map.toList m
+  let s1 = mkSig gen_sig1 cont1
+  let s2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont2
+  let contents = s1 ++ "\n" ++ s2
+  writeFile gen_file contents
+
+  -- run Twelf on the created file
+  libs <- twelf2SigMor gen_file
+  
+  -- construct the mapping
+  let sig' = getSigFromLibs gen_sig2 libs
+  return $ Map.fromList $ getAnnoSyms $ getLocalDefs sig'
