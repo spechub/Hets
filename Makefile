@@ -62,7 +62,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight
+    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -204,7 +204,7 @@ drifted_files = Common/AS_Annotation.hs \
     CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CspCASL.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
-    CommonLogic/AS_CommonLogic.hs \
+    CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -325,6 +325,8 @@ CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs \
 
 Adl_files = Adl/As.hs Adl/Sign.hs
 
+Fpl_files = Fpl/As.hs Fpl/Sign.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -404,6 +406,9 @@ CommonLogic/ATC_CommonLogic.der.hs: $(CommonLogic_files) $(GENRULES)
 
 Adl/ATC_Adl.der.hs: $(Adl_files) $(GENRULES)
 	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(Adl_files)
+
+Fpl/ATC_Fpl.der.hs: $(Fpl_files) $(GENRULES)
+	$(GENRULECALL)  -i CASL.ATC_CASL -o $@ $(Fpl_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
