@@ -23,6 +23,7 @@ module CASL.ToDoc
     , printALTERNATIVE
     , typeString
     , printVarDecl
+    , printVarDecls
     , printSortItem
     , printOpItem
     , printPredItem
@@ -47,7 +48,7 @@ printBASIC_SPEC :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
                 -> BASIC_SPEC b s f -> Doc
 printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
     [] -> specBraces empty
-    _ -> vcat $ map (printAnnoted ( printBASIC_ITEMS fB fS fF)) l
+    _ -> vcat $ map (printAnnoted (printBASIC_ITEMS fB fS fF)) l
 
 instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
     pretty = printBASIC_ITEMS pretty pretty pretty
@@ -71,10 +72,9 @@ printBASIC_ITEMS fB fS fF sis = case sis of
                     semiAnnos printDATATYPE_DECL l']
          _ -> sep [keyword generatedS, specBraces $ vcat $ map
               (printAnnoted $ printSIG_ITEMS fS fF) l]
-    Var_items l _ -> topSigKey (varS ++ pluralS l) <+>
-                           fsep (punctuate semi $ map printVarDecl l)
+    Var_items l _ -> topSigKey (varS ++ pluralS l) <+> printVarDecls l
     Local_var_axioms l f _ ->
-            fsep [fsep $ forallDoc : punctuate semi (map printVarDecl l)
+            fsep [fsep $ forallDoc : printVarDeclL l
                  , printAnnotedBulletFormulas fF f]
     Axiom_items f _ -> printAnnotedBulletFormulas fF f
     Ext_BASIC_ITEMS b -> fB b
@@ -173,6 +173,12 @@ printQuant q = case q of
 printSortedVars :: [VAR] -> SORT -> Doc
 printSortedVars l s =
     fsep $ punctuate comma (map sidDoc l) ++ [colon <+> idDoc s]
+
+printVarDeclL :: [VAR_DECL] -> [Doc]
+printVarDeclL = punctuate semi . map printVarDecl
+
+printVarDecls :: [VAR_DECL] -> Doc
+printVarDecls = fsep . printVarDeclL
 
 printVarDecl :: VAR_DECL -> Doc
 printVarDecl (Var_decl l s _) = printSortedVars l s
@@ -343,7 +349,7 @@ printInfix b join l s r =
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
     { foldQuantification = \ _ q l r _ ->
-          fsep $ printQuant q : punctuate semi (map printVarDecl l)
+          fsep $ printQuant q : printVarDeclL l
                                 ++ [addBullet r]
     , foldConjunction = \ o l _ -> case o of
           Conjunction ol@(_ : _) _ -> fsep $ prepPunctuate (andDoc <> space)
