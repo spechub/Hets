@@ -128,7 +128,7 @@ anaUri path query = case anaQuery query of
     Left err -> Left err
 
 isNat :: String -> Bool
-isNat s = all isDigit s && length s < 11
+isNat s = all isDigit s && not (null s) && length s < 11
 
 -- | a leading question mark is removed
 anaQuery :: String -> Either String (Maybe Int, QueryKind)

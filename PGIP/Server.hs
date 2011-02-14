@@ -232,7 +232,7 @@ edgeAttrib l = show (pretty $ dgl_type l) ++
 addSVGAttribs :: DGraph -> Content -> Content
 addSVGAttribs dg c = case c of
   Elem e -> case getAttrVal "id" e of
-    Just istr | all isDigit istr -> let i = read istr in
+    Just istr | isNat istr -> let i = read istr in
       case getAttrVal "class" e of
       Just "node" -> case lab (dgBody dg) i of
         Nothing -> c
