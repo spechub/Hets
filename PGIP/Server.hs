@@ -196,10 +196,10 @@ getDGraph opts sessRef dgQ = case dgQ of
       Nothing -> liftR $ fail "unknown development graph"
       Just sess -> return (sess, k)
 
-getSVG :: FilePath -> DGraph -> ResultT IO String
-getSVG file dg = do
+getSVG :: String -> DGraph -> ResultT IO String
+getSVG title dg = do
     (exCode, out, err) <- lift $ readProcessWithExitCode "dot" ["-Tsvg"]
-          $ dotGraph file False dg
+          $ dotGraph title False dg
     case exCode of
       ExitSuccess -> liftR $ extractSVG dg out
       _ -> fail err
@@ -276,13 +276,13 @@ getHetsResult opts updates sessRef file query =
       let libEnv = sessLibEnv sess
       case sessGraph dgQ sess of
         Nothing -> fail $ "unknown library given by: " ++ file
-        Just (ln, dg) ->
+        Just (ln, dg) -> let title = show $ getLibId ln in
           case qk of
             DisplayQuery ms -> case ms of
-              Just "svg" -> getSVG file dg
+              Just "svg" -> getSVG title dg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph libEnv (getFilePath ln) dg
-              Just "dot" -> liftR $ return $ dotGraph file False dg
+              Just "dot" -> liftR $ return $ dotGraph title False dg
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)
               _ -> liftR $ return $ sessAns ln sk
