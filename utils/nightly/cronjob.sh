@@ -8,7 +8,7 @@ case `uname -s` in
 esac
 
 HETS_OWL_TOOLS=/home/linux-bkb/hets-owl-tools
-HETS_ISABELLE_LIB=/home/maeder/haskell/Hets-lib/Isabelle
+HETS_ISABELLE_LIB=/home/maeder/haskell/Hets-lib/Isabelle/2011
 
 export GHCRTS
 export LANG
