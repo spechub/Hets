@@ -64,7 +64,7 @@ instance Logic LF
    Sign
    Morphism
    Symbol
-   String
+   RAW_SYM
    ()
 
 instance StaticAnalysis LF
@@ -75,19 +75,19 @@ instance StaticAnalysis LF
    Sign
    Morphism
    Symbol
-   String
+   RAW_SYM
    where
    basic_analysis LF = Just $ basicAnalysis
    stat_symb_items LF = symbAnalysis
    stat_symb_map_items LF = symbMapAnalysis
    symbol_to_raw LF = symName
-   matches LF s1 s2 = (symName s1) == s2 
+   matches LF _ _ = True
    empty_signature LF = emptySig
-   signature_union LF = sigUnion
    is_subsig LF = isSubsig
    subsig_inclusion LF = inclusionMorph
+   signature_union LF = sigUnion
    induced_from_to_morphism LF m (ExtSign sig1 _) (ExtSign sig2 _) =
-     inducedFromToMorphism (mapAnalysis m sig2) sig1 sig2
+     inducedFromToMorphism (translMapAnalysis m sig1 sig2) sig1 sig2
 
 instance LogicFram LF
    ()
@@ -98,7 +98,7 @@ instance LogicFram LF
    Sign
    Morphism
    Symbol
-   String
+   RAW_SYM
    ()
    where
    base_sig LF = baseSig

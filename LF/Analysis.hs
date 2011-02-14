@@ -20,7 +20,9 @@ import Common.AS_Annotation
 import Common.Result
 import Common.DocUtils
 
+import Data.List
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import System.IO.Unsafe
 
@@ -34,10 +36,16 @@ gen_sig1 :: String
 gen_sig1 = gen_module
 
 gen_sig2 :: String
-gen_sig2 = "GEN_SIG_SEN"
+gen_sig2 = gen_module ++ "'"
+
+gen :: String
+gen = "gen_"
+
+genPref :: String -> String
+genPref s = gen ++ s
 
 gen_ax :: String
-gen_ax = "gen_ax"
+gen_ax = genPref "ax"
 
 numSuf :: String -> Int -> String
 numSuf s i = s ++ "_" ++ show i
@@ -98,20 +106,15 @@ makeNamedForm ((n,s),annos) =
 
 getSigFromLibs :: MODULE -> LIBS -> Sign
 getSigFromLibs n libs =
-  let (sigs,_) = Map.findWithDefault (error "Library not found.") gen_file libs
-  in Map.findWithDefault (error $ "Signature " ++ n ++ " not found.") n sigs
+  let (sigs,_) = Map.findWithDefault (error badLibError) gen_file libs
+  in Map.findWithDefault (error $ badSigError n) n sigs
 
-getLocalDefs :: Sign -> [DEF]
-getLocalDefs sig = filter (\ (Def s _ _) -> isLocalSym s sig) $ getDefs sig
+unknownSyms :: [RAW_SYM] -> Sign -> [RAW_SYM]
+unknownSyms syms sig =
+  filter (\ s -> Set.notMember s $ Set.map symName $ getLocalSyms sig) syms
 
-getAnnoSyms :: [DEF] -> [(Symbol,(EXP,EXP))]
-getAnnoSyms ds =
-  map (\ (Def s t v) -> 
-        case v of
-          Nothing -> error $ "Symbol " ++ (show $ pretty s) ++
-                             "does not have a value."
-          Just v' -> (s,(v',t))
-      ) ds
+toSym :: RAW_SYM -> Symbol
+toSym s = Symbol gen_base gen_module s
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -130,7 +133,7 @@ makeSigSen :: Sign -> [Annoted BASIC_ITEM] -> IO (Sign,[(NAME,Sentence)])
 makeSigSen sig items = do
   -- make a Twelf file
   let sen_type = show $ pretty sen_type_exp
-  let cont1 = if (sig == emptySig) then "" else show (pretty sig) ++ "\n"
+  let cont1 = if (null $ getDefs sig) then "" else show (pretty sig) ++ "\n"
   let cont2 = printSigItems $ getSigItems items
   let cont3 = printSenItems sen_type $ getSenItems items
   let s1 = mkSig gen_sig1 $ cont1 ++ cont2
@@ -144,44 +147,54 @@ makeSigSen sig items = do
   -- construct the signature and sentences
   let sig1 = getSigFromLibs gen_sig1 libs
   let sig2 = getSigFromLibs gen_sig2 libs
-  let sens = map (\ (s,(v,_)) -> (symName s, v)) $ getAnnoSyms $
-                getLocalDefs sig2
-  return (sig1,sens)              
+  let sens = getSens sig2
+  return (sig1,sens)
+
+getSens :: Sign -> [(NAME,Sentence)]
+getSens sig = 
+  map (\ (Def s _ v) ->
+         case v of
+           Nothing -> error $ badValError $ symName s
+           Just v' -> (symName s, v')
+      ) $ getLocalDefs sig
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 
 -- symbol analysis for LF 
-symbAnalysis :: [SYMB_ITEMS] -> Result [String]
+symbAnalysis :: [SYMB_ITEMS] -> Result [RAW_SYM]
 symbAnalysis ss = Result [] $ Just $ concat $ map (\ (Symb_items s) -> s) ss
 
 -- symbol map analysis for LF 
-symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result (Map.Map String String)
+symbMapAnalysis :: [SYMB_MAP_ITEMS] -> Result (Map.Map RAW_SYM RAW_SYM)
 symbMapAnalysis ss = Result [] $ Just $
   foldl (\ m s -> Map.union m (makeSymbMap s)) Map.empty ss
 
-makeSymbMap :: SYMB_MAP_ITEMS -> Map.Map String String
+makeSymbMap :: SYMB_MAP_ITEMS -> Map.Map RAW_SYM RAW_SYM
 makeSymbMap (Symb_map_items ss) =
    foldl (\ m s -> case s of
                      Symb s1 -> Map.insert s1 s1 m
                      Symb_map s1 s2 -> Map.insert s1 s2 m
-         )
-         Map.empty
-         ss
+         ) Map.empty ss
 
------------------------------------------------------------------
+----------------------------------------------------------------
 -----------------------------------------------------------------
 
 {- converts a mapping of raw symbols to a mapping of symbols to expressions
    annotated with their type -}
-mapAnalysis :: Map.Map String String -> Sign -> Map.Map Symbol (EXP,EXP)
-mapAnalysis m sig = unsafePerformIO $ mapAnalysisIO m sig
+translMapAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> Sign ->
+                     Map.Map Symbol (EXP,EXP)
+translMapAnalysis m sig1 sig2 =
+  let syms = unknownSyms (Map.keys m) sig1
+      in if not (null syms) then error $ badDomError syms else
+         unsafePerformIO $ codAnalysis m sig2
 
-mapAnalysisIO :: Map.Map String String -> Sign -> IO (Map.Map Symbol (EXP,EXP))
-mapAnalysisIO m sig = do
+codAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> IO (Map.Map Symbol (EXP,EXP))
+codAnalysis m sig2 = do
   -- make a Twelf file
-  let cont1 = show $ pretty sig
-  let cont2 = concat $ map (\ (k,v) -> k ++ " = " ++ v ++ ".\n") $ Map.toList m
+  let cont1 = (show $ pretty sig2) ++ "\n"
+  let cont2 = concat $ map (\ (k,v) -> (genPref k) ++ " = " ++ v ++ ".\n") $
+                 Map.toList m
   let s1 = mkSig gen_sig1 cont1
   let s2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont2
   let contents = s1 ++ "\n" ++ s2
@@ -192,4 +205,30 @@ mapAnalysisIO m sig = do
   
   -- construct the mapping
   let sig' = getSigFromLibs gen_sig2 libs
-  return $ Map.fromList $ getAnnoSyms $ getLocalDefs sig'
+  return $ getMap sig'
+
+getMap :: Sign -> Map.Map Symbol (EXP,EXP)
+getMap sig = Map.fromList $ map
+    (\ (Def s t v) ->
+       case v of
+         Nothing -> error $ badValError $ symName s
+         Just v' -> let Just n = stripPrefix gen $ symName s
+                        in (toSym n, (v',t))
+    ) $ getLocalDefs sig
+
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+
+-- ERROR MESSAGES
+badLibError :: String
+badLibError = "Library not found."
+
+badSigError :: MODULE -> String
+badSigError n = "Signature " ++ n ++ " not found."
+
+badDomError :: [String] -> String
+badDomError ss = "Symbols " ++ (show ss) ++
+  " are unknown or cannot be used in a morphism."
+
+badValError :: String -> String
+badValError s = "Symbol " ++ s ++ "does not have a value."

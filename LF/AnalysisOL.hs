@@ -43,12 +43,12 @@ makeSigSenOL :: Morphism -> Sign -> [Annoted BASIC_ITEM] ->
 makeSigSenOL ltruth sig items = do
   -- make a Twelf file
   let sen_type = case mapSymbol sen_type_symbol ltruth of
-                      Nothing -> error "Sentence type cannot be constructed."
+                      Nothing -> error $ badSenTypeError
                       Just t -> show $ pretty t
   let lSyn = target ltruth
   let imp = mkRead $ sigBase lSyn
-  let cont1 = if (sig == lSyn) then "" else
-        (show $ vcat $ map pretty $ getLocalDefs lSyn) ++ "\n"
+  let cont1 = if (sig == lSyn || (null $ getLocalDefs sig)) then "" else
+        (show $ vcat $ map pretty $ getLocalDefs sig) ++ "\n"
   let cont2 = printSigItems $ getSigItems items
   let cont3 = printSenItems sen_type $ getSenItems items
   let s1 = mkSig gen_sig1 $ mkIncl (sigModule lSyn) ++ cont1 ++ cont2
@@ -62,8 +62,7 @@ makeSigSenOL ltruth sig items = do
   -- construct the signature and sentences
   let sig1 = getSigFromLibs gen_sig1 libs
   let sig2 = getSigFromLibs gen_sig2 libs
-  let sens = map (\ (s,(v,_)) -> (symName s, v)) $ getAnnoSyms $
-                getLocalDefs sig2
+  let sens = getSens sig2
   return (sig1,sens)
 
 -----------------------------------------------------------------
@@ -71,19 +70,22 @@ makeSigSenOL ltruth sig items = do
 
 {- converts a mapping of raw symbols to a mapping of symbols to expressions
    annotated with their type -}
-mapAnalysisOL :: Morphism -> Map.Map String String -> Sign ->
-                 Map.Map Symbol (EXP,EXP)
-mapAnalysisOL ltruth m sig = unsafePerformIO $ mapAnalysisOLIO ltruth m sig
+translMapAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
+                       Sign -> Map.Map Symbol (EXP,EXP)
+translMapAnalysisOL ltruth m sig1 sig2 =
+  let syms = unknownSyms (Map.keys m) sig1
+      in if not (null syms) then error $ badDomError syms else
+         unsafePerformIO $ codAnalysisOL ltruth m sig2
 
-mapAnalysisOLIO :: Morphism -> Map.Map String String -> Sign ->
-                   IO (Map.Map Symbol (EXP,EXP))
-mapAnalysisOLIO ltruth m sig = do
+codAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
+                 IO (Map.Map Symbol (EXP,EXP))
+codAnalysisOL ltruth m sig2 = do
   -- make a Twelf file
-  let cont1 = show $ pretty sig
-  let cont2 = concat $ map (\ (k,v) -> k ++ " = " ++ v ++ ".\n") $ Map.toList m
+  let cont1 = (show $ pretty sig2) ++ "\n"
+  let cont2 = concat $ map (\ (k,v) -> (genPref k) ++ " = " ++ v ++ ".\n") $
+                 Map.toList m
   let lSyn = target ltruth
   let imp = mkRead $ sigBase lSyn
-
   let s1 = mkSig gen_sig1 $ mkIncl (sigModule lSyn) ++ cont1
   let s2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont2
   let contents = imp ++ "\n" ++ s1 ++ "\n" ++ s2
@@ -94,4 +96,11 @@ mapAnalysisOLIO ltruth m sig = do
   
   -- construct the mapping
   let sig' = getSigFromLibs gen_sig2 libs
-  return $ Map.fromList $ getAnnoSyms $ getLocalDefs sig'
+  return $ getMap sig'
+
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+
+-- ERROR MESSAGES
+badSenTypeError :: String
+badSenTypeError = "Sentence type cannot be constructed."

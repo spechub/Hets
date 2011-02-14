@@ -20,3 +20,31 @@ spec SP4 = SP3 then
   
   . q d
 end
+
+spec S5 =
+s : o.
+t : type.
+a : t.
+end
+
+spec S6 =
+s : o.
+l : o.
+p : type.
+b : p.
+end
+
+view V1 : S5 to S6
+
+spec S7 =
+nat : type.
+a : nat.
+end
+
+spec S8 =
+Nat : type.
+p : Nat.
+plus : Nat -> Nat -> Nat.
+end
+
+view V2 : S7 to S8 = a |-> plus p p

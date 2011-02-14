@@ -16,6 +16,7 @@ module LF.Sign
        , MODULE
        , BASE
        , Symbol (..)
+       , RAW_SYM
        , EXP (..)
        , Sentence
        , CONTEXT
@@ -29,12 +30,14 @@ module LF.Sign
        , getDeclaredSyms
        , getDefinedSyms
        , getLocalSyms
+       , getLocalDefs 
        , isConstant
        , isDeclaredSym
        , isDefinedSym
        , isLocalSym
        , getSymType
        , getSymValue
+       , getSymsOfType
        , recForm
        , isSubsig
        , sigUnion
@@ -66,6 +69,8 @@ data Symbol = Symbol
             , symModule :: MODULE
             , symName :: NAME
             } deriving (Ord, Eq, Show)
+
+type RAW_SYM = String
 
 instance GetRange Symbol
 
@@ -137,6 +142,10 @@ isLocalSym :: Symbol -> Sign -> Bool
 isLocalSym s sig =
   and [sigBase sig == symBase s, sigModule sig == symModule s]
 
+-- get the list of local definitions
+getLocalDefs :: Sign -> [DEF]
+getLocalDefs sig = filter (\ (Def s _ _) -> isLocalSym s sig) $ getDefs sig
+
 -- returns the type/kind for the given symbol
 getSymType :: Symbol -> Sign -> Maybe EXP
 getSymType sym sig =
@@ -152,6 +161,11 @@ getSymValue sym sig =
       in case res of
               Nothing -> Nothing
               Just (Def _ _ v) -> v
+
+-- returns the set of symbols of the given type
+getSymsOfType :: EXP -> Sign -> Set.Set Symbol
+getSymsOfType t sig =
+  Set.fromList $ map getSym $ filter (\ (Def _ t' _) -> t' == t) $ getDefs sig
 
 -- pretty printing
 instance Pretty Sign where

@@ -50,9 +50,10 @@ writeLogic l =
       sentenceC = "Sentence"
       morphismC = "Morphism"
       symbolC = "Symbol"
-      raw_symbolC = "Symbol"
+      raw_symbolC = "RAW_SYM"
       sublogicsC = "()"
       proof_treeC = "()"
+      ml = "LF"
       
       -- module declaration
       comp_opt = mkCompOpt [multiOpt,synOpt]
@@ -62,7 +63,8 @@ writeLogic l =
       impts1 = mkImports ["Logic.Logic"]
       impts2 = mkImports ["LF.AS", "LF.Sign", "LF.Morphism",
                           "LF.Logic_LF", "LF.AnalysisOL"]
-      impts3 = mkImports [l ++ "." ++ "Syntax"]
+      impts3 = mkImports ["Common.ExtSign"]
+      impts4 = mkImports [l ++ "." ++ "Syntax"]
       
       -- lid
       lid = mkLid l
@@ -72,18 +74,17 @@ writeLogic l =
       lang = mkInst "Language" l [] [descriptionI]
      
       -- syntax
-      parse_basic_specI = mkImpl "parse_basic_spec" l "parse_basic_spec LF"
-      parse_symb_itemsI = mkImpl "parse_symb_items" l "parse_symb_items LF"
-      parse_symb_map_itemsI = mkImpl "parse_symb_map_items" l
-                                "parse_symb_map_items LF"
+      parse_basic_specI = inheritImpl "parse_basic_spec" l ml
+      parse_symb_itemsI = inheritImpl "parse_symb_items" l ml
+      parse_symb_map_itemsI = inheritImpl "parse_symb_map_items" l ml
       
       syntax = mkInst "Syntax" l
                 [basic_specC, symb_itemsC, symb_map_itemsC]
                 [parse_basic_specI, parse_symb_itemsI, parse_symb_map_itemsI]
     
       -- sentences
-      map_senI = mkImpl "map_sen" l "map_sen LF"
-      sym_ofI = mkImpl "sym_of" l "sym_of LF"
+      map_senI = inheritImpl "map_sen" l ml
+      sym_ofI = inheritImpl "sym_of" l ml
 
       sentences = mkInst "Sentences" l [sentenceC, signC, morphismC,
                     symbolC] [map_senI, sym_ofI]
@@ -95,23 +96,33 @@ writeLogic l =
 
       -- static analysis
       basic_analysisI = mkImpl "basic_analysis" l
-                          "Just $ basicAnalysisOL ltruth"
-      empty_signatureI = mkImpl "empty_signature" l "cod $ ltruth"
-      signature_unionI = mkImpl "signature_union" l "signature_union LF"
-      is_subsigI = mkImpl "is_subsig" l "is_subsig LF"
-      subsig_inclusionI = mkImpl "subsig_inclusion" l "subsig_inclusion LF"
-
+         " Just $ basicAnalysisOL ltruth"
+      stat_symb_itemsI = inheritImpl "stat_symb_items" l ml
+      stat_symb_map_itemsI = inheritImpl "stat_symb_map_items" l ml
+      symbol_to_rawI = inheritImpl "symbol_to_raw" l ml
+      matchesI = inheritImpl "matches" l ml
+      empty_signatureI = mkImpl "empty_signature" l " cod $ ltruth"
+      is_subsigI = inheritImpl "is_subsig" l ml
+      subsig_inclusionI = inheritImpl "subsig_inclusion" l ml
+      signature_unionI = inheritImpl "signature_union" l ml
+      induced_from_to_morphismI = mkFullImpl "induced_from_to_morphism"
+         l ["m", "(ExtSign sig1 _)", "(ExtSign sig2 _)"] $ "\n      " ++
+         "inducedFromToMorphism (translMapAnalysisOL ltruth m sig1 sig2) " ++
+         "sig1 sig2"
+      
       analysis = mkInst "StaticAnalysis" l
                    [basic_specC, sentenceC, symb_itemsC, symb_map_itemsC,
                     signC, morphismC, symbolC, raw_symbolC]
-                   [basic_analysisI, empty_signatureI, signature_unionI,
-                    is_subsigI, subsig_inclusionI]
+                   [basic_analysisI, stat_symb_itemsI, stat_symb_map_itemsI,
+                    symbol_to_rawI, matchesI, empty_signatureI, is_subsigI,
+                    subsig_inclusionI, signature_unionI,
+                    induced_from_to_morphismI]
 
       -- file
       header = comp_opt
       body = intercalate "\n\n" $
-               [mod_decl, impts1, impts2, impts3, lid, lang, syntax, sentences,
-                logic, analysis] 
+               [mod_decl, impts1, impts2, impts3, impts4, lid, lang, syntax,
+                sentences, logic, analysis] 
       in header ++ "\n" ++ body
 
 -----------------------------------------------------------------
