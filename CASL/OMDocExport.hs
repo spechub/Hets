@@ -253,7 +253,7 @@ omdocRec e mf = Record
     , foldSort_gen_ax = \ t _ _ -> sfail
                         "Sort generating axioms should be filtered out before!"
                         $ getRange t
-    , foldExtFORMULA = \ _ f -> mf f
+    , foldExtFORMULA = const mf
     , foldQual_var = \ _ v _ _ -> varToOmdoc v
     , foldApplication = \ _ o ts _ -> appOrConst e o ts
     , foldSorted_term = \ _ r s _ -> makeTyped r $ oms e s
@@ -266,4 +266,5 @@ omdocRec e mf = Record
     , foldMixfix_cast = \ _ _ r -> sfail "Mixfix_cast" r
     , foldMixfix_parenthesized = \ _ _ r -> sfail "Mixfix_parenthesized" r
     , foldMixfix_bracketed = \ _ _ r -> sfail "Mixfix_bracketed" r
-    , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r }
+    , foldMixfix_braced = \ _ _ r -> sfail "Mixfix_braced" r
+    , foldExtTERM = const mf }

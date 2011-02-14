@@ -290,6 +290,7 @@ data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
             -- pos: "[", commas, "]"
           | Mixfix_braced [TERM f] Range         -- also for list-notation
             -- pos: "{", "}"
+          | ExtTERM f
             deriving (Show, Eq, Ord)
 
 -- | state after mixfix- but before overload resolution

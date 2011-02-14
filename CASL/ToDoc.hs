@@ -419,7 +419,8 @@ printRecord mf = Record
     , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
     , foldMixfix_parenthesized = \ _ l _ -> parens $ sepByCommas l
     , foldMixfix_bracketed = \ _ l _ -> brackets $ sepByCommas l
-    , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l }
+    , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l
+    , foldExtTERM = const mf }
 
 recoverType :: [Constraint] -> [Annoted DATATYPE_DECL]
 recoverType =

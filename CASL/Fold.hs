@@ -50,6 +50,7 @@ data Record f a b = Record
     , foldMixfix_parenthesized :: TERM f -> [b] -> Range -> b
     , foldMixfix_bracketed :: TERM f -> [b] -> Range -> b
     , foldMixfix_braced :: TERM f -> [b] -> Range -> b
+    , foldExtTERM :: TERM f -> f -> b
     }
 
 mapRecord :: (f -> g) -> Record f (FORMULA g) (TERM g)
@@ -85,6 +86,7 @@ mapRecord mf = Record
     , foldMixfix_parenthesized = const Mixfix_parenthesized
     , foldMixfix_bracketed = const Mixfix_bracketed
     , foldMixfix_braced = const Mixfix_braced
+    , foldExtTERM = \ _ -> ExtTERM . mf
     }
 
 constRecord :: (f -> a) -> ([a] -> a) -> a -> Record f a a
@@ -120,6 +122,7 @@ constRecord mf join c = Record
     , foldMixfix_parenthesized = \ _ l _ -> join l
     , foldMixfix_bracketed = \ _ l _ -> join l
     , foldMixfix_braced = \ _ l _ -> join l
+    , foldExtTERM = const mf
     }
 
 foldFormula :: Record f a b -> FORMULA f -> a
@@ -171,3 +174,4 @@ foldOnlyTerm ff r t = case t of
       (map (foldOnlyTerm ff r) ts) ps
    Mixfix_braced ts ps -> foldMixfix_braced r t
       (map (foldOnlyTerm ff r) ts) ps
+   ExtTERM e -> foldExtTERM r t e

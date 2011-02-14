@@ -258,3 +258,4 @@ trTerm inSig inF =
           do
             ot <-  mapR (trTerm inSig) trm
             return (Mixfix_braced ot rn)
+      ExtTERM _ -> return $ ExtTERM ()

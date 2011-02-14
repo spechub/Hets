@@ -286,6 +286,7 @@ transRecord sign tyToks tr toks = Record
     , foldMixfix_parenthesized = error "transRecord: Mixfix_parenthesized"
     , foldMixfix_bracketed = error "transRecord: Mixfix_bracketed"
     , foldMixfix_braced = error "transRecord: Mixfix_braced"
+    , foldExtTERM =  error "transRecord: ExtTERM"
     }
 
 transFORMULA :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e

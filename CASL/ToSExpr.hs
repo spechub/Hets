@@ -113,7 +113,8 @@ sRec sign mf = Record
     , foldMixfix_cast = \ _ _ -> sfail "Mixfix_cast"
     , foldMixfix_parenthesized = \ _ _ -> sfail "Mixfix_parenthesized"
     , foldMixfix_bracketed = \ _ _ -> sfail "Mixfix_bracketed"
-    , foldMixfix_braced = \ _ _ -> sfail "Mixfix_braced" }
+    , foldMixfix_braced = \ _ _ -> sfail "Mixfix_braced"
+    , foldExtTERM = const mf }
 
 signToSExprs :: Sign a e -> [SExpr]
 signToSExprs sign = sortSignToSExprs sign
