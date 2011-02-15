@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/Isabelle/Isabelle2009/bin:/home/linux-bkb/bin
+PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/Isabelle/Isabelle2011/bin:/home/linux-bkb/bin
 UDG_HOME=/home/linux-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
 
