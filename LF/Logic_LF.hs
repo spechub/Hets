@@ -81,11 +81,18 @@ instance StaticAnalysis LF
    stat_symb_items LF = symbAnalysis
    stat_symb_map_items LF = symbMapAnalysis
    symbol_to_raw LF = symName
-   matches LF _ _ = True
+   matches LF s1 s2 = symName s1 == s2
    empty_signature LF = emptySig
    is_subsig LF = isSubsig
    subsig_inclusion LF = inclusionMorph
    signature_union LF = sigUnion
+   intersection LF = sigIntersection
+   generated_sign LF syms sig = do
+     sig'<- genSig syms sig
+     inclusionMorph sig' sig
+   cogenerated_sign LF syms sig = do
+     sig'<- coGenSig syms sig
+     inclusionMorph sig' sig
    induced_from_to_morphism LF m (ExtSign sig1 _) (ExtSign sig2 _) =
      inducedFromToMorphism (translMapAnalysis m sig1 sig2) sig1 sig2
 

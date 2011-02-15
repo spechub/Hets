@@ -113,9 +113,6 @@ unknownSyms :: [RAW_SYM] -> Sign -> [RAW_SYM]
 unknownSyms syms sig =
   filter (\ s -> Set.notMember s $ Set.map symName $ getLocalSyms sig) syms
 
-toSym :: RAW_SYM -> Symbol
-toSym s = Symbol gen_base gen_module s
-
 -----------------------------------------------------------------
 -----------------------------------------------------------------
 

@@ -277,20 +277,22 @@ relativize fp1 fp2 =
 resolveToCur :: FilePath -> IO FilePath
 resolveToCur fp = do
   dir <- getCurrentDirectory
-  return $ resolve fp (dir ++ "/")
+  return $ resolve fp $ dir ++ "/"
 
 -- relativizes the file path wrt to the current directory
 relativizeToCur :: FilePath -> IO FilePath
 relativizeToCur fp = do
   dir <- getCurrentDirectory
-  return $ relativize fp (dir ++ "/")
+  let dir' = dir ++ "/"
+  return $ relativize (resolve fp dir') dir'
 
 {- returns the referenced base and module resolved w.r.t.
    the second argument and relativized to the current directory -}
 parseRef :: String -> String -> IO NODE
-parseRef ref base =
+parseRef ref base = do
+  baseA <- resolveToCur base  
   case splitBy '?' ref of
-       [br1,m] -> do let b = fromOMDoc $ resolve br1 base
+       [br1,m] -> do let b = fromOMDoc $ resolve br1 baseA
                      br2 <- relativizeToCur b
                      return (br2,m)
        _ -> fail "Invalid reference."
@@ -299,6 +301,7 @@ parseRef ref base =
    the second argument and relativized to the current directory -}
 getBMN :: Element -> NODE -> IO (BASE,MODULE,NAME)
 getBMN e (base,modul) = do
+  baseA <- resolveToCur base
   let n = case findAttr nameQN e of
                Nothing -> ""
                Just n' -> n'
@@ -307,7 +310,7 @@ getBMN e (base,modul) = do
                Just m' -> m'
   let b = case getBaseAttr e of
                Nothing -> base
-               Just b' -> fromOMDoc $ resolve b' base
+               Just b' -> fromOMDoc $ resolve b' baseA
   br <- relativizeToCur b
   return (br,m,n)
 

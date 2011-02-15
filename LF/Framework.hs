@@ -62,9 +62,8 @@ writeLogic l =
       -- imports
       impts1 = mkImports ["Logic.Logic"]
       impts2 = mkImports ["LF.AS", "LF.Sign", "LF.Morphism",
-                          "LF.Logic_LF", "LF.AnalysisOL"]
-      impts3 = mkImports ["Common.ExtSign"]
-      impts4 = mkImports [l ++ "." ++ "Syntax"]
+                          "LF.Logic_LF", "LF.ImplOL"]
+      impts3 = mkImports [l ++ "." ++ "Syntax"]
       
       -- lid
       lid = mkLid l
@@ -96,32 +95,34 @@ writeLogic l =
 
       -- static analysis
       basic_analysisI = mkImpl "basic_analysis" l
-         " Just $ basicAnalysisOL ltruth"
+         "Just $ basicAnalysisOL ltruth"
       stat_symb_itemsI = inheritImpl "stat_symb_items" l ml
       stat_symb_map_itemsI = inheritImpl "stat_symb_map_items" l ml
       symbol_to_rawI = inheritImpl "symbol_to_raw" l ml
       matchesI = inheritImpl "matches" l ml
-      empty_signatureI = mkImpl "empty_signature" l " cod $ ltruth"
+      empty_signatureI = mkImpl "empty_signature" l "cod $ ltruth"
       is_subsigI = inheritImpl "is_subsig" l ml
       subsig_inclusionI = inheritImpl "subsig_inclusion" l ml
       signature_unionI = inheritImpl "signature_union" l ml
-      induced_from_to_morphismI = mkFullImpl "induced_from_to_morphism"
-         l ["m", "(ExtSign sig1 _)", "(ExtSign sig2 _)"] $ "\n      " ++
-         "inducedFromToMorphism (translMapAnalysisOL ltruth m sig1 sig2) " ++
-         "sig1 sig2"
+      intersectionI = inheritImpl "intersection" l ml
+      generated_signI = mkImpl "generated_sign" l "genSigOL ltruth"
+      cogenerated_signI = inheritImpl "cogenerated_sign" l ml
+      induced_from_to_morphismI = mkImpl "induced_from_to_morphism" l
+         "inducedFromToMorphismOL ltruth"
       
       analysis = mkInst "StaticAnalysis" l
                    [basic_specC, sentenceC, symb_itemsC, symb_map_itemsC,
                     signC, morphismC, symbolC, raw_symbolC]
                    [basic_analysisI, stat_symb_itemsI, stat_symb_map_itemsI,
                     symbol_to_rawI, matchesI, empty_signatureI, is_subsigI,
-                    subsig_inclusionI, signature_unionI,
+                    subsig_inclusionI, signature_unionI, intersectionI,
+                    generated_signI, cogenerated_signI,
                     induced_from_to_morphismI]
 
       -- file
       header = comp_opt
       body = intercalate "\n\n" $
-               [mod_decl, impts1, impts2, impts3, impts4, lid, lang, syntax,
+               [mod_decl, impts1, impts2, impts3, lid, lang, syntax,
                 sentences, logic, analysis] 
       in header ++ "\n" ++ body
 

@@ -38,4 +38,8 @@ p : nat.
 plus : nat -> nat -> nat.
 end
 
-view V1 : SP3 to SP4 = t |-> plus p p
+%view V1 : SP3 to SP4 = t |-> plus p p
+
+spec SP5 = SP hide p
+
+%spec SP6 = SP reveal i

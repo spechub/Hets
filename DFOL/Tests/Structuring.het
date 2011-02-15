@@ -39,9 +39,13 @@ d :: j -> j
 p :: Pi x : i. i
 end
 
-spec S8 = S7 hide i
+spec S12 = S7 then
+k :: i
+end
 
-spec S9 = S7 reveal d, i
+spec S8 = S12 hide i
+
+spec S9 = S12 reveal k
 
 spec S10 =
 s :: Form

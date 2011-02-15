@@ -8,7 +8,7 @@ Maintainer  :  k.sojakova@jacobs-university.de
 Stability   :  experimental
 Portability :  portable
 -}
-module LF.Twelf2DG where
+module LF.Twelf2DG ( anaTwelfFile ) where
 
 import Static.DevGraph
 import Static.ComputeTheory
@@ -86,9 +86,9 @@ addSigToDG sig dg =
       nodeLabel = newInfoNodeLab nodeName info gth
       dg1 = insNodeDG (node,nodeLabel) dg
       emptyNode = EmptyNode $ Logic LF
-      genSig = GenSig emptyNode [] emptyNode
+      gSig = GenSig emptyNode [] emptyNode
       nodeSig = NodeSig node $ G_sign LF extSign startSigId
-      gEntry = SpecEntry $ ExtGenSig genSig nodeSig
+      gEntry = SpecEntry $ ExtGenSig gSig nodeSig
       dg2 = dg1 { globalEnv = Map.insert name gEntry $ globalEnv dg1 }
       in (node,dg2)
 

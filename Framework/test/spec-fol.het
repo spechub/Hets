@@ -47,4 +47,6 @@ p : Nat.
 plus : Nat -> Nat -> Nat.
 end
 
-view V2 : S7 to S8 = a |-> plus p p
+spec SP9 = SP3 reveal i
+
+%view V2 : S7 to S8 = a |-> plus p p

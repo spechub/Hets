@@ -10,7 +10,17 @@ Stability   :  experimental
 Portability :  portable
 -}
 
-module LF.Morphism where
+module LF.Morphism
+   ( MorphType (..)
+   , Morphism (..)
+   , idMorph
+   , compMorph
+   , mapSymbol
+   , translate
+   , canForm
+   , inclusionMorph
+   , inducedFromToMorphism
+   ) where
 
 import LF.Sign
 

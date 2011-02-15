@@ -46,14 +46,10 @@ mkLid lid = "data " ++ lid ++ " = " ++ lid ++ " deriving Show"
 
 mkImpl :: String -> String -> String -> String
 mkImpl f lid imp =
-  f ++ " " ++ lid ++ " =" ++ imp
+  f ++ " " ++ lid ++ " = " ++ imp
 
 inheritImpl :: String -> String -> String -> String
-inheritImpl s l ml = mkImpl s l $ " " ++ s ++ " " ++ ml
-
-mkFullImpl :: String -> String -> [String] -> String -> String
-mkFullImpl f lid args imp =
-  f ++ " " ++ lid ++ " " ++ (intercalate " " args) ++ " =" ++ imp
+inheritImpl s l ml = mkImpl s l $ s ++ " " ++ ml
 
 mkInst :: String -> String -> [String] -> [String] -> String
 mkInst inst lid args impls =
