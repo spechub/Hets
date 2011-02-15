@@ -1,0 +1,12 @@
+spec SimpleRawTreeWithOp = 
+ sorts Nat free with 0 | succ(Nat)
+       Tree free with empty | node(Tree, Nat, Tree)
+ ops empty : Tree
+     node : Tree * Nat * Tree -> Tree
+     op : Nat -> Nat 
+     fun sum(t:Tree):Nat = 
+       let fun plus(x:Nat, n:Nat):Nat =
+           case x of 0 => n | succ(m) => succ(plus(m,n))
+       in case t of empty => 0
+                  | node(t1,n,t2) => plus(plus(op(n),sum(t1)), sum(t2)) 
+
