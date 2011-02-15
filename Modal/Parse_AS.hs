@@ -24,7 +24,7 @@ import CASL.Formula
 import CASL.OpItem
 
 modal_reserved_words :: [String]
-modal_reserved_words = diamondS:termS:rigidS:flexibleS:modalityS:[modalitiesS]
+modal_reserved_words = diamondS : termS : rigidS : flexibleS : modalityS : [modalitiesS]
 
 modalFormula :: AParser st M_FORMULA
 modalFormula =
@@ -51,8 +51,8 @@ modality ks =
        return $ Term_mod t
    <|> return (Simple_mod $ mkSimpleId emptyS)
 
-instance AParsable M_FORMULA where
-  aparser = modalFormula
+instance TermParser M_FORMULA where
+    termParser = aToTermParser modalFormula
 
 rigor :: AParser st RIGOR
 rigor = (asKey rigidS >> return Rigid)
@@ -61,7 +61,7 @@ rigor = (asKey rigidS >> return Rigid)
 rigidSigItems :: AParser st M_SIG_ITEM
 rigidSigItems =
     do r <- rigor
-       do itemList modal_reserved_words opS opItem (Rigid_op_items r)
+       itemList modal_reserved_words opS opItem (Rigid_op_items r)
          <|> itemList modal_reserved_words predS predItem (Rigid_pred_items r)
 
 instance AParsable M_SIG_ITEM where
@@ -89,7 +89,7 @@ mItem pr = do
                       `separatedBy` anSemi
           p <- cBraceT
           return (as, fs, ps `appRange` toRange o qs p)
-        <|>  return (as, [], ps)
+        <|> return (as, [], ps)
 
 instance AParsable M_BASIC_ITEM where
   aparser = mBasic

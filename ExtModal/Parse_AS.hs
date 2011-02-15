@@ -234,8 +234,8 @@ parseModality =
            return (Union t1 t2)
         <|> return (Simple_modality $ mkSimpleId emptyS)
 
-instance AParsable EM_FORMULA where
-        aparser = modalFormulaParser
+instance TermParser EM_FORMULA where
+    termParser = aToTermParser modalFormulaParser
 
 {- Signature parser -}
 

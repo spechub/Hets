@@ -51,8 +51,8 @@ modality ks = do
       Mixfix_token tok -> Simple_mod tok
       _ -> Term_mod t
 
-instance AParsable C_FORMULA where
-  aparser = cocaslFormula
+instance TermParser C_FORMULA where
+  termParser = aToTermParser cocaslFormula
 
 cBasic :: AParser st C_BASIC_ITEM
 cBasic = do
@@ -61,8 +61,8 @@ cBasic = do
     return (codatatypeToCofreetype ti (tokPos f))
   <|> do
     g <- asKey cogeneratedS
-    do  t <- sigItems cocasl_reserved_words
-        return (CoSort_gen [Annoted t nullRange [] []] $ tokPos g)
+    do t <- sigItems cocasl_reserved_words
+       return (CoSort_gen [Annoted t nullRange [] []] $ tokPos g)
       <|> do
         o <- oBraceT
         is <- annosParser (sigItems cocasl_reserved_words)
@@ -82,7 +82,7 @@ codatatype ks = do
     a <- getAnnos
     (Annoted v _ _ b : as, ps) <- acoAlternative ks `separatedBy` barT
     return $ CoDatatype_decl s (Annoted v nullRange a b : as)
-      $ catRange $ e:ps
+      $ catRange $ e : ps
 
 acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
 acoAlternative ks = do
@@ -94,7 +94,7 @@ coalternative :: [String] -> AParser st COALTERNATIVE
 coalternative ks = do
     s <- pluralKeyword sortS
     (ts, cs) <- sortId ks `separatedBy` anComma
-    return (CoSubsorts ts $ catRange $ s:cs)
+    return (CoSubsorts ts $ catRange $ s : cs)
   <|> do
     i <- consId ks
     cocomp ks (Just i)
@@ -106,8 +106,8 @@ cocomp ks i = do
     (cs, ps) <- cocomponent ks `separatedBy` anSemi
     c <- cParenT
     let qs = toRange o ps c
-    do  q <- quMarkT
-        return (Co_construct Partial i cs (qs `appRange` tokPos q))
+    do q <- quMarkT
+       return (Co_construct Partial i cs (qs `appRange` tokPos q))
       <|> return (Co_construct Total i cs qs)
   <|> return (Co_construct Total i [] nullRange)
 

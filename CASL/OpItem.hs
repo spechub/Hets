@@ -32,11 +32,11 @@ import Common.AS_Annotation
 import Text.ParserCombinators.Parsec
 import Common.Token
 import CASL.Formula
-import Data.List(sort)
+import Data.List (sort)
 
 -- stupid cast
 argDecl :: [String] -> AParser st ARG_DECL
-argDecl = fmap (\(Var_decl vs s ps) -> Arg_decl vs s ps) . varDecl
+argDecl = fmap (\ (Var_decl vs s ps) -> Arg_decl vs s ps) . varDecl
 
 -- non-empty
 predHead :: [String] -> AParser st PRED_HEAD
@@ -44,7 +44,7 @@ predHead ks =
     do o <- wrapAnnos oParenT
        (vs, ps) <- argDecl ks `separatedBy` anSemi
        p <- addAnnos >> cParenT
-       return $ Pred_head vs $ catRange (o:ps++[p])
+       return $ Pred_head vs $ catRange (o : ps ++ [p])
 
 opHead :: [String] -> AParser st OP_HEAD
 opHead ks =
@@ -54,31 +54,26 @@ opHead ks =
        return $ Op_head (if b then Partial else Total) vs s
               (ps `appRange` tokPos c `appRange` qs)
 
-opAttr :: AParsable f => [String] -> AParser st (OP_ATTR f, Token)
-opAttr ks = do p <- asKey assocS
-               return (Assoc_op_attr, p)
-            <|>
-            do p <- asKey commS
-               return (Comm_op_attr, p)
-            <|>
-            do p <- asKey idemS
-               return (Idem_op_attr, p)
-            <|>
-            do p <- asKey unitS
-               t <- term ks
-               return (Unit_op_attr t, p)
+opAttr :: TermParser f => [String] -> AParser st (OP_ATTR f, Token)
+opAttr ks = choice
+  (map (\ (s, t) -> fmap (\ p -> (t, p)) $ asKey s)
+    [(assocS, Assoc_op_attr), (commS, Comm_op_attr), (idemS, Idem_op_attr)])
+  <|> do
+    p <- asKey unitS
+    t <- term ks
+    return (Unit_op_attr t, p)
 
 isConstant :: OP_TYPE -> Bool
-isConstant(Op_type _ [] _ _) = True
+isConstant (Op_type _ [] _ _) = True
 isConstant _ = False
 
 toHead :: Range -> OP_TYPE -> OP_HEAD
 toHead (Range c) (Op_type k [] s ps) = Op_head k [] s (Range c `appRange` ps)
 toHead _ _ = error "toHead got non-empty argument type"
 
-opItem :: AParsable f => [String] -> AParser st (OP_ITEM f)
+opItem :: TermParser f => [String] -> AParser st (OP_ITEM f)
 opItem ks =
-    do (os, cs)  <- parseId ks `separatedBy` anComma
+    do (os, cs) <- parseId ks `separatedBy` anComma
        if isSingle os then
               do c <- anColon
                  t <- opType ks
@@ -92,7 +87,7 @@ opItem ks =
             t <- opType ks
             opAttrs ks os t $ cs ++ [c]
 
-opBody :: AParsable f => [String] -> OP_NAME -> OP_HEAD
+opBody :: TermParser f => [String] -> OP_NAME -> OP_HEAD
        -> AParser st (OP_ITEM f)
 opBody ks o h =
     do e <- equalT
@@ -100,31 +95,28 @@ opBody ks o h =
        t <- term ks
        return $ Op_defn o h (Annoted t nullRange a []) $ tokPos e
 
-opAttrs :: AParsable f => [String] -> [OP_NAME] -> OP_TYPE -> [Token]
+opAttrs :: TermParser f => [String] -> [OP_NAME] -> OP_TYPE -> [Token]
         -> AParser st (OP_ITEM f)
 opAttrs ks os t c =
     do q <- anComma
        (as, cs) <- opAttr ks `separatedBy` anComma
-       let ps = Range (sort (catPosAux (c ++ map snd as ++ (q:cs))))
+       let ps = Range (sort (catPosAux (c ++ map snd as ++ (q : cs))))
        return (Op_decl os t (map fst as) ps)
    <|> return (Op_decl os t [] (catRange c))
-
 -- overlap "o:t" DEF-or DECL "o:t=e" or "o:t, assoc"
 
--- ----------------------------------------------------------------------
--- predicates
--- ----------------------------------------------------------------------
+-- * predicates
 
-predItem :: AParsable f => [String] -> AParser st (PRED_ITEM f)
+predItem :: TermParser f => [String] -> AParser st (PRED_ITEM f)
 predItem ks =
-    do (ps, cs)  <- parseId ks `separatedBy` anComma
+    do (ps, cs) <- parseId ks `separatedBy` anComma
        if isSingle ps then
                 predBody ks (head ps) (Pred_head [] nullRange)
                 <|> (predHead ks >>= predBody ks (head ps))
                 <|> predTypeCont ks ps cs
          else predTypeCont ks ps cs
 
-predBody :: AParsable f => [String] -> PRED_NAME -> PRED_HEAD
+predBody :: TermParser f => [String] -> PRED_NAME -> PRED_HEAD
          -> AParser st (PRED_ITEM f)
 predBody ks p h =
     do e <- asKey equivS
@@ -136,4 +128,4 @@ predTypeCont :: [String] -> [PRED_NAME] -> [Token] -> AParser st (PRED_ITEM f)
 predTypeCont ks ps cs =
     do c <- colonT
        t <- predType ks
-       return $ Pred_decl ps t $ catRange (cs++[c])
+       return $ Pred_decl ps t $ catRange (cs ++ [c])

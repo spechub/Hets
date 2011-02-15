@@ -36,26 +36,24 @@ import Common.Token
 
 import Text.ParserCombinators.Parsec
 
--- ------------------------------------------------------------------------
--- sortItem
--- ------------------------------------------------------------------------
+-- * sortItem
 
 commaSortDecl :: [String] -> Id -> AParser st (SORT_ITEM f)
 commaSortDecl ks s =
     do c <- anComma
        (is, cs) <- sortId ks `separatedBy` anComma
        let l = s : is
-           p = catRange (c:cs)
+           p = catRange (c : cs)
        subSortDecl ks (l, p) <|> return (Sort_decl l p)
 
-isoDecl :: AParsable f => [String] -> Id -> AParser st (SORT_ITEM f)
+isoDecl :: TermParser f => [String] -> Id -> AParser st (SORT_ITEM f)
 isoDecl ks s =
     do e <- equalT
-       subSortDefn ks (s, tokPos e) <|>
-           (do (l, p) <- sortId ks `separatedBy` equalT
-               return (Iso_decl (s:l) (catRange (e:p))))
+       subSortDefn ks (s, tokPos e) <|> do
+           (l, p) <- sortId ks `separatedBy` equalT
+           return (Iso_decl (s : l) (catRange (e : p)))
 
-subSortDefn :: AParsable f => [String] -> (Id, Range)
+subSortDefn :: TermParser f => [String] -> (Id, Range)
             -> AParser st (SORT_ITEM f)
 subSortDefn ks (s, e) =
     do a <- annos
@@ -76,24 +74,22 @@ subSortDecl ks (l, p) =
        s <- sortId ks
        return $ Subsort_decl l s (p `appRange` tokPos t)
 
-sortItem :: AParsable f => [String] -> AParser st (SORT_ITEM f)
+sortItem :: TermParser f => [String] -> AParser st (SORT_ITEM f)
 sortItem ks =
     do s <- sortId ks
-       subSortDecl ks ([s],nullRange) <|> commaSortDecl ks s
-          <|> isoDecl ks s  <|> return (Sort_decl [s] nullRange)
+       subSortDecl ks ([s], nullRange) <|> commaSortDecl ks s
+          <|> isoDecl ks s <|> return (Sort_decl [s] nullRange)
 
--- ------------------------------------------------------------------------
--- typeItem
--- ------------------------------------------------------------------------
+-- * typeItem
 
 datatype :: [String] -> AParser st DATATYPE_DECL
 datatype ks =
     do s <- sortId ks
        e <- asKey defnS
        a <- getAnnos
-       (Annoted v _ _ b:alts, ps) <- aAlternative ks `separatedBy` barT
-       return (Datatype_decl s (Annoted v nullRange a b:alts)
-                        (catRange (e:ps)))
+       (Annoted v _ _ b : alts, ps) <- aAlternative ks `separatedBy` barT
+       return (Datatype_decl s (Annoted v nullRange a b : alts)
+                        (catRange (e : ps)))
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
 aAlternative ks =
@@ -105,17 +101,22 @@ alternative :: [String] -> AParser st ALTERNATIVE
 alternative ks =
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
-       return (Subsorts ts (catRange (s:cs)))
-    <|>
-    do i <- consId ks
-       do   o <- wrapAnnos oParenT
+       return (Subsorts ts (catRange (s : cs)))
+    <|> (consId ks >>= optComps ks)
+
+optComps :: [String] -> Id -> AParser st ALTERNATIVE
+optComps ks i = do
+            o <- wrapAnnos oParenT
             (cs, ps) <- component ks `separatedBy` anSemi
             c <- addAnnos >> cParenT
-            let qs = toRange o ps c
-            do   q <- try (addAnnos >> quMarkT)
-                 return (Alt_construct Partial i cs (qs `appRange` tokPos q))
-              <|> return (Alt_construct Total i cs qs)
+            optQuMarkAlt i cs $ toRange o ps c
          <|> return (Alt_construct Total i [] nullRange)
+
+optQuMarkAlt :: Id -> [COMPONENTS] -> Range -> AParser st ALTERNATIVE
+optQuMarkAlt i cs qs = do
+    q <- try (addAnnos >> quMarkT)
+    return (Alt_construct Partial i cs (qs `appRange` tokPos q))
+  <|> return (Alt_construct Total i cs qs)
 
 isSortId :: Id -> Bool
 isSortId (Id is _ _) = case is of
@@ -133,5 +134,5 @@ compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
 compSort ks is cs =
     do c <- anColon
        (b, t, qs) <- opSort ks
-       let p = catRange (cs++[c]) `appRange` qs
+       let p = catRange (cs ++ [c]) `appRange` qs
        return $ Cons_select (if b then Partial else Total) is t p

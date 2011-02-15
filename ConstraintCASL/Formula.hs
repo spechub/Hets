@@ -136,5 +136,5 @@ equivalentT = pToken $ toKey equivalent
 constraintKeywords :: [String]
 constraintKeywords = (equivalent:implies:[])
 
-instance AParsable ConstraintFORMULA where
-  aparser = cformula []
+instance TermParser ConstraintFORMULA where
+  termParser = aToTermParser $ cformula []

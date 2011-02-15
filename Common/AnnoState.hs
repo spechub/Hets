@@ -42,6 +42,16 @@ class AParsable a where
 instance AParsable () where
   aparser = pzero
 
+-- a parser for terms or formulas
+class TermParser a where
+  termParser :: Bool -> AParser st a -- ^ True for terms, formulas otherwise
+
+instance TermParser () where
+  termParser _ = pzero
+
+aToTermParser :: AParser st a -> Bool -> AParser st a
+aToTermParser p b = if b then pzero else p
+
 -- | just the list of currently collected annotations
 data AnnoState st = AnnoState { toAnnos :: [Annotation], _userState :: st }
 
@@ -69,8 +79,8 @@ addAnnos = getState >>= parseAnnos >>= setState
 addLineAnnos :: AParser st ()
 addLineAnnos = getState >>= parseLineAnnos >>= setState
 
--- | extract all annotation from the internal state,
--- resets the internal state to 'emptyAnnos'
+{- | extract all annotation from the internal state,
+resets the internal state to 'emptyAnnos' -}
 getAnnos :: AParser st [Annotation]
 getAnnos = do
   aSt <- getState
@@ -110,8 +120,8 @@ tryItemEnd l = try $ do
      <|> many (scanLPD <|> char '_' <?> "") <?> "")
   unless (null c || elem c l) pzero
 
--- | keywords that indicate a new item for 'tryItemEnd'.
--- the quantifier exists does not start a new item.
+{- | keywords that indicate a new item for 'tryItemEnd'.
+the quantifier exists does not start a new item. -}
 startKeyword :: [String]
 startKeyword = dotS : cDot : delete existsS casl_reserved_words
 
@@ -141,16 +151,16 @@ annosParser parser =
            is = zipWith addLeftAnno (a : init as) ps
        return (init is ++ [appendAnno (last is) (last as)])
 
--- | parse an item list preceded by a singular or plural keyword,
--- interspersed with semicolons and an optional semicolon at the end
+{- | parse an item list preceded by a singular or plural keyword,
+interspersed with semicolons and an optional semicolon at the end -}
 itemList :: [String] -> String -> ([String] -> AParser st b)
                -> ([Annoted b] -> Range -> a) -> AParser st a
 itemList ks kw ip constr =
     do p <- pluralKeyword kw
        auxItemList (ks ++ startKeyword) [p] (ip ks) constr
 
--- | generalized version of 'itemList'
--- for an other keyword list for 'tryItemEnd' and without 'pluralKeyword'
+{- | generalized version of 'itemList'
+for an other keyword list for 'tryItemEnd' and without 'pluralKeyword' -}
 auxItemList :: [String] -> [Token] -> AParser st b
             -> ([Annoted b] -> Range -> a) -> AParser st a
 auxItemList startKeywords ps parser constr = do

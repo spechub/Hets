@@ -70,5 +70,5 @@ cardKeyword = choice $ map ( \ v -> do
     kw <- asKey $ show v
     return (v, tokPos kw)) caslDLCardTypes
 
-instance AParsable DL_FORMULA where
-  aparser = dlFormula
+instance TermParser DL_FORMULA where
+  termParser = aToTermParser dlFormula

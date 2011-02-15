@@ -194,8 +194,8 @@ procdecls = do
   k <- keyword "procedures" <|> keyword "procedure"
   auxItemList (declWords ++ startKeyword) [k] procdecl Procdecls
 
-instance AParsable Dlformula where
-  aparser = dlformula
+instance TermParser Dlformula where
+  termParser = aToTermParser dlformula
 
 instance AParsable Procdecls where
   aparser = procdecls

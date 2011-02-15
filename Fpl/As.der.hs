@@ -17,11 +17,21 @@ module Fpl.As where
 {-! global: GetRange !-}
 
 import Common.AS_Annotation
-import Common.Doc
+import Common.AnnoState
+import Common.Doc as Doc
 import Common.DocUtils
 import Common.Id
+import Common.Keywords
+import Common.Lexer
+import Common.Parsec
+
+import Text.ParserCombinators.Parsec
 
 import CASL.AS_Basic_CASL
+import CASL.Formula
+import CASL.SortItem
+import CASL.OpItem
+import CASL.Parse_AS_Basic
 import CASL.ToDoc
 
 type FplBasicSpec = BASIC_SPEC FunDef FreeType TermExt
@@ -31,22 +41,25 @@ type FplTerm = TERM TermExt
 data FreeType = FreeType [Annoted DATATYPE_DECL] Range
   deriving Show
 
+prepPunctBar :: [Doc] -> [Doc]
+prepPunctBar = prepPunctuate (bar <> Doc.space)
+
 printDD :: DATATYPE_DECL -> Doc
 printDD (Datatype_decl s as _) =
-    sep [pretty s <+> keyword "free" <+> keyword "with"
-        , sep $ prepPunctuate (bar <> space)
+    sep [pretty s <+> keyword freeS <+> keyword withS
+        , sep $ prepPunctBar
           $ map (printAnnoted printALTERNATIVE) as ]
 
 instance Pretty FreeType where
   pretty (FreeType ds _) =
-    keyword "sort" <+> semiAnnos printDD ds
+    topSigKey (sortS ++ pluralS ds) <+> semiAnnos printDD ds
 
 data FunDef = FunDef OP_NAME [VAR_DECL] SORT (Annoted FplTerm) Range
   deriving (Show, Eq, Ord)
 
 instance Pretty FunDef where
   pretty (FunDef n vs s t _) =
-    fsep [keyword "fun" <+> pretty n <>
+    fsep [keyword functS <+> pretty n <>
           (if null vs then empty else parens (printVarDecls vs))
           <+> colon <+> pretty s
          , equals <+> printAnnoted pretty t]
@@ -62,11 +75,15 @@ instance Pretty TermExt where
   pretty t = case t of
     FixDef fd -> pretty fd
     Case c l _ ->
-      sep $ (keyword "case" <+> pretty c <+> keyword "of")
-          : prepPunctuate (bar <> space)
+      sep $ (keyword caseS <+> pretty c <+> keyword ofS)
+          : prepPunctBar
             (map (\ (p, e) -> fsep [pretty p, implies, pretty e]) l)
-    Let fd i _ -> sep [keyword "let" <+> pretty fd <+> keyword "in", pretty i]
+    Let fd i _ -> sep [keyword letS <+> pretty fd <+> keyword inS, pretty i]
     IfThenElse i d e _ ->
-        fsep [ keyword "if" <+> pretty i
-             , keyword "then" <+> pretty d
-             , keyword "else" <+> pretty e ]
+        fsep [ keyword ifS <+> pretty i
+             , keyword thenS <+> pretty d
+             , keyword elseS <+> pretty e ]
+
+fplReservedWords :: [String]
+fplReservedWords = [functS]
+

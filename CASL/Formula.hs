@@ -80,25 +80,25 @@ simpleTerm k = fmap Mixfix_token $ pToken
   <|> placeS
   <?> "id/literal" )
 
-restTerms :: AParsable f => [String] -> AParser st [TERM f]
+restTerms :: TermParser f => [String] -> AParser st [TERM f]
 restTerms k = (tryItemEnd startKeyword >> return [])
   <|> restTerm k <:> restTerms k
   <|> return []
 
-startTerm :: AParsable f => [String] -> AParser st (TERM f)
-startTerm k =
+startTerm :: TermParser f => [String] -> AParser st (TERM f)
+startTerm k = fmap ExtTERM (termParser True) <|>
     parenTerm <|> braceTerm <|> bracketTerm <|> try (addAnnos >> simpleTerm k)
 
-restTerm :: AParsable f => [String] -> AParser st (TERM f)
+restTerm :: TermParser f => [String] -> AParser st (TERM f)
 restTerm k = startTerm k <|> typedTerm k <|> castedTerm k
 
-mixTerm :: AParsable f => [String] -> AParser st (TERM f)
+mixTerm :: TermParser f => [String] -> AParser st (TERM f)
 mixTerm k = do
   l <- startTerm k <:> restTerms k
   return $ if isSingle l then head l else Mixfix_term l
 
 -- | when-else terms
-term :: AParsable f => [String] -> AParser st (TERM f)
+term :: TermParser f => [String] -> AParser st (TERM f)
 term k = do
   t <- mixTerm k
   option t $ do
@@ -123,7 +123,7 @@ castedTerm k = do
   t <- sortId k
   return $ Mixfix_cast t $ tokPos c
 
-terms :: AParsable f => [String] -> AParser st ([TERM f], [Token])
+terms :: TermParser f => [String] -> AParser st ([TERM f], [Token])
 terms k = term k `separatedBy` anComma
 
 qualVarName :: Token -> AParser st (TERM f)
@@ -145,7 +145,7 @@ qualOpName o = do
   return $ Application (Qual_op_name i t $ toRange o [v, c] p) [] nullRange
 
 opSort :: [String] -> GenParser Char st (Bool, Id, Range)
-opSort k = fmap (\s -> (False, s, nullRange)) (sortId k) <|> do
+opSort k = fmap (\ s -> (False, s, nullRange)) (sortId k) <|> do
   q <- quMarkT
   s <- sortId k
   return (True, s, tokPos q)
@@ -167,7 +167,7 @@ opType k = do
     <|> opFunSort k [s] []
     <|> return (Op_type Total [] s nullRange)
 
-parenTerm :: AParsable f => AParser st (TERM f)
+parenTerm :: TermParser f => AParser st (TERM f)
 parenTerm = do
   o <- wrapAnnos oParenT
   qualVarName o <|> qualOpName o <|> qualPredName [] o <|> do
@@ -175,14 +175,14 @@ parenTerm = do
     c <- addAnnos >> cParenT
     return (Mixfix_parenthesized ts $ toRange o ps c)
 
-braceTerm :: AParsable f => AParser st (TERM f)
+braceTerm :: TermParser f => AParser st (TERM f)
 braceTerm = do
   o <- wrapAnnos oBraceT
   (ts, ps) <- option ([], []) $ terms []
   c <- addAnnos >> cBraceT
   return $ Mixfix_braced ts $ toRange o ps c
 
-bracketTerm :: AParsable f => AParser st (TERM f)
+bracketTerm :: TermParser f => AParser st (TERM f)
 bracketTerm = do
   o <- wrapAnnos oBracketT
   (ts, ps) <- option ([], []) $ terms []
@@ -198,7 +198,7 @@ quant = choice (map (\ (q, s) -> do
   , (Universal, forallS) ])
   <?> "quantifier"
 
-quantFormula :: AParsable f => [String] -> AParser st (FORMULA f)
+quantFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 quantFormula k = do
   (q, p) <- quant
   (vs, ps) <- varDecl k `separatedBy` anSemi
@@ -234,10 +234,12 @@ qualPredName k o = do
   p <- cParenT
   return $ Mixfix_qual_pred $ Qual_pred_name i s $ toRange o [v, c] p
 
-parenFormula :: AParsable f => [String] -> AParser st (FORMULA f)
-parenFormula k = do
-  o <- oParenT << addAnnos
-  do  q <- qualPredName [] o <|> qualVarName o <|> qualOpName o
+parenFormula :: TermParser f => [String] -> AParser st (FORMULA f)
+parenFormula k = oParenT << addAnnos >>= clParenFormula k
+
+clParenFormula :: TermParser f => [String] -> Token -> AParser st (FORMULA f)
+clParenFormula k o = do
+      q <- qualPredName [] o <|> qualVarName o <|> qualOpName o
       l <- restTerms []  -- optional arguments
       termFormula k $ if null l then q else Mixfix_term $ q : l
     <|> do
@@ -251,7 +253,7 @@ parenFormula k = do
           termFormula k ft -- commas are not allowed
         _ -> cParenT >> return f
 
-termFormula :: AParsable f => [String] -> (TERM f) -> AParser st (FORMULA f)
+termFormula :: TermParser f => [String] -> TERM f -> AParser st (FORMULA f)
 termFormula k t = do
     e <- asKey exEqual
     r <- term k
@@ -269,9 +271,9 @@ termFormula k t = do
     return $ Membership t s $ tokPos e
   <|> return (Mixfix_formula t)
 
-primFormula :: AParsable f => [String] -> AParser st (FORMULA f)
+primFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 primFormula k = do
-    f <- aparser
+    f <- termParser False
     return $ ExtFORMULA f
   <|> do
     c <- asKey trueS
@@ -297,10 +299,12 @@ andKey = asKey lAnd
 orKey :: AParser st Token
 orKey = asKey lOr
 
-andOrFormula :: AParsable f => [String] -> AParser st (FORMULA f)
-andOrFormula k = do
-  f <- primFormula k
-  do  c <- andKey
+andOrFormula :: TermParser f => [String] -> AParser st (FORMULA f)
+andOrFormula k = primFormula k >>= optAndOr k
+
+optAndOr :: TermParser f => [String] -> FORMULA f -> AParser st (FORMULA f)
+optAndOr k f = do
+      c <- andKey
       (fs, ps) <- primFormula k `separatedBy` andKey
       return $ Conjunction (f : fs) $ catRange $ c : ps
     <|> do
@@ -315,10 +319,12 @@ implKey = asKey implS
 ifKey :: AParser st Token
 ifKey = asKey ifS
 
-formula :: AParsable f => [String] -> AParser st (FORMULA f)
-formula k = do
-  f <- andOrFormula k
-  do  c <- implKey
+formula :: TermParser f => [String] -> AParser st (FORMULA f)
+formula k = andOrFormula k >>= optImplForm k
+
+optImplForm :: TermParser f => [String] -> FORMULA f -> AParser st (FORMULA f)
+optImplForm k f = do
+      c <- implKey
       (fs, ps) <- andOrFormula k `separatedBy` implKey
       return $ makeImpl True (f : fs) $ catPosAux $ c : ps
     <|> do
@@ -330,8 +336,12 @@ formula k = do
       g <- andOrFormula k
       return $ Equivalence f g $ tokPos c
     <|> return f
-    where makeImpl b [f, g] p = Implication f g b (Range p)
-          makeImpl b (f : r) (c : p) =
-              Implication f (makeImpl b r p) b (Range [c])
-          makeImpl _ _ _ = error "makeImpl got illegal argument"
-          makeIf l p = makeImpl False (reverse l) $ reverse p
+
+makeImpl :: Bool -> [FORMULA f] -> [Pos] -> FORMULA f
+makeImpl b l p = case (l, p) of
+  ([f, g], _) -> Implication f g b (Range p)
+  (f : r, c : q) -> Implication f (makeImpl b r q) b (Range [c])
+  _ -> error "makeImpl got illegal argument"
+
+makeIf :: [FORMULA f] -> [Pos] -> FORMULA f
+makeIf l p = makeImpl False (reverse l) $ reverse p
