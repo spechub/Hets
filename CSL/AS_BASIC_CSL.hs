@@ -39,10 +39,12 @@ module CSL.AS_BASIC_CSL
     , InstantiatedConstant(..) -- for function constants we need to store the
                                -- instantiation
     , CMD (..)            -- Command datatype
+    , OperatorState (..)  -- Class providing operator lookup
     , mapExpr             -- maps function over EXPRESSION arguments
     , mkVar               -- Variable constructor
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
+    , mkAndAnalyzeOp
     , toElimConst         -- Constant naming for elim constants, see Analysis.hs
     , OpInfo (..)         -- Type for Operator information
     , BindInfo (..)       -- Type for Binder information
@@ -77,6 +79,9 @@ import qualified Data.Map as Map
 import Control.Monad
 import Control.Monad.Reader
 
+import Data.Maybe
+
+
 -- Arbitrary precision numbers
 type APInt = Integer
 -- TODO: use an arbitrary precision float here:
@@ -95,6 +100,28 @@ mkVar = Var . mkSimpleId
 -- | A simple operator constructor from given operator id and arguments
 mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
 mkPredefOp n el = Op (OpId n) [] el nullRange
+
+-- | Lookup the string in the given 'OperatorState'
+mkAndAnalyzeOp :: OperatorState st => st -> String -> [EXTPARAM] -> [EXPRESSION]
+               -> Range -> EXPRESSION
+mkAndAnalyzeOp st s eps exps rg =
+    let err msg = "mkAndAnalyzeOp: At operator " ++ s ++ "\n" ++ msg
+        -- an error-message producing function
+        g msg | not $ null eps = Just $ err msg
+                                 ++ "* No extended parameters allowed\n"
+              | null msg = Nothing
+              | otherwise = Just $ err msg
+        opOrErr mOp x = case x of
+                          Just msg -> error msg
+                          _ -> OpId $ opname $ fromJust mOp
+        op = case lookupOperator st s (length exps) of
+               Left False -> OpUser $ SimpleConstant s
+               -- if registered it must be registered with the given arity or
+               -- as flex-op, otherwise we don't accept it
+               Left True -> opOrErr Nothing $ g "* Wrong arity\n"
+               Right opinfo -> opOrErr (Just opinfo) $ g ""
+    in Op op eps exps rg
+
 
 mapExpr :: (EXPRESSION -> EXPRESSION) -> EXPRESSION -> EXPRESSION
 mapExpr f e =
@@ -429,6 +456,26 @@ operatorInfo =
 
 maxPrecedence :: Int
 maxPrecedence = 100
+
+
+-- ---------------------------------------------------------------------------
+-- * OpInfo lookup utils
+-- ---------------------------------------------------------------------------
+
+class OperatorState a where
+    lookupOperator :: a
+                   -> String -- ^ operator name
+                   -> Int -- ^ operator arity
+                   -> Either Bool OpInfo
+
+instance OperatorState () where
+    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+
+instance OperatorState OpInfoMap where
+    lookupOperator = lookupOpInfoForParsing
+
+
+
 -- | For the given name and arity we lookup an 'OpInfo', where arity=-1
 -- means flexible arity. If an operator is registered for the given
 -- string but not for the arity we return: Left True.

@@ -27,8 +27,6 @@ import CSL.Verification
 import CSL.Analysis
 
 
-import Foreign.C.Types
-
 import Control.Monad
 --import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.Error
@@ -105,24 +103,87 @@ instance MessagePrinter MathematicaIO where
 -- * Mathematica syntax functions
 -- ----------------------------------------------------------------------
 
-mmShowOpId :: OPID -> String
-mmShowOpId (OpId x) =
+mmShowOPNAME :: OPNAME -> String
+mmShowOPNAME x =
     case x of
       OP_plus -> "Plus"
       OP_mult -> "Times"
-      _ -> showOPNAME x
-mmShowOpId (OpUser (SimpleConstant s)) = s
-mmShowOpId _ = error "mmShowOpId: unsupported constant"
+      OP_pow -> "Power"
+      OP_div -> "Divide"
 
+
+      OP_neq -> "Unequal"
+      OP_lt -> "Less"
+      OP_leq -> "LessEqual"
+      OP_eq -> "Equal"
+      OP_gt -> "Greater"
+      OP_geq -> "GreaterEqual"
+
+      OP_sqrt -> "Sqrt"
+      OP_abs -> "Abs"
+      OP_sign -> "Sign"
+
+      OP_max -> "Max"
+      OP_min -> "Min"
+
+      OP_cos -> "Cos"
+      OP_sin -> "Sin"
+      OP_tan -> "Tan"
+      OP_Pi -> "Pi"
+
+      OP_and -> "And"
+      OP_not -> "Not"
+      OP_or -> "Or"
+      OP_impl -> "Implies"
+      OP_false -> "False"
+      OP_true -> "True"
+
+
+      -- these functions have to be defined in a package
+      OP_minus -> "Minus"
+      OP_neg -> "Negate"
+
+      OP_fthrt -> "fthrt"
+
+      OP_maxloc -> "maxloc"
+      OP_minloc -> "minloc"
+
+      OP_reldist -> "reldist"
+      OP_reldistLe -> "reldistLe"
+
+      OP_undef -> "undef"
+      OP_failure -> "fail"
+      _ -> showOPNAME x
+
+mmShowOPID :: OPID -> String
+mmShowOPID (OpId x) = mmShowOPNAME x
+mmShowOPID (OpUser (SimpleConstant s)) = s
+mmShowOPID _ = error "mmShowOpId: unsupported constant"
+
+
+-- | opInfoMap for mathematica's prdefined symbols
+mathematicaOpInfoMap :: OpInfoMap
+mathematicaOpInfoMap = getOpInfoMap (mmShowOPNAME . opname) operatorInfo
+
+
+sendExpressionString :: String -> ML ()
+sendExpressionString s = do
+  mlPutFunction' "ToExpression" 1
+  mlPutString s
+  return ()
 
 sendExpression :: EXPRESSION -> ML ()
 sendExpression e =
   case e of
    Var token -> mlPutSymbol (tokStr token) >> return ()
-   Op oi _ [] _ -> mlPutSymbol (mmShowOpId oi) >> return ()
+   Op oi _ [] _ -> mlPutSymbol (mmShowOPID oi) >> return ()
    Op oi _ exps _ ->
-       mlPutFunction' (mmShowOpId oi) (length exps) >> mapM_ sendExpression exps
-   Int i _ -> mlPutInteger' i >> return ()
+       mlPutFunction' (mmShowOPID oi) (length exps) >> mapM_ sendExpression exps
+   -- Integers are sent as strings, because the interface supports only machine
+   -- integers not arbitrary sized integers.
+   --   Int i _ -> mlPutInteger' i >> return ()
+   Int i _ ->
+       mlPutFunction' "ToExpression" 1 >> mlPutString (show i) >> return ()
    Double r _ -> mlPutReal' r >> return ()
 
    List _ _ -> error "sendExpression: List not supported"
@@ -130,7 +191,28 @@ sendExpression e =
 
 
 receiveExpression :: ML EXPRESSION
-receiveExpression = error ""
+receiveExpression =  do
+  et <- mlGetNext
+  let mkMLOp s args = mkAndAnalyzeOp mathematicaOpInfoMap s [] args nullRange
+      pr | et == dfMLTKSYM = liftM (flip mkMLOp []) mlGetSymbol
+         -- | et == dfMLTKINT = liftM (flip Int nullRange) mlGetInteger'
+         | et == dfMLTKINT = liftM (flip Int nullRange . read) mlGetString
+         | et == dfMLTKREAL = liftM (flip Double nullRange) mlGetReal'
+         | et == dfMLTKFUNC =
+             do
+               len <- mlGetArgCount
+               if len == 0 then mlProcError
+                else do
+                 -- the head is expected to be a symbol
+                 et' <- mlGetNext
+                 s <- if et' == dfMLTKSYM then mlGetSymbol else
+                          error $ "receiveExpression: Expecting symbol at "
+                                   ++ "function head, but got " ++ show et'
+                 liftM (mkMLOp s) $ forM [1..len] $ const receiveExpression
+
+         | et == dfMLTKERROR = mlProcError
+         | otherwise = mlProcError
+  pr
 
 -- ----------------------------------------------------------------------
 -- * Generic Communication Interface
@@ -147,111 +229,3 @@ receiveExpression = error ""
 -- ----------------------------------------------------------------------
 
 
--- ----------------------------------------------------------------------
--- * MathLink stuff
--- ----------------------------------------------------------------------
-
-
-
-readAndPrintOutput :: ML ()
-readAndPrintOutput = do
-  exptype <- mlGetNext
-  let pr | exptype == dfMLTKSYM = readAndPrintML "Symbol: " mlGetSymbol
-         | exptype == dfMLTKSTR = readAndPrintML "String: " mlGetString
-         | exptype == dfMLTKINT = readAndPrintML "Int: " mlGetInteger
-         | exptype == dfMLTKREAL = readAndPrintML "Real: " mlGetReal
-         | exptype == dfMLTKFUNC =
-             do
-               len <- mlGetArgCount
-               if len == 0 then mlProcError
-                else do
-                 let f i = readAndPrintOutput
-                           >> if i < len then userMessage ", " else return ()
-                 readAndPrintOutput
-                 userMessage "["
-                 forM_ [1..len] f
-                 userMessage "]"
-
-         | exptype == dfMLTKERROR = userMessageLn "readAndPrintOutput-error" >> mlProcError
-         | otherwise = userMessageLn ("readAndPrintOutput-error" ++ show exptype)
-                       >> mlProcError
-  pr
-
-
-
-userMessage :: String -> ML ()
-userMessage s = logMessage s >> liftIO (putStr s)
-
-userMessageLn :: String -> ML ()
-userMessageLn s = logMessageLn s >> liftIO (putStrLn s)
-
-
-class MLShow a where
-    mlshow :: a -> String
-
-instance MLShow String where
-    mlshow s = s
-
-instance MLShow CDouble where
-    mlshow = show
-
-instance MLShow CInt where
-    mlshow = show
-
-readAndPrintML :: MLShow a => String -> ML a -> ML ()
-readAndPrintML _ pr = pr >>= userMessage . mlshow
-
-
--- * Test functionality
-
-sendPlus :: CInt -> CInt -> CInt -> ML ()
-sendPlus i j k = do
-  mlPutFunction "EvaluatePacket" 1
-  mlPutFunction "Plus" 3
-  mlPutInteger i
-  mlPutInteger j
-  mlPutInteger k
-  mlEndPacket
-  userMessageLn "Sent"
-
-
-sendFormula :: CInt -> CInt -> CInt -> ML ()
-sendFormula i j k = do
-  mlPutFunction "EvaluatePacket" 1
-
-  mlPutFunction "Plus" 2
-  mlPutFunction "Times" 2
-  mlPutInteger i
-  mlPutInteger j
-  mlPutFunction "Times" 3
-  mlPutInteger k
-  mlPutInteger k
-  mlPutSymbol "xsymb"
-
-  mlEndPacket
-
-  userMessageLn "Sent"
-
-
--- ----------------------------------------------------------------------
--- * Tests
--- ----------------------------------------------------------------------
-
-test :: [String] -> IO ()
-test argv = do
-  let (k, i, j) = (read $ argv!!0, read $ argv!!1, read $ argv!!2)
-      mN = if length argv > 3 then Just $ argv!!3 else Nothing
-
---  liftIO (putStrLn $ "Sending " ++ show (i, j, k))
-
-  -- Send Plus[i, j]
-  eRes <- runLink (Just "/tmp/mlffi.txt") mN $
-          forM_ [1 .. k] $ sendFormula i j >=>
-                const (receivePacket >> readAndPrintOutput >> userMessageLn "")
-  case eRes of
-    Left eid -> putStrLn $ "Error " ++ show eid
-    _ -> putStrLn $ "OK"
-
-
-  
-  

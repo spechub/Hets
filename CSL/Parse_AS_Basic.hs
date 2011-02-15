@@ -25,7 +25,6 @@ import CSL.AS_BASIC_CSL
 import CSL.Keywords
 import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad
-import Data.Maybe
 
 -- TODO: extract range information for the basic term and command types
 
@@ -47,34 +46,13 @@ parseSymbMapItems = Just symbMapItems
 
 -- ---------------------------------------------------------------------------
 
--- * Parser State Class
+-- * Parser utils
 
 -- ---------------------------------------------------------------------------
-
-class OperatorState a where
-    lookupOperator :: a
-                   -> String -- ^ operator name
-                   -> Int -- ^ operator arity
-                   -> Either Bool OpInfo
-
-instance OperatorState () where
-    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
-
-instance OperatorState String where
-    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
-
 
 instance OperatorState (AnnoState.AnnoState st) where
     lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
 
-instance OperatorState OpInfoMap where
-    lookupOperator = lookupOpInfoForParsing
-
--- ---------------------------------------------------------------------------
-
--- * Parser utils
-
--- ---------------------------------------------------------------------------
 
 parseError :: String -> CharParser st a
 parseError s = do
@@ -103,27 +81,6 @@ getOpName s l = f l
 
 mkFromOps :: [OPNAME] -> String -> [EXPRESSION] -> EXPRESSION
 mkFromOps l s exps = mkPredefOp (getOpName s l) exps
-
--- | Lookup the string in the predefined operator map
-mkAndAnalyzeOp :: OperatorState st => st -> String -> [EXTPARAM] -> [EXPRESSION]
-               -> Range -> EXPRESSION
-mkAndAnalyzeOp st s eps exps rg =
-    let err msg = "At operator " ++ s ++ "\n" ++ msg
-        -- an error-message producing function
-        g msg | not $ null eps = Just $ err msg
-                                 ++ "* No extended parameters allowed\n"
-              | null msg = Nothing
-              | otherwise = Just $ err msg
-        opOrErr mOp x = case x of
-                          Just msg -> error msg
-                          _ -> OpId $ opname $ fromJust mOp
-        op = case lookupOperator st s (length exps) of
-               Left False -> OpUser $ SimpleConstant s
-               -- if registered it must be registered with the given arity or
-               -- as flex-op, otherwise we don't accept it
-               Left True -> opOrErr Nothing $ g "* Wrong arity\n"
-               Right opinfo -> opOrErr (Just opinfo) $ g ""
-    in Op op eps exps rg
 
 -- ---------------------------------------------------------------------------
 

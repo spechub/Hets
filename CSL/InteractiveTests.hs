@@ -42,6 +42,9 @@ import Control.Monad.Error (MonadError(..))
 
 import Static.SpecLoader (getSigSensComplete, SigSens(..))
 
+
+import Foreign.C.Types
+
 import CSL.MathematicaInterpreter
 import CSL.MapleInterpreter 
 import CSL.Interpreter
@@ -56,6 +59,7 @@ import Common.Utils (getEnvDef)
 import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
+import Common.MathLink as ML
 
 import Driver.Options
 
@@ -1216,3 +1220,198 @@ opsQuant = [ OP_ex, OP_all ]
 -}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- ----------------------------------------------------------------------
+-- * MathLink stuff
+-- ----------------------------------------------------------------------
+
+
+
+readAndPrintOutput :: ML ()
+readAndPrintOutput = do
+  exptype <- mlGetNext
+  let pr | exptype == dfMLTKSYM = readAndPrintML "Symbol: " mlGetSymbol
+         | exptype == dfMLTKSTR = readAndPrintML "String: " mlGetString
+         | exptype == dfMLTKINT = readAndPrintML "Int: " mlGetInteger
+         | exptype == dfMLTKREAL = readAndPrintML "Real: " mlGetReal
+         | exptype == dfMLTKFUNC =
+             do
+               len <- mlGetArgCount
+               if len == 0 then mlProcError
+                else do
+                 let f i = readAndPrintOutput
+                           >> if i < len then userMessage ", " else return ()
+                 readAndPrintOutput
+                 userMessage "["
+                 forM_ [1..len] f
+                 userMessage "]"
+
+         | exptype == dfMLTKERROR = userMessageLn "readAndPrintOutput-error" >> mlProcError
+         | otherwise = userMessageLn ("readAndPrintOutput-error" ++ show exptype)
+                       >> mlProcError
+  pr
+
+
+
+userMessage :: String -> ML ()
+userMessage s = ML.logMessage s >> liftIO (putStr s)
+
+userMessageLn :: String -> ML ()
+userMessageLn s = ML.logMessageLn s >> liftIO (putStrLn s)
+
+
+class MLShow a where
+    mlshow :: a -> String
+
+instance MLShow String where
+    mlshow s = s
+
+instance MLShow CDouble where
+    mlshow = show
+
+instance MLShow CInt where
+    mlshow = show
+
+readAndPrintML :: MLShow a => String -> ML a -> ML ()
+readAndPrintML _ pr = pr >>= userMessage . mlshow
+
+
+-- * Test functionality
+
+sendPlus :: CInt -> CInt -> CInt -> ML ()
+sendPlus i j k = do
+  mlPutFunction "EvaluatePacket" 1
+  mlPutFunction "Plus" 3
+  mlPutInteger i
+  mlPutInteger j
+  mlPutInteger k
+  mlEndPacket
+  userMessageLn "Sent"
+
+
+sendFormula :: CInt -> CInt -> CInt -> ML ()
+sendFormula i j k = do
+  mlPutFunction "EvaluatePacket" 1
+
+  mlPutFunction "Plus" 2
+  mlPutFunction "Times" 2
+  mlPutInteger i
+  mlPutInteger j
+  mlPutFunction "Times" 3
+  mlPutInteger k
+  mlPutInteger k
+  mlPutSymbol "xsymb"
+
+  mlEndPacket
+
+  userMessageLn "Sent"
+
+
+-- ----------------------------------------------------------------------
+-- * Tests
+-- ----------------------------------------------------------------------
+
+mlTestEnv :: Pretty a => String -> ML a -> IO a
+mlTestEnv s act = do
+  let mN = if null s then Nothing else Just s
+
+  eRes <- runLink (Just "/tmp/mi.txt") mN act
+  case eRes of
+    Left eid -> putStrLn ("Error " ++ show eid) >> error "ml-test"
+    Right res -> putStrLn ("OK: " ++ (show $ pretty res)) >> return res
+
+
+
+mlTest :: [String] -> IO ()
+mlTest argv = do
+  let (k, i, j) = (read $ argv!!0, read $ argv!!1, read $ argv!!2)
+      s = if length argv > 3 then argv!!3 else ""
+      prog = forM_ [1 .. k] $ sendFormula i j >=>
+                const (waitForAnswer >> readAndPrintOutput >> userMessageLn "")
+  mlTestEnv s prog
+
+
+mlTest2 :: [String] -> IO [EXPRESSION]
+mlTest2 argv = do
+  let k = read $ argv!!0
+      e = toE $ argv!!1
+      s = if length argv > 2 then argv!!2 else ""
+      prog = forM [1..(k::Int)] $ const $ sendPacket (sendExpression e)
+             >> waitForAnswer >> receiveExpression
+
+  mlTestEnv s prog
+
+mlTest3 :: String -> String -> IO ()
+mlTest3 cn es = do
+  let e = toE es
+      prog = sendPacket (sendExpression e) >> prog2
+      gt g
+          | g == dfMLTKSYM = "Symbol"
+          | g == dfMLTKSTR = "String"
+          | g == dfMLTKINT = "Int"
+          | g == dfMLTKREAL = "Real"
+          | otherwise = ""
+      prog2 = do
+               c <- liftIO getChar
+               i <- case c of
+                      'x' -> mlNextPacket
+                      'n' -> mlNewPacket
+                      'G' -> mlGetNext
+                      'g' ->
+                          do 
+                             g <- mlGetNext
+                             liftIO $ putStrLn $ "getnext -> " ++ gt g
+                             return g
+
+                      '1' -> readAndPrintML "Symbol: " mlGetSymbol >> liftIO (putStrLn "") >> return 0
+                      '2' -> readAndPrintML "String: " mlGetString >> liftIO (putStrLn "") >> return 0
+                      '3' -> readAndPrintML "Int: " mlGetInteger >> liftIO (putStrLn "") >> return 0
+                      '4' -> readAndPrintML "Real: " mlGetReal >> liftIO (putStrLn "") >> return 0
+
+                      _ -> return $ -1
+               when (i >= 0) $ do
+                 liftIO $ putStrLn $ c: (": " ++ show i)
+                 prog2
+
+  mlTestEnv cn prog
+
+mlTest4 :: String -> [String] -> IO ()
+mlTest4 cn = mlTest5 cn . map Right
+
+mlTest5 :: String -> [Either String String] -> IO ()
+mlTest5 cn el = do
+  let prog [] = return ()
+      prog (e:l) = do
+                  case e of
+                    Right s ->
+                         sendPacket (sendExpression $ toE s)
+                    Left s ->
+                         sendPacket (sendExpressionString s)
+                  waitForAnswer
+                  e' <- receiveExpression
+                  liftIO $ putStrLn $ show e ++ ": " ++ show (pretty e')
+                  prog l
+
+  mlTestEnv cn $ prog el
+
+
+
+
+  
+
+  

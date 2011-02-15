@@ -34,8 +34,9 @@ dfMLTKAEND, dfMLTKALL_DECODERS, dfMLTKAPCTEND, dfMLTKARRAY, dfMLTKARRAY_DECODER
  , dfMLTKNULLSEQUENCE_DECODER, dfMLTKOLDINT, dfMLTKOLDREAL, dfMLTKOLDSTR
  , dfMLTKOLDSYM, dfMLTKPACKED_DECODER, dfMLTKPACKED, dfMLTKPCTEND, dfMLTKREAL
  , dfMLTKSEND, dfMLTKSTR, dfMLTKSYM, dfRETURNPKT, dfRETURNTEXTPKT
- , dfRETURNEXPRPKT :: CInt
+ , dfRETURNEXPRPKT, dfILLEGALPKT :: CInt
 
+dfILLEGALPKT = 0
 dfRETURNPKT = 3
 dfRETURNTEXTPKT = 4
 dfRETURNEXPRPKT = 16
@@ -311,20 +312,37 @@ mlErrorMessage = liftMLIO (cMlErrorMessage >=> peekCString)
 
 -- * MathLink interface utils
 
-mlProcError :: ML ()
+mlProcError :: ML a
 mlProcError = do
   eid <- mlError
-  if toBool eid then mlErrorMessage >>= logMessageLn . ("Error detected by MathLink: " ++)
-   else logMessageLn "Error detected by Interface"
+  s <- if toBool eid then liftM ("Error detected by MathLink: " ++)
+       mlErrorMessage
+       else return "Error detected by Interface"
+  logMessageLn s
+  error $ "mlProcError: " ++ s
 
-receivePacket :: ML ()
-receivePacket = do
+
+sendPacket :: ML a -> ML a
+sendPacket ml = do
+  mlPutFunction "EvaluatePacket" 1
+  res <- ml
+  mlEndPacket
+  return res
+
+waitForAnswer :: ML ()
+waitForAnswer = do
   -- skip any packets before the first ReturnPacket
   waitUntilPacket (0::Int) [dfRETURNPKT, dfRETURNEXPRPKT, dfRETURNTEXTPKT]
+
+skipAnswer :: ML ()
+skipAnswer = do
+  -- skip all packets until the illegal packet
+  waitUntilPacket (0::Int) [dfILLEGALPKT]
 
 waitUntilPacket :: Num a => a -> [CInt] -> ML ()
 waitUntilPacket i l = do
   np <- mlNextPacket
   if elem np l then logMessageLn $ "GotReturn after " ++ show i ++ " iterations"
    else (logMessageLn $ "wap: " ++ show np) >> mlNewPacket >> waitUntilPacket (i+1) l
+
 

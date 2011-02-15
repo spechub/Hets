@@ -38,6 +38,10 @@ import System.Process
 --------------------------------- Parsing -----------------------------------
 -----------------------------------------------------------------------------
 
+instance OperatorState String where
+    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+
+
 res1 = runParser expression (emptyAnnos ()) "" "x+y+y"
 res2 = runParser expression (emptyAnnos ()) "" "x+y*y"
 res3 = runParser expression (emptyAnnos ()) "" "x*y**y"

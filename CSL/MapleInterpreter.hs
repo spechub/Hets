@@ -25,6 +25,7 @@ import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
 import CSL.Verification
 import CSL.Analysis
+import CSL.GenericInterpreter
 
 -- the process communication interface
 import qualified Interfaces.Process as PC
@@ -184,15 +185,6 @@ is(abs(x2)<1.0e-4);
 printBooleanExpr :: EXPRESSION -> String
 printBooleanExpr e = concat [ "is(evalf(", printExp e, "));" ]
 
-getBooleanFromExpr :: EXPRESSION -> Either String Bool
-getBooleanFromExpr (Op (OpId OP_true) _ _ _) = Right True
-getBooleanFromExpr (Op (OpId OP_false) _ _ _) = Right False
-getBooleanFromExpr (Op (OpId OP_failure) _ _ _) = Left "Maple FAILURE"
-getBooleanFromExpr e = Left $ "Cannot translate expression to boolean: "
-                       ++ show e
-
-
-
 -- The evalf is mandatory if we use the if-statement for encoding
 {-
 
@@ -218,6 +210,10 @@ getBooleanFromExpr e =
 {- |
    The generic interface abstracts over the concrete evaluation function
 -}
+
+-- TODO: implement the generic functions for the generic interpreter
+-- (String -> AssDefinition -> as (Maybe EXPRESSION))
+-- (String -> AssDefinition -> as EXPRESSION)
 
 mapleAssign :: (MonadError ASError s, MonadIO s, SymbolicEvaluator s) =>
                ([String] -> String -> s [EXPRESSION])
@@ -313,7 +309,8 @@ mapleDirect b mit s = do
   (res, _) <- runIOS (getMI mit) $ PC.call (getChannelTimeout mit) s
   return $ if b then removeOutputComments res else res
 
-mapleTransE :: EXPRESSION -> MapleIO EXPRESSION
+mapleTransE :: MonadState (ASState s) as => EXPRESSION -> as EXPRESSION
+-- mapleTransE :: EXPRESSION -> MapleIO EXPRESSION
 mapleTransE e = do
   r <- get
   let bm = getBMap r

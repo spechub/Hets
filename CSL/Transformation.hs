@@ -24,7 +24,6 @@ import Prelude hiding (lookup)
 
 import CSL.Interpreter
 import CSL.AS_BASIC_CSL
-import CSL.Parse_AS_Basic (mkAndAnalyzeOp)
 import Common.Id (nullRange, Token(..), Range)
 
 -- ----------------------------------------------------------------------
