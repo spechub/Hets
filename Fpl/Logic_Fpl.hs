@@ -34,13 +34,12 @@ import Common.DocUtils
 
 data Fpl = Fpl deriving Show
 
-instance Language Fpl  where
- description _ = unlines
-  [ "logic of functional programs (FPL) as CASL extension" ]
+instance Language Fpl where
+  description _ = unlines
+    [ "logic of functional programs (FPL) as CASL extension" ]
 
 type FplSign = Sign TermExt SignExt
 type FplMor = Morphism TermExt SignExt (DefMorExt SignExt)
-type FplForm = FORMULA TermExt
 
 instance SignExtension SignExt
 

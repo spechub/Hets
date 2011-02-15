@@ -24,6 +24,7 @@ import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.Parsec
+import Common.Token
 
 import Text.ParserCombinators.Parsec
 
@@ -37,6 +38,7 @@ import CASL.ToDoc
 type FplBasicSpec = BASIC_SPEC FunDef FreeType TermExt
 
 type FplTerm = TERM TermExt
+type FplForm = FORMULA TermExt
 
 data FreeType = FreeType [Annoted DATATYPE_DECL] Range
   deriving Show
@@ -68,7 +70,7 @@ data TermExt =
     FixDef FunDef -- ^ formula
   | Case FplTerm [(FplTerm, FplTerm)] Range
   | Let FunDef FplTerm Range
-  | IfThenElse FplTerm FplTerm FplTerm Range
+  | IfThenElse FplForm FplTerm FplTerm Range
   deriving (Show, Eq, Ord)
 
 instance Pretty TermExt where
@@ -85,5 +87,62 @@ instance Pretty TermExt where
              , keyword elseS <+> pretty e ]
 
 fplReservedWords :: [String]
-fplReservedWords = [functS]
+fplReservedWords = [barS, functS, caseS, ofS, letS]
 
+funDef :: [String] -> AParser st FunDef
+funDef ks = do
+  q <- asKey functS
+  o <- parseId ks
+  (vs, qs) <- optVarDecls ks
+  c <- anColon
+  s <- sortId ks
+  e <- equalT
+  a <- annos
+  t <- term ks
+  return $ FunDef o vs s (Annoted t nullRange a [])
+         $ appRange (toRange q qs c) $ tokPos e
+
+optVarDecls :: [String] -> AParser st ([VAR_DECL], [Token])
+optVarDecls ks =
+    (oParenT >> separatedBy (varDecl ks) anSemi << cParenT)
+    <|> return ([], [])
+
+fplTerm :: [String] -> AParser st TermExt
+fplTerm ks = caseTerm ks <|> letTerm ks <|> ifThenElse ks
+
+caseTerm :: [String] -> AParser st TermExt
+caseTerm ks = do
+  c <- asKey caseS
+  t <- mixTerm ks
+  o <- asKey ofS
+  (cs, qs) <- separatedBy (patTermPair ks) barT
+  return $ Case t cs $ toRange c qs o
+
+patTermPair :: [String] -> AParser st (FplTerm, FplTerm)
+patTermPair ks = do
+  p <- mixTerm ks
+  implKey
+  t <- mixTerm ks
+  return (p, t)
+
+letTerm :: [String] -> AParser st TermExt
+letTerm ks = do
+  l <- asKey letS
+  d <- funDef ks
+  i <- asKey inS
+  t <- term ks
+  return $ Let d t $ toRange l [] i
+
+ifThenElse :: [String] -> AParser st TermExt
+ifThenElse ks = do
+  i <- ifKey
+  f <- primFormula ks
+  t <- asKey thenS
+  a <- mixTerm ks
+  e <- asKey elseS
+  b <- mixTerm ks
+  return $ IfThenElse f a b $ toRange i [t] e
+
+instance TermParser TermExt where
+  termParser b = if b then fplTerm fplReservedWords else
+    fmap FixDef $ funDef fplReservedWords

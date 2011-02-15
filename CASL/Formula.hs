@@ -46,6 +46,7 @@ parse terms and formulae
 
 module CASL.Formula
     ( term
+    , mixTerm
     , primFormula
     , formula
     , anColon
@@ -56,6 +57,8 @@ module CASL.Formula
     , predType
     , predUnitType
     , qualPredName
+    , implKey
+    , ifKey
     ) where
 
 import Common.AnnoState
