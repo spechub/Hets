@@ -21,7 +21,14 @@ Parser for SORT-ITEMs (sort and subsort declarations and definitions)
    C.2.1 Basic Specifications with Subsorts
 -}
 
-module CASL.SortItem (sortItem, datatype) where
+module CASL.SortItem
+  ( sortItem
+  , datatype
+  , subSortDecl
+  , commaSortDecl
+  , isoDecl
+  , parseDatatype
+  ) where
 
 import CASL.AS_Basic_CASL
 import CASL.Formula
@@ -83,19 +90,23 @@ sortItem ks =
 -- * typeItem
 
 datatype :: [String] -> AParser st DATATYPE_DECL
-datatype ks =
-    do s <- sortId ks
-       e <- asKey defnS
-       a <- getAnnos
-       (Annoted v _ _ b : alts, ps) <- aAlternative ks `separatedBy` barT
-       return (Datatype_decl s (Annoted v nullRange a b : alts)
-                        (catRange (e : ps)))
+datatype ks = do
+    s <- sortId ks
+    e <- asKey defnS
+    parseDatatype ks s e
+
+parseDatatype :: [String] -> SORT -> Token -> AParser st DATATYPE_DECL
+parseDatatype ks s e = do
+    a <- getAnnos
+    (Annoted v _ _ b : alts, ps) <- aAlternative ks `separatedBy` barT
+    return $ Datatype_decl s (Annoted v nullRange a b : alts)
+      $ catRange $ e : ps
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
-aAlternative ks =
-    do a <- alternative ks
-       an <- lineAnnos
-       return (Annoted a nullRange [] an)
+aAlternative ks = do
+    a <- alternative ks
+    an <- lineAnnos
+    return (Annoted a nullRange [] an)
 
 alternative :: [String] -> AParser st ALTERNATIVE
 alternative ks =

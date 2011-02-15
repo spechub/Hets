@@ -44,7 +44,7 @@ type FplMor = Morphism TermExt SignExt (DefMorExt SignExt)
 instance SignExtension SignExt
 
 instance Syntax Fpl FplBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
-    -- parse_basic_spec Fpl = Just $ basicSpec fplReservedWords
+    parse_basic_spec Fpl = Just $ basicSpec fplReservedWords
     parse_symb_items Fpl = Just $ symbItems fplReservedWords
     parse_symb_map_items Fpl = Just $ symbMapItems fplReservedWords
 

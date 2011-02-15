@@ -41,7 +41,6 @@ import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
 import HasCASL.Logic_HasCASL
-import HolLight.Logic_HolLight
 import Propositional.Logic_Propositional
 import QBF.Logic_QBF
 import HolLight.Logic_HolLight
@@ -53,6 +52,7 @@ import Haskell.Logic_Haskell
 import Isabelle.Logic_Isabelle
 import SoftFOL.Logic_SoftFOL
 #ifdef CASLEXTENSIONS
+import Fpl.Logic_Fpl
 import Adl.Logic_Adl
 import Modal.Logic_Modal
 import ExtModal.Logic_ExtModal
@@ -68,7 +68,6 @@ import Temporal.Logic_Temporal
 import DFOL.Logic_DFOL
 import LF.Logic_LF
 import Framework.Logic_Framework
---import OMDoc.Logic_OMDoc ()
 import Maude.Logic_Maude
 import CommonLogic.Logic_CommonLogic
 #endif
@@ -94,6 +93,7 @@ logicList =
   , Logic Haskell
 #endif
 #ifdef CASLEXTENSIONS
+  , Logic Fpl
   , Logic Adl
   , Logic CoCASL
   , Logic ExtModal
@@ -118,7 +118,7 @@ logicList =
 #endif
   ] ++ dynLogicList
 
-addLogicName :: AnyLogic -> (String,AnyLogic)
+addLogicName :: AnyLogic -> (String, AnyLogic)
 addLogicName l@(Logic lid) = (language_name lid, l)
 
 defaultLogic :: AnyLogic

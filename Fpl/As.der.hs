@@ -24,7 +24,7 @@ import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.Parsec
-import Common.Token
+import Common.Token hiding (innerList)
 
 import Text.ParserCombinators.Parsec
 
@@ -32,7 +32,6 @@ import CASL.AS_Basic_CASL
 import CASL.Formula
 import CASL.SortItem
 import CASL.OpItem
-import CASL.Parse_AS_Basic
 import CASL.ToDoc
 
 type FplBasicSpec = BASIC_SPEC FplExt () TermExt
@@ -41,8 +40,18 @@ type FplTerm = TERM TermExt
 type FplForm = FORMULA TermExt
 
 data FplExt =
-    FreeType [Annoted DATATYPE_DECL] Range
-  | FunOp [Annoted FunDef]
+    FplSortItems [Annoted FplSortItem] Range
+  | FplOpItems [Annoted FplOpItem] Range
+  deriving Show
+
+data FplSortItem =
+    FreeType DATATYPE_DECL
+  | CaslSortItem (SORT_ITEM TermExt)
+  deriving Show
+
+data FplOpItem =
+    FunOp FunDef
+  | CaslOpItem (OP_ITEM TermExt)
   deriving Show
 
 prepPunctBar :: [Doc] -> [Doc]
@@ -54,10 +63,31 @@ printDD (Datatype_decl s as _) =
         , sep $ prepPunctBar
           $ map (printAnnoted printALTERNATIVE) as ]
 
+instance ListCheck FplOpItem where
+  innerList i = case i of
+    FunOp _ -> [()]
+    CaslOpItem oi -> innerList oi
+
+instance ListCheck FplSortItem where
+  innerList i = case i of
+    FreeType _ -> [()]
+    CaslSortItem si -> innerList si
+
 instance Pretty FplExt where
   pretty e = case e of
-    FreeType ds _ -> topSigKey (sortS ++ appendS ds) <+> semiAnnos printDD ds
-    FunOp ds -> topSigKey (opS ++ appendS ds) <+> semiAnnos pretty ds
+    FplSortItems ds _ ->
+        topSigKey (sortS ++ pluralS ds) <+> semiAnnos pretty ds
+    FplOpItems ds _ -> topSigKey (opS ++ pluralS ds) <+> semiAnnos pretty ds
+
+instance Pretty FplSortItem where
+  pretty e = case e of
+    FreeType d -> printDD d
+    CaslSortItem s -> printSortItem pretty s
+
+instance Pretty FplOpItem where
+  pretty e = case e of
+    FunOp o -> pretty o
+    CaslOpItem s -> printOpItem pretty s
 
 data FunDef = FunDef OP_NAME [VAR_DECL] SORT (Annoted FplTerm) Range
   deriving (Show, Eq, Ord)
@@ -150,3 +180,27 @@ ifThenElse ks = do
 instance TermParser TermExt where
   termParser b = if b then fplTerm fplReservedWords else
     fmap FixDef $ funDef fplReservedWords
+
+fplExt :: [String] -> AParser st FplExt
+fplExt ks = itemList ks sortS fplSortItem FplSortItems
+  <|> itemList ks opS fplOpItem FplOpItems
+
+fplSortItem :: [String] -> AParser st FplSortItem
+fplSortItem ks = do
+    s <- sortId ks
+    fmap CaslSortItem (subSortDecl ks ([s], nullRange) <|> commaSortDecl ks s
+          <|> isoDecl ks s <|> return (Sort_decl [s] nullRange))
+      <|> freeType ks s
+
+freeType :: [String] -> SORT -> AParser st FplSortItem
+freeType ks s = do
+  f <- asKey freeS
+  asKey withS
+  fmap FreeType $ parseDatatype ks s f
+
+fplOpItem :: [String] -> AParser st FplOpItem
+fplOpItem ks = fmap CaslOpItem (opItem ks)
+  <|> fmap FunOp (funDef ks)
+
+instance AParsable FplExt where
+  aparser = fplExt fplReservedWords
