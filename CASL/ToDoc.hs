@@ -17,6 +17,7 @@ module CASL.ToDoc
     , printTerm
     , printTheoryFormula
     , pluralS
+    , appendS
     , isJunct
     , ListCheck (..)
     , recoverType
@@ -29,7 +30,6 @@ module CASL.ToDoc
     , printPredItem
     , printPredHead
     , printAttr
-
     ) where
 
 import Common.Id
@@ -56,7 +56,7 @@ instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
 typeString :: SortsKind -> [Annoted DATATYPE_DECL] -> String
 typeString sk l = (case sk of
     NonEmptySorts -> typeS
-    PossiblyEmptySorts -> etypeS) ++ pluralS l
+    PossiblyEmptySorts -> etypeS) ++ appendS l
 
 printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
                  -> BASIC_ITEMS b s f -> Doc
@@ -391,7 +391,7 @@ printRecord mf = Record
     , foldSort_gen_ax = \ o _ _ ->
         let Sort_gen_ax constrs b = o
             l = recoverType constrs
-            genAx = sep [ keyword generatedS <+> keyword (typeS ++ pluralS l)
+            genAx = sep [ keyword generatedS <+> keyword (typeS ++ appendS l)
                         , semiAnnos printDATATYPE_DECL l]
         in if b then text "%% free" $+$ genAx else genAx
     , foldQuantOp = \ _ o n r -> fsep
@@ -522,7 +522,10 @@ greater than zero. It returns an empty String if the list and all
 nested lists have only one element. If the list or an nested list
 has more than one element a String containig one "s" is returned. -}
 pluralS :: ListCheck a => a -> String
-pluralS l = if isSingle $ innerList l then "" else "s"
+pluralS = appendS . innerList
+
+appendS :: [a] -> String
+appendS l = if isSingle l then "" else "s"
 
 -- instances of ListCheck for various data types of AS_Basic_CASL
 
@@ -539,9 +542,6 @@ instance ListCheck (OP_ITEM f) where
 instance ListCheck (PRED_ITEM f) where
     innerList (Pred_decl l _ _) = innerList l
     innerList (Pred_defn _ _ _ _) = [()]
-
-instance ListCheck DATATYPE_DECL where
-    innerList (Datatype_decl _ _ _) = [()]
 
 instance ListCheck VAR_DECL where
     innerList (Var_decl l _ _) = innerList l

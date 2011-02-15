@@ -28,21 +28,21 @@ instance Pretty C_BASIC_ITEM where
 
 printC_BASIC_ITEM :: C_BASIC_ITEM -> Doc
 printC_BASIC_ITEM cb = case cb of
-    CoFree_datatype l _ -> keyword cofreeS <+> keyword (cotypeS ++ pluralS l)
-      <+> fsep (punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
+    CoFree_datatype l _ -> keyword cofreeS <+> printAnnotedCoDatas l
     CoSort_gen l _ -> case l of
       [Annoted (Ext_SIG_ITEMS (CoDatatype_items l' _)) _ _ _] ->
-        keyword cogeneratedS <+> keyword (cotypeS ++ pluralS l') <+>
-         semiAnnos printCODATATYPE_DECL l'
+        keyword cogeneratedS <+> printAnnotedCoDatas l'
       _ -> keyword cogeneratedS <+> specBraces (vcat $ map pretty l)
+
+printAnnotedCoDatas :: [Annoted CODATATYPE_DECL] -> Doc
+printAnnotedCoDatas l = keyword (cotypeS ++ appendS l)
+      <+> semiAnnos printCODATATYPE_DECL l
 
 instance Pretty C_SIG_ITEM where
     pretty = printC_SIG_ITEM
 
 printC_SIG_ITEM :: C_SIG_ITEM -> Doc
-printC_SIG_ITEM (CoDatatype_items l _) =
-    keyword (cotypeS ++ pluralS l) <+>
-     fsep (punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
+printC_SIG_ITEM (CoDatatype_items l _) = printAnnotedCoDatas l
 
 instance Pretty CODATATYPE_DECL where
     pretty = printCODATATYPE_DECL
@@ -66,7 +66,7 @@ printCOALTERNATIVE coal = case coal of
               Total -> empty
               _ -> parens empty
         _ -> parens (fsep $ punctuate semi $ map printCOCOMPONENTS l))
-                <> case  k of
+                <> case k of
                    Total -> empty
                    _ -> quMarkD
     CoSubsorts l _ -> text (sortS ++ pluralS l) <+> ppWithCommas l
@@ -107,6 +107,3 @@ instance Pretty CoCASLSign where
 
 printCoCASLSign :: CoCASLSign -> Doc
 printCoCASLSign _ = empty
-
-instance ListCheck CODATATYPE_DECL where
-    innerList (CoDatatype_decl _ _ _) = [()]

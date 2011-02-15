@@ -35,12 +35,14 @@ import CASL.OpItem
 import CASL.Parse_AS_Basic
 import CASL.ToDoc
 
-type FplBasicSpec = BASIC_SPEC FunDef FreeType TermExt
+type FplBasicSpec = BASIC_SPEC FplExt () TermExt
 
 type FplTerm = TERM TermExt
 type FplForm = FORMULA TermExt
 
-data FreeType = FreeType [Annoted DATATYPE_DECL] Range
+data FplExt =
+    FreeType [Annoted DATATYPE_DECL] Range
+  | FunOp [Annoted FunDef]
   deriving Show
 
 prepPunctBar :: [Doc] -> [Doc]
@@ -52,18 +54,20 @@ printDD (Datatype_decl s as _) =
         , sep $ prepPunctBar
           $ map (printAnnoted printALTERNATIVE) as ]
 
-instance Pretty FreeType where
-  pretty (FreeType ds _) =
-    topSigKey (sortS ++ pluralS ds) <+> semiAnnos printDD ds
+instance Pretty FplExt where
+  pretty e = case e of
+    FreeType ds _ -> topSigKey (sortS ++ appendS ds) <+> semiAnnos printDD ds
+    FunOp ds -> topSigKey (opS ++ appendS ds) <+> semiAnnos pretty ds
 
 data FunDef = FunDef OP_NAME [VAR_DECL] SORT (Annoted FplTerm) Range
   deriving (Show, Eq, Ord)
 
 instance Pretty FunDef where
   pretty (FunDef n vs s t _) =
-    fsep [keyword functS <+> pretty n <>
+    fsep [keyword functS
+         , pretty n <>
           (if null vs then empty else parens (printVarDecls vs))
-          <+> colon <+> pretty s
+         , colon <+> pretty s
          , equals <+> printAnnoted pretty t]
 
 data TermExt =
