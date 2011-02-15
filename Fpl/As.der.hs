@@ -188,9 +188,9 @@ fplExt ks = itemList ks sortS fplSortItem FplSortItems
 fplSortItem :: [String] -> AParser st FplSortItem
 fplSortItem ks = do
     s <- sortId ks
-    fmap CaslSortItem (subSortDecl ks ([s], nullRange) <|> commaSortDecl ks s
+    freeType ks s <|>
+      fmap CaslSortItem (subSortDecl ks ([s], nullRange) <|> commaSortDecl ks s
           <|> isoDecl ks s <|> return (Sort_decl [s] nullRange))
-      <|> freeType ks s
 
 freeType :: [String] -> SORT -> AParser st FplSortItem
 freeType ks s = do
@@ -199,8 +199,7 @@ freeType ks s = do
   fmap FreeType $ parseDatatype ks s f
 
 fplOpItem :: [String] -> AParser st FplOpItem
-fplOpItem ks = fmap CaslOpItem (opItem ks)
-  <|> fmap FunOp (funDef ks)
+fplOpItem ks = fmap FunOp (funDef ks) <|> fmap CaslOpItem (opItem ks)
 
 instance AParsable FplExt where
   aparser = fplExt fplReservedWords
