@@ -26,8 +26,8 @@ data BASIC_SPEC b s f = Basic_spec [Annoted (BASIC_ITEMS b s f)]
                   deriving Show
 
 data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
-                   -- the Annotation following the keyword is dropped
-                   -- but preceding the keyword is now an Annotation allowed
+                   {- the Annotation following the keyword is dropped
+                   but preceding the keyword is now an Annotation allowed -}
                  | Free_datatype SortsKind [Annoted DATATYPE_DECL] Range
                    -- pos: free, type, semi colons
                  | Sort_gen [Annoted (SIG_ITEMS s f)] Range
@@ -59,9 +59,9 @@ data SORT_ITEM f = Sort_decl [SORT] Range
                | Subsort_decl [SORT] SORT Range
                  -- pos: commas, <
                | Subsort_defn SORT VAR SORT (Annoted (FORMULA f)) Range
-                 -- pos: "=", "{", ":", ".", "}"
-                 -- the left anno list stored in Annoted Formula is
-                 -- parsed after the equal sign
+                 {- pos: "=", "{", ":", ".", "}"
+                 the left anno list stored in Annoted Formula is
+                 parsed after the equal sign -}
                | Iso_decl [SORT] Range
                  -- pos: "="s
                  deriving Show
@@ -162,8 +162,9 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
                -- pos: =
              | Membership (TERM f) SORT Range
                -- pos: in
-             | Mixfix_formula (TERM f)  -- Mixfix_ Term/Token/(..)/[..]/{..}
-             -- a formula left original for mixfix analysis
+             | Mixfix_formula (TERM f)
+               {- Mixfix_ Term/Token/(..)/[..]/{..}
+               a formula left original for mixfix analysis -}
              | Unparsed_formula String Range
                -- pos: first Char in String
              | Sort_gen_ax [Constraint] Bool -- flag: belongs to a free type?
@@ -201,24 +202,25 @@ and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286).
 -}
 
 data Constraint = Constraint { newSort :: SORT,
-                               opSymbs :: [(OP_SYMB,[Int])],
+                               opSymbs :: [(OP_SYMB, [Int])],
                                origSort :: SORT }
                   deriving (Show, Eq, Ord)
 
+ -- | no duplicate sorts, i.e. injective sort map?
 isInjectiveList :: Ord a => [a] -> Bool
 isInjectiveList l = Set.size (Set.fromList l) == length l
 
--- | from a Sort_gex_ax, recover:
--- | a traditional sort generation constraint plus a sort mapping
+{- | from a Sort_gex_ax, recover:
+a traditional sort generation constraint plus a sort mapping -}
 recover_Sort_gen_ax :: [Constraint] ->
-                        ([SORT],[OP_SYMB],[(SORT,SORT)])
+                        ([SORT], [OP_SYMB], [(SORT, SORT)])
 recover_Sort_gen_ax constrs =
   if isInjectiveList sorts
-     -- no duplicate sorts, i.e. injective sort map? Then we can ignore indices
-     then (sorts, map fst (concatMap opSymbs constrs),[])
-     -- otherwise, we have to introduce new sorts for the indices
-     -- and afterwards rename them into the sorts they denote
-     else (map indSort1 indices,map indOp indOps1,map sortMap indSorts)
+     -- we can ignore indices
+  then (sorts, map fst (concatMap opSymbs constrs), [])
+     {- otherwise, we have to introduce new sorts for the indices
+     and afterwards rename them into the sorts they denote -}
+  else (map indSort1 indices, map indOp indOps1, map sortMap indSorts)
   where
   sorts = map newSort constrs
   indices = [0 .. length sorts - 1]
@@ -228,20 +230,19 @@ recover_Sort_gen_ax constrs =
   sortMap (i, s) = (indSort1 i, s)
   indOps = zip indices (map opSymbs constrs)
   indOps1 = concatMap (\ (i, ops) -> map ((,) i) ops) indOps
-  indOp (res,(Qual_op_name on (Op_type k args1 res1 pos1) pos,args)) =
+  indOp (res, (Qual_op_name on (Op_type k args1 res1 pos1) pos, args)) =
      Qual_op_name on
          (Op_type k (map indSort (zip args args1))
                         (indSort (res, res1)) pos1) pos
   indOp _ = error
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 
--- | from a free Sort_gex_ax, recover:
--- | the sorts, each paired with the constructors
--- | fails (i.e. delivers Nothing) if the sort map is not injective
-recover_free_Sort_gen_ax :: [Constraint] -> Maybe [(SORT,[OP_SYMB])]
+{- | from a free Sort_gex_ax, recover:
+the sorts, each paired with the constructors
+fails (i.e. delivers Nothing) if the sort map is not injective -}
+recover_free_Sort_gen_ax :: [Constraint] -> Maybe [(SORT, [OP_SYMB])]
 recover_free_Sort_gen_ax constrs =
   if isInjectiveList sorts
-     -- no duplicate sorts, i.e. injective sort map?
      then Just $ map getOpProfile constrs
      else Nothing
   where
@@ -280,12 +281,14 @@ data TERM f = Qual_var VAR SORT Range -- pos: "(", var, colon, ")"
             -- pos: colon
           | Mixfix_cast SORT Range
             -- pos: "as"
-          | Mixfix_parenthesized [TERM f] Range  -- non-emtpy term list
-            -- pos: "(", commas, ")"
+          | Mixfix_parenthesized [TERM f] Range
+            {- non-emtpy term list
+            pos: "(", commas, ")" -}
           | Mixfix_bracketed [TERM f] Range
             -- pos: "[", commas, "]"
-          | Mixfix_braced [TERM f] Range         -- also for list-notation
-            -- pos: "{", "}"
+          | Mixfix_braced [TERM f] Range
+            {- also for list-notation
+            pos: "{", "}" -}
           | ExtTERM f
             deriving (Show, Eq, Ord)
 
