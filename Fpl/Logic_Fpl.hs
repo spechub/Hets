@@ -17,6 +17,7 @@ import Logic.Logic
 
 import Fpl.As
 import Fpl.Sign
+import Fpl.StatAna
 import Fpl.ATC_Fpl ()
 
 import CASL.Sign
@@ -38,10 +39,10 @@ instance Language Fpl where
   description _ = unlines
     [ "logic of functional programs (FPL) as CASL extension" ]
 
-type FplSign = Sign TermExt SignExt
 type FplMor = Morphism TermExt SignExt (DefMorExt SignExt)
 
-instance SignExtension SignExt
+instance SignExtension SignExt where
+  isSubSignExtension = isSubFplSign
 
 instance Syntax Fpl FplBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Fpl = Just $ basicSpec fplReservedWords
@@ -59,6 +60,7 @@ instance StaticAnalysis Fpl FplBasicSpec FplForm
                FplSign
                FplMor
                Symbol RawSymbol where
+         basic_analysis Fpl = Just basicFplAnalysis
          stat_symb_map_items Fpl = statSymbMapItems
          stat_symb_items Fpl = statSymbItems
 
