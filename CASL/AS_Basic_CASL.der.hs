@@ -206,7 +206,7 @@ data Constraint = Constraint { newSort :: SORT,
                                origSort :: SORT }
                   deriving (Show, Eq, Ord)
 
- -- | no duplicate sorts, i.e. injective sort map?
+-- | no duplicate sorts, i.e. injective sort map?
 isInjectiveList :: Ord a => [a] -> Bool
 isInjectiveList l = Set.size (Set.fromList l) == length l
 
