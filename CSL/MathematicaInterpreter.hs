@@ -48,16 +48,27 @@ import Prelude hiding (lookup)
 -- ----------------------------------------------------------------------
 
 -- | MathematicaInterpreter with Translator based on the MathLink interface
-type MathState = ASState String
+type MathState = ASState (MLState, Maybe FilePath)
 
 -- Mathematica interface, built on MathLink
 type MathematicaIO = ErrorT ASError (StateT MathState ML)
 
+getMLState :: MathState -> MLState
+getMLState = fst . getConnectInfo
+
+getMLLogFile :: MathState -> Maybe FilePath
+getMLLogFile = snd . getConnectInfo
+
+
+liftML :: ML a -> MathematicaIO a
+liftML = lift . lift
+
+
 instance AssignmentStore MathematicaIO where
-    assign  = genAssign mathematicaAssignDirect
-    assigns l = genAssigns mathematicaAssignsDirect l >> return ()
-    lookup = genLookup mathematicaLookupDirect
-    eval = genEval mathematicaEvalDirect
+    assign  = genAssign mathematicaAssign
+    assigns l = genAssigns mathematicaAssigns l >> return ()
+    lookup = genLookup mathematicaLookup
+    eval = genEval mathematicaEval
     check = mathematicaCheck
     names = get >>= return . SMem . getBMap
     evalRaw s = get >>= liftIO . mathematicaDirect s
@@ -66,7 +77,7 @@ instance AssignmentStore MathematicaIO where
       adg <- gets depGraph
       let g = isNothing . depGraphLookup adg
       return $ Set.filter g $ Set.map SimpleConstant $ setOfUserDefined e
-      
+
     genNewKey = do
       mit <- get
       let (bm, i) = genKey $ getBMap mit
@@ -89,7 +100,6 @@ instance VCGenerator MathematicaIO where
                     $++$ printExpForVC e
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
       liftIO $ hPutStrLn vcHdl s where
-               
 
 instance StepDebugger MathematicaIO where
     setDebugMode b = modify mf where mf mit = mit { debugMode = b }
@@ -182,11 +192,7 @@ sendExpression e =
    Op oi _ [] _ -> mlPutSymbol (mmShowOPID oi) >> return ()
    Op oi _ exps _ ->
        mlPutFunction' (mmShowOPID oi) (length exps) >> mapM_ sendExpression exps
-   -- Integers are sent as strings, because the interface supports only machine
-   -- integers not arbitrary sized integers.
-   --   Int i _ -> mlPutInteger' i >> return ()
-   Int i _ ->
-       mlPutFunction' "ToExpression" 1 >> mlPutString (show i) >> return ()
+   Int i _ -> mlPutInteger'' i >> return ()
    Double r _ -> mlPutReal' r >> return ()
 
    List _ _ -> error "sendExpression: List not supported"
@@ -198,8 +204,7 @@ receiveExpression =  do
   et <- mlGetNext
   let mkMLOp s args = mkAndAnalyzeOp mathematicaOpInfoMap s [] args nullRange
       pr | et == dfMLTKSYM = liftM (flip mkMLOp []) mlGetSymbol
-         -- | et == dfMLTKINT = liftM (flip Int nullRange) mlGetInteger'
-         | et == dfMLTKINT = liftM (flip Int nullRange . read) mlGetString
+         | et == dfMLTKINT = liftM (flip Int nullRange) mlGetInteger''
          | et == dfMLTKREAL = liftM (flip Double nullRange) mlGetReal'
          | et == dfMLTKFUNC =
              do
@@ -225,34 +230,103 @@ mathematicaSetTerm _ _ = error "mathematicaSetTerm: fundefs unsupported"
 mathematicaListTerm :: [EXPRESSION] -> EXPRESSION
 mathematicaListTerm = mkOp "List"
 
-mathematicaSendDirect :: EXPRESSION -> MathematicaIO ()
-mathematicaSendDirect e = lift $ lift $ sendPacket (sendExpression e) >> skipAnswer
+mathematicaSend :: EXPRESSION -> MathematicaIO ()
+mathematicaSend e = liftML $ sendEvalPacket (sendExpression e) >> skipAnswer
 
 -- ----------------------------------------------------------------------
 -- * Methods for Mathematica 'AssignmentStore' Interface
 -- ----------------------------------------------------------------------
 
-mathematicaAssignDirect :: String -> AssDefinition -> MathematicaIO EXPRESSION
-mathematicaAssignDirect s def = mathematicaEvalDirect $ mathematicaSetTerm s def
+mathematicaAssign :: String -> AssDefinition -> MathematicaIO EXPRESSION
+mathematicaAssign s def = mathematicaEval $ mathematicaSetTerm s def
 
-mathematicaAssignsDirect :: [(String, AssDefinition)] -> MathematicaIO ()
-mathematicaAssignsDirect l = mathematicaSendDirect $ mathematicaListTerm l'
+mathematicaAssigns :: [(String, AssDefinition)] -> MathematicaIO ()
+mathematicaAssigns l = mathematicaSend $ mathematicaListTerm l'
     where l' = map (uncurry mathematicaSetTerm) l
 
-mathematicaLookupDirect :: String -> MathematicaIO EXPRESSION
-mathematicaLookupDirect s = mathematicaEvalDirect $ mkOp s []
+mathematicaLookup :: String -> MathematicaIO EXPRESSION
+mathematicaLookup s = mathematicaEval $ mkOp s []
 
-mathematicaEvalDirect :: EXPRESSION -> MathematicaIO EXPRESSION
-mathematicaEvalDirect e =
-    lift $ lift $ sendPacket (sendExpression e) >> waitForAnswer >> receiveExpression
+mathematicaEval :: EXPRESSION -> MathematicaIO EXPRESSION
+mathematicaEval e =
+    liftML $ sendEvalPacket (sendExpression e) >> waitForAnswer
+               >> receiveExpression
 
 mathematicaCheck :: EXPRESSION -> MathematicaIO Bool
-mathematicaCheck = error ""
+mathematicaCheck e = do
+  eB <- genCheck mathematicaEval e
+  case eB of
+    Right b -> return b
+    Left s ->
+        throwError $ ASError CASError $
+                   concat [ "mathematicaCheck: CAS error for expression "
+                          , show e, "\n", s ]
 
 
 -- ----------------------------------------------------------------------
 -- * The Mathematica system via MathLink
 -- ----------------------------------------------------------------------
 
+-- TODO: implement the textpackage stuff
 mathematicaDirect :: String -> MathState -> IO String
 mathematicaDirect = error ""
+
+
+withMathematica :: MathState -> MathematicaIO a -> IO (MathState, a)
+withMathematica st mprog = do
+  let stE = runErrorT mprog  -- (:: StateT MathState ML (Either ASError a))
+      mlE = runStateT stE st -- (:: ML (Either ASError a, MathState))
+  (eRes, st') <- withLink (getMLState st) (getMLLogFile st) mlE
+  case eRes of
+    Left err -> throwASError err
+    Right res -> return (st', res)
+
+
+-- | Init the Mathematica communication
+mathematicaInit :: AssignmentDepGraph ()
+          -> Int -- ^ Verbosity level
+          -> Maybe FilePath -- ^ Log MathLink messages into this file
+          -> Maybe String -- ^ Connection name
+                          -- (launches a new kernel if not specified)
+          -> IO MathState
+mathematicaInit adg v mFp mN = do
+  eMLSt <- openLink v mN
+  case eMLSt of
+    Left i ->
+        error $ "mathematicaInit: MathLink connection failure " ++ show i
+    Right mlSt ->
+        return ASState { getBMap = initWithOpMap mathematicaOpInfoMap
+                       , getConnectInfo = (mlSt, mFp)
+                       , depGraph = adg
+                       , debugMode = False
+                       , symbolicMode = False
+                       , verbosity = v
+                       , vericondOut = Nothing
+                       }
+
+mathematicaExit :: MathState -> IO ()
+mathematicaExit = closeLink . getMLState
+
+{-
+
+-- | Open connection to MathLink or return error code on failure
+openLink :: Maybe String -- ^ Connection name
+                         -- (launches a new kernel if not specified)
+         -> IO (Either Int MLState)
+-- | Run ML-program on an opened connection to MathLink
+withLink :: MLState -- ^ MathLink connection
+         -> Maybe FilePath -- ^ Log low level messages into this file (or STDOUT)
+         -> ML a -- ^ The program to run
+         -> IO a
+
+
+
+type MathState = ASState MLState
+type MathematicaIO = ErrorT ASError (StateT MathState ML)
+
+
+runStateT ms $ runErrorT m
+
+runErrorT :: ErrorT e m a -> m (Either e a)
+runStateT :: StateT s m a -> s -> m (a, s)
+-}

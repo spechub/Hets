@@ -305,6 +305,7 @@ mapleInit adg v to = do
                            , depGraph = adg
                            , debugMode = False
                            , symbolicMode = False
+                           , verbosity = v
                            , vericondOut = Nothing
                            }
     _ -> error "Could not find maple shell command!"

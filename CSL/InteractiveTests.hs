@@ -1269,10 +1269,10 @@ readAndPrintOutput = do
 
 
 userMessage :: String -> ML ()
-userMessage s = ML.logMessage s >> liftIO (putStr s)
+userMessage s = ML.verbMsgMLLn 2 s >> liftIO (putStr s)
 
 userMessageLn :: String -> ML ()
-userMessageLn s = ML.logMessageLn s >> liftIO (putStrLn s)
+userMessageLn s = ML.verbMsgMLLn 2 s >> liftIO (putStrLn s)
 
 
 class MLShow a where
@@ -1329,8 +1329,7 @@ sendFormula i j k = do
 mlTestEnv :: Pretty a => String -> ML a -> IO a
 mlTestEnv s act = do
   let mN = if null s then Nothing else Just s
-
-  eRes <- runLink (Just "/tmp/mi.txt") mN act
+  eRes <- runLink (Just "/tmp/mi.txt") 2 mN act
   case eRes of
     Left eid -> putStrLn ("Error " ++ show eid) >> error "ml-test"
     Right res -> putStrLn ("OK: " ++ (show $ pretty res)) >> return res
@@ -1351,7 +1350,7 @@ mlTest2 argv = do
   let k = read $ argv!!0
       e = toE $ argv!!1
       s = if length argv > 2 then argv!!2 else ""
-      prog = forM [1..(k::Int)] $ const $ sendPacket (sendExpression e)
+      prog = forM [1..(k::Int)] $ const $ sendEvalPacket (sendExpression e)
              >> waitForAnswer >> receiveExpression
 
   mlTestEnv s prog
@@ -1359,7 +1358,7 @@ mlTest2 argv = do
 mlTest3 :: String -> String -> IO ()
 mlTest3 cn es = do
   let e = toE es
-      prog = sendPacket (sendExpression e) >> prog2
+      prog = sendEvalPacket (sendExpression e) >> prog2
       gt g
           | g == dfMLTKSYM = "Symbol"
           | g == dfMLTKSTR = "String"
@@ -1399,9 +1398,9 @@ mlTest5 cn el = do
       prog (e:l) = do
                   case e of
                     Right s ->
-                         sendPacket (sendExpression $ toE s)
+                         sendEvalPacket (sendExpression $ toE s)
                     Left s ->
-                         sendPacket (sendExpressionString s)
+                         sendEvalPacket (sendExpressionString s)
                   waitForAnswer
                   e' <- receiveExpression
                   liftIO $ putStrLn $ show e ++ ": " ++ show (pretty e')

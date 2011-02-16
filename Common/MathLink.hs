@@ -25,6 +25,10 @@ import Control.Monad.Reader
 import System.Timeout
 import System.IO
 
+import Data.Maybe
+
+import Common.Utils
+
 
 -- * Constants for the MathLink interface
 
@@ -76,33 +80,40 @@ dfMLTKSYM=35
 data MLState =
     MLState
     { mlink :: MLINK
+    , menv :: MLEnvironment
+    , mverbosity :: Int
     , logHdl :: Maybe Handle
     }
 
-mkState :: MLINK -> MLState
-mkState mlp = MLState { mlink = mlp, logHdl = Nothing }
-
-mkStateWithLog :: MLINK -> Handle -> MLState
-mkStateWithLog mlp hdl = MLState { mlink = mlp, logHdl = Just hdl }
-
 type ML = ReaderT MLState IO
+
+
+-- | 'verbMsg' with stdout as handle
+verbMsgML :: Int -> String -> ML ()
+verbMsgML lvl msg = do
+  hdl <- getHandle
+  v <- asks mverbosity
+  liftIO $ verbMsg hdl v lvl msg
+
+-- | 'verbMsgLn' with stdout as handle
+verbMsgMLLn :: Int -> String -> ML ()
+verbMsgMLLn lvl msg = do
+  hdl <- getHandle
+  v <- asks mverbosity
+  liftIO $ verbMsg hdl v lvl msg
+
+getHandle :: ML Handle
+getHandle = liftM (fromMaybe stdout) $ asks logHdl
+
+mkState :: MLINK -> MLEnvironment -> Int -> MLState
+mkState mlp env v = MLState { mlink = mlp, menv = env, mverbosity = v
+                            , logHdl = Nothing }
+
+addLogging :: MLState -> Handle -> MLState
+addLogging st hdl = st { logHdl = Just hdl }
 
 askMLink :: ML MLINK
 askMLink = asks mlink
-
-logMessage :: String -> ML ()
-logMessage s = do
-  mHdl <- asks logHdl
-  case mHdl of
-    Just hdl -> liftIO $ hPutStr hdl s
-    Nothing -> liftIO $ putStr s
-
-logMessageLn :: String -> ML ()
-logMessageLn s = do
-  mHdl <- asks logHdl
-  case mHdl of
-    Just hdl -> liftIO $ hPutStrLn hdl s
-    Nothing -> liftIO $ putStrLn s
 
 liftMLIO :: (MLINK -> IO b) -> ML b
 liftMLIO f = askMLink >>= liftIO . f
@@ -110,25 +121,16 @@ liftMLIO f = askMLink >>= liftIO . f
 
 -- * MathLink connection handling
 
-connectLink :: MLINK -> IO Bool
-connectLink lp = do
-  let p i j = do
-        i' <- cMlReady lp
-        if toBool i' || j > 3000 then return j
-         else cMlFlush lp >> if i > 1000 then p 0 (j+1) else p (i+1) j
-
-  p (0::Int) (0::Int) >>= putStrLn . ("ready after " ++) . show
-
-  res <- cMlConnect lp
-  return $ toBool res
-
-runLink :: Maybe FilePath -> Maybe String -> ML a -> IO (Either Int a)
-runLink mFP mName mlprog = do
---  env <- mlInitialize ""
+-- | Open connection to MathLink or return error code on failure
+openLink :: Int -- ^ Verbosity
+         -> Maybe String -- ^ Connection name
+                         -- (launches a new kernel if not specified)
+         -> IO (Either Int MLState)
+openLink v mName = do
   env <- cMlInitialize nullPtr
   if (env == nullPtr) then return $ Left 1
    else do
-    putStrLn "Initialized"
+    verbMsgIOLn v 2 "Initialized"
 
     let (name, mode) = case mName of
                          Just n -> (n, "connect")
@@ -139,33 +141,73 @@ runLink mFP mName mlprog = do
     lp <- mlOpen 4 openargs
     mB <- if lp == nullPtr then return Nothing
 --          else liftM Just $ connectLink lp
-          else timeout 3000000 $ connectLink lp
+          else timeout 3000000 $ connectLink lp v
     
     case mB of
       Nothing -> return $ Left 2
       Just False -> return $ Left 3
-      _ ->
-          do
-            putStrLn "Opened"
-            x <- case mFP of
-                   Just fp ->
-                       withFile fp WriteMode $ runReaderT mlprog . mkStateWithLog lp
-                   Nothing ->
-                       runReaderT mlprog $ mkState lp
-            mlClose lp
-            mlDeinitialize env
-            return $ Right x
-  
+      _ -> return $ Right $ mkState lp env v
 
-mlInitialize  :: String -> IO MLEnvironment
-mlInitialize = flip withCString cMlInitialize
+-- | Close connection to MathLink
+closeLink :: MLState -> IO ()
+closeLink st = do
+  mlClose $ mlink st
+  cMlDeinitialize $ menv st
 
-mlDeinitialize  :: MLEnvironment -> IO ()
-mlDeinitialize = cMlDeinitialize
 
+-- | Run ML-program on an opened connection to MathLink
+withLink :: MLState -- ^ MathLink connection
+         -> Maybe FilePath -- ^ Log low level messages into this file (or STDOUT)
+         -> ML a -- ^ The program to run
+         -> IO a
+withLink st mFp mlprog =
+    case mFp of
+      Just fp ->
+          withFile fp WriteMode $ runReaderT mlprog . addLogging st
+      Nothing ->
+          runReaderT mlprog st
+
+-- | Run ML-program on a new connection to MathLink which is closed right
+-- after the execution and return the prgram result or error code on failure
+runLink :: Maybe FilePath -- ^ Log low level messages into this file (or STDOUT)
+        -> Int -- ^ Verbosity
+        -> Maybe String -- ^ Connection name
+                        -- (launches a new kernel if not specified)
+        -> ML a -- ^ The program to run
+        -> IO (Either Int a)
+runLink mFp v mName mlprog = do
+  eSt <- openLink v mName
+  case eSt of
+    Left i -> return $ Left i
+    Right st ->
+        do
+          verbMsgIOLn v 2 "Opened"
+          x <- withLink st mFp mlprog
+          closeLink st
+          return $ Right x
+
+-- | Low level: open connection
 mlOpen  :: CInt -> [String] -> IO MLINK
 mlOpen i l = withStringArray l $ cMlOpen i
 
+-- | Low level: check connection
+connectLink :: MLINK
+            -> Int -- ^ Verbosity
+            -> IO Bool
+connectLink lp v = do
+  let p i j = do
+        i' <- cMlReady lp
+        if toBool i' || j > 3000 then return j
+         else cMlFlush lp >> if i > 1000 then p 0 (j+1) else p (i+1) j
+
+  p (0::Int) (0::Int) >>= verbMsgIOLn v 2 . ("ready after " ++) . show
+
+  res <- cMlConnect lp
+  return $ toBool res
+
+-- | Low level: close connection
+mlClose  :: MLINK -> IO CInt
+mlClose = cMlClose
 
 
 -- * C to Haskell utilities
@@ -178,7 +220,7 @@ mlGetA  :: (Storable a, Show a, Show b) => (Ptr a -> IO b) -> IO a
 mlGetA f = let g ptr = f ptr >> peek ptr in alloca g
 
 
--- maybe better via foreign pointer, check later
+-- TODO: maybe better via foreign pointer, check later
 mlGetCString  :: Show b => (Ptr CString -> IO b) -> (CString -> IO ()) -> IO String
 mlGetCString f disownF =
     let g ptr = do
@@ -189,10 +231,27 @@ mlGetCString f disownF =
     in alloca g
 
 
--- * Haskell friendly MathLink interface built on top of the raw bindings
+-- * C Type conversions
 
-mlClose  :: MLINK -> IO CInt
-mlClose = cMlClose
+cintToInteger :: CInt -> Integer
+cintToInteger = fromIntegral
+
+intToCInt :: Int -> CInt
+intToCInt = fromIntegral
+
+-- | This function is unsafe, it may overflow...
+cintToInt :: CInt -> Int
+cintToInt = fromIntegral
+
+
+
+cdblToDbl :: CDouble -> Double
+cdblToDbl = realToFrac
+
+dblToCDbl :: Double -> CDouble
+dblToCDbl = realToFrac
+
+-- * Haskell friendly MathLink interface built on top of the raw bindings
 
 mlFlush  :: ML CInt
 mlFlush = liftMLIO cMlFlush
@@ -222,32 +281,6 @@ mlGetArgCount = askMLink >>= liftIO . mlGetA . cMlGetArgCount
 mlGetArgCount' :: ML Int
 mlGetArgCount' = liftM cintToInt mlGetArgCount
 
-
-
-cintToInteger :: CInt -> Integer
-cintToInteger = fromIntegral
-
-intToCInt :: Int -> CInt
-intToCInt = fromIntegral
-
--- These two functions are unsafe, they may overflow...
-integerToCInt :: Integer -> CInt
-integerToCInt = fromIntegral
-
-cintToInt :: CInt -> Int
-cintToInt = fromIntegral
-
-
-
-cdblToDbl :: CDouble -> Double
-cdblToDbl = realToFrac
-
-dblToCDbl :: Double -> CDouble
-dblToCDbl = realToFrac
-
-
-
-
 -- cMlGetSymbol  :: MLINK -> Ptr CString -> IO CInt
 mlGetSymbol  :: ML String
 mlGetSymbol = do
@@ -272,8 +305,13 @@ mlGetReal' = liftM cdblToDbl mlGetReal
 mlGetInteger  :: ML CInt
 mlGetInteger = askMLink >>= liftIO . mlGetA . cMlGetInteger
 
-mlGetInteger'  :: ML Integer
-mlGetInteger' = liftM cintToInteger mlGetInteger
+mlGetInteger'  :: ML Int
+mlGetInteger' = liftM cintToInt mlGetInteger
+
+-- | Integers are received as strings, because the interface supports only
+-- machine integers with fixed length not arbitrary sized integers.
+mlGetInteger''  :: ML Integer
+mlGetInteger'' = liftM read mlGetString
 
 mlPutString  :: String -> ML CInt
 mlPutString s = liftMLIO f where
@@ -293,8 +331,14 @@ mlPutFunction' s = mlPutFunction s . intToCInt
 mlPutInteger  :: CInt -> ML CInt
 mlPutInteger = liftMLIO . flip cMlPutInteger
 
-mlPutInteger'  :: Integer -> ML CInt
-mlPutInteger' = mlPutInteger . integerToCInt
+mlPutInteger'  :: Int -> ML CInt
+mlPutInteger' = mlPutInteger . intToCInt
+
+-- | Integers are sent as strings, because the interface supports only
+-- machine integers with fixed length not arbitrary sized integers.
+mlPutInteger''  :: Integer -> ML CInt
+mlPutInteger'' i = mlPutFunction' "ToExpression" 1 >> mlPutString (show i)
+       
 
 mlPutReal  :: CDouble -> ML CInt
 mlPutReal = liftMLIO . flip cMlPutReal
@@ -318,16 +362,24 @@ mlProcError = do
   s <- if toBool eid then liftM ("Error detected by MathLink: " ++)
        mlErrorMessage
        else return "Error detected by Interface"
-  logMessageLn s
+  verbMsgMLLn 1 s
   error $ "mlProcError: " ++ s
 
 
-sendPacket :: ML a -> ML a
-sendPacket ml = do
+sendEvalPacket :: ML a -> ML a
+sendEvalPacket ml = do
   mlPutFunction "EvaluatePacket" 1
   res <- ml
   mlEndPacket
   return res
+
+-- TODO: implement it correctly
+sendTextPacket :: String -> ML ()
+sendTextPacket s = do
+  mlPutFunction "EvaluateTextPacket" 1
+  mlPutString s
+  mlEndPacket
+  return ()
 
 waitForAnswer :: ML ()
 waitForAnswer = do
@@ -342,7 +394,6 @@ skipAnswer = do
 waitUntilPacket :: Num a => a -> [CInt] -> ML ()
 waitUntilPacket i l = do
   np <- mlNextPacket
-  if elem np l then logMessageLn $ "GotReturn after " ++ show i ++ " iterations"
-   else (logMessageLn $ "wap: " ++ show np) >> mlNewPacket >> waitUntilPacket (i+1) l
-
+  if elem np l then verbMsgMLLn 2 $ "GotReturn after " ++ show i ++ " iterations"
+   else (verbMsgMLLn 2 $ "wap: " ++ show np) >> mlNewPacket >> waitUntilPacket (i+1) l
 

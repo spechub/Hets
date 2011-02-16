@@ -47,6 +47,10 @@ module Common.Utils
   , withinDirectory
   , writeTempFile
   , getTempFile
+  , verbMsg
+  , verbMsgLn
+  , verbMsgIO
+  , verbMsgIOLn
   ) where
 
 import Data.Char
@@ -64,6 +68,28 @@ import System.Process
 import System.Timeout
 
 import Control.Monad
+
+-- | Writes the message to the given handle unless the verbosity is less than
+-- the message level
+verbMsg :: Handle -- ^ Output handle
+        -> Int -- ^ global verbosity
+        -> Int -- ^ message level
+        -> String -- ^ message level
+        -> IO ()
+verbMsg hdl v lvl msg = when (lvl <= v) $ hPutStr hdl msg
+
+-- | Same as 'verbMsg' but with a newline at the end
+verbMsgLn :: Handle -> Int -> Int -> String -> IO ()
+verbMsgLn hdl v lvl msg = when (lvl <= v) $ hPutStrLn hdl msg
+
+-- | 'verbMsg' with stdout as handle
+verbMsgIO :: Int -> Int -> String -> IO ()
+verbMsgIO v lvl msg = verbMsg stdout v lvl msg
+
+-- | 'verbMsgLn' with stdout as handle
+verbMsgIOLn :: Int -> Int -> String -> IO ()
+verbMsgIOLn v lvl msg = verbMsgLn stdout v lvl msg
+
 
 -- | replace first (non-empty) sublist with second one in third argument list
 replace :: Eq a => [a] -> [a] -> [a] -> [a]

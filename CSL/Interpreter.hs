@@ -41,6 +41,7 @@ module CSL.Interpreter
     , EvalAtom(..)
     , prettyEvalAtom
     , asErrorMsg
+    , throwASError
     , ASState(..)
     , ASError(..)
     , ErrorSource(..)
@@ -91,6 +92,7 @@ instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
 
 -- ** Some utility classes for abstraction of concrete realizations
 
+
 -- | Abstraction from lists, sets, etc. for some simple operations
 class SimpleMember a b | a -> b where
     member :: b -> a -> Bool
@@ -114,6 +116,7 @@ data ASState a =
     , depGraph :: AssignmentDepGraph ()
     , debugMode :: Bool
     , symbolicMode :: Bool
+    , verbosity :: Int
     , vericondOut :: Maybe Handle
     }
 
@@ -121,6 +124,7 @@ instance Functor ASState where
     fmap f s = s { getConnectInfo = f $ getConnectInfo s }
 
 
+-- ** AssignmentStore
 
 -- | Calculation interface, bundles the evaluation engine and the
 -- assignment store
@@ -159,6 +163,9 @@ instance AssignmentStore m => AssignmentStore (StateT s m) where
     getDepGraph = lift getDepGraph
     updateConstant c = lift . updateConstant c
 
+
+-- ** AssignmentStore Extensions
+
 class AssignmentStore m => StepDebugger m where
     setDebugMode :: Bool -> m ()
     getDebugMode :: m Bool
@@ -170,6 +177,7 @@ class AssignmentStore m => SymbolicEvaluator m where
 class AssignmentStore m => MessagePrinter m where
     printMessage :: String -> m ()
 
+-- ** Error handling
 
 data ErrorSource = CASError | UserError | InterfaceError deriving Show
 data ASError = ASError ErrorSource String deriving Show
@@ -177,9 +185,15 @@ data ASError = ASError ErrorSource String deriving Show
 asErrorMsg :: ASError -> String
 asErrorMsg (ASError _ s) = s
 
+throwASError :: ASError -> a
+throwASError = error . asErrorMsg
+
 instance Error ASError where
     noMsg = ASError UserError ""
     strMsg = ASError UserError
+
+
+-- ** Evaluation, Debugging, Stepping
 
 isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
