@@ -16,8 +16,9 @@ module CASL.MixfixParser
     , resolveMixTrm, resolveMixFrm
     , IdSets, mkIdSets, emptyIdSets, unite, unite2
     , makeRules, Mix (..), emptyMix, extendMix
-    , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM)
-    where
+    , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM
+    , ids_DATATYPE_DECL
+    ) where
 
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
