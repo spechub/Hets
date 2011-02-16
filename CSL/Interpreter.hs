@@ -133,7 +133,6 @@ class (Monad m) => AssignmentStore m where
     eval :: EXPRESSION -> m EXPRESSION
     evalRaw :: String -> m String
     check :: EXPRESSION -> m Bool
-    check = error "AssignmentStore-default: 'check' not implemented."
     values :: m [(ConstantName, EXPRESSION)]
     values = let f x = do
                    v <- lookup x

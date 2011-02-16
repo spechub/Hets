@@ -25,6 +25,7 @@ import CSL.AS_BASIC_CSL
 import CSL.Interpreter
 import CSL.Verification
 import CSL.Analysis
+import CSL.GenericInterpreter
 
 
 import Control.Monad
@@ -53,12 +54,14 @@ type MathState = ASState String
 type MathematicaIO = ErrorT ASError (StateT MathState ML)
 
 instance AssignmentStore MathematicaIO where
-    assign = error "AssignmentStore MathematicaIO"
-    lookup = error "AssignmentStore MathematicaIO"
-    eval = error "AssignmentStore MathematicaIO"
-    evalRaw = error "AssignmentStore MathematicaIO"
-
+    assign  = genAssign mathematicaAssignDirect
+    assigns l = genAssigns mathematicaAssignsDirect l >> return ()
+    lookup = genLookup mathematicaLookupDirect
+    eval = genEval mathematicaEvalDirect
+    check = mathematicaCheck
     names = get >>= return . SMem . getBMap
+    evalRaw s = get >>= liftIO . mathematicaDirect s
+
     getUndefinedConstants e = do
       adg <- gets depGraph
       let g = isNothing . depGraphLookup adg
@@ -100,7 +103,7 @@ instance MessagePrinter MathematicaIO where
     printMessage = liftIO . putStrLn
 
 -- ----------------------------------------------------------------------
--- * Mathematica syntax functions
+-- * Mathematica syntax and special terms
 -- ----------------------------------------------------------------------
 
 mmShowOPNAME :: OPNAME -> String
@@ -214,18 +217,42 @@ receiveExpression =  do
          | otherwise = mlProcError
   pr
 
+
+mathematicaSetTerm :: String -> AssDefinition -> EXPRESSION
+mathematicaSetTerm s (ConstDef e) = mkOp "Set" [mkOp s [], e]
+mathematicaSetTerm _ _ = error "mathematicaSetTerm: fundefs unsupported"
+
+mathematicaListTerm :: [EXPRESSION] -> EXPRESSION
+mathematicaListTerm = mkOp "List"
+
+mathematicaSendDirect :: EXPRESSION -> MathematicaIO ()
+mathematicaSendDirect e = lift $ lift $ sendPacket (sendExpression e) >> skipAnswer
+
 -- ----------------------------------------------------------------------
--- * Generic Communication Interface
+-- * Methods for Mathematica 'AssignmentStore' Interface
 -- ----------------------------------------------------------------------
 
+mathematicaAssignDirect :: String -> AssDefinition -> MathematicaIO EXPRESSION
+mathematicaAssignDirect s def = mathematicaEvalDirect $ mathematicaSetTerm s def
 
--- ----------------------------------------------------------------------
--- * The Communication Interface
--- ----------------------------------------------------------------------
+mathematicaAssignsDirect :: [(String, AssDefinition)] -> MathematicaIO ()
+mathematicaAssignsDirect l = mathematicaSendDirect $ mathematicaListTerm l'
+    where l' = map (uncurry mathematicaSetTerm) l
+
+mathematicaLookupDirect :: String -> MathematicaIO EXPRESSION
+mathematicaLookupDirect s = mathematicaEvalDirect $ mkOp s []
+
+mathematicaEvalDirect :: EXPRESSION -> MathematicaIO EXPRESSION
+mathematicaEvalDirect e =
+    lift $ lift $ sendPacket (sendExpression e) >> waitForAnswer >> receiveExpression
+
+mathematicaCheck :: EXPRESSION -> MathematicaIO Bool
+mathematicaCheck = error ""
 
 
 -- ----------------------------------------------------------------------
 -- * The Mathematica system via MathLink
 -- ----------------------------------------------------------------------
 
-
+mathematicaDirect :: String -> MathState -> IO String
+mathematicaDirect = error ""

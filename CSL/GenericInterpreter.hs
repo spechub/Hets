@@ -1,4 +1,4 @@
-{-# LANGUAGE  FlexibleContexts, TypeSynonymInstances #-}
+{-# LANGUAGE  FlexibleContexts #-}
 {- |
 Module      :  $Header$
 Description :  Generic ASState functionality for AssignmentStores
@@ -10,7 +10,9 @@ Stability   :  experimental
 Portability :  non-portable
 
 Generic functionality for 'AssignmentStore's based on the 'ASState'
-datastructure.
+datastructure. Handles all the translation stuff between the EnCL specification
+and the terms on the CAS side
+(see the 'BMap' structure in the Interpreter module)
 -}
 
 module CSL.GenericInterpreter where
@@ -21,8 +23,6 @@ import CSL.Interpreter
 
 import Control.Monad.State.Class
 import Control.Monad.Reader
-
-import Data.Maybe
 
 -- ----------------------------------------------------------------------
 -- * Generic Translation Interface
@@ -42,6 +42,12 @@ transConstant s = do
       (bm', s') = lookupOrInsert bm s
   put r { getBMap = bm' }
   return s'
+
+lookupConstant :: MonadState (ASState s) as => ConstantName -> as (Maybe String)
+lookupConstant s = do
+  r <- get
+  let bm = getBMap r
+  return $ rolookup bm s
 
 transExpr :: MonadState (ASState s) as => EXPRESSION -> as EXPRESSION
 transExpr e = do
@@ -66,12 +72,22 @@ transDef :: MonadState (ASState s) as => AssDefinition -> as AssDefinition
 transDef (FunDef l e) = liftM (uncurry FunDef) $ transExprWithVars l e
 transDef (ConstDef e) = liftM ConstDef $ transExpr e
 
-revtransExpr :: MonadState (ASState s) as => AssDefinition -> EXPRESSION
+transAssignment :: (MonadState (ASState s) as) =>
+                   (ConstantName, AssDefinition) -> as (String, AssDefinition)
+transAssignment (c, a) = do
+  n' <- transConstant c
+  def' <- transDef a
+  return (n', def')
+
+revtransDefExpr :: MonadState (ASState s) as => AssDefinition -> EXPRESSION
              -> as EXPRESSION
-revtransExpr def e = do
+revtransDefExpr def = revtransExpr $ getArguments def
+
+revtransExpr :: MonadState (ASState s) as => [String] -> EXPRESSION
+             -> as EXPRESSION
+revtransExpr args e = do
   r <- get
   let bm = getBMap r
-      args = getArguments def
   return $ if null args then revtranslateExpr bm e
            else revtranslateExprWithVars args bm e
 
@@ -80,26 +96,34 @@ revtransExpr def e = do
 -- * Generic AssignmentStore Methods
 -- ----------------------------------------------------------------------
 
-genAssign' :: ( MonadState (ASState s) as) =>
-             (String -> AssDefinition -> as (Maybe EXPRESSION))
-                 -> ConstantName -> AssDefinition -> as (Maybe EXPRESSION)
-genAssign' ef n def = do
-  n' <- transConstant n
-  def' <- transDef def
-  mE <- ef n' def'
-  case mE of
-    Just e' -> liftM Just $ revtransExpr def e'
-    _ -> return Nothing
-
 genAssign :: ( MonadState (ASState s) as) =>
              (String -> AssDefinition -> as EXPRESSION)
           -> ConstantName -> AssDefinition -> as EXPRESSION
-genAssign ef n def = let ef' c a = liftM Just $ ef c a
-                     in liftM fromJust $ genAssign' ef' n def
+genAssign ef n def =
+    transAssignment (n, def) >>= uncurry ef >>= revtransDefExpr def
 
-genAssigns :: ( MonadState (ASState s) as) =>
-             (String -> AssDefinition -> as ())
-           -> [(ConstantName, AssDefinition)] -> as ()
-genAssigns ef = let ef' c a = ef c a >> return Nothing
-                in mapM_ $ (uncurry $ genAssign' ef')
+genAssigns :: (MonadState (ASState s) as) =>
+             ([(String, AssDefinition)] -> as a)
+           -> [(ConstantName, AssDefinition)] -> as a
+genAssigns ef l = mapM transAssignment l >>= ef
+
+genLookup :: (MonadState (ASState s) as) =>
+             (String -> as EXPRESSION)
+           -> ConstantName -> as (Maybe EXPRESSION)
+genLookup ef n = do
+  mN <- lookupConstant n
+  case mN of
+    Just n' ->
+        ef n' >>= liftM Just . revtransExpr []
+    _ -> return Nothing
+
+genEval :: (MonadState (ASState s) as) =>
+             (EXPRESSION -> as EXPRESSION)
+           -> EXPRESSION -> as EXPRESSION
+genEval ef e = transExpr e >>= ef >>= revtransExpr []
+
+genCheck :: (MonadState (ASState s) as) =>
+             (EXPRESSION -> as EXPRESSION)
+           -> EXPRESSION -> as (Either String Bool)
+genCheck ef e = transExpr e >>= liftM getBooleanFromExpr . ef
 

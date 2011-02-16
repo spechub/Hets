@@ -1,4 +1,4 @@
-{-# LANGUAGE  FlexibleContexts, TypeSynonymInstances #-}
+{-# LANGUAGE  TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Maple instance for the AssignmentStore class
@@ -7,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Ewaryst.Schulz@dfki.de
 Stability   :  experimental
-Portability :  non-portable (via imports)
+Portability :  portable
 
 Maple as AssignmentStore
 -}
@@ -75,12 +75,11 @@ setMI cs = fmap (updateCS cs)
 type MapleIO = ErrorT ASError (IOS MITrans)
 
 instance AssignmentStore MapleIO where
-    assign  = mapleAssign (evalMapleString True) mapleTransS mapleTransVarE
-    assigns =
-        mapleAssigns (evalMapleString False []) mapleTransS mapleTransVarE
-    lookup = mapleLookup (evalMapleString True []) mapleTransS
-    eval = mapleEval (evalMapleString True []) mapleTransE
-    check = mapleCheck (evalMapleString True []) mapleTransE
+    assign  = genAssign mapleAssignDirect
+    assigns l = genAssigns mapleAssignsDirect l >> return ()
+    lookup = genLookup mapleLookupDirect
+    eval = genEval mapleEvalDirect
+    check = mapleCheck
     names = get >>= return . SMem . getBMap
     evalRaw s = get >>= liftIO . flip (mapleDirect True) s
 
@@ -114,7 +113,6 @@ instance VCGenerator MapleIO where
 --          vcHdl = stdout
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
       liftIO $ hPutStrLn vcHdl s where
-               
 
 instance StepDebugger MapleIO where
     setDebugMode b = modify mf where mf mit = mit { debugMode = b }
@@ -145,19 +143,19 @@ mapleOpInfoMap = operatorInfoMap
 mapleOpInfoNameMap :: OpInfoNameMap
 mapleOpInfoNameMap = operatorInfoNameMap
 
-printAssignment :: String -> [String] -> EXPRESSION -> String
-printAssignment n [] e = concat [n, ":= ", printExp e, ":", n, ";"]
-printAssignment n l e = concat [ n, ":= proc", args, printExp e
-                               , " end proc:", n, args, ";"]
+printAssignment :: String -> AssDefinition -> String
+printAssignment n (ConstDef e) = concat [n, ":= ", printExp e, ":", n, ";"]
+printAssignment n (FunDef l e) = concat [ n, ":= proc", args, printExp e
+                                        , " end proc:", n, args, ";"]
     where args = concat [ "(", intercalate ", " l, ") " ]
 
-printAssignmentWithEval :: String -> [String] -> EXPRESSION -> String
-printAssignmentWithEval n [] e =
+printAssignmentWithEval :: String -> AssDefinition -> String
+printAssignmentWithEval n (ConstDef e) =
 --    concat [n, ":= evalf(", printExp e, "):", n, " &+ 0", ";"]
 --    concat [n, ":= evalf(", printExp e, "):", n, ";"]
     concat [n, ":= evalf(", printExp e, "):g(", n, ")", ";"]
-printAssignmentWithEval n l e = concat [ n, ":= proc", args, printExp e
-                                       , " end proc:", n, args, ";"]
+printAssignmentWithEval n (FunDef l e) = concat [ n, ":= proc", args, printExp e
+                                                , " end proc:", n, args, ";"]
     where args = concat [ "(", intercalate ", " l, ") " ]
 
 printEvaluation :: EXPRESSION -> String
@@ -168,7 +166,6 @@ printEvaluationWithEval e = "evalf(" ++ printExp e ++ ");"
 
 printLookup :: String -> String
 printLookup n = n ++ ";"
-
 
 {-
 The evalf makes the decision much faster. As we verify the result formally
@@ -195,102 +192,80 @@ printBooleanExpr e = concat [ "if evalf("
                             , printExp e, ") then 1 else 0 fi;"
                             ]
 
-getBooleanFromExpr :: EXPRESSION -> Bool
-getBooleanFromExpr (Int 1 _) = True
-getBooleanFromExpr (Int 0 _) = False
-getBooleanFromExpr e =
-    error $ "getBooleanFromExpr: can't translate expression to boolean: "
-              ++ show e
 -}
 
 -- ----------------------------------------------------------------------
--- * Generic Communication Interface
+-- * Methods for Maple 'AssignmentStore' Interface
 -- ----------------------------------------------------------------------
 
-{- |
-   The generic interface abstracts over the concrete evaluation function
--}
+-- | Evaluate the given String as maple expression and
+-- parse the result to an maybe expression. If the boolean flag is false
+-- the result will not be parsed.
+evalMapleString' :: Bool -- ^ Use parser
+                -> String -- ^ the maple command to evaluate
+                -> MapleIO (Maybe EXPRESSION)
+evalMapleString' b s = do
+  -- 0.09 seconds is a critical value for the accepted response time of Maple
+  mit <- get
+  res <- lift $ wrapCommand $ PC.call (getChannelTimeout mit) s
+  return $ if b
+           --    then parseExpression mapleOpInfoMap $ trimLeft $ removeOutputComments res
+           then parseExpression mapleOpInfoMap $ trimLeft res
+           else Nothing
 
--- TODO: implement the generic functions for the generic interpreter
--- (String -> AssDefinition -> as (Maybe EXPRESSION))
--- (String -> AssDefinition -> as EXPRESSION)
+-- | Evaluate the given String as maple expression and skip the result
+sendMapleString :: String -- ^ the maple command to evaluate
+                -> MapleIO ()
+sendMapleString s = evalMapleString' False s >> return ()
 
-mapleAssign :: (MonadError ASError s, MonadIO s, SymbolicEvaluator s) =>
-               ([String] -> String -> s [EXPRESSION])
-            -> (ConstantName -> s String)
-            -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
-            -> ConstantName -> AssDefinition -> s EXPRESSION
-mapleAssign ef trans transE n def = do
-  let e = getDefiniens def
-      args = getArguments def
-  (e', args') <- transE args e
-  n' <- trans n
-  -- liftIO $ putStrLn $ show e'
-  b <- getSymbolicMode
-  let f = if b then printAssignment else printAssignmentWithEval
-  el <- ef args $ f n' args' e'
---  el <- ef args $ printAssignment n' args' e'
-  case el of
-    [rhs] -> return rhs
-    l -> throwError $ ASError InterfaceError $
-         "mapleAssign: unparseable result for assignment of "
-         ++ (show $ pretty n) ++ "\n" ++ (show $ pretty l)
+-- | Evaluate the given String as maple expression and
+-- parse the result back to an expression.
+evalMapleString :: String -- ^ an error message for the failure case
+                -> String -- ^ the maple command to evaluate
+                -> MapleIO EXPRESSION
+evalMapleString msg s = do
+  mE <- evalMapleString' True s
+  case mE of
+    Just e -> return e
+    _ -> throwError $ ASError InterfaceError msg
 
-mapleAssigns :: (AssignmentStore s) => (String -> s [EXPRESSION])
-          -> (ConstantName -> s String)
-          -> ([String] -> EXPRESSION -> s (EXPRESSION, [String]))
-          -> [(ConstantName, AssDefinition)] -> s ()
-mapleAssigns ef trans transE l =
-    let f (n, def) = do
-          let e = getDefiniens def
-              args = getArguments def
-          (e', args') <- transE args e
-          n' <- trans n
-          return $ printAssignment n' args' e'
-    in mapM f l >>= ef . unlines >> return ()
+mapleAssignDirect :: String -> AssDefinition -> MapleIO EXPRESSION
+mapleAssignDirect n def = do
+  sm <- getSymbolicMode
+  let f = if sm then printAssignment else printAssignmentWithEval
+      msg = "mapleAssignDirect: unparseable result for assignment of "
+            ++ (show $ pretty n <+> pretty def)
+  evalMapleString msg $ f n def
 
-mapleLookup :: (AssignmentStore s) => (String -> s [EXPRESSION])
-           -> (ConstantName -> s String)
-           -> ConstantName -> s (Maybe EXPRESSION)
-mapleLookup ef trans n = do
-  n' <- trans n
-  el <- ef $ printLookup n'
-  return $ listToMaybe el
--- we don't want to return nothing on id-lookup: "x; --> x"
---  if e == mkOp n [] then return Nothing else return $ Just e
+mapleAssignsDirect :: [(String, AssDefinition)] -> MapleIO ()
+mapleAssignsDirect =
+    sendMapleString . unlines . map (uncurry printAssignment)
 
-mapleEval :: (MonadError ASError s, SymbolicEvaluator s) =>
-             (String -> s [EXPRESSION])
-        -> (EXPRESSION -> s EXPRESSION)
-        -> EXPRESSION -> s EXPRESSION
-mapleEval ef trans e = do
-  e' <- trans e
+
+mapleLookupDirect :: String -> MapleIO EXPRESSION
+mapleLookupDirect n = evalMapleString msg $ printLookup n where
+    msg = "mapleLookupDirect: unparseable result for lookup of " ++ n
+
+
+mapleEvalDirect :: EXPRESSION -> MapleIO EXPRESSION
+mapleEvalDirect e = do
   b <- getSymbolicMode
   let f = if b then printEvaluation else printEvaluationWithEval
-  el <- ef $ f e'
-  if null el
-   then throwError $ ASError InterfaceError $
-            "mapleEval: expression " ++ show e' ++ " couldn't be evaluated"
-   else return $ head el
+      msg = "mapleEvalDirect: unparseable result for evaluation of "
+            ++ (show $ pretty e)
+  evalMapleString msg $ f e
 
-mapleCheck :: (MonadError ASError s, AssignmentStore s) =>
-              (String -> s [EXPRESSION])
-         -> (EXPRESSION -> s EXPRESSION)
-         -> EXPRESSION -> s Bool
-mapleCheck ef trans e = do
-  e' <- trans e
-  el <- ef $ printBooleanExpr e'
-  if null el
-   then throwError $ ASError CASError
-            $ "mapleCheck: expression " ++ show e' ++ " could not be evaluated"
-   else case getBooleanFromExpr $ head el of
-          Right b -> return b
-          Left s ->
-              throwError
-              $ ASError CASError $
-                concat [ "mapleCheck: CAS error for expression "
-                       , show e', "\n", s ]
-
+mapleCheck :: EXPRESSION -> MapleIO Bool
+mapleCheck e = do
+  let msg = "mapleCheck: unparseable result for evaluation of "
+            ++ (show $ pretty e)
+  eB <- genCheck (evalMapleString msg . printBooleanExpr) e
+  case eB of
+    Right b -> return b
+    Left s ->
+        throwError $ ASError CASError $
+                   concat [ "mapleCheck: CAS error for expression "
+                          , show e, "\n", s ]
 
 -- ----------------------------------------------------------------------
 -- * The Communication Interface
@@ -308,59 +283,6 @@ mapleDirect :: Bool -> MITrans -> String -> IO String
 mapleDirect b mit s = do
   (res, _) <- runIOS (getMI mit) $ PC.call (getChannelTimeout mit) s
   return $ if b then removeOutputComments res else res
-
-mapleTransE :: MonadState (ASState s) as => EXPRESSION -> as EXPRESSION
--- mapleTransE :: EXPRESSION -> MapleIO EXPRESSION
-mapleTransE e = do
-  r <- get
-  let bm = getBMap r
-      (bm', e') = translateExpr bm e
-  put r { getBMap = bm' }
-  return e'
-
-mapleTransVarE :: [String] -> EXPRESSION -> MapleIO (EXPRESSION, [String])
-mapleTransVarE vl e = do
-  r <- get
-  let bm = getBMap r
-      args = translateArgVars bm vl
-      (bm', e') = translateExprWithVars vl bm e
-  put r { getBMap = bm' }
-  return (e', args)
-
-mapleTransS :: ConstantName -> MapleIO String
-mapleTransS s = do
-  r <- get
-  let bm = getBMap r
-      (bm', s') = lookupOrInsert bm s
-  --     outs = [ "lookingUp " ++ show s ++ " in "
-  --            , show $ pretty bm, "{", show bm, "}" ]
-  -- liftIO $ putStrLn $ unlines outs
-
-  put r { getBMap = bm' }
-  return s'
-
-
--- | Evaluate the given String as maple expression and
--- parse the result to an expression list.
-evalMapleString :: Bool -- ^ Use parser
-                -> [String] -- ^ Use this argument list for variable trafo
-                -> String -> MapleIO [EXPRESSION]
-evalMapleString b args s = do
-  -- 0.09 seconds is a critical value for the accepted response time of Maple
-  mit <- get
-  res <- lift $ wrapCommand $ PC.call (getChannelTimeout mit) s
-  let bm = getBMap mit
-      trans = if null args then revtranslateExpr bm
-              else revtranslateExprWithVars args bm
-  -- when b $ liftIO $ putStrLn $ "evalMapleString:"
-  -- when b $ liftIO $ putStrLn $ show $ maybeToList $ parseExpression mapleOpInfoMap $ trimLeft
-  --          $ removeOutputComments res
-  -- when b $ liftIO $ putStrLn $ show $ map trans $ maybeToList $ parseExpression mapleOpInfoMap $ trimLeft
-  --          $ removeOutputComments res
-  return $ if b
-           then map trans $ maybeToList $ parseExpression mapleOpInfoMap
-                    $ trimLeft $ removeOutputComments res
-           else []
 
 -- | init the maple communication
 mapleInit :: AssignmentDepGraph ()
