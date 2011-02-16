@@ -34,6 +34,8 @@ import CASL.SortItem
 import CASL.OpItem
 import CASL.ToDoc
 
+import Data.List (delete)
+
 type FplBasicSpec = BASIC_SPEC FplExt () TermExt
 
 type FplTerm = TERM TermExt
@@ -183,7 +185,7 @@ instance TermParser TermExt where
 
 fplExt :: [String] -> AParser st FplExt
 fplExt ks = itemList ks sortS fplSortItem FplSortItems
-  <|> itemList ks opS fplOpItem FplOpItems
+  <|> itemList (delete functS ks) opS fplOpItem FplOpItems
 
 fplSortItem :: [String] -> AParser st FplSortItem
 fplSortItem ks = do
