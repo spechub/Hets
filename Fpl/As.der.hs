@@ -36,7 +36,7 @@ import CASL.ToDoc
 
 import Data.List (delete)
 
-type FplBasicSpec = BASIC_SPEC () FplExt TermExt
+type FplBasicSpec = BASIC_SPEC FplExt () TermExt
 
 type FplTerm = TERM TermExt
 type FplForm = FORMULA TermExt
