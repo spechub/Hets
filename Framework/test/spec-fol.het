@@ -1,21 +1,21 @@
 logic FOL
-spec SP1 =
+spec S1 =
   c : i.
   p : i -> o.
   
   . p c
 end
 
-spec SP2 = 
+spec S2 = 
   p : i -> o.
   d : i.
 
   . p d
 end 
 
-spec SP3 = SP1 and SP2
+spec S3 = S1 and S2
 
-spec SP4 = SP3 then
+spec S4 = S3 then
   q : i -> o.
   
   . q d
@@ -45,8 +45,13 @@ spec S8 =
 Nat : type.
 p : Nat.
 plus : Nat -> Nat -> Nat.
+b : i.
 end
 
-spec SP9 = SP3 reveal i
+spec S9 = S3 hide p
 
-%view V2 : S7 to S8 = a |-> plus p p
+spec S10 = S4 reveal plus
+
+view V2 : S7 to S8 = a |-> plus p p
+
+spec S11 = S8 with Nat |-> nat, plus |-> times

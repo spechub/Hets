@@ -105,10 +105,11 @@ writeLogic l =
       subsig_inclusionI = inheritImpl "subsig_inclusion" l ml
       signature_unionI = inheritImpl "signature_union" l ml
       intersectionI = inheritImpl "intersection" l ml
-      generated_signI = mkImpl "generated_sign" l "genSigOL ltruth"
+      generated_signI = inheritImpl "generated_sign" l ml
       cogenerated_signI = inheritImpl "cogenerated_sign" l ml
       induced_from_to_morphismI = mkImpl "induced_from_to_morphism" l
          "inducedFromToMorphismOL ltruth"
+      induced_from_morphismI = inheritImpl "induced_from_morphism" l ml
       
       analysis = mkInst "StaticAnalysis" l
                    [basic_specC, sentenceC, symb_itemsC, symb_map_itemsC,
@@ -117,7 +118,7 @@ writeLogic l =
                     symbol_to_rawI, matchesI, empty_signatureI, is_subsigI,
                     subsig_inclusionI, signature_unionI, intersectionI,
                     generated_signI, cogenerated_signI,
-                    induced_from_to_morphismI]
+                    induced_from_to_morphismI, induced_from_morphismI]
 
       -- file
       header = comp_opt

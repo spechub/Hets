@@ -39,6 +39,7 @@ import Common.AnnoState
 import Common.Lexer
 import Common.Token
 import Common.Id
+import Common.Keywords
 
 import Text.ParserCombinators.Parsec
 

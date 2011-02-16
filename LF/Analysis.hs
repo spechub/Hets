@@ -109,9 +109,9 @@ getSigFromLibs n libs =
   let (sigs,_) = Map.findWithDefault (error badLibError) gen_file libs
   in Map.findWithDefault (error $ badSigError n) n sigs
 
-unknownSyms :: [RAW_SYM] -> Sign -> [RAW_SYM]
-unknownSyms syms sig =
-  filter (\ s -> Set.notMember s $ Set.map symName $ getLocalSyms sig) syms
+getUnknownSyms :: [RAW_SYM] -> Sign -> [RAW_SYM]
+getUnknownSyms syms sig =
+  syms \\ (Set.toList $ Set.map symName $ getLocalSyms sig)
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -174,16 +174,25 @@ makeSymbMap (Symb_map_items ss) =
                      Symb_map s1 s2 -> Map.insert s1 s2 m
          ) Map.empty ss
 
-----------------------------------------------------------------
 -----------------------------------------------------------------
+-----------------------------------------------------------------
+
+-- converts a mapping of raw symbols to a mapping of symbols
+renamMapAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> Map.Map Symbol Symbol
+renamMapAnalysis m sig =
+  let syms1 = getUnknownSyms (Map.keys m) sig
+      syms2 = filter (\ s -> not $ isSym s) $ Map.elems m
+      syms  = syms1 ++ syms2
+      in if not (null syms) then error $ badSymsError syms else
+            Map.fromList $ map (\ (k,v) -> (toSym k, toSym v)) $ Map.toList m
 
 {- converts a mapping of raw symbols to a mapping of symbols to expressions
    annotated with their type -}
 translMapAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> Sign ->
                      Map.Map Symbol (EXP,EXP)
 translMapAnalysis m sig1 sig2 =
-  let syms = unknownSyms (Map.keys m) sig1
-      in if not (null syms) then error $ badDomError syms else
+  let syms = getUnknownSyms (Map.keys m) sig1
+      in if not (null syms) then error $ badSymsError syms else
          unsafePerformIO $ codAnalysis m sig2
 
 codAnalysis :: Map.Map RAW_SYM RAW_SYM -> Sign -> IO (Map.Map Symbol (EXP,EXP))
@@ -223,9 +232,9 @@ badLibError = "Library not found."
 badSigError :: MODULE -> String
 badSigError n = "Signature " ++ n ++ " not found."
 
-badDomError :: [String] -> String
-badDomError ss = "Symbols " ++ (show ss) ++
-  " are unknown or cannot be used in a morphism."
+badSymsError :: [String] -> String
+badSymsError ss = "Symbols " ++ (show ss) ++
+  " are unknown or are not locally accessible."
 
 badValError :: String -> String
 badValError s = "Symbol " ++ s ++ "does not have a value."

@@ -27,22 +27,6 @@ import Data.Char
 
 import LF.AS
 
-chars1 :: String
-chars1 = "_-+*/<=>@^"
-
-chars2 :: String
-chars2 = chars1 ++ ":{}[]()"
-
-chars3 :: String
-chars3 = chars2 ++ ","
-
-trim :: String -> String
-trim = let f = reverse . dropWhile isSpace
-           in f . f
-
---------------------------------------------------------------------
---------------------------------------------------------------------
-
 basicSpec :: AParser st BASIC_SPEC
 basicSpec =
   fmap Basic_spec (trailingAnnosParser basicItem)
@@ -51,12 +35,12 @@ basicSpec =
 
 basicItem :: AParser st BASIC_ITEM
 basicItem = do
- do d <- tokensP chars3
+ do d <- tokensP twelfMultDeclChars
     dotT
     return $ Decl $ trim d
  <|>
  do dotT
-    f <- tokensP chars3
+    f <- tokensP twelfMultDeclChars
     return $ Form $ trim f
 
 tokenP :: String -> AParser st String
@@ -73,7 +57,7 @@ whitesp = many1 $ oneOf whiteChars
 
 symbItems :: AParser st SYMB_ITEMS
 symbItems = fmap Symb_items $ fmap fst $
-   (tokenP chars1) `separatedBy` anComma
+   (tokenP twelfSymChars) `separatedBy` anComma
 
 symbMapItems :: AParser st SYMB_MAP_ITEMS
 symbMapItems = fmap Symb_map_items $ fmap fst $
@@ -81,9 +65,13 @@ symbMapItems = fmap Symb_map_items $ fmap fst $
 
 symbOrMap :: AParser st SYMB_OR_MAP
 symbOrMap = do
-  s <- tokenP chars1
+  s <- tokenP twelfSymChars
   ( do asKey mapsTo
-       t <- tokensP chars2
+       t <- tokensP twelfDeclChars
        return $ Symb_map s $ trim t
     <|>
     return (Symb s) )
+
+trim :: String -> String
+trim = let f = reverse . dropWhile isSpace
+           in f . f

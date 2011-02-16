@@ -20,6 +20,7 @@ module LF.Morphism
    , canForm
    , inclusionMorph
    , inducedFromToMorphism
+   , inducedFromMorphism
    ) where
 
 import LF.Sign
@@ -135,20 +136,22 @@ inducedFromToMorphism :: Map.Map Symbol (EXP,EXP) -> Sign ->
 inducedFromToMorphism m sig1 sig2 =
   let mor = Morphism gen_base gen_module "" sig1 sig2 Unknown Map.empty
       defs = filter (\ (Def _ _ v) -> v == Nothing) $ getLocalDefs sig1
-      in buildMorph defs m mor
+      in buildFromToMorph defs m mor
 
-buildMorph :: [DEF] -> Map.Map Symbol (EXP,EXP) -> Morphism -> Result Morphism
-buildMorph [] _ mor = return mor
-buildMorph ((Def s t _):ds) m mor = do
+buildFromToMorph :: [DEF] -> Map.Map Symbol (EXP,EXP) -> Morphism ->
+                    Result Morphism
+buildFromToMorph [] _ mor = return mor
+buildFromToMorph ((Def s t _):ds) m mor = do
+  let m1 = symMap mor
   let t1 = case translate mor t of
                 Nothing -> error $ badTypeError t
-                Just t' -> t' 
+                Just t' -> t'
   let sig2 = target mor
   if (Map.member s m)
      then do
         let Just (v,t2) = Map.lookup s m
         if (t1 == t2)
-           then buildMorph ds m $ mor {symMap = Map.insert s v $ symMap mor}
+           then buildFromToMorph ds m $ mor {symMap = Map.insert s v m1 }
            else fail $ badViewError s t1
      else do
         let s1 = if (Just t1 == getSymType s sig2) then s else do
@@ -161,8 +164,31 @@ buildMorph ((Def s t _):ds) m mor = do
                                    [s'] -> s'
                                    [] -> error $ noSymError s t1
                                    _ -> error $ manySymError s t1
-        
-        buildMorph ds m $ mor {symMap = Map.insert s (Const s1) $ symMap mor}
+        buildFromToMorph ds m $ mor {symMap = Map.insert s (Const s1) m1}
+
+-- induces a morphism from the source signature and a symbol map
+inducedFromMorphism :: Map.Map Symbol Symbol -> Sign -> Result Morphism
+inducedFromMorphism m sig1 = do
+  let mor = Morphism gen_base gen_module "" sig1 emptySig Unknown $
+              Map.map (\ s -> Const s) m
+  let defs = filter (\ (Def _ _ v) -> v == Nothing) $ getDefs sig1
+  buildFromMorph defs mor
+
+buildFromMorph :: [DEF] -> Morphism -> Result Morphism
+buildFromMorph [] mor = return mor
+buildFromMorph ((Def s t _):ds) mor = do
+  let sig2 = target mor
+  let t1 = case translate mor t of
+                Nothing -> error $ badTypeError t
+                Just t' -> t'
+  let Just (Const s1) = mapSymbol s mor
+  case getSymType s1 sig2 of
+       Just t2 ->
+          if t1 == t2
+             then buildFromMorph ds mor
+             else fail $ badViewError s1 t1
+       Nothing -> buildFromMorph ds $
+                    mor { target = addDef (Def s1 t1 Nothing) $ sig2 }
 
 ---------------------------------------------------------------------------
 ---------------------------------------------------------------------------

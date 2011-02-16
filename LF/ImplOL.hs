@@ -12,7 +12,6 @@ Portability :  portable
 module LF.ImplOL
   ( basicAnalysisOL
   , inducedFromToMorphismOL
-  , genSigOL
   ) where
 
 import LF.AS
@@ -28,8 +27,6 @@ import Common.AS_Annotation
 import Common.Result
 import Common.Doc
 import Common.DocUtils
-
-import qualified Data.Set as Set
 
 import System.IO.Unsafe
 
@@ -87,8 +84,8 @@ inducedFromToMorphismOL ltruth m (ExtSign sig1 _) (ExtSign sig2 _) =
 translMapAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
                        Sign -> Map.Map Symbol (EXP,EXP)
 translMapAnalysisOL ltruth m sig1 sig2 =
-  let syms = unknownSyms (Map.keys m) sig1
-      in if not (null syms) then error $ badDomError syms else
+  let syms = getUnknownSyms (Map.keys m) sig1
+      in if not (null syms) then error $ badSymsError syms else
          unsafePerformIO $ codAnalysisOL ltruth m sig2
 
 codAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
@@ -113,16 +110,6 @@ codAnalysisOL ltruth m sig2 = do
   return $ getMap sig'
 
 ---------------------------------------------------------------------------
----------------------------------------------------------------------------
-
--- generated signatures for object logics
-genSigOL :: Morphism -> Set.Set Symbol -> Sign -> Result Morphism
-genSigOL ltruth syms sig = do
-  let syms' = getSymbols $ target ltruth
-  sig' <- genSig (Set.union syms syms') sig
-  inclusionMorph sig' sig
-
-----------------------------------------------------------------------------
 ---------------------------------------------------------------------------
 
 -- ERROR MESSAGES

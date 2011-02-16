@@ -14,6 +14,7 @@ according to chapter II.4 (Lexical Symbols) of the CASL reference manual
 
 module Common.Lexer where
 
+import Common.Keywords
 import Common.Id
 import Common.Parsec
 import Text.ParserCombinators.Parsec
@@ -217,9 +218,6 @@ isFloating = any (`elem` ".E") . tokStr
 
 nestCommentOut :: CharParser st ()
 nestCommentOut = forget $ nestedComment "%[" "]%"
-
-whiteChars :: String
-whiteChars = "\n\r\t\v\f \160" -- non breaking space
 
 skip :: CharParser st ()
 skip = skipMany (forget (oneOf whiteChars) <|> nestCommentOut <?> "")

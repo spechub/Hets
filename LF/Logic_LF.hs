@@ -81,7 +81,10 @@ instance StaticAnalysis LF
    stat_symb_items LF = symbAnalysis
    stat_symb_map_items LF = symbMapAnalysis
    symbol_to_raw LF = symName
-   matches LF s1 s2 = symName s1 == s2
+   matches LF s1 s2 =
+     if (isSym s2)
+        then symName s1 == s2         --symbols are matched by their name
+        else True   -- expressions are checked manually hence always True
    empty_signature LF = emptySig
    is_subsig LF = isSubsig
    subsig_inclusion LF = inclusionMorph
@@ -95,6 +98,8 @@ instance StaticAnalysis LF
      inclusionMorph sig' sig
    induced_from_to_morphism LF m (ExtSign sig1 _) (ExtSign sig2 _) =
      inducedFromToMorphism (translMapAnalysis m sig1 sig2) sig1 sig2
+   induced_from_morphism LF m sig =
+     inducedFromMorphism (renamMapAnalysis m sig) sig   
 
 instance LogicFram LF
    ()

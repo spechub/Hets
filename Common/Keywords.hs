@@ -270,7 +270,25 @@ sigDelimS :: String
 sigDelimS = ".."
 
 structDelimS :: String
-structDelimS = "/" 
+structDelimS = "/"
+
+-- * Twelf conventions
+
+-- non breaking space
+whiteChars :: String
+whiteChars = "\n\r\t\v\f \160"
+
+-- special characters permitted in a Twelf symbol name
+twelfSymChars :: String
+twelfSymChars = "_-+*/<=>@^"
+
+-- special characters permitted in a Twelf declaration
+twelfDeclChars :: String
+twelfDeclChars = twelfSymChars ++ ":{}[]()"
+
+-- special characters permitted in a Twelf declaration of multiple symbols
+twelfMultDeclChars :: String
+twelfMultDeclChars = twelfDeclChars ++ ","
 
 -- * letter keywords taken from Keywords.txt
 
