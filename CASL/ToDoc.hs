@@ -516,11 +516,8 @@ instance ListCheck a => ListCheck [a] where
 instance ListCheck a => ListCheck (Annoted a) where
     innerList = innerList . item
 
-{- |
-pluralS checks a list with elements in class ListCheck for a list
-greater than zero. It returns an empty String if the list and all
-nested lists have only one element. If the list or an nested list
-has more than one element a String containig one "s" is returned. -}
+{- | pluralS checks nested lists via the class ListCheck to decide
+if a plural s should be appended. -}
 pluralS :: ListCheck a => a -> String
 pluralS = appendS . innerList
 
@@ -533,7 +530,8 @@ instance ListCheck (SORT_ITEM f) where
     innerList (Sort_decl l _) = innerList l
     innerList (Subsort_decl l _ _) = innerList l
     innerList (Subsort_defn _ _ _ _ _) = [()]
-    innerList (Iso_decl _ _) = [()]
+    innerList (Iso_decl l _) = innerList $ drop 1 l
+      -- assume last sort is known
 
 instance ListCheck (OP_ITEM f) where
     innerList (Op_decl l _ _ _) = innerList l

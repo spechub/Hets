@@ -275,7 +275,7 @@ sort  a
 sorts a, b, c
 sort  a < b
 sorts a, b, c, d < e
-sort  a = b = c = d = e
+sorts a = b = c = d = e
 sort  a = {x : b . true}
 sorts s, t
 op    a : s
