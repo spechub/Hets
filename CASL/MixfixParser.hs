@@ -248,9 +248,8 @@ iterateCharts par extR g terms c =
     let self = iterateCharts par extR g
         expand = expandPos Mixfix_token
         oneStep = nextChart addType toAppl g c
-        ruleS = rules c
-        adder = addRules c
-        resolveTerm = resolveMixTrm par extR g (adder, ruleS)
+        ids = (addRules c, rules c)
+        resolveTerm = resolveMixTrm par extR g ids
     in case terms of
     [] -> c
     hd : tl -> case hd of
@@ -268,7 +267,7 @@ iterateCharts par extR g terms c =
             h@(Conditional t1 f2 t3 ps) -> let
               Result mds v = do
                 t4 <- resolveTerm t1
-                f5 <- resolveMixFrm par extR g (adder, ruleS) f2
+                f5 <- resolveMixFrm par extR g ids f2
                 t6 <- resolveTerm t3
                 return (Conditional t4 f5 t6 ps)
               c2 = self tl
@@ -296,6 +295,12 @@ iterateCharts par extR g terms c =
               tNew = Sorted_term (fromMaybe t v) s ps
               c2 = self tl (oneStep (tNew, varTok {tokPos = ps}))
               in mixDiags mds c2
+            ExtTERM t -> let
+              Result mds v = extR g ids t
+              tNew = ExtTERM $ fromMaybe t v
+              c2 = self tl $ oneStep (tNew, varTok {tokPos = getRange t})
+              in mixDiags mds c2
+
             _ -> error "iterateCharts"
 
 -- | construct 'IdSets' from op and pred identifiers

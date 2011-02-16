@@ -285,6 +285,9 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
       ts <- minExpTermCond mef sign ( \ t1 t2 -> Conditional t1 f t2 pos)
             term1 term2 pos
       hasSolutions ga (Conditional term1 formula term2 pos) ts pos
+    ExtTERM t -> do
+      nt <- mef sign t
+      return [[ExtTERM nt]]
     _ -> mkError "unexpected kind of term" top
 
 -- | Minimal expansion of a possibly qualified variable identifier
