@@ -46,10 +46,7 @@ the framework itself as the object logic reuses the signatures and
 morphisms of the framework. The function "write_syntax" constructs 
 the contents of the file declaring the Ltruth morphism. 
 Currently we simply store the morphism using its representation as
-a Haskell datatype value. If proofs and models are later integrated
-into Hets, there should be analogous functions "write_proofs" and 
-"write_models" added, declaring the Lpf and
-Lmod morphisms respectively. 
+a Haskell datatype value.
 
  Module "Logic.Comorphism" provides type classes for the various kinds
 of mappings between logics, and module "Logic.Grothendieck"
