@@ -84,13 +84,9 @@ args_OP_TYPE (Op_type _ args _ _) = args
 res_OP_TYPE :: OP_TYPE -> SORT
 res_OP_TYPE (Op_type _ _ res _) = res
 
-data OP_HEAD = Op_head OpKind [ARG_DECL] SORT Range
+data OP_HEAD = Op_head OpKind [VAR_DECL] SORT Range
                -- pos: "(", semicolons, ")", colon
                deriving Show
-
-data ARG_DECL = Arg_decl [VAR] SORT Range
-                -- pos: commas, colon
-                deriving Show
 
 data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
              | Unit_op_attr (TERM f)
@@ -106,7 +102,7 @@ data PRED_TYPE = Pred_type [SORT] Range
                  -- pos: if null [SORT] then "(",")" else "*"s
                  deriving (Show, Eq, Ord)
 
-data PRED_HEAD = Pred_head [ARG_DECL] Range
+data PRED_HEAD = Pred_head [VAR_DECL] Range
                  -- pos: "(",semi colons , ")"
                  deriving Show
 

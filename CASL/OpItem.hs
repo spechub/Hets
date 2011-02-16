@@ -34,15 +34,11 @@ import Common.Token
 import CASL.Formula
 import Data.List (sort)
 
--- stupid cast
-argDecl :: [String] -> AParser st ARG_DECL
-argDecl = fmap (\ (Var_decl vs s ps) -> Arg_decl vs s ps) . varDecl
-
 -- non-empty
 predHead :: [String] -> AParser st PRED_HEAD
 predHead ks =
     do o <- wrapAnnos oParenT
-       (vs, ps) <- argDecl ks `separatedBy` anSemi
+       (vs, ps) <- varDecl ks `separatedBy` anSemi
        p <- addAnnos >> cParenT
        return $ Pred_head vs $ catRange (o : ps ++ [p])
 

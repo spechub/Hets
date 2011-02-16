@@ -50,16 +50,7 @@ import Syntax.AS_Library
 import Text.ParserCombinators.Parsec (parse)
 import Common.AnnoParser (annotations, parseAnno)
 import Common.Lexer (skip)
-
--- |
--- like the chomp from Perl
--- but this chomp removes trailing newlines AND trailing spaces if any
-chomp :: String -> String
-chomp = reverse . chomp' . reverse
-    where chomp' [] = []
-          chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
-                            | otherwise = xs
-
+import Common.Utils (trimRight)
 
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
 read_sml_ATerm fn = readFile fn >>= return . from_sml_ATermString
@@ -71,12 +62,12 @@ class ATermConvertibleSML t where
     from_sml_ShATermList :: ATermTable -> [t]
 
     -- default function ignores the annotation part
-    from_sml_ShATermList at =
-        case aterm of
-        ShAList ats _ ->  map cnvrt ats
-        _           -> from_sml_ShATermError "[a]" aterm
-        where aterm  = getATerm at
-              cnvrt i = from_sml_ShATerm (getATermByIndex1 i at)
+    from_sml_ShATermList = from_sml_ATermList from_sml_ShATerm
+
+from_sml_ATermList :: (ATermTable -> t) -> ATermTable -> [t]
+from_sml_ATermList f at = case getATerm at of
+   ShAList ats _ -> map (f . flip getATermByIndex1 at) ats
+   aterm -> from_sml_ShATermError "[a]" aterm
 
 from_sml_ATermString :: ATermConvertibleSML a => String -> a
 from_sml_ATermString s   = (\ a -> from_sml_ShATerm a) (readATerm s)
@@ -199,7 +190,7 @@ instance ATermConvertibleSML Annotation where
         case aterm of
             (ShAAppl "comment-line" [ aa ] _)  ->
                 let
-                aa' = chomp $ from_sml_ShATerm (getATermByIndex1 aa att)
+                aa' = trimRight $ from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
                 in (Unparsed_anno Comment_start (Line_anno aa') ab')
             (ShAAppl "comment" [ aa ] _)  ->
@@ -226,7 +217,7 @@ instance ATermConvertibleSML Annotation where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = parse_disp_anno aa' (pos_l)
-                           (chomp $ from_sml_ShATerm (getATermByIndex1 ab att))
+                      (trimRight $ from_sml_ShATerm (getATermByIndex1 ab att))
                 in ab'
             (ShAAppl "string-anno" [ aa,ab ] _)  ->
                 let
@@ -596,13 +587,15 @@ instance ATermConvertibleSML OP_HEAD where
         case aterm of
             (ShAAppl "total-op-head" [ aa,ab ] _)  ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+                aa' = from_sml_ATermList from_sml_ATermARG_DECL
+                       (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in (Op_head Total aa' ab' ac')
             (ShAAppl "partial-op-head" [ aa,ab ] _)  ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+                aa' = from_sml_ATermList from_sml_ATermARG_DECL
+                       (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
                 in (Op_head Partial aa' ab' ac')
@@ -615,8 +608,8 @@ instance ATermConvertibleSML OP_HEAD where
                     (posFromRegion reg_i att,getATermByIndex1 item_i att)
                 _  -> (nullRange,att)
 
-instance ATermConvertibleSML ARG_DECL where
-    from_sml_ShATerm att =
+from_sml_ATermARG_DECL :: ATermTable -> VAR_DECL
+from_sml_ATermARG_DECL att =
         case aterm of
 --  (ShAAppl "arg-decl" [ ShAAppl "" [aa,ab] _ ] _)  ->
         (ShAAppl "" [aa,ab] _)  ->
@@ -624,7 +617,7 @@ instance ATermConvertibleSML ARG_DECL where
                 aa' = from_sml_ATermVARs (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Arg_decl aa' ab' ac')
+                in (Var_decl aa' ab' ac')
         _                       -> from_sml_ShATermError "ARG_DECL" aterm
         where
             aterm = case getATerm att' of
@@ -709,7 +702,8 @@ instance ATermConvertibleSML PRED_HEAD where
         case aterm of
             (ShAAppl "pred-head" [ aa ] _)  ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+                aa' = from_sml_ATermList from_sml_ATermARG_DECL
+                       (getATermByIndex1 aa att)
                 ab' = pos_l
                 in (Pred_head aa' ab')
             _ -> from_sml_ShATermError "PRED_HEAD" aterm
@@ -727,9 +721,9 @@ instance ATermConvertibleSML DATATYPE_DECL where
             (ShAAppl "datatype-decl" [ aa,ab,ac ] _)  ->
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
-                ab' = from_sml_ShATerm (getATermByIndex1 ab att)
+                abh : abt = from_sml_ShATerm (getATermByIndex1 ab att)
                 as  = from_sml_ShATerm (getATermByIndex1 ac att)
-                ab''= (addLAnnoList as $ head ab'):(tail ab')
+                ab''= addLAnnoList as abh : abt
                 ac' = pos_l
                 in (Datatype_decl aa' ab'' ac')
             _ -> from_sml_ShATermError "DATATYPE_DECL" aterm

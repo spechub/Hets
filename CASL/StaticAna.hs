@@ -431,9 +431,8 @@ ana_OP_ITEM mef mix aoi =
         do let ty = headToType ohd
                lb = getRLabel at
                lab = if null lb then getRLabel aoi else lb
-               args = case ohd of
+               vs = case ohd of
                       Op_head _ as _ _ -> as
-               vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
                arg = concatMap (\ (Var_decl v s qs) ->
                                  map (\ j -> Qual_var j s qs) v) vs
            addOp aoi (toOpType ty) i
@@ -459,8 +458,8 @@ ana_OP_ITEM mef mix aoi =
 headToType :: OP_HEAD -> OP_TYPE
 headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 
-sortsOfArgs :: [ARG_DECL] -> [SORT]
-sortsOfArgs = concatMap (\ (Arg_decl l s _) -> map (const s) l)
+sortsOfArgs :: [VAR_DECL] -> [SORT]
+sortsOfArgs = concatMap (\ (Var_decl l s _) -> map (const s) l)
 
 -- see Isabelle/doc/ref.pdf 10.6 Permutative rewrite rules (p. 137)
 addLeftComm :: OpType -> Bool -> Id -> Named (FORMULA f)
@@ -572,11 +571,10 @@ ana_PRED_ITEM mef mix apr = case item apr of
     Pred_decl preds ty _ -> do
       mapM_ (addPred apr $ toPredType ty) preds
       return apr
-    Pred_defn i phd@(Pred_head args rs) at ps -> do
+    Pred_defn i phd@(Pred_head vs rs) at ps -> do
            let lb = getRLabel at
                lab = if null lb then getRLabel apr else lb
-               ty = Pred_type (sortsOfArgs args) rs
-               vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
+               ty = Pred_type (sortsOfArgs vs) rs
                arg = concatMap (\ (Var_decl v s qs) ->
                                  map (\ j -> Qual_var j s qs) v) vs
            addPred apr (toPredType ty) i

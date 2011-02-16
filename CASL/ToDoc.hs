@@ -183,11 +183,8 @@ printVarDecls = fsep . printVarDeclL
 printVarDecl :: VAR_DECL -> Doc
 printVarDecl (Var_decl l s _) = printSortedVars l s
 
-printArgDecl :: ARG_DECL -> Doc
-printArgDecl (Arg_decl l s _) = printSortedVars l s
-
-printArgDecls :: [ARG_DECL] -> Doc
-printArgDecls = parens . fsep . punctuate semi . map printArgDecl
+printArgDecls :: [VAR_DECL] -> Doc
+printArgDecls = parens . printVarDecls
 
 printPredHead :: PRED_HEAD -> Doc
 printPredHead (Pred_head l _) = printArgDecls l
