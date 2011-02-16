@@ -19,6 +19,7 @@ Overload resolution (injections are inserted separately)
 
 module CASL.Overload
   ( minExpFORMULA
+  , minExpFORMULAeq
   , oneExpTerm
   , Min
   , leqF
@@ -51,7 +52,7 @@ import Control.Monad
 -- | the type of the type checking function of extensions
 type Min f e = Sign f e -> f -> Result f
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     - Minimal expansion of a formula -
   Expand a given formula by typing information.
   * For non-atomic formulae, recurse through subsentences.
@@ -63,7 +64,7 @@ type Min f e = Sign f e -> f -> Result f
       expansion function 'minExpFORMULAeq'.
     + Definedness is handled by expanding the subterm.
     + Membership is handled like Cast
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minExpFORMULA :: (GetRange f, Pretty f) => Min f e -> Sign f e -> FORMULA f
               -> Result (FORMULA f)
 minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
@@ -102,7 +103,7 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
         t <- oneExpTerm mef sign term
         return (Definedness t pos)
     Membership term sort pos -> do
-        ts   <- minExpTerm mef sign term
+        ts <- minExpTerm mef sign term
         let fs = map (concatMap ( \ t ->
                     let s = sortOfTerm t in
                     if leqSort sign sort s then
@@ -134,10 +135,10 @@ oneExpTerm minF sign term = do
     ts <- minExpTerm minF sign term
     isUnambiguous (globAnnos sign) term ts nullRange
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     - Minimal expansion of an equation formula -
   see minExpTermCond
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minExpFORMULAeq :: (GetRange f, Pretty f) => Min f e -> Sign f e
                  -> (TERM f -> TERM f -> Range -> FORMULA f)
                  -> TERM f -> TERM f -> Range -> Result (FORMULA f)
@@ -191,10 +192,10 @@ noOpOrPred ops str mty ide pos nargs =
               ++ showDoc ty "' found for '"
               ++ showDoc ide "'") pos] Nothing
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     - Minimal expansion of a predication formula -
     see minExpTermAppl
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minExpFORMULApred :: (GetRange f, Pretty f) => Min f e -> Sign f e -> Id
                    -> Maybe PredType -> [TERM f] -> Range
                    -> Result (FORMULA f)
@@ -233,7 +234,7 @@ qualifyPred ide pos (pred', terms') =
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
 -- | expansions of an equation formula or a conditional
-minExpTermEq :: (GetRange f, Pretty f) =>  Min f e -> Sign f e -> TERM f
+minExpTermEq :: (GetRange f, Pretty f) => Min f e -> Sign f e -> TERM f
               -> TERM f -> Result [[(TERM f, TERM f)]]
 minExpTermEq mef sign term1 term2 = do
     exps1 <- minExpTerm mef sign term1
@@ -241,19 +242,19 @@ minExpTermEq mef sign term1 term2 = do
     return $ map (minimizeEq sign . getPairs) $ combine [exps1, exps2]
 
 getPairs :: [[TERM f]] -> [(TERM f, TERM f)]
-getPairs cs = [ (t1, t2) | [t1,t2] <- combine cs ]
+getPairs cs = [ (t1, t2) | [t1, t2] <- combine cs ]
 
 minimizeEq :: Sign f e -> [(TERM f, TERM f)] -> [(TERM f, TERM f)]
 minimizeEq s = keepMinimals s (sortOfTerm . snd)
   . keepMinimals s (sortOfTerm . fst)
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     - Minimal expansion of a term -
   Expand a given term by typing information.
   * 'Qual_var' terms are handled by 'minExpTerm_var'
   * 'Application' terms are handled by 'minExpTermOp'.
   * 'Conditional' terms are handled by 'minExpTermCond'.
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minExpTerm :: (GetRange f, Pretty f) => Min f e -> Sign f e -> TERM f
            -> Result [[TERM f]]
 minExpTerm mef sign top = let ga = globAnnos sign in case top of
@@ -315,7 +316,7 @@ minExpTermAppl mef sign ide mty args pos = do
         getProfiles cs = map (getProfile cs) ops
         getProfile cs os = [ (op', ts) |
                              op' <- os,
-                             ts  <- cs,
+                             ts <- cs,
                              and $ zipWith (leqSort sign)
                              (map sortOfTerm ts)
                              (opArgs op') ]
@@ -334,7 +335,7 @@ qualifyOp :: Id -> Range -> (OpType, [TERM f]) -> TERM f
 qualifyOp ide pos (op', terms') =
     Application (Qual_op_name ide (toOP_TYPE op') pos) terms' pos
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     - Minimal expansion of a function application or a variable -
   Expand a function application by typing information.
   1. First expand all argument subterms.
@@ -351,7 +352,7 @@ qualifyOp ide pos (op', terms') =
   6. Minimize each element of this unified set (as described on p. 339).
   7. Transform each term in the minimized set into a qualified function
     application term.
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minExpTermOp :: (GetRange f, Pretty f) => Min f e -> Sign f e -> OP_SYMB
               -> [TERM f] -> Range -> Result [[TERM f]]
 minExpTermOp mef sign osym args pos = case osym of
@@ -370,7 +371,7 @@ minExpTermOp mef sign osym args pos = case osym of
    else minExpTermAppl mef sign ide (Just $ toOpType ty) args
         (pos1 `appRange` pos)
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     - Minimal expansion of a conditional -
   Expand a conditional by typing information (see minExpTermEq)
   First expand the subterms and subformula. Then calculate a profile
@@ -379,7 +380,7 @@ minExpTermOp mef sign osym args pos = case osym of
   unification of all these classes. Minimize each equivalence class.
   Finally transform the eq. classes into lists of
   conditionals with equally sorted terms.
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minExpTermCond :: (GetRange f, Pretty f) => Min f e -> Sign f e
                 -> (TERM f -> TERM f -> a) -> TERM f -> TERM f -> Range
                 -> Result [[a]]
@@ -397,13 +398,13 @@ minExpTermCond mef sign f term1 term2 pos = do
                                 (Sorted_term t2 s pos))
                    $ minimalSupers sign s1 s2)) pairs
 
-{-----------------------------------------------------------
+{- ----------------------------------------------------------
     Let P be a set of equivalence classes of qualified terms.
     For each C \in P, let C' choose _one_
     t:s \in C for each s minimal such that t:s \in C.
     That is, discard all terms whose sort is a supersort of
     any other term in the same equivalence class.
------------------------------------------------------------}
+---------------------------------------------------------- -}
 minimizeOp :: Sign f e -> [(OpType, [TERM f])] -> [(OpType, [TERM f])]
 minimizeOp sign = keepMinimals sign (opRes . fst)
 
