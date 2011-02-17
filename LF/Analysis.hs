@@ -104,10 +104,11 @@ makeNamedForm ((n,s),annos) =
       isTheorem = implies || implied
       in (makeNamed n s) {isAxiom = not isTheorem}
 
-getSigFromLibs :: MODULE -> LIBS -> Sign
-getSigFromLibs n libs =
-  let (sigs,_) = Map.findWithDefault (error badLibError) gen_file libs
-  in Map.findWithDefault (error $ badSigError n) n sigs
+getSigFromLibs :: MODULE -> LIBS -> IO Sign
+getSigFromLibs n libs = do
+  lname <- toLibName HETS gen_file
+  let (sigs,_) = Map.findWithDefault (error badLibError) lname libs
+  return $ Map.findWithDefault (error $ badSigError n) n sigs
 
 getUnknownSyms :: [RAW_SYM] -> Sign -> [RAW_SYM]
 getUnknownSyms syms sig =
@@ -139,11 +140,11 @@ makeSigSen sig items = do
   writeFile gen_file contents
   
   -- run Twelf on the created file
-  libs <- twelf2SigMor gen_file
+  libs <- twelf2SigMor HETS gen_file
 
   -- construct the signature and sentences
-  let sig1 = getSigFromLibs gen_sig1 libs
-  let sig2 = getSigFromLibs gen_sig2 libs
+  sig1 <- getSigFromLibs gen_sig1 libs
+  sig2 <- getSigFromLibs gen_sig2 libs
   let sens = getSens sig2
   return (sig1,sens)
 
@@ -207,10 +208,10 @@ codAnalysis m sig2 = do
   writeFile gen_file contents
 
   -- run Twelf on the created file
-  libs <- twelf2SigMor gen_file
+  libs <- twelf2SigMor HETS gen_file
   
   -- construct the mapping
-  let sig' = getSigFromLibs gen_sig2 libs
+  sig' <- getSigFromLibs gen_sig2 libs
   return $ getMap sig'
 
 getMap :: Sign -> Map.Map Symbol (EXP,EXP)
@@ -227,7 +228,7 @@ getMap sig = Map.fromList $ map
 
 -- ERROR MESSAGES
 badLibError :: String
-badLibError = "Library not found."
+badLibError = "Library " ++ gen_file ++ " not found."
 
 badSigError :: MODULE -> String
 badSigError n = "Signature " ++ n ++ " not found."

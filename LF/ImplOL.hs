@@ -61,11 +61,11 @@ makeSigSenOL ltruth sig items = do
   writeFile gen_file contents
   
   -- run Twelf on the created file
-  libs <- twelf2SigMor gen_file
+  libs <- twelf2SigMor HETS gen_file
   
   -- construct the signature and sentences
-  let sig1 = getSigFromLibs gen_sig1 libs
-  let sig2 = getSigFromLibs gen_sig2 libs
+  sig1 <- getSigFromLibs gen_sig1 libs
+  sig2 <- getSigFromLibs gen_sig2 libs
   let sens = getSens sig2
   return (sig1,sens)
 
@@ -103,10 +103,10 @@ codAnalysisOL ltruth m sig2 = do
   writeFile gen_file contents
 
   -- run Twelf on the created file
-  libs <- twelf2SigMor gen_file
+  libs <- twelf2SigMor HETS gen_file
   
   -- construct the mapping
-  let sig' = getSigFromLibs gen_sig2 libs
+  sig' <- getSigFromLibs gen_sig2 libs
   return $ getMap sig'
 
 ---------------------------------------------------------------------------

@@ -50,7 +50,7 @@ end
 
 spec S9 = S3 hide p
 
-spec S10 = S4 reveal plus
+spec S10 = S8 reveal plus
 
 view V2 : S7 to S8 = a |-> plus p p
 
