@@ -14,7 +14,7 @@ Mixfix analysis of terms
 module CASL.MixfixParser
     ( resolveFormula, resolveMixfix, MixResolve
     , resolveMixTrm, resolveMixFrm
-    , extendMixResolve, varDeclTokens
+    , extendRules, varDeclTokens
     , IdSets, mkIdSets, emptyIdSets, unite, unite2
     , makeRules, Mix (..), emptyMix, extendMix
     , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM

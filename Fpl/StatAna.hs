@@ -101,8 +101,8 @@ resolveTermExt ga ids te = case te of
 -- | resolve overloading in rhs and assume function to be in the signature
 resolveFunDef :: MixResolve FunDef
 resolveFunDef ga ids (FunDef o vs s at r) = do
-  nt <- resolveMixTrm mapTermExt
-        (extendMixResolve (varDeclTokens vs) resolveTermExt) ga ids $ item at
+  nt <- resolveMixTrm mapTermExt resolveTermExt ga
+    (extendRules (varDeclTokens vs) ids) $ item at
   return $ FunDef o vs s (replaceAnnoted nt at) r
 
 funDefToOpDefn :: FunDef -> OP_ITEM TermExt
