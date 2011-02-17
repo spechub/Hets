@@ -31,20 +31,21 @@ system in this sense.
 
 The type class 'Logic.Logic.LogicalFramework' is an interface for the
 logics which can be used as logical frameworks, in which object
-logics can be specified by the user. Its methods are used in the 
-analysis of newlogic definitions, in 'Framework.Analysis'.
+logics can be specified by the user. Its methods are used in the
+analysis of newlogic definitions, in "Framework.Analysis".
 
-The method 'Logic.Logic.LogicalFramework.base_sig' 
-returns the base signature of the framework 
-The method 'Logic.Logic.LogicalFramework.write_logic' 
+The method 'Logic.Logic.LogicalFramework.base_sig'
+returns the base signature of the framework
+The method 'Logic.Logic.LogicalFramework.write_logic'
 constructs the contents of the Logic_L
 file, where L is the name of the object logic passed as an argument.
 Typically, this file will declare the lid of the object logic L and
 instances of the classes Language, Syntax, Sentences, Logic, and
 StaticAnalysis. The instance of Category is usually inherited from
 the framework itself as the object logic reuses the signatures and
-morphisms of the framework. The function "write_syntax" constructs 
-the contents of the file declaring the Ltruth morphism. 
+morphisms of the framework. The function
+'Logic.Logic.LogicalFramework.write_syntax' constructs
+the contents of the file declaring the Ltruth morphism.
 Currently we simply store the morphism using its representation as
 a Haskell datatype value.
 
