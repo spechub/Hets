@@ -52,7 +52,7 @@ emptyMix = MixRecord
     { getBaseIds = const emptyIdSets
     , getSigIds = const emptyIdSets
     , getExtIds = const emptyIdSets
-    , mixRules = error "emptyMix"
+    , mixRules = (const [], ([], []))
     , putParen = id
     , mixResolve = const $ const return
     }
@@ -288,6 +288,8 @@ iterateCharts par extR g terms c =
               self tl (oneStep (t, varTok {tokPos = ps}))
             t@(Application (Qual_op_name _ _ ps) _ _) ->
                 self tl (oneStep (t, exprTok {tokPos = ps} ))
+            t@(Application (Op_name o) [] _) ->
+                self tl (oneStep (t, varTok {tokPos = posOfId o} ))
             t@(Mixfix_qual_pred (Qual_pred_name _ _ ps)) ->
                 self tl (oneStep (t, exprTok {tokPos = ps} ))
             Sorted_term t s ps -> let
@@ -300,7 +302,6 @@ iterateCharts par extR g terms c =
               tNew = ExtTERM $ fromMaybe t v
               c2 = self tl $ oneStep (tNew, varTok {tokPos = getRange t})
               in mixDiags mds c2
-
             _ -> error "iterateCharts"
 
 -- | construct 'IdSets' from op and pred identifiers
