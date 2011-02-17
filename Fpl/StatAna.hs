@@ -143,9 +143,16 @@ minFunDef sig (FunDef o vs s at r) = do
   nt <- oneExpTerm minFplTerm sig $ Sorted_term (item at) s r
   return $ FunDef o vs s (replaceAnnoted nt at) r
 
+getDDSorts :: [Annoted FplSortItem] -> [SORT]
+getDDSorts = foldl (\ l si -> case item si of
+  FreeType (Datatype_decl s _ _) -> s : l
+  CaslSortItem _ -> l) []
+
 anaFplExt :: Ana FplExt FplExt () TermExt SignExt
 anaFplExt mix fe = case fe of
   FplSortItems ais r -> do
+    mapM_ (\ s -> addSort NonEmptySorts (emptyAnno s) s)
+      $ getDDSorts ais
     ns <- mapAnM (anaFplSortItem mix) ais
     closeSubsortRel
     return $ FplSortItems ns r
@@ -155,8 +162,7 @@ anaFplExt mix fe = case fe of
 
 anaFplSortItem :: Ana FplSortItem FplExt () TermExt SignExt
 anaFplSortItem mix si = case si of
-  FreeType dt@(Datatype_decl s _ _) -> do
-    addSort NonEmptySorts (emptyAnno dt) s
+  FreeType dt -> do
     ana_DATATYPE_DECL Free dt
     return si
   CaslSortItem s -> fmap (CaslSortItem . item)
