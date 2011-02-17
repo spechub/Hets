@@ -136,11 +136,13 @@ instance Pretty Bool where
     pretty = text . show
 
 
+data CAS = Maple | Mathematica deriving (Show, Read, Eq)
 
 --------------------------- Shortcuts --------------------------
 
-evalWithVerification :: Bool -> Bool -> DTime -> Int -> String -> String -> IO String
-evalWithVerification smode dmode to v lb sp = do
+evalWithVerification :: CAS -> Maybe FilePath -> Maybe String -> Bool -> Bool
+                     -> DTime -> Int -> String -> String -> IO String
+evalWithVerification c mFp mN smode dmode to v lb sp = do
   let -- exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
       p ncl= do
          (_, prog) <- loadAssignmentStore False ncl
@@ -152,8 +154,11 @@ evalWithVerification smode dmode to v lb sp = do
          mE <- verifyProg prog
          when (isJust mE) $ liftIO $ putStrLn $ show $ fromJust mE
          -- readEvalPrintLoop stdin stdout ">" exitWhen
+  case c of
+    Maple -> testWithMapleGen v to p lb sp >>= mapleExit . fst >> return ()
+    Mathematica -> testWithMathematicaGen v mFp mN p lb sp >>= mathematicaExit . fst
 
-  testWithMapleGen v to p lb sp >> return ""
+  return ""
 
 
 
@@ -221,7 +226,26 @@ verifyProg :: (MessagePrinter m, StepDebugger m, VCGenerator m, MonadIO m, Monad
 verifyProg ncl = do
   stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
+testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String
+                 -> IO (MITrans, a)
+testWithMapleGen v to = testWithCASGen rf where
+    rf adg prog =
+        runWithMaple adg v to
+           [ "EnCLFunctions"
+           -- , "intpakX" -- Problems with the min,max functions, they are remapped by this package!
+           ] prog
 
+
+testWithMathematicaGen :: Int -> Maybe FilePath -> Maybe String
+                       -> ([Named CMD] -> MathematicaIO a) -> String -> String
+                       -> IO (MathState, a)
+testWithMathematicaGen v mFp mN = testWithCASGen rf where
+    rf adg prog =
+        runWithMathematica adg v mFp mN
+           [ "/home/ewaryst/Hets/CSL/CAS/Mathematica.m" ] prog
+
+
+{-
 testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String
                  -> IO (MITrans, a)
 testWithMapleGen verb to f lb sp = do
@@ -243,10 +267,31 @@ testWithMapleGen verb to f lb sp = do
          $ g prog
   hClose vchdl
   return res
+-}
 
 testWithMaple :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
 testWithMaple verb to f = uncurry (testWithMapleGen verb to f) . libFP
 
+
+testWithCASGen :: ( AssignmentStore as, MonadState (ASState st) as) =>
+                  (AssignmentDepGraph () -> as a -> IO (ASState st, a))
+                      -> ([Named CMD] -> as a)
+                      -> String -> String -> IO (ASState st, a)
+testWithCASGen rf f lb sp = do
+  ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
+  -- get ordered assignment store and program
+  (as, prog) <- assStoreAndProgSimple ncl
+  vchdl <- openFile "/tmp/vc.out" WriteMode
+  -- build the dependency graph
+  let gr = assDepGraphFromDescList (const $ const ()) as
+      -- make sure that the assignment store is loaded into maple before
+      -- the execution of f
+      g x = loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
+
+  -- start maple and run g
+  res <- rf gr $ g prog
+  hClose vchdl
+  return res
 
 
 
@@ -1355,39 +1400,55 @@ mlTest2 argv = do
 
   mlTestEnv s prog
 
-mlTest3 :: String -> String -> IO ()
-mlTest3 cn es = do
-  let e = toE es
-      prog = sendEvalPacket (sendExpression e) >> prog2
+-- a good interactive stepper through the mathlink interface
+mlTest3 :: String -> String -> Int -> IO ()
+mlTest3 cn es k = do
+  let pr j = liftIO $ putStrLn $ "Entering level " ++ show j
+      prog i j s | i==0 = pr j >> sendEvalPacket (sendExpression $ toE s) >> prog2 j
+                 | i==1 = pr j >> sendTextPacket s >> prog2 j
+                 | i==2 = pr j >> sendTextResultPacket s >> prog2 j
+                 | i==10 = pr j >> sendTextPacket' s >> prog2 j
+                 | i==3 = pr j >> sendTextPacket'' s >> prog2 j
+                 | i==4 = pr j >> sendTextPacket3 s >> prog2 j
+                 | otherwise = pr j >> sendTextPacket4 s >> prog2 j
       gt g
           | g == dfMLTKSYM = "Symbol"
           | g == dfMLTKSTR = "String"
           | g == dfMLTKINT = "Int"
           | g == dfMLTKREAL = "Real"
           | otherwise = ""
-      prog2 = do
+      prog2 j = do
+               let exitP2 = return $ -1
                c <- liftIO getChar
                i <- case c of
                       'x' -> mlNextPacket
                       'n' -> mlNewPacket
                       'G' -> mlGetNext
+                      'r' -> mlReady
                       'g' ->
                           do 
                              g <- mlGetNext
                              liftIO $ putStrLn $ "getnext -> " ++ gt g
                              return g
 
-                      '1' -> readAndPrintML "Symbol: " mlGetSymbol >> liftIO (putStrLn "") >> return 0
-                      '2' -> readAndPrintML "String: " mlGetString >> liftIO (putStrLn "") >> return 0
-                      '3' -> readAndPrintML "Int: " mlGetInteger >> liftIO (putStrLn "") >> return 0
-                      '4' -> readAndPrintML "Real: " mlGetReal >> liftIO (putStrLn "") >> return 0
+                      'y' -> liftIO (putStr " -> ") >> readAndPrintML "Symbol: " mlGetSymbol >> liftIO (putStrLn "") >> return 0
+                      's' -> liftIO (putStr " -> ") >> readAndPrintML "String: " mlGetString >> liftIO (putStrLn "") >> return 0
+                      'i' -> liftIO (putStr " -> ") >> readAndPrintML "Int: " mlGetInteger >> liftIO (putStrLn "") >> return 0
+                      'd' -> liftIO (putStr " -> ") >> readAndPrintML "Real: " mlGetReal >> liftIO (putStrLn "") >> return 0
 
-                      _ -> return $ -1
+                      '0' -> liftIO (putStr ">" >> getLine) >>= prog 0 (j+1) >> exitP2
+                      '1' -> liftIO (putStr ">" >> getLine) >>= prog 1 (j+1) >> exitP2
+                      '2' -> liftIO (putStr ">" >> getLine) >>= prog 2 (j+1) >> exitP2
+                      '3' -> liftIO (putStr ">" >> getLine) >>= prog 3 (j+1) >> exitP2
+                      '4' -> liftIO (putStr ">" >> getLine) >>= prog 4 (j+1) >> exitP2
+                      '5' -> liftIO (putStr ">" >> getLine) >>= prog 5 (j+1) >> exitP2
+
+                      _ -> exitP2
                when (i >= 0) $ do
                  liftIO $ putStrLn $ c: (": " ++ show i)
-                 prog2
+                 prog2 j
 
-  mlTestEnv cn prog
+  mlTestEnv cn $ prog k (0::Int) es
 
 mlTest4 :: String -> [String] -> IO ()
 mlTest4 cn = mlTest5 cn . map Right

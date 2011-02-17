@@ -153,8 +153,8 @@ mmShowOPNAME x =
 
 
       -- these functions have to be defined in a package
-      OP_minus -> "Minus"
-      OP_neg -> "Negate"
+      OP_minus -> "minus"
+      OP_neg -> "negate"
 
       OP_fthrt -> "fthrt"
 
@@ -174,9 +174,20 @@ mmShowOPID (OpUser (SimpleConstant s)) = s
 mmShowOPID _ = error "mmShowOpId: unsupported constant"
 
 
+mmFlexFoldOpList :: [OPNAME]
+mmFlexFoldOpList = [ OP_plus, OP_mult, OP_and, OP_or ]
+
 -- | opInfoMap for mathematica's prdefined symbols
 mathematicaOpInfoMap :: OpInfoMap
-mathematicaOpInfoMap = getOpInfoMap (mmShowOPNAME . opname) operatorInfo
+mathematicaOpInfoMap = getOpInfoMap (mmShowOPNAME . opname)
+                       $ toFlexFold mmFlexFoldOpList operatorInfo
+
+
+toFlexFold :: [OPNAME] -> [OpInfo] -> [OpInfo]
+toFlexFold nl oil = map f oil where
+    ns = Set.fromList nl
+    f oi | Set.member (opname oi) ns = oi { arity = -1, foldNAry = True }
+         | otherwise = oi
 
 
 sendExpressionString :: String -> ML ()
@@ -223,34 +234,54 @@ receiveExpression =  do
   pr
 
 
-mathematicaSetTerm :: String -> AssDefinition -> EXPRESSION
-mathematicaSetTerm s (ConstDef e) = mkOp "Set" [mkOp s [], e]
-mathematicaSetTerm _ _ = error "mathematicaSetTerm: fundefs unsupported"
+receiveString :: ML String
+receiveString =  do
+  et <- mlGetNext
+  if et == dfMLTKSTR then mlGetString
+   else error $ "receiveString: Got " ++ showTK et
 
-mathematicaListTerm :: [EXPRESSION] -> EXPRESSION
-mathematicaListTerm = mkOp "List"
 
-mathematicaSend :: EXPRESSION -> MathematicaIO ()
-mathematicaSend e = liftML $ sendEvalPacket (sendExpression e) >> skipAnswer
+
+-- | mathematica term "Set"
+mtDef :: String -> AssDefinition -> EXPRESSION
+mtDef s (ConstDef e) = mkOp "Set" [mkOp s [], e]
+mtDef s (FunDef args e) = mkOp "Set" [mkOp s $ map mtVarDecl args, e]
+
+mtVarDecl :: String -> EXPRESSION
+mtVarDecl s = mkOp "Pattern" [mkOp s [], mkOp "Blank" []]
+
+mtList :: [EXPRESSION] -> EXPRESSION
+mtList = mkOp "List"
+
+mtCompound :: [EXPRESSION] -> EXPRESSION
+mtCompound = mkOp "CompoundExpression"
+
+
 
 -- ----------------------------------------------------------------------
 -- * Methods for Mathematica 'AssignmentStore' Interface
 -- ----------------------------------------------------------------------
 
-mathematicaAssign :: String -> AssDefinition -> MathematicaIO EXPRESSION
-mathematicaAssign s def = mathematicaEval $ mathematicaSetTerm s def
-
-mathematicaAssigns :: [(String, AssDefinition)] -> MathematicaIO ()
-mathematicaAssigns l = mathematicaSend $ mathematicaListTerm l'
-    where l' = map (uncurry mathematicaSetTerm) l
-
-mathematicaLookup :: String -> MathematicaIO EXPRESSION
-mathematicaLookup s = mathematicaEval $ mkOp s []
+mathematicaSend :: EXPRESSION -> MathematicaIO ()
+mathematicaSend e = liftML $ sendEvalPacket (sendExpression e)
+                    >> skipAnswer >> return ()
 
 mathematicaEval :: EXPRESSION -> MathematicaIO EXPRESSION
 mathematicaEval e =
     liftML $ sendEvalPacket (sendExpression e) >> waitForAnswer
                >> receiveExpression
+
+
+mathematicaAssign :: String -> AssDefinition -> MathematicaIO EXPRESSION
+mathematicaAssign s def = mathematicaEval $ mtDef s def
+
+mathematicaAssigns :: [(String, AssDefinition)] -> MathematicaIO ()
+mathematicaAssigns l = mathematicaSend $ mtList l'
+    where l' = map (uncurry mtDef) l
+
+mathematicaLookup :: String -> MathematicaIO EXPRESSION
+mathematicaLookup s = mathematicaEval $ mkOp s []
+
 
 mathematicaCheck :: EXPRESSION -> MathematicaIO Bool
 mathematicaCheck e = do
@@ -262,14 +293,18 @@ mathematicaCheck e = do
                    concat [ "mathematicaCheck: CAS error for expression "
                           , show e, "\n", s ]
 
+mathematicaDirect :: String -> MathState -> IO String
+mathematicaDirect s st =
+    liftM snd $ withMathematica st $ liftML
+              $ sendTextResultPacket s >> waitForAnswer >> receiveString
 
 -- ----------------------------------------------------------------------
 -- * The Mathematica system via MathLink
 -- ----------------------------------------------------------------------
 
--- TODO: implement the textpackage stuff
-mathematicaDirect :: String -> MathState -> IO String
-mathematicaDirect = error ""
+loadMathematicaModule :: FilePath -> MathematicaIO ()
+loadMathematicaModule fp =
+    liftML $ sendTextPacket ("<<" ++ show fp) >> skipAnswer >> return ()
 
 
 withMathematica :: MathState -> MathematicaIO a -> IO (MathState, a)
@@ -306,6 +341,18 @@ mathematicaInit adg v mFp mN = do
 
 mathematicaExit :: MathState -> IO ()
 mathematicaExit = closeLink . getMLState
+
+
+runWithMathematica :: AssignmentDepGraph () -> Int -- ^ Verbosity level
+          -> Maybe FilePath -- ^ Log MathLink messages into this file
+          -> Maybe String -- ^ Connection name
+                          -- (launches a new kernel if not specified)
+          -> [String] -- ^ mathematica modules to load
+          -> MathematicaIO a -- ^ the mathematica program to run
+          -> IO (MathState, a)
+runWithMathematica adg i mFp mN mods p = do
+  mst <- mathematicaInit adg i mFp mN
+  withMathematica mst $ mapM_ loadMathematicaModule mods >> p
 
 {-
 

@@ -16,7 +16,7 @@ import System.Environment
 import System.Console.GetOpt
 
 import qualified Interfaces.Process as PC
-import CSL.InteractiveTests
+import CSL.InteractiveTests (evalWithVerification, CAS (..))
 import Common.Utils
 
 import Data.Bits
@@ -32,8 +32,17 @@ main = do
     Right st -> runProg st >>= putStrLn
 
 runProg :: ProgSettings -> IO String
-runProg st = evalWithVerification (symbolicmode st) (debugmode st) (timeout st)
-             (verbosity st) (lib st) (spec st) >> return ""
+runProg st =
+    evalWithVerification
+    (cas st)
+    (logFile st)
+    (connectionName st)
+    (symbolicmode st)
+    (debugmode st)
+    (timeout st)
+    (verbosity st)
+    (lib st)
+    (spec st)
 
 ------------------------- Input Arguments -------------------------
 
@@ -70,6 +79,16 @@ options = map f $
           , ( "spec"
             , "Name of specification importing both, the pattern and the design specification"
             , ReqArg PFSpec "SPECNAME")
+          , ( "CAS"
+            , "Name of the computer algebra system to carry out the computations"
+            , ReqArg (PFCAS . fromMaybe (error "Unknown CAS") . readMaybe)
+                         "Mathematica or Maple")
+          , ( "Logfile"
+            , "Path to a logfile which will contain low level CAS connection information"
+            , ReqArg PFLogFile "FILE")
+          , ( "connection"
+            , "A connection name as given e.g. to the MathLink server"
+            , ReqArg PFConnection "String")
           , ( "timeout"
             , "Timeout for communication with external CAS system in deziseconds (tenth of a second)"
             , ReqArg (PFTimeout . fromRational
@@ -100,6 +119,9 @@ data ProgSettings =
     ProgSettings
     { lib :: String
     , spec :: String
+    , cas :: CAS
+    , logFile :: Maybe FilePath
+    , connectionName :: Maybe String
     , timeout :: PC.DTime
     , verbosity :: Int
     , debugmode :: Bool
@@ -111,10 +133,13 @@ defaultSettings :: ProgSettings
 defaultSettings = ProgSettings
                   { lib = error "uninitialized settings"
                   , spec = error "uninitialized settings"
+                  , cas = Maple
                   , timeout = 1
                   , verbosity = 4
                   , debugmode = False
                   , symbolicmode = False
+                  , logFile = Nothing
+                  , connectionName = Nothing
                   }
 
 data ProgFlag =
@@ -122,6 +147,9 @@ data ProgFlag =
         | PFSpec String
         | PFTimeout PC.DTime
         | PFVerbosity Int
+        | PFLogFile FilePath
+        | PFConnection String
+        | PFCAS CAS
         | PFQuiet
         | PFDebug Bool
         | PFSymbolic Bool
@@ -136,6 +164,9 @@ makeSettings settings flg =
       PFTimeout t -> settings { timeout = t }
       PFDebug b -> settings { debugmode = b }
       PFSymbolic b -> settings { symbolicmode = b }
+      PFLogFile fp -> settings { logFile = Just fp }
+      PFConnection n -> settings { connectionName = Just n }
+      PFCAS c -> settings { cas = c }
       
 getSettings :: [ProgFlag] -> ProgSettings
 getSettings = foldl makeSettings defaultSettings

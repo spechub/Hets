@@ -32,18 +32,53 @@ import Common.Utils
 
 -- * Constants for the MathLink interface
 
-dfMLTKAEND, dfMLTKALL_DECODERS, dfMLTKAPCTEND, dfMLTKARRAY, dfMLTKARRAY_DECODER
- , dfMLTKCONT, dfMLTKDIM, dfMLTKELEN, dfMLTKEND, dfMLTKERR, dfMLTKERROR
- , dfMLTKFUNC, dfMLTKINT, dfMLTKMODERNCHARS_DECODER, dfMLTKNULL
- , dfMLTKNULLSEQUENCE_DECODER, dfMLTKOLDINT, dfMLTKOLDREAL, dfMLTKOLDSTR
- , dfMLTKOLDSYM, dfMLTKPACKED_DECODER, dfMLTKPACKED, dfMLTKPCTEND, dfMLTKREAL
- , dfMLTKSEND, dfMLTKSTR, dfMLTKSYM, dfRETURNPKT, dfRETURNTEXTPKT
- , dfRETURNEXPRPKT, dfILLEGALPKT :: CInt
+dfMLTKAEND, dfMLTKALL_DECODERS, dfMLTKAPCTEND, dfMLTKARRAY,
+ dfMLTKARRAY_DECODER , dfMLTKCONT, dfMLTKDIM, dfMLTKELEN, dfMLTKEND,
+ dfMLTKERR, dfMLTKERROR , dfMLTKFUNC, dfMLTKINT,
+ dfMLTKMODERNCHARS_DECODER, dfMLTKNULL , dfMLTKNULLSEQUENCE_DECODER,
+ dfMLTKOLDINT, dfMLTKOLDREAL, dfMLTKOLDSTR , dfMLTKOLDSYM,
+ dfMLTKPACKED_DECODER, dfMLTKPACKED, dfMLTKPCTEND, dfMLTKREAL ,
+ dfMLTKSEND, dfMLTKSTR, dfMLTKSYM, dfILLEGALPKT, dfCALLPKT,
+ dfEVALUATEPKT , dfRETURNPKT, dfINPUTNAMEPKT, dfENTERTEXTPKT,
+ dfENTEREXPRPKT, dfOUTPUTNAMEPKT, dfRETURNTEXTPKT, dfRETURNEXPRPKT,
+ dfDISPLAYPKT, dfDISPLAYENDPKT, dfMESSAGEPKT, dfTEXTPKT, dfINPUTPKT,
+ dfINPUTSTRPKT, dfMENUPKT, dfSYNTAXPKT, dfSUSPENDPKT, dfRESUMEPKT,
+ dfBEGINDLGPKT, dfENDDLGPKT, dfFIRSTUSERPKT, dfLASTUSERPKT :: CInt
 
 dfILLEGALPKT = 0
+
+dfCALLPKT = 7
+dfEVALUATEPKT = 13
 dfRETURNPKT = 3
+
+dfINPUTNAMEPKT = 8
+dfENTERTEXTPKT = 14
+dfENTEREXPRPKT = 15
+dfOUTPUTNAMEPKT = 9
 dfRETURNTEXTPKT = 4
 dfRETURNEXPRPKT = 16
+
+dfDISPLAYPKT = 11
+dfDISPLAYENDPKT = 12
+
+dfMESSAGEPKT = 5
+dfTEXTPKT = 2
+
+dfINPUTPKT = 1
+dfINPUTSTRPKT = 21
+dfMENUPKT = 6
+dfSYNTAXPKT = 10
+
+dfSUSPENDPKT = 17
+dfRESUMEPKT = 18
+
+dfBEGINDLGPKT = 19
+dfENDDLGPKT = 20
+
+dfFIRSTUSERPKT = 128
+dfLASTUSERPKT = 255
+
+
 
 
 dfMLTKAEND=13
@@ -73,6 +108,64 @@ dfMLTKREAL=42
 dfMLTKSEND=44
 dfMLTKSTR=34
 dfMLTKSYM=35
+
+
+showPKT :: CInt -> String
+showPKT i | i == dfILLEGALPKT = "ILLEGALPKT"
+          | i == dfCALLPKT = "CALLPKT"
+          | i == dfEVALUATEPKT = "EVALUATEPKT"
+          | i == dfRETURNPKT = "RETURNPKT"
+          | i == dfINPUTNAMEPKT = "INPUTNAMEPKT"
+          | i == dfENTERTEXTPKT = "ENTERTEXTPKT"
+          | i == dfENTEREXPRPKT = "ENTEREXPRPKT"
+          | i == dfOUTPUTNAMEPKT = "OUTPUTNAMEPKT"
+          | i == dfRETURNTEXTPKT = "RETURNTEXTPKT"
+          | i == dfRETURNEXPRPKT = "RETURNEXPRPKT"
+          | i == dfDISPLAYPKT = "DISPLAYPKT"
+          | i == dfDISPLAYENDPKT = "DISPLAYENDPKT"
+          | i == dfMESSAGEPKT = "MESSAGEPKT"
+          | i == dfTEXTPKT = "TEXTPKT"
+          | i == dfINPUTPKT = "INPUTPKT"
+          | i == dfINPUTSTRPKT = "INPUTSTRPKT"
+          | i == dfMENUPKT = "MENUPKT"
+          | i == dfSYNTAXPKT = "SYNTAXPKT"
+          | i == dfSUSPENDPKT = "SUSPENDPKT"
+          | i == dfRESUMEPKT = "RESUMEPKT"
+          | i == dfBEGINDLGPKT = "BEGINDLGPKT"
+          | i == dfENDDLGPKT = "ENDDLGPKT"
+          | i == dfFIRSTUSERPKT = "FIRSTUSERPKT"
+          | i == dfLASTUSERPKT = "LASTUSERPKT"
+          | otherwise = "UNRECOGNIZED PACKET"
+
+
+showTK :: CInt -> String
+showTK i  | i == dfMLTKAEND = "MLTKAEND"
+          | i == dfMLTKALL_DECODERS = "MLTKALL_DECODERS"
+          | i == dfMLTKAPCTEND = "MLTKAPCTEND"
+          | i == dfMLTKARRAY = "MLTKARRAY"
+          | i == dfMLTKARRAY_DECODER = "MLTKARRAY_DECODER"
+          | i == dfMLTKCONT = "MLTKCONT"
+          | i == dfMLTKDIM = "MLTKDIM"
+          | i == dfMLTKELEN = "MLTKELEN"
+          | i == dfMLTKEND = "MLTKEND"
+          | i == dfMLTKERR = "MLTKERR"
+          | i == dfMLTKERROR = "MLTKERROR"
+          | i == dfMLTKFUNC = "MLTKFUNC"
+          | i == dfMLTKINT = "MLTKINT"
+          | i == dfMLTKMODERNCHARS_DECODER = "MLTKMODERNCHARS_DECODER"
+          | i == dfMLTKNULL = "MLTKNULL"
+          | i == dfMLTKNULLSEQUENCE_DECODER = "MLTKNULLSEQUENCE_DECODER"
+          | i == dfMLTKOLDINT = "MLTKOLDINT"
+          | i == dfMLTKOLDREAL = "MLTKOLDREAL"
+          | i == dfMLTKOLDSTR = "MLTKOLDSTR"
+          | i == dfMLTKOLDSYM = "MLTKOLDSYM"
+          | i == dfMLTKPACKED_DECODER = "MLTKPACKED_DECODER"
+          | i == dfMLTKPACKED = "MLTKPACKED"
+          | i == dfMLTKPCTEND = "MLTKPCTEND"
+          | i == dfMLTKREAL = "MLTKREAL"
+          | i == dfMLTKSEND = "MLTKSEND"
+          | i == dfMLTKSTR = "MLTKSTR"
+          | i == dfMLTKSYM = "MLTKSYM"
 
 
 -- * MathLink monad as Reader IO monad
@@ -373,27 +466,76 @@ sendEvalPacket ml = do
   mlEndPacket
   return res
 
--- TODO: implement it correctly
 sendTextPacket :: String -> ML ()
 sendTextPacket s = do
-  mlPutFunction "EvaluateTextPacket" 1
+  mlPutFunction "EvaluatePacket" 1
+  mlPutFunction "ToExpression" 1
   mlPutString s
   mlEndPacket
   return ()
 
-waitForAnswer :: ML ()
+sendTextResultPacket :: String -> ML ()
+sendTextResultPacket s = do
+  mlPutFunction "EvaluatePacket" 1
+  mlPutFunction "ToString" 1
+  mlPutFunction "ToExpression" 1
+  mlPutString s
+  mlEndPacket
+  return ()
+
+-- these variants does not work as expected
+sendTextPacket' :: String -> ML ()
+sendTextPacket' s = do
+  mlPutFunction "EnterTextPacket" 1
+  mlPutString s
+  mlEndPacket
+  return ()
+sendTextPacket'' :: String -> ML ()
+sendTextPacket'' s = do
+  mlPutFunction "EnterExpressionPacket" 1
+  mlPutFunction "ToExpression" 1
+  mlPutString s
+  mlEndPacket
+  return ()
+sendTextPacket3 :: String -> ML ()
+sendTextPacket3 s = do
+  mlPutFunction "EvaluatePacket" 1
+  mlPutFunction "ToString" 1
+  mlPutFunction "ToExpression" 1
+  mlPutString s
+  mlEndPacket
+  return ()
+sendTextPacket4 :: String -> ML ()
+sendTextPacket4 s = do
+  mlPutFunction "EnterExpressionPacket" 1
+  mlPutFunction "ToString" 1
+  mlPutFunction "ToExpression" 1
+  mlPutString s
+  mlEndPacket
+  return ()
+
+
+waitForAnswer :: ML CInt
 waitForAnswer = do
-  -- skip any packets before the first ReturnPacket
-  waitUntilPacket (0::Int) [dfRETURNPKT, dfRETURNEXPRPKT, dfRETURNTEXTPKT]
+    -- skip any packets before the first ReturnPacket
+  i <- waitUntilPacket (0::Int) [ dfRETURNPKT, dfRETURNEXPRPKT
+                                , dfRETURNTEXTPKT, dfILLEGALPKT]
+  if elem i [dfILLEGALPKT, dfRETURNEXPRPKT, dfRETURNTEXTPKT]
+   then error $ "waitForAnswer: encountered a " ++ showPKT i
+   else return i
+  
 
-skipAnswer :: ML ()
-skipAnswer = do
-  -- skip all packets until the illegal packet
-  waitUntilPacket (0::Int) [dfILLEGALPKT]
+-- wait for the answer and skip it
+skipAnswer :: ML CInt
+skipAnswer = waitForAnswer >> mlNewPacket
 
-waitUntilPacket :: Num a => a -> [CInt] -> ML ()
+waitUntilPacket :: Num a => a -> [CInt] -> ML CInt
 waitUntilPacket i l = do
   np <- mlNextPacket
-  if elem np l then verbMsgMLLn 2 $ "GotReturn after " ++ show i ++ " iterations"
-   else (verbMsgMLLn 2 $ "wap: " ++ show np) >> mlNewPacket >> waitUntilPacket (i+1) l
+  if elem np l then do
+                 verbMsgMLLn 2 $ "GotReturn after " ++ show i ++ " iterations"
+                 return np
+   else (verbMsgMLLn 2 $ "wap: " ++ show np) >> mlNewPacket
+            >> waitUntilPacket (i+1) l
+
 

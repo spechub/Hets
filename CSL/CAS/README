@@ -1,0 +1,27 @@
+This directory contains libraries for computer algebra systems
+connected to Hets. The functions provided in the libraries cover the
+functions which are neccessary for the Hets EnCL CAS interface.
+For each CAS you can find the function mapping in the corresponding
+Interpreter code file (e.g., MathematicaInterpreter.hs).
+
+Files:
+
+Mathematica.m - Interface library for Mathematica
+
+EnCLFunctions.mw - Interface library for Maple
+
+intpakX-v1.2.mw - Interval arithmetic lib for Maple provided by the University
+                  of Wuppertal:
+
+                  intpakX v1.2
+                  (c) 2005 Scientific Computing/Software Engineering Research Group,
+                  Department of Mathematics, University of Wuppertal, Germany
+
+                  Contact: 
+                  kraemer@math.uni-wuppertal.de
+                  markus.grimmer@math.uni-wuppertal.de 
+                  http://www.math.uni-wuppertal.de/wrswt
+
+
+intCompare.mw - A library based on the intpakX lib providing interval
+                comparison operators which are missing completely in intpakX

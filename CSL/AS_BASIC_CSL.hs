@@ -113,14 +113,24 @@ mkAndAnalyzeOp st s eps exps rg =
               | otherwise = Just $ err msg
         opOrErr mOp x = case x of
                           Just msg -> error msg
-                          _ -> OpId $ opname $ fromJust mOp
-        op = case lookupOperator st s (length exps) of
-               Left False -> OpUser $ SimpleConstant s
+                          _ -> let oi = fromJust mOp
+                               in (foldNAry oi, OpId $ opname oi)
+        (fnary, op) =
+            case lookupOperator st s (length exps) of
+               Left False -> (False, OpUser $ SimpleConstant s)
                -- if registered it must be registered with the given arity or
                -- as flex-op, otherwise we don't accept it
                Left True -> opOrErr Nothing $ g "* Wrong arity\n"
                Right opinfo -> opOrErr (Just opinfo) $ g ""
-    in Op op eps exps rg
+        e | fnary && length exps > 2 =
+              if null eps
+              then foldl f (f (exps!!0) (exps!!1)) $ drop 2 exps
+              else error $ "mkAndAnalyzeOp: cannot fold application with "
+                       ++ "extended parameters "
+                       ++ show (pretty $ Op op eps exps rg)
+          | otherwise = Op op eps exps rg
+        f e' e'' = Op op [] [e', e''] rg
+    in e
 
 
 mapExpr :: (EXPRESSION -> EXPRESSION) -> EXPRESSION -> EXPRESSION
@@ -366,6 +376,8 @@ data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
 data OpInfo = OpInfo { prec :: Int -- ^ precedence between 0 and maxPrecedence
                      , infx :: Bool -- ^ True = infix
                      , arity :: Int -- ^ the operator arity
+                     , foldNAry :: Bool -- ^ True = fold nary-applications
+                                        -- during construction into binary ones
                      , opname :: OPNAME -- ^ The actual operator name
                      , bind :: Maybe BindInfo -- ^ More info for binders
                      } deriving (Eq, Ord, Show)
@@ -415,6 +427,7 @@ operatorInfo =
                              , infx = p > 0
                              , arity = i
                              , opname = n
+                             , foldNAry = False
                              , bind = Nothing
                              }
         toSglBind n i bv bb =
@@ -422,6 +435,7 @@ operatorInfo =
                    , infx = False
                    , arity = i
                    , opname = n
+                   , foldNAry = False
                    , bind = Just $ BindInfo [bv] [bb]
                    }
         -- arityX simple ops
