@@ -17,6 +17,7 @@ import Common.DocUtils
 import Common.Keywords
 
 type NAME = Token
+type SIG_NAME = Token
 type MORPH_NAME = Token
 type PATTERN_NAME = Token
 
@@ -28,10 +29,12 @@ data LogicDef = LogicDef
     -- the framework used for defining the object logic
     meta          :: FRAM,
     {- name of the morphism specifying the sentences and truth judgement of the
-       object logic -}    
+       object logic -}
     syntax        :: MORPH_NAME,
     -- name of the morphism specifying the model category of the object logic 
     models        :: MORPH_NAME,
+    -- the foundation used to construct the model theory of the object logic
+    foundation    :: SIG_NAME,
     -- name of the morphism specifying the proof category of the object logic     
     proofs        :: MORPH_NAME,
     -- name of the pattern specifying the signature category of the object logic
@@ -46,11 +49,12 @@ instance Pretty FRAM where
     pretty = printFram
 
 printLogicDef :: LogicDef -> Doc
-printLogicDef (LogicDef l f s m p pa) = 
+printLogicDef (LogicDef l ml s m f p pa) = 
   vcat [ text newlogicS <+> pretty l
-       , text " " <+> text metaS <+> pretty f
+       , text " " <+> text metaS <+> pretty ml
        , text " " <+> text syntaxS <+> pretty s
        , text " " <+> text modelsS <+> pretty m
+       , text " " <+> text foundationS <+> pretty f
        , text " " <+> text proofsS <+> pretty p
        , text " " <+> text patternsS <+> pretty pa
        ] 

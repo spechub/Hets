@@ -160,14 +160,15 @@ libItem l =
   <|> -- newlogic
     do (n, s1) <- newlogicP
        s2 <- equalT
-       (f, s3) <- metaP
+       (ml, s3) <- metaP
        (s, s4) <- syntaxP
        (m, s5) <- modelsP
-       (p, s6) <- proofsP
-       (pa, s7) <- patternsP
+       (f, s6) <- foundationP
+       (p, s7) <- proofsP
+       (pa, s8) <- patternsP
        q <- optEnd
-       return (Newlogic_defn (LogicDef n f s m p pa)
-          (catRange ([s1, s2, s3, s4, s5, s6, s7] ++ maybeToList q)))    
+       return (Newlogic_defn (LogicDef n ml s m f p pa)
+          (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))    
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -266,6 +267,13 @@ modelsP = do
     s <- asKey modelsS
     m <- simpleIdOrDDottedId
     return (m, s)     
+  <|> return (nullTok, nullTok)
+
+foundationP :: AParser st (Token, Token)
+foundationP = do
+    s <- asKey foundationS
+    f <- simpleId
+    return (f, s)
   <|> return (nullTok, nullTok)
 
 proofsP :: AParser st (Token, Token)

@@ -40,6 +40,7 @@ import Common.Lexer
 import Common.Token
 import Common.Id
 import Common.Keywords
+import Common.ExtSign
 
 import Text.ParserCombinators.Parsec
 
@@ -68,9 +69,9 @@ anaLogicDefH :: LogicFram lid sublogics basic_spec sentence symb_items
                 => lid -> LogicDef -> DGraph -> IO DGraph
 anaLogicDefH ml ld dg = do
   case retrieveDiagram ml ld dg of
-       Result _ (Just (ltruth, lmod, lpf)) -> do
+       Result _ (Just (ltruth, lmod, found, lpf)) -> do
            let l = tokStr $ newlogicName ld
-           buildLogic ml l ltruth lmod lpf
+           buildLogic ml l ltruth lmod found lpf
            addLogic2LogicList l
            return $ addLogicDef2DG ld dg
        _ -> fail ""
@@ -100,18 +101,23 @@ retrieveDiagram :: LogicFram lid sublogics basic_spec sentence symb_items
                           symb_map_items sign morphism symbol raw_symbol
                           proof_tree
                    => lid -> LogicDef -> DGraph ->
-                      Result (morphism, Maybe morphism, Maybe morphism)
-retrieveDiagram ml (LogicDef _ _ s m p _) dg = do
+                      Result (morphism, Maybe morphism,
+                              Maybe sign, Maybe morphism)
+retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
   ltruth <- lookupMorph ml s dg
   lmod <- if (m == nullTok)
              then return Nothing
              else do v <- lookupMorph ml m dg
                      return $ Just v
+  found <- if (f == nullTok)
+              then return Nothing
+              else do v <- lookupSig ml f dg
+                      return $ Just v
   lpf <- if (p == nullTok)
             then return Nothing
             else do v <- lookupMorph ml p dg
-                    return $ Just v 
-
+                    return $ Just v
+  
   if (dom ltruth /= base_sig ml) then
      error $ "The morphism " ++ (show s) ++
              " must originate from the Base signature for " ++
@@ -122,7 +128,23 @@ retrieveDiagram ml (LogicDef _ _ s m p _) dg = do
   if (isJust lpf && (dom $ fromJust lpf) /= cod ltruth) then
      error $ "The morphisms " ++ (show s) ++
              " and " ++ (show p) ++ " must be composable." else do
-  return (ltruth, lmod, lpf)
+  return (ltruth, lmod, found, lpf)
+
+-- looks up a signature by name
+lookupSig :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
+                   sign morphism symbol raw_symbol proof_tree
+             => lid -> SIG_NAME -> DGraph -> Result sign
+lookupSig l n dg = do
+  let extSig = case lookupGlobalEnvDG n dg of
+                 Just (SpecEntry es) -> es
+                 _ -> error $ "The signature " ++ (show n) ++
+                              " could not be found."
+  case extSig of
+    ExtGenSig _ (NodeSig _ (G_sign l' (ExtSign sig _) _)) ->
+      if Logic l /= Logic l'
+         then error $ "The signature " ++ (show n) ++
+                      " is not in the logic " ++ (show l) ++ "."
+         else coercePlainSign l' l "" sig
 
 -- looks up a morphism by name
 lookupMorph :: Logic lid sublogics basic_spec sentence symb_items symb_map_items
@@ -146,8 +168,8 @@ lookupMorph l n dg = do
 buildLogic :: LogicFram lid sublogics basic_spec sentence symb_items
                     symb_map_items sign morphism symbol raw_symbol proof_tree
               => lid -> String -> morphism -> Maybe morphism ->
-                 Maybe morphism -> IO ()
-buildLogic ml l ltruth _ _ = do
+                 Maybe sign -> Maybe morphism -> IO ()
+buildLogic ml l ltruth _ _ _ = do
   exists <- doesDirectoryExist l
   if exists then
      error $ "The directory " ++ l ++ " already exists.\n" ++

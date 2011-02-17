@@ -241,6 +241,9 @@ newlogicS = "newlogic"
 metaS :: String
 metaS = "meta"
 
+foundationS :: String
+foundationS = "foundation"
+
 syntaxS :: String
 syntaxS = "syntax"
 
