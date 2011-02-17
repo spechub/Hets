@@ -265,7 +265,9 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
     Sorted_term term sort pos -> do
       expandedTerm <- minExpTerm mef sign term
       -- choose expansions that fit the given signature, then qualify
-      let validExps = map (filter $ \ t -> leqSort sign (sortOfTerm t) sort)
+      let validExps =
+              map (filter $ \ t -> let s = sortOfTerm t in
+                      s == genName "unknown" || leqSort sign s sort)
                       expandedTerm
       hasSolutions ga top (map (map (\ t ->
                  Sorted_term t sort pos)) validExps) pos

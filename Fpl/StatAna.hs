@@ -22,14 +22,17 @@ import CASL.Overload
 import CASL.Quantification
 
 import Common.AS_Annotation
+import Common.DocUtils
 import Common.ExtSign
 import Common.GlobalAnnotations
+import Common.Id
 import Common.Lib.State
 import Common.Result
 
 import Control.Monad
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 type FplSign = Sign TermExt SignExt
 
@@ -113,6 +116,24 @@ opDefnToFunDefn def oi = case oi of
   Op_defn o (Op_head Total vs s _) nt r -> FunDef o vs s nt r
   _ -> def
 
+resolvePattern :: FplSign -> (SORT, FplTerm) -> Result ([VAR_DECL], FplTerm)
+resolvePattern sign (resSort, term) = case term of
+  Application (Op_name ide@(Id ts _ _)) args p ->
+    case filter ( \ o -> length (opArgs o) == length args
+                    && opRes o == resSort
+                    )
+         $ Set.toList $ Map.findWithDefault Set.empty ide $ opMap sign of
+      [] -> if null args && isSimpleId ide then
+                let v = Var_decl [head ts] resSort $ posOfId ide
+                in return ([v], toQualVar v)
+            else fail $ "unresolved pattern " ++ showDoc term ""
+      [OpType k as r] -> do
+        l <- mapM (resolvePattern sign) $ zip as args
+        return (concatMap fst l,
+          Application (Qual_op_name ide (Op_type k as r p) p) (map snd l) p)
+      _ -> fail $ "ambiguous pattern " ++ showDoc term ""
+  _ -> fail $ "unexpected pattern " ++ showDoc term ""
+
 minFplTerm :: Min TermExt SignExt
 minFplTerm sig te = case te of
   FixDef fd -> fmap FixDef $ minFunDef sig fd
@@ -120,10 +141,11 @@ minFplTerm sig te = case te of
     ro <- oneExpTerm minFplTerm sig o
     -- assume unique type of top-level term for now
     let s = sortOfTerm ro
-    -- CHECK: consider pattern variables
-    rl <- mapM (\ (p, t) -> liftM2 (,)
-          (oneExpTerm minFplTerm sig $ Sorted_term p s r)
-          $ oneExpTerm minFplTerm sig $ Sorted_term t s r) l
+    rl <- mapM (\ (p, t) -> do
+          (vs, np) <- resolvePattern sig (s, p)
+          let newSign = execState (mapM_ addVars vs) sig
+          rt <- oneExpTerm minFplTerm newSign t
+          return (np, rt)) l
     return $ Case ro rl r
   Let fd@(FunDef o vs s _ q) t r -> do
     let newSign = execState
@@ -131,7 +153,7 @@ minFplTerm sig te = case te of
            (toOpType $ Op_type Total (sortsOfArgs vs) s q) o)
           sig
     rfd <- minFunDef newSign fd
-    rt <- oneExpTerm minFplTerm sig t
+    rt <- oneExpTerm minFplTerm newSign t
     return $ Let rfd rt r
   IfThenElse i t e r -> do
     ri <- minExpFORMULA minFplTerm sig i

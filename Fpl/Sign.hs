@@ -12,6 +12,7 @@ signature extension for FPL to keep track of constructors
 
 module Fpl.Sign where
 
+import Common.Doc
 import Common.DocUtils
 import Common.Id
 
@@ -25,7 +26,8 @@ data SignExt = SignExt
   , freetypes :: Map.Map Id (Set.Set (Id, OpType)) }
   deriving (Show, Eq, Ord)
 
-instance Pretty SignExt
+instance Pretty SignExt where
+  pretty _ = empty
 
 emptyFplSign :: SignExt
 emptyFplSign = SignExt Map.empty Map.empty
