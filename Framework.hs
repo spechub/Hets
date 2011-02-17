@@ -1,4 +1,4 @@
-{-
+{- |
 Description : syntax and analysis for adding object logics to Hets
 from their specification in a logical framework
 
