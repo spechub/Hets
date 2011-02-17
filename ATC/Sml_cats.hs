@@ -36,6 +36,7 @@ import ATerm.ReadWrite
 import Common.Id
 import Common.AS_Annotation
 import Common.LibName
+import Common.IO
 
 import CASL.AS_Basic_CASL
 
@@ -52,8 +53,9 @@ import Common.AnnoParser (annotations, parseAnno)
 import Common.Lexer (skip)
 import Common.Utils (trimRight)
 
+-- | cats creates latin1 files
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
-read_sml_ATerm fn = readFile fn >>= return . from_sml_ATermString
+read_sml_ATerm fn = readEncFile Latin1 fn >>= return . from_sml_ATermString
 
 ----- Convertible class for sml -----------------------------------------
 
