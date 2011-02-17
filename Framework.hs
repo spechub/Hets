@@ -1,6 +1,5 @@
 {- |
-Description : syntax and analysis for adding object logics to Hets
-from their specification in a logical framework
+Description : syntax and analysis for adding object logics to Hets from their specification in a logical framework
 
 The folder "Framework" contains the infrastructure needed for
 extending Hets with new logics which are specified in
