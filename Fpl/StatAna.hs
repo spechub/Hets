@@ -88,7 +88,7 @@ resolveTermExt ga ids te = case te of
           $ resolveMixTrm mapTermExt resolveTermExt ga ids t) l
     return $ Case ro rl r
   Let fd t r -> do
-    -- FIXME: add fd id!
+    -- add function name for recursive mixfix analysis
     rfd <- resolveFunDef ga ids fd
     rt <- resolveMixTrm mapTermExt resolveTermExt ga ids t
     return $ Let rfd rt r
@@ -101,7 +101,8 @@ resolveTermExt ga ids te = case te of
 -- | resolve overloading in rhs and assume function to be in the signature
 resolveFunDef :: MixResolve FunDef
 resolveFunDef ga ids (FunDef o vs s at r) = do
-  nt <- resolveMixTrm mapTermExt resolveTermExt ga ids $ item at
+  nt <- resolveMixTrm mapTermExt
+        (extendMixResolve (varDeclTokens vs) resolveTermExt) ga ids $ item at
   return $ FunDef o vs s (replaceAnnoted nt at) r
 
 funDefToOpDefn :: FunDef -> OP_ITEM TermExt
@@ -124,9 +125,10 @@ minFplTerm sig te = case te of
           (oneExpTerm minFplTerm sig $ Sorted_term p s r)
           $ oneExpTerm minFplTerm sig $ Sorted_term t s r) l
     return $ Case ro rl r
-  Let fd t r -> do
+  Let fd@(FunDef o vs s _ q) t r -> do
     let newSign = execState
-          (ana_OP_ITEM minFplTerm mixFplAna $ emptyAnno $ funDefToOpDefn fd)
+          (addOp (emptyAnno o)
+           (toOpType $ Op_type Total (sortsOfArgs vs) s q) o)
           sig
     rfd <- minFunDef newSign fd
     rt <- oneExpTerm minFplTerm sig t
@@ -140,7 +142,8 @@ minFplTerm sig te = case te of
 -- | type check rhs and assume function to be in the signature
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
 minFunDef sig (FunDef o vs s at r) = do
-  nt <- oneExpTerm minFplTerm sig $ Sorted_term (item at) s r
+  let newSign = execState (mapM_ addVars vs) sig
+  nt <- oneExpTerm minFplTerm newSign $ Sorted_term (item at) s r
   return $ FunDef o vs s (replaceAnnoted nt at) r
 
 getDDSorts :: [Annoted FplSortItem] -> [SORT]
