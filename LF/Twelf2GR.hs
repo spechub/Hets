@@ -303,6 +303,12 @@ toAbsoluteURI fp = do
   dir <- getCurrentDirectory
   return $ resolve fp $ dir ++ "/"
 
+-- relativizes an absolute file path wrt to the current directory
+toRelativeURI :: FilePath -> IO FilePath
+toRelativeURI fp = do
+  dir <- getCurrentDirectory
+  return $ relativize fp $ dir ++ "/"
+
 {- converts a filepath to a library name, i.e.
    relativizes w.r.t. the LATIN_HOME env variable -}
 toLibName :: Namespace -> FilePath -> IO BASE

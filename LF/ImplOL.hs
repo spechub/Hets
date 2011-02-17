@@ -50,9 +50,9 @@ makeSigSenOL ltruth sig items = do
                       Nothing -> error $ badSenTypeError
                       Just t -> show $ pretty t
   let lSyn = target ltruth
-  let imp = mkRead $ sigBase lSyn
-  let cont1 = if (sig == lSyn || (null $ getLocalDefs sig)) then "" else
-        (show $ vcat $ map pretty $ getLocalDefs sig) ++ "\n"
+  file <- mkImport lSyn
+  let imp = mkRead file
+  let cont1 = if sig == lSyn then "" else printLocalDefs sig
   let cont2 = printSigItems $ getSigItems items
   let cont3 = printSenItems sen_type $ getSenItems items
   let s1 = mkSig gen_sig1 $ mkIncl (sigModule lSyn) ++ cont1 ++ cont2
@@ -68,6 +68,16 @@ makeSigSenOL ltruth sig items = do
   sig2 <- getSigFromLibs gen_sig2 libs
   let sens = getSens sig2
   return (sig1,sens)
+
+mkImport :: Sign -> IO String
+mkImport lSyn = do
+  file <- fromLibName LATIN $ sigBase lSyn
+  toRelativeURI file
+
+printLocalDefs :: Sign -> String
+printLocalDefs sig =
+  if (null $ getLocalDefs sig) then "" else
+     (show $ vcat $ map pretty $ getLocalDefs sig) ++ "\n"
 
 -----------------------------------------------------------------
 -----------------------------------------------------------------
@@ -92,11 +102,12 @@ codAnalysisOL :: Morphism -> Map.Map RAW_SYM RAW_SYM -> Sign ->
                  IO (Map.Map Symbol (EXP,EXP))
 codAnalysisOL ltruth m sig2 = do
   -- make a Twelf file
-  let cont1 = (show $ pretty sig2) ++ "\n"
+  let lSyn = target ltruth
+  file <- mkImport lSyn
+  let imp = mkRead file
+  let cont1 = if sig2 == lSyn then "" else printLocalDefs sig2
   let cont2 = concat $ map (\ (k,v) -> (genPref k) ++ " = " ++ v ++ ".\n") $
                  Map.toList m
-  let lSyn = target ltruth
-  let imp = mkRead $ sigBase lSyn
   let s1 = mkSig gen_sig1 $ mkIncl (sigModule lSyn) ++ cont1
   let s2 = mkSig gen_sig2 $ mkIncl gen_sig1 ++ cont2
   let contents = imp ++ "\n" ++ s1 ++ "\n" ++ s2
