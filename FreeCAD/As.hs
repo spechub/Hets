@@ -51,7 +51,6 @@ data PlacedObject = PlacedObject Placement Object deriving Show
 
 data NamedObject = NamedObject { name::String
                    , object:: PlacedObject}  
-                 | EmptyObject
                  deriving Show
 
 

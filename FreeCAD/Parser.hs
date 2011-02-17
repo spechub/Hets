@@ -4,6 +4,7 @@ module FreeCAD.Parser
 import System.IO
 import Text.XML.Light
 import Data.Maybe
+import FreeCAD.Translater
 
 
 --the IO part of the program:--
