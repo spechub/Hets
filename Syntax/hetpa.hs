@@ -20,10 +20,12 @@ import Common.AnnoState
 import Common.DocUtils
 import Comorphisms.LogicGraph
 import Syntax.Print_AS_Library ()
+import Common.IO
 
 parsefile :: FilePath -> IO ()
 parsefile fname = do
-  input <- readFile fname
+  input <- readEncFile Latin1 fname
+  setStdEnc Latin1
   case runParser (library logicGraph)
            (emptyAnnos ()) fname input of
     Left err -> error $ show err
