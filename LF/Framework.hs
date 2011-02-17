@@ -19,7 +19,7 @@ import Framework.WriteLogicUtils
 import Data.List
 
 baseB :: BASE
-baseB = "Framework/specs/logics/propositional/syntax/base.elf"
+baseB = "../hets/Framework/specs/logics/propositional/syntax/base.elf"
 
 baseM :: MODULE
 baseM = "Base"

@@ -38,11 +38,11 @@ type NODE_MAP = Map.Map NODE Node
 -- analyzes the given Twelf file
 anaTwelfFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaTwelfFile _ fp = do
-  file <- relativizeToCur fp
-  let name = emptyLibName file
-  (libs,bs) <- twelf2GR file (Map.empty,[])
+  (libs,bs) <- twelf2GR fp (Map.empty,[])
   let libenv = makeLibEnv libs bs
-  return $ Just (name,libenv)
+  file <- toAbsoluteURI fp
+  lname <- toLibName file  
+  return $ Just (emptyLibName lname, libenv)
 
 {- generates a library environment from libraries of signatures and morphisms
    the list of library names stores the order in which they were added -}

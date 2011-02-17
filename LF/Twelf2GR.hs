@@ -44,6 +44,12 @@ type GRAPH = (SIGS,MORPHS)
 type LIBS = Map.Map BASE GRAPH
 type LIBS_EXT = ((LIBS,[BASE]),(BASE,GRAPH))
 
+latinEnv :: String
+latinEnv = "LATIN_LIB"
+
+twelfEnv :: String
+twelfEnv = "TWELF_LIB"
+
 emptyGraph :: GRAPH
 emptyGraph = (Map.empty,Map.empty)
 
@@ -245,8 +251,16 @@ eqOMS e1 e2 =
 toOMDoc :: FilePath -> FilePath
 toOMDoc fp = replaceExtension fp omdocE
 
-fromOMDoc :: FilePath -> FilePath
-fromOMDoc fp = replaceExtension fp twelfE
+toTwelf :: FilePath -> FilePath
+toTwelf fp = replaceExtension fp twelfE
+
+-- retrieves the contents of the env variable
+getEnvVar :: String -> IO String
+getEnvVar var = do
+  val <- getEnvDef var ""
+  if null val
+     then error $ "environment variable " ++ var ++ " is not set."
+     else return val
 
 -- resolves the first file path wrt to the second
 resolve :: FilePath -> FilePath -> FilePath
@@ -274,34 +288,41 @@ relativize fp1 fp2 =
   where er = error "Invalid file name."
 
 -- resolves the file path wrt to the current directory
-resolveToCur :: FilePath -> IO FilePath
-resolveToCur fp = do
+toAbsoluteURI :: FilePath -> IO FilePath
+toAbsoluteURI fp = do
   dir <- getCurrentDirectory
   return $ resolve fp $ dir ++ "/"
 
--- relativizes the file path wrt to the current directory
-relativizeToCur :: FilePath -> IO FilePath
-relativizeToCur fp = do
-  dir <- getCurrentDirectory
-  let dir' = dir ++ "/"
-  return $ relativize (resolve fp dir') dir'
+{- converts an absolute filepath to a library name, i.e.
+   relativizes w.r.t. the LATIN_HOME env variable -}
+toLibName :: FilePath -> IO BASE
+toLibName file = do
+  latindir <- getEnvVar latinEnv
+  return $ relativize file $ latindir ++ "/"
+
+{- converts a library name to an absolute filepath, i.e.
+   resolves w.r.t. the LATIN_HOME env variable -}
+fromLibName :: BASE -> IO FilePath
+fromLibName lname = do
+  latindir <- getEnvVar latinEnv
+  return $ resolve lname $ latindir ++ "/"
 
 {- returns the referenced base and module resolved w.r.t.
-   the second argument and relativized to the current directory -}
+   the second argument -}
 parseRef :: String -> String -> IO NODE
 parseRef ref base = do
-  baseA <- resolveToCur base  
+  file <- fromLibName base 
   case splitBy '?' ref of
-       [br1,m] -> do let b = fromOMDoc $ resolve br1 baseA
-                     br2 <- relativizeToCur b
-                     return (br2,m)
+       [br,m] -> do let b = toTwelf $ resolve br file
+                    lname <- toLibName b
+                    return (lname,m)
        _ -> fail "Invalid reference."
 
 {- retrieves the base, module, and name attributes resolved w.r.t.
-   the second argument and relativized to the current directory -}
+   the second argument -}
 getBMN :: Element -> NODE -> IO (BASE,MODULE,NAME)
 getBMN e (base,modul) = do
-  baseA <- resolveToCur base
+  file <- fromLibName base
   let n = case findAttr nameQN e of
                Nothing -> ""
                Just n' -> n'
@@ -309,18 +330,19 @@ getBMN e (base,modul) = do
                Nothing -> modul
                Just m' -> m'
   let b = case getBaseAttr e of
-               Nothing -> base
-               Just b' -> fromOMDoc $ resolve b' baseA
-  br <- relativizeToCur b
-  return (br,m,n)
+               Nothing -> file
+               Just b' -> toTwelf $ resolve b' file
+  lname <- toLibName b
+  return (lname,m,n)
 
 {- parses the referenced file if needed and imports all signatures
    and morphisms from it -}
 addFromFile :: FilePath -> LIBS_EXT -> IO LIBS_EXT
-addFromFile fp libs@(lb@(l,_),(b,gr)) = do
-  if (fp == b || Map.member fp l)
+addFromFile lname libs@(lb@(l,_),(b,gr)) = do
+  if (lname == b || Map.member lname l)
      then return libs
-     else do lb' <- twelf2GR fp lb
+     else do file <- fromLibName lname
+             lb' <- twelf2GR file lb
              return (lb',(b,gr))
 
 -- finds the signature by base and module
@@ -384,8 +406,8 @@ twelf2SigMor fp = do
    which is needed later for the construction of DGraphs -}
 twelf2GR :: FilePath -> (LIBS,[BASE]) -> IO (LIBS,[BASE])
 twelf2GR fp lb = do
-  runTwelf fp
-  file <- relativizeToCur fp
+  file <- toAbsoluteURI fp
+  runTwelf file
   le@((libs,bs),(b,gr)) <- buildGraph file lb
   let gr' = computeTargets gr le
   let libs' = Map.insert b gr' libs
@@ -394,27 +416,23 @@ twelf2GR fp lb = do
 
 -- runs twelf to create an omdoc file
 runTwelf :: FilePath -> IO ()
-runTwelf fp = do
-  file <- resolveToCur fp
+runTwelf file = do
   let dir = dropFileName file
-  twelfdir <- getEnvDef "TWELF_LIB" ""
-  if null twelfdir
-     then error "environment variable TWELF_LIB is not set"
-     else do
-       (_, out, err, pr) <-
-         runInteractiveProcess (concat [twelfdir, "/" ,twelf])
-                               (options ++ [dir,file])
-                               Nothing
-                               Nothing
-       exitCode <- waitForProcess pr
-       outH <- hGetContents out
-       errH <- hGetContents err
-       case exitCode of
-            ExitFailure i -> do
-               putStrLn (outH ++ errH)
-               error $ "Calling Twelf failed with exitCode: " ++ show i ++
-                       " on file " ++ file
-            ExitSuccess -> return ()
+  twelfdir <- getEnvVar twelfEnv
+  (_, out, err, pr) <-
+    runInteractiveProcess (concat [twelfdir, "/" ,twelf])
+                          (options ++ [dir,file])
+                          Nothing
+                          Nothing
+  exitCode <- waitForProcess pr
+  outH <- hGetContents out
+  errH <- hGetContents err
+  case exitCode of
+       ExitFailure i -> do
+          putStrLn (outH ++ errH)
+          error $ "Calling Twelf failed with exitCode: " ++ show i ++
+                  " on file " ++ file ++ "dir: " ++ dir ++ "twelfdir: " ++ twelfdir
+       ExitSuccess -> return ()
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
@@ -424,6 +442,7 @@ runTwelf fp = do
 buildGraph :: FilePath -> (LIBS,[BASE]) -> IO LIBS_EXT
 buildGraph file lb = do
   xml <- readFile $ toOMDoc file
+  lname <- toLibName file
   let elems = onlyElems $ parseXML xml
   let elems1 = filter (\ e -> elName e == omdocQN) elems
   case elems1 of
@@ -434,14 +453,14 @@ buildGraph file lb = do
                          if (n == viewQN) then addView e libs else
                          return libs
                )
-               (lb,(file,emptyGraph))
+               (lb,(lname,emptyGraph))
                $ elChildren root
        _ -> fail "Not an OMDoc file."
 
 -- transforms a theory element into a signature and adds it to the graph
 addSign :: Element -> LIBS_EXT -> IO LIBS_EXT
-addSign e libs@(_,(file,_)) = do
-  let sig = Sign file (getNameAttr e) []
+addSign e libs@(_,(lname,_)) = do
+  let sig = Sign lname (getNameAttr e) []
   (libs1,sig1) <-
      foldM (\ ls el ->
               let n = elName el
@@ -456,12 +475,12 @@ addSign e libs@(_,(file,_)) = do
 
 -- transforms a view element into a view and adds it to the graph
 addView :: Element -> LIBS_EXT -> IO LIBS_EXT
-addView e libs@(_,(file,_)) = do
+addView e libs@(_,(lname,_)) = do
   let name = getNameAttr e
   let from = getFromAttr e
   let to = getToAttr e
-  (b1,m1) <- parseRef from file
-  (b2,m2) <- parseRef to file
+  (b1,m1) <- parseRef from lname
+  (b2,m2) <- parseRef to lname
   libs1 <- addFromFile b1 libs
   libs2 <- addFromFile b2 libs1  
   let srcSig = lookupSig (b1,m1) libs2
@@ -470,16 +489,16 @@ addView e libs@(_,(file,_)) = do
   let libs4 = addMorphToGraph morph libs3
   return libs4
 
-{- constructs the view morphism -}
+-- constructs the view morphism
 getViewMorph :: String -> Sign -> Sign -> [Element] -> LIBS_EXT ->
                 IO (Morphism,LIBS_EXT)
-getViewMorph name srcSig tarSig els libs@(_,(file,_)) = do
+getViewMorph name srcSig tarSig els libs@(_,(lname,_)) = do
   let b1 = sigBase srcSig
   let m1 = sigModule srcSig
   let b2 = sigBase tarSig
   let m2 = sigModule tarSig
   (symmap,libs1) <- constructMap els (b1,m1) (b2,m2) libs
-  let morph = Morphism file name "" srcSig tarSig Postulated symmap
+  let morph = Morphism lname name "" srcSig tarSig Postulated symmap
   return (morph,libs1)
 
 ------------------------------------------------------------------------------
@@ -556,7 +575,7 @@ oma2exp e ref =
                                 " to at least one argument."
                    _ -> return $ Func (init as1) (last as1)
          else do f1 <- omel2exp f ref
-                 return $ Appl f1 as1             
+                 return $ Appl f1 as1
 
 -- converts an OMBIND element to an expression
 ombind2exp :: Element -> NODE -> IO EXP
@@ -614,9 +633,9 @@ omv2exp e _ = return $ Var $ getNameAttr e
 {- adds declarations arising from an inclusion to the signature
    adds the inclusion to the morphism map -}
 addIncl :: Element -> (LIBS_EXT,Sign) -> IO (LIBS_EXT,Sign)
-addIncl e (libs@(_,(file,_)),sig) = do
+addIncl e (libs@(_,(lname,_)),sig) = do
   let from = getFromAttr e
-  (b,m) <- parseRef from file
+  (b,m) <- parseRef from lname
   libs1 <- addFromFile b libs  
   let srcSig = lookupSig (b,m) libs1
   let tarSig = addInclSyms srcSig sig
@@ -646,10 +665,10 @@ getInclMorph sig1 sig2 =
 {- adds declarations arising from a structure to the signature
    adds the structure to the morphism map -}
 addStruct :: Element -> (LIBS_EXT,Sign) -> IO (LIBS_EXT,Sign)
-addStruct e (libs@(_,(file,_)),sig) = do
+addStruct e (libs@(_,(lname,_)),sig) = do
   let name = getNameAttr e
   let from = getFromAttr e
-  (b,m) <- parseRef from file
+  (b,m) <- parseRef from lname
   libs1 <- addFromFile b libs  
   let srcSig = lookupSig (b,m) libs1
   (tarSig,morph,libs2) <- processStruct name srcSig sig (elChildren e) libs1
