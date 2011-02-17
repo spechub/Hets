@@ -2,7 +2,7 @@
 
 GHCRTS='-H300m -M1g'
 case `uname -s` in
-  Linux) LANG=de_DE.uft8;;
+  Linux) LANG=de_DE.utf8;;
   *) LANG=de_DE.UTF-8;;
 esac
 case `uname -s` in
