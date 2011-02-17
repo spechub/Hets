@@ -27,12 +27,14 @@ import Common.Utils
 
 import ATerm.Lib
 
-import Text.ParserCombinators.Parsec
+import Common.XmlParser (XmlParseable, parseXml)
 
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
+
+import FreeCAD.As --abstract data structure in use.
 
 data FreeCAD = FreeCAD deriving Show
 
@@ -48,7 +50,7 @@ instance Pretty Text where
 -- use generic Category instance from Logic.Logic
 
 instance Syntax FreeCAD Text () () where
-  parse_basic_spec FreeCAD = Just $ fmap Text $ many1 anyChar
+  parse_basic_spec FreeCAD = Nothing
 
 instance Sentences FreeCAD () Text (DefaultMorphism Text) () where
   map_sen FreeCAD _ = return
@@ -64,3 +66,5 @@ instance StaticAnalysis FreeCAD Text () () () Text (DefaultMorphism Text) () ()
   is_subsig FreeCAD (Text s1) (Text s2) = isInfixOf (trim s1) s2
 
 instance Logic FreeCAD () Text () () () Text (DefaultMorphism Text) () () ()
+
+--TODO IO, xml parser, constructors.
