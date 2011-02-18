@@ -86,7 +86,7 @@ res_OP_TYPE (Op_type _ _ res _) = res
 
 data OP_HEAD = Op_head OpKind [VAR_DECL] SORT Range
                -- pos: "(", semicolons, ")", colon
-               deriving Show
+               deriving (Show, Eq, Ord)
 
 data OP_ATTR f = Assoc_op_attr | Comm_op_attr | Idem_op_attr
              | Unit_op_attr (TERM f)

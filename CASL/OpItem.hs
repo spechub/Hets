@@ -21,7 +21,7 @@ Parser for OP-ITEMs (operation declarations and definitions)
    C.2.1 Basic Specifications with Subsorts
 -}
 
-module CASL.OpItem (opItem, predItem) where
+module CASL.OpItem (opItem, opHead, predItem) where
 
 import Common.AnnoState
 import Common.Id
@@ -59,29 +59,22 @@ opAttr ks = choice
     t <- term ks
     return (Unit_op_attr t, p)
 
-isConstant :: OP_TYPE -> Bool
-isConstant (Op_type _ [] _ _) = True
-isConstant _ = False
-
-toHead :: Range -> OP_TYPE -> OP_HEAD
-toHead (Range c) (Op_type k [] s ps) = Op_head k [] s (Range c `appRange` ps)
-toHead _ _ = error "toHead got non-empty argument type"
-
 opItem :: TermParser f => [String] -> AParser st (OP_ITEM f)
-opItem ks =
-    do (os, cs) <- parseId ks `separatedBy` anComma
-       if isSingle os then
-              do c <- anColon
-                 t <- opType ks
-                 if isConstant t then
-                     opBody ks (head os) (toHead (tokPos c) t)
-                     <|> opAttrs ks os t [c]  -- this always succeeds
-                   else opAttrs ks os t [c]
-              <|> (opHead ks >>= opBody ks (head os))
-          else do
-            c <- anColon
-            t <- opType ks
-            opAttrs ks os t $ cs ++ [c]
+opItem ks = do
+    (os, cs) <- parseId ks `separatedBy` anComma
+    case os of
+      [o] -> do
+          c <- anColon
+          t@(Op_type k args s ps) <- opType ks
+          case args of
+            [] -> opBody ks o (Op_head k [] s $ appRange ps $ tokPos c)
+              <|> opAttrs ks os t [c]  -- this always succeeds
+            _ -> opAttrs ks os t [c]
+        <|> (opHead ks >>= opBody ks o)
+      _ -> do
+        c <- anColon
+        t <- opType ks
+        opAttrs ks os t $ cs ++ [c]
 
 opBody :: TermParser f => [String] -> OP_NAME -> OP_HEAD
        -> AParser st (OP_ITEM f)
