@@ -117,22 +117,36 @@ opDefnToFunDefn def oi = case oi of
   _ -> def
 
 resolvePattern :: FplSign -> (SORT, FplTerm) -> Result ([VAR_DECL], FplTerm)
-resolvePattern sign (resSort, term) = case term of
-  Application (Op_name ide@(Id ts _ _)) args p ->
-    case filter ( \ o -> length (opArgs o) == length args
-                    && opRes o == resSort
+resolvePattern sign (resSort, term) =
+  let err msg = fail $ msg ++ " " ++ showDoc term "" in
+  case term of
+  Application opSym args p ->
+    let ide@(Id ts _ _) = opSymbName opSym in
+    case filter ( \ oTy@(OpType _ oArgs oRes) -> length oArgs == length args
+                    && (leqSort sign resSort oRes || leqSort sign oRes resSort)
+                    && case opSym of
+                         Qual_op_name _ symTy _ ->
+                             leqF sign oTy $ toOpType symTy
+                         _ -> True
                     )
          $ Set.toList $ Map.findWithDefault Set.empty ide $ opMap sign of
       [] -> if null args && isSimpleId ide then
                 let v = Var_decl [head ts] resSort $ posOfId ide
                 in return ([v], toQualVar v)
-            else fail $ "unresolved pattern " ++ showDoc term ""
+            else err "unresolved pattern"
       [OpType k as r] -> do
         l <- mapM (resolvePattern sign) $ zip as args
         return (concatMap fst l,
           Application (Qual_op_name ide (Op_type k as r p) p) (map snd l) p)
-      _ -> fail $ "ambiguous pattern " ++ showDoc term ""
-  _ -> fail $ "unexpected pattern " ++ showDoc term ""
+      _ -> err "ambiguous pattern"
+  Qual_var v s r -> if leqSort sign s resSort then
+      return ([Var_decl [v] s r], term)
+    else err "wrong type of pattern variable"
+  Sorted_term t s r -> if leqSort sign s resSort then do
+      (vs, nt) <- resolvePattern sign (s, t)
+      return (vs, Sorted_term nt s r)
+    else err "wrong typed pattern"
+  _ -> err "unexpected pattern"
 
 minFplTerm :: Min TermExt SignExt
 minFplTerm sig te = case te of
@@ -217,4 +231,8 @@ freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
   (freeTermVars s $ item at) $ Set.fromList $ flatVAR_DECLs vs
 
 instance TermExtension TermExt where
-    optTermSort = const Nothing
+    optTermSort te = case te of
+      Case _ ((_, t) : _) _ -> optTermSort t
+      Let _ t _ -> optTermSort t
+      IfThenElse _ t _ _ -> optTermSort t
+      _ -> Nothing
