@@ -61,7 +61,7 @@ fplSortIds si = case si of
 
 fplOpIds :: FplOpItem -> IdSets
 fplOpIds oi = let e = Set.empty in case oi of
-  FunOp (FunDef i vs _ _ _) -> let s = Set.singleton i in
+  FunOp (FunDef i (Op_head _ vs _ _) _ _) -> let s = Set.singleton i in
       (if null vs then (s, e) else (e, s), e)
   CaslOpItem o -> (ids_OP_ITEM o, e)
 
@@ -77,8 +77,8 @@ mapTermExt te = case te of
 
 -- | put parens around final term
 mapFunDef :: FunDef -> FunDef
-mapFunDef (FunDef o vs s at r) =
-  FunDef o vs s (fmap (mapTerm mapTermExt) at) r
+mapFunDef (FunDef o h at r) =
+  FunDef o h (fmap (mapTerm mapTermExt) at) r
 
 resolveTermExt :: MixResolve TermExt
 resolveTermExt ga ids te = case te of
@@ -103,17 +103,17 @@ resolveTermExt ga ids te = case te of
 
 -- | resolve overloading in rhs and assume function to be in the signature
 resolveFunDef :: MixResolve FunDef
-resolveFunDef ga ids (FunDef o vs s at r) = do
+resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
   nt <- resolveMixTrm mapTermExt resolveTermExt ga
     (extendRules (varDeclTokens vs) ids) $ item at
-  return $ FunDef o vs s (replaceAnnoted nt at) r
+  return $ FunDef o h (replaceAnnoted nt at) r
 
 funDefToOpDefn :: FunDef -> OP_ITEM TermExt
-funDefToOpDefn (FunDef o vs s nt r) = Op_defn o (Op_head Total vs s r) nt r
+funDefToOpDefn (FunDef o h nt r) = Op_defn o h nt r
 
 opDefnToFunDefn :: FunDef -> OP_ITEM TermExt -> FunDef
 opDefnToFunDefn def oi = case oi of
-  Op_defn o (Op_head Total vs s _) nt r -> FunDef o vs s nt r
+  Op_defn o h nt r -> FunDef o h nt r
   _ -> def
 
 resolvePattern :: FplSign -> (SORT, FplTerm) -> Result ([VAR_DECL], FplTerm)
@@ -147,10 +147,10 @@ minFplTerm sig te = case te of
           rt <- oneExpTerm minFplTerm newSign t
           return (np, rt)) l
     return $ Case ro rl r
-  Let fd@(FunDef o vs s _ q) t r -> do
+  Let fd@(FunDef o h _ _) t r -> do
     let newSign = execState
           (addOp (emptyAnno o)
-           (toOpType $ Op_type Total (sortsOfArgs vs) s q) o)
+           (toOpType $ headToType h) o)
           sig
     rfd <- minFunDef newSign fd
     rt <- oneExpTerm minFplTerm newSign t
@@ -163,10 +163,10 @@ minFplTerm sig te = case te of
 
 -- | type check rhs and assume function to be in the signature
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
-minFunDef sig (FunDef o vs s at r) = do
+minFunDef sig (FunDef o h@(Op_head _ vs s _) at r) = do
   let newSign = execState (mapM_ addVars vs) sig
   nt <- oneExpTerm minFplTerm newSign $ Sorted_term (item at) s r
-  return $ FunDef o vs s (replaceAnnoted nt at) r
+  return $ FunDef o h (replaceAnnoted nt at) r
 
 getDDSorts :: [Annoted FplSortItem] -> [SORT]
 getDDSorts = foldl (\ l si -> case item si of
@@ -213,5 +213,5 @@ instance FreeVars TermExt where
       $ freeVars s f : map (freeTermVars s) [t, e]
 
 freeFunDefVars :: Sign TermExt e -> FunDef -> VarSet
-freeFunDefVars s (FunDef _ vs _ at _) = Set.difference
+freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
   (freeTermVars s $ item at) $ Set.fromList $ flatVAR_DECLs vs

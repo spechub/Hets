@@ -57,7 +57,7 @@ data FplOpItem =
   deriving Show
 
 prepPunctBar :: [Doc] -> [Doc]
-prepPunctBar = prepPunctuate (bar <> Doc.space)
+prepPunctBar = punctuate (Doc.space <> bar)
 
 printDD :: DATATYPE_DECL -> Doc
 printDD (Datatype_decl s as _) =
@@ -91,16 +91,14 @@ instance Pretty FplOpItem where
     FunOp o -> pretty o
     CaslOpItem s -> printOpItem pretty s
 
-data FunDef = FunDef OP_NAME [VAR_DECL] SORT (Annoted FplTerm) Range
+data FunDef = FunDef OP_NAME OP_HEAD (Annoted FplTerm) Range
   deriving (Show, Eq, Ord)
 
 instance Pretty FunDef where
-  pretty (FunDef n vs s t _) =
-    fsep [keyword functS
-         , pretty n <>
-          (if null vs then empty else parens (printVarDecls vs))
-         , colon <+> pretty s
-         , equals <+> printAnnoted pretty t]
+  pretty (FunDef i h@(Op_head _ l _ _) t _) =
+    sep [keyword functS
+      , sep [ (if null l then sep else cat) [idLabelDoc i, pretty h]
+            , equals <+> printAnnoted pretty t]]
 
 data TermExt =
     FixDef FunDef -- ^ formula
@@ -116,7 +114,7 @@ instance Pretty TermExt where
       sep $ (keyword caseS <+> pretty c <+> keyword ofS)
           : prepPunctBar
             (map (\ (p, e) -> fsep [pretty p, implies, pretty e]) l)
-    Let fd i _ -> sep [keyword letS <+> pretty fd <+> keyword inS, pretty i]
+    Let fd i _ -> sep [keyword letS <+> pretty fd, keyword inS <+> pretty i]
     IfThenElse i d e _ ->
         fsep [ keyword ifS <+> pretty i
              , keyword thenS <+> pretty d
@@ -129,14 +127,11 @@ funDef :: [String] -> AParser st FunDef
 funDef ks = do
   q <- asKey functS
   o <- parseId ks
-  (vs, qs) <- optVarDecls ks
-  c <- anColon
-  s <- sortId ks
+  h <- opHead ks
   e <- equalT
   a <- annos
   t <- term ks
-  return $ FunDef o vs s (Annoted t nullRange a [])
-         $ appRange (toRange q qs c) $ tokPos e
+  return $ FunDef o h (Annoted t nullRange a []) $ toRange q [] e
 
 optVarDecls :: [String] -> AParser st ([VAR_DECL], [Token])
 optVarDecls ks =
