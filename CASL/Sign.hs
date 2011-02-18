@@ -28,6 +28,7 @@ import Common.Prec (mkPrecIntMap, PrecMap)
 import Common.Doc
 import Common.DocUtils
 
+import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf)
 import Control.Monad (when, unless)
 
@@ -42,8 +43,8 @@ type OpMap = Map.Map Id (Set.Set OpType)
 data SymbType = SortAsItemType
               | OtherTypeKind String
               | OpAsItemType OpType
-                -- since symbols do not speak about totality, the totality
-                -- information in OpType has to be ignored
+                {- since symbols do not speak about totality, the totality
+                information in OpType has to be ignored -}
               | PredAsItemType PredType
                 deriving (Show, Eq, Ord)
 
@@ -220,8 +221,8 @@ diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in
   , predMap = predMap a `diffMapSet` predMap b
   , annoMap = annoMap a `diffMapSet` annoMap b
   , extendedInfo = dif (extendedInfo a) $ extendedInfo b }
-  -- transClosure needed:  {a < b < c} - {a < c; b}
-  -- is not transitive!
+  {- transClosure needed:  {a < b < c} - {a < c; b}
+  is not transitive! -}
 
 diffOpMapSet :: OpMap -> OpMap -> OpMap
 diffOpMapSet m = diffMapSet m . Map.map (rmOrAddParts False)
@@ -445,14 +446,26 @@ addOpTo k v m =
     in Map.insert k (Set.insert v l) m
 
 -- | extract the sort from an analysed term
-sortOfTerm :: TERM f -> SORT
-sortOfTerm t = case t of
-    Qual_var _ ty _ -> ty
-    Application (Qual_op_name _ ot _) _ _ -> res_OP_TYPE ot
-    Sorted_term _ ty _ -> ty
-    Cast _ ty _ -> ty
-    Conditional t1 _ _ _ -> sortOfTerm t1
-    _ -> genName "unknown"
+class TermExtension f where
+  optTermSort :: f -> Maybe SORT
+  sortOfTerm :: f -> SORT
+  sortOfTerm = fromMaybe (genName "unknown") . optTermSort
+
+instance TermExtension () where
+  optTermSort = const Nothing
+
+instance TermExtension f => TermExtension (TERM f) where
+  optTermSort = optSortOfTerm optTermSort
+
+optSortOfTerm :: (f -> Maybe SORT) -> TERM f -> Maybe SORT
+optSortOfTerm f term = case term of
+    Qual_var _ ty _ -> Just ty
+    Application (Qual_op_name _ ot _) _ _ -> Just $ res_OP_TYPE ot
+    Sorted_term _ ty _ -> Just ty
+    Cast _ ty _ -> Just ty
+    Conditional t1 _ _ _ -> optSortOfTerm f t1
+    ExtTERM t -> f t
+    _ -> Nothing
 
 -- | create binding if variables are non-null
 mkForall :: [VAR_DECL] -> FORMULA f -> Range -> FORMULA f
@@ -505,8 +518,8 @@ mkAxNameSingle str s = "ga_" ++ str ++ "_" ++ show s
 mkSortGenName :: [SORT] -> String
 mkSortGenName sl = "ga_generated_" ++ showSepList (showString "_") showId sl ""
 
--- | The sort generation constraint is given a generated name,
--- built from the sort list
+{- | The sort generation constraint is given a generated name,
+built from the sort list -}
 toSortGenNamed :: FORMULA f -> [SORT] -> Named (FORMULA f)
 toSortGenNamed f sl = makeNamed (mkSortGenName sl) f
 
@@ -521,9 +534,9 @@ addSymbToSign sig sy =
     in do
       let sig' = addSymbToDeclSymbs sig sy
       case symbType sy of
-        SortAsItemType -> return  $ addSort' sig' $ symName sy
-        PredAsItemType pt -> return  $ addPred' sig' (symName sy) pt
-        OpAsItemType ot -> return  $ addOp' sig' (symName sy) ot
+        SortAsItemType -> return $ addSort' sig' $ symName sy
+        PredAsItemType pt -> return $ addPred' sig' (symName sy) pt
+        OpAsItemType ot -> return $ addOp' sig' (symName sy) ot
         _ -> fail "addSymbToSign: symbol type not supported"
 
 

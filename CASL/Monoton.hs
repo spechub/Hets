@@ -66,7 +66,8 @@ injectVar :: VAR_DECL -> SORT -> TERM f
 injectVar = injectTerm . toQualVar
 
 injectTerm :: TERM f -> SORT -> TERM f
-injectTerm t s = if sortOfTerm t == s then t else Sorted_term t s nullRange
+injectTerm t s = if maybe False (== s) $ optSortOfTerm (const Nothing) t
+  then t else Sorted_term t s nullRange
 
 makeEquivMonoR :: Id -> OpType -> OpType -> [SORT] -> SORT
                -> Named (FORMULA f)

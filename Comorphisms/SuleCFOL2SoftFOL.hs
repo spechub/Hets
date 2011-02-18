@@ -774,11 +774,9 @@ transFORMULA siSo sign idMap tr form = case form of
   False_atom _ -> simpTerm SPFalse
   Predication psymb args _ -> compTerm (spSym (transPREDSYMB idMap psymb))
            (map (transTERM siSo sign idMap tr) args)
-  Existl_equation t1 t2 _
-    | sortOfTerm t1 == sortOfTerm t2 ->
+  Existl_equation t1 t2 _ -> -- sortOfTerm t1 == sortOfTerm t2
        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
-  Strong_equation t1 t2 _
-    | sortOfTerm t1 == sortOfTerm t2 ->
+  Strong_equation t1 t2 _ -> -- sortOfTerm t1 == sortOfTerm t2
        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
   ExtFORMULA phi -> tr sign idMap phi
   Definedness _ _ -> simpTerm SPTrue -- assume totality
@@ -804,18 +802,10 @@ transTERM siSo sign idMap tr term = case term of
              (map (transTERM siSo sign idMap tr) args)
   Conditional _t1 _phi _t2 _ ->
     error "SuleCFOL2SoftFOL.transTERM: Conditional terms must be coded out."
-  Sorted_term t s _
-    | sortOfTerm t == s -> recRes
-    | otherwise ->
-        assert (Set.member (sortOfTerm t) (CSign.subsortsOf s sign))
-               recRes
-    where recRes = transTERM siSo sign idMap tr t
-  Cast t s _
-    | sortOfTerm t == s -> recRes
-    | otherwise ->
-          assert (Set.member s (CSign.subsortsOf (sortOfTerm t) sign))
-                 recRes
-    where recRes = transTERM siSo sign idMap tr t
+  Sorted_term t _s _ -> -- sortOfTerm t isSubsortOf s
+    transTERM siSo sign idMap tr t
+  Cast t _s _ -> -- s isSubsortOf sortOfTerm t
+    transTERM siSo sign idMap tr t
   _ -> error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '" ++ showDoc term "'")
 
 isSingleSorted :: CSign.Sign f e -> Bool

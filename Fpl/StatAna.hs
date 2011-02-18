@@ -215,3 +215,6 @@ instance FreeVars TermExt where
 freeFunDefVars :: Sign TermExt e -> FunDef -> VarSet
 freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
   (freeTermVars s $ item at) $ Set.fromList $ flatVAR_DECLs vs
+
+instance TermExtension TermExt where
+    optTermSort = const Nothing

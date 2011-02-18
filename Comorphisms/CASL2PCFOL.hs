@@ -57,10 +57,10 @@ instance Comorphism CASL2PCFOL
     mapSublogic CASL2PCFOL sl = Just $
                                 if has_sub sl then -- subsorting is coded out
                                       sl { sub_features = NoSub
-                                         , has_part    = True
+                                         , has_part = True
                                          , which_logic = max Horn
                                                          $ which_logic sl
-                                         , has_eq      = True}
+                                         , has_eq = True}
                                   else sl
     map_theory CASL2PCFOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in
@@ -68,7 +68,7 @@ instance Comorphism CASL2PCFOL
                  ++ generateAxioms sig))
       (map_sentence CASL2PCFOL)
     map_morphism CASL2PCFOL mor = return
-      (mor  { msource = encodeSig $ msource mor,
+      (mor { msource = encodeSig $ msource mor,
               mtarget = encodeSig $ mtarget mor })
       -- other components need not to be adapted!
     map_sentence CASL2PCFOL _ = return . f2Formula
@@ -80,11 +80,11 @@ instance Comorphism CASL2PCFOL
 encodeSig :: Sign f e -> Sign f e
 encodeSig sig
   = if Rel.null rel then sig else
-      sig{sortRel = Rel.empty, opMap = projOpMap}
+      sig {sortRel = Rel.empty, opMap = projOpMap}
   where
         rel = sortRel sig
-        total (s, s') = OpType{opKind = Total, opArgs = [s], opRes = s'}
-        partial (s, s') = OpType{opKind = if Rel.member s' s rel
+        total (s, s') = OpType {opKind = Total, opArgs = [s], opRes = s'}
+        partial (s, s') = OpType {opKind = if Rel.member s' s rel
                                  then Total
                                  else Partial, opArgs = [s'], opRes = s}
         setinjOptype = Set.map total $ Rel.toSet rel
@@ -124,15 +124,15 @@ injectTo s q = injectUnique nullRange q s
 projectTo :: SORT -> TERM () -> TERM ()
 projectTo s q = projectUnique Partial nullRange q s
 
--- | Make the named sentence for the embedding injectivity axiom from s to s'
---   i.e., forall x,y:s . inj(x)=e=inj(y) => x=e=y
+{- | Make the named sentence for the embedding injectivity axiom from s to s'
+i.e., forall x,y:s . inj(x)=e=inj(y) => x=e=y -}
 mkEmbInjAxiom :: SORT -> SORT -> Named (FORMULA ())
 mkEmbInjAxiom s s' =
     makeNamed (mkEmbInjName s s')
       $ mkInjectivity (injectTo s') (mkVarDeclStr "x" s) $ mkVarDeclStr "y" s
 
--- | Make the named sentence for the projection injectivity axiom from s' to s
---   i.e., forall x,y:s . pr(x)=e=pr(y) => x=e=y
+{- | Make the named sentence for the projection injectivity axiom from s' to s
+i.e., forall x,y:s . pr(x)=e=pr(y) => x=e=y -}
 mkProjInjAxiom :: SORT -> SORT -> Named (FORMULA ())
 mkProjInjAxiom s s' =
     makeNamed (mkProjInjName s' s)
@@ -149,9 +149,9 @@ mkXExEq s fl fr = let
   qualX = toQualVar vx
   in mkForall [vx] (mkExEq (fl qualX) (fr qualX)) nullRange
 
--- | Make the named sentence for the projection axiom from s' to s
---   i.e., forall x:s . pr(inj(x))=e=x
-mkProjAxiom:: SORT -> SORT -> Named (FORMULA ())
+{- | Make the named sentence for the projection axiom from s' to s
+i.e., forall x:s . pr(inj(x))=e=x -}
+mkProjAxiom :: SORT -> SORT -> Named (FORMULA ())
 mkProjAxiom s s' = makeNamed (mkProjName s' s)
     $ mkXExEq s (projectTo s . injectTo s') id
 
@@ -160,9 +160,9 @@ mkTransAxiomName :: SORT -> SORT -> SORT -> String
 mkTransAxiomName s s' s'' =
   mkAxName "transitivity" s s' ++ "_to_" ++ show s''
 
--- | Make the named sentence for the transitivity axiom from s to s' to s''
---   i.e., forall x:s . inj(inj(x))=e=inj(x)
-mkTransAxiom:: SORT -> SORT -> SORT -> Named (FORMULA ())
+{- | Make the named sentence for the transitivity axiom from s to s' to s''
+i.e., forall x:s . inj(inj(x))=e=inj(x) -}
+mkTransAxiom :: SORT -> SORT -> SORT -> Named (FORMULA ())
 mkTransAxiom s s' s'' = makeNamed (mkTransAxiomName s s' s'')
     $ mkXExEq s (injectTo s'' . injectTo s') $ injectTo s''
 
@@ -170,9 +170,9 @@ mkTransAxiom s s' s'' = makeNamed (mkTransAxiomName s s' s'')
 mkIdAxiomName :: SORT -> SORT -> String
 mkIdAxiomName = mkAxName "identity"
 
--- | Make the named sentence for the identity axiom from s to s'
---   i.e., forall x:s . inj(inj(x))=e=x
-mkIdAxiom:: SORT -> SORT -> Named (FORMULA ())
+{- | Make the named sentence for the identity axiom from s to s'
+i.e., forall x:s . inj(inj(x))=e=x -}
+mkIdAxiom :: SORT -> SORT -> Named (FORMULA ())
 mkIdAxiom s s' = makeNamed (mkIdAxiomName s s')
     $ mkXExEq s (injectTo s . injectTo s') id
 
@@ -181,13 +181,13 @@ generateAxioms sig = concatMap (\ s ->
     concatMap (\ s' ->
       [mkIdAxiom s s' | Set.member s $ supersortsOf s' sig ]
       ++ mkEmbInjAxiom s s' : mkProjInjAxiom s s' : mkProjAxiom s s'
-      : map (mkTransAxiom  s s') (filter (/= s) $ realSupers s'))
+      : map (mkTransAxiom s s') (filter (/= s) $ realSupers s'))
     $ realSupers s) $ Set.toList $ sortSet sig
     where
         realSupers so = Set.toList $ supersortsOf so sig
 
-f2Formula :: FORMULA f -> FORMULA f
+f2Formula :: TermExtension f => FORMULA f -> FORMULA f
 f2Formula = projFormula Partial id . injFormula id
 
-t2Term :: TERM f -> TERM f
+t2Term :: TermExtension f => TERM f -> TERM f
 t2Term = projTerm Partial id . injTerm id

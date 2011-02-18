@@ -45,6 +45,9 @@ instance FreeVars EM_FORMULA where
         freeVarsOfExt sign ( NextY _ f _ ) = freeVars sign f
         freeVarsOfExt sign ( FixedPoint _ _ f _ ) = freeVars sign f
 
+instance TermExtension EM_FORMULA where
+    optTermSort = const Nothing
+
 basicEModalAnalysis
         :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
            , Sign EM_FORMULA EModalSign, GlobalAnnos)

@@ -40,3 +40,6 @@ basicConstraintCASLAnalysis =
 
 instance FreeVars ConstraintFORMULA where
     freeVarsOfExt _ _ = Set.empty
+
+instance TermExtension ConstraintFORMULA where
+    optTermSort = const Nothing

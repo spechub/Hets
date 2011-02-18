@@ -38,10 +38,10 @@ simplifyCASLSen = simplifySen dummyMin dummy
 simplifyCASLTerm :: Sign () e -> TERM () -> TERM ()
 simplifyCASLTerm = simplifyTerm dummyMin dummy
 
-simplifySen :: (GetRange f, Pretty f) =>
-               (Min f e) -- ^ extension type analysis
-            -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
-            -> Sign f e -> FORMULA f -> FORMULA f
+simplifySen :: (GetRange f, Pretty f, TermExtension f)
+  => (Min f e) -- ^ extension type analysis
+    -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
+    -> Sign f e -> FORMULA f -> FORMULA f
 simplifySen minF simpF sign formula =
     case formula of
     Quantification q vars f pos ->
@@ -86,10 +86,8 @@ rmSort term = case term of
    simplifies the term and removes its type-information as far as the signature
    allows
 -}
-rmTypesT :: (GetRange f, Pretty f) =>
-            Min f e
-         -> (Sign f e -> f -> f)
-         -> Sign f e -> TERM f -> TERM f
+rmTypesT :: (GetRange f, Pretty f, TermExtension f)
+  => Min f e -> (Sign f e -> f -> f) -> Sign f e -> TERM f -> TERM f
 rmTypesT minF simpF sign term =
     let simTerm = simplifyTerm minF simpF sign term
         minTerm = rmSort simTerm
@@ -100,8 +98,8 @@ rmTypesT minF simpF sign term =
 {- |
    simplify the TERM and keep its typing information if it had one
 -}
-simplifyTerm :: (GetRange f, Pretty f) => Min f e -> (Sign f e -> f -> f)
-        -> Sign f e -> TERM f -> TERM f
+simplifyTerm :: (GetRange f, Pretty f, TermExtension f)
+  => Min f e -> (Sign f e -> f -> f) -> Sign f e -> TERM f -> TERM f
 simplifyTerm minF simpF sign term =
     let simplifyTermC = simplifyTerm minF simpF sign
         minT = maybeResult . oneExpTerm minF sign
@@ -148,8 +146,9 @@ simplifyTerm minF simpF sign term =
 {- |
    simplify the TERM with given sort and attach sort if necessary
 -}
-simplifyTermWithSort :: (GetRange f, Pretty f) => Min f e
-    -> (Sign f e -> f -> f) -> Sign f e -> SORT -> Range -> TERM f -> TERM f
+simplifyTermWithSort :: (GetRange f, Pretty f, TermExtension f)
+  => Min f e -> (Sign f e -> f -> f) -> Sign f e -> SORT -> Range -> TERM f
+    -> TERM f
 simplifyTermWithSort minF simpF sign gSort poss term =
     let simplifyTermCS = simplifyTermWithSort minF simpF sign gSort poss
         simplifyTermC = simplifyTerm minF simpF sign
@@ -198,8 +197,8 @@ simplifyTermWithSort minF simpF sign gSort poss term =
 {- |
     analyzes the formula if it is the minimal expansions.
 -}
-anaFormula :: (GetRange f, Pretty f) => Min f e -> (Sign f e -> f -> f)
-           -> Sign f e -> FORMULA f -> FORMULA f
+anaFormula :: (GetRange f, Pretty f, TermExtension f)
+  => Min f e -> (Sign f e -> f -> f) -> Sign f e -> FORMULA f -> FORMULA f
 anaFormula minF simpF sign form1 =
     let minForm = maybeResult . minExpFORMULA minF sign
         simplifyTermC = simplifyTerm minF simpF sign

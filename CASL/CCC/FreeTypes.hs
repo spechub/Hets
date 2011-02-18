@@ -688,7 +688,7 @@ overlapQuery ((a1, s1), (a2, s2)) =
             resA2 = substiF s2 $ last resA
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: Ord f => [OP_SYMB] -> ([[TERM f]]) -> Bool
+completePatterns :: [OP_SYMB] -> ([[TERM ()]]) -> Bool
 completePatterns cons pas
     | all null pas = True
     | all isVar $ map head pas = completePatterns cons (map tail pas)

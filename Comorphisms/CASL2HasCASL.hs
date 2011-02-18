@@ -120,8 +120,8 @@ fromPredType pt =
     let args = CasS.predArgs pt
     in simpleTypeScheme $ fromPREDTYPE $ Cas.Pred_type args $ getRange args
 
-mapTheory :: Pretty f => (CasS.Sign f e, [Named (Cas.FORMULA f)])
-          -> (Env, [Named Sentence])
+mapTheory :: (CasS.TermExtension f, Pretty f) =>
+  (CasS.Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
     let constr = foldr getConstructors Set.empty sents
         env = mapSig constr sig
@@ -198,7 +198,7 @@ toVarDecl (Cas.Var_decl vs s ps) =
            map ( \ i -> GenVarDecl $
                  VarDecl (simpleIdToId i) (toType s) Other ps) vs
 
-toSentence :: Pretty f => Cas.FORMULA f -> Sentence
+toSentence :: (CasS.TermExtension f, Pretty f) => Cas.FORMULA f -> Sentence
 toSentence f = case f of
    Cas.Sort_gen_ax cs b -> let
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
@@ -222,10 +222,10 @@ toSentence f = case f of
                         _ -> error "CASL2HasCASL.toSentence") ops) sorts
    _ -> Formula $ toTerm f
 
-toTerm :: Pretty f => Cas.FORMULA f -> Term
+toTerm :: (CasS.TermExtension f, Pretty f) => Cas.FORMULA f -> Term
 toTerm f = foldFormula (transRecord $ showDoc f "") f
 
-transRecord :: String -> Record f Term Term
+transRecord :: CasS.TermExtension f => String -> Record f Term Term
 transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
   in (constRecord err err err)
   { foldQuantification = \ _ q -> QuantifiedTerm (toQuant q)
@@ -294,7 +294,7 @@ transRecord str = let err = error $ "CASL2HasCASL.unexpected formula: " ++ str
       ++ "in: " ++ str
   }
 
-typeOfTerm :: Cas.TERM f -> Type
+typeOfTerm :: CasS.TermExtension f => Cas.TERM f -> Type
 typeOfTerm = toType . CasS.sortOfTerm
 
 -- | replace qualified names by variables in second order formulas

@@ -38,6 +38,9 @@ import Data.List as List
 instance FreeVars M_FORMULA where
     freeVarsOfExt sign (BoxOrDiamond _ _ f _) = freeVars sign f
 
+instance TermExtension M_FORMULA where
+    optTermSort = const Nothing
+
 basicModalAnalysis
   :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
       Sign M_FORMULA ModalSign, GlobalAnnos)

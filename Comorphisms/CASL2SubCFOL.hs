@@ -89,10 +89,10 @@ instance Comorphism CASL2SubCFOL
         if b then SL.caslTop else SL.caslTop { cons_features = NoSortGen }
     targetLogic (CASL2SubCFOL _ _) = CASL
     mapSublogic (CASL2SubCFOL _ _) sl = Just $ if has_part sl then sl
-        { has_part    = False -- partiality is coded out
-        , has_pred    = True
+        { has_part = False -- partiality is coded out
+        , has_pred = True
         , which_logic = max Horn $ which_logic sl
-        , has_eq      = True} else sl
+        , has_eq = True} else sl
     map_theory (CASL2SubCFOL b m) (sig, sens) =
         let fbsrts = Set.unions $ map (botFormulaSorts . sentence) sens
             bsrts = sortsWithBottom m sig fbsrts
@@ -106,7 +106,7 @@ instance Comorphism CASL2SubCFOL
              _ -> return
                  ( encodeSig bsrts sig
                  , nameAndDisambiguate $ sens1 ++ sens2)
-    map_morphism (CASL2SubCFOL _ m) mor@Morphism{msource = src, mtarget = tar}
+    map_morphism (CASL2SubCFOL _ m) mor@Morphism {msource = src, mtarget = tar}
         = return
         mor { msource = encodeSig (sortsWithBottom m src Set.empty) src
             , mtarget = encodeSig (sortsWithBottom m tar Set.empty) tar
@@ -137,15 +137,15 @@ sortsWithBottom m sig formBotSrts =
         ops = Map.elems $ opMap sig
         -- all supersorts inherit the same bottom element
         allSortsWithBottom s =
-            Set.unions $ s : map (flip supersortsOf sig) (Set.toList s)
+            Set.unions $ s : map (`supersortsOf` sig) (Set.toList s)
         resSortsOfPartialFcts =
             allSortsWithBottom $ Set.unions $ bsrts :
                map (Set.map opRes . Set.filter
-                    ( \ t -> opKind t == Partial)) ops
+                    ((== Partial) . opKind)) ops
         collect given =
             let more = allSortsWithBottom $ Set.unions $ map
                      (Set.map opRes . Set.filter
-                      (any (flip Set.member given) . opArgs)) ops
+                      (any (`Set.member` given) . opArgs)) ops
             in if Set.isSubsetOf more given then given
                else collect $ Set.union more given
      in collect resSortsOfPartialFcts
@@ -153,19 +153,19 @@ sortsWithBottom m sig formBotSrts =
 defPred :: Id
 defPred = genName "defined"
 
-defined :: Set.Set SORT -> TERM f -> Range -> FORMULA f
+defined :: TermExtension f => Set.Set SORT -> TERM f -> Range -> FORMULA f
 defined bsorts t ps = let s = sortOfTerm t in
   if Set.member s bsorts then Predication
          (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
   else True_atom ps
 
-defVards :: Set.Set SORT -> [VAR_DECL] -> FORMULA f
+defVards :: TermExtension f => Set.Set SORT -> [VAR_DECL] -> FORMULA f
 defVards bs = conjunct . concatMap (defVars bs)
 
-defVars :: Set.Set SORT -> VAR_DECL -> [FORMULA f]
+defVars :: TermExtension f => Set.Set SORT -> VAR_DECL -> [FORMULA f]
 defVars bs (Var_decl vns s _) = map (defVar bs s) vns
 
-defVar :: Set.Set SORT -> SORT -> Token -> FORMULA f
+defVar :: TermExtension f => Set.Set SORT -> SORT -> Token -> FORMULA f
 defVar bs s v = defined bs (Qual_var v s nullRange) nullRange
 
 totalizeOpSymb :: OP_SYMB -> OP_SYMB
@@ -197,9 +197,9 @@ encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
 encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
-   botOpMap  = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
+   botOpMap = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
        newTotalMap $ Set.map botType bsorts
-   defType x = PredType{predArgs=[x]}
+   defType x = PredType {predArgs = [x]}
    defTypes = Set.map defType bsorts
    newpredMap = Map.insert defPred defTypes $ predMap sig
    rel = sortRel sig
@@ -294,21 +294,22 @@ generateAxioms uniqBot bsorts sig = concatMap (\ s -> let
         minSupers so = Set.toList $ Set.delete so $ Set.union (isos so)
           $ Set.unions $ map isos $ Set.toList $ Rel.succs rel2 so
         sortList = Set.toList bsorts
-        opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
+        opList = [(f, t) | (f, types) <- Map.toList $ opMap sig,
                   t <- Set.toList types ]
-        predList = [(p,t) | (p,types) <- Map.toList $ predMap sig,
+        predList = [(p, t) | (p, types) <- Map.toList $ predMap sig,
                     t <- Set.toList types ]
 
-codeRecord :: Bool -> Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
+codeRecord :: TermExtension f => Bool -> Set.Set SORT -> (f -> f)
+  -> Record f (FORMULA f) (TERM f)
 codeRecord uniBot bsrts mf = (mapRecord mf)
-    { foldQuantification = \  _ q vs qf ps ->
+    { foldQuantification = \ _ q vs qf ps ->
       case q of
       Universal ->
           Quantification q vs (Implication (defVards bsrts vs) qf True ps) ps
       _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
     , foldDefinedness = const $ defined bsrts
     , foldExistl_equation = \ _ t1 t2 ps ->
-      Conjunction[Strong_equation t1 t2 ps,
+      Conjunction [Strong_equation t1 t2 ps,
                   defined bsrts t1 ps] ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) ps

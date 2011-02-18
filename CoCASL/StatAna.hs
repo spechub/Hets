@@ -47,6 +47,9 @@ instance FreeVars C_FORMULA where
        BoxOrDiamond _ _ f _ -> freeVars sign f
        _ -> Set.empty
 
+instance TermExtension C_FORMULA where
+    optTermSort = const Nothing
+
 basicCoCASLAnalysis
   :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
       Sign C_FORMULA CoCASLSign, GlobalAnnos)

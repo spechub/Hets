@@ -52,17 +52,20 @@ instance FreeVars DL_FORMULA where
                Nothing -> Set.empty
                Just f -> freeVars sign f
 
+instance TermExtension DL_FORMULA where
+    optTermSort = const Nothing
+
 basicCASL_DLAnalysis
     :: (BASIC_SPEC () () DL_FORMULA, Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
     -> Result (BASIC_SPEC () () DL_FORMULA,
                ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
                [Named (FORMULA DL_FORMULA)])
-basicCASL_DLAnalysis (bs,sig,ga) =
+basicCASL_DLAnalysis (bs, sig, ga) =
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
        let sig' = addSig addCASL_DLSign sig predefinedSign
-           bs'  = transformSortDeclarations True bs
+           bs' = transformSortDeclarations True bs
        case basicAnalysis minDLForm (const return)
-             (const return) ana_Mix (bs',sig',ga') of
+             (const return) ana_Mix (bs', sig', ga') of
          r@(Result ds1 mr) ->
              maybe r (cleanStatAnaResult . postAna ds1 sig') mr
 
@@ -79,7 +82,7 @@ generateSubsorting sig =
     in
       sig
       {
-        sortRel = Set.fold (\x y -> Rel.insert x topSort y) inR inS
+        sortRel = Set.fold (\ x y -> Rel.insert x topSort y) inR inS
       }
 
 transformSortDeclarations :: Bool
@@ -99,7 +102,7 @@ transformSortDeclarations addThing (Basic_spec aBIs) =
           processaSor_i aSor_i =
               case processSor_i (item aSor_i) of
                 [] -> []
-                x:xs -> replaceAnnoted x aSor_i : map emptyAnno xs
+                x : xs -> replaceAnnoted x aSor_i : map emptyAnno xs
           processSor_i sor_i =
               if addThing
               then
@@ -123,7 +126,7 @@ transformSortDeclarations addThing (Basic_spec aBIs) =
 
 -- | marker for sig items added to a basic spec
 statAnaMarker :: Range
-statAnaMarker = Range [SourcePos (">:>added for DL.StaticAna<:<") 0 0]
+statAnaMarker = Range [SourcePos ">:>added for DL.StaticAna<:<" 0 0]
 
 {- |
  * remove predefined symbols from a result of the static analysis
@@ -171,34 +174,28 @@ postAna :: [Diagnosis]
                    ExtSign (Sign DL_FORMULA CASL_DLSign) Symbol,
                    [Named (FORMULA DL_FORMULA)])
 postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
-    Result (ds1++ds_sig) $ if null ds_sig then Just i else Nothing
+    Result (ds1 ++ ds_sig) $ if null ds_sig then Just i else Nothing
     where ds_sig = chkSorts ++ checkPreds ++ checkOps
           diff_sig = diffSig diffCASL_DLSign acc_sig in_sig
           chkSorts = Set.fold chSort [] (sortSet diff_sig) ++
-             (if Set.member topSortD (supersortsOf topSort acc_sig) ||
+             [Diag Error
+                        ("\n     new subsort relations with data " ++
+                         "topsort are not allowed") nullRange
+             | Set.member topSortD (supersortsOf topSort acc_sig) ||
                  Set.member topSortD (subsortsOf topSort acc_sig) ||
-                 (supersortsOf topSortD predefinedSign /=
-                  supersortsOf topSortD acc_sig) ||
-                 (selectDATAKernel (sortRel predefinedSign)
-                  /=
-                  selectDATAKernel (sortRel acc_sig))
-               then [Diag Error
-                        ("\n     new subsort relations with data "++
-                         "topsort are not allowed") nullRange]
-                  else [])
-
+                 supersortsOf topSortD predefinedSign /=
+                  supersortsOf topSortD acc_sig ||
+                 selectDATAKernel (sortRel predefinedSign)
+                  /= selectDATAKernel (sortRel acc_sig)]
           chSort s ds = ds ++
-              (if Set.member topSort (supersortsOf s acc_sig)
-                  then []
-                  else [mkDiag Error
-                        ("\n     new sort is not a subsort of '"++
-                         showDoc topSort "':") s]) ++
-              (if Set.member topSort (subsortsOf s acc_sig)
-                  then [mkDiag Error
-                        ("\n     new sort must not be a supersort of '"++
-                         showDoc topSort "':") s]
-                  else [])
-
+              [mkDiag Error
+                        ("\n     new sort is not a subsort of '" ++
+                         showDoc topSort "':") s
+              | not $ Set.member topSort $ supersortsOf s acc_sig]
+              ++ [mkDiag Error
+                        ("\n     new sort must not be a supersort of '" ++
+                         showDoc topSort "':") s
+                 | Set.member topSort (subsortsOf s acc_sig)]
           selectDATAKernel rel =
               Rel.intransKernel $ Rel.restrict rel $
                  Set.insert topSortD
@@ -206,25 +203,25 @@ postAna ds1 in_sig i@(_, ExtSign acc_sig _, _) =
 
           checkPreds = Map.foldWithKey chPred [] (predMap diff_sig)
           chPred p ts ds = ds ++
-              Set.fold (\ t -> chArgs "pred" p $ predArgs t) [] ts
+              Set.fold (chArgs "pred" p . predArgs) [] ts
 
           checkOps = Map.foldWithKey chOp [] (opMap diff_sig)
           chOp o ts ds = ds ++
-              Set.fold (\ t -> chArgs "op" o $ opArgs t) [] ts
+              Set.fold (chArgs "op" o . opArgs) [] ts
 
           chArgs kstr sym args ds = ds ++
               case args of
               [] -> if kstr == "op"
                     then []
                     else [mkDiag Error
-                        ("\n     propositional symbols are not allowed") sym]
-              (s:_) ->
+                        "\n     propositional symbols are not allowed" sym]
+              (s : _) ->
                   if s == topSort ||
                      Set.member topSort (supersortsOf s acc_sig)
                   then []
                   else [mkDiag Error
-                        ("\n     the first argument sort of this "++kstr++
-                        " is not a subsort of '"++ showDoc topSort "':")
+                        ("\n     the first argument sort of this " ++ kstr ++
+                        " is not a subsort of '" ++ showDoc topSort "':")
                         sym]
 
 
@@ -276,15 +273,15 @@ minDLForm sign form =
         case Map.findWithDefault Set.empty pn (predMap sign) of
         pn_typeSet
             | Set.null pn_typeSet ->
-                Result [Diag Error ("Unknown predicate: \""++
-                                    show pn++"\"") (posOfId pn)]
+                Result [Diag Error ("Unknown predicate: \"" ++
+                                    show pn ++ "\"") (posOfId pn)]
                        Nothing
             | otherwise ->
-              let pn_RelTypes = Set.filter (\pt -> length (predArgs pt) == 2)
+              let pn_RelTypes = Set.filter (\ pt -> length (predArgs pt) == 2)
                                            pn_typeSet
               in if Set.null pn_RelTypes
-                 then Result [Diag Error ("No binary predicate \""++
-                                    show pn++"\" declared") (posOfId pn)]
+                 then Result [Diag Error ("No binary predicate \"" ++
+                                    show pn ++ "\" declared") (posOfId pn)]
                        Nothing
                  else do
                    v2 <- oneExpTerm minDLForm sign varTerm
@@ -302,10 +299,10 @@ minDLForm sign form =
                                  else ds
                                 amigDs ts =
                                  [Diag Error
-                                  ("Ambiguous types found for\n    pred '"++
-                                   showDoc pn "' in cardinalty "++
-                                   "constraint: (showing only two of them)\n"++
-                                   "    '"++ showDoc (head ts) "', '"++
+                                  ("Ambiguous types found for\n    pred '" ++
+                                   showDoc pn "' in cardinalty " ++
+                                   "constraint: (showing only two of them)\n" ++
+                                   "    '" ++ showDoc (head ts) "', '" ++
                                    showDoc (head $ tail ts) "'") ran]
                              in maybe (Result ds' Nothing)
                               (\ ts -> case ts of
@@ -328,9 +325,9 @@ minDLForm sign form =
                               show n_sort == "nonNegativeInteger"
                            then []
                            else [mkDiag Error
-                                    ("The second argument of a\n    "++
-                                     "cardinality constrain must be a "++
-                                     "number literal\n    typeable as "++
+                                    ("The second argument of a\n    " ++
+                                     "cardinality constrain must be a " ++
+                                     "number literal\n    typeable as " ++
                                      "nonNegativeInteger")
                                     natTerm]
                        ds = isNatTerm
@@ -354,15 +351,15 @@ minDLForm sign form =
           sub_sort_of_subj pn v_sort typeSet =
               foldl (\ (Result ds mv) pt ->
                          case predArgs pt of
-                         (s:_)
+                         (s : _)
                              | leqSort sign v_sort s ->
                                  maybe (Result ds $ Just [toPRED_TYPE pt])
                                        (\ l -> Result ds $
-                                                   Just $ l++[toPRED_TYPE pt])
+                                                   Just $ l ++ [toPRED_TYPE pt])
                                        mv
                              | otherwise ->
                                  Result ds mv
-                         _ -> Result (ds++[mkDiag Error
+                         _ -> Result (ds ++ [mkDiag Error
                                                   ("no propositional " ++
                                                    "symbols are allowed\n    "
                                                    ++ "within cardinality " ++
@@ -371,8 +368,8 @@ minDLForm sign form =
                   ) (Result [] Nothing) $ Set.toList typeSet
 
 -- | symbol map analysis
-checkSymbolMapDL ::  RawSymbolMap -> Result RawSymbolMap
-{-    - implement a symbol mapping that forbids mapping of predefined symbols
+checkSymbolMapDL :: RawSymbolMap -> Result RawSymbolMap
+{- - implement a symbol mapping that forbids mapping of predefined symbols
        from emptySign
        use from Logic.Logic.Logic and from CASL:
           matches, symOf, statSymbMapItems
@@ -406,11 +403,11 @@ splitApplM t = case t of
 
 splitAppl :: TERM f -> (Id, [TERM f])
 splitAppl t = case t of
-              Application oi ts _ -> (op_id oi,ts)
+              Application oi ts _ -> (op_id oi, ts)
               _ -> error "splitAppl: no Application found"
 
 -- | extract the Id from any OP_SYMB
 op_id :: OP_SYMB -> Id
 op_id op = case op of
            Qual_op_name x _ _ -> x
-           Op_name x          -> x
+           Op_name x -> x

@@ -571,6 +571,9 @@ instance GetRange (Ranged a) where
 instance FreeVars Dlformula where
   freeVarsOfExt = freeDlVars
 
+instance TermExtension Dlformula where
+  optTermSort = const Nothing
+
 -- | adjust procs map in morphism target signature
 correctTarget :: Morphism f Procs VSEMorExt -> Morphism f Procs VSEMorExt
 correctTarget m = m
