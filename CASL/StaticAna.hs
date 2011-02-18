@@ -426,12 +426,10 @@ ana_OP_ITEM mef mix aoi =
                   _ -> False) il)
                    $ addSentences $ map (addLeftComm oty ni) ops
            return aoi {item = Op_decl ops ty (catMaybes ul) ps}
-    Op_defn i ohd at ps ->
+    Op_defn i ohd@(Op_head _ vs _ _) at ps ->
         do let ty = headToType ohd
                lb = getRLabel at
                lab = if null lb then getRLabel aoi else lb
-               vs = case ohd of
-                      Op_head _ as _ _ -> as
                arg = concatMap (\ (Var_decl v s qs) ->
                                  map (\ j -> Qual_var j s qs) v) vs
            addOp aoi (toOpType ty) i
