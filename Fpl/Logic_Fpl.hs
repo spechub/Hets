@@ -18,6 +18,7 @@ import Logic.Logic
 import Fpl.As
 import Fpl.Sign
 import Fpl.StatAna
+import Fpl.Morphism
 import Fpl.ATC_Fpl ()
 
 import CASL.Sign
@@ -25,7 +26,6 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
-import CASL.MapSentence
 import CASL.SimplifySen
 import CASL.SymbolParser
 import CASL.Taxonomy
@@ -39,8 +39,6 @@ instance Language Fpl where
   description _ = unlines
     [ "logic of functional programs (FPL) as CASL extension" ]
 
-type FplMor = Morphism TermExt SignExt (DefMorExt SignExt)
-
 instance SignExtension SignExt where
   isSubSignExtension = isSubFplSign
 
@@ -50,6 +48,7 @@ instance Syntax Fpl FplBasicSpec SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_symb_map_items Fpl = Just $ symbMapItems fplReservedWords
 
 instance Sentences Fpl FplForm FplSign FplMor Symbol where
+      map_sen Fpl m = return . mapFplSen m
       sym_of Fpl = symOf
       symmap_of Fpl = morphismToSymbMap
       sym_name Fpl = symName
