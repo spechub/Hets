@@ -81,6 +81,13 @@ mapFunDef :: FunDef -> FunDef
 mapFunDef (FunDef o h at r) =
   FunDef o h (fmap (mapTerm mapTermExt) at) r
 
+{- | The is the plugin function for the mixfix analysis. Due to patterns there
+may be unknown simple identifiers that are turned to constants and later by
+the overload resolution to variables. Obviously, such variables cannot be fed
+into the mixfix analysis like all other known variables. Proper mixfix
+identifiers in local let bindings are currently not fed into the mixfix
+analysis! If such a non-simple identifier is globally unknown the analysis may
+reject valid terms. -}
 resolveTermExt :: MixResolve TermExt
 resolveTermExt ga ids te = case te of
   FixDef fd -> fmap FixDef $ resolveFunDef ga ids fd
@@ -117,6 +124,11 @@ opDefnToFunDefn def oi = case oi of
   Op_defn o h nt r -> FunDef o h nt r
   _ -> def
 
+{- | This functions tries to recognize variables in case-patterns (application
+terms) after overload resolution.  Currently any operation in the signature is
+(wrongly) regarded as constructor.  A further limitation is that a unique sort
+is needed as input that is taken from the term between @case@ and @of@.  Also
+uniqueness (linearity) of all variables is not checked yet. -}
 resolvePattern :: FplSign -> (SORT, FplTerm) -> Result ([VAR_DECL], FplTerm)
 resolvePattern sign (resSort, term) =
   let err msg = fail $ msg ++ " " ++ showDoc term "" in
@@ -149,6 +161,9 @@ resolvePattern sign (resSort, term) =
     else err "wrong typed pattern"
   _ -> err "unexpected pattern"
 
+{- | perform overload resolution after mixfix analysis. Case expressions are
+not fully checked yet. The type of patterns is deduced from the top term, but
+it is not checked, if the rhs types of all branches are compatible. -}
 minFplTerm :: Min TermExt SignExt
 minFplTerm sig te = case te of
   FixDef fd -> fmap FixDef $ minFunDef sig fd

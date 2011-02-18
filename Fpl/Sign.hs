@@ -8,6 +8,10 @@ Stability   :  provisional
 Portability :  portable
 
 signature extension for FPL to keep track of constructors
+
+This signature type is complete unused currently and likely to change.
+Constructors could also be kept directly via CASL as extra OpMap and thus
+making this extension obsolete.
 -}
 
 module Fpl.Sign where
