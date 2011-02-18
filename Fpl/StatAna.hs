@@ -20,6 +20,7 @@ import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
 import CASL.Quantification
+import CASL.SimplifySen
 
 import Common.AS_Annotation
 import Common.DocUtils
@@ -251,3 +252,27 @@ instance TermExtension TermExt where
       Let _ t _ -> optTermSort t
       IfThenElse _ t _ _ -> optTermSort t
       _ -> Nothing
+
+simplifyTermExt :: FplSign -> TermExt -> TermExt
+simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
+  case te of
+    FixDef fd -> FixDef $ simplifyFunDef s fd
+    Case o l r -> Case (rec s o)
+      (map (\ (p, t) -> let
+                vs = freeTermVars s p
+                newSign = execState
+                  (mapM_ (uncurry $ flip addVar) $ Set.toList vs) s
+                in (rec newSign p, rec newSign t)) l) r
+    Let fd@(FunDef o h _ _) t r ->
+      let newSign = execState (addOp (emptyAnno o) (toOpType $ headToType h) o)
+            s
+      in Let (simplifyFunDef newSign fd)
+            (rec newSign t) r
+    IfThenElse f t e r -> IfThenElse
+      (simplifySen minFplTerm simplifyTermExt s f) (rec s t) (rec s e) r
+
+simplifyFunDef :: FplSign -> FunDef -> FunDef
+simplifyFunDef sig (FunDef o h@(Op_head _ vs _ _) at r) =
+   let newSign = execState (mapM_ addVars vs) sig
+   in FunDef o h at
+        { item = simplifyTerm minFplTerm simplifyTermExt newSign $ item at } r

@@ -31,7 +31,7 @@ import CASL.Overload
 import CASL.StaticAna
 
 {- | simplifies formula\/term informations for 'show theory' of
-   HETS-graph representation.  -}
+   HETS-graph representation. -}
 simplifyCASLSen :: Sign () e -> FORMULA () -> FORMULA ()
 simplifyCASLSen = simplifySen dummyMin dummy
 
@@ -39,7 +39,7 @@ simplifyCASLTerm :: Sign () e -> TERM () -> TERM ()
 simplifyCASLTerm = simplifyTerm dummyMin dummy
 
 simplifySen :: (GetRange f, Pretty f, TermExtension f)
-  => (Min f e) -- ^ extension type analysis
+  => Min f e -- ^ extension type analysis
     -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
     -> Sign f e -> FORMULA f -> FORMULA f
 simplifySen minF simpF sign formula =
@@ -54,7 +54,7 @@ simplifySen minF simpF sign formula =
         Implication (simplifySenCall f1) (simplifySenCall f2) bool pos
     Equivalence f1 f2 pos ->
         Equivalence (simplifySenCall f1) (simplifySenCall f2) pos
-    Negation f pos ->  Negation (simplifySenCall f) pos
+    Negation f pos -> Negation (simplifySenCall f) pos
     True_atom x -> True_atom x
     False_atom x -> False_atom x
     f@(Predication _ _ _) -> anaFormulaCall f
@@ -141,6 +141,7 @@ simplifyTerm minF simpF sign term =
                  Just _ -> simT
                  _ -> Application q [] pos
                  else simT
+       ExtTERM t -> ExtTERM $ simpF sign t
        _ -> term
 
 {- |
@@ -192,6 +193,7 @@ simplifyTermWithSort minF simpF sign gSort poss term =
            in case minT minOp of
               Just _ -> minOp
               Nothing -> Sorted_term simT gSort poss
+       ExtTERM t -> ExtTERM $ simpF sign t
        _ -> term
 
 {- |

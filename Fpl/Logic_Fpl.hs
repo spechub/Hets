@@ -53,6 +53,7 @@ instance Sentences Fpl FplForm FplSign FplMor Symbol where
       sym_of Fpl = symOf
       symmap_of Fpl = morphismToSymbMap
       sym_name Fpl = symName
+      simplify_sen Fpl = simplifySen minFplTerm simplifyTermExt
       print_sign Fpl = printSign pretty
 
 instance StaticAnalysis Fpl FplBasicSpec FplForm
