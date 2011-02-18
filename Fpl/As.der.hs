@@ -100,6 +100,9 @@ instance Pretty FunDef where
       , sep [ (if null l then sep else cat) [idLabelDoc i, pretty h]
             , equals <+> printAnnoted pretty t]]
 
+{- | extra terms of FPL. if-then-else uses a formula as guard to allow an
+equality test. @true@ and @false@ are currently not allowed as terms! This
+should be solved by parsing. @Bool@ needs to be a builtin type. -}
 data TermExt =
     FixDef FunDef -- ^ formula
   | Case FplTerm [(FplTerm, FplTerm)] Range
