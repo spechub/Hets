@@ -274,5 +274,4 @@ simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
 simplifyFunDef :: FplSign -> FunDef -> FunDef
 simplifyFunDef sig (FunDef o h@(Op_head _ vs _ _) at r) =
    let newSign = execState (mapM_ addVars vs) sig
-   in FunDef o h at
-        { item = simplifyTerm minFplTerm simplifyTermExt newSign $ item at } r
+   in FunDef o h (fmap (simplifyTerm minFplTerm simplifyTermExt newSign) at) r
