@@ -209,10 +209,25 @@ anaFplSortItem mix si = case si of
 
 anaFplOpItem :: Ana FplOpItem FplExt () TermExt SignExt
 anaFplOpItem mix oi = case oi of
-  FunOp fd ->
-    fmap (FunOp . opDefnToFunDefn fd . item)
-      $ ana_OP_ITEM minFplTerm mix
-      $ emptyAnno $ funDefToOpDefn fd
+  FunOp (FunDef i oh@(Op_head _ vs r _) at ps) -> do
+    let ty = headToType oh
+        lb = getRLabel at
+    addOp (emptyAnno i) (toOpType ty) i
+    e <- get -- save
+    put e { varMap = Map.empty }
+    mapM_ addVars vs
+    sign <- get
+    put e -- restore
+    let Result ds mt = anaTerm minFplTerm mix sign r ps $ item at
+    addDiags ds
+    case mt of
+      Nothing -> return $ CaslOpItem $ Op_decl [i] ty [] ps
+      Just (resT, anaT) -> do
+        addSentences
+          [(makeNamed lb $ ExtFORMULA $ FixDef
+           $ FunDef i oh at { item = anaT } ps)
+           { isAxiom = notImplied at, isDef = True }]
+        return $ FunOp $ FunDef i oh at { item = resT } ps
   CaslOpItem o -> fmap (CaslOpItem . item)
     $ ana_OP_ITEM minFplTerm mix (emptyAnno o)
 
