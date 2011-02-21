@@ -18,6 +18,8 @@ module Common.PrintLaTeX
     , renderLatexVerb
     , renderInternalLatex
     , setTabWithSpaces
+    , latexHeader
+    , latexFooter
     )
     where
 
@@ -27,6 +29,19 @@ import Data.List (isPrefixOf,isSuffixOf)
 
 import Common.Lib.Pretty
 import Common.LaTeX_funs
+
+-- the header of the LaTeX-file that will be processed by pdflatex
+latexHeader :: String
+latexHeader = unlines
+  [ "\\documentclass{article}"
+  , "\\usepackage{hetcasl}"
+  , "\\usepackage{textcomp}"
+  , "\\usepackage[T1]{fontenc}"
+  , "\\begin{document}" ]
+
+-- the ending document string
+latexFooter :: String
+latexFooter = "\n\\end{document}\n"
 
 ----------------------------------------------------------------------
 -- a style for formatting (Standard is Style PageMode 50 1.19)

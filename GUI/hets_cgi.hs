@@ -26,6 +26,7 @@ import Common.DocUtils (showGlobalDoc)
 import Common.GlobalAnnotations
 import Common.LibName
 import Common.ResultT
+import Common.PrintLaTeX
 
 import Comorphisms.LogicGraph
 
@@ -78,15 +79,6 @@ baseUrlGenerated = "http://www.informatik.uni-bremen.de/cofi/hets-tmp/"
 accessable by the cgi script -}
 caslLibDir :: String
 caslLibDir = "/home/cofi/Hets-lib"
-
--- the header of the LaTeX-file that will be processed by pdflatex
-latexHeader :: String
-latexHeader = unlines
-  [ "\\documentclass{article}"
-  , "\\usepackage{hetcasl}"
-  , "\\usepackage{textcomp}"
-  , "\\usepackage[T1]{fontenc}"
-  , "\\begin{document}" ]
 
 -- where is the pdflatex command for the generation of PDF-files
 pdflatexCmd :: String

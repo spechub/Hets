@@ -52,6 +52,7 @@ import Text.XML.Light.Cursor
 import Common.Doc
 import Common.DocUtils
 import Common.LibName
+import Common.PrintLaTeX
 import Common.Result
 import Common.ResultT
 import Common.ToXml
@@ -77,6 +78,7 @@ import System.Process
 import System.Directory
 import System.Exit
 import System.FilePath
+import System.IO
 
 data Session = Session
   { sessLibEnv :: LibEnv
@@ -193,7 +195,34 @@ ppDGraph dg mt = case mt of
         PrettyXml -> return $ ppTopElement $ xmlLibDefn ga ld
         PrettyAscii -> return $ showGlobalDoc ga ld "\n"
         PrettyHtml -> return $ htmlHead ++ renderHtml ga (pretty ld)
-        PrettyLatex -> fail "latex output not supported yet"
+        PrettyLatex -> lift $ do
+         tmpDir <- getTemporaryDirectory
+         (tmpFile, hdl) <- openTempFile tmpDir "temp.tex"
+         hSetEncoding hdl latin1
+         hPutStr hdl $ latexHeader ++
+                 renderLatex Nothing (toLatex ga $ pretty ld)
+                 ++ latexFooter
+         hFlush hdl
+         hClose hdl
+         mapM_ (\ s -> do
+            let sty = (</> "hetcasl.sty")
+                f = sty s
+            ex <- doesFileExist f
+            when ex $ copyFile f $ sty tmpDir)
+              [ "utils", "Hets/utils"
+              , "/home/www.informatik.uni-bremen.de/cofi/hets-tmp" ]
+         withinDirectory tmpDir $ do
+           readProcess "pdflatex" [tmpFile] ""
+           readProcess "pdflatex" [tmpFile] ""
+           let pdfFile = replaceExtension tmpFile "pdf"
+           pdf <- doesFileExist pdfFile
+           if pdf then do
+             pdfHdl <- openBinaryFile pdfFile ReadMode
+             str <- hGetContents pdfHdl
+             when (length str < 0) $ putStrLn "pdf file too large"
+             hClose pdfHdl
+             return str
+             else return "could not create pdf"
 
 getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
