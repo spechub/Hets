@@ -96,9 +96,8 @@ restTerm :: TermParser f => [String] -> AParser st (TERM f)
 restTerm k = startTerm k <|> typedTerm k <|> castedTerm k
 
 mixTerm :: TermParser f => [String] -> AParser st (TERM f)
-mixTerm k = do
-  l <- fmap ((: []) . ExtTERM) (termParser True)
-       <|> startTerm k <:> restTerms k
+mixTerm k = fmap ExtTERM (termParser True) <|> do
+  l <- startTerm k <:> restTerms k
   return $ if isSingle l then head l else Mixfix_term l
 
 -- | when-else terms
