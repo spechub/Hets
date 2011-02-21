@@ -20,6 +20,7 @@ module Driver.Options
   , InType (..)
   , OutType (..)
   , PrettyType (..)
+  , prettyList
   , GraphType (..)
   , SPFType (..)
   , ATType

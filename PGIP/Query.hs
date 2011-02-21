@@ -57,13 +57,20 @@ import Interfaces.CmdAction
 
 import Static.DevGraph
 
+import Driver.Options
+
 import Data.Char
 import Data.List
 import Data.Maybe
+
 import Numeric
 
+ppList :: [String]
+ppList = map (show . PrettyOut) prettyList
+
 displayTypes :: [String]
-displayTypes = ["svg", "xml", "dot", "session"]
+displayTypes =
+  ["svg", "xml", "dot", "session"] ++ ppList
 
 nodeCommands :: [String]
 nodeCommands = ["node", "theory", "provers", "translations", "prove"]

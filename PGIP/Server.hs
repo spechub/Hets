@@ -32,6 +32,8 @@ import Static.AnalysisLibrary
 import Static.ToXml as ToXml
 import Static.ApplyChanges
 
+import Syntax.ToXml
+
 import Interfaces.Command
 import Interfaces.CmdAction
 
@@ -47,6 +49,7 @@ import Proofs.AbstractState
 import Text.XML.Light
 import Text.XML.Light.Cursor
 
+import Common.Doc
 import Common.DocUtils
 import Common.LibName
 import Common.Result
@@ -180,6 +183,18 @@ nextSess sessRef newLib k =
       Just s -> let newSess = s { sessLibEnv = newLib }
         in (IntMap.insert k newSess m, newSess))
 
+ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO String
+ppDGraph dg mt = case mt of
+  Nothing -> error "ppDGraph"
+  Just pty -> let ga = globalAnnos dg in
+    case optLibDefn dg of
+      Nothing -> fail "parsed LIB-DEFN not avaible"
+      Just ld -> case pty of
+        PrettyXml -> return $ ppTopElement $ xmlLibDefn ga ld
+        PrettyAscii -> return $ showGlobalDoc ga ld "\n"
+        PrettyHtml -> return $ htmlHead ++ renderHtml ga (pretty ld)
+        PrettyLatex -> fail "latex output not supported yet"
+
 getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = case dgQ of
@@ -285,6 +300,8 @@ getHetsResult opts updates sessRef file query =
               Just "dot" -> liftR $ return $ dotGraph title False dg
               Just "session" -> liftR $ return $ ppElement
                 $ aRef (mkPath sess ln k) (show k)
+              Just str | elem str ppList
+                -> ppDGraph dg $ lookup str $ zip ppList prettyList
               _ -> liftR $ return $ sessAns ln sk
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
