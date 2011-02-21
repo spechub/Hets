@@ -10,39 +10,45 @@ Portability :  non-portable (via imports)
 
 Program for evaluating EnCL specifications
 -}
-
+module Main (main, runMain) where
 
 import System.Environment
 import System.Console.GetOpt
 
 import qualified Interfaces.Process as PC
-import CSL.InteractiveTests (evalWithVerification, CAS (..))
+import CSL.InteractiveTests (evalWithVerification, CAS (..), CASState(..))
 import Common.Utils
 
 import Data.Bits
 import Data.Maybe
 import Data.List
 
+import Control.Monad
 
 main :: IO ()
-main = do
-  args <- getArgs
-  case processArgs args of
-    Left msg -> putStrLn $ "Evaluation: " ++ msg ++ "\n\n" ++ esUsage
-    Right st -> runProg st >>= putStrLn
+main = getArgs >>= runMain True >> putStr ""
 
-runProg :: ProgSettings -> IO String
-runProg st =
-    evalWithVerification
-    (cas st)
-    (logFile st)
-    (connectionName st)
-    (symbolicmode st)
-    (debugmode st)
-    (timeout st)
-    (verbosity st)
-    (lib st)
-    (spec st)
+runMain :: Bool -> [String] -> IO (Maybe CASState)
+runMain cl args =
+    case processArgs args of
+      Left msg -> do
+        putStrLn $ "Evaluation: " ++ msg ++ "\n\n" ++ esUsage
+        return Nothing
+
+      Right st -> liftM Just $ runProg cl st
+
+runProg :: Bool -> ProgSettings -> IO CASState
+runProg cl st =
+  evalWithVerification cl
+                       (cas st)
+                       (logFile st)
+                       (connectionName st)
+                       (symbolicmode st)
+                       (debugmode st)
+                       (timeout st)
+                       (verbosity st)
+                       (lib st)
+                       (spec st)
 
 ------------------------- Input Arguments -------------------------
 

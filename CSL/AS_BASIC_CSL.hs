@@ -288,9 +288,10 @@ showOPNAME x =
           OP_tan -> "tan"
           OP_false -> "false"
           OP_true -> "true"
+          OP_in -> "in"
+
           OP_undef -> "undef"
           OP_failure -> "fail"
-          OP_in -> "in"
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
@@ -585,6 +586,12 @@ class Monad m => ExpressionPrinter m where
     printConstant = return . printConstantName
     printOpname :: OPNAME -> m Doc
     printOpname = return . text . showOPNAME
+    prefixMode :: m Bool
+    prefixMode = return False
+    printArgs :: [Doc] -> m Doc
+    printArgs =  return . parens . sepByCommas
+    printVarDecl :: String -> m Doc
+    printVarDecl =  return . text
     printInterval :: APFloat -> APFloat -> m Doc
     printInterval l r =
         return $ brackets $ sepByCommas $ map (text . show) [l, r]
@@ -599,7 +606,9 @@ printAssDefinition :: ExpressionPrinter m => AssDefinition -> m Doc
 printAssDefinition (ConstDef e) = printExpression e >>= return . (text "=" <+>)
 printAssDefinition (FunDef l e) = do
   ed <- printExpression e
-  return $ (parens $ sepByCommas $ map text l) <+> text "=" <+> ed
+  l' <- mapM printVarDecl l
+  args <- printArgs l'
+  return $ args <+> text "=" <+> ed
 
 printOPID :: ExpressionPrinter m => OPID -> m Doc
 printOPID (OpUser c) = printConstant c
@@ -694,15 +703,19 @@ printExpression (Var token) = return $ text $ tokStr token
 printExpression e@(Op s epl exps _)
     | length exps == 0 = liftM (<> printExtparams epl) $ printOPID s
     | otherwise = do
-        let f pexps = (<> (printExtparams epl <> parens (sepByCommas pexps)))
-            asPrfx pexps = liftM (f pexps) $ printOPID s
+        let asPrfx pexps = do
+                    oid <- printOPID s
+                    args <- printArgs pexps
+                    return $ oid <> printExtparams epl <> args
             asPrfx' = mapM printExpression exps >>= asPrfx
         oinm <- getOINM
-        case lookupOpInfo oinm s $ length exps  of
-             Right oi
-                 | infx oi -> printInfix e
-                 | otherwise -> asPrfx'
-             _ -> asPrfx'
+        pfxMode <- prefixMode
+        if pfxMode then asPrfx' else
+            case lookupOpInfo oinm s $ length exps  of
+              Right oi
+                  | infx oi -> printInfix e
+                  | otherwise -> asPrfx'
+              _ -> asPrfx'
 
 printExpression (List exps _) = liftM sepByCommas (mapM printExpression exps)
 printExpression (Int i _) = return $ text (show i)

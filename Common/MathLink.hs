@@ -166,6 +166,7 @@ showTK i  | i == dfMLTKAEND = "MLTKAEND"
           | i == dfMLTKSEND = "MLTKSEND"
           | i == dfMLTKSTR = "MLTKSTR"
           | i == dfMLTKSYM = "MLTKSYM"
+          | otherwise = "UNRECOGNIZED TK"
 
 
 -- * MathLink monad as Reader IO monad
@@ -181,19 +182,19 @@ data MLState =
 type ML = ReaderT MLState IO
 
 
--- | 'verbMsg' with stdout as handle
+-- | Prints a message dependent on the verbosity level
 verbMsgML :: Int -> String -> ML ()
 verbMsgML lvl msg = do
   hdl <- getHandle
   v <- asks mverbosity
   liftIO $ verbMsg hdl v lvl msg
 
--- | 'verbMsgLn' with stdout as handle
+-- | Prints a message dependent on the verbosity level
 verbMsgMLLn :: Int -> String -> ML ()
 verbMsgMLLn lvl msg = do
   hdl <- getHandle
   v <- asks mverbosity
-  liftIO $ verbMsg hdl v lvl msg
+  liftIO $ verbMsgLn hdl v lvl msg
 
 getHandle :: ML Handle
 getHandle = liftM (fromMaybe stdout) $ asks logHdl

@@ -43,18 +43,23 @@ module CSL.Interpreter
     , asErrorMsg
     , throwASError
     , ASState(..)
+    , initASState
+    , withLogFile
     , ASError(..)
     , ErrorSource(..)
     , StepDebugger(..)
     , SymbolicEvaluator(..)
     , MessagePrinter(..)
+    , verbMsgASSt
+    , verbMsgASStLn
+    , prettyInfo
+    , prettyInfo3
     )
     where
 
-import Control.Monad -- (liftM, forM_, filterM, unless)
-import Control.Monad.State (StateT, MonadState (..))
+import Control.Monad
+import Control.Monad.State
 import Control.Monad.Error (Error(..), MonadError (..))
-import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -118,7 +123,65 @@ data ASState a =
     , symbolicMode :: Bool
     , verbosity :: Int
     , vericondOut :: Maybe Handle
+    , logOut :: Handle
+    , printcount :: Int
     }
+
+initASState :: a -> OpInfoMap -> AssignmentDepGraph () -> Int -> ASState a
+initASState ci oim adg v =
+    ASState { getBMap = initWithOpMap oim
+            , getConnectInfo = ci
+            , depGraph = adg
+            , debugMode = False
+            , symbolicMode = False
+            , verbosity = v
+            , vericondOut = Nothing
+            , logOut = stdout
+            , printcount = 0
+            }
+
+
+-- | Prints a message dependent on the verbosity level
+verbMsgASSt :: (MonadState (ASState a) as, MonadIO as) => Int -> String -> as ()
+verbMsgASSt lvl msg = do
+  hdl <- gets logOut
+  v <- gets verbosity
+  liftIO $ verbMsg hdl v lvl msg
+
+-- | Prints a message dependent on the verbosity level
+verbMsgASStLn :: (MonadState (ASState a) as, MonadIO as) =>
+                 Int -> String -> as ()
+verbMsgASStLn lvl msg = do
+  hdl <- gets logOut
+  v <- gets verbosity
+  liftIO $ verbMsgLn hdl v lvl msg
+
+prettyInfo3 :: (MonadState (ASState a) as, MonadIO as) => Doc -> as ()
+prettyInfo3 = prettyInfoN 3
+
+prettyInfo :: (MonadState (ASState a) as, MonadIO as) => Doc -> as ()
+prettyInfo = prettyInfoN 2
+
+prettyInfoN :: (MonadState (ASState a) as, MonadIO as) => Int -> Doc -> as ()
+prettyInfoN n d = do
+  let mf ass = ass { printcount = printcount ass + 1 }
+  modify mf
+  gets printcount >>= verbMsgASSt n . show
+  verbMsgASSt n ": "
+  verbMsgASStLn n (show d)
+
+withLogFile :: (MonadState (ASState a) as, MonadIO as) =>
+               FilePath -> as b -> as b
+withLogFile fp prog = do
+  oldHdl <- gets logOut
+  let mf hdl ass = ass { logOut = hdl }
+  newHdl <- liftIO $ openFile fp WriteMode
+  modify $ mf newHdl
+  res <- prog
+  modify $ mf oldHdl
+  liftIO $ hClose newHdl
+  return res
+  
 
 instance Functor ASState where
     fmap f s = s { getConnectInfo = f $ getConnectInfo s }
@@ -191,6 +254,15 @@ throwASError = error . asErrorMsg
 instance Error ASError where
     noMsg = ASError UserError ""
     strMsg = ASError UserError
+
+instance Pretty ErrorSource where
+    pretty es = case es of
+                  CASError -> text "CAS error"
+                  UserError -> text "User error"
+                  InterfaceError -> text "Interface error"
+
+instance Pretty ASError where
+    pretty (ASError es s) = pretty es <> text ":" <+> text s
 
 
 -- ** Evaluation, Debugging, Stepping

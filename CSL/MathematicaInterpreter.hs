@@ -1,4 +1,4 @@
-{-# LANGUAGE  FlexibleContexts, TypeSynonymInstances #-}
+{-# LANGUAGE  FlexibleContexts, FlexibleInstances, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Mathematica instance for the AssignmentStore class
@@ -32,6 +32,7 @@ import Control.Monad
 --import Control.Monad.Trans (MonadTrans (..), MonadIO (..))
 import Control.Monad.Error
 import Control.Monad.State
+import Control.Monad.Reader
 
 import Data.List hiding (lookup)
 import qualified Data.Set as Set
@@ -112,6 +113,7 @@ instance SymbolicEvaluator MathematicaIO where
 instance MessagePrinter MathematicaIO where
     printMessage = liftIO . putStrLn
 
+
 -- ----------------------------------------------------------------------
 -- * Mathematica syntax and special terms
 -- ----------------------------------------------------------------------
@@ -177,10 +179,18 @@ mmShowOPID _ = error "mmShowOpId: unsupported constant"
 mmFlexFoldOpList :: [OPNAME]
 mmFlexFoldOpList = [ OP_plus, OP_mult, OP_and, OP_or ]
 
+mathematicaOperatorInfo :: [OpInfo]
+mathematicaOperatorInfo = toFlexFold mmFlexFoldOpList operatorInfo
+
 -- | opInfoMap for mathematica's prdefined symbols
 mathematicaOpInfoMap :: OpInfoMap
-mathematicaOpInfoMap = getOpInfoMap (mmShowOPNAME . opname)
-                       $ toFlexFold mmFlexFoldOpList operatorInfo
+mathematicaOpInfoMap =
+    getOpInfoMap (mmShowOPNAME . opname) mathematicaOperatorInfo
+
+-- | opInfoNameMap for mathematica's prdefined symbols
+mathematicaOpInfoNameMap :: OpInfoNameMap
+mathematicaOpInfoNameMap =
+    getOpInfoNameMap mathematicaOperatorInfo
 
 
 toFlexFold :: [OPNAME] -> [OpInfo] -> [OpInfo]
@@ -189,6 +199,62 @@ toFlexFold nl oil = map f oil where
     f oi | Set.member (opname oi) ns = oi { arity = -1, foldNAry = True }
          | otherwise = oi
 
+
+
+-- | mathematica term "Set"
+mtDef :: String -> AssDefinition -> EXPRESSION
+mtDef s (ConstDef e) = mkOp "Set" [mkOp s [], e]
+mtDef s (FunDef args e) = mkOp "Set" [mkOp s $ map mtVarDecl args, e]
+
+mtVarDecl :: String -> EXPRESSION
+mtVarDecl s = mkOp "Pattern" [mkOp s [], mkOp "Blank" []]
+
+mtList :: [EXPRESSION] -> EXPRESSION
+mtList = mkOp "List"
+
+mtCompound :: [EXPRESSION] -> EXPRESSION
+mtCompound = mkOp "CompoundExpression"
+
+mtIsBlank :: OPID -> Bool
+mtIsBlank oi = mmShowOPID oi == "Blank"
+
+-- ----------------------------------------------------------------------
+-- * Mathematica pretty printing
+-- ----------------------------------------------------------------------
+
+data OfMathematica a = OfMathematica { mmValue :: a }
+
+type MathPrinter = Reader (OfMathematica OpInfoNameMap)
+
+instance ExpressionPrinter MathPrinter where
+    getOINM = asks mmValue
+    printOpname = return . text . mmShowOPNAME
+    printArgs =  return . brackets . sepByCommas
+    prefixMode = return True
+    printVarDecl s = return $ text s <> text "_"
+
+printMathPretty :: (MathPrinter Doc) -> Doc
+printMathPretty = flip runReader $ OfMathematica mathematicaOpInfoNameMap
+
+class MathPretty a where
+    mmPretty :: a -> Doc
+
+instance MathPretty EXPRESSION where
+    mmPretty e = printMathPretty $ printExpression e
+
+instance MathPretty AssDefinition where
+    mmPretty def = printMathPretty $ printAssDefinition def
+
+instance MathPretty String where
+    mmPretty = text
+
+instance (MathPretty a, MathPretty b) => MathPretty [(a, b)] where
+    mmPretty l = ppPairlist mmPretty mmPretty braces sepBySemis (<>) l
+
+
+-- ----------------------------------------------------------------------
+-- * Mathematica over ML Interface
+-- ----------------------------------------------------------------------
 
 sendExpressionString :: String -> ML ()
 sendExpressionString s = do
@@ -200,7 +266,10 @@ sendExpression :: EXPRESSION -> ML ()
 sendExpression e =
   case e of
    Var token -> mlPutSymbol (tokStr token) >> return ()
-   Op oi _ [] _ -> mlPutSymbol (mmShowOPID oi) >> return ()
+   Op oi _ [] _
+       -- blanks get extra empty brackets
+       | mtIsBlank oi -> mlPutFunction' "Blank" 0 >> return ()
+       | otherwise -> mlPutSymbol (mmShowOPID oi) >> return ()
    Op oi _ exps _ ->
        mlPutFunction' (mmShowOPID oi) (length exps) >> mapM_ sendExpression exps
    Int i _ -> mlPutInteger'' i >> return ()
@@ -241,43 +310,35 @@ receiveString =  do
    else error $ "receiveString: Got " ++ showTK et
 
 
-
--- | mathematica term "Set"
-mtDef :: String -> AssDefinition -> EXPRESSION
-mtDef s (ConstDef e) = mkOp "Set" [mkOp s [], e]
-mtDef s (FunDef args e) = mkOp "Set" [mkOp s $ map mtVarDecl args, e]
-
-mtVarDecl :: String -> EXPRESSION
-mtVarDecl s = mkOp "Pattern" [mkOp s [], mkOp "Blank" []]
-
-mtList :: [EXPRESSION] -> EXPRESSION
-mtList = mkOp "List"
-
-mtCompound :: [EXPRESSION] -> EXPRESSION
-mtCompound = mkOp "CompoundExpression"
-
-
-
 -- ----------------------------------------------------------------------
 -- * Methods for Mathematica 'AssignmentStore' Interface
 -- ----------------------------------------------------------------------
 
 mathematicaSend :: EXPRESSION -> MathematicaIO ()
-mathematicaSend e = liftML $ sendEvalPacket (sendExpression e)
-                    >> skipAnswer >> return ()
+mathematicaSend e = do
+  prettyInfo3 $ text "Sending expression" <+> braces (mmPretty e)
+  liftML $ sendEvalPacket (sendExpression e) >> skipAnswer >> return ()
 
 mathematicaEval :: EXPRESSION -> MathematicaIO EXPRESSION
-mathematicaEval e =
-    liftML $ sendEvalPacket (sendExpression e) >> waitForAnswer
-               >> receiveExpression
-
+mathematicaEval e = do
+  prettyInfo3 $ text "Sending expression for evaluation"
+                 <+> braces (mmPretty e)
+  res <- liftML $ sendEvalPacket (sendExpression e) >> waitForAnswer
+         >> receiveExpression
+  prettyInfo3 $ text "Received expression"
+                 <+> braces (mmPretty res)
+  return res 
 
 mathematicaAssign :: String -> AssDefinition -> MathematicaIO EXPRESSION
-mathematicaAssign s def = mathematicaEval $ mtDef s def
+mathematicaAssign s def = do
+  prettyInfo $ text "Assigning" <+> mmPretty s <+> mmPretty def
+  mathematicaEval $ mtDef s def
 
 mathematicaAssigns :: [(String, AssDefinition)] -> MathematicaIO ()
-mathematicaAssigns l = mathematicaSend $ mtList l'
-    where l' = map (uncurry mtDef) l
+mathematicaAssigns l = do
+  prettyInfo $ text "Assigning list" <+> mmPretty l
+  let l' = map (uncurry mtDef) l
+  mathematicaSend $ mtCompound l'
 
 mathematicaLookup :: String -> MathematicaIO EXPRESSION
 mathematicaLookup s = mathematicaEval $ mkOp s []
@@ -285,13 +346,13 @@ mathematicaLookup s = mathematicaEval $ mkOp s []
 
 mathematicaCheck :: EXPRESSION -> MathematicaIO Bool
 mathematicaCheck e = do
+  prettyInfo $ text "Checking expression" <+> mmPretty e
   eB <- genCheck mathematicaEval e
   case eB of
     Right b -> return b
     Left s ->
         throwError $ ASError CASError $
-                   concat [ "mathematicaCheck: CAS error for expression "
-                          , show e, "\n", s ]
+                   concat [ "mathematicaCheck:", show e, "\n", s ]
 
 mathematicaDirect :: String -> MathState -> IO String
 mathematicaDirect s st =
@@ -330,14 +391,7 @@ mathematicaInit adg v mFp mN = do
     Left i ->
         error $ "mathematicaInit: MathLink connection failure " ++ show i
     Right mlSt ->
-        return ASState { getBMap = initWithOpMap mathematicaOpInfoMap
-                       , getConnectInfo = (mlSt, mFp)
-                       , depGraph = adg
-                       , debugMode = False
-                       , symbolicMode = False
-                       , verbosity = v
-                       , vericondOut = Nothing
-                       }
+        return $ initASState (mlSt, mFp) mathematicaOpInfoMap adg v
 
 mathematicaExit :: MathState -> IO ()
 mathematicaExit = closeLink . getMLState

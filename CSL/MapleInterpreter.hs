@@ -300,14 +300,7 @@ mapleInit adg v to = do
             (_, cs') <- runIOS cs $ PC.call 0.5
                         $ concat [ "interface(prettyprint=0); Digits := 10;"
                                  , "libname := \"", libpath, "\", libname;" ]
-            return ASState { getBMap = initWithOpMap mapleOpInfoMap
-                           , getConnectInfo = (cs', to)
-                           , depGraph = adg
-                           , debugMode = False
-                           , symbolicMode = False
-                           , verbosity = v
-                           , vericondOut = Nothing
-                           }
+            return $ initASState (cs', to) mapleOpInfoMap adg v
     _ -> error "Could not find maple shell command!"
 
 

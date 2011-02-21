@@ -138,27 +138,34 @@ instance Pretty Bool where
 
 data CAS = Maple | Mathematica deriving (Show, Read, Eq)
 
+data CASState = MapleState MITrans | MathematicaState MathState
+
 --------------------------- Shortcuts --------------------------
 
-evalWithVerification :: CAS -> Maybe FilePath -> Maybe String -> Bool -> Bool
-                     -> DTime -> Int -> String -> String -> IO String
-evalWithVerification c mFp mN smode dmode to v lb sp = do
+evalWithVerification :: Bool -- ^ auto-close connection
+                     -> CAS -> Maybe FilePath -> Maybe String -> Bool -> Bool
+                     -> DTime -> Int -> String -> String -> IO CASState
+evalWithVerification cl c mFp mN smode dmode to v lb sp =
   let -- exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
-      p ncl= do
-         (_, prog) <- loadAssignmentStore False ncl
-         liftIO $ putStrLn ""
-         liftIO $ putStrLn "****************** Assignment store loaded ******************"
-         liftIO $ putStrLn ""
+      p prog = do
+         prettyInfo $ text ""
+         prettyInfo $ text "****************** Assignment store loaded ******************"
+         prettyInfo $ text ""
          setSymbolicMode smode
          setDebugMode dmode
          mE <- verifyProg prog
-         when (isJust mE) $ liftIO $ putStrLn $ show $ fromJust mE
+         when (isJust mE) $ prettyInfo $ pretty $ fromJust mE
          -- readEvalPrintLoop stdin stdout ">" exitWhen
-  case c of
-    Maple -> testWithMapleGen v to p lb sp >>= mapleExit . fst >> return ()
-    Mathematica -> testWithMathematicaGen v mFp mN p lb sp >>= mathematicaExit . fst
-
-  return ""
+  in case c of
+       Maple -> do
+              (mit, _) <- testWithMapleGen v to p lb sp
+              when cl $ mapleExit mit >> return ()
+              return $ MapleState mit
+       Mathematica -> do
+              (mst, _) <- testWithMathematicaGen v mFp mN
+                          p lb sp
+              when cl $ mathematicaExit mst
+              return $ MathematicaState mst
 
 
 
@@ -174,6 +181,8 @@ mapleLoop mit = do
 -- ----------------------------------------------------------------------
 -- * Gluing the Analysis and Evaluation together
 -- ----------------------------------------------------------------------
+
+
 
 test :: (Pretty a, MonadIO m) => Int -> ([Named CMD] -> m a) -> m ()
 test i f = testResult i f >>= liftIO . putStrLn . show . pretty
@@ -208,7 +217,7 @@ assStoreAndProgSimple ncl = do
 
 
 
-loadAssignmentStore :: (AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
+loadAssignmentStore :: (MonadState (ASState st) m, AssignmentStore m, MonadIO m) => Bool -> [Named CMD]
                 -> m ([(ConstantName, AssDefinition)], [Named CMD])
 loadAssignmentStore b ncl = do
   let f = if b then assStoreAndProgElim else assStoreAndProgSimple
@@ -245,6 +254,7 @@ testWithMathematicaGen v mFp mN = testWithCASGen rf where
            [ "/home/ewaryst/Hets/CSL/CAS/Mathematica.m" ] prog
 
 
+
 {-
 testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String
                  -> IO (MITrans, a)
@@ -273,7 +283,19 @@ testWithMaple :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITran
 testWithMaple verb to f = uncurry (testWithMapleGen verb to f) . libFP
 
 
-testWithCASGen :: ( AssignmentStore as, MonadState (ASState st) as) =>
+
+
+
+getMathState :: Maybe CASState -> MathState
+getMathState (Just (MathematicaState mst))  = mst
+getMathState _ = error "getMathState: no MathState"
+
+getMapleState :: Maybe CASState -> MITrans
+getMapleState (Just (MapleState mst))  = mst
+getMapleState _ = error "getMapleState: no Maple state"
+
+
+testWithCASGen :: ( AssignmentStore as, MonadState (ASState st) as, MonadIO as) =>
                   (AssignmentDepGraph () -> as a -> IO (ASState st, a))
                       -> ([Named CMD] -> as a)
                       -> String -> String -> IO (ASState st, a)
@@ -289,7 +311,7 @@ testWithCASGen rf f lb sp = do
       g x = loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
 
   -- start maple and run g
-  res <- rf gr $ g prog
+  res <- rf gr $ (withLogFile "/tmp/evalWV.txt" . g) prog
   hClose vchdl
   return res
 
@@ -372,12 +394,12 @@ relLayer r l = l : relLayer r succs where
 -- dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
 -- epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guarded EPRange)]
 
-casConst :: MITrans -> String -> String
+casConst :: ASState a -> String -> String
 casConst mit s =
     fromMaybe "" $ rolookup (getBMap mit) $ SimpleConstant s
 
 
-enclConst :: MITrans -> String -> OPID
+enclConst :: ASState a -> String -> OPID
 enclConst mit s =
     fromMaybe (error $ "enclConst: no mapping for " ++ s) $ revlookup (getBMap mit) s
 
@@ -1368,8 +1390,15 @@ sendFormula i j k = do
 
 
 -- ----------------------------------------------------------------------
--- * Tests
+-- * MathLink Tests
 -- ----------------------------------------------------------------------
+
+mathP3 :: MathState -> String -> IO ()
+mathP3 mst s = mlMathEnv mst $ mlP3 s 0
+
+mlMathEnv :: MathState -> ML a -> IO a
+mlMathEnv mst prog = liftM snd $ withMathematica mst $ liftML prog
+
 
 mlTestEnv :: Pretty a => String -> ML a -> IO a
 mlTestEnv s act = do
@@ -1379,37 +1408,44 @@ mlTestEnv s act = do
     Left eid -> putStrLn ("Error " ++ show eid) >> error "ml-test"
     Right res -> putStrLn ("OK: " ++ (show $ pretty res)) >> return res
 
-
+mlP1 :: CInt
+     -> CInt
+     -> CInt
+     -> ML ()
+mlP1 i j k = forM_ [1 .. k] $ sendFormula i j >=>
+             const (waitForAnswer >> readAndPrintOutput >> userMessageLn "")
 
 mlTest :: [String] -> IO ()
 mlTest argv = do
   let (k, i, j) = (read $ argv!!0, read $ argv!!1, read $ argv!!2)
       s = if length argv > 3 then argv!!3 else ""
-      prog = forM_ [1 .. k] $ sendFormula i j >=>
-                const (waitForAnswer >> readAndPrintOutput >> userMessageLn "")
-  mlTestEnv s prog
+  mlTestEnv s $ mlP1 i j k
 
+mlP2 :: Int
+     -> EXPRESSION
+     -> ML [EXPRESSION]
+mlP2 k e = forM [1..(k::Int)] $ const $ sendEvalPacket (sendExpression e)
+           >> waitForAnswer >> receiveExpression
 
 mlTest2 :: [String] -> IO [EXPRESSION]
 mlTest2 argv = do
   let k = read $ argv!!0
       e = toE $ argv!!1
       s = if length argv > 2 then argv!!2 else ""
-      prog = forM [1..(k::Int)] $ const $ sendEvalPacket (sendExpression e)
-             >> waitForAnswer >> receiveExpression
 
-  mlTestEnv s prog
+  mlTestEnv s $ mlP2 k e
 
 -- a good interactive stepper through the mathlink interface
-mlTest3 :: String -> String -> Int -> IO ()
-mlTest3 cn es k = do
+mlP3 :: String -> Int -> ML ()
+mlP3 es k = do
   let pr j = liftIO $ putStrLn $ "Entering level " ++ show j
-      prog i j s | i==0 = pr j >> sendEvalPacket (sendExpression $ toE s) >> prog2 j
+      prog i j s | null s = pr j >> prog2 j
                  | i==1 = pr j >> sendTextPacket s >> prog2 j
                  | i==2 = pr j >> sendTextResultPacket s >> prog2 j
                  | i==10 = pr j >> sendTextPacket' s >> prog2 j
                  | i==3 = pr j >> sendTextPacket'' s >> prog2 j
                  | i==4 = pr j >> sendTextPacket3 s >> prog2 j
+                 | i==0 = pr j >> sendEvalPacket (sendExpression $ toE s) >> prog2 j
                  | otherwise = pr j >> sendTextPacket4 s >> prog2 j
       gt g
           | g == dfMLTKSYM = "Symbol"
@@ -1448,7 +1484,11 @@ mlTest3 cn es k = do
                  liftIO $ putStrLn $ c: (": " ++ show i)
                  prog2 j
 
-  mlTestEnv cn $ prog k (0::Int) es
+--  mlTestEnv cn $ prog k (0::Int) es
+  prog k (0::Int) es
+
+mlTest3 :: String -> String -> Int -> IO ()
+mlTest3 cn es k = mlTestEnv cn $ mlP3 es k
 
 mlTest4 :: String -> [String] -> IO ()
 mlTest4 cn = mlTest5 cn . map Right
