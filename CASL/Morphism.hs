@@ -57,7 +57,16 @@ data Morphism f e m = Morphism
   , extended_map :: m
   } deriving (Show, Eq, Ord)
 
-data DefMorExt e = DefMorExt e deriving (Show, Eq, Ord)
+data DefMorExt e = DefMorExt e
+
+instance Show (DefMorExt e) where
+  show = const ""
+
+instance Ord (DefMorExt e) where
+  compare _ = const EQ
+
+instance Eq (DefMorExt e) where
+  (==) e = (== EQ) . compare e
 
 emptyMorExt :: DefMorExt e
 emptyMorExt = DefMorExt $ error "emptyMorExt"
@@ -167,8 +176,8 @@ symPair sigma =
         preds = ml idToPredSymbol $ predMap sigma
     in [sorts, Set.fromList $ ops ++ preds]
 
--- | returns the symbol sets of the signature in the correct dependency order
--- , i.e., sorts first, then ops and predicates. Result list is of length two.
+{- | returns the symbol sets of the signature in the correct dependency order
+, i.e., sorts first, then ops and predicates. Result list is of length two. -}
 symOf :: Sign f e -> [SymbolSet]
 symOf = symPair
 
@@ -274,8 +283,8 @@ typedSymbKindToRaw k idt t = let
      aSymb = ASymbol $ case t of
        O_type ot -> idToOpSymbol idt $ toOpType ot
        P_type pt -> idToPredSymbol idt $ toPredType pt
-             -- in case of ambiguity, return a constant function type
-             -- this deviates from the CASL summary !!!
+             {- in case of ambiguity, return a constant function type
+             this deviates from the CASL summary !!! -}
        A_type s ->
            let ot = OpType {opKind = Total, opArgs = [], opRes = s}
            in idToOpSymbol idt ot
