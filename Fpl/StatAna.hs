@@ -35,13 +35,14 @@ import Control.Monad
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-type FplSign = Sign TermExt SignExt
-
 basicFplAnalysis
   :: (FplBasicSpec, FplSign, GlobalAnnos)
   -> Result (FplBasicSpec, ExtSign FplSign Symbol, [Named FplForm])
-basicFplAnalysis =
-    basicAnalysis minFplTerm anaFplExt (const return) mixFplAna
+basicFplAnalysis (b, s, ga) =
+    fmap (\ (r, ExtSign t syms, sens) ->
+       (r, ExtSign (delBuiltins t) syms, sens))
+    $ basicAnalysis minFplTerm anaFplExt (const return) mixFplAna
+    (b, addBuiltins s, ga)
 
 mixFplAna :: Mix FplExt () TermExt SignExt
 mixFplAna = emptyMix
