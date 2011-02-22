@@ -228,8 +228,13 @@ anaFplExt mix fe = case fe of
 
 anaFplSortItem :: Ana FplSortItem FplExt () TermExt SignExt
 anaFplSortItem mix si = case si of
-  FreeType dt -> do
+  FreeType dt@(Datatype_decl s aalts _) -> do
     ana_DATATYPE_DECL Free dt
+    updateExtInfo $ \ cs -> return $ foldr
+      (\ aa e -> let a = item aa in if isConsAlt a then
+      let (c, ty, _) = getConsType s a in
+            e { constr = addOpTo c ty $ constr e }
+      else e) cs aalts
     return si
   CaslSortItem s -> fmap (CaslSortItem . item)
     $ ana_SORT_ITEM minFplTerm mix NonEmptySorts $ emptyAnno s

@@ -8,16 +8,13 @@ Stability   :  provisional
 Portability :  portable
 
 signature extension for FPL to keep track of constructors
-
-This signature type is complete unused currently and likely to change.
-Constructors could also be kept directly via CASL as extra OpMap and thus
-making this extension obsolete.
 -}
 
 module Fpl.Sign where
 
 import Fpl.As
 
+import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -25,9 +22,13 @@ import Common.Keywords
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
+import CASL.ToDoc
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import Data.List
+import Data.Ord
 
 boolSort :: Id
 boolSort = stringToId "Bool"
@@ -46,7 +47,18 @@ data SignExt = SignExt
   deriving (Show, Eq, Ord)
 
 instance Pretty SignExt where
-  pretty _ = empty
+  pretty es = let nr = nullRange in case
+         groupBy (\ (_, c1) (_, c2) -> opRes c1 == opRes c2)
+         $ sortBy (comparing (opRes . snd))
+         $ concatMap (\ (i, s) -> map (\ t -> (i, t)) $ Set.toList s)
+         $ Map.toList $ constr es of
+     [] -> empty
+     l -> topSigKey (sortS ++ appendS l) <+> sepBySemis
+       (map (\ g -> printDD
+             (Datatype_decl (opRes $ snd $ head g)
+              (map (\ (i, t) -> emptyAnno $
+                    Alt_construct Total i (map Sort $ opArgs t) nr)
+               g) nr)) l)
 
 emptyFplSign :: SignExt
 emptyFplSign = SignExt Map.empty
