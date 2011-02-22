@@ -25,6 +25,9 @@ import CASL.Sign
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+boolSort :: Id
+boolSort = stringToId "Bool"
+
 data SignExt = SignExt
   { constr :: Map.Map Id OpType
   , freetypes :: Map.Map Id (Set.Set (Id, OpType)) }

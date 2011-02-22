@@ -68,13 +68,13 @@ fplOpIds oi = let e = Set.empty in case oi of
 
 -- | put parens around terms
 mapTermExt :: TermExt -> TermExt
-mapTermExt te = case te of
+mapTermExt te = let rec = mapTerm mapTermExt in case te of
   FixDef fd -> FixDef $ mapFunDef fd
-  Case o l r -> Case (mapTerm mapTermExt o)
-    (map (\ (p, t) -> (mapTerm mapTermExt p, mapTerm mapTermExt t)) l) r
-  Let fd t r -> Let (mapFunDef fd) (mapTerm mapTermExt t) r
-  IfThenElse i t e r -> IfThenElse (mapFormula mapTermExt i)
-    (mapTerm mapTermExt t) (mapTerm mapTermExt e) r
+  Case o l r -> Case (rec o)
+    (map (\ (p, t) -> (rec p, rec t)) l) r
+  Let fd t r -> Let (mapFunDef fd) (rec t) r
+  IfThenElse i t e r -> IfThenElse (rec i) (rec t) (rec e) r
+  EqTerm t e r -> EqTerm (rec t) (rec e) r
 
 -- | put parens around final term
 mapFunDef :: FunDef -> FunDef
@@ -89,25 +89,31 @@ identifiers in local let bindings are currently not fed into the mixfix
 analysis! If such a non-simple identifier is globally unknown the analysis may
 reject valid terms. -}
 resolveTermExt :: MixResolve TermExt
-resolveTermExt ga ids te = case te of
+resolveTermExt ga ids te =
+  let rec = resolveMixTrm mapTermExt resolveTermExt ga ids
+  in case te of
   FixDef fd -> fmap FixDef $ resolveFunDef ga ids fd
   Case o l r -> do
-    ro <- resolveMixTrm mapTermExt resolveTermExt ga ids o
+    ro <- rec o
     -- CHECK: consider pattern variables
     rl <- mapM (\ (p, t) -> liftM2 (,)
-          (resolveMixTrm mapTermExt resolveTermExt ga ids p)
-          $ resolveMixTrm mapTermExt resolveTermExt ga ids t) l
+          (rec p)
+          $ rec t) l
     return $ Case ro rl r
   Let fd t r -> do
     -- add function name for recursive mixfix analysis
     rfd <- resolveFunDef ga ids fd
-    rt <- resolveMixTrm mapTermExt resolveTermExt ga ids t
+    rt <- rec t
     return $ Let rfd rt r
   IfThenElse i t e r -> do
-    ri <- resolveMixFrm mapTermExt resolveTermExt ga ids i
-    rt <- resolveMixTrm mapTermExt resolveTermExt ga ids t
-    re <- resolveMixTrm mapTermExt resolveTermExt ga ids e
+    ri <- rec i
+    rt <- rec t
+    re <- rec e
     return $ IfThenElse ri rt re r
+  EqTerm t e r -> do
+    rt <- rec t
+    re <- rec e
+    return $ EqTerm rt re r
 
 -- | resolve overloading in rhs and assume function to be in the signature
 resolveFunDef :: MixResolve FunDef
@@ -186,10 +192,14 @@ minFplTerm sig te = case te of
     rt <- oneExpTerm minFplTerm newSign t
     return $ Let rfd rt r
   IfThenElse i t e r -> do
-    ri <- minExpFORMULA minFplTerm sig i
+    ri <- oneExpTerm minFplTerm sig $ Sorted_term i boolSort r
     Strong_equation rt re _ <-
         minExpFORMULAeq minFplTerm sig Strong_equation t e r
     return $ IfThenElse ri rt re r
+  EqTerm t e r -> do
+    Strong_equation rt re _ <-
+        minExpFORMULAeq minFplTerm sig Strong_equation t e r
+    return $ EqTerm rt re r
 
 -- | type check rhs and assume function to be in the signature
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
@@ -254,8 +264,8 @@ instance FreeVars TermExt where
     Case o l _ -> Set.unions $ freeTermVars s o
       : map (\ (p, t) -> Set.difference (freeTermVars s t) $ freeTermVars s p) l
     Let fd t _ -> Set.union (freeFunDefVars s fd) $ freeTermVars s t
-    IfThenElse f t e _ -> Set.unions
-      $ freeVars s f : map (freeTermVars s) [t, e]
+    IfThenElse f t e _ -> Set.unions $ map (freeTermVars s) [f, t, e]
+    EqTerm t e _ -> Set.unions $ map (freeTermVars s) [t, e]
 
 freeFunDefVars :: Sign TermExt e -> FunDef -> VarSet
 freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
@@ -266,6 +276,7 @@ instance TermExtension TermExt where
       Case _ ((_, t) : _) _ -> optTermSort t
       Let _ t _ -> optTermSort t
       IfThenElse _ t _ _ -> optTermSort t
+      EqTerm _ _ _ -> Just boolSort
       _ -> Nothing
 
 simplifyTermExt :: FplSign -> TermExt -> TermExt
@@ -283,8 +294,8 @@ simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
             s
       in Let (simplifyFunDef newSign fd)
             (rec newSign t) r
-    IfThenElse f t e r -> IfThenElse
-      (simplifySen minFplTerm simplifyTermExt s f) (rec s t) (rec s e) r
+    IfThenElse f t e r -> IfThenElse (rec s f) (rec s t) (rec s e) r
+    EqTerm t e r -> EqTerm (rec s t) (rec s e) r
 
 simplifyFunDef :: FplSign -> FunDef -> FunDef
 simplifyFunDef sig (FunDef o h@(Op_head _ vs _ _) at r) =

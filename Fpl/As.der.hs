@@ -100,14 +100,15 @@ instance Pretty FunDef where
       , sep [ (if null l then sep else cat) [idLabelDoc i, pretty h]
             , equals <+> printAnnoted pretty t]]
 
-{- | extra terms of FPL. if-then-else uses a formula as guard to allow an
-equality test. @true@ and @false@ are currently not allowed as terms! This
-should be solved by parsing. @Bool@ needs to be a builtin type. -}
+{- | extra terms of FPL. if-then-else must use a term as guard with result
+sort @Bool@. To allow @true@, @false@ and an equality test an extra term
+parser is needed that must not be used when parsing formulas. -}
 data TermExt =
     FixDef FunDef -- ^ formula
   | Case FplTerm [(FplTerm, FplTerm)] Range
   | Let FunDef FplTerm Range
-  | IfThenElse FplForm FplTerm FplTerm Range
+  | IfThenElse FplTerm FplTerm FplTerm Range
+  | EqTerm FplTerm FplTerm Range
   deriving (Show, Eq, Ord)
 
 instance Pretty TermExt where
@@ -122,6 +123,7 @@ instance Pretty TermExt where
         fsep [ keyword ifS <+> pretty i
              , keyword thenS <+> pretty d
              , keyword elseS <+> pretty e ]
+    EqTerm t1 t2 r -> pretty $ Strong_equation t1 t2 r
 
 fplReservedWords :: [String]
 fplReservedWords = [barS, functS, caseS, ofS, letS]
@@ -133,7 +135,7 @@ funDef ks = do
   h <- opHead ks
   e <- equalT
   a <- annos
-  t <- term ks
+  t <- eqTerm ks
   return $ FunDef o h (Annoted t nullRange a []) $ toRange q [] e
 
 optVarDecls :: [String] -> AParser st ([VAR_DECL], [Token])
@@ -141,22 +143,46 @@ optVarDecls ks =
     (oParenT >> separatedBy (varDecl ks) anSemi << cParenT)
     <|> return ([], [])
 
+constBool :: AParser st FplTerm
+constBool = fmap Mixfix_token (asKey trueS <|> asKey falseS)
+
+boolTerm :: [String] -> AParser st FplTerm
+boolTerm ks = constBool <|> mixTerm ks
+
+eqTerm :: [String] -> AParser st FplTerm
+eqTerm ks = do
+  b <- boolTerm ks
+  option b $ do
+    e <- equalT
+    b2 <- boolTerm ks
+    return $ ExtTERM $ EqTerm b b2 $ tokPos e
+
+{- | extra formulas to compare bool terms with true or false.
+Interpreting boolean valued terms as formulas is still missing. -}
+eqForm :: [String] -> AParser st TermExt
+eqForm ks = do
+    (c, t) <- try $ pair constBool equalT
+    e <- mixTerm ks
+    return $ EqTerm c e $ tokPos t
+  <|> fmap (\ (e, (t, c)) -> EqTerm e c $ tokPos t)
+    (try $ pair (mixTerm ks) $ pair equalT constBool)
+
 fplTerm :: [String] -> AParser st TermExt
 fplTerm ks = caseTerm ks <|> letTerm ks <|> ifThenElse ks
 
 caseTerm :: [String] -> AParser st TermExt
 caseTerm ks = do
   c <- asKey caseS
-  t <- mixTerm ks
+  t <- eqTerm ks
   o <- asKey ofS
   (cs, qs) <- separatedBy (patTermPair ks) barT
   return $ Case t cs $ toRange c qs o
 
 patTermPair :: [String] -> AParser st (FplTerm, FplTerm)
 patTermPair ks = do
-  p <- mixTerm ks
+  p <- eqTerm ks
   implKey
-  t <- mixTerm ks
+  t <- eqTerm ks
   return (p, t)
 
 letTerm :: [String] -> AParser st TermExt
@@ -170,16 +196,16 @@ letTerm ks = do
 ifThenElse :: [String] -> AParser st TermExt
 ifThenElse ks = do
   i <- ifKey
-  f <- primFormula ks
+  f <- eqTerm ks
   t <- asKey thenS
-  a <- mixTerm ks
+  a <- eqTerm ks
   e <- asKey elseS
-  b <- mixTerm ks
+  b <- eqTerm ks
   return $ IfThenElse f a b $ toRange i [t] e
 
 instance TermParser TermExt where
   termParser b = if b then fplTerm fplReservedWords else
-    fmap FixDef $ funDef fplReservedWords
+    fmap FixDef (funDef fplReservedWords) <|> eqForm fplReservedWords
 
 fplExt :: [String] -> AParser st FplExt
 fplExt ks = itemList ks sortS fplSortItem FplSortItems
