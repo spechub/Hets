@@ -1,10 +1,8 @@
 #!/bin/bash -xe
 
-GHCRTS='-H300m -M1g'
-case `uname -s` in
-  Linux) LANG=de_DE.utf8;;
-  *) LANG=de_DE.UTF-8;;
-esac
+GHCRTS='-H300m -M2g'
+LANG=de_DE.UTF-8
+
 case `uname -s` in
   SunOS) TAR=gtar; MAKE=gmake;;
   *) TAR=tar; MAKE=make;;
