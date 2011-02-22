@@ -142,28 +142,32 @@ data CASState = MapleState MITrans | MathematicaState MathState
 
 --------------------------- Shortcuts --------------------------
 
+initFlags :: (StepDebugger m, SymbolicEvaluator m) => Bool -> Bool -> m ()
+initFlags sm dm = do
+  setSymbolicMode sm
+  setDebugMode dm
+    
 evalWithVerification :: Bool -- ^ auto-close connection
                      -> CAS -> Maybe FilePath -> Maybe String -> Bool -> Bool
                      -> DTime -> Int -> String -> String -> IO CASState
 evalWithVerification cl c mFp mN smode dmode to v lb sp =
   let -- exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
+      -- program for initialization
+        
       p prog = do
          prettyInfo $ text ""
          prettyInfo $ text "****************** Assignment store loaded ******************"
          prettyInfo $ text ""
-         setSymbolicMode smode
-         setDebugMode dmode
          mE <- verifyProg prog
          when (isJust mE) $ prettyInfo $ pretty $ fromJust mE
          -- readEvalPrintLoop stdin stdout ">" exitWhen
   in case c of
        Maple -> do
-              (mit, _) <- testWithMapleGen v to p lb sp
+              (mit, _) <- testWithMapleGen v to (initFlags smode dmode) p lb sp
               when cl $ mapleExit mit >> return ()
               return $ MapleState mit
        Mathematica -> do
-              (mst, _) <- testWithMathematicaGen v mFp mN
-                          p lb sp
+              (mst, _) <- testWithMathematicaGen v mFp mN (initFlags smode dmode) p lb sp
               when cl $ mathematicaExit mst
               return $ MathematicaState mst
 
@@ -235,7 +239,7 @@ verifyProg :: (MessagePrinter m, StepDebugger m, VCGenerator m, MonadIO m, Monad
 verifyProg ncl = do
   stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
-testWithMapleGen :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> String -> String
+testWithMapleGen :: Int -> DTime -> MapleIO b -> ([Named CMD] -> MapleIO a) -> String -> String
                  -> IO (MITrans, a)
 testWithMapleGen v to = testWithCASGen rf where
     rf adg prog =
@@ -246,7 +250,7 @@ testWithMapleGen v to = testWithCASGen rf where
 
 
 testWithMathematicaGen :: Int -> Maybe FilePath -> Maybe String
-                       -> ([Named CMD] -> MathematicaIO a) -> String -> String
+                       -> MathematicaIO b -> ([Named CMD] -> MathematicaIO a) -> String -> String
                        -> IO (MathState, a)
 testWithMathematicaGen v mFp mN = testWithCASGen rf where
     rf adg prog =
@@ -280,7 +284,7 @@ testWithMapleGen verb to f lb sp = do
 -}
 
 testWithMaple :: Int -> DTime -> ([Named CMD] -> MapleIO a) -> Int -> IO (MITrans, a)
-testWithMaple verb to f = uncurry (testWithMapleGen verb to f) . libFP
+testWithMaple verb to f = uncurry (testWithMapleGen verb to (return ()) f) . libFP
 
 
 
@@ -297,9 +301,9 @@ getMapleState _ = error "getMapleState: no Maple state"
 
 testWithCASGen :: ( AssignmentStore as, MonadState (ASState st) as, MonadIO as) =>
                   (AssignmentDepGraph () -> as a -> IO (ASState st, a))
-                      -> ([Named CMD] -> as a)
+                      -> as b -> ([Named CMD] -> as a)
                       -> String -> String -> IO (ASState st, a)
-testWithCASGen rf f lb sp = do
+testWithCASGen rf ip f lb sp = do
   ncl <- fmap sigsensNamedSentences $ sigsensGen lb sp
   -- get ordered assignment store and program
   (as, prog) <- assStoreAndProgSimple ncl
@@ -308,7 +312,7 @@ testWithCASGen rf f lb sp = do
   let gr = assDepGraphFromDescList (const $ const ()) as
       -- make sure that the assignment store is loaded into maple before
       -- the execution of f
-      g x = loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
+      g x = ip >> loadAS as >> modify (\ mit -> mit {vericondOut = Just vchdl}) >> f x
 
   -- start maple and run g
   res <- rf gr $ (withLogFile "/tmp/evalWV.txt" . g) prog
@@ -1424,7 +1428,7 @@ mlTest argv = do
 mlP2 :: Int
      -> EXPRESSION
      -> ML [EXPRESSION]
-mlP2 k e = forM [1..(k::Int)] $ const $ sendEvalPacket (sendExpression e)
+mlP2 k e = forM [1..(k::Int)] $ const $ sendEvalPacket (sendExpression True e)
            >> waitForAnswer >> receiveExpression
 
 mlTest2 :: [String] -> IO [EXPRESSION]
@@ -1445,7 +1449,7 @@ mlP3 es k = do
                  | i==10 = pr j >> sendTextPacket' s >> prog2 j
                  | i==3 = pr j >> sendTextPacket'' s >> prog2 j
                  | i==4 = pr j >> sendTextPacket3 s >> prog2 j
-                 | i==0 = pr j >> sendEvalPacket (sendExpression $ toE s) >> prog2 j
+                 | i==0 = pr j >> sendEvalPacket (sendExpression True $ toE s) >> prog2 j
                  | otherwise = pr j >> sendTextPacket4 s >> prog2 j
       gt g
           | g == dfMLTKSYM = "Symbol"
@@ -1499,7 +1503,7 @@ mlTest5 cn el = do
       prog (e:l) = do
                   case e of
                     Right s ->
-                         sendEvalPacket (sendExpression $ toE s)
+                         sendEvalPacket (sendExpression True $ toE s)
                     Left s ->
                          sendEvalPacket (sendExpressionString s)
                   waitForAnswer

@@ -262,18 +262,28 @@ sendExpressionString s = do
   mlPutString s
   return ()
 
-sendExpression :: EXPRESSION -> ML ()
-sendExpression e =
+sendExpression :: Bool -- ^ symbolic mode
+               -> EXPRESSION -> ML ()
+sendExpression sm e =
   case e of
    Var token -> mlPutSymbol (tokStr token) >> return ()
    Op oi _ [] _
        -- blanks get extra empty brackets
        | mtIsBlank oi -> mlPutFunction' "Blank" 0 >> return ()
        | otherwise -> mlPutSymbol (mmShowOPID oi) >> return ()
-   Op oi _ exps _ ->
-       mlPutFunction' (mmShowOPID oi) (length exps) >> mapM_ sendExpression exps
+   Op oi _ exps _ -> do
+           mlPutFunction' (mmShowOPID oi) (length exps)
+           mapM_ (sendExpression sm) exps
    Int i _ -> mlPutInteger'' i >> return ()
-   Double r _ -> mlPutReal' r >> return ()
+   Double r _ 
+       | sm ->
+           do
+             let (n1, en2) = decodeFloat r
+             mlPutFunction' "decodedFloat" 2
+             mlPutInteger'' n1
+             mlPutInteger' en2
+             return ()
+       | otherwise -> mlPutReal' r >> return ()
 
    List _ _ -> error "sendExpression: List not supported"
    Interval _ _ _ -> error "sendExpression: Interval not supported"
@@ -296,7 +306,8 @@ receiveExpression =  do
                  s <- if et' == dfMLTKSYM then mlGetSymbol else
                           error $ "receiveExpression: Expecting symbol at "
                                    ++ "function head, but got " ++ show et'
-                 liftM (mkMLOp s) $ forM [1..len] $ const receiveExpression
+                 let s' = if s == "Rational" then "Divide" else s
+                 liftM (mkMLOp s') $ forM [1..len] $ const receiveExpression
 
          | et == dfMLTKERROR = mlProcError
          | otherwise = mlProcError
@@ -317,13 +328,15 @@ receiveString =  do
 mathematicaSend :: EXPRESSION -> MathematicaIO ()
 mathematicaSend e = do
   prettyInfo3 $ text "Sending expression" <+> braces (mmPretty e)
-  liftML $ sendEvalPacket (sendExpression e) >> skipAnswer >> return ()
+  sm <- getSymbolicMode
+  liftML $ sendEvalPacket (sendExpression sm e) >> skipAnswer >> return ()
 
 mathematicaEval :: EXPRESSION -> MathematicaIO EXPRESSION
 mathematicaEval e = do
   prettyInfo3 $ text "Sending expression for evaluation"
                  <+> braces (mmPretty e)
-  res <- liftML $ sendEvalPacket (sendExpression e) >> waitForAnswer
+  sm <- getSymbolicMode
+  res <- liftML $ sendEvalPacket (sendExpression sm e) >> waitForAnswer
          >> receiveExpression
   prettyInfo3 $ text "Received expression"
                  <+> braces (mmPretty res)

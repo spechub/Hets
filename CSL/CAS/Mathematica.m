@@ -12,6 +12,8 @@ negate[x_] := -x;
 (* fourth root *)
 fthrt[x_] := Sqrt[Sqrt[x]];
 
+(* this function is for representing floats as exact values *)
+decodedFloat[x_, y_] := x*2^y;
 
 
 (* maxloc/minloc:
