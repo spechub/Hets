@@ -132,10 +132,8 @@ opDefnToFunDefn def oi = case oi of
   _ -> def
 
 {- | This functions tries to recognize variables in case-patterns (application
-terms) after overload resolution.  Currently any operation in the signature is
-(wrongly) regarded as constructor.  A further limitation is that a unique sort
-is needed as input that is taken from the term between @case@ and @of@.  Also
-uniqueness (linearity) of all variables is not checked yet. -}
+terms) after overload resolution.  A current limitation is that a unique sort
+is needed as input that is taken from the term between @case@ and @of@. -}
 resolvePattern :: FplSign -> (SORT, FplTerm) -> Result ([VAR_DECL], FplTerm)
 resolvePattern sign (resSort, term) =
   let err msg = fail $ msg ++ " " ++ showDoc term "" in
@@ -149,7 +147,8 @@ resolvePattern sign (resSort, term) =
                              leqF sign oTy $ toOpType symTy
                          _ -> True
                     )
-         $ Set.toList $ Map.findWithDefault Set.empty ide $ opMap sign of
+         $ Set.toList $ Map.findWithDefault Set.empty ide
+         $ constr $ extendedInfo sign of
       [] -> if null args && isSimpleId ide then
                 let v = Var_decl [head ts] resSort $ posOfId ide
                 in return ([v], toQualVar v)
@@ -180,6 +179,7 @@ minFplTerm sig te = case te of
     let s = sortOfTerm ro
     rl <- mapM (\ (p, t) -> do
           (vs, np) <- resolvePattern sig (s, p)
+          Result (checkUniqueness . map fst $ flatVAR_DECLs vs) $ Just ()
           let newSign = execState (mapM_ addVars vs) sig
           rt <- oneExpTerm minFplTerm newSign t
           return (np, rt)) l
