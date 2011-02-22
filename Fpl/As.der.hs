@@ -94,10 +94,14 @@ instance Pretty FplOpItem where
 data FunDef = FunDef OP_NAME OP_HEAD (Annoted FplTerm) Range
   deriving (Show, Eq, Ord)
 
+kindHead :: OpKind -> OP_HEAD -> OP_HEAD
+kindHead k (Op_head _ args r ps) = Op_head k args r ps
+
 instance Pretty FunDef where
   pretty (FunDef i h@(Op_head _ l _ _) t _) =
     sep [keyword functS
-      , sep [ (if null l then sep else cat) [idLabelDoc i, pretty h]
+      , sep [ (if null l then sep else cat)
+              [idLabelDoc i, pretty $ kindHead Total h]
             , equals <+> printAnnoted pretty t]]
 
 {- | extra terms of FPL. if-then-else must use a term as guard with result
@@ -136,7 +140,8 @@ funDef ks = do
   e <- equalT
   a <- annos
   t <- eqTerm ks
-  return $ FunDef o h (Annoted t nullRange a []) $ toRange q [] e
+  return $ FunDef o (kindHead Partial h)
+    (Annoted t nullRange a []) $ toRange q [] e
 
 optVarDecls :: [String] -> AParser st ([VAR_DECL], [Token])
 optVarDecls ks =
