@@ -70,6 +70,7 @@ instance StaticAnalysis Fpl FplBasicSpec FplForm
 
          empty_signature Fpl = emptySign emptyFplSign
          signature_union Fpl s = return . addSig addFplSign s
+         intersection Fpl s = return . interSig interFplSign s
          morphism_union Fpl = morphismUnion (const id) addFplSign
          final_union Fpl = finalUnion addFplSign
          is_subsig Fpl = isSubSig isSubFplSign
@@ -77,6 +78,8 @@ instance StaticAnalysis Fpl FplBasicSpec FplForm
          cogenerated_sign Fpl = cogeneratedSign emptyMorExt
          generated_sign Fpl = generatedSign emptyMorExt
          induced_from_morphism Fpl = inducedFromMorphism emptyMorExt
+         induced_from_to_morphism Fpl =
+             inducedFromToMorphism emptyMorExt isSubFplSign diffFplSign
          theory_to_taxonomy Fpl = convTaxo
 
 instance Logic Fpl ()
