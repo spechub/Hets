@@ -217,7 +217,7 @@ data OPNAME =
   | OP_reldist
 
   -- special CAS operators
-  | OP_minimize | OP_minloc | OP_maximize | OP_maxloc | OP_factor
+  | OP_minimize | OP_minloc | OP_maximize | OP_maxloc | OP_factor | OP_approx
   | OP_divide | OP_factorize | OP_int | OP_rlqe | OP_simplify | OP_solve
 
   -- comparison predicates
@@ -289,6 +289,7 @@ showOPNAME x =
           OP_false -> "false"
           OP_true -> "true"
           OP_in -> "in"
+          OP_approx -> "approx"
 
           OP_undef -> "undef"
           OP_failure -> "fail"
@@ -463,7 +464,8 @@ operatorInfo =
            ++ map (a2i 9) [OP_div]
            ++ map (a2i 10) [OP_pow]
            ++ map (aX 2)
-                  [OP_int, OP_divide, OP_solve, OP_convergence, OP_reldist]
+                  [ OP_int, OP_divide, OP_solve, OP_convergence, OP_reldist
+                  , OP_approx]
            ++ map (aX 3) [OP_reldistLe]
            ++ map aflex [ OP_min, OP_max ]
            ++ map (a2bind 1 0) [ OP_maximize, OP_minimize ]

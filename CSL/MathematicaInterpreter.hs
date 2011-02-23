@@ -153,6 +153,7 @@ mmShowOPNAME x =
       OP_false -> "False"
       OP_true -> "True"
 
+      OP_approx -> "N"
 
       -- these functions have to be defined in a package
       OP_minus -> "minus"
@@ -421,26 +422,3 @@ runWithMathematica adg i mFp mN mods p = do
   mst <- mathematicaInit adg i mFp mN
   withMathematica mst $ mapM_ loadMathematicaModule mods >> p
 
-{-
-
--- | Open connection to MathLink or return error code on failure
-openLink :: Maybe String -- ^ Connection name
-                         -- (launches a new kernel if not specified)
-         -> IO (Either Int MLState)
--- | Run ML-program on an opened connection to MathLink
-withLink :: MLState -- ^ MathLink connection
-         -> Maybe FilePath -- ^ Log low level messages into this file (or STDOUT)
-         -> ML a -- ^ The program to run
-         -> IO a
-
-
-
-type MathState = ASState MLState
-type MathematicaIO = ErrorT ASError (StateT MathState ML)
-
-
-runStateT ms $ runErrorT m
-
-runErrorT :: ErrorT e m a -> m (Either e a)
-runStateT :: StateT s m a -> s -> m (a, s)
--}

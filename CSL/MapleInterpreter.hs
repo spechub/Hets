@@ -1,4 +1,4 @@
-{-# LANGUAGE  TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Maple instance for the AssignmentStore class
@@ -129,13 +129,40 @@ instance MessagePrinter MapleIO where
 -- * Maple syntax functions
 -- ----------------------------------------------------------------------
 
+data OfMaple a = OfMaple { mplValue :: a }
+
+type MaplePrinter = Reader (OfMaple OpInfoNameMap)
+
+instance ExpressionPrinter MaplePrinter where
+    getOINM = asks mplValue
+    printOpname = return . text . mplShowOPNAME
+
+printMaplePretty :: (MaplePrinter Doc) -> Doc
+printMaplePretty = flip runReader $ OfMaple mapleOpInfoNameMap
+
+class MaplePretty a where
+    mplPretty :: a -> Doc
+
+instance MaplePretty EXPRESSION where
+    mplPretty e = printMaplePretty $ printExpression e
+
+instance MaplePretty AssDefinition where
+    mplPretty def = printMaplePretty $ printAssDefinition def
+
+instance MaplePretty String where
+    mplPretty = text
+
+instance (MaplePretty a, MaplePretty b) => MaplePretty [(a, b)] where
+    mplPretty l = ppPairlist mplPretty mplPretty braces sepBySemis (<>) l
+
+
 printExp :: EXPRESSION -> String
-printExp e = show $ runReader (printExpression e) mapleOpInfoNameMap
---printExp = exportExp
---printExp = show . pretty
--- :: ExpressionPrinter m => EXPRESSION -> m Doc
+printExp = show . mplPretty
 
 
+mplShowOPNAME :: OPNAME -> String
+mplShowOPNAME OP_approx = "evalf"
+mplShowOPNAME x = showOPNAME x
 
 mapleOpInfoMap :: OpInfoMap
 mapleOpInfoMap = operatorInfoMap
@@ -161,8 +188,8 @@ printAssignmentWithEval n (FunDef l e) = concat [ n, ":= proc", args, printExp e
 printEvaluation :: EXPRESSION -> String
 printEvaluation e = printExp e ++ ";"
 
-printEvaluationWithEval :: EXPRESSION -> String
-printEvaluationWithEval e = "evalf(" ++ printExp e ++ ");"
+--printEvaluationWithEval :: EXPRESSION -> String
+--printEvaluationWithEval e = "evalf(" ++ printExp e ++ ");"
 
 printLookup :: String -> String
 printLookup n = n ++ ";"
@@ -235,6 +262,7 @@ mapleAssignDirect n def = do
   let f = if sm then printAssignment else printAssignmentWithEval
       msg = "mapleAssignDirect: unparseable result for assignment of "
             ++ (show $ pretty n <+> pretty def)
+  prettyInfo3 $ mplPretty [(n, def)]
   evalMapleString msg $ f n def
 
 mapleAssignsDirect :: [(String, AssDefinition)] -> MapleIO ()
@@ -249,11 +277,11 @@ mapleLookupDirect n = evalMapleString msg $ printLookup n where
 
 mapleEvalDirect :: EXPRESSION -> MapleIO EXPRESSION
 mapleEvalDirect e = do
-  b <- getSymbolicMode
-  let f = if b then printEvaluation else printEvaluationWithEval
+--  b <- getSymbolicMode
+  let -- f = if b then printEvaluation else printEvaluationWithEval
       msg = "mapleEvalDirect: unparseable result for evaluation of "
             ++ (show $ pretty e)
-  evalMapleString msg $ f e
+  evalMapleString msg $ printEvaluation e -- f e
 
 mapleCheck :: EXPRESSION -> MapleIO Bool
 mapleCheck e = do
