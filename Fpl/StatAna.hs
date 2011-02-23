@@ -6,6 +6,13 @@ License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
+
+basic static analysis for FPL
+
+missing: mixfix analysis for patterns could be specialized, local mixfix
+identifiers are not supported yet, different constructor sets for the same
+sort are not considered. Subsort embedding constructors are ignored.
+
 -}
 
 module Fpl.StatAna where
@@ -29,6 +36,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.Lib.State
 import Common.Result
+import Common.Utils
 
 import Control.Monad
 
@@ -167,9 +175,9 @@ resolvePattern sign (resSort, term) =
     else err "wrong typed pattern"
   _ -> err "unexpected pattern"
 
-{- | perform overload resolution after mixfix analysis. Case expressions are
-not fully checked yet. The type of patterns is deduced from the top term, but
-it is not checked, if the rhs types of all branches are compatible. -}
+{- | perform overload resolution after mixfix analysis. The type of patterns
+is deduced from the top term. Overlapping or exhaustive patterns are not
+recognized yet. -}
 minFplTerm :: Min TermExt SignExt
 minFplTerm sig te = case te of
   FixDef fd -> fmap FixDef $ minFunDef sig fd
@@ -181,9 +189,33 @@ minFplTerm sig te = case te of
           (vs, np) <- resolvePattern sig (s, p)
           Result (checkUniqueness . map fst $ flatVAR_DECLs vs) $ Just ()
           let newSign = execState (mapM_ addVars vs) sig
-          rt <- oneExpTerm minFplTerm newSign t
+          rt <- minExpTerm minFplTerm newSign t
           return (np, rt)) l
-    return $ Case ro rl r
+    let (ps, tts) = unzip rl
+        cSupers tl = case tl of
+          [] -> True
+          hd : rt -> all (haveCommonSupersorts True sig
+             (sortOfTerm hd) . sortOfTerm) rt && cSupers rt
+    nts <- isUnambiguous (globAnnos sig) (map snd l)
+      (map (filter cSupers . combine) $ combine tts) r
+    let nl = zip ps nts
+        minSort sl = if Set.null sl then Set.empty else
+           let (hd, rt) = Set.deleteFindMin sl
+           in Set.unions . map (Set.fromList . minimalSupers sig hd)
+                    . Set.toList $ Set.insert hd $ minSort rt
+        mSort = minSort . Set.fromList $ map sortOfTerm nts
+    case Set.toList mSort of
+      [tSort] -> do
+         fl <- mapM (\ (p, t) -> do
+            let pvs = freeTermVars sig p
+                tvs = freeTermVars sig t
+                unused = Set.difference pvs tvs
+            unless (Set.null unused) $
+              Result (map (mkDiag Warning "unused pattern variables")
+                     $ Set.toList unused) $ Just ()
+            return (p, mkSorted sig t tSort r)) nl
+         return $ Case ro fl r
+      sl -> mkError ("no common supersort for case terms: " ++ show sl) r
   Let fd@(FunDef o h _ _) t r -> do
     let newSign = execState
           (addOp (emptyAnno o)
