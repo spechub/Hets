@@ -20,7 +20,10 @@ Overload resolution (injections are inserted separately)
 module CASL.Overload
   ( minExpFORMULA
   , minExpFORMULAeq
+  , minExpTerm
+  , isUnambiguous
   , oneExpTerm
+  , mkSorted
   , Min
   , leqF
   , leqP
@@ -51,6 +54,11 @@ import Control.Monad
 
 -- | the type of the type checking function of extensions
 type Min f e = Sign f e -> f -> Result f
+
+mkSorted :: TermExtension f => Sign f e -> TERM f -> SORT -> Range -> TERM f
+mkSorted sign t s r = let nt = Sorted_term t s r in case optTermSort t of
+  Nothing -> nt
+  Just sort -> if leqSort sign s sort then t else nt
 
 {- ----------------------------------------------------------
     - Minimal expansion of a formula -
@@ -106,12 +114,10 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
     Membership term sort pos -> do
         ts <- minExpTerm mef sign term
         let fs = map (concatMap ( \ t ->
-                    let s = sortOfTerm t in
-                    if leqSort sign sort s then
-                    [Membership t sort pos] else
                     map ( \ c ->
-                        Membership (Sorted_term t c pos) sort pos)
-                    $ minimalSupers sign s sort)) ts
+                        Membership (mkSorted sign t c pos) sort pos)
+                    $ maybe [sort] (minimalSupers sign sort)
+                    $ optTermSort t)) ts
         isUnambiguous (globAnnos sign) formula fs pos
     ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
     QuantOp o ty f -> do
@@ -274,13 +280,11 @@ minExpTerm mef sign top = let ga = globAnnos sign in case top of
     Cast term sort pos -> do
       expandedTerm <- minExpTerm mef sign term
       -- find a unique minimal common supersort
-      let ts = map (concatMap (\ t -> let s = sortOfTerm t in
-                    if leqSort sign sort s then
-                    if leqSort sign s sort then [t] else
-                    [Cast t sort pos] else
+      let ts = map (concatMap (\ t ->
                     map ( \ c ->
-                        Cast (Sorted_term t c pos) sort pos)
-                    $ minimalSupers sign s sort)) expandedTerm
+                        Cast (mkSorted sign t c pos) sort pos)
+                    $ maybe [sort] (minimalSupers sign sort)
+                    $ optTermSort t)) expandedTerm
       hasSolutions ga top ts pos
     Conditional term1 formula term2 pos -> do
       f <- minExpFORMULA mef sign formula
@@ -395,13 +399,8 @@ minExpTermCond mef sign f term1 term2 pos = do
     return $ map (concatMap ( \ (t1, t2) ->
               let s1 = sortOfTerm t1
                   s2 = sortOfTerm t2
-              in if s1 == s2 then [f t1 t2]
-              else if leqSort sign s2 s1 then
-                   [f t1 (Sorted_term t2 s1 pos)]
-              else if leqSort sign s1 s2 then
-                   [f (Sorted_term t1 s2 pos) t2]
-              else map ( \ s -> f (Sorted_term t1 s pos)
-                                (Sorted_term t2 s pos))
+              in map ( \ s -> f (mkSorted sign t1 s pos)
+                                (mkSorted sign t2 s pos))
                    $ minimalSupers sign s1 s2)) pairs
 
 {- ----------------------------------------------------------

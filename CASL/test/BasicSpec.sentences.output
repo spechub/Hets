@@ -1500,7 +1500,7 @@
           <=> exists! v3 : s . not p /\ not q(v3) /\ q(v3),
   forall v1 : s . def f(v1), forall v1 : s . f(v1) =e= g(v1),
   forall v1 : s . f(v1) = g(v1), forall v1 : t . v1 in s,
-  forall v1 : s . def g(v1), forall v1 : s . def g(v1),
+  forall v1 : s . def g(v1), forall v1 : s . def g(v1) as s,
   forall v1 : s . def f(v1), forall v1 : s . def g(v1), p,
   forall v1 : s . q(v1),
   forall v1, v2, v3 : s . def v3 * v1 * v2 + v2 * v1 * v3, def {},
