@@ -87,7 +87,6 @@ fi
 
 #
 # Setting environment variables
-# and starting Hets
 #
 
 export HETS_LIB=/usr/lib/hets/hets-lib
@@ -100,5 +99,9 @@ export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
 export MAUDE_LIB=/usr/share/maude
 export GHCRTS='-H300m -M6g'
+
+#
+# Starting Hets
+#
 
 /usr/lib/hets/hets $@
