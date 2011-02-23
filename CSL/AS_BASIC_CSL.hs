@@ -675,7 +675,7 @@ getOp _ = Nothing
 
 printExtparam :: EXTPARAM -> Doc
 printExtparam (EP p op i) =
-    pretty p <> text op <> (text $ if op == "-|" then  "" else show i)
+    pretty p <> text op <> (if op == "-|" then  empty else text $ show i)
 
 printExtparams :: [EXTPARAM] -> Doc
 printExtparams [] = empty
