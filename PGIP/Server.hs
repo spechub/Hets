@@ -487,8 +487,8 @@ sessAns libName (sess, k) =
         if isProve && null gs then unode "i" "no goals" else
         aRef (libPath ++ c ++ "=" ++ s
               ++ if isProve then "&theorems="
-                 ++ encodeForQuery
-                   (unwords $ map fst $ if null os then gs else os)
+                 ++ intercalate "+"
+                   (map (encodeForQuery . fst) $ if null os then gs else os)
                  else "")
               $ if isProve then
                   c ++ "[" ++ show (length ps) ++ "/"
