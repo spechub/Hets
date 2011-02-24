@@ -42,7 +42,7 @@ data Mix b s f e = MixRecord
     { getBaseIds :: b -> IdSets -- ^ ids of extra basic items
     , getSigIds :: s -> IdSets  -- ^ ids of extra sig items
     , getExtIds :: e -> IdSets  -- ^ ids of signature extensions
-    , mixRules :: (Token -> [Rule], Rules) -- ^ rules for Earley
+    , mixRules :: (TokRules, Rules) -- ^ rules for Earley
     , putParen :: f -> f -- ^ parenthesize extended formula
     , mixResolve :: MixResolve f -- ^ resolve extended formula
     }
@@ -53,7 +53,7 @@ emptyMix = MixRecord
     { getBaseIds = const emptyIdSets
     , getSigIds = const emptyIdSets
     , getExtIds = const emptyIdSets
-    , mixRules = (const [], ([], []))
+    , mixRules = (const Set.empty, emptyRules)
     , putParen = id
     , mixResolve = const $ const return
     }
@@ -155,7 +155,7 @@ multiArgsId :: Id
 multiArgsId = mkId (exprTok : getPlainTokenList tupleId)
 
 -- | additional scan rules
-addRule :: GlobalAnnos -> [Rule] -> Bool -> IdSets -> Token -> [Rule]
+addRule :: GlobalAnnos -> [Rule] -> Bool -> IdSets -> TokRules
 addRule ga uRules hasInvisible ((consts, ops), preds) tok =
     let addP = Set.fold (\ i -> case i of
                  Id (t : _) _ _ -> Map.insertWith (++) t
@@ -189,21 +189,24 @@ addRule ga uRules hasInvisible ((consts, ops), preds) tok =
         tId = mkId [tok]
         tPId = mkId [tok, placeTok] -- prefix identifier
     in (if isSimpleToken tok && not (Set.member tId sops)
-        then if hasInvisible then [] else mkRule tId
+        then if hasInvisible then Set.empty else
+             Set.insert (mkRule tId)
              -- add rule for unknown constant or variable
-             : if Set.member tPId ops || Set.member tPId rpreds
-               then [] else [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
+             $ if Set.member tPId ops || Set.member tPId rpreds
+               then Set.empty else
+                 Set.fromList [mkSingleArgRule 1 tId, mkArgsRule 1 tId]
               -- add also rules for undeclared op
-        else []) ++ Map.findWithDefault [] tok m
+        else Set.empty) `Set.union` Set.fromList (Map.findWithDefault [] tok m)
 
 -- insert only identifiers starting with a place
 initRules :: (Set.Set Id, Set.Set Id) -> Rules
 initRules (opS, predS) =
-    let addR p = Set.fold ((:) . mixRule p)
-    in (addR 1 (addR 0 [mkRule typeId] predS) opS, [])
+  let addR p = Set.fold (Set.insert . mixRule p)
+  in emptyRules
+  { postRules = addR 1 (addR 0 (Set.singleton $ mkRule typeId) predS) opS }
 
 -- | construct rules from 'IdSets' to be put into a 'Mix' record
-makeRules :: GlobalAnnos -> IdSets -> (Token -> [Rule], Rules)
+makeRules :: GlobalAnnos -> IdSets -> (TokRules, Rules)
 makeRules ga ((constS, opS), predS) = let
     (cOps, sOps) = Set.partition begPlace opS
     (cPreds, sPreds) = Set.partition begPlace $ Set.difference predS opS
@@ -240,7 +243,7 @@ addType tt t =
     _ -> error "addType"
 
 -- | the type for mixfix resolution
-type MixResolve f = GlobalAnnos -> (Token -> [Rule], Rules) -> f -> Result f
+type MixResolve f = GlobalAnnos -> (TokRules, Rules) -> f -> Result f
 
 iterateCharts :: (GetRange f, Pretty f) => (f -> f)
               -> MixResolve f -> GlobalAnnos -> [TERM f]
@@ -336,15 +339,13 @@ resolveFormula par extR g ruleS f =
 varDeclTokens :: [VAR_DECL] -> Set.Set Token
 varDeclTokens = Set.unions . map (\ (Var_decl vs _ _) -> Set.fromList vs)
 
-extendRules :: Set.Set Token -> (Token -> [Rule], Rules)
-  -> (Token -> [Rule], Rules)
+extendRules :: Set.Set Token -> (TokRules, Rules)
+  -> (TokRules, Rules)
 extendRules ts (f, rs) =
   (\ t -> let
      l = f t
      r = mkRule $ mkId [t]
-     in if Set.member t ts then
-         if elem r l then l else r : l
-     else l, rs)
+     in if Set.member t ts then Set.insert r l else l, rs)
 
 extendMixResolve :: Set.Set Token -> MixResolve f -> MixResolve f
 extendMixResolve ts f ga = f ga . extendRules ts

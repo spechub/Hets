@@ -22,7 +22,9 @@ arguments are constructed.
 
 module Common.Earley
     ( Rule
-    , Rules
+    , TokRules
+    , Rules (..)
+    , emptyRules
     , partitionRules
     -- * special tokens for special ids
     , varTok
@@ -62,6 +64,7 @@ import Control.Exception
 import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2
 takeDiff :: [a] -> [b] -> [b]
@@ -369,13 +372,15 @@ mergeItems (i1 : r1) (i2 : r2) =
     EQ -> ambigItems i1 i2 : mergeItems r1 r2
     GT -> i2 : mergeItems (i1 : r1) r2
 
+type TokRules = Token -> Set.Set Rule
+
 -- | the whole state for mixfix resolution
 data Chart a = Chart
     { prevTable :: Table a
     , currIndex :: Int
     , currItems :: ([Item a], [Item a])
-    , rules :: ([Rule], [Rule])
-    , addRules :: Token -> [Rule]
+    , rules :: Rules
+    , addRules :: TokRules
     , solveDiags :: [Diagnosis] }
 
 {- | make one scan, complete, and predict step.
@@ -389,12 +394,13 @@ nextChart addType toExpr ga st term@(_, tok) = let
     idx = currIndex st
     igz = idx > 0
     (cItems, sItems) = currItems st
-    (cRules, sRules) = rules st
+    Rules cRules sRules = rules st
     pItems = if null cItems && igz then sItems else
-        map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
+        map (mkItem idx) (Set.toList $ Set.union sRules $ addRules st tok)
+        ++ sItems
     scannedItems = scan addType term pItems
     nextTable = if null cItems && igz then table else
-        Map.insert idx (map (mkItem idx) cRules ++ cItems) table
+        Map.insert idx (map (mkItem idx) (Set.toList cRules) ++ cItems) table
     completedItems = complete toExpr ga nextTable $ sortBy ordItem scannedItems
     nextIdx = idx + 1
     in if null pItems && igz then st else st
@@ -409,14 +415,24 @@ nextChart addType toExpr ga st term@(_, tok) = let
 mixDiags :: [Diagnosis] -> Chart a -> Chart a
 mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
-type Rules = ([Rule], [Rule]) -- postfix and prefix rules
+-- | postfix and prefix rules
+data Rules = Rules
+  { postRules :: Set.Set Rule
+  , scanRules :: Set.Set Rule }
+
+emptyRules :: Rules
+emptyRules = Rules
+  { postRules = Set.empty
+  , scanRules = Set.empty }
 
 -- | presort rules
 partitionRules :: [Rule] -> Rules
-partitionRules = partition ( \ (_, _, ts) -> null ts || head ts == termTok)
+partitionRules l =
+  let (p, s) = partition ( \ (_, _, ts) -> null ts || head ts == termTok) l
+  in Rules (Set.fromList p) $ Set.fromList s
 
 -- | create the initial chart
-initChart :: (Token -> [Rule]) -> Rules -> Chart a
+initChart :: TokRules -> Rules -> Chart a
 initChart adder ruleS = Chart
     { prevTable = Map.empty
     , currIndex = 0

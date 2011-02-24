@@ -2,7 +2,7 @@
 (pred y : bb * bb)
 (pred y : bb * bb)(a, b)
 *** Error 4.18-4.20,
-expected further mixfix token: ["!","*","+","-","-->"]
+expected further mixfix token: ["!","!=","*","+","-"]
 *** Error 5.7, unexpected mixfix token: <
 *** Error 6.3, unexpected mixfix token: #=
 exists1(predy :: bb)

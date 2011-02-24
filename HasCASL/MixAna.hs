@@ -57,7 +57,7 @@ addType _ _ = error "addType"
 -- | try to reparse terms as a compound list
 isCompoundList :: Set.Set [Id] -> [Term] -> Bool
 isCompoundList compIds =
-    maybe False (flip Set.member compIds) . mapM reparseAsId
+    maybe False (`Set.member` compIds) . mapM reparseAsId
 
 isTypeList :: Env -> [Term] -> Bool
 isTypeList e l = case mapM termToType l of
@@ -125,26 +125,26 @@ iterateCharts ga sIds compIds terms chart = do
                 (MixTypeTerm q (monoType nTyp) ps, typeTok {tokPos = ps})
         BracketTerm b ts ps ->
           let bres = self (expandPos TermToken
-                (getBrackets b) ts ps ++ tt) chart in case (b, ts) of
-          (Squares, _ : _) -> if isCompoundList compIds ts then do
+                (getBrackets b) ts ps ++ tt) chart in case (b, ts, tt) of
+          (Squares, _ : _, _)
+            | isCompoundList compIds ts -> do
               addDiags [mkDiag Hint "is compound list" t]
               bres
-            else if isTypeList e ts then do
+            | isTypeList e ts -> do
               let testChart = oneStep (t, typeInstTok {tokPos = ps})
               if null $ solveDiags testChart then do
                 addDiags [mkDiag Hint "is type list" t]
                 self tt testChart
                 else bres
-            else bres
-          _ -> case (b, ts, tt) of
-                 (Parens, [QualOp b2 v sc [] _ ps2], hd@(BracketTerm Squares
-                   ts2@(_ : _) ps3) : rtt) | isTypeList e ts2 -> do
+          (Parens, [QualOp b2 v sc [] _ ps2], hd@(BracketTerm Squares
+                   ts2@(_ : _) ps3) : rtt)
+            | isTypeList e ts2 -> do
                    addDiags [mkDiag Hint "is type list" ts2]
                    nSc <- resolveQualOp v sc
                    self rtt $ oneStep
                      ( QualOp b2 v nSc (bracketTermToTypes e hd) UserGiven ps2
                      , exprTok {tokPos = appRange ps ps3})
-                 _ -> bres
+          _ -> bres
         QualVar (VarDecl v typ ok ps) -> do
           mTyp <- anaStarType typ
           recurse $ maybe t ( \ nType -> QualVar $ VarDecl v (monoType nType)
@@ -256,7 +256,7 @@ toMixTerm :: Env -> Id -> [Term] -> Range -> Term
 toMixTerm e i ar qs
   | i == applId = assert (length ar == 2) $
            let [op, arg] = ar in mkPatAppl op arg qs
-  | i == tupleId || i == unitId = mkTupleTerm ar qs
+  | elem i [tupleId, unitId] = mkTupleTerm ar qs
   | otherwise = case unPolyId i of
       Just j@(Id ts _ _) -> if isMixfix j && isSingle ar then
           ResolvedMixTerm j (bracketTermToTypes e $ head ar) [] qs
@@ -299,15 +299,16 @@ builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]
 
 makeRules :: GlobalAnnos -> (PrecMap, Set.Set Id) -> Set.Set Id
-          -> Set.Set Id -> (Token -> [Rule], Rules, Set.Set Id)
+          -> Set.Set Id -> (TokRules, Rules, Set.Set Id)
 makeRules ga ps@(p, _) polyIds aIds =
     let (sIds, ids) = Set.partition isSimpleId aIds
         ks = Set.fold (Set.union . getKnowns) Set.empty ids
         rIds = Set.union ids $ Set.intersection sIds $ Set.map simpleIdToId ks
         m2 = maxWeight p + 2
-    in ( \ tok -> [(simpleIdToId tok, m2, [tok])
-                   | isSimpleToken tok && not (Set.member tok ks)
-                     || tok == uTok ]
+    in ( \ tok -> if isSimpleToken tok && not (Set.member tok ks)
+                  || tok == uTok
+         then Set.singleton (simpleIdToId tok, m2, [tok])
+         else Set.empty
        , partitionRules $ listRules m2 ga ++
              initRules ps (Set.toList polyIds) builtinIds (Set.toList rIds)
        , sIds)

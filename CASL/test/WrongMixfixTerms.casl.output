@@ -25,10 +25,10 @@ ambiguous mixfix term
 *** Error 14.1-14.9,
 ambiguous mixfix term
   A__([__]__(a, A__([__]__(a, p))))
-  A__(____p([__](a), A__([__](a))))
   __[__]__(A, a, A__([__]__(a, p)))
-  __[__]__(A, a, ____p(A, [__](a)))
   __[__]__(A__([__]__(a, A)), a, p)
+  ____p(A, [__]__(a, A__([__](a))))
+  ____p(A[a], A__([__](a)))
 *** Error 15.1-15.5,
 ambiguous mixfix term
   A__(__!([__](a)))
@@ -39,8 +39,8 @@ ambiguous mixfix term
   __::__([__]([__](a)), [ ])
 *** Error 17.1-17.9,
 ambiguous mixfix term
-  __::__(b, __::__(A__([__](a)), [ ]))
-  __::__(b, __::__(A[a], [ ]))
+  A__([__](a))
+  A__(__::__(a, [ ]))
 *** Error 18.1-18.11,
 ambiguous mixfix term
   __+__(b, [__]__(a, +__(b)))
@@ -59,8 +59,8 @@ ambiguous mixfix term
   -__(__::__(a, [ ]))
 *** Error 22.1-22.8,
 ambiguous mixfix term
-  __+__(b, A__([__](a)))
-  __+__(b, A[a])
+  A__([__](a))
+  A__(__::__(a, [ ]))
 *** Error 23.1-23.4,
 ambiguous mixfix term
   __!([__](a))
@@ -75,17 +75,19 @@ ambiguous mixfix term
   __::__(__+__(b, A__([__](a))), [ ])
 *** Error 26.1-26.12,
 ambiguous mixfix term
-  __::__(A__([__](a)), __::__(A__([__](a)), [ ]))
-  __::__(A[a], __::__(A__([__](a)), [ ]))
-  __::__(A__([__](a)), __::__(A[a], [ ]))
-  __::__(A[a], __::__(A[a], [ ]))
+  A__([__](a))
+  A__(__::__(a, [ ]))
+*** Error 26.1-26.12,
+ambiguous mixfix term
+  A__([__](a))
+  A__(__::__(a, [ ]))
 *** Error 27.1-27.8,
 ambiguous mixfix term
   A__([__]__(a, +__(b)))
   __[__]__(A, a, +__(b))
   __+__(A__([__](a)), b)
 *** Error 28.4,
-expected further mixfix token: ["*","+","-","-->","::"]
+expected further mixfix token: ["!=","*","+","-","-->"]
 *** Error 29.9-29.12, expected further mixfix token: ["p","x"]
 *** Error 30.1-30.7,
 ambiguous mixfix term
