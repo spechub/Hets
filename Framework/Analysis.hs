@@ -117,7 +117,7 @@ retrieveDiagram ml (LogicDef _ _ s m f p _) dg = do
             then return Nothing
             else do v <- lookupMorph ml p dg
                     return $ Just v
-  
+
   if (dom ltruth /= base_sig ml) then
      error $ "The morphism " ++ (show s) ++
              " must originate from the Base signature for " ++
@@ -190,7 +190,7 @@ addLogic2LogicList l = do
   let res = runParser (parser l) (emptyAnnos ()) "" contentsOld
   case res of
       Right contentsNew -> writeFile file contentsNew
-      Left er -> error $ show er 
+      Left er -> error $ show er
 
 parser :: String -> AParser st String
 parser l = do
@@ -223,7 +223,7 @@ parser l = do
                    do (xs,_) <- logParser `separatedBy` commaT
                       cBracketT
                       return xs )
-  
+
   return $ header ++ mod_decl ++ "\n\n" ++
            (intercalate "\n" (imps ++ [l_imp])) ++ "\n\n" ++
            log_var_decl ++ "\n" ++ log_var_def ++ " " ++ "[" ++
@@ -246,8 +246,8 @@ moduleName = do
   dotT
   n <- simpleId
   return $ tokStr m ++ "." ++ tokStr n
-       
-logParser :: AParser st String     
+
+logParser :: AParser st String
 logParser = do
   l <- asKey "Logic"
   n <- simpleId
