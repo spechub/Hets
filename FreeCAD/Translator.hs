@@ -117,3 +117,4 @@ findRef s el = getLinkVal el2
     where 
         el2 = childByNameAttr s el
     
+--TODO fix errors
