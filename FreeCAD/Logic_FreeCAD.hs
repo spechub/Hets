@@ -27,14 +27,17 @@ import Common.Utils
 
 import ATerm.Lib
 
-import Common.XmlParser (XmlParseable, parseXml)
+-- import Common.XmlParser (XmlParseable, parseXml)
 
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
 
-import FreeCAD.As --abstract data structure in use.
+
+
+
+
 
 data FreeCAD = FreeCAD deriving Show
 
@@ -67,4 +70,3 @@ instance StaticAnalysis FreeCAD Text () () () Text (DefaultMorphism Text) () ()
 
 instance Logic FreeCAD () Text () () () Text (DefaultMorphism Text) () () ()
 
---TODO IO, xml parser, constructors.

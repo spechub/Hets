@@ -4,10 +4,19 @@
 module FreeCAD.As 
     where
 
-data Vector = Vector { x::Double, y::Double, z::Double } deriving Show 
+data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving Show 
 --a vector in cartesian coordinates
+data Vector4 = Vector4 { q0::Double, q1::Double, q2::Double, q3::Double} deriving Show
+--a vector of 4 coordinates for representing orientation of FreeCAD objects
+{-
+ seems redundant; it probably represents the cartesian coordinates of an orientation
+ 3d vector, and an axial rotation of the object around the direction of the mentioned
+ vector. -- need to research this.
 
-data Placement = Placement { position::Vector, orientation::Vector } deriving Show 
+ -}
+ 
+ 
+data Placement = Placement { position::Vector3, orientation::Vector4 } deriving Show 
 
 {-
 -- | the placement is determined by 2 vectors:
