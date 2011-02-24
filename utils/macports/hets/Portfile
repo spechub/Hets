@@ -1,0 +1,93 @@
+# $Id$
+
+PortSystem 1.0 
+name            hets
+version         0.98r14621
+categories      math
+maintainers     nomaintainer
+platforms       darwin
+
+description     The heterogeneous tool set (HETS)
+long_description    \
+        The central idea of the Heterogeneous Tool Set (HETS) \
+        is to provide a general framework for formal methods \
+        integration and proof management. \
+
+homepage        http://www.dfki.de/sks/hets
+master_sites    ${homepage}/src-distribution/versions/
+
+checksums   md5 9c040018c1a2c20b61b21878d499bd77
+# port checks against all these checksums when installing. for testing purposes,
+# this remains commented out. #TODO
+#checksums   md5 ea6e555e87510bb20e2ae6c6ffc900a9 \
+#            sha1 f67667ef854b6352e8d93f5c200db0c6b202660d \
+#            rmd160 e300ace6b59feeca522853c57dde360a0e9da278
+
+universal_variant no
+
+depends_build   bin:ghc:ghc
+depends_lib     port:hs-platform-fgl \
+                port:hs-platform-cabal
+
+# Variants
+variant gui description {GUI for HETS} {
+#    depends_lib-append port:uni-uDrawGraph
+
+    pre-fetch {
+        if {[file exists ${prefix}/lib/libgtk-quartz-2.0.dylib]} {
+            ui_error "Please reinstall gtk2 with +x11 by running `port install gtk2 +x11`."
+            error "gtk2 must be installed with the x11 variant enabled."
+        }
+    }
+
+    depends_lib-append  port:gtk2 \
+                        port:libglade2
+    pre-build {
+        ui_msg "Calling cabal"
+#        ui_msg "update"
+#        system "exec ${prefix}/bin/cabal update"
+#        ui_msg "install glade uni-uDrawGraph"
+#        system "exec ${prefix}/bin/cabal --global --prefix=${prefix} install glade uni-uDrawGraph"
+        ui_msg "Cabal finished"
+    }
+}
+
+#variant programatica description {} {
+#    pre-build {
+#        system "exec cd ${workpath} && tar -zxf ${worksrcpath}/utils/debian/auto-package/programatica.tar.gz"
+#    }
+#}
+
+#variant isabelle description {} {
+#    depends_run-append port:isabelle
+#}
+
+configure {
+    # don't use ./configure
+}
+
+pre-build {
+    # we really shouldn't do this #TODO
+    # but there's no port package for Haskell's xml
+    ui_msg "Calling cabal"
+#    ui_msg "update"
+#    system "exec ${prefix}/bin/cabal update"
+#    ui_msg "install xml"
+#    system "exec ${prefix}/bin/cabal --global --prefix=${prefix} install xml"
+    ui_msg "Cabal finished"
+}
+
+destroot {
+    xinstall -d ${destroot}${prefix}/lib/${name}
+    copy ${workpath}/${name}-${version}/${name} ${destroot}${prefix}/lib/${name}/
+    #
+}
+
+install {
+    copy ${destroot}${prefix}/lib/${name} ${prefix}/lib/
+}
+
+uninstall {
+    delete ${prefix}/lib/${name}
+}
+
