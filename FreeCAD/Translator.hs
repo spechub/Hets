@@ -103,17 +103,24 @@ getPlacementVals el = (m "Px", m "Py", m "Pz", m "Q1", m "Q2", m "Q3")
 getLinkVal el = getVal "value" el2
     where
         el2 = childByName "Link" el
-        
-findFloat s el = getFloatVal el2
+
+findFloat:: String -> Element -> Double
+findFloat s el = read (getFloatVal el2)
     where
         el2 = childByNameAttr s el
         
 findPlacement el = Placement (Vector a b c) (Vector d e f)
     where
-        (a, b, c, d, e, f) = getPlacementVals el2
-        el2 = childByNameAttr "Placement"
+        (sa, sb, sc, sd, se, sf) = getPlacementVals el2
+        a = read sa
+        b = read sb
+        c = read sc
+        d = read sd
+        e = read se
+        f = read sf
+        el2 = childByNameAttr "Placement" el
         
-findRef s el = getLinkVal el2
+findRef s el = Ref (getLinkVal el2)
     where 
         el2 = childByNameAttr s el
     
