@@ -479,20 +479,27 @@ sessAns libName (sess, k) =
       ref d = aRef (libPath ++ d) d
       noderef (n, lbl) =
         let s = show n
-            gs = getThGoals $ dgn_theory lbl
+            lTh = dgn_theory lbl
+            gs = getThGoals $ fromMaybe lTh $ globalTheory lbl
+            lgs = map fst (getThGoals lTh) \\ map fst gs
             (ps, os) = partition (maybe False isProvedBasically . snd) gs
+            subsumed = if null lgs then "" else
+              " (" ++ show (length lgs) ++ " subsumed)"
         in
         unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
         let isProve = c == "prove" in
-        if isProve && null gs then unode "i" "no goals" else
+        if isProve && null gs then unode "i" ("no goals" ++ subsumed) else
         aRef (libPath ++ c ++ "=" ++ s
               ++ if isProve then "&theorems="
                  ++ intercalate "+"
-                   (map (encodeForQuery . fst) $ if null os then gs else os)
+                   (map encodeForQuery
+                   -- theorems containing spaces do not work with "+"
+                   $ filter (all $ not . isSpace) $ map fst
+                   $ if null os then gs else os)
                  else "")
               $ if isProve then
                   c ++ "[" ++ show (length ps) ++ "/"
-                        ++ show (length gs) ++ "]"
+                        ++ show (length gs) ++ "]" ++ subsumed
                 else c) nodeCommands
       edgeref e@(_, _, lbl) =
         aRef (libPath ++ "edge=" ++ showEdgeId (dgl_id lbl))
