@@ -39,6 +39,8 @@ freeVarsRecord mf = (constRecord mf Set.unions Set.empty)
                     Set.fromList $ flatVAR_DECLs vdecl
     }
 
+{- | The input signature is (currently only) used for statements in the
+VSE logic. -}
 class FreeVars f where
   freeVarsOfExt :: Sign f e -> f -> VarSet
 
@@ -56,7 +58,7 @@ effQuantify :: FreeVars f => Sign f e -> QUANTIFIER -> [VAR_DECL]
             -> FORMULA f -> Range -> FORMULA f
 effQuantify sign q vdecls phi pos =
     let flatVAR_DECL (Var_decl vs s ps) =
-            map (\v -> Var_decl [v] s ps) vs
+            map (\ v -> Var_decl [v] s ps) vs
         joinVarDecl = foldr1 ( \ (Var_decl v1 s1 ps) (Var_decl v2 _s2 _) ->
                           Var_decl (v1 ++ v2) s1 ps)
         cleanDecls =
@@ -68,7 +70,7 @@ effQuantify sign q vdecls phi pos =
            Unique_existential -> Quantification q (cleanDecls vdecls) phi pos
            _ -> let fvs = freeVars sign phi
                     filterVAR_DECL (Var_decl vs s ps) =
-                        Var_decl (filter (\ v -> Set.member (v,s) fvs
+                        Var_decl (filter (\ v -> Set.member (v, s) fvs
                             || Set.member s (emptySortSet sign)) vs) s ps
                     newDecls = cleanDecls $ map filterVAR_DECL vdecls
                 in if null newDecls then phi else
