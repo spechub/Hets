@@ -161,7 +161,7 @@ exportExp (Op s _ [] _) = simpleName s
 exportExp (Op s _ exps _) = concat [simpleName s, "(", exportExps exps, ")"]
 exportExp (List exps _) = "{" ++ exportExps exps ++ "}"
 exportExp (Int i _) = show i
-exportExp (Double d _) = show d
+exportExp (Rat d _) = show d
 exportExp (Interval l r _) =  concat [ "[", show l, ",", show r, "]" ]
 --exportExp e = error $ "exportExp: expression not supported: " ++ show e
 

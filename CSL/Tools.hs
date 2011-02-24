@@ -27,7 +27,7 @@ getAtoms e =
       Op s _ el _ -> ("op:" ++ show s) : concatMap getAtoms el
       List el _ -> ("list") : concatMap getAtoms el
       Int _ _ -> ["int"]
-      Double _ _ -> ["dbl"]
+      Rat _ _ -> ["dbl"]
       Interval _ _ _ -> ["intv"]
 
 getCmdAtoms :: CMD -> [String]

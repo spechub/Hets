@@ -27,9 +27,9 @@ data Record a b = Record
     , foldVar :: EXPRESSION -> Token -> b
     , foldOp :: EXPRESSION -> OPID -> [EXTPARAM] -> [b] -> Range -> b
     , foldList :: EXPRESSION -> [b] -> Range -> b
-    , foldInterval :: EXPRESSION -> APFloat -> APFloat -> Range -> b
+    , foldInterval :: EXPRESSION -> Double -> Double -> Range -> b
     , foldInt :: EXPRESSION -> APInt -> Range -> b
-    , foldDouble :: EXPRESSION -> APFloat -> Range -> b
+    , foldRat :: EXPRESSION -> APFloat -> Range -> b
     }
 
 -- | Produces an error with given message on all entries. Use this if you
@@ -48,7 +48,7 @@ emptyRecord s =
            , foldList = error s
            , foldInterval = error s
            , foldInt = error s
-           , foldDouble = error s
+           , foldRat = error s
            }
 
 -- | The identity transformation
@@ -65,7 +65,7 @@ idRecord =
            , foldList = \ v _ _ -> v
            , foldInterval = \ v _ _ _ -> v
            , foldInt = \ v _ _ -> v
-           , foldDouble = \ v _ _ -> v
+           , foldRat = \ v _ _ -> v
            }
 
 -- | Passes the transformation through the CMD part and is the identity
@@ -83,7 +83,7 @@ passRecord =
            , foldList = \ v _ _ -> v
            , foldInterval = \ v _ _ _ -> v
            , foldInt = \ v _ _ -> v
-           , foldDouble = \ v _ _ -> v
+           , foldRat = \ v _ _ -> v
            }
 
 -- | Passes the transformation through the 'CMD' part by concatenating the
@@ -101,7 +101,7 @@ listCMDRecord =
            , foldList = \ v _ _ -> v
            , foldInterval = \ v _ _ _ -> v
            , foldInt = \ v _ _ -> v
-           , foldDouble = \ v _ _ -> v
+           , foldRat = \ v _ _ -> v
            }
 
 -- | Returns the first constant on the CMD part and the second
@@ -119,7 +119,7 @@ constRecord a b =
            , foldList = \ _ _ _ -> b
            , foldInterval = \ _ _ _ _ -> b
            , foldInt = \ _ _ _ -> b
-           , foldDouble = \ _ _ _ -> b
+           , foldRat = \ _ _ _ -> b
            }
 
 foldCMD :: Record a b -> CMD -> a
@@ -138,4 +138,4 @@ foldTerm r t = case t of
     List l rg -> foldList r t (map (foldTerm r) l) rg
     Interval from to rg -> foldInterval r t from to rg
     Int i rg -> foldInt r t i rg
-    Double f rg -> foldDouble r t f rg
+    Rat f rg -> foldRat r t f rg

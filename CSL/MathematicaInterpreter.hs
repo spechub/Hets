@@ -95,12 +95,8 @@ instance AssignmentStore MathematicaIO where
 
 instance VCGenerator MathematicaIO where
     addVC ea e = do
-      let
-          s = show
-              $ (text "Verification condition for" <+> pretty ea <> text ":")
-                    $++$ printExpForVC e
       vcHdl <- liftM (fromMaybe stdout) $ gets vericondOut
-      liftIO $ hPutStrLn vcHdl s where
+      liftIO $ hPutStrLn vcHdl $ show $ printVCForIsabelle ea "lemma1" e
 
 instance StepDebugger MathematicaIO where
     setDebugMode b = modify mf where mf mit = mit { debugMode = b }
@@ -276,16 +272,16 @@ sendExpression sm e =
            mlPutFunction' (mmShowOPID oi) (length exps)
            mapM_ (sendExpression sm) exps
    Int i _ -> mlPutInteger'' i >> return ()
-   Double r _ 
-       | sm ->
-           do
-             let (n1, en2) = decodeFloat r
-             mlPutFunction' "decodedFloat" 2
-             mlPutInteger'' n1
-             mlPutInteger' en2
-             return ()
-       | otherwise -> mlPutReal' r >> return ()
-
+   Rat r _ 
+       | sm -> putRational r
+       | otherwise -> mlPutFunction' "N" 1 >> putRational r
+       where putRational r' = do
+               let (n1, dn2) = toFraction r'
+               mlPutFunction' "Rational" 2
+               mlPutInteger'' n1
+               mlPutInteger'' dn2
+               return ()
+               
    List _ _ -> error "sendExpression: List not supported"
    Interval _ _ _ -> error "sendExpression: Interval not supported"
 
@@ -296,19 +292,24 @@ receiveExpression =  do
   let mkMLOp s args = mkAndAnalyzeOp mathematicaOpInfoMap s [] args nullRange
       pr | et == dfMLTKSYM = liftM (flip mkMLOp []) mlGetSymbol
          | et == dfMLTKINT = liftM (flip Int nullRange) mlGetInteger''
-         | et == dfMLTKREAL = liftM (flip Double nullRange) mlGetReal'
+         | et == dfMLTKREAL = liftM (flip Rat nullRange . toRational) mlGetReal'
          | et == dfMLTKFUNC =
              do
-               len <- mlGetArgCount
-               if len == 0 then mlProcError
+               ac <- mlGetArgCount
+               if ac == 0 then mlProcError
                 else do
                  -- the head is expected to be a symbol
                  et' <- mlGetNext
                  s <- if et' == dfMLTKSYM then mlGetSymbol else
                           error $ "receiveExpression: Expecting symbol at "
                                    ++ "function head, but got " ++ show et'
-                 let s' = if s == "Rational" then "Divide" else s
-                 liftM (mkMLOp s') $ forM [1..len] $ const receiveExpression
+                 if s == "Rational" then
+                    do 
+                      nn <- mlGetInteger''
+                      dn <- mlGetInteger''
+                      return $ Rat (fromFraction nn dn) nullRange
+                  else
+                    liftM (mkMLOp s) $ forM [1..ac] $ const receiveExpression
 
          | et == dfMLTKERROR = mlProcError
          | otherwise = mlProcError

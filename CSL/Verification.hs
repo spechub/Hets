@@ -10,7 +10,7 @@ Stability   :  experimental
 Portability :  non-portable (via imports)
 
 This module provides functionality for the generation of verification conditions
-during program evaluation.
+during program evaluation. The output is in Isabelle Syntax.
 -}
 
 module CSL.Verification where
@@ -23,6 +23,7 @@ import CSL.Analysis
 import CSL.AS_BASIC_CSL
 
 import Common.Doc
+import Common.DocUtils
 
 import System.IO
 import Control.Monad.Reader
@@ -75,8 +76,9 @@ mkCondition def lhs rhs = f args where
     g v b = toExp ("all", mkVar v, b)
     
 mkVCPrem :: ConstantName -> AssDefinition -> EXPRESSION
-mkVCPrem n def = mkCondition def (toExp(n, map mkVar $ getArguments def))
-                 $ getDefiniens def
+mkVCPrem n def = mkCondition def (toExp( "::"
+                                       , toExp(n, map mkVar $ getArguments def)
+                                       , OP_real)) $ getDefiniens def
 
 mkVC :: ConstantName
      -> AssDefinition
@@ -149,9 +151,11 @@ showOpnameForVC x =
         case x of
           OP_ex -> "enclEX"
           OP_all -> "enclAll"
-          OP_or -> "||"
+          OP_max -> "maxx"
+          OP_min -> "minn"
+          OP_or -> "|"
           OP_impl -> "-->"
-          OP_and -> "&&"
+          OP_and -> "&"
           _ -> showOPNAME x
 
 
@@ -164,6 +168,14 @@ instance ExpressionPrinter (Reader VCPrinter) where
     printInterval l r = return $
                         text "Interval"
                               <> parens (sepByCommas $ map (text . show) [l, r])
+    printRational r = return $ text $ show nn ++ "/" ++ show dn
+        where (nn, dn) = toFraction r
 
 printExpForVC :: EXPRESSION -> Doc
-printExpForVC e = runReader (printExpression e) VCPrinter
+printExpForVC e = doubleQuotes $ runReader (printExpression e) VCPrinter
+
+printVCForIsabelle :: EvalAtom -> String -> EXPRESSION -> Doc
+printVCForIsabelle  ea s e =
+    let cm = text "Verification condition for" <+> pretty ea <> text ":"
+    in sep [ parens $ hcat [text "*", cm, text "*"], text "lemma"
+           , doubleQuotes $ text s, text ":", printExpForVC e ]

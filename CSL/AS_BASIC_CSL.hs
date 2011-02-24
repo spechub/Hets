@@ -58,6 +58,7 @@ module CSL.AS_BASIC_CSL
     , lookupOpInfoForParsing
     , lookupBindInfo
     , APInt, APFloat      -- arbitrary precision numbers
+    , toFraction, fromFraction
     -- Printer
     , printExpression
     , printCMD
@@ -80,14 +81,18 @@ import Control.Monad
 import Control.Monad.Reader
 
 import Data.Maybe
-
+import Ratio
+import Numeric
 
 -- Arbitrary precision numbers
 type APInt = Integer
--- TODO: use an arbitrary precision float here:
--- The use of Other floats (such as Double) requires an instance for
--- ShATermConvertible in Common.ATerm.ConvInstances
-type APFloat = Double
+type APFloat = Rational
+
+fromFraction :: Integer -> Integer -> APFloat
+fromFraction = (%)
+
+toFraction :: APFloat -> (Integer, Integer)
+toFraction r = (numerator r, denominator r)
 
 -- | A simple operator constructor from given operator name and arguments
 mkOp :: String -> [EXPRESSION] -> EXPRESSION
@@ -236,6 +241,9 @@ data OPNAME =
   -- quantifiers
   | OP_ex | OP_all
 
+  -- types
+  | OP_hastype | OP_real
+
     deriving (Eq, Ord)
 
 instance Show OPNAME where
@@ -293,6 +301,9 @@ showOPNAME x =
 
           OP_undef -> "undef"
           OP_failure -> "fail"
+            
+          OP_hastype -> "::"
+          OP_real -> "real"
 
 data OPID = OpId OPNAME | OpUser ConstantName deriving (Eq, Ord, Show)
 
@@ -326,9 +337,9 @@ data EXPRESSION =
   | Op OPID [EXTPARAM] [EXPRESSION] Id.Range
   -- TODO: don't need lists anymore, they should be removed soon
   | List [EXPRESSION] Id.Range
-  | Interval APFloat APFloat Id.Range
+  | Interval Double Double Id.Range
   | Int APInt Id.Range
-  | Double APFloat Id.Range
+  | Rat APFloat Id.Range
   deriving (Eq, Ord, Show)
 
 -- | If the expression list is a variable list the list of the variable names
@@ -450,19 +461,20 @@ operatorInfo =
         a4bind bv bb s = toSglBind s 4 bv bb
         -- arity2 infix with precedence
         a2i p s = toSgl s 2 p
-    in map (aX 0) [ OP_failure, OP_undef, OP_Pi, OP_true, OP_false ]
+    in map (aX 0) [ OP_failure, OP_undef, OP_Pi, OP_true, OP_false, OP_real ]
            ++ map (aX 1)
                   [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
                   , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
-           ++ map (a2bind 0 1) [ OP_ex, OP_all ]
-           ++ map (a2i 3) [ OP_or, OP_impl ]
-           ++ map (a2i 4) [ OP_and ]
-           ++ map (a2i 5) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt, OP_in]
-           ++ map (a2i 6) [ OP_plus ]
-           ++ map (a2i 7) [ OP_minus ]
-           ++ map (a2i 8) [OP_mult]
-           ++ map (a2i 9) [OP_div]
-           ++ map (a2i 10) [OP_pow]
+           ++ map (a2i 5) [ OP_hastype ]
+           ++ map (a2bind 0 10) [ OP_ex, OP_all ]
+           ++ map (a2i 30) [ OP_or, OP_impl ]
+           ++ map (a2i 40) [ OP_and ]
+           ++ map (a2i 50) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt, OP_in]
+           ++ map (a2i 60) [ OP_plus ]
+           ++ map (a2i 70) [ OP_minus ]
+           ++ map (a2i 80) [OP_mult]
+           ++ map (a2i 90) [OP_div]
+           ++ map (a2i 100) [OP_pow]
            ++ map (aX 2)
                   [ OP_int, OP_divide, OP_solve, OP_convergence, OP_reldist
                   , OP_approx]
@@ -472,7 +484,7 @@ operatorInfo =
            ++ map (a4bind 1 0) [ OP_maxloc, OP_minloc ]
 
 maxPrecedence :: Int
-maxPrecedence = 100
+maxPrecedence = 120
 
 
 -- ---------------------------------------------------------------------------
@@ -594,9 +606,12 @@ class Monad m => ExpressionPrinter m where
     printArgs =  return . parens . sepByCommas
     printVarDecl :: String -> m Doc
     printVarDecl =  return . text
-    printInterval :: APFloat -> APFloat -> m Doc
+    printInterval :: Double -> Double -> m Doc
     printInterval l r =
         return $ brackets $ sepByCommas $ map (text . show) [l, r]
+    printRational :: APFloat -> m Doc
+    printRational r = return $ text $ showFloat ((fromRat r) :: Double) ""
+
 
 -- | The default ConstantName printer
 printConstantName :: ConstantName -> Doc
@@ -695,7 +710,7 @@ printInfix e@(Op s _ exps@[e1, e2] _) = do
                                  Just op1 | op1 == s -> (<=)
                                           | otherwise -> (<)
                                  _ -> (<)
-                     in f cmp e1 ed1 <+> oi <+> f (<) e2 ed2
+                     in sep[f cmp e1 ed1,  oi <+> f (<) e2 ed2]
       g _ = error "printInfix: Inner impossible case"
   liftM g $ mapM printExpression exps
 printInfix _ = error "printInfix: Impossible case"
@@ -721,7 +736,7 @@ printExpression e@(Op s epl exps _)
 
 printExpression (List exps _) = liftM sepByCommas (mapM printExpression exps)
 printExpression (Int i _) = return $ text (show i)
-printExpression (Double d _) = return $ text (show d)
+printExpression (Rat r _) = printRational r
 printExpression (Interval l r _) = printInterval l r
 
 printOpItem :: OP_ITEM -> Doc
@@ -831,5 +846,5 @@ instance GetRange EXPRESSION where
     Op _ _ exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
     List exps a -> joinRanges $ [rangeSpan a] ++ (map rangeSpan exps)
     Int _ a -> joinRanges [rangeSpan a]
-    Double _ a -> joinRanges [rangeSpan a]
+    Rat _ a -> joinRanges [rangeSpan a]
     Interval _ _ a -> joinRanges [rangeSpan a]

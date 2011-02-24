@@ -21,6 +21,8 @@ import Common.Lexer as Lexer
 import Common.Parsec
 import Common.AS_Annotation as AS_Anno
 
+import Numeric
+
 import CSL.AS_BASIC_CSL
 import CSL.Keywords
 import Text.ParserCombinators.Parsec as Parsec
@@ -101,17 +103,25 @@ prefixidentifier =
 
 -- | parses a possibly signed number to an EXPRESSION
 signednumberExp :: CharParser st EXPRESSION
-signednumberExp = 
-    let f (eN, rg) = either (flip Int rg) (flip Double rg) eN
+signednumberExp =
+    let f (eN, rg) = either (flip Int rg) (flip Rat rg . readRat) eN
     in signednumber >-> f
 
 -- | parses a possibly signed number (both integers and floats) 
-signednumber :: CharParser st (Either APInt APFloat, Range)
+signednumber :: CharParser st (Either APInt String, Range)
 signednumber = 
-    let f c x = return (c $ read $ tokStr x, tokPos x)
+    let f c x = return (c $ tokStr x, tokPos x)
         g x | isFloating x = f Right x
-            | otherwise  = f Left x
+            | otherwise  = f (Left . read) x
     in Lexer.pToken Lexer.scanFloatExt >>= g
+
+readRat :: String -> APFloat
+readRat s = case readFloat s of
+              [(r, "")] -> r
+              _ -> error $ "readRat: cannot read float " ++ s
+
+readDbl :: String -> Double
+readDbl s = read s
 
 -- | The version in Common.Lexer is not compatible with floating point numbers
 -- which may start with ".". This one does it.
@@ -179,7 +189,7 @@ listexp = do
 intervalexp :: CharParser st EXPRESSION
 intervalexp = do
   nums <- lstring "[" >> Lexer.separatedBy signednumber pComma << lstring "]"
-  let getFloat = either fromInteger id
+  let getFloat = either fromInteger readDbl
   case fst nums of
     [(x, rg1), (y, rg2)] -> return $ Interval (getFloat x) (getFloat y) $ Range
                             $ joinRanges $ map rangeToList [rg1, rg2]
@@ -394,7 +404,7 @@ varItem = do
 parseDomain :: CharParser st Domain
 parseDomain = do
   lp <- lexemeParser $ oneOf "{[]"
-  gcl <- sepBy1 (signednumber >-> either GCI GCR . fst) pComma
+  gcl <- sepBy1 (signednumber >-> either GCI (GCR . readRat) . fst) pComma
   rp <- lexemeParser $ oneOf "[]}"
   let f o c = case gcl of
                 [lb, rb] -> return $ IntVal (lb, o) (rb, c)
