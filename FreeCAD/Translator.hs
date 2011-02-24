@@ -1,8 +1,10 @@
 module FreeCAD.Translator
 
 where
-import FreeCAD.Logic_FreeCAD
+import FreeCAD.As
 import Text.XML.Light
+import Data.Maybe
+import Data.Set as Set
 
 {-
 translate:: Maybe Element -> Document

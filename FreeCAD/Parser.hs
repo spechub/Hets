@@ -2,7 +2,9 @@ module FreeCAD.Parser
     where
 
 import System.IO
-import Translator
+import FreeCAD.Translator
+import Data.Maybe
+import Text.XML.Light.Input
 
 
 --the IO part of the program:--

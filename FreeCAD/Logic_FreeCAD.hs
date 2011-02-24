@@ -36,9 +36,6 @@ import Data.Typeable
 
 
 
-
-
-
 data FreeCAD = FreeCAD deriving Show
 
 instance Language FreeCAD where
