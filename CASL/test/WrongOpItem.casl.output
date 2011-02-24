@@ -1,8 +1,8 @@
-parse error at 1.15:
-unexpected "-"
-expecting "[", "%", ",", ";" or end of input
+parse error at 1.18:
+unexpected "c"
+expecting "{", "[", "__", "%", ",", ":" or "("
 
 parse error at 2.8:
 unexpected "=e=" or "="
-expecting casl char, "_", "[", "*", "->", "%", ",", ";" or end of input
+expecting casl char, "_", "[", "*", "->", "%", ",", ";", casl sign or id
 

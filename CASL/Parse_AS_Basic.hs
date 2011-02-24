@@ -26,7 +26,6 @@ import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import Common.Parsec
 
 import CASL.AS_Basic_CASL
 import CASL.Formula
@@ -94,7 +93,7 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
     return (Var_items vs (catRange (v : ps)))
   <|> do
     f <- forallT
-    (vs, ps) <- varDecl ks `separatedBy` anSemi
+    (vs, ps) <- varDecls ks
     a <- annos
     ai <- dotFormulae ks
     return (axiomToLocalVarAxioms ai a vs $ catRange (f : ps))
@@ -104,7 +103,7 @@ basicItems ks = fmap Ext_BASIC_ITEMS aparser <|> fmap Sig_items (sigItems ks)
 varItems :: [String] -> AParser st ([VAR_DECL], [Token])
 varItems ks =
     do v <- varDecl ks
-       do s <- try (addAnnos >> Common.Lexer.semiT) << addLineAnnos
+       do s <- trySemiOrComma
           do tryItemEnd (ks ++ startKeyword)
              return ([v], [s])
             <|> do

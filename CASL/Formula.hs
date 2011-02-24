@@ -51,6 +51,7 @@ module CASL.Formula
     , formula
     , anColon
     , varDecl
+    , varDecls
     , opSort
     , opFunSort
     , opType
@@ -201,10 +202,13 @@ quant = choice (map (\ (q, s) -> do
   , (Universal, forallS) ])
   <?> "quantifier"
 
+varDecls :: [String] -> AParser st ([VAR_DECL], [Token])
+varDecls ks = separatedBy (varDecl ks) anSemiOrComma
+
 quantFormula :: TermParser f => [String] -> AParser st (FORMULA f)
 quantFormula k = do
   (q, p) <- quant
-  (vs, ps) <- varDecl k `separatedBy` anSemi
+  (vs, ps) <- varDecls k
   d <- dotT
   f <- formula k
   return $ Quantification q vs f $ toRange p ps d

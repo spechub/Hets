@@ -38,7 +38,7 @@ import Data.List (sort)
 predHead :: [String] -> AParser st PRED_HEAD
 predHead ks =
     do o <- wrapAnnos oParenT
-       (vs, ps) <- varDecl ks `separatedBy` anSemi
+       (vs, ps) <- varDecls ks
        p <- addAnnos >> cParenT
        return $ Pred_head vs $ catRange (o : ps ++ [p])
 

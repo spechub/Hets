@@ -118,9 +118,9 @@ alternative ks =
 optComps :: [String] -> Id -> AParser st ALTERNATIVE
 optComps ks i = do
             o <- wrapAnnos oParenT
-            (cs, ps) <- component ks `separatedBy` anSemi
+            (cs, ps) <- component ks `separatedBy` anSemiOrComma
             c <- addAnnos >> cParenT
-            optQuMarkAlt i cs $ toRange o ps c
+            optQuMarkAlt i (concat cs) $ toRange o ps c
          <|> return (Alt_construct Total i [] nullRange)
 
 optQuMarkAlt :: Id -> [COMPONENTS] -> Range -> AParser st ALTERNATIVE
@@ -134,16 +134,16 @@ isSortId (Id is _ _) = case is of
                        [Token (c : _) _] -> caslLetters c
                        _ -> False
 
-component :: [String] -> AParser st COMPONENTS
+component :: [String] -> AParser st [COMPONENTS]
 component ks =
     do (is, cs) <- parseId ks `separatedBy` anComma
-       if isSingle is && isSortId (head is) then
-          compSort ks is cs <|> return (Sort (head is))
+       if all isSortId is then
+          compSort ks is cs <|> return (map Sort is)
           else compSort ks is cs
 
-compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
+compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st [COMPONENTS]
 compSort ks is cs =
     do c <- anColon
        (b, t, qs) <- opSort ks
        let p = catRange (cs ++ [c]) `appRange` qs
-       return $ Cons_select (if b then Partial else Total) is t p
+       return [Cons_select (if b then Partial else Total) is t p]

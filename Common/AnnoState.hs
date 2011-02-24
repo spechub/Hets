@@ -102,16 +102,6 @@ annos = addAnnos >> getAnnos
 lineAnnos :: AParser st [Annotation]
 lineAnnos = addLineAnnos >> getAnnos
 
--- | optional semicolon followed by annotations on consecutive lines
-optSemi :: AParser st ([Token], [Annotation])
-optSemi = do
-    (a1, s) <- try $ pair annos semiT
-    a2 <- lineAnnos
-    return ([s], a1 ++ a2)
-  <|> do
-    a <- lineAnnos
-    return ([], a)
-
 -- | succeeds if the previous item is finished
 tryItemEnd :: [String] -> AParser st ()
 tryItemEnd l = try $ do
@@ -175,7 +165,7 @@ itemAux startKeywords itemParser =
     do a <- itemParser
        (m, an) <- optSemi
        let r = return ([a], [], [an])
-       if null m then r else (tryItemEnd startKeywords >> r) <|>
+       (tryItemEnd startKeywords >> r) <|>
           do (ergs, ts, ans) <- itemAux startKeywords itemParser
              return (a : ergs, m ++ ts, an : ans)
 
@@ -188,11 +178,37 @@ asKey :: String -> AParser st Token
 asKey = wrapAnnos . pToken . toKey
 
 -- * annoted keywords
+
 anComma :: AParser st Token
-anComma = wrapAnnos Common.Lexer.commaT
+anComma = wrapAnnos commaT
 
 anSemi :: AParser st Token
-anSemi = wrapAnnos Common.Lexer.semiT
+anSemi = wrapAnnos semiT
+
+semiOrComma :: CharParser st Token
+semiOrComma = semiT <|> commaT
+
+anSemiOrComma :: AParser st Token
+anSemiOrComma = wrapAnnos semiOrComma << addLineAnnos
+
+-- | check for a semicolon beyond annotations
+trySemi :: AParser st Token
+trySemi = try $ addAnnos >> semiT
+
+-- | check for a semicolon or comma beyond annotations
+trySemiOrComma :: AParser st Token
+trySemiOrComma = try $ addAnnos >> semiOrComma
+
+-- | optional semicolon followed by annotations on consecutive lines
+optSemi :: AParser st ([Token], [Annotation])
+optSemi = do
+    s <- trySemi
+    a1 <- getAnnos
+    a2 <- lineAnnos
+    return ([s], a1 ++ a2)
+  <|> do
+    a <- lineAnnos
+    return ([], a)
 
 equalT :: AParser st Token
 equalT = wrapAnnos $ pToken $ reserved [exEqual]
