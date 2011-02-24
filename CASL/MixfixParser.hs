@@ -19,6 +19,7 @@ module CASL.MixfixParser
     , makeRules, Mix (..), emptyMix, extendMix
     , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM
     , ids_DATATYPE_DECL
+    , addIdToRules
     ) where
 
 import CASL.AS_Basic_CASL
@@ -153,6 +154,16 @@ singleArgId = mkId [exprTok, varTok]
 
 multiArgsId :: Id
 multiArgsId = mkId (exprTok : getPlainTokenList tupleId)
+
+addIdToRules :: Id -> (TokRules, Rules) -> (TokRules, Rules)
+addIdToRules i (tr, rs) =
+   (tr, let newSc = Set.union
+              (Set.fromList [mkSingleArgRule 1 i, mkArgsRule 1 i])
+              $ scanRules rs
+        in if begPlace i then
+            rs { postRules = Set.insert (mixRule 1 i) $ postRules rs
+               , scanRules = newSc }
+        else rs { scanRules = Set.insert (mixRule 1 i) newSc })
 
 -- | additional scan rules
 addRule :: GlobalAnnos -> [Rule] -> Bool -> IdSets -> TokRules

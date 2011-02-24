@@ -99,7 +99,8 @@ analysis! If such a non-simple identifier is globally unknown the analysis may
 reject valid terms. -}
 resolveTermExt :: MixResolve TermExt
 resolveTermExt ga ids te =
-  let rec = resolveMixTrm mapTermExt resolveTermExt ga ids
+  let recAux = resolveMixTrm mapTermExt resolveTermExt ga
+      rec = recAux ids
   in case te of
   FixDef fd -> fmap FixDef $ resolveFunDef ga ids fd
   Case o l r -> do
@@ -109,10 +110,9 @@ resolveTermExt ga ids te =
           (rec p)
           $ rec t) l
     return $ Case ro rl r
-  Let fd t r -> do
-    -- add function name for recursive mixfix analysis
+  Let fd@(FunDef o _ _ _) t r -> do
     rfd <- resolveFunDef ga ids fd
-    rt <- rec t
+    rt <- recAux (addIdToRules o ids) t
     return $ Let rfd rt r
   IfThenElse i t e r -> do
     ri <- rec i
@@ -128,7 +128,7 @@ resolveTermExt ga ids te =
 resolveFunDef :: MixResolve FunDef
 resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
   nt <- resolveMixTrm mapTermExt resolveTermExt ga
-    (extendRules (varDeclTokens vs) ids) $ item at
+    (addIdToRules o $ extendRules (varDeclTokens vs) ids) $ item at
   return $ FunDef o h (replaceAnnoted nt at) r
 
 funDefToOpDefn :: FunDef -> OP_ITEM TermExt
@@ -175,6 +175,9 @@ resolvePattern sign (resSort, term) =
     else err "wrong typed pattern"
   _ -> err "unexpected pattern"
 
+addFunToSign :: FunDef -> State FplSign ()
+addFunToSign (FunDef o h _ _) = addOp (emptyAnno o) (toOpType $ headToType h) o
+
 {- | perform overload resolution after mixfix analysis. The type of patterns
 is deduced from the top term. Overlapping or exhaustive patterns are not
 recognized yet. -}
@@ -216,11 +219,8 @@ minFplTerm sig te = case te of
             return (p, mkSorted sig t tSort r)) nl
          return $ Case ro fl r
       sl -> mkError ("no common supersort for case terms: " ++ show sl) r
-  Let fd@(FunDef o h _ _) t r -> do
-    let newSign = execState
-          (addOp (emptyAnno o)
-           (toOpType $ headToType h) o)
-          sig
+  Let fd t r -> do
+    let newSign = execState (addFunToSign fd) sig
     rfd <- minFunDef newSign fd
     rt <- oneExpTerm minFplTerm newSign t
     return $ Let rfd rt r
@@ -236,8 +236,8 @@ minFplTerm sig te = case te of
 
 -- | type check rhs and assume function to be in the signature
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
-minFunDef sig (FunDef o h@(Op_head _ vs s _) at r) = do
-  let newSign = execState (mapM_ addVars vs) sig
+minFunDef sig fd@(FunDef o h@(Op_head _ vs s _) at r) = do
+  let newSign = execState (mapM_ addVars vs >> addFunToSign fd) sig
   nt <- oneExpTerm minFplTerm newSign $ Sorted_term (item at) s r
   return $ FunDef o h (replaceAnnoted nt at) r
 
@@ -273,10 +273,10 @@ anaFplSortItem mix si = case si of
 
 anaFplOpItem :: Ana FplOpItem FplExt () TermExt SignExt
 anaFplOpItem mix oi = case oi of
-  FunOp (FunDef i oh@(Op_head _ vs r _) at ps) -> do
+  FunOp fd@(FunDef i oh@(Op_head _ vs r _) at ps) -> do
     let ty = headToType oh
         lb = getRLabel at
-    addOp (emptyAnno i) (toOpType ty) i
+    addFunToSign fd
     e <- get -- save
     put e { varMap = Map.empty }
     mapM_ addVars vs
@@ -327,15 +327,14 @@ simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
                 newSign = execState
                   (mapM_ (uncurry $ flip addVar) $ Set.toList vs) s
                 in (rec newSign p, rec newSign t)) l) r
-    Let fd@(FunDef o h _ _) t r ->
-      let newSign = execState (addOp (emptyAnno o) (toOpType $ headToType h) o)
-            s
+    Let fd t r ->
+      let newSign = execState (addFunToSign fd) s
       in Let (simplifyFunDef newSign fd)
             (rec newSign t) r
     IfThenElse f t e r -> IfThenElse (rec s f) (rec s t) (rec s e) r
     EqTerm t e r -> EqTerm (rec s t) (rec s e) r
 
 simplifyFunDef :: FplSign -> FunDef -> FunDef
-simplifyFunDef sig (FunDef o h@(Op_head _ vs _ _) at r) =
-   let newSign = execState (mapM_ addVars vs) sig
+simplifyFunDef sig fd@(FunDef o h@(Op_head _ vs _ _) at r) =
+   let newSign = execState (mapM_ addVars vs >> addFunToSign fd) sig
    in FunDef o h (fmap (simplifyTerm minFplTerm simplifyTermExt newSign) at) r
