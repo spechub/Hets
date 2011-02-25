@@ -9,9 +9,9 @@ ambiguous mixfix term
 *** Error 6.1-6.4, expected further mixfix token: ["(","(var )"]
 *** Error 7.1, unexpected mixfix token: (
 *** Error 8.13, unexpected mixfix token: ,
-*** Error 9.8-9.15, not a formula: (op a : b)
-*** Error 10.8-10.16, not a formula: (var a : b)
-*** Error 11.8-11.17, not a formula: (op a : b)(a)
+a when (op a : b) else b
+a when (var a : b) else b
+a when (op a : b)(a) else b
 *** Error 12.1-12.4,
 ambiguous mixfix term
   A__([__](a))

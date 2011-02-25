@@ -31,6 +31,7 @@ mapTermExt m te = let rec = mapTerm mapTermExt m in case te of
     Let fd t r -> Let (mapFunDef m fd) (rec t) r
     IfThenElse f t e r -> IfThenElse (rec f) (rec t) (rec e) r
     EqTerm t e r -> EqTerm (rec t) (rec e) r
+    BoolTerm t -> BoolTerm (rec t)
 
 mapFunDef :: FplMor -> FunDef -> FunDef
 mapFunDef m (FunDef i h@(Op_head _ vs s q) at r) =

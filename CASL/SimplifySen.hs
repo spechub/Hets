@@ -70,7 +70,8 @@ simplifySen minF simpF sign formula =
         let sign' = execState (addPred (emptyAnno ()) (toPredType ty) p) sign
         in QuantPred p ty $ simplifySen minF simpF sign' f
     f@(Sort_gen_ax _ _) -> f
-    _ -> error "simplifySen"
+    Mixfix_formula t -> Mixfix_formula (simplifyTermC t)
+    _ -> formula
     where
         simplifySenCall = simplifySen minF simpF sign
         simplifyTermC = simplifyTerm minF simpF sign

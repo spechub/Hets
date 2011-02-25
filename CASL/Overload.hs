@@ -133,6 +133,13 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
         Result (envDiags sign') $ Just ()
         f' <- minExpFORMULA mef sign' f
         return $ QuantPred p ty f'
+    Mixfix_formula term -> do
+       t <- oneExpTerm mef sign term
+       let Result ds mt = adjustPos (getRangeSpan term) $ termToFormula t
+       appendDiags ds
+       case mt of
+         Nothing -> mkError "not a formula" term
+         Just f -> return f
     _ -> return formula -- do not fail even for unresolved cases
 
 -- | test if a term can be uniquely resolved
@@ -215,20 +222,26 @@ minExpFORMULApred mef sign ide mty args pos = do
                    Nothing -> map (pSortBy predArgs sign)
                               $ Rel.leqClasses (leqP' sign) preds'
                    Just ty -> [[ty] | Set.member ty preds']
-    noOpOrPred preds "predicate" mty ide pos nargs
-    expansions <- mapM (minExpTerm mef sign) args
-    let getProfiles cs = map (getProfile cs) preds
-        getProfile cs ps = [ (pred', ts) |
+        boolAna l cmd = case mty of
+          Nothing | null l -> minExpFORMULA mef sign $ Mixfix_formula
+            $ Application (Op_name ide) args pos
+          _ -> cmd
+    boolAna preds $ do
+      noOpOrPred preds "predicate" mty ide pos nargs
+      expansions <- mapM (minExpTerm mef sign) args
+      let getProfiles cs = map (getProfile cs) preds
+          getProfile cs ps = [ (pred', ts) |
                              pred' <- ps,
                              ts <- cs,
                              and $ zipWith (leqSort sign)
                              (map sortOfTerm ts)
                              (predArgs pred') ]
-        qualForms = qualifyPreds ide pos
+          qualForms = qualifyPreds ide pos
                        $ concatMap (getProfiles . combine)
                        $ combine expansions
-    isUnambiguous (globAnnos sign)
-                       (Predication (Pred_name ide) args pos) qualForms pos
+      boolAna qualForms
+        $ isUnambiguous (globAnnos sign)
+              (Predication (Pred_name ide) args pos) qualForms pos
 
 qualifyPreds :: Id -> Range -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
 qualifyPreds ide = map . map . qualifyPred ide

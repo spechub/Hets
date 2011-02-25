@@ -113,6 +113,7 @@ data TermExt =
   | Let FunDef FplTerm Range
   | IfThenElse FplTerm FplTerm FplTerm Range
   | EqTerm FplTerm FplTerm Range
+  | BoolTerm FplTerm
   deriving (Show, Eq, Ord)
 
 instance Pretty TermExt where
@@ -128,6 +129,7 @@ instance Pretty TermExt where
              , keyword thenS <+> pretty d
              , keyword elseS <+> pretty e ]
     EqTerm t1 t2 r -> pretty $ Strong_equation t1 t2 r
+    BoolTerm f -> pretty f
 
 fplReservedWords :: [String]
 fplReservedWords = [barS, functS, caseS, ofS, letS]

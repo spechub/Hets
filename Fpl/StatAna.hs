@@ -88,6 +88,7 @@ mapTermExt te = let rec = mapTerm mapTermExt in case te of
   Let fd t r -> Let (mapFunDef fd) (rec t) r
   IfThenElse i t e r -> IfThenElse (rec i) (rec t) (rec e) r
   EqTerm t e r -> EqTerm (rec t) (rec e) r
+  BoolTerm t -> BoolTerm (rec t)
 
 -- | put parens around final term
 mapFunDef :: FunDef -> FunDef
@@ -127,6 +128,7 @@ resolveTermExt ga ids te =
     rt <- rec t
     re <- rec e
     return $ EqTerm rt re r
+  BoolTerm t -> fmap BoolTerm $ rec t
 
 -- | resolve overloading in rhs and assume function to be in the signature
 resolveFunDef :: MixResolve FunDef
@@ -234,6 +236,7 @@ minFplTerm sig te = case te of
     Strong_equation rt re _ <-
         minExpFORMULAeq minFplTerm sig Strong_equation t e r
     return $ EqTerm rt re r
+  BoolTerm t -> fmap BoolTerm $ oneExpTerm minFplTerm sig t
 
 -- | type check rhs and assume function to be in the signature
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
@@ -314,6 +317,7 @@ instance FreeVars TermExt where
     Let fd t _ -> Set.union (freeFunDefVars s fd) $ freeTermVars s t
     IfThenElse f t e _ -> Set.unions $ map (freeTermVars s) [f, t, e]
     EqTerm t e _ -> Set.unions $ map (freeTermVars s) [t, e]
+    BoolTerm t -> freeTermVars s t
 
 freeFunDefVars :: Sign TermExt e -> FunDef -> VarSet
 freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
@@ -324,8 +328,11 @@ instance TermExtension TermExt where
       Case _ ((_, t) : _) _ -> optTermSort t
       Let _ t _ -> optTermSort t
       IfThenElse _ t _ _ -> optTermSort t
-      EqTerm _ _ _ -> Just boolSort
-      _ -> Nothing
+      _ -> Nothing -- all others are formulas
+    termToFormula t = let s = sortOfTerm t in
+        if s == boolSort
+        then return $ ExtFORMULA $ BoolTerm t
+        else fail $ "expected boolean term but found sort: " ++ show s
 
 simplifyTermExt :: FplSign -> TermExt -> TermExt
 simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
@@ -343,6 +350,7 @@ simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
             (rec newSign t) r
     IfThenElse f t e r -> IfThenElse (rec s f) (rec s t) (rec s e) r
     EqTerm t e r -> EqTerm (rec s t) (rec s e) r
+    BoolTerm t -> BoolTerm (rec s t)
 
 simplifyFunDef :: FplSign -> FunDef -> FunDef
 simplifyFunDef sig fd@(FunDef o h@(Op_head _ vs _ _) at r) =

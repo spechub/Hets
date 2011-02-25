@@ -448,11 +448,13 @@ addOpTo k v m =
 -- | extract the sort from an analysed term
 class TermExtension f where
   optTermSort :: f -> Maybe SORT
+  optTermSort = const Nothing
   sortOfTerm :: f -> SORT
   sortOfTerm = fromMaybe (genName "unknown") . optTermSort
+  termToFormula :: TERM f -> Result (FORMULA f)
+  termToFormula = const $ Result [] Nothing
 
-instance TermExtension () where
-  optTermSort = const Nothing
+instance TermExtension ()
 
 instance TermExtension f => TermExtension (TERM f) where
   optTermSort = optSortOfTerm optTermSort

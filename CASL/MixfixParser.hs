@@ -417,9 +417,7 @@ resolveMixFrm par extR g ids frm =
                  Mixfix_term [Mixfix_qual_pred qide,
                               Mixfix_parenthesized ts ps] ->
                      return $ Predication qide ts ps
-                 _ -> fatal_error
-                        ("not a formula: " ++ showTerm par g tNew "")
-                        (getRangeSpan tNew)
+                 _ -> return $ Mixfix_formula tNew
        ExtFORMULA f ->
            do newF <- extR g ids f
               return $ ExtFORMULA newF
