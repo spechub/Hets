@@ -114,6 +114,9 @@ diffVars = Set.fold (\ (v, s) m -> case Map.lookup v m of
     Just t | t == s -> Map.delete v m
     _ -> m)
 
+warnUnusedVars :: String -> Sign f e -> VarSet -> [Diagnosis]
+warnUnusedVars msg sig = map (mkDiag Warning $ "unused" ++ msg ++ "variable")
+  . Map.keys . diffVars (varMap sig)
+
 warnUnused :: Sign f e -> [Named (FORMULA f)] -> [Diagnosis]
-warnUnused sig = map (mkDiag Warning "unused variable")
-  . Map.keys . diffVars (varMap sig) . getTopVars
+warnUnused sig = warnUnusedVars " " sig . getTopVars

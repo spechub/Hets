@@ -283,7 +283,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                   voidOps]
     addSentences [toSortGenNamed f sortList]
 
-ana_SIG_ITEMS :: (GetRange f, Pretty f, TermExtension f)
+ana_SIG_ITEMS :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> GenKind -> SIG_ITEMS s f
     -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix gk si =
@@ -307,7 +307,7 @@ ana_SIG_ITEMS mef anas mix gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix s
 
 -- helper
-ana_Generated :: (GetRange f, Pretty f, TermExtension f)
+ana_Generated :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> [Annoted (SIG_ITEMS s f)]
     -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef anas mix al = do
@@ -407,7 +407,7 @@ ana_SORT_ITEM mef mix sk asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: (GetRange f, Pretty f, TermExtension f)
+ana_OP_ITEM :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
   => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
     -> State (Sign f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM mef mix aoi =
@@ -445,6 +445,8 @@ ana_OP_ITEM mef mix aoi =
              Nothing -> return aoi { item = Op_decl [i] ty [] ps }
              Just (resT, anaT) -> do
                  let p = posOfId i
+                     tvs = freeTermVars sign anaT
+                 addDiags $ warnUnusedVars " local " sign tvs
                  addSentences [(makeNamed lab $ mkForall vs
                      (Strong_equation
                       (Application (Qual_op_name i ty p) arg ps)

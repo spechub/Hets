@@ -218,7 +218,6 @@ ops   a : b; %(bla4)%
 %(bla6)%
 vars  a : t; a, b : s
 
-%(bla8-ignored)%
 %(type)%
 type  t
       ::=
@@ -1604,9 +1603,15 @@ ambiguous term
 ### Warning 366.9, partially redeclared 'c'
 ### Hint 367.9, redeclared op 'a'
 ### Warning 367.9, new 'op a' is also known as 'var a'
+### Warning 368.11, unused local variable 'x'
+### Warning 368.13, unused local variable 'y'
+### Warning 368.17, unused local variable 'z'
 ### Warning 369.9, partially redeclared 'a'
 ### Warning 369.9, new 'op a' is also known as 'var a'
 ### Warning 370.9, partially redeclared 'c'
+### Warning 370.11, unused local variable 'x'
+### Warning 370.13, unused local variable 'y'
+### Warning 370.17, unused local variable 'z'
 ### Hint 373.12, redeclared sort 's'
 ### Hint 373.14, redeclared sort 't'
 ### Warning 374.11, new 'pred a' is also known as 'op a'

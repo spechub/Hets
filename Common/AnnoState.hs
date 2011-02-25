@@ -195,9 +195,9 @@ anSemiOrComma = wrapAnnos semiOrComma << addLineAnnos
 trySemi :: AParser st Token
 trySemi = try $ addAnnos >> semiT
 
--- | check for a semicolon or comma beyond annotations
+-- | check for a semicolon or comma beyond annotations and skip line annos
 trySemiOrComma :: AParser st Token
-trySemiOrComma = try $ addAnnos >> semiOrComma
+trySemiOrComma = try (addAnnos >> semiOrComma) << lineAnnos
 
 -- | optional semicolon followed by annotations on consecutive lines
 optSemi :: AParser st ([Token], [Annotation])
