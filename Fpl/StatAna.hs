@@ -270,11 +270,10 @@ anaFplSortItem mix si = case si of
     updateExtInfo $ \ cs -> foldM
       (\ e aa -> let a = item aa in if isConsAlt a then do
             let (c, ty, _) = getConsType s a
-            when (opKind ty == Partial)
-              $ appendDiags [mkDiag Warning "partial constructor" c]
             unless (Map.null cm)
-              $ if Set.member ty $ Map.findWithDefault Set.empty c cm then
-                appendDiags [mkDiag Warning "repeated constructor" c]
+              $ if Set.member (mkPartial ty)
+                    $ makePartial $ Map.findWithDefault Set.empty c cm
+                then appendDiags [mkDiag Warning "repeated constructor" c]
                 else mkError "illegal new constructor" c
             return e { constr = addOpTo c ty $ constr e }
       else mkError "unexpected subsort embedding" a) cs aalts
