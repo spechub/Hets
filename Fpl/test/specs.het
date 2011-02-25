@@ -16,10 +16,13 @@ spec SimpleRawTreeWithOp =
 
    . forall t1: Tree, t2 : Tree . eq(t1, t2) = true
 
-   . fun one(n : Nat) : Nat = one(n)
    var n1, n2 : Nat
+   . fun one(n : Nat) : Nat = one(n)
    . let fun two(m1, m2 : Nat) : Bool = two(m1, m2) in two(n1, n2) = true
    . let fun __onepost(n : Nat) : Bool = __onepost(n) in n1 onepost = true
    . let fun preone__(n : Nat) : Bool = preone n in preone__(n1) = true
    . let fun __two__(m1, m2 : Nat) : Bool = __two__(m1, m2) in n1 two n2 = true
    . let fun __two__(m1, m2 : Nat) : Bool = n1 two n2 in __two__(n1, n2) = true
+   . fun ;;(n : Nat) : Nat = ;;(n)
+   . fun ||(n : Nat) : Nat = ||(n)
+

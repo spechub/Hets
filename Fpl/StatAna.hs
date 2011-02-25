@@ -238,7 +238,10 @@ minFplTerm sig te = case te of
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
 minFunDef sig fd@(FunDef o h@(Op_head _ vs s _) at r) = do
   let newSign = execState (mapM_ addVars vs >> addFunToSign fd) sig
+      varSign = execState (mapM_ addVars vs) $ emptySign emptyFplSign
   nt <- oneExpTerm minFplTerm newSign $ Sorted_term (item at) s r
+  Result (warnUnusedVars " function " varSign $ freeTermVars newSign nt)
+    $ Just ()
   return $ FunDef o h (replaceAnnoted nt at) r
 
 getDDSorts :: [Annoted FplSortItem] -> [SORT]
