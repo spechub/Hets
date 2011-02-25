@@ -15,7 +15,11 @@ sort are not considered. Subsort embedding constructors are ignored.
 
 -}
 
-module Fpl.StatAna where
+module Fpl.StatAna
+  ( basicFplAnalysis
+  , minFplTerm
+  , simplifyTermExt
+  ) where
 
 import Fpl.As
 import Fpl.Sign
@@ -131,13 +135,11 @@ resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
     (addIdToRules o $ extendRules (varDeclTokens vs) ids) $ item at
   return $ FunDef o h (replaceAnnoted nt at) r
 
-funDefToOpDefn :: FunDef -> OP_ITEM TermExt
-funDefToOpDefn (FunDef o h nt r) = Op_defn o h nt r
-
-opDefnToFunDefn :: FunDef -> OP_ITEM TermExt -> FunDef
-opDefnToFunDefn def oi = case oi of
-  Op_defn o h nt r -> FunDef o h nt r
-  _ -> def
+-- | get constructors for input sort
+getConstrs :: FplSign -> SORT -> OpMap
+getConstrs sign resSort =
+  Map.map (Set.filter $ leqSort sign resSort . opRes)
+         $ constr $ extendedInfo sign
 
 {- | This functions tries to recognize variables in case-patterns (application
 terms) after overload resolution.  A current limitation is that a unique sort
@@ -148,15 +150,14 @@ resolvePattern sign (resSort, term) =
   case term of
   Application opSym args p ->
     let ide@(Id ts _ _) = opSymbName opSym in
-    case filter ( \ oTy@(OpType _ oArgs oRes) -> length oArgs == length args
-                    && (leqSort sign resSort oRes || leqSort sign oRes resSort)
+    case filter ( \ oTy -> length (opArgs oTy) == length args
                     && case opSym of
                          Qual_op_name _ symTy _ ->
                              leqF sign oTy $ toOpType symTy
                          _ -> True
                     )
          $ Set.toList $ Map.findWithDefault Set.empty ide
-         $ constr $ extendedInfo sign of
+         $ getConstrs sign resSort of
       [] -> if null args && isSimpleId ide then
                 let v = Var_decl [head ts] resSort $ posOfId ide
                 in return ([v], toQualVar v)
