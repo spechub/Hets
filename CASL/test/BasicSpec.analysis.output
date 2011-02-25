@@ -218,6 +218,7 @@ ops   a : b; %(bla4)%
 %(bla6)%
 vars  a : t; a, b : s
 
+%(bla8-ignored)%
 %(type)%
 type  t
       ::=
