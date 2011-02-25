@@ -326,6 +326,8 @@ instance TermExtension TermExt where
       Case _ ((_, t) : _) _ -> optTermSort t
       Let _ t _ -> optTermSort t
       IfThenElse _ t _ _ -> optTermSort t
+      EqTerm _ _ _ -> Just boolSort
+      BoolTerm t -> optTermSort t
       _ -> Nothing -- all others are formulas
   termToFormula t = let s = sortOfTerm t in
         if s == boolSort
