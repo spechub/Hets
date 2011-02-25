@@ -37,7 +37,5 @@
   %include NEG2CPLPF.
   %include IMP2CPLPF.
   %include CONJ2CPLPF.
-  %include DISJ2CPLPF. 
+  %include DISJ2CPLPF.
 }.
-  
-  

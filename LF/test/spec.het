@@ -10,7 +10,7 @@ spec SP1 =
   . ded q
 end
 
-spec SP2 = 
+spec SP2 =
   o : type.
   p : o.
   a : o = p.
@@ -21,11 +21,11 @@ spec SP = SP1 and SP2
 
 spec SP' = SP then
   b : o.
-  
+
   .ded b
 end
 
-spec SP3 = 
+spec SP3 =
 nat : type.
 t : nat.
 l : nat.

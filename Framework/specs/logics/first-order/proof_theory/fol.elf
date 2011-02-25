@@ -19,5 +19,6 @@
   !=  = [x][y] not (x == y).     %infix none 30 !=.
   |-  = [x] ded x.               %prefix 0 |-.
 }.
-%view FOL2FOLPF : FOL -> FOLPF = {
+
+%view FOL2FOLPF : FOL -> FOLPF = {
 }.
