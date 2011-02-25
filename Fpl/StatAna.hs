@@ -137,8 +137,8 @@ resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
 
 -- | get constructors for input sort
 getConstrs :: FplSign -> SORT -> OpMap
-getConstrs sign resSort =
-  Map.map (Set.filter $ leqSort sign resSort . opRes)
+getConstrs sign resSort = Map.filter (not . Set.null)
+  $ Map.map (Set.filter $ leqSort sign resSort . opRes)
          $ constr $ extendedInfo sign
 
 {- | This functions tries to recognize variables in case-patterns (application
@@ -191,7 +191,7 @@ minFplTerm sig te = case te of
     let s = sortOfTerm ro
     rl <- mapM (\ (p, t) -> do
           (vs, np) <- resolvePattern sig (s, p)
-          Result (checkUniqueness . map fst $ flatVAR_DECLs vs) $ Just ()
+          appendDiags $ checkUniqueness . map fst $ flatVAR_DECLs vs
           let newSign = execState (mapM_ addVars vs) sig
           rt <- minExpTerm minFplTerm newSign t
           return (np, rt)) l
@@ -215,8 +215,8 @@ minFplTerm sig te = case te of
                 tvs = freeTermVars sig t
                 unused = Set.difference pvs tvs
             unless (Set.null unused) $
-              Result (map (mkDiag Warning "unused pattern variables")
-                     $ Set.toList unused) $ Just ()
+              appendDiags $ map (mkDiag Warning "unused pattern variables")
+                     $ Set.toList unused
             return (p, mkSorted sig t tSort r)) nl
          return $ Case ro fl r
       sl -> mkError ("no common supersort for case terms: " ++ show sl) r
@@ -241,8 +241,7 @@ minFunDef sig fd@(FunDef o h@(Op_head _ vs s _) at r) = do
   let newSign = execState (mapM_ addVars vs >> addFunToSign fd) sig
       varSign = execState (mapM_ addVars vs) $ emptySign emptyFplSign
   nt <- oneExpTerm minFplTerm newSign $ Sorted_term (item at) s r
-  Result (warnUnusedVars " function " varSign $ freeTermVars newSign nt)
-    $ Just ()
+  appendDiags $ warnUnusedVars " function " varSign $ freeTermVars newSign nt
   return $ FunDef o h (replaceAnnoted nt at) r
 
 getDDSorts :: [Annoted FplSortItem] -> [SORT]
@@ -266,11 +265,19 @@ anaFplSortItem :: Ana FplSortItem FplExt () TermExt SignExt
 anaFplSortItem mix si = case si of
   FreeType dt@(Datatype_decl s aalts _) -> do
     ana_DATATYPE_DECL Free dt
-    updateExtInfo $ \ cs -> return $ foldr
-      (\ aa e -> let a = item aa in if isConsAlt a then
-      let (c, ty, _) = getConsType s a in
-            e { constr = addOpTo c ty $ constr e }
-      else e) cs aalts
+    sign <- get
+    let cm = getConstrs sign s
+    updateExtInfo $ \ cs -> foldM
+      (\ e aa -> let a = item aa in if isConsAlt a then do
+            let (c, ty, _) = getConsType s a
+            when (opKind ty == Partial)
+              $ appendDiags [mkDiag Warning "partial constructor" c]
+            unless (Map.null cm)
+              $ if Set.member ty $ Map.findWithDefault Set.empty c cm then
+                appendDiags [mkDiag Warning "repeated constructor" c]
+                else mkError "illegal new constructor" c
+            return e { constr = addOpTo c ty $ constr e }
+      else mkError "unexpected subsort embedding" a) cs aalts
     return si
   CaslSortItem s -> fmap (CaslSortItem . item)
     $ ana_SORT_ITEM minFplTerm mix NonEmptySorts $ emptyAnno s
