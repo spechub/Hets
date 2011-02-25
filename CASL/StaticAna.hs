@@ -157,7 +157,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: (GetRange f, Pretty f, TermExtension f, FreeVars f) => Min f e
+ana_BASIC_SPEC :: (GetRange f, Pretty f, TermExtension f) => Min f e
                -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
@@ -172,7 +172,7 @@ unionGenAx = foldr (\ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
+ana_BASIC_ITEMS :: (GetRange f, Pretty f, TermExtension f)
   => Min f e -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
     -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS mef ab anas mix bi =
@@ -283,7 +283,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                   voidOps]
     addSentences [toSortGenNamed f sortList]
 
-ana_SIG_ITEMS :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
+ana_SIG_ITEMS :: (GetRange f, Pretty f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> GenKind -> SIG_ITEMS s f
     -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix gk si =
@@ -307,7 +307,7 @@ ana_SIG_ITEMS mef anas mix gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix s
 
 -- helper
-ana_Generated :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
+ana_Generated :: (GetRange f, Pretty f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> [Annoted (SIG_ITEMS s f)]
     -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef anas mix al = do
@@ -407,7 +407,7 @@ ana_SORT_ITEM mef mix sk asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
+ana_OP_ITEM :: (GetRange f, Pretty f, TermExtension f)
   => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
     -> State (Sign f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM mef mix aoi =
@@ -839,7 +839,7 @@ anaTerm mef mixIn sign srt pos t = do
     anaT <- oneExpTerm mef sign $ Sorted_term resT srt pos
     return (resT, anaT)
 
-basicAnalysis :: (GetRange f, Pretty f, TermExtension f, FreeVars f)
+basicAnalysis :: (GetRange f, Pretty f, TermExtension f)
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s

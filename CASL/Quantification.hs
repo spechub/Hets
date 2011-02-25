@@ -29,8 +29,6 @@ import qualified Data.Map as Map
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
 flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)
 
-type VarSet = Set.Set (VAR, SORT)
-
 freeVarsRecord :: (f -> VarSet) -> Record f VarSet VarSet
 freeVarsRecord mf = (constRecord mf Set.unions Set.empty)
     { foldQual_var = \ _ v s _ -> Set.singleton (v, s)
@@ -39,22 +37,14 @@ freeVarsRecord mf = (constRecord mf Set.unions Set.empty)
                     Set.fromList $ flatVAR_DECLs vdecl
     }
 
-{- | The input signature is (currently only) used for statements in the
-VSE logic. -}
-class FreeVars f where
-  freeVarsOfExt :: Sign f e -> f -> VarSet
-
-instance FreeVars () where
-  freeVarsOfExt _ () = Set.empty
-
-freeTermVars :: FreeVars f => Sign f e -> TERM f -> VarSet
+freeTermVars :: TermExtension f => Sign f e -> TERM f -> VarSet
 freeTermVars = foldTerm . freeVarsRecord . freeVarsOfExt
 
-freeVars :: FreeVars f => Sign f e -> FORMULA f -> VarSet
+freeVars :: TermExtension f => Sign f e -> FORMULA f -> VarSet
 freeVars = foldFormula . freeVarsRecord . freeVarsOfExt
 
 -- | quantify only over free variables (and only once)
-effQuantify :: FreeVars f => Sign f e -> QUANTIFIER -> [VAR_DECL]
+effQuantify :: TermExtension f => Sign f e -> QUANTIFIER -> [VAR_DECL]
             -> FORMULA f -> Range -> FORMULA f
 effQuantify sign q vdecls phi pos =
     let flatVAR_DECL (Var_decl vs s ps) =
@@ -77,7 +67,7 @@ effQuantify sign q vdecls phi pos =
                    Quantification q newDecls phi pos
 
 
-stripRecord :: FreeVars f => Sign f e -> (f -> f)
+stripRecord :: TermExtension f => Sign f e -> (f -> f)
             -> Record f (FORMULA f) (TERM f)
 stripRecord s mf = (mapRecord mf)
     { foldQuantification = \ _ quant vdecl newF pos ->
@@ -90,7 +80,7 @@ stripRecord s mf = (mapRecord mf)
     }
 
 -- | strip superfluous (or nested) quantifications
-stripQuant :: FreeVars f => Sign f e -> FORMULA f -> FORMULA f
+stripQuant :: TermExtension f => Sign f e -> FORMULA f -> FORMULA f
 stripQuant s = foldFormula $ stripRecord s id
 
 -- | strip all universal quantifications

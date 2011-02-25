@@ -23,7 +23,6 @@ import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import CASL.Quantification
 
 import VSE.Logic_VSE
 import VSE.As
@@ -882,7 +881,7 @@ mapCASLSenAux f = case f of
            Conjunction restrs  nullRange)
              vars
      let sen' = Conjunction
-                 [(foldr1 (\ sen1 sen2 -> Conjunction [sen1,sen2] nullRange) h),
+                 [foldr1 (\ sen1 sen2 -> Conjunction [sen1,sen2] nullRange) h,
                  trSen] nullRange
      return $ Quantification q vars sen' nullRange
     Unique_existential -> fail "nyi Unique_existential"

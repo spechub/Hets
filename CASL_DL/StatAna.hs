@@ -45,15 +45,12 @@ import Common.Result
 import Common.ConvertLiteral
 import Common.ExtSign
 
-instance FreeVars DL_FORMULA where
+instance TermExtension DL_FORMULA where
     freeVarsOfExt sign (Cardinality _ _ t1 t2 mf _) =
         Set.union (freeTermVars sign t1) $ Set.union (freeTermVars sign t2)
            $ case mf of
                Nothing -> Set.empty
                Just f -> freeVars sign f
-
-instance TermExtension DL_FORMULA where
-    optTermSort = const Nothing
 
 basicCASL_DLAnalysis
     :: (BASIC_SPEC () () DL_FORMULA, Sign DL_FORMULA CASL_DLSign, GlobalAnnos)

@@ -445,12 +445,22 @@ addOpTo k v m =
     let l = Map.findWithDefault Set.empty k m
     in Map.insert k (Set.insert v l) m
 
--- | extract the sort from an analysed term
+type VarSet = Set.Set (VAR, SORT)
+
+{- | extract the sort and free variables from an analysed term. The input
+signature for free variables is (currently only) used for statements in the
+VSE logic. The conversion for boolean terms to formulas is only used for FPL.
+-}
 class TermExtension f where
+  freeVarsOfExt :: Sign f e -> f -> VarSet
+  freeVarsOfExt _ = const Set.empty
+
   optTermSort :: f -> Maybe SORT
   optTermSort = const Nothing
+
   sortOfTerm :: f -> SORT
   sortOfTerm = fromMaybe (genName "unknown") . optTermSort
+
   termToFormula :: TERM f -> Result (FORMULA f)
   termToFormula = const $ Result [] Nothing
 

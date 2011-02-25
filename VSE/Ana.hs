@@ -568,11 +568,8 @@ freeDlVars sig (Ranged f _) = case f of
 instance GetRange (Ranged a) where
   getRange (Ranged _ r) = r
 
-instance FreeVars Dlformula where
-  freeVarsOfExt = freeDlVars
-
 instance TermExtension Dlformula where
-  optTermSort = const Nothing
+  freeVarsOfExt = freeDlVars
 
 -- | adjust procs map in morphism target signature
 correctTarget :: Morphism f Procs VSEMorExt -> Morphism f Procs VSEMorExt

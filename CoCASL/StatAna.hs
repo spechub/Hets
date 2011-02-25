@@ -42,13 +42,10 @@ import Data.List (partition)
 
 type CSign = Sign C_FORMULA CoCASLSign
 
-instance FreeVars C_FORMULA where
+instance TermExtension C_FORMULA where
     freeVarsOfExt sign cf = case cf of
        BoxOrDiamond _ _ f _ -> freeVars sign f
        _ -> Set.empty
-
-instance TermExtension C_FORMULA where
-    optTermSort = const Nothing
 
 basicCoCASLAnalysis
   :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,

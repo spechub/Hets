@@ -308,8 +308,11 @@ anaFplOpItem mix oi = case oi of
   CaslOpItem o -> fmap (CaslOpItem . item)
     $ ana_OP_ITEM minFplTerm mix (emptyAnno o)
 
--- free variables or only extracted from analysed terms
-instance FreeVars TermExt where
+freeFunDefVars :: Sign TermExt e -> FunDef -> VarSet
+freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
+  (freeTermVars s $ item at) $ Set.fromList $ flatVAR_DECLs vs
+
+instance TermExtension TermExt where
   freeVarsOfExt s te = case te of
     FixDef fd -> freeFunDefVars s fd
     Case o l _ -> Set.unions $ freeTermVars s o
@@ -319,17 +322,12 @@ instance FreeVars TermExt where
     EqTerm t e _ -> Set.unions $ map (freeTermVars s) [t, e]
     BoolTerm t -> freeTermVars s t
 
-freeFunDefVars :: Sign TermExt e -> FunDef -> VarSet
-freeFunDefVars s (FunDef _ (Op_head _ vs _ _) at _) = Set.difference
-  (freeTermVars s $ item at) $ Set.fromList $ flatVAR_DECLs vs
-
-instance TermExtension TermExt where
-    optTermSort te = case te of
+  optTermSort te = case te of
       Case _ ((_, t) : _) _ -> optTermSort t
       Let _ t _ -> optTermSort t
       IfThenElse _ t _ _ -> optTermSort t
       _ -> Nothing -- all others are formulas
-    termToFormula t = let s = sortOfTerm t in
+  termToFormula t = let s = sortOfTerm t in
         if s == boolSort
         then return $ ExtFORMULA $ BoolTerm t
         else fail $ "expected boolean term but found sort: " ++ show s

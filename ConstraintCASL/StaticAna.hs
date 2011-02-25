@@ -20,12 +20,10 @@ import CASL.StaticAna
 import CASL.Sign
 import CASL.Morphism
 import CASL.MixfixParser
-import CASL.Quantification
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
-import qualified Data.Set as Set
 
 type ConstraintCASLSign = Sign ConstraintFORMULA ()
 type ConstraintCASLMor = Morphism ConstraintFORMULA () ()
@@ -38,8 +36,4 @@ basicConstraintCASLAnalysis
 basicConstraintCASLAnalysis =
     basicAnalysis (const return) (const return) (const return) emptyMix
 
-instance FreeVars ConstraintFORMULA where
-    freeVarsOfExt _ _ = Set.empty
-
-instance TermExtension ConstraintFORMULA where
-    optTermSort = const Nothing
+instance TermExtension ConstraintFORMULA

@@ -35,7 +35,7 @@ import Common.Result
 import Common.ExtSign
 import qualified Data.List as List
 
-instance FreeVars EM_FORMULA where
+instance TermExtension EM_FORMULA where
         freeVarsOfExt sign ( BoxOrDiamond _ _ _ _ f _ ) = freeVars sign f
         freeVarsOfExt sign ( Hybrid _ _ f _ ) = freeVars sign f
         freeVarsOfExt sign ( UntilSince _ f1 f2 _ ) = Set.union
@@ -44,9 +44,6 @@ instance FreeVars EM_FORMULA where
         freeVarsOfExt sign ( StateQuantification _ _ f _ ) = freeVars sign f
         freeVarsOfExt sign ( NextY _ f _ ) = freeVars sign f
         freeVarsOfExt sign ( FixedPoint _ _ f _ ) = freeVars sign f
-
-instance TermExtension EM_FORMULA where
-    optTermSort = const Nothing
 
 basicEModalAnalysis
         :: (BASIC_SPEC EM_BASIC_ITEM EM_SIG_ITEM EM_FORMULA
