@@ -525,7 +525,8 @@ class MonadIO m => CompareIO m where
     logMessage _ = return ()
 
 rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
-rangeCmp x y = liftM tripleFst $ rangeFullCmp x y
+rangeCmp x y = liftM fst3 $ rangeFullCmp x y where
+    fst3 (a, _, _) = a
 
 type SmtComparer = ReaderT VarEnv IO
 

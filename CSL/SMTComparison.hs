@@ -19,7 +19,13 @@ There is also the yices-easy hackage entry which uses the C-API of yices.
 This could be an alternative if speed and robustness will be a problem.
 -}
 
-module CSL.SMTComparison where
+module CSL.SMTComparison
+    ( smtCompare
+    , smtCheck
+    , smtCheck'
+    , VarEnv(..)
+    , VarMap
+    ) where
 
 
 import Control.Monad
@@ -45,6 +51,7 @@ data VarEnv = VarEnv { varmap :: VarMap
                      , vartypes :: VarTypes
                      , loghandle :: Maybe Handle }
 
+{-
 emptyVarEnv :: Maybe Handle -> VarEnv
 emptyVarEnv mHdl =  VarEnv { varmap = Map.empty
                            , vartypes = Map.empty
@@ -76,6 +83,8 @@ smtVarDef m =
     unlines
     $ smtGenericVars m (\ i -> let j = show i
                                in concat ["(define x", j, "::t", j, ")"])
+-}
+
 
 smtVars :: VarEnv -> String -> [String]
 smtVars m s = smtGenericVars m ((s++) . show)
@@ -121,13 +130,14 @@ smtAllScripts m r1 r2 =
 smtScriptHead :: VarEnv -> BoolRep -> BoolRep -> String
 smtScriptHead = smtScriptHead'
 
+{-
 smtScriptHeadOrig :: VarEnv -> BoolRep -> BoolRep -> String
 smtScriptHeadOrig m r1 r2 =
     unlines [ smtTypeDef m
             , smtPredDef m "A" r1
             , smtPredDef m "B" r2
             , smtVarDef m ]
-    
+
 smtGenericScript :: VarEnv -> (VarEnv -> String -> String -> String)
                  -> BoolRep -> BoolRep -> String
 smtGenericScript m f r1 r2 = smtScriptHead m r1 r2 ++ "\n" ++ f m "A" "B"
@@ -140,6 +150,8 @@ smtLEScript m r1 r2 = smtGenericScript m smtLEStmt r1 r2
 
 smtDisjScript :: VarEnv -> BoolRep -> BoolRep -> String
 smtDisjScript m r1 r2 = smtGenericScript m smtDisjStmt r1 r2
+
+-}
 
 data SMTStatus = Sat | Unsat deriving (Show, Eq)
 
@@ -161,9 +173,6 @@ smtStatusCompareTable l =
       [Sat, Sat, Sat, Unsat] -> (Incomparable Disjoint, False, False)
       [Sat, Sat, Sat, Sat] -> (Incomparable Overlap, False, False)
       x -> error $ "smtStatusCompareTable: malformed status " ++ show x
-
-tripleFst :: (a, b, c) -> a
-tripleFst (x, _, _) = x
 
 smtCompare :: VarEnv -> BoolRep -> BoolRep -> IO (EPCompare, Bool, Bool)
 smtCompare m r1 r2 = liftM smtStatusCompareTable $ smtCheck m r1 r2

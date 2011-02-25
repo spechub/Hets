@@ -45,6 +45,7 @@ module CSL.AS_BASIC_CSL
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
     , mkAndAnalyzeOp
+    , mkAndAnalyzeOp'
     , toElimConst         -- Constant naming for elim constants, see Analysis.hs
     , OpInfo (..)         -- Type for Operator information
     , BindInfo (..)       -- Type for Binder information
@@ -80,7 +81,6 @@ import qualified Data.Map as Map
 import Control.Monad
 import Control.Monad.Reader
 
-import Data.Maybe
 import Ratio
 import Numeric
 
@@ -106,36 +106,33 @@ mkVar = Var . mkSimpleId
 mkPredefOp :: OPNAME -> [EXPRESSION] -> EXPRESSION
 mkPredefOp n el = Op (OpId n) [] el nullRange
 
--- | Lookup the string in the given 'OperatorState'
 mkAndAnalyzeOp :: OperatorState st => st -> String -> [EXTPARAM] -> [EXPRESSION]
                -> Range -> EXPRESSION
-mkAndAnalyzeOp st s eps exps rg =
-    let err msg = "mkAndAnalyzeOp: At operator " ++ s ++ "\n" ++ msg
-        -- an error-message producing function
-        g msg | not $ null eps = Just $ err msg
-                                 ++ "* No extended parameters allowed\n"
-              | null msg = Nothing
-              | otherwise = Just $ err msg
-        opOrErr mOp x = case x of
-                          Just msg -> error msg
-                          _ -> let oi = fromJust mOp
-                               in (foldNAry oi, OpId $ opname oi)
-        (fnary, op) =
-            case lookupOperator st s (length exps) of
-               Left False -> (False, OpUser $ SimpleConstant s)
-               -- if registered it must be registered with the given arity or
-               -- as flex-op, otherwise we don't accept it
-               Left True -> opOrErr Nothing $ g "* Wrong arity\n"
-               Right opinfo -> opOrErr (Just opinfo) $ g ""
-        e | fnary && length exps > 2 =
-              if null eps
-              then foldl f (f (exps!!0) (exps!!1)) $ drop 2 exps
-              else error $ "mkAndAnalyzeOp: cannot fold application with "
-                       ++ "extended parameters "
-                       ++ show (pretty $ Op op eps exps rg)
-          | otherwise = Op op eps exps rg
-        f e' e'' = Op op [] [e', e''] rg
-    in e
+
+mkAndAnalyzeOp st s eps exps rg = either f g $ mkAndAnalyzeOp' st s eps exps rg
+    where f = error
+          g e = e
+
+foldNaryToBinary :: OPID -> Range -> [EXPRESSION] -> EXPRESSION
+foldNaryToBinary op rg exps = foldl f (f (exps!!0) (exps!!1)) $ drop 2 exps
+    where f e' e'' = Op op [] [e', e''] rg
+
+-- | Lookup the string in the given 'OperatorState'
+mkAndAnalyzeOp' :: OperatorState st => st -> String -> [EXTPARAM] -> [EXPRESSION]
+               -> Range -> Either String EXPRESSION
+mkAndAnalyzeOp' st s eps exps rg =
+    case lookupOperator st s (length exps) of
+      Left False -> f $ OpUser $ SimpleConstant s
+      -- if registered it must be registered with the given arity or
+      -- as flex-op, otherwise we don't accept it
+      Left True -> Left "Wrong arity"
+      Right oi
+          | null eps ->
+              if foldNAry oi && length exps > 2
+              then Right $ foldNaryToBinary (OpId $ opname oi) rg exps
+              else f $ OpId $ opname oi
+          | otherwise -> Left "No extended parameters allowed"
+    where f op = Right $ Op op eps exps rg
 
 
 mapExpr :: (EXPRESSION -> EXPRESSION) -> EXPRESSION -> EXPRESSION

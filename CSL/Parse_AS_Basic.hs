@@ -19,6 +19,8 @@ import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
 import Common.Parsec
+import Common.Doc
+import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 
 import Numeric
@@ -166,16 +168,17 @@ expatom = try signednumberExp <|> (oParenT >> plusmin << cParenT)
           <|> listexp <|> intervalexp <|> expsymbol
 
 expsymbol :: OperatorState st => CharParser st EXPRESSION
-expsymbol =
-    do
-      ident <- prefixidentifier  -- EXTENDED
-      ep <- option ([],[])
-            $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
-      exps <- option ([],[])
-              $ oParenT >> Lexer.separatedBy formulaorexpression pComma
-                    << cParenT
-      st <- getState
-      return $ mkAndAnalyzeOp st (tokStr ident) (fst ep) (fst exps) nullRange
+expsymbol = do
+  ident <- prefixidentifier  -- EXTENDED
+  ep <- option ([],[])
+        $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
+  exps <- option ([],[])
+          $ oParenT >> Lexer.separatedBy formulaorexpression pComma << cParenT
+  st <- getState
+  case mkAndAnalyzeOp' st (tokStr ident) (fst ep) (fst exps) $ getRange ident of
+    Left s -> parseError $ "expsymbol at op " ++ (tokStr ident)
+              ++ show (parens $ pretty $ fst exps) ++ ": " ++ s
+    Right e -> return e
 
 
 -- | parses a list expression
