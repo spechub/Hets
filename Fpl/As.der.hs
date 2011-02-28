@@ -35,6 +35,7 @@ import CASL.OpItem
 import CASL.ToDoc
 
 import Data.List (delete)
+import Data.Maybe (isNothing)
 
 type FplBasicSpec = BASIC_SPEC FplExt () TermExt
 
@@ -98,11 +99,12 @@ kindHead :: OpKind -> OP_HEAD -> OP_HEAD
 kindHead k (Op_head _ args r ps) = Op_head k args r ps
 
 instance Pretty FunDef where
-  pretty (FunDef i h@(Op_head _ l _ _) t _) =
-    sep [keyword functS
-      , sep [ (if null l then sep else cat)
-              [idLabelDoc i, pretty $ kindHead Total h]
-            , equals <+> printAnnoted pretty t]]
+  pretty (FunDef i h@(Op_head _ l ms _) t _) =
+    let di = idLabelDoc i
+        et = equals <+> printAnnoted pretty t
+    in sep $ if isNothing ms && null l then [di, et] else
+      [keyword functS,
+      sep [(if null l then sep else cat) [di, pretty $ kindHead Total h], et]]
 
 {- | extra terms of FPL. if-then-else must use a term as guard with result
 sort @Bool@. To allow @true@, @false@ and an equality test an extra term
@@ -192,10 +194,19 @@ patTermPair ks = do
   t <- eqTerm ks
   return (p, t)
 
+letVar :: [String] -> AParser st FunDef
+letVar ks = do
+  v <- varId ks
+  e <- equalT
+  a <- annos
+  t <- eqTerm ks
+  return $ FunDef (simpleIdToId v) (Op_head Partial [] Nothing nullRange)
+    (Annoted t nullRange a []) $ tokPos e
+
 letTerm :: [String] -> AParser st TermExt
 letTerm ks = do
   l <- asKey letS
-  d <- funDef ks
+  d <- funDef ks <|> letVar ks
   i <- asKey inS
   t <- term ks
   return $ Let d t $ toRange l [] i
@@ -220,7 +231,6 @@ fplExt ks = itemList ks sortS fplSortItem FplSortItems
   <|> ((pluralKeyword typeS <|> pluralKeyword predS
       <|> asKey generatedS <|> asKey freeS)
        >>= \ k -> unexpected $ "CASL keyword '" ++ shows k "'")
-
 
 fplSortItem :: [String] -> AParser st FplSortItem
 fplSortItem ks = do

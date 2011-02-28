@@ -84,7 +84,7 @@ args_OP_TYPE (Op_type _ args _ _) = args
 res_OP_TYPE :: OP_TYPE -> SORT
 res_OP_TYPE (Op_type _ _ res _) = res
 
-data OP_HEAD = Op_head OpKind [VAR_DECL] SORT Range
+data OP_HEAD = Op_head OpKind [VAR_DECL] (Maybe SORT) Range
                -- pos: "(", semicolons, ")", colon
                deriving (Show, Eq, Ord)
 

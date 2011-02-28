@@ -212,9 +212,10 @@ instance Pretty f => Pretty (OP_ATTR f) where
     pretty = printAttr pretty
 
 printOpHead :: OP_HEAD -> Doc
-printOpHead (Op_head k l r _) =
-    sep $ (if null l then [] else [printArgDecls l]) ++
-         [ (case k of
+printOpHead (Op_head k l mr _) =
+    sep $ (if null l then [] else [printArgDecls l]) ++ case mr of
+      Nothing -> []
+      Just r -> [(case k of
              Total -> colon
              Partial -> text colonQuMark) <+> idDoc r]
 

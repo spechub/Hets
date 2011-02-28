@@ -127,9 +127,9 @@ ana_M_SIG_ITEM mix mi =
                Rigid -> mapM_ (\ aoi -> case item aoi of
                    Op_decl ops ty _ _ ->
                        mapM_ (updateExtInfo . addRigidOp (toOpType ty)) ops
-                   Op_defn i par _ _ ->
-                       updateExtInfo $ addRigidOp (toOpType $ headToType par)
-                                i ) ul
+                   Op_defn i par _ _ -> maybe (return ())
+                       (\ ty -> updateExtInfo $ addRigidOp (toOpType ty) i)
+                       $ headToType par) ul
                _ -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps ->

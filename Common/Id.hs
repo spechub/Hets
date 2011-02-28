@@ -386,6 +386,11 @@ isSimpleId (Id ts cs _) = null cs && case ts of
     [t] -> isSimpleToken t
     _ -> False
 
+idToSimpleId :: Id -> Token
+idToSimpleId i = case i of
+  Id [t] [] _ -> t
+  _ -> error $ "idToSimpleId: " ++ show i
+
 -- ** fixity stuff
 
 -- | number of 'place' in 'Id'

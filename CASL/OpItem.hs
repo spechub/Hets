@@ -45,10 +45,12 @@ predHead ks =
 opHead :: [String] -> AParser st OP_HEAD
 opHead ks =
     do Pred_head vs ps <- predHead ks
-       c <- anColon
-       (b, s, qs) <- opSort ks
-       return $ Op_head (if b then Partial else Total) vs s
+       do
+         c <- anColon
+         (b, s, qs) <- opSort ks
+         return $ Op_head (if b then Partial else Total) vs (Just s)
               (ps `appRange` tokPos c `appRange` qs)
+        <|> return (Op_head Partial vs Nothing ps)
 
 opAttr :: TermParser f => [String] -> AParser st (OP_ATTR f, Token)
 opAttr ks = choice
@@ -67,10 +69,11 @@ opItem ks = do
           c <- anColon
           t@(Op_type k args s ps) <- opType ks
           case args of
-            [] -> opBody ks o (Op_head k [] s $ appRange ps $ tokPos c)
+            [] -> opBody ks o (Op_head k [] (Just s) $ appRange ps $ tokPos c)
               <|> opAttrs ks os t [c]  -- this always succeeds
             _ -> opAttrs ks os t [c]
         <|> (opHead ks >>= opBody ks o)
+        -- require sort: <|> opBody ks o (Op_head Partial [] Nothing nullRange)
       _ -> do
         c <- anColon
         t <- opType ks

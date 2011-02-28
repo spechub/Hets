@@ -1,3 +1,4 @@
+logic Fpl
 spec SimpleRawTreeWithOp =
  sorts Nat free with 0 | succ(Nat)
        Tree free with empty | node(Tree, Nat, Tree)
@@ -16,13 +17,27 @@ spec SimpleRawTreeWithOp =
 
    . forall t1: Tree, t2 : Tree . eq(t1, t2) = true
 
+  ops one : Nat -> Nat
+      two, __two__ : Nat * Nat -> Bool
+      __onepost, preone__ : Nat -> Bool
+
+
    var n1, n2 : Nat
    . fun one(n : Nat) : Nat = one(n)
    . let fun two(m1, m2 : Nat) : Bool = two(m1, m2) in two(n1, n2) = true
    . let fun __onepost(n : Nat) : Bool = __onepost(n) in n1 onepost = true
    . let fun preone__(n : Nat) : Bool = preone n in preone__(n1) = true
    . let fun __two__(m1, m2 : Nat) : Bool = __two__(m1, m2) in n1 two n2 = true
-   . let fun __two__(m1, m2 : Nat) : Bool = n1 two n2 in __two__(n1, n2) = true
+   . let fun __two__(m1, m2 : Nat) : Bool = n1 two n2 in __two__(n1, n2)
    . fun ;;(n : Nat) : Nat = ;;(n)
    . fun ||(n : Nat) : Nat = ||(n)
-
+   . let m = n1 in m = n2
+%%   . snd(empty, empty)
+   . eq(empty, empty)
+%[
+   sort Nat free with 1
+   sort Nat free with 0
+   sort Nat free with succ(Nat)?
+   sort Pos
+   sort Nat free with sort Pos
+]%

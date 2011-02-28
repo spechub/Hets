@@ -593,14 +593,14 @@ instance ATermConvertibleSML OP_HEAD where
                        (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Op_head Total aa' ab' ac')
+                in (Op_head Total aa' (Just ab') ac')
             (ShAAppl "partial-op-head" [ aa,ab ] _)  ->
                 let
                 aa' = from_sml_ATermList from_sml_ATermARG_DECL
                        (getATermByIndex1 aa att)
                 ab' = from_sml_ShATerm (getATermByIndex1 ab att)
                 ac' = pos_l
-                in (Op_head Partial aa' ab' ac')
+                in (Op_head Partial aa' (Just ab') ac')
             _ -> from_sml_ShATermError "OP_HEAD" aterm
         where
             aterm = getATerm att'

@@ -157,12 +157,14 @@ sigItemStatAna mix sig_item = case sig_item of
   Rigid_op_items rig ann_list pos -> do
     new_list <- mapM (ana_OP_ITEM frmTypeAna mix) ann_list
     case rig of
-      Rigid -> mapM_ ( \ nlitem -> case item nlitem of
+      Rigid -> mapM_
+        (\ nlitem -> case item nlitem of
           Op_decl ops typ _ _ ->
               mapM_ (updateExtInfo . addRigidOp (toOpType typ)) ops
-          Op_defn op hd _ _ ->
-              updateExtInfo $ addRigidOp (toOpType $ headToType hd) op
-                     ) new_list
+          Op_defn op hd _ _ -> maybe (return ())
+              (\ ty -> updateExtInfo $ addRigidOp (toOpType ty) op)
+              $ headToType hd
+        ) new_list
       _ -> return ()
     return $ Rigid_op_items rig new_list pos
   Rigid_pred_items rig ann_list pos -> do

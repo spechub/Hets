@@ -34,7 +34,11 @@ mapTermExt m te = let rec = mapTerm mapTermExt m in case te of
     BoolTerm t -> BoolTerm (rec t)
 
 mapFunDef :: FplMor -> FunDef -> FunDef
-mapFunDef m (FunDef i h@(Op_head _ vs s q) at r) =
-   let (j, ty) = mapOpSym (sort_map m) (op_map m) (i, toOpType $ headToType h)
-   in FunDef j (Op_head (opKind ty) (map (mapVars m) vs) (mapSrt m s) q)
-        (fmap (mapTerm mapTermExt m) at) r
+mapFunDef m (FunDef i h@(Op_head k vs ms q) at r) =
+   let nvs = map (mapVars m) vs
+       nt = fmap (mapTerm mapTermExt m) at
+   in maybe (FunDef i (Op_head k nvs ms q) nt r)
+      (\ hty -> let
+        (j, ty) = mapOpSym (sort_map m) (op_map m) (i, toOpType hty)
+        in FunDef j (Op_head (opKind ty) nvs (fmap (mapSrt m) ms) q) nt r)
+      $ headToType h

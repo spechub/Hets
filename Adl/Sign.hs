@@ -101,11 +101,6 @@ symMatch s r = case r of
   Symbol t -> s == t
   AnId i -> symName s == i
 
-idToSimpleId :: Id -> Token
-idToSimpleId i = case i of
-  Id [t] [] _ -> t
-  _ -> error $ "idToSimpleId: " ++ show i
-
 symOf :: Sign -> Set.Set Symbol
 symOf = Set.unions . map (\ (i, l) ->
           Set.fromList

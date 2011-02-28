@@ -359,8 +359,8 @@ getOps :: OP_ITEM f -> Set.Set Component
 getOps oi = case oi of
     Op_decl is ty _ _ ->
         Set.fromList $ map (flip Component $ toOpType ty) is
-    Op_defn i par _ _ ->
-        Set.singleton $ Component i $ toOpType $ headToType par
+    Op_defn i par _ _ -> maybe Set.empty
+        (Set.singleton . Component i . toOpType) $ headToType par
 
 ana_SORT_ITEM :: (GetRange f, Pretty f, TermExtension f)
   => Min f e -> Mix b s f e -> SortsKind -> Annoted (SORT_ITEM f)
@@ -426,26 +426,30 @@ ana_OP_ITEM mef mix aoi =
                   _ -> False) il)
                    $ addSentences $ map (addLeftComm oty ni) ops
            return aoi {item = Op_decl ops ty (catMaybes ul) ps}
-    Op_defn i ohd@(Op_head _ vs _ _) at ps ->
-        do let ty = headToType ohd
+    Op_defn i ohd@(Op_head k vs _ _) at ps ->
+        do let mty = headToType ohd
                lb = getRLabel at
                lab = if null lb then getRLabel aoi else lb
                arg = concatMap (\ (Var_decl v s qs) ->
                                  map (\ j -> Qual_var j s qs) v) vs
-           addOp aoi (toOpType ty) i
+           maybe (return ()) (\ ty -> addOp aoi (toOpType ty) i) mty
            e <- get -- save
            put e { varMap = Map.empty }
            mapM_ addVars vs
            sign <- get
            put e -- restore
            let Result ds mt = anaTerm mef mix sign
-                              (res_OP_TYPE ty) ps $ item at
+                 (maybe Nothing (Just . res_OP_TYPE) mty) ps $ item at
            addDiags ds
            case mt of
-             Nothing -> return aoi { item = Op_decl [i] ty [] ps }
+             Nothing -> return $ maybe aoi
+               (\ ty -> aoi { item = Op_decl [i] ty [] ps }) mty
              Just (resT, anaT) -> do
                  let p = posOfId i
                      tvs = freeTermVars sign anaT
+                     ty = headToTypeM (Op_type k (sortsOfArgs vs)
+                                       (sortOfTerm anaT) ps) id ohd
+                 maybe (addOp aoi (toOpType ty) i) (const $ return ()) mty
                  addDiags $ warnUnusedVars " local " sign tvs
                  addSentences [(makeNamed lab $ mkForall vs
                      (Strong_equation
@@ -454,8 +458,12 @@ ana_OP_ITEM mef mix aoi =
                        isAxiom = notImplied at, isDef = True }]
                  return aoi {item = Op_defn i ohd at { item = resT } ps }
 
-headToType :: OP_HEAD -> OP_TYPE
-headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
+headToTypeM :: a -> (OP_TYPE -> a) -> OP_HEAD -> a
+headToTypeM def f (Op_head k args mr ps) = maybe def
+  (\ r -> f $ Op_type k (sortsOfArgs args) r ps) mr
+
+headToType :: OP_HEAD -> Maybe OP_TYPE
+headToType = headToTypeM Nothing Just
 
 sortsOfArgs :: [VAR_DECL] -> [SORT]
 sortsOfArgs = concatMap (\ (Var_decl l s _) -> map (const s) l)
@@ -497,7 +505,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
     Unit_op_attr t -> do
            sign <- get
            let Result ds mt = anaTerm mef mix
-                              sign { varMap = Map.empty } rty q t
+                              sign { varMap = Map.empty } (Just rty) q t
            addDiags ds
            case mt of
              Nothing -> return Nothing
@@ -830,13 +838,14 @@ anaForm mef mixIn sign f = do
     return (resF, anaF)
 
 anaTerm :: (GetRange f, Pretty f, TermExtension f)
-  => Min f e -> Mix b s f e -> Sign f e -> SORT -> Range -> TERM f
+  => Min f e -> Mix b s f e -> Sign f e -> Maybe SORT -> Range -> TERM f
     -> Result (TERM f, TERM f)
-anaTerm mef mixIn sign srt pos t = do
+anaTerm mef mixIn sign msrt pos t = do
     let mix = extendMix (Map.keysSet $ varMap sign) mixIn
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
             (globAnnos sign) (mixRules mix) t
-    anaT <- oneExpTerm mef sign $ Sorted_term resT srt pos
+    anaT <- oneExpTerm mef sign $ maybe resT
+      (\ srt -> Sorted_term resT srt pos) msrt
     return (resT, anaT)
 
 basicAnalysis :: (GetRange f, Pretty f, TermExtension f)

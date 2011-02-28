@@ -43,6 +43,8 @@ import Control.Monad
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
+import Data.Maybe
+
 basicFplAnalysis
   :: (FplBasicSpec, FplSign, GlobalAnnos)
   -> Result (FplBasicSpec, ExtSign FplSign Symbol, [Named FplForm])
@@ -128,7 +130,7 @@ resolveFunDef :: MixResolve FunDef
 resolveFunDef ga ids (FunDef o h@(Op_head _ vs _ _) at r) = do
   nt <- resolveMixTrm mapTermExt resolveTermExt ga
     (addIdToRules o $ extendRules (varDeclTokens vs) ids) $ item at
-  return $ FunDef o h (replaceAnnoted nt at) r
+  return $ FunDef o h at { item = nt } r
 
 -- | get constructors for input sort
 getConstrs :: FplSign -> SORT -> OpMap
@@ -172,7 +174,15 @@ resolvePattern sign (resSort, term) =
   _ -> err "unexpected pattern"
 
 addFunToSign :: FunDef -> State FplSign ()
-addFunToSign (FunDef o h _ _) = addOp (emptyAnno o) (toOpType $ headToType h) o
+addFunToSign (FunDef o h _ _) =
+  maybe (return ()) (\ ty -> addOp (emptyAnno o) (toOpType ty) o)
+  $ headToType h
+
+addFunVar :: FunDef -> State FplSign ()
+addFunVar (FunDef o (Op_head _ vs ms _) at _) =
+  when (isSimpleId o && isNothing ms && null vs)
+    $ addVar (sortOfTerm $ item at) $ idToSimpleId o
+
 
 {- | perform overload resolution after mixfix analysis. The type of patterns
 is deduced from the top term. Overlapping or exhaustive patterns are not
@@ -218,7 +228,8 @@ minFplTerm sig te = case te of
   Let fd t r -> do
     let newSign = execState (addFunToSign fd) sig
     rfd <- minFunDef newSign fd
-    rt <- oneExpTerm minFplTerm newSign t
+    let sign2 = execState (addFunVar rfd) newSign
+    rt <- oneExpTerm minFplTerm sign2 t
     return $ Let rfd rt r
   IfThenElse i t e r -> do
     ri <- oneExpTerm minFplTerm sig $ Sorted_term i boolSort r
@@ -233,12 +244,13 @@ minFplTerm sig te = case te of
 
 -- | type check rhs and assume function to be in the signature
 minFunDef :: Sign TermExt SignExt -> FunDef -> Result FunDef
-minFunDef sig fd@(FunDef o h@(Op_head _ vs s _) at r) = do
+minFunDef sig fd@(FunDef o h@(Op_head _ vs ms _) at r) = do
   let newSign = execState (mapM_ addVars vs >> addFunToSign fd) sig
       varSign = execState (mapM_ addVars vs) $ emptySign emptyFplSign
-  nt <- oneExpTerm minFplTerm newSign $ Sorted_term (item at) s r
+      t = item at
+  nt <- oneExpTerm minFplTerm newSign $ maybe t (\ s -> Sorted_term t s r) ms
   appendDiags $ warnUnusedVars " function " varSign $ freeTermVars newSign nt
-  return $ FunDef o h (replaceAnnoted nt at) r
+  return $ FunDef o h at { item = nt } r
 
 getDDSorts :: [Annoted FplSortItem] -> [SORT]
 getDDSorts = foldl (\ l si -> case item si of
@@ -280,7 +292,7 @@ anaFplSortItem mix si = case si of
 anaFplOpItem :: Ana FplOpItem FplExt () TermExt SignExt
 anaFplOpItem mix oi = case oi of
   FunOp fd@(FunDef i oh@(Op_head _ vs r _) at ps) -> do
-    let ty = headToType oh
+    let mty = headToType oh
         lb = getRLabel at
     addFunToSign fd
     e <- get -- save
@@ -291,7 +303,8 @@ anaFplOpItem mix oi = case oi of
     let Result ds mt = anaTerm minFplTerm mix sign r ps $ item at
     addDiags ds
     case mt of
-      Nothing -> return $ CaslOpItem $ Op_decl [i] ty [] ps
+      Nothing -> return
+        $ maybe oi (\ ty -> CaslOpItem $ Op_decl [i] ty [] ps) mty
       Just (resT, anaT) -> do
         addSentences
           [(makeNamed lb $ ExtFORMULA $ FixDef
@@ -339,8 +352,9 @@ simplifyTermExt s te = let rec = simplifyTerm minFplTerm simplifyTermExt in
                 in (rec newSign p, rec newSign t)) l) r
     Let fd t r ->
       let newSign = execState (addFunToSign fd) s
+          sign2 = execState (addFunVar fd) newSign
       in Let (simplifyFunDef newSign fd)
-            (rec newSign t) r
+            (rec sign2 t) r
     IfThenElse f t e r -> IfThenElse (rec s f) (rec s t) (rec s e) r
     EqTerm t e r -> EqTerm (rec s t) (rec s e) r
     BoolTerm t -> BoolTerm (rec s t)
