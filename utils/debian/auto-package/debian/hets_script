@@ -86,22 +86,35 @@ __END__
 fi
 
 #
+# Detecting Isabelle version
+#
+
+ISABELLE_VERSION=`isabelle version | awk '{ print $1 }' | sed "s/Isabelle//g" | sed "s/://g"`
+case "$ISABELLE_VERSION"
+in
+    2011)
+        HETS_ISABELLE_DIR=/usr/lib/hets/hets-lib/Isabelle/2011
+    ;;
+    *)
+        HETS_ISABELLE_DIR=/usr/lib/hets/hets-lib/Isabelle
+    ;;
+esac
+
+#
 # Setting environment variables
+# and starting Hets
 #
 
 export HETS_LIB=/usr/lib/hets/hets-lib
 export HETS_OWL_TOOLS=/usr/lib/hets/hets-owl-tools
-export HETS_ISABELLE_LIB=/usr/lib/hets/hets-lib/Isabelle
+export HETS_ISABELLE_LIB=$HETS_ISABELLE_DIR
 export HETS_APROVE=$HETS_OWL_TOOLS/AProVE.jar
 export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
 export HETS_MAUDE_LIB=/usr/lib/hets/hets-maude-lib
 export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
+export HETS_LIB=/usr/lib/hets/hets-maude-lib
 export MAUDE_LIB=/usr/share/maude
 export GHCRTS='-H300m -M6g'
-
-#
-# Starting Hets
-#
 
 /usr/lib/hets/hets $@
