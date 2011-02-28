@@ -113,7 +113,6 @@ export HETS_ONTODMU=$HETS_OWL_TOOLS/OntoDMU.jar
 export HETS_MAUDE_LIB=/usr/lib/hets/hets-maude-lib
 export PELLET_PATH=/usr/share/pellet
 export TWELF_LIB=/usr/share/twelf/bin
-export HETS_LIB=/usr/lib/hets/hets-maude-lib
 export MAUDE_LIB=/usr/share/maude
 export GHCRTS='-H300m -M6g'
 
