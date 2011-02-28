@@ -272,6 +272,7 @@ Maude & x & x & - \\\hline
 VSE & x & x & x \\\hline
 \Isabelle & (x) & - & x \\\hline
 Adl & x & x & - \\\hline
+Fpl & x & x & - \\\hline
 \end{tabular}
 \end{center}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
@@ -369,10 +370,16 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
 \item[DMU] is a dummy logic to read output of ``Computer Aided
   Three-dimensional Interactive Application'' (Catia).
 \item[Maude] is a rewrite system \url{http://maude.cs.uiuc.edu/} for
-  first-order logic.
+  first-order logic. In order to use this logic the environment variable
+  \verb+HETS_MAUDE_LIB+ must be set to a directory containing the files
+  \verb+full-maude.maude+, \verb+hets.prj+, \verb+maude2haskell.maude+ and
+  \verb+parsing.maude+.
 \item[Adl] is ``A Description Language'' based on relational algebra originally
   designed for requirements engineering of business rules
   \url{https://lab.cs.ru.nl/BusinessRules/Requirements_engineering}.
+\item[Fpl] is a ``logic for functional programs'' as an extension of a
+  restriction of \CASL. (\CASL predicates are disabled.)
+  A detailed description of FPL will appear elsewhere.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
