@@ -192,19 +192,22 @@ checkIdAndArgs ide args poss =
        poss] Nothing
     else return nargs
 
+noOpOrPredDiag :: Pretty t => [a] -> DiagKind -> String -> Maybe t -> Id
+  -> Range -> Int -> [Diagnosis]
+noOpOrPredDiag ops k str mty ide pos nargs = case ops of
+  [] -> let
+    hd = "no " ++ str ++ " with "
+    ft = " found for '" ++ showDoc ide "'"
+    in [Diag k (case mty of
+      Nothing -> hd ++ shows nargs " argument"
+               ++ (if nargs == 1 then "" else "s") ++ ft
+      Just ty -> hd ++ "profile '" ++ showDoc ty "'" ++ ft) pos]
+  _ -> []
 
-noOpOrPred :: Pretty t => [a] -> String -> Maybe t -> Id -> Range
-           -> Int -> Result ()
-noOpOrPred ops str mty ide pos nargs =
-    when (null ops) $ case mty of
-           Nothing -> Result [Diag Error
-             ("no " ++ str ++ " with " ++ shows nargs " argument"
-              ++ (if nargs == 1 then "" else "s") ++ " found for '"
-              ++ showDoc ide "'") pos] Nothing
-           Just ty -> Result [Diag Error
-             ("no " ++ str ++ " with profile '"
-              ++ showDoc ty "' found for '"
-              ++ showDoc ide "'") pos] Nothing
+noOpOrPred :: Pretty t => [a] -> String -> Maybe t -> Id -> Range -> Int
+  -> Result ()
+noOpOrPred ops str mty ide pos nargs = when (null ops) $ Result
+      (noOpOrPredDiag ops Error str mty ide pos nargs) Nothing
 
 {- ----------------------------------------------------------
     - Minimal expansion of a predication formula -
@@ -223,8 +226,11 @@ minExpFORMULApred mef sign ide mty args pos = do
                               $ Rel.leqClasses (leqP' sign) preds'
                    Just ty -> [[ty] | Set.member ty preds']
         boolAna l cmd = case mty of
-          Nothing | null l -> minExpFORMULA mef sign $ Mixfix_formula
-            $ Application (Op_name ide) args pos
+          Nothing | null l -> do
+            appendDiags $ noOpOrPredDiag preds Warning
+              "matching predicate" mty ide pos nargs
+            minExpFORMULA mef sign $ Mixfix_formula
+              $ Application (Op_name ide) args pos
           _ -> cmd
     boolAna preds $ do
       noOpOrPred preds "predicate" mty ide pos nargs

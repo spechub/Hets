@@ -2321,9 +2321,13 @@ ambiguous term
 ### Hint 411.16, known variable shadowed 'x'
 ### Hint 411.60, known variable shadowed 'x'
 ### Hint 426.22, known variable shadowed 'x'
-*** Error 426.26, no predicate with 0 arguments found for 'e'
+### Warning 426.26,
+no matching predicate with 0 arguments found for 'e'
+*** Error 426.26, not a formula 'e'
 ### Hint 427.8, known variable shadowed 'x'
-*** Error 427.12, no predicate with 0 arguments found for 'e'
+### Warning 427.12,
+no matching predicate with 0 arguments found for 'e'
+*** Error 427.12, not a formula 'e'
 ### Hint 436.13, known variable shadowed 'x'
 ### Hint 436.15, known variable shadowed 'y'
 ### Hint 436.17, known variable shadowed 'z'

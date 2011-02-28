@@ -1271,5 +1271,5 @@ ambiguous term
 *** Error 343.29, no operation with 2 arguments found for '__E__'
 *** Error 343.45, no operation with 2 arguments found for '__E__'
 *** Error 351.9-351.16, wrong number of places '__and'__'
-*** Error 426.26, no predicate with 0 arguments found for 'e'
-*** Error 427.12, no predicate with 0 arguments found for 'e'
+*** Error 426.26, not a formula 'e'
+*** Error 427.12, not a formula 'e'
