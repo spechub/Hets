@@ -217,6 +217,10 @@ instance TermParser TermExt where
 fplExt :: [String] -> AParser st FplExt
 fplExt ks = itemList ks sortS fplSortItem FplSortItems
   <|> itemList (delete functS ks) opS fplOpItem FplOpItems
+  <|> ((pluralKeyword typeS <|> pluralKeyword predS
+      <|> asKey generatedS <|> asKey freeS)
+       >>= \ k -> unexpected $ "CASL keyword '" ++ shows k "'")
+
 
 fplSortItem :: [String] -> AParser st FplSortItem
 fplSortItem ks = do
