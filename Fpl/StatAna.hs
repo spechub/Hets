@@ -9,10 +9,6 @@ Portability :  portable
 
 basic static analysis for FPL
 
-missing: mixfix analysis for patterns could be specialized, local mixfix
-identifiers are not supported yet, different constructor sets for the same
-sort are not considered. Subsort embedding constructors are ignored.
-
 -}
 
 module Fpl.StatAna
@@ -98,10 +94,7 @@ mapFunDef (FunDef o h at r) =
 {- | The is the plugin function for the mixfix analysis. Due to patterns there
 may be unknown simple identifiers that are turned to constants and later by
 the overload resolution to variables. Obviously, such variables cannot be fed
-into the mixfix analysis like all other known variables. Proper mixfix
-identifiers in local let bindings are currently not fed into the mixfix
-analysis! If such a non-simple identifier is globally unknown the analysis may
-reject valid terms. -}
+into the mixfix analysis like all other known variables. -}
 resolveTermExt :: MixResolve TermExt
 resolveTermExt ga ids te =
   let recAux = resolveMixTrm mapTermExt resolveTermExt ga
