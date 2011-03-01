@@ -10,7 +10,7 @@ Portability :  non-portable (DevGraph)
 adjust development graph according to xupdate information
 -}
 
-module Static.FromXml where
+module Static.FromXmlUpdates where
 
 import Static.DevGraph
 

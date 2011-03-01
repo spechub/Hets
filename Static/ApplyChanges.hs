@@ -16,7 +16,7 @@ import Static.ComputeTheory
 import Static.DevGraph
 import Static.GTheory
 import Static.History
-import Static.FromXml
+import Static.FromXmlUpdates
 
 import Logic.Coerce
 import Logic.ExtSign
