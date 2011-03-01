@@ -178,11 +178,13 @@ addFunToSign (FunDef o h _ _) =
   maybe (return ()) (\ ty -> addOp (emptyAnno o) (toOpType ty) o)
   $ headToType h
 
-addFunVar :: FunDef -> State FplSign ()
-addFunVar (FunDef o (Op_head _ vs ms _) at _) =
-  when (isSimpleId o && isNothing ms && null vs)
-    $ addVar (sortOfTerm $ item at) $ idToSimpleId o
+letVars :: FunDef -> [VAR_DECL]
+letVars (FunDef o (Op_head _ vs ms _) at ps) =
+     [ Var_decl [idToSimpleId o] (sortOfTerm $ item at) ps
+     | isSimpleId o && isNothing ms && null vs ]
 
+addFunVar :: FunDef -> State FplSign ()
+addFunVar = mapM_ addVars . letVars
 
 {- | perform overload resolution after mixfix analysis. The type of patterns
 is deduced from the top term. Overlapping or exhaustive patterns are not
@@ -323,7 +325,9 @@ instance TermExtension TermExt where
     FixDef fd -> freeFunDefVars s fd
     Case o l _ -> Set.unions $ freeTermVars s o
       : map (\ (p, t) -> Set.difference (freeTermVars s t) $ freeTermVars s p) l
-    Let fd t _ -> Set.union (freeFunDefVars s fd) $ freeTermVars s t
+    Let fd t _ -> Set.difference
+      (Set.union (freeFunDefVars s fd) $ freeTermVars s t)
+      $ Set.fromList $ flatVAR_DECLs $ letVars fd
     IfThenElse f t e _ -> Set.unions $ map (freeTermVars s) [f, t, e]
     EqTerm t e _ -> Set.unions $ map (freeTermVars s) [t, e]
     BoolTerm t -> freeTermVars s t
