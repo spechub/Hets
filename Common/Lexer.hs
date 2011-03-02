@@ -14,19 +14,18 @@ according to chapter II.4 (Lexical Symbols) of the CASL reference manual
 
 module Common.Lexer where
 
-import Common.Keywords
 import Common.Id
 import Common.Parsec
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
 import Control.Monad
-import Data.Char (digitToInt, isDigit, ord)
-import Data.List (isPrefixOf)
+import Data.Char
+import Data.List
 
 -- * positions from "Text.ParserCombinators.Parsec.Pos" starting at (1,1)
 
--- | no-bracket-signs
+-- | no-bracket-signs (including mu!)
 signChars :: String
 signChars = "!#$&*+-./:<=>?@\\^|~" ++
     "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
@@ -41,7 +40,7 @@ scanAnySigns :: CharParser st String
 scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
     (many1 (oneOf signChars <?> "casl sign")) <|> semis <?> "signs"
 
--- | casl letters
+-- | casl letters (all isAlpha except feminine and masculine ordinal and mu)
 caslLetters :: Char -> Bool
 caslLetters ch = let c = ord ch in
    if c <= 122 && c >= 65 then c >= 97 || c <= 90
@@ -50,7 +49,10 @@ caslLetters ch = let c = ord ch in
 -- ['A'..'Z'] ++ ['a'..'z'] ++
 
 {- see <http://www.htmlhelp.com/reference/charset/> starting from \192
-\208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn -}
+\208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
+excluded are:
+\170 feminine ordinal \181 micro sign (mu) \186 masculine ordinal
+ -}
 
 caslLetter :: CharParser st Char
 caslLetter = satisfy caslLetters <?> "casl letter"
@@ -220,7 +222,7 @@ nestCommentOut :: CharParser st ()
 nestCommentOut = forget $ nestedComment "%[" "]%"
 
 skip :: CharParser st ()
-skip = skipMany (forget (oneOf whiteChars) <|> nestCommentOut <?> "")
+skip = skipMany (forget (satisfy isSpace) <|> nestCommentOut <?> "")
 
 fromSourcePos :: Pos.SourcePos -> Pos
 fromSourcePos p =

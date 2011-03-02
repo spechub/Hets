@@ -34,8 +34,11 @@ import Common.Token
 import Common.Id as Id
 import Common.Keywords
 import Common.AS_Annotation
+import Common.Utils (trimRight)
+
 import qualified Data.Map as Map
 import Data.List
+import Data.Char
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -70,7 +73,7 @@ mylines s = let strip = unwords . words in
   [] -> []
   [x] -> let x0 = strip x in
          [if null x0 then x0
-          else [' ' | head x == ' ']  ++ x0 ++ [' ' | last x == ' ']]
+          else [' ' | head x == ' '] ++ x0 ++ [' ' | last x == ' ']]
   (x : r) ->
      let x0 = strip x
          e = last r
@@ -96,7 +99,7 @@ annote = annoLabel <|> do
     i <- try annoIdent
     anno <- annoteGroup p i <|> annoteLine p i
     case parseAnno anno p of
-      Left  err -> do
+      Left err -> do
         setPosition (errorPos err)
         fail (tail (showErrorMessages "or" "unknown parse error"
                     "expecting" "unexpected" "end of input"
@@ -134,33 +137,33 @@ annotationL = comment <|> annote <?> "\"%\""
 annotations :: GenParser Char st [Annotation]
 annotations = many (annotationL << skip)
 
------------------------------------------
--- parser for the contents of annotations
------------------------------------------
+{- ---------------------------------------
+parser for the contents of annotations
+--------------------------------------- -}
 
 commaIds :: GenParser Char st [Id]
 commaIds = commaSep1 parseAnnoId
 
 parseAnno :: Annotation -> Pos -> Either ParseError Annotation
-parseAnno anno sp =
-    case anno of
+parseAnno anno sp = case anno of
     Unparsed_anno (Annote_word kw) txt qs ->
         case lookup kw $ swapTable semantic_anno_table of
         Just sa -> semanticAnno sa txt sp
-        _  -> let nsp = Id.incSourceColumn sp (length kw + 1)
-                  inp = annoArg txt
-                  mkAssoc dir p = do
+        _ -> let
+          nsp = Id.incSourceColumn sp (length kw + 1)
+          inp = annoArg txt
+          mkAssoc dir p = do
                         res <- p
-                        return (Assoc_anno dir res qs) in
-             Map.findWithDefault (Right anno) kw $ Map.map ( \ p ->
+                        return (Assoc_anno dir res qs)
+          in Map.findWithDefault (Right anno) kw $ Map.map ( \ p ->
                               parseInternal p nsp inp) $ Map.fromList
              [ (left_assocS, mkAssoc ALeft commaIds)
              , (right_assocS, mkAssoc ARight commaIds)
-             , (precS    , precAnno qs)
+             , (precS , precAnno qs)
              , (displayS , displayAnno qs)
-             , (numberS  , numberAnno qs)
-             , (stringS  , stringAnno qs)
-             , (listS    , listAnno qs)
+             , (numberS , numberAnno qs)
+             , (stringS , stringAnno qs)
+             , (listS , listAnno qs)
              , (floatingS, floatingAnno qs) ]
     _ -> Right anno
 
@@ -220,7 +223,7 @@ listAnno ps = do
     ci <- parseAnnoId
     return $ List_anno bs ni ci ps
 
-stringAnno ps  = literal2idsAnno ps String_anno
+stringAnno ps = literal2idsAnno ps String_anno
 
 floatingAnno ps = literal2idsAnno ps Float_anno
 
@@ -243,12 +246,12 @@ dispSymb :: (Display_format, String)
 dispSymb (dfSymb, symb) = do
   tryString (percentS ++ symb) << skip
   str <- manyTill anyChar $ lookAhead $ charOrEof '%'
-  return (dfSymb, reverse $ dropWhile (`elem` whiteChars) $ reverse str)
+  return (dfSymb, trimRight str)
 
 semanticAnno :: Semantic_anno -> Annote_text -> Pos
               -> Either ParseError Annotation
 semanticAnno sa text sp =
-  if all (`elem` whiteChars) $ annoArg text
+  if all isSpace $ annoArg text
   then Right . Semantic_anno sa
            $ Range [sp, Id.incSourceColumn sp $ length (show sa) - 3]
   else Left $ newErrorMessage
