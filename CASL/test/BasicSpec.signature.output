@@ -1093,7 +1093,7 @@ op __+__ : Nat * Pos -> Pos
 op __+__ : Pos * Nat -> Pos
 op __+__ : Rat * Rat -> Rat
 op __+__ : s * s -> s
-op __+-*/\&=<>!?:.$@#^~】作）倍Ч渤发祙__ : s * s -> s
+op __+-*/\&=<>!?:.$@#^~】作）倍Ч渤发|__ : s * s -> s
 op __-__ : Int * Int -> Int
 op __-__ : Nat * Nat -> Int
 op __-__ : Rat * Rat -> Rat

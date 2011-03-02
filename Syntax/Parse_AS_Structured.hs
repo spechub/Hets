@@ -42,7 +42,7 @@ import Common.Token
 
 import Text.ParserCombinators.Parsec
 
-import Data.List((\\))
+import Data.Char
 import Control.Monad
 
 -- | parse annotations and then still call an annotation parser
@@ -61,8 +61,9 @@ annoParser2 =
 -- better list what is allowed rather than exclude what is forbidden
 -- white spaces und non-printables should be not allowed!
 encodingName :: AParser st Token
-encodingName = parseToken (reserved (funS : casl_reserved_words)
-    (many1 (oneOf ("_`" ++ (signChars \\ ":.")) <|> scanLPD)))
+encodingName = parseToken $ reserved (funS : casl_reserved_words)
+    $ many1 $ satisfy $ \ c -> notElem c ":." && isSignChar c
+    || elem c "_`'" || isAlphaNum c
 
 -- keep these identical in order to
 -- decide after seeing ".", ":" or "->" what was meant

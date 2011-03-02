@@ -25,10 +25,10 @@ import Data.List
 
 -- * positions from "Text.ParserCombinators.Parsec.Pos" starting at (1,1)
 
--- | no-bracket-signs (including mu!)
-signChars :: String
-signChars = "!#$&*+-./:<=>?@\\^|~" ++
-    "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
+-- | no-bracket-signs (excluding mu!)
+isSignChar :: Char -> Bool
+isSignChar c = if isAscii c then elem c "!#$&*+-./:<=>?@\\^|~" else
+  isPunctuation c || isSymbol c || Data.Char.isNumber c
 
 -- \172 neg \183 middle dot \215 times
 
@@ -38,13 +38,11 @@ semis = tryString ";;" <++> many (char ';')
 
 scanAnySigns :: CharParser st String
 scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
-    (many1 (oneOf signChars <?> "casl sign")) <|> semis <?> "signs"
+    (many1 (satisfy isSignChar <?> "casl sign")) <|> semis <?> "signs"
 
--- | casl letters (all isAlpha except feminine and masculine ordinal and mu)
+-- | casl letters (all isAlpha including feminine and masculine ordinal and mu)
 caslLetters :: Char -> Bool
-caslLetters ch = let c = ord ch in
-   if c <= 122 && c >= 65 then c >= 97 || c <= 90
-   else c >= 192 && c <= 255 && notElem c [215, 247]
+caslLetters = isAlpha
 
 -- ['A'..'Z'] ++ ['a'..'z'] ++
 
@@ -248,7 +246,7 @@ keyWord :: CharParser st a -> CharParser st a
 keyWord = try . (<< notFollowedBy (scanLPD <|> singleUnderline))
 
 keySign :: CharParser st a -> CharParser st a
-keySign = try . (<< notFollowedBy (oneOf signChars))
+keySign = try . (<< notFollowedBy (satisfy isSignChar))
 
 -- * lexical tokens with position
 
@@ -266,7 +264,7 @@ pluralKeyword s = pToken (keyWord (string s <++> optionL (string "s")))
 toKey :: String -> CharParser st String
 toKey s = let p = string s in
   if last s `elem` "[]{}(),;" then p
-  else if last s `elem` signChars then keySign p
+  else if isSignChar $ last s then keySign p
        else keyWord p
 
 -- * some separator parsers

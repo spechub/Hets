@@ -75,7 +75,6 @@ import Common.Lexer
 import Common.Parsec
 
 import Text.ParserCombinators.Parsec
-import Data.List (delete)
 
 -- * Casl keyword lists
 
@@ -278,7 +277,7 @@ quMarkT = pToken $ toKey quMark
 -- | parse a 'colonS' possibly immediately followed by a 'quMark'
 colonST :: GenParser Char st Token
 colonST = pToken $ try $ string colonS << notFollowedBy
-    (oneOf $ delete '?' signChars)
+    (satisfy $ \ c -> c /= '?' && isSignChar c)
 
 -- | parse the product key sign ('prodS' or 'timesS')
 crossT :: GenParser Char st Token

@@ -56,7 +56,7 @@ convertTypePattern tp = case tp of
     TypePatternToken t ->
       if isPlace t then illegalTypePattern tp else return (simpleIdToId t, [])
     MixfixTypePattern [ra, ri@(TypePatternToken inTok), rb] ->
-      if head (tokStr inTok) `elem` signChars
+      if isSignChar $ head $ tokStr inTok
       then let inId = Id [Token place $ getRange ra, inTok,
                            Token place $ getRange rb] [] nullRange
             in case (ra, rb) of
@@ -74,7 +74,7 @@ convertTypePattern tp = case tp of
     MixfixTypePattern (TypePatternToken t1 : rp) ->
       if isPlace t1 then case rp of
                [TypePatternToken inId, TypePatternToken t2] ->
-                   if isPlace t2 && head (tokStr inId) `elem` signChars
+                   if isPlace t2 && isSignChar (head $ tokStr inId)
                      then return (Id [t1,inId,t2] [] nullRange, [])
                    else illegalTypePattern tp
                _ -> illegalTypePattern tp

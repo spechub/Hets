@@ -1,51 +1,51 @@
 <?xml version='1.0' ?>
-<DGraph filename="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het" nextlinkid="18">
+<DGraph filename="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het" nextlinkid="18">
   <DGNode name="s__IU1" refname="s" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.29">sort i</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.29">sort i</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s__PU1" refname="s" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.14">sort p</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.14">sort p</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s" refname="s" relxpath="/">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.39">sort s</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.39">sort s</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__IU1" refname="v" relxpath="/Imports/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.28">sort j</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.28">sort j</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__PU1" refname="v" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.13">sort r</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.13">sort r</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__S" refname="v" relxpath="/Source">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.39">sort p</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.39">sort p</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="v__T" refname="v" relxpath="/Target">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.51">sort q</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.51">sort q</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__PU1" refname="s2" relxpath="/Parameters/Union/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.15">sort p2</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:8.15">sort p2</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1V" refname="s" relxpath="/Parameters/Union/Spec[1]">
@@ -55,7 +55,7 @@
   <DGNode name="s2__A1A1" refname="s2" relxpath="/Actuals/Spec[1]/Actuals/Spec[1]">
     <ConsStatus>Cons(ConsistentByNoSentences)</ConsStatus>
     <Declarations>
-      <Symbol range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.35">sort t</Symbol>
+      <Symbol range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:8.35">sort t</Symbol>
     </Declarations>
   </DGNode>
   <DGNode name="s2__A1" refname="s2" relxpath="/Actuals/Spec[1]">
@@ -185,9 +185,9 @@
     <Type>GlobalDefInc</Type>
     <GMorphism name="id_CASL.SubPCSOL=E" />
   </DGLink>
-  <SPEC-DEFN name="s" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:3.6" formal-param="s__PU1" />
-  <SPEC-DEFN name="s2" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:8.6-8.7" formal-param="s2__PU1" />
-  <VIEW-DEFN name="v" range="/home/maeder/Hets/test/ParameterSpecTest/ParamView.het:5.6" formal-param="v__PU1" source="v__S" target="v__T">
+  <SPEC-DEFN name="s" range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:3.6" formal-param="s__PU1" />
+  <SPEC-DEFN name="s2" range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:8.6-8.7" formal-param="s2__PU1" />
+  <VIEW-DEFN name="v" range="/local/home/maeder/haskell/Hets/test/ParameterSpecTest/ParamView.het:5.6" formal-param="v__PU1" source="v__S" target="v__T">
     <GMorphism name="id_CASL.SubPCSOL=E">
       <map>
         <Symbol>sort p</Symbol>
