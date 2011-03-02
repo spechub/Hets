@@ -1,6 +1,12 @@
 # to be include by Makefile
 
-HC = ghc -optl-s -XTemplateHaskell -fcontext-stack=31 -threaded
+GHCVERSION = $(shell ghc --numeric-version)
+ifneq ($(findstring 7.0, $(GHCVERSION)),)
+GHC7OPTS = -rtsopts -fcontext-stack=31
+endif
+
+HC = ghc -optl-s -XTemplateHaskell -threaded $(GHC7OPTS)
+
 HCPKG = ghc-pkg
 
 TIMEVERSION = $(shell $(HCPKG) latest time)
