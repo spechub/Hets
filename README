@@ -13,26 +13,23 @@ is able to analyse heterogeneous and in particular CASL
 specifications.
 
 The sources need to be compiled using ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc) version 6.10.x! Haskell as a logic is also
-a part of Hets via "Programatica" (http://programatica.cs.pdx.edu/).
+(www.haskell.org/ghc) version 6.12.1, 6.12.3 or 7.0.2!
+
+Version 6.10.x does not support the wai-extra-0.2.4.2 package for hets as
+server. Version 6.12.2 is broken for gtk, see
+http://hackage.haskell.org/trac/ghc/ticket/4038. Version 7.0.1 loops for
+programatica, see http://hackage.haskell.org/trac/ghc/ticket/4527.
+
+Haskell as a logic is an optional part of Hets via "Programatica"
+(http://programatica.cs.pdx.edu/).
 
 Beside output written to the console (stdout) or to files, hets can
-display graphs using "uDraw(Graph)", formerly "daVinci"
-(www.informatik.uni-bremen.de/uDrawGraph)
+display graphs using "uDraw(Graph)" www.informatik.uni-bremen.de/uDrawGraph.
 
-Additionally, in particular for the binding to uDrawGraph,
-the sources of the uniform workbench are required:
-https://svn-agbkb.informatik.uni-bremen.de/uni/trunk
-
-For hets (and uni) to find "uDrawGraph", the environment variables UDG_HOME and
-UNIDAVINCI may be set to the installation directory of uDraw(Graph) and to
-the actual executable, respectively.
-
-export UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
+The binary uDrawGraph should be in your PATH.
 
 Some dialogs depend on Gtk and Glade that require a couple of further
-libraries.  Mac users are expected to install gtk2-framework.dmg from
-http://www.dfki.de/sks/hets/intel-mac/gtk2-framework.dmg
+libraries.  Mac users are expected to install gtk2 from macports
 
 A typical call of hets is then: hets -g Basic/Numbers.casl
 
@@ -40,7 +37,7 @@ Example specifications can be found under:
 https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
 For proving users may set HETS_ISABELLE, if "isabelle emacs" is not the right
-call for their system. Only Isabelle version 2009-1 is supported.
+call for their system. Isabelle versions 2009 and 2011 are supported.
 
 Further environment variables for provers are:
 

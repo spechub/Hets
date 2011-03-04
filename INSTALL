@@ -1,38 +1,13 @@
-For the graph display with uDrawGraph we rely on "uni"
-  svn co https://svn-agbkb.informatik.uni-bremen.de/uni/trunk uni
-
 For compilation we use the Glasgow Haskell Compiler "ghc" Version
-6.10.4!
-
-In order to build "hets" from sources using GHC, the "uni" library
-should have been installed. "uni" relies on the
-environment variable UDG_HOME pointing to the "uDrawGraph"
-installation (when calling ./configure in "uni").
-
-A binary distribution of "uDrawGraph" (Version 3.1.1)
-from http://www.informatik.uni-bremen.de/uDrawGraph only needs to be
-unpacked.
-
-Within uni call:
-  ./configure
-  make cabal
-
-Additionally - if you want a mini-logic Haskell - a "programatica" should be
-checked out or unpacked in the same parent directory where Hets resided. (The
-file utils/nightly/cronjob.sh contains the lines how to check out
-programatica.)
-
-From http://www.dfki.de/sks/hets/src-distribution/versions/
-recent snapshots of "uni", "programatica" and the "hets" sources may be
-obtained (if you don't want to check out from cvs or svn
-repositories).
+6.12.3!
 
 The binary "hets" should be produced from a source distribution by:
 
-  make -f Makefile.orig packages
   make depend
   make hets
   # this takes a while
+
+Missing cabal packages can be installed using utils/installHetsPkgs.sh
 
 Use "gmake" (and "gtar" for unpacking) under solaris!
 
