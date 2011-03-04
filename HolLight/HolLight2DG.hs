@@ -95,7 +95,7 @@ anaHolLightFile _opts path = do
        dg'' = foldr (\(source,target) dg -> case Map.lookup source m of
                                            Just (sig,k,lk) -> case Map.lookup target m of
                                              Just (sig1,k1,lk1) -> case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
-                                                            Nothing -> dg 
+                                                            Nothing -> dg
                                                             Just incl ->
                                                               let inclM = gEmbed $ mkG_morphism HolLight incl
                                                                   insE = [InsertEdge (k, k1,globDefLink inclM DGLinkImports)]
@@ -109,8 +109,9 @@ anaHolLightFile _opts path = do
                                                               in changesDGH newDG updL
                                              Nothing -> dg
                                            Nothing -> dg) dg' _lnks
-       le = Map.insert (emptyLibName "HolExport") dg'' (Map.empty)
-   return (Just (emptyLibName "HolExport", le))
+       ln = emptyLibName "example_binom"
+       le = Map.insert ln dg'' (Map.empty)
+   return (Just (ln, le))
 
 -- data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
 
