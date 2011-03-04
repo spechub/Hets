@@ -7,7 +7,7 @@
 #  - curses.h (libncurses-dev or similar)
 #  - cairo C lib (libcairo2-dev or similar)
 #  - glib-2.0 C lib (libglib2.0-dev or similar)
-#  - pango(>=1.0) C lib (libpango-dev or similar)
+#  - pango(>=1.0) C lib (libpango1.0-dev or similar)
 #  - gtk-2.0 C lib (libgtk2.0-dev or similar)
 #  - glade-2.0 C lib (libglade2-dev or similar)
 #  - happy
