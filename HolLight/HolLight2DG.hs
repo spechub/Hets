@@ -109,9 +109,8 @@ anaHolLightFile _opts path = do
                                                               in changesDGH newDG updL
                                              Nothing -> dg
                                            Nothing -> dg) dg' _lnks
-       ln = emptyLibName "example_binom"
-       le = Map.insert ln dg'' (Map.empty)
-   return (Just (ln, le))
+       le = Map.insert (emptyLibName (System.FilePath.Posix.takeBaseName path)) dg'' (Map.empty)
+   return (Just (emptyLibName (System.FilePath.Posix.takeBaseName path), le))
 
 -- data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
 

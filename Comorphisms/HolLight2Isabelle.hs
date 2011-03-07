@@ -32,6 +32,9 @@ import HolLight.Sentence
 import HolLight.Term
 import HolLight.Logic_HolLight
 import HolLight.Sublogic
+import HolLight.Helper
+
+import Debug.Trace (trace)
 
 data HolLight2Isabelle = HolLight2Isabelle deriving Show
 
@@ -106,15 +109,19 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
 ignore :: [String]
 ignore = ["+","-","*",",","!","?","?!","=","<=>","/\\","\\/","==>"]
 
-transConstS :: String -> IsaSign.VName
-transConstS s = case Map.lookup s constMap of
-                  Just v -> v
-                  Nothing -> IsaSign.mkVName $ transConstStringT bs s
+transConstS :: String -> HolType -> IsaSign.VName
+transConstS s t = case Map.lookup s constMap of
+                   Just v -> v
+                   Nothing -> IsaSign.mkVName $ typedName s t
+
+typedName :: String -> HolType -> String
+typedName s t = transConstStringT bs $ s ++ "_" ++ (show $ pp_print_type t)
 
 translateTerm :: Term -> IsaSign.Term
-translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex (map translateTerm (reduceTuples [a,b])) IsaSign.NotCont
-translateTerm (Var s _tp _) = IsaSign.Free $ IsaSign.mkVName s
-translateTerm (Const s tp _) = IsaSign.Const (transConstS s) $ tp2DTyp tp
+-- translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex (map translateTerm (reduceTuples [a,b])) IsaSign.NotCont
+translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex [translateTerm a, translateTerm b] IsaSign.NotCont
+translateTerm (Var s tp _) = IsaSign.Free $ (transConstS s tp)
+translateTerm (Const s tp _) = IsaSign.Const (transConstS s tp) $ tp2DTyp tp
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
@@ -141,11 +148,10 @@ mapSign (Sign t o) = IsaSign.emptySign{
                       }
 
 mapOps :: Map.Map String (Set.Set HolType) -> IsaSign.ConstTab
-mapOps f = Map.fromList $
-            map (\(x,y) -> (transConstS x, tp2Typ y)) $
-            concatMap (\(x, s) -> Set.toList $ Set.map (\a -> (x,a)) s)
-            $ Map.toList (foldl (\m i -> Map.delete i m) f ignore)
-
+mapOps f = Map.fromList
+             $ map (\(x,y) -> (transConstS x y, tp2Typ y))
+             $ concatMap (\(x, s) -> Set.toList $ Set.map (\a -> (x,a)) s)
+             $ Map.toList (foldl (\m i -> Map.delete i m) f ignore)
 
 tp2Typ :: HolType -> IsaSign.Typ
 tp2Typ (TyVar s) = IsaSign.Type (transTypeStringT bs s) holType []
