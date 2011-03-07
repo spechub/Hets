@@ -234,10 +234,15 @@ print_term_sequence sep' prec tms =
   else hcat (punctuate (text sep') (map (print_term prec) tms))
 
 print_binder :: Int -> Term -> Doc
-print_binder prec tm = case rator tm of
-  Just r -> let absf = is_gabs tm in
-    let s = if absf then "\\" else name_of r in
-    let collectvs tm' = if absf then
+print_binder prec tm =
+    let absf = is_gabs tm in
+    let s' = if absf then Just "\\"
+             else case rator tm of
+                   Just r ->  Just (name_of r)
+                   Nothing -> Nothing in
+    case s' of
+     Just s -> let collectvs tm' =
+                       if absf then
                          if is_abs tm' then
                            case (dest_abs tm') of
                              Just (v,t) -> let (vs,bod) = collectvs t
@@ -268,24 +273,24 @@ print_binder prec tm = case rator tm of
                             else ([],tm')
                           _ -> ([],tm')
                        else ([],tm') in
-    let (vs,bod) = collectvs tm in
-      (prec_parens prec) (hcat ([
-        text s,
-        (if all Char.isAlphaNum s then text " " else empty)]
-        ++ (map (\ (b,x) -> hcat [
-              ((if b then parens else id) (print_term 0 x)),
-              text " "] )
-            (init vs))
-        ++ [
-         (if fst (last vs) then text "(" else empty),
-         print_term 0 (snd(last vs)),
-         (if fst (last vs) then text ")" else empty),
-         text ".",
-         (if length vs == 1 then text " " else empty),
-         print_term 0 bod
-        ]
-       ))
-  _ -> empty
+       let (vs,bod) = collectvs tm in
+         (prec_parens prec) (hcat ([
+           text s,
+           (if all Char.isAlphaNum s then text " " else empty)]
+           ++ (map (\ (b,x) -> hcat [
+                 ((if b then parens else id) (print_term 0 x)),
+                 text " "] )
+               (init vs))
+           ++ [
+            (if fst (last vs) then text "(" else empty),
+            print_term 0 (snd(last vs)),
+            (if fst (last vs) then text ")" else empty),
+            text ".",
+            (if length vs == 1 then text " " else empty),
+            print_term 0 bod
+           ]
+          ))
+     _ -> empty
 
 print_clauses :: [[Term]] -> Doc
 print_clauses cls = case cls of
