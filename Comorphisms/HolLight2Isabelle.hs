@@ -26,6 +26,7 @@ import Common.AS_Annotation
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List ((\\))
 
 import HolLight.Sign
 import HolLight.Sentence
@@ -69,7 +70,7 @@ mapSentence :: Sign -> Sentence -> Result IsaSign.Sentence
 mapSentence _ s = return $ mapHolSen s
 
 mapHolSen :: Sentence -> IsaSign.Sentence
-mapHolSen (Sentence _n t _p) = IsaSign.Sentence{
+mapHolSen (Sentence t _) = IsaSign.Sentence{
                                   IsaSign.isSimp = False
                                  ,IsaSign.isRefuteAux = False
                                  ,IsaSign.metaTerm =
@@ -104,15 +105,19 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
                         ,("~",IsaConsts.notV)
                         ,("F",IsaSign.mkVName IsaConsts.cTrue)
                         ,("T",IsaSign.mkVName IsaConsts.cFalse)
+                        ,("~",IsaConsts.notV)
                         ]
 
+notIgnore :: [String]
+notIgnore = ["+","-","*"]
+
 ignore :: [String]
-ignore = ["+","-","*",",","!","?","?!","=","<=>","/\\","\\/","==>"]
+ignore = (map fst $ Map.toList constMap) \\ notIgnore
 
 transConstS :: String -> HolType -> IsaSign.VName
-transConstS s t = case Map.lookup s constMap of
-                   Just v -> v
-                   Nothing -> IsaSign.mkVName $ typedName s t
+transConstS s t = case (Map.lookup s constMap, elem s notIgnore) of
+                   (Just v,False) -> v
+                   (_,_) -> IsaSign.mkVName $ typedName s t
 
 typedName :: String -> HolType -> String
 typedName s t = transConstStringT bs $ s ++ "_" ++ (show $ pp_print_type t)

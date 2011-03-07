@@ -52,12 +52,12 @@ makeSig tps opsM = Sign {
                     types = foldl (\m (k,v) -> Map.insert k v m) Map.empty tps
                    ,ops = foldl (\m (k,v) -> Map.insert k (Set.fromList v) m) Map.empty opsM }
 
-makeSentence :: [Char] -> Term -> Sentence
-makeSentence n t = Sentence { name = n, term = t, proof = Nothing }
+makeNamedSentence :: String -> Term -> Named Sentence
+makeNamedSentence n t = makeNamed n $ Sentence { term = t, proof = Nothing }
 
-_insNodeDG :: Sign -> [Sentence] -> [Char] -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab)) -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab))
+_insNodeDG :: Sign -> [Named Sentence] -> [Char] -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab)) -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab))
 _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
-                                          (toThSens $ map (makeNamed "") sens) startThId
+                                          (toThSens sens) startThId
                                    n' = snd (System.FilePath.Posix.splitFileName n)
                                    labelK = newInfoNodeLab
                                           (makeName (mkSimpleId n'))
@@ -90,7 +90,7 @@ anaHolLightFile _opts path = do
    let libs'' = map (\(lname,(term,sdata)) -> (lname,term,sdata)) (Map.toList libs')
    let (dg',m) = foldr ( \(lname,terms,(tps,opsM)) (dg,m') ->
            let sig = makeSig tps opsM
-               sens = map (\(n,t) -> makeSentence n t) terms in
+               sens = map (\(n,t) -> makeNamedSentence n t) terms in
            _insNodeDG sig sens lname (dg,m')) (emptyDG,Map.empty) libs''
        dg'' = foldr (\(source,target) dg -> case Map.lookup source m of
                                            Just (sig,k,lk) -> case Map.lookup target m of

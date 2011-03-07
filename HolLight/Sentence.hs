@@ -27,20 +27,19 @@ import Data.Maybe (fromJust,catMaybes,isNothing)
 import qualified Data.Char as Char
 
 data Sentence = Sentence {
-  name :: String,
   term :: Term,
   proof :: Maybe HolProof
   } deriving (Eq, Ord, Show)
 
 printNamedSen :: Named Sentence -> Doc
 printNamedSen ns =
-  let s = sentence ns
-  in (hcat [text (name s), text " = `",
-                    (pp_print_term . term) s,text "`"])
+  let s = sentence ns in
+  let name = senAttr ns
+  in (hcat [text name, text " = ",pretty s])
 
 
 instance Pretty Sentence where
-  pretty s = (hcat [text (name s), text " = `",
+  pretty s = (hcat [text "`",
                     (pp_print_term . term) s,text "`"])
 
 pp_print_term :: Term -> Doc
