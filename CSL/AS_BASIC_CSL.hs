@@ -81,7 +81,7 @@ import qualified Data.Map as Map
 import Control.Monad
 import Control.Monad.Reader
 
-import Ratio
+import Data.Ratio
 import Numeric
 
 -- Arbitrary precision numbers
@@ -298,7 +298,7 @@ showOPNAME x =
 
           OP_undef -> "undef"
           OP_failure -> "fail"
-            
+
           OP_hastype -> "::"
           OP_real -> "real"
 
