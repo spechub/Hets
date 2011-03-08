@@ -85,11 +85,6 @@ tp2DTyp tp = IsaSign.Hide{
                 IsaSign.arit = Nothing
               }
 
-reduceTuples :: [Term] -> [Term]
-reduceTuples l = foldl (\acc t -> case t of
-                                    (Comb (Comb (Const "," _ _) a) b) -> (reduceTuples [a,b])++acc
-                                    _ ->t:acc) [] l
-
 constMap :: Map.Map String IsaSign.VName
 constMap = Map.fromList [("+",IsaConsts.plusV)
                         ,("-",IsaConsts.minusV)
@@ -111,6 +106,9 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
 notIgnore :: [String]
 notIgnore = ["+","-","*"]
 
+quantifiers :: [String]
+quantifiers = ["!","?","?!"]
+
 ignore :: [String]
 ignore = (map fst $ Map.toList constMap) \\ notIgnore
 
@@ -122,11 +120,49 @@ transConstS s t = case (Map.lookup s constMap, elem s notIgnore) of
 typedName :: String -> HolType -> String
 typedName s t = transConstStringT bs $ s ++ "_" ++ (show $ pp_print_type t)
 
+unpack_gabs :: Term -> (IsaSign.Term,[IsaSign.Term],IsaSign.Term,IsaSign.Term)
+unpack_gabs t = case unpack_gabs' t [] of
+                 Just (q,vs,tm) ->
+                  let (pat,res) = case tm of 
+                                   Comb (Comb (Const "GEQ" _ _)
+                                    (Comb (Var "f" _ _) pat)) res -> (pat,res) 
+                                   _ -> error "unpack_gabs failed"
+                  in (q,vs,translateTerm pat,translateTerm res)
+                 Nothing -> error "unpack_gabs' failed"
+
+unpack_gabs' ::  Term -> [IsaSign.Term] -> Maybe (IsaSign.Term,[IsaSign.Term],Term)
+unpack_gabs' (Comb c@(Const "!" _ _) (Abs v@(Var _ _ _) tm)) vs =
+  case unpack_gabs' tm ((translateTerm v):vs) of
+    Just r -> Just r
+    Nothing -> Just (translateTerm c,(translateTerm v):vs,tm)
+unpack_gabs' _ _ = Nothing
+
+makeForAll :: IsaSign.Term -> [IsaSign.Term] -> IsaSign.Term -> IsaSign.Term
+makeForAll q [] t = t
+makeForAll q (v:vs) t = IsaSign.App q
+                         (IsaSign.Abs v
+                           (makeForAll q vs t)
+                           IsaSign.NotCont)
+                         IsaSign.NotCont
+
+handleGabs :: Bool -> Term -> IsaSign.Term
+handleGabs b t = case t of
+ (Comb (Const "GABS" _ _) (Abs (Var "f" _ _) tm)) ->
+   let (q,vars,pat,res) = unpack_gabs tm in
+   let n = IsaSign.Free $ IsaSign.mkVName "p" in
+   let t1 = IsaSign.Abs n
+             (IsaSign.Case n [(pat,res)])
+             IsaSign.NotCont
+   in makeForAll q vars (if b then (IsaSign.App q t1
+                                    IsaSign.NotCont)
+                             else t1)
+
 translateTerm :: Term -> IsaSign.Term
--- translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex (map translateTerm (reduceTuples [a,b])) IsaSign.NotCont
 translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex [translateTerm a, translateTerm b] IsaSign.NotCont
 translateTerm (Var s tp _) = IsaSign.Free $ (transConstS s tp)
 translateTerm (Const s tp _) = IsaSign.Const (transConstS s tp) $ tp2DTyp tp
+translateTerm (Comb (Const "!" _ _) t@(Comb (Const "GABS" _ _) _)) = handleGabs True t 
+translateTerm t@(Comb (Const "GABS" _ _) (Abs (Var "f" _ _) tm)) = handleGabs False t
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
