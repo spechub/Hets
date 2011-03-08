@@ -1,0 +1,103 @@
+%% Chapter 7
+
+logic Fpl 
+
+spec NAT = 
+ sorts Nat free with 0 | succ(Nat)
+
+spec NATORD = 
+ NAT then 
+ ops le : Nat * Nat -> ?Bool
+ forall m,n,p : Nat 
+   . def(le(m,n))
+   . le(m,m) = true
+   . le(m,n) = true /\ le(n,m) = true => m = n
+   . le(m,n)  =true /\ le(n,p) = true => le(m,p) = true
+   . le(m,n) =true \/ le(n,m) = true
+
+spec NATLIST = 
+ NATORD then
+   sorts NatList free with nil | cons(Nat, NatList)
+   ops fun append(l:NatList, l':NatList):NatList =
+            case l of
+               nil => l'
+             | cons(n, l'') => cons(n, append(l'',l'))
+       fun is_in(n:Nat, l:NatList):Bool =
+           case l of 
+               nil  => false
+             | cons(m, l') => if n = m then true else is_in(n,l')
+
+spec SORT1 =
+ NATLIST
+then
+ ops sortList: NatList ->? NatList;
+     is_sorted: NatList -> Bool
+ forall n: Nat, l: NatList
+. def (is_sorted(l))
+. is_sorted(nil) = true
+. is_sorted(cons(n, l)) = true <=>
+(forall m:Nat . is_in(m, l) => le(n, m) = true) /\ is_sorted(l) = true
+. is_sorted(sortList(l)) = true
+. is_in(n, l) = true <=> is_in(n, sortList(l)) = true
+
+spec SORT = 
+ SORT1 hide is_sorted
+
+spec SORTCOUNT =
+ SORT
+then
+ ops fun count(n:Nat, l:NatList):Nat =
+        case l of 
+           nil => 0
+         | cons(m, l') => if n = m then succ(count(n, l'))
+                          else count(n, l')
+ forall n: Nat, l: NatList
+ . count(n, l) = count(n, sortList(l))
+
+spec SORTPERM =
+SORTCOUNT hide count
+
+spec INS =
+ NATLIST
+then
+ ops insert: Nat * NatList ->?  NatList
+ forall n: Nat, l: NatList
+ . def (insert(n, l))
+ . exists l1 , l2 :NatList .
+     insert(n, l) = append(l1 , cons(n, l2 )) /\ l = append(l1 , l2 )
+     /\ ( forall l1 :NatList .  forall m:Nat . l1 = append(l1 , cons(m, nil)) =>
+          le(m, n) = true)
+     /\ ( forall l2 :NatList .   forall m:Nat . l2 = cons(m, l2 ) => le(n, m) = true)
+
+spec SORTBYINSERT =
+INS
+then
+ops fun sortList(l:NatList):NatList =
+case l of nil => nil | cons(n, l') => insert(n, sortList(l'))
+
+spec SORTINS =
+SORTBYINSERT hide insert
+
+spec INSDONE =
+ NATLIST
+then
+ ops fun insert(n:Nat, l:NatList):NatList =
+   case l of nil => cons(n, nil)
+           | cons(m, l') => if le(n, m) = true then cons(n, l)
+                            else cons(m, insert(n, l'))
+
+spec SORTBYINSERTDONE =
+ INSDONE
+then
+ ops fun sortList(l:NatList):NatList =
+     case l of nil => nil 
+             | cons(n, l') => insert(n, sortList(l'))
+
+spec SORTDONE =
+SORTBYINSERTDONE hide insert
+
+refinement REF_SORT' = 
+ SORT refined to SORTPERM refined to SORTINS refined to SORTDONE
+
+             
+   
