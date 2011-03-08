@@ -2,12 +2,12 @@
 {- |
 Module      :  $Header$
 Description :  translating from HolLight to Isabelle
-Copyright   :  (c) M. Codescu, DFKI 2010
+Copyright   :  (c) Jonathan von Schroeder and M. Codescu, DFKI 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :  Mihai.Codescu@dfki.de
+Maintainer  :  jonathan.von_schroeder@dfki.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Logic.Logic)
 
 -}
 
