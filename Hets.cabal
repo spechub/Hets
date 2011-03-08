@@ -24,6 +24,9 @@ Author:
   2009 Razvan Pascanu <r.pascanu@jacobs-university.de>
   2009 Thiemo Wiedemeyer <raider@informatik.uni-bremen.de>
   2009 Till.Mossakowski@dfki.de
+  2010 Jonathan.von_Schroeder@dfki.de
+  2010 Simon.Ulbricht@dfki.de
+  2010 Corneliu-Claudiu.Prodescu@dfki.de
 Maintainer: hets-devel@informatik.uni-bremen.de
 Copyright: 2006-2009 DFKI GmbH Bremen, Uni Bremen
 Stability: Experimental
@@ -55,6 +58,9 @@ flag hexpat
 
 flag gtkglade
   description: gtk and glade packages for a better user interface
+
+flag server
+  description: hets as web interface based on wai-extra-0.2.4.2
 
 Executable hets
   Main-is: hets.hs
@@ -91,7 +97,7 @@ Executable hets
     cpp-options: -DUNI_PACKAGE
 
   if flag(programatica)
-    build-depends: programatica == 1.0
+    build-depends: programatica >= 1.0 && < 1.1
     cpp-options: -DPROGRAMATICA
 
   if flag(tar)
@@ -118,3 +124,10 @@ Executable hets
         glade >= 0.11.1
       , gtk >= 0.11.2
     cpp-options: -DGTKGLADE
+
+  if flag(server)
+    build-depends:
+        wai-extra >= 0.2 && < 0.3
+      , wai >= 0.2 && < 0.3
+      , random >= 1.0
+    cpp-options: -DSERVER
