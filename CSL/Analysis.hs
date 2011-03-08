@@ -182,8 +182,10 @@ varSet l =
     let opToVar' s (Op v _ _ rg') =
             ( Set.insert (simpleName v) s
             , Var Token{ tokStr = simpleName v, tokPos = rg' } )
+        opToVar' s v@(Var tok) = (Set.insert (tokStr tok) s, v)
         opToVar' _ x =
-            error $ "varSet: not supported varexpression " ++ show x
+            error $ "varSet: not supported varexpression at "
+                      ++ show (getRange x) ++ ": " ++ show x
     in mapAccumL opToVar' Set.empty l
 
 -- | Replaces Op occurrences to Var if the op is in the given set

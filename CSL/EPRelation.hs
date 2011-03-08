@@ -28,7 +28,7 @@ import Data.Traversable (fmapDefault)
 import System.IO
 
 import CSL.EPBasic
-import CSL.SMTComparison
+import qualified CSL.SMTComparison as CMP
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
 import CSL.ExtendedParameter
@@ -397,13 +397,13 @@ trySimpleCmp r1 r2
 
 -- | Builds a Boolean representation from the extended parameter expression.
 -- Variable names are composed from the string "x" together with an integer.
-boolExps :: VarMap -> EPExps -> BoolRep
+boolExps :: CMP.VarMap -> EPExps -> BoolRep
 boolExps m eps | isStarEP eps = trueBool
                | otherwise = And $ map f $ Map.assocs eps where
     err = error "boolExps: No matching"
     f (k, v) = toBoolRep ("x" ++ show (Map.findWithDefault err k m)) v
 
-boolRange :: VarMap -> EPRange -> BoolRep
+boolRange :: CMP.VarMap -> EPRange -> BoolRep
 boolRange m (Union l) = Or $ map (boolRange m) l
 boolRange m (Intersection l) = And $ map (boolRange m) l
 boolRange m (Complement a) = Not $ boolRange m a
@@ -528,22 +528,22 @@ rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
 rangeCmp x y = liftM fst3 $ rangeFullCmp x y where
     fst3 (a, _, _) = a
 
-type SmtComparer = ReaderT VarEnv IO
+type SmtComparer = ReaderT CMP.VarEnv IO
 
-execSMTComparer :: VarEnv -> SmtComparer a -> IO a
+execSMTComparer :: CMP.VarEnv -> SmtComparer a -> IO a
 execSMTComparer ve smt = runReaderT smt ve
 
 instance CompareIO SmtComparer where
     logMessage s = do
       ve <- ask
-      case loghandle ve of
+      case CMP.loghandle ve of
         Just hdl -> liftIO $ hPutStrLn hdl s
         _ -> return ()
 
     rangeFullCmp r1 r2 = do
             ve <- ask
-            let vm = varmap ve
-            lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+            let vm = CMP.varmap ve
+            lift $ CMP.smtCompare ve (boolRange vm r1) $ boolRange vm r2
 
 data Partition a = AllPartition a | Partition [(EPRange, a)]
 

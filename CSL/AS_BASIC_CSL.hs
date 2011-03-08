@@ -463,7 +463,7 @@ operatorInfo =
                   [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
                   , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
            ++ map (a2i 5) [ OP_hastype ]
-           ++ map (a2bind 0 10) [ OP_ex, OP_all ]
+           ++ map (a2bind 0 1) [ OP_ex, OP_all ]
            ++ map (a2i 30) [ OP_or, OP_impl ]
            ++ map (a2i 40) [ OP_and ]
            ++ map (a2i 50) [ OP_eq, OP_gt, OP_leq, OP_geq, OP_neq, OP_lt, OP_in]

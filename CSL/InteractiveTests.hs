@@ -69,7 +69,7 @@ import Data.Char
 import Data.Maybe
 import Data.Time.Clock
 
-import CSL.SMTComparison
+import qualified CSL.SMTComparison as CMP
 import CSL.EPRelation
 import System.IO
 import System.Directory
@@ -200,11 +200,11 @@ assStoreAndProgElim ncl = do
   let (asss, prog) = splitAS ncl
       gm = fmap analyzeGuarded asss
       sgl = dependencySortAS gm
-      ve = VarEnv { varmap = Map.fromList $ zip ["I", "F"] [1..]
-                  , vartypes = Map.empty
-                  , loghandle = Just stdout
-                  --, loghandle = Nothing
-                  }
+      ve = CMP.VarEnv { CMP.varmap = Map.fromList $ zip ["I", "F"] [1..]
+                      , CMP.vartypes = Map.empty
+                      , CMP.loghandle = Just stdout
+                      --, CMP.loghandle = Nothing
+                      }
       -- ve = emptyVarEnv $ Just stdout
   el <- execSMTTester' ve $ epElimination sgl
   return (getElimAS el, prog)
@@ -494,27 +494,27 @@ toCmd = fromJust . parseCommand
 
 
 data TestEnv = TestEnv { counter :: Int
-                       , varenv :: VarEnv
+                       , varenv :: CMP.VarEnv
                        , loghdl :: Handle }
 
 logf :: FilePath
 logf = "/tmp/CSL.log"
 
-teFromVE :: VarEnv -> IO TestEnv
+teFromVE :: CMP.VarEnv -> IO TestEnv
 teFromVE ve = do
   hdl <- openFile logf WriteMode
-  let ve' = ve{ loghandle = Just hdl }
+  let ve' = ve{ CMP.loghandle = Just hdl }
   return TestEnv { counter = 0, varenv = ve', loghdl = hdl }
 
 type SmtTester = StateT TestEnv IO
 
-execSMTTester :: VarEnv -> SmtTester a -> IO (a, Int)
+execSMTTester :: CMP.VarEnv -> SmtTester a -> IO (a, Int)
 execSMTTester ve smt = do
   (x, s) <- teFromVE ve >>= runStateT smt
   hClose $ loghdl s
   return (x, counter s)
 
-execSMTTester' :: VarEnv -> SmtTester a -> IO a
+execSMTTester' :: CMP.VarEnv -> SmtTester a -> IO a
 execSMTTester' ve smt = do
   (x, i) <- execSMTTester ve smt
   putStrLn $ "SMT-Checks: " ++ show i
@@ -528,12 +528,12 @@ instance CompareIO SmtTester where
       env <- get
       let f x = x{counter = counter x + 1}
           ve = varenv env
-          vm = varmap ve
+          vm = CMP.varmap ve
           hdl = loghdl env
       modify f
       lift $ writeRangesToLog hdl r1 r2
       liftIO $ hPutStrLn hdl ""
-      res <- lift $ smtCompare ve (boolRange vm r1) $ boolRange vm r2
+      res <- lift $ CMP.smtCompare ve (boolRange vm r1) $ boolRange vm r2
       lift $ writeRangesToLog hdl r1 r2 >> hPutStrLn hdl ("=" ++ show res)
       return res
 
