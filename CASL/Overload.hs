@@ -227,7 +227,7 @@ minExpFORMULApred mef sign ide mty args pos = do
                    Just ty -> [[ty] | Set.member ty preds']
         boolAna l cmd = case mty of
           Nothing | null l -> do
-            appendDiags $ noOpOrPredDiag preds Warning
+            appendDiags $ noOpOrPredDiag preds Hint
               "matching predicate" mty ide pos nargs
             minExpFORMULA mef sign $ Mixfix_formula
               $ Application (Op_name ide) args pos
