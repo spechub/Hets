@@ -80,14 +80,14 @@ anaHolLightFile _opts path = do
                 in (List.\\) ns (map (\(_,t) -> t) _lnks)
    let libSigInclusions l n = (let pnodes = map snd $ filter ((n==).fst) _lnks
                                in (case Map.lookup n l of
-                                     Just (_,(term,sdata)) -> foldl (\l' p -> case Map.lookup p l' of
+                                     Just (_,(term1,sdata)) -> foldl (\l' p -> case Map.lookup p l' of
                                                                             Just (d,(term',sdata')) -> libSigInclusions (Map.insert p
-                                                                              (d,(term' `List.union` term,
+                                                                              (d,(term' `List.union` term1,
                                                                                sdata' `List.union` sdata)) l') p
                                                                             Nothing -> l') l pnodes
                                      Nothing -> l))
    let libs' = foldl libSigInclusions sigM leaves
-   let libs'' = map (\(lname,(term,sdata)) -> (lname,term,sdata)) (Map.toList libs')
+   let libs'' = map (\(lname,(term1,sdata)) -> (lname,term1,sdata)) (Map.toList libs')
    let (dg',m) = foldr ( \(lname,terms,(tps,opsM)) (dg,m') ->
            let sig = makeSig tps opsM
                sens = map (\(n,t) -> makeNamedSentence n t) terms in

@@ -35,8 +35,6 @@ import HolLight.Logic_HolLight
 import HolLight.Sublogic
 import HolLight.Helper
 
-import Debug.Trace (trace)
-
 data HolLight2Isabelle = HolLight2Isabelle deriving Show
 
 instance Language HolLight2Isabelle
@@ -125,7 +123,7 @@ unpack_gabs t = case unpack_gabs' t [] of
                  Just (q,vs,tm) ->
                   let (pat,res) = case tm of 
                                    Comb (Comb (Const "GEQ" _ _)
-                                    (Comb (Var "f" _ _) pat)) res -> (pat,res) 
+                                    (Comb (Var "f" _ _) pat1)) res1 -> (pat1,res1) 
                                    _ -> error "unpack_gabs failed"
                   in (q,vs,translateTerm pat,translateTerm res)
                  Nothing -> error "unpack_gabs' failed"
@@ -138,7 +136,7 @@ unpack_gabs' (Comb c@(Const "!" _ _) (Abs v@(Var _ _ _) tm)) vs =
 unpack_gabs' _ _ = Nothing
 
 makeForAll :: IsaSign.Term -> [IsaSign.Term] -> IsaSign.Term -> IsaSign.Term
-makeForAll q [] t = t
+makeForAll _ [] t = t
 makeForAll q (v:vs) t = IsaSign.App q
                          (IsaSign.Abs v
                            (makeForAll q vs t)
@@ -156,13 +154,14 @@ handleGabs b t = case t of
    in makeForAll q vars (if b then (IsaSign.App q t1
                                     IsaSign.NotCont)
                              else t1)
+ _ -> error "handleGabs failed"
 
 translateTerm :: Term -> IsaSign.Term
 translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex [translateTerm a, translateTerm b] IsaSign.NotCont
 translateTerm (Var s tp _) = IsaSign.Free $ (transConstS s tp)
 translateTerm (Const s tp _) = IsaSign.Const (transConstS s tp) $ tp2DTyp tp
 translateTerm (Comb (Const "!" _ _) t@(Comb (Const "GABS" _ _) _)) = handleGabs True t 
-translateTerm t@(Comb (Const "GABS" _ _) (Abs (Var "f" _ _) tm)) = handleGabs False t
+translateTerm t@(Comb (Const "GABS" _ _) (Abs (Var "f" _ _) _)) = handleGabs False t
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
@@ -178,7 +177,7 @@ mapTheory (sig, n_sens) = let
   sig' = mapSign sig
   n_sens' = map mapNamedSen n_sens
                           in return (sig', n_sens')
-
+bs :: IsaSign.BaseSig
 bs = IsaSign.MainHC_thy
 
 mapSign :: Sign -> IsaSign.Sign
@@ -203,16 +202,14 @@ tp2Typ (TyApp s tps) = case tps of
 
 arity2tp :: Int -> [(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])]
 arity2tp i = [(isaTerm,foldl (\l t -> t:l) []
-                       (take i (map (\k -> (IsaSign.TFree ("'a" ++ show (k)) [],[isaTerm]))
-                                (iterate (1+) 1))))]
+                       (map (\k -> (IsaSign.TFree ("'a" ++ show (k)) [],[isaTerm]))
+                            [1..i]))]
 
 mapTypes :: Map.Map String Int -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
                 IsaSign.arities = Map.fromList $ map extractTypeName (Map.toList (Map.delete "bool" tps))}
  where
-    extractTypeName (s,a) = (transTypeStringT bs s , [(isaTerm, [])])
-    extractTypeName (s,a) = (transTypeStringT bs s, [(isaTerm, [])])
-
+    extractTypeName (s,_) = (transTypeStringT bs s , [(isaTerm, [])])
 
 mapNamedSen :: Named Sentence -> Named IsaSign.Sentence
 mapNamedSen n_sen = let
