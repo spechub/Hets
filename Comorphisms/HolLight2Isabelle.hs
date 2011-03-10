@@ -165,7 +165,7 @@ mkQuantifier t = IsaSign.Abs
                   (IsaSign.Free (IsaSign.mkVName "y"))
                   (IsaSign.App (translateTerm t)
                     (IsaSign.Abs
-                     (IsaSign.Free (IsaSign.mkVName "x"))
+                     (IsaSign.Free (IsaSign.mkVName "y"))
                      (IsaSign.Free (IsaSign.mkVName "y"))
                      IsaSign.NotCont)
                     IsaSign.NotCont)
@@ -190,7 +190,7 @@ translateTerm (Comb (Comb (Comb (Const "COND" _ _) i) t) e) = IsaSign.If
                                                                (translateTerm t)
                                                                (translateTerm e)
                                                                IsaSign.NotCont
-translateTerm (Comb c1@(Const _ tp _) t) = if (is_abs t) || ((isAppT tp) && not (isQuantifier t))
+translateTerm (Comb c1@(Const c tp _) t) = if (is_abs t) || ((isAppT tp) && not (isQuantifier t) && not (isQuantifier c1) && c/="@")
                                            then IsaSign.App
                                                 (translateTerm c1)
                                                 (translateTerm t)
