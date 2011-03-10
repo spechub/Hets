@@ -9,10 +9,10 @@ import Text.XML.Light.Input
 
 --the IO part of the program:--
 processFile = do
-  xmlInput <-readFile "FreeCAD/input.xml"
+  xmlInput <-readFile "FreeCAD/test.xml"
   let parsed = parseXMLDoc xmlInput
-  let out = translate (fromJust parsed)
+  let out = testFunction (fromJust parsed)
   putStrLn (show out)
 ------------------------
 
-
+testFunction a = getPlacementVals a

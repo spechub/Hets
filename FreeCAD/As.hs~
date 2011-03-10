@@ -60,7 +60,7 @@ data PlacedObject = PlacedObject Placement Object deriving Show
 
 data NamedObject = NamedObject { name::String
                    , object:: PlacedObject}
-				 | EmptyObject --for objects that are WIP
+				 | NamedObject EmptyObject --for objects that are WIP
                  deriving Show
 
 

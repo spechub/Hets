@@ -73,12 +73,11 @@ getObject el | tn == "Box" = makeb el tn
              | tn == "Tor" = makeb el tn
              | tn == "Cir" = makeb el tn
              | tn == "Rec" = EmptyObject
-             | tn == "Lin" = EmptyObject
+          -- | tn == "Lin" = TODO
              | tn == "Cut" = makex el tn
              | tn == "Com" = makex el tn 
              | tn == "Fus" = makex el tn
              | tn == "Sec" = makex el tn
-			 | tn == "Ext" = EmptyObject
             where 
               tn = firstThree(getName el) 
               makeb el tn = NamedObject (getName el) (PlacedObject (findPlacement elc) (BaseObject (bbuild tn el)))
