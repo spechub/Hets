@@ -25,20 +25,15 @@ import Data.List (partition, isInfixOf)
 
 import Text.XML.Light
 
---TODO: write test module!
 
+-- | for faster access, some elements attributes are stored alongside
+-- as a String
 type NamedNode = (String,Element)
 type NamedLink = ((String,String),Element)
 
-{-
-data NamedNodeElem = NodeElem { name :: String
-                                origin :: Element }
 
-data NamedLinkElem = LinkElem { source :: String
-                                target :: String
-                                origin :: Element }
--}
-
+-- | main function; receives an logicGraph and an initial DGraph, then adds
+-- all nodes and edges from an xml element into the DGraph 
 fromXml :: LogicGraph -> DGraph -> Element -> DGraph
 fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
@@ -61,6 +56,7 @@ extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
             Just name -> (name, e) : r
             Nothing -> r
 
+
 -- | All links are taken from the xml-element. The links have then to be 
 -- filtered so that only definition links are considered. Then, the source and
 -- target attributes are looked up and stored alongside the link access. Links
@@ -68,14 +64,15 @@ extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
 extractLinkElements :: Element -> [NamedLink]
 extractLinkElements = foldr f [] . filter isDef . 
                     findChildren (unqual "DGLink") where
-  isDef e = case findChild (unqual "Type") e of
-              Just tp -> isInfixOf "Def" $ strContent tp
-              Nothing -> False
   f e r = case findAttr (unqual "source") e of
             Just src -> case findAttr (unqual "target") e of
               Just trg -> ((src, trg), e) : r
               Nothing -> r
             Nothing -> r
+  isDef e = case findChild (unqual "Type") e of
+              Just tp -> isInfixOf "Def" $ strContent tp
+              Nothing -> False
+
 
 -- |  All nodes that do not have dependencies via the links are processed at 
 -- the beginning and written into the DGraph. The remaining nodes are returned
@@ -89,10 +86,12 @@ initialiseNodes dg gt nodes links = let
   dg' = foldl insertNodeDG dg $ map (mkDGNodeLab gt) indep
   in (dg',dep)
 
+
 -- | Writes a single Node into the DGraph
 insertNodeDG :: DGraph -> DGNodeLab -> DGraph
 insertNodeDG dg lbl = let n = getNewNodeDG dg in
   insLNodeDG (n,lbl) dg
+
 
 -- TODO: links have to be inserted as well, use insLEdgeDG
 insertEdgeDG :: NamedLink -> DGraph -> DGraph
@@ -126,7 +125,7 @@ processNodes nodes ((th,l@((_,trg),_)):ls) dg =
     _ -> error "fromXML.processNodes: link has no or multiple targets"
 
 
--- |  Help function for iterateNodes. Given a list of links, it partitions the
+-- | Help function for iterateNodes. Given a list of links, it partitions the
 -- links depending on if their source has been processed. Then stores the
 -- source-nodes G_theory alongside for easy access.
 splitLinks :: DGraph -> [NamedLink] -> ([(G_theory,NamedLink)],[NamedLink])
@@ -140,13 +139,13 @@ splitLinks dg = foldr (\l@((src,_),_) (r,r') -> case lookupNodeByName src dg of
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
 mkDGNodeLab gt (name, el) = let
-  (response,message) = extendByBasicSpec (strContent el) gt -- TODO test string extraction!
+  (response,message) = extendByBasicSpec (extractSpecString el) gt -- TODO test string extraction!
   in case response of
     Failure _ -> error $ "FromXML.mkDGNodeLab: "++message
     Success gt' _ symbs _ -> 
       newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
-extractSpecsString :: Element -> String
-extractSpecsString el = case elChildren el of
+extractSpecString :: Element -> String
+extractSpecString el = case elChildren el of
   [] -> strContent el ++ "\n"
-  cld -> concat $ map extractSpecsString cld
+  cld -> concat $ map extractSpecString cld
