@@ -165,7 +165,7 @@ mkQuantifier t = IsaSign.Abs
                   (IsaSign.Free (IsaSign.mkVName "y"))
                   (IsaSign.App (translateTerm t)
                     (IsaSign.Abs
-                     (IsaSign.Free (IsaSign.mkVName "y"))
+                     (IsaSign.Free (IsaSign.mkVName "x"))
                      (IsaSign.Free (IsaSign.mkVName "y"))
                      IsaSign.NotCont)
                     IsaSign.NotCont)
