@@ -104,9 +104,6 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
 notIgnore :: [String]
 notIgnore = ["+","-","*"]
 
-quantifiers :: [String]
-quantifiers = ["!","?","?!"]
-
 ignore :: [String]
 ignore = (map fst $ Map.toList constMap) \\ notIgnore
 
@@ -151,9 +148,9 @@ handleGabs b t = case t of
    let t1 = IsaSign.Abs n
              (IsaSign.Case n [(pat,res)])
              IsaSign.NotCont
-   in makeForAll q vars (if b then (IsaSign.App q t1
+   in if b then makeForAll q vars (IsaSign.App q t1
                                     IsaSign.NotCont)
-                             else t1)
+      else t1
  _ -> error "handleGabs failed"
 
 translateTerm :: Term -> IsaSign.Term
@@ -162,6 +159,24 @@ translateTerm (Var s tp _) = IsaSign.Free $ (transConstS s tp)
 translateTerm (Const s tp _) = IsaSign.Const (transConstS s tp) $ tp2DTyp tp
 translateTerm (Comb (Const "!" _ _) t@(Comb (Const "GABS" _ _) _)) = handleGabs True t 
 translateTerm t@(Comb (Const "GABS" _ _) (Abs (Var "f" _ _) _)) = handleGabs False t
+translateTerm (Comb (Comb (Comb (Const "COND" _ _) i) t) e) = IsaSign.If
+                                                               (translateTerm i)
+                                                               (translateTerm t)
+                                                               (translateTerm e)
+                                                               IsaSign.NotCont
+translateTerm (Comb c1@(Const c _ _) t) = if (is_abs t)
+                                          then IsaSign.App
+                                                (translateTerm c1)
+                                                (translateTerm t)
+                                                IsaSign.NotCont
+                                          else IsaSign.App (translateTerm c1)
+                                                (IsaSign.Abs
+                                                  (IsaSign.Free (IsaSign.mkVName "y"))
+                                                  (IsaSign.App (translateTerm t)
+                                                    (IsaSign.Free (IsaSign.mkVName "y"))
+                                                    IsaSign.NotCont)
+                                                  IsaSign.NotCont)
+                                                IsaSign.NotCont
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
