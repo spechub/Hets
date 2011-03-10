@@ -21,7 +21,7 @@ import Logic.Grothendieck (LogicGraph (..), startSigId)
 import Logic.ExtSign (ext_empty_signature)
 
 import qualified Data.Map as Map (lookup)
-import Data.List (partition)
+import Data.List (partition, isInfixOf)
 
 import Text.XML.Light
 
@@ -30,35 +30,56 @@ import Text.XML.Light
 type NamedNode = (String,Element)
 type NamedLink = ((String,String),Element)
 
-fromXML :: LogicGraph -> DGraph -> Element -> DGraph
-fromXML lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
+{-
+data NamedNodeElem = NodeElem { name :: String
+                                origin :: Element }
+
+data NamedLinkElem = LinkElem { source :: String
+                                target :: String
+                                origin :: Element }
+-}
+
+fromXml :: LogicGraph -> DGraph -> Element -> DGraph
+fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
     error "FromXML.fromXML: current logic was not found in logicMap"
   Just (Logic lid) -> let
     emptyTheory = G_theory lid (ext_empty_signature lid)
                     startSigId noSens startThId
-    -- extract all nodes and store them with their names in fst field
-    nodes :: [NamedNode]
-    nodes = map nameNode $ findChildren (unqual "DGNode") el where
-      nameNode e = case findAttr (unqual "name") e of
-                 Just name -> (name, e)
-                 Nothing -> error "FromXML.fromXML: node has no name"
-    -- extract all links and store tuple of source and target names in fst field
-    links :: [NamedLink] -- TODO filter links so only DefLinks are considered
-    links = map nameLink $ findChildren (unqual "DGLink") el where
-      nameLink e = case findAttr (unqual "source") e of
-                 Just src -> case findAttr (unqual "target") e of
-                   Just trg -> ((src, trg), e)
-                   Nothing -> error "FromXML.fromXML: link has no target"
-                 Nothing -> error "FromXML.fromXML: link has no source"
+    nodes = extractNodeElements el
+    links = extractLinkElements el
     (dg', depNodes) = initialiseNodes dg emptyTheory nodes links
     in iterateLinks dg' depNodes links
 
-{-
-  All nodes that do not have dependencies via the links are processed at the
-  beginning and written into the DGraph. The remaining nodes are returned as
-  well for further processing.
--}
+
+-- | All nodes are taken from the xml-element. Then, the name-attribute is
+-- looked up and stored alongside the node for easy access. Nodes with no names
+-- are ignored (and should never occur).
+extractNodeElements :: Element -> [NamedNode]
+extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
+  f e r = case findAttr (unqual "name") e of
+            Just name -> (name, e) : r
+            Nothing -> r
+
+-- | All links are taken from the xml-element. The links have then to be 
+-- filtered so that only definition links are considered. Then, the source and
+-- target attributes are looked up and stored alongside the link access. Links
+-- with source or target information missing are irgnored.
+extractLinkElements :: Element -> [NamedLink]
+extractLinkElements = foldr f [] . filter isDef . 
+                    findChildren (unqual "DGLink") where
+  isDef e = case findChild (unqual "Type") e of
+              Just tp -> isInfixOf "Def" $ strContent tp
+              Nothing -> False
+  f e r = case findAttr (unqual "source") e of
+            Just src -> case findAttr (unqual "target") e of
+              Just trg -> ((src, trg), e) : r
+              Nothing -> r
+            Nothing -> r
+
+-- |  All nodes that do not have dependencies via the links are processed at 
+-- the beginning and written into the DGraph. The remaining nodes are returned
+-- as well for further processing.
 initialiseNodes :: DGraph -> G_theory -> [NamedNode] -> [NamedLink] 
                 -> (DGraph,[NamedNode])
 initialiseNodes dg gt nodes links = let 
@@ -68,9 +89,7 @@ initialiseNodes dg gt nodes links = let
   dg' = foldl insertNodeDG dg $ map (mkDGNodeLab gt) indep
   in (dg',dep)
 
-{-
-  Writes a single Node into the DGraph
--}
+-- | Writes a single Node into the DGraph
 insertNodeDG :: DGraph -> DGNodeLab -> DGraph
 insertNodeDG dg lbl = let n = getNewNodeDG dg in
   insLNodeDG (n,lbl) dg
@@ -79,13 +98,12 @@ insertNodeDG dg lbl = let n = getNewNodeDG dg in
 insertEdgeDG :: NamedLink -> DGraph -> DGraph
 insertEdgeDG ((src,trg),l) dg = undefined
 
-{-
-  This is the main loop. In every step, all links are extracted which source
-  has already been processed. Then, for each of these links, the target node
-  is calculated and stored using the sources G_theory.
-  The function is called again with the remaining links and additional nodes
-  (stored in DGraph) until the list of links reaches null.
--}
+
+-- | This is the main loop. In every step, all links are extracted which source
+-- has already been processed. Then, for each of these links, the target node
+-- is calculated and stored using the sources G_theory.
+-- The function is called again with the remaining links and additional nodes
+-- (stored in DGraph) until the list of links reaches null.
 iterateLinks :: DGraph -> [NamedNode] -> [NamedLink] -> DGraph
 iterateLinks dg _ [] = dg
 iterateLinks dg nodes links = let (cur,lftL) = splitLinks dg links
@@ -94,11 +112,10 @@ iterateLinks dg nodes links = let (cur,lftL) = splitLinks dg links
       "FromXML.iterateLinks: remaining links cannot be processed"
     else iterateLinks dg' lftN lftL
 
-{-
-  Help function for iterateNodes. For every link, the target node is created
-  and stored in DGraph. Then the link is stored in DGraph.
-  Returns updated DGraph and the list of nodes that have not been captured.
--}
+
+-- | Help function for iterateNodes. For every link, the target node is created
+-- and stored in DGraph. Then the link is stored in DGraph.
+-- Returns updated DGraph and the list of nodes that have not been captured.
 processNodes :: [NamedNode] -> [(G_theory,NamedLink)] -> DGraph 
              -> (DGraph,[NamedNode])
 processNodes nodes [] dg = (dg,nodes)
@@ -108,11 +125,10 @@ processNodes nodes ((th,l@((_,trg),_)):ls) dg =
             $ insertNodeDG dg (mkDGNodeLab th o)
     _ -> error "fromXML.processNodes: link has no or multiple targets"
 
-{-
-  Help function for iterateNodes. Given a list of links, it partitions the
-  links depending on if their source has been processed. Then stores the
-  source-nodes G_theory alongside for easy access.
--}
+
+-- |  Help function for iterateNodes. Given a list of links, it partitions the
+-- links depending on if their source has been processed. Then stores the
+-- source-nodes G_theory alongside for easy access.
 splitLinks :: DGraph -> [NamedLink] -> ([(G_theory,NamedLink)],[NamedLink])
 splitLinks dg = foldr (\l@((src,_),_) (r,r') -> case lookupNodeByName src dg of
     [(_,lbl)] -> ((dgn_theory lbl, l):r,r')
@@ -120,18 +136,17 @@ splitLinks dg = foldr (\l@((src,_),_) (r,r') -> case lookupNodeByName src dg of
     _ -> error "FromXML.splitLinks: found multiple nodes for one NodeName" 
   ) ([],[])
 
-{-
-  Generates a new DGNodeLab with a startoff-G_theory and an Element
--}
+
+-- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
 mkDGNodeLab gt (name, el) = let
-  (response,message) = extendByBasicSpec (strContent el) gt -- TODO extract string properly!
+  (response,message) = extendByBasicSpec (strContent el) gt -- TODO test string extraction!
   in case response of
     Failure _ -> error $ "FromXML.mkDGNodeLab: "++message
     Success gt' _ symbs _ -> 
       newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
-extractBasicSpecs :: Element -> String
-extractBasicSpecs el = case elChildren el of
+extractSpecsString :: Element -> String
+extractSpecsString el = case elChildren el of
   [] -> strContent el ++ "\n"
-  cld -> concat $ map extractBasicSpecs cld
+  cld -> concat $ map extractSpecsString cld
