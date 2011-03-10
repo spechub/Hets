@@ -2,7 +2,7 @@
 
 PortSystem 1.0 
 name            hets
-version         svn_r14654
+version         svn_r14690
 categories      math
 maintainers     nomaintainer
 platforms       darwin
@@ -16,7 +16,7 @@ long_description    \
 homepage        http://www.dfki.de/sks/hets
 master_sites    ${homepage}/src-distribution/versions/
 
-checksums   md5 fd89c56e54c42c817c9b0a4a9012db7b
+checksums   md5 0affe75b0550e0d2c9d8007d12dfe830
 #checksums   md5 ea6e555e87510bb20e2ae6c6ffc900a9 \
 #            sha1 f67667ef854b6352e8d93f5c200db0c6b202660d \
 #            rmd160 e300ace6b59feeca522853c57dde360a0e9da278
@@ -26,12 +26,16 @@ universal_variant no
 depends_build   bin:ghc:ghc
 depends_lib     port:hs-platform-fgl \
                 port:hs-platform-cabal
+                # port:hs-platform-HTTP \
+                # port:hs-platform-haskell-src \
+                # port:hs-platform-mtl \
+                # port:hs-platform-network \
+                # port:hs-platform-parsec \
+                # port:hs-platform-time
 
 # hets release package comes as a tar containing a "Hets" directory.
 # Take me to your sources:
-post-extract {
-    set worksrcdir Hets
-}
+set worksrcdir Hets
 
 # skip phase configure (there is no ./configure)
 use_configure no
@@ -40,13 +44,14 @@ pre-build {
     # we really shouldn't do this #TODO
     # but there's no port package for Haskell's xml
     ui_msg "Calling cabal"
-    ui_msg "update"
+    ui_msg "    update"
     system "exec ${prefix}/bin/cabal update"
-    ui_msg "install xml"
+    ui_msg "    install xml"
     system "exec ${prefix}/bin/cabal --global --prefix=${prefix} install xml"
-    ui_msg "Cabal finished"
+    ui_msg "cabal finished"
 
     # run make depend && make
+    ui_msg "now building ${name}"
     set build.cmd "${build.cmd} depend && ${build.cmd}"
 }
 
