@@ -98,7 +98,6 @@ constMap = Map.fromList [("+",IsaConsts.plusV)
                         ,("~",IsaConsts.notV)
                         ,("F",IsaSign.mkVName IsaConsts.cTrue)
                         ,("T",IsaSign.mkVName IsaConsts.cFalse)
-                        ,("~",IsaConsts.notV)
                         ]
 
 notIgnore :: [String]
@@ -153,6 +152,33 @@ handleGabs b t = case t of
       else t1
  _ -> error "handleGabs failed"
 
+mkAbs :: Term -> IsaSign.Term
+mkAbs t = IsaSign.Abs
+           (IsaSign.Free (IsaSign.mkVName "y"))
+           (IsaSign.App (translateTerm t)
+             (IsaSign.Free (IsaSign.mkVName "y"))
+             IsaSign.NotCont)
+           IsaSign.NotCont
+
+mkQuantifier :: Term -> IsaSign.Term
+mkQuantifier t = IsaSign.Abs
+                  (IsaSign.Free (IsaSign.mkVName "y"))
+                  (IsaSign.App (translateTerm t)
+                    (IsaSign.Abs
+                     (IsaSign.Free (IsaSign.mkVName "y"))
+                     (IsaSign.Free (IsaSign.mkVName "y"))
+                     IsaSign.NotCont)
+                    IsaSign.NotCont)
+                  IsaSign.NotCont
+
+isAppT :: HolType -> Bool
+isAppT (TyApp _ _) = True
+isAppT _ = False
+
+isQuantifier :: Term -> Bool
+isQuantifier (Const c _ _) = elem c ["!","?","?!"]
+isQuantifier _ = False
+
 translateTerm :: Term -> IsaSign.Term
 translateTerm (Comb (Comb (Const "," _ _) a) b) = IsaSign.Tuplex [translateTerm a, translateTerm b] IsaSign.NotCont
 translateTerm (Var s tp _) = IsaSign.Free $ (transConstS s tp)
@@ -164,22 +190,19 @@ translateTerm (Comb (Comb (Comb (Const "COND" _ _) i) t) e) = IsaSign.If
                                                                (translateTerm t)
                                                                (translateTerm e)
                                                                IsaSign.NotCont
-translateTerm (Comb c1@(Const c _ _) t) = if (is_abs t)
-                                          then IsaSign.App
+translateTerm (Comb c1@(Const _ tp _) t) = if (is_abs t) || ((isAppT tp) && not (isQuantifier t))
+                                           then IsaSign.App
                                                 (translateTerm c1)
                                                 (translateTerm t)
                                                 IsaSign.NotCont
                                           else IsaSign.App (translateTerm c1)
-                                                (IsaSign.Abs
-                                                  (IsaSign.Free (IsaSign.mkVName "y"))
-                                                  (IsaSign.App (translateTerm t)
-                                                    (IsaSign.Free (IsaSign.mkVName "y"))
-                                                    IsaSign.NotCont)
-                                                  IsaSign.NotCont)
+                                                (if isQuantifier t
+                                                 then (mkQuantifier t)
+                                                 else (mkAbs t))
                                                 IsaSign.NotCont
 translateTerm (Comb tm1 tm2) = IsaSign.App (translateTerm tm1)
-                                          (translateTerm tm2)
-                                          IsaSign.NotCont
+                                (translateTerm tm2)
+                                IsaSign.NotCont
 translateTerm (Abs tm1 tm2) = IsaSign.Abs (translateTerm tm1)
                                           (translateTerm tm2)
                                           IsaSign.NotCont
