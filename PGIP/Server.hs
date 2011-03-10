@@ -112,16 +112,25 @@ hetsServer opts1 = do
          if null cs then getHetsResponse opts [] sessRef path query
            else mkHtmlPage path dirs
     "POST" -> do
-      (_, files) <- parseRequestBody tempFileSink re
+      (params, files) <- parseRequestBody tempFileSink re
+      mTmpFile <- case lookup "content"
+                   $ map (\ (a, b) -> (B8.unpack a, b)) params of
+              Nothing -> return Nothing
+              Just areatext -> let content = B8.unpack areatext in
+                if all isSpace content then return Nothing else
+                fmap Just $ getTempFile content "temp.het"
+      let res tmpFile = getHetsResponse opts [] sessRef tmpFile query
+          mRes = maybe (return $ mkResponse status400 "nothing submitted")
+            res mTmpFile
       case files of
-        [] -> return $ mkResponse status400 "no file uploaded"
+        [] -> mRes
         [(_, f)] | query /= "?update" -> do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
+             let tmpFile = tempHetsLib </> fn
              copyFile (fileContent f) (tempHetsLib </> fn)
-             dirs <- getHetsLibContent opts "" query
-             mkHtmlPage "" dirs
-            else return $ mkResponse status400 $ "illegal file name: " ++ fn
+             maybe (res tmpFile) res mTmpFile
+            else mRes
         _ -> getHetsResponse opts (map snd files) sessRef path query
     _ -> return $ mkResponse status405 ""
 
@@ -594,6 +603,10 @@ mkForm a = add_attrs
 uploadHtml :: Element
 uploadHtml = mkForm "/"
   [ loadNode "file"
+  , unode "p" $ add_attrs
+    [ mkAttr "cols" "68"
+    , mkAttr "rows" "22"
+    , mkAttr "name" "content" ] $ unode "textarea" ""
   , submitNode ]
 
 loadXUpdate :: String -> Element
