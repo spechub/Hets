@@ -72,8 +72,11 @@ displayTypes :: [String]
 displayTypes =
   ["svg", "xml", "dot", "session"] ++ ppList
 
+comorphs :: [String]
+comorphs = ["provers", "translations"]
+
 nodeCommands :: [String]
-nodeCommands = ["node", "theory", "provers", "translations", "prove"]
+nodeCommands = ["node", "theory"] ++ comorphs ++ ["prove"]
 
 proveParams :: [String]
 proveParams = ["timeout", "include", "prover", "translation", "theorems"]

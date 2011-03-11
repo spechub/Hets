@@ -100,8 +100,10 @@ hetsServer :: HetcatsOpts -> IO ()
 hetsServer opts1 = do
   tempDir <- getTemporaryDirectory
   let tempHetsLib = tempDir </> "MyHetsLib"
+      permFile = tempDir </> "empty.txt"
       opts = opts1 { libdirs = tempHetsLib : libdirs opts1 }
   createDirectoryIfMissing False tempHetsLib
+  writeFile permFile ""
   sessRef <- newIORef IntMap.empty
   run 8000 $ \ re ->
     let query = B8.unpack $ queryString re
@@ -117,8 +119,10 @@ hetsServer opts1 = do
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
               Just areatext -> let content = B8.unpack areatext in
-                if all isSpace content then return Nothing else
-                fmap Just $ getTempFile content "temp.het"
+                if all isSpace content then return Nothing else do
+                   tmpFile <- getTempFile content "temp.het"
+                   copyPermissions permFile tmpFile
+                   return $ Just tmpFile
       let res tmpFile = getHetsResponse opts [] sessRef tmpFile query
           mRes = maybe (return $ mkResponse status400 "nothing submitted")
             res mTmpFile
@@ -128,7 +132,9 @@ hetsServer opts1 = do
            let fn = takeFileName $ B8.unpack $ fileName f
            if any isAlphaNum fn then do
              let tmpFile = tempHetsLib </> fn
-             copyFile (fileContent f) (tempHetsLib </> fn)
+                 snkFile = fileContent f
+             copyPermissions permFile snkFile
+             copyFile snkFile tmpFile
              maybe (res tmpFile) res mTmpFile
             else mRes
         _ -> getHetsResponse opts (map snd files) sessRef path query
@@ -489,16 +495,23 @@ sessAns libName (sess, k) =
       noderef (n, lbl) =
         let s = show n
             lTh = dgn_theory lbl
-            gs = getThGoals $ fromMaybe lTh $ globalTheory lbl
+            gTh = fromMaybe lTh $ globalTheory lbl
+            gs = getThGoals gTh
+            noProvers = null $ getAllAutomaticProvers $ sublogicOfTh gTh
             lgs = map fst (getThGoals lTh) \\ map fst gs
             (ps, os) = partition (maybe False isProvedBasically . snd) gs
             subsumed = if null lgs then "" else
-              " (" ++ show (length lgs) ++ " subsumed)"
+              " (" ++ shows (length lgs) " subsumed)"
+            goalInfo = '[' : shows (length ps) "/" ++ shows (length gs) "]"
+              ++ subsumed
         in
         unode "i" (s ++ " " ++ getDGNodeName lbl) : map (\ c ->
-        let isProve = c == "prove" in
-        if isProve && null gs then unode "i" ("no goals" ++ subsumed) else
-        aRef (libPath ++ c ++ "=" ++ s
+          let isProve = c == "prove" in
+          if isProve && (null gs || noProvers) then
+            unode "i"
+               (if null gs then "no goals" ++ subsumed else
+                   "no provers available " ++ goalInfo)
+          else aRef (libPath ++ c ++ "=" ++ s
               ++ if isProve then "&theorems="
                  ++ intercalate "+"
                    (map encodeForQuery
@@ -506,10 +519,8 @@ sessAns libName (sess, k) =
                    $ filter (all $ not . isSpace) $ map fst
                    $ if null os then gs else os)
                  else "")
-              $ if isProve then
-                  c ++ "[" ++ show (length ps) ++ "/"
-                        ++ show (length gs) ++ "]" ++ subsumed
-                else c) nodeCommands
+              $ if isProve then c ++ goalInfo else c)
+        (if noProvers then nodeCommands \\ comorphs else nodeCommands)
       edgeref e@(_, _, lbl) =
         aRef (libPath ++ "edge=" ++ showEdgeId (dgl_id lbl))
                  $ showLEdge e
