@@ -147,8 +147,12 @@ page1 :: String -> WithHTML x CGI ()
 page1 title1 = do
       h1 $ text title1
       p $ do
+        text "You may also want to try out our experimental "
+        hlink (URL "http://pollux.informatik.uni-bremen.de:8000/")
+          $ text "Hets Server"
+      p $ do
         text "Enter a "
-        hlink (read hetcaslUrl) $ text "HetCASL"
+        hlink (URL hetcaslUrl) $ text "HetCASL"
         text
           " specification or library in the input zone, then press SUBMIT:"
       -- Input field
@@ -170,7 +174,7 @@ page1 title1 = do
       hr_S CGI.empty
       p $ do
         text "Contact address: "
-        hlink (read contactUrl) $ text contactText
+        hlink (URL contactUrl) $ text contactText
 
 -- handle of the submit botton
 handle :: HasValue i => F5 (i String) (i Bool) (i Bool) (i Bool) (i Bool) VALID
