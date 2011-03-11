@@ -14,7 +14,6 @@ module PGIP.Server (hetsServer, sourceToBs) where
 import PGIP.Query
 
 import Driver.Options
-import Driver.ReadFn
 
 import Network.Wai.Handler.SimpleServer
 import Network.Wai
@@ -243,8 +242,9 @@ getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = case dgQ of
   NewDGQuery file -> do
-    (ln, le) <- anaLibFileOrGetEnv logicGraph opts { outputToStdout = False }
-      Set.empty emptyLibEnv emptyDG (fileToLibName opts file) file
+    (ln, le) <- anaSourceFile logicGraph opts
+      { outputToStdout = False, useLibPos = True }
+      Set.empty emptyLibEnv emptyDG file
     time <- lift getCurrentTime
     let sess = Session le ln [] time
     k <- lift $ addNewSess sessRef sess

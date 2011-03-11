@@ -90,16 +90,27 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
         else do
         inputLit <- readEncFile (ioEncoding opts) file
         let input = (if unlit opts then Unlit.unlit else id) inputLit
+            libStr = if isAbsolute fname
+              then convertFileToLibStr $ takeBaseName fname
+              else dropExtensions fname
+            nLn = case mln of
+              Nothing | useLibPos opts ->
+                Just $ emptyLibName libStr
+              _ -> mln
         putIfVerbose opts 2 $ "Reading file " ++ file
         if takeExtension file /= ('.' : show TwelfIn)
            then runResultT $
-                   anaString mln lgraph opts topLns libenv initDG input file
+                   anaString nLn lgraph opts topLns libenv initDG input file
            else do
              res <- anaTwelfFile opts file
              case res of
                   Nothing -> fail ""
                   Just (lname, lenv) -> return $ Result [] $
                       Just (lname, Map.union lenv libenv)
+
+convertFileToLibStr :: FilePath -> String
+convertFileToLibStr = reverse . takeWhile (/= '/') . reverse
+  . filter (\ c -> isAlphaNum c || elem c "'_/")
 
 {- | parsing and static analysis for string (=contents of file)
 Parameters: logic graph, default logic, contents of file, filename -}
@@ -109,14 +120,17 @@ anaString :: Maybe LibName -- ^ suggested library name
 anaString mln lgraph opts topLns libenv initDG input file = do
   curDir <- lift getCurrentDirectory -- get full path for parser positions
   mt <- lift $ getModificationTime file
-  let Result ds mast = readLibDefnM lgraph opts (curDir </> file) input
+  let realFileName = curDir </> file
+      posFileName = case mln of
+          Just gLn | useLibPos opts -> show $ getLibId gLn
+          _ -> realFileName
+      Result ds mast = readLibDefnM lgraph opts posFileName input
   case mast of
     Just (Lib_defn pln is ps ans) ->
          let noSuffixFile = dropExtensions file
-             spN = reverse $ takeWhile (/= '/') $ reverse
-               $ filter (\ c -> isAlphaNum c || elem c "'_/") noSuffixFile
+             spN = convertFileToLibStr noSuffixFile
              noLibName = null $ show $ getLibId pln
-             nLn = setFilePath (curDir </> file) mt
+             nLn = setFilePath posFileName mt
                $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
              nIs = case is of
                [Annoted (Spec_defn spn gn as qs) rs [] []]

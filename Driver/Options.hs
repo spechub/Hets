@@ -154,6 +154,8 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
   , ioEncoding :: Enc
+    -- | use the library name in positions to avoid differences after uploads
+  , useLibPos :: Bool
   , unlit :: Bool
   , serve :: Bool
   , listen :: Int }
@@ -188,6 +190,7 @@ defaultHetcatsOpts = HcOpt
   , computeNormalForm = False
   , dumpOpts = []
   , ioEncoding = Latin1
+  , useLibPos = False
   , unlit = False
   , serve = False
   , listen = -1 }
