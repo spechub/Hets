@@ -1,5 +1,6 @@
 #!/bin/bash -xe
 
+# GHCRTS -A300m is needed to speed up writing out aterms to detect sharing
 GHCRTS='-H300m -M2g'
 LANG=de_DE.UTF-8
 
