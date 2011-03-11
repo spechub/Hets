@@ -277,11 +277,11 @@ processSVG dg c = case nextDF c of
 nodeAttrib :: DGNodeLab -> String
 nodeAttrib l = let nt = getRealDGNodeType l in
   (if isRefType nt then "Ref" else "")
-  ++ (if isProvenNode nt then "P" else "Unp") ++ "roven"
-  ++ (if isProvenCons nt then "Cons" else "")
+  ++ (if hasSenKind (const True) l then
+          (if isProvenNode nt then "P" else "Unp") ++ "roven"
+          ++ if isProvenCons nt then "Cons" else ""
+      else "LocallyEmpty")
   ++ (if isInternalSpec nt then "Internal" else "")
-  ++ (if hasOpenGoals l then "HasOpenGoals" else "")
-  ++ (if hasSenKind (const True) l then "" else "LocallyEmpty")
   ++ if labelHasHiding l then "HasIngoingHidingLink" else ""
 
 edgeAttrib :: DGLinkLab -> String
