@@ -1,0 +1,20 @@
+logic CspCASL
+
+spec Hugo =
+  data {
+    sorts S, T;
+    ops f : S -> S
+        g : T -> T;
+    }
+
+  process
+
+  P : S, T;
+  P(S) : S, T;
+  P(S, S) : S;
+  P(S, S) : T;
+  
+
+  P(x) = x -> |~| x :: T -> x -> P
+
+end

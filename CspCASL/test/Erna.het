@@ -1,0 +1,21 @@
+spec Data =
+  sort S < T
+end
+
+logic CspCASL
+
+spec Hugo =
+  data Data
+  process
+    P : S;
+    P = SKIP
+end
+
+spec Erna =
+  data Data
+  process
+    P : T;
+    P = STOP
+end
+
+spec Hermine = Hugo and Erna
