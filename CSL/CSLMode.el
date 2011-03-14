@@ -2,10 +2,12 @@
 ;; A keymap is suitable for menu use if it has an overall prompt string, which describes the purpose of the menu.
 ;; essentially: define-key map fake-key '(item command), where fake-key is of the form [menu-bar mymenu nl] and defines key nl in mymenu which must exist
 
+(setq encl-cas "Mathematica")
+
 (define-key-after
   global-map
   [menu-bar enclmenu]
-  (cons "ENCL" (make-sparse-keymap "encl menu"))
+  (cons "EnCL" (make-sparse-keymap "encl menu"))
   'tools)
 
 
@@ -181,7 +183,7 @@
     (switch-to-buffer buff)
     (insert "Starting evaluation of EnCL specification.\n")
 ;    (call-process "evalspec" nil buff t "-s" spec1 "-t10" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
-    (start-process "evaluation of EnCL specification" buff "evalspec" "-s" spec1 "-t25" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
+    (start-process "evaluation of EnCL specification" buff "evalspec" "-C" encl-cas "-s" spec1 "-t25" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
 ;;    (insert "\n\nEvaluation of EnCL specification finished.\n")
 ;;    (start-process-shell-command "evalproc" buff (concatenate 'string "evalspec -s " spec1 " " fp))
     nil)
@@ -199,3 +201,39 @@
 
   (refresh-specmenu)
 )
+
+(defun setmaple ()
+  (interactive)
+  (setq encl-cas "Maple")
+  )
+(defun setmathematica ()
+  (interactive)
+  (setq encl-cas "Mathematica")
+  )
+
+(setq encl-commands
+      '((refresh-evalmenu "Refreshes the EnCL evaluation menu based on the specification in the current buffer.")
+	(refresh-matchmenu "Refreshes the EnCL matching menu based on the specification in the current buffer.")
+	(setmaple "Selects the computer algebra system Maple for the evaluation.")
+	(setmathematica "Selects the computer algebra system Mathematica for the evaluation.")
+	(help-encl "Shows this help.")
+	)
+      )
+
+(defun show-command-entry (x)
+  (concatenate 'string (format "%s:\n%s\n" (nth 0 x) (nth 1 x)))
+  )
+
+(defun help-encl ()
+  (interactive)
+
+  (let ((buff (prepare-buffer "*EnCL-Help*")))
+
+    (switch-to-buffer buff)
+    
+    (dolist (x encl-commands)
+      (insert (show-command-entry x))
+      (insert "\n")
+      )
+    )
+  )
