@@ -23,6 +23,7 @@ import qualified CASL.Sign as CASL_Sign
 import qualified CASL.Simplify as CASL_Simplify
 
 import Common.Id (tokStr)
+import Common.Utils (number)
 
 import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
 import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
@@ -113,12 +114,12 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
                  -- transParam (term, declaredSortIndex) =
                  transParam (term, _) =
                      let termTar = ChanSendOrParam $
-                                   error "NYI: CspCASLProver.TransProcesses.transProcess: Not updated for new signatures yet" -- getProcParamSort pn declaredSortIndex
+                                   error "NYI: CspCASLProver.TransProcesses.transProcess: Not updated for new signatures yet" -- getProcParamSort pn (declaredSortIndex - 1)
                      in transCASLTerm caslSign pcfolSign cfolSign
                         vsm termTar term
                  -- Create a list of translated parameters, we number the
-                 -- parameters from zero
-                 paramTerms = map transParam $ zip fqParams [0 ..]
+                 -- parameters from one
+                 paramTerms = map transParam $ number fqParams
              in if null fqParams
                 -- If there are no parameters we just get the process name term
                 then cspProver_NamedProcOp pnTerm
