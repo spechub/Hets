@@ -1,7 +1,6 @@
-module FreeCAD.ParserTest
+module FreeCAD.Parser
     where
 
-import System.IO
 import FreeCAD.Translator
 import Data.Maybe
 import Text.XML.Light.Input
@@ -11,7 +10,7 @@ import Text.XML.Light.Input
 -- processFile "FreeCAD/input.xml"
 processFile :: FilePath -> IO ()
 processFile fp = do
-  xmlInput <-readFile 
+  xmlInput <-readFile fp 
   let parsed = parseXMLDoc xmlInput
   let out = translate (fromJust parsed)
   putStrLn (show out)
