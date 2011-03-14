@@ -66,7 +66,7 @@ import Data.Maybe
 import Numeric
 
 ppList :: [String]
-ppList = map (show . PrettyOut) prettyList
+ppList = map (show . PrettyOut) prettyList ++ ["pdf"]
 
 displayTypes :: [String]
 displayTypes =

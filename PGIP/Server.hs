@@ -200,22 +200,21 @@ nextSess sessRef newLib k =
         in (IntMap.insert k newSess m, newSess))
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO String
-ppDGraph dg mt = case mt of
-  Nothing -> error "ppDGraph"
-  Just pty -> let ga = globalAnnos dg in
-    case optLibDefn dg of
-      Nothing -> fail "parsed LIB-DEFN not avaible"
-      Just ld -> case pty of
+ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
+    Nothing -> fail "parsed LIB-DEFN not avaible"
+    Just ld ->
+      let latex = renderLatex Nothing (toLatex ga $ pretty ld) in case mt of
+      Just pty -> case pty of
         PrettyXml -> return $ ppTopElement $ xmlLibDefn ga ld
         PrettyAscii -> return $ showGlobalDoc ga ld "\n"
         PrettyHtml -> return $ htmlHead ++ renderHtml ga (pretty ld)
-        PrettyLatex -> lift $ do
+        PrettyLatex -> return latex
+      Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
          (tmpFile, hdl) <- openTempFile tmpDir "temp.tex"
+         copyPermissions (tmpDir </> "empty.txt") tmpFile
          hSetEncoding hdl latin1
-         hPutStr hdl $ latexHeader ++
-                 renderLatex Nothing (toLatex ga $ pretty ld)
-                 ++ latexFooter
+         hPutStr hdl $ latexHeader ++ latex ++ latexFooter
          hFlush hdl
          hClose hdl
          mapM_ (\ s -> do
