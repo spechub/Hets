@@ -31,16 +31,18 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import qualified Common.Lib.Rel as Rel
-import Common.Id (getRange, Id, nullRange, simpleIdToId, tokStr)
+import Common.Id (getRange, Id, nullRange, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
-import CspCASL.LocalTop (Obligation(..), unmetObs)
+import qualified CspCASL.LocalTop as LocalTop
 import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
-import CspCASL.Morphism(makeChannelNameSymbol, makeProcNameSymbol)
+import CspCASL.Morphism(makeChannelNameSymbol, makeFQProcNameSymbol)
+
+import qualified Data.Set as Set
 
 -- | The first element of the returned pair (CspBasicSpec) is the same
 --   as the inputted version just with some very minor optimisations -
@@ -78,17 +80,11 @@ ana_BASIC_CSP cc = do checkLocalTops
 checkLocalTops :: State CspCASLSign ()
 checkLocalTops = do
     sig <- get
-    let obs = unmetObs $ Rel.toList $ Rel.transClosure $ sortRel sig
-    addDiags (map lteError obs)
+    let diags' = LocalTop.checkLocalTops $ sortRel sig
+    -- Only error will be added if there are any probelms. If there are no
+    -- problems no errors will be added and hets will continue as normal.
+    addDiags (diags')
     return ()
-
--- | Add diagnostic error message for every unmet local top element
--- obligation.
-lteError :: Obligation SORT -> Diagnosis
-lteError (Obligation x y z) = mkDiag Error msg ()
-    where msg = ("local top element obligation ("
-                 ++ (show x) ++ "<" ++ (show y) ++ "," ++ (show z)
-                 ++ ") unfulfilled")
 
 -- Static analysis of channel declarations
 
@@ -131,96 +127,161 @@ anaChannelName s m chanName = do
 -- Static analysis of process items
 
 -- | Statically analyse a CspCASL process item.
-anaProcItem :: PROC_ITEM -> State CspCASLSign ()
-anaProcItem procItem =
-    case procItem of
-      (Proc_Decl name argSorts alpha) -> anaProcDecl name argSorts alpha
-      (Proc_Eq parmProcName procTerm) -> anaProcEq parmProcName procTerm
+anaProcItem :: (Annoted PROC_ITEM) -> State CspCASLSign ()
+anaProcItem annotedProcItem =
+  let procItem = item annotedProcItem
+  in case procItem of
+    (Proc_Decl name argSorts alpha) -> anaProcDecl name argSorts alpha
+    (Proc_Eq parmProcName procTerm) ->
+      anaProcEq annotedProcItem parmProcName procTerm
 
 -- Static analysis of process declarations
 
 -- | Statically analyse a CspCASL process declaration.
-anaProcDecl :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
+anaProcDecl :: SIMPLE_PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
             -> State CspCASLSign ()
-anaProcDecl name argSorts (ProcAlphabet commTypes _) = do
+anaProcDecl name argSorts comms = do
     sig <- get
     let ext = extendedInfo sig
         oldProcDecls = procSet ext
-    newProcDecls <-
-      if name `Map.member` oldProcDecls
-        then do -- duplicate process declaration
-                let err = "process name declared more than once"
-                addDiags [mkDiag Error err name]
-                return oldProcDecls
-        else do -- new process declation
-                checkSorts argSorts -- check argument sorts are known
-                -- build alphabet: set of CommType values. We do not
-                -- need the fully qualfied commTypes that are returned
-                -- (these area used for analysing Event Sets)
-                (alpha, _ ) <-
-                    Monad.foldM (anaCommType sig) (S.empty, []) commTypes
-                let profile = (ProcProfile argSorts alpha)
-                -- Add the process name as a symbol to the list of
-                -- newly defined symbols - which is stored in the CASL
-                -- signature
-                addSymbol (makeProcNameSymbol name)
-                return (Map.insert name profile oldProcDecls)
+    newProcDecls <- do
+      -- new process declation
+      profile <- anaProcAlphabet argSorts comms
+      -- Add the process name as a symbol to the list of
+      -- newly defined symbols - which is stored in the CASL
+      -- signature
+      let fqPn = FQ_PROCESS_NAME name profile
+      addSymbol $ makeFQProcNameSymbol fqPn
+      -- Check the name (with profile) is new (for warning only)
+      if isNameInProcNameMap name profile oldProcDecls
+         then -- name with profile already in signature
+              do let warn = "process name redeclared with same profile '" ++
+                            show (printProcProfile profile) ++ "':"
+                 addDiags [mkDiag Warning warn name]
+                 return oldProcDecls
+         else -- New name with profile - add the name to the signature in the
+              -- state
+              return $ addProcNameToProcNameMap name profile oldProcDecls
     sig2 <- get
     put sig2 { extendedInfo = ext {procSet = newProcDecls }}
 
 -- Static analysis of process equations
 
+-- | Find a profile for a process name. Either the profile is given via a parsed
+-- fully qualified process name, in which case we check everything is valid and
+-- the process name with the profile is known. Or its a plain process name where
+-- we must deduce a unique profile is possible. We also know how many variables
+-- / parameters the process name has.
+findProfileForProcName :: FQ_PROCESS_NAME -> Int -> ProcNameMap ->
+                          State CspCASLSign (Maybe ProcProfile)
+findProfileForProcName pn numParams procNameMap =
+  case pn of
+    FQ_PROCESS_NAME _ _ ->
+      -- We should not be trying to find a profile for a fully qualified process
+      -- name
+      error $ "CspCASL.StatAnaCsp.findProfileForProcName: Process name\
+              \ already fully qualified: " ++ show pn
+    PARSED_FQ_PROCESS_NAME pn' argSorts comms -> do
+      profile <- anaProcAlphabet argSorts comms
+      let profiles = Map.findWithDefault Set.empty pn' procNameMap
+      if  profile `Set.member` profiles
+        then return $ Just profile
+        else do
+          addDiags [mkDiag Error
+                    "Fully qualified process name not in signature" pn]
+          return Nothing
+    PROCESS_NAME pn' ->
+      let resProfile = getUniqueProfileInProcNameMap pn' numParams procNameMap
+      in case resultToMaybe resProfile of
+        Nothing ->
+          do addDiags $ diags resProfile
+             return Nothing
+        Just profile' ->
+          return $ Just profile'
+
+-- | Analyse a process name an return a fully qualified one if possible. We also
+-- know how many variables / parameters the process name has.
+anaProcName :: FQ_PROCESS_NAME -> Int ->  State CspCASLSign (Maybe FQ_PROCESS_NAME)
+anaProcName pn numParams= do
+  sig <- get
+  let ext = extendedInfo sig
+      procDecls = procSet ext
+      simpPn = procNameToSimpProcName pn
+  maybeProf <- findProfileForProcName pn numParams procDecls
+  case maybeProf of
+    Nothing -> return Nothing
+    Just profile ->
+      -- We now construct the real fully qualified process name
+      return $ Just $ FQ_PROCESS_NAME simpPn profile
+
 -- | Statically analyse a CspCASL process equation.
-anaProcEq :: PARM_PROCNAME -> PROCESS -> State CspCASLSign ()
-anaProcEq (ParmProcname pn vs) proc = do
+anaProcEq :: Annoted a -> PARM_PROCNAME -> PROCESS -> State CspCASLSign ()
+anaProcEq a (ParmProcname pn vs) proc =
+  -- the 'annoted a' contains the annotation of the process equation. We do not
+  -- care what the underlying item is in the annotation (but it probably will be
+  -- the proc eq)
+  do
     sig <- get
     let ext = extendedInfo sig
         ccsens = ccSentences ext
-        procDecls = procSet ext
-        prof = pn `Map.lookup` procDecls
-    case prof of
-         -- Only analyse a process if its name (and thus profile) is known
-         Just (ProcProfile procArgs procAlpha) ->
-             do  gVars <- anaProcVars pn procArgs vs -- compute global
-                 -- vars Change a procVarList to a FQProcVarList We do
-                 -- not care about the range as we are building fully
-                 -- qualified variables and they have already been
-                 -- checked to be ok.
-                 let mkFQProcVar (v,s) = Qual_var v s nullRange
-                 let fqGVars = map mkFQProcVar gVars
-                 (termAlpha, fqProc) <-
-                     anaProcTerm proc (Map.fromList gVars) Map.empty
-                 checkCommAlphaSub termAlpha procAlpha proc "process equation"
-                 -- Save the diags from the checkCommAlphaSub
-                 vds <- gets envDiags
-                 -- put CspCASL Sentences back in to the state with new sentence
-                 put sig {envDiags = vds, extendedInfo =
-                          ext { ccSentences =
-                                -- BUG - What should the constituent
-                                -- alphabet be for this process?
-                                -- probably the same as the inner one!
-                                (makeNamed ("Proc_" ++ tokStr pn)
-                                               (ProcessEq pn fqGVars
-                                                          procAlpha
-                                                          fqProc)):ccsens
-                              }
-                         }
-                 return ()
-         Nothing ->
-             do addDiags [mkDiag Error
-                          "process equation for unknown process" pn]
+        -- procDecls = procSet ext
+    maybeFqPn <- anaProcName pn (length vs)
+    case maybeFqPn of
+      -- Only analyse a process if its name and profile is known
+      Nothing -> return ()
+      Just fqPn ->
+        case fqPn of
+          PROCESS_NAME _ ->
+            error "CspCasl.StatAnaCSP.anaProcEq: Impossible case"
+          PARSED_FQ_PROCESS_NAME _ _ _ ->
+            error "CspCasl.StatAnaCSP.anaProcEq: Impossible case"
+          FQ_PROCESS_NAME _ prof ->
+            case prof of
+              ProcProfile procArgs procAlpha -> do
+                gVars <- anaProcVars pn
+                         procArgs vs -- compute global
+                -- vars Change a procVarList to a FQProcVarList We do
+                -- not care about the range as we are building fully
+                -- qualified variables and they have already been
+                -- checked to be ok.
+                let mkFQProcVar (v,s) = Qual_var v s nullRange
+                let fqGVars = map mkFQProcVar gVars
+                (termAlpha, fqProc) <-
+                  anaProcTerm proc (Map.fromList gVars) Map.empty
+                checkCommAlphaSub termAlpha procAlpha proc "process equation"
+                -- Save the diags from the checkCommAlphaSub
+                vds <- gets envDiags
+                -- put CspCASL Sentences back in to the state with new sentence
+                -- BUG - What should the constituent alphabet be for this
+                -- process?  probably the same as the inner one!
+                let namedSen = makeNamedSen $
+                              -- We take the annotated item and replace the
+                              -- inner item, thus preserving the annotations. We
+                              -- then take this annotated sentence and make it a
+                              -- named sentence in accordance to the (if
+                              -- existing) name in the annotations.
+                               a {item =
+                                     ProcessEq fqPn fqGVars procAlpha fqProc}
+                put sig {envDiags = vds, extendedInfo =
+                            ext {ccSentences = namedSen:ccsens}
+                        }
                 return ()
     return ()
 
 -- | Statically analyse a CspCASL process equation's global variable
 -- names.
-anaProcVars :: PROCESS_NAME -> [SORT] -> [VAR] -> State CspCASLSign ProcVarList
+anaProcVars :: FQ_PROCESS_NAME -> [SORT] -> [VAR] ->
+               State CspCASLSign ProcVarList
 anaProcVars pn ss vs =
     do vars <-
            case (compare (length ss) (length vs)) of
-             LT -> do addDiags [mkDiag Error "too many process arguments" pn]
+             LT -> do addDiags [mkDiag Error
+                                "Process name applied to too many arguments:"
+                                pn]
                       return []
-             GT -> do addDiags [mkDiag Error "not enough process arguments" pn]
+             GT -> do addDiags [mkDiag Error
+                                "process name not applied to enough arguments:"
+                                pn]
                       return []
              EQ -> Monad.foldM anaProcVar [] (zip vs ss)
        return $ reverse $ vars
@@ -230,7 +291,7 @@ anaProcVar :: ProcVarList -> (VAR, SORT) -> State CspCASLSign ProcVarList
 anaProcVar old (v, s) = do
     if v `elem` (map fst old)
        then do addDiags [mkDiag Error
-                         "process argument declared more than once" v]
+                         "Process argument declared more than once:" v]
                return old
        else return ((v,s) : old)
 
@@ -376,31 +437,40 @@ anaProcTerm proc gVars lVars = case proc of
 -- | Statically analyse a CspCASL "named process" term. Return the
 --   permitted alphabet of the process and also a list of the fully qualified
 --   version of the inputted terms.
-anaNamedProc :: PROCESS -> PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
+-- BUG !!! the FQ_PROCESS_NAME may actually need to be a simple process name
+anaNamedProc :: PROCESS -> FQ_PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
                 State CspCASLSign (CommAlpha, [TERM ()])
 anaNamedProc proc pn terms procVars = do
-    sig <- get
-    let ext = extendedInfo sig
-        procDecls = procSet ext
-        prof = pn `Map.lookup` procDecls
-    case prof of
-      Just (ProcProfile varSorts permAlpha) ->
-        if (length terms) == (length varSorts)
+  maybeFqPn <- anaProcName pn (length terms)
+  -- sig <- get
+  -- let ext = extendedInfo sig
+  --     procDecls = procSet ext
+  --     prof = error "NYI: CspCASL.StatAnaCSP.anaNamedProc: Sentence not\
+  --                    \ implemented with new signatures\
+  --                    \ yet" -- pn `Map.lookup` procDecls
+  case maybeFqPn of
+    Nothing ->
+      -- Return the empty alphabet and the original
+      -- terms. There is an error in the spec.
+      return (S.empty, terms)
+    Just fqPn ->
+      case fqPn of
+        PROCESS_NAME _ ->
+          error "CspCasl.StatAnaCSP.anaNamedProc: Impossible case"
+        PARSED_FQ_PROCESS_NAME _ _ _ ->
+          error "CspCasl.StatAnaCSP.anaNamedProc: Impossible case"
+        FQ_PROCESS_NAME _ (ProcProfile varSorts permAlpha) ->
+          if (length terms) == (length varSorts)
           then do fqTerms <-
-                      mapM (anaNamedProcTerm procVars) (zip terms varSorts)
+                    mapM (anaNamedProcTerm procVars) (zip terms varSorts)
                   -- Return the permitted alphabet of the process and
                   -- the fully qualifed terms
                   return (permAlpha, fqTerms)
-          else do let err = "wrong number of arguments in named process"
+          else do let err = "Wrong number of arguments in named process"
                   addDiags [mkDiag Error err proc]
                   -- Return the empty alphabet and the original
                   -- terms. There is an error in the spec.
                   return (S.empty, terms)
-      Nothing ->
-        do addDiags [mkDiag Error "unknown process name" proc]
-           -- Return the empty alphabet and the original
-           -- terms. There is an error in the spec.
-           return (S.empty, terms)
 
 -- | Statically analysis a CASL term occurring in a CspCASL "named
 -- process" term.
@@ -441,6 +511,23 @@ anaEventSet eventSet =
              return (comms, FQEventSet (reverse fqEsElems) r)
       FQEventSet _ _ ->
           error "CspCASL.StatAnaCSP.anaEventSet: Unexpected FQEventSet"
+
+
+
+-- | Statically analyse a proc alphabet (i.e., a list of channel and sort
+-- identifiers) to yeild a list of sorts and typed channel names. We also check
+-- the parameter sorts and actually construct a process profile.
+anaProcAlphabet :: PROC_ARGS -> PROC_ALPHABET ->
+                   State CspCASLSign ProcProfile
+anaProcAlphabet argSorts (ProcAlphabet commTypes _) = do
+  sig <- get
+  checkSorts argSorts -- check argument sorts are known build alphabet: set of
+      -- CommType values. We do not need the fully qualfied commTypes that are
+      -- returned (these area used for analysing Event Sets)
+  (alpha, _ ) <- Monad.foldM (anaCommType sig) (S.empty, []) commTypes
+  let profile =
+        closeProcProfileSortRel (sortRel sig) (ProcProfile argSorts alpha)
+  return profile
 
 -- | Statically analyse a CspCASL communication type. Returns the
 --   extended alphabet and the extended list of fully qualified event
@@ -707,8 +794,9 @@ checkCommAlphaSub :: CommAlpha -> CommAlpha -> PROCESS -> String ->
                      State CspCASLSign ()
 checkCommAlphaSub sub super proc context = do
   sig <- get
-  let extras = ((closeCspCommAlpha sig sub) `S.difference`
-                (closeCspCommAlpha sig super))
+  let sr = sortRel sig
+  let extras = ((closeCspCommAlpha sr sub) `S.difference`
+                (closeCspCommAlpha sr super))
   if S.null extras
     then do return ()
     else do let err = ("Communication alphabet subset violations (" ++

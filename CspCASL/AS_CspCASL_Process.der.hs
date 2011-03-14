@@ -19,9 +19,14 @@ module CspCASL.AS_CspCASL_Process (
     COMM_TYPE,
     EVENT (..),
     EVENT_SET (..),
+    FQ_PROCESS_NAME (..),
     PROCESS (..),
-    PROCESS_NAME,
+    PROC_ARGS,
+    PROC_ALPHABET (..),
+    procNameToSimpProcName,
+    ProcProfile (..),
     RENAMING (..),
+    SIMPLE_PROCESS_NAME,
     TypedChanName (..)
 ) where
 
@@ -84,7 +89,35 @@ data RENAMING = Renaming [Id]
 
 type CHANNEL_NAME = SIMPLE_ID
 
-type PROCESS_NAME = SIMPLE_ID
+type SIMPLE_PROCESS_NAME = SIMPLE_ID
+
+type PROC_ARGS = [SORT]
+
+data PROC_ALPHABET = ProcAlphabet [COMM_TYPE] Range
+                     deriving (Show,Ord, Eq)
+
+-- | Fully qualified process names are indexed by parameter sorts, and a
+-- communication alphabet (a Set of sorts). The CommAlpha here should always
+-- contain downward closed sets (wrt the subsort relation).
+data ProcProfile = ProcProfile [SORT] CommAlpha
+                   deriving (Eq, Ord, Show)
+
+-- | A process name is either a fully qualified process name or a plain process
+-- name.
+data FQ_PROCESS_NAME =
+  -- | A non-fully qualified process name
+  PROCESS_NAME SIMPLE_PROCESS_NAME
+  -- | A fully qualified process name
+  | FQ_PROCESS_NAME SIMPLE_PROCESS_NAME ProcProfile
+  -- | A name with parameter sorts and communication ids from the parser.
+  -- This is where the user has tried to specify a fully qualified process name
+  | PARSED_FQ_PROCESS_NAME SIMPLE_PROCESS_NAME PROC_ARGS PROC_ALPHABET
+                  deriving (Eq, Ord, Show)
+
+procNameToSimpProcName :: FQ_PROCESS_NAME -> SIMPLE_PROCESS_NAME
+procNameToSimpProcName (PROCESS_NAME pn) = pn
+procNameToSimpProcName (FQ_PROCESS_NAME pn _ ) = pn
+procNameToSimpProcName (PARSED_FQ_PROCESS_NAME pn _ _) = pn
 
 type COMM_TYPE = SIMPLE_ID
 
@@ -97,10 +130,13 @@ data CommType = CommTypeSort SORT
               | CommTypeChan TypedChanName
                 deriving (Eq, Ord)
 
+-- | Type of communication types, either a sort communication or a typed channel
+-- communications.
 instance Show CommType where
     show (CommTypeSort s) = show s
     show (CommTypeChan (TypedChanName c s)) = show (c, s)
 
+-- | Type of communication alphabet
 type CommAlpha = Set.Set CommType
 
 -- | CSP-CASL process expressions.
@@ -138,7 +174,7 @@ data PROCESS
     -- | @if f then p else q@ - Conditional
     | ConditionalProcess (FORMULA ()) PROCESS PROCESS Range
     -- | Named process
-    | NamedProcess PROCESS_NAME [TERM ()] Range
+    | NamedProcess FQ_PROCESS_NAME [TERM ()] Range
     -- | Fully qualified process. The range here shall be the same as
     -- | in the process.
     | FQProcess PROCESS CommAlpha Range

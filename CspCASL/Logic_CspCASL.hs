@@ -36,7 +36,6 @@ import CASL.Logic_CASL
 import CASL.Morphism
 import CASL.Sign
 import CASL.SymbolParser
-import CASL.SymbolMapAnalysis
 
 import qualified CspCASL.AS_CspCASL as AS_CspCASL
 import qualified CspCASL.ATC_CspCASL ()
@@ -73,7 +72,7 @@ instance Show a => Sentences (GenCspCASL a)
     -- signature
     SignCSP.CspCASLSign
     -- morphism
-    CspCASL_Morphism.CspMorphism
+    CspCASL_Morphism.CspCASLMorphism
     -- symbol
     Symbol
     where
@@ -102,7 +101,7 @@ instance Show a => Syntax (GenCspCASL a)
 class Show a => CspCASLSemantics a where
   cspProvers :: a
     -> [Prover SignCSP.CspCASLSign SignCSP.CspCASLSen
-        CspCASL_Morphism.CspMorphism () ()]
+        CspCASL_Morphism.CspCASLMorphism () ()]
   cspProvers _ = []
 
 {- further dummy types for the trace of the failure semantics can be added
@@ -142,7 +141,7 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
     -- signature
     SignCSP.CspCASLSign
     -- morphism
-    CspCASL_Morphism.CspMorphism
+    CspCASL_Morphism.CspCASLMorphism
     Symbol
     RawSymbol
     -- proof_tree (missing)
@@ -166,7 +165,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     -- signature
     SignCSP.CspCASLSign
     -- morphism
-    CspCASL_Morphism.CspMorphism
+    CspCASL_Morphism.CspCASLMorphism
     Symbol
     RawSymbol
     where
@@ -176,20 +175,21 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       symbol_to_raw (GenCspCASL _) = symbolToRaw
       matches (GenCspCASL _) = CASL.Morphism.matches
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
-      is_subsig (GenCspCASL _) = isSubSig SignCSP.isCspSubSign
-      subsig_inclusion (GenCspCASL _) =
-          sigInclusion CspCASL_Morphism.emptyCspAddMorphism
-      signature_union (GenCspCASL _) s =
-          return . addSig SignCSP.addCspProcSig s
-      induced_from_morphism (GenCspCASL _) = inducedFromMorphismExt
-          (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
-          inducedCspMorphExt
-      induced_from_to_morphism (GenCspCASL _) = inducedFromToMorphismExt
-          (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
-          inducedCspMorphExt
-          CspCASL_Morphism.composeCspAddMorphism
-          SignCSP.isCspSubSign
-          SignCSP.diffCspProcSig
+      is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig
+      subsig_inclusion (GenCspCASL _) = CspCASL_Morphism.subsig_inclusion
+      signature_union (GenCspCASL _) s1 = SignCSP.unionCspCASLSign s1
+      induced_from_morphism (GenCspCASL _) =
+        error "NYI: CspCASL.Logic_CspCASL. instance StaticAnalysis induced_from_morphism"
+          -- inducedFromMorphismExt
+          -- (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
+          -- inducedCspMorphExt
+      induced_from_to_morphism (GenCspCASL _) = error "NYI: CspCASL.Logic_CspCASL. instance StaticAnalysis induced_from_to_morphism"
+          -- inducedFromToMorphismExt
+          -- (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
+          -- inducedCspMorphExt
+          -- CspCASL_Morphism.composeCspAddMorphism
+          -- SignCSP.isCspSubSign
+          -- SignCSP.diffCspProcSig
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion
                         SignCSP.cspSignUnion

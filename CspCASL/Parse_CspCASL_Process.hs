@@ -19,14 +19,16 @@ module CspCASL.Parse_CspCASL_Process (
     csp_casl_process,
     event_set,
     process_name,
+    simple_process_name,
+    procNameWithParamsAndComms,
     var,
 ) where
 
-import Text.ParserCombinators.Parsec (sepBy, try, (<|>), (<?>))
+import Text.ParserCombinators.Parsec (option, sepBy, try, (<|>), (<?>))
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import qualified CASL.Formula
-import Common.AnnoState (AParser, asKey)
+import Common.AnnoState (AParser, asKey, colonT)
 import Common.Id
 import Common.Keywords
 import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
@@ -116,7 +118,10 @@ hid_ren_proc' lp =
     <|> return lp
 
 prim_proc :: AParser st PROCESS
-prim_proc = do     oParenT
+prim_proc = do     pn <- process_name
+                   args <- procArgs
+                   return (NamedProcess pn args (compRange pn args))
+            <|> do oParenT
                    p <- csp_casl_process
                    cParenT
                    return p
@@ -136,12 +141,41 @@ prim_proc = do     oParenT
                    return (Stop (getRange sk))
             <|> do sk <- asKey skipS
                    return (Skip (getRange sk))
-            <|> do n <- try process_name
-                   args <- procArgs
-                   return (NamedProcess n args (compRange n args))
 
-process_name :: AParser st PROCESS_NAME
-process_name = varId csp_casl_keywords
+-- | Parse a process name which can be a simple one or a fully qualified one.
+process_name :: AParser st FQ_PROCESS_NAME
+process_name =  try fq_process_name
+                <|> do pn <- simple_process_name
+                       return $ PROCESS_NAME pn
+
+-- | Parse a simple process name
+simple_process_name :: AParser st SIMPLE_PROCESS_NAME
+simple_process_name = varId csp_casl_keywords
+
+-- | Parse a fully qualified process name
+fq_process_name :: AParser st FQ_PROCESS_NAME
+fq_process_name = do
+  oParenT
+  asKey processS
+  (pn, params, comms) <- procNameWithParamsAndComms
+  cParenT
+  return $ PARSED_FQ_PROCESS_NAME pn params comms
+
+-- | Parse a process name with parameter sorts and communications set (no semi
+-- colon) e.g., 'P(S,T): S,T'. This is more to reconise a declaration or fully
+-- qualified process. This is not to recongnise the actual parameter terms.
+procNameWithParamsAndComms :: AParser st
+                              (SIMPLE_PROCESS_NAME, PROC_ARGS, PROC_ALPHABET)
+procNameWithParamsAndComms = do
+  pn <- simple_process_name
+  parms <- option [] $ do try oParenT
+                          parms <- commaSep1 csp_casl_sort
+                          cParenT
+                          return parms
+  colonT
+  cts <- (comm_type `sepBy` commaT)
+  return $ (pn, parms, ProcAlphabet cts (getRange cts))
+
 
 channel_name :: AParser st CHANNEL_NAME
 channel_name = varId csp_casl_keywords

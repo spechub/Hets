@@ -15,14 +15,14 @@ module CspCASL.Print_CspCASL where
 
 import CASL.AS_Basic_CASL (SORT, TERM)
 import CASL.ToDoc ()
-
+import Common.AS_Annotation(Annoted (..))
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords (elseS, ifS, thenS)
-
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
+import qualified Data.Set as Set
 
 instance Pretty CspBasicSpec where
     pretty = printCspBasicSpec
@@ -38,6 +38,25 @@ printCspBasicSpec ccs =
                           (printProcItems (proc_items ccs))
               chans = channels ccs
 
+instance Pretty FQ_PROCESS_NAME where
+  pretty = printProcessName
+
+printProcessName :: FQ_PROCESS_NAME -> Doc
+printProcessName fqPn =
+  let f name args commsList =
+        let argDoc = sepByCommas $ map (text.show) args
+            argDoc' = if null args then empty else parens argDoc
+            commsDoc = sepByCommas $ map (text.show) commsList
+        in parens (text processS  <+> text (show name) <> argDoc' <+>
+           colon <+> commsDoc)
+  in case fqPn of
+    PROCESS_NAME pn -> text $ show pn
+    PARSED_FQ_PROCESS_NAME pn argSorts comms ->
+      let ProcAlphabet comms' _ = comms
+      in f pn argSorts comms'
+    FQ_PROCESS_NAME pn profile ->
+      let ProcProfile argSorts commAlpha = profile
+      in f pn argSorts $ Set.toList commAlpha
 
 printChanDecs :: [CHANNEL_DECL] -> Doc
 printChanDecs cds = (vcat . punctuate semi . map pretty) cds
@@ -50,7 +69,7 @@ printChanDecl (ChannelDecl ns s) =
     (ppWithCommas ns) <+> colon <+> (pretty s)
 
 
-printProcItems :: [PROC_ITEM] -> Doc
+printProcItems :: [Annoted PROC_ITEM] -> Doc
 printProcItems ps = foldl ($+$) empty (map pretty ps)
 
 instance Pretty PROC_ITEM where
@@ -79,7 +98,6 @@ instance Pretty PROC_ALPHABET where
 
 printProcAlphabet :: PROC_ALPHABET -> Doc
 printProcAlphabet (ProcAlphabet commTypes _) = ppWithCommas commTypes
-
 
 instance Pretty PROCESS where
     pretty = printProcess
@@ -139,7 +157,7 @@ printProcess pr = case pr of
 --             prettyComms cs = sepByCommas (map pretty cs)
 --         in text "[" <+> (pretty p) <> text "]" <+> text "_" <>
 --            braces (prettyComms commAlphaList)
-           
+
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
     pretty (CommTypeChan (TypedChanName c _)) =

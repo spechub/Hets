@@ -29,7 +29,7 @@ import CASL.Morphism
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
 import CspCASL.AS_CspCASL (CspBasicSpec (..))
-import CspCASL.Morphism (CspMorphism)
+import CspCASL.Morphism (CspCASLMorphism)
 
 -- ModalCASL
 import Modal.Logic_Modal
@@ -45,7 +45,7 @@ instance Comorphism CspCASL2Modal
                CspCASL ()
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
-               CspMorphism
+               CspCASLMorphism
                Symbol RawSymbol ()
                Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
@@ -70,7 +70,7 @@ mapSig sign =
                , predMap = predMap sign }
     -- ??? add modalities
 
-mapMor :: CspMorphism -> ModalMor
+mapMor :: CspCASLMorphism -> ModalMor
 mapMor m = (embedMorphism emptyMorExt (mapSig $ msource m) $ mapSig $ mtarget m)
   { sort_map = sort_map m
   , op_map = op_map m

@@ -14,9 +14,11 @@ Simplification of CspCASL sentences for output after analysis
 
 module CspCASL.SimplifySen(simplifySen) where
 
+import CASL.AS_Basic_CASL (TERM (..), OP_SYMB (..))
 import CASL.SimplifySen (simplifyCASLSen, simplifyCASLTerm)
 
--- import Common.Id(genToken, Range)
+
+import Common.Id (simpleIdToId, nullRange)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
@@ -33,14 +35,28 @@ simplifySen sigma sen =
           in CASLSen $ simplifyCASLSen caslSign f
       ProcessEq pn var alpha p ->
           -- Simpliy the process
-          let simpVar = simplifyFQProcVarList sigma var
+          let simpPn = simplifyFQProcName pn
+              simpVar = simplifyFQProcVarList var
               simpP = simplifyProc sigma p
-          in ProcessEq pn simpVar alpha simpP
+          in ProcessEq simpPn simpVar alpha simpP
 
-simplifyFQProcVarList :: CspCASLSign -> FQProcVarList -> FQProcVarList
-simplifyFQProcVarList sigma fqvars =
-    let caslSign = ccSig2CASLSign sigma
-    in map (simplifyCASLTerm caslSign) fqvars
+-- | Simplifies a process name.
+simplifyFQProcName :: FQ_PROCESS_NAME -> FQ_PROCESS_NAME
+simplifyFQProcName fqPn =
+  PROCESS_NAME $ procNameToSimpProcName fqPn
+
+-- | Simplifiy a fully qualified variable list
+simplifyFQProcVarList :: FQProcVarList -> FQProcVarList
+simplifyFQProcVarList fqvars =
+  -- Our fully qualified variable list is a list of CASL terms where each term
+  -- is a Qual_var. The CASL simplifier will refuse to simplify these as it
+  -- thinks you need the type as there is no application of a function or
+  -- predicate around the variable. Thus we do our own stripping.
+  let simplify (fqVar) = case fqVar of
+        Qual_var v _ _ -> Application (Op_name $ simpleIdToId v) [] nullRange
+        _ -> error "CspCASL.SimplifySen.simplifyFQProcVarList:\
+                   \ Unexpected CASL term"
+    in map simplify fqvars
 
 -- | Simplifies the fully qualified CASL data and simplifies the fully
 --   qualified processes down to non-fully qualified processes.
@@ -89,9 +105,11 @@ simplifyProc sigma proc =
                                  (simplifyProc sigma p)
                                  (simplifyProc sigma q) range
       NamedProcess name args range ->
-          NamedProcess name (simplifyFQProcVarList sigma args) range
+        let simpName = simplifyFQProcName name
+            simpArgs = map (simplifyCASLTerm caslSign) args
+        in NamedProcess simpName simpArgs range
       -- Throw away the FQProccess and just take the simplified inner
-      -- process. The inner rocesses range will be equal to this
+      -- process. The inner processes range will be equal to this
       -- processes range by construction.
       FQProcess p _ _ ->
           simplifyProc sigma p
@@ -118,9 +136,8 @@ simplifyEvent sigma event =
       -- may contain fully qualfied processes), so we simpliy just e.
       FQEvent e _ _ _ -> simplifyEvent sigma e
 
-
 -- I am not really sure what to do with the sorts at the moment, can they be
--- compound sorts
+-- compound sorts -- BUG?
 
 -- | Simplifies the fully qualified event sets but using the casl
 --   simplification of data and removed channel qualification.

@@ -30,7 +30,7 @@ import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP (CspCASLSign, CspSign (..),
-                        ccSig2CASLSign, ccSig2CspSign, ProcProfile (..))
+                        ccSig2CASLSign, ccSig2CspSign)
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -86,15 +86,14 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
         transFormula' = transFormula pcfolSign cfolSign
         transProcess' =
             transProcess ccSign pcfolSign cfolSign
-        cspSign = ccSig2CspSign ccSign
+        -- cspSign = ccSig2CspSign ccSign
         caslSign = ccSig2CASLSign ccSign
-        getProcParamSort procName index =
-            let procMap = procSet cspSign
-                paramSortList = case Map.lookup procName procMap of
-                             Nothing -> error "CspCASLProver.TransProcesses.transProcess: Process name not found in process map."
-                             Just pp -> case pp of
-                                          ProcProfile sorts _ -> sorts
-            in paramSortList !! index
+        -- getProcParamSort procName index =
+        --     let procMap = procSet cspSign
+        --         paramSortList = case Map.lookup procName procMap of
+        --                      Nothing -> error "CspCASLProver.TransProcesses.transProcess: Process name not found in process map."
+        --                      Just pp-> error "NYI: CspCASLProver.TransProcesses.transProcess: Not updated for new signatures yet" -- case pp of ProcProfile sorts _ -> sorts
+        --     in paramSortList !! index
     in case pr of
          -- precedence 0
          Skip _ -> cspProver_skipOp
@@ -106,13 +105,15 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
          Chaos _ _ -> conDouble "ChaosNotSupportedYet"
          NamedProcess pn fqParams _ ->
              let -- Make a process name term
-                 pnTerm = conDouble $ convertProcessName2String pn
+                 pnTerm = conDouble $ convertSimpleProcessName2String
+                          $ procNameToSimpProcName pn
                  -- Translate an argument(a term), t is the sort of the declared
                  -- parameter (the sort of the variable may be a subsort of the
                  -- declared sort, so we must use the declared sort).
-                 transParam (term, declaredSortIndex) =
+                 -- transParam (term, declaredSortIndex) =
+                 transParam (term, _) =
                      let termTar = ChanSendOrParam $
-                                   getProcParamSort pn declaredSortIndex
+                                   error "NYI: CspCASLProver.TransProcesses.transProcess: Not updated for new signatures yet" -- getProcParamSort pn declaredSortIndex
                      in transCASLTerm caslSign pcfolSign cfolSign
                         vsm termTar term
                  -- Create a list of translated parameters, we number the

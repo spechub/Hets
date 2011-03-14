@@ -28,7 +28,7 @@ import CASL.Morphism
 import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.SignCSP
-import CspCASL.Morphism (CspMorphism, emptyCspAddMorphism)
+import CspCASL.Morphism (CspCASLMorphism, emptyCspAddMorphism)
 
 -- | The identity of the comorphism
 data CASL2CspCASL = CASL2CspCASL deriving (Show)
@@ -44,7 +44,7 @@ instance Comorphism CASL2CspCASL
                CspCASL ()
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
-               CspMorphism
+               CspCASLMorphism
                Symbol RawSymbol () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top
@@ -67,7 +67,7 @@ mapSig sign =
                , assocOps = assocOps sign
                , predMap = predMap sign }
 
-mapMor :: CASLMor -> CspMorphism
+mapMor :: CASLMor -> CspCASLMorphism
 mapMor m =
   (embedMorphism emptyCspAddMorphism (mapSig $ msource m) $ mapSig $ mtarget m)
   { sort_map = sort_map m

@@ -36,7 +36,7 @@ import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.SignCSP (ccSig2CASLSign, ccSig2CspSign, CspCASLSign, CspSign (..)
                        , CspCASLSen (..))
-import CspCASL.Morphism (CspMorphism)
+import CspCASL.Morphism (CspCASLMorphism)
 
 import CspCASLProver.Consts
 import CspCASLProver.IsabelleUtils
@@ -56,7 +56,7 @@ cspCASLProverS :: String
 cspCASLProverS = "CspCASLProver"
 
 -- | The wrapper function that is CspCASL Prover
-cspCASLProver :: Prover CspCASLSign CspCASLSen CspMorphism () ()
+cspCASLProver :: Prover CspCASLSign CspCASLSen CspCASLMorphism () ()
 cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
 
 -- | The main cspCASLProver function

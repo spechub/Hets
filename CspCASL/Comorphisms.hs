@@ -48,12 +48,12 @@ instance (CspCASLSemantics a, CspCASLSemantics b)
                (GenCspCASL a) ()
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
-               CspMorphism
+               CspCASLMorphism
                Symbol RawSymbol ()
                (GenCspCASL b) ()
                CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
                CspCASLSign
-               CspMorphism
+               CspCASLMorphism
                Symbol RawSymbol () where
     sourceLogic (CspCASL2CspCASL a _) = GenCspCASL a
     sourceSublogic _ = ()

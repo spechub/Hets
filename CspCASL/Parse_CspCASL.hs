@@ -18,9 +18,10 @@ module CspCASL.Parse_CspCASL (
 import Text.ParserCombinators.Parsec (choice, many1, try, (<|>),
                                       option, sepBy)
 
-import Common.AnnoState (AParser, asKey, colonT, equalT, anSemi)
+import Common.AS_Annotation(Annoted (..), emptyAnno)
+import Common.AnnoState (AParser, asKey, colonT, equalT, anSemi, allAnnoParser)
 import Common.Id
-import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
+import Common.Lexer (commaSep1, cParenT, oParenT)
 
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -44,40 +45,38 @@ chanDecl = do vs <- commaSep1 channel_name
               es <- csp_casl_sort
               return (ChannelDecl vs es)
 
-processItems :: AParser st [PROC_ITEM]
+processItems :: AParser st [Annoted PROC_ITEM]
 processItems = do asKey processS
                   procItems <|> fmap singleProcess csp_casl_process
 
--- Turn an unnamed singleton process into a declaration/equation.
-singleProcess :: PROCESS -> [PROC_ITEM]
+-- Turn an unnamed singleton process into a declaration/equation.  THIS WHOLE
+-- functions seems odd. Why would we want a fixed process "P" which communicates
+-- over sort "singletonProcessSort". BUG?
+singleProcess :: PROCESS -> [Annoted PROC_ITEM]
 singleProcess p =
-    [Proc_Decl singletonProcessName [] singletonProcessAlpha,
-     Proc_Eq (ParmProcname singletonProcessName []) p]
+    map emptyAnno [Proc_Decl singletonProcessName [] singletonProcessAlpha,
+     Proc_Eq (ParmProcname (PROCESS_NAME singletonProcessName) []) p]
         where singletonProcessName = mkSimpleId "P"
               singletonProcessAlpha =
                   (ProcAlphabet [mkSimpleId "singletonProcessSort"]
                                 nullRange)
 
-procItems :: AParser st [PROC_ITEM]
+procItems :: AParser st [Annoted PROC_ITEM]
 procItems = many1 procItem
 
-procItem :: AParser st PROC_ITEM
+procItem :: AParser st (Annoted PROC_ITEM)
 procItem = try procDecl
            <|> procEq
 
-procDecl :: AParser st PROC_ITEM
-procDecl = do pn <- process_name
-              parms <- option [] $ do try oParenT
-                                      parms <- commaSep1 csp_casl_sort
-                                      cParenT
-                                      return parms
-              colonT
-              cts <- (comm_type `sepBy` commaT)
+procDecl :: AParser st (Annoted PROC_ITEM)
+procDecl = do (pn, parms, comms) <- procNameWithParamsAndComms
               anSemi
-              return (Proc_Decl pn parms (ProcAlphabet cts (getRange cts)))
+              -- We don't currently allow annotations on declarations
+              return (emptyAnno $ Proc_Decl pn parms comms)
 
-procEq :: AParser st PROC_ITEM
-procEq = do pn <- parmProcname
+procEq :: AParser st (Annoted PROC_ITEM)
+procEq = allAnnoParser $
+         do pn <- parmProcname
             equalT
             p <- csp_casl_process
             return (Proc_Eq pn p)

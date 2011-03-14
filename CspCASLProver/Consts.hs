@@ -20,7 +20,7 @@ module CspCASLProver.Consts
     , classOp
     , classS
     , convertChannelString
-    , convertProcessName2String
+    , convertSimpleProcessName2String
     , convertSort2String
     , cspFThyS
     , eq_PreAlphabetS
@@ -70,7 +70,7 @@ module CspCASLProver.Consts
     ) where
 
 import CASL.AS_Basic_CASL (SORT)
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, SIMPLE_PROCESS_NAME)
 import Isabelle.IsaConsts (binVNameAppl, conDouble, mkFunType, termAppl)
 import Isabelle.IsaSign (BaseSig(..), Term, Typ(..), VName(..))
 import Isabelle.Translate(showIsaTypeT, transString)
@@ -118,8 +118,8 @@ convertSort2String :: SORT -> String
 convertSort2String s = transString $ showIsaTypeT s Main_thy
 
 -- | Convert a process name to a string
-convertProcessName2String :: PROCESS_NAME -> String
-convertProcessName2String = show
+convertSimpleProcessName2String :: SIMPLE_PROCESS_NAME -> String
+convertSimpleProcessName2String = show
 
 -- |  Theory file name for CSP_F of CSP-Prover
 cspFThyS :: String
@@ -218,7 +218,7 @@ mkPreAlphabetConstructorOp s = termAppl (conDouble (mkPreAlphabetConstructor s))
 -- | Given a process name this fucntion returns a unique constructor for that
 --   process name. This is a helper functin when buildign the process name data
 --   type.
-mkProcNameConstructor :: PROCESS_NAME -> String
+mkProcNameConstructor :: SIMPLE_PROCESS_NAME -> String
 mkProcNameConstructor pn = show pn
 
 -- | Converts a sort in to the corresponding bar sort represented as a

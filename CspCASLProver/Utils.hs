@@ -38,7 +38,6 @@ import qualified CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASLSign
 import qualified CASL.Inject as CASLInject
 
-import Common.Id (nullRange)
 import Common.AS_Annotation (makeNamed, Named, SenAttr (..))
 import qualified Common.Lib.Rel as Rel
 
@@ -48,9 +47,8 @@ import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
-import CspCASL.AS_CspCASL_Process (PROCESS_NAME, PROCESS (..))
 import CspCASL.SignCSP (CspCASLSign, ccSig2CASLSign, ChanNameMap, CspSign (..),
-                        ProcProfile (..), CspCASLSen (..), isProcessEq)
+                        CspCASLSen (..), isProcessEq)
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -684,27 +682,28 @@ addFlatType isaTh sort =
 -- process name (along with the arguments for the process) in the
 -- CspCASL Signature to an Isabelle theory
 addProcNameDatatype :: CspSign -> IsaTheory -> IsaTheory
-addProcNameDatatype cspSign isaTh =
+-- addProcNameDatatype cspSign isaTh =
+addProcNameDatatype _ isaTh =
     let -- Create a list of pairs of process names and thier profiles
-        procSetList = Map.toList (procSet cspSign)
-        procNameDomainEntry = mkProcNameDE procSetList
+        -- procSetList = Map.toList (procSet cspSign)
+        procNameDomainEntry = error "NYI: CspCASLProver.Utils.addProcNameDatatype: Not updated for new signatures yet"-- mkProcNameDE procSetList
     in updateDomainTab procNameDomainEntry isaTh
 
 -- | Make a proccess name Domain Entry from a list of a Process name and profile
 -- pair. This creates a data type for the process names.
-mkProcNameDE :: [(PROCESS_NAME, ProcProfile)] -> DomainEntry
-mkProcNameDE processes =
-    let -- The a list of pairs of constructors and their arguments
-        constructors = map mk_cons processes
-        -- Take a proccess name and its argument sorts (also its
-        -- commAlpha - thrown away) and make a pair representing the
-        -- constructor and the argument types
-        -- Note: The processes need to have arguments of the bar variants of the
-        -- sorts not the original sorts
-        mk_cons (procName, (ProcProfile sorts _)) =
-            (mkVName (mkProcNameConstructor procName), map mkSortBarType sorts)
-    in
-    (procNameType, constructors)
+-- mkProcNameDE :: [(SIMPLE_PROCESS_NAME, ProcProfile)] -> DomainEntry
+-- mkProcNameDE processes =
+--     let -- The a list of pairs of constructors and their arguments
+--         constructors = map mk_cons processes
+--         -- Take a proccess name and its argument sorts (also its
+--         -- commAlpha - thrown away) and make a pair representing the
+--         -- constructor and the argument types
+--         -- Note: The processes need to have arguments of the bar variants of the
+--         -- sorts not the original sorts
+--         mk_cons (procName, (ProcProfile sorts _)) =
+--             (mkVName (mkProcNameConstructor procName), map mkSortBarType sorts)
+--     in
+--     (procNameType, constructors)
 
 -- -----------------------------------------------------------------------
 -- Functions adding the process map function to an Isabelle theory     --
@@ -741,9 +740,10 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
         -- parameter
         procMapTerm = termAppl (conDouble procMapS)
         -- Make a single equation for the primrec from a process equation
-        mkEq (ProcessEq procName fqVars _ proc) =
+        -- mkEq (ProcessEq procName fqVars _ proc) =
+        mkEq (ProcessEq _ fqVars _ proc) =
             let -- Make the name (string) for this process
-                procNameString = convertProcessName2String procName
+                procNameString = error "Error CspCASLProver.Utils.addProcMap: NYI with new signatures yet" -- convertProcessName2String procName
                 -- Change the name to a term
                 procNameTerm = conDouble procNameString
                 -- Turn the list of variables into a list of Isabelle
@@ -780,10 +780,11 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
         -- Filter so we only have proccess equations and no CASL senetences
         processEqs = filter isProcessEq sens
         -- Make a single equation for the primrec from a process equation
-        mkEq (ProcessEq procName fqVars _ proc) =
+        -- mkEq (ProcessEq procName fqVars _ proc) =
+        mkEq (ProcessEq _ fqVars _ proc) =
             let -- the LHS a a process in abstract syntax i.e. process name with
                 -- variables as arguments
-                lhs' = NamedProcess procName fqVars nullRange
+                lhs' = error "Error CspCASLProver.Utils.addProcTheorms: NYI with new signatures yet"-- NamedProcess procName fqVars nullRange
                 addToVdm fqvar vdm' =
                     case fqvar of
                       Qual_var v _ _ -> Map.insert v GlobalParameter vdm'
