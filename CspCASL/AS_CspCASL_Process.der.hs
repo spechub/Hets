@@ -104,9 +104,9 @@ data ProcProfile = ProcProfile [SORT] CommAlpha
 
 -- | A process name is either a fully qualified process name or a plain process
 -- name.
-data FQ_PROCESS_NAME =
+data FQ_PROCESS_NAME
   -- | A non-fully qualified process name
-  PROCESS_NAME SIMPLE_PROCESS_NAME
+  = PROCESS_NAME SIMPLE_PROCESS_NAME
   -- | A fully qualified process name
   | FQ_PROCESS_NAME SIMPLE_PROCESS_NAME ProcProfile
   -- | A name with parameter sorts and communication ids from the parser.
