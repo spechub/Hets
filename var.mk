@@ -73,7 +73,7 @@ endif
 
 PARSEC1VERSION = $(shell $(HCPKG) field parsec1 version)
 ifneq ($(findstring 1.0., $(PARSEC1VERSION)),)
-PARSEC_FLAG = -hide-package parsec
+PARSEC_FLAG = -hide-package parsec -package parsec1
 endif
 
 ifneq ($(strip $(UNI_PACKAGE)),)
