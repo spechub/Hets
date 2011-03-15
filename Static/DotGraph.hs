@@ -39,9 +39,11 @@ dotEdge (n1, n2, link) =
                  else ", color=\"black:white:black\", arrowsize=1.6"
 
 nodeAttribute :: Bool -> DGNodeLab -> String
-nodeAttribute showInternal la =
-   concatMap (", " ++) (inter la : ["shape=box" | isDGRef la]
-                    ++ ["style=filled, fillcolor=grey" | hasOpenGoals la])
+nodeAttribute showInternal la = concatMap (", " ++)
+  (inter la : ["shape=box" | isDGRef la]
+   ++ [ "style=filled"
+      , "fillcolor=" ++ show ('/' : if hasOpenGoals la then "red" else
+        if hasOpenNodeConsStatus False la then "yellow" else "green") ])
  where inter l = if isInternalNode l && not showInternal
                     then "label=\"\", height=0.2, width=0.35"
                     else "label=\"" ++ getDGNodeName la ++ "\""
