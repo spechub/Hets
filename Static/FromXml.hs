@@ -19,16 +19,18 @@ import Common.Result (Result (..))
 import Common.ExtSign (ExtSign (..))
 
 import Logic.ExtSign (ext_empty_signature)
-import Logic.Logic (AnyLogic (..), inclusion)
+import Logic.Logic (AnyLogic (..))
 import Logic.Prover (noSens)
-import Logic.Grothendieck {- (LogicGraph (..), G_morphism (..), GMorphism,
-                           gEmbed, startSigId, startMorId) -}
+import Logic.Grothendieck 
 
 import qualified Data.Map as Map (lookup)
 import Data.List (partition, isInfixOf)
+import Data.Graph.Inductive.Graph (LNode)
+import Data.Maybe (fromJust)
 
 import Text.XML.Light
 
+--import Debug.Trace
 
 -- | for faster access, some elements attributes are stored alongside
 -- as a String
@@ -41,14 +43,14 @@ type NamedLink = ((String,String),Element)
 fromXml :: LogicGraph -> DGraph -> Element -> DGraph
 fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
-    error "FromXML.fromXML: current logic was not found in logicMap"
+    error "FromXml.FromXml: current logic was not found in logicMap"
   Just (Logic lid) -> let
     emptyTheory = G_theory lid (ext_empty_signature lid)
                     startSigId noSens startThId
     nodes = extractNodeElements el
     links = extractLinkElements el
     (dg', depNodes) = initialiseNodes dg emptyTheory nodes links
-    in iterateLinks dg' depNodes links
+    in iterateLinks lg dg' depNodes links
 
 
 -- | All nodes are taken from the xml-element. Then, the name-attribute is
@@ -97,25 +99,29 @@ insertNodeDG dg lbl = let n = getNewNodeDG dg in
   insLNodeDG (n,lbl) dg
 
 
--- TODO: get LEdge label!
-insertEdgeDG :: NamedLink -> DGraph -> DGraph
-insertEdgeDG e@((src,trg),l) dg = undefined -- let (EdgeId i) = getNewEdgeId dg in
---  insLEdgeDG (i, globDefLink (getEdgeMorphism dg e) SeeTarget) dg
+-- | Inserts a new edge into the DGraph and returns the new DGraph.
+-- This function is the reason why the logicGraph is passed through, because
+-- it implements Grothendieck.ginclusion for getting the links GMorphism.
+insertEdgeDG :: NamedLink -> LogicGraph -> DGraph -> DGraph
+insertEdgeDG ((src,trg),_) lg dg = let
+  (i,lbl1) = fromJust $ getNodeByName src dg
+  (j,lbl2) = fromJust $ getNodeByName trg dg
+  gsign = signOf . dgn_theory
+  resMorph = ginclusion lg (gsign lbl1) (gsign lbl2) 
+  morph = case maybeResult resMorph of
+    Just m -> m
+    Nothing -> error $ show resMorph
+  in snd $ insLEdgeDG (i, j, globDefLink morph SeeTarget) dg 
 
--- TODO: kill constraint: double occurence of sign does not work!
-getEdgeMorphism :: DGraph -> NamedLink -> GMorphism
-getEdgeMorphism dg ((src,trg),_) = case signOf $ theoryOfNode src dg of
-  G_sign lid (ExtSign s0 _) _ -> --case signOf $ theoryOfNode trg dg of
-    --G_sign _ (ExtSign s1 _) _ -> 
-       case maybeResult $ inclusion lid s0 s0 of -- s0 s1 of
-         Just mor -> gEmbed (G_morphism lid mor startMorId) 
-         Nothing -> error "FromXml.getEdgeMorphism"
 
-
-theoryOfNode :: String -> DGraph -> G_theory
-theoryOfNode n dg = case lookupNodeByName n dg of
-  [(_,lbl)] -> dgn_theory lbl
-  _ -> error "FromXml.theoryOfNode: NodeName was not found in DGraph"
+-- | A Node is looked up via its name in the DGraph. Returns the node only
+-- if one single node is found for the respective name, otherwise an error
+-- is thrown.
+getNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+getNodeByName s dg = case lookupNodeByName s dg of
+  [n] -> Just n
+  [] -> Nothing
+  _ -> error $ "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
 
 
 -- | This is the main loop. In every step, all links are extracted which source
@@ -123,52 +129,75 @@ theoryOfNode n dg = case lookupNodeByName n dg of
 -- is calculated and stored using the sources G_theory.
 -- The function is called again with the remaining links and additional nodes
 -- (stored in DGraph) until the list of links reaches null.
-iterateLinks :: DGraph -> [NamedNode] -> [NamedLink] -> DGraph
-iterateLinks dg _ [] = dg
-iterateLinks dg nodes links = let (cur,lftL) = splitLinks dg links
-                                  (dg',lftN) = processNodes nodes cur dg
+iterateLinks :: LogicGraph -> DGraph -> [NamedNode] -> [NamedLink] -> DGraph
+iterateLinks _ dg _ [] = dg
+iterateLinks lg dg nodes links = let (cur,lftL) = splitLinks dg links
+                                     (dg',lftN) = processNodes nodes cur lg dg
   in if null cur then error 
-      "FromXML.iterateLinks: remaining links cannot be processed"
-    else iterateLinks dg' lftN lftL
+      "FromXml.iterateLinks: remaining links cannot be processed"
+    else iterateLinks lg dg' lftN lftL
 
 
--- | Help function for iterateNodes. For every link, the target node is created
--- and stored in DGraph. Then the link is stored in DGraph.
+--TODO: whenever a node is inserted, all links that target this node must be considered too.
+--TODO: use gsigUnion to update the G_sign for these links. if one of those links has no source jet,
+-- it must not be considered!
+
+-- | Help function for iterateNodes. For every link, the target node is 
+-- created and stored in DGraph. Then the link is stored in DGraph.
 -- Returns updated DGraph and the list of nodes that have not been captured.
-processNodes :: [NamedNode] -> [(G_theory,NamedLink)] -> DGraph 
+processNodes :: [NamedNode] -> [(G_theory,NamedLink)] -> LogicGraph -> DGraph
              -> (DGraph,[NamedNode])
-processNodes nodes [] dg = (dg,nodes)
-processNodes nodes ((th,l@((_,trg),_)):ls) dg = 
+processNodes nodes [] _ dg = (dg,nodes)
+processNodes nodes ((gt,l@((_,trg),_)):ls) lg dg = 
   case partition ((== trg) . fst) nodes of
-    ([o],r) -> processNodes r ls $ insertEdgeDG l 
-            $ insertNodeDG dg (mkDGNodeLab th o)
-    _ -> error "fromXML.processNodes: link has no or multiple targets"
+    ([o],r) -> processNodes r ls lg $ insertEdgeDG l lg
+            $ insertNodeDG dg (mkDGNodeLab gt o)
+    ([],r) -> case getNodeByName trg dg of
+      Just (_,lbl) -> undefined --TODO gsigUnion
+      Nothing -> error $
+        "FromXml.processNodes: Target <" ++ trg ++ "> was not found!"
+    _ -> error $ 
+      "FromXml.processNodes: Target <" ++ trg ++ "> was found multiple times!"
 
 
 -- | Help function for iterateNodes. Given a list of links, it partitions the
 -- links depending on if their source has been processed. Then stores the
 -- source-nodes G_theory alongside for easy access.
 splitLinks :: DGraph -> [NamedLink] -> ([(G_theory,NamedLink)],[NamedLink])
-splitLinks dg = foldr (\l@((src,_),_) (r,r') -> case lookupNodeByName src dg of
-    [(_,lbl)] -> ((dgn_theory lbl, l):r,r')
-    [] -> (r,l:r') 
-    _ -> error "FromXML.splitLinks: found multiple nodes for one NodeName" 
-  ) ([],[])
+splitLinks dg = killMultTrg . foldr partition' ([],[]) where
+  partition' l@((src,_),_) (r,r') = case getNodeByName src dg of
+    Just (_,lbl) -> ((dgn_theory lbl, l):r,r')
+    Nothing -> (r,l:r')
+  -- if a link targets a node that is also targeted by another link which
+  -- cannot be processed at this step, the first link is also appended.
+  killMultTrg (hasSrc,noSrc) = let noSrcTrgs = map (snd . fst) noSrc in
+    foldr (\(gt,l@((_,trg),_)) (r,r') -> if elem trg noSrcTrgs
+      then (r,l:r') else ((gt,l):r,r')) ([],noSrc) hasSrc
 
 
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
-mkDGNodeLab gt (name, el) = let
-  (response,message) = extendByBasicSpec (extractSpecString el) gt -- TODO test string extraction!
-  in case response of
-    Failure _ -> error $ "FromXML.mkDGNodeLab: "++message
-    Success gt' _ symbs _ -> 
-      newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
+mkDGNodeLab gt (name, el) = case extractSpecString el of
+  "" -> newNodeLab (parseNodeName name) DGBasic gt
+  specs -> let 
+    (response,message) = extendByBasicSpec specs gt
+    in case response of
+      Failure _ -> error $ "FromXml.mkDGNodeLab: "++message
+      Success gt' _ symbs _ -> 
+        newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
 
--- TODO: String extraction does not work. fix it.
+-- | Extracts a String including all Axioms, Theorems and Symbols from the
+-- xml-Element.
 extractSpecString :: Element -> String
-extractSpecString el = let decl = findChildren (unqual "Declarations") el in
-  unlines $ map strContent $ concat $ map elChildren decl
+extractSpecString e = let
+  specs = map unqual ["Axiom","Theorem","Symbol"]
+  elems = deepSearch specs e
+  in unlines $ map strContent elems
 
+
+-- | custom xml-search not only for immediate children
+deepSearch :: [QName] -> Element -> [Element]
+deepSearch names e = filterChildrenName (`elem` names) e ++
+  concat (map (deepSearch names) (elChildren e))
 
