@@ -136,14 +136,20 @@ processNodes lg (x@(name,_):xs) links dg =
        $ insertNodeDG (linkSrcTh l) x dg
     ([],_) -> let (dg',xs') = processNodes lg xs links dg
       in (dg',x:xs')
-    (sameTrg,ls) -> let
-      signs = map (signOf . linkSrcTh) sameTrg
-      res = gsigManyUnion lg signs
-      in case maybeResult res of
-        Nothing -> error $ "FromXml.processNodes:\n" ++ show res
-        Just sign -> undefined -- processNodes lg xs ls $ foldr (insertEdgeDG lg)
-        --  $ insertNodeDG --TODO: which theory to take?? x dg
-
+    (sameTrg,ls) -> processNodes lg xs ls $ insMultTrg lg x sameTrg dg
+      
+insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
+insMultTrg lg x links dg = undefined {- let
+  (t:ts) = map linkSrcTh links
+  signs = map signOf (t:ts)
+  res = gsigManyUnion lg signs
+  in case maybeResult res of
+    Nothing -> error $ "FromXml.insMultTrg:\n" ++ show res
+    Just (G_sign _ sign _) -> case flatG_sentences t ts of
+      Nothing -> error "FromXml.insMultTrg: failed to merge theories"
+      Just (G_theory lid _ sId sens tId) -> foldr (insertEdgeDG lg) 
+        (insertNodeDG (G_theory lid sign sId sens tId) x dg) links
+-}
 
 -- | returns the G_theory of a links source node
 linkSrcTh :: NamedLink -> G_theory
