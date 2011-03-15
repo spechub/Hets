@@ -15,37 +15,56 @@ module Static.DotGraph (dotGraph) where
 
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
-import Logic.Grothendieck (isHomogeneous)
 
-edgeAttribute :: DGLinkType -> String
-edgeAttribute l = case l of
-  ScopedLink _ lk _ -> case lk of
-    DefLink -> " ,style=bold"
-    _ -> " ,arrowhead=onormal"
-  HidingDefLink -> " ,style=bold, arrowhead=vee"
-  FreeOrCofreeDefLink _ _ -> " ,style=bold"
-  HidingFreeOrCofreeThm mh _ _ -> case mh of
-    Nothing -> " ,arrowhead=vee"
-    Just _ -> " ,arrowhead=onormal"
+edgeAttributes :: DGEdgeType -> String
+edgeAttributes ety = concatMap (", " ++)
+  $ (if isInc ety then [] else ["dir=both", "arrowtail=inv"])
+  ++ case edgeTypeModInc ety of
+    GlobalDef -> []
+    HetDef -> ["color=" ++ doubleColor "black"]
+    HidingDef -> ["color=blue"]
+    LocalDef -> ["style=dashed"]
+    FreeOrCofreeDef -> ["color=blue"]
+    ThmType
+      { thmEdgeType = thTy
+      , isProvenEdge = isProv
+      , isConservativ = isCons
+      , isPending = isPend }
+      -> let
+      hc = ["color=" ++ if isPend then "cyan" else
+             if isProv then "green" else "blue"]
+      in case thTy of
+      HidingThm -> "style=dashed" : hc
+      FreeOrCofreeThm -> "style=dotted" : hc
+      th -> let
+        cl c = if isHomThm th then c else doubleColor c
+        rc = if isProv then
+               if isCons then
+                 if isPend then "yellow" else show "/green"
+               else "orange"
+             else "red"
+        in ("color=" ++ cl rc) : case isLocalThmType th of
+        Global -> []
+        Local -> ["style=dashed"]
+
+doubleColor :: String -> String
+doubleColor s = show $ s ++ ':' : s
 
 dotEdge :: LEdge DGLinkLab -> String
 dotEdge (n1, n2, link) =
   show n1 ++ " -> " ++ show n2
                ++ " [id=" ++ showEdgeId (dgl_id link)
-               ++ edgeAttribute (dgl_type link) ++ het
+               ++ edgeAttributes (getRealDGLinkType link)
                ++ "];"
-  where het = if isHomogeneous $ dgl_morphism link
-                 then ""
-                 else ", color=\"black:white:black\", arrowsize=1.6"
 
 nodeAttribute :: Bool -> DGNodeLab -> String
 nodeAttribute showInternal la = concatMap (", " ++)
   (inter la : ["shape=box" | isDGRef la]
    ++ [ "style=filled"
-      , "fillcolor=" ++ show ('/' : if hasOpenGoals la then "red" else
-        if hasOpenNodeConsStatus False la then "yellow" else "green") ])
+      , "fillcolor=" ++ if hasOpenGoals la then "red" else
+        if hasOpenNodeConsStatus False la then "yellow" else show "/green" ])
  where inter l = if isInternalNode l && not showInternal
-                    then "label=\"\", height=0.2, width=0.35"
+                    then "label=\"\", height=0.1, width=0.2"
                     else "label=\"" ++ getDGNodeName la ++ "\""
 
 dotNode :: Bool -> LNode DGNodeLab -> String
