@@ -186,21 +186,25 @@ cspAddMorphismToSymbMap :: CspSign -> CspAddMorphism -> SymbolMap
 cspAddMorphismToSymbMap _ _ =
   error "CspCASL/Morphism.cspAddMorphismToSymbMap: NYI for new\
                    \ notion of signatures"
-  -- foldr (\ p -> Map.insert (makeProcNameSymbol p)
-  --        . makeProcNameSymbol . Map.findWithDefault p p
-  --        $ processMap mor)
-  -- (foldr (\ c -> Map.insert (makeChannelNameSymbol c)
-  --        . makeChannelNameSymbol . Map.findWithDefault c c
-  --        $ channelMap mor) Map.empty $ Map.keys $ chans sig)
-  -- $ Set.toList $ Set.unions $ Map.elems $ procSet sig
+{-
+  foldr (\ p -> Map.insert (makeProcNameSymbol p)
+         . makeProcNameSymbol . Map.findWithDefault p p
+         $ processMap mor)
+  (foldr (\ c -> Map.insert (makeChannelNameSymbol c)
+         . makeChannelNameSymbol . Map.findWithDefault c c
+         $ channelMap mor) Map.empty $ Map.keys $ chans sig)
+  $ Set.toList $ Set.unions $ Map.elems $ procSet sig
+-}
 
 -- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where
   pretty _ = error "CspCASL/Morphism.Pretty CspAddMorphism: NYI for new\
                    \ notion of signatures"
-             -- pretty $ Map.union
-             -- (Map.mapKeys makeChannelNameSymbol $ channelMap m)
-             -- $ Map.mapKeys makeProcNameSymbol $ processMap m
+{-
+             pretty $ Map.union
+             (Map.mapKeys makeChannelNameSymbol $ channelMap m)
+             $ Map.mapKeys makeProcNameSymbol $ processMap m
+-}
 
 -- | Instance for CspCASL signature extension
 instance SignExtension CspSign where
