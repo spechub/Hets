@@ -15,10 +15,14 @@ module Static.FromXml where
 import Static.DevGraph
 import Static.GTheory
 
-import Logic.Logic (AnyLogic (..))
-import Logic.Prover (noSens)
-import Logic.Grothendieck (LogicGraph (..), startSigId)
+import Common.Result (Result (..))
+import Common.ExtSign (ExtSign (..))
+
 import Logic.ExtSign (ext_empty_signature)
+import Logic.Logic (AnyLogic (..), inclusion)
+import Logic.Prover (noSens)
+import Logic.Grothendieck {- (LogicGraph (..), G_morphism (..), GMorphism,
+                           gEmbed, startSigId, startMorId) -}
 
 import qualified Data.Map as Map (lookup)
 import Data.List (partition, isInfixOf)
@@ -93,9 +97,25 @@ insertNodeDG dg lbl = let n = getNewNodeDG dg in
   insLNodeDG (n,lbl) dg
 
 
--- TODO: links have to be inserted as well, use insLEdgeDG
+-- TODO: get LEdge label!
 insertEdgeDG :: NamedLink -> DGraph -> DGraph
-insertEdgeDG ((src,trg),l) dg = undefined
+insertEdgeDG e@((src,trg),l) dg = undefined -- let (EdgeId i) = getNewEdgeId dg in
+--  insLEdgeDG (i, globDefLink (getEdgeMorphism dg e) SeeTarget) dg
+
+-- TODO: kill constraint: double occurence of sign does not work!
+getEdgeMorphism :: DGraph -> NamedLink -> GMorphism
+getEdgeMorphism dg ((src,trg),_) = case signOf $ theoryOfNode src dg of
+  G_sign lid (ExtSign s0 _) _ -> --case signOf $ theoryOfNode trg dg of
+    --G_sign _ (ExtSign s1 _) _ -> 
+       case maybeResult $ inclusion lid s0 s0 of -- s0 s1 of
+         Just mor -> gEmbed (G_morphism lid mor startMorId) 
+         Nothing -> error "FromXml.getEdgeMorphism"
+
+
+theoryOfNode :: String -> DGraph -> G_theory
+theoryOfNode n dg = case lookupNodeByName n dg of
+  [(_,lbl)] -> dgn_theory lbl
+  _ -> error "FromXml.theoryOfNode: NodeName was not found in DGraph"
 
 
 -- | This is the main loop. In every step, all links are extracted which source
@@ -145,7 +165,10 @@ mkDGNodeLab gt (name, el) = let
     Success gt' _ symbs _ -> 
       newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
+
+-- TODO: String extraction does not work. fix it.
 extractSpecString :: Element -> String
-extractSpecString el = case elChildren el of
-  [] -> strContent el ++ "\n"
-  cld -> concat $ map extractSpecString cld
+extractSpecString el = let decl = findChildren (unqual "Declarations") el in
+  unlines $ map strContent $ concat $ map elChildren decl
+
+
