@@ -18,7 +18,7 @@ import Static.DevGraph
 
 edgeAttributes :: DGEdgeType -> String
 edgeAttributes ety = concatMap (", " ++)
-  $ (if isInc ety then [] else ["dir=both", "arrowtail=inv"])
+  $ (if isInc ety then ["arrowsize=0.5"] else ["style=bold"])
   ++ case edgeTypeModInc ety of
     GlobalDef -> []
     HetDef -> ["color=" ++ doubleColor "black"]
