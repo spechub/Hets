@@ -203,8 +203,7 @@ getNodeConsStatus lbl = case nodeInfo lbl of
    DGNode { node_cons_status = c } -> c
 
 getNodeCons :: DGNodeLab -> Conservativity
-getNodeCons nl = case getNodeConsStatus nl of
-  ConsStatus cons _ _ -> cons
+getNodeCons = getConsOfStatus . getNodeConsStatus
 
 -- | returns the Conservativity if the given node has one, otherwise none
 getNodeConservativity :: LNode DGNodeLab -> Conservativity
@@ -354,6 +353,17 @@ isProvenConsStatusLink = not . hasOpenConsStatus False
 
 mkConsStatus :: Conservativity -> ConsStatus
 mkConsStatus c = ConsStatus c None LeftOpen
+
+getConsOfStatus :: ConsStatus -> Conservativity
+getConsOfStatus (ConsStatus c _ _) = c
+
+-- | to be displayed as edge label
+showConsStatus :: ConsStatus -> String
+showConsStatus cs = case cs of
+  ConsStatus None None _ -> ""
+  ConsStatus None _ LeftOpen -> ""
+  ConsStatus c _ LeftOpen -> show c ++ "?"
+  ConsStatus _ cp _ -> show cp
 
 {- | Link types of development graphs,
      Sect. IV:4.2 of the CASL Reference Manual explains them in depth. -}
@@ -613,7 +623,7 @@ emptyRefStUnitCtx = Map.empty
 -- Auxiliaries for refinament signatures composition
 matchesContext :: RefSigMap -> BStContext -> Bool
 matchesContext rsmap bstc =
-  null (filter (`notElem` Map.keys bstc) $ Map.keys rsmap)
+  not (any (`notElem` Map.keys bstc) $ Map.keys rsmap)
   && namesMatchCtx (Map.keys rsmap) bstc rsmap
 
 equalSigs :: UnitSig -> UnitSig -> Bool
@@ -1315,21 +1325,21 @@ filterRefNodesByName s ln dg = lookupNodeWith f dg where
  with the given name. We return the labeled node and the Graph where this node
  resides as local node. See also 'lookupLocalNode'. -}
 lookupLocalNodeByNameInEnv :: LibEnv -> String
-                           -> Maybe (DGraph, (LNode DGNodeLab))
+  -> Maybe (DGraph, LNode DGNodeLab)
 lookupLocalNodeByNameInEnv le s = f $ Map.elems le where
     f [] = Nothing
-    f (dg:l) = case lookupNodeByName s dg of
-                 (nd, _):_ -> Just $ lookupLocalNode le dg nd
+    f (dg : l) = case lookupNodeByName s dg of
+                 (nd, _) : _ -> Just $ lookupLocalNode le dg nd
                  _ -> f l
 
 {- | We search only the given 'DGraph' for a (maybe referenced) node with the
  given name. We return the labeled node and the Graph where this node resides
  as local node. See also 'lookupLocalNode'. -}
 lookupLocalNodeByName :: LibEnv -> DGraph -> String
-                      -> Maybe (DGraph, (LNode DGNodeLab))
+  -> Maybe (DGraph, LNode DGNodeLab)
 lookupLocalNodeByName le dg s =
     case lookupNodeByName s dg of
-      (nd, _):_ -> Just $ lookupLocalNode le dg nd
+      (nd, _) : _ -> Just $ lookupLocalNode le dg nd
       _ -> Nothing
 
 {- | Given a Node and a 'DGraph' we follow the node to the graph where it is
@@ -1618,13 +1628,15 @@ getLinkConsStatus lt = case lt of
   ScopedLink _ _ c -> c
   _ -> mkConsStatus None
 
+getEdgeConsStatus :: DGLinkLab -> ConsStatus
+getEdgeConsStatus = getLinkConsStatus . dgl_type
+
 getCons :: DGLinkType -> Conservativity
-getCons lt = case getLinkConsStatus lt of
-  ConsStatus cons _ _ -> cons
+getCons = getConsOfStatus . getLinkConsStatus
 
 -- | returns the Conservativity if the given edge has one, otherwise none
 getConservativity :: LEdge DGLinkLab -> Conservativity
-getConservativity (_, _, edgeLab) = getCons $ dgl_type edgeLab
+getConservativity (_, _, edgeLab) = getConsOfStatus $ getEdgeConsStatus edgeLab
 
 -- | returns the conservativity of the given path
 getConservativityOfPath :: [LEdge DGLinkLab] -> Conservativity

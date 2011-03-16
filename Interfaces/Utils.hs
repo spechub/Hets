@@ -188,7 +188,7 @@ addCommandHistoryToState :: IORef IntState
     -> [ProofStatus proof_tree]       -- goals included in prove
     -> IO ()
 addCommandHistoryToState intSt st pcm pt =
-  unless (null $ filter wasProved pt) $ do
+  unless (not $ any wasProved pt) $ do
         ost <- readIORef intSt
         fn <- tryRemoveAbsolutePathComponent $ filename ost
         writeIORef intSt $ add2history
@@ -244,7 +244,7 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
     else do
          let nInfo = nodeInfo nodeLab
              nodeLab' = nodeLab { nodeInfo = nInfo { node_cons_status =
-                          getLinkConsStatus $ dgl_type lnkLab } }
+                          getEdgeConsStatus lnkLab } }
              changes = [ SetNodeLab nodeLab (nodeId, nodeLab') ]
              dg' = changesDGH dg changes
              history = snd $ splitHistory dg dg'

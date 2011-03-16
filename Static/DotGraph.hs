@@ -51,9 +51,10 @@ doubleColor :: String -> String
 doubleColor s = show $ s ++ ':' : s
 
 dotEdge :: LEdge DGLinkLab -> String
-dotEdge (n1, n2, link) =
+dotEdge (n1, n2, link) = let cs = showConsStatus (getEdgeConsStatus link) in
   show n1 ++ " -> " ++ show n2
                ++ " [id=" ++ showEdgeId (dgl_id link)
+               ++ (if null cs then "" else ", label=" ++ show cs)
                ++ edgeAttributes (getRealDGLinkType link)
                ++ "];"
 

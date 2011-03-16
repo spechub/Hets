@@ -41,7 +41,6 @@ import Static.ConsInclusions
 import qualified Proofs.VSE as VSE
 
 import Common.DocUtils
-import Common.Consistency
 
 import Driver.Options (HetcatsOpts, rmSuffix, prfSuffix)
 import Driver.ReadFn (libNameToFile)
@@ -443,8 +442,7 @@ createMenuButtonShowEdgeInfo :: GInfo -> ButtonMenu GA.EdgeValue
 createMenuButtonShowEdgeInfo _ = Button "Show info"
   (\ (_, EdgeId descr, maybeLEdge) -> showEdgeInfo descr maybeLEdge)
 
-createMenuButtonCheckconservativityOfEdge :: GInfo
-                                               -> ButtonMenu GA.EdgeValue
+createMenuButtonCheckconservativityOfEdge :: GInfo -> ButtonMenu GA.EdgeValue
 createMenuButtonCheckconservativityOfEdge gi =
   Button "Check conservativity"
     (\ (_, EdgeId descr, maybeLEdge) ->
@@ -452,18 +450,9 @@ createMenuButtonCheckconservativityOfEdge gi =
 
 createMenuValueTitleShowConservativity :: ValueTitle GA.EdgeValue
 createMenuValueTitleShowConservativity = ValueTitle
-  (\ (_, _, maybeLEdge) -> case maybeLEdge of
-    Just (_, _, edgelab) -> case dgl_type edgelab of
-      ScopedLink _ _ (ConsStatus c cp status) -> return (showCons c cp status)
-      _ -> return ""
-    Nothing -> return "")
-  where
-    showCons :: Conservativity -> Conservativity -> ThmLinkStatus -> String
-    showCons c cp status = case (c, cp, status) of
-      (None, None, _) -> ""
-      (None, _, LeftOpen) -> ""
-      (_, _, LeftOpen) -> show c ++ "?"
-      _ -> show cp
+  (\ (_, _, maybeLEdge) -> return $ case maybeLEdge of
+    Just (_, _, edgelab) -> showConsStatus $ getEdgeConsStatus edgelab
+    Nothing -> "")
 
 -- Suggests a proof-script filename.
 getProofScriptFileName :: String -> IO FilePath
