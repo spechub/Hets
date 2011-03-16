@@ -311,7 +311,6 @@ pluralS_symb_list :: SYMB_KIND -> [a] -> String
 pluralS_symb_list k l = (case k of
     Implicit -> error "pluralS_symb_list"
     Sorts_kind -> sortS
-    OtherKinds s -> s
     Ops_kind -> opS
     Preds_kind -> predS) ++ (if isSingle l then "" else "s")
 

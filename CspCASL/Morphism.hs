@@ -49,14 +49,14 @@ import qualified Data.Set as Set
 -- Symbols
 
 channelNameSymbType :: SymbType
-channelNameSymbType = OtherTypeKind channelS
+channelNameSymbType = SortAsItemType -- needs to change
 
 processNameSymbType :: ProcProfile -> SymbType
 processNameSymbType (ProcProfile argSorts commAlpha) =
   let argString = concat $ List.intersperse ", " $ map show argSorts
       commsString = concat $ List.intersperse ", " $ Set.toList $
                     Set.map show commAlpha
-    in OtherTypeKind $ processS ++ " (" ++ argString ++ "): " ++ commsString
+    in SortAsItemType -- needs to change
 
 -- | Make a symbol form a channel name
 makeChannelNameSymbol :: CHANNEL_NAME -> Symbol

@@ -127,7 +127,6 @@ instance AsOMConstant (String, SymbType) where
           SortAsItemType -> toOMConstant e n
           OpAsItemType ot -> toOMConstant e (n, ot)
           PredAsItemType pt -> toOMConstant e (n, pt)
-          OtherTypeKind tk -> error $ "toOMConstant: other typekind " ++ tk
 
 -- ------------------------ ADT --------------------------
 

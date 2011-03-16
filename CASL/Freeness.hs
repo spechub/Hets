@@ -697,7 +697,6 @@ iota_symbol (Symbol name (OpAsItemType ot)) = Symbol (mkFreeName name) oait
 iota_symbol (Symbol name (PredAsItemType pt)) = Symbol (mkFreeName name) pait
     where f = \ (PredType args) -> PredType $ map mkFreeName args
           pait = PredAsItemType $ f pt
-iota_symbol sym = sym
 
 -- | applies the iota renaming to the annotations
 iota_anno_map :: Map.Map Symbol (Set.Set Annotation) -> Map.Map Symbol (Set.Set Annotation)

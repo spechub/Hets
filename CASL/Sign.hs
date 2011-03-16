@@ -41,7 +41,6 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 type OpMap = Map.Map Id (Set.Set OpType)
 
 data SymbType = SortAsItemType
-              | OtherTypeKind String
               | OpAsItemType OpType
                 {- since symbols do not speak about totality, the totality
                 information in OpType has to be ignored -}
@@ -165,7 +164,6 @@ instance Pretty Symbol where
   pretty sy = let n = pretty (symName sy) in
     case symbType sy of
        SortAsItemType -> keyword sortS <+> n
-       OtherTypeKind s -> keyword s <+> n
        PredAsItemType pt -> keyword predS <+> n <+> colon <+> pretty pt
        OpAsItemType ot -> keyword opS <+> n <+> colon <> pretty ot
 
@@ -549,8 +547,6 @@ addSymbToSign sig sy =
         SortAsItemType -> return $ addSort' sig' $ symName sy
         PredAsItemType pt -> return $ addPred' sig' (symName sy) pt
         OpAsItemType ot -> return $ addOp' sig' (symName sy) ot
-        _ -> fail "addSymbToSign: symbol type not supported"
-
 
 addSymbToDeclSymbs :: Sign e f -> Symbol -> Sign e f
 addSymbToDeclSymbs cs sy =

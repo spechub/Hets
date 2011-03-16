@@ -148,7 +148,6 @@ symbTypeToKind st = case st of
   OpAsItemType _ -> Ops_kind
   PredAsItemType _ -> Preds_kind
   SortAsItemType -> Sorts_kind
-  OtherTypeKind s -> OtherKinds s
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw = ASymbol
@@ -348,7 +347,6 @@ matches (Symbol idt k) rs = case rs of
         (SortAsItemType, Sorts_kind) -> res
         (OpAsItemType _, Ops_kind) -> res
         (PredAsItemType _, Preds_kind) -> res
-        (OtherTypeKind s, OtherKinds t) -> t == s && res
         _ -> False
 
 idMor :: m -> Sign f e -> Morphism f e m
