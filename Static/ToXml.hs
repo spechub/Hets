@@ -110,7 +110,7 @@ lnode ga lenv (_, lbl) =
                           $ lookupDGraph li lenv ]
             $ unode "Reference"
             $ prettyElem "Signature" ga $ dgn_sign lbl ]
-          DGNode orig cs -> constStatus cs
+          DGNode orig cs -> consStatus cs
               ++ case orig of
                    DGBasicSpec _ syms -> subnodes "Declarations"
                      (map (prettyRangeElem "Symbol" ga) $ Set.toList syms)
@@ -141,8 +141,8 @@ mkProvenAttr b = mkStatusAttr $ if b then "proven" else "open"
 mkAxDocNode :: GlobalAnnos -> Doc -> Element
 mkAxDocNode ga = unode "Axiom" . show . useGlobalAnnos ga
 
-constStatus :: ConsStatus -> [Element]
-constStatus cs = case show $ pretty cs of
+consStatus :: ConsStatus -> [Element]
+consStatus cs = case show $ pretty cs of
   "" -> []
   cstr -> [unode "ConsStatus" cstr]
 
@@ -163,7 +163,7 @@ ledge ga dg (f, t, lbl) = let
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl)
-    : stAttr ++ lnkSt ++ constStatus (getLinkConsStatus typ)
+    : stAttr ++ lnkSt ++ consStatus (getLinkConsStatus typ)
     ++ [gmorph ga $ dgl_morphism lbl]
 
 dgrule :: DGRule -> [Element]
