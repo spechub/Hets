@@ -33,7 +33,7 @@ import Text.XML.Light
 -- | for faster access, some elements attributes are stored alongside
 -- as a String
 type NamedNode = (String,Element)
---type NamedLink = ((String,String),Element)
+
 data NamedLink = Link { src :: String
                       , trg :: String
                       , srcNode :: Maybe (LNode DGNodeLab)
@@ -94,27 +94,19 @@ initialiseNodes dg gt nodes links = let
   in (dg',dep)
 
 
--- | A Node is looked up via its name in the DGraph. Returns the node only
--- if one single node is found for the respective name, otherwise an error
--- is thrown.
-getNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
-getNodeByName s dg = case lookupNodeByName s dg of
-  [n] -> Just n
-  [] -> Nothing
-  _ -> error $ "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
-
-
 -- | This is the main loop. In every step, all links are extracted which source
 -- has already been processed. Then, for each of these links, the target node
--- is calculated and stored using the sources G_theory.
+-- is calculated and stored using the sources G_theory (If a node is targeted
+-- by more than one link, refer to insMultTrg).
 -- The function is called again with the remaining links and additional nodes
 -- (stored in DGraph) until the list of links reaches null.
 iterateLinks :: LogicGraph -> DGraph -> [NamedNode] -> [NamedLink] -> DGraph
 iterateLinks _ dg _ [] = dg
 iterateLinks lg dg nodes links = let (cur,lftL) = splitLinks dg links
                                      (dg',lftN) = processNodes lg nodes cur dg
-  in if null cur then error 
-      "FromXml.iterateLinks: remaining links cannot be processed"
+  in if null cur then error $
+      "FromXml.iterateLinks: remaining links cannot be processed!\n" 
+        ++ printLinks lftL
     else iterateLinks lg dg' lftN lftL
 
 
@@ -125,45 +117,49 @@ iterateLinks lg dg nodes links = let (cur,lftL) = splitLinks dg links
 processNodes :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
              -> (DGraph,[NamedNode])
 processNodes _ nodes [] dg = (dg,nodes)
-processNodes _ [] links _ = let 
-  showLinks = unlines $ map (\l -> src l ++ " -> " ++ trg l) links
-  in error $ 
-    "FromXml.processNodes: remaining links targets cannot be found!\n" 
-      ++ showLinks
+processNodes _ [] links _ = error $ 
+    "FromXml.processNodes: remaining links targets cannot be found!\n"
+      ++ printLinks links
 processNodes lg (x@(name,_):xs) links dg = 
   case partition ((== name) . trg) links of
     ([l],ls) -> processNodes lg xs ls $ insertEdgeDG lg l
-       $ insertNodeDG (linkSrcTh l) x dg
+       $ insertNodeDG (thOfSrc l) x dg
     ([],_) -> let (dg',xs') = processNodes lg xs links dg
       in (dg',x:xs')
     (sameTrg,ls) -> processNodes lg xs ls $ insMultTrg lg x sameTrg dg
-      
+
+
+-- | if multiple links target one node, a G_theory must be calculated using
+-- the signature of all ingoing links via gSigUnion.
 insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
-insMultTrg lg x links dg = undefined {- let
-  (t:ts) = map linkSrcTh links
-  signs = map signOf (t:ts)
+insMultTrg lg x links dg = let
+  signs = map (signOf . thOfSrc) links
   res = gsigManyUnion lg signs
   in case maybeResult res of
     Nothing -> error $ "FromXml.insMultTrg:\n" ++ show res
-    Just (G_sign _ sign _) -> case flatG_sentences t ts of
-      Nothing -> error "FromXml.insMultTrg: failed to merge theories"
-      Just (G_theory lid _ sId sens tId) -> foldr (insertEdgeDG lg) 
-        (insertNodeDG (G_theory lid sign sId sens tId) x dg) links
--}
+    Just (G_sign lid sign sId) -> let gt = noSensGTheory lid sign sId
+      in foldr (insertEdgeDG lg) (insertNodeDG gt x dg) links
+
 
 -- | returns the G_theory of a links source node
-linkSrcTh :: NamedLink -> G_theory
-linkSrcTh = dgn_theory . snd . fromJust . srcNode  
+thOfSrc :: NamedLink -> G_theory
+thOfSrc = dgn_theory . snd . fromJust . srcNode
+
+
+-- | returns a String representation of a list of links showing their
+-- source and target nodes.
+printLinks :: [NamedLink] -> String
+printLinks = let show' l = src l ++ " -> " ++ trg l in
+  unlines . (map show')
 
 
 -- | Help function for iterateNodes. Given a list of links, it partitions the
--- links depending on if their source has been processed. Then stores the
--- source-nodes G_theory alongside for easy access.
+-- links depending on if their source has been processed.
 splitLinks :: DGraph -> [NamedLink] -> ([NamedLink],[NamedLink])
 splitLinks dg = killMultTrg . foldr partition' ([],[]) where
   partition' l (r,r') = case getNodeByName (src l) dg of
-    Just dgn -> (l { srcNode = Just dgn }:r, r')
     Nothing -> (r, l:r')
+    dgn -> (l { srcNode = dgn }:r, r')
   -- if a link targets a node that is also targeted by another link which
   -- cannot be processed at this step, the first link is also appended.
   killMultTrg (hasSrc,noSrc) = let noSrcTrgs = map trg noSrc in
@@ -171,11 +167,14 @@ splitLinks dg = killMultTrg . foldr partition' ([],[]) where
       then (r, l:r') else (l:r, r')) ([],noSrc) hasSrc
 
 
--- | Writes a single Node into the DGraph
-insertNodeDG :: G_theory -> NamedNode -> DGraph -> DGraph
-insertNodeDG gt ele dg = let lbl = mkDGNodeLab gt ele
-                             n = getNewNodeDG dg
-  in insLNodeDG (n,lbl) dg
+-- | A Node is looked up via its name in the DGraph. Returns the node only
+-- if one single node is found for the respective name, otherwise an error
+-- is thrown.
+getNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+getNodeByName s dg = case lookupNodeByName s dg of
+  [n] -> Just n
+  [] -> Nothing
+  _ -> error $ "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
 
 
 -- | Inserts a new edge into the DGraph.
@@ -183,20 +182,22 @@ insertNodeDG gt ele dg = let lbl = mkDGNodeLab gt ele
 -- it implements Grothendieck.ginclusion for getting the links GMorphism.
 insertEdgeDG :: LogicGraph -> NamedLink -> DGraph -> DGraph
 insertEdgeDG lg l dg = let
-  dgn1 = fromJust $ srcNode l
-  dgn2 = fromJust $ getNodeByName (trg l) dg
-  in insertEdgeDG' lg dgn1 dgn2 dg 
-
-insertEdgeDG' :: LogicGraph -> LNode DGNodeLab -> LNode DGNodeLab
-              -> DGraph -> DGraph
-insertEdgeDG' lg (i,lbl1) (j,lbl2) dg = let
+  (i,lbl1) = fromJust $ srcNode l
+  (j,lbl2) = fromJust $ getNodeByName (trg l) dg
   gsign = signOf . dgn_theory
   resMorph = ginclusion lg (gsign lbl1) (gsign lbl2)
   morph = case maybeResult resMorph of
     Just m -> m
     Nothing -> error $ "FromXml.insertEdgeDG':\n" ++ show resMorph
   in snd $ insLEdgeDG (i, j, globDefLink morph SeeTarget) dg 
+
  
+-- | Writes a single Node into the DGraph
+insertNodeDG :: G_theory -> NamedNode -> DGraph -> DGraph
+insertNodeDG gt ele dg = let lbl = mkDGNodeLab gt ele
+                             n = getNewNodeDG dg
+  in insLNodeDG (n,lbl) dg
+
 
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
