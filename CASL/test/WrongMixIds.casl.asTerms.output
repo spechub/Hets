@@ -9,21 +9,15 @@ unexpected "'"
 expecting "%", "(", "{", "[", "\\" or "\""
 
 parse error at 5.1:
-unexpected "'"
+unexpected "37"
 expecting "%", "(", "{", "[" or octal digit
 
-parse error at 6.1:
-unexpected "477"
-expecting "%", "(", "{" or "["
-
+'\o477'
 parse error at 7.1:
 unexpected "'"
 expecting "%", "(", "{", "[", digit, "x" or "o"
 
-parse error at 8.1:
-unexpected "256"
-expecting "%", "(", "{" or "["
-
+'\256'
 parse error at 9.1:
 unexpected "'"
 expecting "%", "(", "{", "[" or hexadecimal digit

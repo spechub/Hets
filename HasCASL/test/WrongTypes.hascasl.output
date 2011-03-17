@@ -15,7 +15,7 @@ unexpected "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 5.1:
-unexpected "*"
+unexpected "\215"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 6.1:
@@ -23,7 +23,7 @@ unexpected "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 7.1:
-unexpected "*"
+unexpected "\215"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 8.1:
@@ -59,7 +59,7 @@ unexpected "*"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 16.1:
-unexpected "*"
+unexpected "\215"
 expecting "?", words, "__", casl sign, "[", "{" or "("
 
 parse error at 17.8:

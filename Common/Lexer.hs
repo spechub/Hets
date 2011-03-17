@@ -37,8 +37,8 @@ semis :: CharParser st String
 semis = tryString ";;" <++> many (char ';')
 
 scanAnySigns :: CharParser st String
-scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
-    (many1 (satisfy isSignChar <?> "casl sign")) <|> semis <?> "signs"
+scanAnySigns =
+    many1 (satisfy isSignChar <?> "casl sign") <|> semis <?> "signs"
 
 -- | casl letters (all isAlpha including feminine and masculine ordinal and mu)
 caslLetters :: Char -> Bool
@@ -68,7 +68,7 @@ myLookAhead parser = do
     state <- getParserState
     x <- fmap Just parser <|> return Nothing
     p <- getPosition
-    setParserState state
+    _ <- setParserState state
     case x of
       Nothing -> fail $ lookaheadPosition ++ showPos
                  (fromSourcePos p) { Common.Id.sourceName = "" } ")"
@@ -121,18 +121,26 @@ scanDotWords = scanDot <:> scanAnyWords
 value :: Int -> String -> Int
 value base = foldl (\ x d -> base * x + digitToInt d) 0
 
+digits :: Int -> Int -> Int
+digits b n = if n == 0 then 0 else 1 + digits b (div n b)
+
+valueCheck :: Int -> String -> Bool
+valueCheck b s = let
+  n = length s
+  m = ord maxBound
+  in n >= digits b 255 && n <= digits b m && value b s <= m
+
 simpleEscape :: CharParser st String
 simpleEscape = single (oneOf "'\"\\ntrvbfa?")
 
 decEscape :: CharParser st String
-decEscape = count 3 digit `checkWith` \ s -> value 10 s <= 255
+decEscape = many1 digit `checkWith` valueCheck 10
 
 hexEscape :: CharParser st String
-hexEscape = char 'x' <:> count 2 hexDigit -- cannot be too big
+hexEscape = char 'x' <:> many1 hexDigit `checkWith` valueCheck 16
 
 octEscape :: CharParser st String
-octEscape = char 'o' <:>
-            count 3 octDigit `checkWith` \ s -> value 8 s <= 255
+octEscape = char 'o' <:> many1 octDigit `checkWith` valueCheck 8
 
 escapeChar :: CharParser st String
 escapeChar = char '\\' <:>

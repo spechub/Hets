@@ -15,19 +15,15 @@ unexpected "'"
 expecting "\\" or "\""
 
 parse error at 5.6:
-unexpected "8"
+unexpected "37"
 expecting octal digit
 
-parse error at 6.7:
-unexpected "477"
-
+'\o477'
 parse error at 7.3:
 unexpected "d"
 expecting digit, "x" or "o"
 
-parse error at 8.6:
-unexpected "256"
-
+'\256'
 parse error at 9.4:
 unexpected "'"
 expecting hexadecimal digit
