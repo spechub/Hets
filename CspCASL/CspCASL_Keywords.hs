@@ -19,9 +19,8 @@ import Common.Keywords
 import Common.Token (casl_reserved_words)
 
 -- | Keywords identifying beginning of channel declaration part.
-channelS, channelsS :: String
-channelS  = "channel"
-channelsS = "channels"
+channelS :: String
+channelS = "channel"
 
 -- | Keyword identifying beginning of process equation part.
 processS :: String
@@ -60,7 +59,7 @@ svar_sortS = "::"
 csp_casl_keywords :: [String]
 csp_casl_keywords = casl_reserved_words ++
                     [ channelS,
-                      channelsS,
+                      channelS ++ sS,
                       processS,
                       sequentialS,
                       interleavingS,

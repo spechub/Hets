@@ -246,16 +246,6 @@ printProcList =
     where printProc (procName, procProfile) = pretty procName <+>
                                  pretty procProfile
 
--- | Pretty printing for process profiles
-instance Pretty ProcProfile where
-  pretty = printProcProfile
-
-printProcProfile :: ProcProfile -> Doc
-printProcProfile (ProcProfile sorts commAlpha) =
-    printArgs sorts <+> colon <+> ppWithCommas (Set.toList commAlpha)
-    where printArgs [] = empty
-          printArgs args = parens $ ppWithCommas args
-
 -- Sentences
 
 {- | FQProcVarList should only contain fully qualified CASL variables which are

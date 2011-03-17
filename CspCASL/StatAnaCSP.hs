@@ -35,7 +35,7 @@ import Common.ExtSign
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
 import qualified CspCASL.LocalTop as LocalTop
-import CspCASL.Print_CspCASL ()
+import CspCASL.Print_CspCASL
 import CspCASL.SignCSP
 import CspCASL.Symbol
 import CspCASL.Morphism (makeFQProcNameSymbol)

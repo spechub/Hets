@@ -14,10 +14,11 @@ Printing abstract syntax of CSP-CASL
 module CspCASL.Print_CspCASL where
 
 import CASL.AS_Basic_CASL (SORT, TERM)
-import CASL.ToDoc ()
+import CASL.ToDoc
 import Common.AS_Annotation(Annoted (..))
 import Common.Doc
 import Common.DocUtils
+import Common.Id
 import Common.Keywords (elseS, ifS, thenS)
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -29,34 +30,35 @@ instance Pretty CspBasicSpec where
 
 printCspBasicSpec :: CspBasicSpec -> Doc
 printCspBasicSpec ccs =
-    chan_part $+$ proc_part
-        where chan_part = case (length chans) of
-                            0 -> empty
-                            1 -> (keyword channelS) <+> printChanDecs chans
-                            _ -> (keyword channelsS) <+> printChanDecs chans
-              proc_part = (keyword processS) <+>
-                          (printProcItems (proc_items ccs))
-              chans = channels ccs
+    case channels ccs of
+      [] -> empty
+      cs -> keyword (channelS ++ appendS cs) <+> printChanDecs cs
+  $+$ case proc_items ccs of
+    [] -> empty
+    ps -> keyword processS <+> printProcItems ps
 
 instance Pretty FQ_PROCESS_NAME where
   pretty = printProcessName
 
+-- | Pretty printing for process profiles
+instance Pretty ProcProfile where
+  pretty = printProcProfile
+
+printProcProfile :: ProcProfile -> Doc
+printProcProfile (ProcProfile sorts commAlpha) =
+    sep [if null sorts then empty else parens $ ppWithCommas sorts
+        , colon <+> ppWithCommas (Set.toList commAlpha)]
+
 printProcessName :: FQ_PROCESS_NAME -> Doc
 printProcessName fqPn =
-  let f name args commsList =
-        let argDoc = sepByCommas $ map (text.show) args
-            argDoc' = if null args then empty else parens argDoc
-            commsDoc = sepByCommas $ map (text.show) commsList
-        in parens (text processS  <+> text (show name) <> argDoc' <+>
-           colon <+> commsDoc)
+  let f n pf =
+        parens $ cat [text processS  <+> text (show n), printProcProfile pf]
   in case fqPn of
     PROCESS_NAME pn -> text $ show pn
-    PARSED_FQ_PROCESS_NAME pn argSorts comms ->
-      let ProcAlphabet comms' _ = comms
-      in f pn argSorts comms'
-    FQ_PROCESS_NAME pn profile ->
-      let ProcProfile argSorts commAlpha = profile
-      in f pn argSorts $ Set.toList commAlpha
+    PARSED_FQ_PROCESS_NAME pn argSorts (ProcAlphabet comms' _) ->
+      f pn $ ProcProfile argSorts $ Set.fromList
+        $ map (CommTypeSort. simpleIdToId) comms'
+    FQ_PROCESS_NAME pn profile -> f pn profile
 
 printChanDecs :: [CHANNEL_DECL] -> Doc
 printChanDecs cds = (vcat . punctuate semi . map pretty) cds
