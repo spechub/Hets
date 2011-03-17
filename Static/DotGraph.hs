@@ -50,33 +50,43 @@ edgeAttributes ety = concatMap (", " ++)
 doubleColor :: String -> String
 doubleColor s = show $ s ++ ':' : s
 
-dotEdge :: LEdge DGLinkLab -> String
-dotEdge (n1, n2, link) = let cs = showConsStatus (getEdgeConsStatus link) in
-  show n1 ++ " -> " ++ show n2
-               ++ " [id=" ++ showEdgeId (dgl_id link)
-               ++ (if null cs then "" else ", label=" ++ show cs)
-               ++ edgeAttributes (getRealDGLinkType link)
-               ++ "];"
+dotEdge :: String -> LEdge DGLinkLab -> String
+dotEdge url (n1, n2, link) = let
+  cs = showConsStatus (getEdgeConsStatus link)
+  es = showEdgeId (dgl_id link)
+  in show n1 ++ " -> " ++ show n2
+    ++ " [id=" ++ es
+    ++ (if null url then "" else ", URL=" ++ show (url ++ "?edge=" ++ es))
+    ++ (if null cs then "" else
+        ", fontname=Helvetica, fontsize=10, label=" ++ show cs)
+    ++ edgeAttributes (getRealDGLinkType link)
+    ++ "];"
 
 nodeAttribute :: Bool -> DGNodeLab -> String
 nodeAttribute showInternal la = concatMap (", " ++)
   (inter la : ["shape=box" | isDGRef la]
    ++ [ "style=filled"
+      , "fontsize=12"
+      , "fontname=Helvetica"
       , "fillcolor=" ++ if hasOpenGoals la then "red" else
         if hasOpenNodeConsStatus False la then "yellow" else show "/green" ])
  where inter l = if isInternalNode l && not showInternal
                     then "label=\"\", height=0.1, width=0.2"
                     else "label=\"" ++ getDGNodeName la ++ "\""
 
-dotNode :: Bool -> LNode DGNodeLab -> String
-dotNode showInternal (n, ncontents) =
-  show n ++ " [id=" ++ show n ++ nodeAttribute showInternal ncontents ++ "];"
+dotNode :: Bool -> String -> LNode DGNodeLab -> String
+dotNode showInternal url (n, ncontents) = let ns = show n in
+  ns ++ " [id=" ++ ns
+  ++ (if null url then "" else ", URL=" ++ show (url ++ "?node=" ++ ns))
+  ++ nodeAttribute showInternal ncontents ++ "];"
 
 -- | Generate a dot term representation out of a development graph
 dotGraph :: FilePath
     -> Bool -- ^ True means show internal node labels
+    -> String -- ^ URL for node and edge links
     -> DGraph -> String
-dotGraph f showInternalNodeLabels dg = unlines $
-  ["digraph " ++ show f ++ " {" ] ++
-  map (dotNode showInternalNodeLabels) (labNodesDG dg) ++
-  map dotEdge (labEdgesDG dg) ++ ["}"]
+dotGraph f showInternalNodeLabels url dg = unlines $
+  ["digraph " ++ show f ++ " {" ]
+  ++ map (dotNode showInternalNodeLabels url) (labNodesDG dg)
+  ++ map (dotEdge url) (labEdgesDG dg)
+  ++ ["}"]
