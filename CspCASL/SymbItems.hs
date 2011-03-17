@@ -15,6 +15,7 @@ import CspCASL.AS_CspCASL_Process
 
 import CASL.AS_Basic_CASL
 
+import Common.DocUtils
 import Common.Id
 
 data SymbItems = SymbItems SymbKind [Symb] deriving (Show, Eq)
@@ -31,3 +32,7 @@ data Symb = CspSymb Id (Maybe CspType)
 data CspType = CaslType TYPE | ProcType ProcProfile deriving (Show, Eq)
 
 data SymbMap = SymbMap Symb (Maybe Symb) deriving (Show, Eq)
+
+instance Pretty SymbItems
+
+instance Pretty SymbMapItems

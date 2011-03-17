@@ -31,21 +31,19 @@ module CspCASL.Logic_CspCASL
 import Logic.Logic
 import Logic.Prover
 
-import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
 import CASL.Morphism
-import CASL.Sign
-import CASL.SymbolParser
 
 import qualified CspCASL.AS_CspCASL as AS_CspCASL
 import qualified CspCASL.ATC_CspCASL ()
-import CspCASL.CspCASL_Keywords
 import CspCASL.Morphism as CspCASL_Morphism
 import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
 import qualified CspCASL.Print_CspCASL ()
 import qualified CspCASL.SignCSP as SignCSP
 import qualified CspCASL.SimplifySen as SimplifySen
 import qualified CspCASL.StatAnaCSP as StatAnaCSP
+import CspCASL.SymbItems
+import CspCASL.Symbol
 
 import CspCASLProver.CspCASLProver (cspCASLProver)
 
@@ -74,27 +72,20 @@ instance Show a => Sentences (GenCspCASL a)
     -- morphism
     CspCASL_Morphism.CspCASLMorphism
     -- symbol
-    Symbol
+    CspSymbol
     where
       map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
-      sym_of (GenCspCASL _) = allSymOf CspCASL_Morphism.cspSymOf
-      symmap_of (GenCspCASL _) =
-         extMorphismToSymbMap CspCASL_Morphism.cspAddMorphismToSymbMap
-      sym_name (GenCspCASL _) = symName
+      sym_name (GenCspCASL _) = cspSymName
       simplify_sen (GenCspCASL _) = SimplifySen.simplifySen
 
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)
     AS_CspCASL.CspBasicSpec -- basic_spec
-    SYMB_ITEMS              -- symb_items
-    SYMB_MAP_ITEMS          -- symb_map_items
+    SymbItems              -- symb_items
+    SymbMapItems          -- symb_map_items
     where
       parse_basic_spec (GenCspCASL _) =
           Just Parse_CspCASL.cspBasicSpec
-      parse_symb_items (GenCspCASL _) = -- needs extensions
-          Just $ symbItems csp_casl_keywords
-      parse_symb_map_items (GenCspCASL _) = -- needs extensions
-          Just $ symbMapItems csp_casl_keywords
 
 -- lattices (for sublogics) missing
 
@@ -135,15 +126,15 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
     -- sentence
     SignCSP.CspCASLSen
     -- symb_items
-    SYMB_ITEMS
+    SymbItems
     -- symb_map_items
-    SYMB_MAP_ITEMS
+    SymbMapItems
     -- signature
     SignCSP.CspCASLSign
     -- morphism
     CspCASL_Morphism.CspCASLMorphism
-    Symbol
-    RawSymbol
+    CspSymbol
+    CspRawSymbol
     -- proof_tree (missing)
     ()
     where
@@ -159,37 +150,22 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     -- sentence
     SignCSP.CspCASLSen
     -- symb_items
-    SYMB_ITEMS
+    SymbItems
     -- symb_map_items
-    SYMB_MAP_ITEMS
+    SymbMapItems
     -- signature
     SignCSP.CspCASLSign
     -- morphism
     CspCASL_Morphism.CspCASLMorphism
-    Symbol
-    RawSymbol
+    CspSymbol
+    CspRawSymbol
     where
       basic_analysis (GenCspCASL _) = Just StatAnaCSP.basicAnalysisCspCASL
-      stat_symb_map_items (GenCspCASL _) = statSymbMapItems
-      stat_symb_items (GenCspCASL _) = statSymbItems
-      symbol_to_raw (GenCspCASL _) = symbolToRaw
-      matches (GenCspCASL _) = CASL.Morphism.matches
+      symbol_to_raw (GenCspCASL _) = ACspSymbol
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
       is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig
       subsig_inclusion (GenCspCASL _) = CspCASL_Morphism.subsig_inclusion
-      signature_union (GenCspCASL _) s1 = SignCSP.unionCspCASLSign s1
-      induced_from_morphism (GenCspCASL _) =
-        error "NYI: CspCASL.Logic_CspCASL. instance StaticAnalysis induced_from_morphism"
-          -- inducedFromMorphismExt
-          -- (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
-          -- inducedCspMorphExt
-      induced_from_to_morphism (GenCspCASL _) = error "NYI: CspCASL.Logic_CspCASL. instance StaticAnalysis induced_from_to_morphism"
-          -- inducedFromToMorphismExt
-          -- (\ sm _ _ m sig -> inducedCspSign sm m $ extendedInfo sig)
-          -- inducedCspMorphExt
-          -- CspCASL_Morphism.composeCspAddMorphism
-          -- SignCSP.isCspSubSign
-          -- SignCSP.diffCspProcSig
+      signature_union (GenCspCASL _) = SignCSP.unionCspCASLSign
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion
                         SignCSP.cspSignUnion

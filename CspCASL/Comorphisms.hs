@@ -16,16 +16,13 @@ module CspCASL.Comorphisms where
 import Logic.Logic
 import Logic.Comorphism
 
--- CASL
-import CASL.Sign
-import CASL.AS_Basic_CASL
-import CASL.Morphism
-
 -- CspCASL
 import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.Morphism
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
+import CspCASL.SymbItems
+import CspCASL.Symbol
 
 import qualified Data.Set as Set
 
@@ -44,24 +41,20 @@ instance (Show a, Show b) => Language (CspCASL2CspCASL a b) where
       ++ "2" ++ language_name (GenCspCASL b)
 
 instance (CspCASLSemantics a, CspCASLSemantics b)
-   => Comorphism (CspCASL2CspCASL a b)
-               (GenCspCASL a) ()
-               CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
-               CspCASLSign
-               CspCASLMorphism
-               Symbol RawSymbol ()
-               (GenCspCASL b) ()
-               CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
-               CspCASLSign
-               CspCASLMorphism
-               Symbol RawSymbol () where
+  => Comorphism (CspCASL2CspCASL a b)
+    (GenCspCASL a) ()
+      CspBasicSpec CspCASLSen SymbItems SymbMapItems
+        CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol ()
+    (GenCspCASL b) ()
+      CspBasicSpec CspCASLSen SymbItems SymbMapItems
+        CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol () where
     sourceLogic (CspCASL2CspCASL a _) = GenCspCASL a
     sourceSublogic _ = ()
     targetLogic (CspCASL2CspCASL _ b) = GenCspCASL b
     mapSublogic _ _ = Just ()
     map_theory _ = return
     map_morphism _ = return
-    map_sentence _ = \_ -> return
+    map_sentence _ = const return
     map_symbol _ _ = Set.singleton
     is_model_transportable _ = True
     has_model_expansion _ = True

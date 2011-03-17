@@ -30,6 +30,8 @@ import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
 import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.Morphism (CspCASLMorphism)
+import CspCASL.SymbItems
+import CspCASL.Symbol
 
 -- ModalCASL
 import Modal.Logic_Modal
@@ -42,16 +44,10 @@ data CspCASL2Modal = CspCASL2Modal deriving (Show)
 instance Language CspCASL2Modal -- default definition is okay
 
 instance Comorphism CspCASL2Modal
-               CspCASL ()
-               CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
-               CspCASLSign
-               CspCASLMorphism
-               Symbol RawSymbol ()
-               Modal ()
-               M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               MSign
-               ModalMor
-               Symbol RawSymbol () where
+    CspCASL () CspBasicSpec CspCASLSen SymbItems SymbMapItems
+        CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol ()
+    Modal () M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+        MSign ModalMor Symbol RawSymbol () where
     sourceLogic CspCASL2Modal = cspCASL
     sourceSublogic CspCASL2Modal = ()
     targetLogic CspCASL2Modal = Modal
@@ -59,7 +55,6 @@ instance Comorphism CspCASL2Modal
     map_theory CspCASL2Modal = return . simpleTheoryMapping mapSig mapSen
     map_morphism CspCASL2Modal = return . mapMor
     map_sentence CspCASL2Modal _ = return . mapSen
-    map_symbol CspCASL2Modal _ = Set.singleton . mapSym
 
 mapSig :: CspCASLSign -> MSign
 mapSig sign =

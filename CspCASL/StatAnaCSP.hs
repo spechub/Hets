@@ -40,6 +40,7 @@ import CspCASL.AS_CspCASL_Process
 import qualified CspCASL.LocalTop as LocalTop
 import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
+import CspCASL.Symbol
 import CspCASL.Morphism(makeChannelNameSymbol, makeFQProcNameSymbol)
 
 import qualified Data.Set as Set
@@ -50,7 +51,7 @@ import qualified Data.Set as Set
 --   that happens, the mixfixed terms are still mixed fixed terms in
 --   the returned version.
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
-        -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol,
+        -> Result (CspBasicSpec, ExtSign CspCASLSign CspSymbol,
                    [Named CspCASLSen])
 basicAnalysisCspCASL (cc, sigma, ga) =
     let Result es mga = mergeGlobalAnnos ga $ globAnnos sigma
@@ -64,8 +65,12 @@ basicAnalysisCspCASL (cc, sigma, ga) =
         -- Clean signature here
         cleanSig = accSig
                    { extendedInfo = ext { ccSentences = []}}
-    in Result (es ++ ds) $
-      Just (cc, ExtSign cleanSig $ declaredSymbols accSig, ccsents)
+    in Result (es ++ ds) $ Just (cc
+           , ExtSign cleanSig $ Set.map caslToCspSymbol $ declaredSymbols accSig
+           , ccsents)
+
+caslToCspSymbol :: Symbol -> CspSymbol
+caslToCspSymbol sy = CspSymbol (symName sy) $ CaslSymbType $ symbType sy
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do checkLocalTops

@@ -29,6 +29,8 @@ import CspCASL.Logic_CspCASL
 import CspCASL.AS_CspCASL (CspBasicSpec (..))
 import CspCASL.SignCSP
 import CspCASL.Morphism (CspCASLMorphism, emptyCspAddMorphism)
+import CspCASL.SymbItems
+import CspCASL.Symbol
 
 -- | The identity of the comorphism
 data CASL2CspCASL = CASL2CspCASL deriving (Show)
@@ -36,25 +38,17 @@ data CASL2CspCASL = CASL2CspCASL deriving (Show)
 instance Language CASL2CspCASL -- default definition is okay
 
 instance Comorphism CASL2CspCASL
-               CASL CASL_Sublogics
-               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign
-               CASLMor
-               Symbol RawSymbol ProofTree
-               CspCASL ()
-               CspBasicSpec CspCASLSen SYMB_ITEMS SYMB_MAP_ITEMS
-               CspCASLSign
-               CspCASLMorphism
-               Symbol RawSymbol () where
+    CASL CASL_Sublogics CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+        CASLSign CASLMor Symbol RawSymbol ProofTree
+    CspCASL () CspBasicSpec CspCASLSen SymbItems SymbMapItems
+        CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top
     targetLogic CASL2CspCASL = cspCASL
     mapSublogic CASL2CspCASL _ = Just ()
-    map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig mapSen
+    map_theory CASL2CspCASL = return . simpleTheoryMapping mapSig CASLSen
     map_morphism CASL2CspCASL = return . mapMor
-    map_sentence CASL2CspCASL _sig = return . mapSen -- toSentence sig
-    -- this function has now the error implementation as default
-    -- map_symbol = errMapSymbol -- Set.singleton . mapSym
+    map_sentence CASL2CspCASL _sig = return . CASLSen
     has_model_expansion CASL2CspCASL = True
     is_weakly_amalgamable CASL2CspCASL = True
     isInclusionComorphism CASL2CspCASL = True
@@ -73,6 +67,3 @@ mapMor m =
   { sort_map = sort_map m
   , op_map = op_map m
   , pred_map = pred_map m }
-
-mapSen :: CASLFORMULA -> CspCASLSen
-mapSen f = CASLSen f
