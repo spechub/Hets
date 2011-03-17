@@ -24,6 +24,7 @@ import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 
 import Numeric
+import Char
 
 import CSL.AS_BASIC_CSL
 import CSL.Keywords
@@ -118,9 +119,13 @@ signednumber =
     in Lexer.pToken Lexer.scanFloatExt >>= g
 
 readRat :: String -> APFloat
-readRat s = case readFloat s of
-              [(r, "")] -> r
+readRat s = case readFloat fls of
+              [(r, "")] -> withSgn r
               _ -> error $ "readRat: cannot read float " ++ s
+    where withSgn x = if sgn then -x else x
+          (sgn, fls) = case dropWhile isSpace s of
+                         '-':s' -> (True, s')
+                         _ -> (False, s)
 
 readDbl :: String -> Double
 readDbl s = read s

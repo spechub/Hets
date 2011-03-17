@@ -215,7 +215,7 @@ data OPNAME =
     OP_mult | OP_div | OP_plus | OP_minus | OP_neg | OP_pow
     -- roots, trigonometric and other operators
   | OP_fthrt | OP_sqrt | OP_abs | OP_max | OP_min | OP_sign
-  | OP_cos | OP_sin | OP_tan | OP_Pi
+  | OP_cos | OP_sin | OP_tan | OP_cot | OP_Pi
   | OP_reldist
 
   -- special CAS operators
@@ -291,6 +291,7 @@ showOPNAME x =
           OP_solve -> "solve"
           OP_sqrt -> "sqrt"
           OP_tan -> "tan"
+          OP_cot -> "cot"
           OP_false -> "false"
           OP_true -> "true"
           OP_in -> "in"
@@ -460,8 +461,9 @@ operatorInfo =
         a2i p s = toSgl s 2 p
     in map (aX 0) [ OP_failure, OP_undef, OP_Pi, OP_true, OP_false, OP_real ]
            ++ map (aX 1)
-                  [ OP_neg, OP_cos, OP_sin, OP_tan, OP_sqrt, OP_fthrt, OP_abs
-                  , OP_sign, OP_simplify, OP_rlqe, OP_factor, OP_factorize ]
+                  [ OP_neg, OP_cos, OP_sin, OP_tan, OP_cot, OP_sqrt, OP_fthrt
+                  , OP_abs, OP_sign, OP_simplify, OP_rlqe, OP_factor
+                  , OP_factorize ]
            ++ map (a2i 5) [ OP_hastype ]
            ++ map (a2bind 0 1) [ OP_ex, OP_all ]
            ++ map (a2i 30) [ OP_or, OP_impl ]

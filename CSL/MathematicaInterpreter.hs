@@ -137,9 +137,10 @@ mmShowOPNAME x =
       OP_max -> "Max"
       OP_min -> "Min"
 
-      OP_cos -> "Cos"
       OP_sin -> "Sin"
+      OP_cos -> "Cos"
       OP_tan -> "Tan"
+      OP_cot -> "Cot"
       OP_Pi -> "Pi"
 
       OP_and -> "And"
