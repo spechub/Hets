@@ -23,6 +23,7 @@ import qualified CASL.Sign as CASL_Sign
 import qualified CASL.Simplify as CASL_Simplify
 
 import Common.Id (tokStr)
+import Common.Result (propagateErrors)
 import Common.Utils (number)
 
 import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
@@ -32,6 +33,8 @@ import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP (CspCASLSign, CspSign (..),
                         ccSig2CASLSign, ccSig2CspSign)
+
+import CspCASL.StatAnaCSP (getDeclaredChanSort)
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -261,9 +264,9 @@ transEvent ccSign pcfolSign cfolSign vsm event p =
                              -- of the declared channel sort, which is what we
                              -- need.
                   Just (chanName, _) ->
-                      let declaredChanSort = case Map.lookup chanName chanMap of
-                                             Nothing -> error "CspCASLProver.TransProcesses.transEvent: Channel name not in channel map"
-                                             Just s -> s
+                      let declaredChanSort = propagateErrors
+                            "CspCASLProver.TransProcesses.transEvent1"
+                            $ getDeclaredChanSort mfqc ccSign
                       -- CspProvers non-deterministic channel send Op
                       in cspProver_chan_nondeterministic_sendOp
                       -- The channel name
@@ -288,9 +291,9 @@ transEvent ccSign pcfolSign cfolSign vsm event p =
                   -- Just) as this can be a sub type of the declared channel
                   -- sort, which is what we need.
                   Just (chanName, _) ->
-                      let declaredChanSort = case Map.lookup chanName chanMap of
-                                             Nothing -> error "CspCASLProver.TransProcesses.transEvent: Channel name not in channel map"
-                                             Just s -> s
+                      let declaredChanSort = propagateErrors
+                            "CspCASLProver.TransProcesses.transEvent2"
+                            $ getDeclaredChanSort mfqc ccSign
                       -- CspProvers channel receive Op
                       in cspProver_chan_recOp
                       -- The channel name

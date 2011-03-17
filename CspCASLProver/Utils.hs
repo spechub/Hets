@@ -48,7 +48,7 @@ import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.SignCSP (CspCASLSign, ccSig2CASLSign, ChanNameMap, CspSign (..),
-                        CspCASLSen (..), isProcessEq)
+                        CspCASLSen (..), isProcessEq, mapSetToList)
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -626,7 +626,7 @@ mkEventDE _ chanNameMap =
                                         [mkSortBarType s])
         -- Make pairs of channel and sorts, where we only build the declared
         -- channels and not the subsorted channels.
-        mkAllChanCons = map mkChanCon $ Map.toList chanNameMap
+        mkAllChanCons = map mkChanCon $ mapSetToList chanNameMap
         -- We build the event type out of the flat constructions and the list of
         -- channel constructions
     in (eventType, (flat : mkAllChanCons))

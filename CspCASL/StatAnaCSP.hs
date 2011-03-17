@@ -17,20 +17,17 @@ for CSP-CASL", MPhil thesis by Andy Gimblett, 2008.
 
 module CspCASL.StatAnaCSP where
 
-import qualified Control.Monad as Monad
-import qualified Data.Map as Map
-import qualified Data.Set as S
 import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
                            VAR_DECL(..))
 import CASL.MixfixParser
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
 import CASL.StaticAna (allConstIds, allOpIds, allPredIds)
+
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
-import qualified Common.Lib.Rel as Rel
 import Common.Id (getRange, Id, nullRange, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
@@ -41,9 +38,13 @@ import qualified CspCASL.LocalTop as LocalTop
 import CspCASL.Print_CspCASL ()
 import CspCASL.SignCSP
 import CspCASL.Symbol
-import CspCASL.Morphism(makeChannelNameSymbol, makeFQProcNameSymbol)
+import CspCASL.Morphism (makeFQProcNameSymbol)
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Data.Maybe
+
+import Control.Monad
 
 -- | The first element of the returned pair (CspBasicSpec) is the same
 --   as the inputted version just with some very minor optimisations -
@@ -100,7 +101,7 @@ anaChanDecl (ChannelDecl chanNames chanSort) = do
     sig <- get
     let ext = extendedInfo sig
         oldChanMap = chans ext
-    newChanMap <- Monad.foldM (anaChannelName chanSort) oldChanMap chanNames
+    newChanMap <- foldM (anaChannelName chanSort) oldChanMap chanNames
     sig2 <- get
     put sig2 { extendedInfo = ext { chans = newChanMap }}
 
@@ -109,25 +110,16 @@ anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME ->
                     State CspCASLSign ChanNameMap
 anaChannelName s m chanName = do
     sig <- get
-    if (show chanName) `S.member` (S.map show (sortSet sig))
-      then do let err = "channel name already in use as a sort name"
-              addDiags [mkDiag Error err chanName]
-              return m
-      else case Map.lookup chanName m of
-             Nothing ->
-                 -- Add the channel name as a symbol to the list of
-                 -- newly defined symbols - which is stored in the CASL
-                 -- signature
-                 do addSymbol (makeChannelNameSymbol chanName)
-                    return (Map.insert chanName s m) -- insert new.
-             Just e ->
-               if e == s
-                 then do let warn = "channel redeclared with same sort"
-                         addDiags [mkDiag Warning warn chanName]
-                         return m -- already declared with this sort.
-                 else do let err = "channel declared with multiple sorts"
-                         addDiags [mkDiag Error err chanName]
-                         return m
+    if Set.member (simpleIdToId chanName) (sortSet sig)
+      then do
+        let err = "channel name already in use as a sort name"
+        addDiags [mkDiag Error err chanName]
+        return m
+      else do
+        let ts = Map.findWithDefault Set.empty chanName m
+        when (Set.member s ts) $
+          addDiags [mkDiag Warning "redeclared channel" chanName]
+        return $ Map.insert chanName (Set.insert s ts) m
 
 -- Static analysis of process items
 
@@ -288,7 +280,7 @@ anaProcVars pn ss vs =
                                 "process name not applied to enough arguments:"
                                 pn]
                       return []
-             EQ -> Monad.foldM anaProcVar [] (zip vs ss)
+             EQ -> foldM anaProcVar [] (zip vs ss)
        return $ reverse $ vars
 
 -- | Statically analyse a CspCASL process-global variable name.
@@ -316,16 +308,16 @@ anaProcTerm proc gVars lVars = case proc of
            return (al, fqProc)
     Skip r ->
         do addDiags [mkDiag Debug "Skip" proc]
-           let fqProc = FQProcess (Skip r) S.empty r
-           return (S.empty, fqProc)
+           let fqProc = FQProcess (Skip r) Set.empty r
+           return (Set.empty, fqProc)
     Stop r ->
         do addDiags [mkDiag Debug "Stop" proc]
-           let fqProc = FQProcess (Stop r) S.empty r
-           return (S.empty, fqProc)
+           let fqProc = FQProcess (Stop r) Set.empty r
+           return (Set.empty, fqProc)
     Div r ->
         do addDiags [mkDiag Debug "Div" proc]
-           let fqProc = FQProcess (Div r) S.empty r
-           return (S.empty, fqProc)
+           let fqProc = FQProcess (Div r) Set.empty r
+           return (Set.empty, fqProc)
     Run es r ->
         do addDiags [mkDiag Debug "Run" proc]
            (comms, fqEs) <- anaEventSet es
@@ -340,42 +332,42 @@ anaProcTerm proc gVars lVars = case proc of
         do addDiags [mkDiag Debug "Prefix" proc]
            (evComms, rcvMap, fqEvent) <- anaEvent e (lVars `Map.union` gVars)
            (comms, pFQTerm) <- anaProcTerm p gVars (rcvMap `Map.union` lVars)
-           let newAlpha = comms `S.union` evComms
+           let newAlpha = comms `Set.union` evComms
            let fqProc = FQProcess (PrefixProcess fqEvent pFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     Sequential p q r ->
         do addDiags [mkDiag Debug "Sequential" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars Map.empty
-           let newAlpha = pComms `S.union` qComms
+           let newAlpha = pComms `Set.union` qComms
            let fqProc = FQProcess (Sequential pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     InternalChoice p q r ->
         do addDiags [mkDiag Debug "InternalChoice" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           let newAlpha = pComms `S.union` qComms
+           let newAlpha = pComms `Set.union` qComms
            let fqProc = FQProcess (InternalChoice pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     ExternalChoice p q r ->
         do addDiags [mkDiag Debug "ExternalChoice" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           let newAlpha = pComms `S.union` qComms
+           let newAlpha = pComms `Set.union` qComms
            let fqProc = FQProcess (ExternalChoice pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     Interleaving p q r ->
         do addDiags [mkDiag Debug "Interleaving" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           let newAlpha = pComms `S.union` qComms
+           let newAlpha = pComms `Set.union` qComms
            let fqProc = FQProcess (Interleaving pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     SynchronousParallel p q r ->
         do addDiags [mkDiag Debug "Synchronous" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           let newAlpha = pComms `S.union` qComms
+           let newAlpha = pComms `Set.union` qComms
            let fqProc = FQProcess (SynchronousParallel pFQTerm
                                                        qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
@@ -384,7 +376,7 @@ anaProcTerm proc gVars lVars = case proc of
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (synComms, fqEs) <- anaEventSet es
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
-           let newAlpha = S.unions [pComms, qComms, synComms]
+           let newAlpha = Set.unions [pComms, qComms, synComms]
            let fqProc = FQProcess (GeneralisedParallel pFQTerm fqEs qFQTerm r)
                                          newAlpha r
            return (newAlpha, fqProc)
@@ -397,7 +389,7 @@ anaProcTerm proc gVars lVars = case proc of
            (qComms, qFQTerm) <- anaProcTerm q gVars lVars
            checkCommAlphaSub qSynComms qComms proc
                                  "alphabetised parallel, right"
-           let newAlpha = pComms `S.union` qComms
+           let newAlpha = pComms `Set.union` qComms
            let fqProc = FQProcess (AlphabetisedParallel pFQTerm fqEsp fqEsq
                                                         qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
@@ -405,15 +397,15 @@ anaProcTerm proc gVars lVars = case proc of
         do addDiags [mkDiag Debug "Hiding" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (hidComms, fqEs) <- anaEventSet es
-           return (pComms `S.union` hidComms, FQProcess (Hiding pFQTerm fqEs r)
-                                 (pComms `S.union` hidComms) r)
+           return (pComms `Set.union` hidComms, FQProcess (Hiding pFQTerm fqEs r)
+                                 (pComms `Set.union` hidComms) r)
     RenamingProcess p renaming r ->
         do addDiags [mkDiag Debug "Renaming" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
            (renAlpha, fqRenaming) <- anaRenaming renaming
-           let newAlpha = pComms `S.union` renAlpha
+           let newAlpha = pComms `Set.union` renAlpha
            let fqProc = FQProcess (RenamingProcess pFQTerm fqRenaming r)
-                                         (pComms `S.union` renAlpha) r
+                                         (pComms `Set.union` renAlpha) r
            return (newAlpha, fqProc)
     ConditionalProcess f p q r ->
         do addDiags [mkDiag Debug "Conditional" proc]
@@ -429,9 +421,9 @@ anaProcTerm proc gVars lVars = case proc of
                                     -- qualified.
                        Just fs -> fs -- use the real fully qualified formula
            let fComms = case mfs of
-                          Nothing -> S.empty
+                          Nothing -> Set.empty
                           Just fs -> formulaComms fs
-           let newAlpha = S.unions [pComms, qComms, fComms]
+           let newAlpha = Set.unions [pComms, qComms, fComms]
            let fqProc = FQProcess (ConditionalProcess
                                    (fFQ) pFQTerm qFQTerm r)
                         newAlpha r
@@ -457,7 +449,7 @@ anaNamedProc proc pn terms procVars = do
     Nothing ->
       -- Return the empty alphabet and the original
       -- terms. There is an error in the spec.
-      return (S.empty, terms)
+      return (Set.empty, terms)
     Just fqPn ->
       case fqPn of
         PROCESS_NAME _ ->
@@ -475,7 +467,7 @@ anaNamedProc proc pn terms procVars = do
                   addDiags [mkDiag Error err proc]
                   -- Return the empty alphabet and the original
                   -- terms. There is an error in the spec.
-                  return (S.empty, terms)
+                  return (Set.empty, terms)
 
 -- | Statically analysis a CASL term occurring in a CspCASL "named
 -- process" term.
@@ -483,20 +475,23 @@ anaNamedProcTerm :: ProcVarMap -> ((TERM ()), SORT) ->
                     State CspCASLSign (TERM ())
 anaNamedProcTerm pm (t, expSort) = do
     mt <- anaTermCspCASL pm t
+    sig <- get
     case mt of
       Nothing -> return t -- CASL term analysis failed. Use old term
                           -- as the fully qualified term, there is a
                           -- error in the spec anyway.
-      (Just at) -> do at' <- ccTermCast at expSort -- attempt cast;
-                      case at' of
-                        Nothing -> -- Use old term as the fully
-                                   -- qualified term, there is a error
-                                   -- in the spec anyway.
+      Just at -> do
+        let Result ds at' = ccTermCast at expSort sig -- attempt cast;
+        addDiags ds
+        case at' of
+          Nothing -> -- Use old term as the fully
+                     -- qualified term, there is a error
+                     -- in the spec anyway.
                                return t
-                        (Just at'') -> return at'' -- Use the fully
-                                                   -- qualified
-                                                   -- (possibly cast)
-                                                   -- term
+          Just at'' -> return at'' -- Use the fully
+                                   -- qualified
+                                   -- (possibly cast)
+                                   -- term
 
 -- Static analysis of event sets and communication types
 
@@ -508,8 +503,8 @@ anaEventSet eventSet =
       EventSet es r ->
           do sig <- get
              -- fqEsElems is built the reversed order for efficiency.
-             (comms, fqEsElems) <- Monad.foldM (anaCommType sig)
-                                   (S.empty, []) es
+             (comms, fqEsElems) <- foldM (anaCommType sig)
+                                   (Set.empty, []) es
              vds <- gets envDiags
              put sig { envDiags = vds }
              -- reverse the list inside the event set
@@ -529,7 +524,7 @@ anaProcAlphabet argSorts (ProcAlphabet commTypes _) = do
   checkSorts argSorts -- check argument sorts are known build alphabet: set of
       -- CommType values. We do not need the fully qualfied commTypes that are
       -- returned (these area used for analysing Event Sets)
-  (alpha, _ ) <- Monad.foldM (anaCommType sig) (S.empty, []) commTypes
+  (alpha, _ ) <- foldM (anaCommType sig) (Set.empty, []) commTypes
   let profile =
         closeProcProfileSortRel (sortRel sig) (ProcProfile argSorts alpha)
   return profile
@@ -539,29 +534,28 @@ anaProcAlphabet argSorts (ProcAlphabet commTypes _) = do
 --   set elements - [CommType].
 anaCommType :: CspCASLSign -> (CommAlpha, [CommType]) -> COMM_TYPE ->
                State CspCASLSign (CommAlpha, [CommType])
-anaCommType sig (alpha, fqEsElems) ct =
-    if ctSort `S.member` (sortSet sig)
+anaCommType sig (alpha, fqEsElems) ct = let ctSort = simpleIdToId ct in
+    if Set.member ctSort (sortSet sig)
       then -- ct is a sort name; insert sort into alpha and add a sort
            -- to the fully qualified event set elements.
-        do let newAlpha = S.insert (CommTypeSort ctSort) alpha
-           let newFqEsElems = (CommTypeSort ctSort) : fqEsElems
-           return (newAlpha, newFqEsElems)
+        let newAlpha = Set.insert (CommTypeSort ctSort) alpha
+            newFqEsElems = (CommTypeSort ctSort) : fqEsElems
+        in return (newAlpha, newFqEsElems)
       else -- ct not a sort name, so should be a channel name
-        case Map.lookup ct (chans $ extendedInfo sig) of
-          Just s -> -- ct is a channel name; insert typed chan name
-                    -- into alpha and add typed channel to the fully
-                    -- qualified event set elemenets.
-                    let newAlpha = S.insert (mkTypedChan ct s) alpha
-                        newFqEsElems = (mkTypedChan ct s) : fqEsElems
-                    in return (newAlpha, newFqEsElems)
-          Nothing -> do let err = "not a sort or channel name"
-                        addDiags [mkDiag Error err ct]
+        case Set.toList $ Map.findWithDefault Set.empty ct $ chans
+               $ extendedInfo sig of
+        [] -> do
+           let err = "not a sort or channel name"
+           addDiags [mkDiag Error err ct]
                         -- failed, thus error in spec, return the
                         -- unmodified alphabet and the unmodifled
                         -- fully qualified event set elements.
-                        return (alpha, fqEsElems)
-        where ctSort = simpleIdToId ct
-              mkTypedChan c s = CommTypeChan $ TypedChanName c s
+           return (alpha, fqEsElems)
+        ts -> let tcs = map (CommTypeChan . TypedChanName ct) ts
+                    -- ct is a channel name; insert typed chan name
+                    -- into alpha and add typed channel to the fully
+                    -- qualified event set elemenets.
+              in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
 
 -- Static analysis of events
 
@@ -626,7 +620,7 @@ anaTermEvent t vars = do
                       Just at -> ([(CommTypeSort (sortOfTerm at))], at)
                       -- return the empty alphabet and the original term
                       Nothing -> ([], t)
-  return (S.fromList alpha, Map.empty, t')
+  return (Set.fromList alpha, Map.empty, t')
 
 
 -- | Statically analyse a CspCASL internal or external prefix choice
@@ -637,7 +631,7 @@ anaPrefixChoice :: VAR -> SORT ->
                    State CspCASLSign (CommAlpha, ProcVarMap, TERM ())
 anaPrefixChoice v s = do
   checkSorts [s] -- check sort is known
-  let alpha = S.singleton $ CommTypeSort s
+  let alpha = Set.singleton $ CommTypeSort s
   let binding = Map.singleton v s
   let fqVar = Qual_var v s nullRange
   return (alpha, binding, fqVar)
@@ -652,37 +646,53 @@ anaChanSend :: CHANNEL_NAME -> (TERM ()) -> ProcVarMap ->
 anaChanSend c t vars = do
   sig <- get
   let ext = extendedInfo sig
-  case c `Map.lookup` (chans ext) of
-    Nothing -> do
+  case Set.toList $ Map.findWithDefault Set.empty c $ chans ext of
+    [] -> do
       addDiags [mkDiag Error "unknown channel" c]
       -- Use old term as the fully qualified term and forget about the
       -- channel, there is an error in the spec
-      return (S.empty, Map.empty, Nothing, t)
-    Just chanSort -> do
+      return (Set.empty, Map.empty, Nothing, t)
+    chanSorts -> do
       mt <- anaTermCspCASL vars t
       case mt of
-        Nothing -> -- CASL analysis failed. Use old term as the fully
-                   -- qualified term and forget about the channel,
-                   -- there is an error in the spec.
-                   return (S.empty, Map.empty, Nothing, t)
-        (Just at) ->
-            do mc <- ccTermCast at chanSort
-               case mc of
-                 Nothing -> -- cast failed. Use old term as the fully
-                            -- qualified term, and forget about the
-                            -- channel there is an error in the spec.
-                            return (S.empty, Map.empty, Nothing, t)
-                 (Just ct) ->
-                     do let castSort = sortOfTerm ct
-                            alpha = [CommTypeSort castSort
-                                    ,CommTypeChan $ TypedChanName c castSort
-                                    ]
+        Nothing ->
+          -- CASL analysis failed. Use old term as the fully
+          -- qualified term and forget about the channel,
+          -- there is an error in the spec.
+          return (Set.empty, Map.empty, Nothing, t)
+        Just at -> do
+          let rs = map (\ s -> ccTermCast at s sig) chanSorts
+          addDiags $ concatMap diags rs
+          case filter (isJust . maybeResult . fst) $ zip rs chanSorts of
+            [] -> do
+              -- cast failed. Use old term as the fully
+              -- qualified term, and forget about the
+              -- channel there is an error in the spec.
+              return (Set.empty, Map.empty, Nothing, t)
+            [(_, castSort)] ->
+              let alpha = [ CommTypeSort castSort
+                          , CommTypeChan $ TypedChanName c castSort]
                         -- Use the real fully qualified term. We do
                         -- not want to use a cast term here. A cast
                         -- must be possible, but we do not want to
                         -- force it!
-                        return (S.fromList alpha, Map.empty,
-                                 Just (c, chanSort), at)
+              in return (Set.fromList alpha, Map.empty, Just (c, castSort), at)
+            cts -> do -- fail due to an ambiguous chan sort
+              addDiags [mkDiag Error
+                   ("ambiguous channel sorts " ++ show (map snd cts)) t]
+              return (Set.empty, Map.empty, Nothing, t)
+
+getDeclaredChanSort :: Maybe (CHANNEL_NAME, SORT) -> CspCASLSign
+  -> Result SORT
+getDeclaredChanSort mc sig = let cm = chans $ extendedInfo sig in case mc of
+  Nothing -> fail "no channel data"
+  Just (c, s) -> case Set.toList $ Map.findWithDefault Set.empty c cm of
+    [] -> mkError "unknown channel" c
+    css -> case filter (\ cs -> cs == s || Set.member s (subsortsOf cs sig))
+           css of
+     [] -> mkError "sort not a subsort of channel's sort" s
+     [cs] -> return cs
+     fcs -> mkError ("ambiguous channel sorts " ++ show fcs) s
 
 -- | Statically analyse a CspCASL "binding" channel event (which is
 -- either a channel nondeterministic send event or a channel receive
@@ -698,35 +708,21 @@ anaChanBinding :: CHANNEL_NAME -> VAR -> SORT ->
 anaChanBinding c v s = do
   checkSorts [s] -- check sort is known
   sig <- get
-  let ext = extendedInfo sig
-  case c `Map.lookup` (chans ext) of
-    Nothing -> do
-      addDiags [mkDiag Error "unknown channel" c]
-      -- No fully qualified channel, use Nothing - there is a error in
-      -- the spec anyway. Use the real fully qualified variable
-      -- version with a nullRange.
-      return (S.empty, Map.empty, Nothing, (Qual_var v s nullRange))
-    Just chanSort -> do
-      if s `S.member` (chanSort `S.insert` (subsorts chanSort))
-        then do let alpha = [CommTypeSort s
-                            ,CommTypeChan (TypedChanName c s)]
-                let binding = [(v, s)]
+  let qv = Qual_var v s nullRange
+      jcs = Just (c, s)
+      Result ds ms = getDeclaredChanSort jcs sig
+  addDiags ds
+  case ms of
+    Nothing -> return (Set.empty, Map.empty, jcs, qv)
+    Just _ ->
+        let alpha = [CommTypeSort s, CommTypeChan (TypedChanName c s)]
+            binding = [(v, s)]
                               -- Return the alphabet, var mapping, the fully
                               -- qualfied channel and fully qualfied
                               -- variable. Notice that the fully qualified
                               -- channel's sort should be the lowest sort we can
                               -- communicate in i.e. the sort of the variable.
-                return (S.fromList alpha, Map.fromList binding,
-                             (Just (c,s)), (Qual_var v s nullRange))
-        else do let err = "sort not a subsort of channel's sort"
-                addDiags [mkDiag Error err s]
-                         -- There is a error in the spec, but return
-                         -- the alphabet, var mapping, the fully
-                         -- qualfied channel and fully qualfied
-                         -- variable - as we can.
-                return (S.empty, Map.empty, (Just (c,s)),
-                             (Qual_var v s nullRange))
-                    where subsorts = Rel.predecessors (sortRel sig)
+        in return (Set.fromList alpha, Map.fromList binding, jcs, qv)
 
 -- Static analysis of renaming and renaming items
 
@@ -735,7 +731,7 @@ anaChanBinding c v s = do
 anaRenaming :: RENAMING -> State CspCASLSign (CommAlpha, RENAMING)
 anaRenaming renaming = case renaming of
   Renaming r -> do
-    (al, fqRenamingTermsMaybes) <- Monad.foldM anaRenamingItem (S.empty, []) r
+    (al, fqRenamingTermsMaybes) <- foldM anaRenamingItem (Set.empty, []) r
     return (al, FQRenaming fqRenamingTermsMaybes)
   FQRenaming _ ->
       error "CspCASL.StatAnaCSP.anaRenaming: Unexpected FQRenaming"
@@ -747,16 +743,16 @@ anaRenamingItem :: (CommAlpha, [TERM ()]) -> Id ->
 anaRenamingItem (inAl, fqRenamingTerms) ri = do
 -- BUG -- too many nothings - should only be one
   totOps <- getUnaryOpsById ri Total
-  if (not $ S.null totOps)
-    then return (inAl `S.union` totOps, fqRenamingTerms)
+  if (not $ Set.null totOps)
+    then return (inAl `Set.union` totOps, fqRenamingTerms)
     else do
       parOps <- getUnaryOpsById ri Partial
-      if not (S.null parOps)
-        then return (inAl `S.union` parOps, fqRenamingTerms)
+      if not (Set.null parOps)
+        then return (inAl `Set.union` parOps, fqRenamingTerms)
         else do
           preds <- getBinPredsById ri
-          if not (S.null preds)
-            then return (inAl `S.union` preds, fqRenamingTerms)
+          if not (Set.null preds)
+            then return (inAl `Set.union` preds, fqRenamingTerms)
             else do
               let err = "renaming item not a binary "
                         ++ "operation or predicate name"
@@ -770,28 +766,28 @@ anaRenamingItem (inAl, fqRenamingTerms) ri = do
 -- find all unary operations of that kind with that name in the CASL
 -- signature, and return a set of corresponding communication types
 -- for those operations.
-getUnaryOpsById :: Id -> OpKind -> State CspCASLSign (S.Set CommType)
+getUnaryOpsById :: Id -> OpKind -> State CspCASLSign (Set.Set CommType)
 getUnaryOpsById ri kind = do
     sig <- get
-    let opsWithId = Map.findWithDefault S.empty ri (opMap sig)
-        binOpsKind = S.filter (isBin kind) opsWithId
-        cts = S.map CommTypeSort $ S.fold opSorts S.empty binOpsKind
+    let opsWithId = Map.findWithDefault Set.empty ri (opMap sig)
+        binOpsKind = Set.filter (isBin kind) opsWithId
+        cts = Set.map CommTypeSort $ Set.fold opSorts Set.empty binOpsKind
     return cts
       where isBin k ot = (k == opKind ot) && (1 == (length (opArgs ot)))
-            opSorts o inS = inS `S.union` (S.fromList ((opArgs o) ++ [opRes o]))
+            opSorts o inS = inS `Set.union` (Set.fromList ((opArgs o) ++ [opRes o]))
 
 -- | Given a CASL identifier find all binary predicates with that name
 -- in the CASL signature, and return a set of corresponding
 -- communication types for those predicates.
-getBinPredsById :: Id -> State CspCASLSign (S.Set CommType)
+getBinPredsById :: Id -> State CspCASLSign (Set.Set CommType)
 getBinPredsById ri = do
     sig <- get
-    let predsWithId = Map.findWithDefault S.empty ri (predMap sig)
-        binPreds = S.filter isBin predsWithId
-        cts = S.map CommTypeSort $ S.fold predSorts S.empty binPreds
+    let predsWithId = Map.findWithDefault Set.empty ri (predMap sig)
+        binPreds = Set.filter isBin predsWithId
+        cts = Set.map CommTypeSort $ Set.fold predSorts Set.empty binPreds
     return cts
       where isBin ot = (2 == (length (predArgs ot)))
-            predSorts p inS = inS `S.union` (S.fromList (predArgs p))
+            predSorts p inS = inS `Set.union` (Set.fromList (predArgs p))
 
 -- | Given two CspCASL communication alphabets, check that the first's
 -- subsort closure is a subset of the second's subsort closure.
@@ -800,12 +796,12 @@ checkCommAlphaSub :: CommAlpha -> CommAlpha -> PROCESS -> String ->
 checkCommAlphaSub sub super proc context = do
   sig <- get
   let sr = sortRel sig
-  let extras = ((closeCspCommAlpha sr sub) `S.difference`
+  let extras = ((closeCspCommAlpha sr sub) `Set.difference`
                 (closeCspCommAlpha sr super))
-  if S.null extras
+  if Set.null extras
     then do return ()
     else do let err = ("Communication alphabet subset violations (" ++
-                       context ++ "): " ++ (show $ S.toList extras))
+                       context ++ "): " ++ (show $ Set.toList extras))
             addDiags [mkDiag Error err proc]
             return ()
 
@@ -840,24 +836,19 @@ anaTermCspCASL' sig trm = do
     oneExpTerm (const return) sig resT
 
 -- | Attempt to cast a CASL term to a particular CASL sort.
-ccTermCast :: (TERM ()) -> SORT -> State CspCASLSign (Maybe (TERM ()))
-ccTermCast t cSort =
-    if termSort == (cSort)
-      then return (Just t)
-      else do sig <- get
-              if Rel.member termSort cSort (sortRel sig)
-                then do let err = "upcast term to " ++ (show cSort)
-                        addDiags [mkDiag Debug err t]
-                        return (Just (Sorted_term t cSort (getRange t)))
-                else if Rel.member cSort termSort (sortRel sig)
-                       then do let err = "downcast term to " ++ (show cSort)
-                               addDiags [mkDiag Debug err t]
-                               return (Just (Cast t cSort (getRange t)))
-                       else do let err = "can't cast term to sort " ++
-                                           (show cSort)
-                               addDiags [mkDiag Error err t]
-                               return Nothing
-        where termSort = (sortOfTerm t)
+ccTermCast :: TERM () -> SORT -> CspCASLSign -> Result (TERM ())
+ccTermCast t cSort sig = let
+  pos = getRange t
+  msg = (++ "cast term to sort " ++ show cSort)
+  in case optTermSort t of
+  Nothing -> mkError "term without type" t
+  Just termSort
+    | termSort == cSort -> return t
+    | Set.member termSort $ subsortsOf cSort sig ->
+        hint (Sorted_term t cSort pos) (msg "up") pos
+    | Set.member termSort $ supersortsOf cSort sig ->
+        hint (Cast t cSort pos) (msg "down") pos
+    | otherwise ->fatal_error (msg "cannot ") pos
 
 -- Static analysis of CASL formulae occurring in CspCASL process
 -- terms.
@@ -891,20 +882,20 @@ anaFormulaCspCASL' sig frm = do
 formulaComms :: (FORMULA ()) -> CommAlpha
 formulaComms f = case f of
     Quantification _ varDecls f' _ ->
-        (formulaComms f') `S.union` S.fromList vdSorts
+        (formulaComms f') `Set.union` Set.fromList vdSorts
             where vdSorts = (map (CommTypeSort . vdSort) varDecls)
                   vdSort (Var_decl _ s _) = s
-    Conjunction fs _ -> S.unions (map formulaComms fs)
-    Disjunction fs _ -> S.unions (map formulaComms fs)
-    Implication f1 f2 _ _ -> (formulaComms f1) `S.union` (formulaComms f2)
-    Equivalence f1 f2 _ -> (formulaComms f1) `S.union` (formulaComms f2)
+    Conjunction fs _ -> Set.unions (map formulaComms fs)
+    Disjunction fs _ -> Set.unions (map formulaComms fs)
+    Implication f1 f2 _ _ -> (formulaComms f1) `Set.union` (formulaComms f2)
+    Equivalence f1 f2 _ -> (formulaComms f1) `Set.union` (formulaComms f2)
     Negation f' _ -> formulaComms f'
-    Definedness t _ -> S.singleton (CommTypeSort (sortOfTerm t))
-    Existl_equation t1 t2 _ -> S.fromList [CommTypeSort (sortOfTerm t1),
+    Definedness t _ -> Set.singleton (CommTypeSort (sortOfTerm t))
+    Existl_equation t1 t2 _ -> Set.fromList [CommTypeSort (sortOfTerm t1),
                                            CommTypeSort (sortOfTerm t2)]
-    Strong_equation t1 t2 _ -> S.fromList [CommTypeSort (sortOfTerm t1),
+    Strong_equation t1 t2 _ -> Set.fromList [CommTypeSort (sortOfTerm t1),
                                            CommTypeSort (sortOfTerm t2)]
-    Membership t s _ -> S.fromList [CommTypeSort (sortOfTerm t),
+    Membership t s _ -> Set.fromList [CommTypeSort (sortOfTerm t),
                                     CommTypeSort s]
-    Mixfix_formula t -> S.singleton (CommTypeSort (sortOfTerm t))
-    _ -> S.empty
+    Mixfix_formula t -> Set.singleton (CommTypeSort (sortOfTerm t))
+    _ -> Set.empty
