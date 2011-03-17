@@ -1,3 +1,14 @@
+{- |
+Module      :  $Header$
+Description :  semantic csp-casl symbols
+Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
+License     :  GPLv2 or higher, see LICENSE.txt
+Maintainer  :  Christian.Maeder@dfki.de
+Stability   :  provisional
+Portability :  portable
+
+-}
+
 module CspCASL.Symbol where
 
 import CspCASL.SymbItems
