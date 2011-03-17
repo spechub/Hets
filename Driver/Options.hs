@@ -98,6 +98,9 @@ applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
 unlitS = "unlit"
 
+relposS :: String
+relposS = "relative-positions"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
@@ -211,6 +214,7 @@ instance Show HetcatsOpts where
          Latin1 -> ""
          Utf8 -> showEqOpt "encoding" "utf8"
     ++ (if unlit opts then showOpt unlitS else "")
+    ++ (if useLibPos opts then showOpt relposS else "")
     ++ showEqOpt intypeS (show $ intype opts)
     ++ showEqOpt outdirS (outdir opts)
     ++ showEqOpt outtypesS (intercalate "," $ map show $ outtypes opts)
@@ -255,6 +259,7 @@ data Flag =
   | Dump String
   | IOEncoding Enc
   | Unlit
+  | RelPos
   | Serve
   | Listen Int
 
@@ -288,6 +293,7 @@ makeOpts opts flg = case flg of
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
+    RelPos -> opts { useLibPos = True }
     Help -> opts -- skipped
     Version -> opts -- skipped
 
@@ -521,6 +527,7 @@ options = let
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
       "latin1 (default) or utf8 encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
+    , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
