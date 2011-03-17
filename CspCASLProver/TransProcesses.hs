@@ -31,8 +31,7 @@ import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
 import CspCASL.AS_CspCASL_Process
-import CspCASL.SignCSP (CspCASLSign, CspSign (..),
-                        ccSig2CASLSign, ccSig2CspSign)
+import CspCASL.SignCSP (CspCASLSign, ccSig2CASLSign)
 
 import CspCASL.StatAnaCSP (getDeclaredChanSort)
 
@@ -208,7 +207,6 @@ transEvent :: CspCASLSign -> CASL_Sign.Sign () () ->
 transEvent ccSign pcfolSign cfolSign vsm event p =
     let -- Make translation with all the signatures filled in
         transProcess' = transProcess ccSign pcfolSign cfolSign
-        chanMap = chans $ ccSig2CspSign ccSign
         caslSign = ccSig2CASLSign ccSign
         transCASLTerm' = transCASLTerm caslSign pcfolSign cfolSign
     in case event of

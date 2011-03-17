@@ -13,9 +13,6 @@ Portability :  non-portable(Logic)
 
 module Proofs.TriangleCons where
 
-
---import Logic.Grothendieck
-
 import Static.DevGraph
 import Static.History
 
@@ -37,52 +34,49 @@ triangleConsRule = DGRule "TriangleCons"
 triangleCons :: LibName -> LibEnv -> Result LibEnv
 triangleCons ln le = do
  let dg = lookupDGraph ln le
- newDg <- foldM triangleConsDG dg $ 
+ newDg <- foldM triangleConsDG dg $
              filter (\ (_, _, l) -> let e = getRealDGLinkType l in
                edgeTypeModInc e == GlobalDef
                && getCons (dgl_type l) == Cons
              )
-          $ labEdgesDG dg 
+          $ labEdgesDG dg
  return $ Map.insert ln
     (groupHistory dg triangleConsRule newDg) le
 
 triangleConsDG :: DGraph -> LEdge DGLinkLab -> Result DGraph
-triangleConsDG dg (s,t,l) = do
+triangleConsDG dg (s, t, l) = do
  let g = dgBody dg
-     markCons l1 l2= let
-        l' = l{dgl_type = case dgl_type l of
+     markCons l1 l2 = let
+        l' = l {dgl_type = case dgl_type l of
                            ScopedLink a b _ ->
                               ScopedLink a b $
-                               ConsStatus 
+                               ConsStatus
                                  Cons
                                  Cons
-                                 $ Proven triangleConsRule $ 
-                                    ProofBasis $ Set.fromList $ 
+                                 $ Proven triangleConsRule $
+                                    ProofBasis $ Set.fromList $
                                      map dgl_id [l1, l2]
                            dt -> dt}
-       in [DeleteEdge (s,t,l), InsertEdge (s,t,l')]
-     checkThm eType = 
-       case eType of 
+       in [DeleteEdge (s, t, l), InsertEdge (s, t, l')]
+     checkThm eType =
+       case eType of
          ThmType (GlobalOrLocalThm _ _) _ _ _ -> True
          _ -> False
-     oThm  = filter (\ (_, _, ll) -> let e = getRealDGLinkType ll in
+     oThm = filter (\ (_, _, ll) -> let e = getRealDGLinkType ll in
                checkThm (edgeTypeModInc e)
              ) $ out g t
- case oThm of 
+ case oThm of
    [] -> trace "1" $ return dg -- no outgoing thm link found
    _ -> do
-    let bases = filter (\((s',_,_), _) -> s == s') 
-                $ concatMap (\dge@(_, tt, _) -> 
-                        map (\x-> (x,dge)) 
-                         $ filter (\ (_, _, lx) -> 
-                           let e = getRealDGLinkType lx in
-                             -- edgeTypeModInc e == GlobalDef &&
+    let bases = filter (\ ((s', _, _), _) -> s == s')
+                $ concatMap (\ dge@(_, tt, _) ->
+                        map (\ x -> (x, dge))
+                         $ filter (\ (_, _, lx) ->
                              getCons (dgl_type lx) == Cons
                            ) $ inn g tt)
                   oThm
     case bases of
       [] -> trace "2" $ return dg -- no cons link found
-      ((_, _, cl), (_, _, tl)):_ -> do
+      ((_, _, cl), (_, _, tl)) : _ -> do
         let changes = markCons cl tl
         return $ changesDGH dg changes
-       --error "nyi"    
