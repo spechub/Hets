@@ -23,7 +23,6 @@ import ATC.Grothendieck
 import ATC.Sml_cats
 import ATC.LibName ()
 
-
 import Driver.Options
 
 import ATerm.AbstractSyntax
@@ -39,6 +38,7 @@ import Text.ParserCombinators.Parsec
 
 import System.FilePath
 
+import Data.Char
 import Data.List (isPrefixOf)
 import Data.Maybe
 
@@ -47,10 +47,10 @@ readLibDefnM :: Monad m => LogicGraph -> HetcatsOpts -> FilePath -> String
 readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
-    ATermIn _  -> return $ from_sml_ATermString input
+    ATermIn _ -> return $ from_sml_ATermString input
     _ -> case runParser (library lgraph { currentLogic = defLogic opts })
           (emptyAnnos ()) file input of
-         Left err  -> fail (showErr err)
+         Left err -> fail (showErr err)
          Right ast -> return ast
 
 readShATermFile :: ShATermLG a => LogicGraph -> FilePath -> IO (Result a)
@@ -61,13 +61,13 @@ readShATermFile lg fp = do
 fromVersionedATT :: ShATermLG a => LogicGraph -> ATermTable -> Result a
 fromVersionedATT lg att =
     case getATerm att of
-    ShAAppl "hets" [versionnr,aterm] [] ->
+    ShAAppl "hets" [versionnr, aterm] [] ->
         if hetsVersion == snd (fromShATermLG lg versionnr att)
         then Result [] (Just $ snd $ fromShATermLG lg aterm att)
         else Result [Diag Warning
                      "Wrong version number ... re-analyzing"
                      nullRange] Nothing
-    _  ->  Result [Diag Warning
+    _ -> Result [Diag Warning
                    "Couldn't convert ShATerm back from ATermTable"
                    nullRange] Nothing
 
@@ -106,14 +106,23 @@ findFileOfLibName opts file = do
             [] -> Nothing
             f : _ -> Just f
 
+convertFileToLibStr :: FilePath -> String
+convertFileToLibStr = mkLibStr . takeBaseName
+
+stripLibChars :: String -> String
+stripLibChars = filter (\ c -> isAlphaNum c || elem c "'_/")
+
+mkLibStr :: String -> String
+mkLibStr = dropWhile (== '/') . stripLibChars
+
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LibName
 fileToLibName opts efile =
     let paths = libdirs opts
         file = rmSuffix efile -- cut of extension
         pps = filter snd $ map (\ p -> (p, isPrefixOf p file)) paths
-        nfile = case pps of
-                  [] -> file
-                  (path, _) : _ -> drop (length path) file
+    in emptyLibName $ case pps of
+         [] -> if useLibPos opts then convertFileToLibStr file
+            else mkLibStr file
+         (path, _) : _ -> mkLibStr $ drop (length path) file
                    -- cut off libdir prefix
-    in emptyLibName $ dropWhile (== '/') $ filter (`notElem` ". ") nfile

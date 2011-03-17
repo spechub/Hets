@@ -57,7 +57,6 @@ import Data.List
 import Control.Monad
 import Control.Monad.Trans
 
-import Data.Char
 import Data.Maybe
 
 import System.Directory
@@ -91,7 +90,7 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
         inputLit <- readEncFile (ioEncoding opts) file
         let input = (if unlit opts then Unlit.unlit else id) inputLit
             libStr = if isAbsolute fname
-              then convertFileToLibStr $ takeBaseName fname
+              then convertFileToLibStr fname
               else dropExtensions fname
             nLn = case mln of
               Nothing | useLibPos opts ->
@@ -108,10 +107,6 @@ anaSource mln lgraph opts topLns libenv initDG fname = ResultT $ do
                   Just (lname, lenv) -> return $ Result [] $
                       Just (lname, Map.union lenv libenv)
 
-convertFileToLibStr :: FilePath -> String
-convertFileToLibStr = reverse . takeWhile (/= '/') . reverse
-  . filter (\ c -> isAlphaNum c || elem c "'_/")
-
 {- | parsing and static analysis for string (=contents of file)
 Parameters: logic graph, default logic, contents of file, filename -}
 anaString :: Maybe LibName -- ^ suggested library name
@@ -127,8 +122,8 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       Result ds mast = readLibDefnM lgraph opts posFileName input
   case mast of
     Just (Lib_defn pln is ps ans) ->
-         let noSuffixFile = dropExtensions file
-             spN = convertFileToLibStr noSuffixFile
+         let noSuffixFile = rmSuffix file
+             spN = convertFileToLibStr file
              noLibName = null $ show $ getLibId pln
              nLn = setFilePath posFileName mt
                $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
