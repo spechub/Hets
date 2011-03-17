@@ -16,6 +16,7 @@ import CspCASL.AS_CspCASL_Process
 
 import CASL.Sign
 
+import Common.Doc
 import Common.DocUtils
 import Common.Id
 
@@ -31,10 +32,24 @@ data CspSymbol = CspSymbol {cspSymName :: Id, cspSymbType :: CspSymbType}
 data CspRawSymbol = ACspSymbol CspSymbol | CspKindedSymb SymbKind Id
   deriving (Show, Eq, Ord)
 
-instance Pretty CspSymbol
+instance Pretty CspSymbType where
+  pretty t = case t of
+    CaslSymbType c -> colon <> pretty c
+    ProcAsItemType p -> pretty p
+    ChanAsItemType s -> colon <+> pretty s
 
-instance GetRange CspSymbol
+instance Pretty CspSymbol where
+  pretty (CspSymbol i t) = pretty i <+> pretty t
 
-instance Pretty CspRawSymbol
+instance GetRange CspSymbol where
+  getRange (CspSymbol i _) = getRange i
 
-instance GetRange CspRawSymbol
+instance Pretty CspRawSymbol where
+  pretty r = case r of
+    ACspSymbol s -> pretty s
+    CspKindedSymb k i -> pretty k <+> pretty i
+
+instance GetRange CspRawSymbol where
+  getRange r = case r of
+    ACspSymbol s -> getRange s
+    CspKindedSymb _ i -> getRange i
