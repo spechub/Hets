@@ -24,7 +24,7 @@ data SymbMapItems = SymbMapItems SymbKind [SymbMap] deriving (Show, Eq)
 data SymbKind = CaslKind SYMB_KIND | ProcessKind | ChannelKind
     deriving (Show, Eq, Ord)
 
-data Symb = Symb Id (Maybe CspType)
+data Symb = CspSymb Id (Maybe CspType)
             deriving (Show, Eq)
 
 -- for channels with sorts we may re-use A_type that is ambiguous

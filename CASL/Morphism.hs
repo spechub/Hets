@@ -79,8 +79,6 @@ class MorphismExtension e m | m -> e where
    composeMorphismExtension :: e -> m -> m -> Result m
    inverseMorphismExtension :: m -> Result m
    isInclusionMorphismExtension :: m -> Bool
-   morphismToSymbolMapExtension :: e -> m -> SymbolMap
-   morphismToSymbolMapExtension _ _ = Map.empty
 
 instance MorphismExtension () () where
    ideMorphismExtension _ = ()

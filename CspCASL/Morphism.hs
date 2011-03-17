@@ -40,9 +40,7 @@ import Common.Utils (composeMap)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
-import CspCASL.CspCASL_Keywords
 
-import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -52,11 +50,7 @@ channelNameSymbType :: SymbType
 channelNameSymbType = SortAsItemType -- needs to change
 
 processNameSymbType :: ProcProfile -> SymbType
-processNameSymbType (ProcProfile argSorts commAlpha) =
-  let argString = concat $ List.intersperse ", " $ map show argSorts
-      commsString = concat $ List.intersperse ", " $ Set.toList $
-                    Set.map show commAlpha
-    in SortAsItemType -- needs to change
+processNameSymbType _ = SortAsItemType -- needs to change
 
 -- | Make a symbol form a channel name
 makeChannelNameSymbol :: CHANNEL_NAME -> Symbol
@@ -219,7 +213,6 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       inverseMorphismExtension = inverseCspAddMorphism
       isInclusionMorphismExtension m =
         Map.null (channelMap m) && Map.null (processMap m)
-      morphismToSymbolMapExtension = cspAddMorphismToSymbMap
 
 -- Application of morhisms to sentences
 
