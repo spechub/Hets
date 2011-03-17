@@ -110,7 +110,7 @@ addNodesAndEdgesRef gInfo@(GInfo { hetcatsOpts = opts}) graph nodesEdges = do
                                             (lookup' nodes' n1)
                                             (lookup' nodes' n2)
    subArcListT <- mapM insertSubArcT $
-                    filter (\ (_, _, e) -> False) -- TODO: it was easier
+                    filter (\ (_, _, _e) -> False) -- TODO: it was easier
                     arcs
    subArcTypeR <- newArcType graph subArcTypeParmsR
    let insertSubArcR (n1, n2, e) = newArc graph subArcTypeR
