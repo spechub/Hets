@@ -70,6 +70,9 @@ getUniqueProfileInProcNameMap name numParams pm =
        _ -> mkError ("Process name not unique in signature with "
             ++ show numParams ++ " parameters:") name
 
+closeProcs :: Rel SORT -> CspSign -> CspSign
+closeProcs r s = s { procSet = closeProcNameMapSortRel r $ procSet s }
+
 {- | Close a proc name map under a sub-sort relation. Assumes all the proc
 profile's comms are in the sub sort relation and simply makes the comms
 downward closed under the sub-sort relation. -}
@@ -138,17 +141,11 @@ data CspSign = CspSign
     , ccSentences :: [Named CspCASLSen]
     } deriving (Eq, Ord, Show)
 
-{- | I dont know if this is implemented correctly. Always prefers sign1 if there
-are clashes in chans or procSet. BUG? I guess this would be called once the
-union of the data signatures has been computed. But this unioned data
-signature may have changed the subsort structure, so the process map may have
-to ben repaired to make the keys closed under subsort. -}
+-- | plain union
 cspSignUnion :: CspSign -> CspSign -> CspSign
-cspSignUnion _ _ = error "NYI: CspCASL.SignCSP.cspSignUnion"
-    {- CspSign { chans = Map.union (chans sign1) (chans sign2)
-    , procSet = Map.union (procSet sign1) (procSet sign2)
-    , ccSentences = ccSentences sign1 ++ ccSentences sign2
-    } -}
+cspSignUnion sign1 sign2 = emptyCspSign
+    { chans = addMapSet (chans sign1) (chans sign2)
+    , procSet = addMapSet (procSet sign1) (procSet sign2) }
 
 {- | A CspCASL signature is a CASL signature with a CSP process
 signature in the extendedInfo part. -}
@@ -179,9 +176,10 @@ unionCspCASLSign s1 s2 = do
   -- Compute the unioned data signature ignoring the csp signatures
   let newDataSig = uniteCASLSign (ccSig2CASLSign s1) (ccSig2CASLSign s2)
   -- Check that the new data signature has local top elements
-      diags' = LocalTop.checkLocalTops $ sortRel newDataSig
+      rel = sortRel newDataSig
+      diags' = LocalTop.checkLocalTops rel
   -- Compute the unioned csp signature with respect to the new data signature
-      newCspSign = unionCspSign newDataSig (extendedInfo s1) (extendedInfo s2)
+      newCspSign = unionCspSign rel (extendedInfo s1) (extendedInfo s2)
   {- Only error will be added if there are any probelms. If there are no
   problems no errors will be added and hets will continue as normal. -}
   appendDiags diags'
@@ -190,18 +188,8 @@ unionCspCASLSign s1 s2 = do
 
 {- | Compute union of two CSP signatures assuming the new already computed data
 signature. -}
-unionCspSign :: Sign () () -> CspSign -> CspSign -> CspSign
-unionCspSign dataSig a b =
-  let sr = sortRel dataSig
-      closedProcSetA = closeProcNameMapSortRel sr $ procSet a
-      closedProcSetB = closeProcNameMapSortRel sr $ procSet b
-  in emptyCspSign
-    { chans = addMapSet (chans a) $ chans b
-      {- Union the maps, and where there is the same key in both maps take the
-      union of both of the process name sets for that key. -}
-    , procSet = addMapSet closedProcSetA closedProcSetB
-    }
-
+unionCspSign :: Rel SORT -> CspSign -> CspSign -> CspSign
+unionCspSign sr a b = cspSignUnion (closeProcs sr a) (closeProcs sr b)
 
 -- | Compute difference of two CSP process signatures.
 diffCspProcSig :: CspSign -> CspSign -> CspSign
