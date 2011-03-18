@@ -43,7 +43,7 @@ data CspCASL2Modal = CspCASL2Modal deriving (Show)
 instance Language CspCASL2Modal -- default definition is okay
 
 instance Comorphism CspCASL2Modal
-    CspCASL () CspBasicSpec CspCASLSen SymbItems SymbMapItems
+    CspCASL () CspBasicSpec CspCASLSen CspSymbItems CspSymbMapItems
         CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol ()
     Modal () M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         MSign ModalMor Symbol RawSymbol () where

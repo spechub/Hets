@@ -38,7 +38,7 @@ data CspSymbType
 data CspSymbol = CspSymbol {cspSymName :: Id, cspSymbType :: CspSymbType}
   deriving (Show, Eq, Ord)
 
-data CspRawSymbol = ACspSymbol CspSymbol | CspKindedSymb SymbKind Id
+data CspRawSymbol = ACspSymbol CspSymbol | CspKindedSymb CspSymbKind Id
   deriving (Show, Eq, Ord)
 
 rawId :: CspRawSymbol -> Id
@@ -71,16 +71,16 @@ instance GetRange CspRawSymbol where
     ACspSymbol s -> getRange s
     CspKindedSymb _ i -> getRange i
 
-cspCheckSymbList :: [SymbMap] -> [Diagnosis]
+cspCheckSymbList :: [CspSymbMap] -> [Diagnosis]
 cspCheckSymbList l = case l of
-  SymbMap (CspSymb a Nothing) Nothing
-    : SymbMap (CspSymb b (Just t)) _ : r -> mkDiag Warning
+  CspSymbMap (CspSymb a Nothing) Nothing
+    : CspSymbMap (CspSymb b (Just t)) _ : r -> mkDiag Warning
            ("profile '" ++ showDoc t "' does not apply to '"
             ++ showId a "' but only to") b : cspCheckSymbList r
   _ : r -> cspCheckSymbList r
   [] -> []
 
-cspTypedSymbKindToRaw :: SymbKind -> Id -> CspType -> Result CspRawSymbol
+cspTypedSymbKindToRaw :: CspSymbKind -> Id -> CspType -> Result CspRawSymbol
 cspTypedSymbKindToRaw k idt t = let
     err = plain_error (CspKindedSymb (CaslKind Implicit) idt)
               (showDoc idt " " ++ showDoc t
@@ -103,7 +103,7 @@ cspTypedSymbKindToRaw k idt t = let
          $ typedSymbKindToRaw ck idt ct
        _ -> err
 
-cspSymbToRaw :: SymbKind -> Symb -> Result CspRawSymbol
+cspSymbToRaw :: CspSymbKind -> CspSymb -> Result CspRawSymbol
 cspSymbToRaw k (CspSymb idt mt) = case mt of
   Nothing -> return $ case k of
     CaslKind Sorts_kind ->
@@ -111,16 +111,16 @@ cspSymbToRaw k (CspSymb idt mt) = case mt of
     _ -> CspKindedSymb k idt
   Just t -> cspTypedSymbKindToRaw k idt t
 
-cspStatSymbItems :: [SymbItems] -> Result [CspRawSymbol]
+cspStatSymbItems :: [CspSymbItems] -> Result [CspRawSymbol]
 cspStatSymbItems sl =
-  let st (SymbItems kind l) = do
-        appendDiags $ cspCheckSymbList $ map (`SymbMap` Nothing) l
+  let st (CspSymbItems kind l) = do
+        appendDiags $ cspCheckSymbList $ map (`CspSymbMap` Nothing) l
         mapM (cspSymbToRaw kind) l
   in fmap concat (mapM st sl)
 
-cspSymbOrMapToRaw :: SymbKind -> SymbMap
+cspSymbOrMapToRaw :: CspSymbKind -> CspSymbMap
    -> Result [(CspRawSymbol, CspRawSymbol)]
-cspSymbOrMapToRaw k (SymbMap s mt) = case mt of
+cspSymbOrMapToRaw k (CspSymbMap s mt) = case mt of
   Nothing -> do
       v <- cspSymbToRaw k s
       return [(v, v)]
@@ -159,10 +159,10 @@ cspSymbOrMapToRaw k (SymbMap s mt) = case mt of
                ++ showDoc t2 "' do not match"
         _ -> return [(w, x)]
 
-cspStatSymbMapItems :: [SymbMapItems]
+cspStatSymbMapItems :: [CspSymbMapItems]
   -> Result (Map.Map CspRawSymbol CspRawSymbol)
 cspStatSymbMapItems sl = do
-  let st (SymbMapItems kind l) = do
+  let st (CspSymbMapItems kind l) = do
         appendDiags $ cspCheckSymbList l
         fmap concat $ mapM (cspSymbOrMapToRaw kind) l
       getSort rsy = case rsy of

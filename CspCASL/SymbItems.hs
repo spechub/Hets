@@ -33,22 +33,26 @@ import Control.Monad
 
 import qualified Data.Set as Set
 
-data SymbItems = SymbItems SymbKind [Symb] deriving (Show, Eq)
+data CspSymbItems = CspSymbItems CspSymbKind [CspSymb]
+  deriving (Show, Eq)
 
-data SymbMapItems = SymbMapItems SymbKind [SymbMap] deriving (Show, Eq)
+data CspSymbMapItems = CspSymbMapItems CspSymbKind [CspSymbMap]
+  deriving (Show, Eq)
 
-data SymbKind = CaslKind SYMB_KIND | ProcessKind | ChannelKind
-    deriving (Show, Eq, Ord)
+data CspSymbKind = CaslKind SYMB_KIND | ProcessKind | ChannelKind
+  deriving (Show, Eq, Ord)
 
-data Symb = CspSymb Id (Maybe CspType)
-            deriving (Show, Eq)
+data CspSymb = CspSymb Id (Maybe CspType)
+  deriving (Show, Eq)
 
 -- for channels with sorts we may re-use A_type that is ambiguous
-data CspType = CaslType TYPE | ProcType ProcProfile deriving (Show, Eq)
+data CspType = CaslType TYPE | ProcType ProcProfile
+  deriving (Show, Eq)
 
-data SymbMap = SymbMap Symb (Maybe Symb) deriving (Show, Eq)
+data CspSymbMap = CspSymbMap CspSymb (Maybe CspSymb)
+  deriving (Show, Eq)
 
-instance Pretty SymbKind where
+instance Pretty CspSymbKind where
   pretty k = case k of
     CaslKind c -> pretty c
     ProcessKind -> keyword processS
@@ -59,19 +63,19 @@ instance Pretty CspType where
     CaslType c -> colon <> pretty c
     ProcType p -> printProcProfile p
 
-instance Pretty Symb where
+instance Pretty CspSymb where
   pretty (CspSymb i ms) = pretty i <+> pretty ms
 
-instance Pretty SymbMap where
-  pretty (SymbMap s ms) = pretty s <+> case ms of
+instance Pretty CspSymbMap where
+  pretty (CspSymbMap s ms) = pretty s <+> case ms of
     Nothing -> empty
     Just t -> mapsto <+> pretty t
 
-instance Pretty SymbItems where
-  pretty (SymbItems k syms) = pretty k <+> ppWithCommas syms
+instance Pretty CspSymbItems where
+  pretty (CspSymbItems k syms) = pretty k <+> ppWithCommas syms
 
-instance Pretty SymbMapItems where
-  pretty (SymbMapItems k syms) = pretty k <+> ppWithCommas syms
+instance Pretty CspSymbMapItems where
+  pretty (CspSymbMapItems k syms) = pretty k <+> ppWithCommas syms
 
 sortList :: [String] -> GenParser Char st [SORT]
 sortList = commaSep1 . sortId
@@ -83,7 +87,7 @@ toAlphaComm :: [SORT] -> CommAlpha
 toAlphaComm = Set.fromList . map CommTypeSort
 
 -- | parsing a possibly qualified identifier
-cspSymb :: [String] -> GenParser Char st Symb
+cspSymb :: [String] -> GenParser Char st CspSymb
 cspSymb ks =
     do i <- parseId ks
        do
@@ -100,19 +104,19 @@ cspSymb ks =
         <|> return (CspSymb i Nothing)
 
 -- | parsing one symbol or a mapping of one to second symbol
-cspSymbMap :: [String] -> GenParser Char st SymbMap
-cspSymbMap ks = liftM2 SymbMap (cspSymb ks) $ optionMaybe
+cspSymbMap :: [String] -> GenParser Char st CspSymbMap
+cspSymbMap ks = liftM2 CspSymbMap (cspSymb ks) $ optionMaybe
   $ pToken (toKey mapsTo) >> cspSymb ks
 
 -- | parse a kind keyword
-cspSymbKind :: GenParser Char st SymbKind
+cspSymbKind :: GenParser Char st CspSymbKind
 cspSymbKind =
   fmap (const ChannelKind) (pluralKeyword channelS)
   <|> fmap (const ProcessKind) (pToken $ toKey processS)
   <|> fmap (CaslKind . fst) symbKind
 
 -- | parse a comma separated list of symbols
-cspSymbs :: [String] -> GenParser Char st [Symb]
+cspSymbs :: [String] -> GenParser Char st [CspSymb]
 cspSymbs ks =
     do s <- cspSymb ks
        do
@@ -123,13 +127,13 @@ cspSymbs ks =
 
 {- | Parse a possible kinded list of comma separated CspCASL symbols.
      The argument is a list of keywords to avoid as identifiers. -}
-cspSymbItems :: [String] -> GenParser Char st SymbItems
-cspSymbItems ks = fmap (SymbItems $ CaslKind Implicit) (cspSymbs ks) <|> do
+cspSymbItems :: [String] -> GenParser Char st CspSymbItems
+cspSymbItems ks = fmap (CspSymbItems $ CaslKind Implicit) (cspSymbs ks) <|> do
     k <- cspSymbKind
-    fmap (SymbItems k) (cspSymbs ks)
+    fmap (CspSymbItems k) (cspSymbs ks)
 
 -- | parse a comma separated list of symbols
-cspSymbMaps :: [String] -> GenParser Char st [SymbMap]
+cspSymbMaps :: [String] -> GenParser Char st [CspSymbMap]
 cspSymbMaps ks =
     do s <- cspSymbMap ks
        do
@@ -139,8 +143,8 @@ cspSymbMaps ks =
         <|> return [s]
 
 -- | parse a possible kinded list of CspCASL symbol mappings
-cspSymbMapItems :: [String] -> GenParser Char st SymbMapItems
-cspSymbMapItems ks = fmap (SymbMapItems $ CaslKind Implicit) (cspSymbMaps ks)
+cspSymbMapItems :: [String] -> GenParser Char st CspSymbMapItems
+cspSymbMapItems ks = fmap (CspSymbMapItems $ CaslKind Implicit) (cspSymbMaps ks)
   <|> do
     k <- cspSymbKind
-    fmap (SymbMapItems k) (cspSymbMaps ks)
+    fmap (CspSymbMapItems k) (cspSymbMaps ks)

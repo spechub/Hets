@@ -40,7 +40,7 @@ instance Language CASL2CspCASL -- default definition is okay
 instance Comorphism CASL2CspCASL
     CASL CASL_Sublogics CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
         CASLSign CASLMor Symbol RawSymbol ProofTree
-    CspCASL () CspBasicSpec CspCASLSen SymbItems SymbMapItems
+    CspCASL () CspBasicSpec CspCASLSen CspSymbItems CspSymbMapItems
         CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol () where
     sourceLogic CASL2CspCASL = CASL
     sourceSublogic CASL2CspCASL = SL.top

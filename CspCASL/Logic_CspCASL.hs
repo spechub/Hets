@@ -82,8 +82,8 @@ instance Show a => Sentences (GenCspCASL a)
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)
     AS_CspCASL.CspBasicSpec -- basic_spec
-    SymbItems
-    SymbMapItems
+    CspSymbItems
+    CspSymbMapItems
     where
       parse_symb_items (GenCspCASL _) = Just $ cspSymbItems []
       parse_symb_map_items (GenCspCASL _) = Just $ cspSymbMapItems []
@@ -129,9 +129,9 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
     -- sentence
     SignCSP.CspCASLSen
     -- symb_items
-    SymbItems
+    CspSymbItems
     -- symb_map_items
-    SymbMapItems
+    CspSymbMapItems
     -- signature
     SignCSP.CspCASLSign
     -- morphism
@@ -153,9 +153,9 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     -- sentence
     SignCSP.CspCASLSen
     -- symb_items
-    SymbItems
+    CspSymbItems
     -- symb_map_items
-    SymbMapItems
+    CspSymbMapItems
     -- signature
     SignCSP.CspCASLSign
     -- morphism

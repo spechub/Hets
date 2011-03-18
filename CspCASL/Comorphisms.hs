@@ -43,10 +43,10 @@ instance (Show a, Show b) => Language (CspCASL2CspCASL a b) where
 instance (CspCASLSemantics a, CspCASLSemantics b)
   => Comorphism (CspCASL2CspCASL a b)
     (GenCspCASL a) ()
-      CspBasicSpec CspCASLSen SymbItems SymbMapItems
+      CspBasicSpec CspCASLSen CspSymbItems CspSymbMapItems
         CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol ()
     (GenCspCASL b) ()
-      CspBasicSpec CspCASLSen SymbItems SymbMapItems
+      CspBasicSpec CspCASLSen CspSymbItems CspSymbMapItems
         CspCASLSign CspCASLMorphism CspSymbol CspRawSymbol () where
     sourceLogic (CspCASL2CspCASL a _) = GenCspCASL a
     sourceSublogic _ = ()
