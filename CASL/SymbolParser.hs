@@ -14,6 +14,8 @@ Parsing symbols for translations and reductions
 module CASL.SymbolParser
   ( symbItems
   , symbMapItems
+  , opOrPredType
+  , symbKind
   ) where
 
 import Common.Id

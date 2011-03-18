@@ -82,9 +82,11 @@ instance Show a => Sentences (GenCspCASL a)
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)
     AS_CspCASL.CspBasicSpec -- basic_spec
-    SymbItems              -- symb_items
-    SymbMapItems          -- symb_map_items
+    SymbItems
+    SymbMapItems
     where
+      parse_symb_items (GenCspCASL _) = Just $ cspSymbItems []
+      parse_symb_map_items (GenCspCASL _) = Just $ cspSymbMapItems []
       parse_basic_spec (GenCspCASL _) =
           Just Parse_CspCASL.cspBasicSpec
 
