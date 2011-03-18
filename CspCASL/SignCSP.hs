@@ -192,8 +192,8 @@ unionCspSign :: Rel SORT -> CspSign -> CspSign -> CspSign
 unionCspSign sr a b = cspSignUnion (closeProcs sr a) (closeProcs sr b)
 
 -- | Compute difference of two CSP process signatures.
-diffCspProcSig :: CspSign -> CspSign -> CspSign
-diffCspProcSig a b = emptyCspSign
+diffCspSig :: CspSign -> CspSign -> CspSign
+diffCspSig a b = emptyCspSign
   { chans = diffMapSet (chans a) $ chans b
   , procSet = diffMapSet (procSet a) $ procSet b
   }

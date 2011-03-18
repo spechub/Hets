@@ -22,6 +22,7 @@ import CASL.AS_Basic_CASL (FORMULA(..), OpKind(..), SORT, TERM(..), VAR,
 import CASL.MixfixParser
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
+import CASL.Morphism
 import CASL.StaticAna (allConstIds, allOpIds, allPredIds)
 
 import Common.AS_Annotation
@@ -67,8 +68,22 @@ basicAnalysisCspCASL (cc, sigma, ga) =
         cleanSig = accSig
                    { extendedInfo = ext { ccSentences = []}}
     in Result (es ++ ds) $ Just (cc
-           , ExtSign cleanSig $ Set.map caslToCspSymbol $ declaredSymbols accSig
+           , ExtSign cleanSig
+              $ Set.unions
+              $ (Set.map caslToCspSymbol $ declaredSymbols accSig)
+              : toSymbolSet (diffCspSig ext $ extendedInfo sigma)
            , ccsents)
+
+toSymbolSet :: CspSign -> [Set.Set CspSymbol]
+toSymbolSet csig = map Set.fromList
+  [ map (\ (n, s) -> CspSymbol (simpleIdToId n) $ ChanAsItemType s)
+    $ mapSetToList $ chans csig
+  , map (\ (n, p) -> CspSymbol (simpleIdToId n) $ ProcAsItemType p)
+    $ mapSetToList $ procSet csig ]
+
+symSets :: CspCASLSign -> [Set.Set CspSymbol]
+symSets sig = map (Set.map caslToCspSymbol) (symOf sig)
+  ++ toSymbolSet (extendedInfo sig)
 
 caslToCspSymbol :: Symbol -> CspSymbol
 caslToCspSymbol sy = CspSymbol (symName sy) $ CaslSymbType $ symbType sy

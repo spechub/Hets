@@ -41,7 +41,7 @@ import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
 import qualified CspCASL.Print_CspCASL ()
 import qualified CspCASL.SignCSP as SignCSP
 import qualified CspCASL.SimplifySen as SimplifySen
-import qualified CspCASL.StatAnaCSP as StatAnaCSP
+import CspCASL.StatAnaCSP
 import CspCASL.SymbItems
 import CspCASL.Symbol
 
@@ -77,6 +77,7 @@ instance Show a => Sentences (GenCspCASL a)
       map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
       sym_name (GenCspCASL _) = cspSymName
       simplify_sen (GenCspCASL _) = SimplifySen.simplifySen
+      sym_of (GenCspCASL _) = symSets
 
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)
@@ -160,7 +161,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     CspSymbol
     CspRawSymbol
     where
-      basic_analysis (GenCspCASL _) = Just StatAnaCSP.basicAnalysisCspCASL
+      basic_analysis (GenCspCASL _) = Just basicAnalysisCspCASL
       symbol_to_raw (GenCspCASL _) = ACspSymbol
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
       is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig
