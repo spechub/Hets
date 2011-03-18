@@ -119,7 +119,7 @@ cspStatSymbItems sl =
   in fmap concat (mapM st sl)
 
 cspSymbOrMapToRaw :: CspSymbKind -> CspSymbMap
-   -> Result [(CspRawSymbol, CspRawSymbol)]
+  -> Result [(CspRawSymbol, CspRawSymbol)]
 cspSymbOrMapToRaw k (CspSymbMap s mt) = case mt of
   Nothing -> do
       v <- cspSymbToRaw k s
