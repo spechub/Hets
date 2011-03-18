@@ -77,36 +77,52 @@ instance Pretty CspSymbItems where
 instance Pretty CspSymbMapItems where
   pretty (CspSymbMapItems k syms) = pretty k <+> ppWithCommas syms
 
-sortList :: [String] -> GenParser Char st [SORT]
-sortList = commaSep1 . sortId
+parseCspId :: GenParser Char st Id
+parseCspId = parseId csp_casl_keywords
 
-bracedList :: [String] -> GenParser Char st [SORT]
-bracedList = braces . sortList
+cspSortId :: GenParser Char st SORT
+cspSortId = sortId csp_casl_keywords
 
-toAlphaComm :: [SORT] -> CommAlpha
-toAlphaComm = Set.fromList . map CommTypeSort
+plainColon :: GenParser Char st ()
+plainColon = forget $ pToken $ toKey colonS
+
+commType :: GenParser Char st CommType
+commType = do
+  s <- cspSortId
+  do
+    plainColon
+    r <- cspSortId
+    if isSimpleId s
+      then return $ CommTypeChan $ TypedChanName (idToSimpleId s) r
+      else unexpected $ "sort " ++ show s
+   <|> return (CommTypeSort s)
+
+bracedList :: GenParser Char st [CommType]
+bracedList = braces $ commaSep1 commType
+
+commAlpha :: GenParser Char st CommAlpha
+commAlpha = fmap Set.fromList $ single commType <|> bracedList
 
 -- | parsing a possibly qualified identifier
-cspSymb :: [String] -> GenParser Char st CspSymb
-cspSymb ks =
-    do i <- parseId ks
+cspSymb :: GenParser Char st CspSymb
+cspSymb =
+    do i <- parseCspId
        do
          _ <- colonST
-         t <- fmap CaslType (opOrPredType ks) <|>
-            fmap (ProcType . ProcProfile [] . toAlphaComm) (bracedList ks)
+         t <- fmap CaslType (opOrPredType csp_casl_keywords) <|>
+            fmap (ProcType . ProcProfile []) commAlpha
          return $ CspSymb i $ Just t
         <|> do
-         ts <- between oParenT cParenT $ commaSep1 $ sortId ks
-         _ <- pToken $ toKey colonS
-         cs <- single (sortId ks) <|> bracedList ks
-         return $ CspSymb i $ Just $ ProcType $ ProcProfile ts
-           $ toAlphaComm cs
+         ts <- between oParenT cParenT $ commaSep1 cspSortId
+         plainColon
+         cs <- commAlpha
+         return $ CspSymb i $ Just $ ProcType $ ProcProfile ts cs
         <|> return (CspSymb i Nothing)
 
 -- | parsing one symbol or a mapping of one to second symbol
-cspSymbMap :: [String] -> GenParser Char st CspSymbMap
-cspSymbMap ks = liftM2 CspSymbMap (cspSymb ks) $ optionMaybe
-  $ pToken (toKey mapsTo) >> cspSymb ks
+cspSymbMap :: GenParser Char st CspSymbMap
+cspSymbMap = liftM2 CspSymbMap cspSymb $ optionMaybe
+  $ pToken (toKey mapsTo) >> cspSymb
 
 -- | parse a kind keyword
 cspSymbKind :: GenParser Char st CspSymbKind
@@ -116,35 +132,35 @@ cspSymbKind =
   <|> fmap (CaslKind . fst) symbKind
 
 -- | parse a comma separated list of symbols
-cspSymbs :: [String] -> GenParser Char st [CspSymb]
-cspSymbs ks =
-    do s <- cspSymb ks
+cspSymbs :: GenParser Char st [CspSymb]
+cspSymbs =
+    do s <- cspSymb
        do
-         _ <- commaT `followedWith` parseId ks
-         is <- cspSymbs ks
+         _ <- commaT `followedWith` parseCspId
+         is <- cspSymbs
          return $ s : is
         <|> return [s]
 
 {- | Parse a possible kinded list of comma separated CspCASL symbols.
      The argument is a list of keywords to avoid as identifiers. -}
-cspSymbItems :: [String] -> GenParser Char st CspSymbItems
-cspSymbItems ks = fmap (CspSymbItems $ CaslKind Implicit) (cspSymbs ks) <|> do
+cspSymbItems :: GenParser Char st CspSymbItems
+cspSymbItems = fmap (CspSymbItems $ CaslKind Implicit) cspSymbs <|> do
     k <- cspSymbKind
-    fmap (CspSymbItems k) (cspSymbs ks)
+    fmap (CspSymbItems k) cspSymbs
 
 -- | parse a comma separated list of symbols
-cspSymbMaps :: [String] -> GenParser Char st [CspSymbMap]
-cspSymbMaps ks =
-    do s <- cspSymbMap ks
+cspSymbMaps :: GenParser Char st [CspSymbMap]
+cspSymbMaps =
+    do s <- cspSymbMap
        do
-         _ <- commaT `followedWith` parseId ks
-         is <- cspSymbMaps ks
+         _ <- commaT `followedWith` parseCspId
+         is <- cspSymbMaps
          return $ s : is
         <|> return [s]
 
 -- | parse a possible kinded list of CspCASL symbol mappings
-cspSymbMapItems :: [String] -> GenParser Char st CspSymbMapItems
-cspSymbMapItems ks = fmap (CspSymbMapItems $ CaslKind Implicit) (cspSymbMaps ks)
+cspSymbMapItems :: GenParser Char st CspSymbMapItems
+cspSymbMapItems = fmap (CspSymbMapItems $ CaslKind Implicit) cspSymbMaps
   <|> do
     k <- cspSymbKind
-    fmap (CspSymbMapItems k) (cspSymbMaps ks)
+    fmap (CspSymbMapItems k) cspSymbMaps

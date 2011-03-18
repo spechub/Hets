@@ -38,7 +38,6 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.ExtSign
 import Common.Id
-import Common.ToId (toSimpleId)
 import Common.LibName
 import Common.Result
 import Common.Amalgamate
@@ -217,10 +216,10 @@ TO DO -}
                 -- now stores S \cup T
                usig' = UnitSig (ns : argSigs) resultSig' $ Just argUnion
                (newN, dgU') = addNodeRT dgU usig' ""
-               newP = NPBranch n $ Map.fromList [(toSimpleId "", NPUnit newN)]
+               newP = NPBranch n $ Map.fromList [(mkSimpleId "a", NPUnit newN)]
                rUnit = UnitSig argSigs resultSig' $ Just argUnion
                rSig = BranchRefSig newP (rUnit, Just $ BranchStaticContext $
-                         Map.insert (toSimpleId "") (mkRefSigFromUnit usig')
+                         Map.insert (mkSimpleId "a") (mkRefSigFromUnit usig')
                             Map.empty)
            return (addEdgesToNodeRT dgU' [newN] n, rSig)
              -- check the pointer
@@ -602,7 +601,8 @@ anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
                    let first (e, _, _) = e
                        second (_, e, _) = e
                        third (_, _, e) = e
-                   (sigA, dg''') <- trace (show $ edges $ diagGraph diagA)$ nodeSigUnion lgraph dg''
+                   (sigA, dg''') <- trace (show $ edges $ diagGraph diagA)
+                                    $ nodeSigUnion lgraph dg''
                        (map (JustNode . second) morphSigs)
                               DGFitSpec
                    -- compute morphA (\sigma^A)
@@ -822,7 +822,8 @@ to ignore the nodes of the
 lambda expressions, like you do in the following -}
   Compose_ref rslist range ->
     do
-       (dg', anaSpecs, _) <- foldM (\ (dgr, rList, rN') rsp0 -> trace (show rN') $ do
+       (dg', anaSpecs, _) <- foldM (\ (dgr, rList, rN') rsp0 ->
+                                        trace (show rN') $ do
           (_, _, _, rsig', dgr', rsp') <-
                                anaRefSpec lgraph ln dgr opts nsig
                                (mkSimpleId $ show rn ++ "gen_ref_name" ++
