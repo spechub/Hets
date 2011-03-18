@@ -17,7 +17,7 @@ import CspCASL.Print_CspCASL
 
 import CASL.AS_Basic_CASL
 import CASL.SymbolParser
-import CASL.ToDoc ()
+import CASL.ToDoc
 
 import Common.Doc hiding (braces)
 import Common.DocUtils
@@ -52,11 +52,16 @@ data CspType = CaslType TYPE | ProcType ProcProfile
 data CspSymbMap = CspSymbMap CspSymb (Maybe CspSymb)
   deriving (Show, Eq)
 
-instance Pretty CspSymbKind where
-  pretty k = case k of
-    CaslKind c -> pretty c
+pluralCspSympKind :: CspSymbKind -> [a] -> Doc
+pluralCspSympKind k l = case k of
+    CaslKind c -> case c of
+      Implicit -> empty
+      _ -> keyword $ pluralS_symb_list c l
     ProcessKind -> keyword processS
-    ChannelKind -> keyword channelS
+    ChannelKind -> keyword $ channelS ++ appendS l
+
+instance Pretty CspSymbKind where
+  pretty k = pluralCspSympKind k [()]
 
 instance Pretty CspType where
   pretty t = case t of
@@ -72,10 +77,10 @@ instance Pretty CspSymbMap where
     Just t -> mapsto <+> pretty t
 
 instance Pretty CspSymbItems where
-  pretty (CspSymbItems k syms) = pretty k <+> ppWithCommas syms
+  pretty (CspSymbItems k l) = pluralCspSympKind k l <+> ppWithCommas l
 
 instance Pretty CspSymbMapItems where
-  pretty (CspSymbMapItems k syms) = pretty k <+> ppWithCommas syms
+  pretty (CspSymbMapItems k l) = pluralCspSympKind k l <+> ppWithCommas l
 
 parseCspId :: GenParser Char st Id
 parseCspId = parseId csp_casl_keywords

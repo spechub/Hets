@@ -16,6 +16,7 @@ module CASL.ToDoc
     , printFormula
     , printTerm
     , printTheoryFormula
+    , pluralS_symb_list
     , pluralS
     , appendS
     , isJunct
@@ -312,7 +313,7 @@ pluralS_symb_list k l = (case k of
     Implicit -> error "pluralS_symb_list"
     Sorts_kind -> sortS
     Ops_kind -> opS
-    Preds_kind -> predS) ++ (if isSingle l then "" else "s")
+    Preds_kind -> predS) ++ appendS l
 
 instance Pretty SYMB_OR_MAP where
     pretty = printSymbOrMap
