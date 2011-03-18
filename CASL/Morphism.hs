@@ -305,11 +305,6 @@ typedSymbKindToRaw k idt t = let
 morphismToSymbMap :: Morphism f e m -> SymbolMap
 morphismToSymbMap = morphismToSymbMapAux False
 
-extMorphismToSymbMap :: (e -> m -> SymbolMap) -> Morphism f e m -> SymbolMap
-extMorphismToSymbMap extM m =
-  Map.union (extM (extendedInfo $ msource m) $ extended_map m)
-     $ morphismToSymbMap m
-
 morphismToSymbMapAux :: Bool -> Morphism f e m -> SymbolMap
 morphismToSymbMapAux b mor = let
     src = msource mor
