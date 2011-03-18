@@ -164,6 +164,8 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     CspRawSymbol
     where
       basic_analysis (GenCspCASL _) = Just basicAnalysisCspCASL
+      stat_symb_items (GenCspCASL _) _ = cspStatSymbItems
+      stat_symb_map_items (GenCspCASL _) _ = cspStatSymbMapItems
       symbol_to_raw (GenCspCASL _) = ACspSymbol
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
       is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig

@@ -191,39 +191,53 @@ checkSymbList l = case l of
          _ : r -> checkSymbList r
          [] -> []
 
-statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result RawSymbolMap
-statSymbMapItems sl = do
-  let st (Symb_map_items kind l _) = do
-        appendDiags $ checkSymbList l
-        fmap concat $ mapM (symbOrMapToRaw kind) l
-      insertRsys m1 (rsy1, rsy2) = let m3 = Map.insert rsy1 rsy2 m1 in
+insertRsys :: (Pretty r, GetRange r, Ord r)
+  => (r -> Id) -> (r -> Maybe Id) -> (Id -> r)
+    -> (r -> Maybe Id) -> (Id -> r) -> Map.Map r r -> (r, r)
+      -> Result (Map.Map r r)
+insertRsys rawId getSort mkSort getImplicit mkImplicit m1 (rsy1, rsy2) =
+  let m3 = Map.insert rsy1 rsy2 m1 in
         case Map.lookup rsy1 m1 of
-          Nothing -> case rsy1 of
-            ASymbol (Symbol i SortAsItemType) ->
-              case Map.lookup (AKindedSymb Implicit i) m1 of
-                Just (AKindedSymb Implicit j) | rawSymName rsy2 == j ->
+          Nothing -> case getSort rsy1 of
+            Just i ->
+              case Map.lookup (mkImplicit i) m1 of
+                Just r2 | Just (rawId rsy2) == getImplicit r2 ->
                   warning m1 ("ignoring separate mapping for sort " ++
                     show i) $ getRange i
                 _ -> return m3
-            AKindedSymb Implicit i ->
-              let rsy3 = ASymbol (Symbol i SortAsItemType) in
-              case Map.lookup rsy3 m1 of
-                Just (ASymbol (Symbol j SortAsItemType))
-                  | rawSymName rsy2 == j -> warning (Map.delete rsy3 m3)
+            Nothing -> case getImplicit rsy1 of
+              Just i -> let rsy3 = mkSort i in case Map.lookup rsy3 m1 of
+                Just r2 | Just (rawId rsy2) == getSort r2 ->
+                  warning (Map.delete rsy3 m3)
                       ("ignoring extra mapping of sort " ++
-                       show i) $ getRange j
+                       show i) $ getRange i
                    {- this case cannot occur, because unkinded names cannot
                       follow kinded ones:
                       in "sort s |-> t, o |-> q" "o" will be a sort, too. -}
                 _ -> return m3
-            _ -> return m3
+              _ -> return m3
           Just rsy3 -> if rsy2 == rsy3 then
             hint m1 ("ignoring duplicate mapping of "
                        ++ showDoc rsy1 "") $ getRange rsy1 else
               plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
+
+statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result RawSymbolMap
+statSymbMapItems sl = do
+  let st (Symb_map_items kind l _) = do
+        appendDiags $ checkSymbList l
+        fmap concat $ mapM (symbOrMapToRaw kind) l
+      getSort rsy = case rsy of
+        ASymbol (Symbol i SortAsItemType) -> Just i
+        _ -> Nothing
+      getImplicit rsy = case rsy of
+        AKindedSymb Implicit i -> Just i
+        _ -> Nothing
+      mkSort i = ASymbol $ Symbol i SortAsItemType
+      mkImplicit = AKindedSymb Implicit
   ls <- mapM st sl
-  foldM insertRsys Map.empty (concat ls)
+  foldM (insertRsys rawSymName getSort mkSort getImplicit mkImplicit)
+                    Map.empty (concat ls)
 
 symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> Result [(RawSymbol, RawSymbol)]
 symbOrMapToRaw k sm = case sm of
