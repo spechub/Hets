@@ -61,8 +61,8 @@ instance StaticAnalysis Fpl FplBasicSpec FplForm
                FplMor
                Symbol RawSymbol where
          basic_analysis Fpl = Just basicFplAnalysis
-         stat_symb_map_items Fpl = statSymbMapItems
-         stat_symb_items Fpl = statSymbItems
+         stat_symb_map_items Fpl _ = statSymbMapItems
+         stat_symb_items Fpl _ = statSymbItems
 
          symbol_to_raw Fpl = symbolToRaw
          id_to_raw Fpl = idToRaw

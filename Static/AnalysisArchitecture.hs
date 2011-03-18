@@ -36,6 +36,7 @@ import Syntax.AS_Architecture
 import Syntax.AS_Structured
 
 import Common.AS_Annotation
+import Common.ExtSign
 import Common.Id
 import Common.ToId (toSimpleId)
 import Common.LibName
@@ -673,20 +674,20 @@ anaFitArgUnit :: LogicGraph -> LibName -> DGraph
 {- ^ returns 1. the signature morphism 2. the target signature of the morphism
 3. the diagram node 4. the modified DGraph 5. the modified diagram -}
 anaFitArgUnit lgraph ln dg opts uctx nsig
-                     (Fit_arg_unit ut symbMap poss) = do
+                     (Fit_arg_unit ut symbMap poss) = adjustPos poss $ do
        (p, diag', dg', _) <-
            anaUnitTerm lgraph ln dg opts uctx (item ut)
-       let adj = adjustPos poss
-           gsigmaS = getSig nsig
+       let gsigmaS = getSig nsig
            gsigmaT = getSig (getSigFromDiag p)
        G_sign lidS sigmaS _ <- return gsigmaS
        G_sign lidT sigmaT _ <- return gsigmaT
-       G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
-       sigmaT' <- adj $ coerceSign lidT lidS "" sigmaT
+       G_symb_map_items_list lid sis <- homogenizeGM (Logic lidS) symbMap
+       sigmaT' <- coerceSign lidT lidS "anaFitArgUnit1" sigmaT
        mor <- if isStructured opts then return (ext_ide sigmaS) else do
-         rmap <- adj $ stat_symb_map_items lid sis
-         rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
-         adj $ ext_induced_from_to_morphism lidS rmap' sigmaS sigmaT'
+         ExtSign sigS' _ <- coerceSign lidS lid "anaFitArgUnit2" sigmaS
+         rmap <- stat_symb_map_items lid sigS' sis
+         rmap' <- coerceRawSymbolMap lid lidS "" rmap
+         ext_induced_from_to_morphism lidS rmap' sigmaS sigmaT'
        let gMorph = mkG_morphism lidS mor
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
        return (gMorph, nsig', p, dg'', diag')
@@ -895,9 +896,10 @@ anaSymbMapRef dg' ns ns' symbMap rn = do
    G_sign lidS sigS _ <- return gSigS
    G_sign lidT sigT _ <- return gSigT
    G_symb_map_items_list lid sis <- homogenizeGM (Logic lidS) symbMap
-   sigT' <- coerceSign lidT lidS "" sigT
+   sigT' <- coerceSign lidT lidS "anaSymbMapRef1" sigT
    mor <- do
-           rmap <- stat_symb_map_items lid sis
+           ExtSign sigS' _ <- coerceSign lidS lid "anaSymbMapRef2" sigS
+           rmap <- stat_symb_map_items lid sigS' sis
            rmap' <- coerceRawSymbolMap lid lidS "" rmap
            ext_induced_from_to_morphism lidS rmap' sigS sigT'
    let g_mor = mkG_morphism lidS mor

@@ -67,8 +67,8 @@ instance StaticAnalysis ConstraintCASL
                ConstraintCASLMor
                Symbol RawSymbol where
          basic_analysis ConstraintCASL = Just basicConstraintCASLAnalysis
-         stat_symb_map_items ConstraintCASL = statSymbMapItems
-         stat_symb_items ConstraintCASL = statSymbItems
+         stat_symb_map_items ConstraintCASL _ = statSymbMapItems
+         stat_symb_items ConstraintCASL _ = statSymbItems
 
          symbol_to_raw ConstraintCASL = symbolToRaw
          id_to_raw ConstraintCASL = idToRaw

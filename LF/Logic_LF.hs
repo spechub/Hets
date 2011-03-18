@@ -78,8 +78,8 @@ instance StaticAnalysis LF
    RAW_SYM
    where
    basic_analysis LF = Just $ basicAnalysis
-   stat_symb_items LF = symbAnalysis
-   stat_symb_map_items LF = symbMapAnalysis
+   stat_symb_items LF _ = symbAnalysis
+   stat_symb_map_items LF _ = symbMapAnalysis
    symbol_to_raw LF = symName
    matches LF s1 s2 =
      if (isSym s2)
@@ -99,7 +99,7 @@ instance StaticAnalysis LF
    induced_from_to_morphism LF m (ExtSign sig1 _) (ExtSign sig2 _) =
      inducedFromToMorphism (translMapAnalysis m sig1 sig2) sig1 sig2
    induced_from_morphism LF m sig =
-     inducedFromMorphism (renamMapAnalysis m sig) sig   
+     inducedFromMorphism (renamMapAnalysis m sig) sig
 
 instance LogicFram LF
    ()

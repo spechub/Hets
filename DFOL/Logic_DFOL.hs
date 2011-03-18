@@ -70,8 +70,8 @@ instance StaticAnalysis DFOL
    Symbol
    where
    basic_analysis DFOL = Just basicAnalysis
-   stat_symb_map_items DFOL = symbMapAnalysis
-   stat_symb_items DFOL = symbAnalysis
+   stat_symb_map_items DFOL _ = symbMapAnalysis
+   stat_symb_items DFOL _ = symbAnalysis
    symbol_to_raw DFOL = id
    id_to_raw DFOL = fromId
    matches DFOL s1 s2 = s1 == s2

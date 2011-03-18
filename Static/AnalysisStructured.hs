@@ -510,8 +510,9 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gmap =
     if language_name lid2 == language_name lid then
      if isStructured opts then return gmor else do
       sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
-      rmap <- stat_symb_map_items lid2 sis1
-      mor1 <- ext_induced_from_morphism lid2 rmap $ makeExtSign lid2 $ cod mor
+      src@(ExtSign sig _) <- return $ makeExtSign lid2 $ cod mor
+      rmap <- stat_symb_map_items lid2 sig sis1
+      mor1 <- ext_induced_from_morphism lid2 rmap src
       case lenv of
         EmptyNode _ -> return ()
         JustNode (NodeSig _ sigLenv) -> do
@@ -585,7 +586,7 @@ anaRestr lg sigEnv pos (GMorphism cid (ExtSign sigma1 sys1) _ mor _) gh =
       G_symb_list (G_symb_items_list lid' sis') -> do
         let lid1 = sourceLogic cid
         sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction1" sis'
-        rsys <- stat_symb_items lid1 sis1
+        rsys <- stat_symb_items lid1 sigma1 sis1
         let sys = symset_of lid1 sigma1
             sys' = Set.filter (\ sy -> any (matches lid1 sy) rsys) sys
             unmatched = filter ( \ rsy -> Set.null $ Set.filter
@@ -627,7 +628,7 @@ anaRestriction lg gSigma gSigma'@(G_sign lid0 sig0 _) opts restr =
       sigma1 <- coerceSign lid0 lid1 "reveal2" sig0
       let sys = ext_sym_of lid1 sigma0 -- local env
           sys' = ext_sym_of lid1 sigma1 -- "big" signature
-      rmap <- stat_symb_map_items lid1 sis
+      rmap <- stat_symb_map_items lid1 (plainSign sigma1) sis
       let sys'' = Set.fromList
            [sy | sy <- Set.toList sys', rsy <-
                        Map.keys rmap, matches lid1 sy rsy]
@@ -660,9 +661,9 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
       else do
       cl <- lookupCurrentLogic "anaGmaps" lg
       G_symb_map_items_list lid sis <- homogenizeGM cl gsis
-      rmap <- stat_symb_map_items lid sis
       (G_sign lidP' sigmaP'' _, _) <- gSigCoerce lg psig (Logic lid)
       sigmaP' <- coerceSign lidP' lid "anaGmaps1" sigmaP''
+      rmap <- stat_symb_map_items lid (plainSign sigmaP') sis
       (G_sign lidA' sigmaA'' _, _) <- gSigCoerce lg asig (Logic lid)
       sigmaA' <- coerceSign lidA' lid "anaGmaps2" sigmaA''
       fmap (mkG_morphism lid)

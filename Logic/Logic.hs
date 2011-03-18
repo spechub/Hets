@@ -371,11 +371,11 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             Just ba -> ba (b, s, g)
          -- | static analysis of symbol maps, see CASL RefMan p. 222f.
          stat_symb_map_items ::
-             lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
-         stat_symb_map_items l _ = statFail l "stat_symb_map_items"
+             lid -> sign -> [symb_map_items] -> Result (EndoMap raw_symbol)
+         stat_symb_map_items l _ _ = statFail l "stat_symb_map_items"
          -- | static analysis of symbol lists, see CASL RefMan p. 221f.
-         stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol]
-         stat_symb_items l _ = statFail l "stat_symb_items"
+         stat_symb_items :: lid -> sign -> [symb_items] -> Result [raw_symbol]
+         stat_symb_items l _ _ = statFail l "stat_symb_items"
 
          {- ----------------------- amalgamation ---------------------------
             Computation of colimits of signature diagram.
@@ -730,7 +730,7 @@ class Logic lid sublogics basic_spec sentence
       {- | generation of the object logic instances
            second argument is object logic name -}
       write_logic :: lid -> String -> String
-      write_logic l = error 
+      write_logic l = error
          $ "Function write_logic nyi for logic " ++ shows l "."
 
       {- | generation of the Ltruth morphism declaration

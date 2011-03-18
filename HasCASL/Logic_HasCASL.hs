@@ -104,8 +104,8 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
     cogenerated_sign HasCASL = cogeneratedSign
     generated_sign HasCASL = generatedSign
 
-    stat_symb_map_items HasCASL = statSymbMapItems
-    stat_symb_items HasCASL = statSymbItems
+    stat_symb_map_items HasCASL _ = statSymbMapItems
+    stat_symb_items HasCASL _ = statSymbItems
     symbol_to_raw HasCASL = symbolToRaw
     id_to_raw HasCASL = idToRaw
     matches HasCASL = matchSymb
