@@ -13,6 +13,7 @@ module CspCASL.Symbol where
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
+import CspCASL.SignCSP
 import CspCASL.SymbItems
 
 import CASL.AS_Basic_CASL
@@ -176,3 +177,17 @@ cspStatSymbMapItems sl = do
   ls <- mapM st sl
   foldM (insertRsys rawId getSort mkSort getImplicit mkImplicit)
                     Map.empty (concat ls)
+
+toSymbolSet :: CspSign -> [Set.Set CspSymbol]
+toSymbolSet csig = map Set.fromList
+  [ map (\ (n, s) -> CspSymbol (simpleIdToId n) $ ChanAsItemType s)
+    $ mapSetToList $ chans csig
+  , map (\ (n, p) -> CspSymbol (simpleIdToId n) $ ProcAsItemType p)
+    $ mapSetToList $ procSet csig ]
+
+symSets :: CspCASLSign -> [Set.Set CspSymbol]
+symSets sig = map (Set.map caslToCspSymbol) (symOf sig)
+  ++ toSymbolSet (extendedInfo sig)
+
+caslToCspSymbol :: Symbol -> CspSymbol
+caslToCspSymbol sy = CspSymbol (symName sy) $ CaslSymbType $ symbType sy

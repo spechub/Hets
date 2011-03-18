@@ -22,7 +22,6 @@ import CASL.Fold
 import CASL.MixfixParser
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
-import CASL.Morphism
 import CASL.StaticAna (allConstIds, allOpIds, allPredIds)
 
 import Common.AS_Annotation
@@ -71,20 +70,6 @@ basicAnalysisCspCASL (cc, sigma, ga) =
               $ Set.map caslToCspSymbol (declaredSymbols accSig)
               : toSymbolSet (diffCspSig ext $ extendedInfo sigma)
            , ccsents)
-
-toSymbolSet :: CspSign -> [Set.Set CspSymbol]
-toSymbolSet csig = map Set.fromList
-  [ map (\ (n, s) -> CspSymbol (simpleIdToId n) $ ChanAsItemType s)
-    $ mapSetToList $ chans csig
-  , map (\ (n, p) -> CspSymbol (simpleIdToId n) $ ProcAsItemType p)
-    $ mapSetToList $ procSet csig ]
-
-symSets :: CspCASLSign -> [Set.Set CspSymbol]
-symSets sig = map (Set.map caslToCspSymbol) (symOf sig)
-  ++ toSymbolSet (extendedInfo sig)
-
-caslToCspSymbol :: Symbol -> CspSymbol
-caslToCspSymbol sy = CspSymbol (symName sy) $ CaslSymbType $ symbType sy
 
 ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
 ana_BASIC_CSP cc = do

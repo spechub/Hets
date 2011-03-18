@@ -158,12 +158,6 @@ rawSymName rs = case rs of
   ASymbol sym -> symName sym
   AKindedSymb _ i -> i
 
-allSymOf :: (e -> SymbolSet) -> Sign f e -> [SymbolSet]
-allSymOf f s = let (s1, so) = Set.partition ((== Sorts_kind) .
-                                             symbTypeToKind . symbType)
-                              $ f (extendedInfo s)
-               in zipWith Set.union (symPair s) [s1, so]
-
 symPair :: Sign f e -> [SymbolSet]
 symPair sigma =
     let
@@ -589,8 +583,8 @@ instance Pretty RawSymbol where
     AKindedSymb k i -> pretty k <+> pretty i
 
 printMorphism :: (e -> e -> Bool) -> (m -> Bool) -> (e -> Doc) -> (m -> Doc)
-  -> (e -> SymbolSet) -> Morphism f e m -> Doc
-printMorphism isSubSigExt isInclMorExt fE fM symOfExt mor =
+  -> Morphism f e m -> Doc
+printMorphism isSubSigExt isInclMorExt fE fM mor =
     let src = msource mor
         tar = mtarget mor
         ops = op_map mor
@@ -601,11 +595,8 @@ printMorphism isSubSigExt isInclMorExt fE fM symOfExt mor =
                fsep [text "identity morphism over", srcD]
            else fsep
       [ text "inclusion morphism of", srcD
-      , fsep $ if Map.null ops then
-          [ text "extended with"
-          , pretty $ Set.unions $ zipWith Set.difference (allSymOf symOfExt tar)
-                       $ allSymOf symOfExt src ]
-        else
+      , if Map.null ops then empty
+        else fsep
           [ text "by totalizing"
           , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
     else fsep
@@ -616,4 +607,4 @@ printMorphism isSubSigExt isInclMorExt fE fM symOfExt mor =
 instance (SignExtension e, Pretty e, Show f, MorphismExtension e m, Pretty m)
   => Pretty (Morphism f e m) where
        pretty = printMorphism isSubSignExtension isInclusionMorphismExtension
-         pretty pretty symOfExtension
+         pretty pretty

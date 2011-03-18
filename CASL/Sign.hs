@@ -124,8 +124,6 @@ getSyntaxTable sig = let gannos = globAnnos sig
 
 class SignExtension e where
     isSubSignExtension :: e -> e -> Bool
-    symOfExtension :: e -> Set.Set Symbol
-    symOfExtension _ = Set.empty
 
 instance SignExtension () where
     isSubSignExtension _ _ = True

@@ -20,10 +20,7 @@ module CspCASL.Morphism
     , cspAddMorphismUnion
     , composeCspAddMorphism
     , cspAddMorphismToSymbMap
-    , makeChannelNameSymbol
-    , makeFQProcNameSymbol
     , mapSen
-    , cspSymOf
     , inducedCspSign
     , inducedCspMorphExt
     ) where
@@ -34,7 +31,6 @@ import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
 import Common.DocUtils
-import Common.Id
 import Common.Result
 import Common.Utils (composeMap)
 
@@ -43,53 +39,6 @@ import CspCASL.SignCSP
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-
--- Symbols
-
-channelNameSymbType :: SymbType
-channelNameSymbType = SortAsItemType -- needs to change
-
-processNameSymbType :: ProcProfile -> SymbType
-processNameSymbType _ = SortAsItemType -- needs to change
-
--- | Make a symbol form a channel name
-makeChannelNameSymbol :: CHANNEL_NAME -> Symbol
-makeChannelNameSymbol c =
-    Symbol {symName = simpleIdToId c, symbType = channelNameSymbType}
-
--- | Make a symbol form a simple process name and a profile
-makeSimpleProcNameSymbol :: SIMPLE_PROCESS_NAME -> ProcProfile -> Symbol
-makeSimpleProcNameSymbol pn profile =
-  Symbol {symName = simpleIdToId pn, symbType = processNameSymbType profile}
-
--- | Make a set of symbol form a simple process name and a set of profiles
-makeSimpleProcNameSymbols :: (SIMPLE_PROCESS_NAME, Set.Set ProcProfile) ->
-                       Set.Set Symbol
-makeSimpleProcNameSymbols (name, profiles) =
-  Set.map (makeSimpleProcNameSymbol name) profiles
-
--- | Make a symbol form a fully qualified process name
-makeFQProcNameSymbol :: FQ_PROCESS_NAME -> Symbol
-makeFQProcNameSymbol pn =
-  case pn of
-    FQ_PROCESS_NAME pn' profile -> makeSimpleProcNameSymbol pn' profile
-    _ ->
-      error "CspCASL.Morphism.makeFQProcNameSymbol: Tried to make a symbol\
-            \ from a non-fully qualified process name"
-
--- | Calculate the set of symbols for a CspCASL signature
-cspSymOf :: CspSign -> Set.Set Symbol
-cspSymOf cspExt =
-    let chanNames = Map.keysSet (chans cspExt) -- Get the channel names
-        simpProcNameSetWithProfiles =
-          Map.toList (procSet cspExt) -- Get the process names set with each
-                                      -- profile (i.e. pairs (name,set of
-                                      -- profiles) Make channel symbols from
-                                      -- names
-        chanNameSymbols = Set.map makeChannelNameSymbol chanNames
-        procNameSymbols =
-          Set.unions $ map makeSimpleProcNameSymbols simpProcNameSetWithProfiles
-    in Set.union chanNameSymbols procNameSymbols
 
 -- Morphisms
 
@@ -203,7 +152,6 @@ instance Pretty CspAddMorphism where
 -- | Instance for CspCASL signature extension
 instance SignExtension CspSign where
   isSubSignExtension = isCspSubSign
-  symOfExtension = cspSymOf
 
 -- | Instance for CspCASL morphism extension (used for Category)
 instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
