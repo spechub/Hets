@@ -89,7 +89,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
          empty_signature VSE = emptySign emptyProcs
          signature_union VSE = addSigM unionProcs
          intersection VSE = interSigM interProcs
-         morphism_union VSE = morphismUnionM (const extended_map) unionProcs
+         morphism_union VSE = morphismUnionM (const id) unionProcs
          final_union VSE = addSigM unionProcs
          is_subsig VSE = isSubSig isSubProcsMap
          subsig_inclusion VSE = sigInclusion emptyMorExt

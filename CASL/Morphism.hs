@@ -480,17 +480,15 @@ addSigM f a b = do
 
 plainMorphismUnion :: (e -> e -> e) -- ^ join signature extensions
   -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-plainMorphismUnion = morphismUnion (const extended_map)
+plainMorphismUnion = morphismUnion (const id)
 
-morphismUnion
-  :: (Morphism f e m -> Morphism f e m -> m)  -- ^ join morphism extensions
+morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
   -> (e -> e -> e) -- ^ join signature extensions
   -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 morphismUnion uniteM addSigExt =
     morphismUnionM uniteM (\ e -> return . addSigExt e)
 
-morphismUnionM
- :: (Morphism f e m -> Morphism f e m -> m)  -- ^ join morphism extensions
+morphismUnionM :: (m -> m -> m)  -- ^ join morphism extensions
  -> (e -> e -> Result e) -- ^ join signature extensions
  -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 -- consider identity mappings but filter them eventually
@@ -550,7 +548,7 @@ morphismUnionM uniteM addSigExt mor1 mor2 =
     s3 <- addSigM addSigExt s1 s2
     s4 <- addSigM addSigExt (mtarget mor1) $ mtarget mor2
     return $ cleanMorMaps
-      (embedMorphism (uniteM mor1 mor2) s3 s4)
+      (embedMorphism (uniteM (extended_map mor1) $ extended_map mor2) s3 s4)
       { sort_map = smap
       , op_map = omap
       , pred_map = pmap }
