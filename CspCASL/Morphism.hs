@@ -149,7 +149,7 @@ emptyCspAddMorphism =
 
 {- | Dont know if this is implemented correctly. If m1 and m2 have the same
 channel or process maps then m1's are taken. BUG? -}
-cspAddMorphismUnion :: CspAddMorphism -> CspAddMorphism -> CspAddMorphism
+cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism -> CspAddMorphism
 cspAddMorphismUnion _ _ = error
  "NYI: CspCASL.Morphism.cspAddMorphismUnion for new signature morphisms"
 
