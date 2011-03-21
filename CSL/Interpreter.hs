@@ -392,7 +392,7 @@ stepwise f (Sequence l) = mapM_ (stepwise f) l
 stepwise _ (Cmd c l) 
     | c == "print" =
         let p x x' = printMessage
-                     $ show $ pretty x <+> text "gets evaluated to"
+                     $ show $ pretty x <+> text "evaluates to"
                            <+> pretty x'
         in case l of
              [] -> printMessage "Nothing to print"

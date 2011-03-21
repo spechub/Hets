@@ -4,6 +4,9 @@
 
 (setq encl-cas "Mathematica")
 
+(setq encl-verb "1")
+
+
 (define-key-after
   global-map
   [menu-bar enclmenu]
@@ -183,7 +186,7 @@
     (switch-to-buffer buff)
     (insert "Starting evaluation of EnCL specification.\n")
 ;    (call-process "evalspec" nil buff t "-s" spec1 "-t10" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
-    (start-process "evaluation of EnCL specification" buff "evalspec" "-C" encl-cas "-s" spec1 "-t25" "-v2" (if (string= symbolic "Symbolic") "-S" "") fp)
+    (start-process "evaluation of EnCL specification" buff "evalspec" "-C" encl-cas "-s" spec1 "-t25" "-v" encl-verb (if (string= symbolic "Symbolic") "-S" "") fp)
 ;;    (insert "\n\nEvaluation of EnCL specification finished.\n")
 ;;    (start-process-shell-command "evalproc" buff (concatenate 'string "evalspec -s " spec1 " " fp))
     nil)
@@ -202,6 +205,23 @@
   (refresh-specmenu)
 )
 
+(defun setverb0 ()
+  (interactive)
+  (setq encl-verb "0")
+  )
+(defun setverb1 ()
+  (interactive)
+  (setq encl-verb "1")
+  )
+(defun setverb2 ()
+  (interactive)
+  (setq encl-verb "2")
+  )
+(defun setverb3 ()
+  (interactive)
+  (setq encl-verb "3")
+  )
+
 (defun setmaple ()
   (interactive)
   (setq encl-cas "Maple")
@@ -216,6 +236,7 @@
 	(refresh-matchmenu "Refreshes the EnCL matching menu based on the specification in the current buffer.")
 	(setmaple "Selects the computer algebra system Maple for the evaluation.")
 	(setmathematica "Selects the computer algebra system Mathematica for the evaluation.")
+	(setverbX "Sets verbosity to X in [0-3].")
 	(help-encl "Shows this help.")
 	)
       )

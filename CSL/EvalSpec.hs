@@ -103,7 +103,7 @@ options = map f $
                       . (++ "%10")) "1-1000")
           , ( "verbosity"
             , "A value from 0=quiet to 4=print out all information during processing"
-            , OptArg (PFVerbosity . read . fromMaybe "4") "0-4")
+            , ReqArg (PFVerbosity . read) "0-4")
           , ( "quiet", "Equal to -v0", NoArg PFQuiet)
           , ( "Symbolic", "Enables symbolic evaluation mode", NoArg (PFSymbolic True))
           , ( "debug", "Enables debug mode", NoArg (PFDebug True))
