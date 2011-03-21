@@ -377,13 +377,14 @@ inducedFromToMorphism :: (Eq e, Show f, Pretty e, Pretty m)
                       -> ExtSign (Sign f e) Symbol -> Result (Morphism f e m)
 inducedFromToMorphism m =
   inducedFromToMorphismExt (\ _ _ _ _ -> extendedInfo) (constMorphExt m)
-  (\ _ _ _ -> return m)
+  (\ _ _ -> return m)
 
 inducedFromToMorphismExt
   :: (Eq e, Show f, Pretty e, Pretty m)
   => InducedSign f e m e
   -> InducedMorphism e m -- ^ compute extended morphism
-  -> (e -> m -> m -> Result m) -- ^ composition of extensions
+  -> (Morphism f e m -> Morphism f e m -> Result m)
+     -- ^ composition of extensions
   -> (e -> e -> Bool) -- ^ subsignature test of extensions
   -> (e -> e -> e) -- ^ difference of extensions
   -> RawSymbolMap
@@ -442,7 +443,8 @@ inducedFromToMorphismAuxExt
   :: (Eq e, Show f, Pretty e, Pretty m)
   => InducedSign f e m e
   -> InducedMorphism e m -- ^ compute extended morphism
-  -> (e -> m -> m -> Result m) -- ^ composition of extensions
+  -> (Morphism f e m -> Morphism f e m -> Result m)
+     -- ^ composition of extensions
   -> (e -> e -> Bool) -- ^ subsignature test of extensions
   -> (e -> e -> e) -- ^ difference of extensions
   -> RawSymbolMap
@@ -458,7 +460,7 @@ inducedFromToMorphismAuxExt extInd extEm compM isSubExt diffExt rmap
       em = extended_map mor1
   if isSubSig isSubExt inducedSign sigma2
    -- yes => we are done
-   then composeM (compM $ extendedInfo $ msource mor1) mor1 $ idOrInclMorphism
+   then composeM compM mor1 $ idOrInclMorphism
      $ embedMorphism em inducedSign sigma2
      {- here the empty mapping should be used, but it will be overwritten
      by the first argument of composeM -}

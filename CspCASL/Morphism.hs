@@ -15,7 +15,7 @@ Symbols and signature morphisms for the CspCASL logic
 module CspCASL.Morphism
     ( CspCASLMorphism
     , CspAddMorphism (..)
-    , subsig_inclusion
+    , cspSubsigInclusion
     , emptyCspAddMorphism
     , cspAddMorphismUnion
     , composeCspAddMorphism
@@ -25,14 +25,13 @@ module CspCASL.Morphism
     , inducedCspMorphExt
     ) where
 
-import CASL.AS_Basic_CASL (FORMULA, TERM)
+import CASL.AS_Basic_CASL (FORMULA, TERM, SORT)
 import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
 import Common.DocUtils
 import Common.Result
-import Common.Utils (composeMap)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
@@ -54,7 +53,9 @@ import qualified Data.Set as Set
 -- target communications alphabet must be downward closed with respect to the
 -- CASL signature sub-sort relation (at target).
 type ProcessMorphismMap =
-  Map.Map (SIMPLE_PROCESS_NAME, ProcProfile) (SIMPLE_PROCESS_NAME, CommAlpha)
+  Map.Map (SIMPLE_PROCESS_NAME, ProcProfile) SIMPLE_PROCESS_NAME
+
+type ChanMap = Map.Map (CHANNEL_NAME, SORT) CHANNEL_NAME
 
 -- | CspAddMorphism - This is just the extended part
 data CspAddMorphism = CspAddMorphism
@@ -62,30 +63,46 @@ data CspAddMorphism = CspAddMorphism
     -- names, if the name is not in the map in the morphism, then the
     -- application is the identity function. Thus empty maps are used to form
     -- the empty morphism and the identity morphism.
-    { channelMap :: Map.Map CHANNEL_NAME CHANNEL_NAME
+    { channelMap :: ChanMap
     , processMap :: ProcessMorphismMap
     } deriving (Eq, Ord, Show)
 
 -- | Given two signatures (the first being a sub signature of the second
 -- according to CspCASL.SignCSP.isCspCASLSubSig) compute the inclusion morphism.
-subsig_inclusion :: CspCASLSign -> CspCASLSign -> Result CspCASLMorphism
-subsig_inclusion =  CASL_Morphism.sigInclusion
+cspSubsigInclusion :: CspCASLSign -> CspCASLSign -> Result CspCASLMorphism
+cspSubsigInclusion =  CASL_Morphism.sigInclusion
                     -- We use the empty morphism as it also represents the
                     -- identity, thus this will embed chanel names and process
                     -- names properly.
                     emptyCspAddMorphism
 
 -- | Compose two CspAddMorphisms
-composeCspAddMorphism :: CspSign -> CspAddMorphism -> CspAddMorphism
-                      -> Result CspAddMorphism
-composeCspAddMorphism sig m1 m2 = return emptyCspAddMorphism
-  { channelMap = composeMap (chans sig) (channelMap m1) $ channelMap m2
-  , processMap = error "NYI CspCASL.Morphism.composeCspAddMorphism"}
+composeCspAddMorphism :: Morphism f CspSign CspAddMorphism
+  -> Morphism f CspSign CspAddMorphism -> Result CspAddMorphism
+composeCspAddMorphism m1 m2 = {- let
+    cMap1 = channelMap m1
+    cMap2 = channelMap m2
+    sMap2 =
+    cMap = if Map.null cMap2 then cMap1 else
+                 Map.foldWithKey ( \ i t m ->
+                   Set.fold ( \ pt ->
+                       let ni = fst $ mapPredSym sMap2 pMap2
+                             $ mapPredSym sMap1 pMap1 (i, pt)
+                       in if i == ni then id else Map.insert (i, pt) ni) m t)
+                      Map.empty $ predMap src
+-}
+
+
+ return emptyCspAddMorphism
+  { channelMap = error "NYI CspCASL.Morphism.composeCspAddMorphism1"
+       -- composeMap (chans sig) (channelMap m1) $ channelMap m2
+  , processMap = error "NYI CspCASL.Morphism.composeCspAddMorphism2"}
                  -- Old Andy Version: composeMap (procSet sig) (processMap m1) $
                  -- processMap m2 }
 
 -- | Calculate the inverse of a CspAddMorphism
-inverseCspAddMorphism :: CspAddMorphism -> Result CspAddMorphism
+inverseCspAddMorphism :: Morphism f CspSign CspAddMorphism
+  -> Result CspAddMorphism
 inverseCspAddMorphism _ = error "NYI: CspCASL.Morphism.inverseCspAddMorphism\
                                  \ for new signature morphisms"
 -- inverseCspAddMorphism cm = do
@@ -269,25 +286,19 @@ mapEvent mor e =
           ExternalPrefixChoice v (mapSort' s) r
       ChanSend c t r ->
           -- Just map the morphism over the event (a term) and the channel name
-          ChanSend (mapChannelName' c) (mapCASLTerm' t) r
+          ChanSend (fst $ mapChannelName' (c, sortOfTerm t)) (mapCASLTerm' t) r
       ChanNonDetSend c v s r ->
           -- Just map the morphism over the sort and the channel name, we keep
           -- the variable name
-          ChanNonDetSend (mapChannelName' c) v (mapSort' s) r
+          ChanNonDetSend (fst $ mapChannelName' (c, s)) v (mapSort' s) r
       ChanRecv c v s r ->
           -- Just map the morphism over the sort and the channel name, we keep
           -- the variable name
-          ChanRecv (mapChannelName' c) v (mapSort' s) r
+          ChanRecv (fst $ mapChannelName' (c, s)) v (mapSort' s) r
       FQEvent ev mfqc fqTerm r ->
           -- Map the morphism over each part of the FQEvent
-          let mfqc' = case mfqc of
-                        -- Just preserve nothings
-                        Nothing -> Nothing
-                        Just (chanName, chanSort) ->
-                            -- Just map the morphism over the channel name and
-                            -- channel sort
-                            Just (mapChannelName' chanName, mapSort' chanSort)
-          in FQEvent (mapEvent' ev) mfqc' (mapCASLTerm' fqTerm) r
+          FQEvent (mapEvent' ev) (fmap mapChannelName' mfqc)
+              (mapCASLTerm' fqTerm) r
 
 mapRenaming :: CspCASLMorphism -> RENAMING -> RENAMING
 mapRenaming mor re =
@@ -316,12 +327,13 @@ mapCASLFormula =
     CASL_MapSen.mapSen (error "CspCASL.Morphism.mapCASLFormula")
 
 -- | Apply a signature morphism to a channel name
-mapChannelName :: CspCASLMorphism -> CHANNEL_NAME -> CHANNEL_NAME
-mapChannelName mor cn =
+mapChannelName :: CspCASLMorphism -> (CHANNEL_NAME, SORT)
+  -> (CHANNEL_NAME, SORT)
+mapChannelName mor (cn, s) =
     let chanMap = channelMap $ CASL_Morphism.extended_map mor
     -- Find look up the new channel name, if it does not exist then
     -- use the original name.
-    in Map.findWithDefault cn cn chanMap
+    in (Map.findWithDefault cn (cn, s) chanMap, mapSort (sort_map mor) s)
 
 -- | Apply a signature morphism to a process name
 mapProcessName :: CspCASLMorphism -> FQ_PROCESS_NAME -> FQ_PROCESS_NAME
@@ -351,12 +363,12 @@ inducedCspSign _ _ _ = error "NYI: CspCASL.Morphism.inducedCspSign"
 -- mapProcProfile sm cm (ProcProfile sl cs) =
 --   ProcProfile (map (mapSort sm) sl) $ Set.map (mapCommTypeAux sm cm) cs
 
-mapCommTypeAux :: Sort_map -> Map.Map CHANNEL_NAME CHANNEL_NAME
-               -> CommType -> CommType
+mapCommTypeAux :: Sort_map -> ChanMap -> CommType -> CommType
 mapCommTypeAux sm cm ct = case ct of
    CommTypeSort s -> CommTypeSort $ mapSort sm s
    CommTypeChan (TypedChanName c s) ->
-     CommTypeChan $ TypedChanName (Map.findWithDefault c c cm) $ mapSort sm s
+     CommTypeChan $ TypedChanName (Map.findWithDefault c (c, s) cm)
+       $ mapSort sm s
 
 inducedCspMorphExt :: RawSymbolMap -> CspSign -> Result CspAddMorphism
 inducedCspMorphExt _ _ = error "NYI: CspCASL.Morphism.inducedCspMorphExt"

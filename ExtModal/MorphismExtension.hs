@@ -35,14 +35,16 @@ emptyMorphExtension =
 instance MorphismExtension EModalSign MorphExtension where
 
         ideMorphismExtension sgn =
-                let insert_next old_map s_id = Map.insert  s_id s_id old_map in
+                let insert_next old_map s_id = Map.insert s_id s_id old_map in
                 MorphExtension sgn sgn
                   (foldl insert_next Map.empty (Map.keys (modalities sgn)))
                   (foldl insert_next Map.empty (Set.toList (nominals sgn)))
 
-        composeMorphismExtension _ me1 me2 =
-                if me1 == me2
-                   then let me_compos second_map  old_map (me_k, me_val) =
+        composeMorphismExtension fme1 fme2 = let
+          me1 = extended_map fme1
+          me2 = extended_map fme2
+          in if me1 == me2
+                   then let me_compos second_map old_map (me_k, me_val) =
                                 if Map.member me_val second_map
                                 then Map.insert me_k (second_map Map.! me_val)
                                      old_map
@@ -54,14 +56,14 @@ instance MorphismExtension EModalSign MorphExtension where
                                       Map.empty (Map.toList (nom_map me1)))
                    else return emptyMorphExtension
 
-        inverseMorphismExtension me =
+        inverseMorphismExtension fme = let me = extended_map fme in
                 let swap_arrows old_map (me_k, me_val) =
                         Map.insert me_val me_k old_map
                     occurs_alt [] once _ = once
-                    occurs_alt ((_,me_val1):l) True me_val2 =
-                        if me_val1 == me_val2 then True else
+                    occurs_alt ((_, me_val1) : l) True me_val2 =
+                        me_val1 == me_val2 ||
                             occurs_alt l True me_val2
-                    occurs_alt ((_,me_val1):l) False me_val2 =
+                    occurs_alt ((_, me_val1) : l) False me_val2 =
                         if me_val1 == me_val2
                         then occurs_alt l True me_val2
                         else occurs_alt l False me_val2
@@ -82,5 +84,5 @@ instance MorphismExtension EModalSign MorphExtension where
 
         isInclusionMorphismExtension me =
                 let target_ide = ideMorphismExtension (target me) in
-                (Map.isSubmapOf (mod_map me) (mod_map target_ide))
-                        && (Map.isSubmapOf (nom_map me) (nom_map target_ide))
+                Map.isSubmapOf (mod_map me) (mod_map target_ide)
+                        && Map.isSubmapOf (nom_map me) (nom_map target_ide)

@@ -33,7 +33,7 @@ import qualified Data.Set as Set
 
 mkOverloadedId :: Int -> Id -> Id
 mkOverloadedId n i = if n <= 1 then i else
-  Id [genToken "Over"] (i : map (stringToId  . (: [])) (show n)) $ posOfId i
+  Id [genToken "Over"] (i : map (stringToId . (: [])) (show n)) $ posOfId i
 
 mkOrReuseQualSortName :: Sort_map -> SIMPLE_ID -> LibId -> Id -> Id
 mkOrReuseQualSortName sm nodeId libId i =
@@ -55,7 +55,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       sm = Set.fold (\ s -> Map.insert s
                     $ mkOrReuseQualSortName (sort_map m) nodeId libId s)
            Map.empty ss
-      sMap = Set.fold (flip Map.insert 1) Map.empty ss
+      sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) (\ o -> o { opKind = Partial }) os
       oMap = Map.foldWithKey (\ i ->
@@ -71,7 +71,7 @@ qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
                -> LibId -> (a -> a) -> (a -> a) -> Map.Map Id (Set.Set a)
                -> Map.Map (Id, a) (Id, a)
 qualOverloaded oMap rn nodeId libId f g =
-  Map.foldWithKey (\ i s m -> foldr (\ (e, n) ->let ge = g e in
+  Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
     Map.insert (i, ge)
       (case Map.lookup (i, ge) rn of
          Just j | isQualName j -> j
@@ -83,9 +83,10 @@ createOpMorMap :: Map.Map (Id, OpType) (Id, OpType)
              -> Map.Map (Id, OpType) (Id, OpKind)
 createOpMorMap = Map.map (\ (i, t) -> (i, opKind t))
 
-inverseMorphism :: (m -> Result m) -> Morphism f e m -> Result (Morphism f e m)
+inverseMorphism :: (Morphism f e m -> Result m) -> Morphism f e m
+  -> Result (Morphism f e m)
 inverseMorphism invExt m = do
-  iExt <- invExt $ extended_map m
+  iExt <- invExt m
   let src = msource m
       ss = sortSet src
       os = opMap src

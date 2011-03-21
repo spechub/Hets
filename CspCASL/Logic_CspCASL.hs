@@ -169,7 +169,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       symbol_to_raw (GenCspCASL _) = ACspSymbol
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
       is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig
-      subsig_inclusion (GenCspCASL _) = CspCASL_Morphism.subsig_inclusion
+      subsig_inclusion (GenCspCASL _) = cspSubsigInclusion
       signature_union (GenCspCASL _) = SignCSP.unionCspCASLSign
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion

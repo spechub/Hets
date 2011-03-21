@@ -76,20 +76,20 @@ instance Show e => Pretty (DefMorExt e) where
 
 class MorphismExtension e m | m -> e where
    ideMorphismExtension :: e -> m
-   composeMorphismExtension :: e -> m -> m -> Result m
-   inverseMorphismExtension :: m -> Result m
+   composeMorphismExtension :: Morphism f e m -> Morphism f e m -> Result m
+   inverseMorphismExtension :: Morphism f e m -> Result m
    isInclusionMorphismExtension :: m -> Bool
 
 instance MorphismExtension () () where
    ideMorphismExtension _ = ()
-   composeMorphismExtension _ _ = return
-   inverseMorphismExtension = return
+   composeMorphismExtension _ = return . extended_map
+   inverseMorphismExtension = return . extended_map
    isInclusionMorphismExtension _ = True
 
 instance MorphismExtension e (DefMorExt e) where
    ideMorphismExtension _ = emptyMorExt
-   composeMorphismExtension _ _ = return
-   inverseMorphismExtension = return
+   composeMorphismExtension _ = return . extended_map
+   inverseMorphismExtension = return . extended_map
    isInclusionMorphismExtension _ = True
 
 type CASLMor = Morphism () () ()
@@ -353,7 +353,7 @@ matches (Symbol idt k) rs = case rs of
 idMor :: m -> Sign f e -> Morphism f e m
 idMor extEm sigma = embedMorphism extEm sigma sigma
 
-composeM :: Eq e => (m -> m -> Result m)
+composeM :: Eq e => (Morphism f e m -> Morphism f e m -> Result m)
          -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
 composeM comp mor1 mor2 = do
   let sMap1 = sort_map mor1
@@ -381,7 +381,7 @@ composeM comp mor1 mor2 = do
                              $ mapPredSym sMap1 pMap1 (i, pt)
                        in if i == ni then id else Map.insert (i, pt) ni) m t)
                       Map.empty $ predMap src
-  extComp <- comp (extended_map mor1) $ extended_map mor2
+  extComp <- comp mor1 mor2
   let emb = embedMorphism extComp src tar
   return $ cleanMorMaps emb
      { sort_map = sMap
