@@ -78,18 +78,17 @@ class MorphismExtension e m | m -> e where
    ideMorphismExtension :: e -> m
    composeMorphismExtension :: Morphism f e m -> Morphism f e m -> Result m
    inverseMorphismExtension :: Morphism f e m -> Result m
+   inverseMorphismExtension = return . extended_map
    isInclusionMorphismExtension :: m -> Bool
 
 instance MorphismExtension () () where
    ideMorphismExtension _ = ()
    composeMorphismExtension _ = return . extended_map
-   inverseMorphismExtension = return . extended_map
    isInclusionMorphismExtension _ = True
 
 instance MorphismExtension e (DefMorExt e) where
    ideMorphismExtension _ = emptyMorExt
    composeMorphismExtension _ = return . extended_map
-   inverseMorphismExtension = return . extended_map
    isInclusionMorphismExtension _ = True
 
 type CASLMor = Morphism () () ()
