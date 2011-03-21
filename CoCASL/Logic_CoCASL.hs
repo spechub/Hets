@@ -32,9 +32,8 @@ import Logic.Logic
 
 data CoCASL = CoCASL deriving Show
 
-instance Language CoCASL  where
- description _ =
-  "CoCASL is the coalgebraic extension of CASL."
+instance Language CoCASL where
+  description _ = "CoCASL is the coalgebraic extension of CASL."
 
 type CoCASLMor = Morphism C_FORMULA CoCASLSign (DefMorExt CoCASLSign)
 type CoCASLFORMULA = FORMULA C_FORMULA
@@ -54,7 +53,7 @@ map_C_FORMULA mor frm = case frm of
            BoxOrDiamond b m f ps -> let
               newF = mapSen map_C_FORMULA mor f
               newM = case m of
-                   Simple_mod _ ->  m
+                   Simple_mod _ -> m
                    Term_mod t -> Term_mod $ mapTerm map_C_FORMULA mor t
               in BoxOrDiamond b newM newF ps
            phi -> phi
@@ -81,7 +80,7 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
          empty_signature CoCASL = emptySign emptyCoCASLSign
          signature_union CoCASL s = return . addSig addCoCASLSign s
          intersection CoCASL s = return . interSig interCoCASLSign s
-         morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
+         morphism_union CoCASL = plainMorphismUnion addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
          is_subsig CoCASL = isSubSig isSubCoCASLSign
          subsig_inclusion CoCASL = sigInclusion emptyMorExt

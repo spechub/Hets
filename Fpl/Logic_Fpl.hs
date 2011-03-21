@@ -71,7 +71,7 @@ instance StaticAnalysis Fpl FplBasicSpec FplForm
          empty_signature Fpl = emptySign emptyFplSign
          signature_union Fpl s = return . addSig addFplSign s
          intersection Fpl s = return . interSig interFplSign s
-         morphism_union Fpl = morphismUnion (const id) addFplSign
+         morphism_union Fpl = plainMorphismUnion addFplSign
          final_union Fpl = finalUnion addFplSign
          is_subsig Fpl = isSubSig isSubFplSign
          subsig_inclusion Fpl = sigInclusion emptyMorExt

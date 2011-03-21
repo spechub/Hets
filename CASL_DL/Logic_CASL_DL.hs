@@ -12,7 +12,7 @@ Portability :  portable
 Instance of class Logic for CASL DL
 -}
 
-module CASL_DL.Logic_CASL_DL (CASL_DL(..), DLMor, DLFORMULA) where
+module CASL_DL.Logic_CASL_DL (CASL_DL (..), DLMor, DLFORMULA) where
 
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -42,7 +42,7 @@ import Logic.Logic
 
 data CASL_DL = CASL_DL deriving Show
 
-instance Language CASL_DL  where
+instance Language CASL_DL where
  description _ = unlines
   [ "CASL_DL is at the same time an extension and a restriction of CASL."
   , "It additionally provides cardinality restrictions in a description logic"
@@ -112,7 +112,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
 
          empty_signature CASL_DL = emptySign emptyCASL_DLSign
          signature_union CASL_DL s = return . addSig addCASL_DLSign s
-         morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
+         morphism_union CASL_DL = plainMorphismUnion addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
          is_subsig CASL_DL = isSubSig isSubCASL_DLSign
          subsig_inclusion CASL_DL = sigInclusion emptyMorExt
@@ -128,7 +128,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
 extendSortRelWithTopSort :: Sign f e -> Sign f e
 extendSortRelWithTopSort sig = sig {sortRel = addThing $ sortRel sig}
     where addThing r = Rel.union r (Rel.fromSet
-                                    $ Set.map (\ x -> (x,topSort))
+                                    $ Set.map (\ x -> (x, topSort))
                                     $ sortSet sig)
 
 instance Logic CASL_DL CASL_DL_SL
@@ -136,9 +136,9 @@ instance Logic CASL_DL CASL_DL_SL
                DLSign
                DLMor
                Symbol RawSymbol ProofTree where
-         stability _        = Unstable
-         top_sublogic _     = SROIQ
-         all_sublogics _    = [SROIQ]
+         stability _ = Unstable
+         top_sublogic _ = SROIQ
+         all_sublogics _ = [SROIQ]
 
 instance MinSublogic CASL_DL_SL DLFORMULA where
     minSublogic _ = SROIQ
@@ -178,7 +178,7 @@ instance SublogicName CASL_DL_SL where
 
 instance SemiLatticeWithTop CASL_DL_SL where
     join _ _ = SROIQ
-    top      = SROIQ
+    top = SROIQ
 
 instance ProjectSublogic CASL_DL_SL Symbol where
     projectSublogic _ = id

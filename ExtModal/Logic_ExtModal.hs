@@ -15,7 +15,7 @@ module ExtModal.Logic_ExtModal where
 
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
-import ExtModal.ATC_ExtModal()
+import ExtModal.ATC_ExtModal ()
 import ExtModal.Parse_AS
 import ExtModal.Print_AS
 import ExtModal.StatAna
@@ -147,7 +147,7 @@ instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
         signature_union ExtModal sgn = return . addSig addEModalSign sgn
         intersection ExtModal sgn = return . interSig interEModalSign sgn
         final_union ExtModal = finalUnion addEModalSign
-        morphism_union ExtModal = morphismUnion (const id) addEModalSign
+        morphism_union ExtModal = plainMorphismUnion addEModalSign
         is_subsig ExtModal = isSubSig isSubEModalSign
         subsig_inclusion ExtModal = sigInclusion emptyMorphExtension
         generated_sign ExtModal = generatedSign emptyMorphExtension

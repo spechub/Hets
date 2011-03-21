@@ -18,8 +18,6 @@ module CspCASL.Morphism
     , cspSubsigInclusion
     , emptyCspAddMorphism
     , cspAddMorphismUnion
-    , composeCspAddMorphism
-    , cspAddMorphismToSymbMap
     , mapSen
     ) where
 
@@ -70,15 +68,13 @@ data CspAddMorphism = CspAddMorphism
 {- | Given two signatures (the first being a sub signature of the second
 according to CspCASL.SignCSP.isCspCASLSubSig) compute the inclusion morphism. -}
 cspSubsigInclusion :: CspCASLSign -> CspCASLSign -> Result CspCASLMorphism
-cspSubsigInclusion = CASL_Morphism.sigInclusion
-                    {- We use the empty morphism as it also represents the
-                    identity, thus this will embed chanel names and process
-                    names properly. -}
-                    emptyCspAddMorphism
+cspSubsigInclusion = CASL_Morphism.sigInclusion emptyCspAddMorphism
+{- We use the empty morphism as it also represents the identity, thus this
+will embed channel names and process names properly. -}
 
 -- | lookup a typed channel
 mapChan :: Sort_map -> ChanMap -> (CHANNEL_NAME, SORT) -> (CHANNEL_NAME, SORT)
-mapChan sm cm (c, s) = (Map.findWithDefault c (c, s) cm, mapSort sm s)
+mapChan sm cm p@(c, s) = (Map.findWithDefault c p cm, mapSort sm s)
 
 -- | Apply a signature morphism to a channel name
 mapChannel :: Morphism f CspSign CspAddMorphism -> (CHANNEL_NAME, SORT)
@@ -119,17 +115,18 @@ composeCspAddMorphism m1 m2 = let
     cSrc = extendedInfo src
     cMap = Map.foldWithKey ( \ c ts m ->
                    Set.fold ( \ s ->
-                       let ni = fst $ mapChannel m2
-                                $ mapChannel m1 (c, s)
-                       in if c == ni then id else Map.insert (c, s) ni) m ts)
+                       let p = (c, s)
+                           ni = fst $ mapChannel m2 $ mapChannel m1 p
+                       in if c == ni then id else Map.insert p ni) m ts)
                       Map.empty $ chans cSrc
     pMap = Map.foldWithKey ( \ p ps m ->
                    Set.fold ( \ pr ->
-                       let (ni, ProcProfile _ na) =
-                             mapProcess m2 $ mapProcess m1 (p, pr)
+                       let pp = (p, pr)
+                           (ni, ProcProfile _ na) =
+                             mapProcess m2 $ mapProcess m1 pp
                            ProcProfile _ oa = mapProcProfile sMap cMap pr
                        in if p == ni && oa == na then id else
-                              Map.insert (p, pr) (ni, na)) m ps)
+                              Map.insert pp (ni, na)) m ps)
                       Map.empty $ procSet cSrc
   in return emptyCspAddMorphism
   { channelMap = cMap
@@ -152,14 +149,9 @@ emptyCspAddMorphism =
 
 {- | Dont know if this is implemented correctly. If m1 and m2 have the same
 channel or process maps then m1's are taken. BUG? -}
-cspAddMorphismUnion :: CspAddMorphism -> CspAddMorphism -> CspAddMorphism
+cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism -> CspAddMorphism
 cspAddMorphismUnion _ _ = error
  "NYI: CspCASL.Morphism.cspAddMorphismUnion for new signature morphisms"
-
--- | create a symbol map from the additional csp entities.
-cspAddMorphismToSymbMap :: CspSign -> CspAddMorphism -> SymbolMap
-cspAddMorphismToSymbMap _ _ = error
-  "CspCASL/Morphism.cspAddMorphismToSymbMap: NYI for new notion of signatures"
 
 -- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where

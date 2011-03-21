@@ -20,15 +20,15 @@ import Logic.Logic
 import ConstraintCASL.AS_ConstraintCASL
 import ConstraintCASL.Formula
 import ConstraintCASL.StaticAna
-import ConstraintCASL.ATC_ConstraintCASL()
-import ConstraintCASL.Print_AS()
+import ConstraintCASL.ATC_ConstraintCASL ()
+import ConstraintCASL.Print_AS ()
 
 import CASL.AS_Basic_CASL
 import CASL.Parse_AS_Basic
-import CASL.ToDoc()
+import CASL.ToDoc ()
 import CASL.SymbolParser
 import CASL.MapSentence
-import CASL.ATC_CASL()
+import CASL.ATC_CASL ()
 import CASL.Sublogic
 import CASL.Sign
 import CASL.Morphism
@@ -39,8 +39,8 @@ data ConstraintCASL = ConstraintCASL deriving Show
 
 instance Language ConstraintCASL where
  description _ =
-  "ConstraintCASL - a restriction of CASL to constraint\
-   \formulas over predicates"
+  "ConstraintCASL - a restriction of CASL to constraint "
+  ++ "formulas over predicates"
 
 instance Syntax ConstraintCASL ConstraintCASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
@@ -77,7 +77,7 @@ instance StaticAnalysis ConstraintCASL
 
          empty_signature ConstraintCASL = emptySign ()
          signature_union ConstraintCASL s = return . addSig const s
-         morphism_union ConstraintCASL = morphismUnion (const id) const
+         morphism_union ConstraintCASL = plainMorphismUnion const
          final_union ConstraintCASL = finalUnion const
          is_subsig ConstraintCASL = isSubSig trueC
          subsig_inclusion ConstraintCASL = sigInclusion ()

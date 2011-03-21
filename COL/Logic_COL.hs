@@ -16,10 +16,10 @@ module COL.Logic_COL where
 
 import COL.AS_COL
 import COL.COLSign
-import COL.ATC_COL()
-import COL.Parse_AS()
+import COL.ATC_COL ()
+import COL.Parse_AS ()
 import COL.StatAna
-import COL.Print_AS()
+import COL.Print_AS ()
 import CASL.Sign
 import CASL.StaticAna
 import CASL.MixfixParser
@@ -77,7 +77,7 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
          empty_signature COL = emptySign emptyCOLSign
          signature_union COL sigma1 =
            return . addSig addCOLSign sigma1
-         morphism_union COL = morphismUnion (const id) addCOLSign
+         morphism_union COL = plainMorphismUnion addCOLSign
          final_union COL = finalUnion addCOLSign
          is_subsig COL = isSubSig isSubCOLSign
          subsig_inclusion COL = sigInclusion emptyMorExt
