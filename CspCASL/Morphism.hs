@@ -17,6 +17,7 @@ module CspCASL.Morphism
     , CspAddMorphism (..)
     , ChanMap
     , ProcessMap
+    , mapProcProfile
     , cspSubsigInclusion
     , emptyCspAddMorphism
     , cspAddMorphismUnion

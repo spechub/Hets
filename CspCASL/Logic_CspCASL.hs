@@ -44,6 +44,7 @@ import qualified CspCASL.SimplifySen as SimplifySen
 import CspCASL.StatAnaCSP
 import CspCASL.SymbItems
 import CspCASL.Symbol
+import CspCASL.SymMapAna
 
 import CspCASLProver.CspCASLProver (cspCASLProver)
 
@@ -175,3 +176,4 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion
                         SignCSP.cspSignUnion
+      induced_from_morphism (GenCspCASL _) = cspInducedFromMorphism
