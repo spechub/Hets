@@ -87,9 +87,12 @@ toChanSymbol (c, s) = CspSymbol (simpleIdToId c) $ ChanAsItemType s
 toProcSymbol :: (SIMPLE_PROCESS_NAME, ProcProfile) -> CspSymbol
 toProcSymbol (n, p) = CspSymbol (simpleIdToId n) $ ProcAsItemType p
 
+idToCspRaw :: Id -> CspRawSymbol
+idToCspRaw = CspKindedSymb $ CaslKind Implicit
+
 cspTypedSymbKindToRaw :: CspSymbKind -> Id -> CspType -> Result CspRawSymbol
 cspTypedSymbKindToRaw k idt t = let
-    err = plain_error (CspKindedSymb (CaslKind Implicit) idt)
+    err = plain_error (idToCspRaw idt)
               (showDoc idt " " ++ showDoc t
                " does not have kind " ++ showDoc k "") nullRange
     mkSimple i = if isSimpleId i then return $ idToSimpleId i else
@@ -185,7 +188,7 @@ cspStatSymbMapItems sl = do
         CspKindedSymb (CaslKind Implicit) i -> Just i
         _ -> Nothing
       mkSort i = ACspSymbol $ CspSymbol i $ CaslSymbType SortAsItemType
-      mkImplicit = CspKindedSymb $ CaslKind Implicit
+      mkImplicit = idToCspRaw
   ls <- mapM st sl
   foldM (insertRsys rawId getSort mkSort getImplicit mkImplicit)
                     Map.empty (concat ls)

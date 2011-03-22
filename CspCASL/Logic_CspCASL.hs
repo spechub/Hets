@@ -168,7 +168,10 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       basic_analysis (GenCspCASL _) = Just basicAnalysisCspCASL
       stat_symb_items (GenCspCASL _) _ = cspStatSymbItems
       stat_symb_map_items (GenCspCASL _) _ = cspStatSymbMapItems
+      id_to_raw (GenCspCASL _) = idToCspRaw
       symbol_to_raw (GenCspCASL _) = ACspSymbol
+      matches (GenCspCASL _) = cspMatches
+
       empty_signature (GenCspCASL _) = SignCSP.emptyCspCASLSign
       is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig
       subsig_inclusion (GenCspCASL _) = cspSubsigInclusion
@@ -176,4 +179,5 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion
                         SignCSP.cspSignUnion
+
       induced_from_morphism (GenCspCASL _) = cspInducedFromMorphism

@@ -220,3 +220,19 @@ mappedProcSym sm cm pn pf@(ProcProfile _ al) rsy =
 compatibleProcTypes :: ProcProfile -> ProcProfile -> Bool
 compatibleProcTypes (ProcProfile l1 a1) (ProcProfile l2 a2) =
   l1 == l2 && (Set.isSubsetOf a1 a2 || Set.isSubsetOf a2 a1)
+
+cspMatches :: CspSymbol -> CspRawSymbol -> Bool
+cspMatches (CspSymbol i t) rsy = case rsy of
+  ACspSymbol (CspSymbol j t2) -> i == j && case (t, t2) of
+    (CaslSymbType t1, CaslSymbType t3) -> matches (Symbol i t1)
+      $ ASymbol $ Symbol j t3
+    (ChanAsItemType s1, ChanAsItemType s2) -> s1 == s2
+    (ProcAsItemType p1, ProcAsItemType p2) -> compatibleProcTypes p1 p2
+    _ -> False
+  CspKindedSymb k j -> let res = i == j in case (k, t) of
+    (CaslKind ck, CaslSymbType t1) -> matches (Symbol i t1)
+      $ AKindedSymb ck j
+    (ChannelKind, ChanAsItemType _) -> res
+    (ProcessKind, ProcAsItemType _) -> res
+    (CaslKind Implicit, _) -> res
+    _ -> False
