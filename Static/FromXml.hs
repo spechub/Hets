@@ -49,9 +49,9 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     emptyTheory = G_theory lid (ext_empty_signature lid)
                     startSigId noSens startThId
     nodes = extractNodeElements el
-    links = extractLinkElements el
-    (dg', depNodes) = initialiseNodes dg emptyTheory nodes links
-    in iterateLinks lg dg' depNodes links
+    (defLinks, thmLinks) = extractLinkElements el
+    (dg', depNodes) = initialiseNodes dg emptyTheory nodes defLinks
+    in insertNodesAndDefLinks lg dg' depNodes defLinks
 
 
 -- | All nodes are taken from the xml-element. Then, the name-attribute is
@@ -64,19 +64,20 @@ extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
             Nothing -> r
 
 
--- | All links are taken from the xml-element. The links have then to be 
--- filtered so that only definition links are considered. Then, the source and
--- target attributes are looked up and stored alongside the link access. Links
--- with source or target information missing are irgnored.
-extractLinkElements :: Element -> [NamedLink]
-extractLinkElements = foldr f [] . filter isDef . 
+-- | All links are taken from the xml-element. The source and target attributes
+-- are looked up and stored alongside the link access. Links with source or 
+-- target information missing are irgnored.
+-- Finally the links are partitioned dependent on whether they are definition
+-- or theorem links.
+extractLinkElements :: Element -> ([NamedLink],[NamedLink])
+extractLinkElements = partition isDef . foldr f [] . 
                     findChildren (unqual "DGLink") where
   f e r = case findAttr (unqual "source") e of
             Just sr -> case findAttr (unqual "target") e of
               Just tr -> (Link sr tr Nothing e) : r
               Nothing -> r
             Nothing -> r
-  isDef e = case findChild (unqual "Type") e of
+  isDef l = case findChild (unqual "Type") (element l) of
               Just tp -> isInfixOf "Def" $ strContent tp
               Nothing -> False
 
@@ -100,17 +101,19 @@ initialiseNodes dg gt nodes links = let
 -- by more than one link, refer to insMultTrg).
 -- The function is called again with the remaining links and additional nodes
 -- (stored in DGraph) until the list of links reaches null.
-iterateLinks :: LogicGraph -> DGraph -> [NamedNode] -> [NamedLink] -> DGraph
-iterateLinks _ dg _ [] = dg
-iterateLinks lg dg nodes links = let (cur,lftL) = splitLinks dg links
-                                     (dg',lftN) = processNodes lg nodes cur dg
-  in if null cur then error $
-      "FromXml.iterateLinks: remaining links cannot be processed!\n" 
+insertNodesAndDefLinks :: LogicGraph -> DGraph -> [NamedNode] -> [NamedLink]
+                       -> DGraph
+insertNodesAndDefLinks _ dg _ [] = dg
+insertNodesAndDefLinks lg dg nodes links = let
+  (cur,lftL) = splitLinks dg links
+  (dg',lftN) = processNodes lg nodes cur dg
+  in if (not . null) cur then insertNodesAndDefLinks lg dg' lftN lftL
+     else error $
+      "FromXml.insertNodesAndDefLinks: remaining links cannot be processed!\n" 
         ++ printLinks lftL
-    else iterateLinks lg dg' lftN lftL
 
 
--- | Help function for iterateLinks. 
+-- | Help function for insertNodesAndDefLinks. 
 -- For every Node, all Links targeting this Node are collected. Then the Node
 -- is processed depending on if none, one or multiple Links are targeting it.
 -- Returns updated DGraph and the list of nodes that have not been captured.
