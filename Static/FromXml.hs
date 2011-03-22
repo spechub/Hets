@@ -67,7 +67,7 @@ readDGXml path = do
   xml' <- readFile path
   case parseXMLDoc xml' of
     Nothing -> return Nothing
-    Just xml -> case getAttrVal "fileName" xml of
+    Just xml -> case getAttrVal "filename" xml of
       Nothing -> return Nothing
       Just nm -> let
         dg = fromXml logicGraph emptyDG xml
