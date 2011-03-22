@@ -18,6 +18,7 @@ module CspCASL.Morphism
     , cspSubsigInclusion
     , emptyCspAddMorphism
     , cspAddMorphismUnion
+    , inducedCspSign
     , mapSen
     ) where
 
@@ -255,7 +256,30 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       prettyMorphismExtension = printMap id sepByCommas pairElems
         . toCspSymbMap True
 
--- Application of morhisms to sentences
+-- * induced signature extension
+
+inducedChanMap :: Sort_map -> ChanMap -> ChanNameMap -> ChanNameMap
+inducedChanMap sm cm = Map.foldWithKey
+  ( \ i -> flip $ Set.fold ( \ s ->
+      let (j, t) = mapChan sm cm (i, s)
+      in Rel.setInsert j t)) Map.empty
+
+inducedProcMap :: Sort_map -> ChanMap -> ProcessMap -> ProcNameMap
+  -> ProcNameMap
+inducedProcMap sm cm pm = Map.foldWithKey
+  ( \ n -> flip $ Set.fold ( \ p ->
+      let (m, q) = mapProcId sm cm pm (n, p)
+      in Rel.setInsert m q)) Map.empty
+
+inducedCspSign :: InducedSign () CspSign CspAddMorphism CspSign
+inducedCspSign sm _ _ m sig =
+  let csig = extendedInfo sig
+      cm = channelMap m
+  in emptyCspSign
+     { chans = inducedChanMap sm cm $ chans csig
+     , procSet = inducedProcMap sm cm (processMap m) $ procSet csig }
+
+-- * application of morhisms to sentences
 
 -- | Apply a Signature Morphism to a CspCASL Sentence
 mapSen :: CspCASLMorphism -> CspCASLSen -> Result CspCASLSen

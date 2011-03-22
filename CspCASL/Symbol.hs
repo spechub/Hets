@@ -201,3 +201,17 @@ symSets sig = map (Set.map caslToCspSymbol) (symOf sig)
 
 caslToCspSymbol :: Symbol -> CspSymbol
 caslToCspSymbol sy = CspSymbol (symName sy) $ CaslSymbType $ symbType sy
+
+-- | try to convert a csp raw symbol to a CASL raw symbol
+toRawSymbol :: CspRawSymbol -> Maybe RawSymbol
+toRawSymbol r = case r of
+  ACspSymbol (CspSymbol i (CaslSymbType t)) -> Just (ASymbol $ Symbol i t)
+  CspKindedSymb (CaslKind k) i -> Just (AKindedSymb k i)
+  _ -> Nothing
+
+splitSymbolMap :: Map.Map CspRawSymbol CspRawSymbol
+  -> (RawSymbolMap, Map.Map CspRawSymbol CspRawSymbol)
+splitSymbolMap = Map.foldWithKey (\ s t (cm, ccm) ->
+  case (toRawSymbol s, toRawSymbol t) of
+    (Just c, Just d) -> (Map.insert c d cm, ccm)
+    _ -> (cm, Map.insert s t ccm)) (Map.empty, Map.empty)
