@@ -24,6 +24,7 @@ import Driver.AnaLib
 import Driver.WriteFn
 
 import Static.DevGraph
+import Static.FromXml
 
 #ifndef NOOWLLOGIC
 import OWL.OWLAnalysis
@@ -52,7 +53,7 @@ import PGIP.Server
 import Maude.Maude2DG (anaMaudeFile)
 import LF.Twelf2DG (anaTwelfFile)
 import OMDoc.Import (anaOMDocFile)
-import HolLight.HolLight2DG(anaHolLightFile)
+import HolLight.HolLight2DG (anaHolLightFile)
 
 main :: IO ()
 main =
@@ -88,7 +89,7 @@ processFile opts file = do
         emptyLibEnv emptyDG
       CommonLogic2In -> anaLibExt (opts { defLogic = "CommonLogic" }) file
         emptyLibEnv emptyDG
-      DgXml -> return Nothing
+      DgXml -> readDGXml file
       _ -> anaLib opts file
     case res of
       Just (ln, nEnv) ->
