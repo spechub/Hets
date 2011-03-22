@@ -71,22 +71,24 @@ instance Eq (DefMorExt e) where
 emptyMorExt :: DefMorExt e
 emptyMorExt = DefMorExt $ error "emptyMorExt"
 
-instance Show e => Pretty (DefMorExt e) where
+instance Pretty (DefMorExt e) where
   pretty _ = empty
 
-class MorphismExtension e m | m -> e where
+class (Pretty e, Pretty m) => MorphismExtension e m | m -> e where
    ideMorphismExtension :: e -> m
    composeMorphismExtension :: Morphism f e m -> Morphism f e m -> Result m
    inverseMorphismExtension :: Morphism f e m -> Result m
    inverseMorphismExtension = return . extended_map
    isInclusionMorphismExtension :: m -> Bool
+   prettyMorphismExtension :: Morphism f e m -> Doc
+   prettyMorphismExtension = pretty . extended_map
 
 instance MorphismExtension () () where
    ideMorphismExtension _ = ()
    composeMorphismExtension _ = return . extended_map
    isInclusionMorphismExtension _ = True
 
-instance MorphismExtension e (DefMorExt e) where
+instance Pretty e => MorphismExtension e (DefMorExt e) where
    ideMorphismExtension _ = emptyMorExt
    composeMorphismExtension _ = return . extended_map
    isInclusionMorphismExtension _ = True
@@ -591,8 +593,8 @@ instance Pretty RawSymbol where
     ASymbol sy -> pretty sy
     AKindedSymb k i -> pretty k <+> pretty i
 
-printMorphism :: (e -> e -> Bool) -> (m -> Bool) -> (e -> Doc) -> (m -> Doc)
-  -> Morphism f e m -> Doc
+printMorphism :: (e -> e -> Bool) -> (m -> Bool) -> (e -> Doc)
+  -> (Morphism f e m -> Doc) -> Morphism f e m -> Doc
 printMorphism isSubSigExt isInclMorExt fE fM mor =
     let src = msource mor
         tar = mtarget mor
@@ -609,11 +611,11 @@ printMorphism isSubSigExt isInclMorExt fE fM mor =
           [ text "by totalizing"
           , pretty $ Set.map (uncurry idToOpSymbol) $ Map.keysSet ops ]]
     else fsep
-      [ pretty (morphismToSymbMapAux True mor)
-          $+$ fM (extended_map mor)
+      [ braces $ printMap id sepByCommas pairElems
+          (morphismToSymbMapAux True mor) $+$ fM mor
       , colon <+> srcD, mapsto <+> prSig tar ]
 
-instance (SignExtension e, Pretty e, Show f, MorphismExtension e m, Pretty m)
+instance (SignExtension e, Pretty e, Show f, MorphismExtension e m)
   => Pretty (Morphism f e m) where
        pretty = printMorphism isSubSignExtension isInclusionMorphismExtension
-         pretty pretty
+         pretty prettyMorphismExtension

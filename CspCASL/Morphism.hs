@@ -23,12 +23,14 @@ module CspCASL.Morphism
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
+import CspCASL.Symbol
 
 import CASL.AS_Basic_CASL (FORMULA, TERM, SORT)
 import CASL.Sign as CASL_Sign
 import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
+import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.Result
@@ -99,9 +101,15 @@ mapCommTypeAux sm cm ct = case ct of
    CommTypeChan (TypedChanName c s) -> let (d, t) = mapChan sm cm (c, s) in
      CommTypeChan $ TypedChanName d t
 
+mapCommAlphaAux :: Sort_map -> ChanMap -> CommAlpha -> CommAlpha
+mapCommAlphaAux sm cm = Set.map (mapCommTypeAux sm cm)
+
+mapCommSet :: Morphism f CspSign CspAddMorphism -> CommAlpha -> CommAlpha
+mapCommSet mor = mapCommAlphaAux (sort_map mor) $ channelMap $ extended_map mor
+
 mapProcProfile :: Sort_map -> ChanMap -> ProcProfile -> ProcProfile
 mapProcProfile sm cm (ProcProfile sl cs) =
-  ProcProfile (map (mapSort sm) sl) $ Set.map (mapCommTypeAux sm cm) cs
+  ProcProfile (map (mapSort sm) sl) $ mapCommAlphaAux sm cm cs
 
 mapProcId :: Sort_map -> ChanMap -> ProcessMap
   -> (SIMPLE_PROCESS_NAME, ProcProfile) -> (SIMPLE_PROCESS_NAME, ProcProfile)
@@ -132,11 +140,11 @@ composeCspAddMorphism m1 m2 = let
                        in if c == ni then id else Map.insert p ni) m ts)
                       Map.empty $ chans cSrc
     pMap = Map.foldWithKey ( \ p ps m ->
-                   Set.fold ( \ pr ->
+                   Set.fold ( \ pr@(ProcProfile _ a) ->
                        let pp = (p, pr)
                            (ni, ProcProfile _ na) =
                              mapProcess m2 $ mapProcess m1 pp
-                           ProcProfile _ oa = mapProcProfile sMap cMap pr
+                           oa = mapCommAlphaAux sMap cMap a
                        in if p == ni && oa == na then id else
                               Map.insert pp (ni, na)) m ps)
                       Map.empty $ procSet cSrc
@@ -198,14 +206,37 @@ cspAddMorphismUnion mor1 mor2 = let
         , processMap = pMap }
         else Result pds Nothing
 
--- | Pretty printing for Csp morphisms
-instance Pretty CspAddMorphism where
-  pretty _ = error
-    "CspCASL/Morphism.Pretty CspAddMorphism: NYI for new notion of signatures"
+toCspSymbMap :: Bool -> Morphism f CspSign CspAddMorphism
+  -> Map.Map CspSymbol CspSymbol
+toCspSymbMap b mor = let
+    src = extendedInfo $ msource mor
+    chanSymMap = Map.foldWithKey
+      ( \ i s m -> Set.fold
+        ( \ t -> let
+              p = (i, t)
+              q@(j, _) = mapChannel mor p
+              in if b && i == j then id else
+                     Map.insert (toChanSymbol p) $ toChanSymbol q)
+        m s) Map.empty $ chans src
+    procSymMap = Map.foldWithKey
+      ( \ i s m -> Set.fold
+        ( \ t@(ProcProfile _ al) -> let
+              p = (i, t)
+              al1 = mapCommSet mor al
+              q@(j, ProcProfile _ al2) = mapProcess mor p
+              in if b && i == j && al1 == al2 then id else
+                     Map.insert (toProcSymbol p) $ toProcSymbol q)
+        m s) Map.empty $ procSet src
+  in Map.union chanSymMap procSymMap
 
 -- | Instance for CspCASL signature extension
 instance SignExtension CspSign where
   isSubSignExtension = isCspSubSign
+
+-- | a dummy instances used for the default definition
+instance Pretty CspAddMorphism where
+  pretty m = pretty $ toCspSymbMap False
+    $ embedMorphism m emptyCspCASLSign emptyCspCASLSign
 
 -- | Instance for CspCASL morphism extension (used for Category)
 instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
@@ -215,6 +246,9 @@ instance CASL_Morphism.MorphismExtension CspSign CspAddMorphism
       -- we omit inverses here
       isInclusionMorphismExtension m =
         Map.null (channelMap m) && Map.null (processMap m)
+      -- pretty printing for Csp morphisms
+      prettyMorphismExtension = printMap id sepByCommas pairElems
+        . toCspSymbMap True
 
 -- Application of morhisms to sentences
 

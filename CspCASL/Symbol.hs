@@ -81,21 +81,33 @@ cspCheckSymbList l = case l of
   _ : r -> cspCheckSymbList r
   [] -> []
 
+toChanSymbol :: (CHANNEL_NAME, SORT) -> CspSymbol
+toChanSymbol (c, s) = CspSymbol (simpleIdToId c) $ ChanAsItemType s
+
+toProcSymbol :: (SIMPLE_PROCESS_NAME, ProcProfile) -> CspSymbol
+toProcSymbol (n, p) = CspSymbol (simpleIdToId n) $ ProcAsItemType p
+
 cspTypedSymbKindToRaw :: CspSymbKind -> Id -> CspType -> Result CspRawSymbol
 cspTypedSymbKindToRaw k idt t = let
     err = plain_error (CspKindedSymb (CaslKind Implicit) idt)
               (showDoc idt " " ++ showDoc t
                " does not have kind " ++ showDoc k "") nullRange
+    mkSimple i = if isSimpleId i then return $ idToSimpleId i else
+      mkError "not a simple id" i
     in case k of
-     ProcessKind -> case t of
-       ProcType p -> return $ ACspSymbol $ CspSymbol idt $ ProcAsItemType p
+     ProcessKind -> do
+      si <- mkSimple idt
+      case t of
+       ProcType p -> return $ ACspSymbol $ toProcSymbol (si, p)
        CaslType (A_type s) -> return
-         $ ACspSymbol $ CspSymbol idt $ ProcAsItemType $
-           ProcProfile [] $ Set.singleton $ CommTypeSort s
+         $ ACspSymbol $ toProcSymbol
+             (si, ProcProfile [] $ Set.singleton $ CommTypeSort s)
        _ -> err
-     ChannelKind -> case t of
+     ChannelKind -> do
+      si <- mkSimple idt
+      case t of
        CaslType (A_type s) ->
-         return $ ACspSymbol $ CspSymbol idt $ ChanAsItemType s
+         return $ ACspSymbol $ toChanSymbol (si, s)
        _ -> err
      CaslKind ck -> case t of
        CaslType ct -> fmap (\ r -> case r of
@@ -180,10 +192,8 @@ cspStatSymbMapItems sl = do
 
 toSymbolSet :: CspSign -> [Set.Set CspSymbol]
 toSymbolSet csig = map Set.fromList
-  [ map (\ (n, s) -> CspSymbol (simpleIdToId n) $ ChanAsItemType s)
-    $ mapSetToList $ chans csig
-  , map (\ (n, p) -> CspSymbol (simpleIdToId n) $ ProcAsItemType p)
-    $ mapSetToList $ procSet csig ]
+  [ map toChanSymbol $ mapSetToList $ chans csig
+  , map toProcSymbol $ mapSetToList $ procSet csig ]
 
 symSets :: CspCASLSign -> [Set.Set CspSymbol]
 symSets sig = map (Set.map caslToCspSymbol) (symOf sig)

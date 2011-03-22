@@ -22,7 +22,6 @@ import Common.DocUtils
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 import ExtModal.Keywords
-import ExtModal.MorphismExtension
 
 import CASL.AS_Basic_CASL (FORMULA(..))
 import CASL.ToDoc
@@ -133,8 +132,3 @@ printEModalSign sim sign =
 printFormulaOfEModalSign :: Pretty f => (FORMULA f -> FORMULA f) -> [[Annoted (FORMULA f)]] -> Doc
 printFormulaOfEModalSign sim =
         vcat . map (\ tf -> fsep $ punctuate semi $ map (printAnnoted $ pretty . sim) tf)
-
-instance Pretty MorphExtension where
-        pretty me = pretty (source me) <+> pretty (target me) <+>
-                        text (show (Map.toList (mod_map me))) <+> text (show (Map.toList (nom_map me)))
-

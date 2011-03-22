@@ -16,9 +16,13 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import CASL.Morphism
+
+import Common.Doc
+import Common.DocUtils
 import Common.Id
 
 import ExtModal.ExtModalSign
+import ExtModal.Print_AS ()
 
 data MorphExtension = MorphExtension
         { source :: EModalSign
@@ -31,6 +35,10 @@ emptyMorphExtension :: MorphExtension
 emptyMorphExtension =
   MorphExtension emptyEModalSign emptyEModalSign Map.empty Map.empty
 
+instance Pretty MorphExtension where
+        pretty me = specBraces (pretty $ source me) $+$
+           mapsto <+> specBraces (pretty $ target me)
+           $+$ pretty (mod_map me) $+$ pretty (nom_map me)
 
 instance MorphismExtension EModalSign MorphExtension where
 
