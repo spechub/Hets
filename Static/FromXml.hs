@@ -210,9 +210,8 @@ insertThmLinks lg dg (l:ls) = let
   in insertThmLinks lg dg' ls
 
 
--- | Inserts a new edge into the DGraph.
--- This function is the reason why the logicGraph is passed through, because
--- it implements Grothendieck.ginclusion for getting the links GMorphism.
+-- | Inserts a Definition Link into the DGraph.
+-- ( Currently, all definition links are considered to be global ).
 insertDefLinkDG :: LogicGraph -> NamedLink -> DGraph -> DGraph
 insertDefLinkDG lg l dg = let
   n1 = fromMaybe (error "FromXml.insertDefLinkDG") $ srcNode l
