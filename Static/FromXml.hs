@@ -123,7 +123,8 @@ processNodes _ [] links _ = error $
 processNodes lg (x@(name,_):xs) links dg = 
   case partition ((== name) . trg) links of
     ([l],ls) -> processNodes lg xs ls $ insertEdgeDG lg l
-       $ insertNodeDG (thOfSrc l) x dg
+       -- bevor insertion, the parent nodes sentences have to be removed.
+       $ insertNodeDG (deleteSentences (thOfSrc l)) x dg
     ([],_) -> let (dg',xs') = processNodes lg xs links dg
       in (dg',x:xs')
     (sameTrg,ls) -> processNodes lg xs ls $ insMultTrg lg x sameTrg dg
@@ -145,6 +146,9 @@ insMultTrg lg x links dg = let
 thOfSrc :: NamedLink -> G_theory
 thOfSrc = dgn_theory . snd . fromJust . srcNode
 
+deleteSentences :: G_theory -> G_theory
+deleteSentences gt = case signOf gt of
+  G_sign lid sign sId -> noSensGTheory lid sign sId
 
 -- | returns a String representation of a list of links showing their
 -- source and target nodes.
