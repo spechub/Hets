@@ -101,11 +101,16 @@ mapCommTypeAux sm cm ct = case ct of
    CommTypeChan (TypedChanName c s) -> let (d, t) = mapChan sm cm (c, s) in
      CommTypeChan $ TypedChanName d t
 
-mapCommAlphaAux :: Sort_map -> ChanMap -> CommAlpha -> CommAlpha
-mapCommAlphaAux sm cm = Set.map (mapCommTypeAux sm cm)
+-- | Apply a signature morphism to a CommType
+mapCommType :: Morphism f CspSign CspAddMorphism -> CommType -> CommType
+mapCommType mor = mapCommTypeAux (sort_map mor) (channelMap $ extended_map mor)
 
-mapCommSet :: Morphism f CspSign CspAddMorphism -> CommAlpha -> CommAlpha
-mapCommSet mor = mapCommAlphaAux (sort_map mor) $ channelMap $ extended_map mor
+mapCommAlphaAux :: Sort_map -> ChanMap -> CommAlpha -> CommAlpha
+mapCommAlphaAux sm = Set.map . mapCommTypeAux sm
+
+-- | Apply a signature morphism  to a CommAlpha
+mapCommAlpha :: Morphism f CspSign CspAddMorphism -> CommAlpha -> CommAlpha
+mapCommAlpha = Set.map . mapCommType
 
 mapProcProfile :: Sort_map -> ChanMap -> ProcProfile -> ProcProfile
 mapProcProfile sm cm (ProcProfile sl cs) =
@@ -222,7 +227,7 @@ toCspSymbMap b mor = let
       ( \ i s m -> Set.fold
         ( \ t@(ProcProfile _ al) -> let
               p = (i, t)
-              al1 = mapCommSet mor al
+              al1 = mapCommAlpha mor al
               q@(j, ProcProfile _ al2) = mapProcess mor p
               in if b && i == j && al1 == al2 then id else
                      Map.insert (toProcSymbol p) $ toProcSymbol q)
@@ -261,12 +266,10 @@ mapSen mor sen =
     else case sen of
            CASLSen caslSen ->
                return $ CASLSen (mapCASLFormula mor caslSen)
-           ProcessEq _ fqVarList commAlpha proc ->
+           ProcessEq procName fqVarList commAlpha proc ->
                let {- Map the morphism over all the parts of the process
                    equation -}
-                   newProcName = error
-                     "CspCASL.Morphism.mapSen NYI with new signatures yet"
-                                 -- mapProcessName mor procName
+                   newProcName = mapProcessName mor procName
                    newFqVarList = mapFQProcVarList mor fqVarList
                    newCommAlpha = mapCommAlpha mor commAlpha
                    newProc = mapProc mor proc
@@ -278,14 +281,6 @@ mapFQProcVarList :: CspCASLMorphism -> FQProcVarList -> FQProcVarList
 mapFQProcVarList mor =
     -- As these are terms, just map the morphism over CASL TERMs
     map (mapCASLTerm mor)
-
--- | Apply a signature morphism  to a CommAlpha
-mapCommAlpha :: CspCASLMorphism -> CommAlpha -> CommAlpha
-mapCommAlpha mor = Set.map (mapCommType mor)
-
--- | Apply a signature morphism to a CommType
-mapCommType :: CspCASLMorphism -> CommType -> CommType
-mapCommType mor = mapCommTypeAux (sort_map mor) (channelMap $ extended_map mor)
 
 -- | Apply a signature morphism to a process
 mapProc :: CspCASLMorphism -> PROCESS -> PROCESS
@@ -400,5 +395,7 @@ mapCASLFormula =
 
 -- | Apply a signature morphism to a process name
 mapProcessName :: CspCASLMorphism -> FQ_PROCESS_NAME -> FQ_PROCESS_NAME
-mapProcessName _ _ = error
-  "NYI: CspCASL.Morphism.mapProcessName for new signature moprhism"
+mapProcessName mor pn = case pn of
+  FQ_PROCESS_NAME n p -> let (m, q) = mapProcess mor (n, p) in
+    FQ_PROCESS_NAME m q
+  _ -> error "unqualifed FQ_PROCESS_NAME"
