@@ -332,6 +332,7 @@ data InType =
   | GuessIn
   | CommonLogicIn
   | CommonLogic2In -- ^ "clif"
+  | DgXml
 
 instance Show InType where
   show i = case i of
@@ -350,6 +351,7 @@ instance Show InType where
     GuessIn -> ""
     CommonLogicIn -> "clf"
     CommonLogic2In -> "clif"
+    DgXml -> xmlS
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
@@ -368,8 +370,9 @@ instance Show ATType where
 
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn,
-    HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In]
+  [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
+  , HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In
+  , DgXml ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
