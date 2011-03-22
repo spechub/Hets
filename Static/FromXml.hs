@@ -12,11 +12,12 @@ create new or extend a Development Graph in accordance with an XML input
 
 module Static.FromXml where
 
+import Static.ComputeTheory (computeDGraphTheories)
 import Static.DevGraph
 import Static.GTheory
 
 import Common.LibName (LibName(..), emptyLibName)
-import Common.Result (Result (..))
+import Common.Result (propagateErrors)
 import Common.XUpdate (getAttrVal)
 
 import Comorphisms.LogicGraph (logicGraph)
@@ -29,11 +30,12 @@ import Logic.Grothendieck
 import qualified Data.Map as Map (lookup, insert, empty)
 import Data.List (partition, isInfixOf)
 import Data.Graph.Inductive.Graph (LNode)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
 
 import Text.XML.Light
 
 -- TODO use XUpdate.getAttrVal for other attribute access also!
+-- TODO kill fromJust
 
 
 -- | for faster access, some elements attributes are stored alongside
@@ -56,8 +58,10 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
                     startSigId noSens startThId
     nodes = extractNodeElements el
     (defLinks, thmLinks) = extractLinkElements el
-    (dg', depNodes) = initialiseNodes dg emptyTheory nodes defLinks
-    in insertNodesAndDefLinks lg dg' depNodes defLinks
+    (dg0, depNodes) = initialiseNodes dg emptyTheory nodes defLinks
+    dg1 = insertNodesAndDefLinks lg dg0 depNodes defLinks
+    dgFinal = insertThmLinks lg dg1 thmLinks
+    in computeDGraphTheories Map.empty dgFinal
 
 
 -- | main function; receives a FilePath and calls fromXml upon that path,
@@ -66,9 +70,13 @@ readDGXml :: FilePath -> IO(Maybe (LibName,LibEnv))
 readDGXml path = do
   xml' <- readFile path
   case parseXMLDoc xml' of
-    Nothing -> return Nothing
+    Nothing -> do
+      putStrLn "FromXml.readDGXml: failed to parse XML file"
+      return Nothing
     Just xml -> case getAttrVal "filename" xml of
-      Nothing -> return Nothing
+      Nothing -> do
+        putStrLn "FromXml.readDGXml: DGraphs name attribute is missing!"
+        return Nothing
       Just nm -> let
         dg = fromXml logicGraph emptyDG xml
         ln = emptyLibName nm
@@ -76,25 +84,12 @@ readDGXml path = do
         in return $ Just (ln,le)
 
 
-{-insertThmLinks :: LogicGraph -> DGraph -> [NamedLink] -> DGraph
-insertThmLinks _ dg [] = dg
-insertThmLinks lg dg (l:ls) = let
-  (i,lbl1) = getNodeByName (src l)
-  (j,lbl2) = getNodeByName (trg l)
-  gsign = signOf . dgn_theory
-  resMorph = ginclusion lg (gsign lbl1) (gsign lbl2)
-  morph = case maybeResult resMorph of
-    Just m -> m
-    Nothing -> error $ "FromXml.insertEdgeDG':\n" ++ show resMorph
-  in snd $ insLEdgeDG (i, j, globDefLink morph SeeTarget) dg -}
-
-
 -- | All nodes are taken from the xml-element. Then, the name-attribute is
 -- looked up and stored alongside the node for easy access. Nodes with no names
 -- are ignored (and should never occur).
 extractNodeElements :: Element -> [NamedNode]
 extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
-  f e r = case findAttr (unqual "name") e of
+  f e r = case getAttrVal "name" e of
             Just name -> (name, e) : r
             Nothing -> r
 
@@ -107,8 +102,8 @@ extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
 extractLinkElements :: Element -> ([NamedLink],[NamedLink])
 extractLinkElements = partition isDef . foldr f [] . 
                     findChildren (unqual "DGLink") where
-  f e r = case findAttr (unqual "source") e of
-            Just sr -> case findAttr (unqual "target") e of
+  f e r = case getAttrVal "source" e of
+            Just sr -> case getAttrVal "target" e of
               Just tr -> (Link sr tr Nothing e) : r
               Nothing -> r
             Nothing -> r
@@ -161,11 +156,16 @@ processNodes _ [] links _ = error $
       ++ printLinks links
 processNodes lg (x@(name,_):xs) links dg = 
   case partition ((== name) . trg) links of
-    ([l],ls) -> processNodes lg xs ls $ insertEdgeDG lg l
-       -- bevor insertion, the parent nodes sentences have to be removed.
+    -- Case #1: Only one Link is targetting the current Node.
+    -- The Node can be inserted using the links source-theory.
+    ([l],ls) -> processNodes lg xs ls $ insertDefLinkDG lg l
        $ insertNodeDG (deleteSentences (thOfSrc l)) x dg
+    -- Case #2: None of the current links are targetting the Node.
+    -- Append Node and contiue with the rest.
     ([],_) -> let (dg',xs') = processNodes lg xs links dg
       in (dg',x:xs')
+    -- Case #3: Multiple Links are targetting the Node.
+    -- A merged Signature must be created, see insMultTrg..
     (sameTrg,ls) -> processNodes lg xs ls $ insMultTrg lg x sameTrg dg
 
 
@@ -176,21 +176,61 @@ deleteSentences gt = case signOf gt of
   G_sign lid sign sId -> noSensGTheory lid sign sId
 
 
+-- | returns the G_theory of a links source node
+thOfSrc :: NamedLink -> G_theory
+thOfSrc l = case srcNode l of
+  Nothing -> error "FromXml.thOfSrc: Links sourceNode was not found!"
+  Just (_,lbl) -> dgn_theory lbl
+
+
 -- | if multiple links target one node, a G_theory must be calculated using
 -- the signature of all ingoing links via gSigUnion.
 insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
 insMultTrg lg x links dg = let
   signs = map (signOf . thOfSrc) links
-  res = gsigManyUnion lg signs
-  in case maybeResult res of
-    Nothing -> error $ "FromXml.insMultTrg:\n" ++ show res
-    Just (G_sign lid sign sId) -> let gt = noSensGTheory lid sign sId
-      in foldr (insertEdgeDG lg) (insertNodeDG gt x dg) links
+  res = propagateErrors "FromXml.insMultTrg:" $ gsigManyUnion lg signs
+  in case res of
+    G_sign lid sign sId -> let 
+      gt = noSensGTheory lid sign sId in
+      foldr (insertDefLinkDG lg) (insertNodeDG gt x dg) links
 
 
--- | returns the G_theory of a links source node
-thOfSrc :: NamedLink -> G_theory
-thOfSrc = dgn_theory . snd . fromJust . srcNode
+-- | After all other Elements are inserted, this function inserts the
+-- theorem links into the DGraph
+insertThmLinks :: LogicGraph -> DGraph -> [NamedLink] -> DGraph
+insertThmLinks _ dg [] = dg
+insertThmLinks lg dg (l:ls) = let
+  n1 = fromMaybe (error "FromXml.insertThmLinks") $ getNodeByName (src l) dg
+  n2 = fromMaybe (error "FromXml.insertThmLinks") $ getNodeByName (trg l) dg
+  lType = case findChild (unqual "Type") (element l) of
+    Just tp -> if isInfixOf "Global" $ strContent tp then globalThm else localThm
+    Nothing -> error 
+      "FromXml.insertThmLinks: Links type field is missing!"
+  dg' = insertLink lg dg n1 n2 lType
+  in insertThmLinks lg dg' ls
+
+
+-- | Inserts a new edge into the DGraph.
+-- This function is the reason why the logicGraph is passed through, because
+-- it implements Grothendieck.ginclusion for getting the links GMorphism.
+insertDefLinkDG :: LogicGraph -> NamedLink -> DGraph -> DGraph
+insertDefLinkDG lg l dg = let
+  n1 = fromMaybe (error "FromXml.insertDefLinkDG") $ srcNode l
+  n2 = fromMaybe (error "FromXml.insertDefLinkDG") $ getNodeByName (trg l) dg
+  in insertLink lg dg n1 n2 globalDef
+
+
+-- | Inserts a new edge into the DGraph.
+-- This function is the reason why the logicGraph is passed through, because
+-- it implements Grothendieck.ginclusion for getting the links GMorphism.
+insertLink :: LogicGraph -> DGraph -> LNode DGNodeLab -> LNode DGNodeLab
+           -> DGLinkType -> DGraph
+insertLink lg dg (i,lbl1) (j,lbl2) lType = let
+  gsign = signOf . dgn_theory
+  morph = propagateErrors "FromXml.insertLink:" $
+    ginclusion lg (gsign lbl1) (gsign lbl2)
+  in snd $ insLEdgeDG (i, j, defDGLink morph lType SeeTarget) dg
+
 
 -- | returns a String representation of a list of links showing their
 -- source and target nodes.
@@ -221,21 +261,6 @@ getNodeByName s dg = case lookupNodeByName s dg of
   [n] -> Just n
   [] -> Nothing
   _ -> error $ "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
-
-
--- | Inserts a new edge into the DGraph.
--- This function is the reason why the logicGraph is passed through, because
--- it implements Grothendieck.ginclusion for getting the links GMorphism.
-insertEdgeDG :: LogicGraph -> NamedLink -> DGraph -> DGraph
-insertEdgeDG lg l dg = let
-  (i,lbl1) = fromJust $ srcNode l
-  (j,lbl2) = fromJust $ getNodeByName (trg l) dg
-  gsign = signOf . dgn_theory
-  resMorph = ginclusion lg (gsign lbl1) (gsign lbl2)
-  morph = case maybeResult resMorph of
-    Just m -> m
-    Nothing -> error $ "FromXml.insertEdgeDG':\n" ++ show resMorph
-  in snd $ insLEdgeDG (i, j, globDefLink morph SeeTarget) dg 
 
  
 -- | Writes a single Node into the DGraph
