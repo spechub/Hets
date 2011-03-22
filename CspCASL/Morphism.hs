@@ -30,8 +30,9 @@ import CASL.Morphism as CASL_Morphism
 import qualified CASL.MapSentence as CASL_MapSen
 
 import Common.DocUtils
+import Common.Id
 import Common.Result
-import Common.Utils (composeMap)
+import Common.Utils (composeMap, isSingleton)
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
@@ -64,6 +65,17 @@ data CspAddMorphism = CspAddMorphism
     { channelMap :: ChanMap
     , processMap :: ProcessMap
     } deriving (Eq, Ord, Show)
+
+-- | The empty CspAddMorphism.
+emptyCspAddMorphism :: CspAddMorphism
+emptyCspAddMorphism = CspAddMorphism
+    {- Note that when applying the CspAddMorphism to process names or
+    channel names, if the name is not in the map in the morphism,
+    then the application is the identity function. Thus empty maps
+    are used to form the empty morphism. -}
+    { channelMap = Map.empty
+    , processMap = Map.empty
+    }
 
 {- | Given two signatures (the first being a sub signature of the second
 according to CspCASL.SignCSP.isCspCASLSubSig) compute the inclusion morphism. -}
@@ -136,22 +148,55 @@ composeCspAddMorphism m1 m2 = let
 CspAddMorphism. -}
 type CspCASLMorphism = CASL_Morphism.Morphism () CspSign CspAddMorphism
 
--- | The empty CspAddMorphism.
-emptyCspAddMorphism :: CspAddMorphism
-emptyCspAddMorphism =
-    {- Note that when applying the CspAddMorphism to process names or
-    channel names, if the name is not in the map in the morphism,
-    then the application is the identity function. Thus empty maps
-    are used to form the empty morphism. -}
-    CspAddMorphism { channelMap = Map.empty
-                   , processMap = Map.empty
-                   }
-
 {- | Dont know if this is implemented correctly. If m1 and m2 have the same
 channel or process maps then m1's are taken. BUG? -}
-cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism -> CspAddMorphism
-cspAddMorphismUnion _ _ = error
- "NYI: CspCASL.Morphism.cspAddMorphismUnion for new signature morphisms"
+cspAddMorphismUnion :: CspCASLMorphism -> CspCASLMorphism
+  -> Result CspAddMorphism
+cspAddMorphismUnion mor1 mor2 = let
+    s1 = extendedInfo $ msource mor1
+    s2 = extendedInfo $ msource mor2
+    m1 = extended_map mor1
+    m2 = extended_map mor2
+    chan1 = channelMap m1
+    chan2 = channelMap m2
+    delChan (n, s) m = diffMapSet m $ Map.singleton n $ Set.singleton s
+    uc1 = foldr delChan (chans s1) $ Map.keys chan1
+    uc2 = foldr delChan (chans s2) $ Map.keys chan2
+    uc = addMapSet uc1 uc2
+    proc1 = processMap m1
+    proc2 = processMap m2
+    delProc (n, p) m = diffMapSet m $ Map.singleton n $ Set.singleton p
+    up1 = foldr delProc (procSet s1) $ Map.keys proc1
+    up2 = foldr delProc (procSet s2) $ Map.keys proc2
+    up = addMapSet up1 up2
+    showAlpha (i, s) l = shows i (if null l then "" else "(..)") ++ ":"
+      ++ if isSingleton s then showDoc (Set.findMin s) "" else showDoc s ""
+    (cds, cMap) = foldr ( \ (isc@(i, s), j) (ds, m) ->
+          case Map.lookup isc m of
+          Nothing -> (ds, Map.insert isc j m)
+          Just k -> if j == k then (ds, m) else
+              (Diag Error
+               ("incompatible mapping of channel " ++ shows i ":"
+                ++ showDoc s " to " ++ shows j " and "
+                ++ shows k "") nullRange : ds, m)) ([], chan1)
+          (Map.toList chan2 ++ concatMap ( \ (c, ts) -> map
+              ( \ s -> ((c, s), c)) $ Set.toList ts) (Map.toList uc))
+    (pds, pMap) =
+      foldr ( \ (isc@(i, pt@(ProcProfile args _)), j) (ds, m) ->
+          case Map.lookup isc m of
+          Nothing -> (ds, Map.insert isc j m)
+          Just k -> if j == k then (ds, m) else
+              (Diag Error
+               ("incompatible mapping of process " ++ shows i " "
+                ++ showDoc pt " to " ++ showAlpha j args ++ " and "
+                ++ showAlpha k args) nullRange : ds, m)) (cds, proc1)
+          (Map.toList proc2 ++ concatMap ( \ (p, pts) -> map
+              ( \ pt@(ProcProfile _ al) -> ((p, pt), (p, al)))
+              $ Set.toList pts) (Map.toList up))
+     in if null pds then return emptyCspAddMorphism
+        { channelMap = cMap
+        , processMap = pMap }
+        else Result pds Nothing
 
 -- | Pretty printing for Csp morphisms
 instance Pretty CspAddMorphism where
