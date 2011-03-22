@@ -15,9 +15,12 @@ Symbols and signature morphisms for the CspCASL logic
 module CspCASL.Morphism
     ( CspCASLMorphism
     , CspAddMorphism (..)
+    , ChanMap
+    , ProcessMap
     , cspSubsigInclusion
     , emptyCspAddMorphism
     , cspAddMorphismUnion
+    , cspMorphismToCspSymbMap
     , inducedCspSign
     , mapSen
     ) where
@@ -234,6 +237,13 @@ toCspSymbMap b mor = let
                      Map.insert (toProcSymbol p) $ toProcSymbol q)
         m s) Map.empty $ procSet src
   in Map.union chanSymMap procSymMap
+
+cspMorphismToCspSymbMap :: CspCASLMorphism -> Map.Map CspSymbol CspSymbol
+cspMorphismToCspSymbMap mor =
+  Map.union (Map.fromList
+    . map (\ (a, b) -> (caslToCspSymbol a, caslToCspSymbol b))
+    $ Map.toList $ morphismToSymbMap mor)
+  $ toCspSymbMap False mor
 
 -- | Instance for CspCASL signature extension
 instance SignExtension CspSign where

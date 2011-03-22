@@ -76,6 +76,7 @@ instance Show a => Sentences (GenCspCASL a)
     where
       map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
       sym_name (GenCspCASL _) = cspSymName
+      symmap_of (GenCspCASL _) = cspMorphismToCspSymbMap
       simplify_sen (GenCspCASL _) = SimplifySen.simplifySen
       sym_of (GenCspCASL _) = symSets
 
