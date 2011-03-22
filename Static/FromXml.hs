@@ -15,19 +15,25 @@ module Static.FromXml where
 import Static.DevGraph
 import Static.GTheory
 
+import Common.LibName (LibName(..), emptyLibName)
 import Common.Result (Result (..))
+import Common.XUpdate (getAttrVal)
+
+import Comorphisms.LogicGraph (logicGraph)
 
 import Logic.ExtSign (ext_empty_signature)
 import Logic.Logic (AnyLogic (..))
 import Logic.Prover (noSens)
-import Logic.Grothendieck 
+import Logic.Grothendieck
 
-import qualified Data.Map as Map (lookup)
+import qualified Data.Map as Map (lookup, insert, empty)
 import Data.List (partition, isInfixOf)
 import Data.Graph.Inductive.Graph (LNode)
 import Data.Maybe (fromJust)
 
 import Text.XML.Light
+
+-- TODO use XUpdate.getAttrVal for other attribute access also!
 
 
 -- | for faster access, some elements attributes are stored alongside
@@ -52,6 +58,35 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     (defLinks, thmLinks) = extractLinkElements el
     (dg', depNodes) = initialiseNodes dg emptyTheory nodes defLinks
     in insertNodesAndDefLinks lg dg' depNodes defLinks
+
+
+-- | main function; receives a FilePath and calls fromXml upon that path,
+-- using an empty DGraph and initial LogicGraph.
+readDGXml :: FilePath -> IO(Maybe (LibName,LibEnv))
+readDGXml path = do
+  xml' <- readFile path
+  case parseXMLDoc xml' of
+    Nothing -> return Nothing
+    Just xml -> case getAttrVal "fileName" xml of
+      Nothing -> return Nothing
+      Just nm -> let
+        dg = fromXml logicGraph emptyDG xml
+        ln = emptyLibName nm
+        le = Map.insert ln dg Map.empty
+        in return $ Just (ln,le)
+
+
+{-insertThmLinks :: LogicGraph -> DGraph -> [NamedLink] -> DGraph
+insertThmLinks _ dg [] = dg
+insertThmLinks lg dg (l:ls) = let
+  (i,lbl1) = getNodeByName (src l)
+  (j,lbl2) = getNodeByName (trg l)
+  gsign = signOf . dgn_theory
+  resMorph = ginclusion lg (gsign lbl1) (gsign lbl2)
+  morph = case maybeResult resMorph of
+    Just m -> m
+    Nothing -> error $ "FromXml.insertEdgeDG':\n" ++ show resMorph
+  in snd $ insLEdgeDG (i, j, globDefLink morph SeeTarget) dg -}
 
 
 -- | All nodes are taken from the xml-element. Then, the name-attribute is
@@ -79,7 +114,8 @@ extractLinkElements = partition isDef . foldr f [] .
             Nothing -> r
   isDef l = case findChild (unqual "Type") (element l) of
               Just tp -> isInfixOf "Def" $ strContent tp
-              Nothing -> False
+              Nothing -> error 
+                "FromXml.extractLinkElements: Links type field is missing!"
 
 
 -- |  All nodes that do not have dependencies via the links are processed at 
@@ -109,7 +145,7 @@ insertNodesAndDefLinks lg dg nodes links = let
   (dg',lftN) = processNodes lg nodes cur dg
   in if (not . null) cur then insertNodesAndDefLinks lg dg' lftN lftL
      else error $
-      "FromXml.insertNodesAndDefLinks: remaining links cannot be processed!\n" 
+      "FromXml.insertNodesAndDefLinks: remaining links cannot be processed!\n"
         ++ printLinks lftL
 
 
@@ -133,6 +169,13 @@ processNodes lg (x@(name,_):xs) links dg =
     (sameTrg,ls) -> processNodes lg xs ls $ insMultTrg lg x sameTrg dg
 
 
+-- | When a new node is created, the old nodes sentences have to be removed
+-- from the derived G_theory.
+deleteSentences :: G_theory -> G_theory
+deleteSentences gt = case signOf gt of
+  G_sign lid sign sId -> noSensGTheory lid sign sId
+
+
 -- | if multiple links target one node, a G_theory must be calculated using
 -- the signature of all ingoing links via gSigUnion.
 insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
@@ -148,10 +191,6 @@ insMultTrg lg x links dg = let
 -- | returns the G_theory of a links source node
 thOfSrc :: NamedLink -> G_theory
 thOfSrc = dgn_theory . snd . fromJust . srcNode
-
-deleteSentences :: G_theory -> G_theory
-deleteSentences gt = case signOf gt of
-  G_sign lid sign sId -> noSensGTheory lid sign sId
 
 -- | returns a String representation of a list of links showing their
 -- source and target nodes.
