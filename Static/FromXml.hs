@@ -60,7 +60,7 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     (defLinks, thmLinks) = extractLinkElements el
     (dg0, depNodes) = initialiseNodes dg emptyTheory nodes defLinks
     dg1 = insertNodesAndDefLinks lg dg0 depNodes defLinks
-    dgFinal = insertThmLinks lg dg1 thmLinks
+    dgFinal = dg1 --insertThmLinks lg dg1 thmLinks
     in computeDGraphTheories Map.empty dgFinal
 
 
@@ -203,9 +203,10 @@ insertThmLinks lg dg (l:ls) = let
   n1 = fromMaybe (error "FromXml.insertThmLinks") $ getNodeByName (src l) dg
   n2 = fromMaybe (error "FromXml.insertThmLinks") $ getNodeByName (trg l) dg
   lType = case findChild (unqual "Type") (element l) of
-    Just tp -> if isInfixOf "Global" $ strContent tp then globalThm else localThm
     Nothing -> error 
       "FromXml.insertThmLinks: Links type field is missing!"
+    Just tp -> if isInfixOf "Global" $ strContent tp
+      then globalThm else localThm
   dg' = insertLink lg dg n1 n2 lType
   in insertThmLinks lg dg' ls
 
@@ -259,7 +260,8 @@ getNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
 getNodeByName s dg = case lookupNodeByName s dg of
   [n] -> Just n
   [] -> Nothing
-  _ -> error $ "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
+  _ -> error $ 
+    "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
 
  
 -- | Writes a single Node into the DGraph
@@ -273,10 +275,10 @@ insertNodeDG gt ele dg = let lbl = mkDGNodeLab gt ele
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
 mkDGNodeLab gt (name, el) = case extractSpecString el of
   "" -> newNodeLab (parseNodeName name) DGBasic gt
-  specs -> let 
+  specs -> let
     (response,message) = extendByBasicSpec specs gt
     in case response of
-      Failure _ -> error $ "FromXml.mkDGNodeLab: "++message
+      Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
       Success gt' _ symbs _ -> 
         newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
