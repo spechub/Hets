@@ -28,14 +28,11 @@ import Logic.Prover (noSens)
 import Logic.Grothendieck
 
 import qualified Data.Map as Map (lookup, insert, empty)
-import Data.List (partition, isInfixOf)
+import Data.List (partition, intercalate, isInfixOf)
 import Data.Graph.Inductive.Graph (LNode)
 import Data.Maybe (fromMaybe)
 
 import Text.XML.Light
-
--- TODO use XUpdate.getAttrVal for other attribute access also!
--- TODO kill fromJust
 
 
 -- | for faster access, some elements attributes are stored alongside
@@ -144,6 +141,27 @@ insertNodesAndDefLinks lg dg nodes links = let
         ++ printLinks lftL
 
 
+-- | Help function for iterateNodes. Given a list of links, it partitions the
+-- links depending on if their source has been processed.
+splitLinks :: DGraph -> [NamedLink] -> ([NamedLink],[NamedLink])
+splitLinks dg = killMultTrg . foldr partition' ([],[]) where
+  partition' l (r,r') = case getNodeByName (src l) dg of
+    Nothing -> (r, l:r')
+    dgn -> (l { srcNode = dgn }:r, r')
+  -- if a link targets a node that is also targeted by another link which
+  -- cannot be processed at this step, the first link is also appended.
+  killMultTrg (hasSrc,noSrc) = let noSrcTrgs = map trg noSrc in
+    foldr (\l (r,r') -> if elem (trg l) noSrcTrgs
+      then (r, l:r') else (l:r, r')) ([],noSrc) hasSrc
+
+
+-- | returns a String representation of a list of links showing their
+-- source and target nodes.
+printLinks :: [NamedLink] -> String
+printLinks = let show' l = src l ++ " -> " ++ trg l in
+  unlines . (map show')
+
+
 -- | Help function for insertNodesAndDefLinks. 
 -- For every Node, all Links targeting this Node are collected. Then the Node
 -- is processed depending on if none, one or multiple Links are targeting it.
@@ -198,17 +216,20 @@ insMultTrg lg x links dg = let
 -- | After all other Elements are inserted, this function inserts the
 -- theorem links into the DGraph
 insertThmLinks :: LogicGraph -> DGraph -> [NamedLink] -> DGraph
-insertThmLinks _ dg [] = dg
-insertThmLinks lg dg (l:ls) = let
-  n1 = fromMaybe (error "FromXml.insertThmLinks") $ getNodeByName (src l) dg
-  n2 = fromMaybe (error "FromXml.insertThmLinks") $ getNodeByName (trg l) dg
+insertThmLinks lg dg = foldl (insertThmLinkDG lg) dg
+
+
+-- | Inserts a Theorem Link into the DGraph.
+insertThmLinkDG :: LogicGraph -> DGraph -> NamedLink -> DGraph
+insertThmLinkDG lg dg l = let
+  n1 = fromMaybe (error "FromXml.insertThmLinkDG") $ getNodeByName (src l) dg
+  n2 = fromMaybe (error "FromXml.insertThmLinkDG") $ getNodeByName (trg l) dg
   lType = case findChild (unqual "Type") (element l) of
     Nothing -> error 
       "FromXml.insertThmLinks: Links type field is missing!"
     Just tp -> if isInfixOf "Global" $ strContent tp
       then globalThm else localThm
-  dg' = insertLink lg dg n1 n2 lType
-  in insertThmLinks lg dg' ls
+  in insertLink lg dg n1 n2 lType
 
 
 -- | Inserts a Definition Link into the DGraph.
@@ -232,25 +253,13 @@ insertLink lg dg (i,lbl1) (j,lbl2) lType = let
   in snd $ insLEdgeDG (i, j, defDGLink morph lType SeeTarget) dg
 
 
--- | returns a String representation of a list of links showing their
--- source and target nodes.
-printLinks :: [NamedLink] -> String
-printLinks = let show' l = src l ++ " -> " ++ trg l in
-  unlines . (map show')
-
-
--- | Help function for iterateNodes. Given a list of links, it partitions the
--- links depending on if their source has been processed.
-splitLinks :: DGraph -> [NamedLink] -> ([NamedLink],[NamedLink])
-splitLinks dg = killMultTrg . foldr partition' ([],[]) where
-  partition' l (r,r') = case getNodeByName (src l) dg of
-    Nothing -> (r, l:r')
-    dgn -> (l { srcNode = dgn }:r, r')
-  -- if a link targets a node that is also targeted by another link which
-  -- cannot be processed at this step, the first link is also appended.
-  killMultTrg (hasSrc,noSrc) = let noSrcTrgs = map trg noSrc in
-    foldr (\l (r,r') -> if elem (trg l) noSrcTrgs
-      then (r, l:r') else (l:r, r')) ([],noSrc) hasSrc
+-- | A links symbol mapping must be deduced to a specific string in order
+-- to derive the correct signature from it.
+getSymbolMapStr :: NamedLink -> String
+getSymbolMapStr l = case deepSearch [unqual "map"] (element l) of
+  [] -> ""
+  ms -> let mkStr = intercalate " |-> " . map strContent . elChildren
+     in intercalate ", " $ map mkStr ms
 
 
 -- | A Node is looked up via its name in the DGraph. Returns the node only
