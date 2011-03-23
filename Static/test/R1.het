@@ -1,0 +1,3 @@
+spec s = sort s,t; op o :? s; o :? t
+
+spec t = s with t |-> u, o :?s |-> p : s
