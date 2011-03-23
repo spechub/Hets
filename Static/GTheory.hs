@@ -414,12 +414,14 @@ data BasicExtResponse = Failure Bool  -- True means fatal (give up)
   | Success G_theory Int (Set.Set G_symbol) Bool
 
 extendByBasicSpec :: String -> G_theory -> (BasicExtResponse, String)
-extendByBasicSpec str (G_theory lid eSig@(ExtSign sign syms) si sens _) =
+extendByBasicSpec str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
+  let tstr = trimLeft str in
+  if null tstr then (Success gt 0 Set.empty True, "") else
   case parse_basic_spec lid of
     Nothing -> (Failure True, "missing basic spec parser")
     Just p -> case basic_analysis lid of
       Nothing -> (Failure True, "missing basic analysis")
-      Just f -> case runParser (p << eof) (emptyAnnos ()) "" $ trimLeft str of
+      Just f -> case runParser (p << eof) (emptyAnnos ()) "" tstr of
         Left err -> (Failure False, show err)
         Right bs -> let
           Result ds res = f (bs, sign, emptyGlobalAnnos)
