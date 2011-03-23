@@ -1,3 +1,4 @@
 spec s = sort s,t; op o :? s; o :? t
 
-spec t = s with t |-> u, o :?s |-> p : s
+spec t = s with
+  op o :? s |-> op p : s, op o :? t |-> op o :? u, sort t |-> sort u

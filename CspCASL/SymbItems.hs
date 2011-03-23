@@ -19,6 +19,7 @@ import CASL.AS_Basic_CASL
 import CASL.SymbolParser
 import CASL.ToDoc
 
+import Common.AnnoState
 import Common.Doc hiding (braces)
 import Common.DocUtils
 import Common.Id
@@ -82,34 +83,31 @@ instance Pretty CspSymbItems where
 instance Pretty CspSymbMapItems where
   pretty (CspSymbMapItems k l) = pluralCspSympKind k l <+> ppWithCommas l
 
-parseCspId :: GenParser Char st Id
+parseCspId :: AParser st Id
 parseCspId = parseId csp_casl_keywords
 
-cspSortId :: GenParser Char st SORT
+cspSortId :: AParser st SORT
 cspSortId = sortId csp_casl_keywords
 
-plainColon :: GenParser Char st ()
-plainColon = forget $ pToken $ toKey colonS
-
-commType :: GenParser Char st CommType
+commType :: AParser st CommType
 commType = do
   s <- cspSortId
   do
-    plainColon
+    colonT
     r <- cspSortId
     if isSimpleId s
       then return $ CommTypeChan $ TypedChanName (idToSimpleId s) r
       else unexpected $ "sort " ++ show s
    <|> return (CommTypeSort s)
 
-bracedList :: GenParser Char st [CommType]
+bracedList :: AParser st [CommType]
 bracedList = braces $ commaSep1 commType
 
-commAlpha :: GenParser Char st CommAlpha
+commAlpha :: AParser st CommAlpha
 commAlpha = fmap Set.fromList $ single commType <|> bracedList
 
 -- | parsing a possibly qualified identifier
-cspSymb :: GenParser Char st CspSymb
+cspSymb :: AParser st CspSymb
 cspSymb =
     do i <- parseCspId
        do
@@ -119,25 +117,25 @@ cspSymb =
          return $ CspSymb i $ Just t
         <|> do
          ts <- between oParenT cParenT $ commaSep1 cspSortId
-         plainColon
+         colonT
          cs <- commAlpha
          return $ CspSymb i $ Just $ ProcType $ ProcProfile ts cs
         <|> return (CspSymb i Nothing)
 
 -- | parsing one symbol or a mapping of one to second symbol
-cspSymbMap :: GenParser Char st CspSymbMap
+cspSymbMap :: AParser st CspSymbMap
 cspSymbMap = liftM2 CspSymbMap cspSymb $ optionMaybe
-  $ pToken (toKey mapsTo) >> cspSymb
+  $ asKey mapsTo >> cspSymb
 
 -- | parse a kind keyword
-cspSymbKind :: GenParser Char st CspSymbKind
+cspSymbKind :: AParser st CspSymbKind
 cspSymbKind =
   fmap (const ChannelKind) (pluralKeyword channelS)
-  <|> fmap (const ProcessKind) (pToken $ toKey processS)
+  <|> fmap (const ProcessKind) (asKey processS)
   <|> fmap (CaslKind . fst) symbKind
 
 -- | parse a comma separated list of symbols
-cspSymbs :: GenParser Char st [CspSymb]
+cspSymbs :: AParser st [CspSymb]
 cspSymbs =
     do s <- cspSymb
        do
@@ -148,23 +146,24 @@ cspSymbs =
 
 {- | Parse a possible kinded list of comma separated CspCASL symbols.
      The argument is a list of keywords to avoid as identifiers. -}
-cspSymbItems :: GenParser Char st CspSymbItems
+cspSymbItems :: AParser st CspSymbItems
 cspSymbItems = fmap (CspSymbItems $ CaslKind Implicit) cspSymbs <|> do
     k <- cspSymbKind
     fmap (CspSymbItems k) cspSymbs
 
 -- | parse a comma separated list of symbols
-cspSymbMaps :: GenParser Char st [CspSymbMap]
+cspSymbMaps :: AParser st [CspSymbMap]
 cspSymbMaps =
     do s <- cspSymbMap
        do
          _ <- commaT `followedWith` parseCspId
+         optional cspSymbMap
          is <- cspSymbMaps
          return $ s : is
         <|> return [s]
 
 -- | parse a possible kinded list of CspCASL symbol mappings
-cspSymbMapItems :: GenParser Char st CspSymbMapItems
+cspSymbMapItems :: AParser st CspSymbMapItems
 cspSymbMapItems = fmap (CspSymbMapItems $ CaslKind Implicit) cspSymbMaps
   <|> do
     k <- cspSymbKind

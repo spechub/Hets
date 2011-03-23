@@ -18,26 +18,40 @@ module CASL.SymbolParser
   , symbKind
   ) where
 
+import CASL.AS_Basic_CASL
+import CASL.Formula
+import CASL.ToDoc ()
+
+import Common.AnnoState
+import Common.DocUtils
 import Common.Id
 import Common.Keywords
 import Common.Lexer
-import CASL.AS_Basic_CASL
-import Text.ParserCombinators.Parsec
 import Common.Token
-import CASL.Formula
+
+import Text.ParserCombinators.Parsec
 
 -- | parsing a possibly qualified identifier
-symb :: [String] -> GenParser Char st SYMB
-symb ks =
-    do i <- parseId ks
-       do
-         c <- colonST
-         t <- opOrPredType ks
-         return (Qual_id i t $ tokPos c)
-        <|> return (Symb_id i)
+symb :: [String] -> SYMB_KIND -> AParser st SYMB
+symb ks k = parseId ks >>= \ i -> case k of
+    Sorts_kind -> return $ Symb_id i
+    _ -> case k of
+        Ops_kind -> do
+             c <- colonST
+             o <- opType ks
+             return $ Qual_id i (O_type o) $ tokPos c
+        Preds_kind -> do
+             c <- colonT
+             p <- predType ks
+             return $ Qual_id i (P_type p) $ tokPos c
+        _ -> do
+             c <- colonST
+             t <- opOrPredType ks
+             return (Qual_id i t $ tokPos c)
+     <|> return (Symb_id i)
 
 -- | parsing a type for an operation or a predicate
-opOrPredType :: [String] -> GenParser Char st TYPE
+opOrPredType :: [String] -> AParser st TYPE
 opOrPredType ks =
     do (b, s, p) <- opSort ks
        if b then return (O_type (Op_type Partial [] s p))
@@ -51,17 +65,27 @@ opOrPredType ks =
     <|> fmap P_type predUnitType
 
 -- | parsing one symbol or a mapping of one to second symbol
-symbMap :: [String] -> GenParser Char st SYMB_OR_MAP
-symbMap ks =
-    do s <- symb ks
+symbMap :: [String] -> SYMB_KIND -> AParser st SYMB_OR_MAP
+symbMap ks k =
+    do s <- symb ks k
        do
-         f <- pToken $ toKey mapsTo
-         t <- symb ks
-         return (Symb_map s t $ tokPos f)
+         f <- asKey mapsTo
+         k2 <- option Implicit $ fmap fst symbKind
+         case joinSymbKinds k k2 of
+           Nothing -> fail $ "contradicting symbol kinds '"
+             ++ showDoc k "' and '" ++ showDoc k2 "'"
+           Just k3 -> do
+             t <- symb ks k3
+             return (Symb_map s t $ tokPos f)
         <|> return (Symb s)
 
+joinSymbKinds :: SYMB_KIND -> SYMB_KIND -> Maybe SYMB_KIND
+joinSymbKinds k1 k2 = case k1 of
+  Implicit -> Just k2
+  _ -> if k2 == Implicit || k1 == k2 then Just k1 else Nothing
+
 -- | parse a kind keyword
-symbKind :: GenParser Char st (SYMB_KIND, Token)
+symbKind :: AParser st (SYMB_KIND, Token)
 symbKind =
   choice (map (\ (v, s) -> do
     q <- pluralKeyword s
@@ -71,41 +95,41 @@ symbKind =
 
 {- | Parse a possible kinded list of comma separated CASL symbols.
      The argument is a list of keywords to avoid as identifiers. -}
-symbItems :: [String] -> GenParser Char st SYMB_ITEMS
+symbItems :: [String] -> AParser st SYMB_ITEMS
 symbItems ks =
-    do (is, ps) <- symbs ks
+    do (is, ps) <- symbs ks Implicit
        return (Symb_items Implicit is $ catRange ps)
     <|>
     do (k, p) <- symbKind
-       (is, ps) <- symbs ks
+       (is, ps) <- symbs ks k
        return (Symb_items k is $ catRange $ p : ps)
 
 -- | parse a comma separated list of symbols
-symbs :: [String] -> GenParser Char st ([SYMB], [Token])
-symbs ks =
-    do s <- symb ks
+symbs :: [String] -> SYMB_KIND -> AParser st ([SYMB], [Token])
+symbs ks k =
+    do s <- symb ks k
        do
-         c <- commaT `followedWith` symb ks
-         (is, ps) <- symbs ks
+         c <- commaT `followedWith` parseId ks
+         (is, ps) <- symbs ks k
          return (s : is, c : ps)
         <|> return ([s], [])
 
 -- | parse a possible kinded list of CASL symbol mappings
-symbMapItems :: [String] -> GenParser Char st SYMB_MAP_ITEMS
+symbMapItems :: [String] -> AParser st SYMB_MAP_ITEMS
 symbMapItems ks =
-    do (is, ps) <- symbMaps ks
+    do (is, ps) <- symbMaps ks Implicit
        return (Symb_map_items Implicit is $ catRange ps)
     <|>
     do (k, p) <- symbKind
-       (is, ps) <- symbMaps ks
+       (is, ps) <- symbMaps ks k
        return (Symb_map_items k is $ catRange $ p : ps)
 
 -- | parse a comma separated list of symbol mappings
-symbMaps :: [String] -> GenParser Char st ([SYMB_OR_MAP], [Token])
-symbMaps ks =
-    do s <- symbMap ks
+symbMaps :: [String] -> SYMB_KIND -> AParser st ([SYMB_OR_MAP], [Token])
+symbMaps ks k =
+    do s <- symbMap ks k
        do
-         c <- commaT `followedWith` symb ks
-         (is, ps) <- symbMaps ks
+         c <- commaT `followedWith` parseId ks
+         (is, ps) <- symbMaps ks k
          return (s : is, c : ps)
         <|> return ([s], [])
