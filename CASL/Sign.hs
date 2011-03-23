@@ -333,7 +333,11 @@ addAnnoSet a s = do
 addSymbol :: Symbol -> State.State (Sign f e) ()
 addSymbol s = do
   e <- State.get
-  State.put e { declaredSymbols = Set.insert s $ declaredSymbols e }
+  State.put $ addSymbToDeclSymbs e s
+
+addSymbToDeclSymbs :: Sign e f -> Symbol -> Sign e f
+addSymbToDeclSymbs cs sy =
+    cs { declaredSymbols = Set.insert sy $ declaredSymbols cs }
 
 addSort :: SortsKind -> Annoted a -> SORT -> State.State (Sign f e) ()
 addSort sk a s = do
@@ -545,7 +549,3 @@ addSymbToSign sig sy =
         SortAsItemType -> return $ addSort' sig' $ symName sy
         PredAsItemType pt -> return $ addPred' sig' (symName sy) pt
         OpAsItemType ot -> return $ addOp' sig' (symName sy) ot
-
-addSymbToDeclSymbs :: Sign e f -> Symbol -> Sign e f
-addSymbToDeclSymbs cs sy =
-    cs { declaredSymbols = Set.insert sy $ declaredSymbols cs }
