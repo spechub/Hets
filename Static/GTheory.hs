@@ -24,7 +24,7 @@ import Logic.Coerce
 import qualified Common.OrderedMap as OMap
 
 import ATerm.Lib
-import Common.AnnoState (emptyAnnos)
+import Common.AnnoState
 import Common.Lib.Graph as Tree
 import Common.Amalgamate -- for now
 import Common.Keywords
@@ -441,3 +441,19 @@ extendByBasicSpec str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
               , if sameSig then if null sens2 then "" else
                             show (vcat $ map (print_named lid) sens2)
                        else showRelDiags 1 es)
+
+-- | reconstruct the morphism from symbols maps
+getMorphism :: G_sign
+  -> String -- ^ the symbol mappings
+  -> Result G_morphism
+getMorphism (G_sign lid (ExtSign sig _) _) syms =
+    let str = trimLeft syms in
+    if null str then return $ mkG_morphism lid $ ide sig else
+    case parse_symb_map_items lid of
+      Nothing -> fail $ "no symbol map parser for " ++ language_name lid
+      Just smpa -> case runParser (sepBy1 smpa anComma << eof)
+                   (emptyAnnos ()) "" $ trimLeft str of
+        Left err -> fail $ show err
+        Right sms -> do
+          rm <- stat_symb_map_items lid sig sms
+          fmap (mkG_morphism lid) $ induced_from_morphism lid rm sig
