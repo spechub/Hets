@@ -458,6 +458,7 @@ getMorphism (G_sign lid (ExtSign sig _) _) syms =
           rm <- stat_symb_map_items lid sig sms
           fmap (mkG_morphism lid) $ induced_from_morphism lid rm sig
 
+-- | get the gmorphism for a gmorphism name
 translateByGName :: LogicGraph -> G_sign
   -> String -- ^ the name of the morphism
   -> Result GMorphism
@@ -467,6 +468,7 @@ translateByGName lg gsig gname =
     cmor <- lookupComorphism str lg
     gEmbedComorphism cmor gsig
 
+-- | get the gmorphism for a gmorphism name with symbols maps
 getGMorphism :: LogicGraph -> G_sign
   -> String -- ^ the name of the gmorphism
   -> String -- ^ the symbol mappings
