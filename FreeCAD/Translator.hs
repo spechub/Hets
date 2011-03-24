@@ -6,18 +6,7 @@ import Text.XML.Light
 import Data.Maybe
 import Data.Set as Set
 
-{-
-translate:: Maybe Element -> Document
 
-isBaseObject:: Element -> Bool
-
-getObject:: Element -> NamedObject
-getBaseObject:: Element -> BaseObject
-getExtendedObject:: Element -> ExtendedObject
-getPlacement:: Element -> Placement
-getName:: Element -> String
-getProperty:: Element -> String -> Double
--}
 
 --constants used to find the appropriate subtree in the XML file:
 objListQName::QName
