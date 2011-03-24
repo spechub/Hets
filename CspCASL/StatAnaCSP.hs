@@ -286,8 +286,9 @@ anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap ->
 anaProcTerm proc gVars lVars = case proc of
     NamedProcess name args r ->
         do addDiags [mkDiag Debug "Named process" proc]
-           (al, fqArgs) <- anaNamedProc proc name args (lVars `Map.union` gVars)
-           let fqProc = FQProcess (NamedProcess name fqArgs r) al r
+           (fqName, al, fqArgs) <-
+             anaNamedProc proc name args (lVars `Map.union` gVars)
+           let fqProc = FQProcess (NamedProcess fqName fqArgs r) al r
            return (al, fqProc)
     Skip r ->
         do addDiags [mkDiag Debug "Skip" proc]
@@ -411,14 +412,14 @@ permitted alphabet of the process and also a list of the fully qualified
 version of the inputted terms.
 BUG !!! the FQ_PROCESS_NAME may actually need to be a simple process name -}
 anaNamedProc :: PROCESS -> FQ_PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
-                State CspCASLSign (CommAlpha, [TERM ()])
+                State CspCASLSign (FQ_PROCESS_NAME, CommAlpha, [TERM ()])
 anaNamedProc proc pn terms procVars = do
   maybeFqPn <- anaProcName pn (length terms)
   case maybeFqPn of
     Nothing ->
       {- Return the empty alphabet and the original
       terms. There is an error in the spec. -}
-      return (Set.empty, terms)
+      return (pn, Set.empty, terms)
     Just fqPn ->
       case fqPn of
         PROCESS_NAME _ ->
@@ -432,13 +433,13 @@ anaNamedProc proc pn terms procVars = do
                     mapM (anaNamedProcTerm procVars) (zip terms varSorts)
                   {- Return the permitted alphabet of the process and
                   the fully qualifed terms -}
-            return (permAlpha, fqTerms)
+            return (fqPn, permAlpha, fqTerms)
           else do
             let err = "Wrong number of arguments in named process"
             addDiags [mkDiag Error err proc]
                   {- Return the empty alphabet and the original
                   terms. There is an error in the spec. -}
-            return (Set.empty, terms)
+            return (pn, Set.empty, terms)
 
 {- | Statically analysis a CASL term occurring in a CspCASL "named
 process" term. -}
