@@ -110,6 +110,8 @@ type InducedMorphism e m = RawSymbolMap -> e -> Result m
 constMorphExt :: m -> InducedMorphism e m
 constMorphExt m _ _ = return m
 
+{- | function and preds in the overloading relation are mapped in the same way
+thus preserving the overload-relation -}
 inducedFromMorphism :: (Pretty e, Show f) => m -> RawSymbolMap -> Sign f e
                     -> Result (Morphism f e m)
 inducedFromMorphism =
@@ -119,8 +121,7 @@ inducedFromMorphismExt :: (Pretty e, Show f) => InducedSign f e m e
                        -> InducedMorphism e m
                        -> RawSymbolMap -> Sign f e -> Result (Morphism f e m)
 inducedFromMorphismExt extInd extEm rmap sigma = do
-  {- ??? Missing: check preservation of overloading relation
-  compute the sort map (as a Map) -}
+  -- compute the sort map (as a Map)
   sort_Map <- Set.fold (\ s m -> do
                 s' <- sortFun rmap s
                 m1 <- m
@@ -211,14 +212,15 @@ mappedOpSym sort_Map ide ot rsy =
     let opSym = "operation symbol " ++ showDoc (idToOpSymbol ide ot)
                 " is mapped to "
         kind = opKind ot
+        ot2 = mapOpType sort_Map ot
     in case rsy of
       ASymbol (Symbol ide' (OpAsItemType ot')) ->
-        if compatibleOpTypes (mapOpType sort_Map ot) ot'
+        if compatibleOpTypes ot2 ot'
            then return (ide', opKind ot')
            else plain_error (ide, kind)
              (opSym ++ "type " ++ showDoc ot'
               " but should be mapped to type " ++
-              showDoc (mapOpType sort_Map ot) "") $ getRange rsy
+              showDoc ot2 "") $ getRange rsy
       AKindedSymb k ide' | elem k [Implicit, Ops_kind] -> return (ide', kind)
       _ -> plain_error (ide, kind)
                (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
@@ -248,7 +250,7 @@ insertmapOpSym sort_Map ide rsy ot m = do
              ("conflicting mapping of " ++ showDoc otsy " to " ++
                show ide' ++ " and " ++ show ide'') pos
 
-  {- to a Pred_map, add evering resulting from mapping (ide,pts)
+  {- to a Pred_map, add evering resulting from mapping (ide, pts)
   according to rmap -}
 
 predFun :: Sign f e -> RawSymbolMap -> Sort_map -> Id -> Set.Set PredType
@@ -289,25 +291,26 @@ directPredMap rmap sort_Map ide pts m =
          $ rs ++ ps
        _ -> m
 
-    -- map pred symbol (ide,pt) to raw symbol rsy
+    -- map pred symbol (ide, pt) to raw symbol rsy
 mappedPredSym :: Sort_map -> Id -> PredType -> RawSymbol -> Result Id
 mappedPredSym sort_Map ide pt rsy =
     let predSym = "predicate symbol " ++ showDoc (idToPredSymbol ide pt)
                   " is mapped to "
+        pt2 = mapPredType sort_Map pt
     in case rsy of
       ASymbol (Symbol ide' (PredAsItemType pt')) ->
-        if mapPredType sort_Map pt == pt'
+        if pt2 == pt'
            then return ide'
            else plain_error ide
              (predSym ++ "type " ++ showDoc pt'
               " but should be mapped to type " ++
-              showDoc (mapPredType sort_Map pt) "") $ getRange rsy
+              showDoc pt2 "") $ getRange rsy
       AKindedSymb k ide' | elem k [Implicit, Preds_kind] -> return ide'
       _ -> plain_error ide
                (predSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
-    -- insert mapping of pred symbol (ide,pt) to raw symbol rsy into m
+    -- insert mapping of pred symbol (ide, pt) to raw symbol rsy into m
 insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
                  -> Result Pred_map -> Result Pred_map
 insertmapPredSym sort_Map ide rsy pt m = do
