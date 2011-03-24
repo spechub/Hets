@@ -78,7 +78,7 @@ instance StaticAnalysis OWL OntologyFile Axiom
       -- these functions are implemented in OWL.StaticAna and OWL.Sign.
       basic_analysis OWL = Just basicOWLAnalysis
       stat_symb_items OWL _ = return . statSymbItems
-      stat_symb_map_items OWL _ = statSymbMapItems
+      stat_symb_map_items OWL _ _ = statSymbMapItems
       empty_signature OWL = emptySign
       signature_union OWL s = return . addSign s
       final_union OWL = signature_union OWL

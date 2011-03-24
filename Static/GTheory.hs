@@ -455,7 +455,7 @@ getMorphism (G_sign lid (ExtSign sig _) _) syms =
                    (emptyAnnos ()) "" $ trimLeft str of
         Left err -> fail $ show err
         Right sms -> do
-          rm <- stat_symb_map_items lid sig sms
+          rm <- stat_symb_map_items lid sig Nothing sms
           fmap (mkG_morphism lid) $ induced_from_morphism lid rm sig
 
 -- | get the gmorphism for a gmorphism name

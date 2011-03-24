@@ -52,7 +52,7 @@ instance Sentences LF
    Morphism
    Symbol
    where
-   map_sen LF m = (Result []) . (translate m)
+   map_sen LF m = Result [] . translate m
    sym_of LF = singletonList . getSymbols
 
 instance Logic LF
@@ -77,24 +77,23 @@ instance StaticAnalysis LF
    Symbol
    RAW_SYM
    where
-   basic_analysis LF = Just $ basicAnalysis
+   basic_analysis LF = Just basicAnalysis
    stat_symb_items LF _ = symbAnalysis
-   stat_symb_map_items LF _ = symbMapAnalysis
+   stat_symb_map_items LF _ _ = symbMapAnalysis
    symbol_to_raw LF = symName
    matches LF s1 s2 =
-     if (isSym s2)
-        then symName s1 == s2         --symbols are matched by their name
-        else True   -- expressions are checked manually hence always True
+     not (isSym s2) || symName s1 == s2
+     -- expressions are checked manually or symbols match by name
    empty_signature LF = emptySig
    is_subsig LF = isSubsig
    subsig_inclusion LF = inclusionMorph
    signature_union LF = sigUnion
    intersection LF = sigIntersection
    generated_sign LF syms sig = do
-     sig'<- genSig syms sig
+     sig' <- genSig syms sig
      inclusionMorph sig' sig
    cogenerated_sign LF syms sig = do
-     sig'<- coGenSig syms sig
+     sig' <- coGenSig syms sig
      inclusionMorph sig' sig
    induced_from_to_morphism LF m (ExtSign sig1 _) (ExtSign sig2 _) =
      inducedFromToMorphism (translMapAnalysis m sig1 sig2) sig1 sig2

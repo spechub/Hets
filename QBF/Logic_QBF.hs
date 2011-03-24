@@ -136,7 +136,7 @@ instance StaticAnalysis QBF
           id_to_raw QBF = idToRaw
           matches QBF = Symbol.matches
           stat_symb_items QBF _ = mkStatSymbItems
-          stat_symb_map_items QBF _ = mkStatSymbMapItem
+          stat_symb_map_items QBF _ _ = mkStatSymbMapItem
           morphism_union QBF = morphismUnion
           induced_from_morphism QBF = inducedFromMorphism
           induced_from_to_morphism QBF = inducedFromToMorphism

@@ -70,7 +70,7 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA
                CoCASLMor
                Symbol RawSymbol where
          basic_analysis CoCASL = Just basicCoCASLAnalysis
-         stat_symb_map_items CoCASL _ = statSymbMapItems
+         stat_symb_map_items CoCASL _ _ = statSymbMapItems
          stat_symb_items CoCASL _ = statSymbItems
 
          symbol_to_raw CoCASL = symbolToRaw

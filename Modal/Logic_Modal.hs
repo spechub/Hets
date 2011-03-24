@@ -95,7 +95,7 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA
                ModalMor
                Symbol RawSymbol where
          basic_analysis Modal = Just basicModalAnalysis
-         stat_symb_map_items Modal _ = statSymbMapItems
+         stat_symb_map_items Modal _ _ = statSymbMapItems
          stat_symb_items Modal _ = statSymbItems
 
          symbol_to_raw Modal = symbolToRaw

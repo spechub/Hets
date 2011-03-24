@@ -76,7 +76,7 @@ instance StaticAnalysis VSE VSEBasicSpec Sentence
                VSEMor
                Symbol RawSymbol where
          basic_analysis VSE = Just basicAna
-         stat_symb_map_items VSE _ = statSymbMapItems
+         stat_symb_map_items VSE _ _ = statSymbMapItems
          stat_symb_items VSE _ = statSymbItems
          signature_colimit VSE diag =
            let (sig, mmor) = signColimit diag extVSEColimit

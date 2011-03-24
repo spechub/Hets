@@ -136,7 +136,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
 instance StaticAnalysis ExtModal EM_BASIC_SPEC ExtModalFORMULA SYMB_ITEMS
     SYMB_MAP_ITEMS ExtModalSign ExtModalMorph Symbol RawSymbol where
         basic_analysis ExtModal = Just basicEModalAnalysis
-        stat_symb_map_items ExtModal _ = statSymbMapItems
+        stat_symb_map_items ExtModal _ _ = statSymbMapItems
         stat_symb_items ExtModal _ = statSymbItems
 
         symbol_to_raw ExtModal = symbolToRaw

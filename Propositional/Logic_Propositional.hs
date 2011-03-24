@@ -155,7 +155,7 @@ instance StaticAnalysis Propositional
           id_to_raw Propositional = idToRaw
           matches Propositional = Symbol.matches
           stat_symb_items Propositional _ = mkStatSymbItems
-          stat_symb_map_items Propositional _ = mkStatSymbMapItem
+          stat_symb_map_items Propositional _ _ = mkStatSymbMapItem
           morphism_union Propositional = morphismUnion
           induced_from_morphism Propositional = inducedFromMorphism
           induced_from_to_morphism Propositional = inducedFromToMorphism

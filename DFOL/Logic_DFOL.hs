@@ -53,8 +53,8 @@ instance Syntax DFOL BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
 
 -- sentences for DFOL
 instance Sentences DFOL FORMULA Sign Morphism Symbol where
-   map_sen DFOL m = wrapInResult . (applyMorph m)
-   sym_of DFOL = singletonList . (Set.map Symbol) . getSymbols
+   map_sen DFOL m = wrapInResult . applyMorph m
+   sym_of DFOL = singletonList . Set.map Symbol . getSymbols
    symmap_of DFOL = toSymMap . symMap
    sym_name DFOL = toId
 
@@ -70,16 +70,16 @@ instance StaticAnalysis DFOL
    Symbol
    where
    basic_analysis DFOL = Just basicAnalysis
-   stat_symb_map_items DFOL _ = symbMapAnalysis
+   stat_symb_map_items DFOL _ _ = symbMapAnalysis
    stat_symb_items DFOL _ = symbAnalysis
    symbol_to_raw DFOL = id
    id_to_raw DFOL = fromId
    matches DFOL s1 s2 = s1 == s2
    empty_signature DFOL = emptySig
-   is_subsig DFOL sig1 sig2 = isValidMorph $ Morphism sig1 sig2 $ Map.empty
+   is_subsig DFOL sig1 sig2 = isValidMorph $ Morphism sig1 sig2 Map.empty
    signature_union DFOL = sigUnion
    intersection DFOL = sigIntersection
-   subsig_inclusion DFOL =  inclusionMorph
+   subsig_inclusion DFOL = inclusionMorph
    morphism_union DFOL = morphUnion
    induced_from_morphism DFOL = inducedFromMorphism
    induced_from_to_morphism DFOL = inducedFromToMorphism

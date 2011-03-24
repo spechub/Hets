@@ -681,14 +681,15 @@ anaFitArgUnit lgraph ln dg opts uctx nsig
            gsigmaT = getSig (getSigFromDiag p)
        G_sign lidS sigmaS _ <- return gsigmaS
        G_sign lidT sigmaT _ <- return gsigmaT
-       G_symb_map_items_list lid sis <- homogenizeGM (Logic lidS) symbMap
-       sigmaT' <- coerceSign lidT lidS "anaFitArgUnit1" sigmaT
-       mor <- if isStructured opts then return (ext_ide sigmaS) else do
-         ExtSign sigS' _ <- coerceSign lidS lid "anaFitArgUnit2" sigmaS
-         rmap <- stat_symb_map_items lid sigS' sis
-         rmap' <- coerceRawSymbolMap lid lidS "" rmap
-         ext_induced_from_to_morphism lidS rmap' sigmaS sigmaT'
-       let gMorph = mkG_morphism lidS mor
+       cl <- lookupCurrentLogic "anaFitArgUnit" lgraph
+       G_symb_map_items_list lid sis <- homogenizeGM cl symbMap
+       sigmaS' <- coerceSign lidS lid "anaFitArgUnit1" sigmaS
+       sigmaT' <- coerceSign lidT lid "anaFitArgUnit2" sigmaT
+       mor <- if isStructured opts then return (ext_ide sigmaS') else do
+         rmap <- stat_symb_map_items lid (plainSign sigmaS')
+           (Just $ plainSign sigmaT') sis
+         ext_induced_from_to_morphism lid rmap sigmaS' sigmaT'
+       let gMorph = mkG_morphism lid mor
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
        return (gMorph, nsig', p, dg'', diag')
 
@@ -862,7 +863,7 @@ lambda expressions, like you do in the following -}
              -- here Nothing is fine
      case (usig, usig') of
        (UnitSig _ls ns _, UnitSig _ls' ns' _) -> do
-               dg'' <- anaSymbMapRef dgr' ns ns' gMapList rn
+               dg'' <- anaSymbMapRef lgraph dgr' ns ns' gMapList rn
                let (s, dg3) = case nP of
                                Nothing -> addNodeRT dg'' usig $ name uspec
                                Just p ->
@@ -887,33 +888,25 @@ lambda expressions, like you do in the following -}
               _ -> ""
 
 
-anaSymbMapRef :: DGraph -> NodeSig -> NodeSig -> [G_mapping] -> SPEC_NAME ->
-                    Result DGraph
-anaSymbMapRef dg' ns ns' symbMap rn = do
+anaSymbMapRef :: LogicGraph -> DGraph -> NodeSig -> NodeSig -> [G_mapping]
+  -> SPEC_NAME -> Result DGraph
+anaSymbMapRef lg dg' ns ns' symbMap rn = do
    let gSigS = getSig ns
        nodeS = getNode ns
        gSigT = getSig ns'
        nodeT = getNode ns'
    G_sign lidS sigS _ <- return gSigS
    G_sign lidT sigT _ <- return gSigT
-   G_symb_map_items_list lid sis <- homogenizeGM (Logic lidS) symbMap
-   sigT' <- coerceSign lidT lidS "anaSymbMapRef1" sigT
-   mor <- do
-           ExtSign sigS' _ <- coerceSign lidS lid "anaSymbMapRef2" sigS
-           rmap <- stat_symb_map_items lid sigS' sis
-           rmap' <- coerceRawSymbolMap lid lidS "" rmap
-           ext_induced_from_to_morphism lidS rmap' sigS sigT'
-   let g_mor = mkG_morphism lidS mor
-   -- for now we stay in the homogeneous case
-   let gm = gEmbed g_mor
-       linkLabel = DGLink {
-                     dgl_morphism = gm,
-                     dgl_type = globalThm,
-                     dgl_origin = DGLinkRefinement rn,
-                     dglPending = False,
-                     dglName = emptyNodeName,
-                     dgl_id = getNewEdgeId dg'
-                   }
+   cl <- lookupCurrentLogic "anaFitArgUnit" lg
+   G_symb_map_items_list lid sis <- homogenizeGM cl symbMap
+   sigS' <- coerceSign lidS lid "anaSymbMapRef1" sigS
+   sigT' <- coerceSign lidT lid "anaSymbMapRef2" sigT
+   rmap <- stat_symb_map_items lid (plainSign sigS')
+     (Just $ plainSign sigT') sis
+   mor <- ext_induced_from_to_morphism lid rmap sigS' sigT'
+   let gm = gEmbed $ mkG_morphism lid mor
+       -- for now we stay in the homogeneous case
+       linkLabel = defDGLink gm globalThm (DGLinkRefinement rn)
        (_, dg'') = insLEdgeDG (nodeS, nodeT, linkLabel) dg'
    return dg''
 

@@ -102,7 +102,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA
                DLMor
                Symbol RawSymbol where
          basic_analysis CASL_DL = Just basicCASL_DLAnalysis
-         stat_symb_map_items CASL_DL _ sml =
+         stat_symb_map_items CASL_DL _ _ sml =
              statSymbMapItems sml >>= checkSymbolMapDL
          stat_symb_items CASL_DL _ = statSymbItems
 

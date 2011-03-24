@@ -13,7 +13,7 @@ Here is the place where the class Logic is instantiated for HasCASL.
    Also the instances for Syntax and Category.
 -}
 
-module HasCASL.Logic_HasCASL(HasCASL(HasCASL)) where
+module HasCASL.Logic_HasCASL (HasCASL (HasCASL)) where
 
 import HasCASL.As
 import HasCASL.Builtin
@@ -24,7 +24,7 @@ import HasCASL.SymbItem
 import HasCASL.Symbol
 import HasCASL.ParseItem
 import HasCASL.Morphism
-import HasCASL.ATC_HasCASL()
+import HasCASL.ATC_HasCASL ()
 import HasCASL.SymbolMapAnalysis
 import HasCASL.Sublogic
 import HasCASL.SimplifyTerm
@@ -104,7 +104,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence
     cogenerated_sign HasCASL = cogeneratedSign
     generated_sign HasCASL = generatedSign
 
-    stat_symb_map_items HasCASL _ = statSymbMapItems
+    stat_symb_map_items HasCASL _ _ = statSymbMapItems
     stat_symb_items HasCASL _ = statSymbItems
     symbol_to_raw HasCASL = symbolToRaw
     id_to_raw HasCASL = idToRaw
