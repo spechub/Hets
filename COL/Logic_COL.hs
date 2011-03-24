@@ -67,8 +67,8 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA
          basic_analysis COL = Just $ basicAnalysis (const return)
                               (const return) ana_COL_SIG_ITEM
                               emptyMix
-         stat_symb_map_items COL _ _ = statSymbMapItems
-         stat_symb_items COL _ = statSymbItems
+         stat_symb_map_items COL = statSymbMapItems
+         stat_symb_items COL = statSymbItems
 
          symbol_to_raw COL = symbolToRaw
          id_to_raw COL = idToRaw

@@ -217,11 +217,12 @@ insertRsys rawId getSort mkSort getImplicit mkImplicit m1 (rsy1, rsy2) =
               plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
 
-statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result RawSymbolMap
-statSymbMapItems sl = do
+statSymbMapItems :: Sign f e -> Maybe (Sign f e) -> [SYMB_MAP_ITEMS]
+  -> Result RawSymbolMap
+statSymbMapItems sig msig sl = do
   let st (Symb_map_items kind l _) = do
         appendDiags $ checkSymbList l
-        fmap concat $ mapM (symbOrMapToRaw kind) l
+        fmap concat $ mapM (symbOrMapToRaw sig msig kind) l
       getSort rsy = case rsy of
         ASymbol (Symbol i SortAsItemType) -> Just i
         _ -> Nothing
@@ -234,18 +235,21 @@ statSymbMapItems sl = do
   foldM (insertRsys rawSymName getSort mkSort getImplicit mkImplicit)
                     Map.empty (concat ls)
 
-symbOrMapToRaw :: SYMB_KIND -> SYMB_OR_MAP -> Result [(RawSymbol, RawSymbol)]
-symbOrMapToRaw k sm = case sm of
+symbOrMapToRaw :: Sign f e -> Maybe (Sign f e) -> SYMB_KIND -> SYMB_OR_MAP
+   -> Result [(RawSymbol, RawSymbol)]
+symbOrMapToRaw sig msig k sm = case sm of
     Symb s -> do
-      v <- symbToRaw k s
+      v <- symbToRaw True sig k s
       return [(v, v)]
     Symb_map s t _ -> do
       appendDiags $ case (s, t) of
         (Symb_id a, Symb_id b) | a == b ->
           [mkDiag Hint "unneeded identical mapping of" a]
         _ -> []
-      w <- symbToRaw k s
-      x <- symbToRaw k t
+      w <- symbToRaw True sig k s
+      x <- case msig of
+             Nothing -> symbToRaw False sig k t
+             Just tsig -> symbToRaw True tsig k t
       let mkS = ASymbol . idToSortSymbol
       case (s, t) of
         (Qual_id _ t1 _, Qual_id _ t2 _) -> case (t1, t2) of
@@ -267,49 +271,101 @@ symbOrMapToRaw k sm = case sm of
                ++ showDoc t2 "' do not match"
         _ -> return [(w, x)]
 
-statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
-statSymbItems sl =
+statSymbItems :: Sign f e -> [SYMB_ITEMS] -> Result [RawSymbol]
+statSymbItems sig sl =
   let st (Symb_items kind l _) = do
         appendDiags $ checkSymbList $ map Symb l
-        mapM (symbToRaw kind) l
+        mapM (symbToRaw True sig kind) l
   in fmap concat (mapM st sl)
 
-symbToRaw :: SYMB_KIND -> SYMB -> Result RawSymbol
-symbToRaw k si = case si of
+-- | bool indicates if a deeper symbol check is possible for target symbols
+symbToRaw :: Bool -> Sign f e -> SYMB_KIND -> SYMB -> Result RawSymbol
+symbToRaw b sig k si = case si of
   Symb_id idt -> return $ case k of
     Sorts_kind -> ASymbol $ idToSortSymbol idt
     _ -> AKindedSymb k idt
-  Qual_id idt t _ -> typedSymbKindToRaw k idt t
+  Qual_id idt t _ -> typedSymbKindToRaw b sig k idt t
 
-typedSymbKindToRaw :: SYMB_KIND -> Id -> TYPE -> Result RawSymbol
-typedSymbKindToRaw k idt t = let
+sortToOpType :: SORT -> OpType
+sortToOpType = OpType Total []
+
+sortToPredType :: SORT -> PredType
+sortToPredType s = PredType [s]
+
+typedSymbKindToRaw :: Bool -> Sign f e -> SYMB_KIND -> Id -> TYPE
+  -> Result RawSymbol
+typedSymbKindToRaw b sig k idt t = let
+     pm = predMap sig
+     om = opMap sig
+     getSet = Map.findWithDefault Set.empty idt
      err = plain_error (AKindedSymb Implicit idt)
               (showDoc idt ":" ++ showDoc t
-               "does not have kind" ++ showDoc k "") nullRange
+               "does not have kind" ++ showDoc k "") (getRange idt)
      aSymb = ASymbol $ case t of
        O_type ot -> idToOpSymbol idt $ toOpType ot
        P_type pt -> idToPredSymbol idt $ toPredType pt
-             {- in case of ambiguity, return a constant function type
-             this deviates from the CASL summary !!! -}
-       A_type s ->
-           let ot = OpType {opKind = Total, opArgs = [], opRes = s}
-           in idToOpSymbol idt ot
+       A_type s -> idToOpSymbol idt $ sortToOpType s
+     unKnown = do
+       appendDiags [mkDiag Error "unknown symbol" aSymb]
+       return aSymb
     in case k of
     Implicit -> case t of
-      A_type _ -> do
+      A_type s -> if b then do
+          let pt = sortToPredType s
+              ot = sortToOpType s
+              pot = mkPartial ot
+              hasPred = Set.member pt $ getSet pm
+              hasOp = Set.member ot $ getSet om
+              hasPOp = Set.member pot $ getSet om
+              bothWarn = when hasPred $
+                appendDiags [mkDiag Warning "considering operation only" idt]
+          if hasOp then do
+              appendDiags [mkDiag Hint "matched constant" idt]
+              bothWarn
+              return aSymb
+            else if hasPOp then do
+              bothWarn
+              appendDiags [mkDiag Warning "constant is partial" idt]
+              return $ ASymbol $ idToOpSymbol idt pot
+            else if hasPred then do
+              appendDiags [mkDiag Hint "matched unary predicate" idt]
+              return $ ASymbol $ idToPredSymbol idt pt
+            else unKnown
+        else do
           appendDiags [mkDiag Warning "qualify name as pred or op" idt]
           return aSymb
       _ -> return aSymb
     Ops_kind -> case t of
         P_type _ -> err
-        _ -> return aSymb
+        _ ->
+          let ot = case t of
+                     O_type aot -> toOpType aot
+                     A_type s -> sortToOpType s
+                     P_type _ -> error "CASL.typedSymbKindToRaw.Ops_kind"
+              pot = mkPartial ot
+              isMem aot = Set.member aot $ getSet om
+          in if b then
+            if isMem ot then return aSymb
+            else if isMem pot then do
+             appendDiags [mkDiag Warning "operation is partial" idt]
+             return $ ASymbol $ idToOpSymbol idt pot
+            else unKnown
+          else return aSymb
     Preds_kind -> case t of
         O_type _ -> err
-        A_type s -> return $ ASymbol $
-                    let pt = PredType {predArgs = [s]}
-                    in idToPredSymbol idt pt
-        P_type _ -> return aSymb
-    _ -> err
+        _ ->
+          let pt = case t of
+                     A_type s -> sortToPredType s
+                     P_type qt -> toPredType qt
+                     O_type _ -> error "CASL.typedSymbKindToRaw.Preds_kind"
+              pSymb = ASymbol $ idToPredSymbol idt pt
+          in if b then
+              if Set.member pt $ getSet pm then do
+                 appendDiags [mkDiag Hint "matched predicate" idt]
+                 return pSymb
+              else unKnown
+             else return pSymb
+    Sorts_kind -> err
 
 morphismToSymbMap :: Morphism f e m -> SymbolMap
 morphismToSymbMap = morphismToSymbMapAux False

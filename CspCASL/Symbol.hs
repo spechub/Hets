@@ -90,8 +90,16 @@ toProcSymbol (n, p) = CspSymbol (simpleIdToId n) $ ProcAsItemType p
 idToCspRaw :: Id -> CspRawSymbol
 idToCspRaw = CspKindedSymb $ CaslKind Implicit
 
-cspTypedSymbKindToRaw :: CspSymbKind -> Id -> CspType -> Result CspRawSymbol
-cspTypedSymbKindToRaw k idt t = let
+sortToProcProfile :: SORT -> ProcProfile
+sortToProcProfile = ProcProfile [] . Set.singleton . CommTypeSort
+
+cspTypedSymbKindToRaw :: Bool -> CspCASLSign -> CspSymbKind -> Id -> CspType
+  -> Result CspRawSymbol
+cspTypedSymbKindToRaw b sig k idt t = let
+    csig = extendedInfo sig
+    getSet = Map.findWithDefault Set.empty $ idToSimpleId idt
+    chs = getSet $ chans csig
+    prs = getSet $ procSet csig
     err = plain_error (idToCspRaw idt)
               (showDoc idt " " ++ showDoc t
                " does not have kind " ++ showDoc k "") nullRange
@@ -104,7 +112,7 @@ cspTypedSymbKindToRaw k idt t = let
        ProcType p -> return $ ACspSymbol $ toProcSymbol (si, p)
        CaslType (A_type s) -> return
          $ ACspSymbol $ toProcSymbol
-             (si, ProcProfile [] $ Set.singleton $ CommTypeSort s)
+             (si, sortToProcProfile s)
        _ -> err
      ChannelKind -> do
       si <- mkSimple idt
@@ -113,40 +121,64 @@ cspTypedSymbKindToRaw k idt t = let
          return $ ACspSymbol $ toChanSymbol (si, s)
        _ -> err
      CaslKind ck -> case t of
-       CaslType ct -> fmap (\ r -> case r of
-         ASymbol sy -> ACspSymbol $ CspSymbol idt $ CaslSymbType $ symbType sy
-         _ -> CspKindedSymb k idt)
-         $ typedSymbKindToRaw ck idt ct
+       CaslType ct -> let
+         caslAnno = fmap (\ r -> case r of
+           ASymbol sy -> ACspSymbol $ CspSymbol idt $ CaslSymbType $ symbType sy
+           _ -> CspKindedSymb k idt) $ typedSymbKindToRaw b sig ck idt ct
+         in case ct of
+         A_type s | b && ck == Implicit && isSimpleId idt ->
+           let si = idToSimpleId idt
+               hasChan = Set.member s chs
+               cprs = Set.filter (\ (ProcProfile args al) ->
+                 null args && any (\ cs -> case cs of
+                            CommTypeSort r -> r == s
+                              || Set.member s (subsortsOf r sig)
+                            CommTypeChan (TypedChanName c _) ->
+                              simpleIdToId c == s) (Set.toList al)) prs
+           in case Set.toList cprs of
+             [] -> if hasChan then do
+                 appendDiags [mkDiag Hint "matched channel" si]
+                 return $ ACspSymbol $ toChanSymbol (si, s)
+               else caslAnno
+             pr : rpr -> do
+               when (hasChan || not (null rpr)) $
+                 appendDiags [mkDiag Warning "ambiguous matches" si]
+               appendDiags [mkDiag Hint "matched process" si]
+               return $ ACspSymbol $ toProcSymbol (si, pr)
+         _ -> caslAnno
        _ -> err
 
-cspSymbToRaw :: CspSymbKind -> CspSymb -> Result CspRawSymbol
-cspSymbToRaw k (CspSymb idt mt) = case mt of
+cspSymbToRaw :: Bool -> CspCASLSign -> CspSymbKind -> CspSymb
+  -> Result CspRawSymbol
+cspSymbToRaw b sig k (CspSymb idt mt) = case mt of
   Nothing -> return $ case k of
     CaslKind Sorts_kind ->
       ACspSymbol $ CspSymbol idt $ CaslSymbType SortAsItemType
     _ -> CspKindedSymb k idt
-  Just t -> cspTypedSymbKindToRaw k idt t
+  Just t -> cspTypedSymbKindToRaw b sig k idt t
 
-cspStatSymbItems :: [CspSymbItems] -> Result [CspRawSymbol]
-cspStatSymbItems sl =
+cspStatSymbItems :: CspCASLSign -> [CspSymbItems] -> Result [CspRawSymbol]
+cspStatSymbItems sig sl =
   let st (CspSymbItems kind l) = do
         appendDiags $ cspCheckSymbList $ map (`CspSymbMap` Nothing) l
-        mapM (cspSymbToRaw kind) l
+        mapM (cspSymbToRaw True sig kind) l
   in fmap concat (mapM st sl)
 
-cspSymbOrMapToRaw :: CspSymbKind -> CspSymbMap
-  -> Result [(CspRawSymbol, CspRawSymbol)]
-cspSymbOrMapToRaw k (CspSymbMap s mt) = case mt of
+cspSymbOrMapToRaw :: CspCASLSign -> Maybe CspCASLSign -> CspSymbKind
+  -> CspSymbMap -> Result [(CspRawSymbol, CspRawSymbol)]
+cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
   Nothing -> do
-      v <- cspSymbToRaw k s
+      v <- cspSymbToRaw True sig k s
       return [(v, v)]
   Just t -> do
       appendDiags $ case (s, t) of
         (CspSymb a Nothing, CspSymb b Nothing) | a == b ->
           [mkDiag Hint "unneeded identical mapping of" a]
         _ -> []
-      w <- cspSymbToRaw k s
-      x <- cspSymbToRaw k t
+      w <- cspSymbToRaw True sig k s
+      x <- case msig of
+             Nothing -> cspSymbToRaw False sig k t
+             Just tsig -> cspSymbToRaw True tsig k t
       let mkS i = ACspSymbol $ CspSymbol i $ CaslSymbType SortAsItemType
           pairS s1 s2 = (mkS s1, mkS s2)
       case (w, x) of
@@ -175,12 +207,12 @@ cspSymbOrMapToRaw k (CspSymbMap s mt) = case mt of
                ++ showDoc t2 "' do not match"
         _ -> return [(w, x)]
 
-cspStatSymbMapItems :: [CspSymbMapItems]
+cspStatSymbMapItems :: CspCASLSign -> Maybe CspCASLSign -> [CspSymbMapItems]
   -> Result (Map.Map CspRawSymbol CspRawSymbol)
-cspStatSymbMapItems sl = do
+cspStatSymbMapItems sig msig sl = do
   let st (CspSymbMapItems kind l) = do
         appendDiags $ cspCheckSymbList l
-        fmap concat $ mapM (cspSymbOrMapToRaw kind) l
+        fmap concat $ mapM (cspSymbOrMapToRaw sig msig kind) l
       getSort rsy = case rsy of
         ACspSymbol (CspSymbol i (CaslSymbType SortAsItemType)) -> Just i
         _ -> Nothing

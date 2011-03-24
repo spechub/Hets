@@ -166,8 +166,8 @@ instance Show a => StaticAnalysis (GenCspCASL a)
     CspRawSymbol
     where
       basic_analysis (GenCspCASL _) = Just basicAnalysisCspCASL
-      stat_symb_items (GenCspCASL _) _ = cspStatSymbItems
-      stat_symb_map_items (GenCspCASL _) _ _ = cspStatSymbMapItems
+      stat_symb_items (GenCspCASL _) = cspStatSymbItems
+      stat_symb_map_items (GenCspCASL _) = cspStatSymbMapItems
       id_to_raw (GenCspCASL _) = idToCspRaw
       symbol_to_raw (GenCspCASL _) = ACspSymbol
       matches (GenCspCASL _) = cspMatches

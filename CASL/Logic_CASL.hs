@@ -213,8 +213,8 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
                CASLMor
                Symbol RawSymbol where
          basic_analysis CASL = Just basicCASLAnalysis
-         stat_symb_map_items CASL _ _ = statSymbMapItems
-         stat_symb_items CASL _ = statSymbItems
+         stat_symb_map_items CASL = statSymbMapItems
+         stat_symb_items CASL = statSymbItems
          signature_colimit CASL diag = return $ signColimit diag extCASLColimit
          quotient_term_algebra CASL = quotientTermAlgebra
          ensures_amalgamability CASL (opts, diag, sink, desc) =
