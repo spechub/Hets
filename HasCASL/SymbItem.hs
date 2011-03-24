@@ -24,6 +24,7 @@ import HasCASL.ParseTerm
 import HasCASL.As
 
 -- * parsers for symbols
+
 -- | parse a (typed) symbol
 symb :: AParser st Symb
 symb = do
@@ -39,6 +40,7 @@ symbMap :: AParser st SymbOrMap
 symbMap = do
     s <- symb
     do  f <- asKey mapsTo
+        optional symbKind
         t <- symb
         return $ SymbOrMap s (Just t) $ tokPos f
       <|> return (SymbOrMap s Nothing nullRange)
@@ -61,7 +63,7 @@ symbItems = do
   <|> do
     (k, p) <- symbKind
     (is, ps) <- symbs
-    return $ SymbItems k is [] $ catRange $ p:ps
+    return $ SymbItems k is [] $ catRange $ p : ps
 
 symbs :: AParser st ([Symb], [Token])
 symbs = do
@@ -79,12 +81,12 @@ symbMapItems = do
   <|> do
     (k, p) <- symbKind
     (is, ps) <- symbMaps
-    return $ SymbMapItems k is [] $ catRange $ p:ps
+    return $ SymbMapItems k is [] $ catRange $ p : ps
 
 symbMaps :: AParser st ([SymbOrMap], [Token])
 symbMaps = do
     s <- symbMap
     do  c <- anComma `followedWith` symb
         (is, ps) <- symbMaps
-        return (s:is, c:ps)
+        return (s : is, c : ps)
       <|> return ([s], [])

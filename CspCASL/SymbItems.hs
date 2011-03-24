@@ -125,7 +125,7 @@ cspSymb =
 -- | parsing one symbol or a mapping of one to second symbol
 cspSymbMap :: AParser st CspSymbMap
 cspSymbMap = liftM2 CspSymbMap cspSymb $ optionMaybe
-  $ asKey mapsTo >> cspSymb
+  $ asKey mapsTo >> optional cspSymbKind >> cspSymb
 
 -- | parse a kind keyword
 cspSymbKind :: AParser st CspSymbKind
@@ -157,7 +157,6 @@ cspSymbMaps =
     do s <- cspSymbMap
        do
          _ <- commaT `followedWith` parseCspId
-         optional cspSymbMap
          is <- cspSymbMaps
          return $ s : is
         <|> return [s]
