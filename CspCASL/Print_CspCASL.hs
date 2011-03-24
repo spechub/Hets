@@ -1,5 +1,5 @@
 {- |
-Module      :  $Id$
+Module      :  $Header$
 Description :  Pretty printing for CspCASL
 Copyright   :  (c) Andy Gimblett and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,7 +15,6 @@ module CspCASL.Print_CspCASL where
 
 import CASL.AS_Basic_CASL (SORT, TERM)
 import CASL.ToDoc
-import Common.AS_Annotation(Annoted (..))
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -25,17 +24,18 @@ import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 import qualified Data.Set as Set
 
-instance Pretty CspBasicSpec where
-    pretty = printCspBasicSpec
+instance Pretty CspBasicExt where
+    pretty = printCspBasicExt
 
-printCspBasicSpec :: CspBasicSpec -> Doc
-printCspBasicSpec ccs =
-    case channels ccs of
-      [] -> empty
-      cs -> keyword (channelS ++ appendS cs) <+> printChanDecs cs
-  $+$ case proc_items ccs of
-    [] -> empty
-    ps -> keyword processS <+> printProcItems ps
+instance ListCheck CHANNEL_DECL where
+  innerList (ChannelDecl l _) = innerList l
+
+printCspBasicExt :: CspBasicExt -> Doc
+printCspBasicExt ccs = case ccs of
+  Channels cs -> keyword (channelS ++ pluralS cs)
+    <+> semiAnnos printChanDecl cs
+  ProcItems ps -> keyword processS
+    <+> semiAnnos printProcItem ps
 
 instance Pretty FQ_PROCESS_NAME where
   pretty = printProcessName
@@ -60,19 +60,12 @@ printProcessName fqPn =
         $ map (CommTypeSort. simpleIdToId) comms'
     FQ_PROCESS_NAME pn profile -> f pn profile
 
-printChanDecs :: [CHANNEL_DECL] -> Doc
-printChanDecs cds = (vcat . punctuate semi . map pretty) cds
-
 instance Pretty CHANNEL_DECL where
     pretty = printChanDecl
 
 printChanDecl :: CHANNEL_DECL -> Doc
 printChanDecl (ChannelDecl ns s) =
-    (ppWithCommas ns) <+> colon <+> (pretty s)
-
-
-printProcItems :: [Annoted PROC_ITEM] -> Doc
-printProcItems ps = foldl ($+$) empty (map pretty ps)
+    ppWithCommas ns <+> colon <+> pretty s
 
 instance Pretty PROC_ITEM where
     pretty = printProcItem

@@ -27,7 +27,7 @@ import CASL.Morphism
 -- CspCASL
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
-import CspCASL.AS_CspCASL (CspBasicSpec (..))
+import CspCASL.StatAnaCSP (CspBasicSpec)
 import CspCASL.Morphism (CspCASLMorphism)
 import CspCASL.SymbItems
 import CspCASL.Symbol

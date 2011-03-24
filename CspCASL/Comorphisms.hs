@@ -17,7 +17,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 -- CspCASL
-import CspCASL.AS_CspCASL (CspBasicSpec (..))
+import CspCASL.StatAnaCSP (CspBasicSpec)
 import CspCASL.Morphism
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP

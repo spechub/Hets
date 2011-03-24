@@ -22,12 +22,12 @@ import CASL.Fold
 import CASL.MixfixParser
 import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Sign
-import CASL.StaticAna (allConstIds, allOpIds, allPredIds)
+import CASL.StaticAna
+import CASL.ToDoc ()
 
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
-import Common.ConvertGlobalAnnos
 import Common.Id (getRange, Id, nullRange, simpleIdToId)
 import Common.Lib.State
 import Common.ExtSign
@@ -45,6 +45,8 @@ import Data.Maybe
 
 import Control.Monad
 
+type CspBasicSpec = BASIC_SPEC CspBasicExt () ()
+
 {- | The first element of the returned pair (CspBasicSpec) is the same
 as the inputted version just with some very minor optimisations -
 none in our case, but for CASL - brackets are otimized. This all
@@ -52,30 +54,27 @@ that happens, the mixfixed terms are still mixed fixed terms in
 the returned version. -}
 basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
   -> Result (CspBasicSpec, ExtSign CspCASLSign CspSymbol, [Named CspCASLSen])
-basicAnalysisCspCASL (cc, sigma, ga) =
-    let Result es mga = mergeGlobalAnnos ga $ globAnnos sigma
-        (_, accSig) = runState (ana_BASIC_CSP cc) $ case mga of
-              Nothing -> sigma
-              Just nga -> sigma { globAnnos = nga }
-        ds = reverse $ envDiags accSig
-        -- Extract process equations only.
-        ext = extendedInfo accSig
-        ccsents = reverse $ ccSentences ext
-        -- Clean signature here
-        cleanSig = accSig
-                   { extendedInfo = ext { ccSentences = []}}
-    in Result (es ++ ds) $ Just (cc
-           , ExtSign cleanSig
-              $ Set.unions
-              $ Set.map caslToCspSymbol (declaredSymbols accSig)
-              : toSymbolSet (diffCspSig ext $ extendedInfo sigma)
-           , ccsents)
+basicAnalysisCspCASL inp@(_, insig, _) = do
+  (bs, ExtSign sig syms, sens) <- basicAnaAux inp
+  unless (null sens) $
+    appendDiags [mkDiag Warning "ignoring CASL sentences" $ map sentence sens]
+  let ext = extendedInfo sig
+  return (bs, ExtSign sig $ Set.unions
+             $ Set.map caslToCspSymbol syms
+             : toSymbolSet (diffCspSig ext $ extendedInfo insig),
+    reverse $ ccSentences ext)
 
-ana_BASIC_CSP :: CspBasicSpec -> State CspCASLSign ()
-ana_BASIC_CSP cc = do
-  checkLocalTops
-  mapM_ anaChanDecl (channels cc)
-  mapM_ anaProcItem (proc_items cc)
+basicAnaAux :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
+  -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol, [Named (FORMULA ())])
+basicAnaAux =
+  basicAnalysis (const return) ana_BASIC_CSP (const return) emptyMix
+
+ana_BASIC_CSP :: Ana CspBasicExt CspBasicExt () () CspSign
+ana_BASIC_CSP _ bs = do
+  case bs of
+    Channels cs -> mapM_ (anaChanDecl . item) cs
+    ProcItems ps ->  mapM_ anaProcItem ps
+  return bs
 
 -- Analysis of local top elements
 

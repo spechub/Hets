@@ -32,13 +32,14 @@ import Logic.Logic
 import Logic.Prover
 
 import CASL.Logic_CASL
+import CASL.Parse_AS_Basic
 import CASL.Morphism
 
-import qualified CspCASL.AS_CspCASL as AS_CspCASL
-import qualified CspCASL.ATC_CspCASL ()
+import CspCASL.ATC_CspCASL ()
+import CspCASL.CspCASL_Keywords
 import CspCASL.Morphism as CspCASL_Morphism
-import qualified CspCASL.Parse_CspCASL as Parse_CspCASL
-import qualified CspCASL.Print_CspCASL ()
+import CspCASL.Parse_CspCASL ()
+import CspCASL.Print_CspCASL ()
 import qualified CspCASL.SignCSP as SignCSP
 import qualified CspCASL.SimplifySen as SimplifySen
 import CspCASL.StatAnaCSP
@@ -83,14 +84,13 @@ instance Show a => Sentences (GenCspCASL a)
 
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)
-    AS_CspCASL.CspBasicSpec -- basic_spec
+    CspBasicSpec -- basic_spec
     CspSymbItems
     CspSymbMapItems
     where
       parse_symb_items (GenCspCASL _) = Just cspSymbItems
       parse_symb_map_items (GenCspCASL _) = Just cspSymbMapItems
-      parse_basic_spec (GenCspCASL _) =
-          Just Parse_CspCASL.cspBasicSpec
+      parse_basic_spec (GenCspCASL _) = Just $ basicSpec csp_casl_keywords
 
 -- lattices (for sublogics) missing
 
@@ -127,7 +127,7 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
     -- Sublogics (missing)
     ()
     -- basic_spec
-    AS_CspCASL.CspBasicSpec
+    CspBasicSpec
     -- sentence
     SignCSP.CspCASLSen
     -- symb_items
@@ -151,7 +151,7 @@ instance CspCASLSemantics a => Logic (GenCspCASL a)
 -- | Static Analysis for CspCASL
 instance Show a => StaticAnalysis (GenCspCASL a)
     -- basic_spec
-    AS_CspCASL.CspBasicSpec
+    CspBasicSpec
     -- sentence
     SignCSP.CspCASLSen
     -- symb_items
