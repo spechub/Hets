@@ -78,7 +78,7 @@ printSPEC spec = case spec of
     Group aa _ -> pretty aa
     Spec_inst aa ab _ -> cat [structSimpleId aa, print_fit_arg_list ab]
     Qualified_spec ln asp _ -> printLogicEncoding ln <> colon $+$ pretty asp
-    Data _ _ s1 s2 _ -> keyword dataS <+> pretty s1 $+$ pretty s2
+    Data _ _ s1 s2 _ -> keyword dataS <+> printGroupSpec s1 $+$ pretty s2
 
 instance Pretty RENAMING where
     pretty = printRENAMING
