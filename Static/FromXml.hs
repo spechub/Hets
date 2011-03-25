@@ -35,6 +35,11 @@ import Data.Maybe (fromMaybe)
 
 import Text.XML.Light
 
+
+
+import Debug.Trace (trace)
+
+
 -- | for faster access, some elements attributes are stored alongside
 -- as a String
 type NamedNode = (String,Element)
@@ -105,7 +110,7 @@ insertThmLinks lg links dg = foldr insert' dg links where
     lType = if isInfixOf "Global" $ linkTypeStr l
         then globalThm
         else localThm
-    in insertLink i j lType morph dg'
+    in insertLink i j lType morph lg dg'
 
 
 -- | main loop: in every step, all links are collected of which the source node
@@ -159,28 +164,40 @@ insSinglTrg :: LogicGraph -> NamedNode -> NamedLink -> DGraph -> DGraph
 insSinglTrg lg x l dg = let
   (i,morph) = prepareLink lg dg l
   (j,dg') = insertNode2 morph x dg
-  in insertLink i j globalDef morph dg'
+  in insertLink i j globalDef morph lg dg'
 
 
 insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
 insMultTrg lg x ls dg = let
   (h:t) = map (prepareLink lg dg) ls
-  morph = foldr comp' (snd h) t where
-    comp' (_,m1) m2 = propagateErrors "FromXml.insMultTrg:" 
+  morph = foldl comp' (snd h) t where
+    comp' m2 (_,m1) = propagateErrors "FromXml.insMultTrg:" 
                     $ composeMorphisms m1 m2
   (j,dg') = insertNode2 morph x dg
-  insert' (i,m) = insertLink i j globalDef m
+  insert' (i,m) = insertLink i j globalDef m lg
   in foldr insert' dg' $ (h:t)
 
-
 -- TODO: fix here!
-insertLink :: Graph.Node -> Graph.Node -> DGLinkType -> GMorphism -> DGraph
-           -> DGraph
-insertLink i j lType morph = 
+insertLink :: Graph.Node -> Graph.Node -> DGLinkType -> GMorphism
+           -> LogicGraph -> DGraph -> DGraph
+insertLink i j lType morph lg = 
+  snd . insLEdgeDG (i,j, defDGLink morph lType SeeTarget)
+
+-- JUST TRYING OUT... --
+{-  let
+    gsig2 = case lookupNodeWith ((== j) . fst) dg of
+      [(_,lbl)] -> (signOf . dgn_theory) lbl
+      _ -> error "FromXml.insertLink: (find node error)"
+    mrph2 = propagateErrors "FromXml.insertLink"
+          $ ginclusion lg (cod morph) gsig2
+   in trace ">inserting link<" 
+        $ snd 
+        $ insLEdgeDG (i,j, defDGLink mrph2 lType SeeTarget) dg
 -- at this point, i get an error message:
 -- "Static/GTheory.hs:168:11-16: Assertion failed"
 -- -- v -- -- v -- -- v -- v -- -- v -- -- v -- --
- snd . insLEdgeDG (i,j, defDGLink morph lType SeeTarget)
+--
+-}
 
 
 
@@ -189,7 +206,7 @@ insertNode2 gm x dg = let
   lbl = mkDGNodeLab g_th x
   g_th = case cod gm of
     G_sign lid sign sId -> noSensGTheory lid sign sId
-  n = getNewNodeDG dg                         
+  n = getNewNodeDG dg
   in (n, insLNodeDG (n,lbl) dg)
 
 
@@ -211,15 +228,25 @@ getLinkMorphism lg s1 l = case findChild (unqual "GMorphism") (element l) of
     Just mor -> let
       nm = fromMaybe (error "FromXml.getLinkMorphism: No name attribute") 
          $ getAttrVal "name" mor
-      symbs = parseSymbolMap $ findChildren (unqual "map") mor
-      in propagateErrors "FromXml.getLinkMorphism:" 
+      symbs = parseSymbolMap mor
+      -- DEBUG STUFF -- v -- v --
+      in trace (printLinks [l] ++ symbs)
+         $ propagateErrors "FromXml.getLinkMorphism:" 
          $ getGMorphism lg s1 nm symbs
-    
-  
+
+
+parseSymbolMap :: Element -> String
+parseSymbolMap = intercalate ", " 
+               . map ( intercalate " |-> "
+               . map strContent . elChildren )
+               . deepSearch [unqual "map"] 
+
+
+{-    
 parseSymbolMap :: [Element] -> String
 parseSymbolMap = intercalate ", " . map mkStr where
   mkStr = intercalate " |-> " . map strContent . elChildren
-
+-}
 
 -- | All nodes that do not have dependencies via the links are processed at the
 -- beginning and written into the DGraph. Returns the resulting DGraph and the
