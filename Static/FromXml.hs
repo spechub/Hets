@@ -180,7 +180,7 @@ insertLink i j lType morph =
 -- at this point, i get an error message:
 -- "Static/GTheory.hs:168:11-16: Assertion failed"
 -- -- v -- -- v -- -- v -- v -- -- v -- -- v -- --
- insEdgeDG (i,j, defDGLink morph lType SeeTarget)
+ snd . insLEdgeDG (i,j, defDGLink morph lType SeeTarget)
 
 
 
