@@ -1,5 +1,5 @@
 {- |
-Module      :  $Id$
+Module      :  $Header$
 Description :  Abstract syntax of CSP-CASL processes
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -50,29 +50,29 @@ data EVENT
     | ChanNonDetSend CHANNEL_NAME VAR SORT Range
     -- | @c ? var :: s -> p@ - Channel recieve
     | ChanRecv CHANNEL_NAME VAR SORT Range
-    -- | A fully qualified event contains the (non-fully qualified)
-    -- event being qualified. There other parameters depend on the
-    -- underlying type of the event.
-    -- -
-    -- For TermEvent, the fully qualified channel should be nothing
-    -- and the fully qualified term should be the fully qualified
-    -- CASL term version of the term being communicated in the inner
-    -- process.
-    -- -
-    -- For ExternalPrefixChoice and InternalPrefixChoice, the fully
-    -- qualified channel should be nothing and the fully qualified
-    -- term should be the fully qualified CASL variable version (a
-    -- term) of the inner process's variable.
-    -- -
-    -- For ChanSend, the fully qualified channel should be the fully
-    -- qualified channel of the underlying event and the fully
-    -- qualified term should be the fully qualified CASL term
-    -- version of the term being communicated in the inner process.
-    -- -
-    -- For ChanNonDetSend and ChanRecv, the fully qualified channel
-    -- should be the fully qualified channel of the underlying event
-    -- and the fully qualified CASL variable version (a term) of the
-    -- inner process's variable
+    {- | A fully qualified event contains the (non-fully qualified)
+    event being qualified. There other parameters depend on the
+    underlying type of the event.
+    -
+    For TermEvent, the fully qualified channel should be nothing
+    and the fully qualified term should be the fully qualified
+    CASL term version of the term being communicated in the inner
+    process.
+    -
+    For ExternalPrefixChoice and InternalPrefixChoice, the fully
+    qualified channel should be nothing and the fully qualified
+    term should be the fully qualified CASL variable version (a
+    term) of the inner process's variable.
+    -
+    For ChanSend, the fully qualified channel should be the fully
+    qualified channel of the underlying event and the fully
+    qualified term should be the fully qualified CASL term
+    version of the term being communicated in the inner process.
+    -
+    For ChanNonDetSend and ChanRecv, the fully qualified channel
+    should be the fully qualified channel of the underlying event
+    and the fully qualified CASL variable version (a term) of the
+    inner process's variable -}
     | FQEvent EVENT (Maybe (CHANNEL_NAME, SORT)) (TERM ()) Range
     deriving (Show, Ord, Eq)
 
@@ -94,23 +94,23 @@ type SIMPLE_PROCESS_NAME = SIMPLE_ID
 type PROC_ARGS = [SORT]
 
 data PROC_ALPHABET = ProcAlphabet [COMM_TYPE] Range
-                     deriving (Show,Ord, Eq)
+                     deriving (Show, Ord, Eq)
 
--- | Fully qualified process names are indexed by parameter sorts, and a
--- communication alphabet (a Set of sorts). The CommAlpha here should always
--- contain downward closed sets (wrt the subsort relation).
-data ProcProfile = ProcProfile [SORT] CommAlpha
+{- | Fully qualified process names are indexed by parameter sorts, and a
+communication alphabet (a Set of sorts). The CommAlpha here should always
+contain downward closed sets (wrt the subsort relation). -}
+data ProcProfile = ProcProfile PROC_ARGS CommAlpha
                    deriving (Eq, Ord, Show)
 
--- | A process name is either a fully qualified process name or a plain process
--- name.
+{- | A process name is either a fully qualified process name or a plain process
+name. -}
 data FQ_PROCESS_NAME
   -- | A non-fully qualified process name
   = PROCESS_NAME SIMPLE_PROCESS_NAME
   -- | A fully qualified process name
   | FQ_PROCESS_NAME SIMPLE_PROCESS_NAME ProcProfile
-  -- | A name with parameter sorts and communication ids from the parser.
-  -- This is where the user has tried to specify a fully qualified process name
+  {- | A name with parameter sorts and communication ids from the parser.
+  This is where the user has tried to specify a fully qualified process name -}
   | PARSED_FQ_PROCESS_NAME SIMPLE_PROCESS_NAME PROC_ARGS PROC_ALPHABET
                   deriving (Eq, Ord, Show)
 
@@ -121,8 +121,8 @@ procNameToSimpProcName (PARSED_FQ_PROCESS_NAME pn _ _) = pn
 
 type COMM_TYPE = SIMPLE_ID
 
--- | A process communication alphabet consists of a set of sort names
--- and typed channel names.
+{- | A process communication alphabet consists of a set of sort names
+and typed channel names. -}
 data TypedChanName = TypedChanName CHANNEL_NAME SORT
                      deriving (Eq, Ord, Show)
 
@@ -130,8 +130,8 @@ data CommType = CommTypeSort SORT
               | CommTypeChan TypedChanName
                 deriving (Eq, Ord)
 
--- | Type of communication types, either a sort communication or a typed channel
--- communications.
+{- | Type of communication types, either a sort communication or a typed channel
+communications. -}
 instance Show CommType where
     show (CommTypeSort s) = show s
     show (CommTypeChan (TypedChanName c s)) = show (c, s)
@@ -175,7 +175,7 @@ data PROCESS
     | ConditionalProcess (FORMULA ()) PROCESS PROCESS Range
     -- | Named process
     | NamedProcess FQ_PROCESS_NAME [TERM ()] Range
-    -- | Fully qualified process. The range here shall be the same as
-    -- | in the process.
+    {- | Fully qualified process. The range here shall be the same as
+    in the process. -}
     | FQProcess PROCESS CommAlpha Range
     deriving (Eq, Ord, Show)
