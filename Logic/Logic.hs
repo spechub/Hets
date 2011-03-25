@@ -285,10 +285,10 @@ class (Language lid, Category sign morphism, Ord sentence,
 
       -- | dependency ordered list of symbol sets for a signature
       sym_of :: lid -> sign -> [Set.Set symbol]
-      sym_of l _ = statError l "sym_of"
+      sym_of _ _ = []
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
-      symmap_of l _ = statError l "symmap_of"
+      symmap_of _ _ = Map.empty
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
@@ -423,7 +423,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          {- | Check wether a symbol matches a raw symbol, for
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
-         matches l _ _ = statError l "matches"
+         matches _ _ _ = True
 
          -- ------------- operations on signatures and morphisms -----------
 
