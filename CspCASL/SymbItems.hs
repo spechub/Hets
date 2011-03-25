@@ -111,7 +111,7 @@ cspSymb =
             fmap (ProcType . ProcProfile []) commAlpha
          return $ CspSymb i $ Just t
         <|> do
-         ts <- between oParenT cParenT $ commaSep1 cspSortId
+         ts <- parenList cspSortId
          colonT
          cs <- commAlpha
          return $ CspSymb i $ Just $ ProcType $ ProcProfile ts cs

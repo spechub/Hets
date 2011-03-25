@@ -15,6 +15,8 @@ Parser for CSP-CASL processes.
 module CspCASL.Parse_CspCASL_Process
   ( channel_name
   , comm_type
+  , parens
+  , parenList
   , cspSortId
   , parseCspId
   , csp_casl_process
@@ -25,7 +27,7 @@ module CspCASL.Parse_CspCASL_Process
   , var
   ) where
 
-import Text.ParserCombinators.Parsec (option, sepBy, try, (<|>), (<?>))
+import Text.ParserCombinators.Parsec (sepBy, try, (<|>), (<?>))
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import qualified CASL.Formula
@@ -33,7 +35,7 @@ import Common.AnnoState (AParser, asKey, colonT)
 import Common.Id
 import Common.Keywords
 import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
-import Common.Parsec ((<<))
+import Common.Parsec ((<<), optionL)
 import Common.Token (parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL_Process
@@ -50,7 +52,7 @@ cond_proc = do
     p <- csp_casl_process
     asKey elseS
     q <- csp_casl_process
-    return (ConditionalProcess f p q (compRange ift q))
+    return $ ConditionalProcess f p q $ compRange ift q
 
 par_proc :: AParser st PROCESS
 par_proc = choice_proc >>= par_proc'
@@ -126,37 +128,32 @@ hid_ren_proc' lp = do
     hid_ren_proc' (RenamingProcess lp rn (compRange lp ck))
   <|> return lp
 
+-- | parser for parens
+parens :: AParser st a -> AParser st a
+parens p = oParenT >> p << cParenT
+
+-- | parser for comma-separated items in parens
+parenList :: AParser st a -> AParser st [a]
+parenList = parens . commaSep1
+
 prim_proc :: AParser st PROCESS
 prim_proc = do
     pn <- process_name
     args <- procArgs
-    return (NamedProcess pn args (compRange pn args))
-  <|> do
-    oParenT
-    p <- csp_casl_process
-    cParenT
-    return p
+    return $ NamedProcess pn args $ compRange pn args
+  <|> parens csp_casl_process
   <|> do
     rk <- asKey runS
-    oParenT
-    es <- event_set
-    cp <- cParenT
-    return (Run es (compRange rk cp))
+    es <- parens event_set
+    return $ Run es $ getRange rk
   <|> do
     ck <- asKey chaosS
-    oParenT
-    es <- event_set
-    cp <- cParenT
-    return (Chaos es (compRange ck cp))
-  <|> do
-    dk <- asKey divS
-    return (Div (getRange dk))
-  <|> do
-    sk <- asKey stopS
-    return (Stop (getRange sk))
-  <|> do
-    sk <- asKey skipS
-    return (Skip (getRange sk))
+    es <- parens event_set
+    return $ Chaos es $ getRange ck
+  <|> fmap (Div . getRange) (asKey divS)
+  <|> fmap (Stop . getRange) (asKey stopS)
+  <|> fmap (Skip . getRange) (asKey skipS)
+
 
 -- | Parse a process name which can be a simple one or a fully qualified one.
 process_name :: AParser st FQ_PROCESS_NAME
@@ -169,10 +166,7 @@ simple_process_name = var
 -- | Parse a fully qualified process name
 fq_process_name :: AParser st FQ_PROCESS_NAME
 fq_process_name = do
-    oParenT
-    asKey processS
-    (pn, params, comms) <- procNameWithParamsAndComms
-    cParenT
+    (pn, params, comms) <- parens (asKey processS >> procNameWithParamsAndComms)
     return $ PARSED_FQ_PROCESS_NAME pn params comms
 
 {- | Parse a process name with parameter sorts and communications set (no semi
@@ -182,11 +176,7 @@ procNameWithParamsAndComms :: AParser st
                               (SIMPLE_PROCESS_NAME, PROC_ARGS, PROC_ALPHABET)
 procNameWithParamsAndComms = do
     pn <- simple_process_name
-    parms <- option [] $ do
-        try oParenT
-        parms <- commaSep1 cspSortId
-        cParenT
-        return parms
+    parms <- optionL $ parenList cspSortId
     colonT
     cts <- comm_type `sepBy` commaT
     return (pn, parms, ProcAlphabet cts (getRange cts))
@@ -199,12 +189,7 @@ comm_type = var
 
 -- List of arguments to a named process
 procArgs :: AParser st [TERM ()]
-procArgs = do
-    oParenT
-    es <- commaSep1 (CASL.Formula.term cspKeywords)
-    cParenT
-    return es
-  <|> return []
+procArgs = optionL $ parenList $ CASL.Formula.term cspKeywords
 
 event_set :: AParser st EVENT_SET
 event_set = do
