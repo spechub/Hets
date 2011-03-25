@@ -24,7 +24,8 @@ import CASL.Formula
 import CASL.OpItem
 
 modal_reserved_words :: [String]
-modal_reserved_words = diamondS : termS : rigidS : flexibleS : modalityS : [modalitiesS]
+modal_reserved_words =
+  diamondS : termS : rigidS : flexibleS : modalityS : [modalitiesS]
 
 modalFormula :: AParser st M_FORMULA
 modalFormula =
@@ -85,10 +86,10 @@ mItem pr = do
        (as, cs) <- separatedBy (annoParser pr) anComma
        let ps = catRange $ c : cs
        do o <- oBraceT
-          (fs, qs) <- annoParser (formula modal_reserved_words)
-                      `separatedBy` anSemi
+          (fs, q) <- auxItemList modal_reserved_words []
+                      (formula modal_reserved_words) (,)
           p <- cBraceT
-          return (as, fs, ps `appRange` toRange o qs p)
+          return (as, fs, ps `appRange` q `appRange` toRange o [] p)
         <|> return (as, [], ps)
 
 instance AParsable M_BASIC_ITEM where

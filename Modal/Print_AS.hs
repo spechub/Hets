@@ -20,18 +20,17 @@ import Common.Doc
 import Common.DocUtils
 import Modal.AS_Modal
 import Modal.ModalSign
-import CASL.AS_Basic_CASL (FORMULA(..))
+import CASL.AS_Basic_CASL (FORMULA (..))
 import CASL.ToDoc
 
 printFormulaOfModalSign :: Pretty f => (FORMULA f -> FORMULA f)
                         -> [[Annoted (FORMULA f)]] -> Doc
 printFormulaOfModalSign sim =
-    vcat . map (\ tf -> fsep $ punctuate semi
-                          $ map (printAnnoted $ pretty . sim) tf)
+    vcat . map (sepBySemis . map (printAnnoted $ pretty . sim))
 
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
-        cat [keyword modalityS <+> semiAnnos pretty is
+        cat [keyword modalityS <+> ppWithCommas is
             , space <> specBraces (semiAnnos pretty fs)]
     pretty (Term_mod_decl ss fs _) =
         cat [keyword termS <+> keyword modalityS <+> semiAnnos pretty ss
@@ -76,29 +75,27 @@ printModalSign sim s =
     $+$
     printSetMap (keyword rigidS <+> keyword predS) space (rigidPreds s)
     $+$ (if Map.null ms then empty else
-        cat [keyword modalitiesS <+> (fsep $ punctuate semi $
-            map sidDoc (Map.keys ms))
+        cat [keyword modalitiesS <+> sepBySemis (map sidDoc $ Map.keys ms)
             , specBraces (printFormulaOfModalSign sim $ Map.elems ms)])
     $+$ (if Map.null tms then empty else
-        cat [keyword termS <+> keyword modalityS <+> (fsep $ punctuate semi $
-                map idDoc (Map.keys tms))
+        cat [keyword termS <+> keyword modalityS <+> sepBySemis
+                (map idDoc $ Map.keys tms)
             , specBraces (printFormulaOfModalSign sim $ Map.elems tms)])
 
 condParensInnerF :: Pretty f => (FORMULA f -> Doc)
-                    -> (Doc -> Doc)    -- ^ a function that surrounds
-                                       -- the given Doc with appropiate
-                                       -- parens
+                    -> (Doc -> Doc)    {- ^ a function that surrounds
+                                       the given Doc with appropiate parens -}
                     -> FORMULA f -> Doc
 condParensInnerF pf parens_fun f =
     case f of
     Quantification _ _ _ _ -> f'
-    True_atom _            -> f'
-    False_atom _           -> f'
-    Predication _ _ _      -> f'
-    Definedness _ _        -> f'
-    Existl_equation _ _ _  -> f'
-    Strong_equation _ _ _  -> f'
-    Membership _ _ _       -> f'
-    ExtFORMULA _           -> f'
-    _                      -> parens_fun f'
+    True_atom _ -> f'
+    False_atom _ -> f'
+    Predication _ _ _ -> f'
+    Definedness _ _ -> f'
+    Existl_equation _ _ _ -> f'
+    Strong_equation _ _ _ -> f'
+    Membership _ _ _ -> f'
+    ExtFORMULA _ -> f'
+    _ -> parens_fun f'
     where f' = pf f
