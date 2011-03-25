@@ -23,7 +23,7 @@ import Common.XUpdate (getAttrVal)
 import Comorphisms.LogicGraph (logicGraph)
 
 import Logic.ExtSign (ext_empty_signature)
-import Logic.Logic (AnyLogic (..))
+import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
 import Logic.Prover (noSens)
 import Logic.Grothendieck
 
@@ -35,7 +35,6 @@ import Data.Maybe (fromMaybe)
 
 import Text.XML.Light
 
-
 -- | for faster access, some elements attributes are stored alongside
 -- as a String
 type NamedNode = (String,Element)
@@ -44,6 +43,18 @@ data NamedLink = Link { src :: String
                       , trg :: String
                       , srcNode :: Maybe (LNode DGNodeLab)
                       , element :: Element }
+
+linkTypeStr :: NamedLink -> String
+linkTypeStr (Link _ _ _ el) = case findChild (unqual "Type") el of
+  Nothing -> error "FromXml.linkTypeStr: Links type field is missing!"
+  Just tp -> strContent tp
+
+
+-- | returns a String representation of a list of links showing their
+-- source and target nodes.
+printLinks :: [NamedLink] -> String
+printLinks = let show' l = src l ++ " -> " ++ trg l in
+  unlines . (map show')
 
 
 -- | main function; receives a FilePath and calls fromXml upon that path,
@@ -78,48 +89,23 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     nodes = extractNodeElements el
     (defLinks, thmLinks) = extractLinkElements el
     (dg', depNodes) = initialiseNodes emptyTheory nodes defLinks dg
-    in (computeDGraphTheories Map.empty . insertThmLinks lg thmLinks .
-      insertNodesAndDefLinks lg depNodes defLinks) dg'
+    in ( computeDGraphTheories Map.empty
+       . insertThmLinks lg thmLinks
+       . insertNodesAndDefLinks lg depNodes defLinks
+       ) dg'
 
 
--- | All nodes are taken from the xml-element. Then, the name-attribute is
--- looked up and stored alongside the node for easy access. Nodes with no names
--- are ignored.
-extractNodeElements :: Element -> [NamedNode]
-extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
-  f e r = case getAttrVal "name" e of
-            Just name -> (name, e) : r
-            Nothing -> r
-
-
--- | All links are taken from the xml-element and stored alongside their source
--- and target information. The links are then partitioned depending on if they
--- are theorem or definition links.
-extractLinkElements :: Element -> ([NamedLink],[NamedLink])
-extractLinkElements = partition isDef . foldr f [] . 
-                    findChildren (unqual "DGLink") where
-  f e r = case getAttrVal "source" e of
-            Just sr -> case getAttrVal "target" e of
-              Just tr -> (Link sr tr Nothing e) : r
-              Nothing -> r
-            Nothing -> r
-  isDef l = case findChild (unqual "Type") (element l) of
-              Just tp -> isInfixOf "Def" $ strContent tp
-              Nothing -> error 
-                "FromXml.extractLinkElements: Links type field is missing!"
-
-
--- | All nodes that do not have dependencies via the links are processed at the
--- beginning and written into the DGraph. Returns the resulting DGraph and the
--- list of nodes that have not been stored (i.e. have dependencies). 
-initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph 
-                -> (DGraph,[NamedNode])
-initialiseNodes gt nodes links dg = let 
-  targets = map trg links
-  -- all nodes that are not targeted by any links are considered independent
-  (dep, indep) = partition ((`elem` targets) . fst) nodes
-  dg' = foldr (insertNode gt) dg indep
-  in (dg',dep)
+-- TODO: Maybe the node has to be updated as well. Ask Christian about it..
+insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> DGraph
+insertThmLinks lg links dg = foldr insert' dg links where
+  insert' l dg' = let
+    (i,morph) = prepareLink lg dg l
+    (j,_) = fromMaybe (error "FromXml.insertThmLinks: Node not found")
+          $ findNodeByName (trg l) dg'
+    lType = if isInfixOf "Global" $ linkTypeStr l
+        then globalThm
+        else localThm
+    in insertLink i j lType morph dg'
 
 
 -- | main loop: in every step, all links are collected of which the source node
@@ -137,29 +123,16 @@ insertNodesAndDefLinks lg nodes links dg = let
         ++ printLinks lftL
 
 
-insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> DGraph
-insertThmLinks = undefined
-
-
 -- | Help function for insertNodesAndDefLinks. Given a list of links, it
--- partitions the links depending on if their source has been processed.
+-- partitions the links depending on if they can be processed in one step.
 splitLinks :: DGraph -> [NamedLink] -> ([NamedLink],[NamedLink])
-splitLinks dg = killMultTrg . foldr partition' ([],[]) where
-  partition' l (r,r') = case getNodeByName (src l) dg of
+splitLinks dg = killMultTrg . foldr partiSrc ([],[]) where
+  partiSrc l (r,r') = case findNodeByName (src l) dg of
     Nothing -> (r, l:r')
     dgn -> (l { srcNode = dgn }:r, r')
-  -- if a link targets a node that is also targeted by another link which
-  -- cannot be processed at this step, the first link is also appended.
   killMultTrg (hasSrc,noSrc) = let noSrcTrgs = map trg noSrc in
     foldr (\l (r,r') -> if elem (trg l) noSrcTrgs
       then (r, l:r') else (l:r, r')) ([],noSrc) hasSrc
-
-
--- | returns a String representation of a list of links showing their
--- source and target nodes.
-printLinks :: [NamedLink] -> String
-printLinks = let show' l = src l ++ " -> " ++ trg l in
-  unlines . (map show')
 
 
 -- | Help function for insertNodesAndDefLinks. Given the currently processable
@@ -184,24 +157,48 @@ iterateNodes lg (x@(name,_):xs) links dg =
 
 insSinglTrg :: LogicGraph -> NamedNode -> NamedLink -> DGraph -> DGraph
 insSinglTrg lg x l dg = let
-  (i,morph) = prepareLink lg l
+  (i,morph) = prepareLink lg dg l
   (j,dg') = insertNode2 morph x dg
   in insertLink i j globalDef morph dg'
 
 
 insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
 insMultTrg lg x ls dg = let
-  (h:t) = map (prepareLink lg) ls
+  (h:t) = map (prepareLink lg dg) ls
   morph = foldr comp' (snd h) t where
-    comp' (_,m1) m2 = propagateErrors "" $ compInclusion lg m1 m2
+    comp' (_,m1) m2 = propagateErrors "FromXml.insMultTrg:" 
+                    $ composeMorphisms m1 m2
   (j,dg') = insertNode2 morph x dg
   insert' (i,m) = insertLink i j globalDef m
   in foldr insert' dg' $ (h:t)
 
 
-prepareLink :: LogicGraph -> NamedLink -> (Graph.Node, GMorphism)
-prepareLink lg l = let
-  (i,lbl) = fromMaybe (error "") $ srcNode l
+-- TODO: fix here!
+insertLink :: Graph.Node -> Graph.Node -> DGLinkType -> GMorphism -> DGraph
+           -> DGraph
+insertLink i j lType morph = 
+-- at this point, i get an error message:
+-- "Static/GTheory.hs:168:11-16: Assertion failed"
+-- -- v -- -- v -- -- v -- v -- -- v -- -- v -- --
+ insEdgeDG (i,j, defDGLink morph lType SeeTarget)
+
+
+
+insertNode2 :: GMorphism -> NamedNode -> DGraph -> (Graph.Node, DGraph)
+insertNode2 gm x dg = let
+  lbl = mkDGNodeLab g_th x
+  g_th = case cod gm of
+    G_sign lid sign sId -> noSensGTheory lid sign sId
+  n = getNewNodeDG dg                         
+  in (n, insLNodeDG (n,lbl) dg)
+
+
+prepareLink :: LogicGraph -> DGraph -> NamedLink -> (Graph.Node, GMorphism)
+prepareLink lg dg l = let
+  (i,lbl) = case srcNode l of
+    Nothing -> fromMaybe (error "FromXml.prepareLink: source node not found")
+            $ findNodeByName (src l) dg
+    Just ln -> ln
   sign1 = signOf $ dgn_theory lbl
   morph = getLinkMorphism lg sign1 l
   in (i,morph)
@@ -209,29 +206,32 @@ prepareLink lg l = let
 
 getLinkMorphism :: LogicGraph -> G_sign -> NamedLink -> GMorphism
 getLinkMorphism lg s1 l = case findChild (unqual "GMorphism") (element l) of
+    Nothing -> error $
+      "FromXml.getLinkMorphism: Link has no Morphism!" ++ printLinks [l]
     Just mor -> let
       nm = fromMaybe (error "FromXml.getLinkMorphism: No name attribute") 
          $ getAttrVal "name" mor
       symbs = parseSymbolMap $ findChildren (unqual "map") mor
-      in propagateErrors "" $ getGMorphism lg s1 nm symbs
-    Nothing -> error "FromXml.getLinkMorphism: Link has no Morphism!" 
-
+      in propagateErrors "FromXml.getLinkMorphism:" 
+         $ getGMorphism lg s1 nm symbs
+    
   
 parseSymbolMap :: [Element] -> String
 parseSymbolMap = intercalate ", " . map mkStr where
   mkStr = intercalate " |-> " . map strContent . elChildren
 
 
-insertLink :: Graph.Node -> Graph.Node -> DGLinkType -> GMorphism -> DGraph -> DGraph
-insertLink i j lType morph = 
-  insEdgeDG (i,j, defDGLink morph lType SeeTarget)
-
-
-insertNode2 :: GMorphism -> NamedNode -> DGraph -> (Graph.Node, DGraph)
-insertNode2 gm x dg = let g_th = undefined -- TODO: get proper G_theory from GMorphism
-                          lbl = mkDGNodeLab g_th x
-                          n = getNewNodeDG dg
-  in (n, insLNodeDG (n,lbl) dg)
+-- | All nodes that do not have dependencies via the links are processed at the
+-- beginning and written into the DGraph. Returns the resulting DGraph and the
+-- list of nodes that have not been stored (i.e. have dependencies). 
+initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph 
+                -> (DGraph,[NamedNode])
+initialiseNodes gt nodes links dg = let 
+  targets = map trg links
+  -- all nodes that are not targeted by any links are considered independent
+  (dep, indep) = partition ((`elem` targets) . fst) nodes
+  dg' = foldr (insertNode gt) dg indep
+  in (dg',dep)
 
 
 insertNode :: G_theory -> NamedNode -> DGraph -> DGraph
@@ -243,14 +243,38 @@ insertNode gt x dg = let lbl = mkDGNodeLab gt x
 -- | A Node is looked up via its name in the DGraph. Returns the node only
 -- if one single node is found for the respective name, otherwise an error
 -- is thrown.
-getNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
-getNodeByName s dg = case lookupNodeByName s dg of
+findNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
+findNodeByName s dg = case lookupNodeByName s dg of
   [n] -> Just n
   [] -> Nothing
   _ -> error $ 
-    "FromXml.getNodeByName: ambiguous occurence for " ++ s ++ "!"
+    "FromXml.findNodeByName: ambiguous occurence for " ++ s ++ "!"
 
  
+-- | All nodes are taken from the xml-element. Then, the name-attribute is
+-- looked up and stored alongside the node for easy access. Nodes with no names
+-- are ignored.
+extractNodeElements :: Element -> [NamedNode]
+extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
+  f e r = case getAttrVal "name" e of
+            Just name -> (name, e) : r
+            Nothing -> r
+
+
+-- | All links are taken from the xml-element and stored alongside their source
+-- and target information. The links are then partitioned depending on if they
+-- are theorem or definition links.
+extractLinkElements :: Element -> ([NamedLink],[NamedLink])
+extractLinkElements = partition isDef . foldr f [] . 
+                    findChildren (unqual "DGLink") where
+  f e r = case getAttrVal "source" e of
+            Just sr -> case getAttrVal "target" e of
+              Just tr -> (Link sr tr Nothing e) : r
+              Nothing -> r
+            Nothing -> r
+  isDef l = isInfixOf "Def" $ linkTypeStr l
+              
+
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
 mkDGNodeLab gt (name, el) = case extractSpecString el of
