@@ -17,7 +17,6 @@ import CASL.AS_Basic_CASL (SORT, TERM)
 import CASL.ToDoc
 import Common.Doc
 import Common.DocUtils
-import Common.Id
 import Common.Keywords (elseS, ifS, thenS)
 import CspCASL.AS_CspCASL
 import CspCASL.AS_CspCASL_Process
@@ -55,9 +54,8 @@ printProcessName fqPn =
         parens $ cat [text processS <+> text (show n), printProcProfile pf]
   in case fqPn of
     PROCESS_NAME pn -> text $ show pn
-    PARSED_FQ_PROCESS_NAME pn argSorts (ProcAlphabet comms' _) ->
-      f pn $ ProcProfile argSorts $ Set.fromList
-        $ map (CommTypeSort . simpleIdToId) comms'
+    PARSED_FQ_PROCESS_NAME pn argSorts (ProcAlphabet comms) ->
+      f pn $ ProcProfile argSorts $ Set.fromList comms
     FQ_PROCESS_NAME pn profile -> f pn profile
 
 instance Pretty CHANNEL_DECL where
@@ -89,7 +87,7 @@ instance Pretty PROC_ALPHABET where
     pretty = printProcAlphabet
 
 printProcAlphabet :: PROC_ALPHABET -> Doc
-printProcAlphabet (ProcAlphabet commTypes _) = ppWithCommas commTypes
+printProcAlphabet (ProcAlphabet commTypes) = ppWithCommas commTypes
 
 instance Pretty PROCESS where
     pretty = printProcess

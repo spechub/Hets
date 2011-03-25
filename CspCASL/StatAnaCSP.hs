@@ -28,7 +28,7 @@ import CASL.ToDoc ()
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
-import Common.Id (getRange, Id, nullRange, simpleIdToId)
+import Common.Id
 import Common.Lib.State
 import Common.ExtSign
 
@@ -153,10 +153,10 @@ findProfileForProcName :: FQ_PROCESS_NAME -> Int -> ProcNameMap ->
                           State CspCASLSign (Maybe ProcProfile)
 findProfileForProcName pn numParams procNameMap =
   case pn of
-    FQ_PROCESS_NAME _ _ ->
-      -- We should not try to find a profile for a fully qualified process name
-      error $ "CspCASL.StatAnaCsp.findProfileForProcName: Process name"
-              ++ " already fully qualified: " ++ show pn
+    FQ_PROCESS_NAME pn' (ProcProfile argSorts comms) ->
+      findProfileForProcName
+        (PARSED_FQ_PROCESS_NAME pn' argSorts $ ProcAlphabet $ Set.toList comms)
+        numParams procNameMap
     PARSED_FQ_PROCESS_NAME pn' argSorts comms -> do
       profile <- anaProcAlphabet argSorts comms
       let profiles = Map.findWithDefault Set.empty pn' procNameMap
@@ -464,7 +464,7 @@ anaEventSet eventSet =
       EventSet es r ->
           do sig <- get
              -- fqEsElems is built the reversed order for efficiency.
-             (comms, fqEsElems) <- foldM (anaCommType sig)
+             (comms, fqEsElems) <- foldM (anaCOMM_TYPE sig)
                                    (Set.empty, []) es
              vds <- gets envDiags
              put sig { envDiags = vds }
@@ -479,7 +479,7 @@ identifiers) to yeild a list of sorts and typed channel names. We also check
 the parameter sorts and actually construct a process profile. -}
 anaProcAlphabet :: PROC_ARGS -> PROC_ALPHABET ->
                    State CspCASLSign ProcProfile
-anaProcAlphabet argSorts (ProcAlphabet commTypes _) = do
+anaProcAlphabet argSorts (ProcAlphabet commTypes) = do
   sig <- get
   checkSorts argSorts {- check argument sorts are known build alphabet: set of
       CommType values. We do not need the fully qualfied commTypes that are
@@ -492,9 +492,9 @@ anaProcAlphabet argSorts (ProcAlphabet commTypes _) = do
 {- | Statically analyse a CspCASL communication type. Returns the
 extended alphabet and the extended list of fully qualified event
 set elements - [CommType]. -}
-anaCommType :: CspCASLSign -> (CommAlpha, [CommType]) -> COMM_TYPE ->
-               State CspCASLSign (CommAlpha, [CommType])
-anaCommType sig (alpha, fqEsElems) ct = let ctSort = simpleIdToId ct in
+anaCOMM_TYPE :: CspCASLSign -> (CommAlpha, [CommType]) -> COMM_TYPE
+  -> State CspCASLSign (CommAlpha, [CommType])
+anaCOMM_TYPE sig (alpha, fqEsElems) ct = let ctSort = simpleIdToId ct in
     if Set.member ctSort (sortSet sig)
       then {- ct is a sort name; insert sort into alpha and add a sort
            to the fully qualified event set elements. -}
@@ -516,6 +516,43 @@ anaCommType sig (alpha, fqEsElems) ct = let ctSort = simpleIdToId ct in
                     into alpha and add typed channel to the fully
                     qualified event set elemenets. -}
               in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
+
+{- | Statically analyse a CspCASL communication type. Returns the
+extended alphabet and the extended list of fully qualified event
+set elements - [CommType]. -}
+anaCommType :: CspCASLSign -> (CommAlpha, [CommType]) -> CommType ->
+               State CspCASLSign (CommAlpha, [CommType])
+anaCommType sig (alpha, fqEsElems) ct =
+  let res = return (Set.insert ct alpha, ct : fqEsElems)
+      old = return (alpha, fqEsElems)
+  in case ct of
+  CommTypeSort sid
+    | isSimpleId sid
+    -> anaCOMM_TYPE sig (alpha, fqEsElems) $ idToSimpleId sid
+    | Set.member sid (sortSet sig) -> res
+    | otherwise -> do
+           addDiags [mkDiag Error "unknown communication sort" sid]
+           old
+  CommTypeChan (TypedChanName ch sid) ->
+    if Set.member sid (sortSet sig) then
+    case Set.toList $ Map.findWithDefault Set.empty ch $ chans
+               $ extendedInfo sig of
+      [] -> do
+        addDiags [mkDiag Error "unknown channel" ch]
+        old
+      ts -> case filter (\ s -> s == sid || Set.member sid
+              (subsortsOf s sig) || Set.member s (subsortsOf sid sig)) ts of
+        [] -> do
+          let mess = "found no suitably sort '"
+                ++ shows sid "' for channel"
+          addDiags [mkDiag Error mess ch]
+          old
+        rs -> let tcs = map (CommTypeChan . TypedChanName ch) rs
+              in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
+    else do
+      let mess = "unknow sort '" ++ shows sid "' for channel"
+      addDiags [mkDiag Error mess ch]
+      old
 
 -- Static analysis of events
 

@@ -24,7 +24,6 @@ module CspCASL.Parse_CspCASL_Process
   , event_set
   , process_name
   , simple_process_name
-  , procNameWithParamsAndComms
   , var
   , commType
   , bracedList
@@ -171,33 +170,11 @@ prim_proc = do
 
 -- | Parse a process name which can be a simple one or a fully qualified one.
 process_name :: AParser st FQ_PROCESS_NAME
-process_name = fq_process_name <|> fmap PROCESS_NAME simple_process_name
+process_name = qualProc <|> fmap PROCESS_NAME simple_process_name
 
 -- | Parse a simple process name
 simple_process_name :: AParser st SIMPLE_PROCESS_NAME
 simple_process_name = var
-
-{- | Parse a fully qualified process name. Instead qualProc should be used
-and static analysis should be adjusted. The variant PARSED_FQ_PROCESS_NAME
-could be deleted then. -}
-fq_process_name :: AParser st FQ_PROCESS_NAME
-fq_process_name = do
-    try (oParenT >> asKey processS)
-    (pn, params, comms) <- procNameWithParamsAndComms
-    cParenT
-    return $ PARSED_FQ_PROCESS_NAME pn params comms
-
-{- | Parse a process name with parameter sorts and communications set (no semi
-colon) e.g., 'P(S,T): S,T'. This is more to reconise a declaration or fully
-qualified process. This is not to recongnise the actual parameter terms. -}
-procNameWithParamsAndComms :: AParser st
-                              (SIMPLE_PROCESS_NAME, PROC_ARGS, PROC_ALPHABET)
-procNameWithParamsAndComms = do
-    pn <- simple_process_name
-    parms <- optionL $ parenList cspSortId
-    colonT
-    cts <- comm_type `sepBy` commaT
-    return (pn, parms, ProcAlphabet cts (getRange cts))
 
 channel_name :: AParser st CHANNEL_NAME
 channel_name = var
@@ -335,8 +312,8 @@ bracedList :: AParser st [CommType]
 bracedList = braces commTypeList
 
 -- | parse a possibly empty set of comm types possibly within braces
-alphabet :: AParser st CommAlpha
-alphabet = fmap Set.fromList $ commTypeList <|> bracedList
+alphabet :: AParser st [CommType]
+alphabet = commTypeList <|> bracedList
 
 -- | possibly sorted arguments
 formalProcArgs :: AParser st [(SORT, Maybe SORT)]
@@ -346,10 +323,10 @@ formalProcArgs = optionL $ parens manySortedVars
 procHead :: AParser st (SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)])
 procHead = pair simple_process_name formalProcArgs
 
-procTail :: AParser st CommAlpha
+procTail :: AParser st [CommType]
 procTail = colonT >> alphabet
 
-procDecl :: AParser st ((SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)]), CommAlpha)
+procDecl :: AParser st ((SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)]), [CommType])
 procDecl = pair procHead procTail
 
 qualProc :: AParser st FQ_PROCESS_NAME
@@ -359,17 +336,20 @@ qualProc = do
     ss <- if all (isNothing . snd) fs then return $ map fst fs else
        fail "expected simple sort list in qualified process"
     cParenT
-    return $ FQ_PROCESS_NAME pn $ ProcProfile ss al
+    return $ PARSED_FQ_PROCESS_NAME pn ss $ ProcAlphabet al
 
 procDeclOrEq :: AParser st
-  (FQ_PROCESS_NAME, [(SORT, Maybe SORT)], Maybe CommAlpha)
+  (FQ_PROCESS_NAME, [(SORT, Maybe SORT)], Maybe [CommType], Bool)
 procDeclOrEq = do
-    fq <- qualProc
+    PARSED_FQ_PROCESS_NAME pn ss (ProcAlphabet al) <- qualProc
     as <- formalProcArgs
     ma <- optionMaybe procTail
     equalT
-    return (fq, as, ma)
+    return (FQ_PROCESS_NAME pn (ProcProfile ss $ Set.fromList al), as, ma, True)
   <|> do
     (pn, as) <- procHead
-    ma <- fmap Just procTail <|> fmap (const Nothing) equalT
-    return (PROCESS_NAME pn, as, ma)
+    ma <- optionMaybe procTail
+    e <- case ma of
+           Nothing -> fmap Just equalT
+           Just _ -> optionMaybe equalT
+    return (PROCESS_NAME pn, as, ma, isJust e)

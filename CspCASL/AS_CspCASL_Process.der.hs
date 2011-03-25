@@ -93,7 +93,7 @@ type SIMPLE_PROCESS_NAME = SIMPLE_ID
 
 type PROC_ARGS = [SORT]
 
-data PROC_ALPHABET = ProcAlphabet [COMM_TYPE] Range
+data PROC_ALPHABET = ProcAlphabet [CommType]
                      deriving (Show, Ord, Eq)
 
 {- | Fully qualified process names are indexed by parameter sorts, and a
