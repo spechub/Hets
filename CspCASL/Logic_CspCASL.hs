@@ -90,7 +90,7 @@ instance Show a => Syntax (GenCspCASL a)
     where
       parse_symb_items (GenCspCASL _) = Just cspSymbItems
       parse_symb_map_items (GenCspCASL _) = Just cspSymbMapItems
-      parse_basic_spec (GenCspCASL _) = Just $ basicSpec csp_casl_keywords
+      parse_basic_spec (GenCspCASL _) = Just $ basicSpec cspKeywords
 
 -- lattices (for sublogics) missing
 

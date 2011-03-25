@@ -57,33 +57,34 @@ svar_sortS = "::"
 -- | starting CSP-CASL keywords
 startCspKeywords :: [String]
 startCspKeywords =
-  [ channelS,
-    channelS ++ "s",
-    processS,
-    processS ++ "es" ]
+  [ channelS
+  , channelS ++ "s"
+  , processS
+  , processS ++ "es" ]
 
 -- | Reserved keywords specific to CSP-CASL.
-csp_casl_keywords :: [String]
-csp_casl_keywords = startCspKeywords ++
-  [ sequentialS,
-    interleavingS,
-    synchronousS,
-    genpar_openS,
-    genpar_closeS,
-    alpar_openS,
-    alpar_sepS,
-    alpar_closeS,
-    external_choiceS,
-    internal_choiceS,
-    prefix_procS,
-    hiding_procS,
-    ren_proc_openS,
-    ren_proc_closeS,
-    runS,
-    chaosS,
-    divS,
-    skipS,
-    stopS,
-    chan_sendS,
-    chan_receiveS,
-    svar_sortS ]
+cspKeywords :: [String]
+cspKeywords = startCspKeywords ++
+  [ sequentialS
+  , ";;" -- we add this as alternative sequential composition operator
+  , interleavingS
+  , synchronousS
+  , genpar_openS
+  , genpar_closeS
+  , alpar_openS
+  , alpar_sepS
+  , alpar_closeS
+  , external_choiceS
+  , internal_choiceS
+  , prefix_procS
+  , hiding_procS
+  , ren_proc_openS
+  , ren_proc_closeS
+  , runS
+  , chaosS
+  , divS
+  , skipS
+  , stopS
+  , chan_sendS
+  , chan_receiveS
+  , svar_sortS ]

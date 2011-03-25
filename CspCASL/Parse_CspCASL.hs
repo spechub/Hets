@@ -29,7 +29,7 @@ instance AParsable CspBasicExt where
 
 cspBasicExt :: AParser st CspBasicExt
 cspBasicExt =
-  itemList csp_casl_keywords channelS (const chanDecl) (\ l _ -> Channels l)
+  itemList cspKeywords channelS (const chanDecl) (\ l _ -> Channels l)
   <|> do
     p <- asKey processS
     auxItemList (startCspKeywords ++ startKeyword)
@@ -39,7 +39,7 @@ chanDecl :: AParser st CHANNEL_DECL
 chanDecl = do
   vs <- commaSep1 channel_name
   colonT
-  es <- csp_casl_sort
+  es <- cspSortId
   return (ChannelDecl vs es)
 
 {- Turn an unnamed singleton process into a declaration/equation.  THIS WHOLE

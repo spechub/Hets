@@ -14,6 +14,7 @@ module CspCASL.SymbItems where
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 import CspCASL.Print_CspCASL
+import CspCASL.Parse_CspCASL_Process
 
 import CASL.AS_Basic_CASL
 import CASL.SymbolParser
@@ -83,12 +84,6 @@ instance Pretty CspSymbItems where
 instance Pretty CspSymbMapItems where
   pretty (CspSymbMapItems k l) = pluralCspSympKind k l <+> ppWithCommas l
 
-parseCspId :: AParser st Id
-parseCspId = parseId csp_casl_keywords
-
-cspSortId :: AParser st SORT
-cspSortId = sortId csp_casl_keywords
-
 commType :: AParser st CommType
 commType = do
   s <- cspSortId
@@ -112,7 +107,7 @@ cspSymb =
     do i <- parseCspId
        do
          _ <- colonST
-         t <- fmap CaslType (opOrPredType csp_casl_keywords) <|>
+         t <- fmap CaslType (opOrPredType cspKeywords) <|>
             fmap (ProcType . ProcProfile []) commAlpha
          return $ CspSymb i $ Just t
         <|> do
