@@ -11,16 +11,13 @@ Portability :  portable
 Parser for CSP-CASL specifications.
 -}
 
-module CspCASL.Parse_CspCASL (singleProcess) where
+module CspCASL.Parse_CspCASL () where
 
 import Text.ParserCombinators.Parsec
-import Common.AS_Annotation (Annoted (..), emptyAnno)
 import Common.AnnoState
-import Common.Id
 import Common.Lexer
 
 import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 import CspCASL.Parse_CspCASL_Process
 
@@ -41,18 +38,6 @@ chanDecl = do
   colonT
   es <- cspSortId
   return (ChannelDecl vs es)
-
-{- Turn an unnamed singleton process into a declaration/equation.  THIS WHOLE
-functions seems odd. Why would we want a fixed process "P" which communicates
-over sort "singletonProcessSort". BUG? -}
-singleProcess :: PROCESS -> [Annoted PROC_ITEM]
-singleProcess p =
-    map emptyAnno [Proc_Decl singletonProcessName [] singletonProcessAlpha,
-     Proc_Eq (ParmProcname (PROCESS_NAME singletonProcessName) []) p]
-        where singletonProcessName = mkSimpleId "P"
-              singletonProcessAlpha =
-                  ProcAlphabet [mkSimpleId "singletonProcessSort"]
-                                nullRange
 
 procItem :: AParser st PROC_ITEM
 procItem = try procDecl <|> procEq

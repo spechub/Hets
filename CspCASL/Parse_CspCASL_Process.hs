@@ -25,21 +25,27 @@ module CspCASL.Parse_CspCASL_Process
   , simple_process_name
   , procNameWithParamsAndComms
   , var
+  , commType
+  , bracedList
+  , procDeclOrEq
   ) where
 
-import Text.ParserCombinators.Parsec (sepBy, try, (<|>), (<?>))
+import Text.ParserCombinators.Parsec
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
 import qualified CASL.Formula
-import Common.AnnoState (AParser, asKey, colonT)
+import Common.AnnoState
 import Common.Id
 import Common.Keywords
-import Common.Lexer (commaSep1, commaT, cParenT, oParenT)
-import Common.Parsec ((<<), optionL)
+import Common.Lexer
+import Common.Parsec
 import Common.Token (parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
+
+import qualified Data.Set as Set
+import Data.Maybe
 
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = cond_proc <|> par_proc
@@ -99,9 +105,12 @@ choice_proc' lp = do
 seq_proc :: AParser st PROCESS
 seq_proc = pref_proc >>= seq_proc'
 
+seqSym :: AParser st Token
+seqSym = asKey sequentialS `notFollowedWith` procDeclOrEq
+
 seq_proc' :: PROCESS -> AParser st PROCESS
 seq_proc' lp = do
-    asKey sequentialS
+    seqSym
     rp <- pref_proc
     seq_proc' (Sequential lp rp (compRange lp rp))
   <|> return lp
@@ -278,3 +287,75 @@ cspSortId = sortId cspKeywords
 
 compRange :: (GetRange a, GetRange b) => a -> b -> Range
 compRange x y = getRange x `appRange` getRange y
+
+-- * parse the beginning of a process declaration or equation
+
+-- | parse many vars with the same sort
+sortedVars :: AParser st [(SORT, Maybe SORT)]
+sortedVars = do
+    is <- commaSep1 cspSortId
+    ms <- optionMaybe $ colonT >> cspSortId
+    let res = return $ map (\ i -> (i, ms)) is
+    case ms of
+      Nothing -> res
+      Just _ -> if all isSimpleId is then res else
+        fail "expecting only simple vars before colon"
+
+-- | parse variables with possibly different sorts
+manySortedVars :: AParser st [(SORT, Maybe SORT)]
+manySortedVars = flat $ sepBy1 sortedVars anSemiOrComma
+
+-- | parse a sort or a sorted channel
+commType :: AParser st CommType
+commType = do
+  s <- cspSortId
+  do
+    colonT
+    r <- cspSortId
+    if isSimpleId s
+      then return $ CommTypeChan $ TypedChanName (idToSimpleId s) r
+      else unexpected $ "sort " ++ show s
+   <|> return (CommTypeSort s)
+
+-- | parse a possibly empty list of comm types
+commTypeList :: AParser st [CommType]
+commTypeList = sepBy commType commaT
+
+-- | parse a possibly empty list of comm types within braces
+bracedList :: AParser st [CommType]
+bracedList = braces commTypeList
+
+-- | parse a possibly empty set of comm types possibly within braces
+alphabet :: AParser st CommAlpha
+alphabet = fmap Set.fromList $ commTypeList <|> bracedList
+
+-- | possibly sorted arguments
+formalProcArgs :: AParser st [(SORT, Maybe SORT)]
+formalProcArgs = optionL $ parens manySortedVars
+
+-- | process name plus formal arguments
+procHead :: AParser st (SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)])
+procHead = pair simple_process_name formalProcArgs
+
+procTail :: AParser st CommAlpha
+procTail = colonT >> alphabet
+
+procDecl :: AParser st ((SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)]), CommAlpha)
+procDecl = pair procHead procTail
+
+procDeclOrEq :: AParser st
+  (FQ_PROCESS_NAME, [(SORT, Maybe SORT)], Maybe CommAlpha)
+procDeclOrEq = do
+    try (oParenT >> asKey processS)
+    ((pn, fs), al) <- procDecl
+    ss <- if all (isNothing . snd) fs then return $ map fst fs else
+       fail "expected simple sort list in qualified process"
+    cParenT
+    as <- formalProcArgs
+    ma <- optionMaybe procTail
+    equalT
+    return (FQ_PROCESS_NAME pn $ ProcProfile ss al, as, ma)
+  <|> do
+    (pn, as) <- procHead
+    ma <- fmap Just procTail <|> fmap (const Nothing) equalT
+    return (PROCESS_NAME pn, as, ma)

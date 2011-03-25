@@ -84,20 +84,6 @@ instance Pretty CspSymbItems where
 instance Pretty CspSymbMapItems where
   pretty (CspSymbMapItems k l) = pluralCspSympKind k l <+> ppWithCommas l
 
-commType :: AParser st CommType
-commType = do
-  s <- cspSortId
-  do
-    colonT
-    r <- cspSortId
-    if isSimpleId s
-      then return $ CommTypeChan $ TypedChanName (idToSimpleId s) r
-      else unexpected $ "sort " ++ show s
-   <|> return (CommTypeSort s)
-
-bracedList :: AParser st [CommType]
-bracedList = braces $ commaSep1 commType
-
 commAlpha :: AParser st CommAlpha
 commAlpha = fmap Set.fromList $ single commType <|> bracedList
 
