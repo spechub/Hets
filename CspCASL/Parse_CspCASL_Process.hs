@@ -17,6 +17,7 @@ module CspCASL.Parse_CspCASL_Process
   , comm_type
   , parens
   , parenList
+  , cspStartKeys
   , cspSortId
   , parseCspId
   , csp_casl_process
@@ -105,8 +106,12 @@ choice_proc' lp = do
 seq_proc :: AParser st PROCESS
 seq_proc = pref_proc >>= seq_proc'
 
+cspStartKeys :: [String]
+cspStartKeys = startCspKeywords ++ startKeyword
+
 seqSym :: AParser st Token
-seqSym = asKey sequentialS `notFollowedWith` procDeclOrEq
+seqSym = asKey sequentialS `notFollowedWith`
+  (forget procDeclOrEq <|> choice (map (forget . asKey) cspStartKeys))
 
 seq_proc' :: PROCESS -> AParser st PROCESS
 seq_proc' lp = do

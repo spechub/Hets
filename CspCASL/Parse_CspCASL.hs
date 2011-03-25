@@ -29,8 +29,7 @@ cspBasicExt =
   itemList cspKeywords channelS (const chanDecl) (\ l _ -> Channels l)
   <|> do
     p <- asKey processS
-    auxItemList (startCspKeywords ++ startKeyword)
-      [p] procItem (\ l _ -> ProcItems l)
+    auxItemList cspStartKeys [p] procItem (\ l _ -> ProcItems l)
 
 chanDecl :: AParser st CHANNEL_DECL
 chanDecl = do
