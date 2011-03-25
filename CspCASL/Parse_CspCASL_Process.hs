@@ -171,16 +171,20 @@ prim_proc = do
 
 -- | Parse a process name which can be a simple one or a fully qualified one.
 process_name :: AParser st FQ_PROCESS_NAME
-process_name = try fq_process_name <|> fmap PROCESS_NAME simple_process_name
+process_name = fq_process_name <|> fmap PROCESS_NAME simple_process_name
 
 -- | Parse a simple process name
 simple_process_name :: AParser st SIMPLE_PROCESS_NAME
 simple_process_name = var
 
--- | Parse a fully qualified process name
+{- | Parse a fully qualified process name. Instead qualProc should be used
+and static analysis should be adjusted. The variant PARSED_FQ_PROCESS_NAME
+could be deleted then. -}
 fq_process_name :: AParser st FQ_PROCESS_NAME
 fq_process_name = do
-    (pn, params, comms) <- parens (asKey processS >> procNameWithParamsAndComms)
+    try (oParenT >> asKey processS)
+    (pn, params, comms) <- procNameWithParamsAndComms
+    cParenT
     return $ PARSED_FQ_PROCESS_NAME pn params comms
 
 {- | Parse a process name with parameter sorts and communications set (no semi
@@ -348,18 +352,23 @@ procTail = colonT >> alphabet
 procDecl :: AParser st ((SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)]), CommAlpha)
 procDecl = pair procHead procTail
 
-procDeclOrEq :: AParser st
-  (FQ_PROCESS_NAME, [(SORT, Maybe SORT)], Maybe CommAlpha)
-procDeclOrEq = do
+qualProc :: AParser st FQ_PROCESS_NAME
+qualProc = do
     try (oParenT >> asKey processS)
     ((pn, fs), al) <- procDecl
     ss <- if all (isNothing . snd) fs then return $ map fst fs else
        fail "expected simple sort list in qualified process"
     cParenT
+    return $ FQ_PROCESS_NAME pn $ ProcProfile ss al
+
+procDeclOrEq :: AParser st
+  (FQ_PROCESS_NAME, [(SORT, Maybe SORT)], Maybe CommAlpha)
+procDeclOrEq = do
+    fq <- qualProc
     as <- formalProcArgs
     ma <- optionMaybe procTail
     equalT
-    return (FQ_PROCESS_NAME pn $ ProcProfile ss al, as, ma)
+    return (fq, as, ma)
   <|> do
     (pn, as) <- procHead
     ma <- fmap Just procTail <|> fmap (const Nothing) equalT
