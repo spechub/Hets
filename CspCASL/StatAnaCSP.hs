@@ -58,6 +58,8 @@ basicAnalysisCspCASL inp@(_, insig, _) = do
   (bs, ExtSign sig syms, sens) <- basicAnaAux inp
   unless (null sens) $
     appendDiags [mkDiag Warning "ignoring CASL sentences" $ map sentence sens]
+  -- check for local top elements in the subsort relation
+  appendDiags $ LocalTop.checkLocalTops $ sortRel sig
   let ext = extendedInfo sig
   return (bs, ExtSign sig $ Set.unions
              $ Set.map caslToCspSymbol syms
@@ -73,19 +75,8 @@ ana_BASIC_CSP :: Ana CspBasicExt CspBasicExt () () CspSign
 ana_BASIC_CSP _ bs = do
   case bs of
     Channels cs -> mapM_ (anaChanDecl . item) cs
-    ProcItems ps ->  mapM_ anaProcItem ps
+    ProcItems ps -> mapM_ anaProcItem ps
   return bs
-
--- Analysis of local top elements
-
-{- | Check a CspCASL signature for local top elements in its subsort
-relation. -}
-checkLocalTops :: State CspCASLSign ()
-checkLocalTops = do
-    sr <- gets sortRel
-    {- Only error will be added if there are any probelms. If there are no
-    problems no errors will be added and hets will continue as normal. -}
-    addDiags $ LocalTop.checkLocalTops sr
 
 -- Static analysis of channel declarations
 
