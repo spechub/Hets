@@ -16,7 +16,6 @@ printing.
 module CspCASL.CspCASL_Keywords where
 
 import Common.Keywords
-import Common.Token (casl_reserved_words)
 
 -- | Keywords identifying beginning of channel declaration part.
 channelS :: String
@@ -55,14 +54,18 @@ chan_receiveS = "?"
 svar_sortS :: String
 svar_sortS = "::"
 
+-- | starting CSP-CASL keywords
+startCspKeywords :: [String]
+startCspKeywords =
+  [ channelS,
+    channelS ++ "s",
+    processS,
+    processS ++ "es" ]
+
 -- | Reserved keywords specific to CSP-CASL.
 csp_casl_keywords :: [String]
-csp_casl_keywords = casl_reserved_words ++
-  [ channelS,
-    channelS ++ sS,
-    processS,
-    processS ++ "es",
-    sequentialS,
+csp_casl_keywords = startCspKeywords ++
+  [ sequentialS,
     interleavingS,
     synchronousS,
     genpar_openS,
