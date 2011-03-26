@@ -313,7 +313,7 @@ bracedList = braces commTypeList
 
 -- | parse a possibly empty set of comm types possibly within braces
 alphabet :: AParser st [CommType]
-alphabet = commTypeList <|> bracedList
+alphabet = bracedList <|> commTypeList
 
 -- | possibly sorted arguments
 formalProcArgs :: AParser st [(SORT, Maybe SORT)]

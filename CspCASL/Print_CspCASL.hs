@@ -45,15 +45,15 @@ instance Pretty ProcProfile where
 
 printProcProfile :: ProcProfile -> Doc
 printProcProfile (ProcProfile sorts commAlpha) =
-    sep [if null sorts then empty else parens $ ppWithCommas sorts
-        , colon <+> ppWithCommas (Set.toList commAlpha)]
+    sep [ printArgs sorts
+        , colon <+> printProcAlphabet (ProcAlphabet $ Set.toList commAlpha)]
 
 printProcessName :: FQ_PROCESS_NAME -> Doc
 printProcessName fqPn =
   let f n pf =
-        parens $ cat [text processS <+> text (show n), printProcProfile pf]
+        parens $ cat [keyword processS <+> pretty n, printProcProfile pf]
   in case fqPn of
-    PROCESS_NAME pn -> text $ show pn
+    PROCESS_NAME pn -> pretty pn
     PARSED_FQ_PROCESS_NAME pn argSorts (ProcAlphabet comms) ->
       f pn $ ProcProfile argSorts $ Set.fromList comms
     FQ_PROCESS_NAME pn profile -> f pn profile
@@ -87,7 +87,9 @@ instance Pretty PROC_ALPHABET where
     pretty = printProcAlphabet
 
 printProcAlphabet :: PROC_ALPHABET -> Doc
-printProcAlphabet (ProcAlphabet commTypes) = ppWithCommas commTypes
+printProcAlphabet (ProcAlphabet commTypes) = case commTypes of
+  [CommTypeSort s] -> pretty s
+  _ -> braces $ ppWithCommas commTypes
 
 instance Pretty PROCESS where
     pretty = printProcess
@@ -140,10 +142,8 @@ printProcess pr = case pr of
 
 instance Pretty CommType where
     pretty (CommTypeSort s) = pretty s
-    pretty (CommTypeChan (TypedChanName c _)) =
-        -- Only show the channel name, why?
-        pretty c
-        -- parens (pretty c <+> comma <+> pretty s)
+    pretty (CommTypeChan (TypedChanName c s)) =
+        pretty c <+> colon <+> pretty s
 
 instance Pretty RENAMING where
     pretty renaming = case renaming of
