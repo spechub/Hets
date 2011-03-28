@@ -11,7 +11,7 @@ Portability :  portable
 Parser for CSP-CASL specifications.
 -}
 
-module CspCASL.Parse_CspCASL () where
+module CspCASL.Parse_CspCASL (cspBasicExt) where
 
 import Text.ParserCombinators.Parsec
 import Common.AS_Annotation
