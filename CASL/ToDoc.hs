@@ -31,6 +31,7 @@ module CASL.ToDoc
     , printPredItem
     , printPredHead
     , printAttr
+    , FormExtension (..)
     ) where
 
 import Common.Id
@@ -42,27 +43,27 @@ import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
-instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_SPEC b s f) where
-    pretty = printBASIC_SPEC pretty pretty pretty
+instance (Pretty b, Pretty s, FormExtension f) => Pretty (BASIC_SPEC b s f)
+  where pretty = printBASIC_SPEC pretty pretty
 
-printBASIC_SPEC :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
+printBASIC_SPEC :: FormExtension f => (b -> Doc) -> (s -> Doc)
                 -> BASIC_SPEC b s f -> Doc
-printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
+printBASIC_SPEC fB fS (Basic_spec l) = case l of
     [] -> specBraces empty
-    _ -> vcat $ map (printAnnoted (printBASIC_ITEMS fB fS fF)) l
+    _ -> vcat $ map (printAnnoted (printBASIC_ITEMS fB fS)) l
 
-instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
-    pretty = printBASIC_ITEMS pretty pretty pretty
+instance (Pretty b, Pretty s, FormExtension f) => Pretty (BASIC_ITEMS b s f)
+  where pretty = printBASIC_ITEMS pretty pretty
 
 typeString :: SortsKind -> [Annoted DATATYPE_DECL] -> String
 typeString sk l = (case sk of
     NonEmptySorts -> typeS
     PossiblyEmptySorts -> etypeS) ++ appendS l
 
-printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
+printBASIC_ITEMS :: FormExtension f => (b -> Doc) -> (s -> Doc)
                  -> BASIC_ITEMS b s f -> Doc
-printBASIC_ITEMS fB fS fF sis = case sis of
-    Sig_items s -> printSIG_ITEMS fS fF s
+printBASIC_ITEMS fB fS sis = case sis of
+    Sig_items s -> printSIG_ITEMS fS s
     Free_datatype sk l _ -> sep [keyword freeS <+> keyword (typeString sk l),
                                  semiAnnos printDATATYPE_DECL l]
     Sort_gen l _ -> case l of
@@ -72,32 +73,32 @@ printBASIC_ITEMS fB fS fF sis = case sis of
              $ sep [keyword generatedS <+> keyword (typeString sk l'),
                     semiAnnos printDATATYPE_DECL l']
          _ -> sep [keyword generatedS, specBraces $ vcat $ map
-              (printAnnoted $ printSIG_ITEMS fS fF) l]
+              (printAnnoted $ printSIG_ITEMS fS) l]
     Var_items l _ -> topSigKey (varS ++ pluralS l) <+> printVarDecls l
     Local_var_axioms l f _ ->
             fsep [fsep $ forallDoc : printVarDeclL l
-                 , printAnnotedBulletFormulas fF f]
-    Axiom_items f _ -> printAnnotedBulletFormulas fF f
+                 , printAnnotedBulletFormulas f]
+    Axiom_items f _ -> printAnnotedBulletFormulas f
     Ext_BASIC_ITEMS b -> fB b
 
-printAnnotedBulletFormulas :: (f -> Doc) -> [Annoted (FORMULA f)] -> Doc
-printAnnotedBulletFormulas fF l = vcat $ case l of
+printAnnotedBulletFormulas :: FormExtension f => [Annoted (FORMULA f)] -> Doc
+printAnnotedBulletFormulas l = vcat $ case l of
     [] -> []
-    _ -> let pp = addBullet . printFormula fF in
+    _ -> let pp = addBullet . printFormula in
          map (printAnnoted pp) (init l)
          ++ [printSemiAnno pp False $ last l] -- use True for HasCASL
 
-instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
-    pretty = printSIG_ITEMS pretty pretty
+instance (Pretty s, FormExtension f) => Pretty (SIG_ITEMS s f) where
+    pretty = printSIG_ITEMS pretty
 
-printSIG_ITEMS :: (s -> Doc) -> (f -> Doc) -> SIG_ITEMS s f -> Doc
-printSIG_ITEMS fS fF sis = case sis of
+printSIG_ITEMS :: FormExtension f => (s -> Doc) -> SIG_ITEMS s f -> Doc
+printSIG_ITEMS fS sis = case sis of
     Sort_items sk l _ -> topSigKey ((case sk of
         NonEmptySorts -> sortS
         PossiblyEmptySorts -> esortS) ++ pluralS l) <+>
-         semiAnnos (printSortItem fF) l
+         semiAnnos printSortItem l
     Op_items l _ -> topSigKey (opS ++ pluralS l) <+>
-        let pp = printOpItem fF in
+        let pp = printOpItem in
         if null l then empty else if case item $ last l of
             Op_decl _ _ a@(_ : _) _ -> case last a of
                 Unit_op_attr {} -> False  -- use True for HasCASL
@@ -106,7 +107,7 @@ printSIG_ITEMS fS fF sis = case sis of
             _ -> False
         then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
     Pred_items l _ -> topSigKey (predS ++ pluralS l) <+>
-        let pp = printPredItem fF in
+        let pp = printPredItem in
         if null l then empty else if case item $ last l of
             Pred_defn {} -> True
             _ -> False
@@ -152,18 +153,18 @@ printALTERNATIVE a = case a of
 instance Pretty ALTERNATIVE where
     pretty = printALTERNATIVE
 
-printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
-printSortItem mf si = case si of
+printSortItem :: FormExtension f => SORT_ITEM f -> Doc
+printSortItem si = case si of
     Sort_decl sl _ -> sepByCommas $ map idLabelDoc sl
     Subsort_decl sl sup _ ->
         fsep $ punctuate comma (map idDoc sl) ++ [less, idDoc sup]
     Subsort_defn s v sup af _ -> fsep [idLabelDoc s, equals,
               specBraces $ fsep [sidDoc v, colon <+> idDoc sup,
-                             printAnnoted (addBullet . printFormula mf) af]]
+                             printAnnoted (addBullet . printFormula) af]]
     Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
 
-instance Pretty f => Pretty (SORT_ITEM f) where
-    pretty = printSortItem pretty
+instance FormExtension f => Pretty (SORT_ITEM f) where
+    pretty = printSortItem
 
 printQuant :: QUANTIFIER -> Doc
 printQuant q = case q of
@@ -190,27 +191,26 @@ printArgDecls = parens . printVarDecls
 printPredHead :: PRED_HEAD -> Doc
 printPredHead (Pred_head l _) = printArgDecls l
 
-printPredItem :: (f -> Doc) -> PRED_ITEM f -> Doc
-printPredItem mf p = case p of
+printPredItem :: FormExtension f => PRED_ITEM f -> Doc
+printPredItem p = case p of
     Pred_decl l t _ -> fsep $ punctuate comma (map idLabelDoc l)
         ++ [colon <+> printPredType t]
     Pred_defn i h f _ ->
         sep [ cat [idLabelDoc i, printPredHead h]
-           , equiv <+> printAnnoted (printFormula mf) f]
+           , equiv <+> printAnnoted printFormula f]
 
-instance Pretty f => Pretty (PRED_ITEM f) where
-    pretty = printPredItem pretty
+instance FormExtension f => Pretty (PRED_ITEM f) where
+    pretty = printPredItem
 
-
-printAttr :: (f -> Doc) -> OP_ATTR f -> Doc
-printAttr mf a = case a of
+printAttr :: FormExtension f => OP_ATTR f -> Doc
+printAttr a = case a of
     Assoc_op_attr -> text assocS
     Comm_op_attr -> text commS
     Idem_op_attr -> text idemS
-    Unit_op_attr t -> text unitS <+> printTerm mf t
+    Unit_op_attr t -> text unitS <+> printTerm t
 
-instance Pretty f => Pretty (OP_ATTR f) where
-    pretty = printAttr pretty
+instance FormExtension f => Pretty (OP_ATTR f) where
+    pretty = printAttr
 
 printOpHead :: OP_HEAD -> Doc
 printOpHead (Op_head k l mr _) =
@@ -223,17 +223,17 @@ printOpHead (Op_head k l mr _) =
 instance Pretty OP_HEAD where
     pretty = printOpHead
 
-printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
-printOpItem mf p = case p of
+printOpItem :: FormExtension f => OP_ITEM f -> Doc
+printOpItem p = case p of
     Op_decl l t a _ -> fsep $ punctuate comma (map idLabelDoc l)
         ++ [colon <> (if null a then id else (<> comma)) (printOpType t)]
-        ++ punctuate comma (map (printAttr mf) a)
+        ++ punctuate comma (map printAttr a)
     Op_defn i h@(Op_head _ l _ _) t _ ->
         sep [ (if null l then sep else cat) [idLabelDoc i, printOpHead h]
-            , equals <+> printAnnoted (printTerm mf) t]
+            , equals <+> printAnnoted printTerm t]
 
-instance Pretty f => Pretty (OP_ITEM f) where
-    pretty = printOpItem pretty
+instance FormExtension f => Pretty (OP_ITEM f) where
+    pretty = printOpItem
 
 instance Pretty VAR_DECL where
     pretty = printVarDecl
@@ -344,8 +344,14 @@ printInfix :: Bool -- ^ attach separator to right argument?
 printInfix b join l s r =
      join $ if b then [l, s <+> r] else [l <+> s, r]
 
-printRecord :: (f -> Doc) -> Record f Doc Doc
-printRecord mf = Record
+class (GetRange f, Pretty f) => FormExtension f where
+  isQuantifierLike :: f -> Bool
+  isQuantifierLike _ = False
+
+instance FormExtension ()
+
+printRecord :: FormExtension f => Record f Doc Doc
+printRecord = Record
     { foldQuantification = \ _ q l r _ ->
           fsep $ printQuant q : printVarDeclL l
                                 ++ [addBullet r]
@@ -400,7 +406,7 @@ printRecord mf = Record
         [ forallDoc
         , printPredSymb $ Qual_pred_name p n nullRange
         , addBullet r ]
-    , foldExtFORMULA = const mf
+    , foldExtFORMULA = const pretty
     , foldQual_var = \ _ v s _ ->
           parens $ fsep [text varS, sidDoc v, colon <+> idDoc s]
     , foldApplication = \ orig o l _ -> case (o, orig) of
@@ -424,7 +430,7 @@ printRecord mf = Record
     , foldMixfix_parenthesized = \ _ l _ -> parens $ sepByCommas l
     , foldMixfix_bracketed = \ _ l _ -> brackets $ sepByCommas l
     , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l
-    , foldExtTERM = const mf }
+    , foldExtTERM = const pretty }
 
 recoverType :: [Constraint] -> [Annoted DATATYPE_DECL]
 recoverType =
@@ -439,22 +445,22 @@ recoverType =
 zipConds :: [TERM f] -> [Doc] -> [Doc]
 zipConds = zipWith (\ o d -> if isCond o then parens d else d)
 
-printFormula :: (f -> Doc) -> FORMULA f -> Doc
-printFormula = foldFormula . printRecord
+printFormula :: FormExtension f => FORMULA f -> Doc
+printFormula = foldFormula printRecord
 
-instance Pretty f => Pretty (FORMULA f) where
-    pretty = printFormula pretty
+instance FormExtension f => Pretty (FORMULA f) where
+    pretty = printFormula
 
-printTerm :: (f -> Doc) -> TERM f -> Doc
-printTerm = foldTerm . printRecord
+printTerm :: FormExtension f => TERM f -> Doc
+printTerm = foldTerm printRecord
 
-instance Pretty f => Pretty (TERM f) where
-    pretty = printTerm pretty
+instance FormExtension f => Pretty (TERM f) where
+    pretty = printTerm
 
-isQuant :: FORMULA f -> Bool
+isQuant :: FormExtension f => FORMULA f -> Bool
 isQuant f = case f of
     Quantification _ _ _ _ -> True
-    ExtFORMULA _ -> True
+    ExtFORMULA ef -> isQuantifierLike ef
     Conjunction l _ -> case l of
         [] -> False
         _ -> isQuant $ last l
@@ -481,7 +487,7 @@ isJunct f = case f of
     _ -> isAnyImpl f
 
 -- true for non-final
-mkJunctDoc :: Bool -> FORMULA f -> Doc -> Doc
+mkJunctDoc :: FormExtension f => Bool -> FORMULA f -> Doc -> Doc
 mkJunctDoc b f = if isJunct f || b && isQuant f then parens else id
 
 mkEquivDoc :: FORMULA f -> Doc -> Doc
@@ -543,7 +549,7 @@ instance ListCheck VAR_DECL where
     innerList (Var_decl l _ _) = innerList l
 
 -- | print a formula as a sentence
-printTheoryFormula :: Pretty f => Named (FORMULA f) -> Doc
+printTheoryFormula :: FormExtension f => Named (FORMULA f) -> Doc
 printTheoryFormula f = printAnnoted
     ((case sentence f of
     Quantification Universal _ _ _ -> id

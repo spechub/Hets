@@ -85,12 +85,12 @@ instance Pretty FplExt where
 instance Pretty FplSortItem where
   pretty e = case e of
     FreeType d -> printDD d
-    CaslSortItem s -> printSortItem pretty s
+    CaslSortItem s -> printSortItem s
 
 instance Pretty FplOpItem where
   pretty e = case e of
     FunOp o -> pretty o
-    CaslOpItem s -> printOpItem pretty s
+    CaslOpItem s -> printOpItem s
 
 data FunDef = FunDef OP_NAME OP_HEAD (Annoted FplTerm) Range
   deriving (Show, Eq, Ord)
@@ -117,6 +117,8 @@ data TermExt =
   | EqTerm FplTerm FplTerm Range
   | BoolTerm FplTerm
   deriving (Show, Eq, Ord)
+
+instance FormExtension TermExt
 
 instance Pretty TermExt where
   pretty t = case t of

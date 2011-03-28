@@ -33,6 +33,7 @@ import CASL.MixfixParser
 import CASL.Overload
 import CASL.Quantification
 import CASL.Sign
+import CASL.ToDoc
 
 import Common.AS_Annotation
 import Common.Doc
@@ -157,7 +158,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: (GetRange f, Pretty f, TermExtension f) => Min f e
+ana_BASIC_SPEC :: (FormExtension f, TermExtension f) => Min f e
                -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
@@ -172,7 +173,7 @@ unionGenAx = foldr (\ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: (GetRange f, Pretty f, TermExtension f)
+ana_BASIC_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
     -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS mef ab anas mix bi =
@@ -283,7 +284,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                   voidOps]
     addSentences [toSortGenNamed f sortList]
 
-ana_SIG_ITEMS :: (GetRange f, Pretty f, TermExtension f)
+ana_SIG_ITEMS :: (FormExtension f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> GenKind -> SIG_ITEMS s f
     -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix gk si =
@@ -307,7 +308,7 @@ ana_SIG_ITEMS mef anas mix gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix s
 
 -- helper
-ana_Generated :: (GetRange f, Pretty f, TermExtension f)
+ana_Generated :: (FormExtension f, TermExtension f)
   => Min f e -> Ana s b s f e -> Mix b s f e -> [Annoted (SIG_ITEMS s f)]
     -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef anas mix al = do
@@ -362,7 +363,7 @@ getOps oi = case oi of
     Op_defn i par _ _ -> maybe Set.empty
         (Set.singleton . Component i . toOpType) $ headToType par
 
-ana_SORT_ITEM :: (GetRange f, Pretty f, TermExtension f)
+ana_SORT_ITEM :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> SortsKind -> Annoted (SORT_ITEM f)
     -> State (Sign f e) (Annoted (SORT_ITEM f))
 ana_SORT_ITEM mef mix sk asi =
@@ -407,7 +408,7 @@ ana_SORT_ITEM mef mix sk asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: (GetRange f, Pretty f, TermExtension f)
+ana_OP_ITEM :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
     -> State (Sign f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM mef mix aoi =
@@ -486,7 +487,7 @@ addLeftComm ty ni i =
               (Application qi [v2, Application qi [v1, v3] p] p) p) p)
             { isAxiom = ni }
 
-ana_OP_ATTR :: (GetRange f, Pretty f, TermExtension f)
+ana_OP_ATTR :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> OpType -> Bool -> [Id] -> OP_ATTR f
     -> State (Sign f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR mef mix ty ni ois oa = do
@@ -572,7 +573,7 @@ makeUnit b t ty ni i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p) {isAxiom = ni }
 
-ana_PRED_ITEM :: (GetRange f, Pretty f, TermExtension f)
+ana_PRED_ITEM :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Annoted (PRED_ITEM f)
     -> State (Sign f e) (Annoted (PRED_ITEM f))
 ana_PRED_ITEM mef mix apr = case item apr of
@@ -827,7 +828,7 @@ resultToState f a = do
 
 type Ana a b s f e = Mix b s f e -> a -> State (Sign f e) a
 
-anaForm :: (GetRange f, Pretty f, TermExtension f)
+anaForm :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Sign f e -> FORMULA f
     -> Result (FORMULA f, FORMULA f)
 anaForm mef mixIn sign f = do
@@ -837,7 +838,7 @@ anaForm mef mixIn sign f = do
     anaF <- minExpFORMULA mef sign resF
     return (resF, anaF)
 
-anaTerm :: (GetRange f, Pretty f, TermExtension f)
+anaTerm :: (FormExtension f, TermExtension f)
   => Min f e -> Mix b s f e -> Sign f e -> Maybe SORT -> Range -> TERM f
     -> Result (TERM f, TERM f)
 anaTerm mef mixIn sign msrt pos t = do
@@ -848,7 +849,7 @@ anaTerm mef mixIn sign msrt pos t = do
       (\ srt -> Sorted_term resT srt pos) msrt
     return (resT, anaT)
 
-basicAnalysis :: (GetRange f, Pretty f, TermExtension f)
+basicAnalysis :: (FormExtension f, TermExtension f)
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s

@@ -120,7 +120,7 @@ fromPredType pt =
     let args = CasS.predArgs pt
     in simpleTypeScheme $ fromPREDTYPE $ Cas.Pred_type args $ getRange args
 
-mapTheory :: (CasS.TermExtension f, Pretty f) =>
+mapTheory :: (CasS.TermExtension f, FormExtension f) =>
   (CasS.Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
     let constr = foldr getConstructors Set.empty sents
@@ -197,7 +197,8 @@ toVarDecl (Cas.Var_decl vs s ps) =
            map ( \ i -> GenVarDecl $
                  VarDecl (simpleIdToId i) (toType s) Other ps) vs
 
-toSentence :: (CasS.TermExtension f, Pretty f) => Cas.FORMULA f -> Sentence
+toSentence :: (CasS.TermExtension f, FormExtension f)
+  => Cas.FORMULA f -> Sentence
 toSentence f = case f of
    Cas.Sort_gen_ax cs b -> let
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
@@ -221,7 +222,7 @@ toSentence f = case f of
                         _ -> error "CASL2HasCASL.toSentence") ops) sorts
    _ -> Formula $ toTerm f
 
-toTerm :: (CasS.TermExtension f, Pretty f) => Cas.FORMULA f -> Term
+toTerm :: (CasS.TermExtension f, FormExtension f) => Cas.FORMULA f -> Term
 toTerm f = foldFormula (transRecord $ showDoc f "") f
 
 transRecord :: CasS.TermExtension f => String -> Record f Term Term

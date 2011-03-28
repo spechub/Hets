@@ -37,7 +37,6 @@ import Data.List as List
 import Data.Maybe
 import Data.Char
 
--- CASL
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
@@ -49,7 +48,8 @@ import CASL.Utils
 import CASL.Inject
 import CASL.Induction (generateInductionLemmas)
 import CASL.Simplify
--- SoftFOL
+import CASL.ToDoc
+
 import SoftFOL.Sign as SPSign
 import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
@@ -569,7 +569,7 @@ disjointTopSorts sign idMap = let
                 map (\ t -> fromMaybe (transIdSort t)
                      $ lookupSPId t CSort idMap) l
 
-transTheory :: (Pretty f, Eq f) =>
+transTheory :: (FormExtension f, Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
             -> (CSign.Sign f e, [Named (FORMULA f)])
@@ -728,14 +728,14 @@ transVarTup (usedIds, idMap) (v, s) =
                     [mkSimpleId $ "_Va_" ++ showDoc s "_Va"]
                     usedIds
 
-mapSen :: (Eq f, Pretty f) => Bool
+mapSen :: (Eq f, FormExtension f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen siSo trForm sign = transFORM siSo Set.empty sign
                                         ((\ (_, x, _) -> x) (transSign sign))
                                         trForm
 
-transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
+transFORM :: (Eq f, FormExtension f) => Bool -- ^ single sorted flag
           -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
           -> CSign.Sign f e
           -> IdTypeSPIdMap -> FormulaTranslator f e
@@ -746,7 +746,7 @@ transFORM siSo eqPreds sign i tr phi = transFORMULA siSo sign i tr phi'
                           (substEqPreds eqPreds id phi))
 
 
-transFORMULA :: Pretty f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
+transFORMULA :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
              -> FormulaTranslator f e -> FORMULA f -> SPTerm
 transFORMULA siSo sign idMap tr form = case form of
   Quantification qu vdecl phi _ ->
@@ -790,7 +790,7 @@ transFORMULA siSo sign idMap tr form = case form of
   _ -> error
     ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '" ++ showDoc form "'")
 
-transTERM :: Pretty f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
+transTERM :: FormExtension f => Bool -> CSign.Sign f e -> IdTypeSPIdMap
           -> FormulaTranslator f e -> TERM f -> SPTerm
 transTERM siSo sign idMap tr term = case term of
   Qual_var v s _ -> maybe

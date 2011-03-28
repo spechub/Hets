@@ -20,6 +20,8 @@ import CASL.StaticAna
 import CASL.Sign
 import CASL.Morphism
 import CASL.MixfixParser
+import CASL.ToDoc
+
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -35,5 +37,7 @@ basicConstraintCASLAnalysis
                [Named ConstraintCASLFORMULA])
 basicConstraintCASLAnalysis =
     basicAnalysis (const return) (const return) (const return) emptyMix
+
+instance FormExtension ConstraintFORMULA
 
 instance TermExtension ConstraintFORMULA

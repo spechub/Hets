@@ -78,6 +78,11 @@ printCOCOMPONENTS :: COCOMPONENTS -> Doc
 printCOCOMPONENTS (CoSelect l s _) =
     fsep (punctuate comma $ map idDoc l) <> colon <> pretty s
 
+instance FormExtension C_FORMULA where
+  isQuantifierLike f = case f of
+    BoxOrDiamond {} -> False
+    CoSort_gen_ax {} -> True
+
 instance Pretty C_FORMULA where
     pretty = printC_FORMULA
 
@@ -88,7 +93,7 @@ printC_FORMULA cf = case cf of
                  Simple_mod _ -> (<>)
                  _ -> (<+>)
           td = printMODALITY t
-          fd = printFormula printC_FORMULA f
+          fd = printFormula f
       in if b then brackets td <> fd else less `sp` td `sp` greater <+> fd
     CoSort_gen_ax sorts ops _ -> keyword cogeneratedS <>
          specBraces (sep [ keyword sortS <+> ppWithCommas sorts <> semi
@@ -100,7 +105,7 @@ instance Pretty MODALITY where
 printMODALITY :: MODALITY -> Doc
 printMODALITY md = case md of
     Simple_mod ident -> sidDoc ident
-    Term_mod t -> printTerm printC_FORMULA t
+    Term_mod t -> printTerm t
 
 instance Pretty CoCASLSign where
     pretty = printCoCASLSign

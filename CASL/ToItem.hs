@@ -26,8 +26,7 @@ import CASL.ToDoc
 
 --------------------- TS = TransState
 data TS b s f = TS { fB :: b -> Doc
-                   , fS :: s -> Doc
-                   , fF :: f -> Doc }
+                   , fS :: s -> Doc }
 
 -- LITC = LocalITContext
 -- This datastructure is used to pass an additional ItemType argument to
@@ -54,22 +53,22 @@ listWithLIT = map . withLIT
 
 -- this function is only to unify the types of the state and the basic spec
 -- in the call of toitem and runState in bsToItem
-getTransState :: (Pretty b, Pretty s, Pretty f)
+getTransState :: (Pretty b, Pretty s)
     => BASIC_SPEC b s f -> TS b s f
-getTransState _ = TS pretty pretty pretty
+getTransState _ = TS pretty pretty
 
 --------------------- The Main function of this module
-bsToItem :: (Pretty b, Pretty s, Pretty f, GetRange b, GetRange s, GetRange f)
+bsToItem :: (Pretty b, Pretty s, GetRange b, GetRange s, FormExtension f)
     => BASIC_SPEC b s f -> Item
 bsToItem bs = runReader (toitem bs) $ getTransState bs
 
-instance (GetRange b, GetRange s, GetRange f)
+instance (GetRange b, GetRange s, FormExtension f)
     => ItemConvertible (BASIC_SPEC b s f) (Reader (TS b s f)) where
     toitem (Basic_spec l) = do
         l' <-  listFromAL l
         return rootItem { items = l' }
 
-instance (GetRange b, GetRange s, GetRange f)
+instance (GetRange b, GetRange s, FormExtension f)
     => ItemConvertible (BASIC_ITEMS b s f) (Reader (TS b s f)) where
     toitem bi = let rg = getRangeSpan bi in
         case bi of
@@ -87,7 +86,7 @@ instance (GetRange b, GetRange s, GetRange f)
               st <- ask
               fromPrinter (fB st) "Ext_BASIC_ITEMS" b
 
-instance (GetRange s, GetRange f)
+instance (GetRange s, FormExtension f)
     => ItemConvertible (SIG_ITEMS s f) (Reader (TS b s f)) where
     toitem si = let rg = getRangeSpan si in
         case si of
@@ -104,7 +103,8 @@ instance (GetRange s, GetRange f)
               fromPrinter (fS st) "Ext_SIG_ITEMS" s
 
 
-instance GetRange f => ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
+instance FormExtension f
+    => ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
     toitem si = let rg = getRangeSpan si in
         case si of
           Sort_decl l _ -> mkItemM "Sort_decl" rg $ listFromL
@@ -120,7 +120,8 @@ instance GetRange f => ItemConvertible (SORT_ITEM f) (Reader (TS b s f)) where
                            $ listWithLIT "SORT" l
 
 
-instance GetRange f => ItemConvertible (OP_ITEM f) (Reader (TS b s f)) where
+instance FormExtension f
+    => ItemConvertible (OP_ITEM f) (Reader (TS b s f)) where
     toitem oi = let rg = getRangeSpan oi in
         case oi of
           Op_decl onl ot oal _ ->
@@ -132,7 +133,8 @@ instance GetRange f => ItemConvertible (OP_ITEM f) (Reader (TS b s f)) where
                                     , fromAC at]
 
 
-instance GetRange f => ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
+instance FormExtension f
+    => ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
     toitem p = let rg = getRangeSpan p in
         case p of
           Pred_decl pnl pt _ ->
@@ -141,7 +143,6 @@ instance GetRange f => ItemConvertible (PRED_ITEM f) (Reader (TS b s f)) where
           Pred_defn pn ph af _ ->
               mkItemMM "Pred_defn" rg [ fromC $ withLIT "PRED_NAME" pn, fromC ph
                                       , fromAC af]
-
 
 -------------------- not further expanded --------------------
 
@@ -168,10 +169,9 @@ instance ItemConvertible OP_TYPE (Reader (TS b s f)) where
 instance ItemConvertible OP_HEAD (Reader (TS b s f)) where
     toitem = fromPrinterWithRg pretty "OP_HEAD"
 
-instance ItemConvertible (OP_ATTR f) (Reader (TS b s f)) where
-    toitem a = do
-        st <- ask
-        fromPrinter (printAttr (fF st)) "OP_ATTR" a
+instance FormExtension f
+    => ItemConvertible (OP_ATTR f) (Reader (TS b s f)) where
+    toitem = fromPrinter printAttr "OP_ATTR"
 
 instance ItemConvertible PRED_TYPE (Reader (TS b s f)) where
     toitem = fromPrinterWithRg pretty "PRED_TYPE"
@@ -185,17 +185,12 @@ instance ItemConvertible DATATYPE_DECL (Reader (TS b s f)) where
 instance ItemConvertible VAR_DECL (Reader (TS b s f)) where
     toitem = fromPrinterWithRg pretty "VAR_DECL"
 
-instance GetRange f => ItemConvertible (FORMULA f) (Reader (TS b s f)) where
-    toitem f = do
-      st <- ask
-      fromPrinterWithRange getRangeSpan
-               (printFormula (fF st)) "FORMULA" f
+instance FormExtension f
+    => ItemConvertible (FORMULA f) (Reader (TS b s f)) where
+    toitem = fromPrinterWithRange getRangeSpan printFormula "FORMULA"
 
-instance GetRange f => ItemConvertible (TERM f) (Reader (TS b s f)) where
-    toitem f = do
-      st <- ask
-      fromPrinterWithRange getRangeSpan
-               (printTerm (fF st)) "TERM" f
+instance FormExtension f => ItemConvertible (TERM f) (Reader (TS b s f)) where
+    toitem = fromPrinterWithRange getRangeSpan printTerm "TERM"
 
 instance ItemConvertible (LITC Id) (Reader (TS b s f)) where
     toitem = litFromPrinterWithRg pretty

@@ -59,6 +59,8 @@ instance Pretty EM_SIG_ITEM where
 instance Pretty NOMINAL where
         pretty (Nominal idt) = pretty idt
 
+instance FormExtension EM_FORMULA
+
 instance Pretty EM_FORMULA where
         pretty (BoxOrDiamond choice modality leq_geq number em_sentence _) =
                 let sp = case modality of
@@ -67,29 +69,29 @@ instance Pretty EM_FORMULA where
                     mdl = pretty modality
                 in sep $ (if choice then brackets mdl else less `sp` mdl `sp` greater)
                        : (if leq_geq then keyword lessEq else keyword greaterEq)
-                       : (text (show number)) : space : [condParensInnerF (printFormula pretty) parens em_sentence]
+                       : (text (show number)) : space : [condParensInnerF printFormula parens em_sentence]
 
         pretty (Hybrid choice nom em_sentence _) =
                 sep $ (if choice then keyword atS else keyword hereS) : space : (pretty nom) : space
-                    : [condParensInnerF (printFormula pretty) parens em_sentence]
+                    : [condParensInnerF printFormula parens em_sentence]
         pretty (UntilSince choice sentence1 sentence2 _) =
-                sep $ ([condParensInnerF (printFormula pretty) parens sentence1]
+                sep $ ([condParensInnerF printFormula parens sentence1]
                        ++ ( space : (if choice then keyword untilS else keyword sinceS) : space
-                             : [condParensInnerF (printFormula pretty) parens sentence2]))
+                             : [condParensInnerF printFormula parens sentence2]))
         pretty (PathQuantification choice em_sentence _) =
                 sep $ (if choice then keyword allPathsS else keyword somePathsS) : space
-                    : [condParensInnerF (printFormula pretty) parens em_sentence]
+                    : [condParensInnerF printFormula parens em_sentence]
         pretty (NextY choice em_sentence _) =
                 sep $ (if choice then keyword nextS else keyword yesterdayS) : space
-                    : [condParensInnerF (printFormula pretty) parens em_sentence]
+                    : [condParensInnerF printFormula parens em_sentence]
         pretty (StateQuantification dir_choice choice em_sentence _) =
                 let kw = case dir_choice of
                                 True -> if choice then keyword generallyS else keyword eventuallyS
                                 _ -> if choice then keyword hithertoS else keyword previouslyS
-                in sep $ kw : space : [condParensInnerF (printFormula pretty) parens em_sentence]
+                in sep $ kw : space : [condParensInnerF printFormula parens em_sentence]
         pretty (FixedPoint choice p_var em_sentence _) =
                 sep $ (if choice then keyword muS else keyword nuS) : space : (pretty p_var) : space
-                        : [condParensInnerF (printFormula pretty) parens em_sentence]
+                        : [condParensInnerF printFormula parens em_sentence]
 
 condParensInnerF :: Pretty f => (FORMULA f -> Doc) -> (Doc -> Doc) -> FORMULA f -> Doc
 condParensInnerF frm_print parens_fun frm  =
@@ -109,7 +111,8 @@ condParensInnerF frm_print parens_fun frm  =
 instance Pretty EModalSign where
         pretty  = printEModalSign id
 
-printEModalSign :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA) -> EModalSign -> Doc
+printEModalSign :: (FORMULA EM_FORMULA -> FORMULA EM_FORMULA) -> EModalSign
+                -> Doc
 printEModalSign sim sign =
         let mds = modalities sign
             tms = time_modalities sign
@@ -119,16 +122,18 @@ printEModalSign sim sign =
         printSetMap (keyword rigidS <+> keyword predS) empty (rigidPreds sign)
         $+$
         (if Map.null mds then empty else
-        cat [keyword modalitiesS <+> (fsep $ punctuate semi $ map sidDoc (Map.keys mds))
+        cat [keyword modalitiesS <+> sepBySemis (map sidDoc (Map.keys mds))
             , specBraces (printFormulaOfEModalSign sim $ Map.elems mds)])
         $+$
         (if Set.null tms then empty else
-        keyword timeS <+> keyword modalitiesS <+> (fsep $ punctuate semi $ map sidDoc (Set.toList tms)))
+        keyword timeS <+> keyword modalitiesS
+                    <+> sepBySemis (map sidDoc (Set.toList tms)))
         $+$
         (if Set.null nms then empty else
-        keyword nominalsS <+> (fsep $ punctuate semi $ map sidDoc (Set.toList nms)))
+        keyword nominalsS <+> sepBySemis (map sidDoc (Set.toList nms)))
 
 
-printFormulaOfEModalSign :: Pretty f => (FORMULA f -> FORMULA f) -> [[Annoted (FORMULA f)]] -> Doc
-printFormulaOfEModalSign sim =
-        vcat . map (\ tf -> fsep $ punctuate semi $ map (printAnnoted $ pretty . sim) tf)
+printFormulaOfEModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
+  -> [[Annoted (FORMULA f)]] -> Doc
+printFormulaOfEModalSign sim = vcat . map
+  (sepBySemis . map (printAnnoted $ pretty . sim))

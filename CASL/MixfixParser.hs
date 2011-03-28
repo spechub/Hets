@@ -24,7 +24,7 @@ module CASL.MixfixParser
 
 import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
-import CASL.ToDoc ()
+import CASL.ToDoc
 
 import Common.AS_Annotation
 import Common.ConvertMixfixToken
@@ -256,7 +256,7 @@ addType tt t =
 -- | the type for mixfix resolution
 type MixResolve f = GlobalAnnos -> (TokRules, Rules) -> f -> Result f
 
-iterateCharts :: (GetRange f, Pretty f) => (f -> f)
+iterateCharts :: FormExtension f => (f -> f)
               -> MixResolve f -> GlobalAnnos -> [TERM f]
               -> Chart (TERM f) -> Chart (TERM f)
 iterateCharts par extR g terms c =
@@ -324,24 +324,24 @@ mkIdSets :: Set.Set Id -> Set.Set Id -> Set.Set Id -> IdSets
 mkIdSets consts ops preds = ((consts, ops), preds)
 
 -- | top-level resolution like 'resolveMixTrm' that fails in case of diags
-resolveMixfix :: (GetRange f, Pretty f) => (f -> f)
+resolveMixfix :: FormExtension f => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixfix par extR g ruleS t =
     let r@(Result ds _) = resolveMixTrm par extR g ruleS t
         in if null ds then r else Result ds Nothing
 
 -- | basic term resolution that supports recursion without failure
-resolveMixTrm :: (GetRange f, Pretty f) => (f -> f)
+resolveMixTrm :: FormExtension f => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga (adder, ruleS) trm =
     getResolved (showTerm par ga) (getRangeSpan trm) toAppl
            $ iterateCharts par extR ga [trm] $ initChart adder ruleS
 
-showTerm :: Pretty f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
+showTerm :: FormExtension f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
 showTerm par ga = showGlobalDoc ga . mapTerm par
 
 -- | top-level resolution like 'resolveMixFrm' that fails in case of diags
-resolveFormula :: (GetRange f, Pretty f) => (f -> f)
+resolveFormula :: FormExtension f => (f -> f)
                -> MixResolve f -> MixResolve (FORMULA f)
 resolveFormula par extR g ruleS f =
     let r@(Result ds _) = resolveMixFrm par extR g ruleS f
@@ -362,7 +362,7 @@ extendMixResolve :: Set.Set Token -> MixResolve f -> MixResolve f
 extendMixResolve ts f ga = f ga . extendRules ts
 
 -- | basic formula resolution that supports recursion without failure
-resolveMixFrm :: (GetRange f, Pretty f) => (f -> f)
+resolveMixFrm :: FormExtension f => (f -> f)
               -> MixResolve f -> MixResolve (FORMULA f)
 resolveMixFrm par extR g ids frm =
     let self = resolveMixFrm par extR g ids

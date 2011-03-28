@@ -565,9 +565,6 @@ freeDlVars sig (Ranged f _) = case f of
   Defprocs _ -> Set.empty
   RestrictedConstraint _ _ _ -> Set.empty
 
-instance GetRange (Ranged a) where
-  getRange (Ranged _ r) = r
-
 instance TermExtension Dlformula where
   freeVarsOfExt = freeDlVars
 

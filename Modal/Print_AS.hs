@@ -23,7 +23,7 @@ import Modal.ModalSign
 import CASL.AS_Basic_CASL (FORMULA (..))
 import CASL.ToDoc
 
-printFormulaOfModalSign :: Pretty f => (FORMULA f -> FORMULA f)
+printFormulaOfModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
                         -> [[Annoted (FORMULA f)]] -> Doc
 printFormulaOfModalSign sim =
     vcat . map (sepBySemis . map (printAnnoted $ pretty . sim))
@@ -56,7 +56,10 @@ instance Pretty M_FORMULA where
             td = pretty t
         in sep $ (if b then brackets td
                   else less `sp` td `sp` greater)
-               : [condParensInnerF (printFormula pretty) parens f]
+               : [condParensInnerF printFormula parens f]
+
+instance FormExtension M_FORMULA where
+  isQuantifierLike _ = False
 
 instance Pretty MODALITY where
     pretty (Simple_mod ident) =

@@ -15,14 +15,16 @@ module CASL_DL.Print_AS where
 import Common.Doc
 import Common.DocUtils
 
-import CASL.ToDoc ()
+import CASL.ToDoc
 import CASL_DL.AS_CASL_DL
+
+instance FormExtension DL_FORMULA
 
 instance Pretty DL_FORMULA where
     pretty (Cardinality ct pn varTerm natTerm qualTerm _) =
         text (show ct)
         <> brackets (pretty pn)
         <> parens (pretty varTerm <> comma <+> pretty natTerm
-        <> (case qualTerm of
-            Nothing -> text ""
-            Just  x -> comma <+> pretty x))
+                   <> case qualTerm of
+            Nothing -> empty
+            Just x -> comma <+> pretty x)

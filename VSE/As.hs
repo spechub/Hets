@@ -28,7 +28,7 @@ import Common.LibName
 import Common.Utils (number)
 
 import CASL.AS_Basic_CASL
-import CASL.ToDoc (recoverType, printALTERNATIVE)
+import CASL.ToDoc
 
 -- | input or output procedure parameter kind
 data Paramkind = In | Out deriving (Show, Eq, Ord)
@@ -92,7 +92,7 @@ addInits vs p = case vs of
 data VSEforms =
     Dlformula BoxOrDiamond Program Sentence
   | Defprocs [Defproc]
-  | RestrictedConstraint [Constraint] (Map.Map SORT Id)  Bool
+  | RestrictedConstraint [Constraint] (Map.Map SORT Id) Bool
     deriving (Show, Eq, Ord)
 
 type Dlformula = Ranged VSEforms
@@ -174,6 +174,12 @@ instance Pretty Defproc where
 instance Pretty a => Pretty (Ranged a) where
   pretty (Ranged a _) = pretty a
 
+instance GetRange (Ranged a) where
+  getRange (Ranged _ r) = r
+
+instance FormExtension a => FormExtension (Ranged a) where
+  isQuantifierLike (Ranged a _) = isQuantifierLike a
+
 instance Pretty VarDecl where
   pretty (VarDecl v s mt _) =
       sidDoc v <+> colon <+> idDoc s <+> case mt of
@@ -204,6 +210,11 @@ instance Pretty PlainProgram where
       [ text "WHILE" <+> pretty f
       , text "DO" <+> pretty p
       , text "OD" ]
+
+instance FormExtension VSEforms
+
+instance GetRange VSEforms where
+  getRange _ = nullRange
 
 instance Pretty VSEforms where
   pretty v = case v of
@@ -246,11 +257,11 @@ yVar :: Token
 yVar = genToken "y"
 
 printRestrTypedecl :: Map.Map SORT Id -> DATATYPE_DECL -> Doc
-printRestrTypedecl restr (Datatype_decl s a r)=
+printRestrTypedecl restr (Datatype_decl s a r) =
     let pa = printAnnoted printALTERNATIVE in case a of
     [] -> printRestrTypedecl restr
            (Datatype_decl s [emptyAnno $ Subsorts [s] r] r)
-    h : t  -> sep [idLabelDoc s, colon <> colon <> sep
+    h : t -> sep [idLabelDoc s, colon <> colon <> sep
                       ((equals <+> pa h) :
                        map ((bar <+>) . pa) t), text "restricted by",
                    pretty $ Map.findWithDefault (gnRestrName s) s restr]

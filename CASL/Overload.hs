@@ -35,6 +35,7 @@ module CASL.Overload
   , keepMinimals
   ) where
 
+import CASL.ToDoc (FormExtension)
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
@@ -74,7 +75,7 @@ mkSorted sign t s r = let nt = Sorted_term t s r in case optTermSort t of
     + Membership is handled like Cast
 ---------------------------------------------------------- -}
 minExpFORMULA
-  :: (GetRange f, Pretty f, TermExtension f)
+  :: (FormExtension f, TermExtension f)
    => Min f e -> Sign f e -> FORMULA f -> Result (FORMULA f)
 minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
   case formula of
@@ -143,7 +144,7 @@ minExpFORMULA mef sign formula = let sign0 = sign { envDiags = [] } in
     _ -> return formula -- do not fail even for unresolved cases
 
 -- | test if a term can be uniquely resolved
-oneExpTerm :: (GetRange f, Pretty f, TermExtension f)
+oneExpTerm :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> TERM f -> Result (TERM f)
 oneExpTerm minF sign term = do
     ts <- minExpTerm minF sign term
@@ -153,7 +154,7 @@ oneExpTerm minF sign term = do
     - Minimal expansion of an equation formula -
   see minExpTermCond
 ---------------------------------------------------------- -}
-minExpFORMULAeq :: (GetRange f, Pretty f, TermExtension f)
+minExpFORMULAeq :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> (TERM f -> TERM f -> Range -> FORMULA f)
     -> TERM f -> TERM f -> Range -> Result (FORMULA f)
 minExpFORMULAeq mef sign eq term1 term2 pos = do
@@ -213,7 +214,7 @@ noOpOrPred ops str mty ide pos nargs = when (null ops) $ Result
     - Minimal expansion of a predication formula -
     see minExpTermAppl
 ---------------------------------------------------------- -}
-minExpFORMULApred :: (GetRange f, Pretty f, TermExtension f)
+minExpFORMULApred :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> Id -> Maybe PredType -> [TERM f] -> Range
     -> Result (FORMULA f)
 minExpFORMULApred mef sign ide mty args pos = do
@@ -258,7 +259,7 @@ qualifyPred ide pos (pred', terms') =
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
 -- | expansions of an equation formula or a conditional
-minExpTermEq :: (GetRange f, Pretty f, TermExtension f)
+minExpTermEq :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> TERM f -> TERM f -> Result [[(TERM f, TERM f)]]
 minExpTermEq mef sign term1 term2 = do
     exps1 <- minExpTerm mef sign term1
@@ -280,7 +281,7 @@ minimizeEq s = keepMinimals s (sortOfTerm . snd)
   * 'Application' terms are handled by 'minExpTermOp'.
   * 'Conditional' terms are handled by 'minExpTermCond'.
 ---------------------------------------------------------- -}
-minExpTerm :: (GetRange f, Pretty f, TermExtension f)
+minExpTerm :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> TERM f -> Result [[TERM f]]
 minExpTerm mef sign top = let ga = globAnnos sign in case top of
     Qual_var var sort _ -> let ts = minExpTermVar sign var (Just sort) in
@@ -325,7 +326,7 @@ minExpTermVar sign tok ms = case Map.lookup tok $ varMap sign of
               Just s2 -> if s == s2 then qv else []
 
 -- | minimal expansion of an (possibly qualified) operator application
-minExpTermAppl :: (GetRange f, Pretty f, TermExtension f)
+minExpTermAppl :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> Id -> Maybe OpType -> [TERM f] -> Range
     -> Result [[TERM f]]
 minExpTermAppl mef sign ide mty args pos = do
@@ -382,7 +383,7 @@ qualifyOp ide pos (op', terms') =
   7. Transform each term in the minimized set into a qualified function
     application term.
 ---------------------------------------------------------- -}
-minExpTermOp :: (GetRange f, Pretty f, TermExtension f)
+minExpTermOp :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> OP_SYMB -> [TERM f] -> Range -> Result [[TERM f]]
 minExpTermOp mef sign osym args pos = case osym of
   Op_name ide@(Id ts _ _) ->
@@ -410,7 +411,7 @@ minExpTermOp mef sign osym args pos = case osym of
   Finally transform the eq. classes into lists of
   conditionals with equally sorted terms.
 ---------------------------------------------------------- -}
-minExpTermCond :: (GetRange f, Pretty f, TermExtension f)
+minExpTermCond :: (FormExtension f, TermExtension f)
   => Min f e -> Sign f e -> (TERM f -> TERM f -> a) -> TERM f -> TERM f
     -> Range -> Result [[a]]
 minExpTermCond mef sign f term1 term2 pos = do
