@@ -96,7 +96,7 @@ anaChannelName :: SORT -> ChanNameMap -> CHANNEL_NAME
   -> State CspCASLSign ChanNameMap
 anaChannelName s m chanName = do
     sig <- get
-    if Set.member (simpleIdToId chanName) (sortSet sig)
+    if Set.member chanName (sortSet sig)
       then do
         let err = "channel name already in use as a sort name"
         addDiags [mkDiag Error err chanName]
@@ -119,7 +119,7 @@ anaProcItem annotedProcItem = case item annotedProcItem of
 -- Static analysis of process declarations
 
 -- | Statically analyse a CspCASL process declaration.
-anaProcDecl :: SIMPLE_PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
+anaProcDecl :: PROCESS_NAME -> PROC_ARGS -> PROC_ALPHABET
             -> State CspCASLSign ()
 anaProcDecl name argSorts comms = do
     sig <- get
@@ -494,12 +494,12 @@ extended alphabet and the extended list of fully qualified event
 set elements - [CommType]. -}
 anaCOMM_TYPE :: CspCASLSign -> (CommAlpha, [CommType]) -> COMM_TYPE
   -> State CspCASLSign (CommAlpha, [CommType])
-anaCOMM_TYPE sig (alpha, fqEsElems) ct = let ctSort = simpleIdToId ct in
-    if Set.member ctSort (sortSet sig)
+anaCOMM_TYPE sig (alpha, fqEsElems) sct = let ct = simpleIdToId sct in
+    if Set.member ct (sortSet sig)
       then {- ct is a sort name; insert sort into alpha and add a sort
            to the fully qualified event set elements. -}
-        let newAlpha = Set.insert (CommTypeSort ctSort) alpha
-            newFqEsElems = CommTypeSort ctSort : fqEsElems
+        let newAlpha = Set.insert (CommTypeSort ct) alpha
+            newFqEsElems = CommTypeSort ct : fqEsElems
         in return (newAlpha, newFqEsElems)
       else -- ct not a sort name, so should be a channel name
         case Set.toList $ Map.findWithDefault Set.empty ct $ chans

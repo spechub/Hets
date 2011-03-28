@@ -30,7 +30,7 @@ data CspBasicExt
 data CHANNEL_DECL = ChannelDecl [CHANNEL_NAME] SORT deriving Show
 
 data PROC_ITEM
-  = Proc_Decl SIMPLE_PROCESS_NAME PROC_ARGS PROC_ALPHABET
+  = Proc_Decl PROCESS_NAME PROC_ARGS PROC_ALPHABET
   | Proc_Eq PARM_PROCNAME PROCESS
     deriving Show
 

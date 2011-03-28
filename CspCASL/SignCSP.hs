@@ -18,7 +18,7 @@ import CASL.AS_Basic_CASL (CASLFORMULA, SORT, TERM)
 import CASL.Sign
 import CASL.ToDoc
 import CspCASL.AS_CspCASL_Process
-         (CHANNEL_NAME, SIMPLE_PROCESS_NAME, FQ_PROCESS_NAME, PROCESS (..),
+         (CHANNEL_NAME, PROCESS_NAME, FQ_PROCESS_NAME, PROCESS (..),
           CommAlpha, CommType (..), TypedChanName (..), ProcProfile (..))
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
@@ -34,19 +34,19 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 type ChanNameMap = Map.Map CHANNEL_NAME (Set.Set SORT)
-type ProcNameMap = Map.Map SIMPLE_PROCESS_NAME (Set.Set ProcProfile)
+type ProcNameMap = Map.Map PROCESS_NAME (Set.Set ProcProfile)
 type ProcVarMap = Map.Map SIMPLE_ID SORT
 type ProcVarList = [(SIMPLE_ID, SORT)]
 
 -- | Add a process name and its profile to a process name map.  exist.
-addProcNameToProcNameMap :: SIMPLE_PROCESS_NAME -> ProcProfile ->
+addProcNameToProcNameMap :: PROCESS_NAME -> ProcProfile ->
                             ProcNameMap -> ProcNameMap
 addProcNameToProcNameMap name profile pm =
     let l = Map.findWithDefault Set.empty name pm
     in Map.insert name (Set.insert profile l) pm
 
 -- | Test if a simple process name with a profile is in the process name map.
-isNameInProcNameMap :: SIMPLE_PROCESS_NAME -> ProcProfile -> ProcNameMap -> Bool
+isNameInProcNameMap :: PROCESS_NAME -> ProcProfile -> ProcNameMap -> Bool
 isNameInProcNameMap name profile pm =
   let l = Map.findWithDefault Set.empty name pm
   in Set.member profile l
@@ -56,7 +56,7 @@ unqiue profile with that many parameters if possible. If this is not possible
 (i.e., name does not exist, or no profile with the required number of
 arguments or not unique profile for the required number of arguments), then
 the functions returns a failed result with a helpful error message.  failure. -}
-getUniqueProfileInProcNameMap :: SIMPLE_PROCESS_NAME -> Int -> ProcNameMap ->
+getUniqueProfileInProcNameMap :: PROCESS_NAME -> Int -> ProcNameMap ->
                                  Result ProcProfile
 getUniqueProfileInProcNameMap name numParams pm =
   let profiles = Map.findWithDefault Set.empty name pm
@@ -240,7 +240,7 @@ printChanList =
                   pretty chanName <+> colon <+> pretty sort
 
 -- | Pretty printing for processes
-printProcList :: [(SIMPLE_PROCESS_NAME, ProcProfile)] -> Doc
+printProcList :: [(PROCESS_NAME, ProcProfile)] -> Doc
 printProcList =
     vcat . punctuate semi . map printProc
     where printProc (procName, procProfile) = pretty procName <+>

@@ -57,15 +57,14 @@ cspInducedFromMorphism rmap sigma = do
     , op_map = om
     , pred_map = pm }
 
-chanFun :: CspRawMap -> Sort_map -> Token -> Set.Set SORT -> Result ChanMap
+chanFun :: CspRawMap -> Sort_map -> Id -> Set.Set SORT -> Result ChanMap
   -> Result ChanMap
 chanFun rmap sm cn ss m =
   -- assume no overload relation
   let sls = map Set.singleton $ Set.toList ss
       m1 = foldr (directChanMap rmap sm cn) m sls
-      ide = simpleIdToId cn
-  in case (Map.lookup (CspKindedSymb ChannelKind ide) rmap,
-                Map.lookup (CspKindedSymb (CaslKind Implicit) ide) rmap) of
+  in case (Map.lookup (CspKindedSymb ChannelKind cn) rmap,
+                Map.lookup (CspKindedSymb (CaslKind Implicit) cn) rmap) of
        (Just rsy1, Just rsy2) -> let
           m2 = Set.fold (insertChanSym sm cn rsy1) m1 ss
           in Set.fold (insertChanSym sm cn rsy2) m2 ss
@@ -76,7 +75,7 @@ chanFun rmap sm cn ss m =
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
-directChanMap :: CspRawMap -> Sort_map -> Token -> Set.Set SORT
+directChanMap :: CspRawMap -> Sort_map -> Id -> Set.Set SORT
   -> Result ChanMap -> Result ChanMap
 directChanMap rmap sm cn ss m =
   let sl = Set.toList ss
@@ -87,18 +86,18 @@ directChanMap rmap sm cn ss m =
          foldr (\ (_, s) ->
            insertChanSym sm cn
               (ACspSymbol $ toChanSymbol
-               (idToSimpleId $ rawId rsy, mapSort sm s)) s)
+               (rawId rsy, mapSort sm s)) s)
          (foldr (\ (rsy2, s) ->
            insertChanSym sm cn (fromJust rsy2) s) m l)
          $ rs ++ ps
        _ -> m
 
-insertChanSym :: Sort_map -> Token -> CspRawSymbol -> SORT -> Result ChanMap
+insertChanSym :: Sort_map -> Id -> CspRawSymbol -> SORT -> Result ChanMap
   -> Result ChanMap
 insertChanSym sm cn rsy s m = do
       m1 <- m
       c1 <- mappedChanSym sm cn s rsy
-      let ptsy = CspSymbol (simpleIdToId cn) $ ChanAsItemType s
+      let ptsy = CspSymbol cn $ ChanAsItemType s
           pos = getRange rsy
           m2 = Map.insert (cn, s) c1 m1
       case Map.lookup (cn, s) m1 of
@@ -115,7 +114,7 @@ insertChanSym sm cn rsy s m = do
              ("conflicting mapping of " ++ showDoc ptsy " to " ++
                show c1 ++ " and " ++ show c2) pos
 
-mappedChanSym :: Sort_map -> Token -> SORT -> CspRawSymbol -> Result Token
+mappedChanSym :: Sort_map -> Id -> SORT -> CspRawSymbol -> Result Id
 mappedChanSym sm cn s rsy =
     let chanSym = "channel symbol " ++ showDoc (toChanSymbol (cn, s))
                   " is mapped to "
@@ -123,26 +122,25 @@ mappedChanSym sm cn s rsy =
       ACspSymbol (CspSymbol ide (ChanAsItemType s1)) ->
         let s2 = mapSort sm s
         in if s1 == s2
-           then return $ idToSimpleId ide
+           then return ide
            else plain_error cn
              (chanSym ++ "sort " ++ showDoc s1
               " but should be mapped to type " ++
               showDoc s2 "") $ getRange rsy
       CspKindedSymb k ide | elem k [CaslKind Implicit, ChannelKind] ->
-        return $ idToSimpleId ide
+        return ide
       _ -> plain_error cn
                (chanSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
-procFun :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Token
+procFun :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Id
   -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
 procFun sig rmap sm cm pn ps m =
     let pls = map Set.singleton $ Set.toList ps
         m1 = foldr (directProcMap sig rmap sm cm pn) m pls
-        ide = simpleIdToId pn
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (CspKindedSymb ProcessKind ide) rmap,
-                Map.lookup (CspKindedSymb (CaslKind Implicit) ide) rmap) of
+    in case (Map.lookup (CspKindedSymb ProcessKind pn) rmap,
+                Map.lookup (CspKindedSymb (CaslKind Implicit) pn) rmap) of
        (Just rsy1, Just rsy2) -> let
           m2 = Set.fold (insertProcSym sig sm cm pn rsy1) m1 ps
           in Set.fold (insertProcSym sig sm cm pn rsy2) m2 ps
@@ -153,7 +151,7 @@ procFun sig rmap sm cm pn ps m =
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
-directProcMap :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Token ->
+directProcMap :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Id ->
   Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
 directProcMap sig rmap sm cm pn ps m =
   let pl = Set.toList ps
@@ -164,25 +162,25 @@ directProcMap sig rmap sm cm pn ps m =
          foldr (\ (_, p) ->
            insertProcSym sig sm cm pn
               (ACspSymbol $ toProcSymbol
-                (idToSimpleId $ rawId rsy, mapProcProfile sm cm p)) p)
+                (rawId rsy, mapProcProfile sm cm p)) p)
          (foldr (\ (rsy2, p) ->
            insertProcSym sig sm cm pn (fromJust rsy2) p) m l)
          $ rs ++ os
        _ -> m
 
-lookupProcSymbol :: CspCASLSign -> CspRawMap -> Token -> ProcProfile
+lookupProcSymbol :: CspCASLSign -> CspRawMap -> Id -> ProcProfile
   -> Maybe CspRawSymbol
 lookupProcSymbol sig rmap pn p = case
   filter (\ (k, _) -> case k of
     ACspSymbol (CspSymbol i (ProcAsItemType pf)) ->
-      idToSimpleId i == pn && compatibleProcTypes (Just sig) p pf
+      i == pn && compatibleProcTypes (Just sig) p pf
     _ -> False) $ Map.toList rmap of
   [(_, r)] -> Just r
   [] -> Nothing
        -- in case of ambiguities try to find an exact match
   l -> lookup (ACspSymbol $ toProcSymbol (pn, p)) l
 
-insertProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Token -> CspRawSymbol
+insertProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Id -> CspRawSymbol
   -> ProcProfile -> Result ProcessMap -> Result ProcessMap
 insertProcSym sig sm cm pn rsy pf@(ProcProfile _ al) m = do
       m1 <- m
@@ -205,8 +203,8 @@ insertProcSym sig sm cm pn rsy pf@(ProcProfile _ al) m = do
              ("conflicting mapping of " ++ showDoc otsy " to " ++
                show p1 ++ " and " ++ show p2) pos
 
-mappedProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Token -> ProcProfile
-  -> CspRawSymbol -> Result (Token, CommAlpha)
+mappedProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Id -> ProcProfile
+  -> CspRawSymbol -> Result (Id, CommAlpha)
 mappedProcSym sig sm cm pn pf@(ProcProfile _ al) rsy =
     let procSym = "process symbol " ++ showDoc (toProcSymbol (pn, pf))
                 " is mapped to "
@@ -214,13 +212,13 @@ mappedProcSym sig sm cm pn pf@(ProcProfile _ al) rsy =
       ACspSymbol (CspSymbol ide (ProcAsItemType pf1@(ProcProfile _ al1))) ->
         let pf2 = mapProcProfile sm cm pf
         in if compatibleProcTypes (Just sig) pf1 pf2
-           then return (idToSimpleId ide, al1)
+           then return (ide, al1)
            else plain_error (pn, al)
              (procSym ++ "type " ++ showDoc pf1
               " but should be mapped to type " ++
               showDoc pf2 "") $ getRange rsy
       CspKindedSymb k ide | elem k [CaslKind Implicit, ProcessKind] ->
-        return (idToSimpleId ide, al)
+        return (ide, al)
       _ -> plain_error (pn, al)
                (procSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy

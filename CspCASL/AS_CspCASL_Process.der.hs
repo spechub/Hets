@@ -26,7 +26,7 @@ module CspCASL.AS_CspCASL_Process (
     procNameToSimpProcName,
     ProcProfile (..),
     RENAMING (..),
-    SIMPLE_PROCESS_NAME,
+    PROCESS_NAME,
     TypedChanName (..)
 ) where
 
@@ -87,9 +87,9 @@ data RENAMING = Renaming [Id]
               | FQRenaming [TERM ()]
                 deriving (Show, Ord, Eq)
 
-type CHANNEL_NAME = SIMPLE_ID
+type CHANNEL_NAME = Id
 
-type SIMPLE_PROCESS_NAME = SIMPLE_ID
+type PROCESS_NAME = Id
 
 type PROC_ARGS = [SORT]
 
@@ -106,15 +106,15 @@ data ProcProfile = ProcProfile PROC_ARGS CommAlpha
 name. -}
 data FQ_PROCESS_NAME
   -- | A non-fully qualified process name
-  = PROCESS_NAME SIMPLE_PROCESS_NAME
+  = PROCESS_NAME PROCESS_NAME
   -- | A fully qualified process name
-  | FQ_PROCESS_NAME SIMPLE_PROCESS_NAME ProcProfile
+  | FQ_PROCESS_NAME PROCESS_NAME ProcProfile
   {- | A name with parameter sorts and communication ids from the parser.
   This is where the user has tried to specify a fully qualified process name -}
-  | PARSED_FQ_PROCESS_NAME SIMPLE_PROCESS_NAME PROC_ARGS PROC_ALPHABET
+  | PARSED_FQ_PROCESS_NAME PROCESS_NAME PROC_ARGS PROC_ALPHABET
                   deriving (Eq, Ord, Show)
 
-procNameToSimpProcName :: FQ_PROCESS_NAME -> SIMPLE_PROCESS_NAME
+procNameToSimpProcName :: FQ_PROCESS_NAME -> PROCESS_NAME
 procNameToSimpProcName (PROCESS_NAME pn) = pn
 procNameToSimpProcName (FQ_PROCESS_NAME pn _ ) = pn
 procNameToSimpProcName (PARSED_FQ_PROCESS_NAME pn _ _) = pn

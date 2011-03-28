@@ -82,10 +82,10 @@ cspCheckSymbList l = case l of
   [] -> []
 
 toChanSymbol :: (CHANNEL_NAME, SORT) -> CspSymbol
-toChanSymbol (c, s) = CspSymbol (simpleIdToId c) $ ChanAsItemType s
+toChanSymbol (c, s) = CspSymbol c $ ChanAsItemType s
 
-toProcSymbol :: (SIMPLE_PROCESS_NAME, ProcProfile) -> CspSymbol
-toProcSymbol (n, p) = CspSymbol (simpleIdToId n) $ ProcAsItemType p
+toProcSymbol :: (PROCESS_NAME, ProcProfile) -> CspSymbol
+toProcSymbol (n, p) = CspSymbol n $ ProcAsItemType p
 
 idToCspRaw :: Id -> CspRawSymbol
 idToCspRaw = CspKindedSymb $ CaslKind Implicit
@@ -97,28 +97,22 @@ cspTypedSymbKindToRaw :: Bool -> CspCASLSign -> CspSymbKind -> Id -> CspType
   -> Result CspRawSymbol
 cspTypedSymbKindToRaw b sig k idt t = let
     csig = extendedInfo sig
-    getSet = Map.findWithDefault Set.empty $ idToSimpleId idt
+    getSet = Map.findWithDefault Set.empty idt
     chs = getSet $ chans csig
     prs = getSet $ procSet csig
     err = plain_error (idToCspRaw idt)
               (showDoc idt " " ++ showDoc t
                " does not have kind " ++ showDoc k "") nullRange
-    mkSimple i = if isSimpleId i then return $ idToSimpleId i else
-      mkError "not a simple id" i
     in case k of
-     ProcessKind -> do
-      si <- mkSimple idt
-      case t of
-       ProcType p -> return $ ACspSymbol $ toProcSymbol (si, p)
+     ProcessKind -> case t of
+       ProcType p -> return $ ACspSymbol $ toProcSymbol (idt, p)
        CaslType (A_type s) -> return
          $ ACspSymbol $ toProcSymbol
-             (si, sortToProcProfile s)
+             (idt, sortToProcProfile s)
        _ -> err
-     ChannelKind -> do
-      si <- mkSimple idt
-      case t of
+     ChannelKind -> case t of
        CaslType (A_type s) ->
-         return $ ACspSymbol $ toChanSymbol (si, s)
+         return $ ACspSymbol $ toChanSymbol (idt, s)
        _ -> err
      CaslKind ck -> case t of
        CaslType ct -> let
@@ -126,25 +120,24 @@ cspTypedSymbKindToRaw b sig k idt t = let
            ASymbol sy -> ACspSymbol $ CspSymbol idt $ CaslSymbType $ symbType sy
            _ -> CspKindedSymb k idt) $ typedSymbKindToRaw b sig ck idt ct
          in case ct of
-         A_type s | b && ck == Implicit && isSimpleId idt ->
-           let si = idToSimpleId idt
-               hasChan = Set.member s chs
+         A_type s | b && ck == Implicit ->
+           let hasChan = Set.member s chs
                cprs = Set.filter (\ (ProcProfile args al) ->
                  null args && any (\ cs -> case cs of
                             CommTypeSort r -> r == s
                               || Set.member s (subsortsOf r sig)
                             CommTypeChan (TypedChanName c _) ->
-                              simpleIdToId c == s) (Set.toList al)) prs
+                              c == s) (Set.toList al)) prs
            in case Set.toList cprs of
              [] -> if hasChan then do
-                 appendDiags [mkDiag Hint "matched channel" si]
-                 return $ ACspSymbol $ toChanSymbol (si, s)
+                 appendDiags [mkDiag Hint "matched channel" idt]
+                 return $ ACspSymbol $ toChanSymbol (idt, s)
                else caslAnno
              pr : rpr -> do
                when (hasChan || not (null rpr)) $
-                 appendDiags [mkDiag Warning "ambiguous matches" si]
-               appendDiags [mkDiag Hint "matched process" si]
-               return $ ACspSymbol $ toProcSymbol (si, pr)
+                 appendDiags [mkDiag Warning "ambiguous matches" idt]
+               appendDiags [mkDiag Hint "matched process" idt]
+               return $ ACspSymbol $ toProcSymbol (idt, pr)
          _ -> caslAnno
        _ -> err
 

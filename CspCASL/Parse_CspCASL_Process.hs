@@ -173,11 +173,11 @@ process_name :: AParser st FQ_PROCESS_NAME
 process_name = qualProc <|> fmap PROCESS_NAME simple_process_name
 
 -- | Parse a simple process name
-simple_process_name :: AParser st SIMPLE_PROCESS_NAME
-simple_process_name = var
+simple_process_name :: AParser st PROCESS_NAME
+simple_process_name = cspSortId
 
 channel_name :: AParser st CHANNEL_NAME
-channel_name = var
+channel_name = cspSortId
 
 comm_type :: AParser st COMM_TYPE
 comm_type = var
@@ -298,9 +298,7 @@ commType = do
   do
     colonT
     r <- cspSortId
-    if isSimpleId s
-      then return $ CommTypeChan $ TypedChanName (idToSimpleId s) r
-      else unexpected $ "sort " ++ show s
+    return $ CommTypeChan $ TypedChanName s r
    <|> return (CommTypeSort s)
 
 -- | parse a possibly empty list of comm types
@@ -320,13 +318,13 @@ formalProcArgs :: AParser st [(SORT, Maybe SORT)]
 formalProcArgs = optionL $ parens manySortedVars
 
 -- | process name plus formal arguments
-procHead :: AParser st (SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)])
+procHead :: AParser st (PROCESS_NAME, [(SORT, Maybe SORT)])
 procHead = pair simple_process_name formalProcArgs
 
 procTail :: AParser st [CommType]
 procTail = colonT >> alphabet
 
-procDecl :: AParser st ((SIMPLE_PROCESS_NAME, [(SORT, Maybe SORT)]), [CommType])
+procDecl :: AParser st ((PROCESS_NAME, [(SORT, Maybe SORT)]), [CommType])
 procDecl = pair procHead procTail
 
 qualProc :: AParser st FQ_PROCESS_NAME
