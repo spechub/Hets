@@ -77,7 +77,7 @@ kif2CASLTerm ll = case ll of
     Literal _ s -> varOrConst $ toSimpleId s
     -- a formula in place of a term; coerce to Booleans
     List (Literal l f : args) ->
-      if f `elem` ["forall","exists"] -- ,"and","or","=>","<=>","not"]
+      if f `elem` ["forall", "exists"] -- ,"and","or","=>","<=>","not"]
        then Conditional trueTerm
          (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
         else Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
@@ -96,36 +96,36 @@ kif2CASLvardecl l = case l of
 -- | first pass of translation, just collecting the formulas
 kif2CASLpass1 :: [ListOfList] -> [Annoted CASLFORMULA]
 kif2CASLpass1 [] = []
-kif2CASLpass1 (phi:rest) =
+kif2CASLpass1 (phi : rest) =
   (emptyAnno phi') { r_annos = annos } : kif2CASLpass1 rest'
   where phi' = kif2CASLFormula phi
-        (annos,rest') = skipComments [] rest
+        (annos, rest') = skipComments [] rest
 
 -- | chech for comment
 isKifComment :: ListOfList -> Bool
-isKifComment (List (Literal KToken "documentation":_)) = True
+isKifComment (List (Literal KToken "documentation" : _)) = True
 isKifComment _ = False
 
 -- | convert comment to annotation
 toAnno :: ListOfList -> Annotation
-toAnno (List (_:l)) =
+toAnno (List (_ : l)) =
   Unparsed_anno Comment_start
     (Group_anno [show $ Doc.vcat $ map ppListOfList l]) nullRange
 toAnno _ = error "Kif2CASL.toAnno: wrong format of comment"
 
 -- | skip the first comments; they belong to the whole file
 skipComments :: [Annotation] -> [ListOfList] -> ([Annotation], [ListOfList])
-skipComments acc [] = (reverse acc,[])
-skipComments acc l@(x:rest) =
+skipComments acc [] = (reverse acc, [])
+skipComments acc l@(x : rest) =
   if isKifComment x
-   then skipComments (toAnno x:acc) rest
-   else (reverse acc,l)
+   then skipComments (toAnno x : acc) rest
+   else (reverse acc, l)
 
 data Predsym = Predsym Int PRED_NAME
                 deriving (Eq, Ord, Show)
 
 sameArity :: Predsym -> Predsym -> Bool
-sameArity (Predsym m _) (Predsym n _) = m==n
+sameArity (Predsym m _) (Predsym n _) = m == n
 
 getName :: Predsym -> PRED_NAME
 getName (Predsym _ p) = p
@@ -150,7 +150,7 @@ data Opsym = Opsym Int OP_NAME
                 deriving (Eq, Ord, Show)
 
 sameOpArity :: Opsym -> Opsym -> Bool
-sameOpArity (Opsym m _) (Opsym n _) = m==n
+sameOpArity (Opsym m _) (Opsym n _) = m == n
 
 getOpName :: Opsym -> OP_NAME
 getOpName (Opsym _ p) = p
@@ -179,7 +179,7 @@ kif2CASL l = Basic_spec $ filter nonEmpty
                            [(emptyAnno sorts) { l_annos = ans },
                             emptyAnno ops, emptyAnno preds,
                             emptyAnno vars, emptyAnno axs]
-  where (ans,rest) = skipComments [] l
+  where (ans, rest) = skipComments [] l
         phis = kif2CASLpass1 rest
         axs = Axiom_items phis nullRange
         preds = Sig_items $ Pred_items preddecls nullRange

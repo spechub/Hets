@@ -55,10 +55,10 @@ mapOpSymb _ (Op_name os) =
 mapVars :: Morphism f e m -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
 
-mapDecoratedOpSymb :: Morphism f e m -> (OP_SYMB,[Int]) -> (OP_SYMB,[Int])
-mapDecoratedOpSymb m (os,indices) = let
+mapDecoratedOpSymb :: Morphism f e m -> (OP_SYMB, [Int]) -> (OP_SYMB, [Int])
+mapDecoratedOpSymb m (os, indices) = let
    newOs = mapOpSymb m os
-   in (newOs,indices)
+   in (newOs, indices)
 
 mapConstr :: Morphism f e m -> Constraint -> Constraint
 mapConstr m constr =

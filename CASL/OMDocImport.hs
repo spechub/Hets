@@ -169,8 +169,8 @@ mkConstructor e s (ADTConstr nm args) =
     in (Qual_op_name opn (Op_type Total l s nullRange) nullRange, [0])
 
 
--- we have to create the name of this injection because we throw it away
--- during the export
+{- we have to create the name of this injection because we throw it away
+during the export -}
 mkConstructor e s (ADTInsort (_, omn)) =
     let argsort = lookupSort e omn
         opn = mkUniqueInjName argsort s
@@ -187,7 +187,7 @@ mkArg _ _ = error "mkArg: Malformed ADT expression"
 -- * Subsort Relation
 
 omdocToSortRel :: Env -> [TCElement] -> Result (Rel.Rel SORT)
-omdocToSortRel e tcs = foldM (addMaybeToSortRel e) Rel.empty tcs
+omdocToSortRel e = foldM (addMaybeToSortRel e) Rel.empty
 
 addMaybeToSortRel :: Env -> Rel.Rel SORT -> TCElement -> Result (Rel.Rel SORT)
 addMaybeToSortRel e r (TCSymbol n (OMA [sof, oms1, oms2]) Axiom _) =
@@ -316,7 +316,7 @@ toVarDecl _ _ = error "toVarDecl: bound variables should be attributed."
 
 -- Toplevel entry point
 omdocToFormula :: Env -> OMElement -> FORMULA f
-omdocToFormula e f = omdocToFormula' (e, Map.empty) f
+omdocToFormula e = omdocToFormula' (e, Map.empty)
 
 
 -- Functions with given VarMap
@@ -345,7 +345,7 @@ omdocToTerm' e@(ie, vm) f =
                          (error $ concat [ "omdocToTerm': Variable not in "
                                          , "varmap: ", show var ]) var vm
                  in Qual_var var s nullRange
-      OMATTT ome (OMAttr ct t) 
+      OMATTT ome (OMAttr ct t)
           | ct == const_type ->
               -- same as cast
               mkT2 (omdocToTerm' e) (lookupSortOMS "omdocToTerm: Sorted" ie)
@@ -401,4 +401,4 @@ omdocToFormula' e@(ie, _) f =
                              $ lookupPredOMS
                                    ("omdocToFormula: can't handle constant "
                                     ++ show f) ie f) [] nullRange
-      _ | otherwise -> error $ "omdocToFormula: no valid formula " ++ show f
+      _ -> error $ "omdocToFormula: no valid formula " ++ show f

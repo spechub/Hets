@@ -45,7 +45,7 @@ localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
 localAna ga bs =
     let Result ds ms =
             basicCASLAnalysis (bs, emptySign () , ga)
-        es = filter ((<= Error)  . diagKind) ds
+        es = filter ((<= Error) . diagKind) ds
         in case ms of
            Just (_newBs, ExtSign accSig _, _sents) -> Result es $ Just accSig
            Nothing -> Result ds Nothing

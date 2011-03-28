@@ -18,10 +18,10 @@ Please do not remove them without reason!!
 -}
 
 module CASL.Taxonomy
-    (-- * Conversion
-     convTaxo,
-     -- * Printing of MMiSS ontologies in LaTeX
-     showOntClass, showRelationName, showRelation) where
+  ( -- * Conversion
+    convTaxo
+    -- * Printing of MMiSS ontologies in LaTeX
+  , showOntClass, showRelationName, showRelation) where
 
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
@@ -37,8 +37,8 @@ import Common.Result
 import Common.Id ()
 import Common.AS_Annotation
 
--- | convert a generic CASL signature into the MMiSS ontology
--- datastructure for display as taxonomy graph
+{- | convert a generic CASL signature into the MMiSS ontology
+datastructure for display as taxonomy graph -}
 convTaxo :: TaxoGraphKind -> MMiSSOntology
          -> Sign f e
          -> [Named (FORMULA f)] -> Result MMiSSOntology
@@ -77,7 +77,7 @@ convPred s o =
     where addPred pn tSet wOnto =
            weither (const wOnto) insBinaryPred wOnto
            where insBinaryPred on =
-                  let binT = Set.filter ((==2) . length . predArgs) tSet
+                  let binT = Set.filter ((== 2) . length . predArgs) tSet
                   in if Set.null binT
                         then hasValue on
                         else Set.fold insType (insName on) binT

@@ -15,7 +15,7 @@ module Main where
 
 import CASL.Formula
 import CASL.AS_Basic_CASL
-import CASL.ToDoc()
+import CASL.ToDoc ()
 import CASL.Parse_AS_Basic
 import Common.AnnoState
 import Common.RunParsers

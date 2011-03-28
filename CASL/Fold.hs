@@ -22,9 +22,9 @@ data Record f a b = Record
                           a -> Range -> a
     , foldConjunction :: FORMULA f -> [a] -> Range -> a
     , foldDisjunction :: FORMULA f -> [a] -> Range -> a
-    , foldImplication :: FORMULA f -> a  -> a  -> Bool -> Range -> a
-    , foldEquivalence :: FORMULA f -> a  -> a  -> Range -> a
-    , foldNegation :: FORMULA f -> a  -> Range -> a
+    , foldImplication :: FORMULA f -> a -> a -> Bool -> Range -> a
+    , foldEquivalence :: FORMULA f -> a -> a -> Range -> a
+    , foldNegation :: FORMULA f -> a -> Range -> a
     , foldTrue_atom :: FORMULA f -> Range -> a
     , foldFalse_atom :: FORMULA f -> Range -> a
     , foldPredication :: FORMULA f -> PRED_SYMB -> [b] -> Range -> a
@@ -39,7 +39,7 @@ data Record f a b = Record
     , foldExtFORMULA :: FORMULA f -> f -> a
     , foldQual_var :: TERM f -> VAR -> SORT -> Range -> b
     , foldApplication :: TERM f -> OP_SYMB -> [b] -> Range -> b
-    , foldSorted_term :: TERM f ->  b -> SORT -> Range -> b
+    , foldSorted_term :: TERM f -> b -> SORT -> Range -> b
     , foldCast :: TERM f -> b -> SORT -> Range -> b
     , foldConditional :: TERM f -> b -> a -> b -> Range -> b
     , foldMixfix_qual_pred :: TERM f -> PRED_SYMB -> b
@@ -136,7 +136,7 @@ foldFormula r f = case f of
       (foldFormula r f2) ps
    Negation e ps -> foldNegation r f (foldFormula r e) ps
    True_atom ps -> foldTrue_atom r f ps
-   False_atom ps -> foldFalse_atom  r f ps
+   False_atom ps -> foldFalse_atom r f ps
    Predication p ts ps -> foldPredication r f p (map (foldTerm r) ts) ps
    Definedness t ps -> foldDefinedness r f (foldTerm r t) ps
    Existl_equation t1 t2 ps -> foldExistl_equation r f (foldTerm r t1)

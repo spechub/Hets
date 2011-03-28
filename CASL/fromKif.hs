@@ -14,7 +14,7 @@ module Main where
 
 import CASL.Kif
 import CASL.Kif2CASL
-import CASL.ToDoc()
+import CASL.ToDoc ()
 
 import Common.Utils
 import Common.DocUtils
