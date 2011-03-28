@@ -55,12 +55,10 @@ convSign KConcept o s =
     wOnto -> weither (const wOnto) (convPred s) wOnto
 convSign KSubsort onto sign =
     Set.fold addSor (hasValue onto) $ sortSet sign
--- Ausgehend von den Top-Sorten -- Rel.mostRight
-
-    where str = show
-          relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
+    -- start with top sorts (maybe use Rel.mostRight?)
+    where relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
           addSor sort weOnto =
-             let sortStr = str sort
+             let sortStr = show sort
              in weither (const weOnto)
                         (\ on -> insClass on sortStr
                                           (maybe [] toStrL $
@@ -68,7 +66,7 @@ convSign KSubsort onto sign =
                         weOnto
           insClass o nm supL =
               insertClass o nm nm supL (Just SubSort)
-          toStrL = Set.fold ((:) . str) []
+          toStrL = map show . Set.toList
 
 convPred :: Sign f e -> MMiSSOntology -> WithError MMiSSOntology
 convPred s o =
