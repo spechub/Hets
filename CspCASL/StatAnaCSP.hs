@@ -21,6 +21,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.MixfixParser
 import CASL.Overload (minExpFORMULA, oneExpTerm)
+import CASL.Quantification
 import CASL.Sign
 import CASL.StaticAna
 import CASL.ToDoc ()
@@ -113,6 +114,11 @@ anaChannelName s m chanName = do
 anaProcItem :: Annoted PROC_ITEM -> State CspCASLSign ()
 anaProcItem annotedProcItem = case item annotedProcItem of
     Proc_Decl name argSorts alpha -> anaProcDecl name argSorts alpha
+    Proc_Defn name args alpha procTerm -> do
+      let vs = flatVAR_DECLs args
+      let pn = ParmProcname (PROCESS_NAME name) $ map fst vs
+      anaProcDecl name (map snd vs) alpha
+      anaProcEq annotedProcItem pn procTerm
     Proc_Eq parmProcName procTerm ->
       anaProcEq annotedProcItem parmProcName procTerm
 

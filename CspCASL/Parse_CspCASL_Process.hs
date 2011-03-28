@@ -27,13 +27,14 @@ module CspCASL.Parse_CspCASL_Process
   , var
   , commType
   , bracedList
-  , procDeclOrEq
+  , procDeclOrDefn
   ) where
 
 import Text.ParserCombinators.Parsec
 
-import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR)
-import qualified CASL.Formula
+import CASL.AS_Basic_CASL
+import qualified CASL.Formula as CASL
+
 import Common.AnnoState
 import Common.Id
 import Common.Keywords
@@ -43,9 +44,6 @@ import Common.Token (parseId, sortId, varId)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
-
-import qualified Data.Set as Set
-import Data.Maybe
 
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = cond_proc <|> par_proc
@@ -110,7 +108,7 @@ cspStartKeys = startCspKeywords ++ startKeyword
 
 seqSym :: AParser st Token
 seqSym = asKey sequentialS `notFollowedWith`
-  (forget procDeclOrEq <|> choice (map (forget . asKey) cspStartKeys))
+  (forget procDeclOrDefn <|> choice (map (forget . asKey) cspStartKeys))
 
 seq_proc' :: PROCESS -> AParser st PROCESS
 seq_proc' lp = do
@@ -174,17 +172,17 @@ process_name = qualProc <|> fmap PROCESS_NAME simple_process_name
 
 -- | Parse a simple process name
 simple_process_name :: AParser st PROCESS_NAME
-simple_process_name = cspSortId
+simple_process_name = fmap simpleIdToId var
 
 channel_name :: AParser st CHANNEL_NAME
-channel_name = cspSortId
+channel_name = fmap simpleIdToId var
 
 comm_type :: AParser st COMM_TYPE
 comm_type = var
 
 -- List of arguments to a named process
 procArgs :: AParser st [TERM ()]
-procArgs = optionL $ parenList $ CASL.Formula.term cspKeywords
+procArgs = optionL $ parenList $ CASL.term cspKeywords
 
 event_set :: AParser st EVENT_SET
 event_set = do
@@ -202,7 +200,7 @@ chan_send :: AParser st EVENT
 chan_send = do
     cn <- channel_name
     asKey chan_sendS
-    t <- CASL.Formula.term cspKeywords
+    t <- CASL.term cspKeywords
     return (ChanSend cn t (getRange cn))
 
 chan_nondet_send :: AParser st EVENT
@@ -241,14 +239,14 @@ externalPrefixChoice = do
 
 term_event :: AParser st EVENT
 term_event = do
-    t <- CASL.Formula.term cspKeywords
+    t <- CASL.term cspKeywords
     return (TermEvent t (getRange t))
 
 {- Formulas are CASL formulas.  We make our own wrapper around them
 however. -}
 
 formula :: AParser st (FORMULA ())
-formula = CASL.Formula.formula cspKeywords
+formula = CASL.formula cspKeywords
 
 {- Primitive renaming is done using an operator name or a predicate
 name.  They're both Ids.  Separation between operator or predicate
@@ -277,19 +275,26 @@ compRange x y = getRange x `appRange` getRange y
 -- * parse the beginning of a process declaration or equation
 
 -- | parse many vars with the same sort
-sortedVars :: AParser st [(SORT, Maybe SORT)]
+sortedVars :: AParser st (Either [SORT] VAR_DECL)
 sortedVars = do
     is <- commaSep1 cspSortId
-    ms <- optionMaybe $ colonT >> cspSortId
-    let res = return $ map (\ i -> (i, ms)) is
+    ms <- optionMaybe $ pair colonT cspSortId
     case ms of
-      Nothing -> res
-      Just _ -> if all isSimpleId is then res else
-        fail "expecting only simple vars before colon"
+      Nothing -> return $ Left is
+      Just (r, s) -> if all isSimpleId is
+        then return $ Right $ Var_decl (map idToSimpleId is) s $ tokPos r else
+        fail "expected only simple vars before colon"
 
 -- | parse variables with possibly different sorts
-manySortedVars :: AParser st [(SORT, Maybe SORT)]
-manySortedVars = flat $ sepBy1 sortedVars anSemiOrComma
+manySortedVars :: AParser st (Either [SORT] [VAR_DECL])
+manySortedVars = do
+  e <- sortedVars
+  case e of
+    Left s -> return $ Left s
+    Right vd -> do
+       vs <- optionL $ anSemiOrComma
+          >> fmap fst (CASL.varDecls cspKeywords)
+       return $ Right $ vd : vs
 
 -- | parse a sort or a sorted channel
 commType :: AParser st CommType
@@ -313,41 +318,50 @@ bracedList = braces commTypeList
 alphabet :: AParser st [CommType]
 alphabet = bracedList <|> commTypeList
 
--- | possibly sorted arguments
-formalProcArgs :: AParser st [(SORT, Maybe SORT)]
-formalProcArgs = optionL $ parens manySortedVars
+procTail :: AParser st PROC_ALPHABET
+procTail = fmap ProcAlphabet $ colonT >> alphabet
 
--- | process name plus formal arguments
-procHead :: AParser st (PROCESS_NAME, [(SORT, Maybe SORT)])
-procHead = pair simple_process_name formalProcArgs
-
-procTail :: AParser st [CommType]
-procTail = colonT >> alphabet
-
-procDecl :: AParser st ((PROCESS_NAME, [(SORT, Maybe SORT)]), [CommType])
-procDecl = pair procHead procTail
+procDecl :: AParser st FQ_PROCESS_NAME
+procDecl = do
+  pn <- simple_process_name
+  ss <- optionL $ parenList cspSortId
+  al <- procTail
+  return $ PARSED_FQ_PROCESS_NAME pn ss al
 
 qualProc :: AParser st FQ_PROCESS_NAME
 qualProc = do
     try (oParenT >> asKey processS)
-    ((pn, fs), al) <- procDecl
-    ss <- if all (isNothing . snd) fs then return $ map fst fs else
-       fail "expected simple sort list in qualified process"
+    pd <- procDecl
     cParenT
-    return $ PARSED_FQ_PROCESS_NAME pn ss $ ProcAlphabet al
+    return pd
 
-procDeclOrEq :: AParser st
-  (FQ_PROCESS_NAME, [(SORT, Maybe SORT)], Maybe [CommType], Bool)
-procDeclOrEq = do
-    PARSED_FQ_PROCESS_NAME pn ss (ProcAlphabet al) <- qualProc
-    as <- formalProcArgs
-    ma <- optionMaybe procTail
+procDeclOrDefn :: AParser st (Either (FQ_PROCESS_NAME, [VAR])
+    (PROCESS_NAME, Either [SORT] [VAR_DECL], PROC_ALPHABET))
+procDeclOrDefn = do
+    fqn <- qualProc
+    as <- optionL $ parenList var
     equalT
-    return (FQ_PROCESS_NAME pn (ProcProfile ss $ Set.fromList al), as, ma, True)
+    return $ Left (fqn, as)
   <|> do
-    (pn, as) <- procHead
-    ma <- optionMaybe procTail
-    e <- case ma of
-           Nothing -> fmap Just equalT
-           Just _ -> optionMaybe equalT
-    return (PROCESS_NAME pn, as, ma, isJust e)
+    pn <- simple_process_name
+    ma <- optionMaybe $ parens manySortedVars
+    mal <- optionMaybe procTail
+    case mal of
+      Nothing -> do
+        equalT
+        case ma of
+          Just (Left ss) | all isSimpleId ss ->
+             return $ Left (PROCESS_NAME pn, map idToSimpleId ss)
+          Nothing -> return $ Left (PROCESS_NAME pn, [])
+          _ -> fail "unexpected argument list"
+      Just al -> case ma of
+        Nothing -> do
+          me <- optionMaybe equalT
+          case me of
+            Nothing -> return $ Right (pn, Left [], al)
+            Just _ -> return $ Right (pn, Right [], al)
+        Just as -> case as of
+          Left ss -> return $ Right (pn, Left ss, al)
+          Right vds -> do
+            equalT
+            return $ Right (pn, Right vds, al)

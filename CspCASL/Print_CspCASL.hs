@@ -74,6 +74,11 @@ printArgs a = if null a then empty else parens $ ppWithCommas a
 printProcItem :: PROC_ITEM -> Doc
 printProcItem (Proc_Decl pn args alpha) =
     sep [pretty pn <> printArgs args, colon <+> pretty alpha]
+printProcItem (Proc_Defn pn args alpha p) =
+    sep [pretty pn <> if null args then empty
+           else parens $ printVarDecls args
+        , colon <+> pretty alpha
+        , equals <+> pretty p]
 printProcItem (Proc_Eq pn p) = sep [pretty pn, equals <+> pretty p]
 
 instance Pretty PARM_PROCNAME where

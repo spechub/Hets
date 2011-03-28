@@ -15,7 +15,7 @@ module CspCASL.AS_CspCASL where
 
 import Common.Id
 
-import CASL.AS_Basic_CASL (SORT, VAR)
+import CASL.AS_Basic_CASL (SORT, VAR, VAR_DECL)
 import Common.AS_Annotation (Annoted)
 import CspCASL.AS_CspCASL_Process
 
@@ -31,6 +31,7 @@ data CHANNEL_DECL = ChannelDecl [CHANNEL_NAME] SORT deriving Show
 
 data PROC_ITEM
   = Proc_Decl PROCESS_NAME PROC_ARGS PROC_ALPHABET
+  | Proc_Defn PROCESS_NAME [VAR_DECL] PROC_ALPHABET PROCESS
   | Proc_Eq PARM_PROCNAME PROCESS
     deriving Show
 
