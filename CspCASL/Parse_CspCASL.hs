@@ -26,10 +26,10 @@ instance AParsable CspBasicExt where
 
 cspBasicExt :: AParser st CspBasicExt
 cspBasicExt =
-  itemList cspKeywords channelS (const chanDecl) (\ l _ -> Channels l)
+  itemList cspKeywords channelS (const chanDecl) Channels
   <|> do
     p <- asKey processS
-    auxItemList cspStartKeys [p] procItem (\ l _ -> ProcItems l)
+    auxItemList cspStartKeys [p] procItem ProcItems
 
 chanDecl :: AParser st CHANNEL_DECL
 chanDecl = do

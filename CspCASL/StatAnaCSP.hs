@@ -75,8 +75,8 @@ basicAnaAux =
 ana_BASIC_CSP :: Ana CspBasicExt CspBasicExt () () CspSign
 ana_BASIC_CSP _ bs = do
   case bs of
-    Channels cs -> mapM_ (anaChanDecl . item) cs
-    ProcItems ps -> mapM_ anaProcItem ps
+    Channels cs _ -> mapM_ (anaChanDecl . item) cs
+    ProcItems ps _ -> mapM_ anaProcItem ps
   return bs
 
 -- Static analysis of channel declarations

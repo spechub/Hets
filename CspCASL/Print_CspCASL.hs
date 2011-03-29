@@ -31,9 +31,9 @@ instance ListCheck CHANNEL_DECL where
 
 printCspBasicExt :: CspBasicExt -> Doc
 printCspBasicExt ccs = case ccs of
-  Channels cs -> keyword (channelS ++ pluralS cs)
+  Channels cs _ -> keyword (channelS ++ pluralS cs)
     <+> semiAnnos printChanDecl cs
-  ProcItems ps -> keyword processS
+  ProcItems ps _ -> keyword processS
     <+> semiAnnos printProcItem ps
 
 instance Pretty FQ_PROCESS_NAME where

@@ -23,8 +23,8 @@ import CspCASL.AS_CspCASL_Process
 {-! global: GetRange !-}
 
 data CspBasicExt
-  = Channels [Annoted CHANNEL_DECL]
-  | ProcItems [Annoted PROC_ITEM]
+  = Channels [Annoted CHANNEL_DECL] Range
+  | ProcItems [Annoted PROC_ITEM] Range
   deriving Show
 
 data CHANNEL_DECL = ChannelDecl [CHANNEL_NAME] SORT deriving Show
