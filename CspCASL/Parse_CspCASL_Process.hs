@@ -14,7 +14,6 @@ Parser for CSP-CASL processes.
 
 module CspCASL.Parse_CspCASL_Process
   ( channel_name
-  , comm_type
   , parens
   , parenList
   , cspStartKeys
@@ -177,16 +176,13 @@ simple_process_name = fmap simpleIdToId var
 channel_name :: AParser st CHANNEL_NAME
 channel_name = fmap simpleIdToId var
 
-comm_type :: AParser st COMM_TYPE
-comm_type = var
-
 -- List of arguments to a named process
 procArgs :: AParser st [TERM ()]
 procArgs = optionL $ parenList $ CASL.term cspKeywords
 
 event_set :: AParser st EVENT_SET
 event_set = do
-    cts <- comm_type `sepBy` commaT
+    cts <- alphabet
     return (EventSet cts (getRange cts))
 
 {- Events may be simple CASL terms or channel send/receives or
@@ -326,7 +322,7 @@ procDecl = do
   pn <- simple_process_name
   ss <- optionL $ parenList cspSortId
   al <- procTail
-  return $ PARSED_FQ_PROCESS_NAME pn ss al
+  return $ FQ_PROCESS_NAME pn ss al
 
 qualProc :: AParser st FQ_PROCESS_NAME
 qualProc = do

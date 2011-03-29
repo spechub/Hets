@@ -49,14 +49,11 @@ printProcProfile (ProcProfile sorts commAlpha) =
         , colon <+> printProcAlphabet (ProcAlphabet $ Set.toList commAlpha)]
 
 printProcessName :: FQ_PROCESS_NAME -> Doc
-printProcessName fqPn =
-  let f n pf =
-        parens $ cat [keyword processS <+> pretty n, printProcProfile pf]
-  in case fqPn of
+printProcessName fqPn = case fqPn of
     PROCESS_NAME pn -> pretty pn
-    PARSED_FQ_PROCESS_NAME pn argSorts (ProcAlphabet comms) ->
-      f pn $ ProcProfile argSorts $ Set.fromList comms
-    FQ_PROCESS_NAME pn profile -> f pn profile
+    FQ_PROCESS_NAME pn argSorts al -> parens $ sep
+      [ keyword processS <+> pretty pn <> printArgs argSorts
+      , printProcAlphabet al ]
 
 instance Pretty CHANNEL_DECL where
     pretty = printChanDecl

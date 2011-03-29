@@ -16,7 +16,6 @@ module CspCASL.AS_CspCASL_Process (
     CHANNEL_NAME,
     CommAlpha,
     CommType (..),
-    COMM_TYPE,
     EVENT (..),
     EVENT_SET (..),
     FQ_PROCESS_NAME (..),
@@ -77,7 +76,7 @@ data EVENT
     deriving (Show, Ord, Eq)
 
 -- | Event sets are sets of communication types.
-data EVENT_SET = EventSet [COMM_TYPE] Range
+data EVENT_SET = EventSet [CommType] Range
                -- | FQEvent set distinguishes between channel names and Sorts
                | FQEventSet [CommType] Range
                  deriving (Show, Ord, Eq)
@@ -107,19 +106,14 @@ name. -}
 data FQ_PROCESS_NAME
   -- | A non-fully qualified process name
   = PROCESS_NAME PROCESS_NAME
-  -- | A fully qualified process name
-  | FQ_PROCESS_NAME PROCESS_NAME ProcProfile
   {- | A name with parameter sorts and communication ids from the parser.
   This is where the user has tried to specify a fully qualified process name -}
-  | PARSED_FQ_PROCESS_NAME PROCESS_NAME PROC_ARGS PROC_ALPHABET
+  | FQ_PROCESS_NAME PROCESS_NAME PROC_ARGS PROC_ALPHABET
                   deriving (Eq, Ord, Show)
 
 procNameToSimpProcName :: FQ_PROCESS_NAME -> PROCESS_NAME
 procNameToSimpProcName (PROCESS_NAME pn) = pn
-procNameToSimpProcName (FQ_PROCESS_NAME pn _ ) = pn
-procNameToSimpProcName (PARSED_FQ_PROCESS_NAME pn _ _) = pn
-
-type COMM_TYPE = SIMPLE_ID
+procNameToSimpProcName (FQ_PROCESS_NAME pn _ _) = pn
 
 {- | A process communication alphabet consists of a set of sort names
 and typed channel names. -}

@@ -116,8 +116,9 @@ anaProcItem annotedProcItem = case item annotedProcItem of
     Proc_Decl name argSorts alpha -> anaProcDecl name argSorts alpha
     Proc_Defn name args alpha procTerm -> do
       let vs = flatVAR_DECLs args
-      let pn = ParmProcname (PROCESS_NAME name) $ map fst vs
-      anaProcDecl name (map snd vs) alpha
+          ss = map snd vs
+          pn = ParmProcname (FQ_PROCESS_NAME name ss alpha) $ map fst vs
+      anaProcDecl name ss alpha
       anaProcEq annotedProcItem pn procTerm
     Proc_Eq parmProcName procTerm ->
       anaProcEq annotedProcItem parmProcName procTerm
@@ -153,17 +154,13 @@ anaProcDecl name argSorts comms = do
 {- | Find a profile for a process name. Either the profile is given via a parsed
 fully qualified process name, in which case we check everything is valid and
 the process name with the profile is known. Or its a plain process name where
-we must deduce a unique profile is possible. We also know how many variables
+we must deduce a unique profile if possible. We also know how many variables
 / parameters the process name has. -}
 findProfileForProcName :: FQ_PROCESS_NAME -> Int -> ProcNameMap ->
                           State CspCASLSign (Maybe ProcProfile)
 findProfileForProcName pn numParams procNameMap =
   case pn of
-    FQ_PROCESS_NAME pn' (ProcProfile argSorts comms) ->
-      findProfileForProcName
-        (PARSED_FQ_PROCESS_NAME pn' argSorts $ ProcAlphabet $ Set.toList comms)
-        numParams procNameMap
-    PARSED_FQ_PROCESS_NAME pn' argSorts comms -> do
+    FQ_PROCESS_NAME pn' argSorts comms -> do
       profile <- anaProcAlphabet argSorts comms
       let profiles = Map.findWithDefault Set.empty pn' procNameMap
       if profile `Set.member` profiles
@@ -193,9 +190,10 @@ anaProcName pn numParams = do
   maybeProf <- findProfileForProcName pn numParams procDecls
   case maybeProf of
     Nothing -> return Nothing
-    Just profile ->
+    Just (ProcProfile args sal) ->
       -- We now construct the real fully qualified process name
-      return $ Just $ FQ_PROCESS_NAME simpPn profile
+      return $ Just $ FQ_PROCESS_NAME simpPn args $ ProcAlphabet
+        $ Set.toList sal
 
 -- | Statically analyse a CspCASL process equation.
 anaProcEq :: Annoted a -> PARM_PROCNAME -> PROCESS -> State CspCASLSign ()
@@ -216,11 +214,7 @@ anaProcEq a (ParmProcname pn vs) proc =
         case fqPn of
           PROCESS_NAME _ ->
             error "CspCasl.StatAnaCSP.anaProcEq: Impossible case"
-          PARSED_FQ_PROCESS_NAME _ _ _ ->
-            error "CspCasl.StatAnaCSP.anaProcEq: Impossible case"
-          FQ_PROCESS_NAME _ prof ->
-            case prof of
-              ProcProfile procArgs procAlpha -> do
+          FQ_PROCESS_NAME _ procArgs (ProcAlphabet al) -> do
                 gVars <- anaProcVars pn
                          procArgs vs {- compute global
                 vars Change a procVarList to a FQProcVarList We do
@@ -228,7 +222,8 @@ anaProcEq a (ParmProcname pn vs) proc =
                 qualified variables and they have already been
                 checked to be ok. -}
                 let mkFQProcVar (v, s) = Qual_var v s nullRange
-                let fqGVars = map mkFQProcVar gVars
+                    fqGVars = map mkFQProcVar gVars
+                    procAlpha = Set.fromList al
                 (termAlpha, fqProc) <-
                   anaProcTerm proc (Map.fromList gVars) Map.empty
                 checkCommAlphaSub termAlpha procAlpha proc "process equation"
@@ -420,16 +415,14 @@ anaNamedProc proc pn terms procVars = do
       case fqPn of
         PROCESS_NAME _ ->
           error "CspCasl.StatAnaCSP.anaNamedProc: Impossible case"
-        PARSED_FQ_PROCESS_NAME _ _ _ ->
-          error "CspCasl.StatAnaCSP.anaNamedProc: Impossible case"
-        FQ_PROCESS_NAME _ (ProcProfile varSorts permAlpha) ->
+        FQ_PROCESS_NAME _ varSorts (ProcAlphabet permAlpha) ->
           if length terms == length varSorts
           then do
             fqTerms <-
                     mapM (anaNamedProcTerm procVars) (zip terms varSorts)
                   {- Return the permitted alphabet of the process and
                   the fully qualifed terms -}
-            return (fqPn, permAlpha, fqTerms)
+            return (fqPn, Set.fromList permAlpha, fqTerms)
           else do
             let err = "Wrong number of arguments in named process"
             addDiags [mkDiag Error err proc]
@@ -470,7 +463,7 @@ anaEventSet eventSet =
       EventSet es r ->
           do sig <- get
              -- fqEsElems is built the reversed order for efficiency.
-             (comms, fqEsElems) <- foldM (anaCOMM_TYPE sig)
+             (comms, fqEsElems) <- foldM (anaCommType sig)
                                    (Set.empty, []) es
              vds <- gets envDiags
              put sig { envDiags = vds }
@@ -498,51 +491,25 @@ anaProcAlphabet argSorts (ProcAlphabet commTypes) = do
 {- | Statically analyse a CspCASL communication type. Returns the
 extended alphabet and the extended list of fully qualified event
 set elements - [CommType]. -}
-anaCOMM_TYPE :: CspCASLSign -> (CommAlpha, [CommType]) -> COMM_TYPE
-  -> State CspCASLSign (CommAlpha, [CommType])
-anaCOMM_TYPE sig (alpha, fqEsElems) sct = let ct = simpleIdToId sct in
-    if Set.member ct (sortSet sig)
-      then {- ct is a sort name; insert sort into alpha and add a sort
-           to the fully qualified event set elements. -}
-        let newAlpha = Set.insert (CommTypeSort ct) alpha
-            newFqEsElems = CommTypeSort ct : fqEsElems
-        in return (newAlpha, newFqEsElems)
-      else -- ct not a sort name, so should be a channel name
-        case Set.toList $ Map.findWithDefault Set.empty ct $ chans
-               $ extendedInfo sig of
-        [] -> do
-           let err = "not a sort or channel name"
-           addDiags [mkDiag Error err ct]
-                        {- failed, thus error in spec, return the
-                        unmodified alphabet and the unmodifled
-                        fully qualified event set elements. -}
-           return (alpha, fqEsElems)
-        ts -> let tcs = map (CommTypeChan . TypedChanName ct) ts
-                    {- ct is a channel name; insert typed chan name
-                    into alpha and add typed channel to the fully
-                    qualified event set elemenets. -}
-              in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
-
-{- | Statically analyse a CspCASL communication type. Returns the
-extended alphabet and the extended list of fully qualified event
-set elements - [CommType]. -}
 anaCommType :: CspCASLSign -> (CommAlpha, [CommType]) -> CommType ->
                State CspCASLSign (CommAlpha, [CommType])
 anaCommType sig (alpha, fqEsElems) ct =
   let res = return (Set.insert ct alpha, ct : fqEsElems)
       old = return (alpha, fqEsElems)
+      getChSrts ch = Set.toList $ Map.findWithDefault Set.empty ch $ chans
+        $ extendedInfo sig
+      chRes ch rs = let tcs = map (CommTypeChan . TypedChanName ch) rs
+        in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
   in case ct of
-  CommTypeSort sid
-    | isSimpleId sid
-    -> anaCOMM_TYPE sig (alpha, fqEsElems) $ idToSimpleId sid
-    | Set.member sid (sortSet sig) -> res
-    | otherwise -> do
-           addDiags [mkDiag Error "unknown communication sort" sid]
-           old
+  CommTypeSort sid -> if Set.member sid (sortSet sig) then res else
+    case getChSrts sid of
+      [] -> do
+        addDiags [mkDiag Error "unknown sort or channel" sid]
+        old
+      cs -> chRes sid cs
   CommTypeChan (TypedChanName ch sid) ->
     if Set.member sid (sortSet sig) then
-    case Set.toList $ Map.findWithDefault Set.empty ch $ chans
-               $ extendedInfo sig of
+    case getChSrts ch of
       [] -> do
         addDiags [mkDiag Error "unknown channel" ch]
         old
@@ -553,8 +520,7 @@ anaCommType sig (alpha, fqEsElems) ct =
                 ++ shows sid "' for channel"
           addDiags [mkDiag Error mess ch]
           old
-        rs -> let tcs = map (CommTypeChan . TypedChanName ch) rs
-              in return (Set.union alpha $ Set.fromList tcs, tcs ++ fqEsElems)
+        rs -> chRes ch rs
     else do
       let mess = "unknow sort '" ++ shows sid "' for channel"
       addDiags [mkDiag Error mess ch]
