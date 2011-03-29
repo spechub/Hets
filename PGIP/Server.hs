@@ -337,7 +337,7 @@ getHetsResult opts updates sessRef file query =
         Just (ln, dg) -> let title = show $ getLibId ln in
           case qk of
             DisplayQuery ms -> case ms of
-              Just "svg" -> getSVG title file dg
+              Just "svg" -> getSVG title ('/' : file) dg
               Just "xml" -> liftR $ return $ ppTopElement
                 $ ToXml.dGraph libEnv (getFilePath ln) dg
               Just "dot" -> liftR $ return $ dotGraph title False title dg
