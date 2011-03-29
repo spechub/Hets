@@ -57,8 +57,6 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA
       sym_of ConstraintCASL = symOf
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName
-      simplify_sen ConstraintCASL =
-        error "simplify_sen ConstraintCASL nyi"
 
 instance StaticAnalysis ConstraintCASL
                ConstraintCASLBasicSpec ConstraintCASLFORMULA
@@ -86,8 +84,6 @@ instance StaticAnalysis ConstraintCASL
          induced_from_morphism ConstraintCASL = inducedFromMorphism ()
          induced_from_to_morphism ConstraintCASL =
              inducedFromToMorphism () trueC const
-         theory_to_taxonomy ConstraintCASL =
-           error "theory_to_taxonomy ConstraintCASL nyi" -- convTaxo
 
 instance MinSL () ConstraintFORMULA where
     minSL _ = bottom
