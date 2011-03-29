@@ -213,8 +213,7 @@ instance Pretty PlainProgram where
 
 instance FormExtension VSEforms
 
-instance GetRange VSEforms where
-  getRange _ = nullRange
+instance GetRange VSEforms
 
 instance Pretty VSEforms where
   pretty v = case v of
