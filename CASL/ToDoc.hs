@@ -26,6 +26,7 @@ module CASL.ToDoc
     , typeString
     , printVarDecl
     , printVarDecls
+    , printOptArgDecls
     , printSortItem
     , printOpItem
     , printPredItem
@@ -188,6 +189,9 @@ printVarDecl (Var_decl l s _) = printSortedVars l s
 printArgDecls :: [VAR_DECL] -> Doc
 printArgDecls = parens . printVarDecls
 
+printOptArgDecls :: [VAR_DECL] -> Doc
+printOptArgDecls vs = if null vs then empty else printArgDecls vs
+
 printPredHead :: PRED_HEAD -> Doc
 printPredHead (Pred_head l _) = printArgDecls l
 
@@ -214,7 +218,7 @@ instance FormExtension f => Pretty (OP_ATTR f) where
 
 printOpHead :: OP_HEAD -> Doc
 printOpHead (Op_head k l mr _) =
-    sep $ (if null l then [] else [printArgDecls l]) ++ case mr of
+    sep $ printOptArgDecls l : case mr of
       Nothing -> []
       Just r -> [(case k of
              Total -> colon

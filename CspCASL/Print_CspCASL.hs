@@ -75,8 +75,7 @@ printProcItem :: PROC_ITEM -> Doc
 printProcItem (Proc_Decl pn args alpha) =
     sep [pretty pn <> printArgs args, colon <+> pretty alpha]
 printProcItem (Proc_Defn pn args alpha p) =
-    sep [pretty pn <> if null args then empty
-           else parens $ printVarDecls args
+    sep [pretty pn <> printOptArgDecls args
         , colon <+> pretty alpha
         , equals <+> pretty p]
 printProcItem (Proc_Eq pn p) = sep [pretty pn, equals <+> pretty p]
@@ -233,8 +232,8 @@ printEvent ev =
 
 {- | Print a fully qualified event. We need the fully qualified
 channel (if there is one) and the fully qualified term (which may
-be an event or a variable). these will be passed in fro mthe
-printEvent that actually has access to the fully qualfied parts
+be an event or a variable). these will be passed in from the
+printEvent that actually has access to the fully qualified parts
 of this fully qualified event. -}
 printFQEvent :: EVENT -> Maybe (CHANNEL_NAME, SORT) -> TERM () -> Doc
 printFQEvent ev mfqChan t =
