@@ -44,6 +44,7 @@ module Common.LaTeX_funs
     , setTabWSp
     , startAnno
     , endAnno
+    , escapeSpecial
     , escapeLatex
     ) where
 
@@ -106,14 +107,10 @@ data Word_type =
     deriving (Show,Eq)
 
 calc_word_width :: Word_type -> String -> Int
-calc_word_width wt s =
-    case Map.lookup s wFM of
-    Just l  -> l
-    Nothing -> sum_char_width_deb (  showString "In map \""
-                                   . shows wt
-                                   . showString "\" \'") wFM k_wFM s
-                 - correction
-    where (wFM,k_wFM) = case wt of
+calc_word_width wt s = Map.findWithDefault
+  (sum_char_width_deb (showString "In map \"" . shows wt . showString "\" \'")
+   wFM k_wFM s - correction) s wFM
+    where (wFM, k_wFM) = case wt of
                         Keyword        -> (keyword_map,key_keyword_map)
                         StructId       -> (structid_map,key_structid_map)
                         Comment        -> (comment_map,key_comment_map)
@@ -157,7 +154,7 @@ sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
           sum_char_width' [c] r = r + case c of
               '}' -> 0
               '{' -> 0
-              ' ' -> lookupWithDefault_cFM ['~']
+              ' ' -> lookupWithDefault_cFM "~"
               _ -> lookupWithDefault_cFM [c]
           sum_char_width' full@(c1:rest@(c2:cs)) r
               | isLigature [c1, c2] = case Map.lookup [c1, c2] cFM of
@@ -177,13 +174,13 @@ sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
                                          $ r + lookupWithDefault_cFM "~"
                                         else sum_char_width' rest nl
               where nl = r + lookupWithDefault_cFM [c1]
-          lookupWithDefault_cFM s' = case Map.lookup s' cFM of
-                                     Nothing -> 2200 -- do something here?
-                                     Just w  -> w
+          lookupWithDefault_cFM s' = Map.findWithDefault 2200 s' cFM
+              -- 2200 may not be optimal
+
 
 prefixIsKey :: String -> Map.Map Char [String] -> Maybe String
 prefixIsKey [] _ = Nothing
-prefixIsKey ls@(c:_) key_cFM = case filter (flip isPrefixOf ls)
+prefixIsKey ls@(c:_) key_cFM = case filter (`isPrefixOf` ls)
         $ Map.findWithDefault [] c key_cFM of
     [] -> Nothing
     s : _ -> Just s
@@ -228,21 +225,21 @@ hc_sty_casl_keyword str =
 
 hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword kw =
-    latex_macro "\\KW{" <> casl_keyword_latex (escapeUnderline kw)
+    latex_macro "\\KW{" <> casl_keyword_latex (escapeSpecial kw)
                     <> latex_macro "}"
 
 hc_sty_small_keyword :: String -> Doc
 hc_sty_small_keyword kw =
-    latex_macro "\\KW{" <> casl_annotationbf_latex (escapeUnderline kw)
+    latex_macro "\\KW{" <> casl_annotationbf_latex (escapeSpecial kw)
                     <> latex_macro "}"
 
 hc_sty_axiom, hc_sty_structid, hc_sty_id,hc_sty_structid_indexed
     :: String -> Doc
 hc_sty_structid sid = latex_macro "\\SId{"<>sid_doc<>latex_macro "}"
-    where sid_doc = casl_structid_latex (escapeUnderline sid)
+    where sid_doc = casl_structid_latex (escapeSpecial sid)
 hc_sty_structid_indexed sid =
     latex_macro "\\SIdIndex{"<>sid_doc<>latex_macro "}"
-    where sid_doc = casl_structid_latex (escapeUnderline sid)
+    where sid_doc = casl_structid_latex (escapeSpecial sid)
 hc_sty_id i        = latex_macro "\\Id{"<>id_doc<>latex_macro "}"
     where id_doc = casl_axiom_latex i
 hc_sty_axiom ax = latex_macro "\\Ax{"<>ax_doc<>latex_macro "}"
@@ -262,16 +259,16 @@ startAnno = "{\\small{}"
 endAnno :: String
 endAnno = "%@%small@}"
 
-escapeUnderline :: String -> String
-escapeUnderline = concatMap ( \ c -> if c == '_' then "\\_" else [c])
+escapeSpecial :: String -> String
+escapeSpecial = concatMap $ \ c -> if  elem c "_%$&{}#" then '\\' : [c] else
+  Map.findWithDefault [c] c escapeMap
 
-escapeLatex :: Bool -> String -> String
-escapeLatex addAx = concatMap ( \ c ->
-     if elem c "_%$&{}#" then
-         if addAx then "\\Ax{\\" ++ c : "}"
-         else '\\' : [c]
-     else if addAx && elem c "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
-     else Map.findWithDefault [c] c escapeMap)
+escapeLatex :: String -> String
+escapeLatex = concatMap $ \ c -> case () of
+  ()
+    | elem c "_%$&{}#" -> "\\Ax{\\" ++ c : "}"
+    | elem c "<|>=-!()[]?:;,./*+@" -> "\\Ax{" ++ c : "}"
+    | otherwise -> Map.findWithDefault [c] c escapeMap
 
 parseAxiomString :: String -> [String]
 parseAxiomString s = case parse axiomString "" s of

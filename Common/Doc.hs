@@ -775,7 +775,7 @@ makeSmallLatex b d = if b then
 
 symbolToLatex :: String -> Pretty.Doc
 symbolToLatex s =
-    Map.findWithDefault (hc_sty_axiom $ escapeLatex False s) s latexSymbols
+    Map.findWithDefault (hc_sty_axiom $ escapeSpecial s) s latexSymbols
 
 getDeclIds :: Doc -> Set.Set Id
 getDeclIds = foldDoc anyRecord
@@ -793,13 +793,13 @@ getDeclIds = foldDoc anyRecord
 textToLatex :: Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
 textToLatex dis b k s = case s of
   "" -> Pretty.text ""
-  h : _ -> let e = escapeLatex True s in case k of
+  h : _ -> let e = escapeLatex s in case k of
     IdKind -> makeSmallLatex b $ if elem s $ map (: []) ",;[]() "
               then casl_normal_latex s
               else hc_sty_id e
     IdSymb -> makeSmallLatex b $ if s == "__" then symbolToLatex s
               else if isAlpha h || elem h "._'" then hc_sty_id e
-              else hc_sty_axiom $ escapeLatex False s
+              else hc_sty_axiom (escapeSpecial s)
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> makeSmallLatex b $ casl_comment_latex e
                -- multiple spaces should be replaced by \hspace
@@ -831,8 +831,8 @@ latexSymbols = Map.union (Map.fromList
     [ ("{", casl_normal_latex "\\{")
     , ("}", casl_normal_latex "\\}")
     , (barS, casl_normal_latex "\\AltBar{}")
-    , (percentS, hc_sty_small_keyword "\\%")
-    , (percents, hc_sty_small_keyword "\\%\\%")
+    , (percentS, hc_sty_small_keyword "%")
+    , (percents, hc_sty_small_keyword "%%")
     , (exEqual, Pretty.sp_text (axiom_width "=") "\\Ax{\\stackrel{e}{=}}") ])
     $ Map.map hc_sty_axiom $ Map.fromList
     [ (dotS, "\\bullet")
