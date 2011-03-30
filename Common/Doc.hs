@@ -793,24 +793,21 @@ getDeclIds = foldDoc anyRecord
 textToLatex :: Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
 textToLatex dis b k s = case s of
   "" -> Pretty.text ""
-  h : _ -> let
-      e = escapeLatex True s
-      e2 = escapeLatex False s
-    in case k of
+  h : _ -> let e = escapeLatex True s in case k of
     IdKind -> makeSmallLatex b $ if elem s $ map (: []) ",;[]() "
               then casl_normal_latex s
               else hc_sty_id e
     IdSymb -> makeSmallLatex b $ if s == "__" then symbolToLatex s
               else if isAlpha h || elem h "._'" then hc_sty_id e
-              else hc_sty_axiom e2
+              else hc_sty_axiom $ escapeLatex False s
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> makeSmallLatex b $ casl_comment_latex e
                -- multiple spaces should be replaced by \hspace
     Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
-                else hc_sty_plain_keyword) e2
-    TopKey _ -> hc_sty_casl_keyword e2
-    Indexed -> hc_sty_structid_indexed e2
-    StructId -> hc_sty_structid e2
+                else hc_sty_plain_keyword) s
+    TopKey _ -> hc_sty_casl_keyword s
+    Indexed -> hc_sty_structid_indexed s
+    StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
     HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
                              , textToLatex dis b Comment s
