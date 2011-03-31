@@ -858,18 +858,12 @@ latexSymbols = Map.union (Map.fromList
     , (breveS, "\\breve{~}")
     , (implS, "\\Rightarrow")
     , (equivS, "\\Leftrightarrow")
-    , (prefix_procS, "\\rightarrow") -- clash with funS
-    , (genpar_openS, "{|}\\mkern -2mu{[}\\mkern-1mu")
-    , (genpar_closeS, "\\mkern-1mu{]}\\mkern -2mu{|}")
-    , (alpar_openS, "{|}\\mkern -2mu{[}\\mkern-1mu")
-    , (alpar_sepS, "\\cpar") -- overridden by synchronousS, below
-    , (alpar_closeS, "\\mkern-1mu{]}\\mkern -2mu{|}")
     , (interleavingS, "{|}\\mkern-2mu{|}\\mkern-2mu{|}")
-    , (synchronousS, "\\mid\\mid") -- must be after alpar_sepS (clash)
+    , (synchronousS, "\\parallel")
     , (external_choiceS, "\\Box")
     , (internal_choiceS, "\\sqcap")
-    , (ren_proc_openS, "[")
-    , (ren_proc_closeS, "]")
+    , (ren_proc_openS, "[\\mkern-2mu{[}")
+    , (ren_proc_closeS, "]\\mkern-2mu{]}")
     ]
 
 -- * coding out stuff
