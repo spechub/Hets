@@ -50,47 +50,47 @@ spassConsTimeLimit = 500
 printTheoryAsSoftFOL :: LibName -> SIMPLE_ID
          -> Int -- ^ 0 = DFG, 1 = TPTP
          -> Bool
-            -- ^ if True a conjecture false is added otherwise
-            -- its a theory without its own conjectures.
+            {- ^ if True a conjecture false is added otherwise
+                 its a theory without its own conjectures. -}
          -> G_theory -> IO (Maybe Doc)
 printTheoryAsSoftFOL ln sn lang checkConsistency
   gth@(G_theory lid (ExtSign sign _) _ thSens _) =
     maybe (return Nothing)
-          (\ (sign1,sens1) ->
+          (\ (sign1, sens1) ->
                do prob <- genSoftFOLProblem
                               thName
                               (spLogicalPart sign1 sens1)
                               (if checkConsistency
                                then Just falseConj
                                else Nothing)
-                  return $ Just $ printOut $
-                         (prob {settings = [SPSettings
+                  return $ Just $ printOut
+                         prob {settings = [SPSettings
                                             {settingName = SPASS,
-                                             settingBody = flags}]}))
+                                             settingBody = flags}]})
                          -- (prob {settings = flags}))
 
       (if lessSublogicComor (sublogicOfTh gth) $
-          Comorphism SuleCFOL2SoftFOL
+          Comorphism suleCFOL2SoftFOL
        then resultToMaybe
-             (coerceBasicTheory lid CASL "" (sign,sens)
-              >>= wrapMapTheory SuleCFOL2SoftFOL)
+             (coerceBasicTheory lid CASL "" (sign, sens)
+              >>= wrapMapTheory suleCFOL2SoftFOL)
        else
         if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
         then resultToMaybe
-             (coerceBasicTheory lid CASL "" (sign,sens)
+             (coerceBasicTheory lid CASL "" (sign, sens)
               >>= wrapMapTheory idCASL
               >>= wrapMapTheory defaultCASL2SubCFOL
-              >>= wrapMapTheory SuleCFOL2SoftFOL)
+              >>= wrapMapTheory suleCFOL2SoftFOL)
         else if lessSublogicComor (sublogicOfTh gth) $
                 Comorphism idCASL_nosub
              then resultToMaybe
-                     (coerceBasicTheory lid CASL "" (sign,sens)
+                     (coerceBasicTheory lid CASL "" (sign, sens)
                       >>= wrapMapTheory idCASL_nosub
                       >>= wrapMapTheory CASL2PCFOL
                       >>= wrapMapTheory defaultCASL2SubCFOL
-                      >>= wrapMapTheory SuleCFOL2SoftFOL)
+                      >>= wrapMapTheory suleCFOL2SoftFOL)
              else resultToMaybe $
-                 coerceBasicTheory lid SoftFOL "" (sign,sens))
+                 coerceBasicTheory lid SoftFOL "" (sign, sens))
   where
         printOut = case lang of
                      0 -> pretty
@@ -106,16 +106,12 @@ printTheoryAsSoftFOL ln sn lang checkConsistency
                                    prepareSenNames transSenName sen)
 
         flags = if checkConsistency
-                then [SPFlag "set_flag" ["TimeLimit",(show spassConsTimeLimit)]
-                     ,SPFlag "set_flag" ["DocProof", "1"]]
+                then [SPFlag "set_flag" ["TimeLimit", show spassConsTimeLimit]
+                     , SPFlag "set_flag" ["DocProof", "1"]]
                 else []
 
         falseConj = (makeNamed "inconsistent" falseSen)
-                    {
-                      isAxiom    = False
-                    , isDef      = False
-                    , wasTheorem = False
-                    }
+                    { isAxiom = False }
         falseSen = simpTerm SPFalse
 
         max_nosub_SPASS = caslTop { cons_features = emptyMapConsFeature }

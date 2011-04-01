@@ -13,8 +13,10 @@ The translating comorphism from a CASL subset to SoftFOL.
 -}
 
 module Comorphisms.SuleCFOL2SoftFOL
-    (SuleCFOL2SoftFOL (..), SuleCFOL2SoftFOLInduction (..))
-    where
+  ( suleCFOL2SoftFOL
+  , suleCFOL2SoftFOLInduction
+  , suleCFOL2SoftFOLInduction2
+  ) where
 
 import Control.Exception (assert)
 import Control.Monad (foldM)
@@ -55,9 +57,25 @@ import SoftFOL.Logic_SoftFOL
 import SoftFOL.Translate
 import SoftFOL.ParseTPTP
 
+data PlainSoftFOL = PlainSoftFOL
+
+instance Show PlainSoftFOL where
+  show PlainSoftFOL = "SoftFOL"
+
+data SoftFOLInduction = SoftFOLInduction deriving Show
+data SoftFOLInduction2 = SoftFOLInduction2 deriving Show
+
 -- | The identity of the comorphisms
-data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving Show
-data SuleCFOL2SoftFOLInduction = SuleCFOL2SoftFOLInduction deriving Show
+data GenSuleCFOL2SoftFOL a = GenSuleCFOL2SoftFOL a deriving Show
+
+suleCFOL2SoftFOL :: GenSuleCFOL2SoftFOL PlainSoftFOL
+suleCFOL2SoftFOL = GenSuleCFOL2SoftFOL PlainSoftFOL
+
+suleCFOL2SoftFOLInduction :: GenSuleCFOL2SoftFOL SoftFOLInduction
+suleCFOL2SoftFOLInduction = GenSuleCFOL2SoftFOL SoftFOLInduction
+
+suleCFOL2SoftFOLInduction2 :: GenSuleCFOL2SoftFOL SoftFOLInduction2
+suleCFOL2SoftFOLInduction2 = GenSuleCFOL2SoftFOL SoftFOLInduction2
 
 -- | SoftFOL theories
 type SoftFOLTheory = (SPSign.Sign, [Named SPTerm])
@@ -126,13 +144,10 @@ type FormulaTranslator f e =
 formTrCASL :: FormulaTranslator () ()
 formTrCASL _ _ = error "SuleCFOL2SoftFOL: No extended formulas allowed in CASL"
 
-instance Language SuleCFOL2SoftFOL where
-  language_name SuleCFOL2SoftFOL = "CASL2SoftFOL"
+instance Show a => Language (GenSuleCFOL2SoftFOL a) where
+  language_name (GenSuleCFOL2SoftFOL a) = "CASL2" ++ show a
 
-instance Language SuleCFOL2SoftFOLInduction where
-  language_name SuleCFOL2SoftFOLInduction = "CASL2SoftFOLInduction"
-
-instance Comorphism SuleCFOL2SoftFOL
+instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
@@ -141,47 +156,25 @@ instance Comorphism SuleCFOL2SoftFOL
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism SFSymbol () ProofTree where
-    sourceLogic SuleCFOL2SoftFOL = CASL
-    sourceSublogic SuleCFOL2SoftFOL = SL.cFol
+    sourceLogic (GenSuleCFOL2SoftFOL _) = CASL
+    sourceSublogic (GenSuleCFOL2SoftFOL a) = SL.cFol
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
-                      , has_empty_sorts = True }
-    targetLogic SuleCFOL2SoftFOL = SoftFOL
-    mapSublogic SuleCFOL2SoftFOL sl =
-        if isSubElem sl $ sourceSublogic SuleCFOL2SoftFOL
+                      , has_empty_sorts = show a == show PlainSoftFOL }
+    targetLogic (GenSuleCFOL2SoftFOL _) = SoftFOL
+    mapSublogic cid sl =
+        if isSubElem sl $ sourceSublogic cid
         then Just () else Nothing
-    map_theory SuleCFOL2SoftFOL = transTheory sigTrCASL formTrCASL
+    map_theory (GenSuleCFOL2SoftFOL a) = transTheory sigTrCASL formTrCASL
+      . case show a of
+      str | str == show SoftFOLInduction -> generateInductionLemmas
+          | str == show SoftFOLInduction2 -> generateInductionLemmas
+          | otherwise -> id
     map_morphism = mapDefaultMorphism
-    map_sentence SuleCFOL2SoftFOL sign =
+    map_sentence (GenSuleCFOL2SoftFOL _) sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
-    extractModel SuleCFOL2SoftFOL = extractCASLModel
-    has_model_expansion SuleCFOL2SoftFOL = True
-
-instance Comorphism SuleCFOL2SoftFOLInduction
-               CASL CASL_Sublogics
-               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign
-               CASLMor
-               CSign.Symbol RawSymbol ProofTree
-               SoftFOL () () SPTerm () ()
-               SPSign.Sign
-               SoftFOLMorphism SFSymbol () ProofTree where
-    sourceLogic SuleCFOL2SoftFOLInduction = CASL
-    sourceSublogic SuleCFOL2SoftFOLInduction = SL.cFol
-                      { sub_features = LocFilSub
-                      , cons_features = emptyMapConsFeature }
-
-    targetLogic SuleCFOL2SoftFOLInduction = SoftFOL
-    mapSublogic SuleCFOL2SoftFOLInduction sl =
-        if isSubElem sl $ sourceSublogic SuleCFOL2SoftFOLInduction
-        then Just () else Nothing
-    map_theory SuleCFOL2SoftFOLInduction =
-        transTheory sigTrCASL formTrCASL . generateInductionLemmas
-    map_morphism = mapDefaultMorphism
-    map_sentence SuleCFOL2SoftFOLInduction sign =
-      return . mapSen (isSingleSorted sign) formTrCASL sign
-    extractModel SuleCFOL2SoftFOLInduction = extractCASLModel
-    has_model_expansion SuleCFOL2SoftFOLInduction = True
+    extractModel (GenSuleCFOL2SoftFOL _) = extractCASLModel
+    has_model_expansion (GenSuleCFOL2SoftFOL _) = True
 
 -- -------------------------- Signature -----------------------------
 

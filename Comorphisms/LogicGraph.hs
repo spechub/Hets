@@ -166,10 +166,11 @@ comorphismList =
     , Comorphism MonadicHasCASL2IsabelleHOL
     , Comorphism PCoClTyConsHOL2PairsInIsaHOL
     , Comorphism HasCASL2IsabelleHOL
-    , Comorphism SuleCFOL2SoftFOLInduction
+    , Comorphism suleCFOL2SoftFOLInduction
+    , Comorphism suleCFOL2SoftFOLInduction2
     , Comorphism HasCASL2PCoClTyConsHOL
     , Comorphism HasCASL2HasCASL
-    , Comorphism SuleCFOL2SoftFOL
+    , Comorphism suleCFOL2SoftFOL
     , Comorphism CASL2PCFOL
     , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
     , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types
