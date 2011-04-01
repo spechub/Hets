@@ -105,34 +105,34 @@ printProcess pr = case pr of
     -- precedence 1
     ConditionalProcess f p q _ -> parens $ fsep
         [ keyword ifS <+> pretty f
-        , keyword thenS <+> glue pr p
-        , keyword elseS <+> glue pr q ]
+        , keyword thenS <+> pretty p
+        , keyword elseS <+> pretty q ]
     -- precedence 2
-    Hiding p es _ ->
-        pretty p <+> hiding_proc <+> pretty es
+    Hiding p es _ -> sep
+        [ lglue pr p, hiding_proc <+> pretty es ]
     RenamingProcess p r _ -> sep
-        [ pretty p, ren_proc_open <+> pretty r <+> ren_proc_close ]
+        [ lglue pr p, ren_proc_open <+> pretty r <+> ren_proc_close ]
     -- precedence 3
     Sequential p q _ -> parens $ sep
-        [ pretty p, sequential <+> glue pr q ]
-    PrefixProcess event p _ ->
-        pretty event <+> prefix_proc $+$ glue pr p
+        [ lglue pr p, sequential <+> glue pr q ]
+    PrefixProcess event p _ -> sep
+        [ pretty event <+> prefix_proc, glue pr p ]
     -- precedence 4
     InternalChoice p q _ -> sep
-        [ pretty p, internal_choice <+> glue pr q ]
+        [ lglue pr p, internal_choice <+> glue pr q ]
     ExternalChoice p q _ -> sep
-        [ pretty p, external_choice <+> glue pr q ]
+        [ lglue pr p, external_choice <+> glue pr q ]
     -- precedence 5
     Interleaving p q _ -> sep
-        [ pretty p, interleave <+> glue pr q ]
+        [ lglue pr p, interleave <+> glue pr q ]
     SynchronousParallel p q _ -> sep
-        [ pretty p, synchronous <+> glue pr q ]
+        [ lglue pr p, synchronous <+> glue pr q ]
     GeneralisedParallel p es q _ -> fsep
-        [ pretty p
+        [ lglue pr p
         , genpar_open <+> pretty es <+> genpar_close
         , glue pr q ]
     AlphabetisedParallel p les res q _ -> fsep
-        [ pretty p
+        [ lglue pr p
         , alpar_open <+> pretty les
         , alpar_sep <+> pretty res
         , alpar_close <+> glue pr q ]
@@ -147,64 +147,41 @@ instance Pretty RENAMING where
     pretty renaming = case renaming of
                         Renaming ids -> ppWithCommas ids
                         FQRenaming fqTerms -> ppWithCommas fqTerms
-{- glue and prec_comp decide whether the child in the parse tree needs
-to be parenthesised or not.  Parentheses are necessary if the
-right-child is at the same level of precedence as the parent but is
-a different operator; otherwise, they're not. -}
 
+{- glue and lglue decide whether the child in the parse tree needs
+to be parenthesised or not. -}
+
+-- | the second argument is a right argument process of the first argument
 glue :: PROCESS -> PROCESS -> Doc
-glue x y = (if prec_comp x y then parens else id) $ pretty y
+glue x y = let p = procPrio y in
+  (if p /= Cond && p >= procPrio x then parens else id) $ pretty y
 
-{- This is really nasty, but sledgehammer effective and allows fine
-control.  Unmaintainable, however.  :-( I imagine there's a way to
-compare the types in a less boilerplate manner, but OTOH there are
-some special cases where it's nice to be explicit.  Also, hiding
-and renaming are distinctly non-standard.  *shrug* -}
+-- | the second argument is a left argument process of the first argument
+lglue :: PROCESS -> PROCESS -> Doc
+lglue x y = (if procPrio y > procPrio x then parens else id) $ pretty y
 
-prec_comp :: PROCESS -> PROCESS -> Bool
-prec_comp x y = case x of
-      Hiding _ _ _ -> case y of
-          RenamingProcess _ _ _ -> True
-          _ -> False
-      RenamingProcess _ _ _ -> case y of
-          Hiding _ _ _ -> True
-          _ -> False
-      Sequential _ _ _ -> False
-      PrefixProcess _ _ _ -> case y of
-          Sequential _ _ _ -> True
-          _ -> False
-      ExternalChoice _ _ _ -> case y of
-          InternalChoice _ _ _ -> True
-          _ -> False
-      InternalChoice _ _ _ -> case y of
-          ExternalChoice _ _ _ -> True
-          _ -> False
-      Interleaving _ _ _ -> case y of
-                    SynchronousParallel _ _ _ -> True
-                    GeneralisedParallel _ _ _ _ -> True
-                    AlphabetisedParallel _ _ _ _ _ -> True
-                    _ -> False
-      SynchronousParallel _ _ _ -> case y of
-                    Interleaving _ _ _ -> True
-                    GeneralisedParallel _ _ _ _ -> True
-                    AlphabetisedParallel _ _ _ _ _ -> True
-                    _ -> False
-      GeneralisedParallel _ _ _ _ -> case y of
-                    Interleaving _ _ _ -> True
-                    SynchronousParallel _ _ _ -> True
-                    AlphabetisedParallel _ _ _ _ _ -> True
-                    _ -> False
-      AlphabetisedParallel _ _ _ _ _ -> case y of
-                    Interleaving _ _ _ -> True
-                    SynchronousParallel _ _ _ -> True
-                    GeneralisedParallel _ _ _ _ -> True
-                    _ -> False
-      _ -> False
+{- par binds weakest and is left associative. Then choice follows,
+then sequence, then prefix and finally renaming or hiding. -}
 
+data Prio = Prim | Post | Pre | Seq | Choice | Par | Cond deriving (Eq, Ord)
+
+procPrio :: PROCESS -> Prio
+procPrio x = case x of
+  ConditionalProcess _ _ _ _ -> Cond
+  SynchronousParallel _ _ _ -> Par
+  GeneralisedParallel _ _ _ _ -> Par
+  AlphabetisedParallel _ _ _ _ _ -> Par
+  Interleaving _ _ _ -> Par
+  ExternalChoice _ _ _ -> Choice
+  InternalChoice _ _ _ -> Choice
+  Sequential _ _ _ -> Seq
+  PrefixProcess _ _ _ -> Pre
+  Hiding _ _ _ -> Post
+  RenamingProcess _ _ _ -> Post
+  _ -> Prim
 
 instance Pretty EVENT where
     pretty = printEvent
-
 
 -- | print an event.
 printEvent :: EVENT -> Doc
