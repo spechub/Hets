@@ -48,18 +48,19 @@ Given a list of formulas with a free sorted variable, instantiate the
 sort generation constraint for this list of formulas
 It is assumed that the (original) sorts of the constraint
 match the sorts of the free variables -}
-instantiateSortGen :: Pretty f => [(Constraint, (FORMULA f, VAR))] -> FORMULA f
+instantiateSortGen :: Pretty f => [(Constraint, (FORMULA f, (VAR, SORT)))]
+  -> FORMULA f
 instantiateSortGen phis =
   induction (map substFormula phis)
-  where substFormula (c, (phi, v)) = (c, \ t -> substitute v t phi)
+  where substFormula (c, (phi, (v, s))) = (c, \ t -> substitute v s t phi)
 
 -- | substitute a term for a variable in a formula
-substitute :: Pretty f => VAR -> TERM f -> FORMULA f -> FORMULA f
-substitute v t = foldFormula
- (mapRecord id) { foldQual_var = \ t2 v2 _ _ ->
-                  if v == v2 then t else t2
+substitute :: Pretty f => VAR -> SORT -> TERM f -> FORMULA f -> FORMULA f
+substitute v s t = foldFormula
+ (mapRecord id) { foldQual_var = \ t2 v2 s2 _ ->
+                  if v == v2 && s == s2 then t else t2
                 , foldQuantification = \ t2 q vs p r ->
-                  if elem v $ concatMap ( \ (Var_decl l _ _) -> l) vs
+                  if elem (v, s) $ flatVAR_DECLs vs
                   then t2 else Quantification q vs p r
                 }
 
@@ -124,7 +125,7 @@ generateInductionLemmasAux sort_gen_axs goals =
                     $ map (\ (c, (f, varsorts)) ->
                        let s = newSort c
                            vs = findVar s varsorts
-                       in (c, (removeVarsort vs s $ sentence f, vs)))
+                       in (c, (removeVarsort vs s $ sentence f, (vs, s))))
                     $ zip cons formulas
 
                 sName = (if null formulas then id else tail)
