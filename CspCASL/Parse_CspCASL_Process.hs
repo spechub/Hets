@@ -250,7 +250,7 @@ name.  They're both Ids.  Separation between operator or predicate
 problem. -}
 
 renaming :: AParser st RENAMING
-renaming = fmap Renaming $ parseCspId `sepBy` commaT
+renaming = fmap Renaming $ parseCspId `sepBy1` commaT
 
 -- names come from CASL/Hets.
 
@@ -302,17 +302,13 @@ commType = do
     return $ CommTypeChan $ TypedChanName s r
    <|> return (CommTypeSort s)
 
--- | parse a possibly empty list of comm types
-commTypeList :: AParser st [CommType]
-commTypeList = sepBy commType commaT
-
 -- | parse a possibly empty list of comm types within braces
 bracedList :: AParser st [CommType]
-bracedList = braces commTypeList
+bracedList = braces $ sepBy commType commaT
 
--- | parse a possibly empty set of comm types possibly within braces
+-- | parse a set of comm types possibly within braces or the empty set
 alphabet :: AParser st [CommType]
-alphabet = bracedList <|> commTypeList
+alphabet = bracedList <|> sepBy1 commType commaT
 
 procTail :: AParser st PROC_ALPHABET
 procTail = fmap ProcAlphabet $ colonT >> alphabet
