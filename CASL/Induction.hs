@@ -48,8 +48,7 @@ Given a list of formulas with a free sorted variable, instantiate the
 sort generation constraint for this list of formulas
 It is assumed that the (original) sorts of the constraint
 match the sorts of the free variables -}
-instantiateSortGen :: Pretty f => [(Constraint, (FORMULA f, VAR))]
-                        -> FORMULA f
+instantiateSortGen :: Pretty f => [(Constraint, (FORMULA f, VAR))] -> FORMULA f
 instantiateSortGen phis =
   induction (map substFormula phis)
   where substFormula (c, (phi, v)) = (c, \ t -> substitute v t phi)
@@ -66,33 +65,28 @@ substitute v t = foldFormula
 
 {- | derive an induction scheme from a sort generation constraint
 using substitutions as induction predicates -}
-induction :: Pretty f => [(Constraint, TERM f -> FORMULA f)]
-          -> FORMULA f
+induction :: Pretty f => [(Constraint, TERM f -> FORMULA f)] -> FORMULA f
 induction constrSubsts =
    let mkVar i = mkSimpleId ("x_" ++ show i)
-       sortInfo = map (\ ((cs, sub), i) -> (cs, sub, (mkVar i, newSort cs)))
+       sortInfo = map (\ ((cs, sub), i) -> (sub, (mkVar i, newSort cs)))
          $ number constrSubsts
-       mkConclusion (_, subst, v) =
+       mkConclusion (subst, v) =
          mkForall [uncurry mkVarDecl v] (subst (uncurry mkVarTerm v)) nullRange
        inductionConclusion = conjunct $ map mkConclusion sortInfo
-       inductionPremises = map (mkPrems $ map snd constrSubsts) sortInfo
+       inductionPremises = map (mkPrems $ map snd constrSubsts) constrSubsts
        inductionPremise = conjunct $ concat inductionPremises
    in mkImpl inductionPremise inductionConclusion
 
 {- | construct premise set for the induction scheme
 for one sort in the constraint -}
 mkPrems :: Pretty f => [TERM f -> FORMULA f]
-            -> (Constraint, TERM f -> FORMULA f, (VAR, SORT))
-            -> [FORMULA f]
-mkPrems substs info@(constr, _, _) = map (mkPrem substs info) (opSymbs constr)
+  -> (Constraint, TERM f -> FORMULA f) -> [FORMULA f]
+mkPrems substs (constr, sub) = map (mkPrem substs sub) (opSymbs constr)
 
 -- | construct a premise for the induction scheme for one constructor
-mkPrem :: Pretty f => [TERM f -> FORMULA f]
-           -> (Constraint, TERM f -> FORMULA f, (VAR, SORT))
-           -> (OP_SYMB, [Int])
-           -> FORMULA f
-mkPrem substs (_, subst, _)
-       (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
+mkPrem :: Pretty f => [TERM f -> FORMULA f] -> (TERM f -> FORMULA f)
+  -> (OP_SYMB, [Int]) -> FORMULA f
+mkPrem substs subst (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
   mkForall qVars phi nullRange
   where
   qVars = map (\ (a, i) -> mkVarDeclStr ("y_" ++ show i) a) $ number argTypes
@@ -108,9 +102,9 @@ mkPrem _ _ (opSym, _) =
         ++ "unqualified operation symbol occuring in constraint: "
         ++ show opSym)
 
--- !! documentation is missing
+-- | for goals try to generate additional implications based on induction
 generateInductionLemmas :: Pretty f => (Sign f e, [Named (FORMULA f)])
-                        -> (Sign f e, [Named (FORMULA f)])
+  -> (Sign f e, [Named (FORMULA f)])
 generateInductionLemmas (sig, axs) = (sig, axs ++ inductionAxs) where
    sortGens = foldr (\ s cs -> case sentence s of
      Sort_gen_ax c _ -> c : cs
@@ -157,7 +151,7 @@ generateInductionLemmasAux sort_gen_axs goals =
         newVarDecls = filter (\ (Var_decl vs _ _) -> not $ null vs) .
             map (\ var_decl@(Var_decl vars varsort r) ->
                    if varsort == s
-                     then Var_decl (filter (not . (==) v) vars) s r
+                     then Var_decl (filter (/= v) vars) s r
                      else var_decl)
     uniQuantGoals =
             foldr ( \ goal l -> case sentence goal of
