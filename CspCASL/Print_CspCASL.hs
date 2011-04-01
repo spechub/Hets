@@ -46,7 +46,7 @@ instance Pretty ProcProfile where
 printProcProfile :: ProcProfile -> Doc
 printProcProfile (ProcProfile sorts commAlpha) =
     sep [ printArgs sorts
-        , colon <+> printProcAlphabet (ProcAlphabet $ Set.toList commAlpha)]
+        , printProcAlphabet (ProcAlphabet $ Set.toList commAlpha)]
 
 printProcessName :: FQ_PROCESS_NAME -> Doc
 printProcessName fqPn = case fqPn of
@@ -70,10 +70,10 @@ printArgs a = if null a then empty else parens $ ppWithCommas a
 
 printProcItem :: PROC_ITEM -> Doc
 printProcItem (Proc_Decl pn args alpha) =
-    sep [pretty pn <> printArgs args, colon <+> pretty alpha]
+    sep [pretty pn <> printArgs args, printProcAlphabet alpha]
 printProcItem (Proc_Defn pn args alpha p) =
-    sep [pretty pn <> printOptArgDecls args
-        , colon <+> pretty alpha
+    sep [ pretty pn <> printOptArgDecls args
+        , printProcAlphabet alpha
         , equals <+> pretty p]
 printProcItem (Proc_Eq pn p) = sep [pretty pn, equals <+> pretty p]
 
@@ -84,11 +84,8 @@ printParmProcname :: PARM_PROCNAME -> Doc
 printParmProcname (ParmProcname pn args) =
     pretty pn <> printArgs args
 
-instance Pretty PROC_ALPHABET where
-    pretty = printProcAlphabet
-
 printProcAlphabet :: PROC_ALPHABET -> Doc
-printProcAlphabet (ProcAlphabet commTypes) = case commTypes of
+printProcAlphabet (ProcAlphabet commTypes) = colon <+> case commTypes of
   [CommTypeSort s] -> pretty s
   _ -> braces $ ppWithCommas commTypes
 

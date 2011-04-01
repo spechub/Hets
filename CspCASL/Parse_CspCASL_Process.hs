@@ -174,7 +174,7 @@ simple_process_name :: AParser st PROCESS_NAME
 simple_process_name = fmap simpleIdToId var
 
 channel_name :: AParser st CHANNEL_NAME
-channel_name = fmap simpleIdToId var
+channel_name = cspSortId
 
 -- List of arguments to a named process
 procArgs :: AParser st [TERM ()]
