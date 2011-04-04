@@ -109,7 +109,7 @@ showProverGUI prGuiAcs thName warn th knownProvers comorphList = do
 
     -- setup comorphism combobox
     comboBoxSetModelText cbComorphism
-    shC <- after cbComorphism changed
+    shC <- after cbComorphism changed $ modifyMVar_ state
       $ setSelectedComorphism trvProvers listProvers cbComorphism
 
     -- setup provers list
@@ -253,20 +253,32 @@ updateComorphism view list cbComorphism sh = do
 expand :: GProver -> [String]
 expand = map show . comorphism
 
-setSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> IO ()
-setSelectedComorphism view list cbComorphism = do
+setSelectedComorphism :: TreeView -> ListStore GProver -> ComboBox -> ProofState
+  -> IO ProofState
+setSelectedComorphism view list cbComorphism s = do
   mfinder <- getSelectedSingle view list
   case mfinder of
     Just (i, f) -> do
       sel <- comboBoxGetActive cbComorphism
-      listStoreSetValue list i f { selected = sel }
-    Nothing -> return ()
+      let nf = f { selected = sel }
+      listStoreSetValue list i nf
+      return $ setGProver nf s
+    Nothing -> return s
+
+setGProver :: GProver -> ProofState -> ProofState
+setGProver f s =
+  let pn = pName f
+      c = comorphism f !! selected f
+  in s
+  { selectedProver = Just pn
+  , proversMap = Map.insert pn [c] $ proversMap s}
 
 updateSublogic :: Label -> ProofActions
                -> KnownProvers.KnownProversMap -> ProofState
                -> IO ProofState
 updateSublogic lbl prGuiAcs knownProvers s' = do
-  s <- recalculateSublogicF prGuiAcs s' { proversMap = knownProvers }
+  s <- recalculateSublogicF prGuiAcs s'
+    { proversMap = Map.unionWith (++) (proversMap s') knownProvers }
   labelSetLabel lbl $ show $ sublogicOfTheory s
   return s
 
@@ -329,7 +341,9 @@ setSelectedProver :: TreeView -> ListStore GProver -> ComboBox
 setSelectedProver trvProvers listProvers cbComorphism shC s = do
   mprover <- getSelectedSingle trvProvers listProvers
   updateComorphism trvProvers listProvers cbComorphism shC
-  return s { selectedProver = maybe Nothing (Just . pName . snd) mprover }
+  return $ case mprover of
+    Nothing -> s { selectedProver = Nothing }
+    Just (_, gp) -> setGProver gp s
 
 wasATheorem :: ProofState -> String -> Bool
 wasATheorem st i = case currentTheory st of
