@@ -12,16 +12,21 @@ Parser for modal logic extension of CASL
 
 module Modal.Parse_AS where
 
-import Common.AnnoState
+import CASL.Formula
+import CASL.OpItem
+
 import Common.AS_Annotation
+import Common.AnnoState
 import Common.Id
 import Common.Keywords
 import Common.Lexer
 import Common.Token
+
 import Modal.AS_Modal
+
 import Text.ParserCombinators.Parsec
-import CASL.Formula
-import CASL.OpItem
+
+import Data.List
 
 modal_reserved_words :: [String]
 modal_reserved_words =
@@ -86,7 +91,7 @@ mItem pr = do
        (as, cs) <- separatedBy (annoParser pr) anComma
        let ps = catRange $ c : cs
        do o <- oBraceT
-          (fs, q) <- auxItemList modal_reserved_words []
+          (fs, q) <- auxItemList (delete diamondS modal_reserved_words) []
                       (formula modal_reserved_words) (,)
           p <- cBraceT
           return (as, fs, ps `appRange` q `appRange` toRange o [] p)
