@@ -42,6 +42,7 @@ import CASL.Morphism
 import CASL.Quantification
 import CASL.Fold
 import CASL.Induction
+import CASL.ToDoc
 
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
@@ -49,7 +50,6 @@ import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 
 import Common.AS_Annotation
-import Common.DocUtils
 import Common.Id
 import Common.ProofTree
 import Common.Utils
@@ -111,7 +111,7 @@ baseSign = Main_thy
 typeToks :: CASL.Sign.Sign f e -> Set.Set String
 typeToks = Set.map (`showIsaTypeT` baseSign) . sortSet
 
-transTheory :: Pretty f => SignTranslator f e ->
+transTheory :: FormExtension f => SignTranslator f e ->
                FormulaTranslator f e ->
                (CASL.Sign.Sign f e, [Named (FORMULA f)])
                    -> IsaTheory
@@ -286,7 +286,7 @@ transRecord sign tyToks tr toks = Record
     , foldMixfix_parenthesized = error "transRecord: Mixfix_parenthesized"
     , foldMixfix_bracketed = error "transRecord: Mixfix_bracketed"
     , foldMixfix_braced = error "transRecord: Mixfix_braced"
-    , foldExtTERM =  error "transRecord: ExtTERM"
+    , foldExtTERM = error "transRecord: ExtTERM"
     }
 
 transFORMULA :: CASL.Sign.Sign f e -> Set.Set String -> FormulaTranslator f e

@@ -167,8 +167,8 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
         then Just () else Nothing
     map_theory (GenSuleCFOL2SoftFOL a) = transTheory sigTrCASL formTrCASL
       . case show a of
-      str | str == show SoftFOLInduction -> generateInductionLemmas
-          | str == show SoftFOLInduction2 -> generateInductionLemmas
+      str | str == show SoftFOLInduction -> generateInductionLemmas True
+          | str == show SoftFOLInduction2 -> generateInductionLemmas False
           | otherwise -> id
     map_morphism = mapDefaultMorphism
     map_sentence (GenSuleCFOL2SoftFOL _) sign =
