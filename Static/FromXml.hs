@@ -45,11 +45,10 @@ type NamedNode = (String,Element)
 
 data NamedLink = Link { src :: String
                       , trg :: String
-                      , srcNode :: Maybe (LNode DGNodeLab)
                       , element :: Element }
 
 linkTypeStr :: NamedLink -> String
-linkTypeStr (Link _ _ _ el) = case findChild (unqual "Type") el of
+linkTypeStr (Link _ _ el) = case findChild (unqual "Type") el of
   Nothing -> error "FromXml.linkTypeStr: Links type field is missing!"
   Just tp -> strContent tp
 
@@ -93,23 +92,10 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     nodes = extractNodeElements el
     (defLinks, thmLinks) = extractLinkElements el
     (dg', depNodes) = initialiseNodes emptyTheory nodes defLinks dg
--- DEBUG STUFF --
-    dg'' = insertNodesAndDefLinks lg depNodes defLinks dg'
-    in insertThmLinks lg thmLinks dg''
-{-    in (computeDGraphTheories Map.empty
+    in ( computeDGraphTheories Map.empty
        . insertThmLinks lg thmLinks
        . insertNodesAndDefLinks lg depNodes defLinks
        ) dg'
--}
-
--- TODO: Maybe the node has to be updated as well. Ask Christian about it..
-insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> DGraph
-insertThmLinks lg links dg = foldl insert' dg links where
-  insert' dg' l = let
-    lType = if isInfixOf "Global" $ linkTypeStr l
-        then globalThm
-        else localThm
-    in insertLink lg l lType dg'
 
 
 -- | main loop: in every step, all links are collected of which the source node
@@ -133,7 +119,7 @@ splitLinks :: DGraph -> [NamedLink] -> ([NamedLink],[NamedLink])
 splitLinks dg = killMultTrg . foldr partiSrc ([],[]) where
   partiSrc l (r,r') = case findNodeByName (src l) dg of
     Nothing -> (r, l:r')
-    dgn -> (l { srcNode = dgn }:r, r')
+    _ -> (l:r, r')
   killMultTrg (hasSrc,noSrc) = let noSrcTrgs = map trg noSrc in
     foldr (\l (r,r') -> if elem (trg l) noSrcTrgs
       then (r, l:r') else (l:r, r')) ([],noSrc) hasSrc
@@ -150,78 +136,85 @@ iterateNodes _ [] links _ = error $
     ++ printLinks links
 iterateNodes lg (x@(name,_):xs) links dg = 
   case partition ((== name) . trg) links of
-    -- Case #1: Only one Link is targetting the current Node.
-    ([l],ls) -> iterateNodes lg xs ls $ insSinglTrg lg x l dg
-    -- Case #2: None of the current links are targetting the Node.
     ([],_) -> let (dg',xs') = iterateNodes lg xs links dg
               in (dg',x:xs')
-    -- Case #3: Multiple Links are targetting the Node.
-    (sameTrg,ls) -> iterateNodes lg xs ls $ insMultTrg lg x sameTrg dg
+    (lCur,lLft) -> iterateNodes lg xs lLft 
+                  $ insDefLinks lg x lCur dg
 
 
-insSinglTrg :: LogicGraph -> NamedNode -> NamedLink -> DGraph -> DGraph
-insSinglTrg lg x l dg = insertLink lg l globalDef $ insertNode2 morph x dg
-  where morph = getLinkMorphism lg sign1 l
-        sign1 = signOf $ dgn_theory $ snd $ fromMaybe (error "")
-              $ findNodeByName (src l) dg
-
-insMultTrg :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
-insMultTrg _ _ [] dg = dg
-insMultTrg lg x (l:ls) dg = let
-  mrp = foldl comp' (morph l) ls where
-    comp' m l' = propagateErrors "FromXml.insMultTrg:" 
-                    $ composeMorphisms m $ morph l'
-    morph l' = getLinkMorphism lg sign l'
--- since the source node is the same for all links, so is the startoff-G_sign
-    sign = signOf . dgn_theory . snd . fromMaybe (error "FromXml.insMultTrg")
-         $ findNodeByName (src l) dg
-  dg' = insertNode2 mrp x dg
-  insert' y = insertLink lg y globalDef
-  in foldr insert' dg' (l:ls)
+insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> DGraph
+insertThmLinks _ [] dg = dg
+insertThmLinks lg (l:ls) dg = case partition ((== trg l) . trg) ls of
+  (lCur,lLft) -> let mr = getLinkMorphism lg dg (l:lCur)
+     in trace (show (length (l:lCur)) ++ " ThmLinks") $
+      insertThmLinks lg lLft
+      $ foldr (insertLink mr globalThm) dg (l:lCur)
 
 
--- TODO: fix here!
-insertLink :: LogicGraph -> NamedLink -> DGLinkType -> DGraph -> DGraph
-insertLink lg l lType dg = let
-  lookup' str = fromMaybe (error "FromXml.insertLink: Node not found")
-              $ findNodeByName str dg
-  (i,lbl1) = lookup' (src l)
-  (j,lbl2) = lookup' (trg l)
-  sign1 = signOf $ dgn_theory lbl1
-  morph = getLinkMorphism lg sign1 l
-  insertWith m = snd . insLEdgeDG (i,j, defDGLink m lType SeeTarget)
-  in trace (printLinks [l] ++ "[type:] " ++ show lType
-        ++ parseSymbolMap (element l))
-    $ if hasSymbolMap l
-    then let
-      sgn = signOf $ dgn_theory lbl2
-      mrp = propagateErrors "FromXml.insertLink: <-- THIS?" 
-          $ ginclusion lg (cod morph) sgn
-      in insertWith mrp dg
-    else insertWith morph dg
+insDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
+insDefLinks _ _ [] dg = dg
+insDefLinks lg trgNd links dg = let
+  mr = getLinkMorphism lg dg links
+  gt = case cod mr of
+         G_sign lid sg sId -> noSensGTheory lid sg sId
+  dg' = insertNode gt trgNd dg
+  in trace (show (length links) ++ " DefLinks") $
+    foldr (insertLink mr globalDef) dg' links
 
 
-insertNode2 :: GMorphism -> NamedNode -> DGraph -> DGraph
-insertNode2 gm = case cod gm of
-    G_sign lid sign sId -> let gt = noSensGTheory lid sign sId
-                        in insertNode gt
+insertLink :: GMorphism -> DGLinkType -> NamedLink -> DGraph
+           -> DGraph
+insertLink m lType link dg = let
+  -- I wish i could get this out of here.. the node is looked up for its
+  -- theory in getLinkMorphism just below..
+  (i,_) = fromMaybe (error "FromXml.insertLink: node not found")
+        $ findNodeByName (src link) dg
+  (j,_) = fromMaybe (error "FromXml.insertLink: node not found")
+        $ findNodeByName (trg link) dg
+  in snd $ insLEdgeDG (i,j, defDGLink m lType SeeTarget) dg
 
 
-getLinkMorphism :: LogicGraph -> G_sign -> NamedLink -> GMorphism
-getLinkMorphism lg s1 l = case findChild (unqual "GMorphism") (element l) of
+getLinkMorphism :: LogicGraph -> DGraph -> [NamedLink] -> GMorphism
+getLinkMorphism _ _ [] = error "FromXml.getLinkMorphism"
+getLinkMorphism lg dg ls = let
+  (mh:mt) = map (\ l -> extractMorphism lg (getSg l) l) ls
+  getSg l = signOf $ dgn_theory $ snd $ fromMaybe 
+          (error "FromXml.getLinkMorphism: source node missing")
+          $ findNodeByName  (src l) dg
+  comp m m' = propagateErrors "FromXml.getLinkMorphism:" 
+             $ composeMorphisms m m'
+  in foldl comp mh mt
+
+{- NOTE tried out to use ginclusion with target node signature, but didnt help
+---------------------------------------------------------------------------
+getLinkMorphism :: LogicGraph -> DGraph -> [NamedLink] -> GMorphism
+getLinkMorphism _ _ [] = error "FromXml.getLinkMorphism"
+getLinkMorphism lg dg ls = let
+  (mh:mt) = map (\ l -> extractMorphism lg (getSg l) l) ls
+  getSg l = signOf $ dgn_theory $ snd $ fromMaybe 
+          (error "FromXml.getLinkMorphism: source node missing")
+          $ findNodeByName  (src l) dg
+  comp m m' = propagateErrors "FromXml.getLinkMorphism:" 
+             $ composeMorphisms m m'
+  mr1 = foldl comp mh mt
+  in case findNodeByName (trg (head ls)) dg of
+    Just (_,lbl) -> propagateErrors "" $
+      ginclusion lg (signOf (dgn_theory lbl)) (cod mr1) 
+    Nothing -> trace "no target node!!" mr1
+---------------------------------------------------------------------------
+------------------------------------------------------------------------ -}
+
+
+extractMorphism :: LogicGraph -> G_sign -> NamedLink -> GMorphism
+extractMorphism lg sgn l = case findChild (unqual "GMorphism") (element l) of
     Nothing -> error $
-      "FromXml.getLinkMorphism: Link has no Morphism!" ++ printLinks [l]
+      "FromXml.extractMorphism: Link has no Morphism!" ++ printLinks [l]
     Just mor -> let
-      nm = fromMaybe (error "FromXml.getLinkMorphism: No name attribute") 
+      nm = fromMaybe (error "FromXml.extractMorphism: No name attribute") 
          $ getAttrVal "name" mor
       symbs = parseSymbolMap mor
-      -- DEBUG STUFF -- v -- v --
-      in propagateErrors "FromXml.getLinkMorphism:" 
-         $ getGMorphism lg s1 nm symbs
-
-
-hasSymbolMap :: NamedLink -> Bool
-hasSymbolMap = not . null . deepSearch [unqual "map"] . element
+      in propagateErrors "FromXml.extractMorphism:" 
+         $ getGMorphism lg sgn nm symbs
 
 
 parseSymbolMap :: Element -> String
@@ -229,6 +222,7 @@ parseSymbolMap = intercalate ", "
                . map ( intercalate " |-> "
                . map strContent . elChildren )
                . deepSearch [unqual "map"] 
+
 
 
 -- | All nodes that do not have dependencies via the links are processed at the
@@ -279,7 +273,7 @@ extractLinkElements = partition isDef . foldr f [] .
                     findChildren (unqual "DGLink") where
   f e r = case getAttrVal "source" e of
             Just sr -> case getAttrVal "target" e of
-              Just tr -> (Link sr tr Nothing e) : r
+              Just tr -> (Link sr tr e) : r
               Nothing -> r
             Nothing -> r
   isDef l = isInfixOf "Def" $ linkTypeStr l
@@ -290,8 +284,8 @@ mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
 mkDGNodeLab gt (name, el) = let 
   specs = extractSpecString el
   (response,message) = extendByBasicSpec specs gt
-  in trace (" >> NODE << " ++ name ++ " <<\n" ++ specs) 
-   $ case response of
+  in trace (" >> NODE << " ++ name ++ " <<") -- ++ specs) 
+    $ case response of
        Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
        Success gt' _ symbs _ -> 
          newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
