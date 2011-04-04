@@ -168,7 +168,7 @@ libItem l =
        (pa, s8) <- patternsP
        q <- optEnd
        return (Newlogic_defn (LogicDef n ml s m f p pa)
-          (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))    
+          (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -266,7 +266,7 @@ modelsP :: AParser st (Token, Token)
 modelsP = do
     s <- asKey modelsS
     m <- simpleIdOrDDottedId
-    return (m, s)     
+    return (m, s)
   <|> return (nullTok, nullTok)
 
 foundationP :: AParser st (Token, Token)
