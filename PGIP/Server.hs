@@ -104,10 +104,12 @@ hetsServer opts1 = do
   createDirectoryIfMissing False tempHetsLib
   writeFile permFile ""
   sessRef <- newIORef IntMap.empty
-  run 8000 $ \ re ->
-    let query = B8.unpack $ queryString re
-        path = dropWhile (== '/') $ B8.unpack (pathInfo re)
-    in case B8.unpack (requestMethod re) of
+  run 8000 $ \ re -> do
+   let query = B8.unpack $ queryString re
+       path = dropWhile (== '/') $ B8.unpack (pathInfo re)
+   appendFile permFile $ shows (remoteHost re) "\n"
+   appendFile permFile $ shows (requestHeaders re) "\n"
+   case B8.unpack (requestMethod re) of
     "GET" -> if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then getHetsResponse opts [] sessRef path query
