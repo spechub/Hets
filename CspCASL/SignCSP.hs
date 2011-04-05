@@ -24,7 +24,6 @@ import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import qualified CspCASL.LocalTop as LocalTop
 import CspCASL.Print_CspCASL ()
-import Common.AS_Annotation (Named)
 import Common.AnnoState
 import Common.Doc
 import Common.DocUtils
@@ -137,9 +136,6 @@ cspSubsortCloseSorts sig sorts =
 data CspSign = CspSign
     { chans :: ChanNameMap
     , procSet :: ProcNameMap
-    {- | Added for uniformity to the CASL static analysis. After
-    static analysis this is the empty list. -}
-    , ccSentences :: [Named CspCASLSen]
     } deriving (Eq, Ord, Show)
 
 -- | plain union
@@ -167,9 +163,7 @@ emptyCspCASLSign = emptySign emptyCspSign
 emptyCspSign :: CspSign
 emptyCspSign = CspSign
     { chans = Map.empty
-    , procSet = Map.empty
-    , ccSentences = []
-    }
+    , procSet = Map.empty }
 
 -- | Compute union of two CSP CASL signatures.
 unionCspCASLSign :: CspCASLSign -> CspCASLSign -> Result CspCASLSign

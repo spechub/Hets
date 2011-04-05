@@ -62,8 +62,7 @@ basicAnalysisCspCASL inp@(_, insig, _) = do
   let ext = extendedInfo sig
   return (bs, ExtSign sig $ Set.unions
              $ Set.map caslToCspSymbol syms
-             : toSymbolSet (diffCspSig ext $ extendedInfo insig),
-    sens ++ reverse (ccSentences ext))
+             : toSymbolSet (diffCspSig ext $ extendedInfo insig), sens)
 
 basicAnaAux :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
   -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol, [Named CspCASLSen])
@@ -200,10 +199,6 @@ anaProcEq a (ParmProcname pn vs) proc =
   care what the underlying item is in the annotation (but it probably will be
   the proc eq) -}
   do
-    sig <- get
-    let ext = extendedInfo sig
-        ccsens = ccSentences ext
-        -- procDecls = procSet ext
     maybeFqPn <- anaProcName pn (length vs)
     case maybeFqPn of
       -- Only analyse a process if its name and profile is known
@@ -225,24 +220,17 @@ anaProcEq a (ParmProcname pn vs) proc =
                 (termAlpha, fqProc) <-
                   anaProcTerm proc (Map.fromList gVars) Map.empty
                 checkCommAlphaSub termAlpha procAlpha proc "process equation"
-                -- Save the diags from the checkCommAlphaSub
-                vds <- gets envDiags
                 {- put CspCASL Sentences back in to the state with new sentence
                 BUG - What should the constituent alphabet be for this
                 process?  probably the same as the inner one! -}
-                let namedSen = makeNamedSen $
+                addSentences [makeNamedSen $
                               {- We take the annotated item and replace the
                               inner item, thus preserving the annotations. We
                               then take this annotated sentence and make it a
                               named sentence in accordance to the (if
                               existing) name in the annotations. -}
                                a {item = ExtFORMULA
-                                   $ ProcessEq fqPn fqGVars procAlpha fqProc}
-                put sig {envDiags = vds, extendedInfo =
-                            ext {ccSentences = namedSen : ccsens}
-                        }
-                return ()
-    return ()
+                                   $ ProcessEq fqPn fqGVars procAlpha fqProc}]
 
 -- | Statically analyse a CspCASL process equation's global variable names.
 anaProcVars :: FQ_PROCESS_NAME -> [SORT] -> [VAR] ->
