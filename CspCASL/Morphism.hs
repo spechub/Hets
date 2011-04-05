@@ -164,7 +164,7 @@ composeCspAddMorphism m1 m2 = let
 
 {- | A CspCASLMorphism is a CASL Morphism with the extended_map to be a
 CspAddMorphism. -}
-type CspCASLMorphism = CASL_Morphism.Morphism () CspSign CspAddMorphism
+type CspCASLMorphism = CASL_Morphism.Morphism CspSen CspSign CspAddMorphism
 
 {- | Dont know if this is implemented correctly. If m1 and m2 have the same
 channel or process maps then m1's are taken. BUG? -}
@@ -282,7 +282,7 @@ inducedProcMap sm cm pm = Map.foldWithKey
       let (m, q) = mapProcId sm cm pm (n, p)
       in Rel.setInsert m q)) Map.empty
 
-inducedCspSign :: InducedSign () CspSign CspAddMorphism CspSign
+inducedCspSign :: InducedSign f CspSign CspAddMorphism CspSign
 inducedCspSign sm _ _ m sig =
   let csig = extendedInfo sig
       cm = channelMap m
@@ -293,14 +293,12 @@ inducedCspSign sm _ _ m sig =
 -- * application of morhisms to sentences
 
 -- | Apply a Signature Morphism to a CspCASL Sentence
-mapSen :: CspCASLMorphism -> CspCASLSen -> Result CspCASLSen
+mapSen :: CspCASLMorphism -> CspSen -> CspSen
 mapSen mor sen =
     if CASL_Morphism.isInclusionMorphism
        CASL_Morphism.isInclusionMorphismExtension mor
-    then return sen
+    then sen
     else case sen of
-           CASLSen caslSen ->
-               return $ CASLSen (mapCASLFormula mor caslSen)
            ProcessEq procName fqVarList commAlpha proc ->
                let {- Map the morphism over all the parts of the process
                    equation -}
@@ -308,8 +306,8 @@ mapSen mor sen =
                    newFqVarList = mapFQProcVarList mor fqVarList
                    newCommAlpha = mapCommAlpha mor commAlpha
                    newProc = mapProc mor proc
-               in return (ProcessEq newProcName newFqVarList
-                                    newCommAlpha newProc)
+               in ProcessEq newProcName newFqVarList
+                                    newCommAlpha newProc
 
 -- | Apply a signature morphism  to a Fully Qualified Process Variable List
 mapFQProcVarList :: CspCASLMorphism -> FQProcVarList -> FQProcVarList
@@ -412,6 +410,12 @@ mapRenaming mor re =
           error "CspCASL.Morphism.mapRenaming: Unexpected Renaming"
       FQRenaming rs -> FQRenaming $ map (mapCASLTerm mor) rs
 
+cspCASLMorphism2caslMorphism :: CspCASLMorphism -> Morphism () () ()
+cspCASLMorphism2caslMorphism m =
+  m { msource = ccSig2CASLSign $ msource m
+    , mtarget = ccSig2CASLSign $ mtarget m
+    , extended_map = () }
+
 {- | Apply a signature morphism to a CASL TERM (for CspCASL only, i.e. a CASL
 TERM that appears in CspCASL). -}
 mapCASLTerm :: CspCASLMorphism -> TERM () -> TERM ()
@@ -419,6 +423,7 @@ mapCASLTerm =
     {- The error here is not used. It is a function to map over the morphism,
     CspCASL does not use this functionality. -}
     CASL_MapSen.mapTerm (error "CspCASL.Morphism.mapCASLTerm")
+      . cspCASLMorphism2caslMorphism
 
 {- | Apply a signature morphism to a CASL FORMULA (for CspCASL only, i.e. a CASL
 FORMULA that appears in CspCASL). -}
@@ -427,6 +432,7 @@ mapCASLFormula =
     {- The error here is not used. It is a function to map over the morphism,
     CspCASL does not use this functionality. -}
     CASL_MapSen.mapSen (error "CspCASL.Morphism.mapCASLFormula")
+      . cspCASLMorphism2caslMorphism
 
 -- | Apply a signature morphism to a process name
 mapProcessName :: CspCASLMorphism -> FQ_PROCESS_NAME -> FQ_PROCESS_NAME

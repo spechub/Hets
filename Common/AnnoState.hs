@@ -45,9 +45,9 @@ instance AParsable () where
 -- a parser for terms or formulas
 class TermParser a where
   termParser :: Bool -> AParser st a -- ^ True for terms, formulas otherwise
-
-instance TermParser () where
   termParser _ = pzero
+
+instance TermParser ()
 
 aToTermParser :: AParser st a -> Bool -> AParser st a
 aToTermParser p b = if b then pzero else p

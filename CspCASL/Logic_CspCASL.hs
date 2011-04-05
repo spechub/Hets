@@ -34,6 +34,8 @@ import Logic.Prover
 import CASL.Logic_CASL
 import CASL.Parse_AS_Basic
 import CASL.Morphism
+import qualified CASL.MapSentence as MapSen
+import qualified CASL.SimplifySen as SimpSen
 
 import CspCASL.ATC_CspCASL ()
 import CspCASL.CspCASL_Keywords
@@ -76,10 +78,11 @@ instance Show a => Sentences (GenCspCASL a)
     -- symbol
     CspSymbol
     where
-      map_sen (GenCspCASL _) = CspCASL_Morphism.mapSen
+      map_sen (GenCspCASL _) m = return . MapSen.mapSen mapSen m
       sym_name (GenCspCASL _) = cspSymName
       symmap_of (GenCspCASL _) = cspMorphismToCspSymbMap
-      simplify_sen (GenCspCASL _) = SimplifySen.simplifySen
+      simplify_sen (GenCspCASL _) =
+        SimpSen.simplifySen (const return) SimplifySen.simplifySen
       sym_of (GenCspCASL _) = symSets
 
 -- | Syntax of CspCASL

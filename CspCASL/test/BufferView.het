@@ -28,6 +28,7 @@ end
 spec Buffer2 =
   data List2
   channel read, write : Elem
+  . nil = nil
   process Buf(List): read, write, List;
           EmptyBuffer : read,write, List;
           Buf(l)= read? x :: Elem -> Buf( cons(x,nil) ) []

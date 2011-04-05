@@ -14,7 +14,7 @@ signatures for CSP-CASL
 
 module CspCASL.SignCSP where
 
-import CASL.AS_Basic_CASL (CASLFORMULA, SORT, TERM)
+import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.ToDoc
 import CspCASL.AS_CspCASL_Process
@@ -25,6 +25,7 @@ import CspCASL.CspCASL_Keywords
 import qualified CspCASL.LocalTop as LocalTop
 import CspCASL.Print_CspCASL ()
 import Common.AS_Annotation (Named)
+import Common.AnnoState
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -149,10 +150,10 @@ cspSignUnion sign1 sign2 = emptyCspSign
 
 {- | A CspCASL signature is a CASL signature with a CSP process
 signature in the extendedInfo part. -}
-type CspCASLSign = Sign () CspSign
+type CspCASLSign = Sign CspSen CspSign
 
 ccSig2CASLSign :: CspCASLSign -> CASLSign
-ccSig2CASLSign sigma = sigma { extendedInfo = () }
+ccSig2CASLSign sigma = sigma { extendedInfo = (), sentences = [] }
 
 -- | Projection from CspCASL signature to Csp signature
 ccSig2CspSign :: CspCASLSign -> CspSign
@@ -174,7 +175,7 @@ emptyCspSign = CspSign
 unionCspCASLSign :: CspCASLSign -> CspCASLSign -> Result CspCASLSign
 unionCspCASLSign s1 s2 = do
   -- Compute the unioned data signature ignoring the csp signatures
-  let newDataSig = uniteCASLSign (ccSig2CASLSign s1) (ccSig2CASLSign s2)
+  let newDataSig = addSig (\ _ _ -> emptyCspSign) s1 s2
   -- Check that the new data signature has local top elements
       rel = sortRel newDataSig
       diags' = LocalTop.checkLocalTops rel
@@ -256,27 +257,25 @@ type FQProcVarList = [TERM ()]
 process equation has on the LHS a process name, a list of parameters which
 are qualified variables (which are terms), a constituent( or is it permitted
 ?) communication alphabet and finally on the RHS a fully qualified process. -}
-data CspCASLSen
-    = CASLSen (CASLFORMULA)
-    | ProcessEq FQ_PROCESS_NAME FQProcVarList CommAlpha PROCESS
+data CspSen = ProcessEq FQ_PROCESS_NAME FQProcVarList CommAlpha PROCESS
       deriving (Show, Eq, Ord)
 
-instance GetRange CspCASLSen
+type CspCASLSen = FORMULA CspSen
 
-instance Pretty CspCASLSen where
-    pretty (CASLSen f) = pretty f
+instance GetRange CspSen
+
+instance Pretty CspSen where
     pretty (ProcessEq pn varList _commAlpha proc) =
         let varDoc = if null varList
                      then empty
                      else parens $ ppWithCommas varList
         in pretty pn <+> varDoc <+> equals <+> pretty proc
 
--- | Test if a CspCASL sentence is a CASL sentence
-isCASLSen :: CspCASLSen -> Bool
-isCASLSen (CASLSen _) = True
-isCASLSen _ = False
+instance FormExtension CspSen
+instance TermExtension CspSen
+instance TermParser CspSen
 
--- | Test if a CspCASL sentence is a Process Equation.
 isProcessEq :: CspCASLSen -> Bool
-isProcessEq (ProcessEq _ _ _ _) = True
-isProcessEq _ = False
+isProcessEq f = case f of
+   ExtFORMULA _ -> True
+   _ -> False

@@ -46,7 +46,7 @@ import Data.Maybe
 
 import Control.Monad
 
-type CspBasicSpec = BASIC_SPEC CspBasicExt () ()
+type CspBasicSpec = BASIC_SPEC CspBasicExt () CspSen
 
 {- | The first element of the returned pair (CspBasicSpec) is the same
 as the inputted version just with some very minor optimisations -
@@ -57,22 +57,20 @@ basicAnalysisCspCASL :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
   -> Result (CspBasicSpec, ExtSign CspCASLSign CspSymbol, [Named CspCASLSen])
 basicAnalysisCspCASL inp@(_, insig, _) = do
   (bs, ExtSign sig syms, sens) <- basicAnaAux inp
-  unless (null sens) $
-    appendDiags [mkDiag Warning "ignoring CASL sentences" $ map sentence sens]
   -- check for local top elements in the subsort relation
   appendDiags $ LocalTop.checkLocalTops $ sortRel sig
   let ext = extendedInfo sig
   return (bs, ExtSign sig $ Set.unions
              $ Set.map caslToCspSymbol syms
              : toSymbolSet (diffCspSig ext $ extendedInfo insig),
-    reverse $ ccSentences ext)
+    sens ++ reverse (ccSentences ext))
 
 basicAnaAux :: (CspBasicSpec, CspCASLSign, GlobalAnnos)
-  -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol, [Named (FORMULA ())])
+  -> Result (CspBasicSpec, ExtSign CspCASLSign Symbol, [Named CspCASLSen])
 basicAnaAux =
   basicAnalysis (const return) ana_BASIC_CSP (const return) emptyMix
 
-ana_BASIC_CSP :: Ana CspBasicExt CspBasicExt () () CspSign
+ana_BASIC_CSP :: Ana CspBasicExt CspBasicExt () CspSen CspSign
 ana_BASIC_CSP _ bs = do
   case bs of
     Channels cs _ -> mapM_ (anaChanDecl . item) cs
@@ -238,8 +236,8 @@ anaProcEq a (ParmProcname pn vs) proc =
                               then take this annotated sentence and make it a
                               named sentence in accordance to the (if
                               existing) name in the annotations. -}
-                               a {item =
-                                     ProcessEq fqPn fqGVars procAlpha fqProc}
+                               a {item = ExtFORMULA
+                                   $ ProcessEq fqPn fqGVars procAlpha fqProc}
                 put sig {envDiags = vds, extendedInfo =
                             ext {ccSentences = namedSen : ccsens}
                         }
@@ -796,7 +794,7 @@ anaTermCspCASL' sig trm = do
               emptyMix { mixRules = makeRules ga $ idSetOfSig sig }
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
                  ga (mixRules mix) trm
-    oneExpTerm (const return) sig resT
+    oneExpTerm (const return) (ccSig2CASLSign sig) resT
 
 -- | Attempt to cast a CASL term to a particular CASL sort.
 ccTermCast :: TERM () -> SORT -> CspCASLSign -> Result (TERM ())
@@ -838,7 +836,7 @@ anaFormulaCspCASL' sig frm = do
         mix = extendMix (Map.keysSet $ varMap sig)
               emptyMix { mixRules = makeRules ga $ idSetOfSig sig }
     resF <- resolveFormula (putParen mix) (mixResolve mix) ga (mixRules mix) frm
-    minExpFORMULA (const return) sig resF
+    minExpFORMULA (const return) (ccSig2CASLSign sig) resF
 
 {- | Compute the communication alphabet arising from a formula
 occurring in a CspCASL process term. -}

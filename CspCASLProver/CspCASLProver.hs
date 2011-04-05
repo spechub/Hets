@@ -24,7 +24,8 @@ module CspCASLProver.CspCASLProver
     ( cspCASLProver
     ) where
 
-import CASL.AS_Basic_CASL (CASLFORMULA)
+import CASL.AS_Basic_CASL
+import CASL.Fold
 import CASL.Sign (CASLSign, Sign (..))
 
 import Common.AS_Annotation (Named, mapNamedM)
@@ -34,8 +35,7 @@ import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
 import qualified Comorphisms.CASL2SubCFOL as CASL2SubCFOL
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
-import CspCASL.SignCSP (ccSig2CASLSign, ccSig2CspSign, CspCASLSign, CspSign (..)
-                       , CspCASLSen (..))
+import CspCASL.SignCSP
 import CspCASL.Morphism (CspCASLMorphism)
 
 import CspCASLProver.Consts
@@ -69,8 +69,8 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
       ccNamedSens = toNamedList ccSensThSens
       -- A filter to change a CspCASLSen to a CASLSen (if possible)
       caslSenFilter ccSen = case ccSen of
-                              CASLSen sen -> Just sen
-                              ProcessEq _ _ _ _ -> Nothing
+        ExtFORMULA (ProcessEq _ _ _ _) -> Nothing
+        sen -> Just $ foldFormula (mapRecord $ const ()) sen
       -- All named CASL sentences from the datapart
       caslNamedSens = Maybe.mapMaybe (mapNamedM caslSenFilter) ccNamedSens
       -- Generate data encoding. This may fail.

@@ -33,7 +33,7 @@ module CspCASLProver.Utils
     , addProcTheorems
     ) where
 
-import CASL.AS_Basic_CASL (SORT, OpKind (..), TERM (..))
+import CASL.AS_Basic_CASL
 import qualified CASL.Fold as CASL_Fold
 import qualified CASL.Sign as CASLSign
 import qualified CASL.Inject as CASLInject
@@ -47,8 +47,7 @@ import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
-import CspCASL.SignCSP (CspCASLSign, ccSig2CASLSign, ChanNameMap, CspSign (..),
-                        CspCASLSen (..), isProcessEq, mapSetToList)
+import CspCASL.SignCSP
 
 import CspCASLProver.Consts
 import CspCASLProver.CspProverConsts
@@ -741,7 +740,8 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
         procMapTerm = termAppl (conDouble procMapS)
         -- Make a single equation for the primrec from a process equation
         -- mkEq (ProcessEq procName fqVars _ proc) =
-        mkEq (ProcessEq _ fqVars _ proc) =
+        mkEq f = case f of
+          ExtFORMULA (ProcessEq _ fqVars _ proc) ->
             let -- Make the name (string) for this process
                 procNameString = error "Error CspCASLProver.Utils.addProcMap: NYI with new signatures yet" -- convertProcessName2String procName
                 -- Change the name to a term
@@ -757,9 +757,7 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
                 vdm = foldr addToVdm Map.empty fqVars
                 rhs = transProcess ccSign pcfolSign cfolSign vdm proc
              in binEq lhs rhs
-        -- to avoid warnings we specify the behaviour on CASL sentences. This
-        -- should never be called as they have been filtered out.
-        mkEq (CASLSen _ ) = error "CspCASLProver.Utils.addProcMap: Unexpected CASLSen, Expected ProcessEq"
+          _ -> error "addProcMap: no ProcessEq"
         -- Build equations for primrec using process equations
         eqs = map mkEq processEqs
     in addPrimRec eqs isaThWithConst
@@ -781,7 +779,8 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
         processEqs = filter isProcessEq sens
         -- Make a single equation for the primrec from a process equation
         -- mkEq (ProcessEq procName fqVars _ proc) =
-        mkEq (ProcessEq _ fqVars _ proc) =
+        mkEq f = case f of
+          ExtFORMULA (ProcessEq _ fqVars _ proc) ->
             let -- the LHS a a process in abstract syntax i.e. process name with
                 -- variables as arguments
                 lhs' = error "Error CspCASLProver.Utils.addProcTheorms: NYI with new signatures yet"-- NamedProcess procName fqVars nullRange
@@ -793,9 +792,7 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
                 lhs = transProcess ccSign pcfolSign cfolSign vdm lhs'
                 rhs = transProcess ccSign pcfolSign cfolSign vdm proc
              in cspProverbinEqF lhs rhs
-        -- to avoid warnings we specify the behaviour on CASL sentences. This
-        -- should never be called as they have been filtered out.
-        mkEq (CASLSen _ ) = error "CspCASLProver.Utils.addProcMap: Unexpected CASLSen, Expected ProcessEq"
+          _ -> error "addProcTheorems: no ProcessEq"
         eqs = map mkEq processEqs
         proof' = toIsaProof Sorry
         addTheorem eq' isaTh' = addTheoremWithProof "UserTheorem" [] eq'
