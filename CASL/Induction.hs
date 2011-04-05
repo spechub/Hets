@@ -142,14 +142,11 @@ generateInductionLemmasAux b sort_gen_axs goals = let
                    if varsort == s
                      then Var_decl (filter (/= v) vars) s r
                      else var_decl)
-    indSorts = Set.fromList $ concatMap (map newSort) sort_gen_axs
     (uniQuantGoals, restGoals) =
             foldr ( \ goal (ul, rl) -> case sentence goal of
-                                  Quantification Universal varDecl _ _
-                                    | any ((`Set.member` indSorts) . snd) vs
-                                      -> ((goal, vs) : ul, rl)
-                                    where vs = flatVAR_DECLs varDecl
-                                  _ -> (ul, goal : rl)) ([], []) goals
+                     Quantification Universal varDecl _ _ ->
+                         ((goal, flatVAR_DECLs varDecl) : ul, rl)
+                     _ -> (ul, goal : rl)) ([], []) goals
 
     {- For each constraint we get a list of goals out of uniQuantGoals
     which contain the constraint's newSort. Afterwards all combinations
@@ -163,6 +160,19 @@ generateInductionLemmasAux b sort_gen_axs goals = let
          (concatMap (\ c ->
                           map (\ combi -> (c, combi)) $ constraintGoals c)
                        sort_gen_axs)
+    singleDts = map head $ filter isSingle sort_gen_axs
+    indSorts = Set.fromList $ map newSort singleDts
+    (simpleIndGoals, rest2) = foldr (\ (gs, vs) (ul, rl) ->
+       case dropWhile (not . (`Set.member` indSorts) . snd) vs of
+         [] -> (ul, gs : rl)
+         (v, s) : _ -> case find ((== s) . newSort) singleDts of
+           Nothing -> (ul, gs : rl)
+           Just c -> ((gs, (v, s), c) : ul, rl)) ([], []) uniQuantGoals
+    toIndPrem (gs, (v, s), c) =
+      let f = removeVarsort v s $ sentence gs
+          sb t = substitute v s t f
+          ps = mkPrems [sb] (c, sb)
+      in gs { sentence = conjunct ps }
     in if b then
     map (\ (cons, formulas) ->
             let formula = instantiateSortGen
@@ -177,4 +187,4 @@ generateInductionLemmasAux b sort_gen_axs goals = let
                          ++ "_induction")
             in makeNamed sName formula
          ) combis
-    else map fst uniQuantGoals ++ restGoals
+    else map toIndPrem simpleIndGoals ++ rest2 ++ restGoals
