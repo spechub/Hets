@@ -225,17 +225,18 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
               [ "utils", "Hets/utils"
               , "/home/www.informatik.uni-bremen.de/cofi/hets-tmp" ]
          withinDirectory tmpDir $ do
-           readProcess "pdflatex" [tmpFile] ""
-           readProcess "pdflatex" [tmpFile] ""
+           (ex1, out1, err1) <- readProcessWithExitCode "pdflatex" [tmpFile] ""
+           (ex2, out2, err2) <- readProcessWithExitCode "pdflatex" [tmpFile] ""
            let pdfFile = replaceExtension tmpFile "pdf"
            pdf <- doesFileExist pdfFile
-           if pdf then do
+           if ex1 == ExitSuccess && ex2 == ExitSuccess && pdf then do
              pdfHdl <- openBinaryFile pdfFile ReadMode
              str <- hGetContents pdfHdl
              when (length str < 0) $ putStrLn "pdf file too large"
              hClose pdfHdl
              return str
-             else return "could not create pdf"
+             else return $ "could not create pdf:\n"
+                  ++ unlines [out1, err1, out2, err2]
 
 getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
