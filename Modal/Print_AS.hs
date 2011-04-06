@@ -25,12 +25,11 @@ import CASL.ToDoc
 
 printFormulaOfModalSign :: FormExtension f => (FORMULA f -> FORMULA f)
                         -> [[Annoted (FORMULA f)]] -> Doc
-printFormulaOfModalSign sim =
-    vcat . map (sepBySemis . map (printAnnoted $ pretty . sim))
+printFormulaOfModalSign sim = semiAnnos (pretty . sim) . concat
 
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
-        cat [keyword modalityS <+> ppWithCommas is
+        cat [keyword modalityS <+> semiAnnos pretty is
             , space <> specBraces (semiAnnos pretty fs)]
     pretty (Term_mod_decl ss fs _) =
         cat [keyword termS <+> keyword modalityS <+> semiAnnos pretty ss

@@ -32,11 +32,12 @@ import CASL.MapSentence
 import CASL.SimplifySen
 import CASL.SymbolParser
 import CASL.Taxonomy
+import CASL.ToDoc
 import CASL.Logic_CASL ()
 
 data Modal = Modal deriving Show
 
-instance Language Modal  where
+instance Language Modal where
  description _ = unlines
   [ "ModalCASL extends CASL by modal operators. Syntax for ordinary"
   , "modalities, multi-modal logics as well as  term-modal"
@@ -75,6 +76,7 @@ instance Sentences Modal ModalFORMULA MSign ModalMor Symbol where
       simplify_sen Modal = simplifySen minExpForm simModal
       print_sign Modal sig = printSign
           (printModalSign $ simplifySen minExpForm simModal sig) sig
+      print_named Modal = printTheoryFormula
 
 -- simplifySen for ExtFORMULA
 simModal :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA

@@ -88,7 +88,7 @@ mBasic =
 mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], Range)
 mItem pr = do
        c <- mKey
-       (as, cs) <- separatedBy (annoParser pr) anComma
+       (as, cs) <- separatedBy (annoParser pr) anSemiOrComma
        let ps = catRange $ c : cs
        do o <- oBraceT
           (fs, q) <- auxItemList (delete diamondS modal_reserved_words) []

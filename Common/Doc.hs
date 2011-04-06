@@ -923,9 +923,6 @@ annoLine w = percent <> keyword w
 annoLparen :: String -> Doc
 annoLparen w = percent <> keyword w <> lparen
 
-revDropSpaces :: String -> String
-revDropSpaces = reverse . dropWhile isSpace
-
 wrapLines :: TextKind -> Doc -> [String] -> Doc -> Doc
 wrapLines k a l b = let p = (null (head l), null (last l)) in
   case map (Text k) l of
@@ -966,8 +963,7 @@ codeOutAnno m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
-            Comment_start -> symbol percents)
-                             <> commentText (revDropSpaces $ reverse s)
+            Comment_start -> symbol percents) <> commentText s
         Group_anno l -> case aw of
             Annote_word w -> wrapAnnoLines (annoLparen w) l annoRparen
             Comment_start -> wrapAnnoLines (percent <> lbrace) l
