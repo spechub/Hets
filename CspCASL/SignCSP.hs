@@ -30,6 +30,8 @@ import Common.Lib.Rel (Rel, predecessors)
 import Common.Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.List
+import Data.Ord
 
 type ChanNameMap = Map.Map CHANNEL_NAME (Set.Set SORT)
 type ProcNameMap = Map.Map PROCESS_NAME (Set.Set ProcProfile)
@@ -227,15 +229,17 @@ printCspSign sigma =
 
 -- | Pretty printing for channels
 printChanList :: [(CHANNEL_NAME, SORT)] -> Doc
-printChanList =
-    vcat . punctuate semi . map printChan
-        where printChan (chanName, sort) =
-                  pretty chanName <+> colon <+> pretty sort
+printChanList l = let
+  gl = groupBy (\ (_, s1) (_, s2) -> s1 == s2) $ sortBy (comparing snd) l
+  printChan cl = case cl of
+    [] -> empty -- should not happen
+    (_, s) : _ -> fsep [ppWithCommas (map fst cl), colon <+> pretty s]
+  in sepBySemis $ map printChan gl
 
 -- | Pretty printing for processes
 printProcList :: [(PROCESS_NAME, ProcProfile)] -> Doc
 printProcList =
-    vcat . punctuate semi . map printProc
+    sepBySemis . map printProc
     where printProc (procName, procProfile) = pretty procName <+>
                                  pretty procProfile
 
@@ -261,7 +265,7 @@ instance Pretty CspSen where
         let varDoc = if null varList
                      then empty
                      else parens $ ppWithCommas varList
-        in pretty pn <+> varDoc <+> equals <+> pretty proc
+        in fsep [pretty pn, varDoc, equals <+> pretty proc]
 
 instance FormExtension CspSen where
   prefixExt (ProcessEq pn _ _ _) = case pn of
