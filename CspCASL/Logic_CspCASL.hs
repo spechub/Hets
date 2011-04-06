@@ -34,6 +34,7 @@ import Logic.Prover
 import CASL.Logic_CASL
 import CASL.Parse_AS_Basic
 import CASL.Morphism
+import CASL.ToDoc
 import qualified CASL.MapSentence as MapSen
 import qualified CASL.SimplifySen as SimpSen
 
@@ -84,6 +85,7 @@ instance Show a => Sentences (GenCspCASL a)
       simplify_sen (GenCspCASL _) =
         SimpSen.simplifySen (const return) SimplifySen.simplifySen
       sym_of (GenCspCASL _) = symSets
+      print_named (GenCspCASL _) = printTheoryFormula
 
 -- | Syntax of CspCASL
 instance Show a => Syntax (GenCspCASL a)

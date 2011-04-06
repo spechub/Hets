@@ -18,8 +18,6 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.ToDoc
 import CspCASL.AS_CspCASL_Process
-         (CHANNEL_NAME, PROCESS_NAME, FQ_PROCESS_NAME, PROCESS (..),
-          CommAlpha, CommType (..), TypedChanName (..), ProcProfile (..))
 import CspCASL.AS_CspCASL ()
 import CspCASL.CspCASL_Keywords
 import qualified CspCASL.LocalTop as LocalTop
@@ -265,7 +263,11 @@ instance Pretty CspSen where
                      else parens $ ppWithCommas varList
         in pretty pn <+> varDoc <+> equals <+> pretty proc
 
-instance FormExtension CspSen
+instance FormExtension CspSen where
+  prefixExt (ProcessEq pn _ _ _) = case pn of
+    PROCESS_NAME _ -> (keyword processS <+>)
+    FQ_PROCESS_NAME {} -> id
+
 instance TermExtension CspSen
 instance TermParser CspSen
 

@@ -351,6 +351,8 @@ printInfix b join l s r =
 class (GetRange f, Pretty f) => FormExtension f where
   isQuantifierLike :: f -> Bool
   isQuantifierLike _ = False
+  prefixExt :: f -> Doc -> Doc
+  prefixExt _ = (bullet <+>)
 
 instance FormExtension ()
 
@@ -558,4 +560,5 @@ printTheoryFormula f = printAnnoted
     ((case sentence f of
     Quantification Universal _ _ _ -> id
     Sort_gen_ax _ _ -> id
+    ExtFORMULA e -> prefixExt e
     _ -> (bullet <+>)) . pretty) $ fromLabelledSen f
