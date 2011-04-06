@@ -14,6 +14,7 @@ signatures for CSP-CASL
 module CspCASL.SignCSP where
 
 import CASL.AS_Basic_CASL
+import CASL.Overload
 import CASL.Sign
 import CASL.ToDoc
 import CspCASL.AS_CspCASL_Process
@@ -210,7 +211,30 @@ printProcList :: [(PROCESS_NAME, ProcProfile)] -> Doc
 printProcList = sepBySemis . map
   (\ (procName, procProfile) -> pretty procName <+> pretty procProfile)
 
--- Sentences
+-- * overload relations
+
+relatedSorts :: CspCASLSign -> SORT -> SORT -> Bool
+relatedSorts sig s1 s2 = haveCommonSupersorts True sig s1 s2
+  || haveCommonSupersorts False sig s1 s2
+
+relatedCommTypes :: CspCASLSign -> CommType -> CommType -> Bool
+relatedCommTypes sig ct1 ct2 = case (ct1, ct2) of
+  (CommTypeSort s1, CommTypeSort s2) -> relatedSorts sig s1 s2
+  (CommTypeChan (TypedChanName c1 s1), CommTypeChan (TypedChanName c2 s2))
+    -> c1 == c2 && relatedSorts sig s1 s2
+  _ -> False
+
+relatedCommAlpha :: CspCASLSign -> CommAlpha -> CommAlpha -> Bool
+relatedCommAlpha sig al1 al2 = Set.null al1 || Set.null al2 ||
+  any (\ a -> any (relatedCommTypes sig a) $ Set.toList al1) (Set.toList al2)
+
+relatedProcs :: CspCASLSign -> ProcProfile -> ProcProfile -> Bool
+relatedProcs sig (ProcProfile l1 al1) (ProcProfile l2 al2) =
+  length l1 == length l2 &&
+    and (zipWith (relatedSorts sig) l1 l2)
+    && relatedCommAlpha sig al1 al2
+
+-- * Sentences
 
 {- | FQProcVarList should only contain fully qualified CASL variables which are
 TERMs i.e. constructed via the TERM constructor Qual_var. -}

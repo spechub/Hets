@@ -26,6 +26,7 @@ import CASL.SymbolMapAnalysis
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -43,7 +44,7 @@ cspInducedFromMorphism rmap sigma = do
       pm = pred_map m
       csig = extendedInfo sigma
   -- compute the channel name map (as a Map)
-  cm <- Map.foldWithKey (chanFun rmap sm)
+  cm <- Map.foldWithKey (chanFun sigma rmap sm)
               (return Map.empty) (chans csig)
   -- compute the process name map (as a Map)
   proc_Map <- Map.foldWithKey (procFun sigma rmap sm cm)
@@ -57,11 +58,10 @@ cspInducedFromMorphism rmap sigma = do
     , op_map = om
     , pred_map = pm }
 
-chanFun :: CspRawMap -> Sort_map -> Id -> Set.Set SORT -> Result ChanMap
-  -> Result ChanMap
-chanFun rmap sm cn ss m =
-  -- assume no overload relation
-  let sls = map Set.singleton $ Set.toList ss
+chanFun :: CspCASLSign -> CspRawMap -> Sort_map -> Id -> Set.Set SORT
+  -> Result ChanMap -> Result ChanMap
+chanFun sig rmap sm cn ss m =
+  let sls = Rel.partSet (relatedSorts sig) ss
       m1 = foldr (directChanMap rmap sm cn) m sls
   in case (Map.lookup (CspKindedSymb ChannelKind cn) rmap,
                 Map.lookup (CspKindedSymb (CaslKind Implicit) cn) rmap) of
@@ -136,7 +136,7 @@ mappedChanSym sm cn s rsy =
 procFun :: CspCASLSign -> CspRawMap -> Sort_map -> ChanMap -> Id
   -> Set.Set ProcProfile -> Result ProcessMap -> Result ProcessMap
 procFun sig rmap sm cm pn ps m =
-    let pls = map Set.singleton $ Set.toList ps
+    let pls = Rel.partSet (relatedProcs sig) ps
         m1 = foldr (directProcMap sig rmap sm cm pn) m pls
     -- now try the remaining ones with (un)kinded raw symbol
     in case (Map.lookup (CspKindedSymb ProcessKind pn) rmap,
@@ -225,12 +225,7 @@ mappedProcSym sig sm cm pn pf@(ProcProfile _ al) rsy =
 
 compatibleProcTypes :: Maybe CspCASLSign -> ProcProfile -> ProcProfile -> Bool
 compatibleProcTypes msig (ProcProfile l1 al1) (ProcProfile l2 al2) =
-  l1 == l2 && let
-    (a1, a2) = case msig of
-       Nothing -> (al1, al2)
-       Just sig -> let sr = sortRel sig in
-         (closeCspCommAlpha sr al1, closeCspCommAlpha sr al2)
-    in Set.isSubsetOf a1 a2 || Set.isSubsetOf a2 a1
+  l1 == l2 && relatedCommAlpha (fromMaybe emptyCspCASLSign msig) al1 al2
 
 cspMatches :: CspSymbol -> CspRawSymbol -> Bool
 cspMatches (CspSymbol i t) rsy = case rsy of
