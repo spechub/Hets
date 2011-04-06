@@ -1,6 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Id$
+Module      :  $Header$
 Description :  CspCASL signatures
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -104,33 +103,6 @@ closeOneCspComm sr x = let
     CommTypeChan (TypedChanName c s) ->
         Set.map CommTypeSort (subsorts s)
       `Set.union` Set.map (mkTypedChan c) (subsorts s)
-
-{- Will probably be useful, but doesn't appear to be right now.
-
--- Extract the sorts from a process alphabet
-procAlphaSorts :: CommAlpha -> Set.Set SORT
-procAlphaSorts a = stripMaybe $ Set.map justSort a
-    where justSort n = case n of
-                         (CommTypeSort s) -> Just s
-                         _ -> Nothing
--- Extract the typed channel names from a process alphabet
-procAlphaChans :: CommAlpha -> Set.Set TypedChanName
-procAlphaChans a = stripMaybe $ Set.map justChan a
-    where justChan n = case n of
-                         (CommTypeChan c) -> Just c
-                         _ -> Nothing
--- Given a set of Maybes, filter to keep only the Justs
-stripMaybe :: Ord a => Set.Set (Maybe a) -> Set.Set a
-stripMaybe x = Set.fromList $ Maybe.catMaybes $ Set.toList x
-
--- Close a set of sorts under a subsort relation
-cspSubsortCloseSorts :: CspCASLSign -> Set.Set SORT -> Set.Set SORT
-cspSubsortCloseSorts sig sorts =
-    Set.unions subsort_sets
-        where subsort_sets =
-                  Set.toList $ Set.map (cspSubsortPreds sig) sorts
-
--}
 
 -- | CSP process signature.
 data CspSign = CspSign
