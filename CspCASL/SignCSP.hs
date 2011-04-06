@@ -38,17 +38,15 @@ type ProcVarMap = Map.Map SIMPLE_ID SORT
 type ProcVarList = [(SIMPLE_ID, SORT)]
 
 -- | Add a process name and its profile to a process name map.  exist.
-addProcNameToProcNameMap :: PROCESS_NAME -> ProcProfile ->
-                            ProcNameMap -> ProcNameMap
-addProcNameToProcNameMap name profile pm =
-    let l = Map.findWithDefault Set.empty name pm
-    in Map.insert name (Set.insert profile l) pm
+addProcNameToProcNameMap :: PROCESS_NAME -> ProcProfile -> ProcNameMap
+  -> ProcNameMap
+addProcNameToProcNameMap name profile =
+    Map.insertWith Set.union name (Set.singleton profile)
 
 -- | Test if a simple process name with a profile is in the process name map.
 isNameInProcNameMap :: PROCESS_NAME -> ProcProfile -> ProcNameMap -> Bool
-isNameInProcNameMap name profile pm =
-  let l = Map.findWithDefault Set.empty name pm
-  in Set.member profile l
+isNameInProcNameMap name profile =
+  Set.member profile . Map.findWithDefault Set.empty name
 
 {- | Given a simple process name and a required number of parameters, find a
 unqiue profile with that many parameters if possible. If this is not possible
@@ -95,8 +93,7 @@ closeCspCommAlpha sr =
 closeOneCspComm :: Rel SORT -> CommType -> CommAlpha
 closeOneCspComm sr x = let
   mkTypedChan c s = CommTypeChan $ TypedChanName c s
-  subsorts s' =
-      Set.singleton s' `Set.union` predecessors sr s'
+  subsorts s' = Set.insert s' $ predecessors sr s'
   in case x of
     CommTypeSort s ->
         Set.map CommTypeSort (subsorts s)
@@ -210,10 +207,8 @@ printChanList l = let
 
 -- | Pretty printing for processes
 printProcList :: [(PROCESS_NAME, ProcProfile)] -> Doc
-printProcList =
-    sepBySemis . map printProc
-    where printProc (procName, procProfile) = pretty procName <+>
-                                 pretty procProfile
+printProcList = sepBySemis . map
+  (\ (procName, procProfile) -> pretty procName <+> pretty procProfile)
 
 -- Sentences
 
