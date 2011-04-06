@@ -15,10 +15,15 @@ Simplification of CspCASL sentences for output after analysis
 module CspCASL.SimplifySen (simplifySen) where
 
 import CASL.AS_Basic_CASL (TERM (..), OP_SYMB (..))
+import CASL.Sign (extendedInfo)
 import CASL.SimplifySen (simplifyCASLSen, simplifyCASLTerm)
 
 
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+
 import Common.Id (simpleIdToId, nullRange)
+import Common.Utils (isSingleton)
 
 import CspCASL.AS_CspCASL_Process
 import CspCASL.SignCSP
@@ -31,15 +36,16 @@ simplifySen sigma sen =
     case sen of
       ProcessEq pn var alpha p ->
           -- Simplify the process
-          let simpPn = simplifyFQProcName pn
+          let simpPn = simplifyFQProcName sigma pn
               simpVar = simplifyFQProcVarList var
               simpP = simplifyProc sigma p
           in ProcessEq simpPn simpVar alpha simpP
 
 -- | Simplifies a process name.
-simplifyFQProcName :: FQ_PROCESS_NAME -> FQ_PROCESS_NAME
-simplifyFQProcName fqPn =
-  PROCESS_NAME $ procNameToSimpProcName fqPn
+simplifyFQProcName :: CspCASLSign -> FQ_PROCESS_NAME -> FQ_PROCESS_NAME
+simplifyFQProcName sig fqPn = let pn = procNameToSimpProcName fqPn in
+  if isSingleton $ Map.findWithDefault Set.empty pn $ procSet $ extendedInfo sig
+  then PROCESS_NAME pn else fqPn
 
 -- | Simplifiy a fully qualified variable list
 simplifyFQProcVarList :: FQProcVarList -> FQProcVarList
@@ -101,7 +107,7 @@ simplifyProc sigma proc =
                                  (simplifyProc sigma p)
                                  (simplifyProc sigma q) range
       NamedProcess name args range ->
-        let simpName = simplifyFQProcName name
+        let simpName = simplifyFQProcName sigma name
             simpArgs = map (simplifyCASLTerm caslSign) args
         in NamedProcess simpName simpArgs range
       {- Throw away the FQProccess and just take the simplified inner
