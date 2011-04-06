@@ -56,7 +56,7 @@ module OldTopdirs = Topdirs;;
 
 let use_file s =
   if Toploop.use_file Format.std_formatter s then ()
-  else (Format.print_string("@@@@@@@@@@@@@@@@@@@@@@@@@@Error in included file "^s);
+  else (Format.print_string("Error in included file "^s);
         Format.print_newline());;
 
 let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []

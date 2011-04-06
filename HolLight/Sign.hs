@@ -40,4 +40,4 @@ isSubSig :: Sign -> Sign -> Bool
 isSubSig s1 s2 = ((types s1) `Map.isSubmapOf` (types s2)) && ((ops s1) `Map.isSubmapOf` (ops s2))
 
 sigUnion :: Sign -> Sign -> Result Sign
-sigUnion (Sign {types = t1,ops = o1}) (Sign {types = t2, ops = o2}) = return $ Sign {types=Map.union t1 t2,ops=Map.union o1 o2}
+sigUnion (Sign {types = t1,ops = o1}) (Sign {types = t2, ops = o2}) = return $ Sign {types=Map.union t1 t2,ops=Map.unionWith Set.union o1 o2}

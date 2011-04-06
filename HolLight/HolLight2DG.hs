@@ -31,31 +31,206 @@ import HolLight.Sign
 import HolLight.Sentence
 import HolLight.Term
 import HolLight.Logic_HolLight
+import HolLight.Helper
 
 import Driver.Options
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import qualified Data.List as List
+import qualified Data.Char
 
 import qualified System.FilePath.Posix
 
-importData :: FilePath -> IO ([([Char],[([Char], Term)],([(String,Int)], [([Char], [HolType])]))],[([Char],[Char])])
+import Maybe
+
+import Text.XML.Light
+
+cleanContent :: Element -> [Content]
+cleanContent e = catMaybes (map (\ c -> case c of
+ (CRef s) -> if all Data.Char.isSpace s then Nothing else Just c
+ (Text s) -> if all Data.Char.isSpace (cdData s) then Nothing else Just c
+ _ -> Just c
+ ) (elContent e))
+
+expectElems :: [String] -> [Content] -> [Element]
+expectElems [] _ = []
+expectElems (s:s') (c:c') = case c of
+ Elem e -> if qName (elName e) == s then e:(expectElems s' c')
+           else []
+ _ -> expectElems (s:s') c'
+expectElems _ _ = []
+
+expectElem :: Content -> Maybe Element
+expectElem (Elem e) = Just e
+expectElem _ = Nothing
+
+readTuple :: Content -> Maybe (Element,Element)
+readTuple (Elem e) =
+ if qName (elName e) == "tuple" then
+  case expectElems ["fst","snd"] (cleanContent e) of
+   (f:s:[]) -> Just (f,s) 
+   _ -> Nothing
+ else Nothing
+readTuple _ = Nothing
+
+readMappedTuple :: (Show a, Show b) => (Element -> Maybe a) -> (Element -> Maybe b) -> Content -> Maybe (a,b)
+readMappedTuple a b c = case readTuple c of
+ Just (c1,c2) -> case (a c1,b c2) of
+  (Just e1,Just e2) -> Just (e1,e2)
+  _ -> Nothing
+ Nothing -> Nothing
+
+readString :: Content -> Maybe String
+readString (CRef s) = Just s
+readString (Text t) = let s = cdData t
+                          b = Data.Char.isSpace
+                      in Just $ reverse (dropWhile b (reverse (dropWhile b s)))
+readString _ = Nothing
+
+readType :: Content -> Maybe HolType
+readType (Elem e) = case (qName (elName e),cleanContent e) of
+ ("TyVar",s:[]) -> case readString s of
+  Just s' -> Just (TyVar s')
+  _ -> Nothing
+ ("TyApp",s:t) -> case (readString s, readAll readType t) of
+  (Just s',Just t') -> Just (TyApp s' t')
+  _ -> Nothing
+ _ -> Nothing
+readType _ = Nothing
+
+readOnlyInt :: [Content] -> Maybe Int
+readOnlyInt ((CRef s):[]) = Just ((read s)::Int)
+readOnlyInt ((Text s):[]) = Just ((read (cdData s))::Int)
+readOnlyInt _ = Nothing
+
+readParseType :: [Content] -> Maybe ([Content],HolParseType)
+readParseType ((Elem e):c') = case (qName (elName e),cleanContent e) of
+ ("Prefix",_) -> Just (c',Prefix)
+ ("InfixR",c) -> case (readOnlyInt c) of
+  Just i  -> Just (c',InfixR i)
+  Nothing ->  Nothing
+ ("InfixL",c) -> case (readOnlyInt c) of
+  Just i  -> Just (c',InfixL i)
+  Nothing -> Nothing
+ ("Normal",_) -> Just (c',Normal)
+ ("Binder",_) -> Just (c',Binder)
+ _ -> Nothing
+readParseType _ = Nothing
+
+applyToContents :: ([Content] -> Maybe a) -> Element -> Maybe a
+applyToContents f e = f (cleanContent e)
+
+applyToSingleEl :: (Content -> Maybe a) -> Element -> Maybe a
+applyToSingleEl f e = case (cleanContent e) of
+ (e':[]) -> f e'
+ _ -> Nothing
+
+readTermInfo :: [Content] -> Maybe HolTermInfo
+readTermInfo c = case readParseType c of
+ Just (c',p) -> case c' of
+  (t:_) -> case readMappedTuple (applyToSingleEl readString) (applyToContents readParseType) t of
+   Just (s,(_,p1)) -> Just (HolTermInfo (p,Just (s,p1)))
+   _ -> Just (HolTermInfo (p,Nothing))
+  _ -> Just (HolTermInfo (p,Nothing))
+ _ -> Nothing
+
+readTerm :: Content -> Maybe Term
+readTerm (Elem e) = case (qName (elName e),cleanContent e) of
+ ("Var",n:t:i) -> case (readString n,readType t,readTermInfo i) of
+  (Just n',Just t',Just i') -> Just (Var n' t' i')
+  _ -> Nothing
+ ("Const",n:t:i) -> case (readString n,readType t,readTermInfo i) of
+  (Just n',Just t',Just i') -> Just (Const n' t' i')
+  _ -> Nothing
+ ("Comb",t1:t2:[]) -> case (readTerm t1,readTerm t2) of
+  (Just t1',Just t2') -> Just (Comb t1' t2')
+  _ -> Nothing
+ ("Abs",t1:t2:[]) -> case (readTerm t1,readTerm t2) of
+  (Just t1',Just t2') -> Just (Abs t1' t2')
+  _ -> Nothing
+ _ -> Nothing
+readTerm _ = Nothing
+
+readTest :: a -> Maybe a
+readTest c = Just c
+
+readAll :: (Content -> Maybe a) -> [Content] -> Maybe [a]
+readAll _ [] = Just []
+readAll r (c:c') = case (r c,readAll r c') of
+ (Just e,Just l) -> Just (e:l)
+ _ -> Nothing
+
+importData :: FilePath -> IO ([(String,[(String,Term)])],[(String,String)]) 
 importData fp = do
     s <- readFile fp
-    let (libs,lnks) = (read s) :: ([([Char],[([Char], Term)],([(String,Int)], [([Char], [HolType])]))],[([Char],[Char])])
-    return (libs, lnks)
+    let e = ([],[])
+    case parseXMLDoc s of
+     Just export -> 
+      if qName (elName export) == "HolExport" then
+       case expectElems ["Libs","LibLinks"] (cleanContent export) of
+        (l:lk:[]) -> let l' = readAll (readMappedTuple (applyToSingleEl readString) (applyToContents (readAll (readMappedTuple (applyToSingleEl readString) (applyToSingleEl readTerm))))) (cleanContent l)
+                         lk' = readAll (readMappedTuple (applyToSingleEl readString) (applyToSingleEl readString)) (cleanContent lk)
+                     in case (l',lk') of
+                      (Just l'',Just lk'') -> return (l'',lk'')
+                      _ -> return e
+        _ -> return e
+      else return e
+     Nothing -> return e
 
-makeSig :: [(String,Int)] -> [([Char],[HolType])] -> Sign
-makeSig tps opsM = Sign {
-                    types = foldl (\m (k,v) -> Map.insert k v m) Map.empty tps
-                   ,ops = foldl (\m (k,v) -> Map.insert k (Set.fromList v) m) Map.empty opsM }
+get_types :: Map.Map String Int -> HolType -> Map.Map String Int
+get_types m t = case t of
+ (TyVar s) -> Map.insert s 0 m
+ (TyApp s ts) -> let m' = foldl get_types Map.empty ts in
+                     Map.insert s (length ts) m'
+
+mergeTypesOps :: (Map.Map String Int,Map.Map String (Set.Set HolType))
+                 -> (Map.Map String Int,Map.Map String (Set.Set HolType))
+                 -> (Map.Map String Int,Map.Map String (Set.Set HolType))
+mergeTypesOps (ts1,ops1) (ts2,ops2) =
+ (Map.union ts1 ts2,Map.unionWith Set.union ops1 ops2)
+
+get_ops :: [String] -> Bool -> Term
+           -> (Map.Map String Int,Map.Map String (Set.Set HolType)) 
+get_ops ign not_abs t = case t of
+ (Var s tp _)   -> let ts = get_types Map.empty tp
+                     in if not_abs && not (elem s ign) then
+                          (ts,Map.insert s (Set.fromList [tp]) Map.empty)
+                        else (ts,Map.empty)
+ (Const s tp _) -> let ts = get_types Map.empty tp
+                     in (ts,Map.insert s (Set.fromList [tp]) Map.empty)
+ (Comb t1 t2) -> mergeTypesOps 
+                  (get_ops ((name_of t1):ign) True  t1)
+                  (get_ops ((name_of t1):ign) True  t2)
+ (Abs t1 t2)  -> mergeTypesOps                  
+                  (get_ops ((name_of t1):ign) False t1)
+                  (get_ops ((name_of t1):ign) True  t2)
+
+calcSig :: [(String,Term)] -> Sign
+calcSig tm = let (ts,os) = foldl
+                  (\p (_,t) -> (mergeTypesOps (get_ops [] True t) p)) (Map.empty,Map.empty) tm
+             in Sign {
+                 types = ts
+                ,ops = os }
+
+sigDepends :: Sign -> Sign -> Bool
+sigDepends s1 s2 = ((Map.size (Map.intersection (types s1) (types s2))) /= 0) ||
+                   (foldl (||) False (map snd (Map.toList (Map.intersectionWith
+                     (\a b -> (Set.size (Set.intersection a b))/=0)
+                     (ops s1) (ops s2)))))
+
+treeLevels :: [(String,String)] -> Map.Map Int [(String,String)]
+treeLevels l = let lk = foldl (\l' (imp,t) -> case lookup t l' of
+                                 Just (p,_) -> (imp,(p+1,t)):l'
+                                 Nothing -> (imp,(1,t)):(t,(0,"")):l') [] l
+                        in foldl (\m (imp,(p,t)) ->
+                            let s = Map.findWithDefault [] p m
+                                in Map.insert p ((imp,t):s) m) Map.empty lk
 
 makeNamedSentence :: String -> Term -> Named Sentence
 makeNamedSentence n t = makeNamed n $ Sentence { term = t, proof = Nothing }
 
-_insNodeDG :: Sign -> [Named Sentence] -> [Char] -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab)) -> (DGraph, Map.Map [Char] (Sign,Node,DGNodeLab))
+_insNodeDG :: Sign -> [Named Sentence] -> String -> (DGraph, Map.Map String (String,Data.Graph.Inductive.Graph.Node,DGNodeLab)) -> (DGraph, Map.Map String (String,Data.Graph.Inductive.Graph.Node,DGNodeLab))
 _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight sig) startSigId
                                           (toThSens sens) startThId
                                    n' = snd (System.FilePath.Posix.splitFileName n)
@@ -64,7 +239,7 @@ _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight 
                                           (newNodeInfo DGEmpty)
                                           gt
                                    k = getNewNodeDG dg
-                                   m' = Map.insert n (sig,k,labelK) m
+                                   m' = Map.insert n (n,k,labelK) m
                                    insN = [InsertNode (k,labelK)]
                                    newDG = changesDGH dg insN
                                    labCh = [SetNodeLab labelK (k, labelK
@@ -74,27 +249,34 @@ _insNodeDG sig sens n (dg,m) = let gt = G_theory HolLight (makeExtSign HolLight 
 
 anaHolLightFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaHolLightFile _opts path = do
-   (libs, _lnks) <- importData path
-   let sigM = Map.fromList (map (\(lname,t,sdata) -> (lname,(t,sdata))) libs)
-       leaves = let ns = map (\(lname,_,_) -> lname) libs
-                in (List.\\) ns (map (\(_,t) -> t) _lnks)
-   let libSigInclusions l n = (let pnodes = map snd $ filter ((n==).fst) _lnks
-                               in (case Map.lookup n l of
-                                     Just (_,(term1,sdata)) -> foldl (\l' p -> case Map.lookup p l' of
-                                                                            Just (d,(term',sdata')) -> libSigInclusions (Map.insert p
-                                                                              (d,(term' `List.union` term1,
-                                                                               sdata' `List.union` sdata)) l') p
-                                                                            Nothing -> l') l pnodes
-                                     Nothing -> l))
-   let libs' = foldl libSigInclusions sigM leaves
-   let libs'' = map (\(lname,(term1,sdata)) -> (lname,term1,sdata)) (Map.toList libs')
-   let (dg',m) = foldr ( \(lname,terms,(tps,opsM)) (dg,m') ->
-           let sig = makeSig tps opsM
-               sens = map (\(n,t) -> makeNamedSentence n t) terms in
-           _insNodeDG sig sens lname (dg,m')) (emptyDG,Map.empty) libs''
-       dg'' = foldr (\(source,target) dg -> case Map.lookup source m of
-                                           Just (sig,k,lk) -> case Map.lookup target m of
-                                             Just (sig1,k1,lk1) -> case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
+   (libs, lnks) <- importData path
+   let h = treeLevels lnks
+   let fixLinks m l = case l of 
+        (l1:l2:l') -> if ((snd l1) == (snd l2)) && (sigDepends
+                          (Map.findWithDefault emptySig (fst l1) m)
+                          (Map.findWithDefault emptySig (fst l2) m)) then
+                       ((fst l1,fst l2):(fixLinks m (l2:l')))
+                      else (l1:l2:(fixLinks m l'))
+        l' -> l'
+   let uniteSigs m lnks' = foldl (\m' (s,t) -> case resultToMaybe (sigUnion
+                                                                   (Map.findWithDefault emptySig s m')
+                                                                   (Map.findWithDefault emptySig t m')) of
+                                                Nothing      -> m'
+                                                Just new_tsig -> Map.insert t new_tsig m') m lnks'
+   let m = foldl (\m' (s,l) -> Map.insert s (calcSig l) m') Map.empty libs
+   let (m',lnks') = foldr (\lvl (m'',lnks_loc) -> let lvl' = Map.findWithDefault [] lvl h
+                                                      lnks_next = fixLinks m'' (reverse lvl')
+                                               in (uniteSigs m'' lnks_next,lnks_next++lnks_loc)
+                    ) (m,[]) [0..((Map.size h)-1)]
+   let (dg',node_m) = foldr (\(lname,lterms) (dg,node_m') ->
+           let sig = Map.findWithDefault emptySig lname m'
+               sens = map (\(n,t) -> makeNamedSentence n t) lterms in
+           _insNodeDG sig sens lname (dg,node_m')) (emptyDG,Map.empty) libs
+       dg'' = foldr (\(source,target) dg -> case Map.lookup source node_m of
+                                           Just (n,k,lk) -> case Map.lookup target node_m of
+                                             Just (n1,k1,lk1) -> let sig  = Map.findWithDefault emptySig n  m'
+                                                                     sig1 = Map.findWithDefault emptySig n1 m' in
+                                                          case resultToMaybe $ subsig_inclusion HolLight sig sig1 of
                                                             Nothing -> dg
                                                             Just incl ->
                                                               let inclM = gEmbed $ mkG_morphism HolLight incl
@@ -108,40 +290,6 @@ anaHolLightFile _opts path = do
                                                                            (k, lk) })]
                                                               in changesDGH newDG updL
                                              Nothing -> dg
-                                           Nothing -> dg) dg' _lnks
+                                           Nothing -> dg) dg' lnks'
        le = Map.insert (emptyLibName (System.FilePath.Posix.takeBaseName path)) dg'' (Map.empty)
    return (Just (emptyLibName (System.FilePath.Posix.takeBaseName path), le))
-
--- data SenInfo = SenInfo Int Bool [Int] String deriving (Read,Show)
-
--- term_sig :: Term -> Sign
--- term_sig (Var s _) = Sign (Set.singleton s)
--- term_sig (Comb t1 t2) = sigUnion (term_sig t1) (term_sig t2)
--- term_sig (Abs t1 t2) = sigUnion (term_sig t1) (term_sig t2)
--- term_sig _ = Sign Set.empty
-
--- anaHol2HetsFile :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
--- anaHol2HetsFile _ fp = do
---   s <- readFile fp
---   let s' = (read s) :: [(Term,SenInfo)]
---   let (dg,lnks,m) = foldl (\(dg,ls,mp) (t,SenInfo id axiom inc name) ->
---                      let gt = G_theory HolLight (makeExtSign HolLight (term_sig t)) startSigId (toThSens [makeNamed name (Sentence name t Nothing)]) startThId in
---                      let (n,dg') = insGTheory dg (NodeName (mkSimpleId name) "" 0 [])  DGEmpty gt in
---                    (dg',ls++(Prelude.map (\i -> (i,n)) inc),Map.insert id (n) mp)
---                  ) (emptyDG,[],Map.empty) s'
---   let dg' = foldl (\d (i,n) ->
---             let n1 = case Map.lookup i m of
---                       Just s -> s
---                       Nothing -> error "encountered internal error while importing data exported from Hol Light" in
---             let incl = subsig_inclusion HolLight (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') (case n1 of (NodeSig _ s) -> case s of (G_sign _ s' _) -> case s' of (ExtSign s'' _) -> s'') in
---             let gm = case maybeResult incl of
---                      Nothing -> error "encountered an internal error importing data exported from Hol Light"
---                      Just inc -> gEmbed $ mkG_morphism HolLight inc in
---             insLink d gm globalDef TEST (getNode n1) (getNode n)
-
---            ) dg lnks
---   let ln = emptyLibName fp
---       lib = Map.singleton ln $
---               computeDGraphTheories Map.empty dg
---   return $ Just (ln, lib)
-

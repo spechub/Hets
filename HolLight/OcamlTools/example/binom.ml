@@ -1,6 +1,3 @@
-use_file "/home/sternk/hol_light/hol.ml";;
-(*use_file "/home/sternk/binom/test.ml";;*)
-
 let binom = define
 `(!n. binom(n,0) = 1) /\
 (!k. binom(0,SUC(k)) = 0) /\
