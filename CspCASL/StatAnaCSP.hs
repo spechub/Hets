@@ -364,9 +364,9 @@ anaProcTerm proc gVars lVars = case proc of
     RenamingProcess p renaming r ->
         do addDiags [mkDiag Debug "Renaming" proc]
            (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (renAlpha, fqRenaming) <- anaRenaming renaming
+           (renAlpha, _) <- anaRenaming renaming
            let newAlpha = pComms `Set.union` renAlpha
-               fqProc = FQProcess (RenamingProcess pFQTerm fqRenaming r)
+               fqProc = FQProcess (RenamingProcess pFQTerm renaming r)
                                          (pComms `Set.union` renAlpha) r
            return (newAlpha, fqProc)
     ConditionalProcess f p q r ->
@@ -726,7 +726,7 @@ getUnaryOpsById ri kind = do
         binOpsKind = Set.filter (isBin kind) opsWithId
         cts = Set.map CommTypeSort $ Set.fold opSorts Set.empty binOpsKind
     return cts
-      where isBin k ot = k == opKind ot && 1 == length (opArgs ot)
+      where isBin k ot = k == opKind ot && isSingle (opArgs ot)
             opSorts o inS = Set.union inS $ Set.fromList $ opRes o : opArgs o
 
 {- | Given a CASL identifier find all binary predicates with that name
@@ -739,7 +739,9 @@ getBinPredsById ri = do
         binPreds = Set.filter isBin predsWithId
         cts = Set.map CommTypeSort $ Set.fold predSorts Set.empty binPreds
     return cts
-      where isBin ot = 2 == length (predArgs ot)
+      where isBin ot = case predArgs ot of
+              [_, _] -> True
+              _ -> False
             predSorts p inS = inS `Set.union` Set.fromList (predArgs p)
 
 {- | Given two CspCASL communication alphabets, check that the first's
