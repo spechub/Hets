@@ -1,7 +1,7 @@
 {- | Module     : $Header$
  -  Description : Implementation of logic instance Probabilistic modal logic
  -  Copyright   : (c) Daniel Hausmann & Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
- -                Rob Myers & Dirk Pattinson, Department of Computing, ICL 
+ -                Rob Myers & Dirk Pattinson, Department of Computing, ICL
  -  License     : GPLv2 or higher, see LICENSE.txt
  -  Maintainer  : hausmann@dfki.de
  -  Stability   : provisional
@@ -36,21 +36,21 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature P b c d w
                              probabilities xs = map (\(Mod (P k _)) -> k) xs
                              strip_neg (Neg phi) = phi
                              bound (p,n) = pml_bound ((probabilities p),(probabilities (map strip_neg n)))
-  	                     tuples (p,n) = nub [(pts,nts,k)| pts <- (tuprange (bound (p,n)) (length p)),  
+  	                     tuples (p,n) = nub [(pts,nts,k)| pts <- (tuprange (bound (p,n)) (length p)),
 	 	                                              nts <- (tuprange (bound (p,n)) (length n)),
 		                                              k <- [-(bound (p,n))..(bound (p,n))]]
                              side_condition_tuples (p,n) = filter (pml_side_condition (p,n)) (tuples (p,n))
-                             pml_match (p,n) = -- trace ("\n  filtered tuples:" 
+                             pml_match (p,n) = -- trace ("\n  filtered tuples:"
                                                --        ++ show((pml_filter_tuples (side_condition_tuples (p,n)) []))) $
-                                                  map (pml_build_matches (p,n)) 
+                                                  map (pml_build_matches (p,n))
                                                       (pml_filter_tuples (side_condition_tuples (p,n)) [])
                          in if (flags!!1)
-                              then 
+                              then
                                 trace ("\n  allc: tracing defunct" )
                                 map pml_match all_combinations
                               else map pml_match all_combinations
 
-    nefPretty d = case d of 
+    nefPretty d = case d of
                     P r [] -> "[P]" ++ show r ++ "nothing contained"
                     P r e -> "[P]" ++ show r ++ (pretty (head e))
     nefFeatureFromSignature sig = P 1
@@ -60,7 +60,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature P b c d w
     nefDisj2Conj (Mod (P r phi)) = Mod (P r ([disj2conj (head phi)]))
     nefNegNorm (Mod (P r phi)) = Mod (P r ([negNorm (head phi)]))
 
-    nefParser sig = 
+    nefParser sig =
      do x <- natural
         let auxP n =  do char '/'
                          m<-natural
@@ -70,7 +70,7 @@ instance (SigFeature b c d, Eq (b (c d)), Eq (c d)) => NonEmptyFeature P b c d w
                          let noDig n
                                | n<10 = 1
                                | n>=10 = 1 + noDig (div n 10)
-                         let rat n = toRational(fromInteger n / 
+                         let rat n = toRational(fromInteger n /
                                                 fromInteger (10^(noDig n)))
                          let res = toRational n + rat m
                          return res
@@ -106,7 +106,7 @@ pml_side_condition (pls,nls) (pints,nints,k) =
 						else (psum + nsum <= fromIntegral(k))
 
 pml_bound :: ([Rational],[Rational]) -> Int
-pml_bound (rps,rns) = 
+pml_bound (rps,rns) =
 	let	n = (length rps) + (length rns)
 		toints rs = concatMap (\r -> [numerator r,denominator r]) rs
 		allints = (toints rps) ++ (toints rns)
@@ -134,9 +134,9 @@ pml_geq (p1, n1, k1) (p2, n2, k2) = (k1 == k2) &&
 -- Construct all integer n-tuples with elements from 1,..,r
 tuprange :: Int -> Int -> [[Int]]
 tuprange _ 0 = [[]]
-tuprange r n = 
-	let rec xs ys = map (\z -> z:ys) xs
-	in	concatMap (rec [1..r]) (tuprange r (n-1))
+tuprange r n =
+	let go xs ys = map (\z -> z:ys) xs
+	in	concatMap (go [1..r]) (tuprange r (n-1))
 
 -- zip two lists together using a binary operator
 zipbin :: (a -> a -> a) -> [a] -> [a] -> [a]
