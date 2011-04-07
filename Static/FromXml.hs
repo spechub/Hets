@@ -19,7 +19,8 @@ import Static.GTheory
 import Common.LibName (LibName(..), emptyLibName)
 import Common.Result (propagateErrors)
 import Common.XUpdate (getAttrVal)
-import Common.GlobalAnnotations
+import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
+import Common.AnalyseAnnos (getGlobalAnnos)
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -71,7 +72,8 @@ readDGXml path = do
         putStrLn "FromXml.readDGXml: DGraphs name attribute is missing!"
         return Nothing
       Just nm -> let
-        dg = fromXml logicGraph emptyDG xml
+        an = extractGlobalAnnos xml
+        dg = fromXml logicGraph emptyDG {globalAnnos = an} xml
         ln = emptyLibName nm
         le = Map.insert ln dg Map.empty
         in return $ Just (ln,le)
@@ -222,10 +224,17 @@ initialiseNodes gt nodes links dg = let
 
 
 insertNode :: G_theory -> NamedNode -> DGraph -> DGraph
-insertNode gt x dg = let lbl = mkDGNodeLab gt x
+insertNode gt x dg = let ans = globalAnnos dg
+                         lbl = mkDGNodeLab gt ans x
                          n = getNewNodeDG dg
   in insLNodeDG (n,lbl) dg
 
+{-
+insertNode :: G_theory -> NamedNode -> DGraph -> DGraph
+insertNode gt x dg = let lbl = mkDGNodeLab gt x
+                         n = getNewNodeDG dg
+  in insLNodeDG (n,lbl) dg
+-}
 
 -- | A Node is looked up via its name in the DGraph. Returns the node only
 -- if one single node is found for the respective name, otherwise an error
@@ -262,14 +271,21 @@ extractLinkElements = partition isDef . foldr f [] .
   isDef l = isInfixOf "Def" $ linkTypeStr l
 
 
+extractGlobalAnnos :: Element -> GlobalAnnos
+extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
+  Nothing -> emptyGlobalAnnos
+  Just gl -> propagateErrors "FromXml.extractGlobalAnnos" $ getGlobalAnnos $
+           unlines $ map strContent $ findChildren (unqual "Annotation") gl
+
+
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
-mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
-mkDGNodeLab gt (name, el) = let
+mkDGNodeLab :: G_theory -> GlobalAnnos -> NamedNode -> DGNodeLab
+mkDGNodeLab gt annos (name, el) = let
   specs = case findChild (unqual "Reference") el of
     Just rf -> unlines $ map strContent $ findChildren (unqual "Signature") rf
     Nothing -> unlines $ map strContent
              $ deepSearch ["Axiom","Theorem","Symbol"] el
-  (response,message) = extendByBasicSpec emptyGlobalAnnos specs gt
+  (response,message) = extendByBasicSpec annos specs gt
   in case response of
        Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
        Success gt' _ symbs _ ->
