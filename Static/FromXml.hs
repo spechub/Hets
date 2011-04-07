@@ -146,17 +146,17 @@ partitionWith f v ls = partition ((== v) . f) ls
 
 insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> DGraph
 insertThmLinks _ [] dg = dg
-insertThmLinks lg (l:ls) dg = dg {-let
+insertThmLinks lg (l:ls) dg = let
   (lCur,lLft) = partitionWith trg (trg l) ls
-  mrs = map (extractMorphism lg dg) (l:lCur)
   gsig = signOf $ dgn_theory $ snd $ fromMaybe (error "FromXml.insertThmLinks(1)")
        $ findNodeByName (trg l) dg
-  mr' m = propagateErrors "FromXml.insertThmLinks(2):"
-            $ composeMorphisms m $ propagateErrors "FromXml.insertThmLinks(3):"
-            $ ginclusion lg (cod m) gsig
-  ins' (l,m) dgr = insertLink (mr' m) globalThm l dgr
-  in insertThmLinks lg lLft $ foldr ins' dg $ zip (l:lCur) mrs
--}
+  morph x = let m1 = extractMorphism lg dg x in
+    propagateErrors "FromXml.insertThmLinks(2):"
+      $ composeMorphisms m1 $ propagateErrors "FromXml.insertThmLinks(3):"
+      $ ginclusion lg (cod m1) gsig
+  ins' x dgr = insertLink (morph x) globalThm x dgr
+  in insertThmLinks lg lLft $ foldr ins' dg (l:lCur)
+
 
 insDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
 insDefLinks _ _ [] dg = dg
