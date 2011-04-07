@@ -12,8 +12,13 @@ Some functions for building and accessing the datastructures of
  GlobalAnnotations
 -}
 
-module Common.AnalyseAnnos (addGlobalAnnos, store_literal_map) where
+module Common.AnalyseAnnos
+  ( addGlobalAnnos
+  , getGlobalAnnos
+  , store_literal_map
+  ) where
 
+import Common.AnnoParser
 import Common.AS_Annotation
 import Common.DocUtils
 import Common.GlobalAnnotations
@@ -21,6 +26,7 @@ import Common.Id
 import Common.Lexer
 import Common.Parsec
 import Common.Result
+import Common.Utils
 import qualified Common.Lib.Rel as Rel
 
 import qualified Data.Map as Map
@@ -28,6 +34,12 @@ import Data.Maybe (fromMaybe)
 import Data.List (partition)
 import Control.Monad (foldM)
 import Text.ParserCombinators.Parsec
+
+getGlobalAnnos :: String -> Result GlobalAnnos
+getGlobalAnnos istr = let str = trimLeft istr in
+  case runParser (annotations << eof) () "" str of
+    Left err -> fail $ show err
+    Right ans -> addGlobalAnnos emptyGlobalAnnos ans
 
 -- | add global annotations
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos
@@ -39,7 +51,7 @@ addGlobalAnnos ga all_annos = do
             -- line and group and comments will be ignored
         _ -> True) all_annos
   appendDiags $ map (mkDiag Hint "no analysis of") rest_annos
-  n_prec_annos <- store_prec_annos (prec_annos  ga) annos
+  n_prec_annos <- store_prec_annos (prec_annos ga) annos
   n_assoc_annos <- store_assoc_annos (assoc_annos ga) annos
   n_display_annos <- store_display_annos (display_annos ga) annos
   n_literal_annos <- store_literal_annos (literal_annos ga) annos
@@ -74,7 +86,7 @@ store_prec_annos pgr =
       _ -> return p0) pgr
 
 -- | add associative ids
-store_assoc_annos :: AssocMap ->  [Annotation] -> Result AssocMap
+store_assoc_annos :: AssocMap -> [Annotation] -> Result AssocMap
 store_assoc_annos = foldM $ \ am0 an -> case an of
   Assoc_anno as is _ -> foldM ( \ am1 i ->
     let v = Map.lookup i am1 in case v of
@@ -111,8 +123,8 @@ store_display_annos = foldM $ \ m an -> case an of
     return $ Map.insert i dm m
   _ -> return m
 
--- | add literal annotation to 'LiteralMap'
--- and check for overlapping ids
+{- | add literal annotation to 'LiteralMap'
+and check for overlapping ids -}
 store_literal_map :: LiteralMap -> [Annotation] -> Result LiteralMap
 store_literal_map = foldM $ \ m a -> case a of
   Number_anno id1 _ ->
@@ -132,7 +144,7 @@ store_literal_map = foldM $ \ m a -> case a of
           on = Map.findWithDefault Floating id2 m
       in if oc == Fraction && on == Floating
       then return $ Map.insert id2 Floating $ Map.insert id1 Fraction m
-      else  Result [mkDiag Error ("conflict: " ++ showDoc a "") id1] $ Just m
+      else Result [mkDiag Error ("conflict: " ++ showDoc a "") id1] $ Just m
   List_anno id1 id2 id3 _ ->
       let c = ListCons id1 id2
           n = ListNull id1
@@ -143,8 +155,8 @@ store_literal_map = foldM $ \ m a -> case a of
          else Result [mkDiag Error ("conflict: " ++ showDoc a "") id1] $ Just m
   _ -> return m
 
--- | add literal annotation to 'LiteralAnnos'
--- and check for contradictions
+{- | add literal annotation to 'LiteralAnnos'
+and check for contradictions -}
 store_literal_annos :: LiteralAnnos -> [Annotation] -> Result LiteralAnnos
 store_literal_annos la ans = do
   n_string_lit <- setStringLit (string_lit la) ans
@@ -155,14 +167,14 @@ store_literal_annos la ans = do
     { string_lit = n_string_lit
     , list_lit = n_list_lit
     , number_lit = n_number_lit
-    , float_lit  = n_float_lit }
+    , float_lit = n_float_lit }
 
 -- | shortcut to show errors in 'setStringLit' and  'setFloatLit'
 showIdPair :: (Id, Id) -> ShowS
 showIdPair (i1, i2) = showId i1 . showString "," . showId i2
 
 -- | add (and check for uniqueness) string annotations
-setStringLit :: Maybe (Id,Id) -> [Annotation] -> Result (Maybe (Id,Id))
+setStringLit :: Maybe (Id, Id) -> [Annotation] -> Result (Maybe (Id, Id))
 setStringLit = foldM $ \ m a -> case a of
   String_anno id1 id2 _ -> let q = (id1, id2) in case m of
     Nothing -> return $ Just q
@@ -173,7 +185,7 @@ setStringLit = foldM $ \ m a -> case a of
   _ -> return m
 
 -- | add (and check for uniqueness) floating annotations
-setFloatLit :: Maybe (Id,Id) -> [Annotation] -> Result (Maybe (Id,Id))
+setFloatLit :: Maybe (Id, Id) -> [Annotation] -> Result (Maybe (Id, Id))
 setFloatLit = foldM $ \ m a -> case a of
   Float_anno id1 id2 _ -> let q = (id1, id2) in case m of
     Nothing -> return $ Just q
@@ -195,7 +207,7 @@ setNumberLit = foldM $ \ m a -> case a of
   _ -> return m
 
 -- | add (and check for consistency) (possibly several) list annotations
-setListLit :: Map.Map Id (Id,Id) -> [Annotation] -> Result (Map.Map Id (Id,Id))
+setListLit :: Map.Map Id (Id, Id) -> [Annotation] -> Result (Map.Map Id (Id, Id))
 setListLit =
   let showListAnno i1 (i2, i3) =
           " %list " ++ showId i1 "," ++ showId i2 "," ++ showId i3 ""
@@ -205,7 +217,7 @@ setListLit =
     let nv = (id2, id3)
     in case Map.lookup id1 m of
          Nothing -> return $ Map.insert id1 nv m
-         Just v  -> if nv == v then return m
+         Just v -> if nv == v then return m
            else Result [mkDiag Error
              ("conflict" ++ showListAnno id1 nv ++ " and"
               ++ showListAnno id1 v) id1] $ Just m
