@@ -112,8 +112,12 @@ lnode ga lenv (_, lbl) =
             $ prettyElem "Signature" ga $ dgn_sign lbl ]
           DGNode orig cs -> consStatus cs
               ++ case orig of
-                   DGBasicSpec _ syms -> subnodes "Declarations"
-                     (map (prettyRangeElem "Symbol" ga) $ Set.toList syms)
+                   DGBasicSpec _ syms -> case dgn_sign lbl of
+                     G_sign lid (ExtSign sig _) _ -> let
+                       isyms = concatMap (Set.toList . Set.intersection syms
+                                 . Set.map (G_symbol lid)) $ sym_of lid sig
+                       in subnodes "Declarations"
+                       (map (prettyRangeElem "Symbol" ga) isyms)
                    _ -> [prettyElem "Signature" ga $ dgn_sign lbl]
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
