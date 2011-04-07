@@ -141,26 +141,44 @@ iterateNodes lg (x@(name,_):xs) links dg =
     (lCur,lLft) -> iterateNodes lg xs lLft 
                   $ insDefLinks lg x lCur dg
 
+partitionWith :: Eq a => (NamedLink -> a) -> a -> [NamedLink] -> ([NamedLink],[NamedLink])
+partitionWith f v ls = partition ((== v) . f) ls
 
 insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> DGraph
 insertThmLinks _ [] dg = dg
-insertThmLinks lg (l:ls) dg = case partition ((== trg l) . trg) ls of
-  (lCur,lLft) -> let mr = getLinkMorphism lg dg (l:lCur)
-     in trace (show (length (l:lCur)) ++ " ThmLinks") $
-      insertThmLinks lg lLft
-      $ foldr (insertLink mr globalThm) dg (l:lCur)
-
+insertThmLinks lg (l:ls) dg = dg {-let
+  (lCur,lLft) = partitionWith trg (trg l) ls
+  mrs = map (extractMorphism lg dg) (l:lCur)
+  gsig = signOf $ dgn_theory $ snd $ fromMaybe (error "FromXml.insertThmLinks(1)")
+       $ findNodeByName (trg l) dg
+  mr' m = propagateErrors "FromXml.insertThmLinks(2):"
+            $ composeMorphisms m $ propagateErrors "FromXml.insertThmLinks(3):"
+            $ ginclusion lg (cod m) gsig
+  ins' (l,m) dgr = insertLink (mr' m) globalThm l dgr
+  in insertThmLinks lg lLft $ foldr ins' dg $ zip (l:lCur) mrs
+-}
 
 insDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
 insDefLinks _ _ [] dg = dg
 insDefLinks lg trgNd links dg = let
-  mr = getLinkMorphism lg dg links
-  gt = case cod mr of
+  mrs = map (extractMorphism lg dg) links
+  gsig = propagateErrors "FromXml.insDefLinks(1):" $
+           gsigManyUnion lg $ map cod mrs
+  gt = case gsig of
          G_sign lid sg sId -> noSensGTheory lid sg sId
   dg' = insertNode gt trgNd dg
-  in trace (show (length links) ++ " DefLinks") $
-    foldr (insertLink mr globalDef) dg' links
+  mr' m = propagateErrors "FromXml.insDefLinks(2):"
+            $ composeMorphisms m $ propagateErrors "FromXml.insDefLinks(3):"
+            $ ginclusion lg (cod m) gsig
+  ins' (l,m) dgr = insertLink (mr' m) globalDef l dgr
+  in foldr ins' dg' $ zip links mrs
 
+{-
+  gt = case cod $ composeMorphism mrs of
+         G_sign lid sg sId -> noSensGTheory lid sg sId
+  dg' = insertNode gt trgNd dg
+  in foldr (\ (mr,l) -> insertLink mr globalDef l) dg' $ zip mrs links
+-}
 
 insertLink :: GMorphism -> DGLinkType -> NamedLink -> DGraph
            -> DGraph
@@ -173,40 +191,28 @@ insertLink m lType link dg = let
         $ findNodeByName (trg link) dg
   in snd $ insLEdgeDG (i,j, defDGLink m lType SeeTarget) dg
 
-
-getLinkMorphism :: LogicGraph -> DGraph -> [NamedLink] -> GMorphism
-getLinkMorphism _ _ [] = error "FromXml.getLinkMorphism"
-getLinkMorphism lg dg ls = let
-  (mh:mt) = map (\ l -> extractMorphism lg (getSg l) l) ls
-  getSg l = signOf $ dgn_theory $ snd $ fromMaybe 
-          (error "FromXml.getLinkMorphism: source node missing")
-          $ findNodeByName  (src l) dg
+{-
+composeMorphism :: [GMorphism] -> GMorphism
+composeMorphism [] = error "FromXml.composeMorphism: emptyList"
+composeMorphism (mh:mt) = let 
   comp m m' = propagateErrors "FromXml.getLinkMorphism:" 
              $ composeMorphisms m m'
   in foldl comp mh mt
-
-{- NOTE tried out to use ginclusion with target node signature, but didnt help
----------------------------------------------------------------------------
+-}
+{-
 getLinkMorphism :: LogicGraph -> DGraph -> [NamedLink] -> GMorphism
 getLinkMorphism _ _ [] = error "FromXml.getLinkMorphism"
 getLinkMorphism lg dg ls = let
-  (mh:mt) = map (\ l -> extractMorphism lg (getSg l) l) ls
-  getSg l = signOf $ dgn_theory $ snd $ fromMaybe 
-          (error "FromXml.getLinkMorphism: source node missing")
+  (mh:mt) = map (\ l -> extractMorphism lg dg l) ls
+  in composeMorphism (mh:mt)
+-}
+
+extractMorphism :: LogicGraph -> DGraph -> NamedLink -> GMorphism
+extractMorphism lg dg l = let
+  sgn = signOf $ dgn_theory $ snd $ fromMaybe 
+          (error "FromXml.extractMorphism: source node missing")
           $ findNodeByName  (src l) dg
-  comp m m' = propagateErrors "FromXml.getLinkMorphism:" 
-             $ composeMorphisms m m'
-  mr1 = foldl comp mh mt
-  in case findNodeByName (trg (head ls)) dg of
-    Just (_,lbl) -> propagateErrors "" $
-      ginclusion lg (signOf (dgn_theory lbl)) (cod mr1) 
-    Nothing -> trace "no target node!!" mr1
----------------------------------------------------------------------------
------------------------------------------------------------------------- -}
-
-
-extractMorphism :: LogicGraph -> G_sign -> NamedLink -> GMorphism
-extractMorphism lg sgn l = case findChild (unqual "GMorphism") (element l) of
+  in case findChild (unqual "GMorphism") (element l) of
     Nothing -> error $
       "FromXml.extractMorphism: Link has no Morphism!" ++ printLinks [l]
     Just mor -> let
@@ -221,7 +227,7 @@ parseSymbolMap :: Element -> String
 parseSymbolMap = intercalate ", " 
                . map ( intercalate " |-> "
                . map strContent . elChildren )
-               . deepSearch [unqual "map"] 
+               . deepSearch ["map"] 
 
 
 
@@ -281,30 +287,23 @@ extractLinkElements = partition isDef . foldr f [] .
 
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
-mkDGNodeLab gt (name, el) = let 
-  specs = extractSpecString el
+mkDGNodeLab gt (name, el) = let
+  specs = case findChild (unqual "Reference") el of
+    Just rf -> unlines $ map strContent $ findChildren (unqual "Signature") rf
+    Nothing -> unlines $ map strContent 
+             $ deepSearch ["Axiom","Theorem","Symbol"] el
   (response,message) = extendByBasicSpec specs gt
-  in trace (" >> NODE << " ++ name ++ " <<") -- ++ specs) 
-    $ case response of
+  in case response of
        Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
        Success gt' _ symbs _ -> 
          newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
 
--- | Extracts a String including all Axioms, Theorems and Symbols from the
--- xml-Element (supposedly for one Node only).
-extractSpecString :: Element -> String
-extractSpecString e = let
-  specs = map unqual ["Axiom","Theorem","Symbol"]
-  elems = case findChild (unqual "Reference") e of
-            Nothing -> deepSearch specs e
-            Just sg -> elChildren sg
-  in unlines $ map strContent elems
-
-
 -- | custom xml-search for not only immediate children
-deepSearch :: [QName] -> Element -> [Element]
-deepSearch names e = filterChildrenName (`elem` names) e ++
-  concat (map (deepSearch names) (elChildren e))
+deepSearch :: [String] -> Element -> [Element]
+deepSearch tags' ele = rek ele where
+  tags = map unqual tags'
+  rek e = filtr e ++ concat (map filtr (elChildren e))
+  filtr = filterChildrenName (`elem` tags)
 
 
