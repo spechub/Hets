@@ -162,23 +162,19 @@ insDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
 insDefLinks _ _ [] dg = dg
 insDefLinks lg trgNd links dg = let
   mrs = map (extractMorphism lg dg) links
-  gsig = propagateErrors "FromXml.insDefLinks(1):" $
+  gsig1 = propagateErrors "FromXml.insDefLinks(1):" $
            gsigManyUnion lg $ map cod mrs
-  gt = case gsig of
+  gt = case gsig1 of
          G_sign lid sg sId -> noSensGTheory lid sg sId
   dg' = insertNode gt trgNd dg
-  mr' m = propagateErrors "FromXml.insDefLinks(2):"
-            $ composeMorphisms m $ propagateErrors "FromXml.insDefLinks(3):"
-            $ ginclusion lg (cod m) gsig
+  gsig2 = signOf $ dgn_theory $ snd $ fromMaybe (error "FromXml.insDefLinks(2)")
+       $ findNodeByName (fst trgNd) dg'
+  mr' m = propagateErrors "FromXml.insDefLinks(3):"
+            $ composeMorphisms m $ propagateErrors "FromXml.insDefLinks(4):"
+            $ ginclusion lg (cod m) gsig2
   ins' (l,m) dgr = insertLink (mr' m) globalDef l dgr
   in foldr ins' dg' $ zip links mrs
 
-{-
-  gt = case cod $ composeMorphism mrs of
-         G_sign lid sg sId -> noSensGTheory lid sg sId
-  dg' = insertNode gt trgNd dg
-  in foldr (\ (mr,l) -> insertLink mr globalDef l) dg' $ zip mrs links
--}
 
 insertLink :: GMorphism -> DGLinkType -> NamedLink -> DGraph
            -> DGraph
@@ -191,21 +187,6 @@ insertLink m lType link dg = let
         $ findNodeByName (trg link) dg
   in snd $ insLEdgeDG (i,j, defDGLink m lType SeeTarget) dg
 
-{-
-composeMorphism :: [GMorphism] -> GMorphism
-composeMorphism [] = error "FromXml.composeMorphism: emptyList"
-composeMorphism (mh:mt) = let 
-  comp m m' = propagateErrors "FromXml.getLinkMorphism:" 
-             $ composeMorphisms m m'
-  in foldl comp mh mt
--}
-{-
-getLinkMorphism :: LogicGraph -> DGraph -> [NamedLink] -> GMorphism
-getLinkMorphism _ _ [] = error "FromXml.getLinkMorphism"
-getLinkMorphism lg dg ls = let
-  (mh:mt) = map (\ l -> extractMorphism lg dg l) ls
-  in composeMorphism (mh:mt)
--}
 
 extractMorphism :: LogicGraph -> DGraph -> NamedLink -> GMorphism
 extractMorphism lg dg l = let
@@ -301,9 +282,9 @@ mkDGNodeLab gt (name, el) = let
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
-deepSearch tags' ele = rek ele where
+deepSearch tags' ele = rekSearch ele where
   tags = map unqual tags'
-  rek e = filtr e ++ concat (map filtr (elChildren e))
+  rekSearch e = filtr e ++ concat (map filtr (elChildren e))
   filtr = filterChildrenName (`elem` tags)
 
 
