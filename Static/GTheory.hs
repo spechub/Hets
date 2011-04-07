@@ -413,8 +413,9 @@ gEnsuresAmalgamability options gd sink =
 data BasicExtResponse = Failure Bool  -- True means fatal (give up)
   | Success G_theory Int (Set.Set G_symbol) Bool
 
-extendByBasicSpec :: String -> G_theory -> (BasicExtResponse, String)
-extendByBasicSpec str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
+extendByBasicSpec :: GlobalAnnos -> String -> G_theory
+  -> (BasicExtResponse, String)
+extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
   let tstr = trimLeft str in
   if null tstr then (Success gt 0 Set.empty True, "") else
   case parse_basic_spec lid of
@@ -424,7 +425,7 @@ extendByBasicSpec str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
       Just f -> case runParser (p << eof) (emptyAnnos ()) "" tstr of
         Left err -> (Failure False, show err)
         Right bs -> let
-          Result ds res = f (bs, sign, emptyGlobalAnnos)
+          Result ds res = f (bs, sign, ga)
           in case res of
             Nothing -> (Failure False, showRelDiags 1 ds)
             Just (_, ExtSign sign2 syms2, sens2) ->

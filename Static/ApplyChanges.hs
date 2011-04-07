@@ -116,7 +116,7 @@ addSymbol :: Monad m => String -> SelElem -> DGraph -> m DGraph
 addSymbol str se dg = let err = "Static.ApplyChanges.addSymbol: " in case se of
   NodeElem nn (Just (DeclSymbol Nothing)) -> do
     (v, lbl) <- getNodeByName err nn dg
-    case extendByBasicSpec str (dgn_theory lbl) of
+    case extendByBasicSpec (globalAnnos dg) str (dgn_theory lbl) of
        (Success nGt nSens nSyms _, _) ->
           if nSens == 0 && Set.size nSyms == 1 then let
               newLbl = lbl { dgn_theory = nGt
@@ -135,7 +135,7 @@ addAxOrTh :: Monad m => String -> SelElem -> DGraph -> m DGraph
 addAxOrTh str se dg = let err = "Static.ApplyChanges.addAxOrTh: " in case se of
   NodeElem nn (Just _) -> do
     (v, lbl) <- getNodeByName err nn dg
-    case extendByBasicSpec str (dgn_theory lbl) of
+    case extendByBasicSpec (globalAnnos dg) str (dgn_theory lbl) of
        (Success nGt nSens _ sameSig, msg) -> case nSens of
           1 | sameSig -> let
               newLbl = lbl { dgn_theory = nGt }

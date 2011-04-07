@@ -26,6 +26,8 @@ import Interfaces.Utils
 import Static.DevGraph
 import Static.GTheory
 
+import Common.GlobalAnnotations
+
 import Control.Monad
 import Data.IORef
 
@@ -43,7 +45,7 @@ gtkAddSentence gi n dg = postGUIAsync $ do
   onClicked btnAbort $ widgetDestroy window
   onClicked btnAdd $ do
     sen <- entryGetText entry
-    abort <- anaSentence gi n lbl sen
+    abort <- anaSentence gi (globalAnnos dg) n lbl sen
     when abort $ widgetDestroy window
   widgetShow window
 
@@ -51,8 +53,8 @@ errorFeedback :: Bool -> String -> IO Bool
 errorFeedback abort msg =
    errorDialog "Error" msg >> return abort
 
-anaSentence :: GInfo -> Int -> DGNodeLab -> String -> IO Bool
-anaSentence gi n lbl sen = case extendByBasicSpec sen $ dgn_theory lbl of
+anaSentence :: GInfo -> GlobalAnnos -> Int -> DGNodeLab -> String -> IO Bool
+anaSentence gi ga n lbl sen = case extendByBasicSpec ga sen $ dgn_theory lbl of
   (Success gTh num _ sameSig, str)
     | not sameSig -> errorFeedback False $ "signature must not change\n" ++ str
     | num < 1 -> errorFeedback False "no sentence recognized"

@@ -19,6 +19,7 @@ import Static.GTheory
 import Common.LibName (LibName(..), emptyLibName)
 import Common.Result (propagateErrors)
 import Common.XUpdate (getAttrVal)
+import Common.GlobalAnnotations
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -268,7 +269,7 @@ mkDGNodeLab gt (name, el) = let
     Just rf -> unlines $ map strContent $ findChildren (unqual "Signature") rf
     Nothing -> unlines $ map strContent
              $ deepSearch ["Axiom","Theorem","Symbol"] el
-  (response,message) = extendByBasicSpec specs gt
+  (response,message) = extendByBasicSpec emptyGlobalAnnos specs gt
   in case response of
        Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
        Success gt' _ symbs _ ->
