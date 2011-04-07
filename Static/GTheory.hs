@@ -427,8 +427,7 @@ extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
         Right bs -> let
           Result ds res = f (bs, sign, ga)
           in case res of
-            Nothing -> (Failure False, showRelDiags 1 ds)
-            Just (_, ExtSign sign2 syms2, sens2) ->
+            Just (_, ExtSign sign2 syms2, sens2) | not (hasErrors ds) ->
               let Result es mm = inclusion lid sign2 sign
                   sameSig = isJust mm
                   finExtSign = ExtSign sign2 $ Set.union syms syms2
@@ -442,6 +441,7 @@ extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
               , if sameSig then if null sens2 then "" else
                             show (vcat $ map (print_named lid) sens2)
                        else showRelDiags 1 es)
+            _ -> (Failure False, showRelDiags 1 ds)
 
 -- | reconstruct the morphism from symbols maps
 getMorphism :: G_sign
