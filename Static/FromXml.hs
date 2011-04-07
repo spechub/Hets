@@ -281,8 +281,8 @@ mkDGNodeLab gt annos (name, el) = let
              $ deepSearch ["Axiom","Theorem","Symbol"] el
   (response,message) = extendByBasicSpec annos specs gt
   in case response of
-       Failure _ -> error $ ("FromXml.mkDGNodeLab (" ++ name ++ "): ") 
-                     ++ message
+       Failure _ -> error $ ("FromXml.mkDGNodeLab (" ++ name ++ "):\n") 
+                     ++ specs ++ "\n" ++ message
        Success gt' _ symbs _ ->
          newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
