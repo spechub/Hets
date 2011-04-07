@@ -229,12 +229,6 @@ insertNode gt x dg = let ans = globalAnnos dg
                          n = getNewNodeDG dg
   in insLNodeDG (n,lbl) dg
 
-{-
-insertNode :: G_theory -> NamedNode -> DGraph -> DGraph
-insertNode gt x dg = let lbl = mkDGNodeLab gt x
-                         n = getNewNodeDG dg
-  in insLNodeDG (n,lbl) dg
--}
 
 -- | A Node is looked up via its name in the DGraph. Returns the node only
 -- if one single node is found for the respective name, otherwise an error
@@ -287,7 +281,8 @@ mkDGNodeLab gt annos (name, el) = let
              $ deepSearch ["Axiom","Theorem","Symbol"] el
   (response,message) = extendByBasicSpec annos specs gt
   in case response of
-       Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
+       Failure _ -> error $ ("FromXml.mkDGNodeLab (" ++ name ++ "): ") 
+                     ++ message
        Success gt' _ symbs _ ->
          newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
