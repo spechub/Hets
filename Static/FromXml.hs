@@ -35,10 +35,6 @@ import Data.Maybe (fromMaybe)
 import Text.XML.Light
 
 
-
-import Debug.Trace (trace)
-
-
 -- | for faster access, some elements attributes are stored alongside
 -- as a String
 type NamedNode = (String,Element)
@@ -81,7 +77,7 @@ readDGXml path = do
 
 
 -- | main function; receives a logicGraph, an initial DGraph and an xml
--- element, then adds all nodes and edges from the element into the DGraph 
+-- element, then adds all nodes and edges from the element into the DGraph
 fromXml :: LogicGraph -> DGraph -> Element -> DGraph
 fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
@@ -131,14 +127,14 @@ splitLinks dg = killMultTrg . foldr partiSrc ([],[]) where
 iterateNodes :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
              -> (DGraph,[NamedNode])
 iterateNodes _ nodes [] dg = (dg,nodes)
-iterateNodes _ [] links _ = error $ 
+iterateNodes _ [] links _ = error $
   "FromXml.iterateNodes: remaining links targets cannot be found!\n"
     ++ printLinks links
-iterateNodes lg (x@(name,_):xs) links dg = 
+iterateNodes lg (x@(name,_):xs) links dg =
   case partition ((== name) . trg) links of
     ([],_) -> let (dg',xs') = iterateNodes lg xs links dg
               in (dg',x:xs')
-    (lCur,lLft) -> iterateNodes lg xs lLft 
+    (lCur,lLft) -> iterateNodes lg xs lLft
                   $ insDefLinks lg x lCur dg
 
 partitionWith :: Eq a => (NamedLink -> a) -> a -> [NamedLink] -> ([NamedLink],[NamedLink])
@@ -190,34 +186,33 @@ insertLink m lType link dg = let
 
 extractMorphism :: LogicGraph -> DGraph -> NamedLink -> GMorphism
 extractMorphism lg dg l = let
-  sgn = signOf $ dgn_theory $ snd $ fromMaybe 
+  sgn = signOf $ dgn_theory $ snd $ fromMaybe
           (error "FromXml.extractMorphism: source node missing")
-          $ findNodeByName  (src l) dg
+          $ findNodeByName (src l) dg
   in case findChild (unqual "GMorphism") (element l) of
     Nothing -> error $
       "FromXml.extractMorphism: Link has no Morphism!" ++ printLinks [l]
     Just mor -> let
-      nm = fromMaybe (error "FromXml.extractMorphism: No name attribute") 
+      nm = fromMaybe (error "FromXml.extractMorphism: No name attribute")
          $ getAttrVal "name" mor
       symbs = parseSymbolMap mor
-      in propagateErrors "FromXml.extractMorphism:" 
+      in propagateErrors "FromXml.extractMorphism:"
          $ getGMorphism lg sgn nm symbs
 
 
 parseSymbolMap :: Element -> String
-parseSymbolMap = intercalate ", " 
+parseSymbolMap = intercalate ", "
                . map ( intercalate " |-> "
                . map strContent . elChildren )
-               . deepSearch ["map"] 
-
+               . deepSearch ["map"]
 
 
 -- | All nodes that do not have dependencies via the links are processed at the
 -- beginning and written into the DGraph. Returns the resulting DGraph and the
--- list of nodes that have not been stored (i.e. have dependencies). 
-initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph 
+-- list of nodes that have not been stored (i.e. have dependencies).
+initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph
                 -> (DGraph,[NamedNode])
-initialiseNodes gt nodes links dg = let 
+initialiseNodes gt nodes links dg = let
   targets = map trg links
   -- all nodes that are not targeted by any links are considered independent
   (dep, indep) = partition ((`elem` targets) . fst) nodes
@@ -238,10 +233,10 @@ findNodeByName :: String -> DGraph -> Maybe (LNode DGNodeLab)
 findNodeByName s dg = case lookupNodeByName s dg of
   [n] -> Just n
   [] -> Nothing
-  _ -> error $ 
+  _ -> error $
     "FromXml.findNodeByName: ambiguous occurence for " ++ s ++ "!"
 
- 
+
 -- | All nodes are taken from the xml-element. Then, the name-attribute is
 -- looked up and stored alongside the node for easy access. Nodes with no names
 -- are ignored.
@@ -256,7 +251,7 @@ extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
 -- and target information. The links are then partitioned depending on if they
 -- are theorem or definition links.
 extractLinkElements :: Element -> ([NamedLink],[NamedLink])
-extractLinkElements = partition isDef . foldr f [] . 
+extractLinkElements = partition isDef . foldr f [] .
                     findChildren (unqual "DGLink") where
   f e r = case getAttrVal "source" e of
             Just sr -> case getAttrVal "target" e of
@@ -264,19 +259,19 @@ extractLinkElements = partition isDef . foldr f [] .
               Nothing -> r
             Nothing -> r
   isDef l = isInfixOf "Def" $ linkTypeStr l
-              
+
 
 -- | Generates a new DGNodeLab with a startoff-G_theory and an Element
 mkDGNodeLab :: G_theory -> NamedNode -> DGNodeLab
 mkDGNodeLab gt (name, el) = let
   specs = case findChild (unqual "Reference") el of
     Just rf -> unlines $ map strContent $ findChildren (unqual "Signature") rf
-    Nothing -> unlines $ map strContent 
+    Nothing -> unlines $ map strContent
              $ deepSearch ["Axiom","Theorem","Symbol"] el
   (response,message) = extendByBasicSpec specs gt
   in case response of
        Failure _ -> error $ "FromXml.mkDGNodeLab: " ++ message
-       Success gt' _ symbs _ -> 
+       Success gt' _ symbs _ ->
          newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
 
 
@@ -286,5 +281,3 @@ deepSearch tags' ele = rekSearch ele where
   tags = map unqual tags'
   rekSearch e = filtr e ++ concat (map filtr (elChildren e))
   filtr = filterChildrenName (`elem` tags)
-
-
