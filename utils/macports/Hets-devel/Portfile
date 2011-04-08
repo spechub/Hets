@@ -1,0 +1,51 @@
+# $Id$
+
+PortSystem 1.0 
+name            Hets-devel
+version         0.98b
+categories      math
+maintainers     nomaintainer
+platforms       darwin
+
+description     The heterogeneous tool set (HETS)
+long_description    \
+        The central idea of the Heterogeneous Tool Set (HETS) \
+        is to provide a general framework for formal methods \
+        integration and proof management. \
+
+fetch.type      svn
+svn.url         https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
+
+universal_variant no
+
+depends_build   bin:ghc:ghc
+depends_lib     port:hs-platform-fgl \
+                port:hs-platform-cabal
+depends_run     port:uDrawGraph
+
+# hets release package comes as a tar containing a "Hets" directory.
+# Take me to your sources:
+set worksrcdir Hets
+
+# skip phase configure (there is no ./configure)
+use_configure no
+
+pre-build {
+    # we probably shouldn't do this but there's no port for Haskell's xml
+    ui_msg "Calling cabal"
+    ui_msg "    update"
+    system "exec ${prefix}/bin/cabal update"
+    ui_msg "    install xml"
+    system "exec ${prefix}/bin/cabal --global --prefix=${prefix} install xml"
+    ui_msg "cabal finished"
+
+    # run make depend && make
+    ui_msg "now building ${name}"
+    set build.cmd "${build.cmd} depend && ${build.cmd}"
+}
+
+destroot {
+    xinstall -d ${destroot}${prefix}/lib/${name}
+    copy ${worksrcpath}/${name} ${destroot}${prefix}/lib/${name}/
+}
+
