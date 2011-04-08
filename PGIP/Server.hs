@@ -14,6 +14,7 @@ module PGIP.Server (hetsServer, sourceToBs) where
 import PGIP.Query
 
 import Driver.Options
+import Driver.ReadFn
 
 import Network.Wai.Handler.SimpleServer
 import Network.Wai
@@ -22,14 +23,15 @@ import Network.Wai.Parse
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
 
-import Static.ComputeTheory
-import Static.GTheory
-import Static.DevGraph
-import Static.PrintDevGraph
-import Static.DotGraph
 import Static.AnalysisLibrary
-import Static.ToXml as ToXml
 import Static.ApplyChanges
+import Static.ComputeTheory
+import Static.DevGraph
+import Static.DotGraph
+import Static.FromXml
+import Static.GTheory
+import Static.PrintDevGraph
+import Static.ToXml as ToXml
 
 import Syntax.ToXml
 
@@ -107,9 +109,15 @@ hetsServer opts1 = do
   run 8000 $ \ re -> do
    let query = B8.unpack $ queryString re
        path = dropWhile (== '/') $ B8.unpack (pathInfo re)
-   appendFile permFile $ shows (remoteHost re) "\n"
+       rhost = shows (remoteHost re) "\n"
+   time <- getCurrentTime
+   m <- readIORef sessRef
+   appendFile permFile $ shows time " sessions: " ++ shows (IntMap.size m) "\n"
+   appendFile permFile rhost
    appendFile permFile $ shows (requestHeaders re) "\n"
-   case B8.unpack (requestMethod re) of
+   -- better try to read hosts to exclude from a file
+   if isInfixOf "crawl" rhost then return $ mkResponse status403 "" else
+    case B8.unpack (requestMethod re) of
     "GET" -> if query == "?menus" then mkMenuResponse else do
          dirs@(_ : cs) <- getHetsLibContent opts path query
          if null cs then getHetsResponse opts [] sessRef path query
@@ -145,8 +153,8 @@ hetsServer opts1 = do
 sourceToBs :: Source -> IO B8.ByteString
 sourceToBs = fmap B8.concat . go id
   where
-    go front (Source src) = do
-        res <- src
+    go front (Source s) = do
+        res <- s
         case res of
             Nothing -> return $ front []
             Just (bs, src') -> go (front . (:) bs) src'
@@ -244,9 +252,15 @@ getDGraph :: HetcatsOpts -> IORef (IntMap.IntMap Session) -> DGQuery
   -> ResultT IO (Session, Int)
 getDGraph opts sessRef dgQ = case dgQ of
   NewDGQuery file -> do
-    (ln, le) <- anaSourceFile logicGraph opts
-      { outputToStdout = False, useLibPos = True }
-      Set.empty emptyLibEnv emptyDG file
+    (ln, le) <- case guess file GuessIn of
+      DgXml -> do
+        mf <- lift $ findFileOfLibName opts file
+        case mf of
+          Just f -> ResultT $ fmap (Result []) $ readDGXml f
+          Nothing -> liftR $ fail "xml file not found"
+      _ -> anaSourceFile logicGraph opts
+        { outputToStdout = False, useLibPos = True }
+        Set.empty emptyLibEnv emptyDG file
     time <- lift getCurrentTime
     let sess = Session le ln [] time
     k <- lift $ addNewSess sessRef sess
