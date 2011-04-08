@@ -22,6 +22,8 @@ checksums       md5 090c891ecf9ce80ed89c55921ad7f48a
 
 universal_variant no
 
+conflicts       Hets-devel
+
 depends_build   bin:ghc:ghc
 depends_lib     port:hs-platform-fgl \
                 port:hs-platform-cabal

@@ -18,6 +18,8 @@ svn.url         https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
 
 universal_variant no
 
+conflicts       Hets
+
 depends_build   bin:ghc:ghc
 depends_lib     port:hs-platform-fgl \
                 port:hs-platform-cabal
