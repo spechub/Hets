@@ -1,0 +1,59 @@
+# $Id$
+
+PortSystem 1.0
+name            uDrawGraph
+version         3.1
+categories      graphics
+maintainers     nomaintainer
+platforms       darwin
+
+description     uDraw(Graph) creates graphs for you.
+long_description    \
+        uDraw(Graph) creates your flow charts, diagrams, \
+        hierarchies or structure visualizations using automatic \
+        layout - much faster than with any standard drawing program.
+
+homepage        http://www.informatik.uni-bremen.de/uDrawGraph/
+master_sites    ${homepage}/download/
+
+# MacOS X 10.3
+platform darwin 7 {
+    distfiles   ${name}-3.1.1-2-macosx.tar.gz
+
+    checksums   md5 344dd9ed85f3e0eacd8270ce2e75c577 \
+                sha1 fde8141e9872576078e922474403d086c59ae3c9 \
+                rnd160 45e14c9b0c9502b93f09d7aaefdd34c085cef016
+}
+
+# MacOS X 10.4
+platform darwin 8 {
+    distfiles   ${name}-3.1.1-3-macosx.tar.gz
+
+    checksums   md5 894b862e27b8403b0d92bef811384f54 \
+                sha1 60c12b3a4fc39be7c11c016edf3d9832dddd8ee9 \
+                rnd160 a01c9a83c0d31939d884130b1f61047a15e18af6
+}
+
+# MacOS X 10.5 and 10.6 (x86 only)
+platform darwin 9 i386 darwin 10 i386 {
+    distfiles   ${name}-3.1.1-4-macosx-i386.tar.gz
+
+    checksums   md5 5459618bd09ff8c7b642082d0fc31774 \
+                sha1 7956a715aae3707857511a34d3941b37386285fd \
+                rnd160 2bc90f3e5b1674bb837b8b1c2b9a8b41bb25aacf
+}
+
+universal_variant no
+
+# this is a binary so don't try compiling it
+configure {}
+build {}
+
+destroot {
+    xinstall -d ${destroot}${prefix}/bin/${name}
+    copy ${workpath}/${name}-${version} ${destroot}${prefix}/bin/${name}
+
+clean {
+    delete ${workpath}/${name}-${version}
+}
+
