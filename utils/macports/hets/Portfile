@@ -2,7 +2,7 @@
 
 PortSystem 1.0 
 name            Hets
-version         svn_r14841
+version         0.97
 categories      math
 maintainers     nomaintainer
 platforms       darwin
@@ -13,10 +13,12 @@ long_description    \
         is to provide a general framework for formal methods \
         integration and proof management. \
 
-homepage        http://www.dfki.de/sks/hets
+homepage        http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
 master_sites    ${homepage}/src-distribution/versions/
+distname        ${name}-src-${version}
+extract.suffix  .tgz
 
-checksums   md5 bbc34ed0bda727aea3757fbcc5644858
+checksums       md5 090c891ecf9ce80ed89c55921ad7f48a
 
 universal_variant no
 
