@@ -46,14 +46,14 @@ platform darwin 9 i386 darwin 10 i386 {
 universal_variant no
 
 # this is a binary so don't try compiling it
+
 configure {}
 build {}
 
 destroot {
-    xinstall -d ${destroot}${prefix}/bin/${name}
-    copy ${workpath}/${name}-${version} ${destroot}${prefix}/bin/${name}
-
-clean {
-    delete ${workpath}/${name}-${version}
+    xinstall -d ${destroot}${prefix}/lib/${name}
+    xinstall -d ${destroot}${prefix}/bin
+    move ${workpath}/${distname}/bin/${name} ${destroot}${prefix}/bin/${name}
+    copy ${workpath}/${distname} ${destroot}${prefix}/lib/${name}
 }
 

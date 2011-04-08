@@ -1,0 +1,10 @@
+--- bin/uDrawGraph.orig	2011-04-08 12:25:44.000000000 +0200
++++ bin/uDrawGraph	2011-04-08 12:25:55.000000000 +0200
+@@ -1,4 +1,6 @@
+ #!/bin/sh
+ 
+-`dirname $0`/.uDrawGraph-wrapper `basename $0` "$@" 
++cd `dirname $0`/../lib/uDrawGraph/uDrawGraph-3.1/bin
++pwd
++./.uDrawGraph-wrapper `basename $0` "$@" 
+ 
