@@ -263,12 +263,12 @@ are theorem or definition links. -}
 extractLinkElements :: Element -> ([NamedLink], [NamedLink])
 extractLinkElements = partition isDef . foldr mkNamedLink [] .
                     findChildren (unqual "DGLink") where
+  isDef = isDefEdge . lType
   mkNamedLink e r = case getAttrVal "source" e of
     Nothing -> r
     Just sr -> case getAttrVal "target" e of
       Nothing -> r
       Just tr -> Link sr tr (getLinkType e) e : r
-  isDef = isDefEdge . lType
 
 
 getLinkType :: Element -> DGLinkType
@@ -313,16 +313,32 @@ extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
 the DGraphs Global Annotations -}
 mkDGNodeLab :: G_theory -> GlobalAnnos -> NamedNode -> DGNodeLab
 mkDGNodeLab gt annos (name, el) = let
-  specs = case findChild (unqual "Reference") el of
-    Just rf -> unlines $ map strContent $ findChildren (unqual "Signature") rf
-    Nothing ->
-      unlines $ map strContent $ deepSearch ["Axiom", "Theorem", "Symbol"] el
-  (response, message) = extendByBasicSpec annos specs gt
-  in case response of
-       Failure _ -> error $ ("FromXml.mkDGNodeLab (" ++ name ++ "):\n")
-                     ++ specs ++ "\n" ++ message
-       Success gt' _ symbs _ ->
-         newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
+  parseSpecs specElems = let
+    specs = unlines $ map strContent specElems
+    (response, message) = extendByBasicSpec annos specs gt
+    in case response of
+      Success gt' _ symbs _ -> (gt', symbs)
+      Failure _ -> error $ ("FromXml.mkDGNodeLab (" ++ name ++ "):\n")
+        ++ message
+  in case findChild (unqual "Reference") el of
+    -- Case #1: regular node
+    Nothing -> let
+      (gt', symbs) = parseSpecs $ deepSearch ["Axiom", "Theorem", "Symbol"] el
+      in newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
+    -- Case #2: reference node
+    Just rf -> let
+      (gt', _) = parseSpecs $ findChildren (unqual "Signature") rf
+      {-
+      TODO: reference nodes currently leed to a lookupDGraph error
+      refLib = case getAttrVal "library" rf of
+        Nothing -> error "FromXml.mkDGNodeLab(1)"
+        Just ln -> emptyLibName ln
+      refNode :: Graph.Node
+      refNode = (-1)
+      in newInfoNodeLab (parseNodeName name) (DGRef refLib refNode) gt'
+      -}
+      in newNodeLab (parseNodeName name) DGBasic gt'
+
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
