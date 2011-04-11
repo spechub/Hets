@@ -30,7 +30,7 @@ data Conservativity =
   | Cons
   | Mono
   | Def
-    deriving (Show, Eq, Ord)
+    deriving (Show, Read, Eq, Ord)
 
 showConsistency :: Conservativity -> String
 showConsistency c = case c of
