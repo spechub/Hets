@@ -20,7 +20,6 @@ module CspCASL.StatAnaCSP where
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.MixfixParser
-import CASL.Overload (minExpFORMULA, oneExpTerm)
 import CASL.Quantification
 import CASL.Sign
 import CASL.StaticAna
@@ -70,10 +69,12 @@ basicAnaAux =
   basicAnalysis (const return) ana_BASIC_CSP (const return) emptyMix
 
 ana_BASIC_CSP :: Ana CspBasicExt CspBasicExt () CspSen CspSign
-ana_BASIC_CSP _ bs = do
+ana_BASIC_CSP mix bs = do
+  let caslMix = emptyMix
+        { mixRules = mixRules mix }
   case bs of
     Channels cs _ -> mapM_ (anaChanDecl . item) cs
-    ProcItems ps _ -> mapM_ anaProcItem ps
+    ProcItems ps _ -> mapM_ (anaProcItem caslMix) ps
   return bs
 
 -- Static analysis of channel declarations
@@ -108,17 +109,17 @@ anaChannelName s m chanName = do
 -- Static analysis of process items
 
 -- | Statically analyse a CspCASL process item.
-anaProcItem :: Annoted PROC_ITEM -> State CspCASLSign ()
-anaProcItem annotedProcItem = case item annotedProcItem of
+anaProcItem :: Mix b s () () -> Annoted PROC_ITEM -> State CspCASLSign ()
+anaProcItem mix annotedProcItem = case item annotedProcItem of
     Proc_Decl name argSorts alpha -> anaProcDecl name argSorts alpha
     Proc_Defn name args alpha procTerm -> do
       let vs = flatVAR_DECLs args
           ss = map snd vs
           pn = ParmProcname (FQ_PROCESS_NAME name ss alpha) $ map fst vs
       anaProcDecl name ss alpha
-      anaProcEq annotedProcItem pn procTerm
+      anaProcEq mix annotedProcItem pn procTerm
     Proc_Eq parmProcName procTerm ->
-      anaProcEq annotedProcItem parmProcName procTerm
+      anaProcEq mix annotedProcItem parmProcName procTerm
 
 -- Static analysis of process declarations
 
@@ -193,8 +194,9 @@ anaProcName pn numParams = do
         $ Set.toList sal
 
 -- | Statically analyse a CspCASL process equation.
-anaProcEq :: Annoted a -> PARM_PROCNAME -> PROCESS -> State CspCASLSign ()
-anaProcEq a (ParmProcname pn vs) proc =
+anaProcEq :: Mix b s () () -> Annoted a -> PARM_PROCNAME -> PROCESS
+  -> State CspCASLSign ()
+anaProcEq mix a (ParmProcname pn vs) proc =
   {- the 'annoted a' contains the annotation of the process equation. We do not
   care what the underlying item is in the annotation (but it probably will be
   the proc eq) -}
@@ -218,7 +220,7 @@ anaProcEq a (ParmProcname pn vs) proc =
                     fqGVars = map mkFQProcVar gVars
                     procAlpha = Set.fromList al
                 (termAlpha, fqProc) <-
-                  anaProcTerm proc (Map.fromList gVars) Map.empty
+                  anaProcTerm mix proc (Map.fromList gVars) Map.empty
                 checkCommAlphaSub termAlpha procAlpha proc "process equation"
                 {- put CspCASL Sentences back in to the state with new sentence
                 BUG - What should the constituent alphabet be for this
@@ -258,13 +260,13 @@ anaProcVar old (v, s) =
 not returing FQProcesses
 Statically analyse a CspCASL process term.
 The process that is returned is a fully qualified process. -}
-anaProcTerm :: PROCESS -> ProcVarMap -> ProcVarMap ->
-               State CspCASLSign (CommAlpha, PROCESS)
-anaProcTerm proc gVars lVars = case proc of
+anaProcTerm :: Mix b s () () -> PROCESS -> ProcVarMap -> ProcVarMap
+  -> State CspCASLSign (CommAlpha, PROCESS)
+anaProcTerm mix proc gVars lVars = case proc of
     NamedProcess name args r ->
         do addDiags [mkDiag Debug "Named process" proc]
            (fqName, al, fqArgs) <-
-             anaNamedProc proc name args (lVars `Map.union` gVars)
+             anaNamedProc mix proc name args (lVars `Map.union` gVars)
            let fqProc = FQProcess (NamedProcess fqName fqArgs r) al r
            return (al, fqProc)
     Skip r ->
@@ -291,63 +293,65 @@ anaProcTerm proc gVars lVars = case proc of
            return (comms, fqProc)
     PrefixProcess e p r ->
         do addDiags [mkDiag Debug "Prefix" proc]
-           (evComms, rcvMap, fqEvent) <- anaEvent e (lVars `Map.union` gVars)
-           (comms, pFQTerm) <- anaProcTerm p gVars (rcvMap `Map.union` lVars)
+           (evComms, rcvMap, fqEvent) <-
+               anaEvent mix e (lVars `Map.union` gVars)
+           (comms, pFQTerm) <-
+               anaProcTerm mix p gVars (rcvMap `Map.union` lVars)
            let newAlpha = comms `Set.union` evComms
                fqProc = FQProcess (PrefixProcess fqEvent pFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     Sequential p q r ->
         do addDiags [mkDiag Debug "Sequential" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (qComms, qFQTerm) <- anaProcTerm q gVars Map.empty
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars Map.empty
            let newAlpha = pComms `Set.union` qComms
                fqProc = FQProcess (Sequential pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     InternalChoice p q r ->
         do addDiags [mkDiag Debug "InternalChoice" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            let newAlpha = pComms `Set.union` qComms
                fqProc = FQProcess (InternalChoice pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     ExternalChoice p q r ->
         do addDiags [mkDiag Debug "ExternalChoice" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            let newAlpha = pComms `Set.union` qComms
                fqProc = FQProcess (ExternalChoice pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     Interleaving p q r ->
         do addDiags [mkDiag Debug "Interleaving" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            let newAlpha = pComms `Set.union` qComms
                fqProc = FQProcess (Interleaving pFQTerm qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     SynchronousParallel p q r ->
         do addDiags [mkDiag Debug "Synchronous" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            let newAlpha = pComms `Set.union` qComms
                fqProc = FQProcess (SynchronousParallel pFQTerm
                                                        qFQTerm r) newAlpha r
            return (newAlpha, fqProc)
     GeneralisedParallel p es q r ->
         do addDiags [mkDiag Debug "Generalised parallel" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
            (synComms, fqEs) <- anaEventSet es
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            let newAlpha = Set.unions [pComms, qComms, synComms]
                fqProc = FQProcess (GeneralisedParallel pFQTerm fqEs qFQTerm r)
                                          newAlpha r
            return (newAlpha, fqProc)
     AlphabetisedParallel p esp esq q r ->
         do addDiags [mkDiag Debug "Alphabetised parallel" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
            (pSynComms, fqEsp) <- anaEventSet esp
            checkCommAlphaSub pSynComms pComms proc "alphabetised parallel, left"
            (qSynComms, fqEsq) <- anaEventSet esq
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            checkCommAlphaSub qSynComms qComms proc
                                  "alphabetised parallel, right"
            let newAlpha = pComms `Set.union` qComms
@@ -356,14 +360,14 @@ anaProcTerm proc gVars lVars = case proc of
            return (newAlpha, fqProc)
     Hiding p es r ->
         do addDiags [mkDiag Debug "Hiding" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
            (hidComms, fqEs) <- anaEventSet es
            return (pComms `Set.union` hidComms
                   , FQProcess (Hiding pFQTerm fqEs r)
                                   (pComms `Set.union` hidComms) r)
     RenamingProcess p renaming r ->
         do addDiags [mkDiag Debug "Renaming" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
            (renAlpha, _) <- anaRenaming renaming
            let newAlpha = pComms `Set.union` renAlpha
                fqProc = FQProcess (RenamingProcess pFQTerm renaming r)
@@ -371,10 +375,10 @@ anaProcTerm proc gVars lVars = case proc of
            return (newAlpha, fqProc)
     ConditionalProcess f p q r ->
         do addDiags [mkDiag Debug "Conditional" proc]
-           (pComms, pFQTerm) <- anaProcTerm p gVars lVars
-           (qComms, qFQTerm) <- anaProcTerm q gVars lVars
+           (pComms, pFQTerm) <- anaProcTerm mix p gVars lVars
+           (qComms, qFQTerm) <- anaProcTerm mix q gVars lVars
            -- mfs is the fully qualified formula version of f
-           mfs <- anaFormulaCspCASL (gVars `Map.union` lVars) f
+           mfs <- anaFormulaCspCASL mix (gVars `Map.union` lVars) f
            let fFQ = fromMaybe f mfs
                fComms = maybe Set.empty formulaComms mfs
                newAlpha = Set.unions [pComms, qComms, fComms]
@@ -388,9 +392,9 @@ anaProcTerm proc gVars lVars = case proc of
 permitted alphabet of the process and also a list of the fully qualified
 version of the inputted terms.
 BUG !!! the FQ_PROCESS_NAME may actually need to be a simple process name -}
-anaNamedProc :: PROCESS -> FQ_PROCESS_NAME -> [TERM ()] -> ProcVarMap ->
-                State CspCASLSign (FQ_PROCESS_NAME, CommAlpha, [TERM ()])
-anaNamedProc proc pn terms procVars = do
+anaNamedProc :: Mix b s () () -> PROCESS -> FQ_PROCESS_NAME -> [TERM ()]
+  -> ProcVarMap -> State CspCASLSign (FQ_PROCESS_NAME, CommAlpha, [TERM ()])
+anaNamedProc mix proc pn terms procVars = do
   maybeFqPn <- anaProcName pn (length terms)
   case maybeFqPn of
     Nothing ->
@@ -405,7 +409,7 @@ anaNamedProc proc pn terms procVars = do
           if length terms == length varSorts
           then do
             fqTerms <-
-                    mapM (anaNamedProcTerm procVars) (zip terms varSorts)
+                    mapM (anaNamedProcTerm mix procVars) (zip terms varSorts)
                   {- Return the permitted alphabet of the process and
                   the fully qualifed terms -}
             return (fqPn, Set.fromList permAlpha, fqTerms)
@@ -418,9 +422,10 @@ anaNamedProc proc pn terms procVars = do
 
 {- | Statically analysis a CASL term occurring in a CspCASL "named
 process" term. -}
-anaNamedProcTerm :: ProcVarMap -> (TERM (), SORT) -> State CspCASLSign (TERM ())
-anaNamedProcTerm pm (t, expSort) = do
-    mt <- anaTermCspCASL pm t
+anaNamedProcTerm :: Mix b s () () -> ProcVarMap -> (TERM (), SORT)
+  -> State CspCASLSign (TERM ())
+anaNamedProcTerm mix pm (t, expSort) = do
+    mt <- anaTermCspCASL mix pm t
     sig <- get
     case mt of
       Nothing -> return t {- CASL term analysis failed. Use old term
@@ -517,13 +522,13 @@ anaCommType sig (alpha, fqEsElems) ct =
 {- | Statically analyse a CspCASL event. Returns a constituent
 communication alphabet of the event, mapping for any new
 locally bound variables and a fully qualified version of the event. -}
-anaEvent :: EVENT -> ProcVarMap ->
-            State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
-anaEvent e vars =
+anaEvent :: Mix b s () () -> EVENT -> ProcVarMap
+  -> State CspCASLSign (CommAlpha, ProcVarMap, EVENT)
+anaEvent mix e vars =
     case e of
       TermEvent t range ->
           do addDiags [mkDiag Debug "Term event" e]
-             (alpha, newVars, fqTerm) <- anaTermEvent t vars
+             (alpha, newVars, fqTerm) <- anaTermEvent mix t vars
              let fqEvent = FQEvent e Nothing fqTerm range
              return (alpha, newVars, fqEvent)
       InternalPrefixChoice v s range ->
@@ -542,7 +547,7 @@ anaEvent e vars =
              channel. It will be Nothing if
              annChanSend failed - i.e. we forget
              about the channel. -}
-             (alpha, newVars, mfqChan, fqTerm) <- anaChanSend c t vars
+             (alpha, newVars, mfqChan, fqTerm) <- anaChanSend mix c t vars
              let fqEvent = FQEvent e mfqChan fqTerm range
              return (alpha, newVars, fqEvent)
       ChanNonDetSend c v s range ->
@@ -566,10 +571,10 @@ anaEvent e vars =
 communication alphabet of the event and a mapping for any new
 locally bound variables and the fully qualified version of the
 term. -}
-anaTermEvent :: TERM () -> ProcVarMap
+anaTermEvent :: Mix b s () () -> TERM () -> ProcVarMap
   -> State CspCASLSign (CommAlpha, ProcVarMap, TERM ())
-anaTermEvent t vars = do
-  mt <- anaTermCspCASL vars t
+anaTermEvent mix t vars = do
+  mt <- anaTermCspCASL mix vars t
   let (alpha, t') = case mt of
                       -- return the alphabet and the fully qualified term
                       Just at -> ([CommTypeSort (sortOfTerm at)], at)
@@ -595,10 +600,10 @@ anaPrefixChoice v s = do
 constituent communication alphabet of the event, a mapping for
 any new locally bound variables, a fully qualified channel (if
 possible) and the fully qualified version of the term. -}
-anaChanSend :: CHANNEL_NAME -> TERM () -> ProcVarMap
+anaChanSend :: Mix b s () () -> CHANNEL_NAME -> TERM () -> ProcVarMap
   -> State CspCASLSign
      (CommAlpha, ProcVarMap, Maybe (CHANNEL_NAME, SORT), TERM ())
-anaChanSend c t vars = do
+anaChanSend mix c t vars = do
   sig <- get
   let ext = extendedInfo sig
   case Set.toList $ Map.findWithDefault Set.empty c $ chans ext of
@@ -608,7 +613,7 @@ anaChanSend c t vars = do
       channel, there is an error in the spec -}
       return (Set.empty, Map.empty, Nothing, t)
     chanSorts -> do
-      mt <- anaTermCspCASL vars t
+      mt <- anaTermCspCASL mix vars t
       case mt of
         Nothing ->
           {- CASL analysis failed. Use old term as the fully
@@ -762,12 +767,13 @@ checkCommAlphaSub sub super proc context = do
 {- | Statically analyse a CASL term appearing in a CspCASL process;
 any in-scope process variables are added to the signature before
 performing the analysis. -}
-anaTermCspCASL :: ProcVarMap -> TERM () -> State CspCASLSign (Maybe (TERM ()))
-anaTermCspCASL pm t = do
+anaTermCspCASL :: Mix b s () () -> ProcVarMap -> TERM ()
+  -> State CspCASLSign (Maybe (TERM ()))
+anaTermCspCASL mix pm t = do
     sig <- get
     let newVars = Map.union pm (varMap sig)
         sigext = sig { varMap = newVars }
-        Result ds mt = anaTermCspCASL' sigext t
+        Result ds mt = anaTermCspCASL' mix sigext t
     addDiags ds
     return mt
 
@@ -777,14 +783,9 @@ idSetOfSig sig =
 
 {- | Statically analyse a CASL term in the context of a CspCASL
 signature.  If successful, returns a fully-qualified term. -}
-anaTermCspCASL' :: CspCASLSign -> TERM () -> Result (TERM ())
-anaTermCspCASL' sig trm = do
-    let ga = globAnnos sig
-        mix = extendMix (Map.keysSet $ varMap sig)
-              emptyMix { mixRules = makeRules ga $ idSetOfSig sig }
-    resT <- resolveMixfix (putParen mix) (mixResolve mix)
-                 ga (mixRules mix) trm
-    oneExpTerm (const return) (ccSig2CASLSign sig) resT
+anaTermCspCASL' :: Mix b s () () -> CspCASLSign -> TERM () -> Result (TERM ())
+anaTermCspCASL' mix sig trm = fmap snd $ anaTerm (const return) mix
+ (ccSig2CASLSign sig) Nothing (getRange trm) trm
 
 -- | Attempt to cast a CASL term to a particular CASL sort.
 ccTermCast :: TERM () -> SORT -> CspCASLSign -> Result (TERM ())
@@ -807,26 +808,23 @@ terms. -}
 {- | Statically analyse a CASL formula appearing in a CspCASL process;
 any in-scope process variables are added to the signature before
 performing the analysis. -}
-anaFormulaCspCASL :: ProcVarMap -> FORMULA ()
+anaFormulaCspCASL :: Mix b s () () -> ProcVarMap -> FORMULA ()
   -> State CspCASLSign (Maybe (FORMULA ()))
-anaFormulaCspCASL pm f = do
+anaFormulaCspCASL mix pm f = do
     addDiags [mkDiag Debug "anaFormulaCspCASL" f]
     sig <- get
     let newVars = Map.union pm (varMap sig)
         sigext = sig { varMap = newVars }
-        Result ds mt = anaFormulaCspCASL' sigext f
+        Result ds mt = anaFormulaCspCASL' mix sigext f
     addDiags ds
     return mt
 
 {- | Statically analyse a CASL formula in the context of a CspCASL
 signature.  If successful, returns a fully-qualified formula. -}
-anaFormulaCspCASL' :: CspCASLSign -> FORMULA () -> Result (FORMULA ())
-anaFormulaCspCASL' sig frm = do
-    let ga = globAnnos sig
-        mix = extendMix (Map.keysSet $ varMap sig)
-              emptyMix { mixRules = makeRules ga $ idSetOfSig sig }
-    resF <- resolveFormula (putParen mix) (mixResolve mix) ga (mixRules mix) frm
-    minExpFORMULA (const return) (ccSig2CASLSign sig) resF
+anaFormulaCspCASL' :: Mix b s () () -> CspCASLSign -> FORMULA ()
+  -> Result (FORMULA ())
+anaFormulaCspCASL' mix sig =
+  fmap snd . anaForm (const return) mix (ccSig2CASLSign sig)
 
 {- | Compute the communication alphabet arising from a formula
 occurring in a CspCASL process term. -}
