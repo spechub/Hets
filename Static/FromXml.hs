@@ -16,7 +16,7 @@ import Static.ComputeTheory (computeDGraphTheories)
 import Static.DevGraph
 import Static.GTheory
 
-import Common.LibName (LibName (..), emptyLibName)
+import Common.LibName (LibName (..), noTime, setFilePath, emptyLibName)
 import Common.Result (propagateErrors)
 import Common.XUpdate (getAttrVal)
 import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
@@ -38,6 +38,11 @@ import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import Data.Maybe (fromMaybe)
 
 import Text.XML.Light
+
+-- TODO sort functions into chapters
+
+
+-- * Data Types
 
 
 {- | for faster access, some elements attributes are stored alongside
@@ -72,7 +77,7 @@ readDGXml path = do
       Just nm -> let
         an = extractGlobalAnnos xml
         dg = fromXml logicGraph emptyDG {globalAnnos = an} xml
-        ln = emptyLibName nm
+        ln = setFilePath nm noTime $ emptyLibName nm
         le = Map.insert ln dg Map.empty
         in return $ Just (ln, le)
 
