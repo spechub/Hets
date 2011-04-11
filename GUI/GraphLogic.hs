@@ -41,7 +41,7 @@ module GUI.GraphLogic
     , runAndLock
     , saveUDGraph
     , focusNode
-    , calcGlobalHistory 
+    , calcGlobalHistory
     , add2history
     ) where
 
@@ -669,8 +669,8 @@ showReferencedLibrary descr gInfo convGraph showLib = do
                     else error "showReferencedLibrary"
    case Map.lookup refLibname le of
     Just _ -> showDGraph gInfo refLibname convGraph showLib
-    Nothing -> error $ "The referenced library (" ++ show refLibname
-                       ++ ") is unknown"
+    Nothing -> errorDialog "Error"
+      $ "The referenced library (" ++ show refLibname ++ ") is unknown"
 
 -- | display a window of translated graph with maximal sublogic.
 translateGraph :: GInfo -> IO (Maybe LibEnv)
