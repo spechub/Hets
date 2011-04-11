@@ -42,6 +42,7 @@ import Common.Result
 
 import Data.IORef
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe
 import Data.List
 
@@ -241,8 +242,10 @@ addNodesAndEdges gi graph nodesEdges = do
    let
     le = i_libEnv ist
     opts = hetcatsOpts gi
-    lookup' x y = Map.findWithDefault (error "lookup': node not found") y x
-    keys = Map.keys le
+    lookup' x y = Map.findWithDefault
+      (error $ "lookup2': node not found " ++ show y) y x
+    keySet = Map.keysSet le
+    keys = Set.toList keySet
     subNodeMenu = LocalMenu (UDG.Menu Nothing [
       Button "Show Graph" $ mShowGraph gi,
       Button "Show spec/View Names" $ showSpec le])
@@ -264,12 +267,13 @@ addNodesAndEdges gi graph nodesEdges = do
    let insertSubArc (node1, node2) = newArc graph subArcType (return "")
                                             (lookup' nodes' node1)
                                             (lookup' nodes' node2)
-   subArcList <- mapM insertSubArc $ getLibDeps le
+   subArcList <- mapM insertSubArc $ getLibDeps keySet le
    writeIORef nodesEdges (subNodeList, subArcList)
 
 -- | Creates a list of all LibName pairs, which have a dependency
-getLibDeps :: LibEnv -> [(LibName, LibName)]
-getLibDeps = Rel.toList . Rel.intransKernel . getLibDepRel
+getLibDeps :: Set.Set LibName -> LibEnv -> [(LibName, LibName)]
+getLibDeps ks =
+  Rel.toList . Rel.intransKernel . (`Rel.restrict` ks) . getLibDepRel
 
 mShowGraph :: GInfo -> LibName -> IO ()
 mShowGraph gi ln = showDGraph gi ln convertGraph showLibGraph

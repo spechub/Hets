@@ -333,17 +333,10 @@ mkDGNodeLab gt annos (name, el) = let
     -- Case #2: reference node
     Just rf -> let
       (gt', _) = parseSpecs $ findChildren (unqual "Signature") rf
-      {-
-      TODO: reference nodes currently leed to a lookupDGraph error
       refLib = case getAttrVal "library" rf of
         Nothing -> error "FromXml.mkDGNodeLab(1)"
         Just ln -> emptyLibName ln
-      refNode :: Graph.Node
-      refNode = (-1)
-      in newInfoNodeLab (parseNodeName name) (DGRef refLib refNode) gt'
-      -}
-      in newNodeLab (parseNodeName name) DGBasic gt'
-
+      in newInfoNodeLab (parseNodeName name) (newRefInfo refLib (-1)) gt'
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
