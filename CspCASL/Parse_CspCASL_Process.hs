@@ -117,7 +117,7 @@ seq_proc' lp = do
 
 pref_proc :: AParser st PROCESS
 pref_proc = do
-    e <- try (event << asKey prefix_procS)
+    e <- event
     p <- pref_proc
     return (PrefixProcess e p (compRange e p))
   <|> hid_ren_proc
@@ -197,50 +197,33 @@ event_set = do
 {- Events may be simple CASL terms or channel send/receives or
 internal / external prefix choice. -}
 event :: AParser st EVENT
-event = try chan_recv <|> try chan_nondet_send <|> try chan_send
-        <|> try externalPrefixChoice <|> try internalPrefixChoice
-        <|> term_event
+event = ((prefixChoice <|> chanComm) << asKey prefix_procS)
+        <|> try (term_event << asKey prefix_procS)
 
-chan_send :: AParser st EVENT
-chan_send = do
-    cn <- channel_name
-    asKey chan_sendS
-    t <- CASL.term cspKeywords
-    return (ChanSend cn t (getRange cn))
+chanComm :: AParser st EVENT
+chanComm = do
+    (cn, sr) <- try $ pair channel_name
+       $ asKey chan_sendS <|> asKey chan_receiveS
+    if tokStr sr == chan_sendS then do
+         v <- try $ var << asKey svar_sortS
+         s <- cspSortId
+         return (ChanNonDetSend cn v s (compRange cn s))
+       <|> do
+         t <- CASL.term cspKeywords
+         return (ChanSend cn t (getRange cn))
+       else do
+         v <- var << asKey svar_sortS
+         s <- cspSortId
+         return (ChanRecv cn v s (compRange cn s))
 
-chan_nondet_send :: AParser st EVENT
-chan_nondet_send = do
-    cn <- channel_name
-    asKey chan_sendS
+prefixChoice :: AParser st EVENT
+prefixChoice = do
+    constr <- fmap (const InternalPrefixChoice) (asKey internal_choiceS)
+      <|> fmap (const ExternalPrefixChoice) (asKey external_choiceS)
     v <- var
     asKey svar_sortS
     s <- cspSortId
-    return (ChanNonDetSend cn v s (compRange cn s))
-
-chan_recv :: AParser st EVENT
-chan_recv = do
-    cn <- channel_name
-    asKey chan_receiveS
-    v <- var
-    asKey svar_sortS
-    s <- cspSortId
-    return (ChanRecv cn v s (compRange cn s))
-
-internalPrefixChoice :: AParser st EVENT
-internalPrefixChoice = do
-    ipk <- asKey internal_choiceS
-    v <- var
-    asKey svar_sortS
-    s <- cspSortId
-    return (InternalPrefixChoice v s (compRange ipk s))
-
-externalPrefixChoice :: AParser st EVENT
-externalPrefixChoice = do
-    epk <- asKey external_choiceS
-    v <- var
-    asKey svar_sortS
-    s <- cspSortId
-    return (ExternalPrefixChoice v s (compRange epk s))
+    return $ constr v s $ getRange s
 
 term_event :: AParser st EVENT
 term_event = do
