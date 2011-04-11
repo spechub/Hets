@@ -23,6 +23,7 @@ import Logic.Grothendieck
 
 import Common.AS_Annotation
 import Common.ConvertGlobalAnnos
+import Common.Consistency
 import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
@@ -146,9 +147,9 @@ mkAxDocNode :: GlobalAnnos -> Doc -> Element
 mkAxDocNode ga = unode "Axiom" . show . useGlobalAnnos ga
 
 consStatus :: ConsStatus -> [Element]
-consStatus cs = case show $ pretty cs of
-  "" -> []
-  cstr -> [unode "ConsStatus" cstr]
+consStatus cs = case getConsOfStatus cs of
+  None -> []
+  cStat -> [unode "ConsStatus" $ show cStat] 
 
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
 ledge ga dg (f, t, lbl) = let
