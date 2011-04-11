@@ -110,7 +110,7 @@ seqSym = asKey sequentialS `notFollowedWith`
 
 seq_proc' :: PROCESS -> AParser st PROCESS
 seq_proc' lp = do
-    seqSym
+    asKey doubleSemis <|> seqSym
     rp <- pref_proc
     seq_proc' (Sequential lp rp (compRange lp rp))
   <|> return lp
@@ -120,7 +120,7 @@ pref_proc = do
     e <- event
     p <- pref_proc
     return (PrefixProcess e p (compRange e p))
-  <|> hid_ren_proc
+  <|> hid_ren_proc <|> cond_proc
 
 hid_ren_proc :: AParser st PROCESS
 hid_ren_proc = prim_proc >>= hid_ren_proc'

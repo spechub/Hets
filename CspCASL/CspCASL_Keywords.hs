@@ -54,6 +54,9 @@ chan_receiveS = "?"
 svar_sortS :: String
 svar_sortS = "::"
 
+doubleSemis :: String
+doubleSemis = ";;"
+
 -- | starting CSP-CASL keywords
 startCspKeywords :: [String]
 startCspKeywords =
@@ -66,7 +69,7 @@ startCspKeywords =
 cspKeywords :: [String]
 cspKeywords = startCspKeywords ++
   [ sequentialS
-  , ";;" -- we add this as alternative sequential composition operator
+  , doubleSemis -- we add this as alternative sequential composition operator
   , interleavingS
   , synchronousS
   , genpar_openS

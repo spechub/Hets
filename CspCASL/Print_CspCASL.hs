@@ -103,7 +103,7 @@ printProcess pr = case pr of
     NamedProcess pn ts _ ->
         pretty pn <+> printArgs ts
     -- precedence 1
-    ConditionalProcess f p q _ -> parens $ fsep
+    ConditionalProcess f p q _ -> fsep
         [ keyword ifS <+> pretty f
         , keyword thenS <+> pretty p
         , keyword elseS <+> pretty q ]
@@ -113,7 +113,7 @@ printProcess pr = case pr of
     RenamingProcess p r _ -> sep
         [ lglue pr p, ren_proc_open <+> pretty r <+> ren_proc_close ]
     -- precedence 3
-    Sequential p q _ -> parens $ sep
+    Sequential p q _ -> sep
         [ lglue pr p, sequential <+> glue pr q ]
     PrefixProcess event p _ -> sep
         [ pretty event <+> prefix_proc, glue pr p ]
