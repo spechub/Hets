@@ -132,12 +132,12 @@ computeDGraphTheoriesAux le dgraph =
 
 computeLabelTheory :: LibEnv -> DGraph -> LNode DGNodeLab -> Maybe G_theory
 computeLabelTheory le dg (n, lbl) = let localTh = dgn_theory lbl in
-    fmap reduceTheory . maybeResult $ if isDGRef lbl then do
-        let refNode = dgn_node lbl
-            dg' = lookupDGraph (dgn_libname lbl) le
-            newLab = labDG dg' refNode
-        refTh <- getGlobalTheory newLab
-        joinG_sentences refTh localTh
+    fmap reduceTheory . maybeResult $ if isDGRef lbl then
+        case Map.lookup (dgn_libname lbl) le of
+          Nothing -> return localTh -- do not crash here
+          Just dg' -> do
+            refTh <- getGlobalTheory $ labDG dg' $ dgn_node lbl
+            joinG_sentences refTh localTh
     else do
       ths <- mapM (\ (s, _, l) -> do
          th <- let sl = labDG dg s in if isLocalDef $ dgl_type l then
