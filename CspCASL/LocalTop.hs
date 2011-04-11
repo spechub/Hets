@@ -1,5 +1,5 @@
 {- |
-Module      :  $Id$
+Module      :  $Header$
 Description :  Local top element analysis for CspCASL specifications
 Copyright   :  (c) Andy Gimblett, Swansea University 2007
 License     :  GPLv2 or higher, see LICENSE.txt
