@@ -22,7 +22,6 @@ module CspCASL.Parse_CspCASL_Process
   , csp_casl_process
   , event_set
   , process_name
-  , simple_process_name
   , var
   , commType
   , bracedList
@@ -167,11 +166,21 @@ prim_proc = do
 
 -- | Parse a process name which can be a simple one or a fully qualified one.
 process_name :: AParser st FQ_PROCESS_NAME
-process_name = qualProc <|> fmap PROCESS_NAME simple_process_name
+process_name = qualProc <|> fmap PROCESS_NAME processId
 
--- | Parse a simple process name
-simple_process_name :: AParser st PROCESS_NAME
-simple_process_name = fmap simpleIdToId var
+-- | Parse a process identifier
+processId :: AParser st PROCESS_NAME
+processId = do
+  s <- var
+  (c, p) <- option ([], nullRange) cspComps
+  return (Id [s] c p)
+
+cspComps :: AParser st ([Id], Range)
+cspComps = try $ do
+  o <- pToken $ string "[" << notFollowedBy (oneOf "[]|")
+  (ts, ps) <- parseId cspKeywords `separatedBy` commaT
+  c <- cBracketT
+  return (ts, toRange o ps c)
 
 channel_name :: AParser st CHANNEL_NAME
 channel_name = cspSortId
@@ -315,7 +324,7 @@ procTail = fmap ProcAlphabet $ colonT >> alphabet
 
 procDecl :: AParser st FQ_PROCESS_NAME
 procDecl = do
-  pn <- simple_process_name
+  pn <- processId
   ss <- optionL $ parenList cspSortId
   al <- procTail
   return $ FQ_PROCESS_NAME pn ss al
@@ -335,7 +344,7 @@ procDeclOrDefn = do
     equalT
     return $ Left (fqn, as)
   <|> do
-    pn <- simple_process_name
+    pn <- processId
     ma <- optionMaybe $ parens manySortedVars
     mal <- optionMaybe procTail
     case mal of
