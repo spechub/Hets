@@ -44,7 +44,7 @@ import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
 csp_casl_process :: AParser st PROCESS
-csp_casl_process = cond_proc <|> par_proc
+csp_casl_process = par_proc
 
 cond_proc :: AParser st PROCESS
 cond_proc = do
@@ -162,7 +162,6 @@ prim_proc = do
   <|> fmap (Div . getRange) (asKey divS)
   <|> fmap (Stop . getRange) (asKey stopS)
   <|> fmap (Skip . getRange) (asKey skipS)
-
 
 -- | Parse a process name which can be a simple one or a fully qualified one.
 process_name :: AParser st FQ_PROCESS_NAME
