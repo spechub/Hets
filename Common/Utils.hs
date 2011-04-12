@@ -69,27 +69,26 @@ import System.Timeout
 
 import Control.Monad
 
--- | Writes the message to the given handle unless the verbosity is less than
--- the message level
+{- | Writes the message to the given handle unless the verbosity is less than
+the message level. -}
 verbMsg :: Handle -- ^ Output handle
         -> Int -- ^ global verbosity
         -> Int -- ^ message level
         -> String -- ^ message level
         -> IO ()
-verbMsg hdl v lvl msg = when (lvl <= v) $ hPutStr hdl msg
+verbMsg hdl v lvl = when (lvl <= v) . hPutStr hdl
 
 -- | Same as 'verbMsg' but with a newline at the end
 verbMsgLn :: Handle -> Int -> Int -> String -> IO ()
-verbMsgLn hdl v lvl msg = when (lvl <= v) $ hPutStrLn hdl msg
+verbMsgLn hdl v lvl = when (lvl <= v) . hPutStrLn hdl
 
 -- | 'verbMsg' with stdout as handle
 verbMsgIO :: Int -> Int -> String -> IO ()
-verbMsgIO v lvl msg = verbMsg stdout v lvl msg
+verbMsgIO = verbMsg stdout
 
 -- | 'verbMsgLn' with stdout as handle
 verbMsgIOLn :: Int -> Int -> String -> IO ()
-verbMsgIOLn v lvl msg = verbMsgLn stdout v lvl msg
-
+verbMsgIOLn = verbMsgLn stdout
 
 -- | replace first (non-empty) sublist with second one in third argument list
 replace :: Eq a => [a] -> [a] -> [a] -> [a]
@@ -208,10 +207,10 @@ keepMins lt l = case l of
 
 {- |
   A function inspired by the perl function split. A list is splitted
-  on a seperator element in smaller non-empty lists.
-  The seperator element is dropped from the resulting list.
+  on a separator element in smaller non-empty lists.
+  The separator element is dropped from the resulting list.
 -}
-splitOn :: Eq a => a -- ^ seperator
+splitOn :: Eq a => a -- ^ separator
         -> [a] -- ^ list to split
         -> [[a]]
 splitOn x = filter (not . null) . splitBy x
@@ -220,13 +219,13 @@ splitOn x = filter (not . null) . splitBy x
   Same as splitOn but empty lists are kept. Even the empty list is split into
   a singleton list containing the empty list.
 -}
-splitBy :: Eq a => a -- ^ seperator
+splitBy :: Eq a => a -- ^ separator
         -> [a] -- ^ list to split
         -> [[a]]
 splitBy c l = let (p, q) = break (c ==) l in
   if null q then [p] else p : splitBy c (tail q)
 
--- | Same as splitBy but the seperator is a sublist not only one element.
+-- | Same as splitBy but the separator is a sublist not only one element.
 splitByList :: Eq a => [a] -> [a] -> [[a]]
 splitByList sep l = split' [] [] l where
     split' acc bag l' = case l' of
