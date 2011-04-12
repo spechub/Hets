@@ -72,10 +72,15 @@ coerceMaybeNode lg dg mn nn l2 = case mn of
 
 coerceNode :: LogicGraph -> DGraph -> NodeSig -> NodeName -> AnyLogic
            -> Result (NodeSig, DGraph)
-coerceNode lg dg ns@(NodeSig n s@(G_sign lid1 _ _)) nn l2@(Logic lid2) =
+coerceNode lg dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
     if language_name lid1 == language_name lid2 then return (ns, dg)
     else do
       c <- logicInclusion lg (Logic lid1) l2
+      coerceNodeByComorph c dg ns nn
+
+coerceNodeByComorph :: AnyComorphism -> DGraph -> NodeSig -> NodeName
+           -> Result (NodeSig, DGraph)
+coerceNodeByComorph c dg (NodeSig n s) nn = do
       gmor <- gEmbedComorphism c s
       case find (\ (_, _, l) -> dgl_origin l == SeeTarget
           && dgl_type l == globalDef
@@ -426,24 +431,14 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           sp2 = item asp2
       {- look for the inclusion comorphism from the current logic's data logic
       into the current logic itself -}
-      Comorphism cid <- logicInclusion lg (Logic lidD) (Logic lidP)
-      let lidD' = sourceLogic cid
-          lidP' = targetLogic cid
-          dname = extName "Data" name
+      c <- logicInclusion lg (Logic lidD) (Logic lidP)
+      let dname = extName "Data" name
       -- analyse SPEC1
-      (sp1', NodeSig n' (G_sign lid' sigma' _), dg') <-
+      (sp1', ns', dg') <-
          anaSpec False lg ln dg (EmptyNode (Logic lidD)) dname opts sp1
-      -- force the result to be in the data logic
-      sigmaD <- coerceSign lid' lidD' "Analysis of data spec" sigma'
       -- translate SPEC1's signature along the comorphism
-      (sigmaD', sensD') <- ext_map_sign cid sigmaD
-      -- create a development graph link for this translation
-      let (nsig2@(NodeSig node _), dg1) = insGTheory dg' dname DGData
-            $ G_theory lidP' sigmaD' startSigId (toThSens sensD') startThId
-          dg2 = insLink dg1 (GMorphism cid sigmaD startSigId
-                             (ext_ide sigmaD') startMorId)
-                globalDef SeeTarget n' node
-          gsigmaD = G_sign lidP' sigmaD' startSigId
+      (nsig2@(NodeSig node gsigmaD), dg2) <-
+         coerceNodeByComorph c dg' ns' dname
       (usig, udg) <- case nsig of
         EmptyNode _ -> return (nsig2, dg2)
         JustNode ns2 -> do
