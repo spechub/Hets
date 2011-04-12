@@ -256,7 +256,7 @@ getDGraph opts sessRef dgQ = case dgQ of
       DgXml -> do
         mf <- lift $ findFileOfLibName opts file
         case mf of
-          Just f -> ResultT $ fmap (Result []) $ readDGXml f
+          Just f -> readDGXmlR opts f
           Nothing -> liftR $ fail "xml file not found"
       _ -> anaSourceFile logicGraph opts
         { outputToStdout = False, useLibPos = True }

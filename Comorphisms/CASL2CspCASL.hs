@@ -16,6 +16,8 @@ module Comorphisms.CASL2CspCASL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.ProofTree
+import Common.Id
+import Common.AS_Annotation
 
 -- CASL
 import CASL.AS_Basic_CASL
@@ -47,8 +49,9 @@ instance Comorphism CASL2CspCASL
     sourceSublogic CASL2CspCASL = SL.top
     targetLogic CASL2CspCASL = cspCASL
     mapSublogic CASL2CspCASL _ = Just ()
-    map_theory CASL2CspCASL =
-      return . simpleTheoryMapping mapSig casl2CspCASLSen
+    map_theory CASL2CspCASL p =
+      let (sig, sens) = simpleTheoryMapping mapSig casl2CspCASLSen p
+      in return (sig, makeNamed "test" (True_atom nullRange) : sens)
     map_morphism CASL2CspCASL = return . mapMor
     map_sentence CASL2CspCASL _sig = return . casl2CspCASLSen
     has_model_expansion CASL2CspCASL = True

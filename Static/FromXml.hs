@@ -12,12 +12,15 @@ create new or extend a Development Graph in accordance with an XML input
 
 module Static.FromXml where
 
+import Driver.Options
+
 import Static.ComputeTheory (computeDGraphTheories)
 import Static.DevGraph
 import Static.GTheory
 
 import Common.LibName (LibName (..), noTime, setFilePath, emptyLibName)
-import Common.Result (propagateErrors)
+import Common.Result
+import Common.ResultT
 import Common.XUpdate (getAttrVal)
 import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
 import Common.AnalyseAnnos (getGlobalAnnos)
@@ -36,6 +39,8 @@ import Data.List (partition, intercalate, isInfixOf)
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import Data.Maybe (fromMaybe)
+
+import Control.Monad.Trans (lift)
 
 import Text.XML.Light
 
@@ -58,29 +63,34 @@ data NamedLink = Link { src :: String
 source and target nodes (used for error messages). -}
 printLinks :: [NamedLink] -> String
 printLinks = let show' l = src l ++ " -> " ++ trg l in
-  unlines . (map show')
-
+  unlines . map show'
 
 {- | main function; receives a FilePath and calls fromXml upon that path,
 using an empty DGraph and initial LogicGraph. -}
-readDGXml :: FilePath -> IO (Maybe (LibName, LibEnv))
-readDGXml path = do
-  xml' <- readFile path
+readDGXmlR :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
+readDGXmlR opts path = do
+  lift $ putIfVerbose opts 1 $ "Reading " ++ path
+  xml' <- lift $ readFile path
   case parseXMLDoc xml' of
-    Nothing -> do
-      putStrLn "FromXml.readDGXml: failed to parse XML file"
-      return Nothing
+    Nothing ->
+      liftR $ fail $ "failed to parse XML file: " ++ path
     Just xml -> case getAttrVal "filename" xml of
-      Nothing -> do
-        putStrLn "FromXml.readDGXml: DGraphs name attribute is missing!"
-        return Nothing
+      Nothing ->
+        liftR $ fail $ "missing DGraph name attribute\n" ++
+           unlines (take 5 $ lines xml')
       Just nm -> let
         an = extractGlobalAnnos xml
         dg = fromXml logicGraph emptyDG {globalAnnos = an} xml
         ln = setFilePath nm noTime $ emptyLibName nm
         le = Map.insert ln dg Map.empty
-        in return $ Just (ln, le)
+        in return (ln, le)
 
+-- | top-level function
+readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
+readDGXml opts path = do
+    Result ds res <- runResultT $ readDGXmlR opts path
+    showDiags opts ds
+    return res
 
 {- | main function; receives a logicGraph, an initial DGraph and an xml
 element, then adds all nodes and edges from the element into the DGraph -}
@@ -171,7 +181,7 @@ insNdAndDefLinks lg trgNd links dg = let
   dg' = insertNode gt trgNd dg
   (j, gsig2) = signOfNode (fst trgNd) dg'
   morph mr = finalizeMorphism lg mr gsig2
-  ins' ((i, mr), l) dgr = insertLink i j (morph mr) (lType l) dgr
+  ins' ((i, mr), l) = insertLink i j (morph mr) (lType l)
   in foldr ins' dg' $ zip mrs links
 
 
@@ -320,11 +330,11 @@ mkDGNodeLab :: G_theory -> GlobalAnnos -> NamedNode -> DGNodeLab
 mkDGNodeLab gt annos (name, el) = let
   parseSpecs specElems = let
     specs = unlines $ map strContent specElems
-    (response, message) = extendByBasicSpec annos specs gt
+    (response, msg) = extendByBasicSpec annos specs gt
     in case response of
       Success gt' _ symbs _ -> (gt', symbs)
       Failure _ -> error $ ("FromXml.mkDGNodeLab (" ++ name ++ "):\n")
-        ++ message
+        ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
     Nothing -> let
@@ -342,5 +352,5 @@ mkDGNodeLab gt annos (name, el) = let
 deepSearch :: [String] -> Element -> [Element]
 deepSearch tags' ele = rekSearch ele where
   tags = map unqual tags'
-  rekSearch e = filtr e ++ concat (map filtr (elChildren e))
+  rekSearch e = filtr e ++ concatMap filtr (elChildren e)
   filtr = filterChildrenName (`elem` tags)
