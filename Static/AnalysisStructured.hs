@@ -173,16 +173,6 @@ anaSpecTop conser addSyms lg ln dg nsig name opts sp =
   ndg <- createConsLink provenThmLink conser lg rdg nsig ns SeeTarget
   return (rsp, ns, ndg)
 
-anaQualSpec :: Bool -> LogicGraph -> HetcatsOpts -> LibName -> DGraph
-  -> MaybeNode -> NodeName -> Annoted SPEC -> Range
-  -> Result (Annoted SPEC, NodeSig, DGraph)
-anaQualSpec addSyms lg opts ln dg nsig name asp pos = adjustPos pos $ do
-      (sp', NodeSig n' gsigma, dg') <- anaSpec addSyms lg ln dg nsig
-        (extName "Qualified" name) opts $ item asp
-      let (ns@(NodeSig node _), dg2) = insGSig dg' name DGLogicQual gsigma
-      return (replaceAnnoted sp' asp, ns,
-              insLink dg2 (ide gsigma) globalDef SeeTarget n' node)
-
 anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> LibName -> DGraph
   -> MaybeNode -> NodeName -> FreeOrCofree -> Annoted SPEC -> Range
   -> Result (Annoted SPEC, NodeSig, DGraph)
@@ -367,15 +357,16 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
       dg4 <- createConsLink DefLink conser lg dg3 nsig ns DGLinkClosedLenv
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, dg4)
-  Qualified_spec lognm@(Logic_name nln _) asp pos -> do
+  Qualified_spec lognm@(Logic_name nln _) asp pos -> adjustPos pos $ do
       let newLG = lg { currentLogic = tokStr nln }
       l <- lookupCurrentLogic "Qualified_spec" newLG
       let newNSig = case nsig of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
-      (nasp, nsig', dg') <-
-          anaQualSpec addSyms lg opts ln dg newNSig name asp pos
-      return (Qualified_spec lognm nasp pos, nsig', dg')
+          qname = extName "Qualified" name
+      (sp', ns', dg') <- anaSpec addSyms lg ln dg newNSig qname opts $ item asp
+      (ns, dg2) <- coerceNode lg dg' ns' qname l
+      return (Qualified_spec lognm asp { item = sp' } pos, ns, dg2)
   Group asp pos -> do
       (sp', nsig', dg') <-
           anaSpecTop conser addSyms lg ln dg nsig name opts (item asp)
@@ -426,19 +417,21 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
     _ -> notFoundError "Structured specification" spname pos
 
   -- analyse "data SPEC1 SPEC2"
-  Data (Logic lidD) (Logic lidP) asp1 asp2 pos -> adjustPos pos $ do
+  Data lD lP asp1 asp2 pos -> adjustPos pos $ do
       let sp1 = item asp1
           sp2 = item asp2
       {- look for the inclusion comorphism from the current logic's data logic
       into the current logic itself -}
-      c <- logicInclusion lg (Logic lidD) (Logic lidP)
+      c <- logicInclusion lg lD lP
       let dname = extName "Data" name
       -- analyse SPEC1
       (sp1', ns', dg') <-
-         anaSpec False lg ln dg (EmptyNode (Logic lidD)) dname opts sp1
+         anaSpec False lg ln dg (EmptyNode lD) dname opts sp1
+      -- force the result to be in the data logic
+      (ns'', dg'') <- coerceNode lg dg' ns' (extName "Qualified" dname) lD
       -- translate SPEC1's signature along the comorphism
       (nsig2@(NodeSig node gsigmaD), dg2) <-
-         coerceNodeByComorph c dg' ns' dname
+         coerceNodeByComorph c dg'' ns'' dname
       (usig, udg) <- case nsig of
         EmptyNode _ -> return (nsig2, dg2)
         JustNode ns2 -> do
@@ -452,7 +445,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       -- analyse SPEC2
       (sp2', nsig3, udg3) <-
           anaSpec addSyms lg ln udg (JustNode usig) name opts sp2
-      return (Data (Logic lidD) (Logic lidP)
+      return (Data lD lP
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
