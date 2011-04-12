@@ -222,17 +222,18 @@ splitOn x = filter (not . null) . splitBy x
 splitBy :: Eq a => a -- ^ separator
         -> [a] -- ^ list to split
         -> [[a]]
-splitBy c l = let (p, q) = break (c ==) l in
-  if null q then [p] else p : splitBy c (tail q)
+splitBy c l = let (p, q) = break (c ==) l in p : case q of
+     [] -> []
+     _ : r -> splitBy c r
 
--- | Same as splitBy but the separator is a sublist not only one element.
+{- | Same as splitBy but the separator is a sublist not only one element.
+Note that the separator must be non-empty. -}
 splitByList :: Eq a => [a] -> [a] -> [[a]]
-splitByList sep l = split' [] [] l where
-    split' acc bag l' = case l' of
-      [] -> bag ++ [acc]
-      x : xs -> case stripPrefix sep l' of
-        Nothing -> split' (acc ++ [x]) bag xs
-        Just l'' -> split' [] (bag ++ [acc]) l''
+splitByList sep l = case l of
+    [] -> [[]]
+    h : t -> case stripPrefix sep l of
+      Just suf -> [] : splitByList sep suf
+      Nothing -> let f : r = splitByList sep t in (h : f) : r
 
 {- | If the given string is terminated by a decimal number
 this number and the nonnumber prefix is returned. -}
