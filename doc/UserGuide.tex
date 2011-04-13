@@ -131,9 +131,9 @@ pdftitle={Hets User Guide}]
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\
--- Version 0.97 --}
+-- Version 0.98 --}
 \author{Till Mossakowski, Christian Maeder,
-  Mihai Codescu, Dominik L\"{u}cke\\[1em]
+  Mihai Codescu\\[1em]
 DFKI GmbH, Bremen, Germany.\\[1em]
 Comments to: hets-users@informatik.uni-bremen.de \\
 (the latter needs subscription to the mailing list)
@@ -167,7 +167,7 @@ hand.
 
 \Hets supports a number of input languages directly, such as \CASL,
 Common Logic, OWL-DL, Haskell, and Maude. For heterogeneous
-specification, \Hets offers language heterogeneous \CASL.
+specification, \Hets offers the language heterogeneous \CASL.
 Heterogeneous \CASL (\HetCASL) generalises the structuring
 constructs of
 \CASL \cite{CASL-UM,CASL/RefManual} to arbitrary logics
@@ -252,9 +252,10 @@ Language & Parser & Static Analysis & Prover \\\hline
 \ModalCASL & x & x & - \\\hline
 \HasCASL & x & x & - \\\hline
 Haskell & (x) & x & - \\\hline
-\CspCASL & x & x & - \\\hline
-\CspCASL\_Trace & - & - & x \\\hline
-\CspCASL\_Failure & - & - & - \\\hline
+CspCASL & x & x & - \\\hline
+CspCASL\_Trace & - & - & x \\\hline
+CspCASL\_Failure & - & - & - \\\hline
+CommonLogic & x & x & - \\\hline
 Constraint\CASL & x & (x) & - \\\hline
 Temporal & x & (x) & - \\\hline
 RelScheme & x & (x) & - \\\hline
@@ -267,10 +268,12 @@ LF & x & (x) & - \\\hline
 DMU & x & - & - \\\hline
 OWL DL & x & x & - \\\hline
 Propositional & x & x & x \\\hline
+QBF & x & x & x \\\hline
 SoftFOL & x & - & x \\\hline
 Maude & x & x & - \\\hline
 VSE & x & x & x \\\hline
 \Isabelle & (x) & - & x \\\hline
+HolLight & (x) & - & - \\\hline
 Adl & x & x & - \\\hline
 Fpl & x & x & - \\\hline
 \end{tabular}
@@ -324,7 +327,9 @@ The definitive reference for Haskell is \cite{PeytonJones03},
 see also \url{www.haskell.org}.
 
 \item[CspCASL] \cite{Roggenbach06} is a combination of \CASL
-  with the process algebra CSP.
+  with the process algebra \Csp.
+
+\item[CommonLogic] \url{http://en.wikipedia.org/wiki/Common_logic}
 
 \item[ConstraintCASL] is an experimental logic for the specification
 of qualitative constraint calculi.
@@ -356,6 +361,9 @@ It extends
 \item[Propositional] is classical propositional logic, with
 the zChaff SAT solver \cite{Herbstritt03} connected to it.
 
+\item[QBF] are quantified boolean formulas, with
+DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
+
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
   proving (ATP) systems for first-order logic with equality: (1) \SPASS
   \cite{WeidenbachEtAl02}; (2) Vampire \cite{RiazanovV02}; and (3)
@@ -365,6 +373,9 @@ the zChaff SAT solver \cite{Herbstritt03} connected to it.
   for first-order logic.
 
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover
+  for higher-order logic.
+\item[HolLight] \url{http://www.cl.cam.ac.uk/~jrh13/hol-light/}
+  is John Harrison's interactive theorem prover
   for higher-order logic.
 \item[VSE] is an interactive theorem prover, see \ref{subsec:VSE}.
 \item[DMU] is a dummy logic to read output of ``Computer Aided
@@ -425,6 +436,7 @@ In more detail, the following list of logic translations is currently
 supported by \Hets:
 
 \begin{tabular}{|l|p{8cm}|}\hline
+Adl2CASL & inclusion taking relations to CASL predicates \\\hline
 CASL2CoCASL & inclusion \\\hline
 CASL2CspCASL & inclusion \\\hline
 CASL2HasCASL & inclusion \\\hline
@@ -439,6 +451,7 @@ CASL2SoftFOL & coding of CASL.SuleCFOL=E to SoftFOL \cite{LuettichEA06a},
 mapping types to soft types \\\hline
 CASL2SoftFOLInduction & same as CASL2SoftFOL but with instances of induction
 axioms for all proof goals \\\hline
+CASL2SoftFOLInduction2 & similar to CASL2SoftFOLInduction but replaces goals with induction premises \\\hline
 CASL2SubCFOL & coding of partial functions by error elements
 (translation $(4a')$ of \cite{Mossakowski02}, but extended to subsorting, i.e. sublogic SubPCFOL=) \\\hline
 CASL2VSE & inclusion on sublogic CFOL= \\\hline
@@ -448,6 +461,7 @@ CASL\_DL2CASL & inclusion \\\hline
 CoCASL2CoPCFOL & coding of subsorting by injections, similar to CASL2PCFOL \\\hline
 CoCASL2CoSubCFOL & coding of partial functions by error supersorts, similar to  CASL2SubCFOL \\\hline
 CoCASL2Isabelle & extended translation similar to CASL2Isabelle \\\hline
+CommonLogic2CASL & coding Common Logic to CASL \\\hline
 CspCASL2CspCASL\_Failure & inclusion \\\hline
 CspCASL2CspCASL\_Trace & inclusion \\\hline
 CspCASL2Modal & translating the CASL data part to ModalCASL \\\hline
@@ -463,13 +477,16 @@ HasCASL2Haskell & translation of \HasCASL recursive program definitions to Haske
 HasCASL2IsabelleOption & coding of HasCASL to Isabelle/HOL \cite{Groening05} \\\hline
 Haskell2Isabelle & coding of Haskell to Isabelle/HOL \cite{TorriniEtAl07} \\\hline
 Haskell2IsabelleHOLCF & coding of Haskell to Isabelle/HOLCF \cite{TorriniEtAl07} \\\hline
+HolLight2Isabelle & coding of HolLight to Isabelle/HOL \\\hline
 Maude2CASL & encoding of rewrites as predicates \\\hline
 Modal2CASL & the standard translation of modal logic
 to first-order logic \cite{blackburn_p-etal:2001a} \\\hline
 OWL2CASL & inclusion \\\hline
+OWL2CommonLogic & inclusion \\\hline
 Propositional2CASL & inclusion \\\hline
+Propositional2QBF & inclusion \\\hline
+QBF2Propositional & inclusion \\\hline
 RelScheme2CASL & inclusion \\\hline
-Adl2CASL & inclusion taking relations to CASL predicates \\\hline
 \end{tabular}
 
 \section{Getting started}
@@ -482,10 +499,10 @@ The latest \Hets version can be obtained from the
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
 
-\Hets currently is available (on Intel architectures only) for Linux, Solaris
+\Hets is currently available (on Intel architectures only) for Linux, Solaris
 and Mac OS-X.
 
-There are three possibilities to install \Hets:
+There are several possibilities to install \Hets:
 \begin{enumerate}
 \item
 The Java-based \Hets installer. Download a \texttt{.jar} file and
