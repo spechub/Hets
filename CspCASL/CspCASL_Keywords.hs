@@ -68,21 +68,22 @@ startCspKeywords =
 -- | Reserved keywords specific to CSP-CASL.
 cspKeywords :: [String]
 cspKeywords = startCspKeywords ++
-  [ sequentialS
-  , doubleSemis -- we add this as alternative sequential composition operator
+  [ -- sequentialS
+  doubleSemis -- we add this as alternative sequential composition operator
   , interleavingS
   , synchronousS
-  , genpar_openS
-  , genpar_closeS
+-- , genpar_openS
+-- , genpar_closeS
   , alpar_openS
   , alpar_sepS
   , alpar_closeS
-  , external_choiceS
+--  , external_choiceS
   , internal_choiceS
   , prefix_procS
   , hiding_procS
-  , ren_proc_openS
-  , ren_proc_closeS
+-- , ren_proc_openS
+-- , ren_proc_closeS
+  , barS -- in case we want to use it within generialized parallel
   , runS
   , chaosS
   , divS
