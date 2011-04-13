@@ -69,7 +69,7 @@ printLinks = let show' l = src l ++ " -> " ++ trg l in
 using an empty DGraph and initial LogicGraph. -}
 readDGXmlR :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
 readDGXmlR opts path = do
-  lift $ putIfVerbose opts 1 $ "Reading " ++ path
+  lift $ putIfVerbose opts 2 $ "Reading " ++ path
   xml' <- lift $ readFile path
   case parseXMLDoc xml' of
     Nothing ->

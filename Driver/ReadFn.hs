@@ -79,7 +79,7 @@ fromShATermString lg str = if null str then
 readVerbose :: ShATermLG a => LogicGraph -> HetcatsOpts -> LibName -> FilePath
             -> IO (Maybe a)
 readVerbose lg opts ln file = do
-    putIfVerbose opts 1 $ "Reading " ++ file
+    putIfVerbose opts 2 $ "Reading " ++ file
     Result ds mgc <- readShATermFile lg file
     showDiags opts ds
     case mgc of
