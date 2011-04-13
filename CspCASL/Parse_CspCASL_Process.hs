@@ -69,11 +69,15 @@ par_proc' lp = do
     rp <- choice_proc
     par_proc' (SynchronousParallel lp rp (compRange lp rp))
   <|> do
-    asKey genpar_openS
-    es <- event_set <?> "communication type"
-    asKey genpar_closeS
+    asKey genpar_openS <|> asKey "|["
+    es <- event_set
+    mes <- optionMaybe $
+       (asKey alpar_sepS <|> asKey barS) >>  event_set
+    asKey genpar_closeS <|> asKey "]|"
     rp <- choice_proc
-    par_proc' (GeneralisedParallel lp es rp (compRange lp rp))
+    par_proc' $ (case mes of
+        Nothing -> GeneralisedParallel lp es
+        Just res -> AlphabetisedParallel lp es res) rp $ compRange lp rp
   <|> do
     asKey alpar_openS
     les <- event_set
@@ -190,7 +194,7 @@ procArgs = optionL $ parenList $ CASL.term cspKeywords
 
 event_set :: AParser st EVENT_SET
 event_set = do
-    cts <- alphabet
+    cts <- alphabet <?> "communication type"
     return (EventSet cts (getRange cts))
 
 {- Events may be simple CASL terms or channel send/receives or
