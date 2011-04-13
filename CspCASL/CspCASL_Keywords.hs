@@ -75,7 +75,7 @@ cspKeywords = startCspKeywords ++
 -- , genpar_openS
 -- , genpar_closeS
   , alpar_openS
-  , alpar_sepS
+--  , alpar_sepS -- is identical to synchronousS
   , alpar_closeS
 --  , external_choiceS
   , internal_choiceS
