@@ -12,43 +12,40 @@ create new or extend a Development Graph in accordance with an XML input
 
 module Static.FromXml where
 
-import Driver.Options
-
 import Static.ComputeTheory (computeDGraphTheories)
 import Static.DevGraph
 import Static.GTheory
 
+import Common.AnalyseAnnos (getGlobalAnnos)
+import Common.Consistency (Conservativity (..))
+import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
 import Common.LibName (LibName (..), noTime, setFilePath, emptyLibName)
 import Common.Result
 import Common.ResultT
+import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal)
-import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
-import Common.AnalyseAnnos (getGlobalAnnos)
-
-import Common.Consistency (Conservativity (..))
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import Logic.ExtSign (ext_empty_signature)
-import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
-import Logic.Prover (noSens)
-import Logic.Grothendieck
+import Control.Monad.Trans (lift)
 
-import qualified Data.Map as Map (lookup, insert, empty)
 import Data.List (partition, intercalate, isInfixOf)
 import Data.Graph.Inductive.Graph (LNode)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
+import qualified Data.Map as Map (lookup, insert, empty)
 import Data.Maybe (fromMaybe)
 
-import Control.Monad.Trans (lift)
+import Driver.Options
+
+import Logic.ExtSign (ext_empty_signature)
+import Logic.Grothendieck
+import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
+import Logic.Prover (noSens)
 
 import Text.XML.Light
 
--- TODO sort functions into chapters
-
 
 -- * Data Types
-
 
 {- | for faster access, some elements attributes are stored alongside
 as a String -}
@@ -64,6 +61,9 @@ source and target nodes (used for error messages). -}
 printLinks :: [NamedLink] -> String
 printLinks = let show' l = src l ++ " -> " ++ trg l in
   unlines . map show'
+
+
+-- * Top-Level functions
 
 {- | main function; receives a FilePath and calls fromXml upon that path,
 using an empty DGraph and initial LogicGraph. -}
@@ -110,6 +110,21 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
       $ dg'
 
 
+-- * reconstructing the development graph
+
+{- | All nodes that do not have dependencies via the links are processed at the
+beginning and written into the DGraph. Returns the resulting DGraph and the
+list of nodes that have not been stored (i.e. have dependencies). -}
+initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph
+                -> (DGraph, [NamedNode])
+initialiseNodes gt nodes links dg = let
+  targets = map trg links
+  -- all nodes that are not targeted by any links are considered independent
+  (dep, indep) = partition ((`elem` targets) . fst) nodes
+  dg' = foldr (insertNode gt) dg indep
+  in (dg', dep)
+
+
 {- | main loop: in every step, all links are collected of which the source node
 has been written into DGraph already. Upon these, further nodes are written
 in each step until the list of remaining links reaches null. -}
@@ -139,7 +154,7 @@ splitLinks dg = killMultTrg . foldr partiSrc ([], []) where
 
 {- | Help function for insertNodesAndDefLinks. Given the currently processable
 links and the total of remaining nodes, it stores all processable elements
-into the DGraph. Returns the updated DGraph and a list of remaining nodes. -}
+into the DGraph. Returns the updated DGraph and the list of remaining nodes. -}
 iterateNodes :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
              -> (DGraph, [NamedNode])
 iterateNodes _ nodes [] dg = (dg, nodes)
@@ -200,11 +215,7 @@ insertNode gt x dg = let an = globalAnnos dg
   in insLNodeDG (n, lbl) dg
 
 
--- | returns the g_sign of a node from the dgraph
-signOfNode :: String -> DGraph -> (Graph.Node, G_sign)
-signOfNode nd = (\ (j, lbl) -> (j, signOf (dgn_theory lbl)))
-  . fromMaybe (error "FromXml.signOfNode") . findNodeByName nd
-
+-- * logic calculations
 
 {- | given a links intermediate morphism and its target nodes signature,
 this function calculates the final morphism for this link -}
@@ -214,41 +225,12 @@ finalizeMorphism lg mr = propagateErrors "FromXml.finalizeMorphism(1):"
                        . propagateErrors "FromXml.finalizeMorphism(2):"
                        . ginclusion lg (cod mr)
 
+-- * Utils
 
-{- | extracts the intermediate morphism for a link, using the xml data and the
-(previously inserted) source nodes signature -}
-extractMorphism :: LogicGraph -> DGraph -> NamedLink -> (Graph.Node, GMorphism)
-extractMorphism lg dg l = let
-  (i, sgn) = signOfNode (src l) dg
-  in case findChild (unqual "GMorphism") (element l) of
-    Nothing -> error $
-      "FromXml.extractMorphism: no morphism!" ++ printLinks [l]
-    Just mor -> let
-      nm = fromMaybe (error "FromXml.extractMorphism(2)")
-         $ getAttrVal "name" mor
-      symbs = parseSymbolMap mor
-      in (i, propagateErrors "FromXml.extractMorphism(3):"
-        $ getGMorphism lg sgn nm symbs)
-
-
-parseSymbolMap :: Element -> String
-parseSymbolMap = intercalate ", "
-               . map ( intercalate " |-> "
-               . map strContent . elChildren )
-               . deepSearch ["map"]
-
-
-{- | All nodes that do not have dependencies via the links are processed at the
-beginning and written into the DGraph. Returns the resulting DGraph and the
-list of nodes that have not been stored (i.e. have dependencies). -}
-initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph
-                -> (DGraph, [NamedNode])
-initialiseNodes gt nodes links dg = let
-  targets = map trg links
-  -- all nodes that are not targeted by any links are considered independent
-  (dep, indep) = partition ((`elem` targets) . fst) nodes
-  dg' = foldr (insertNode gt) dg indep
-  in (dg', dep)
+-- | returns the g_sign of a node from the dgraph
+signOfNode :: String -> DGraph -> (Graph.Node, G_sign)
+signOfNode nd = (\ (j, lbl) -> (j, signOf (dgn_theory lbl)))
+  . fromMaybe (error "FromXml.signOfNode") . findNodeByName nd
 
 
 {- | A Node is looked up via its name in the DGraph. Returns the node only
@@ -262,66 +244,28 @@ findNodeByName s dg = case lookupNodeByName s dg of
     "FromXml.findNodeByName: ambiguous occurence for " ++ s ++ "!"
 
 
-{- | All nodes are taken from the xml-element. Then, the name-attribute is
-looked up and stored alongside the node for easy access. Nodes with no names
-are ignored. -}
-extractNodeElements :: Element -> [NamedNode]
-extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
-  f e r = case getAttrVal "name" e of
-            Just name -> (name, e) : r
-            Nothing -> r
+-- * Element extraction
 
+{- | extracts the intermediate morphism for a link, using the xml data and the
+signature of the (previously inserted) source node -}
+extractMorphism :: LogicGraph -> DGraph -> NamedLink -> (Graph.Node, GMorphism)
+extractMorphism lg dg l = let
+  (i, sgn) = signOfNode (src l) dg
+  in case findChild (unqual "GMorphism") (element l) of
+    Nothing -> error $
+      "FromXml.extractMorphism: no morphism!" ++ printLinks [l]
+    Just mor -> let
+      nm = fromMaybe (error "FromXml.extractMorphism(2)")
+         $ getAttrVal "name" mor
+      symbs = parseSymbolMap mor
+      in (i, propagateErrors "FromXml.extractMorphism(3):"
+        $ getGMorphism lg sgn nm symbs)
 
-{- | All links are taken from the xml-element and stored alongside their source
-and target information. The links are then partitioned depending on if they
-are theorem or definition links. -}
-extractLinkElements :: Element -> ([NamedLink], [NamedLink])
-extractLinkElements = partition isDef . foldr mkNamedLink [] .
-                    findChildren (unqual "DGLink") where
-  isDef = isDefEdge . lType
-  mkNamedLink e r = case getAttrVal "source" e of
-    Nothing -> r
-    Just sr -> case getAttrVal "target" e of
-      Nothing -> r
-      Just tr -> Link sr tr (getLinkType e) e : r
-
-
-getLinkType :: Element -> DGLinkType
-getLinkType l = let
-  tp = case findChild (unqual "Type") l of
-    Nothing -> error "FromXml.getLinkType(1)"
-    Just xy -> strContent xy
-  sc = if isInfixOf "Global" tp then Global else Local
-  in if isInfixOf "Def" tp
-    -- Case #1: DefinitionLink, global or local
-    then localOrGlobalDef sc None
-    else case findChild (unqual "Status") l of
-      -- Case #2: Unproven theorem link, global or local
-      Nothing -> localOrGlobalThm sc None
-      Just st -> if strContent st /= "Proven"
-        then error "FromXml.getLinkType: unknown links status!"
-        -- Case #3: Proven theorem link, global or local
-        else case findChild (unqual "Rule") l of
-          Nothing -> error "FromXml.getLinkType(2)"
-          Just rl -> case findChild (unqual "ConsStatus") l of
-            Nothing -> error "FromXml.getLinkType(3)"
-            Just cc -> let
-              lkind = ThmLink $ Proven (DGRule (strContent rl)) emptyProofBasis
-              consv = case strContent cc of
-                "Inconsistent" -> Inconsistent
-                "PCons" -> PCons
-                "Cons" -> Cons
-                "Mono" -> Mono
-                "Def" -> Def
-                _ -> None
-              in ScopedLink sc lkind $ mkConsStatus consv
-
-
-extractGlobalAnnos :: Element -> GlobalAnnos
-extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
-  Nothing -> emptyGlobalAnnos
-  Just gl -> propagateErrors "FromXml.extractGlobalAnnos" $ getGlobalAnnos $
-           unlines $ map strContent $ findChildren (unqual "Annotation") gl
+parseSymbolMap :: Element -> String
+parseSymbolMap = intercalate ", "
+               . map ( intercalate " |-> "
+               . map strContent . elChildren )
+               . deepSearch ["map"]
 
 
 {- | Generates a new DGNodeLab with a startoff-G_theory, an Element and the
@@ -347,6 +291,67 @@ mkDGNodeLab gt annos (name, el) = let
         Nothing -> error "FromXml.mkDGNodeLab(1)"
         Just ln -> emptyLibName ln
       in newInfoNodeLab (parseNodeName name) (newRefInfo refLib (-1)) gt'
+
+
+{- | All nodes are taken from the xml-element. Then, the name-attribute is
+looked up and stored alongside the node for easy access. Nodes with no names
+are ignored. -}
+extractNodeElements :: Element -> [NamedNode]
+extractNodeElements = foldr f [] . findChildren (unqual "DGNode") where
+  f e r = case getAttrVal "name" e of
+            Just name -> (name, e) : r
+            Nothing -> r
+
+
+{- | All links are taken from the xml-element and stored alongside their source
+and target information. The links are then partitioned depending on if they
+are theorem or definition links. -}
+extractLinkElements :: Element -> ([NamedLink], [NamedLink])
+extractLinkElements = partition isDef . foldr mkNamedLink [] .
+                    findChildren (unqual "DGLink") where
+  isDef = isDefEdge . lType
+  mkNamedLink e r = case getAttrVal "source" e of
+    Nothing -> r
+    Just sr -> case getAttrVal "target" e of
+      Nothing -> r
+      Just tr -> Link sr tr (extractLinkType e) e : r
+
+
+-- | reads the type of a link from the xml data
+extractLinkType :: Element -> DGLinkType
+extractLinkType l = let
+  tp = case findChild (unqual "Type") l of
+    Nothing -> error "FromXml.extractLinkType(1)"
+    Just xy -> strContent xy
+  sc = if isInfixOf "Global" tp then Global else Local
+  in if isInfixOf "Def" tp
+    -- Case #1: DefinitionLink, global or local
+    then localOrGlobalDef sc None
+    else case findChild (unqual "Status") l of
+      -- Case #2: Unproven theorem link, global or local
+      Nothing -> localOrGlobalThm sc None
+      Just st -> if strContent st /= "Proven"
+        then error "FromXml.extractLinkType: unknown links status!"
+        -- Case #3: Proven theorem link, global or local
+        else case findChild (unqual "Rule") l of
+          Nothing -> error "FromXml.extractLinkType(2)"
+          Just rl -> case findChild (unqual "ConsStatus") l of
+            Nothing -> error "FromXml.extractLinkType(3)"
+            Just cc -> let
+              lkind = ThmLink $ Proven (DGRule (strContent rl)) emptyProofBasis
+              consv = case readMaybe $ strContent cc of
+                Just c' -> c'
+                Nothing -> None
+              in ScopedLink sc lkind $ mkConsStatus consv
+
+
+-- | extracts the global annotations from the xml-graph
+extractGlobalAnnos :: Element -> GlobalAnnos
+extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
+  Nothing -> emptyGlobalAnnos
+  Just gl -> propagateErrors "FromXml.extractGlobalAnnos" $ getGlobalAnnos $
+           unlines $ map strContent $ findChildren (unqual "Annotation") gl
+
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
