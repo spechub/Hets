@@ -287,10 +287,9 @@ mkDGNodeLab gt annos (name, el) = let
     -- Case #2: reference node
     Just rf -> let
       (gt', _) = parseSpecs $ findChildren (unqual "Signature") rf
-      refLib = case getAttrVal "library" rf of
-        Nothing -> error "FromXml.mkDGNodeLab(1)"
-        Just ln -> emptyLibName ln
-      in newInfoNodeLab (parseNodeName name) (newRefInfo refLib (-1)) gt'
+      {- using DGRef currently leads to runtime errors.
+      see revision 14911 for such an approach -}
+      in newNodeLab (parseNodeName name) DGBasic gt'
 
 
 {- | All nodes are taken from the xml-element. Then, the name-attribute is
