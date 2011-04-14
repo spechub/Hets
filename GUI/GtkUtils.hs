@@ -223,7 +223,7 @@ fileDialog :: FileChooserAction -- ^ Action
            -> Maybe (FilePath -> IO ()) -- ^ Action on open
            -> IO (Maybe FilePath)
 fileDialog fAction fname' filters mAction = do
-  fname <- canonicalizePath fname'
+  fname <- catch (canonicalizePath fname') $ \ _ -> return fname'
   dlg <- case fAction of
     FileChooserActionOpen -> do
       dlg' <- fileChooserDialogNew Nothing Nothing FileChooserActionOpen
