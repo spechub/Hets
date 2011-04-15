@@ -89,7 +89,7 @@ processFile opts file = do
         emptyLibEnv emptyDG
       CommonLogic2In -> anaLibExt (opts { defLogic = "CommonLogic" }) file
         emptyLibEnv emptyDG
-      DgXml -> readDGXml opts file
+      DgXml | not (defLogicIsDMU opts) -> readDGXml opts file
       _ -> anaLib opts file
     case res of
       Just (ln, nEnv) ->

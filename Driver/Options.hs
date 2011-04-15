@@ -43,6 +43,7 @@ module Driver.Options
   , putIfVerbose
   , doDump
   , checkUri
+  , defLogicIsDMU
   ) where
 
 import Driver.Version
@@ -620,16 +621,22 @@ envSuffix = '.' : envS
 prfSuffix :: String
 prfSuffix = '.' : prfS
 
+isDefLogic :: String -> HetcatsOpts -> Bool
+isDefLogic s = (s ==) . defLogic
+
+defLogicIsDMU :: HetcatsOpts -> Bool
+defLogicIsDMU = isDefLogic "DMU"
+
 {- |
 checks if a source file for the given file name exists -}
 existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 existsAnSource opts file = do
        let base = rmSuffix file
-           defLog = (defLogic opts ==)
            exts = case intype opts of
                   GuessIn
-                    | defLog "DMU" -> [".xml"]
-                    | defLog "Framework" -> [".elf", ".thy", ".maude", ".het"]
+                    | defLogicIsDMU opts -> [".xml"]
+                    | isDefLogic "Framework" opts
+                        -> [".elf", ".thy", ".maude", ".het"]
                   GuessIn -> downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
