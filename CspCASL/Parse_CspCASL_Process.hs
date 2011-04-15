@@ -71,8 +71,10 @@ par_proc' lp = do
   <|> do
     asKey genpar_openS <|> asKey "|["
     es <- event_set
-    mes <- optionMaybe $
-       (asKey alpar_sepS <|> asKey barS) >>  event_set
+    mes <- optionMaybe $ pToken
+      (try $ (char '|' <:> optionL (string barS))
+       << notFollowedBy (satisfy $ \ c -> elem c "[]" || isSignChar c))
+      >> event_set
     asKey genpar_closeS <|> asKey "]|"
     rp <- choice_proc
     par_proc' $ (case mes of
