@@ -59,35 +59,30 @@ cond_proc = do
 par_proc :: AParser st PROCESS
 par_proc = choice_proc >>= par_proc'
 
+asKeySign :: String -> AParser st Token
+asKeySign s =
+  wrapAnnos . pToken $ tryString s
+    << notFollowedBy (satisfy $ \ c -> elem c "[]" || isSignChar c)
+
 par_proc' :: PROCESS -> AParser st PROCESS
 par_proc' lp = do
-    asKey interleavingS
+    asKeySign interleavingS
     rp <- choice_proc
     par_proc' (Interleaving lp rp (compRange lp rp))
   <|> do
-    asKey synchronousS
+    asKeySign synchronousS
     rp <- choice_proc
     par_proc' (SynchronousParallel lp rp (compRange lp rp))
   <|> do
-    asKey genpar_openS <|> asKey "|["
+    asKeySign genpar_openS <|> asKeySign "|[" <|> asKeySign alpar_openS
     es <- event_set
-    mes <- optionMaybe $ pToken
-      (try $ (char '|' <:> optionL (string barS))
-       << notFollowedBy (satisfy $ \ c -> elem c "[]" || isSignChar c))
+    mes <- optionMaybe $ (asKeySign alpar_sepS <|> asKeySign barS)
       >> event_set
-    asKey genpar_closeS <|> asKey "]|"
+    asKeySign genpar_closeS <|> asKeySign "]|" <|> asKeySign alpar_closeS
     rp <- choice_proc
     par_proc' $ (case mes of
         Nothing -> GeneralisedParallel lp es
         Just res -> AlphabetisedParallel lp es res) rp $ compRange lp rp
-  <|> do
-    asKey alpar_openS
-    les <- event_set
-    asKey alpar_sepS
-    res <- event_set
-    asKey alpar_closeS
-    rp <- choice_proc
-    par_proc' (AlphabetisedParallel lp les res rp (compRange lp rp))
   <|> return lp
 
 choice_proc :: AParser st PROCESS
@@ -95,11 +90,11 @@ choice_proc = seq_proc >>= choice_proc'
 
 choice_proc' :: PROCESS -> AParser st PROCESS
 choice_proc' lp = do
-    asKey external_choiceS
+    asKeySign external_choiceS
     rp <- seq_proc
     choice_proc' (ExternalChoice lp rp (compRange lp rp))
   <|> do
-    asKey internal_choiceS
+    asKeySign internal_choiceS
     rp <- seq_proc
     choice_proc' (InternalChoice lp rp (compRange lp rp))
   <|> return lp
@@ -111,12 +106,12 @@ cspStartKeys :: [String]
 cspStartKeys = startCspKeywords ++ startKeyword
 
 seqSym :: AParser st Token
-seqSym = asKey sequentialS `notFollowedWith`
+seqSym = asKeySign sequentialS `notFollowedWith`
   (forget procDeclOrDefn <|> choice (map (forget . asKey) cspStartKeys))
 
 seq_proc' :: PROCESS -> AParser st PROCESS
 seq_proc' lp = do
-    asKey doubleSemis <|> seqSym
+    asKeySign doubleSemis <|> seqSym
     rp <- pref_proc
     seq_proc' (Sequential lp rp (compRange lp rp))
   <|> return lp
@@ -133,13 +128,13 @@ hid_ren_proc = prim_proc >>= hid_ren_proc'
 
 hid_ren_proc' :: PROCESS -> AParser st PROCESS
 hid_ren_proc' lp = do
-    asKey hiding_procS
+    asKeySign hiding_procS
     es <- event_set
     hid_ren_proc' (Hiding lp es (compRange lp es))
   <|> do
-    asKey ren_proc_openS
+    asKeySign ren_proc_openS
     rn <- renaming
-    ck <- asKey ren_proc_closeS
+    ck <- asKeySign ren_proc_closeS
     hid_ren_proc' (RenamingProcess lp rn (compRange lp ck))
   <|> return lp
 
@@ -202,31 +197,31 @@ event_set = do
 {- Events may be simple CASL terms or channel send/receives or
 internal / external prefix choice. -}
 event :: AParser st EVENT
-event = ((prefixChoice <|> chanComm) << asKey prefix_procS)
-        <|> try (term_event << asKey prefix_procS)
+event = ((prefixChoice <|> chanComm) << asKeySign prefix_procS)
+        <|> try (term_event << asKeySign prefix_procS)
 
 chanComm :: AParser st EVENT
 chanComm = do
     (cn, sr) <- try $ pair channel_name
-       $ asKey chan_sendS <|> asKey chan_receiveS
+       $ asKeySign chan_sendS <|> asKeySign chan_receiveS
     if tokStr sr == chan_sendS then do
-         v <- try $ var << asKey svar_sortS
+         v <- try $ var << asKeySign svar_sortS
          s <- cspSortId
          return (ChanNonDetSend cn v s (compRange cn s))
        <|> do
          t <- CASL.term cspKeywords
          return (ChanSend cn t (getRange cn))
        else do
-         v <- var << asKey svar_sortS
+         v <- var << asKeySign svar_sortS
          s <- cspSortId
          return (ChanRecv cn v s (compRange cn s))
 
 prefixChoice :: AParser st EVENT
 prefixChoice = do
-    constr <- fmap (const InternalPrefixChoice) (asKey internal_choiceS)
-      <|> fmap (const ExternalPrefixChoice) (asKey external_choiceS)
+    constr <- fmap (const InternalPrefixChoice) (asKeySign internal_choiceS)
+      <|> fmap (const ExternalPrefixChoice) (asKeySign external_choiceS)
     v <- var
-    asKey svar_sortS
+    asKeySign svar_sortS
     s <- cspSortId
     return $ constr v s $ getRange s
 
