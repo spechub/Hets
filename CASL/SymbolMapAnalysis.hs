@@ -21,6 +21,9 @@ module CASL.SymbolMapAnalysis
     , generatedSign
     , finalUnion
     , constMorphExt
+    , revealSym
+    , hideSym
+    , profileContainsSort
     ) where
 
 import CASL.Sign
@@ -501,24 +504,22 @@ Output: signature "Sigma1"<=Sigma.
 7. return the inclusion of sigma1 into sigma.
 -}
 
-generatedSign :: m -> SymbolSet -> Sign f e
-              -> Result (Morphism f e m)
-generatedSign extEm sys sigma =
-  if not (sys `Set.isSubsetOf` symset)   -- 2.
+generatedSign :: m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
+generatedSign extEm sys sigma = let
+  symset = symsetOf sigma   -- 1.
+  sigma1 = Set.fold revealSym sigma
+    { sortSet = Set.empty
+    , opMap = Map.empty
+    , predMap = Map.empty } sys  -- 4.
+  sigma2 = sigma1
+    { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1
+    , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
+  in if not $ Set.isSubsetOf sys symset   -- 2.
    then let diffsyms = sys Set.\\ symset in
         fatal_error ("Revealing: The following symbols "
                      ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-   else return $ idOrInclMorphism $ embedMorphism extEm sigma2 sigma
-  -- 7.
-  where
-  symset = symsetOf sigma   -- 1.
-  sigma1 = Set.fold revealSym (sigma { sortSet = Set.empty
-                                     , opMap = Map.empty
-                                     , predMap = Map.empty }) sys  -- 4.
-  sigma2 = sigma1
-    { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1
-    , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
+   else sigInclusion extEm sigma2 sigma  -- 7.
 
 revealSym :: Symbol -> Sign f e -> Sign f e
 revealSym sy sigma1 = case symbType sy of
@@ -555,30 +556,32 @@ Output: signature "Sigma1"<=Sigma.
 5. return the inclusion of sigma1 into sigma.
 -}
 
-cogeneratedSign :: m -> SymbolSet -> Sign f e
-                -> Result (Morphism f e m)
-cogeneratedSign extEm symset sigma =
-  if Set.isSubsetOf symset symset0   -- 2.
+cogeneratedSign :: m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
+cogeneratedSign extEm symset sigma = let
+  symset0 = symsetOf sigma   -- 1.
+  symset1 = Set.fold hideSym symset0 symset  -- 3.
+  in if Set.isSubsetOf symset symset0   -- 2.
    then generatedSign extEm symset1 sigma -- 4./5.
    else let diffsyms = symset Set.\\ symset0 in
         fatal_error ("Hiding: The following symbols "
             ++ showDoc diffsyms " are not in the signature")
         $ getRange diffsyms
-  where
-  symset0 = symsetOf sigma   -- 1.
-  symset1 = Set.fold revealSym' symset0 symset  -- 3.
-  revealSym' sy symset1' = case symbType sy of
+
+hideSym :: Symbol -> Set.Set Symbol -> Set.Set Symbol
+hideSym sy symset1' = case symbType sy of
     SortAsItemType ->      -- 3.1.1.
-      Set.filter (not . profileContains (symName sy) . symbType)
+      Set.filter (not . profileContainsSort (symName sy) . symbType)
         $ Set.delete sy symset1'
     OpAsItemType _ ->     -- 3.1.2
       Set.delete sy symset1'
     PredAsItemType _ ->   -- 3.1.2
       Set.delete sy symset1'
-  profileContains s symbT = elem s $ case symbT of
+
+profileContainsSort :: SORT -> SymbType -> Bool
+profileContainsSort s symbT = elem s $ case symbT of
     OpAsItemType ot -> opRes ot : opArgs ot
     PredAsItemType pt -> predArgs pt
-    SortAsItemType -> [] -- for other kinds the profiles need to be looked up
+    SortAsItemType -> []
 
 leCl :: Ord a => (a -> a -> Bool) -> Map.Map Id (Set.Set a)
      -> Map.Map Id [Set.Set a]

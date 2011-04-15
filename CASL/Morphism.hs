@@ -525,8 +525,7 @@ idOrInclMorphism m =
               map (\ t -> ((i, t), (i, Total)))
                  $ Set.toList s) $ Map.toList diffOpMap }
 
-sigInclusion :: (Pretty f, Pretty e)
-             => m -- ^ computed extended morphism
+sigInclusion :: m -- ^ computed extended morphism
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
 sigInclusion extEm sigma1 =
      return . idOrInclMorphism . embedMorphism extEm sigma1
