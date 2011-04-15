@@ -205,21 +205,21 @@ insertProcSym sig sm cm pn rsy pf@(ProcProfile _ al) m = do
 
 mappedProcSym :: CspCASLSign -> Sort_map -> ChanMap -> Id -> ProcProfile
   -> CspRawSymbol -> Result (Id, CommAlpha)
-mappedProcSym sig sm cm pn pf@(ProcProfile _ al) rsy =
+mappedProcSym sig sm cm pn pf rsy =
     let procSym = "process symbol " ++ showDoc (toProcSymbol (pn, pf))
                 " is mapped to "
+        pf2@(ProcProfile _ al2) = mapProcProfile sm cm pf
     in case rsy of
       ACspSymbol (CspSymbol ide (ProcAsItemType pf1@(ProcProfile _ al1))) ->
-        let pf2 = mapProcProfile sm cm pf
-        in if compatibleProcTypes (Just sig) pf1 pf2
+        if compatibleProcTypes (Just sig) pf1 pf2
            then return (ide, al1)
-           else plain_error (pn, al)
+           else plain_error (pn, al2)
              (procSym ++ "type " ++ showDoc pf1
               " but should be mapped to type " ++
               showDoc pf2 "") $ getRange rsy
       CspKindedSymb k ide | elem k [CaslKind Implicit, ProcessKind] ->
-        return (ide, al)
-      _ -> plain_error (pn, al)
+        return (ide, al2)
+      _ -> plain_error (pn, al2)
                (procSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
                $ getRange rsy
 
