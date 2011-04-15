@@ -153,8 +153,10 @@ to be parenthesised or not. -}
 
 -- | the second argument is a right argument process of the first argument
 glue :: PROCESS -> PROCESS -> Doc
-glue x y = let p = procPrio y in
-  (if p /= Cond && p >= procPrio x then parens else id) $ pretty y
+glue x y = let
+  p = procPrio y
+  q = procPrio x in
+  (if p < Cond && (p > q || p == q && p > Pre) then parens else id) $ pretty y
 
 -- | the second argument is a left argument process of the first argument
 lglue :: PROCESS -> PROCESS -> Doc
