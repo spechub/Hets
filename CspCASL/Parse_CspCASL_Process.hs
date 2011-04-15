@@ -200,11 +200,15 @@ event :: AParser st EVENT
 event = ((prefixChoice <|> chanComm) << asKeySign prefix_procS)
         <|> try (term_event << asKeySign prefix_procS)
 
+svarKey :: AParser st Token
+svarKey = asKeySign svar_sortS <|> asKeySign colonS
+
 chanComm :: AParser st EVENT
 chanComm = do
     (cn, sr) <- try $ pair channel_name
        $ asKeySign chan_sendS <|> asKeySign chan_receiveS
     if tokStr sr == chan_sendS then do
+         -- a double colon makes the difference to a CASL term
          v <- try $ var << asKeySign svar_sortS
          s <- cspSortId
          return (ChanNonDetSend cn v s (compRange cn s))
@@ -212,7 +216,7 @@ chanComm = do
          t <- CASL.term cspKeywords
          return (ChanSend cn t (getRange cn))
        else do
-         v <- var << asKeySign svar_sortS
+         v <- var << svarKey
          s <- cspSortId
          return (ChanRecv cn v s (compRange cn s))
 
@@ -221,7 +225,7 @@ prefixChoice = do
     constr <- fmap (const InternalPrefixChoice) (asKeySign internal_choiceS)
       <|> fmap (const ExternalPrefixChoice) (asKeySign external_choiceS)
     v <- var
-    asKeySign svar_sortS
+    svarKey
     s <- cspSortId
     return $ constr v s $ getRange s
 

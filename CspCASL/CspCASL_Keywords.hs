@@ -72,23 +72,23 @@ cspKeywords = startCspKeywords ++
   doubleSemis -- we add this as alternative sequential composition operator
   , interleavingS
   , synchronousS
--- , genpar_openS
--- , genpar_closeS
+{- , genpar_openS
+  , genpar_closeS -}
   , alpar_openS
---  , alpar_sepS -- is identical to synchronousS
+-- , alpar_sepS -- is identical to synchronousS
   , alpar_closeS
---  , external_choiceS
+-- , external_choiceS
   , internal_choiceS
   , prefix_procS
   , hiding_procS
--- , ren_proc_openS
--- , ren_proc_closeS
+{- , ren_proc_openS
+  , ren_proc_closeS -}
   , barS -- in case we want to use it within generialized parallel
   , runS
   , chaosS
   , divS
   , skipS
   , stopS
-  , chan_sendS
-  , chan_receiveS
+{- , chan_sendS
+  , chan_receiveS -}
   , svar_sortS ]
