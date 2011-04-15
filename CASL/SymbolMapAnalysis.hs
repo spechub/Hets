@@ -22,7 +22,6 @@ module CASL.SymbolMapAnalysis
     , finalUnion
     , constMorphExt
     , revealSym
-    , hideSym
     , profileContainsSort
     ) where
 
@@ -568,14 +567,10 @@ cogeneratedSign extEm symset sigma = let
         $ getRange diffsyms
 
 hideSym :: Symbol -> Set.Set Symbol -> Set.Set Symbol
-hideSym sy symset1' = case symbType sy of
+hideSym sy set1 = let set2 = Set.delete sy set1 in case symbType sy of
     SortAsItemType ->      -- 3.1.1.
-      Set.filter (not . profileContainsSort (symName sy) . symbType)
-        $ Set.delete sy symset1'
-    OpAsItemType _ ->     -- 3.1.2
-      Set.delete sy symset1'
-    PredAsItemType _ ->   -- 3.1.2
-      Set.delete sy symset1'
+      Set.filter (not . profileContainsSort (symName sy) . symbType) set2
+    _ -> set2    -- 3.1.2
 
 profileContainsSort :: SORT -> SymbType -> Bool
 profileContainsSort s symbT = elem s $ case symbT of

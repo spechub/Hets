@@ -242,3 +242,86 @@ cspMatches (CspSymbol i t) rsy = case rsy of
     (ProcessKind, ProcAsItemType _) -> res
     (CaslKind Implicit, _) -> res
     _ -> False
+
+commType2Sort :: CommType -> SORT
+commType2Sort c = case c of
+  CommTypeSort s -> s
+  CommTypeChan (TypedChanName _ s) -> s
+
+procProfile2Sorts :: ProcProfile -> Set.Set SORT
+procProfile2Sorts (ProcProfile sorts al) =
+  Set.union (Set.fromList sorts) $ Set.map commType2Sort al
+
+cspRevealSym :: CspSymbol -> CspCASLSign -> CspCASLSign
+cspRevealSym sy sig = let
+  n = cspSymName sy
+  ss = sortSet sig
+  ext = extendedInfo sig
+  cs = chans ext
+  in case cspSymbType sy of
+    CaslSymbType t -> revealSym (Symbol n t) sig
+    ChanAsItemType s -> sig
+      { sortSet = Set.insert s ss
+      , extendedInfo = ext { chans = Rel.setInsert n s cs }}
+    ProcAsItemType p@(ProcProfile _ al) -> sig
+      { sortSet = Set.fold Set.insert ss $ procProfile2Sorts p
+      , extendedInfo = ext
+        { chans = Set.fold (\ ct -> case ct of
+            CommTypeSort _ -> id
+            CommTypeChan (TypedChanName c s) -> Rel.setInsert c s) cs al
+        , procSet = Rel.setInsert n p $ procSet ext }
+      }
+
+cspGeneratedSign :: Set.Set CspSymbol -> CspCASLSign -> Result CspCASLMorphism
+cspGeneratedSign sys sigma = let
+  symset = Set.unions $ symSets sigma
+  sigma1 = Set.fold cspRevealSym sigma
+    { sortSet = Set.empty
+    , opMap = Map.empty
+    , predMap = Map.empty
+    , extendedInfo = emptyCspSign } sys
+  sigma2 = sigma1
+    { sortRel = sortRel sigma `Rel.restrict` sortSet sigma1
+    , emptySortSet = Set.intersection (sortSet sigma1) $ emptySortSet sigma }
+  in if not $ Set.isSubsetOf sys symset
+   then let diffsyms = sys Set.\\ symset in
+        fatal_error ("Revealing: The following symbols "
+                     ++ showDoc diffsyms " are not in the signature")
+        $ getRange diffsyms
+   else cspSubsigInclusion sigma2 sigma
+
+cspCogeneratedSign :: Set.Set CspSymbol -> CspCASLSign -> Result CspCASLMorphism
+cspCogeneratedSign symset sigma = let
+  symset0 = Set.unions $ symSets sigma
+  symset1 = Set.fold cspHideSym symset0 symset
+  in if Set.isSubsetOf symset symset0
+   then cspGeneratedSign symset1 sigma
+   else let diffsyms = symset Set.\\ symset0 in
+        fatal_error ("Hiding: The following symbols "
+            ++ showDoc diffsyms " are not in the signature")
+        $ getRange diffsyms
+
+cspHideSym :: CspSymbol -> Set.Set CspSymbol -> Set.Set CspSymbol
+cspHideSym sy set1 = let
+  set2 = Set.delete sy set1
+  n = cspSymName sy
+  in case cspSymbType sy of
+  CaslSymbType SortAsItemType ->
+    Set.filter (not . cspProfileContains n . cspSymbType) set2
+  ChanAsItemType s ->
+    Set.filter (unusedChan n s) set2
+  _ -> set2
+
+cspProfileContains :: Id -> CspSymbType -> Bool
+cspProfileContains s ty = case ty of
+  CaslSymbType t -> profileContainsSort s t
+  ChanAsItemType s2 -> s == s2
+  ProcAsItemType p -> Set.member s $ procProfile2Sorts p
+
+unusedChan :: Id -> SORT -> CspSymbol -> Bool
+unusedChan c s sy = case cspSymbType sy of
+  ProcAsItemType (ProcProfile _ al) ->
+    Set.fold (\ ct b -> case ct of
+       CommTypeSort _ -> b
+       CommTypeChan (TypedChanName c2 s2) -> b && (c, s) /= (c2, s2)) True al
+  _ -> True

@@ -186,3 +186,5 @@ instance Show a => StaticAnalysis (GenCspCASL a)
                         SignCSP.cspSignUnion
 
       induced_from_morphism (GenCspCASL _) = cspInducedFromMorphism
+      cogenerated_sign (GenCspCASL _) = cspCogeneratedSign
+      generated_sign (GenCspCASL _) = cspGeneratedSign
