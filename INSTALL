@@ -1,5 +1,5 @@
 For compilation we use the Glasgow Haskell Compiler "ghc" Version
-6.12.3!
+6.12.1, 6.12.3, ghc-7.0.2 or ghc-7.0.3.
 
 The binary "hets" should be produced from a source distribution by:
 
@@ -7,7 +7,9 @@ The binary "hets" should be produced from a source distribution by:
   make hets
   # this takes a while
 
-Missing cabal packages can be installed using utils/installHetsPkgs.sh
+Missing cabal packages can be installed using utils/installHetsPkgs.sh which
+requires the "cabal" binary that is part of the haskell platform
+http://hackage.haskell.org/platform/.
 
 Use "gmake" (and "gtar" for unpacking) under solaris!
 
@@ -22,9 +24,7 @@ http://www.cofi.info/Libraries/lib.tgz
 Try out i.e. "hets -g Basic/Numbers.casl" to see if the graphical interface
 pops up. If this does not work, maybe "uDrawGraph" (Version 3.1.1) from
 http://www.informatik.uni-bremen.de/uDrawGraph
-is not properly installed. If UDG_HOME was not properly set during
-installation of "uni", setting UNIDAVINCI to the "uDrawGraph" binary
-may help. (Or make sure "uDrawGraph" can be found in your PATH.)
+is not properly installed.  Make sure "uDrawGraph" can be found in your PATH.
 
 Note, however, that a source release (created by "make release") contains
 generated sources that should not be changed manually. Some files are
