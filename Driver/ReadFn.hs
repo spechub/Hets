@@ -48,7 +48,7 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
-    _ -> case runParser (library lgraph { currentLogic = defLogic opts })
+    _ -> case runParser (library $ setCurLogic (defLogic opts) lgraph)
           (emptyAnnos ()) file input of
          Left err -> fail (showErr err)
          Right ast -> return ast

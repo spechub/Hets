@@ -23,7 +23,9 @@ import Logic.Logic (AnyLogic)
 import Logic.Grothendieck
     ( G_basic_spec
     , G_symb_items_list
-    , G_symb_map_items_list)
+    , G_symb_map_items_list
+    , LogicGraph
+    , setCurLogic)
 
 -- for spec-defn and view-defn see AS_Library
 
@@ -31,9 +33,9 @@ data SPEC = Basic_spec G_basic_spec Range
           | EmptySpec Range
           | Translation (Annoted SPEC) RENAMING
           | Reduction (Annoted SPEC) RESTRICTION
-          | Union [(Annoted SPEC)] Range
+          | Union [Annoted SPEC] Range
             -- pos: "and"s
-          | Extension [(Annoted SPEC)] Range
+          | Extension [Annoted SPEC] Range
             -- pos: "then"s
           | Free_spec (Annoted SPEC) Range
             -- pos: "free"
@@ -87,17 +89,20 @@ type VIEW_NAME = SIMPLE_ID
 data Logic_code = Logic_code (Maybe Token)
                              (Maybe Logic_name)
                              (Maybe Logic_name) Range
-                 -- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
-                 -- one of <encoding>, <src-logic> or <targ-logic>
-                 -- must be given (by Just)
-                 -- "logic bla"    => <encoding> only
-                 -- "logic bla ->" => <src-logic> only
-                 -- "logic -> bla" => <targ-logic> only
-                 -- "logic bla1 -> bla2" => <src-logic> and <targ-logic>
-                 -- -- "logic bla1:bla2"    => <encoding> and <src-logic>
-                 -- ^ this notation is not very useful and is not maintained
-                 -- "logic bla1:bla2 ->" => <encoding> and <src-logic> (!)
-                 -- "logic bla1: ->bla2" => <encoding> and <targ-logic>
+                 {- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
+                 one of <encoding>, <src-logic> or <targ-logic>
+                 must be given (by Just)
+                 "logic bla"    => <encoding> only
+                 "logic bla ->" => <src-logic> only
+                 "logic -> bla" => <targ-logic> only
+                 "logic bla1 -> bla2" => <src-logic> and <targ-logic>
+                 -- "logic bla1:bla2"    => <encoding> and <src-logic>
+                 this notation is not very useful and is not maintained
+                 "logic bla1:bla2 ->" => <encoding> and <src-logic> (!)
+                 "logic bla1: ->bla2" => <encoding> and <targ-logic> -}
                   deriving (Show, Eq)
 
 data Logic_name = Logic_name Token (Maybe Token) deriving (Show, Eq)
+
+setLogicName :: Logic_name -> LogicGraph -> LogicGraph
+setLogicName (Logic_name lid _) = setCurLogic $ tokStr lid

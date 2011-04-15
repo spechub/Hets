@@ -236,9 +236,8 @@ anaLibItemAux :: HetcatsOpts -> LNS -> LibName
   -> LIB_ITEM -> ResultT IO ([LIB_ITEM], DGraph, LibEnv, LogicGraph)
 anaLibItemAux opts topLns ln (libItems', dg1, libenv1, lG) libItem =
     let newLG = case libItems' of
-          [] -> lG { currentLogic = defLogic opts }
-          Logic_decl (Logic_name logTok _) _ : _ ->
-              lG { currentLogic = tokStr logTok }
+          [] -> setCurLogic (defLogic opts) lG
+          Logic_decl logN _ : _ -> setLogicName logN lG
           _ -> lG
         currLog = currentLogic newLG
         newOpts = if elem currLog ["DMU", "Framework"] then

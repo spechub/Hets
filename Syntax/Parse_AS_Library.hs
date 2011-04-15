@@ -13,7 +13,7 @@ Parser for CASL specification librariess
 
 module Syntax.Parse_AS_Library (library) where
 
-import Logic.Grothendieck (LogicGraph (currentLogic))
+import Logic.Grothendieck (LogicGraph)
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
@@ -86,8 +86,8 @@ libItems l =
       la <- lineAnnos
       an <- annos
       is <- libItems $ case r of
-             Logic_decl (Logic_name logN _) _ ->
-                 l { currentLogic = tokStr logN }
+             Logic_decl logN _ ->
+                 setLogicName logN l
              _ -> l
       case is of
         [] -> return [Annoted r nullRange [] $ la ++ an]

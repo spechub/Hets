@@ -59,6 +59,7 @@ module Logic.Grothendieck
   , mkG_morphism
   , lessSublogicComor
   , LogicGraph (..)
+  , setCurLogic
   , emptyLogicGraph
   , lookupLogic
   , lookupCurrentLogic
@@ -427,6 +428,9 @@ emptyLogicGraph = LogicGraph
     , modifications = Map.empty
     , squares = Map.empty
     , qTATranslations = Map.empty }
+
+setCurLogic :: String -> LogicGraph -> LogicGraph
+setCurLogic s lg = lg { currentLogic = s }
 
 instance Pretty LogicGraph where
     pretty lg = text ("current logic is: " ++ currentLogic lg)

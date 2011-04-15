@@ -357,14 +357,15 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       let dg3 = insLink dg2 incl2 globalDef SeeTarget n' node
       dg4 <- createConsLink DefLink conser lg dg3 nsig ns DGLinkClosedLenv
       return (Closed_spec (replaceAnnoted sp' asp) pos, ns, dg4)
-  Qualified_spec lognm@(Logic_name nln _) asp pos -> adjustPos pos $ do
-      let newLG = lg { currentLogic = tokStr nln }
+  Qualified_spec lognm asp pos -> adjustPos pos $ do
+      let newLG = setLogicName lognm lg
       l <- lookupCurrentLogic "Qualified_spec" newLG
       let newNSig = case nsig of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
           qname = extName "Qualified" name
-      (sp', ns', dg') <- anaSpec addSyms lg ln dg newNSig qname opts $ item asp
+      (sp', ns', dg') <- anaSpec addSyms newLG ln dg newNSig qname opts
+        $ item asp
       (ns, dg2) <- coerceNode lg dg' ns' qname l
       return (Qualified_spec lognm asp { item = sp' } pos, ns, dg2)
   Group asp pos -> do
@@ -417,7 +418,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
     _ -> notFoundError "Structured specification" spname pos
 
   -- analyse "data SPEC1 SPEC2"
-  Data lD lP asp1 asp2 pos -> adjustPos pos $ do
+  Data lD@(Logic lidD) lP asp1 asp2 pos -> adjustPos pos $ do
       let sp1 = item asp1
           sp2 = item asp2
       {- look for the inclusion comorphism from the current logic's data logic
@@ -425,8 +426,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       c <- logicInclusion lg lD lP
       let dname = extName "Data" name
       -- analyse SPEC1
-      (sp1', ns', dg') <-
-         anaSpec False lg ln dg (EmptyNode lD) dname opts sp1
+      (sp1', ns', dg') <- anaSpec False (setCurLogic (language_name lidD) lg)
+         ln dg (EmptyNode lD) dname opts sp1
       -- force the result to be in the data logic
       (ns'', dg'') <- coerceNode lg dg' ns' (extName "Qualified" dname) lD
       -- translate SPEC1's signature along the comorphism
