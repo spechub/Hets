@@ -45,9 +45,10 @@ pre-build {
     system "exec ${prefix}/bin/cabal --global --prefix=${prefix} install xml"
     ui_msg "cabal finished"
 
-    # run make depend && make
     ui_msg "now building ${name}"
-    set build.cmd "${build.cmd} depend && ${build.cmd}"
+    # DEACTIVATED make depend only works on tarballs created with 'make release'
+    # run make depend && make
+    #set build.cmd "${build.cmd} depend && ${build.cmd}"
 }
 
 destroot {

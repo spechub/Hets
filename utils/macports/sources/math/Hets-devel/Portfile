@@ -2,7 +2,7 @@
 
 PortSystem 1.0 
 name            Hets-devel
-version         0.98b
+version         0.98
 categories      math
 maintainers     nomaintainer
 platforms       darwin
@@ -25,9 +25,8 @@ depends_lib     port:hs-platform-fgl \
                 port:hs-platform-cabal
 depends_run     port:uDrawGraph
 
-# hets release package comes as a tar containing a "Hets" directory.
 # Take me to your sources:
-set worksrcdir Hets
+set worksrcdir trunk
 
 # skip phase configure (there is no ./configure)
 use_configure no
@@ -41,13 +40,17 @@ pre-build {
     system "exec ${prefix}/bin/cabal --global --prefix=${prefix} install xml"
     ui_msg "cabal finished"
 
-    # run make depend && make
     ui_msg "now building ${name}"
-    set build.cmd "${build.cmd} depend && ${build.cmd}"
+    # DEACTIVATED make depend only works on tarballs created with 'make release'
+    # run make depend && make
+    #set build.cmd "${build.cmd} depend && ${build.cmd}"
 }
+
+# since we changed ${name} to "Hets-devel":
+set binary_name hets
 
 destroot {
     xinstall -d ${destroot}${prefix}/lib/${name}
-    copy ${worksrcpath}/${name} ${destroot}${prefix}/lib/${name}/
+    copy ${worksrcpath}/${binary_name} ${destroot}${prefix}/lib/${name}/
 }
 
