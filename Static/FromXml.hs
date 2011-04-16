@@ -80,10 +80,11 @@ readDGXmlR opts path = do
            unlines (take 5 $ lines xml')
       Just nm -> let
         an = extractGlobalAnnos xml
-        dg = fromXml logicGraph emptyDG {globalAnnos = an} xml
         ln = setFilePath nm noTime $ emptyLibName nm
-        le = Map.insert ln dg Map.empty
-        in return (ln, le)
+        Result ds res = fromXml logicGraph emptyDG {globalAnnos = an} xml
+        in case res of
+          Nothing -> ResultT $ return (Result ds Nothing)
+          Just dg -> return (ln, Map.insert ln dg Map.empty)
 
 -- | top-level function
 readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
@@ -94,17 +95,18 @@ readDGXml opts path = do
 
 {- | main function; receives a logicGraph, an initial DGraph and an xml
 element, then adds all nodes and edges from the element into the DGraph -}
-fromXml :: LogicGraph -> DGraph -> Element -> DGraph
+fromXml :: LogicGraph -> DGraph -> Element -> Result DGraph
 fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
-    error "FromXml.fromXml: current logic was not found in logicMap"
+    fail "FromXml.fromXml: current logic was not found in logicMap"
   Just (Logic lid) -> let
     emptyTheory = G_theory lid (ext_empty_signature lid)
                     startSigId noSens startThId
     nodes = extractNodeElements el
     (defLinks, thmLinks) = extractLinkElements el
     (dg', depNodes) = initialiseNodes emptyTheory nodes defLinks dg
-    in computeDGraphTheories Map.empty
+    in return $
+      computeDGraphTheories Map.empty
       . insertThmLinks lg thmLinks
       . insertNodesAndDefLinks lg depNodes defLinks
       $ dg'
