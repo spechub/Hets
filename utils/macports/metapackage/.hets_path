@@ -1,0 +1,2 @@
+PATH=$PATH:/opt/local/bin
+export PATH
