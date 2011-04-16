@@ -46,11 +46,13 @@ pre-build {
     #set build.cmd "${build.cmd} depend && ${build.cmd}"
 }
 
-# since we changed ${name} to "Hets-devel":
-set binary_name hets
+# for compatibility with Hets-devel:
+set hets_binary_name    hets
+set hets_path_name      Hets
 
 destroot {
-    xinstall -d ${destroot}${prefix}/lib/${name}
-    copy ${worksrcpath}/${binary_name} ${destroot}${prefix}/lib/${name}/
+    xinstall -d ${destroot}${prefix}/lib/${hets_path_name}
+    copy ${worksrcpath}/${hets_binary_name} ${destroot}${prefix}/lib/${hets_path_name}/
+    copy ${worksrcpath}/utils/macports/hets_script ${destroot}${prefix}/bin/${hets_binary_name}
 }
 
