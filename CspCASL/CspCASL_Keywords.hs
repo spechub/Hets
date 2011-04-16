@@ -88,7 +88,7 @@ cspKeywords = startCspKeywords ++
   , chaosS
   , divS
   , skipS
-  , stopS
+  , stopS ]
 {- , chan_sendS
-  , chan_receiveS -}
-  , svar_sortS ]
+  , chan_receiveS
+  , svar_sortS -}
