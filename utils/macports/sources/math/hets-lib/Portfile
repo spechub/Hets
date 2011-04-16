@@ -1,0 +1,41 @@
+# $Id$
+
+PortSystem 1.0 
+name            hets-lib
+version         0.98
+categories      math
+maintainers     nomaintainer
+platforms       darwin
+
+description     The heterogeneous tool set (HETS) - Libraries
+long_description    \
+        The central idea of the Heterogeneous Tool Set (HETS) \
+        is to provide a general framework for formal methods \
+        integration and proof management. \
+
+fetch.type      svn
+svn.url         https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+
+universal_variant no
+
+# Doesn't work. But this would be nice. So instead we just don't depend on
+# anything.
+#depends_run     port:Hets | port:Hets-devel
+
+# Take me to your sources:
+set worksrcdir trunk
+
+# skip phase configure (there is no ./configure)
+use_configure no
+
+# don't try compiling this..
+build {}
+
+set hets_path_name      hets
+
+destroot {
+    xinstall -d ${destroot}${prefix}/lib/${hets_path_name}/hets-lib
+    copy ${worksrcpath} ${destroot}${prefix}/lib/${hets_path_name}/hets-lib
+}
+
+

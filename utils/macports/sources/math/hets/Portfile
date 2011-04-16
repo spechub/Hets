@@ -1,7 +1,7 @@
 # $Id$
 
 PortSystem 1.0 
-name            Hets
+name            hets
 version         0.97
 categories      math
 maintainers     nomaintainer
@@ -22,10 +22,11 @@ checksums       md5 090c891ecf9ce80ed89c55921ad7f48a
 
 universal_variant no
 
-conflicts       Hets-devel
+conflicts       hets-devel
 
 depends_build   bin:ghc:ghc
-depends_lib     port:hs-platform-fgl \
+depends_lib     port:hets-lib \
+                port:hs-platform-fgl \
                 port:hs-platform-cabal
 depends_run     port:uDrawGraph
 
@@ -51,13 +52,13 @@ pre-build {
     #set build.cmd "${build.cmd} depend && ${build.cmd}"
 }
 
-# for compatibility with Hets-devel:
-set hets_binary_name    hets
-set hets_path_name      Hets
+# for compatibility with hets-devel:
+set hets_name      hets
 
 destroot {
-    xinstall -d ${destroot}${prefix}/lib/${hets_path_name}
-    copy ${worksrcpath}/${hets_binary_name} ${destroot}${prefix}/lib/${hets_path_name}/
-    copy ${worksrcpath}/utils/macports/hets_script ${destroot}${prefix}/bin/${hets_binary_name}
+    xinstall -d ${destroot}${prefix}/lib/${hets_name}
+    xinstall -m 755 -W ${worksrcpath} ${hets_name} ${destroot}${prefix}/lib/${hets_name}/
+    xinstall -m 755 -W ${worksrcpath}/utils/macports hets_script ${destroot}${prefix}/bin/
+    move ${destroot}${prefix}/bin/hets_script ${destroot}${prefix}/bin/${hets_name}
 }
 
