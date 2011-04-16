@@ -105,11 +105,20 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     nodes = extractNodeElements el
     (defLinks, thmLinks) = extractLinkElements el
     (dg', depNodes) = initialiseNodes emptyTheory nodes defLinks dg
-    in return $
-      computeDGraphTheories Map.empty
-      . insertThmLinks lg thmLinks
-      . insertNodesAndDefLinks lg depNodes defLinks
-      $ dg'
+    in resultF (computeDGraphTheories Map.empty)
+      . resultF (insertThmLinks lg thmLinks)
+      $ insertNodesAndDefLinks lg depNodes defLinks dg'
+
+
+resultF :: (a -> b) -> Result a -> Result b
+resultF f (Result ds res) = case res of
+  Nothing -> Result ds Nothing
+  Just a -> return $ f a
+
+resultF2 :: (a -> Result b) -> Result a -> Result b
+resultF2 f (Result ds res) = case res of
+  Nothing -> Result ds Nothing
+  Just a -> f a
 
 
 -- * reconstructing the development graph
@@ -131,13 +140,14 @@ initialiseNodes gt nodes links dg = let
 has been written into DGraph already. Upon these, further nodes are written
 in each step until the list of remaining links reaches null. -}
 insertNodesAndDefLinks :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
-                       -> DGraph
-insertNodesAndDefLinks _ _ [] dg = dg
+                       -> Result DGraph
+insertNodesAndDefLinks _ _ [] dg = return dg
 insertNodesAndDefLinks lg nodes links dg = let
   (cur, lftL) = splitLinks dg links
-  (dg', lftN) = iterateNodes lg nodes cur dg
-  in if (not . null) cur then insertNodesAndDefLinks lg lftN lftL dg'
-     else error $
+  in if (not . null) cur then resultF2
+      (\ (dg', lftN) -> insertNodesAndDefLinks lg lftN lftL dg')
+        $ iterateNodes lg nodes cur dg
+     else fail $
       "FromXml.insertNodesAndDefLinks: remaining links cannot be processed!\n"
         ++ printLinks lftL
 
@@ -158,17 +168,17 @@ splitLinks dg = killMultTrg . foldr partiSrc ([], []) where
 links and the total of remaining nodes, it stores all processable elements
 into the DGraph. Returns the updated DGraph and the list of remaining nodes. -}
 iterateNodes :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
-             -> (DGraph, [NamedNode])
-iterateNodes _ nodes [] dg = (dg, nodes)
-iterateNodes _ [] links _ = error $
+             -> Result (DGraph, [NamedNode])
+iterateNodes _ nodes [] dg = return (dg, nodes)
+iterateNodes _ [] links _ = fail $
   "FromXml.iterateNodes: remaining links targets cannot be found!\n"
     ++ printLinks links
 iterateNodes lg (x@(name, _) : xs) links dg =
   case partitionWith trg name links of
-    ([], _) -> let (dg', xs') = iterateNodes lg xs links dg
-              in (dg', x : xs')
-    (lCur, lLft) -> iterateNodes lg xs lLft
-                  $ insNdAndDefLinks lg x lCur dg
+    ([], _) -> resultF (\ (dg', xs') -> (dg', x : xs'))
+            $ iterateNodes lg xs links dg
+    (lCur, lLft) -> resultF2 (iterateNodes lg xs lLft)
+                 $ insNdAndDefLinks lg x lCur dg
 
 partitionWith :: Eq a => (NamedLink -> a) -> a -> [NamedLink]
               -> ([NamedLink], [NamedLink])
@@ -187,8 +197,8 @@ insertThmLinks lg links dg' = foldr ins' dg' links where
 
 {- | inserts a new node into the dgraph as well as all deflinks that target
 this particular node -}
-insNdAndDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> DGraph
-insNdAndDefLinks _ _ [] _ = error "FromXml.insNdAndDefLinks"
+insNdAndDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph -> Result DGraph
+insNdAndDefLinks _ _ [] _ = fail "FromXml.insNdAndDefLinks"
 insNdAndDefLinks lg trgNd links dg = let
   mrs = map (extractMorphism lg dg) links
   gsig1 = propagateErrors "FromXml.insNdAndDefLinks(2):" $
@@ -199,7 +209,7 @@ insNdAndDefLinks lg trgNd links dg = let
   (j, gsig2) = signOfNode (fst trgNd) dg'
   morph mr = finalizeMorphism lg mr gsig2
   ins' ((i, mr), l) = insertLink i j (morph mr) (lType l)
-  in foldr ins' dg' $ zip mrs links
+  in return $ foldr ins' dg' $ zip mrs links
 
 
 -- | inserts a new link into the dgraph
