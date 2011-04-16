@@ -118,11 +118,23 @@ seq_proc' lp = do
   <|> return lp
 
 pref_proc :: AParser st PROCESS
-pref_proc = do
-    e <- event
+pref_proc = cond_proc <|> hid_ren_proc
+  <|> (qualProc >>= namedProc >>= hid_ren_proc')
+  <|> (event >>= mkPrefProc)
+  <|> try
+    ((((fmap PROCESS_NAME processId >>= namedProc)
+        <|> parens csp_casl_process) >>= hid_ren_proc')
+    `notFollowedWith` prefSym)
+  <|> (try (term_event << prefSym)
+      >>= mkPrefProc)
+
+prefSym :: AParser st Token
+prefSym = asKeySign prefix_procS
+
+mkPrefProc :: EVENT -> AParser st PROCESS
+mkPrefProc e = do
     p <- pref_proc
     return (PrefixProcess e p (compRange e p))
-  <|> hid_ren_proc <|> cond_proc
 
 hid_ren_proc :: AParser st PROCESS
 hid_ren_proc = prim_proc >>= hid_ren_proc'
@@ -147,13 +159,13 @@ parens p = oParenT >> p << cParenT
 parenList :: AParser st a -> AParser st [a]
 parenList = parens . commaSep1
 
-prim_proc :: AParser st PROCESS
-prim_proc = do
-    pn <- process_name
+namedProc :: FQ_PROCESS_NAME -> AParser st PROCESS
+namedProc pn = do
     args <- procArgs
     return $ NamedProcess pn args $ compRange pn args
-  <|> parens csp_casl_process
-  <|> do
+
+prim_proc :: AParser st PROCESS
+prim_proc = do
     rk <- asKey runS
     es <- parens event_set
     return $ Run es $ getRange rk
@@ -198,8 +210,7 @@ event_set = do
 {- Events may be simple CASL terms or channel send/receives or
 internal / external prefix choice. -}
 event :: AParser st EVENT
-event = ((prefixChoice <|> chanComm) << asKeySign prefix_procS)
-        <|> try (term_event << asKeySign prefix_procS)
+event = (prefixChoice <|> chanComm) << prefSym
 
 svarKey :: AParser st Token
 svarKey = asKeySign svar_sortS <|> asKeySign colonS
