@@ -5,7 +5,6 @@
 # and starting Hets
 #
 
-export HETS_LIB=/opt/local/lib/hets/hets-lib
-export HETS_ISABELLE_LIB=$HETS_ISABELLE_DIR
+export HETS_LIB=`dirname $0`/../lib/Hets/hets-lib
 
-/opt/local/lib/hets/hets $@
+`dirname $0`/../lib/Hets/hets $@
