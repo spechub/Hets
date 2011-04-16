@@ -74,9 +74,10 @@ par_proc' lp = do
     rp <- choice_proc
     par_proc' (SynchronousParallel lp rp (compRange lp rp))
   <|> do
-    asKeySign genpar_openS <|> asKeySign "|[" <|> asKeySign alpar_openS
+    k <- asKeySign genpar_openS <|> asKeySign "|[" <|> asKeySign alpar_openS
     es <- event_set
-    mes <- optionMaybe $ (asKeySign alpar_sepS <|> asKeySign barS)
+    mes <- (if tokStr k == alpar_openS then fmap Just else optionMaybe)
+      $ (asKeySign alpar_sepS <|> asKeySign barS)
       >> event_set
     asKeySign genpar_closeS <|> asKeySign "]|" <|> asKeySign alpar_closeS
     rp <- choice_proc
