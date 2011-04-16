@@ -2077,7 +2077,7 @@
 									<key>Mode</key>
 									<integer>1</integer>
 									<key>Path</key>
-									<string>/Users/.freak/Development/hets/PKGs/hets-svn_r14841.pkg/Contents/Resources/English.lproj/Welcome.html</string>
+									<string>/Users/.freak/Development/Hets/PKGs/hets-devel-0.98.pkg/Contents/Resources/English.lproj/Welcome.html</string>
 								</dict>
 								<key>International</key>
 								<dict>
@@ -2097,12 +2097,12 @@
 							<key>Imported Options</key>
 							<dict>
 								<key>IFPkgFlagInstalledSize</key>
-								<integer>69296</integer>
+								<integer>55512</integer>
 							</dict>
 							<key>Imported Package</key>
 							<true/>
 							<key>Package Path</key>
-							<string>/Users/.freak/Development/hets/PKGs/hets-svn_r14841.pkg</string>
+							<string>/Users/.freak/Development/Hets/PKGs/hets-devel-0.98.pkg</string>
 						</dict>
 						<key>Plugins</key>
 						<dict>
@@ -2218,7 +2218,7 @@
 									<key>IFPkgDescriptionDescription</key>
 									<string></string>
 									<key>IFPkgDescriptionTitle</key>
-									<string>hets-svn_r14841</string>
+									<string>hets-devel-0.98</string>
 									<key>IFPkgDescriptionVersion</key>
 									<string></string>
 								</dict>
@@ -2237,13 +2237,13 @@
 							<key>Display Information</key>
 							<dict>
 								<key>CFBundleGetInfoString</key>
-								<string>hets svn_r14841</string>
+								<string>hets-devel 0.98</string>
 								<key>CFBundleIdentifier</key>
-								<string>org.macports.hets</string>
+								<string>org.macports.hets-devel</string>
 								<key>CFBundleName</key>
-								<string>hets</string>
+								<string>hets-devel</string>
 								<key>CFBundleShortVersionString</key>
-								<string>svn_r14841</string>
+								<string>0.98</string>
 							</dict>
 							<key>Options</key>
 							<dict>
@@ -2280,7 +2280,259 @@
 					<key>IFPkgFlagPackageSelection</key>
 					<integer>0</integer>
 					<key>Name</key>
-					<string>hets-svn_r14841</string>
+					<string>hets-devel-0.98</string>
+					<key>Status</key>
+					<integer>1</integer>
+					<key>Type</key>
+					<integer>1</integer>
+				</dict>
+				<dict>
+					<key>Attributes</key>
+					<dict>
+						<key>Documents</key>
+						<dict>
+							<key>Background Image</key>
+							<dict>
+								<key>IFPkgFlagBackgroundAlignment</key>
+								<integer>4</integer>
+								<key>IFPkgFlagBackgroundScaling</key>
+								<integer>1</integer>
+								<key>Mode</key>
+								<integer>0</integer>
+								<key>Path</key>
+								<string></string>
+							</dict>
+							<key>License</key>
+							<dict>
+								<key>International</key>
+								<dict>
+									<key>Mode</key>
+									<integer>0</integer>
+									<key>Path</key>
+									<string></string>
+								</dict>
+							</dict>
+							<key>ReadMe</key>
+							<dict>
+								<key>International</key>
+								<dict>
+									<key>Mode</key>
+									<integer>0</integer>
+									<key>Path</key>
+									<string></string>
+								</dict>
+							</dict>
+							<key>Welcome</key>
+							<dict>
+								<key>English</key>
+								<dict>
+									<key>Mode</key>
+									<integer>1</integer>
+									<key>Path</key>
+									<string>/Users/.freak/Development/Hets/PKGs/hets-lib-0.98.pkg/Contents/Resources/English.lproj/Welcome.html</string>
+								</dict>
+								<key>International</key>
+								<dict>
+									<key>Mode</key>
+									<integer>0</integer>
+									<key>Path</key>
+									<string></string>
+								</dict>
+							</dict>
+						</dict>
+						<key>Files</key>
+						<dict>
+							<key>Hierarchy</key>
+							<dict/>
+							<key>IFPkgFlagDefaultLocation</key>
+							<string>/</string>
+							<key>Imported Options</key>
+							<dict>
+								<key>IFPkgFlagInstalledSize</key>
+								<integer>18688</integer>
+							</dict>
+							<key>Imported Package</key>
+							<true/>
+							<key>Package Path</key>
+							<string>/Users/.freak/Development/Hets/PKGs/hets-lib-0.98.pkg</string>
+						</dict>
+						<key>Plugins</key>
+						<dict>
+							<key>PluginsList</key>
+							<array>
+								<dict>
+									<key>Path</key>
+									<string>Introduction</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+								<dict>
+									<key>Path</key>
+									<string>ReadMe</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+								<dict>
+									<key>Path</key>
+									<string>License</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+								<dict>
+									<key>Path</key>
+									<string>Target</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+								<dict>
+									<key>Path</key>
+									<string>PackageSelection</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+								<dict>
+									<key>Path</key>
+									<string>Install</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+								<dict>
+									<key>Path</key>
+									<string>FinishUp</string>
+									<key>Type</key>
+									<integer>0</integer>
+								</dict>
+							</array>
+						</dict>
+						<key>Scripts</key>
+						<dict>
+							<key>Additional Resources</key>
+							<dict>
+								<key>International</key>
+								<array/>
+							</dict>
+							<key>Installation Scripts</key>
+							<dict>
+								<key>IFInstallationScriptsPostflight</key>
+								<dict>
+									<key>Path</key>
+									<string></string>
+									<key>Status</key>
+									<false/>
+								</dict>
+								<key>IFInstallationScriptsPostinstall</key>
+								<dict>
+									<key>Path</key>
+									<string></string>
+									<key>Status</key>
+									<false/>
+								</dict>
+								<key>IFInstallationScriptsPostupgrade</key>
+								<dict>
+									<key>Path</key>
+									<string></string>
+									<key>Status</key>
+									<false/>
+								</dict>
+								<key>IFInstallationScriptsPreflight</key>
+								<dict>
+									<key>Path</key>
+									<string></string>
+									<key>Status</key>
+									<false/>
+								</dict>
+								<key>IFInstallationScriptsPreinstall</key>
+								<dict>
+									<key>Path</key>
+									<string></string>
+									<key>Status</key>
+									<false/>
+								</dict>
+								<key>IFInstallationScriptsPreupgrade</key>
+								<dict>
+									<key>Path</key>
+									<string></string>
+									<key>Status</key>
+									<false/>
+								</dict>
+							</dict>
+							<key>Requirements</key>
+							<array/>
+						</dict>
+						<key>Settings</key>
+						<dict>
+							<key>Description</key>
+							<dict>
+								<key>English</key>
+								<dict>
+									<key>IFPkgDescriptionDeleteWarning</key>
+									<string></string>
+									<key>IFPkgDescriptionDescription</key>
+									<string></string>
+									<key>IFPkgDescriptionTitle</key>
+									<string>hets-lib-0.98</string>
+									<key>IFPkgDescriptionVersion</key>
+									<string></string>
+								</dict>
+								<key>International</key>
+								<dict>
+									<key>IFPkgDescriptionDeleteWarning</key>
+									<string></string>
+									<key>IFPkgDescriptionDescription</key>
+									<string></string>
+									<key>IFPkgDescriptionTitle</key>
+									<string></string>
+									<key>IFPkgDescriptionVersion</key>
+									<string></string>
+								</dict>
+							</dict>
+							<key>Display Information</key>
+							<dict>
+								<key>CFBundleGetInfoString</key>
+								<string>hets-lib 0.98</string>
+								<key>CFBundleIdentifier</key>
+								<string>org.macports.hets-lib</string>
+								<key>CFBundleName</key>
+								<string>hets-lib</string>
+								<key>CFBundleShortVersionString</key>
+								<string>0.98</string>
+							</dict>
+							<key>Options</key>
+							<dict>
+								<key>IFPkgFlagAllowBackRev</key>
+								<true/>
+								<key>IFPkgFlagAuthorizationAction</key>
+								<integer>2</integer>
+								<key>IFPkgFlagFollowLinks</key>
+								<true/>
+								<key>IFPkgFlagInstallFat</key>
+								<false/>
+								<key>IFPkgFlagIsRequired</key>
+								<false/>
+								<key>IFPkgFlagOverwritePermissions</key>
+								<false/>
+								<key>IFPkgFlagRelocatable</key>
+								<false/>
+								<key>IFPkgFlagRestartAction</key>
+								<integer>0</integer>
+								<key>IFPkgFlagRootVolumeOnly</key>
+								<true/>
+								<key>IFPkgFlagUpdateInstalledLanguages</key>
+								<false/>
+							</dict>
+							<key>Version</key>
+							<dict>
+								<key>IFMajorVersion</key>
+								<integer>0</integer>
+								<key>IFMinorVersion</key>
+								<integer>0</integer>
+							</dict>
+						</dict>
+					</dict>
+					<key>IFPkgFlagPackageSelection</key>
+					<integer>0</integer>
+					<key>Name</key>
+					<string>hets-lib-0.98</string>
 					<key>Status</key>
 					<integer>1</integer>
 					<key>Type</key>
@@ -7125,9 +7377,9 @@
 					<key>International</key>
 					<dict>
 						<key>Mode</key>
-						<integer>0</integer>
+						<integer>1</integer>
 						<key>Path</key>
-						<string></string>
+						<string>/Users/.freak/Development/Hets/Hets/README.txt</string>
 						<key>Path Type</key>
 						<integer>1</integer>
 					</dict>
@@ -7259,7 +7511,7 @@
 						<key>IFPkgDescriptionDescription</key>
 						<string>The central idea of the Heterogeneous Tool Set (HETS) is to provide a general framework for formal methods integration and proof management.
 
-This Metapackage contains hets and its dependencies, built from MacPorts.</string>
+This Metapackage contains hets and run dependencies, built from MacPorts.</string>
 						<key>IFPkgDescriptionTitle</key>
 						<string>Hets</string>
 						<key>IFPkgDescriptionVersion</key>
@@ -7286,7 +7538,7 @@ This Metapackage contains hets and its dependencies, built from MacPorts.</strin
 					<key>IFMajorVersion</key>
 					<integer>0</integer>
 					<key>IFMinorVersion</key>
-					<integer>0</integer>
+					<integer>98</integer>
 				</dict>
 			</dict>
 		</dict>
