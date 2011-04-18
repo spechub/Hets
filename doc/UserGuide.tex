@@ -266,6 +266,7 @@ LF & x & (x) & - \\\hline
 %Architectural specifications & x & x & -\\\hline
 \CASLDL & x & - & - \\\hline
 DMU & x & - & - \\\hline
+FreeCAD & - & - & - \\\hline
 OWL DL & x & x & - \\\hline
 Propositional & x & x & x \\\hline
 QBF & x & x & x \\\hline
@@ -276,6 +277,7 @@ VSE & x & x & x \\\hline
 HolLight & (x) & - & - \\\hline
 Adl & x & x & - \\\hline
 Fpl & x & x & - \\\hline
+EnCL & x & x & x \\\hline
 \end{tabular}
 \end{center}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
@@ -388,6 +390,9 @@ DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
 \item[DMU] is a dummy logic to read output of ``Computer Aided
   Three-dimensional Interactive Application'' (Catia).
 
+\item[FreeCAD] is a logic to read CAD design files of the CAD system
+  FreeCAD \url{http://sourceforge.net/projects/free-cad}.
+
 \item[Maude] is a rewrite system \url{http://maude.cs.uiuc.edu/} for
   first-order logic. In order to use this logic the environment variable
   \verb+HETS_MAUDE_LIB+ must be set to a directory containing the files
@@ -413,6 +418,13 @@ DepQBF \url{http://fmv.jku.at/depqbf/} connected to it.
 \item[Fpl] is a ``logic for functional programs'' as an extension of a
   restriction of \CASL. (\CASL predicates are disabled.)
   A detailed description of FPL will appear elsewhere.
+
+\item[EnCL] is an ``engineering calculation language'' based on first
+  order theory of real numbers with some predefined binders
+  \cite{logic:EnCL}.  It allows the formulation of executable
+  specifications of engineering calculation methods. For the execution
+  of these specifications Hets provides connections to the computer
+  algebra systems Mathematica, Maple and Reduce.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the
