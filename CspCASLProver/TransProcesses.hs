@@ -106,10 +106,9 @@ transProcess ccSign pcfolSign cfolSign vsm pr =
          Run _ _ -> conDouble "RunNotSupportedYet"
          -- Chaos -> App (cspProver_chaosOp) (head (transEventSet es)) NotCont
          Chaos _ _ -> conDouble "ChaosNotSupportedYet"
-         NamedProcess pn fqParams _ ->
+         NamedProcess fqpn fqParams _ ->
              let -- Make a process name term
-                 pnTerm = conDouble $ convertSimpleProcessName2String
-                          $ procNameToSimpProcName pn
+                 pnTerm = conDouble $ convertFQProcessName2String fqpn
                  -- Translate an argument(a term), t is the sort of the declared
                  -- parameter (the sort of the variable may be a subsort of the
                  -- declared sort, so we must use the declared sort).

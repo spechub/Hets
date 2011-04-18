@@ -24,7 +24,7 @@ module CspCASLProver.Utils
     , addEqFun
     , addEventDataType
     , addFlatTypes
-    , addInstansanceOfEquiv
+    , addInstanceOfEquiv
     , addJustificationTheorems
     , addPreAlphabet
     , addProcMap
@@ -40,6 +40,7 @@ import qualified CASL.Inject as CASLInject
 
 import Common.AS_Annotation (makeNamed, Named, SenAttr (..))
 import qualified Common.Lib.Rel as Rel
+import Common.Id (nullRange)
 
 import Comorphisms.CASL2PCFOL (mkEmbInjName, mkTransAxiomName, mkIdAxiomName)
 import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
@@ -47,6 +48,8 @@ import Comorphisms.CASL2SubCFOL (mkNotDefBotAxiomName, mkTotalityAxiomName)
 import Comorphisms.CFOL2IsabelleHOL (IsaTheory)
 import qualified Comorphisms.CFOL2IsabelleHOL as CFOL2IsabelleHOL
 
+import CspCASL.AS_CspCASL_Process(FQ_PROCESS_NAME(..), ProcProfile(..),
+                                  PROCESS(..))
 import CspCASL.SignCSP
 
 import CspCASLProver.Consts
@@ -418,8 +421,8 @@ addTransitivityTheorem sorts sortRel isaTh =
 
 -- | Function to add preAlphabet as an equivalence relation to an
 -- Isabelle theory
-addInstansanceOfEquiv :: IsaTheory -> IsaTheory
-addInstansanceOfEquiv isaTh =
+addInstanceOfEquiv :: IsaTheory -> IsaTheory
+addInstanceOfEquiv isaTh =
     let equivSort = [IsaClass equivTypeClassS]
         equivProof = IsaProof [Apply [Other "intro_classes"] False,
                                Apply [Other ("unfold " ++ preAlphabetSimS
@@ -681,28 +684,37 @@ addFlatType isaTh sort =
 -- process name (along with the arguments for the process) in the
 -- CspCASL Signature to an Isabelle theory
 addProcNameDatatype :: CspSign -> IsaTheory -> IsaTheory
--- addProcNameDatatype cspSign isaTh =
-addProcNameDatatype _ isaTh =
+addProcNameDatatype cspSign isaTh =
     let -- Create a list of pairs of process names and thier profiles
-        -- procSetList = Map.toList (procSet cspSign)
-        procNameDomainEntry = error "NYI: CspCASLProver.Utils.addProcNameDatatype: Not updated for new signatures yet"-- mkProcNameDE procSetList
+        procNamesAndProfileSet = Map.toList (procSet cspSign)
+        f (name,profileSet) =
+          if Set.size profileSet == 1
+          then -- Just keep the first one.
+            FQ_PROCESS_NAME name $ head(Set.elems profileSet)
+          else error "CspCASLProver.Utils.addProcNameDatatype: CSP-CASL-Prover\
+                     \ does not support overloaded process names yet."
+        procNameDomainEntry = mkFQProcNameDE $ map f procNamesAndProfileSet
     in updateDomainTab procNameDomainEntry isaTh
 
--- | Make a proccess name Domain Entry from a list of a Process name and profile
--- pair. This creates a data type for the process names.
--- mkProcNameDE :: [(SIMPLE_PROCESS_NAME, ProcProfile)] -> DomainEntry
--- mkProcNameDE processes =
---     let -- The a list of pairs of constructors and their arguments
---         constructors = map mk_cons processes
---         -- Take a proccess name and its argument sorts (also its
---         -- commAlpha - thrown away) and make a pair representing the
---         -- constructor and the argument types
---         -- Note: The processes need to have arguments of the bar variants of the
---         -- sorts not the original sorts
---         mk_cons (procName, (ProcProfile sorts _)) =
---             (mkVName (mkProcNameConstructor procName), map mkSortBarType sorts)
---     in
---     (procNameType, constructors)
+-- | Make a proccess name Domain Entry from a list of fully qualified Process
+-- names. This creates a data type for the process names.
+mkFQProcNameDE :: [FQ_PROCESS_NAME] -> DomainEntry
+mkFQProcNameDE fqProcesses =
+    let -- The a list of pairs of constructors and their arguments
+        constructors = map mk_cons fqProcesses
+        -- Take a proccess name and its argument sorts (also its
+        -- commAlpha - thrown away) and make a pair representing the
+        -- constructor and the argument types
+        -- Note: The processes need to have arguments of the bar variants of the
+        -- sorts not the original sorts
+        mk_cons fqProcName = case fqProcName of
+          FQ_PROCESS_NAME _ (ProcProfile argSorts _) ->
+            (mkVName (mkProcNameConstructor fqProcName),
+             map mkSortBarType argSorts)
+          _ -> error "CspCASLProver.Utils.mkFQProcNameDE: Applied to non fully\
+                      \ qualified processes name."
+    in
+    (procNameType, constructors)
 
 -- -----------------------------------------------------------------------
 -- Functions adding the process map function to an Isabelle theory     --
@@ -710,6 +722,7 @@ addProcNameDatatype _ isaTh =
 
 -- | Add the function procMap to an Isabelle theory. This function maps process
 -- names to real processes build using the same names and the alphabet i.e.,
+-- in CSP-Prover syntax:
 -- ProcName => (ProcName, Alphabet) proc. We need to know the CspCASL
 -- sentences and the casl signature (data part). We need the PCFOL and CFOL
 -- signatures of the data part after translation to PCFOL and CFOL to pass
@@ -739,11 +752,10 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
         -- parameter
         procMapTerm = termAppl (conDouble procMapS)
         -- Make a single equation for the primrec from a process equation
-        -- mkEq (ProcessEq procName fqVars _ proc) =
         mkEq f = case f of
-          ExtFORMULA (ProcessEq _ fqVars _ proc) ->
+          ExtFORMULA (ProcessEq fqProcName fqVars _ proc) ->
             let -- Make the name (string) for this process
-                procNameString = error "Error CspCASLProver.Utils.addProcMap: NYI with new signatures yet" -- convertProcessName2String procName
+                procNameString = convertFQProcessName2String fqProcName
                 -- Change the name to a term
                 procNameTerm = conDouble procNameString
                 -- Turn the list of variables into a list of Isabelle
@@ -753,7 +765,9 @@ addProcMap namedSens ccSign pcfolSign cfolSign isaTh =
                 addToVdm fqvar vdm' =
                     case fqvar of
                       Qual_var v _ _ -> Map.insert v GlobalParameter vdm'
-                      _ -> error "CspCASLProver.Utils.addProcMap: Term other than fully qualified variable in process parameter variable list"
+                      _ -> error "CspCASLProver.Utils.addProcMap: Term other\
+                                \ than fully qualified variable in process\
+                                \ parameter variable list"
                 vdm = foldr addToVdm Map.empty fqVars
                 rhs = transProcess ccSign pcfolSign cfolSign vdm proc
              in binEq lhs rhs
@@ -780,14 +794,16 @@ addProcTheorems namedSens ccSign pcfolSign cfolSign isaTh =
         -- Make a single equation for the primrec from a process equation
         -- mkEq (ProcessEq procName fqVars _ proc) =
         mkEq f = case f of
-          ExtFORMULA (ProcessEq _ fqVars _ proc) ->
+          ExtFORMULA (ProcessEq fqProcName fqVars _ proc) ->
             let -- the LHS a a process in abstract syntax i.e. process name with
                 -- variables as arguments
-                lhs' = error "Error CspCASLProver.Utils.addProcTheorms: NYI with new signatures yet"-- NamedProcess procName fqVars nullRange
+                lhs' = NamedProcess fqProcName fqVars nullRange
                 addToVdm fqvar vdm' =
                     case fqvar of
                       Qual_var v _ _ -> Map.insert v GlobalParameter vdm'
-                      _ -> error "CspCASLProver.Utils.addProcMap: Term other than fully qualified variable in process parameter variable list"
+                      _ -> error "CspCASLProver.Utils.addProcMap: Term other\
+                                \ than fully qualified variable in process\
+                                \ parameter variable list"
                 vdm = foldr addToVdm Map.empty fqVars
                 lhs = transProcess ccSign pcfolSign cfolSign vdm lhs'
                 rhs = transProcess ccSign pcfolSign cfolSign vdm proc

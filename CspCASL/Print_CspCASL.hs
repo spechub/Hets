@@ -51,9 +51,8 @@ printProcProfile (ProcProfile sorts commAlpha) =
 printProcessName :: FQ_PROCESS_NAME -> Doc
 printProcessName fqPn = case fqPn of
     PROCESS_NAME pn -> pretty pn
-    FQ_PROCESS_NAME pn argSorts al -> parens $ sep
-      [ keyword processS <+> pretty pn <> printArgs argSorts
-      , printProcAlphabet al ]
+    FQ_PROCESS_NAME pn profile -> parens $ sep
+      [ keyword processS <+> pretty pn <> printProcProfile profile]
 
 instance Pretty CHANNEL_DECL where
     pretty = printChanDecl

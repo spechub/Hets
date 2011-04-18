@@ -43,6 +43,8 @@ import Common.Token (parseId, sortId, varId)
 import CspCASL.AS_CspCASL_Process
 import CspCASL.CspCASL_Keywords
 
+import qualified Data.Set as Set
+
 csp_casl_process :: AParser st PROCESS
 csp_casl_process = par_proc
 
@@ -324,9 +326,13 @@ procTail = fmap ProcAlphabet $ colonT >> alphabet
 procDecl :: AParser st FQ_PROCESS_NAME
 procDecl = do
   pn <- processId
-  ss <- optionL $ parenList cspSortId
+  argSorts <- optionL $ parenList cspSortId
   al <- procTail
-  return $ FQ_PROCESS_NAME pn ss al
+  -- BUG for the parse tree we should preserve the order of the decalred
+  -- ccommunication alphabet.
+  let alSet = case al of
+        ProcAlphabet al' -> Set.fromList al'
+  return $ FQ_PROCESS_NAME pn (ProcProfile argSorts alSet)
 
 qualProc :: AParser st FQ_PROCESS_NAME
 qualProc = do

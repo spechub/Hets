@@ -95,7 +95,7 @@ type PROC_ARGS = [SORT]
 data PROC_ALPHABET = ProcAlphabet [CommType]
                      deriving (Show, Ord, Eq)
 
-{- | Fully qualified process names are indexed by parameter sorts, and a
+{- | Fully qualified process names have parameter sorts, and a
 communication alphabet (a Set of sorts). The CommAlpha here should always
 contain downward closed sets (wrt the subsort relation). -}
 data ProcProfile = ProcProfile PROC_ARGS CommAlpha
@@ -108,12 +108,12 @@ data FQ_PROCESS_NAME
   = PROCESS_NAME PROCESS_NAME
   {- | A name with parameter sorts and communication ids from the parser.
   This is where the user has tried to specify a fully qualified process name -}
-  | FQ_PROCESS_NAME PROCESS_NAME PROC_ARGS PROC_ALPHABET
+  | FQ_PROCESS_NAME PROCESS_NAME ProcProfile
                   deriving (Eq, Ord, Show)
 
 procNameToSimpProcName :: FQ_PROCESS_NAME -> PROCESS_NAME
 procNameToSimpProcName (PROCESS_NAME pn) = pn
-procNameToSimpProcName (FQ_PROCESS_NAME pn _ _) = pn
+procNameToSimpProcName (FQ_PROCESS_NAME pn _) = pn
 
 {- | A process communication alphabet consists of a set of sort names
 and typed channel names. -}

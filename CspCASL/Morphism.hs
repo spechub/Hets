@@ -437,8 +437,8 @@ mapCASLFormula =
 -- | Apply a signature morphism to a process name
 mapProcessName :: CspCASLMorphism -> FQ_PROCESS_NAME -> FQ_PROCESS_NAME
 mapProcessName mor pn = case pn of
-  FQ_PROCESS_NAME n args (ProcAlphabet al) ->
-    let (m, ProcProfile nas sal) =
-            mapProcess mor (n, ProcProfile args $ Set.fromList al) in
-    FQ_PROCESS_NAME m nas $ ProcAlphabet $ Set.toList sal
-  _ -> error "unqualifed FQ_PROCESS_NAME"
+    FQ_PROCESS_NAME pn' procProfilePn' ->
+      let (m, procProfileM) =
+            mapProcess mor (pn', procProfilePn')
+      in FQ_PROCESS_NAME m procProfileM
+    _ -> error "unqualifed FQ_PROCESS_NAME"

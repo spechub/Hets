@@ -20,7 +20,7 @@ module CspCASLProver.Consts
     , classOp
     , classS
     , convertChannelString
-    , convertSimpleProcessName2String
+    , convertFQProcessName2String
     , convertSort2String
     , cspFThyS
     , eq_PreAlphabetS
@@ -70,7 +70,7 @@ module CspCASLProver.Consts
     ) where
 
 import CASL.AS_Basic_CASL (SORT)
-import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, PROCESS_NAME)
+import CspCASL.AS_CspCASL_Process (CHANNEL_NAME, FQ_PROCESS_NAME(..))
 import Isabelle.IsaConsts (binVNameAppl, conDouble, mkFunType, termAppl)
 import Isabelle.IsaSign (BaseSig(..), Term, Typ(..), VName(..))
 import Isabelle.Translate(showIsaTypeT, transString)
@@ -118,8 +118,13 @@ convertSort2String :: SORT -> String
 convertSort2String s = transString $ showIsaTypeT s Main_thy
 
 -- | Convert a process name to a string
-convertSimpleProcessName2String :: PROCESS_NAME -> String
-convertSimpleProcessName2String = show
+convertFQProcessName2String :: FQ_PROCESS_NAME -> String
+convertFQProcessName2String fqPn =
+  case fqPn of
+    PROCESS_NAME _ ->
+      error "CspCASLProver.Consts.convertFQProcessName2String:\
+           \ Tried to convert non fully qualified process name to string."
+    FQ_PROCESS_NAME pn _ -> show pn
 
 -- |  Theory file name for CSP_F of CSP-Prover
 cspFThyS :: String
@@ -218,8 +223,13 @@ mkPreAlphabetConstructorOp s = termAppl (conDouble (mkPreAlphabetConstructor s))
 -- | Given a process name this fucntion returns a unique constructor for that
 --   process name. This is a helper functin when buildign the process name data
 --   type.
-mkProcNameConstructor :: PROCESS_NAME -> String
-mkProcNameConstructor pn = show pn
+mkProcNameConstructor :: FQ_PROCESS_NAME -> String
+mkProcNameConstructor fqPn =   case fqPn of
+    PROCESS_NAME _ ->
+      error "CspCASLProver.Consts.mkProcNameConstructor:\
+           \ Tried to make a non fully qualified process name as a\
+           \ constructor (string)."
+    FQ_PROCESS_NAME pn _ -> show pn
 
 -- | Converts a sort in to the corresponding bar sort represented as a
 -- string
@@ -228,7 +238,9 @@ mkSortBarString s = convertSort2String s ++ barExtS
 
 -- | Converts a sort in to the corresponding bar sort type
 mkSortBarType :: SORT -> Typ
-mkSortBarType sort = Type {typeId = (mkSortBarString sort), typeSort = [], typeArgs =[]}
+mkSortBarType sort = Type {typeId = (mkSortBarString sort),
+                           typeSort = [],
+                           typeArgs =[]}
 
 -- | Given a sort this function produces the function name (string) of the built
 --   in Isabelle fucntion that corresponds to the abstraction function of the

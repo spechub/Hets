@@ -114,9 +114,12 @@ anaProcItem mix annotedProcItem = case item annotedProcItem of
     Proc_Decl name argSorts alpha -> anaProcDecl name argSorts alpha
     Proc_Defn name args alpha procTerm -> do
       let vs = flatVAR_DECLs args
-          ss = map snd vs
-          pn = ParmProcname (FQ_PROCESS_NAME name ss alpha) $ map fst vs
-      anaProcDecl name ss alpha
+          argSorts = map snd vs
+          alpha' = case alpha of
+            ProcAlphabet alpha'' -> Set.fromList alpha''
+          procProfile = ProcProfile argSorts alpha'
+          pn = ParmProcname (FQ_PROCESS_NAME name procProfile) $ map fst vs
+      anaProcDecl name argSorts alpha
       anaProcEq mix annotedProcItem pn procTerm
     Proc_Eq parmProcName procTerm ->
       anaProcEq mix annotedProcItem parmProcName procTerm
@@ -158,11 +161,10 @@ findProfileForProcName :: FQ_PROCESS_NAME -> Int -> ProcNameMap ->
                           State CspCASLSign (Maybe ProcProfile)
 findProfileForProcName pn numParams procNameMap =
   case pn of
-    FQ_PROCESS_NAME pn' argSorts comms -> do
-      profile <- anaProcAlphabet argSorts comms
+    FQ_PROCESS_NAME pn' procProfile -> do
       let profiles = Map.findWithDefault Set.empty pn' procNameMap
-      if profile `Set.member` profiles
-        then return $ Just profile
+      if procProfile `Set.member` profiles
+        then return $ Just procProfile
         else do
           addDiags [mkDiag Error
                     "Fully qualified process name not in signature" pn]
@@ -188,10 +190,9 @@ anaProcName pn numParams = do
   maybeProf <- findProfileForProcName pn numParams procDecls
   case maybeProf of
     Nothing -> return Nothing
-    Just (ProcProfile args sal) ->
+    Just procProfile ->
       -- We now construct the real fully qualified process name
-      return $ Just $ FQ_PROCESS_NAME simpPn args $ ProcAlphabet
-        $ Set.toList sal
+      return $ Just $ FQ_PROCESS_NAME simpPn procProfile
 
 -- | Statically analyse a CspCASL process equation.
 anaProcEq :: Mix b s () () -> Annoted a -> PARM_PROCNAME -> PROCESS
@@ -209,19 +210,18 @@ anaProcEq mix a (ParmProcname pn vs) proc =
         case fqPn of
           PROCESS_NAME _ ->
             error "CspCasl.StatAnaCSP.anaProcEq: Impossible case"
-          FQ_PROCESS_NAME _ procArgs (ProcAlphabet al) -> do
+          FQ_PROCESS_NAME _ (ProcProfile argSorts commAlpha) -> do
                 gVars <- anaProcVars pn
-                         procArgs vs {- compute global
+                         argSorts vs {- compute global
                 vars Change a procVarList to a FQProcVarList We do
                 not care about the range as we are building fully
                 qualified variables and they have already been
                 checked to be ok. -}
                 let mkFQProcVar (v, s) = Qual_var v s nullRange
                     fqGVars = map mkFQProcVar gVars
-                    procAlpha = Set.fromList al
                 (termAlpha, fqProc) <-
                   anaProcTerm mix proc (Map.fromList gVars) Map.empty
-                checkCommAlphaSub termAlpha procAlpha proc "process equation"
+                checkCommAlphaSub termAlpha commAlpha proc "process equation"
                 {- put CspCASL Sentences back in to the state with new sentence
                 BUG - What should the constituent alphabet be for this
                 process?  probably the same as the inner one! -}
@@ -232,7 +232,7 @@ anaProcEq mix a (ParmProcname pn vs) proc =
                               named sentence in accordance to the (if
                               existing) name in the annotations. -}
                                a {item = ExtFORMULA
-                                   $ ProcessEq fqPn fqGVars procAlpha fqProc}]
+                                   $ ProcessEq fqPn fqGVars commAlpha fqProc}]
 
 -- | Statically analyse a CspCASL process equation's global variable names.
 anaProcVars :: FQ_PROCESS_NAME -> [SORT] -> [VAR] ->
@@ -405,14 +405,14 @@ anaNamedProc mix proc pn terms procVars = do
       case fqPn of
         PROCESS_NAME _ ->
           error "CspCasl.StatAnaCSP.anaNamedProc: Impossible case"
-        FQ_PROCESS_NAME _ varSorts (ProcAlphabet permAlpha) ->
-          if length terms == length varSorts
+        FQ_PROCESS_NAME _ (ProcProfile argSorts permAlpha) ->
+          if length terms == length argSorts
           then do
             fqTerms <-
-                    mapM (anaNamedProcTerm mix procVars) (zip terms varSorts)
+                    mapM (anaNamedProcTerm mix procVars) (zip terms argSorts)
                   {- Return the permitted alphabet of the process and
                   the fully qualifed terms -}
-            return (fqPn, Set.fromList permAlpha, fqTerms)
+            return (fqPn, permAlpha, fqTerms)
           else do
             let err = "Wrong number of arguments in named process"
             addDiags [mkDiag Error err proc]

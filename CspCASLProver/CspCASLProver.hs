@@ -127,7 +127,7 @@ produceDataEncoding caslSign caslNamedSens =
       (th_isa_Sig, th_isa_Sens) <- cfol2isabelleHol th_cfol
       return (th_isa_Sig, th_isa_Sens, fst th_pcfol, fst th_cfol)
 
--- |Produce the Isabelle theory which contains the PreAlphabet,
+-- | Produce the Isabelle theory which contains the PreAlphabet,
 -- Justification Theorems and also the instances code. We need the
 -- PFOL signature which is the data part CASL signature after
 -- translation to PCFOL (i.e. without subsorting) to pass on as an
@@ -140,11 +140,8 @@ producePreAlphabet thName caslSign pfolSign =
         -- and quotient.thy (which is needed for the instances code)
         isaSignEmpty = Isa.emptySign {Isa.imports = [mkThyNameDataEnc thName
                                                     , quotientThyS] }
-        -- Start with our empty isabelle theory, add the preAlphabet
-        -- datetype, then all the comparewith functions, then add the
-        -- eq function. Finally add the justification theorems and
-        -- instance of code.
-        (isaSign, isaSens) = addInstansanceOfEquiv
+        -- Start with our empty Isabelle theory, add the constructs
+        (isaSign, isaSens) = addInstanceOfEquiv
                            $ addJustificationTheorems caslSign pfolSign
                            $ addAllGaAxiomsCollections caslSign pfolSign
                            $ addEqFun sortList
