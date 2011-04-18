@@ -12,9 +12,9 @@ A parser for the TPTP-THF Input Syntax v5.1.0.1 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
--- TODO die bnf nochmal anschauen und leerzeichen zwischen tokens einbauen
--- davor aber nochmal nachfragen
 -- bnf no_star_slash ist auch unverständlich
+
+-- siehe 146
 
 module THF.ParseTHF {- (parseTHF) -} where
 
@@ -154,64 +154,58 @@ thfBinaryPair = try (do
     return $ TBF_THF_Binary_Pair uff pc ufb)
 
 thfBinaryTuple :: Parser THFBinaryTuple
-thfBinaryTuple = thfOrFormula
-  <|> thfAndFormula
-  <|> thfApplyFormula
-
-thfOrFormula :: Parser THFBinaryTuple
-thfOrFormula = do
+thfBinaryTuple = do -- or
     uff <- try (thfUnitaryFormula << vLine)
     ufb <- sepBy1 thfUnitaryFormula vLine
     return $ TBT_THF_Or_Formula uff ufb
-
-thfAndFormula :: Parser THFBinaryTuple
-thfAndFormula = do
+  <|> do -- and
     uff <- try (thfUnitaryFormula << ampersand)
     ufb <- sepBy1 thfUnitaryFormula ampersand
     return $ TBT_THF_And_Formula uff ufb
-
-thfApplyFormula :: Parser THFBinaryTuple
-thfApplyFormula = do
+  <|> do -- apply
     uff <- try (thfUnitaryFormula << at)
     ufb <- sepBy1 thfUnitaryFormula at
     return $ TBT_THF_Apply_Formula uff ufb
 
 thfUnitaryFormula :: Parser THFUnitaryFormula
-thfUnitaryFormula = fmap TUF_THF_Logic_Formula (parentheses thfLogicFormula)
-  <|> fmap TUF_THF_Quantified_Formula thfQuantifiedFormula
-  <|> fmap TUF_THF_Unary_Formula thfUnaryFormula
+thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
+  <|> thfQuantifiedFormula
+  <|> thfUnaryFormula
   <|> fmap TUF_THF_Atom thfAtom
   <|> fmap TUF_THF_Tuple thfTuple
-  <|> fmap TUF_THF_Let thfLet
-  <|> fmap TUF_THF_Conditional thfConditional
-
-thfQuantifiedFormula :: Parser THFQuantifiedFormula
-thfQuantifiedFormula = do
-    q <- thfQuantifier
-    vl <- brackets thfVariableList
+  <|> do
+    key $ tryString ":="
+    ll <- brackets (sepBy1 thfDefinedVar comma)
     colon
     uf <- thfUnitaryFormula
-    return $ TQF_THF_Quantified_Formula q vl uf
+    return $ TUF_THF_Let ll uf
+  <|> do
+    key $ tryString "$itef"; oParentheses
+    lf1 <- thfLogicFormula; comma
+    lf2 <- thfLogicFormula; comma
+    lf3 <- thfLogicFormula; cParentheses
+    return $ TUF_THF_Conditional lf1 lf2 lf3
 
-thfVariableList :: Parser THFVariableList
-thfVariableList = sepBy1 thfVariable comma
+thfQuantifiedFormula :: Parser THFUnitaryFormula
+thfQuantifiedFormula = do
+    q <- thfQuantifier
+    vl <- brackets (sepBy1 thfVariable comma)
+    colon
+    uf <- thfUnitaryFormula
+    return $ TUF_THF_Quantified_Formula q vl uf
 
 thfVariable :: Parser THFVariable
-thfVariable = fmap TV_THF_Typed_Variable thfTypedVariable
-  <|> fmap TV_Variable variable
-
-thfTypedVariable :: Parser THFTypedVariable
-thfTypedVariable = do
+thfVariable = do
     v <- try (variable << colon)
     tlt <- thfTopLevelType
-    return $ TTV_THF_Typed_Variable v tlt
-  <?> "typed variable"
+    return $ TV_THF_Typed_Variable v tlt
+  <|> fmap TV_Variable variable
 
-thfUnaryFormula :: Parser THFUnaryFormula
+thfUnaryFormula :: Parser THFUnitaryFormula
 thfUnaryFormula = do
     uc <- thfUnaryConnective
     lf <- parentheses thfLogicFormula
-    return $ TUnF_THF_Unary_Formula uc lf
+    return $ TUF_THF_Unary_Formula uc lf
 
 thfTypeFormula :: Parser THFTypeFormula
 thfTypeFormula = do
@@ -241,24 +235,15 @@ thfUnitaryType :: Parser THFUnitaryType
 thfUnitaryType = thfUnitaryFormula
 
 thfBinaryType :: Parser THFBinaryType
-thfBinaryType = thfMappingType
-  <|> thfXprodType
-  <|> thfUnionType
-
-thfMappingType :: Parser THFBinaryType
-thfMappingType = do
+thfBinaryType = do -- mappingType
     utf <- try (thfUnitaryType << arrow)
     utb <- sepBy1 thfUnitaryType arrow
     return $ TBT_THF_Mapping_Type utf utb
-
-thfXprodType :: Parser THFBinaryType
-thfXprodType = do
+  <|> do -- xprodType
     utf <- try (thfUnitaryType << star)
     utb <- sepBy1 thfUnitaryType star
     return $ TBT_THF_Xprod_Type utf utb
-
-thfUnionType :: Parser THFBinaryType
-thfUnionType = do
+  <|> do -- unionType
     utf <- try (thfUnitaryType << plus)
     utb <- sepBy1 thfUnitaryType plus
     return $ TBT_THF_Union_Type utf utb
@@ -273,41 +258,14 @@ thfAtom = fmap TA_Defined_Type definedType
 
 thfTuple :: Parser THFTuple
 thfTuple = (try (oBracket >> cBracket) >> return [])
-  <|> brackets thfTupleList
-
-thfTupleList :: Parser [THFUnitaryFormula]
-thfTupleList = sepBy1 thfUnitaryFormula comma
-
-
-thfLet :: Parser THFLet
-thfLet = do
-    key $ tryString ":="
-    ll <- brackets thfLetList
-    colon
-    uf <- thfUnitaryFormula
-    return $ TL_THf_Let ll uf
-
-thfLetList :: Parser THFLetList
-thfLetList = sepBy1 thfDefinedVar comma
+  <|> brackets (sepBy1 thfUnitaryFormula comma)
 
 thfDefinedVar :: Parser THFDefinedVar
-thfDefinedVar = fmap TDV_THF_Defined_Var_Bracketed (parentheses thfDefinedVar)
+thfDefinedVar = fmap TDV_THF_Defined_Var_Br (parentheses thfDefinedVar)
   <|> do
     v <- try (thfVariable << (key $ string ":="))
     lf <- thfLogicFormula
     return $ TDV_THF_Defined_Var v lf
-
-thfConditional :: Parser THFConditional
-thfConditional = do
-    key $ tryString "$itef"
-    oParentheses
-    lf1 <- thfLogicFormula
-    comma
-    lf2 <- thfLogicFormula
-    comma
-    lf3 <- thfLogicFormula
-    cParentheses
-    return $ TC_THF_Conditional lf1 lf2 lf3
 
 thfSequent :: Parser THFSequent
 thfSequent = fmap TS_THF_Sequent_Bracketed (try (parentheses thfSequent))
@@ -419,25 +377,19 @@ tptpFunctor :: Parser TPTPFunctor
 tptpFunctor = atomicWord
 
 definedTerm :: Parser DefinedTerm
-definedTerm = fmap DT_Defined_Atomic_Term definedAtomicTerm
+definedTerm = fmap DT_Defined_Atomic_Term definedPlainTerm
   <|> fmap DT_Defined_Atom definedAtom
 
 definedAtom :: Parser DefinedAtom
 definedAtom = fmap DA_Number number
   <|> fmap DA_Distinct_Object distinctObject
 
-definedAtomicTerm :: Parser DefinedAtomicTerm
-definedAtomicTerm = definedPlainTerm
-
 definedPlainTerm :: Parser DefinedPlainTerm
 definedPlainTerm = try (do
     df <- definedFunctor
     a <- parentheses arguments
     return $ DPT_Defined_Function df a)
-  <|> fmap DPT_Defined_Constant definedConstant
-
-definedConstant :: Parser DefinedConstant
-definedConstant = definedFunctor
+  <|> fmap DPT_Defined_Constant definedFunctor
 
 definedFunctor :: Parser DefinedFunctor
 definedFunctor = do
@@ -458,10 +410,7 @@ systemTerm = try (do
     sf <- systemFunctor
     a <- parentheses arguments
     return $ ST_System_Term sf a)
-  <|> fmap ST_System_Constant systemConstant
-
-systemConstant :: Parser SystemConstant
-systemConstant = systemFunctor
+  <|> fmap ST_System_Constant systemFunctor
 
 systemFunctor :: Parser SystemFunctor
 systemFunctor = atomicSystemWord
@@ -475,10 +424,7 @@ variable = do
   <?> "Variable"
 
 arguments :: Parser Arguments
-arguments = do
-    t <- term
-    ts <- sepBy term comma
-    return $ A_Terms t ts
+arguments = sepBy1 term comma
 
 principalSymbol :: Parser PrincipalSymbol
 principalSymbol = fmap PS_Functor tptpFunctor
@@ -488,17 +434,12 @@ source :: Parser Source
 source = ((key $ tryString "unknown")  >>  return S_Unknown)
   <|> fmap S_Dag_Source dagSource
   <|> fmap S_External_Source externalSource
-  <|> fmap S_Sources sources
+  <|> fmap S_Sources (sepBy1 source comma)
   <|> do -- internal_source
-    key $ tryString "introduced"
-    oParentheses
+    key $ tryString "introduced"; oParentheses
     it <- introType
-    oi <- optionalInfo
-    cParentheses
+    oi <- optionalInfo; cParentheses
     return $ S_Internal_Source it oi
-
-sources :: Parser Sources
-sources = sepBy1 source comma
 
 dagSource :: Parser DagSource
 dagSource = do
@@ -506,13 +447,10 @@ dagSource = do
     oParentheses
     ir <- atomicWord; comma
     ui <- usefulInfo; comma
-    pl <- brackets parentList
+    pl <- brackets (sepBy1 parentInfo comma)
     cParentheses
     return (DS_Inference_Record ir ui pl)
   <|> fmap DS_Name name
-
-parentList :: Parser ParentList
-parentList = sepBy1 parentInfo comma
 
 parentInfo :: Parser ParentInfo
 parentInfo = do
@@ -533,27 +471,21 @@ introType = (key (tryString "definition")   >> return IT_definition)
 externalSource :: Parser ExternalSource
 externalSource = fmap ES_File_Source fileSource
   <|> do
-    key $ tryString "theory"
-    oParentheses
+    key $ tryString "theory"; oParentheses
     tn <- theoryName
-    oi <- optionalInfo
-    cParentheses
+    oi <- optionalInfo; cParentheses
     return $ ES_Theory tn oi
   <|> do
-    key $ tryString "creator"
-    oParentheses
+    key $ tryString "creator"; oParentheses
     cn <- atomicWord
-    oi <- optionalInfo
-    cParentheses
+    oi <- optionalInfo; cParentheses
     return $ ES_Creator_Source cn oi
 
 fileSource :: Parser FileSource
 fileSource = do
-    key $ tryString "file"
-    oParentheses
+    key $ tryString "file"; oParentheses
     fn <- fileName
-    fi <- fileInfo
-    cParentheses
+    fi <- fileInfo; cParentheses
     return $ FS_File fn fi
 
 fileInfo :: Parser (Maybe Name)
@@ -565,15 +497,12 @@ theoryName = ((key $ tryString "equality")  >> return Equality)
   <|> ((key $ tryString "ac")               >> return Ac)
 
 optionalInfo :: Parser OptionalInfo
-optionalInfo = fmap OI_Useful_Info (comma >> usefulInfo)
-  <|> (notFollowedBy (char ',') >> return OI_Null)
+optionalInfo = fmap Just (comma >> usefulInfo)
+  <|> (notFollowedBy (char ',') >> return Nothing)
 
 usefulInfo :: Parser UsefulInfo
 usefulInfo = (oBracket >> cBracket >> return [])
-  <|> brackets infoItems
-
-infoItems :: Parser [InfoItem]
-infoItems = sepBy1 infoItem comma
+  <|> brackets (sepBy1 infoItem comma)
 
 infoItem :: Parser InfoItem
 infoItem = fmap II_Formula_Item formulaItem
@@ -590,9 +519,17 @@ formulaItem = do
 
 inferenceItem :: Parser InferenceItem
 inferenceItem = fmap II_Inference_Status inferenceStatus
-  <|> fmap II_Assumptions_Record assumptionRecord
-  <|> fmap II_New_Symbol_Record newSymbolRecord
-  <|> fmap II_Refutation refutation
+  <|> do
+    key $ tryString "assumptions"
+    fmap II_Assumptions_Record (parentheses (brackets nameList))
+  <|> do
+    key $ tryString "new_symbols"; oParentheses
+    aw <- atomicWord; comma
+    nsl <- brackets (sepBy1 principalSymbol comma); cParentheses
+    return $ II_New_Symbol_Record aw nsl
+  <|> do
+    key $ tryString "refutation"
+    fmap II_Refutation (parentheses fileSource)
 
 inferenceStatus :: Parser InferenceStatus
 inferenceStatus = do
@@ -600,10 +537,8 @@ inferenceStatus = do
     fmap IS_Status (parentheses statusValue)
   <|> do
     ir <- try (atomicWord << oParentheses)
-    aw <- atomicWord
-    comma
-    gl <- generalList
-    cParentheses
+    aw <- atomicWord; comma
+    gl <- generalList; cParentheses
     return $ IS_Inference_Info ir aw gl
 
 statusValue :: Parser StatusValue
@@ -620,33 +555,9 @@ allStatusValues =
 showStatusValue :: StatusValue -> String
 showStatusValue = map toLower . show
 
-assumptionRecord :: Parser AssumptionRecord
-assumptionRecord = do
-    key $ tryString "assumptions"
-    parentheses (brackets nameList)
-
-refutation :: Parser Refutation
-refutation = do
-    key $ tryString "refutation"
-    parentheses fileSource
-
-newSymbolRecord :: Parser NewSymbolRecord
-newSymbolRecord = do
-    key $ tryString "new_symbols"
-    oParentheses
-    aw <- atomicWord
-    comma; oBracket
-    nsl <- newSymbolList
-    cBracket; cParentheses
-    return $ NSR_New_Symbols aw nsl
-
-newSymbolList :: Parser [PrincipalSymbol]
-newSymbolList = sepBy1 principalSymbol comma
-
-
-formulaSelection :: Parser FormulaSelection
-formulaSelection = fmap FS_Name_List (comma >> brackets nameList)
-  <|> (notFollowedBy (char ',') >> return FS_Null)
+formulaSelection :: Parser (Maybe NameList)
+formulaSelection = fmap Just (comma >> brackets nameList)
+  <|> (notFollowedBy (char ',') >> return Nothing)
 
 nameList :: Parser NameList
 nameList = sepBy1 name comma
@@ -669,11 +580,9 @@ generalData = fmap GD_Atomic_Word atomicWord
   <|> fmap GD_Distinct_Object distinctObject
   <|> fmap GD_Formula_Data formulaData
   <|> do
-    key $ tryString "bind"
-    oParentheses
+    key $ tryString "bind"; oParentheses
     v <- variable; comma
-    fd <- formulaData
-    cParentheses
+    fd <- formulaData; cParentheses
     return (GD_Bind v fd)
 
 generalFunction :: Parser GeneralFunction
@@ -715,7 +624,7 @@ number = fmap Num_Real (real << skipAll)
 fileName :: Parser FileName
 fileName = singleQuoted
 
-singleQuoted :: Parser String
+singleQuoted :: Parser SingleQuoted
 singleQuoted = do
     char '\''
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\'"
@@ -732,7 +641,7 @@ distinctObject = do
     keyChar '\"'
     return s
 
-lowerWord :: Parser String
+lowerWord :: Parser LowerWord
 lowerWord = do
     l <- lower
     an <- many (alphaNum <|> (char '_'))
