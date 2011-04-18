@@ -1131,9 +1131,9 @@ current selection.
 
 \item[Consistency checker]
 
- Checks whether the theories of the nodes of the graph are consistent
- i.e. have a model. The model finders currently interfaced are
- Isabelle-refute, darwin and E-KRHyper.
+  Checks whether the theories of the nodes of the graph are consistent
+  i.e. have a model. The model finders currently interfaced are
+  Isabelle-refute, darwin and E-KRHyper, with best support for darwin.
 
 \item[Proofs] This menu allows to apply some of the deduction rules
   for development graphs, see Sect. IV:4.4 of the \CASL Reference
@@ -1198,6 +1198,17 @@ for details.
   current node to the interactive \texttt{hetsvse} prover if that binary is
   available, see \ref{subsec:VSE}.
 
+\item[Disprove] Negates selected goals and tries to disprove them using
+  consistency checkers. Other goals will be treated like axioms if ``Include
+  Theorems'' is selected. (If a theory is consistent with a negated goal, the
+  goal is disproven.)
+
+\item[Add sentence] This menu allows to add a sentence on the fly. The
+  (possibly named) sentence will be parsed and analysed using the unlying logic.
+
+\item[Check consistency] Simply calls the global ``Consistency checker'' menu
+  for the current node, see \ref{sec:CC}.
+
 \item[Check conservativity] Checks conservativity of the inclusion
  morphism from the empty theory to the theory of the node (see
  {\bf Check conervativity} for edges).
@@ -1239,6 +1250,9 @@ library hierarchy. The Edit menu has the following submenus:
   and restarting the application after sources have changed. However, all
   previous proof steps will be lost, therefore you have to confirm this
   action. (A change management tool to keep proofs is in preparation.)
+\item[Experimental reload changed Library] This button is supposed to
+  interface our change management tool (in order to preserve proof
+  information) but does not work yet.
 \item[Translate Library] Translates a library along a comorphism to be chosen.
   This only works for a homogeneous library hierarchy. A finer grained
   alternative is to use ``Translate theory'' for individual nodes. The
@@ -1427,8 +1441,6 @@ prover, i.e. by using the ``Prove'' menu of a red node.
 
 The graphical user interface (GUI) for calling a prover is shown in
 Fig. \ref{fig:proof_window} --- we call it ``Proof Management GUI''.
-(This GUI looks slightly different, if hets was not build with GTK support as
-for example under solaris.)
 The top list on the left shows all goal names prefixed with the proof
 status in square brackets. A proved goal is indicated by a `+', a `-'
 indicates a disproved goal, a space denotes an open goal, and a
@@ -1446,8 +1458,6 @@ first time, it will show all goals as open. Within this list you can
 select those goals that should be inspected or proved. The GUI elements are the following:
 
 \begin{itemize}
-\item The top-right button `Disprove' is supposed to prove the negation of a
-  selected goal, but this functionality is not implemented yet.
 \item The button `Display' shows the selected goals in the ASCII syntax of
   this theory's logic in a separate window.
 \item By pressing the `Proof details' button a window is opened where for each
@@ -1481,8 +1491,7 @@ select those goals that should be inspected or proved. The GUI elements are the 
 Since proofs are void if specifications are inconsistent, the consistency
 should be checked (if possible for the given logic) by the ``Consistency
 checker'' shown in Fig. \ref{fig:cons_window}.  This GUI is invoked from
-the `Edit' menu as it operates on all nodes.  (Without GTK support this GUI is
-missing, though.)
+the `Edit' menu as it operates on all nodes.
 
 The list on the left shows all node names prefixed with a consistency status
 in square brackets that is initially empty.  A consistent node is indicated by
