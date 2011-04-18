@@ -55,6 +55,7 @@ ext_modal_reserved_words =
 
 {- | Modal formula parser -}
 modalFormulaParser :: AParser st EM_FORMULA
+-- common beginnings must be factored out
 modalFormulaParser =
         {- box, <= -}
         do open <- oBracketT
@@ -219,6 +220,7 @@ parseModality =
            asKey tmGuardS
            return (Guard f)
         <|>
+-- this left recursion cannot work
         do t <- parseModality
            asKey tmTransClosS
            return (TransitiveClosure t)

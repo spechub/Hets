@@ -25,7 +25,6 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.AS_Basic_CASL
-import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.SimplifySen
@@ -54,7 +53,8 @@ instance SignExtension EModalSign where
         isSubSignExtension = isSubEModalSign
 
 instance Syntax ExtModal EM_BASIC_SPEC SYMB_ITEMS SYMB_MAP_ITEMS where
-        parse_basic_spec ExtModal = Just $ basicSpec ext_modal_reserved_words
+        parse_basic_spec ExtModal = Nothing
+        -- the parser is not working: Just $ basicSpec ext_modal_reserved_words
         parse_symb_items ExtModal = Just $ symbItems ext_modal_reserved_words
         parse_symb_map_items ExtModal =
             Just $ symbMapItems ext_modal_reserved_words
