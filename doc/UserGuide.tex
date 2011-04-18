@@ -1415,7 +1415,8 @@ chooses a list of named views for processing
 
 \item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode
 
-\item[\texttt{-X}, \texttt{--server}] run \Hets as web server
+\item[\texttt{-X}, \texttt{--server}] run \Hets as web server (see
+  \ref{sec:Server})
 
 \item[\texttt{-x}, \texttt{--xml}] use xml-pgip packets to communicate with
   \Hets in interactive mode
@@ -1431,6 +1432,18 @@ chooses a list of named views for processing
   dependent output for debugging purposes only
   (i.e.\ \texttt{-d LogicGraph} lists the logics and comorphisms)
 \end{description}
+
+\section{Hets as a web server}\label{sec:Server}
+
+Large parts of \Hets are now also available via a web interface. A running
+server should be accessible on
+\url{http://pollux.informatik.uni-bremen.de:8000/}. It allows to browse the
+\Hets library, upload a file or just a \HetCASL specification. Development
+graphs for well-formed specifications can be displayed in various formats
+where the \texttt{svg} format is supposed to look like the graphs displayed by
+uDrawGraph. Besides browsing, the web server is supposed to be accessed by
+other programs using queries. The possible queries are described on
+\url{http://trac.informatik.uni-bremen.de:8080/hets/wiki/RESTfulInterface}.
 
 \section{Miscellaneous Options}
 
