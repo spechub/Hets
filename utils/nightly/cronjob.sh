@@ -132,7 +132,7 @@ for i in CspCASL/*.het CspCASL/Shop/*.het;
 pdflatex CspCASL/Shop/Shop.tex
 for i in CspCASL/*.{pp.het,th} CspCASL/Shop/*.{pp.het,th};
     do ./hets -v2 -o th,pp.het $i; done
-find CspCASL -name \*.{th,pp.het} | xargs \rm
+find CspCASL -name \*.th -o -name \*.pp.het} | xargs \rm
 }
 
 makeLibCheck ()
