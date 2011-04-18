@@ -122,6 +122,17 @@ if [ -z "$1" ]; then
 fi
 }
 
+checkCspCASL ()
+{
+date
+for i in CspCASL/*.het CspCASL/Shop/*.het;
+    do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
+pdflatex CspCASL/Shop/Shop.tex
+for i in CspCASL/*.{pp.het,th} CspCASL/Shop/*.{pp.het,th};
+    do ./hets -v2 -o th,pp.het $i; done
+find CspCASL -name \*.{th,pp.het} | xargs \rm
+}
+
 makeLibCheck ()
 {
 rm -rf Hets-lib
@@ -135,6 +146,7 @@ checkBasicCASL
 checkUserManual
 reCheckBasicCASLThs
 checkHasCASL $1
+checkCspCASL
 date
 }
 
