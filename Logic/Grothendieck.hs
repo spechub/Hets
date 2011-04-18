@@ -482,14 +482,16 @@ lookupCompComorphism nameList logicGraph = do
       'i' : 'd' : '_' : logic -> do
          let (mainLogic, subLogicD) = span (/= '.') logic
           -- subLogicD will begin with a . which has to be removed
-         sublogic <- if null subLogicD
-                     then fail $ "missing sublogic for " ++ logic
-                     else return $ tail subLogicD
+             msublogic = if null subLogicD
+                     then Nothing
+                     else Just $ tail subLogicD
          Logic lid <- maybe (fail ("Cannot find Logic " ++ mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
-         case filter (\ s -> sublogic == sublogicName s)
+         case maybe id (\ subl -> filter (\ s -> subl == sublogicName s))
+              msublogic
               $ all_sublogics lid of
-           [] -> fail $ "unknown sublogic name " ++ sublogic
+           [] -> fail $ maybe "missing sublogic"
+                    ("unknown sublogic name " ++) msublogic
            s : _ -> return $ Comorphism $ mkIdComorphism lid s
       _ -> maybe (fail ("Cannot find logic comorphism " ++ name)) return
              $ Map.lookup name (comorphisms logicGraph)
