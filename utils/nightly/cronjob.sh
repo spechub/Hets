@@ -11,6 +11,7 @@ esac
 
 HETS_OWL_TOOLS=/home/linux-bkb/hets-owl-tools
 HETS_ISABELLE_LIB=/home/maeder/haskell/Hets-lib/Isabelle/2011
+PELLET_PATH=/home/linux-bkb/pellet
 
 export GHCRTS
 export LANG
@@ -18,6 +19,7 @@ export TAR
 export MAKE
 export HETS_OWL_TOOLS
 export HETS_ISABELLE_LIB
+export PELLET_PATH
 
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
