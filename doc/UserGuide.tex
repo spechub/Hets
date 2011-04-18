@@ -713,6 +713,7 @@ Ending & default logic & structuring language\\\hline
 \texttt{.hs} & Haskell & Haskell\\\hline
 \texttt{.owl} & OWL DL, OWL Lite & OWL\\\hline
 \texttt{.elf} & LF & Twelf \\\hline
+\texttt{.clf} or \texttt{.clif} & CommonLogic & \CASL \\\hline
 \texttt{.maude} & Maude & Maude \\\hline
 \end{tabular}
 
@@ -720,7 +721,8 @@ Ending & default logic & structuring language\\\hline
 
 Furthermore, \texttt{.xml} files are accepted as Catia output if the default
 logic is set to DMU before a library import or by the ``\texttt{-l DMU}''
-command line option of \Hets.
+command line option of \Hets. In all other cases \texttt{.xml} files are
+assumed to be development graph files as produced by ``\texttt{-o xml}''.
 
 Although the endings \texttt{.casl} and \texttt{.het} are
 interchangeable, the former should be used for libraries of
