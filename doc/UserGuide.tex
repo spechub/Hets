@@ -710,8 +710,9 @@ calling \Hets).
 Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
-\texttt{.hs} & Haskell & Haskell\\\hline
-\texttt{.owl} & OWL DL, OWL Lite & OWL\\\hline
+\texttt{.hol} & HolLight & HolLight \\\hline
+\texttt{.hs} & Haskell & Haskell \\\hline
+\texttt{.owl} & OWL DL, OWL Lite & OWL \\\hline
 \texttt{.elf} & LF & Twelf \\\hline
 \texttt{.clf} or \texttt{.clif} & CommonLogic & \CASL \\\hline
 \texttt{.maude} & Maude & Maude \\\hline
@@ -837,8 +838,7 @@ for Grothendieck signature morphisms $(\rho,\sigma)$ where
 $\rho\not=id$. This case is indicated with double arrows.
 
 Theorem links are initially displayed in red.
-The \emph{proof
-  calculus} for development graphs
+The \emph{proof calculus} for development graphs
 \cite{MossakowskiEtAl05,Habil} is given by rules
 that allow for proving global theorem links by decomposing them
 into simpler (local and global) ones. Theorem links that have been
@@ -1293,8 +1293,21 @@ that are read and written.
 
 The possible input types are:
 \begin{verbatim}
-    casl|het|owl|hs|exp|maude|elf|prf
-     |omdoc|hpf|[tree.]gen_trm[.baf]
+    casl
+  | het
+  | owl
+  | hs
+  | exp
+  | maude
+  | elf
+  | hol
+  | prf
+  | omdoc
+  | hpf
+  | clf
+  | clif
+  | xml
+  | [tree.]gen_trm[.baf]
 \end{verbatim}
 
 \item[\texttt{-O DIR}, \texttt{--output-dir=DIR}]
@@ -1305,7 +1318,7 @@ Specify \texttt{DIR} as destination directory for output files.
 \begin{verbatim}
     prf
   | env
-  | owl
+  | omn
   | omdoc
   | xml
   | exp
@@ -1313,7 +1326,7 @@ Specify \texttt{DIR} as destination directory for output files.
   | thy
   | comptable.xml
   | (sig|th)[.delta]
-  | pp.(het|tex|xml)
+  | pp.(het|tex|xml|html)
   | graph.(exp.dot|dot)
   | dfg[.c]
   | tptp[.c]
@@ -1322,7 +1335,7 @@ The \texttt{env} and \texttt{prf} formats are for subsequent reading,
 avoiding the need to re-analyse downloaded libraries. \texttt{prf} files
 can also be stored or loaded via the GUI's File menu.
 
-The \texttt{owl} option \cite{books/sp/Kohlhase06} will produce OWL files in
+The \texttt{omn} option \cite{books/sp/Kohlhase06} will produce OWL files in
 Manchester Syntax for each specification of a structured OWL library.
 
 The \texttt{omdoc} format \cite{books/sp/Kohlhase06} is an XML-based
@@ -1359,9 +1372,9 @@ theory files for each development graph node. (The \texttt{.delta} extension
 is not supported, yet.)
 
 The \texttt{pp} format is for pretty printing, either as plain text
-(\texttt{het}), \LaTeX input (\texttt{tex}) or XML (\texttt{xml}).
-For example, it is possible to generate a pretty
-printed \LaTeX\ version of \texttt{Order.casl} by typing:
+(\texttt{het}), \LaTeX input (\texttt{tex}), HTML (\texttt{html}) or XML
+(\texttt{xml}).  For example, it is possible to generate a pretty printed
+\LaTeX\ version of \texttt{Order.casl} by typing:
 
 \begin{quote}
 \texttt{hets -v2 -o pp.tex Order.casl}
@@ -1371,8 +1384,7 @@ This will generate a file \texttt{Order.pp.tex}. It can be included
 into \LaTeX\ documents, provided that the style \texttt{hetcasl.sty}
 coming with the \Hets distribution (\texttt{LaTeX/hetcasl.sty}) is used.
 
-The format \texttt{pp.xml} represents a library in XML for our change
-  management broker.
+The format \texttt{pp.xml} represents just a parsed library in XML.
 
 Formats with \texttt{graph} are for future usage.
 
@@ -1391,14 +1403,19 @@ actually written. (\texttt{-v2} also shows which files are read.)
 
 \item[\texttt{-t TRANS}, \texttt{--translation=TRANS}]
 chooses a translation option. \texttt{TRANS} is a colon-separated list
-without blanks of one or more comorphism names (see Sect.~\ref{comorphisms}).
+without blanks of one or more comorphism names (see Sect.~\ref{comorphisms})
 
 \item[\texttt{-n SPECS}, \texttt{--spec=SPECS}]
 chooses a list of named specifications for processing
 
-\item[\texttt{-R}, \texttt{--recursive}] output also imported libraries.
+\item[\texttt{-w NVIEWS}, \texttt{--view=NVIEWS}]
+chooses a list of named views for processing
+
+\item[\texttt{-R}, \texttt{--recursive}] output also imported libraries
 
 \item[\texttt{-I}, \texttt{--interactive}] run \Hets in interactive mode
+
+\item[\texttt{-X}, \texttt{--server}] run \Hets as web server
 
 \item[\texttt{-x}, \texttt{--xml}] use xml-pgip packets to communicate with
   \Hets in interactive mode
@@ -1412,6 +1429,7 @@ chooses a list of named specifications for processing
 
 \item[\texttt{-d STRING}, \texttt{--dump=STRING}] produces implementation
   dependent output for debugging purposes only
+  (i.e.\ \texttt{-d LogicGraph} lists the logics and comorphisms)
 \end{description}
 
 \section{Miscellaneous Options}
@@ -1429,6 +1447,10 @@ Print usage information and exit.
 This must be the first option.
 \item[\texttt{-l LOGIC}, \texttt{--logic=LOGIC}] chooses the initial logic, which is used for processing the specifications before the first \textbf{logic L}
 declaration. The default is \CASL.
+\item[\texttt{-e ENCODING}, \texttt{--encoding=ENCODING}] Read input files using latin1 or utf8 encoding. The default is still latin1.
+\item[\texttt{--unlit}] Read literate input files.
+\item[\texttt{--relative-positions}] Just uses the relative library name in positions of warning or errors.
+\item[\texttt{-U FILE}, \texttt{--xupdate=FILE}] update a development graph according to special xml update information (still experimental).
 \item[\texttt{-m FILE}, \texttt{--modelSparQ=FILE}] model check a qualitative calculus given in SparQ lisp notation \cite{SparQ06} against a \CASL specification
 \end{description}
 
@@ -2014,9 +2036,11 @@ Klaus L\"{u}ttich,
 Maciek Makowski,
 Florian Mossakowski,
 Immanuel Normann,
+Sebastian Raible,
 Liam O'Reilly,
 Razvan Pascanu,
 Daniel Pratsch,
+Corneliu-Claudiu Prodescu,
 Felix Reckers,
 Adri\'{a}n Riesco,
 Markus Roggenbach,
@@ -2027,6 +2051,7 @@ Igor Stassiy,
 Tilman Thiry,
 Paolo Torrini,
 Jonathan von Schroeder,
+Simon Ulbricht,
 Ren\'{e} Wagner,
 Jian Chun Wang,
 Zicheng Wang, and
