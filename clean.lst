@@ -49,3 +49,4 @@ utils/genRules
 utils/nightly
 utils/LiveCD
 utils/debian
+utils/macports
