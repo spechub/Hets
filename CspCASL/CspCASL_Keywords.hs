@@ -73,11 +73,11 @@ cspKeywords = startCspKeywords ++
   , interleavingS
   , synchronousS
 {- , genpar_openS
-  , genpar_closeS -}
+  , genpar_closeS
   , alpar_openS
--- , alpar_sepS -- is identical to synchronousS
+  , alpar_sepS -- is identical to synchronousS
   , alpar_closeS
--- , external_choiceS
+  , external_choiceS -}
   , internal_choiceS
   , prefix_procS
   , hiding_procS
