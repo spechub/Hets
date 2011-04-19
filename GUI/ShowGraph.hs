@@ -66,12 +66,12 @@ showGraph file opts env = case env of
       let thr = workThread file opts ln le
 #ifdef GTKGLADE
       eitherGTK <- try unsafeInitGUIForThreadedRTS
+      _ <- forkIO thr
       case eitherGTK of
         Right _ -> return ()
         Left e -> do
           putIfVerbose opts 5 $ "Error: " ++ show (e :: SomeException)
           error $ "Can't initialize GTK."
-      _ <- forkIO thr
       mainGUI
 #else
       thr
