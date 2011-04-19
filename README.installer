@@ -48,9 +48,9 @@ If you install the emacs casl-mode you can also run hets from within
 emacs on a specification file with C-c C-r or C-c C-g (to get the
 graphical interface).
 
-MacOS users: make sure that you've installed the gtk2-framework.dmg from
-http://www.dfki.de/sks/hets/intel-mac/gtk2-framework.dmg otherwise some
-dynamic libraries needed by hets will be missing.
+MacOS users: make sure that you've installed libglade2 from macports
+("sudo port install libglade2+universal")
+otherwise some dynamic libraries needed by hets will be missing.
 
 Solaris users: hets uses the "patch" program before calling
 Isabelle. Under Solaris this must be the "gpatch" program, so you may
