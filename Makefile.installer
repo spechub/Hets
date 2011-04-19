@@ -17,8 +17,8 @@ IZPACK_PACK = $(IZPACK_SAMPLE)/pack
 IZPACK_SPASS = $(IZPACK_SAMPLE)/SPASS
 IZPACK_HETS = $(IZPACK_SAMPLE)/hets
 IZPACK_JAVA = $(IZPACK_HETS)/java
-HETS_VERSION = 0.95
-SPASS_DIR_MAC = SPASS-3.0
+HETS_VERSION = 0.98
+SPASS_DIR_MAC = SPASS-3.5
 SPASS_INTEL_MAC_BINARY = /home/mac-bkb/intel/bin/SPASS
 SPASS_PC_SOLARIS_BINARY = /home/pub-bkb/pc-solaris/SPASS/bin/SPASS
 
@@ -45,10 +45,10 @@ GET = wget -O
 endif
 
 SPASSURL_LINUX = \
-  http://www.spass-prover.org/download/binaries/spass30pclinux.tgz
+  http://www.spass-prover.org/download/binaries/spass35pclinux32.tgz
 SPASSURL_INTELMAC = \
-  http://www.spass-prover.org/download/binaries/spass30x86macosx.dmg
-SPASS_SRC = http://www.spass-prover.org/download/sources/spass30.tgz
+  http://www.spass-prover.org/download/binaries/spass35x86macosx.dmg
+SPASS_SRC = http://www.spass-prover.org/download/sources/spass37.tgz
 
 download : izpack-checkout hets-download release-hets-download spass-download
 
@@ -86,17 +86,6 @@ release-hets-download :
         mkdir -p $(IZPACK_HETS)/$$i ; \
         $(GET) $(IZPACK_HETS)/$$i/hets-$(HETS_VERSION).bz2 \
            $(HETS_URL)/$$i/versions/hets-$(HETS_VERSION).bz2; done
-
-tools-checkout :
-	@echo update uni
-	cd $(IZPACK_SAMPLE)/src ; \
-        svn checkout $(UNI_TRUNK) uni ; \
-        $(TAR) cvfz uni.tgz --exclude=.svn --exclude=.cvsignore uni ;\
-        echo checkout programatica ; \
-        cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
-            programatica/tools/base programatica/tools/property  ;\
-        $(TAR) cvfz programatica.tgz --exclude=CVS --exclude=.cvsignore \
-            programatica
 
 izpack-checkout :
 	@echo update izpack_het
@@ -160,4 +149,4 @@ clean :
 
 .PHONY : all download build build-prepare hets-lib-checkout hets-download \
  release-hets-download spass-download izpack-checkout \
- clean tools-checkout
+ clean
