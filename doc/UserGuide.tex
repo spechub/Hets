@@ -1445,6 +1445,46 @@ uDrawGraph. Besides browsing, the web server is supposed to be accessed by
 other programs using queries. The possible queries are described on
 \url{http://trac.informatik.uni-bremen.de:8080/hets/wiki/RESTfulInterface}.
 
+A development graph is addressed by the \emph{path} following the port number
+and the slash of the URL, i.e.\
+\url{http://localhost:8000/Basic/Numbers.casl}. Once a development has been
+created it can be accessed via a (fairly unique) session id (consisting of
+nine digits) that can be used as \emph{path}.
+
+A \emph{path} may be followed by a query string that begins with a question
+mark and consists of \emph{entries} (usually field-value pairs) separated by
+ampersands. The queries control the information to be extracted from the
+development graph given by the \emph{path} or they allow to perform commands
+on the graph.
+
+Usually, query string are made up of \texttt{field=value} pairs, but in some
+cases the field name or the value may be omitted and in that case the equal
+sign must be omitted, too.
+
+For instance strings denoting formats, like \texttt{xml}, \texttt{svg},
+\texttt{pdf}, etc., do not need to be preceded by \texttt{format=}.  Some
+formats, like \texttt{pdf}, only pretty print specification and
+basically ignore the underlying development graph.
+
+A special \emph{entry} is just \texttt{session} which only returns a fresh
+session id for a development graph that is given by a file name, i.e.\
+\url{http://localhost:8000/Basic/Numbers.casl?session}. These session ids must
+be used to perform commands (of the development graph calculus) that
+\emph{change} the underlying graph.
+
+Given a graph, nodes and edges can be addressed by numbers via entries like
+\texttt{node=0} or \texttt{edge=0}. (Nodes can also be given by name.)  For
+nodes, prover actions are possible by further
+entries. \url{http://localhost:8000/123456789?prove=Nat\_\_E1\&prover=SPASS\&timeout=5}
+would try to prove the goals of the node \texttt{Nat\_\_E1} using the prover
+\texttt{SPASS} with a timeout of 5 seconds for the development graph that
+happened to have the (unlikely) session id \texttt{123456789}. Individual
+goals can be given via a \texttt{theorems} field and special translations by a
+\texttt{translation} field. The available provers and translations can be
+queried by \texttt{?node=0\&translations} and \texttt{?node=0\&provers} or
+shorter by \texttt{?translations=0} and \texttt{?provers=0}, where instead of
+the node number (here \texttt{0}) also a node name can be used.
+
 \section{Miscellaneous Options}
 
 \begin{description}
