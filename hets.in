@@ -54,7 +54,7 @@ else if [ -f "$SPASS_PATH" ] ; then
 fi
 
 if [ -f $SPASS_HOME/SPASS ] ; then
-   export PATH=$SPASS_HOME:$PATH
+   export PATH=$PATH:$SPASS_HOME
 fi
 
 export PATH=$PATH:$INSTALL_PATH/bin
