@@ -38,10 +38,9 @@ example) with the following layout:
 A typical call of hets within the directory Hets/Hets-lib/ is:
    ../bin/hets -v2 -g -A Calculi/Space/RCCVerification.het
 
-After "Edit" -> "Proofs" -> "Auto-DG-Prover" you may try to prove the red
-nodes using SPASS or Isabelle. Isabelle is only needed for the single
-red node that is not supported by other provers. The used Isabelle
-example proof is stored in the file
+You may then try to prove the red nodes using SPASS or Isabelle. Isabelle is
+only needed for the single red node that is not supported by other
+provers. The used Isabelle example proof is stored in the file
 RCCVerification_RCC_FO_in_MetricSpace__T.thy
 
 If you install the emacs casl-mode you can also run hets from within
