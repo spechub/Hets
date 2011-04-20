@@ -71,7 +71,7 @@ printCommentBlock str =
 
 instance PrintTHF Include where
     printTHF (I_Include fn nl) = text "include" <> parens (printSingleQuoted fn
-        <> (maybe empty (\c -> comma <+> printNameList c) nl)) <> text "."
+        <> maybe empty (\c -> comma <+> printNameList c) nl) <> text "."
 
 instance PrintTHF Annotations where
     printTHF a = case a of
@@ -115,7 +115,7 @@ instance PrintTHF THFUnitaryFormula where
             printTHF q <+> brackets (sepByCommas (map printTHF vl))
             <+> text ":" <+> printTHF uf
         TUF_THF_Unary_Formula uc lf         ->
-            printTHF uc <+> (parens $ printTHF lf)
+            printTHF uc <+> parens (printTHF lf)
         TUF_THF_Atom a                      -> printTHF a
         TUF_THF_Tuple t                     -> printTHFTuple t
         TUF_THF_Let dvl uf                  ->
@@ -151,10 +151,10 @@ instance PrintTHF THFSubType where
         printTHF c1 <+> text "<<" <+> printTHF c2
 
 printTHFTopLevelType :: THFTopLevelType -> Doc
-printTHFTopLevelType lf = printTHF lf
+printTHFTopLevelType = printTHF
 
 printTHFUnitaryType :: THFUnitaryType -> Doc
-printTHFUnitaryType uf = printTHF uf
+printTHFUnitaryType = printTHF
 
 instance PrintTHF THFBinaryType where
     printTHF bt = case bt of
@@ -178,10 +178,10 @@ instance PrintTHF THFDefinedVar where
     printTHF dv = case dv of
         TDV_THF_Defined_Var v lf        ->
             printTHF v <+> text ":=" <+> printTHF lf
-        TDV_THF_Defined_Var_Br d -> parens (printTHF d)
+        TDV_THF_Defined_Var_Par d -> parens (printTHF d)
 
 instance PrintTHF THFSequent where
-    printTHF (TS_THF_Sequent_Bracketed s) = parens $ printTHF s
+    printTHF (TS_THF_Sequent_Par s) = parens $ printTHF s
     printTHF (TS_THF_Sequent t1 t2) =
         printTHFTuple t1 <+> text "-->" <+> printTHFTuple t2
 
@@ -223,7 +223,7 @@ instance PrintTHF AssocConnective where
     printTHF OR     = text "|"
 
 instance PrintTHF DefinedType where
-    printTHF dt = text $ "$" ++ (drop 3 (show dt))
+    printTHF dt = text $ "$" ++ drop 3 (show dt)
 
 instance PrintTHF DefinedPlainFormula where
     printTHF dpf = case dpf of
@@ -235,7 +235,7 @@ instance PrintTHF DefinedProp where
     printTHF DP_False   = text "$false"
 
 instance PrintTHF DefinedPred where
-    printTHF dp = text $ "$" ++ (map toLower (show dp))
+    printTHF dp = text $ "$" ++ map toLower (show dp)
 
 instance PrintTHF Term where
     printTHF t = case t of
@@ -275,7 +275,7 @@ instance PrintTHF DefinedPlainTerm where
         DPT_Defined_Function df a   -> printTHF df <> parens (printArguments a)
 
 instance PrintTHF DefinedFunctor where
-    printTHF df = text $ "$" ++ (map toLower (show df))
+    printTHF df = text $ "$" ++ map toLower (show df)
 
 instance PrintTHF SystemTerm where
     printTHF st = case st of
@@ -287,7 +287,7 @@ printSystemFunctor :: SystemFunctor -> Doc
 printSystemFunctor = printAtomicSystemWord
 
 printVariable :: Variable -> Doc
-printVariable s = text s
+printVariable = text
 
 printArguments :: Arguments -> Doc
 printArguments = sepByCommas . map printTHF
@@ -316,7 +316,7 @@ instance PrintTHF DagSource where
 instance PrintTHF ParentInfo where
     printTHF (PI_Parent_Info s mgl) =
         let gl = maybe empty (\c -> text ":" <> printGeneralList c) mgl
-        in (printTHF s) <> gl
+        in printTHF s <> gl
 
 instance PrintTHF IntroType where
     printTHF it = text (drop 3 (show it))
@@ -338,7 +338,7 @@ instance PrintTHF TheoryName where
     printTHF tn = text $ map toLower (show tn)
 
 printOptionalInfo :: OptionalInfo -> Doc
-printOptionalInfo oi = maybe empty (\ui -> comma <+> printUsefulInfo ui) oi
+printOptionalInfo = maybe empty (\ui -> comma <+> printUsefulInfo ui)
 
 printUsefulInfo :: UsefulInfo -> Doc
 printUsefulInfo = brackets . sepByCommas . map printTHF
@@ -453,4 +453,4 @@ plusSign = text "+"
 
 sepBy :: [Doc] -> Doc -> Doc
 sepBy (c : []) s = c
-sepBy (c : d) s = c <+> s <+> (sepBy d s)
+sepBy (c : d) s = c <+> s <+> sepBy d s

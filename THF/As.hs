@@ -14,6 +14,9 @@ A Abstract Syntax for the TPTP-THF Input Syntax v5.1.0.2 taken from
 
 module THF.As where
 
+-- A las Question: at the example of <source>: Sould <general_term> be also
+-- tried when all ather cariations fail?
+
 -- <TPTP_input>         ::= <annotated_formula> | <include>
 -- <thf_annotated>      ::= thf(<name>,<formula_role>,<thf_formula><annotations>).
 data TPTP_THF =
@@ -210,16 +213,16 @@ type THFTuple = [THFUnitaryFormula]
 -- <thf_defined_var> ::= <thf_variable> := <thf_logic_formula> |
 --                       (<thf_defined_var>)
 data THFDefinedVar =
-    TDV_THF_Defined_Var             THFVariable THFLogicFormula
-  | TDV_THF_Defined_Var_Br   THFDefinedVar
+    TDV_THF_Defined_Var      THFVariable THFLogicFormula
+  | TDV_THF_Defined_Var_Par   THFDefinedVar
     deriving (Show, Eq)
 
 -- <thf_sequent> ::= <thf_tuple> <gentzen_arrow> <thf_tuple> |
 --                   (<thf_sequent>)
 -- <gentzen_arrow> ::= -->
 data THFSequent =
-    TS_THF_Sequent              THFTuple THFTuple
-  | TS_THF_Sequent_Bracketed    THFSequent
+    TS_THF_Sequent      THFTuple THFTuple
+  | TS_THF_Sequent_Par  THFSequent
     deriving (Show, Eq)
 
 -- <thf_conn_term> ::= <thf_pair_connective> | <assoc_connective> |
@@ -304,7 +307,8 @@ data DefinedPred =
     deriving (Show, Eq)
 
 -- <term> ::= <function_term> | <variable> | <conditional_term>
--- %----Conditional terms should not be used by THF thus tey are not implemented
+-- %----Conditional terms should not be used by THF.
+-- Thus tey are not implemented.
 data Term =
     T_Function_Term     FunctionTerm
   | T_Variable          Variable
@@ -319,14 +323,15 @@ data FunctionTerm =
 
 -- <plain_term> ::= <constant> | <functor>(<arguments>)
 data PlainTerm =
-    PT_Constant     Constant
-  | PT_Plain_Term   TPTPFunctor Arguments
+    PT_Plain_Term   TPTPFunctor Arguments
+  | PT_Constant     Constant
+
     deriving (Show, Eq)
 
 -- <constant> ::= <functor>
 type Constant = TPTPFunctor
 
--- <functor>            ::= <atomic_word>
+-- <functor>  ::= <atomic_word>
 type TPTPFunctor = AtomicWord
 
 -- <defined_term> ::= <defined_atom> | <defined_atomic_term>
@@ -345,8 +350,9 @@ data DefinedAtom =
 -- <defined_plain_term> ::= <defined_constant> | <defined_functor>(<arguments>)
 -- <defined_constant> ::= <defined_functor>
 data DefinedPlainTerm =
-    DPT_Defined_Constant    DefinedFunctor
-  | DPT_Defined_Function    DefinedFunctor Arguments
+    DPT_Defined_Function    DefinedFunctor Arguments
+  | DPT_Defined_Constant    DefinedFunctor
+
     deriving (Show, Eq)
 
 -- <defined_functor> ::= <atomic_defined_word>
@@ -357,21 +363,21 @@ data DefinedFunctor =
   | Product | To_int | To_rat | To_real
     deriving (Show, Eq)
 
--- <system_term> ::= <system_constant> | <system_functor>(<arguments>)
--- <system_constant> ::= <system_functor>
+-- <system_term>        ::= <system_constant> | <system_functor>(<arguments>)
+-- <system_constant>    ::= <system_functor>
 data SystemTerm =
-    ST_System_Constant  SystemFunctor
-  | ST_System_Term      SystemFunctor Arguments
+    ST_System_Term      SystemFunctor Arguments
+  | ST_System_Constant  SystemFunctor
     deriving (Show, Eq)
 
 -- <system_functor>     ::= <atomic_system_word>
+-- <upper_word>         ::- <upper_alpha><alpha_numeric>*
 type SystemFunctor = AtomicSystemWord
 
 -- <variable>           ::= <upper_word>
 type Variable = String
 
 -- <arguments> ::= <term> | <term>,<arguments>
--- a simplification for easier parsing
 -- at least one term is neaded
 type Arguments = [Term]
 
@@ -511,12 +517,12 @@ data GeneralTerm =
 -- <general_data>       :== bind(<variable>,<formula_data>)
 data GeneralData =
     GD_Atomic_Word      AtomicWord
-  | GD_General_Function GeneralFunction
   | GD_Variable         Variable
   | GD_Number           Number
   | GD_Distinct_Object  DistinctObject
   | GD_Formula_Data     FormulaData
   | GD_Bind             Variable FormulaData
+  | GD_General_Function GeneralFunction
     deriving (Show, Eq)
 
 -- <general_function>   ::= <atomic_word>(<general_terms>)
@@ -548,7 +554,7 @@ data Name =
 -- <atomic_word>        ::= <lower_word> | <single_quoted>
 data AtomicWord =
     A_Lower_Word    LowerWord
-  | A_Single_Quoted String
+  | A_Single_Quoted SingleQuoted
     deriving (Show, Eq)
 
 -- <atomic_system_word> ::= <dollar_dollar_word>

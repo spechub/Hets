@@ -12,9 +12,7 @@ A parser for the TPTP-THF Input Syntax v5.1.0.1 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
--- bnf no_star_slash ist auch unverständlich
-
--- siehe 146
+--cont at source
 
 module THF.ParseTHF {- (parseTHF) -} where
 
@@ -22,20 +20,21 @@ import Text.ParserCombinators.Parsec
 import THF.As
 import Common.Parsec
 
-import Char
+import Data.Char
+
+-- Questions:
+-- how to understand <not_star_slash>
 
 -- Parser
 
 parseTHF :: Parser [TPTP_THF]
 parseTHF = do
     skipSpaces
-    thf <- many (comment <|> definedComment     <|> systemComment <|>
+    thf <- many (systemComment <|> definedComment <|> comment <|>
                  include <|> thfAnnotatedFormula)
     skipSpaces; eof
     return thf
 
--- wie verhalten sich comments in comments?
--- die lines sollten damit kein problem haben aber die blocks werden rummeckern
 comment :: Parser TPTP_THF
 comment = do
     try (char '%' >> notFollowedBy (char '$'))
@@ -141,17 +140,12 @@ thfLogicFormula = fmap TLF_THF_Binary_Formula thfBinaryFormula
 thfBinaryFormula :: Parser THFBinaryFormula
 thfBinaryFormula = fmap TBF_THF_Binary_Type thfBinaryType
   <|> fmap TBF_THF_Binary_Tuple thfBinaryTuple
-  <|> thfBinaryPair
-
-
--- hier pack ich sicherheitshalber momentan noch ein try davor
--- ist aber ein TODO
-thfBinaryPair :: Parser THFBinaryFormula
-thfBinaryPair = try (do
-    uff <- thfUnitaryFormula
-    pc <- thfPairConnective
+  <|> do
+    (uff, pc) <- try (do uff1 <- thfUnitaryFormula
+                         pc1 <- thfPairConnective
+                         return (uff1, pc1))
     ufb <- thfUnitaryFormula
-    return $ TBF_THF_Binary_Pair uff pc ufb)
+    return $ TBF_THF_Binary_Pair uff pc ufb
 
 thfBinaryTuple :: Parser THFBinaryTuple
 thfBinaryTuple = do -- or
@@ -175,8 +169,7 @@ thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
   <|> fmap TUF_THF_Tuple thfTuple
   <|> do
     key $ tryString ":="
-    ll <- brackets (sepBy1 thfDefinedVar comma)
-    colon
+    ll <- brackets (sepBy1 thfDefinedVar comma); colon
     uf <- thfUnitaryFormula
     return $ TUF_THF_Let ll uf
   <|> do
@@ -189,8 +182,7 @@ thfUnitaryFormula = fmap TUF_THF_Logic_Formula_Par (parentheses thfLogicFormula)
 thfQuantifiedFormula :: Parser THFUnitaryFormula
 thfQuantifiedFormula = do
     q <- thfQuantifier
-    vl <- brackets (sepBy1 thfVariable comma)
-    colon
+    vl <- brackets (sepBy1 thfVariable comma); colon
     uf <- thfUnitaryFormula
     return $ TUF_THF_Quantified_Formula q vl uf
 
@@ -224,7 +216,7 @@ thfTypeableFormula = fmap TTyF_THF_Atom thfAtom
 
 thfSubType :: Parser THFSubType
 thfSubType = do
-    cf <- try (constant << (key $ string "<<"))
+    cf <- try (constant << key (string "<<"))
     cb <- constant
     return $ TST_THF_Sub_Type cf cb
 
@@ -257,18 +249,18 @@ thfAtom = fmap TA_Defined_Type definedType
   <|> fmap TA_THF_Conn_Term thfConnTerm
 
 thfTuple :: Parser THFTuple
-thfTuple = (try (oBracket >> cBracket) >> return [])
+thfTuple = try ((oBracket >> cBracket) >> return [])
   <|> brackets (sepBy1 thfUnitaryFormula comma)
 
 thfDefinedVar :: Parser THFDefinedVar
-thfDefinedVar = fmap TDV_THF_Defined_Var_Br (parentheses thfDefinedVar)
+thfDefinedVar = fmap TDV_THF_Defined_Var_Par (parentheses thfDefinedVar)
   <|> do
-    v <- try (thfVariable << (key $ string ":="))
+    v <- try (thfVariable << key ( string ":="))
     lf <- thfLogicFormula
     return $ TDV_THF_Defined_Var v lf
 
 thfSequent :: Parser THFSequent
-thfSequent = fmap TS_THF_Sequent_Bracketed (try (parentheses thfSequent))
+thfSequent = fmap TS_THF_Sequent_Par (parentheses thfSequent)
   <|> do
     tf <- try (thfTuple << gentzenArrow)
     tb <- thfTuple
@@ -281,33 +273,33 @@ thfConnTerm = fmap TCT_THF_Pair_Connective thfPairConnective
 
 thfQuantifier :: Parser THFQuantifier
 thfQuantifier = (keyChar '!'    >> return ForAll)
-  <|> (keyChar '?'            >> return Exists)
-  <|> (keyChar '^'            >> return Lambda_Binder)
-  <|> (key (tryString "!>")   >> return Dependent_Product)
-  <|> (key (tryString "?*")   >> return Dependent_Sum)
-  <|> (key (tryString "@+")   >> return Indefinite_Description)
-  <|> (key (tryString "@-")   >> return Definite_Description)
+  <|> (keyChar '?'              >> return Exists)
+  <|> (keyChar '^'              >> return Lambda_Binder)
+  <|> (key (tryString "!>")     >> return Dependent_Product)
+  <|> (key (tryString "?*")     >> return Dependent_Sum)
+  <|> (key (tryString "@+")     >> return Indefinite_Description)
+  <|> (key (tryString "@-")     >> return Definite_Description)
   <?> "quantifier"
 
 thfPairConnective :: Parser THFPairConnective
-thfPairConnective = (key (tryString "!=")       >> return Infix_Inequality)
-  <|> (key (tryString "<=>")      >> return Equivalent)
-  <|> (key (tryString "=>")       >> return Implication)
-  <|> (key (tryString "<=")       >> return IF)
-  <|> (key (tryString "<~>")      >> return XOR)
-  <|> (key (tryString "~|")       >> return NOR)
-  <|> (key (tryString "~&")       >> return NAND)
-  <|> (keyChar '='    >> return Infix_Equality)
+thfPairConnective = (key (tryString "!=")   >> return Infix_Inequality)
+  <|> (key (tryString "<=>")    >> return Equivalent)
+  <|> (key (tryString "=>")     >> return Implication)
+  <|> (key (tryString "<=")     >> return IF)
+  <|> (key (tryString "<~>")    >> return XOR)
+  <|> (key (tryString "~|")     >> return NOR)
+  <|> (key (tryString "~&")     >> return NAND)
+  <|> (keyChar '='              >> return Infix_Equality)
   <?> "pairConnective"
 
 thfUnaryConnective :: Parser THFUnaryConnective
 thfUnaryConnective = (keyChar '~'   >> return Negation)
-  <|> (key (tryString "!!")       >> return PiForAll)
-  <|> (key (tryString "??")       >> return SigmaExists)
+  <|> (key (tryString "!!")         >> return PiForAll)
+  <|> (key (tryString "??")         >> return SigmaExists)
 
 assocConnective :: Parser AssocConnective
 assocConnective = (keyChar '|'  >> return OR)
-  <|> (keyChar '&'            >> return AND)
+  <|> (keyChar '&'              >> return AND)
 
 definedType :: Parser DefinedType
 definedType = do
@@ -431,7 +423,7 @@ principalSymbol = fmap PS_Functor tptpFunctor
   <|> fmap PS_Variable variable
 
 source :: Parser Source
-source = ((key $ tryString "unknown")  >>  return S_Unknown)
+source = (key (tryString "unknown")  >>  return S_Unknown)
   <|> fmap S_Dag_Source dagSource
   <|> fmap S_External_Source externalSource
   <|> fmap S_Sources (sepBy1 source comma)
@@ -493,8 +485,8 @@ fileInfo = fmap Just (comma >> name)
   <|> (notFollowedBy (char ',') >> return Nothing)
 
 theoryName :: Parser TheoryName
-theoryName = ((key $ tryString "equality")  >> return Equality)
-  <|> ((key $ tryString "ac")               >> return Ac)
+theoryName = (key (tryString "equality")  >> return Equality)
+  <|> (key (tryString "ac")               >> return Ac)
 
 optionalInfo :: Parser OptionalInfo
 optionalInfo = fmap Just (comma >> usefulInfo)
@@ -629,7 +621,7 @@ singleQuoted = do
     char '\''
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\'"
         <|> tryString "\\\'"
-        <|> (single $ satisfy (\c -> printable c && c /= '\'' && c /= '\\')))
+        <|> single ( satisfy (\c -> printable c && c /= '\'' && c /= '\\')))
     keyChar '\''
     return s
 
@@ -637,14 +629,14 @@ distinctObject :: Parser DistinctObject
 distinctObject = do
     char '\"'
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\\""
-        <|> (single $ satisfy (\c -> printable c && c /= '\"' && c /= '\\')))
+        <|> single ( satisfy (\c -> printable c && c /= '\"' && c /= '\\')))
     keyChar '\"'
     return s
 
 lowerWord :: Parser LowerWord
 lowerWord = do
     l <- lower
-    an <- many (alphaNum <|> (char '_'))
+    an <- many (alphaNum <|> char '_')
     skipAll
     return (l : an)
   <?> "alphanumeric word with leading lowercase letter"
@@ -653,7 +645,7 @@ printableChar :: Parser Char
 printableChar = satisfy printable
 
 printable :: Char -> Bool
-printable c = (ord c) >= 32 && (ord c) <= 126
+printable c = ord c >= 32 && ord c <= 126
 
 -- Numbers
 real :: Parser String
@@ -723,10 +715,9 @@ decimalFractional = do
 -- some helper functions
 
 skipAll :: Parser ()
-skipAll = skipMany ((skipMany1 space) <|>
+skipAll = skipMany (skipMany1 space <|>
                     ((comment <|> definedComment <|>
-                      systemComment)
-                     >> return ()))
+                      systemComment) >> return ()))
 
 skipSpaces :: Parser ()
 skipSpaces = skipMany space
