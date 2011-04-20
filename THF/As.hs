@@ -17,8 +17,8 @@ module THF.As where
 -- A las Question: at the example of <source>: Sould <general_term> be also
 -- tried when all ather cariations fail?
 
--- <TPTP_input>         ::= <annotated_formula> | <include>
--- <thf_annotated>      ::= thf(<name>,<formula_role>,<thf_formula><annotations>).
+-- <TPTP_input>       ::= <annotated_formula> | <include>
+-- <thf_annotated>    ::= thf(<name>,<formula_role>,<thf_formula><annotations>).
 data TPTP_THF =
     TPTP_THF_Annotated_Formula  Name FormulaRole THFFormula Annotations
   | TPTP_Include                Include

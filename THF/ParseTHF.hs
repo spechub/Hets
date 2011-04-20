@@ -51,7 +51,7 @@ comment = do
 
 definedComment :: Parser TPTP_THF
 definedComment = do
-    try(string "%$" >> notFollowedBy (char '$'))
+    try (string "%$" >> notFollowedBy (char '$'))
     c <- many printableChar
     skipSpaces
     return $ TPTP_Defined_Comment (Defined_Comment_Line c)
@@ -141,9 +141,10 @@ thfBinaryFormula :: Parser THFBinaryFormula
 thfBinaryFormula = fmap TBF_THF_Binary_Type thfBinaryType
   <|> fmap TBF_THF_Binary_Tuple thfBinaryTuple
   <|> do
-    (uff, pc) <- try (do uff1 <- thfUnitaryFormula
-                         pc1 <- thfPairConnective
-                         return (uff1, pc1))
+    (uff, pc) <- try $ do
+        uff1 <- thfUnitaryFormula
+        pc1 <- thfPairConnective
+        return (uff1, pc1)
     ufb <- thfUnitaryFormula
     return $ TBF_THF_Binary_Pair uff pc ufb
 
@@ -534,7 +535,7 @@ inferenceStatus = do
     return $ IS_Inference_Info ir aw gl
 
 statusValue :: Parser StatusValue
-statusValue = choice $ map (\r -> key (tryString $ showStatusValue r)
+statusValue = choice $ map (\ r -> key (tryString $ showStatusValue r)
                             >> return r) allStatusValues
 
 allStatusValues :: [StatusValue]
@@ -621,7 +622,7 @@ singleQuoted = do
     char '\''
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\'"
         <|> tryString "\\\'"
-        <|> single ( satisfy (\c -> printable c && c /= '\'' && c /= '\\')))
+        <|> single ( satisfy (\ c -> printable c && c /= '\'' && c /= '\\')))
     keyChar '\''
     return s
 
@@ -629,7 +630,7 @@ distinctObject :: Parser DistinctObject
 distinctObject = do
     char '\"'
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\\""
-        <|> single ( satisfy (\c -> printable c && c /= '\"' && c /= '\\')))
+        <|> single ( satisfy (\ c -> printable c && c /= '\"' && c /= '\\')))
     keyChar '\"'
     return s
 
@@ -700,7 +701,7 @@ decimal = do
 
 positiveDecimal :: Parser String
 positiveDecimal = do
-    nz <- satisfy (\c -> isDigit c && c /= '0')
+    nz <- satisfy (\ c -> isDigit c && c /= '0')
     d <- many digit
     return (nz : d)
   <?> "positiv decimal"
