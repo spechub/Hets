@@ -1,0 +1,17 @@
+# In order to test the brep reader call the program from the console
+# in the current directory with:
+
+python brep_conversion/brep_reader.py
+
+# When asked for a filepath "please insert file path and name:" type
+
+'./test/test_part/PartShape1.brp'
+
+# or
+
+"./test/test_part/PartShape1.brp"
+
+# the quotes (or double quotes) are mandatory!
+
+######################################################################
+
