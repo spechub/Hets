@@ -10,38 +10,35 @@
 if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
 else if [ ! -d "$UDG_HOME" ] ; then
-        if [ -f "$UNIDAVINCI" ] ; then
-          UDG_HOME=`dirname $UNIDAVINCI 2> /dev/null`/..
-        else if [ -f "$UDRAWGRAPH_PATH" ] ; then
+             if [ -f "$UDRAWGRAPH_PATH" ] ; then
                 UDG_HOME=`dirname $UDRAWGRAPH_PATH 2> /dev/null`/..
              else
                 UDG_HOME=`dirname \`which uDrawGraph\` 2> /dev/null`/..
              fi
-        fi
      fi
 fi
+
 export UDG_HOME
 export PATH=$UDG_HOME/bin:$PATH
-export UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
-    ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/
+    ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
 else if [ ! -d "$ISABELLE_HOME" ] ; then
         if [ -f "$ISABELLE_PATH" ] ; then
-          ISABELLE_HOME=`dirname $ISABELLE_PATH 2> /dev/null`/../..
+          ISABELLE_HOME=`dirname $ISABELLE_PATH 2> /dev/null`/..
         else
-          ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/../..
+          ISABELLE_HOME=`dirname \`which isabelle\` 2> /dev/null`/..
         fi
      fi
 fi
 
-if [ -f "$ISABELLE_HOME/Isabelle/bin/isabelle" ] ;
-    then export PATH=$ISABELLE_HOME/Isabelle/bin:$PATH
+if [ -f "$ISABELLE_HOME/bin/isabelle" ] ;
+    then export PATH=$ISABELLE_HOME/bin:$PATH
 fi
 
 if [ -d $INSTALL_PATH/Hets-lib ] ; then
     export HETS_LIB=$INSTALL_PATH/Hets-lib
-    export HETS_ISABELLE_LIB=$HETS_LIB/Isabelle
+    export HETS_ISABELLE_LIB=$HETS_LIB/Isabelle/2011
 fi
 
 export HETS_OWL_TOOLS=$INSTALL_PATH/lib/hets/java
