@@ -1,6 +1,17 @@
 To generate the example yourself (or to export any other HolLight-Theorems) execute the following steps:
 
 1) install ocaml and hol light
+
+you also need to installed the ocaml compiler libs
+
+if you are using ubuntu you done this using apt to install the package ocaml-compiler-libs
+
+if you build ocaml from source you should at least call
+make world
+make world.opt
+
+afterwards the correct path for HETS_OCAML_LIB_DIR is the directory where you built ocaml
+
 2) tell hets where HolLight and ocaml are located by setting the following environment variables (the values are just examples)
 
 export HETS_OCAML_LIB_DIR="/usr/lib/ocaml/compiler-libs/"
