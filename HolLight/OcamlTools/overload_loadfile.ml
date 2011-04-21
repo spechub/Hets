@@ -1,11 +1,4 @@
-(* !!!!!!! You must set this to point at the source directory in
-   !!!!!!! which OCaml was built. (And don't do "make clean" beforehand.)
- 
-  the provided value is an example that works with a standard ocaml installation (aptitude install ocaml) on ubuntu
-
- *)
-
-let ocaml_source_dir = "/usr/lib/ocaml/compiler-libs/";;
+Sys.chdir hol_dir;;
 
 let rec do_list f l =
   match l with
@@ -36,32 +29,30 @@ do_list (fun s -> Topdirs.dir_directory(Filename.concat ocaml_source_dir s))
 #load "primitive.cmo";;
 #load "printtyp.cmo";;
 
-let hol_dir = ref
-  (try Sys.getenv "HOLLIGHT_DIR" with Not_found -> Sys.getcwd());;
-
 if let v = String.sub Sys.ocaml_version 0 4 in
    v = "3.10" or v = "3.11"
 then (Topdirs.dir_directory "+camlp5";
       Topdirs.dir_load Format.std_formatter "camlp5o.cma")
 else (Topdirs.dir_load Format.std_formatter "camlp4o.cma");;
 
-Topdirs.dir_load Format.std_formatter (Filename.concat (!hol_dir) "pa_j.cmo");;
+Topdirs.dir_load Format.std_formatter (Filename.concat hol_dir "pa_j.cmo");;
 
-#use "/home/sternk/hol_light/sys.ml";;
-#use "/home/sternk/hol_light/lib.ml";;
-#use "/home/sternk/hol_light/fusion.ml";;
-
-module OldToploop = Toploop;;
-module OldTopdirs = Topdirs;;
+#use "sys.ml";;
+#use "lib.ml";;
+#use "fusion.ml";;
 
 let use_file s =
   if Toploop.use_file Format.std_formatter s then ()
   else (Format.print_string("Error in included file "^s);
         Format.print_newline());;
 
-let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
+module OldToploop = Toploop;;
+module OldTopdirs = Topdirs;;
+
+let (store_read_result,begin_load,end_load,get_libs,inject_hol_include) = let libs = ref []
   and stack = ref (Stack.create ())
   and known = ref (Hashtbl.create 10)
+  and hol_core_loaded = ref false
   and bnds_size = ref 0 in
   let _read = ref [] in
   let store_read_result s = _read := s
@@ -114,8 +105,8 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
       List.iter (fun (t,tv) -> Hashtbl.replace lib_ths t tv)
         (!_read);
       Hashtbl.replace (!known) lib lib_ths in
-  let begin_load lib = if lib <> "/home/sternk/hol_light/fusion.ml" then
-                        ((if (Stack.is_empty (!stack)) then ()
+  let begin_load lib = if lib <> "export.ml"  && lib <> (hol_dir^"fusion.ml") && ((lib <> (hol_dir^"hol.ml") && lib <> "hol.ml") || not (!hol_core_loaded)) then
+                        ((if(lib <> (hol_dir^"hol.ml") || lib <> "hol.ml") then hol_core_loaded := true else ()); (if (Stack.is_empty (!stack)) then ()
                         else
                           let plib = Stack.top (!stack)
                           in map_new_syms plib;
@@ -129,6 +120,7 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
                         Hashtbl.add (!known) lib (Hashtbl.create 10);
                         true) else false
   and end_load () = map_new_syms (Stack.pop (!stack))
+  and inject_hol_include f = (libs := (!libs)@[("hol.ml",f)])
   and get_libs () = let empty = Hashtbl.fold (fun k v t -> if Hashtbl.length v == 0 then k::t else t) (!known) []
                     and purge = fun names (h,l) -> (Hashtbl.fold (fun k v t -> (if List.mem k names then () else Hashtbl.add t k v); t) h (Hashtbl.create (Hashtbl.length h)),List.filter (fun (s,_) -> not(List.mem s names)) l)
                     and childnodes = fun n l -> List.fold_left (fun ch (s,t) -> if t == n || List.mem t ch then s::ch else ch) [] l
@@ -139,7 +131,7 @@ let (store_read_result,begin_load,end_load,get_libs) = let libs = ref []
                      
   in
 (*(Hashtbl.fold (fun k v t -> (if Hashtbl.length v > 0 then Hashtbl.add t k v else ()); t) (!known) (Hashtbl.create (Hashtbl.length (!known))), List.filter (fun (s,_) -> (Hashtbl.length (Hashtbl.find (!known) s)) > 0) (!libs)) in*)
-  (store_read_result,begin_load,end_load,get_libs);
+  (store_read_result,begin_load,end_load,get_libs,inject_hol_include);;
 
 module Topdirs =
     struct

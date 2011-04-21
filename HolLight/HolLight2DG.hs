@@ -42,141 +42,269 @@ import qualified Data.Char
 
 import qualified System.FilePath.Posix
 
-import Maybe
+import Text.XML.Expat.SAX
+import qualified Data.ByteString.Lazy as L
 
-import Text.XML.Light
+type SaxEvL = [SAXEvent String String]
 
-cleanContent :: Element -> [Content]
-cleanContent e = catMaybes (map (\ c -> case c of
- (CRef s) -> if all Data.Char.isSpace s then Nothing else Just c
- (Text s) -> if all Data.Char.isSpace (cdData s) then Nothing else Just c
- _ -> Just c
- ) (elContent e))
+parsexml :: L.ByteString -> SaxEvL
+parsexml txt = parse defaultParseOptions txt
 
-expectElems :: [String] -> [Content] -> [Element]
-expectElems [] _ = []
-expectElems (s:s') (c:c') = case c of
- Elem e -> if qName (elName e) == s then e:(expectElems s' c')
-           else []
- _ -> expectElems (s:s') c'
-expectElems _ _ = []
+is_space :: String -> Bool
+is_space = all Data.Char.isSpace
 
-expectElem :: Content -> Maybe Element
-expectElem (Elem e) = Just e
-expectElem _ = Nothing
+tag :: SaxEvL -> SaxEvL
+tag = dropWhile (\e -> case e of
+                        (CharacterData d) -> is_space d
+                        _ -> False)
 
-readTuple :: Content -> Maybe (Element,Element)
-readTuple (Elem e) =
- if qName (elName e) == "tuple" then
-  case expectElems ["fst","snd"] (cleanContent e) of
-   (f:s:[]) -> Just (f,s) 
+dropSpaces :: SaxEvL -> SaxEvL
+dropSpaces = tag 
+
+whileJust :: b -> (b -> (Maybe a,b)) -> (Maybe [a],b)
+whileJust d f =
+ case f d of
+  (Just r,d') ->
+   case whileJust d' f of
+     (Just l,d'') -> (Just (r:l),d'')
+     _ -> (Just [r],d')
+  _ -> (Just [],d)
+
+readL :: (SaxEvL -> (Maybe a,SaxEvL)) -> String -> SaxEvL -> (Maybe [a],SaxEvL)
+readL f s d = case tag d of
+ ((StartElement s' _):d') -> if (s'/=s) then (Nothing,d) else case whileJust d' f of
+  (Just l,d'') -> case tag d'' of
+   ((EndElement s''):d''') -> if (s''/=s) then (Nothing,d) else (Just l,d''')
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+readList' :: (SaxEvL -> (Maybe a,SaxEvL)) -> SaxEvL -> (Maybe [a],SaxEvL)
+readList' f d = case whileJust d f of
+ (Just l,d') -> (Just l,d')
+ _ -> (Nothing,d)
+
+whileJust' :: b -> (b -> a -> (Maybe a,b)) -> a -> (Maybe a,b)
+whileJust' d f s = case f d s of
+ (Just s',d') -> case whileJust' d' f s' of
+  r@(Just _,_) -> r
+  _ -> (Just s',d')
+ _ -> (Nothing,d)
+
+foldS :: (SaxEvL -> b -> (Maybe b,SaxEvL)) -> b -> String -> SaxEvL -> (Maybe b,SaxEvL)
+foldS f b s d = case tag d of
+ ((StartElement s' _):d') -> if (s'/=s) then (Nothing,d) else case whileJust' d' f b of
+  (Just b',d'') -> case tag d'' of
+   ((EndElement s''):d''') -> if (s''/=s) then (Nothing,d) else (Just b',d''')
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+readTuple :: (Show a,Show b) => (SaxEvL -> (Maybe a,SaxEvL)) -> (SaxEvL -> (Maybe b,SaxEvL)) -> SaxEvL -> (Maybe (a,b),SaxEvL)
+readTuple f1 f2 d = case tag d of
+ ((StartElement "tuple" _):d1) -> case tag d1 of
+  ((StartElement "fst" _):d2) -> case f1 d2 of
+   (Just r1,d3) -> case tag d3 of
+    ((EndElement "fst"):d4) -> case tag d4 of
+     ((StartElement "snd" _):d5) -> case f2 d5 of
+      (Just r2,d6) -> case tag d6 of
+       ((EndElement "snd"):d7) -> case tag d7 of
+        ((EndElement "tuple"):d8) -> (Just (r1,r2),d8)
+        _ -> (Nothing,d)
+       _ -> (Nothing,d)
+      _ -> (Nothing,d)
+     _ -> (Nothing,d)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+readTuple' :: (SaxEvL -> (Maybe a,SaxEvL)) -> (SaxEvL -> a -> b -> (Maybe b,SaxEvL)) -> SaxEvL -> b -> (Maybe b,SaxEvL)
+readTuple' f1 f2 d b = case tag d of
+ ((StartElement "tuple" _):d1) -> case tag d1 of
+  ((StartElement "fst" _):d2) -> case f1 d2 of
+   (Just r1,d3) -> case tag d3 of
+    ((EndElement "fst"):d4) -> case tag d4 of
+     ((StartElement "snd" _):d5) -> case f2 d5 r1 b of
+      (Just r2,d6) -> case tag d6 of
+       ((EndElement "snd"):d7) -> case tag d7 of
+        ((EndElement "tuple"):d8) -> (Just r2,d8)
+        _ -> (Nothing,d)
+       _ -> (Nothing,d)
+      _ -> (Nothing,d)
+     _ -> (Nothing,d)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+readWord' :: SaxEvL -> (Maybe String, SaxEvL)
+readWord' d = case d of 
+ ((CharacterData s):d') -> let b = Data.Char.isSpace
+                           in case readWord' d' of
+                              (Just s',d'') -> (Just (reverse (dropWhile b (reverse (dropWhile b (s++s'))))),d'')
+                              _ -> (Just (reverse (dropWhile b (reverse (dropWhile b s)))),d')
+ _ -> (Nothing,d)
+
+
+readWord :: SaxEvL -> (Maybe String,SaxEvL)
+readWord d = case dropSpaces d of
+ ((CharacterData s):d') -> let b = Data.Char.isSpace
+                           in case readWord' d' of
+                              (Just s',d'') -> (Just (reverse (dropWhile b (reverse (dropWhile b (s++s'))))),d'')
+                              _ -> (Just (reverse (dropWhile b (reverse (dropWhile b s)))),d')
+ _ -> (Nothing,d)
+
+readStr :: SaxEvL -> (Maybe String,SaxEvL)
+readStr d = case tag d of
+ ((StartElement "s" _):d') -> case readWord d' of
+  (Just s,d'') -> case tag d'' of
+   ((EndElement "s"):d''') -> (Just s,d''')
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+readInt :: SaxEvL -> (Maybe Int,SaxEvL)
+readInt d = case readWord d of
+ (Just s,d') -> (Just ((read s)::Int),d')
+ _ -> (Nothing,d)
+
+readInt' :: SaxEvL -> (Maybe Int,SaxEvL)
+readInt' d = case tag d of
+ ((StartElement "i" _):d') -> case readInt d' of
+  (Just i,d'') -> case tag d'' of
+   ((EndElement "i"):d''') -> (Just i,d''')
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+readMappedInt :: Map.Map Int a -> SaxEvL -> (Maybe a,SaxEvL)
+readMappedInt m d = case readInt d of
+ (Just i,d') -> case Map.lookup i m of
+  (Just a) -> (Just a,d')
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
+
+listToTypes :: Map.Map Int HolType -> [Int] -> Maybe [HolType]
+listToTypes m l = case l of
+ (x:xs) -> case Map.lookup x m of
+  (Just t) -> case listToTypes m xs of
+   (Just ts) -> Just (t:ts)
    _ -> Nothing
- else Nothing
-readTuple _ = Nothing
-
-readMappedTuple :: (Show a, Show b) => (Element -> Maybe a) -> (Element -> Maybe b) -> Content -> Maybe (a,b)
-readMappedTuple a b c = case readTuple c of
- Just (c1,c2) -> case (a c1,b c2) of
-  (Just e1,Just e2) -> Just (e1,e2)
   _ -> Nothing
- Nothing -> Nothing
+ []     -> Just []
+ 
 
-readString :: Content -> Maybe String
-readString (CRef s) = Just s
-readString (Text t) = let s = cdData t
-                          b = Data.Char.isSpace
-                      in Just $ reverse (dropWhile b (reverse (dropWhile b s)))
-readString _ = Nothing
+readSharedHolType :: Map.Map Int String -> SaxEvL -> Map.Map Int HolType -> (Maybe (Map.Map Int HolType),SaxEvL)
+readSharedHolType sl d m = case tag d of
+ ((StartElement "TyApp" _):d1) -> case readTuple readInt (readList' readInt') d1 of
+  (Just (i,l),d2) -> case Map.lookup i sl of
+   (Just s) -> case listToTypes m l of
+     (Just l') -> case tag d2 of
+      ((EndElement "TyApp"):d3) -> (Just (Map.insert ((Map.size m)+1) (TyApp s l') m),d3)
+      _ -> (Nothing,d)
+     _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ ((StartElement "TyVar" _):d1) -> case readInt d1 of
+  (Just i,d2) -> case Map.lookup i sl of
+   (Just s) -> case tag d2 of
+    ((EndElement "TyVar"):d3) -> (Just (Map.insert ((Map.size m)+1) (TyVar s) m),d3)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
 
-readType :: Content -> Maybe HolType
-readType (Elem e) = case (qName (elName e),cleanContent e) of
- ("TyVar",s:[]) -> case readString s of
-  Just s' -> Just (TyVar s')
-  _ -> Nothing
- ("TyApp",s:t) -> case (readString s, readAll readType t) of
-  (Just s',Just t') -> Just (TyApp s' t')
-  _ -> Nothing
- _ -> Nothing
-readType _ = Nothing
+readParseType :: SaxEvL -> (Maybe HolParseType,SaxEvL)
+readParseType d = case tag d of
+ ((StartElement "Prefix" _):d1) -> case tag d1 of
+  ((EndElement "Prefix"):d2) -> (Just Prefix,d2)
+  _ -> (Nothing,d)
+ ((StartElement "InfixR" _):d1) -> case readInt d1 of
+  (Just i,d2) -> case tag d2 of
+   ((EndElement "InfixR"):d3) -> (Just (InfixR i),d3)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ ((StartElement "InfixL" _):d1) -> case readInt d1 of
+  (Just i,d2) -> case tag d2 of
+   ((EndElement "InfixL"):d3) -> (Just (InfixL i),d3)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ ((StartElement "Normal" _):d1) -> case tag d1 of
+  ((EndElement "Normal"):d2) -> (Just Normal,d2)
+  _ -> (Nothing,d)
+ ((StartElement "Binder" _):d1) -> case tag d1 of
+  ((EndElement "Binder"):d2) -> (Just Binder,d2)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
 
-readOnlyInt :: [Content] -> Maybe Int
-readOnlyInt ((CRef s):[]) = Just ((read s)::Int)
-readOnlyInt ((Text s):[]) = Just ((read (cdData s))::Int)
-readOnlyInt _ = Nothing
 
-readParseType :: [Content] -> Maybe ([Content],HolParseType)
-readParseType ((Elem e):c') = case (qName (elName e),cleanContent e) of
- ("Prefix",_) -> Just (c',Prefix)
- ("InfixR",c) -> case (readOnlyInt c) of
-  Just i  -> Just (c',InfixR i)
-  Nothing ->  Nothing
- ("InfixL",c) -> case (readOnlyInt c) of
-  Just i  -> Just (c',InfixL i)
-  Nothing -> Nothing
- ("Normal",_) -> Just (c',Normal)
- ("Binder",_) -> Just (c',Binder)
- _ -> Nothing
-readParseType _ = Nothing
+readTermInfo :: SaxEvL -> (Maybe HolTermInfo,SaxEvL)
+readTermInfo d = case readParseType d of
+ (Just p,d1) -> case readTuple readWord readParseType d1 of
+  (Just (s,p1),d2) -> (Just (HolTermInfo (p, Just (s,p1))),d2)
+  _ -> (Just (HolTermInfo (p,Nothing)),d1)
+ _ -> (Nothing,d)
 
-applyToContents :: ([Content] -> Maybe a) -> Element -> Maybe a
-applyToContents f e = f (cleanContent e)
-
-applyToSingleEl :: (Content -> Maybe a) -> Element -> Maybe a
-applyToSingleEl f e = case (cleanContent e) of
- (e':[]) -> f e'
- _ -> Nothing
-
-readTermInfo :: [Content] -> Maybe HolTermInfo
-readTermInfo c = case readParseType c of
- Just (c',p) -> case c' of
-  (t:_) -> case readMappedTuple (applyToSingleEl readString) (applyToContents readParseType) t of
-   Just (s,(_,p1)) -> Just (HolTermInfo (p,Just (s,p1)))
-   _ -> Just (HolTermInfo (p,Nothing))
-  _ -> Just (HolTermInfo (p,Nothing))
- _ -> Nothing
-
-readTerm :: Content -> Maybe Term
-readTerm (Elem e) = case (qName (elName e),cleanContent e) of
- ("Var",n:t:i) -> case (readString n,readType t,readTermInfo i) of
-  (Just n',Just t',Just i') -> Just (Var n' t' i')
-  _ -> Nothing
- ("Const",n:t:i) -> case (readString n,readType t,readTermInfo i) of
-  (Just n',Just t',Just i') -> Just (Const n' t' i')
-  _ -> Nothing
- ("Comb",t1:t2:[]) -> case (readTerm t1,readTerm t2) of
-  (Just t1',Just t2') -> Just (Comb t1' t2')
-  _ -> Nothing
- ("Abs",t1:t2:[]) -> case (readTerm t1,readTerm t2) of
-  (Just t1',Just t2') -> Just (Abs t1' t2')
-  _ -> Nothing
- _ -> Nothing
-readTerm _ = Nothing
-
-readTest :: a -> Maybe a
-readTest c = Just c
-
-readAll :: (Content -> Maybe a) -> [Content] -> Maybe [a]
-readAll _ [] = Just []
-readAll r (c:c') = case (r c,readAll r c') of
- (Just e,Just l) -> Just (e:l)
- _ -> Nothing
+readSharedHolTerm :: Map.Map Int HolType -> Map.Map Int String -> SaxEvL -> Map.Map Int Term -> (Maybe (Map.Map Int Term),SaxEvL)
+readSharedHolTerm ts sl d m = case tag d of
+ ((StartElement "Var" _):d1) -> case readTuple readInt readInt d1 of
+  (Just (n,t),d2) -> case readTermInfo d2 of
+   (Just ti,d3) -> case Map.lookup n sl of
+    (Just name) -> case Map.lookup t ts of
+     (Just tp) -> case tag d3 of
+      ((EndElement "Var"):d4) -> (Just (Map.insert ((Map.size m)+1) (Var name tp ti) m),d4)
+      _ -> (Nothing,d)
+     _ -> (Nothing,d)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ ((StartElement "Const" _):d1) -> case readTuple readInt readInt d1 of
+  (Just (n,t),d2) -> case readTermInfo d2 of
+   (Just ti,d3) -> case Map.lookup n sl of
+    (Just name) -> case Map.lookup t ts of
+     (Just tp) -> case tag d3 of
+      ((EndElement "Const"):d4) -> (Just (Map.insert ((Map.size m)+1) (Const name tp ti) m),d4)
+      _ -> (Nothing,d)
+     _ -> (Nothing,d)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ ((StartElement "Comb" _):d1) -> case readTuple readInt readInt d1 of
+  (Just (t1,t2),d2) -> case (Map.lookup t1 m,Map.lookup t2 m) of
+   (Just t1',Just t2') -> case tag d2 of
+    ((EndElement "Comb"):d3) -> (Just (Map.insert ((Map.size m)+1) (Comb t1' t2') m),d3)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ ((StartElement "Abs" _):d1) -> case readTuple readInt readInt d1 of
+  (Just (t1,t2),d2) -> case (Map.lookup t1 m,Map.lookup t2 m) of
+   (Just t1',Just t2') -> case tag d2 of
+    ((EndElement "Abs"):d3) -> (Just (Map.insert ((Map.size m)+1) (Abs t1' t2') m),d3)
+    _ -> (Nothing,d)
+   _ -> (Nothing,d)
+  _ -> (Nothing,d)
+ _ -> (Nothing,d)
 
 importData :: FilePath -> IO ([(String,[(String,Term)])],[(String,String)]) 
 importData fp = do
-    s <- readFile fp
+    s <- L.readFile fp
     let e = ([],[])
-    case parseXMLDoc s of
-     Just export -> 
-      if qName (elName export) == "HolExport" then
-       case expectElems ["Libs","LibLinks"] (cleanContent export) of
-        (l:lk:[]) -> let l' = readAll (readMappedTuple (applyToSingleEl readString) (applyToContents (readAll (readMappedTuple (applyToSingleEl readString) (applyToSingleEl readTerm))))) (cleanContent l)
-                         lk' = readAll (readMappedTuple (applyToSingleEl readString) (applyToSingleEl readString)) (cleanContent lk)
-                     in case (l',lk') of
-                      (Just l'',Just lk'') -> return (l'',lk'')
-                      _ -> return e
-        _ -> return e
-      else return e
-     Nothing -> return e
+    case tag (parsexml s) of
+      ((StartElement "HolExport" _):d) -> case readL readStr "Strings" d of
+       (Just sl,d1) -> 
+        let strings = Map.fromList (zip [1..] sl)
+          in case foldS (readSharedHolType strings) Map.empty "SharedHolTypes" d1 of
+           (Just hol_types,d2) -> case foldS (readSharedHolTerm hol_types strings) Map.empty "SharedHolTerms" d2 of
+            (Just hol_terms,d3) -> case readL (readTuple readWord (readList' (readTuple readWord (readMappedInt hol_terms)))) "Libs" d3 of
+             (Just libs,d4) -> case readL (readTuple readWord readWord) "LibLinks" d4 of
+              (Just liblinks,_) -> return (libs,liblinks)
+              _ -> return e
+             _ -> return e
+            _ -> return e
+           _ -> return e
+       _ -> return e 
+      _ -> return e
 
 get_types :: Map.Map String Int -> HolType -> Map.Map String Int
 get_types m t = case t of
@@ -192,13 +320,13 @@ mergeTypesOps (ts1,ops1) (ts2,ops2) =
 
 get_ops :: [String] -> Bool -> Term
            -> (Map.Map String Int,Map.Map String (Set.Set HolType)) 
-get_ops ign not_abs t = case t of
- (Var s tp _)   -> let ts = get_types Map.empty tp
+get_ops ign not_abs tm = case tm of
+ (Var s t _)    -> let ts = get_types Map.empty t
                      in if not_abs && not (elem s ign) then
-                          (ts,Map.insert s (Set.fromList [tp]) Map.empty)
+                          (ts,Map.insert s (Set.fromList [t]) Map.empty)
                         else (ts,Map.empty)
- (Const s tp _) -> let ts = get_types Map.empty tp
-                     in (ts,Map.insert s (Set.fromList [tp]) Map.empty)
+ (Const s t _)  -> let ts = get_types Map.empty t
+                     in (ts,Map.insert s (Set.fromList [t]) Map.empty)
  (Comb t1 t2) -> mergeTypesOps 
                   (get_ops ((name_of t1):ign) True  t1)
                   (get_ops ((name_of t1):ign) True  t2)
@@ -220,7 +348,7 @@ sigDepends s1 s2 = ((Map.size (Map.intersection (types s1) (types s2))) /= 0) ||
                      (ops s1) (ops s2)))))
 
 treeLevels :: [(String,String)] -> Map.Map Int [(String,String)]
-treeLevels l = let lk = foldl (\l' (imp,t) -> case lookup t l' of
+treeLevels l = let lk = foldr (\(imp,t) l' -> case lookup t l' of
                                  Just (p,_) -> (imp,(p+1,t)):l'
                                  Nothing -> (imp,(1,t)):(t,(0,"")):l') [] l
                         in foldl (\m (imp,(p,t)) ->
@@ -266,6 +394,7 @@ anaHolLightFile _opts path = do
    let m = foldl (\m' (s,l) -> Map.insert s (calcSig l) m') Map.empty libs
    let (m',lnks') = foldr (\lvl (m'',lnks_loc) -> let lvl' = Map.findWithDefault [] lvl h
                                                       lnks_next = fixLinks m'' (reverse lvl')
+{- we'd probably need to take care of dependencies on previously imported files not imported by the file imported last -}
                                                in (uniteSigs m'' lnks_next,lnks_next++lnks_loc)
                     ) (m,[]) [0..((Map.size h)-1)]
    let (dg',node_m) = foldr (\(lname,lterms) (dg,node_m') ->

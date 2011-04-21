@@ -1,0 +1,12 @@
+To generate the example yourself (or to export any other HolLight-Theorems) execute the following steps:
+
+1) install ocaml and hol light
+2) tell hets where HolLight and ocaml are located by setting the following environment variables (the values are just examples)
+
+export HETS_OCAML_LIB_DIR="/usr/lib/ocaml/compiler-libs/"
+export HETS_HOL_DIR="/home/sternk/hol_light/"
+
+3) cd Hets/HolLight/OcamlTools/
+4) If you wish to export example/binom.ml (make sure you use an absolute path or one assuming you are in the directory you cd'd into in step 3 for all files included in your file - the only exception is for including hol light - you can simply use #use "hol.ml") to /home/sternk/Hets/HolLight/example_binom.hol type (assuming ocaml is in your PATH)
+
+ocaml export.ml example/binom.ml /home/sternk/Hets/HolLight/example_binom.hol
