@@ -5,7 +5,7 @@
 # Year:   2008
 #
 # This Makefile will generate the installer for Hets with IzPack
-#
+# parts will be post processed by sample/pack/scripts/postProcOfHets.sh
 
 all : download build
 
@@ -19,6 +19,7 @@ IZPACK_HETS = $(IZPACK_SAMPLE)/hets
 IZPACK_JAVA = $(IZPACK_HETS)/java
 HETS_VERSION = 0.98
 SPASS_DIR_MAC = SPASS-3.5
+SPASS_DIR_SOLARIS = SPASS-3.7
 SPASS_INTEL_MAC_BINARY = /home/mac-bkb/intel/bin/SPASS
 SPASS_PC_SOLARIS_BINARY = /home/pub-bkb/pc-solaris/SPASS/bin/SPASS
 
@@ -107,9 +108,9 @@ spass-download :
                 $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
                 mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS ; \
            done
-	mkdir -p $(IZPACK_SPASS)/pc-solaris/SPASS
+	mkdir -p $(IZPACK_SPASS)/pc-solaris/$(SPASS_DIR_SOLARIS)
 	cp $(SPASS_PC_SOLARIS_BINARY) \
-           $(IZPACK_SPASS)/pc-solaris/SPASS/
+           $(IZPACK_SPASS)/pc-solaris/$(SPASS_DIR_SOLARIS)
 	mkdir -p $(IZPACK_SPASS)/intel-mac/$(SPASS_DIR_MAC)
 	cp $(SPASS_INTEL_MAC_BINARY) \
            $(IZPACK_SPASS)/intel-mac/$(SPASS_DIR_MAC)/
