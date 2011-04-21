@@ -5,7 +5,7 @@
 ### a script that sets some HETS_*- variables and the PATH according to the
 ### installation directory or according to binaries found during the
 ### installation;
-### it is post processed by some IzPack variables starting with %
+### it is post processed by izpack/sample/pack/scripts/postProcOfHets.sh!
 
 if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
