@@ -24,7 +24,7 @@ import CSL.AS_BASIC_CSL
 import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
 import CSL.Verification
-import CSL.Analysis
+import CSL.DependencyGraph
 import CSL.GenericInterpreter
 
 -- the process communication interface

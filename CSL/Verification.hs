@@ -19,7 +19,7 @@ module CSL.Verification where
 import qualified Data.Set as Set
 import CSL.Interpreter
 import CSL.Transformation
-import CSL.Analysis
+import CSL.DependencyGraph
 import CSL.AS_BASIC_CSL
 
 import Common.Doc

@@ -16,7 +16,7 @@ import System.Environment
 import System.Console.GetOpt
 
 import qualified Interfaces.Process as PC
-import CSL.InteractiveTests (evalWithVerification, CAS (..), CASState(..))
+import CSL.AnEvenTool (evalWithVerification, CAS (..), CASState(..))
 import Common.Utils
 
 import Data.Bits

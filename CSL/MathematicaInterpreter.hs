@@ -24,7 +24,7 @@ import Common.MathLink
 import CSL.AS_BASIC_CSL
 import CSL.Interpreter
 import CSL.Verification
-import CSL.Analysis
+import CSL.DependencyGraph
 import CSL.GenericInterpreter
 
 

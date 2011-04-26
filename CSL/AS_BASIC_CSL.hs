@@ -71,13 +71,17 @@ module CSL.AS_BASIC_CSL
     , showOPNAME
     , OpInfoMap
     , OpInfoNameMap
+    , setOfUserDefined
+    , setOfUserDefinedICs
     ) where
 
 import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
+
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Control.Monad
 import Control.Monad.Reader
 
@@ -555,6 +559,38 @@ lookupBindInfo oinm (OpId op) arit =
             _ -> Nothing
       _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
 lookupBindInfo _ (OpUser _) _ = Nothing
+
+
+
+-- | Returns a set of user defined constants ignoring 'EXTPARAM' instantiation.
+setOfUserDefined :: EXPRESSION -> Set.Set String
+setOfUserDefined e = g Set.empty e
+    where
+      g s x =
+       case x of
+         Op oi@(OpUser _) _ al _ -> foldl g (Set.insert (simpleName oi) s) al
+         -- handle also non-userdefined ops.
+         Op _ _ al _ -> foldl g s al 
+         -- ignoring lists (TODO: they should be removed soon anyway)
+         _ -> s
+
+-- | Returns a set of user defined constants with function instantiation,
+-- but ignoring 'EXTPARAM' instantiation.
+setOfUserDefinedICs :: EXPRESSION -> Set.Set InstantiatedConstant
+setOfUserDefinedICs e = g Set.empty e
+    where
+      f sc al = InstantiatedConstant { constName = sc, instantiation = al }
+      g s x =
+       case x of
+         Op (OpUser sc@(SimpleConstant _)) _ al _ ->
+             foldl g (Set.insert (f sc al) s) al
+         Op (OpUser _) _ _ _ ->
+             error "setOfUserDefinedICs: Elim constant encountered"
+         -- handle also non-userdefined ops.
+         Op _ _ al _ -> foldl g s al 
+         -- ignoring lists (TODO: they should be removed soon anyway)
+         _ -> s
+
 
 -- * Pretty Printing
 

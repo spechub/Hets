@@ -341,7 +341,7 @@ reduceCommand = do
 assignment :: OperatorState st => CharParser st CMD
 assignment = do
   ident <- expsymbol
-  lexemeParser $ tryString ":="
+  lexemeParser $ choice [tryString ":=", tryString "="]
   exp' <- plusmin
   return $ Ass ident exp'
 

@@ -75,7 +75,7 @@ import Common.DocUtils
 import Common.Utils
 
 import CSL.AS_BASIC_CSL
-import CSL.Analysis
+import CSL.DependencyGraph
 
 -- ----------------------------------------------------------------------
 -- * Evaluator

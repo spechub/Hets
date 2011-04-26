@@ -14,6 +14,22 @@
   'tools)
 
 
+(define-key-after
+  global-map
+  [menu-bar enclmenu refresh]
+  (cons "Refresh" (make-sparse-keymap)))
+
+(define-key-after
+  global-map
+  [menu-bar enclmenu refresh matchmenu]
+  (cons "Match-menu" `(lambda () (interactive) (refresh-matchmenu))))
+
+(define-key-after
+  global-map
+  [menu-bar enclmenu refresh evalmenu]
+  (cons "Eval-menu" `(lambda () (interactive) (refresh-evalmenu))))
+
+
 ;; extract all spec definitions
 (defun extractspecs ()
   (interactive)
@@ -115,7 +131,7 @@
 
 
 (defun refresh-specmenu (entries menusym runfun runlist)
-  (interactive)
+;;  (interactive)
     
     ;; generate subentries  
     (dolist (item entries)
