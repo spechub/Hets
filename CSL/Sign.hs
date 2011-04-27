@@ -34,6 +34,7 @@ import Common.Doc
 import Common.DocUtils
 
 import CSL.AS_BASIC_CSL
+import CSL.Print_AS ()
 
 data OpType = OpType { opArity :: Int
                      } deriving (Eq, Ord, Show)

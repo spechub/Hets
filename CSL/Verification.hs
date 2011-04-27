@@ -21,6 +21,7 @@ import CSL.Interpreter
 import CSL.Transformation
 import CSL.DependencyGraph
 import CSL.AS_BASIC_CSL
+import CSL.Print_AS
 
 import Common.Doc
 import Common.DocUtils

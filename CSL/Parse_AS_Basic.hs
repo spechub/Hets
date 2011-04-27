@@ -27,6 +27,7 @@ import Numeric
 import Char
 
 import CSL.AS_BASIC_CSL
+import CSL.Print_AS ()
 import CSL.Keywords
 import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad
