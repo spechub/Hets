@@ -27,7 +27,7 @@ import System.IO
 
 import Data.Maybe
 
-import Common.Utils
+import Common.Utils (verbMsg, verbMsgLn, verbMsgIOLn)
 
 
 -- * Constants for the MathLink interface
@@ -345,7 +345,7 @@ cdblToDbl = realToFrac
 dblToCDbl :: Double -> CDouble
 dblToCDbl = realToFrac
 
--- * Haskell friendly MathLink interface built on top of the raw bindings
+-- * MathLink interface using the ML monad, built on top of the raw bindings
 
 mlFlush  :: ML CInt
 mlFlush = liftMLIO cMlFlush
@@ -484,6 +484,7 @@ sendTextResultPacket s = do
   mlEndPacket
   return ()
 
+{-
 -- these variants does not work as expected
 sendTextPacket' :: String -> ML ()
 sendTextPacket' s = do
@@ -514,7 +515,7 @@ sendTextPacket4 s = do
   mlPutString s
   mlEndPacket
   return ()
-
+-}
 
 waitForAnswer :: ML CInt
 waitForAnswer = do

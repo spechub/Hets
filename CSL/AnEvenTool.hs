@@ -16,14 +16,14 @@ Provides functionality for interactive experimenting with EnCL specifications.
 
 
 module CSL.AnEvenTool
-    (evalWithVerification, CAS (..), CASState(..))
+    -- (evalWithVerification, CAS (..), CASState(..))
         where
 
-import Interfaces.Process as PC
+import qualified Interfaces.Process as PC
 
-import Control.Monad.Error (MonadError(..))
+import Control.Monad.Error (MonadError (..))
 
-import Static.SpecLoader (getSigSensComplete, SigSens(..))
+import Static.SpecLoader (getSigSensComplete, SigSens (..))
 
 
 import CSL.MathematicaInterpreter
@@ -65,7 +65,39 @@ data CASState = MapleState MITrans | MathematicaState MathState
 -- * AnEven-Tool
 -- ----------------------------------------------------------------------
 
+-- ----------------------------------------------------------------------
+-- ** Basic Datatypes
+-- ----------------------------------------------------------------------
 
+data AnEvenConfig = AnEvenConfig
+
+defaultConfig :: AnEvenConfig
+defaultConfig = AnEvenConfig
+
+data AnEvenState = 
+    AnEvenState
+    { stSpec :: Maybe (SigSens Sign CMD) -- current hets environment
+    , stConfig :: AnEvenConfig -- the global settings
+    , stProg :: Maybe [Named CMD] -- the current program (derived from spec)
+    , stDS :: Maybe (GuardedMap [EXTPARAM]) -- the current dependency store
+                                            -- (derived from spec)
+    }
+
+
+emptyState :: AnEvenState
+emptyState = AnEvenState
+             { stSpec = Nothing
+             , stProg = Nothing
+             , stDS = Nothing
+             , stConfig = defaultConfig }
+
+
+-- ----------------------------------------------------------------------
+-- ** Basic Interface Functions
+-- ----------------------------------------------------------------------
+
+
+-- 
 
 
 
@@ -92,7 +124,7 @@ initFlags sm dm = do
     
 evalWithVerification :: Bool -- ^ auto-close connection
                      -> CAS -> Maybe FilePath -> Maybe String -> Bool -> Bool
-                     -> DTime -> Int -> String -> String -> IO CASState
+                     -> PC.DTime -> Int -> String -> String -> IO CASState
 evalWithVerification cl c mFp mN smode dmode to v lb sp =
   let -- exitWhen s = null s || s == "q" || take 4 s == "quit" || take 4 s == "exit"
       -- program for initialization
@@ -131,7 +163,7 @@ verifyProg :: (MessagePrinter m, StepDebugger m, VCGenerator m, MonadIO m, Monad
 verifyProg ncl = do
   stepwiseSafe verifyingStepper $ Sequence $ map sentence ncl
 
-testWithMapleGen :: Int -> DTime -> MapleIO b -> ([Named CMD] -> MapleIO a) -> String -> String
+testWithMapleGen :: Int -> PC.DTime -> MapleIO b -> ([Named CMD] -> MapleIO a) -> String -> String
                  -> IO (MITrans, a)
 testWithMapleGen v to = testWithCASGen rf where
     rf adg prog =

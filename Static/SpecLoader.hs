@@ -66,43 +66,8 @@ getSigSensComplete ::
 getSigSensComplete b hopts lid fname sp = do
   Result _ res <- runResultT $ proceed' hopts fname
   case res of
-    Just (ln, lenv) ->
-     let dg = lookupDGraph ln lenv
-         SpecEntry (ExtGenSig _ (NodeSig node _)) =
-            case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
-              Just x -> x
-              _ -> error ("Specification " ++ sp ++ " not found")
-         f nL gth =
-          case gth of
-           G_theory { gTheoryLogic = lid2
-                    , gTheorySign = gSig
-                    , gTheorySens = gSens } ->
-            case (coerceSign lid2 lid "" gSig,
-                  coerceThSens lid2 lid "" gSens) of
-             (Just sig, Just sens) ->
-                return SigSens
-                           { sigsensSignature = plainSign sig
-                           , sigsensNamedSentences
-                               = map (\ (x, y) -> y{senAttr = x})
-                                 $ OMap.toList sens
-                           , sigsensGlobalAnnos = globalAnnos dg
-                           , sigsensNode = node
-                           , sigsensNodeLabel = nL
-                           , sigsensDG = dg
-                           , sigsensLibname = ln, sigsensLibenv = lenv }
-             _ -> error $ "Not a " ++ show lid ++ " sig"
-
-     in if b then
-            case computeTheory lenv ln node of
-              Just gth -> f (labDG dg node) gth
-              _ -> error "computeTheory failed"
-        else
-            case match node (dgBody dg) of
-              (Just ctx, _) ->
-                  let nL = lab' ctx in f nL $ dgn_theory nL
-              _ -> error "Node 1 not in development graph"
-
-    Nothing -> error "Error occured"
+    Just (ln, lenv) -> getSpec b lid ln lenv sp
+    Nothing -> error $ "getSigSensComplete: cannot read file" ++ fname
 
 
 -- read in a hets file and return the basic theory and the sentences
@@ -116,3 +81,53 @@ getSigSens ::
     -> String  -- name of spec
     -> IO (SigSens sign sentence)
 getSigSens = getSigSensComplete False
+
+
+getSpec ::
+    Logic lid sublogics basic_spec sentence
+          symb_items symb_map_items sign
+          morphism symbol raw_symbol proof_tree
+    => Bool -- complete theory or not
+    -> lid -- logicname
+    -> LibName
+    -> LibEnv
+    -> String  -- name of spec
+    -> IO (SigSens sign sentence)
+getSpec b lid ln lenv sp =
+    let dg = lookupDGraph ln lenv
+        SpecEntry (ExtGenSig _ (NodeSig node _)) =
+            case Map.lookup (Id.mkSimpleId sp) $ globalEnv dg of
+              Just x -> x
+              _ -> error $ "getSpec: Specification " ++ sp ++ " not found"
+        f nL gth =
+            case gth of
+              G_theory { gTheoryLogic = lid2
+                       , gTheorySign = gSig
+                       , gTheorySens = gSens } ->
+                     case (coerceSign lid2 lid "" gSig,
+                           coerceThSens lid2 lid "" gSens) of
+                       (Just sig, Just sens) ->
+                           return SigSens
+                                      { sigsensSignature = plainSign sig
+                                      , sigsensNamedSentences
+                                          = map (\ (x, y) -> y{senAttr = x})
+                                            $ OMap.toList sens
+                                      , sigsensGlobalAnnos = globalAnnos dg
+                                      , sigsensNode = node
+                                      , sigsensNodeLabel = nL
+                                      , sigsensDG = dg
+                                      , sigsensLibname = ln
+                                      , sigsensLibenv = lenv }
+                       _ -> error $ "getSpec: Not a " ++ show lid ++ " sig"
+
+    in if b then
+           case computeTheory lenv ln node of
+             Just gth -> f (labDG dg node) gth
+             _ -> error "getSpec: computeTheory failed"
+       else
+           case match node (dgBody dg) of
+             (Just ctx, _) ->
+                 let nL = lab' ctx in f nL $ dgn_theory nL
+             _ -> error $ "getSpec: Node " ++ show node
+                  ++ " not in development graph"
+
