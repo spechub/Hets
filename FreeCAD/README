@@ -1,7 +1,18 @@
 # In order to test the brep reader call the program from the console
 # in the current directory with:
 
-python brep_conversion/brep_reader.py
+brep_conversion/bin/brep_to_xml <filename.brp>
+
+# To compile the program just go to the brep_conversion folder and type
+
+make
+
+
+######################################################################
+
+## OLD Python program
+
+python brep_conversion/src/brep_reader.py
 
 # When asked for a filepath "please insert file path and name:" type
 
