@@ -1,0 +1,902 @@
+Shape : 34, FORWARD, location : 1
+
+Dump of 34 TShapes
+
+-----------------
+
+Flags : Free, Modified, Checked, Orientable, Closed, Infinite, Convex
+
+TShape # 1 : SOLID     1100000 0x2000a2e8
+    +2 
+
+TShape # 2 : SHELL     0101100 0x2000b868
+    -25 +15 -11 +7 -5 +3 
+
+TShape # 3 : FACE      0111000 0x2000c9c8
+    +4 
+    Tolerance : 1e-07
+    - Surface : 3
+
+TShape # 4 : WIRE      0101000 0x2000a7f8
+    -30 -9 +20 +13 
+
+TShape # 5 : FACE      0111000 0x2000c798
+    +6 
+    Tolerance : 1e-07
+    - Surface : 5
+
+TShape # 6 : WIRE      0101000 0x2000a668
+    -27 -10 +17 +14 
+
+TShape # 7 : FACE      0111000 0x2000b7d8
+    +8 
+    Tolerance : 1e-07
+    - Surface : 4
+
+TShape # 8 : WIRE      0101000 0x2000a508
+    -10 -18 +9 +28 
+
+TShape # 9 : EDGE      0101000 0x2000c2f0
+    -21 +31 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 12, range : 0 10
+    - PCurve : 23 on surface 4, range : 0 10
+  UV Points : 10, 0 10, 10
+    - PCurve : 24 on surface 3, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 10 : EDGE      0101000 0x2000c0c0
+    -19 +29 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 11, range : 0 10
+    - PCurve : 21 on surface 4, range : 0 10
+  UV Points : 0, 0 0, 10
+    - PCurve : 22 on surface 5, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 11 : FACE      0111000 0x2000a708
+    +12 
+    Tolerance : 1e-07
+    - Surface : 2
+
+TShape # 12 : WIRE      0101000 0x2000a538
+    -14 -22 +13 +32 
+
+TShape # 13 : EDGE      0101000 0x2000bb10
+    -24 +34 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 10, range : 0 10
+    - PCurve : 19 on surface 2, range : 0 10
+  UV Points : 10, 0 10, 10
+    - PCurve : 20 on surface 3, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 14 : EDGE      0101000 0x2000b8e0
+    -23 +33 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 9, range : 0 10
+    - PCurve : 17 on surface 2, range : 0 10
+  UV Points : 0, 0 0, 10
+    - PCurve : 18 on surface 5, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 15 : FACE      0111000 0x2000a5a8
+    +16 
+    Tolerance : 1e-07
+    - Surface : 6
+
+TShape # 16 : WIRE      0101000 0x2000a798
+    -22 -20 +18 +17 
+
+TShape # 17 : EDGE      0101000 0x2000b2f8
+    -19 +23 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 8, range : 0 10
+    - PCurve : 15 on surface 6, range : 0 10
+  UV Points : 0, 0 0, -10
+    - PCurve : 16 on surface 5, range : 0 10
+  UV Points : 10, 0 10, 10
+
+TShape # 18 : EDGE      0101000 0x2000b020
+    -21 +19 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 7, range : 0 10
+    - PCurve : 13 on surface 6, range : 0 10
+  UV Points : 0, -10 10, -10
+    - PCurve : 14 on surface 4, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 19 : VERTEX    0101101 0x2000af78
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 10, 0
+
+TShape # 20 : EDGE      0101000 0x2000acd8
+    -21 +24 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 6, range : 0 10
+    - PCurve : 11 on surface 6, range : 0 10
+  UV Points : 10, 0 10, -10
+    - PCurve : 12 on surface 3, range : 0 10
+  UV Points : 10, 0 10, 10
+
+TShape # 21 : VERTEX    0101101 0x2000ac30
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 10, 10
+
+TShape # 22 : EDGE      0101000 0x2000aa00
+    -24 +23 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 5, range : 0 10
+    - PCurve : 9 on surface 6, range : 0 10
+  UV Points : 0, 0 10, 0
+    - PCurve : 10 on surface 2, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 23 : VERTEX    0101101 0x2000a958
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 0, 0
+
+TShape # 24 : VERTEX    0101101 0x2000a8b0
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 0, 10
+
+TShape # 25 : FACE      0111000 0x2000a258
+    +26 
+    Tolerance : 1e-07
+    - Surface : 1
+
+TShape # 26 : WIRE      0101000 0x2000a100
+    -32 -30 +28 +27 
+
+TShape # 27 : EDGE      0101000 0x20009e28
+    -29 +33 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 4, range : 0 10
+    - PCurve : 7 on surface 1, range : 0 10
+  UV Points : 0, 0 0, -10
+    - PCurve : 8 on surface 5, range : 0 10
+  UV Points : 0, 0 0, 10
+
+TShape # 28 : EDGE      0101000 0x20009b50
+    -31 +29 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 3, range : 0 10
+    - PCurve : 5 on surface 1, range : 0 10
+  UV Points : 0, -10 10, -10
+    - PCurve : 6 on surface 4, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 29 : VERTEX    0101101 0x20009aa8
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 10, 0
+
+TShape # 30 : EDGE      0101000 0x200097d0
+    -31 +34 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 2, range : 0 10
+    - PCurve : 3 on surface 1, range : 0 10
+  UV Points : 10, 0 10, -10
+    - PCurve : 4 on surface 3, range : 0 10
+  UV Points : 0, 0 0, 10
+
+TShape # 31 : VERTEX    0101101 0x20009728
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 10, 10
+
+TShape # 32 : EDGE      0101000 0x20009178
+    -34 +33 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 1, range : 0 10
+    - PCurve : 1 on surface 1, range : 0 10
+  UV Points : 0, 0 10, 0
+    - PCurve : 2 on surface 2, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 33 : VERTEX    0101101 0x200090d0
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 0, 0
+
+TShape # 34 : VERTEX    0101101 0x20008f10
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 0, 10
+
+
+ -------
+Dump of 24 Curve2ds 
+ -------
+
+   1 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+   2 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+   3 : Line
+  Origin :10, 0 
+  Axis   :0, -1 
+
+   4 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+   5 : Line
+  Origin :0, -10 
+  Axis   :1, 0 
+
+   6 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+   7 : Line
+  Origin :0, 0 
+  Axis   :0, -1 
+
+   8 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+   9 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+  10 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+  11 : Line
+  Origin :10, 0 
+  Axis   :0, -1 
+
+  12 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  13 : Line
+  Origin :0, -10 
+  Axis   :1, 0 
+
+  14 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+  15 : Line
+  Origin :0, 0 
+  Axis   :0, -1 
+
+  16 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  17 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+  18 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+  19 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  20 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+  21 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+  22 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+  23 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  24 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+
+ -------
+Dump of 12 Curves 
+ -------
+
+   1 : Line
+  Origin :0, 0, 0 
+  Axis   :0, 0, 1 
+
+   2 : Line
+  Origin :0, 0, 10 
+  Axis   :-0, 1, 0 
+
+   3 : Line
+  Origin :0, 10, 0 
+  Axis   :0, 0, 1 
+
+   4 : Line
+  Origin :0, 0, 0 
+  Axis   :-0, 1, 0 
+
+   5 : Line
+  Origin :10, 0, 0 
+  Axis   :0, 0, 1 
+
+   6 : Line
+  Origin :10, 0, 10 
+  Axis   :0, 1, 0 
+
+   7 : Line
+  Origin :10, 10, 0 
+  Axis   :0, 0, 1 
+
+   8 : Line
+  Origin :10, 0, 0 
+  Axis   :-0, 1, 0 
+
+   9 : Line
+  Origin :0, 0, 0 
+  Axis   :1, 0, -0 
+
+  10 : Line
+  Origin :0, 0, 10 
+  Axis   :1, 0, -0 
+
+  11 : Line
+  Origin :0, 10, 0 
+  Axis   :1, 0, -0 
+
+  12 : Line
+  Origin :0, 10, 10 
+  Axis   :1, 0, -0 
+
+ -------
+Dump of 0 Polygon3Ds
+ -------
+ -------
+Dump of 0 PolygonOnTriangulations
+ -------
+
+ -------
+Dump of 6 surfaces 
+ -------
+
+   1 : Plane
+  Origin :0, 0, 0 
+  Axis   :1, 0, -0 
+  XAxis  :0, 0, 1 
+  YAxis  :0, -1, 0 
+
+   2 : Plane
+  Origin :0, 0, 0 
+  Axis   :-0, 1, 0 
+  XAxis  :0, 0, 1 
+  YAxis  :1, 0, -0 
+
+   3 : Plane
+  Origin :0, 0, 10 
+  Axis   :0, 0, 1 
+  XAxis  :1, 0, -0 
+  YAxis  :-0, 1, 0 
+
+   4 : Plane
+  Origin :0, 10, 0 
+  Axis   :-0, 1, 0 
+  XAxis  :0, 0, 1 
+  YAxis  :1, 0, -0 
+
+   5 : Plane
+  Origin :0, 0, 0 
+  Axis   :0, 0, 1 
+  XAxis  :1, 0, -0 
+  YAxis  :-0, 1, 0 
+
+   6 : Plane
+  Origin :10, 0, 0 
+  Axis   :1, 0, -0 
+  XAxis  :0, 0, 1 
+  YAxis  :0, -1, 0 
+
+ -------
+Dump of 0 Triangulations
+ -------
+
+
+
+ -------
+ Dump of 1 Locations
+ -------
+
+    1 : 
+Elementary location
+(               1               0               0               0  )
+(               0               1               0               0  )
+(               0               0               1               0  )
+
+Shape : 34, FORWARD, location : 1
+
+Dump of 34 TShapes
+
+-----------------
+
+Flags : Free, Modified, Checked, Orientable, Closed, Infinite, Convex
+
+TShape # 1 : SOLID     1100000 0x2000a2e8
+    +2 
+
+TShape # 2 : SHELL     0101100 0x2000b868
+    -25 +15 -11 +7 -5 +3 
+
+TShape # 3 : FACE      0111000 0x2000c9c8
+    +4 
+    Tolerance : 1e-07
+    - Surface : 3
+
+TShape # 4 : WIRE      0101000 0x2000a7f8
+    -30 -9 +20 +13 
+
+TShape # 5 : FACE      0111000 0x2000c798
+    +6 
+    Tolerance : 1e-07
+    - Surface : 5
+
+TShape # 6 : WIRE      0101000 0x2000a668
+    -27 -10 +17 +14 
+
+TShape # 7 : FACE      0111000 0x2000b7d8
+    +8 
+    Tolerance : 1e-07
+    - Surface : 4
+
+TShape # 8 : WIRE      0101000 0x2000a508
+    -10 -18 +9 +28 
+
+TShape # 9 : EDGE      0101000 0x2000c2f0
+    -21 +31 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 12, range : 0 10
+    - PCurve : 23 on surface 4, range : 0 10
+  UV Points : 10, 0 10, 10
+    - PCurve : 24 on surface 3, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 10 : EDGE      0101000 0x2000c0c0
+    -19 +29 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 11, range : 0 10
+    - PCurve : 21 on surface 4, range : 0 10
+  UV Points : 0, 0 0, 10
+    - PCurve : 22 on surface 5, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 11 : FACE      0111000 0x2000a708
+    +12 
+    Tolerance : 1e-07
+    - Surface : 2
+
+TShape # 12 : WIRE      0101000 0x2000a538
+    -14 -22 +13 +32 
+
+TShape # 13 : EDGE      0101000 0x2000bb10
+    -24 +34 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 10, range : 0 10
+    - PCurve : 19 on surface 2, range : 0 10
+  UV Points : 10, 0 10, 10
+    - PCurve : 20 on surface 3, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 14 : EDGE      0101000 0x2000b8e0
+    -23 +33 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 9, range : 0 10
+    - PCurve : 17 on surface 2, range : 0 10
+  UV Points : 0, 0 0, 10
+    - PCurve : 18 on surface 5, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 15 : FACE      0111000 0x2000a5a8
+    +16 
+    Tolerance : 1e-07
+    - Surface : 6
+
+TShape # 16 : WIRE      0101000 0x2000a798
+    -22 -20 +18 +17 
+
+TShape # 17 : EDGE      0101000 0x2000b2f8
+    -19 +23 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 8, range : 0 10
+    - PCurve : 15 on surface 6, range : 0 10
+  UV Points : 0, 0 0, -10
+    - PCurve : 16 on surface 5, range : 0 10
+  UV Points : 10, 0 10, 10
+
+TShape # 18 : EDGE      0101000 0x2000b020
+    -21 +19 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 7, range : 0 10
+    - PCurve : 13 on surface 6, range : 0 10
+  UV Points : 0, -10 10, -10
+    - PCurve : 14 on surface 4, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 19 : VERTEX    0101101 0x2000af78
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 10, 0
+
+TShape # 20 : EDGE      0101000 0x2000acd8
+    -21 +24 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 6, range : 0 10
+    - PCurve : 11 on surface 6, range : 0 10
+  UV Points : 10, 0 10, -10
+    - PCurve : 12 on surface 3, range : 0 10
+  UV Points : 10, 0 10, 10
+
+TShape # 21 : VERTEX    0101101 0x2000ac30
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 10, 10
+
+TShape # 22 : EDGE      0101000 0x2000aa00
+    -24 +23 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 5, range : 0 10
+    - PCurve : 9 on surface 6, range : 0 10
+  UV Points : 0, 0 10, 0
+    - PCurve : 10 on surface 2, range : 0 10
+  UV Points : 0, 10 10, 10
+
+TShape # 23 : VERTEX    0101101 0x2000a958
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 0, 0
+
+TShape # 24 : VERTEX    0101101 0x2000a8b0
+    
+    Tolerance : 1e-07
+    - Point 3D : 10, 0, 10
+
+TShape # 25 : FACE      0111000 0x2000a258
+    +26 
+    Tolerance : 1e-07
+    - Surface : 1
+
+TShape # 26 : WIRE      0101000 0x2000a100
+    -32 -30 +28 +27 
+
+TShape # 27 : EDGE      0101000 0x20009e28
+    -29 +33 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 4, range : 0 10
+    - PCurve : 7 on surface 1, range : 0 10
+  UV Points : 0, 0 0, -10
+    - PCurve : 8 on surface 5, range : 0 10
+  UV Points : 0, 0 0, 10
+
+TShape # 28 : EDGE      0101000 0x20009b50
+    -31 +29 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 3, range : 0 10
+    - PCurve : 5 on surface 1, range : 0 10
+  UV Points : 0, -10 10, -10
+    - PCurve : 6 on surface 4, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 29 : VERTEX    0101101 0x20009aa8
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 10, 0
+
+TShape # 30 : EDGE      0101000 0x200097d0
+    -31 +34 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 2, range : 0 10
+    - PCurve : 3 on surface 1, range : 0 10
+  UV Points : 10, 0 10, -10
+    - PCurve : 4 on surface 3, range : 0 10
+  UV Points : 0, 0 0, 10
+
+TShape # 31 : VERTEX    0101101 0x20009728
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 10, 10
+
+TShape # 32 : EDGE      0101000 0x20009178
+    -34 +33 
+    Tolerance : 1e-07
+     same parametrisation of curves
+     same range on curves
+    - Curve 3D : 1, range : 0 10
+    - PCurve : 1 on surface 1, range : 0 10
+  UV Points : 0, 0 10, 0
+    - PCurve : 2 on surface 2, range : 0 10
+  UV Points : 0, 0 10, 0
+
+TShape # 33 : VERTEX    0101101 0x200090d0
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 0, 0
+
+TShape # 34 : VERTEX    0101101 0x20008f10
+    
+    Tolerance : 1e-07
+    - Point 3D : 0, 0, 10
+
+
+ -------
+Dump of 24 Curve2ds 
+ -------
+
+   1 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+   2 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+   3 : Line
+  Origin :10, 0 
+  Axis   :0, -1 
+
+   4 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+   5 : Line
+  Origin :0, -10 
+  Axis   :1, 0 
+
+   6 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+   7 : Line
+  Origin :0, 0 
+  Axis   :0, -1 
+
+   8 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+   9 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+  10 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+  11 : Line
+  Origin :10, 0 
+  Axis   :0, -1 
+
+  12 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  13 : Line
+  Origin :0, -10 
+  Axis   :1, 0 
+
+  14 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+  15 : Line
+  Origin :0, 0 
+  Axis   :0, -1 
+
+  16 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  17 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+  18 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+  19 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  20 : Line
+  Origin :0, 0 
+  Axis   :1, 0 
+
+  21 : Line
+  Origin :0, 0 
+  Axis   :0, 1 
+
+  22 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+  23 : Line
+  Origin :10, 0 
+  Axis   :0, 1 
+
+  24 : Line
+  Origin :0, 10 
+  Axis   :1, 0 
+
+
+ -------
+Dump of 12 Curves 
+ -------
+
+   1 : Line
+  Origin :0, 0, 0 
+  Axis   :0, 0, 1 
+
+   2 : Line
+  Origin :0, 0, 10 
+  Axis   :-0, 1, 0 
+
+   3 : Line
+  Origin :0, 10, 0 
+  Axis   :0, 0, 1 
+
+   4 : Line
+  Origin :0, 0, 0 
+  Axis   :-0, 1, 0 
+
+   5 : Line
+  Origin :10, 0, 0 
+  Axis   :0, 0, 1 
+
+   6 : Line
+  Origin :10, 0, 10 
+  Axis   :0, 1, 0 
+
+   7 : Line
+  Origin :10, 10, 0 
+  Axis   :0, 0, 1 
+
+   8 : Line
+  Origin :10, 0, 0 
+  Axis   :-0, 1, 0 
+
+   9 : Line
+  Origin :0, 0, 0 
+  Axis   :1, 0, -0 
+
+  10 : Line
+  Origin :0, 0, 10 
+  Axis   :1, 0, -0 
+
+  11 : Line
+  Origin :0, 10, 0 
+  Axis   :1, 0, -0 
+
+  12 : Line
+  Origin :0, 10, 10 
+  Axis   :1, 0, -0 
+
+ -------
+Dump of 0 Polygon3Ds
+ -------
+ -------
+Dump of 0 PolygonOnTriangulations
+ -------
+
+ -------
+Dump of 6 surfaces 
+ -------
+
+   1 : Plane
+  Origin :0, 0, 0 
+  Axis   :1, 0, -0 
+  XAxis  :0, 0, 1 
+  YAxis  :0, -1, 0 
+
+   2 : Plane
+  Origin :0, 0, 0 
+  Axis   :-0, 1, 0 
+  XAxis  :0, 0, 1 
+  YAxis  :1, 0, -0 
+
+   3 : Plane
+  Origin :0, 0, 10 
+  Axis   :0, 0, 1 
+  XAxis  :1, 0, -0 
+  YAxis  :-0, 1, 0 
+
+   4 : Plane
+  Origin :0, 10, 0 
+  Axis   :-0, 1, 0 
+  XAxis  :0, 0, 1 
+  YAxis  :1, 0, -0 
+
+   5 : Plane
+  Origin :0, 0, 0 
+  Axis   :0, 0, 1 
+  XAxis  :1, 0, -0 
+  YAxis  :-0, 1, 0 
+
+   6 : Plane
+  Origin :10, 0, 0 
+  Axis   :1, 0, -0 
+  XAxis  :0, 0, 1 
+  YAxis  :0, -1, 0 
+
+ -------
+Dump of 0 Triangulations
+ -------
+
+
+
+ -------
+ Dump of 1 Locations
+ -------
+
+    1 : 
+Elementary location
+(               1               0               0               0  )
+(               0               1               0               0  )
+(               0               0               1               0  )
+

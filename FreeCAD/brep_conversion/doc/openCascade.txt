@@ -1,0 +1,16 @@
+
+
+
+
+
+ BRepTools.cxx implements Read and Write for .brp files; it also has a Dump method.
+
+	-uses a BRepTools_ShapeSet instance as a container for the objects, geometry and locations (?)
+	  - BRepTools_ShapeSet uses method for Read, Write and Dump inherited from TopTools_ShapeSet
+
+
+
+	  TopTools_ShapeSet contains:
+		TopTools_IndexedMapOfShape myShapes; -- cannot find implementation
+		TopTools_LocationSet myLocations;
+		
