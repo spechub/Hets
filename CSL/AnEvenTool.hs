@@ -53,6 +53,20 @@ import Data.Maybe
 import System.IO
 import System.Directory
 
+
+-- Shell handling/building imports
+import System.Console.Readline
+
+import System.Console.Shell
+import System.Console.Shell.ShellMonad
+
+-- memory access error in runShell when using readline-backend
+-- , hence I prefer haskeline!
+
+-- import System.Console.Shell.Backend.Readline
+import System.Console.Shell.Backend.Haskeline
+-- ----------------------------------------------------------------------
+
 instance Pretty Bool where
     pretty = text . show
 
@@ -64,6 +78,21 @@ data CASState = MapleState MITrans | MathematicaState MathState
 -- ----------------------------------------------------------------------
 -- * AnEven-Tool
 -- ----------------------------------------------------------------------
+
+versionInfo :: String
+versionInfo = unlines
+  [ ""
+  , "The AnEven-Tool: an (An)alyzer and (Ev)aluator for"
+  , "(En)CL specifications. Version 0.1"
+  , "Copyright Ewaryst Schulz, DFKI Bremen 2010"
+  , ""
+  ]
+
+shellMessage :: String
+shellMessage = unlines
+  [ "This is free software, and you are welcome to"
+  , "redistribute it under certain conditions (GPLv2)."
+  ]
 
 -- ----------------------------------------------------------------------
 -- ** Basic Datatypes
@@ -85,26 +114,112 @@ data AnEvenState =
 
 
 emptyState :: AnEvenState
-emptyState = AnEvenState
-             { stSpec = Nothing
-             , stProg = Nothing
-             , stDS = Nothing
-             , stConfig = defaultConfig }
+emptyState =
+    AnEvenState
+    { stSpec = Nothing
+    , stProg = Nothing
+    , stDS = Nothing
+    , stConfig = defaultConfig }
 
 
 -- ----------------------------------------------------------------------
 -- ** Basic Interface Functions
 -- ----------------------------------------------------------------------
 
+{-
 
--- 
+1. loads the spec and translates it to signature and sentences
+sigsensGen :: String -> String -> IO (SigSens Sign CMD)
+
+2. sentences are split into guarded dependency store and program
+splitAS :: [Named CMD] -> (GuardedMap [EXTPARAM], [Named CMD])
+
+3. guarded dependency is analyzed and made disjoint, to apply it to a dependency store use 'fmap'
+analyzeGuarded :: Guarded [EXTPARAM] -> Guarded EPRange
+
+4. the dependency store is sorted by the dependency relation
+dependencySortAS :: GuardedMap EPRange -> [(String, Guarded EPRange)]
+
+5. we apply extended parameter elimination to the dependency store
+epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guarded EPRange)]
+
+6. the guarded dependency store is flattened to an ordinary one
+getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, AssDefinition)]
+
+6'. as 6, but this one returns in addition a mapping of elim-constants to ranges
+getElimAS' :: [(String, Guarded EPRange)] -> ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
+
+-}
+
+-- 1. 
+loadSpecEnv :: String -> String -> Sh AnEvenState ()
+loadSpecEnv lfn spn = do
+  sigs <- liftIO $ sigsensGen lfn spn
+  let f st = st { stSpec = Just sigs }
+  modifyShellSt f
+
+-- ??. 
+stateInfo :: Sh AnEvenState ()
+stateInfo = do
+  st <- getShellSt
+  case stSpec st of
+    Just (SigSens { sigsensLibname = ln}) ->
+        shellPutInfoLn $ show $ text "Library" <+> pretty ln <+> text "loaded."
+    _ -> shellPutInfoLn "System not initialized."
 
 
 
+rEPL :: IO ()
+rEPL = do
+   maybeLine <- readline "% "
+   case maybeLine of 
+    Nothing     -> return () -- EOF / control-d
+    Just "exit" -> return ()
+    Just line -> do addHistory line
+                    putStrLn $ "The user input: " ++ (show line)
+                    rEPL
 
 
+-- Another repl based on Shellac
+
+-- defaultBackend = readlineBackend
+defaultBackend = haskelineBackend
+
+runToolREPL :: AnEvenState -> IO AnEvenState
+runToolREPL st = do
+    let
+      desc =
+         (mkShellDescription cmds evalFun)
+         { defaultCompletions = Just completeUndefault
+         , greetingText       = Just (versionInfo ++ shellMessage)
+         , commandStyle       = OnlyCommands
+         }
+    runShell desc defaultBackend st
+
+runTool :: IO AnEvenState
+runTool = runToolREPL emptyState
+
+-- ----------------------------------------------------------------------
+-- ** commands
+-- ----------------------------------------------------------------------
+
+evalFun :: String -> Sh AnEvenState ()
+evalFun s = shellPutInfoLn $ "evaluate " ++ s ++ "!"
 
 
+completeUndefault :: AnEvenState -> String -> IO [String]
+completeUndefault _ s = return $
+                        if length s > 2 then [] else
+                            map (\x -> s++"Undefault"++show x) [0..length s]
+
+cmds :: [ShellCommand AnEvenState]
+cmds =
+  [ exitCommand "q"
+  , helpCommand "h"
+
+  , cmd "load"       loadSpecEnv    "Loads an EnCL spec from the given file- and specname"
+  , cmd "info"       stateInfo      "Show information on the current state"
+  ]
 
 
 
