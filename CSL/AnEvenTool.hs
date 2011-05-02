@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleContexts #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleContexts, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL
@@ -34,6 +34,7 @@ import CSL.Logic_CSL
 import CSL.DependencyGraph
 import CSL.GuardedDependencies
 import CSL.EPElimination
+import CSL.EPRelation
 
 import CSL.AS_BASIC_CSL
 import CSL.Sign
@@ -48,23 +49,42 @@ import Driver.Options
 
 import Control.Monad.State.Class
 import Control.Monad.Reader
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe
+import Data.List
+
+import Data.IORef
 
 import System.IO
 import System.Directory
+import System.FilePath
 
+import Text.Regex
 
 -- Shell handling/building imports
 import System.Console.Readline
 
 import System.Console.Shell
+import qualified System.Console.Shell.Backend as ShBE
 import System.Console.Shell.ShellMonad
 
--- memory access error in runShell when using readline-backend
--- , hence I prefer haskeline!
+{- PROBLEMS with Shellac:
+
+   1. When using the readline-backend and load this module in a "make ghci"
+   session, there is a segfault after invoking runShell. When running a compiled
+   program then this does not happen anymore!
+
+   2. With all backends, when explicitly calling initBackend then there are
+   segfaults after exiting from the REPL or even during completion...
+
+
+-}
 
 -- import System.Console.Shell.Backend.Readline
 import System.Console.Shell.Backend.Haskeline
+
 -- ----------------------------------------------------------------------
 
 instance Pretty Bool where
@@ -95,6 +115,74 @@ shellMessage = unlines
   ]
 
 -- ----------------------------------------------------------------------
+-- ** Utils
+-- ----------------------------------------------------------------------
+
+
+{-
+  Given a relation ~ represented by M through
+  a ~ b <=> b elem (lookup a in M)
+  we compute the strict set of elements S transitively related to a, i.e.,
+  S is the smallest set satisfying:
+  b elem S <=> a /= b /\ (a ~ b \/ (EX a' elem S. a' ~ b))
+-}
+terminalSeg :: Ord a => Map.Map a [a] -- the relation
+            -> a             -- the element
+            -> Set.Set a     -- the terminalSegment of the element
+terminalSeg rel el = snd $ terminalSegEx rel (Set.singleton el) el
+
+terminalSegEx :: Ord a => Map.Map a [a] -- the relation
+          -> Set.Set a         -- the cache
+          -> a                 -- the element
+          -> ( Set.Set a       -- the updated cache
+             , Set.Set a       -- the terminalSegment of the element
+             )
+terminalSegEx rel cache el =
+    case Map.lookup el rel of
+      Nothing -> (cache, Set.empty)
+      Just l ->
+          let l' = filter (flip Set.notMember cache) l
+              cache' = foldr Set.insert cache l'
+              (cache'', iss) = mapAccumL (terminalSegEx rel) cache' l'
+          in (cache'', Set.unions iss)
+
+
+matchCands :: [String] -> String -> [String]
+matchCands l str = filter (isPrefixOf str) l
+
+-- spec extraction from source files
+specNameRE :: Regex
+specNameRE = mkRegex "^\\s*spec\\W+(\\w+)"
+
+getSpecNames :: String -> [String]
+getSpecNames txt = sort $ concat $ mapMaybe (matchRegex specNameRE) $ lines txt
+
+getSpecNamesFromFile :: Maybe FilePath -> IO [String]
+getSpecNamesFromFile Nothing = return []
+getSpecNamesFromFile (Just fp) = do
+  fe <- doesFileExist fp
+  if fe then readFile fp >>= return . getSpecNames else return []
+
+
+-- use this history file
+historyFilePath :: IO FilePath
+historyFilePath = do
+  tmp <- getTemporaryDirectory
+  return $ joinPath [tmp, "AnEvenHistory.txt"]
+
+-- ----------------------------------------------------------------------
+-- ** Shell abstraction
+-- ----------------------------------------------------------------------
+
+type BackendState = ShellacState
+-- type BackendState = ()
+
+defaultBackend :: ShBE.ShellBackend BackendState
+defaultBackend = haskelineBackend
+-- defaultBackend = readlineBackend
+
+
+-- ----------------------------------------------------------------------
 -- ** Basic Datatypes
 -- ----------------------------------------------------------------------
 
@@ -103,23 +191,168 @@ data AnEvenConfig = AnEvenConfig
 defaultConfig :: AnEvenConfig
 defaultConfig = AnEvenConfig
 
+{- AnEventState
+
+   We use this state as a cache/store for data which depends of other data.
+   In order to clear dependent entries when we update a given value we
+   use *update trigger*, which are executed recursively.
+
+-}
+
+data TriggerSymbol = TrgSpec | TrgProg | TrgDS | TrgODS deriving (Eq, Ord, Show)
+
+triggers :: Map.Map TriggerSymbol [TriggerSymbol]
+triggers = Map.fromList
+           [ (TrgSpec,  [TrgProg, TrgDS])
+           , (TrgDS,    [TrgODS])
+           ]
+
+
 data AnEvenState = 
     AnEvenState
     { stSpec :: Maybe (SigSens Sign CMD) -- current hets environment
     , stConfig :: AnEvenConfig -- the global settings
     , stProg :: Maybe [Named CMD] -- the current program (derived from spec)
-    , stDS :: Maybe (GuardedMap [EXTPARAM]) -- the current dependency store
-                                            -- (derived from spec)
+    , stDS :: Maybe (GuardedMap EPRange) -- the current dependency store
+                                         -- (derived from spec)
+
+    -- the ordered version of the current dependency store
+    , stODS :: Maybe [(String, Guarded EPRange)]
+
+    , stCompletionState :: IORef (Maybe FilePath) -- see completion-logic
     }
 
-
-emptyState :: AnEvenState
-emptyState =
+initialState :: IO AnEvenState
+initialState = do
+  csinit <- newIORef Nothing
+  return $
     AnEvenState
     { stSpec = Nothing
     , stProg = Nothing
     , stDS = Nothing
-    , stConfig = defaultConfig }
+    , stODS = Nothing
+    , stConfig = defaultConfig
+    , stCompletionState = csinit
+    }
+
+
+-- accessor functions
+getStGeneric :: (AnEvenState -> Maybe a) -- the accessor function
+             -> String -- the error message
+             -> Sh AnEvenState a
+
+getStGeneric f msg = do
+  st <- getShellSt
+  case f st of
+    Just a -> return a
+    Nothing -> error msg
+
+getStSpec :: Sh AnEvenState (SigSens Sign CMD)
+getStSpec = getStGeneric stSpec "Any specification loaded."
+
+getStProg :: Sh AnEvenState [Named CMD]
+getStProg = getStGeneric stProg "Program not initialized."
+
+getStDepStore :: Sh AnEvenState (GuardedMap EPRange)
+getStDepStore = getStGeneric stDS "Dependency Store not initialized."
+
+-- update functions
+updStAS :: GuardedMap EPRange -> [Named CMD] -> Sh AnEvenState ()
+updStAS gm l =
+    let f st = st { stProg = Just l, stDS = Just gm } in modifyShellSt f
+
+updStSpec :: SigSens Sign CMD -> Sh AnEvenState ()
+updStSpec sp = let f st = st { stSpec = Just sp } in modifyShellSt f
+
+
+-- reset functions, when partially applied to a TriggerSymbol can be passed to
+-- modifyShellSt
+resetSt :: TriggerSymbol -> AnEvenState -> AnEvenState
+resetSt trg st =
+    case trg of
+      TrgSpec  -> st { stSpec = Nothing }
+      TrgProg  -> st { stProg = Nothing }
+      TrgDS    -> st { stDS = Nothing }
+      TrgODS   -> st { stODS = Nothing }
+
+
+-- triggers recursively all resets for the given symbol
+runTrigger :: TriggerSymbol -> Sh AnEvenState ()
+runTrigger trg =
+    let trgs = terminalSeg triggers trg
+        f st = Set.fold resetSt st trgs
+    in modifyShellSt f
+
+
+
+{- completion-logic:
+
+  due to shortcomings of the Shellac interface concerning completion
+  (no context-sensitive completion possible!), we implement the following
+  completion logic using the AnEvenState:
+
+  * When a filename argument is completed we remember the completion in the
+    state-field stCompletionState.
+
+  * When a command using filename arguments is executed we clear the
+    stCompletionState field
+
+  * In the specname completion function we use the stCompletionState field to
+    read eventually the specfile and extract the possible specnames
+
+-}
+
+-- see completion-logic
+setComplFilepath :: AnEvenState -> Maybe FilePath -> IO ()
+setComplFilepath st mFp =
+    atomicModifyIORef (stCompletionState st) $ \ _ -> (mFp, ())
+
+getComplFilepath :: AnEvenState -> IO (Maybe FilePath)
+getComplFilepath st = readIORef $ stCompletionState st
+
+writeComplState :: Maybe FilePath -> Sh AnEvenState ()
+writeComplState mFp = do
+  nst <- getShellSt
+  liftIO $ setComplFilepath nst mFp
+
+readComplState :: Sh AnEvenState (Maybe FilePath)
+readComplState = do
+  nst <- getShellSt
+  liftIO $ getComplFilepath nst
+
+
+
+-- Completable dummytypes and completion instances
+
+-- File completable
+
+data SpecFile = SpecFile
+data SpecName = SpecName
+
+instance Completion SpecFile AnEvenState where
+
+{- REMARK (on a Shellac issue):
+  There is no way to get the backend state from the backend other than the init
+  function, but when we call initBackend explicitly we get segfaults (later in
+  the program, not directly...).
+  For our purposes it is sufficient to use a dummy backend state because in the
+  completeFilename function this value is not touched.
+-}
+  complete _ st str = do
+      -- the backend state is not touched only passed...
+      opts <- ShBE.completeFilename defaultBackend (error "117: no bst") str
+      unless (null opts) -- see completion-logic
+                 $ setComplFilepath st $ Just $ head opts
+      return opts
+
+  completableLabel _ = "<fname>"
+
+instance Completion SpecName AnEvenState where
+  complete _ st str = do
+      mFp <- getComplFilepath st
+      l <- getSpecNamesFromFile mFp
+      return $ matchCands l str
+  completableLabel _ = "<specname>"
 
 
 -- ----------------------------------------------------------------------
@@ -151,12 +384,25 @@ getElimAS' :: [(String, Guarded EPRange)] -> ([(ConstantName, AssDefinition)], M
 
 -}
 
+
+
 -- 1. 
-loadSpecEnv :: String -> String -> Sh AnEvenState ()
-loadSpecEnv lfn spn = do
+loadSpecEnv :: Completable SpecFile -> Completable SpecName -> Sh AnEvenState ()
+loadSpecEnv (Completable lfn) (Completable spn) = do
   sigs <- liftIO $ sigsensGen lfn spn
-  let f st = st { stSpec = Just sigs }
-  modifyShellSt f
+  updStSpec sigs
+  runTrigger TrgSpec
+  writeComplState Nothing -- see completion-logic
+
+-- 2., 3.
+extractFromSpec :: Sh AnEvenState ()
+extractFromSpec = do
+  sigs <- getStSpec
+  let (gm, prg) = splitAS $ sigsensNamedSentences sigs
+  updStAS (fmap analyzeGuarded gm) prg
+  mapM_ runTrigger [TrgDS, TrgProg]
+
+
 
 -- ??. 
 stateInfo :: Sh AnEvenState ()
@@ -167,8 +413,62 @@ stateInfo = do
         shellPutInfoLn $ show $ text "Library" <+> pretty ln <+> text "loaded."
     _ -> shellPutInfoLn "System not initialized."
 
+debugInfo :: Sh AnEvenState ()
+debugInfo = do
+  mFp <- readComplState
+  case mFp of
+    Just fp ->
+        do
+          shellPutInfoLn $ "Debug: " ++ fp
+          fe <- liftIO $ doesFileExist fp
+          when fe $
+               do
+                 cont <- liftIO $ readFile fp
+                 shellPutInfoLn "=========================== CONTENT ==========================="
+                 shellPutInfoLn cont
+                 shellPutInfoLn "==============================================================="
+                 shellPutInfoLn $ unlines $ getSpecNames cont
+    _ -> shellPutInfoLn "Debug: <EMPTY>"
 
 
+-- A REPL based on Shellac
+
+runToolREPL :: AnEvenState -> IO AnEvenState
+runToolREPL st = do
+    hfp <- historyFilePath
+    let desc =
+            (mkShellDescription cmds evalFun)
+            { greetingText       = Just (versionInfo ++ shellMessage)
+            , commandStyle       = OnlyCommands
+            , historyFile        = Just hfp
+            }
+
+    -- execute the shell
+    runShell desc defaultBackend st
+
+runTool :: IO AnEvenState
+runTool = initialState >>= runToolREPL
+
+evalFun :: String -> Sh AnEvenState ()
+evalFun [] = return ()
+evalFun s = do
+  shellPutInfoLn $ concat ["Unknown command: ", s, "\n\nAvailable commands:\n"]
+  shellSpecial $ ShellHelp Nothing
+
+cmds :: [ShellCommand AnEvenState]
+cmds =
+  [ exitCommand "q"
+  , helpCommand "h"
+
+  , cmd "load"       loadSpecEnv    "Loads an EnCL spec from the given file- and specname"
+  , cmd "as"         extractFromSpec "gets...TODO: make it right with automatic triggering of extraction-functions..."
+  , cmd "info"       stateInfo      "Show information on the current state"
+  , cmd "debug"      debugInfo      "Show debug information"
+  ]
+
+
+
+-------- a Readline REPL 
 rEPL :: IO ()
 rEPL = do
    maybeLine <- readline "% "
@@ -178,51 +478,6 @@ rEPL = do
     Just line -> do addHistory line
                     putStrLn $ "The user input: " ++ (show line)
                     rEPL
-
-
--- Another repl based on Shellac
-
--- defaultBackend = readlineBackend
-defaultBackend = haskelineBackend
-
-runToolREPL :: AnEvenState -> IO AnEvenState
-runToolREPL st = do
-    let
-      desc =
-         (mkShellDescription cmds evalFun)
-         { defaultCompletions = Just completeUndefault
-         , greetingText       = Just (versionInfo ++ shellMessage)
-         , commandStyle       = OnlyCommands
-         }
-    runShell desc defaultBackend st
-
-runTool :: IO AnEvenState
-runTool = runToolREPL emptyState
-
--- ----------------------------------------------------------------------
--- ** commands
--- ----------------------------------------------------------------------
-
-evalFun :: String -> Sh AnEvenState ()
-evalFun s = shellPutInfoLn $ "evaluate " ++ s ++ "!"
-
-
-completeUndefault :: AnEvenState -> String -> IO [String]
-completeUndefault _ s = return $
-                        if length s > 2 then [] else
-                            map (\x -> s++"Undefault"++show x) [0..length s]
-
-cmds :: [ShellCommand AnEvenState]
-cmds =
-  [ exitCommand "q"
-  , helpCommand "h"
-
-  , cmd "load"       loadSpecEnv    "Loads an EnCL spec from the given file- and specname"
-  , cmd "info"       stateInfo      "Show information on the current state"
-  ]
-
-
-
 
 -- ----------------------------------------------------------------------
 -- * The functionality for the EvalSpec-Tool

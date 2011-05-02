@@ -16,7 +16,7 @@ import System.Environment
 import System.Console.GetOpt
 
 import qualified Interfaces.Process as PC
-import CSL.AnEvenTool (evalWithVerification, CAS (..), CASState(..))
+import CSL.AnEvenTool (evalWithVerification, CAS (..), CASState(..), runTool)
 import Common.Utils
 
 import Data.Bits
@@ -26,7 +26,8 @@ import Data.List
 import Control.Monad
 
 main :: IO ()
-main = getArgs >>= runMain True >> putStr ""
+--main = getArgs >>= runMain True >> putStr ""
+main = runTool >> return ()
 
 runMain :: Bool -> [String] -> IO (Maybe CASState)
 runMain cl args =
