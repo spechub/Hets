@@ -178,7 +178,7 @@ insertThmLinks lg links dg' = foldM ins' dg' links where
   ins' dg l = do
     (i, mr) <- extractMorphism lg dg l
     (j, gsig) <- signOfNode (trg l) dg
-    morph <- finalizeMorphism lg mr gsig
+    morph <- finalizeMorphism lg mr gsig (lType l)
     insertLink i j morph (lType l) dg
 
 
@@ -194,7 +194,7 @@ insNdAndDefLinks lg trgNd links dg = do
   dg' <- insertNode gt dg trgNd
   (j, gsig2) <- signOfNode (fst trgNd) dg'
   let ins' dgR ((i, mr), l) = do
-        morph <- finalizeMorphism lg mr gsig2
+        morph <- finalizeMorphism lg mr gsig2 (lType l)
         insertLink i j morph (lType l) dgR
   foldM ins' dg' $ zip mrs links
 
@@ -219,10 +219,15 @@ insertNode gt dg x = do
 
 {- | given a links intermediate morphism and its target nodes signature,
 this function calculates the final morphism for this link -}
-finalizeMorphism :: LogicGraph -> GMorphism -> G_sign -> Result GMorphism
-finalizeMorphism lg mr sg = do
-  mr1 <- ginclusion lg (cod mr) sg
-  composeMorphisms mr mr1
+finalizeMorphism :: LogicGraph -> GMorphism -> G_sign -> DGLinkType
+                 -> Result GMorphism
+finalizeMorphism lg mr sg lTp = do
+    {- TODO: for HidingDefLinks the inclusion is reversed.
+    check if this works right! -}
+    mr1 <- case lTp of
+      HidingDefLink -> ginclusion lg sg (cod mr)
+      _ -> ginclusion lg (cod mr) sg
+    composeMorphisms mr mr1
 
 
 -- * Utils
@@ -271,7 +276,7 @@ mkDGNodeLab gt annos (name, el) = let
     (response, msg) = extendByBasicSpec annos specs gt
     in case response of
       Success gt' _ symbs _ -> return (gt', symbs)
-      Failure _ -> fail msg
+      Failure _ -> fail $ "( @node: " ++ name ++ " )\n" ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
     Nothing -> do
@@ -316,29 +321,30 @@ extractLinkType l = do
   tp <- case findChild (unqual "Type") l of
     Nothing -> fail "Links type description is missing!"
     Just xy -> return $ strContent xy
-  let sc = if isInfixOf "Global" tp then Global else Local
-  if isInfixOf "Def" tp
-    -- Case #1: DefinitionLink, global or local
-    then return $ localOrGlobalDef sc None
-    else if not $ isInfixOf "Thm" tp
-      then fail $ "unknown link type!\n" ++ tp
-        else case findChild (unqual "Status") l of
-        -- Case #2: Unproven theorem link, global or local
-        Nothing -> return $ localOrGlobalThm sc None
-        Just st -> if strContent st /= "Proven"
-          then fail $ "unknown links status!\n" ++ strContent st
-          -- Case #3: Proven theorem link, global or local
-          else let
-            rl = case findChild (unqual "Rule") l of
-              Nothing -> "no rule"
-              Just r' -> strContent r'
-            cc = case findChild (unqual "ConsStatus") l of
-              Nothing -> None
-              Just c' -> case readMaybe $ strContent c' of
-                Just consv -> consv
+  if tp == "HidingDefInc" then return HidingDefLink else do
+    let sc = if isInfixOf "Global" tp then Global else Local
+    if isInfixOf "Def" tp
+      -- Case #1: DefinitionLink, global or local
+      then return $ localOrGlobalDef sc None
+      else if not $ isInfixOf "Thm" tp
+        then fail $ "unknown link type!\n" ++ tp
+          else case findChild (unqual "Status") l of
+          -- Case #2: Unproven theorem link, global or local
+          Nothing -> return $ localOrGlobalThm sc None
+          Just st -> if strContent st /= "Proven"
+            then fail $ "unknown links status!\n" ++ strContent st
+            -- Case #3: Proven theorem link, global or local
+            else let
+              rl = case findChild (unqual "Rule") l of
+                Nothing -> "no rule"
+                Just r' -> strContent r'
+              cc = case findChild (unqual "ConsStatus") l of
                 Nothing -> None
-            lkind = ThmLink $ Proven (DGRule rl) emptyProofBasis
-            in return $ ScopedLink sc lkind $ mkConsStatus cc
+                Just c' -> case readMaybe $ strContent c' of
+                  Just consv -> consv
+                  Nothing -> None
+              lkind = ThmLink $ Proven (DGRule rl) emptyProofBasis
+              in return $ ScopedLink sc lkind $ mkConsStatus cc
 
 
 -- | extracts the global annotations from the xml-graph
