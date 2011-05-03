@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 {- |
 Module      :  $Header$
 Description :  The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL
@@ -14,6 +14,18 @@ The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL specifications.
 Provides functionality for interactive experimenting with EnCL specifications.
 -}
 
+
+{- TODO:
+
+ * implement the output of the elim-const to eprange mapping
+ * implement the cmpenv creation
+   - get the corresponding data from the signature
+   - implement the global settings for logfiles etc...
+ * complete the pretty printing stuff
+   - add visualization functions and bind them to commands
+ * check the autoload/reset facility
+
+-}
 
 module CSL.AnEvenTool
     -- (evalWithVerification, CAS (..), CASState(..))
@@ -35,6 +47,7 @@ import CSL.DependencyGraph
 import CSL.GuardedDependencies
 import CSL.EPElimination
 import CSL.EPRelation
+import qualified CSL.SMTComparison as CMP
 
 import CSL.AS_BASIC_CSL
 import CSL.Sign
@@ -146,6 +159,11 @@ terminalSegEx rel cache el =
               (cache'', iss) = mapAccumL (terminalSegEx rel) cache' l'
           in (cache'', Set.unions iss)
 
+predecessorsOf :: Ord a => Map.Map a [a] -- the relation
+            -> a       -- the element
+            -> [a]     -- the predecessors
+predecessorsOf rel el = Map.keys $ Map.filter (elem el) rel
+
 
 matchCands :: [String] -> String -> [String]
 matchCands l str = filter (isPrefixOf str) l
@@ -183,6 +201,39 @@ defaultBackend = haskelineBackend
 
 
 -- ----------------------------------------------------------------------
+-- ** Pretty Printing for AnEvenState fields
+-- ----------------------------------------------------------------------
+
+class PrettyOutput a b where
+    showPretty :: a -> b -> Doc
+
+data POdefault = POdefault
+
+instance PrettyOutput POdefault (SigSens a b) where
+    showPretty _ sigs = pretty $ sigsensLibname sigs
+
+instance PrettyOutput POdefault [Named CMD] where
+    showPretty _ prog = pretty prog
+
+{- TODO: implement it for the other types...
+    , stDS :: Maybe (GuardedMap EPRange) -- the current dependency store
+                                         -- (derived from spec)
+
+    -- the ordered version of the current dependency store
+    , stODS :: Maybe [(String, Guarded EPRange)]
+
+    -- the guarded version of the current dependency store
+    , stGDS :: Maybe [(String, Guarded EPRange)]
+    -- the flattened version of the guarded dependency store
+    , stFDS :: Maybe [(ConstantName, AssDefinition)]
+    -- the elim constant to eprange mapping
+    , stECRgMap :: Maybe (Map.Map ConstantName EPRange)
+
+    -- the environment for the range-comparer facility
+    , stCmpEnv :: Maybe CMP.VarEnv
+-}
+
+-- ----------------------------------------------------------------------
 -- ** Basic Datatypes
 -- ----------------------------------------------------------------------
 
@@ -199,19 +250,35 @@ defaultConfig = AnEvenConfig
 
 -}
 
-data TriggerSymbol = TrgSpec | TrgProg | TrgDS | TrgODS deriving (Eq, Ord, Show)
+{- autoload-logic:
+
+  Each trigger symbol has
+   * a corresponding field in the state (see resetSt/checkSt),
+   and
+   * a function which sets the field value (see triggerFunc)
+
+  If a function depends on some state fields we provide an autoload
+  facility which tries to fill unset fields recursively.
+  This is only possible if the corresponding function does not take arguments.
+  In the latter case we break the autoload process with an error message.
+-}
+
+data TriggerSymbol = TrgSpec | TrgProg | TrgDS | TrgODS | TrgFDS | TrgGDS
+                   | TrgECRgMap | TrgCmpEnv deriving (Eq, Ord, Show)
 
 triggers :: Map.Map TriggerSymbol [TriggerSymbol]
 triggers = Map.fromList
-           [ (TrgSpec,  [TrgProg, TrgDS])
+           [ (TrgSpec,  [TrgProg, TrgDS, TrgCmpEnv])
            , (TrgDS,    [TrgODS])
+           , (TrgODS,    [TrgGDS])
+           , (TrgGDS,    [TrgFDS, TrgECRgMap])
            ]
+
 
 
 data AnEvenState = 
     AnEvenState
     { stSpec :: Maybe (SigSens Sign CMD) -- current hets environment
-    , stConfig :: AnEvenConfig -- the global settings
     , stProg :: Maybe [Named CMD] -- the current program (derived from spec)
     , stDS :: Maybe (GuardedMap EPRange) -- the current dependency store
                                          -- (derived from spec)
@@ -219,8 +286,22 @@ data AnEvenState =
     -- the ordered version of the current dependency store
     , stODS :: Maybe [(String, Guarded EPRange)]
 
+    -- the guarded version of the current dependency store
+    , stGDS :: Maybe [(String, Guarded EPRange)]
+    -- the flattened version of the guarded dependency store
+    , stFDS :: Maybe [(ConstantName, AssDefinition)]
+    -- the elim constant to eprange mapping
+    , stECRgMap :: Maybe (Map.Map ConstantName EPRange)
+
+    -- the environment for the range-comparer facility
+    , stCmpEnv :: Maybe CMP.VarEnv
+
+
+    , stConfig :: AnEvenConfig -- the global settings
     , stCompletionState :: IORef (Maybe FilePath) -- see completion-logic
     }
+
+
 
 initialState :: IO AnEvenState
 initialState = do
@@ -231,6 +312,11 @@ initialState = do
     , stProg = Nothing
     , stDS = Nothing
     , stODS = Nothing
+    , stGDS = Nothing
+    , stFDS = Nothing
+    , stECRgMap = Nothing
+    , stCmpEnv = Nothing
+
     , stConfig = defaultConfig
     , stCompletionState = csinit
     }
@@ -256,6 +342,22 @@ getStProg = getStGeneric stProg "Program not initialized."
 getStDepStore :: Sh AnEvenState (GuardedMap EPRange)
 getStDepStore = getStGeneric stDS "Dependency Store not initialized."
 
+getStODS :: Sh AnEvenState [(String, Guarded EPRange)]
+getStODS = getStGeneric stODS "Ordered Dependency Store not initialized."
+
+getStGDS :: Sh AnEvenState [(String, Guarded EPRange)]
+getStGDS = getStGeneric stGDS "Guarded Dependency Store not initialized."
+
+getStFDS :: Sh AnEvenState [(ConstantName, AssDefinition)]
+getStFDS = getStGeneric stFDS "Flattened Dependency Store not initialized."
+
+getStECRgMap :: Sh AnEvenState (Map.Map ConstantName EPRange)
+getStECRgMap = getStGeneric stECRgMap "Elim constant to eprange mapping not initialized."
+
+getStCmpEnv :: Sh AnEvenState CMP.VarEnv
+getStCmpEnv = getStGeneric stCmpEnv "Comparer environment not initialized."
+
+
 -- update functions
 updStAS :: GuardedMap EPRange -> [Named CMD] -> Sh AnEvenState ()
 updStAS gm l =
@@ -264,26 +366,88 @@ updStAS gm l =
 updStSpec :: SigSens Sign CMD -> Sh AnEvenState ()
 updStSpec sp = let f st = st { stSpec = Just sp } in modifyShellSt f
 
+updStODS :: [(String, Guarded EPRange)] -> Sh AnEvenState ()
+updStODS ods = let f st = st { stODS = Just ods } in modifyShellSt f
+
+updStGDS :: [(String, Guarded EPRange)] -> Sh AnEvenState ()
+updStGDS gds = let f st = st { stGDS = Just gds } in modifyShellSt f
+
+updStFDS :: [(ConstantName, AssDefinition)] -> Sh AnEvenState ()
+updStFDS fds = let f st = st { stFDS = Just fds } in modifyShellSt f
+
+updStECRgMap :: Map.Map ConstantName EPRange -> Sh AnEvenState ()
+updStECRgMap m = let f st = st { stECRgMap = Just m } in modifyShellSt f
+
+updStCmpEnv :: CMP.VarEnv -> Sh AnEvenState ()
+updStCmpEnv ve = let f st = st { stCmpEnv = Just ve } in modifyShellSt f
+
 
 -- reset functions, when partially applied to a TriggerSymbol can be passed to
 -- modifyShellSt
 resetSt :: TriggerSymbol -> AnEvenState -> AnEvenState
 resetSt trg st =
     case trg of
-      TrgSpec  -> st { stSpec = Nothing }
-      TrgProg  -> st { stProg = Nothing }
-      TrgDS    -> st { stDS = Nothing }
-      TrgODS   -> st { stODS = Nothing }
+      TrgSpec     -> st { stSpec = Nothing }
+      TrgProg     -> st { stProg = Nothing }
+      TrgDS       -> st { stDS   = Nothing }
+      TrgODS      -> st { stODS  = Nothing }
+      TrgGDS      -> st { stGDS  = Nothing }
+      TrgFDS      -> st { stFDS  = Nothing }
+      TrgECRgMap  -> st { stECRgMap  = Nothing }
+      TrgCmpEnv   -> st { stCmpEnv  = Nothing }
 
 
 -- triggers recursively all resets for the given symbol
-runTrigger :: TriggerSymbol -> Sh AnEvenState ()
-runTrigger trg =
-    let trgs = terminalSeg triggers trg
-        f st = Set.fold resetSt st trgs
+runResetTrigger :: [TriggerSymbol] -> Sh AnEvenState ()
+runResetTrigger trgs =
+    let trgSet = Set.unions $ map (terminalSeg triggers) trgs
+        f st = Set.fold resetSt st trgSet
     in modifyShellSt f
 
+-- checks whether the corresponding field is set (Just-val) or unset (Nothing)
+checkSt :: TriggerSymbol -> AnEvenState -> Bool
+checkSt trg st =
+    case trg of
+      TrgSpec    -> isJust $ stSpec st
+      TrgProg    -> isJust $ stProg st
+      TrgDS      -> isJust $ stDS st
+      TrgODS     -> isJust $ stODS st
+      TrgGDS     -> isJust $ stGDS st
+      TrgFDS     -> isJust $ stFDS st
+      TrgECRgMap -> isJust $ stECRgMap st
+      TrgCmpEnv  -> isJust $ stCmpEnv st
 
+
+triggerFunc :: TriggerSymbol -> Sh AnEvenState ()
+triggerFunc trg =
+    case trg of
+      TrgSpec     -> noTriggerFunc trg "load"
+      TrgProg     -> alExtractFromSpec
+      TrgDS       -> alExtractFromSpec
+      TrgCmpEnv   -> alExtractFromSpec
+      TrgODS      -> alSortDS
+      TrgGDS      -> alEPElim
+      TrgFDS      -> alElimAS
+      TrgECRgMap  -> alElimASWithMap
+
+
+noTriggerFunc :: TriggerSymbol -> String -> a
+noTriggerFunc trg s =
+    error $ concat [ "Cannot autoload for trigger ", show trg
+                   , "\nPlease use the ", s, "-command for this purpose" ]
+
+autoloads :: [TriggerSymbol] -> Sh AnEvenState ()
+autoloads trgs = mapM_ autoload trgs
+
+autoload :: TriggerSymbol -> Sh AnEvenState ()
+autoload trg = do
+  let isFieldSet = fmap (checkSt trg) getShellSt
+  b <- isFieldSet
+  unless b $ do
+    mapM_ autoload $ predecessorsOf triggers trg
+    b' <- isFieldSet
+    unless b' $ triggerFunc trg
+    
 
 {- completion-logic:
 
@@ -359,7 +523,7 @@ instance Completion SpecName AnEvenState where
 -- ** Basic Interface Functions
 -- ----------------------------------------------------------------------
 
-{-
+{- Most of this functions are autoload functions required for some visualization output
 
 1. loads the spec and translates it to signature and sentences
 sigsensGen :: String -> String -> IO (SigSens Sign CMD)
@@ -380,27 +544,22 @@ epElimination :: CompareIO m => [(String, Guarded EPRange)] -> m [(String, Guard
 getElimAS :: [(String, Guarded EPRange)] -> [(ConstantName, AssDefinition)]
 
 6'. as 6, but this one returns in addition a mapping of elim-constants to ranges
-getElimAS' :: [(String, Guarded EPRange)] -> ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
+getElimASWithMap :: [(String, Guarded EPRange)] -> ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
 
 -}
 
 
 
 -- 1. 
-loadSpecEnv :: Completable SpecFile -> Completable SpecName -> Sh AnEvenState ()
-loadSpecEnv (Completable lfn) (Completable spn) = do
+cmdLoadSpecEnv :: Completable SpecFile -> Completable SpecName -> Sh AnEvenState ()
+cmdLoadSpecEnv (Completable lfn) (Completable spn) = do
   sigs <- liftIO $ sigsensGen lfn spn
   updStSpec sigs
-  runTrigger TrgSpec
+  runResetTrigger [TrgSpec]
   writeComplState Nothing -- see completion-logic
 
--- 2., 3.
-extractFromSpec :: Sh AnEvenState ()
-extractFromSpec = do
-  sigs <- getStSpec
-  let (gm, prg) = splitAS $ sigsensNamedSentences sigs
-  updStAS (fmap analyzeGuarded gm) prg
-  mapM_ runTrigger [TrgDS, TrgProg]
+
+
 
 
 
@@ -409,9 +568,19 @@ stateInfo :: Sh AnEvenState ()
 stateInfo = do
   st <- getShellSt
   case stSpec st of
-    Just (SigSens { sigsensLibname = ln}) ->
-        shellPutInfoLn $ show $ text "Library" <+> pretty ln <+> text "loaded."
+    Just (SigSens { sigsensLibname = ln, sigsensNode = nd }) ->
+        shellPutInfoLn $ show $ text "Library" <+> pretty ln <> text ":" <> pretty nd  <+> text "loaded."
     _ -> shellPutInfoLn "System not initialized."
+  when (isJust $ stProg st) $ shellPutInfoLn "Program loaded."
+  when (isJust $ stDS st) $ shellPutInfoLn "Dependency Store loaded."
+  when (isJust $ stODS st) $ shellPutInfoLn "Ordered Dependency Store loaded."
+  when (isJust $ stGDS st) $ shellPutInfoLn "Guarded Dependency Store loaded."
+  when (isJust $ stFDS st) $ shellPutInfoLn "Flattened Dependency Store loaded."
+  when (isJust $ stECRgMap st) $ shellPutInfoLn "Elim-constant Map loaded."
+  when (isJust $ stCmpEnv st) $ shellPutInfoLn "Comparer Environment loaded."
+
+
+
 
 debugInfo :: Sh AnEvenState ()
 debugInfo = do
@@ -429,6 +598,55 @@ debugInfo = do
                  shellPutInfoLn "==============================================================="
                  shellPutInfoLn $ unlines $ getSpecNames cont
     _ -> shellPutInfoLn "Debug: <EMPTY>"
+
+
+
+
+-- ** Autoloadable functions
+-- 2., 3.
+alExtractFromSpec :: Sh AnEvenState ()
+alExtractFromSpec = do
+  autoload TrgSpec
+  sigs <- getStSpec
+  let (gm, prg) = splitAS $ sigsensNamedSentences sigs
+  updStAS (fmap analyzeGuarded gm) prg
+  runResetTrigger [TrgDS, TrgProg]
+
+-- 4.
+alSortDS :: Sh AnEvenState ()
+alSortDS = do
+  autoload TrgDS
+  ds <- getStDepStore
+  updStODS $ dependencySortAS ds
+  runResetTrigger [TrgODS]
+
+-- 5.
+alEPElim :: Sh AnEvenState ()
+alEPElim = do
+  autoloads [TrgODS, TrgCmpEnv]
+  ods <- getStODS
+  gds <- epElimination ods
+  updStGDS gds
+  runResetTrigger [TrgGDS]
+  
+-- 6.
+alElimAS :: Sh AnEvenState ()
+alElimAS = do
+  autoload TrgGDS
+  gds <- getStGDS
+  updStFDS $ getElimAS gds
+  runResetTrigger [TrgFDS]
+
+-- 6'.
+alElimASWithMap :: Sh AnEvenState ()
+alElimASWithMap = do
+  autoload TrgGDS
+  gds <- getStGDS
+  let (fds, m) = getElimASWithMap gds
+  updStFDS fds
+  updStECRgMap m
+  runResetTrigger [TrgFDS, TrgECRgMap]
+
 
 
 -- A REPL based on Shellac
@@ -460,8 +678,8 @@ cmds =
   [ exitCommand "q"
   , helpCommand "h"
 
-  , cmd "load"       loadSpecEnv    "Loads an EnCL spec from the given file- and specname"
-  , cmd "as"         extractFromSpec "gets...TODO: make it right with automatic triggering of extraction-functions..."
+  , cmd "load"       cmdLoadSpecEnv    "Loads an EnCL spec from the given file- and specname"
+
   , cmd "info"       stateInfo      "Show information on the current state"
   , cmd "debug"      debugInfo      "Show debug information"
   ]
@@ -478,6 +696,22 @@ rEPL = do
     Just line -> do addHistory line
                     putStrLn $ "The user input: " ++ (show line)
                     rEPL
+
+-- ----------------------------------------------------------------------
+-- ** CompareIO related stuff
+-- ----------------------------------------------------------------------
+
+instance CompareIO (Sh AnEvenState) where
+    logMessage s = do
+      ve <- getStCmpEnv
+      case CMP.loghandle ve of
+        Just hdl -> liftIO $ hPutStrLn hdl s
+        _ -> return ()
+
+    rangeFullCmp r1 r2 = do
+            ve <- getStCmpEnv
+            let vm = CMP.varmap ve
+            liftIO $ CMP.smtCompare ve (boolRange vm r1) $ boolRange vm r2
 
 -- ----------------------------------------------------------------------
 -- * The functionality for the EvalSpec-Tool

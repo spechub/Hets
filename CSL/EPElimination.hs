@@ -265,6 +265,12 @@ getElimAS = concatMap f where
     f (s, grdd) = zipWith (g s $ argvars grdd) [0..] $ guards grdd
     g s args i grd = (ElimConstant s i, mkDefinition args $ definition grd)
 
+
+-- TODO: implement the map-output
+getElimASWithMap :: [(String, Guarded EPRange)] ->
+                    ([(ConstantName, AssDefinition)], Map.Map ConstantName EPRange)
+getElimASWithMap gds = (getElimAS gds, Map.empty)
+
 -- | Return the assignments in output format of 'getElimAS' but for assignments
 --  not beeing extended parameter eliminated (for simple specs).
 getSimpleAS :: [(String, Guarded EPRange)] ->
