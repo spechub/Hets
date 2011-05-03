@@ -38,6 +38,8 @@ import CSL.AS_BASIC_CSL
 
 instance Pretty Domain where
     pretty = printDomain
+instance Pretty EP_decl where
+    pretty = printEPDecl
 instance Pretty OP_ITEM where
     pretty = printOpItem
 instance Pretty VAR_ITEM where
@@ -223,6 +225,16 @@ printOpItem (Op_item tokens _) =
 printVarItem :: VAR_ITEM -> Doc
 printVarItem (Var_item vars dom _) =
     hsep [sepByCommas $ map pretty vars, text "in", pretty dom]
+
+printEPDecl :: EP_decl -> Doc
+printEPDecl (EP_decl tk mDom mDef) =
+    let tkD = pretty tk
+        domD = case mDom of
+                 Just dom -> hsep [tkD, text "in", pretty dom]
+                 _ -> tkD
+    in case mDef of
+         Just def -> sepByCommas [domD, hsep [tkD, text "default=", pretty def]]
+         _ -> domD
 
 printDomain :: Domain -> Doc
 printDomain (Set l) = braces $ sepByCommas $ map printGC l

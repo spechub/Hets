@@ -94,7 +94,7 @@ complementEP (x, i) = case x of
 
 
 -- | Compares two 'EPExp': They are uncompareable if they overlap or are disjoint.
-compareEP :: EPExp -> EPExp -> EPCompare
+compareEP :: EPExp -> EPExp -> SetOrdering
 compareEP ep1@(r1, n1) ep2@(r2, n2)
     | r1 == r2 = compareSameRel r1 n1 n2
     | otherwise =
@@ -114,7 +114,7 @@ compareEP ep1@(r1, n1) ep2@(r2, n2)
           _ -> swapCmp $ compareEP ep2 ep1
 
 
-compareSameRel :: NormEP -> APInt -> APInt -> EPCompare
+compareSameRel :: NormEP -> APInt -> APInt -> SetOrdering
 compareSameRel r n1 n2
     | n1 == n2 = Comparable EQ
     | otherwise =

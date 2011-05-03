@@ -989,7 +989,7 @@ printOrdEPs s = let ft = forestFromEPs ((,) ()) $ toEPLs s
 --forestFromEPs :: (a -> EPTree b) -> [a] -> EPForest b
 
 
-compareEPgen :: Show a => (String -> a) -> (a -> a -> EPCompare) -> String -> String -> IO EPCompare
+compareEPgen :: Show a => (String -> a) -> (a -> a -> SetOrdering) -> String -> String -> IO SetOrdering
 compareEPgen p c a b =
     let epA = p a
         epB = p b

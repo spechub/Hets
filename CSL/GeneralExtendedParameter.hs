@@ -115,7 +115,7 @@ toEPExp (EP t r i) =
 leftOf :: BaseInterval -> BaseInterval -> Bool
 leftOf (_,b) (_,d) = b <= d
 
-compareBI :: BaseInterval -> BaseInterval -> EPCompare
+compareBI :: BaseInterval -> BaseInterval -> SetOrdering
 compareBI i1@(a,b) i2@(c,d)
     | i1 == i2 = Comparable EQ
     | b < c || a > d = Incomparable Disjoint
@@ -124,7 +124,7 @@ compareBI i1@(a,b) i2@(c,d)
     | otherwise = Incomparable Overlap
 
 
-compareBIEP :: BaseInterval -> EPExp -> EPCompare
+compareBIEP :: BaseInterval -> EPExp -> SetOrdering
 compareBIEP _ [] = Comparable GT
 compareBIEP i1 [i2] = compareBI i1 i2
 compareBIEP i1 (i2:l) =
@@ -143,7 +143,7 @@ compareBIEP i1 (i2:l) =
 -- TODO: implement this comparison procedure
 
 -- | Compares two 'EPExp': They are uncompareable if they overlap or are disjoint.
-compareEP :: EPExp -> EPExp -> EPCompare
+compareEP :: EPExp -> EPExp -> SetOrdering
 compareEP [] [] =  Comparable EQ
 compareEP _ [] =  Comparable GT
 compareEP [] _ =  Comparable LT

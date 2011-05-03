@@ -337,7 +337,7 @@ modelOf rm re = let
      This function can be optimized in returning directly disjoint
      once a disjoint subresult encountered.
 -}
-compareEPs :: EPExps -> EPExps -> EPCompare
+compareEPs :: EPExps -> EPExps -> SetOrdering
 compareEPs eps1 eps2 =
     -- choose smaller map for fold, and remember if maps are swapped
     let (eps, eps', sw) = if Map.size eps1 > Map.size eps2
@@ -374,7 +374,7 @@ compareEPs eps1 eps2 =
 
 -- | We try to decide the relation between the given ranges without using
 -- an external decision procedure.
-trySimpleFullCmp :: EPRange -> EPRange -> Maybe (EPCompare, Bool, Bool)
+trySimpleFullCmp :: EPRange -> EPRange -> Maybe (SetOrdering, Bool, Bool)
 trySimpleFullCmp r1 r2
     | isStarRange r1 && r1 == r2 = Just (Comparable EQ, False, False)
     | r1 == Empty && r1 == r2 = Just (Comparable EQ, True, True)
@@ -384,7 +384,7 @@ trySimpleFullCmp r1 r2
           _ -> Nothing
 
 -- | Same as 'trySimpleFullCmp' but without deciding if the ranges are empty or not
-trySimpleCmp :: EPRange -> EPRange -> Maybe (EPCompare, Bool, Bool)
+trySimpleCmp :: EPRange -> EPRange -> Maybe (SetOrdering, Bool, Bool)
 trySimpleCmp r1 r2
 
     | isStarRange r1 = Just (Comparable GT, False, r2 == Empty)
@@ -520,11 +520,11 @@ instance Pretty a => Show (EPNodeLabel a) where
 -- ----------------------------------------------------------------------
 
 class MonadIO m => CompareIO m where
-    rangeFullCmp :: EPRange -> EPRange -> m (EPCompare, Bool, Bool)
+    rangeFullCmp :: EPRange -> EPRange -> m (SetOrdering, Bool, Bool)
     logMessage :: String -> m ()
     logMessage _ = return ()
 
-rangeCmp :: CompareIO m => EPRange -> EPRange -> m EPCompare
+rangeCmp :: CompareIO m => EPRange -> EPRange -> m SetOrdering
 rangeCmp x y = liftM fst3 $ rangeFullCmp x y where
     fst3 (a, _, _) = a
 

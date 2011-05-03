@@ -19,9 +19,9 @@ module CSL.TreePO where
 
 data Incomparable = Disjoint | Overlap deriving (Eq, Show)
 
-data EPCompare = Comparable Ordering | Incomparable Incomparable deriving Eq
+data SetOrdering = Comparable Ordering | Incomparable Incomparable deriving Eq
 
-instance Show EPCompare where
+instance Show SetOrdering where
     show (Comparable LT) = "<"
     show (Comparable GT) = ">"
     show (Comparable EQ) = "="
@@ -32,7 +32,7 @@ instance Show EPCompare where
 -- * Combining comparison results
 -- ----------------------------------------------------------------------
 
-swapCmp :: EPCompare -> EPCompare
+swapCmp :: SetOrdering -> SetOrdering
 swapCmp (Comparable LT) = (Comparable GT)
 swapCmp (Comparable GT) = (Comparable LT)
 swapCmp x = x
@@ -54,8 +54,24 @@ swapCmp x = x
 >     ---------------------------------------------
 >     RightOf | LeftOf | Equal | Overlap | Disjoint
 
+
+The purpose of this table is to use it for cartesian products as follows
+
+Let
+
+A', A'' \subset A
+B', B'' \subset B
+
+
+In order to get the comparison result for A' x B' and A'' x B'' we compare
+
+A' and A'' as well as B' and B'' and combine the results with the above table.
+
+Note that for empty sets the comparable results <,>,= are preferred over the
+disjoint result.
 -}
-combineCmp :: EPCompare -> EPCompare -> EPCompare
+
+combineCmp :: SetOrdering -> SetOrdering -> SetOrdering
 combineCmp x y
     | x == y = x -- idempotence
     | otherwise =

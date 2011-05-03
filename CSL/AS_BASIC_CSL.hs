@@ -27,6 +27,7 @@ module CSL.AS_BASIC_CSL
     , ConstantName (..)   -- names of user-defined constants
     , OP_ITEM (..)        -- operator declaration
     , VAR_ITEM (..)       -- variable declaration
+    , EP_decl (..)        -- extparam declaration
     , Domain (..)         -- domains for variable declarations
     , GroundConstant (..) -- constants for domain formation
     , AssDefinition (..)  -- A function or constant definition
@@ -77,6 +78,10 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Data.Ratio
+
+-- ---------------------------------------------------------------------------
+-- * Preliminaries and Utilities
+-- ---------------------------------------------------------------------------
 
 -- Arbitrary precision numbers
 type APInt = Integer
@@ -137,7 +142,9 @@ mapExpr f e =
       _ -> e
 
 
--- * CSL Basic Data Structures
+-- ---------------------------------------------------------------------------
+-- * EnCL Basic Data Structures and utils
+-- ---------------------------------------------------------------------------
 
 -- | operator symbol declaration
 data OP_ITEM = Op_item [Id.Token] Id.Range
@@ -198,6 +205,12 @@ data BASIC_ITEM =
 
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
+
+-- | Extended Parameter declaration
+data EP_decl = EP_decl Id.Token -- name
+                       (Maybe Domain) -- evtl. a domain over which the ep ranges
+                       (Maybe APInt)  -- evtl. a default value
+                       deriving (Eq, Ord, Show)
 
 data OPNAME =
     -- arithmetic operators
@@ -358,7 +371,9 @@ data SYMB_OR_MAP = Symb SYMB
                    -- pos: "|->"
                    deriving (Show, Eq)
 
+-- ---------------------------------------------------------------------------
 -- * Predefined Operators: info for parsing/printing and static analysis
+-- ---------------------------------------------------------------------------
 
 data BindInfo = BindInfo { bindingVarPos :: [Int] -- ^ argument positions of
                                                   -- binding variables

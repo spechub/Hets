@@ -17,12 +17,12 @@ Provides functionality for interactive experimenting with EnCL specifications.
 
 {- TODO:
 
- * implement the output of the elim-const to eprange mapping
+ * complete the pretty printing stuff
+   - add visualization functions and bind them to commands
  * implement the cmpenv creation
    - get the corresponding data from the signature
    - implement the global settings for logfiles etc...
- * complete the pretty printing stuff
-   - add visualization functions and bind them to commands
+ * implement the output of the elim-const to eprange mapping
  * check the autoload/reset facility
 
 -}
@@ -157,7 +157,7 @@ terminalSegEx rel cache el =
           let l' = filter (flip Set.notMember cache) l
               cache' = foldr Set.insert cache l'
               (cache'', iss) = mapAccumL (terminalSegEx rel) cache' l'
-          in (cache'', Set.unions iss)
+          in (cache'', Set.unions $ Set.fromList l': iss)
 
 predecessorsOf :: Ord a => Map.Map a [a] -- the relation
             -> a       -- the element
@@ -209,11 +209,21 @@ class PrettyOutput a b where
 
 data POdefault = POdefault
 
+instance Pretty TriggerSymbol where
+    pretty = text . show
+
+instance PrettyOutput POdefault (Set.Set TriggerSymbol) where
+    showPretty _ s = pretty s
+
 instance PrettyOutput POdefault (SigSens a b) where
     showPretty _ sigs = pretty $ sigsensLibname sigs
 
 instance PrettyOutput POdefault [Named CMD] where
     showPretty _ prog = pretty prog
+
+instance PrettyOutput POdefault [(String, Guarded EPRange)] where
+    showPretty _ ds = pretty ds
+
 
 {- TODO: implement it for the other types...
     , stDS :: Maybe (GuardedMap EPRange) -- the current dependency store
@@ -232,6 +242,9 @@ instance PrettyOutput POdefault [Named CMD] where
     -- the environment for the range-comparer facility
     , stCmpEnv :: Maybe CMP.VarEnv
 -}
+
+visualize :: PrettyOutput POdefault a => a -> Sh AnEvenState ()
+visualize x = shellPutStrLn $ show $ showPretty POdefault x
 
 -- ----------------------------------------------------------------------
 -- ** Basic Datatypes
@@ -399,10 +412,13 @@ resetSt trg st =
 
 -- triggers recursively all resets for the given symbol
 runResetTrigger :: [TriggerSymbol] -> Sh AnEvenState ()
-runResetTrigger trgs =
+runResetTrigger trgs = do
     let trgSet = Set.unions $ map (terminalSeg triggers) trgs
         f st = Set.fold resetSt st trgSet
-    in modifyShellSt f
+    modifyShellSt f
+-- only in debugmode...
+--    shellPutInfo "Triggered reset on:"
+--    visualize trgSet
 
 -- checks whether the corresponding field is set (Just-val) or unset (Nothing)
 checkSt :: TriggerSymbol -> AnEvenState -> Bool
@@ -434,7 +450,7 @@ triggerFunc trg =
 noTriggerFunc :: TriggerSymbol -> String -> a
 noTriggerFunc trg s =
     error $ concat [ "Cannot autoload for trigger ", show trg
-                   , "\nPlease use the ", s, "-command for this purpose" ]
+                   , ", please use the ", s, "-command for this purpose." ]
 
 autoloads :: [TriggerSymbol] -> Sh AnEvenState ()
 autoloads trgs = mapM_ autoload trgs
@@ -558,6 +574,12 @@ cmdLoadSpecEnv (Completable lfn) (Completable spn) = do
   runResetTrigger [TrgSpec]
   writeComplState Nothing -- see completion-logic
 
+-- 4. viz
+cmdShowODS :: Sh AnEvenState ()
+cmdShowODS = do
+  autoload TrgODS
+  ods <- getStODS
+  visualize ods
 
 
 
@@ -679,6 +701,7 @@ cmds =
   , helpCommand "h"
 
   , cmd "load"       cmdLoadSpecEnv    "Loads an EnCL spec from the given file- and specname"
+  , cmd "ods"        cmdShowODS        "Shows the ordered dependency store"
 
   , cmd "info"       stateInfo      "Show information on the current state"
   , cmd "debug"      debugInfo      "Show debug information"
