@@ -35,7 +35,7 @@ simplifyRec b env = mapRec
     , foldQualOp = \ trm _ (PolyId i _ _) _ tys k ps ->
       if Map.member i $ localVars env then trm else
           case getMinAssumps env i of
-          -- DEBUG (remove this comment if checked in by accident) _ : _ : _ -> trm
+          _ : _ : _ -> trm
           _ -> ResolvedMixTerm i (if k == Infer then [] else tys) [] ps
     , foldTypedTerm = \ _ nt q ty ps ->
         let ntyped = TypedTerm nt q ty ps in case q of
