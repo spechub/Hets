@@ -309,7 +309,7 @@ importData fp = do
 get_types :: Map.Map String Int -> HolType -> Map.Map String Int
 get_types m t = case t of
  (TyVar s) -> Map.insert s 0 m
- (TyApp s ts) -> let m' = foldl get_types Map.empty ts in
+ (TyApp s ts) -> let m' = foldl get_types m ts in
                      Map.insert s (length ts) m'
 
 mergeTypesOps :: (Map.Map String Int,Map.Map String (Set.Set HolType))
@@ -318,25 +318,25 @@ mergeTypesOps :: (Map.Map String Int,Map.Map String (Set.Set HolType))
 mergeTypesOps (ts1,ops1) (ts2,ops2) =
  (Map.union ts1 ts2,Map.unionWith Set.union ops1 ops2)
 
-get_ops :: [String] -> Bool -> Term
+get_ops :: [String] -> Term
            -> (Map.Map String Int,Map.Map String (Set.Set HolType)) 
-get_ops ign not_abs tm = case tm of
+get_ops ign tm = case tm of
  (Var s t _)    -> let ts = get_types Map.empty t
-                     in if not_abs && not (elem s ign) then
+                     in if not (elem s ign) then
                           (ts,Map.insert s (Set.fromList [t]) Map.empty)
                         else (ts,Map.empty)
  (Const s t _)  -> let ts = get_types Map.empty t
                      in (ts,Map.insert s (Set.fromList [t]) Map.empty)
  (Comb t1 t2) -> mergeTypesOps 
-                  (get_ops ((name_of t1):ign) True  t1)
-                  (get_ops ((name_of t1):ign) True  t2)
+                  (get_ops ((name_of t1):ign) t1)
+                  (get_ops ((name_of t1):ign) t2)
  (Abs t1 t2)  -> mergeTypesOps                  
-                  (get_ops ((name_of t1):ign) False t1)
-                  (get_ops ((name_of t1):ign) True  t2)
+                  (get_ops ((name_of t1):ign) t1)
+                  (get_ops ((name_of t1):ign) t2)
 
 calcSig :: [(String,Term)] -> Sign
 calcSig tm = let (ts,os) = foldl
-                  (\p (_,t) -> (mergeTypesOps (get_ops [] True t) p)) (Map.empty,Map.empty) tm
+                  (\p (_,t) -> (mergeTypesOps (get_ops [] t) p)) (Map.empty,Map.empty) tm
              in Sign {
                  types = ts
                 ,ops = os }

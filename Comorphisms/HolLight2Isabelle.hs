@@ -239,9 +239,8 @@ tp2Typ (TyApp s tps) = case tps of
   _ -> IsaSign.Type (transTypeStringT bs s) holType $ map tp2Typ tps
 
 arity2tp :: Int -> [(IsaSign.IsaClass, [(IsaSign.Typ, IsaSign.Sort)])]
-arity2tp i = [(isaTerm, foldl (\ l t -> t : l) []
-                       (map (\ k -> (IsaSign.TFree ("'a" ++ show (k)) [], [isaTerm]))
-                            [1 .. i]))]
+arity2tp i = [(isaTerm, map (\ k -> (IsaSign.TFree ("'a" ++ show (k)) [], [isaTerm]))
+                            [1 .. i])]
 
 mapTypes :: Map.Map String Int -> IsaSign.TypeSig
 mapTypes tps = IsaSign.emptyTypeSig {
@@ -249,7 +248,7 @@ mapTypes tps = IsaSign.emptyTypeSig {
                   $ Map.toList $ foldr Map.delete tps
                        ["bool", "fun", "prod"] }
  where
-    extractTypeName (s, _) = (transTypeStringT bs s , [(isaTerm, [])])
+    extractTypeName (s, arity) = (transTypeStringT bs s, arity2tp arity)
 
 mapNamedSen :: Named Sentence -> Named IsaSign.Sentence
 mapNamedSen n_sen = let
