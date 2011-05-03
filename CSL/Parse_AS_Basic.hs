@@ -26,6 +26,8 @@ import Common.AS_Annotation as AS_Anno
 import Numeric
 import Char
 
+import qualified Data.Set as Set
+
 import CSL.AS_BASIC_CSL
 import CSL.Print_AS ()
 import CSL.Keywords
@@ -419,7 +421,7 @@ parseDomain = do
                 [lb, rb] -> return $ IntVal (lb, o) (rb, c)
                 _ -> parseError "parseDomain: incorrect interval-list"
   case [lp, rp] of
-    "{}" -> return $ Set gcl
+    "{}" -> return $ Set $ Set.fromList gcl
     "[]" -> f True True
     "[[" -> f True False
     "][" -> f False False

@@ -32,9 +32,14 @@ instance Show SetOrdering where
 -- * Combining comparison results
 -- ----------------------------------------------------------------------
 
+swapCompare :: Ordering -> Ordering
+swapCompare GT = LT
+swapCompare LT = GT
+swapCompare x = x
+
+
 swapCmp :: SetOrdering -> SetOrdering
-swapCmp (Comparable LT) = (Comparable GT)
-swapCmp (Comparable GT) = (Comparable LT)
+swapCmp (Comparable x) = Comparable $ swapCompare x
 swapCmp x = x
 
 {- | We combine the comparison outcome of the individual parameters with

@@ -30,6 +30,9 @@ module CSL.AS_BASIC_CSL
     , EP_decl (..)        -- extparam declaration
     , Domain (..)         -- domains for variable declarations
     , GroundConstant (..) -- constants for domain formation
+    , membDomain          -- member predicate for domains
+    , cmpDomains          -- domain set comparer
+    , cmpFloatToInt       -- comparer for APFloat with APInt
     , AssDefinition (..)  -- A function or constant definition
     , getDefiniens        -- accessor function for AssDefinition
     , getArguments        -- accessor function for AssDefinition
@@ -79,6 +82,8 @@ import qualified Data.Set as Set
 
 import Data.Ratio
 
+import CSL.TreePO
+
 -- ---------------------------------------------------------------------------
 -- * Preliminaries and Utilities
 -- ---------------------------------------------------------------------------
@@ -86,6 +91,10 @@ import Data.Ratio
 -- Arbitrary precision numbers
 type APInt = Integer
 type APFloat = Rational
+
+
+cmpFloatToInt :: APFloat -> APInt -> Ordering
+cmpFloatToInt a b = compare a $ fromFraction b 1
 
 fromFraction :: Integer -> Integer -> APFloat
 fromFraction = (%)
@@ -157,12 +166,44 @@ data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEM)]
                   deriving Show
 
-data GroundConstant = GCI APInt | GCR APFloat deriving (Eq, Ord, Show)
+data GroundConstant = GCI APInt | GCR APFloat deriving Show
+
+cmpGCs :: GroundConstant -> GroundConstant -> Ordering
+cmpGCs (GCI a) (GCI b) = compare a b
+cmpGCs (GCR a) (GCR b) = compare a b
+cmpGCs (GCI a) (GCR b) = swapCompare $ cmpFloatToInt b a
+cmpGCs (GCR a) (GCI b) = cmpFloatToInt a b
+
+instance Eq GroundConstant where
+    a == b = cmpGCs a b == EQ
+
+instance Ord GroundConstant where
+    compare = cmpGCs
+
 
 -- | A finite set or an interval. True = closed, False = opened
-data Domain = Set [GroundConstant]
+data Domain = Set (Set.Set GroundConstant)
             | IntVal (GroundConstant, Bool) (GroundConstant, Bool)
               deriving (Eq, Ord, Show)
+
+
+membDomain :: GroundConstant -> Domain -> Bool
+membDomain gc (Set s) = Set.member gc s
+membDomain gc (IntVal (a,bA) (b, bB)) =
+    let opA = if bA then (>=) else (>)
+        opB = if bB then (<=) else (<)
+    in opA gc a && opB gc b
+
+cmpDomains :: Domain -> Domain -> SetOrdering
+cmpDomains (Set s1) (Set s2)
+    | s1 == s2 = Comparable EQ
+    | s1 `Set.isSubsetOf` s2 = Comparable LT
+    | s2 `Set.isSubsetOf` s1 = Comparable GT
+    | Set.null $ Set.intersection s1 s2 = Incomparable Disjoint
+    | otherwise = Incomparable Overlap
+-- TODO: finish implementation
+cmpDomains _ _ = error "setcmpDomains"
+
 
 -- | A constant or function definition
 data AssDefinition = ConstDef EXPRESSION | FunDef [String] EXPRESSION

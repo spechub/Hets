@@ -36,6 +36,8 @@ import CSL.AS_BASIC_CSL
 
 -- * Pretty Printing
 
+instance Pretty GroundConstant where
+    pretty = printGC
 instance Pretty Domain where
     pretty = printDomain
 instance Pretty EP_decl where
@@ -237,7 +239,7 @@ printEPDecl (EP_decl tk mDom mDef) =
          _ -> domD
 
 printDomain :: Domain -> Doc
-printDomain (Set l) = braces $ sepByCommas $ map printGC l
+printDomain (Set s) = pretty s
 printDomain (IntVal (c1, b1) (c2, b2)) =
     hcat [ getIBorder True b1, sepByCommas $ map printGC [c1, c2]
          , getIBorder False b2]

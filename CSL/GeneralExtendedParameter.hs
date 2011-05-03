@@ -45,11 +45,6 @@ import Common.Id (tokStr)
 -- * Datatypes for efficient Extended Parameter comparison
 -- ----------------------------------------------------------------------
 
-swapCompare :: Ordering -> Ordering
-swapCompare GT = LT
-swapCompare LT = GT
-swapCompare x = x
-
 data ExtNumber = LeftInf | RightInf | Regular APInt deriving (Show, Eq)
 
 instance Ord ExtNumber where
