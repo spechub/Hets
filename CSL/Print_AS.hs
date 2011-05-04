@@ -32,6 +32,7 @@ import Control.Monad.Reader
 import Numeric
 
 import CSL.AS_BASIC_CSL
+import CSL.TreePO
 
 
 -- * Pretty Printing

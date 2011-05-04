@@ -23,14 +23,16 @@ import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 
+import CSL.AS_BASIC_CSL
+import CSL.Print_AS ()
+import CSL.Keywords
+import CSL.TreePO
+
 import Numeric
 import Char
 
 import qualified Data.Set as Set
 
-import CSL.AS_BASIC_CSL
-import CSL.Print_AS ()
-import CSL.Keywords
 import Text.ParserCombinators.Parsec as Parsec
 import Control.Monad
 

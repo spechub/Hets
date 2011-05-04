@@ -28,10 +28,8 @@ module CSL.AS_BASIC_CSL
     , OP_ITEM (..)        -- operator declaration
     , VAR_ITEM (..)       -- variable declaration
     , EP_decl (..)        -- extparam declaration
-    , Domain (..)         -- domains for variable declarations
+    , Domain              -- domains for variable declarations
     , GroundConstant (..) -- constants for domain formation
-    , membDomain          -- member predicate for domains
-    , cmpDomains          -- domain set comparer
     , cmpFloatToInt       -- comparer for APFloat with APInt
     , AssDefinition (..)  -- A function or constant definition
     , getDefiniens        -- accessor function for AssDefinition
@@ -83,6 +81,11 @@ import qualified Data.Set as Set
 import Data.Ratio
 
 import CSL.TreePO
+
+
+-- Imports for workaround...
+import ATerm.Lib
+import Data.Typeable
 
 -- ---------------------------------------------------------------------------
 -- * Preliminaries and Utilities
@@ -180,30 +183,7 @@ instance Eq GroundConstant where
 instance Ord GroundConstant where
     compare = cmpGCs
 
-
--- | A finite set or an interval. True = closed, False = opened
-data Domain = Set (Set.Set GroundConstant)
-            | IntVal (GroundConstant, Bool) (GroundConstant, Bool)
-              deriving (Eq, Ord, Show)
-
-
-membDomain :: GroundConstant -> Domain -> Bool
-membDomain gc (Set s) = Set.member gc s
-membDomain gc (IntVal (a,bA) (b, bB)) =
-    let opA = if bA then (>=) else (>)
-        opB = if bB then (<=) else (<)
-    in opA gc a && opB gc b
-
-cmpDomains :: Domain -> Domain -> SetOrdering
-cmpDomains (Set s1) (Set s2)
-    | s1 == s2 = Comparable EQ
-    | s1 `Set.isSubsetOf` s2 = Comparable LT
-    | s2 `Set.isSubsetOf` s1 = Comparable GT
-    | Set.null $ Set.intersection s1 s2 = Incomparable Disjoint
-    | otherwise = Incomparable Overlap
--- TODO: finish implementation
-cmpDomains _ _ = error "setcmpDomains"
-
+type Domain = SetOrInterval GroundConstant
 
 -- | A constant or function definition
 data AssDefinition = ConstDef EXPRESSION | FunDef [String] EXPRESSION
@@ -626,3 +606,33 @@ setOfUserDefinedICs e = g Set.empty e
          _ -> s
 
 
+
+-- TODO: remove workaround!
+-- WORKAROUND for imported datatypes used in abstract syntax. These instances should be derived automatically!
+
+instance (Ord a, ShATermConvertible a) => ShATermConvertible (SetOrInterval a) where
+  toShATermAux att0 xv = case xv of
+    Set a -> do
+      (att1, a') <- toShATerm' att0 a
+      return $ addATerm (ShAAppl "Set" [a'] []) att1
+    IntVal a b -> do
+      (att1, a') <- toShATerm' att0 a
+      (att2, b') <- toShATerm' att1 b
+      return $ addATerm (ShAAppl "IntVal" [a', b'] []) att2
+  fromShATermAux ix att0 = case getShATerm ix att0 of
+    ShAAppl "Set" [a] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      (att1, Set a') }
+    ShAAppl "IntVal" [a, b] _ ->
+      case fromShATerm' a att0 of
+      { (att1, a') ->
+      case fromShATerm' b att1 of
+      { (att2, b') ->
+      (att2, IntVal a' b') }}
+    u -> fromShATermError "SetOrInterval" u
+
+_tcSetOrIntervalTc :: TyCon
+_tcSetOrIntervalTc = mkTyCon "CSL.AS_BASIC_CSL.SetOrInterval"
+instance Typeable1 SetOrInterval where
+    typeOf1 _ = mkTyConApp _tcSetOrIntervalTc []
