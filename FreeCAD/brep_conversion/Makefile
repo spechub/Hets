@@ -13,10 +13,14 @@ INCLUDE=/usr/include/opencascade
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)/brep_to_xml.o
+$(TARGET): $(OBJS)/brep_to_xml.o $(OBJS)/main.o
 	$(CC) $(CFLAGS) $(LFLAGS) $^ -I $(INCLUDE) -lTKBRep -o $(BIN)/$(TARGET)
 
 $(OBJS)/brep_to_xml.o: $(SRCS)/brep_to_xml.cxx
+	$(CC) $(CFLAGS) $(LFLAGS) -I $(INCLUDE) -lTKBRep -c $^
+	mv $(@F) $(OBJS)/
+	
+$(OBJS)/main.o: $(SRCS)/main.cxx
 	$(CC) $(CFLAGS) $(LFLAGS) -I $(INCLUDE) -lTKBRep -c $^
 	mv $(@F) $(OBJS)/
 
