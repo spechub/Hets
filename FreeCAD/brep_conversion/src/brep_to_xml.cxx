@@ -102,6 +102,7 @@ bool BrepToXML::read_brep(const char* filePath)
     {
         cout << "error while reading brep file" << endl;
     }
+    SS.Add(Sh);
     return b;
 }
 
@@ -181,29 +182,37 @@ void BrepToXML::init_graph(void)
 void BrepToXML::build_graph(void)
 {
     this->init_graph();
-    BRepTools_ShapeSet shapeList;
-    BRepTools_ShapeSet tempList;
-    shapeList = SS;
-    tempList = SS;
-    //while (tempList.NbShapes() > 1) {
-        
-    //}
+    this->add_to_graph();//this only fills the matrix under the main diagonal with 1s
+    //TODO delete surplus edges from the graph represented by entries
+    //in the matrix 'graph'
 }
 
+void BrepToXML::add_to_graph()
+{
+   
+    BRepTools_ShapeSet tempss;
+    //TODO resolve segmentation fault.
+    for (int i = 1; i <= SS.NbShapes(); i++)
+    {
+        tempss.Add(SS.Shape(i));
+        for (int j = 2; j <= tempss.NbShapes(); j++)
+        {
+            int y = SS.Index(tempss.Shape(j));
+            if (!graph[i-1][y-1]) graph[i-1][y-1]++;
+        }
+    }
 
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void BrepToXML::print_graph(void)
+{
+    cout << SS.NbShapes() << endl;
+    for(int i = 0; i < SS.NbShapes(); i++)
+    {
+        for(int j = 0; j < SS.NbShapes(); j++)
+        {
+            cout << graph[i][j] << " ";
+        }
+        cout << endl;
+    }
+}

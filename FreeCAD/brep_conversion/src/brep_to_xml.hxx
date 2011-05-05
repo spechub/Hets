@@ -25,9 +25,11 @@ private:
     BRepTools_ShapeSet SS;
     
     std::vector < std::vector < int > > graph;
-    void init_graph(void);
     
+    void add_to_graph(void);
+    void init_graph(void);
 public:
+
     BrepToXML();
     BrepToXML(TopoDS_Shape);
     BrepToXML(const BrepToXML&);
@@ -44,5 +46,6 @@ public:
     
     std::vector <TopoDS_Shape> get_subshapes(int);
     void build_graph(void);
+    void print_graph(void);
 };
 #endif
