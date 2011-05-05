@@ -23,18 +23,26 @@ private:
     TopoDS_Shape Sh;
     BRep_Builder builder;
     BRepTools_ShapeSet SS;
+    
+    std::vector < std::vector < int > > graph;
+    void init_graph(void);
+    
 public:
     BrepToXML();
     BrepToXML(TopoDS_Shape);
     BrepToXML(const BrepToXML&);
     ~BrepToXML();
-    void print_shape_type(void);
-    bool read_brep(const char* filePath); //returns 1 if reading error occurs, 0 otherwise
-    void print_subshapes(void);
-    void print_location(void);
+    
     TopoDS_Shape get_shape(void);
     void set_shape(TopoDS_Shape);
-    std::vector <TopoDS_Shape> get_subshapes(void);
+    
+    bool read_brep(const char* filePath); //returns 1 if reading error occurs, 0 otherwise
+    
+    void print_shape_type(void);
+    void print_subshapes(void);
+    void print_location(void);
+    
+    std::vector <TopoDS_Shape> get_subshapes(int);
     void build_graph(void);
 };
 #endif

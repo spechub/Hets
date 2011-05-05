@@ -113,7 +113,7 @@ bool BrepToXML::read_brep(const char* filePath)
 void BrepToXML::print_subshapes()
 {
     vector <TopoDS_Shape> list;
-    list = this->get_subshapes();
+    list = this->get_subshapes(0);
     //TODO cout part for each shape in vector
 }
 
@@ -132,13 +132,16 @@ void BrepToXML::print_location()
  * 
  *return a vector containing the subshapes only
  *
+ *  arg == 0  => the vector includes the container shape
+ *  arg == 1  => it does not
+ *  arg > 1   => lose data
  ******************************************************************************/
-vector <TopoDS_Shape> BrepToXML::get_subshapes(void)
-{
-    vector <TopoDS_Shape> temp;
-    if (SS.NbShapes() > 1)
+vector <TopoDS_Shape> BrepToXML::get_subshapes(int arg)
+{   
+    vector <TopoDS_Shape> temp;       
+    if (SS.NbShapes() > arg)
     {
-        for (int i = 2; i <= SS.NbShapes(); i++)
+        for (int i = arg+1; i <= SS.NbShapes(); i++)
         {
             temp.push_back(SS.Shape(i));
         }
@@ -147,14 +150,47 @@ vector <TopoDS_Shape> BrepToXML::get_subshapes(void)
     {
         cout << "error -- no subshapes" << endl;
     }
+
     return temp;
 }
 
+/*******************************************************************************
+ *
+ * initializer for the graph matrix
+ *
+ ******************************************************************************/
+void BrepToXML::init_graph(void)
+{
+    vector <int> line;
+    for (int i = 0; i < SS.NbShapes(); i++)
+    {
+        for (int j = 0; j < SS.NbShapes(); j++)
+        {
+            line.push_back(0);
+        }
+        graph.push_back(line);
+        line.clear();
+    }
+}
 
+/*******************************************************************************
+ *
+ * method to build the dependency graph for the shapeset
+ *
+ ******************************************************************************/
 void BrepToXML::build_graph(void)
 {
-
+    this->init_graph();
+    BRepTools_ShapeSet shapeList;
+    BRepTools_ShapeSet tempList;
+    shapeList = SS;
+    tempList = SS;
+    //while (tempList.NbShapes() > 1) {
+        
+    //}
 }
+
+
 
 
 
