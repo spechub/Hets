@@ -34,7 +34,7 @@ import System.IO
 import System.Process
 
 import CSL.TreePO
-import CSL.EPBasic
+import CSL.BoolBasic
 
 -- ----------------------------------------------------------------------
 -- * SMT output generation for SMT based comparison

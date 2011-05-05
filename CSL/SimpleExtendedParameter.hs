@@ -27,7 +27,7 @@ Extended parameters may be based on one of the following
 
 module CSL.SimpleExtendedParameter where
 
-import CSL.EPBasic
+import CSL.BoolBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
 import Common.Id (tokStr)

@@ -13,7 +13,7 @@ a printer which outputs this representation into an s-expression like format.
 This is mainly for communication with the smt-solver yices.
  -}
 
-module CSL.EPBasic where
+module CSL.BoolBasic where
 
 import Data.List
 -- ----------------------------------------------------------------------

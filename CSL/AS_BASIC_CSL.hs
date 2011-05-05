@@ -183,6 +183,8 @@ instance Eq GroundConstant where
 instance Ord GroundConstant where
     compare = cmpGCs
 
+instance Continuous GroundConstant
+
 type Domain = SetOrInterval GroundConstant
 
 -- | A constant or function definition

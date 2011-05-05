@@ -36,7 +36,7 @@ module CSL.GeneralExtendedParameter where
 
 import Data.List (intercalate)
 
-import CSL.EPBasic
+import CSL.BoolBasic
 import CSL.TreePO
 import CSL.AS_BASIC_CSL
 import Common.Id (tokStr)

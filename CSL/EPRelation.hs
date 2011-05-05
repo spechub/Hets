@@ -27,7 +27,7 @@ import Data.Tree
 import Data.Traversable (fmapDefault)
 import System.IO
 
-import CSL.EPBasic
+import CSL.BoolBasic
 import qualified CSL.SMTComparison as CMP
 import CSL.TreePO
 import CSL.AS_BASIC_CSL

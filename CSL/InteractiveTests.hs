@@ -20,7 +20,7 @@ module CSL.InteractiveTests where
 import CSL.ReduceInterpreter
 import CSL.Reduce_Interface
 import CSL.Transformation
-import CSL.EPBasic
+import CSL.BoolBasic
 import CSL.TreePO
 import CSL.ExtendedParameter
 import Common.IOS
