@@ -1,11 +1,15 @@
-# In order to test the brep reader call the program from the console
-# in the current directory with:
-
-brep_conversion/bin/brep_to_xml <filename.brp>
+######## Brep to XML convertor of OpenCascade's '.brp' files #########
 
 # To compile the program just go to the brep_conversion folder and type
 
 make
+
+#The binary is built in the ./bin folder.
+
+# In order to test the brep reader call the program from the console
+# in the current directory with:
+
+brep_conversion/bin/brep_to_xml <filename.brp>
 
 
 ######################################################################
@@ -25,4 +29,6 @@ python brep_conversion/src/brep_reader.py
 # the quotes (or double quotes) are mandatory!
 
 ######################################################################
+
+
 
