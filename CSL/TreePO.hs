@@ -90,9 +90,6 @@ data SetOrInterval a = Set (Set.Set a)
                      | IntVal (a, Bool) (a, Bool)
                        deriving (Eq, Ord, Show)
 
-
-
-
 -- | Infinite integers = integers augmented by -Infty and +Infty
 data InfInt = PosInf | NegInf | FinInt Integer deriving (Show, Eq)
 
@@ -105,7 +102,6 @@ instance Ord InfInt where
               (PosInf, _) -> GT
               (FinInt a, FinInt b) -> compare a b
               _ -> swapCompare $ compare y x
-
 
 
 class Continuous a
@@ -121,7 +117,7 @@ instance Discrete InfInt where
     nextA x = x
     prevA (FinInt a) = FinInt $ a-1
     prevA x = x
-    intsizeA (FinInt a) (FinInt b) = Just $ abs $ b-a
+    intsizeA (FinInt a) (FinInt b) = Just $ (1+) $ abs $ b-a
     intsizeA _ _ = Nothing
 
 -- ----------------------------------------------------------------------
@@ -300,49 +296,6 @@ cmpSoIsEx i1@(IntVal _ _) s2@(Set s) =
 
 cmpSoIsEx s1 i2 = swapCmp $ cmpSoIsEx i2 s1
 
-{-
-cmpSoIsEx (Set s1) (Set s2)
-    | s1 == s2 = Comparable EQ
-    | s1 `Set.isSubsetOf` s2 = Comparable LT
-    | s2 `Set.isSubsetOf` s1 = Comparable GT
-    | Set.null $ Set.intersection s1 s2 = Incomparable Disjoint
-    | otherwise = Incomparable Overlap
-
-cmpSoIsEx (IntVal (l1, bL1) (r1, bR1)) (IntVal (l2, bL2) (r2, bR2)) =
-    case cmpClosedInts l1 r1 l2 r2 of
-      OIDisj -> Incomparable Disjoint
-      OITouch1 -> touchRes bR1 bL2
-      OITouch2 -> touchRes bR2 bL1
-      OIEq -- assumes that True > False:
-          | bL1 == bL2 && bR1 == bR2 -> Comparable EQ
-          | bL1 >= bL2 && bR1 >= bR2 -> Comparable GT
-          | bL1 <= bL2 && bR1 <= bR2 -> Comparable LT
-          | otherwise -> Incomparable Overlap
-      OIContain1 mDir ->
-          case mDir of
-            Just DLeft -> containRes bL1 bL2
-            Just DRight -> containRes bR1 bR2
-            Nothing -> Comparable GT
-      OIContain2 mDir ->
-          case mDir of
-            Just DLeft -> swapCmp $ containRes bL2 bL1
-            Just DRight -> swapCmp $ containRes bR2 bR1
-            Nothing -> Comparable GT
-      OIOverlap -> Incomparable Overlap
-    where touchRes b1 b2 = if b1 && b2 then Incomparable Overlap
-                           else Incomparable Disjoint
-          containRes b1 b2 = if b1 >= b2 then Comparable GT
-                             else Incomparable Overlap
-
-{-
-cmpSoIsEx (IntVal (a,bA) (b, bB)) (Set s1) = error ""
-    case cmpClosedInts a b l2 r2 of
-
-cmpSoIsEx d1@(Set s1) i = swapCmp $ cmpSoIsEx i d1
--}
-cmpSoIsEx _ _ = error "cmpSoIsEx"
-
--}
 
 -- ----------------------------------------------------------------------
 -- * Combining comparison results

@@ -27,8 +27,11 @@ module CSL.AS_BASIC_CSL
     , ConstantName (..)   -- names of user-defined constants
     , OP_ITEM (..)        -- operator declaration
     , VAR_ITEM (..)       -- variable declaration
-    , EP_decl (..)        -- extparam declaration
+    , EP_item (..)        -- extparam declaration
+    , EPComponent (..)    -- raw extparam declaration
+    , epNameOfComp
     , Domain              -- domains for variable declarations
+    , EPDomain            -- domains for extended parameter declarations
     , GroundConstant (..) -- constants for domain formation
     , cmpFloatToInt       -- comparer for APFloat with APInt
     , AssDefinition (..)  -- A function or constant definition
@@ -186,6 +189,7 @@ instance Ord GroundConstant where
 instance Continuous GroundConstant
 
 type Domain = SetOrInterval GroundConstant
+type EPDomain = SetOrInterval InfInt
 
 -- | A constant or function definition
 data AssDefinition = ConstDef EXPRESSION | FunDef [String] EXPRESSION
@@ -219,9 +223,10 @@ data InstantiatedConstant = InstantiatedConstant
     { constName :: ConstantName
     , instantiation :: [EXPRESSION] } deriving (Show, Eq, Ord)
 
--- | basic items: an operator or variable declaration or an axiom
+-- | basic items: an operator, extended parameter or variable declaration or an axiom
 data BASIC_ITEM =
     Op_decl OP_ITEM
+    | EP_components [EPComponent]
     | Var_decls [VAR_ITEM]
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
@@ -229,9 +234,19 @@ data BASIC_ITEM =
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
+-- | Raw components of Extended Parameter declarations
+data EPComponent = EPDomain Id.Token EPDomain | EPDefault Id.Token APInt
+                 | EPSimple Id.Token deriving Show
+
+epNameOfComp :: EPComponent -> Token
+epNameOfComp (EPDomain s _) = s
+epNameOfComp (EPDefault s _) = s
+epNameOfComp (EPSimple s) = s
+
+
 -- | Extended Parameter declaration
-data EP_decl = EP_decl Id.Token -- name
-                       (Maybe Domain) -- evtl. a domain over which the ep ranges
+data EP_item = EP_item Id.Token -- name
+                       (Maybe EPDomain) -- evtl. a domain over which the ep ranges
                        (Maybe APInt)  -- evtl. a default value
                        deriving (Eq, Ord, Show)
 
@@ -638,3 +653,10 @@ _tcSetOrIntervalTc :: TyCon
 _tcSetOrIntervalTc = mkTyCon "CSL.AS_BASIC_CSL.SetOrInterval"
 instance Typeable1 SetOrInterval where
     typeOf1 _ = mkTyConApp _tcSetOrIntervalTc []
+
+instance Typeable InfInt where
+    typeOf = error "Typeable InfInt instance missing"
+
+instance ShATermConvertible InfInt where
+    toShATermAux = error "ShATermConvertible InfInt instance missing"
+    fromShATermAux = error "ShATermConvertible InfInt instance missing"

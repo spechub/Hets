@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Testing of different parts of the EnCL Implementation
@@ -9,40 +10,72 @@ Stability   :  experimental
 Portability :  portable
 
 
-Testing using QuickCheck of SetOrdering algos
+Testing using QuickCheck of SetOrdering algos.
+Mainly for instance generation of interesting data structures.
 -}
 
 import Data.List
+import Numeric
 import qualified Data.Set as Set
 import Control.Monad
 
 import Test.QuickCheck
-import Test.QuickCheck.Test
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Property
-import Test.QuickCheck.Gen
 
 import CSL.TreePO
+import CSL.AS_BASIC_CSL
+
+
+-- ----------------------------------------------------------------------
+-- * Pretty printing
+-- ----------------------------------------------------------------------
+
+
+class Show' a where
+    show' :: a -> String
+
+instance Show' a => Show' (SetOrInterval a) where
+    show' (Set s) = let l = intersperse "," $ map show' $ Set.toList s
+                    in "{" ++ concat l ++ "}"
+    show' (IntVal (a, bA) (b, bB)) = let l = if bA then "[" else "]"
+                                         r = if bB then "]" else "["
+                                     in concat [l, show' a, ", ", show' b, r]
+
+instance Show' a => Show' (CIType a) where
+    show' (CIType (x, e)) = case e of
+                              Zero -> show' x
+                              EpsLeft -> show' x ++ "-"
+                              EpsRight -> show' x ++ "+"
+
+instance Show' InfInt where
+    show' NegInf = "-oo"
+    show' PosInf = "oo"
+    show' (FinInt x) = show x
+
+instance Show' a => Show' (Maybe a) where
+    show' (Just x) = show' x
+    show' Nothing = ""
+
+instance Show' a => Show' (a, a) where
+    show' (x,y) = "(" ++ show' x ++ ", " ++ show' y ++ ")"
+
+instance Show' SetOrdering where
+    show' = show
+
+instance Show' GroundConstant where
+    show' (GCI x) = show x
+    show' (GCR x) = show' x
+
+instance Show' APFloat where
+    show' x = showFFloat (Just 2) (fromRational x) ""
 
 -- ----------------------------------------------------------------------
 -- * Generator for test sets
 -- ----------------------------------------------------------------------
 
-
-diskr = [ ((FinInt 10, True), (PosInf, False))
-        , ((FinInt 12, True), (PosInf, False))
-        , ((FinInt 10, True), (PosInf, False))
-        , ((FinInt 10, True), (PosInf, False))
-        , ((FinInt 10, True), (PosInf, False))
-        , ((FinInt 10, True), (PosInf, False))
-        , ((FinInt 10, True), (PosInf, False))
-        , ((FinInt 10, True), (PosInf, False))
-        ]
--- data InfInt = PosInf | NegInf | FinInt Integer deriving (Show, Eq)
-
--- ----------------------------------------------------------------------
--- * Generator for test sets
--- ----------------------------------------------------------------------
+gconst :: Gen GroundConstant
+gconst = do
+  b <- arbitrary
+  if b then fmap GCI arbitrary else fmap GCR arbitrary
 
 finborder :: Gen (InfInt, Bool)
 finborder = do
@@ -63,14 +96,38 @@ intval :: Gen (SetOrInterval InfInt)
 intval = do
   (x, bx) <- border
   (y, by) <- border
-  let res
-          | x == y = IntVal (x, True) (y, True)
-          | x > y = IntVal (y, by) (x, bx)
-          | otherwise = IntVal (x, bx) (y, by)
-  return res
+  let mkRes a ba b bb
+          | a == b = IntVal (a, True) (b, True)
+          | intsizeA a b == Just 2 && not (ba || bb) = mkRes a (not ba) b bb
+          | a > b = IntVal (b, bb) (a, ba)
+          | otherwise = IntVal (a, ba) (b, bb)
+  return $ mkRes x bx y by
 
+
+
+finsetC :: (Ord a) => Gen a -> Gen (SetOrInterval a)
+finsetC g = fmap (Set . Set.fromList) $ listOf1 g
+-- finset = fmap (Set . Set.map FinInt) arbitrary
+
+intvalC :: (Ord a) => Gen a -> Gen (SetOrInterval a)
+intvalC g = do
+  x1 <- g
+  b1 <- arbitrary
+  x2 <- g
+  b2 <- arbitrary
+  let mkRes a ba b bb
+          | a == b = IntVal (a, True) (b, True)
+          | a > b = IntVal (b, bb) (a, ba)
+          | otherwise = IntVal (a, ba) (b, bb)
+  return $ mkRes x1 b1 x2 b2
+  
+
+-- main generator functions
 soi :: Gen (SetOrInterval InfInt)
 soi = oneof [finset, intval]
+
+soiC :: Gen (SetOrInterval GroundConstant)
+soiC = oneof [finsetC gconst, intvalC gconst]
 
 comps :: Gen (SetOrInterval InfInt, SetOrInterval InfInt)
 comps = do
@@ -78,73 +135,37 @@ comps = do
   soi2 <- soi
   return (soi1, soi2)
 
+compsC :: Gen (SetOrInterval GroundConstant, SetOrInterval GroundConstant)
+compsC = do
+  soi1 <- soiC
+  soi2 <- soiC
+  return (soi1, soi2)
 
-verbCmp (a, b) = do
-  putStrLn $ "Compare " ++ show a ++ " and " ++ show b
-  putStrLn $ " --> " ++ show (cmpSoIsD a b)
 
 
+
+-- run function f on many samples
 onSmpl g f = do
   l <- smpls g
   mapM_ pr l
       where pr x = do
-               putStrLn $ "Input: " ++ show x
-               putStrLn $ "  -->  " ++ show (f x)
+               putStrLn $ "Input: " ++ show' x
+               putStrLn $ "  -->  " ++ show' (f x)
 
 
 
+-- get many samples
 smpls :: Gen a -> IO [a]
 smpls = fmap concat . replicateM 10 . sample'
 
+
+-- show samples
 insts :: Show a => Gen a -> IO ()
 insts = replicateM_ 10 . sample
 
-insts' :: Show a => Gen a -> IO ()
-insts' g = smpls g >>= writeFile "/tmp/qc" . unlines . map show
+-- write samples to file
+insts' :: Show' a => Gen a -> IO ()
+insts' g = smpls g >>= writeFile "/tmp/qc" . unlines . map show'
 
 
 
-
-newtype Filename = FN { unFN :: String }
-
-instance Show Filename where
-    show x = show $ unFN x
-
-
-instance Arbitrary Filename where
-  arbitrary = do name <- elements ["foo", "bar", "baz"]
-                 ext <- listOf $ elements ['a'..'z']
-                 return (FN (name ++ "." ++ ext))
-
-
-
-
-
-
-
-
-
-opt :: Gen String -> Gen String
-opt g = oneof [ g, return "" ]
-
-identifier :: Gen String
-identifier = do
-  i0 <- iden0
-  n <- idenN
-  return $ i0:n
-
-iden0 :: Gen Char
-iden0 = oneof [ elements ['a'..'z'], elements ['A'..'Z']
-              , elements ['0'..'9'] ]
-idenN :: Gen String
-idenN = listOf iden0
-
-
-filenames :: Gen String
-filenames = do
-  name <- opt identifier
-  dot  <- opt (return ".")
-  ext  <- opt identifier
-  exts <- listOf identifier
-  oneof [ return $ name ++ dot ++ ext
-        , return $ name ++ "." ++ (concat . intersperse "." $ exts)]

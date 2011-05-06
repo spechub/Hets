@@ -394,12 +394,29 @@ caseExpr = many1 singleCase >-> Cond << lstring "end"
 
 -- ---------------------------------------------------------------------------
 
+
 -- | parser for operator declarations: example: operator a,b,c
 opItem :: CharParser st OP_ITEM
 opItem = do
   Lexer.keySign (lexemeParser (tryString "operator"))
   vars <- sepBy1 identifier pComma
   return $ Op_item vars nullRange
+
+
+-- | Parser for components of extended parameter declarations: 
+-- example: I in {1,2}; I default= 1; J;K
+epComponent :: CharParser st EPComponent
+epComponent = do
+  epId <- identifier
+  comp <- optionMaybe $ oneOfKeys ["in", "default="]
+  case comp of
+    Just "in" -> parseEPDomain >-> EPDomain epId
+    Just _ -> getSignedNumber >-> EPDefault epId . read
+    _ -> return $ EPSimple epId
+
+-- | Parser fro extended parameter declarations: eps epComp(;epComp)+
+epComponents :: CharParser st [EPComponent]
+epComponents = oneOfKeys ["eps", "ep"] >> sepBy1 epComponent pSemi
 
 -- | Parser for variable declarations: example: vars x,y in {1,2}; z in [-1,1]
 varItems :: CharParser st [VAR_ITEM]
@@ -430,6 +447,19 @@ parseDomain = do
     "]]" -> f False True
     _ -> parseError "parseDomain: malformed domain parens"
 
+parseEPDomain :: CharParser st EPDomain
+parseEPDomain = do
+  lp <- lexemeParser $ oneOf "{["
+  nl <- sepBy1 (getSignedNumber >-> FinInt . read) pComma
+  rp <- lexemeParser $ oneOf "]}"
+  let f o c = case nl of
+                [lb, rb] -> return $ IntVal (lb, o) (rb, c)
+                _ -> parseError "parseEPDomain: incorrect interval-list"
+  case [lp, rp] of
+    "{}" -> return $ Set $ Set.fromList nl
+    "[]" -> f True True
+    _ -> parseError "parseEPDomain: malformed domain parens"
+
 
 -- | Toplevel parser for basic specs
 basicSpec :: AnnoState.AParser st BASIC_SPEC
@@ -439,15 +469,19 @@ basicSpec =
 
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st BASIC_ITEM
-parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseAxItems
+parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseEPDecl <|> parseAxItems
 
--- | parser for predicate declarations
+-- | parser for operator declarations
 parseOpDecl :: AnnoState.AParser st BASIC_ITEM
 parseOpDecl = opItem >-> Op_decl
 
--- | parser for predicate declarations
+-- | parser for variable declarations
 parseVarDecl :: AnnoState.AParser st BASIC_ITEM
 parseVarDecl = varItems >-> Var_decls
+
+-- | parser for extended parameter declarations
+parseEPDecl :: AnnoState.AParser st BASIC_ITEM
+parseEPDecl = epComponents >-> EP_components
 
 -- | parser for Axiom_item
 parseAxItems :: AnnoState.AParser st BASIC_ITEM

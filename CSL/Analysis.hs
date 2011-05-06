@@ -83,6 +83,7 @@ anaBasicItem (sign, i) itm =
     case item itm of
       Op_decl (Op_item tokens _) -> return ((addTokens sign tokens, i), Nothing)
       Var_decls l -> return ((addVarDecls sign l, i), Nothing)
+      EP_components l -> return ((foldl addEPComponent sign l, i), Nothing)
       Axiom_item annocmd ->
           do
             ncmd <- analyzeFormula sign annocmd i

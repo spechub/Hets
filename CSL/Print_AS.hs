@@ -37,12 +37,16 @@ import CSL.TreePO
 
 -- * Pretty Printing
 
+instance Pretty InfInt where
+    pretty = printInfInt
 instance Pretty GroundConstant where
     pretty = printGC
-instance Pretty Domain where
+instance Pretty a => Pretty (SetOrInterval a) where
     pretty = printDomain
-instance Pretty EP_decl where
+instance Pretty EP_item where
     pretty = printEPDecl
+instance Pretty EPComponent where
+    pretty = printEPComponent
 instance Pretty OP_ITEM where
     pretty = printOpItem
 instance Pretty VAR_ITEM where
@@ -229,20 +233,26 @@ printVarItem :: VAR_ITEM -> Doc
 printVarItem (Var_item vars dom _) =
     hsep [sepByCommas $ map pretty vars, text "in", pretty dom]
 
-printEPDecl :: EP_decl -> Doc
-printEPDecl (EP_decl tk mDom mDef) =
+printEPComponent :: EPComponent -> Doc
+printEPComponent (EPDomain n epd) = pretty n <+> text "in" <+> printDomain epd
+printEPComponent (EPDefault n dv) = pretty n <+> text "default=" <+> pretty dv
+printEPComponent (EPSimple n) = pretty n
+
+
+printEPDecl :: EP_item -> Doc
+printEPDecl (EP_item tk mDom mDef) =
     let tkD = pretty tk
         domD = case mDom of
                  Just dom -> hsep [tkD, text "in", pretty dom]
                  _ -> tkD
     in case mDef of
-         Just def -> sepByCommas [domD, hsep [tkD, text "default=", pretty def]]
+         Just def -> sepBySemis [domD, hsep [tkD, text "default=", pretty def]]
          _ -> domD
 
-printDomain :: Domain -> Doc
+printDomain :: Pretty a => SetOrInterval a -> Doc
 printDomain (Set s) = pretty s
 printDomain (IntVal (c1, b1) (c2, b2)) =
-    hcat [ getIBorder True b1, sepByCommas $ map printGC [c1, c2]
+    hcat [ getIBorder True b1, sepByCommas $ map pretty [c1, c2]
          , getIBorder False b2]
 
 getIBorder :: Bool -> Bool -> Doc
@@ -254,6 +264,11 @@ printGC :: GroundConstant -> Doc
 printGC (GCI i) = text (show i)
 printGC (GCR d) = text (show d)
 
+printInfInt :: InfInt -> Doc
+printInfInt NegInf = text "-oo"
+printInfInt PosInf = text "oo"
+printInfInt (FinInt x) = text $ show x
+
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
@@ -261,6 +276,7 @@ printBasicItems :: BASIC_ITEM -> Doc
 printBasicItems (Axiom_item x) = pretty x
 printBasicItems (Op_decl x) = pretty x
 printBasicItems (Var_decls x) = text "vars" <+> (sepBySemis $ map pretty x)
+printBasicItems (EP_components x) = text "eps" <+> (sepBySemis $ map pretty x)
 
 printSymbol :: SYMB -> Doc
 printSymbol (Symb_id sym) = pretty sym
@@ -284,6 +300,10 @@ instance GetRange OP_ITEM where
   rangeSpan x = case x of
     Op_item a b -> joinRanges [rangeSpan a, rangeSpan b]
 
+instance GetRange EPComponent where
+  getRange = Range . rangeSpan
+  rangeSpan = rangeSpan . epNameOfComp
+
 instance GetRange VAR_ITEM where
   getRange = Range . rangeSpan
   rangeSpan x = case x of
@@ -301,6 +321,7 @@ instance GetRange BASIC_ITEM where
     Op_decl a -> joinRanges [rangeSpan a]
     Var_decls a -> joinRanges [rangeSpan a]
     Axiom_item a -> joinRanges [rangeSpan a]
+    EP_components a -> joinRanges [rangeSpan a]
 
 instance GetRange CMD where
     getRange = Range . rangeSpan
