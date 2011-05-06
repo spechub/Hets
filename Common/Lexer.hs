@@ -183,6 +183,9 @@ splitString p = parseString $ do
 getNumber :: CharParser st String
 getNumber = many1 digit
 
+getSignedNumber :: CharParser st String
+getSignedNumber = optionL (string "-") <++> getNumber
+
 scanFloat :: CharParser st String
 scanFloat = getNumber
   <++> (optionL (try $ char '.' <:> getNumber)
