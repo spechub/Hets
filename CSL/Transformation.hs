@@ -55,6 +55,9 @@ instance VarGen m => VarGen (StateT s m) where
 class SExp a where
     toExp :: a -> EXPRESSION
 
+class SOp a where
+    toOp :: a -> OpDecl
+
 instance SExp EXPRESSION where
     toExp e = e
 
@@ -66,6 +69,9 @@ instance SExp APFloat where
 
 instance SExp String where
     toExp s = mkOperator s [] [] nullRange
+
+instance SOp String where
+    toOp s = OpDecl (SimpleConstant s) [] [] nullRange
 
 instance SExp OPNAME where
     toExp n = mkPredefOp n []
@@ -101,8 +107,8 @@ class SCmd a where
 instance (SExp a, SExp b) => SCmd (String, a, b) where
     toCmd (s, x, y) = Cmd s [toExp x, toExp y]
 
-instance (SExp a, SExp b) => SCmd (a, b) where
-    toCmd (x, y) = Ass (toExp x) $ toExp y
+instance (SOp a, SExp b) => SCmd (a, b) where
+    toCmd (x, y) = Ass (toOp x) $ toExp y
 
 class IntervalLike a where
     toIntervalExp :: a -> EXPRESSION

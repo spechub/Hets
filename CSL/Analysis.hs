@@ -12,30 +12,13 @@ Static Analysis for EnCL
 -}
 
 
-module CSL.Analysis
-{-    ( splitSpec
-    , basicCSLAnalysis
-    , splitAS
-    , Guard(..)
-    , Guarded(..)
-    , dependencySortAS
-    , getDependencyRelation
-    , epElimination
-    , topsortDirect
-    , topsort
--- basicCSLAnalysis
--- ,mkStatSymbItems
--- ,mkStatSymbMapItem
--- ,inducedFromMorphism
--- ,inducedFromToMorphism
--- , signatureColimit
-    ) -}
-    where
+module CSL.Analysis where
 
 import Common.ExtSign
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
+import Common.ResultT
 import Common.Utils (mapAccumLM)
 
 import CSL.AS_BASIC_CSL
@@ -43,12 +26,15 @@ import CSL.Symbol
 import CSL.Fold
 import CSL.Sign as Sign
 
-import qualified Data.Set as Set
+
+import Control.Monad.State
+
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
 
--- * Diagnosis Types and Functions
+-- * Basic Analysis Functions
 
 -- | generates a named formula
 withName :: Annoted CMD -> Int -> Named CMD
@@ -91,7 +77,7 @@ anaBasicItem (sign, i) itm =
 
 -- | adds the specified tokens to the signature
 addTokens :: Sign.Sign -> [Token] -> Sign.Sign
-addTokens sign tokens = let f res itm = addToSig res (simpleIdToId itm)
+addTokens sign tokens = let f res itm = addToSig res itm
                                         $ optypeFromArity 0
                         in foldl f sign tokens
 
@@ -99,8 +85,11 @@ addTokens sign tokens = let f res itm = addToSig res (simpleIdToId itm)
 
 -- | adds the specified var items to the signature
 addVarDecls :: Sign.Sign -> [VAR_ITEM] -> Sign.Sign
+addVarDecls  = const
+{-
 addVarDecls sign vitems = foldl f sign vitems where
     f res (Var_item toks dom _) = addVarItem res toks dom
+-}
 
 {- | stepwise extends an initially empty signature by the basic spec bs.
  The resulting spec contains analyzed axioms in it. The result contains:
@@ -113,9 +102,59 @@ basicCSLAnalysis :: (BASIC_SPEC, Sign, a)
 basicCSLAnalysis (bs, sig, _) =
     do 
       (newSig, ncmds) <- splitSpec bs sig
-      let newSyms = Set.map Symbol $ Map.keysSet
-                    $ Map.difference (items newSig) $ items sig
+      let newSyms = Set.map Symbol $ opIds $ sigDiff newSig sig
       return (bs, ExtSign newSig newSyms, ncmds)
+
+
+
+-- * Alternative Basic Analysis
+
+data AnaEnv = AnaEnv
+                 { aVarDecls :: Map.Map Token Domain
+                 , aEPConsts :: Map.Map Token EP_const
+                 , aEPDecls :: Map.Map Token EP_item
+                 , aCommands :: Map.Map Int (Named CMD)
+                 , aCounter :: Int
+                 }
+
+
+emptyAnaEnv :: AnaEnv
+emptyAnaEnv = AnaEnv
+              { aVarDecls = Map.empty
+              , aEPConsts = Map.empty
+              , aEPDecls = Map.empty
+              , aCommands = Map.empty
+              , aCounter = 0
+              }
+
+
+
+type Analysis a = ResultT (State AnaEnv) a
+
+-- data VAR_ITEM = Var_item [Id.Token] Domain Id.Range
+anaVarDecl :: VAR_ITEM -> Analysis ()
+anaVarDecl (Var_item l dom rg) = error ""
+
+-- data EPComponent = EPDomain Id.Token EPDomain | EPDefault Id.Token APInt | EPConst Id.Token APInt
+anaEPComp :: EPComponent -> Analysis ()
+anaEPComp (EPDomain n dom) = error ""
+anaEPComp (EPDefault n i) = error ""
+anaEPComp (EPConst n i) = error ""
+
+
+anaAxiom :: Annoted CMD -> Analysis ()
+anaAxiom = error ""
+
+anaBasicItem' :: Annoted BASIC_ITEM -> Analysis ()
+anaBasicItem' itm =
+    case item itm of
+      Op_decl _ -> return ()
+      Var_decls l -> mapM_ anaVarDecl l
+      EP_components l -> mapM_ anaEPComp l
+      Axiom_item annocmd -> anaAxiom annocmd
+
+
+-- * Command update functions
 
 -- | A function which regroups all updates on a CMD during the static analysis.
 staticUpdate :: CMD -> CMD
@@ -123,9 +162,8 @@ staticUpdate = handleFunAssignment . handleBinder
 
 -- | Replaces the function-arguments in functional assignments by variables.
 handleFunAssignment :: CMD -> CMD
-handleFunAssignment (Ass (Op f epl al@(_:_) rg) e) =
-   let (env, al') = varSet al in Ass (Op f epl al' rg) $ constsToVars env e
-
+handleFunAssignment (Ass od@(OpDecl _ _ al@(_:_) _) e) =
+   let env = Set.fromList $ map varDeclName al in Ass od $ constsToVars env e
 handleFunAssignment x = x
 
 {- | If element x is at position i in the first list and there is an entry (i,y)
@@ -201,7 +239,4 @@ constsToVars env e =
          }
     in foldTerm substRec e
 
--- * Utils for 'CMD' and 'EXPRESSION'
-subAssignments :: CMD -> [(EXPRESSION, EXPRESSION)]
-subAssignments = foldCMD listCMDRecord{ foldAss = \ _ c def -> [(c, def)] }
 

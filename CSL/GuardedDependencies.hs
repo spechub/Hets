@@ -18,7 +18,6 @@ module CSL.GuardedDependencies
     where
 
 import Common.AS_Annotation
-import Common.Id
 import Common.Doc
 import Common.DocUtils
 
@@ -93,19 +92,15 @@ instance Pretty a => Show (Guarded a) where
 type GuardedMap a = Map.Map String (Guarded a)
 
 
-addAssignment :: String -> EXPRESSION -> EXPRESSION -> GuardedMap [EXTPARAM]
+addAssignment :: String -> OpDecl -> EXPRESSION -> GuardedMap [EXTPARAM]
               -> GuardedMap [EXTPARAM]
-addAssignment n (Op oid@(OpUser _) epl al _) def m =
-    let f (Var tok) = tokStr tok
-        f x = error $ "addAssignment: not a variable " ++ show x
-        combf x y | argvars x == argvars y = y { guards = guards y ++ guards x }
+addAssignment n (OpDecl sc epl al _) def m =
+    let combf x y | argvars x == argvars y = y { guards = guards y ++ guards x }
                   | otherwise =
                       error "addAssignment: the argument vars does not match."
-        grd = Guarded (map f al) [uncurry (Guard epl def n)
+        grd = Guarded (map varDeclName al) [uncurry (Guard epl def n)
                                               $ filteredConstrainedParams epl]
-    in Map.insertWith combf (simpleName oid) grd m
-
-addAssignment _ x _ _ = error $ "unexpected assignment " ++ show x
+    in Map.insertWith combf (simpleName $ OpUser sc) grd m
 
 {-  TODO:
     1. analysis for missing definitions and undeclared extparams

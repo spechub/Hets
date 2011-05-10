@@ -19,7 +19,6 @@ module CSL.Print_AS
     , printAssDefinition
     , printConstantName
     , ExpressionPrinter (..)
-    , toArgList
     ) where
 
 import Common.Id as Id
@@ -43,6 +42,18 @@ instance Pretty GroundConstant where
     pretty = printGC
 instance Pretty a => Pretty (SetOrInterval a) where
     pretty = printDomain
+instance Pretty a => Pretty (ClosedInterval a) where
+    pretty = printClosedInterval
+
+instance Pretty OpDecl where
+    pretty = head . printOpDecl
+instance Pretty VarDecl where
+    pretty = printVarDecl
+instance Pretty EP_const where
+    pretty = printEPConst
+instance Pretty EPVal where
+    pretty = printEPVal
+
 instance Pretty EP_item where
     pretty = printEPDecl
 instance Pretty EPComponent where
@@ -90,8 +101,8 @@ class Monad m => ExpressionPrinter m where
     prefixMode = return False
     printArgs :: [Doc] -> m Doc
     printArgs =  return . parens . sepByCommas
-    printVarDecl :: String -> m Doc
-    printVarDecl =  return . text
+    printArgPattern :: String -> m Doc
+    printArgPattern =  return . text
     printInterval :: Double -> Double -> m Doc
     printInterval l r =
         return $ brackets $ sepByCommas $ map (text . show) [l, r]
@@ -109,7 +120,7 @@ printAssDefinition :: ExpressionPrinter m => AssDefinition -> m Doc
 printAssDefinition (ConstDef e) = printExpression e >>= return . (text "=" <+>)
 printAssDefinition (FunDef l e) = do
   ed <- printExpression e
-  l' <- mapM printVarDecl l
+  l' <- mapM printArgPattern l
   args <- printArgs l'
   return $ args <+> text "=" <+> ed
 
@@ -127,7 +138,8 @@ instance ExpressionPrinter (Reader OpInfoNameMap) where
 
 printCMD :: ExpressionPrinter m => CMD -> m Doc
 printCMD (Ass c def) = do
-  [c', def'] <- mapM printExpression [c, def]
+  def' <- printExpression def
+  c' <- printOpDecl c
   return $ c' <+> text ":=" <+> def'
 printCMD c@(Cmd s exps) -- TODO: remove the case := later
     | s == ":=" = error $ "printCMD: use Ass for assignment representation! "
@@ -234,10 +246,35 @@ printVarItem (Var_item vars dom _) =
     hsep [sepByCommas $ map pretty vars, text "in", pretty dom]
 
 printEPComponent :: EPComponent -> Doc
-printEPComponent (EPDomain n epd) = pretty n <+> text "in" <+> printDomain epd
+printEPComponent (EPDomain n epd) = pretty n <+> text "in"
+                                    <+> printClosedInterval epd
 printEPComponent (EPDefault n dv) = pretty n <+> text "default=" <+> pretty dv
-printEPComponent (EPSimple n) = pretty n
+printEPComponent (EPConst n val) = pretty n <+> text "=" <+> pretty val
 
+
+instance Pretty Ordering where
+    pretty LT = text "<"
+    pretty GT = text ">"
+    pretty EQ = text "="
+
+printEPConst :: EP_const -> Doc
+printEPConst (EP_const n o ref) = pretty n <+> pretty o <+> pretty ref
+
+printVarDecl :: VarDecl -> Doc
+printVarDecl (VarDecl n (Just dom)) = pretty n <+> text "in" <+> printDomain dom
+printVarDecl (VarDecl n Nothing) = pretty n
+
+printOpDecl :: ExpressionPrinter m => OpDecl -> m Doc
+printOpDecl (OpDecl n epl vdl _)
+    | length vdl == 0 = liftM (<> printExtparams epl) $ printConstant n
+    | otherwise = do
+         oid <- printConstant n
+         args <- printArgs $ map printVarDecl vdl
+         return $ oid <> printExtparams epl <> args
+
+printEPVal :: EPVal -> Doc
+printEPVal (EPVal i) = pretty i
+printEPVal (EPConstRef r) = text r
 
 printEPDecl :: EP_item -> Doc
 printEPDecl (EP_item tk mDom mDef) =
@@ -248,6 +285,11 @@ printEPDecl (EP_item tk mDom mDef) =
     in case mDef of
          Just def -> sepBySemis [domD, hsep [tkD, text "default=", pretty def]]
          _ -> domD
+
+printClosedInterval :: Pretty a => ClosedInterval a -> Doc
+printClosedInterval (ClosedInterval l r) =
+    hcat [ lbrack, sepByCommas $ map pretty [l, r], rbrack ]
+
 
 printDomain :: Pretty a => SetOrInterval a -> Doc
 printDomain (Set s) = pretty s
@@ -325,7 +367,7 @@ instance GetRange BASIC_ITEM where
 
 instance GetRange CMD where
     getRange = Range . rangeSpan
-    rangeSpan (Ass c def) = joinRanges (map rangeSpan [c, def])
+    rangeSpan (Ass _ def) = rangeSpan def
     rangeSpan (Cmd _ exps) = joinRanges (map rangeSpan exps)
     -- parsing guruantees l <> null
     rangeSpan (Repeat c l) = joinRanges [rangeSpan c, rangeSpan $ head l]
@@ -369,9 +411,3 @@ instance Pretty InstantiatedConstant where
         else pretty cn <> (parens $ sepByCommas $ map pretty el)
 
 
--- | If the expression list is a variable list the list of the variable names
--- is returned.
-toArgList :: [EXPRESSION] -> [String]
-toArgList [] = []
-toArgList (Var tok:l) = tokStr tok : toArgList l
-toArgList (x:_) = error $ "toArgList: unsupported as argument " ++ show (pretty x)

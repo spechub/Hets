@@ -230,7 +230,7 @@ instance ExpressionPrinter MathPrinter where
     printOpname = return . text . mmShowOPNAME
     printArgs =  return . brackets . sepByCommas
     prefixMode = return True
-    printVarDecl s = return $ text s <> text "_"
+    printArgPattern s = return $ text s <> text "_"
 
 printMathPretty :: (MathPrinter Doc) -> Doc
 printMathPretty = flip runReader $ OfMathematica mathematicaOpInfoNameMap

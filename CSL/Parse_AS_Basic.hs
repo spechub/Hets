@@ -34,6 +34,7 @@ import Char
 import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec as Parsec
+import Text.ParserCombinators.Parsec.Error
 import Control.Monad
 
 -- TODO: extract range information for the basic term and command types
@@ -60,8 +61,75 @@ parseSymbMapItems = Just symbMapItems
 
 -- ---------------------------------------------------------------------------
 
+
+-- TODO: test subparser invocation...
+
+addToPosition :: SourcePos -- ^ original position
+              -> SourcePos -- ^ relative position
+              -> SourcePos -- ^ new position
+addToPosition sp1 sp2
+    | Parsec.sourceLine sp2 == 0 =
+        setSourceColumn sp1 $ Parsec.sourceColumn sp1 + Parsec.sourceColumn sp2
+    | otherwise =
+        setSourceColumn (setSourceLine sp1
+                        $ Parsec.sourceLine sp1 + Parsec.sourceLine sp2)
+                            $ Parsec.sourceColumn sp2
+
+        
+
+runSubParser :: GenParser tok st a -> st -> SourceName
+             -> GenParser tok st' (Either ParseError (st, a))
+runSubParser sp st sn = do
+  -- save the current state
+  pos <- getPosition
+  inp <- getInput
+  let posInputParser x =
+          do
+            pos' <- getPosition
+            inp' <- getInput
+            st' <- getState
+            return (x, pos', inp', st')
+  case runParser (sp >>= posInputParser) st sn inp of
+    Left err -> return $ Left err
+    Right (x, pos', inp', st') -> do
+      setPosition $ addToPosition pos pos'
+      setInput inp'
+      return $ Right (st', x)
+
+
+class OperatorState a => OperatorVarState a where
+    addVar :: String -> CharParser a ()
+    isVar :: String -> CharParser a Bool
+
+
 instance OperatorState (AnnoState.AnnoState st) where
     lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+
+data OpVarState a = OpVarState a (Set.Set String)
+
+instance OperatorState a => OperatorState (OpVarState a) where
+    lookupOperator (OpVarState x _) = lookupOperator x
+
+instance OperatorState a => OperatorVarState (OpVarState a) where
+    addVar x = do
+      OpVarState st s <- getState
+      setState $ OpVarState st $ Set.insert x s
+    isVar x = do
+      OpVarState _ s <- getState
+      return $ Set.member x s
+
+
+-- call opvar-state-subparser on given state
+runWithVars :: OperatorState a => [String] -> CharParser (OpVarState a) res
+            -> CharParser a res
+runWithVars l p = do
+  st <- getState
+  res <- runSubParser p (OpVarState st $ Set.fromList l) "" 
+  case res of
+    Left err -> parseError $ unlines $ map messageString $ errorMessages err
+    Right (_, x) -> return x
+
+
 
 
 parseError :: String -> CharParser st a
@@ -190,6 +258,15 @@ expsymbol = do
               ++ show (parens $ pretty $ fst exps) ++ ": " ++ s
     Right e -> return e
 
+opdecl :: OperatorState st => CharParser st OpDecl
+opdecl = do
+  ident <- prefixidentifier  -- EXTENDED
+  ep <- option ([],[])
+        $ oBracketT >> Lexer.separatedBy extparam pComma << cBracketT
+  args <- option ([],[])
+          $ oParenT >> Lexer.separatedBy prefixidentifier pComma << cParenT
+  let vdl = map (flip VarDecl Nothing) $ fst args
+  return $ OpDecl (SimpleConstant $ tokStr ident) (fst ep) vdl $ tokPos ident
 
 -- | parses a list expression
 listexp :: OperatorState st => CharParser st EXPRESSION
@@ -325,6 +402,7 @@ andFormula = do
 
 -- ---------------------------------------------------------------------------
 
+
 formulaorexpression :: OperatorState st => CharParser st EXPRESSION
 formulaorexpression = try aFormula <|> plusmin
 
@@ -345,7 +423,7 @@ reduceCommand = do
 
 assignment :: OperatorState st => CharParser st CMD
 assignment = do
-  ident <- expsymbol
+  ident <- opdecl
   lexemeParser $ choice [tryString ":=", tryString "="]
   exp' <- plusmin
   return $ Ass ident exp'
@@ -408,11 +486,11 @@ opItem = do
 epComponent :: CharParser st EPComponent
 epComponent = do
   epId <- identifier
-  comp <- optionMaybe $ oneOfKeys ["in", "default="]
+  comp <- oneOfKeys ["in", "default=", "="]
   case comp of
-    Just "in" -> parseEPDomain >-> EPDomain epId
-    Just _ -> getSignedNumber >-> EPDefault epId . read
-    _ -> return $ EPSimple epId
+    "in" -> parseEPDomain >-> EPDomain epId
+    "=" -> getSignedNumber >-> EPConst epId . read
+    _ -> getSignedNumber >-> EPDefault epId . read
 
 -- | Parser fro extended parameter declarations: eps epComp(;epComp)+
 epComponents :: CharParser st [EPComponent]
@@ -447,18 +525,21 @@ parseDomain = do
     "]]" -> f False True
     _ -> parseError "parseDomain: malformed domain parens"
 
+parseEPVal :: CharParser st EPVal
+parseEPVal = do
+  mId <- optionMaybe identifier
+  case mId of
+    Just n -> return $ EPConstRef $ tokStr n
+    _ -> getSignedNumber >-> EPVal . read
+
 parseEPDomain :: CharParser st EPDomain
 parseEPDomain = do
-  lp <- lexemeParser $ oneOf "{["
-  nl <- sepBy1 (getSignedNumber >-> FinInt . read) pComma
-  rp <- lexemeParser $ oneOf "]}"
-  let f o c = case nl of
-                [lb, rb] -> return $ IntVal (lb, o) (rb, c)
-                _ -> parseError "parseEPDomain: incorrect interval-list"
-  case [lp, rp] of
-    "{}" -> return $ Set $ Set.fromList nl
-    "[]" -> f True True
-    _ -> parseError "parseEPDomain: malformed domain parens"
+  Lexer.keySign $ string "["
+  l <- parseEPVal
+  pComma
+  r <- parseEPVal
+  Lexer.keySign $ string "]"
+  return $ ClosedInterval l r
 
 
 -- | Toplevel parser for basic specs

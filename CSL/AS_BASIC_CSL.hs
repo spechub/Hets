@@ -27,7 +27,11 @@ module CSL.AS_BASIC_CSL
     , ConstantName (..)   -- names of user-defined constants
     , OP_ITEM (..)        -- operator declaration
     , VAR_ITEM (..)       -- variable declaration
+    , VarDecl (..)        -- variable declaration in assignment
+    , OpDecl (..)         -- operator declaration in assignment
     , EP_item (..)        -- extparam declaration
+    , EP_const (..)       -- extparam constant declaration
+    , EPVal (..)          -- extparam values
     , EPComponent (..)    -- raw extparam declaration
     , epNameOfComp
     , Domain              -- domains for variable declarations
@@ -46,6 +50,11 @@ module CSL.AS_BASIC_CSL
     , CMD (..)            -- Command datatype
     , OperatorState (..)  -- Class providing operator lookup
     , mapExpr             -- maps function over EXPRESSION arguments
+
+    , varDeclName
+    , varDeclToVar
+    , opDeclToOp
+
     , mkVar               -- Variable constructor
     , mkOp                -- Simple Operator constructor
     , mkPredefOp          -- Simple Operator constructor for predefined ops
@@ -189,7 +198,7 @@ instance Ord GroundConstant where
 instance Continuous GroundConstant
 
 type Domain = SetOrInterval GroundConstant
-type EPDomain = SetOrInterval InfInt
+type EPDomain = ClosedInterval EPVal
 
 -- | A constant or function definition
 data AssDefinition = ConstDef EXPRESSION | FunDef [String] EXPRESSION
@@ -236,18 +245,29 @@ data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
 -- | Raw components of Extended Parameter declarations
 data EPComponent = EPDomain Id.Token EPDomain | EPDefault Id.Token APInt
-                 | EPSimple Id.Token deriving Show
+                 | EPConst Id.Token APInt deriving Show
 
 epNameOfComp :: EPComponent -> Token
 epNameOfComp (EPDomain s _) = s
 epNameOfComp (EPDefault s _) = s
-epNameOfComp (EPSimple s) = s
+epNameOfComp (EPConst s _) = s
 
 
 -- | Extended Parameter declaration
 data EP_item = EP_item Id.Token -- name
                        (Maybe EPDomain) -- evtl. a domain over which the ep ranges
                        (Maybe APInt)  -- evtl. a default value
+                       deriving (Eq, Ord, Show)
+
+
+-- | Extended Parameter value may be an integer or a reference to a 'EP_const'.
+-- This type is used for the domain specification of EPs (see 'EPDomain').
+data EPVal = EPVal APInt | EPConstRef String deriving (Eq, Ord, Show)
+
+-- | Extended Parameter constant declaration
+data EP_const = EP_const Id.Token -- name
+                         Ordering -- constraint for constant
+                         APInt    -- value to compare with
                        deriving (Eq, Ord, Show)
 
 data OPNAME =
@@ -380,8 +400,22 @@ data EXPRESSION =
   | Rat APFloat Id.Range
   deriving (Eq, Ord, Show)
 
+data VarDecl = VarDecl Id.Token (Maybe Domain) deriving (Show, Eq, Ord)
+
+data OpDecl = OpDecl ConstantName [EXTPARAM] [VarDecl] Id.Range
+              deriving (Show, Eq, Ord)
+
+varDeclName :: VarDecl -> String
+varDeclName (VarDecl n _) = Id.tokStr n
+
+varDeclToVar :: VarDecl -> EXPRESSION
+varDeclToVar (VarDecl n _) = Var n
+
+opDeclToOp :: OpDecl -> EXPRESSION
+opDeclToOp (OpDecl n epl vdl rg ) = Op (OpUser n) epl (map varDeclToVar vdl) rg
+
 -- TODO: add Range-support to this type
-data CMD = Ass EXPRESSION EXPRESSION
+data CMD = Ass OpDecl EXPRESSION
          | Cmd String [EXPRESSION]
          | Sequence [CMD] -- program sequence
          | Cond [(EXPRESSION, [CMD])]
@@ -657,6 +691,17 @@ instance Typeable1 SetOrInterval where
 instance Typeable InfInt where
     typeOf = error "Typeable InfInt instance missing"
 
+instance Typeable (ClosedInterval a) where
+    typeOf = error "Typeable ClosedInterval instance missing"
+
+instance ShATermConvertible (ClosedInterval a) where
+    toShATermAux = error "ShATermConvertible ClosedInterval instance missing"
+    fromShATermAux = error "ShATermConvertible ClosedInterval instance missing"
+
 instance ShATermConvertible InfInt where
     toShATermAux = error "ShATermConvertible InfInt instance missing"
     fromShATermAux = error "ShATermConvertible InfInt instance missing"
+
+instance ShATermConvertible Ordering where
+    toShATermAux = error "ShATermConvertible Ordering instance missing"
+    fromShATermAux = error "ShATermConvertible Ordering instance missing"

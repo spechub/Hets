@@ -18,7 +18,7 @@ import Common.Id
 import CSL.AS_BASIC_CSL
 
 data Record a b = Record
-    { foldAss :: CMD -> b -> b -> a
+    { foldAss :: CMD -> OpDecl -> b -> a
     , foldCmd :: CMD -> String -> [b] -> a
     , foldSequence :: CMD -> [a] -> a
     , foldCond :: CMD -> [(b, [a])] -> a
@@ -124,7 +124,7 @@ constRecord a b =
 
 foldCMD :: Record a b -> CMD -> a
 foldCMD r f = case f of
-   Ass c def -> foldAss r f (foldTerm r c) $ foldTerm r def
+   Ass c def -> foldAss r f c $ foldTerm r def
    Cmd s l -> foldCmd r f s $ map (foldTerm r) l
    Sequence l -> foldSequence r f $ map (foldCMD r) l
    Cond l -> foldCond r f $ map cf l where

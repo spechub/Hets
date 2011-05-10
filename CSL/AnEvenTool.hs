@@ -14,7 +14,6 @@ The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL specifications.
 Provides functionality for interactive experimenting with EnCL specifications.
 -}
 
-
 {- TODO:
 
  * complete the pretty printing stuff

@@ -25,6 +25,7 @@ module CSL.TreePO
 
 import qualified Data.Set as Set
 
+
 -- ----------------------------------------------------------------------
 -- * Datatypes for comparison
 -- ----------------------------------------------------------------------
@@ -90,6 +91,9 @@ data SetOrInterval a = Set (Set.Set a)
                      | IntVal (a, Bool) (a, Bool)
                        deriving (Eq, Ord, Show)
 
+-- | A closed interval
+data ClosedInterval a = ClosedInterval a a deriving (Eq, Ord, Show)
+
 -- | Infinite integers = integers augmented by -Infty and +Infty
 data InfInt = PosInf | NegInf | FinInt Integer deriving (Show, Eq)
 
@@ -127,10 +131,10 @@ instance Discrete InfInt where
 -- | Compares closed intervals [l1, r1] and [l2, r2]. Assumes
 -- | non-singular intervals, i.e., l1 < r1 and l2 < r2.
 -- | Works only for linearly ordered types.
-cmpClosedInts :: Ord a => (a, a) -- ^ [l1, r1]
-              -> (a, a) -- ^ [l2, r2]
+cmpClosedInts :: Ord a => ClosedInterval a -- ^ [l1, r1]
+              -> ClosedInterval a -- ^ [l2, r2]
               -> SetOrdering
-cmpClosedInts (l1, r1) (l2, r2)
+cmpClosedInts (ClosedInterval l1 r1) (ClosedInterval l2 r2)
     | l1 == l2 && r1 == r2 = Comparable EQ
     | l1 <= l2 && r1 >= r2 = Comparable GT
     | l1 >= l2 && r1 <= r2 = Comparable LT
@@ -144,12 +148,12 @@ cmpClosedInts (l1, r1) (l2, r2)
 -- | Membership in 'SetOrInterval'
 membSoID :: (Discrete a, Ord a) => a -> SetOrInterval a -> Bool
 membSoID x (Set s) = Set.member x s
-membSoID x i = let (a, b) = setToClosedIntD i in x >= a && x <= b
+membSoID x i = let ClosedInterval a b = setToClosedIntD i in x >= a && x <= b
 
 -- | Checks if the set is empty.
 nullSoID :: (Discrete a, Ord a) => SetOrInterval a -> Bool
 nullSoID (Set s) = Set.null s
-nullSoID i = let (a, b) = setToClosedIntD i in a > b
+nullSoID i = let ClosedInterval a b = setToClosedIntD i in a > b
 
 -- | If the set is singular, i.e., consists only from one point, then we
 -- return this point. Reports error on empty SoI's.
@@ -161,14 +165,14 @@ toSingularD d
           Set s
               | Set.size s == 1 -> Just $ Set.findMin s
               | otherwise -> Nothing
-          _ -> let (a, b) = setToClosedIntD d
+          _ -> let ClosedInterval a b = setToClosedIntD d
                in if a == b then Just a else Nothing
 
 -- | Transforms a 'SetOrInterval' to a closed representation
-setToClosedIntD :: (Discrete a, Ord a) =>  SetOrInterval a -> (a, a)
-setToClosedIntD (Set s) = (Set.findMin s, Set.findMax s)
+setToClosedIntD :: (Discrete a, Ord a) =>  SetOrInterval a -> ClosedInterval a
+setToClosedIntD (Set s) = ClosedInterval (Set.findMin s) $ Set.findMax s
 setToClosedIntD (IntVal (l, bL) (r, bR)) =
-    (if bL then l else nextA l, if bR then r else prevA r)
+    ClosedInterval (if bL then l else nextA l) $ if bR then r else prevA r
 
 
 -- | Compare sets over discrete types
@@ -198,7 +202,7 @@ cmpSoIsExD i1@(IntVal _ _) i2@(IntVal _ _) =
 cmpSoIsExD s1@(Set _) s2@(Set _) = cmpSoIsEx s1 s2
 
 cmpSoIsExD i1@(IntVal _ _) s2@(Set s) =
-    let ci2@(a2, b2) = setToClosedIntD s2
+    let ci2@(ClosedInterval a2 b2) = setToClosedIntD s2
     in case cmpClosedInts (setToClosedIntD i1) ci2 of
       Comparable EQ -> case intsizeA a2 b2 of
                          Just dst 
@@ -221,7 +225,7 @@ cmpSoIsExD s1 i2 = swapCmp $ cmpSoIsExD i2 s1
 -- | Membership in 'SetOrInterval'
 membSoI :: Ord a => a -> SetOrInterval a -> Bool
 membSoI x (Set s) = Set.member x s
-membSoI x i = let (a, b) = setToClosedInt i
+membSoI x i = let ClosedInterval a b = setToClosedInt i
                   x' = CIType (x, Zero) in x' >= a && x' <= b
 
 -- | Checks if the set is empty.
@@ -248,12 +252,12 @@ toSingular d
 -- | Transforms a 'SetOrInterval' to a closed representation
 -- Only for continuous types.
 setToClosedInt :: Ord a => 
-                  SetOrInterval a -> (CIType a, CIType a)
-setToClosedInt (Set s) = ( CIType (Set.findMin s, Zero)
-                         , CIType (Set.findMax s, Zero))
+                  SetOrInterval a -> ClosedInterval (CIType a)
+setToClosedInt (Set s) = ClosedInterval (CIType (Set.findMin s, Zero))
+                         $ CIType (Set.findMax s, Zero)
 setToClosedInt (IntVal (l, bL) (r, bR)) =
-    ( CIType (l, if bL then Zero else EpsRight)
-    , CIType (r, if bR then Zero else EpsLeft))
+    ClosedInterval (CIType (l, if bL then Zero else EpsRight))
+                       $ CIType (r, if bR then Zero else EpsLeft)
 
 -- | Compare sets over continuous types
 cmpSoIs :: (Continuous a, Ord a) =>

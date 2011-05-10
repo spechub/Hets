@@ -26,8 +26,8 @@ import Data.List
 import Control.Monad
 
 main :: IO ()
---main = getArgs >>= runMain True >> putStr ""
-main = runTool >> return ()
+main = getArgs >>= runMain True >> putStr ""
+--main = runTool >> return ()
 
 runMain :: Bool -> [String] -> IO (Maybe CASState)
 runMain cl args =

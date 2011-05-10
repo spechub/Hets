@@ -12,24 +12,26 @@ Definition of signatures for CSL logic, which are just lists of operators
 -}
 
 module CSL.Sign
-    (Sign (..)                     -- Propositional Signatures
-    ,OpType (..)                   -- Operator Information attached to ids
-    ,pretty                        -- pretty printing
-    ,isLegalSignature              -- is a signature ok?
-    ,addToSig                      -- adds an id to the given Signature
-    ,addVarItem                    -- adds a var item to the given Signature
-    ,addEPComponent                -- adds a raw ext param decl to the given Signature
-    ,combineEPDecls
-    ,unite                         -- union of signatures
-    ,emptySig                      -- empty signature
-    ,isSubSigOf                    -- is subsiganture?
-    ,sigDiff                       -- Difference of Signatures
-    ,sigUnion                      -- Union for Logic.Logic
-    ,lookupSym
-    ,optypeFromArity
+    ( Sign (Sign)                   -- EnCL Signatures
+    , opIds
+    , OpType (..)                   -- Operator Information attached to ids
+    , pretty                        -- pretty printing
+    , isLegalSignature              -- is a signature ok?
+    , addToSig                      -- adds an id to the given Signature
+    , addEPComponent                -- adds a raw ext param decl to the given Signature
+    , combineEPDecls
+    , unite                         -- union of signatures
+    , emptySig                      -- empty signature
+    , isSubSigOf                    -- is subsiganture?
+    , sigDiff                       -- Difference of Signatures
+    , sigUnion                      -- Union for Logic.Logic
+    , lookupSym
+    , optypeFromArity
     ) where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
+
 import Common.Id
 import Common.Result
 import Common.Doc
@@ -50,15 +52,18 @@ optypeFromArity i = defaultType { opArity = i }
 
 -- | Datatype for CSL Signatures
 -- Signatures are just sets of Tokens for the operators
-data Sign = Sign { items :: Map.Map Id OpType
-                 , vardecls :: Map.Map Token Domain
+data Sign = Sign { items :: Map.Map Token OpType
+                 , epconsts :: Map.Map Token EP_const
                  , epdecls :: Map.Map Token EP_item
                  } deriving (Eq, Ord, Show)
+
+opIds :: Sign -> Set.Set Id
+opIds = Set.map simpleIdToId . Map.keysSet . items
 
 -- | The empty signature, use this one to create new signatures
 emptySig :: Sign
 emptySig = Sign { items = Map.empty
-                , vardecls = Map.empty
+                , epconsts = Map.empty
                 , epdecls = Map.empty
                 }
 
@@ -67,33 +72,25 @@ instance Pretty Sign where
 
 -- | checks whether a Id is declared in the signature
 lookupSym :: Sign -> Id -> Bool
-lookupSym sig item = Map.member item $ items sig
+lookupSym sig item = Map.member (idToSimpleId item) $ items sig
 
 -- TODO: adapt the operations to new signature components
 
 -- | pretty printer for CSL signatures
 printSign :: Sign -> Doc
 printSign s =
---    hsep [text "operator", sepByCommas $ map pretty $ Map.keys $ items s]
-    vsep [ hsep [ text "vars"
-                , sepBySemis $ map f $ Map.toList $ vardecls s ]
-         , hsep [ text "eps"
-                , sepBySemis $ map pretty $ Map.elems $ epdecls s ]
+    hsep [ text "eps"
+         , sepBySemis $ map pretty $ Map.elems $ epconsts s
+         , sepBySemis $ map pretty $ Map.elems $ epdecls s
          ]
-    where f (k, dom) = pretty k <+> text "in" <+> pretty dom
 
 -- | determines whether a signature is valid. all sets are ok, so glued to true
 isLegalSignature :: Sign -> Bool
 isLegalSignature _ = True
 
 -- | Basic function to extend a given signature by adding an item (id) to it
-addToSig :: Sign -> Id -> OpType -> Sign
+addToSig :: Sign -> Token -> OpType -> Sign
 addToSig sig tok ot = sig {items = Map.insert tok ot $ items sig}
-
--- | Basic function to extend a given signature by adding a var item to it
-addVarItem :: Sign -> [Token] -> Domain -> Sign
-addVarItem sig toks dom = foldl addvi sig toks where
-    addvi sg tok = sg {vardecls = Map.insert tok dom $ vardecls sg}
 
 -- | Basic function to extend a given signature by adding an extparam component.
 addEPComponent :: Sign -> EPComponent -> Sign
@@ -104,9 +101,9 @@ addEPComponent sig epc =
 epCompToItem :: EPComponent -> (Token, EP_item)
 epCompToItem (EPDomain s dom) = (s, EP_item s (Just dom) Nothing)
 epCompToItem (EPDefault s val) = (s, EP_item s Nothing (Just val))
-epCompToItem (EPSimple s) = (s, EP_item s Nothing Nothing)
+epCompToItem (EPConst s _) = (s, EP_item s Nothing Nothing)
 
--- TODO: add support for vardecls and epdecls and report errors if they do not match!
+-- TODO: add support for epdecls and report errors if they do not match!
 
 {- Two signatures s1 and s2 are compatible if the common part has the
    following properties:
@@ -149,7 +146,7 @@ combineEPDecls (EP_item n1 mDom1 mDft1) (EP_item n2 mDom2 mDft2)
             mDom = case (mDom1, mDom2) of
                       -- the domains must be comparable
                      (Just d1, Just d2) ->
-                         case cmpSoIsD d1 d2 of
+                         case cmpClosedInts d1 d2 of
                            Incomparable _ ->
                                error $ "combineEPDecls: domains incomparable for "
                                          ++ "extended parameter "

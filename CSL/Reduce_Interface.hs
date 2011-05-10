@@ -308,9 +308,10 @@ casDeclareOperators sess varlist = do
 casDeclareEquation :: Session a => a -> CMD -> IO ()
 casDeclareEquation sess (Ass c def) = 
     do
-      putStrLn $ (exportExp c) ++ ":=" ++  (exportExp def)
-      hPutStrLn (inp sess) $ (exportExp c)
-                    ++ ":=" ++  (exportExp def) ++ ";"
+      let e1 = exportExp $ opDeclToOp c
+          e2 = exportExp def
+      putStrLn $ e1 ++ ":=" ++  e2
+      hPutStrLn (inp sess) $ e1 ++ ":=" ++  e2 ++ ";"
       res <- getNextResultOutput (outp sess)
       putStrLn $ "Declaration Result: " ++ res
       return ()

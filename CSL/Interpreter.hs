@@ -1,6 +1,5 @@
 {-# LANGUAGE FunctionalDependencies, FlexibleInstances, FlexibleContexts
-  , UndecidableInstances, OverlappingInstances, MultiParamTypeClasses
-  , TypeSynonymInstances, ExistentialQuantification #-}
+  , MultiParamTypeClasses, TypeSynonymInstances, ExistentialQuantification #-}
 {- |
 Module      :  $Header$
 Description :  Interpreter for CPL programs
@@ -69,32 +68,17 @@ import Prelude hiding (lookup)
 import System.IO
 
 import Common.Id
-import Common.ResultT
 import Common.Doc
 import Common.DocUtils
 import Common.Utils
 
 import CSL.AS_BASIC_CSL
-import CSL.Print_AS
 import CSL.DependencyGraph
+-- import Common.MonadTrans ()
 
 -- ----------------------------------------------------------------------
 -- * Evaluator
 -- ----------------------------------------------------------------------
-
--- ** some general lifted instances
--- TODO: outsource them
-
-instance (MonadState s m, MonadTrans t, Monad (t m)) => MonadState s (t m) where
-    get = lift get
-    put = lift . put
-
-instance (MonadIO m, MonadTrans t, Monad (t m)) => MonadIO (t m) where
-    liftIO = lift . liftIO
-
-instance (MonadResult m, MonadTrans t, Monad (t m)) => MonadResult (t m) where
-    liftR = lift . liftR
-
 
 -- ** Some utility classes for abstraction of concrete realizations
 
@@ -268,12 +252,19 @@ instance Pretty ASError where
 
 -- ** Evaluation, Debugging, Stepping
 
+-- | If the expression list is a variable list the list of the variable names
+-- is returned.
+toArgList :: [EXPRESSION] -> [String]
+toArgList [] = []
+toArgList (Var tok:l) = tokStr tok : toArgList l
+toArgList (x:_) = error $ "toArgList: unsupported as argument " ++ show (pretty x)
+
 isDefined :: AssignmentStore m => ConstantName -> m Bool
 isDefined s = liftM (member s) names
 
 evaluate :: AssignmentStore m => CMD -> m ()
-evaluate (Ass (Op (OpUser n) [] l _) e) = do
-    assign n $ mkDefinition (toArgList l) e
+evaluate (Ass (OpDecl n [] l _) e) = do
+    assign n $ mkDefinition (map varDeclName l) e
     return ()
 evaluate (Cond l) = do
   cl <- filterM (check . fst) l
@@ -291,9 +282,6 @@ evaluate (Repeat e l) =
 evaluate (Sequence l) = evaluateList l
 
 evaluate (Cmd c _) = error $ "evaluate: unsupported command " ++ c
-evaluate a@(Ass (Op (OpId _) _ _ _) _) =
-    error $ concat [ "evaluate: predefined constants in left hand side of "
-                   , "assignment not allowed ", show a ]
 evaluate a@(Ass _ _) = error $ "evaluate: unsupported assignment " ++ show a
 
 
@@ -364,8 +352,8 @@ printStep s (RepeatAtom e _ _) = printMessage
 
 stepwise :: MessagePrinter m => (m () -> EvalAtom -> m Bool) -> CMD
          -> m ()
-stepwise f (Ass (Op (OpUser n) [] l _) e) = do
-  let def = mkDefinition (toArgList l) e
+stepwise f (Ass (OpDecl n [] l _) e) = do
+  let def = mkDefinition (map varDeclName l) e
   printStep "" $ AssAtom n def
   f (return ()) $ AssAtom n def
   return ()
@@ -400,9 +388,6 @@ stepwise _ (Cmd c l)
              [e] -> eval e >>= p e
              _ -> mapM eval l >>= p l
     | otherwise = error $ "stepwise: unsupported command " ++ c
-stepwise _ a@(Ass (Op (OpId _) _ _ _) _) =
-    error $ concat [ "stepwise: predefined constants in left hand side of "
-                   , "assignment not allowed ", show a ]
 stepwise _ a@(Ass _ _) = error $ "stepwise: unsupported assignment " ++ show a
 
 
