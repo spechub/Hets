@@ -73,6 +73,7 @@ import Common.DocUtils
 import Common.Utils
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.DependencyGraph
 -- import Common.MonadTrans ()
 
@@ -568,6 +569,9 @@ translateExprWithVars = translateExprGen . Map.fromList . varList
 
 translateExpr :: BMap -> EXPRESSION -> (BMap, EXPRESSION)
 translateExpr = translateExprGen Map.empty
+
+
+-- TODO: check if we can simplify by not checking if a var is in a given scope..
 
 -- | Translate EXPRESSION into a CAS compatible form. Variables are translated
 -- as constants with a namespace disjoint from that of the usual constants.

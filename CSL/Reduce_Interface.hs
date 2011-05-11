@@ -22,6 +22,7 @@ import Common.Utils (getEnvDef)
 import Logic.Prover
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Parse_AS_Basic
 import CSL.Lemma_Export
 
@@ -185,7 +186,7 @@ skipReduceLineNr s = dropWhile (`elem` " \n") $ tail
 
 -- | try to get an EXPRESSION from a Reduce string
 redOutputToExpression :: String -> Maybe EXPRESSION
-redOutputToExpression = parseExpression operatorInfoMap . skipReduceLineNr
+redOutputToExpression = parseExpression () . skipReduceLineNr
 
 
 -- ----------------------------------------------------------------------

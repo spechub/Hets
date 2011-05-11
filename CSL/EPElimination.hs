@@ -18,6 +18,7 @@ module CSL.EPElimination
 import Common.Id
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Fold
 import CSL.EPRelation
 

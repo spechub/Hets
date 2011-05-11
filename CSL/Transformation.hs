@@ -21,6 +21,7 @@ import Control.Monad.Trans (lift)
 import Prelude hiding (lookup)
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import Common.Id
 
 -- ----------------------------------------------------------------------
@@ -29,7 +30,7 @@ import Common.Id
 
 
 mkOperator :: String -> [EXTPARAM] -> [EXPRESSION] -> Range -> EXPRESSION
-mkOperator = mkAndAnalyzeOp operatorInfoMap
+mkOperator = mkAndAnalyzeOp ()
 
 -- | A class to abstract from the concrete variable generation facility
 class Monad m => VarGen m where

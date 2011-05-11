@@ -21,6 +21,7 @@ import Common.DocUtils
 import Common.IOS
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Print_AS
 import CSL.Parse_AS_Basic (parseExpression)
 import CSL.Interpreter
@@ -168,6 +169,9 @@ mplShowOPNAME x = showOPNAME x
 mapleOpInfoMap :: OpInfoMap
 mapleOpInfoMap = operatorInfoMap
 
+mapleBindInfoMap :: BindInfoMap
+mapleBindInfoMap = operatorBindInfoMap
+
 mapleOpInfoNameMap :: OpInfoNameMap
 mapleOpInfoNameMap = operatorInfoNameMap
 
@@ -238,7 +242,7 @@ evalMapleString' b s = do
   res <- lift $ wrapCommand $ PC.call (getChannelTimeout mit) s
   return $ if b
            --    then parseExpression mapleOpInfoMap $ trimLeft $ removeOutputComments res
-           then parseExpression mapleOpInfoMap $ trimLeft res
+           then parseExpression (mapleOpInfoMap, mapleBindInfoMap) $ trimLeft res
            else Nothing
 
 -- | Evaluate the given String as maple expression and skip the result

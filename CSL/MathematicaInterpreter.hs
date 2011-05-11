@@ -22,6 +22,7 @@ import Common.MathLink
 
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Print_AS
 import CSL.Interpreter
 import CSL.Verification
@@ -191,6 +192,8 @@ mathematicaOpInfoNameMap :: OpInfoNameMap
 mathematicaOpInfoNameMap =
     getOpInfoNameMap mathematicaOperatorInfo
 
+mathematicaBindInfoMap :: BindInfoMap
+mathematicaBindInfoMap = getBindInfoMap mathematicaOperatorInfo
 
 toFlexFold :: [OPNAME] -> [OpInfo] -> [OpInfo]
 toFlexFold nl oil = map f oil where
@@ -291,7 +294,9 @@ sendExpression sm e =
 receiveExpression :: ML EXPRESSION
 receiveExpression =  do
   et <- mlGetNext
-  let mkMLOp s args = mkAndAnalyzeOp mathematicaOpInfoMap s [] args nullRange
+  let mkMLOp s args = mkAndAnalyzeOp ( mathematicaOpInfoMap
+                                     , mathematicaBindInfoMap )
+                      s [] args nullRange
       pr | et == dfMLTKSYM = liftM (flip mkMLOp []) mlGetSymbol
          | et == dfMLTKINT = liftM (flip Int nullRange) mlGetInteger''
          | et == dfMLTKREAL = liftM (flip Rat nullRange . toRational) mlGetReal'

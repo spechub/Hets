@@ -19,11 +19,10 @@ import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
 import Common.Parsec
-import Common.Doc
-import Common.DocUtils
 import Common.AS_Annotation as AS_Anno
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Print_AS ()
 import CSL.Keywords
 import CSL.TreePO
@@ -62,33 +61,36 @@ parseSymbMapItems = Just symbMapItems
 -- ---------------------------------------------------------------------------
 
 
--- TODO: test subparser invocation...
-
 addToPosition :: SourcePos -- ^ original position
               -> SourcePos -- ^ relative position
               -> SourcePos -- ^ new position
 addToPosition sp1 sp2
-    | Parsec.sourceLine sp2 == 0 =
-        setSourceColumn sp1 $ Parsec.sourceColumn sp1 + Parsec.sourceColumn sp2
+    | Parsec.sourceLine sp2 == 1 =
+        setSourceColumn sp1 $
+                        Parsec.sourceColumn sp1 + Parsec.sourceColumn sp2 - 1
     | otherwise =
         setSourceColumn (setSourceLine sp1
-                        $ Parsec.sourceLine sp1 + Parsec.sourceLine sp2)
+                        $ Parsec.sourceLine sp1 + Parsec.sourceLine sp2 - 1)
                             $ Parsec.sourceColumn sp2
 
-        
+posInputParser :: a -> GenParser tok st (a, SourcePos, [tok], st)
+posInputParser x = do
+  pos <- getPosition
+  inp <- getInput
+  st <- getState
+  return (x, pos, inp, st)
 
+
+{- Tests for subparser
+let p1 = getState >>= many1 . string
+runParser (string "h" >> runSubParser p1 "\n" "sourcename" >>= posInputParser) () "k" "h\n\nghurra"
+-}
 runSubParser :: GenParser tok st a -> st -> SourceName
              -> GenParser tok st' (Either ParseError (st, a))
 runSubParser sp st sn = do
   -- save the current state
   pos <- getPosition
   inp <- getInput
-  let posInputParser x =
-          do
-            pos' <- getPosition
-            inp' <- getInput
-            st' <- getState
-            return (x, pos', inp', st')
   case runParser (sp >>= posInputParser) st sn inp of
     Left err -> return $ Left err
     Right (x, pos', inp', st') -> do
@@ -97,26 +99,17 @@ runSubParser sp st sn = do
       return $ Right (st', x)
 
 
-class OperatorState a => OperatorVarState a where
-    addVar :: String -> CharParser a ()
-    isVar :: String -> CharParser a Bool
-
-
 instance OperatorState (AnnoState.AnnoState st) where
-    lookupOperator _ = lookupOpInfoForParsing operatorInfoMap
+    lookupOperator _ = lookupOperator ()
+    lookupBinder _ = lookupBinder ()
 
 data OpVarState a = OpVarState a (Set.Set String)
 
 instance OperatorState a => OperatorState (OpVarState a) where
     lookupOperator (OpVarState x _) = lookupOperator x
-
-instance OperatorState a => OperatorVarState (OpVarState a) where
-    addVar x = do
-      OpVarState st s <- getState
-      setState $ OpVarState st $ Set.insert x s
-    isVar x = do
-      OpVarState _ s <- getState
-      return $ Set.member x s
+    lookupBinder (OpVarState x _) = lookupBinder x
+    addVar (OpVarState st s) x = OpVarState st $ Set.insert x s
+    isVar (OpVarState _ s) x = Set.member x s
 
 
 -- call opvar-state-subparser on given state
@@ -128,6 +121,8 @@ runWithVars l p = do
   case res of
     Left err -> parseError $ unlines $ map messageString $ errorMessages err
     Right (_, x) -> return x
+
+-- TEST: for subparser...
 
 
 
@@ -205,6 +200,7 @@ readDbl s = read s
 
 -- | The version in Common.Lexer is not compatible with floating point numbers
 -- which may start with ".". This one does it.
+-- This version is still not compatible with -!
 keySignNumCompat :: CharParser st a -> CharParser st a
 keySignNumCompat = try . (<< notFollowedBy (oneOf signNumCompatChars))
 
@@ -253,9 +249,10 @@ expsymbol = do
   exps <- option ([],[])
           $ oParenT >> Lexer.separatedBy formulaorexpression pComma << cParenT
   st <- getState
-  case mkAndAnalyzeOp' st (tokStr ident) (fst ep) (fst exps) $ getRange ident of
+  case mkAndAnalyzeOp' True st (tokStr ident) (fst ep) (fst exps)
+           $ getRange ident of
     Left s -> parseError $ "expsymbol at op " ++ (tokStr ident)
-              ++ show (parens $ pretty $ fst exps) ++ ": " ++ s
+              ++ show (fst exps) ++ ": " ++ s
     Right e -> return e
 
 opdecl :: OperatorState st => CharParser st OpDecl
@@ -271,9 +268,9 @@ opdecl = do
 -- | parses a list expression
 listexp :: OperatorState st => CharParser st EXPRESSION
 listexp = do
-  Lexer.keySign $ string "{"
+  keySignNumCompat $ string "{"
   elems <- Lexer.separatedBy formulaorexpression pComma
-  Lexer.keySign $ string "}"
+  keySignNumCompat $ string "}"
   return (List (fst elems) nullRange)
 
 intervalexp :: CharParser st EXPRESSION
@@ -423,9 +420,9 @@ reduceCommand = do
 
 assignment :: OperatorState st => CharParser st CMD
 assignment = do
-  ident <- opdecl
+  ident@(OpDecl _ _ vdl _) <- opdecl
   lexemeParser $ choice [tryString ":=", tryString "="]
-  exp' <- plusmin
+  exp' <- runWithVars (map varDeclName vdl) plusmin
   return $ Ass ident exp'
 
 constraint :: OperatorState st => CharParser st CMD
@@ -534,11 +531,11 @@ parseEPVal = do
 
 parseEPDomain :: CharParser st EPDomain
 parseEPDomain = do
-  Lexer.keySign $ string "["
+  lexemeParser $ string "["
   l <- parseEPVal
   pComma
   r <- parseEPVal
-  Lexer.keySign $ string "]"
+  lexemeParser $ string "]"
   return $ ClosedInterval l r
 
 
@@ -628,7 +625,7 @@ parseCommand inp =
       Left _ -> Nothing
       Right s -> Just s
 
-parseExpression :: OpInfoMap -> String -> Maybe EXPRESSION
+parseExpression :: OperatorState a => a -> String -> Maybe EXPRESSION
 parseExpression st inp =
     case runParser formulaorexpression st "" inp of
       Left _ -> Nothing

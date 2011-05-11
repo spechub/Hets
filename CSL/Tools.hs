@@ -13,6 +13,7 @@ Portability :  portable
 module CSL.Tools where
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import Common.Id
 import Common.AS_Annotation as AS_Anno
 

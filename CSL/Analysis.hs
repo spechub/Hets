@@ -36,6 +36,7 @@ import Data.Maybe
 
 -- * Basic Analysis Functions
 
+
 -- | generates a named formula
 withName :: Annoted CMD -> Int -> Named CMD
 withName f i = (makeNamed (if label == "" then "Ax_" ++ show i
@@ -53,7 +54,7 @@ withName f i = (makeNamed (if label == "" then "Ax_" ++ show i
 -- It analyzes the formula and returns a formula with diagnosis
 analyzeFormula :: Sign.Sign -> (Annoted CMD) -> Int -> Result (Named CMD)
 analyzeFormula _ f i =
-    return $ withName f{ item = staticUpdate $ item f } i
+    return $ withName f i
 
 
 -- | Extracts the axioms and the signature of a basic spec
@@ -128,6 +129,11 @@ emptyAnaEnv = AnaEnv
               }
 
 
+{-
+
+tTT :: CMD -> CMD
+tTT c = foldCMD myrec c where
+    myrec = passAllRecord { foldVar = \ _ _ -> Var $ mkSimpleId "X" }
 
 type Analysis a = ResultT (State AnaEnv) a
 
@@ -137,9 +143,9 @@ anaVarDecl (Var_item l dom rg) = error ""
 
 -- data EPComponent = EPDomain Id.Token EPDomain | EPDefault Id.Token APInt | EPConst Id.Token APInt
 anaEPComp :: EPComponent -> Analysis ()
-anaEPComp (EPDomain n dom) = error ""
-anaEPComp (EPDefault n i) = error ""
-anaEPComp (EPConst n i) = error ""
+anaEPComp (EPDomain n dom) = addEPDomain n dom
+anaEPComp (EPDefault n i) = addEPDefault n i
+anaEPComp (EPConst n i) = addEPConst n i
 
 
 anaAxiom :: Annoted CMD -> Analysis ()
@@ -153,90 +159,5 @@ anaBasicItem' itm =
       EP_components l -> mapM_ anaEPComp l
       Axiom_item annocmd -> anaAxiom annocmd
 
-
--- * Command update functions
-
--- | A function which regroups all updates on a CMD during the static analysis.
-staticUpdate :: CMD -> CMD
-staticUpdate = handleFunAssignment . handleBinder
-
--- | Replaces the function-arguments in functional assignments by variables.
-handleFunAssignment :: CMD -> CMD
-handleFunAssignment (Ass od@(OpDecl _ _ al@(_:_) _) e) =
-   let env = Set.fromList $ map varDeclName al in Ass od $ constsToVars env e
-handleFunAssignment x = x
-
-{- | If element x is at position i in the first list and there is an entry (i,y)
-   in the second list then the resultlist has element y at position i. All 
-   positions not mentioned by the second list have identical values in the first
-   and the result list. 
 -}
-replacePositions :: [a] -> [(Int, a)] -> [a]
-replacePositions l posl =
-    let f (x, _) (y, _) = compare x y
-        -- the actual merge function
-        g _ l' [] = l'
-        g _ [] _ = error "replacePositions: positions left for replacement"
-        g i (a:l1) l2'@((j,b):l2) =
-            if i == j then b:g (i+1) l1 l2 else a:g (i+1) l1 l2'
-    -- works only if the positions are in ascending order
-    in g 0 l $ sortBy f posl
-
--- | Replaces the binding-arguments in binders by variables.
-handleBinder :: CMD -> CMD
-handleBinder cmd =
-    let substBinderArgs bvl bbl args =
-            -- compute the var set from the given positions
-            let (vs, vl) = varSet $ map (args!!) bvl
-                -- compute the substituted bodyexpressionlist
-                bl = map (constsToVars vs . (args!!)) bbl
-            in replacePositions args $ zip (bvl ++ bbl) $ vl ++ bl
-        substRec =
-            passRecord
-            { foldAss = \ cmd' _ def ->
-                case cmd' of
-                  -- we do not want to recurse into the left hand side hence
-                  -- we take the original value
-                  Ass c _ -> Ass c def
-                  _ -> error "handleBinder: impossible case"
-
-            , foldOp = \ _ s epl' args rg' ->
-                case lookupBindInfo operatorInfoNameMap s $ length args of
-                  Just (BindInfo bvl bbl) ->
-                       Op s epl' (substBinderArgs bvl bbl args) rg'
-                  _ -> Op s epl' args rg'
-            , foldList = \ _ l rg' -> List l rg'
-            }
-    in foldCMD substRec cmd
-
-
--- | Transforms Op-Expressions to a set of op-names and a Var-list
-varSet :: [EXPRESSION] -> (Set.Set String, [EXPRESSION])
-varSet l =
-    let opToVar' s (Op v _ _ rg') =
-            ( Set.insert (simpleName v) s
-            , Var Token{ tokStr = simpleName v, tokPos = rg' } )
-        opToVar' s v@(Var tok) = (Set.insert (tokStr tok) s, v)
-        opToVar' _ x =
-            error $ "varSet: not supported varexpression at "
-                      ++ show (getRange x) ++ ": " ++ show x
-    in mapAccumL opToVar' Set.empty l
-
--- | Replaces Op occurrences to Var if the op is in the given set
-constsToVars :: Set.Set String -> EXPRESSION -> EXPRESSION
-constsToVars env e =
-    let substRec =
-         idRecord
-         { foldOp =
-            \ _ s epl' args rg' ->
-                if Set.member (simpleName s) env then
-                    if null args
-                    then Var (Token { tokStr = simpleName s, tokPos = rg' })
-                    else error $ "constsToVars: variable must not have"
-                             ++ " arguments:" ++ show args
-                else Op s epl' args rg'
-         , foldList = \ _ l rg' -> List l rg'
-         }
-    in foldTerm substRec e
-
 

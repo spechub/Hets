@@ -19,6 +19,7 @@ module CSL.GenericInterpreter where
 
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Interpreter
 
 import Control.Monad.State.Class

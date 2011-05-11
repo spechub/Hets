@@ -19,6 +19,7 @@ import Common.Doc
 import Common.DocUtils
 
 import CSL.AS_BASIC_CSL
+import CSL.ASUtils
 import CSL.Sign as Sign
 
 import qualified Data.Set as Set
@@ -195,14 +196,3 @@ assDepGraphFromDescList f l = depGraphFromDescList getPs id $ map g l where
               . annoDef
 
 
-{- OLD, using instantiated constants
-type AssignmentDepGraph a =
-    DepGraph ConstantName (DepGraphAnno a) InstantiatedConstant
-
-assDepGraphFromDescList :: (ConstantName -> AssDefinition -> a)
-                        -> [(ConstantName, AssDefinition)]
-                        -> AssignmentDepGraph a
-assDepGraphFromDescList f l = depGraphFromDescList getPs constName $ map g l where
-    g (cn, ad) = (cn, DepGraphAnno { annoDef = ad, annoVal = f cn ad })
-    getPs _ = Set.toList . setOfUserDefinedICs . getDefiniens . annoDef
--}
