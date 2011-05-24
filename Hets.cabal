@@ -129,5 +129,6 @@ Executable hets
     build-depends:
         wai-extra >= 0.2 && < 0.3
       , wai >= 0.2 && < 0.3
+      , bytestring >= 0.9
       , random >= 1.0
     cpp-options: -DSERVER

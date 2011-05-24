@@ -53,7 +53,9 @@ import PGIP.Server
 import Maude.Maude2DG (anaMaudeFile)
 import LF.Twelf2DG (anaTwelfFile)
 import OMDoc.Import (anaOMDocFile)
+#ifdef HEXPAT
 import HolLight.HolLight2DG (anaHolLightFile)
+#endif
 
 main :: IO ()
 main =
@@ -77,13 +79,15 @@ processFile opts file = do
 #ifndef NOOWLLOGIC
       OWLIn -> parseOWL file >>= structureAna file opts
 #endif
+#ifdef HEXPAT
+      HolLightIn -> anaHolLightFile opts file
+#endif
       PrfIn -> anaLibReadPrfs opts file
       ProofCommand -> do
         st <- cmdlProcessFile opts file
         return . getMaybeLib $ intState st
       MaudeIn -> anaMaudeFile opts file
       TwelfIn -> anaTwelfFile opts file
-      HolLightIn -> anaHolLightFile opts file
       OmdocIn -> anaOMDocFile opts file
       CommonLogicIn -> anaLibExt (opts { defLogic = "CommonLogic" }) file
         emptyLibEnv emptyDG
