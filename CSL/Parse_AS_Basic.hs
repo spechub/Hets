@@ -28,7 +28,7 @@ import CSL.Keywords
 import CSL.TreePO
 
 import Numeric
-import Char
+import Data.Char
 
 import qualified Data.Set as Set
 
@@ -117,7 +117,7 @@ runWithVars :: OperatorState a => [String] -> CharParser (OpVarState a) res
             -> CharParser a res
 runWithVars l p = do
   st <- getState
-  res <- runSubParser p (OpVarState st $ Set.fromList l) "" 
+  res <- runSubParser p (OpVarState st $ Set.fromList l) ""
   case res of
     Left err -> parseError $ unlines $ map messageString $ errorMessages err
     Right (_, x) -> return x
@@ -178,9 +178,9 @@ signednumberExp =
     let f (eN, rg) = either (flip Int rg) (flip Rat rg . readRat) eN
     in signednumber >-> f
 
--- | parses a possibly signed number (both integers and floats) 
+-- | parses a possibly signed number (both integers and floats)
 signednumber :: CharParser st (Either APInt String, Range)
-signednumber = 
+signednumber =
     let f c x = return (c $ tokStr x, tokPos x)
         g x | isFloating x = f Right x
             | otherwise  = f (Left . read) x
@@ -452,7 +452,7 @@ repeatExpr = do
 singleCase :: CharParser (AnnoState.AnnoState st) (EXPRESSION, [CMD])
 singleCase =
     let p1 = lstring "else" >> return (mkPredefOp OP_true [])
-    in do 
+    in do
       lstring "case"
       cond <- choice [try p1, aFormula]
       lstring ":"
@@ -478,7 +478,7 @@ opItem = do
   return $ Op_item vars nullRange
 
 
--- | Parser for components of extended parameter declarations: 
+-- | Parser for components of extended parameter declarations:
 -- example: I in {1,2}; I default= 1; J;K
 epComponent :: CharParser st EPComponent
 epComponent = do
