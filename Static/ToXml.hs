@@ -99,6 +99,7 @@ lnode ga lenv (_, lbl) =
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
+      sigxml = prettyElem "Signature" ga $ dgn_sign lbl
   in add_attrs (mkNameAttr (showName nm) : if
                not (isDGRef lbl) && dgn_origin lbl < DGProof then
                [mkAttr "refname" spn, mkAttr "relxpath" xp ]
@@ -110,16 +111,13 @@ lnode ga lenv (_, lbl) =
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
             $ unode "Reference"
-            $ prettyElem "Signature" ga $ dgn_sign lbl ]
+            $ sigxml ]
           DGNode orig cs -> consStatus cs
-              ++ case orig of
-                   DGBasicSpec _ syms -> case dgn_sign lbl of
-                     G_sign lid (ExtSign sig _) _ -> let
-                       isyms = concatMap (Set.toList . Set.intersection syms
-                                 . Set.map (G_symbol lid)) $ sym_of lid sig
-                       in subnodes "Declarations"
-                       (map (prettyRangeElem "Symbol" ga) isyms)
-                   _ -> [prettyElem "Signature" ga $ dgn_sign lbl]
+              ++ [ case orig of
+                   DGBasicSpec mbs _ -> case mbs of
+                     Just bs -> prettyRangeElem "Basicspec" ga bs
+                     _ -> sigxml
+                   _ -> sigxml]
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom $ OMap.map
@@ -149,7 +147,7 @@ mkAxDocNode ga = unode "Axiom" . show . useGlobalAnnos ga
 consStatus :: ConsStatus -> [Element]
 consStatus cs = case getConsOfStatus cs of
   None -> []
-  cStat -> [unode "ConsStatus" $ show cStat] 
+  cStat -> [unode "ConsStatus" $ show cStat]
 
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
 ledge ga dg (f, t, lbl) = let
