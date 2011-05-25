@@ -91,18 +91,21 @@ readDGXml opts path = do
     showDiags opts ds
     return res
 
+-- | creates an entirely empty theory
+emptyTheory :: AnyLogic -> G_theory
+emptyTheory (Logic lid) =
+  G_theory lid (ext_empty_signature lid) startSigId noSens startThId
+
 {- | main function; receives a logicGraph, an initial DGraph and an xml
 element, then adds all nodes and edges from the element into the DGraph -}
 fromXml :: LogicGraph -> DGraph -> Element -> Result DGraph
 fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
     fail "current logic was not found in logicMap"
-  Just (Logic lid) -> do
-    let emptyTheory = G_theory lid (ext_empty_signature lid)
-                    startSigId noSens startThId
+  Just lo -> do
     nodes <- extractNodeElements el
     (defLinks, thmLinks) <- extractLinkElements el
-    (dg', depNodes) <- initialiseNodes emptyTheory nodes defLinks dg
+    (dg', depNodes) <- initialiseNodes (emptyTheory lo) nodes defLinks dg
     dg1 <- insertNodesAndDefLinks lg depNodes defLinks dg'
     dg2 <- insertThmLinks lg thmLinks dg1
     return $ computeDGraphTheories Map.empty dg2
@@ -187,17 +190,28 @@ insertThmLinks lg links dg' = foldM ins' dg' links where
 this particular node -}
 insNdAndDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph
                  -> Result DGraph
-insNdAndDefLinks lg trgNd links dg = do
-  mrs <- mapM (extractMorphism lg dg) links
-  gsig1 <- gsigManyUnion lg $ map (cod . snd) mrs
-  let gt = case gsig1 of
-             G_sign lid sg sId -> noSensGTheory lid sg sId
-  dg' <- insertNode gt dg trgNd
-  (j, gsig2) <- signOfNode (fst trgNd) dg'
-  let ins' dgR ((i, mr), l) = do
-        morph <- finalizeMorphism lg mr gsig2
-        insertLink i j morph (lType l) dgR
-  foldM ins' dg' $ zip mrs links
+insNdAndDefLinks lg trgNd links dg = case links of
+  [l@(Link _ _ HidingDefLink _)] ->
+    case Map.lookup (currentLogic lg) (logics lg) of
+      Nothing ->
+        fail "current logic was not found in logicMap"
+      Just lo -> do
+        dg' <- insertNode (emptyTheory lo) dg trgNd
+        (j, gsig1) <- signOfNode (fst trgNd) dg'
+        (i, mr) <- extractMorphism lg dg' l
+        mr' <- ginclusion lg gsig1 (cod mr)
+        insertLink i j mr' (lType l) dg'
+  _ -> do
+    mrs <- mapM (extractMorphism lg dg) links
+    gsig1 <- gsigManyUnion lg $ map (cod . snd) mrs
+    let gt = case gsig1 of
+               G_sign lid sg sId -> noSensGTheory lid sg sId
+    dg' <- insertNode gt dg trgNd
+    (j, gsig2) <- signOfNode (fst trgNd) dg'
+    let ins' dgR ((i, mr), l) = do
+          morph <- finalizeMorphism lg mr gsig2
+          insertLink i j morph (lType l) dgR
+    foldM ins' dg' $ zip mrs links
 
 
 -- | inserts a new link into the dgraph
@@ -272,14 +286,14 @@ mkDGNodeLab gt annos (name, el) = let
     (response, msg) = extendByBasicSpec annos specs gt
     in case response of
       Success gt' _ symbs _ -> return (gt', symbs)
-      Failure _ -> fail 
+      Failure _ -> fail
         $ "[ " ++ name ++ " ]\n" ++ showDoc (signOf gt) "\n" ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
-    Nothing -> let ch1 = deepSearch ["Axiom", "Theorem"] el 
-                   ch2 = case findChild (unqual "Basicspec") el of
+    Nothing -> let ch1 = case findChild (unqual "Basicspec") el of
                      Just ch -> [ch]
                      Nothing -> findChildren (unqual "Signature") el
+                   ch2 = deepSearch ["Axiom", "Theorem"] el
                in do
       (gt', symbs) <- parseSpecs $ ch1 ++ ch2
       return $ newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
