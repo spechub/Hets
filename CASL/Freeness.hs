@@ -690,16 +690,17 @@ iota_syms = Set.map iota_symbol
 
 -- | applies the iota renaming to a symbol
 iota_symbol :: Symbol -> Symbol
-iota_symbol (Symbol name SortAsItemType) = Symbol (mkFreeName name) SortAsItemType
-iota_symbol (Symbol name (OpAsItemType ot)) = Symbol (mkFreeName name) oait
-    where f = \ (OpType _ args res) -> OpType Total (map mkFreeName args) (mkFreeName res)
-          oait = OpAsItemType $ f ot
-iota_symbol (Symbol name (PredAsItemType pt)) = Symbol (mkFreeName name) pait
-    where f = \ (PredType args) -> PredType $ map mkFreeName args
-          pait = PredAsItemType $ f pt
+iota_symbol (Symbol name ty) = Symbol (mkFreeName name) $ case ty of
+  SortAsItemType -> SortAsItemType
+  SubsortAsItemType s -> SubsortAsItemType $ mkFreeName s
+  OpAsItemType (OpType _ args res) -> OpAsItemType
+    $ OpType Total (map mkFreeName args) (mkFreeName res)
+  PredAsItemType (PredType args) -> PredAsItemType
+    $ PredType $ map mkFreeName args
 
 -- | applies the iota renaming to the annotations
-iota_anno_map :: Map.Map Symbol (Set.Set Annotation) -> Map.Map Symbol (Set.Set Annotation)
+iota_anno_map :: Map.Map Symbol (Set.Set Annotation)
+  -> Map.Map Symbol (Set.Set Annotation)
 iota_anno_map = Map.mapKeys iota_symbol
 
 -- Some auxiliary functions

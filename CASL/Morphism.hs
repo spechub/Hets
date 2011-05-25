@@ -146,7 +146,7 @@ symbTypeToKind :: SymbType -> SYMB_KIND
 symbTypeToKind st = case st of
   OpAsItemType _ -> Ops_kind
   PredAsItemType _ -> Preds_kind
-  SortAsItemType -> Sorts_kind
+  _ -> Sorts_kind
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw = ASymbol

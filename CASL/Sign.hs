@@ -41,6 +41,7 @@ data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
 type OpMap = Map.Map Id (Set.Set OpType)
 
 data SymbType = SortAsItemType
+              | SubsortAsItemType SORT -- special symbols for xml output
               | OpAsItemType OpType
                 {- since symbols do not speak about totality, the totality
                 information in OpType has to be ignored -}
@@ -162,6 +163,7 @@ instance Pretty Symbol where
   pretty sy = let n = pretty (symName sy) in
     case symbType sy of
        SortAsItemType -> keyword sortS <+> n
+       SubsortAsItemType s -> keyword sortS <+> n <+> less <+> pretty s
        PredAsItemType pt -> keyword predS <+> n <+> colon <+> pretty pt
        OpAsItemType ot -> keyword opS <+> n <+> colon <> pretty ot
 
@@ -541,5 +543,6 @@ addSymbToSign sig sy =
       let sig' = addSymbToDeclSymbs sig sy
       case symbType sy of
         SortAsItemType -> return $ addSort' sig' $ symName sy
+        SubsortAsItemType _ -> return sig
         PredAsItemType pt -> return $ addPred' sig' (symName sy) pt
         OpAsItemType ot -> return $ addOp' sig' (symName sy) ot

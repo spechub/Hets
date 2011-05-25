@@ -125,6 +125,7 @@ instance AsOMConstant (String, SymbType) where
     toOMConstant e (n, st) =
         case st of
           SortAsItemType -> toOMConstant e n
+          SubsortAsItemType _ -> fail "AsOMConstant.SubsortAsItemType"
           OpAsItemType ot -> toOMConstant e (n, ot)
           PredAsItemType pt -> toOMConstant e (n, pt)
 

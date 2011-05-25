@@ -186,6 +186,7 @@ mapSym s = let i = trId $ CasS.symName s in
         idToOpSymbol initialEnv i $ fromOpType ot $ CasS.opKind ot
     CasS.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
     CasS.SortAsItemType -> idToTypeSymbol initialEnv i rStar
+    CasS.SubsortAsItemType _ -> idToTypeSymbol initialEnv i rStar
 
 toQuant :: Cas.QUANTIFIER -> Quantifier
 toQuant Cas.Universal = Universal

@@ -524,6 +524,7 @@ revealSym :: Symbol -> Sign f e -> Sign f e
 revealSym sy sigma1 = case symbType sy of
     SortAsItemType ->      -- 4.1.1.
       sigma1 {sortSet = Set.insert (symName sy) $ sortSet sigma1}
+    SubsortAsItemType _ -> sigma1 -- ignore
     OpAsItemType ot ->     -- 4.1.2./4.1.3.
       sigma1 { sortSet = foldr Set.insert (sortSet sigma1)
                $ opRes ot : opArgs ot
@@ -576,6 +577,7 @@ profileContainsSort :: SORT -> SymbType -> Bool
 profileContainsSort s symbT = elem s $ case symbT of
     OpAsItemType ot -> opRes ot : opArgs ot
     PredAsItemType pt -> predArgs pt
+    SubsortAsItemType t -> [t]
     SortAsItemType -> []
 
 leCl :: Ord a => (a -> a -> Bool) -> Map.Map Id (Set.Set a)
