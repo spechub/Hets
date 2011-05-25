@@ -25,6 +25,8 @@ import Common.ResultT
 import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal)
 
+import Common.DocUtils (showDoc)
+
 import Comorphisms.LogicGraph (logicGraph)
 
 import Control.Monad.Trans (lift)
@@ -42,7 +44,6 @@ import Logic.Logic (AnyLogic (..), cod, composeMorphisms)
 import Logic.Prover (noSens)
 
 import Text.XML.Light
-
 
 -- * Data Types
 
@@ -221,13 +222,15 @@ insertNode gt dg x = do
 this function calculates the final morphism for this link -}
 finalizeMorphism :: LogicGraph -> GMorphism -> G_sign -> DGLinkType
                  -> Result GMorphism
-finalizeMorphism lg mr sg lTp = do
+finalizeMorphism lg mr sg lTp = case lTp of
     {- TODO: for HidingDefLinks the inclusion is reversed.
     check if this works right! -}
-    mr1 <- case lTp of
-      HidingDefLink -> ginclusion lg sg (cod mr)
-      _ -> ginclusion lg (cod mr) sg
-    composeMorphisms mr mr1
+      HidingDefLink -> do
+        mr1 <- ginclusion lg sg (cod mr)
+        composeMorphisms mr1 mr
+      _ -> do
+        mr1 <- ginclusion lg (cod mr) sg
+        composeMorphisms mr mr1
 
 
 -- * Utils
@@ -276,7 +279,8 @@ mkDGNodeLab gt annos (name, el) = let
     (response, msg) = extendByBasicSpec annos specs gt
     in case response of
       Success gt' _ symbs _ -> return (gt', symbs)
-      Failure _ -> fail $ "( @node: " ++ name ++ " )\n" ++ msg
+      Failure _ -> fail 
+        $ "[ " ++ name ++ " ]\n" ++ showDoc (signOf gt) "\n" ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
     Nothing -> do
