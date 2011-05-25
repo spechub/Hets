@@ -190,28 +190,31 @@ insertThmLinks lg links dg' = foldM ins' dg' links where
 this particular node -}
 insNdAndDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph
                  -> Result DGraph
-insNdAndDefLinks lg trgNd links dg = case links of
-  [l@(Link _ _ HidingDefLink _)] ->
-    case Map.lookup (currentLogic lg) (logics lg) of
+insNdAndDefLinks lg trgNd links dg = do
+  mrs <- mapM (extractMorphism lg dg) links
+  (dg', isHiding) <- case partition (isHidingDef . lType) links of
+    -- case #1: none hiding def links
+    ([], _) -> do
+      gsig1 <- gsigManyUnion lg $ map (cod . snd) mrs
+      let gt = case gsig1 of
+                 G_sign lid sg sId -> noSensGTheory lid sg sId
+      dg' <- insertNode gt dg trgNd
+      return (dg', False)
+    -- case #2: only hiding def links
+    (_, []) -> case Map.lookup (currentLogic lg) (logics lg) of
       Nothing ->
         fail "current logic was not found in logicMap"
       Just lo -> do
         dg' <- insertNode (emptyTheory lo) dg trgNd
-        (j, gsig1) <- signOfNode (fst trgNd) dg'
-        (i, mr) <- extractMorphism lg dg' l
-        mr' <- ginclusion lg gsig1 (cod mr)
-        insertLink i j mr' (lType l) dg'
-  _ -> do
-    mrs <- mapM (extractMorphism lg dg) links
-    gsig1 <- gsigManyUnion lg $ map (cod . snd) mrs
-    let gt = case gsig1 of
-               G_sign lid sg sId -> noSensGTheory lid sg sId
-    dg' <- insertNode gt dg trgNd
-    (j, gsig2) <- signOfNode (fst trgNd) dg'
-    let ins' dgR ((i, mr), l) = do
-          morph <- finalizeMorphism lg mr gsig2
-          insertLink i j morph (lType l) dgR
-    foldM ins' dg' $ zip mrs links
+        return (dg', True)
+    -- case #3: mixture. not implemented!
+    _ -> fail "mix of HidingDefLinks and other links pointing at a single node"
+  (j, gsig2) <- signOfNode (fst trgNd) dg'
+  let ins' dgR ((i, mr), l) = do
+        morph <- if isHiding then ginclusion lg gsig2 (cod mr)
+          else finalizeMorphism lg mr gsig2
+        insertLink i j morph (lType l) dgR
+  foldM ins' dg' $ zip mrs links
 
 
 -- | inserts a new link into the dgraph
