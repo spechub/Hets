@@ -165,12 +165,6 @@ instance Pretty Symbol where
        PredAsItemType pt -> keyword predS <+> n <+> colon <+> pretty pt
        OpAsItemType ot -> keyword opS <+> n <+> colon <> pretty ot
 
-instance Pretty SymbType where
-  pretty st = case st of
-     OpAsItemType ot -> pretty ot
-     PredAsItemType pt -> space <> pretty pt
-     _ -> empty
-
 printSign :: (e -> Doc) -> Sign f e -> Doc
 printSign fE s = let
   printRel (supersort, subsorts) =

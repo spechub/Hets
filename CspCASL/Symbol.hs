@@ -47,12 +47,6 @@ rawId r = case r of
   ACspSymbol s -> cspSymName s
   CspKindedSymb _ i -> i
 
-instance Pretty CspSymbType where
-  pretty t = case t of
-    CaslSymbType c -> pretty c
-    ProcAsItemType p -> pretty p
-    ChanAsItemType s -> pretty s
-
 instance Pretty CspSymbol where
   pretty (CspSymbol i t) = case t of
     ProcAsItemType p -> keyword processS <+> pretty i <+> pretty p
@@ -175,7 +169,7 @@ cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
       let mkS i = ACspSymbol $ CspSymbol i $ CaslSymbType SortAsItemType
           pairS s1 s2 = (mkS s1, mkS s2)
       case (w, x) of
-        (ACspSymbol (CspSymbol _ t1), ACspSymbol (CspSymbol _ t2)) ->
+        (ACspSymbol c1@(CspSymbol _ t1), ACspSymbol c2@(CspSymbol _ t2)) ->
           case (t1, t2) of
             (ChanAsItemType s1, ChanAsItemType s2) ->
               return [(w, x), (mkS s1, mkS s2)]
@@ -196,8 +190,8 @@ cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
                 : zipWith pairS (res1 : args1) (res2 : args2)
             (CaslSymbType SortAsItemType, CaslSymbType SortAsItemType) ->
               return [(w, x)]
-            _ -> fail $ "profiles '" ++ showDoc t1 "' and '"
-               ++ showDoc t2 "' do not match"
+            _ -> fail $ "profiles of '" ++ showDoc c1 "' and '"
+               ++ showDoc c2 "' do not match"
         _ -> return [(w, x)]
 
 cspStatSymbMapItems :: CspCASLSign -> Maybe CspCASLSign -> [CspSymbMapItems]
