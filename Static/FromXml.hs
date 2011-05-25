@@ -283,8 +283,9 @@ mkDGNodeLab gt annos (name, el) = let
         $ "[ " ++ name ++ " ]\n" ++ showDoc (signOf gt) "\n" ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
-    Nothing -> do
-      (gt', symbs) <- parseSpecs $ deepSearch ["Axiom", "Theorem", "Basicspec", "Signature"] el
+    Nothing -> let s1 = deepSearch ["Axiom", "Theorem", "Basicspec"] el in do
+      (gt', symbs) <- parseSpecs 
+         $ if null s1 then deepSearch ["Signature"] el else s1
       return $ newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
     -- Case #2: reference node
     Just rf -> do
