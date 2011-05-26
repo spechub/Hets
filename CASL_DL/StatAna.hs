@@ -372,23 +372,16 @@ checkSymbolMapDL :: RawSymbolMap -> Result RawSymbolMap
           matches, symOf, statSymbMapItems
 -}
 checkSymbolMapDL rsm =
-    let syms = Map.foldWithKey checkSourceSymbol [] rsm
+    let checkSourceSymbol sSym _ =
+              if any (`matches` sSym) symOfPredefinedSign then
+                  (sSym :) else id
+        syms = Map.foldWithKey checkSourceSymbol [] rsm
     in if null syms
        then return rsm
-       else Result (ds syms) Nothing
-    where checkSourceSymbol sSym _ syms =
-              if Set.fold (\ ps -> (||) $ matches ps sSym) False
-                          symOfPredefinedSign
-              then syms ++ [sSym]
-              else syms
-          -- ds :: [RawSymbol] -> [Diagnosis]
-          ds syms = [Diag Error
-                     ("Predefined CASL_DL symbols\n    cannot be mapped: "
-                      ++ show (ppWithCommas syms))
-                     $ minimum $ map getRange syms]
+       else mkError "Predefined CASL_DL symbols cannot be mapped" syms
 
-symOfPredefinedSign :: SymbolSet
-symOfPredefinedSign = symsetOf predefinedSign
+symOfPredefinedSign :: [Symbol]
+symOfPredefinedSign = Set.toList . Set.unions $ symOf predefinedSign
 
 isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
 isNumber = isGenNum splitApplM
