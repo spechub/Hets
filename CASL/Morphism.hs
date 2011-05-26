@@ -13,7 +13,58 @@ Portability :  non-portable (MPTC+FD)
 Symbols and signature morphisms for the CASL logic
 -}
 
-module CASL.Morphism where
+module CASL.Morphism
+  ( SymbolSet
+  , SymbolMap
+  , RawSymbol (..)
+  , Morphism (..)
+  , idMor
+  , legalMor
+  , DefMorExt (..)
+  , emptyMorExt
+  , MorphismExtension (..)
+  , retExtMap
+  , CASLMor
+  , isInclusionMorphism
+  , isSortInjective
+  , isInjective
+  , Sort_map
+  , Pred_map
+  , Op_map
+  , embedMorphism
+  , sigInclusion
+  , composeM
+  , plainMorphismUnion
+  , morphismUnion
+  , morphismUnionM
+  , idOrInclMorphism
+  , morphismToSymbMap
+  , symsetOf
+  , symOf
+  , sigSymsOf
+  , addSigM
+  , idToRaw
+  , typedSymbKindToRaw
+  , symbolToRaw
+  , insertRsys
+  , mapSort
+  , mapOpSym
+  , mapPredSym
+  , mapOpType
+  , mapPredType
+  , matches
+  , compatibleOpTypes
+  , imageOfMorphism
+  , RawSymbolMap
+  , InducedSign
+  , inducedSignAux
+  , rawSymName
+  , inducedOpMap
+  , inducedPredMap
+  , statSymbMapItems
+  , statSymbItems
+  , makeTotal
+  ) where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -40,7 +91,6 @@ instance GetRange RawSymbol where
         ASymbol s -> getRange s
         AKindedSymb _ i -> getRange i
 
-type RawSymbolSet = Set.Set RawSymbol
 type RawSymbolMap = Map.Map RawSymbol RawSymbol
 
 type Sort_map = Map.Map SORT SORT
@@ -107,9 +157,6 @@ mapOpType sorts t = if Map.null sorts then t else
   t { opArgs = map (mapSort sorts) $ opArgs t
     , opRes = mapSort sorts $ opRes t }
 
-mapOpTypeK :: Sort_map -> OpKind -> OpType -> OpType
-mapOpTypeK sorts k = makeTotal k . mapOpType sorts
-
 makeTotal :: OpKind -> OpType -> OpType
 makeTotal fk t = case fk of
   Total -> mkTotal t
@@ -141,12 +188,6 @@ embedMorphism extEm a b = Morphism
   , op_map = Map.empty
   , pred_map = Map.empty
   , extended_map = extEm }
-
-symbTypeToKind :: SymbType -> SYMB_KIND
-symbTypeToKind st = case st of
-  OpAsItemType _ -> Ops_kind
-  PredAsItemType _ -> Preds_kind
-  _ -> Sorts_kind
 
 symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw = ASymbol
