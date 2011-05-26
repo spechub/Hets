@@ -295,8 +295,8 @@ class (Language lid, Category sign morphism, Ord sentence,
       contains this function as total, although a signature with just that
       partial function would be a subsignature. This function is supposed to
       work over partial signatures created by 'signatureDiff'. -}
-      mostSymsOf :: lid -> sign -> [Set.Set symbol]
-      mostSymsOf = sym_of
+      mostSymsOf :: lid -> sign -> [symbol]
+      mostSymsOf l = concatMap Set.toList . sym_of l
 
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol

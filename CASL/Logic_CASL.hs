@@ -202,6 +202,7 @@ instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       map_sen CASL m = return . mapSen (const id) m
       negation CASL = negateFormula
       sym_of CASL = symOf
+      mostSymsOf CASL = sigSymsOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       simplify_sen CASL = simplifyCASLSen

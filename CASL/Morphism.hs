@@ -159,24 +159,32 @@ rawSymName rs = case rs of
   ASymbol sym -> symName sym
   AKindedSymb _ i -> i
 
-symPair :: Sign f e -> [SymbolSet]
-symPair sigma =
-    let
-        ml f = concatMap (\ (i, ts) -> map (f i) $ Set.toList ts) . Map.toList
-        sorts = Set.map idToSortSymbol $ sortSet sigma
-        ops = ml idToOpSymbol $ opMap sigma
-        preds = ml idToPredSymbol $ predMap sigma
-    in [sorts, Set.fromList $ ops ++ preds]
+sortSyms :: Sign f e -> SymbolSet
+sortSyms = Set.map idToSortSymbol . sortSet
+
+opSyms :: Sign f e -> [Symbol]
+opSyms = map (uncurry idToOpSymbol) . mapSetToList . opMap
+
+predSyms :: Sign f e -> [Symbol]
+predSyms = map (uncurry idToPredSymbol) . mapSetToList . predMap
 
 {- | returns the symbol sets of the signature in the correct dependency order
 , i.e., sorts first, then ops and predicates. Result list is of length two. -}
 symOf :: Sign f e -> [SymbolSet]
-symOf = symPair
+symOf s = [ sortSyms s, Set.fromList $ predSyms s ++ opSyms s ]
+
+sigSymsOf :: Sign f e -> [Symbol]
+sigSymsOf s = concat
+  [ Set.toList $ sortSyms s
+  , map (\ (a, b) -> Symbol a $ SubsortAsItemType b)
+    . Rel.toList . Rel.transReduce $ sortRel s
+    -- assume sort relation to be the irreflexive transitive closure
+  , opSyms s
+  , predSyms s ]
 
 -- | set of symbols for a signature
 symsetOf :: Sign f e -> SymbolSet
 symsetOf = Set.unions . symOf
-
 
 checkSymbList :: [SYMB_OR_MAP] -> [Diagnosis]
 checkSymbList l = case l of
