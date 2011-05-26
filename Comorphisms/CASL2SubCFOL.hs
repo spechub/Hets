@@ -196,7 +196,7 @@ botType x = OpType {opKind = Total, opArgs = [], opRes = x }
 encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
 encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
-   newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
+   newTotalMap = Map.map (Set.map mkTotal) $ opMap sig
    botOpMap = Set.fold (\ bt -> addOpTo (uniqueBotName $ toOP_TYPE bt) bt)
        newTotalMap $ Set.map botType bsorts
    defType x = PredType {predArgs = [x]}

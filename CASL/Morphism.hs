@@ -63,7 +63,6 @@ module CASL.Morphism
   , inducedPredMap
   , statSymbMapItems
   , statSymbItems
-  , makeTotal
   ) where
 
 import CASL.Sign
