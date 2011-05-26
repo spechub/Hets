@@ -34,7 +34,7 @@ module Common.Result
   , hint
   , message
   , maybeToResult
-  , maybeToMonad
+  , resultToMonad
   , resultToMaybe
   , adjustPos
   , propagateErrors
@@ -55,6 +55,7 @@ import Text.ParserCombinators.Parsec.Char (char)
 import Text.ParserCombinators.Parsec (parse)
 import Common.Lexer
 import Control.Monad
+import Control.Monad.Identity
 
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
@@ -188,16 +189,9 @@ maybeToResult p s m = Result (case m of
                               Nothing -> [Diag Error s p]
                               Just _ -> []) m
 
--- | add a failure message to 'Nothing'
--- (alternative for 'maybeToResult' without 'Range')
-maybeToMonad :: Monad m => String -> Maybe a -> m a
-maybeToMonad s m = case m of
-                        Nothing -> fail s
-                        Just v -> return v
-
 -- | check whether no errors are present, coerce into 'Maybe'
 resultToMaybe :: Result a -> Maybe a
-resultToMaybe (Result ds val) = if hasErrors ds then Nothing else val
+resultToMaybe = resultToMonad ""
 
 -- | adjust positions of diagnoses
 adjustPos :: Range -> Result a -> Result a
@@ -205,11 +199,15 @@ adjustPos p r =
   r {diags = map (adjustDiagPos p) $ diags r}
 
 -- | Propagate errors using the error function
-propagateErrors :: String -> Result a -> a
-propagateErrors pos r =
+resultToMonad :: Monad m => String -> Result a -> m a
+resultToMonad pos r =
   case (hasErrors $ diags r, maybeResult r) of
-    (False, Just x) -> x
-    _ -> error $ pos ++ ' ' : showRelDiags 2 (diags r)
+    (False, Just x) -> return x
+    _ -> fail $ pos ++ ' ' : showRelDiags 2 (diags r)
+
+-- | Propagate errors using the error function
+propagateErrors :: String -> Result a -> a
+propagateErrors pos = runIdentity . resultToMonad pos
 
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
