@@ -178,12 +178,22 @@ parseHiding = parseMapOrHide G_logic_projection G_symb_list parseItemsList
 
 -- * specs
 
+-- "then" is associative, therefore flatten extensions
+
+flatExts :: [Annoted SPEC] -> [Annoted SPEC]
+flatExts = concatMap $ \ as -> case item as of
+   Extension sps _ -> sps
+   Group sp _ -> case flatExts [sp] of
+     [_] -> [as]
+     sps -> sps
+   _ -> [as]
+
 spec :: LogicGraph -> AParser st (Annoted SPEC)
 spec l = do
   (sps, ps) <- annoParser2 (specA l) `separatedBy` asKey thenS
   return $ case sps of
     [sp] -> sp
-    _ -> emptyAnno (Extension sps $ catRange ps)
+    _ -> emptyAnno (Extension (flatExts sps) $ catRange ps)
 
 specA :: LogicGraph -> AParser st (Annoted SPEC)
 specA l = do
