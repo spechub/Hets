@@ -286,6 +286,18 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | dependency ordered list of symbol sets for a signature
       sym_of :: lid -> sign -> [Set.Set symbol]
       sym_of _ _ = []
+      {- | Dependency ordered list of a bigger symbol set for a
+      signature. This function contains more symbols than those being subject
+      to hiding and renaming (given by 'sym_of') to better represent a
+      signature as a set of symbols given within xml files. At least for CASL
+      additional symbols for (direct) subsorts will be created, but note, that
+      no symbol for a partial function will be created, if the signature
+      contains this function as total, although a signature with just that
+      partial function would be a subsignature. This function is supposed to
+      work over partial signatures created by 'signatureDiff'. -}
+      mostSymsOf :: lid -> sign -> [Set.Set symbol]
+      mostSymsOf = sym_of
+
       -- | symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
       symmap_of _ _ = Map.empty
