@@ -483,9 +483,10 @@ anaItemNameOrMap1 libenv ln genv' (genv, dg) (old, new) = do
   let newName = makeName new
   entry <- maybeToResult (tokPos old)
             (tokStr old ++ " not found") (Map.lookup old genv')
-  case Map.lookup new genv of
-    Nothing -> return ()
-    Just _ -> fail (tokStr new ++ " already used")
+  maybeToResult (tokPos new) (tokStr new ++ " already used")
+    $ case Map.lookup new genv of
+    Nothing -> Just ()
+    Just _ -> Nothing
   case entry of
     SpecEntry extsig ->
       let (dg1, extsig1) = refExtsig libenv ln dg newName extsig

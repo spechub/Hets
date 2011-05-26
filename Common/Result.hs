@@ -200,10 +200,10 @@ adjustPos p r =
 
 -- | Propagate errors using the error function
 resultToMonad :: Monad m => String -> Result a -> m a
-resultToMonad pos r =
-  case (hasErrors $ diags r, maybeResult r) of
+resultToMonad pos r = let ds = diags r in
+  case (hasErrors ds, maybeResult r) of
     (False, Just x) -> return x
-    _ -> fail $ pos ++ ' ' : showRelDiags 2 (diags r)
+    _ -> fail $ pos ++ ' ' : showRelDiags 2 ds
 
 -- | Propagate errors using the error function
 propagateErrors :: String -> Result a -> a
