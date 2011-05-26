@@ -184,10 +184,6 @@ isCspSubSign a b =
 instance Pretty CspSign where
   pretty = printCspSign
 
-mapSetToList :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> [(a, b)]
-mapSetToList = concatMap (\ (c, ts) -> map (\ t -> (c, t)) $ Set.toList ts)
-  . Map.toList
-
 printCspSign :: CspSign -> Doc
 printCspSign sigma =
     case mapSetToList $ chans sigma of

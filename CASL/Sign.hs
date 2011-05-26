@@ -313,6 +313,10 @@ isSubSig isSubExt a b = Set.isSubsetOf (sortSet a) (sortSet b)
   && isSubMapSet (predMap a) (predMap b)
   && isSubExt (extendedInfo a) (extendedInfo b)
 
+mapSetToList :: (Ord a, Ord b) => Map.Map a (Set.Set b) -> [(a, b)]
+mapSetToList = concatMap (\ (c, ts) -> map (\ t -> (c, t)) $ Set.toList ts)
+  . Map.toList
+
 addDiags :: [Diagnosis] -> State.State (Sign f e) ()
 addDiags ds = do
   e <- State.get

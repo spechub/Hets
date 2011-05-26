@@ -628,7 +628,7 @@ mkEventDE _ chanNameMap =
                                         [mkSortBarType s])
         -- Make pairs of channel and sorts, where we only build the declared
         -- channels and not the subsorted channels.
-        mkAllChanCons = map mkChanCon $ mapSetToList chanNameMap
+        mkAllChanCons = map mkChanCon $ CASLSign.mapSetToList chanNameMap
         -- We build the event type out of the flat constructions and the list of
         -- channel constructions
     in (eventType, (flat : mkAllChanCons))
