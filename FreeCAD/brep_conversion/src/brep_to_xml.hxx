@@ -28,6 +28,7 @@ private:
     
     void add_to_graph(void);
     void init_graph(void);
+    void simplify_graph(void);
 public:
 
     BrepToXML();
@@ -40,7 +41,8 @@ public:
     
     bool read_brep(const char* filePath); //returns 1 if reading error occurs, 0 otherwise
     
-    void print_shape_type(void);
+    void print_shape_type(TopoDS_Shape);
+    
     void print_subshapes(void);
     void print_location(void);
     

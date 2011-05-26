@@ -47,10 +47,10 @@ void BrepToXML::set_shape(TopoDS_Shape shape)
  *
  ******************************************************************************/
 
-void BrepToXML::print_shape_type() 
+void BrepToXML::print_shape_type(TopoDS_Shape a) 
 {
     TopAbs_ShapeEnum st;
-    st = Sh.ShapeType();
+    st = a.ShapeType();
     switch (st)
     {
         case TopAbs_COMPOUND:
@@ -113,9 +113,10 @@ bool BrepToXML::read_brep(const char* filePath)
  ******************************************************************************/
 void BrepToXML::print_subshapes()
 {
-    vector <TopoDS_Shape> list;
-    list = this->get_subshapes(0);
-    //TODO cout part for each shape in vector
+    for (int i = 0; i < SS.NbShapes(); i++)
+    {
+        this->print_shape_type(SS.Shape(i+1));
+    }
 }
 
 /*******************************************************************************
@@ -144,7 +145,7 @@ vector <TopoDS_Shape> BrepToXML::get_subshapes(int arg)
     {
         for (int i = arg+1; i <= SS.NbShapes(); i++)
         {
-            temp.push_back(SS.Shape(i));
+           // temp.push_back(SS.Shape(i+1));
         }
     }
     else
@@ -182,27 +183,54 @@ void BrepToXML::init_graph(void)
 void BrepToXML::build_graph(void)
 {
     this->init_graph();
-    this->add_to_graph();//this only fills the matrix under the main diagonal with 1s
-    //TODO delete surplus edges from the graph represented by entries
-    //in the matrix 'graph'
+    this->add_to_graph();
+    this->simplify_graph();
 }
+
+
 
 void BrepToXML::add_to_graph()
 {
    
     BRepTools_ShapeSet tempss;
-    //TODO resolve segmentation fault.
     for (int i = 1; i <= SS.NbShapes(); i++)
     {
         tempss.Add(SS.Shape(i));
-        for (int j = 2; j <= tempss.NbShapes(); j++)
+        for (int j = 1; j <= tempss.NbShapes(); j++)
         {
             int y = SS.Index(tempss.Shape(j));
             if (!graph[i-1][y-1]) graph[i-1][y-1]++;
         }
+        tempss.Clear();
     }
 
 }
+
+// graph[i][j] == 1 <=> Shape(i) contains Shape(j)
+void BrepToXML::simplify_graph(void)
+{
+    for (int i = 0; i < SS.NbShapes(); i++) //neglect the fact that an object contains itself
+    {
+        graph[i][i] = 0;
+    }
+    for (int i = 0; i < SS.NbShapes(); i++) //for every geometrical object:
+    {
+        for (int j = i+1; j < SS.NbShapes(); j++) //for every object higher in the hierarchy
+        {
+            if (graph[j][i]) //if i is contained by j
+            {
+                for (int k = j+1; k < SS.NbShapes(); k++) //for every k higher than j
+                {
+                    if((graph[k][j])&&(graph[k][i])) //if j is contained by k and i is contained by k
+                    {
+                        graph[k][i] = 0; //=> i is contained indirectly by k so we could delete this edge
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 void BrepToXML::print_graph(void)
 {

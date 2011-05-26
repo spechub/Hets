@@ -12,10 +12,9 @@ int main (int argc, char* argv[])
     }
         BrepToXML btx;
         btx.read_brep(filename);
-        //btx.init_graph();
         btx.build_graph();
         btx.print_graph();          
-    
+        btx.print_subshapes();
     
     return 0;
 }
