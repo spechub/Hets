@@ -1,0 +1,2770 @@
+<omdoc xmlns="http://omdoc.org/ns" xmlns:om="http://www.openmath.org/OpenMath">
+<theory name="MyListSimple2" meta="http://cds.omdoc.org/logics/isabelle.omdoc?Pure">
+<imports from="MyListSimple1"/>
+<constant name="append">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</type>
+</constant>
+<constant name="length">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="length_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x0"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_sumC"/>
+<om:OMV name="x0"/>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="length_dom">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+</definition>
+</constant>
+<constant name="length_graph">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMS cd="Nat" name="nat"/>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="length_graph_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Inductive" name="lfp"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMS cd="Nat" name="nat"/>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="p"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x1"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMATP>
+<om:OMV name="x2"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op |"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x2"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x2"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMV name="p"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="length_rel">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="length_rel_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Inductive" name="lfp"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="p"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x1"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x2"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x2"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="length_sumC">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="length_sumC_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_sumC"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="FunDef" name="THE_default"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="undefined"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMATP>
+<om:OMV name="y"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="y"/>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="sko_MyListSimple2_Xlength_Xpinduct_1_1">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="sko_MyListSimple2_Xlength_Xpinduct_1_1_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xpinduct_1_1"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="P"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Hilbert_Choice" name="Eps"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name=""/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name=""/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+<om:OMV name=""/>
+</om:OMA>
+<om:OMV name=""/>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Not"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="sko_MyListSimple2_Xlength_Xpinduct_1_2">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="sko_MyListSimple2_Xlength_Xpinduct_1_2_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xpinduct_1_2"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="P"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Hilbert_Choice" name="Eps"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name=""/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name=""/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+<om:OMV name=""/>
+</om:OMA>
+<om:OMV name=""/>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xpinduct_1_1"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op &amp;"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Not"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xpinduct_1_1"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="sko_MyListSimple2_Xlength_Xtermination_1_1">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Product_Type" name="*"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="sko_MyListSimple2_Xlength_Xtermination_1_1_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xtermination_1_1"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Product_Type" name="*"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="R"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Hilbert_Choice" name="Eps"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Ex"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Not"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Set" name="op :"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Product_Type" name="Pair"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Product_Type" name="*"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMATP>
+<om:OMV name=""/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMV name="R"/>
+<om:OMV name=""/>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<constant name="sko_MyListSimple2_Xlength_Xtermination_1_2">
+<type>
+<om:OMBIND>
+<om:OMS cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Product_Type" name="*"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</type>
+<definition name="sko_MyListSimple2_Xlength_Xtermination_1_2_def">
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="=="/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xtermination_1_2"/>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="Product_Type" name="*"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+<om:OMS cd="HOL" name="bool"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="R"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Hilbert_Choice" name="Eps"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Not"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Set" name="op :"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Product_Type" name="Pair"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="sko_MyListSimple2_Xlength_Xtermination_1_1"/>
+<om:OMV name="R"/>
+</om:OMA>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="lambda"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Product_Type" name="*"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMATP>
+<om:OMV name=""/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMV name="R"/>
+<om:OMV name=""/>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+</om:OMBIND>
+</definition>
+</constant>
+<assertion name="app_nil_r" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="append"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="induct" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="mylist"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="simps_1" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="append"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+<om:OMV name="ys"/>
+</om:OMA>
+</om:OMA>
+<om:OMV name="ys"/>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="simps_2" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="append"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+<om:OMV name="ys"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="append"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMV name="ys"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="cases" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="induct" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="pinduct" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMV name="a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="a0"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="psimps_1" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="psimps_2" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="simps_1" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="simps_2" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="termination" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="wf"/>
+<om:OMV name="R"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Set" name="op :"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Product_Type" name="Pair"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMV name="R"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="All"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Wellfounded" name="accp"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+</om:OMA>
+<om:OMV name="x"/>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="cases" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="a1"/>
+</om:OMA>
+<om:OMV name="a2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="a1"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="a2"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="a1"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="a2"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="induct" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="inducts" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="Pure" name="fun"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+<om:OMS cd="Nat" name="nat"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="length_sum"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="intros_1" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="EmptyList"/>
+</om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="zero"/>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="intros_2" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_graph"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="plus"/>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="one"/>
+</om:OMA>
+<om:OMA>
+<om:OMV name="length_sum"/>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+<assertion name="cases" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+<om:OMV name="a1"/>
+</om:OMA>
+<om:OMV name="a2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="a1"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="op ="/>
+<om:OMV name="a2"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMV name="P"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="induct" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="inducts" role="lemma">
+<FMP>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="alltype"/>
+<om:OMBVAR>
+<om:OMV name="&apos;a0"/>
+</om:OMBVAR>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="==&gt;"/>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMV name="&apos;a0"/>
+</om:OMATP>
+<om:OMV name="x"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMBIND>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="all"/>
+<om:OMBVAR>
+<om:OMATTR>
+<om:OMATP>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="Pure" name="oftype"/>
+<om:OMA>
+<om:OMS cd="MyListSimple1" name="mylist"/>
+<om:OMV name="&apos;a0"/>
+</om:OMA>
+</om:OMATP>
+<om:OMV name="xs"/>
+</om:OMATTR>
+</om:OMBVAR>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</om:OMBIND>
+</om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMV name="P"/>
+<om:OMV name="x1"/>
+</om:OMA>
+<om:OMV name="x2"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</om:OMBIND>
+</FMP>
+</assertion>
+<assertion name="intros" role="lemma">
+<FMP>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="HOL" name="Trueprop"/>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple2" name="length_rel"/>
+<om:OMV name="xs"/>
+</om:OMA>
+<om:OMA>
+<om:OMA>
+<om:OMS cdbase="http://cds.omdoc.org/logics/isabelle.omdoc" cd="MyListSimple1" name="ConsList"/>
+<om:OMV name="x"/>
+</om:OMA>
+<om:OMV name="xs"/>
+</om:OMA>
+</om:OMA>
+</om:OMA>
+</FMP>
+</assertion>
+</theory>
+</omdoc>

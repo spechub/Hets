@@ -1,0 +1,41 @@
+CDLookup in types
+load.ML
+
+->Somehow need to sort ancestors list to get CDs completely right
+
+consts into lambda abstractions while parsing?
+
+-awe/extensions fuer mixfix get_mixfix
+
+==========Fahrplan
+0 Lemma, Theorem
+
+1 Isabelle constants
+	consts
+	defs
+	constdefs
+	definition
+	-typ
+	-ggf. term
+	'mixfix'->notation defs
+			Constdefs f::"Typ"
+			f xyz = <term>
+			("[_|_<-_]")
+2 Typen
+	typedecl
+    	typedef -> TypeDef?
+	datatype -> ADT
+	record? -> ?
+3 Functiondefinitions
+	function
+	recdef
+
+3 Syntax -erstmal ueberspringen
+  	 abbrevation
+	 syntax
+
+4 Typklassen
+	axclass -> OMDoc Theory
+	class -> Typen
+
+5 Locales

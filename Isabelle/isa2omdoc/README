@@ -1,0 +1,10 @@
+In the isabelle prompt, type
+
+   use "LOAD.ML";
+
+then
+
+     ThyToOMDoc.ParseTheory "<Path of Theory relative to path you called isabelle from>"
+
+the theory will be automatically loaded if it isn't already
+the output will be placed in a file called <TheoryName>.omdoc in the same directory as the theory, or the directory isabelle was called from if the theory was already loaded
