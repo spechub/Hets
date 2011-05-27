@@ -220,10 +220,12 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                Nothing | null ds ->
                  fail "basic analysis failed without giving a reason"
                _ -> res
+       diffSig <- signatureDiff lid sigma_complete sig
        let gsysd = Set.map (G_symbol lid) sysd
            (ns, dg') = insGTheory dg0 name
-             (DGBasicSpec (Just $ G_basic_spec lid bspec') gsysd)
-             $ G_theory lid (ExtSign sigma_complete
+             (DGBasicSpec (Just $ G_basic_spec lid bspec')
+             (G_sign lid (mkExtSign diffSig) startSigId) gsysd)
+               $ G_theory lid (ExtSign sigma_complete
                $ Set.intersection
                      (if addSyms then Set.union sys sysd else sysd)
                $ symset_of lid sigma_complete)

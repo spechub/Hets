@@ -117,18 +117,21 @@ addSymbol str se dg = let err = "Static.ApplyChanges.addSymbol: " in case se of
   NodeElem nn (Just (DeclSymbol Nothing)) -> do
     (v, lbl) <- getNodeByName err nn dg
     case extendByBasicSpec (globalAnnos dg) str (dgn_theory lbl) of
-       (Success nGt nSens nSyms _, _) ->
-          if nSens == 0 && Set.size nSyms == 1 then let
-              newLbl = lbl { dgn_theory = nGt
+      (Success nGt nSens nSyms _, _) ->
+        if nSens == 0 && Set.size nSyms == 1 then do
+          diffSig <- resultToMonad "ApplyChanges.addSymbol"
+            $ homGsigDiff (signOf nGt) $ dgn_sign lbl
+          let newLbl = lbl { dgn_theory = nGt
                            , nodeInfo = case nodeInfo lbl of
-                               DGNode (DGBasicSpec _ syms) _ -> newNodeInfo $
-                                 DGBasicSpec Nothing $ Set.union nSyms syms
+                               DGNode (DGBasicSpec _ _ syms) _ -> newNodeInfo $
+                                 DGBasicSpec Nothing diffSig
+                                 $ Set.union nSyms syms
                                i -> i }
               finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
                                   (v, newLbl) }
-              in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
-          else fail $ err ++ "just add a single symbol to: " ++ showName nn
-       (_, msg) -> fail $ err ++ msg
+          return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
+        else fail $ err ++ "just add a single symbol to: " ++ showName nn
+      (_, msg) -> fail $ err ++ msg
   _ -> fail $ err ++ "cannot add symbol to: " ++ show se
 
 addAxOrTh :: Monad m => String -> SelElem -> DGraph -> m DGraph
@@ -200,25 +203,30 @@ removeNthSymbol n dg (v, lbl) = let nn = getDGNodeName lbl in
   case nodeInfo lbl of
   DGRef _ _ -> fail $ "cannot remove symbols from ref-node: " ++ nn
   DGNode orig _ -> case orig of
-    DGBasicSpec _ syms -> case atMaybe (Set.toList syms) $ n - 1 of
+    DGBasicSpec _ _ syms -> case atMaybe (Set.toList syms) $ n - 1 of
       Nothing -> fail $ "symbol " ++ show n ++ " not found in node: " ++ nn
         ++ "\n" ++ showDoc syms ""
       Just gs@(G_symbol lid sym) -> case dgn_theory lbl of
-        G_theory lid2 sig _ sens _ ->
+        G_theory lid2 sig si sens _ ->
           let Result ds mr = ext_cogenerated_sign lid2
                 (Set.singleton $ coerceSymbol lid lid2 sym) sig
           in case mr of
             Nothing -> fail $ "hiding " ++ showDoc sym " in " ++ nn ++
               " failed:\n" ++ showRelDiags 1 ds
-            Just mor -> let
-              newLbl = lbl { dgn_theory = G_theory lid2
-                               (makeExtSign lid2 $ dom mor) startSigId
-                               sens startThId
-                           , nodeInfo = newNodeInfo $
-                                DGBasicSpec Nothing $ Set.delete gs syms }
-              finLbl = newLbl { globalTheory = computeLabelTheory Map.empty dg
-                                  (v, newLbl) }
-              in return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
+            Just mor -> case makeExtSign lid2 $ dom mor of
+             tarSig -> do
+               diffSig <- resultToMonad "ApplyChanges.removeNthSymbol"
+                 $ homGsigDiff (G_sign lid2 sig si)
+                 $ G_sign lid2 tarSig startSigId
+               let newLbl = lbl
+                     { dgn_theory = G_theory lid2 tarSig startSigId
+                         sens startThId
+                     , nodeInfo = newNodeInfo $ DGBasicSpec Nothing diffSig
+                         $ Set.delete gs syms }
+                   finLbl = newLbl
+                     { globalTheory = computeLabelTheory Map.empty dg
+                         (v, newLbl) }
+               return $ changeDGH dg $ SetNodeLab lbl (v, finLbl)
     _ -> fail $ "cannot remove symbol from non-basic-spec node: " ++ nn
 
 removeNthAxOrTh :: Monad m => Bool -> Int -> DGraph -> LNode DGNodeLab

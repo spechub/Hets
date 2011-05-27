@@ -110,11 +110,10 @@ lnode ga lenv (_, lbl) =
             [ add_attrs [ mkAttr "library" $ show $ getLibId li
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
-            $ unode "Reference"
-            $ sigxml ]
+            $ unode "Reference" sigxml ]
           DGNode orig cs -> consStatus cs
               ++ [ case orig of
-                   DGBasicSpec mbs _ -> case mbs of
+                   DGBasicSpec mbs _ _ -> case mbs of
                      Just bs -> prettyRangeElem "Basicspec" ga bs
                      _ -> sigxml
                    _ -> sigxml]

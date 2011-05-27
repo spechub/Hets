@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  xml input for Hets development graphs
 Copyright   :  (c) Simon Ulbricht, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
-Maintainer  :  tekknix@tzi.de
+Maintainer  :  tekknix@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (DevGraph)
 
@@ -33,6 +33,7 @@ import Control.Monad.Trans (lift)
 import Control.Monad (foldM)
 
 import Data.List (partition, intercalate, isInfixOf)
+import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Map as Map (lookup, insert, empty)
 
@@ -251,7 +252,7 @@ Otherwise an error is thrown. -}
 signOfNode :: String -> DGraph -> Result (Graph.Node, G_sign)
 signOfNode nd dg = case lookupNodeByName nd dg of
   [] -> fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
-  [(j, lbl)] -> do
+  [(j, lbl)] ->
     return (j, signOf (dgn_theory lbl))
   _ -> fail $ "ambiguous occurence for node [" ++ nd ++ "]!"
 
@@ -299,7 +300,9 @@ mkDGNodeLab gt annos (name, el) = let
                    ch2 = deepSearch ["Axiom", "Theorem"] el
                in do
       (gt', symbs) <- parseSpecs $ ch1 ++ ch2
-      return $ newNodeLab (parseNodeName name) (DGBasicSpec Nothing symbs) gt'
+      diffSig <- homGsigDiff (signOf gt') $ signOf gt
+      return $ newNodeLab (parseNodeName name)
+        (DGBasicSpec Nothing diffSig symbs) gt'
     -- Case #2: reference node
     Just rf -> do
       (gt', _) <- parseSpecs $ findChildren (unqual "Signature") rf
@@ -358,9 +361,7 @@ extractLinkType l = do
                 Just r' -> strContent r'
               cc = case findChild (unqual "ConsStatus") l of
                 Nothing -> None
-                Just c' -> case readMaybe $ strContent c' of
-                  Just consv -> consv
-                  Nothing -> None
+                Just c' -> fromMaybe None $ readMaybe $ strContent c'
               lkind = ThmLink $ Proven (DGRule rl) emptyProofBasis
               in return $ ScopedLink sc lkind $ mkConsStatus cc
 

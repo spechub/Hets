@@ -73,6 +73,7 @@ module Logic.Grothendieck
   , gEmbed
   , gEmbed2
   , gEmbedComorphism
+  , homGsigDiff
   , gsigUnion
   , gsigManyUnion
   , homogeneousMorManyUnion
@@ -716,9 +717,15 @@ gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
 -- | homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign
 homogeneousGsigUnion (G_sign lid1 sigma1 _) (G_sign lid2 sigma2 _) = do
-  sigma2' <- coerceSign lid2 lid1 "Union of signaturesd" sigma2
+  sigma2' <- coerceSign lid2 lid1 "Union of signatures" sigma2
   sigma3 <- ext_signature_union lid1 sigma1 sigma2'
   return (G_sign lid1 sigma3 startSigId)
+
+homGsigDiff :: G_sign -> G_sign -> Result G_sign
+homGsigDiff (G_sign lid1 (ExtSign s1 _) _) (G_sign lid2 (ExtSign s2 _) _) = do
+  s3 <- coercePlainSign lid2 lid1 "hom differerence of signatures" s2
+  s4 <- signatureDiff lid1 s1 s3
+  return $ G_sign lid1 (makeExtSign lid1 s4) startSigId
 
 -- | union of a list of Grothendieck signatures
 gsigManyUnion :: LogicGraph -> [G_sign] -> Result G_sign
