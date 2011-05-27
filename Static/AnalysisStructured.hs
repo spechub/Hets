@@ -220,7 +220,10 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                Nothing | null ds ->
                  fail "basic analysis failed without giving a reason"
                _ -> res
-       diffSig <- signatureDiff lid sigma_complete sig
+       diffSig <- case signatureDiff lid sigma_complete sig of
+         Result _ (Just ds) -> return ds
+         _ -> warning sigma_complete
+           "signature difference could not be computed using full one" pos
        let gsysd = Set.map (G_symbol lid) sysd
            (ns, dg') = insGTheory dg0 name
              (DGBasicSpec (Just $ G_basic_spec lid bspec')
