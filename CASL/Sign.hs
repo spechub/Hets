@@ -207,7 +207,8 @@ diffSig dif a b = let s = sortSet a `Set.difference` sortSet b in
   { sortSet = s
   , emptySortSet = Set.difference s
       $ nonEmptySortSet a `Set.difference` nonEmptySortSet b
-  , sortRel = Rel.difference (sortRel a) $ sortRel b
+  , sortRel = Rel.difference (Rel.transReduce $ sortRel a)
+      . Rel.transReduce $ sortRel b
   , opMap = opMap a `diffOpMapSet` opMap b
   , assocOps = assocOps a `diffOpMapSet` assocOps b
   , predMap = predMap a `diffMapSet` predMap b
