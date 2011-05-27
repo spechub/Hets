@@ -112,11 +112,14 @@ lnode ga lenv (_, lbl) =
                           $ lookupDGraph li lenv ]
             $ unode "Reference" sigxml ]
           DGNode orig cs -> consStatus cs
-              ++ [ case orig of
-                   DGBasicSpec mbs _ _ -> case mbs of
-                     Just bs -> prettyRangeElem "Basicspec" ga bs
-                     _ -> sigxml
-                   _ -> sigxml]
+              ++ case orig of
+                   DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ ->
+                     subnodes "Declarations"
+                       $ map (prettyRangeElem "Symbol" ga)
+                       $ mostSymsOf lid dsig
+                   _ -> {- in this case nothing should be needed
+                        but it fails currently for targets of hiding defs -}
+                     [sigxml]
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom $ OMap.map

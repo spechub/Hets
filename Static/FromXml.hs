@@ -294,8 +294,8 @@ mkDGNodeLab gt annos (name, el) = let
         $ "[ " ++ name ++ " ]\n" ++ showDoc (signOf gt) "\n" ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
-    Nothing -> let ch1 = case findChild (unqual "Basicspec") el of
-                     Just ch -> [ch]
+    Nothing -> let ch1 = case findChild (unqual "Declarations") el of
+                     Just ch -> deepSearch ["Symbol"] ch
                      Nothing -> findChildren (unqual "Signature") el
                    ch2 = deepSearch ["Axiom", "Theorem"] el
                in do
