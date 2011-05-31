@@ -1,0 +1,78 @@
+Source: hets
+Section: misc
+Priority: extra
+Maintainer: Corneliu-Claudiu Prodescu <cprodescu@googlemail.com>
+Build-Depends:
+ debhelper(>=7.4.15),
+ ghc6,
+ happy,
+ ghc6-prof,
+ libghc6-parsec2-dev,
+ libghc6-parsec2-prof,
+ libghc6-tar-dev,
+ libghc6-tar-prof,
+ libghc6-glade-dev,
+ libghc6-haskeline-dev,
+ libghc6-haskeline-prof,
+ libghc6-hexpat-dev,
+ libghc6-hexpat-prof,
+ libghc6-http-dev,
+ libghc6-http-prof,
+ libghc6-fgl-dev,
+ libghc6-fgl-prof,
+ libghc6-xml-dev,
+ libghc6-xml-prof,
+ libghc6-zlib-dev,
+ libghc6-zlib-prof,
+ libghc6-haskell-src-dev,
+ libghc6-haskell-src-prof,
+ libghc6-aterm-dev,
+ libghc6-aterm-prof,
+ libghc6-programatica-dev,
+ libghc6-programatica-prof,
+ libghc6-uni-udrawgraph-dev,
+ libghc6-uni-udrawgraph-prof,
+ libghc6-wai-dev,
+ libghc6-wai-prof,
+ libghc6-wai-extra-dev,
+ libghc6-wai-extra-prof,
+ spass,
+ darwin,
+ lib32stdc++6[amd64],
+ texlive-latex-base,
+ texlive-pictures
+Standards-Version: 3.9.1
+Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
+
+Package: hets-core
+Architecture: i386 amd64
+Depends: tk, darwin, eprover, minisat, openjdk-6-jdk | sun-java6-jdk, spass, udrawgraph, gtk2-engines, zchaff, python, curl, bzip2, ${shlibs:Depends}, ${misc:Depends}
+Recommends: man
+Description: Package containing the core of Hets - the Heterogeneous Tool Set.
+ Hets is a parsing, static analysis and proof management tool combining
+ various tools for different specification languages, thus providing a
+ tool for the heterogeneous specification language HetCASL. The structuring
+ constructs of this language are those of CASL, plus some new heterogeneous
+ constructs for indicating the language and for language translations. Hence,
+ Hets is based on a graph of logics and languages.
+
+Package: hets-ontology
+Architecture: all
+Depends: hets-core, protege-owl, libfactplusplusjni, pellet, ekrhyper, ${misc:Depends}
+Description: Package containing the Hets-Ontology system.
+ This is a meta-package containing the Hets-Ontology system.
+
+Package: hets-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: Package containing the documentation for Heterogeneous Tool Set.
+ This is a package containing the Haddock documentation of the Heterogenous
+ Tool Set.
+
+Package: hets
+Architecture: all
+Depends: hets-core, hets-ontology, hets-doc, isabelle, maude, twelf, reduce, ${misc:Depends}
+Description: Package containing the full Hets - the Heterogeneous Tool Set.
+ This is a meta-package containing the full Hets system.
+

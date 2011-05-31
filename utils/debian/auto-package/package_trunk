@@ -5,11 +5,11 @@
 #
 # c.prodescu@jacobs-university.de
 #
-# Dependencies: hets-core dependencies, devscripts, ant, sun-java6
+# Dependencies: hets-core dependencies, devscripts, subversion, ant, sun-java6
 #
 # VARIABLES
 
-HETS_VERSION=0.97
+HETS_VERSION=0.98
 HETS_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
 HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
 
@@ -20,6 +20,10 @@ else
 	echo Bye.
 	exit
 fi
+
+#Macro handling
+DIRNAME="`dirname "$0"`"
+PWD="`cd "$DIRNAME" && pwd`"
 
 #getting revision number
 HETS_REVISION=`svn info $HETS_REPO | tail -n6 | head -n1 | awk '{ print $2 }'`
@@ -63,7 +67,7 @@ cp $HETS_FOLDER/DMU/OntoDMU.jar $HETS_FOLDER/hets-owl-tools
 #cleaning the svn/cvs folders
 echo ::Clearing svn/cvs folders
 cd $HETS_FOLDER
-make distclean
+make distclean 1>/dev/null 2>/dev/null
 rm OWL/java -rf
 rm programatica
 rm -rf GMP Search mini Lottery
@@ -74,50 +78,50 @@ echo ::Done
 #creating orig.tar.gz
 echo ::Creating orig.tar.gz archive
 tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz hets-$HETS_FULL_VERSION
+rm -rf $HETS_FOLDER
 echo ::Done
 
-#copying debian folder
-echo ::Creating debian folder
-cp -rf debian $HETS_FOLDER
-rm -rf $HETS_FOLDER/debian/.svn
+#detecting distributions for which to build
+echo "::Detecting distroseries"
+DISTROS=$PWD/debian/*
+COUNT=`echo $DISTROS | wc -w`
+echo $DISTROS
 
-#modifying the changelog
-echo "hets ($HETS_FULL_VERSION-1ubuntu0) lucid; urgency=low" > .changelog
-echo >> .changelog
-echo "  * Initial release, automatically generated." >> .changelog
-echo >> .changelog
-echo " -- `cat changelog_name` <`cat changelog_email`>  `date -R`" >> .changelog
+count=0
+for DIST in $DISTROS
+do
+	# incrementing count
+	count="`expr $count + 1`"
+	# Packaging for each distroseries
+	echo "::Packaging for `basename $DIST` distroseries ($count/$COUNT)"
+	# Unpacking orig.tar.gz archive
+	tar -xf hets_$HETS_FULL_VERSION.orig.tar.gz
+	# Copying debian folder
+	echo ::Creating debian folder and changelog
+	cp -rf $DIST $HETS_FOLDER/debian
+	rm -rf $HETS_FOLDER/debian/.svn
 
-#merging changelogs
-mv .changelog $HETS_FOLDER/debian/changelog
-echo ::Done
+	# Creating the changelog
+	echo "hets ($HETS_FULL_VERSION-1ubuntu$count) `basename $DIST`; urgency=low" > .changelog
+	echo >> .changelog
+	echo "  * Initial release, automatically generated." >> .changelog
+	echo >> .changelog
+	echo " -- `cat changelog_name` <`cat changelog_email`>  `date -R`" >> .changelog
 
-#
-# checking arguments to proceed further
-# ___________________________________________
-# |argument  | action                       |
-# -------------------------------------------
-# |<no args> | build and submit to launchpad|
-# |  local   | build a local package        |
-# -------------------------------------------
-#
+	#merging changelogs
+	mv .changelog $HETS_FOLDER/debian/changelog
+	echo ::Done
 
-if [ "$#" = "0" ]; then
-   echo ::Starting package building and uploading;
-   cd $HETS_FOLDER;
-   debuild -S -sa
-   cd ..
-   dput ppa:hets/hets hets_$HETS_FULL_VERSION-1ubuntu0_source.changes
-else
-   if [ "$1" = "local" ]; then
-       echo ::Building local package
-       cd $HETS_FOLDER;
-       debuild -us -uc
-       cd ..
-   fi
-fi
+   	echo ::Starting package building and signing;
+   	cd $HETS_FOLDER;
+   	debuild -S -sa
+	echo ::Done
+   	cd ..
+	echo ::Uploading package...
+   	dput ppa:hets/hets hets_$HETS_FULL_VERSION-1ubuntu0_source.changes
+	echo ::Done
+done
 
 #done
 
-echo ::Done
-exit 0
+echo "::All $COUNT package(s) uploaded successfully"
