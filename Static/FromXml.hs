@@ -25,8 +25,6 @@ import Common.ResultT
 import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal)
 
-import Common.DocUtils (showDoc)
-
 import Comorphisms.LogicGraph (logicGraph)
 
 import Control.Monad.Trans (lift)
@@ -291,7 +289,7 @@ mkDGNodeLab gt annos (name, el) = let
     in case response of
       Success gt' _ symbs _ -> return (gt', symbs)
       Failure _ -> fail
-        $ "[ " ++ name ++ " ]\n" ++ showDoc (signOf gt) "\n" ++ msg
+        $ "[ " ++ name ++ " ]\n" ++ msg
   in case findChild (unqual "Reference") el of
     -- Case #1: regular node
     Nothing -> let ch1 = case findChild (unqual "Declarations") el of
