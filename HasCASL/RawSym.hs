@@ -58,8 +58,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
     Nothing -> return $ symbKindToRaw k idt
     Just (SymbType sc@(TypeScheme vs t _)) ->
         let r = return $ AQualId idt $ OpAsItemType sc
-            rk = if null vs then Nothing else
-                 convTypeToKind t
+            rk = if null vs then convTypeToKind t else Nothing
             rrk = maybeToResult (getRange t)
                            ("not a kind: " ++ showDoc t "") rk
         in case k of
