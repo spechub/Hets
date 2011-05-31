@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <Standard_PrimitiveTypes.hxx>
+#include <TopTools_LocationSet.hxx>
+#include <BRep_Tool.hxx>
 
 using namespace std;
 /*******************************************************************************
@@ -116,19 +118,12 @@ void BrepToXML::print_subshapes()
     for (int i = 0; i < SS.NbShapes(); i++)
     {
         this->print_shape_type(SS.Shape(i+1));
+        
+        
+       // cout << SS.Locations().Location(i+1) << endl;
     }
 }
 
-/*******************************************************************************
- *
- * method to print the value of the contained shape's location
- *
- ******************************************************************************/
-void BrepToXML::print_location()
-{
-    //TODO
-    cout << "location" << endl;
-}
 
 /*******************************************************************************
  * 
@@ -243,4 +238,70 @@ void BrepToXML::print_graph(void)
         }
         cout << endl;
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void BrepToXML::cacheProperties(const TopoDS_Shape& sh) 
+{
+    TopoDS_Iterator it(sh);
+    for(;it.More();it.Next())
+    {
+        const TopoDS_Shape& child = it.Value();
+        TopAbs_ShapeEnum childType;
+        childType = child.ShapeType();
+        switch (childType) 
+        {
+            case TopAbs_COMPOUND:
+                break;
+            case TopAbs_COMPSOLID:
+                break;
+            case TopAbs_SOLID:
+                break;
+            case TopAbs_SHELL:
+                break;
+            case TopAbs_FACE:
+            
+                break;
+            case TopAbs_WIRE:
+                break;
+                case TopAbs_SHAPE:
+                break;
+            case TopAbs_EDGE:
+                //TODO extract data describing the curve: 
+                //
+                //Handle(Geom_Curve) aCurve3d = 
+                //BRep_Tool::Curve (anEdge, aFirst, aLast)
+                break;
+            case TopAbs_VERTEX:
+                gp_Pnt vLoc;
+                //vertLoc.X(), .Y() and .Z() -- absolute location values on x, y
+                // and z axis.
+                const TopoDS_Vertex& castChild = TopoDS::Vertex(child);
+
+                vLoc = BRep_Tool::Pnt(castChild);
+                pair < int, gp_Pnt > indexedVLoc(SS.Index(child), vLoc);
+                vLocs.push_back(indexedVLoc);  
+                break;
+        }
+              
+        cacheProperties(child);
+    }
+}
+
+void BrepToXML::build_xml(void)
+{
+    
 }

@@ -1,27 +1,27 @@
  
 CC=g++
-CFLAGS=-Wall
-LFLAGS=
+CFLAGS=-Wall -I/usr/include/libxml2 -I/usr/include/opencascade
+
+LFLAGS= -lTKBRep -lxml2
 TARGET=brep_to_xml
 
 SRCS=src
 BIN=bin
 OBJS=objs
-INCLUDE=/usr/include/opencascade
 
 # g++ brep_to_xml.cxx -I /usr/include/opencascade/ -Wall -lTKBRep
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)/brep_to_xml.o $(OBJS)/main.o
-	$(CC) $(CFLAGS) $(LFLAGS) $^ -I $(INCLUDE) -lTKBRep -o $(BIN)/$(TARGET)
+	$(CC) $^ $(CFLAGS) $(LFLAGS) -o $(BIN)/$(TARGET)
 
 $(OBJS)/brep_to_xml.o: $(SRCS)/brep_to_xml.cxx
-	$(CC) $(CFLAGS) $(LFLAGS) -I $(INCLUDE) -lTKBRep -c $^
+	$(CC) $(CFLAGS) $(LFLAGS) -c $^
 	mv $(@F) $(OBJS)/
 	
 $(OBJS)/main.o: $(SRCS)/main.cxx
-	$(CC) $(CFLAGS) $(LFLAGS) -I $(INCLUDE) -lTKBRep -c $^
+	$(CC) $(CFLAGS) $(LFLAGS) -c $^
 	mv $(@F) $(OBJS)/
 
 clean:

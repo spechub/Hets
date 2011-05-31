@@ -1,6 +1,7 @@
 #ifndef __BREP_TO_XML_HXX
 #define __BREP_TO_XML_HXX
 #include <BRepTools.hxx>
+#include <TopoDS.hxx>
 #include <TopoDS_Shape.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <BRep_Builder.hxx>
@@ -15,7 +16,10 @@
 #include <TopoDS_Solid.hxx>
 #include <TopoDS_Vertex.hxx>
 #include <TopoDS_Wire.hxx>
+#include <TopoDS_Iterator.hxx>
 #include <vector>
+#include <utility>
+#include <gp_Pnt.hxx>
 
 class BrepToXML
 {
@@ -25,10 +29,13 @@ private:
     BRepTools_ShapeSet SS;
     
     std::vector < std::vector < int > > graph;
+    std::vector < std::pair < int, gp_Pnt > > vLocs;
     
     void add_to_graph(void);
     void init_graph(void);
     void simplify_graph(void);
+    void cacheProperties(void);
+    void cacheProperties(const TopoDS_Shape&); 
 public:
 
     BrepToXML();
@@ -44,10 +51,10 @@ public:
     void print_shape_type(TopoDS_Shape);
     
     void print_subshapes(void);
-    void print_location(void);
     
     std::vector <TopoDS_Shape> get_subshapes(int);
     void build_graph(void);
     void print_graph(void);
+    void build_xml(void);
 };
 #endif
