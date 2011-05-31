@@ -7,6 +7,7 @@ Build-Depends:
  ghc6,
  happy,
  ghc6-prof,
+ ghc6-haddock,
  libghc6-parsec2-dev,
  libghc6-parsec2-prof,
  libghc6-tar-dev,

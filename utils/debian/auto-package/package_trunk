@@ -78,18 +78,18 @@ echo ::Done
 #creating orig.tar.gz
 echo ::Creating orig.tar.gz archive
 tar -czf hets_$HETS_FULL_VERSION.orig.tar.gz hets-$HETS_FULL_VERSION
-rm -rf $HETS_FOLDER
 echo ::Done
 
 #detecting distributions for which to build
 echo "::Detecting distroseries"
 DISTROS=$PWD/debian/*
 COUNT=`echo $DISTROS | wc -w`
-echo $DISTROS
+echo "  $COUNT distributions found"
 
 count=0
 for DIST in $DISTROS
 do
+	rm -rf $HETS_FOLDER
 	# incrementing count
 	count="`expr $count + 1`"
 	# Packaging for each distroseries
@@ -118,7 +118,7 @@ do
 	echo ::Done
    	cd ..
 	echo ::Uploading package...
-   	dput ppa:hets/hets hets_$HETS_FULL_VERSION-1ubuntu0_source.changes
+   	dput ppa:hets/hets hets_"$HETS_FULL_VERSION"-1ubuntu"$count"_source.changes
 	echo ::Done
 done
 
