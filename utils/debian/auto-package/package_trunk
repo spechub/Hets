@@ -5,7 +5,8 @@
 #
 # c.prodescu@jacobs-university.de
 #
-# Dependencies: hets-core dependencies, devscripts, subversion, ant, sun-java6
+# Dependencies: hets-core dependencies, devscripts, subversion, ant,
+#   sun-java6-jdk
 #
 # VARIABLES
 
