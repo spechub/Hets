@@ -85,9 +85,7 @@ showLibGraph gi = do
                    FileMenuAct ExitMenuOption (Just (exitGInfo gi)) $$
                    emptyGraphParms
     graph' <- newGraph daVinciSort graphParms
-    addNodesAndEdges gi graph' nodesEdges
-    writeIORef graph graph'
-    redraw graph'
+    addNodesAndEdges gi graph graph' nodesEdges
 
 closeGInfo :: GInfo -> IO Bool
 closeGInfo gi = do
@@ -124,9 +122,7 @@ reloadLibGraph' gi graph nodesEdges = do
       closeOpenWindows gi
       mapM_ (deleteArc graph') edges
       mapM_ (deleteNode graph') nodes
-      addNodesAndEdges gi graph' nodesEdges
-      writeIORef graph graph'
-      redraw graph'
+      addNodesAndEdges gi graph graph' nodesEdges
       writeIORef (intState gi) emptyIntState
                  { i_state = Just $ emptyIntIState le ln
                  , filename = libfile }
@@ -187,9 +183,7 @@ changeLibGraph gi graph nodesEdges = do
                   closeOpenWindows gi
                   mapM_ (deleteArc graph') edges
                   mapM_ (deleteNode graph') nodes
-                  addNodesAndEdges gi graph' nodesEdges
-                  writeIORef graph graph'
-                  redraw graph'
+                  addNodesAndEdges gi graph graph' nodesEdges
                   let fle = Map.insert ln fdg le
                   writeIORef (intState gi) emptyIntState
                         { i_state = Just $ emptyIntIState fle ln
@@ -233,8 +227,9 @@ closeOpenWindows gi = do
   writeIORef iorOpenGraphs Map.empty
 
 -- | Adds the Librarys and the Dependencies to the Graph
-addNodesAndEdges :: GInfo -> DaVinciGraphTypeSyn -> IORef NodeEdgeList -> IO ()
-addNodesAndEdges gi graph nodesEdges = do
+addNodesAndEdges :: GInfo -> IORef DaVinciGraphTypeSyn -> DaVinciGraphTypeSyn
+  -> IORef NodeEdgeList -> IO ()
+addNodesAndEdges gi graphR graph nodesEdges = do
  ost <- readIORef $ intState gi
  case i_state ost of
   Nothing -> return ()
@@ -269,6 +264,8 @@ addNodesAndEdges gi graph nodesEdges = do
                                             (lookup' nodes' node2)
    subArcList <- mapM insertSubArc $ getLibDeps keySet le
    writeIORef nodesEdges (subNodeList, subArcList)
+   writeIORef graphR graph
+   redraw graph
 
 -- | Creates a list of all LibName pairs, which have a dependency
 getLibDeps :: Set.Set LibName -> LibEnv -> [(LibName, LibName)]
