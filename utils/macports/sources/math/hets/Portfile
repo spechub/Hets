@@ -2,7 +2,7 @@
 
 PortSystem 1.0 
 name            hets
-version         0.97
+version         0.98
 categories      math
 maintainers     nomaintainer
 platforms       darwin
@@ -13,12 +13,9 @@ long_description    \
         is to provide a general framework for formal methods \
         integration and proof management. \
 
-homepage        http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
-master_sites    ${homepage}/src-distribution/versions/
-distname        ${name}-src-${version}
-extract.suffix  .tgz
-
-checksums       md5 090c891ecf9ce80ed89c55921ad7f48a
+fetch.type      svn
+svn.url         https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk
+svn.revision    14977
 
 universal_variant no
 
@@ -30,9 +27,8 @@ depends_lib     port:hets-lib \
                 port:hs-platform-cabal
 depends_run     port:uDrawGraph
 
-# hets release package comes as a tar containing a "Hets" directory.
 # Take me to your sources:
-set worksrcdir Hets
+set worksrcdir trunk
 
 # skip phase configure (there is no ./configure)
 use_configure no
