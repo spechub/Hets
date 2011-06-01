@@ -98,16 +98,16 @@ libNameToFile ln = case getLibId ln of
       else rmSuffix ofile
   DirectLink _ _ -> error "libNameToFile"
 
-findFileOfLibNameAux :: InType -> HetcatsOpts -> FilePath -> IO (Maybe FilePath)
-findFileOfLibNameAux inT opts file = do
+findFileOfLibNameAux :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
+findFileOfLibNameAux opts file = do
           let fs = map (</> file) $ "" : libdirs opts
-          ms <- mapM (existsAnSource opts { intype = inT }) fs
+          ms <- mapM (existsAnSource opts) fs
           return $ case catMaybes ms of
             [] -> Nothing
             f : _ -> Just f
 
 findFileOfLibName :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
-findFileOfLibName = findFileOfLibNameAux GuessIn
+findFileOfLibName opts = findFileOfLibNameAux opts { intype = GuessIn }
 
 convertFileToLibStr :: FilePath -> String
 convertFileToLibStr = mkLibStr . takeBaseName
