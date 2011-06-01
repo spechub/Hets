@@ -155,7 +155,7 @@ changeLibGraph gi graph nodesEdges = do
                   $ proofHistory dg
           writeXml l' f' g' =
               writeVerbFile opts f' $ ppTopElement
-                $ ToXml.dGraph l' (getFilePath ln) g'
+                $ ToXml.dGraph l' ln g'
       writeXml le f1 dg
       writeXml le f2 dgold
       m <- anaLib opts { outtypes = [] } fn

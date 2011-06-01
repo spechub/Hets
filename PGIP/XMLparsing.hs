@@ -248,7 +248,7 @@ informCmd nwSt mCmd pgSt1 = case (getMaybeLib $ intState nwSt, mCmd) of
 informDGraph :: LibName -> LibEnv -> CmdlPgipState -> CmdlPgipState
 informDGraph lN lEnv pgSt =
   addPGIPElement pgSt $ unode "informdevelopmentgraph"
-    $ ToXml.dGraph lEnv (getFilePath lN)
+    $ ToXml.dGraph lEnv lN
     $ lookupDGraph lN lEnv
 
 -- | Executes given commands and returns output message and the new state

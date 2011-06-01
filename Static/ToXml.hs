@@ -40,12 +40,13 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-dGraph :: LibEnv -> FilePath -> DGraph -> Element
-dGraph lenv file dg =
+dGraph :: LibEnv -> LibName -> DGraph -> Element
+dGraph lenv ln dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
-  in add_attrs [ mkAttr "filename" file
+  in add_attrs [ mkAttr "filename" $ getFilePath ln
+               , mkAttr "libname" $ show $ getLibId ln
                , mkAttr "nextlinkid" $ showEdgeId $ getNewEdgeId dg ]
      $ unode "DGraph" $
          subnodes "Global" (annotations ga $ convertGlobalAnnos ga)

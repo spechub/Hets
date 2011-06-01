@@ -101,7 +101,7 @@ writeLibEnv opts filePrefix lenv ln ot =
       Prf -> toShATermString (ln, lookupHistory ln lenv)
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
-          $ ToXml.dGraph lenv (getFilePath ln) dg
+          $ ToXml.dGraph lenv ln dg
       OmdocOut -> do
           let Result ds mOmd = exportLibEnv (recurse opts) (outdir opts) ln lenv
           showDiags opts ds
