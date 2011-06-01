@@ -12,14 +12,14 @@ create new or extend a Development Graph in accordance with an XML input
 
 module Static.FromXml where
 
-import Static.ComputeTheory (computeDGraphTheories)
+import Static.ComputeTheory (computeLibEnvTheories)
 import Static.DevGraph
 import Static.GTheory
 
 import Common.AnalyseAnnos (getGlobalAnnos)
 import Common.Consistency (Conservativity (..))
 import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
-import Common.LibName (LibName (..), noTime, setFilePath, emptyLibName)
+import Common.LibName
 import Common.Result
 import Common.ResultT
 import Common.Utils (readMaybe)
@@ -33,9 +33,10 @@ import Control.Monad (foldM)
 import Data.List (partition, intercalate, isInfixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.Map as Map (lookup, insert, empty)
+import qualified Data.Map as Map (lookup, insert, empty, union)
 
 import Driver.Options
+import Driver.ReadFn (findFileOfLibNameAux)
 
 import Logic.ExtSign (ext_empty_signature)
 import Logic.Grothendieck
@@ -44,6 +45,7 @@ import Logic.Prover (noSens)
 
 import Text.XML.Light
 
+import Debug.Trace
 -- * Data Types
 
 {- | for faster access, some elements attributes are stored alongside
@@ -81,14 +83,36 @@ readDGXmlR opts path = do
         let ln = setFilePath nm noTime $ emptyLibName nm
         an <- extractGlobalAnnos xml
         dg <- fromXml logicGraph emptyDG {globalAnnos = an} xml
-        return (ln, Map.insert ln dg Map.empty)
+        trace (show ln) $ return (ln, Map.insert ln dg Map.empty)
+
 
 -- | top-level function
 readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 readDGXml opts path = do
     Result ds res <- runResultT $ readDGXmlR opts path
     showDiags opts ds
-    return res
+    case res of
+      Just (ln, lv) -> do
+        let dg = lookupDGraph ln lv
+        lv' <- loadRefLibs opts (map snd (lookupNodeWith (isDGRef . snd) dg)) lv 
+        return $ Just (ln, computeLibEnvTheories lv')
+      _ -> return res
+
+
+loadRefLibs :: HetcatsOpts -> [DGNodeLab] -> LibEnv -> IO LibEnv
+loadRefLibs _ [] lv = return lv
+loadRefLibs opts (x:xs) lv = case nodeInfo x of
+  DGRef ln _ -> trace (getFilePath ln) $ do
+    mPath <- findFileOfLibNameAux opts { intype = DgXml } (getFilePath ln)
+    case mPath of
+      Just path -> do
+        Result _ res <- runResultT $ readDGXmlR opts path
+        case res of
+          Just (_, lv') -> loadRefLibs opts xs $ Map.union lv lv'
+          _ -> loadRefLibs opts xs lv
+      _ -> loadRefLibs opts xs lv
+  _ -> loadRefLibs opts xs lv
+
 
 -- | creates an entirely empty theory
 emptyTheory :: AnyLogic -> G_theory
@@ -106,9 +130,8 @@ fromXml lg dg el = case Map.lookup (currentLogic lg) (logics lg) of
     (defLinks, thmLinks) <- extractLinkElements el
     (dg', depNodes) <- initialiseNodes (emptyTheory lo) nodes defLinks dg
     dg1 <- insertNodesAndDefLinks lg depNodes defLinks dg'
-    dg2 <- insertThmLinks lg thmLinks dg1
-    return $ computeDGraphTheories Map.empty dg2
-
+    insertThmLinks lg thmLinks dg1
+    
 
 -- * reconstructing the development graph
 
@@ -279,6 +302,9 @@ parseSymbolMap = intercalate ", "
                . deepSearch ["map"]
 
 
+
+-- TODO: when inserting RefNodes, call addToRefNodesDG (DevGraph)!!
+
 {- | Generates a new DGNodeLab with a startoff-G_theory, an Element and the
 the DGraphs Global Annotations -}
 mkDGNodeLab :: G_theory -> GlobalAnnos -> NamedNode -> Result DGNodeLab
@@ -304,10 +330,10 @@ mkDGNodeLab gt annos (name, el) = let
     -- Case #2: reference node
     Just rf -> do
       (gt', _) <- parseSpecs $ findChildren (unqual "Signature") rf
-      {- using DGRef currently leads to runtime errors.
-      see revision 14911 for such an approach -}
-      return $ newNodeLab (parseNodeName name) DGBasic gt'
-
+      refLib <- case getAttrVal "library" rf of
+        Nothing -> fail $ "no library name for reference node " ++ name 
+        Just ln -> return $ setFilePath ln noTime $ emptyLibName ln
+      return $ newInfoNodeLab (parseNodeName name) (newRefInfo refLib (-1)) gt'
 
 {- | All nodes are taken from the xml-element. Then, the name-attribute is
 looked up and stored alongside the node for easy access. Nodes with no names
