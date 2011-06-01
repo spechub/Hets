@@ -52,8 +52,8 @@ build {}
 
 destroot {
     xinstall -d ${destroot}${prefix}/lib/${name}
-    xinstall -d ${destroot}${prefix}/bin
-    move ${workpath}/${distname}/bin/${name} ${destroot}${prefix}/bin/${name}
+    xinstall -m 755 -W ${workpath}/${distname}/bin/ ${name} ${destroot}${prefix}/bin/
+    xinstall -m 755 -W ${workpath}/${distname}/bin/ .${name}-wrapper ${destroot}${prefix}/bin/
     copy ${workpath}/${distname} ${destroot}${prefix}/lib/${name}
 }
 
