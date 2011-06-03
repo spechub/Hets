@@ -22,6 +22,7 @@ procRectangle [a, b, c, d] = (Rectangle h l, )
         h = mn
         l = md
         
+        
 
 getRectangle::String-> String -> [Vector3, Vector3, Vector3, Vector3]
 getRectangle (address, "rectangle") = readProcess "./FreeCAD/brep_conversion/bin/brep_to_xml" [address,"rectangle"]

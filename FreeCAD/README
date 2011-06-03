@@ -1,3 +1,20 @@
+############ Testing of the program ###########################################
+
+load the module Parser.hs in ghci from the Hets folder
+then run the function processFile giving it as an argument the string representing
+the path to the free-cad saved file
+
+example:
+
+
+user@localhost:~/Hets$ ghci
+...
+Prelude> :l FreeCAD/Parser.hs 
+...
+*FreeCAD.Parser> processFile "address/of/the/file.fcstd"
+
+
+
 ############# Brep to XML convertor of OpenCascade's '.brp' files ##############
 
 # To compile the program just go to the brep_conversion folder and type
