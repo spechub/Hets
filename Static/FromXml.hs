@@ -283,9 +283,8 @@ loadRefLib opts ln nd lv = do
 -- | inserts a new link into the dgraph
 insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> DGraph
            -> ResultT IO DGraph
-insertLink i j mr tp = return . snd
-  . insLEdgeDG (i, j, defDGLink mr tp SeeTarget)
-
+insertLink i j mr tp = return
+  . insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget)
 
 -- * logic calculations
 
