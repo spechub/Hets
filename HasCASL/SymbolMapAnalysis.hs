@@ -16,7 +16,7 @@ module HasCASL.SymbolMapAnalysis
     , inducedFromToMorphism
     , cogeneratedSign
     , generatedSign
-    )  where
+    ) where
 
 import HasCASL.As
 import HasCASL.Le
@@ -24,7 +24,6 @@ import HasCASL.PrintLe
 import HasCASL.Builtin
 import HasCASL.AsToLe
 import HasCASL.Symbol
-import HasCASL.RawSym
 import HasCASL.Merge
 import HasCASL.Morphism
 import HasCASL.VarDecl
@@ -40,9 +39,7 @@ import qualified Data.Set as Set
 import Control.Monad
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
-inducedFromMorphism rmap1 sigma = do
-    -- first check: do all source raw symbols match with source signature?
-    rmap <- anaRawMap sigma sigma rmap1
+inducedFromMorphism rmap sigma = do
     let srcTypeMap = typeMap sigma
         srcClassMap = classMap sigma
         assMap = assumps sigma
@@ -134,11 +131,11 @@ mapTypeDefn im td = case td of
 
 -- | compute class mapping
 classFun :: Env -> RawSymbolMap -> Id -> RawKind -> Result Id
-classFun e rmap s k = do
+classFun _e rmap s k = do
     let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
                  Nothing -> Set.empty
                  Just r -> Set.singleton r)
-               [ASymbol $ idToClassSymbol e s k, AnID s, AKindedId SyKclass s]
+               [ASymbol $ idToClassSymbol s k, AnID s, AKindedId SyKclass s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
        else if Set.null $ Set.deleteMin rsys then
@@ -148,11 +145,11 @@ classFun e rmap s k = do
 
 -- | compute type mapping
 typeFun :: Env -> RawSymbolMap -> Id -> RawKind -> Result Id
-typeFun e rmap s k = do
+typeFun _e rmap s k = do
     let rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
                  Nothing -> Set.empty
                  Just r -> Set.singleton r)
-               [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SyKtype s]
+               [ASymbol $ idToTypeSymbol s k, AnID s, AKindedId SyKtype s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
        else if Set.null $ Set.deleteMin rsys then
@@ -168,7 +165,7 @@ opFun rmap e jm tm im i ots m =
     let (ots1, m1) = Set.fold (directOpMap rmap e jm tm im i)
                     (Set.empty, m) ots
     -- now try the remaining ones with (un)kinded raw symbol
-    in case (Map.lookup (AKindedId SyKop i) rmap,Map.lookup (AnID i) rmap) of
+    in case (Map.lookup (AKindedId SyKop i) rmap, Map.lookup (AnID i) rmap) of
        (Just rsy1, Just rsy2) ->
              Result [mkDiag Error ("Operation " ++ showId i " is mapped twice")
                      (rsy1, rsy2)] Nothing
@@ -179,24 +176,23 @@ opFun rmap e jm tm im i ots m =
        -- Anything not mapped explicitly is left unchanged
        (Nothing, Nothing) -> m1
 
-    -- try to map an operation symbol directly
-    -- collect all opTypes that cannot be mapped directly
+    {- try to map an operation symbol directly and
+    collect all opTypes that cannot be mapped directly -}
 directOpMap :: RawSymbolMap -> Env -> IdMap -> TypeMap -> IdMap -> Id -> OpInfo
             -> (Set.Set TypeScheme, Result FunMap)
             -> (Set.Set TypeScheme, Result FunMap)
-directOpMap rmap e jm tm im i oi (ots,m) = let ot = opType oi in
-    case Map.lookup (ASymbol $ idToOpSymbol e i ot) rmap of
-        Just rsy ->
-          (ots, insertmapOpSym e jm tm im i rsy ot m)
+directOpMap rmap e jm tm im i oi (ots, m) = let ot = opType oi in
+    case Map.lookup (ASymbol $ idToOpSymbol i ot) rmap of
+        Just rsy -> (ots, insertmapOpSym e jm tm im i rsy ot m)
         Nothing -> (Set.insert ot ots, m)
 
     -- map op symbol (id,ot) to raw symbol rsy
 mapOpSym :: Env -> IdMap -> TypeMap -> IdMap -> Id -> TypeScheme -> RawSymbol
          -> Result (Id, TypeScheme)
-mapOpSym e jm tm im i ot rsy =
+mapOpSym _e jm tm im i ot rsy =
     let sc = mapTypeScheme jm tm im ot
         err d = Result [mkDiag Error ("Operation symbol " ++
-                             showDoc (idToOpSymbol e i sc)
+                             showDoc (idToOpSymbol i sc)
                              "\nis mapped to " ++ d) rsy] Nothing in
       case rsy of
       AnID id' -> return (id', sc)
@@ -204,11 +200,19 @@ mapOpSym e jm tm im i ot rsy =
           SyKop -> return (id', sc)
           _ -> err "wrongly kinded raw symbol"
       ASymbol sy -> case symType sy of
-          OpAsItemType ot2 -> let xpd = expand (typeMap $ symEnv sy) in
-              if xpd ot2 == xpd sc then return (symName sy, sc)
-              else err "wrongly typed symbol"
-          _ ->  err "wrongly kinded symbol"
-      _ -> error "mapOpSym"
+          OpAsItemType ot2
+            | ot2 == sc -> return (j, sc)
+            | ots == scs -> hint (j, sc) msg rgn
+            | otherwise ->
+                warning (j, sc) (msg ++ "\nversus: " ++ ots) rgn
+            where
+              j = symName sy
+              ots = showDoc ot2 ""
+              scs = showDoc sc ""
+              msg = "ignoring different target symbol type for '"
+                ++ showDoc sy "'"
+              rgn = getRange ot2
+          _ -> err "wrongly kinded symbol"
 
     -- insert mapping of op symbol (id, ot) to raw symbol rsy into m
 insertmapOpSym :: Env -> IdMap -> TypeMap -> IdMap -> Id -> RawSymbol
@@ -262,7 +266,7 @@ inducedFromToMorphism rmap1 e1@(ExtSign sigma1 sy1) (ExtSign sigma2 sy2) = do
     then return mor1 { mtarget = sigma2 }
     -- no => OK, we've to take a harder way
     else do
-        let ft = Set.filter ( \ (Symbol _ t _) -> case t of
+        let ft = Set.filter ( \ (Symbol _ t) -> case t of
                         TypeAsItemType _ -> True
                         _ -> False)
             s1 = ft sy1
@@ -271,11 +275,12 @@ inducedFromToMorphism rmap1 e1@(ExtSign sigma1 sy1) (ExtSign sigma2 sy2) = do
                  ++ shows (printMap1 rmap1) "\nOriginal Signature 1:\n"
                  ++ showDoc e1 "\nInduced "
                  ++ showEnvDiff (mtarget mor) sigma2
+                 ++ "\nMor fun-Map\n" ++ shows (printMap1 $ funMap mor) "\n"
                  ++ "\ndeclared Symbols of Signature 2:\n"
                  ++ showDoc sy2 "") nullRange] Nothing
         if Set.size s1 == 1 && Set.size s2 == 1 then do
-          let Symbol n1 _ _ = Set.findMin s1
-              Symbol n2 _ _ = Set.findMin s2
+          let Symbol n1 _ = Set.findMin s1
+              Symbol n2 _ = Set.findMin s2
           mor2 <- inducedFromMorphism (Map.insert (AKindedId SyKtype n1)
                                        (AKindedId SyKtype n2) rmap1) sigma1
           if isSubEnv (mtarget mor2) sigma2

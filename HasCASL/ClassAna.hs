@@ -32,7 +32,7 @@ anaKindM :: Kind -> ClassMap -> Result RawKind
 anaKindM k cm = case k of
     ClassKind ci -> if k == universe then return rStar
        else case Map.lookup ci cm of
-            Just (ClassInfo rk _)  -> return rk
+            Just (ClassInfo rk _) -> return rk
             Nothing -> Result [mkDiag Error "not a class" ci] $ Just rStar
     FunKind v k1 k2 ps -> do
         rk1 <- anaKindM k1 cm
@@ -59,7 +59,7 @@ kindArity k = case k of
 cyclicClassId :: ClassMap -> Id -> Kind -> Bool
 cyclicClassId cm ci k = case k of
     FunKind _ k1 k2 _ -> cyclicClassId cm ci k1 || cyclicClassId cm ci k2
-    ClassKind cj  -> cj /= universeId &&
+    ClassKind cj -> cj /= universeId &&
       (cj == ci || not (Set.null $ Set.filter (cyclicClassId cm ci)
           $ classKinds $ Map.findWithDefault (error "cyclicClassId") cj cm))
 
@@ -189,7 +189,7 @@ addClassDecl rk kind ci =
                  [mkDiag Error "class name already a type variable" ci]
              Nothing -> case Map.lookup ci cm of
                  Nothing -> do
-                   addSymbol $ idToClassSymbol e ci rk
+                   addSymbol $ idToClassSymbol ci rk
                    putClassMap $ Map.insert ci
                      (ClassInfo rk $ Set.singleton kind) cm
                  Just (ClassInfo ork superClasses) ->
@@ -200,7 +200,7 @@ addClassDecl rk kind ci =
                      if cyclicClassId cm ci kind then
                         addDiags [mkDiag Error "cyclic class" ci]
                      else do
-                       addSymbol $ idToClassSymbol e ci nk
+                       addSymbol $ idToClassSymbol ci nk
                        if newKind cm kind superClasses then do
                          addDiags [mkDiag Warning "refined class" ci]
                          putClassMap $ Map.insert ci

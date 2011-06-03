@@ -284,7 +284,7 @@ putBinders bs = do
 
 -- | get the variable
 getVar :: VarDecl -> Id
-getVar(VarDecl v _ _ _) = v
+getVar (VarDecl v _ _ _) = v
 
 -- | check uniqueness of variables
 checkUniqueVars :: [VarDecl] -> State.State Env ()
@@ -320,15 +320,15 @@ isInclMor m =
 -- * symbol stuff
 
 -- | the type or kind of an identifier
-data SymbolType a =
+data SymbolType =
     OpAsItemType TypeScheme
-  | TypeAsItemType (AnyKind a)
-  | ClassAsItemType (AnyKind a)
+  | TypeAsItemType RawKind
+  | ClassAsItemType RawKind
     deriving (Show, Eq, Ord)
 
--- | symbols with their type and env (to look up type aliases)
+-- | symbols with their type
 data Symbol =
-    Symbol {symName :: Id, symType :: SymbolType (), symEnv :: Env}
+    Symbol { symName :: Id, symType :: SymbolType }
     deriving Show
 
 instance Eq Symbol where
@@ -344,22 +344,22 @@ type SymbolMap = Map.Map Symbol Symbol
 type SymbolSet = Set.Set Symbol
 
 -- | create a type symbol
-idToTypeSymbol :: Env -> Id -> RawKind -> Symbol
-idToTypeSymbol e idt k = Symbol idt (TypeAsItemType $ nonVarRawKind k) e
+idToTypeSymbol :: Id -> RawKind -> Symbol
+idToTypeSymbol idt k = Symbol idt (TypeAsItemType $ nonVarRawKind k)
 
 -- | create a class symbol
-idToClassSymbol :: Env -> Id -> RawKind -> Symbol
-idToClassSymbol e idt k = Symbol idt (ClassAsItemType $ nonVarRawKind k) e
+idToClassSymbol :: Id -> RawKind -> Symbol
+idToClassSymbol idt k = Symbol idt (ClassAsItemType $ nonVarRawKind k)
 
 -- | create an operation symbol
-idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol
-idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
+idToOpSymbol :: Id -> TypeScheme -> Symbol
+idToOpSymbol idt typ = Symbol idt (OpAsItemType typ)
 
--- | raw symbols where the type of a qualified raw symbol is not yet analysed
+{- | raw symbols where the type of a qualified raw symbol can be a type scheme
+and also be a kind if the symbol kind is unknown. -}
 data RawSymbol =
     AnID Id
   | AKindedId SymbKind Id
-  | AQualId Id (SymbolType Id)
   | ASymbol Symbol
     deriving (Show, Eq, Ord)
 
@@ -375,11 +375,10 @@ rawSymName :: RawSymbol -> Id
 rawSymName r = case r of
     AnID i -> i
     AKindedId _ i -> i
-    AQualId i _ -> i
     ASymbol s -> symName s
 
 -- | convert a symbol type to a symbol kind
-symbTypeToKind :: SymbolType a -> SymbKind
+symbTypeToKind :: SymbolType -> SymbKind
 symbTypeToKind s = case s of
     OpAsItemType _ -> SyKop
     TypeAsItemType _ -> SyKtype

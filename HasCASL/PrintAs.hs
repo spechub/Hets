@@ -636,7 +636,7 @@ instance Pretty Symb where
 
 instance Pretty SymbItems where
     pretty (SymbItems k syms _ _) =
-        printSK k syms <> ppWithCommas syms
+        printSK k syms <+> ppWithCommas syms
 
 instance Pretty SymbOrMap where
     pretty (SymbOrMap s mt _) =
@@ -646,12 +646,12 @@ instance Pretty SymbOrMap where
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems k syms _ _) =
-        printSK k syms <> ppWithCommas syms
+        printSK k syms <+> ppWithCommas syms
 
 -- | print symbol kind
 printSK :: SymbKind -> [a] -> Doc
 printSK k l = case k of
       Implicit -> empty
-      _ -> keyword (drop 3 (show k) ++ case l of
+      _ -> keyword $ drop 3 (show k) ++ case l of
         _ : _ : _ -> sS
-        _ -> "") <> space
+        _ -> ""

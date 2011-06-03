@@ -121,8 +121,8 @@ mapSel jm tm im fm nIm args dt (Select mid t p) =
         (j, TypeScheme _ ty _) = mapFunSym jm tm im fm (i, sc)
         in Select (Just j) newT $ getPartiality [dt] ty
 
--- | get the partiality from a constructor type
--- with a given number of curried arguments
+{- | get the partiality from a constructor type
+with a given number of curried arguments. -}
 getPartiality :: [a] -> Type -> Partiality
 getPartiality args t = case getTypeAppl t of
    (TypeName i _ _, [_, res]) | isArrow i -> case args of
@@ -145,7 +145,7 @@ mapSentence m s = let
       DatatypeSen td -> DatatypeSen $ map (mapDataEntry jm tm im fm) td
       ProgEqSen i sc pe ->
         let (ni, nsc) = f (i, sc)
-        in ProgEqSen ni nsc $ mapEq (f,  mapTypeE jm tm im) pe
+        in ProgEqSen ni nsc $ mapEq (f, mapTypeE jm tm im) pe
 
 mapFunSym :: IdMap -> TypeMap -> IdMap -> FunMap -> (Id, TypeScheme)
           -> (Id, TypeScheme)
@@ -157,8 +157,8 @@ ideMor :: Env -> Morphism
 ideMor e = mkMorphism e e
 
 compMor :: Morphism -> Morphism -> Result Morphism
-compMor m1 m2 =
-     let  tm1 = typeIdMap m1
+compMor m1 m2 = let
+          tm1 = typeIdMap m1
           tm2 = typeIdMap m2
           ctm = composeMap (typeMap src) tm1 tm2
           cm1 = classIdMap m1
@@ -275,18 +275,18 @@ morphismToSymbMap mor = let
     classSymMap = Map.foldWithKey ( \ i ti ->
        let j = Map.findWithDefault i i jm
            k = rawKind ti
-           in Map.insert (idToClassSymbol src i k)
-               $ idToClassSymbol tar j k) Map.empty $ classMap src
+           in Map.insert (idToClassSymbol i k)
+               $ idToClassSymbol j k) Map.empty $ classMap src
     typeSymMap = Map.foldWithKey ( \ i ti ->
        let j = Map.findWithDefault i i im
            k = typeKind ti
-           in Map.insert (idToTypeSymbol src i k)
-               $ idToTypeSymbol tar j k) classSymMap $ typeMap src
+           in Map.insert (idToTypeSymbol i k)
+               $ idToTypeSymbol j k) classSymMap $ typeMap src
    in Map.foldWithKey
          ( \ i s m ->
              Set.fold ( \ oi ->
              let ty = opType oi
                  (j, t2) = mapFunSym jm tm im (funMap mor) (i, ty)
-             in Map.insert (idToOpSymbol src i ty)
-                        (idToOpSymbol tar j t2)) m s)
+             in Map.insert (idToOpSymbol i ty)
+                        (idToOpSymbol j t2)) m s)
          typeSymMap $ assumps src

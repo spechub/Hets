@@ -14,13 +14,15 @@ HasCASL analysed symbols of a signature
 module HasCASL.Symbol where
 
 import HasCASL.Le
-import HasCASL.PrintLe()
+import HasCASL.PrintLe ()
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Builtin
 import HasCASL.RawSym
+
 import Common.Id
 import Common.Result
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -33,7 +35,7 @@ checkSymbols s1 s2 r =
                  Set.filter (not . matchSymb e2 . ASymbol))
                   s1 $ Set.toList s2 in
     if Set.null s then r else
-       Result [mkDiag Error "unknown symbols" s] Nothing
+       Result [mkDiag Error "unknown HasCASL symbols" s] Nothing
 
 dependentSyms :: Symbol -> Env -> SymbolSet
 dependentSyms sym =
@@ -85,22 +87,22 @@ plainHide syms sigma =
     in Set.fold hideSymbol (Set.fold hideSymbol sigma otherSyms) opSyms
 
 -- | type ids within a type
-subSyms :: Env -> Type -> SymbolSet
-subSyms e t = case t of
+subSyms :: Type -> SymbolSet
+subSyms t = case t of
            TypeName i k n ->
                if n == 0 then if i == unitTypeId || i == lazyTypeId ||
                  isArrow i || isProductId i then Set.empty
-                  else Set.singleton $ idToTypeSymbol e i k
+                  else Set.singleton $ idToTypeSymbol i k
                else Set.empty
-           TypeAppl t1 t2 -> Set.union (subSyms e t1) (subSyms e t2)
-           ExpandedType _ t1 -> subSyms e t1
-           KindedType tk _ _ -> subSyms e tk
-           TypeAbs _ b _ -> subSyms e b
+           TypeAppl t1 t2 -> Set.union (subSyms t1) (subSyms t2)
+           ExpandedType _ t1 -> subSyms t1
+           KindedType tk _ _ -> subSyms tk
+           TypeAbs _ b _ -> subSyms b
            _ -> error ("subSyms: " ++ show t)
 
 subSymsOf :: Symbol -> SymbolSet
 subSymsOf sy = case symType sy of
-     OpAsItemType (TypeScheme _ ty _) -> subSyms (symEnv sy) ty
+     OpAsItemType (TypeScheme _ ty _) -> subSyms ty
      _ -> Set.empty
 
 closeSymbSet :: SymbolSet -> SymbolSet
@@ -109,15 +111,15 @@ closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 symOf :: Env -> SymbolSet
 symOf sigma =
     let classes = Map.foldWithKey ( \ i ->
-                          Set.insert . idToClassSymbol sigma i . rawKind)
+                          Set.insert . idToClassSymbol i . rawKind)
                   Set.empty $ classMap sigma
         types = Map.foldWithKey ( \ i ti ->
                         if Map.member i bTypes then id else
-                        Set.insert $ idToTypeSymbol sigma i $ typeKind ti)
+                        Set.insert $ idToTypeSymbol i $ typeKind ti)
                 classes $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
-                      Set.fold (Set.insert . idToOpSymbol sigma i . opType)
+                      Set.fold (Set.insert . idToOpSymbol i . opType)
                          s ts)
               types $ assumps sigma
         in ops

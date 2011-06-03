@@ -745,9 +745,9 @@ sl_morphism :: Morphism -> Sublogic
 sl_morphism m = sublogic_max (sl_env $ msource m) $ sl_env $ mtarget m
 
 sl_symbol :: Symbol -> Sublogic
-sl_symbol (Symbol _ t e) = sublogic_max (sl_symbolType t) $ sl_env e
+sl_symbol (Symbol _ t) = sl_symbolType t
 
-sl_symbolType :: SymbolType a -> Sublogic
+sl_symbolType :: SymbolType -> Sublogic
 sl_symbolType s = case s of
     OpAsItemType t -> sl_typeScheme t
     ClassAsItemType _ -> simpleTypeClasses

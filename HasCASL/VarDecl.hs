@@ -163,7 +163,7 @@ addTypeKind warn d i k = do
   let tm = typeMap e
       cm = classMap e
       addTypeSym = unless (Map.member i bTypes)
-                        . addSymbol . idToTypeSymbol e i
+                        . addSymbol . idToTypeSymbol i
   unless (placeCount i <= kindArity rk)
     $ addDiags [mkDiag Error "wrong arity of" i]
   case Map.lookup i tm of
@@ -296,7 +296,7 @@ addOpId i oldSc attrs dfn = do
     case mo of
       Nothing -> return False
       Just oi -> do
-        addSymbol $ idToOpSymbol e i $ opType oi
+        addSymbol $ idToOpSymbol i $ opType oi
         putAssumps $ Map.insert i (Set.insert oi r) as
         return True
 

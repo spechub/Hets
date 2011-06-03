@@ -139,7 +139,7 @@ instance Pretty Env where
       , localVars = vs
       , sentences = se
       , envDiags = ds } = let
-      oops = foldr Map.delete ops $ map fst bList
+      oops = foldr (Map.delete . fst) ops bList
       poMap = Map.map (Set.partition (isPredOpDefn . opDefn)) oops
       pMap = Map.map fst poMap
       oMap = Map.map snd poMap
@@ -210,8 +210,8 @@ instance Pretty Morphism where
       let tm = typeIdMap m
           cm = classIdMap m
           fm = funMap m
-          -- the types in funs are already mapped
-          -- key und value types only differ wrt. partiality
+          {- the types in funs are already mapped
+          key und value types only differ wrt. partiality -}
           ds = Map.foldWithKey ( \ (i, _) (j, t) ->
                 ((pretty i <+> mapsto <+>
                   pretty j <+> colon <+> pretty t) :))
@@ -226,7 +226,7 @@ instance Pretty Morphism where
                     $+$ mapsto
                     <+> specBraces (pretty $ mtarget m)
 
-instance Pretty a => Pretty (SymbolType a) where
+instance Pretty SymbolType where
     pretty t = case t of
       OpAsItemType sc -> pretty sc
       TypeAsItemType k -> pretty k
@@ -245,14 +245,12 @@ instance Pretty Symbol where
 instance Pretty RawSymbol where
   pretty rs = case rs of
       AnID i -> pretty i
-      AKindedId k i -> printSK k [i] <> pretty i
-      AQualId i t ->
-          printSK (symbTypeToKind t) [i] <> pretty i <+> colon <+> pretty t
+      AKindedId k i -> printSK k [i] <+> pretty i
       ASymbol s -> pretty s
 
 improveDiag :: (GetRange a, Pretty a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d
-  { diagString = let f:l = lines $ diagString d in
+  { diagString = let f : l = lines $ diagString d in
       unlines $ (f ++ " of '" ++ showDoc v "'") : l
   , diagPos = getRange v }
 
@@ -268,7 +266,7 @@ mergeMap f m1 = foldM ( \ m (k, v) -> case Map.lookup k m of
 
 mergeClassInfo :: ClassInfo -> ClassInfo -> Result ClassInfo
 mergeClassInfo c1 c2 = do
-    k <-  minRawKind "class raw kind" (rawKind c1) $ rawKind c2
+    k <- minRawKind "class raw kind" (rawKind c1) $ rawKind c2
     return $ ClassInfo k $ Set.union (classKinds c1) $ classKinds c2
 
 diffClassMap :: ClassMap -> ClassMap -> ClassMap
