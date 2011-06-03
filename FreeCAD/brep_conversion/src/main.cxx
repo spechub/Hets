@@ -15,7 +15,11 @@ int main (int argc, char* argv[])
             BrepToXML btx;
             btx.read_brep(filename);
             btx.build_graph();
-            btx.build_xml();
+            string s;
+            btx.print_graph();
+            const string a = "rectangle";
+            btx.build_xml(a, s);
+            cout <<s;
         }
 
         //TODO locations, locations

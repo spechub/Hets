@@ -1,4 +1,4 @@
-######## Brep to XML convertor of OpenCascade's '.brp' files #########
+############# Brep to XML convertor of OpenCascade's '.brp' files ##############
 
 # To compile the program just go to the brep_conversion folder and type
 
@@ -12,7 +12,7 @@ make
 brep_conversion/bin/brep_to_xml <filename.brp>
 
 
-######################################################################
+################################################################################
 
 ## OLD Python program
 
@@ -28,7 +28,21 @@ python brep_conversion/src/brep_reader.py
 
 # the quotes (or double quotes) are mandatory!
 
-######################################################################
+################################################################################
 
+####################### FreeCAD placement representation #######################
 
+# It consists of two vectors: 
+    1. A 3-dimensional vector pointing to the center of the object
+        which is an arbitrary point defined at construction-time
+        (e.g. for a default box of dimensions x, y and z without any rotation
+        which consists of all the points in [0,x]x[0,y]x[0,z] in R^3, the center
+        of the box is in 0,0,0)
+    2. A 4-dimensional unit vector (Quaternion) q = q3 + q0i + q1j + q2k
+        q = q3 + (q0,q1,q2) = cos(a/2) + u*sin(a/2)
+        where        a = angle of rotation (positive = clockwise) in radians
+        and          u = unit vector along the (oriented) axis of rotation
 
+## TODO : convert this to latex
+
+################################################################################

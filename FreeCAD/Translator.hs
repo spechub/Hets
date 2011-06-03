@@ -5,6 +5,8 @@ import FreeCAD.As
 import Text.XML.Light
 import Data.Maybe
 import Data.Set as Set
+--import FreeCAD.Brep
+
 
 
 

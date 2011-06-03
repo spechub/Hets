@@ -2,7 +2,7 @@
 --data structures for FreeCAD documents and objects
 --
 module FreeCAD.As 
-    where
+where
 
 data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving Show 
 --a vector in cartesian coordinates
@@ -72,3 +72,58 @@ data NamedObject = NamedObject { name::String
 
 
 type Document = [NamedObject]
+
+distance3:: Vector3 -> Vector3 -> Double
+distance3 (Vector3 ax ay az) (Vector3 bx by bz) = sqrt (x*x + y*y + z*z)
+    where
+        x = ax - bx
+        y = ay - by
+        z = az - bz
+        
+norm3:: Vector3 -> Double
+norm3 a = distance3 a (Vector3 0 0 0)
+
+scalarprod3:: Double -> Vector3 ->Vector3
+scalarprod3 a (Vector3 bx by bz) = Vector3 abx aby abz
+    where
+        abx = a*bx
+        aby = a*by
+        abz = a*bz
+        
+median3:: [Vector3] -> Vector3
+median3 a = scalarprod3 (fromIntegral (length a)) (v3Sum a)
+
+v3Sum:: [Vector3] -> Vector3
+v3Sum [a,b] = Vector3 xc yc zc
+    where 
+        xc = (x a)*(x b)
+        yc = (y a)*(y b) 
+        zc = (z a)*(z b)      
+v3Sum (a:b:as) = v3Sum (c:as)
+    where 
+        xc = (x a)*(x b)
+        yc = (y a)*(y b) 
+        zc = (z a)*(z b) 
+        c = Vector3 xc yc zc
+      
+v3ScalProd:: Vector3 -> Vector3 -> Double
+v3ScalProd v1 v2 = (x v1)*(x v2) + (y v1)*(y v2) + (z v1)*(z v2)
+
+v4ScalProd:: Vector4 -> Vector4 -> Double
+v4ScalProd v1 v2 = (q0 v1)*(q0 v2) + (q1 v1)*(q1 v2) + (q2 v1)*(q2 v2) + (q3 v1)*(q3 v2)
+
+v3VecProd:: Vector3 -> Vector3 -> Vector3
+v3VecProd v1 v2 = Vector3 m n p
+    where
+        m = (y v1)*(z v2) - (z v1)*(y v2)
+        n = (z v1)*(x v2) - (x v1)*(z v2)
+        p = (x v1)*(y v2) - (y v1)*(x v2)
+        
+quatProd:: Vector4 -> Vector4 -> Vector4
+quatProd v1 v2 = Vector4 m n p q
+    where
+        m = (q3 v2)*(q0 v1) + (q2 v2)*(q1 v1) - (q1 v2)*(q2 v1) + (q0 v2)*(q3 v1)
+        n = -(q2 v2)*(q0 v1) + (q3 v2)*(q1 v1) + (q0 v2)*(q2 v1) + (q1 v2)*(q3 v1)
+        p = (q1 v2)*(q0 v1) - (q0 v2)*(q1 v1) + (q3 v2)*(q2 v1) + (q2 v2)*(q3 v1)
+        q = -(q0 v2)*(q0 v1) -(q1 v2)*(q1 v1) - (q2 v2)*(q2 v1) + (q3 v2)*(q3 v1)
+        

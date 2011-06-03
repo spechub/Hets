@@ -5,6 +5,7 @@
 #include <Standard_PrimitiveTypes.hxx>
 #include <TopTools_LocationSet.hxx>
 #include <BRep_Tool.hxx>
+#include <sstream>
 
 using namespace std;
 /*******************************************************************************
@@ -301,7 +302,22 @@ void BrepToXML::cacheProperties(const TopoDS_Shape& sh)
     }
 }
 
-void BrepToXML::build_xml(void)
+void BrepToXML::build_xml(const string& what, string& output)
 {
-    
+    if(what == "rectangle")
+    //we only need 4 points to define it
+    this->cacheProperties(Sh);
+    {
+        //if ( SS.NbShapes != 9 ) exit(1);
+        stringstream ss;
+        ss << "<rectangle>";
+        for (int i = 0; i < 4; i++)
+        {
+            ss  << "<vertex " << "x=" << vLocs[i].second.X() << ", "
+                << "y=" << vLocs[i].second.Y() << ", "
+                << "z=" << vLocs[i].second.Z() << "/>";
+        }
+        ss <<"/rectangle>";
+        output = ss.str();
+    }
 }

@@ -20,6 +20,8 @@
 #include <vector>
 #include <utility>
 #include <gp_Pnt.hxx>
+#include <libxml/encoding.h>
+#include <libxml/xmlwriter.h>
 
 class BrepToXML
 {
@@ -55,6 +57,6 @@ public:
     std::vector <TopoDS_Shape> get_subshapes(int);
     void build_graph(void);
     void print_graph(void);
-    void build_xml(void);
+    void build_xml(const std::string&, std::string&);
 };
 #endif
