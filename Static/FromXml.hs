@@ -20,7 +20,7 @@ import Common.AnalyseAnnos (getGlobalAnnos)
 import Common.Consistency (Conservativity (..))
 import Common.GlobalAnnotations (GlobalAnnos, emptyGlobalAnnos)
 import Common.LibName
-import Common.Result
+import Common.Result (Result (..))
 import Common.ResultT
 import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal)
@@ -33,7 +33,7 @@ import Control.Monad (foldM)
 import Data.List (partition, intercalate, isInfixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.Map as Map (lookup, insert, empty, union)
+import qualified Data.Map as Map (lookup, insert, empty)
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
@@ -45,7 +45,8 @@ import Logic.Prover (noSens)
 
 import Text.XML.Light
 
-import Debug.Trace
+-- import Debug.Trace
+
 -- * Data Types
 
 {- | for faster access, some elements attributes are stored alongside
@@ -66,6 +67,13 @@ printLinks = let show' l = src l ++ " -> " ++ trg l in
 
 -- * Top-Level functions
 
+-- | top-level function
+readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
+readDGXml opts path = do
+    Result ds res <- runResultT $ readDGXmlR opts path
+    showDiags opts ds
+    return res
+
 {- | main function; receives a FilePath and calls fromXml upon that path,
 using an empty DGraph and initial LogicGraph. -}
 readDGXmlR :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
@@ -81,38 +89,7 @@ readDGXmlR opts path = do
           unlines (take 5 $ lines xml')
       Just nm -> do
         let ln = setFilePath nm noTime $ emptyLibName nm
-        an <- extractGlobalAnnos xml
-        let lnv = (ln, Map.insert ln emptyDG {globalAnnos = an} Map.empty)
-        fromXml opts logicGraph lnv xml
-        
-
--- | top-level function
-readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
-readDGXml opts path = do
-    Result ds res <- runResultT $ readDGXmlR opts path
-    showDiags opts ds
-    case res of
-      Just (ln, lv) -> do
-        let dg = lookupDGraph ln lv
-        lv' <- loadRefLibs opts (map snd (lookupNodeWith (isDGRef . snd) dg)) lv 
-        return $ Just (ln, computeLibEnvTheories lv')
-      _ -> return res
-
-
-loadRefLibs :: HetcatsOpts -> [DGNodeLab] -> LibEnv -> IO LibEnv
-loadRefLibs _ [] lv = return lv
-loadRefLibs opts (x:xs) lv = case nodeInfo x of
-  DGRef ln _ -> do
-    mPath <- findFileOfLibNameAux opts { intype = DgXml } (getFilePath ln)
-    case mPath of
-      Just path -> do
-        Result _ res <- runResultT $ readDGXmlR opts path
-        case res of
-          Just (_, lv') -> loadRefLibs opts xs $ Map.union lv lv'
-          _ -> loadRefLibs opts xs lv
-      _ -> loadRefLibs opts xs lv
-  _ -> loadRefLibs opts xs lv
-
+        fromXml opts logicGraph ln xml
 
 -- | creates an entirely empty theory
 emptyTheory :: AnyLogic -> G_theory
@@ -121,47 +98,50 @@ emptyTheory (Logic lid) =
 
 {- | main function; receives a logicGraph, an initial DGraph and an xml
 element, then adds all nodes and edges from the element into the DGraph -}
-fromXml :: HetcatsOpts -> LogicGraph -> (LibName, LibEnv) -> Element
+fromXml :: HetcatsOpts -> LogicGraph -> LibName -> Element
         -> ResultT IO (LibName, LibEnv)
-fromXml opts lg (ln, lv) el = case Map.lookup (currentLogic lg) (logics lg) of
+fromXml opts lg ln xml = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
     fail "current logic was not found in logicMap"
   Just lo -> do
-    nodes <- extractNodeElements el
-    (defLinks, thmLinks) <- extractLinkElements el
-    let dg = lookupDGraph ln lv
-    (dg', depNodes) <- initialiseNodes (emptyTheory lo) nodes defLinks dg
-    dg1 <- insertNodesAndDefLinks lg depNodes defLinks dg'
-    dg2 <- insertThmLinks lg thmLinks dg1
-    return (ln, Map.insert ln dg2 lv)
+    nodes <- extractNodeElements xml
+    (defLinks, thmLinks) <- extractLinkElements xml
+    an <- extractGlobalAnnos xml
+    let dg = emptyDG { globalAnnos = an }
+
+    (dglv, depNodes) <- initialiseNodes opts (emptyTheory lo) nodes defLinks (dg, Map.empty)
+    (dg', lv') <- insertNodesAndDefLinks opts lg depNodes defLinks dglv
+    dg'' <- insertThmLinks lg thmLinks dg'
+    return (ln, computeLibEnvTheories $ Map.insert ln dg'' lv')
+
 
 -- * reconstructing the development graph
 
 {- | All nodes that do not have dependencies via the links are processed at the
 beginning and written into the DGraph. Returns the resulting DGraph and the
 list of nodes that have not been stored (i.e. have dependencies). -}
-initialiseNodes :: G_theory -> [NamedNode] -> [NamedLink] -> DGraph
-                -> ResultT IO (DGraph, [NamedNode])
-initialiseNodes gt nodes links dg = do
+initialiseNodes :: HetcatsOpts -> G_theory -> [NamedNode] -> [NamedLink] -> (DGraph, LibEnv)
+                -> ResultT IO ((DGraph, LibEnv), [NamedNode])
+initialiseNodes opts gt nodes links dglv = do
   let targets = map trg links
       -- all nodes that are not target of any link are considered independent
       (dep, indep) = partition ((`elem` targets) . fst) nodes
-  dg' <- foldM (insertNode gt) dg indep
-  return (dg', dep)
+  (dglv') <- foldM (flip $ insertNode opts gt) dglv indep
+  return (dglv', dep)
 
 
 {- | main loop: in every step, all links are collected of which the source node
 has been written into DGraph already. Upon these, further nodes are written
 in each step until the list of remaining links reaches null. -}
-insertNodesAndDefLinks :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
-                       -> ResultT IO DGraph
-insertNodesAndDefLinks _ _ [] dg = return dg
-insertNodesAndDefLinks lg nodes links dg = let
+insertNodesAndDefLinks :: HetcatsOpts -> LogicGraph -> [NamedNode] -> [NamedLink]
+                       -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
+insertNodesAndDefLinks _ _ _ [] dglv = return dglv
+insertNodesAndDefLinks opts lg nodes links (dg, lv) = let
   (cur, lftL) = splitLinks dg links
   in if (not . null) cur
     then do
-      (dg', lftN) <- iterateNodes lg nodes cur dg
-      insertNodesAndDefLinks lg lftN lftL dg'
+      (dglv', lftN) <- iterateNodes opts lg nodes cur (dg, lv)
+      insertNodesAndDefLinks opts lg lftN lftL dglv'
     else fail $
       "some elements cannot be reached!\n" ++ printLinks lftL
 
@@ -181,19 +161,19 @@ splitLinks dg = killMultTrg . partition hasSource where
 {- | Help function for insertNodesAndDefLinks. Given the currently processable
 links and the total of remaining nodes, it stores all processable elements
 into the DGraph. Returns the updated DGraph and the list of remaining nodes. -}
-iterateNodes :: LogicGraph -> [NamedNode] -> [NamedLink] -> DGraph
-             -> ResultT IO (DGraph, [NamedNode])
-iterateNodes _ nodes [] dg = return (dg, nodes)
-iterateNodes _ [] links _ = fail $
+iterateNodes :: HetcatsOpts -> LogicGraph -> [NamedNode] -> [NamedLink]
+             -> (DGraph, LibEnv) -> ResultT IO ((DGraph, LibEnv), [NamedNode])
+iterateNodes _ _ nodes [] dglv = return (dglv, nodes)
+iterateNodes _ _ [] links _ = fail $
   "some links are missing their target nodes!\n" ++ printLinks links
-iterateNodes lg (x@(name, _) : xs) links dg =
+iterateNodes opts lg (x@(name, _) : xs) links dglv =
   case partitionWith trg name links of
     ([], _) -> do
-      (dg', xs') <- iterateNodes lg xs links dg
-      return (dg', x : xs')
+      (dglv', xs') <- iterateNodes opts lg xs links dglv
+      return (dglv', x : xs')
     (lCur, lLft) -> do
-      dg' <- insNdAndDefLinks lg x lCur dg
-      iterateNodes lg xs lLft dg'
+      dglv' <- insNdAndDefLinks opts lg x lCur dglv
+      iterateNodes opts lg xs lLft dglv'
 
 partitionWith :: Eq a => (NamedLink -> a) -> a -> [NamedLink]
               -> ([NamedLink], [NamedLink])
@@ -212,25 +192,25 @@ insertThmLinks lg links dg' = foldM ins' dg' links where
 
 {- | inserts a new node into the dgraph as well as all deflinks that target
 this particular node -}
-insNdAndDefLinks :: LogicGraph -> NamedNode -> [NamedLink] -> DGraph
-                 -> ResultT IO DGraph
-insNdAndDefLinks lg trgNd links dg = do
+insNdAndDefLinks :: HetcatsOpts -> LogicGraph -> NamedNode -> [NamedLink]
+                 -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
+insNdAndDefLinks opts lg trgNd links (dg, lv) = do
   mrs <- mapM (extractMorphism lg dg) links
-  (dg', isHiding) <- case partition (isHidingDef . lType) links of
+  ((dg', lv'), isHiding) <- case partition (isHidingDef . lType) links of
     -- case #1: none hiding def links
     ([], _) -> do
       gsig1 <- liftR $ gsigManyUnion lg $ map (cod . snd) mrs
       let gt = case gsig1 of
                  G_sign lid sg sId -> noSensGTheory lid sg sId
-      dg' <- insertNode gt dg trgNd
-      return (dg', False)
+      dglv <- insertNode opts gt trgNd (dg, lv)
+      return (dglv, False)
     -- case #2: only hiding def links
     (_, []) -> case Map.lookup (currentLogic lg) (logics lg) of
       Nothing ->
         fail "current logic was not found in logicMap"
       Just lo -> do
-        dg' <- insertNode (emptyTheory lo) dg trgNd
-        return (dg', True)
+        dglv <- insertNode opts (emptyTheory lo) trgNd (dg, lv)
+        return (dglv, True)
     -- case #3: mixture. not implemented!
     _ -> fail "mix of HidingDefLinks and other links pointing at a single node"
   (j, gsig2) <- signOfNode (fst trgNd) dg'
@@ -238,7 +218,66 @@ insNdAndDefLinks lg trgNd links dg = do
         morph <- if isHiding then liftR $ ginclusion lg gsig2 (cod mr)
           else finalizeMorphism lg mr gsig2
         insertLink i j morph (lType l) dgR
-  foldM ins' dg' $ zip mrs links
+  dg'' <- foldM ins' dg' $ zip mrs links
+  return (dg'', lv')
+
+
+-- TODO: when inserting RefNodes, call addToRefNodesDG (DevGraph)!!
+
+
+{- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element and the
+the DGraphs Global Annotations -}
+insertNode :: HetcatsOpts -> G_theory -> NamedNode -> (DGraph, LibEnv)
+           -> ResultT IO (DGraph, LibEnv)
+insertNode opts gt (name, el) (dg, lv) = let
+  n = getNewNodeDG dg
+  parseSpecs specElems = let
+    specs = unlines $ map strContent specElems
+    (response, msg) = extendByBasicSpec (globalAnnos dg) specs gt
+    in case response of
+      Success gt' _ symbs _ -> return (gt', symbs)
+      Failure _ -> fail
+        $ "[ " ++ name ++ " ]\n" ++ msg
+  in case findChild (unqual "Reference") el of
+    -- Case #1: regular node
+    Nothing -> let ch1 = case findChild (unqual "Declarations") el of
+                     Just ch -> deepSearch ["Symbol"] ch
+                     Nothing -> findChildren (unqual "Signature") el
+                   ch2 = deepSearch ["Axiom", "Theorem"] el
+               in do
+      (gt', symbs) <- parseSpecs $ ch1 ++ ch2
+      diffSig <- liftR $ homGsigDiff (signOf gt') $ signOf gt
+      let lbl = newNodeLab (parseNodeName name)
+            (DGBasicSpec Nothing diffSig symbs) gt'
+      return (insLNodeDG (n, lbl) dg, lv)
+    -- Case #2: reference node
+    Just rf -> do
+      (gt', _) <- parseSpecs $ findChildren (unqual "Signature") rf
+      refLib <- case getAttrVal "library" rf of
+        Nothing -> fail $ "no library name for reference node " ++ name
+        Just ln -> return ln
+      refNod <- case getAttrVal "node" rf of
+        Nothing -> fail $ "no reference node name for node " ++ name
+        Just nm -> return nm
+      (i, lv') <- case Map.lookup (emptyLibName refLib) lv of
+        Just dg' -> case lookupNodeByName refNod dg' of
+          [(i, _)] -> return (i, lv)
+          _ -> fail $ "reference node " ++ refNod ++ " was not found" 
+        Nothing -> loadRefLib opts refLib refNod lv
+      let lbl = newInfoNodeLab (parseNodeName name) (newRefInfo (emptyLibName refLib) i) gt'
+      return (insLNodeDG (n, lbl) dg, lv')
+
+loadRefLib :: HetcatsOpts -> String -> String -> LibEnv -> ResultT IO (Graph.Node, LibEnv)
+loadRefLib opts ln nd lv = do
+  mPath <- lift $ findFileOfLibNameAux opts { intype = DgXml } ln
+  case mPath of
+    Just path -> do
+      (ln', lv') <- readDGXmlR opts path
+      let dg' = lookupDGraph ln' lv'
+      case lookupNodeByName nd dg' of
+          [(i, _)] -> return (i, lv')
+          _ -> fail $ "reference node " ++ nd ++ " was not found" 
+    _ -> return (-1, lv)
 
 
 -- | inserts a new link into the dgraph
@@ -246,15 +285,6 @@ insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> DGraph
            -> ResultT IO DGraph
 insertLink i j mr tp = return . snd
   . insLEdgeDG (i, j, defDGLink mr tp SeeTarget)
-
-
--- | inserts a new node into the dgraph
-insertNode :: G_theory -> DGraph -> NamedNode -> ResultT IO DGraph
-insertNode gt dg x = do
-  let an = globalAnnos dg
-      n = getNewNodeDG dg
-  lbl <- mkDGNodeLab gt an x
-  return $ insLNodeDG (n, lbl) dg
 
 
 -- * logic calculations
@@ -303,39 +333,6 @@ parseSymbolMap = intercalate ", "
                . map strContent . elChildren )
                . deepSearch ["map"]
 
-
-
--- TODO: when inserting RefNodes, call addToRefNodesDG (DevGraph)!!
-
-{- | Generates a new DGNodeLab with a startoff-G_theory, an Element and the
-the DGraphs Global Annotations -}
-mkDGNodeLab :: G_theory -> GlobalAnnos -> NamedNode -> ResultT IO DGNodeLab
-mkDGNodeLab gt annos (name, el) = let
-  parseSpecs specElems = let
-    specs = unlines $ map strContent specElems
-    (response, msg) = extendByBasicSpec annos specs gt
-    in case response of
-      Success gt' _ symbs _ -> return (gt', symbs)
-      Failure _ -> fail
-        $ "[ " ++ name ++ " ]\n" ++ msg
-  in case findChild (unqual "Reference") el of
-    -- Case #1: regular node
-    Nothing -> let ch1 = case findChild (unqual "Declarations") el of
-                     Just ch -> deepSearch ["Symbol"] ch
-                     Nothing -> findChildren (unqual "Signature") el
-                   ch2 = deepSearch ["Axiom", "Theorem"] el
-               in do
-      (gt', symbs) <- parseSpecs $ ch1 ++ ch2
-      diffSig <- liftR $ homGsigDiff (signOf gt') $ signOf gt
-      return $ newNodeLab (parseNodeName name)
-        (DGBasicSpec Nothing diffSig symbs) gt'
-    -- Case #2: reference node
-    Just rf -> do
-      (gt', _) <- parseSpecs $ findChildren (unqual "Signature") rf
-      refLib <- case getAttrVal "library" rf of
-        Nothing -> fail $ "no library name for reference node " ++ name 
-        Just ln -> return $ setFilePath ln noTime $ emptyLibName ln
-      return $ newInfoNodeLab (parseNodeName name) (newRefInfo refLib (-1)) gt'
 
 {- | All nodes are taken from the xml-element. Then, the name-attribute is
 looked up and stored alongside the node for easy access. Nodes with no names
