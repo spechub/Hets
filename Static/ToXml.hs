@@ -111,7 +111,7 @@ lnode ga lenv (_, lbl) =
             [ add_attrs [ mkAttr "library" $ show $ getLibId li
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
-            $ unode "Reference" sigxml ]
+            $ unode "Reference" () ]
           DGNode orig cs -> consStatus cs
               ++ case orig of
                    DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ ->
