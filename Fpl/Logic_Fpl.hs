@@ -70,6 +70,7 @@ instance StaticAnalysis Fpl FplBasicSpec FplForm
 
          empty_signature Fpl = emptySign emptyFplSign
          signature_union Fpl s = return . addSig addFplSign s
+         signatureDiff Fpl s = return . diffSig diffFplSign s
          intersection Fpl s = return . interSig interFplSign s
          morphism_union Fpl = plainMorphismUnion addFplSign
          final_union Fpl = finalUnion addFplSign
