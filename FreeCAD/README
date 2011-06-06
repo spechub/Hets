@@ -23,15 +23,17 @@ make
 
 #The binary is built in the ./bin folder.
 
-# In order to test the brep reader call the program from the console
+# In order to test the brep reader call the program from the console 
 # in the current directory with:
 
 brep_conversion/bin/brep_to_xml <filename.brp>
 
-
+The program is not yet included in the module and can only be tested manually.
+Although the import algorithms are complete, the IO needs restructuring for it 
+to work.
 ################################################################################
 
-## OLD Python program
+##Python program --obsolete
 
 python brep_conversion/src/brep_reader.py
 
