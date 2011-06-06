@@ -55,8 +55,20 @@ type NamedNode = (String, Element)
 
 data NamedLink = Link { src :: String
                       , trg :: String
-                      , lType :: DGLinkType
+-- , lType :: DGLinkType
                       , element :: Element }
+
+isOfType :: String -> NamedLink -> ResultT IO Bool
+isOfType t (Link _ _ l) = case findChild (unqual "Type") l of
+  Nothing -> fail "links type description is missing"
+  Just tp -> return $ isInfixOf t $ strContent tp
+
+partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
+partitionM f = foldM part ([], []) where
+  part (xs, ys) obj = do
+    b <- f obj
+    return $ if b then (obj : xs, ys) else (xs, obj : ys)
+
 
 {- | returns a String representation of a list of links showing their
 source and target nodes (used for error messages). -}
@@ -185,10 +197,13 @@ partitionWith f v = partition ((== v) . f)
 insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> ResultT IO DGraph
 insertThmLinks lg links dg' = foldM ins' dg' links where
   ins' dg l = do
+    isHide <- isOfType "Hiding" l
     (i, mr) <- extractMorphism lg dg l
     (j, gsig) <- signOfNode (trg l) dg
-    morph <- finalizeMorphism lg mr gsig
-    insertLink i j morph (lType l) dg
+    morph <- case isHide of
+      True -> liftR $ ginclusion lg gsig (cod mr)
+      False -> finalizeMorphism lg mr gsig
+    insertLink i j morph l dg
 
 
 {- | inserts a new node into the dgraph as well as all deflinks that target
@@ -197,7 +212,8 @@ insNdAndDefLinks :: HetcatsOpts -> LogicGraph -> NamedNode -> [NamedLink]
                  -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insNdAndDefLinks opts lg trgNd links (dg, lv) = do
   mrs <- mapM (extractMorphism lg dg) links
-  ((dg', lv'), isHiding) <- case partition (isHidingDef . lType) links of
+  partHide <- partitionM (isOfType "Hiding") links
+  ((dg', lv'), isHiding) <- case partHide of
     -- case #1: none hiding def links
     ([], _) -> do
       gsig1 <- liftR $ gsigManyUnion lg $ map (cod . snd) mrs
@@ -218,7 +234,7 @@ insNdAndDefLinks opts lg trgNd links (dg, lv) = do
   let ins' dgR ((i, mr), l) = do
         morph <- if isHiding then liftR $ ginclusion lg gsig2 (cod mr)
           else finalizeMorphism lg mr gsig2
-        insertLink i j morph (lType l) dgR
+        insertLink i j morph l dgR
   dg'' <- foldM ins' dg' $ zip mrs links
   return (dg'', lv')
 
@@ -281,10 +297,11 @@ loadRefLib opts ln lv = do
 
 
 -- | inserts a new link into the dgraph
-insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> DGraph
+insertLink :: Graph.Node -> Graph.Node -> GMorphism -> NamedLink -> DGraph
            -> ResultT IO DGraph
-insertLink i j mr tp = return
-  . insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget)
+insertLink i j mr l dg = do
+  tp <- lType l mr
+  return $ insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget) dg
 
 -- * logic calculations
 
@@ -349,18 +366,16 @@ are theorem or definition links. -}
 extractLinkElements :: Element -> ResultT IO ([NamedLink], [NamedLink])
 extractLinkElements el = do
   l1 <- foldM labelLink [] $ findChildren (unqual "DGLink") el
-  return $ partition isDef l1 where
-    isDef = isDefEdge . lType
+  partitionM (isOfType "Def") l1 where
     labelLink r e = do
       sr <- getAttrVal "source" e
       tr <- getAttrVal "target" e
-      tp <- extractLinkType e
-      return $ Link sr tr tp e : r
+      return $ Link sr tr e : r
 
 
 -- | reads the type of a link from the xml data
-extractLinkType :: Element -> ResultT IO DGLinkType
-extractLinkType l = do
+lType :: NamedLink -> GMorphism -> ResultT IO DGLinkType
+lType (Link _ _ l) mor = do
   tp <- case findChild (unqual "Type") l of
     Nothing -> fail "Links type description is missing!"
     Just xy -> return $ strContent xy
@@ -378,15 +393,18 @@ extractLinkType l = do
       then return $ localOrGlobalDef sc cc
       else if not $ isInfixOf "Thm" tp
         then fail $ "unknown link type!\n" ++ tp
-        else case findChild (unqual "Status") l of
-          -- Case #2: Unproven theorem link, global or local
-          Nothing -> return $ localOrGlobalThm sc cc
-          Just st -> if strContent st /= "Proven"
-            then fail $ "unknown links status!\n" ++ strContent st
-            else let
-              -- Case #3: Proven theorem link, global or local
-              lkind = ThmLink $ Proven (DGRule rl) emptyProofBasis
-              in return $ ScopedLink sc lkind $ mkConsStatus cc
+        -- ...Theorem Links
+        else do
+          lStat <- case findChild (unqual "Status") l of
+            Nothing -> return LeftOpen
+            Just st -> if strContent st /= "Proven"
+              then fail $ "unknown links status!\n" ++ strContent st
+              else return $ Proven (DGRule rl) emptyProofBasis
+          if isInfixOf "Hiding" tp
+            -- Case #3: Hiding theorem link
+            then return $ HidingFreeOrCofreeThm Nothing mor lStat
+            -- Case #4: other theorem links
+            else return $ ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 
 -- | extracts the global annotations from the xml-graph
