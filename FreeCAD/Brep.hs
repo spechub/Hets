@@ -7,8 +7,10 @@ import Data.Maybe
 import Data.Set as Set
 import FreeCAD.As
 
-getBrep::(String, String) -> (BaseObject, Placement)
-getBrep (address, "rectangle") = procRectangle (getRectangle (address, "rectangle"))
+getBrep::(String, String) -> IO (BaseObject, Placement)
+getBrep (address, "rectangle") =
+    fmap procRectangle $ getRectangle address
+
 
 procRectangle::(Vector3, Vector3, Vector3, Vector3) -> (BaseObject, Placement)
 procRectangle (a, b, c, d) = (Rectangle h l, place)
@@ -62,5 +64,6 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
 
 
 
-getRectangle::(String, String) -> (Vector3, Vector3, Vector3, Vector3)
-getRectangle (address, "rectangle") = readProcess "./FreeCAD/brep_conversion/bin/brep_to_xml" [address,"rectangle"]
+getRectangle:: String -> IO (Vector3, Vector3, Vector3, Vector3)
+getRectangle address = readProcess "./FreeCAD/brep_conversion/bin/brep_to_xml"
+                       [address, "rectangle"]

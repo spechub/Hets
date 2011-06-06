@@ -56,22 +56,30 @@ isBaseObject el = member (firstThree (getName el)) setBaseObjs
                  
 --used in order to identify the object constructor from the name
 
-getObject:: Element -> FreeCAD.As.NamedObject
-getObject el | tn == "Box" = makeb el tn
+getObject:: Element -> IO NamedObject
+getObject el | tn == "Box" = mkBaseObject $ getBox elc
              | tn == "Sph" = makeb el tn
              | tn == "Cyl" = makeb el tn
              | tn == "Con" = makeb el tn
              | tn == "Tor" = makeb el tn
              | tn == "Cir" = makeb el tn
-             | tn == "Rec" = EmptyObject
+             | tn == "Rec" = mkRectangle elc
              | tn == "Lin" = EmptyObject
-             | tn == "Cut" = makex el tn
+             -- | tn == "Cut" = makex el tn
+             | tn == "Cut" = mkObject $ getCut elc -- makeb el tn
              | tn == "Com" = makex el tn 
              | tn == "Fus" = makex el tn
              | tn == "Sec" = makex el tn
 			 | tn == "Ext" = EmptyObject
             where 
               tn = firstThree(getName el) 
+              mkObject = return . NamedObject (getName el) . PlacedObject (findPlacement elc)
+              mkBaseObject = mkObject . BaseObject
+
+              getBox elc = Box (findFloat "Height" elc) (findFloat "Width" elc) (findFloat "Length" elc)
+              getCut elc = Cut (findRef "Base" elc) (findRef "Tool" elc)
+
+
               makeb el tn = NamedObject (getName el) (PlacedObject (findPlacement elc) (BaseObject (bbuild tn el)))
               makex el tn = NamedObject (getName el) (PlacedObject (findPlacement elc) (buildex tn el))
               bbuild tn el | tn == "Box" = Box (findFloat "Height" elc) (findFloat "Width" elc) (findFloat "Length" elc)
@@ -87,6 +95,11 @@ getObject el | tn == "Box" = makeb el tn
                             | tn == "Fus" = Fusion (findRef "Base" elc) (findRef "Tool" elc)
                             | tn == "Sec" = Section (findRef "Base" elc) (findRef "Tool" elc)
               elc = child el
+
+
+mkRectangle :: Element -> IO NamedObject
+mkRectangle = error "not implemented"
+
 
 
 
@@ -135,9 +148,5 @@ child el = head(elChildren el)
 
 --Facade function that translates the parsed XML document into Haskell-FreeCAD datatype
 
-translate:: Element -> Document
-translate baseElement = document
-    where
-	objects = objList baseElement
-	document = Prelude.map getObject objects
-
+translate:: Element -> IO Document
+translate baseElement = mapM getObject $ objList baseElement

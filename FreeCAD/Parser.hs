@@ -15,7 +15,7 @@ processFile fp = do
   createProcess (proc "unzip" ["-oqf", fp, "-d", tempDir])
   xmlInput <-readFile (concat[tempDir, "/Document.xml"])
   let parsed = parseXMLDoc xmlInput
-  let out = translate (fromJust parsed)
+  out <- translate (fromJust parsed)
   putStrLn (show out)
 ------------------------
 
