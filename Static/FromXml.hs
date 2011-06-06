@@ -232,11 +232,11 @@ insertNode :: HetcatsOpts -> G_theory -> NamedNode -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
 insertNode opts gt (name, el) (dg, lv) = let
   n = getNewNodeDG dg
-  parseSpecs specElems = let
+  parseSpecs gt' specElems = let
     specs = unlines $ map strContent specElems
-    (response, msg) = extendByBasicSpec (globalAnnos dg) specs gt
+    (response, msg) = extendByBasicSpec (globalAnnos dg) specs gt'
     in case response of
-      Success gt' _ symbs _ -> return (gt', symbs)
+      Success gt'' _ symbs _ -> return (gt'', symbs)
       Failure _ -> fail
         $ "[ " ++ name ++ " ]\n" ++ msg
   in case findChild (unqual "Reference") el of
@@ -246,7 +246,7 @@ insertNode opts gt (name, el) (dg, lv) = let
                      Nothing -> findChildren (unqual "Signature") el
                    ch2 = deepSearch ["Axiom", "Theorem"] el
                in do
-      (gt', symbs) <- parseSpecs $ ch1 ++ ch2
+      (gt', symbs) <- parseSpecs gt $ ch1 ++ ch2
       diffSig <- liftR $ homGsigDiff (signOf gt') $ signOf gt
       let lbl = newNodeLab (parseNodeName name)
             (DGBasicSpec Nothing diffSig symbs) gt'
@@ -267,8 +267,9 @@ insertNode opts gt (name, el) (dg, lv) = let
           [(i, lbl)] -> case signOf $ dgn_theory lbl of
             G_sign lid sign sId -> return (i, noSensGTheory lid sign sId)
           _ -> fail $ "reference node " ++ refNod ++ " was not found"
+      (gt'', _) <- parseSpecs gt' $ deepSearch ["Axiom", "Theorem"] el
       let lbl = newInfoNodeLab (parseNodeName name)
-            (newRefInfo (emptyLibName refLib) i) gt'
+            (newRefInfo (emptyLibName refLib) i) gt''
       return (insLNodeDG (n, lbl) dg, lv')
 
 loadRefLib :: HetcatsOpts -> String -> LibEnv
