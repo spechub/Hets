@@ -223,9 +223,6 @@ insNdAndDefLinks opts lg trgNd links (dg, lv) = do
   return (dg'', lv')
 
 
--- TODO: when inserting RefNodes, call addToRefNodesDG (DevGraph)!!
-
-
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
 and the the DGraphs Global Annotations -}
 insertNode :: HetcatsOpts -> G_theory -> NamedNode -> (DGraph, LibEnv)
@@ -268,9 +265,9 @@ insertNode opts gt (name, el) (dg, lv) = let
             G_sign lid sign sId -> return (i, noSensGTheory lid sign sId)
           _ -> fail $ "reference node " ++ refNod ++ " was not found"
       (gt'', _) <- parseSpecs gt' $ deepSearch ["Axiom", "Theorem"] el
-      let lbl = newInfoNodeLab (parseNodeName name)
-            (newRefInfo (emptyLibName refLib) i) gt''
-      return (insLNodeDG (n, lbl) dg, lv')
+      let nInf = newRefInfo (emptyLibName refLib) i
+          lbl = newInfoNodeLab (parseNodeName name) nInf gt''
+      return (addToRefNodesDG n nInf $ insLNodeDG (n, lbl) dg, lv')
 
 loadRefLib :: HetcatsOpts -> String -> LibEnv
   -> ResultT IO (DGraph, LibEnv)
