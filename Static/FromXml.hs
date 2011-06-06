@@ -198,12 +198,12 @@ insertThmLinks :: LogicGraph -> [NamedLink] -> DGraph -> ResultT IO DGraph
 insertThmLinks lg links dg' = foldM ins' dg' links where
   ins' dg l = do
     isHide <- isOfType "Hiding" l
-    (i, mr) <- extractMorphism lg dg l
-    (j, gsig) <- signOfNode (trg l) dg
-    morph <- case isHide of
-      True -> liftR $ ginclusion lg gsig (cod mr)
-      False -> finalizeMorphism lg mr gsig
-    insertLink i j morph l dg
+    -- due to runtime errors, hidingThmLinks are skipped since revision 15075
+    if isHide then return dg else do
+      (i, mr) <- extractMorphism lg dg l
+      (j, gsig) <- signOfNode (trg l) dg
+      morph <- finalizeMorphism lg mr gsig
+      insertLink i j morph l dg
 
 
 {- | inserts a new node into the dgraph as well as all deflinks that target
