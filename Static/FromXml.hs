@@ -260,26 +260,25 @@ insertNode opts gt (name, el) (dg, lv) = let
       refNod <- case getAttrVal "node" rf of
         Nothing -> fail $ "no reference node name for node " ++ name
         Just nm -> return nm
-      (i, lv', gt') <- case Map.lookup (emptyLibName refLib) lv of
-        Just dg' -> case lookupNodeByName refNod dg' of
-          [(i, lbl)] -> return (i, lv, dgn_theory lbl)
+      (dg', lv') <- case Map.lookup (emptyLibName refLib) lv of
+        Just dg' -> return (dg', lv)
+        Nothing -> loadRefLib opts refLib lv
+      (i, gt') <- case lookupNodeByName refNod dg' of
+          [(i, lbl)] -> case signOf $ dgn_theory lbl of
+            G_sign lid sign sId -> return (i, noSensGTheory lid sign sId)
           _ -> fail $ "reference node " ++ refNod ++ " was not found"
-        Nothing -> loadRefLib opts refLib refNod lv
       let lbl = newInfoNodeLab (parseNodeName name)
             (newRefInfo (emptyLibName refLib) i) gt'
       return (insLNodeDG (n, lbl) dg, lv')
 
-loadRefLib :: HetcatsOpts -> String -> String -> LibEnv
-  -> ResultT IO (Graph.Node, LibEnv, G_theory)
-loadRefLib opts ln nd lv = do
+loadRefLib :: HetcatsOpts -> String -> LibEnv
+  -> ResultT IO (DGraph, LibEnv)
+loadRefLib opts ln lv = do
   mPath <- lift $ findFileOfLibNameAux opts { intype = DgXml } ln
   case mPath of
     Just path -> do
       (ln', lv') <- readDGXmlR opts path lv
-      let dg' = lookupDGraph ln' lv'
-      case lookupNodeByName nd dg' of
-          [(i, lbl)] -> return (i, lv', dgn_theory lbl)
-          _ -> fail $ "reference node " ++ nd ++ " was not found"
+      return (lookupDGraph ln' lv', lv')
     _ -> fail $ "no file exists for reference library " ++ ln
 
 
