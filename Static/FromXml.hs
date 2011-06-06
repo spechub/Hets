@@ -33,7 +33,7 @@ import Control.Monad (foldM)
 import Data.List (partition, intercalate, isInfixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.Map as Map (lookup, insert, empty)
+import qualified Data.Map as Map (lookup, insert, empty, union)
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
@@ -109,7 +109,8 @@ fromXml opts lg ln xml = case Map.lookup (currentLogic lg) (logics lg) of
     an <- extractGlobalAnnos xml
     let dg = emptyDG { globalAnnos = an }
 
-    (dglv, depNodes) <- initialiseNodes opts (emptyTheory lo) nodes defLinks (dg, Map.empty)
+    (dglv, depNodes) <- initialiseNodes opts (emptyTheory lo)
+      nodes defLinks (dg, Map.empty)
     (dg', lv') <- insertNodesAndDefLinks opts lg depNodes defLinks dglv
     dg'' <- insertThmLinks lg thmLinks dg'
     return (ln, computeLibEnvTheories $ Map.insert ln dg'' lv')
@@ -120,8 +121,8 @@ fromXml opts lg ln xml = case Map.lookup (currentLogic lg) (logics lg) of
 {- | All nodes that do not have dependencies via the links are processed at the
 beginning and written into the DGraph. Returns the resulting DGraph and the
 list of nodes that have not been stored (i.e. have dependencies). -}
-initialiseNodes :: HetcatsOpts -> G_theory -> [NamedNode] -> [NamedLink] -> (DGraph, LibEnv)
-                -> ResultT IO ((DGraph, LibEnv), [NamedNode])
+initialiseNodes :: HetcatsOpts -> G_theory -> [NamedNode] -> [NamedLink]
+  -> (DGraph, LibEnv) -> ResultT IO ((DGraph, LibEnv), [NamedNode])
 initialiseNodes opts gt nodes links dglv = do
   let targets = map trg links
       -- all nodes that are not target of any link are considered independent
@@ -133,8 +134,8 @@ initialiseNodes opts gt nodes links dglv = do
 {- | main loop: in every step, all links are collected of which the source node
 has been written into DGraph already. Upon these, further nodes are written
 in each step until the list of remaining links reaches null. -}
-insertNodesAndDefLinks :: HetcatsOpts -> LogicGraph -> [NamedNode] -> [NamedLink]
-                       -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
+insertNodesAndDefLinks :: HetcatsOpts -> LogicGraph -> [NamedNode]
+  -> [NamedLink] -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insertNodesAndDefLinks _ _ _ [] dglv = return dglv
 insertNodesAndDefLinks opts lg nodes links (dg, lv) = let
   (cur, lftL) = splitLinks dg links
@@ -225,8 +226,8 @@ insNdAndDefLinks opts lg trgNd links (dg, lv) = do
 -- TODO: when inserting RefNodes, call addToRefNodesDG (DevGraph)!!
 
 
-{- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element and the
-the DGraphs Global Annotations -}
+{- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
+and the the DGraphs Global Annotations -}
 insertNode :: HetcatsOpts -> G_theory -> NamedNode -> (DGraph, LibEnv)
            -> ResultT IO (DGraph, LibEnv)
 insertNode opts gt (name, el) (dg, lv) = let
@@ -252,22 +253,24 @@ insertNode opts gt (name, el) (dg, lv) = let
       return (insLNodeDG (n, lbl) dg, lv)
     -- Case #2: reference node
     Just rf -> do
-      (gt', _) <- parseSpecs $ findChildren (unqual "Signature") rf
+      -- (gt', _) <- parseSpecs $ findChildren (unqual "Signature") rf
       refLib <- case getAttrVal "library" rf of
         Nothing -> fail $ "no library name for reference node " ++ name
         Just ln -> return ln
       refNod <- case getAttrVal "node" rf of
         Nothing -> fail $ "no reference node name for node " ++ name
         Just nm -> return nm
-      (i, lv') <- case Map.lookup (emptyLibName refLib) lv of
+      (i, lv', gt') <- case Map.lookup (emptyLibName refLib) lv of
         Just dg' -> case lookupNodeByName refNod dg' of
-          [(i, _)] -> return (i, lv)
-          _ -> fail $ "reference node " ++ refNod ++ " was not found" 
+          [(i, lbl)] -> return (i, lv, dgn_theory lbl)
+          _ -> fail $ "reference node " ++ refNod ++ " was not found"
         Nothing -> loadRefLib opts refLib refNod lv
-      let lbl = newInfoNodeLab (parseNodeName name) (newRefInfo (emptyLibName refLib) i) gt'
+      let lbl = newInfoNodeLab (parseNodeName name)
+            (newRefInfo (emptyLibName refLib) i) gt'
       return (insLNodeDG (n, lbl) dg, lv')
 
-loadRefLib :: HetcatsOpts -> String -> String -> LibEnv -> ResultT IO (Graph.Node, LibEnv)
+loadRefLib :: HetcatsOpts -> String -> String -> LibEnv
+  -> ResultT IO (Graph.Node, LibEnv, G_theory)
 loadRefLib opts ln nd lv = do
   mPath <- lift $ findFileOfLibNameAux opts { intype = DgXml } ln
   case mPath of
@@ -275,9 +278,9 @@ loadRefLib opts ln nd lv = do
       (ln', lv') <- readDGXmlR opts path
       let dg' = lookupDGraph ln' lv'
       case lookupNodeByName nd dg' of
-          [(i, _)] -> return (i, lv')
-          _ -> fail $ "reference node " ++ nd ++ " was not found" 
-    _ -> return (-1, lv)
+          [(i, lbl)] -> return (i, Map.union lv lv', dgn_theory lbl)
+          _ -> fail $ "reference node " ++ nd ++ " was not found"
+    _ -> fail $ "no file exists for reference library " ++ ln
 
 
 -- | inserts a new link into the dgraph
