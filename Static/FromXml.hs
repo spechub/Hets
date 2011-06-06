@@ -33,7 +33,7 @@ import Control.Monad (foldM)
 import Data.List (partition, intercalate, isInfixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
-import qualified Data.Map as Map (lookup, insert, empty, union)
+import qualified Data.Map as Map (lookup, insert, empty)
 
 import Driver.Options
 import Driver.ReadFn (findFileOfLibNameAux)
@@ -70,14 +70,14 @@ printLinks = let show' l = src l ++ " -> " ++ trg l in
 -- | top-level function
 readDGXml :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 readDGXml opts path = do
-    Result ds res <- runResultT $ readDGXmlR opts path
+    Result ds res <- runResultT $ readDGXmlR opts path Map.empty
     showDiags opts ds
     return res
 
 {- | main function; receives a FilePath and calls fromXml upon that path,
 using an empty DGraph and initial LogicGraph. -}
-readDGXmlR :: HetcatsOpts -> FilePath -> ResultT IO (LibName, LibEnv)
-readDGXmlR opts path = do
+readDGXmlR :: HetcatsOpts -> FilePath -> LibEnv -> ResultT IO (LibName, LibEnv)
+readDGXmlR opts path lv = do
   lift $ putIfVerbose opts 2 $ "Reading " ++ path
   xml' <- lift $ readFile path
   case parseXMLDoc xml' of
@@ -89,7 +89,7 @@ readDGXmlR opts path = do
           unlines (take 5 $ lines xml')
       Just nm -> do
         let ln = setFilePath nm noTime $ emptyLibName nm
-        fromXml opts logicGraph ln xml
+        fromXml opts logicGraph ln lv xml
 
 -- | creates an entirely empty theory
 emptyTheory :: AnyLogic -> G_theory
@@ -98,9 +98,9 @@ emptyTheory (Logic lid) =
 
 {- | main function; receives a logicGraph, an initial DGraph and an xml
 element, then adds all nodes and edges from the element into the DGraph -}
-fromXml :: HetcatsOpts -> LogicGraph -> LibName -> Element
+fromXml :: HetcatsOpts -> LogicGraph -> LibName -> LibEnv -> Element
         -> ResultT IO (LibName, LibEnv)
-fromXml opts lg ln xml = case Map.lookup (currentLogic lg) (logics lg) of
+fromXml opts lg ln lv xml = case Map.lookup (currentLogic lg) (logics lg) of
   Nothing ->
     fail "current logic was not found in logicMap"
   Just lo -> do
@@ -110,7 +110,7 @@ fromXml opts lg ln xml = case Map.lookup (currentLogic lg) (logics lg) of
     let dg = emptyDG { globalAnnos = an }
 
     (dglv, depNodes) <- initialiseNodes opts (emptyTheory lo)
-      nodes defLinks (dg, Map.empty)
+      nodes defLinks (dg, lv)
     (dg', lv') <- insertNodesAndDefLinks opts lg depNodes defLinks dglv
     dg'' <- insertThmLinks lg thmLinks dg'
     return (ln, computeLibEnvTheories $ Map.insert ln dg'' lv')
@@ -275,10 +275,10 @@ loadRefLib opts ln nd lv = do
   mPath <- lift $ findFileOfLibNameAux opts { intype = DgXml } ln
   case mPath of
     Just path -> do
-      (ln', lv') <- readDGXmlR opts path
+      (ln', lv') <- readDGXmlR opts path lv
       let dg' = lookupDGraph ln' lv'
       case lookupNodeByName nd dg' of
-          [(i, lbl)] -> return (i, Map.union lv lv', dgn_theory lbl)
+          [(i, lbl)] -> return (i, lv', dgn_theory lbl)
           _ -> fail $ "reference node " ++ nd ++ " was not found"
     _ -> fail $ "no file exists for reference library " ++ ln
 
