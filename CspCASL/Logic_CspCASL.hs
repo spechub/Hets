@@ -34,6 +34,7 @@ import Logic.Prover
 import CASL.Logic_CASL
 import CASL.Parse_AS_Basic
 import CASL.Morphism
+import CASL.Sign
 import CASL.ToDoc
 import qualified CASL.MapSentence as MapSen
 import qualified CASL.SimplifySen as SimpSen
@@ -181,6 +182,7 @@ instance Show a => StaticAnalysis (GenCspCASL a)
       is_subsig (GenCspCASL _) = SignCSP.isCspCASLSubSig
       subsig_inclusion (GenCspCASL _) = cspSubsigInclusion
       signature_union (GenCspCASL _) = SignCSP.unionCspCASLSign
+      signatureDiff (GenCspCASL _) s = return . diffSig SignCSP.diffCspSig s
       morphism_union (GenCspCASL _) =
           morphismUnion CspCASL_Morphism.cspAddMorphismUnion
                         SignCSP.cspSignUnion
