@@ -364,26 +364,27 @@ extractLinkType l = do
   tp <- case findChild (unqual "Type") l of
     Nothing -> fail "Links type description is missing!"
     Just xy -> return $ strContent xy
-  if tp == "HidingDefInc" then return HidingDefLink else do
-    let sc = if isInfixOf "Global" tp then Global else Local
-    if isInfixOf "Def" tp
-      -- Case #1: DefinitionLink, global or local
-      then return $ localOrGlobalDef sc None
+  -- Case #1: HidingDefLinks. No other information required.
+  if tp == "HidingDefInc" then return HidingDefLink else let
+    sc = if isInfixOf "Global" tp then Global else Local
+    rl = case findChild (unqual "Rule") l of
+      Nothing -> "no rule"
+      Just r' -> strContent r'
+    cc = case findChild (unqual "ConsStatus") l of
+      Nothing -> None
+      Just c' -> fromMaybe None $ readMaybe $ strContent c'
+    in if isInfixOf "Def" tp
+      -- Case #2: DefinitionLink, global or local
+      then return $ localOrGlobalDef sc cc
       else if not $ isInfixOf "Thm" tp
         then fail $ "unknown link type!\n" ++ tp
-          else case findChild (unqual "Status") l of
+        else case findChild (unqual "Status") l of
           -- Case #2: Unproven theorem link, global or local
-          Nothing -> return $ localOrGlobalThm sc None
+          Nothing -> return $ localOrGlobalThm sc cc
           Just st -> if strContent st /= "Proven"
             then fail $ "unknown links status!\n" ++ strContent st
-            -- Case #3: Proven theorem link, global or local
             else let
-              rl = case findChild (unqual "Rule") l of
-                Nothing -> "no rule"
-                Just r' -> strContent r'
-              cc = case findChild (unqual "ConsStatus") l of
-                Nothing -> None
-                Just c' -> fromMaybe None $ readMaybe $ strContent c'
+              -- Case #3: Proven theorem link, global or local
               lkind = ThmLink $ Proven (DGRule rl) emptyProofBasis
               in return $ ScopedLink sc lkind $ mkConsStatus cc
 
