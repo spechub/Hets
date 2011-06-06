@@ -6,6 +6,12 @@ where
 
 data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving Show 
 --a vector in cartesian coordinates
+
+data Matrix33 = Matrix33 {   a11::Double ,a12::Double ,a13::Double
+                            ,a21::Double ,a22::Double ,a23::Double
+                            ,a31::Double ,a32::Double ,a33::Double
+                         } --used as a rotation matrix
+                            
 data Vector4 = Vector4 { q0::Double, q1::Double, q2::Double, q3::Double} deriving Show
 --a vector of 4 coordinates for representing orientation of FreeCAD objects
 {-
@@ -80,6 +86,13 @@ distance3 (Vector3 ax ay az) (Vector3 bx by bz) = sqrt (x*x + y*y + z*z)
         y = ay - by
         z = az - bz
         
+subtract3:: Vector3 -> Vector3 -> Vector3
+subtract3 a b = Vector3 ex ey ez
+    where
+        ex = (x a) - (x b)
+        ey = (y a) - (y b)
+        ez = (z a) - (z b)
+        
 norm3:: Vector3 -> Double
 norm3 a = distance3 a (Vector3 0 0 0)
 
@@ -106,11 +119,11 @@ v3Sum (a:b:as) = v3Sum (c:as)
         zc = (z a)*(z b) 
         c = Vector3 xc yc zc
       
-v3ScalProd:: Vector3 -> Vector3 -> Double
-v3ScalProd v1 v2 = (x v1)*(x v2) + (y v1)*(y v2) + (z v1)*(z v2)
+v3DotProd:: Vector3 -> Vector3 -> Double
+v3DotProd v1 v2 = (x v1)*(x v2) + (y v1)*(y v2) + (z v1)*(z v2)
 
-v4ScalProd:: Vector4 -> Vector4 -> Double
-v4ScalProd v1 v2 = (q0 v1)*(q0 v2) + (q1 v1)*(q1 v2) + (q2 v1)*(q2 v2) + (q3 v1)*(q3 v2)
+v4DotProd:: Vector4 -> Vector4 -> Double
+v4DotProd v1 v2 = (q0 v1)*(q0 v2) + (q1 v1)*(q1 v2) + (q2 v1)*(q2 v2) + (q3 v1)*(q3 v2)
 
 v3VecProd:: Vector3 -> Vector3 -> Vector3
 v3VecProd v1 v2 = Vector3 m n p
@@ -127,3 +140,27 @@ quatProd v1 v2 = Vector4 m n p q
         p = (q1 v2)*(q0 v1) - (q0 v2)*(q1 v1) + (q3 v2)*(q2 v1) + (q2 v2)*(q3 v1)
         q = -(q0 v2)*(q0 v1) -(q1 v2)*(q1 v1) - (q2 v2)*(q2 v1) + (q3 v2)*(q3 v1)
         
+-- from quaternion to rotation matrix        
+quat2matrix:: Vector4 -> Matrix33
+quat2matrix q = Matrix33 m11 m12 m13 m21 m22 m23 m31 m32 m33
+             where
+                m11 = (1 - 2*p2**2 - 2*p3**2)
+                m12 = (2*(p1*p2 - p3*p4))
+                m13 = (2*(p1*p3 + p2*p4))
+                m21 = (2*(p1*p2 + p3*p4))
+                m22 = (1 - 2*p1**2 - 2*p3**2)
+                m23 = (2*(p2*p3 - p1*p4))
+                m31 = (2*(p1*p3 - p2*p4))
+                m32 = (2*(p1*p4 + p2*p3))
+                m33 = (1 - 2*p1**2 - 2*p2**2)
+                p1 = q0 q
+                p2 = q1 q
+                p3 = q2 q
+                p4 = q3 q
+                
+rotate:: Matrix33 -> Vector3 -> Vector3
+rotate a v = Vector3 xx yy zz
+    where
+        xx = (a11 a)*(x v) + (a12 a)*(y v) + (a13 a)*(z v)
+        yy = (a21 a)*(x v) + (a22 a)*(y v) + (a23 a)*(z v)
+        zz = (a31 a)*(x v) + (a32 a)*(y v) + (a33 a)*(z v)
