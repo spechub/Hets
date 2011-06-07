@@ -137,13 +137,14 @@ cTypeS = "^^"
 data Constant = Constant LexicalForm TypedOrUntyped
     deriving (Typeable, Show, Eq, Ord)
 
-data Literal = TypedData TypedLiteral |  PlainLiteral StringLiteral_With_Or_Without_Language
+data Literal = TypedData TypedLiteral | PlainLiteral StringLiteral	
+					-- with or without LanguageTag
 	 deriving (Typeable, Show, Eq, Ord)
 
 data TypedLiteral = TypedLiteral LexicalForm Datatype
 	 deriving (Typeable, Show, Eq, Ord)
 
-data StringLiteral_With_Or_Without_Language = StringLiteral_With_Or_Without_Language String (Maybe LanguageTag)
+data StringLiteral = StringLiteral (Maybe LanguageTag)
 	 deriving (Typeable, Show, Eq, Ord)
 
 --------------------------
