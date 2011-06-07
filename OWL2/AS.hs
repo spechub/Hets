@@ -9,12 +9,12 @@ Stability   :  provisional
 Portability :  non-portable(deriving Typeable)
 
 This module defines all the data types for the functional style Syntax
-of OWL 1.1.
+of OWL 2
 It is modeled after the W3C document:
-<http://www.w3.org/Submission/2006/SUBM-owl11-owl_specification-20061219/>
+<http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
 -}
 
-module OWL2.AS where
+module OWL.AS where
 
 import Common.Keywords
 import Common.Id (GetRange)
@@ -66,86 +66,66 @@ instance Ord QName where
       if null n2 then compare (b1, p1, l1) (b2, p2, l2) else LT
     else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
 
-type URI = QName
-type URIreference = QName
+type IRIreference = QName
+type IRI = QName
 
 -- | prefix -> localname
-type Namespace = Map.Map String String
+type PrefixMap = Map.Map String String
 
-type AnnotationURI = URI
-type OntologyURI = URI
-type DatatypeURI = URI
-type OwlClassURI = URI
-type ObjectPropertyURI = URI
-type DataPropertyURI = URI
-type IndividualURI = URI
-type ImportURI = URI
+type NodeID = String
+type LexicalForm = String
+type LanguageTag = String
+type PrefixName = String
+type ImportIRI = IRI
+type OntologyIRI = IRI
+type Class = IRI
+type Datatype = IRI
+type ObjectProperty = IRI
+type DataProperty = IRI
+type AnnotationProperty = IRI
+type NamedIndividual = IRI
+type AnonymousIndividual = NodeID
+data Individual = IRI | AnonymousIndividual
+	deriving (Typeable, Show, Eq, Ord)
 
--- | Syntax of Ontologies
-data Annotation =
-  	Annotation AnnotationURI AnnotationBody
-    deriving (Typeable, Show, Eq, Ord)
-
-data AnnotationBody =
-	OntIDorRef URI
-       | AnnotationDataLiteral DataLiteral
-       | AnnotationIndividual Individual
-       
-data PlainLiteral = PlainLiteral LexicalForm (Maybe LanguageTag)
-
-data TypedLiteral = TypedLiteral LexicalForm URIreference
-
-data DataLiteral = TypedData TypedLiteral | PlainData PlainLiteral
-
-
+------------------------
+-- ONTOLOGIES SYNTAX
+------------------------
 
 data OntologyFile = OntologyFile
-  { namespaces :: Namespace
+  { prefixName :: PrefixMap
   , ontology :: Ontology
   } deriving (Typeable, Show, Eq, Ord)
 
 instance GetRange OntologyFile
 
 data Ontology = Ontology
-  { uri :: OntologyURI
-  , importsList :: [ImportURI]
+  { uri :: OntologyIRI
+  , importsList :: [ImportIRI]
   , annotationsList :: [Annotation]
   , axiomsList :: [Axiom]
   } deriving (Typeable, Show, Eq, Ord)
 
 type OntologyMap = Map.Map String OntologyFile
 
-data EntityType =
-    Datatype
-  | Class
-  | ObjectProperty
-  | DataProperty
-  | AnnotationProperty
-  | NamedIndividual
-    deriving (Typeable, Enum, Bounded, Show, Read, Eq, Ord)
+------------------------
+-- SYMBOL ITEMS FOR HETS
+------------------------
 
--- | Syntax of Entities
-data Entity = Entity EntityType URI deriving (Typeable, Show, Eq, Ord)
-
-instance GetRange Entity
-
-entityTypes :: [EntityType]
-entityTypes = [minBound .. maxBound]
-
--- | symbol items for hets
-data SymbItems = SymbItems (Maybe EntityType) [URI]
+data SymbItems = SymbItems (Maybe EntityType) [IRI]
     deriving (Typeable, Show, Eq)
 
-data SymbMapItems = SymbMapItems (Maybe EntityType) [(URI, Maybe URI)]
+data SymbMapItems = SymbMapItems (Maybe EntityType) [(IRI, Maybe IRI)]
     deriving (Typeable, Show, Eq)
 
 -- | raw symbols
-data RawSymb = ASymbol Entity | AnUri URI deriving (Typeable, Show, Eq, Ord)
+data RawSymb = ASymbol Entity | AnUri IRI deriving (Typeable, Show, Eq, Ord)
 
-type LexicalForm = String
-type LanguageTag = String
+-------------------------
+-- LITERALS
+-------------------------
 
-data TypedOrUntyped = Typed URIreference | Untyped LanguageTag
+data TypedOrUntyped = Typed IRIreference | Untyped LanguageTag
     deriving (Typeable, Show, Eq, Ord)
 
 cTypeS :: String
@@ -153,18 +133,27 @@ cTypeS = "^^"
 
 -- | a lexical representation either with an "^^" URI (typed) or
 -- an optional language tag starting with "\@" (untyped)
+
 data Constant = Constant LexicalForm TypedOrUntyped
     deriving (Typeable, Show, Eq, Ord)
 
--- | Object and Data Property Expressions
-type InverseObjectProperty = ObjectPropertyExpression
+data Literal = TypedData TypedLiteral |  PlainLiteral StringLiteral_With_Or_Without_Language
+	 deriving (Typeable, Show, Eq, Ord)
 
-data ObjectPropertyExpression =
-    OpURI ObjectPropertyURI
-  | InverseOp InverseObjectProperty
-    deriving (Typeable, Show, Eq, Ord)
+data TypedLiteral = TypedLiteral LexicalForm Datatype
+	 deriving (Typeable, Show, Eq, Ord)
 
-type DataPropertyExpression = DataPropertyURI
+data StringLiteral_With_Or_Without_Language = StringLiteral_With_Or_Without_Language String (Maybe LanguageTag)
+	 deriving (Typeable, Show, Eq, Ord)
+
+--------------------------
+-- PROPERTY EXPRESSIONS
+--------------------------
+
+data ObjectPropertyExpression = ObjectProp ObjectProperty | ObjectInverseOf ObjectProperty
+	deriving (Typeable, Show, Eq, Ord)
+
+type DataPropertyExpression = DataProperty
 
 -- | data type strings (some are not listed in the grammar)
 datatypeKeys :: [String]
@@ -182,7 +171,10 @@ datatypeKeys =
   , universalS
   ]
 
--- | Syntax of Data Range
+--------------------------
+-- DATA RANGES
+--------------------------
+
 data DatatypeFacet =
     LENGTH
   | MINLENGTH
@@ -209,24 +201,29 @@ showFacet df = case df of
     TOTALDIGITS -> digitsS
     FRACTIONDIGITS -> fractionS
 
-type RestrictionValue = Constant
+data DataRange 
+	= DataType Datatype
+	| DataIntersectionOrUnionOf JunctionType [DataRange]  -- at least two elements in the list
+	| DataComplementOf DataRange
+	| DataOneOf [Literal]	-- at least one element in the list
+	| DatatypeRestriction Datatype [(ConstrainingFacet, RestrictionValue)]	-- at least one element in the list
+	deriving (Typeable, Show, Eq, Ord)
 
-data DataRange =
-    DRDatatype DatatypeURI
-  | DataComplementOf DataRange
-  | DataOneOf [Constant] -- min. 1 constant
-  | DatatypeRestriction DataRange [(DatatypeFacet, RestrictionValue)]
-    deriving (Typeable, Show, Eq, Ord)
+data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 
--- | Syntax of Entity Annotations
-type AnnotationsForAxiom = Annotation
-type AnnotationsForEntity = Annotation
+type ConstrainingFacet = IRI
+type RestrictionValue = Literal
 
-data EntityAnnotation =
-    EntityAnnotation [AnnotationsForAxiom] Entity [AnnotationsForEntity]
-    deriving (Typeable, Show, Eq, Ord)
+---------------------------
+-- CLASS EXPERSSIONS
+---------------------------
 
--- | Syntax of Classes
+data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
+
+showQuantifierType :: QuantifierType -> String
+showQuantifierType ty = case ty of
+    AllValuesFrom -> onlyS
+    SomeValuesFrom -> someS
 
 data CardinalityType = MinCardinality | MaxCardinality | ExactCardinality
     deriving (Show, Eq, Ord)
@@ -237,50 +234,79 @@ showCardinalityType ty = case ty of
     MaxCardinality -> maxS
     ExactCardinality -> exactlyS
 
-data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
-
-data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
-
-showQuantifierType :: QuantifierType -> String
-showQuantifierType ty = case ty of
-    AllValuesFrom -> onlyS
-    SomeValuesFrom -> someS
-
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
     deriving (Typeable, Show, Eq, Ord)
 
-data Description =
-    OWLClassDescription OwlClassURI
-  | ObjectJunction JunctionType [Description]  -- min. 2 Descriptions
-  | ObjectComplementOf Description
-  | ObjectOneOf [IndividualURI]  -- min. 1 Individual
-  | ObjectValuesFrom QuantifierType ObjectPropertyExpression Description
-  | ObjectExistsSelf ObjectPropertyExpression
-  | ObjectHasValue ObjectPropertyExpression IndividualURI
-  | ObjectCardinality (Cardinality ObjectPropertyExpression Description)
-  | DataValuesFrom
-      QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
-  | DataHasValue DataPropertyExpression Constant
+data ClassExpression =
+    Expression Class
+  | ObjectJunction JunctionType [ClassExpression]  -- min. 2 ClassExpressions
+  | ObjectComplementOf ClassExpression
+  | ObjectOneOf [Individual]  -- min. 1 Individual
+  | ObjectValuesFrom QuantifierType ObjectPropertyExpression ClassExpression
+  | ObjectHasValue ObjectPropertyExpression Individual
+  | ObjectHasSelf ObjectPropertyExpression
+  | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
+  | DataValuesFrom QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
+  | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Typeable, Show, Eq, Ord)
 
--- Axiom
-type SubClass = Description
-type SuperClass = Description
+-------------------
+-- ANNOTATIONS
+-------------------
 
-data SubObjectPropertyExpression =
-    OPExpression ObjectPropertyExpression
-  | SubObjectPropertyChain [ObjectPropertyExpression]
-      -- ^ min. 2 ObjectPropertyExpression
-    deriving (Typeable, Show, Eq, Ord)
+data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
+	  deriving (Typeable, Show, Eq, Ord)
 
-type SourceIndividualURI = IndividualURI
-type TargetIndividualURI = IndividualURI
-type TargetValue = Constant
+data AnnotationAxiom 
+	= AnnotationAssertion [Annotation] AnnotationProperty AnnotationSubject AnnotationValue
+	| SubAnnotationPropertyOf [Annotation] AnnotationProperty AnnotationProperty
+	| AnnotationPropertyDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
+	deriving (Typeable, Show, Eq, Ord)
+
+data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
+
+data AnnotationSubject 
+	= AnnSubIRI IRI 
+	| AnnSubject AnonymousIndividual
+	  deriving (Typeable, Show, Eq, Ord)
+
+data AnnotationValue 
+	= AnnValue AnonymousIndividual 
+	| AnnValIRI IRI 
+	| AnnValLit Literal
+	  deriving (Typeable, Show, Eq, Ord)
+
+---------------------
+-- AXIOMS
+---------------------
+
+--Entities
+
+data EntityType =
+    Datatype
+  | Class
+  | ObjectProperty
+  | DataProperty
+  | AnnotationProperty
+  | NamedIndividual
+    deriving (Typeable, Enum, Bounded, Show, Read, Eq, Ord)
+
+-- | Syntax of Entities
+data Entity = Entity EntityType IRI deriving (Typeable, Show, Eq, Ord)
+
+instance GetRange Entity
+
+entityTypes :: [EntityType]
+entityTypes = [minBound .. maxBound]
+
+type SourceIndividual = Individual
+type TargetIndividual = Individual
+type TargetValue = Literal
 
 data Axiom = -- Annotations can be ignored
     PlainAxiom [Annotation] PlainAxiom
-  | EntityAnno EntityAnnotation
+  | EntityAnno AnnotationAxiom
     deriving (Typeable, Show, Eq, Ord)
 
 instance GetRange Axiom
@@ -299,7 +325,7 @@ showObjDomainOrRange dr = case dr of
     ObjDomain -> domainC
     ObjRange -> rangeC
 
-data DataDomainOrRange = DataDomain Description | DataRange DataRange
+data DataDomainOrRange = DataDomain ClassExpression | DataRange DataRange
     deriving (Typeable, Show, Eq, Ord)
 
 data Character =
@@ -322,34 +348,42 @@ showSameOrDifferent sd = case sd of
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 
-data Assertion a b = Assertion a PositiveOrNegative SourceIndividualURI b
+data Assertion a b = Assertion a PositiveOrNegative SourceIndividual b
     deriving (Typeable, Show, Eq, Ord)
 
 data PlainAxiom =
     SubClassOf SubClass SuperClass
-  | EquivOrDisjointClasses EquivOrDisjoint [Description] -- min. 2 desc.
-  | DisjointUnion OwlClassURI [Description] -- min. 2 desc.
+  | EquivOrDisjointClasses EquivOrDisjoint [ClassExpression] -- min. 2 desc.
+  | DisjointUnion Class [ClassExpression] -- min. 2 desc.
   | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
-  | EquivOrDisjointObjectProperties EquivOrDisjoint [ObjectPropertyExpression]
-                                  -- min. 2  ObjectPropertyExpression
-  | ObjectPropertyDomainOrRange ObjDomainOrRange ObjectPropertyExpression
-    Description
+  | EquivOrDisjointObjectProperties EquivOrDisjoint [ObjectPropertyExpression]  -- min. 2  ObjectPropertyExpression
+  | ObjectPropertyDomainOrRange ObjDomainOrRange ObjectPropertyExpression ClassExpression
   | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
   | ObjectPropertyCharacter Character ObjectPropertyExpression
   | SubDataPropertyOf DataPropertyExpression DataPropertyExpression
-  | EquivOrDisjointDataProperties EquivOrDisjoint [DataPropertyExpression]
-                                  -- min. 2 DataPropertyExpressions
+  | EquivOrDisjointDataProperties EquivOrDisjoint [DataPropertyExpression] -- min. 2 DataPropertyExpressions
   | DataPropertyDomainOrRange DataDomainOrRange DataPropertyExpression
   | FunctionalDataProperty DataPropertyExpression
-  | SameOrDifferentIndividual SameOrDifferent [IndividualURI]  -- min. 2 ind.
-  | ClassAssertion IndividualURI Description
-  | ObjectPropertyAssertion
-    (Assertion ObjectPropertyExpression TargetIndividualURI)
-  | DataPropertyAssertion
-    (Assertion DataPropertyExpression TargetValue)
+  | SameOrDifferentIndividual SameOrDifferent [Individual] -- min. 2 ind.
+  | ClassAssertion ClassExpression Individual 	-- arguments are reversed from OWL-1
+  | ObjectPropertyAssertion (Assertion ObjectPropertyExpression TargetIndividual)
+  | DataPropertyAssertion (Assertion DataPropertyExpression TargetValue)
   | Declaration Entity
+  | DatatypeDefinition Datatype DataRange
+  | HasKey ClassExpression [ObjectPropertyExpression] [DataPropertyExpression]
     deriving (Typeable, Show, Eq, Ord)
 
+type SubClass = ClassExpression
+type SuperClass = ClassExpression
+
+data SubObjectPropertyExpression 
+  = OPExpression ObjectPropertyExpression
+  | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
+    deriving (Typeable, Show, Eq, Ord)
+
+---------------------
+-- ONTOLOGY FILES
+---------------------
 emptyOntologyFile :: OntologyFile
 emptyOntologyFile = OntologyFile Map.empty emptyOntology
 
