@@ -180,7 +180,7 @@ monoIsFree dg = groupHistory dg (DGRule "monoIsFree") $ changesDGH dg changes
     process e@(s, t, l) = [ DeleteEdge e, InsertEdge (s, t, l {
         dgl_type = case dgl_type l of
                    ScopedLink _ _ (ConsStatus _ _ ls) -> HidingFreeOrCofreeThm
-                                                         (Just Free)
+                                                         (Just Free) s
                                                          (dgl_morphism l) ls
                    tp -> tp
       })]

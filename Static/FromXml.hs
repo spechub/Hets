@@ -401,8 +401,8 @@ lType (Link _ _ l) mor = do
               then fail $ "unknown links status!\n" ++ strContent st
               else return $ Proven (DGRule rl) emptyProofBasis
           if isInfixOf "Hiding" tp
-            -- Case #3: Hiding theorem link
-            then return $ HidingFreeOrCofreeThm Nothing mor lStat
+            -- Case #3: Hiding theorem link (not created currently)
+            then return $ HidingFreeOrCofreeThm Nothing (-1) mor lStat
             -- Case #4: other theorem links
             else return $ ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 

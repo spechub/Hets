@@ -280,18 +280,19 @@ instance Pretty DGLinkType where
                $+$ pretty (getLinkConsStatus t)
 
 instance Pretty DGLinkLab where
-  pretty l = vcat
+  pretty l = let mor = pretty $ dgl_morphism l in vcat
     [ text "Origin:" <+> pretty (dgl_origin l)
     , text "Type:" <+> pretty (dgl_type l)
-    , text "Signature Morphism:"
     , if dglPending l then text "proof chain incomplete" else Doc.empty
-    , pretty $ dgl_morphism l
     , case dgl_type l of
-        HidingFreeOrCofreeThm k gm _ -> text ("with " ++ (case k of
+        HidingFreeOrCofreeThm k n gm _ -> let nstr = showNodeId n ++ ":" in
+          text ("Signature morphism from " ++ nstr)
+          $+$ mor
+          $+$ text ("with " ++ (case k of
           Nothing -> "hiding"
           Just v -> map toLower (show v))
           ++ " morphism:") $+$ pretty gm
-        _ -> Doc.empty ]
+        _ -> text "Signature morphism:" $+$ mor ]
 
 -- | pretty print a labelled node
 prettyGenLNode :: (a -> Doc) -> LNode a -> Doc

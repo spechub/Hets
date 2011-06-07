@@ -146,7 +146,7 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt, lb)) proofBaseSel = do
       pathsFromSrc = getAllPathsOfTypeFrom dgraph2 src
       pathsFromTgt = getAllPathsOfTypeFrom dgraph2 tgt
       possiblePathPairs = selectPathPairs pathsFromSrc pathsFromTgt
-      HidingFreeOrCofreeThm Nothing hidingMorphism _ = dgl_type lb
+      HidingFreeOrCofreeThm Nothing _ hidingMorphism _ = dgl_type lb
       morphism = dgl_morphism lb
       pathPairsFilteredByMorphism
         = filterPairsByResultingMorphisms possiblePathPairs

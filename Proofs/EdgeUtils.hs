@@ -64,7 +64,7 @@ isUnprovenLocalThm lt = case lt of
 
 isUnprovenHidingThm :: DGLinkType -> Bool
 isUnprovenHidingThm lt = case lt of
-    HidingFreeOrCofreeThm Nothing _ LeftOpen -> True
+    HidingFreeOrCofreeThm Nothing _ _ LeftOpen -> True
     _ -> False
 
 isFreeEdge :: DGLinkType -> Bool
@@ -237,13 +237,13 @@ calculateProofBasis rel = ProofBasis . foldr
 tryToGetProofBasis :: DGLinkLab -> ProofBasis
 tryToGetProofBasis label = case dgl_type label of
     ScopedLink _ (ThmLink (Proven _ pB)) _ -> pB
-    HidingFreeOrCofreeThm _ _ (Proven _ pB) -> pB
+    HidingFreeOrCofreeThm _ _ _ (Proven _ pB) -> pB
     _ -> emptyProofBasis
 
 setProof :: ThmLinkStatus -> DGLinkType -> DGLinkType
 setProof p lt = case lt of
     ScopedLink sc (ThmLink _) cs -> ScopedLink sc (ThmLink p) cs
-    HidingFreeOrCofreeThm hm mor _ -> HidingFreeOrCofreeThm hm mor p
+    HidingFreeOrCofreeThm hm n mor _ -> HidingFreeOrCofreeThm hm n mor p
     _ -> lt
 
 invalidateProof :: DGLinkType -> DGLinkType
@@ -252,7 +252,7 @@ invalidateProof t = case t of
       ScopedLink sc (case dl of
         ThmLink _ -> ThmLink LeftOpen
         _ -> dl) $ ConsStatus c None LeftOpen
-    HidingFreeOrCofreeThm mh gm _ -> HidingFreeOrCofreeThm mh gm LeftOpen
+    HidingFreeOrCofreeThm mh n gm _ -> HidingFreeOrCofreeThm mh n gm LeftOpen
     _ -> t
 
 {- | adopts the edges of the old node to the new node -}

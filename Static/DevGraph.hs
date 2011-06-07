@@ -371,7 +371,7 @@ data DGLinkType =
     ScopedLink Scope LinkKind ConsStatus
   | HidingDefLink
   | FreeOrCofreeDefLink FreeOrCofree MaybeNode -- the "parameter" node
-  | HidingFreeOrCofreeThm (Maybe FreeOrCofree) GMorphism ThmLinkStatus
+  | HidingFreeOrCofreeThm (Maybe FreeOrCofree) Node GMorphism ThmLinkStatus
     {- DGLink S1 S2 m2 (DGLinkType m1 p) n
     corresponds to a span of morphisms
     S1 <--m1-- S --m2--> S2 -}
@@ -381,7 +381,7 @@ data DGLinkType =
 thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
 thmLinkStatus t = case t of
     ScopedLink _ (ThmLink s) _ -> Just s
-    HidingFreeOrCofreeThm _ _ s -> Just s
+    HidingFreeOrCofreeThm _ _ _ s -> Just s
     _ -> Nothing
 
 -- | link inscriptions in development graphs
@@ -479,7 +479,7 @@ getHomEdgeType isPend isHom lt = case lt of
             , isPending = isPend } -- needs to be checked
       HidingDefLink -> HidingDef
       FreeOrCofreeDefLink _ _ -> FreeOrCofreeDef
-      HidingFreeOrCofreeThm mh _ st -> ThmType
+      HidingFreeOrCofreeThm mh _ _ st -> ThmType
         { thmEdgeType = case mh of
             Nothing -> HidingThm
             _ -> FreeOrCofreeThm
@@ -1586,13 +1586,13 @@ isLocalEdge edge = case edge of
 isHidingEdge :: DGLinkType -> Bool
 isHidingEdge edge = case edge of
     HidingDefLink -> True
-    HidingFreeOrCofreeThm Nothing _ _ -> True
+    HidingFreeOrCofreeThm Nothing _ _ _ -> True
     _ -> False
 
 -- ** create link types
 
-hidingThm :: GMorphism -> DGLinkType
-hidingThm m = HidingFreeOrCofreeThm Nothing m LeftOpen
+hidingThm :: Node -> GMorphism -> DGLinkType
+hidingThm n m = HidingFreeOrCofreeThm Nothing n m LeftOpen
 
 globalThm :: DGLinkType
 globalThm = localOrGlobalThm Global None

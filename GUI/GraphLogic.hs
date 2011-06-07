@@ -194,7 +194,7 @@ hideEdgesAux dg = map dgl_id
              case linktype of
                ScopedLink _ (ThmLink s) c ->
                  isProvenThmLinkStatus s && isProvenConsStatusLink c
-               HidingFreeOrCofreeThm _ _ s -> isProvenThmLinkStatus s
+               HidingFreeOrCofreeThm _ _ _ s -> isProvenThmLinkStatus s
                _ -> False
            )
   $ foldl (\ e c -> case c of

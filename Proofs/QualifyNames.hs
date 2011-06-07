@@ -134,15 +134,14 @@ qualifyLabNode ln (dg, mormap) (n, lb) =
         let nlb = lb { dgn_theory = G_theory lid
                        (makeExtSign lid (cod m1)) startSigId
                        nThSens startThId }
-        gm1 <- return $ gEmbed $ G_morphism lid m1 startMorId
-        grm <- return $ gEmbed $ G_morphism lid rm startMorId
-        let gp = (gm1, grm)
+            gp = ( gEmbed $ G_morphism lid m1 startMorId
+                 , gEmbed $ G_morphism lid rm startMorId)
         (ds, is) <- createChanges dg n inss gp
         return ( changesDGH dg $ ds ++ SetNodeLab lb (n, nlb) : is
                , Map.insert n gp mormap)
 
--- consider that hiding definition links have a reverse morphism
--- and hiding theorems are also special
+{- consider that hiding definition links have a reverse morphism
+and hiding theorems are also special -}
 composeWithMorphism :: Bool -> GMorphism -> GMorphism -> LEdge DGLinkLab
                     -> Result (LEdge DGLinkLab)
 composeWithMorphism dir mor rmor (s, t, lb) = do
@@ -155,12 +154,9 @@ composeWithMorphism dir mor rmor (s, t, lb) = do
         HidingDefLink -> do
           nmor <- if dir then outmor else inmor
           return lb { dgl_morphism = nmor }
-        HidingFreeOrCofreeThm Nothing hmor st -> if dir then do
-            nmor <- inmor
-            return lb { dgl_morphism = nmor }
-          else do
-            nhmor <- comp hmor mor
-            return lb { dgl_type = HidingFreeOrCofreeThm Nothing nhmor st }
+        HidingFreeOrCofreeThm {} ->
+          -- adjusting the morphisms here is more tricky and omitted for now
+          return lb
         _ -> do
           nmor <- if dir then inmor else outmor
           return lb { dgl_morphism = nmor }

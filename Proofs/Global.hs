@@ -233,7 +233,7 @@ globDecompForOneEdgeAux :: Node -> (DGraph, ProofBasis)
 globDecompForOneEdgeAux target (dgraph, proof_basis) path =
   case path of
     [] -> error "globDecompForOneEdgeAux"
-    (node, _, lbl) : rpath -> let
+    (node, tar, lbl) : rpath -> let
       lbltype = dgl_type lbl
       isHiding = isHidingDef lbltype
       morphismPath = if isHiding then rpath else path
@@ -245,7 +245,7 @@ globDecompForOneEdgeAux target (dgraph, proof_basis) path =
         && dgl_morphism l == morphism)
         $ innDG dgraph target
       newEdgeLbl = defDGLink morphism
-        (if isHiding then hidingThm $ dgl_morphism lbl
+        (if isHiding then hidingThm tar $ dgl_morphism lbl
             else if isGlobalDef lbltype then globalThm else localThm)
         DGLinkProof
       newEdge = (node, target, newEdgeLbl)
