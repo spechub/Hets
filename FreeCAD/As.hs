@@ -10,7 +10,7 @@ data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving Show
 data Matrix33 = Matrix33 {   a11::Double ,a12::Double ,a13::Double
                             ,a21::Double ,a22::Double ,a23::Double
                             ,a31::Double ,a32::Double ,a33::Double
-                         } --used as a rotation matrix
+                         } deriving Show --used as a rotation matrix
                             
 data Vector4 = Vector4 { q0::Double, q1::Double, q2::Double, q3::Double} deriving Show
 --a vector of 4 coordinates for representing orientation of FreeCAD objects
