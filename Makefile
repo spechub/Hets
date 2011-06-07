@@ -36,15 +36,6 @@ DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
 
-OSBYUNAME = $(shell uname)
-ifneq ($(findstring SunOS, $(OSBYUNAME)),)
-TAR = gtar
-PATCH = gpatch
-else
-TAR = tar
-PATCH = patch
-endif
-
 ARCH = $(subst $(space),,$(shell uname -m))
 SETUP = utils/Setup
 SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages

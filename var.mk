@@ -5,6 +5,16 @@ ifneq ($(findstring 7.0, $(GHCVERSION)),)
 GHC7OPTS = -rtsopts -fcontext-stack=31
 endif
 
+OSBYUNAME = $(shell uname)
+ifneq ($(findstring SunOS, $(OSBYUNAME)),)
+TAR = gtar
+PATCH = gpatch
+SUNRUNPATH = -optl-R/opt/csw/lib
+else
+TAR = tar
+PATCH = patch
+endif
+
 HC = ghc -optl-s -XTemplateHaskell -threaded $(GHC7OPTS)
 
 HCPKG = ghc-pkg
@@ -29,7 +39,7 @@ endif
 
 GLADEVERSION = $(shell $(HCPKG) field glade version)
 ifneq ($(findstring 0.1, $(GLADEVERSION)),)
-GLADE_PACKAGE = -DGTKGLADE
+GLADE_PACKAGE = -DGTKGLADE $(SUNRUNPATH)
 endif
 
 HASKELINEVERSION = $(shell $(HCPKG) field haskeline version)
