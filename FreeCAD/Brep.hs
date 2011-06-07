@@ -38,32 +38,27 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
         -- 0.0.0 --> X.Y.Z
         -- first we rotate with regard to hpoint (and Oy axis)
         rot1vec = v3VecProd (Vector3 0 1 0) hpoint -- rotation vector (for q1)
-        rot1vecn = scalarprod3 (norm3 rot1vec) rot1vec --normalized rotation vector (for q1)
-        cosAlpha1 = cos((acos ((v3DotProd (Vector3 0 1 0) hpoint)/(norm3 hpoint)))/2) --(for q1)
-        sinAlpha1 = sqrt (1 - cosAlpha1**2)
-        quat1 = Vector4 (sinAlpha1*(x rot1vecn)) (sinAlpha1*(y rot1vecn)) (sinAlpha1*(z rot1vecn)) cosAlpha1
+        rot1vecn = scalarprod3 (norm3 rot1vec) rot1vec 
+        cosAa1 = cos((acos((v3DotProd(Vector3 0 1 0)hpoint)/(norm3 hpoint)))/2)
+        sinAa1 = sqrt (1 - cosAa1**2)
+        quat1 = Vector4 (sinAa1*(x rot1vecn)) (sinAa1*(y rot1vecn)) 
+                        (sinAa1*(z rot1vecn)) cosAa1
         tmatrix = quat2matrix quat1
         l2point = rotate tmatrix (Vector3 (norm3 lpoint) 0 0)
         -- then we rotate l2point into lpoint
         rot2vec = v3VecProd (l2point) lpoint
-        rot2vecn = scalarprod3 (norm3 rot2vec) rot2vec --normalized rotation vector (for q2)
-        cosAlpha2 = cos((acos ((v3DotProd l2point lpoint)/(norm3 lpoint)))/2) --(for q2)
-        sinAlpha2 = sqrt (1 - cosAlpha2**2)
-        quat2 = Vector4 (sinAlpha2*(x rot2vecn)) (sinAlpha2*(y rot2vecn)) (sinAlpha2*(z rot2vecn)) cosAlpha2
+        rot2vecn = scalarprod3 (norm3 rot2vec) rot2vec 
+        cosAa2 = cos((acos ((v3DotProd l2point lpoint)/(norm3 lpoint)))/2) 
+        sinAa2 = sqrt (1 - cosAa2**2)
+        quat2 = Vector4 (sinAa2*(x rot2vecn)) (sinAa2*(y rot2vecn)) 
+                        (sinAa2*(z rot2vecn)) cosAa2
         quaternion = quatProd quat1 quat2
         pos = a
         place = Placement pos quaternion
-        
-        
-        
-        
-        
-        
-        
-
-
-
-
 getRectangle:: String -> IO (Vector3, Vector3, Vector3, Vector3)
-getRectangle address = readProcess "./FreeCAD/brep_conversion/bin/brep_to_xml"
-                       [address, "rectangle"]
+getRectangle address = fmap parseBrepXML $ readProcess 
+                        "./FreeCAD/brep_conversion/bin/brep_to_xml"
+                        [address, "rectangle"] ""
+                       
+parseBrepXML:: String -> (Vector3, Vector3, Vector3, Vector3)
+parseBrepXML a = (Vector3 0 0 0, Vector3 0 0 0, Vector3 0 0 0, Vector3 0 0 0)

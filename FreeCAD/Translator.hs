@@ -58,49 +58,50 @@ isBaseObject el = member (firstThree (getName el)) setBaseObjs
 
 getObject:: Element -> IO NamedObject
 getObject el | tn == "Box" = mkBaseObject $ getBox elc
-             | tn == "Sph" = makeb el tn
-             | tn == "Cyl" = makeb el tn
-             | tn == "Con" = makeb el tn
-             | tn == "Tor" = makeb el tn
-             | tn == "Cir" = makeb el tn
-             | tn == "Rec" = mkRectangle elc
-             | tn == "Lin" = EmptyObject
-             -- | tn == "Cut" = makex el tn
-             | tn == "Cut" = mkObject $ getCut elc -- makeb el tn
-             | tn == "Com" = makex el tn 
-             | tn == "Fus" = makex el tn
-             | tn == "Sec" = makex el tn
-			 | tn == "Ext" = EmptyObject
-            where 
-              tn = firstThree(getName el) 
-              mkObject = return . NamedObject (getName el) . PlacedObject (findPlacement elc)
-              mkBaseObject = mkObject . BaseObject
-
-              getBox elc = Box (findFloat "Height" elc) (findFloat "Width" elc) (findFloat "Length" elc)
-              getCut elc = Cut (findRef "Base" elc) (findRef "Tool" elc)
-
-
-              makeb el tn = NamedObject (getName el) (PlacedObject (findPlacement elc) (BaseObject (bbuild tn el)))
-              makex el tn = NamedObject (getName el) (PlacedObject (findPlacement elc) (buildex tn el))
-              bbuild tn el | tn == "Box" = Box (findFloat "Height" elc) (findFloat "Width" elc) (findFloat "Length" elc)
-                           | tn == "Sph" = Sphere (findFloat "Angle1" elc) (findFloat "Angle2" elc) (findFloat "Angle3" elc) (findFloat "Radius" elc)
-                           | tn == "Cyl" = Cylinder (findFloat "Angle" elc) (findFloat "Height" elc) (findFloat "Radius" elc)
-                           | tn == "Con" = Cone (findFloat "Angle" elc) (findFloat "Radius1" elc) (findFloat "Radius2" elc) (findFloat "Height" elc)
-                           | tn == "Tor" = Torus (findFloat "Angle1" elc) (findFloat "Angle2" elc) (findFloat "Angle3" elc) (findFloat "Radius1" elc) (findFloat "Radius2" elc)
-                           | tn == "Cir" = Circle (findFloat "StartAngle" elc) (findFloat "EndAngle" elc) (findFloat "Radius" elc)
-                       --  | tn == "Rec" = Rectangle TODO
-                       --  | tn == "Lin" = Line TODO
-              buildex tn el | tn == "Cut" = Cut (findRef "Base" elc) (findRef "Tool" elc)
-                            | tn == "Com" = Common (findRef "Base" elc) (findRef "Tool" elc)
-                            | tn == "Fus" = Fusion (findRef "Base" elc) (findRef "Tool" elc)
-                            | tn == "Sec" = Section (findRef "Base" elc) (findRef "Tool" elc)
-              elc = child el
+             | tn == "Sph" = mkBaseObject $ getSph elc
+             | tn == "Cyl" = mkBaseObject $ getCyl elc
+             | tn == "Con" = mkBaseObject $ getCon elc
+             | tn == "Tor" = mkBaseObject $ getTor elc
+             | tn == "Cir" = mkBaseObject $ getCir elc
+             | tn == "Rec" = mkRectangle elc --TODO
+             | tn == "Lin" = mkLine elc --TODO
+             | tn == "Cut" = mkObject $ getCut elc
+             | tn == "Com" = mkObject $ getCom elc
+             | tn == "Fus" = mkObject $ getFus elc
+             | tn == "Sec" = mkObject $ getSec elc
+			 | tn == "Ext" = mkObject $ getExt elc
+            where
+                tn = firstThree(getName el)
+                mkObject = return . NamedObject (getName el)
+                                  . PlacedObject (findPlacement elc)
+                mkBaseObject = mkObject . BaseObject
+                getBox e = Box (findFloat "Height" e) (findFloat "Width" e)
+                               (findFloat "Length" e)
+                getSph e = Sphere (findFloat "Angle1" e) (findFloat "Angle2" e) 
+                                  (findFloat "Angle3" e) (findFloat "Radius" e)
+                getCyl e = Cylinder (findFloat "Angle" e) (findFloat "Height" e)
+                                    (findFloat "Radius" e)
+                getCon e = Cone (findFloat "Angle" e) (findFloat "Radius1" e)
+                                (findFloat "Radius2" elc) (findFloat "Height" e)
+                getTor e = Torus (findFloat "Angle1" e) (findFloat "Angle2" e)
+                                 (findFloat "Angle3" e) (findFloat "Radius1" e)
+                                 (findFloat "Radius2" e)
+                getCir e = Circle (findFloat "StartAngle" e) 
+                                  (findFloat "EndAngle" e)
+                                  (findFloat "Radius" e)
+                getCut e = Cut (findRef "Base" e) (findRef "Tool" e)
+                getCom e = Common (findRef "Base" e) (findRef "Tool" e)
+                getSec e = Section (findRef "Base" e) (findRef "Tool" e)
+                getFus e = Fusion (findRef "Base" e) (findRef "Tool" e)
+                getExt e = Extrusion (findRef "Base" e) 3.14159 --TODO
+                elc = child el
 
 
 mkRectangle :: Element -> IO NamedObject
-mkRectangle = error "not implemented"
+mkRectangle = error "rectangle not implemented"
 
-
+mkLine :: Element -> IO NamedObject
+mkLine = error "line not implemented"
 
 
 getVal:: String -> Element -> String
@@ -111,7 +112,8 @@ getFloatVal el = getVal "value" el2
     where
         el2 = childByName "Float" el
 
-getPlacementVals::Element -> (String, String, String, String, String, String, String)
+getPlacementVals :: Element -> (String ,String ,String ,String ,String ,String
+                               ,String)
 getPlacementVals el = (m "Px", m "Py", m "Pz", m "Q0", m "Q1", m "Q2", m "Q3")
     where
         m s = getVal s el2
@@ -146,7 +148,8 @@ findRef s el = Ref (getLinkVal el2)
 child:: Element -> Element
 child el = head(elChildren el)
 
---Facade function that translates the parsed XML document into Haskell-FreeCAD datatype
+--Facade function that translates the parsed XML document 
+--into Haskell-FreeCAD datatype
 
 translate:: Element -> IO Document
 translate baseElement = mapM getObject $ objList baseElement

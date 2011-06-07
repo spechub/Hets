@@ -12,17 +12,13 @@ data Matrix33 = Matrix33 {   a11::Double ,a12::Double ,a13::Double
                             ,a31::Double ,a32::Double ,a33::Double
                          } deriving Show --used as a rotation matrix
                             
-data Vector4 = Vector4 { q0::Double, q1::Double, q2::Double, q3::Double} deriving Show
---a vector of 4 coordinates for representing orientation of FreeCAD objects
-{-
- seems redundant; it probably represents the cartesian coordinates of an orientation
- 3d vector, and an axial rotation of the object around the direction of the mentioned
- vector. -- need to research this.
-
- -}
+data Vector4 = Vector4 { q0::Double, q1::Double, q2::Double, q3::Double} 
+               deriving Show
+-- quaternion rotational representation
  
  
-data Placement = Placement { position::Vector3, orientation::Vector4 } deriving Show 
+data Placement = Placement { position::Vector3, orientation::Vector4 } 
+                 deriving Show 
 
 {-
 -- | the placement is determined by 2 vectors:
@@ -33,15 +29,16 @@ data Edgelist = []
               | 0:Edgelist
 -}
 
---reference from compound objects to 'building-blocks' objects made through strings or containment of the other 
+--reference from compound objects to 'building-blocks' 
+--objects made through strings or containment of the other 
 --objects
 data BaseObject = Box Double Double Double -- Height, Width, Length
             | Cylinder Double Double Double -- Angle, Height, Radius
             | Sphere Double Double Double Double --Angle1, Angle2, Angle3, Radius
             | Cone Double Double Double Double --Angle, Radius1, Radius2, Height
-            | Torus Double Double Double Double Double --Angle1, Angle2, Angle3, Radius1, Radius2
---          | Line   :not enough data in the xml to determine the full properties
---          | Wire   :not enough data in the xml to determine the full properties
+            | Torus Double Double Double Double Double 
+            --Angle1, Angle2, Angle3, Radius1, Radius2
+            | Line Double -- length
             | Circle Double Double Double --StartAngle, EndAngle, Radius
             | Rectangle Double Double --Height, Length
             deriving Show 
@@ -50,12 +47,16 @@ data BaseObject = Box Double Double Double -- Height, Width, Length
 
 
 data Object = BaseObject BaseObject 
-            | Cut ExtendedObject ExtendedObject --difference between object1 and object2
-            | Common ExtendedObject ExtendedObject --intersection of two objects
-            | Fusion ExtendedObject ExtendedObject  --union of two objects
-            | Section ExtendedObject ExtendedObject  --section of an object (intersection with a plane
---          | Fillet, (Base::String, Edges::Edgelist, Radius::Double)), --not enough data in the xml
---          | Chamfer, (Base::String, Edges::Edgelist, Amount::Double)), --not enough data in the xml
+            | Cut ExtendedObject ExtendedObject 
+            | Common ExtendedObject ExtendedObject
+            | Fusion ExtendedObject ExtendedObject
+            | Section ExtendedObject ExtendedObject  
+                --section of an object (intersection with a plane
+            | Extrusion ExtendedObject Double --TODO
+--          | Fillet, (Base::String, Edges::Edgelist, Radius::Double)), 
+    --not enough data in the xml
+--          | Chamfer, (Base::String, Edges::Edgelist, Amount::Double)), 
+--not enough data in the xml
 --          | Mirror, (Base::String, Position2::Vector)) --mirroring of an object 
             deriving Show 
 
@@ -70,9 +71,9 @@ data NamedObject = NamedObject { name::String
                  deriving Show
 
 
--- the first parameter is the name of the object as it is stored in the FreeCAD document
--- the second parameter determines the placement of the object (a pair of vectors)
--- the third parameter contains the type of the object and
+-- the first parameter is the name of the object as it is stored in the 
+-- FreeCAD document. the second parameter determines the placement of the object
+-- (a pair of vectors) the third parameter contains the type of the object and
 --a list of doubles (numbers) describing the characteristics
 --of the object (e.g. dimensions, angles, etc)
 
@@ -123,7 +124,8 @@ v3DotProd:: Vector3 -> Vector3 -> Double
 v3DotProd v1 v2 = (x v1)*(x v2) + (y v1)*(y v2) + (z v1)*(z v2)
 
 v4DotProd:: Vector4 -> Vector4 -> Double
-v4DotProd v1 v2 = (q0 v1)*(q0 v2) + (q1 v1)*(q1 v2) + (q2 v1)*(q2 v2) + (q3 v1)*(q3 v2)
+v4DotProd v1 v2 = (q0 v1)*(q0 v2)+(q1 v1)*(q1 v2)+(q2 v1)*(q2 v2)+
+                  (q3 v1)*(q3 v2)
 
 v3VecProd:: Vector3 -> Vector3 -> Vector3
 v3VecProd v1 v2 = Vector3 m n p
@@ -135,10 +137,10 @@ v3VecProd v1 v2 = Vector3 m n p
 quatProd:: Vector4 -> Vector4 -> Vector4
 quatProd v1 v2 = Vector4 m n p q
     where
-        m = (q3 v2)*(q0 v1) + (q2 v2)*(q1 v1) - (q1 v2)*(q2 v1) + (q0 v2)*(q3 v1)
-        n = -(q2 v2)*(q0 v1) + (q3 v2)*(q1 v1) + (q0 v2)*(q2 v1) + (q1 v2)*(q3 v1)
-        p = (q1 v2)*(q0 v1) - (q0 v2)*(q1 v1) + (q3 v2)*(q2 v1) + (q2 v2)*(q3 v1)
-        q = -(q0 v2)*(q0 v1) -(q1 v2)*(q1 v1) - (q2 v2)*(q2 v1) + (q3 v2)*(q3 v1)
+        m = (q3 v2)*(q0 v1)+(q2 v2)*(q1 v1)-(q1 v2)*(q2 v1)+(q0 v2)*(q3 v1)
+        n = -(q2 v2)*(q0 v1)+(q3 v2)*(q1 v1)+(q0 v2)*(q2 v1)+(q1 v2)*(q3 v1)
+        p = (q1 v2)*(q0 v1)-(q0 v2)*(q1 v1)+(q3 v2)*(q2 v1)+(q2 v2)*(q3 v1)
+        q = -(q0 v2)*(q0 v1)-(q1 v2)*(q1 v1)-(q2 v2)*(q2 v1)+(q3 v2)*(q3 v1)
         
 -- from quaternion to rotation matrix        
 quat2matrix:: Vector4 -> Matrix33
