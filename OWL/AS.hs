@@ -61,10 +61,11 @@ instance Eq QName where
     p == q = compare p q == EQ
 
 instance Ord QName where
-  compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) =
-    if null n1 then
-      if null n2 then compare (b1, p1, l1) (b2, p2, l2) else LT
-    else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
+  compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) = case (n1, n2) of
+    ([], []) -> compare (b1, p1, l1) (b2, p2, l2)
+    ([], _) -> LT
+    (_, []) -> GT
+    _ -> compare (b1, l1, n1) (b2, l2, n2)
 
 type URI = QName
 type URIreference = QName
@@ -142,8 +143,8 @@ data TypedOrUntyped = Typed URIreference | Untyped LanguageTag
 cTypeS :: String
 cTypeS = "^^"
 
--- | a lexical representation either with an "^^" URI (typed) or
--- an optional language tag starting with "\@" (untyped)
+{- | a lexical representation either with an "^^" URI (typed) or
+an optional language tag starting with "\@" (untyped) -}
 data Constant = Constant LexicalForm TypedOrUntyped
     deriving (Typeable, Show, Eq, Ord)
 
