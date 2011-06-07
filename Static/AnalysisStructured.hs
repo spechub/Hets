@@ -724,8 +724,9 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
                       (DGLinkFitViewImp vn) nI n'
             return (insLink dg2 inclS globalDef
                     (DGLinkFitViewImp vn) nSrc n', n')
-        gmor <- ginclusion lg gsigmaP gsigmaIS
-        return $ insLink dg4 gmor globalThm (DGLinkFitView vn) nP iSrc
+        if nP == iSrc then return dg4 else do
+          gmor <- ginclusion lg gsigmaP gsigmaIS
+          return $ insLink dg4 gmor globalThm (DGLinkFitView vn) nP iSrc
       case (length afitargs, length params) of
       -- the case without parameters leads to a simpler dg
         (0, 0) -> return (fv, dg5, (G_morphism lid morHom ind, target))
