@@ -155,6 +155,7 @@ consStatus cs = case getConsOfStatus cs of
 ledge :: GlobalAnnos -> DGraph -> LEdge DGLinkLab -> Element
 ledge ga dg (f, t, lbl) = let
   typ = dgl_type lbl
+  mor = gmorph ga $ dgl_morphism lbl
   (lnkSt, stAttr) = case thmLinkStatus typ of
         Nothing -> ([], [])
         Just tls -> case tls of
@@ -170,7 +171,10 @@ ledge ga dg (f, t, lbl) = let
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl)
     : stAttr ++ lnkSt ++ consStatus (getLinkConsStatus typ)
-    ++ [gmorph ga $ dgl_morphism lbl]
+    ++ case typ of
+         HidingFreeOrCofreeThm _ n _ _ ->
+           [ add_attr (mkAttr "morphismsource" $ getNameOfNode n dg) mor ]
+         _ -> [mor]
 
 dgrule :: DGRule -> [Element]
 dgrule r =
