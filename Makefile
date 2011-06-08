@@ -730,6 +730,11 @@ owl_java:
   https://owlapi.svn.sourceforge.net/svnroot/owlapi/owl1_1/trunk \
   OWL/java/OwlApi
 
+owl2_java:
+	svn co \
+  https://owlapi.svn.sourceforge.net/svnroot/owlapi/v3/trunk \
+  OWL2/java/OwlApi
+
 initialize_java: owl_java
 	ant -q init
 
