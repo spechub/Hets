@@ -52,6 +52,7 @@ import Haskell.Logic_Haskell
 import Isabelle.Logic_Isabelle
 import SoftFOL.Logic_SoftFOL
 #ifdef CASLEXTENSIONS
+import THF.Logic_THF
 import Fpl.Logic_Fpl
 import Adl.Logic_Adl
 import Modal.Logic_Modal
@@ -93,6 +94,7 @@ logicList =
   , Logic Haskell
 #endif
 #ifdef CASLEXTENSIONS
+  , Logic THF
   , Logic Fpl
   , Logic Adl
   , Logic CoCASL
