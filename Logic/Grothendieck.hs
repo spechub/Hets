@@ -667,6 +667,7 @@ instance Category G_sign GMorphism where
     let lid2 = targetLogic r
         sig2 = cod mor
     in G_sign lid2 (makeExtSign lid2 sig2) startSigId
+  isInclusion = isHomInclusion
   legal_mor (GMorphism r (ExtSign s _) _ mor _) =
     legal_mor mor &&
     case maybeResult $ map_sign r s of

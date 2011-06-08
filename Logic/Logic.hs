@@ -209,6 +209,10 @@ class (Ord object, Ord morphism)
          -- | is a value of type morphism denoting a legal  morphism?
          legal_mor :: morphism -> Bool
 
+-- | test if the signature morphism is the identity
+isIdentity :: Category object morphism => morphism -> Bool
+isIdentity m = isInclusion m && dom m == cod m
+
 comp :: Category object morphism => morphism -> morphism -> Result morphism
 comp m1 m2 = if cod m1 == dom m2 then composeMorphisms m1 m2 else
   fail "target of first and source of second morphism are different"
