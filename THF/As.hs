@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  A abstract syntax for the TPTP-THF Syntax
-Copyright   :  (c) A.Tsogias, DFKI Bremen 2011
+Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :
@@ -26,7 +26,7 @@ data TPTP_THF =
   | TPTP_Defined_Comment        DefinedComment
   | TPTP_System_Comment         SystemComment
 --  | TPTP_Empty_Line
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <comment>            ::- <comment_line>|<comment_block>
 -- <comment_line>       ::- [%]<printable_char>*
@@ -35,7 +35,7 @@ data TPTP_THF =
 data Comment =
     Comment_Line    String
   | Comment_Block   [String]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_comment>    ::- <def_comment_line>|<def_comment_block>
 -- <def_comment_line>   ::: [%]<dollar><printable_char>*
@@ -43,7 +43,7 @@ data Comment =
 data DefinedComment =
     Defined_Comment_Line    String
   | Defined_Comment_Block   [String]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <system_comment>     ::- <sys_comment_line>|<sys_comment_block>
 -- <sys_comment_line>   ::: [%]<dollar><dollar><printable_char>*
@@ -51,19 +51,19 @@ data DefinedComment =
 data SystemComment =
     System_Comment_Line    String
   | System_Comment_Block   [String]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <include>            ::= include(<file_name><formula_selection>).
 -- <formula_selection>  ::= ,[<name_list>] | <null>
 data Include =
     I_Include   FileName (Maybe NameList)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <annotations>        ::= ,<source><optional_info> | <null>
 data Annotations =
     Annotations Source OptionalInfo
   | Null
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <formula_role>       ::= <lower_word>
 -- <formula_role>       :== axiom | hypothesis | definition | assumption |
@@ -75,13 +75,13 @@ data FormulaRole =
   | Lemma | Theorem    | Conjecture  | Negated_Conjecture
   | Plain | Fi_Domain  | Fi_Functors | Fi_Predicates
   | Type  | Unknown
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_formula>        ::= <thf_logic_formula> | <thf_sequent>
 data THFFormula =
     TF_THF_Logic_Formula    THFLogicFormula
   | TF_THF_Sequent          THFSequent
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_logic_formula>  ::= <thf_binary_formula> | <thf_unitary_formula> |
 --                         <thf_type_formula> | <thf_subtype>
@@ -90,7 +90,7 @@ data THFLogicFormula =
   | TLF_THF_Unitary_Formula THFUnitaryFormula
   | TLF_THF_Type_Formula    THFTypeFormula
   | TLF_THF_Sub_Type        THFSubType
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_binary_formula> ::= <thf_binary_pair> | <thf_binary_tuple> |
 --                          <thf_binary_type>
@@ -100,7 +100,7 @@ data THFBinaryFormula =
     TBF_THF_Binary_Pair     THFUnitaryFormula THFPairConnective THFUnitaryFormula
   | TBF_THF_Binary_Tuple    THFBinaryTuple
   | TBF_THF_Binary_Type     THFBinaryType
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_binary_tuple>   ::= <thf_or_formula> | <thf_and_formula> |
 --                          <thf_apply_formula>
@@ -114,7 +114,7 @@ data THFBinaryTuple =
     TBT_THF_Or_Formula      THFUnitaryFormula [THFUnitaryFormula]
   | TBT_THF_And_Formula     THFUnitaryFormula [THFUnitaryFormula]
   | TBT_THF_Apply_Formula   THFUnitaryFormula [THFUnitaryFormula]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_unitary_formula>    ::= <thf_quantified_formula> | <thf_unary_formula> |
 --                              <thf_atom> | <thf_tuple> | <thf_let> |
@@ -137,34 +137,34 @@ data THFUnitaryFormula =
   | TUF_THF_Let                 [THFDefinedVar] THFUnitaryFormula
   | TUF_THF_Conditional         THFLogicFormula THFLogicFormula THFLogicFormula
   | TUF_THF_Logic_Formula_Par   THFLogicFormula
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_variable> ::= <thf_typed_variable> | <variable>
 -- <thf_typed_variable> ::= <variable> : <thf_top_level_type>
 data THFVariable =
     TV_THF_Typed_Variable   Variable THFTopLevelType
   | TV_Variable             Variable
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_type_formula> ::= <thf_typeable_formula> : <thf_top_level_type>
 -- <thf_type_formula> :== <constant> : <thf_top_level_type>
 data THFTypeFormula =
     TTF_THF_Type_Formula    THFTypeableFormula THFTopLevelType
   | TTF_THF_Role_Type       Constant THFTopLevelType
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_typeable_formula> ::= <thf_atom> | <thf_tuple> | (<thf_logic_formula>)
 data THFTypeableFormula =
     TTyF_THF_Atom           THFAtom
   | TTyF_THF_Tuple          THFTuple
   | TTyF_THF_Logic_Formula  THFLogicFormula
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_subtype> ::= <constant> <subtype_sign> <constant>
 -- <subtype_sign> == <<
 data THFSubType =
     TST_THF_Sub_Type        Constant Constant
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_top_level_type> ::= <thf_logic_formula>
 type THFTopLevelType = THFLogicFormula
@@ -187,7 +187,7 @@ data THFBinaryType =
     TBT_THF_Mapping_Type    THFUnitaryType [THFUnitaryType]
   | TBT_THF_Xprod_Type      THFUnitaryType [THFUnitaryType]
   | TBT_THF_Union_Type      THFUnitaryType [THFUnitaryType]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_atom> ::= <term> | <thf_conn_term>
 -- %----<thf_atom> can also be <defined_type> | <defined_plain_formula> |
@@ -202,7 +202,7 @@ data THFAtom =
   | TA_Defined_Plain_Formula    DefinedPlainFormula
   | TA_System_Type              AtomicSystemWord
   | TA_System_Atomic_Formula    SystemTerm
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_tuple> ::= [] | [<thf_tuple_list>]
 -- <thf_tuple_list> ::= <thf_unitary_formula> |
@@ -215,7 +215,7 @@ type THFTuple = [THFUnitaryFormula]
 data THFDefinedVar =
     TDV_THF_Defined_Var      THFVariable THFLogicFormula
   | TDV_THF_Defined_Var_Par   THFDefinedVar
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_sequent> ::= <thf_tuple> <gentzen_arrow> <thf_tuple> |
 --                   (<thf_sequent>)
@@ -223,7 +223,7 @@ data THFDefinedVar =
 data THFSequent =
     TS_THF_Sequent      THFTuple THFTuple
   | TS_THF_Sequent_Par  THFSequent
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_conn_term> ::= <thf_pair_connective> | <assoc_connective> |
 --                     <thf_unary_connective>
@@ -231,7 +231,7 @@ data THFConnTerm =
     TCT_THF_Pair_Connective     THFPairConnective
   | TCT_Assoc_Connective        AssocConnective
   | TCT_THF_Unary_Connective    THFUnaryConnective
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_quantifier>     ::= <fol_quantifier> | ^ | !> | ?* | @+ | @-
 -- <fol_quantifier>     ::= ! | ?
@@ -243,7 +243,7 @@ data THFQuantifier =
   | Dependent_Sum           -- ?*
   | Indefinite_Description  -- @+
   | Definite_Description    -- @-
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_pair_connective> ::= <infix_equality> | <infix_inequality> |
 --                          <binary_connective>
@@ -259,7 +259,7 @@ data THFPairConnective =
   | XOR                     -- <~>
   | NOR                     -- ~|
   | NAND                    -- ~&
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <thf_unary_connective> ::= <unary_connective> | !! | ??
 -- <unary_connective>   ::= ~
@@ -267,13 +267,13 @@ data THFUnaryConnective =
     Negation                -- ~
   | PiForAll                -- !!
   | SigmaExists             -- ??
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <assoc_connective>   ::= <vline> | &
 data AssocConnective =
     OR      -- |
   | AND     -- &
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_type>       ::= <atomic_defined_word>
 -- <defined_type>       :== $oType | $o | $iType | $i | $tType |
@@ -281,20 +281,20 @@ data AssocConnective =
 data DefinedType =
     DT_oType | DT_o    | DT_iType | DT_i
   | DT_tType | DT_real | DT_rat   | DT_int
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_plain_formula> ::= <defined_plain_term>
 -- <defined_plain_formula> :== <defined_prop> | <defined_pred>(<arguments>)
 data DefinedPlainFormula =
     DPF_Defined_Prop    DefinedProp
   | DPF_Defined_Formula DefinedPred Arguments
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_prop>       :== <atomic_defined_word>
 -- <defined_prop>       :== $true | $false
 data DefinedProp =
     DP_True | DP_False
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_pred>       :== <atomic_defined_word>
 -- <defined_pred>       :== $equal | $distinct | $itef | $less |
@@ -304,7 +304,7 @@ data DefinedPred =
     Equal  | Disrinct | Itef      | Less
   | Lesseq | Greater  | Greatereq | Evaleq
   | Is_int | Is_rat
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <term> ::= <function_term> | <variable> | <conditional_term>
 -- %----Conditional terms should not be used by THF.
@@ -312,21 +312,20 @@ data DefinedPred =
 data Term =
     T_Function_Term     FunctionTerm
   | T_Variable          Variable
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <function_term> ::= <plain_term> | <defined_term> | <system_term>
 data FunctionTerm =
     FT_Plain_Term   PlainTerm
   | FT_Defined_Term DefinedTerm
   | FT_System_Term  SystemTerm
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <plain_term> ::= <constant> | <functor>(<arguments>)
 data PlainTerm =
     PT_Plain_Term   TPTPFunctor Arguments
   | PT_Constant     Constant
-
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <constant> ::= <functor>
 type Constant = TPTPFunctor
@@ -339,21 +338,20 @@ type TPTPFunctor = AtomicWord
 data DefinedTerm =
     DT_Defined_Atom         DefinedAtom
   | DT_Defined_Atomic_Term  DefinedPlainTerm
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_atom> ::= <number> | <distinct_object>
 data DefinedAtom =
     DA_Number           Number
   | DA_Distinct_Object  DistinctObject
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_plain_term> ::= <defined_constant> | <defined_functor>(<arguments>)
 -- <defined_constant> ::= <defined_functor>
 data DefinedPlainTerm =
     DPT_Defined_Function    DefinedFunctor Arguments
   | DPT_Defined_Constant    DefinedFunctor
-
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <defined_functor> ::= <atomic_defined_word>
 -- <defined_functor> :== $itett | $uminus | $sum | $difference |
@@ -361,14 +359,14 @@ data DefinedPlainTerm =
 data DefinedFunctor =
     Itett   | Uminus | Sum    | Difference
   | Product | To_int | To_rat | To_real
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <system_term>        ::= <system_constant> | <system_functor>(<arguments>)
 -- <system_constant>    ::= <system_functor>
 data SystemTerm =
     ST_System_Term      SystemFunctor Arguments
   | ST_System_Constant  SystemFunctor
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <system_functor>     ::= <atomic_system_word>
 -- <upper_word>         ::- <upper_alpha><alpha_numeric>*
@@ -385,7 +383,7 @@ type Arguments = [Term]
 data PrincipalSymbol =
     PS_Functor  TPTPFunctor
   | PS_Variable Variable
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <source>             ::= <general_term>
 -- <source>             :== <dag_source> | <internal_source> | <external_source> |
@@ -398,7 +396,7 @@ data Source =
   | S_External_Source   ExternalSource
   | S_Sources           [Source]
   | S_Unknown
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <dag_source>         :== <name> | <inference_record>
 -- <inference_record>   :== inference(<inference_rule>,<useful_info>,
@@ -408,18 +406,18 @@ data Source =
 data DagSource =
     DS_Name             Name
   | DS_Inference_Record AtomicWord UsefulInfo [ParentInfo]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <parent_info>        :== <source><parent_details>
 -- <parent_details>     :== :<general_list> | <null>
 data ParentInfo =
     PI_Parent_Info  Source (Maybe GeneralList)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <intro_type>         :== definition | axiom_of_choice | tautology | assumption
 data IntroType =
    IT_definition | IT_axiom_of_choice | IT_tautology | IT_assumption
-   deriving (Show, Eq)
+   deriving (Show, Eq, Ord)
 
 -- <external_source>    :== <file_source> | <theory> | <creator_source>
 -- <theory>             :== theory(<theory_name><optional_info>)
@@ -429,18 +427,18 @@ data ExternalSource =
     ES_File_Source      FileSource
   | ES_Theory           TheoryName OptionalInfo
   | ES_Creator_Source   AtomicWord OptionalInfo
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <file_source>        :== file(<file_name><file_info>)
 -- <file_info>          :== ,<name> | <null>
 data FileSource =
     FS_File FileName (Maybe Name)
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <theory_name>        :== equality | ac
 data TheoryName =
     Equality | Ac
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <optional_info>      ::= ,<useful_info> | <null>
 type OptionalInfo = (Maybe UsefulInfo)
@@ -456,7 +454,7 @@ data InfoItem =
     II_Formula_Item     FormulaItem
   | II_Inference_Item   InferenceItem
   | II_General_Function GeneralFunction
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <formula_item>       :== <description_item> | <iquote_item>
 -- <description_item>   :== description(<atomic_word>)
@@ -464,7 +462,7 @@ data InfoItem =
 data FormulaItem =
     FI_Description_Item AtomicWord
   | FI_Iquote_Item      AtomicWord
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <inference_item>     :== <inference_status> | <assumptions_record> |
 --                          <new_symbol_record> | <refutation>
@@ -478,7 +476,7 @@ data InferenceItem =
   | II_Assumptions_Record   NameList
   | II_New_Symbol_Record    AtomicWord [PrincipalSymbol]
   | II_Refutation           FileSource
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <inference_status>   :== status(<status_value>) | <inference_info>
 -- <inference_info>     :== <inference_rule>(<atomic_word>,<general_list>)
@@ -486,7 +484,7 @@ data InferenceItem =
 data InferenceStatus =
     IS_Status           StatusValue
   | IS_Inference_Info   AtomicWord AtomicWord GeneralList
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <status_value>       :== suc | unp | sap | esa | sat | fsa | thm | eqv | tac |
 --                          wec | eth | tau | wtc | wth | cax | sca | tca | wca |
@@ -497,7 +495,7 @@ data StatusValue =
   | Wec | Eth | Tau | Wtc | Wth | Cax | Sca | Tca | Wca
   | Cup | Csp | Ecs | Csa | Cth | Ceq | Unc | Wcc | Ect
   | Fun | Uns | Wuc | Wct | Scc | Uca | Noc
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- <name_list>          ::= <name> | <name>,<name_list>
 -- the list must mot be empty
@@ -509,7 +507,7 @@ data GeneralTerm =
     GT_General_Data         GeneralData
   | GT_General_Data_Term    GeneralData GeneralTerm
   | GT_General_List         GeneralList
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <general_data>       ::= <atomic_word> | <general_function> |
 --                          <variable> | <number> | <distinct_object> |
@@ -523,13 +521,13 @@ data GeneralData =
   | GD_Formula_Data     FormulaData
   | GD_Bind             Variable FormulaData
   | GD_General_Function GeneralFunction
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <general_function>   ::= <atomic_word>(<general_terms>)
 -- general_terms must not be empty
 data GeneralFunction =
     GF_General_Function AtomicWord GeneralTerms
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <formula_data>       ::= $thf(<thf_formula>) | $tff(<tff_formula>) |
 --                          $fof(<fof_formula>) | $cnf(<cnf_formula>) |
@@ -537,7 +535,7 @@ data GeneralFunction =
 -- only thf is used here
 data FormulaData =
     THF_Formula THFFormula
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <general_list>       ::= [] | [<general_terms>]
 type GeneralList = GeneralTerms
@@ -549,13 +547,13 @@ type GeneralTerms = [GeneralTerm]
 data Name =
     N_Atomic_Word   AtomicWord
   | N_Integer       String
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <atomic_word>        ::= <lower_word> | <single_quoted>
 data AtomicWord =
     A_Lower_Word    LowerWord
   | A_Single_Quoted SingleQuoted
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <atomic_system_word> ::= <dollar_dollar_word>
 -- <dollar_dollar_word> ::- <dollar><dollar><lower_word>
@@ -588,7 +586,7 @@ data Number =
     Num_Integer   String
   | Num_Rational  String
   | Num_Real      String
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 -- <file_name>          ::= <single_quoted>
 type FileName = SingleQuoted
@@ -609,3 +607,12 @@ type DistinctObject = String
 -- <upper_alpha>        ::: [A-Z]
 -- <numeric>            ::: [0-9]
 type LowerWord = String
+
+
+--------------------------------------------------------------------------------
+-- Data structures used in Logic_THF
+
+data Sign = UNDEFINEDSIGN deriving (Eq, Ord, Show)
+
+data Symbol = UNDEFINEDSYMOL deriving (Show, Eq, Ord)
+

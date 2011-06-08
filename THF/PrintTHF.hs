@@ -1,14 +1,14 @@
 {- |
 Module      :  $Header$
 Description :  A printer for the TPTP-THF Syntax
-Copyright   :  (c) A.Tsogias, DFKI Bremen 2011
+Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :
 Stability   :
 Portability :
 
-A printer for the TPTP-THF Input Syntax v5.1.0.1 taken from
+A printer for the TPTP-THF Input Syntax v5.1.0.2 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
@@ -44,33 +44,31 @@ instance PrintTHF TPTP_THF where
 
 instance PrintTHF Comment where
     printTHF c = case c of
-        Comment_Line s          -> text "%" <> text s
-        Comment_Block (s : ts)  -> text "/*"
-                                   $+$ printCommentBlock (s:ts)
-                                   $+$ text "*/"
+        Comment_Line s      -> text "%" <> text s
+        Comment_Block sl    -> text "/*"
+                $+$ printCommentBlock sl
+                $+$ text "*/"
 
 instance PrintTHF DefinedComment where
     printTHF dc = case dc of
-        Defined_Comment_Line s          -> text "%$" <> text s
-        Defined_Comment_Block (s : ts)  -> text "/*$"
-                                   $+$ printCommentBlock (s:ts)
-                                   $+$ text "*/"
+        Defined_Comment_Line s      -> text "%$" <> text s
+        Defined_Comment_Block sl    -> text "/*$"
+                $+$ printCommentBlock sl
+                $+$ text "*/"
 
 instance PrintTHF SystemComment where
     printTHF sc = case sc of
-        System_Comment_Line s          -> text "%$$" <> text s
-        System_Comment_Block (s : ts)  -> text "/*$$"
-                                   $+$ printCommentBlock (s:ts)
-                                   $+$ text "*/"
+        System_Comment_Line s   -> text "%$$" <> text s
+        System_Comment_Block sl -> text "/*$$"
+                $+$ printCommentBlock sl
+                $+$ text "*/"
 
 printCommentBlock :: [String] -> Doc
-printCommentBlock str =
-    case str of
-        [] -> empty
-        s : rt -> text s $+$ printCommentBlock rt
+printCommentBlock []        = empty
+printCommentBlock (s : rt)  = text s $+$ printCommentBlock rt
 
 instance PrintTHF Include where
-    printTHF (I_Include fn nl) = text "include" <> parens (printSingleQuoted fn
+    printTHF (I_Include fn nl) = text "include" <> parens (printFileName fn
         <> maybe empty (\c -> comma <+> printNameList c) nl) <> text "."
 
 instance PrintTHF Annotations where
@@ -129,8 +127,8 @@ instance PrintTHF THFUnitaryFormula where
 
 instance PrintTHF THFVariable where
     printTHF v = case v of
-        TV_THF_Typed_Variable v tlt -> printVariable v <+> text ":"
-                                        <+> printTHF tlt
+        TV_THF_Typed_Variable v tlt -> printVariable v
+            <+> text ":" <+> printTHF tlt
         TV_Variable var             -> printVariable var
 
 instance PrintTHF THFTypeFormula where

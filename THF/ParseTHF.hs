@@ -1,14 +1,14 @@
 {- |
 Module      :  $Header$
 Description :  A parser for the TPTP-THF Syntax
-Copyright   :  (c) A.Tsogias, DFKI Bremen 2011
+Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :
 Stability   :
 Portability :
 
-A parser for the TPTP-THF Input Syntax v5.1.0.1 taken from
+A parser for the TPTP-THF Input Syntax v5.1.0.2 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
 -}
 
@@ -21,9 +21,6 @@ import THF.As
 import Common.Parsec
 
 import Data.Char
-
--- Questions:
--- how to understand <not_star_slash>
 
 -- Parser
 
@@ -436,8 +433,7 @@ source = (key (tryString "unknown")  >>  return S_Unknown)
 
 dagSource :: Parser DagSource
 dagSource = do
-    key (tryString "inference")
-    oParentheses
+    key (tryString "inference"); oParentheses
     ir <- atomicWord; comma
     ui <- usefulInfo; comma
     pl <- brackets (sepBy1 parentInfo comma)
@@ -566,17 +562,17 @@ generalTerm = do
   <|> fmap GT_General_List generalList
 
 generalData :: Parser GeneralData
-generalData = fmap GD_Atomic_Word atomicWord
-  <|> fmap GD_General_Function generalFunction
-  <|> fmap GD_Variable variable
+generalData = fmap GD_Variable variable
   <|> fmap GD_Number number
   <|> fmap GD_Distinct_Object distinctObject
-  <|> fmap GD_Formula_Data formulaData
   <|> do
     key $ tryString "bind"; oParentheses
     v <- variable; comma
     fd <- formulaData; cParentheses
     return (GD_Bind v fd)
+  <|> fmap GD_General_Function generalFunction
+  <|> fmap GD_Atomic_Word atomicWord
+  <|> fmap GD_Formula_Data formulaData
 
 generalFunction :: Parser GeneralFunction
 generalFunction = do
@@ -637,8 +633,7 @@ distinctObject = do
 lowerWord :: Parser LowerWord
 lowerWord = do
     l <- lower
-    an <- many (alphaNum <|> char '_')
-    skipAll
+    an <- many (alphaNum <|> char '_'); skipAll
     return (l : an)
   <?> "alphanumeric word with leading lowercase letter"
 
