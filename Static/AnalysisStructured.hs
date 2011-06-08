@@ -246,51 +246,47 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       JustNode ns -> return (sp, ns , dg)
   Translation asp ren ->
    do let sp1 = item asp
-      (sp1', NodeSig n' gsigma, dg') <-
+      (sp1', ns'@(NodeSig n' gsigma), dg') <-
         anaSpec addSyms lg ln dg nsig (extName "Translation" name) opts sp1
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
-      let (ns@(NodeSig node _), dg'') =
-            insGSig dg' name (DGTranslation $ Renamed ren) $ cod mor
+      (fs, dgf) <- if mor == ide (dom mor) then
+         hint (ns', dg') ("nothing renamed by:\n" ++ showDoc ren "")
+           $ getRange ren
+         else do
+         let (ns@(NodeSig node _), dg'') =
+               insGSig dg' name (DGTranslation $ Renamed ren) $ cod mor
            -- ??? too simplistic for non-comorphism inter-logic translations
-      let dg3 = insLink dg'' mor globalDef SeeTarget n' node
-      return (Translation (replaceAnnoted sp1' asp) ren, ns, dg3)
+         return (ns, insLink dg'' mor globalDef SeeTarget n' node)
+      return (Translation (replaceAnnoted sp1' asp) ren, fs, dgf)
   Reduction asp restr ->
    do let sp1 = item asp
           orig = DGRestriction $ Restricted restr
           rname = extName "Restriction" name
       (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts sp1
       rLid <- getRestrLogic restr
-      (NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
+      p1@(NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
+      let reveal = maybe False (\ tmor' -> tmor' == ide (dom tmor')) tmor
+      p2@(NodeSig node1 _, dg2) <- if hmor == ide (dom hmor) then
+          warning p1 ("nothing hidden by:\n" ++ showDoc restr "")
+            $ getRange restr
+          else do
+           let (ns@(NodeSig node _), dg'') = insGSig dg'
+                 (if reveal then extName "Revealing" name else name)
+                 orig $ dom hmor
+           -- ??? too simplistic for non-comorphism inter-logic reductions
+           return (ns, insLink dg'' hmor HidingDefLink SeeTarget n' node)
       {- we treat hiding and revealing differently
       in order to keep the dg as simple as possible -}
-      case tmor of
-       Nothing ->
-        do let (ns@(NodeSig node _), dg'') =
-                   insGSig dg' name orig $ dom hmor
-           -- ??? too simplistic for non-comorphism inter-logic reductions
-           return (Reduction (replaceAnnoted sp1' asp) restr, ns,
-                   insLink dg'' hmor HidingDefLink SeeTarget n' node)
-       Just tmor' -> do
-        let gsigma1 = dom tmor'
-            gsigma'' = cod tmor'
-           {- ??? too simplistic for non-comorphism inter-logic reductions
-           the case with identity translation leads to a simpler dg -}
-        if tmor' == ide (dom tmor')
-         then do
-           let (ns@(NodeSig node1 _), dg'') =
-                   insGSig dg' name orig gsigma1
-           return (Reduction (replaceAnnoted sp1' asp) restr, ns,
-                   insLink dg'' hmor HidingDefLink SeeTarget n' node1)
-         else do
-           let (NodeSig node1 _, dg'') =
-                   insGSig dg' (extName "Revealing" name) orig gsigma1
-               (ns@(NodeSig node2 _), dg3) =
-                   insGSig dg'' name DGRevealTranslation gsigma''
-               dg4 = insLink dg3 hmor HidingDefLink SeeTarget n' node1
-           return (Reduction (replaceAnnoted sp1' asp) restr, ns,
-                   insLink dg4 tmor' globalDef SeeTarget node1 node2)
+      (fs, dgf) <- case tmor of
+        Just tmor' | reveal -> do
+          let gsigma'' = cod tmor'
+              (ns@(NodeSig node2 _), dg3) =
+                   insGSig dg2 name DGRevealTranslation gsigma''
+          return (ns, insLink dg3 tmor' globalDef SeeTarget node1 node2)
+        _ -> return p2
+      return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
   Union asps pos -> do
     (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg ln dg nsig
       name opts asps
