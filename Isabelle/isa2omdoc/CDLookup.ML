@@ -17,7 +17,7 @@ fun isabelle_cd () = "http://cds.omdoc.org/logics/isabelle.omdoc?Pure"
 fun isabelle_base () = "http://cds.omdoc.org/logics/isabelle.omdoc"
 
 
-fun find_first [] const = raise UNDECLARED_CONST
+fun find_first [] _ = raise UNDECLARED_CONST
   | find_first (thy::thyList) const = 
     if Sign.declared_const thy const orelse Sign.declared_tyname thy const
        then Context.theory_name thy
@@ -25,7 +25,7 @@ fun find_first [] const = raise UNDECLARED_CONST
 	find_first thyList const
 
 
-fun find_first_class [] class_name = raise UNDECLARED_CLASS|
+fun find_first_class [] _ = raise UNDECLARED_CLASS|
     find_first_class (thy::thyList) class_name =
 	if utility.member (Sign.all_classes thy) class_name then Context.theory_name thy 
 	else find_first_class (thyList) class_name;

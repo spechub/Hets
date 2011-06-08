@@ -22,11 +22,11 @@ fun say s = TextIO.output(TextIO.stdOut, s^"\n")
 
 (*mergesort*)
 	fun getDot (nil) = nil|
-	    getDot ("."::x) = nil|
+	    getDot ("."::_) = nil|
 	    getDot (a::x) = a::(getDot(x))
 	val getName = implode o rev o getDot o rev o explode
-fun mergesort comp [] = []
-  | mergesort comp (m::[]) = [m]
+fun mergesort _ [] = []
+  | mergesort _ (m::[]) = [m]
   | mergesort comp (m::M) = 
     let
 	fun partition (A, B, []) = (A,B)
@@ -54,7 +54,7 @@ fun uniquify [] = []
 
 (* remove all elements in A from B. A must be a subset of B and the lists have to be ordered with each element being unique *)
 fun rem ([], B) = B
-  | rem (A, []) = []
+  | rem (_, []) = []
   | rem (a::A, b::B) = if op=(a,b)
 			  then rem(A, B)
 		       else
@@ -70,7 +70,7 @@ fun insert leaf (const,CD) = node(const,CD,leaf,leaf)
     else
 	node(const1, CD1, (insert L (const2, CD2)), R)
 
-fun search leaf query = "FAIL"
+fun search leaf _ = "FAIL"
   | search (node(const, CD, L, R)) query = 
     if const = query 
         then CD

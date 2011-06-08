@@ -6,6 +6,7 @@ end;
 structure ParseTyp : ParseTyp = 
 struct
 open utility
+
 fun TypToOMOBJ (T, env)=
     let 
 	fun escape([])=[]| 
@@ -15,18 +16,18 @@ fun TypToOMOBJ (T, env)=
 			  if hd(name)="\"" then "&quot;"::escape(tl(name)) else
 			  if hd(name)="'" then "&apos;"::escape(tl(name)) else hd(name)::escape(tl(name));
 	fun escaped(name)=implode(escape(explode(name)));
-	fun print_sort ([], env) = ""|
+	fun print_sort ([], _) = ""|
 	    print_sort (c::C, env) = 
 		let
 			val x= CDLookup.lookup (2, env) c
 		in
 			"<om:OMS cd=\""^ escaped(#1 x) ^"\" name=\""^ escaped(getName(c)) ^ "\"/>\n" ^ print_sort(C, env)
 		end
-	fun getVar(Type(Name,nil))=[]|
-            getVar(Type(Name,X::nil))= getVar(X)|
-	    getVar(Type(Name,TypList))= foldl op@ [] (map getVar TypList) |
-	    getVar(TFree(Name,Sort))=[]|
-	    getVar(TVar((Name,Index),Sort))=[escaped(Name)^Int.toString(Index)];
+	fun getVar(Type(_,nil))=[]|
+            getVar(Type(_,X::nil))= getVar(X)|
+	    getVar(Type(_,TypList))= foldl op@ [] (map getVar TypList) |
+	    getVar(TFree(_,_))=[]|
+	    getVar(TVar((Name,Index),_))=[escaped(Name)^Int.toString(Index)];
 	fun toOmdoc(Type(Name,nil), env)=
 		let 
 			val x = CDLookup.lookup (1, env) Name
@@ -38,7 +39,7 @@ fun TypToOMOBJ (T, env)=
 	    toOmdoc(Type(Name, TypList), env)=
 		let 
 			val x = CDLookup.lookup (1, env) Name
-			fun go_list([], env)=""|
+			fun go_list([], _)=""|
 			    go_list(TList,env)=toOmdoc(hd(TList),env) ^ go_list(tl(TList),env);
 			in
 				 "<om:OMA>\n" 
@@ -55,7 +56,7 @@ fun TypToOMOBJ (T, env)=
 			^ "</om:OMA>\n"
 			^ "</om:OMA>\n"
 			|
-	    toOmdoc(TVar((Name, Index),Sort), env)=
+	    toOmdoc(TVar((Name, Index),_), _)=
 			"<om:OMV name=\""^escaped(Name)^Int.toString(Index)^"\"/>\n"
 	    val vars = utility.uniquify (utility.mergesort op< (getVar(T))); 
    in	

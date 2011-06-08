@@ -26,27 +26,26 @@ datatype omobj = OMS of attribute list
 
 exception index_overflow
 
-fun get_attributes(OMBVAR(A, L)) = A
+fun get_attributes(OMBVAR(A, _)) = A
+|   get_attributes _ = raise Match
 
-
-fun ith (0:int) (a::A) = a
-|   ith n (a::A) = ith (n-1) A
+fun ith (0:int) (a::_) = a
+|   ith n (_::A) = ith (n-1) A
 |   ith _ nil  = raise index_overflow
 
 val OMBase = CDLookup.isabelle_base();
-val IsabelleCD = CDLookup.isabelle_cd();
 
 (* V : List with Bound variables. TH : Theory of the term *)
 (*#check theory to get cd right*)
-fun termToomobj (Const(s,t)) V env = 
+fun termToomobj (Const(s,_)) _ env = 
     let 
 	val x = CDLookup.lookup (1, env) s
     in 
 	(OMS([cdbase(OMBase),cd(#1 x),name(getName(s))]), #2 x)
     end
-|   termToomobj (Free(s,t)) V  env = (if s = "" then say "fu0" else ();(OMV([name(s)]), env))
-|   termToomobj (Var((s,0),t)) V env = (if s = "" then say "fu1" else (); (OMV([name(s)]), env))
-|   termToomobj (Var((s,i),t)) V env = (if s = "" then say "fu2" else (); (OMV([name(s^Int.toString(i))]), env))
+|   termToomobj (Free(s,_)) _  env = (if s = "" then say "fu0" else ();(OMV([name(s)]), env))
+|   termToomobj (Var((s,0),_)) _ env = (if s = "" then say "fu1" else (); (OMV([name(s)]), env))
+|   termToomobj (Var((s,i),_)) _ env = (if s = "" then say "fu2" else (); (OMV([name(s^Int.toString(i))]), env))
 |   termToomobj (Bound(i)) V env = (OMV([name(ith i V)]), env)
 |   termToomobj (Abs(s,t,scope)) V env = 
     let 
@@ -54,7 +53,7 @@ fun termToomobj (Const(s,t)) V env =
     in
 	(OMBIND([], OMS([cdbase(OMBase),cd("Pure"),name("lambda")]), OMBVAR([],[OMV([name(s)])]), #1 x, t), #2 x)
     end
-|   termToomobj (op$(Const(s1,t1),Abs(s2,t2,T))) V env = 
+|   termToomobj (op$(Const(s1,_),Abs(s2,t2,T))) V env = 
     let 
 	val x = CDLookup.lookup (1, env) s1
 	val y = termToomobj T (s2::V) (#2 x)
@@ -85,9 +84,10 @@ fun ParseAtt(nil) = ""
 |   ParseAtt(class(s)::A) = " class=\"" ^ escaped(s) ^ "\"" ^ ParseAtt(A)
 |   ParseAtt(style(s)::A) = " style=\"" ^ escaped(s) ^ "\"" ^ ParseAtt(A)
 fun addsecond(x::nil, y)=[(x,y)]|
-    addsecond (x::xs, y) = (x,y)::addsecond(xs,y);
-fun ParseObj (OMS(A), env) = ("<om:OMS" ^ ParseAtt(A) ^ "/>\n",[])
-|   ParseObj (OMV(A), env) = ("<om:OMV" ^ ParseAtt(A) ^ "/>\n",[])
+    addsecond (x::xs, y) = (x,y)::addsecond(xs,y)|
+    addsecond _ = raise Match;
+fun ParseObj (OMS(A), _) = ("<om:OMS" ^ ParseAtt(A) ^ "/>\n",[])
+|   ParseObj (OMV(A), _) = ("<om:OMV" ^ ParseAtt(A) ^ "/>\n",[])
 |   ParseObj (OMA(A,L), env) = 
 	let
 		fun unzip [] = ("",[])
@@ -126,7 +126,7 @@ fun ParseObj (OMS(A), env) = ("<om:OMS" ^ ParseAtt(A) ^ "/>\n",[])
 	,utility.uniquify (utility.mergesort op< (tvars@vars1@vars2@vars3)))
 	end
 
-|ParseObj (OMBVAR (A,L),env) = 
+|ParseObj (OMBVAR (_,L),env) = 
 	let
 		fun unzip [] = ("",[])
 		 |  unzip ((obj,var)::L) = 

@@ -15,29 +15,19 @@ fun escape([])=[]|
 			  if hd(name)="\"" then "&quot;"::escape(tl(name)) else
 			  if hd(name)="'" then "&apos;"::escape(tl(name)) else hd(name)::escape(tl(name));
 	fun escaped(name)=implode(escape(explode(name)));
-(* Parsing Definitions *)
-fun own_defs_of T = 
-    let
-	val get_defs = Defs.all_specifications_of o Theory.defs_of
-	fun comp ((a,b), (x,y)) = a < x
-	val defs = utility.mergesort comp (get_defs T)
-	val ancestor_defs = utility.uniquify (utility.mergesort comp (foldl op@ [] (map get_defs (Context.ancestors_of T))))
-    in
-	utility.rem(ancestor_defs, defs)
-    end
 
 (* Parsing Constants *)
 fun own_consts_of T = 		  
     let 
-	val get_consts = NameSpace.dest_table o #constants o Consts.dest o Sign.consts_of
-	fun comp ((a,b), (x,y)) = a < x
+	val get_consts = Name_Space.dest_table o #constants o Consts.dest o Sign.consts_of
+	fun comp ((a,_), (x,_)) = a < x
 	val consts = utility.mergesort comp (get_consts T)
 	val ancestor_consts = utility.uniquify (utility.mergesort comp (foldl op@ [] (map get_consts (Context.ancestors_of T))))
     in
 	utility.rem(ancestor_consts, consts)
     end
 
-fun get_term env Name (nil:(string * term) list) = ("",env)
+fun get_term env _ (nil:(string * term) list) = ("",env)
   | get_term env Name (a::Axioms) = 
     if Name = (#1 a) orelse implode ((explode (#3 env) @ ["."] @ (explode Name))) = (#1 a)
         then let 
@@ -87,16 +77,16 @@ fun ParseConsts env Axioms =
 		((#1 y) ^ (#1 x), #2 y)
 	    end
     in
-	myfold env (own_consts_of (ThyInfo.get_theory (#3 env)))
+	myfold env (own_consts_of (Thy_Info.get_theory (#3 env)))
     end
 (* Parsing Axioms *)
 fun own_axioms_of T = 
     let
 	val get_axioms = Theory.axioms_of
-	fun comp ((a,b), (x,y)) = a < x
+	fun comp ((a,_), (x,_)) = a < x
 	val axioms = utility.mergesort comp (get_axioms T)
 	val ancestor_axioms = utility.uniquify (utility.mergesort comp (foldl op@ [] (map get_axioms (Context.ancestors_of T))))
-	fun is_def ("f"::"e"::"d"::"_"::s) = true
+	fun is_def ("f"::"e"::"d"::"_"::_) = true
 	  | is_def _ = false
 	fun divide (ax,def) (nil:(string * term) list) = (ax,def)
 	  | divide (ax,def) (l::list) = if is_def (rev (explode (#1 l))) 
@@ -129,7 +119,7 @@ fun ParseAxioms env =
 		((#1 y) ^ (#1 x), #2 y)
 	    end
     in
-	myfold env (#1 (own_axioms_of (ThyInfo.get_theory (#3 env))))
+	myfold env (#1 (own_axioms_of (Thy_Info.get_theory (#3 env))))
     end
 
 (* Parsing Theorems *)
@@ -138,19 +128,21 @@ fun own_theorems_of T =
 	 fun get_theorems T = 
 	
 	
-   		map (fn (a,b) => (a, prop_of b)) (PureThy.all_thms_of T)
+   		map (fn (a,b) => (a, prop_of b)) (Global_Theory.all_thms_of T)
 	
-	fun comp ((a,b), (x,y)) = a < x
+	fun comp ((a,_), (x,_)) = a < x
 	val theorems = utility.mergesort comp (get_theorems T)
 	
 
 	val debug=map get_theorems (Context.ancestors_of T)
-	fun member(x,[])=false|
+	fun member(_,[])=false|
 	    member(x,y::ys)=if x=y then true else member(x,ys);
 	fun combine2(x::xs, [])=x::xs|
-	    combine2(x::xs, y::ys)=if member(x,y::ys) then combine2(x::xs,ys) else combine2(y::x::xs,ys);
+	    combine2(x::xs, y::ys)=if member(x,y::ys) then combine2(x::xs,ys) else combine2(y::x::xs,ys)|
+            combine2 _ = raise Match;
 	fun combine((x::xs)::nil)=x::xs|
-	    combine((x::xs)::ys)= combine(combine2(x::xs,hd(ys))::tl(ys));
+	    combine((x::xs)::ys)= combine(combine2(x::xs,hd(ys))::tl(ys))|
+            combine _ = raise Match;
 	
 	
 	val debug2=combine(debug);
@@ -191,7 +183,7 @@ fun myfold env [] = ("", env)
                 ((#1 y) ^ (#1 x), #2 y)
             end
     in
-	myfold env (own_theorems_of (ThyInfo.get_theory (#3 env)))
+	myfold env (own_theorems_of (Thy_Info.get_theory (#3 env)))
     end
 
 (* Parsing Theories *)
@@ -202,16 +194,14 @@ fun ParseTheory S =
 	fun getToImportLine(inputfile) = let
 		val firstword = TextIO.inputN(inputfile,8);
 		in if firstword="imports " then TextIO.inputLine(inputfile) 
-			else let
-				val inpufile2=TextIO.inputLine(inputfile)  (* check what happens if no import line*)
-				in getToImportLine(inputfile)
-			end
+			else getToImportLine(inputfile)
 		end
 	fun getImportNames(line: string option)=
 		case line of
 			NONE => ""|
 			SOME(str) => str;
-	fun tmp (x::xs:string list,y:string list) = if x<> " " andalso x<> "\n" then tmp(xs,x::y) else (xs,implode(rev(y))); 
+	fun tmp (x::xs:string list,y:string list) = if x<> " " andalso x<> "\n" then tmp(xs,x::y) else (xs,implode(rev(y)))|
+            tmp _ = raise Match; 
 	fun parseImportNames([],x)=x|
 	    parseImportNames(str,x)= let
 			val word= #2(tmp(str,[]))
@@ -224,14 +214,14 @@ fun ParseTheory S =
 	    printimports(x::xs) = "<imports from=\""^escaped(x)^"\"/>\n"^printimports(xs);
 	
 	fun get_name [] = ""
-	  | get_name ("/" :: L) = ""
+	  | get_name ("/" :: _) = ""
 	  | get_name (a :: L) = (get_name L) ^ a
 	val name = get_name(rev(explode(S)))
 
 	val allimports = printimports(importNames);
-	val tmp = TextIO.output(TextIO.stdOut, name);
-	val xyz = if (ThyInfo.known_thy name) then () else use_thy S
-        val T = ThyInfo.get_theory name
+	val _ = TextIO.output(TextIO.stdOut, name);
+	val _ = if (known_thy name) then () else use_thy S
+        val T = Thy_Info.get_theory name
 	val env = (utility.getleaf (), (rev (Context.ancestors_of T)) @ [T], name)
 	val CONSTS = ParseConsts env (#2 (own_axioms_of T)) (* Why #2 and not #1 ?! #2 - definitions, #1 - axioms*)
 	val AXIOMS = ParseAxioms (#2 CONSTS)
@@ -242,8 +232,6 @@ fun ParseTheory S =
 		    (#1 CONSTS) ^ (#1 AXIOMS) ^ (#1 THEOREMS) ^
 		    "</theory>\n" ^
 		    "</omdoc>\n"
-	    handle index_overflow => "Index overflow"
-	    handle UNDECLARED_CONST => "Found undeclared constant"
 	val outs = TextIO.openOut (S^".omdoc")
     in
 	(TextIO.output(outs, omdoc), TextIO.closeOut(outs))
