@@ -128,14 +128,14 @@ data RawSymb = ASymbol Entity | AnUri IRI deriving (Typeable, Show, Eq, Ord)
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
     deriving (Typeable, Show, Eq, Ord)
 
+data Literal = Literal LexicalForm TypedOrUntyped
+    deriving (Typeable, Show, Eq, Ord)
+
 cTypeS :: String
 cTypeS = "^^"
 
 -- | a lexical representation either with an "^^" URI (typed) or
 -- an optional language tag starting with "\@" (untyped)
-
-data Literal = Literal LexicalForm TypedOrUntyped
-    deriving (Typeable, Show, Eq, Ord)
 
 --------------------------
 -- PROPERTY EXPRESSIONS
