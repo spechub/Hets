@@ -14,7 +14,7 @@ It is modeled after the W3C document:
 <http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
 -}
 
-module OWL.AS where
+module OWL2.AS where
 
 import Common.Keywords
 import Common.Id (GetRange)
@@ -85,7 +85,7 @@ type DataProperty = IRI
 type AnnotationProperty = IRI
 type NamedIndividual = IRI
 type AnonymousIndividual = NodeID
-data Individual = IRI | AnonymousIndividual
+data Individual = NamedInd IRI | AnonymousIndividual AnonymousIndividual  
 	deriving (Typeable, Show, Eq, Ord)
 
 ------------------------
@@ -125,7 +125,7 @@ data RawSymb = ASymbol Entity | AnUri IRI deriving (Typeable, Show, Eq, Ord)
 -- LITERALS
 -------------------------
 
-data TypedOrUntyped = Typed IRIreference | Untyped LanguageTag
+data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
     deriving (Typeable, Show, Eq, Ord)
 
 cTypeS :: String
@@ -134,24 +134,16 @@ cTypeS = "^^"
 -- | a lexical representation either with an "^^" URI (typed) or
 -- an optional language tag starting with "\@" (untyped)
 
-data Constant = Constant LexicalForm TypedOrUntyped
+data Literal = Literal LexicalForm TypedOrUntyped
     deriving (Typeable, Show, Eq, Ord)
-
-data Literal = TypedData TypedLiteral | PlainLiteral StringLiteral	
-					-- with or without LanguageTag
-	 deriving (Typeable, Show, Eq, Ord)
-
-data TypedLiteral = TypedLiteral LexicalForm Datatype
-	 deriving (Typeable, Show, Eq, Ord)
-
-data StringLiteral = StringLiteral (Maybe LanguageTag)
-	 deriving (Typeable, Show, Eq, Ord)
 
 --------------------------
 -- PROPERTY EXPRESSIONS
 --------------------------
 
-data ObjectPropertyExpression = ObjectProp ObjectProperty | ObjectInverseOf ObjectProperty
+type InverseObjectProperty = ObjectPropertyExpression
+
+data ObjectPropertyExpression = ObjectProp ObjectProperty | ObjectInverseOf InverseObjectProperty
 	deriving (Typeable, Show, Eq, Ord)
 
 type DataPropertyExpression = DataProperty
@@ -247,7 +239,8 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
+  | DataValuesFrom 
+	QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Typeable, Show, Eq, Ord)
