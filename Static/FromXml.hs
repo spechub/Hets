@@ -138,10 +138,10 @@ insertThmLinks lg links (dg, lv) = do
   dg' <- foldM ins' dg links
   return (dg', lv) where
     ins' dgR l = do
-        (i, mr) <- extractMorphism lg dgR l
+        (i, mr, tp) <- extractMorphism lg dgR l
         (j, gsig) <- signOfNode (trg l) dgR
         morph <- finalizeMorphism lg mr gsig
-        insertLink i j morph l dgR
+        insertLink i j morph tp dgR
 
 {- | main loop: in every step, all links are collected of which the source node
 has been written into DGraph already. Upon these, further nodes are written in
@@ -184,7 +184,7 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
   ((dg', lv'), hid) <- case partition (isHiding . lType) links of
     -- case #1: none hiding def links
     ([], _) -> do
-      gsig1 <- liftR $ gsigManyUnion lg $ map (cod . snd) mrs
+      gsig1 <- liftR $ gsigManyUnion lg $ map (\(_, m, _) -> cod m) mrs
       let gt = case gsig1 of
                  G_sign lid sg sId -> noSensGTheory lid sg sId
       dglv <- insertNode opts gt trgNd (dg, lv)
@@ -199,11 +199,11 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
     -- case #3: mixture. not implemented!
     _ -> fail "mix of HidingDefLinks and other links pointing at a single node"
   (j, gsig2) <- signOfNode (fst trgNd) dg'
-  let ins' dgR ((i, mr), l) = do
+  let ins' dgR (i, mr, tp) = do
         morph <- if hid then liftR $ ginclusion lg gsig2 (cod mr)
           else finalizeMorphism lg mr gsig2
-        insertLink i j morph l dgR
-  dg'' <- foldM ins' dg' $ zip mrs links
+        insertLink i j morph tp dgR
+  dg'' <- foldM ins' dg' mrs
   return (dg'', lv')
 
 {- | given a links intermediate morphism and its target nodes signature,
@@ -217,11 +217,10 @@ finalizeMorphism lg mr sg = liftR $ do
 Reconstruct the Development Graph, low level -}
 
 -- | inserts a new link into the dgraph
-insertLink :: Graph.Node -> Graph.Node -> GMorphism -> NamedLink -> DGraph
+insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> DGraph
            -> ResultT IO DGraph
-insertLink i j mr l dg = do
-  tp <- getDGLinkTyp l mr
-  return $ insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget) dg
+insertLink i j mr tp = return . 
+  insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget)
 
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
 and the the DGraphs Global Annotations -}
@@ -290,20 +289,59 @@ Element extraction -}
 {- | extracts the intermediate morphism for a link, using the xml data and the
 signature of the (previously inserted) source node -}
 extractMorphism :: LogicGraph -> DGraph -> NamedLink
-                -> ResultT IO (Graph.Node, GMorphism)
-extractMorphism lg dg l = case findChild (unqual "GMorphism") (element l) of
-    Nothing -> fail $
-      "Links morphism description is missing!\n" ++ printLinks [l]
+                -> ResultT IO (Graph.Node, GMorphism, DGLinkType)
+extractMorphism lg dg (Link srN _ tp l) =
+  case findChild (unqual "GMorphism") l of
+    Nothing -> fail "Links morphism description is missing!"
     Just mor -> let
-      srcNd = case getAttrVal "morphismsource" mor of
-        Nothing -> src l
-        Just nd -> nd
-      symbs = parseSymbolMap mor
-      in do
-        (i, sgn) <- signOfNode srcNd dg
-        nm <- getAttrVal "name" mor
-        mor' <- liftR $ getGMorphism lg sgn nm symbs
-        return (i, mor')
+        symbs = parseSymbolMap mor
+        rl = case findChild (unqual "Rule") l of
+            Nothing -> "no rule"
+            Just r' -> strContent r'
+        cc = case findChild (unqual "ConsStatus") l of
+            Nothing -> None
+            Just c' -> fromMaybe None $ readMaybe $ strContent c'
+        in do
+          (i, sgn) <- signOfNode srN dg
+          nm <- getAttrVal "name" mor
+          (sgn', lTp) <- case tp of
+            DefL sc hid -> return $ if hid then (sgn, HidingDefLink)
+              else (sgn, localOrGlobalDef sc cc)
+            ThmL sc hid -> do
+              lStat <- case findChild (unqual "Status") l of
+                  Nothing -> return LeftOpen
+                  Just st -> if strContent st /= "Proven"
+                    then fail $ "unknown links status!\n" ++ strContent st
+                    else return $ Proven (DGRule rl) emptyProofBasis
+              if hid then do
+                  mSrc <- getAttrVal "morphismsource" mor
+                  (i', sgn') <- signOfNode mSrc dg
+                  mr' <- liftR $ ginclusion lg sgn' sgn
+                  return (sgn', HidingFreeOrCofreeThm Nothing i' mr' lStat)
+                else return (sgn, ScopedLink sc (ThmLink lStat) $ mkConsStatus cc)
+          mor' <- liftR $ getGMorphism lg sgn' nm symbs
+          return (i, mor', lTp)
+
+-- | reads the type of a link from the xml data
+getDGLinkTyp :: NamedLink -> GMorphism -> ResultT IO DGLinkType
+getDGLinkTyp (Link _ _ tp l) mor = let
+  rl = case findChild (unqual "Rule") l of
+      Nothing -> "no rule"
+      Just r' -> strContent r'
+  cc = case findChild (unqual "ConsStatus") l of
+      Nothing -> None
+      Just c' -> fromMaybe None $ readMaybe $ strContent c'
+  in case tp of
+      DefL sc hid -> return $ if hid then HidingDefLink
+        else localOrGlobalDef sc cc
+      ThmL sc hid -> do
+        lStat <- case findChild (unqual "Status") l of
+            Nothing -> return LeftOpen
+            Just st -> if strContent st /= "Proven"
+              then fail $ "unknown links status!\n" ++ strContent st
+              else return $ Proven (DGRule rl) emptyProofBasis
+        return $ if hid then HidingFreeOrCofreeThm Nothing (-1) mor lStat
+          else ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 parseSymbolMap :: Element -> String
 parseSymbolMap = intercalate ", "
@@ -336,27 +374,6 @@ extractLinkElements el = do
       tr <- getAttrVal "target" e
       tp <- getLType e
       return $ Link sr tr tp e : r
-
--- | reads the type of a link from the xml data
-getDGLinkTyp :: NamedLink -> GMorphism -> ResultT IO DGLinkType
-getDGLinkTyp (Link _ _ tp l) mor = let
-  rl = case findChild (unqual "Rule") l of
-      Nothing -> "no rule"
-      Just r' -> strContent r'
-  cc = case findChild (unqual "ConsStatus") l of
-      Nothing -> None
-      Just c' -> fromMaybe None $ readMaybe $ strContent c'
-  in case tp of
-      DefL sc hid -> return $ if hid then HidingDefLink
-        else localOrGlobalDef sc cc
-      ThmL sc hid -> do
-        lStat <- case findChild (unqual "Status") l of
-            Nothing -> return LeftOpen
-            Just st -> if strContent st /= "Proven"
-              then fail $ "unknown links status!\n" ++ strContent st
-              else return $ Proven (DGRule rl) emptyProofBasis
-        return $ if hid then HidingFreeOrCofreeThm Nothing (-1) mor lStat
-          else ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 -- | extracts the global annotations from the xml-graph
 extractGlobalAnnos :: Element -> ResultT IO GlobalAnnos
