@@ -140,9 +140,7 @@ insertThmLinks lg links (dg, lv) = do
     ins' dgR l = do
         (i, mr) <- extractMorphism lg dgR l
         (j, gsig) <- signOfNode (trg l) dgR
-        morph <- case isHiding $ lType l of
-          True -> liftR $ ginclusion lg gsig (cod mr)
-          False -> finalizeMorphism lg mr gsig
+        morph <- finalizeMorphism lg mr gsig
         insertLink i j morph l dgR
 
 {- | main loop: in every step, all links are collected of which the source node
