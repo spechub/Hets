@@ -138,11 +138,11 @@ insertThmLinks lg links (dg, lv) = do
   dg' <- foldM ins' dg links
   return (dg', lv) where
     ins' dgR l = do
-      -- due to runtime errors, hidingThmLinks are skipped since revision 15075
-      if isHiding (lType l) then return dgR else do
         (i, mr) <- extractMorphism lg dgR l
         (j, gsig) <- signOfNode (trg l) dgR
-        morph <- finalizeMorphism lg mr gsig
+        morph <- case isHiding $ lType l of
+          True -> liftR $ ginclusion lg gsig (cod mr)
+          False -> finalizeMorphism lg mr gsig
         insertLink i j morph l dgR
 
 {- | main loop: in every step, all links are collected of which the source node
@@ -293,16 +293,19 @@ Element extraction -}
 signature of the (previously inserted) source node -}
 extractMorphism :: LogicGraph -> DGraph -> NamedLink
                 -> ResultT IO (Graph.Node, GMorphism)
-extractMorphism lg dg l = do
-  (i, sgn) <- signOfNode (src l) dg
-  case findChild (unqual "GMorphism") (element l) of
+extractMorphism lg dg l = case findChild (unqual "GMorphism") (element l) of
     Nothing -> fail $
       "Links morphism description is missing!\n" ++ printLinks [l]
-    Just mor -> liftR $ do
-      nm <- getAttrVal "name" mor
-      let symbs = parseSymbolMap mor
-      mor' <- getGMorphism lg sgn nm symbs
-      return (i, mor')
+    Just mor -> let
+      srcNd = case getAttrVal "morphismsource" mor of
+        Nothing -> src l
+        Just nd -> nd
+      symbs = parseSymbolMap mor
+      in do
+        (i, sgn) <- signOfNode srcNd dg
+        nm <- getAttrVal "name" mor
+        mor' <- liftR $ getGMorphism lg sgn nm symbs
+        return (i, mor')
 
 parseSymbolMap :: Element -> String
 parseSymbolMap = intercalate ", "
