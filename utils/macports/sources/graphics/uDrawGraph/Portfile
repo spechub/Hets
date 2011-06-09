@@ -53,8 +53,6 @@ configure {}
 build {}
 
 destroot {
-    #using move we shouldn't need to create the dir first.
-    #xinstall -d ${destroot}/${prefix}/lib/${distname}
     xinstall -m 755 -W ${workpath}/${distname}/bin/ ${name} ${destroot}${prefix}/bin/
     move ${workpath}/${distname} ${destroot}/${prefix}/lib/
 }
