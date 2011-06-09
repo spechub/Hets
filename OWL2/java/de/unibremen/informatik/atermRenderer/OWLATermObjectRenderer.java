@@ -4,17 +4,10 @@ import java.util.Map;
 import org.coode.xml.OWLOntologyXMLNamespaceManager;
 
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
-//import org.semanticweb.owlapi.model.OWLDatatypeRestriction;
 import org.semanticweb.owlapi.vocab.OWLXMLVocabulary;
-//import org.semanticweb.owlapi.model.OWLAnnotationAxiom;
 import org.semanticweb.owlapi.vocab.OWLFacet;
 import org.semanticweb.owlapi.apibinding.*;
 import uk.ac.manchester.cs.owl.owlapi.OWLOntologyImpl;
-//import uk.ac.manchester.cs.owl.owlapi.OWLDataExactCardinalityImpl;
-//import uk.ac.manchester.cs.owl.owlapi.OWLQuantifiedDataRestrictionImpl;
-//import uk.ac.manchester.cs.owl.owlapi.OWLDataMaxCardinalityImpl;
-//import org.semanticweb.owlapi.model.OWLEntityAnnotationAxiom;
-//import org.semanticweb.owl.model.OWLConstantAnnotation;
 import static org.semanticweb.owlapi.vocab.OWLXMLVocabulary.*;
 import org.semanticweb.owlapi.model.*;
 import uk.ac.manchester.cs.owl.owlapi.OWLAnnotationImpl;
@@ -400,45 +393,59 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
     public void visit(OWLAnnotationPropertyRangeAxiom ax)
 	{
 	}
+
       public void visit(OWLAnnotationPropertyDomainAxiom ax)
 	{
 	} 	
+
       public void visit(OWLSubAnnotationPropertyOfAxiom ax)
 	{
 	}
+
       public void visit(OWLAnnotationAssertionAxiom ax)
 	{
 	}
+
       public void visit(OWLDataHasValue ax)
 	{
 	}
+
       public void visit(OWLDataAllValuesFrom val)
 	{
 	}
+
       public void visit(OWLLiteral lit)
 	{
 	}
+
       public void visit(OWLDataUnionOf data)
 	{
 	}
+
       public void visit(OWLDataIntersectionOf dat)
 	{
 	}
+
       public void visit(OWLAnnotationProperty pro)
 	{
 	}
+
       public void visit(OWLAnonymousIndividual an)
 	{
 	}
+
       public void visit(IRI ir)
 	{
 	}
+
       public void visit(OWLAnnotation an)
 	{
 	}
+
       public void visit(SWRLLiteralArgument arg)
 	{
 	}
+
     public void visit(OWLClassAssertionAxiom axiom) {
     	try{
     		ATermList annoOfAxiom = renderAnnotations(axiom);
