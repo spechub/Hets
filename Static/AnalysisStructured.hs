@@ -688,7 +688,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name fv =
    gmor <- anaGmaps lg opts pos gsigmaP' gsigA' gsis
    eGmor <- comp tmor $ gEmbed gmor
    return ( Fit_spec (replaceAnnoted sp' asp) gsis pos
-          , if nP == nA' && isHomInclusion eGmor then dg'' else
+          , if nP == nA' && isInclusion eGmor then dg'' else
                 insLink dg'' eGmor globalThm
                    (DGLinkInst spname $ Fitted gsis) nP nA'
           , (gmor, nsigA'))

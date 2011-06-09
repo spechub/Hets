@@ -68,7 +68,6 @@ module Logic.Grothendieck
   , lookupModification
   , GMorphism (..)
   , isHomogeneous
-  , isHomInclusion
   , Grothendieck (..)
   , gEmbed
   , gEmbed2
@@ -602,10 +601,6 @@ isHomogeneous :: GMorphism -> Bool
 isHomogeneous (GMorphism cid _ _ _ _) =
   isIdComorphism (Comorphism cid)
 
-isHomInclusion :: GMorphism -> Bool
-isHomInclusion gm@(GMorphism _ _ _ mor _) =
-  isHomogeneous gm && isInclusion mor
-
 data Grothendieck = Grothendieck deriving (Typeable, Show)
 
 instance Language Grothendieck
@@ -667,7 +662,8 @@ instance Category G_sign GMorphism where
     let lid2 = targetLogic r
         sig2 = cod mor
     in G_sign lid2 (makeExtSign lid2 sig2) startSigId
-  isInclusion = isHomInclusion
+  isInclusion (GMorphism cid _ _ mor _) =
+    isInclusionComorphism cid && isInclusion mor
   legal_mor (GMorphism r (ExtSign s _) _ mor _) =
     legal_mor mor &&
     case maybeResult $ map_sign r s of

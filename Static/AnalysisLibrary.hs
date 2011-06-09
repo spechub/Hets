@@ -437,7 +437,7 @@ anaViewDefn lgraph ln libenv dg opts vn gen vt gsis pos = do
       emor <- fmap gEmbed $ anaGmaps lgraph opts pos gsigmaS' gsigmaT hsis
       gmor <- comp tmor emor
       let vsig = ExtViewSig src gmor $ ExtGenSig gsig tar
-          voidView = nodeS == nodeT && isHomInclusion gmor
+          voidView = nodeS == nodeT && isInclusion gmor
       when voidView $ warning ()
         ("identity mapping of source to same target for view: " ++ tokStr vn)
         pos
