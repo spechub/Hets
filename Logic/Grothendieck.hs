@@ -176,7 +176,7 @@ instance Eq G_sign where
 instance Ord G_sign where
   compare (G_sign l1 sigma1 s1) (G_sign l2 sigma2 s2) =
     if s1 > startSigId && s2 > startSigId && s1 == s2 then EQ else
-    case compare (language_name l1) $ language_name l2 of
+    case compare (Logic l1) $ Logic l2 of
       EQ -> compare (coerceSign l1 l2 "Eq G_sign" sigma1) $ Just sigma2
       r -> r
 
@@ -227,7 +227,7 @@ instance (Typeable a, Ord a) => Eq (G_symbolmap a) where
 
 instance (Typeable a, Ord a) => Ord (G_symbolmap a) where
   compare (G_symbolmap l1 sm1) (G_symbolmap l2 sm2) =
-    case compare (language_name l1) $ language_name l2 of
+    case compare (Logic l1) $ Logic l2 of
       EQ -> compare (coerceSymbolmap l1 l2 sm1) sm2
       r -> r
 
@@ -250,7 +250,7 @@ instance (Typeable a, Ord a) => Eq (G_mapofsymbol a) where
 
 instance (Typeable a, Ord a) => Ord (G_mapofsymbol a) where
   compare (G_mapofsymbol l1 sm1) (G_mapofsymbol l2 sm2) =
-    case compare (language_name l1) $ language_name l2 of
+    case compare (Logic l1) $ Logic l2 of
       EQ -> compare (coerceMapofsymbol l1 l2 sm1) sm2
       r -> r
 
@@ -280,7 +280,7 @@ instance Eq G_symbol where
 
 instance Ord G_symbol where
   compare (G_symbol l1 s1) (G_symbol l2 s2) =
-    case compare (language_name l1) $ language_name l2 of
+    case compare (Logic l1) $ Logic l2 of
       EQ -> compare (coerceSymbol l1 l2 s1) s2
       r -> r
 
@@ -348,7 +348,7 @@ instance Eq G_sublogics where
 
 instance Ord G_sublogics where
     compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
-      case compare (language_name lid1) $ language_name lid2 of
+      case compare (Logic lid1) $ Logic lid2 of
         EQ -> compare (forceCoerceSublogic lid1 lid2 l1) l2
         r -> r
 
@@ -401,7 +401,7 @@ mkG_morphism l m = G_morphism l m startMorId
 lessSublogicComor :: G_sublogics -> AnyComorphism -> Bool
 lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     let lid2 = sourceLogic cid
-    in language_name lid2 == language_name lid1
+    in Logic lid2 == Logic lid1
         && isSubElem (forceCoerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
 
 -- | Logic graph
@@ -694,7 +694,7 @@ gEmbedComorphism (Comorphism cid) (G_sign lid sig ind) = do
 gsigUnion :: LogicGraph -> G_sign -> G_sign -> Result G_sign
 gsigUnion lg gsig1@(G_sign lid1 (ExtSign sigma1 _) _)
           gsig2@(G_sign lid2 (ExtSign sigma2 _) _) =
- if language_name lid1 == language_name lid2
+ if Logic lid1 == Logic lid2
     then homogeneousGsigUnion gsig1 gsig2
     else do
       (Comorphism cid1, Comorphism cid2) <-
@@ -763,7 +763,7 @@ toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) mor i
 gSigCoerce :: LogicGraph -> G_sign -> AnyLogic
            -> Result (G_sign, AnyComorphism)
 gSigCoerce lg g@(G_sign lid1 sigma1 _) l2@(Logic lid2) =
-  if language_name lid1 == language_name lid2
+  if Logic lid1 == Logic lid2
     then return (g, idComorphism l2) else do
     cmor@(Comorphism i) <- logicInclusion lg (Logic lid1) l2
     ExtSign sigma1' _ <-
@@ -827,7 +827,7 @@ findComorphism :: Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
 findComorphism _ [] = fail "No matching comorphism found"
 findComorphism gsl@(G_sublogics lid sub) (Comorphism cid : rest) =
     let l2 = sourceLogic cid in
-    if language_name lid == language_name l2
+    if Logic lid == Logic l2
       && isSubElem (forceCoerceSublogic lid l2 sub) (sourceSublogic cid)
     then return $ Comorphism cid
     else findComorphism gsl rest

@@ -146,6 +146,7 @@ import Common.Taxonomy
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 
@@ -780,8 +781,12 @@ instance GetRange AnyLogic
 
 instance Show AnyLogic where
   show (Logic lid) = language_name lid
+
 instance Eq AnyLogic where
-  Logic lid1 == Logic lid2 = language_name lid1 == language_name lid2
+  a == b = compare a b == EQ
+
+instance Ord AnyLogic where
+  compare = comparing show
 
 {- class hierarchy:
                             Language
