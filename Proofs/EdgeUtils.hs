@@ -31,20 +31,18 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
 
--- -------------------------------------
--- methods to check the type of an edge
--- -------------------------------------
+-- * methods to check the type of an edge
 
 isProven :: DGLinkType -> Bool
 isProven edge = case edge of
-    ScopedLink _ DefLink _  -> True
+    ScopedLink _ DefLink _ -> True
     _ -> case thmLinkStatus edge of
            Just (Proven _ _) -> True
            _ -> False
 
 isGlobalEdge :: DGLinkType -> Bool
 isGlobalEdge edge = case edge of
-    ScopedLink Global _ _  -> True
+    ScopedLink Global _ _ -> True
     _ -> False
 
 isGlobalThm :: DGLinkType -> Bool
@@ -77,12 +75,10 @@ isCofreeEdge edge = case edge of
     FreeOrCofreeDefLink Cofree _ -> True
     _ -> False
 
--- ----------------------------------------------------------------------------
--- other methods on edges
--- ----------------------------------------------------------------------------
+-- * other methods on edges
 
 eqLEdge :: (DGLinkLab -> DGLinkLab -> Bool) -> LEdge DGLinkLab
-          -> LEdge DGLinkLab -> Bool
+        -> LEdge DGLinkLab -> Bool
 eqLEdge f (v, w, l) (v2, w2, l2) = v == v2 && w == w2 && f l l2
 
 noPath :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
@@ -96,10 +92,9 @@ tryToGetEdge :: LEdge DGLinkLab -> DGraph -> Maybe (LEdge DGLinkLab)
 tryToGetEdge (src, tgt, lb) dgraph = fmap (\ l -> (src, tgt, l))
   $ find (eqDGLinkLabContent lb) $ Tree.getLEdges src tgt $ dgBody dgraph
 
-{- | try to insert an edge into the given dgraph, if the edge exists, the to
-be inserted edge's id would be added into the existing edge. -}
-insertDGLEdge :: LEdge DGLinkLab -- ^ the to be inserted edge
-              -> DGraph -> DGraph
+{- | try to insert an edge into the given dgraph, if the edge exists, the
+edge's id should match, too. -}
+insertDGLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 insertDGLEdge edge dgraph =
   case tryToGetEdge edge dgraph of
     Nothing -> changeDGH dgraph $ InsertEdge edge
@@ -108,34 +103,41 @@ insertDGLEdge edge dgraph =
         then dgraph
         else error "Proofs.EdgeUtils.insertDGLEdge"
 
-{- | get the edge id out of a given edge -}
+-- | get the edge id out of a given edge
 getEdgeId :: LEdge DGLinkLab -> EdgeId
 getEdgeId (_, _, label) = dgl_id label
 
--- ----------------------------------------------
--- methods that calculate paths of certain types
--- ----------------------------------------------
+-- * methods that calculate paths of certain types
 
 getAllPathsOfTypeFromGoalList :: DGraph -> (DGLinkType -> Bool)
                               -> [LEdge DGLinkLab] -> [[LEdge DGLinkLab]]
-getAllPathsOfTypeFromGoalList dgraph isType ls = concat
-    [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
-     source <- sources]
-    where
+getAllPathsOfTypeFromGoalList dgraph isType ls = let
       sources = Set.toList $ Set.fromList $ map (\ (s, _, _) -> s) ls
       targets = Set.toList $ Set.fromList $ map (\ (_, t, _) -> t) ls
+  in concatMap (\ source ->
+       concatMap (getAllPathsOfTypeBetween dgraph isType source) targets)
+         sources
 
 {- | returns all paths consisting of edges of the given type in the given
-   development graph-}
+   development graph -}
 getAllPathsOfType :: DGraph -> (DGLinkType -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfType dgraph isType =
     getAllPathsOfTypeFromGoalList dgraph isType $ labEdgesDG dgraph
 
--- determines the morphism of a given path
+-- | morphisms of (co)free definitions are identities
+realMorphism :: DGLinkLab -> Maybe GMorphism
+realMorphism lbl = let mor = dgl_morphism lbl in case dgl_type lbl of
+  ScopedLink _ _ _ -> return mor
+  HidingDefLink -> fail "hiding definition link"
+  FreeOrCofreeDefLink _ _ -> return $ ide $ cod mor
+  HidingFreeOrCofreeThm _ _ _ _ -> fail "hiding or free thm link"
+
+-- | determines the morphism of a given path
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
 calculateMorphismOfPath p = case p of
-  (_, _, lbl) : r -> let morphism = dgl_morphism lbl in
-    if null r then Just morphism else do
+  (_, _, lbl) : r -> do
+    morphism <- realMorphism lbl
+    if null r then return morphism else do
        rmor <- calculateMorphismOfPath r
        resultToMaybe $ composeMorphisms morphism rmor
   [] -> error "calculateMorphismOfPath"
@@ -144,29 +146,25 @@ calculateMorphismOfPath p = case p of
    given one -}
 filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
                       -> [[LEdge DGLinkLab]]
-filterPathsByMorphism morphism paths =
-  [path | path <- paths, calculateMorphismOfPath path == Just morphism]
+filterPathsByMorphism morphism =
+    filter ((== Just morphism) . calculateMorphismOfPath)
 
 {- | returns all paths consisting of global edges only
    or of one local edge followed by any number of global edges -}
 getAllLocGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
-getAllLocGlobPathsBetween dgraph src tgt =
-  locGlobPaths ++ globPaths
-  where
+getAllLocGlobPathsBetween dgraph src tgt = let
     outEdges = outDG dgraph src
-    locEdges = [(edge, target)
-               | edge@(_,target,_) <- filter (liftE isLocalEdge) outEdges]
-    locGlobPaths = concat
-                   [map ([edge] ++)
-                   $ getAllGlobPathsBetween dgraph node tgt
-                    | (edge, node) <- locEdges]
+    locEdges = filter (liftE isLocalEdge) outEdges
+    locGlobPaths =
+       concatMap (\ edge@(_, node, _) -> map (edge :)
+                  $ getAllGlobPathsBetween dgraph node tgt) locEdges
     globPaths = getAllGlobPathsBetween dgraph src tgt
+  in locGlobPaths ++ globPaths
 
 {- | returns all paths of globalDef edges or globalThm edges
    between the given source and target node -}
 getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
-getAllGlobPathsBetween dgraph src tgt =
-  getAllPathsOfTypeBetween dgraph isGlobalEdge src tgt
+getAllGlobPathsBetween dgraph = getAllPathsOfTypeBetween dgraph isGlobalEdge
 
 {- | returns all cyclic paths consisting of edges of the given type between the
    given two nodes -}
@@ -180,9 +178,7 @@ getAllPathsOfTypeFrom :: DGraph -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom dgraph src =
    Tree.getPaths src . elfilter (not . isHidingEdge . dgl_type) $ dgBody dgraph
 
--- ----------------------------------------
--- methods to check and select proof basis
--- ----------------------------------------
+-- * methods to check and select proof basis
 
 checkEdgeIds :: DGraph -> Maybe [EdgeId]
 checkEdgeIds dg =
@@ -217,9 +213,9 @@ selectProofBasisAux :: Map.Map EdgeId (Set.Set EdgeId) -> LEdge DGLinkLab
                     -> [[LEdge DGLinkLab]] -> ProofBasis
 selectProofBasisAux _ _ [] = emptyProofBasis
 selectProofBasisAux rel ledge (path : list) =
+  let b = calculateProofBasis rel path in
     if roughElem ledge b then selectProofBasisAux rel ledge list
-       else b {- OK, no cyclic proof -}
-    where b = calculateProofBasis rel path
+       else b               -- OK, no cyclic proof
 
 {- | calculates the proofBasis of the given path,
  i.e. (recursively) close the list of DGLinkLabs under the relation
@@ -255,7 +251,7 @@ invalidateProof t = case t of
     HidingFreeOrCofreeThm mh n gm _ -> HidingFreeOrCofreeThm mh n gm LeftOpen
     _ -> t
 
-{- | adopts the edges of the old node to the new node -}
+-- | adopts the edges of the old node to the new node
 adoptEdges :: DGraph -> Node -> Node -> DGraph
 adoptEdges dgraph oldNode newNode =
   if oldNode == newNode then dgraph else
@@ -268,9 +264,9 @@ adoptEdges dgraph oldNode newNode =
                    ++ map InsertEdge (newIn ++ newOut)
   in changesDGH dgraph allChanges
 
-{- | auxiliary method for adoptEdges -}
+-- | auxiliary method for adoptEdges
 adoptEdgesAux :: Node -> Bool -> LEdge DGLinkLab -> LEdge DGLinkLab
-adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
+adoptEdgesAux node areIngoingEdges (src, tgt, edgelab) =
   let (newSrc, newTgt) = if src == tgt then (node, node) else (src, tgt)
   in if areIngoingEdges then (newSrc, node, edgelab)
      else (node, newTgt, edgelab)
