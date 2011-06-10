@@ -183,8 +183,12 @@ anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType asp pos =
             $ item asp
       let (ns@(NodeSig node _), dg2) =
               insGSig dg' name (DGFreeOrCofree dglType) gsigma
+          nsigma = case nsig of
+            EmptyNode cl -> emptyG_sign cl
+            JustNode nds -> getSig nds
+      incl <- ginclusion lg nsigma gsigma
       return (replaceAnnoted sp' asp, ns,
-              insLink dg2 (ide gsigma) (FreeOrCofreeDefLink dglType nsig)
+              insLink dg2 incl (FreeOrCofreeDefLink dglType nsig)
               SeeTarget n' node)
 
 {- | analyze a SPEC. The Bool Parameter determines if incoming symbols shall
