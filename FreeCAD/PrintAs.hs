@@ -65,8 +65,8 @@ printBO (Cone a r1 r2 h) = text "Cone" <+> (vcat[arow, brow, hrow, rrow]) where
 printBO (Torus t1 t2 t3 t4 t5) = text "Torus" <+>
                                  (vcat[t1r, t2r, t3r, t4r, t5r]) where
         t1r = hcat [ text "Angle1  ", pretty t1]
-        t2r = hcat [ text "Angle1  ", pretty t2]
-        t3r = hcat [ text "Angle1  ", pretty t3]
+        t2r = hcat [ text "Angle2  ", pretty t2]
+        t3r = hcat [ text "Angle3  ", pretty t3]
         t4r = hcat [ text "Radius1 ", pretty t4]
         t5r = hcat [ text "Radius2 ", pretty t5]
 printBO (Line a) = text "Line" <+> hcat [ text "Length ", pretty a]

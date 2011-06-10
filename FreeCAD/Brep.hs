@@ -33,12 +33,12 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
         d2 = distance3 a c --  > values used to compute rectangle's properties
         d3 = distance3 a d -- /
         mn = min d1 (min d2 d3) -- heigth/small edge value
-        mx = max d1 (min d2 d3) -- diagonal length
+        mx = max d1 (max d2 d3) -- diagonal length
         md = if (d1 /= mn)&&(d1 /= mx) then d1 else --length value
                 if (d2 /= mn)&&(d2 /= mx) then d2 else
-                    if (d3 /= mn)&&(d3 /= mx) then d2 else 0
-        h = mn
-        l = md
+                    if (d3 /= mn)&&(d3 /= mx) then d3 else 0
+        h = d1
+        l = d3
         hh = if mn == d1 then b else --w/o rotation is on the Oy axis
                     if mn == d2 then c else
                         if mn == d3 then d else (Vector3 0 0 0)

@@ -18,14 +18,14 @@ BrepToXML::BrepToXML() {}
 
 BrepToXML::BrepToXML(TopoDS_Shape shape)
 {
-    Sh = shape;
-    SS.Add(Sh);
+  Sh = shape;
+  SS.Add(Sh);
 }
 
 BrepToXML::BrepToXML(const BrepToXML& btxml)
 {
-    Sh = btxml.Sh;
-    SS.Add(Sh);
+  Sh = btxml.Sh;
+  SS.Add(Sh);
 }
 
 BrepToXML::~BrepToXML() {}
@@ -35,12 +35,12 @@ BrepToXML::~BrepToXML() {}
  */
 TopoDS_Shape BrepToXML::get_shape(void)
 {
-    return Sh;
+  return Sh;
 }
 void BrepToXML::set_shape(TopoDS_Shape shape)
 {
-    Sh = shape;
-    //TODO Refresh the shapeset
+  Sh = shape;
+  //TODO Refresh the shapeset
 }
 
 
@@ -52,37 +52,37 @@ void BrepToXML::set_shape(TopoDS_Shape shape)
 
 void BrepToXML::print_shape_type(TopoDS_Shape a) 
 {
-    TopAbs_ShapeEnum st;
-    st = a.ShapeType();
-    switch (st)
+  TopAbs_ShapeEnum st;
+  st = a.ShapeType();
+  switch (st)
     {
-        case TopAbs_COMPOUND:
-            cout << "TopAbs_COMPOUND" << endl;
-            break;
-        case TopAbs_COMPSOLID:
-            cout << "TopAbs_COMPSOLID" << endl;
-            break;
-        case TopAbs_SOLID:
-            cout << "TopAbs_SOLID" << endl;
-            break;
-        case TopAbs_SHELL:
-            cout << "TopAbs_SHELL" << endl;
-            break;
-        case TopAbs_FACE:
-            cout << "TopAbs_FACE" << endl;
-            break;
-        case TopAbs_WIRE:
-            cout << "TopAbs_WIRE" << endl;
-            break;
-        case TopAbs_EDGE:
-            cout << "TopAbs_EDGE" << endl;
-            break;
-        case TopAbs_VERTEX:
-            cout << "TopAbs_VERTEX" << endl;
-            break;
-        case TopAbs_SHAPE:
-            cout << "TopAbs_SHAPE" << endl;
-            break;
+    case TopAbs_COMPOUND:
+      cout << "TopAbs_COMPOUND" << endl;
+      break;
+    case TopAbs_COMPSOLID:
+      cout << "TopAbs_COMPSOLID" << endl;
+      break;
+    case TopAbs_SOLID:
+      cout << "TopAbs_SOLID" << endl;
+      break;
+    case TopAbs_SHELL:
+      cout << "TopAbs_SHELL" << endl;
+      break;
+    case TopAbs_FACE:
+      cout << "TopAbs_FACE" << endl;
+      break;
+    case TopAbs_WIRE:
+      cout << "TopAbs_WIRE" << endl;
+      break;
+    case TopAbs_EDGE:
+      cout << "TopAbs_EDGE" << endl;
+      break;
+    case TopAbs_VERTEX:
+      cout << "TopAbs_VERTEX" << endl;
+      break;
+    case TopAbs_SHAPE:
+      cout << "TopAbs_SHAPE" << endl;
+      break;
     }
 }
 
@@ -95,18 +95,14 @@ void BrepToXML::print_shape_type(TopoDS_Shape a)
 
 bool BrepToXML::read_brep(const char* filePath)
 {
-    bool b = BRepTools::Read(Sh, (const Standard_CString)filePath, builder);
-    //insert testing guards
-    if (b)
+  bool b = BRepTools::Read(Sh, (const Standard_CString)filePath, builder);
+  //insert testing guards
+  if (!b)
     {
-        cout << "reading ok" << endl;
+      cerr << "error while reading brep file" << endl;
     }
-    else
-    {
-        cout << "error while reading brep file" << endl;
-    }
-    SS.Add(Sh);
-    return b;
+  SS.Add(Sh);
+  return b;
 }
 
 /*******************************************************************************
@@ -116,12 +112,12 @@ bool BrepToXML::read_brep(const char* filePath)
  ******************************************************************************/
 void BrepToXML::print_subshapes()
 {
-    for (int i = 0; i < SS.NbShapes(); i++)
+  for (int i = 0; i < SS.NbShapes(); i++)
     {
-        this->print_shape_type(SS.Shape(i+1));
-        
-        
-       // cout << SS.Locations().Location(i+1) << endl;
+      this->print_shape_type(SS.Shape(i+1));
+      
+      
+      // cout << SS.Locations().Location(i+1) << endl;
     }
 }
 
@@ -136,20 +132,20 @@ void BrepToXML::print_subshapes()
  ******************************************************************************/
 vector <TopoDS_Shape> BrepToXML::get_subshapes(int arg)
 {   
-    vector <TopoDS_Shape> temp;       
-    if (SS.NbShapes() > arg)
+  vector <TopoDS_Shape> temp;       
+  if (SS.NbShapes() > arg)
     {
-        for (int i = arg+1; i <= SS.NbShapes(); i++)
+      for (int i = arg+1; i <= SS.NbShapes(); i++)
         {
-           // temp.push_back(SS.Shape(i+1));
+	  // temp.push_back(SS.Shape(i+1));
         }
     }
-    else
+  else
     {
-        cout << "error -- no subshapes" << endl;
+      cout << "error -- no subshapes" << endl;
     }
-
-    return temp;
+  
+  return temp;
 }
 
 /*******************************************************************************
@@ -159,15 +155,15 @@ vector <TopoDS_Shape> BrepToXML::get_subshapes(int arg)
  ******************************************************************************/
 void BrepToXML::init_graph(void)
 {
-    vector <int> line;
-    for (int i = 0; i < SS.NbShapes(); i++)
+  vector <int> line;
+  for (int i = 0; i < SS.NbShapes(); i++)
     {
-        for (int j = 0; j < SS.NbShapes(); j++)
+      for (int j = 0; j < SS.NbShapes(); j++)
         {
-            line.push_back(0);
+	  line.push_back(0);
         }
-        graph.push_back(line);
-        line.clear();
+      graph.push_back(line);
+      line.clear();
     }
 }
 
@@ -178,52 +174,52 @@ void BrepToXML::init_graph(void)
  ******************************************************************************/
 void BrepToXML::build_graph(void)
 {
-    this->init_graph();
-    this->add_to_graph();
-    this->simplify_graph();
+  this->init_graph();
+  this->add_to_graph();
+  this->simplify_graph();
 }
 
 
 
 void BrepToXML::add_to_graph()
 {
-
-    BRepTools_ShapeSet tempss;
-    for (int i = 1; i <= SS.NbShapes(); i++)
+  
+  BRepTools_ShapeSet tempss;
+  for (int i = 1; i <= SS.NbShapes(); i++)
     {
-        tempss.Add(SS.Shape(i));
-        for (int j = 1; j <= tempss.NbShapes(); j++)
+      tempss.Add(SS.Shape(i));
+      for (int j = 1; j <= tempss.NbShapes(); j++)
         {
-            int y = SS.Index(tempss.Shape(j));
-            if (!graph[i-1][y-1]) graph[i-1][y-1]++;
+	  int y = SS.Index(tempss.Shape(j));
+	  if (!graph[i-1][y-1]) graph[i-1][y-1]++;
         }
-        tempss.Clear();
+      tempss.Clear();
     }
-
+  
 }
 
 // graph[i][j] == 1 <=> Shape(i) contains Shape(j)
 void BrepToXML::simplify_graph(void)
 {
-    for (int i = 0; i < SS.NbShapes(); i++)
-      //neglect the fact that an object contains itself
+  for (int i = 0; i < SS.NbShapes(); i++)
+    //neglect the fact that an object contains itself
     {
-        graph[i][i] = 0;
+      graph[i][i] = 0;
     }
-    for (int i = 0; i < SS.NbShapes(); i++) //for every geometrical object:
+  for (int i = 0; i < SS.NbShapes(); i++) //for every geometrical object:
     {
-        for (int j = i+1; j < SS.NbShapes(); j++)
+      for (int j = i+1; j < SS.NbShapes(); j++)
         //for every object higher in the hierarchy
         {
-            if (graph[j][i]) //if i is contained by j
+	  if (graph[j][i]) //if i is contained by j
             {
-                for (int k = j+1; k < SS.NbShapes(); k++)
-                               //for every k higher than j
+	      for (int k = j+1; k < SS.NbShapes(); k++)
+		//for every k higher than j
                 {
-                    if((graph[k][j])&&(graph[k][i])) 
+		  if((graph[k][j])&&(graph[k][i])) 
                     //if j is contained by k and i is contained by k
                     {
-                        graph[k][i] = 0;
+		      graph[k][i] = 0;
                       //=> i is contained indirectly by k so we could delete this edge
                     }
                 }
@@ -235,78 +231,88 @@ void BrepToXML::simplify_graph(void)
 
 void BrepToXML::print_graph(void)
 {
-    cout << SS.NbShapes() << endl;
-    for(int i = 0; i < SS.NbShapes(); i++)
+  cout << SS.NbShapes() << endl;
+  for(int i = 0; i < SS.NbShapes(); i++)
     {
-        for(int j = 0; j < SS.NbShapes(); j++)
+      for(int j = 0; j < SS.NbShapes(); j++)
         {
-            cout << graph[i][j] << " ";
+	  cout << graph[i][j] << " ";
         }
-        cout << endl;
+      cout << endl;
     }
 }
 
 void BrepToXML::cacheProperties(const TopoDS_Shape& sh)
 {
-    TopoDS_Iterator it(sh);
-    for(;it.More();it.Next())
+  TopoDS_Iterator it(sh);
+  for(;it.More();it.Next())
     {
-        const TopoDS_Shape& child = it.Value();
-        TopAbs_ShapeEnum childType;
-        childType = child.ShapeType();
-        switch (childType)
+      const TopoDS_Shape& child = it.Value();
+      TopAbs_ShapeEnum childType;
+      childType = child.ShapeType();
+      switch (childType)
         {
-            case TopAbs_COMPOUND:
-                break;
-            case TopAbs_COMPSOLID:
-                break;
-            case TopAbs_SOLID:
-                break;
-            case TopAbs_SHELL:
-                break;
-            case TopAbs_FACE:
-                break;
-            case TopAbs_WIRE:
-                break;
-                case TopAbs_SHAPE:
-                break;
-            case TopAbs_EDGE:
-                //TODO extract data describing the curve:
-                //
-                //Handle(Geom_Curve) aCurve3d =
-                //BRep_Tool::Curve (anEdge, aFirst, aLast)
-                break;
-            case TopAbs_VERTEX:
-                gp_Pnt vLoc;
-                //vertLoc.X(), .Y() and .Z() -- absolute location values on x, y
-                // and z axis.
-                const TopoDS_Vertex& castChild = TopoDS::Vertex(child);
-
-                vLoc = BRep_Tool::Pnt(castChild);
-                pair < int, gp_Pnt > indexedVLoc(SS.Index(child), vLoc);
-                vLocs.push_back(indexedVLoc);
-                break;
+	case TopAbs_COMPOUND:
+	  break;
+	case TopAbs_COMPSOLID:
+	  break;
+	case TopAbs_SOLID:
+	  break;
+	case TopAbs_SHELL:
+	  break;
+	case TopAbs_FACE:
+	  break;
+	case TopAbs_WIRE:
+	  break;
+	case TopAbs_SHAPE:
+	  break;
+	case TopAbs_EDGE:
+	  //TODO extract data describing the curve:
+	  //
+	  //Handle(Geom_Curve) aCurve3d =
+	  //BRep_Tool::Curve (anEdge, aFirst, aLast)
+	  break;
+	case TopAbs_VERTEX:
+	  gp_Pnt vLoc;
+	  //vertLoc.X(), .Y() and .Z() -- absolute location values on x, y
+	  // and z axis.
+	  const TopoDS_Vertex& castChild = TopoDS::Vertex(child);
+	  
+	  vLoc = BRep_Tool::Pnt(castChild);
+	  pair < int, gp_Pnt > indexedVLoc(SS.Index(child), vLoc);
+	  vLocs.push_back(indexedVLoc);
+	  break;
         }
-        cacheProperties(child);
+      cacheProperties(child);
     }
 }
 
 void BrepToXML::build_xml(const string& what, string& output)
 {
-    if(what == "rectangle")
+  if(what == "rectangle")
     //we only need 4 points to define it
     this->cacheProperties(Sh);
-    {
-        //if ( SS.NbShapes != 9 ) exit(1);
-        stringstream ss;
-        ss << "<rectangle>";
-        for (int i = 0; i < 4; i++)
-        {
-            ss  << "<vertex " << "x=" << vLocs[i].second.X() << " "
-                << "y=" << vLocs[i].second.Y() << " "
-                << "z=" << vLocs[i].second.Z() << "/>";
-        }
-        ss <<"</rectangle>";
-        output = ss.str();
-    }
+  {
+    //if ( SS.NbShapes != 9 ) exit(1);
+    stringstream ss;
+    ss    << "<rectangle>\n";
+    vector <int> duplicates;
+    for (int i = 0; i < vLocs.size(); i++)
+      {
+	bool write = true;
+ 	for (int j = 0; j < duplicates.size(); j++)
+   	  {
+	    if ( vLocs[i].first == duplicates[j])
+	      write = false;
+ 	  }
+	if (write) {
+	  ss  << "<vertex " << "x=\"" << vLocs[i].second.X() << "\" "
+	      << "y=\"" << vLocs[i].second.Y() << "\" "
+	      << "z=\"" << vLocs[i].second.Z() << "\" />\n";
+	  duplicates.push_back(vLocs[i].first);
+	}
+      }
+    ss <<"</rectangle>\n";
+    output = ss.str();
+  }
 }
