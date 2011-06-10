@@ -251,7 +251,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       (fs, dgf) <- if isIdentity mor then
-         hint (ns', dg') ("nothing translated by:\n" ++ showDoc ren "")
+         warning (ns', dg') ("nothing renamed by:\n" ++ showDoc ren "")
            $ getRange ren
          else do
          let (ns@(NodeSig node _), dg'') =
@@ -267,20 +267,22 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       rLid <- getRestrLogic restr
       p1@(NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
-      let reveal = maybe False (not . isIdentity) tmor
-      p2@(NodeSig node1 _, dg2) <- if isIdentity hmor then
-          warning p1 ("nothing hidden by:\n" ++ showDoc restr "")
+      let noRename = maybe True isIdentity tmor
+          noHide = isIdentity hmor
+      p2@(NodeSig node1 _, dg2) <- if noHide then
+          (if noRename then warning else hint)
+          p1 ("nothing hidden by:\n" ++ showDoc restr "")
             $ getRange restr
           else do
            let (ns@(NodeSig node _), dg'') = insGSig dg'
-                 (if reveal then extName "Hiding" name else name)
+                 (if noRename then name else extName "Hiding" name)
                  orig $ dom hmor
            -- ??? too simplistic for non-comorphism inter-logic reductions
            return (ns, insLink dg'' hmor HidingDefLink SeeTarget n' node)
       {- we treat hiding and revealing differently
       in order to keep the dg as simple as possible -}
       (fs, dgf) <- case tmor of
-        Just tmor' | reveal -> do
+        Just tmor' | not noRename -> do
           let (ns@(NodeSig node2 _), dg3) =
                    insGSig dg2 name DGRevealTranslation $ cod tmor'
           return (ns, insLink dg3 tmor' globalDef SeeTarget node1 node2)
