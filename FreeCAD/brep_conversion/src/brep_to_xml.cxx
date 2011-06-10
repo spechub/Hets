@@ -297,10 +297,10 @@ void BrepToXML::build_xml(const string& what, string& output)
     stringstream ss;
     ss    << "<rectangle>\n";
     vector <int> duplicates;
-    for (int i = 0; i < vLocs.size(); i++)
+    for (int i = 0; i < (int) vLocs.size(); i++)
       {
 	bool write = true;
- 	for (int j = 0; j < duplicates.size(); j++)
+ 	for (int j = 0; j < (int) duplicates.size(); j++)
    	  {
 	    if ( vLocs[i].first == duplicates[j])
 	      write = false;

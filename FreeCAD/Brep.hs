@@ -37,8 +37,8 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
         md = if (d1 /= mn)&&(d1 /= mx) then d1 else --length value
                 if (d2 /= mn)&&(d2 /= mx) then d2 else
                     if (d3 /= mn)&&(d3 /= mx) then d3 else 0
-        h = d1
-        l = d3
+        h = mn
+        l = md
         hh = if mn == d1 then b else --w/o rotation is on the Oy axis
                     if mn == d2 then c else
                         if mn == d3 then d else (Vector3 0 0 0)
@@ -51,9 +51,16 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
         --space ( a = 0.0.0; first: hpoint = hpoint'; then: lpoint = lpoint' )
         -- 0.0.0 --> X.Y.Z
         -- first we rotate with regard to hpoint (and Oy axis)
-        rot1vec = v3VecProd (Vector3 0 1 0) hpoint -- rotation vector (for q1)
-        rot1vecn = scalarprod3 (norm3 rot1vec) rot1vec
-        cosAa1 = cos((acos((v3DotProd(Vector3 0 1 0)hpoint)/(norm3 hpoint)))/2)
+        oy = Vector3 0 1 0
+        rot1vec = v3VecProd oy hpoint -- rotation axis (for q1)
+        rot1vecn = if norm3 rot1vec /= 0 then
+                       scalarprod3(1/(norm3 rot1vec)) rot1vec --normalized rotation axis
+                   else
+                       Vector3 1 0 0
+        cosAa1 = if norm3 rot1vec /= 0 then
+                     cos((acos((v3DotProd oy hpoint)/(norm3 hpoint)))/2)
+                 else
+                     cos(0)
         sinAa1 = sqrt (1 - cosAa1**2)
         quat1 = Vector4 (sinAa1*(x rot1vecn)) (sinAa1*(y rot1vecn))
                         (sinAa1*(z rot1vecn)) cosAa1
@@ -61,8 +68,14 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
         l2point = rotate tmatrix (Vector3 (norm3 lpoint) 0 0)
         -- then we rotate l2point into lpoint
         rot2vec = v3VecProd (l2point) lpoint
-        rot2vecn = scalarprod3 (norm3 rot2vec) rot2vec
-        cosAa2 = cos((acos ((v3DotProd l2point lpoint)/(norm3 lpoint)))/2)
+        rot2vecn = if norm3 rot2vec /= 0 then
+                       scalarprod3 (1/(norm3 rot2vec)) rot2vec
+                   else
+                       Vector3 1 0 0
+        cosAa2 = if norm3 rot2vec /= 0 then
+                     cos((acos ((v3DotProd l2point lpoint)/(norm3 lpoint)))/2)
+                 else
+                     cos(0)
         sinAa2 = sqrt (1 - cosAa2**2)
         quat2 = Vector4 (sinAa2*(x rot2vecn)) (sinAa2*(y rot2vecn))
                         (sinAa2*(z rot2vecn)) cosAa2
