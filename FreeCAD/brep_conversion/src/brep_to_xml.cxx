@@ -187,7 +187,7 @@ void BrepToXML::build_graph(void)
 
 void BrepToXML::add_to_graph()
 {
-   
+
     BRepTools_ShapeSet tempss;
     for (int i = 1; i <= SS.NbShapes(); i++)
     {
@@ -205,21 +205,26 @@ void BrepToXML::add_to_graph()
 // graph[i][j] == 1 <=> Shape(i) contains Shape(j)
 void BrepToXML::simplify_graph(void)
 {
-    for (int i = 0; i < SS.NbShapes(); i++) //neglect the fact that an object contains itself
+    for (int i = 0; i < SS.NbShapes(); i++)
+      //neglect the fact that an object contains itself
     {
         graph[i][i] = 0;
     }
     for (int i = 0; i < SS.NbShapes(); i++) //for every geometrical object:
     {
-        for (int j = i+1; j < SS.NbShapes(); j++) //for every object higher in the hierarchy
+        for (int j = i+1; j < SS.NbShapes(); j++)
+        //for every object higher in the hierarchy
         {
             if (graph[j][i]) //if i is contained by j
             {
-                for (int k = j+1; k < SS.NbShapes(); k++) //for every k higher than j
+                for (int k = j+1; k < SS.NbShapes(); k++)
+                               //for every k higher than j
                 {
-                    if((graph[k][j])&&(graph[k][i])) //if j is contained by k and i is contained by k
+                    if((graph[k][j])&&(graph[k][i])) 
+                    //if j is contained by k and i is contained by k
                     {
-                        graph[k][i] = 0; //=> i is contained indirectly by k so we could delete this edge
+                        graph[k][i] = 0;
+                      //=> i is contained indirectly by k so we could delete this edge
                     }
                 }
             }
@@ -241,21 +246,7 @@ void BrepToXML::print_graph(void)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void BrepToXML::cacheProperties(const TopoDS_Shape& sh) 
+void BrepToXML::cacheProperties(const TopoDS_Shape& sh)
 {
     TopoDS_Iterator it(sh);
     for(;it.More();it.Next())
@@ -263,7 +254,7 @@ void BrepToXML::cacheProperties(const TopoDS_Shape& sh)
         const TopoDS_Shape& child = it.Value();
         TopAbs_ShapeEnum childType;
         childType = child.ShapeType();
-        switch (childType) 
+        switch (childType)
         {
             case TopAbs_COMPOUND:
                 break;
@@ -274,16 +265,15 @@ void BrepToXML::cacheProperties(const TopoDS_Shape& sh)
             case TopAbs_SHELL:
                 break;
             case TopAbs_FACE:
-            
                 break;
             case TopAbs_WIRE:
                 break;
                 case TopAbs_SHAPE:
                 break;
             case TopAbs_EDGE:
-                //TODO extract data describing the curve: 
+                //TODO extract data describing the curve:
                 //
-                //Handle(Geom_Curve) aCurve3d = 
+                //Handle(Geom_Curve) aCurve3d =
                 //BRep_Tool::Curve (anEdge, aFirst, aLast)
                 break;
             case TopAbs_VERTEX:
@@ -294,10 +284,9 @@ void BrepToXML::cacheProperties(const TopoDS_Shape& sh)
 
                 vLoc = BRep_Tool::Pnt(castChild);
                 pair < int, gp_Pnt > indexedVLoc(SS.Index(child), vLoc);
-                vLocs.push_back(indexedVLoc);  
+                vLocs.push_back(indexedVLoc);
                 break;
         }
-              
         cacheProperties(child);
     }
 }
@@ -313,11 +302,11 @@ void BrepToXML::build_xml(const string& what, string& output)
         ss << "<rectangle>";
         for (int i = 0; i < 4; i++)
         {
-            ss  << "<vertex " << "x=" << vLocs[i].second.X() << ", "
-                << "y=" << vLocs[i].second.Y() << ", "
+            ss  << "<vertex " << "x=" << vLocs[i].second.X() << " "
+                << "y=" << vLocs[i].second.Y() << " "
                 << "z=" << vLocs[i].second.Z() << "/>";
         }
-        ss <<"/rectangle>";
+        ss <<"</rectangle>";
         output = ss.str();
     }
 }

@@ -1,10 +1,24 @@
-module FreeCAD.Translator
+{- |
+Module      :  $Header$
+Description :  definition of the datatype describing
+               the abstract FreeCAD terms and and a few tools describing simple
+               mathematical operations on those building-blocks (3d vectors,
+               rotation matrices, rotation quaternions)
+Copyright   :  (c) Robert Savu and Uni Bremen 2011
+License     :  GPLv2 or higher, see LICENSE.txt
 
-where
+Maintainer  :  Robert.Savu@dfki.de
+Stability   :  experimental
+Portability :  portable
+
+Declaration of the abstract datatypes of FreeCAD terms
+-}
+module FreeCAD.Translator where
 import FreeCAD.As
 import Text.XML.Light
 import Data.Maybe
 import Data.Set as Set
+import FreeCAD.Brep
 --import FreeCAD.Brep
 
 
@@ -18,21 +32,16 @@ objListQName = makeQName "ObjectData"
 objQName::QName
 objQName = makeQName "Object"
     --qualified name for the element which represents an object
-    
-    
 objListEl:: Element -> Maybe Element
-objListEl mbel = findChild objListQName mbel 
+objListEl mbel = findChild objListQName mbel
     --the xml element containing all objects and their data:: Element
 objList:: Element -> [Element]
 objList mbel= findChildren objQName (fromJust (objListEl mbel))
     --list of xml elements containing data for each object:: [Element]
-            
+
 
 firstThree :: String -> String
 firstThree x = take 3 x
-
-makeQName:: String -> QName
-makeQName s = QName s Nothing Nothing
 
 getName:: Element -> String
 getName el = fromJust (findAttr (makeQName "name") el)
@@ -49,11 +58,10 @@ setBaseObjs:: Set.Set [Char]
 setBaseObjs = fromList["Box", "Sph", "Cyl", "Con", "Tor", "Cir", "Rec"]
 
 isBaseObject:: Element -> Bool
-isBaseObject el = member (firstThree (getName el)) setBaseObjs  
+isBaseObject el = member (firstThree (getName el)) setBaseObjs
     -- identify (by its name) whether an object is simpe or extended
     -- returns true if it is a base object and false otherwise
-                
-                 
+
 --used in order to identify the object constructor from the name
 
 getObject:: Element -> IO NamedObject
@@ -63,13 +71,13 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
              | tn == "Con" = mkBaseObject $ getCon elc
              | tn == "Tor" = mkBaseObject $ getTor elc
              | tn == "Cir" = mkBaseObject $ getCir elc
-             | tn == "Rec" = mkRectangle elc --TODO
+             | tn == "Rec" = mkRectangle el --TODO
              | tn == "Lin" = mkLine elc --TODO
              | tn == "Cut" = mkObject $ getCut elc
              | tn == "Com" = mkObject $ getCom elc
              | tn == "Fus" = mkObject $ getFus elc
              | tn == "Sec" = mkObject $ getSec elc
-			 | tn == "Ext" = mkObject $ getExt elc
+             | tn == "Ext" = mkObject $ getExt elc
             where
                 tn = firstThree(getName el)
                 mkObject = return . NamedObject (getName el)
@@ -77,7 +85,7 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
                 mkBaseObject = mkObject . BaseObject
                 getBox e = Box (findFloat "Height" e) (findFloat "Width" e)
                                (findFloat "Length" e)
-                getSph e = Sphere (findFloat "Angle1" e) (findFloat "Angle2" e) 
+                getSph e = Sphere (findFloat "Angle1" e) (findFloat "Angle2" e)
                                   (findFloat "Angle3" e) (findFloat "Radius" e)
                 getCyl e = Cylinder (findFloat "Angle" e) (findFloat "Height" e)
                                     (findFloat "Radius" e)
@@ -86,7 +94,7 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
                 getTor e = Torus (findFloat "Angle1" e) (findFloat "Angle2" e)
                                  (findFloat "Angle3" e) (findFloat "Radius1" e)
                                  (findFloat "Radius2" e)
-                getCir e = Circle (findFloat "StartAngle" e) 
+                getCir e = Circle (findFloat "StartAngle" e)
                                   (findFloat "EndAngle" e)
                                   (findFloat "Radius" e)
                 getCut e = Cut (findRef "Base" e) (findRef "Tool" e)
@@ -97,12 +105,17 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
                 elc = child el
 
 
-mkRectangle :: Element -> IO NamedObject
-mkRectangle = error "rectangle not implemented"
-
+mkRectangle :: Element ->IO NamedObject
+mkRectangle ef = do
+        let e = child ef
+            el2 = childByNameAttr "Shape" e
+            elx = childByName "Part" el2
+        (bo, place) <- getBrep (getVal "file" elx, "rectangle")
+        let obj = BaseObject bo
+            po = PlacedObject place obj
+        return $ NamedObject (getVal "name" ef) po
 mkLine :: Element -> IO NamedObject
 mkLine = error "line not implemented"
-
 
 getVal:: String -> Element -> String
 getVal s el = fromJust (findAttr (makeQName s) el)
@@ -127,9 +140,9 @@ findFloat:: String -> Element -> Double
 findFloat s el = read (getFloatVal el2)
     where
         el2 = childByNameAttr s el
-findPlacement::Element -> FreeCAD.As.Placement        
+findPlacement::Element -> FreeCAD.As.Placement
 findPlacement el = Placement (Vector3 a b c) (Vector4 d e f g)
-	where
+    where
         (sa, sb, sc, sd, se, sf, sg) = getPlacementVals el2
         a = read sa
         b = read sb
@@ -140,15 +153,15 @@ findPlacement el = Placement (Vector3 a b c) (Vector4 d e f g)
         g = read sg
         el2 = childByNameAttr "Placement" el
 
-findRef::String -> Element -> FreeCAD.As.ExtendedObject        
+findRef::String -> Element -> FreeCAD.As.ExtendedObject
 findRef s el = Ref (getLinkVal el2)
-    where 
+    where
         el2 = childByNameAttr s el
 
 child:: Element -> Element
 child el = head(elChildren el)
 
---Facade function that translates the parsed XML document 
+--Facade function that translates the parsed XML document
 --into Haskell-FreeCAD datatype
 
 translate:: Element -> IO Document

@@ -20,6 +20,7 @@ processFile fp = do
   let parsed = parseXMLDoc xmlInput
   out <- translate (fromJust parsed)
   putStrLn (show $printDoc out)
+  --putStrLn (show out)
 ------------------------
 
 

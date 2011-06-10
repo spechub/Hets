@@ -34,14 +34,14 @@ instance Pretty Matrix33 where
                          row1 = row a11 a12 a13
                          row2 = row a21 a22 a23
                          row3 = row a31 a32 a33
-                         
-                         
+
+
 instance Pretty Vector4 where
     pretty v = parens $ sepByCommas $ map pretty [q0 v, q1 v, q2 v, q3 v]
-        
+
 instance Pretty Placement where
     pretty p = brackets $sepBySemis [pretty $position p, pretty $orientation p]
- 
+
 printBO:: BaseObject -> Doc
 printBO (Box h w l) = text "Box" <+> (vcat[hrow, wrow, lrow]) where
         hrow = hcat [ text "Height ", pretty h]
@@ -51,7 +51,8 @@ printBO (Cylinder a h r) = text "Cylinder" <+> (vcat[arow, hrow, rrow]) where
         arow = hcat [ text "Angle  ", pretty a]
         hrow = hcat [ text "Heigth ", pretty h]
         rrow = hcat [ text "Radius ", pretty r]
-printBO (Sphere a1 a2 a3 r) = text "Sphere" <+> (vcat[a1row, a2row, a3row, rrow]) where
+printBO (Sphere a1 a2 a3 r)=text "Sphere" <+>
+                             (vcat[a1row, a2row, a3row, rrow]) where
         a1row = hcat [ text "Angle1 ", pretty a1]
         a2row = hcat [ text "Angle2 ", pretty a2]
         a3row = hcat [ text "Angle3 ", pretty a3]
@@ -61,8 +62,8 @@ printBO (Cone a r1 r2 h) = text "Cone" <+> (vcat[arow, brow, hrow, rrow]) where
         brow = hcat [ text "Radius1 ", pretty r1]
         hrow = hcat [ text "Radius2 ", pretty r2]
         rrow = hcat [ text "Heigth  ", pretty h]
-printBO (Torus t1 t2 t3 t4 t5) = text "Torus" <+> (vcat[t1r, t2r, t3r, t4r, t5r])
-            where
+printBO (Torus t1 t2 t3 t4 t5) = text "Torus" <+>
+                                 (vcat[t1r, t2r, t3r, t4r, t5r]) where
         t1r = hcat [ text "Angle1  ", pretty t1]
         t2r = hcat [ text "Angle1  ", pretty t2]
         t3r = hcat [ text "Angle1  ", pretty t3]
@@ -86,6 +87,7 @@ printObject ( Cut eo1 eo2) = text "Cut" <+> vcat[pretty eo1, pretty eo2]
 printObject ( Common eo1 eo2) = text "Common" <+> vcat[pretty eo1, pretty eo2]
 printObject ( Fusion eo1 eo2) = text "Fusion" <+> vcat[pretty eo1, pretty eo2]
 printObject ( Section eo1 eo2) = text "Section" <+> vcat[pretty eo1, pretty eo2]
+printObject ( Extrusion eo d) = text "Extrusion" <+> vcat[pretty eo, pretty d]
 
 instance Pretty Object where
     pretty o = printObject o
@@ -103,11 +105,10 @@ printPO (PlacedObject p o) = vcat[pretty o, text "place" <+> pretty p]
 
 instance Pretty PlacedObject where
     pretty po = printPO po
-    
+
 instance Pretty NamedObject where
-    pretty no = 
-      lbrack $+$ space <+> hcat[doubleQuotes $pretty $name no, colon, space, pretty $object no]
-      $+$ rbrack
+    pretty no = lbrack $+$ space <+>
+        hcat[doubleQuotes $pretty $name no, colon, space, pretty $object no]
+        $+$ rbrack
 printDoc:: Document -> Doc
 printDoc a = vcat $ map pretty a
-
