@@ -89,7 +89,7 @@ getRectangle address = fmap parseBrepXML $ readProcess
                         --TODO fix this ^ (make it portable)
 
 parseBrepXML:: String -> (Vector3, Vector3, Vector3, Vector3)
-parseBrepXML a = getData $fromJust $parseXMLDoc a
+parseBrepXML a = getData (fromJust (parseXMLDoc a))
 
 quadFromList :: [a] -> (a,a,a,a)
 quadFromList ([]) = error "quadFromList: List empty"
@@ -99,7 +99,7 @@ quadFromList (d:b:c:[]) = error "quadFromList: List too short"
 quadFromList (b:c:d:e) = (b,c,d, head e)
 
 getData:: Element -> (Vector3, Vector3, Vector3, Vector3)
-getData e = if (qName $elName e) == "rectangle" then
+getData e = if (qName (elName e)) == "rectangle" then
                 quadFromList (Prelude.map parseVertex (elChildren e))
             else error "unsupported object type in the .brp file"
 
@@ -107,7 +107,7 @@ parseVertex:: Element -> Vector3
 parseVertex e = Vector3 (getD "x") (getD "y") (getD "z") where
     getD x = if ( findAttr (makeQName x) e) == Nothing then
                  error "erroneous input given by c++ module"
-             else read $fromJust (findAttr (makeQName x) e)
+             else read (fromJust (findAttr (makeQName x) e))
     --getD x = 0
 
 makeQName:: String -> QName
