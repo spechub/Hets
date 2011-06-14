@@ -27,9 +27,11 @@ public class OWLATermRenderer extends AbstractOWLRenderer {
     public ATerm render(OWLOntology ontology) throws OWLException
     {
 	//System.out.println("rere");
-        OWLATermObjectRenderer ren = new OWLATermObjectRenderer(ontology, ontology.getOWLOntologyManager());
-	//System.out.println("rere");
-        return ren.term(ontology);
+        OWLATermObjectRenderer ren = new OWLATermObjectRenderer(ontology, getOWLOntologyManager());
+	//System.out.println("rere\n");
+	ATerm aux = ren.term(ontology);
+	System.out.println("Aux is: " + aux);
+        return aux;
 
     }
 

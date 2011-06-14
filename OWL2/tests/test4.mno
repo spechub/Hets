@@ -1,0 +1,37 @@
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: : <http://example.org/>
+
+
+Datatype: rdf:PlainLiteral
+
+    
+DataProperty: hasZip
+
+    
+DataProperty: hasAddress
+
+    
+DataProperty: hasName
+
+    
+Individual: Petre
+
+    Facts:  
+     hasZip  "Peter Griffin"
+    
+    
+Individual: Peter_Griffin
+
+    Facts:  
+     hasAddress  "Peter Griffin"
+    
+    
+Individual: Peter
+
+    Facts:  
+     hasName  "Peter Griffin"
+    
+    
+DisjointProperties: 
+    hasAddress,hasName,hasZip
+

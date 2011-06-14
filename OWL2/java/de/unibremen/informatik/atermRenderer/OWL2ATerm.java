@@ -113,26 +113,32 @@ public class OWL2ATerm {
 			// get all ontology which are imported from this ontology.
 			getImportsList(ontology, manager);
 			//System.out.println(loadedImportsList);	
-			//System.out.println(ImportsList);
+			//System.out.println("Imports List: " + ImportsList);
 			
-			OWLOntologyManager mn = OWLManager.createOWLOntologyManager();
+			//OWLOntologyManager mn = OWLManager.createOWLOntologyManager();
 			System.out.println();
-			
+			System.out.println("LoadedImportsList: " + loadedImportsList);
+			System.out.println();
+			int i = 0;
 			for (OWLOntology onto : loadedImportsList) {
-				// String keyUri = (String) ontos.next();
-//				OWLOntology onto = ontos;
+				//String keyIri = (String) ontos.next();
+				//OWLOntology onto = ontos;
+				//System.out.println(onto.getOntologyID());
+				System.out.println(i + "\n");
+				i = i + 1;
 				IRI ontoIRI = onto.getOntologyID().getOntologyIRI();
 				//System.out.println(ontoIRI);
 				System.out.println("parsing OWL: " + ontoIRI + " ...");
-				ATerm uriTerm = factory.parse("\"" + ontoIRI + "\"");
-				System.out.println();
-				System.out.println(onto);
-				System.out.println();
+				ATerm iriTerm = factory.parse("\"" + ontoIRI + "\"");
+				//System.out.println();
+				//System.out.println(onto);
+				System.out.println("iriTerm is: " + iriTerm);
 				ATerm aterm = getATerm(onto, manager);
-
+				
 				ontologyList = factory.makeList(factory.makeAppl(af.paarFunc,
-						uriTerm, aterm), ontologyList);
-			}/*
+						iriTerm, aterm), ontologyList);
+			}
+			System.out.println("stuck in loop");
 			File file = new File(filename);
 			ontologyList.reverse().writeToTextFile(new FileOutputStream(file, false));
 			String cmd = "cp " + file.getAbsolutePath() + " .outputFilename";
@@ -140,7 +146,7 @@ public class OWL2ATerm {
 			System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
-			e.printStackTrace();*/
+			e.printStackTrace();
 		}catch (Exception ex) {
 			System.err.println("OWL parse error: " + ex.getMessage());
 			ex.printStackTrace();
@@ -150,7 +156,10 @@ public class OWL2ATerm {
 	static private ATerm getATerm(OWLOntology ontology, OWLOntologyManager manager) {
         try {
             OWLATermRenderer renderer = new OWLATermRenderer(manager);
-            return renderer.render(ontology);
+		//System.out.println("dsds\n");
+	    ATerm aaux = renderer.render(ontology);
+		//System.out.println("dsds\n");
+            return aaux;
         }
         catch (OWLException e) {
           System.err.println("Rendering error" + manager.getOntologyDocumentIRI(ontology));
@@ -175,11 +184,9 @@ public class OWL2ATerm {
 		}	
 		//System.out.println("err");
 		try {
+			OWLOntologyManager ma = OWLManager.createOWLOntologyManager();
 			for (OWLOntology imported : ontology.getImports()) {
-				//System.out.println(imported);
-				//System.out.println();
-				//System.out.println("err");
-				OWLOntologyManager ma = OWLManager.createOWLOntologyManager();
+								
 				if (!importsIRI.contains(ma.getOntologyDocumentIRI(imported))) {
 					unSavedImports.add(imported);
 					loadedImportsList.add(imported);

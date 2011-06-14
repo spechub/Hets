@@ -21,7 +21,7 @@ public class ATermFunc {
 		AFun paarFunc = factory.makeAFun("UOPaar", 2, false);
 		AFun axFunc = factory.makeAFun("Ax", 1, false);
 		AFun ontologyPropertyFunc = factory.makeAFun("OntologyProperty", 2, false);
-		AFun uriAnnoFunc = factory.makeAFun("IRIAnnotation", 2, false);
+		AFun iriAnnoFunc = factory.makeAFun("IRIAnnotation", 2, false);
 		AFun messageFunc = factory.makeAFun("MassageList", 1, false);
 
 		AFun fcFunc = factory.makeAFun("Fc", 1, false);
@@ -31,8 +31,8 @@ public class ATermFunc {
 		AFun nothingFunc = factory.makeAFun("N", 0, false);
 
 		
-		AFun nsFunc1 = factory.makeAFun("Namespace", 1, false);
-		AFun nsFunc2 = factory.makeAFun("NS", 2, false);
+		AFun nsFunc1 = factory.makeAFun("Prefix", 1, false);
+		AFun nsFunc2 = factory.makeAFun("Px", 2, false);
 		
 		AFun labelAnnoFunc = factory.makeAFun(LABEL.getShortName(), 1, false);
 		AFun commAnnoFunc =  factory.makeAFun(COMMENT.getShortName(), 1, false);
