@@ -119,27 +119,27 @@ anaString mln lgraph opts topLns libenv initDG input file = do
       posFileName = case mln of
           Just gLn | useLibPos opts -> show $ getLibId gLn
           _ -> realFileName
-      Result ds mast = readLibDefnM lgraph opts posFileName input
-  case mast of
-    Just (Lib_defn pln is ps ans) ->
-         let noSuffixFile = rmSuffix file
-             spN = convertFileToLibStr file
-             noLibName = null $ show $ getLibId pln
-             nLn = setFilePath posFileName mt
-               $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
-             nIs = case is of
-               [Annoted (Spec_defn spn gn as qs) rs [] []]
-                 | noLibName && null (tokStr spn)
-                   -> [Annoted (Spec_defn (mkSimpleId spN) gn as qs) rs [] []]
-               _ -> is
-             ast@(Lib_defn ln _ _ _) = Lib_defn nLn nIs ps ans
-         in case analysis opts of
+
+  Lib_defn pln is ps ans <- readLibDefnM lgraph opts posFileName input
+
+  let noSuffixFile = rmSuffix file
+      spN = convertFileToLibStr file
+      noLibName = null $ show $ getLibId pln
+      nLn = setFilePath posFileName mt
+            $ if noLibName then fromMaybe (emptyLibName spN) mln else pln
+      nIs = case is of
+        [Annoted (Spec_defn spn gn as qs) rs [] []]
+            | noLibName && null (tokStr spn)
+                -> [Annoted (Spec_defn (mkSimpleId spN) gn as qs) rs [] []]
+        _ -> is
+      ast@(Lib_defn ln _ _ _) = Lib_defn nLn nIs ps ans
+  case analysis opts of
       Skip -> do
           lift $ putIfVerbose opts 1 $
                   "Skipping static analysis of library " ++ show ln
           ga <- liftR $ addGlobalAnnos emptyGlobalAnnos ans
           lift $ writeLibDefn ga file opts ast
-          liftR $ Result ds Nothing
+          liftR $ mzero
       _ -> do
           let libstring = show $ getLibId ln
           unless (isSuffixOf libstring noSuffixFile) $ lift
@@ -157,7 +157,6 @@ anaString mln lgraph opts topLns libenv initDG input file = do
                   when (hasEnvOut opts)
                         (writeFileInfo opts ln file ld dg)
                   return (ln, lenv)
-    Nothing -> liftR $ Result ds Nothing
 
 -- lookup or read a library
 anaLibFile :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LibName

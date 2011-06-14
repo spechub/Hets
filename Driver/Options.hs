@@ -331,6 +331,7 @@ data InType =
   | ExperimentalIn -- ^ for testing new functionality
   | ProofCommand
   | GuessIn
+  | FreeCADIn
   | CommonLogicIn
   | CommonLogic2In -- ^ "clif"
   | DgXml
@@ -350,6 +351,7 @@ instance Show InType where
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
     GuessIn -> ""
+    FreeCADIn -> "fcstd"
     CommonLogicIn -> "clf"
     CommonLogic2In -> "clif"
     DgXml -> xmlS
@@ -373,7 +375,7 @@ plainInTypes :: [InType]
 plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
   , HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In
-  , DgXml ]
+  , DgXml, FreeCADIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]

@@ -20,6 +20,8 @@ import Common.Id
 import Common.AS_Annotation
 import Common.LibName
 
+import Logic.Grothendieck (G_basic_spec)
+
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
 
@@ -69,3 +71,12 @@ data ITEM_NAME_OR_MAP = Item_name ITEM_NAME
                         deriving (Show, Eq)
 
 type ITEM_NAME = SIMPLE_ID
+
+fromBasicSpec :: LibName -> SPEC_NAME -> G_basic_spec -> LIB_DEFN
+fromBasicSpec ln sn gbs =
+    let rg = nullRange
+        g = Genericity (Params []) (Imported []) rg
+        sp = Basic_spec gbs rg
+        mkAnno = emptyAnno
+        li = Spec_defn sn g (mkAnno sp) rg
+    in Lib_defn ln [mkAnno li] rg []

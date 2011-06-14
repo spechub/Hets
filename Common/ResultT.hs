@@ -14,6 +14,7 @@ Portability :  portable
 module Common.ResultT where
 
 import Common.Result
+import Control.Monad
 import Control.Monad.Trans
 
 newtype ResultT m a = ResultT { runResultT :: m (Result a) }
@@ -46,4 +47,7 @@ class Monad m => MonadResult m where
 
 instance Monad m => MonadResult (ResultT m) where
     liftR = ResultT . return
+
+instance MonadIO m => MonadIO (ResultT m) where
+    liftIO = ResultT . liftM return . liftIO
 

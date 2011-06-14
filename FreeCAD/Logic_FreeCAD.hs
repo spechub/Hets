@@ -23,20 +23,22 @@ import Common.Doc
 import Common.DocUtils
 import Common.ExtSign
 import Common.Id
-import Common.Utils
+import Common.LibName
 
 import ATerm.Lib
 
 -- import Common.XmlParser (XmlParseable, parseXml)
 
-import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
 
 import FreeCAD.As
 import FreeCAD.ATC_FreeCAD ()
-import FreeCAD.PrintAs
+import FreeCAD.PrintAs ()
+
+import Logic.Grothendieck (G_basic_spec(..))
+import Syntax.AS_Library (fromBasicSpec, LIB_DEFN)
 
 data FreeCAD = FreeCAD deriving Show
 
@@ -85,3 +87,10 @@ instance Logic FreeCAD
     where
       stability FreeCAD = Experimental
 
+
+
+readFreeCADLib :: FilePath -> LibName -> IO LIB_DEFN
+readFreeCADLib fp ln = do
+  bs <- error "1" -- getBS fp
+  let sn = error "2" -- sid "FreeCAD-Design"
+  return $ fromBasicSpec ln sn $ G_basic_spec FreeCAD bs

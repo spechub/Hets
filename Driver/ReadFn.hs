@@ -38,17 +38,26 @@ import Text.ParserCombinators.Parsec
 
 import System.FilePath
 
+import Control.Monad.Trans (MonadIO (..))
+
 import Data.Char
 import Data.List (isPrefixOf)
 import Data.Maybe
 
-readLibDefnM :: Monad m => LogicGraph -> HetcatsOpts -> FilePath -> String
+import FreeCAD.Logic_FreeCAD
+
+readLibDefnM :: MonadIO m => LogicGraph -> HetcatsOpts -> FilePath -> String
   -> m LIB_DEFN
 readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
-    _ -> case runParser (library $ setCurLogic (defLogic opts) lgraph)
+    FreeCADIn -> do
+      liftIO $ putStrLn "FREECAD"
+      liftIO $ readFreeCADLib file $ fileToLibName opts file
+    _ -> do
+--      liftIO $ putStrLn "DEFAULT"
+      case runParser (library $ setCurLogic (defLogic opts) lgraph)
           (emptyAnnos ()) file input of
          Left err -> fail (showErr err)
          Right ast -> return ast

@@ -198,23 +198,26 @@ handle (F5 input box1 box2 box3 box4) = do
 -- Analyze the input
 anaInput :: String -> SelectedBoxes -> FilePath
          -> IO (CRes.Result Output)
+{-
 anaInput contents selectedBoxes outputfiles =
       maybe (return $ CRes.Result parseErrors Nothing) ana_ast mast
    where
       CRes.Result parseErrors mast =
               readLibDefnM logicGraph webOpts "<stdin>" contents
-      ana_ast ast = do
-         CRes.Result ds mres <- runResultT
-           $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast
-         let ds1 = filter diagFilter ds
-         if CRes.hasErrors ds1
-            then return $ CRes.Result ds1 Nothing
-            else maybe (return $ CRes.Result ds1 Nothing)
-                       (\ res -> do
-                          saveLog (archive selectedBoxes)
-                          process_result ds1 res outputfiles selectedBoxes)
-                       mres
-
+-}
+anaInput contents selectedBoxes outputfiles = do
+  ast <- readLibDefnM logicGraph webOpts "<stdin>" contents
+  CRes.Result ds mres <- runResultT
+         $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast
+  let ds1 = filter diagFilter ds
+  if CRes.hasErrors ds1
+  then return $ CRes.Result ds1 Nothing
+  else maybe (return $ CRes.Result ds1 Nothing)
+           (\ res -> do
+              saveLog (archive selectedBoxes)
+              process_result ds1 res outputfiles selectedBoxes)
+           mres
+ where
       diagFilter d = case CRes.diagKind d of
                      CRes.Hint -> False
                      CRes.Debug -> False
