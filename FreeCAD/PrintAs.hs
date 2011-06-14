@@ -40,7 +40,7 @@ instance Pretty Vector4 where
     pretty v = parens $ sepByCommas $ map pretty [q0 v, q1 v, q2 v, q3 v]
 
 instance Pretty Placement where
-    pretty p = brackets $sepBySemis [pretty $position p, pretty $orientation p]
+    pretty p = brackets $ sepBySemis [pretty $ position p, pretty $ orientation p]
 
 printBO:: BaseObject -> Doc
 printBO (Box h w l) = text "Box" <+> (vcat[hrow, wrow, lrow]) where
@@ -108,7 +108,13 @@ instance Pretty PlacedObject where
 
 instance Pretty NamedObject where
     pretty no = lbrack $+$ space <+>
-        hcat[doubleQuotes $pretty $name no, colon, space, pretty $object no]
+        hcat[doubleQuotes $ pretty $ name no, colon, space, pretty $ object no]
         $+$ rbrack
+
+instance GetRange NamedObject
+
 printDoc:: Document -> Doc
 printDoc a = vcat $ map pretty a
+
+instance Pretty Sign where
+    pretty = pretty . objects

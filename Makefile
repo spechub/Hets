@@ -53,7 +53,7 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF
+    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF FreeCAD
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -321,6 +321,8 @@ Fpl_files = Fpl/As.hs Fpl/Sign.hs
 
 THF_files = THF/As.hs
 
+FreeCAD_files = FreeCAD/As.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -406,6 +408,10 @@ Fpl/ATC_Fpl.der.hs: $(Fpl_files) $(GENRULES)
 
 THF/ATC_THF.der.hs: $(THF_files) $(GENRULES)
 	$(GENRULECALL)  -o $@ $(THF_files)
+
+FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)
+
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)

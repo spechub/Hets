@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
-  , GeneralizedNewtypeDeriving #-}
+  , GeneralizedNewtypeDeriving, TypeSynonymInstances #-}
 {- |
 Module      :  $Header$
 Description :  Instance of class Logic for FreeCAD
@@ -34,7 +34,9 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
 
-
+import FreeCAD.As
+import FreeCAD.ATC_FreeCAD ()
+import FreeCAD.PrintAs
 
 data FreeCAD = FreeCAD deriving Show
 
@@ -47,23 +49,39 @@ newtype Text = Text { fromText :: String }
 instance Pretty Text where
   pretty (Text s) = text s
 
+type FCMorphism = DefaultMorphism Sign
+
 -- use generic Category instance from Logic.Logic
 
-instance Syntax FreeCAD Text () () where
+instance Syntax FreeCAD Document () () where
   parse_basic_spec FreeCAD = Nothing
 
-instance Sentences FreeCAD () Text (DefaultMorphism Text) () where
+instance Sentences FreeCAD () Sign FCMorphism () where
   map_sen FreeCAD _ = return
   sym_of FreeCAD _ = [Set.singleton ()]
   symmap_of FreeCAD _ = Map.empty
   sym_name FreeCAD _ = genName "FreeCAD"
 
-instance StaticAnalysis FreeCAD Text () () () Text (DefaultMorphism Text) () ()
+instance StaticAnalysis FreeCAD Document () () () Sign FCMorphism () ()
   where
-  basic_analysis FreeCAD = Just $ \ (s, _, _) ->
-    return (s, mkExtSign s, [])
-  empty_signature FreeCAD = Text ""
-  is_subsig FreeCAD (Text s1) (Text s2) = isInfixOf (trim s1) s2
+  basic_analysis FreeCAD = Just $ \ (bs, s, _) ->
+    return (bs, mkExtSign s, [])
+  empty_signature FreeCAD = Sign { objects = Set.empty }
+  is_subsig FreeCAD s1 s2 = Set.isSubsetOf (objects s1) $ objects s2
 
-instance Logic FreeCAD () Text () () () Text (DefaultMorphism Text) () () ()
+-- instance Logic FreeCAD () Text () () () Text (DefaultMorphism Text) () () ()
+
+instance Logic FreeCAD
+    ()                        -- Sublogics
+    Document                  -- basic_spec
+    ()                        -- no sentences
+    ()                        -- no symb_items
+    ()                        -- no symb_map_items
+    Sign                      -- sign
+    (DefaultMorphism Sign)    -- morphism
+    ()                        -- no symbol
+    ()                        -- no raw_symbol
+    ()                        -- no proof_tree
+    where
+      stability FreeCAD = Experimental
 

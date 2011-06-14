@@ -19,20 +19,22 @@ Declaration of the abstract datatypes of FreeCAD terms
 module FreeCAD.As
 where
 
-data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving Show
+import qualified Data.Set as Set
+
+data Vector3 = Vector3 { x::Double, y::Double, z::Double } deriving (Show, Eq, Ord)
 --a vector in cartesian coordinates
 
 data Matrix33 = Matrix33 {   a11::Double ,a12::Double ,a13::Double
                             ,a21::Double ,a22::Double ,a23::Double
                             ,a31::Double ,a32::Double ,a33::Double
-                         } deriving Show --used as a rotation matrix
+                         } deriving (Show, Eq, Ord) --used as a rotation matrix
 
 data Vector4 = Vector4 { q0::Double, q1::Double, q2::Double, q3::Double}
-               deriving Show
+               deriving (Show, Eq, Ord)
 -- quaternion rotational representation
 
 data Placement = Placement { position::Vector3, orientation::Vector4 }
-                 deriving Show
+                 deriving (Show, Eq, Ord)
 
 {-
 -- | the placement is determined by 2 vectors:
@@ -55,7 +57,7 @@ data BaseObject = Box Double Double Double -- Height, Width, Length
             | Line Double -- length
             | Circle Double Double Double --StartAngle, EndAngle, Radius
             | Rectangle Double Double --Height, Length
-            deriving Show
+            deriving (Show, Eq, Ord)
           --TODO: Plane, Vertex, etc..
 
 
@@ -73,18 +75,17 @@ data Object = BaseObject BaseObject
             --not enough data in the xml
 --          | Mirror, (Base::String, Position2::Vector))
             --mirroring of an object
-            deriving Show
+            deriving (Show, Eq, Ord)
 
 
-data ExtendedObject = Placed PlacedObject | Ref String deriving Show
+data ExtendedObject = Placed PlacedObject | Ref String deriving (Show, Eq, Ord)
 
-data PlacedObject = PlacedObject {p::Placement, o::Object} deriving Show
+data PlacedObject = PlacedObject {p::Placement, o::Object} deriving (Show, Eq, Ord)
 
 data NamedObject = NamedObject { name::String
                    , object:: PlacedObject}
                  | EmptyObject --for objects that are WIP
-                   deriving Show
-
+                   deriving (Show, Eq, Ord)
 
 -- the first parameter is the name of the object as it is stored in the
 -- FreeCAD document. the second parameter determines the placement of the object
@@ -95,12 +96,17 @@ data NamedObject = NamedObject { name::String
 
 type Document = [NamedObject]
 
+-- | Datatype for FreeCAD Signatures
+-- Signatures are just sets of named objects
+data Sign = Sign { objects :: Set.Set NamedObject } deriving (Eq, Ord, Show)
+
+
 distance3:: Vector3 -> Vector3 -> Double
-distance3 (Vector3 ax ay az) (Vector3 bx by bz) = sqrt (x*x + y*y + z*z)
+distance3 (Vector3 ax ay az) (Vector3 bx by bz) = sqrt (x1*x1 + x2*x2 + x3*x3)
     where
-        x = ax - bx
-        y = ay - by
-        z = az - bz
+        x1 = ax - bx
+        x2 = ay - by
+        x3 = az - bz
 
 subtract3:: Vector3 -> Vector3 -> Vector3
 subtract3 a b = Vector3 ex ey ez
