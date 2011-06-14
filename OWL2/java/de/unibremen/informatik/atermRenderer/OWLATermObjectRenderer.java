@@ -1,20 +1,21 @@
 package de.unibremen.informatik.atermRenderer;
 
 import java.util.Map;
-import org.coode.xml.OWLOntologyXMLNamespaceManager;
-
+//import org.coode.xml.OWLPrefixManager;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import org.semanticweb.owlapi.vocab.OWLXMLVocabulary;
 import org.semanticweb.owlapi.vocab.OWLFacet;
 import org.semanticweb.owlapi.apibinding.*;
-import uk.ac.manchester.cs.owl.owlapi.OWLOntologyImpl;
+//import uk.ac.manchester.cs.owl.owlapi.OWLOntologyImpl;
 import static org.semanticweb.owlapi.vocab.OWLXMLVocabulary.*;
 import org.semanticweb.owlapi.model.*;
 import uk.ac.manchester.cs.owl.owlapi.OWLAnnotationImpl;
+import org.semanticweb.owlapi.util.DefaultPrefixManager;
 
 import java.io.Writer;
 import java.net.URI;
 import java.util.*;
+import java.lang.Object;
 import aterm.*;
 
 /**
@@ -27,7 +28,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 
     private Map<String, String> namespaceMap;
     
-    private OWLOntologyXMLNamespaceManager nsm;
+    private DefaultPrefixManager nsm;
 
     private OWLOntology ontology;
 
@@ -47,7 +48,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 			"l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x",
 			"y", "z" };
 	
-	// ATermFactory factory = new PureFactory();
+   // ATermFactory factory = new PureFactory();
     private ATermList declarationsList;
     private ATermList annotationsList;
     private ATermList annotationAxiomsList;
@@ -67,15 +68,15 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
         declarationsList = af.factory.makeList();
         annotationsList = af.factory.makeList();
         annotationAxiomsList = af.factory.makeList();
-        nsm = new OWLOntologyXMLNamespaceManager(owlOntologyManager, ontology);
+        nsm = new DefaultPrefixManager(ontology.getOntologyID().getOntologyIRI().toString());
       //  namespaceMap.put(nsm.getDefaultNamespace(), "a");
-        for( String prefix : nsm.getPrefixes())
+        for( String prefix : nsm.getPrefixNames())
         {
         	if(namespaceMap.containsValue(prefix))
         	{
         		continue;
         	}
-        	namespaceMap.put(nsm.getNamespaceForPrefix(prefix), prefix);
+        	namespaceMap.put(nsm.getPrefix(prefix), prefix);
         }
     }
 
@@ -84,7 +85,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
         this.namespaceMap = new HashMap<String, String>();
         writeEntitiesAsIRIs = false;
         isEntity = false;
-        // namespaceMap.put(ontology.getURI().toString() + "#", "");
+        //namespaceMap.put(ontology.getURI().toString() + "#", "");
         // namespaceMap.put(Namespaces.OWL.toString(), "owl");
         // namespaceMap.put(Namespaces.RDFS.toString(), "rdfs");
         // namespaceMap.put(Namespaces.RDF.toString(), "rdf");
@@ -93,15 +94,15 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
         declarationsList = af.factory.makeList();
         annotationsList = af.factory.makeList();
         annotationAxiomsList = af.factory.makeList();
-        nsm = new OWLOntologyXMLNamespaceManager(owlOntologyManager, ontology);
+        nsm = new DefaultPrefixManager(ontology.getOntologyID().getOntologyIRI().toString());
        // namespaceMap.put(nsm.getDefaultNamespace(), "a");
-        for( String prefix : nsm.getPrefixes())
+        for( String prefix : nsm.getPrefixNames())
         {
         	if(namespaceMap.containsValue(prefix))
         	{
         		continue;
         	}
-        	namespaceMap.put(nsm.getNamespaceForPrefix(prefix), prefix);
+        	namespaceMap.put(nsm.getPrefix(prefix), prefix);
         }
     }
 
@@ -111,10 +112,10 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 
     private String reverseLookUp(IRI iri)
     {
-	String baseIRI = iri.getScheme() + ":" +
-	    iri.getScheme() +"#";
-	String ns = nsm.getPrefixForNamespace(baseIRI);
-	String ty = iri.getFragment();
+	String baseIRI = iri.toURI().getScheme() + ":" +
+	    iri.toURI().getSchemeSpecificPart() +"#";
+	String ns = nsm.getPrefixIRI(IRI.create(baseIRI));
+	String ty = iri.toURI().getFragment();
 	if (ns == null)
 	    {
 		return baseIRI + "#" + ty;
@@ -183,9 +184,10 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
                 return strToATermAppl(result.append(iriString.substring(ns.length(), iriString.length())).toString());
             }
         }
-        return strToATermAppl("<" + iri.toString() + ">");
+       // return strToATermAppl("<" + iri.toString() + ">");
+	return strToATermAppl("<" + iri.toString() + ">");
     }
-
+	/*
      private ATermAppl renderIri(OWLAnnotationValue val) {
     	StringBuffer result = new StringBuffer("");
     	int index = 0;
@@ -204,32 +206,45 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
         }
         return strToATermAppl("<" + val.toString() + ">");
     }
-    
+    */
     public void visit(OWLOntology ontology) {
     	try{
     		ATermAppl namespaces = renderNamespaces();
-    		ATermAppl onto = renderOWLOntology();
+		//System.out.println("No error so far");
+    		ATermAppl onto = renderOWLOntology();			// THROWS EXCEPTION FROM HERE
+		//System.out.println("No error so far");
     		term = af.factory.makeAppl(af.ontologyFileFunc, namespaces, onto);
+
     	}catch(OWLException e)
     	{
-		OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-    		System.err.println("error by ontology" + manager.getOntologyDocumentIRI(ontology));
+		//OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+    		System.err.println("error by ontology" + ontology.getOntologyID().getOntologyIRI().toString());
     		e.printStackTrace();
     	}
     }
     
     private ATermAppl renderOWLOntology() throws OWLException
     {
-	OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
-    	ATermAppl ontoUri = strToATermAppl("<" + manager.getOntologyDocumentIRI(ontology).toString() + ">");
+	//OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
+    	ATermAppl ontoIri = strToATermAppl("<" + ontology.getOntologyID().getOntologyIRI().toString() + ">");
     	ATermList annoList = af.factory.makeList();
     	ATermList importsList = af.factory.makeList();
-    	
+    	//System.out.println("not here");
 	//Ontology annotations are now stored directly in an ontology and not as axioms in an ontology
-        for (OWLAnnotation anno : ontology.getAnnotations()) {
-        	annoList = af.factory.makeList(term(anno), annoList);
+
+/*
+        for (OWLAnnotationAxiom anno : ontology.getAxioms()) {
+		//System.out.println("not here");
+        	annoList = af.factory.makeList(term(anno.getAnnotations()), annoList);		// THROWS IT FROM HERE
+		//System.out.println("not here");
         }
-        
+*/
+
+	for (OWLAnnotation anno : ontology.getAnnotations()) {
+	                annoList = af.factory.makeList(term(anno), annoList);
+	        }
+	//System.out.println("not here");
+      
         Set<OWLAxiom> axioms = new HashSet<OWLAxiom>(ontology.getAxioms());
         axioms.removeAll(ontology.getImportsDeclarations());
 	// NO LONGER AN AXIOM IN OWL 2.0
@@ -281,7 +296,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
       /*  for (OWLSubPropertyChainOfAxiom ax : ontology.getPropertyChain()) {
             propAxiomList = af.factory.makeList(term(ax), propAxiomList);
         }*/
-        return af.factory.makeAppl(af.ontologyFunc, ontoUri, importsList, annoList, declarationsList.concat(classAxiomList.reverse().concat(propAxiomList.reverse().concat(individualList.reverse().concat(annotationAxiomsList)))));
+        return af.factory.makeAppl(af.ontologyFunc, ontoIri, importsList, annoList, declarationsList.concat(classAxiomList.reverse().concat(propAxiomList.reverse().concat(individualList.reverse().concat(annotationAxiomsList)))));
     }
 
     private void renderAnnotations(OWLEntity entity) throws OWLException
@@ -327,18 +342,26 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
     }
 
 
-    public void visit(OWLAnnotationImpl annotation) {
+    public void visit(OWLAnnotation annotation) {
     	try{
+		
+		OWLAnnotationProperty label = annotation.getProperty();
+		//System.out.println("Anno value is: " + annotation.getValue());
     		ATerm annoValue = term(annotation.getValue());
+//		System.out.println("Anno value is: " + annoValue);
+		//OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 
-        if (annotation.isLabel()) {
+        if (label.isLabel()) {
+	   // OWLLiteral val = (OWLLiteral) annotation.getValue();
             term = af.factory.makeAppl(af.labelAnnoFunc, annoValue);
         }
-        else if (annotation.isComment()) {
+        else if (label.isComment()) {
             term = af.factory.makeAppl(af.commAnnoFunc, annoValue);
         }
         else {
-        	ATermAppl annoIri = renderIri(annotation.getValue()); 
+		//System.out.println("Annotation value is:" + annotation.getValue());
+        	ATermAppl annoIri = renderIri(annotation.getProperty().getIRI()); 
+	//	System.out.println(annoIri);
         	term = af.factory.makeAppl(af. explicitAnnoFunc, annoIri, annoValue);
         }    	
         }catch(OWLException e)
@@ -346,6 +369,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
     		System.err.println("error by make term of annotation value: " + annotation);
     		e.printStackTrace();
     	}
+	
     }
 
 
@@ -392,6 +416,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 	}
     public void visit(OWLAnnotationPropertyRangeAxiom ax)
 	{
+	//System.out.println("");
 	}
 
       public void visit(OWLAnnotationPropertyDomainAxiom ax)
@@ -428,6 +453,7 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 
       public void visit(OWLAnnotationProperty pro)
 	{
+		System.out.println("OWLAnnotationProperty");
 	}
 
       public void visit(OWLAnonymousIndividual an)
@@ -438,9 +464,9 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
 	{
 	}
 
-      public void visit(OWLAnnotation an)
-	{
-	}
+      //public void visit(OWLAnnotation an)
+//	{
+//	}
 
       public void visit(SWRLLiteralArgument arg)
 	{
@@ -1334,13 +1360,23 @@ public class OWLATermObjectRenderer implements OWLObjectVisitor {
     }
 */    
 	private ATermAppl strToATermAppl(String str) {
+		//System.out.println("rere");
 		return af.factory.makeAppl(af.factory.makeAFun(str, 0, true));
 	}
 	
+	
 	public ATerm term(OWLObject d) throws OWLException {
-        reset();
+       		reset();
+		
+		System.out.println("Object is: " + d);
+
+		//System.out.println(this);
+		System.out.println("<This> is: " + this);
+	
 		d.accept(this);
+		
 		ATerm a = result();
+	
 		if(a == null) {
 			throw new OWLOntologyStorageException("Cannot create ATerm from description " + d);
 		}

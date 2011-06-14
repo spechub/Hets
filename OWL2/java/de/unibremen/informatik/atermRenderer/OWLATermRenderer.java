@@ -3,7 +3,6 @@ package  de.unibremen.informatik.atermRenderer;
 import org.semanticweb.owlapi.io.AbstractOWLRenderer;
 import org.semanticweb.owlapi.io.OWLRendererException;
 import org.semanticweb.owlapi.io.OWLRendererIOException;
-// import org.semanticweb.owl.model.OWLException;
 import org.semanticweb.owlapi.model.OWLException;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
@@ -27,16 +26,18 @@ public class OWLATermRenderer extends AbstractOWLRenderer {
 
     public ATerm render(OWLOntology ontology) throws OWLException
     {
-        OWLATermObjectRenderer ren = new OWLATermObjectRenderer(ontology, getOWLOntologyManager());
+	//System.out.println("rere");
+        OWLATermObjectRenderer ren = new OWLATermObjectRenderer(ontology, ontology.getOWLOntologyManager());
+	//System.out.println("rere");
         return ren.term(ontology);
 
     }
 
     public void render(OWLOntology ontology, Writer writer) throws OWLRendererException {
         try {
-            OWLATermObjectRenderer ren = new OWLATermObjectRenderer(ontology, writer, getOWLOntologyManager());
+            OWLATermObjectRenderer ren = new OWLATermObjectRenderer(ontology, writer, ontology.getOWLOntologyManager());
             writer.write(ren.term(ontology).toString());
-            // ontology.accept(ren);
+            //ontology.accept(ren);
             writer.flush();
         }
         catch (IOException e) {

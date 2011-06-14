@@ -21,7 +21,7 @@ public class ATermFunc {
 		AFun paarFunc = factory.makeAFun("UOPaar", 2, false);
 		AFun axFunc = factory.makeAFun("Ax", 1, false);
 		AFun ontologyPropertyFunc = factory.makeAFun("OntologyProperty", 2, false);
-		AFun uriAnnoFunc = factory.makeAFun("URIAnnotation", 2, false);
+		AFun uriAnnoFunc = factory.makeAFun("IRIAnnotation", 2, false);
 		AFun messageFunc = factory.makeAFun("MassageList", 1, false);
 
 		AFun fcFunc = factory.makeAFun("Fc", 1, false);

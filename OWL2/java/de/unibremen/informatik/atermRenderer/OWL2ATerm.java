@@ -2,8 +2,10 @@ package de.unibremen.informatik.atermRenderer;
 
 import de.unibremen.informatik.atermRenderer.OWLATermStorer;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.*;
-import org.semanticweb.owlapi.util.SimpleIRIMapper;
+import org.semanticweb.owlapi.model.OWLException;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.IRI;
 
 import aterm.ATerm;
 import aterm.ATermList;
@@ -16,8 +18,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Map;
-import java.net.UnknownHostException;
 
 /*
  * Copyright (C) 2007, University of Manchester
@@ -72,13 +72,14 @@ public class OWL2ATerm {
 
 		// A simple example of how to load and save an ontology
 		try {
+			//String aux = args[0].replaceAll("\\<.*?\\>","");
 			IRI iri = IRI.create(args[0]);
 			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 			manager.addOntologyStorer(new OWLATermStorer());
 			if (args.length == 2) {
 				filename = args[1];
 			} else {
-				String[] iriSplit = iri.getScheme().split("/");
+				String[] iriSplit = iri.toURI().getPath().split("/");
 				String tmpPath = "/tmp/";
 				String pidCmd[] = {
 						"/bin/sh",
@@ -98,28 +99,40 @@ public class OWL2ATerm {
 				filename = tmpPath + iriSplit[iriSplit.length - 1] + "-"
 						+ randomName + postfix;
 			}
-
-			/* Load an ontology from a physical URI */
-			// System.out.println("Loading : " + args[0]);
+			
+			
+			/* Load an ontology from a physical IRI */
 			IRI physicalIRI = IRI.create(args[0]);
+			System.out.println("Loading : " + args[0]);
+			//System.out.println(iri);
+			//IRI physicalIRI = IRI.create(args[0]);
 			// Now do the loading
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
-
+			System.out.println(ontology);
+			
 			// get all ontology which are imported from this ontology.
 			getImportsList(ontology, manager);
-
+			//System.out.println(loadedImportsList);	
+			//System.out.println(ImportsList);
+			
+			OWLOntologyManager mn = OWLManager.createOWLOntologyManager();
 			System.out.println();
+			
 			for (OWLOntology onto : loadedImportsList) {
 				// String keyUri = (String) ontos.next();
 //				OWLOntology onto = ontos;
-				System.out
-						.println("parsing OWL: " + manager.getOntologyDocumentIRI(onto) + " ...");
-				ATerm iriTerm = factory.parse("\""
-						+ manager.getOntologyDocumentIRI(onto).toString() + "\"");
+				IRI ontoIRI = onto.getOntologyID().getOntologyIRI();
+				//System.out.println(ontoIRI);
+				System.out.println("parsing OWL: " + ontoIRI + " ...");
+				ATerm uriTerm = factory.parse("\"" + ontoIRI + "\"");
+				System.out.println();
+				System.out.println(onto);
+				System.out.println();
 				ATerm aterm = getATerm(onto, manager);
 
-				ontologyList = factory.makeList(factory.makeAppl(af.paarFunc,iriTerm, aterm), ontologyList);
-			}
+				ontologyList = factory.makeList(factory.makeAppl(af.paarFunc,
+						uriTerm, aterm), ontologyList);
+			}/*
 			File file = new File(filename);
 			ontologyList.reverse().writeToTextFile(new FileOutputStream(file, false));
 			String cmd = "cp " + file.getAbsolutePath() + " .outputFilename";
@@ -127,7 +140,7 @@ public class OWL2ATerm {
 			System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
-			e.printStackTrace();
+			e.printStackTrace();*/
 		}catch (Exception ex) {
 			System.err.println("OWL parse error: " + ex.getMessage());
 			ex.printStackTrace();
@@ -146,25 +159,35 @@ public class OWL2ATerm {
         return null;
     }
 
-	private static void getImportsList(OWLOntology ontology, OWLOntologyManager om) {
+	private static void getImportsList(OWLOntology ontology,OWLOntologyManager om) {
+
 		// HashMap hMap = new HashMap();
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
+		
 
 		if(loadedImportsList.size() == 0)
 		{
 			loadedImportsList.add(ontology);
-			IRI docIRI = om.getOntologyDocumentIRI(ontology);
-			importsIRI.add(docIRI);
+			importsIRI.add(om.getOntologyDocumentIRI(ontology));
+			//System.out.println(loadedImportsList);
+			//System.out.println(importsIRI);
+			
 		}	
-
+		//System.out.println("err");
 		try {
-			for (OWLOntology imported : om.getImports(ontology)) {
-				if (!importsIRI.contains(om.getOntologyDocumentIRI(imported))) {
+			for (OWLOntology imported : ontology.getImports()) {
+				//System.out.println(imported);
+				//System.out.println();
+				//System.out.println("err");
+				OWLOntologyManager ma = OWLManager.createOWLOntologyManager();
+				if (!importsIRI.contains(ma.getOntologyDocumentIRI(imported))) {
 					unSavedImports.add(imported);
 					loadedImportsList.add(imported);
-					importsIRI.add(om.getOntologyDocumentIRI(imported));
+					importsIRI.add(ma.getOntologyDocumentIRI(imported));
+				
 				}
 			}
+			
 			for (OWLOntology onto : unSavedImports) {
 				getImportsList(onto, om);
 			}

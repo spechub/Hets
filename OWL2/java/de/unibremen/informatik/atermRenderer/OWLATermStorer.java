@@ -29,9 +29,9 @@ public class OWLATermStorer implements OWLOntologyStorer {
 
 
     /**
-     * Stores an ontology at the specified physical URI in the specified format.
+     * Stores an ontology at the specified physical IRI in the specified format.
      * @param ontology       The ontology to be stored
-     * @param physicalURI    The physical URI that specifies the location
+     * @param physicalIRI    The physical IRI that specifies the location
      * @param ontologyFormat The format that the ontology should be stored in
      */
     public void storeOntology(OWLOntologyManager manager, 
