@@ -191,10 +191,10 @@ mapAccumLCM g f s l = case l of
 
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
-composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
-  (Map.foldWithKey ( \ i j ->
-    let k = Map.findWithDefault j j m2 in
-    if i == k then Map.delete i else Map.insert i k) m2 m1) s
+composeMap _s m1 m2 =
+  Map.filterWithKey (/=) $ Map.union
+    (Map.foldWithKey ( \ i j -> Map.insert i (Map.findWithDefault j j m2))
+     Map.empty m1) m2
 
 -- | keep only minimal elements
 keepMins :: (a -> a -> Bool) -> [a] -> [a]
