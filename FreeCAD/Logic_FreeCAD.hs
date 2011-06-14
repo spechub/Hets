@@ -10,7 +10,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-dummy instance of class Logic for FreeCAD
+instance of class Logic for FreeCAD
 
 -}
 
@@ -36,6 +36,8 @@ import Data.Typeable
 import FreeCAD.As
 import FreeCAD.ATC_FreeCAD ()
 import FreeCAD.PrintAs ()
+-- TODO: use this module after the bugfix
+-- import FreeCAD.Parser
 
 import Logic.Grothendieck (G_basic_spec(..))
 import Syntax.AS_Library (fromBasicSpec, LIB_DEFN)
@@ -91,6 +93,8 @@ instance Logic FreeCAD
 
 readFreeCADLib :: FilePath -> LibName -> IO LIB_DEFN
 readFreeCADLib fp ln = do
-  bs <- error "1" -- getBS fp
-  let sn = error "2" -- sid "FreeCAD-Design"
+-- TODO: use the real basic-spec reader...
+  bs <- error "link here the process file"
+--  bs <- processFile fp
+  let sn = mkSimpleId "FreeCAD-Design"
   return $ fromBasicSpec ln sn $ G_basic_spec FreeCAD bs
