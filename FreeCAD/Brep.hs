@@ -92,7 +92,10 @@ parseBrepXML:: String -> (Vector3, Vector3, Vector3, Vector3)
 parseBrepXML a = getData $fromJust $parseXMLDoc a
 
 quadFromList :: [a] -> (a,a,a,a)
-quadFromList (d:b:c:[]) = error "List too short"
+quadFromList ([]) = error "quadFromList: List empty"
+quadFromList (d:[]) = error "quadFromList: List too short"
+quadFromList (d:b:[]) = error "quadFromList: List too short"
+quadFromList (d:b:c:[]) = error "quadFromList: List too short"
 quadFromList (b:c:d:e) = (b,c,d, head e)
 
 getData:: Element -> (Vector3, Vector3, Vector3, Vector3)

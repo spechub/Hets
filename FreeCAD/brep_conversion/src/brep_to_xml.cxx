@@ -296,20 +296,32 @@ void BrepToXML::build_xml(const string& what, string& output)
     //if ( SS.NbShapes != 9 ) exit(1);
     stringstream ss;
     ss    << "<rectangle>\n";
-    vector <int> duplicates;
+    vector < gp_Pnt > duplicates;
     for (int i = 0; i < (int) vLocs.size(); i++)
       {
 	bool write = true;
  	for (int j = 0; j < (int) duplicates.size(); j++)
    	  {
-	    if ( vLocs[i].first == duplicates[j])
-	      write = false;
- 	  }
+	    if (( vLocs[i].second.X() == duplicates[j].X())&&
+		( vLocs[i].second.Y() == duplicates[j].Y())&&
+		( vLocs[i].second.Z() == duplicates[j].Z()))
+	      { 
+		write = false;
+		break;
+	      }
+	  }
+	/*for (int j = 0; j < (int) duplicates.size(); j++)
+	  {
+	    cout << vLocs[j].second.X() << " "
+		 << vLocs[j].second.X() << " "
+		 << vLocs[j].second.X() << endl;
+	  }
+	cout << endl;*/
 	if (write) {
 	  ss  << "<vertex " << "x=\"" << vLocs[i].second.X() << "\" "
 	      << "y=\"" << vLocs[i].second.Y() << "\" "
 	      << "z=\"" << vLocs[i].second.Z() << "\" />\n";
-	  duplicates.push_back(vLocs[i].first);
+	  duplicates.push_back(vLocs[i].second);
 	}
       }
     ss <<"</rectangle>\n";
