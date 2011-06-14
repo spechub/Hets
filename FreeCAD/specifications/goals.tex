@@ -1,0 +1,94 @@
+% Ligatur-Problem (z.b. bei specific wird aus dem fi eine ligatur
+% gemacht, danach nicht mehr suchbar im acrobat-reader) wird mit
+% diesem Eintrag behoben. Toll!
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{ifpdf}
+\ifpdf
+\RequirePackage{cmap}% Improve PDF text search.
+\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[11pt,draft,a4paper]{article}%{scrartcl}%{report}
+
+
+\usepackage{xspace}
+\usepackage{amsmath}
+
+
+\newcommand{\freecad}{FreeCAD\xspace}
+\newcommand{\opencasc}{Open CASCADE\xspace}
+\newcommand{\hets}{Hets\xspace}
+\newcommand{\bash}[1]{{\tt #1}}
+\newcommand{\haskell}[1]{{\tt #1}}
+\newcommand{\setsep}[2]{\{#1~|~#2\}}
+\newcommand{\leftsem}{[\![} %% 
+\newcommand{\rightsem}{]\!]} %% 
+\newcommand{\setsem}[1]{\leftsem #1 \rightsem} %% set semantics
+
+
+\begin{document}
+
+
+\title{Internship Goals for Robert Savu}
+
+\author{Ewaryst Schulz}
+
+\maketitle
+
+
+\section{Reading \freecad documents}
+Given a document containing a \freecad design (typically a *.fcstd-file) we want to import it into \hets. This requires the following:
+\begin{description}
+  \item[Abstract Syntax:] an appropriate representation in \hets for \freecad designs,
+    i.e., the \freecad abstract syntax (mostly done)
+  \item[Semantics:] \freecad terms should have a semantics in the sense of 3D Pointsets (see section \ref{sec:semantics})
+  \item[Import:] an import method translating \freecad documents into this
+    representation (partly done, has to be integrated into one method)
+  \item[\hets Integration:] a complete integration of the \freecad logic into the \hets
+    logic-graph (partly done, signature and simple static analysis missing)
+  \item[\hets tool:] a hook into the hets program to open \freecad documents from there, i.e., \bash{hets -g test.fcstd} should work
+  \item[Pretty printing] for basic \freecad specs, i.e.,
+    \haskell{Pretty}-instances for the \freecad abstract syntax
+\end{description}
+
+\subsection{Semantics}
+\label{sec:semantics}
+We first give the semantics of some base objects such as rectangles,
+boxes, and cylinders. The goal is to specify the semantics for each of
+the base objects used in the abstract syntax of \freecad and also for
+the transformation by rotations and translations as well as for
+compound objects such as \haskell{Cut}, \haskell{Common},
+\haskell{Fusion}, etc..
+
+\begin{figure}[htb]
+    \centering
+    \framebox{\begin{minipage}{\textwidth}
+\begin{align}
+\setsem{Rectangle(w, l)} & = \text{The set consisting of the four sides of the }\notag\\
+ & \qquad \text{rectangle in the x-y-plane}\notag\\
+ & = \setsep{(x,y,0)}{x\in[0,l], y\in\{0,w\}}\notag\\
+ & \quad \cup \setsep{(x,y,0)}{x\in\{0,l\}, y\in[0,w]}\\
+\setsem{Box(h, l, w)} & = \text{The solid bounded by the faces of the box}\notag\\
+ & = [0,l]\times[0,w]\times[0,h]\\
+\setsem{Cylinder(a, h, r)} & = \text{The ``pac-man'' cylinder along z-axis}\notag\\
+ & = circle\times[0,h]\\
+ \text{where}~ circle &=\setsep{(\rho\cdot cos(\alpha),\rho\cdot sin(\alpha))}{\alpha \in [0,a], \rho \in [0,r]}\notag\\
+\setsem{Sphere(a_1, a_2, a_3, r)} & = \setsep{(x,y,z)}{x + y + z \leq r} \cap \notag\\
+& \setsep{(\rho\cdot cos(\alpha),\rho\cdot sin(\alpha),z)}{z \in [sin(a_1),sin(a_2)]. \rho \in [0, \infty], \alpha \in [0, a_3]}\\
+\setsem{Cone(a, r_1, r_2, h)} & = \setsep{(\rho \cdot cos(\alpha), \rho \cdot sin(\alpha), z)}{\rho \leq r_1 + {{z}\over{h}} \cdot (r_2 - r_1). z \in [0,h],\alpha \in [0, a]} \\
+\setsem{Torus(a_1, a_2, a_3, r_1, r_2)} & = \{(x,y,z)\} \cup \{(x_2,y_2,z_2)\}\notag\\
+& \text{where:}\notag\\
+& circle = \setsep{(\rho\cdot cos(\alpha), \rho\cdot sin(\alpha))}{\alpha \in [a_1, a_2], \rho \in [0,r_2]}\notag\\
+& (rad, z) \in \setsep{(m,n)}{(-(m-r_1), n)\in circle}\notag\\
+& x = rad\cdot cos (ang) \notag\\
+& y = rad\cdot sin (ang) \notag\\
+& ang \in [0, a_3] \notag\\
+& \text{if } (a_1 \geq -180) \text{or} (a_2 \leq 180) \text {then} \notag\\
+& (x_2,y_2,z_2 - r_2 \cdot sin(a_1)) \in \notag\\
+&\setsem{Cone(a_3, r_1 - r_2 \cdot cos(a_1), r_1 - r_2 \cdot cos(a_2), sin(a_2) - sin(a_1))}\\
+\setsem{Circle(sa, ea, r)} & = \setsep{(x,y,z)}{x = r\cdot cos(\alpha), y = r \cdot sin(\alpha), z = 0, \alpha \in [sa, ea]}\\
+\end{align}
+\end{minipage}}
+    \caption{Set semantics for some baseobjects}\label{fig:semantics}
+\end{figure}
+
+\end{document}
