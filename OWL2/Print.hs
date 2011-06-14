@@ -134,7 +134,7 @@ printDataRange dr = case dr of
     DataOneOf constList -> specBraces $ ppWithCommas constList
     DatatypeRestriction dtype l -> pretty dtype <+>				
       if null l then empty else brackets $ sepByCommas $ map printFV l
-    DataIntersectionOrUnionOf ty drlist -> let
+    DataJunction ty drlist -> let
       k = case ty of
           UnionOf -> orS
           IntersectionOf -> andS

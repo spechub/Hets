@@ -72,7 +72,7 @@ type IRI = QName
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
 
-type NodeID = String
+type NodeID = IRI
 type LexicalForm = String
 type LanguageTag = String
 type PrefixName = String
@@ -196,7 +196,7 @@ showFacet df = case df of
 
 data DataRange 
 	= DataType Datatype
-	| DataIntersectionOrUnionOf JunctionType [DataRange]  -- at least two elements in the list
+	| DataJunction JunctionType [DataRange]  -- at least two elements in the list
 	| DataComplementOf DataRange
 	| DataOneOf [Literal]	-- at least one element in the list
 	| DatatypeRestriction Datatype [(ConstrainingFacet, RestrictionValue)]	-- at least one element in the list
@@ -240,7 +240,7 @@ data ClassExpression =
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
   | DataValuesFrom 
-	QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
+	     QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Typeable, Show, Eq, Ord)
@@ -259,6 +259,11 @@ data AnnotationAxiom
 	deriving (Typeable, Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
+
+showAnnDomainOrRange :: AnnotationDomainOrRange -> String
+showAnnDomainOrRange dr = case dr of
+    AnnDomain -> domainC
+    AnnRange -> rangeC
 
 data AnnotationSubject 
 	= AnnSubIRI IRI 
