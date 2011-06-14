@@ -1,0 +1,42 @@
+:l CommonLogic/ClTests.hs
+:m +CommonLogic.Sublogic
+
+-- extract pieces from abstract syntax:
+let Right txt = abstrSyntax "(and (P x) (Q P)))"
+let (Text [phr] _) = txt
+let (Sentence sen) = phr
+let (Bool_sent boolsen _) = sen
+let (Conjunction [atsen1, atsen2]) = boolsen
+let (Atom_sent (Atom ntP1 [Term_seq ntx]) _) = atsen1
+let (Atom_sent (Atom ntQ [Term_seq ntP2]) _) = atsen2
+
+
+
+-- should be first order, but is propositional
+-- "(and (x) (y))" cannot be parsed
+let (Right txt1) = abstrSyntax "(and (P x) (Q y))"
+prd_text txt1
+sublogic txt1
+
+-- first order (quantified over some object x)
+-- "(exists (x) (x))" cannot be parsed
+let (Right txt2) = abstrSyntax "(exists (x) (P x))"
+prd_text txt2
+sublogic txt2
+
+-- first order (some predicates used)
+-- "(and (x), (Q x))" cannot be parsed
+let (Right txt3) = abstrSyntax "(and (P x) (Q (P x)))"
+prd_text txt3
+sublogic txt3
+
+-- full common logic: quantified (used predicate as object)
+let (Right txt4) = abstrSyntax "(and (P x) (Q P)))"
+prd_text txt4
+sublogic txt4
+
+-- full common logic: quantified over predicate P
+let (Right txt5) = abstrSyntax "(exists (P) (and (P x)))"
+prd_text txt5
+sublogic txt5
+

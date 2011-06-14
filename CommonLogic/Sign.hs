@@ -33,7 +33,9 @@ import Common.DocUtils
 
 -- | Datatype for common logic Signatures
 
-newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
+data Sign = Sign { items :: Set.Set Id
+                 , discourseItems :: Set.Set Id
+                 } deriving (Eq, Ord, Show)
 -- TODO function testing whether an ID is a sequence marker
 
 instance Pretty Sign where
@@ -41,7 +43,9 @@ instance Pretty Sign where
 
 -- | The empty signature
 emptySig :: Sign
-emptySig = Sign {items = Set.empty}
+emptySig = Sign { items = Set.empty
+                , discourseItems = Set.empty
+                }
 
 -- | pretty printing for Signatures
 printSign :: Sign -> Doc
@@ -54,7 +58,10 @@ isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) $ items sig2
 
 -- | difference of Signatures
 sigDiff :: Sign -> Sign -> Sign
-sigDiff sig1 sig2 = Sign {items = Set.difference (items sig1) $ items sig2}
+sigDiff sig1 sig2 = Sign {
+    items = Set.difference (items sig1) $ items sig2,
+    discourseItems = Set.difference (discourseItems sig1) $ items sig2
+}
 
 -- | Unite Signatures
 sigUnion :: Sign -> Sign -> Result Sign
@@ -67,7 +74,10 @@ sigUnionL (sig : sigL) = sigUnion sig (uniteL sigL)
 sigUnionL [] = return emptySig
 
 unite :: Sign -> Sign -> Sign
-unite sig1 sig2 = Sign {items = Set.union (items sig1) $ items sig2}
+unite sig1 sig2 = Sign {
+    items = Set.union (items sig1) $ items sig2,
+    discourseItems = Set.union (discourseItems sig1) $ discourseItems sig2
+}
 
 -- TODO
 isSeqMark :: Id -> Bool

@@ -16,6 +16,7 @@ module CommonLogic.Tests where
 
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Parse_CLIF
+import qualified CommonLogic.Sublogic as SL
 
 import Common.Doc as Doc
 import Common.Id as Id
@@ -100,3 +101,17 @@ p4 = parseTest sentence "(not (On x y))"
 p5 = parseTest sentence "(if (P x) (Q x))"
 
 p6 = parseTest sentence "(exists (z) (and (Pet x) (Happy z) (Attr x z)))"
+
+
+-- helper functions for testing sublogics
+
+-- | parses the given string
+abstrSyntax :: String -> Either ParseError TEXT
+abstrSyntax txt = parse CommonLogic.Parse_CLIF.text "" txt 
+
+-- | determines the sublogic of the given string
+sl :: String -> Either ParseError SL.CommonLogicSL
+sl txt = case abstrSyntax txt of
+            Left err -> Left err 
+            Right t -> Right $ SL.sublogic t
+              

@@ -128,22 +128,31 @@ propsOfFormula (CL.Irregular_sent _ _) = Sign.emptySig
 
 propsOfTerm :: CL.TERM -> Sign.Sign
 propsOfTerm term = case term of
-    CL.Name_term x -> Sign.Sign {Sign.items = Set.singleton $ Id.simpleIdToId x}
+    CL.Name_term x -> Sign.Sign {
+            Sign.items = Set.singleton $ Id.simpleIdToId x,
+            Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+        }
     CL.Funct_term t ts _ -> Sign.unite (propsOfTerm t)
                                        (uniteMap propsOfTermSeq ts)
     CL.Comment_term t _ _ -> propsOfTerm t -- fix
 
 propsOfNames :: CL.NAME_OR_SEQMARK -> Sign.Sign
-propsOfNames (CL.Name x) = Sign.Sign {Sign.items = Set.singleton $
-   Id.simpleIdToId x}
-propsOfNames (CL.SeqMark x) = Sign.Sign {Sign.items = Set.singleton $
-   Id.simpleIdToId x}
+propsOfNames (CL.Name x) = Sign.Sign {
+        Sign.items = Set.singleton $ Id.simpleIdToId x,
+        Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+    }
+propsOfNames (CL.SeqMark x) = Sign.Sign {
+        Sign.items = Set.singleton $ Id.simpleIdToId x,
+        Sign.discourseItems = Set.singleton $ Id.simpleIdToId x
+    }
 
 propsOfTermSeq :: CL.TERM_SEQ -> Sign.Sign
 propsOfTermSeq s = case s of
     CL.Term_seq term -> propsOfTerm term
-    CL.Seq_marks sqm -> Sign.Sign {Sign.items = Set.singleton $
-      Id.simpleIdToId sqm}
+    CL.Seq_marks sqm -> Sign.Sign {
+            Sign.items = Set.singleton $ Id.simpleIdToId sqm,
+            Sign.discourseItems = Set.singleton $ Id.simpleIdToId sqm
+        }
 
 uniteMap :: (a -> Sign.Sign) -> [a] -> Sign
 uniteMap p = List.foldl (\ sig -> Sign.unite sig . p)
