@@ -17,7 +17,7 @@ Manchester syntax parser for OWL 1.1
 <http://www.faqs.org/rfcs/rfc4646.html>
 -}
 
-module OWL2.Parse ({-basicSpec, symbItems, symbMapItems-}) where
+module OWL2.Parse (basicSpec, symbItems, symbMapItems) where
 
 import OWL2.AS
 import OWL.Keywords
@@ -179,7 +179,7 @@ uriP =
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
-{-
+
 -- | parse a possibly kinded list of comma separated uris aka symbols
 symbItems :: GenParser Char st SymbItems
 symbItems = do
@@ -209,7 +209,7 @@ symbPairs = uriPair >>= \ u -> do
     us <- symbPairs
     return $ u : us
   <|> return [u]
--}
+
 uriPair :: GenParser Char st (URI, Maybe URI)
 uriPair = uriP >>= \ u -> do
     pToken $ toKey mapsTo
