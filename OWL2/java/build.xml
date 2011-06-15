@@ -71,7 +71,7 @@
         <mkdir dir="${classesdir}/atermRenderer"/>
         <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
-	    <include name="de/unibremen/informatik/atermRenderer/*.java"/>
+	    <include name="de/unibremen/informatik/atermRenderer/OWL2Parser.java"/>
         </javac>
     </target>
 
