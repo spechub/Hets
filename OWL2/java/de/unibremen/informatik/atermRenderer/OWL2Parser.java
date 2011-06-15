@@ -79,6 +79,12 @@ public class OWL2Parser {
 			//ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (ontology.getOWLOntologyManager());
 			
 		//	rendi.render(ontology,out);
+
+			if(loadedImportsList.size() == 0)
+			{
+				loadedImportsList.add(ontology);
+				importsURI.add(manager.getOntologyDocumentIRI(ontology));
+			}	
 			
 
 			for (OWLOntology onto : loadedImportsList) {
@@ -106,13 +112,7 @@ public class OWL2Parser {
 			OWLOntologyManager om) {
 
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
-		/*
-		if(loadedImportsList.size() == 0)
-		{
-			loadedImportsList.add(ontology);
-			importsURI.add(om.getOntologyDocumentIRI(ontology));
-		}	
-		*/
+		
 		try {
 			for (OWLOntology imported : om.getImports(ontology)) {
 				if (!importsURI.contains(imported.getOntologyID().getOntologyIRI())) {
