@@ -627,7 +627,7 @@ classFrameBit curi = let duri = Expression curi in
   <|> do
     pkeyword hasKeyC
     as <- annotationList
-    o <- many objectPropertyExpr
+    o <- sepByComma objectPropertyExpr
     return [PlainAxiom as $ HasKey duri o []]
      
 domainOrRange :: CharParser st ObjDomainOrRange
