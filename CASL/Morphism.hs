@@ -470,17 +470,22 @@ composeM comp mor1 mor2 = do
       oMap2 = op_map mor2
       pMap2 = pred_map mor2
       sMap = composeMap (Rel.setToMap $ sortSet src) sMap1 sMap2
-      oMap = Map.filterWithKey (\ (i, ot) (j, k) ->
-                 i /= j || opKind ot /= k) $ Map.union
-             (Map.foldWithKey (\ i _ ->
-                 let (ni, nt) = mapOpSym sMap2 oMap2 $ mapOpSym sMap1 oMap1 i
-                 in Map.insert i (ni, opKind nt))
-              Map.empty oMap1) oMap2
-      pMap = Map.filterWithKey (\ (i, _) j -> i /= j) $ Map.union
-             (Map.foldWithKey (\ i _ ->
-                  Map.insert i $ fst $ mapPredSym sMap2 pMap2
-                         $ mapPredSym sMap1 pMap1 i)
-              Map.empty pMap1) pMap2
+      oMap = if Map.null oMap2 then oMap1 else
+                 Map.foldWithKey ( \ i t m ->
+                   Set.fold ( \ ot ->
+                       let (ni, nt) = mapOpSym sMap2 oMap2
+                             $ mapOpSym sMap1 oMap1 (i, ot)
+                           k = opKind nt
+                       in if i == ni && opKind ot == k then id else
+                          Map.insert (i, mkPartial ot) (ni, k)) m t)
+                     Map.empty $ opMap src
+      pMap = if Map.null pMap2 then pMap1 else
+                 Map.foldWithKey ( \ i t m ->
+                   Set.fold ( \ pt ->
+                       let ni = fst $ mapPredSym sMap2 pMap2
+                             $ mapPredSym sMap1 pMap1 (i, pt)
+                       in if i == ni then id else Map.insert (i, pt) ni) m t)
+                      Map.empty $ predMap src
   extComp <- comp mor1 mor2
   let emb = embedMorphism extComp src tar
   return $ cleanMorMaps emb

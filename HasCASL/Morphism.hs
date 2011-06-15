@@ -175,11 +175,16 @@ compMor m1 m2 = let
      return emb
       { typeIdMap = ctm
       , classIdMap = ccm
-      , funMap = Map.filterWithKey (\ (i, sc) (j, nsc) ->
-          i /= j || nsc /= mapTypeScheme ccm tm ctm sc) $ Map.union
-          (Map.foldWithKey (\ p1 _ ->
-             Map.insert p1 $ mapFunSym ccm tm tm2 fm2 $
-                  mapFunSym ccm tm tm1 fm1 p1) Map.empty fm1) fm2 }
+      , funMap = Map.intersection
+          (Map.foldWithKey ( \ p1@(i, sc) p2 ->
+                       let p3 = mapFunSym ccm tm tm2 fm2 p2
+                           nSc = mapTypeScheme ccm tm ctm sc
+                       in if (i, nSc) == p3 then Map.delete p1 else
+                              Map.insert p1 p3)
+                 fm2 fm1) $ Map.fromList $
+                    concatMap ( \ (k, os) ->
+                          map ( \ o -> ((k, opType o), ())) $ Set.toList os)
+                     $ Map.toList $ assumps src }
 
 showEnvDiff :: Env -> Env -> String
 showEnvDiff e1 e2 =
