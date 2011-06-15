@@ -11,6 +11,8 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjec
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.Writer;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -76,23 +78,24 @@ public class OWL2Parser {
 			//System.out.println();
 			System.out.println("LoadedImportsList: " + loadedImportsList);
 			System.out.println();
+			BufferedWriter out = new BufferedWriter(new FileWriter(filename));
 
 			for (OWLOntology onto : loadedImportsList) {
 	                             
 				System.out.println("parsing OWL: " + onto.getOntologyID().getOntologyIRI() + " ...");
 				ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
-				Writer wr;
-				//rendi.render(onto,wr);
-	//                        ManchesterOWLSyntaxObjectRenderer ren = new ManchesterOWLSyntaxObjectRenderer(wr,);
+			
+				rendi.render(onto,out);
+	                        //ManchesterOWLSyntaxObjectRenderer ren = new ManchesterOWLSyntaxObjectRenderer(out,);
      
 	                        }
 
 			
-	                        File file = new File(filename);
+	                        
 	                       // ontologyList.reverse().writeToTextFile(new FileOutputStream(file, false));
-	                        String cmd = "cp " + file.getAbsolutePath() + " .outputFilename";
-	                        Runtime.getRuntime().exec(cmd);
-	                       // System.out.println("OWL parsing done!\n");
+	                       // String cmd = "cp " + file.getAbsolutePath() + " .outputFilename";
+	                        //Runtime.getRuntime().exec(cmd);
+	                        System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
 			e.printStackTrace();
