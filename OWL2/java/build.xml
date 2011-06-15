@@ -97,7 +97,7 @@
 	  <attribute name="Title" value="OWL ATerm Renderer"/>
 	  <attribute name="Built-By" value="${user.name}"/>
 	  <attribute name="Main-Class" value="OWL2Parser"/>
-	  <attribute name="Class-Path" value="java/lib/owlapi-bin.jar java/lib/aterm-java-1.6.jar"/>	  
+	  <attribute name="Class-Path" value="java/lib/owlapi-bin.jar"/>	  
 	</manifest>
       </jar>
     </target> 
