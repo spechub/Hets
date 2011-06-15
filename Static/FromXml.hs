@@ -63,14 +63,11 @@ data LType = DefL { scope :: Scope
            | ThmL { scope :: Scope
                   , isHiding :: Bool }
 
-getLType :: Element -> ResultT IO LType
-getLType el = case findChild (unqual "Type") el of
-  Just tp -> let
-    scp = if isInfixOf "Global" $ strContent tp then Global else Local
-    def = isInfixOf "Def" $ strContent tp
-    hid = isInfixOf "Hiding" $ strContent tp
-    in return $ if def then DefL scp hid else ThmL scp hid
-  Nothing -> fail "links type description is missing"
+getLType :: String -> LType
+getLType tp = let
+    scp = if isInfixOf "Global" tp then Global else Local
+    hid = isInfixOf "Hiding" tp
+  in if isInfixOf "Def" tp then DefL scp hid else ThmL scp hid
 
 {- ----------------------
 Top-Level Functions -}
@@ -372,7 +369,9 @@ extractLinkElements el = do
     labelLink r e = do
       sr <- getAttrVal "source" e
       tr <- getAttrVal "target" e
-      tp <- getLType e
+      tp <- case findChild (unqual "Type") e of
+          Just tp' -> return $ getLType $ strContent tp'
+          Nothing -> fail "links type description is missing"
       return $ Link sr tr tp e : r
 
 -- | extracts the global annotations from the xml-graph
