@@ -142,6 +142,7 @@ instance ShATermConvertible Entity where
     fromShATermAux ix att0 = case getShATerm ix att0 of
        u@(ShAAppl tys [a] _) -> case case tys of
             "OWLClassEntity" -> Just Class
+            "OWLClass" -> Just Class
             "Individual" -> Just NamedIndividual
             _ -> readMaybe tys of
          Nothing -> fromShATermError "Entity" u
