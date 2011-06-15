@@ -6,7 +6,8 @@ import Data.Maybe
 import Text.XML.Light.Input
 import System.Directory
 import System.Process
-import FreeCAD.PrintAs
+import FreeCAD.As
+-- import FreeCAD.PrintAs
 
 
 --the IO part of the program:--

@@ -25,9 +25,11 @@ import Common.ExtSign
 import Common.Id
 import Common.LibName
 
-import ATerm.Lib
+import Common.AS_Annotation
+import Common.GlobalAnnotations
+import Common.Result
 
--- import Common.XmlParser (XmlParseable, parseXml)
+import ATerm.Lib
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -36,8 +38,7 @@ import Data.Typeable
 import FreeCAD.As
 import FreeCAD.ATC_FreeCAD ()
 import FreeCAD.PrintAs ()
--- TODO: use this module after the bugfix
--- import FreeCAD.Parser
+import FreeCAD.Parser (processFile)
 
 import Logic.Grothendieck (G_basic_spec(..))
 import Syntax.AS_Library (fromBasicSpec, LIB_DEFN)
@@ -68,8 +69,7 @@ instance Sentences FreeCAD () Sign FCMorphism () where
 
 instance StaticAnalysis FreeCAD Document () () () Sign FCMorphism () ()
   where
-  basic_analysis FreeCAD = Just $ \ (bs, s, _) ->
-    return (bs, mkExtSign s, [])
+  basic_analysis FreeCAD = Just basicFCAnalysis
   empty_signature FreeCAD = Sign { objects = Set.empty }
   is_subsig FreeCAD s1 s2 = Set.isSubsetOf (objects s1) $ objects s2
 
@@ -93,8 +93,10 @@ instance Logic FreeCAD
 
 readFreeCADLib :: FilePath -> LibName -> IO LIB_DEFN
 readFreeCADLib fp ln = do
--- TODO: use the real basic-spec reader...
-  bs <- error "link here the process file"
---  bs <- processFile fp
+  bs <- processFile fp
   let sn = mkSimpleId "FreeCAD-Design"
   return $ fromBasicSpec ln sn $ G_basic_spec FreeCAD bs
+
+basicFCAnalysis :: (Document, Sign, GlobalAnnos)
+                -> Result (Document, ExtSign Sign (), [Named ()])
+basicFCAnalysis (bs, _, _) = return (bs, mkExtSign $ error "make sign from bs", [])
