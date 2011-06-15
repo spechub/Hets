@@ -339,9 +339,9 @@ facetValuePair = do
   return (df, rv)
 
 
--- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair] 
+-- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair]
 dataRangeRestriction :: CharParser st DataRange
-dataRangeRestriction = do 
+dataRangeRestriction = do
   e <- datatypeUri
   option (DataType e) $ fmap (DatatypeRestriction e) $ bracketsP
     $ sepByComma facetValuePair
@@ -494,7 +494,7 @@ conjunction = do
 
 description :: CharParser st ClassExpression
 description =
-  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword orS 
+  fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword orS
 
 
 entityType :: CharParser st EntityType
@@ -520,8 +520,8 @@ annotation :: CharParser st Annotation
 annotation = do
     ap <- uriP
     av <- annotationValue
-    return $ Annotation [] ap av    
-      
+    return $ Annotation [] ap av
+
 optAnnos :: CharParser st a -> CharParser st ([Annotation], a)
 optAnnos p = do
   as <- annotationList
@@ -540,7 +540,7 @@ annotationList = optionL realAnnotations
 realAnnotations :: CharParser st [Annotation]
 realAnnotations = do
   pkeyword annotationsC
-  sepByComma $ optAnnos2 
+  sepByComma $ optAnnos2
 
 descriptionAnnotatedList :: CharParser st [([Annotation], ClassExpression)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
@@ -549,7 +549,7 @@ annotationPropertyFrame :: CharParser st [Axiom]
 annotationPropertyFrame = do
   pkeyword annotationPropertyC
   ap <- uriP
-  x <- flat $ many $ apBit ap 
+  x <- flat $ many $ apBit ap
   return x
 
 apBit :: QName -> CharParser st [Axiom]
@@ -560,15 +560,15 @@ apBit ap = do
         <|> do
           pkeyword rangeC
           x <- sepByComma $ optAnnos uriP
-          return $ map (\ (ans, iri) -> EntityAnno $ AnnotationPropertyDomainOrRange AnnRange ans ap iri) x 
+          return $ map (\ (ans, iri) -> EntityAnno $ AnnotationPropertyDomainOrRange AnnRange ans ap iri) x
        <|> do
           pkeyword domainC
           x <- sepByComma $ optAnnos uriP
           return $ map (\ (ans, iri) -> EntityAnno $ AnnotationPropertyDomainOrRange AnnDomain ans ap iri) x
        <|> do
-          x <- annotationList
+          x <- realAnnotations
           return [EntityAnno $ AnnotationAssertion x ap]
-         
+
 equivOrDisjointL :: [EquivOrDisjoint]
 equivOrDisjointL = [Equivalent, Disjoint]
 
@@ -589,7 +589,7 @@ datatypeFrame = do
       return (al, dr)
     as2 <- many realAnnotations
     return $ map (\ an -> EntityAnno $ AnnotationAssertion an duri) as1
-     ++ case ms of 
+     ++ case ms of
       Nothing -> [ EntityAnno $ AnnotationAssertion (concat $ as1 ++ as2) duri ]
       Just (al, dr) -> [ PlainAxiom al $ DatatypeDefinition duri dr ]
      ++ map (\ an -> EntityAnno $ AnnotationAssertion an duri) as2
@@ -600,13 +600,13 @@ entityAnnos qn ty = do
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
 classFrame :: CharParser st [Axiom]
-classFrame = do 
+classFrame = do
         pkeyword classC
         iri <- uriP
         plain <- flat $ many $ classFrameBit iri
-        if null plain then return [PlainAxiom [] $ Declaration $ Entity Class iri] 
+        if null plain then return [PlainAxiom [] $ Declaration $ Entity Class iri]
                       else return plain
-          
+
 classFrameBit :: QName -> CharParser st [Axiom]
 classFrameBit curi = let duri = Expression curi in
     entityAnnos curi Class
@@ -629,7 +629,7 @@ classFrameBit curi = let duri = Expression curi in
     as <- annotationList
     o <- sepByComma objectPropertyExpr
     return [PlainAxiom as $ HasKey duri o []]
-     
+
 domainOrRange :: CharParser st ObjDomainOrRange
 domainOrRange = choice
   $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
@@ -690,7 +690,7 @@ objectPropertyFrame = do
   as <- flat $ many $ objectFrameBit ouri
   return $ if null as
     then [PlainAxiom [] $ Declaration $ Entity ObjectProperty ouri]
-    else as 
+    else as
 
 dataPropExprAList :: CharParser st [([Annotation], DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
