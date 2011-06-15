@@ -84,9 +84,7 @@ type ObjectProperty = IRI
 type DataProperty = IRI
 type AnnotationProperty = IRI
 type NamedIndividual = IRI
-type AnonymousIndividual = NodeID
-data Individual = NamedInd IRI | AnonymousIndividual AnonymousIndividual  
-	deriving (Typeable, Show, Eq, Ord)
+type Individual = IRI
 
 ------------------------
 -- ONTOLOGIES SYNTAX
@@ -253,7 +251,7 @@ data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
 	  deriving (Typeable, Show, Eq, Ord)
 
 data AnnotationAxiom 
-	= AnnotationAssertion [Annotation] AnnotationProperty AnnotationSubject AnnotationValue
+	= AnnotationAssertion [Annotation] IRI
 	| SubAnnotationPropertyOf [Annotation] AnnotationProperty AnnotationProperty
 	| AnnotationPropertyDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
 	deriving (Typeable, Show, Eq, Ord)
@@ -265,14 +263,8 @@ showAnnDomainOrRange dr = case dr of
     AnnDomain -> domainC
     AnnRange -> rangeC
 
-data AnnotationSubject 
-	= AnnSubIRI IRI 
-	| AnnSubject AnonymousIndividual
-	  deriving (Typeable, Show, Eq, Ord)
-
 data AnnotationValue 
-	= AnnValue AnonymousIndividual 
-	| AnnValIRI IRI 
+	= AnnValue IRI
 	| AnnValLit Literal
 	  deriving (Typeable, Show, Eq, Ord)
 

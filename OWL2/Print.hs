@@ -64,13 +64,9 @@ quantifierType :: QuantifierType -> Doc
 quantifierType = keyword . showQuantifierType
 
 printIndividual :: Individual -> Doc
-printIndividual ind = 
-    case ind of
-      NamedInd n -> pretty n
-      AnonymousIndividual a -> pretty a
+printIndividual = pretty
 
-instance Pretty Individual where
-    pretty = printIndividual 
+
 
 instance Pretty ClassExpression where
   pretty desc = case desc of

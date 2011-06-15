@@ -276,9 +276,7 @@ individualUri :: CharParser st QName
 individualUri = uriP
 
 individual :: CharParser st Individual
-individual = do
-      i <- individualUri
-      return $ if namePrefix i == "_" then AnonymousIndividual i else NamedInd i
+individual = individualUri
 
 skipChar :: Char -> CharParser st ()
 skipChar = forget . skips . char
@@ -512,111 +510,65 @@ entity = do
 -- same as annotation Target in Manchester Syntax, named annotation Value in Abstract Syntax
 annotationValue :: CharParser st AnnotationValue
 annotationValue = do
-    i <- individualUri
-    case namePrefix i of
-      "_" -> return $ AnnValue i
-      _ -> return $ AnnValIRI i
+    i <- individual
+    return $ AnnValue i
   <|> do
     l <- literal
     return $ AnnValLit l
 
-{-
--- annotationSubject parser
-annotationSubject :: CharParser st AnnotationSubject
-annotationSubject = do
-    i <- individualUri
-    case namePrefix i of
-      "_" -> return $ AnnSubject i
-      _ -> return $ AnnSubIRI i
--}
-
-annotationList :: CharParser st [Annotation]
-annotationList = optionL $ sepByComma annotations  -- or many annotations !!!!!!!! which one ?
-
-annotations :: CharParser st Annotation
-annotations = do
-    pkeyword annotationsC
-    a <- annotationList
-    ap <- uriP
-    av <- annotationValue
-    return $ Annotation a ap av    
-      
- 
-annotationPropertyFrame :: CharParser st AnnotationAxiom
-annotationPropertyFrame = do
-      pkeyword annotationPropertyC
-      ap <- uriP 
-      do
-          pkeyword subPropertyOfC
-          al <- annotationList
-          i <- uriP
-          return $ SubAnnotationPropertyOf al ap i
-        <|> do
-          pkeyword rangeC
-          al <- annotationList
-          i <- uriP
-          return $ AnnotationPropertyDomainOrRange AnnRange al ap i 
-       <|> do
-          pkeyword domainC
-          al <- annotationList
-          i <- uriP
-          return $ AnnotationPropertyDomainOrRange AnnDomain al ap i
-       <|> do
-          al <- annotationList
-          ap2 <- uriP
-          av <- annotationValue 
-          case namePrefix ap of
-            "_" -> return $ AnnotationAssertion al ap2 (AnnSubject ap) av
-            _   -> return $ AnnotationAssertion al ap2 (AnnSubIRI ap) av
-           
-{-
-annotationPropertyFrame :: CharParser st [Axiom]
-annotationPropertyFrame = do
-  pkeyword annotationPropertyC
-  ap <- uriP
-  many apBit -- ignore
-  return [PlainAxiom [] $ Declaration $ Entity AnnotationProperty ap]
-
-apBit :: CharParser st ()
-apBit = (annotationList >> return ())
-  <|> do
-    pkeyword domainC <|> pkeyword rangeC <|> subPropertyKey
-    sepByComma $ optAnnos uriP
-    return ()
-
 annotation :: CharParser st Annotation
 annotation = do
-  a <- uriP
-  do {-
-      c <- literal
-      return $ ExplicitAnnotation a c 
-    <|> do -}
-      e <- entity
-      return $ Annotation a e
-    <|> do
-      individualUri
-      fail "unsupported individualURI of annotation"
-
-
+    ap <- uriP
+    av <- annotationValue
+    return $ Annotation [] ap av    
+      
 optAnnos :: CharParser st a -> CharParser st ([Annotation], a)
 optAnnos p = do
-  as <- annotations
+  as <- annotationList
   a <- p
   return (as, a)
 
-annotations :: CharParser st [Annotation]
-annotations = optionL realAnnotations
+optAnnos2 :: CharParser st Annotation
+optAnnos2 = do
+  as <- annotationList
+  Annotation _ ap av <- annotation
+  return $ Annotation as ap av
+
+annotationList :: CharParser st [Annotation]
+annotationList = optionL realAnnotations
 
 realAnnotations :: CharParser st [Annotation]
 realAnnotations = do
   pkeyword annotationsC
-  as <- sepByComma $ optAnnos annotation
-  return $ map snd as -- annoted annotations not supported yet
+  sepByComma $ optAnnos2 
 
 descriptionAnnotatedList :: CharParser st [([Annotation], ClassExpression)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
--}
 
+annotationPropertyFrame :: CharParser st [Axiom]
+annotationPropertyFrame = do
+  pkeyword annotationPropertyC
+  ap <- uriP
+  x <- flat $ many $ apBit ap 
+  return x
+
+apBit :: QName -> CharParser st [Axiom]
+apBit ap = do
+          pkeyword subPropertyOfC
+          x <- sepByComma $ optAnnos uriP
+          return $ map (\ (ans, iri) -> EntityAnno $ SubAnnotationPropertyOf ans ap iri) x
+        <|> do
+          pkeyword rangeC
+          x <- sepByComma $ optAnnos uriP
+          return $ map (\ (ans, iri) -> EntityAnno $ AnnotationPropertyDomainOrRange AnnRange ans ap iri) x 
+       <|> do
+          pkeyword domainC
+          x <- sepByComma $ optAnnos uriP
+          return $ map (\ (ans, iri) -> EntityAnno $ AnnotationPropertyDomainOrRange AnnDomain ans ap iri) x
+       <|> do
+          x <- annotationList
+          return [EntityAnno $ AnnotationAssertion x ap]
+         
 equivOrDisjointL :: [EquivOrDisjoint]
 equivOrDisjointL = [Equivalent, Disjoint]
 
@@ -625,90 +577,59 @@ equivOrDisjoint = choice
   $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
   equivOrDisjointL
 
-datatypeDefinition :: CharParser st [Axiom]
-datatypeDefinition = do
+datatypeFrame :: CharParser st [Axiom]
+datatypeFrame = do
     pkeyword datatypeC
     duri <- datatypeUri
-    do 
-        al <- annotationList
-        ap <- uriP
-        av <- annotationValue
-        case namePrefix duri of
-            "_" -> return [EntityAnno $ AnnotationAssertion al ap (AnnSubject duri) av]
-            _   -> return [EntityAnno $ AnnotationAssertion al ap (AnnSubIRI duri) av] 
-      <|> do
-        pkeyword equivalentToC
-        al <- annotationList
-        dr <- dataRange
-        return [PlainAxiom al $ DatatypeDefinition duri dr]
-        
+    as1 <- many realAnnotations
+    ms <- optionMaybe $ do
+      pkeyword equivalentToC
+      al <- annotationList
+      dr <- dataRange
+      return (al, dr)
+    as2 <- many realAnnotations
+    return $ map (\ an -> EntityAnno $ AnnotationAssertion an duri) as1
+     ++ case ms of 
+      Nothing -> [ EntityAnno $ AnnotationAssertion (concat $ as1 ++ as2) duri ]
+      Just (al, dr) -> [ PlainAxiom al $ DatatypeDefinition duri dr ]
+     ++ map (\ an -> EntityAnno $ AnnotationAssertion an duri) as2
 
-{-
 entityAnnos :: QName -> EntityType -> CharParser st [Axiom]
 entityAnnos qn ty = do
     as <- realAnnotations
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
-datatypeFrame :: CharParser st [Axiom]
-datatypeFrame = do
-    pkeyword datatypeC
-    duri <- datatypeUri
-    as1 <- many annotationList
-    option () $ do
-      pkeyword equivalentToC
-      annotations
-      dataRange
-      return ()
-    as2 <- many annotationList
-    return [ PlainAxiom (concat $ as1 ++ as2)
-           $ Declaration $ Entity Datatype duri ]
--}
-classFrame:: CharParser st [Axiom]
-classFrame = do
-    pkeyword classC
-    iri <- uriP
-    do
-        pkeyword subClassOfC
-        as <- annotationList
-        d <- description
-        return [PlainAxiom as $ SubClassOf (Expression iri) d] 
-      <|> do
-        e <- equivOrDisjoint
-        al <- annotationList
-        d <- sepByComma description
-        return [PlainAxiom al $ EquivOrDisjointClasses e $ (Expression iri) : d]
-      <|> do
-        pkeyword disjointUnionOfC
-        al <- annotationList
-        d <- sepByComma description
-        return [PlainAxiom al $ DisjointUnion iri d]
-      <|> do
-        pkeyword hasKeyC
-        al <- annotationList
-      --  op <- 
-        return []
-        
-{-
+classFrame :: CharParser st [Axiom]
+classFrame = do 
+        pkeyword classC
+        iri <- uriP
+        plain <- flat $ many $ classFrameBit iri
+        if null plain then return [PlainAxiom [] $ Declaration $ Entity Class iri] 
+                      else return plain
+          
+classFrameBit :: QName -> CharParser st [Axiom]
+classFrameBit curi = let duri = Expression curi in
+    entityAnnos curi Class
+  <|> do
+    pkeyword subClassOfC
+    ds <- descriptionAnnotatedList
+    return $ map (\ (as, d) -> PlainAxiom as $ SubClassOf duri d) ds
+  <|> do
+    e <- equivOrDisjoint
+    ds <- descriptionAnnotatedList
+    return [PlainAxiom (concatMap fst ds)
+           $ EquivOrDisjointClasses e $ duri : map snd ds]
   <|> do
     pkeyword disjointUnionOfC
-    as <- annotations
+    as <- annotationList
     ds <- sepByComma description
     return [PlainAxiom as $ DisjointUnion curi ds]
   <|> do
     pkeyword hasKeyC
-    annotations
-    many objectPropertyExpr
-    return []
-
-classFrame :: CharParser st [Axiom]
-classFrame = do
-  pkeyword classC
-  curi <- owlClassUri
-  as <- flat $ many $ classFrameBit curi
-  return $ if null as
-    then [PlainAxiom [] $ Declaration $ Entity Class curi]
-    else as -}
-{-
+    as <- annotationList
+    o <- many objectPropertyExpr
+    return [PlainAxiom as $ HasKey duri o []]
+     
 domainOrRange :: CharParser st ObjDomainOrRange
 domainOrRange = choice
   $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
@@ -757,7 +678,7 @@ objectFrameBit ouri = let opExp = ObjectProp ouri in
       $ InverseObjectProperties opExp i) ds
   <|> do
     pkeyword subPropertyChainC
-    as <- annotations
+    as <- annotationList
     os <- sepBy1 objectPropertyExpr (keyword oS)
     return [PlainAxiom as
       $ SubObjectPropertyOf (SubObjectPropertyChain os) opExp]
@@ -769,7 +690,7 @@ objectPropertyFrame = do
   as <- flat $ many $ objectFrameBit ouri
   return $ if null as
     then [PlainAxiom [] $ Declaration $ Entity ObjectProperty ouri]
-    else as
+    else as 
 
 dataPropExprAList :: CharParser st [([Annotation], DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
@@ -789,7 +710,7 @@ dataFrameBit duri =
       $ DataPropertyDomainOrRange (DataRange r) duri) ds
   <|> do
     characterKey
-    as <- annotations
+    as <- annotationList
     keyword functionalS
     return [PlainAxiom as $ FunctionalDataProperty duri]
   <|> do
@@ -833,7 +754,7 @@ iFrameBit iuri =
   <|> do
     pkeyword typesC
     ds <- descriptionAnnotatedList
-    return $ map (\ (as, d) -> PlainAxiom as $ ClassAssertion iuri d) ds
+    return $ map (\ (as, d) -> PlainAxiom as $ ClassAssertion d iuri) ds
   <|> do
     s <- sameOrDifferent
     is <- sepByComma $ optAnnos individualUri
@@ -869,18 +790,18 @@ sameOrDifferentIndu =
 misc :: CharParser st Axiom
 misc = do
     e <- equivOrDisjointKeyword classesC
-    as <- annotations
+    as <- annotationList
     ds <- sepByComma description
     return $ PlainAxiom as $ EquivOrDisjointClasses e ds
   <|> do
     e <- equivOrDisjointKeyword propertiesC
-    as <- annotations
+    as <- annotationList
     es <- sepByComma objectPropertyExpr
     -- indistinguishable from dataProperties
     return $ PlainAxiom as $ EquivOrDisjointObjectProperties e es
   <|> do
     s <- sameOrDifferentIndu
-    as <- annotations
+    as <- annotationList
     is <- sepByComma individualUri
     return $ PlainAxiom as $ SameOrDifferentIndividual s is
 
@@ -923,4 +844,4 @@ basicSpec = do
 --      , ("", showQU dummyQName ++ "#") -- uncomment for API v3
       , ("owl2xml", "http://www.w3.org/2006/12/owl2-xml#") ]
       ++ map (\ (p, q) -> (p, showQU q)) nss }
--}
+
