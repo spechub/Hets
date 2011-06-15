@@ -75,10 +75,6 @@ public class OWL2Parser {
 			System.out.println("LoadedImportsList: " + loadedImportsList);
 			System.out.println();
 			BufferedWriter out = new BufferedWriter(new FileWriter(filename));
-					
-			//ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (ontology.getOWLOntologyManager());
-			
-		//	rendi.render(ontology,out);
 
 			if(loadedImportsList.size() == 0)
 			{
