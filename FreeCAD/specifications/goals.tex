@@ -59,9 +59,6 @@ the transformation by rotations and translations as well as for
 compound objects such as \haskell{Cut}, \haskell{Common},
 \haskell{Fusion}, etc..
 
-\begin{figure}[htb]
-    \centering
-    \framebox{\begin{minipage}{\textwidth}
 \begin{align}
 \setsem{Rectangle(w, l)} & = \text{The set consisting of the four sides of the }\notag\\
  & \qquad \text{rectangle in the x-y-plane}\notag\\
@@ -72,10 +69,15 @@ compound objects such as \haskell{Cut}, \haskell{Common},
 \setsem{Cylinder(a, h, r)} & = \text{The ``pac-man'' cylinder along z-axis}\notag\\
  & = circle\times[0,h]\\
  \text{where}~ circle &=\setsep{(\rho\cdot cos(\alpha),\rho\cdot sin(\alpha))}{\alpha \in [0,a], \rho \in [0,r]}\notag\\
-\setsem{Sphere(a_1, a_2, a_3, r)} & = \setsep{(x,y,z)}{x + y + z \leq r} \cap \notag\\
+\setsem{Sphere(a_1, a_2, a_3, r)} & = \text{The intersection between a full sphere and a 'pac-man' cylinder}\notag\\ 
+& \text {on the z-axis (which may cut a 'cake-slice' and also the nort-pole/south-pole caps)}\notag\\
+& = \setsep{(x,y,z)}{x + y + z \leq r} \cap \notag\\
 & \setsep{(\rho\cdot cos(\alpha),\rho\cdot sin(\alpha),z)}{z \in [sin(a_1),sin(a_2)]. \rho \in [0, \infty], \alpha \in [0, a_3]}\\
-\setsem{Cone(a, r_1, r_2, h)} & = \setsep{(\rho \cdot cos(\alpha), \rho \cdot sin(\alpha), z)}{\rho \leq r_1 + {{z}\over{h}} \cdot (r_2 - r_1). z \in [0,h],\alpha \in [0, a]} \\
-\setsem{Torus(a_1, a_2, a_3, r_1, r_2)} & = \{(x,y,z)\} \cup \{(x_2,y_2,z_2)\}\notag\\
+\setsem{Cone(a, r_1, r_2, h)} & = \text{The intersection between a fullright circular cone and a 'pac-man' cylinder}\notag\\
+& = \setsep{(\rho \cdot cos(\alpha), \rho \cdot sin(\alpha), z)}{\rho \leq r_1 + {{z}\over{h}} \cdot (r_2 - r_1). z \in [0,h],\alpha \in [0, a]} \\
+\setsem{Torus(a_1, a_2, a_3, r_1, r_2)}  & = \text{a bit trickier: union between a torus and a cylinder with the same center and the}\notag\\
+& \text {same symmetry axis all intersected with an infinite-radius z-axis centered 'pac-man' cylinder}\notag\\
+& = \{(x,y,z)\} \cup \{(x_2,y_2,z_2)\}\notag\\
 & \text{where:}\notag\\
 & circle = \setsep{(\rho\cdot cos(\alpha), \rho\cdot sin(\alpha))}{\alpha \in [a_1, a_2], \rho \in [0,r_2]}\notag\\
 & (rad, z) \in \setsep{(m,n)}{(-(m-r_1), n)\in circle}\notag\\
@@ -87,8 +89,6 @@ compound objects such as \haskell{Cut}, \haskell{Common},
 &\setsem{Cone(a_3, r_1 - r_2 \cdot cos(a_1), r_1 - r_2 \cdot cos(a_2), sin(a_2) - sin(a_1))}\\
 \setsem{Circle(sa, ea, r)} & = \setsep{(x,y,z)}{x = r\cdot cos(\alpha), y = r \cdot sin(\alpha), z = 0, \alpha \in [sa, ea]}\\
 \end{align}
-\end{minipage}}
-    \caption{Set semantics for some baseobjects}\label{fig:semantics}
-\end{figure}
+
 
 \end{document}
