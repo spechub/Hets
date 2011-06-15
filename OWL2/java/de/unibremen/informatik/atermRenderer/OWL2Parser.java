@@ -5,9 +5,12 @@ import org.semanticweb.owlapi.model.OWLException;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.IRI;
+import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
+import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.Writer;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -77,7 +80,11 @@ public class OWL2Parser {
 			for (OWLOntology onto : loadedImportsList) {
 	                             
 				System.out.println("parsing OWL: " + onto.getOntologyID().getOntologyIRI() + " ...");
-	                               
+				ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
+				Writer wr;
+				//rendi.render(onto,wr);
+	//                        ManchesterOWLSyntaxObjectRenderer ren = new ManchesterOWLSyntaxObjectRenderer(wr,);
+     
 	                        }
 
 			
