@@ -80,7 +80,7 @@
 
     <target name="install" depends="jar">
       <copy file="${builddir}/OWLLocality.jar" todir="../"/>
-      <copy file="${builddir}/OWL2ATerm.jar" todir="../"/>
+      <copy file="${builddir}/OWL2Parser.jar" todir="../"/>
     </target>
 
     <target name="jar" depends="compile">
@@ -92,11 +92,11 @@
 	  <attribute name="Class-Path" value="lib/owlapi-bin.jar"/>	  
 	</manifest>
       </jar>
-      <jar basedir="${classesdir}/atermRenderer" destfile="${builddir}/OWL2ATerm.jar">
+      <jar basedir="${classesdir}/atermRenderer" destfile="${builddir}/OWL2Parser.jar">
 	<manifest>
 	  <attribute name="Title" value="OWL ATerm Renderer"/>
 	  <attribute name="Built-By" value="${user.name}"/>
-	  <attribute name="Main-Class" value="de.unibremen.informatik.atermRenderer.OWL2ATerm"/>
+	  <attribute name="Main-Class" value="OWL2Parser"/>
 	  <attribute name="Class-Path" value="java/lib/owlapi-bin.jar java/lib/aterm-java-1.6.jar"/>	  
 	</manifest>
       </jar>
