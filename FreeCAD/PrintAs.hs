@@ -40,7 +40,7 @@ instance Pretty Vector4 where
     pretty v = parens $ sepByCommas $ map pretty [q0 v, q1 v, q2 v, q3 v]
 
 instance Pretty Placement where
-    pretty p = brackets $ sepBySemis [pretty $ position p, pretty $ orientation p]
+    pretty p1 = brackets $ sepBySemis [pretty $ position p1, pretty $ orientation p1]
 
 printBO:: BaseObject -> Doc
 printBO (Box h w l) = text "Box" <+> (vcat[hrow, wrow, lrow]) where
@@ -90,7 +90,7 @@ printObject ( Section eo1 eo2) = text "Section" <+> vcat[pretty eo1, pretty eo2]
 printObject ( Extrusion eo d) = text "Extrusion" <+> vcat[pretty eo, pretty d]
 
 instance Pretty Object where
-    pretty o = printObject o
+    pretty obj = printObject obj
 
 printEO:: ExtendedObject -> Doc
 printEO (Placed po) = pretty po
@@ -100,7 +100,7 @@ instance Pretty ExtendedObject where
     pretty eo = printEO eo
 
 printPO:: PlacedObject -> Doc
-printPO (PlacedObject p o) = vcat[pretty o, text "place" <+> pretty p]
+printPO (PlacedObject plc obj) = vcat[pretty obj, text "place" <+> pretty plc]
 
 
 instance Pretty PlacedObject where

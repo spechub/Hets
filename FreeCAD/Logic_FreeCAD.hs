@@ -38,7 +38,7 @@ import Data.Typeable
 import FreeCAD.As
 import FreeCAD.ATC_FreeCAD ()
 import FreeCAD.PrintAs ()
-import FreeCAD.Parser (processFile)
+import FreeCAD.Translator (processFile)
 
 import Logic.Grothendieck (G_basic_spec(..))
 import Syntax.AS_Library (fromBasicSpec, LIB_DEFN)
@@ -100,3 +100,6 @@ readFreeCADLib fp ln = do
 basicFCAnalysis :: (Document, Sign, GlobalAnnos)
                 -> Result (Document, ExtSign Sign (), [Named ()])
 basicFCAnalysis (bs, _, _) = return (bs, mkExtSign $ error "make sign from bs", [])
+
+bsToSign :: Document -> Sign
+bsToSign doc = Sign $ Set.fromList doc

@@ -1,9 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  definition of the datatype describing
-               the abstract FreeCAD terms and and a few tools describing simple
-               mathematical operations on those building-blocks (3d vectors,
-               rotation matrices, rotation quaternions)
+Description :  The main part of the module. Here the parsing, translation of the
+               input xml is handled, as well as the I/O.
 Copyright   :  (c) Robert Savu and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -19,7 +17,24 @@ import Text.XML.Light
 import Data.Maybe
 import Data.Set as Set
 import FreeCAD.Brep
---import FreeCAD.Brep
+import System.Directory
+import System.Process
+import FreeCAD.PrintAs()
+
+
+processFile :: FilePath -> IO Document
+--unzips the freecad archive, reads the main "Document.xml" file and gives control
+--to (translate :: Element -> IO Document) function to interpret the xml data
+processFile fp = do
+  tempDir <- getTemporaryDirectory
+--  putStrLn $ show $ ["unzip", "-of", fp, "-d", tempDir]
+  readProcess "unzip" ["-o", fp, "-d", tempDir] []
+  xmlInput <-readFile (concat[tempDir, "/Document.xml"])
+  let parsed = parseXMLDoc xmlInput
+  translate $ fromJust parsed
+  --putStrLn (show $printDoc out)
+  --putStrLn (show out)
+------------------------
 
 
 
@@ -41,7 +56,7 @@ objList mbel= findChildren objQName (fromJust (objListEl mbel))
 
 
 firstThree :: String -> String
-firstThree x = take 3 x
+firstThree s = take 3 s
 
 getName:: Element -> String
 getName el = fromJust (findAttr (makeQName "name") el)
@@ -71,38 +86,38 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
              | tn == "Con" = mkBaseObject $ getCon elc
              | tn == "Tor" = mkBaseObject $ getTor elc
              | tn == "Cir" = mkBaseObject $ getCir elc
-             | tn == "Rec" = mkRectangle el --TODO
-             | tn == "Lin" = mkLine elc --TODO
+             | tn == "Rec" = mkRectangle el
+             | tn == "Lin" = mkLine el --TODO
              | tn == "Cut" = mkObject $ getCut elc
              | tn == "Com" = mkObject $ getCom elc
              | tn == "Fus" = mkObject $ getFus elc
              | tn == "Sec" = mkObject $ getSec elc
              | tn == "Ext" = mkObject $ getExt elc
-            where
-                tn = firstThree(getName el)
-                mkObject = return . NamedObject (getName el)
-                                  . PlacedObject (findPlacement elc)
-                mkBaseObject = mkObject . BaseObject
-                getBox e = Box (findFloat "Height" e) (findFloat "Width" e)
-                               (findFloat "Length" e)
-                getSph e = Sphere (findFloat "Angle1" e) (findFloat "Angle2" e)
-                                  (findFloat "Angle3" e) (findFloat "Radius" e)
-                getCyl e = Cylinder (findFloat "Angle" e) (findFloat "Height" e)
-                                    (findFloat "Radius" e)
-                getCon e = Cone (findFloat "Angle" e) (findFloat "Radius1" e)
-                                (findFloat "Radius2" elc) (findFloat "Height" e)
-                getTor e = Torus (findFloat "Angle1" e) (findFloat "Angle2" e)
-                                 (findFloat "Angle3" e) (findFloat "Radius1" e)
-                                 (findFloat "Radius2" e)
-                getCir e = Circle (findFloat "StartAngle" e)
-                                  (findFloat "EndAngle" e)
-                                  (findFloat "Radius" e)
-                getCut e = Cut (findRef "Base" e) (findRef "Tool" e)
-                getCom e = Common (findRef "Base" e) (findRef "Tool" e)
-                getSec e = Section (findRef "Base" e) (findRef "Tool" e)
-                getFus e = Fusion (findRef "Base" e) (findRef "Tool" e)
-                getExt e = Extrusion (findRef "Base" e) 3.14159 --TODO
-                elc = child el
+    where
+      tn = firstThree(getName el)
+      mkObject = return . NamedObject (getName el)
+                 . PlacedObject (findPlacement elc)
+      mkBaseObject = mkObject . BaseObject
+      getBox e = Box (findFloat "Height" e) (findFloat "Width" e)
+                 (findFloat "Length" e)
+      getSph e = Sphere (findFloat "Angle1" e) (findFloat "Angle2" e)
+                 (findFloat "Angle3" e) (findFloat "Radius" e)
+      getCyl e = Cylinder (findFloat "Angle" e) (findFloat "Height" e)
+                 (findFloat "Radius" e)
+      getCon e = Cone (findFloat "Angle" e) (findFloat "Radius1" e)
+                 (findFloat "Radius2" elc) (findFloat "Height" e)
+      getTor e = Torus (findFloat "Angle1" e) (findFloat "Angle2" e)
+                 (findFloat "Angle3" e) (findFloat "Radius1" e)
+                 (findFloat "Radius2" e)
+      getCir e = Circle (findFloat "StartAngle" e) (findFloat "EndAngle" e)
+                 (findFloat "Radius" e)
+      getCut e = Cut (findRef "Base" e) (findRef "Tool" e)
+      getCom e = Common (findRef "Base" e) (findRef "Tool" e)
+      getSec e = Section (findRef "Base" e) (findRef "Tool" e)
+      getFus e = Fusion (findRef "Base" e) (findRef "Tool" e)
+      getExt e = Extrusion (findRef "Base" e) 3.14159 --TODO
+      elc = child el
+getObject _ = error "undefined object"
 
 
 mkRectangle :: Element ->IO NamedObject

@@ -14,17 +14,26 @@ Portability :  portable
 
 Haskell layer of the Brep-reader
 -}
+
 module FreeCAD.Brep where
 
 import System.Process
 import Text.XML.Light
 import Data.Maybe
-import Data.Set as Set
+--import Data.Set() as Set
 import FreeCAD.As
+import FreeCAD.VecTools
 
 getBrep::(String, String) -> IO (BaseObject, Placement)
-getBrep (address, "rectangle") =
+getBrep (address, "line") = 
+    fmap proc3dLine $ get3dLine address
+getBrep (address, "rectangle") = 
     fmap procRectangle $ getRectangle address
+getBrep (_, _) = error "getBrep called with wrong arguments"
+
+
+proc3dLine:: (Vector3, Vector3) -> (BaseObject, Placement)
+proc3dLine (_, _) = (Line 0, (Placement (Vector3 0 0 0) (Vector4 0 0 0 0))) --TODO
 
 procRectangle::(Vector3, Vector3, Vector3, Vector3) -> (BaseObject, Placement)
 procRectangle (a, b, c, d) = (Rectangle h l, place)
@@ -82,6 +91,11 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
         quaternion = quatProd quat1 quat2
         pos = a
         place = Placement pos quaternion
+
+get3dLine :: String -> IO (Vector3, Vector3)
+get3dLine address = fmap parseBrepXML2 $ readProcess
+                  "./FreeCAD/brep_conversion/bin/brep_to_xml"
+                  [concat ["/tmp/",address], "line"] ""
 getRectangle:: String -> IO (Vector3, Vector3, Vector3, Vector3)
 getRectangle address = fmap parseBrepXML $ readProcess
                         "./FreeCAD/brep_conversion/bin/brep_to_xml"
@@ -91,24 +105,37 @@ getRectangle address = fmap parseBrepXML $ readProcess
 parseBrepXML:: String -> (Vector3, Vector3, Vector3, Vector3)
 parseBrepXML a = getData (fromJust (parseXMLDoc a))
 
+parseBrepXML2:: String -> (Vector3, Vector3)
+parseBrepXML2 a = getData2 (fromJust (parseXMLDoc a))
+
 quadFromList :: [a] -> (a,a,a,a)
 quadFromList ([]) = error "quadFromList: List empty"
-quadFromList (d:[]) = error "quadFromList: List too short"
-quadFromList (d:b:[]) = error "quadFromList: List too short"
-quadFromList (d:b:c:[]) = error "quadFromList: List too short"
+quadFromList (_:[]) = error "quadFromList: List too short"
+quadFromList (_:_:[]) = error "quadFromList: List too short"
+quadFromList (_:_:_:[]) = error "quadFromList: List too short"
 quadFromList (b:c:d:e) = (b,c,d, head e)
+
+doubleFromList :: [a] -> (a,a)
+doubleFromList [] = error "doubleFromList: List too short"
+doubleFromList(_:[]) = error "quadFromList: List too short"
+doubleFromList(b:c) = (b, head c)
 
 getData:: Element -> (Vector3, Vector3, Vector3, Vector3)
 getData e = if (qName (elName e)) == "rectangle" then
                 quadFromList (Prelude.map parseVertex (elChildren e))
             else error "unsupported object type in the .brp file"
 
+getData2 :: Element -> (Vector3, Vector3)
+getData2 e = if (qName (elName e)) == "line" then
+                 doubleFromList (Prelude.map parseVertex (elChildren e))
+             else error "unsuported ubject type in the .brp file"
+
 parseVertex:: Element -> Vector3
 parseVertex e = Vector3 (getD "x") (getD "y") (getD "z") where
-    getD x = if ( findAttr (makeQName x) e) == Nothing then
+    getD el = if ( findAttr (makeQName el) e) == Nothing then
                  error "erroneous input given by c++ module"
-             else read (fromJust (findAttr (makeQName x) e))
-    --getD x = 0
+             else read (fromJust (findAttr (makeQName el) e))
 
 makeQName:: String -> QName
 makeQName s = QName s Nothing Nothing
+
