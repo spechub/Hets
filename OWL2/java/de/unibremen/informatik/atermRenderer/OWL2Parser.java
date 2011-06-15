@@ -1,5 +1,3 @@
-//package de.unibremen.informatik.atermRenderer;
-
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLException;
 import org.semanticweb.owlapi.model.OWLOntology;
@@ -74,11 +72,14 @@ public class OWL2Parser {
 			// get all ontology which are imported from this ontology.
 			getImportsList(ontology, manager);
 			
-			//OWLOntologyManager mn = OWLManager.createOWLOntologyManager();
-			//System.out.println();
 			System.out.println("LoadedImportsList: " + loadedImportsList);
 			System.out.println();
 			BufferedWriter out = new BufferedWriter(new FileWriter(filename));
+					
+			//ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (ontology.getOWLOntologyManager());
+			
+		//	rendi.render(ontology,out);
+			
 
 			for (OWLOntology onto : loadedImportsList) {
 	                             
@@ -86,20 +87,15 @@ public class OWL2Parser {
 				ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
 			
 				rendi.render(onto,out);
-	                        //ManchesterOWLSyntaxObjectRenderer ren = new ManchesterOWLSyntaxObjectRenderer(out,);
-     
+	                      
 	                        }
 
-			
-	                        
-	                       // ontologyList.reverse().writeToTextFile(new FileOutputStream(file, false));
-	                       // String cmd = "cp " + file.getAbsolutePath() + " .outputFilename";
-	                        //Runtime.getRuntime().exec(cmd);
-	                        System.out.println("OWL parsing done!\n");
+	  
+	                System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
 			e.printStackTrace();
-		}catch (Exception ex) {
+		} catch (Exception ex) {
 			System.err.println("OWL parse error: " + ex.getMessage());
 			ex.printStackTrace();
 		}
@@ -109,24 +105,24 @@ public class OWL2Parser {
 	private static void getImportsList(OWLOntology ontology,
 			OWLOntologyManager om) {
 
-		// HashMap hMap = new HashMap();
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
-		//System.out.println("ab\n");
-
+		/*
 		if(loadedImportsList.size() == 0)
 		{
 			loadedImportsList.add(ontology);
 			importsURI.add(om.getOntologyDocumentIRI(ontology));
 		}	
-
+		*/
 		try {
 			for (OWLOntology imported : om.getImports(ontology)) {
 				if (!importsURI.contains(imported.getOntologyID().getOntologyIRI())) {
+					System.out.println("IMPORTED: " + imported + "\n");
 					unSavedImports.add(imported);
 					loadedImportsList.add(imported);
 					importsURI.add(imported.getOntologyID().getOntologyIRI());
 				}
 			}
+			
 			for (OWLOntology onto : unSavedImports) {
 				getImportsList(onto, om);
 			}
