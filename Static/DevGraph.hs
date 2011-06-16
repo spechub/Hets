@@ -437,7 +437,7 @@ getDGEdgeTypeModIncName et = case et of
     let prvn = (if isPrvn then "P" else "Unp") ++ "roven" in
     case thm of
       HidingThm -> prvn ++ "HidingThm"
-      FreeOrCofreeThm -> prvn ++ "Thm"
+      FreeOrCofreeThm fc -> prvn ++ shows fc "Thm"
       GlobalOrLocalThm scope isHom ->
           let het = if isHom then id else ("Het" ++) in
           het (case scope of
@@ -465,7 +465,7 @@ data DGEdgeTypeModInc =
 
 data ThmTypes =
     HidingThm
-  | FreeOrCofreeThm
+  | FreeOrCofreeThm FreeOrCofree
   | GlobalOrLocalThm { isLocalThmType :: Scope
                      , isHomThm :: Bool }
   deriving (Eq, Ord, Show)
@@ -486,7 +486,7 @@ getHomEdgeType isPend isHom lt = case lt of
       HidingFreeOrCofreeThm mh _ _ st -> ThmType
         { thmEdgeType = case mh of
             Nothing -> HidingThm
-            _ -> FreeOrCofreeThm
+            Just fc -> FreeOrCofreeThm fc
         , isProvenEdge = isProvenThmLinkStatus st
         , isConservativ = True
         , isPending = isPend }
@@ -517,9 +517,8 @@ listDGEdgeTypes =
                 , isProvenEdge = proven
                 , isConservativ = cons
                 , isPending = pending }
-      | thmType <-
-        [ HidingThm
-        , FreeOrCofreeThm] ++
+      | thmType <- HidingThm 
+        : [ FreeOrCofreeThm fc | fc <- fcList ] ++
           [ GlobalOrLocalThm { isLocalThmType = local
                              , isHomThm = hom }
           | local <- [Local, Global]

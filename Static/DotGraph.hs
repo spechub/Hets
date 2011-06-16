@@ -35,7 +35,7 @@ edgeAttributes ety = concatMap (", " ++)
              if isProv then "green" else "blue"]
       in case thTy of
       HidingThm -> "style=dashed" : hc
-      FreeOrCofreeThm -> "style=dotted" : hc
+      FreeOrCofreeThm _ -> "style=dotted" : hc
       th -> let
         cl c = if isHomThm th then c else doubleColor c
         rc = if isProv then
