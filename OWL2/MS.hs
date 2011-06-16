@@ -11,7 +11,7 @@ import OWL.ColonKeywords
 import qualified Data.Map as Map
 import Data.Typeable
 
-data AnnotatedList a = AnnotatedList [(Maybe [Annotation], a)]
+data AnnotatedList a = AnnotatedList [([Annotation], a)]
    deriving (Typeable, Show, Eq, Ord)
 
 data DatatypeFrame = DatatypeFrame Datatype [AnnotatedList Annotation] (Maybe ([Annotation], DataRange))
@@ -72,7 +72,7 @@ data AnnotationFrame = AnnotationFrame AnnotationProperty [AnnotationBit]
 
 data AnnotationBit 
   = AnnotationAnnotations (AnnotatedList Annotation)
-  | AnnotationDomainOrRange AnnotationDomainOrRange (AnnotatedList IRI)
+  | AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
   | AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
   deriving (Typeable, Show, Eq, Ord)
 
