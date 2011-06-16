@@ -11,6 +11,18 @@ import OWL.ColonKeywords
 import qualified Data.Map as Map
 import Data.Typeable
 
+data OntologyDocument = OntologyDocument {
+    prefixDeclaration :: PrefixMap,
+    mOntology :: MOntology  
+} deriving (Typeable, Show, Eq, Ord)
+
+data MOntology = MOntology {
+  muri :: OntologyIRI,
+  imports :: [ImportIRI],
+  ann :: [Annotations],
+  ontologyFrame :: [Frame]
+} deriving (Typeable, Show, Eq, Ord)
+
 data AnnotatedList a = AnnotatedList [(Annotations, a)]
    deriving (Typeable, Show, Eq, Ord)
 
@@ -23,40 +35,54 @@ data Annotations = Annotations [(Annotations, Annotation)]
 noAnnos :: Annotations
 noAnnos = Annotations []
 
-data DatatypeFrame = DatatypeFrame Datatype [AnnotatedList Annotation] (Maybe ([Annotation], DataRange))
+data FrameBit 
+  = DF [DatatypeFrame]
+  | CF [ClassFrame]
+  | OPF [ObjectPropertyFrame]
+  | DPF [DataPropertyFrame]
+  | AF [AnnotationFrame]
+  | IF [IndividualFrame]
+  | MSC [Misc]
+  deriving (Typeable, Show, Eq, Ord)
+
+data Frame = Frame [FrameBit]
+  deriving (Typeable, Show, Eq, Ord)
+
+data DatatypeFrame = DatatypeFrame Datatype [Annotations] (Maybe ([Annotation], DataRange))
   deriving (Typeable, Show, Eq, Ord)
 
 data ClassFrame = ClassFrame Class [ClassFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data ClassFrameBit
-  = ClassAnnotations (AnnotatedList Annotation)  -- nonEmpty list
+  = ClassAnnotations Annotations  -- nonEmpty list
   | ClassSubClassOf (AnnotatedList ClassExpression)   -- nonEmpty list
   | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression) --nonEmpty list
-  | ClassDisjointUnion [Annotation] [ClassExpression] -- min 2 class expressions
-  | ClassHasKey [Annotation] [ObjectPropertyExpression] [DataPropertyExpression]
+  | ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
+  | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
   deriving (Typeable, Show, Eq, Ord)
 
-data ObjectPropertyFrame = ObjectPropertyFrame ObjectPropertyExpression [ObjectFrameBit]
+data ObjectPropertyFrame = ObjectPropertyFrame ObjectProperty [ObjectFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data ObjectFrameBit
-  = ObjectAnnotations (AnnotatedList Annotation)
+  = ObjectAnnotations Annotations
   | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
   | ObjectCharacteristics (AnnotatedList Character)
   | ObjectEquivOrDisjoint EquivOrDisjoint (AnnotatedList ObjectPropertyExpression)
   | ObjectInverse (AnnotatedList ObjectPropertyExpression)
-  | ObjectSubPropertyChain [Annotation] [ObjectPropertyExpression]
+  | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
   | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
   deriving (Typeable, Show, Eq, Ord)
 
-data DataPropertyFrame = DataPropertyFrame DataPropertyExpression [DataFrameBit]
+data DataPropertyFrame = DataPropertyFrame DataProperty [DataFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data DataFrameBit
-  = DataAnnotations (AnnotatedList Annotation)
-  | DataPropDomainOrRange (AnnotatedList DataDomainOrRange)
-  | DataFunctional [Annotation]
+  = DataAnnotations Annotations
+  | DataPropDomain (AnnotatedList ClassExpression)
+  | DataPropRange (AnnotatedList DataRange)
+  | DataFunctional Annotations
   | DataSubPropertyOf (AnnotatedList DataPropertyExpression)
   | DataEquivOrDisjoint EquivOrDisjoint (AnnotatedList DataPropertyExpression)
   deriving (Typeable, Show, Eq, Ord)
@@ -65,34 +91,46 @@ data IndividualFrame = IndividualFrame Individual [IndividualBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data IndividualBit
-  = IndividualAnnotations (AnnotatedList Annotation)
+  = IndividualAnnotations Annotations
   | IndividualTypes (AnnotatedList ClassExpression)
   | IndividualFacts (AnnotatedList Fact)
   | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
   deriving (Typeable, Show, Eq, Ord)
 
 data Fact
-  = ObjectPropertyFact (Maybe ()) ObjectPropertyExpression Individual
-  | DataPropertyExpression (Maybe ()) DataPropertyExpression Literal
+  = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
+  | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
   deriving (Typeable, Show, Eq, Ord)
 
 data AnnotationFrame = AnnotationFrame AnnotationProperty [AnnotationBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data AnnotationBit
-  = AnnotationAnnotations (AnnotatedList Annotation)
+  = AnnotationAnnotations Annotations
   | AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
   | AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
   deriving (Typeable, Show, Eq, Ord)
 
 data Misc
-  = MiscEquivOrDisjointClasses EquivOrDisjoint [Annotation] [ClassExpression]
-  | MiscEquivOrDisjointObjProp EquivOrDisjoint [Annotation] [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp EquivOrDisjoint [Annotation] [DataPropertyExpression]
-  | MiscSameOrDifferent SameOrDifferent [Annotation] [Individual]
+  = MiscEquivOrDisjointClasses EquivOrDisjoint Annotations [ClassExpression]
+  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations [ObjectPropertyExpression]
+  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations [DataPropertyExpression]
+  | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
   deriving (Typeable, Show, Eq, Ord)
 
+emptyOntologyDoc :: OntologyDocument
+emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD
 
+emptyOntologyD :: MOntology
+emptyOntologyD = MOntology nullQName [] [] []
+
+isEmptyOntologyDoc :: OntologyDocument -> Bool
+isEmptyOntologyDoc (OntologyDocument ns onto) =
+    Map.null ns && isEmptyOntologyM onto
+
+isEmptyOntologyM :: MOntology -> Bool
+isEmptyOntologyM (MOntology (QN _ l _ n) annoList impList frames) =
+    null l && null n && null annoList && null impList && null frames
 
 
 
