@@ -30,7 +30,7 @@ import Comorphisms.LogicGraph (logicGraph)
 import Control.Monad.Trans (lift)
 import Control.Monad (foldM)
 
-import Data.List (partition, intercalate, isInfixOf)
+import Data.List (partition, intercalate)
 import Data.Maybe (fromMaybe)
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Map as Map (lookup, insert, empty)
@@ -55,20 +55,9 @@ type NamedNode = (String, Element)
 
 data NamedLink = Link { src :: String
                       , trg :: String
-                      , lType :: DGEdgeType  --LType
+                      , lType :: DGEdgeType
                       , element :: Element }
-{-
-data LType = DefL { scope :: Scope
-                  , isHiding :: Bool }
-           | ThmL { scope :: Scope
-                  , isHiding :: Bool }
 
-getLType :: String -> LType
-getLType tp = let
-    scp = if isInfixOf "Global" tp then Global else Local
-    hid = isInfixOf "Hiding" tp
-  in if isInfixOf "Def" tp then DefL scp hid else ThmL scp hid
--}
 {- ----------------------
 Top-Level Functions -}
 
@@ -185,7 +174,7 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
   ((dg', lv'), hid) <- case partition (isHiding . lType) links of
     -- case #1: none hiding def links
     ([], _) -> do
-      gsig1 <- liftR $ gsigManyUnion lg $ map (\(_, m, _) -> cod m) mrs
+      gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
       let gt = case gsig1 of
                  G_sign lid sg sId -> noSensGTheory lid sg sId
       dglv <- insertNode opts gt trgNd (dg, lv)
@@ -218,7 +207,7 @@ Reconstruct the Development Graph, low level -}
 -- | inserts a new link into the dgraph
 insertLink :: Graph.Node -> Graph.Node -> GMorphism -> DGLinkType -> DGraph
            -> ResultT IO DGraph
-insertLink i j mr tp = return . 
+insertLink i j mr tp = return .
   insLEdgeNubDG (i, j, defDGLink mr tp SeeTarget)
 
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
@@ -306,13 +295,14 @@ extractMorphism lg dg (Link srN _ tp l) =
           (i, sgn@(G_sign slid _ _)) <- signOfNode srN dg
           nm <- getAttrVal "name" mor
           (sgn', lTp) <- case edgeTypeModInc tp of
+            HetDef -> fail "HetDef Edgetype not implemented yet!"
             HidingDef -> return (sgn, HidingDefLink)
             GlobalDef -> return (sgn, localOrGlobalDef Global cc)
             LocalDef -> return (sgn, localOrGlobalDef Local cc)
-            FreeOrCofreeDef fc -> {-do
+            FreeOrCofreeDef fc -> {- do
               lo <- lookupCurrentLogic "FromXml.extractMorphism:" lg -}
               return (sgn, FreeOrCofreeDefLink fc $ EmptyNode $ Logic slid)
-            ThmType et prv _ _ -> do
+            ThmType et _ _ _ -> do
               lStat <- case findChild (unqual "Status") l of
                   Nothing -> return LeftOpen
                   Just st -> if strContent st /= "Proven"
@@ -327,47 +317,20 @@ extractMorphism lg dg (Link srN _ tp l) =
                 FreeOrCofreeThm fc -> do
                   (i', sgn') <- case getAttrVal "morphismsource" mor of
                     Just mSrc -> signOfNode mSrc dg
-                    Nothing -> case lookupCurrentLogic "FromXml.extractMorphism:" lg of
-                      Nothing -> fail "current logic was not found"
-                      Just (Logic lid) -> return 
-                        (i, G_sign lid (ext_empty_signature lid) startSigId)
+                    Nothing -> return
+                      (i, G_sign slid (ext_empty_signature slid) startSigId)
                   mr' <- liftR $ ginclusion lg sgn' sgn
                   return (sgn', HidingFreeOrCofreeThm (Just fc) i' mr' lStat)
-                GlobalOrLocalThm sc _ -> return (sgn, ScopedLink sc (ThmLink lStat) $ mkConsStatus cc)
+                GlobalOrLocalThm sc _ -> return
+                  (sgn, ScopedLink sc (ThmLink lStat) $ mkConsStatus cc)
           mor' <- liftR $ getGMorphism lg sgn' nm symbs
           return (i, mor', lTp)
-
-{- | reads the type of a link from the xml data
----------------
-this function has merged with extractMorphism and will evtl be deleted
-...............
-getDGLinkTyp :: NamedLink -> GMorphism -> ResultT IO DGLinkType
-getDGLinkTyp (Link _ _ tp l) mor = let
-  rl = case findChild (unqual "Rule") l of
-      Nothing -> "no rule"
-      Just r' -> strContent r'
-  cc = case findChild (unqual "ConsStatus") l of
-      Nothing -> None
-      Just c' -> fromMaybe None $ readMaybe $ strContent c'
-  in case tp of
-      DefL sc hid -> return $ if hid then HidingDefLink
-        else localOrGlobalDef sc cc
-      ThmL sc hid -> do
-        lStat <- case findChild (unqual "Status") l of
-            Nothing -> return LeftOpen
-            Just st -> if strContent st /= "Proven"
-              then fail $ "unknown links status!\n" ++ strContent st
-              else return $ Proven (DGRule rl) emptyProofBasis
-        return $ if hid then HidingFreeOrCofreeThm Nothing (-1) mor lStat
-          else ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
--}
 
 parseSymbolMap :: Element -> String
 parseSymbolMap = intercalate ", "
                . map ( intercalate " |-> "
                . map strContent . elChildren )
                . deepSearch ["map"]
-
 
 {- | All nodes are taken from the xml-element. Then, the name-attribute is
 looked up and stored alongside the node for easy access. Nodes with no names
@@ -377,7 +340,6 @@ extractNodeElements = foldM labelNode [] . findChildren (unqual "DGNode") where
   labelNode r e = do
     nm <- getAttrVal "name" e
     return $ (nm, e) : r
-
 
 {- | All links are taken from the xml-element and stored alongside their source
 and target information. The links are then partitioned depending on if they
@@ -402,7 +364,6 @@ extractGlobalAnnos dgEle = case findChild (unqual "Global") dgEle of
   Nothing -> return emptyGlobalAnnos
   Just gl -> liftR $ getGlobalAnnos $ unlines $ map strContent
     $ findChildren (unqual "Annotation") gl
-
 
 -- | custom xml-search for not only immediate children
 deepSearch :: [String] -> Element -> [Element]
