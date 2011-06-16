@@ -99,7 +99,7 @@ readFreeCADLib fp ln = do
 
 basicFCAnalysis :: (Document, Sign, GlobalAnnos)
                 -> Result (Document, ExtSign Sign (), [Named ()])
-basicFCAnalysis (bs, _, _) = return (bs, mkExtSign $ error "make sign from bs", [])
+basicFCAnalysis (bs, _, _) = return (bs, mkExtSign $ bsToSign bs, [])
 
 bsToSign :: Document -> Sign
 bsToSign doc = Sign $ Set.fromList doc
