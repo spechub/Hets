@@ -12,7 +12,7 @@ Manchester syntax parser for OWL 2
 <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
 
-module OWL2.ManchesterParse ({-basicSpec, symbItems, symbMapItems-}) where
+module OWL2.ManchesterParse (basicSpec, symbItems, symbMapItems) where
 
 import OWL2.AS
 import OWL2.MS
