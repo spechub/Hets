@@ -55,9 +55,9 @@ type NamedNode = (String, Element)
 
 data NamedLink = Link { src :: String
                       , trg :: String
-                      , lType :: LType
+                      , lType :: DGEdgeType  --LType
                       , element :: Element }
-
+{-
 data LType = DefL { scope :: Scope
                   , isHiding :: Bool }
            | ThmL { scope :: Scope
@@ -68,7 +68,7 @@ getLType tp = let
     scp = if isInfixOf "Global" tp then Global else Local
     hid = isInfixOf "Hiding" tp
   in if isInfixOf "Def" tp then DefL scp hid else ThmL scp hid
-
+-}
 {- ----------------------
 Top-Level Functions -}
 
@@ -169,6 +169,12 @@ iterateNodes opts lg (x@(name, _) : xs) links dglv =
     (lCur, lLft) -> do
       dglv' <- insertNodeAndLinks opts lg x lCur dglv
       iterateNodes opts lg xs lLft dglv'
+
+isHiding :: DGEdgeType -> Bool
+isHiding et = case edgeTypeModInc et of
+  HidingDef -> True
+  ThmType HidingThm _ _ _ -> True
+  _ -> False
 
 {- | inserts a new node into the dgraph as well as all definition links that
 target this particular node -}
@@ -279,6 +285,8 @@ parseSpecs gt' name dg specElems = let
 {- ---------------------
 Element extraction -}
 
+-- TODO: extract morphismsource for FreeOrCofreeDefs, FreeOrCofreeThms.
+
 {- | extracts the intermediate morphism for a link, using the xml data and the
 signature of the (previously inserted) source node -}
 extractMorphism :: LogicGraph -> DGraph -> NamedLink
@@ -295,27 +303,37 @@ extractMorphism lg dg (Link srN _ tp l) =
             Nothing -> None
             Just c' -> fromMaybe None $ readMaybe $ strContent c'
         in do
-          (i, sgn) <- signOfNode srN dg
+          (i, sgn@(G_sign slid _ _)) <- signOfNode srN dg
           nm <- getAttrVal "name" mor
-          (sgn', lTp) <- case tp of
-            DefL sc hid -> if hid then do
---                lo <- lookupCurrentLogic "FromXml.extractMorphism:" lg
-                return (sgn, HidingDefLink) {- $ case lo of
-                  Logic lid -> (G_sign lid (ext_empty_signature lid) startSigId, HidingDefLink)
--}
-              else return (sgn, localOrGlobalDef sc cc)
-            ThmL sc hid -> do
+          (sgn', lTp) <- case edgeTypeModInc tp of
+            HidingDef -> return (sgn, HidingDefLink)
+            GlobalDef -> return (sgn, localOrGlobalDef Global cc)
+            LocalDef -> return (sgn, localOrGlobalDef Local cc)
+            FreeOrCofreeDef fc -> {-do
+              lo <- lookupCurrentLogic "FromXml.extractMorphism:" lg -}
+              return (sgn, FreeOrCofreeDefLink fc $ EmptyNode $ Logic slid)
+            ThmType et prv _ _ -> do
               lStat <- case findChild (unqual "Status") l of
                   Nothing -> return LeftOpen
                   Just st -> if strContent st /= "Proven"
                     then fail $ "unknown links status!\n" ++ strContent st
                     else return $ Proven (DGRule rl) emptyProofBasis
-              if hid then do
+              case et of
+                HidingThm -> do
                   mSrc <- getAttrVal "morphismsource" mor
                   (i', sgn') <- signOfNode mSrc dg
                   mr' <- liftR $ ginclusion lg sgn' sgn
                   return (sgn', HidingFreeOrCofreeThm Nothing i' mr' lStat)
-                else return (sgn, ScopedLink sc (ThmLink lStat) $ mkConsStatus cc)
+                FreeOrCofreeThm fc -> do
+                  (i', sgn') <- case getAttrVal "morphismsource" mor of
+                    Just mSrc -> signOfNode mSrc dg
+                    Nothing -> case lookupCurrentLogic "FromXml.extractMorphism:" lg of
+                      Nothing -> fail "current logic was not found"
+                      Just (Logic lid) -> return 
+                        (i, G_sign lid (ext_empty_signature lid) startSigId)
+                  mr' <- liftR $ ginclusion lg sgn' sgn
+                  return (sgn', HidingFreeOrCofreeThm (Just fc) i' mr' lStat)
+                GlobalOrLocalThm sc _ -> return (sgn, ScopedLink sc (ThmLink lStat) $ mkConsStatus cc)
           mor' <- liftR $ getGMorphism lg sgn' nm symbs
           return (i, mor', lTp)
 
@@ -367,14 +385,14 @@ are theorem or definition links. -}
 extractLinkElements :: Element -> ResultT IO ([NamedLink], [NamedLink])
 extractLinkElements el = do
   l1 <- foldM labelLink [] $ findChildren (unqual "DGLink") el
-  return $ partition (\ l -> case lType l of
-      DefL _ _ -> True
-      _ -> False) l1 where
+  return $ partition (\ l -> case edgeTypeModInc $ lType l of
+      ThmType _ _ _ _ -> False
+      _ -> True) l1 where
     labelLink r e = do
       sr <- getAttrVal "source" e
       tr <- getAttrVal "target" e
       tp <- case findChild (unqual "Type") e of
-          Just tp' -> return $ getLType $ strContent tp'
+          Just tp' -> return $ revertDGEdgeTypeName $ strContent tp'
           Nothing -> fail "links type description is missing"
       return $ Link sr tr tp e : r
 
