@@ -342,7 +342,11 @@ data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
-data FreeOrCofree = Free | Cofree | NPFree deriving (Show, Eq, Ord)
+data FreeOrCofree = Free | Cofree | NPFree 
+  deriving (Show, Eq, Ord, Enum, Bounded, Read)
+
+fcList :: [FreeOrCofree]
+fcList = [minBound .. maxBound]
 
 -- | required and proven conservativity (with a proof)
 data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
@@ -439,7 +443,7 @@ getDGEdgeTypeModIncName et = case et of
           het (case scope of
                  Local -> "Local"
                  Global -> if isHom then "Global" else "") ++ prvn ++ "Thm"
-  FreeOrCofreeDef -> "Def"
+  FreeOrCofreeDef fc -> shows fc "Def"
   _ -> show et
 
 data DGEdgeType = DGEdgeType
@@ -452,7 +456,7 @@ data DGEdgeTypeModInc =
   | HetDef
   | HidingDef
   | LocalDef
-  | FreeOrCofreeDef -- free or cofree
+  | FreeOrCofreeDef FreeOrCofree
   | ThmType { thmEdgeType :: ThmTypes
             , isProvenEdge :: Bool
             , isConservativ :: Bool
@@ -478,7 +482,7 @@ getHomEdgeType isPend isHom lt = case lt of
             , isConservativ = isProvenConsStatusLink cons
             , isPending = isPend } -- needs to be checked
       HidingDefLink -> HidingDef
-      FreeOrCofreeDefLink _ _ -> FreeOrCofreeDef
+      FreeOrCofreeDefLink fc _ -> FreeOrCofreeDef fc
       HidingFreeOrCofreeThm mh _ _ st -> ThmType
         { thmEdgeType = case mh of
             Nothing -> HidingThm
@@ -508,7 +512,7 @@ listDGEdgeTypes =
     , HetDef
     , HidingDef
     , LocalDef
-    , FreeOrCofreeDef ] ++
+    ] ++ [ FreeOrCofreeDef fc | fc <- fcList ] ++
       [ ThmType { thmEdgeType = thmType
                 , isProvenEdge = proven
                 , isConservativ = cons

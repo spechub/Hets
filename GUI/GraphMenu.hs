@@ -87,7 +87,7 @@ edgeTypes opts = map
     )
   . (\ (e, l) -> case edgeTypeModInc e of -- Add colors
       HidingDef -> (e, l, getColor opts Blue True $ not $ isInc e)
-      FreeOrCofreeDef -> (e, l, getColor opts Blue False $ not $ isInc e)
+      FreeOrCofreeDef _ -> (e, l, getColor opts Blue False $ not $ isInc e)
       ThmType { thmEdgeType = thmType
               , isProvenEdge = False } -> case thmType of
         GlobalOrLocalThm { isLocalThmType = Local, isHomThm = False }

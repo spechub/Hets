@@ -24,7 +24,7 @@ edgeAttributes ety = concatMap (", " ++)
     HetDef -> ["color=" ++ doubleColor "black"]
     HidingDef -> ["color=blue"]
     LocalDef -> ["style=dashed"]
-    FreeOrCofreeDef -> ["color=blue"]
+    FreeOrCofreeDef _ -> ["color=blue"]
     ThmType
       { thmEdgeType = thTy
       , isProvenEdge = isProv
