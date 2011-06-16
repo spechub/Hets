@@ -10,11 +10,6 @@ Portability :  portable
 
 Manchester syntax parser for OWL 2
 <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
-adpated from
-Manchester syntax parser for OWL 1.1
-<http://www.webont.org/owled/2008dc/papers/owled2008dc_paper_11.pdf>
-<http://www.faqs.org/rfcs/rfc3987.html>
-<http://www.faqs.org/rfcs/rfc4646.html>
 -}
 
 module OWL2.ManchesterParse ({-basicSpec, symbItems, symbMapItems-}) where
