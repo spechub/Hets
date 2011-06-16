@@ -100,10 +100,8 @@ readDGXmlR opts path lv = do
 element, then adds all nodes and edges from this element into a DGraph -}
 fromXml :: HetcatsOpts -> LogicGraph -> LibName -> LibEnv -> Element
         -> ResultT IO (LibName, LibEnv)
-fromXml opts lg ln lv xml = case Map.lookup (currentLogic lg) (logics lg) of
-  Nothing ->
-    fail "current logic was not found in logicMap"
-  Just lo -> do
+fromXml opts lg ln lv xml = do
+    lo <- lookupCurrentLogic "fromXml:" lg
     an <- extractGlobalAnnos xml
     let dg = emptyDG { globalAnnos = an }
     nodes <- extractNodeElements xml
@@ -187,10 +185,8 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
       dglv <- insertNode opts gt trgNd (dg, lv)
       return (dglv, False)
     -- case #2: only hiding def links
-    (_, []) -> case Map.lookup (currentLogic lg) (logics lg) of
-      Nothing ->
-        fail "current logic was not found in logicMap"
-      Just lo -> do
+    (_, []) -> do
+        lo <- lookupCurrentLogic (fst trgNd) lg
         dglv <- insertNode opts (emptyTheory lo) trgNd (dg, lv)
         return (dglv, True)
     -- case #3: mixture. not implemented!
@@ -302,8 +298,12 @@ extractMorphism lg dg (Link srN _ tp l) =
           (i, sgn) <- signOfNode srN dg
           nm <- getAttrVal "name" mor
           (sgn', lTp) <- case tp of
-            DefL sc hid -> return $ if hid then (sgn, HidingDefLink)
-              else (sgn, localOrGlobalDef sc cc)
+            DefL sc hid -> if hid then do
+--                lo <- lookupCurrentLogic "FromXml.extractMorphism:" lg
+                return (sgn, HidingDefLink) {- $ case lo of
+                  Logic lid -> (G_sign lid (ext_empty_signature lid) startSigId, HidingDefLink)
+-}
+              else return (sgn, localOrGlobalDef sc cc)
             ThmL sc hid -> do
               lStat <- case findChild (unqual "Status") l of
                   Nothing -> return LeftOpen
@@ -319,7 +319,10 @@ extractMorphism lg dg (Link srN _ tp l) =
           mor' <- liftR $ getGMorphism lg sgn' nm symbs
           return (i, mor', lTp)
 
--- | reads the type of a link from the xml data
+{- | reads the type of a link from the xml data
+---------------
+this function has merged with extractMorphism and will evtl be deleted
+...............
 getDGLinkTyp :: NamedLink -> GMorphism -> ResultT IO DGLinkType
 getDGLinkTyp (Link _ _ tp l) mor = let
   rl = case findChild (unqual "Rule") l of
@@ -339,6 +342,7 @@ getDGLinkTyp (Link _ _ tp l) mor = let
               else return $ Proven (DGRule rl) emptyProofBasis
         return $ if hid then HidingFreeOrCofreeThm Nothing (-1) mor lStat
           else ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
+-}
 
 parseSymbolMap :: Element -> String
 parseSymbolMap = intercalate ", "
