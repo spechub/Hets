@@ -553,7 +553,6 @@ annotationPropertyFrame = do
   x <- flat $ many $ apBit 
   return [AnnotationFrame ap x]
 
-
 apBit :: CharParser st [AnnotationBit]
 apBit = do
           pkeyword subPropertyOfC
@@ -603,36 +602,37 @@ entityAnnos qn ty = do
     as <- realAnnotations
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
-classFrame :: CharParser st [Axiom]
+classFrame :: CharParser st [ClassFrame]
 classFrame = do
         pkeyword classC
         iri <- uriP
-        plain <- flat $ many $ classFrameBit iri
+        plain <- flat $ many $ classFrameBit
         if null plain then return [PlainAxiom [] $ Declaration $ Entity Class iri]
                       else return plain
 
-classFrameBit :: QName -> CharParser st [Axiom]
-classFrameBit curi = let duri = Expression curi in
-    entityAnnos curi Class
-  <|> do
+classFrameBit ::CharParser st [ClassFramBit]
+classFrameBit curi = do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList
-    return $ map (\ (as, d) -> PlainAxiom as $ SubClassOf duri d) ds
+    return [ClassSubClassOf $ AnnotatedList ds]
   <|> do
     e <- equivOrDisjoint
     ds <- descriptionAnnotatedList
-    return [PlainAxiom (concatMap fst ds)
-           $ EquivOrDisjointClasses e $ duri : map snd ds]
+    return [ClassEquivOrDisjoint e $ AnnotatedList ds]
   <|> do
     pkeyword disjointUnionOfC
     as <- annotationList
     ds <- sepByComma description
-    return [PlainAxiom as $ DisjointUnion curi ds]
+    return [ClassDisjointUnion as ds]
   <|> do
     pkeyword hasKeyC
     as <- annotationList
     o <- sepByComma objectPropertyExpr
-    return [PlainAxiom as $ HasKey duri o []]
+    return [ClassHasKey as o []]
+  <|> do
+    pkeyword annotationsC
+    as <- sepByComma $ optAnnos annotation
+    return [ClassAnnotations $ AnnotatedList as]
 
 domainOrRange :: CharParser st ObjDomainOrRange
 domainOrRange = choice
