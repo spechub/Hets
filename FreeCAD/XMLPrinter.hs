@@ -1,7 +1,25 @@
+{- |
+Module      :  $Header$
+Description :  XML Printer function for FreeCAD datatypes
+Copyright   :  (c) Robert Savu and Uni Bremen 2011
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  Robert.Savu@dfki.de
+Stability   :  experimental
+Portability :  portable
+
+Declaration of the abstract datatypes of FreeCAD terms
+-}
+
+
 module XMLPrinter where
 
 import Text.XML.Light
 import FreeCAD.As
+
+exportXMLFC :: Document -> String
+exportXMLFC = ppTopElement . doc2XML
+
 
 makeAttr :: String -> String -> Attr
 makeAttr key value = Attr (unqual key) value
