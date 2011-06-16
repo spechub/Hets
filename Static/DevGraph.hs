@@ -431,6 +431,10 @@ getDGEdgeTypeName e =
   (if isInc e then (++ "Inc") else id)
   $ getDGEdgeTypeModIncName $ edgeTypeModInc e
 
+revertDGEdgeTypeName :: String -> DGEdgeType
+revertDGEdgeTypeName tp = fromMaybe (error "DevGraph.revertDGEdgeTypeName")
+  $ find ((== tp) . getDGEdgeTypeName) listDGEdgeTypes
+
 getDGEdgeTypeModIncName :: DGEdgeTypeModInc -> String
 getDGEdgeTypeModIncName et = case et of
   ThmType thm isPrvn _ _ ->
