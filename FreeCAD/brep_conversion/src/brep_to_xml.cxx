@@ -295,7 +295,6 @@ void BrepToXML::build_xml(const string& what, string& output)
   {
     //if ( SS.NbShapes != 9 ) exit(1);
     stringstream ss;
-    ss    << "<rectangle>\n";
     vector < gp_Pnt > duplicates;
     for (int i = 0; i < (int) vLocs.size(); i++)
       {
@@ -324,7 +323,6 @@ void BrepToXML::build_xml(const string& what, string& output)
 	  duplicates.push_back(vLocs[i].second);
 	}
       }
-    ss <<"</rectangle>\n";
     output = ss.str();
   }
 }
