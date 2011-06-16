@@ -313,7 +313,7 @@ ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs \
 CSL_files = CSL/Sign.hs CSL/Morphism.hs CSL/AS_BASIC_CSL.hs CSL/Symbol.hs
 
 CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs \
-  CommonLogic/Symbol.hs CommonLogic/Morphism.hs
+  CommonLogic/Symbol.hs CommonLogic/Morphism.hs CommonLogic/Sublogic.hs
 
 Adl_files = Adl/As.hs Adl/Sign.hs
 

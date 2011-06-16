@@ -255,7 +255,11 @@ termSeqForm sig ts = case ts of
                     termForm trm
                where subSig = ClSign.isSubSigOf new sig
                      new    = ClSign.Sign
-                      { ClSign.items = Set.singleton $ Id.simpleIdToId name }
+                         { 
+                           ClSign.items = Set.singleton $ Id.simpleIdToId name
+                         , ClSign.discourseItems = Set.singleton $                       
+                               Id.simpleIdToId name
+                         }
              ClBasic.Funct_term term _ _ -> termForm term
              ClBasic.Comment_term term _ _ -> termForm term
         ClBasic.Seq_marks seqm -> CBasic.varOrConst seqm

@@ -12,8 +12,7 @@ Sublogics for CommonLogic
 -}
 
 module CommonLogic.Sublogic
---TODO: uncomment after testing
-{-    (
+    (
      sl_basic_spec                  -- determine sublogic for basic spec
     , CLTextType (..)               -- types of CommonLogic texts
     , CommonLogicSL (..)            -- sublogics for CommonLogic
@@ -30,7 +29,7 @@ module CommonLogic.Sublogic
     , isProp
     , isFOL
     , isCL
-    )-}
+    )
     where
 
 import qualified Data.Set as Set
@@ -294,7 +293,7 @@ sl_sentence prds cs sen =
     case sen of
         AS.Quant_sent q _ -> sl_quantSent prds cs q
         AS.Bool_sent b _ -> sl_boolSent prds cs b
-        AS.Atom_sent a _ -> sl_atom prds cs a
+        AS.Atom_sent a _ -> sl_atomSent prds cs a
         AS.Comment_sent _ s _ -> sl_sentence prds cs s
         AS.Irregular_sent s _ -> sl_sentence prds cs s
 
@@ -328,13 +327,14 @@ sl_boolSent prds cs b =
         sublogics_max (sl_sentence prds cs s1) (sl_sentence prds cs s2)
 
 -- | determines the sublogic for atoms
-sl_atom :: Set.Set AS.NAME -> CommonLogicSL -> AS.ATOM -> CommonLogicSL
-sl_atom prds cs a = 
+sl_atomSent :: Set.Set AS.NAME -> CommonLogicSL -> AS.ATOM -> CommonLogicSL
+sl_atomSent prds cs a = 
     case a of
         AS.Equation t1 t2 -> 
             comp_list $ folsl : map (sl_term prds cs) [t1,t2]
-        AS.Atom t tseq -> 
-            comp_list $ sl_term prds cs t : map (sl_termSeq prds cs) tseq
+        AS.Atom t [] -> sl_term prds cs t 
+        AS.Atom t tseq -> comp_list 
+            $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
 
 -- | determines the sublogic for NAME_OR_SEQMARK
 sl_nameOrSeqmark :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME_OR_SEQMARK 
@@ -346,7 +346,7 @@ sl_nameOrSeqmark prds cs nos =
 
 -- | determines the sublogic for names which are next to a quantifier
 sl_quantName :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
-sl_quantName prds cs n = if Set.member n prds then top else folsl
+sl_quantName prds _ n = if Set.member n prds then top else folsl
 
 -- | determines the sublogic for names
 sl_name :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
@@ -366,8 +366,24 @@ sl_term prds cs term =
 sl_termSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM_SEQ -> CommonLogicSL
 sl_termSeq prds cs tseq = 
     case tseq of
-        AS.Term_seq t -> sl_term prds cs t--------------------
+        AS.Term_seq t -> sl_termInSeq prds cs t--------------------
         AS.Seq_marks _ -> cs -- correct?
+
+-- | determines the sublogic for names
+sl_nameInTermSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.NAME -> CommonLogicSL
+sl_nameInTermSeq prds _ n = if Set.member n prds then top else propsl
+
+-- | determines the sublogic for terms inside of a term-sequence
+sl_termInSeq :: Set.Set AS.NAME -> CommonLogicSL -> AS.TERM -> CommonLogicSL
+sl_termInSeq prds cs term = 
+    case term of
+      AS.Name_term n -> sl_nameInTermSeq prds cs n
+      AS.Funct_term t tseq _ -> 
+          comp_list $ folsl : sl_term prds cs t : map (sl_termSeq prds cs) tseq
+      AS.Comment_term t _ _ -> sl_term prds cs t
+        --is the last one correct/necessary?
+
+
 
 -- | determines subloig for basic items
 sl_basic_items :: Set.Set AS.NAME -> CommonLogicSL -> AS.BASIC_ITEMS 

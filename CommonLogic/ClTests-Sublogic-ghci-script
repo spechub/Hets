@@ -11,9 +11,11 @@ let (Atom_sent (Atom ntP1 [Term_seq ntx]) _) = atsen1
 let (Atom_sent (Atom ntQ [Term_seq ntP2]) _) = atsen2
 
 
+-- parsing error: Predicates *must* be used
+let (Left err) = abstrSyntax "(and (x) (y))"
+err
 
--- should be first order, but is propositional
--- "(and (x) (y))" cannot be parsed
+-- first order
 let (Right txt1) = abstrSyntax "(and (P x) (Q y))"
 prd_text txt1
 sublogic txt1
