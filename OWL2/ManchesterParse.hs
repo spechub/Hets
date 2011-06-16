@@ -588,22 +588,18 @@ equivOrDisjoint = choice
   $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
   equivOrDisjointL
 
-datatypeFrame :: CharParser st [Axiom]
+datatypeFrame :: CharParser st [DatatypeFrame]
 datatypeFrame = do
     pkeyword datatypeC
     duri <- datatypeUri
-    as1 <- many realAnnotations
+    as1 <- many annotations
     ms <- optionMaybe $ do
       pkeyword equivalentToC
-      al <- annotationList
+      al <- annotations
       dr <- dataRange
       return (al, dr)
-    as2 <- many realAnnotations
-    return $ map (\ an -> EntityAnno $ AnnotationAssertion an duri) as1
-     ++ case ms of
-      Nothing -> [ EntityAnno $ AnnotationAssertion (concat $ as1 ++ as2) duri ]
-      Just (al, dr) -> [ PlainAxiom al $ DatatypeDefinition duri dr ]
-     ++ map (\ an -> EntityAnno $ AnnotationAssertion an duri) as2
+    as2 <- many annotations
+    return [DatatypeFrame duri (as1 ++ as2) ms]
 
 entityAnnos :: QName -> EntityType -> CharParser st [Axiom]
 entityAnnos qn ty = do
@@ -813,7 +809,7 @@ frames = do
     w <- flat $ many individualFrame
     u <- flat $ many annotationPropertyFrame
     m <- flat $ many $ single misc
-    return $ [ Frame [CF y, OPF z, DPF t, IF w, AF u, MSC m] ]
+    return $ [ Frame [DF x, CF y, OPF z, DPF t, IF w, AF u, MSC m] ]
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do

@@ -48,7 +48,7 @@ data FrameBit
 data Frame = Frame [FrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
-data DatatypeFrame = DatatypeFrame Datatype [Annotations] (Maybe ([Annotation], DataRange))
+data DatatypeFrame = DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange)) 
   deriving (Typeable, Show, Eq, Ord)
 
 data ClassFrame = ClassFrame Class [ClassFrameBit]
