@@ -25,7 +25,6 @@ import OWL.ColonKeywords
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-
 instance Pretty QName where
     pretty = printURIreference
 

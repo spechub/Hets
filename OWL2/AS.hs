@@ -67,7 +67,7 @@ instance Ord QName where
     else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
 
 type IRIreference = QName
-type IRI = String       ---- !!!!!!!!!!!!!
+type IRI = QName
 
 -- | prefix -> localname
 type PrefixMap = Map.Map String String
@@ -375,7 +375,7 @@ data SubObjectPropertyExpression
 ---------------------
 -- ONTOLOGY FILES
 --------------------- 
-{-
+
 emptyOntologyFile :: OntologyFile
 emptyOntologyFile = OntologyFile Map.empty emptyOntology
 
@@ -388,4 +388,4 @@ isEmptyOntologyFile (OntologyFile ns onto) =
 
 isEmptyOntology :: Ontology -> Bool
 isEmptyOntology (Ontology (QN _ l _ n) annoList impList axioms) =
-    null l && null n && null annoList && null impList && null axioms -}
+    null l && null n && null annoList && null impList && null axioms 
