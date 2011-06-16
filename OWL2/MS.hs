@@ -11,8 +11,17 @@ import OWL.ColonKeywords
 import qualified Data.Map as Map
 import Data.Typeable
 
-data AnnotatedList a = AnnotatedList [([Annotation], a)]
+data AnnotatedList a = AnnotatedList [(Annotations, a)]
    deriving (Typeable, Show, Eq, Ord)
+
+{- | annotions are annotedAnnotationList that must be preceded by the keyword
+  @Annotations:@ if non-empty
+-}
+data Annotations = Annotations [(Annotations, Annotation)]
+   deriving (Typeable, Show, Eq, Ord)
+
+noAnnos :: Annotations
+noAnnos = Annotations []
 
 data DatatypeFrame = DatatypeFrame Datatype [AnnotatedList Annotation] (Maybe ([Annotation], DataRange))
   deriving (Typeable, Show, Eq, Ord)
@@ -20,7 +29,7 @@ data DatatypeFrame = DatatypeFrame Datatype [AnnotatedList Annotation] (Maybe ([
 data ClassFrame = ClassFrame Class [ClassFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
-data ClassFrameBit 
+data ClassFrameBit
   = ClassAnnotations (AnnotatedList Annotation)  -- nonEmpty list
   | ClassSubClassOf (AnnotatedList ClassExpression)   -- nonEmpty list
   | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression) --nonEmpty list
@@ -31,7 +40,7 @@ data ClassFrameBit
 data ObjectPropertyFrame = ObjectPropertyFrame ObjectPropertyExpression [ObjectFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
-data ObjectFrameBit 
+data ObjectFrameBit
   = ObjectAnnotations (AnnotatedList Annotation)
   | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
   | ObjectCharacteristics (AnnotatedList Character)
@@ -44,7 +53,7 @@ data ObjectFrameBit
 data DataPropertyFrame = DataPropertyFrame DataPropertyExpression [DataFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
-data DataFrameBit 
+data DataFrameBit
   = DataAnnotations (AnnotatedList Annotation)
   | DataPropDomainOrRange (AnnotatedList DataDomainOrRange)
   | DataFunctional [Annotation]
@@ -55,14 +64,14 @@ data DataFrameBit
 data IndividualFrame = IndividualFrame Individual [IndividualBit]
   deriving (Typeable, Show, Eq, Ord)
 
-data IndividualBit 
+data IndividualBit
   = IndividualAnnotations (AnnotatedList Annotation)
   | IndividualTypes (AnnotatedList ClassExpression)
   | IndividualFacts (AnnotatedList Fact)
   | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
   deriving (Typeable, Show, Eq, Ord)
 
-data Fact 
+data Fact
   = ObjectPropertyFact (Maybe ()) ObjectPropertyExpression Individual
   | DataPropertyExpression (Maybe ()) DataPropertyExpression Literal
   deriving (Typeable, Show, Eq, Ord)
@@ -70,13 +79,13 @@ data Fact
 data AnnotationFrame = AnnotationFrame AnnotationProperty [AnnotationBit]
   deriving (Typeable, Show, Eq, Ord)
 
-data AnnotationBit 
+data AnnotationBit
   = AnnotationAnnotations (AnnotatedList Annotation)
   | AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
   | AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
   deriving (Typeable, Show, Eq, Ord)
 
-data Misc 
+data Misc
   = MiscEquivOrDisjointClasses EquivOrDisjoint [Annotation] [ClassExpression]
   | MiscEquivOrDisjointObjProp EquivOrDisjoint [Annotation] [ObjectPropertyExpression]
   | MiscEquivOrDisjointDataProp EquivOrDisjoint [Annotation] [DataPropertyExpression]
@@ -89,6 +98,6 @@ data Misc
 
 
 
-               
+
 
 
