@@ -2,10 +2,8 @@ import System.Environment
 
 import OWL2.Parse
 import OWL2.FunctionalParser
-import OWL2.ManchesterParser
 import OWL2.Print ()
 import OWL2.FunctionalPrint
-import OWL2.ManchesterPrint
 
 import Common.DocUtils
 import Common.Parsec
