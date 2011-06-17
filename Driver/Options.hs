@@ -343,7 +343,7 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     OWLIn -> "owl"
-    OWL2In -> "owl2"
+    OWL2In -> "ow2"
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -377,7 +377,7 @@ plainInTypes :: [InType]
 plainInTypes =
   [ CASLIn, HetCASLIn, OWLIn, HaskellIn, ExperimentalIn, MaudeIn, TwelfIn
   , HolLightIn, PrfIn, OmdocIn, ProofCommand, CommonLogicIn, CommonLogic2In
-  , DgXml, FreeCADIn ]
+  , DgXml, FreeCADIn, OWL2In ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
