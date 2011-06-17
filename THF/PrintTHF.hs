@@ -18,12 +18,12 @@ import THF.As
 import Data.Char
 
 import Common.Doc
-import Common.DocUtils
+--import Common.DocUtils
 
 printTPTPTHF :: [TPTP_THF] -> Doc
 printTPTPTHF [] = empty
 printTPTPTHF (t : rt) = case t of
-    TPTP_THF_Annotated_Formula n fr f a -> printTHF t $++$ printTPTPTHF rt
+    TPTP_THF_Annotated_Formula _ _ _ _ -> printTHF t $++$ printTPTPTHF rt
     _                                   -> printTHF t $+$ printTPTPTHF rt
 
 
@@ -109,16 +109,16 @@ instance PrintTHF THFBinaryTuple where
 
 instance PrintTHF THFUnitaryFormula where
     printTHF uf = case uf of
-        TUF_THF_Quantified_Formula q vl uf  ->
+        TUF_THF_Quantified_Formula q vl uf1 ->
             printTHF q <+> brackets (sepByCommas (map printTHF vl))
-            <+> text ":" <+> printTHF uf
+            <+> text ":" <+> printTHF uf1
         TUF_THF_Unary_Formula uc lf         ->
             printTHF uc <+> parens (printTHF lf)
         TUF_THF_Atom a                      -> printTHF a
         TUF_THF_Tuple t                     -> printTHFTuple t
-        TUF_THF_Let dvl uf                  ->
+        TUF_THF_Let dvl uf2                 ->
             text ":=" <+> brackets (sepByCommas (map printTHF dvl))
-            <+> text ":" <+> printTHF uf
+            <+> text ":" <+> printTHF uf2
         TUF_THF_Conditional lf1 lf2 lf3     ->
             text "$itef" <> parens (printTHF lf1
             <> comma <+> printTHF lf2
@@ -127,7 +127,7 @@ instance PrintTHF THFUnitaryFormula where
 
 instance PrintTHF THFVariable where
     printTHF v = case v of
-        TV_THF_Typed_Variable v tlt -> printVariable v
+        TV_THF_Typed_Variable va tlt -> printVariable va
             <+> text ":" <+> printTHF tlt
         TV_Variable var             -> printVariable var
 
@@ -376,7 +376,7 @@ printNameList = sepByCommas . map printTHF
 instance PrintTHF GeneralTerm where
     printTHF gt = case gt of
         GT_General_Data gd          -> printTHF gd
-        GT_General_Data_Term gd gt  -> printTHF gd <+> text ":" <+> printTHF gt
+        GT_General_Data_Term gd gt1 -> printTHF gd <+> text ":" <+> printTHF gt1
         GT_General_List gl          -> printGeneralList gl
 
 instance PrintTHF GeneralData where
@@ -450,5 +450,7 @@ plusSign :: Doc
 plusSign = text "+"
 
 sepBy :: [Doc] -> Doc -> Doc
-sepBy (c : []) s = c
-sepBy (c : d) s = c <+> s <+> sepBy d s
+sepBy ls s = case ls of
+    (c : [])    -> c
+    (c : d)     -> c <+> s <+> sepBy d s
+    []          -> empty

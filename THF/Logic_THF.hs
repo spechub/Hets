@@ -6,7 +6,7 @@ Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :
-Stability   :
+Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
 Instance of class Logic for THF.
@@ -19,11 +19,11 @@ import Logic.Logic
 import ATC.ProofTree ()
 
 import Common.ProofTree
-import Common.DefaultMorphism
 
 import THF.ATC_THF ()
 import THF.Cons
 import THF.As
+import THF.ParseTHF
 
 data THF = THF deriving Show
 
@@ -33,27 +33,24 @@ instance Language THF where
   "For further information please refer to" ++
   "http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
-instance Logic.Logic.Syntax THF () () ()
-    -- default implementation is fine!
+instance Logic.Logic.Syntax THF BasicSpecTHF () () where
+    parse_basic_spec THF = Just $ fmap BasicSpecTHF parseTHF
+    -- remaining default implementations are fine!
 
-instance Sentences THF Sentence Sign
-                           THFMorphism Symbol where
+instance Sentences THF SentenceTHF SignTHF
+                           MorphismTHF SymbolTHF where
     map_sen THF _ = return
-    --sym_of THF =
     --sym_name THF =
-    --print_named THF =
-    -- other default implementations are fine
-    simplify_sen THF _ = id
     --negation THF _ =
-    --print_sign THF =
-    --symmap_of THF _ =
+    -- other default implementations are fine
 
-instance StaticAnalysis THF () Sentence () ()
-               Sign THFMorphism Symbol () where
+instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
+               SignTHF MorphismTHF SymbolTHF () where
+         --basic_analysis THF = --Just globalAnnon kann leer bleiben
          empty_signature THF = emptySign
-         is_subsig THF _ _ = True
-         subsig_inclusion THF = defaultInclusion
+         --is_subsig THF _ _ = True
+         --subsig_inclusion THF = defaultInclusion
 
-instance Logic THF () () Sentence () ()
-                Sign THFMorphism Symbol () ProofTree where
+instance Logic THF () BasicSpecTHF SentenceTHF () ()
+                SignTHF MorphismTHF SymbolTHF () ProofTree where
          stability _ = Testing

@@ -612,7 +612,8 @@ type LowerWord = String
 --------------------------------------------------------------------------------
 -- Data structures used in Logic_THF
 
-data Sign = UNDEFINEDSIGN deriving (Eq, Ord, Show)
+data SignTHF = UNDEFINEDSIGN deriving (Eq, Ord, Show)
+--
 
-data Symbol = UNDEFINEDSYMOL deriving (Show, Eq, Ord)
+data SymbolTHF = UNDEFINEDSYMOL deriving (Show, Eq, Ord)
 

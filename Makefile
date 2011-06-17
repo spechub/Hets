@@ -321,7 +321,7 @@ Adl_files = Adl/As.hs Adl/Sign.hs
 
 Fpl_files = Fpl/As.hs Fpl/Sign.hs
 
-THF_files = THF/As.hs
+THF_files = THF/As.hs THF/Cons.hs
 
 FreeCAD_files = FreeCAD/As.hs
 

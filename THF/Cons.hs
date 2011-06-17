@@ -11,6 +11,13 @@ Portability :  non-portable (imports Logic)
 Data structures and functions used in Logic_THF and HasCASL2THF
 -}
 
+{-
+Notes for the developer:
+-- lookup monads due to the state monad
+-- realworldhaskell monad
+
+-}
+
 module THF.Cons where
 
 import THF.As
@@ -21,32 +28,40 @@ import Common.DocUtils
 import Common.Id
 
 -- We use the DefaultMorphism for THF.
-type THFMorphism = DefaultMorphism Sign
+type MorphismTHF = DefaultMorphism SignTHF
+
+data BasicSpecTHF = BasicSpecTHF [TPTP_THF] deriving (Show, Eq, Ord)
+
+instance GetRange BasicSpecTHF
+
+instance Pretty BasicSpecTHF where
+    pretty (BasicSpecTHF a) = printTPTPTHF a
+
 
 -- Sentence
 
 -- A Sentence is a THFFormula.
-type Sentence = THFFormula
+type SentenceTHF = THFFormula
 
 instance GetRange THFFormula
 
 instance Pretty THFFormula where
   pretty = printTHF
 
+-- SymbolTHF
 
--- Sign
+instance GetRange SymbolTHF
 
-instance Pretty Sign where
+instance Pretty SymbolTHF where
+  pretty = undefined
+
+-- SignTHF
+
+instance Pretty SignTHF where
   pretty = undefined
 
 -- Creates an empty Signature.
-emptySign :: Sign
+emptySign :: SignTHF
 emptySign = UNDEFINEDSIGN
 
 
--- Symbol
-
-instance GetRange Symbol
-
-instance Pretty Symbol where
-  pretty = undefined

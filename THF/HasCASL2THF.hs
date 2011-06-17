@@ -6,7 +6,7 @@ Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :
-Stability   :
+Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 The embedding comorphism from HasCASL to THF.
@@ -27,7 +27,7 @@ import HasCASL.AsUtils
 import HasCASL.Builtin
 
 import THF.Logic_THF
-import THF.Cons as THFCons
+import THF.Cons
 
 -- | The identity of the comorphism
 data HasCASL2THF = HasCASL2THF deriving Show
@@ -39,8 +39,8 @@ instance Comorphism HasCASL2THF
                 BasicSpec HCAS.Sentence SymbItems SymbMapItems
                 Env Morphism Symbol RawSymbol ()
                 THF ()
-                () THFCons.Sentence () ()
-                () THFMorphism THFCons.Symbol () () where
+                () SentenceTHF () ()
+                () MorphismTHF SymbolTHF () () where
     sourceLogic HasCASL2THF = HasCASL
     sourceSublogic HasCASL2THF = top
     targetLogic HasCASL2THF = THF
