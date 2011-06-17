@@ -229,12 +229,12 @@ iFrameBit iuri =
 
 individualFrame :: CharParser st [Axiom]
 individualFrame = do
-  pkeyword individualC
-  iuri <- individualUri
-  as <- flat $ many $ iFrameBit iuri
-  return $ if null as
-    then [PlainAxiom [] $ Declaration $ Entity NamedIndividual iuri]
-    else as
+    pkeyword individualC <|> pkeyword individualsC 
+    iuri <- individualUri
+    as <- flat $ many $ iFrameBit iuri
+    return $ if null as
+      then [PlainAxiom [] $ Declaration $ Entity NamedIndividual iuri]
+      else as
 
 misc :: CharParser st Axiom
 misc = do

@@ -78,7 +78,7 @@ printObjectFrameBit ofb = case ofb of
     ObjectAnnotations x -> pretty x
     ObjectDomainOrRange dr x -> printObjDomainOrRange dr <+> pretty x
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
-    ObjectEquivOrDisjoint ed x ->  <+> pretty x
+    ObjectEquivOrDisjoint ed x -> printEquivOrDisjoint ed <+> pretty x
     ObjectInverse x -> keyword inverseOfC <+> printAnnotatedList x
     ObjectSubPropertyChain a opl -> keyword subPropertyChainC <+> pretty a <+> fsep (prepPunctuate (keyword oS <> space) $ map pretty opl)
     ObjectSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
@@ -91,11 +91,18 @@ printDataFrameBit dfb = case dfb of
     DataPropDomain x -> keyword domainC <+> pretty x
     DataPropRange x -> keyword rangeC <+> pretty x 
     DataFunctional x -> printCharact functionalS <+> pretty x
-    DataSubPropertyOf x -> keyword subPropertyOf <+> pretty x
+    DataSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
     DataEquivOrDisjoint e x -> printEquivOrDisjoint e <+> pretty x
 
 instance Pretty IndividualBit where
     pretty = printIndividualBit
+
+printIndividualBit :: IndividualBit -> Doc
+printIndividualBit ib = case ib of
+    IndividualAnnotations x -> pretty x
+    IndividualTypes x -> keyword typesC <+> pretty x
+    IndividualFacts x -> keyword factsC <+> pretty x
+    IndividualSameOrDifferent s x -> print
 
 {-
   data IndividualBit
