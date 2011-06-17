@@ -29,10 +29,10 @@ import Framework.AS
 import Framework.ATC_Framework ()
 
 data LIB_DEFN = Lib_defn LibName [Annoted LIB_ITEM] Range [Annotation]
-                -- pos: "library"
-                -- list of annotations is parsed preceding the first LIB_ITEM
-                -- the last LIB_ITEM may be annotated with a following comment
-                -- the first LIB_ITEM cannot be annotated
+                {- pos: "library"
+                list of annotations is parsed preceding the first LIB_ITEM
+                the last LIB_ITEM may be annotated with a following comment
+                the first LIB_ITEM cannot be annotated -}
                 deriving Show
 
 {- for information on the list of Pos see the documentation in
@@ -53,11 +53,14 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               | Logic_decl Logic_name Range
               -- pos:  "logic", Logic_name
               | Newlogic_defn LogicDef Range
-              -- pos:  "newlogic", Logic_name, "=", opt "end" 
+              -- pos:  "newlogic", Logic_name, "=", opt "end"
                 deriving Show
 
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
                   -- pos: many of "[","]" opt ("given", commas)
+
+emptyGENERICITY :: GENERICITY
+emptyGENERICITY = Genericity (Params []) (Imported []) nullRange
 
 data PARAMS = Params [Annoted SPEC] deriving Show
 
@@ -75,8 +78,7 @@ type ITEM_NAME = SIMPLE_ID
 fromBasicSpec :: LibName -> SPEC_NAME -> G_basic_spec -> LIB_DEFN
 fromBasicSpec ln sn gbs =
     let rg = nullRange
-        g = Genericity (Params []) (Imported []) rg
         sp = Basic_spec gbs rg
         mkAnno = emptyAnno
-        li = Spec_defn sn g (mkAnno sp) rg
+        li = Spec_defn sn emptyGENERICITY (mkAnno sp) rg
     in Lib_defn ln [mkAnno li] rg []
