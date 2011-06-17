@@ -40,7 +40,6 @@ import System.FilePath
 
 import Control.Monad.Trans (MonadIO (..))
 
-import Data.Char
 import Data.List (isPrefixOf)
 import Data.Maybe
 
@@ -116,15 +115,6 @@ findFileOfLibNameAux opts file = do
 
 findFileOfLibName :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 findFileOfLibName opts = findFileOfLibNameAux opts { intype = GuessIn }
-
-convertFileToLibStr :: FilePath -> String
-convertFileToLibStr = mkLibStr . takeBaseName
-
-stripLibChars :: String -> String
-stripLibChars = filter (\ c -> isAlphaNum c || elem c "'_/")
-
-mkLibStr :: String -> String
-mkLibStr = dropWhile (== '/') . stripLibChars
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LibName

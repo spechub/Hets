@@ -19,8 +19,11 @@ import Common.Id
 import Common.Keywords
 import Common.Utils
 
+import Data.Char
 import Data.List
 import Data.Ord
+
+import System.FilePath
 import System.Time
 
 import Data.Graph.Inductive.Graph
@@ -176,3 +179,12 @@ addToPath libid n (LinkPath x l) = LinkPath x $ (libid, n) : l
 
 initPath :: LibId -> Node -> a -> LinkPath a
 initPath libid n x = LinkPath x [(libid, n)]
+
+convertFileToLibStr :: FilePath -> String
+convertFileToLibStr = mkLibStr . takeBaseName
+
+stripLibChars :: String -> String
+stripLibChars = filter (\ c -> isAlphaNum c || elem c "'_/")
+
+mkLibStr :: String -> String
+mkLibStr = dropWhile (== '/') . stripLibChars
