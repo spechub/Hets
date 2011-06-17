@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2007
@@ -22,7 +21,6 @@ import Common.Id (GetRange)
 import OWL.Keywords
 import OWL.ColonKeywords
 import qualified Data.Map as Map
-import Data.Typeable
 
 {- | full or abbreviated IRIs with a possible uri for the prefix
      or a local part following a hash sign -}
@@ -34,7 +32,7 @@ data QName = QN
   , isFullIri :: Bool
   , namespaceUri :: String
   -- ^ the associated namespace uri (not printed)
-  } deriving (Typeable, Show)
+  } deriving Show
 
 showQN :: QName -> String
 showQN q = (if isFullIri q then showQI else showQU) q
@@ -93,7 +91,7 @@ type Individual = IRI
 data OntologyFile = OntologyFile
   { prefixName :: PrefixMap
   , ontology :: Ontology
-  } deriving (Typeable, Show, Eq, Ord)
+  } deriving (Show, Eq, Ord)
 
 instance GetRange OntologyFile
 
@@ -102,7 +100,7 @@ data Ontology = Ontology
   , importsList :: [ImportIRI]
   , annotationsList :: [Annotation]
   , axiomsList :: [Axiom]
-  } deriving (Typeable, Show, Eq, Ord)
+  } deriving (Show, Eq, Ord)
 
 type OntologyMap = Map.Map String OntologyFile
 
@@ -111,23 +109,23 @@ type OntologyMap = Map.Map String OntologyFile
 ------------------------
 
 data SymbItems = SymbItems (Maybe EntityType) [IRI]
-    deriving (Typeable, Show, Eq)
+    deriving (Show, Eq)
 
 data SymbMapItems = SymbMapItems (Maybe EntityType) [(IRI, Maybe IRI)]
-    deriving (Typeable, Show, Eq)
+    deriving (Show, Eq)
 
 -- | raw symbols
-data RawSymb = ASymbol Entity | AnUri IRI deriving (Typeable, Show, Eq, Ord)
+data RawSymb = ASymbol Entity | AnUri IRI deriving (Show, Eq, Ord)
 
 -------------------------
 -- LITERALS
 -------------------------
 
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data Literal = Literal LexicalForm TypedOrUntyped
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 cTypeS :: String
 cTypeS = "^^"
@@ -142,7 +140,7 @@ cTypeS = "^^"
 type InverseObjectProperty = ObjectPropertyExpression
 
 data ObjectPropertyExpression = ObjectProp ObjectProperty | ObjectInverseOf InverseObjectProperty
-	deriving (Typeable, Show, Eq, Ord)
+	deriving (Show, Eq, Ord)
 
 type DataPropertyExpression = DataProperty
 
@@ -177,7 +175,7 @@ data DatatypeFacet =
   | MAXEXCLUSIVE
   | TOTALDIGITS
   | FRACTIONDIGITS
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 showFacet :: DatatypeFacet -> String
 showFacet df = case df of
@@ -198,7 +196,7 @@ data DataRange
 	| DataComplementOf DataRange
 	| DataOneOf [Literal]	-- at least one element in the list
 	| DatatypeRestriction Datatype [(ConstrainingFacet, RestrictionValue)]	-- at least one element in the list
-	deriving (Typeable, Show, Eq, Ord)
+	deriving (Show, Eq, Ord)
 
 data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 
@@ -226,7 +224,7 @@ showCardinalityType ty = case ty of
     ExactCardinality -> exactlyS
 
 data Cardinality a b = Cardinality CardinalityType Int a (Maybe b)
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data ClassExpression =
     Expression Class
@@ -241,20 +239,20 @@ data ClassExpression =
 	     QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 -------------------
 -- ANNOTATIONS
 -------------------
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
-	  deriving (Typeable, Show, Eq, Ord)
+	  deriving (Show, Eq, Ord)
 
 data AnnotationAxiom
 	= AnnotationAssertion [Annotation] IRI
 	| SubAnnotationPropertyOf [Annotation] AnnotationProperty AnnotationProperty
 	| AnnotationPropertyDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
-	deriving (Typeable, Show, Eq, Ord)
+	deriving (Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
 
@@ -266,7 +264,7 @@ showAnnDomainOrRange dr = case dr of
 data AnnotationValue
 	= AnnValue IRI
 	| AnnValLit Literal
-	  deriving (Typeable, Show, Eq, Ord)
+	  deriving (Show, Eq, Ord)
 
 ---------------------
 -- AXIOMS
@@ -281,10 +279,10 @@ data EntityType =
   | DataProperty
   | AnnotationProperty
   | NamedIndividual
-    deriving (Typeable, Enum, Bounded, Show, Read, Eq, Ord)
+    deriving (Enum, Bounded, Show, Read, Eq, Ord)
 
 -- | Syntax of Entities
-data Entity = Entity EntityType IRI deriving (Typeable, Show, Eq, Ord)
+data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
 
 instance GetRange Entity
 
@@ -298,7 +296,7 @@ type TargetValue = Literal
 data Axiom = -- Annotations can be ignored
     PlainAxiom [Annotation] PlainAxiom
   | EntityAnno AnnotationAxiom
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 instance GetRange Axiom
 
@@ -317,7 +315,7 @@ showObjDomainOrRange dr = case dr of
     ObjRange -> rangeC
 
 data DataDomainOrRange = DataDomain ClassExpression | DataRange DataRange
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data Character =
     Functional
@@ -328,7 +326,7 @@ data Character =
   | Asymmetric
   | Antisymmetric
   | Transitive
-    deriving (Typeable, Enum, Bounded, Show, Eq, Ord)
+    deriving (Enum, Bounded, Show, Eq, Ord)
 
 data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
 
@@ -340,7 +338,7 @@ showSameOrDifferent sd = case sd of
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 
 data Assertion a b = Assertion a PositiveOrNegative SourceIndividual b
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data PlainAxiom =
     SubClassOf SubClass SuperClass
@@ -362,7 +360,7 @@ data PlainAxiom =
   | Declaration Entity
   | DatatypeDefinition Datatype DataRange
   | HasKey ClassExpression [ObjectPropertyExpression] [DataPropertyExpression]
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 type SubClass = ClassExpression
 type SuperClass = ClassExpression
@@ -370,7 +368,7 @@ type SuperClass = ClassExpression
 data SubObjectPropertyExpression
   = OPExpression ObjectPropertyExpression
   | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
-    deriving (Typeable, Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 ---------------------
 -- ONTOLOGY FILES
