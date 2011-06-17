@@ -73,7 +73,7 @@ parseOWL filename = do
 -- | parse the tmp-omn-file from java-owl-parser
 parseProc :: FilePath -> String -> IO OntologyMap
 parseProc filename str = do
-    case runParser (many1 basicSpec << eof) () filename str of
+    case runParser (many1 ontologyFile << eof) () filename str of
       Right os -> return $ Map.fromList
         $ map (\ o -> (showQN $ uri $ ontology o, o)) os
       Left err -> do
