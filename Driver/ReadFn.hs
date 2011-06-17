@@ -52,11 +52,9 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
-    FreeCADIn -> do
-      liftIO $ putIfVerbose opts 3 "FREECAD"
+    FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
-    _ -> do
-      liftIO $ putIfVerbose opts 3 "DEFAULT"
+    _ ->
       case runParser (library $ setCurLogic (defLogic opts) lgraph)
           (emptyAnnos ()) file input of
          Left err -> fail (showErr err)

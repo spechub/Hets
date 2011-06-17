@@ -54,6 +54,10 @@ import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
 import SoftFOL.ParseTPTP
 
+import FreeCAD.XMLPrinter (exportXMLFC)
+import FreeCAD.Logic_FreeCAD
+
+
 import VSE.Logic_VSE
 import VSE.ToSExpr
 
@@ -132,6 +136,13 @@ writeSoftFOL opts f gTh ln i c n msg = do
                 _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
               writeVerbFile opts f str) mDoc
 
+writeFreeCADFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
+             -> IO ()
+writeFreeCADFile opts filePrefix (G_theory lid (ExtSign sign _) _ _ _) _ _ = do
+  fcSign <- coercePlainSign lid FreeCAD
+            "Expecting a FreeCAD signature for writing FreeCAD xml" sign
+  writeVerbFile opts (filePrefix ++ ".xml") $ exportXMLFC fcSign
+
 writeIsaFile :: HetcatsOpts -> FilePath -> G_theory -> LibName -> SIMPLE_ID
              -> IO ()
 writeIsaFile opts filePrefix raw_gTh ln i = do
@@ -169,6 +180,7 @@ writeTheory opts filePrefix ga
         f = fp ++ "." ++ show ot
         th = (sign0, toNamedList sens0)
     in case ot of
+    FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh ln i
     ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh ln i c 0 "DFG"
     TPTPFile c -> writeSoftFOL opts f raw_gTh ln i c 1 "TPTP"
@@ -275,6 +287,7 @@ writeSpecFiles opts file lenv ln dg = do
             TheoryFile _ -> True
             SigFile _ -> True
             OWLOut -> True
+            FreeCADOut -> True
             HaskellOut -> True
             ComptableXml -> True
             _ -> False) outTypes

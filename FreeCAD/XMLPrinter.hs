@@ -12,13 +12,14 @@ Declaration of the abstract datatypes of FreeCAD terms
 -}
 
 
-module XMLPrinter where
+module FreeCAD.XMLPrinter where
 
 import Text.XML.Light
 import FreeCAD.As
+import qualified Data.Set as Set
 
-exportXMLFC :: Document -> String
-exportXMLFC = ppTopElement . doc2XML
+exportXMLFC :: Sign -> String
+exportXMLFC = ppTopElement . doc2XML . Set.toList . objects
 
 
 makeAttr :: String -> String -> Attr

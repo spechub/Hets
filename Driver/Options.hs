@@ -401,6 +401,7 @@ data OutType =
   | XmlOut -- ^ development graph xml output
   | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
+  | FreeCADOut
   | ThyFile -- ^ isabelle theory file
   | DfgFile SPFType -- ^ SPASS input file
   | TPTPFile SPFType
@@ -419,6 +420,7 @@ instance Show OutType where
     XmlOut -> xmlS
     ExperimentalOut -> experimentalS
     HaskellOut -> hsS
+    FreeCADOut -> "fcxml"
     ThyFile -> "thy"
     DfgFile t -> dfgS ++ show t
     TPTPFile t -> tptpS ++ show t
@@ -429,7 +431,7 @@ instance Show OutType where
 plainOutTypeList :: [OutType]
 plainOutTypeList =
   [Prf, EnvOut, OWLOut, OmdocOut, XmlOut, ExperimentalOut,
-      HaskellOut, ThyFile, ComptableXml]
+      HaskellOut, ThyFile, ComptableXml, FreeCADOut]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
