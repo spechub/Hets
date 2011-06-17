@@ -35,23 +35,17 @@ data Annotations = Annotations [(Annotations, Annotation)]
 noAnnos :: Annotations
 noAnnos = Annotations []
 
-data FrameBit 
-  = DF [DatatypeFrame]
-  | CF [ClassFrame]
-  | OPF [ObjectPropertyFrame]
-  | DPF [DataPropertyFrame]
-  | AF [AnnotationFrame]
-  | IF [IndividualFrame]
-  | MSC [Misc]
-  deriving (Typeable, Show, Eq, Ord)
-
-data Frame = Frame [FrameBit]
-  deriving (Typeable, Show, Eq, Ord)
-
-data DatatypeFrame = DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange)) 
-  deriving (Typeable, Show, Eq, Ord)
-
-data ClassFrame = ClassFrame Class [ClassFrameBit]
+data Frame 
+  = ClassFrame Class [ClassFrameBit]
+  | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange))
+  | ObjectPropertyFrame ObjectProperty [ObjectFrameBit]
+  | DataPropertyFrame DataProperty [DataFrameBit]
+  | IndividualFrame Individual [IndividualBit]
+  | AnnotationFrame AnnotationProperty [AnnotationBit]
+  | MiscEquivOrDisjointClasses EquivOrDisjoint Annotations [ClassExpression]
+  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations [ObjectPropertyExpression]
+  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations [DataPropertyExpression]
+  | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
   deriving (Typeable, Show, Eq, Ord)
 
 data ClassFrameBit
@@ -60,9 +54,6 @@ data ClassFrameBit
   | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression) --nonEmpty list
   | ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  deriving (Typeable, Show, Eq, Ord)
-
-data ObjectPropertyFrame = ObjectPropertyFrame ObjectProperty [ObjectFrameBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data ObjectFrameBit
@@ -75,9 +66,6 @@ data ObjectFrameBit
   | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
   deriving (Typeable, Show, Eq, Ord)
 
-data DataPropertyFrame = DataPropertyFrame DataProperty [DataFrameBit]
-  deriving (Typeable, Show, Eq, Ord)
-
 data DataFrameBit
   = DataAnnotations Annotations
   | DataPropDomain (AnnotatedList ClassExpression)
@@ -85,9 +73,6 @@ data DataFrameBit
   | DataFunctional Annotations
   | DataSubPropertyOf (AnnotatedList DataPropertyExpression)
   | DataEquivOrDisjoint EquivOrDisjoint (AnnotatedList DataPropertyExpression)
-  deriving (Typeable, Show, Eq, Ord)
-
-data IndividualFrame = IndividualFrame Individual [IndividualBit]
   deriving (Typeable, Show, Eq, Ord)
 
 data IndividualBit
@@ -102,20 +87,10 @@ data Fact
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
   deriving (Typeable, Show, Eq, Ord)
 
-data AnnotationFrame = AnnotationFrame AnnotationProperty [AnnotationBit]
-  deriving (Typeable, Show, Eq, Ord)
-
 data AnnotationBit
   = AnnotationAnnotations Annotations
   | AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
   | AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
-  deriving (Typeable, Show, Eq, Ord)
-
-data Misc
-  = MiscEquivOrDisjointClasses EquivOrDisjoint Annotations [ClassExpression]
-  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations [DataPropertyExpression]
-  | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
   deriving (Typeable, Show, Eq, Ord)
 
 emptyOntologyDoc :: OntologyDocument

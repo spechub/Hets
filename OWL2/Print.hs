@@ -65,8 +65,6 @@ quantifierType = keyword . showQuantifierType
 printIndividual :: Individual -> Doc
 printIndividual = pretty
 
-
-
 instance Pretty ClassExpression where
   pretty desc = case desc of
    Expression ocUri -> printURIreference ocUri

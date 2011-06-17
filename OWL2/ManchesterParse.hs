@@ -524,14 +524,6 @@ optAnnos p = do
   a <- p
   return (as, a)
 
-transform :: [Annotation] -> Annotations
-transform [] = Annotations []
-transform (h : t) = let Annotation ls ap av = h in Annotations(((transform ls), Annotation [] ap av) : (transform2 t))
-
-transform2 :: [Annotation] -> [(Annotations, Annotation)]
-transform2 [] = []
-transform2 (h : t) = let Annotation ls ap av = h in ((transform ls), Annotation [] ap av) : (transform2 t)
-
 optAnnos2 :: CharParser st Annotation
 optAnnos2 = do
   as <- annotationList
@@ -554,7 +546,7 @@ realAnnotations = do
 descriptionAnnotatedList :: CharParser st [(Annotations, ClassExpression)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
 
-annotationPropertyFrame :: CharParser st [AnnotationFrame]
+annotationPropertyFrame :: CharParser st [Frame]
 annotationPropertyFrame = do
   pkeyword annotationPropertyC
   ap <- uriP
@@ -587,7 +579,7 @@ equivOrDisjoint = choice
   $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
   equivOrDisjointL
 
-datatypeFrame :: CharParser st [DatatypeFrame]
+datatypeFrame :: CharParser st [Frame]
 datatypeFrame = do
     pkeyword datatypeC
     duri <- datatypeUri
@@ -605,7 +597,7 @@ entityAnnos qn ty = do
     as <- realAnnotations
     return [PlainAxiom as $ Declaration $ Entity ty qn]
 
-classFrame :: CharParser st [ClassFrame]
+classFrame :: CharParser st [Frame]
 classFrame = do
         pkeyword classC
         iri <- uriP
@@ -684,7 +676,7 @@ objectFrameBit = do
     as <- annotations
     return [ObjectAnnotations as]
 
-objectPropertyFrame :: CharParser st [ObjectPropertyFrame]
+objectPropertyFrame :: CharParser st [Frame]
 objectPropertyFrame = do
   pkeyword objectPropertyC
   ouri <- uriP
@@ -722,7 +714,7 @@ dataFrameBit  = do
     as <- annotations
     return [DataAnnotations as]
 
-dataPropertyFrame :: CharParser st [DataPropertyFrame]
+dataPropertyFrame :: CharParser st [Frame]
 dataPropertyFrame = do
   pkeyword dataPropertyC
   duri <- uriP
@@ -761,7 +753,7 @@ iFrameBit = do
     fs <- sepByComma $ optAnnos $ fact
     return [IndividualFacts $ AnnotatedList fs]
 
-individualFrame :: CharParser st [IndividualFrame]
+individualFrame :: CharParser st [Frame]
 individualFrame = do
   pkeyword individualC
   iuri <- individualUri
@@ -781,7 +773,7 @@ sameOrDifferentIndu =
   (pkeyword sameIndividualC >> return Same)
   <|> (pkeyword differentIndividualsC >> return Different)
 
-misc :: CharParser st Misc
+misc :: CharParser st Frame
 misc = do
     e <- equivOrDisjointKeyword classesC
     as <- annotations
@@ -800,15 +792,9 @@ misc = do
     return $ MiscSameOrDifferent s as is
 
 frames :: CharParser st [Frame]
-frames = do
-    x <- flat $ many datatypeFrame
-    y <- flat $ many classFrame
-    z <- flat $ many objectPropertyFrame
-    t <- flat $ many dataPropertyFrame
-    w <- flat $ many individualFrame
-    u <- flat $ many annotationPropertyFrame
-    m <- flat $ many $ single misc
-    return $ [ Frame [DF x, CF y, OPF z, DPF t, IF w, AF u, MSC m] ]
+frames = flat $ many $ datatypeFrame <|> classFrame
+  <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
+  <|> annotationPropertyFrame <|> single misc
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
