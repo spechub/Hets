@@ -21,14 +21,9 @@ import OWL.Keywords
 import OWL.ColonKeywords
 
 import Common.Keywords
-import Common.Lexer
 import Common.Parsec
-import Common.AnnoParser (commentLine)
-import Common.Token (criticalKeywords)
-import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
-import Data.Char
 import qualified Data.Map as Map
 
 objectPropertyCharacter :: CharParser st Character

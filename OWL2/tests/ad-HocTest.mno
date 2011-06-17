@@ -17,7 +17,7 @@ ObjectProperty: a
   
 DataProperty: a
   Annotations: a b, c d, p q, r s
-  Characteristics: Functional
+  Characteristics: Annotations: Annotations: a b c d Functional
   Domain: a, b, Annotations: p q c, Annotations: Annotations: p q r s v
   SubPropertyOf: x, y, z, p
   EquivalentTo: Annotations: a b, c d, Annotations: x y z t, p q c
@@ -37,7 +37,7 @@ Class: x
   SubClassOf: c, not b, Annotations: x y c and d only b
   EquivalentTo: a
   DisjointUnionOf: Annotations: x y, z t x, y, U
-  HasKey: a, b, c
+  HasKey: Annotations: x y a, b, c
 
 Individual: John
   Types: Person, a, Annotations: a b x

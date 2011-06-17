@@ -16,13 +16,7 @@ It is modeled after the W3C document:
 module OWL2.MS where
 
 import OWL2.AS
-import Common.Keywords
-import Common.Id (GetRange)
-
-import OWL.Keywords
-import OWL.ColonKeywords
 import qualified Data.Map as Map
-import Data.Typeable
 
 data OntologyDocument = OntologyDocument {
     prefixDeclaration :: PrefixMap,

@@ -22,7 +22,7 @@ import OWL2.Print
 import OWL.Keywords
 import OWL.ColonKeywords
 
-import qualified Data.Set as Set
+--import qualified Data.Set as Set
 
 printCharact :: String -> Doc
 printCharact charact = text charact
@@ -63,9 +63,9 @@ printClassFrameBit cfb = case cfb of
     ClassAnnotations x -> pretty x
     ClassSubClassOf x -> keyword subClassOfC <+> pretty x
     ClassEquivOrDisjoint x y -> printEquivOrDisjoint x <+> pretty y
-    ClassDisjointUnion a x -> keyword disjointUnionOfC <+> pretty a <+> sepByCommas ( map (\a -> pretty a) x )
-    ClassHasKey a op dp -> keyword hasKeyC <+> pretty a
-      <+> vcat (punctuate comma $ map pretty op ++ map pretty dp)
+    ClassDisjointUnion a x -> keyword disjointUnionOfC <+> (pretty a $+$ vcat(punctuate comma ( map (\p -> pretty p) x )))
+    ClassHasKey a op dp -> keyword hasKeyC <+> (pretty a
+      $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
 
 instance Pretty ObjectFrameBit where
     pretty = printObjectFrameBit
@@ -77,7 +77,7 @@ printObjectFrameBit ofb = case ofb of
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
     ObjectEquivOrDisjoint ed x -> printEquivOrDisjoint ed <+> pretty x
     ObjectInverse x -> keyword inverseOfC <+> pretty x
-    ObjectSubPropertyChain a opl -> keyword subPropertyChainC <+> pretty a <+> fsep (prepPunctuate (keyword oS <> space) $ map pretty opl)
+    ObjectSubPropertyChain a opl -> keyword subPropertyChainC <+> (pretty a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))
     ObjectSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
 
 instance Pretty DataFrameBit where
@@ -88,10 +88,9 @@ printDataFrameBit dfb = case dfb of
     DataAnnotations x -> pretty x
     DataPropDomain x -> keyword domainC <+> pretty x
     DataPropRange x -> keyword rangeC <+> pretty x 
-    DataFunctional x -> keyword characteristicsC <+> pretty x <+> printCharact functionalS 
+    DataFunctional x -> keyword characteristicsC <+> (pretty x $+$ printCharact functionalS) 
     DataSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
     DataEquivOrDisjoint e x -> printEquivOrDisjoint e <+> pretty x
-    _ -> text "not frame bit"
 
 instance Pretty IndividualBit where
     pretty = printIndividualBit
@@ -134,20 +133,20 @@ instance Pretty Frame where
 printMaybeAnnDR :: Maybe (Annotations, DataRange) -> Doc
 printMaybeAnnDR x = case x of
     Nothing -> empty
-    Just (a, dr) -> keyword equivalentToC <+> pretty a <+> pretty dr 
+    Just (a, dr) -> keyword equivalentToC <+> (pretty a $+$ pretty dr) 
 
 printFrame :: Frame -> Doc
 printFrame x = case x of
     ClassFrame a cfb -> classStart <+> pretty a <+> vcat (map pretty cfb)
-    DatatypeFrame d ans a ans2 -> keyword datatypeC <+> pretty d <+> vcat (map pretty ans) <+> printMaybeAnnDR a <+> vcat (map pretty ans2)
+    DatatypeFrame d ans a ans2 -> keyword datatypeC <+> (pretty d $+$ vcat (map pretty ans) $+$ printMaybeAnnDR a $+$ vcat (map pretty ans2))
     ObjectPropertyFrame op ofb -> keyword objectPropertyC <+> pretty op <+> vcat (map pretty ofb)
     DataPropertyFrame dp dfb -> keyword dataPropertyC <+> pretty dp <+> vcat (map pretty dfb)
     IndividualFrame i ib -> keyword individualC <+> pretty i <+> vcat (map pretty ib)
     AnnotationFrame ap ab -> keyword annotationPropertyC <+> pretty ap  <+> vcat (map pretty ab)
-    MiscEquivOrDisjointClasses e a c -> printEquivOrDisjointClasses e <+> pretty a <+> vcat (punctuate comma (map pretty c) )
-    MiscEquivOrDisjointObjProp e a c -> printEquivOrDisjointObj e <+> pretty a <+> vcat ( punctuate comma (map pretty c) )
-    MiscEquivOrDisjointDataProp e a c -> printEquivOrDisjointData e <+> pretty a <+> vcat ( punctuate comma (map pretty c) )
-    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+>  pretty a <+> vcat ( punctuate comma (map pretty c) )
+    MiscEquivOrDisjointClasses e a c -> printEquivOrDisjointClasses e <+> (pretty a $+$ vcat (punctuate comma (map pretty c) ))
+    MiscEquivOrDisjointObjProp e a c -> printEquivOrDisjointObj e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
+    MiscEquivOrDisjointDataProp e a c -> printEquivOrDisjointData e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
+    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (pretty a $+$ vcat( punctuate comma (map pretty c) ))
 
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of
