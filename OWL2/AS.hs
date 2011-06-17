@@ -192,7 +192,7 @@ showFacet df = case df of
     TOTALDIGITS -> digitsS
     FRACTIONDIGITS -> fractionS
 
-data DataRange 
+data DataRange
 	= DataType Datatype
 	| DataJunction JunctionType [DataRange]  -- at least two elements in the list
 	| DataComplementOf DataRange
@@ -237,7 +237,7 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom 
+  | DataValuesFrom
 	     QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
@@ -250,7 +250,7 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
 	  deriving (Typeable, Show, Eq, Ord)
 
-data AnnotationAxiom 
+data AnnotationAxiom
 	= AnnotationAssertion [Annotation] IRI
 	| SubAnnotationPropertyOf [Annotation] AnnotationProperty AnnotationProperty
 	| AnnotationPropertyDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
@@ -263,7 +263,7 @@ showAnnDomainOrRange dr = case dr of
     AnnDomain -> domainC
     AnnRange -> rangeC
 
-data AnnotationValue 
+data AnnotationValue
 	= AnnValue IRI
 	| AnnValLit Literal
 	  deriving (Typeable, Show, Eq, Ord)
@@ -367,20 +367,23 @@ data PlainAxiom =
 type SubClass = ClassExpression
 type SuperClass = ClassExpression
 
-data SubObjectPropertyExpression 
+data SubObjectPropertyExpression
   = OPExpression ObjectPropertyExpression
   | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
     deriving (Typeable, Show, Eq, Ord)
 
 ---------------------
 -- ONTOLOGY FILES
---------------------- 
+---------------------
 
 emptyOntologyFile :: OntologyFile
 emptyOntologyFile = OntologyFile Map.empty emptyOntology
 
+emptyOntologyByName :: QName -> Ontology
+emptyOntologyByName qn = Ontology qn [] [] []
+
 emptyOntology :: Ontology
-emptyOntology = Ontology nullQName [] [] []
+emptyOntology = emptyOntologyByName nullQName
 
 isEmptyOntologyFile :: OntologyFile -> Bool
 isEmptyOntologyFile (OntologyFile ns onto) =
@@ -388,4 +391,4 @@ isEmptyOntologyFile (OntologyFile ns onto) =
 
 isEmptyOntology :: Ontology -> Bool
 isEmptyOntology (Ontology (QN _ l _ n) annoList impList axioms) =
-    null l && null n && null annoList && null impList && null axioms 
+    null l && null n && null annoList && null impList && null axioms

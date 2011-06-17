@@ -17,7 +17,7 @@ Manchester syntax parser for OWL 1.1
 <http://www.faqs.org/rfcs/rfc4646.html>
 -}
 
-module OWL2.Parse (basicSpec, symbItems, symbMapItems) where
+module OWL2.Parse (ontologyFile, basicSpec, symbItems, symbMapItems) where
 
 import OWL2.AS
 import OWL.Keywords
@@ -501,12 +501,6 @@ entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
   entityTypes
 
-entity :: CharParser st Entity
-entity = do
-  t <- entityType
-  u <- parensP uriP
-  return $ Entity t u
-
 -- same as annotation Target in Manchester Syntax, named annotation Value in Abstract Syntax
 annotationValue :: CharParser st AnnotationValue
 annotationValue = do
@@ -806,9 +800,9 @@ misc = do
     return $ PlainAxiom as $ SameOrDifferentIndividual s is
 
 frames :: CharParser st [Axiom]
-frames = flat $ many $ datatypeFrame <|> classFrame
+frames = flat $ many (datatypeFrame <|> classFrame
   <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
-  <|> annotationPropertyFrame <|> single misc
+  <|> annotationPropertyFrame <|> single misc)
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
@@ -824,6 +818,18 @@ nsEntry = do
 
 importEntry :: CharParser st QName
 importEntry = pkeyword importC >> uriP
+
+ontologyFile :: CharParser st OntologyFile
+ontologyFile = do
+  nss <- many nsEntry
+  ouri <- pkeyword ontologyC >> uriP
+  is <- many importEntry
+  as <- frames
+  return emptyOntologyFile
+    { ontology = (emptyOntologyByName ouri)
+        { axiomsList = as
+        , importsList = is }
+    , prefixName = Map.fromList $ map (\ (p, q) -> (p, showQU q)) nss }
 
 basicSpec :: CharParser st OntologyFile
 basicSpec = do
