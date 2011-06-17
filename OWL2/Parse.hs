@@ -539,10 +539,6 @@ domainOrRange = choice
   $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
   [ObjDomain, ObjRange]
 
-objectPropertyCharacter :: CharParser st Character
-objectPropertyCharacter =
-  choice $ map (\ f -> keyword (show f) >> return f) characters
-
 subPropertyKey :: CharParser st ()
 subPropertyKey = pkeyword subPropertyOfC
 

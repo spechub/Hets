@@ -24,6 +24,10 @@ import OWL.ColonKeywords
 
 import qualified Data.Set as Set
 
+printCharact :: String -> Doc
+printCharact charact =
+    keyword characteristicsC <+> text charact
+
 instance Pretty Axiom where
     pretty = printAxiom
 
@@ -81,7 +85,7 @@ printAxiom axiom = case axiom of
        indStart <+> pretty ind $+$ keyword typesC <+> pretty desc
    ObjectPropertyAssertion ass -> printAssertion ass
    DataPropertyAssertion ass -> printAssertion ass
-   Declaration x -> pretty x    -- [Annotation] Entity
+   Declaration _ -> empty    -- [Annotation] Entity
    DatatypeDefinition dt dr ->
        keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> pretty dr
    HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC

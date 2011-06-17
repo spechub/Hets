@@ -1,0 +1,63 @@
+Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+Prefix: owl: <http://www.w3.org/2002/07/owl#>
+Prefix: xml: <http://www.w3.org/XML/1998/namespace>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+Ontology: a
+
+ObjectProperty: a
+  Annotations: a b, c d, Annotations: x y z t, Annotations: Annotations: p q x y z t, u v
+  Characteristics: Functional, Annotations: a b, c d Reflexive, Asymmetric
+  Domain: a, b, Annotations: p q c, Annotations: Annotations: p q r s v
+  SubPropertyOf: x, y, Annotations: z p r
+  DisjointWith: x, p, q, Annotations: p q r, s,t
+  InverseOf: a, b, c
+  SubPropertyChain: Annotations: a b, c d, Annotations: p q r t A o B o C
+  
+DataProperty: a
+  Annotations: a b, c d, p q, r s
+  Characteristics: Functional
+  Domain: a, b, Annotations: p q c, Annotations: Annotations: p q r s v
+  SubPropertyOf: x, y, z, p
+  EquivalentTo: Annotations: a b, c d, Annotations: x y z t, p q c
+
+AnnotationProperty: x
+  Domain: x, y, z
+  Range: p, q
+  Annotations: a b
+
+Datatype: a
+  Annotations: x y, z t, Annotations: a b c d
+  EquivalentTo: Annotations: a b c
+  Annotations: a b
+
+Class: x
+  SubClassOf: a, b, Annotations: x y c and d only b
+  SubClassOf: c, not b, Annotations: x y c and d only b
+  EquivalentTo: a
+  DisjointUnionOf: Annotations: x y, z t x, y, U
+  HasKey: a, b, c
+
+Individual: John
+  Types: Person, a, Annotations: a b x
+  SameAs: a
+  Facts: a b, Annotations: a b not c d, x y
+
+DisjointClasses: x, y,z
+EquivalentProperties: a, b, c
+DifferentIndividuals: Annotations: a b, c d, Annotations: x y z t c, d, e
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    

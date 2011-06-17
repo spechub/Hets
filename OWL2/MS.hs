@@ -50,7 +50,7 @@ noAnnos = Annotations []
 
 data Frame 
   = ClassFrame Class [ClassFrameBit]
-  | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange))
+  | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange)) [Annotations]
   | ObjectPropertyFrame ObjectProperty [ObjectFrameBit]
   | DataPropertyFrame DataProperty [DataFrameBit]
   | IndividualFrame Individual [IndividualBit]

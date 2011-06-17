@@ -174,10 +174,6 @@ dpStart = keyword dataPropertyC
 indStart :: Doc
 indStart = keyword individualC
 
-printCharact :: String -> Doc
-printCharact charact =
-    keyword characteristicsC <+> text charact
-
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =
         case sopExp of

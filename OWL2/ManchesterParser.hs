@@ -12,7 +12,7 @@ Parser from Manchester Syntax to Manchester Abstract Syntax
 <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
 
-module OWL2.ManchesterParse where
+module OWL2.ManchesterParser where
 
 import OWL2.AS
 import OWL2.MS
@@ -30,6 +30,10 @@ import Common.Utils (nubOrd)
 import Text.ParserCombinators.Parsec
 import Data.Char
 import qualified Data.Map as Map
+
+objectPropertyCharacter :: CharParser st Character
+objectPropertyCharacter =
+  choice $ map (\ f -> keyword (show f) >> return f) characters
 
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do
@@ -73,14 +77,14 @@ datatypeFrame :: CharParser st [Frame]
 datatypeFrame = do
     pkeyword datatypeC
     duri <- datatypeUri
-    as1 <- many annotations
+    x <- many annotations
     ms <- optionMaybe $ do
       pkeyword equivalentToC
-      al <- annotations
+      al <- option noAnnos annotations
       dr <- dataRange
       return (al, dr)
-    as2 <- many annotations
-    return [DatatypeFrame duri (as1 ++ as2) ms]
+    y <- many annotations
+    return [DatatypeFrame duri x ms y]
 
 classFrame :: CharParser st [Frame]
 classFrame = do
@@ -101,12 +105,12 @@ classFrameBit = do
     return [ClassEquivOrDisjoint e $ AnnotatedList ds]
   <|> do
     pkeyword disjointUnionOfC
-    as <- annotations
+    as <- option noAnnos annotations
     ds <- sepByComma description
     return [ClassDisjointUnion as ds]
   <|> do
     pkeyword hasKeyC
-    as <- annotations
+    as <- option noAnnos annotations
     o <- sepByComma objectPropertyExpr
     return [ClassHasKey as o []]
   <|> do
@@ -139,7 +143,7 @@ objectFrameBit = do
     return [ObjectInverse $ AnnotatedList ds]
   <|> do
     pkeyword subPropertyChainC
-    as <- annotations
+    as <- option noAnnos annotations
     os <- sepBy1 objectPropertyExpr (keyword oS)
     return [ObjectSubPropertyChain as os]
   <|> do
@@ -169,7 +173,7 @@ dataFrameBit  = do
     return [DataPropRange $ AnnotatedList ds]
   <|> do
     characterKey
-    as <- annotations
+    as <- option noAnnos annotations
     keyword functionalS
     return [DataFunctional as]
   <|> do
@@ -217,6 +221,9 @@ iFrameBit = do
     pkeyword factsC
     fs <- sepByComma $ optAnnos $ fact
     return [IndividualFacts $ AnnotatedList fs]
+  <|> do
+    a <- annotations
+    return [IndividualAnnotations a]
 
 individualFrame :: CharParser st [Frame]
 individualFrame = do
@@ -230,18 +237,18 @@ individualFrame = do
 misc :: CharParser st Frame
 misc = do
     e <- equivOrDisjointKeyword classesC
-    as <- annotations
+    as <- option noAnnos annotations
     ds <- sepByComma description
     return $ MiscEquivOrDisjointClasses e as ds
   <|> do
     e <- equivOrDisjointKeyword propertiesC
-    as <- annotations
+    as <- option noAnnos annotations
     es <- sepByComma objectPropertyExpr
     -- indistinguishable from dataProperties
     return $ MiscEquivOrDisjointObjProp e as es
   <|> do
     s <- sameOrDifferentIndu
-    as <- annotations
+    as <- option noAnnos annotations
     is <- sepByComma individualUri
     return $ MiscSameOrDifferent s as is
 

@@ -26,6 +26,10 @@ import Common.Parsec
 import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
 
+objectPropertyCharacter :: CharParser st Character
+objectPropertyCharacter =
+  choice $ map (\ f -> keyword (show f) >> return f) characters
+
 optAnnos :: CharParser st a -> CharParser st ([Annotation], a)
 optAnnos p = do
   as <- annotationList
