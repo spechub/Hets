@@ -56,7 +56,7 @@ anaLibReadPrfs opts file = do
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts fname = do
-  fname' <- existsAnSource opts {intype = GuessIn} $ rmSuffix fname
+  fname' <- existsAnSource opts {intype = GuessIn} fname
   case fname' of
     Nothing -> anaLibExt opts fname emptyLibEnv emptyDG
     Just file ->
