@@ -94,7 +94,8 @@ printDataFrameBit dfb = case dfb of
     DataSubPropertyOf x -> keyword subPropertyOf <+> pretty x
     DataEquivOrDisjoint e x -> printEquivOrDisjoint e <+> pretty x
 
-instance Pretty 
+instance Pretty IndividualBit where
+    pretty = printIndividualBit
 
 {-
   data IndividualBit

@@ -81,7 +81,7 @@ printAxiom axiom = case axiom of
        indStart <+> pretty ind $+$ keyword typesC <+> pretty desc
    ObjectPropertyAssertion ass -> printAssertion ass
    DataPropertyAssertion ass -> printAssertion ass
-   Declaration _ -> empty    -- [Annotation] Entity
+   Declaration x -> pretty x    -- [Annotation] Entity
    DatatypeDefinition dt dr ->
        keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> pretty dr
    HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC
