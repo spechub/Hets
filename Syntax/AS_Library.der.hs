@@ -59,8 +59,8 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
 data GENERICITY = Genericity PARAMS IMPORTED Range deriving Show
                   -- pos: many of "[","]" opt ("given", commas)
 
-emptyGENERICITY :: GENERICITY
-emptyGENERICITY = Genericity (Params []) (Imported []) nullRange
+emptyGenericity :: GENERICITY
+emptyGenericity = Genericity (Params []) (Imported []) nullRange
 
 data PARAMS = Params [Annoted SPEC] deriving Show
 
@@ -80,5 +80,5 @@ fromBasicSpec ln sn gbs =
     let rg = nullRange
         sp = Basic_spec gbs rg
         mkAnno = emptyAnno
-        li = Spec_defn sn emptyGENERICITY (mkAnno sp) rg
+        li = Spec_defn sn emptyGenericity (mkAnno sp) rg
     in Lib_defn ln [mkAnno li] rg []
