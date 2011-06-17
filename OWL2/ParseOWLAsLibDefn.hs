@@ -10,32 +10,25 @@ Portability :  non-portable (imports Logic.Logic)
 analyse OWL files by calling the external Java parser.
 -}
 
-module OWL2.OWLAnalysis (parseOWL) where
+module OWL2.ParseOWLAsLibDefn (parseOWL) where
 
 import OWL2.AS
 import OWL2.Parse
-
-import Static.GTheory
-import Static.DevGraph
-import Static.ComputeTheory
+import OWL2.Logic_OWL2
 
 import Common.Id
-import Common.GlobalAnnotations
-import Common.ExtSign
 import Common.LibName
-import Common.Result
 import Common.ProverTools
-import Common.Utils
 import Common.AS_Annotation hiding (isAxiom, isDef)
 --import ATerm.ReadWrite
 --import ATerm.Unshared
 
 import Driver.Options
 
-import Logic.Comorphism
+import Syntax.AS_Library
+import Syntax.AS_Structured
+
 import Logic.Grothendieck
-import Logic.Logic
-import Logic.Prover
 
 import System.Directory
 import System.Exit
@@ -45,17 +38,10 @@ import System.Process
 import Text.ParserCombinators.Parsec
 import Common.Parsec
 
-import qualified Data.Map as Map
-import qualified Data.List as List
-import Data.Graph.Inductive.Graph
-import qualified Data.Graph.Inductive.Query.DFS as DFS
-import qualified Data.Graph.Inductive.Query.BFS as BFS
-import Data.Maybe (fromJust)
-
 
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
-         -> IO OntologyMap        -- ^ map: uri -> OntologyFile
+         -> IO LIB_DEFN        -- ^ map: uri -> OntologyFile
 parseOWL filename = do
     let jar = "OWL2Parser.jar"
     absfile <- if checkUri filename then return filename else
@@ -71,13 +57,24 @@ parseOWL filename = do
       else error $ jar ++ " not found"
 
 -- | parse the tmp-omn-file from java-owl-parser
-parseProc :: FilePath -> String -> IO OntologyMap
+parseProc :: FilePath -> String -> IO LIB_DEFN
 parseProc filename str = do
     case runParser (many1 ontologyFile << eof) () filename str of
-      Right os -> return $ Map.fromList
-        $ map (\ o -> (showQN $ uri $ ontology o, o)) os
+      Right os -> return $ convertToLibDefN filename os 
       Left err -> do
-        print err
         putStrLn str
-        return Map.empty
+        fail $ show err
 
+convertone :: OntologyFile-> Annoted LIB_ITEM
+convertone o = emptyAnno $ Spec_defn  
+  (mkSimpleId $ showQN $ uri $ ontology o) 
+  emptyGenericity
+  (emptyAnno $ Basic_spec (G_basic_spec OWL2 o ) nullRange)
+  nullRange 
+
+convertToLibDefN :: FilePath -> [OntologyFile] -> LIB_DEFN
+convertToLibDefN filename l = Lib_defn 
+  (emptyLibName $ convertFileToLibStr filename)
+  (map convertone $ l)
+  nullRange
+  []
