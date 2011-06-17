@@ -62,22 +62,22 @@ parseOWL filename = do
       fmap ("file://" ++) $ canonicalizePath filename
     (hasJar, toolPath) <- check4HetsOWLjar jar
     if hasJar then do
-       tmpFile <- getTempFile "" $ basename filename ++ ".term"
-       (exitCode, _, _) <- readProcessWithExitCode "java"
-         ["-jar", toolPath </> jar, absfile, tmpFile] ""
+       (exitCode, result, errStr) <- readProcessWithExitCode "java"
+         ["-jar", toolPath </> jar, absfile] ""
        case exitCode of
-         ExitSuccess -> parseProc tmpFile
-         _ -> error ("process stop! " ++ show exitCode)
+         ExitSuccess -> parseProc filename result
+         _ -> error $ "process stop! " ++ shows exitCode "\n"
+              ++ errStr
       else error $ jar ++ " not found"
 
 -- | parse the tmp-omn-file from java-owl-parser
-parseProc :: FilePath -> IO OntologyMap
-parseProc filename = do 
-    str <- readFile filename
+parseProc :: FilePath -> String -> IO OntologyMap
+parseProc filename str = do
     case runParser (many1 basicSpec << eof) () filename str of
-      Right os -> return $ Map.fromList 
-        $ map (\ o -> (showQN $ uri $ ontology o, o)) os 
-      Left err -> do 
+      Right os -> return $ Map.fromList
+        $ map (\ o -> (showQN $ uri $ ontology o, o)) os
+      Left err -> do
         print err
+        putStrLn str
         return Map.empty
-	
+
