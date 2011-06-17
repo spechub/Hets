@@ -78,10 +78,37 @@ printObjectFrameBit ofb = case ofb of
     ObjectAnnotations x -> pretty x
     ObjectDomainOrRange dr x -> printObjDomainOrRange dr <+> pretty x
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
-    ObjectEquivOrDisjoint ed x -> printEquivOrDisjoint ed <+> pretty x
+    ObjectEquivOrDisjoint ed x ->  <+> pretty x
     ObjectInverse x -> keyword inverseOfC <+> printAnnotatedList x
     ObjectSubPropertyChain a opl -> keyword subPropertyChainC <+> pretty a <+> fsep (prepPunctuate (keyword oS <> space) $ map pretty opl)
     ObjectSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
+
+instance Pretty DataFrameBit where
+    pretty = printDataFrameBit
+
+printDataFrameBit :: DataFrameBit -> Doc
+printDataFrameBit dfb = case dfb of
+    DataPropDomain x -> keyword domainC <+> pretty x
+    DataPropRange x -> keyword rangeC <+> pretty x 
+    DataFunctional x -> printCharact functionalS <+> pretty x
+    DataSubPropertyOf x -> keyword subPropertyOf <+> pretty x
+    DataEquivOrDisjoint e x -> printEquivOrDisjoint e <+> pretty x
+
+instance Pretty 
+
+{-
+  data IndividualBit
+  = IndividualAnnotations Annotations
+  | IndividualTypes (AnnotatedList ClassExpression)
+  | IndividualFacts (AnnotatedList Fact)
+  | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
+  deriving (Show, Eq, Ord)
+
+data Fact
+  = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
+  | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
+  deriving (Show, Eq, Ord)
+-}
 
 instance Pretty Character where
   pretty = printCharact . show 

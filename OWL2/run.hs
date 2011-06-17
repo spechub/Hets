@@ -1,6 +1,7 @@
 import System.Environment
 
 import OWL2.Parse
+import OWL2.FunctionalParser
 import OWL2.Print ()
 
 import Common.DocUtils
