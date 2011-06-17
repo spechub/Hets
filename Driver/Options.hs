@@ -322,6 +322,7 @@ data InType =
   | CASLIn
   | HetCASLIn
   | OWLIn
+  | OWL2In
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -342,6 +343,7 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     OWLIn -> "owl"
+    OWL2In -> "owl2"
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
