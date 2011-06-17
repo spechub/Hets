@@ -30,6 +30,7 @@ HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
     -i Data.Typeable -i ATerm.Lib
+
 GENRULECALL2 = $(GENRULES) -r Typeable -r ShATermLG \
     -i Data.Typeable -i ATerm.Lib -i ATC.Grothendieck
 DRIFT = utils/DrIFT
@@ -53,7 +54,8 @@ derived_sources += $(GTK_GLADE_HSFILES)
 # the list of logics that need ShATermConvertible instances
 logics = CASL HasCASL Isabelle Modal Temporal CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional OWL RelationalScheme VSE OMDoc DFOL \
-    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF FreeCAD
+    LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
+    FreeCAD OWL2
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -323,6 +325,8 @@ THF_files = THF/As.hs
 
 FreeCAD_files = FreeCAD/As.hs
 
+OWL2_files = OWL2/AS.hs
+
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
@@ -412,6 +416,8 @@ THF/ATC_THF.der.hs: $(THF_files) $(GENRULES)
 FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)
 
+OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
+	$(GENRULECALL) -o $@ $(OWL2_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
