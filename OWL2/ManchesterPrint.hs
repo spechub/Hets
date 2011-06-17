@@ -102,16 +102,16 @@ printIndividualBit ib = case ib of
     IndividualAnnotations x -> pretty x
     IndividualTypes x -> keyword typesC <+> pretty x
     IndividualFacts x -> keyword factsC <+> pretty x
-    IndividualSameOrDifferent s x -> print
+    IndividualSameOrDifferent s x -> printSameOrDifferent s <+> pretty x
+
+instance Pretty Fact where
+    pretty = printFact
+
+printFact :: Fact -> Doc
+printFact pf = case pf of
+    ObjectPropertyFact pn op i -> printSameOrDifferent <+> 
 
 {-
-  data IndividualBit
-  = IndividualAnnotations Annotations
-  | IndividualTypes (AnnotatedList ClassExpression)
-  | IndividualFacts (AnnotatedList Fact)
-  | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
-  deriving (Show, Eq, Ord)
-
 data Fact
   = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
