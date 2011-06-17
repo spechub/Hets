@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances #-}
+{-# OPTIONS -w #-}
 {- |
 Module      :  $Header$
 Description :  instance of the class Logic for OWL2
