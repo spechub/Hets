@@ -15,12 +15,9 @@ It is modeled after the W3C document:
 
 module OWL2.FS where
 
-import Common.Keywords
 import Common.Id (GetRange)
 
 import OWL2.AS
-import OWL.Keywords
-import OWL.ColonKeywords
 import qualified Data.Map as Map
 
 ------------------------

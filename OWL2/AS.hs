@@ -16,7 +16,6 @@ It is modeled after the W3C document:
 module OWL2.AS where
 
 import Common.Keywords
-import Common.Id (GetRange)
 
 import OWL.Keywords
 import OWL.ColonKeywords

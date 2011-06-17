@@ -33,7 +33,6 @@ import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
 import Data.Char
-import qualified Data.Map as Map
 
 type URI = IRI
 

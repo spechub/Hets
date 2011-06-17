@@ -17,19 +17,13 @@ module OWL2.FunctionalParser where
 import OWL2.Parse
 import OWL2.FS
 import OWL2.AS
-import OWL2.Symbols
 import OWL.Keywords
 import OWL.ColonKeywords
 
 import Common.Keywords
-import Common.Lexer
 import Common.Parsec
-import Common.AnnoParser (commentLine)
-import Common.Token (criticalKeywords)
-import Common.Utils (nubOrd)
 
 import Text.ParserCombinators.Parsec
-import Data.Char
 import qualified Data.Map as Map
 
 optAnnos :: CharParser st a -> CharParser st ([Annotation], a)

@@ -12,10 +12,8 @@ Pretty printing for OWL 2 DL theories - Functional Syntax
 
 module OWL2.FunctionalPrint where
 
-import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
-import Common.Id
 import Common.Keywords
 
 import OWL2.AS
@@ -25,7 +23,6 @@ import OWL.Keywords
 import OWL.ColonKeywords
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 instance Pretty Axiom where
     pretty = printAxiom

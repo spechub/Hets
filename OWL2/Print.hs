@@ -12,7 +12,6 @@ Pretty printing for OWL 2 DL theories - common Functional and Manchester Syntax.
 
 module OWL2.Print where
 
-import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -25,7 +24,6 @@ import OWL.Keywords
 import OWL.ColonKeywords
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 instance Pretty QName where
     pretty = printURIreference

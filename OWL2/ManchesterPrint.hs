@@ -85,12 +85,3 @@ printObjectFrameBit ofb = case ofb of
 
 instance Pretty Character where
   pretty = printCharact . show 
-{-
-  = ObjectAnnotations Annotations
-  | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
-  | ObjectCharacteristics (AnnotatedList Character)
-  | ObjectEquivOrDisjoint EquivOrDisjoint (AnnotatedList ObjectPropertyExpression)
-  | ObjectInverse (AnnotatedList ObjectPropertyExpression)
-  | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
-  | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
--}
