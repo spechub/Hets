@@ -520,11 +520,11 @@ annotation = do
 
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do
-  as <- annotationList
+  as <- option noAnnos $ annotations
   a <- p
-  return (transform as, a)
+  return (as, a)
 
-transform :: [Annotation] -> Annotations 
+transform :: [Annotation] -> Annotations
 transform [] = Annotations []
 transform (h : t) = let Annotation ls ap av = h in Annotations(((transform ls), Annotation [] ap av) : (transform2 t))
 
@@ -541,8 +541,7 @@ optAnnos2 = do
 annotations :: CharParser st Annotations
 annotations = do
    pkeyword annotationsC
-   x <- sepByComma $ optAnnos annotation
-   return $ Annotations x
+   fmap Annotations $ sepByComma $ optAnnos annotation
 
 annotationList :: CharParser st [Annotation]
 annotationList = optionL realAnnotations
@@ -559,14 +558,14 @@ annotationPropertyFrame :: CharParser st [AnnotationFrame]
 annotationPropertyFrame = do
   pkeyword annotationPropertyC
   ap <- uriP
-  x <- flat $ many $ apBit 
+  x <- flat $ many $ apBit
   return [AnnotationFrame ap x]
 
 apBit :: CharParser st [AnnotationBit]
 apBit = do
           pkeyword subPropertyOfC
           x <- sepByComma $ optAnnos uriP
-          return [AnnotationSubPropertyOf $ AnnotatedList x] 
+          return [AnnotationSubPropertyOf $ AnnotatedList x]
         <|> do
           pkeyword rangeC
           x <- sepByComma $ optAnnos uriP
@@ -577,7 +576,7 @@ apBit = do
           return [AnnotationDOR AnnDomain $ AnnotatedList x ]
        <|> do
           x <- annotations
-          return [AnnotationAnnotations x] 
+          return [AnnotationAnnotations x]
 
 
 equivOrDisjointL :: [EquivOrDisjoint]
@@ -689,7 +688,7 @@ objectPropertyFrame :: CharParser st [ObjectPropertyFrame]
 objectPropertyFrame = do
   pkeyword objectPropertyC
   ouri <- uriP
-  as <- flat $ many $ objectFrameBit 
+  as <- flat $ many $ objectFrameBit
   return $ if null as
     then [ObjectPropertyFrame ouri []]
     else [ObjectPropertyFrame ouri as]
@@ -698,7 +697,7 @@ dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
 
 dataFrameBit :: CharParser st [DataFrameBit]
-dataFrameBit  = do 
+dataFrameBit  = do
     pkeyword domainC
     ds <- descriptionAnnotatedList
     return [DataPropDomain $ AnnotatedList ds]
@@ -706,7 +705,7 @@ dataFrameBit  = do
     pkeyword rangeC
     ds <- sepByComma $ optAnnos dataRange
     return [DataPropRange $ AnnotatedList ds]
-  <|> do 
+  <|> do
     characterKey
     as <- annotations
     keyword functionalS
@@ -735,7 +734,7 @@ dataPropertyFrame = do
 sameOrDifferent :: CharParser st SameOrDifferent
 sameOrDifferent = choice
   $ map (\ f -> pkeyword (showSameOrDifferent f) >> return f)
-  [Same, Different] 
+  [Same, Different]
 
 fact :: CharParser st Fact
 fact = do
@@ -759,7 +758,7 @@ iFrameBit = do
     return [IndividualSameOrDifferent s $ AnnotatedList is]
   <|> do
     pkeyword factsC
-    fs <- sepByComma $ optAnnos $ fact 
+    fs <- sepByComma $ optAnnos $ fact
     return [IndividualFacts $ AnnotatedList fs]
 
 individualFrame :: CharParser st [IndividualFrame]
