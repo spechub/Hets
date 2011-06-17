@@ -24,8 +24,12 @@ import ATC.ProofTree ()
 import Logic.Logic
 
 import OWL2.AS
+import OWL2.FS
 import OWL2.Parse
+import OWL2.FunctionalParser
+import OWL2.Symbols
 import OWL2.Print ()
+import OWL2.FunctionalPrint
 import OWL2.ATC_OWL2 ()
 
 type Sign = ()

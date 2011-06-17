@@ -7,10 +7,10 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Pretty printing for OWL 2 DL theories.
+Pretty printing for OWL 2 DL theories - common Functional and Manchester Syntax.
 -}
 
-module OWL2.Print ({-printOWLBasicTheory,-} printAxiom) where
+module OWL2.Print where
 
 import Common.AS_Annotation
 import Common.Doc
@@ -19,6 +19,8 @@ import Common.Id
 import Common.Keywords
 
 import OWL2.AS
+import OWL2.FS
+import OWL2.Symbols
 import OWL.Keywords
 import OWL.ColonKeywords
 
@@ -148,9 +150,6 @@ instance Pretty Literal where
       Untyped tag -> if tag == Nothing then empty else 
                      let Just tag2 = tag in text asP <> text tag2
 
-instance Pretty Axiom where
-    pretty = printAxiom
-
 printEquivOrDisjoint :: EquivOrDisjoint -> Doc
 printEquivOrDisjoint = keyword . showEquivOrDisjoint
 
@@ -164,67 +163,6 @@ printDataDomainOrRange dr = case dr of
 
 printSameOrDifferent :: SameOrDifferent -> Doc
 printSameOrDifferent = keyword . showSameOrDifferent
-
-printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
-printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
-   let d = fsep [pretty a, pretty b] in
-   keyword factsC <+> case p of
-     Positive -> d
-     Negative -> keyword notS <+> d
-
-printAxiom :: Axiom -> Doc
-printAxiom axiom = case axiom of
-  EntityAnno _ -> empty -- EntityAnnotation
-  PlainAxiom _ paxiom -> case paxiom of
-   SubClassOf sub super -> case super of
-     Expression curi
-       | localPart curi == "Thing" && namePrefix curi == "owl" -> empty
-     _ -> classStart <+> pretty sub $+$ keyword subClassOfC <+> pretty super
-   EquivOrDisjointClasses ty (clazz : equiList) ->
-       classStart <+> pretty clazz $+$ printEquivOrDisjoint ty <+>
-                      setToDocV (Set.fromList equiList)
-   DisjointUnion curi discList ->
-       classStart <+> pretty curi $+$ keyword disjointUnionOfC <+>
-                   setToDocV (Set.fromList discList)
-   -- ObjectPropertyAxiom
-   SubObjectPropertyOf sopExp opExp ->
-       opStart <+> pretty opExp $+$ keyword (case sopExp of
-                 SubObjectPropertyChain _ -> subPropertyChainC
-                 _ -> subPropertyOfC)
-                   <+> pretty sopExp
-   EquivOrDisjointObjectProperties ty (opExp : opList) ->
-       opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+>
-                   setToDocV (Set.fromList opList)
-   ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
-   InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> pretty opExp2
-   ObjectPropertyCharacter ch opExp ->
-       opStart <+> pretty opExp $+$ printCharact (show ch)
-   -- DataPropertyAxiom
-   SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> pretty dpExp2
-   EquivOrDisjointDataProperties ty (dpExp : dpList) ->
-       dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty <+>
-               setToDocV (Set.fromList dpList)
-   DataPropertyDomainOrRange ddr dpExp ->
-       dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr
-   FunctionalDataProperty dpExp ->
-       dpStart <+> pretty dpExp $+$ printCharact functionalS
-   -- Fact
-   SameOrDifferentIndividual ty (ind : indList) ->
-       indStart <+> pretty ind $+$ printSameOrDifferent ty <+>
-                 setToDocV (Set.fromList indList)
-   ClassAssertion desc ind ->
-       indStart <+> pretty ind $+$ keyword typesC <+> pretty desc
-   ObjectPropertyAssertion ass -> printAssertion ass
-   DataPropertyAssertion ass -> printAssertion ass
-   Declaration _ -> empty    -- [Annotation] Entity
-   DatatypeDefinition dt dr ->
-       keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> pretty dr
-   HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC
-     <+> vcat (punctuate comma $ map pretty objlist ++ map pretty datalist)
-   u -> error $ "unknow axiom " ++ show u
 
 classStart :: Doc
 classStart = keyword classC
@@ -248,9 +186,6 @@ instance Pretty SubObjectPropertyExpression where
           OPExpression opExp -> pretty opExp
           SubObjectPropertyChain opExpList ->
              fsep $ prepPunctuate (keyword oS <> space) $ map pretty opExpList
-
-instance Pretty OntologyFile where
-    pretty = vsep . map pretty . axiomsList . ontology
 
 setToDocs :: Pretty a => Set.Set a -> [Doc]
 setToDocs = punctuate comma . map pretty . Set.toList

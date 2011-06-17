@@ -13,15 +13,15 @@ analyse OWL files by calling the external Java parser.
 module OWL2.ParseOWLAsLibDefn (parseOWL) where
 
 import OWL2.AS
-import OWL2.Parse
+import OWL2.FS
+import OWL2.FunctionalParser
 import OWL2.Logic_OWL2
 
 import Common.Id
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
---import ATerm.ReadWrite
---import ATerm.Unshared
+
 
 import Driver.Options
 

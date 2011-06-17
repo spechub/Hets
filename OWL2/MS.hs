@@ -1,4 +1,17 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{- |
+Module      :  $Header$
+Copyright   :  (c) Felix Gabriel Mance
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  f.mance@jacobs-university.de
+Stability   :  provisional
+Portability :  portable
+
+This module defines all the data types for the Manchester Syntax
+of OWL 2
+It is modeled after the W3C document:
+<http://www.w3.org/TR/owl2-manchester-syntax/>
+-}
 
 module OWL2.MS where
 
@@ -14,23 +27,23 @@ import Data.Typeable
 data OntologyDocument = OntologyDocument {
     prefixDeclaration :: PrefixMap,
     mOntology :: MOntology  
-} deriving (Typeable, Show, Eq, Ord)
+} deriving (Show, Eq, Ord)
 
 data MOntology = MOntology {
   muri :: OntologyIRI,
   imports :: [ImportIRI],
   ann :: [Annotations],
   ontologyFrame :: [Frame]
-} deriving (Typeable, Show, Eq, Ord)
+} deriving (Show, Eq, Ord)
 
 data AnnotatedList a = AnnotatedList [(Annotations, a)]
-   deriving (Typeable, Show, Eq, Ord)
+   deriving (Show, Eq, Ord)
 
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
   @Annotations:@ if non-empty
 -}
 data Annotations = Annotations [(Annotations, Annotation)]
-   deriving (Typeable, Show, Eq, Ord)
+   deriving (Show, Eq, Ord)
 
 noAnnos :: Annotations
 noAnnos = Annotations []
@@ -46,7 +59,7 @@ data Frame
   | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations [ObjectPropertyExpression]
   | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations [DataPropertyExpression]
   | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data ClassFrameBit
   = ClassAnnotations Annotations  -- nonEmpty list
@@ -54,7 +67,7 @@ data ClassFrameBit
   | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression) --nonEmpty list
   | ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data ObjectFrameBit
   = ObjectAnnotations Annotations
@@ -64,7 +77,7 @@ data ObjectFrameBit
   | ObjectInverse (AnnotatedList ObjectPropertyExpression)
   | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
   | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data DataFrameBit
   = DataAnnotations Annotations
@@ -73,25 +86,25 @@ data DataFrameBit
   | DataFunctional Annotations
   | DataSubPropertyOf (AnnotatedList DataPropertyExpression)
   | DataEquivOrDisjoint EquivOrDisjoint (AnnotatedList DataPropertyExpression)
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data IndividualBit
   = IndividualAnnotations Annotations
   | IndividualTypes (AnnotatedList ClassExpression)
   | IndividualFacts (AnnotatedList Fact)
   | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data Fact
   = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data AnnotationBit
   = AnnotationAnnotations Annotations
   | AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
   | AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
-  deriving (Typeable, Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD
@@ -106,11 +119,3 @@ isEmptyOntologyDoc (OntologyDocument ns onto) =
 isEmptyOntologyM :: MOntology -> Bool
 isEmptyOntologyM (MOntology (QN _ l _ n) annoList impList frames) =
     null l && null n && null annoList && null impList && null frames
-
-
-
-
-
-
-
-
