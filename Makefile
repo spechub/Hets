@@ -537,7 +537,7 @@ clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) \
             $(hs_clean_files)
 
-clean: bin_clean o_clean clean_pretty
+clean: bin_clean o_clean clean_pretty clean_javastuff
 
 ### removes all *.o, *.hi and *.p_o files in all subdirectories
 o_clean:
@@ -559,6 +559,10 @@ clean_pretty:
 	$(RM) ToHaskell/test/*.{out,output}
 	$(RM) */test/temp*
 	$(RM) doc/UserGuide.{log,aux,bbl,blg,out,pdf}
+
+clean_javastuff:
+	$(RM) OWL/*.jar OWL/java/lib/*.jar
+	$(RM) -r OWL/java/build OWL/lib
 
 ### additionally removes the library files
 real_clean: clean
