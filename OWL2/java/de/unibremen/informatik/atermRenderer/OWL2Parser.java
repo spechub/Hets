@@ -7,6 +7,8 @@ import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRende
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
 
 import java.io.BufferedReader;
+import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
 import java.io.File;
 import java.io.Writer;
 import java.io.BufferedWriter;
@@ -31,6 +33,7 @@ public class OWL2Parser {
 		}
 
 		String filename = "";
+		BufferedWriter out;
 
 		// A simple example of how to load and save an ontology
 		try {
@@ -38,43 +41,25 @@ public class OWL2Parser {
 			OWLOntologyManager manager = OWLManager.createOWLOntologyManager();
 			if (args.length == 2) {
 				filename = args[1];
+				out = new BufferedWriter(new FileWriter(filename));
 			} else {
-				String[] iriSplit = iri.toURI().getPath().split("/");
-				String tmpPath = "/tmp/";
-				String pidCmd[] = {
-						"/bin/sh",
-						"-c",
-						"/bin/ps -f | /bin/awk '{print $2,$3}' | /bin/grep \"^$$\" "
-								+ "| /bin/awk '{print $2}'" };
-				String pidName = "";
-				long currTime = 0;
-				Process pidProc = Runtime.getRuntime().exec(pidCmd);
-				BufferedReader stdout1 = new BufferedReader(
-						new InputStreamReader(pidProc.getInputStream()));
-				pidName = stdout1.readLine();
-				currTime = System.currentTimeMillis();
-
-				String randomName = pidName + "-" + currTime;
-				String postfix = ".term";
-				filename = tmpPath + iriSplit[iriSplit.length - 1] + "-"
-						+ randomName + postfix;
+				out = new BufferedWriter(openForFile(null));
 			}
 			
 			
 			/* Load an ontology from a physical IRI */
 			IRI physicalIRI = IRI.create(args[0]);
-			System.out.println("Loading : " + args[0]);
+			//System.out.println("Loading : " + args[0]);
 			
 			// Now do the loading
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
-			System.out.println(ontology);
+			//System.out.println(ontology);
 			
 			// get all ontology which are imported from this ontology.
 			getImportsList(ontology, manager);
 			
-			System.out.println("LoadedImportsList: " + loadedImportsList);
-			System.out.println();
-			BufferedWriter out = new BufferedWriter(new FileWriter(filename));
+			//System.out.println("LoadedImportsList: " + loadedImportsList);
+			//System.out.println();
 
 			if(loadedImportsList.size() == 0)
 			{
@@ -85,7 +70,7 @@ public class OWL2Parser {
 
 			for (OWLOntology onto : loadedImportsList) {
 	                             
-				System.out.println("parsing OWL: " + onto.getOntologyID().getOntologyIRI() + " ...");
+				//System.out.println("parsing OWL: " + onto.getOntologyID().getOntologyIRI() + " ...");
 				ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
 			
 				rendi.render(onto,out);
@@ -93,7 +78,7 @@ public class OWL2Parser {
 	                        }
 
 	  
-	                System.out.println("OWL parsing done!\n");
+	                //System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
 			e.printStackTrace();
@@ -103,7 +88,6 @@ public class OWL2Parser {
 		}
 	}
 
-
 	private static void getImportsList(OWLOntology ontology,
 			OWLOntologyManager om) {
 
@@ -112,7 +96,7 @@ public class OWL2Parser {
 		try {
 			for (OWLOntology imported : om.getImports(ontology)) {
 				if (!importsURI.contains(imported.getOntologyID().getOntologyIRI())) {
-					System.out.println("IMPORTED: " + imported + "\n");
+					//System.out.println("IMPORTED: " + imported + "\n");
 					unSavedImports.add(imported);
 					loadedImportsList.add(imported);
 					importsURI.add(imported.getOntologyID().getOntologyIRI());
@@ -129,6 +113,10 @@ public class OWL2Parser {
 		}
 	}
 
+	private static Writer openForFile(String fileName) 
+		{ 		
+			return new OutputStreamWriter(System.out);
+		}
 }
 
 
