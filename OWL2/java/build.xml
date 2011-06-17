@@ -68,10 +68,10 @@
             <classpath refid="classpath"/>
 	    <include name="de/unibremen/informatik/locality/*.java"/>
         </javac>
-        <mkdir dir="${classesdir}/atermRenderer"/>
-        <javac srcdir="./" destdir="${classesdir}/atermRenderer" debug="on" target="${target-vm}" nowarn="off" source="1.5">
+        <mkdir dir="${classesdir}"/>
+        <javac srcdir="./" destdir="${classesdir}" debug="on" target="${target-vm}" nowarn="off" source="1.5">
             <classpath refid="classpath"/>
-	    <include name="de/unibremen/informatik/atermRenderer/OWL2Parser.java"/>
+	    <include name="de/unibremen/informatik/OWL2Parser.java"/>
         </javac>
     </target>
 
@@ -92,7 +92,7 @@
 	  <attribute name="Class-Path" value="lib/owlapi-bin.jar"/>
 	</manifest>
       </jar>
-      <jar basedir="${classesdir}/atermRenderer" destfile="${builddir}/OWL2Parser.jar">
+      <jar basedir="${classesdir}" destfile="${builddir}/OWL2Parser.jar">
 	<manifest>
 	  <attribute name="Title" value="OWL OMN Renderer"/>
 	  <attribute name="Built-By" value="${user.name}"/>
