@@ -122,7 +122,7 @@ insertThmLinks lg links (dg, lv) = do
   dg' <- foldM ins' dg links
   return (dg', lv) where
     ins' dgR l = do
-        (i, mr, tp) <- extractMorphism lg dgR l
+        (i, mr, tp) <- getTypeAndMorphism lg dgR l
         (j, gsig) <- signOfNode (trg l) dgR
         morph <- finalizeMorphism lg False mr gsig
         insertLink i j morph tp dgR
@@ -164,7 +164,7 @@ target this particular node -}
 insertNodeAndLinks :: HetcatsOpts -> LogicGraph -> NamedNode -> [NamedLink]
                  -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
 insertNodeAndLinks opts lg trgNd links (dg, lv) = do
-  mrs <- mapM (extractMorphism lg dg) links
+  mrs <- mapM (getTypeAndMorphism lg dg) links
   {- for HidingDefLinks, the target node signature and link morphisms are
   different. -}
   let isHiding = (== HidingDef) . edgeTypeModInc . lType
@@ -211,13 +211,15 @@ insertLink i j mr tp = return .
 
 {- | extracts the intermediate morphism for a link, using the xml data and the
 signature of the (previously inserted) source node -}
-extractMorphism :: LogicGraph -> DGraph -> NamedLink
+getTypeAndMorphism :: LogicGraph -> DGraph -> NamedLink
                 -> ResultT IO (Graph.Node, GMorphism, DGLinkType)
-extractMorphism lg dg (Link srN _ tp l) =
+getTypeAndMorphism lg dg (Link srN _ tp l) =
   case findChild (unqual "GMorphism") l of
     Nothing -> fail "Links morphism description is missing!"
     Just mor -> let
-        symbs = parseSymbolMap mor
+        parseSymbMap = intercalate ", " . map ( intercalate " |-> "
+          . map strContent . elChildren ) . deepSearch ["map"]
+        symbs = parseSymbMap mor
         rl = case findChild (unqual "Rule") l of
             Nothing -> "no rule"
             Just r' -> strContent r'
@@ -226,50 +228,49 @@ extractMorphism lg dg (Link srN _ tp l) =
             Just c' -> fromMaybe None $ readMaybe $ strContent c'
         in do
           nm <- getAttrVal "name" mor
-          (i, sgn@(G_sign slid _ _)) <- signOfNode srN dg
-          (sgn', lTp) <- case edgeTypeModInc tp of
-            HetDef -> fail "HetDef Edgetype not implemented yet!"
-            HidingDef -> return (sgn, HidingDefLink)
-            GlobalDef -> return (sgn, localOrGlobalDef Global cc)
-            LocalDef -> return (sgn, localOrGlobalDef Local cc)
-            FreeOrCofreeDef fc -> do -- TODO lookup mrSrc here!!!!
-              (sg', mSrc) <- case getAttrVal "morphismsource" mor of
-                Nothing -> return 
-                  (G_sign slid (ext_empty_signature slid) startSigId,
-                  EmptyNode $ Logic slid)
-                Just ms -> do
-                  (j, sg') <- signOfNode ms dg
-                  return (sg', JustNode $ NodeSig j sg')
-              return (sg', FreeOrCofreeDefLink fc mSrc)
-            ThmType et _ _ _ -> do
-              lStat <- case findChild (unqual "Status") l of
-                  Nothing -> return LeftOpen
-                  Just st -> if strContent st /= "Proven"
-                    then fail $ "unknown links status!\n" ++ strContent st
-                    else return $ Proven (DGRule rl) emptyProofBasis
-              case et of
-                HidingThm -> do
-                  mSrc <- getAttrVal "morphismsource" mor
-                  (i', sgn') <- signOfNode mSrc dg
-                  mr' <- liftR $ ginclusion lg sgn' sgn
-                  return (sgn', HidingFreeOrCofreeThm Nothing i' mr' lStat)
-                FreeOrCofreeThm fc -> do
-                  (i', sgn') <- case getAttrVal "morphismsource" mor of
-                    Just mSrc -> signOfNode mSrc dg
-                    Nothing -> return
-                      (i, G_sign slid (ext_empty_signature slid) startSigId)
-                  mr' <- liftR $ ginclusion lg sgn' sgn
-                  return (sgn', HidingFreeOrCofreeThm (Just fc) i' mr' lStat)
-                GlobalOrLocalThm sc _ -> return
-                  (sgn, ScopedLink sc (ThmLink lStat) $ mkConsStatus cc)
-          mor' <- liftR $ getGMorphism lg sgn' nm symbs
-          return (i, mor', lTp)
+          (i, sg1) <- signOfNode srN dg
+          (sg2, lTp) <- getTypeAndMorAux lg dg (edgeTypeModInc tp)
+              (getAttrVal "morphismsource" mor) sg1 cc rl
+          mr' <- liftR $ getGMorphism lg sg2 nm symbs
+          return (i, mr', lTp)
 
-parseSymbolMap :: Element -> String
-parseSymbolMap = intercalate ", "
-               . map ( intercalate " |-> "
-               . map strContent . elChildren )
-               . deepSearch ["map"]
+{- depending on the type of the link, the correct DGLinkType and the signature
+for the (external) morphism are extracted here -}
+getTypeAndMorAux :: LogicGraph -> DGraph -> DGEdgeTypeModInc -> Maybe String
+       -> G_sign -> Conservativity -> String -> ResultT IO (G_sign, DGLinkType)
+getTypeAndMorAux lg dg eTp mSrc sg@(G_sign slid _ _) cc rl = let
+  emptySig = G_sign slid (ext_empty_signature slid) startSigId
+  mkRtVAL sg' tp = return (sg', tp)
+  in case eTp of
+    HetDef -> fail "HetDef Edgetype not implemented yet!"
+    HidingDef -> mkRtVAL sg HidingDefLink
+    GlobalDef -> mkRtVAL sg $ localOrGlobalDef Global cc
+    LocalDef -> mkRtVAL sg $ localOrGlobalDef Local cc
+    FreeOrCofreeDef fc -> do
+      (sg', mNd) <- case mSrc of
+        Nothing -> return (emptySig, EmptyNode $ Logic slid)
+        Just ms -> do
+          (j, sg') <- signOfNode ms dg
+          return (sg', JustNode $ NodeSig j sg')
+      mkRtVAL sg' $ FreeOrCofreeDefLink fc mNd
+    ThmType thTp prv _ _ -> let
+      lStat = if not prv then LeftOpen
+          else Proven (DGRule rl) emptyProofBasis
+      in case thTp of
+        HidingThm -> do
+          (i', sg') <- case mSrc of
+            Just ms -> signOfNode ms dg
+            Nothing -> fail "no morphism source declaration for HidingThmLink"
+          mr' <- liftR $ ginclusion lg sg' sg
+          mkRtVAL sg' $ HidingFreeOrCofreeThm Nothing i' mr' lStat
+        FreeOrCofreeThm fc -> do
+            (i', sg') <- case mSrc of
+              Just ms -> signOfNode ms dg
+              Nothing -> return ((-1), emptySig)
+            mr' <- liftR $ ginclusion lg sg' sg
+            mkRtVAL sg' $ HidingFreeOrCofreeThm (Just fc) i' mr' lStat
+        GlobalOrLocalThm sc _ -> mkRtVAL sg 
+          $ ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 {- ------------------------------------------------------
 Reconstruct the Development Graph, [node insertion] -}
