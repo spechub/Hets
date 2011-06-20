@@ -137,6 +137,14 @@ diagnoseEPRange re =
       Complement r -> text [chr 8705] <> diagnoseEPRange r
       Empty -> text [chr 8709]
       Atom eps -> prettyEPs eps
+
+{-
+to see what you get here use:
+
+writeFile "/tmp/t.txt" $ map chr [8746, 10, 8726, 10, 8745, 10, 8705, 10, 8709]
+
+you will see: union, difference, intersection, complement, emptyset
+-}
     
 
 -- | Pretty output for 'EPRange'
@@ -270,7 +278,7 @@ projectRange e re = simplifyRange $ f re
 
  Complement * -> Empty                   (bottom element)
 
- For Empty its the dual behaviour
+ For Empty its the Union-Intersection-dual behaviour
 -}
 simplifyRange :: EPRange -> EPRange
 simplifyRange re =
@@ -313,12 +321,15 @@ boolModelChar b = if b then '*' else ' '
 modelToString :: (a -> Char) -> Model a -> String
 modelToString f (Model l vm) =
     case l of
-      [(a, b)] -> map (f . (\ x -> Map.findWithDefault (error $ "modelToString: elem not in map " ++ show x ++ "\n" ++ (show $ Map.keys vm)) x vm) . (:[])) [a..b] ++ "\n"
+      [(a, b)] -> map (f . h . (:[])) [a..b] ++ "\n"
       [(a, b), (c, d)] ->
           let g y = map (f . (vm Map.!)) [[x, y]| x <- [a..b]]
           in unlines $ map g [c..d]
       [] -> ""
       _ -> concat ["Cannot output a ", show $ length l, "-dim model"]
+    where err x = error $ concat [ "modelToString: elem not in map "
+                                 , show x, "\n", show $ Map.keys vm ]
+          h x = Map.findWithDefault (err x) x vm
 
 modelOf :: Map.Map String (Int, Int) -> EPRange -> Model Bool
 modelOf rm re = let
@@ -619,5 +630,4 @@ restrictPartition er p
                    Comparable GT -> liftM ((er', x) :) $ f l
                    Incomparable Disjoint -> f l
                    Incomparable Overlap -> liftM ((er'', x) :) $ f l
-
 

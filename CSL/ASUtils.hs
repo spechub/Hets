@@ -13,8 +13,7 @@ Utils to create and access abstract syntax data
 -}
 
 module CSL.ASUtils
-    ( epNameOfComp
-    , getDefiniens        -- accessor function for AssDefinition
+    ( getDefiniens        -- accessor function for AssDefinition
     , getArguments        -- accessor function for AssDefinition
     , isFunDef            -- predicate for AssDefinition
     , isInterval          -- predicate for EXPRESSION
@@ -186,11 +185,6 @@ isFunDef _ = False
 isInterval :: EXPRESSION -> Bool
 isInterval (Interval _ _ _) = True
 isInterval _ = False
-
-epNameOfComp :: EPComponent -> Token
-epNameOfComp (EPDomain s _) = s
-epNameOfComp (EPDefault s _) = s
-epNameOfComp (EPConst s _) = s
 
 simpleName :: OPID -> String
 simpleName (OpId n) = showOPNAME n

@@ -31,7 +31,6 @@ import Control.Monad.Reader
 import Numeric
 
 import CSL.AS_BASIC_CSL
-import CSL.ASUtils
 import CSL.TreePO
 
 
@@ -50,15 +49,11 @@ instance Pretty OpDecl where
     pretty = head . printOpDecl
 instance Pretty VarDecl where
     pretty = printVarDecl
-instance Pretty EP_const where
-    pretty = printEPConst
 instance Pretty EPVal where
     pretty = printEPVal
 
-instance Pretty EP_item where
+instance Pretty EPDecl where
     pretty = printEPDecl
-instance Pretty EPComponent where
-    pretty = printEPComponent
 instance Pretty OP_ITEM where
     pretty = printOpItem
 instance Pretty VAR_ITEM where
@@ -246,20 +241,11 @@ printVarItem :: VAR_ITEM -> Doc
 printVarItem (Var_item vars dom _) =
     hsep [sepByCommas $ map pretty vars, text "in", pretty dom]
 
-printEPComponent :: EPComponent -> Doc
-printEPComponent (EPDomain n epd) = pretty n <+> text "in"
-                                    <+> printClosedInterval epd
-printEPComponent (EPDefault n dv) = pretty n <+> text "default=" <+> pretty dv
-printEPComponent (EPConst n val) = pretty n <+> text "=" <+> pretty val
-
 
 instance Pretty Ordering where
     pretty LT = text "<"
     pretty GT = text ">"
     pretty EQ = text "="
-
-printEPConst :: EP_const -> Doc
-printEPConst (EP_const n o ref) = pretty n <+> pretty o <+> pretty ref
 
 printVarDecl :: VarDecl -> Doc
 printVarDecl (VarDecl n (Just dom)) = pretty n <+> text "in" <+> printDomain dom
@@ -275,17 +261,18 @@ printOpDecl (OpDecl n epl vdl _)
 
 printEPVal :: EPVal -> Doc
 printEPVal (EPVal i) = pretty i
-printEPVal (EPConstRef r) = text r
+printEPVal (EPConstRef r) = pretty r
 
-printEPDecl :: EP_item -> Doc
-printEPDecl (EP_item tk mDom mDef) =
+
+printEPDecl :: EPDecl -> Doc
+printEPDecl (EPDecl tk dom mDef) =
     let tkD = pretty tk
-        domD = case mDom of
-                 Just dom -> hsep [tkD, text "in", pretty dom]
-                 _ -> tkD
+        domD = printInfixWith True "in" (tk, dom)
     in case mDef of
-         Just def -> sepBySemis [domD, hsep [tkD, text "default=", pretty def]]
+         Just def -> vcat [domD, hsep [ text "set", text "default"
+                                            , hcat [tkD, text "=", pretty def]]]
          _ -> domD
+
 
 printClosedInterval :: Pretty a => ClosedInterval a -> Doc
 printClosedInterval (ClosedInterval l r) =
@@ -319,7 +306,16 @@ printBasicItems :: BASIC_ITEM -> Doc
 printBasicItems (Axiom_item x) = pretty x
 printBasicItems (Op_decl x) = pretty x
 printBasicItems (Var_decls x) = text "vars" <+> (sepBySemis $ map pretty x)
-printBasicItems (EP_components x) = text "eps" <+> (sepBySemis $ map pretty x)
+printBasicItems (EP_decl x) = text "eps" <+>
+                              (sepBySemis $ map (printInfixWith True "in") x)
+printBasicItems (EP_domdecl x) =
+    text "set" <+> (sepBySemis $ map (printInfixWith False "=") x)
+printBasicItems (EP_defval x) = text "set" <+> text "default" <+>
+                                (sepBySemis $ map (printInfixWith False "=") x)
+
+printInfixWith :: (Pretty a, Pretty b) => Bool -> String -> (a, b) -> Doc
+printInfixWith b s (x, y) = sep' [pretty x, text s, pretty y]
+    where sep' = if b then hsep else hcat
 
 printSymbol :: SYMB -> Doc
 printSymbol (Symb_id sym) = pretty sym
@@ -343,10 +339,6 @@ instance GetRange OP_ITEM where
   rangeSpan x = case x of
     Op_item a b -> joinRanges [rangeSpan a, rangeSpan b]
 
-instance GetRange EPComponent where
-  getRange = Range . rangeSpan
-  rangeSpan = rangeSpan . epNameOfComp
-
 instance GetRange VAR_ITEM where
   getRange = Range . rangeSpan
   rangeSpan x = case x of
@@ -364,7 +356,10 @@ instance GetRange BASIC_ITEM where
     Op_decl a -> joinRanges [rangeSpan a]
     Var_decls a -> joinRanges [rangeSpan a]
     Axiom_item a -> joinRanges [rangeSpan a]
-    EP_components a -> joinRanges [rangeSpan a]
+    EP_decl a -> joinRanges [rangeSpan $ map fst a]
+    EP_domdecl a -> joinRanges [rangeSpan $ map fst a]
+    EP_defval a -> joinRanges [rangeSpan $ map fst a]
+
 
 instance GetRange CMD where
     getRange = Range . rangeSpan

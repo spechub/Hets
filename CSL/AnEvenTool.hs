@@ -12,6 +12,8 @@ Portability :  non-portable (uses type-expression in type contexts)
 
 The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL specifications.
 Provides functionality for interactive experimenting with EnCL specifications.
+
+Usage: Load this module with 'make ghci' in order to run the commands
 -}
 
 {- TODO:
@@ -22,10 +24,15 @@ Provides functionality for interactive experimenting with EnCL specifications.
    - get the corresponding data from the signature
    - implement the global settings for logfiles etc...
  * implement the output of the elim-const to eprange mapping
- * check the autoload/reset facility
 
 -}
 
+{-
+REMARK:
+I removed a complicated autoload program logic.
+To see the autoload version see this module-version 15007.
+
+-}
 module CSL.AnEvenTool
     -- (evalWithVerification, CAS (..), CASState(..))
         where
@@ -127,7 +134,7 @@ shellMessage = unlines
   ]
 
 -- ----------------------------------------------------------------------
--- ** Utils
+-- ** Utils for Completion
 -- ----------------------------------------------------------------------
 
 
@@ -208,12 +215,6 @@ class PrettyOutput a b where
 
 data POdefault = POdefault
 
-instance Pretty TriggerSymbol where
-    pretty = text . show
-
-instance PrettyOutput POdefault (Set.Set TriggerSymbol) where
-    showPretty _ s = pretty s
-
 instance PrettyOutput POdefault (SigSens a b) where
     showPretty _ sigs = pretty $ sigsensLibname sigs
 
@@ -221,6 +222,9 @@ instance PrettyOutput POdefault [Named CMD] where
     showPretty _ prog = pretty prog
 
 instance PrettyOutput POdefault [(String, Guarded EPRange)] where
+    showPretty _ ds = pretty ds
+
+instance PrettyOutput POdefault (GuardedMap EPRange) where
     showPretty _ ds = pretty ds
 
 
@@ -256,37 +260,7 @@ defaultConfig = AnEvenConfig
 
 {- AnEventState
 
-   We use this state as a cache/store for data which depends of other data.
-   In order to clear dependent entries when we update a given value we
-   use *update trigger*, which are executed recursively.
-
 -}
-
-{- autoload-logic:
-
-  Each trigger symbol has
-   * a corresponding field in the state (see resetSt/checkSt),
-   and
-   * a function which sets the field value (see triggerFunc)
-
-  If a function depends on some state fields we provide an autoload
-  facility which tries to fill unset fields recursively.
-  This is only possible if the corresponding function does not take arguments.
-  In the latter case we break the autoload process with an error message.
--}
-
-data TriggerSymbol = TrgSpec | TrgProg | TrgDS | TrgODS | TrgFDS | TrgGDS
-                   | TrgECRgMap | TrgCmpEnv deriving (Eq, Ord, Show)
-
-triggers :: Map.Map TriggerSymbol [TriggerSymbol]
-triggers = Map.fromList
-           [ (TrgSpec,  [TrgProg, TrgDS, TrgCmpEnv])
-           , (TrgDS,    [TrgODS])
-           , (TrgODS,    [TrgGDS])
-           , (TrgGDS,    [TrgFDS, TrgECRgMap])
-           ]
-
-
 
 data AnEvenState = 
     AnEvenState
@@ -394,76 +368,6 @@ updStCmpEnv :: CMP.VarEnv -> Sh AnEvenState ()
 updStCmpEnv ve = let f st = st { stCmpEnv = Just ve } in modifyShellSt f
 
 
--- reset functions, when partially applied to a TriggerSymbol can be passed to
--- modifyShellSt
-resetSt :: TriggerSymbol -> AnEvenState -> AnEvenState
-resetSt trg st =
-    case trg of
-      TrgSpec     -> st { stSpec = Nothing }
-      TrgProg     -> st { stProg = Nothing }
-      TrgDS       -> st { stDS   = Nothing }
-      TrgODS      -> st { stODS  = Nothing }
-      TrgGDS      -> st { stGDS  = Nothing }
-      TrgFDS      -> st { stFDS  = Nothing }
-      TrgECRgMap  -> st { stECRgMap  = Nothing }
-      TrgCmpEnv   -> st { stCmpEnv  = Nothing }
-
-
--- triggers recursively all resets for the given symbol
-runResetTrigger :: [TriggerSymbol] -> Sh AnEvenState ()
-runResetTrigger trgs = do
-    let trgSet = Set.unions $ map (terminalSeg triggers) trgs
-        f st = Set.fold resetSt st trgSet
-    modifyShellSt f
--- only in debugmode...
---    shellPutInfo "Triggered reset on:"
---    visualize trgSet
-
--- checks whether the corresponding field is set (Just-val) or unset (Nothing)
-checkSt :: TriggerSymbol -> AnEvenState -> Bool
-checkSt trg st =
-    case trg of
-      TrgSpec    -> isJust $ stSpec st
-      TrgProg    -> isJust $ stProg st
-      TrgDS      -> isJust $ stDS st
-      TrgODS     -> isJust $ stODS st
-      TrgGDS     -> isJust $ stGDS st
-      TrgFDS     -> isJust $ stFDS st
-      TrgECRgMap -> isJust $ stECRgMap st
-      TrgCmpEnv  -> isJust $ stCmpEnv st
-
-
-triggerFunc :: TriggerSymbol -> Sh AnEvenState ()
-triggerFunc trg =
-    case trg of
-      TrgSpec     -> noTriggerFunc trg "load"
-      TrgProg     -> alExtractFromSpec
-      TrgDS       -> alExtractFromSpec
-      TrgCmpEnv   -> alExtractFromSpec
-      TrgODS      -> alSortDS
-      TrgGDS      -> alEPElim
-      TrgFDS      -> alElimAS
-      TrgECRgMap  -> alElimASWithMap
-
-
-noTriggerFunc :: TriggerSymbol -> String -> a
-noTriggerFunc trg s =
-    error $ concat [ "Cannot autoload for trigger ", show trg
-                   , ", please use the ", s, "-command for this purpose." ]
-
-autoloads :: [TriggerSymbol] -> Sh AnEvenState ()
-autoloads trgs = mapM_ autoload trgs
-
-autoload :: TriggerSymbol -> Sh AnEvenState ()
-autoload trg = do
-  let isFieldSet = fmap (checkSt trg) getShellSt
-  b <- isFieldSet
-  unless b $ do
-    mapM_ autoload $ predecessorsOf triggers trg
-    b' <- isFieldSet
-    unless b' $ triggerFunc trg
-    
-
 {- completion-logic:
 
   due to shortcomings of the Shellac interface concerning completion
@@ -538,7 +442,7 @@ instance Completion SpecName AnEvenState where
 -- ** Basic Interface Functions
 -- ----------------------------------------------------------------------
 
-{- Most of this functions are autoload functions required for some visualization output
+{-
 
 1. loads the spec and translates it to signature and sentences
 sigsensGen :: String -> String -> IO (SigSens Sign CMD)
@@ -570,13 +474,24 @@ cmdLoadSpecEnv :: Completable SpecFile -> Completable SpecName -> Sh AnEvenState
 cmdLoadSpecEnv (Completable lfn) (Completable spn) = do
   sigs <- liftIO $ sigsensGen lfn spn
   updStSpec sigs
-  runResetTrigger [TrgSpec]
+  let (gm, prg) = splitAS $ sigsensNamedSentences sigs
+  updStAS (fmap analyzeGuarded gm) prg
   writeComplState Nothing -- see completion-logic
 
+
 -- 4. viz
+cmdShowDS :: Sh AnEvenState ()
+cmdShowDS = do
+  ds <- getStDepStore
+  visualize ds
+
+cmdShowProg :: Sh AnEvenState ()
+cmdShowProg = do
+  p <- getStProg
+  visualize p
+
 cmdShowODS :: Sh AnEvenState ()
 cmdShowODS = do
-  autoload TrgODS
   ods <- getStODS
   visualize ods
 
@@ -623,50 +538,32 @@ debugInfo = do
 
 
 
--- ** Autoloadable functions
--- 2., 3.
-alExtractFromSpec :: Sh AnEvenState ()
-alExtractFromSpec = do
-  autoload TrgSpec
-  sigs <- getStSpec
-  let (gm, prg) = splitAS $ sigsensNamedSentences sigs
-  updStAS (fmap analyzeGuarded gm) prg
-  runResetTrigger [TrgDS, TrgProg]
-
 -- 4.
 alSortDS :: Sh AnEvenState ()
 alSortDS = do
-  autoload TrgDS
   ds <- getStDepStore
   updStODS $ dependencySortAS ds
-  runResetTrigger [TrgODS]
 
 -- 5.
 alEPElim :: Sh AnEvenState ()
 alEPElim = do
-  autoloads [TrgODS, TrgCmpEnv]
   ods <- getStODS
   gds <- epElimination ods
   updStGDS gds
-  runResetTrigger [TrgGDS]
   
 -- 6.
 alElimAS :: Sh AnEvenState ()
 alElimAS = do
-  autoload TrgGDS
   gds <- getStGDS
   updStFDS $ getElimAS gds
-  runResetTrigger [TrgFDS]
 
 -- 6'.
 alElimASWithMap :: Sh AnEvenState ()
 alElimASWithMap = do
-  autoload TrgGDS
   gds <- getStGDS
   let (fds, m) = getElimASWithMap gds
   updStFDS fds
   updStECRgMap m
-  runResetTrigger [TrgFDS, TrgECRgMap]
 
 
 
@@ -699,11 +596,13 @@ cmds =
   [ exitCommand "q"
   , helpCommand "h"
 
-  , cmd "load"       cmdLoadSpecEnv    "Loads an EnCL spec from the given file- and specname"
-  , cmd "ods"        cmdShowODS        "Shows the ordered dependency store"
+  , cmd "load"       cmdLoadSpecEnv   "Loads an EnCL spec from the given file- and specname"
+  , cmd "ods"        cmdShowODS       "Shows the ordered dependency store"
+  , cmd "ds"         cmdShowDS        "Shows the dependency store"
+  , cmd "prog"       cmdShowProg      "Shows the program"
 
-  , cmd "info"       stateInfo      "Show information on the current state"
-  , cmd "debug"      debugInfo      "Show debug information"
+  , cmd "info"       stateInfo        "Show information on the current state"
+  , cmd "debug"      debugInfo        "Show debug information"
   ]
 
 

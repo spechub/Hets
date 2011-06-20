@@ -30,10 +30,9 @@ module CSL.AS_BASIC_CSL
     , VAR_ITEM (..)       -- variable declaration
     , VarDecl (..)        -- variable declaration in assignment
     , OpDecl (..)         -- operator declaration in assignment
-    , EP_item (..)        -- extparam declaration
-    , EP_const (..)       -- extparam constant declaration
+    , EPDecl (..)         -- extparam declaration
     , EPVal (..)          -- extparam values
-    , EPComponent (..)    -- raw extparam declaration
+    , getEPVarRef
     , Domain              -- domains for variable declarations
     , EPDomain            -- domains for extended parameter declarations
     , GroundConstant (..) -- constants for domain formation
@@ -141,7 +140,9 @@ data InstantiatedConstant = InstantiatedConstant
 -- | basic items: an operator, extended parameter or variable declaration or an axiom
 data BASIC_ITEM =
     Op_decl OP_ITEM
-    | EP_components [EPComponent]
+    | EP_decl [(Id.Token, EPDomain)]
+    | EP_domdecl [(Id.Token, APInt)]
+    | EP_defval [(Id.Token, APInt)]
     | Var_decls [VAR_ITEM]
     | Axiom_item (AS_Anno.Annoted CMD)
     deriving Show
@@ -149,26 +150,18 @@ data BASIC_ITEM =
 -- | Extended Parameter Datatype
 data EXTPARAM = EP Id.Token String APInt deriving (Eq, Ord, Show)
 
--- | Raw components of Extended Parameter declarations
-data EPComponent = EPDomain Id.Token EPDomain | EPDefault Id.Token APInt
-                 | EPConst Id.Token APInt deriving Show
+data EPDecl = EPDecl Id.Token -- name
+              EPDomain -- a domain over which the ep ranges
+              (Maybe APInt) -- evtl. a default value
+              deriving (Eq, Ord, Show)
 
--- | Extended Parameter declaration
-data EP_item = EP_item Id.Token -- name
-                       (Maybe EPDomain) -- evtl. a domain over which the ep ranges
-                       (Maybe APInt)  -- evtl. a default value
-                       deriving (Eq, Ord, Show)
-
-
--- | Extended Parameter value may be an integer or a reference to a 'EP_const'.
+-- | Extended Parameter value may be an integer or a reference to an 'EPDomVal'.
 -- This type is used for the domain specification of EPs (see 'EPDomain').
-data EPVal = EPVal APInt | EPConstRef String deriving (Eq, Ord, Show)
+data EPVal = EPVal APInt | EPConstRef Id.Token deriving (Eq, Ord, Show)
 
--- | Extended Parameter constant declaration
-data EP_const = EP_const Id.Token -- name
-                         Ordering -- constraint for constant
-                         APInt    -- value to compare with
-                       deriving (Eq, Ord, Show)
+getEPVarRef :: EPVal -> Maybe Id.Token
+getEPVarRef (EPConstRef tok) = Just tok
+getEPVarRef _ = Nothing
 
 data OPNAME =
     -- arithmetic operators

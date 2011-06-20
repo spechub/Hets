@@ -478,21 +478,6 @@ opItem = do
   return $ Op_item vars nullRange
 
 
--- | Parser for components of extended parameter declarations:
--- example: I in {1,2}; I default= 1; J;K
-epComponent :: CharParser st EPComponent
-epComponent = do
-  epId <- identifier
-  comp <- oneOfKeys ["in", "default=", "="]
-  case comp of
-    "in" -> parseEPDomain >-> EPDomain epId
-    "=" -> getSignedNumber >-> EPConst epId . read
-    _ -> getSignedNumber >-> EPDefault epId . read
-
--- | Parser fro extended parameter declarations: eps epComp(;epComp)+
-epComponents :: CharParser st [EPComponent]
-epComponents = oneOfKeys ["eps", "ep"] >> sepBy1 epComponent pSemi
-
 -- | Parser for variable declarations: example: vars x,y in {1,2}; z in [-1,1]
 varItems :: CharParser st [VAR_ITEM]
 varItems = oneOfKeys ["vars", "var"] >> sepBy1 varItem pSemi
@@ -504,6 +489,23 @@ varItem = do
   oneOfKeys ["in"]
   dom <- parseDomain
   return $ Var_item vars dom nullRange
+
+
+-- | Parser for extended parameter declarations:
+-- example: I in [1,2]; 
+epDecl :: CharParser st (Id.Token, EPDomain)
+epDecl = do
+  epId <- identifier
+  oneOfKeys ["in"]
+  parseEPDomain >-> (,) epId
+
+-- | Parser for extended parameter default values and domain variable
+-- declarations: example: I = 1; n=2
+epNumValAss :: CharParser st (Id.Token, APInt)
+epNumValAss = do
+  epId <- identifier
+  oneOfKeys ["="]
+  getSignedNumber >-> (,) epId . read
 
 
 parseDomain :: CharParser st Domain
@@ -526,7 +528,7 @@ parseEPVal :: CharParser st EPVal
 parseEPVal = do
   mId <- optionMaybe identifier
   case mId of
-    Just n -> return $ EPConstRef $ tokStr n
+    Just n -> return $ EPConstRef n
     _ -> getSignedNumber >-> EPVal . read
 
 parseEPDomain :: CharParser st EPDomain
@@ -547,7 +549,8 @@ basicSpec =
 
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st BASIC_ITEM
-parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseEPDecl <|> parseAxItems
+parseBasicItems = parseOpDecl <|> parseVarDecl <|> parseEPDefValOrDomDecl
+                  <|> parseEPDecl <|> parseAxItems
 
 -- | parser for operator declarations
 parseOpDecl :: AnnoState.AParser st BASIC_ITEM
@@ -558,8 +561,17 @@ parseVarDecl :: AnnoState.AParser st BASIC_ITEM
 parseVarDecl = varItems >-> Var_decls
 
 -- | parser for extended parameter declarations
+parseEPDefValOrDomDecl :: AnnoState.AParser st BASIC_ITEM
+parseEPDefValOrDomDecl = do
+  lstring "set"
+  mDef <- optionMaybe $ try $ lexemeParser $ string "default"
+  case mDef of
+    Nothing -> sepBy1 epNumValAss pSemi >-> EP_domdecl
+    _ -> sepBy1 epNumValAss pSemi >-> EP_defval
+
+-- | parser for extended parameter declarations
 parseEPDecl :: AnnoState.AParser st BASIC_ITEM
-parseEPDecl = epComponents >-> EP_components
+parseEPDecl = oneOfKeys ["eps", "ep"] >> sepBy1 epDecl pSemi >-> EP_decl
 
 -- | parser for Axiom_item
 parseAxItems :: AnnoState.AParser st BASIC_ITEM

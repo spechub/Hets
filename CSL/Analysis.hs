@@ -29,7 +29,7 @@ import CSL.Sign as Sign
 
 -- import Control.Monad.State
 
-import qualified Data.Map as Map
+-- import qualified Data.Map as Map
 import qualified Data.Set as Set
 -- import Data.List
 import Data.Maybe
@@ -64,13 +64,18 @@ splitSpec (Basic_spec specitems) sig =
       ((newsig, _), mNCmds) <- mapAccumLM anaBasicItem (sig, 0) specitems
       return (newsig, catMaybes mNCmds)
 
+{- | Add a single basic item to the signature. EP_defvals cannot be added if
+   the corresponding EP_decl is not yet defined.
+-}
 anaBasicItem :: (Sign.Sign, Int) -> Annoted BASIC_ITEM
              -> Result ((Sign.Sign, Int), Maybe (Named CMD))
 anaBasicItem (sign, i) itm =
     case item itm of
       Op_decl (Op_item tokens _) -> return ((addTokens sign tokens, i), Nothing)
       Var_decls l -> return ((addVarDecls sign l, i), Nothing)
-      EP_components l -> return ((foldl addEPComponent sign l, i), Nothing)
+      EP_decl l -> return ((addEPDecls sign l, i), Nothing)
+      EP_domdecl l -> return ((addEPDomDecls sign l, i), Nothing)
+      EP_defval l -> return ((addEPDefVals sign l, i), Nothing)
       Axiom_item annocmd ->
           do
             ncmd <- analyzeFormula sign annocmd i
@@ -91,6 +96,20 @@ addVarDecls  = const
 addVarDecls sign vitems = foldl f sign vitems where
     f res (Var_item toks dom _) = addVarItem res toks dom
 -}
+addEPDecls :: Sign.Sign -> [(Token, EPDomain)] -> Sign.Sign
+addEPDecls = addPairsToSig addEPDeclToSig
+
+addEPDomDecls :: Sign.Sign -> [(Token, APInt)] -> Sign.Sign
+addEPDomDecls = addPairsToSig addEPDomVarDeclToSig
+
+addEPDefVals :: Sign.Sign -> [(Token, APInt)] -> Sign.Sign
+addEPDefVals = addPairsToSig addEPDefValToSig
+
+addPairsToSig :: (Sign.Sign -> a -> b -> Sign.Sign)
+              -> Sign.Sign -> [(a,b)] -> Sign.Sign
+addPairsToSig f s l = foldl g s l where g s' = uncurry $ f s'
+
+
 
 {- | stepwise extends an initially empty signature by the basic spec bs.
  The resulting spec contains analyzed axioms in it. The result contains:
@@ -108,6 +127,7 @@ basicCSLAnalysis (bs, sig, _) =
 
 
 
+{-
 -- * Alternative Basic Analysis
 
 data AnaEnv = AnaEnv
@@ -129,7 +149,6 @@ emptyAnaEnv = AnaEnv
               }
 
 
-{-
 
 tTT :: CMD -> CMD
 tTT c = foldCMD myrec c where
