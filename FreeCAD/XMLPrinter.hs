@@ -65,7 +65,7 @@ makeObjElem obj = case obj of
                     Extrusion eo1 val -> mk1refs "Extrusion" eo1 val
     where
       mkRefAtt key eo = (Attr (unqual key) (getEORef eo))
-      mk2refs consType ref1  = 
+      mk2refs consType ref1 ref2 = 
           unode consType ((mkRefAtt "base" ref1):(mkRefAtt "tool" ref2):[])
       mk1refs consType ref val = 
           unode consType ((mkRefAtt "base" ref):(mkNumAtt "tool" val):[])
