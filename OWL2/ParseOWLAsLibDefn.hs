@@ -75,15 +75,22 @@ cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
 cnvtoSimpleId :: QName -> SPEC_NAME
 cnvtoSimpleId = mkSimpleId . showQN 
 
+createSpec :: OntologyDocument -> Annoted SPEC
+createSpec o = let 
+  bs = emptyAnno $ Basic_spec (G_basic_spec OWL2 o) nullRange
+  in case imports $ mOntology o of
+  [] -> bs
+  is -> emptyAnno $ Extension 
+         [case is of 
+           [i] -> cnvimport i
+           _ -> emptyAnno $ Union (map cnvimport is) nullRange
+         , bs] nullRange
+
 convertone :: OntologyDocument-> Annoted LIB_ITEM
 convertone o = emptyAnno $ Spec_defn
   (mkSimpleId $ showQN $ muri $ mOntology o)
   emptyGenericity
-  (emptyAnno $ Extension 
-    [ emptyAnno $ Union 
-       (map cnvimport $ imports $ mOntology o) nullRange
-    , emptyAnno $ Basic_spec (G_basic_spec OWL2 o) nullRange
-    ] nullRange) 
+  (createSpec o)
   nullRange
 {-
 convertone o = emptyAnno $ Spec_defn
