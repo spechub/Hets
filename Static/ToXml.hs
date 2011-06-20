@@ -38,7 +38,6 @@ import Text.XML.Light
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 dGraph :: LibEnv -> LibName -> DGraph -> Element
 dGraph lenv ln dg =
@@ -157,21 +156,17 @@ ledge ga dg (f, t, lbl) = let
   typ = dgl_type lbl
   mor = gmorph ga $ dgl_morphism lbl
   mkMor n = add_attr (mkAttr "morphismsource" $ getNameOfNode n dg) mor
-  (lnkSt, stAttr) = case thmLinkStatus typ of
-        Nothing -> ([], [])
-        Just tls -> case tls of
-          LeftOpen -> ([], [])
-          Proven r ls -> (dgrule r ++
-            map (\ e -> add_attr (mkAttr "linkref" $ showEdgeId e)
-                   $ unode "ProofBasis" ()) (Set.toList $ proofBasis ls)
-            , [unode "Status" "Proven"])
+  rule = case thmLinkStatus typ of
+      -- writing out ProofBasis was removed with rev. 15224
+      Just (Proven r _) -> dgrule r
+      _ -> []
   in add_attrs
   [ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl ]
   $ unode "DGLink"
     $ unode "Type" (getDGLinkType lbl)
-    : stAttr ++ lnkSt ++ consStatus (getLinkConsStatus typ)
+    : rule ++ consStatus (getLinkConsStatus typ)
     ++ [case typ of
          HidingFreeOrCofreeThm _ n _ _ -> mkMor n
          FreeOrCofreeDefLink _ (JustNode ns) -> mkMor $ getNode ns
