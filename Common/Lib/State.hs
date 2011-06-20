@@ -17,25 +17,24 @@ This module may be replaced by the (non-nhc98 module) Control.Monad.State
 
 module Common.Lib.State where
 
--- ---------------------------------------------------------------------------
--- Our fixed state monad
+-- | Our fixed state monad
 newtype State s a = State { runState :: s -> (a, s) }
 
 instance Functor (State s) where
-        fmap f m = State $ \s -> let
+        fmap f m = State $ \ s -> let
                 (a, s') = runState m s
                 in (f a, s')
 
 instance Monad (State s) where
-        return a = State $ \s -> (a, s)
-        m >>= k  = State $ \s -> let
+        return a = State $ \ s -> (a, s)
+        m >>= k = State $ \ s -> let
                 (a, s') = runState m s
                 in runState (k a) s'
 
 -- put and get are non-overloaded here!
 
 get :: State s s
-get   = State $ \s -> (s, s)
+get = State $ \ s -> (s, s)
 
 put :: s -> State s ()
 put s = State $ const ((), s)
