@@ -10,7 +10,7 @@ Portability :  portable
 static analysis of basic specifications for OWL 1.1.
 -}
 
-module OWL2.StaticAnalysis (basicOWLAnalysis, modEntity) where
+module OWL2.StaticAnalysis where
 
 --import OWL.Namespace
 import OWL2.Sign
@@ -162,6 +162,12 @@ anaPlainAxiom pa = case pa of
     mapM_ anaDataPropExpr dpl
 
 -- | static analysis of ontology with incoming sign.
+basicOWLAnalysisMS ::
+    (OntologyDocument, Sign, GlobalAnnos) ->
+        Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
+basicOWLAnalysisMS = error "not implemented"
+
+
 basicOWLAnalysis ::
     (OntologyFile, Sign, GlobalAnnos) ->
         Result (OntologyFile, ExtSign Sign Entity, [Named Axiom])

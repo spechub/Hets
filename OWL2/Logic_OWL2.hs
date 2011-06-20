@@ -34,8 +34,9 @@ import OWL2.Symbols
 import OWL2.Print ()
 import OWL2.FunctionalPrint
 import OWL2.ATC_OWL2 ()
+import OWL2.Sign
+import OWL2.StaticAnalysis
 
-type Sign = ()
 type OWLMorphism = ()
 type OWLSub = ()
 
@@ -58,7 +59,8 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
                Sign
                OWLMorphism
-               Entity RawSymb
+               Entity RawSymb where
+      basic_analysis OWL2 = Just basicOWLAnalysisMS
 
 instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign

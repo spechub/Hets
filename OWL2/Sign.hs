@@ -18,6 +18,7 @@ import OWL2.FS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common.Result
+import Common.DocUtils
 
 type ID = IRIreference          -- for universal ID
 type OntologyID = IRIreference
@@ -27,6 +28,8 @@ type IndividualID = IRIreference
 type DataRoleIRI = IRIreference
 type IndividualRoleIRI = IRIreference
 type AnnotationPropertyID = IRIreference
+
+instance Pretty Sign
 
 data Sign = Sign
             { concepts :: Set.Set ClassID
@@ -41,27 +44,26 @@ data Sign = Sign
               -- ^ a set of axioms of subconceptrelations, domain an drenge
               -- ^of roles, functional roles and concept membership
             , prefixMap :: PrefixMap 
-            , diagnosis :: [Diagnosis]
-            } deriving (Show, Eq)
+            } deriving (Show, Eq, Ord)
 
 data SignAxiom =
     Subconcept ClassExpression ClassExpression   -- subclass, superclass
   | Role (DomainOrRangeOrFunc (RoleKind, RoleType)) ObjectPropertyExpression
   | Data (DomainOrRangeOrFunc ()) DataPropertyExpression
   | Conceptmembership IndividualID ClassExpression
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
-data RoleKind = FuncRole | RefRole deriving (Show, Eq)
+data RoleKind = FuncRole | RefRole deriving (Show, Eq, Ord)
 
-data RoleType = IRole | DRole deriving (Show, Eq)
+data RoleType = IRole | DRole deriving (Show, Eq, Ord)
 
-data DesKind = RDomain | DDomain | RIRange deriving (Show, Eq)
+data DesKind = RDomain | DDomain | RIRange deriving (Show, Eq, Ord)
 
 data DomainOrRangeOrFunc a =
     DomainOrRange DesKind ClassExpression
   | RDRange DataRange
   | FuncProp a
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
 
 emptySign :: Sign
 emptySign = Sign
@@ -72,7 +74,6 @@ emptySign = Sign
   , annotationRoles = Set.empty
   , individuals = Set.empty
   , prefixMap = Map.empty
-  , diagnosis = []
   }
 
 -- ignoe ontologyID

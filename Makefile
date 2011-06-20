@@ -325,7 +325,7 @@ THF_files = THF/As.hs THF/Cons.hs
 
 FreeCAD_files = FreeCAD/As.hs
 
-OWL2_files = OWL2/AS.hs OWL2/FS.hs OWL2/Symbols.hs OWL2/MS.hs
+OWL2_files = OWL2/AS.hs OWL2/FS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
@@ -417,7 +417,7 @@ FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
-	$(GENRULECALL) -o $@ $(OWL2_files)
+	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
