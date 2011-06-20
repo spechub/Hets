@@ -21,7 +21,7 @@ import qualified Data.Map as Map
 
 data OntologyDocument = OntologyDocument {
     prefixDeclaration :: PrefixMap,
-    mOntology :: MOntology  
+    mOntology :: MOntology
  } deriving (Show, Eq, Ord)
 
 instance GetRange OntologyDocument
@@ -45,23 +45,27 @@ data Annotations = Annotations [(Annotations, Annotation)]
 noAnnos :: Annotations
 noAnnos = Annotations []
 
-data Frame 
+data Frame
   = ClassFrame Class [ClassFrameBit]
-  | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange)) [Annotations]
+  | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange))
+      [Annotations]
   | ObjectPropertyFrame ObjectProperty [ObjectFrameBit]
   | DataPropertyFrame DataProperty [DataFrameBit]
   | IndividualFrame Individual [IndividualBit]
   | AnnotationFrame AnnotationProperty [AnnotationBit]
-  | MiscEquivOrDisjointClasses EquivOrDisjoint Annotations [ClassExpression]
-  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations [DataPropertyExpression]
+  | MiscEquivOrDisjointClasses EquivOrDisjoint Annotations
+      [ClassExpression]
+  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations
+      [ObjectPropertyExpression]
+  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations
+      [DataPropertyExpression]
   | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
   deriving (Show, Eq, Ord)
 
 data ClassFrameBit
-  = ClassAnnotations Annotations  -- nonEmpty list
-  | ClassSubClassOf (AnnotatedList ClassExpression)   -- nonEmpty list
-  | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression) --nonEmpty list
+  = ClassAnnotations Annotations
+  | ClassSubClassOf (AnnotatedList ClassExpression)
+  | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression)
   | ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
   deriving (Show, Eq, Ord)
@@ -70,7 +74,8 @@ data ObjectFrameBit
   = ObjectAnnotations Annotations
   | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
   | ObjectCharacteristics (AnnotatedList Character)
-  | ObjectEquivOrDisjoint EquivOrDisjoint (AnnotatedList ObjectPropertyExpression)
+  | ObjectEquivOrDisjoint EquivOrDisjoint
+      (AnnotatedList ObjectPropertyExpression)
   | ObjectInverse (AnnotatedList ObjectPropertyExpression)
   | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
   | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
