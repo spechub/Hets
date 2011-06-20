@@ -167,6 +167,16 @@ printSameOrDifferentInd :: SameOrDifferent -> Doc
 printSameOrDifferentInd x = case x of
     Same -> keyword sameIndividualC
     Different -> keyword differentIndividualsC
+    Individuals -> keyword individualsC
+
+instance Pretty MOntology where
+    pretty = printOntology
+
+printImport :: ImportIRI -> Doc
+printImport x = keyword importC <+> pretty x 
+
+printOntology :: MOntology -> Doc
+printOntology MOntology {muri = a, imports = b, ann = c, ontologyFrame = d} = keyword ontologyC <+> pretty a $+$ vcat (map printImport b) $+$ vcat (map pretty c) $+$ vcat(map pretty d) 
 
 instance Pretty OntologyDocument where
-    pretty = vsep . map pretty . ontologyFrame . mOntology
+    pretty = pretty . mOntology

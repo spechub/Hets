@@ -264,12 +264,13 @@ data Character =
   | Transitive
     deriving (Enum, Bounded, Show, Eq, Ord)
 
-data SameOrDifferent = Same | Different deriving (Show, Eq, Ord)
+data SameOrDifferent = Same | Different | Individuals deriving (Show, Eq, Ord)
 
 showSameOrDifferent :: SameOrDifferent -> String
 showSameOrDifferent sd = case sd of
     Same -> sameAsC
     Different -> differentFromC
+    Individuals -> individualsC
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 

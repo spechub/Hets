@@ -3,18 +3,20 @@ Prefix: owl: <http://www.w3.org/2002/07/owl#>
 Prefix: xml: <http://www.w3.org/XML/1998/namespace>
 Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-Prefix: : <http://www.w3.org./2002/07/owl#>
 
-Ontology:
+Ontology: a 
+Import: x
+Import: y
+Annotations: a b
 
 ObjectProperty: a
   Annotations: a b, c d, Annotations: x y z t, Annotations: Annotations: p q x y z t, u v
   Characteristics: Functional, Annotations: a b, c d Reflexive, Asymmetric
-  Domain: a, b, Annotations: p q c, Annotations: Annotations: p q r s v
+  Domain: a, b, Annotations: p q c, v
   SubPropertyOf: x, y, Annotations: z p r
-  DisjointWith: x, p, q, Annotations: p q r, s,t
+  DisjointWith: x, p, q, s,t
   InverseOf: a, b, c
-  SubPropertyChain: Annotations: a b, c d, Annotations: p q r t A o B o C
+  SubPropertyChain:  A o B o C
   
 DataProperty: a
   Annotations: a b, c d, p q, r s
@@ -45,9 +47,11 @@ Individual: John
   SameAs: a
   Facts: a b, Annotations: a b not c d, x y
 
+
 DisjointClasses: x, y,z
 EquivalentProperties: a, b, c
 DifferentIndividuals: Annotations: a b, c d, Annotations: x y z t c, d, e
+Individuals: Annotations: a b, Annotations: c d e f a, b, x, d, e
 
 
 

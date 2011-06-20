@@ -560,6 +560,7 @@ sameOrDifferentIndu :: CharParser st SameOrDifferent
 sameOrDifferentIndu =
   (pkeyword sameIndividualC >> return Same)
   <|> (pkeyword differentIndividualsC >> return Different)
+  <|> (pkeyword individualsC >> return Individuals)
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do

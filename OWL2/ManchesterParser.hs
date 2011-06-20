@@ -255,14 +255,16 @@ frames = flat $ many $ datatypeFrame <|> classFrame
 basicSpec :: CharParser st OntologyDocument
 basicSpec = do
   nss <- many nsEntry
-  option () $ pkeyword ontologyC >> uriP >> return ()
-  many importEntry
-  many annotations
+  ou <- option dummyQName $ pkeyword ontologyC >> uriP
+  ie <- many importEntry
+  ans <- many annotations
   as <- frames
   return emptyOntologyDoc
     { mOntology = emptyOntologyD
       { ontologyFrame = as
-      , muri = dummyQName }
+      , imports = ie
+      , ann = ans
+      , muri = ou }
     , prefixDeclaration = Map.fromList $
       [ ("owl", "http://www.w3.org/2002/07/owl#")
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
