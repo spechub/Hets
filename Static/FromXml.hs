@@ -242,9 +242,9 @@ getTypeAndMorAux lg dg eTp mSrc sg@(G_sign slid _ _) cc rl = let
   emptySig = G_sign slid (ext_empty_signature slid) startSigId
   mkRtVAL sg' tp = return (sg', tp)
   in case eTp of
-    HetDef -> fail "HetDef Edgetype not implemented yet!"
     HidingDef -> mkRtVAL sg HidingDefLink
     GlobalDef -> mkRtVAL sg $ localOrGlobalDef Global cc
+    HetDef -> mkRtVAL sg $ localOrGlobalDef Global cc
     LocalDef -> mkRtVAL sg $ localOrGlobalDef Local cc
     FreeOrCofreeDef fc -> do
       (sg', mNd) <- case mSrc of
