@@ -13,22 +13,23 @@ analyse OWL files by calling the external Java parser.
 module OWL2.ParseOWLAsLibDefn (parseOWL) where
 
 import OWL2.AS
-import OWL2.FS
-import OWL2.FunctionalParser
-import OWL2.Logic_OWL2
+import OWL2.MS
+import OWL2.ManchesterParser
+import OWL2.Parse
+import OWL.ColonKeywords
+
+
+import qualified Data.Map as Map
 
 import Common.Id
 import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
 
-
 import Driver.Options
 
 import Syntax.AS_Library
 import Syntax.AS_Structured
-
-import Logic.Grothendieck
 
 import System.Directory
 import System.Exit
@@ -56,25 +57,55 @@ parseOWL filename = do
               ++ errStr
       else error $ jar ++ " not found"
 
--- | parse the tmp-omn-file from java-owl-parser
+
 parseProc :: FilePath -> String -> IO LIB_DEFN
 parseProc filename str = do
-    case runParser (many1 ontologyFile << eof) () filename str of
+    case runParser (many1 ontologyDocument << eof) () filename str of
       Right os -> return $ convertToLibDefN filename os 
       Left err -> do
         putStrLn str
         fail $ show err
 
-convertone :: OntologyFile-> Annoted LIB_ITEM
-convertone o = emptyAnno $ Spec_defn  
+cnvimport :: QName -> Annoted SPEC
+cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
+
+cnvtoSimpleId :: QName -> SPEC_NAME
+cnvtoSimpleId = mkSimpleId . showQN 
+
+convertone :: OntologyDocument-> Annoted LIB_ITEM
+convertone o = emptyAnno $ Spec_defn
+  (mkSimpleId $ showQN $ muri $ mOntology o)
+  emptyGenericity
+  (emptyAnno $ Extension [emptyAnno $ Union [cnvimport $ muri $ mOntology o] nullRange] nullRange) 
+  nullRange
+{-
+convertone o = emptyAnno $ Spec_defn
   (mkSimpleId $ showQN $ uri $ ontology o) 
   emptyGenericity
   (emptyAnno $ Basic_spec (G_basic_spec OWL2 o ) nullRange)
   nullRange 
-
-convertToLibDefN :: FilePath -> [OntologyFile] -> LIB_DEFN
+-}
+convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
 convertToLibDefN filename l = Lib_defn 
   (emptyLibName $ convertFileToLibStr filename)
   (map convertone $ l)
   nullRange
   []
+
+ontologyDocument :: CharParser st OntologyDocument
+ontologyDocument = do
+  nss <- many nsEntry
+  oiri <- pkeyword ontologyC >> uriP
+  is <- many importEntry
+  ans <- many annotations
+  as <- frames
+  return emptyOntologyDoc
+    { mOntology = emptyOntologyD
+      { ontologyFrame = as
+      , muri = oiri 
+      , imports = is
+      , ann = ans }
+    , prefixDeclaration = Map.fromList $
+      map (\ (p, q) -> (p, showQU q)) nss }
+
+
