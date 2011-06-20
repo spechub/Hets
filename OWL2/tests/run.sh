@@ -5,5 +5,5 @@ export HETS_OWL_TOOLS
 
 for i in *.rdf
 do
-  ../../hets -i owl $i
+  ../../hets -i ow2 $i
 done

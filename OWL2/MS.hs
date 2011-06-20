@@ -16,19 +16,22 @@ It is modeled after the W3C document:
 module OWL2.MS where
 
 import OWL2.AS
+import Common.Id
 import qualified Data.Map as Map
 
 data OntologyDocument = OntologyDocument {
     prefixDeclaration :: PrefixMap,
     mOntology :: MOntology  
-} deriving (Show, Eq, Ord)
+ } deriving (Show, Eq, Ord)
+
+instance GetRange OntologyDocument
 
 data MOntology = MOntology {
   muri :: OntologyIRI,
   imports :: [ImportIRI],
   ann :: [Annotations],
   ontologyFrame :: [Frame]
-} deriving (Show, Eq, Ord)
+ } deriving (Show, Eq, Ord)
 
 data AnnotatedList a = AnnotatedList [(Annotations, a)]
    deriving (Show, Eq, Ord)

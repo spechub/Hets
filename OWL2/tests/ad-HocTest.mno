@@ -3,8 +3,9 @@ Prefix: owl: <http://www.w3.org/2002/07/owl#>
 Prefix: xml: <http://www.w3.org/XML/1998/namespace>
 Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Prefix: : <http://www.w3.org./2002/07/owl#>
 
-Ontology: a
+Ontology:
 
 ObjectProperty: a
   Annotations: a b, c d, Annotations: x y z t, Annotations: Annotations: p q x y z t, u v

@@ -26,6 +26,9 @@ import Common.LibName
 import Common.ProverTools
 import Common.AS_Annotation hiding (isAxiom, isDef)
 
+import Logic.Grothendieck 
+import OWL2.Logic_OWL2
+
 import Driver.Options
 
 import Syntax.AS_Library
@@ -76,7 +79,11 @@ convertone :: OntologyDocument-> Annoted LIB_ITEM
 convertone o = emptyAnno $ Spec_defn
   (mkSimpleId $ showQN $ muri $ mOntology o)
   emptyGenericity
-  (emptyAnno $ Extension [emptyAnno $ Union [cnvimport $ muri $ mOntology o] nullRange] nullRange) 
+  (emptyAnno $ Extension 
+    [ emptyAnno $ Union 
+       (map cnvimport $ imports $ mOntology o) nullRange
+    , emptyAnno $ Basic_spec (G_basic_spec OWL2 o) nullRange
+    ] nullRange) 
   nullRange
 {-
 convertone o = emptyAnno $ Spec_defn
@@ -95,7 +102,7 @@ convertToLibDefN filename l = Lib_defn
 ontologyDocument :: CharParser st OntologyDocument
 ontologyDocument = do
   nss <- many nsEntry
-  oiri <- pkeyword ontologyC >> uriP
+  oiri <- pkeyword ontologyC >> option dummyQName uriP
   is <- many importEntry
   ans <- many annotations
   as <- frames

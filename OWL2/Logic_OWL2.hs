@@ -26,8 +26,10 @@ import Logic.Logic
 
 import OWL2.AS
 import OWL2.FS
+import OWL2.MS
 import OWL2.Parse
-import OWL2.FunctionalParser
+import OWL2.ManchesterParser
+import OWL2.ManchesterPrint
 import OWL2.Symbols
 import OWL2.Print ()
 import OWL2.FunctionalPrint
@@ -45,20 +47,20 @@ instance Language OWL2 where
 
 instance Category Sign OWLMorphism
 
-instance Syntax OWL2 OntologyFile SymbItems SymbMapItems where
+instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
     parse_basic_spec OWL2 = Just basicSpec
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
 
 instance Sentences OWL2 Axiom Sign OWLMorphism Entity
 
-instance StaticAnalysis OWL2 OntologyFile Axiom
+instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
                Sign
                OWLMorphism
                Entity RawSymb
 
-instance Logic OWL2 OWLSub OntologyFile Axiom SymbItems SymbMapItems
+instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree
 
