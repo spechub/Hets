@@ -105,7 +105,8 @@ cTypeS = "^^"
 
 type InverseObjectProperty = ObjectPropertyExpression
 
-data ObjectPropertyExpression = ObjectProp ObjectProperty | ObjectInverseOf InverseObjectProperty
+data ObjectPropertyExpression = ObjectProp ObjectProperty
+  | ObjectInverseOf InverseObjectProperty
 	deriving (Show, Eq, Ord)
 
 type DataPropertyExpression = DataProperty
@@ -158,10 +159,12 @@ showFacet df = case df of
 
 data DataRange
 	= DataType Datatype
-	| DataJunction JunctionType [DataRange]  -- at least two elements in the list
+	| DataJunction JunctionType [DataRange]
+          -- at least two elements in the list
 	| DataComplementOf DataRange
 	| DataOneOf [Literal]	-- at least one element in the list
-	| DatatypeRestriction Datatype [(ConstrainingFacet, RestrictionValue)]	-- at least one element in the list
+	| DatatypeRestriction Datatype [(ConstrainingFacet, RestrictionValue)]
+	  -- at least one element in the list
 	deriving (Show, Eq, Ord)
 
 data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
@@ -201,8 +204,8 @@ data ClassExpression =
   | ObjectHasValue ObjectPropertyExpression Individual
   | ObjectHasSelf ObjectPropertyExpression
   | ObjectCardinality (Cardinality ObjectPropertyExpression ClassExpression)
-  | DataValuesFrom
-	     QuantifierType DataPropertyExpression [DataPropertyExpression] DataRange
+  | DataValuesFrom QuantifierType
+       DataPropertyExpression [DataPropertyExpression] DataRange
   | DataHasValue DataPropertyExpression Literal
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord)
@@ -236,12 +239,21 @@ type SourceIndividual = Individual
 type TargetIndividual = Individual
 type TargetValue = Literal
 
-data EquivOrDisjoint = Equivalent | Disjoint deriving (Show, Eq, Ord)
+data EquivOrDisjoint =
+    Equivalent
+  | Disjoint
+  | SubPropertyOf
+  | InverseOf
+  | SubClass
+    deriving (Show, Eq, Ord)
 
 showEquivOrDisjoint :: EquivOrDisjoint -> String
 showEquivOrDisjoint ed = case ed of
     Equivalent -> equivalentToC
     Disjoint -> disjointWithC
+    SubPropertyOf -> subPropertyOfC
+    InverseOf -> inverseOfC
+    SubClass -> subClassOfC
 
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
 
