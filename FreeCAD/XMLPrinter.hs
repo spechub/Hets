@@ -29,7 +29,8 @@ doc2XML :: Document -> Element
 doc2XML list  = unode  "document" (map sendNamedObj list)
 
 sendNamedObj :: NamedObject -> Element
-sendNamedObj no = unode (name no) (getNOChildren no)
+sendNamedObj no = add_attr att (unode "Object" (getNOChildren no)) where
+    att = Attr (unqual "name") (name no)
 
 getNOChildren :: NamedObject -> [Element]
 getNOChildren no = (makePlaceElem place):(makeObjElem obj):[] where
@@ -64,8 +65,8 @@ makeObjElem obj = case obj of
                     Extrusion eo1 val -> mk1refs "Extrusion" eo1 val
     where
       mkRefAtt key eo = (Attr (unqual key) (getEORef eo))
-      mk2refs consType ref1 ref2 = 
-          unode consType ((mkRefAtt "base" ref1):(mkRefAtt "tool" ref1):[])
+      mk2refs consType ref1  = 
+          unode consType ((mkRefAtt "base" ref1):(mkRefAtt "tool" ref2):[])
       mk1refs consType ref val = 
           unode consType ((mkRefAtt "base" ref):(mkNumAtt "tool" val):[])
 
