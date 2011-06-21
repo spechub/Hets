@@ -23,6 +23,14 @@ convertAnnList :: (AnnotatedList a) -> [([Annotation], a)]
 convertAnnList (AnnotatedList x) = 
   map (\ (ans, b) -> (convertAnnos ans, b)) x
 
+convertFrameBit :: Entity -> FrameBit -> [Axiom]
+convertFrameBit (Entity e iri) fb = case fb of
+    AnnotationFrameBit ans -> [EntityAnno $ AnnotationAssertion (convertAnnos ans) iri]
+    AnnotationBit ed anl ->  map (\ (ans, b) -> EntityAnno $ AnnotationAxiom ed ans iri b) (convertAnnList anl)
+    DatatypeBit ans dr -> [PlainAxiom (convertAnnos ans) $ DatatypeDefinition iri dr]
+    ExpressionBit ed anl -> map (\ (ans, b) -> ) (convertAnnList anl)
+
+{-
 convertClassBit :: IRI -> ClassFrameBit -> [Axiom]
 convertClassBit iri fb = let cle = Expression iri in case fb of
     ClassAnnotations x -> [EntityAnno $ AnnotationAssertion (convertAnnos x) iri]
@@ -40,7 +48,6 @@ convertObjectBit iri ob = let op = ObjectProp iri in case ob of
     ObjectSubPropertyOf anl -> map (\ (ans, b) -> PlainAxiom ans $ SubObjectPropertyOf (OPExpression b) op) (convertAnnList anl)
     ObjectSubPropertyChain ans opl = let x = convertAnnList ans in [PlainAxiom (concatMap fst x) $ SubObjectPropertyOf ()]
 
-{-
 = ObjectAnnotations Annotations
   | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
   | ObjectCharacteristics (AnnotatedList Character)

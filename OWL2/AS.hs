@@ -220,8 +220,7 @@ data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
 
 data AnnotationAxiom
 	= AnnotationAssertion [Annotation] IRI
-	| SubAnnotationPropertyOf [Annotation] AnnotationProperty AnnotationProperty
-	| AnnotationPropertyDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
+	| AnnotationAxiom EquivOrDisjoint [Annotation] AnnotationProperty IRI
 	deriving (Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)

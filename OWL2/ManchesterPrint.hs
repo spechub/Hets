@@ -22,7 +22,7 @@ import OWL2.Print
 import OWL.Keywords
 import OWL.ColonKeywords
 
---import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 printCharact :: String -> Doc
 printCharact charact = text charact
@@ -96,7 +96,7 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame f = case f of
-    Frame (Entity e uri) bl -> pretty (showEntityType e) <+> pretty uri <+> vcat (map pretty bl)
+    Frame (Entity e uri) bl -> pretty (showEntityType e) <+> fsep [pretty uri, vcat (map pretty bl)]
     MiscFrame e a misc -> case misc of 
         MiscEquivOrDisjointClasses c -> printEquivOrDisjointClasses e <+> (pretty a $+$ vcat (punctuate comma (map pretty c) ))
         MiscEquivOrDisjointObjProp c -> printEquivOrDisjointObj e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
@@ -133,8 +133,16 @@ instance Pretty MOntology where
 printImport :: ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x 
 
+printPrefixes :: PrefixMap -> Doc
+printPrefixes x = vcat (map (\(a, b) -> 
+       (text "Prefix:" <+> text a <> colon <+> text ('<' : b ++ ">"))) (Map.toList x)) 
+
 printOntology :: MOntology -> Doc
-printOntology MOntology {muri = a, imports = b, ann = c, ontologyFrame = d} = keyword ontologyC <+> pretty a $+$ vcat (map printImport b) $+$ vcat (map pretty c) $+$ vcat(map pretty d) 
+printOntology MOntology {muri = a, imports = b, ann = c, ontologyFrame = d} = keyword ontologyC 
+      <+> pretty a $++$ vcat (map printImport b) $++$ vcat (map pretty c) $+$ vcat(map pretty d) 
+
+printOntologyDocument :: OntologyDocument -> Doc
+printOntologyDocument OntologyDocument {prefixDeclaration = a, mOntology = b} = printPrefixes a $++$ pretty b
 
 instance Pretty OntologyDocument where
-    pretty = pretty . mOntology
+    pretty = printOntologyDocument
