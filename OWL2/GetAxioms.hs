@@ -15,7 +15,6 @@ module OWL2.GetAxioms where
 import OWL2.AS
 import OWL2.MS
 import OWL2.FS
-import Common.Parsec
 import Common.Keywords
 import Common.Doc
 import Common.DocUtils
@@ -74,8 +73,8 @@ convertMisc ed ans misc = let x = convertAnnos ans in case misc of
     MiscEquivOrDisjointObjProp l -> PlainAxiom x $ EquivOrDisjointObjectProperties ed l
     MiscEquivOrDisjointDataProp l -> PlainAxiom x $ EquivOrDisjointDataProperties ed l
 
-manToFun :: Frame -> [Axiom]
-manToFun f = case f of
+getAxioms :: Frame -> [Axiom]
+getAxioms f = case f of
     Frame e fbl -> concatMap (convertFrameBit e) fbl
     MiscFrame ed ans misc -> [convertMisc ed ans misc]    
     MiscSameOrDifferent sd ans il -> let x = convertAnnos ans in 

@@ -33,7 +33,7 @@ optAnnos p = do
   return (as, a)
 
 optionalAnnos :: CharParser st Annotations
-optionalAnnos = optionalAnnos
+optionalAnnos = option noAnnos annotations
 
 annotations :: CharParser st Annotations
 annotations = do
