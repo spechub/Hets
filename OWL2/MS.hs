@@ -16,7 +16,7 @@ It is modeled after the W3C document:
 module OWL2.MS where
 
 import OWL2.AS
-import Common.Id
+import Common.Id (GetRange)
 import qualified Data.Map as Map
 
 data OntologyDocument = OntologyDocument {

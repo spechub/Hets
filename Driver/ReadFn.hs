@@ -23,7 +23,7 @@ import ATC.Grothendieck
 import ATC.Sml_cats
 import ATC.LibName ()
 
---import OWL2.ParseOWLAsLibDefn
+import OWL2.ParseOWLAsLibDefn
 
 import Driver.Options
 
@@ -53,7 +53,7 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
---    OWL2In -> liftIO $ parseOWL file
+    OWL2In -> liftIO $ parseOWL file
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
     _ ->
