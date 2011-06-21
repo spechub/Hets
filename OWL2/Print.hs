@@ -7,7 +7,8 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Pretty printing for OWL 2 DL theories - common Functional and Manchester Syntax.
+Contains    :  Pretty printing for the common datatypes of the 
+               Functional and Manchester Syntaxes of OWL 2.
 -}
 
 module OWL2.Print where
@@ -147,8 +148,8 @@ instance Pretty Literal where
       Untyped tag -> if tag == Nothing then empty else 
                      let Just tag2 = tag in text asP <> text tag2
 
-printEquivOrDisjoint :: EquivOrDisjoint -> Doc
-printEquivOrDisjoint = keyword . showEquivOrDisjoint
+printRelation :: Relation -> Doc
+printRelation = keyword . showRelation
 
 printObjDomainOrRange :: ObjDomainOrRange -> Doc
 printObjDomainOrRange = keyword . showObjDomainOrRange
@@ -160,18 +161,6 @@ printDataDomainOrRange dr = case dr of
 
 printSameOrDifferent :: SameOrDifferent -> Doc
 printSameOrDifferent = keyword . showSameOrDifferent
-
-classStart :: Doc
-classStart = keyword classC
-
-opStart :: Doc
-opStart = keyword objectPropertyC
-
-dpStart :: Doc
-dpStart = keyword dataPropertyC
-
-indStart :: Doc
-indStart = keyword individualC
 
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =

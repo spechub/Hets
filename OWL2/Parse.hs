@@ -8,13 +8,9 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Manchester syntax parser for OWL 2
-<http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
-adpated from
-Manchester syntax parser for OWL 1.1
-<http://www.webont.org/owled/2008dc/papers/owled2008dc_paper_11.pdf>
-<http://www.faqs.org/rfcs/rfc3987.html>
-<http://www.faqs.org/rfcs/rfc4646.html>
+Contains    :  Parser for the Manchester Syntax into Abstract Syntax of OWL 2
+
+References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
 
 module OWL2.Parse where
@@ -178,7 +174,7 @@ uriP =
   if null p then notElem (localPart q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
-        ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
+        ++ [ show d ++ e | d <- relationL, e <- [classesC, propertiesC]]
 
 -- | parse a possibly kinded list of comma separated uris aka symbols
 symbItems :: GenParser Char st SymbItems
@@ -492,7 +488,6 @@ description :: CharParser st ClassExpression
 description =
   fmap (mkObjectJunction UnionOf) $ sepBy1 conjunction $ keyword orS
 
-
 entityType :: CharParser st EntityType
 entityType = choice $ map (\ f -> keyword (show f) >> return f)
   entityTypes
@@ -512,32 +507,13 @@ annotation = do
     av <- annotationValue
     return $ Annotation [] ap av
 
-optAnnos2 :: CharParser st Annotation
-optAnnos2 = do
-  as <- annotationList
-  Annotation _ ap av <- annotation
-  return $ Annotation as ap av
+relationL :: [Relation]
+relationL = [Equivalent, Disjoint, SubPropertyOf, Domain, Range, InverseOf, SubClass]
 
-annotationList :: CharParser st [Annotation]
-annotationList = optionL realAnnotations
-
-realAnnotations :: CharParser st [Annotation]
-realAnnotations = do
-  pkeyword annotationsC
-  sepByComma $ optAnnos2
-
-equivOrDisjointL :: [EquivOrDisjoint]
-equivOrDisjointL = [Equivalent, Disjoint, SubPropertyOf, Domain, Range, InverseOf, SubClass]
-
-domainOrRange :: CharParser st ObjDomainOrRange
-domainOrRange = choice
-  $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
-  [ObjDomain, ObjRange]
-
-equivOrDisjoint :: CharParser st EquivOrDisjoint
-equivOrDisjoint = choice
-  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
-  equivOrDisjointL
+relation :: CharParser st Relation
+relation = choice
+  $ map (\ f -> pkeyword (showRelation f) >> return f)
+  relationL
 
 subPropertyKey :: CharParser st ()
 subPropertyKey = pkeyword subPropertyOfC
@@ -550,10 +526,10 @@ sameOrDifferent = choice
   $ map (\ f -> pkeyword (showSameOrDifferent f) >> return f)
   [Same, Different]
 
-equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
-equivOrDisjointKeyword ext = choice
+relationKeyword :: String -> CharParser st Relation
+relationKeyword ext = choice
   $ map (\ f -> pkeyword (show f ++ ext) >> return f)
-  equivOrDisjointL
+  relationL
 
 -- note the plural when different
 sameOrDifferentIndu :: CharParser st SameOrDifferent
@@ -561,6 +537,10 @@ sameOrDifferentIndu =
   (pkeyword sameIndividualC >> return Same)
   <|> (pkeyword differentIndividualsC >> return Different)
   <|> (pkeyword individualsC >> return Individuals)
+
+objectPropertyCharacter :: CharParser st Character
+objectPropertyCharacter =
+  choice $ map (\ f -> keyword (show f) >> return f) characters
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do

@@ -13,11 +13,8 @@ Signatures and sentences for OWL 2
 module OWL2.Sign where
 
 import OWL2.AS
-import OWL2.MS
-import OWL2.FS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Common.Result
 import Common.DocUtils
 
 type ID = IRIreference          -- for universal ID

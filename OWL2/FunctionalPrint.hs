@@ -7,7 +7,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Pretty printing for OWL 2 DL theories - Functional Syntax
+Contains    :  Pretty Printing for the Functional Syntax of OWL 2
 -}
 
 module OWL2.FunctionalPrint where
@@ -23,6 +23,18 @@ import OWL.Keywords
 import OWL.ColonKeywords
 
 import qualified Data.Set as Set
+
+classStart :: Doc
+classStart = keyword classC
+
+opStart :: Doc
+opStart = keyword objectPropertyC
+
+dpStart :: Doc
+dpStart = keyword dataPropertyC
+
+indStart :: Doc
+indStart = keyword individualC
 
 printCharact :: String -> Doc
 printCharact charact =
@@ -47,7 +59,7 @@ printAxiom axiom = case axiom of
        | localPart curi == "Thing" && namePrefix curi == "owl" -> empty
      _ -> classStart <+> pretty sub $+$ keyword subClassOfC <+> pretty super
    EquivOrDisjointClasses ty (clazz : equiList) ->
-       classStart <+> pretty clazz $+$ printEquivOrDisjoint ty <+>
+       classStart <+> pretty clazz $+$ printRelation ty <+>
                       setToDocV (Set.fromList equiList)
    DisjointUnion curi discList ->
        classStart <+> pretty curi $+$ keyword disjointUnionOfC <+>
@@ -59,10 +71,10 @@ printAxiom axiom = case axiom of
                  _ -> subPropertyOfC)
                    <+> pretty sopExp
    EquivOrDisjointObjectProperties ty (opExp : opList) ->
-       opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+>
+       opStart <+> pretty opExp $+$ printRelation ty <+>
                    setToDocV (Set.fromList opList)
    ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printEquivOrDisjoint ty <+> pretty desc
+       opStart <+> pretty opExp $+$ printRelation ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
        opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->
@@ -71,7 +83,7 @@ printAxiom axiom = case axiom of
    SubDataPropertyOf dpExp1 dpExp2 ->
        dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> pretty dpExp2
    EquivOrDisjointDataProperties ty (dpExp : dpList) ->
-       dpStart <+> pretty dpExp $+$ printEquivOrDisjoint ty <+>
+       dpStart <+> pretty dpExp $+$ printRelation ty <+>
                setToDocV (Set.fromList dpList)
    DataPropertyDomainOrRange ddr dpExp ->
        dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr

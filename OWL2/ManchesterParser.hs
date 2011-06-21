@@ -1,6 +1,5 @@
 {- |
 Module      :  $Header$
-ClassExpression :  Manchester syntax parser for OWL 2
 Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,8 +7,9 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-Parser from Manchester Syntax to Manchester Abstract Syntax
-<http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
+Contains    :  Parser from Manchester Syntax to Manchester Abstract Syntax
+
+References  :  <http://www.w3.org/TR/2009/NOTE-owl2-manchester-syntax-20091027/>
 -}
 
 module OWL2.ManchesterParser where
@@ -26,10 +26,6 @@ import Common.Parsec
 import Text.ParserCombinators.Parsec
 import qualified Data.Map as Map
 
-objectPropertyCharacter :: CharParser st Character
-objectPropertyCharacter =
-  choice $ map (\ f -> keyword (show f) >> return f) characters
-
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do
   as <- optionalAnnos
@@ -37,7 +33,7 @@ optAnnos p = do
   return (as, a)
 
 optionalAnnos :: CharParser st Annotations
-optionalAnnos = option noAnnos annotations
+optionalAnnos = optionalAnnos
 
 annotations :: CharParser st Annotations
 annotations = do
@@ -97,17 +93,17 @@ classFrameBit = do
     ds <- descriptionAnnotatedList
     return $ ExpressionBit SubClass $ AnnotatedList ds
   <|> do
-    e <- equivOrDisjoint
+    e <- relation
     ds <- descriptionAnnotatedList
     return $ ExpressionBit e $ AnnotatedList ds
   <|> do
     pkeyword disjointUnionOfC
-    as <- option noAnnos annotations
+    as <- optionalAnnos
     ds <- sepByComma description
     return $ ClassDisjointUnion as ds
   <|> do
     pkeyword hasKeyC
-    as <- option noAnnos annotations
+    as <- optionalAnnos
     o <- sepByComma objectPropertyExpr
     return $ ClassHasKey as o []
   <|> do
@@ -116,11 +112,6 @@ classFrameBit = do
 
 objPropExprAList :: CharParser st [(Annotations, ObjectPropertyExpression)]
 objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
-
-relation :: CharParser st EquivOrDisjoint
-relation = choice
-  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
-  equivOrDisjointL
 
 objectFrameBit :: CharParser st FrameBit
 objectFrameBit = do
@@ -136,7 +127,7 @@ objectFrameBit = do
     ds <- objPropExprAList
     return $ ObjectBit SubPropertyOf $ AnnotatedList ds
   <|> do
-    e <- equivOrDisjoint
+    e <- relation
     ds <- objPropExprAList
     return $ ObjectBit e $ AnnotatedList ds
   <|> do
@@ -145,7 +136,7 @@ objectFrameBit = do
     return $ ObjectBit InverseOf $ AnnotatedList ds
   <|> do
     pkeyword subPropertyChainC
-    as <- option noAnnos annotations
+    as <- optionalAnnos
     os <- sepBy1 objectPropertyExpr (keyword oS)
     return $ ObjectSubPropertyChain as os
   <|> do
@@ -173,7 +164,7 @@ dataFrameBit  = do
     return $ DataPropRange $ AnnotatedList ds
   <|> do
     characterKey
-    as <- option noAnnos annotations
+    as <- optionalAnnos
     keyword functionalS
     return $ DataFunctional as
   <|> do
@@ -181,7 +172,7 @@ dataFrameBit  = do
     ds <- dataPropExprAList
     return $ DataBit SubPropertyOf $ AnnotatedList ds
   <|> do
-    e <- equivOrDisjoint
+    e <- relation
     ds <- dataPropExprAList
     return $ DataBit e $ AnnotatedList ds
   <|> do
@@ -232,19 +223,19 @@ individualFrame = do
 
 misc :: CharParser st Frame
 misc = do
-    e <- equivOrDisjointKeyword classesC
-    as <- option noAnnos annotations
+    e <- relationKeyword classesC
+    as <- optionalAnnos
     ds <- sepByComma description
     return $ MiscFrame e as $ MiscEquivOrDisjointClasses ds
   <|> do
-    e <- equivOrDisjointKeyword propertiesC
-    as <- option noAnnos annotations
+    e <- relationKeyword propertiesC
+    as <- optionalAnnos
     es <- sepByComma objectPropertyExpr
     -- indistinguishable from dataProperties
     return $ MiscFrame e as $ MiscEquivOrDisjointObjProp es
   <|> do
     s <- sameOrDifferentIndu
-    as <- option noAnnos annotations
+    as <- optionalAnnos
     is <- sepByComma individualUri
     return $ MiscSameOrDifferent s as is
 

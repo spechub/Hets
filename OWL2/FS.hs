@@ -7,10 +7,9 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(deriving Typeable)
 
-This module defines all the data types for the functional style Syntax
-of OWL 2
-It is modeled after the W3C document:
-<http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
+Contains    :  Datatypes specific to the Functional Syntax of OWL 2
+
+References  :  <http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
 -}
 
 module OWL2.FS where
@@ -53,15 +52,15 @@ instance GetRange Axiom
 
 data PlainAxiom =
     SubClassOf SubClass SuperClass
-  | EquivOrDisjointClasses EquivOrDisjoint [ClassExpression] -- min. 2 desc.
+  | EquivOrDisjointClasses Relation [ClassExpression] -- min. 2 desc.
   | DisjointUnion Class [ClassExpression] -- min. 2 desc.
   | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
-  | EquivOrDisjointObjectProperties EquivOrDisjoint [ObjectPropertyExpression]  -- min. 2  ObjectPropertyExpression
-  | ObjectPropertyDomainOrRange EquivOrDisjoint ObjectPropertyExpression ClassExpression
+  | EquivOrDisjointObjectProperties Relation [ObjectPropertyExpression]  -- min. 2  ObjectPropertyExpression
+  | ObjectPropertyDomainOrRange Relation ObjectPropertyExpression ClassExpression
   | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
   | ObjectPropertyCharacter Character ObjectPropertyExpression
   | SubDataPropertyOf DataPropertyExpression DataPropertyExpression
-  | EquivOrDisjointDataProperties EquivOrDisjoint [DataPropertyExpression] -- min. 2 DataPropertyExpressions
+  | EquivOrDisjointDataProperties Relation [DataPropertyExpression] -- min. 2 DataPropertyExpressions
   | DataPropertyDomainOrRange DataDomainOrRange DataPropertyExpression
   | FunctionalDataProperty DataPropertyExpression
   | SameOrDifferentIndividual SameOrDifferent [Individual] -- min. 2 ind.

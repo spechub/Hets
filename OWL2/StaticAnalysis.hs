@@ -17,10 +17,8 @@ import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.FS
-import OWL.Namespace
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 import Data.List
 
 import Common.AS_Annotation

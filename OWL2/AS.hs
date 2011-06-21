@@ -7,10 +7,10 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(deriving Typeable)
 
-Common datatypes for Functional and Manchester Syntax of OWl 2
+Contains    :  Common datatypes for the Functional and Manchester Syntaxes of OWl 2
 
-It is modeled after the W3C document:
-<http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
+References  :  <http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
+               <http://www.w3.org/TR/owl2-manchester-syntax/>
 -}
 
 module OWL2.AS where
@@ -111,6 +111,11 @@ data ObjectPropertyExpression = ObjectProp ObjectProperty
 	deriving (Show, Eq, Ord)
 
 type DataPropertyExpression = DataProperty
+
+data SubObjectPropertyExpression
+  = OPExpression ObjectPropertyExpression
+  | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
+    deriving (Show, Eq, Ord)
 
 -- | data type strings (some are not listed in the grammar)
 datatypeKeys :: [String]
@@ -220,7 +225,7 @@ data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
 
 data AnnotationAxiom
 	= AnnotationAssertion [Annotation] IRI
-	| AnnotationAxiom EquivOrDisjoint [Annotation] AnnotationProperty IRI
+	| AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
 	deriving (Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
@@ -235,11 +240,44 @@ data AnnotationValue
 	| AnnValLit Literal
 	  deriving (Show, Eq, Ord)
 
+---------------------------
+-- ENTITIES
+---------------------------
+
+data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
+
+instance GetRange Entity
+
+data EntityType =
+    Datatype
+  | Class
+  | ObjectProperty
+  | DataProperty
+  | AnnotationProperty
+  | NamedIndividual
+    deriving (Enum, Bounded, Show, Read, Eq, Ord)
+
+showEntityType :: EntityType -> String
+showEntityType e = case e of
+    Datatype -> datatypeC
+    Class -> classC
+    ObjectProperty -> objectPropertyC
+    DataProperty -> dataPropertyC
+    AnnotationProperty -> annotationPropertyC
+    NamedIndividual -> individualC
+
+entityTypes :: [EntityType]
+entityTypes = [minBound .. maxBound]
+
+---------------------------
+-- CASES
+---------------------------
+
 type SourceIndividual = Individual
 type TargetIndividual = Individual
 type TargetValue = Literal
 
-data EquivOrDisjoint =
+data Relation =
     Equivalent
   | Disjoint
   | SubPropertyOf
@@ -250,8 +288,8 @@ data EquivOrDisjoint =
   | Types
     deriving (Show, Eq, Ord)
 
-showEquivOrDisjoint :: EquivOrDisjoint -> String
-showEquivOrDisjoint ed = case ed of
+showRelation :: Relation -> String
+showRelation ed = case ed of
     Equivalent -> equivalentToC
     Disjoint -> disjointWithC
     SubPropertyOf -> subPropertyOfC
@@ -292,35 +330,3 @@ showSameOrDifferent sd = case sd of
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
 
-data SubObjectPropertyExpression
-  = OPExpression ObjectPropertyExpression
-  | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
-    deriving (Show, Eq, Ord)
-
---Entities
-
--- | Syntax of Entities
-data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
-
-instance GetRange Entity
-
-data EntityType =
-    Datatype
-  | Class
-  | ObjectProperty
-  | DataProperty
-  | AnnotationProperty
-  | NamedIndividual
-    deriving (Enum, Bounded, Show, Read, Eq, Ord)
-
-showEntityType :: EntityType -> String
-showEntityType e = case e of
-    Datatype -> datatypeC
-    Class -> classC
-    ObjectProperty -> objectPropertyC
-    DataProperty -> dataPropertyC
-    AnnotationProperty -> annotationPropertyC
-    NamedIndividual -> individualC
-
-entityTypes :: [EntityType]
-entityTypes = [minBound .. maxBound]

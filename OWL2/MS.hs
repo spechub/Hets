@@ -7,10 +7,9 @@ Maintainer  :  f.mance@jacobs-university.de
 Stability   :  provisional
 Portability :  portable
 
-This module defines all the data types for the Manchester Syntax
-of OWL 2
-It is modeled after the W3C document:
-<http://www.w3.org/TR/owl2-manchester-syntax/>
+Contains    :  Datatypes specific to the Manchester Syntax of OWL 2
+
+References  :  <http://www.w3.org/TR/owl2-manchester-syntax/>
 -}
 
 module OWL2.MS where
@@ -47,21 +46,21 @@ noAnnos = Annotations []
 
 data Frame 
    = Frame Entity [FrameBit]
-   | MiscFrame EquivOrDisjoint Annotations Misc
+   | MiscFrame Relation Annotations Misc
    | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
     deriving (Show, Eq, Ord)
           
 data FrameBit 
   = AnnotationFrameBit Annotations
-  | AnnotationBit EquivOrDisjoint (AnnotatedList AnnotationProperty)
+  | AnnotationBit Relation (AnnotatedList AnnotationProperty)
   | DatatypeBit Annotations DataRange
-  | ExpressionBit EquivOrDisjoint (AnnotatedList ClassExpression)
+  | ExpressionBit Relation (AnnotatedList ClassExpression)
   | ClassDisjointUnion Annotations [ClassExpression]
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  | ObjectBit EquivOrDisjoint (AnnotatedList ObjectPropertyExpression)
+  | ObjectBit Relation (AnnotatedList ObjectPropertyExpression)
   | ObjectCharacteristics (AnnotatedList Character)
   | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
-  | DataBit EquivOrDisjoint (AnnotatedList DataPropertyExpression)
+  | DataBit Relation (AnnotatedList DataPropertyExpression)
   | DataPropRange (AnnotatedList DataRange)
   | DataFunctional Annotations
   | IndividualFacts (AnnotatedList Fact)
@@ -81,59 +80,6 @@ data Fact
   = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
   deriving (Show, Eq, Ord)
-{-
-data EquivOrDisjoint =
-    Equivalent
-  | Disjoint
-  | SubPropertyOf
-  | InverseOf
-  | SubClass
-  | Domain
-  | Range
-    deriving (Show, Eq, Ord)
-
-data ClassFrameBit
-  = --ClassAnnotations Annotations
-  | --ClassSubClassOf (AnnotatedList ClassExpression)
-  | --ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression)
-  | --ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
-  | --ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  deriving (Show, Eq, Ord)
-
-data ObjectFrameBit
-  = --ObjectAnnotations Annotations
-  | --ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
-  | --ObjectCharacteristics (AnnotatedList Character)
-  | --ObjectEquivOrDisjoint EquivOrDisjoint
-      --(AnnotatedList ObjectPropertyExpression)
-  | --ObjectInverse (AnnotatedList ObjectPropertyExpression)
-  | --ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
-  | --ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
-  deriving (Show, Eq, Ord)
-
-data DataFrameBit
-  = --DataAnnotations Annotations
-  | --DataPropDomain (AnnotatedList ClassExpression)
-  | --DataPropRange (AnnotatedList DataRange)
-  | --DataFunctional Annotations
-  | --DataSubPropertyOf (AnnotatedList DataPropertyExpression)
-  | --DataEquivOrDisjoint EquivOrDisjoint (AnnotatedList DataPropertyExpression)
-  deriving (Show, Eq, Ord)
-
-data IndividualBit
-  = --IndividualAnnotations Annotations
-  | --IndividualTypes (AnnotatedList ClassExpression)
-  | --IndividualFacts (AnnotatedList Fact)
-  | --IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
-  deriving (Show, Eq, Ord)
-
-
-data AnnotationBit
-  = --AnnotationAnnotations Annotations
-  | --AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
-  | --AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
-  deriving (Show, Eq, Ord)
--}
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD
