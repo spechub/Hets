@@ -22,36 +22,30 @@ convertAnnos (Annotations l) =
 convertAnnList :: (AnnotatedList a) -> [([Annotation], a)]
 convertAnnList (AnnotatedList x) = 
   map (\ (ans, b) -> (convertAnnos ans, b)) x
-    
-        
 
-convert :: Frame -> [Axiom]
-convert f = case f of
-    ClassFrame c cfb -> case cfb of 
-        [] -> []
-        (ClassAnnotations x) : t -> (EntityAnno $ AnnotationAssertion (convertAnnos x) c) : (convert $ ClassFrame c t)
-        --(ClassSubClassOf x) : t -> (PlainAxiom $ SubClassOf () c)
-        
-      
+convertClassBit :: IRI -> ClassFrameBit -> [Axiom]
+convertClassBit iri fb = let cle = Expression iri in case fb of
+    ClassAnnotations x -> [EntityAnno $ AnnotationAssertion (convertAnnos x) iri]
+    ClassSubClassOf al -> map (\ (ans, b) -> PlainAxiom ans $ SubClassOf cle b) (convertAnnList al)
+    ClassEquivOrDisjoint ed al -> let x = convertAnnList al in [PlainAxiom (concatMap fst x) $ EquivOrDisjointClasses ed (cle : map snd x)] 
+    ClassDisjointUnion ans ce -> [PlainAxiom (convertAnnos ans) $ DisjointUnion iri ce]
+    ClassHasKey ans opl dpl -> [PlainAxiom (convertAnnos ans) $ HasKey cle opl dpl]
+
+convertObjectBit :: IRI -> ObjectFrameBit -> [Axiom]
+convertObjectBit iri ob = let op = ObjectProp iri in case ob of
+    ObjectDomainOrRange dr ls -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyDomainOrRange dr op b) (convertAnnList ls)
+    ObjectCharacteristics anc -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyCharacter b op) (convertAnnList anc)
+    ObjectEquivOrDisjoint ed anl -> let x = convertAnnList anl in [PlainAxiom (concatMap fst x) $ EquivOrDisjointObjectProperties ed (op : map snd x)]
+    ObjectInverse anl -> map (\ (ans, b) -> PlainAxiom ans $ InverseObjectProperties op b) (convertAnnList anl)
+    ObjectSubPropertyOf anl -> map (\ (ans, b) -> PlainAxiom ans $ SubObjectPropertyOf (OPExpression b) op) (convertAnnList anl)
+    ObjectSubPropertyChain ans opl = let x = convertAnnList ans in [PlainAxiom (concatMap fst x) $ SubObjectPropertyOf ()]
+
 {-
-data Frame 
-  = ClassFrame Class [ClassFrameBit]
-  | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange)) [Annotations]
-  | ObjectPropertyFrame ObjectProperty [ObjectFrameBit]
-  | DataPropertyFrame DataProperty [DataFrameBit]
-  | IndividualFrame Individual [IndividualBit]
-  | AnnotationFrame AnnotationProperty [AnnotationBit]
-  | MiscEquivOrDisjointClasses EquivOrDisjoint Annotations [ClassExpression]
-  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations [DataPropertyExpression]
-  | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
-  deriving (Show, Eq, Ord)
-
-data ClassFrameBit
-  = ClassAnnotations Annotations  -- nonEmpty list
-  | ClassSubClassOf (AnnotatedList ClassExpression)   -- nonEmpty list
-  | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression) --nonEmpty list
-  | ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
-  | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  deriving (Show, Eq, Ord)
+= ObjectAnnotations Annotations
+  | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
+  | ObjectCharacteristics (AnnotatedList Character)
+  | ObjectEquivOrDisjoint EquivOrDisjoint (AnnotatedList ObjectPropertyExpression)
+  | ObjectInverse (AnnotatedList ObjectPropertyExpression)
+  | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
+  | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
 -}

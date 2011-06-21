@@ -18,6 +18,7 @@ module OWL2.FS where
 import Common.Id (GetRange)
 
 import OWL2.AS
+import OWL.ColonKeywords
 import qualified Data.Map as Map
 
 ------------------------
@@ -43,13 +44,6 @@ type OntologyMap = Map.Map String OntologyFile
 ---------------------
 -- AXIOMS
 ---------------------
-
---Entities
-
--- | Syntax of Entities
-data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
-
-instance GetRange Entity
 
 data Axiom = -- Annotations can be ignored
     PlainAxiom [Annotation] PlainAxiom

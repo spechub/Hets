@@ -44,7 +44,7 @@ data Annotations = Annotations [(Annotations, Annotation)]
 
 noAnnos :: Annotations
 noAnnos = Annotations []
-
+{-
 data Frame
   = ClassFrame Class [ClassFrameBit]
   | DatatypeFrame Datatype [Annotations] (Maybe (Annotations, DataRange))
@@ -61,52 +61,97 @@ data Frame
       [DataPropertyExpression]
   | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
   deriving (Show, Eq, Ord)
+-}
 
-data ClassFrameBit
-  = ClassAnnotations Annotations
-  | ClassSubClassOf (AnnotatedList ClassExpression)
-  | ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression)
-  | ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
+data Frame 
+   = Frame Entity [FrameBit]
+   | MiscFrame Misc
+    deriving (Show, Eq, Ord)
+          
+data FrameBit 
+  = AnnotationFrameBit Annotations
+  | AnnotationBit EquivOrDisjoint (AnnotatedList AnnotationProperty)
+  | DatatypeFrame [Annotations] (Maybe (Annotations, DataRange)) [Annotations]
+  | ExpressionBit EquivOrDisjoint (AnnotatedList ClassExpression)
+  | ClassDisjointUnion Annotations [ClassExpression]
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
-  deriving (Show, Eq, Ord)
-
-data ObjectFrameBit
-  = ObjectAnnotations Annotations
-  | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
+  | ObjectBit EquivOrDisjoint (AnnotatedList ObjectPropertyExpression)
   | ObjectCharacteristics (AnnotatedList Character)
-  | ObjectEquivOrDisjoint EquivOrDisjoint
-      (AnnotatedList ObjectPropertyExpression)
-  | ObjectInverse (AnnotatedList ObjectPropertyExpression)
   | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
-  | ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
-  deriving (Show, Eq, Ord)
-
-data DataFrameBit
-  = DataAnnotations Annotations
-  | DataPropDomain (AnnotatedList ClassExpression)
+  | DataBit EquivOrDisjoint (AnnotatedList DataPropertyExpression)
   | DataPropRange (AnnotatedList DataRange)
   | DataFunctional Annotations
-  | DataSubPropertyOf (AnnotatedList DataPropertyExpression)
-  | DataEquivOrDisjoint EquivOrDisjoint (AnnotatedList DataPropertyExpression)
-  deriving (Show, Eq, Ord)
-
-data IndividualBit
-  = IndividualAnnotations Annotations
-  | IndividualTypes (AnnotatedList ClassExpression)
   | IndividualFacts (AnnotatedList Fact)
   | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
-  deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
+
+data Misc 
+  = MiscEquivOrDisjointClasses EquivOrDisjoint Annotations
+      [ClassExpression]
+  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations
+      [ObjectPropertyExpression]
+  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations
+      [DataPropertyExpression]
+  | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
+     deriving (Show, Eq, Ord)
 
 data Fact
   = ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
   | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
   deriving (Show, Eq, Ord)
+{-
+data EquivOrDisjoint =
+    Equivalent
+  | Disjoint
+  | SubPropertyOf
+  | InverseOf
+  | SubClass
+  | Domain
+  | Range
+    deriving (Show, Eq, Ord)
+
+data ClassFrameBit
+  = --ClassAnnotations Annotations
+  | --ClassSubClassOf (AnnotatedList ClassExpression)
+  | --ClassEquivOrDisjoint EquivOrDisjoint (AnnotatedList ClassExpression)
+  | --ClassDisjointUnion Annotations [ClassExpression] -- min 2 class expressions
+  | --ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
+  deriving (Show, Eq, Ord)
+
+data ObjectFrameBit
+  = --ObjectAnnotations Annotations
+  | --ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
+  | --ObjectCharacteristics (AnnotatedList Character)
+  | --ObjectEquivOrDisjoint EquivOrDisjoint
+      --(AnnotatedList ObjectPropertyExpression)
+  | --ObjectInverse (AnnotatedList ObjectPropertyExpression)
+  | --ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
+  | --ObjectSubPropertyOf (AnnotatedList ObjectPropertyExpression)
+  deriving (Show, Eq, Ord)
+
+data DataFrameBit
+  = --DataAnnotations Annotations
+  | --DataPropDomain (AnnotatedList ClassExpression)
+  | --DataPropRange (AnnotatedList DataRange)
+  | --DataFunctional Annotations
+  | --DataSubPropertyOf (AnnotatedList DataPropertyExpression)
+  | --DataEquivOrDisjoint EquivOrDisjoint (AnnotatedList DataPropertyExpression)
+  deriving (Show, Eq, Ord)
+
+data IndividualBit
+  = --IndividualAnnotations Annotations
+  | --IndividualTypes (AnnotatedList ClassExpression)
+  | --IndividualFacts (AnnotatedList Fact)
+  | --IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
+  deriving (Show, Eq, Ord)
+
 
 data AnnotationBit
-  = AnnotationAnnotations Annotations
-  | AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
-  | AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
+  = --AnnotationAnnotations Annotations
+  | --AnnotationDOR AnnotationDomainOrRange (AnnotatedList IRI)
+  | --AnnotationSubPropertyOf (AnnotatedList AnnotationProperty)
   deriving (Show, Eq, Ord)
+-}
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty emptyOntologyD

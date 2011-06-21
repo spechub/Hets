@@ -16,6 +16,7 @@ It is modeled after the W3C document:
 module OWL2.AS where
 
 import Common.Keywords
+import Common.Id (GetRange)
 
 import OWL.Keywords
 import OWL.ColonKeywords
@@ -245,6 +246,9 @@ data EquivOrDisjoint =
   | SubPropertyOf
   | InverseOf
   | SubClass
+  | Domain
+  | Range
+  | Types
     deriving (Show, Eq, Ord)
 
 showEquivOrDisjoint :: EquivOrDisjoint -> String
@@ -254,6 +258,9 @@ showEquivOrDisjoint ed = case ed of
     SubPropertyOf -> subPropertyOfC
     InverseOf -> inverseOfC
     SubClass -> subClassOfC
+    Domain -> domainC
+    Range -> rangeC
+    Types -> typesC
 
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
 
@@ -290,6 +297,13 @@ data SubObjectPropertyExpression
   = OPExpression ObjectPropertyExpression
   | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
     deriving (Show, Eq, Ord)
+
+--Entities
+
+-- | Syntax of Entities
+data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
+
+instance GetRange Entity
 
 data EntityType =
     Datatype

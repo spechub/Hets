@@ -527,17 +527,17 @@ realAnnotations = do
   sepByComma $ optAnnos2
 
 equivOrDisjointL :: [EquivOrDisjoint]
-equivOrDisjointL = [Equivalent, Disjoint]
-
-equivOrDisjoint :: CharParser st EquivOrDisjoint
-equivOrDisjoint = choice
-  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
-  equivOrDisjointL
+equivOrDisjointL = [Equivalent, Disjoint, SubPropertyOf, Domain, Range, InverseOf, SubClass]
 
 domainOrRange :: CharParser st ObjDomainOrRange
 domainOrRange = choice
   $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
   [ObjDomain, ObjRange]
+
+equivOrDisjoint :: CharParser st EquivOrDisjoint
+equivOrDisjoint = choice
+  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
+  equivOrDisjointL
 
 subPropertyKey :: CharParser st ()
 subPropertyKey = pkeyword subPropertyOfC
