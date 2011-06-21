@@ -65,7 +65,8 @@ data Frame
 
 data Frame 
    = Frame Entity [FrameBit]
-   | MiscFrame Misc
+   | MiscFrame EquivOrDisjoint Annotations Misc
+   | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
     deriving (Show, Eq, Ord)
           
 data FrameBit 
@@ -86,13 +87,12 @@ data FrameBit
     deriving (Show, Eq, Ord)
 
 data Misc 
-  = MiscEquivOrDisjointClasses EquivOrDisjoint Annotations
+  = MiscEquivOrDisjointClasses  
       [ClassExpression]
-  | MiscEquivOrDisjointObjProp EquivOrDisjoint Annotations
+  | MiscEquivOrDisjointObjProp 
       [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp EquivOrDisjoint Annotations
+  | MiscEquivOrDisjointDataProp 
       [DataPropertyExpression]
-  | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
      deriving (Show, Eq, Ord)
 
 data Fact

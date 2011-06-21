@@ -62,7 +62,7 @@ printFrameBit :: FrameBit -> Doc
 printFrameBit fb = case fb of
     AnnotationFrameBit x -> pretty x
     AnnotationBit ed l -> printEquivOrDisjoint ed <+> pretty l
-    DatatypeBit ans a -> pretty ans $+$ pretty a
+    DatatypeBit ans a -> pretty ans $+$ keyword equivalentToC <+> pretty a
     ExpressionBit x y -> printEquivOrDisjoint x <+> pretty y
     ClassDisjointUnion a x -> keyword disjointUnionOfC 
       <+> (pretty a $+$ vcat(punctuate comma ( map (\p -> pretty p) x )))
@@ -94,20 +94,14 @@ printPositiveOrNegative x = case x of
 instance Pretty Frame where
     pretty = printFrame
 
-instance Pretty Misc where
-    pretty = printMisc
-
-printMisc :: Misc -> Doc
-printMisc m = case m of 
-    MiscEquivOrDisjointClasses e a c -> printEquivOrDisjointClasses e <+> (pretty a $+$ vcat (punctuate comma (map pretty c) ))
-    MiscEquivOrDisjointObjProp e a c -> printEquivOrDisjointObj e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
-    MiscEquivOrDisjointDataProp e a c -> printEquivOrDisjointData e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
-    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (pretty a $+$ vcat( punctuate comma (map pretty c) ))
-
 printFrame :: Frame -> Doc
 printFrame f = case f of
     Frame (Entity e uri) bl -> pretty (showEntityType e) <+> pretty uri <+> vcat (map pretty bl)
-    MiscFrame misc -> pretty misc
+    MiscFrame e a misc -> case misc of 
+        MiscEquivOrDisjointClasses c -> printEquivOrDisjointClasses e <+> (pretty a $+$ vcat (punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointObjProp c -> printEquivOrDisjointObj e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointDataProp c -> printEquivOrDisjointData e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
+    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (pretty a $+$ vcat( punctuate comma (map pretty c) ))
 
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of

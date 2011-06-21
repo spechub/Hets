@@ -32,9 +32,12 @@ objectPropertyCharacter =
 
 optAnnos :: CharParser st a -> CharParser st (Annotations, a)
 optAnnos p = do
-  as <- option noAnnos $ annotations
+  as <- optionalAnnos
   a <- p
   return (as, a)
+
+optionalAnnos :: CharParser st Annotations
+optionalAnnos = option noAnnos annotations
 
 annotations :: CharParser st Annotations
 annotations = do
@@ -72,10 +75,14 @@ datatypeBit :: CharParser st [Frame]
 datatypeBit = do
     pkeyword datatypeC
     duri <- datatypeUri
-    x <- option noAnnos annotations
-    dr <- many dataRange
-    return $ if null dr then [Frame (Entity Datatype duri) []]
-             else [Frame (Entity Datatype duri) [DatatypeBit x (head dr)]]
+    as1 <- many annotations
+    mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange 
+    as2 <- many annotations
+    return $ [Frame (Entity Datatype duri) 
+      $ map AnnotationFrameBit as1 ++ case mp of
+          Nothing -> []
+          Just (ans, dr) -> [DatatypeBit ans dr]
+        ++ map AnnotationFrameBit as2]
 
 classFrame :: CharParser st [Frame]
 classFrame = do
@@ -235,18 +242,18 @@ misc = do
     e <- equivOrDisjointKeyword classesC
     as <- option noAnnos annotations
     ds <- sepByComma description
-    return $ MiscFrame $ MiscEquivOrDisjointClasses e as ds
+    return $ MiscFrame e as $ MiscEquivOrDisjointClasses ds
   <|> do
     e <- equivOrDisjointKeyword propertiesC
     as <- option noAnnos annotations
     es <- sepByComma objectPropertyExpr
     -- indistinguishable from dataProperties
-    return $ MiscFrame $ MiscEquivOrDisjointObjProp e as es
+    return $ MiscFrame e as $ MiscEquivOrDisjointObjProp es
   <|> do
     s <- sameOrDifferentIndu
     as <- option noAnnos annotations
     is <- sepByComma individualUri
-    return $ MiscFrame $ MiscSameOrDifferent s as is
+    return $ MiscSameOrDifferent s as is
 
 frames :: CharParser st [Frame]
 frames = flat $ many $ datatypeBit <|> classFrame

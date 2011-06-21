@@ -32,8 +32,7 @@ AnnotationProperty: x
 
 Datatype: a
   Annotations: x y, z t, Annotations: a b c d
-  EquivalentTo: Annotations: a b c
-  Annotations: a b
+  EquivalentTo: a
 
 Class: x
   SubClassOf: a, b, Annotations: x y c and d only b
