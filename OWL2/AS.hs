@@ -314,5 +314,14 @@ data EntityType =
   | NamedIndividual
     deriving (Enum, Bounded, Show, Read, Eq, Ord)
 
+showEntityType :: EntityType -> String
+showEntityType e = case e of
+    Datatype -> datatypeC
+    Class -> classC
+    ObjectProperty -> objectPropertyC
+    DataProperty -> dataPropertyC
+    AnnotationProperty -> annotationPropertyC
+    NamedIndividual -> individualC
+
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]

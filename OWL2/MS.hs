@@ -71,7 +71,7 @@ data Frame
 data FrameBit 
   = AnnotationFrameBit Annotations
   | AnnotationBit EquivOrDisjoint (AnnotatedList AnnotationProperty)
-  | DatatypeFrame [Annotations] (Maybe (Annotations, DataRange)) [Annotations]
+  | DatatypeBit Annotations DataRange
   | ExpressionBit EquivOrDisjoint (AnnotatedList ClassExpression)
   | ClassDisjointUnion Annotations [ClassExpression]
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]

@@ -12,7 +12,6 @@ Symbol items for Hets
 
 module OWL2.Symbols where
 
-import OWL2.FS
 import OWL2.AS
 
 ------------------------

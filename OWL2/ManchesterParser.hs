@@ -68,18 +68,14 @@ apBit = do
           x <- annotations
           return [AnnotationFrameBit x]
 
-datatypeFrame :: CharParser st [Frame]
-datatypeFrame = do
+datatypeBit :: CharParser st [Frame]
+datatypeBit = do
     pkeyword datatypeC
     duri <- datatypeUri
-    x <- many annotations
-    ms <- optionMaybe $ do
-      pkeyword equivalentToC
-      al <- option noAnnos annotations
-      dr <- dataRange
-      return (al, dr)
-    y <- many annotations
-    return [Frame (Entity Datatype duri) [DatatypeFrame x ms y]]
+    x <- option noAnnos annotations
+    dr <- many dataRange
+    return $ if null dr then [Frame (Entity Datatype duri) []]
+             else [Frame (Entity Datatype duri) [DatatypeBit x (head dr)]]
 
 classFrame :: CharParser st [Frame]
 classFrame = do
@@ -253,7 +249,7 @@ misc = do
     return $ MiscFrame $ MiscSameOrDifferent s as is
 
 frames :: CharParser st [Frame]
-frames = flat $ many $ datatypeFrame <|> classFrame
+frames = flat $ many $ datatypeBit <|> classFrame
   <|> objectPropertyFrame <|> dataPropertyFrame <|> individualFrame
   <|> annotationPropertyFrame <|> single misc
 

@@ -18,7 +18,6 @@ module OWL2.FS where
 import Common.Id (GetRange)
 
 import OWL2.AS
-import OWL.ColonKeywords
 import qualified Data.Map as Map
 
 ------------------------

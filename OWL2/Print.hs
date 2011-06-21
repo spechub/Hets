@@ -18,7 +18,6 @@ import Common.Id
 import Common.Keywords
 
 import OWL2.AS
-import OWL2.FS
 import OWL2.Symbols
 import OWL.Keywords
 import OWL.ColonKeywords

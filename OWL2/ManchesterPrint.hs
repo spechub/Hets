@@ -55,52 +55,28 @@ instance Pretty a => Pretty (AnnotatedList a) where
 printAnnotatedList :: Pretty a => AnnotatedList a -> Doc
 printAnnotatedList (AnnotatedList l) = vcat ( punctuate comma $ map ( \(ans, a) -> pretty ans $+$ pretty a) l )
   
-instance Pretty ClassFrameBit where
-    pretty = printClassFrameBit
+instance Pretty FrameBit where
+    pretty = printFrameBit
 
-printClassFrameBit :: ClassFrameBit -> Doc
-printClassFrameBit cfb = case cfb of
-    ClassAnnotations x -> pretty x
-    ClassSubClassOf x -> keyword subClassOfC <+> pretty x
-    ClassEquivOrDisjoint x y -> printEquivOrDisjoint x <+> pretty y
-    ClassDisjointUnion a x -> keyword disjointUnionOfC <+> (pretty a $+$ vcat(punctuate comma ( map (\p -> pretty p) x )))
+printFrameBit :: FrameBit -> Doc
+printFrameBit fb = case fb of
+    AnnotationFrameBit x -> pretty x
+    AnnotationBit ed l -> printEquivOrDisjoint ed <+> pretty l
+    DatatypeBit ans a -> pretty ans $+$ pretty a
+    ExpressionBit x y -> printEquivOrDisjoint x <+> pretty y
+    ClassDisjointUnion a x -> keyword disjointUnionOfC 
+      <+> (pretty a $+$ vcat(punctuate comma ( map (\p -> pretty p) x )))
     ClassHasKey a op dp -> keyword hasKeyC <+> (pretty a
       $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
-
-instance Pretty ObjectFrameBit where
-    pretty = printObjectFrameBit
-
-printObjectFrameBit :: ObjectFrameBit -> Doc
-printObjectFrameBit ofb = case ofb of
-    ObjectAnnotations x -> pretty x
-    ObjectDomainOrRange dr x -> printObjDomainOrRange dr <+> pretty x
+    ObjectBit dr x -> printEquivOrDisjoint dr <+> pretty x
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
-    ObjectEquivOrDisjoint ed x -> printEquivOrDisjoint ed <+> pretty x
-    ObjectInverse x -> keyword inverseOfC <+> pretty x
-    ObjectSubPropertyChain a opl -> keyword subPropertyChainC <+> (pretty a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))
-    ObjectSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
-
-instance Pretty DataFrameBit where
-    pretty = printDataFrameBit
-
-printDataFrameBit :: DataFrameBit -> Doc
-printDataFrameBit dfb = case dfb of
-    DataAnnotations x -> pretty x
-    DataPropDomain x -> keyword domainC <+> pretty x
+    ObjectSubPropertyChain a opl -> keyword subPropertyChainC 
+      <+> (pretty a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))
+    DataBit dr x -> printEquivOrDisjoint dr <+> pretty x
     DataPropRange x -> keyword rangeC <+> pretty x 
     DataFunctional x -> keyword characteristicsC <+> (pretty x $+$ printCharact functionalS) 
-    DataSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
-    DataEquivOrDisjoint e x -> printEquivOrDisjoint e <+> pretty x
-
-instance Pretty IndividualBit where
-    pretty = printIndividualBit
-
-printIndividualBit :: IndividualBit -> Doc
-printIndividualBit ib = case ib of
-    IndividualAnnotations x -> pretty x
-    IndividualTypes x -> keyword typesC <+> pretty x
     IndividualFacts x -> keyword factsC <+> pretty x
-    IndividualSameOrDifferent s x -> printSameOrDifferent s <+> pretty x
+    IndividualSameOrDifferent s x -> printSameOrDifferent s <+> pretty x    
 
 instance Pretty Fact where
     pretty = printFact
@@ -115,53 +91,41 @@ printPositiveOrNegative x = case x of
     Positive -> empty
     Negative -> keyword notS
 
-instance Pretty AnnotationBit where
-    pretty = printAnnotationBit
-
-printAnnotationBit :: AnnotationBit -> Doc
-printAnnotationBit ab = case ab of
-    AnnotationAnnotations x -> pretty x
-    AnnotationDOR dor x -> printAnnDomainOrRange dor <+> pretty x
-    AnnotationSubPropertyOf x -> keyword subPropertyOfC <+> pretty x
-
-printAnnDomainOrRange :: AnnotationDomainOrRange -> Doc
-printAnnDomainOrRange = keyword . showAnnDomainOrRange
-
 instance Pretty Frame where
     pretty = printFrame
 
-printMaybeAnnDR :: Maybe (Annotations, DataRange) -> Doc
-printMaybeAnnDR x = case x of
-    Nothing -> empty
-    Just (a, dr) -> keyword equivalentToC <+> (pretty a $+$ pretty dr) 
+instance Pretty Misc where
+    pretty = printMisc
 
-printFrame :: Frame -> Doc
-printFrame x = case x of
-    ClassFrame a cfb -> classStart <+> pretty a <+> vcat (map pretty cfb)
-    DatatypeFrame d ans a ans2 -> keyword datatypeC <+> (pretty d $+$ vcat (map pretty ans) $+$ printMaybeAnnDR a $+$ vcat (map pretty ans2))
-    ObjectPropertyFrame op ofb -> keyword objectPropertyC <+> pretty op <+> vcat (map pretty ofb)
-    DataPropertyFrame dp dfb -> keyword dataPropertyC <+> pretty dp <+> vcat (map pretty dfb)
-    IndividualFrame i ib -> keyword individualC <+> pretty i <+> vcat (map pretty ib)
-    AnnotationFrame ap ab -> keyword annotationPropertyC <+> pretty ap  <+> vcat (map pretty ab)
+printMisc :: Misc -> Doc
+printMisc m = case m of 
     MiscEquivOrDisjointClasses e a c -> printEquivOrDisjointClasses e <+> (pretty a $+$ vcat (punctuate comma (map pretty c) ))
     MiscEquivOrDisjointObjProp e a c -> printEquivOrDisjointObj e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
     MiscEquivOrDisjointDataProp e a c -> printEquivOrDisjointData e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
     MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (pretty a $+$ vcat( punctuate comma (map pretty c) ))
 
+printFrame :: Frame -> Doc
+printFrame f = case f of
+    Frame (Entity e uri) bl -> pretty (showEntityType e) <+> pretty uri <+> vcat (map pretty bl)
+    MiscFrame misc -> pretty misc
+
 printEquivOrDisjointClasses :: EquivOrDisjoint -> Doc
 printEquivOrDisjointClasses x = case x of
     Equivalent -> text "EquivalentClasses:"
     Disjoint -> text "DisjointClasses:"
+    _ -> empty
 
 printEquivOrDisjointObj :: EquivOrDisjoint -> Doc
 printEquivOrDisjointObj x = case x of
     Equivalent -> text "EquivalentProperties:"
     Disjoint -> text "DisjointProperties:"
+    _ -> empty
 
 printEquivOrDisjointData :: EquivOrDisjoint -> Doc
 printEquivOrDisjointData x = case x of
     Equivalent -> text "EquivalentProperties:"
     Disjoint -> text "DisjointProperties:"
+    _ -> empty
 
 printSameOrDifferentInd :: SameOrDifferent -> Doc
 printSameOrDifferentInd x = case x of
