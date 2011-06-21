@@ -312,7 +312,8 @@ Maude_files = Maude/Sign.hs Maude/Morphism.hs Maude/Sentence.hs \
 ExtModal_files = ExtModal/AS_ExtModal.hs ExtModal/ExtModalSign.hs \
     ExtModal/MorphismExtension.hs
 
-CSL_files = CSL/Sign.hs CSL/Morphism.hs CSL/AS_BASIC_CSL.hs CSL/Symbol.hs
+CSL_files = CSL/Sign.hs CSL/Morphism.hs CSL/AS_BASIC_CSL.hs CSL/Symbol.hs \
+    CSL/TreePO.hs
 
 CommonLogic_files = CommonLogic/AS_CommonLogic.hs CommonLogic/Sign.hs \
   CommonLogic/Symbol.hs CommonLogic/Morphism.hs CommonLogic/Sublogic.hs

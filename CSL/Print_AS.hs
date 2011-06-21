@@ -40,7 +40,7 @@ instance Pretty InfInt where
     pretty = printInfInt
 instance Pretty GroundConstant where
     pretty = printGC
-instance Pretty a => Pretty (SetOrInterval a) where
+instance (Ord a, Pretty a) => Pretty (SetOrInterval a) where
     pretty = printDomain
 instance Pretty a => Pretty (ClosedInterval a) where
     pretty = printClosedInterval
@@ -279,7 +279,7 @@ printClosedInterval (ClosedInterval l r) =
     hcat [ lbrack, sepByCommas $ map pretty [l, r], rbrack ]
 
 
-printDomain :: Pretty a => SetOrInterval a -> Doc
+printDomain :: (Ord a, Pretty a) => SetOrInterval a -> Doc
 printDomain (Set s) = pretty s
 printDomain (IntVal (c1, b1) (c2, b2)) =
     hcat [ getIBorder True b1, sepByCommas $ map pretty [c1, c2]

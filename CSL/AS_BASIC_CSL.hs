@@ -78,10 +78,6 @@ import Data.Ratio
 import CSL.TreePO
 
 
--- Imports for workaround...
-import ATerm.Lib
-import Data.Typeable
-
 -- ---------------------------------------------------------------------------
 -- * EnCL Basic Data Structures and utils
 -- ---------------------------------------------------------------------------
@@ -523,51 +519,3 @@ lookupBindInfo oinm (OpId op) arit =
       _ -> error $ "lookupBindInfo: no opinfo for " ++ show op
 lookupBindInfo _ (OpUser _) _ = Nothing
 
-
--- TODO: remove workaround!
--- WORKAROUND for imported datatypes used in abstract syntax. These instances should be derived automatically!
-
-instance (Ord a, ShATermConvertible a) => ShATermConvertible (SetOrInterval a) where
-  toShATermAux att0 xv = case xv of
-    Set a -> do
-      (att1, a') <- toShATerm' att0 a
-      return $ addATerm (ShAAppl "Set" [a'] []) att1
-    IntVal a b -> do
-      (att1, a') <- toShATerm' att0 a
-      (att2, b') <- toShATerm' att1 b
-      return $ addATerm (ShAAppl "IntVal" [a', b'] []) att2
-  fromShATermAux ix att0 = case getShATerm ix att0 of
-    ShAAppl "Set" [a] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      (att1, Set a') }
-    ShAAppl "IntVal" [a, b] _ ->
-      case fromShATerm' a att0 of
-      { (att1, a') ->
-      case fromShATerm' b att1 of
-      { (att2, b') ->
-      (att2, IntVal a' b') }}
-    u -> fromShATermError "SetOrInterval" u
-
-_tcSetOrIntervalTc :: TyCon
-_tcSetOrIntervalTc = mkTyCon "CSL.AS_BASIC_CSL.SetOrInterval"
-instance Typeable1 SetOrInterval where
-    typeOf1 _ = mkTyConApp _tcSetOrIntervalTc []
-
-instance Typeable InfInt where
-    typeOf = error "Typeable InfInt instance missing"
-
-instance Typeable (ClosedInterval a) where
-    typeOf = error "Typeable ClosedInterval instance missing"
-
-instance ShATermConvertible (ClosedInterval a) where
-    toShATermAux = error "ShATermConvertible ClosedInterval instance missing"
-    fromShATermAux = error "ShATermConvertible ClosedInterval instance missing"
-
-instance ShATermConvertible InfInt where
-    toShATermAux = error "ShATermConvertible InfInt instance missing"
-    fromShATermAux = error "ShATermConvertible InfInt instance missing"
-
-instance ShATermConvertible Ordering where
-    toShATermAux = error "ShATermConvertible Ordering instance missing"
-    fromShATermAux = error "ShATermConvertible Ordering instance missing"

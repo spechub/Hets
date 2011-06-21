@@ -87,9 +87,9 @@ instance Ord a => Ord (CIType a) where
 
 
 -- | A finite set or an interval. True = closed, False = opened interval border.
-data SetOrInterval a = Set (Set.Set a)
-                     | IntVal (a, Bool) (a, Bool)
-                       deriving (Eq, Ord, Show)
+data Ord a => SetOrInterval a = Set (Set.Set a)
+                              | IntVal (a, Bool) (a, Bool)
+                                deriving (Eq, Ord, Show)
 
 -- | A closed interval
 data ClosedInterval a = ClosedInterval a a deriving (Eq, Ord, Show)

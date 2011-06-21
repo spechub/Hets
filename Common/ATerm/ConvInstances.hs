@@ -113,3 +113,20 @@ instance ShATermConvertible TimeOfDay where
                     (att3, TimeOfDay a' b'
                      $ (fromRational :: Ratio Integer -> Pico) c') }}}
             u -> fromShATermError "TimeOfDay" u
+
+instance ShATermConvertible Ordering where
+    toShATermAux att = toShATermAux att . ordToInt
+    fromShATermAux ix att0 = case fromShATermAux ix att0 of
+       (att, i) -> (att, ordFromInt i)
+
+ordFromInt :: Int -> Ordering
+ordFromInt 0 = LT
+ordFromInt 1 = EQ
+ordFromInt 2 = GT
+ordFromInt i = error $ "ordFromInt: only values from 0 to 2 allowed but got "
+               ++ show i
+
+ordToInt :: Ordering -> Int
+ordToInt LT = 0
+ordToInt EQ = 1
+ordToInt GT = 2
