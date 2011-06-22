@@ -157,12 +157,58 @@ checkBit fb = case fb of
         return $ if elem Nothing x then Nothing else Just fb
     ClassHasKey _ _ _ -> checkHasKeyAll fb
     ObjectBit _ anl -> do
-        s <- get
         let ol = map snd $ convertAnnList anl
-            y = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
-        return $ if elem False y then Nothing 
-                 else (Just $ fb)
+        checkObjPropList fb ol
     ObjectCharacteristics _ -> return $ Just fb
+    ObjectSubPropertyChain _ ol -> checkObjPropList fb ol
+    DataBit _ anl -> do
+        let dl = map snd $ convertAnnList anl
+        checkDataPropList fb dl
+    DataPropRange anl -> do
+        let dr = map snd $ convertAnnList anl
+        mapM_ anaDataRange dr
+        return $ Just fb    
+    DataFunctional _ -> return $ Just fb
+    IndividualFacts anl -> do
+        let f = map snd $ convertAnnList anl
+        checkFactList fb f 
+    IndividualSameOrDifferent _ anl -> do
+        let i = map snd $ convertAnnList anl
+        mapM_ anaIndividual i
+        return $ Just fb
+
+checkFactList :: FrameBit -> [Fact] -> State Sign (Maybe FrameBit)
+checkFactList fb fl = do
+    x <- mapM (checkFact fb) fl
+    return $ if length (catMaybes x) < length x then Nothing 
+             else (Just fb)   
+
+checkFact :: FrameBit -> Fact -> State Sign (Maybe FrameBit)
+checkFact fb f = do 
+    s <- get
+    case f of
+      ObjectPropertyFact _ op i -> 
+        if Set.member (getObjRoleFromExpression op) (objectProperties s) 
+            && Set.member i (individuals s) then return $ Just fb
+        else return Nothing
+      DataPropertyFact _ dp (Literal _ (Typed l)) -> 
+        if Set.member dp (dataProperties s) 
+            && Set.member l (datatypes s) then return $ Just fb
+        else return Nothing 
+     
+checkObjPropList :: FrameBit -> [ObjectPropertyExpression] -> State Sign (Maybe FrameBit)
+checkObjPropList fb ol = do
+        s <- get
+        let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
+        return $ if elem False x then Nothing 
+                 else (Just fb)
+
+checkDataPropList :: FrameBit -> [DataPropertyExpression] -> State Sign (Maybe FrameBit)
+checkDataPropList fb dl = do
+        s <- get
+        let x = map (\ u -> Set.member u (dataProperties s) ) dl
+        return $ if elem False x then Nothing 
+                 else (Just $ fb)
 
 checkHasKeyAll :: FrameBit -> State Sign (Maybe FrameBit)
 checkHasKeyAll (ClassHasKey a ol dl) = do
