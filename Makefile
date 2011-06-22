@@ -479,11 +479,16 @@ hets.cgi: GUI/hets_cgi.hs
 # Documentation via haddock
 doc: docs/index.html
 
+HADDOCK_INTERFACES = $(shell find `ghc --print-libdir`/../.. -name \*.haddock)
+
+HAD_INTS = $(foreach file, $(HADDOCK_INTERFACES),\
+ -i http://hackage.haskell.org/packages/archive/$(basename $(notdir $(file)))/latest/doc/html,$(file))
+
 HADDOCK_OPTS = $(addprefix --optghc=, $(HC_OPTS))
 docs/index.html:
 	$(RM) -r docs
 	mkdir docs
-	$(HADDOCK) --ignore-all-exports -o docs -h -s ../%F \
+	$(HADDOCK) --ignore-all-exports -o docs -h -s ../%F $(HAD_INTS) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
              Syntax/ADoc.hs $(filter-out Scratch.hs, $(wildcard *.hs)) \
