@@ -56,11 +56,13 @@ anaLibReadPrfs opts file = do
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts fname = do
-  fname' <- existsAnSource opts {intype = GuessIn} fname
+  let isPrfFile = isSuffixOf prfSuffix
+  fname' <- existsAnSource opts {intype = GuessIn}
+     $ if isPrfFile fname then rmSuffix fname else fname
   case fname' of
     Nothing -> anaLibExt opts fname emptyLibEnv emptyDG
     Just file ->
-        if isSuffixOf prfSuffix file then do
+        if isPrfFile file then do
             putIfVerbose opts 0 $ "a matching source file for proof history '"
                              ++ file ++ "' not found."
             return Nothing
