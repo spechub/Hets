@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Parser of common logic interface format
+Description :  Parser of common logic interchange format
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Parser of common logic interface format
+Parser of common logic interchange format
 -}
 
 {-
@@ -79,7 +79,7 @@ phrase = do
       return $ Sentence s
 
 -- | parser for module
-pModule :: CharParser st MODULE
+pModule :: CharParser st MODULE --TODO: parse exclusion lists
 pModule = do
   -- clModuleKey
   t <- identifier
@@ -168,7 +168,7 @@ atom = do
     return $ Equation t1 t2
   <|> do
     t <- term
-    ts <- many1 termseq
+    ts <- many termseq
     return $ Atom t ts
 
 term :: CharParser st TERM

@@ -12,7 +12,7 @@ Portability :  portable
 -}
 
 
-module CommonLogic.Tests where
+module CommonLogic.ClTests where
 
 import CommonLogic.AS_CommonLogic
 import CommonLogic.Parse_CLIF

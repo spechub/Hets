@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Parser of common logic interface format
+Description :  Parser of common logic interchange format
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010
 License     :  GPLv2 or higher
 
@@ -8,7 +8,7 @@ Maintainer  :  kluc@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Parser of common logic interface format
+Parser of common logic interchange format
 -}
 
 {-

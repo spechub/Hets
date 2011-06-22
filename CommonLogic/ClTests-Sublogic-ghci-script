@@ -42,3 +42,18 @@ let (Right txt5) = abstrSyntax "(exists (P) (and (P x)))"
 prd_text txt5
 sublogic txt5
 
+
+
+-- module elimination
+let (Right mt) = abstrSyntax "(cl-module D (forall (x) (and (P x) (Q x))))"
+let (Text [Module (Mod _ (Text [Sentence sen] _) _)] _) = mt
+let d = mkSimpleId "D"
+let sen_new = rq_sentence sen [d]
+
+let (Right mt') = abstrSyntax "(forall (x) (if (and (D x)) (and (P x) (Q x))))"
+let (Text [Sentence sen'] _) = mt'
+
+sen_new == sen'
+
+
+--TODO: analyze multiple modules in a text
