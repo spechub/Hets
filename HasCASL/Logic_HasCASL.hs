@@ -84,7 +84,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
         . fromLabelledSen
     sym_name HasCASL = symName
-    sym_of HasCASL = singletonList . symOf
+    sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap
 
 instance StaticAnalysis HasCASL BasicSpec Sentence

@@ -291,7 +291,7 @@ inducedFromToMorphism rmap1 e1@(ExtSign sigma1 sy1) (ExtSign sigma2 sy2) = do
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism
 generatedSign syms sigma =
-    let signSyms = symOf sigma
+    let signSyms = Set.unions $ symOf sigma
         closedSyms = closeSymbSet syms
         subSigma = plainHide (signSyms Set.\\ closedSyms) sigma
     in checkSymbols closedSyms signSyms $
@@ -300,7 +300,7 @@ generatedSign syms sigma =
 -- | hide the symbols in the set
 cogeneratedSign :: SymbolSet -> Env -> Result Morphism
 cogeneratedSign syms sigma =
-    let signSyms = symOf sigma
+    let signSyms = Set.unions $ symOf sigma
         subSigma = Set.fold hideRelSymbol sigma syms
         in checkSymbols syms signSyms $
            return $ mkMorphism subSigma sigma

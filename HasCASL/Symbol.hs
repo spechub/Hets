@@ -41,7 +41,7 @@ dependentSyms :: Symbol -> Env -> SymbolSet
 dependentSyms sym =
     Set.fold ( \ op se ->
                if Set.member sym $ subSymsOf op then
-               Set.insert op se else se) Set.empty . symOf
+               Set.insert op se else se) Set.empty . Set.unions . symOf
 
 hideRelSymbol :: Symbol -> Env -> Env
 hideRelSymbol sym sig =
@@ -108,7 +108,14 @@ subSymsOf sy = case symType sy of
 closeSymbSet :: SymbolSet -> SymbolSet
 closeSymbSet s = Set.unions (s : map subSymsOf (Set.toList s))
 
-symOf :: Env -> SymbolSet
+opSymOf :: Env -> SymbolSet
+opSymOf sigma = Map.foldWithKey ( \ i ts s ->
+                      if Map.member i bOps then s else
+                      Set.fold (Set.insert . idToOpSymbol i . opType)
+                         s ts)
+              Set.empty $ assumps sigma
+
+symOf :: Env -> [SymbolSet]
 symOf sigma =
     let classes = Map.foldWithKey ( \ i ->
                           Set.insert . idToClassSymbol i . rawKind)
@@ -116,10 +123,10 @@ symOf sigma =
         types = Map.foldWithKey ( \ i ti ->
                         if Map.member i bTypes then id else
                         Set.insert $ idToTypeSymbol i $ typeKind ti)
-                classes $ typeMap sigma
+                Set.empty $ typeMap sigma
         ops = Map.foldWithKey ( \ i ts s ->
                       if Map.member i bOps then s else
                       Set.fold (Set.insert . idToOpSymbol i . opType)
                          s ts)
-              types $ assumps sigma
-        in ops
+              Set.empty $ assumps sigma
+        in [classes, types, ops]
