@@ -155,7 +155,14 @@ checkBit fb = case fb of
     ClassDisjointUnion _ cel -> do
         x <- mapM anaDescription cel
         return $ if elem Nothing x then Nothing else Just fb
-    c@(ClassHasKey {}) -> checkHasKeyAll c
+    ClassHasKey _ _ _ -> checkHasKeyAll fb
+    ObjectBit _ anl -> do
+        s <- get
+        let ol = map snd $ convertAnnList anl
+            y = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
+        return $ if elem False y then Nothing 
+                 else (Just $ fb)
+    ObjectCharacteristics _ -> return $ Just fb
 
 checkHasKeyAll :: FrameBit -> State Sign (Maybe FrameBit)
 checkHasKeyAll (ClassHasKey a ol dl) = do
