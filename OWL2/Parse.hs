@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-ClassExpression :  Manchester syntax parser for OWL 2
+Description :  Manchester syntax parser for OWL 2
 Copyright   :  (c) DFKI GmbH, Uni Bremen 2007-2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
