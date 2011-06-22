@@ -19,6 +19,7 @@ import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.ProofTree
+import Common.DefaultMorphism
 
 import ATC.ProofTree ()
 
@@ -37,7 +38,7 @@ import OWL2.ATC_OWL2 ()
 import OWL2.Sign
 import OWL2.StaticAnalysis
 
-type OWLMorphism = ()
+type OWLMorphism = DefaultMorphism Sign
 type OWLSub = ()
 
 data OWL2 = OWL2 deriving Show
@@ -46,7 +47,7 @@ instance Language OWL2 where
  description _ =
   "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
-instance Category Sign OWLMorphism
+-- instance Category Sign OWLMorphism -- to be refined
 
 instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
     parse_basic_spec OWL2 = Just basicSpec
