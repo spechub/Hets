@@ -17,9 +17,11 @@ import OWL2.Sign
 import OWL2.AS
 import OWL2.MS
 import OWL2.FS
+import OWL2.GetAxioms
 
 import qualified Data.Set as Set
 import Data.List
+import Data.Maybe
 
 import Common.AS_Annotation
 import Common.Result
@@ -41,12 +43,12 @@ modEntity f (Entity ty u) = do
 
 addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
-
+{-
 anaAxiom :: Axiom -> State Sign [Named Axiom]
-anaAxiom (PlainAxiom as p) = let x = PlainAxiom as p in do
+anaAxiom x = let PlainAxiom as p = x in do
     anaPlainAxiom p
     return [findImplied as $ makeNamed "" $ x]
-
+-}
 anaObjPropExpr :: ObjectPropertyExpression -> State Sign ()
 anaObjPropExpr = addEntity . Entity ObjectProperty . getObjRoleFromExpression
 
@@ -56,53 +58,129 @@ anaDataPropExpr = addEntity . Entity DataProperty
 anaIndividual :: Individual -> State Sign ()
 anaIndividual = addEntity . Entity NamedIndividual
 
-anaConstant :: Literal -> State Sign ()
-anaConstant (Literal _ ty) = case ty of
+anaLiteral :: Literal -> State Sign ()
+anaLiteral (Literal _ ty) = case ty of
   Typed u -> addEntity $ Entity Datatype u
   _ -> return ()
 
 anaDataRange :: DataRange -> State Sign ()
 anaDataRange dr = case dr of
   DataType u -> addEntity $ Entity Datatype u
+  DataJunction jt drl -> mapM_ anaDataRange drl
   DataComplementOf r -> anaDataRange r
-  DataOneOf cs -> mapM_ anaConstant cs
+  DataOneOf cs -> mapM_ anaLiteral cs
   DatatypeRestriction dt fcs -> do
     addEntity $ Entity Datatype dt
-    mapM_ (anaConstant . snd) fcs
+    mapM_ (anaLiteral . snd) fcs
 
-anaDescription :: ClassExpression -> State Sign ()
+anaDescription :: ClassExpression -> State Sign (Maybe ClassExpression)
 anaDescription desc = case desc of
-  Expression u ->
-      case u of
-        QN _ "Thing" _ _ -> addEntity $ Entity Class $
-                          QN "owl" "Thing" False ""
-        QN _ "Nothing" _ _ -> addEntity $ Entity Class $
-                          QN "owl" "Nothing" False ""
-        v -> addEntity $ Entity Class v
-  ObjectJunction _ ds -> mapM_ anaDescription ds
-  ObjectComplementOf d -> anaDescription d
-  ObjectOneOf is -> mapM_ anaIndividual is
+  Expression u -> case u of
+        QN _ "Thing" _ _ -> return $ Just $ Expression $ QN "owl" "Thing" False ""
+        QN _ "Nothing" _ _ -> return $ Just $ Expression $ QN "owl" "Nothing" False ""
+        _ -> do 
+            s <- get
+            if Set.member u (concepts s) then return $ return desc
+            else return $ fail "Class not found"
+  ObjectJunction _ ds -> do 
+      mapM_ anaDescription ds 
+      return (Just desc)
+  ObjectComplementOf d -> do 
+      anaDescription d
+      return (Just desc)
+  ObjectOneOf is -> do 
+      mapM_ anaIndividual is
+      return (Just desc)
   ObjectValuesFrom _ opExpr d -> do
-    anaObjPropExpr opExpr
-    anaDescription d
-  ObjectHasSelf opExpr -> anaObjPropExpr opExpr
+    s <- get
+    if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then do
+        anaDescription d
+        return (Just desc)
+    else return $ fail "Failed"
+  ObjectHasSelf opExpr -> do
+    s <- get
+    if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then return (Just desc)
+    else return $ fail "Failed"
   ObjectHasValue opExpr i -> do
-    anaObjPropExpr opExpr
-    anaIndividual i
+    s <- get
+    if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then do
+        anaIndividual i
+        return (Just desc)
+    else return $ fail "Failed"
   ObjectCardinality (Cardinality _ _ opExpr md) -> do
-    anaObjPropExpr opExpr
-    maybe (return ()) anaDescription md
+    s <- get
+    if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then do
+        maybe (return (Just desc)) anaDescription md
+    else return $ fail "Failed"
   DataValuesFrom _ dExp ds r -> do
-    anaDataPropExpr dExp
-    mapM_ anaDataPropExpr ds
-    anaDataRange r
+    s <- get
+    if Set.isSubsetOf (Set.fromList(dExp : ds)) (dataProperties s) then do
+        anaDataPropExpr dExp
+        mapM_ anaDataPropExpr ds
+        anaDataRange r
+        return (Just desc)
+    else return $ fail "Failed"
   DataHasValue dExp c -> do
-    anaDataPropExpr dExp
-    anaConstant c
+    s <- get
+    if Set.member dExp (dataProperties s) then do
+        anaDataPropExpr dExp
+        anaLiteral c
+        return (Just desc)
+    else return $ fail "Failed"
   DataCardinality (Cardinality _ _ dExp mr) -> do
-    anaDataPropExpr dExp
-    maybe (return ()) anaDataRange mr
+    s <- get
+    if Set.member dExp (dataProperties s) then do
+        anaDataPropExpr dExp
+        maybe (return ()) anaDataRange mr
+        return (Just desc)
+    else return $ fail "Failed"
 
+anaFrame :: Frame -> State Sign (Frame)
+anaFrame f = case f of
+    Frame e fbl -> do
+      addEntity e
+      let ckfbl = fbl in
+        return $ Frame e ckfbl
+
+checkBit :: FrameBit -> State Sign (Maybe FrameBit)
+checkBit fb = case fb of
+    AnnotationFrameBit _ -> return $ Just fb
+    AnnotationBit _ _ -> return $ Just fb
+    DatatypeBit _ dr -> do 
+        anaDataRange dr
+        return $ Just fb
+    ExpressionBit _ anl -> do
+        x <- mapM anaDescription (map snd $ convertAnnList anl)
+        return $ if elem Nothing x then Nothing else Just fb
+    ClassDisjointUnion _ cel -> do
+        x <- mapM anaDescription cel
+        return $ if elem Nothing x then Nothing else Just fb
+    c@(ClassHasKey {}) -> checkHasKeyAll c
+
+checkHasKeyAll :: FrameBit -> State Sign (Maybe FrameBit)
+checkHasKeyAll (ClassHasKey a ol dl) = do
+    s <- get
+    let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
+        y = map (\ u -> Set.member u (dataProperties s) ) dl 
+    return $ if elem False (x ++ y) then Nothing
+             else (Just $ ClassHasKey a ol dl)
+
+checkHasKey :: FrameBit -> State Sign (Maybe FrameBit)
+checkHasKey (ClassHasKey a ol dl) = do 
+    x <- sortObjDataList ol 
+    return $ if null x then Nothing
+             else Just $ ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
+
+sortObjData :: ObjectPropertyExpression -> State Sign (Maybe ObjectPropertyExpression)
+sortObjData op = do
+    s <- get
+    return $ if Set.member (getObjRoleFromExpression op) (objectProperties s) then Just op
+    else Nothing
+
+sortObjDataList :: [ObjectPropertyExpression] -> State Sign [ObjectPropertyExpression]
+sortObjDataList = fmap catMaybes . mapM sortObjData   
+
+{-
 anaPlainAxiom :: PlainAxiom -> State Sign ()
 anaPlainAxiom pa = case pa of
   SubClassOf s1 s2 -> do
@@ -149,15 +227,19 @@ anaPlainAxiom pa = case pa of
   DataPropertyAssertion (Assertion dp _ s c) -> do
     anaDataPropExpr dp
     anaIndividual s
-    anaConstant c
+    anaLiteral c
   Declaration e -> addEntity e
   DatatypeDefinition dt dr -> do
     addEntity $ Entity Datatype dt
     anaDataRange dr
   HasKey ce opl dpl -> do
     anaDescription ce
+    s <- get
     mapM_ anaObjPropExpr opl
     mapM_ anaDataPropExpr dpl
+-}
+
+    
 
 -- | static analysis of ontology with incoming sign.
 basicOWLAnalysisMS ::
@@ -165,7 +247,7 @@ basicOWLAnalysisMS ::
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 basicOWLAnalysisMS = error "not implemented"
 
-
+{-
 basicOWLAnalysis ::
     (OntologyFile, Sign, GlobalAnnos) ->
         Result (OntologyFile, ExtSign Sign Entity, [Named Axiom])
@@ -182,7 +264,7 @@ basicOWLAnalysis (ofile, inSign, _) =
                   , filter noDecl $ concat sens)
     where
         oName = uri $ ontology ofile
-
+-}
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
 getObjRoleFromExpression opExp =
