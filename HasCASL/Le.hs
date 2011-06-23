@@ -324,6 +324,9 @@ data SymbolType =
     OpAsItemType TypeScheme
   | TypeAsItemType RawKind
   | ClassAsItemType RawKind
+  | SuperClassSymbol Kind
+  | TypeKindInstance Kind
+  | SuperTypeSymbol Id
     deriving (Show, Eq, Ord)
 
 -- | symbols with their type
@@ -382,7 +385,10 @@ symbTypeToKind :: SymbolType -> SymbKind
 symbTypeToKind s = case s of
     OpAsItemType _ -> SyKop
     TypeAsItemType _ -> SyKtype
+    SuperTypeSymbol _ -> SyKtype
+    TypeKindInstance _ -> SyKtype
     ClassAsItemType _ -> SyKclass
+    SuperClassSymbol _ -> SyKclass
 
 -- | wrap a symbol as raw symbol (is 'ASymbol')
 symbolToRaw :: Symbol -> RawSymbol

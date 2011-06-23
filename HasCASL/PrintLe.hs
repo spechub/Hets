@@ -226,21 +226,15 @@ instance Pretty Morphism where
                     $+$ mapsto
                     <+> specBraces (pretty $ mtarget m)
 
-instance Pretty SymbolType where
-    pretty t = case t of
-      OpAsItemType sc -> pretty sc
-      TypeAsItemType k -> pretty k
-      ClassAsItemType k -> pretty k
-
 instance Pretty Symbol where
-    pretty s = keyword (case symType s of
-        OpAsItemType _ -> opS
-        TypeAsItemType _ -> typeS
-        ClassAsItemType _ -> classS)
-            <+> pretty (symName s) <+> colon <+> case symType s of
-        OpAsItemType sc -> pretty sc
-        TypeAsItemType k -> pretty $ rawToKind k
-        ClassAsItemType k -> pretty $ rawToKind k
+    pretty s = let ty = symType s in
+      printSK (symbTypeToKind ty) [()] <+> pretty (symName s) <+> case ty of
+        SuperTypeSymbol sty -> less <+> pretty sty
+        SuperClassSymbol k -> less <+> pretty k
+        TypeKindInstance k -> colon <+> pretty k
+        OpAsItemType sc -> colon <+> pretty sc
+        TypeAsItemType k -> colon <+> pretty (rawToKind k)
+        ClassAsItemType k -> colon <+> pretty (rawToKind k)
 
 instance Pretty RawSymbol where
   pretty rs = case rs of

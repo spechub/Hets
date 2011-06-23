@@ -73,6 +73,7 @@ hideSymbol sym sig =
             rs = Set.filter ((/= ot) . opType) os
         in sig { assumps = if Set.null rs then Map.delete i as
                           else Map.insert i rs as }
+    _ -> sig
 
 idsOfKind :: Kind -> Set.Set Id
 idsOfKind kd = case kd of
