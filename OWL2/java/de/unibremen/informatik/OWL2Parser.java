@@ -2,7 +2,10 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLException;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.util.OWLOntologyMerger;
 import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLAxiom;
+import org.semanticweb.owlapi.io.OWLRendererException;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxRenderer;
 import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxObjectRenderer;
 
@@ -18,12 +21,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.net.URLConnection;
+import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class OWL2Parser {
 
 	private static ArrayList<OWLOntology> loadedImportsList = new ArrayList<OWLOntology>();
-	static private ArrayList<IRI> importsURI = new ArrayList<IRI>();
+	private static ArrayList<IRI> importsIRI = new ArrayList<IRI>();
+	private static ArrayList<OWLOntology> haveImportsList = new ArrayList<OWLOntology>();
+	private static Map m = new HashMap();  
+	private static Set s = new HashSet();
 
 	public static void main(String[] args) {
 		
@@ -34,7 +46,7 @@ public class OWL2Parser {
 
 		String filename = "";
 		BufferedWriter out;
-
+		
 		// A simple example of how to load and save an ontology
 		try {
 			IRI iri = IRI.create(args[0]);
@@ -45,40 +57,72 @@ public class OWL2Parser {
 			} else {
 				out = new BufferedWriter(openForFile(null));
 			}
-			
-			
+						
 			/* Load an ontology from a physical IRI */
 			IRI physicalIRI = IRI.create(args[0]);
-			//System.out.println("Loading : " + args[0]);
-			
+						
 			// Now do the loading
+			
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
-			//System.out.println(ontology);
-			
-			// get all ontology which are imported from this ontology.
+
 			getImportsList(ontology, manager);
-			
-			//System.out.println("LoadedImportsList: " + loadedImportsList);
-			//System.out.println();
 
 			if(loadedImportsList.size() == 0)
 			{
-				loadedImportsList.add(ontology);
-				importsURI.add(manager.getOntologyDocumentIRI(ontology));
+				parse(ontology,out);
 			}	
-			
 
-			for (OWLOntology onto : loadedImportsList) {
-	                             
-				//System.out.println("parsing OWL: " + onto.getOntologyID().getOntologyIRI() + " ...");
-				ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
-			
-				rendi.render(onto,out);
-	                      
-	                        }
-
-	  
-	                //System.out.println("OWL parsing done!\n");
+			else {
+				if(importsIRI.contains(ontology.getOntologyID().getOntologyIRI())) {
+    					importsIRI.remove(importsIRI.lastIndexOf(ontology.getOntologyID().getOntologyIRI()));
+					}
+				
+				if(loadedImportsList.contains(ontology))
+					{	
+					
+					Iterator<OWLOntology> itr_onto = loadedImportsList.iterator();
+					Iterator<IRI> itr_iri = importsIRI.iterator();
+	
+					OWLOntologyManager mng = OWLManager.createOWLOntologyManager();
+				
+					OWLOntologyMerger merger = new OWLOntologyMerger(manager);
+	
+					String str = ontology.getOntologyID().getOntologyIRI().toQuotedString();
+					String notag = str.replaceAll("\\<","");
+					notag = notag.replaceAll("\\>","");
+				
+					notag = notag.replaceAll("http:/","");
+					notag = notag.replaceAll("\\/.*?/","");;
+					notag = notag.replaceAll(".*?/","");;
+										
+					Object aux[] = loadedImportsList.toArray(); 
+					String merged_name = "";
+	
+					for (Object it : aux) {
+						Object aux_ont = it;
+						String mrg = aux_ont.toString();
+						mrg = mrg.replaceAll("\\<","");
+						mrg = mrg.replaceAll("\\>","");
+						mrg = mrg.replaceAll("\\[.*?]","");
+						mrg = mrg.replaceAll("Ontology\\(","");
+						mrg = mrg.replaceAll(" ","");
+						mrg = mrg.replaceAll("\\)","");
+						mrg = mrg + notag;
+						merged_name = merged_name + mrg;
+					}
+									
+					IRI mergedOntologyIRI = IRI.create(merged_name);
+					OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
+					
+					ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (manager);
+					rendi.render(merged,out);
+					}
+				else 	
+					{
+					parseZeroImports(out);
+					}
+   			
+			}
 		} catch (IOException e) {
 			System.err.println("Error: can not build file: " + filename);
 			e.printStackTrace();
@@ -93,22 +137,33 @@ public class OWL2Parser {
 
 		ArrayList<OWLOntology> unSavedImports = new ArrayList<OWLOntology>();
 		
-		try {
-			for (OWLOntology imported : om.getImports(ontology)) {
-				if (!importsURI.contains(imported.getOntologyID().getOntologyIRI())) {
-					//System.out.println("IMPORTED: " + imported + "\n");
-					unSavedImports.add(imported);
-					loadedImportsList.add(imported);
-					importsURI.add(imported.getOntologyID().getOntologyIRI());
-				}
+		try {	
+			if (om.getImports(ontology).isEmpty())	{
+				m.put(ontology,0); 
 			}
-			
+			else 	{ 
+				haveImportsList.add(ontology);
+	
+				for (OWLOntology imported : om.getImports(ontology)) {
+					if (!importsIRI.contains(imported.getOntologyID().getOntologyIRI())) {
+	
+						unSavedImports.add(imported);
+						loadedImportsList.add(imported);
+						importsIRI.add(imported.getOntologyID().getOntologyIRI());
+	
+						if(!loadedImportsList.contains(ontology))	{
+							m.put(ontology,imported);
+						}
+					}
+				}
+				} 				
+					
 			for (OWLOntology onto : unSavedImports) {
 				getImportsList(onto, om);
 			}
 
 		} catch (Exception e) {
-			System.err.println("Error!");
+			System.err.println("Error getImportsList!");
 			e.printStackTrace();
 		}
 	}
@@ -117,6 +172,69 @@ public class OWL2Parser {
 		{ 		
 			return new OutputStreamWriter(System.out);
 		}
+	
+	private static void parseZeroImports(BufferedWriter out) 
+	{
+		Set all = getKeysByValue(0);
+		Iterator it = all.iterator();
+		
+		while(it.hasNext())	
+			{
+			OWLOntology onto = (OWLOntology)it.next();
+			parse(onto,out);
+			s.add(onto);
+			m.remove(onto);
+			parseImports(out);
+			}
+	}
+
+	public static void parseImports(BufferedWriter out)
+	{
+		Iterator iter = m.entrySet().iterator();
+		while(iter.hasNext()) {
+
+			Map.Entry pairs = (Map.Entry)iter.next();
+	
+			if(checkset(pairs.getValue())) {
+				OWLOntology onto = (OWLOntology)pairs.getKey();
+				parse(onto,out);
+				s.add((OWLOntology)pairs.getKey());
+				m.remove(pairs.getKey());
+				parseImports(out);
+			}
+		}
+	}
+
+	public static Boolean checkset(Object it)	{
+		Set aux = new HashSet();
+		aux.add(it);		
+		if (s.containsAll(aux))		
+			return true;
+		else
+			return false;
+	}
+
+	public static Set getKeysByValue(int value) {
+		Set keys = new HashSet();
+		Iterator it = m.entrySet().iterator();		
+		while(it.hasNext()) {
+			Map.Entry pairs = (Map.Entry)it.next();
+			if(pairs.getValue().equals(value)) {
+				keys.add(pairs.getKey());
+			}
+		}
+     	return keys;
+	}
+	
+	public static void parse(OWLOntology onto, BufferedWriter out)	{
+		try {
+		ManchesterOWLSyntaxRenderer rendi = new ManchesterOWLSyntaxRenderer (onto.getOWLOntologyManager());
+		rendi.render(onto,out);
+		} catch(OWLRendererException ex)	{		
+			System.err.println("Error by parse!");
+			ex.printStackTrace();
+		}
+	}
 }
 
 
