@@ -28,7 +28,7 @@ import java.util.Iterator;
 import java.util.HashMap;
 import java.util.Map;
 
-
+@SuppressWarnings("unchecked")
 public class OWL2Parser {
 
 	private static ArrayList<OWLOntology> loadedImportsList = new ArrayList<OWLOntology>();
@@ -66,7 +66,7 @@ public class OWL2Parser {
 			OWLOntology ontology = manager.loadOntologyFromOntologyDocument(physicalIRI);
 
 			getImportsList(ontology, manager);
-
+	
 			if(loadedImportsList.size() == 0)
 			{
 				parse(ontology,out);
@@ -79,38 +79,39 @@ public class OWL2Parser {
 				
 				if(loadedImportsList.contains(ontology))
 					{	
-					
-					Iterator<OWLOntology> itr_onto = loadedImportsList.iterator();
-					Iterator<IRI> itr_iri = importsIRI.iterator();
-	
+
 					OWLOntologyManager mng = OWLManager.createOWLOntologyManager();
-				
 					OWLOntologyMerger merger = new OWLOntologyMerger(manager);
 	
 					String str = ontology.getOntologyID().getOntologyIRI().toQuotedString();
 					String notag = str.replaceAll("\\<","");
+
 					notag = notag.replaceAll("\\>","");
-				
-					notag = notag.replaceAll("http:/","");
-					notag = notag.replaceAll("\\/.*?/","");;
-					notag = notag.replaceAll(".*?/","");;
-										
+					notag = notag.replaceAll("\\[.*?]","");
+					notag = notag.replaceAll("Ontology\\(","");
+					notag = notag.replaceAll(" ","");
+					notag = notag.replaceAll("\\)","");
+
+					loadedImportsList.remove(loadedImportsList.indexOf(ontology));
 					Object aux[] = loadedImportsList.toArray(); 
+
 					String merged_name = "";
 	
 					for (Object it : aux) {
 						Object aux_ont = it;
 						String mrg = aux_ont.toString();
-						mrg = mrg.replaceAll("\\<","");
 						mrg = mrg.replaceAll("\\>","");
+						mrg = mrg.replaceAll("http:/","");
+						mrg = mrg.replaceAll("\\/.*?/","");
+						mrg = mrg.replaceAll(".*?/","");
 						mrg = mrg.replaceAll("\\[.*?]","");
-						mrg = mrg.replaceAll("Ontology\\(","");
-						mrg = mrg.replaceAll(" ","");
 						mrg = mrg.replaceAll("\\)","");
-						mrg = mrg + notag;
+						mrg = mrg.replaceAll(" ","");
 						merged_name = merged_name + mrg;
 					}
-									
+
+					merged_name = notag + merged_name;
+					
 					IRI mergedOntologyIRI = IRI.create(merged_name);
 					OWLOntology merged = merger.createMergedOntology(manager, mergedOntologyIRI);
 					
