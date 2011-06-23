@@ -33,8 +33,8 @@
 	<manifest>
 	  <attribute name="Title" value="OWL2 MNO Parser"/>
 	  <attribute name="Built-By" value="${user.name}"/>
-	  <attribute name="Main-Class" value="de.unibremen.informatik.OWL2Parser"/>
-	  <attribute name="Class-Path" value="lib/owlapi-bin.jar"/>	  
+	  <attribute name="Main-Class" value="OWL2Parser"/>
+	  <attribute name="Class-Path" value="lib/owl2api-bin.jar"/>	  
 	</manifest>
       </jar>
     </target> 
