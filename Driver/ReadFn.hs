@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  $Header$
 Description :  reading and parsing ATerms, CASL, HetCASL files
@@ -23,7 +24,9 @@ import ATC.Grothendieck
 import ATC.Sml_cats
 import ATC.LibName ()
 
+#ifndef NOOWLLOGIC
 import OWL2.ParseOWLAsLibDefn
+#endif
 
 import Driver.Options
 
@@ -53,7 +56,9 @@ readLibDefnM lgraph opts file input =
     if null input then fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return $ from_sml_ATermString input
+#ifndef NOOWLLOGIC
     OWL2In -> liftIO $ parseOWL file
+#endif
     FreeCADIn ->
       liftIO $ readFreeCADLib file $ fileToLibName opts file
     _ ->
