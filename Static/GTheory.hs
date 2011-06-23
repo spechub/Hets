@@ -443,6 +443,21 @@ extendByBasicSpec ga str gt@(G_theory lid eSig@(ExtSign sign syms) si sens _) =
                        else showRelDiags 1 es)
             _ -> (Failure False, showRelDiags 1 ds)
 
+deleteHiddenSymbols :: String -> G_sign -> Result G_sign
+deleteHiddenSymbols syms gs@(G_sign lid (ExtSign sig _) _) = let
+  str = trimLeft syms in if null str then return gs else
+    case parse_symb_items lid of
+      Nothing -> fail $ "no symbol map parser for " ++ language_name lid
+      Just smpa -> case runParser (sepBy1 smpa anComma << eof)
+                   (emptyAnnos ()) "" str of
+        Left err -> fail $ show err
+        Right sms -> do
+          rm <- stat_symb_items lid sig sms
+          let sym1 = symset_of lid sig
+              sym2 = Set.filter (\s -> any (matches lid s) rm) sym1
+          sig2 <- fmap dom $ cogenerated_sign lid sym2 sig
+          return $ G_sign lid (mkExtSign sig2) startSigId
+
 -- | reconstruct the morphism from symbols maps
 getMorphism :: G_sign
   -> String -- ^ the symbol mappings
@@ -453,7 +468,7 @@ getMorphism (G_sign lid (ExtSign sig _) _) syms =
     case parse_symb_map_items lid of
       Nothing -> fail $ "no symbol map parser for " ++ language_name lid
       Just smpa -> case runParser (sepBy1 smpa anComma << eof)
-                   (emptyAnnos ()) "" $ trimLeft str of
+                   (emptyAnnos ()) "" str of
         Left err -> fail $ show err
         Right sms -> do
           rm <- stat_symb_map_items lid sig Nothing sms
