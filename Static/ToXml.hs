@@ -100,10 +100,12 @@ lnode ga lenv (_, lbl) =
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
       sigxml = prettyElem "Signature" ga $ dgn_sign lbl
-  in add_attrs (mkNameAttr (showName nm) : if
-               not (isDGRef lbl) && dgn_origin lbl < DGProof then
-               [mkAttr "refname" spn, mkAttr "relxpath" xp ]
-               else [])
+  in add_attrs (mkNameAttr (showName nm)
+    : if not (isDGRef lbl) then case signOf $ dgn_theory lbl of
+        G_sign slid _ _ -> mkAttr "logic" (show slid)
+          : if dgn_origin lbl < DGProof then
+             [mkAttr "refname" spn, mkAttr "relxpath" xp ]
+          else [] else [])
   $ unode "DGNode"
     $ case nodeInfo lbl of
           DGRef li rf ->
@@ -111,8 +113,7 @@ lnode ga lenv (_, lbl) =
                         , mkAttr "node" $ getNameOfNode rf
                           $ lookupDGraph li lenv ]
             $ unode "Reference" () ]
-          DGNode orig cs -> consStatus cs
-              ++ case orig of
+          DGNode orig cs -> consStatus cs ++ case orig of
                    DGBasicSpec _ (G_sign lid (ExtSign dsig _) _) _ ->
                      subnodes "Declarations"
                        $ map (prettyRangeElem "Symbol" ga)
