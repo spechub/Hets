@@ -306,7 +306,7 @@ basicOWL2Analysis (odoc, inSign, _) =
     let ns = prefixDeclaration odoc
         syms = Set.difference (symOf accSign) $ symOf inSign
         (_, accSign) = runState
-          (mapM getEntityFromFrame $ ontologyFrame $ mOntology odoc)
+          (createSign $ ontologyFrame $ mOntology odoc)
           inSign
         (axl, _) = runState (createAxioms (ontologyFrame (mOntology odoc)))
                    accSign    
