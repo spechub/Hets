@@ -18,7 +18,7 @@ import OWL2.ManchesterParser
 import OWL2.Parse
 import OWL.ColonKeywords
 
-
+import Data.Char
 import qualified Data.Map as Map
 
 import Common.Id
@@ -73,7 +73,7 @@ cnvimport :: QName -> Annoted SPEC
 cnvimport i = emptyAnno $ Spec_inst (cnvtoSimpleId i) [] nullRange
 
 cnvtoSimpleId :: QName -> SPEC_NAME
-cnvtoSimpleId = mkSimpleId . showQN 
+cnvtoSimpleId = mkSimpleId . filter isAlphaNum . showQN  
 
 createSpec :: OntologyDocument -> Annoted SPEC
 createSpec o = let 
@@ -88,17 +88,11 @@ createSpec o = let
 
 convertone :: OntologyDocument-> Annoted LIB_ITEM
 convertone o = emptyAnno $ Spec_defn
-  (mkSimpleId $ showQN $ muri $ mOntology o)
+  (cnvtoSimpleId $ muri $ mOntology o)
   emptyGenericity
   (createSpec o)
   nullRange
-{-
-convertone o = emptyAnno $ Spec_defn
-  (mkSimpleId $ showQN $ uri $ ontology o) 
-  emptyGenericity
-  (emptyAnno $ Basic_spec (G_basic_spec OWL2 o ) nullRange)
-  nullRange 
--}
+
 convertToLibDefN :: FilePath -> [OntologyDocument] -> LIB_DEFN
 convertToLibDefN filename l = Lib_defn 
   (emptyLibName $ convertFileToLibStr filename)
