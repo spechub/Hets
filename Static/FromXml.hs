@@ -90,12 +90,11 @@ element, then adds all nodes and edges from this element into a DGraph -}
 fromXml :: HetcatsOpts -> LogicGraph -> LibName -> LibEnv -> Element
         -> ResultT IO (LibName, LibEnv)
 fromXml opts lg ln lv xml = do
-    lo <- lookupCurrentLogic "fromXml:" lg
     an <- extractGlobalAnnos xml
     let dg = emptyDG { globalAnnos = an }
     nodes <- extractNodeElements xml
     (defLk, thmLk) <- extractLinkElements xml
-    (res0, depNd) <- initialise opts (emptyTheory lo) nodes defLk (dg, lv)
+    (res0, depNd) <- initialise opts lg nodes defLk (dg, lv)
     res1 <- insertNodesAndDefLinks opts lg depNd defLk res0
     res2 <- insertThmLinks lg thmLk res1
     return (ln, computeLibEnvTheories $ uncurry (Map.insert ln) res2)
@@ -106,13 +105,13 @@ Reconstruct the Development Graph, high level -}
 {- | All nodes that do not have dependencies via the links are processed at the
 beginning and written into the DGraph. Returns the resulting DGraph and the
 list of nodes that have not been stored (i.e. have dependencies). -}
-initialise :: HetcatsOpts -> G_theory -> [NamedNode] -> [NamedLink]
+initialise :: HetcatsOpts -> LogicGraph -> [NamedNode] -> [NamedLink]
            -> (DGraph, LibEnv) -> ResultT IO ((DGraph, LibEnv), [NamedNode])
-initialise opts gt nodes links dglv = do
+initialise opts lg nodes links dglv = do
   let targets = map trg links
       -- all nodes that are not target of any link are considered independent
       (dep, indep) = partition ((`elem` targets) . fst) nodes
-  (dglv') <- foldM (flip $ insertNode opts gt) dglv indep
+  (dglv') <- foldM (flip $ insertNode opts $ Right lg) dglv indep
   return (dglv', dep)
 
 -- | inserts all theorem link into the previously constructed dgraph
@@ -174,12 +173,11 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
       gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
       let gt = case gsig1 of
                  G_sign lid sg sId -> noSensGTheory lid sg sId
-      dglv <- insertNode opts gt trgNd (dg, lv)
+      dglv <- insertNode opts (Left gt) trgNd (dg, lv)
       return (dglv, False)
     -- case #2: only hiding def links
     (_, []) -> do
-        lo <- lookupCurrentLogic (fst trgNd) lg
-        dglv <- insertNode opts (emptyTheory lo) trgNd (dg, lv)
+        dglv <- insertNode opts (Right lg) trgNd (dg, lv)
         return (dglv, True)
     -- case #3: mixture. not implemented!
     _ -> fail "mix of HidingDefLinks and other links pointing at a single node"
@@ -277,9 +275,9 @@ Reconstruct the Development Graph, [node insertion] -}
 
 {- | Generates and inserts a new DGNodeLab with a startoff-G_theory, an Element
 and the the DGraphs Global Annotations -}
-insertNode :: HetcatsOpts -> G_theory -> NamedNode -> (DGraph, LibEnv)
-           -> ResultT IO (DGraph, LibEnv)
-insertNode opts gt (name, el) (dg, lv) =
+insertNode :: HetcatsOpts -> Either G_theory LogicGraph -> NamedNode
+           -> (DGraph, LibEnv) -> ResultT IO (DGraph, LibEnv)
+insertNode opts gtOrLg (name, el) (dg, lv) =
   case findChild (unqual "Reference") el of
     -- Case #1: Reference Node, ref- library will be loaded
     Just rf -> insertRefNode opts rf (name, el) (dg, lv)
@@ -291,12 +289,20 @@ insertNode opts gt (name, el) (dg, lv) =
                        Nothing -> findChildren (unqual "Signature") el
           ch2 = deepSearch ["Axiom", "Theorem"] el
           in do
+            gt <- case gtOrLg of
+              Left gt' -> return gt'
+              Right lg -> do
+                lid <- getAttrVal "logic" el
+                lo <- lookupLogic ("unknown logic: " ++ lid) lid lg
+                return $ emptyTheory lo
             (gt', symbs) <- parseSpecs gt name dg $ ch1 ++ ch2
             diffSig <- liftR $ homGsigDiff (signOf gt') $ signOf gt
             let lbl = newNodeLab (parseNodeName name)
                   (DGBasicSpec Nothing diffSig symbs) gt'
             return (insLNodeDG (n, lbl) dg, lv)
 
+{- inserts a reference node into the dgraph. The referenced library is first
+read using another call of fromXml, then the corresponding node is looked up -}
 insertRefNode :: HetcatsOpts -> Element -> NamedNode -> (DGraph, LibEnv)
               -> ResultT IO (DGraph, LibEnv)
 insertRefNode opts rf (name, el) (dg, lv) = do
