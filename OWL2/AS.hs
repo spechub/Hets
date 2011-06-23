@@ -226,6 +226,7 @@ data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
 data AnnotationAxiom
 	= AnnotationAssertion [Annotation] IRI
 	| AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
+  | AnnDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
 	deriving (Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
@@ -283,8 +284,6 @@ data Relation =
   | SubPropertyOf
   | InverseOf
   | SubClass
-  | Domain
-  | Range
   | Types
     deriving (Show, Eq, Ord)
 
@@ -295,8 +294,6 @@ showRelation ed = case ed of
     SubPropertyOf -> subPropertyOfC
     InverseOf -> inverseOfC
     SubClass -> subClassOfC
-    Domain -> domainC
-    Range -> rangeC
     Types -> typesC
 
 data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)

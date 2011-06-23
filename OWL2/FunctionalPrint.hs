@@ -15,15 +15,40 @@ module OWL2.FunctionalPrint where
 import Common.Doc
 import Common.DocUtils
 import Common.Keywords
+import Common.AS_Annotation
 
 import OWL2.AS
 import OWL2.FS
 import OWL2.Print
 import OWL.Keywords
 import OWL.ColonKeywords
+import OWL2.Sign
 
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 
+printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printOWLBasicTheory (s, l) =
+  printSign s
+  $++$ vsep (map (pretty . sentence) l)
+
+instance Pretty Sign where
+    pretty = printSign
+
+printSign :: Sign -> Doc
+printSign s =
+   let cs = concepts s
+       ts = Set.filter ((`notElem` datatypeKeys) . localPart) $ datatypes s
+   in vcat (map (\ (c, l) -> hsep $ map text
+                 [namespaceC, c, '<' : l ++ ">"]
+                 -- [prefixC, c ++ ":", '<' : l ++ ">"]
+                ) $ Map.toList $ prefixMap s) $++$
+   vcat (map (\ t -> keyword datatypeC <+> pretty t) $ Set.toList ts)
+   $++$ vcat (map (\ c -> keyword classC <+> pretty c) $ Set.toList cs)
+   $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o) $ Set.toList $ objectProperties s)
+   $++$
+     vcat (map (\ d -> keyword dataPropertyC <+> pretty d) $ Set.toList $ dataProperties s)
+   $++$ vcat (map (\ i -> keyword individualC <+> pretty i) $ Set.toList $ individuals s)
 classStart :: Doc
 classStart = keyword classC
 
@@ -74,7 +99,7 @@ printAxiom axiom = case axiom of
        opStart <+> pretty opExp $+$ printRelation ty <+>
                    setToDocV (Set.fromList opList)
    ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printRelation ty <+> pretty desc
+       opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
        opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->

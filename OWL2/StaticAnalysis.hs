@@ -67,8 +67,7 @@ checkEntity a (Entity ty e) = do
       AnnotationProperty -> if Set.member e (annotationRoles s) then return $ return a else fail $ showQN e ++ " annotation property undeclared"
     
 checkDataRange :: DataRange -> State Sign (Maybe DataRange)
-checkDataRange dr = do 
-  s <- get  
+checkDataRange dr = 
   case dr of
     DataType u -> checkEntity dr (Entity Datatype u)
     DataJunction _ drl -> do
@@ -90,9 +89,7 @@ checkClassExpression desc = case desc of
   Expression u -> case u of
         QN _ "Thing" _ _ -> return $ Just $ Expression $ QN "owl" "Thing" False ""
         QN _ "Nothing" _ _ -> return $ Just $ Expression $ QN "owl" "Nothing" False ""
-        _ -> do 
-            s <- get
-            checkEntity desc (Entity Class u)
+        _ -> checkEntity desc (Entity Class u) 
   ObjectJunction _ ds -> do 
       x <- mapM checkClassExpression ds 
       if any isNothing x then return Nothing
@@ -101,7 +98,7 @@ checkClassExpression desc = case desc of
       checkClassExpression d
   ObjectOneOf is -> do 
       x <- mapM (checkEntity desc) (map (Entity NamedIndividual) is)
-      if any isNothing x then return Nothing
+      if any isNothing x then return Nothing 
        else return $ Just desc
   ObjectValuesFrom _ opExpr d -> do
       s <- get
@@ -160,6 +157,7 @@ checkBit fb = case fb of
         x <- mapM (checkEntity fb) (map (Entity AnnotationProperty) apl)
         return $ if any isNothing x then Nothing 
                   else Just fb
+    AnnotationDR _ _ -> return $ Just fb
     DatatypeBit _ dr -> do 
         x <- checkDataRange dr
         return $ if isNothing x then Nothing 
@@ -176,11 +174,21 @@ checkBit fb = case fb of
     ObjectBit _ anl -> do
         let ol = map snd $ convertAnnList anl
         checkObjPropList fb ol
+    ObjectDomainOrRange _ anl -> do
+        let ds = map snd $ convertAnnList anl
+        y <- mapM checkClassExpression ds
+        return $ if any isNothing y then Nothing 
+                else Just fb
     ObjectCharacteristics _ -> return $ Just fb
     ObjectSubPropertyChain _ ol -> checkObjPropList fb ol
     DataBit _ anl -> do
         let dl = map snd $ convertAnnList anl
         checkDataPropList fb dl
+    DataPropDomain anl -> do
+        let dr = map snd $ convertAnnList anl
+        x <- mapM checkClassExpression dr
+        return $ if any isNothing x then Nothing 
+                  else Just fb 
     DataPropRange anl -> do
         let dr = map snd $ convertAnnList anl
         x <- mapM checkDataRange dr
@@ -210,10 +218,14 @@ checkFact fb f = do
         if Set.member (getObjRoleFromExpression op) (objectProperties s) 
             && Set.member i (individuals s) then return $ Just fb
          else return Nothing
-      DataPropertyFact _ dp (Literal _ (Typed l)) -> 
-        if Set.member dp (dataProperties s) 
-            && Set.member l (datatypes s) then return $ Just fb
-         else return Nothing 
+      DataPropertyFact _ dp x -> 
+        case x of 
+          Literal _ (Typed l) -> 
+            if Set.member dp (dataProperties s) 
+              && Set.member l (datatypes s) then return $ Just fb
+             else return Nothing 
+          _ -> return $ Just fb
+    
      
 checkObjPropList :: FrameBit -> [ObjectPropertyExpression] -> State Sign (Maybe FrameBit)
 checkObjPropList fb ol = do
@@ -230,18 +242,22 @@ checkDataPropList fb dl = do
                   else (Just $ fb)
 
 checkHasKeyAll :: FrameBit -> State Sign (Maybe FrameBit)
-checkHasKeyAll (ClassHasKey a ol dl) = do
+checkHasKeyAll k = case k of
+  ClassHasKey a ol dl -> do
     s <- get
     let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
         y = map (\ u -> Set.member u (dataProperties s) ) dl 
     return $ if elem False (x ++ y) then Nothing
               else (Just $ ClassHasKey a ol dl)
+  _ -> return $ Just k
 
 checkHasKey :: FrameBit -> State Sign (Maybe FrameBit)
-checkHasKey (ClassHasKey a ol dl) = do 
+checkHasKey k = case k of 
+  ClassHasKey a ol _ -> do 
     x <- sortObjDataList ol 
-    let k = ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
-    checkHasKeyAll k
+    let k2 = ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
+    checkHasKeyAll k2
+  _ -> return $ Just k
 
 sortObjData :: ObjectPropertyExpression -> State Sign (Maybe ObjectPropertyExpression)
 sortObjData op = do
@@ -260,6 +276,7 @@ checkMisc m = case m of
     MiscEquivOrDisjointObjProp ol -> do
       x <- sortObjDataList ol
       return $ if null x then Just $ MiscEquivOrDisjointDataProp (map getObjRoleFromExpression x) else Just m
+    _ -> return $ Just m
 
 getEntityFromFrame :: Frame -> State Sign ()
 getEntityFromFrame f = case f of
@@ -271,7 +288,7 @@ createSign = mapM_ getEntityFromFrame
 
 checkFrame :: Frame -> State Sign (Maybe Frame)
 checkFrame f = case f of
-    Frame e fbl -> do
+    Frame _ fbl -> do
       x <- mapM checkBit fbl
       return $ if any isNothing x then Nothing else Just f 
     MiscFrame r al misc -> do
@@ -303,7 +320,7 @@ basicOWL2Analysis ::
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 
 basicOWL2Analysis (odoc, inSign, _) = 
-    let ns = prefixDeclaration odoc
+    let --ns = prefixDeclaration odoc
         syms = Set.difference (symOf accSign) $ symOf inSign
         (_, accSign) = runState
           (createSign $ ontologyFrame $ mOntology odoc)

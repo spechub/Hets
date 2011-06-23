@@ -56,7 +56,7 @@ data PlainAxiom =
   | DisjointUnion Class [ClassExpression] -- min. 2 desc.
   | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
   | EquivOrDisjointObjectProperties Relation [ObjectPropertyExpression]  -- min. 2  ObjectPropertyExpression
-  | ObjectPropertyDomainOrRange Relation ObjectPropertyExpression ClassExpression
+  | ObjectPropertyDomainOrRange ObjDomainOrRange ObjectPropertyExpression ClassExpression
   | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
   | ObjectPropertyCharacter Character ObjectPropertyExpression
   | SubDataPropertyOf DataPropertyExpression DataPropertyExpression

@@ -58,11 +58,11 @@ apBit = do
         <|> do
           pkeyword rangeC
           x <- sepByComma $ optAnnos uriP
-          return $ AnnotationBit Range $ AnnotatedList x 
+          return $ AnnotationDR AnnRange $ AnnotatedList x 
        <|> do
           pkeyword domainC
           x <- sepByComma $ optAnnos uriP
-          return $ AnnotationBit Domain $ AnnotatedList x 
+          return $ AnnotationDR AnnDomain $ AnnotatedList x 
        <|> do
           x <- annotations
           return $ AnnotationFrameBit x
@@ -115,9 +115,9 @@ objPropExprAList = sepByComma $ optAnnos objectPropertyExpr
 
 objectFrameBit :: CharParser st FrameBit
 objectFrameBit = do
-    r <- relation
+    r <- domainOrRange
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit r $ AnnotatedList ds
+    return $ ObjectDomainOrRange r $ AnnotatedList ds
   <|> do
     characterKey
     ds <- sepByComma $ optAnnos objectPropertyCharacter
@@ -157,7 +157,7 @@ dataFrameBit :: CharParser st FrameBit
 dataFrameBit  = do
     pkeyword domainC
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit Domain $ AnnotatedList ds
+    return $ DataPropDomain $ AnnotatedList ds
   <|> do
     pkeyword rangeC
     ds <- sepByComma $ optAnnos dataRange

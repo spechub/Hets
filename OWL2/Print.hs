@@ -154,6 +154,9 @@ printRelation = keyword . showRelation
 printObjDomainOrRange :: ObjDomainOrRange -> Doc
 printObjDomainOrRange = keyword . showObjDomainOrRange
 
+printAnnDomainOrRange :: AnnotationDomainOrRange -> Doc
+printAnnDomainOrRange = keyword . showAnnDomainOrRange
+
 printDataDomainOrRange :: DataDomainOrRange -> Doc
 printDataDomainOrRange dr = case dr of
     DataDomain d -> keyword domainC <+> pretty d

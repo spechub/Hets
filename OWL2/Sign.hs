@@ -15,7 +15,6 @@ module OWL2.Sign where
 import OWL2.AS
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Common.DocUtils
 
 type ID = IRIreference          -- for universal ID
 type OntologyID = IRIreference
@@ -25,8 +24,6 @@ type IndividualID = IRIreference
 type DataRoleIRI = IRIreference
 type IndividualRoleIRI = IRIreference
 type AnnotationPropertyID = IRIreference
-
-instance Pretty Sign
 
 data Sign = Sign
             { concepts :: Set.Set ClassID

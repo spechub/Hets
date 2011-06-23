@@ -508,7 +508,7 @@ annotation = do
     return $ Annotation [] ap av
 
 relationL :: [Relation]
-relationL = [Equivalent, Disjoint, SubPropertyOf, Domain, Range, InverseOf, SubClass]
+relationL = [Equivalent, Disjoint, SubPropertyOf, InverseOf, SubClass]
 
 relation :: CharParser st Relation
 relation = choice
@@ -541,6 +541,11 @@ sameOrDifferentIndu =
 objectPropertyCharacter :: CharParser st Character
 objectPropertyCharacter =
   choice $ map (\ f -> keyword (show f) >> return f) characters
+
+domainOrRange :: CharParser st ObjDomainOrRange
+domainOrRange = choice
+  $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
+  [ObjDomain, ObjRange]
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do
