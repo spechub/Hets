@@ -4,9 +4,9 @@ Description :  A Parser for the TPTP-THF Syntax
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :
-Stability   :
-Portability :
+Maintainer  :  Alexis.Tsogias@dfki.de
+Stability   :  provisional
+Portability :  portable
 
 A Parser for the TPTP-THF Input Syntax v5.1.0.2 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
@@ -19,23 +19,42 @@ import THF.As
 import Common.Parsec
 
 import Data.Char
+import Data.Maybe
 
 -- Parser
 
 parseTHF :: CharParser st [TPTP_THF]
 parseTHF = do
     skipSpaces
+    h <- optionMaybe header
     thf <- many (systemComment <|> definedComment <|> comment <|>
                  include <|> thfAnnotatedFormula)
     skipSpaces; eof
-    return thf
+    return $ if isJust h then (fromJust h) : thf else thf
 
-comment :: CharParser st TPTP_THF
-comment = do
+header :: CharParser st TPTP_THF
+header = do
+    s <- headerSE
+    c <- many commentLine
+    e <- headerSE
+    return $ TPTP_Header ((s : c) ++ [e])
+
+headerSE :: CharParser st Comment
+headerSE = do
+    try (char '%' >> notFollowedBy (char '$'))
+    c <- many1 $ char '-'
+    skipSpaces
+    return $ Comment_Line c
+
+commentLine :: CharParser st Comment
+commentLine = do
     try (char '%' >> notFollowedBy (char '$'))
     c <- many printableChar
     skipSpaces
-    return $ TPTP_Comment (Comment_Line c)
+    return $ Comment_Line c
+
+comment :: CharParser st TPTP_THF
+comment = fmap TPTP_Comment commentLine
   <|> do
     try (string "/*" >> notFollowedBy (char '$'))
     c <- many (noneOf "*/")

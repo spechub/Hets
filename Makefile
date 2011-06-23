@@ -412,7 +412,7 @@ Fpl/ATC_Fpl.der.hs: $(Fpl_files) $(GENRULES)
 	$(GENRULECALL)  -i CASL.ATC_CASL -o $@ $(Fpl_files)
 
 THF/ATC_THF.der.hs: $(THF_files) $(GENRULES)
-	$(GENRULECALL)  -o $@ $(THF_files)
+	$(GENRULECALL) -i ATC.Id -i ATC.GlobalAnnotations -o $@ $(THF_files)
 
 FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)

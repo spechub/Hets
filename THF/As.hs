@@ -4,9 +4,9 @@ Description :  A abstract syntax for the TPTP-THF Syntax
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :
-Stability   :
-Portability :
+Maintainer  :  Alexis.Tsogias@dfki.de
+Stability   :  provisional
+Portability :  portable
 
 A Abstract Syntax for the TPTP-THF Input Syntax v5.1.0.2 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>
@@ -25,7 +25,7 @@ data TPTP_THF =
   | TPTP_Comment                Comment
   | TPTP_Defined_Comment        DefinedComment
   | TPTP_System_Comment         SystemComment
---  | TPTP_Empty_Line
+  | TPTP_Header                 [Comment]
     deriving (Show, Eq, Ord)
 
 -- <comment>            ::- <comment_line>|<comment_block>
@@ -607,13 +607,3 @@ type DistinctObject = String
 -- <upper_alpha>        ::: [A-Z]
 -- <numeric>            ::: [0-9]
 type LowerWord = String
-
-
---------------------------------------------------------------------------------
--- Data structures used in Logic_THF
-
-data SignTHF = UNDEFINEDSIGN deriving (Eq, Ord, Show)
---
-
-data SymbolTHF = UNDEFINEDSYMOL deriving (Show, Eq, Ord)
-

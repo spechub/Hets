@@ -4,9 +4,9 @@ Description :  A printer for the TPTP-THF Syntax
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :
-Stability   :
-Portability :
+Maintainer  :  Alexis.Tsogias@dfki.de
+Stability   :  provisional
+Portability :  portable
 
 A printer for the TPTP-THF Input Syntax v5.1.0.2 taken from
 <http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html>

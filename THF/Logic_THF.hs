@@ -5,7 +5,7 @@ Description :  Instance of class Logic for THF.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
-Maintainer  :
+Maintainer  :  Alexis.Tsogias@dfki.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
@@ -24,6 +24,7 @@ import THF.ATC_THF ()
 import THF.Cons
 import THF.As
 import THF.ParseTHF
+import THF.StaticAnalysisTHF
 
 data THF = THF deriving Show
 
@@ -46,7 +47,7 @@ instance Sentences THF SentenceTHF SignTHF
 
 instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
                SignTHF MorphismTHF SymbolTHF () where
-         --basic_analysis THF = --Just globalAnnon kann leer bleiben
+         basic_analysis THF = Just basicAnalysis
          empty_signature THF = emptySign
          --is_subsig THF _ _ = True
          --subsig_inclusion THF = defaultInclusion
