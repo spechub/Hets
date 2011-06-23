@@ -81,7 +81,7 @@ anaDescription desc = case desc of
         _ -> do 
             s <- get
             if Set.member u (concepts s) then return $ return desc
-            else return $ fail "Class not found"
+             else return $ fail "Class not found"
   ObjectJunction _ ds -> do 
       mapM_ anaDescription ds 
       return (Just desc)
@@ -96,22 +96,22 @@ anaDescription desc = case desc of
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then do
         anaDescription d
         return (Just desc)
-    else return $ fail "Failed"
+     else return $ fail "Failed"
   ObjectHasSelf opExpr -> do
     s <- get
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then return (Just desc)
-    else return $ fail "Failed"
+     else return $ fail "Failed"
   ObjectHasValue opExpr i -> do
     s <- get
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then do
         anaIndividual i
         return (Just desc)
-    else return $ fail "Failed"
+     else return $ fail "Failed"
   ObjectCardinality (Cardinality _ _ opExpr md) -> do
     s <- get
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then do
         maybe (return (Just desc)) anaDescription md
-    else return $ fail "Failed"
+     else return $ fail "Failed"
   DataValuesFrom _ dExp ds r -> do
     s <- get
     if Set.isSubsetOf (Set.fromList(dExp : ds)) (dataProperties s) then do
@@ -119,21 +119,21 @@ anaDescription desc = case desc of
         mapM_ anaDataPropExpr ds
         anaDataRange r
         return (Just desc)
-    else return $ fail "Failed"
+     else return $ fail "Failed"
   DataHasValue dExp c -> do
     s <- get
     if Set.member dExp (dataProperties s) then do
         anaDataPropExpr dExp
         anaLiteral c
         return (Just desc)
-    else return $ fail "Failed"
+     else return $ fail "Failed"
   DataCardinality (Cardinality _ _ dExp mr) -> do
     s <- get
     if Set.member dExp (dataProperties s) then do
         anaDataPropExpr dExp
         maybe (return ()) anaDataRange mr
         return (Just desc)
-    else return $ fail "Failed"
+     else return $ fail "Failed"
 
 anaFrame :: Frame -> State Sign (Frame)
 anaFrame f = case f of
@@ -181,7 +181,7 @@ checkFactList :: FrameBit -> [Fact] -> State Sign (Maybe FrameBit)
 checkFactList fb fl = do
     x <- mapM (checkFact fb) fl
     return $ if length (catMaybes x) < length x then Nothing 
-             else (Just fb)   
+              else (Just fb)   
 
 checkFact :: FrameBit -> Fact -> State Sign (Maybe FrameBit)
 checkFact fb f = do 
@@ -190,25 +190,25 @@ checkFact fb f = do
       ObjectPropertyFact _ op i -> 
         if Set.member (getObjRoleFromExpression op) (objectProperties s) 
             && Set.member i (individuals s) then return $ Just fb
-        else return Nothing
+         else return Nothing
       DataPropertyFact _ dp (Literal _ (Typed l)) -> 
         if Set.member dp (dataProperties s) 
             && Set.member l (datatypes s) then return $ Just fb
-        else return Nothing 
+         else return Nothing 
      
 checkObjPropList :: FrameBit -> [ObjectPropertyExpression] -> State Sign (Maybe FrameBit)
 checkObjPropList fb ol = do
         s <- get
         let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
         return $ if elem False x then Nothing 
-                 else (Just fb)
+                  else (Just fb)
 
 checkDataPropList :: FrameBit -> [DataPropertyExpression] -> State Sign (Maybe FrameBit)
 checkDataPropList fb dl = do
         s <- get
         let x = map (\ u -> Set.member u (dataProperties s) ) dl
         return $ if elem False x then Nothing 
-                 else (Just $ fb)
+                  else (Just $ fb)
 
 checkHasKeyAll :: FrameBit -> State Sign (Maybe FrameBit)
 checkHasKeyAll (ClassHasKey a ol dl) = do
@@ -216,19 +216,19 @@ checkHasKeyAll (ClassHasKey a ol dl) = do
     let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
         y = map (\ u -> Set.member u (dataProperties s) ) dl 
     return $ if elem False (x ++ y) then Nothing
-             else (Just $ ClassHasKey a ol dl)
+              else (Just $ ClassHasKey a ol dl)
 
 checkHasKey :: FrameBit -> State Sign (Maybe FrameBit)
 checkHasKey (ClassHasKey a ol dl) = do 
     x <- sortObjDataList ol 
     return $ if null x then Nothing
-             else Just $ ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
+              else Just $ ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
 
 sortObjData :: ObjectPropertyExpression -> State Sign (Maybe ObjectPropertyExpression)
 sortObjData op = do
     s <- get
     return $ if Set.member (getObjRoleFromExpression op) (objectProperties s) then Just op
-    else Nothing
+     else Nothing
 
 sortObjDataList :: [ObjectPropertyExpression] -> State Sign [ObjectPropertyExpression]
 sortObjDataList = fmap catMaybes . mapM sortObjData   
@@ -339,7 +339,7 @@ findImplied anno sent =
          { isAxiom = False
          , isDef = False
          , wasTheorem = False }
-  else sent { isAxiom = True }
+   else sent { isAxiom = True }
 
 isToProve :: [OWL2.AS.Annotation] -> Bool
 isToProve [] = False
