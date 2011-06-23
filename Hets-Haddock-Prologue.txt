@@ -70,8 +70,7 @@ Last but not least, there are general purpose folders.  The most
 important one is the folder "Common". It contains general purpose
 libraries, e.g. for relations, and for parsing and
 pretty printing. "Common.Result" provides a monad for error handling
-and error messages that is used at many places throughout Hets (see
-<http://www.haskell.org/all_about_monads/> for an introduction to monads).
+and error messages that is used at many places throughout Hets.
 
 The folder "ATC" is for conversion from and to shared ATerms. The
 /utils/ folder contains tools like /DriFT/ and /InlineAxioms/, the
