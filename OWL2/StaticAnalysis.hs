@@ -39,7 +39,7 @@ modEntity f (Entity ty u) = do
     ObjectProperty -> s { objectProperties = chg $ objectProperties s }
     DataProperty -> s { dataProperties = chg $ dataProperties s }
     NamedIndividual -> s { individuals = chg $ individuals s }
-    AnnotationProperty -> s -- ignore
+    AnnotationProperty -> s {annotationRoles = chg $ annotationRoles s}
 
 addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
@@ -72,17 +72,17 @@ checkDataRange dr =
     DataType u -> checkEntity dr (Entity Datatype u)
     DataJunction _ drl -> do
       x <- mapM checkDataRange drl
-      if any isNothing x then return Nothing
-       else return $ Just dr
+      if any isNothing x then fail "data junction failed"
+       else return $ return dr
     DataComplementOf r -> checkDataRange r
     DataOneOf ls -> do
       x <- mapM checkLiteral ls
-      if any isNothing x then return Nothing
-       else return $ Just dr
+      if any isNothing x then fail "data one of failed" 
+       else return $ return dr
     DatatypeRestriction dt fcs -> do
       x <- checkEntity dr (Entity Datatype dt)
       y <- mapM checkLiteral (map snd fcs)
-      return $ if any isNothing y || isNothing x then Nothing else Just dr 
+      if any isNothing y || isNothing x then fail "datatype restriction failed" else return $ return dr 
 
 checkClassExpression :: ClassExpression -> State Sign (Maybe ClassExpression)
 checkClassExpression desc = case desc of
@@ -92,20 +92,20 @@ checkClassExpression desc = case desc of
         _ -> checkEntity desc (Entity Class u) 
   ObjectJunction _ ds -> do 
       x <- mapM checkClassExpression ds 
-      if any isNothing x then return Nothing
-       else return $ Just desc
-  ObjectComplementOf d -> do 
+      if any isNothing x then fail "object junction failed"
+       else return $ return desc
+  ObjectComplementOf d -> do  
       checkClassExpression d
   ObjectOneOf is -> do 
       x <- mapM (checkEntity desc) (map (Entity NamedIndividual) is)
-      if any isNothing x then return Nothing 
-       else return $ Just desc
+      if any isNothing x then fail "data one of failed"
+       else return $ return desc
   ObjectValuesFrom _ opExpr d -> do
       s <- get
       let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s)
       y <- checkClassExpression d
-      return $ if (x == False || isNothing y ) then Nothing 
-                else Just desc
+      if (x == False || isNothing y ) then fail "object values from failed"
+                else return $ return desc
   ObjectHasSelf opExpr -> do
     s <- get
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then return (Just desc)
@@ -114,40 +114,50 @@ checkClassExpression desc = case desc of
     s <- get
     let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s) 
     y <- checkEntity desc (Entity NamedIndividual i)
-    return $ if (x == False || isNothing y ) then Nothing 
-              else Just desc
-  ObjectCardinality (Cardinality _ _ opExpr md) -> do
+    if (x == False || isNothing y ) then fail "object has value failed" 
+              else return $ return desc
+  ObjectCardinality (Cardinality a b opExpr md) -> do
     s <- get
-    let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s)
+    let iri = getObjRoleFromExpression opExpr 
+    let x = Set.member iri (objectProperties s)
+    let z = Set.member iri (dataProperties s)
     case md of 
-        Nothing -> return $ if x == False then Nothing 
-              else Just desc
-        Just d -> do
-            y <- checkClassExpression d
-            return $ if (x == False || isNothing y ) then Nothing 
-                      else Just desc
+        Nothing -> if x == False then fail "object cardinality failed with no class expression provided"
+                        else return $ return desc
+        Just d -> if x == True then do
+                      y <- checkClassExpression d
+                      if isNothing y then fail "object cardinality failed"
+                        else return $ return desc
+                    else do
+                        let Expression u = d
+                            dr = DataType u
+                        chk <- checkDataRange dr 
+                        if isNothing chk then fail $ "corrected data cardinality failed: " ++ showQN iri
+                          else 
+                            if z == False then fail $ "corrected data cardinality failed: " ++ showQN iri 
+                              else return $ return $ DataCardinality (Cardinality a b iri (Just dr))
   DataValuesFrom _ dExp ds r -> do
     s <- get
     let x = Set.isSubsetOf (Set.fromList(dExp : ds)) (dataProperties s) 
     y <- checkDataRange r
-    return $ if (x == False || isNothing y ) then Nothing 
-              else Just desc
+    if (x == False || isNothing y ) then fail "data values from failed" 
+              else return $ return desc
   DataHasValue dExp c -> do
     s <- get
     let x = Set.member dExp (dataProperties s) 
     y <- checkLiteral c
-    return $ if (x == False || isNothing y ) then Nothing 
-              else Just desc  
+    if (x == False || isNothing y ) then fail "data has value failed" 
+              else return $ return desc  
   DataCardinality (Cardinality _ _ dExp mr) -> do
     s <- get
     let x = Set.member dExp (dataProperties s)
     case mr of 
-        Nothing -> return $ if x == False then Nothing 
-                             else Just desc
+        Nothing -> if x == False then fail "data cardinality failed with no class expression provided"
+                             else return $ return desc
         Just d -> do
             y <- checkDataRange d
-            return $ if (x == False || isNothing y ) then Nothing 
-                      else Just desc
+            if (x == False || isNothing y ) then fail "data cardinality failed"
+                      else return $ return desc
 
 checkBit :: FrameBit -> State Sign (Maybe FrameBit)
 checkBit fb = case fb of
@@ -160,12 +170,12 @@ checkBit fb = case fb of
     AnnotationDR _ _ -> return $ Just fb
     DatatypeBit _ dr -> do 
         x <- checkDataRange dr
-        return $ if isNothing x then Nothing 
-                  else Just fb
+        if isNothing x then fail "datatype bit failed" 
+                  else return $ return $ fb
     ExpressionBit _ anl -> do
         x <- mapM checkClassExpression (map snd $ convertAnnList anl)
-        return $ if elem Nothing x then Nothing 
-                  else Just fb
+        if elem Nothing x then fail "expression bit failed"
+                  else return $ return fb
     ClassDisjointUnion _ cel -> do
         x <- mapM checkClassExpression cel
         return $ if elem Nothing x then Nothing 
@@ -192,8 +202,8 @@ checkBit fb = case fb of
     DataPropRange anl -> do
         let dr = map snd $ convertAnnList anl
         x <- mapM checkDataRange dr
-        return $ if any isNothing x then Nothing 
-                  else Just fb  
+        if any isNothing x then fail "data property range failed"
+                  else return $ return fb  
     DataFunctional _ -> return $ Just fb
     IndividualFacts anl -> do
         let f = map snd $ convertAnnList anl
@@ -207,8 +217,8 @@ checkBit fb = case fb of
 checkFactList :: FrameBit -> [Fact] -> State Sign (Maybe FrameBit)
 checkFactList fb fl = do
     x <- mapM (checkFact fb) fl
-    return $ if any isNothing x then Nothing 
-              else (Just fb)   
+    if any isNothing x then fail "fact failed" 
+              else return $ return fb   
 
 checkFact :: FrameBit -> Fact -> State Sign (Maybe FrameBit)
 checkFact fb f = do 
@@ -247,26 +257,28 @@ checkHasKeyAll k = case k of
     s <- get
     let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
         y = map (\ u -> Set.member u (dataProperties s) ) dl 
-    return $ if elem False (x ++ y) then Nothing
-              else (Just $ ClassHasKey a ol dl)
+    if elem False (x ++ y) then fail "keys failed"
+              else return $ return (ClassHasKey a ol dl)
   _ -> return $ Just k
 
 checkHasKey :: FrameBit -> State Sign (Maybe FrameBit)
 checkHasKey k = case k of 
   ClassHasKey a ol _ -> do 
-    x <- sortObjDataList ol 
-    let k2 = ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
-    checkHasKeyAll k2
-  _ -> return $ Just k
+    --x <- sortObjDataList ol 
+    let k2 = ClassHasKey a [] (map getObjRoleFromExpression (ol)) 
+    return $ return k2
+  _ -> return $ return k
+
 
 sortObjData :: ObjectPropertyExpression -> State Sign (Maybe ObjectPropertyExpression)
 sortObjData op = do
     s <- get
-    return $ if Set.member (getObjRoleFromExpression op) (objectProperties s) then Just op
-     else Nothing
+    let p = getObjRoleFromExpression op
+    if Set.member p (objectProperties s) then return $ return op
+     else fail $ "sorting obj property failed " ++ showQN p
 
 sortObjDataList :: [ObjectPropertyExpression] -> State Sign [ObjectPropertyExpression]
-sortObjDataList = fmap catMaybes . mapM sortObjData   
+sortObjDataList ls = fmap catMaybes (mapM sortObjData ls)   
 
 checkMisc :: Misc -> State Sign (Maybe Misc)
 checkMisc m = case m of
@@ -288,17 +300,17 @@ createSign = mapM_ getEntityFromFrame
 
 checkFrame :: Frame -> State Sign (Maybe Frame)
 checkFrame f = case f of
-    Frame _ fbl -> do
+    Frame a fbl -> do
       x <- mapM checkBit fbl
-      return $ if any isNothing x then Nothing else Just f 
+      if any isNothing x then fail "bit failed" else return $ return $ Frame a (catMaybes x) 
     MiscFrame r al misc -> do
       x <- checkMisc misc
       case x of 
-        Nothing -> return Nothing
+        Nothing -> return $ fail "misc failed"
         Just m -> return $ Just (MiscFrame r al m)
     MiscSameOrDifferent _ _ il -> do
       y <- mapM (checkEntity f) (map (Entity NamedIndividual) il)
-      return $ if any isNothing y then Nothing 
+      return $ if any isNothing y then fail "same or different individuals failed"
                   else Just f
 
 correctFrames :: [Frame] -> State Sign (Maybe [Frame])
@@ -306,13 +318,13 @@ correctFrames fl = do
     createSign fl
     x <- mapM checkFrame fl
     return $ if any isNothing x then Nothing 
-                  else Just fl
+                  else Just (catMaybes x)
 
 createAxioms :: [Frame] -> State Sign (Maybe [Named Axiom])
 createAxioms fl = do
     x <- correctFrames fl 
-    return $ if isNothing x then Nothing 
-              else Just $ map (makeNamed "") $ concatMap getAxioms fl
+    return $ if isNothing x then Nothing
+              else Just $ map (makeNamed "") $ concatMap getAxioms (fromJust x)
 
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis ::
@@ -328,7 +340,7 @@ basicOWL2Analysis (odoc, inSign, _) =
         (axl, _) = runState (createAxioms (ontologyFrame (mOntology odoc)))
                    accSign    
     in return $ case axl of
-          Nothing -> (odoc, ExtSign accSign syms, []) 
+          Nothing -> error "could not correct axioms, bad ontolgy" --(odoc, ExtSign accSign syms, [])
           Just al -> (odoc, ExtSign accSign syms, al)
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
