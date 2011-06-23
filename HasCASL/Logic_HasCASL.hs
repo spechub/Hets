@@ -18,6 +18,7 @@ module HasCASL.Logic_HasCASL (HasCASL (HasCASL)) where
 import HasCASL.As
 import HasCASL.Builtin
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.AsToLe
 import HasCASL.RawSym
 import HasCASL.SymbItem
@@ -85,6 +86,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
         . fromLabelledSen
     sym_name HasCASL = symName
     sym_of HasCASL = symOf
+    mostSymsOf HasCASL = mostSyms
     symmap_of HasCASL = morphismToSymbMap
 
 instance StaticAnalysis HasCASL BasicSpec Sentence

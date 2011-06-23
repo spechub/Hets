@@ -19,7 +19,9 @@ module HasCASL.PrintLe
   , improveDiag
   , diffTypeMap
   , diffType
-  , printMap1) where
+  , printMap1
+  , mostSyms
+  ) where
 
 import HasCASL.As
 import HasCASL.AsUtils
@@ -186,6 +188,31 @@ instance Pretty Env where
         $+$ printMap0 vs
         $+$ vcat (map (pretty . fromLabelledSen) $ reverse se)
         $+$ vcat (map pretty $ reverse ds)
+
+mostSyms :: Env -> [Symbol]
+mostSyms Env
+      { classMap = cm
+      , typeMap = tm
+      , assumps = ops
+      } = let
+      oops = foldr (Map.delete . fst) ops bList
+      ocm = diffClassMap cm cpoMap
+      otm = diffTypeMap ocm tm bTypes
+      ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
+          $ Set.toList $ otherTypeKinds ti) $ Map.toList otm
+      stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
+          $ Set.toList $ superTypes ti) $ Map.toList otm
+      scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
+          $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
+          $ Map.toList ocm
+      in map (\ (i, k) -> idToClassSymbol i $ rawKind k) (Map.toList ocm)
+      ++ map (\ (i, s) -> Symbol i $ SuperClassSymbol s) scm
+      ++ map (\ (i, k) -> idToTypeSymbol i $ typeKind k) (Map.toList otm)
+      ++ map (\ (i, s) -> Symbol i $ TypeKindInstance s) ltm
+      ++ map (\ (i, s) -> Symbol i $ SuperTypeSymbol s) stm
+      ++ concatMap (\ (i, ts) ->
+                    map (idToOpSymbol i . opType) $ Set.toList ts)
+             (Map.toList oops)
 
 printAliasTypes :: Map.Map Id TypeInfo -> Doc
 printAliasTypes = ppMap pretty (\ td -> case typeDefn td of
