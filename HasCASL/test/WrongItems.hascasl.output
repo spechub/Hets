@@ -1,6 +1,6 @@
 parse error at 1.9:
 unexpected "="
-expecting "[", "%", ",", "<", "{", ";", casl sign or words
+expecting "[", "%", ",", "<", ":", "{", ";", casl sign or words
 
 parse error at 2.5:
 unexpected "<"

@@ -216,7 +216,7 @@ dataItems = hasCaslItemList typeS dataItem FreeDatatype
 classDecl :: AParser st ClassDecl
 classDecl = do
     (is, cs) <- classId `separatedBy` anComma
-    (ps, k) <- option ([], universe) $ pair (single lessT) kind
+    (ps, k) <- option ([], universe) $ pair (single $ lessT <|> colonT) kind
     return $ ClassDecl is k $ catRange $ cs ++ ps
 
 classItem :: AParser st ClassItem
