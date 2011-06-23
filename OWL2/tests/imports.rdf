@@ -1,0 +1,15 @@
+<rdf:RDF
+    xmlns:rdf='http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+    xmlns:rdfs='http://www.w3.org/2000/01/rdf-schema#'
+    xmlns:owl='http://www.w3.org/2002/07/owl#'
+    xmlns:ont='http://www.w3.org/2002/03owlt/imports/support011-A#'
+    xml:base='http://www.w3.org/2002/03owlt/imports/premises011' >
+
+    <owl:Ontology rdf:about=''>
+        <owl:imports 
+     rdf:resource="http://www.w3.org/2002/03owlt/imports/support011-A"/>
+    </owl:Ontology>
+
+    <ont:Man rdf:about='http://example.org/data#Socrates'/>
+
+</rdf:RDF>
