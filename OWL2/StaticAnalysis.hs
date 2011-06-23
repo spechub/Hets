@@ -59,12 +59,12 @@ checkEntity :: a -> Entity -> State Sign (Maybe a)
 checkEntity a (Entity ty e) = do
     s <- get
     case ty of
-      Datatype -> if Set.member e (datatypes s) then return $ return a else fail $ showQN e ++ " undeclared"
-      Class -> if Set.member e (concepts s) then return $ return a else fail $ showQN e ++ " undeclared"
-      ObjectProperty -> if Set.member e (objectProperties s) then return $ return a else fail $ showQN e ++ " undeclared"
-      DataProperty -> if Set.member e (dataProperties s) then return $ return a else fail $ showQN e ++ " undeclared" 
-      NamedIndividual -> if Set.member e (individuals s) then return $ return a else fail $ showQN e ++ " undeclared"
-      AnnotationProperty -> if Set.member e (annotationRoles s) then return $ return a else fail $ showQN e ++ " undeclared"
+      Datatype -> if Set.member e (datatypes s) then return $ return a else fail $ showQN e ++ " datatype undeclared"
+      Class -> if Set.member e (concepts s) then return $ return a else fail $ showQN e ++ " class undeclared"
+      ObjectProperty -> if Set.member e (objectProperties s) then return $ return a else fail $ showQN e ++ "object property undeclared"
+      DataProperty -> if Set.member e (dataProperties s) then return $ return a else fail $ showQN e ++ " data property undeclared" 
+      NamedIndividual -> if Set.member e (individuals s) then return $ return a else fail $ showQN e ++ " individual undeclared"
+      AnnotationProperty -> if Set.member e (annotationRoles s) then return $ return a else fail $ showQN e ++ " annotation property undeclared"
     
 checkDataRange :: DataRange -> State Sign (Maybe DataRange)
 checkDataRange dr = do 
