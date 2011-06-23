@@ -59,12 +59,12 @@ checkEntity :: a -> Entity -> State Sign (Maybe a)
 checkEntity a (Entity ty e) = do
     s <- get
     case ty of
-      Datatype -> if Set.member e (datatypes s) then return $ return a else fail "undeclared"
-      Class -> if Set.member e (concepts s) then return $ return a else fail "undeclared"
-      ObjectProperty -> if Set.member e (objectProperties s) then return $ return a else fail "undeclared"
-      DataProperty -> if Set.member e (dataProperties s) then return $ return a else fail "undeclared"
-      NamedIndividual -> if Set.member e (individuals s) then return $ return a else fail "undeclared"
-      AnnotationProperty -> if Set.member e (annotationRoles s) then return $ return a else fail "undeclared"
+      Datatype -> if Set.member e (datatypes s) then return $ return a else fail $ showQN e ++ " undeclared"
+      Class -> if Set.member e (concepts s) then return $ return a else fail $ showQN e ++ " undeclared"
+      ObjectProperty -> if Set.member e (objectProperties s) then return $ return a else fail $ showQN e ++ " undeclared"
+      DataProperty -> if Set.member e (dataProperties s) then return $ return a else fail $ showQN e ++ " undeclared" 
+      NamedIndividual -> if Set.member e (individuals s) then return $ return a else fail $ showQN e ++ " undeclared"
+      AnnotationProperty -> if Set.member e (annotationRoles s) then return $ return a else fail $ showQN e ++ " undeclared"
     
 checkDataRange :: DataRange -> State Sign (Maybe DataRange)
 checkDataRange dr = do 
@@ -269,25 +269,50 @@ getEntityFromFrame f = case f of
 createSign :: [Frame] -> State Sign ()
 createSign = mapM_ getEntityFromFrame
 
+checkFrame :: Frame -> State Sign (Maybe Frame)
+checkFrame f = case f of
+    Frame e fbl -> do
+      x <- mapM checkBit fbl
+      return $ if any isNothing x then Nothing else Just f 
+    MiscFrame r al misc -> do
+      x <- checkMisc misc
+      case x of 
+        Nothing -> return Nothing
+        Just m -> return $ Just (MiscFrame r al m)
+    MiscSameOrDifferent _ _ il -> do
+      y <- mapM (checkEntity f) (map (Entity NamedIndividual) il)
+      return $ if any isNothing y then Nothing 
+                  else Just f
+
+correctFrames :: [Frame] -> State Sign (Maybe [Frame])
+correctFrames fl = do
+    createSign fl
+    x <- mapM checkFrame fl
+    return $ if any isNothing x then Nothing 
+                  else Just fl
+
+createAxioms :: [Frame] -> State Sign (Maybe [Named Axiom])
+createAxioms fl = do
+    x <- correctFrames fl 
+    return $ if isNothing x then Nothing 
+              else Just $ map (makeNamed "") $ concatMap getAxioms fl
+
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis ::
     (OntologyDocument, Sign, GlobalAnnos) ->
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 
-basicOWL2Analysis (odoc, inSign, _) =
+basicOWL2Analysis (odoc, inSign, _) = 
     let ns = prefixDeclaration odoc
         syms = Set.difference (symOf accSign) $ symOf inSign
         (_, accSign) = runState
           (mapM getEntityFromFrame $ ontologyFrame $ mOntology odoc)
           inSign
-        noDecl s = case sentence s of
-                     PlainAxiom _ (Declaration _) -> False
-                     _ -> True
-    in return (odoc, ExtSign accSign syms
-                  , [])
-    where
-        oName = muri $ mOntology odoc
-
+        (axl, _) = runState (createAxioms (ontologyFrame (mOntology odoc)))
+                   accSign    
+    in return $ case axl of
+          Nothing -> (odoc, ExtSign accSign syms, []) 
+          Just al -> (odoc, ExtSign accSign syms, al)
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
 getObjRoleFromExpression opExp =
