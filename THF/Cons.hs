@@ -25,6 +25,7 @@ import THF.PrintTHF
 
 import Common.DefaultMorphism
 import Common.DocUtils
+import Common.Doc
 import Common.Id
 import Common.GlobalAnnotations
 import Common.Result
@@ -64,7 +65,8 @@ data SymbolTHF = Symbol
 instance GetRange SymbolTHF
 
 instance Pretty SymbolTHF where
-  pretty = undefined
+  pretty s = (text "Name: ") <+> pretty (symName s)
+        <+> text (" Type: " ++ (drop 3 (show $ symType s)))
 
 data SymbolType =
     ST_Const
@@ -96,7 +98,7 @@ type TypeMap = Map.Map Id Kind
 type ConstMap = Map.Map Id SentenceTHF
 
 data Kind =
-    Kind
+    TType
   | FunKind Kind Kind Range
     deriving (Show, Ord, Eq)
 

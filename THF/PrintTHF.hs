@@ -41,6 +41,11 @@ instance PrintTHF TPTP_THF where
         TPTP_Comment c                      -> printTHF c
         TPTP_Defined_Comment dc             -> printTHF dc
         TPTP_System_Comment sc              -> printTHF sc
+        TPTP_Header h                       -> printHeader h
+
+printHeader :: [Comment] -> Doc
+printHeader (c : rc) = printTHF c $+$ printHeader rc
+printHeader [] = empty
 
 instance PrintTHF Comment where
     printTHF c = case c of

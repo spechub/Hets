@@ -22,9 +22,9 @@ import Common.ProofTree
 
 import THF.ATC_THF ()
 import THF.Cons
-import THF.As
 import THF.ParseTHF
-import THF.StaticAnalysisTHF
+-- import THF.StaticAnalysisTHF
+-- import THF.ProveLeoII
 
 data THF = THF deriving Show
 
@@ -47,7 +47,7 @@ instance Sentences THF SentenceTHF SignTHF
 
 instance StaticAnalysis THF BasicSpecTHF SentenceTHF () ()
                SignTHF MorphismTHF SymbolTHF () where
-         basic_analysis THF = Just basicAnalysis
+         -- basic_analysis THF = Just basicAnalysis
          empty_signature THF = emptySign
          --is_subsig THF _ _ = True
          --subsig_inclusion THF = defaultInclusion
