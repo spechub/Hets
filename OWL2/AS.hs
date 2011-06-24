@@ -1,16 +1,17 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2007
+Copyright   :  (c) C. Maeder
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
-Portability :  non-portable(deriving Typeable)
+Portability :  portable
 
-Contains    :  Common datatypes for the Functional and Manchester Syntaxes of OWl 2
+Common datatypes for the Functional and Manchester Syntaxes of OWL 2
 
-References  :  <http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
-               <http://www.w3.org/TR/owl2-manchester-syntax/>
+References:
+ <http://www.w3.org/TR/2009/REC-owl2-syntax-20091027/#Functional-Style_Syntax>
+ <http://www.w3.org/TR/owl2-manchester-syntax/>
 -}
 
 module OWL2.AS where
@@ -108,7 +109,7 @@ type InverseObjectProperty = ObjectPropertyExpression
 
 data ObjectPropertyExpression = ObjectProp ObjectProperty
   | ObjectInverseOf InverseObjectProperty
-	deriving (Show, Eq, Ord)
+        deriving (Show, Eq, Ord)
 
 type DataPropertyExpression = DataProperty
 
@@ -164,12 +165,12 @@ showFacet df = case df of
     FRACTIONDIGITS -> fractionS
 
 data DataRange
-	= DataType Datatype [(ConstrainingFacet, RestrictionValue)]
-	| DataJunction JunctionType [DataRange]
+        = DataType Datatype [(ConstrainingFacet, RestrictionValue)]
+        | DataJunction JunctionType [DataRange]
           -- at least two elements in the list
-	| DataComplementOf DataRange
-	| DataOneOf [Literal]	-- at least one element in the list
-	deriving (Show, Eq, Ord)
+        | DataComplementOf DataRange
+        | DataOneOf [Literal]   -- at least one element in the list
+        deriving (Show, Eq, Ord)
 
 data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 
@@ -219,13 +220,13 @@ data ClassExpression =
 -------------------
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
-	  deriving (Show, Eq, Ord)
+          deriving (Show, Eq, Ord)
 
 data AnnotationAxiom
-	= AnnotationAssertion [Annotation] IRI
-	| AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
+        = AnnotationAssertion [Annotation] IRI
+        | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
   | AnnDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
-	deriving (Show, Eq, Ord)
+        deriving (Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
 
@@ -235,9 +236,9 @@ showAnnDomainOrRange dr = case dr of
     AnnRange -> rangeC
 
 data AnnotationValue
-	= AnnValue IRI
-	| AnnValLit Literal
-	  deriving (Show, Eq, Ord)
+        = AnnValue IRI
+        | AnnValLit Literal
+          deriving (Show, Eq, Ord)
 
 ---------------------------
 -- ENTITIES
