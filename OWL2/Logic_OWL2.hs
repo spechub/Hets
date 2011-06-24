@@ -37,8 +37,8 @@ import OWL2.FunctionalPrint
 import OWL2.ATC_OWL2 ()
 import OWL2.Sign
 import OWL2.StaticAnalysis
+import OWL2.Morphism
 
-type OWLMorphism = DefaultMorphism Sign
 type OWLSub = ()
 
 data OWL2 = OWL2 deriving Show
@@ -47,7 +47,13 @@ instance Language OWL2 where
  description _ =
   "OWL2 DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
--- instance Category Sign OWLMorphism -- to be refined
+instance Category Sign OWLMorphism where
+    ide sig = inclOWLMorphism sig sig
+    dom = osource
+    cod = otarget
+    legal_mor = legalMor
+    isInclusion = isOWLInclusion
+    composeMorphisms = composeMor
 
 instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
     parse_basic_spec OWL2 = Just basicSpec
@@ -63,6 +69,8 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
                Entity RawSymb where
       basic_analysis OWL2 = Just basicOWL2Analysis
       empty_signature OWL2 = emptySign
+      stat_symb_items OWL2 _ = return . statSymbItems
+      stat_symb_map_items OWL2 _ _ = statSymbMapItems
 
 instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
