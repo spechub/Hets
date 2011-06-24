@@ -59,12 +59,12 @@ def fromHets(filePath, app):
         print entity
     while len(buildque) > 0 :
         for elsrc in buildque:
-            if isBuildable(elsrc, buildque):
-                buildObject(elsrc, buildque, objDict)
+            if isBuildable(elsrc, buildque, app):
+                buildObject(elsrc, buildque, objDict, app)
 
 
 #checks whether the object is buildable in the current state of the program
-def isBuildable(el, queue):
+def isBuildable(el, queue, app):
     name, pos, att, ot, tr = el
     hasDependency = False
     composed = ['cut','common','extrude']
@@ -83,7 +83,7 @@ def isBuildable(el, queue):
 
 #calls constructor in the freecad document and updates queue and refList
 #arguments: element from buildque, object type, buildque, reference->object dict
-def buildObject(el, queue, refList): 
+def buildObject(el, queue, refList, app): 
     #expand and extract elements needed for object construction
     name, pos, b, objtype, tr = el
     queue.remove(el)
@@ -95,65 +95,95 @@ def buildObject(el, queue, refList):
     angle = 2*math.acos(q3)
     axis = FreeCAD.Vector(q0, q1, q2)
     place = FreeCAD.Placement(base, axis, angle)
-    
+
+    isCreated = False
+    defpnt = FreeCAD.Vector()
+    defdir = FreeCAD.Vector(0,0,1)
     defplace = FreeCAD.Placement()
     #handler to determine which object constructor to call
     if objtype == 'box':
-        isCreated = False
+        isCreated = True
         part = Part.makeBox(float(b['length']), float(b['width']), float(b['height']))
+        obj = app.ActiveDocument.addObject('Part::Box',name)
+        obj.Shape = part
     elif objtype == 'cylinder':
-        isCreated = False
-        part = Part.makeCylinder(float(b['radius']), float(b['height']), 
-        defplace)
+        isCreated = True
+        part = Part.makeCylinder(float(b['radius']), float(b['height']))
+        obj = app.ActiveDocument.addObject('Part::Cylinder',name)
+        obj.Shape = part
     elif objtype == 'cone':
-        isCreated = False
-        part = Part.makeCone(float(b['radius1']), float(b['radius2']), float(b['height']),
-        defplace)
+        isCreated = True
+        part = Part.makeCone(float(b['radius1']), float(b['radius2']), float(b['height']))
+        obj = app.ActiveDocument.addObject('Part::Cone',name)
+        obj.Shape = part
     elif objtype == 'sphere':
-        isCreated = False
-        part = Part.makeSphere(float(b['radius']),
-        [defpnt, defdir, float(b['angle1']),float(b['angle2']),float(b['angle3'])])
+        isCreated = True
+        part = Part.makeSphere(float(b['radius']), defpnt, defdir, float(b['angle1']),
+                               float(b['angle2']),float(b['angle3']))
+        obj = app.ActiveDocument.addObject('Part::Sphere',name)
+        obj.Shape = part
     elif objtype == 'torus':
-        isCreated = False
+        isCreated = True
         print el
-        part = Part.makeTorus(float(b['radius1']), float(b['radius2']), 
-        [defpnt, defdir, float(b['angle1']),float(b['angle2']),float(b['angle3'])])
+        part = Part.makeTorus(float(b['radius1']), float(b['radius2']), defpnt, defdir, 
+                              float(b['angle1']),float(b['angle2']),float(b['angle3']))
+        obj = app.ActiveDocument.addObject('Part::Torus',name)
+        obj.Shape = part
     elif objtype == 'line':
         isCreated = False
+        obj = app.ActiveDocument.addObject('Part::Part2DObjectPython', name)
         secpnt = FreeCAD.Vector(float(b['length']),0,0)
-        part = Part.makeLine(defpnt, secpnt)
+        Draft.Wire(obj)
+        obj.Points = [defpnt, secpnt]
+        obj.Closed = False
+        obj.Support = None
     elif objtype == 'circle':
-        isCreated = False
-        part = Part.makeCircle(float(b['radius']), [defpnt, defdir, float(b['angle1']), float(b['angle2'])])
+        isCreated = True
+        obj = app.ActiveDocument.addObject('Part::Part2DObjectPython', name)
+        Circle(obj)
+        obj.Radius = float(b['radius'])
+        startangle = float(b['angle1'])
+        endangle = float(b['angle2'])
+        if (startangle != None) and (endangle != None):
+            obj.FirstAngle = startangle
+            obj.LastAngle = endangle
     elif objtype == 'cut':
         isCreated = True
-        obj = cut(refList[att['base']],refList[att['tool']])
+        obj = addObject('Part::MultiCut',name)
+        obj.Shapes = [refList[b['base']],refList[b['tool']]]
     elif objtype == 'fusion':
         isCreated = True
-        obj = fuse(refList[att['base']],refList[att['tool']])
+        obj = addObject('Part::MultiFuse',name)
+        obj.Shapes = [refList[b['base']],refList[b['tool']]]
+        #refList[att['base']].Visibility = False
+        #refList[att['tool']].Visibility = False
     elif objtype == 'common':
         isCreated = True
         obj = addObject('Part::MultiCommon',name)
-        obj.Shapes = [refList[att['base']],refList[att['tool']]]
+        obj.Shapes = [refList[b['base']],refList[b['tool']]]
     elif objtype == 'extrude':
         isCreated = True
-        obj = extrude(refList[att['base']],float(refList[att['tool']]))
+        obj = app.ActiveDocument.addObject('Part::Extrusion', name)
+        obj.Base =refList[b['base']]
+        obj.Dir = float(FreeCAD.Vector(float(b['valueX']),
+                                       float(b['valueY']),
+                                       float(b['valueZ'])))
     elif objtype == 'rectangle':
         isCreated = True
-        obj = makeRectangle(b['length'], b['height'],FreeCAD.Placement(),False)
-
-
-    #build an empty object
-    if not isCreated:
-        obj = FreeCAD.ActiveDocument.addObject("Part::Feature", name)
-    else:
-        obj.Label = name
+        obj = app.ActiveDocument.addObject("Part::Part2DObjectPython",name)
+        Draft.Rectangle(obj)
+        Draft.ViewProviderRectangle(obj.ViewObject)
+        obj.Length = float(b['length'])
+        obj.Height = float(b['height'])
+        obj.Support =None
+        obj.ViewObject.DisplayMode = "Wireframe"
+        #Draft.formatObject(obj)
+        app.ActiveDocument.recompute()
     
     #all objects are created with the default placement
     #now the actual placement is added to the FreeCAD object
-    obj.Placement = place
-        
-        
-    #add the mapping from the reference string(name of object) to the actual object.
-    #this is needed in order to build 'extended objects'
-    refList[name] = obj
+    if isCreated:
+        obj.Placement = place
+        #add the mapping from the reference string(name of object) to the actual object.
+        #this is needed in order to build 'extended objects'
+        refList[name] = obj
