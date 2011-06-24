@@ -24,6 +24,9 @@ import Data.Maybe
 import FreeCAD.As
 import FreeCAD.VecTools
 
+import System.Directory
+import System.FilePath
+
 getBrep::(String, String) -> IO (BaseObject, Placement)
 getBrep (address, "line") = 
     fmap proc3dLine $ get3dLine address
@@ -110,15 +113,26 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
       pos = a
       place = Placement pos quaternion
 
+-- TODO: get binary path from environment
+brepToXmlBinary :: IO FilePath
+brepToXmlBinary = return "./FreeCAD/brep_conversion/bin/brep_to_xml"
+
+-- TODO: make unique subdirectory in tmp
+getFreshTempDir :: IO FilePath
+getFreshTempDir = getTemporaryDirectory
+
+getBrepObject :: (String -> a) -> String -> String -> IO a
+getBrepObject parser t addr = do
+  tmpDir <- getFreshTempDir
+  binary <- brepToXmlBinary
+  fmap parser $ readProcess binary [joinPath [tmpDir, addr], t] ""
+
 get3dLine :: String -> IO (Vector3, Vector3)
-get3dLine address = fmap parseBrepXML2 $ readProcess
-                    "./FreeCAD/brep_conversion/bin/brep_to_xml"
-                    [concat ["/tmp/",address], "line"] ""
+get3dLine = getBrepObject parseBrepXML2 "line"
+
 getRectangle:: String -> IO (Vector3, Vector3, Vector3, Vector3)
-getRectangle address = fmap parseBrepXML $ readProcess
-                       "./FreeCAD/brep_conversion/bin/brep_to_xml"
-                       [concat ["/tmp/",address], "rectangle"] ""
-                       --TODO fix this ^ (make it portable)
+getRectangle = getBrepObject parseBrepXML "rectangle"
+
 
 parseBrepXML:: String -> (Vector3, Vector3, Vector3, Vector3)
 parseBrepXML a = getData (fromJust (parseXMLDoc a))
