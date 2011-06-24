@@ -50,11 +50,6 @@ anaAxiom x = case x of
   _ -> id
  $ makeNamed "" x
 
-checkLiteral :: Sign -> Literal -> Result Literal
-checkLiteral s (Literal a ty) = case ty of
-  Typed u -> checkEntity s (Literal a ty) (Entity Datatype u)
-  _ -> return (Literal a ty)
-
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a (Entity ty e) = case ty of
       Datatype -> if Set.member e (datatypes s) then return a else fail $ showQN e ++ " datatype undeclared"

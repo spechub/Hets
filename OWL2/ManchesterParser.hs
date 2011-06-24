@@ -19,7 +19,6 @@ import OWL2.MS
 import OWL2.Parse
 import OWL.Keywords
 import OWL.ColonKeywords
-import OWL2.ManchesterPrint
 
 import Common.Keywords
 import Common.Parsec
