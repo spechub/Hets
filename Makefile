@@ -326,7 +326,8 @@ THF_files = THF/As.hs THF/Cons.hs
 
 FreeCAD_files = FreeCAD/As.hs
 
-OWL2_files = OWL2/AS.hs OWL2/FS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs
+OWL2_files = OWL2/AS.hs OWL2/FS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
+  OWL2/Morphism.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
