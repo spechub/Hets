@@ -32,25 +32,20 @@ data MOntology = MOntology {
   ontologyFrame :: [Frame]
  } deriving (Show, Eq, Ord)
 
-data AnnotatedList a = AnnotatedList [(Annotations, a)]
-   deriving (Show, Eq, Ord)
-
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
-  @Annotations:@ if non-empty
--}
-data Annotations = Annotations [(Annotations, Annotation)]
+  @Annotations:@ if non-empty -}
+type Annotations = [Annotation]
+
+data AnnotatedList a = AnnotatedList { convertAnnList :: [(Annotations, a)] }
    deriving (Show, Eq, Ord)
 
-noAnnos :: Annotations
-noAnnos = Annotations []
-
-data Frame 
+data Frame
    = Frame Entity [FrameBit]
    | MiscFrame Relation Annotations Misc
    | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
     deriving (Show, Eq, Ord)
-          
-data FrameBit 
+
+data FrameBit
   = AnnotationFrameBit Annotations
   | AnnotationBit Relation (AnnotatedList AnnotationProperty)
   | AnnotationDR AnnotationDomainOrRange (AnnotatedList IRI)
@@ -70,12 +65,12 @@ data FrameBit
   | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)
     deriving (Show, Eq, Ord)
 
-data Misc 
-  = MiscEquivOrDisjointClasses  
+data Misc
+  = MiscEquivOrDisjointClasses
       [ClassExpression]
-  | MiscEquivOrDisjointObjProp 
+  | MiscEquivOrDisjointObjProp
       [ObjectPropertyExpression]
-  | MiscEquivOrDisjointDataProp 
+  | MiscEquivOrDisjointDataProp
       [DataPropertyExpression]
      deriving (Show, Eq, Ord)
 

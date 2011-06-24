@@ -519,12 +519,6 @@ annotationValue = do
     l <- literal
     return $ AnnValLit l
 
-annotation :: CharParser st Annotation
-annotation = do
-    ap <- uriP
-    av <- annotationValue
-    return $ Annotation [] ap av
-
 relationL :: [Relation]
 relationL = [Equivalent, Disjoint, SubPropertyOf, InverseOf, SubClass]
 

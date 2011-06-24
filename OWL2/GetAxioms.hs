@@ -16,48 +16,40 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.FS
 
-convertAnnos :: Annotations -> [Annotation]
-convertAnnos (Annotations l) =
-  map (\ (ans, Annotation _ ap av) -> Annotation (convertAnnos ans) ap av) l
- 
-convertAnnList :: (AnnotatedList a) -> [([Annotation], a)]
-convertAnnList (AnnotatedList x) = 
-  map (\ (ans, b) -> (convertAnnos ans, b)) x
-
 convertFrameBit :: Entity -> FrameBit -> [Axiom]
 convertFrameBit (Entity e iri) fb = case fb of
-    AnnotationFrameBit ans -> [EntityAnno $ AnnotationAssertion (convertAnnos ans) iri]
-    AnnotationBit ed anl ->  map (\ (ans, b) -> EntityAnno $ AnnotationAxiom ed ans iri b) (convertAnnList anl)
-    AnnotationDR dr anl -> map (\ (ans, b) -> EntityAnno $ AnnDomainOrRange dr ans iri b) (convertAnnList anl)
-    DatatypeBit ans dr -> [PlainAxiom (convertAnnos ans) $ DatatypeDefinition iri dr]
-    ExpressionBit ed anl -> let x = convertAnnList anl in 
+    AnnotationFrameBit ans -> [EntityAnno $ AnnotationAssertion ans iri]
+    AnnotationBit ed (AnnotatedList x) ->  map (\ (ans, b) -> EntityAnno $ AnnotationAxiom ed ans iri b) x
+    AnnotationDR dr (AnnotatedList x) -> map (\ (ans, b) -> EntityAnno $ AnnDomainOrRange dr ans iri b) x
+    DatatypeBit ans dr -> [PlainAxiom ans $ DatatypeDefinition iri dr]
+    ExpressionBit ed (AnnotatedList x) ->
         case e of
           Class -> case ed of
-            SubClass -> map (\ (ans, b) -> PlainAxiom ans $ SubClassOf (Expression iri) b) x   
+            SubClass -> map (\ (ans, b) -> PlainAxiom ans $ SubClassOf (Expression iri) b) x
             _ -> [PlainAxiom (concatMap fst x) $ EquivOrDisjointClasses ed ((Expression iri) : (map snd x) )]
           NamedIndividual -> map (\ (ans, b) -> PlainAxiom ans $ ClassAssertion b iri) x
           _ -> fail "incorrect binding of class expression to entity"
-    ClassDisjointUnion ans ce -> [PlainAxiom (convertAnnos ans) $ DisjointUnion iri ce]
-    ClassHasKey ans opl dpl -> [PlainAxiom (convertAnnos ans) $ HasKey (Expression iri) opl dpl]
-    ObjectBit ed anl -> let x = convertAnnList anl in 
+    ClassDisjointUnion ans ce -> [PlainAxiom ans $ DisjointUnion iri ce]
+    ClassHasKey ans opl dpl -> [PlainAxiom ans $ HasKey (Expression iri) opl dpl]
+    ObjectBit ed (AnnotatedList x) ->
         case ed of
           InverseOf -> map (\ (ans, b) -> PlainAxiom ans $ InverseObjectProperties (ObjectProp iri) b) x
           SubPropertyOf -> map (\ (ans, b) -> PlainAxiom ans $ SubObjectPropertyOf (OPExpression b) (ObjectProp iri)) x
           _ -> [PlainAxiom (concatMap fst x) $ EquivOrDisjointObjectProperties ed ((ObjectProp iri) : map snd x)]
-    ObjectCharacteristics anc -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyCharacter b (ObjectProp iri)) (convertAnnList anc)
-    ObjectDomainOrRange dr anl-> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyDomainOrRange dr (ObjectProp iri) b) (convertAnnList anl)
-    ObjectSubPropertyChain ans opl -> let x = convertAnnos ans in [PlainAxiom x 
+    ObjectCharacteristics (AnnotatedList anc) -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyCharacter b (ObjectProp iri)) anc
+    ObjectDomainOrRange dr (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyDomainOrRange dr (ObjectProp iri) b) x
+    ObjectSubPropertyChain ans opl -> [PlainAxiom ans
               $ SubObjectPropertyOf (SubObjectPropertyChain opl) (ObjectProp iri)]
-    DataBit ed anl -> let x = convertAnnList anl in
+    DataBit ed (AnnotatedList x) ->
         case ed of
           SubPropertyOf -> map (\ (ans, b) -> PlainAxiom ans $ SubDataPropertyOf iri b) x
           _ -> [PlainAxiom (concatMap fst x) $ EquivOrDisjointDataProperties ed (iri : map snd x)]
-    DataPropDomain anl ->  map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataDomain b) iri) (convertAnnList anl)
-    DataPropRange anl -> map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataRange b) iri) (convertAnnList anl)
-    DataFunctional anl -> [PlainAxiom (convertAnnos anl) $ FunctionalDataProperty iri]
-    IndividualFacts anl -> let x = convertAnnList anl in map (\ (ans, b) -> PlainAxiom ans $ (convertFact iri b)) x
-    IndividualSameOrDifferent sd anl -> let x = convertAnnList anl in 
-        [PlainAxiom (concatMap fst x) $ SameOrDifferentIndividual sd (iri : map snd x)]
+    DataPropDomain (AnnotatedList x) ->  map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataDomain b) iri) x
+    DataPropRange (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataRange b) iri) x
+    DataFunctional anl -> [PlainAxiom anl $ FunctionalDataProperty iri]
+    IndividualFacts (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ (convertFact iri b)) x
+    IndividualSameOrDifferent sd (AnnotatedList x) ->
+       [PlainAxiom (concatMap fst x) $ SameOrDifferentIndividual sd (iri : map snd x)]
 
 convertFact :: Individual -> Fact -> PlainAxiom
 convertFact i f = case f of
@@ -65,7 +57,7 @@ convertFact i f = case f of
     DataPropertyFact pn dpe i2 -> DataPropertyAssertion $ Assertion dpe pn i i2
 
 convertMisc :: Relation -> Annotations -> Misc -> Axiom
-convertMisc ed ans misc = let x = convertAnnos ans in case misc of
+convertMisc ed x misc = case misc of
     MiscEquivOrDisjointClasses l -> PlainAxiom x $ EquivOrDisjointClasses ed l
     MiscEquivOrDisjointObjProp l -> PlainAxiom x $ EquivOrDisjointObjectProperties ed l
     MiscEquivOrDisjointDataProp l -> PlainAxiom x $ EquivOrDisjointDataProperties ed l
@@ -73,6 +65,6 @@ convertMisc ed ans misc = let x = convertAnnos ans in case misc of
 getAxioms :: Frame -> [Axiom]
 getAxioms f = case f of
     Frame e fbl -> concatMap (convertFrameBit e) fbl
-    MiscFrame ed ans misc -> [convertMisc ed ans misc]    
-    MiscSameOrDifferent sd ans il -> let x = convertAnnos ans in 
+    MiscFrame ed ans misc -> [convertMisc ed ans misc]
+    MiscSameOrDifferent sd x il ->
         [PlainAxiom x $ SameOrDifferentIndividual sd il]

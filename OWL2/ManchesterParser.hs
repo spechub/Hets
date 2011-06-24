@@ -33,12 +33,13 @@ optAnnos p = do
   return (as, a)
 
 optionalAnnos :: CharParser st Annotations
-optionalAnnos = option noAnnos annotations
+optionalAnnos = option [] annotations
 
 annotations :: CharParser st Annotations
 annotations = do
    pkeyword annotationsC
-   fmap Annotations $ sepByComma $ optAnnos annotation
+   fmap (map $ \ (as, (i, v)) -> Annotation as i v)
+     . sepByComma . optAnnos $ pair uriP annotationValue
 
 descriptionAnnotatedList :: CharParser st [(Annotations, ClassExpression)]
 descriptionAnnotatedList = sepByComma $ optAnnos description
@@ -58,11 +59,11 @@ apBit = do
         <|> do
           pkeyword rangeC
           x <- sepByComma $ optAnnos uriP
-          return $ AnnotationDR AnnRange $ AnnotatedList x 
+          return $ AnnotationDR AnnRange $ AnnotatedList x
        <|> do
           pkeyword domainC
           x <- sepByComma $ optAnnos uriP
-          return $ AnnotationDR AnnDomain $ AnnotatedList x 
+          return $ AnnotationDR AnnDomain $ AnnotatedList x
        <|> do
           x <- annotations
           return $ AnnotationFrameBit x
@@ -72,9 +73,9 @@ datatypeBit = do
     pkeyword datatypeC
     duri <- datatypeUri
     as1 <- many annotations
-    mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange 
+    mp <- optionMaybe $ pkeyword equivalentToC >> pair optionalAnnos dataRange
     as2 <- many annotations
-    return $ Frame (Entity Datatype duri) 
+    return $ Frame (Entity Datatype duri)
       $ map AnnotationFrameBit as1 ++ case mp of
           Nothing -> []
           Just (ans, dr) -> [DatatypeBit ans dr]
