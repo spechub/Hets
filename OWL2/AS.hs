@@ -60,10 +60,11 @@ instance Eq QName where
     p == q = compare p q == EQ
 
 instance Ord QName where
-  compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) =
-    if null n1 then
-      if null n2 then compare (b1, p1, l1) (b2, p2, l2) else LT
-    else if null n2 then GT else compare (b1, l1, n1) (b2, l2, n2)
+  compare (QN p1 l1 b1 n1) (QN p2 l2 b2 n2) = case (n1, n2) of
+    ([], []) -> compare (b1, p1, l1) (b2, p2, l2)
+    ([], _) -> LT
+    (_, []) -> GT
+    _ -> compare (b1, l1, n1) (b2, l2, n2)
 
 type IRIreference = QName
 type IRI = QName
@@ -85,9 +86,7 @@ type AnnotationProperty = IRI
 type NamedIndividual = IRI
 type Individual = IRI
 
--------------------------
--- LITERALS
--------------------------
+-- * LITERALS
 
 data TypedOrUntyped = Typed Datatype | Untyped (Maybe LanguageTag)
     deriving (Show, Eq, Ord)
@@ -98,12 +97,7 @@ data Literal = Literal LexicalForm TypedOrUntyped
 cTypeS :: String
 cTypeS = "^^"
 
--- | a lexical representation either with an "^^" URI (typed) or
--- an optional language tag starting with "\@" (untyped)
-
---------------------------
--- PROPERTY EXPRESSIONS
---------------------------
+-- * PROPERTY EXPRESSIONS
 
 type InverseObjectProperty = ObjectPropertyExpression
 
@@ -115,7 +109,8 @@ type DataPropertyExpression = DataProperty
 
 data SubObjectPropertyExpression
   = OPExpression ObjectPropertyExpression
-  | SubObjectPropertyChain [ObjectPropertyExpression] -- min. 2 ObjectPropertyExpression
+  | SubObjectPropertyChain [ObjectPropertyExpression]
+    -- min. 2 ObjectPropertyExpression
     deriving (Show, Eq, Ord)
 
 -- | data type strings (some are not listed in the grammar)
@@ -134,9 +129,7 @@ datatypeKeys =
   , universalS
   ]
 
---------------------------
--- DATA RANGES
---------------------------
+-- * DATA RANGES
 
 data DatatypeFacet =
     LENGTH
@@ -177,9 +170,7 @@ data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)
 type ConstrainingFacet = IRI
 type RestrictionValue = Literal
 
----------------------------
--- CLASS EXPERSSIONS
----------------------------
+-- * CLASS EXPERSSIONS
 
 data QuantifierType = AllValuesFrom | SomeValuesFrom deriving (Show, Eq, Ord)
 
@@ -215,18 +206,16 @@ data ClassExpression =
   | DataCardinality (Cardinality DataPropertyExpression DataRange)
     deriving (Show, Eq, Ord)
 
--------------------
--- ANNOTATIONS
--------------------
+-- * ANNOTATIONS
 
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
-          deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 data AnnotationAxiom
-        = AnnotationAssertion [Annotation] IRI
-        | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
+  = AnnotationAssertion [Annotation] IRI
+  | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
   | AnnDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
-        deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord)
 
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
 
@@ -240,9 +229,7 @@ data AnnotationValue
         | AnnValLit Literal
           deriving (Show, Eq, Ord)
 
----------------------------
--- ENTITIES
----------------------------
+-- * ENTITIES
 
 data Entity = Entity EntityType IRI deriving (Show, Eq, Ord)
 
@@ -269,9 +256,7 @@ showEntityType e = case e of
 entityTypes :: [EntityType]
 entityTypes = [minBound .. maxBound]
 
----------------------------
--- CASES
----------------------------
+-- * CASES
 
 type SourceIndividual = Individual
 type TargetIndividual = Individual
@@ -325,4 +310,3 @@ showSameOrDifferent sd = case sd of
     Individuals -> individualsC
 
 data PositiveOrNegative = Positive | Negative deriving (Show, Eq, Ord)
-
