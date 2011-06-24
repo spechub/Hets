@@ -327,9 +327,27 @@ objectPropertyExpr = do
 -- creating the facet-value pairs
 facetValuePair :: CharParser st (ConstrainingFacet, RestrictionValue)
 facetValuePair = do
-  df <- uriP
+  df <- choice $ map (\ f -> keyword (showFacet f) >> return f)
+      [ LENGTH
+      , MINLENGTH
+      , MAXLENGTH
+      , PATTERN
+      , TOTALDIGITS
+      , FRACTIONDIGITS ] ++ map
+      (\ f -> keywordNotFollowedBy (showFacet f) (oneOf "<>=")
+              >> return f)
+      [ MININCLUSIVE
+      , MINEXCLUSIVE
+      , MAXINCLUSIVE
+      , MAXEXCLUSIVE ]
   rv <- literal
-  return (df, rv)
+  return (facetToIRI df, rv)
+
+facetToIRI :: DatatypeFacet -> ConstrainingFacet
+facetToIRI = makeCF . showFacet
+
+makeCF :: String -> ConstrainingFacet
+makeCF lp = (mkQName lp) { namePrefix = "xsd"}
 
 -- it returns DataType Datatype or DatatypeRestriction Datatype [facetValuePair]
 dataRangeRestriction :: CharParser st DataRange

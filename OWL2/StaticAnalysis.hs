@@ -67,19 +67,14 @@ checkEntity s a (Entity ty e) = case ty of
 checkDataRange :: Sign -> DataRange -> Result DataRange
 checkDataRange s dr = 
   case dr of
-    DataType dt fcs -> do
-      let x = checkEntity s dr (Entity Datatype dt)
-      let y = map (checkLiteral s) (map snd fcs)
-      if any isNothing (map maybeResult y) || isNothing (maybeResult x) then fail "datatype restriction failed" else return dr 
+    DataType dt _ -> do
+      checkEntity s dr (Entity Datatype dt)
+      return dr 
     DataJunction _ drl -> do
-      let x = map (checkDataRange s) drl
-      if any isNothing (map maybeResult x) then fail "data junction failed"
-       else return dr
+      mapM_ (checkDataRange s) drl
+      return dr
     DataComplementOf r -> checkDataRange s r
-    DataOneOf ls -> do
-      let x = map (checkLiteral s) ls
-      if any isNothing (map maybeResult x) then fail "data one of failed" 
-       else return dr
+    _-> return dr
     
 checkClassExpression :: Sign -> ClassExpression -> Result ClassExpression
 checkClassExpression s desc = case desc of
@@ -88,36 +83,30 @@ checkClassExpression s desc = case desc of
         QN _ "Nothing" _ _ -> return $ Expression $ QN "owl" "Nothing" False ""
         _ -> checkEntity s desc (Entity Class u) 
   ObjectJunction _ ds -> do 
-      let x = map (checkClassExpression s) ds 
-      if any isNothing (map maybeResult x) then fail "object junction failed"
-       else return desc
+      mapM_ (checkClassExpression s) ds 
+      return desc
   ObjectComplementOf d -> do  
       checkClassExpression s d
   ObjectOneOf is -> do 
-      let x = map (checkEntity s desc) (map (Entity NamedIndividual) is)
-      if any isNothing (map maybeResult x) then fail "data one of failed"
-       else return desc
+      mapM_ (checkEntity s desc) (map (Entity NamedIndividual) is)
+      return desc
   ObjectValuesFrom a opExpr d -> do
       let iri = getObjRoleFromExpression opExpr 
       let x = Set.member iri (objectProperties s)
       let z = Set.member iri (dataProperties s)
-      if x == True then do
-          let y = checkClassExpression s d
-          if isNothing (maybeResult y) then fail "corrected data values from failed"
-            else return desc
-        else if z == True then do
+      if x then do
+          checkClassExpression s d
+          return desc
+        else if z then
                 let Expression u = d
-                return (DataValuesFrom a iri [] (DataType u []))  
+                in return (DataValuesFrom a iri [] (DataType u []))  
               else fail "corrected data values from failed"
-          
   ObjectHasSelf opExpr -> do
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then return desc
-     else fail "Failed"
+     else fail "ObjectHasSelf Failed"
   ObjectHasValue opExpr i -> do
-    let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s) 
-    let y = checkEntity s desc (Entity NamedIndividual i)
-    if (x == False || isNothing (maybeResult y) ) then fail "object has value failed" 
-              else return desc
+    let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s)
+    if x then return desc else checkEntity s desc (Entity NamedIndividual i)
   ObjectCardinality (Cardinality a b opExpr md) -> do
     let iri = getObjRoleFromExpression opExpr 
     let x = Set.member iri (objectProperties s)
@@ -126,66 +115,56 @@ checkClassExpression s desc = case desc of
         Nothing -> if x == False then fail "object cardinality failed with no class expression provided"
                         else return desc
         Just d -> if x then do
-                      let y = checkClassExpression s d
-                      if isNothing (maybeResult y) then fail "object cardinality failed"
-                        else return desc
+                      checkClassExpression s d
+                      return desc
                     else do
                         let Expression u = d
                             dr = DataType u []
-                        let chk = checkDataRange s dr 
-                        if isNothing (maybeResult chk) then fail $ "corrected data cardinality failed: " ++ showQN iri
-                          else 
-                            if z == False then fail $ "corrected data cardinality failed: " ++ showQN iri 
-                              else return $ DataCardinality (Cardinality a b iri (Just dr))
+                        checkDataRange s dr 
+                        if z then return $ DataCardinality (Cardinality a b iri (Just dr))
+                            else fail "corrected data cardinality failed"
   DataValuesFrom _ dExp ds r -> do
+    checkDataRange s r
     let x = Set.isSubsetOf (Set.fromList(dExp : ds)) (dataProperties s) 
-    let y = checkDataRange s r
-    if (x == False || isNothing (maybeResult y) ) then fail "data values from failed" 
-              else return desc
+    if x then return desc else fail "dataValuesFrom failed"
   DataHasValue dExp _ -> do
     let x = Set.member dExp (dataProperties s) 
-    if x == False then fail "data has value failed" 
-              else return desc  
+    if x then return desc else fail "dataHasValue failed"  
   DataCardinality (Cardinality _ _ dExp mr) -> do
     let x = Set.member dExp (dataProperties s)
-    case mr of 
-        Nothing -> if x == False then fail "data cardinality failed with no class expression provided"
-                             else return desc
-        Just d -> do
-            let y = checkDataRange s d
-            if (x == False || isNothing (maybeResult y) ) then fail "data cardinality failed"
-                      else return desc
+    if x then do
+        case mr of 
+          Nothing -> return desc
+          Just d -> do
+            checkDataRange s d
+            return desc
+      else fail "dataCardinality failed"
 
 checkBit :: Sign -> FrameBit -> Result FrameBit
 checkBit s fb = case fb of
     AnnotationFrameBit _ -> return fb
     AnnotationBit _ anl -> do
         let apl = map snd (convertAnnList anl)
-        let x = map (checkEntity s fb) (map (Entity AnnotationProperty) apl)
-        if any isNothing (map maybeResult x) then fail "annotation bit failed"
-                  else return fb
+        mapM_ (checkEntity s fb) (map (Entity AnnotationProperty) apl)
+        return fb
     AnnotationDR _ _ -> return fb
     DatatypeBit _ dr -> do 
-        let x = checkDataRange s dr
-        if isNothing (maybeResult x) then fail "datatype bit failed" 
-                  else return fb
+        checkDataRange s dr
+        return fb
     ExpressionBit _ anl -> do
-        let x = map (checkClassExpression s) (map snd $ convertAnnList anl)
-        if any isNothing (map maybeResult x) then fail "expression bit failed"
-                  else return fb
+        mapM_ (checkClassExpression s) (map snd $ convertAnnList anl)
+        return fb
     ClassDisjointUnion _ cel -> do
-        let x = map (checkClassExpression s) cel
-        if any isNothing (map maybeResult x) then fail "class disjoint union failed" 
-                  else return fb
+        mapM_ (checkClassExpression s) cel
+        return fb
     ClassHasKey _ _ _ -> checkHasKey s fb 
     ObjectBit _ anl -> do
         let ol = map snd $ convertAnnList anl
         checkObjPropList s fb ol
     ObjectDomainOrRange _ anl -> do
         let ds = map snd $ convertAnnList anl
-        let y = map (checkClassExpression s) ds
-        if any isNothing (map maybeResult y) then fail "obj domain or range failed" 
-                else return fb
+        mapM_ (checkClassExpression s) ds
+        return fb
     ObjectCharacteristics _ -> return fb
     ObjectSubPropertyChain _ ol -> checkObjPropList s fb ol
     DataBit _ anl -> do
@@ -193,29 +172,25 @@ checkBit s fb = case fb of
         checkDataPropList s fb dl
     DataPropDomain anl -> do
         let dr = map snd $ convertAnnList anl
-        let x = map (checkClassExpression s) dr
-        if any isNothing (map maybeResult x) then fail "data property domain failed"
-                  else return fb 
+        mapM_ (checkClassExpression s) dr
+        return fb 
     DataPropRange anl -> do
         let dr = map snd $ convertAnnList anl
-        let x = map (checkDataRange s) dr
-        if any isNothing (map maybeResult x) then fail "data property range failed"
-                  else return fb  
+        mapM_ (checkDataRange s) dr
+        return fb  
     DataFunctional _ -> return fb
     IndividualFacts anl -> do
         let f = map snd $ convertAnnList anl
         checkFactList s fb f 
     IndividualSameOrDifferent _ anl -> do
         let i = map snd $ convertAnnList anl
-        let y = map (checkEntity s fb) (map (Entity NamedIndividual) i)
-        if any isNothing (map maybeResult y) then fail "individual same or different failed" 
-                  else return fb
+        mapM_ (checkEntity s fb) (map (Entity NamedIndividual) i)
+        return fb
 
 checkFactList :: Sign -> FrameBit -> [Fact] -> Result FrameBit
 checkFactList s fb fl = do
-    let x = map (checkFact s fb) fl
-    if any isNothing (map maybeResult x) then fail "fact failed" 
-              else return fb   
+    mapM_ (checkFact s fb) fl
+    return fb   
 
 checkFact :: Sign -> FrameBit -> Fact -> Result FrameBit
 checkFact s fb f = do 
@@ -268,8 +243,8 @@ sortObjDataList s = catMaybes . map (sortObjData s)
 checkMisc :: Sign -> Misc -> Result Misc
 checkMisc s m = case m of
     MiscEquivOrDisjointClasses cl -> do
-      let x = map (checkClassExpression s) cl
-      if any isNothing (map maybeResult x) then fail "equiv or disjoint classes failed" else return m
+      mapM_ (checkClassExpression s) cl
+      return m
     MiscEquivOrDisjointObjProp ol -> do
       let x = sortObjDataList s ol
       if null x then return $ MiscEquivOrDisjointDataProp (map getObjRoleFromExpression x) else return m
@@ -286,29 +261,25 @@ createSign = mapM_ getEntityFromFrame
 checkFrame :: Sign -> Frame -> Result Frame
 checkFrame s f = case f of
     Frame a fbl -> do
-      let x = map (checkBit s) fbl
-      if any isNothing (map maybeResult x) then fail "bit failed" else return $ Frame a (catMaybes (map maybeResult x)) 
+      nl <- mapM (checkBit s) fbl
+      return $ Frame a nl
     MiscFrame r al misc -> do
       let x = maybeResult $ checkMisc s misc
       case x of 
         Nothing -> fail "misc failed"
         Just m -> return (MiscFrame r al m)
     MiscSameOrDifferent _ _ il -> do
-      let y = map (checkEntity s f) (map (Entity NamedIndividual) il)
-      if any isNothing (map maybeResult y) then fail "same or different individuals failed"
-                  else return f
+      mapM_ (checkEntity s f) (map (Entity NamedIndividual) il)
+      return f
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
 correctFrames s fl = do
-    let x = map (checkFrame s) fl
-    if any isNothing (map maybeResult x) then fail "correct frames failed"
-                  else return (catMaybes (map maybeResult x))
+    mapM (checkFrame s) fl
 
 createAxioms :: Sign -> [Frame] -> Result [Named Axiom]
 createAxioms s fl = do
-    let x = correctFrames s fl 
-    if isNothing (maybeResult x) then fail "unable to create axioms from frames"
-              else return $ map anaAxiom $ concatMap getAxioms (fromJust (maybeResult x))
+    x <- correctFrames s fl 
+    return $ map anaAxiom $ concatMap getAxioms x
 
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis ::
