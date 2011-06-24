@@ -128,6 +128,3 @@ printAxiom axiom = case axiom of
    HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC
      <+> vcat (punctuate comma $ map pretty objlist ++ map pretty datalist)
    u -> error $ "unknow axiom " ++ show u
-
-instance Pretty OntologyFile where
-    pretty = vsep . map pretty . axiomsList . ontology
