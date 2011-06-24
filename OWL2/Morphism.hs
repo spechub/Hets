@@ -272,9 +272,7 @@ mapPlainAxiom m pax = case pax of
     DataPropertyDomainOrRange dd d -> DataPropertyDomainOrRange
       (mapDataDomOrRange m dd) $ mapDataExpr m d
     FunctionalDataProperty d -> FunctionalDataProperty $ mapDataExpr m d
-    SameOrDifferentIndividual ty mi is -> case mi of
-        Nothing -> SameOrDifferentIndividual ty Nothing $ map (`getIndIri` m) is
-        Just i -> SameOrDifferentIndividual ty (Just ((`getIndIri` m) i)) $ map (`getIndIri` m) is
+    SameOrDifferentIndividual ty is -> SameOrDifferentIndividual ty $ map (`getIndIri` m) is
     ClassAssertion d i -> ClassAssertion (mapDescr m d) $ getIndIri i m
     ObjectPropertyAssertion a -> ObjectPropertyAssertion
       $ mapAssertion m (mapObjExpr m) (`getIndIri` m) a

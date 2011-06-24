@@ -115,10 +115,10 @@ printAxiom axiom = case axiom of
    FunctionalDataProperty dpExp ->
        dpStart <+> pretty dpExp $+$ printCharact functionalS
    -- Fact
-   SameOrDifferentIndividual ty mi indList ->
-      case mi of 
-        Nothing -> printSameOrDifferentInd ty <+> setToDocV (Set.fromList indList)
-        Just ind -> indStart <+> pretty ind $+$ printSameOrDifferent ty <+>
+   SameOrDifferentIndividual ty (ind : indList) ->
+      case ty of 
+        Individuals -> printSameOrDifferentInd ty <+> setToDocV (Set.fromList (ind : indList))
+        _ -> indStart <+> pretty ind $+$ printSameOrDifferentInd ty <+> 
                  setToDocV (Set.fromList indList)
    ClassAssertion desc ind ->
        indStart <+> pretty ind $+$ keyword typesC <+> pretty desc

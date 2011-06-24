@@ -49,7 +49,7 @@ convertFrameBit (Entity e iri) fb = case fb of
     DataFunctional anl -> [PlainAxiom anl $ FunctionalDataProperty iri]
     IndividualFacts (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ (convertFact iri b)) x
     IndividualSameOrDifferent sd (AnnotatedList x) ->
-       [PlainAxiom (concatMap fst x) $ SameOrDifferentIndividual sd (Just iri) (map snd x)]
+       [PlainAxiom (concatMap fst x) $ SameOrDifferentIndividual sd (iri : map snd x)]
 
 convertFact :: Individual -> Fact -> PlainAxiom
 convertFact i f = case f of
@@ -67,4 +67,4 @@ getAxioms f = case f of
     Frame e fbl -> concatMap (convertFrameBit e) fbl
     MiscFrame ed ans misc -> [convertMisc ed ans misc]
     MiscSameOrDifferent sd x il ->
-        [PlainAxiom x $ SameOrDifferentIndividual sd Nothing il]
+        [PlainAxiom x $ SameOrDifferentIndividual sd il]
