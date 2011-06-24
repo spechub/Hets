@@ -211,12 +211,6 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
   deriving (Show, Eq, Ord)
 
-data AnnotationAxiom
-  = AnnotationAssertion [Annotation] IRI
-  | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
-  | AnnDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
-    deriving (Show, Eq, Ord)
-
 data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
 
 showAnnDomainOrRange :: AnnotationDomainOrRange -> String

@@ -26,6 +26,12 @@ data Axiom = -- Annotations can be ignored
   | EntityAnno AnnotationAxiom
     deriving (Show, Eq, Ord)
 
+data AnnotationAxiom
+  = AnnotationAssertion [Annotation] IRI
+  | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
+  | AnnDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
+    deriving (Show, Eq, Ord)
+
 instance GetRange Axiom
 
 data PlainAxiom =
