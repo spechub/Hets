@@ -21,7 +21,6 @@ import OWL2.MS
 import OWL2.Print
 import OWL.Keywords
 import OWL.ColonKeywords
-
 import qualified Data.Map as Map
 
 printCharact :: String -> Doc
@@ -45,7 +44,8 @@ printAnnotation (Annotation ans ap av) =
 printAnnotations :: Annotations -> Doc
 printAnnotations l = case l of
     [] -> empty
-    _ -> sep [keyword annotationsC, ppWithCommas l]
+    _ -> keyword annotationsC <+> 
+          vcat (punctuate comma (map ( \(Annotation ans ap av) -> printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
 
 instance Pretty a => Pretty (AnnotatedList a) where
     pretty = printAnnotatedList
@@ -60,24 +60,24 @@ instance Pretty FrameBit where
 
 printFrameBit :: FrameBit -> Doc
 printFrameBit fb = case fb of
-    AnnotationFrameBit x -> pretty x
+    AnnotationFrameBit x -> printAnnotations x
     AnnotationBit ed l -> printRelation ed <+> pretty l
     AnnotationDR dr l -> printDomainOrRange dr <+> pretty l
-    DatatypeBit ans a -> pretty ans $+$ keyword equivalentToC <+> pretty a
+    DatatypeBit ans a -> printAnnotations ans $+$ keyword equivalentToC <+> pretty a
     ExpressionBit x y -> printRelation x <+> pretty y
     ClassDisjointUnion a x -> keyword disjointUnionOfC
-      <+> (pretty a $+$ vcat(punctuate comma ( map (\p -> pretty p) x )))
-    ClassHasKey a op dp -> keyword hasKeyC <+> (pretty a
+      <+> (printAnnotations a $+$ vcat(punctuate comma ( map (\p -> pretty p) x )))
+    ClassHasKey a op dp -> keyword hasKeyC <+> (printAnnotations a
       $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
     ObjectBit dr x -> printRelation dr <+> pretty x
     ObjectDomainOrRange dr x -> printDomainOrRange dr <+> pretty x
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
     ObjectSubPropertyChain a opl -> keyword subPropertyChainC
-      <+> (pretty a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))
+      <+> (printAnnotations a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))
     DataBit dr x -> printRelation dr <+> pretty x
     DataPropRange x -> keyword rangeC <+> pretty x
     DataPropDomain x -> keyword domainC <+> pretty x
-    DataFunctional x -> keyword characteristicsC <+> (pretty x $+$ printCharact functionalS)
+    DataFunctional x -> keyword characteristicsC <+> (printAnnotations x $+$ printCharact functionalS)
     IndividualFacts x -> keyword factsC <+> pretty x
     IndividualSameOrDifferent s x -> printSameOrDifferent s <+> pretty x
 
@@ -101,10 +101,10 @@ printFrame :: Frame -> Doc
 printFrame f = case f of
     Frame (Entity e uri) bl -> pretty (showEntityType e) <+> fsep [pretty uri, vcat (map pretty bl)]
     MiscFrame e a misc -> case misc of
-        MiscEquivOrDisjointClasses c -> printEquivOrDisjointClasses e <+> (pretty a $+$ vcat (punctuate comma (map pretty c) ))
-        MiscEquivOrDisjointObjProp c -> printEquivOrDisjointObj e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
-        MiscEquivOrDisjointDataProp c -> printEquivOrDisjointData e <+> (pretty a $+$ vcat ( punctuate comma (map pretty c) ))
-    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (pretty a $+$ vcat( punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointClasses c -> printEquivOrDisjointClasses e <+> (printAnnotations a $+$ vcat (punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointObjProp c -> printEquivOrDisjointObj e <+> (printAnnotations a $+$ vcat ( punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointDataProp c -> printEquivOrDisjointData e <+> (printAnnotations a $+$ vcat ( punctuate comma (map pretty c) ))
+    MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (printAnnotations a $+$ vcat( punctuate comma (map pretty c) ))
 
 printEquivOrDisjointClasses :: Relation -> Doc
 printEquivOrDisjointClasses x = case x of
@@ -142,7 +142,7 @@ printPrefixes x = vcat (map (\(a, b) ->
 
 printOntology :: MOntology -> Doc
 printOntology MOntology {muri = a, imports = b, ann = c, ontologyFrame = d} = keyword ontologyC
-      <+> pretty a $++$ vcat (map printImport b) $++$ vcat (map pretty c) $+$ vcat(map pretty d)
+      <+> pretty a $++$ vcat (map printImport b) $++$ vcat (map printAnnotations c) $+$ vcat(map pretty d)
 
 printOntologyDocument :: OntologyDocument -> Doc
 printOntologyDocument OntologyDocument {prefixDeclaration = a, mOntology = b} = printPrefixes a $++$ pretty b
