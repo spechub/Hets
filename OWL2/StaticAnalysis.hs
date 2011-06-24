@@ -100,12 +100,20 @@ checkClassExpression desc = case desc of
       x <- mapM (checkEntity desc) (map (Entity NamedIndividual) is)
       if any isNothing x then fail "data one of failed"
        else return $ return desc
-  ObjectValuesFrom _ opExpr d -> do
+  ObjectValuesFrom a opExpr d -> do
       s <- get
-      let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s)
-      y <- checkClassExpression d
-      if (x == False || isNothing y ) then fail "object values from failed"
-                else return $ return desc
+      let iri = getObjRoleFromExpression opExpr 
+      let x = Set.member iri (objectProperties s)
+      let z = Set.member iri (dataProperties s)
+      if x == True then do
+          y <- checkClassExpression d
+          if isNothing y then fail "corrected data values from failed"
+            else return $ return desc
+        else if z == True then do
+                let Expression u = d
+                return $ return (DataValuesFrom a iri [] (DataType u))  
+              else fail "corrected data values from failed"
+          
   ObjectHasSelf opExpr -> do
     s <- get
     if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then return (Just desc)
@@ -145,8 +153,7 @@ checkClassExpression desc = case desc of
   DataHasValue dExp c -> do
     s <- get
     let x = Set.member dExp (dataProperties s) 
-    y <- checkLiteral c
-    if (x == False || isNothing y ) then fail "data has value failed" 
+    if x == False then fail "data has value failed" 
               else return $ return desc  
   DataCardinality (Cardinality _ _ dExp mr) -> do
     s <- get
@@ -225,15 +232,13 @@ checkFact fb f = do
     s <- get
     case f of
       ObjectPropertyFact _ op i -> 
-        if Set.member (getObjRoleFromExpression op) (objectProperties s) 
-            && Set.member i (individuals s) then return $ Just fb
-         else return Nothing
+        if Set.member (getObjRoleFromExpression op) (objectProperties s) then return $ Just fb
+         else fail "object property fact failed"
       DataPropertyFact _ dp x -> 
         case x of 
           Literal _ (Typed l) -> 
-            if Set.member dp (dataProperties s) 
-              && Set.member l (datatypes s) then return $ Just fb
-             else return Nothing 
+            if Set.member dp (dataProperties s) then return $ Just fb
+             else fail "data property fact failed" 
           _ -> return $ Just fb
     
      
@@ -264,18 +269,17 @@ checkHasKeyAll k = case k of
 checkHasKey :: FrameBit -> State Sign (Maybe FrameBit)
 checkHasKey k = case k of 
   ClassHasKey a ol _ -> do 
-    --x <- sortObjDataList ol 
-    let k2 = ClassHasKey a [] (map getObjRoleFromExpression (ol)) 
-    return $ return k2
+    x <- sortObjDataList ol 
+    let k2 = ClassHasKey a x (map getObjRoleFromExpression (ol \\ x)) 
+    checkHasKeyAll k2
   _ -> return $ return k
-
 
 sortObjData :: ObjectPropertyExpression -> State Sign (Maybe ObjectPropertyExpression)
 sortObjData op = do
     s <- get
     let p = getObjRoleFromExpression op
     if Set.member p (objectProperties s) then return $ return op
-     else fail $ "sorting obj property failed " ++ showQN p
+     else return Nothing
 
 sortObjDataList :: [ObjectPropertyExpression] -> State Sign [ObjectPropertyExpression]
 sortObjDataList ls = fmap catMaybes (mapM sortObjData ls)   
