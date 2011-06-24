@@ -20,23 +20,28 @@ import FreeCAD.Brep
 import System.Directory
 import System.Process
 import FreeCAD.PrintAs()
---import System.IO.Temp()
-
+import Control.Monad.Trans.Reader (ReaderT(..))
 
 -- processFile2 :: FilePath -> IO Document
 -- processFile2 fp = withSystemTempDirectory $ "hets-fc." pFile
 -- processFile2 fp = withSystemTempDirectory $ "hets-fc." pFile
 
+
+-- TODO: make unique subdirectory in tmp
+getFreshTempDir :: IO FilePath
+getFreshTempDir = getTemporaryDirectory
+
 processFile :: FilePath -> IO Document
 --unzips the freecad archive, reads the main "Document.xml" file and gives control
 --to (translate :: Element -> IO Document) function to interpret the xml data
 processFile fp = do
-  tempDir <- getTemporaryDirectory
+  tempDir <- getFreshTempDir
 --  putStrLn $ show $ ["unzip", "-of", fp, "-d", tempDir]
   readProcess "unzip" ["-o", fp, "-d", tempDir] []
   xmlInput <-readFile (concat[tempDir, "/Document.xml"])
   let parsed = parseXMLDoc xmlInput
   translate $ fromJust parsed
+  runReaderT (translate' $ fromJust parsed) tempDir
   --putStrLn (show $printDoc out)
   --putStrLn (show out)
 ------------------------
@@ -193,3 +198,9 @@ child el = head(elChildren el)
 
 translate:: Element -> IO Document
 translate baseElement = mapM getObject $ objList baseElement
+
+translate':: Element -> RIO Document
+translate' baseElement = return $ error "not implemented"
+
+type Env = FilePath
+type RIO a = ReaderT Env IO a

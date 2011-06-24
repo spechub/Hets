@@ -24,9 +24,7 @@ import Data.Maybe
 import FreeCAD.As
 import FreeCAD.VecTools
 
-import System.Directory
 import System.FilePath
---import System.IO.Temp
 
 getBrep::(String, String) -> IO (BaseObject, Placement)
 getBrep (address, "line") = 
@@ -118,13 +116,10 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
 brepToXmlBinary :: IO FilePath
 brepToXmlBinary = return "./FreeCAD/brep_conversion/bin/brep_to_xml"
 
--- TODO: make unique subdirectory in tmp
-getFreshTempDir :: IO FilePath
-getFreshTempDir = getTemporaryDirectory
 
 getBrepObject :: (String -> a) -> String -> String -> IO a
 getBrepObject parser t addr = do
-  tmpDir <- getFreshTempDir
+  tmpDir <- error "put ask in this place"
   binary <- brepToXmlBinary
   fmap parser $ readProcess binary [joinPath [tmpDir, addr], t] ""
 
