@@ -62,9 +62,9 @@ import VSE.Logic_VSE
 import VSE.ToSExpr
 
 #ifndef NOOWLLOGIC
-import OWL.Logic_OWL
-import OWL.Print (printOWLBasicTheory)
-import OWL.Parse (basicSpec)
+import OWL2.Logic_OWL2
+import OWL2.FunctionalPrint (printOWLBasicTheory)
+import OWL2.ManchesterParser (basicSpec)
 #endif
 
 import Logic.Prover
@@ -218,8 +218,8 @@ writeTheory opts filePrefix ga
             Nothing -> return ()
         else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
 #ifndef NOOWLLOGIC
-    OWLOut -> if language_name lid == language_name OWL then do
-            th2 <- coerceBasicTheory lid OWL "" th
+    OWLOut -> if language_name lid == language_name OWL2 then do
+            th2 <- coerceBasicTheory lid OWL2 "" th
             let owltext = shows (printOWLBasicTheory th2) "\n"
             case parse (basicSpec >> eof) f owltext of
               Left err -> putIfVerbose opts 0 $ show err
