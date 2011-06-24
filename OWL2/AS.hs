@@ -164,13 +164,11 @@ showFacet df = case df of
     FRACTIONDIGITS -> fractionS
 
 data DataRange
-	= DataType Datatype
+	= DataType Datatype [(ConstrainingFacet, RestrictionValue)]
 	| DataJunction JunctionType [DataRange]
           -- at least two elements in the list
 	| DataComplementOf DataRange
 	| DataOneOf [Literal]	-- at least one element in the list
-	| DatatypeRestriction Datatype [(ConstrainingFacet, RestrictionValue)]
-	  -- at least one element in the list
 	deriving (Show, Eq, Ord)
 
 data JunctionType = UnionOf | IntersectionOf deriving (Show, Eq, Ord)

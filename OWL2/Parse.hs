@@ -335,7 +335,7 @@ facetValuePair = do
 dataRangeRestriction :: CharParser st DataRange
 dataRangeRestriction = do
   e <- datatypeUri
-  option (DataType e) $ fmap (DatatypeRestriction e) $ bracketsP
+  option (DataType e []) $ fmap (DataType e) $ bracketsP
     $ sepByComma facetValuePair
 
 dataConjunct :: CharParser st DataRange
@@ -392,11 +392,11 @@ primaryOrDataRange = do
   ed <- do
       u <- datatypeUri
       fmap Left (restrictionAny $ ObjectProp u)
-        <|> fmap (Right . DatatypeRestriction u)
+        <|> fmap (Right . DataType u)
             (bracketsP $ sepByComma facetValuePair)
         <|> return (if elem (localPart u) datatypeKeys
                        && elem (namePrefix u) ["", "xsd"]
-              then Right $ DataType u
+              then Right $ DataType u []
               else Left $ Expression u) -- could still be a datatypeUri
     <|> do
       e <- bracesP individualOrConstantList

@@ -46,7 +46,7 @@ addEntity = modEntity Set.insert
 
 anaAxiom :: Axiom -> Named Axiom
 anaAxiom x = case x of 
-  PlainAxiom as p -> findImplied as
+  PlainAxiom as _ -> findImplied as
   _ -> id
  $ makeNamed "" x
 
@@ -67,7 +67,10 @@ checkEntity s a (Entity ty e) = case ty of
 checkDataRange :: Sign -> DataRange -> Result DataRange
 checkDataRange s dr = 
   case dr of
-    DataType u -> checkEntity s dr (Entity Datatype u)
+    DataType dt fcs -> do
+      let x = checkEntity s dr (Entity Datatype dt)
+      let y = map (checkLiteral s) (map snd fcs)
+      if any isNothing (map maybeResult y) || isNothing (maybeResult x) then fail "datatype restriction failed" else return dr 
     DataJunction _ drl -> do
       let x = map (checkDataRange s) drl
       if any isNothing (map maybeResult x) then fail "data junction failed"
@@ -77,11 +80,7 @@ checkDataRange s dr =
       let x = map (checkLiteral s) ls
       if any isNothing (map maybeResult x) then fail "data one of failed" 
        else return dr
-    DatatypeRestriction dt fcs -> do
-      let x = checkEntity s dr (Entity Datatype dt)
-      let y = map (checkLiteral s) (map snd fcs)
-      if any isNothing (map maybeResult y) || isNothing (maybeResult x) then fail "datatype restriction failed" else return dr 
-
+    
 checkClassExpression :: Sign -> ClassExpression -> Result ClassExpression
 checkClassExpression s desc = case desc of
   Expression u -> case u of
@@ -108,7 +107,7 @@ checkClassExpression s desc = case desc of
             else return desc
         else if z == True then do
                 let Expression u = d
-                return (DataValuesFrom a iri [] (DataType u))  
+                return (DataValuesFrom a iri [] (DataType u []))  
               else fail "corrected data values from failed"
           
   ObjectHasSelf opExpr -> do
@@ -126,13 +125,13 @@ checkClassExpression s desc = case desc of
     case md of 
         Nothing -> if x == False then fail "object cardinality failed with no class expression provided"
                         else return desc
-        Just d -> if x == True then do
+        Just d -> if x then do
                       let y = checkClassExpression s d
                       if isNothing (maybeResult y) then fail "object cardinality failed"
                         else return desc
                     else do
                         let Expression u = d
-                            dr = DataType u
+                            dr = DataType u []
                         let chk = checkDataRange s dr 
                         if isNothing (maybeResult chk) then fail $ "corrected data cardinality failed: " ++ showQN iri
                           else 
@@ -143,7 +142,7 @@ checkClassExpression s desc = case desc of
     let y = checkDataRange s r
     if (x == False || isNothing (maybeResult y) ) then fail "data values from failed" 
               else return desc
-  DataHasValue dExp c -> do
+  DataHasValue dExp _ -> do
     let x = Set.member dExp (dataProperties s) 
     if x == False then fail "data has value failed" 
               else return desc  
@@ -221,17 +220,13 @@ checkFactList s fb fl = do
 checkFact :: Sign -> FrameBit -> Fact -> Result FrameBit
 checkFact s fb f = do 
     case f of
-      ObjectPropertyFact _ op i -> 
+      ObjectPropertyFact _ op _ -> 
         if Set.member (getObjRoleFromExpression op) (objectProperties s) then return fb
          else fail "object property fact failed"
-      DataPropertyFact _ dp x -> 
-        case x of 
-          Literal _ (Typed l) -> 
+      DataPropertyFact _ dp _ -> 
             if Set.member dp (dataProperties s) then return fb
              else fail "data property fact failed" 
-          _ -> return fb
     
-     
 checkObjPropList :: Sign -> FrameBit -> [ObjectPropertyExpression] -> Result FrameBit
 checkObjPropList s fb ol = do
         let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol

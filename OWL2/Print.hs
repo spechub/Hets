@@ -122,11 +122,10 @@ instance Pretty DataRange where
 
 printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
-    DataType du -> pretty du
+    DataType dtype l -> pretty dtype <+>				
+      if null l then empty else brackets $ sepByCommas $ map printFV l
     DataComplementOf drange -> keyword notS <+> pretty drange
     DataOneOf constList -> specBraces $ ppWithCommas constList
-    DatatypeRestriction dtype l -> pretty dtype <+>				
-      if null l then empty else brackets $ sepByCommas $ map printFV l
     DataJunction ty drlist -> let
       k = case ty of
           UnionOf -> orS
