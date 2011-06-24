@@ -65,6 +65,12 @@ quantifierType = keyword . showQuantifierType
 printIndividual :: Individual -> Doc
 printIndividual = pretty
 
+printSameOrDifferentInd :: SameOrDifferent -> Doc
+printSameOrDifferentInd x = case x of
+    Same -> keyword sameIndividualC
+    Different -> keyword differentIndividualsC
+    Individuals -> keyword individualsC
+
 instance Pretty ClassExpression where
   pretty desc = case desc of
    Expression ocUri -> printURIreference ocUri

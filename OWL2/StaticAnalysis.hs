@@ -242,7 +242,7 @@ checkMisc s m = case m of
       return m
     MiscEquivOrDisjointObjProp ol -> do
       let x = sortObjDataList s ol
-      if null x then return $ MiscEquivOrDisjointDataProp (map getObjRoleFromExpression x) else return m
+      if null x then return $ MiscEquivOrDisjointDataProp (map getObjRoleFromExpression ol) else return m
     _ -> return m
 
 getEntityFromFrame :: Frame -> State Sign ()
@@ -271,10 +271,10 @@ correctFrames :: Sign -> [Frame] -> Result [Frame]
 correctFrames s fl = do
     mapM (checkFrame s) fl
 
-createAxioms :: Sign -> [Frame] -> Result [Named Axiom]
+createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
     x <- correctFrames s fl 
-    return $ map anaAxiom $ concatMap getAxioms x
+    return (map anaAxiom $ concatMap getAxioms x, x)
 
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis ::
@@ -282,12 +282,11 @@ basicOWL2Analysis ::
         Result (OntologyDocument, ExtSign Sign Entity, [Named Axiom])
 
 basicOWL2Analysis (odoc, inSign, _) = do 
-    let --ns = prefixDeclaration odoc
-        syms = Set.difference (symOf accSign) $ symOf inSign
+    let syms = Set.difference (symOf accSign) $ symOf inSign
         (_, accSign) = runState
           (createSign $ ontologyFrame $ mOntology odoc)
           inSign
-    axl <- createAxioms accSign (ontologyFrame (mOntology odoc))
+    (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc))
     return (odoc, ExtSign accSign syms, axl)
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI

@@ -50,7 +50,7 @@ data PlainAxiom =
     -- min. 2 DataPropertyExpressions
   | DataPropertyDomainOrRange DataDomainOrRange DataPropertyExpression
   | FunctionalDataProperty DataPropertyExpression
-  | SameOrDifferentIndividual SameOrDifferent [Individual] -- min. 2 ind.
+  | SameOrDifferentIndividual SameOrDifferent (Maybe Individual) [Individual]
   | ClassAssertion ClassExpression Individual
     -- arguments are reversed from OWL-1
   | ObjectPropertyAssertion

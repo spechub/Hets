@@ -114,21 +114,15 @@ printEquivOrDisjointClasses x = case x of
 
 printEquivOrDisjointObj :: Relation -> Doc
 printEquivOrDisjointObj x = case x of
-    Equivalent -> text "EquivalentProperties:"
-    Disjoint -> text "DisjointProperties:"
+    Equivalent -> text "EquivalentObjectProperties:"
+    Disjoint -> text "DisjointObjectProperties:"
     _ -> empty
 
 printEquivOrDisjointData :: Relation -> Doc
 printEquivOrDisjointData x = case x of
-    Equivalent -> text "EquivalentProperties:"
-    Disjoint -> text "DisjointProperties:"
+    Equivalent -> text "EquivalentDataProperties:"
+    Disjoint -> text "DisjointDataProperties:"
     _ -> empty
-
-printSameOrDifferentInd :: SameOrDifferent -> Doc
-printSameOrDifferentInd x = case x of
-    Same -> keyword sameIndividualC
-    Different -> keyword differentIndividualsC
-    Individuals -> keyword individualsC
 
 instance Pretty MOntology where
     pretty = printOntology
