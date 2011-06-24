@@ -13,6 +13,12 @@
 #
 #
 ################################################################################
+
+__all__ = [
+    "newdoc",
+    "fromHets",
+]
+
 import sys
 sys.path.append('/usr/lib/freecad/lib')
 import FreeCAD
@@ -21,9 +27,10 @@ import Draft
 import Part
 from xml.etree import ElementTree as ET
 
-App.newDocument('fromHets')
+def newdoc(app):
+    app.newDocument('fromHets')
 
-def fromHets(filePath):
+def fromHets(filePath, app):
     try:
         f = open (filePath, 'r')
     except IOError as (errno, strerror):
@@ -32,8 +39,10 @@ def fromHets(filePath):
     else:
         s = f.read()
         f.close()
+    newdoc(app)
+    buildque = []
+    objDict = {}
     fcdoc = ET.XML(s)
-    print fcdoc.tag
     for fcobj in fcdoc:
         print fcobj.tag
         name = fcobj.attrib['name']
@@ -45,18 +54,18 @@ def fromHets(filePath):
                 objtype = props.tag
                 attribsxml = props.attrib
         print objtype
-        entity = name, placexml, attribsxml, 0
+        entity = name, placexml, attribsxml, objtype, 0
         buildque.append(entity)
-
-    while buildque.len() > 0 :
+        print entity
+    while len(buildque) > 0 :
         for elsrc in buildque:
-            if isBuildable(elsrc, objtype, buildque):
-                buildObject(elsrc, objtype, buildque, objDict)
+            if isBuildable(elsrc, buildque):
+                buildObject(elsrc, buildque, objDict)
 
 
 #checks whether the object is buildable in the current state of the program
-def isBuildable(el, ot, queue):
-    name, pos, att, tr = el
+def isBuildable(el, queue):
+    name, pos, att, ot, tr = el
     hasDependency = False
     composed = ['cut','common','extrude']
     if (ot in composed):
@@ -74,38 +83,39 @@ def isBuildable(el, ot, queue):
 
 #calls constructor in the freecad document and updates queue and refList
 #arguments: element from buildque, object type, buildque, reference->object dict
-def buildObject(el, ot, queue, refList): 
+def buildObject(el, queue, refList): 
     #expand and extract elements needed for object construction
-    name, pos, att, tr = el
+    name, pos, b, objtype, tr = el
     queue.remove(el)
-    objtype = ot
     
     #build the placement from the vector and quaternion stored in the xml file
     base = FreeCAD.Vector(float(pos['x']), float(pos['y']), float(pos['z']))
     quat = [float(pos['q0']), float(pos['q1']), float(pos['q2']), float(pos['q3'])]
     q0, q1, q2, q3 = quat
-    angle = 2*acos(q3)
+    angle = 2*math.acos(q3)
     axis = FreeCAD.Vector(q0, q1, q2)
     place = FreeCAD.Placement(base, axis, angle)
     
+    defplace = FreeCAD.Placement()
     #handler to determine which object constructor to call
     if objtype == 'box':
         isCreated = False
-        part = Part.makeBox(float(b[length]), float(b[width]), float(b[height]))
+        part = Part.makeBox(float(b['length']), float(b['width']), float(b['height']))
     elif objtype == 'cylinder':
         isCreated = False
         part = Part.makeCylinder(float(b['radius']), float(b['height']), 
-        [defpnt, defdir, float(b['angle'])])
+        defplace)
     elif objtype == 'cone':
         isCreated = False
         part = Part.makeCone(float(b['radius1']), float(b['radius2']), float(b['height']),
-        [defpnt, defdir, float(b['angle'])])
+        defplace)
     elif objtype == 'sphere':
         isCreated = False
         part = Part.makeSphere(float(b['radius']),
         [defpnt, defdir, float(b['angle1']),float(b['angle2']),float(b['angle3'])])
     elif objtype == 'torus':
         isCreated = False
+        print el
         part = Part.makeTorus(float(b['radius1']), float(b['radius2']), 
         [defpnt, defdir, float(b['angle1']),float(b['angle2']),float(b['angle3'])])
     elif objtype == 'line':
@@ -118,9 +128,13 @@ def buildObject(el, ot, queue, refList):
     elif objtype == 'cut':
         isCreated = True
         obj = cut(refList[att['base']],refList[att['tool']])
-    elif objtype == 'common':
+    elif objtype == 'fusion':
         isCreated = True
         obj = fuse(refList[att['base']],refList[att['tool']])
+    elif objtype == 'common':
+        isCreated = True
+        obj = addObject('Part::MultiCommon',name)
+        obj.Shapes = [refList[att['base']],refList[att['tool']]]
     elif objtype == 'extrude':
         isCreated = True
         obj = extrude(refList[att['base']],float(refList[att['tool']]))

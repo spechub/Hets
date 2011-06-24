@@ -58,11 +58,11 @@ mkNumAtt key num = (Attr (unqual key) (show num))
 makeObjElem :: Object -> Element
 makeObjElem obj = case obj of
                     BaseObject bo -> makeBOElem bo
-                    Cut eo1 eo2 -> mk2refs "Cut" eo1 eo2
-                    Common eo1 eo2 -> mk2refs "Common" eo1 eo2
-                    Fusion eo1 eo2 -> mk2refs "Fusion" eo1 eo2
-                    Section eo1 eo2 -> mk2refs "Section" eo1 eo2
-                    Extrusion eo1 val -> mk1refs "Extrusion" eo1 val
+                    Cut eo1 eo2 -> mk2refs "cut" eo1 eo2
+                    Common eo1 eo2 -> mk2refs "common" eo1 eo2
+                    Fusion eo1 eo2 -> mk2refs "fusion" eo1 eo2
+                    Section eo1 eo2 -> mk2refs "section" eo1 eo2
+                    Extrusion eo1 val -> mk1refs "extrusion" eo1 val
     where
       mkRefAtt key eo = (Attr (unqual key) (getEORef eo))
       mk2refs consType ref1 ref2 = 
