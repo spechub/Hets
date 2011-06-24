@@ -21,7 +21,6 @@ module HasCASL.SymbolMapAnalysis
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.PrintLe
-import HasCASL.Builtin
 import HasCASL.AsToLe
 import HasCASL.Symbol
 import HasCASL.Merge
@@ -75,7 +74,7 @@ inducedFromMorphism rmap sigma = do
            mk <- mergeTypeInfo tarClassMap ok nk
            return $ Map.insert ni mk m)
        Map.empty $ Map.toList srcTypeMap
-    let tarTypeMap = addUnit (classMap sigma) tarTypeMap0
+    let tarTypeMap = addUnit (addCpoMap srcClassMap) tarTypeMap0
         tarAliases = filterAliases tarTypeMap
   -- compute the op map (as a Map)
     op_Map <- Map.foldWithKey
@@ -94,7 +93,7 @@ inducedFromMorphism rmap sigma = do
     disjointKeys tarTypeMap2 tarClassMap
   -- return assembled morphism
     Result (envDiags sigma') $ Just ()
-    return $ (mkMorphism sigma $ diffEnv sigma' preEnv)
+    return $ (mkMorphism sigma $ delPreDefs sigma')
                  { typeIdMap = myTypeIdMap
                  , classIdMap = myClassIdMap
                  , funMap = op_Map }

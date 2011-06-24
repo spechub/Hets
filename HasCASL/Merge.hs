@@ -17,7 +17,6 @@ module HasCASL.Merge
     , mergeTypeDefn
     , mergeOpInfo
     , addUnit
-    , minimizeClassMap
     ) where
 
 import Common.Id
@@ -36,7 +35,7 @@ import HasCASL.MapTerm
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
-import Control.Monad(foldM)
+import Control.Monad (foldM)
 
 mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
 mergeTypeInfo cm t1 t2 = do
@@ -117,14 +116,9 @@ mergeOpInfo o1 o2 = do
 mergeTypeMap :: ClassMap -> TypeMap -> TypeMap -> Result TypeMap
 mergeTypeMap = mergeMap . mergeTypeInfo
 
-minimizeClassMap :: ClassMap -> ClassMap
-minimizeClassMap cm = Map.map (\ ci -> ci { classKinds =
-                          keepMinKinds cm [classKinds ci] }) cm
-
 merge :: Env -> Env -> Result Env
 merge e1 e2 = do
-    cMap <- mergeMap mergeClassInfo (classMap e1) $ classMap e2
-    let clMap = minimizeClassMap cMap
+    clMap <- mergeClassMap (classMap e1) $ classMap e2
     tMap <- mergeTypeMap clMap (typeMap e1) $ typeMap e2
     let tAs = filterAliases tMap
     as <- mergeMap mergeOpInfos (assumps e1) $ assumps e2

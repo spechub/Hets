@@ -15,9 +15,11 @@ module HasCASL.RawSym where
 
 import HasCASL.As
 import HasCASL.AsUtils
+import HasCASL.Builtin
 import HasCASL.ClassAna
 import HasCASL.Le
 import HasCASL.Merge (addUnit)
+import HasCASL.PrintLe (addClassMap)
 import HasCASL.VarDecl
 
 import Common.DocUtils
@@ -65,11 +67,13 @@ symbToRaw me k (Symb idt mt _) = case mt of
         let qi ty = ASymbol $ Symbol idt ty
             rsc = if k == SyKpred then predTypeScheme (posOfId idt) sc else sc
             r = do
-              let mtysc = evalState (anaTypeScheme rsc) e
-                    {typeMap = addUnit (classMap e) $ typeMap e}
+              let cm = addClassMap cpoMap (classMap e)
+                  (mtysc, rLe) = runState (anaTypeScheme rsc) e
+                    { typeMap = addUnit cm $ typeMap e
+                    , classMap = cm }
               case mtysc of
-                Nothing -> Result
-                  [mkDiag Error "no function type" rsc] Nothing
+                Nothing -> Result (reverse
+                  $ mkDiag Error "no function type" rsc : envDiags rLe) Nothing
                 Just asc -> return $ qi $ OpAsItemType asc
             rk = if null vs then do
                 (_, ck) <- convTypeToKind t

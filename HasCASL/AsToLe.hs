@@ -103,7 +103,7 @@ diffEnv :: Env -> Env -> Env
 diffEnv e1 e2 = let
     tm = typeMap e2
     cm = diffClassMap (classMap e1) $ classMap e2
-    Result _ (Just acm) = mergeMap mergeClassInfo (classMap e1) $ classMap e2
+    acm = addClassMap (classMap e1) $ classMap e2
     in initialEnv
        { classMap = cm
        , typeMap = diffTypeMap acm (typeMap e1) tm
@@ -132,11 +132,11 @@ diffOps cm tAs tm s1 s2 = if Set.null s1 then s1 else
 
 -- | clean up finally accumulated environment
 cleanEnv :: Env -> Env
-cleanEnv e = diffEnv initialEnv
+cleanEnv e = delPreDefs initialEnv
              { classMap = classMap e
              , typeMap = typeMap e
              , assumps = assumps e
-             , binders = binders e } preEnv
+             , binders = binders e }
 
 -- | analyse basic spec
 anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec

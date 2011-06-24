@@ -16,14 +16,17 @@ module HasCASL.Le where
 import HasCASL.As
 import HasCASL.FoldType
 import HasCASL.AsUtils
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+
 import qualified Common.Lib.State as State
 import Common.Result
 import Common.Id
 import Common.AS_Annotation (Named)
 import Common.GlobalAnnotations
 import Common.Prec
+
+import qualified Data.Map as Map
+import Data.Ord
+import qualified Data.Set as Set
 
 -- * class info
 
@@ -156,7 +159,7 @@ instance Eq OpInfo where
     o1 == o2 = compare o1 o2 == EQ
 
 instance Ord OpInfo where
-    compare o1 o2 = compare (opType o1) $ opType o2
+    compare = comparing opType
 
 -- | test for constructor
 isConstructor :: OpInfo -> Bool
@@ -327,6 +330,7 @@ data SymbolType =
   | SuperClassSymbol Kind
   | TypeKindInstance Kind
   | SuperTypeSymbol Id
+  | TypeAliasSymbol Type
     deriving (Show, Eq, Ord)
 
 -- | symbols with their type
@@ -387,6 +391,7 @@ symbTypeToKind s = case s of
     TypeAsItemType _ -> SyKtype
     SuperTypeSymbol _ -> SyKtype
     TypeKindInstance _ -> SyKtype
+    TypeAliasSymbol _ -> SyKtype
     ClassAsItemType _ -> SyKclass
     SuperClassSymbol _ -> SyKclass
 

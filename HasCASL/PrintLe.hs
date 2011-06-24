@@ -15,12 +15,17 @@ module HasCASL.PrintLe
   ( diffClass
   , diffClassMap
   , mergeClassInfo
+  , mergeClassMap
+  , addClassMap
+  , addCpoMap
+  , minimizeClassMap
   , mergeMap
   , improveDiag
   , diffTypeMap
   , diffType
   , printMap1
   , mostSyms
+  , delPreDefs
   ) where
 
 import HasCASL.As
@@ -41,6 +46,7 @@ import Common.Result
 
 import Control.Monad (foldM)
 import Data.List
+import Data.Maybe
 
 instance Pretty ClassInfo where
     pretty (ClassInfo rk ks) =
@@ -131,43 +137,66 @@ instance Pretty Sentence where
         DatatypeSen ls -> vcat (map pretty ls)
         ProgEqSen _ _ pe -> keyword programS <+> pretty pe
 
+delPreDefs :: Env -> Env
+delPreDefs e =
+  let cm = classMap e
+      tm = typeMap e
+      ops = assumps e
+      ocm = diffClassMap cm cpoMap
+  in e
+  { classMap = ocm
+  , typeMap = diffTypeMap ocm tm bTypes
+  , assumps = foldr (Map.delete . fst) ops bList }
+
+getSuperClasses :: ClassMap -> [(Id, Kind)]
+getSuperClasses = concatMap
+  ( \ (i, ci) -> map ( \ s -> (i, s))
+    . Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
+  . Map.toList
+
+getSuperTypes :: TypeMap -> [(Id, Id)]
+getSuperTypes = concatMap
+  ( \ (i, ti) -> map ( \ s -> (i, s))
+    . Set.toList $ superTypes ti)
+  . Map.toList
+
+getTypeKinds :: TypeMap -> [(Id, Kind)]
+getTypeKinds = concatMap
+  ( \ (i, ti) -> map ( \ k -> (i, k))
+    . Set.toList $ otherTypeKinds ti)
+  . Map.toList
+
+getTypeAliases :: TypeMap -> [(Id, Type)]
+getTypeAliases = foldr
+  ( \ (i, td) -> case typeDefn td of
+    AliasTypeDefn ty -> ((i, ty) :)
+    _ -> id) [] . Map.toList
+
 instance Pretty Env where
-    pretty Env
-      { classMap = cm
-      , typeMap = tm
-      , localTypeVars = tvs
-      , assumps = ops
-      , binders = bs
-      , localVars = vs
-      , sentences = se
-      , envDiags = ds } = let
-      oops = foldr (Map.delete . fst) ops bList
-      poMap = Map.map (Set.partition (isPredOpDefn . opDefn)) oops
+    pretty env = let
+      d = delPreDefs env
+      cm = classMap d
+      tm = typeMap d
+      tvs = localTypeVars d
+      vs = localVars d
+      poMap = Map.map (Set.partition (isPredOpDefn . opDefn)) $ assumps d
       pMap = Map.map fst poMap
       oMap = Map.map snd poMap
-      ocm = diffClassMap cm cpoMap
-      otm = diffTypeMap ocm tm bTypes
-      ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
-          $ Set.toList $ otherTypeKinds ti) $ Map.toList otm
-      stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
-          $ Set.toList $ superTypes ti) $ Map.toList otm
-      atm = Map.filter ( \ td -> case typeDefn td of
-          AliasTypeDefn _ -> True
-          _ -> False) otm
-      scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
-          $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
-          $ Map.toList ocm
+      ltm = getTypeKinds tm
+      stm = getSuperTypes tm
+      atm = getTypeAliases tm
+      scm = getSuperClasses cm
       bas = map (\ (b, o) -> Unparsed_anno (Annote_word "binder")
              (Line_anno $ " " ++ show b ++ ", " ++ show o) $ posOfId b)
-            $ Map.toList bs
+            $ Map.toList $ binders d
       mkPlural s = if last s == 's' then s ++ "es" else s ++ "s"
       header2 l s = keyword $ case l of
         _ : _ : _ -> mkPlural s
         _ -> s
       header m s = keyword $
         if Map.size m < 2 then s else mkPlural s
-      in noPrint (Map.null ocm) (header ocm classS)
-        $+$ printMap0 (Map.map ( \ ci -> ci { classKinds = Set.empty }) ocm)
+      in noPrint (Map.null cm) (header cm classS)
+        $+$ printMap0 (Map.map ( \ ci -> ci { classKinds = Set.empty }) cm)
         $+$ noPrint (null scm) (header2 scm classS)
         $+$ vcat (punctuate semi $ map ( \ (i, s) ->
             pretty i <+> text lessS <+> pretty s) scm)
@@ -177,7 +206,7 @@ instance Pretty Env where
         $+$ noPrint (null stm) (header2 stm typeS)
         $+$ vcat (punctuate semi $ map ( \ (i, s) ->
             pretty i <+> text lessS <+> pretty s) stm)
-        $+$ noPrint (Map.null atm) (header atm typeS)
+        $+$ noPrint (null atm) (header2 atm typeS)
         $+$ printAliasTypes atm
         $+$ noPrint (Map.null tvs) (header tvs varS)
         $+$ printMap0 tvs
@@ -186,40 +215,32 @@ instance Pretty Env where
         $+$ printSetMap (keyword predS) space pMap
         $+$ noPrint (Map.null vs) (header vs varS)
         $+$ printMap0 vs
-        $+$ vcat (map (pretty . fromLabelledSen) $ reverse se)
-        $+$ vcat (map pretty $ reverse ds)
+        $+$ vcat (map (pretty . fromLabelledSen) . reverse $ sentences d)
+        $+$ vcat (map pretty . reverse $ envDiags d)
 
 mostSyms :: Env -> [Symbol]
-mostSyms Env
-      { classMap = cm
-      , typeMap = tm
-      , assumps = ops
-      } = let
-      oops = foldr (Map.delete . fst) ops bList
-      ocm = diffClassMap cm cpoMap
-      otm = diffTypeMap ocm tm bTypes
-      ltm = concatMap ( \ (i, ti) -> map ( \ k -> (i, k))
-          $ Set.toList $ otherTypeKinds ti) $ Map.toList otm
-      stm = concatMap ( \ (i, ti) -> map ( \ s -> (i, s))
-          $ Set.toList $ superTypes ti) $ Map.toList otm
-      scm = concatMap ( \ (i, ci) -> map ( \ s -> (i, s))
-          $ Set.toList $ Set.delete (rawToKind $ rawKind ci) $ classKinds ci)
-          $ Map.toList ocm
-      in map (\ (i, k) -> idToClassSymbol i $ rawKind k) (Map.toList ocm)
-      ++ map (\ (i, s) -> Symbol i $ SuperClassSymbol s) scm
-      ++ map (\ (i, k) -> idToTypeSymbol i $ typeKind k) (Map.toList otm)
-      ++ map (\ (i, s) -> Symbol i $ TypeKindInstance s) ltm
-      ++ map (\ (i, s) -> Symbol i $ SuperTypeSymbol s) stm
+mostSyms e = let
+  d = delPreDefs e
+  cm = classMap d
+  tm = typeMap d
+  in map (\ (i, k) -> idToClassSymbol i $ rawKind k) (Map.toList cm)
+      ++ map (\ (i, s) -> Symbol i $ SuperClassSymbol s) (getSuperClasses cm)
+      ++ map (\ (i, k) -> idToTypeSymbol i $ typeKind k) (Map.toList tm)
+      ++ map (\ (i, s) -> Symbol i $ TypeKindInstance s) (getTypeKinds tm)
+      ++ map (\ (i, s) -> Symbol i $ SuperTypeSymbol s) (getSuperTypes tm)
+      ++ map (\ (i, s) -> Symbol i $ TypeAliasSymbol s) (getTypeAliases tm)
       ++ concatMap (\ (i, ts) ->
                     map (idToOpSymbol i . opType) $ Set.toList ts)
-             (Map.toList oops)
+             (Map.toList $ assumps d)
 
-printAliasTypes :: Map.Map Id TypeInfo -> Doc
-printAliasTypes = ppMap pretty (\ td -> case typeDefn td of
-  AliasTypeDefn ty ->
+printAliasType :: Type -> Doc
+printAliasType ty =
     let (args, t) = getArgsAndType ty in
     fsep $ map (parens . pretty) args ++ [text assignS, pretty t]
-  _ -> empty) id (vcat . punctuate semi) $ \ a b -> fsep [a, b]
+
+printAliasTypes :: [(Id, Type)] -> Doc
+printAliasTypes = vcat . punctuate semi .
+   map (\ (i, ty) -> sep [pretty i, printAliasType ty])
 
 getArgsAndType :: Type -> ([TypeArg], Type)
 getArgsAndType ty = case ty of
@@ -258,6 +279,7 @@ instance Pretty Symbol where
       printSK (symbTypeToKind ty) [()] <+> pretty (symName s) <+> case ty of
         SuperTypeSymbol sty -> less <+> pretty sty
         SuperClassSymbol k -> less <+> pretty k
+        TypeAliasSymbol t -> printAliasType t
         TypeKindInstance k -> colon <+> pretty k
         OpAsItemType sc -> colon <+> pretty sc
         TypeAsItemType k -> colon <+> pretty (rawToKind k)
@@ -290,9 +312,22 @@ mergeClassInfo c1 c2 = do
     k <- minRawKind "class raw kind" (rawKind c1) $ rawKind c2
     return $ ClassInfo k $ Set.union (classKinds c1) $ classKinds c2
 
+minimizeClassMap :: ClassMap -> ClassMap
+minimizeClassMap cm = Map.map (\ ci -> ci { classKinds =
+                          keepMinKinds cm [classKinds ci] }) cm
+
+mergeClassMap :: ClassMap -> ClassMap -> Result ClassMap
+mergeClassMap c = fmap minimizeClassMap . mergeMap mergeClassInfo c
+
+addClassMap :: ClassMap -> ClassMap -> ClassMap
+addClassMap c = fromMaybe (error "addClassMap") . maybeResult . mergeClassMap c
+
+addCpoMap :: ClassMap -> ClassMap
+addCpoMap = addClassMap cpoMap
+
 diffClassMap :: ClassMap -> ClassMap -> ClassMap
 diffClassMap c1 c2 =
-  let Result _ (Just ce) = mergeMap mergeClassInfo c1 c2
+  let ce = addClassMap c1 c2
   in Map.differenceWith (diffClass ce) c1 c2
 
 -- | compute difference of class infos
