@@ -20,12 +20,16 @@ import FreeCAD.Brep
 import System.Directory
 import System.Process
 import FreeCAD.PrintAs()
+import System.IO.Temp()
 
 
 processFile :: FilePath -> IO Document
+processFile fp = withSystemTempDirectory $ "hets-fc." pFile
+
+pFile :: FilePath -> IO Document
 --unzips the freecad archive, reads the main "Document.xml" file and gives control
 --to (translate :: Element -> IO Document) function to interpret the xml data
-processFile fp = do
+pFile fp = do
   tempDir <- getTemporaryDirectory
 --  putStrLn $ show $ ["unzip", "-of", fp, "-d", tempDir]
   readProcess "unzip" ["-o", fp, "-d", tempDir] []

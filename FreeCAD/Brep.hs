@@ -26,6 +26,7 @@ import FreeCAD.VecTools
 
 import System.Directory
 import System.FilePath
+import System.IO.Temp
 
 getBrep::(String, String) -> IO (BaseObject, Placement)
 getBrep (address, "line") = 
@@ -36,7 +37,7 @@ getBrep (_, _) = error "getBrep called with wrong arguments"
 
 
 proc3dLine:: (Vector3, Vector3) -> (BaseObject, Placement)
-proc3dLine (a, b) = (Line l, place) --TODO
+proc3dLine (a, b) = (Line l, place) 
     where
       l = distance3 a b
       pos = a
