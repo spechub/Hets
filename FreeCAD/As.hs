@@ -67,7 +67,7 @@ data Object = BaseObject BaseObject
             | Fusion ExtendedObject ExtendedObject
             | Section ExtendedObject ExtendedObject
                 --section of an object (intersection with a plane
-            | Extrusion ExtendedObject Double --TODO
+            | Extrusion ExtendedObject Vector3 --TODO
 --          | Fillet, (Base::String, Edges::Edgelist, Radius::Double)),
             --not enough data in the xml
 --          | Chamfer, (Base::String, Edges::Edgelist, Amount::Double)),

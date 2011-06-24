@@ -115,7 +115,7 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
       getCom e = Common (findRef "Base" e) (findRef "Tool" e)
       getSec e = Section (findRef "Base" e) (findRef "Tool" e)
       getFus e = Fusion (findRef "Base" e) (findRef "Tool" e)
-      getExt e = Extrusion (findRef "Base" e) 3.14159 --TODO
+      getExt e = Extrusion (findRef "Base" e) (findPropVec "Dir" e)
       elc = child el
 getObject _ = error "undefined object"
 
@@ -169,9 +169,16 @@ findPlacement el = Placement (Vector3 a b c) (Vector4 d e f g)
         el2 = childByNameAttr "Placement" el
 
 findRef::String -> Element -> FreeCAD.As.ExtendedObject
-findRef s el = Ref (getLinkVal el2)
-    where
-        el2 = childByNameAttr s el
+findRef s el = Ref (getLinkVal el2) where
+    el2 = childByNameAttr s el
+
+findPropVec::String -> Element -> FreeCAD.As.Vector3
+findPropVec s el = Vector3 valueX valueY valueZ where
+    el2 = childByNameAttr s el
+    propVec = fromJust( findChild ( unqual "PropertyVector" ) el2)
+    valueX = read $ fromJust $ findAttr (unqual "valueX") propVec
+    valueY = read $ fromJust $ findAttr (unqual "valueY") propVec
+    valueZ = read $ fromJust $ findAttr (unqual "valueZ") propVec
 
 child:: Element -> Element
 child el = head(elChildren el)
