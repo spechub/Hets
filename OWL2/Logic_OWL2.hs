@@ -60,7 +60,13 @@ instance Syntax OWL2 OntologyDocument SymbItems SymbMapItems where
     parse_symb_items OWL2 = Just symbItems
     parse_symb_map_items OWL2 = Just symbMapItems
 
-instance Sentences OWL2 Axiom Sign OWLMorphism Entity
+instance Sentences OWL2 Axiom Sign OWLMorphism Entity where
+    map_sen OWL2 = mapSen
+    print_named OWL2 namedSen =
+        pretty (sentence namedSen) <>
+          if isAxiom namedSen then empty else space <> text "%implied"
+    sym_of OWL2 = singletonList . symOf
+    symmap_of OWL2 = symMapOf
 
 instance StaticAnalysis OWL2 OntologyDocument Axiom
                SymbItems SymbMapItems
