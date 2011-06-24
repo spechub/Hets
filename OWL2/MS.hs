@@ -48,13 +48,13 @@ data Frame
 data FrameBit
   = AnnotationFrameBit Annotations
   | AnnotationBit Relation (AnnotatedList AnnotationProperty)
-  | AnnotationDR AnnotationDomainOrRange (AnnotatedList IRI)
+  | AnnotationDR DomainOrRange (AnnotatedList IRI)
   | DatatypeBit Annotations DataRange
   | ExpressionBit Relation (AnnotatedList ClassExpression)
   | ClassDisjointUnion Annotations [ClassExpression]
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
   | ObjectBit Relation (AnnotatedList ObjectPropertyExpression)
-  | ObjectDomainOrRange ObjDomainOrRange (AnnotatedList ClassExpression)
+  | ObjectDomainOrRange DomainOrRange (AnnotatedList ClassExpression)
   | ObjectCharacteristics (AnnotatedList Character)
   | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
   | DataBit Relation (AnnotatedList DataPropertyExpression)

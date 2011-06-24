@@ -7,7 +7,7 @@ Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Contains    :  Pretty printing for the common datatypes of the 
+Contains    :  Pretty printing for the common datatypes of the
                Functional and Manchester Syntaxes of OWL 2.
 -}
 
@@ -122,7 +122,7 @@ instance Pretty DataRange where
 
 printDataRange :: DataRange -> Doc
 printDataRange dr = case dr of
-    DataType dtype l -> pretty dtype <+>				
+    DataType dtype l -> pretty dtype <+>
       if null l then empty else brackets $ sepByCommas $ map printFV l
     DataComplementOf drange -> keyword notS <+> pretty drange
     DataOneOf constList -> specBraces $ ppWithCommas constList
@@ -132,7 +132,7 @@ printDataRange dr = case dr of
           IntersectionOf -> andS
       in fsep $ prepPunctuate (keyword k <> space) $ map pretty drlist
 
-printFV ::(ConstrainingFacet, RestrictionValue) -> Doc
+printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
 printFV (facet, restValue) = pretty facet <+> pretty restValue
 
 instance Pretty DatatypeFacet where
@@ -144,17 +144,14 @@ instance Pretty Literal where
              '"' : _ -> lexi
              _ -> show lexi) <> case ty of
       Typed u -> keyword cTypeS <> pretty u
-      Untyped tag -> if tag == Nothing then empty else 
+      Untyped tag -> if tag == Nothing then empty else
                      let Just tag2 = tag in text asP <> text tag2
 
 printRelation :: Relation -> Doc
 printRelation = keyword . showRelation
 
-printObjDomainOrRange :: ObjDomainOrRange -> Doc
-printObjDomainOrRange = keyword . showObjDomainOrRange
-
-printAnnDomainOrRange :: AnnotationDomainOrRange -> Doc
-printAnnDomainOrRange = keyword . showAnnDomainOrRange
+printDomainOrRange :: DomainOrRange -> Doc
+printDomainOrRange = keyword . showDomainOrRange
 
 printDataDomainOrRange :: DataDomainOrRange -> Doc
 printDataDomainOrRange dr = case dr of

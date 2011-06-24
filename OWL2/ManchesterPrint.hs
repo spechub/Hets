@@ -62,7 +62,7 @@ printFrameBit :: FrameBit -> Doc
 printFrameBit fb = case fb of
     AnnotationFrameBit x -> pretty x
     AnnotationBit ed l -> printRelation ed <+> pretty l
-    AnnotationDR dr l -> printAnnDomainOrRange dr <+> pretty l
+    AnnotationDR dr l -> printDomainOrRange dr <+> pretty l
     DatatypeBit ans a -> pretty ans $+$ keyword equivalentToC <+> pretty a
     ExpressionBit x y -> printRelation x <+> pretty y
     ClassDisjointUnion a x -> keyword disjointUnionOfC
@@ -70,7 +70,7 @@ printFrameBit fb = case fb of
     ClassHasKey a op dp -> keyword hasKeyC <+> (pretty a
       $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
     ObjectBit dr x -> printRelation dr <+> pretty x
-    ObjectDomainOrRange dr x -> printObjDomainOrRange dr <+> pretty x
+    ObjectDomainOrRange dr x -> printDomainOrRange dr <+> pretty x
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
     ObjectSubPropertyChain a opl -> keyword subPropertyChainC
       <+> (pretty a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))

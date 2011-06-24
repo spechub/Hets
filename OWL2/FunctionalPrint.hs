@@ -99,7 +99,7 @@ printAxiom axiom = case axiom of
        opStart <+> pretty opExp $+$ printRelation ty <+>
                    setToDocV (Set.fromList opList)
    ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printObjDomainOrRange ty <+> pretty desc
+       opStart <+> pretty opExp $+$ printDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
        opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> pretty opExp2
    ObjectPropertyCharacter ch opExp ->

@@ -29,7 +29,7 @@ data Axiom = -- Annotations can be ignored
 data AnnotationAxiom
   = AnnotationAssertion [Annotation] IRI
   | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
-  | AnnDomainOrRange AnnotationDomainOrRange [Annotation] AnnotationProperty IRI
+  | AnnDomainOrRange DomainOrRange [Annotation] AnnotationProperty IRI
     deriving (Show, Eq, Ord)
 
 instance GetRange Axiom
@@ -41,7 +41,7 @@ data PlainAxiom =
   | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
   | EquivOrDisjointObjectProperties Relation [ObjectPropertyExpression]
     -- min. 2  ObjectPropertyExpression
-  | ObjectPropertyDomainOrRange ObjDomainOrRange ObjectPropertyExpression
+  | ObjectPropertyDomainOrRange DomainOrRange ObjectPropertyExpression
       ClassExpression
   | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
   | ObjectPropertyCharacter Character ObjectPropertyExpression

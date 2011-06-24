@@ -211,12 +211,12 @@ data ClassExpression =
 data Annotation = Annotation [Annotation] AnnotationProperty AnnotationValue
   deriving (Show, Eq, Ord)
 
-data AnnotationDomainOrRange = AnnDomain | AnnRange deriving (Show, Eq, Ord)
+data DomainOrRange = ADomain | ARange deriving (Show, Eq, Ord)
 
-showAnnDomainOrRange :: AnnotationDomainOrRange -> String
-showAnnDomainOrRange dr = case dr of
-    AnnDomain -> domainC
-    AnnRange -> rangeC
+showDomainOrRange :: DomainOrRange -> String
+showDomainOrRange dr = case dr of
+    ADomain -> domainC
+    ARange -> rangeC
 
 data AnnotationValue
         = AnnValue IRI
@@ -273,13 +273,6 @@ showRelation ed = case ed of
     InverseOf -> inverseOfC
     SubClass -> subClassOfC
     Types -> typesC
-
-data ObjDomainOrRange = ObjDomain | ObjRange deriving (Show, Eq, Ord)
-
-showObjDomainOrRange :: ObjDomainOrRange -> String
-showObjDomainOrRange dr = case dr of
-    ObjDomain -> domainC
-    ObjRange -> rangeC
 
 data DataDomainOrRange = DataDomain ClassExpression | DataRange DataRange
     deriving (Show, Eq, Ord)

@@ -554,10 +554,10 @@ objectPropertyCharacter :: CharParser st Character
 objectPropertyCharacter =
   choice $ map (\ f -> keyword (show f) >> return f) characters
 
-domainOrRange :: CharParser st ObjDomainOrRange
+domainOrRange :: CharParser st DomainOrRange
 domainOrRange = choice
-  $ map (\ f -> pkeyword (showObjDomainOrRange f) >> return f)
-  [ObjDomain, ObjRange]
+  $ map (\ f -> pkeyword (showDomainOrRange f) >> return f)
+  [ADomain, ARange]
 
 nsEntry :: CharParser st (String, QName)
 nsEntry = do

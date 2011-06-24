@@ -57,13 +57,9 @@ apBit = do
           x <- sepByComma $ optAnnos uriP
           return $ AnnotationBit SubPropertyOf $ AnnotatedList x
         <|> do
-          pkeyword rangeC
+          dr <- domainOrRange
           x <- sepByComma $ optAnnos uriP
-          return $ AnnotationDR AnnRange $ AnnotatedList x
-       <|> do
-          pkeyword domainC
-          x <- sepByComma $ optAnnos uriP
-          return $ AnnotationDR AnnDomain $ AnnotatedList x
+          return $ AnnotationDR dr $ AnnotatedList x
        <|> do
           x <- annotations
           return $ AnnotationFrameBit x
@@ -88,7 +84,7 @@ classFrame = do
         plain <- many classFrameBit
         return $ Frame (Entity Class iri) plain
 
-classFrameBit ::CharParser st FrameBit
+classFrameBit :: CharParser st FrameBit
 classFrameBit = do
     pkeyword subClassOfC
     ds <- descriptionAnnotatedList
@@ -155,7 +151,7 @@ dataPropExprAList :: CharParser st [(Annotations, DataPropertyExpression)]
 dataPropExprAList = sepByComma $ optAnnos uriP
 
 dataFrameBit :: CharParser st FrameBit
-dataFrameBit  = do
+dataFrameBit = do
     pkeyword domainC
     ds <- descriptionAnnotatedList
     return $ DataPropDomain $ AnnotatedList ds
@@ -209,7 +205,7 @@ iFrameBit = do
     return $ IndividualSameOrDifferent s $ AnnotatedList is
   <|> do
     pkeyword factsC
-    fs <- sepByComma $ optAnnos $ fact
+    fs <- sepByComma $ optAnnos fact
     return $ IndividualFacts $ AnnotatedList fs
   <|> do
     a <- annotations
@@ -263,7 +259,5 @@ basicSpec = do
       , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
       , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
       , ("xsd", "http://www.w3.org/2001/XMLSchema#")
---      , ("", showQU dummyQName ++ "#") -- uncomment for API v3
-      , ("owl2xml", "http://www.w3.org/2006/12/owl2-xml#") ]
+      , ("", showQU dummyQName ++ "#") ]
       ++ map (\ (p, q) -> (p, showQU q)) nss }
-
