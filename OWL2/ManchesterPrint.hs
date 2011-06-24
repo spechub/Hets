@@ -19,8 +19,8 @@ import Common.Keywords
 import OWL2.AS
 import OWL2.MS
 import OWL2.Print
-import OWL.Keywords
-import OWL.ColonKeywords
+import OWL2.Keywords
+import OWL2.ColonKeywords
 import qualified Data.Map as Map
 
 printCharact :: String -> Doc

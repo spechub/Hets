@@ -17,8 +17,8 @@ module OWL2.ManchesterParser where
 import OWL2.AS
 import OWL2.MS
 import OWL2.Parse
-import OWL.Keywords
-import OWL.ColonKeywords
+import OWL2.Keywords
+import OWL2.ColonKeywords
 
 import Common.Keywords
 import Common.Parsec

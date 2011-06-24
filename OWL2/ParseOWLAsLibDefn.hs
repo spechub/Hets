@@ -16,7 +16,7 @@ import OWL2.AS
 import OWL2.MS
 import OWL2.ManchesterParser
 import OWL2.Parse
-import OWL.ColonKeywords
+import OWL2.ColonKeywords
 
 import Data.Char
 import qualified Data.Map as Map

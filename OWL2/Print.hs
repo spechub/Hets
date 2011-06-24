@@ -20,8 +20,8 @@ import Common.Keywords
 
 import OWL2.AS
 import OWL2.Symbols
-import OWL.Keywords
-import OWL.ColonKeywords
+import OWL2.Keywords
+import OWL2.ColonKeywords
 
 import qualified Data.Set as Set
 
