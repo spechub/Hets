@@ -26,7 +26,7 @@ import FreeCAD.VecTools
 
 import System.Directory
 import System.FilePath
-import System.IO.Temp
+--import System.IO.Temp
 
 getBrep::(String, String) -> IO (BaseObject, Placement)
 getBrep (address, "line") = 
