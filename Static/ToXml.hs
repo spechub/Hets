@@ -38,6 +38,7 @@ import Text.XML.Light
 
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
+import qualified Data.Set as Set (toList)
 
 dGraph :: LibEnv -> LibName -> DGraph -> Element
 dGraph lenv ln dg =
@@ -118,9 +119,10 @@ lnode ga lenv (_, lbl) =
                      subnodes "Declarations"
                        $ map (prettyRangeElem "Symbol" ga)
                        $ mostSymsOf lid dsig
-                   _ -> {- in this case nothing should be needed
-                        but it fails currently for targets of hiding defs -}
-                     [sigxml]
+                   DGRestriction _ hidSyms -> subnodes "Hidden"
+                       $ map (prettyRangeElem "Symbol" ga)
+                       $ Set.toList hidSyms
+                   _ -> [sigxml]
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom $ OMap.map

@@ -261,7 +261,6 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
       return (Translation (replaceAnnoted sp1' asp) ren, fs, dgf)
   Reduction asp restr ->
    do let sp1 = item asp
-          orig = DGRestriction $ Restricted restr
           rname = extName "Restriction" name
       (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts sp1
       rLid <- getRestrLogic restr
@@ -274,9 +273,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           p1 ("nothing hidden by:\n" ++ showDoc restr "")
             $ getRange restr
           else do
-           let (ns@(NodeSig node _), dg'') = insGSig dg'
+           let trgSg = dom hmor
+               hidSyms = Set.difference (symsOfGsign gsigma')
+                 $ symsOfGsign trgSg
+               orig = DGRestriction (Restricted restr) hidSyms
+               (ns@(NodeSig node _), dg'') = insGSig dg'
                  (if noRename then name else extName "Hiding" name)
-                 orig $ dom hmor
+                 orig trgSg
            -- ??? too simplistic for non-comorphism inter-logic reductions
            return (ns, insLink dg'' hmor HidingDefLink SeeTarget n' node)
       {- we treat hiding and revealing differently
@@ -334,6 +337,8 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                else ext_cogenerated_sign lid2
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom mor3
+-- TODO: check if startoff G_sign is correct for DGRestriction!
+          gsigma1 = G_sign lid2 sigma1 startSigId
           -- gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid2 (makeExtSign lid2 sigma3) startSigId
           sys3 = symset_of lid2 sigma3
@@ -343,7 +348,9 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           "illegal use of locally declared symbols: "
           ++ showDoc ((sys2 `Set.intersection` sys1) `Set.difference` sys3) "")
          poss
-      let (ns@(NodeSig node _), dg2) = insGSig dg'' name DGLocal gsigma3
+      let hidSyms = Set.difference (symsOfGsign gsigma1) $ symsOfGsign gsigma3
+          orig = DGRestriction NoRestriction hidSyms
+          (ns@(NodeSig node _), dg2) = insGSig dg'' name orig gsigma3
       return (Local_spec (replaceAnnoted sp2 asp)
                          (replaceAnnoted sp2' asp')
                          poss, ns,

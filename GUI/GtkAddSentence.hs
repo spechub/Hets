@@ -25,6 +25,7 @@ import Interfaces.Utils
 
 import Static.DevGraph
 import Static.GTheory
+import Static.FromXmlUtils (BasicExtResponse (..), extendByBasicSpec)
 
 import Common.GlobalAnnotations
 

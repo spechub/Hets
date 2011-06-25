@@ -109,12 +109,12 @@ instance Eq Renamed where
   _ == _ = True
 
 -- | a wrapper for restrictions with a trivial Ord instance
-newtype Restricted = Restricted RESTRICTION deriving Show
+data MaybeRestricted = NoRestriction | Restricted RESTRICTION deriving Show
 
-instance Ord Restricted where
+instance Ord MaybeRestricted where
   compare _ _ = EQ
 
-instance Eq Restricted where
+instance Eq MaybeRestricted where
   _ == _ = True
 
 {- | Data type indicating the origin of nodes and edges in the input language
@@ -128,7 +128,7 @@ data DGOrigin =
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
-  | DGRestriction Restricted
+  | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
   | DGLocal
@@ -342,7 +342,7 @@ data Scope = Local | Global deriving (Show, Eq, Ord)
 
 data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
 
-data FreeOrCofree = Free | Cofree | NPFree 
+data FreeOrCofree = Free | Cofree | NPFree
   deriving (Show, Eq, Ord, Enum, Bounded, Read)
 
 fcList :: [FreeOrCofree]
@@ -521,7 +521,7 @@ listDGEdgeTypes =
                 , isProvenEdge = proven
                 , isConservativ = cons
                 , isPending = pending }
-      | thmType <- HidingThm 
+      | thmType <- HidingThm
         : [ FreeOrCofreeThm fc | fc <- fcList ] ++
           [ GlobalOrLocalThm { isLocalThmType = local
                              , isHomThm = hom }

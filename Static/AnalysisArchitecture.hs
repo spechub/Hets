@@ -46,6 +46,7 @@ import qualified Data.Map as Map
 
 import Data.Maybe
 import Data.Graph.Inductive.Graph as Graph (Node, edges)
+import qualified Data.Set as Set
 import Control.Monad (foldM)
 
 import Debug.Trace
@@ -464,7 +465,7 @@ anaUnitTerm lgraph ln dg opts uctx@(buc, diag) utrm =
       utStr = showDoc utrm ""
   in case utrm of
   Unit_reduction ut restr -> do
-       let orig = DGRestriction $ Restricted restr
+       let orig = DGRestriction (Restricted restr) Set.empty
        (p, diag1, dg1, ut') <-
            anaUnitTerm lgraph ln dg opts uctx (item ut)
        curl <- lookupCurrentLogic "UnitTerm" lgraph

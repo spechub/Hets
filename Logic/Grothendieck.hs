@@ -45,6 +45,7 @@ module Logic.Grothendieck
   , isHomSubGsign
   , isSubGsign
   , logicOfGsign
+  , symsOfGsign
   , G_symbolmap (..)
   , G_mapofsymbol (..)
   , G_symbol (..)
@@ -117,6 +118,7 @@ import Control.Monad (foldM)
 import Data.Maybe (mapMaybe)
 import Data.Typeable
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
@@ -208,6 +210,10 @@ instance Pretty G_sign where
 
 logicOfGsign :: G_sign -> AnyLogic
 logicOfGsign (G_sign lid _ _) = Logic lid
+
+symsOfGsign :: G_sign -> Set.Set G_symbol
+symsOfGsign (G_sign lid (ExtSign sgn _) _) = Set.map (G_symbol lid)
+    $ symset_of lid sgn
 
 -- | Grothendieck maps with symbol as keys
 data G_symbolmap a = forall lid sublogics

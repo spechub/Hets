@@ -15,6 +15,7 @@ module Static.FromXml where
 import Static.ComputeTheory (computeLibEnvTheories)
 import Static.DevGraph
 import Static.GTheory
+import Static.FromXmlUtils
 
 import Common.AnalyseAnnos (getGlobalAnnos)
 import Common.Consistency (Conservativity (..))
@@ -167,17 +168,17 @@ insertNodeAndLinks opts lg trgNd links (dg, lv) = do
   {- for HidingDefLinks, the target node signature and link morphisms are
   different. -}
   let isHiding = (== HidingDef) . edgeTypeModInc . lType
+  gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
+  let gt = case gsig1 of
+             G_sign lid sg sId -> noSensGTheory lid sg sId
   ((dg', lv'), hid) <- case partition isHiding links of
     -- case #1: none hiding def links
     ([], _) -> do
-      gsig1 <- liftR $ gsigManyUnion lg $ map (\ (_, m, _) -> cod m) mrs
-      let gt = case gsig1 of
-                 G_sign lid sg sId -> noSensGTheory lid sg sId
       dglv <- insertNode opts (Left gt) trgNd (dg, lv)
       return (dglv, False)
     -- case #2: only hiding def links
     (_, []) -> do
-        dglv <- insertNode opts (Right lg) trgNd (dg, lv)
+        dglv <- insertNode opts (Left gt) trgNd (dg, lv)
         return (dglv, True)
     -- case #3: mixture. not implemented!
     _ -> fail "mix of HidingDefLinks and other links pointing at a single node"
@@ -267,7 +268,7 @@ getTypeAndMorAux lg dg eTp mSrc sg@(G_sign slid _ _) cc rl = let
               Nothing -> return ((-1), emptySig)
             mr' <- liftR $ ginclusion lg sg' sg
             mkRtVAL sg' $ HidingFreeOrCofreeThm (Just fc) i' mr' lStat
-        GlobalOrLocalThm sc _ -> mkRtVAL sg 
+        GlobalOrLocalThm sc _ -> mkRtVAL sg
           $ ScopedLink sc (ThmLink lStat) $ mkConsStatus cc
 
 {- ------------------------------------------------------
@@ -282,24 +283,49 @@ insertNode opts gtOrLg (name, el) (dg, lv) =
     -- Case #1: Reference Node, ref- library will be loaded
     Just rf -> insertRefNode opts rf (name, el) (dg, lv)
     -- Case #2: Regular Node
-    Nothing -> let
-          n = getNewNodeDG dg
-          ch1 = case findChild (unqual "Declarations") el of
-                       Just ch -> deepSearch ["Symbol"] ch
-                       Nothing -> findChildren (unqual "Signature") el
-          ch2 = deepSearch ["Axiom", "Theorem"] el
-          in do
-            gt <- case gtOrLg of
-              Left gt' -> return gt'
-              Right lg -> do
-                lid <- getAttrVal "logic" el
-                lo <- lookupLogic ("unknown logic: " ++ lid) lid lg
-                return $ emptyTheory lo
-            (gt', symbs) <- parseSpecs gt name dg $ ch1 ++ ch2
-            diffSig <- liftR $ homGsigDiff (signOf gt') $ signOf gt
-            let lbl = newNodeLab (parseNodeName name)
-                  (DGBasicSpec Nothing diffSig symbs) gt'
-            return (insLNodeDG (n, lbl) dg, lv)
+    Nothing -> do
+        -- StartOff-Theory. Taken from LogicGraph for initial Nodes
+        gt0 <- case gtOrLg of
+          Left gt' -> return gt'
+          Right lg -> do
+            lid <- getAttrVal "logic" el
+            lo <- lookupLogic ("unknown logic: " ++ lid) lid lg
+            return $ emptyTheory lo
+        let parseTh = parseSpecs gt0 name dg
+        gt1 <- case findChild (unqual "Hidden") el of
+              Nothing -> case findChild (unqual "Declarations") el of
+                {- Case #1: No declared or hidden symbols, use signature
+                TODO: get rid of using Xml-Signature for all node types -}
+                Nothing -> do
+                  (gt', _) <- parseTh $ deepSearch ["Signature"] el
+                  return gt'
+                -- Case #2: Node has declared symbols (DGBasicSpec)
+                Just ch -> do
+                  (gt', _) <- parseTh $ deepSearch ["Symbol"] ch
+                  return gt'
+              -- Case #3: Node has hidden symbols (DGRestricted)
+              Just ch -> parseHidden gt0 $ deepSearch ["Symbol"] ch
+        let spec2 = deepSearch ["Axiom", "Theorem"] el
+        (gt2, symbs) <- parseSpecs gt1 name dg spec2
+        diffSig <- liftR $ homGsigDiff (signOf gt2) $ signOf gt1
+        let lbl = newNodeLab (parseNodeName name)
+              (DGBasicSpec Nothing diffSig symbs) gt2
+        return (insLNodeDG (getNewNodeDG dg, lbl) dg, lv)
+
+parseHidden :: G_theory -> [Element] -> ResultT IO G_theory
+parseHidden gt syms = let s' = intercalate ", " $ map strContent syms in do
+  gs <- liftR $ deleteHiddenSymbols s' $ signOf gt
+  return $ case gs of
+    G_sign lid sg sId -> noSensGTheory lid sg sId
+
+parseSpecs :: G_theory -> String -> DGraph -> [Element]
+           -> ResultT IO (G_theory, Set.Set G_symbol)
+parseSpecs gt' name dg specElems = let
+          specs = unlines $ map strContent specElems
+          (response, msg) = extendByBasicSpec (globalAnnos dg) specs gt'
+          in case response of
+            Success gt'' _ symbs _ -> return (gt'', symbs)
+            Failure _ -> fail $ "[ " ++ name ++ " ]\n" ++ msg
 
 {- inserts a reference node into the dgraph. The referenced library is first
 read using another call of fromXml, then the corresponding node is looked up -}
@@ -334,15 +360,6 @@ loadRefLib opts ln lv = do
               (ln', lv') <- readDGXmlR opts path lv
               return (lookupDGraph ln' lv', lv')
             _ -> fail $ "no file exists for reference library " ++ ln
-
-parseSpecs :: G_theory -> String -> DGraph -> [Element]
-           -> ResultT IO (G_theory, Set.Set G_symbol)
-parseSpecs gt' name dg specElems = let
-          specs = unlines $ map strContent specElems
-          (response, msg) = extendByBasicSpec (globalAnnos dg) specs gt'
-          in case response of
-            Success gt'' _ symbs _ -> return (gt'', symbs)
-            Failure _ -> fail $ "[ " ++ name ++ " ]\n" ++ msg
 
 {- ---------------------
 Element extraction -}

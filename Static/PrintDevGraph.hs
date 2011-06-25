@@ -111,7 +111,7 @@ dgOriginHeader o = case o of
     DGLogicCoercion -> "logic-translation"
     DGTranslation _ -> "translation"
     DGUnion -> "union"
-    DGRestriction _ -> "restriction"
+    DGRestriction _ _ -> "restriction"
     DGRevealTranslation -> "translation part of a revealing"
     DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
     DGLocal -> "local-spec"
@@ -129,16 +129,20 @@ dgOriginHeader o = case o of
     DGFlattening -> "flattening"
 
 instance Pretty DGOrigin where
-  pretty o = text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
-    $+$ case o of
+  pretty o = let prettySyms headr syms = if Set.null syms then Doc.empty
+                   else text headr $+$ pretty syms
+    in text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
+      $+$ case o of
           DGBasicSpec mgbs _ syms -> case mgbs of
               Nothing -> Doc.empty
               Just gbs -> specBraces (pretty gbs)
-            $+$
-              if Set.null syms then Doc.empty else
-                  text "new symbols:" $+$ pretty syms
+            $+$ prettySyms "new symbols:" syms
           DGTranslation (Renamed r) -> pretty r
-          DGRestriction (Restricted r) -> pretty r
+          DGRestriction rst syms -> let
+              prtS = prettySyms "hidden symbols:" syms
+              in case rst of
+                Restricted r -> pretty r $+$ prtS
+                NoRestriction -> prtS
           _ -> Doc.empty
 
 instance Pretty DGNodeInfo where
