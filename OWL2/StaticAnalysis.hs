@@ -77,11 +77,12 @@ checkClassExpression s desc = case desc of
         QN _ "Thing" _ _ -> return $ Expression $ QN "owl" "Thing" False ""
         QN _ "Nothing" _ _ -> return $ Expression $ QN "owl" "Nothing" False ""
         _ -> checkEntity s desc (Entity Class u) 
-  ObjectJunction _ ds -> do 
-      mapM_ (checkClassExpression s) ds 
-      return desc
+  ObjectJunction a ds -> do 
+      nl <- mapM (checkClassExpression s) ds 
+      return $ ObjectJunction a nl
   ObjectComplementOf d -> do  
-      checkClassExpression s d
+      n <- checkClassExpression s d
+      return $ ObjectComplementOf n
   ObjectOneOf is -> do 
       mapM_ (checkEntity s desc) (map (Entity NamedIndividual) is)
       return desc
@@ -90,41 +91,47 @@ checkClassExpression s desc = case desc of
       let x = Set.member iri (objectProperties s)
       let z = Set.member iri (dataProperties s)
       if x then do
-          checkClassExpression s d
-          return desc
-        else if z then
+          n <- checkClassExpression s d
+          return $ ObjectValuesFrom a opExpr n
+        else if z then do
                 let Expression u = d
-                in return (DataValuesFrom a iri [] (DataType u []))  
-              else fail "corrected data values from failed"
+                checkEntity s d (Entity Datatype u) 
+                return (DataValuesFrom a iri [] (DataType u []))  
+              else fail $ showQN iri ++ " objectValuesFrom failed"
   ObjectHasSelf opExpr -> do
-    if Set.member (getObjRoleFromExpression opExpr) (objectProperties s) then return desc
-     else fail "ObjectHasSelf Failed"
+    let iri = getObjRoleFromExpression opExpr
+    if Set.member iri (objectProperties s) then return desc
+     else fail $ showQN iri ++ " ObjectHasSelf Failed"
   ObjectHasValue opExpr i -> do
-    let x = Set.member (getObjRoleFromExpression opExpr) (objectProperties s)
-    if x then return desc else checkEntity s desc (Entity NamedIndividual i)
+    let iri = getObjRoleFromExpression opExpr
+    let x = Set.member iri (objectProperties s)
+    if x then do
+                checkEntity s desc (Entity NamedIndividual i)
+                return desc
+      else fail $ showQN iri ++ " objectHasValue failed"
   ObjectCardinality (Cardinality a b opExpr md) -> do
     let iri = getObjRoleFromExpression opExpr 
     let x = Set.member iri (objectProperties s)
     let z = Set.member iri (dataProperties s)
     case md of 
-        Nothing -> if x == False then fail "object cardinality failed with no class expression provided"
-                        else return desc
+        Nothing -> if x then return desc 
+                          else fail $ showQN iri ++ " object cardinality failed with no class expression provided"
         Just d -> if x then do
-                      checkClassExpression s d
-                      return desc
+                      n <- checkClassExpression s d
+                      return $ ObjectCardinality (Cardinality a b opExpr (Just n))
                     else do
                         let Expression u = d
                             dr = DataType u []
                         checkDataRange s dr 
                         if z then return $ DataCardinality (Cardinality a b iri (Just dr))
-                            else fail "corrected data cardinality failed"
+                            else fail $ showQN iri ++ " corrected data cardinality failed"
   DataValuesFrom _ dExp ds r -> do
     checkDataRange s r
     let x = Set.isSubsetOf (Set.fromList(dExp : ds)) (dataProperties s) 
-    if x then return desc else fail "dataValuesFrom failed"
+    if x then return desc else fail $ showQN dExp ++ " dataValuesFrom failed"
   DataHasValue dExp _ -> do
     let x = Set.member dExp (dataProperties s) 
-    if x then return desc else fail "dataHasValue failed"  
+    if x then return desc else fail $ showQN dExp ++ " dataHasValue failed"  
   DataCardinality (Cardinality _ _ dExp mr) -> do
     let x = Set.member dExp (dataProperties s)
     if x then do
@@ -133,7 +140,7 @@ checkClassExpression s desc = case desc of
           Just d -> do
             checkDataRange s d
             return desc
-      else fail "dataCardinality failed"
+      else fail $ showQN dExp ++ " dataCardinality failed"
 
 checkBit :: Sign -> FrameBit -> Result FrameBit
 checkBit s fb = case fb of
@@ -146,12 +153,12 @@ checkBit s fb = case fb of
     DatatypeBit _ dr -> do 
         checkDataRange s dr
         return fb
-    ExpressionBit _ anl -> do
-        mapM_ (checkClassExpression s) (map snd $ convertAnnList anl)
-        return fb
-    ClassDisjointUnion _ cel -> do
-        mapM_ (checkClassExpression s) cel
-        return fb
+    ExpressionBit a anl -> do
+        n <- mapM (checkClassExpression s) (map snd $ convertAnnList anl)
+        return fb -- !!!!!
+    ClassDisjointUnion a cel -> do
+        n <- mapM (checkClassExpression s) cel
+        return $ ClassDisjointUnion a n
     ClassHasKey _ _ _ -> checkHasKey s fb 
     ObjectBit _ anl -> do
         let ol = map snd $ convertAnnList anl

@@ -28,7 +28,7 @@ convertFrameBit (Entity e iri) fb = case fb of
             SubClass -> map (\ (ans, b) -> PlainAxiom ans $ SubClassOf (Expression iri) b) x
             _ -> [PlainAxiom (concatMap fst x) $ EquivOrDisjointClasses ed ((Expression iri) : (map snd x) )]
           NamedIndividual -> map (\ (ans, b) -> PlainAxiom ans $ ClassAssertion b iri) x
-          _ -> fail "incorrect binding of class expression to entity"
+          _ -> error "incorrect binding of class expression to entity"
     ClassDisjointUnion ans ce -> [PlainAxiom ans $ DisjointUnion iri ce]
     ClassHasKey ans opl dpl -> [PlainAxiom ans $ HasKey (Expression iri) opl dpl]
     ObjectBit ed (AnnotatedList x) ->
@@ -36,8 +36,10 @@ convertFrameBit (Entity e iri) fb = case fb of
           InverseOf -> map (\ (ans, b) -> PlainAxiom ans $ InverseObjectProperties (ObjectProp iri) b) x
           SubPropertyOf -> map (\ (ans, b) -> PlainAxiom ans $ SubObjectPropertyOf (OPExpression b) (ObjectProp iri)) x
           _ -> [PlainAxiom (concatMap fst x) $ EquivOrDisjointObjectProperties ed ((ObjectProp iri) : map snd x)]
-    ObjectCharacteristics (AnnotatedList anc) -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyCharacter b (ObjectProp iri)) anc
-    ObjectDomainOrRange dr (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyDomainOrRange dr (ObjectProp iri) b) x
+    ObjectCharacteristics (AnnotatedList anc) -> 
+              map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyCharacter b (ObjectProp iri)) anc
+    ObjectDomainOrRange dr (AnnotatedList x) -> 
+              map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyDomainOrRange dr (ObjectProp iri) b) x
     ObjectSubPropertyChain ans opl -> [PlainAxiom ans
               $ SubObjectPropertyOf (SubObjectPropertyChain opl) (ObjectProp iri)]
     DataBit ed (AnnotatedList x) ->
@@ -54,7 +56,7 @@ convertFrameBit (Entity e iri) fb = case fb of
 convertFact :: Individual -> Fact -> PlainAxiom
 convertFact i f = case f of
     ObjectPropertyFact pn ope i2 -> ObjectPropertyAssertion $ Assertion ope pn i i2
-    DataPropertyFact pn dpe i2 -> DataPropertyAssertion $ Assertion dpe pn i i2
+    DataPropertyFact pn dpe l -> DataPropertyAssertion $ Assertion dpe pn i l
 
 convertMisc :: Relation -> Annotations -> Misc -> Axiom
 convertMisc ed x misc = case misc of
