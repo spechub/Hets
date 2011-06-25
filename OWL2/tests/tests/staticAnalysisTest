@@ -9,8 +9,13 @@ ObjectProperty: d2
     InverseOf: d, d2
 
 DataProperty: c
-  Domain: d min 2 d min 2 b some dt 
+  Domain: d min 2 d some b some dt 
   Range: not dt[<1]
+
+ObjectProperty: a
+    EquivalentTo: d,d2
+    SubPropertyOf: d
+    Range: b only not not dt
 
 DisjointProperties: d, d2
 
@@ -19,3 +24,5 @@ Individual: i
 Class: c
   HasKey: b, d, b2, d2
   
+AnnotationProperty: a
+    Range: x, Annotations: a b y

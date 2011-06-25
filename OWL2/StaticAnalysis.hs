@@ -229,7 +229,7 @@ checkFact s fb f = do
 checkObjPropList :: Sign -> a -> [ObjectPropertyExpression] -> Result a
 checkObjPropList s fb ol = do
         let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
-        if elem False x then fail "Static analysis. Error: not all properties in the list are ObjectProperty"
+        if elem False x then fail "Static analysis. Error: not all properties in the list are ObjectProperties"
                   else return fb
 
 checkDataPropList :: Sign -> a -> [DataPropertyExpression] -> Result a
