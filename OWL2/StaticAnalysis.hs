@@ -307,6 +307,10 @@ createAxioms s fl = do
     x <- correctFrames s fl 
     return (map anaAxiom $ concatMap getAxioms x, x)
 
+modifyOntologyDocument :: OntologyDocument -> [Frame] -> OntologyDocument
+modifyOntologyDocument OntologyDocument {mOntology = mo, prefixDeclaration = pd} fl = 
+            OntologyDocument { mOntology = mo {ontologyFrame = fl}, prefixDeclaration = pd}
+
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis ::
     (OntologyDocument, Sign, GlobalAnnos) ->
@@ -318,7 +322,8 @@ basicOWL2Analysis (odoc, inSign, _) = do
           (createSign $ ontologyFrame $ mOntology odoc)
           inSign
     (axl, nfl) <- createAxioms accSign (ontologyFrame (mOntology odoc))
-    return (odoc, ExtSign accSign syms, axl)
+    let newdoc = modifyOntologyDocument odoc nfl
+    return (newdoc , ExtSign accSign syms, axl)
 
 getObjRoleFromExpression :: ObjectPropertyExpression -> IndividualRoleIRI
 getObjRoleFromExpression opExp =

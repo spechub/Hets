@@ -17,7 +17,7 @@ ObjectProperty: a
     SubPropertyOf: d
     Range: b only not not dt, Annotations: a b d some c, Annotations: x y d min 2 d some b some dt
 
-DisjointProperties: d, d2
+DisjointProperties: b, b2
 
 Individual: i
 
