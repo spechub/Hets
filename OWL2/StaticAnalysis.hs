@@ -52,12 +52,18 @@ anaAxiom x = case x of
 
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a (Entity ty e) = case ty of
-      Datatype -> if Set.member e (datatypes s) then return a else fail $ showQN e ++ " datatype undeclared"
-      Class -> if Set.member e (concepts s) then return a else fail $ showQN e ++ " class undeclared"
-      ObjectProperty -> if Set.member e (objectProperties s) then return a else fail $ showQN e ++ "object property undeclared"
-      DataProperty -> if Set.member e (dataProperties s) then return a else fail $ showQN e ++ " data property undeclared" 
-      NamedIndividual -> if Set.member e (individuals s) then return a else fail $ showQN e ++ " individual undeclared"
-      AnnotationProperty -> if Set.member e (annotationRoles s) then return a else fail $ showQN e ++ " annotation property undeclared"
+      Datatype -> if Set.member e (datatypes s) then return a 
+                    else fail $ "Static analysis. Datatype undeclared " ++ showQN e
+      Class -> if Set.member e (concepts s) then return a 
+                    else fail $ "Static analysis. Class undeclared " ++ showQN e 
+      ObjectProperty -> if Set.member e (objectProperties s) then return a 
+                          else fail $ "Static analysis. ObjectProperty undeclared " ++ showQN e
+      DataProperty -> if Set.member e (dataProperties s) then return a 
+                        else fail $ "Static analysis. DataProperty undeclared " ++ showQN e 
+      NamedIndividual -> if Set.member e (individuals s) then return a 
+                          else fail $ "Static analysis. Individual undeclared " ++ showQN e
+      AnnotationProperty -> if Set.member e (annotationRoles s) then return a 
+                             else fail $ "Static analysis. AnnotationProperty undeclared" ++ showQN e
     
 checkDataRange :: Sign -> DataRange -> Result DataRange
 checkDataRange s dr = 
@@ -70,6 +76,19 @@ checkDataRange s dr =
       return dr
     DataComplementOf r -> checkDataRange s r
     _-> return dr
+
+classExpressionToDataRange :: Sign -> ClassExpression -> Result DataRange
+classExpressionToDataRange s ce = case ce of
+    Expression u -> do
+      checkEntity s ce (Entity Datatype u)
+      return $ DataType u []
+    ObjectJunction jt cel -> do
+      nrl <- mapM (classExpressionToDataRange s) cel
+      return $ DataJunction jt nrl
+    ObjectComplementOf c -> do
+      nr <- classExpressionToDataRange s c
+      return $ DataComplementOf nr
+    _ -> fail "Static analysis. Failed to convert ClassExpression to DataRange"
     
 checkClassExpression :: Sign -> ClassExpression -> Result ClassExpression
 checkClassExpression s desc = case desc of
@@ -94,44 +113,43 @@ checkClassExpression s desc = case desc of
           n <- checkClassExpression s d
           return $ ObjectValuesFrom a opExpr n
         else if z then do
-                let Expression u = d
-                checkEntity s d (Entity Datatype u) 
-                return (DataValuesFrom a iri [] (DataType u []))  
-              else fail $ showQN iri ++ " objectValuesFrom failed"
+                ndr <- classExpressionToDataRange s d
+                checkDataRange s ndr
+                return $ DataValuesFrom a iri [] ndr 
+              else fail $ "Static analysis. ObjectValuesFrom failed, Data or Object Property undeclared " ++ showQN iri 
   ObjectHasSelf opExpr -> do
     let iri = getObjRoleFromExpression opExpr
     if Set.member iri (objectProperties s) then return desc
-     else fail $ showQN iri ++ " ObjectHasSelf Failed"
-  ObjectHasValue opExpr i -> do
+     else fail $ "Static analysis. ObjectHasSelf failed, ObjectProperty undeclared " ++ showQN iri
+  ObjectHasValue opExpr i -> do             
     let iri = getObjRoleFromExpression opExpr
     let x = Set.member iri (objectProperties s)
     if x then do
                 checkEntity s desc (Entity NamedIndividual i)
                 return desc
-      else fail $ showQN iri ++ " objectHasValue failed"
+      else fail $ "Static analysis. ObjectHasValue failed, ObjectProperty undeclared " ++ showQN iri
   ObjectCardinality (Cardinality a b opExpr md) -> do
     let iri = getObjRoleFromExpression opExpr 
     let x = Set.member iri (objectProperties s)
     let z = Set.member iri (dataProperties s)
     case md of 
-        Nothing -> if x then return desc 
-                          else fail $ showQN iri ++ " object cardinality failed with no class expression provided"
-        Just d -> if x then do
-                      n <- checkClassExpression s d
-                      return $ ObjectCardinality (Cardinality a b opExpr (Just n))
-                    else do
-                        let Expression u = d
-                            dr = DataType u []
-                        checkDataRange s dr 
-                        if z then return $ DataCardinality (Cardinality a b iri (Just dr))
-                            else fail $ showQN iri ++ " corrected data cardinality failed"
+      Nothing -> if x then return desc 
+                  else fail $ "Static analysis. ObjectCardinality failed with no class expression provided, ObjectProperty undeclared " ++ showQN iri 
+      Just d -> if x then do
+                    n <- checkClassExpression s d
+                    return $ ObjectCardinality (Cardinality a b opExpr (Just n))
+                  else do
+                      dr <- classExpressionToDataRange s d
+                      checkDataRange s dr 
+                      if z then return $ DataCardinality (Cardinality a b iri (Just dr))
+                        else fail $ "Static analysis. Corrected DataCardinality failed, Object or Data Property undeclared " ++ showQN iri
   DataValuesFrom _ dExp ds r -> do
     checkDataRange s r
     let x = Set.isSubsetOf (Set.fromList(dExp : ds)) (dataProperties s) 
-    if x then return desc else fail $ showQN dExp ++ " dataValuesFrom failed"
+    if x then return desc else fail "Static analysis. DataValuesFrom failed, some DataProperty undeclared"
   DataHasValue dExp _ -> do
     let x = Set.member dExp (dataProperties s) 
-    if x then return desc else fail $ showQN dExp ++ " dataHasValue failed"  
+    if x then return desc else fail $ "Static analysis. DataHasValue failed, DataProperty undeclared " ++ showQN dExp 
   DataCardinality (Cardinality _ _ dExp mr) -> do
     let x = Set.member dExp (dataProperties s)
     if x then do
@@ -140,22 +158,24 @@ checkClassExpression s desc = case desc of
           Just d -> do
             checkDataRange s d
             return desc
-      else fail $ showQN dExp ++ " dataCardinality failed"
+      else fail $ "Static analysis. DataCardinality failed, DataProperty undeclared " ++ showQN dExp
 
 checkBit :: Sign -> FrameBit -> Result FrameBit
 checkBit s fb = case fb of
     AnnotationFrameBit _ -> return fb
     AnnotationBit _ anl -> do
-        let apl = map snd (convertAnnList anl)
-        mapM_ (checkEntity s fb) (map (Entity AnnotationProperty) apl)
+        let apl = map snd $ convertAnnList anl
+        mapM_ (checkEntity s fb) $ map (Entity AnnotationProperty) apl
         return fb
     AnnotationDR _ _ -> return fb
     DatatypeBit _ dr -> do 
         checkDataRange s dr
         return fb
     ExpressionBit a anl -> do
-        n <- mapM (checkClassExpression s) (map snd $ convertAnnList anl)
-        return fb -- !!!!!
+        let ans = map fst $ convertAnnList anl
+        let ce = map snd $ convertAnnList anl
+        n <- mapM (checkClassExpression s) ce
+        return $ ExpressionBit a $ AnnotatedList $ zip ans n
     ClassDisjointUnion a cel -> do
         n <- mapM (checkClassExpression s) cel
         return $ ClassDisjointUnion a n
@@ -163,19 +183,21 @@ checkBit s fb = case fb of
     ObjectBit _ anl -> do
         let ol = map snd $ convertAnnList anl
         checkObjPropList s fb ol
-    ObjectDomainOrRange _ anl -> do
-        let ds = map snd $ convertAnnList anl
-        mapM_ (checkClassExpression s) ds
-        return fb
+    ObjectDomainOrRange drng anl -> do
+        let ans = map fst $ convertAnnList anl
+        let ce = map snd $ convertAnnList anl
+        n <- mapM (checkClassExpression s) ce
+        return $ ObjectDomainOrRange drng $ AnnotatedList $ zip ans n
     ObjectCharacteristics _ -> return fb
     ObjectSubPropertyChain _ ol -> checkObjPropList s fb ol
     DataBit _ anl -> do
         let dl = map snd $ convertAnnList anl
         checkDataPropList s fb dl
     DataPropDomain anl -> do
+        let ans = map fst $ convertAnnList anl
         let dr = map snd $ convertAnnList anl
-        mapM_ (checkClassExpression s) dr
-        return fb 
+        n <- mapM (checkClassExpression s) dr
+        return $ DataPropDomain $ AnnotatedList $ zip ans n
     DataPropRange anl -> do
         let dr = map snd $ convertAnnList anl
         mapM_ (checkDataRange s) dr
@@ -199,21 +221,21 @@ checkFact s fb f = do
     case f of
       ObjectPropertyFact _ op _ -> 
         if Set.member (getObjRoleFromExpression op) (objectProperties s) then return fb
-         else fail "object property fact failed"
+         else fail "Static analysis. ObjectPropertyFact failed"
       DataPropertyFact _ dp _ -> 
             if Set.member dp (dataProperties s) then return fb
-             else fail "data property fact failed" 
+             else fail "Static analysis. DataProperty fact failed" 
     
-checkObjPropList :: Sign -> FrameBit -> [ObjectPropertyExpression] -> Result FrameBit
+checkObjPropList :: Sign -> a -> [ObjectPropertyExpression] -> Result a
 checkObjPropList s fb ol = do
         let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
-        if elem False x then fail "not obj property list"
+        if elem False x then fail "Static analysis. Error: not all properties in the list are ObjectProperty"
                   else return fb
 
-checkDataPropList :: Sign -> FrameBit -> [DataPropertyExpression] -> Result FrameBit
+checkDataPropList :: Sign -> a -> [DataPropertyExpression] -> Result a
 checkDataPropList s fb dl = do
         let x = map (\ u -> Set.member u (dataProperties s) ) dl
-        if elem False x then fail "not data property list"
+        if elem False x then fail "Static analysis. Error: not all properties in the list are DataProperties"
                   else return fb
 
 checkHasKeyAll :: Sign -> FrameBit -> Result FrameBit
@@ -221,7 +243,7 @@ checkHasKeyAll s k = case k of
   ClassHasKey a ol dl -> do
     let x = map (\ u -> Set.member (getObjRoleFromExpression u) (objectProperties s) ) ol
         y = map (\ u -> Set.member u (dataProperties s) ) dl 
-    if elem False (x ++ y) then fail "keys failed"
+    if elem False (x ++ y) then fail "Static analysis. Keys failed, undeclared Data or Object Properties"
               else return (ClassHasKey a ol dl)
   _ -> return k
 
@@ -245,11 +267,16 @@ sortObjDataList s = catMaybes . map (sortObjData s)
 checkMisc :: Sign -> Misc -> Result Misc
 checkMisc s m = case m of
     MiscEquivOrDisjointClasses cl -> do
-      mapM_ (checkClassExpression s) cl
-      return m
+      n <- mapM (checkClassExpression s) cl
+      return $ MiscEquivOrDisjointClasses n
     MiscEquivOrDisjointObjProp ol -> do
       let x = sortObjDataList s ol
-      if null x then return $ MiscEquivOrDisjointDataProp (map getObjRoleFromExpression ol) else return m
+      if null x then do
+          let dpl = map getObjRoleFromExpression ol
+          let nm = MiscEquivOrDisjointDataProp dpl
+          checkDataPropList s nm dpl
+          return nm 
+        else return m
     _ -> return m
 
 getEntityFromFrame :: Frame -> State Sign ()
@@ -266,17 +293,14 @@ checkFrame s f = case f of
       nl <- mapM (checkBit s) fbl
       return $ Frame a nl
     MiscFrame r al misc -> do
-      let x = maybeResult $ checkMisc s misc
-      case x of 
-        Nothing -> fail "misc failed"
-        Just m -> return (MiscFrame r al m)
+      x <- checkMisc s misc
+      return $ MiscFrame r al x
     MiscSameOrDifferent _ _ il -> do
       mapM_ (checkEntity s f) (map (Entity NamedIndividual) il)
       return f
 
 correctFrames :: Sign -> [Frame] -> Result [Frame]
-correctFrames s fl = do
-    mapM (checkFrame s) fl
+correctFrames s fl = mapM (checkFrame s) fl
 
 createAxioms :: Sign -> [Frame] -> Result ([Named Axiom], [Frame])
 createAxioms s fl = do
