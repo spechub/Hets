@@ -15,7 +15,7 @@ DataProperty: c
 ObjectProperty: a
     EquivalentTo: d,d2
     SubPropertyOf: d
-    Range: b only not not dt
+    Range: b only not not dt, Annotations: a b d some c, Annotations: x y d min 2 d some b some dt
 
 DisjointProperties: d, d2
 
