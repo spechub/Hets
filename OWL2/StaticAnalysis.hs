@@ -276,7 +276,7 @@ checkMisc s m = case m of
           let nm = MiscEquivOrDisjointDataProp dpl
           checkDataPropList s nm dpl
           return nm 
-        else return m
+        else if length x == length ol then return m else fail "Static analysis. Error: Object and Data Properties mixed in the wrong place."
     _ -> return m
 
 getEntityFromFrame :: Frame -> State Sign ()

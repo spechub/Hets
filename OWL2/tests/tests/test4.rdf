@@ -1,0 +1,173 @@
+<rdf:RDF xmlns="http://example.com/"
+     xml:base="http://example.com/"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <owl:Ontology rdf:about=""/>
+
+    <owl:ObjectProperty rdf:about="2a=a">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">2a-to-a</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="2a=b-and-c">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">2a-to-b-and-c</rdfs:label>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="a=2a'">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">a-to-2a'</rdfs:label>
+        <owl:inverseOf rdf:resource="2a=a"/>
+    </owl:ObjectProperty>
+    
+
+    <owl:ObjectProperty rdf:about="a=b">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">a-to-b</rdfs:label>
+    </owl:ObjectProperty>
+    
+    <owl:ObjectProperty rdf:about="b-and-c=2a'">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">b-and-c-to-2a'</rdfs:label>
+        <owl:inverseOf rdf:resource="2a=b-and-c"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="b=a'">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">b-to-a'</rdfs:label>
+        <owl:inverseOf rdf:resource="a=b"/>
+    </owl:ObjectProperty>
+    
+    <owl:ObjectProperty rdf:about="b=c">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">b-to-c</rdfs:label>
+    </owl:ObjectProperty>
+    
+    <owl:ObjectProperty rdf:about="c=b'">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">c-to-b'</rdfs:label>
+        <owl:inverseOf rdf:resource="b=c"/>
+    </owl:ObjectProperty>
+    
+    <owl:Class rdf:about="2a">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">2a</rdfs:label>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="2a=b-and-c"/>
+                <owl:someValuesFrom rdf:resource="b-and-c"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="2a=a"/>
+                <owl:someValuesFrom rdf:resource="a"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <owl:disjointWith rdf:resource="a"/>
+        <owl:disjointWith rdf:resource="b"/>
+        <owl:disjointWith rdf:resource="b-and-c"/>
+        <owl:disjointWith rdf:resource="c"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="a">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">a</rdfs:label>
+        <owl:equivalentClass>
+            <owl:Class>
+                <owl:oneOf rdf:parseType="Collection">
+                    <rdf:Description rdf:about="http://example.com/j"/>
+                    <rdf:Description rdf:about="http://example.com/k"/>
+                    <rdf:Description rdf:about="http://example.com/i"/>
+                </owl:oneOf>
+            </owl:Class>
+        </owl:equivalentClass>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="a=b"/>
+                <owl:someValuesFrom rdf:resource="b"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="a=2a'"/>
+                <owl:someValuesFrom rdf:resource="2a"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <owl:disjointWith rdf:resource="b"/>
+        <owl:disjointWith rdf:resource="c"/>
+    </owl:Class>
+    
+    <owl:Class rdf:about="b">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">b</rdfs:label>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="b=a'"/>
+                <owl:someValuesFrom rdf:resource="a"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="b=c"/>
+                <owl:someValuesFrom rdf:resource="c"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <owl:disjointWith rdf:resource="c"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="b-and-c">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">b-and-c</rdfs:label>
+        <owl:equivalentClass>
+            <owl:Class>
+                <owl:unionOf rdf:parseType="Collection">
+                    <rdf:Description rdf:about="b"/>
+                    <rdf:Description rdf:about="c"/>
+                </owl:unionOf>
+            </owl:Class>
+        </owl:equivalentClass>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="b-and-c=2a'"/>
+                <owl:someValuesFrom rdf:resource="2a"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+    
+    <owl:Class rdf:about="c">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">c</rdfs:label>
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="c=b'"/>
+                <owl:someValuesFrom rdf:resource="b"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+    </owl:Class>
+
+    <rdf:Description rdf:about="http://example.com/i">
+        <rdfs:label>i</rdfs:label>
+    </rdf:Description>
+
+    <rdf:Description rdf:about="http://example.com/j">
+        <rdfs:label>j</rdfs:label>
+    </rdf:Description>
+
+    <rdf:Description rdf:about="http://example.com/k">
+        <rdfs:label>k</rdfs:label>
+    </rdf:Description>
+
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDifferent"/>
+        <owl:distinctMembers rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://example.com/j"/>
+            <rdf:Description rdf:about="http://example.com/k"/>
+            <rdf:Description rdf:about="http://example.com/i"/>
+        </owl:distinctMembers>
+    </rdf:Description>
+</rdf:RDF>

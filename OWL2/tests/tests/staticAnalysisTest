@@ -1,0 +1,21 @@
+Ontology: a
+
+Datatype: dt
+
+DataProperty: b
+DataProperty: b2
+ObjectProperty: d
+ObjectProperty: d2
+    InverseOf: d, d2
+
+DataProperty: c
+  Domain: d min 2 d min 2 b some dt 
+  Range: not dt[<1]
+
+DisjointProperties: d, d2
+
+Individual: i
+
+Class: c
+  HasKey: b, d, b2, d2
+  
