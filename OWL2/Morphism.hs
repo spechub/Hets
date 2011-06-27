@@ -78,12 +78,12 @@ inducedFromMor rm sig = do
         (ASymbol s@(Entity _ v), ASymbol (Entity _ u)) ->
             if Set.member s syms
             then return $ if u == v then m else Map.insert s u m
-            else fail $ "unknown symbol: " ++ showDoc s ""
+            else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
           $ map (`Entity` v) entityTypes of
-          [] -> fail $ "unknown symbol: " ++ showDoc v ""
+          [] -> fail $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
           l -> return $ if u == v then m else foldr (`Map.insert` u) m l
-        _ -> error "OWL.Morphism.inducedFromMor") Map.empty $ Map.toList rm
+        _ -> error "OWL2.Morphism.inducedFromMor") Map.empty $ Map.toList rm
   return OWLMorphism
     { osource = sig
     , otarget = inducedSign mm sig
