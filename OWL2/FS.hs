@@ -16,7 +16,7 @@ References:
 module OWL2.FS where
 
 import Common.Id (GetRange)
-
+import Data.List  
 import OWL2.AS
 
 -- * AXIOMS
@@ -25,6 +25,26 @@ data Axiom = PlainAxiom [Annotation] PlainAxiom
     deriving (Show, Eq, Ord)
 
 instance GetRange Axiom
+
+addImplied :: Axiom -> Axiom
+addImplied a = case remImplied a of 
+      PlainAxiom ans pa -> PlainAxiom (impliedTh : ans) pa
+
+remImplied :: Axiom -> Axiom
+remImplied (PlainAxiom ans pa) = PlainAxiom (filter isToProve1 ans) pa
+
+impliedTh :: Annotation
+impliedTh = Annotation [] (mkQName "Implied") (AnnValLit(Literal "true" (Typed nullQName)))
+
+isToProve :: [OWL2.AS.Annotation] -> Bool
+isToProve = any isToProve1
+
+isToProve1 :: OWL2.AS.Annotation -> Bool
+isToProve1 anno = case anno of
+      Annotation _ aIRI (AnnValLit(Literal value (Typed _))) ->
+          if localPart aIRI == "Implied" then isInfixOf "true" value
+            else False 
+      _ -> False
 
 data PlainAxiom =
     AnnotationAssertion IRI

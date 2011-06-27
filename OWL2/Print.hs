@@ -19,6 +19,7 @@ import Common.Id
 import Common.Keywords
 
 import OWL2.AS
+import OWL2.MS
 import OWL2.Symbols
 import OWL2.Keywords
 import OWL2.ColonKeywords
@@ -70,6 +71,24 @@ printSameOrDifferentInd x = case x of
     Same -> keyword sameIndividualC
     Different -> keyword differentIndividualsC
     Individuals -> keyword individualsC
+
+instance Pretty AnnotationValue where
+    pretty x = case x of
+      AnnValue iri -> pretty iri
+      AnnValLit lit -> pretty lit
+
+instance Pretty Annotation where
+    pretty = printAnnotation
+
+printAnnotation :: Annotation -> Doc
+printAnnotation (Annotation ans ap av) =
+  sep [printAnnotations ans, sep [pretty ap, pretty av]]
+
+printAnnotations :: Annotations -> Doc
+printAnnotations l = case l of
+    [] -> empty
+    _ -> keyword annotationsC <+> 
+          vcat (punctuate comma (map ( \(Annotation ans ap av) -> printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
 
 instance Pretty ClassExpression where
   pretty desc = case desc of
@@ -139,7 +158,10 @@ printDataRange dr = case dr of
       in fsep $ prepPunctuate (keyword k <> space) $ map pretty drlist
 
 printFV :: (ConstrainingFacet, RestrictionValue) -> Doc
-printFV (facet, restValue) = pretty facet <+> pretty restValue
+printFV (facet, restValue) = pretty (fromCF facet) <+> pretty restValue
+
+fromCF :: ConstrainingFacet -> String
+fromCF (QN _ local _ _) = local
 
 instance Pretty DatatypeFacet where
     pretty = keyword . showFacet
@@ -159,10 +181,10 @@ printRelation = keyword . showRelation
 printDomainOrRange :: DomainOrRange -> Doc
 printDomainOrRange = keyword . showDomainOrRange
 
-printDataDomainOrRange :: DataDomainOrRange -> Doc
-printDataDomainOrRange dr = case dr of
-    DataDomain d -> keyword domainC <+> pretty d
-    DataRange d -> keyword rangeC <+> pretty d
+printDataDomainOrRange :: DataDomainOrRange -> Annotations -> Doc
+printDataDomainOrRange dr ans = case dr of
+    DataDomain d -> keyword domainC <+> (printAnnotations ans $+$ pretty d)
+    DataRange d -> keyword rangeC <+> (printAnnotations ans $+$ pretty d)
 
 printSameOrDifferent :: SameOrDifferent -> Doc
 printSameOrDifferent = keyword . showSameOrDifferent
@@ -172,15 +194,10 @@ printEquivOrDisjointClasses x = case x of
     Equivalent -> text "EquivalentClasses:"
     Disjoint -> text "DisjointClasses:"
 
-printEquivOrDisjointObj :: EquivOrDisjoint -> Doc
-printEquivOrDisjointObj x = case x of
-    Equivalent -> text "EquivalentObjectProperties:"
-    Disjoint -> text "DisjointObjectProperties:"
-
-printEquivOrDisjointData :: EquivOrDisjoint -> Doc
-printEquivOrDisjointData x = case x of
-    Equivalent -> text "EquivalentDataProperties:"
-    Disjoint -> text "DisjointDataProperties:"
+printEquivOrDisjointProp :: EquivOrDisjoint -> Doc
+printEquivOrDisjointProp e = case e of
+    Disjoint -> text "DisjointProperties:"
+    Equivalent -> text "EquivalentProperties:"
 
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =

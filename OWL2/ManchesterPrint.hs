@@ -29,24 +29,6 @@ printCharact charact = text charact
 instance Pretty Character where
   pretty = printCharact . show
 
-instance Pretty AnnotationValue where
-    pretty x = case x of
-      AnnValue iri -> pretty iri
-      AnnValLit lit -> pretty lit
-
-instance Pretty Annotation where
-    pretty = printAnnotation
-
-printAnnotation :: Annotation -> Doc
-printAnnotation (Annotation ans ap av) =
-  sep [printAnnotations ans, sep [pretty ap, pretty av]]
-
-printAnnotations :: Annotations -> Doc
-printAnnotations l = case l of
-    [] -> empty
-    _ -> keyword annotationsC <+> 
-          vcat (punctuate comma (map ( \(Annotation ans ap av) -> printAnnotations ans $+$ pretty (Annotation [] ap av)) l) )
-
 instance Pretty a => Pretty (AnnotatedList a) where
     pretty = printAnnotatedList   
 
@@ -109,10 +91,7 @@ instance Pretty MOntology where
 printImport :: ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x
 
-printEquivOrDisjointProp :: EquivOrDisjoint -> Doc
-printEquivOrDisjointProp e = case e of
-    Disjoint -> text "DisjointProperties:"
-    Equivalent -> text "EquivalentProperties:"
+
 
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\(a, b) ->

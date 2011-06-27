@@ -334,13 +334,3 @@ findImplied anno sent =
          , isDef = False
          , wasTheorem = False }
    else sent { isAxiom = True }
-
-isToProve :: [OWL2.AS.Annotation] -> Bool
-isToProve [] = False
-isToProve (anno : r) =
-    case anno of
-      Annotation _ aIRI (AnnValLit(Literal value (Typed _))) ->
-          if localPart aIRI == "Implied" then isInfixOf "true" value
-            else isToProve r
-      _ -> isToProve r
-

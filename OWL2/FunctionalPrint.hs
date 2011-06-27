@@ -25,7 +25,6 @@ import OWL2.ColonKeywords
 import OWL2.Sign
 
 import qualified Data.Set as Set
-import qualified Data.Map as Map
 
 printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
 printOWLBasicTheory (s, l) =
@@ -72,58 +71,59 @@ printCharact charact =
 instance Pretty Axiom where
     pretty = printAxiom
 
-printAssertion :: (Pretty a, Pretty b) => Assertion a b -> Doc
-printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
+printAssertion :: (Pretty a, Pretty b) => Assertion a b -> [OWL2.AS.Annotation] -> Doc
+printAssertion (Assertion a p s b) ans = indStart <+> pretty s $+$
    let d = fsep [pretty a, pretty b] in
-   keyword factsC <+> case p of
+   keyword factsC <+> (printAnnotations ans $+$ case p of
      Positive -> d
-     Negative -> keyword notS <+> d
+     Negative -> keyword notS <+> d)
 
 printAxiom :: Axiom -> Doc
-printAxiom (PlainAxiom _ paxiom) = case paxiom of
+printAxiom (PlainAxiom ans paxiom) = case paxiom of
    AnnotationAssertion _ -> empty
    AnnotationAxiom _ _ _ -> empty
    SubClassOf sub super -> case super of
      Expression curi
        | localPart curi == "Thing" && namePrefix curi == "owl" -> empty
-     _ -> classStart <+> pretty sub $+$ keyword subClassOfC <+> pretty super
+     _ -> classStart <+> pretty sub $+$ keyword subClassOfC <+> (printAnnotations ans $+$ pretty super)
    EquivOrDisjointClasses ty equiList ->
-       printEquivOrDisjointClasses ty <+> setToDocV (Set.fromList equiList)
+       printEquivOrDisjointClasses ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList equiList))
    DisjointUnion curi discList ->
        classStart <+> pretty curi $+$ keyword disjointUnionOfC <+>
-                   setToDocV (Set.fromList discList)
+                   (printAnnotations ans $+$ setToDocV (Set.fromList discList))
    -- ObjectPropertyAxiom
    SubObjectPropertyOf sopExp opExp ->
        opStart <+> pretty opExp $+$ keyword (case sopExp of
                  SubObjectPropertyChain _ -> subPropertyChainC
                  _ -> subPropertyOfC)
-                   <+> pretty sopExp
+                   <+> (printAnnotations ans $+$ pretty sopExp)
    EquivOrDisjointObjectProperties ty opList ->
-       printEquivOrDisjointObj ty <+> setToDocV (Set.fromList opList)
+       printEquivOrDisjointProp ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList opList))
    ObjectPropertyDomainOrRange ty opExp desc ->
-       opStart <+> pretty opExp $+$ printDomainOrRange ty <+> pretty desc
+       opStart <+> pretty opExp $+$ printDomainOrRange ty <+> (printAnnotations ans $+$ pretty desc)
    InverseObjectProperties opExp1 opExp2 ->
-       opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> pretty opExp2
+       opStart <+> pretty opExp1 $+$ keyword inverseOfC <+> (printAnnotations ans $+$ pretty opExp2)
    ObjectPropertyCharacter ch opExp ->
-       opStart <+> pretty opExp $+$ printCharact (show ch)
+       opStart <+> pretty opExp $+$ (printAnnotations ans $+$ printCharact (show ch))
    -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
-       dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> pretty dpExp2
+       dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> (printAnnotations ans $+$ pretty dpExp2)
    EquivOrDisjointDataProperties ty dpList ->
-       printEquivOrDisjointData ty <+> setToDocV (Set.fromList dpList)
+       printEquivOrDisjointProp ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList dpList))
    DataPropertyDomainOrRange ddr dpExp ->
-       dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr
+       dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr ans
    FunctionalDataProperty dpExp ->
-       dpStart <+> pretty dpExp $+$ printCharact functionalS
+       dpStart <+> pretty dpExp $+$ (printAnnotations ans $+$ printCharact functionalS)
    -- Fact
-   SameOrDifferentIndividual ty indlist -> printSameOrDifferentInd ty <+> setToDocV (Set.fromList indlist)
+   SameOrDifferentIndividual ty indlist -> printSameOrDifferentInd ty <+> (printAnnotations ans $+$ setToDocV (Set.fromList indlist))
    ClassAssertion desc ind ->
-       indStart <+> pretty ind $+$ keyword typesC <+> pretty desc
-   ObjectPropertyAssertion ass -> printAssertion ass
-   DataPropertyAssertion ass -> printAssertion ass
+       indStart <+> pretty ind $+$ keyword typesC <+> (printAnnotations ans $+$ pretty desc)
+   ObjectPropertyAssertion ass -> printAssertion ass ans
+   DataPropertyAssertion ass -> printAssertion ass ans
    Declaration _ -> empty    -- [Annotation] Entity
    DatatypeDefinition dt dr ->
-       keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> pretty dr
+       keyword datatypeC <+> pretty dt $+$ keyword equivalentToC <+> (printAnnotations ans $+$ pretty dr)
    HasKey cexpr objlist datalist -> classStart <+> pretty cexpr $+$ keyword hasKeyC
-     <+> vcat (punctuate comma $ map pretty objlist ++ map pretty datalist)
+     <+> (printAnnotations ans $+$ vcat (punctuate comma $ map pretty objlist ++ map pretty datalist))
    u -> error $ "unknow axiom " ++ show u
+
