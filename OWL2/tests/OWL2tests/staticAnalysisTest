@@ -25,7 +25,7 @@ DisjointProperties: d,d2
 DisjointProperties: b, b2
 
 Individual: i
-    DifferentFrom: j
+    DifferentFrom: j,k
 
 Individual: j
   
@@ -38,6 +38,9 @@ Class: d
 
 Individual: k
   DifferentFrom: i,j
+
+Individual: x
+  DifferentFrom: k,i
 
 Class: c
   HasKey: b, d, b2, d2
