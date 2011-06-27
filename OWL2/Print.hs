@@ -167,6 +167,25 @@ printDataDomainOrRange dr = case dr of
 printSameOrDifferent :: SameOrDifferent -> Doc
 printSameOrDifferent = keyword . showSameOrDifferent
 
+printEquivOrDisjointClasses :: Relation -> Doc
+printEquivOrDisjointClasses x = case x of
+    Equivalent -> text "EquivalentClasses:"
+    Disjoint -> text "DisjointClasses:"
+    _ -> empty
+
+printEquivOrDisjointObj :: Relation -> Doc
+printEquivOrDisjointObj x = case x of
+    Equivalent -> text "EquivalentObjectProperties:"
+    Disjoint -> text "DisjointObjectProperties:"
+    _ -> empty
+
+printEquivOrDisjointData :: Relation -> Doc
+printEquivOrDisjointData x = case x of
+    Equivalent -> text "EquivalentDataProperties:"
+    Disjoint -> text "DisjointDataProperties:"
+    _ -> empty
+
+
 instance Pretty SubObjectPropertyExpression where
     pretty sopExp =
         case sopExp of

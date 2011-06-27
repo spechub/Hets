@@ -102,33 +102,21 @@ printFrame f = case f of
     Frame (Entity e uri) bl -> pretty (showEntityType e) <+> fsep [pretty uri, vcat (map pretty bl)]
     MiscFrame e a misc -> case misc of
         MiscEquivOrDisjointClasses c -> printEquivOrDisjointClasses e <+> (printAnnotations a $+$ vcat (punctuate comma (map pretty c) ))
-        MiscEquivOrDisjointObjProp c -> printEquivOrDisjointObj e <+> (printAnnotations a $+$ vcat ( punctuate comma (map pretty c) ))
-        MiscEquivOrDisjointDataProp c -> printEquivOrDisjointData e <+> (printAnnotations a $+$ vcat ( punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointObjProp c -> printEquivOrDisjointProp e <+> (printAnnotations a $+$ vcat ( punctuate comma (map pretty c) ))
+        MiscEquivOrDisjointDataProp c -> printEquivOrDisjointProp e <+> (printAnnotations a $+$ vcat ( punctuate comma (map pretty c) ))
     MiscSameOrDifferent s a c -> printSameOrDifferentInd s <+> (printAnnotations a $+$ vcat( punctuate comma (map pretty c) ))
-
-printEquivOrDisjointClasses :: Relation -> Doc
-printEquivOrDisjointClasses x = case x of
-    Equivalent -> text "EquivalentClasses:"
-    Disjoint -> text "DisjointClasses:"
-    _ -> empty
-
-printEquivOrDisjointObj :: Relation -> Doc
-printEquivOrDisjointObj x = case x of
-    Equivalent -> text "EquivalentObjectProperties:"
-    Disjoint -> text "DisjointObjectProperties:"
-    _ -> empty
-
-printEquivOrDisjointData :: Relation -> Doc
-printEquivOrDisjointData x = case x of
-    Equivalent -> text "EquivalentDataProperties:"
-    Disjoint -> text "DisjointDataProperties:"
-    _ -> empty
 
 instance Pretty MOntology where
     pretty = printOntology
 
 printImport :: ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x
+
+printEquivOrDisjointProp :: Relation -> Doc
+printEquivOrDisjointProp e = case e of
+    Disjoint -> text "DisjointProperties:"
+    Equivalent -> text "EquivalentProperties:"
+    _ -> empty
 
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\(a, b) ->

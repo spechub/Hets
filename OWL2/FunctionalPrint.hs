@@ -83,9 +83,8 @@ printAxiom axiom = case axiom of
      Expression curi
        | localPart curi == "Thing" && namePrefix curi == "owl" -> empty
      _ -> classStart <+> pretty sub $+$ keyword subClassOfC <+> pretty super
-   EquivOrDisjointClasses ty (clazz : equiList) ->
-       classStart <+> pretty clazz $+$ printRelation ty <+>
-                      setToDocV (Set.fromList equiList)
+   EquivOrDisjointClasses ty equiList ->
+       printEquivOrDisjointClasses ty <+> setToDocV (Set.fromList equiList)
    DisjointUnion curi discList ->
        classStart <+> pretty curi $+$ keyword disjointUnionOfC <+>
                    setToDocV (Set.fromList discList)
@@ -95,9 +94,8 @@ printAxiom axiom = case axiom of
                  SubObjectPropertyChain _ -> subPropertyChainC
                  _ -> subPropertyOfC)
                    <+> pretty sopExp
-   EquivOrDisjointObjectProperties ty (opExp : opList) ->
-       opStart <+> pretty opExp $+$ printRelation ty <+>
-                   setToDocV (Set.fromList opList)
+   EquivOrDisjointObjectProperties ty opList ->
+       printEquivOrDisjointObj ty <+> setToDocV (Set.fromList opList)
    ObjectPropertyDomainOrRange ty opExp desc ->
        opStart <+> pretty opExp $+$ printDomainOrRange ty <+> pretty desc
    InverseObjectProperties opExp1 opExp2 ->
@@ -107,19 +105,18 @@ printAxiom axiom = case axiom of
    -- DataPropertyAxiom
    SubDataPropertyOf dpExp1 dpExp2 ->
        dpStart <+> pretty dpExp1 $+$ keyword subPropertyOfC <+> pretty dpExp2
-   EquivOrDisjointDataProperties ty (dpExp : dpList) ->
-       dpStart <+> pretty dpExp $+$ printRelation ty <+>
-               setToDocV (Set.fromList dpList)
+   EquivOrDisjointDataProperties ty dpList ->
+       printEquivOrDisjointData ty <+> setToDocV (Set.fromList dpList)
    DataPropertyDomainOrRange ddr dpExp ->
        dpStart <+> pretty dpExp $+$ printDataDomainOrRange ddr
    FunctionalDataProperty dpExp ->
        dpStart <+> pretty dpExp $+$ printCharact functionalS
    -- Fact
    SameOrDifferentIndividual ty (ind : indList) ->
-      case ty of 
-        Individuals -> printSameOrDifferentInd ty <+> setToDocV (Set.fromList (ind : indList))
-        _ -> indStart <+> pretty ind $+$ printSameOrDifferentInd ty <+> 
-                 setToDocV (Set.fromList indList)
+      {-case ty of 
+        Individuals -> -}printSameOrDifferentInd ty <+> setToDocV (Set.fromList (ind : indList))
+        {-_ -> indStart <+> pretty ind $+$ printSameOrDifferentInd ty <+> 
+                 setToDocV (Set.fromList indList)-}
    ClassAssertion desc ind ->
        indStart <+> pretty ind $+$ keyword typesC <+> pretty desc
    ObjectPropertyAssertion ass -> printAssertion ass
