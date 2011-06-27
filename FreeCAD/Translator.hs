@@ -34,17 +34,13 @@ getFreshTempDir :: IO FilePath
 getFreshTempDir = getTemporaryDirectory
 
 processFile :: FilePath -> IO Document
-processFile _ = do error "TODO"
---unzips the freecad archive, reads the main "Document.xml" file and gives control
---to (translate :: Element -> IO Document) function to interpret the xml data
-{-processFile fp = do
-  tempDir <- liftIO getFreshTempDir
+processFile fp = do
+  tempDir <- getFreshTempDir
 --  putStrLn $ show $ ["unzip", "-of", fp, "-d", tempDir]
   readProcess "unzip" ["-o", fp, "-d", tempDir] []
   xmlInput <- readFile (joinPath[tempDir, "Document.xml"])
   let parsed = parseXMLDoc xmlInput
-  translate' $ fromJust parsed
-  runReaderT (translate $ fromJust parsed) tempDir
+  runReaderT (translate' $ fromJust parsed) tempDir
   --putStrLn (show $printDoc out)
   --putStrLn (show out)
 ------------------------}
