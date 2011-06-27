@@ -40,9 +40,13 @@ printSign s =
    let cs = concepts s
        ts = Set.filter ((`notElem` datatypeKeys) . localPart) $ datatypes s
    in vcat (map (\ (c, l) -> hsep $ map text
-                 [namespaceC, c, '<' : l ++ ">"]
-                 -- [prefixC, c ++ ":", '<' : l ++ ">"]
-                ) $ Map.toList $ prefixMap s) $++$
+                 [prefixC, c ++ ":", '<' : l ++ ">"]
+                )
+       [ ("owl", "http://www.w3.org/2002/07/owl#")
+      , ("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      , ("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+      , ("xsd", "http://www.w3.org/2001/XMLSchema#")
+      , ("", showQU dummyQName ++ "#") ]) $++$
    vcat (map (\ t -> keyword datatypeC <+> pretty t) $ Set.toList ts)
    $++$ vcat (map (\ c -> keyword classC <+> pretty c) $ Set.toList cs)
    $++$ vcat (map (\ o -> keyword objectPropertyC <+> pretty o) $ Set.toList $ objectProperties s)
