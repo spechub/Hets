@@ -74,9 +74,13 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
                OWLMorphism
                Entity RawSymb where
       basic_analysis OWL2 = Just basicOWL2Analysis
-      empty_signature OWL2 = emptySign
       stat_symb_items OWL2 _ = return . statSymbItems
       stat_symb_map_items OWL2 _ _ = statSymbMapItems
+      empty_signature OWL2 = emptySign
+      induced_from_morphism OWL2 = inducedFromMor
+      cogenerated_sign OWL2 = cogeneratedSign 
+      generated_sign OWL2 = generatedSign
+     
 
 instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
