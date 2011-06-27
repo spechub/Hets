@@ -39,4 +39,4 @@ Individual: Peter
      fatherOf  Stewie,
      fatherOf  Meg
     
-with Individual: Peter |-> John
+with Class Woman |-> Female, NamedIndividual Peter |-> John

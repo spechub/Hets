@@ -113,4 +113,5 @@ symOf s = Set.unions
   , Set.map (Entity Datatype) $ datatypes s
   , Set.map (Entity ObjectProperty) $ objectProperties s
   , Set.map (Entity DataProperty) $ dataProperties s
-  , Set.map (Entity NamedIndividual) $ individuals s ]
+  , Set.map (Entity NamedIndividual) $ individuals s
+  , Set.map (Entity AnnotationProperty) $ annotationRoles s ]

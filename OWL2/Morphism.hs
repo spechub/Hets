@@ -132,7 +132,7 @@ cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
   in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
-         fail "non OWL subsignatures for (co)generatedSign"
+         fail "non OWL2 subsignatures for (co)generatedSign"
 
 generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign

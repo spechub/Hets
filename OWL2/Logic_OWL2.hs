@@ -77,8 +77,14 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       stat_symb_items OWL2 _ = return . statSymbItems
       stat_symb_map_items OWL2 _ _ = statSymbMapItems
       empty_signature OWL2 = emptySign
+      signature_union OWL2 s = return . addSign s
+      final_union OWL2 = signature_union OWL2
+      is_subsig OWL2 = isSubSign
+      subsig_inclusion OWL2 s = return . inclOWLMorphism s
+      matches OWL2 = matchesSym
+      symbol_to_raw OWL2 = ASymbol
       induced_from_morphism OWL2 = inducedFromMor
-      cogenerated_sign OWL2 = cogeneratedSign 
+      cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign
      
 
