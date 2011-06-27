@@ -19,7 +19,9 @@ import Data.Set as Set
 import FreeCAD.Brep
 import System.Directory
 import System.Process
+import System.FilePath
 import FreeCAD.PrintAs()
+import Control.Monad.Trans (liftIO,)
 import Control.Monad.Trans.Reader (ReaderT(..))
 
 -- processFile2 :: FilePath -> IO Document
@@ -32,19 +34,20 @@ getFreshTempDir :: IO FilePath
 getFreshTempDir = getTemporaryDirectory
 
 processFile :: FilePath -> IO Document
+processFile _ = do error "TODO"
 --unzips the freecad archive, reads the main "Document.xml" file and gives control
 --to (translate :: Element -> IO Document) function to interpret the xml data
-processFile fp = do
-  tempDir <- getFreshTempDir
+{-processFile fp = do
+  tempDir <- liftIO getFreshTempDir
 --  putStrLn $ show $ ["unzip", "-of", fp, "-d", tempDir]
   readProcess "unzip" ["-o", fp, "-d", tempDir] []
-  xmlInput <-readFile (concat[tempDir, "/Document.xml"])
+  xmlInput <- readFile (joinPath[tempDir, "Document.xml"])
   let parsed = parseXMLDoc xmlInput
-  translate $ fromJust parsed
-  runReaderT (translate' $ fromJust parsed) tempDir
+  translate' $ fromJust parsed
+  runReaderT (translate $ fromJust parsed) tempDir
   --putStrLn (show $printDoc out)
   --putStrLn (show out)
-------------------------
+------------------------}
 
 
 
@@ -89,7 +92,7 @@ isBaseObject el = member (firstThree (getName el)) setBaseObjs
 
 --used in order to identify the object constructor from the name
 
-getObject:: Element -> IO NamedObject
+getObject:: Element -> RIO NamedObject
 getObject el | tn == "Box" = mkBaseObject $ getBox elc
              | tn == "Sph" = mkBaseObject $ getSph elc
              | tn == "Cyl" = mkBaseObject $ getCyl elc
@@ -130,7 +133,7 @@ getObject el | tn == "Box" = mkBaseObject $ getBox elc
 getObject _ = error "undefined object"
 
 
-mkRectangle :: Element ->IO NamedObject
+mkRectangle :: Element ->RIO NamedObject
 mkRectangle ef = do
         let e = child ef
             el2 = childByNameAttr "Shape" e
@@ -139,7 +142,7 @@ mkRectangle ef = do
         let obj = BaseObject bo
             po = PlacedObject place obj
         return $ NamedObject (getVal "name" ef) po
-mkLine :: Element -> IO NamedObject
+mkLine :: Element -> RIO NamedObject
 mkLine = error "line not implemented"
 
 getVal:: String -> Element -> String
@@ -197,10 +200,9 @@ child el = head(elChildren el)
 --into Haskell-FreeCAD datatype
 
 translate:: Element -> IO Document
-translate baseElement = mapM getObject $ objList baseElement
+translate baseElement = error "replace this once compilation error is solved"
 
 translate':: Element -> RIO Document
-translate' baseElement = return $ error "not implemented"
+translate' baseElement = mapM getObject $ objList baseElement
 
-type Env = FilePath
-type RIO a = ReaderT Env IO a
+

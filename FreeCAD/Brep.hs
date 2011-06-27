@@ -23,10 +23,11 @@ import Data.Maybe
 --import Data.Set() as Set
 import FreeCAD.As
 import FreeCAD.VecTools
-
+import Control.Monad.Trans.Reader (ask, ReaderT(..))
+import Control.Monad.Trans (liftIO,)
 import System.FilePath
 
-getBrep::(String, String) -> IO (BaseObject, Placement)
+getBrep::(String, String) -> RIO (BaseObject, Placement)
 getBrep (address, "line") = 
     fmap proc3dLine $ get3dLine address
 getBrep (address, "rectangle") = 
@@ -113,20 +114,21 @@ procRectangle (a, b, c, d) = (Rectangle h l, place)
       place = Placement pos quaternion
 
 -- TODO: get binary path from environment
-brepToXmlBinary :: IO FilePath
+brepToXmlBinary :: RIO FilePath
 brepToXmlBinary = return "./FreeCAD/brep_conversion/bin/brep_to_xml"
 
 
-getBrepObject :: (String -> a) -> String -> String -> IO a
-getBrepObject parser t addr = do
-  tmpDir <- error "put ask in this place"
+getBrepObject :: (String -> a) -> String -> String -> RIO a
+getBrepObject _ _ _ = error "error here"
+{-getBrepObject parser t addr = do
+  tmpDir <- ask
   binary <- brepToXmlBinary
-  fmap parser $ readProcess binary [joinPath [tmpDir, addr], t] ""
-
-get3dLine :: String -> IO (Vector3, Vector3)
+  fmap parser $ liftIO $ readProcess binary [joinPath [tmpDir, addr], t] ""
+-}
+get3dLine :: String -> RIO (Vector3, Vector3)
 get3dLine = getBrepObject parseBrepXML2 "line"
 
-getRectangle:: String -> IO (Vector3, Vector3, Vector3, Vector3)
+getRectangle:: String -> RIO (Vector3, Vector3, Vector3, Vector3)
 getRectangle = getBrepObject parseBrepXML "rectangle"
 
 
@@ -167,3 +169,5 @@ parseVertex e = Vector3 (getD "x") (getD "y") (getD "z") where
 makeQName:: String -> QName
 makeQName s = QName s Nothing Nothing
 
+type Env = FilePath
+type RIO a = ReaderT Env IO a
