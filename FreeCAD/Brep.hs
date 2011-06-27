@@ -24,19 +24,19 @@ import Data.Maybe
 import FreeCAD.As
 import FreeCAD.VecTools
 import Control.Monad.Trans.Reader (ask, ReaderT(..))
-import Control.Monad.Trans (liftIO,)
+import Control.Monad.Trans (liftIO)
 import System.FilePath
 
 getBrep::(String, String) -> RIO (BaseObject, Placement)
-getBrep (address, "line") = 
+getBrep (address, "line") =
     fmap proc3dLine $ get3dLine address
-getBrep (address, "rectangle") = 
+getBrep (address, "rectangle") =
     fmap procRectangle $ getRectangle address
 getBrep (_, _) = error "getBrep called with wrong arguments"
 
 
 proc3dLine:: (Vector3, Vector3) -> (BaseObject, Placement)
-proc3dLine (a, b) = (Line l, place) 
+proc3dLine (a, b) = (Line l, place)
     where
       l = distance3 a b
       pos = a
@@ -119,12 +119,11 @@ brepToXmlBinary = return "./FreeCAD/brep_conversion/bin/brep_to_xml"
 
 
 getBrepObject :: (String -> a) -> String -> String -> RIO a
-getBrepObject _ _ _ = error "error here"
-{-getBrepObject parser t addr = do
+getBrepObject parser t addr = do
   tmpDir <- ask
   binary <- brepToXmlBinary
   fmap parser $ liftIO $ readProcess binary [joinPath [tmpDir, addr], t] ""
--}
+
 get3dLine :: String -> RIO (Vector3, Vector3)
 get3dLine = getBrepObject parseBrepXML2 "line"
 
