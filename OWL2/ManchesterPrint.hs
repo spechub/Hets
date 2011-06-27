@@ -62,7 +62,6 @@ printFrameBit :: FrameBit -> Doc
 printFrameBit fb = case fb of
     AnnotationFrameBit x -> printAnnotations x
     AnnotationBit ed l -> printRelation ed <+> pretty l
-    AnnotationDR dr l -> printDomainOrRange dr <+> pretty l
     DatatypeBit ans a -> printAnnotations ans $+$ keyword equivalentToC <+> pretty a
     ExpressionBit x y -> printRelation x <+> pretty y
     ClassDisjointUnion a x -> keyword disjointUnionOfC
@@ -70,13 +69,11 @@ printFrameBit fb = case fb of
     ClassHasKey a op dp -> keyword hasKeyC <+> (printAnnotations a
       $+$ vcat (punctuate comma $ map pretty op ++ map pretty dp))
     ObjectBit dr x -> printRelation dr <+> pretty x
-    ObjectDomainOrRange dr x -> printDomainOrRange dr <+> pretty x
     ObjectCharacteristics x -> keyword characteristicsC <+> pretty x
     ObjectSubPropertyChain a opl -> keyword subPropertyChainC
       <+> (printAnnotations a $+$ fsep (prepPunctuate (keyword oS <> space) $ map pretty opl))
     DataBit dr x -> printRelation dr <+> pretty x
     DataPropRange x -> keyword rangeC <+> pretty x
-    DataPropDomain x -> keyword domainC <+> pretty x
     DataFunctional x -> keyword characteristicsC <+> (printAnnotations x $+$ printCharact functionalS)
     IndividualFacts x -> keyword factsC <+> pretty x
     IndividualSameOrDifferent s x -> printSameOrDifferent s <+> pretty x
@@ -112,11 +109,10 @@ instance Pretty MOntology where
 printImport :: ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x
 
-printEquivOrDisjointProp :: Relation -> Doc
+printEquivOrDisjointProp :: EquivOrDisjoint -> Doc
 printEquivOrDisjointProp e = case e of
     Disjoint -> text "DisjointProperties:"
     Equivalent -> text "EquivalentProperties:"
-    _ -> empty
 
 printPrefixes :: PrefixMap -> Doc
 printPrefixes x = vcat (map (\(a, b) ->

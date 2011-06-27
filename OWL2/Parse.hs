@@ -174,7 +174,7 @@ uriP =
   if null p then notElem (localPart q) owlKeywords
    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
-        ++ [ show d ++ e | d <- relationL, e <- [classesC, propertiesC]]
+        ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
 -- | parse a possibly kinded list of comma separated uris aka symbols
 symbItems :: GenParser Char st SymbItems
@@ -519,13 +519,13 @@ annotationValue = do
     l <- literal
     return $ AnnValLit l
 
-relationL :: [Relation]
-relationL = [Equivalent, Disjoint, SubPropertyOf, InverseOf, SubClass]
+equivOrDisjointL :: [EquivOrDisjoint]
+equivOrDisjointL = [Equivalent, Disjoint]
 
-relation :: CharParser st Relation
-relation = choice
-  $ map (\ f -> pkeyword (showRelation f) >> return f)
-  relationL
+equivOrDisjoint :: CharParser st EquivOrDisjoint
+equivOrDisjoint = choice
+  $ map (\ f -> pkeyword (showEquivOrDisjoint f) >> return f)
+  equivOrDisjointL
 
 subPropertyKey :: CharParser st ()
 subPropertyKey = pkeyword subPropertyOfC
@@ -538,12 +538,12 @@ sameOrDifferent = choice
   $ map (\ f -> pkeyword (showSameOrDifferent f) >> return f)
   [Same, Different]
 
-relationKeyword :: String -> CharParser st Relation
-relationKeyword ext = choice
+equivOrDisjointKeyword :: String -> CharParser st EquivOrDisjoint
+equivOrDisjointKeyword ext = choice
   $ map (\ f -> pkeyword (show f ++ ext) >> return f)
-  relationL
+  equivOrDisjointL
 
--- note the plural when different
+
 sameOrDifferentIndu :: CharParser st SameOrDifferent
 sameOrDifferentIndu =
   (pkeyword sameIndividualC >> return Same)

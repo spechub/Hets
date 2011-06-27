@@ -59,7 +59,7 @@ apBit = do
         <|> do
           dr <- domainOrRange
           x <- sepByComma $ optAnnos uriP
-          return $ AnnotationDR dr $ AnnotatedList x
+          return $ AnnotationBit (DRRelation dr) $ AnnotatedList x
        <|> do
           x <- annotations
           return $ AnnotationFrameBit x
@@ -90,9 +90,9 @@ classFrameBit = do
     ds <- descriptionAnnotatedList
     return $ ExpressionBit SubClass $ AnnotatedList ds
   <|> do
-    e <- relation
+    e <- equivOrDisjoint
     ds <- descriptionAnnotatedList
-    return $ ExpressionBit e $ AnnotatedList ds
+    return $ ExpressionBit (EDRelation e) $ AnnotatedList ds
   <|> do
     pkeyword disjointUnionOfC
     as <- optionalAnnos
@@ -114,7 +114,7 @@ objectFrameBit :: CharParser st FrameBit
 objectFrameBit = do
     r <- domainOrRange
     ds <- descriptionAnnotatedList
-    return $ ObjectDomainOrRange r $ AnnotatedList ds
+    return $ ExpressionBit (DRRelation r) $ AnnotatedList ds
   <|> do
     characterKey
     ds <- sepByComma $ optAnnos objectPropertyCharacter
@@ -124,9 +124,9 @@ objectFrameBit = do
     ds <- objPropExprAList
     return $ ObjectBit SubPropertyOf $ AnnotatedList ds
   <|> do
-    e <- relation
+    e <- equivOrDisjoint
     ds <- objPropExprAList
-    return $ ObjectBit e $ AnnotatedList ds
+    return $ ObjectBit (EDRelation e) $ AnnotatedList ds
   <|> do
     pkeyword inverseOfC
     ds <- objPropExprAList
@@ -154,7 +154,7 @@ dataFrameBit :: CharParser st FrameBit
 dataFrameBit = do
     pkeyword domainC
     ds <- descriptionAnnotatedList
-    return $ DataPropDomain $ AnnotatedList ds
+    return $ ExpressionBit (DRRelation ADomain) $ AnnotatedList ds
   <|> do
     pkeyword rangeC
     ds <- sepByComma $ optAnnos dataRange
@@ -169,9 +169,9 @@ dataFrameBit = do
     ds <- dataPropExprAList
     return $ DataBit SubPropertyOf $ AnnotatedList ds
   <|> do
-    e <- relation
+    e <- equivOrDisjoint
     ds <- dataPropExprAList
-    return $ DataBit e $ AnnotatedList ds
+    return $ DataBit (EDRelation e) $ AnnotatedList ds
   <|> do
     as <- annotations
     return $ AnnotationFrameBit as
@@ -220,12 +220,12 @@ individualFrame = do
 
 misc :: CharParser st Frame
 misc = do
-    e <- relationKeyword classesC
+    e <- equivOrDisjointKeyword classesC
     as <- optionalAnnos
     ds <- sepByComma description
     return $ MiscFrame e as $ MiscEquivOrDisjointClasses ds
   <|> do
-    e <- relationKeyword propertiesC
+    e <- equivOrDisjointKeyword propertiesC
     as <- optionalAnnos
     es <- sepByComma objectPropertyExpr
     -- indistinguishable from dataProperties

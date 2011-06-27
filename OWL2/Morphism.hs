@@ -181,11 +181,7 @@ mapSen m = return . mapAxiom (mmaps m)
 mapAxiom :: Map.Map Entity IRI -> Axiom -> Axiom
 mapAxiom m axm = case axm of
   PlainAxiom as a -> PlainAxiom (map (mapAnno m) as) $ mapPlainAxiom m a
-  EntityAnno en -> case en of
-    AnnotationAssertion l ir -> EntityAnno $ AnnotationAssertion (map (mapAnno m) l) ir
-    AnnotationAxiom rel l p ir -> EntityAnno $ AnnotationAxiom rel (map (mapAnno m) l) (getIri AnnotationProperty p m) ir
-    AnnDomainOrRange a l p ir -> EntityAnno $ AnnDomainOrRange a (map (mapAnno m) l) (getIri AnnotationProperty p m) ir
-
+    
 mapObjExpr :: Map.Map Entity IRI -> ObjectPropertyExpression
            -> ObjectPropertyExpression
 mapObjExpr m ope = case ope of
@@ -251,6 +247,8 @@ mapAssertion m f g (Assertion a ty i b) =
 
 mapPlainAxiom :: Map.Map Entity IRI -> PlainAxiom -> PlainAxiom
 mapPlainAxiom m pax = case pax of
+    AnnotationAssertion ir -> AnnotationAssertion ir
+    AnnotationAxiom rel p ir -> AnnotationAxiom rel (getIri AnnotationProperty p m) ir
     SubClassOf s t -> SubClassOf (mapDescr m s) $ mapDescr m t
     EquivOrDisjointClasses ty ds -> EquivOrDisjointClasses ty
       $ map (mapDescr m) ds

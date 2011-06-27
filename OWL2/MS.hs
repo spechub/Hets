@@ -41,25 +41,22 @@ data AnnotatedList a = AnnotatedList { convertAnnList :: [(Annotations, a)] }
 
 data Frame
    = Frame Entity [FrameBit]
-   | MiscFrame Relation Annotations Misc
+   | MiscFrame EquivOrDisjoint Annotations Misc
    | MiscSameOrDifferent SameOrDifferent Annotations [Individual]
     deriving (Show, Eq, Ord)
 
 data FrameBit
   = AnnotationFrameBit Annotations
   | AnnotationBit Relation (AnnotatedList AnnotationProperty)
-  | AnnotationDR DomainOrRange (AnnotatedList IRI)
   | DatatypeBit Annotations DataRange
   | ExpressionBit Relation (AnnotatedList ClassExpression)
   | ClassDisjointUnion Annotations [ClassExpression]
   | ClassHasKey Annotations [ObjectPropertyExpression] [DataPropertyExpression]
   | ObjectBit Relation (AnnotatedList ObjectPropertyExpression)
-  | ObjectDomainOrRange DomainOrRange (AnnotatedList ClassExpression)
   | ObjectCharacteristics (AnnotatedList Character)
   | ObjectSubPropertyChain Annotations [ObjectPropertyExpression]
   | DataBit Relation (AnnotatedList DataPropertyExpression)
   | DataPropRange (AnnotatedList DataRange)
-  | DataPropDomain (AnnotatedList ClassExpression)
   | DataFunctional Annotations
   | IndividualFacts (AnnotatedList Fact)
   | IndividualSameOrDifferent SameOrDifferent (AnnotatedList Individual)

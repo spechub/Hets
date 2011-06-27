@@ -256,23 +256,41 @@ type SourceIndividual = Individual
 type TargetIndividual = Individual
 type TargetValue = Literal
 
+data EquivOrDisjoint = Equivalent | Disjoint
+    deriving (Show, Eq, Ord)
+
+showEquivOrDisjoint :: EquivOrDisjoint -> String
+showEquivOrDisjoint ed = case ed of
+    Equivalent -> equivalentToC
+    Disjoint -> disjointWithC
+
 data Relation =
-    Equivalent
-  | Disjoint
+    EDRelation EquivOrDisjoint
   | SubPropertyOf
   | InverseOf
   | SubClass
   | Types
+  | DRRelation DomainOrRange
     deriving (Show, Eq, Ord)
 
 showRelation :: Relation -> String
-showRelation ed = case ed of
-    Equivalent -> equivalentToC
-    Disjoint -> disjointWithC
+showRelation r = case r of
+    EDRelation ed -> showEquivOrDisjoint ed
     SubPropertyOf -> subPropertyOfC
     InverseOf -> inverseOfC
     SubClass -> subClassOfC
     Types -> typesC
+    DRRelation dr -> showDomainOrRange dr
+
+getDR :: Relation -> DomainOrRange
+getDR r = case r of
+    DRRelation dr -> dr
+    _ -> error "not domain or range"
+
+getED :: Relation -> EquivOrDisjoint
+getED r = case r of
+    EDRelation ed -> ed
+    _ -> error "not domain or range"
 
 data DataDomainOrRange = DataDomain ClassExpression | DataRange DataRange
     deriving (Show, Eq, Ord)

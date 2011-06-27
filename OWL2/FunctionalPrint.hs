@@ -76,9 +76,9 @@ printAssertion (Assertion a p s b) = indStart <+> pretty s $+$
      Negative -> keyword notS <+> d
 
 printAxiom :: Axiom -> Doc
-printAxiom axiom = case axiom of
-  EntityAnno _ -> empty -- EntityAnnotation
-  PlainAxiom _ paxiom -> case paxiom of
+printAxiom (PlainAxiom _ paxiom) = case paxiom of
+   AnnotationAssertion _ -> empty
+   AnnotationAxiom _ _ _ -> empty
    SubClassOf sub super -> case super of
      Expression curi
        | localPart curi == "Thing" && namePrefix curi == "owl" -> empty

@@ -21,32 +21,26 @@ import OWL2.AS
 
 -- * AXIOMS
 
-data Axiom = -- Annotations can be ignored
-    PlainAxiom [Annotation] PlainAxiom
-  | EntityAnno AnnotationAxiom
-    deriving (Show, Eq, Ord)
-
-data AnnotationAxiom
-  = AnnotationAssertion [Annotation] IRI
-  | AnnotationAxiom Relation [Annotation] AnnotationProperty IRI
-  | AnnDomainOrRange DomainOrRange [Annotation] AnnotationProperty IRI
+data Axiom = PlainAxiom [Annotation] PlainAxiom
     deriving (Show, Eq, Ord)
 
 instance GetRange Axiom
 
 data PlainAxiom =
-    SubClassOf SubClass SuperClass
-  | EquivOrDisjointClasses Relation [ClassExpression] -- min. 2 desc.
+    AnnotationAssertion IRI
+  | AnnotationAxiom Relation AnnotationProperty IRI
+  | SubClassOf SubClass SuperClass
+  | EquivOrDisjointClasses EquivOrDisjoint [ClassExpression] -- min. 2 desc.
   | DisjointUnion Class [ClassExpression] -- min. 2 desc.
   | SubObjectPropertyOf SubObjectPropertyExpression ObjectPropertyExpression
-  | EquivOrDisjointObjectProperties Relation [ObjectPropertyExpression]
+  | EquivOrDisjointObjectProperties EquivOrDisjoint [ObjectPropertyExpression]
     -- min. 2  ObjectPropertyExpression
   | ObjectPropertyDomainOrRange DomainOrRange ObjectPropertyExpression
       ClassExpression
   | InverseObjectProperties ObjectPropertyExpression ObjectPropertyExpression
   | ObjectPropertyCharacter Character ObjectPropertyExpression
   | SubDataPropertyOf DataPropertyExpression DataPropertyExpression
-  | EquivOrDisjointDataProperties Relation [DataPropertyExpression]
+  | EquivOrDisjointDataProperties EquivOrDisjoint [DataPropertyExpression]
     -- min. 2 DataPropertyExpressions
   | DataPropertyDomainOrRange DataDomainOrRange DataPropertyExpression
   | FunctionalDataProperty DataPropertyExpression

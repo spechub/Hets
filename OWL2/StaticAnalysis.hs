@@ -45,10 +45,7 @@ addEntity :: Entity -> State Sign ()
 addEntity = modEntity Set.insert
 
 anaAxiom :: Axiom -> Named Axiom
-anaAxiom x = case x of 
-  PlainAxiom as _ -> findImplied as
-  _ -> id
- $ makeNamed "" x
+anaAxiom x = case x of PlainAxiom as _ -> findImplied as $ makeNamed "" x
 
 checkEntity :: Sign -> a -> Entity -> Result a
 checkEntity s a (Entity ty e) = case ty of
@@ -63,7 +60,7 @@ checkEntity s a (Entity ty e) = case ty of
       NamedIndividual -> if Set.member e (individuals s) then return a 
                           else fail $ "Static analysis. Individual undeclared " ++ showQN e
       AnnotationProperty -> if Set.member e (annotationRoles s) then return a 
-                             else fail $ "Static analysis. AnnotationProperty undeclared" ++ showQN e
+                             else fail $ "Static analysis. AnnotationProperty undeclared " ++ showQN e
     
 checkDataRange :: Sign -> DataRange -> Result DataRange
 checkDataRange s dr = 
@@ -163,11 +160,12 @@ checkClassExpression s desc = case desc of
 checkBit :: Sign -> FrameBit -> Result FrameBit
 checkBit s fb = case fb of
     AnnotationFrameBit _ -> return fb
-    AnnotationBit _ anl -> do
-        let apl = map snd $ convertAnnList anl
-        mapM_ (checkEntity s fb) $ map (Entity AnnotationProperty) apl
-        return fb
-    AnnotationDR _ _ -> return fb
+    AnnotationBit r anl -> case r of
+        DRRelation _ -> return fb
+        _ -> do
+            let apl = map snd $ convertAnnList anl
+            mapM_ (checkEntity s fb) $ map (Entity AnnotationProperty) apl
+            return fb
     DatatypeBit _ dr -> do 
         checkDataRange s dr
         return fb
@@ -183,21 +181,11 @@ checkBit s fb = case fb of
     ObjectBit _ anl -> do
         let ol = map snd $ convertAnnList anl
         checkObjPropList s fb ol
-    ObjectDomainOrRange drng anl -> do
-        let ans = map fst $ convertAnnList anl
-        let ce = map snd $ convertAnnList anl
-        n <- mapM (checkClassExpression s) ce
-        return $ ObjectDomainOrRange drng $ AnnotatedList $ zip ans n
     ObjectCharacteristics _ -> return fb
     ObjectSubPropertyChain _ ol -> checkObjPropList s fb ol
     DataBit _ anl -> do
         let dl = map snd $ convertAnnList anl
         checkDataPropList s fb dl
-    DataPropDomain anl -> do
-        let ans = map fst $ convertAnnList anl
-        let dr = map snd $ convertAnnList anl
-        n <- mapM (checkClassExpression s) dr
-        return $ DataPropDomain $ AnnotatedList $ zip ans n
     DataPropRange anl -> do
         let dr = map snd $ convertAnnList anl
         mapM_ (checkDataRange s) dr

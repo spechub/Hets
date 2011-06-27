@@ -17,6 +17,9 @@ ObjectProperty: a
     SubPropertyOf: d
     Range: b only not not dt, Annotations: a b d some c, Annotations: x y d min 2 d some b some dt
 
+Class: t
+  EquivalentTo: d only b some dt[<2]
+
 DisjointProperties: d,d2
 
 DisjointProperties: b, b2
