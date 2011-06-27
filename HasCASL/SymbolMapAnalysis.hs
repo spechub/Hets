@@ -93,7 +93,7 @@ inducedFromMorphism rmap sigma = do
     disjointKeys tarTypeMap2 tarClassMap
   -- return assembled morphism
     Result (envDiags sigma') $ Just ()
-    return $ (mkMorphism sigma $ delPreDefs sigma')
+    return $ (mkMorphism sigma $ cleanEnv sigma')
                  { typeIdMap = myTypeIdMap
                  , classIdMap = myClassIdMap
                  , funMap = op_Map }
