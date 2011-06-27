@@ -323,7 +323,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           lname = extName "Local" name
       (sp2, nsig'@(NodeSig _ gsig1), dg') <-
         anaSpec False lg ln dg nsig (extName "Spec" lname) opts sp1
-      (sp2', NodeSig n'' (G_sign lid2 sigma2 _), dg'') <- anaSpec False lg
+      (sp2', NodeSig n'' gsig2@(G_sign lid2 sigma2 _), dg'') <- anaSpec False lg
         ln dg' (JustNode nsig') (extName "Within" lname) opts sp1'
       let gSigN = getMaybeSig nsig
       (G_sign lid sigmaN _, _) <- gSigCoerce lg gSigN (Logic lid2)
@@ -337,9 +337,6 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
                else ext_cogenerated_sign lid2
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom mor3
--- TODO: check if startoff G_sign is correct for DGRestriction!
-          gsigma1 = G_sign lid2 sigma1 startSigId
-          -- gsigma2 = G_sign lid sigma2
           gsigma3 = G_sign lid2 (makeExtSign lid2 sigma3) startSigId
           sys3 = symset_of lid2 sigma3
       unless (isStructured opts
@@ -348,7 +345,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts sp = case sp of
           "illegal use of locally declared symbols: "
           ++ showDoc ((sys2 `Set.intersection` sys1) `Set.difference` sys3) "")
          poss
-      let hidSyms = Set.difference (symsOfGsign gsigma1) $ symsOfGsign gsigma3
+      let hidSyms = Set.difference (symsOfGsign gsig2) $ symsOfGsign gsigma3
           orig = DGRestriction NoRestriction hidSyms
           (ns@(NodeSig node _), dg2) = insGSig dg'' name orig gsigma3
       return (Local_spec (replaceAnnoted sp2 asp)
