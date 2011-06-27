@@ -1,4 +1,9 @@
+(* PolyML.Compiler.debug := true;
+open PolyML.Debug;
+breakIn "own_consts_of"; *)
 
+PolyML.profiling 1;
+PolyML.profiling 2;
 
 signature ThyToOMDoc = 
 sig
@@ -191,11 +196,11 @@ fun myfold env [] = ("", env)
 fun ParseTheory S = 
     let
 	val inputfile= TextIO.openIn(S ^ ".thy");
-	fun getToImportLine(inputfile) = let
-		val firstword = TextIO.inputN(inputfile,8);
-		in if firstword="imports " then TextIO.inputLine(inputfile) 
-			else getToImportLine(inputfile)
-		end
+        fun getToStr inputfile [] _ 	 = TextIO.inputLine(inputfile)|
+	    getToStr inputfile (x::xs) f = if TextIO.inputN(inputfile,1) = x then getToStr inputfile xs f
+                                           else getToStr inputfile f f
+	fun getToImportLine(inputfile) = let val imports = explode "imports "
+                                         in getToStr inputfile imports imports end
 	fun getImportNames(line: string option)=
 		case line of
 			NONE => ""|

@@ -11,6 +11,7 @@ if [ -z $1 ]; then
 fi
 
 TRANS=$(readlink -f $1)
+TRANS=$(dirname $TRANS)/$(basename $TRANS .thy)
 
 if [ -z $HETS_ISABELLE_LIB ]; then
  echo '$HETS_ISABELLE_LIB not set!'
