@@ -25,7 +25,7 @@ convertFrameBit (Entity e iri) fb = case fb of
         case e of
           Class -> case r of
             SubClass -> map (\ (ans, b) -> PlainAxiom ans $ SubClassOf (Expression iri) b) x
-            _ -> map (PlainAxiom (concatMap fst x)) $ 
+            _ -> map (PlainAxiom (concatMap fst x)) $
                     map (EquivOrDisjointClasses (getED r)) $ map (Expression iri :) $ (map (\u -> [u])) (map snd x)
           ObjectProperty -> map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyDomainOrRange (getDR r) (ObjectProp iri) b) x
           DataProperty -> map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataDomain b) iri) x
@@ -37,21 +37,22 @@ convertFrameBit (Entity e iri) fb = case fb of
         case r of
           InverseOf -> map (\ (ans, b) -> PlainAxiom ans $ InverseObjectProperties (ObjectProp iri) b) x
           SubPropertyOf -> map (\ (ans, b) -> PlainAxiom ans $ SubObjectPropertyOf (OPExpression b) (ObjectProp iri)) x
-          _ -> map (PlainAxiom (concatMap fst x)) $ 
-                    map (EquivOrDisjointObjectProperties (getED r)) $ map (ObjectProp iri :) $ (map (\u -> [u])) (map snd x)
-    ObjectCharacteristics (AnnotatedList anc) -> 
+          _ -> map (\ f -> PlainAxiom (concatMap fst x)
+                    $ EquivOrDisjointObjectProperties (getED r)
+                          [ObjectProp iri, snd f]) x
+    ObjectCharacteristics (AnnotatedList anc) ->
               map (\ (ans, b) -> PlainAxiom ans $ ObjectPropertyCharacter b (ObjectProp iri)) anc
     ObjectSubPropertyChain ans opl -> [PlainAxiom ans
               $ SubObjectPropertyOf (SubObjectPropertyChain opl) (ObjectProp iri)]
     DataBit ed (AnnotatedList x) ->
         case ed of
           SubPropertyOf -> map (\ (ans, b) -> PlainAxiom ans $ SubDataPropertyOf iri b) x
-          _ -> map (PlainAxiom (concatMap fst x)) $ 
+          _ -> map (PlainAxiom (concatMap fst x)) $
                     map (EquivOrDisjointDataProperties (getED ed)) $ map (iri :) $ (map (\u -> [u])) (map snd x)
     DataPropRange (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ DataPropertyDomainOrRange (DataRange b) iri) x
     DataFunctional anl -> [PlainAxiom anl $ FunctionalDataProperty iri]
     IndividualFacts (AnnotatedList x) -> map (\ (ans, b) -> PlainAxiom ans $ (convertFact iri b)) x
-    IndividualSameOrDifferent sd (AnnotatedList x) -> map (PlainAxiom (concatMap fst x)) $ 
+    IndividualSameOrDifferent sd (AnnotatedList x) -> map (PlainAxiom (concatMap fst x)) $
                     map (SameOrDifferentIndividual sd) $ map (iri :) $ (map (\u -> [u])) (map snd x)
 
 convertFact :: Individual -> Fact -> PlainAxiom
