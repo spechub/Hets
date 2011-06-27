@@ -296,18 +296,12 @@ sepByComma p = sepBy1 p commaP
 ichar :: Char -> CharParser st Char
 ichar c = char (toUpper c) <|> char (toLower c) <?> show [c]
 
--- | parse string case insensitive
-istring :: String -> CharParser st String
-istring s = case s of
-  [] -> return ""
-  c : r -> ichar c <:> istring r
-
 -- | plain string parser with skip
 pkeyword :: String -> CharParser st ()
 pkeyword s = keywordNotFollowedBy s (alphaNum <|> char '/') >> return ()
 
 keywordNotFollowedBy :: String -> CharParser st Char -> CharParser st String
-keywordNotFollowedBy s c = skips $ try $ istring s << notFollowedBy c
+keywordNotFollowedBy s c = skips $ try $ string s << notFollowedBy c
 
 -- | keyword not followed by any alphanum
 keyword :: String -> CharParser st String
