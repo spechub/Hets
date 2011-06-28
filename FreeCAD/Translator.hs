@@ -21,12 +21,7 @@ import System.Directory
 import System.Process
 import System.FilePath
 import FreeCAD.PrintAs()
-import Control.Monad.Trans (liftIO,)
-import Control.Monad.Trans.Reader (ReaderT(..))
-
--- processFile2 :: FilePath -> IO Document
--- processFile2 fp = withSystemTempDirectory $ "hets-fc." pFile
--- processFile2 fp = withSystemTempDirectory $ "hets-fc." pFile
+import Control.Monad.Reader (ReaderT(..))
 
 
 -- TODO: make unique subdirectory in tmp

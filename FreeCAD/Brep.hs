@@ -23,8 +23,7 @@ import Data.Maybe
 --import Data.Set() as Set
 import FreeCAD.As
 import FreeCAD.VecTools
-import Control.Monad.Trans.Reader (ask, ReaderT(..))
-import Control.Monad.Trans (liftIO)
+import Control.Monad.Reader (ask, ReaderT(..), liftIO)
 import System.FilePath
 
 getBrep::(String, String) -> RIO (BaseObject, Placement)
