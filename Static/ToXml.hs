@@ -122,7 +122,7 @@ lnode ga lenv (_, lbl) =
                    DGRestriction _ hidSyms -> subnodes "Hidden"
                        $ map (prettyRangeElem "Symbol" ga)
                        $ Set.toList hidSyms
-                   _ -> [sigxml]
+                   _ -> []
       ++ case dgn_theory lbl of
         G_theory lid (ExtSign sig _) _ thsens _ -> let
                  (axs, thms) = OMap.partition isAxiom $ OMap.map
