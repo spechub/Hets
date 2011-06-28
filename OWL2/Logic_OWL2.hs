@@ -44,7 +44,7 @@ import OWL2.Morphism
 import OWL2.ProveFact
 import OWL2.Conservativity
 import OWL2.ColimSign
---import OWL2.Taxonomy
+import OWL2.Taxonomy
 
 
 
@@ -95,7 +95,9 @@ instance StaticAnalysis OWL2 OntologyDocument Axiom
       cogenerated_sign OWL2 = cogeneratedSign
       generated_sign OWL2 = generatedSign
       signature_colimit OWL2 = return . signColimit
-
+#ifdef UNI_PACKAGE
+      theory_to_taxonomy OWL2 = onto2Tax
+#endif
 instance Logic OWL2 OWLSub OntologyDocument Axiom SymbItems SymbMapItems
                Sign
                OWLMorphism Entity RawSymb ProofTree where

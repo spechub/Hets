@@ -7,7 +7,7 @@ Maintainer  :  mcodescu@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable
 
-OWL signature colimits, computed component-wise.
+OWL2 signature colimits, computed component-wise.
 
 -}
 
